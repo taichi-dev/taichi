@@ -2657,7 +2657,8 @@ void CodeGenLLVM::visit(FuncCallStmt *stmt) {
 void CodeGenLLVM::cache_module(const std::string &kernel_key) {
   std::vector<LLVMCompiledData> data;
   data.emplace_back(offloaded_tasks, llvm::CloneModule(*module));
-  get_llvm_program(prog)->cache_kernel(kernel_key, data, infer_launch_args(kernel));
+  get_llvm_program(prog)->cache_kernel(kernel_key, data,
+                                       infer_launch_args(kernel));
 }
 
 LLVMCompiledData LLVMCompiledData::clone() const {

@@ -52,7 +52,8 @@ class LlvmProgramImpl : public ProgramImpl {
 
   void cache_kernel(const std::string &kernel_key,
                     const std::vector<LLVMCompiledData> &data_list,
-                    std::vector<LlvmLaunchArgInfo> &&args);;
+                    std::vector<LlvmLaunchArgInfo> &&args);
+  ;
 
   void cache_field(int snode_tree_id,
                    int root_id,

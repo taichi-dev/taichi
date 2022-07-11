@@ -104,7 +104,7 @@ class ASTTransformer(Builder):
         return None
 
     @staticmethod
-    def build_assign_slice(ctx, node_target: ast.Subscript, values):
+    def build_assign_slice(ctx, node_target, values, is_static_assign):
         target = ASTTransformer.build_Subscript(ctx, node_target, get_ref=True)
         if isinstance(node_target.value.ptr, Matrix):
             if isinstance(node_target.value.ptr._impl, _TiScopeMatrixImpl):
@@ -117,12 +117,7 @@ class ASTTransformer(Builder):
             else:
                 raise TaichiTypeError(f'{type(target)} cannot be subscripted')
         else:
-            try:
-                target._assign(values)
-            except AttributeError:
-                raise TaichiSyntaxError(
-                    f"Variable '{unparse(node_target).strip()}' cannot be assigned. Maybe it is not a Taichi object?"
-                )
+            ASTTransformer.build_assign_basic(ctx, node_target, values, is_static_assign)
 
     @staticmethod
     def build_assign_unpack(ctx, node_target, values, is_static_assign):
@@ -137,7 +132,7 @@ class ASTTransformer(Builder):
             is_static_assign: A boolean value indicating whether this is a static assignment
         """
         if isinstance(node_target, ast.Subscript):
-            return ASTTransformer.build_assign_slice(ctx, node_target, values)
+            return ASTTransformer.build_assign_slice(ctx, node_target, values, is_static_assign)
 
         if not isinstance(node_target, ast.Tuple):
             return ASTTransformer.build_assign_basic(ctx, node_target, values,

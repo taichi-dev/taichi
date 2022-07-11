@@ -306,7 +306,7 @@ FunctionType CodeGenCPU::codegen() {
   auto compiled_res = gen.run_compilation();
 
   CPUModuleToFunctionConverter converter{gen.tlctx,
-                                          llvm_prog->get_runtime_executor()};
+                                         llvm_prog->get_runtime_executor()};
   std::vector<LLVMCompiledData> data_list;
   data_list.push_back(std::move(compiled_res));
   if (!kernel->is_evaluator) {

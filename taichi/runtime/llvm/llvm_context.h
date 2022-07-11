@@ -191,7 +191,6 @@ class LlvmModuleBitcodeLoader {
   std::string bitcode_path_;
   std::string buffer_id_;
   bool inline_funcs_{false};
-
 };
 
 std::unique_ptr<llvm::Module> module_from_bitcode_file(

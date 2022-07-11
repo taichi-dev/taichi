@@ -1394,9 +1394,11 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
   auto ptr_type = stmt->dest->ret_type->as<PointerType>();
   if (ptr_type->is_bit_pointer()) {
     auto pointee_type = ptr_type->get_pointee_type();
-    if (stmt->dest->as<GetChStmt>()->input_snode->type == SNodeType::bit_struct) {
+    if (stmt->dest->as<GetChStmt>()->input_snode->type ==
+        SNodeType::bit_struct) {
       TI_ERROR(
-          "Bit struct stores with type {} should have been handled by BitStructStoreStmt.",
+          "Bit struct stores with type {} should have been handled by "
+          "BitStructStoreStmt.",
           pointee_type->to_string());
     }
     if (auto qit = pointee_type->cast<QuantIntType>()) {

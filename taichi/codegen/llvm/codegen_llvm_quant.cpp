@@ -42,10 +42,12 @@ llvm::Value *CodeGenLLVM::atomic_add_quant_fixed(AtomicOpStmt *stmt,
                       tlctx->get_constant(qit->get_num_bits()), val_store});
 }
 
-llvm::Value *CodeGenLLVM::to_quant_fixed(llvm::Value *real, QuantFixedType *qfxt) {
+llvm::Value *CodeGenLLVM::to_quant_fixed(llvm::Value *real,
+                                         QuantFixedType *qfxt) {
   // Compute int(real * (1.0 / scale) + 0.5)
   auto compute_type = qfxt->get_compute_type();
-  auto s = builder->CreateFPCast(tlctx->get_constant(1.0 / qfxt->get_scale()), llvm_type(compute_type));
+  auto s = builder->CreateFPCast(tlctx->get_constant(1.0 / qfxt->get_scale()),
+                                 llvm_type(compute_type));
   auto input_real = builder->CreateFPCast(real, llvm_type(compute_type));
   auto scaled = builder->CreateFMul(input_real, s);
 
@@ -80,7 +82,8 @@ void CodeGenLLVM::store_quant_fixed(llvm::Value *bit_ptr,
                                     QuantFixedType *qfxt,
                                     llvm::Value *value,
                                     bool atomic) {
-  store_quant_int(bit_ptr, qfxt->get_digits_type()->as<QuantIntType>(), to_quant_fixed(value, qfxt), atomic);
+  store_quant_int(bit_ptr, qfxt->get_digits_type()->as<QuantIntType>(),
+                  to_quant_fixed(value, qfxt), atomic);
 }
 
 void CodeGenLLVM::store_masked(llvm::Value *byte_ptr,

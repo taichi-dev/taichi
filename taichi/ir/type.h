@@ -309,7 +309,8 @@ class QuantArrayType : public Type {
     if (auto qit = element_type_->cast<QuantIntType>()) {
       element_num_bits_ = qit->get_num_bits();
     } else if (auto qfxt = element_type_->cast<QuantFixedType>()) {
-      element_num_bits_ = qfxt->get_digits_type()->as<QuantIntType>()->get_num_bits();
+      element_num_bits_ =
+          qfxt->get_digits_type()->as<QuantIntType>()->get_num_bits();
     } else {
       TI_ERROR("Quant array only supports quant int/fixed type for now.");
     }

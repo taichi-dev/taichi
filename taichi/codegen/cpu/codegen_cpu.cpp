@@ -219,7 +219,6 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
       TI_NOT_IMPLEMENTED
     }
   }
-
 };
 
 }  // namespace

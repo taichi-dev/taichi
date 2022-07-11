@@ -153,8 +153,8 @@ class Scene:
                   radius,
                   color=(0.5, 0.5, 0.5),
                   per_vertex_color=None,
-                  vertex_offset : int = 0,
-                  vertex_count : int = None):
+                  index_offset : int = 0,
+                  index_count : int = None):
         """Declare a set of particles within the scene.
 
         Args:
@@ -164,9 +164,9 @@ class Scene:
                 values. If `per_vertex_color` is provided, this is ignored.
             per_vertex_color (Tuple[float]): a taichi 3D vector field, where each
                 element indicate the RGB color of a particle.
-            vertex_offset: int type(ohterwise float type will be floored to int),
+            index_offset: int type(ohterwise float type will be floored to int),
                 the index of the first vertex to draw.
-            vertex_count: int type(ohterwise float type will be floored to int),
+            index_count: int type(ohterwise float type will be floored to int),
                 the number of vertices to draw.
         """
         vbo = get_vbo_field(centers)
@@ -174,11 +174,11 @@ class Scene:
         has_per_vertex_color = per_vertex_color is not None
         if has_per_vertex_color:
             copy_colors_to_vbo(vbo, per_vertex_color)
-        if vertex_count is None:
-            vertex_count = centers.shape[0]
+        if index_count is None:
+            index_count = centers.shape[0]
         vbo_info = get_field_info(vbo)
         self.scene.particles(vbo_info, has_per_vertex_color, color, radius,
-                                vertex_count, vertex_offset)
+                                index_count, index_offset)
 
     def point_light(self, pos, color):  # pylint: disable=W0235
         """Set a point light in this scene.

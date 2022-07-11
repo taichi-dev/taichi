@@ -1412,26 +1412,44 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
   }
 }
 
-void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
-  int width = stmt->width();
-  TI_ASSERT(width == 1);
+llvm::Value *CodeGenLLVM::create_intrinsic_load(const DataType &dtype,
+                                                llvm::Value *data_ptr) {
+  TI_NOT_IMPLEMENTED;
+}
+
+void CodeGenLLVM::global_load(GlobalLoadStmt *stmt,
+                              bool should_cache_as_read_only) {
+  auto ptr = llvm_val[stmt->src];
   auto ptr_type = stmt->src->ret_type->as<PointerType>();
   if (ptr_type->is_bit_pointer()) {
     auto val_type = ptr_type->get_pointee_type();
+    auto get_ch = stmt->src->as<GetChStmt>();
+    auto physical_type = get_ch->input_snode->physical_type;
     if (auto qit = val_type->cast<QuantIntType>()) {
-      llvm_val[stmt] = load_quant_int(
-          llvm_val[stmt->src], qit,
-          stmt->src->as<GetChStmt>()->input_snode->physical_type);
+      llvm_val[stmt] =
+          load_quant_int(ptr, qit, physical_type, should_cache_as_read_only);
+    } else if (auto qfxt = val_type->cast<QuantFixedType>()) {
+      llvm_val[stmt] =
+          load_quant_fixed(ptr, qfxt, physical_type, should_cache_as_read_only);
     } else {
-      TI_ASSERT(val_type->is<QuantFixedType>() ||
-                val_type->is<QuantFloatType>());
-      TI_ASSERT(stmt->src->is<GetChStmt>());
-      llvm_val[stmt] = load_quant_fixed_or_quant_float(stmt->src);
+      TI_ASSERT(val_type->is<QuantFloatType>());
+      llvm_val[stmt] = load_quant_float(
+          ptr, get_ch->output_snode, val_type->as<QuantFloatType>(),
+          physical_type, should_cache_as_read_only);
     }
   } else {
-    llvm_val[stmt] = builder->CreateLoad(tlctx->get_data_type(stmt->ret_type),
-                                         llvm_val[stmt->src]);
+    // Byte pointer case.
+    if (should_cache_as_read_only) {
+      llvm_val[stmt] = create_intrinsic_load(stmt->ret_type, ptr);
+    } else {
+      llvm_val[stmt] =
+          builder->CreateLoad(tlctx->get_data_type(stmt->ret_type), ptr);
+    }
   }
+}
+
+void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
+  global_load(stmt, false);
 }
 
 void CodeGenLLVM::visit(ElementShuffleStmt *stmt){

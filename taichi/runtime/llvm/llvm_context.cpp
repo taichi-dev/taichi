@@ -515,16 +515,30 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_struct_module() {
 
 void TaichiLLVMContext::set_struct_module(
     const std::unique_ptr<llvm::Module> &module) {
-  auto data = get_this_thread_data();
+  TI_ASSERT(std::this_thread::get_id() == main_thread_id_);
+  auto this_thread_data = get_this_thread_data();
   TI_ASSERT(module);
   if (llvm::verifyModule(*module, &llvm::errs())) {
     module->print(llvm::errs(), nullptr);
     TI_ERROR("module broken");
   }
   // TODO: Move this after ``if (!arch_is_cpu(arch))``.
-  data->struct_module = llvm::CloneModule(*module);
+  this_thread_data->struct_module = llvm::CloneModule(*module);
+  for (auto &[id, data] : per_thread_data_) {
+    if (id == std::this_thread::get_id()) {
+      continue;
+    }
+    TI_ASSERT(!data->runtime_module);
+    data->struct_module.reset();
+    old_contexts_.push_back(std::move(data->thread_safe_llvm_context));
+    data->thread_safe_llvm_context =
+        std::make_unique<llvm::orc::ThreadSafeContext>(
+            std::make_unique<llvm::LLVMContext>());
+    data->llvm_context = data->thread_safe_llvm_context->getContext();
+    data->struct_module = clone_module_to_context(
+        this_thread_data->struct_module.get(), data->llvm_context);
+  }
 }
-
 template <typename T>
 llvm::Value *TaichiLLVMContext::get_constant(DataType dt, T t) {
   auto ctx = get_this_thread_context();
@@ -823,10 +837,21 @@ void TaichiLLVMContext::delete_functions_of_snode_tree(int id) {
     func->eraseFromParent();
   }
   snode_tree_funcs_.erase(id);
+  set_struct_module(get_this_thread_data()->struct_module);
 }
 
 void TaichiLLVMContext::add_function_to_snode_tree(int id, std::string func) {
   snode_tree_funcs_[id].push_back(func);
+}
+
+TaichiLLVMContext::ThreadLocalData::~ThreadLocalData() {
+  if (struct_module) {
+    TI_ASSERT(&struct_module->getContext() ==
+              thread_safe_llvm_context->getContext());
+  }
+  runtime_module.reset();
+  struct_module.reset();
+  thread_safe_llvm_context.reset();
 }
 
 TI_REGISTER_TASK(make_slim_libdevice);

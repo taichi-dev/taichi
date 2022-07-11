@@ -47,7 +47,7 @@ void Renderable::update_data(const RenderableInfo &info) {
   if (prog) {
     prog->flush();
   }
-  
+
   int num_vertices = info.vbo.shape[0];
   int draw_num_vertices = info.draw_vertex_count;
   int draw_first_vertices = info.draw_first_vertex % num_vertices;
@@ -61,7 +61,8 @@ void Renderable::update_data(const RenderableInfo &info) {
                 "indices must either be a ti.field or a 2D/3D ti.Vector.field");
     num_indices = info.indices.shape[0] * info.indices.matrix_rows;
     draw_num_indices = info.draw_index_count * info.indices.matrix_rows;
-    draw_first_indices = (info.draw_first_index * info.indices.matrix_rows) % num_indices;
+    draw_first_indices =
+        (info.draw_first_index * info.indices.matrix_rows) % num_indices;
     if (info.indices.dtype != PrimitiveType::i32 &&
         info.indices.dtype != PrimitiveType::u32) {
       throw std::runtime_error("dtype needs to be 32-bit ints for indices");
@@ -75,15 +76,12 @@ void Renderable::update_data(const RenderableInfo &info) {
   config_.vertices_count = num_vertices;
   config_.indices_count = num_indices;
 
-  if (info.has_user_customized_draw)
-  {
+  if (info.has_user_customized_draw) {
     config_.draw_vertex_count = draw_num_vertices;
     config_.draw_first_vertex = draw_first_vertices;
     config_.draw_index_count = draw_num_indices;
     config_.draw_first_index = draw_first_indices;
-  }
-  else
-  {
+  } else {
     config_.draw_vertex_count = num_vertices;
     config_.draw_first_vertex = 0;
     config_.draw_index_count = num_indices;
@@ -277,7 +275,9 @@ void Renderable::record_this_frame_commands(CommandList *command_list) {
   command_list->bind_resources(pipeline_->resource_binder());
 
   if (indexed_) {
-    command_list->draw_indexed(config_.draw_index_count, config_.draw_first_vertex, config_.draw_first_index);
+    command_list->draw_indexed(config_.draw_index_count,
+                               config_.draw_first_vertex,
+                               config_.draw_first_index);
   } else {
     command_list->draw(config_.draw_vertex_count, config_.draw_first_vertex);
   }

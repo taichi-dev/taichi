@@ -95,10 +95,10 @@ class Scene:
              color=(0.5, 0.5, 0.5),
              per_vertex_color=None,
              two_sided=False,
-             vertex_offset : int = 0,
-             vertex_count : int = None,
-             index_offset : int = 0,
-             index_count : int = None):
+             vertex_offset: int = 0,
+             vertex_count: int = None,
+             index_offset: int = 0,
+             index_count: int = None):
         """Declare a mesh inside the scene.
 
         Args:
@@ -117,11 +117,11 @@ class Scene:
             two_sided (bool): whether or not the triangles should be able to be
                 seen from both sides.
             vertex_offset: int type(ohterwise float type will be floored to int),
-                if 'indices' is provided, this means the value added to the vertex 
-                index before indexing into the vertex buffer, else this means the 
+                if 'indices' is provided, this means the value added to the vertex
+                index before indexing into the vertex buffer, else this means the
                 index of the first vertex to draw.
             vertex_count: int type(ohterwise float type will be floored to int),
-                only avaliable when `indices` is not provided, which is the number 
+                only avaliable when `indices` is not provided, which is the number
                 of vertices to draw.
             index_offset: int type(ohterwise float type will be floored to int),
                 only avaliable when `indices` is provided, which is the base index
@@ -145,16 +145,17 @@ class Scene:
         vbo_info = get_field_info(vbo)
         indices_info = get_field_info(indices)
 
-        self.scene.mesh(vbo_info, has_per_vertex_color, indices_info, color, two_sided, 
-                            index_count, index_offset, vertex_count, vertex_offset)
+        self.scene.mesh(vbo_info, has_per_vertex_color, indices_info, color,
+                        two_sided, index_count, index_offset, vertex_count,
+                        vertex_offset)
 
     def particles(self,
                   centers,
                   radius,
                   color=(0.5, 0.5, 0.5),
                   per_vertex_color=None,
-                  vertex_offset : int = 0,
-                  vertex_count : int = None):
+                  vertex_offset: int = 0,
+                  vertex_count: int = None):
         """Declare a set of particles within the scene.
 
         Args:
@@ -178,7 +179,7 @@ class Scene:
             vertex_count = centers.shape[0]
         vbo_info = get_field_info(vbo)
         self.scene.particles(vbo_info, has_per_vertex_color, color, radius,
-                                vertex_count, vertex_offset)
+                             vertex_count, vertex_offset)
 
     def point_light(self, pos, color):  # pylint: disable=W0235
         """Set a point light in this scene.

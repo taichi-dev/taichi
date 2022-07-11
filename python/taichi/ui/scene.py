@@ -154,8 +154,8 @@ class Scene:
                   radius,
                   color=(0.5, 0.5, 0.5),
                   per_vertex_color=None,
-                  index_offset : int = 0,
-                  index_count : int = None):
+                  index_offset: int = 0,
+                  index_count: int = None):
         """Declare a set of particles within the scene.
 
         Args:
@@ -179,7 +179,7 @@ class Scene:
             index_count = centers.shape[0]
         vbo_info = get_field_info(vbo)
         self.scene.particles(vbo_info, has_per_vertex_color, color, radius,
-                                index_count, index_offset)
+                             index_count, index_offset)
 
     def point_light(self, pos, color):  # pylint: disable=W0235
         """Set a point light in this scene.

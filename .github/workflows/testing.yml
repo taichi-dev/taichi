@@ -261,6 +261,13 @@ jobs:
   build_and_test_cpu_windows:
     name: Build and Test Windows (CPU)
     needs: check_files
+    strategy:
+      matrix:
+        include:
+          - os: windows-2019
+            llvmVer : '15'
+          - os: windows-2019
+            llvmVer : '10'
     timeout-minutes: 90
     runs-on: windows-2019
     permissions:
@@ -298,67 +305,7 @@ jobs:
           fi
           docker create --name taichi_build_test \
             ghcr.io/taichi-dev/taichidev-cpu-windows:v0.0.1 \
-            C:/taichi/.github/workflows/scripts/win_build_test_cpu.ps1
-          tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx | docker cp - taichi_build_test:C:/
-          docker start -a taichi_build_test
-          rm -rf ccache_cache
-          docker cp taichi_build_test:C:/taichi/ccache_cache ccache_cache
-
-      - name: clean docker container
-        shell: bash
-        if: always()
-        run: |
-          docker rm taichi_build_test -f
-
-      # - name: Save wheel if test failed
-      #   if: failure() && steps.build_and_test.conclusion == 'failure'
-      #   uses: actions/upload-artifact@v3
-      #   with:
-      #     name: broken-wheel
-      #     path: dist/*
-      #     retention-days: 7
-
-  build_and_test_cpu_windows_llvm15:
-    name: Build and Test Windows (CPU) LLVM 15
-    needs: check_files
-    timeout-minutes: 90
-    runs-on: windows-2019
-    permissions:
-      packages: read
-      contents: read
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: 'recursive'
-
-      - name: Get sccache cache
-        uses: actions/cache@v2
-        if: needs.check_files.outputs.run_job == 'true'
-        with:
-          path: ccache_cache
-          key: ccache-win64-cpu-${{ github.sha }}
-          restore-keys: |
-            ccache-win64-cpu-
-
-      - name: Get docker images
-        shell: bash
-        if: needs.check_files.outputs.run_job == 'true'
-        run: |
-          echo $CR_PAT | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-          docker pull ghcr.io/taichi-dev/taichidev-cpu-windows:v0.0.1
-        env:
-          CR_PAT: ${{ secrets.GITHUB_TOKEN }}
-
-      # TODO: split build and test
-      - name: Build and Test
-        shell: bash
-        run: |
-          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
-            exit 0
-          fi
-          docker create --name taichi_build_test \
-            ghcr.io/taichi-dev/taichidev-cpu-windows:v0.0.1 \
-            C:/taichi/.github/workflows/scripts/win_build_test_cpu_llvm_15.ps1
+            C:/taichi/.github/workflows/scripts/win_build_test_cpu.ps1 -llvmVer ${{ matrix.llvmVer }}
           tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx | docker cp - taichi_build_test:C:/
           docker start -a taichi_build_test
           rm -rf ccache_cache

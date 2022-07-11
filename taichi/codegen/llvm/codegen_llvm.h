@@ -229,9 +229,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   llvm::Value *atomic_add_quant_int(AtomicOpStmt *stmt, QuantIntType *qit);
 
-  llvm::Value *quant_fixed_to_quant_int(QuantFixedType *qfxt,
-                                        QuantIntType *qit,
-                                        llvm::Value *real);
+  llvm::Value *to_quant_fixed(llvm::Value *real, QuantFixedType *qfxt);
 
   virtual llvm::Value *optimized_reduction(AtomicOpStmt *stmt);
 
@@ -256,6 +254,11 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
                        QuantIntType *qit,
                        llvm::Value *value,
                        bool atomic);
+
+  void store_quant_fixed(llvm::Value *bit_ptr,
+                         QuantFixedType *qfxt,
+                         llvm::Value *value,
+                         bool atomic);
 
   void store_masked(llvm::Value *byte_ptr,
                     uint64 mask,
@@ -313,7 +316,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
                                        QuantFloatType *qflt,
                                        bool shared_exponent);
 
-  void global_load(GlobalLoadStmt *stmt, bool should_cache_as_read_only);
+  void create_global_load(GlobalLoadStmt *stmt, bool should_cache_as_read_only);
 
   void visit(GlobalLoadStmt *stmt) override;
 

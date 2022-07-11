@@ -1394,19 +1394,18 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
   auto ptr_type = stmt->dest->ret_type->as<PointerType>();
   if (ptr_type->is_bit_pointer()) {
     auto pointee_type = ptr_type->get_pointee_type();
-    if (!pointee_type->is<QuantIntType>()) {
-      if (stmt->dest->as<GetChStmt>()->input_snode->type ==
-          SNodeType::bit_struct) {
-        TI_ERROR(
-            "Bit struct stores with type {} should have been "
-            "handled by BitStructStoreStmt.",
-            pointee_type->to_string());
-      } else {
-        TI_ERROR("Quant array only supports quant int type.");
-      }
+    if (stmt->dest->as<GetChStmt>()->input_snode->type == SNodeType::bit_struct) {
+      TI_ERROR(
+          "Bit struct stores with type {} should have been handled by BitStructStoreStmt.",
+          pointee_type->to_string());
     }
-    store_quant_int(llvm_val[stmt->dest], pointee_type->as<QuantIntType>(),
-                    llvm_val[stmt->val], true);
+    if (auto qit = pointee_type->cast<QuantIntType>()) {
+      store_quant_int(llvm_val[stmt->dest], qit, llvm_val[stmt->val], true);
+    } else if (auto qfxt = pointee_type->cast<QuantFixedType>()) {
+      store_quant_fixed(llvm_val[stmt->dest], qfxt, llvm_val[stmt->val], true);
+    } else {
+      TI_NOT_IMPLEMENTED;
+    }
   } else {
     builder->CreateStore(llvm_val[stmt->val], llvm_val[stmt->dest]);
   }
@@ -1417,8 +1416,8 @@ llvm::Value *CodeGenLLVM::create_intrinsic_load(const DataType &dtype,
   TI_NOT_IMPLEMENTED;
 }
 
-void CodeGenLLVM::global_load(GlobalLoadStmt *stmt,
-                              bool should_cache_as_read_only) {
+void CodeGenLLVM::create_global_load(GlobalLoadStmt *stmt,
+                                     bool should_cache_as_read_only) {
   auto ptr = llvm_val[stmt->src];
   auto ptr_type = stmt->src->ret_type->as<PointerType>();
   if (ptr_type->is_bit_pointer()) {
@@ -1449,7 +1448,7 @@ void CodeGenLLVM::global_load(GlobalLoadStmt *stmt,
 }
 
 void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
-  global_load(stmt, false);
+  create_global_load(stmt, false);
 }
 
 void CodeGenLLVM::visit(ElementShuffleStmt *stmt){

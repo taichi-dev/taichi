@@ -148,7 +148,7 @@ class TI_DLL_EXPORT Kernel : public Callable {
   const std::string &get_cached_kernel_key() {
     return kernel_key_;
   }
-
+  void offload_to_executable(IRNode *stmt);
  private:
   void init(Program &program,
             const std::function<void()> &func,

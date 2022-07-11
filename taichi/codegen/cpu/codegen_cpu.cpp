@@ -8,7 +8,9 @@
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"
 #include "taichi/util/statistics.h"
-
+#include "taichi/ir/transforms.h"
+#include "taichi/ir/analysis.h"
+#include "taichi/analysis/offline_cache_util.h"
 TLANG_NAMESPACE_BEGIN
 
 namespace {
@@ -20,10 +22,6 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
   CodeGenLLVMCPU(Kernel *kernel, IRNode *ir)
       : CodeGenLLVM(kernel, ir, nullptr) {
     TI_AUTO_PROF
-  }
-
-  bool supports_offline_cache() const override {
-    return true;
   }
 
   void create_offload_range_for(OffloadedStmt *stmt) override {
@@ -222,15 +220,6 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
     }
   }
 
-  FunctionType gen() override {
-    auto compiled_res = run_compilation();
-
-    CPUModuleToFunctionConverter converter{
-        tlctx, get_llvm_program(prog)->get_runtime_executor()};
-    std::vector<LLVMCompiledData> data;
-    data.push_back(std::move(compiled_res));
-    return converter.convert(kernel, std::move(data));
-  }
 };
 
 }  // namespace
@@ -290,7 +279,58 @@ FunctionType CPUModuleToFunctionConverter::convert(
 
 FunctionType CodeGenCPU::codegen() {
   TI_AUTO_PROF;
-  return CodeGenLLVMCPU(kernel, ir).gen();
-}
+  auto *llvm_prog = get_llvm_program(prog);
+  auto *tlctx = llvm_prog->get_llvm_context(kernel->arch);
+  auto &config = prog->config;
+  std::string kernel_key = get_hashed_offline_cache_key(&config, kernel);
+  kernel->set_kernel_key_for_cache(kernel_key);
+  if (config.offline_cache && !config.async_mode &&
+      this->supports_offline_cache() && !kernel->is_evaluator) {
+    std::vector<LLVMCompiledData> res;
+    const bool ok = maybe_read_compilation_from_cache(kernel_key, res);
+    if (ok) {
+      CPUModuleToFunctionConverter converter(
+          tlctx, get_llvm_program(prog)->get_runtime_executor());
+      return converter.convert(kernel, std::move(res));
+    }
+  }
+  if (!kernel->lowered()) {
+    kernel->lower(/*to_executable=*/false);
+  }
 
+  auto block = dynamic_cast<Block *>(kernel->ir.get());
+  auto &worker = get_llvm_program(kernel->program)->compilation_workers;
+  TI_ASSERT(block);
+
+  auto &offloads = block->statements;
+  std::vector<LLVMCompiledData> data(offloads.size());
+  using TaskFunc = int32 (*)(void *);
+  std::vector<TaskFunc> task_funcs(offloads.size());
+  for (int i = 0; i < offloads.size(); i++) {
+    auto compile_func = [&, i] {
+      auto offload =
+          irpass::analysis::clone(offloads[i].get(), offloads[i]->get_kernel());
+      irpass::re_id(offload.get());
+      auto new_data = this->modulegen(nullptr, offload->as<OffloadedStmt>());
+      data[i].tasks = std::move(new_data.tasks);
+      data[i].module = std::move(new_data.module);
+    };
+    if (kernel->is_evaluator) {
+      compile_func();
+    } else {
+      worker.enqueue(compile_func);
+    }
+  }
+  if (!kernel->is_evaluator) {
+    worker.flush();
+  }
+
+  if (!kernel->is_evaluator) {
+    cache_module(kernel_key, data);
+  }
+
+  CPUModuleToFunctionConverter converter(
+      tlctx, get_llvm_program(prog)->get_runtime_executor());
+  return converter.convert(kernel, std::move(data));
+}
 TLANG_NAMESPACE_END

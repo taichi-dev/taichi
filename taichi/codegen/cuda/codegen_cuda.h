@@ -19,6 +19,10 @@ class CodeGenCUDA : public KernelCodeGen {
                                                         IRNode *ir);
 #endif  // TI_WITH_LLVM
 
+  bool supports_offline_cache() const override {
+    return true;
+  }
+
   FunctionType codegen() override;
 };
 

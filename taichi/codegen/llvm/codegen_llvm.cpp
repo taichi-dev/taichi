@@ -2547,58 +2547,15 @@ void CodeGenLLVM::emit_to_module() {
 }
 
 LLVMCompiledData CodeGenLLVM::run_compilation() {
-  const auto &config = prog->config;
-  std::string kernel_key =
-      get_hashed_offline_cache_key(&kernel->program->config, kernel);
-  kernel->set_kernel_key_for_cache(kernel_key);
-  if (config.offline_cache && !config.async_mode &&
-      this->supports_offline_cache() && !kernel->is_evaluator) {
-    LLVMCompiledData res;
-    const bool ok = maybe_read_compilation_from_cache(kernel_key, &res);
-    if (ok) {
-      return res;
-    }
-  }
+  // Final lowering
 
-  if (!kernel->lowered()) {
-    kernel->lower();
-  }
+  auto config = kernel->program->config;
+  kernel->offload_to_executable(ir);
+
   emit_to_module();
   eliminate_unused_functions();
 
-  // Updates LlvmProgramImpl->cache_data_ to save the compiled kernel
-  // information for successive uses in AOT or CGraph.
-  if (!kernel->is_evaluator) {
-    cache_module(kernel_key);
-  }
-
-  LLVMCompiledData res;
-  res.tasks = std::move(this->offloaded_tasks);
-  res.module = std::move(this->module);
-  return res;
-}
-
-bool CodeGenLLVM::maybe_read_compilation_from_cache(
-    const std::string &kernel_key,
-    LLVMCompiledData *data) {
-  const auto &config = prog->config;
-  auto reader =
-      LlvmOfflineCacheFileReader::make(config.offline_cache_file_path);
-  if (!reader) {
-    return false;
-  }
-
-  LlvmOfflineCache::KernelCacheData cache_data;
-  auto *tlctx = get_llvm_program(prog)->get_llvm_context(config.arch);
-  auto &llvm_ctx = *tlctx->get_this_thread_context();
-
-  if (!reader->get_kernel_cache(cache_data, kernel_key, llvm_ctx)) {
-    return false;
-  }
-  data->tasks = std::move(cache_data.compiled_data_list[0].tasks);
-  data->module = std::move(cache_data.compiled_data_list[0].module);
-  kernel->set_from_offline_cache();
-  return true;
+  return {std::move(this->offloaded_tasks), std::move(this->module)};
 }
 
 llvm::Value *CodeGenLLVM::create_xlogue(std::unique_ptr<Block> &block) {
@@ -2670,13 +2627,6 @@ void CodeGenLLVM::visit(FuncCallStmt *stmt) {
   } else {
     create_call(llvm_func, {new_ctx});
   }
-}
-
-void CodeGenLLVM::cache_module(const std::string &kernel_key) {
-  std::vector<LLVMCompiledData> data;
-  data.emplace_back(offloaded_tasks, llvm::CloneModule(*module));
-  get_llvm_program(prog)->cache_kernel(kernel_key, data,
-                                       infer_launch_args(kernel));
 }
 
 LLVMCompiledData LLVMCompiledData::clone() const {

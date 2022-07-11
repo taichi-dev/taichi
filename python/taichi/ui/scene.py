@@ -100,7 +100,7 @@ class Scene:
              index_offset: int = 0,
              index_count: int = None):
         """Declare a mesh inside the scene.
-        if you indicate the index_offset and index_count, the normals will also 
+        if you indicate the index_offset and index_count, the normals will also
         be sliced by the args, and the shading resultes will not be affected.
         (It is equal to make a part of the mesh visible)
         Args:

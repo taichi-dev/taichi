@@ -117,7 +117,11 @@ class ASTTransformer(Builder):
             else:
                 raise TaichiTypeError(f'{type(target)} cannot be subscripted')
         else:
-            ASTTransformer.build_assign_basic(ctx, node_target, values, is_static_assign)
+            ASTTransformer.build_assign_basic(ctx,
+                                              target,
+                                              values,
+                                              is_static_assign,
+                                              build_target=False)
 
     @staticmethod
     def build_assign_unpack(ctx, node_target, values, is_static_assign):
@@ -132,7 +136,8 @@ class ASTTransformer(Builder):
             is_static_assign: A boolean value indicating whether this is a static assignment
         """
         if isinstance(node_target, ast.Subscript):
-            return ASTTransformer.build_assign_slice(ctx, node_target, values, is_static_assign)
+            return ASTTransformer.build_assign_slice(ctx, node_target, values,
+                                                     is_static_assign)
 
         if not isinstance(node_target, ast.Tuple):
             return ASTTransformer.build_assign_basic(ctx, node_target, values,
@@ -159,7 +164,11 @@ class ASTTransformer(Builder):
         return None
 
     @staticmethod
-    def build_assign_basic(ctx, target, value, is_static_assign):
+    def build_assign_basic(ctx,
+                           target,
+                           value,
+                           is_static_assign,
+                           build_target=True):
         """Build basic assignment like this: target = value.
 
          Args:
@@ -180,7 +189,10 @@ class ASTTransformer(Builder):
             var = impl.expr_init(value)
             ctx.create_variable(target.id, var)
         else:
-            var = build_stmt(ctx, target)
+            if build_target:
+                var = build_stmt(ctx, target)
+            else:
+                var = target
             try:
                 var._assign(value)
             except AttributeError:

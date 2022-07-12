@@ -317,13 +317,7 @@ def render():
 
 
 def main():
-    frame_id = 0
-
     while window.running:
-        #print("heyyy ",frame_id)
-        frame_id += 1
-        frame_id = frame_id % 256
-
         if not paused:
             for _ in range(steps):
                 substep(*GRAVITY)

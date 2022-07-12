@@ -191,12 +191,8 @@ def main():
     window = ti.ui.Window("Fractal 3D", image_res, vsync=True)
     canvas = window.get_canvas()
 
-    frame_id = 0
-
     while window.running:
-        frame_id += 1
-
-        canvas.set_image(julia.get_image(frame_id / 60))
+        canvas.set_image(julia.get_image(window.frame_count / 60))
 
         window.show()
 

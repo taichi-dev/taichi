@@ -153,19 +153,18 @@ def main():
         "[Hint] Use WSAD/arrow keys to control gravity. Use left/right mouse buttons to attract/repel. Press R to reset."
     )
     while window.running:
-        for e in window.get_events(ti.ui.PRESS):
-            if e.key == ti.ui.ESCAPE:
-                window.running = False
-            elif e.key == 'r':
-                init_pos()
-            elif e.key in ('a', ti.ui.LEFT):
-                gravity[None] = [-1, 0]
-            elif e.key in ('d', ti.ui.RIGHT):
-                gravity[None] = [+1, 0]
-            elif e.key in ('s', ti.ui.DOWN):
-                gravity[None] = [0, -1]
-            elif e.key in ('w', ti.ui.UP):
-                gravity[None] = [0, +1]
+        if window.is_pressed(ti.ui.ESCAPE):
+            window.running = False
+        elif window.is_pressed('r'):
+            init_pos()
+        elif window.is_pressed('a', ti.ui.LEFT):
+            gravity[None] = [-1, 0]
+        elif window.is_pressed('d', ti.ui.RIGHT):
+            gravity[None] = [+1, 0]
+        elif window.is_pressed('s', ti.ui.DOWN):
+            gravity[None] = [0, -1]
+        elif window.is_pressed('w', ti.ui.UP):
+            gravity[None] = [0, +1]
 
         mouse_pos = window.get_cursor_pos()
         attractor_pos[None] = mouse_pos

@@ -2,7 +2,6 @@
 
 #include <string>
 #include "taichi/ui/utils/utils.h"
-#include "input_handler.h"
 
 #include <vector>
 #include <unordered_map>
@@ -50,7 +49,6 @@ class WindowBase {
  protected:
   AppConfig config_;
   GLFWwindow *glfw_window_{nullptr};
-  InputHandler input_handler_;
 
   // used for FPS counting
   double last_record_time_{0.0};
@@ -58,6 +56,9 @@ class WindowBase {
 
   std::list<Event> events_;
   Event current_event_{EventType::Any, ""};
+  double last_x_;
+  double last_y_;
+  std::vector<bool> key_press_states_;
 
  protected:
   WindowBase(AppConfig config);

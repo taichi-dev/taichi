@@ -6,7 +6,7 @@ TI_UI_NAMESPACE_BEGIN
   TI_ERROR_IF(!config_.show_window, \
               "show_window must be True to use this method")
 
-WindowBase ::WindowBase(AppConfig config) : config_(config) {
+WindowBase::WindowBase(AppConfig config) : config_(config), key_press_states_(1024) {
   if (config_.show_window) {
     glfw_window_ = create_glfw_window_(config_.name, config_.width,
                                        config_.height, config_.vsync);
@@ -20,31 +20,6 @@ void WindowBase::set_callbacks() {
   glfwSetKeyCallback(glfw_window_, key_callback);
   glfwSetCursorPosCallback(glfw_window_, mouse_pos_callback);
   glfwSetMouseButtonCallback(glfw_window_, mouse_button_callback);
-
-  input_handler_.add_key_callback([&](int key, int action) {
-    // Catch exception from button_id_to_name().
-    try {
-      if (action == GLFW_PRESS) {
-        events_.push_back({EventType::Press, button_id_to_name(key)});
-      } else if (action == GLFW_RELEASE) {
-        events_.push_back({EventType::Release, button_id_to_name(key)});
-      }
-    } catch (const std::runtime_error &e) {
-      TI_TRACE("Input: {}.", e.what());
-    }
-  });
-  input_handler_.add_mouse_button_callback([&](int key, int action) {
-    // Catch exception from button_id_to_name().
-    try {
-      if (action == GLFW_PRESS) {
-        events_.push_back({EventType::Press, button_id_to_name(key)});
-      } else if (action == GLFW_RELEASE) {
-        events_.push_back({EventType::Release, button_id_to_name(key)});
-      }
-    } catch (const std::runtime_error &e) {
-      TI_TRACE("Input: {}.", e.what());
-    }
-  });
 }
 
 CanvasBase *WindowBase::get_canvas() {
@@ -80,7 +55,7 @@ bool WindowBase::is_pressed(std::string button) {
     TI_TRACE("Pressed: {}.", e.what());
     return false;
   }
-  return input_handler_.is_pressed(button_id) > 0;
+  return key_press_states_.at(button_id) > 0;
 }
 
 bool WindowBase::is_running() {
@@ -98,8 +73,8 @@ void WindowBase::set_is_running(bool value) {
 
 std::pair<float, float> WindowBase::get_cursor_pos() {
   CHECK_WINDOW_SHOWING;
-  float x = input_handler_.last_x();
-  float y = input_handler_.last_y();
+  float x = last_x_;
+  float y = last_y_;
 
   x = x / (float)config_.width;
   y = (config_.height - y) / (float)config_.height;
@@ -172,7 +147,17 @@ void WindowBase::key_callback(GLFWwindow *glfw_window,
                               int mode) {
   auto window =
       reinterpret_cast<WindowBase *>(glfwGetWindowUserPointer(glfw_window));
-  window->input_handler_.key_callback(glfw_window, key, scancode, action, mode);
+  window->key_press_states_.at(key) = action != GLFW_RELEASE;
+
+  try {
+    if (action == GLFW_PRESS) {
+      window->events_.push_back({EventType::Press, button_id_to_name(key)});
+    } else if (action == GLFW_RELEASE) {
+      window->events_.push_back({EventType::Release, button_id_to_name(key)});
+    }
+  } catch (const std::runtime_error &e) {
+    TI_TRACE("Input: {}.", e.what());
+  }
 }
 
 void WindowBase::mouse_pos_callback(GLFWwindow *glfw_window,
@@ -180,17 +165,36 @@ void WindowBase::mouse_pos_callback(GLFWwindow *glfw_window,
                                     double ypos) {
   auto window =
       reinterpret_cast<WindowBase *>(glfwGetWindowUserPointer(glfw_window));
-  window->input_handler_.mouse_pos_callback(glfw_window, xpos, ypos);
+  window->last_x_ = xpos;
+  window->last_y_ = ypos;
 }
 
 void WindowBase::mouse_button_callback(GLFWwindow *glfw_window,
                                        int button,
                                        int action,
                                        int modifier) {
+  if (button == GLFW_MOUSE_BUTTON_LEFT) {
+    if (action == GLFW_PRESS) {
+      glfwSetInputMode(glfw_window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+    }
+    if (action == GLFW_RELEASE) {
+      glfwSetInputMode(glfw_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    }
+  }
+
   auto window =
       reinterpret_cast<WindowBase *>(glfwGetWindowUserPointer(glfw_window));
-  window->input_handler_.mouse_button_callback(glfw_window, button, action,
-                                               modifier);
+  window->key_press_states_.at(button) = action != GLFW_RELEASE;
+
+  try {
+    if (action == GLFW_PRESS) {
+      window->events_.push_back({EventType::Press, button_id_to_name(button)});
+    } else if (action == GLFW_RELEASE) {
+      window->events_.push_back({EventType::Release, button_id_to_name(button)});
+    }
+  } catch (const std::runtime_error &e) {
+    TI_TRACE("Input: {}.", e.what());
+  }
 }
 
 TI_UI_NAMESPACE_END

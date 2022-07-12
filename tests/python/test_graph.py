@@ -142,7 +142,7 @@ def test_arg_mismatched_ndarray_dtype():
     n = 4
 
     @ti.kernel
-    def test(pos: ti.types.ndarray(field_dim=1)):
+    def test(pos: ti.types.ndarray(dtype=ti.f32, field_dim=1)):
         for i in range(n):
             pos[i] = 2.5
 

@@ -54,12 +54,15 @@ class AotModule {
 
 namespace {
 
-taichi::lang::DeviceAllocation devmem2devalloc(Runtime &runtime,
-                                               TiMemory devmem) {
+[[maybe_unused]] taichi::lang::DeviceAllocation devmem2devalloc(
+    Runtime &runtime,
+    TiMemory devmem) {
   return taichi::lang::DeviceAllocation{
       &runtime.get(), (taichi::lang::DeviceAllocationId)((size_t)devmem - 1)};
 }
-TiMemory devalloc2devmem(const taichi::lang::DeviceAllocation &devalloc) {
+
+[[maybe_unused]] TiMemory devalloc2devmem(
+    const taichi::lang::DeviceAllocation &devalloc) {
   return (TiMemory)((size_t)devalloc.alloc_id + 1);
 }
 

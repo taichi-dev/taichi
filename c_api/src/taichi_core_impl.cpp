@@ -1,5 +1,6 @@
 #include "taichi_core_impl.h"
 #include "taichi_vulkan_impl.h"
+#include "taichi_llvm_impl.h"
 #include "taichi/program/ndarray.h"
 
 Runtime::Runtime(taichi::Arch arch) : arch(arch) {

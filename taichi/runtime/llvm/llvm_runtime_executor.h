@@ -164,4 +164,4 @@ class LlvmRuntimeExecutor {
 }  // namespace lang
 }  // namespace taichi
 
-#endif // TI_WITH_LLVM
+#endif  // TI_WITH_LLVM

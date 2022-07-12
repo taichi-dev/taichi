@@ -12,21 +12,44 @@ std::string type_name(llvm::Type *type) {
 
 /*
  * Determine whether two types are the same
- * (a type is a renamed version of the other one) based on the type name
+ * (required type is required renamed version of the other one) based on the type name.
+ * Check recursively if the types are function types.
  */
-bool is_same_type(llvm::Type *a, llvm::Type *b) {
-  if (a == b) {
+bool is_same_type(llvm::Type *required, llvm::Type *provided) {
+  if (required == provided) {
     return true;
   }
-  if (a->isPointerTy() != b->isPointerTy()) {
+  if (required->isPointerTy() != provided->isPointerTy()) {
     return false;
   }
-  if (a->isPointerTy()) {
-    a = a->getPointerElementType();
-    b = b->getPointerElementType();
+  if (required->isPointerTy()) {
+    required = required->getPointerElementType();
+    provided = provided->getPointerElementType();
   }
-  auto a_name = type_name(a);
-  auto b_name = type_name(b);
+  if (required->isFunctionTy() != provided->isFunctionTy()) {
+    return false;
+  }
+  if (required->isFunctionTy()) {
+    auto req_func = llvm::dyn_cast<llvm::FunctionType>(
+        required);
+    auto prov_func = llvm::dyn_cast<llvm::FunctionType>(
+        provided);
+    if (!is_same_type(req_func->getReturnType(), prov_func->getReturnType())) {
+      return false;
+    }
+    if (req_func->getNumParams() != prov_func->getNumParams()) {
+      return false;
+    }
+    for (int j = 0; j < req_func->getNumParams(); j++) {
+      if (!is_same_type(req_func->getParamType(j),
+                        prov_func->getParamType(j))) {
+        return false;
+      }
+    }
+    return true;
+  }
+  auto a_name = type_name(required);
+  auto b_name = type_name(provided);
   int min_len = std::min(a_name.size(), b_name.size());
   return a_name.substr(0, min_len) == b_name.substr(0, min_len);
 }
@@ -60,26 +83,7 @@ void check_func_call_signature(llvm::Value *func,
      * parameter are renamed.
      */
     if (required != provided) {
-      bool is_same = true;
-      if (required->isPointerTy() &&
-          required->getPointerElementType()->isFunctionTy()) {
-        auto req_func = llvm::dyn_cast<llvm::FunctionType>(
-            required->getPointerElementType());
-        auto prov_func = llvm::dyn_cast<llvm::FunctionType>(
-            provided->getPointerElementType());
-        if (req_func->getNumParams() != prov_func->getNumParams()) {
-          is_same = false;
-        }
-        for (int j = 0; is_same && j < req_func->getNumParams(); j++) {
-          if (!is_same_type(req_func->getParamType(j),
-                            prov_func->getParamType(j))) {
-            is_same = false;
-          }
-        }
-      } else {
-        is_same = is_same_type(required, provided);
-      }
-      if (is_same) {
+      if (is_same_type(required, provided)) {
         arglist[i] = builder->CreatePointerCast(arglist[i], required);
         continue;
       }

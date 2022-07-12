@@ -29,7 +29,8 @@ LlvmRuntime::LlvmRuntime(taichi::Arch arch) : Runtime(arch) {
 }
 
 taichi::lang::Device &LlvmRuntime::get() {
-  TI_NOT_IMPLEMENTED;
+  taichi::lang::Device *device = executor_->get_compute_device();
+  return *device;
 }
 
 TiAotModule LlvmRuntime::load_aot_module(const char *module_path) {

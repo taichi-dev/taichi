@@ -48,6 +48,17 @@ TiRuntime ti_create_runtime(TiArch arch) {
     case TI_ARCH_VULKAN:
       return (TiRuntime)(static_cast<Runtime *>(new VulkanRuntimeOwned));
 #endif  // TI_WITH_VULKAN
+#ifdef TI_WITH_LLVM
+    case TI_ARCH_X64:
+      return (TiRuntime)(static_cast<Runtime *>(
+          new capi::LlvmRuntime(taichi::Arch::x64)));
+    case TI_ARCH_ARM64:
+      return (TiRuntime)(static_cast<Runtime *>(
+          new capi::LlvmRuntime(taichi::Arch::arm64)));
+    case TI_ARCH_CUDA:
+      return (TiRuntime)(static_cast<Runtime *>(
+          new capi::LlvmRuntime(taichi::Arch::cuda)));
+#endif  // TI_WITH_LLVM
     default:
       TI_WARN("ignored attempt to create runtime on unknown arch");
       return TI_NULL_HANDLE;

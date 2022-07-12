@@ -1,8 +1,9 @@
 #include "taichi_core_impl.h"
 #include "taichi_llvm_impl.h"
-#include "taichi/runtime/llvm/llvm_runtime_executor.h"
 
 #ifdef TI_WITH_LLVM
+
+#include "taichi/runtime/llvm/llvm_runtime_executor.h"
 
 namespace capi {
 

@@ -62,7 +62,8 @@ def produce_injected_args(kernel, symbolic_args=None):
                     f'{field_dim} from Arg {arg.name} doesn\'t match kernel\'s annotated field_dim={anno.field_dim}'
                 )
 
-            if anno.dtype is not None and not check_type_match(dtype, anno.dtype):
+            if anno.dtype is not None and not check_type_match(
+                    dtype, anno.dtype):
                 raise TaichiCompilationError(
                     f' Arg {arg.name}\'s dtype {dtype.to_string()} doesn\'t match kernel\'s annotated dtype={anno.dtype.to_string()}'
                 )

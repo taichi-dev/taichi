@@ -10,14 +10,14 @@ import taichi as ti
 real = ti.f32
 ti.init(arch=ti.gpu, default_fp=real)
 
-N = 1024  # grid resolution
+N = 512  # grid resolution
 CFL = .9  # keep below 1
 method = 1  # 0:muscl, 1:thinc
 IC_type = 0  # 0:sod
 BC_type = 0  # 0:walls
 
 img_field = 0  # 0:density, 1: schlieren, 2:vorticity, 3: velocity mag
-res = 1024  # gui resolution
+res = 512  # gui resolution
 cmap_name = 'magma_r'  # python colormap
 use_fixed_caxis = 0  # 1: use fixed caxis limits, 0: automatic caxis limits
 fixed_caxis = [0.0, 5.0]  # fixed caxis limits
@@ -315,7 +315,7 @@ def thinc(wl, wc, wr, beta):
 
 @ti.kernel
 def compute_F_thinc():
-    # reconstruct primitve variables on interior faces of each cell using
+    # reconstruct primitive variables on interior faces of each cell using
     #    multiple candidate thinc reconstructions
     for i, j in Q:
         if is_interior_cell(i, j):

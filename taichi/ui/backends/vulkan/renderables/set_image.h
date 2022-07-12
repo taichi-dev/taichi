@@ -20,7 +20,7 @@
 #include "taichi/ui/backends/vulkan/renderable.h"
 #include "taichi/ui/common/field_info.h"
 #include "taichi/ui/common/canvas_base.h"
-#include "taichi/backends/device.h"
+#include "taichi/rhi/device.h"
 
 TI_UI_NAMESPACE_BEGIN
 

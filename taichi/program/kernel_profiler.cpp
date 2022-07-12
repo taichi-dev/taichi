@@ -1,8 +1,8 @@
 #include "kernel_profiler.h"
 
 #include "taichi/system/timer.h"
-#include "taichi/backends/cuda/cuda_driver.h"
-#include "taichi/backends/cuda/cuda_profiler.h"
+#include "taichi/rhi/cuda/cuda_driver.h"
+#include "taichi/rhi/cuda/cuda_profiler.h"
 #include "taichi/system/timeline.h"
 
 TLANG_NAMESPACE_BEGIN

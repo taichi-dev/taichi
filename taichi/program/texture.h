@@ -5,7 +5,7 @@
 
 #include "taichi/inc/constants.h"
 #include "taichi/ir/type_utils.h"
-#include "taichi/backends/device.h"
+#include "taichi/rhi/device.h"
 
 namespace taichi {
 namespace lang {

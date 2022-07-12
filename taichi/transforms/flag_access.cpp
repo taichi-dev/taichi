@@ -115,7 +115,7 @@ class WeakenAccess : public BasicStmtVisitor {
   static SNode *least_sparse_ancestor(SNode *a) {
     while (a->type == SNodeType::place || a->type == SNodeType::dense ||
            a->type == SNodeType::bit_struct ||
-           a->type == SNodeType::bit_array) {
+           a->type == SNodeType::quant_array) {
       a = a->parent;
     }
     return a;

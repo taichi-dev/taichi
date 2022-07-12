@@ -40,7 +40,7 @@ def test_ad_sum():
     compute_sum()
 
     for i in range(N):
-        assert p[i] == 3 * b[i] + 1
+        assert p[i] == a[i] * b[i] + 1
         p.grad[i] = 1
 
     compute_sum.grad()

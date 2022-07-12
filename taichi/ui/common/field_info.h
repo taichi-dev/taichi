@@ -3,7 +3,7 @@
 
 #include "taichi/ir/type_utils.h"
 #include "taichi/ir/snode.h"
-#include "taichi/backends/device.h"
+#include "taichi/rhi/device.h"
 #include "taichi/program/program.h"
 
 TI_UI_NAMESPACE_BEGIN

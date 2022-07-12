@@ -594,7 +594,7 @@ def solve(A, b, dt=None):
     Returns:
         x (ti.Vector(n, 1)): the solution of Ax=b.
     """
-    assert A.n == A.m, "Only sqaure matrix is supported"
+    assert A.n == A.m, "Only square matrix is supported"
     assert A.n >= 2 and A.n <= 3, "Only 2D and 3D matrices are supported"
     assert A.m == b.n, "Matrix and Vector dimension dismatch"
     if dt is None:

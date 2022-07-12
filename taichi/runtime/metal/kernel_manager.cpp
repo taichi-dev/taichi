@@ -8,8 +8,8 @@
 #include <random>
 #include <string_view>
 
-#include "taichi/backends/metal/constants.h"
-#include "taichi/backends/metal/device.h"
+#include "taichi/rhi/metal/constants.h"
+#include "taichi/rhi/metal/device.h"
 #include "taichi/runtime/metal/features.h"
 #include "taichi/runtime/metal/runtime_utils.h"
 #include "taichi/inc/constants.h"
@@ -245,7 +245,7 @@ class ListgenOpMtlKernel : public SparseRuntimeMtlKernelBase {
     // args[0] = parent_snode_id
     // args[1] = child_snode_id
     // Note that this args buffer has nothing to do with the one passed to
-    // Taichi kernel. See taichi/backends/metal/shaders/runtime_kernels.metal.h
+    // Taichi kernel. See taichi/rhi/metal/shaders/runtime_kernels.metal.h
     const int parent_snode_id = params.snode()->parent->id;
     const int child_snode_id = params.snode()->id;
     auto *mem = reinterpret_cast<int32_t *>(args_mem_->ptr());
@@ -655,7 +655,7 @@ class KernelManager::Impl {
       ComputeDeviceParams rhi_params;
       rhi_params.device = device_.get();
       rhi_params.mem_pool = mem_pool_;
-      rhi_params.only_for_dev_allocation = true;
+      rhi_params.only_for_dev_allocation = false;
       auto make_res = make_compute_device(rhi_params);
       rhi_device_ = std::move(make_res.device);
       TI_ASSERT(rhi_device_ != nullptr);
@@ -897,7 +897,7 @@ class KernelManager::Impl {
 
     // Initialize the memory allocator
     dev_mem_alloc_mirror_ = reinterpret_cast<MemoryAllocator *>(addr);
-    // Make sure the retured memory address is always greater than 1.
+    // Make sure the returned memory address is always greater than 1.
     dev_mem_alloc_mirror_->next = shaders::MemoryAllocator::kInitOffset;
     TI_DEBUG("Memory allocator, begin={} next={}", (addr - addr_begin),
              dev_mem_alloc_mirror_->next);
@@ -1169,7 +1169,7 @@ class KernelManager::Impl {
         } else if (dt == MsgType::Str) {
           py_cout << print_strtable_.get(x);
         } else {
-          TI_ERROR("Unexecpted data type={}", dt);
+          TI_ERROR("Unexpected data type={}", dt);
         }
       }
       buf += shaders::mtl_compute_print_msg_bytes(num_entries);

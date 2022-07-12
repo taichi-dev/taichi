@@ -736,7 +736,7 @@ class MakeAdjoint : public ADTransform {
       // GlobalLoadStmt is not inside a range-for
       // Code sample:
       // a and b require grad
-      // Case 1 (GlobalLoadStmt is ouside the for-loop, compute 5 times and
+      // Case 1 (GlobalLoadStmt is outside the for-loop, compute 5 times and
       // accumulate once, alloca history value is needed):
       // for i in range(5):
       //     p = a[i]
@@ -1041,12 +1041,12 @@ class MakeDual : public ADTransform {
   using ADTransform::visit;
   Stmt *current_stmt;
   Block *current_block;
-  // Block *alloca_block;
+  Block *alloca_block;
   std::map<Stmt *, Stmt *> dual_stmt;
 
   MakeDual(Block *block) {
     current_stmt = nullptr;
-    // alloca_block = block;
+    alloca_block = block;
     current_block = block;
   }
 
@@ -1100,9 +1100,8 @@ class MakeDual : public ADTransform {
       auto alloca = Stmt::make<AllocaStmt>(1, stmt->ret_type);
       dual_stmt[stmt] = alloca.get();
 
-      // TODO: check whether this is correct when in for-loop
-      // check whether each stmt has a parent...
-      current_stmt->parent->insert(std::move(alloca), 0);
+      // TODO: check whether there are any edge cases for the alloca_block
+      alloca_block->insert(std::move(alloca), 0);
     }
     return dual_stmt[stmt];
   }
@@ -1137,10 +1136,83 @@ class MakeDual : public ADTransform {
       // d (x * y) = y * dx + x * dy
       accumulate(bin, mul(bin->lhs, dual(bin->rhs)));
       accumulate(bin, mul(bin->rhs, dual(bin->lhs)));
+    } else if (bin->op_type == BinaryOpType::mod) {
+      // Do nothing
+    } else if (bin->op_type == BinaryOpType::div) {
+      accumulate(bin, div(dual(bin->lhs), bin->rhs));
+      accumulate(bin, negate(div(mul(dual(bin->rhs), bin->lhs),
+                                 mul(bin->rhs, bin->rhs))));
+    } else if (is_comparison(bin->op_type) || is_bit_op(bin->op_type)) {
+      // do nothing
     } else {
       TI_WARN("gradient of binary op {}", binary_op_type_name(bin->op_type));
       TI_NOT_IMPLEMENTED
     }
+  }
+
+  void visit(IfStmt *if_stmt) override {
+    if (if_stmt->true_statements) {
+      std::vector<Stmt *> true_statements;
+      for (auto &stmt : if_stmt->true_statements->statements) {
+        true_statements.push_back(stmt.get());
+      }
+
+      for (auto stmt : true_statements) {
+        current_stmt = stmt;
+        stmt->accept(this);
+      }
+    }
+    if (if_stmt->false_statements) {
+      std::vector<Stmt *> false_statements;
+      for (auto &stmt : if_stmt->false_statements->statements) {
+        false_statements.push_back(stmt.get());
+      }
+
+      for (auto stmt : false_statements) {
+        current_stmt = stmt;
+        stmt->accept(this);
+      }
+    }
+  }
+
+  void visit(RangeForStmt *for_stmt) override {
+    std::vector<Stmt *> statements;
+    // always make a copy since the list can be modified.
+    for (auto &stmt : for_stmt->body->statements) {
+      statements.push_back(stmt.get());
+    }
+    auto previous_alloca_block = alloca_block;
+    alloca_block = for_stmt->body.get();
+    for (auto stmt : statements) {
+      current_stmt = stmt;
+      stmt->accept(this);
+    }
+    alloca_block = previous_alloca_block;
+  }
+
+  void visit(StructForStmt *for_stmt) override {
+    alloca_block = for_stmt->body.get();
+    for_stmt->body->accept(this);
+  }
+
+  void visit(LocalLoadStmt *stmt) override {
+    // TI_ASSERT(!needs_grad(stmt->ret_type));
+    accumulate(stmt, dual(stmt->src.data[0].var));
+  }
+
+  void visit(LocalStoreStmt *stmt) override {
+    // Clear the dual of the dest before local store,
+    // Because LocalStoreStmt overwrites the dest,
+    // If the alloca serves as the dest of multiple LocalStoreStmt, only the
+    // last LocalStoreStmt should be taken account of, i.e, its history should
+    // be cleared
+    if (needs_grad(stmt->dest->ret_type)) {
+      auto dtype = stmt->dest->ret_type;
+      auto zero = insert<ConstStmt>(TypedConstant(dtype, 0));
+      insert<LocalStoreStmt>(dual(stmt->dest), zero);
+    }
+
+    accumulate(stmt->dest, dual(stmt->val));
   }
 
   void visit(GlobalLoadStmt *stmt) override {
@@ -1318,7 +1390,6 @@ void auto_diff(IRNode *root,
   } else if (autodiff_mode == AutodiffMode::kForward) {
     // Forward mode autodiff
     Block *block = root->as<Block>();
-    PromoteSSA2LocalVar::run(block);
     MakeDual::run(block);
   }
   type_check(root, config);

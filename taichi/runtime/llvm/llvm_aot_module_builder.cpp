@@ -3,6 +3,7 @@
 #include <algorithm>
 #include "taichi/runtime/llvm/launch_arg_info.h"
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
+#include "taichi/runtime/llvm/aot_graph_data.h"
 
 namespace taichi {
 namespace lang {
@@ -12,6 +13,8 @@ void LlvmAotModuleBuilder::dump(const std::string &output_dir,
   LlvmOfflineCacheFileWriter writer;
   writer.set_data(std::move(cache_));
   writer.dump(output_dir);
+
+  dump_graph(output_dir);
 }
 
 void LlvmAotModuleBuilder::add_per_backend(const std::string &identifier,
@@ -21,17 +24,8 @@ void LlvmAotModuleBuilder::add_per_backend(const std::string &identifier,
   kcache.kernel_key = identifier;
   kcache.module = compiled.llvm_module.get();
   kcache.owned_module = std::move(compiled.llvm_module);
-  const auto &tasks = compiled.offloaded_tasks;
   kcache.args = infer_launch_args(kernel);
-  kcache.offloaded_task_list.resize(tasks.size());
-  std::transform(tasks.begin(), tasks.end(), kcache.offloaded_task_list.begin(),
-                 [](const auto &t) -> LlvmOfflineCache::OffloadedTaskCacheData {
-                   LlvmOfflineCache::OffloadedTaskCacheData res;
-                   res.name = t.name;
-                   res.block_dim = t.block_dim;
-                   res.grid_dim = t.grid_dim;
-                   return res;
-                 });
+  kcache.offloaded_task_list = std::move(compiled.offloaded_tasks);
   cache_.kernels[identifier] = std::move(kcache);
 }
 
@@ -65,6 +59,16 @@ void LlvmAotModuleBuilder::add_field_per_backend(const std::string &identifier,
 
   // 3. Update AOT Cache
   cache_.fields[snode_tree_id] = std::move(field_cache);
+}
+
+void LlvmAotModuleBuilder::add_compiled_kernel(aot::Kernel *kernel) {
+  auto *kernel_impl = dynamic_cast<llvm_aot::KernelImpl *>(kernel);
+  TI_ASSERT(kernel_impl);
+
+  const std::string &kernel_name = kernel_impl->kernel_name_;
+  if (cache_.kernels.find(kernel_name) == cache_.kernels.end()) {
+    cache_.kernels[kernel_name] = std::move(kernel_impl->kernel_data_);
+  }
 }
 
 }  // namespace lang

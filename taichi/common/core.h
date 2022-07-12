@@ -241,10 +241,10 @@ std::vector<uint8> read(const std::string fn, bool verbose = false);
 //******************************************************************************
 
 inline std::vector<std::string> split_string(const std::string &s,
-                                             const std::string &seperators) {
+                                             const std::string &separators) {
   std::vector<std::string> ret;
   bool is_seperator[256] = {false};
-  for (auto &ch : seperators) {
+  for (auto &ch : separators) {
     is_seperator[(unsigned int)ch] = true;
   }
   int begin = 0;

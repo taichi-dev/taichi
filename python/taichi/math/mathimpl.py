@@ -71,7 +71,7 @@ def uvec4(*args):
 def _gen_matrix(n, *args):
     """Supports more matrix construction routines.
 
-    1. Usual contruction (from a 2d list or a single scalar).
+    1. Usual construction (from a 2d list or a single scalar).
     2. From a 1-D array of n*n elements (glsl style).
     3. From a list of n-D vectors (glsl style).
     """
@@ -80,7 +80,7 @@ def _gen_matrix(n, *args):
         return ti.Matrix(data, float)
 
     if len(args) == n:  # initialize with n vectors
-        # Matrix.rows() will do implict type inference
+        # Matrix.rows() will do implicit type inference
         data = [list(x) for x in args]
         return ti.Matrix(data, float)
 
@@ -578,7 +578,7 @@ def rotate3d(p, axis, ang):
 
 @ti.func
 def eye(n: ti.template()):
-    """Returns the nxn identiy matrix.
+    """Returns the nxn identity matrix.
 
     Alias for :func:`~taichi.Matrix.identity`.
     """

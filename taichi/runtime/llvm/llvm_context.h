@@ -49,7 +49,7 @@ class TaichiLLVMContext {
   /**
    * Initializes TaichiLLVMContext#runtime_jit_module.
    *
-   * Unfortuantely, this cannot be placed inside the constructor. When adding an
+   * Unfortunately, this cannot be placed inside the constructor. When adding an
    * llvm::Module, the JITSessionCPU implementation eventually calls back to
    * this object, so it must be fully constructed by then.
    */
@@ -65,7 +65,7 @@ class TaichiLLVMContext {
   /**
    * Updates the LLVM module of the JIT compiled SNode structs.
    *
-   * @param module Module containg the JIT compiled SNode structs.
+   * @param module Module containing the JIT compiled SNode structs.
    */
   void set_struct_module(const std::unique_ptr<llvm::Module> &module);
 

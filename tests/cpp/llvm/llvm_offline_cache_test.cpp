@@ -13,7 +13,7 @@ namespace fs = std::filesystem;
 #include <experimental/filesystem>
 namespace fs = std::experimental::filesystem;
 #else
-error "Missing the <filesystem> header."
+#error "Missing the <filesystem> header."
 #endif  //  __has_include(<filesystem>)
 
 #include "llvm/IR/IRBuilder.h"
@@ -21,7 +21,7 @@ error "Missing the <filesystem> header."
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Verifier.h"
 
-#include "taichi/backends/arch.h"
+#include "taichi/rhi/arch.h"
 #include "taichi/runtime/llvm/llvm_context.h"
 #include "taichi/runtime/llvm/llvm_offline_cache.h"
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
@@ -99,9 +99,7 @@ TEST_P(LlvmOfflineCacheTest, ReadWrite) {
     kcache.kernel_key = kKernelName;
     kcache.owned_module = make_module(*llvm_ctx);
     kcache.module = kcache.owned_module.get();
-    kcache.offloaded_task_list.push_back(
-        LlvmOfflineCache::OffloadedTaskCacheData{kTaskName, kBlockDim,
-                                                 kGridDim});
+    kcache.offloaded_task_list.emplace_back(kTaskName, kBlockDim, kGridDim);
     kcache.args = arg_infos;
     writer.add_kernel_cache(kKernelName, std::move(kcache));
     writer.set_no_mangle();

@@ -13,8 +13,9 @@ endif()
 file(GLOB_RECURSE TAICHI_TESTS_SOURCE
         "tests/cpp/analysis/*.cpp"
         "tests/cpp/aot/*.cpp"
+        "tests/cpp/aot/llvm/*.cpp"
+        "tests/cpp/aot/vulkan/*.cpp"
         "tests/cpp/backends/*.cpp"
-        "tests/cpp/backends/llvm/*.cpp"
         "tests/cpp/codegen/*.cpp"
         "tests/cpp/common/*.cpp"
         "tests/cpp/ir/*.cpp"

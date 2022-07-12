@@ -2,7 +2,7 @@
 
 #include "taichi/runtime/program_impls/dx/dx_program.h"
 
-#include "taichi/backends/dx/dx_device.h"
+#include "taichi/rhi/dx/dx_api.h"
 #include "taichi/runtime/gfx/aot_module_builder_impl.h"
 #include "taichi/runtime/gfx/snode_tree_manager.h"
 #include "taichi/runtime/gfx/aot_module_loader_impl.h"
@@ -15,8 +15,8 @@ FunctionType compile_to_executable(Kernel *kernel,
                                    gfx::GfxRuntime *runtime,
                                    gfx::SNodeTreeManager *snode_tree_mgr) {
   auto handle = runtime->register_taichi_kernel(
-      std::move(gfx::run_codegen(kernel, runtime->get_ti_device(),
-                                 snode_tree_mgr->get_compiled_structs())));
+      gfx::run_codegen(kernel, runtime->get_ti_device(),
+                       snode_tree_mgr->get_compiled_structs()));
   return [runtime, handle](RuntimeContext &ctx) {
     runtime->launch_kernel(handle, &ctx);
   };
@@ -40,7 +40,7 @@ void Dx11ProgramImpl::materialize_runtime(MemoryPool *memory_pool,
   *result_buffer_ptr = (uint64 *)memory_pool->allocate(
       sizeof(uint64) * taichi_result_buffer_entries, 8);
 
-  device_ = std::make_shared<directx11::Dx11Device>();
+  device_ = directx11::make_dx11_device();
 
   gfx::GfxRuntime::Params params;
   params.host_result_buffer = *result_buffer_ptr;

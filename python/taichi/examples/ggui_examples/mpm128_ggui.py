@@ -139,7 +139,7 @@ def render():
 
 def main():
     print(
-        "[Hint] Use WSAD/arrow keys to control gravity. Use left/right mouse bottons to attract/repel. Press R to reset."
+        "[Hint] Use WSAD/arrow keys to control gravity. Use left/right mouse buttons to attract/repel. Press R to reset."
     )
 
     res = (512, 512)

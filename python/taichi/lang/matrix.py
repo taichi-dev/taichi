@@ -363,7 +363,7 @@ class Matrix(TaichiOperations):
     """The matrix class.
 
     A matrix is a 2-D rectangular array with scalar entries, it's row-majored, and is
-    aligned continously. We recommend only use matrix with no more than 32 elements for
+    aligned continuously. We recommend only use matrix with no more than 32 elements for
     efficiency considerations.
 
     Note: in taichi a matrix is strictly two-dimensional and only stores scalars.
@@ -582,7 +582,7 @@ class Matrix(TaichiOperations):
     @taichi_scope
     def _subscript(self, *indices):
         if isinstance(self._impl, _PyScopeMatrixImpl):
-            # This can happpen in these cases:
+            # This can happen in these cases:
             # 1. A Python scope matrix is passed into a Taichi kernel as ti.template()
             # 2. Taichi kernel directlly uses a matrix (global variable) created in the Python scope.
             return self._impl.subscript_scope_ignored(indices)
@@ -1078,7 +1078,7 @@ class Matrix(TaichiOperations):
             name (string, optional): The custom name of the field.
             offset (Union[int, tuple of int], optional): The coordinate offset
                 of all elements in a field.
-            needs_grad (bool, optional): Whether the Matrix need gradients.
+            needs_grad (bool, optional): Whether the Matrix need grad field (reverse mode autodiff).
             layout (Layout, optional): The field layout, either Array Of
                 Structure (AOS) or Structure Of Array (SOA).
 
@@ -1095,7 +1095,9 @@ class Matrix(TaichiOperations):
                 ) == n, f'Please set correct dtype list for Vector. The shape of dtype list should be ({n}, ) instead of {np.shape(dtype)}'
                 for i in range(n):
                     entries.append(
-                        impl.create_field_member(dtype[i], name=name))
+                        impl.create_field_member(dtype[i],
+                                                 name=name,
+                                                 needs_grad=needs_grad))
             else:
                 assert len(np.shape(dtype)) == 2 and len(dtype) == n and len(
                     dtype[0]
@@ -1103,14 +1105,24 @@ class Matrix(TaichiOperations):
                 for i in range(n):
                     for j in range(m):
                         entries.append(
-                            impl.create_field_member(dtype[i][j], name=name))
+                            impl.create_field_member(dtype[i][j],
+                                                     name=name,
+                                                     needs_grad=needs_grad))
         else:
             for _ in range(n * m):
-                entries.append(impl.create_field_member(dtype, name=name))
-        entries, entries_adjoint = zip(*entries)
-        entries, entries_adjoint = MatrixField(entries, n, m), MatrixField(
-            entries_adjoint, n, m)
-        entries._set_grad(entries_adjoint, reverse_mode=True)
+                entries.append(
+                    impl.create_field_member(dtype,
+                                             name=name,
+                                             needs_grad=needs_grad))
+        entries, entries_grad, entries_dual = zip(*entries)
+
+        entries, entries_grad, entries_dual = MatrixField(
+            entries, n, m), MatrixField(entries_grad, n,
+                                        m), MatrixField(entries_grad, n, m)
+
+        entries._set_grad(entries_grad)
+        entries._set_dual(entries_dual)
+
         impl.get_runtime().matrix_fields.append(entries)
 
         if shape is None:
@@ -1133,7 +1145,7 @@ class Matrix(TaichiOperations):
                     impl.root.dense(impl.index_nd(dim),
                                     shape).place(ScalarField(e), offset=offset)
                 if needs_grad:
-                    for e in entries_adjoint._get_field_members():
+                    for e in entries_grad._get_field_members():
                         impl.root.dense(impl.index_nd(dim),
                                         shape).place(ScalarField(e),
                                                      offset=offset)
@@ -1142,8 +1154,7 @@ class Matrix(TaichiOperations):
                                                                  offset=offset)
                 if needs_grad:
                     impl.root.dense(impl.index_nd(dim),
-                                    shape).place(entries_adjoint,
-                                                 offset=offset)
+                                    shape).place(entries_grad, offset=offset)
         return entries
 
     @classmethod

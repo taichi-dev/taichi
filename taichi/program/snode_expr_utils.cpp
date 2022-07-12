@@ -105,18 +105,28 @@ void place_child(Expr *expr_arg,
   }
 }
 
-void make_lazy_grad(SNode *snode, SNodeGlobalVarExprMap *snode_to_exprs) {
+void make_lazy_grad(SNode *snode,
+                    SNodeGlobalVarExprMap *snode_to_exprs,
+                    bool is_adjoint,
+                    bool is_dual) {
   if (snode->type == SNodeType::place)
     return;
   for (auto &c : snode->ch) {
-    make_lazy_grad(c.get(), snode_to_exprs);
+    make_lazy_grad(c.get(), snode_to_exprs, is_adjoint, is_dual);
   }
   std::vector<Expr> new_grads;
   for (auto &c : snode->ch) {
-    // TODO: handle the dual SNode
-    if (c->type == SNodeType::place && c->is_primal() && needs_grad(c->dt) &&
-        !c->has_adjoint()) {
-      new_grads.push_back(snode_to_exprs->at(c.get())->adjoint);
+    if (is_adjoint) {
+      if (c->type == SNodeType::place && c->is_primal() && needs_grad(c->dt) &&
+          !c->has_adjoint()) {
+        new_grads.push_back(snode_to_exprs->at(c.get())->adjoint);
+      }
+    }
+    if (is_dual) {
+      if (c->type == SNodeType::place && c->is_primal() && needs_grad(c->dt) &&
+          !c->has_dual()) {
+        new_grads.push_back(snode_to_exprs->at(c.get())->dual);
+      }
     }
   }
   for (auto p : new_grads) {

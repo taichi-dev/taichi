@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-#include "taichi/backends/metal/constants.h"
+#include "taichi/rhi/metal/constants.h"
 #include "taichi/runtime/metal/data_types.h"
 #include "taichi/runtime/metal/features.h"
 #include "taichi/runtime/metal/kernel_utils.h"
@@ -67,7 +67,7 @@ class StructCompiler {
         if (ty == SNodeType::place) {
           // do nothing
         }
-        CHECK_UNSUPPORTED_TYPE(bit_array)
+        CHECK_UNSUPPORTED_TYPE(quant_array)
         CHECK_UNSUPPORTED_TYPE(hash)
         else {
           max_snodes_ = std::max(max_snodes_, sn->id);

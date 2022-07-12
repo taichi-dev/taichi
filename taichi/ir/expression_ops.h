@@ -1,4 +1,4 @@
-// Arithmatic operations
+// Arithmetic operations
 
 #if defined(TI_EXPRESSION_IMPLEMENTATION)
 

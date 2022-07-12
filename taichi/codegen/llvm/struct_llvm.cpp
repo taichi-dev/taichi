@@ -87,17 +87,17 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
     }
     snode.dt = snode.bit_struct_type_builder->build();
     body_type = tlctx_->get_data_type(snode.physical_type);
-  } else if (type == SNodeType::bit_array) {
-    // A bit array SNode should have only one child
+  } else if (type == SNodeType::quant_array) {
+    // A quant array SNode should have only one child
     TI_ASSERT(snode.ch.size() == 1);
     auto &ch = snode.ch[0];
     Type *ch_type = ch->dt;
     if (!arch_is_cpu(arch_)) {
       TI_ERROR_IF(data_type_bits(snode.physical_type) <= 16,
-                  "bit_array physical type must be at least 32 bits on "
+                  "quant_array physical type must be at least 32 bits on "
                   "non-CPU backends.");
     }
-    snode.dt = TypeFactory::get_instance().get_bit_array_type(
+    snode.dt = TypeFactory::get_instance().get_quant_array_type(
         snode.physical_type, ch_type, snode.num_cells_per_container);
 
     DataType container_primitive_type(snode.physical_type);

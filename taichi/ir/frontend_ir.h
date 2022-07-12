@@ -7,14 +7,14 @@
 #include "taichi/ir/stmt_op_types.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/expression.h"
-#include "taichi/backends/arch.h"
+#include "taichi/rhi/arch.h"
 #include "taichi/program/function.h"
 #include "taichi/ir/mesh.h"
 
 TLANG_NAMESPACE_BEGIN
 
 struct ForLoopConfig {
-  int bit_vectorize{0};
+  bool is_bit_vectorized{false};
   int num_cpu_threads{0};
   bool strictly_serialized{false};
   MemoryAccessOptions mem_access_opt;
@@ -161,7 +161,7 @@ class FrontendForStmt : public Stmt {
   Expr global_var;
   std::unique_ptr<Block> body;
   std::vector<Identifier> loop_var_id;
-  int bit_vectorize;
+  bool is_bit_vectorized;
   int num_cpu_threads;
   bool strictly_serialized;
   MemoryAccessOptions mem_access_opt;
@@ -803,7 +803,7 @@ class ASTBuilder {
     }
 
     void reset() {
-      config.bit_vectorize = -1;
+      config.is_bit_vectorized = false;
       config.num_cpu_threads = 0;
       config.uniform = false;
       config.mem_access_opt.clear();
@@ -875,8 +875,8 @@ class ASTBuilder {
   void create_scope(std::unique_ptr<Block> &list, LoopType tp = NotLoop);
   void pop_scope();
 
-  void bit_vectorize(int v) {
-    for_loop_dec_.config.bit_vectorize = v;
+  void bit_vectorize() {
+    for_loop_dec_.config.is_bit_vectorized = true;
   }
 
   void parallelize(int v) {

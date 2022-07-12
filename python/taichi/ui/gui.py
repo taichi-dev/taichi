@@ -447,7 +447,7 @@ class GUI:
         Args:
             a (numpy.array): The positions of the first points of triangles.
             b (numpy.array): The positions of the second points of triangles.
-            c (numpy.array): The positions of the thrid points of triangles.
+            c (numpy.array): The positions of the third points of triangles.
             color (Union[int, numpy.array], optional): The color or colors of triangles.
                 Can be either a single color or a list of colors whose shape matches
                 the shape of a & b & c. Default is 0xFFFFFF.

@@ -2,13 +2,13 @@
 
 #include "taichi/runtime/llvm/llvm_offline_cache.h"
 #include "taichi/runtime/llvm/runtime_module/mem_request.h"
-#include "taichi/backends/cpu/cpu_device.h"
-#include "taichi/backends/cuda/cuda_device.h"
+#include "taichi/rhi/cpu/cpu_device.h"
+#include "taichi/rhi/cuda/cuda_device.h"
 #include "taichi/platform/cuda/detect_cuda.h"
-#include "taichi/backends/cuda/cuda_driver.h"
+#include "taichi/rhi/cuda/cuda_driver.h"
 
 #if defined(TI_WITH_CUDA)
-#include "taichi/backends/cuda/cuda_context.h"
+#include "taichi/rhi/cuda/cuda_context.h"
 #endif
 
 namespace taichi {
@@ -220,7 +220,7 @@ void LlvmRuntimeExecutor::check_runtime_error(uint64 *result_buffer) {
     // Here we fetch the error_message_template char by char.
     // This is not efficient, but fortunately we only need to do this when an
     // assertion fails. Note that we may not have unified memory here, so using
-    // "fetch_result" that works across device/host memroy is necessary.
+    // "fetch_result" that works across device/host memory is necessary.
     for (int i = 0;; i++) {
       runtime_jit_module->call<void *>("runtime_retrieve_error_message",
                                        llvm_runtime_, i);

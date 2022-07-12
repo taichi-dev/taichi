@@ -19,16 +19,14 @@ class CodeGenLLVM;
 class OffloadedTask {
  public:
   std::string name;
-  CodeGenLLVM *codegen;
-
   int block_dim{0};
   int grid_dim{0};
 
-  OffloadedTask(CodeGenLLVM *codegen);
-
-  void begin(const std::string &name);
-
-  void end();
+  OffloadedTask(const std::string &name = "",
+                int block_dim = 0,
+                int grid_dim = 0)
+      : name(name), block_dim(block_dim), grid_dim(grid_dim){};
+  TI_IO_DEF(name, block_dim, grid_dim);
 };
 
 class FunctionCreationGuard {
@@ -411,14 +409,14 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   void cache_module(const std::string &kernel_key);
 };
 
-class LlvmProgramImpl;
+class LlvmRuntimeExecutor;
 
 // TODO: Make ModuleToFunctionConverter abstract,
 //       Move CPU implementation to "taichi/backend/cpu/"
 class ModuleToFunctionConverter {
  public:
   explicit ModuleToFunctionConverter(TaichiLLVMContext *tlctx,
-                                     LlvmProgramImpl *program);
+                                     LlvmRuntimeExecutor *executor);
 
   virtual ~ModuleToFunctionConverter() = default;
 
@@ -433,7 +431,7 @@ class ModuleToFunctionConverter {
 
  protected:
   TaichiLLVMContext *tlctx_{nullptr};
-  LlvmProgramImpl *program_{nullptr};
+  LlvmRuntimeExecutor *executor_{nullptr};
 };
 
 }  // namespace lang

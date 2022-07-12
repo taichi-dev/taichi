@@ -1,6 +1,7 @@
 
 #include <vector>
 #include "pybind11/pybind11.h"
+#include <pybind11/numpy.h>
 #include "pybind11/stl.h"
 
 #include "taichi/common/interface.h"
@@ -17,7 +18,7 @@ namespace py = pybind11;
 #include "taichi/ui/common/camera.h"
 #include "taichi/ui/backends/vulkan/canvas.h"
 #include "taichi/ui/backends/vulkan/scene.h"
-#include "taichi/backends/vulkan/vulkan_loader.h"
+#include "taichi/rhi/vulkan/vulkan_loader.h"
 #include "taichi/ui/common/field_info.h"
 #include "taichi/ui/common/gui_base.h"
 #include <memory>
@@ -32,6 +33,21 @@ glm::vec3 tuple_to_vec3(pybind11::tuple t) {
 
 pybind11::tuple vec3_to_tuple(glm::vec3 v) {
   return pybind11::make_tuple(v.x, v.y, v.z);
+}
+
+// Here we convert the 2d-array to numpy array using pybind. Refs:
+// https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html?highlight=array_t#vectorizing-functions
+// https://stackoverflow.com/questions/44659924/returning-numpy-arrays-via-pybind11
+py::array_t<float> mat4_to_nparray(glm::mat4 mat) {
+  // Here we must explicitly pass args using py::detail::any_container<ssize_t>.
+  // Refs:
+  // https://stackoverflow.com/questions/54055530/error-no-matching-function-for-call-to-pybind11buffer-infobuffer-info
+  return py::array_t<float>(
+      py::detail::any_container<ssize_t>({4, 4}),  // shape (rows, cols)
+      py::detail::any_container<ssize_t>(
+          {sizeof(float) * 4, sizeof(float)}),  // strides in bytes
+      glm::value_ptr(mat),                      // buffer pointer
+      nullptr);
 }
 
 struct PyGui {
@@ -98,6 +114,12 @@ struct PyCamera {
   }
   void z_far(float z_far_) {
     camera.z_far = z_far_;
+  }
+  py::array_t<float> get_view_matrix() {
+    return mat4_to_nparray(camera.get_view_matrix());
+  }
+  py::array_t<float> get_projection_matrix(float aspect_ratio) {
+    return mat4_to_nparray(camera.get_projection_matrix(aspect_ratio));
   }
 };
 
@@ -368,7 +390,9 @@ void export_ggui(py::module &m) {
       .def("top", &PyCamera::top)
       .def("bottom", &PyCamera::bottom)
       .def("z_near", &PyCamera::z_near)
-      .def("z_far", &PyCamera::z_far);
+      .def("z_far", &PyCamera::z_far)
+      .def("get_view_matrix", &PyCamera::get_view_matrix)
+      .def("get_projection_matrix", &PyCamera::get_projection_matrix);
 
   py::class_<Event>(m, "Event")
       .def_property("key", &Event::get_key, &Event::set_key);

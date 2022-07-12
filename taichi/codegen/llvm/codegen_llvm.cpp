@@ -19,19 +19,6 @@ TLANG_NAMESPACE_BEGIN
 
 // TODO: sort function definitions to match declaration order in header
 
-// OffloadedTask
-
-OffloadedTask::OffloadedTask(CodeGenLLVM *codegen) : codegen(codegen) {
-}
-
-void OffloadedTask::begin(const std::string &name) {
-  this->name = name;
-}
-
-void OffloadedTask::end() {
-  codegen->offloaded_tasks.push_back(*this);
-}
-
 // TODO(k-ye): Hide FunctionCreationGuard inside cpp file
 FunctionCreationGuard::FunctionCreationGuard(
     CodeGenLLVM *mb,
@@ -241,6 +228,9 @@ std::unique_ptr<RuntimeObject> CodeGenLLVM::emit_struct_meta_object(
     meta =
         std::make_unique<RuntimeObject>("BitmaskedMeta", this, builder.get());
     emit_struct_meta_base("Bitmasked", meta->ptr, snode);
+  } else if (snode->type == SNodeType::quant_array) {
+    meta = std::make_unique<RuntimeObject>("DenseMeta", this, builder.get());
+    emit_struct_meta_base("Dense", meta->ptr, snode);
   } else {
     TI_P(snode_type_name(snode->type));
     TI_NOT_IMPLEMENTED;
@@ -1348,7 +1338,7 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
             "handled by BitStructStoreStmt.",
             pointee_type->to_string());
       } else {
-        TI_ERROR("Bit array only supports quant int type.");
+        TI_ERROR("Quant array only supports quant int type.");
       }
     }
     store_quant_int(llvm_val[stmt->dest], pointee_type->as<QuantIntType>(),
@@ -1411,8 +1401,8 @@ std::string CodeGenLLVM::get_runtime_snode_name(SNode *snode) {
     return "Bitmasked";
   } else if (snode->type == SNodeType::bit_struct) {
     return "BitStruct";
-  } else if (snode->type == SNodeType::bit_array) {
-    return "BitArray";
+  } else if (snode->type == SNodeType::quant_array) {
+    return "QuantArray";
   } else {
     TI_P(snode_type_name(snode->type));
     TI_NOT_IMPLEMENTED
@@ -1533,9 +1523,9 @@ void CodeGenLLVM::visit(SNodeLookupStmt *stmt) {
                           {llvm_val[stmt->input_index]});
   } else if (snode->type == SNodeType::bit_struct) {
     llvm_val[stmt] = parent;
-  } else if (snode->type == SNodeType::bit_array) {
+  } else if (snode->type == SNodeType::quant_array) {
     auto element_num_bits =
-        snode->dt->as<BitArrayType>()->get_element_num_bits();
+        snode->dt->as<QuantArrayType>()->get_element_num_bits();
     auto offset = tlctx->get_constant(element_num_bits);
     offset = builder->CreateMul(offset, llvm_val[stmt->input_index]);
     llvm_val[stmt] = create_bit_ptr(llvm_val[stmt->input_snode], offset);
@@ -1546,7 +1536,7 @@ void CodeGenLLVM::visit(SNodeLookupStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(GetChStmt *stmt) {
-  if (stmt->input_snode->type == SNodeType::bit_array) {
+  if (stmt->input_snode->type == SNodeType::quant_array) {
     llvm_val[stmt] = llvm_val[stmt->input_ptr];
   } else if (stmt->ret_type->as<PointerType>()->is_bit_pointer()) {
     auto bit_struct = stmt->input_snode->dt->cast<BitStructType>();
@@ -1649,8 +1639,7 @@ std::string CodeGenLLVM::init_offloaded_task_function(OffloadedStmt *stmt,
                                 llvm::Function::ExternalLinkage,
                                 task_kernel_name, module.get());
 
-  current_task = std::make_unique<OffloadedTask>(this);
-  current_task->begin(task_kernel_name);
+  current_task = std::make_unique<OffloadedTask>(task_kernel_name);
 
   for (auto &arg : func->args()) {
     kernel_args.push_back(&arg);
@@ -1725,16 +1714,16 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
   llvm::Function *body = nullptr;
   auto leaf_block = stmt->snode;
 
-  // When looping over bit_arrays, we always vectorize and generate struct for
-  // on their parent node (usually "dense") instead of itself for higher
-  // performance. Also, note that the loop must be bit_vectorized for
-  // bit_arrays, and their parent must be "dense".
-  if (leaf_block->type == SNodeType::bit_array) {
-    if (leaf_block->parent->type == SNodeType::dense) {
+  // For a bit-vectorized loop over a quant array, we generate struct for on its
+  // parent node (must be "dense") instead of itself for higher performance.
+  if (stmt->is_bit_vectorized) {
+    if (leaf_block->type == SNodeType::quant_array &&
+        leaf_block->parent->type == SNodeType::dense) {
       leaf_block = leaf_block->parent;
     } else {
       TI_ERROR(
-          "Struct-for looping through bit array but its parent is not dense")
+          "A bit-vectorized struct-for must loop over a quant array with a "
+          "dense parent");
     }
   }
 
@@ -1866,20 +1855,14 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     create_call(refine, {parent_coordinates, new_coordinates,
                          builder->CreateLoad(loop_index)});
 
-    // One more refine step is needed for bit_arrays to make final coordinates
-    // non-consecutive, since each thread will process multiple
-    // coordinates via vectorization
-    if (stmt->snode->type == SNodeType::bit_array && stmt->snode->parent) {
-      if (stmt->snode->parent->type == SNodeType::dense) {
-        refine =
-            get_runtime_function(stmt->snode->refine_coordinates_func_name());
-
-        create_call(refine,
-                    {new_coordinates, new_coordinates, tlctx->get_constant(0)});
-      } else {
-        TI_ERROR(
-            "Struct-for looping through bit array but its parent is not dense");
-      }
+    // For a bit-vectorized loop over a quant array, one more refine step is
+    // needed to make final coordinates non-consecutive, since each thread will
+    // process multiple coordinates via vectorization
+    if (stmt->is_bit_vectorized) {
+      refine =
+          get_runtime_function(stmt->snode->refine_coordinates_func_name());
+      create_call(refine,
+                  {new_coordinates, new_coordinates, tlctx->get_constant(0)});
     }
 
     current_coordinates = new_coordinates;
@@ -1889,37 +1872,28 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     //  - if leaf block is bitmasked, make sure we only loop over active
     //    voxels
     auto exec_cond = tlctx->get_constant(true);
-    auto snode = stmt->snode;
-    if (snode->type == SNodeType::bit_array && snode->parent) {
-      if (snode->parent->type == SNodeType::dense) {
-        snode = snode->parent;
-      } else {
-        TI_ERROR(
-            "Struct-for looping through bit array but its parent is not dense");
-      }
-    }
-
     auto coord_object = RuntimeObject(kLLVMPhysicalCoordinatesName, this,
                                       builder.get(), new_coordinates);
     if (!prog->config.packed) {
-      for (int i = 0; i < snode->num_active_indices; i++) {
-        auto j = snode->physical_index_position[i];
+      for (int i = 0; i < leaf_block->num_active_indices; i++) {
+        auto j = leaf_block->physical_index_position[i];
         if (!bit::is_power_of_two(
-                snode->extractors[j].num_elements_from_root)) {
+                leaf_block->extractors[j].num_elements_from_root)) {
           auto coord = coord_object.get("val", tlctx->get_constant(j));
           exec_cond = builder->CreateAnd(
-              exec_cond, builder->CreateICmp(
-                             llvm::CmpInst::ICMP_SLT, coord,
-                             tlctx->get_constant(
-                                 snode->extractors[j].num_elements_from_root)));
+              exec_cond,
+              builder->CreateICmp(
+                  llvm::CmpInst::ICMP_SLT, coord,
+                  tlctx->get_constant(
+                      leaf_block->extractors[j].num_elements_from_root)));
         }
       }
     }
 
-    if (snode->type == SNodeType::bitmasked ||
-        snode->type == SNodeType::pointer) {
+    if (leaf_block->type == SNodeType::bitmasked ||
+        leaf_block->type == SNodeType::pointer) {
       // test whether the current voxel is active or not
-      auto is_active = call(snode, element.get("element"), "is_active",
+      auto is_active = call(leaf_block, element.get("element"), "is_active",
                             {builder->CreateLoad(loop_index)});
       is_active =
           builder->CreateTrunc(is_active, llvm::Type::getInt1Ty(*llvm_context));
@@ -2340,18 +2314,17 @@ void CodeGenLLVM::emit_to_module() {
 }
 
 CodeGenLLVM::CompiledData CodeGenLLVM::run_compilation() {
-  bool needs_cache = false;
   const auto &config = prog->config;
-  std::string kernel_key;
+  std::string kernel_key =
+      get_hashed_offline_cache_key(&kernel->program->config, kernel);
+  kernel->set_kernel_key_for_cache(kernel_key);
   if (config.offline_cache && !config.async_mode &&
       this->supports_offline_cache() && !kernel->is_evaluator) {
-    kernel_key = get_hashed_offline_cache_key(&kernel->program->config, kernel);
     CompiledData res;
     const bool ok = maybe_read_compilation_from_cache(kernel_key, &res);
     if (ok) {
       return res;
     }
-    needs_cache = true;
   }
 
   if (!kernel->lowered()) {
@@ -2359,9 +2332,13 @@ CodeGenLLVM::CompiledData CodeGenLLVM::run_compilation() {
   }
   emit_to_module();
   eliminate_unused_functions();
-  if (needs_cache) {
+
+  // Updates LlvmProgramImpl->cache_data_ to save the compiled kernel
+  // information for successive uses in AOT or CGraph.
+  if (!kernel->is_evaluator) {
     cache_module(kernel_key);
   }
+
   CompiledData res;
   res.offloaded_tasks = std::move(this->offloaded_tasks);
   res.llvm_module = std::move(this->module);
@@ -2387,8 +2364,7 @@ bool CodeGenLLVM::maybe_read_compilation_from_cache(
   }
   this->module = std::move(cache_data.owned_module);
   for (auto &task : cache_data.offloaded_task_list) {
-    auto &t = this->offloaded_tasks.emplace_back(this);
-    t.name = std::move(task.name);
+    auto &t = this->offloaded_tasks.emplace_back(task.name);
     t.block_dim = task.block_dim;
     t.grid_dim = task.grid_dim;
   }
@@ -2401,7 +2377,8 @@ bool CodeGenLLVM::maybe_read_compilation_from_cache(
 FunctionType CodeGenLLVM::gen() {
   auto compiled_res = run_compilation();
 
-  ModuleToFunctionConverter converter{tlctx, get_llvm_program(prog)};
+  ModuleToFunctionConverter converter{
+      tlctx, get_llvm_program(prog)->get_runtime_executor()};
   return converter.convert(kernel, std::move(compiled_res.llvm_module),
                            std::move(compiled_res.offloaded_tasks));
 }
@@ -2474,22 +2451,16 @@ void CodeGenLLVM::visit(FuncCallStmt *stmt) {
 }
 
 void CodeGenLLVM::cache_module(const std::string &kernel_key) {
-  using OffloadedTaskCache = LlvmOfflineCache::OffloadedTaskCacheData;
-  std::vector<OffloadedTaskCache> offloaded_task_list;
-  for (auto &task : offloaded_tasks) {
-    auto &task_cache = offloaded_task_list.emplace_back();
-    task_cache.name = task.name;
-    task_cache.block_dim = task.block_dim;
-    task_cache.grid_dim = task.grid_dim;
-  }
+  std::vector<OffloadedTask> offloaded_task_list = offloaded_tasks;
   get_llvm_program(prog)->cache_kernel(kernel_key, this->module.get(),
                                        infer_launch_args(kernel),
                                        std::move(offloaded_task_list));
 }
 
-ModuleToFunctionConverter::ModuleToFunctionConverter(TaichiLLVMContext *tlctx,
-                                                     LlvmProgramImpl *program)
-    : tlctx_(tlctx), program_(program) {
+ModuleToFunctionConverter::ModuleToFunctionConverter(
+    TaichiLLVMContext *tlctx,
+    LlvmRuntimeExecutor *executor)
+    : tlctx_(tlctx), executor_(executor) {
 }
 
 FunctionType ModuleToFunctionConverter::convert(
@@ -2508,7 +2479,7 @@ FunctionType ModuleToFunctionConverter::convert(
     task_funcs.push_back((TaskFunc)(func_ptr));
   }
   // Do NOT capture `this`...
-  return [program = this->program_, args, kernel_name,
+  return [executor = this->executor_, args, kernel_name,
           task_funcs](RuntimeContext &context) {
     TI_TRACE("Launching kernel {}", kernel_name);
     // For taichi ndarrays, context.args saves pointer to its
@@ -2520,7 +2491,7 @@ FunctionType ModuleToFunctionConverter::convert(
           context.array_runtime_sizes[i] > 0) {
         DeviceAllocation *ptr =
             static_cast<DeviceAllocation *>(context.get_arg<void *>(i));
-        uint64 host_ptr = (uint64)program->get_ndarray_alloc_info_ptr(*ptr);
+        uint64 host_ptr = (uint64)executor->get_ndarray_alloc_info_ptr(*ptr);
         context.set_arg(i, host_ptr);
         context.set_array_device_allocation_type(
             i, RuntimeContext::DevAllocType::kNone);

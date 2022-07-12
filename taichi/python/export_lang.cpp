@@ -34,7 +34,7 @@
 #include "taichi/program/kernel_profiler.h"
 
 #if defined(TI_WITH_CUDA)
-#include "taichi/backends/cuda/cuda_context.h"
+#include "taichi/rhi/cuda/cuda_context.h"
 #endif
 
 TI_NAMESPACE_BEGIN
@@ -238,7 +238,13 @@ void export_lang(py::module &m) {
                      &CompileConfig::auto_mesh_local_default_occupacy)
       .def_readwrite("offline_cache", &CompileConfig::offline_cache)
       .def_readwrite("offline_cache_file_path",
-                     &CompileConfig::offline_cache_file_path);
+                     &CompileConfig::offline_cache_file_path)
+      .def_readwrite("offline_cache_cleaning_policy",
+                     &CompileConfig::offline_cache_cleaning_policy)
+      .def_readwrite("offline_cache_max_size_of_files",
+                     &CompileConfig::offline_cache_max_size_of_files)
+      .def_readwrite("offline_cache_cleaning_factor",
+                     &CompileConfig::offline_cache_cleaning_factor);
 
   m.def("reset_default_compile_config",
         [&]() { default_compile_config = CompileConfig(); });
@@ -515,7 +521,8 @@ void export_lang(py::module &m) {
                                bool))(&SNode::bitmasked),
            py::return_value_policy::reference)
       .def("bit_struct", &SNode::bit_struct, py::return_value_policy::reference)
-      .def("bit_array", &SNode::bit_array, py::return_value_policy::reference)
+      .def("quant_array", &SNode::quant_array,
+           py::return_value_policy::reference)
       .def("place", &SNode::place)
       .def("data_type", [](SNode *snode) { return snode->dt; })
       .def("name", [](SNode *snode) { return snode->name; })
@@ -707,7 +714,7 @@ void export_lang(py::module &m) {
         // The reason that there are both get_raw_address() and
         // get_underlying_ptr_address() is that Expr itself is mostly wrapper
         // around its underlying |expr| (of type Expression). Expr |e| can be
-        // temporary, while the underlying |expr| is mostly persistant.
+        // temporary, while the underlying |expr| is mostly persistent.
         //
         // Same get_raw_address() implies that get_underlying_ptr_address() are
         // also the same. The reverse is not true.

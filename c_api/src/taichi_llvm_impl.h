@@ -6,7 +6,8 @@
 namespace taichi {
 namespace lang {
 class LlvmRuntimeExecutor;
-}
+class MemoryPool;
+}  // namespace lang
 }  // namespace taichi
 
 namespace capi {
@@ -32,6 +33,7 @@ class LlvmRuntime : public Runtime {
  private:
   taichi::uint64 *result_buffer{nullptr};
   std::unique_ptr<taichi::lang::LlvmRuntimeExecutor> executor_{nullptr};
+  std::unique_ptr<taichi::lang::MemoryPool> memory_pool_{nullptr};
 };
 
 }  // namespace capi

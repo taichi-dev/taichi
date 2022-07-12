@@ -5,11 +5,11 @@ from .staging_buffer import (copy_colors_to_vbo, copy_vertices_to_vbo,
 from .utils import get_field_info
 
 
-def _translate_color_component(component):
-    if isinstance(component, int):
-        return max(min(component, 255), 0) / 255
+def _clamp_color_component(component):
+    if isinstance(component, int) :
+        return max(min(component, 255), 0.0) / 255.0
     elif isinstance(component, float):
-        return max(min(component, 1.0), 0.0)
+        return max(min(float(component), 1.0), 0.0)
     else:
         return None
 
@@ -57,10 +57,10 @@ def _translate_color(color):
                 return _translate_color(COLOR_LUT[color])
     elif isinstance(color, tuple) or isinstance(color, list):
         color = list(color[:3]) + [0] * (3 - len(color))
-        if all(isinstance(x, int) for x in color):
-            return tuple(_translate_color_component(x) for x in color)
+        if all(isinstance(x, int) and x > 1 for x in color):
+            return tuple(_clamp_color_component(x) for x in color)
         elif all(isinstance(x, int) or isinstance(x, float) for x in color):
-            return tuple(_translate_color_component(float(x)) for x in color)
+            return tuple(_clamp_color_component(float(x)) for x in color)
 
     warning(f"'{color}' is not a valid color")
     return ERROR_COLOR

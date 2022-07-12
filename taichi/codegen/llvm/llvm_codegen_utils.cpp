@@ -12,8 +12,8 @@ std::string type_name(llvm::Type *type) {
 
 /*
  * Determine whether two types are the same
- * (required type is required renamed version of the other one) based on the type name.
- * Check recursively if the types are function types.
+ * (required type is required renamed version of the other one) based on the
+ * type name. Check recursively if the types are function types.
  */
 bool is_same_type(llvm::Type *required, llvm::Type *provided) {
   if (required == provided) {
@@ -30,10 +30,8 @@ bool is_same_type(llvm::Type *required, llvm::Type *provided) {
     return false;
   }
   if (required->isFunctionTy()) {
-    auto req_func = llvm::dyn_cast<llvm::FunctionType>(
-        required);
-    auto prov_func = llvm::dyn_cast<llvm::FunctionType>(
-        provided);
+    auto req_func = llvm::dyn_cast<llvm::FunctionType>(required);
+    auto prov_func = llvm::dyn_cast<llvm::FunctionType>(provided);
     if (!is_same_type(req_func->getReturnType(), prov_func->getReturnType())) {
       return false;
     }

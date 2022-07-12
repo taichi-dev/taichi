@@ -44,7 +44,8 @@ inline constexpr char kLLVMPhysicalCoordinatesName[] = "PhysicalCoordinates";
 std::string type_name(llvm::Type *type);
 
 void check_func_call_signature(llvm::Value *func,
-                               std::vector<llvm::Value *> arglist);
+                               std::vector<llvm::Value *> &arglist,
+                               llvm::IRBuilder<> *builder);
 
 class LLVMModuleBuilder {
  public:
@@ -121,8 +122,9 @@ class LLVMModuleBuilder {
                     const std::string &func_name,
                     const std::vector<llvm::Value *> &arglist) {
     auto func = get_runtime_function(func_name);
-    check_func_call_signature(func, arglist);
-    return builder->CreateCall(func, arglist);
+    std::vector<llvm::Value *> args = arglist;
+    check_func_call_signature(func, args, builder);
+    return builder->CreateCall(func, args);
   }
 
   template <typename... Args>
@@ -131,7 +133,7 @@ class LLVMModuleBuilder {
                     Args &&...args) {
     auto func = get_runtime_function(func_name);
     auto arglist = std::vector<llvm::Value *>({args...});
-    check_func_call_signature(func, arglist);
+    check_func_call_signature(func, arglist, builder);
     return builder->CreateCall(func, arglist);
   }
 
@@ -186,7 +188,7 @@ class RuntimeObject {
   llvm::Value *call(const std::string &func_name, Args &&...args) {
     auto func = get_func(func_name);
     auto arglist = std::vector<llvm::Value *>({ptr, args...});
-    check_func_call_signature(func, arglist);
+    check_func_call_signature(func, arglist, builder);
     return builder->CreateCall(func, arglist);
   }
 

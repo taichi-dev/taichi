@@ -925,8 +925,9 @@ void CodeGenLLVM::emit_gc(OffloadedStmt *stmt) {
 }
 
 llvm::Value *CodeGenLLVM::create_call(llvm::Value *func,
-                                      llvm::ArrayRef<llvm::Value *> args) {
-  check_func_call_signature(func, args);
+                                      llvm::ArrayRef<llvm::Value *> args_arr) {
+  std::vector<llvm::Value *> args = args_arr;
+  check_func_call_signature(func, args, builder.get());
 #ifdef TI_LLVM_15
   llvm::FunctionType *func_ty = nullptr;
   if (auto *fn = llvm::dyn_cast<llvm::Function>(func)) {

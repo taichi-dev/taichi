@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#ifdef TI_WITH_LLVM
 #include "llvm/IR/Module.h"
 #include "taichi/common/core.h"
 #include "taichi/common/serialization.h"
@@ -126,7 +127,7 @@ class LlvmOfflineCacheFileReader {
                              LlvmOfflineCache &&data,
                              LlvmOfflineCache::Format format);
 
-  std::unique_ptr<llvm::Module> load_module(const std::string &path_prefix,
+  std::unique_ptr<struct llvm::Module> load_module(const std::string &path_prefix,
                                             const std::string &key,
                                             llvm::LLVMContext &llvm_ctx) const;
 
@@ -193,3 +194,4 @@ class LlvmOfflineCacheFileWriter {
 
 }  // namespace lang
 }  // namespace taichi
+#endif // TI_WITH_LLVM

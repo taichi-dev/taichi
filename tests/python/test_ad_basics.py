@@ -281,9 +281,9 @@ def test_select():
     func.grad()
     for i in range(N):
         if i % 2:
-            loss[i] = i
+            assert loss[i] == i
         else:
-            loss[i] = -i
+            assert loss[i] == -i
         assert x.grad[i] == i % 2 * 1.0
         assert y.grad[i] == (not i % 2) * 1.0
 

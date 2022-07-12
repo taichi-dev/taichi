@@ -1394,44 +1394,63 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
   auto ptr_type = stmt->dest->ret_type->as<PointerType>();
   if (ptr_type->is_bit_pointer()) {
     auto pointee_type = ptr_type->get_pointee_type();
-    if (!pointee_type->is<QuantIntType>()) {
-      if (stmt->dest->as<GetChStmt>()->input_snode->type ==
-          SNodeType::bit_struct) {
-        TI_ERROR(
-            "Bit struct stores with type {} should have been "
-            "handled by BitStructStoreStmt.",
-            pointee_type->to_string());
-      } else {
-        TI_ERROR("Quant array only supports quant int type.");
-      }
+    if (stmt->dest->as<GetChStmt>()->input_snode->type ==
+        SNodeType::bit_struct) {
+      TI_ERROR(
+          "Bit struct stores with type {} should have been handled by "
+          "BitStructStoreStmt.",
+          pointee_type->to_string());
     }
-    store_quant_int(llvm_val[stmt->dest], pointee_type->as<QuantIntType>(),
-                    llvm_val[stmt->val], true);
+    if (auto qit = pointee_type->cast<QuantIntType>()) {
+      store_quant_int(llvm_val[stmt->dest], qit, llvm_val[stmt->val], true);
+    } else if (auto qfxt = pointee_type->cast<QuantFixedType>()) {
+      store_quant_fixed(llvm_val[stmt->dest], qfxt, llvm_val[stmt->val], true);
+    } else {
+      TI_NOT_IMPLEMENTED;
+    }
   } else {
     builder->CreateStore(llvm_val[stmt->val], llvm_val[stmt->dest]);
   }
 }
 
-void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
-  int width = stmt->width();
-  TI_ASSERT(width == 1);
+llvm::Value *CodeGenLLVM::create_intrinsic_load(const DataType &dtype,
+                                                llvm::Value *data_ptr) {
+  TI_NOT_IMPLEMENTED;
+}
+
+void CodeGenLLVM::create_global_load(GlobalLoadStmt *stmt,
+                                     bool should_cache_as_read_only) {
+  auto ptr = llvm_val[stmt->src];
   auto ptr_type = stmt->src->ret_type->as<PointerType>();
   if (ptr_type->is_bit_pointer()) {
     auto val_type = ptr_type->get_pointee_type();
+    auto get_ch = stmt->src->as<GetChStmt>();
+    auto physical_type = get_ch->input_snode->physical_type;
     if (auto qit = val_type->cast<QuantIntType>()) {
-      llvm_val[stmt] = load_quant_int(
-          llvm_val[stmt->src], qit,
-          stmt->src->as<GetChStmt>()->input_snode->physical_type);
+      llvm_val[stmt] =
+          load_quant_int(ptr, qit, physical_type, should_cache_as_read_only);
+    } else if (auto qfxt = val_type->cast<QuantFixedType>()) {
+      llvm_val[stmt] =
+          load_quant_fixed(ptr, qfxt, physical_type, should_cache_as_read_only);
     } else {
-      TI_ASSERT(val_type->is<QuantFixedType>() ||
-                val_type->is<QuantFloatType>());
-      TI_ASSERT(stmt->src->is<GetChStmt>());
-      llvm_val[stmt] = load_quant_fixed_or_quant_float(stmt->src);
+      TI_ASSERT(val_type->is<QuantFloatType>());
+      llvm_val[stmt] = load_quant_float(
+          ptr, get_ch->output_snode, val_type->as<QuantFloatType>(),
+          physical_type, should_cache_as_read_only);
     }
   } else {
-    llvm_val[stmt] = builder->CreateLoad(tlctx->get_data_type(stmt->ret_type),
-                                         llvm_val[stmt->src]);
+    // Byte pointer case.
+    if (should_cache_as_read_only) {
+      llvm_val[stmt] = create_intrinsic_load(stmt->ret_type, ptr);
+    } else {
+      llvm_val[stmt] =
+          builder->CreateLoad(tlctx->get_data_type(stmt->ret_type), ptr);
+    }
   }
+}
+
+void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
+  create_global_load(stmt, false);
 }
 
 void CodeGenLLVM::visit(ElementShuffleStmt *stmt){
@@ -2529,64 +2548,15 @@ void CodeGenLLVM::emit_to_module() {
 }
 
 LLVMCompiledData CodeGenLLVM::run_compilation() {
-  const auto &config = prog->config;
-  std::string kernel_key =
-      get_hashed_offline_cache_key(&kernel->program->config, kernel);
-  kernel->set_kernel_key_for_cache(kernel_key);
-  if (config.offline_cache && !config.async_mode &&
-      this->supports_offline_cache() && !kernel->is_evaluator) {
-    LLVMCompiledData res;
-    const bool ok = maybe_read_compilation_from_cache(kernel_key, &res);
-    if (ok) {
-      return res;
-    }
-  }
+  // Final lowering
 
-  if (!kernel->lowered()) {
-    kernel->lower();
-  }
+  auto config = kernel->program->config;
+  kernel->offload_to_executable(ir);
+
   emit_to_module();
   eliminate_unused_functions();
 
-  // Updates LlvmProgramImpl->cache_data_ to save the compiled kernel
-  // information for successive uses in AOT or CGraph.
-  if (!kernel->is_evaluator) {
-    cache_module(kernel_key);
-  }
-
-  LLVMCompiledData res;
-  res.tasks = std::move(this->offloaded_tasks);
-  res.module = std::move(this->module);
-  return res;
-}
-
-bool CodeGenLLVM::maybe_read_compilation_from_cache(
-    const std::string &kernel_key,
-    LLVMCompiledData *data) {
-  const auto &config = prog->config;
-  auto reader =
-      LlvmOfflineCacheFileReader::make(config.offline_cache_file_path);
-  if (!reader) {
-    return false;
-  }
-
-  LlvmOfflineCache::KernelCacheData cache_data;
-  auto *tlctx = get_llvm_program(prog)->get_llvm_context(config.arch);
-  auto &llvm_ctx = *tlctx->get_this_thread_context();
-
-  if (!reader->get_kernel_cache(cache_data, kernel_key, llvm_ctx)) {
-    return false;
-  }
-  this->module = std::move(cache_data.owned_module);
-  for (auto &task : cache_data.offloaded_task_list) {
-    auto &t = this->offloaded_tasks.emplace_back(task.name);
-    t.block_dim = task.block_dim;
-    t.grid_dim = task.grid_dim;
-  }
-  kernel->set_from_offline_cache();
-  data->tasks = std::move(this->offloaded_tasks);
-  data->module = std::move(this->module);
-  return true;
+  return {std::move(this->offloaded_tasks), std::move(this->module)};
 }
 
 llvm::Value *CodeGenLLVM::create_xlogue(std::unique_ptr<Block> &block) {
@@ -2660,11 +2630,8 @@ void CodeGenLLVM::visit(FuncCallStmt *stmt) {
   }
 }
 
-void CodeGenLLVM::cache_module(const std::string &kernel_key) {
-  std::vector<OffloadedTask> offloaded_task_list = offloaded_tasks;
-  get_llvm_program(prog)->cache_kernel(kernel_key, this->module.get(),
-                                       infer_launch_args(kernel),
-                                       std::move(offloaded_task_list));
+LLVMCompiledData LLVMCompiledData::clone() const {
+  return {tasks, llvm::CloneModule(*module)};
 }
 
 TLANG_NAMESPACE_END

@@ -114,15 +114,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
    *
    * @return LLVMCompiledData
    */
-  LLVMCompiledData run_compilation();
-
-  // TODO: This function relies largely on `run_compilation()`. Name it better.
-  virtual FunctionType gen(){TI_NOT_IMPLEMENTED};
-
-  virtual bool supports_offline_cache() const {
-    return false;
-  }
-
+  virtual LLVMCompiledData run_compilation();
   // For debugging only
   virtual llvm::Value *create_print(std::string tag,
                                     DataType dt,
@@ -205,9 +197,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   llvm::Value *atomic_add_quant_int(AtomicOpStmt *stmt, QuantIntType *qit);
 
-  llvm::Value *quant_fixed_to_quant_int(QuantFixedType *qfxt,
-                                        QuantIntType *qit,
-                                        llvm::Value *real);
+  llvm::Value *to_quant_fixed(llvm::Value *real, QuantFixedType *qfxt);
 
   virtual llvm::Value *optimized_reduction(AtomicOpStmt *stmt);
 
@@ -233,6 +223,11 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
                        llvm::Value *value,
                        bool atomic);
 
+  void store_quant_fixed(llvm::Value *bit_ptr,
+                         QuantFixedType *qfxt,
+                         llvm::Value *value,
+                         bool atomic);
+
   void store_masked(llvm::Value *byte_ptr,
                     uint64 mask,
                     llvm::Value *value,
@@ -251,21 +246,37 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   llvm::Value *extract_quant_float(llvm::Value *local_bit_struct,
                                    SNode *digits_snode);
 
+  virtual llvm::Value *create_intrinsic_load(const DataType &dtype,
+                                             llvm::Value *data_ptr);
+
   llvm::Value *load_quant_int(llvm::Value *ptr,
                               QuantIntType *qit,
-                              Type *physical_type);
+                              Type *physical_type,
+                              bool should_cache_as_read_only);
 
   llvm::Value *extract_quant_int(llvm::Value *physical_value,
                                  llvm::Value *bit_offset,
                                  QuantIntType *qit);
 
+  llvm::Value *load_quant_fixed(llvm::Value *ptr,
+                                QuantFixedType *qfxt,
+                                Type *physical_type,
+                                bool should_cache_as_read_only);
+
   llvm::Value *reconstruct_quant_fixed(llvm::Value *digits,
                                        QuantFixedType *qfxt);
+
+  llvm::Value *load_quant_float(llvm::Value *digits_bit_ptr,
+                                SNode *digits_snode,
+                                QuantFloatType *qflt,
+                                Type *physical_type,
+                                bool should_cache_as_read_only);
 
   llvm::Value *load_quant_float(llvm::Value *digits_bit_ptr,
                                 llvm::Value *exponent_bit_ptr,
                                 QuantFloatType *qflt,
                                 Type *physical_type,
+                                bool should_cache_as_read_only,
                                 bool shared_exponent);
 
   llvm::Value *reconstruct_quant_float(llvm::Value *input_digits,
@@ -273,7 +284,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
                                        QuantFloatType *qflt,
                                        bool shared_exponent);
 
-  llvm::Value *load_quant_fixed_or_quant_float(Stmt *ptr_stmt);
+  void create_global_load(GlobalLoadStmt *stmt, bool should_cache_as_read_only);
 
   void visit(GlobalLoadStmt *stmt) override;
 
@@ -388,12 +399,6 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   llvm::Value *bitcast_to_u64(llvm::Value *val, DataType type);
 
   ~CodeGenLLVM() override = default;
-
- private:
-  bool maybe_read_compilation_from_cache(const std::string &kernel_key,
-                                         LLVMCompiledData *data);
-
-  void cache_module(const std::string &kernel_key);
 };
 
 }  // namespace lang

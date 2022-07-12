@@ -139,11 +139,20 @@ struct PyScene {
             bool has_per_vertex_color,
             FieldInfo indices,
             py::tuple color,
-            bool two_sided) {
+            bool two_sided,
+            float draw_index_count,
+            float draw_first_index,
+            float draw_vertex_count,
+            float draw_first_vertex) {
     RenderableInfo renderable_info;
     renderable_info.vbo = vbo;
     renderable_info.has_per_vertex_color = has_per_vertex_color;
     renderable_info.indices = indices;
+    renderable_info.has_user_customized_draw = true;
+    renderable_info.draw_index_count = (int)draw_index_count;
+    renderable_info.draw_first_index = (int)draw_first_index;
+    renderable_info.draw_vertex_count = (int)draw_vertex_count;
+    renderable_info.draw_first_vertex = (int)draw_first_vertex;
 
     MeshInfo info;
     info.renderable_info = renderable_info;
@@ -156,10 +165,15 @@ struct PyScene {
   void particles(FieldInfo vbo,
                  bool has_per_vertex_color,
                  py::tuple color_,
-                 float radius) {
+                 float radius,
+                 float draw_vertex_count,
+                 float draw_first_vertex) {
     RenderableInfo renderable_info;
     renderable_info.vbo = vbo;
+    renderable_info.has_user_customized_draw = true;
     renderable_info.has_per_vertex_color = has_per_vertex_color;
+    renderable_info.draw_vertex_count = (int)draw_vertex_count;
+    renderable_info.draw_first_vertex = (int)draw_first_vertex;
 
     ParticlesInfo info;
     info.renderable_info = renderable_info;

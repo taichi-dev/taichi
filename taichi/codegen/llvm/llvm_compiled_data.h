@@ -29,6 +29,7 @@ struct LLVMCompiledData {
                    std::unique_ptr<llvm::Module> module)
       : tasks(std::move(tasks)), module(std::move(module)) {
   }
+  LLVMCompiledData clone() const;
   TI_IO_DEF(tasks);
 };
 

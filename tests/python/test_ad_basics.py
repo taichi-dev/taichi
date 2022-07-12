@@ -159,9 +159,10 @@ def test_unary(tifunc, npfunc):
     (lambda x: ti.max(1, x), lambda x: np.maximum(1, x)),
 ])
 @if_has_autograd
-@test_utils.test()
+@test_utils.test(exclude=[ti.cc])
 def test_minmax(tifunc, npfunc):
     grad_test(tifunc, npfunc)
+    grad_test_fwd(tifunc, npfunc)
 
 
 @if_has_autograd
@@ -188,14 +189,37 @@ def test_mod():
     func2.grad()
 
 
+@if_has_autograd
+@test_utils.test()
+def test_mod_fwd():
+    x = ti.field(ti.f32)
+    y = ti.field(ti.f32)
+
+    ti.root.dense(ti.i, 1).place(x, y)
+    ti.root.lazy_dual()
+
+    @ti.kernel
+    def func():
+        y[0] = x[0] % 3
+
+    @ti.kernel
+    def func2():
+        ti.atomic_add(y[0], x[0] % 3)
+
+    with ti.ad.FwdMode(loss=y, parameters=x, seed=[1.0]):
+        func()
+        func2()
+
+
 @pytest.mark.parametrize('tifunc,npfunc', [
     (lambda x: ti.atan2(0.4, x), lambda x: np.arctan2(0.4, x)),
     (lambda y: ti.atan2(y, 0.4), lambda y: np.arctan2(y, 0.4)),
 ])
 @if_has_autograd
-@test_utils.test()
+@test_utils.test(exclude=[ti.cc])
 def test_atan2(tifunc, npfunc):
     grad_test(tifunc, npfunc)
+    grad_test_fwd(tifunc, npfunc)
 
 
 @pytest.mark.parametrize('tifunc,npfunc', [
@@ -203,9 +227,12 @@ def test_atan2(tifunc, npfunc):
     (lambda y: ti.atan2(y, 0.4), lambda y: np.arctan2(y, 0.4)),
 ])
 @if_has_autograd
-@test_utils.test(require=ti.extension.data64, default_fp=ti.f64)
+@test_utils.test(require=ti.extension.data64,
+                 default_fp=ti.f64,
+                 exclude=[ti.cc])
 def test_atan2_f64(tifunc, npfunc):
     grad_test(tifunc, npfunc)
+    grad_test_fwd(tifunc, npfunc)
 
 
 @pytest.mark.parametrize('tifunc,npfunc', [
@@ -213,9 +240,10 @@ def test_atan2_f64(tifunc, npfunc):
     (lambda y: y**0.4, lambda y: np.power(y, 0.4)),
 ])
 @if_has_autograd
-@test_utils.test()
+@test_utils.test(exclude=[ti.cc])
 def test_pow(tifunc, npfunc):
     grad_test(tifunc, npfunc)
+    grad_test_fwd(tifunc, npfunc)
 
 
 @pytest.mark.parametrize('tifunc,npfunc', [
@@ -223,9 +251,12 @@ def test_pow(tifunc, npfunc):
     (lambda y: y**0.4, lambda y: np.power(y, 0.4)),
 ])
 @if_has_autograd
-@test_utils.test(require=ti.extension.data64, default_fp=ti.f64)
+@test_utils.test(require=ti.extension.data64,
+                 default_fp=ti.f64,
+                 exclude=[ti.cc])
 def test_pow_f64(tifunc, npfunc):
     grad_test(tifunc, npfunc)
+    grad_test_fwd(tifunc, npfunc)
 
 
 @test_utils.test()

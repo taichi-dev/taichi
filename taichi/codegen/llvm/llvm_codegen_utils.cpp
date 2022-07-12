@@ -10,7 +10,6 @@ std::string type_name(llvm::Type *type) {
   return type_name_str;
 }
 
-
 /*
  * Determine whether two types are the same
  * (a type is a renamed version of the other one) based on the type name
@@ -56,20 +55,24 @@ void check_func_call_signature(llvm::Value *func,
     auto provided = arglist[i]->getType();
     /*
      * Types in modules imported from files which are not the first appearances
-     * are renamed "original_type.xxx", so we have to create a pointer cast to the
-     * type in the function parameter list when the types in the function parameter
-     * are renamed.
+     * are renamed "original_type.xxx", so we have to create a pointer cast to
+     * the type in the function parameter list when the types in the function
+     * parameter are renamed.
      */
     if (required != provided) {
       bool is_same = true;
-      if (required->isPointerTy() && required->getPointerElementType()->isFunctionTy()) {
-        auto req_func = llvm::dyn_cast<llvm::FunctionType>(required->getPointerElementType());
-        auto prov_func = llvm::dyn_cast<llvm::FunctionType>(provided->getPointerElementType());
+      if (required->isPointerTy() &&
+          required->getPointerElementType()->isFunctionTy()) {
+        auto req_func = llvm::dyn_cast<llvm::FunctionType>(
+            required->getPointerElementType());
+        auto prov_func = llvm::dyn_cast<llvm::FunctionType>(
+            provided->getPointerElementType());
         if (req_func->getNumParams() != prov_func->getNumParams()) {
           is_same = false;
         }
         for (int j = 0; is_same && j < req_func->getNumParams(); j++) {
-          if (!is_same_type(req_func->getParamType(j), prov_func->getParamType(j))) {
+          if (!is_same_type(req_func->getParamType(j),
+                            prov_func->getParamType(j))) {
             is_same = false;
           }
         }

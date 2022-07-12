@@ -6,7 +6,7 @@ from .utils import get_field_info
 
 
 def _clamp_color_component(component):
-    if isinstance(component, int) :
+    if isinstance(component, int):
         return max(min(component, 255), 0.0) / 255.0
     elif isinstance(component, float):
         return max(min(float(component), 1.0), 0.0)

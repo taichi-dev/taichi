@@ -6,7 +6,8 @@ TI_UI_NAMESPACE_BEGIN
   TI_ERROR_IF(!config_.show_window, \
               "show_window must be True to use this method")
 
-WindowBase::WindowBase(AppConfig config) : config_(config), key_press_states_(1024) {
+WindowBase::WindowBase(AppConfig config)
+    : config_(config), key_press_states_(1024) {
   if (config_.show_window) {
     glfw_window_ = create_glfw_window_(config_.name, config_.width,
                                        config_.height, config_.vsync);
@@ -192,7 +193,8 @@ void WindowBase::mouse_button_callback(GLFWwindow *glfw_window,
     if (action == GLFW_PRESS) {
       window->events_.push_back({EventType::Press, button_id_to_name(button)});
     } else if (action == GLFW_RELEASE) {
-      window->events_.push_back({EventType::Release, button_id_to_name(button)});
+      window->events_.push_back(
+          {EventType::Release, button_id_to_name(button)});
     }
   } catch (const std::runtime_error &e) {
     TI_TRACE("Input: {}.", e.what());

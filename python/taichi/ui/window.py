@@ -151,8 +151,6 @@ class Window:
         """
         return self.window.destroy()
 
-
-
     def write_image(self, filename):
         """(Deprecated) See `imsave`."""
         return self.imsave(filename)

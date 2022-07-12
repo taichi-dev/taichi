@@ -2,10 +2,17 @@ from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiCompilationError
 from taichi.lang.matrix import Matrix, MatrixNdarray, MatrixType, VectorNdarray
+from taichi.lang.util import cook_dtype
 from taichi.types.annotations import template
 from taichi.types.ndarray_type import NdarrayType
 
 template_types = (NdarrayType, template)
+
+
+def check_type_match(lhs, rhs):
+    if cook_dtype(lhs) == cook_dtype(rhs):
+        return True
+    return False
 
 
 def produce_injected_args_from_template(kernel, template_args):
@@ -54,10 +61,13 @@ def produce_injected_args(kernel, symbolic_args=None):
                 raise TaichiCompilationError(
                     f'{field_dim} from Arg {arg.name} doesn\'t match kernel\'s annotated field_dim={anno.field_dim}'
                 )
-            if anno.dtype is not None and dtype != anno.dtype:
+
+            if anno.dtype is not None and not check_type_match(
+                    dtype, anno.dtype):
                 raise TaichiCompilationError(
                     f' Arg {arg.name}\'s dtype {dtype.to_string()} doesn\'t match kernel\'s annotated dtype={anno.dtype.to_string()}'
                 )
+
             if element_dim is None or element_dim == 0:
                 injected_args.append(
                     ScalarNdarray(dtype, (2, ) * anno.field_dim))
@@ -95,7 +105,7 @@ def produce_injected_args(kernel, symbolic_args=None):
             else:
                 dtype = anno
 
-            if dtype != anno:
+            if not check_type_match(dtype, anno):
                 raise TaichiCompilationError(
                     f' Arg {arg.name}\'s dtype {dtype.to_string()} doesn\'t match kernel\'s annotated dtype={anno.to_string()}'
                 )

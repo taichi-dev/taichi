@@ -40,6 +40,7 @@ TEST(LlvmAotTest, CpuKernel) {
   aot_params.executor_ = &exec;
   auto mod = cpu::make_aot_module(aot_params);
   auto *k_run = mod->get_kernel("run");
+
   RuntimeContext ctx;
   ctx.runtime = exec.get_llvm_runtime();
   ctx.set_arg(0, /*v=*/0);

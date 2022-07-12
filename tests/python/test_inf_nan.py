@@ -1,4 +1,5 @@
 import pytest
+
 import taichi as ti
 from taichi.math import inf, isinf, isnan, nan
 from tests import test_utils

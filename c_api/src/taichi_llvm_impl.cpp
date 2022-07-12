@@ -33,6 +33,19 @@ taichi::lang::Device &LlvmRuntime::get() {
   return *device;
 }
 
+taichi::lang::DeviceAllocation LlvmRuntime::allocate_memory(
+    const taichi::lang::Device::AllocParams &params) {
+  taichi::lang::CompileConfig *config = executor_->get_config();
+  taichi::lang::TaichiLLVMContext *tlctx =
+      executor_->get_llvm_context(config->arch);
+  taichi::lang::LLVMRuntime *llvm_runtime = executor_->get_llvm_runtime();
+  taichi::lang::LlvmDevice *llvm_device = executor_->llvm_device();
+
+  return llvm_device->allocate_memory_runtime(
+      {params, config->ndarray_use_cached_allocator, tlctx->runtime_jit_module,
+       llvm_runtime, result_buffer});
+}
+
 TiAotModule LlvmRuntime::load_aot_module(const char *module_path) {
   TI_NOT_IMPLEMENTED;
 }

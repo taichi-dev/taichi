@@ -65,6 +65,8 @@ class LlvmRuntimeExecutor {
 
   Device *get_compute_device();
 
+  LlvmDevice *llvm_device();
+
   void synchronize();
 
  private:
@@ -116,7 +118,6 @@ class LlvmRuntimeExecutor {
   /* -------------------------- */
   cuda::CudaDevice *cuda_device();
   cpu::CpuDevice *cpu_device();
-  LlvmDevice *llvm_device();
 
   void initialize_host();
 

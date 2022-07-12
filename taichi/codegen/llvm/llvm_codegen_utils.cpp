@@ -46,10 +46,10 @@ bool is_same_type(llvm::Type *required, llvm::Type *provided) {
     }
     return true;
   }
-  auto a_name = type_name(required);
-  auto b_name = type_name(provided);
-  int min_len = std::min(a_name.size(), b_name.size());
-  return a_name.substr(0, min_len) == b_name.substr(0, min_len);
+  auto req_name = type_name(required);
+  auto prov_name = type_name(provided);
+  int min_len = std::min(req_name.size(), prov_name.size());
+  return req_name.substr(0, min_len) == prov_name.substr(0, min_len);
 }
 
 void check_func_call_signature(llvm::Value *func,

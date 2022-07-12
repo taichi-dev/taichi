@@ -127,10 +127,9 @@ class LlvmOfflineCacheFileReader {
                              LlvmOfflineCache &&data,
                              LlvmOfflineCache::Format format);
 
-  std::unique_ptr<struct llvm::Module> load_module(
-      const std::string &path_prefix,
-      const std::string &key,
-      llvm::LLVMContext &llvm_ctx) const;
+  std::unique_ptr<llvm::Module> load_module(const std::string &path_prefix,
+                                            const std::string &key,
+                                            llvm::LLVMContext &llvm_ctx) const;
 
   std::string path_;
   LlvmOfflineCache data_;

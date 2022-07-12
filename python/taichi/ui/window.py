@@ -31,6 +31,12 @@ class Window:
         self.window = _ti_core.PyWindow(get_runtime().prog, name, res, vsync,
                                         show_window, package_path, ti_arch,
                                         is_packed)
+        self._frame_count = 0
+
+    @property
+    def frame_count(self) -> int:
+        """Get the number of presented frames."""
+        return self._frame_count
 
     @property
     def running(self):
@@ -120,9 +126,11 @@ class Window:
     def show(self):
         """Display this window.
         """
-        return self.window.show()
+        rv = self.window.show()
+        self._frame_count += 1
+        return rv
 
-    def write_image(self, filename):
+    def imsave(self, filename):
         """Save the window content to an image file.
 
         Args:
@@ -130,7 +138,7 @@ class Window:
         """
         return self.window.write_image(filename)
 
-    def get_image_buffer(self):
+    def get_image(self):
         """Get the window content to numpy array.
 
         Returns:
@@ -142,3 +150,13 @@ class Window:
         """Destroy this window. The window will be unavailable then.
         """
         return self.window.destroy()
+
+
+
+    def write_image(self, filename):
+        """(Deprecated) See `imsave`."""
+        return self.imsave(filename)
+
+    def get_image_buffer(self):
+        """(Deprecated) See `get_image`."""
+        return self.to_numpy()

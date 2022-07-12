@@ -120,7 +120,8 @@ def _test_python(args):
             pytest_args += ['--exitfirst']
         if args.timeout > 0:
             pytest_args += [
-                '-p', 'pytest_hardtle', f'--timeout={args.timeout}'
+                '--durations=15', '-p', 'pytest_hardtle',
+                f'--timeout={args.timeout}'
             ]
     except AttributeError:
         pass

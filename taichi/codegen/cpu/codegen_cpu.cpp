@@ -302,17 +302,39 @@ FunctionType CodeGenCPU::codegen() {
     kernel->lower(/*to_executable=*/false);
   }
 
-  CodeGenLLVMCPU gen(kernel, ir);
-  auto compiled_res = gen.run_compilation();
+  auto block = dynamic_cast<Block *>(kernel->ir.get());
+  auto &worker = get_llvm_program(kernel->program)->compilation_workers;
+  TI_ASSERT(block);
 
-  CPUModuleToFunctionConverter converter{gen.tlctx,
-                                         llvm_prog->get_runtime_executor()};
-  std::vector<LLVMCompiledData> data_list;
-  data_list.push_back(std::move(compiled_res));
+  auto &offloads = block->statements;
+  std::vector<LLVMCompiledData> data(offloads.size());
+  using TaskFunc = int32 (*)(void *);
+  std::vector<TaskFunc> task_funcs(offloads.size());
+  for (int i = 0; i < offloads.size(); i++) {
+    auto compile_func = [&, i] {
+      auto offload =
+          irpass::analysis::clone(offloads[i].get(), offloads[i]->get_kernel());
+      irpass::re_id(offload.get());
+      auto new_data = this->modulegen(nullptr, offload->as<OffloadedStmt>());
+      data[i].tasks = std::move(new_data.tasks);
+      data[i].module = std::move(new_data.module);
+    };
+    if (kernel->is_evaluator) {
+      compile_func();
+    } else {
+      worker.enqueue(compile_func);
+    }
+  }
   if (!kernel->is_evaluator) {
-    cache_module(kernel_key, data_list);
+    worker.flush();
   }
 
-  return converter.convert(this->kernel, std::move(data_list));
+  if (!kernel->is_evaluator) {
+    cache_module(kernel_key, data);
+  }
+
+  CPUModuleToFunctionConverter converter(
+      tlctx, get_llvm_program(prog)->get_runtime_executor());
+  return converter.convert(kernel, std::move(data));
 }
 TLANG_NAMESPACE_END

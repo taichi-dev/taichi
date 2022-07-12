@@ -2,22 +2,16 @@ from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiCompilationError
 from taichi.lang.matrix import Matrix, MatrixNdarray, MatrixType, VectorNdarray
-from taichi.types import f32, i32
+from taichi.lang.util import cook_dtype
 from taichi.types.annotations import template
 from taichi.types.ndarray_type import NdarrayType
 
 template_types = (NdarrayType, template)
 
-_aliased_type = {i32: int, int: i32, f32: float, float: f32}
-
 
 def check_type_match(lhs, rhs):
-    if lhs == rhs:
+    if cook_dtype(lhs) == cook_dtype(rhs):
         return True
-
-    if lhs in _aliased_type.keys() and _aliased_type[lhs] == rhs:
-        return True
-
     return False
 
 

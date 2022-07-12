@@ -14,6 +14,12 @@ def _test_inf_nan(dt):
         assert isinf(inf) == isinf(-inf) == True
         assert isinf(nan) == isinf(1.0) == isinf(-1) == False
 
+        v = ti.math.vec4(inf, -inf, 1.0, nan)
+        assert all(isinf(v) == [1, 1, 0, 0])
+
+        v = ti.math.vec4(nan, -nan, 1, inf)
+        assert all(isnan(v) == [1, 1, 0, 0])
+
     make_tests()
 
 

@@ -1,8 +1,12 @@
+
 #include "taichi_core_impl.h"
 #include "taichi_llvm_impl.h"
-#include "taichi/runtime/llvm/llvm_runtime_executor.h"
 
 #ifdef TI_WITH_LLVM
+
+#include "taichi/runtime/llvm/llvm_runtime_executor.h"
+#include "taichi/runtime/cpu/aot_module_loader_impl.h"
+#include "taichi/runtime/cuda/aot_module_loader_impl.h"
 
 namespace capi {
 
@@ -47,7 +51,26 @@ taichi::lang::DeviceAllocation LlvmRuntime::allocate_memory(
 }
 
 TiAotModule LlvmRuntime::load_aot_module(const char *module_path) {
-  TI_NOT_IMPLEMENTED;
+  auto *config = executor_->get_config();
+  std::unique_ptr<taichi::lang::aot::Module> aot_module{nullptr};
+
+  if (taichi::arch_is_cpu(config->arch)) {
+    taichi::lang::cpu::AotModuleParams aot_params;
+    aot_params.executor_ = executor_.get();
+    aot_params.module_path = module_path;
+    aot_module = taichi::lang::cpu::make_aot_module(aot_params);
+
+  } else {
+    TI_ASSERT(config->arch == taichi::Arch::cuda);
+    taichi::lang::cuda::AotModuleParams aot_params;
+    aot_params.executor_ = executor_.get();
+    aot_params.module_path = module_path;
+    aot_module = taichi::lang::cuda::make_aot_module(aot_params);
+  }
+
+  // Insert LLVMRuntime to RuntimeContext
+  executor_->prepare_runtime_context(&this->runtime_context_);
+  return (TiAotModule)(new AotModule(*this, std::move(aot_module)));
 }
 
 void LlvmRuntime::buffer_copy(const taichi::lang::DevicePtr &dst,
@@ -61,7 +84,7 @@ void LlvmRuntime::submit() {
 }
 
 void LlvmRuntime::wait() {
-  TI_NOT_IMPLEMENTED;
+  executor_->sychronize();
 }
 
 }  // namespace capi

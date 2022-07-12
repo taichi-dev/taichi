@@ -6,6 +6,8 @@
 #if defined(TI_WITH_LLVM)
 #include "taichi/codegen/cpu/codegen_cpu.h"
 #include "taichi/codegen/wasm/codegen_wasm.h"
+#include "taichi/runtime/llvm/llvm_offline_cache.h"
+#include "taichi/runtime/program_impls/llvm/llvm_program.h"
 #endif
 #if defined(TI_WITH_CUDA)
 #include "taichi/codegen/cuda/codegen_cuda.h"
@@ -52,6 +54,34 @@ std::unique_ptr<KernelCodeGen> KernelCodeGen::create(Arch arch,
 #endif
 }
 #ifdef TI_WITH_LLVM
+
+bool KernelCodeGen::maybe_read_compilation_from_cache(
+    const std::string &kernel_key,
+    std::vector<LLVMCompiledData> &data) {
+  const auto &config = prog->config;
+  auto reader =
+      LlvmOfflineCacheFileReader::make(config.offline_cache_file_path);
+  if (!reader) {
+    return false;
+  }
+
+  LlvmOfflineCache::KernelCacheData cache_data;
+  auto *tlctx = get_llvm_program(prog)->get_llvm_context(config.arch);
+  auto &llvm_ctx = *tlctx->get_this_thread_context();
+
+  if (!reader->get_kernel_cache(cache_data, kernel_key, llvm_ctx)) {
+    return false;
+  }
+  data.swap(cache_data.compiled_data_list);
+  kernel->set_from_offline_cache();
+  return true;
+}
+
+void KernelCodeGen::cache_module(const std::string &kernel_key,
+                                 const std::vector<LLVMCompiledData> &data) {
+  get_llvm_program(prog)->cache_kernel(kernel_key, data,
+                                       infer_launch_args(kernel));
+}
 
 ModuleToFunctionConverter::ModuleToFunctionConverter(
     TaichiLLVMContext *tlctx,

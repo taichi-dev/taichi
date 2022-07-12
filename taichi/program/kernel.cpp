@@ -454,4 +454,20 @@ bool Kernel::supports_lowering(Arch arch) {
   return arch_is_cpu(arch) || (arch == Arch::cuda) || (arch == Arch::metal);
 }
 
+void Kernel::offload_to_executable(IRNode *stmt) {
+  CurrentCallableGuard _(program, this);
+  auto config = program->config;
+  bool verbose = config.print_ir;
+  if ((is_accessor && !config.print_accessor_ir) ||
+      (is_evaluator && !config.print_evaluator_ir))
+    verbose = false;
+  irpass::offload_to_executable(
+      stmt, config, this, verbose,
+      /*determine_ad_stack_size=*/autodiff_mode == AutodiffMode::kReverse,
+      /*lower_global_access=*/true,
+      /*make_block_local=*/config.make_thread_local,
+      /*make_block_local=*/
+      is_extension_supported(config.arch, Extension::bls) &&
+          config.make_block_local);
+}
 TLANG_NAMESPACE_END

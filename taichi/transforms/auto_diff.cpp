@@ -1172,6 +1172,26 @@ class MakeDual : public ADTransform {
       accumulate(bin, div(dual(bin->lhs), bin->rhs));
       accumulate(bin, negate(div(mul(dual(bin->rhs), bin->lhs),
                                  mul(bin->rhs, bin->rhs))));
+    } else if (bin->op_type == BinaryOpType::atan2) {
+      auto numerator = add(sqr(bin->lhs), sqr(bin->rhs));
+      accumulate(bin, div(mul(bin->rhs, dual(bin->lhs)), numerator));
+      accumulate(bin, negate(div(mul(bin->lhs, dual(bin->rhs)), numerator)));
+    } else if (bin->op_type == BinaryOpType::pow) {
+      // d (x ^ y) = x ^ (y-1) * (y * dx + log(x) * x * dy)
+      auto common_coeff =
+          pow(bin->lhs, sub(bin->rhs, constant(1)));  // x ^ (y-1)
+      accumulate(bin, mul(dual(bin->lhs), mul(bin->rhs, common_coeff)));
+      accumulate(bin, mul(dual(bin->rhs),
+                          mul(log(bin->lhs), mul(bin->lhs, common_coeff))));
+    } else if (bin->op_type == BinaryOpType::min ||
+               bin->op_type == BinaryOpType::max) {
+      auto cmp = bin->op_type == BinaryOpType::min ? cmp_lt(bin->lhs, bin->rhs)
+                                                   : cmp_lt(bin->rhs, bin->lhs);
+      auto zero = insert<ConstStmt>(TypedConstant(bin->ret_type));
+      accumulate(bin, sel(cmp, dual(bin->lhs), zero));
+      accumulate(bin, sel(cmp, zero, dual(bin->rhs)));
+    } else if (bin->op_type == BinaryOpType::floordiv) {
+      // do nothing
     } else if (is_comparison(bin->op_type) || is_bit_op(bin->op_type)) {
       // do nothing
     } else {

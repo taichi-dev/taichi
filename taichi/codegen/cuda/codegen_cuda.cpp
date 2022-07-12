@@ -15,7 +15,7 @@
 #include "taichi/rhi/cuda/cuda_context.h"
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
 #include "taichi/util/action_recorder.h"
-
+#include "taichi/analysis/offline_cache_util.h"
 TLANG_NAMESPACE_BEGIN
 
 using namespace llvm;
@@ -29,21 +29,6 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
 
   CodeGenLLVMCUDA(Kernel *kernel, IRNode *ir = nullptr)
       : CodeGenLLVM(kernel, ir) {
-  }
-
-  bool supports_offline_cache() const override {
-    return true;
-  }
-
-  FunctionType gen() override {
-    auto compiled_res = run_compilation();
-
-    auto *llvm_prog = get_llvm_program(kernel->program);
-    CUDAModuleToFunctionConverter converter{tlctx,
-                                            llvm_prog->get_runtime_executor()};
-    std::vector<LLVMCompiledData> data;
-    data.push_back(std::move(compiled_res));
-    return converter.convert(this->kernel, std::move(data));
   }
 
   llvm::Value *create_print(std::string tag,
@@ -540,7 +525,9 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
   }
 
   llvm::Value *create_intrinsic_load(const DataType &dtype,
-                                     llvm::Value *data_ptr) {
+                                     llvm::Value *data_ptr) override {
+    // Issue an CUDA "__ldg" instruction so that data are cached in
+    // the CUDA read-only data cache.
     auto llvm_dtype = llvm_type(dtype);
     auto llvm_dtype_ptr = llvm::PointerType::get(llvm_type(dtype), 0);
     llvm::Intrinsic::ID intrin;
@@ -555,41 +542,12 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
   }
 
   void visit(GlobalLoadStmt *stmt) override {
-    if (auto get_ch = stmt->src->cast<GetChStmt>(); get_ch) {
-      bool should_cache_as_read_only = false;
-      if (current_offload->mem_access_opt.has_flag(
-              get_ch->output_snode, SNodeAccessFlag::read_only)) {
-        should_cache_as_read_only = true;
-      }
-      if (should_cache_as_read_only) {
-        auto dtype = stmt->ret_type;
-        if (auto ptr_type = stmt->src->ret_type->as<PointerType>();
-            ptr_type->is_bit_pointer()) {
-          // Bit pointer case.
-          auto val_type = ptr_type->get_pointee_type();
-          if (auto qit = val_type->cast<QuantIntType>()) {
-            dtype = get_ch->input_snode->physical_type;
-            auto [data_ptr, bit_offset] = load_bit_ptr(llvm_val[stmt->src]);
-            data_ptr = builder->CreateBitCast(data_ptr, llvm_ptr_type(dtype));
-            auto data = create_intrinsic_load(dtype, data_ptr);
-            llvm_val[stmt] = extract_quant_int(data, bit_offset, qit);
-          } else {
-            // TODO: support __ldg
-            TI_ASSERT(val_type->is<QuantFixedType>() ||
-                      val_type->is<QuantFloatType>());
-            llvm_val[stmt] = load_quant_fixed_or_quant_float(stmt->src);
-          }
-        } else {
-          // Byte pointer case.
-          // Issue an CUDA "__ldg" instruction so that data are cached in
-          // the CUDA read-only data cache.
-          llvm_val[stmt] = create_intrinsic_load(dtype, llvm_val[stmt->src]);
-        }
-      } else {
-        CodeGenLLVM::visit(stmt);
-      }
+    if (auto get_ch = stmt->src->cast<GetChStmt>()) {
+      bool should_cache_as_read_only = current_offload->mem_access_opt.has_flag(
+          get_ch->output_snode, SNodeAccessFlag::read_only);
+      create_global_load(stmt, should_cache_as_read_only);
     } else {
-      CodeGenLLVM::visit(stmt);
+      create_global_load(stmt, false);
     }
   }
 
@@ -764,7 +722,38 @@ static void set_arg_external_array(RuntimeContext *ctx,
 
 FunctionType CodeGenCUDA::codegen() {
   TI_AUTO_PROF
-  return CodeGenLLVMCUDA(kernel, ir).gen();
+  // TODO: move the offline cache part to the base class
+  auto *llvm_prog = get_llvm_program(prog);
+  auto *tlctx = llvm_prog->get_llvm_context(kernel->arch);
+  auto &config = prog->config;
+  std::string kernel_key = get_hashed_offline_cache_key(&config, kernel);
+  kernel->set_kernel_key_for_cache(kernel_key);
+  if (config.offline_cache && !config.async_mode &&
+      this->supports_offline_cache() && !kernel->is_evaluator) {
+    std::vector<LLVMCompiledData> res;
+    const bool ok = maybe_read_compilation_from_cache(kernel_key, res);
+    if (ok) {
+      CUDAModuleToFunctionConverter converter(
+          tlctx, get_llvm_program(prog)->get_runtime_executor());
+      return converter.convert(kernel, std::move(res));
+    }
+  }
+  if (!kernel->lowered()) {
+    kernel->lower(/*to_executable=*/false);
+  }
+
+  CodeGenLLVMCUDA gen(kernel, ir);
+  auto compiled_res = gen.run_compilation();
+
+  CUDAModuleToFunctionConverter converter{gen.tlctx,
+                                          llvm_prog->get_runtime_executor()};
+  std::vector<LLVMCompiledData> data_list;
+  data_list.push_back(std::move(compiled_res));
+  if (!kernel->is_evaluator) {
+    cache_module(kernel_key, data_list);
+  }
+
+  return converter.convert(this->kernel, std::move(data_list));
 }
 
 FunctionType CUDAModuleToFunctionConverter::convert(

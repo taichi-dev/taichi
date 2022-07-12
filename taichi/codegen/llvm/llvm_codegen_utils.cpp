@@ -6,7 +6,7 @@ namespace lang {
 std::string type_name(llvm::Type *type) {
   std::string type_name_str;
   llvm::raw_string_ostream rso(type_name_str);
-  type->print(rso, false, true);
+  type->print(rso, /*IsForDebug=*/false, /*NoDetails=*/true);
   return type_name_str;
 }
 

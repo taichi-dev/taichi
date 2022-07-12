@@ -43,6 +43,8 @@ void WindowBase::show() {
     frames_since_last_record_ = 0;
   }
 
+  // Avoid an ever expanding event record when its not used.
+  events_.clear();
   glfwPollEvents();
 }
 

@@ -704,13 +704,13 @@ def isinf(x):
        >>> @ti.kernel
        >>> def test():
        >>>     x = vec4(inf, -inf, nan, 1)
-       >>>     isinf(x)
+       >>>     ti.math.isinf(x)
        >>>
        >>> test()
        [1, 1, 0, 0]
 
     Returns:
-        For each element i of the result, returns `True` if x[i] is posititve or negative floating point infinity and `False` otherwise.
+        For each element i of the result, returns 1 if x[i] is posititve or negative floating point infinity and 0 otherwise.
     """
     ftype = impl.get_runtime().default_fp
     fx = ti.cast(x, ftype)
@@ -736,13 +736,13 @@ def isnan(x):
        >>> @ti.kernel
        >>> def test():
        >>>     x = vec4(nan, -nan, inf, 1)
-       >>>     isnan(x)
+       >>>     ti.math.isnan(x)
        >>>
        >>> test()
        [1, 1, 0, 0]
 
     Returns:
-        For each element i of the result, returns `True` if x[i] is posititve or negative floating point NaN (Not a Number) and `False` otherwise.
+        For each element i of the result, returns 1 if x[i] is posititve or negative floating point NaN (Not a Number) and 0 otherwise.
     """
     ftype = impl.get_runtime().default_fp
     fx = ti.cast(x, ftype)

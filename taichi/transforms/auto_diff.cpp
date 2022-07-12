@@ -1200,6 +1200,15 @@ class MakeDual : public ADTransform {
     }
   }
 
+  void visit(TernaryOpStmt *stmt) override {
+    TI_ASSERT(stmt->op_type == TernaryOpType::select);
+    auto zero = insert<ConstStmt>(TypedConstant(stmt->ret_type));
+    accumulate(stmt, insert<TernaryOpStmt>(TernaryOpType::select, stmt->op1,
+                                           load(dual(stmt->op2)), zero));
+    accumulate(stmt, insert<TernaryOpStmt>(TernaryOpType::select, stmt->op1,
+                                           zero, load(dual(stmt->op3))));
+  }
+
   void visit(IfStmt *if_stmt) override {
     if (if_stmt->true_statements) {
       std::vector<Stmt *> true_statements;

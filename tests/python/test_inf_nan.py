@@ -1,11 +1,10 @@
+import pytest
 import taichi as ti
 from taichi.math import inf, isinf, isnan, nan
 from tests import test_utils
 
 
 def _test_inf_nan(dt):
-    ti.init(default_fp=dt)
-
     @ti.kernel
     def make_tests():
         assert isnan(nan) == isnan(-nan) == True
@@ -18,11 +17,7 @@ def _test_inf_nan(dt):
     make_tests()
 
 
-@test_utils.test(default_fp=ti.f32)
-def test_inf_nan_f32():
-    _test_inf_nan(ti.f32)
-
-
-@test_utils.test(default_fp=ti.f64)
-def test_inf_nan_f64():
-    _test_inf_nan(ti.f64)
+@pytest.mark.parametrize('dt', [ti.f32, ti.f64])
+@test_utils.test()
+def test_inf_nan_f32(dt):
+    _test_inf_nan(dt)

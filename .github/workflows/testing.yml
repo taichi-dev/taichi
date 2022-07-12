@@ -261,6 +261,13 @@ jobs:
   build_and_test_cpu_windows:
     name: Build and Test Windows (CPU)
     needs: check_files
+    strategy:
+      matrix:
+        include:
+          - os: windows-2019
+            llvmVer : '15'
+          - os: windows-2019
+            llvmVer : '10'
     timeout-minutes: 90
     runs-on: windows-2019
     permissions:
@@ -298,7 +305,7 @@ jobs:
           fi
           docker create --name taichi_build_test \
             ghcr.io/taichi-dev/taichidev-cpu-windows:v0.0.1 \
-            C:/taichi/.github/workflows/scripts/win_build_test_cpu.ps1
+            C:/taichi/.github/workflows/scripts/win_build_test_cpu.ps1 -llvmVer ${{ matrix.llvmVer }}
           tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx | docker cp - taichi_build_test:C:/
           docker start -a taichi_build_test
           rm -rf ccache_cache
@@ -317,7 +324,6 @@ jobs:
       #     name: broken-wheel
       #     path: dist/*
       #     retention-days: 7
-
 
   build_and_test_gpu_linux:
     name: Build and Test (GPU)

@@ -195,7 +195,7 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
     TI_ASSERT(v.created_at);
     TI_ASSERT(v.last_used_at);
     v.size = size;
-    TI_ASSERT(v.size > 0);
+    TI_ASSERT(v.compiled_data_list.empty() || v.size > 0);
     new_kernels_size += v.size;
   }
 

@@ -19,9 +19,16 @@ bool is_same_type(llvm::Type *a, llvm::Type *b) {
   if (a == b) {
     return true;
   }
+  if (a->isPointerTy() != b->isPointerTy()) {
+    return false;
+  }
+  if (a->isPointerTy()) {
+    a = a->getPointerElementType();
+    b = b->getPointerElementType();
+  }
   auto a_name = type_name(a);
   auto b_name = type_name(b);
-  int min_len = std::min(a_name.size(), b_name.size()) - 1;
+  int min_len = std::min(a_name.size(), b_name.size());
   return a_name.substr(0, min_len) == b_name.substr(0, min_len);
 }
 

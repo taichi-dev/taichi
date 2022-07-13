@@ -607,6 +607,8 @@ class ASTTransformer(Builder):
         if node.attr.id == "append":
             if isinstance(node.value, ast.Subscript):
                 x = build_stmt(ctx, node.value.value)
+                if not isinstance(x, SNode) and (x.ptr.type != _ti_core.SNodeType.dynamic):
+                    raise TaichiSyntaxError(f"In Taichi scope you can only call `append` for dynamic SNodes, but {x} is encountered")
                 slice = build_stmt(ctx, node.value.slice)
                 node.ptr = lambda val: append(x.parent(), slice, val)
 

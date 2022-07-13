@@ -95,7 +95,6 @@ file(GLOB TAICHI_CORE_SOURCE
     "taichi/analysis/*.cpp" "taichi/analysis/*.h" #IR
     "taichi/aot/*.cpp" "taichi/aot/*.h" #RT?
     "taichi/codegen/*.cpp" "taichi/codegen/*.h" #CODEGEN
-    "taichi/codegen/spirv/*" #CODEGEN
     "taichi/ir/*"
     "taichi/jit/*"
     "taichi/math/*"
@@ -379,12 +378,10 @@ endif()
 set(SPIRV_SKIP_EXECUTABLES true)
 set(SPIRV-Headers_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/SPIRV-Headers)
 add_subdirectory(external/SPIRV-Tools)
-# NOTE: SPIRV-Tools-opt must come before SPIRV-Tools
-# https://github.com/KhronosGroup/SPIRV-Tools/issues/1569#issuecomment-390250792
-target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE SPIRV-Tools-opt ${SPIRV_TOOLS})
+add_subdirectory(taichi/codegen/spirv)
+target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE spirv_codegen)
 
-target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Headers/include)
-target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Reflect)
+
 
 add_subdirectory(taichi/runtime/gfx)
 target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE gfx_runtime)

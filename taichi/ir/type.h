@@ -271,11 +271,11 @@ class QuantFloatType : public Type {
 class BitStructType : public Type {
  public:
   BitStructType(PrimitiveType *physical_type,
-                std::vector<Type *> member_types,
-                std::vector<int> member_bit_offsets,
-                std::vector<bool> member_owns_shared_exponents,
-                std::vector<int> member_exponents,
-                std::vector<std::vector<int>> member_exponent_users);
+                const std::vector<Type *> &member_types,
+                const std::vector<int> &member_bit_offsets,
+                const std::vector<bool> &member_owns_shared_exponents,
+                const std::vector<int> &member_exponents,
+                const std::vector<std::vector<int>> &member_exponent_users);
 
   std::string to_string() const override;
 

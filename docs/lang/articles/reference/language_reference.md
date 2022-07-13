@@ -21,7 +21,7 @@ article. You can clearly determine a certain behavior is *correct*, *buggy*, or
 ## Introduction
 
 Taichi is a domain-specific language embedded in Python.
-[Kernels and functions](../basic/syntax.md) clearly defines the boundary between
+[Kernels and functions](../kernels/syntax.md) clearly defines the boundary between
 the Taichi language and the Python language - code in the Taichi scope is
 treated as the former, while code in the Python scope is treated as the latter.
 It should be emphasized that this article is about *the Taichi language*.
@@ -284,7 +284,7 @@ positional_item      ::= assignment_expression | "*" expression
 ```
 
 The `primary` must be evaluated to one of:
-- A [Taichi function](../basic/syntax.md#taichi-function).
+- A [Taichi function](../kernels/syntax.md#taichi-function).
 - A [Taichi builtin function](./operator.md#other-arithmetic-functions).
 - A Taichi primitive type, which serves as a type annotation for a literal. In this case, the `positional_arguments` must be evaluated to a single Python value, and the Python value will be turned into a Taichi value with that annotated type.
 - A Python callable object. If not inside a [static expression](#static-expressions), a warning is produced.

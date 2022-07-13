@@ -1,11 +1,11 @@
 ---
-sidebar_position: 2
+sidebar_position: 1
 
 ---
 
 # Type system
 
-Taichi supports two data types in the [Taichi scope](./syntax.md#taichi-scope): primitive type and compound type.
+Taichi supports two data types in the [Taichi scope](./kernels/syntax.md#taichi-scope): primitive type and compound type.
 
 - Primitive types: Various commonly-used numerical data types, such as `int32`, `uint8`, and `float64`
 - Compound types: User-defined data types, which comprise multiple members.

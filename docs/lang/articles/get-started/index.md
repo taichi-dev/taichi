@@ -173,7 +173,7 @@ Taichi **kernels** are defined with the decorator `@ti.kernel`. They can be call
 
 Taichi **functions** are defined with the decorator `@ti.func`. They can *only* be called by Taichi kernels or other Taichi functions.
 
-See [syntax](../basic/syntax.md) for more details about Taichi kernels and functions.
+See [syntax](../kernels/syntax.md) for more details about Taichi kernels and functions.
 
 The language used in Taichi kernels and functions looks exactly like Python, yet the Taichi frontend compiler converts it into a language
 that is **compiled, statically-typed, lexically-scoped, parallel and differentiable**.

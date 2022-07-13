@@ -405,7 +405,7 @@ jobs:
           docker create --user dev --name taichi_test \
             --gpus 'all,"capabilities=graphics,utility,display,video,compute"' \
             -v /tmp/.X11-unix:/tmp/.X11-unix \
-            -e DISPLAY -e PY -e GPU_TEST -e TI_WANTED_ARCHS \
+            -e DISPLAY -e PY -e GPU_TEST -e TI_WANTED_ARCHS -e TI_RUN_RELEASE_TESTS \
              registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.1 \
              /home/dev/unix_test.sh
           docker cp .github/workflows/scripts/unix_test.sh taichi_test:/home/dev/unix_test.sh

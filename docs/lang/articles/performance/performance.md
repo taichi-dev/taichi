@@ -48,7 +48,7 @@ def fill():
 ```
 
 :::note
-For **performance profiling** utilities, please see [Profiler section of the Contribution Guide](./profiler.md).
+For **performance profiling** utilities, please see [Profiler](./profiler.md).
 :::
 
 ### Background: Thread hierarchy of GPUs

@@ -619,49 +619,46 @@ void export_lang(py::module &m) {
       .def("seq", &GraphBuilder::seq, py::return_value_policy::reference);
 
   py::class_<aot::CompiledGraph>(m, "CompiledGraph")
-      .def("run", [](aot::CompiledGraph *self, const py::dict &arg_ptrs,
-                     const py::dict &arg_ints, const py::dict &arg_floats,
-                     const py::dict &arg_doubles) {
+      .def("run", [](aot::CompiledGraph *self, const py::dict &pyargs) {
         std::unordered_map<std::string, aot::IValue> args;
-        for (auto it : arg_ptrs) {
-          auto &val = it.second.cast<Ndarray &>();
-          args.insert(
-              {py::cast<std::string>(it.first), aot::IValue::create(val)});
-        }
-        for (auto it : arg_ints) {
+        for (auto it : pyargs) {
           std::string arg_name = py::cast<std::string>(it.first);
-          auto expected_dtype = self->args[arg_name].dtype();
-          if (expected_dtype == PrimitiveType::i32) {
+          auto tag = self->args[arg_name].tag;
+          if (tag == aot::ArgKind::kNdarray) {
+            auto &val = it.second.cast<Ndarray &>();
             args.insert(
-                {arg_name, aot::IValue::create(py::cast<int>(it.second))});
-          } else if (expected_dtype == PrimitiveType::i64) {
-            args.insert(
-                {arg_name, aot::IValue::create(py::cast<int64>(it.second))});
-          } else if (expected_dtype == PrimitiveType::i16) {
-            args.insert(
-                {arg_name, aot::IValue::create(py::cast<int16>(it.second))});
-          } else if (expected_dtype == PrimitiveType::u32) {
-            args.insert(
-                {arg_name, aot::IValue::create(py::cast<uint32>(it.second))});
-          } else if (expected_dtype == PrimitiveType::u64) {
-            args.insert(
-                {arg_name, aot::IValue::create(py::cast<uint64>(it.second))});
-          } else if (expected_dtype == PrimitiveType::u16) {
-            args.insert(
-                {arg_name, aot::IValue::create(py::cast<uint16>(it.second))});
-          } else {
-            TI_NOT_IMPLEMENTED;
-          }
-        }
-        for (auto it : arg_floats) {
-          std::string arg_name = py::cast<std::string>(it.first);
-          auto expected_dtype = self->args[arg_name].dtype();
-          if (expected_dtype == PrimitiveType::f32) {
-            args.insert(
-                {arg_name, aot::IValue::create(py::cast<float>(it.second))});
-          } else if (expected_dtype == PrimitiveType::f64) {
-            args.insert(
-                {arg_name, aot::IValue::create(py::cast<double>(it.second))});
+                {py::cast<std::string>(it.first), aot::IValue::create(val)});
+          } else if (tag == aot::ArgKind::kScalar ||
+                     tag == aot::ArgKind::kMatrix) {
+            std::string arg_name = py::cast<std::string>(it.first);
+            auto expected_dtype = self->args[arg_name].dtype();
+            if (expected_dtype == PrimitiveType::i32) {
+              args.insert(
+                  {arg_name, aot::IValue::create(py::cast<int>(it.second))});
+            } else if (expected_dtype == PrimitiveType::i64) {
+              args.insert(
+                  {arg_name, aot::IValue::create(py::cast<int64>(it.second))});
+            } else if (expected_dtype == PrimitiveType::f32) {
+              args.insert(
+                  {arg_name, aot::IValue::create(py::cast<float>(it.second))});
+            } else if (expected_dtype == PrimitiveType::f64) {
+              args.insert(
+                  {arg_name, aot::IValue::create(py::cast<double>(it.second))});
+            } else if (expected_dtype == PrimitiveType::i16) {
+              args.insert(
+                  {arg_name, aot::IValue::create(py::cast<int16>(it.second))});
+            } else if (expected_dtype == PrimitiveType::u32) {
+              args.insert(
+                  {arg_name, aot::IValue::create(py::cast<uint32>(it.second))});
+            } else if (expected_dtype == PrimitiveType::u64) {
+              args.insert(
+                  {arg_name, aot::IValue::create(py::cast<uint64>(it.second))});
+            } else if (expected_dtype == PrimitiveType::u16) {
+              args.insert(
+                  {arg_name, aot::IValue::create(py::cast<uint16>(it.second))});
+            } else {
+              TI_NOT_IMPLEMENTED;
+            }
           } else {
             TI_NOT_IMPLEMENTED;
           }

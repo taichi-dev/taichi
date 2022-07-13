@@ -12,8 +12,12 @@ std::string type_name(llvm::Type *type) {
 
 /*
  * Determine whether two types are the same
- * (required type is required renamed version of the other one) based on the
+ * (a type is a renamed version of the other one) based on the
  * type name. Check recursively if the types are function types.
+ *
+ * The name of a type imported multiple times is added a suffix starting with a "."
+ * following by a number. For example, "RuntimeContext" may be renamed to names
+ * like "RuntimeContext.0" and "RuntimeContext.8".
  */
 bool is_same_type(llvm::Type *required, llvm::Type *provided) {
   if (required == provided) {

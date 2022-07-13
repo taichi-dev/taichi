@@ -63,6 +63,23 @@ uint32_t SwapChain::height() {
 taichi::lang::Surface &SwapChain::surface() {
   return *(surface_.get());
 }
+std::vector<float32> &SwapChain::dump_depth_buffer() {
+  auto [w, h] = surface_->get_size();
+  curr_width_ = w;
+  curr_height_ = h;
+  depth_buffer_data_.clear();
+  depth_buffer_data_.resize(w * h);
+  DeviceAllocation depth_buffer = surface_->get_depth_data(depth_allocation_);
+  float *ptr = (float *)app_context_->device().map(depth_buffer);
+
+  for (int i = 0; i < w; i++) {
+    for (int j = 0; j < h; j++) {
+        depth_buffer_data_[i * h + (h - j - 1)] = ptr[j * w + i];
+    }
+  }
+  app_context_->device().unmap(depth_buffer);
+  return depth_buffer_data_;
+}
 std::vector<uint32_t> &SwapChain::dump_image_buffer() {
   auto [w, h] = surface_->get_size();
   curr_width_ = w;

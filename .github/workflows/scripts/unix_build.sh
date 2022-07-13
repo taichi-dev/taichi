@@ -66,8 +66,8 @@ build_taichi_wheel() {
     fi
     python3 misc/make_changelog.py origin/master ./ True
 
-    CMAKE_ARGS="TAICHI_CMAKE_ARGS=\"-DTI_WITH_C_API=ON\""
-    env $CMAKE_ARGS python3 setup.py $PROJECT_TAGS bdist_wheel $EXTRA_ARGS
+    TAICHI_CMAKE_ARGS="${TAICHI_CMAKE_ARGS} -DTI_WITH_C_API=ON"
+    exec env TAICHI_CMAKE_ARGS="${TAICHI_CMAKE_ARGS}" python3 setup.py $PROJECT_TAGS bdist_wheel $EXTRA_ARGS
     sccache -s
 }
 

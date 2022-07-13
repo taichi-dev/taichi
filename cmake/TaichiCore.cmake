@@ -96,7 +96,6 @@ file(GLOB TAICHI_CORE_SOURCE
     "taichi/aot/*.cpp" "taichi/aot/*.h" #RT?
     "taichi/codegen/*.cpp" "taichi/codegen/*.h" #CODEGEN
     "taichi/codegen/spirv/*" #CODEGEN
-    "taichi/common/*"
     "taichi/ir/*"
     "taichi/jit/*"
     "taichi/math/*"
@@ -250,6 +249,11 @@ if(DEFINED ENV{LLVM_DIR})
     message("Getting LLVM_DIR=${LLVM_DIR} from the environment variable")
 endif()
 
+
+add_subdirectory(taichi/common)
+target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE taichi_common)
+
+
 add_subdirectory(taichi/rhi/interop)
 target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE interop_rhi)
 
@@ -316,7 +320,6 @@ if(TI_WITH_LLVM)
     add_subdirectory(taichi/runtime/llvm)
     add_subdirectory(taichi/runtime/program_impls/llvm)
 
-    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE llvm_rhi)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE llvm_codegen)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE llvm_runtime)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE llvm_program_impl)

@@ -79,10 +79,12 @@ void check_func_call_signature(llvm::Value *func,
     auto required = func_type->getFunctionParamType(i);
     auto provided = arglist[i]->getType();
     /*
-     * Types in modules imported from files which are not the first appearances
-     * are renamed "original_type.xxx", so we have to create a pointer cast to
-     * the type in the function parameter list when the types in the function
-     * parameter are renamed.
+     * When importing a module from file, the imported `llvm::Type`s can get
+     * conflict with the same type in the llvm::Context. In such scenario,
+     * the imported types will be renamed from "original_type" to
+     * "original_type.xxx", making them separate types in essence.
+     * To make the types of the argument and parameter the same,
+     * a pointer cast must be performed.
      */
     if (required != provided) {
       if (is_same_type(required, provided)) {

@@ -1,8 +1,8 @@
 ---
-sidebar_position: 1
+sidebar_position: 3
 ---
 
-# Export your results
+# Export Your Results
 
 Taichi has functions that help you **export visual results to images or
 videos**. This tutorial demonstrates how to use them step by step.
@@ -50,10 +50,7 @@ for i in range(iterations):
     gui.show(filename)  # export and show in GUI
 ```
 
-- After running the code above, you will get a series of images in the
-  current folder.
-- To compose these images into a single `mp4` or `gif` file, see
-  [Converting PNGs to video](../utilities/cli_utilities.md#converting-pngs-to-video).
+After running the code above, you will get a series of images in the current folder.
 
 ### Export images using `ti.tools.imwrite`
 
@@ -94,13 +91,27 @@ print(f'The image has been saved to {filename}')
 :::note
 All Taichi fields have their own data types, such as `ti.u8` and
 `ti.f32`. Different data types can lead to different behaviors of
-`ti.tools.imwrite`. Please check out [GUI system](../utilities/gui_system.md) for
+`ti.tools.imwrite`. Please check out [GUI system](./gui_system.md) for
 more details.
 :::
 
 - Taichi offers other helper functions that read and show images in
   addition to `ti.tools.imwrite`. They are also demonstrated in
-  [GUI system](../utilities/gui_system.md).
+  [GUI system](./gui_system.md).
+
+### Convert PNGs to video
+
+Sometimes it's convenient to convert a series of `png` files into a
+single video when showing your result to others.
+
+For example, suppose you have `000000.png`, `000001.png`, \... generated
+according to [Export your results](../visualization/export_results.md) in the
+**current working directory**.
+
+Then you could run `ti video` to create a file `video.mp4` containing
+all these images as frames (sorted by file name).
+
+Use `ti video -f40` for creating a video with 40 FPS.
 
 ## Export videos
 
@@ -144,6 +155,15 @@ print(f'GIF video is saved to {video_manager.get_output_filename(".gif")}')
 
 After running the code above, you will find the output videos in the
 `./results/` folder.
+
+### Convert video to GIF
+
+Sometimes you may need `gif` images to post a result on forums.
+
+To do so, run `ti gif -i video.mp4`, where `video.mp4` is the
+`mp4` video (generated with instructions above).
+
+Use `ti gif -i video.mp4 -f40` to create a GIF at 40 FPS.
 
 ## Install ffmpeg
 

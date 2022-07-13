@@ -1,8 +1,8 @@
 ---
-sidebar_position: 7
+sidebar_position: 1
 ---
 
-# Differentiable programming
+# Differentiable Programming
 
 ## Introduction
 

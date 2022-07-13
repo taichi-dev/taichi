@@ -2,7 +2,7 @@
 sidebar_position: 1
 ---
 
-# GUI system
+# GUI System
 
 Taichi has a built-in GUI system for visualizing simulation data in data containers like Taichi fields or NumPy ndarrays. It also has limited support for drawing primitive geometries.
 

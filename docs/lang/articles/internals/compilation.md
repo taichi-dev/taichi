@@ -2,7 +2,7 @@
 sidebar_position: 2
 ---
 
-# Life of a Taichi kernel
+# Life of a Taichi Kernel
 
 Sometimes it is helpful to understand the life cycle of a Taichi kernel.
 In short, compilation will only happen on the first invocation of an

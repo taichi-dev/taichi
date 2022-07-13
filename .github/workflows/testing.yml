@@ -160,6 +160,7 @@ jobs:
           fi
           docker create --user dev --name taichi_test -e PY -e TI_WANTED_ARCHS ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.3.2 /home/dev/unix_test.sh
           docker cp .github/workflows/scripts/unix_test.sh taichi_test:/home/dev/unix_test.sh
+          docker cp .github/workflows/scripts/libcommon.sh taichi_test:/home/dev/libcommon.sh
           docker cp shared/dist/ taichi_test:/home/dev/
           docker cp shared/build/ taichi_test:/home/dev/
           docker cp ./requirements_test.txt taichi_test:/home/dev/requirements_test.txt
@@ -416,6 +417,7 @@ jobs:
              registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.1 \
              /home/dev/unix_test.sh
           docker cp .github/workflows/scripts/unix_test.sh taichi_test:/home/dev/unix_test.sh
+          docker cp .github/workflows/scripts/libcommon.sh taichi_test:/home/dev/libcommon.sh
           docker cp shared/dist/ taichi_test:/home/dev/
           docker cp shared/build/ taichi_test:/home/dev/
           docker cp pyproject.toml taichi_test:/home/dev/
@@ -630,3 +632,79 @@ jobs:
         if: always()
         run: |
           docker rm taichi_build_desktop -f
+
+  build_android_demos:
+    name: Build Android Demos
+    needs: check_files
+    runs-on: [self-hosted, Linux, cn]
+    timeout-minutes: 60
+    permissions:
+      packages: read
+      contents: read
+    env:
+      REDIS_HOST: 172.16.5.8
+    steps:
+      - uses: actions/checkout@v2
+        name: Checkout taichi
+        with:
+          submodules: "recursive"
+
+      - name: Build For Android
+        run: |
+          docker rm taichi_build_android -f
+          mkdir -p ~/build-cache/pip; chmod 0777 ~/build-cache/pip
+          chown -R 1000:1000 .
+          docker run -i --user dev --name taichi_build_android \
+            -e SCCACHE_ROOT=/var/lib/sccache \
+            -v $(pwd):/home/dev/taichi \
+            -v $(readlink -f ~/sccache):/var/lib/sccache \
+            -v $(readlink -f ~/git-cache):/var/lib/git-cache \
+            -v $(readlink -f ~/build-cache)/pip:/home/dev/.cache/pip \
+            registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.5 \
+            /home/dev/taichi/.github/workflows/scripts/android-build.sh build-ext
+
+          redis-cli --raw -h $REDIS_HOST get android-build-credentials >> $GITHUB_ENV
+
+      - name: Test For Android AOT (export core)
+        run: |
+          docker rm taichi_test_android -f
+          mkdir -p ~/build-cache/dot-gradle; chmod 0777 ~/build-cache/dot-gradle
+          mkdir -p ~/build-cache/pip; chmod 0777 ~/build-cache/pip
+          chown -R 1000:1000 .
+          docker run -i --user dev --name taichi_test_android \
+            -e REDIS_HOST \
+            -v $(pwd):/home/dev/taichi \
+            -v $(readlink -f ~/build-cache)/pip:/home/dev/.cache/pip \
+            -v $(readlink -f ~/build-cache)/dot-gradle:/home/dev/.gradle \
+            registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.5 \
+            /home/dev/taichi/.github/workflows/scripts/aot-demo.sh build-and-smoke-test-android-aot-demo
+
+      - name: Prepare Unity Build Environment
+        run: |
+          chown -R 1000:1000 .
+          docker run -i --rm --user dev \
+            -v $(pwd):/home/dev/taichi \
+            -v $(readlink -f ~/git-cache):/var/lib/git-cache \
+            -v $(readlink -f ~/build-cache)/pip:/home/dev/.cache/pip \
+            registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.5 \
+            /home/dev/taichi/.github/workflows/scripts/aot-demo.sh prepare-unity-build-env
+
+      - name: Build Taichi-UnityExample
+        run: |
+          docker run -i --rm --user dev \
+            -v $(pwd):/home/dev/taichi \
+            -v $(readlink -f ~/git-cache):/var/lib/git-cache \
+            -v $(readlink -f ~/build-cache)/pip:/home/dev/.cache/pip \
+            -v $(readlink -f ~/build-cache)/dot-gradle:/home/dev/.gradle \
+            registry.taichigraphics.com/unityci-editor:ubuntu-2020.3.14f1-android-1-with-secret-sauce \
+            /home/dev/taichi/.github/workflows/scripts/aot-demo.sh build-unity-demo
+
+      - name: Run Taichi-UnityExample (C-API)
+        run: |
+          chown -R 1000:1000 .
+          docker run -i --rm --user dev \
+            -v $(pwd):/home/dev/taichi \
+            -v $(readlink -f ~/git-cache):/var/lib/git-cache \
+            -e REDIS_HOST \
+            registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.5 \
+            /home/dev/taichi/.github/workflows/scripts/aot-demo.sh smoke-test-unity-demo

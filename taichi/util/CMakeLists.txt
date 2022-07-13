@@ -21,6 +21,7 @@ target_include_directories(taichi_util
     ${PROJECT_SOURCE_DIR}
     ${PROJECT_SOURCE_DIR}/external/include
     ${PROJECT_SOURCE_DIR}/external/eigen
+    ${LLVM_INCLUDE_DIRS}
   )
 
 target_link_libraries(taichi_util PUBLIC taichi_common)

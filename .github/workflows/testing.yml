@@ -420,6 +420,7 @@ jobs:
           GPU_TEST: ON
           TI_WANTED_ARCHS: 'cpu,cuda,vulkan,opengl'
           TI_DEVICE_MEMORY_GB: '0.7'
+          TI_RUN_RELEASE_TESTS: '1'
 
 
       - name: clean docker container
@@ -488,6 +489,7 @@ jobs:
           TI_CI: 1
           PYTHON: '3.7'
           TI_DEVICE_MEMORY_GB: '0.7'
+          TI_RUN_RELEASE_TESTS: '1'
 
       - name: Save wheel if test failed
         if: failure() && steps.test.conclusion == 'failure'
@@ -550,6 +552,7 @@ jobs:
           PY: ${{ matrix.python }}
           PLATFORM: 'm1'
           TI_CI: 1
+          TI_RUN_RELEASE_TESTS: '1'
 
       - name: Save wheel if test failed
         if: failure() && steps.test.conclusion == 'failure'

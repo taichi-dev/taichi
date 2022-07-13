@@ -50,18 +50,19 @@ ti diagnose
 ti changelog
 echo "wanted archs: $TI_WANTED_ARCHS"
 
-# release tests
-python3 -m pip install PyYAML
-git clone https://github.com/taichi-dev/taichi-release-tests
-mkdir -p repos/taichi/python/taichi
-EXAMPLES=$(cat <<EOF | python3 | tail -n 1
+if [ "$TI_RUN_RELEASE_TESTS" -eq "1" ]; then
+    python3 -m pip install PyYAML
+    git clone https://github.com/taichi-dev/taichi-release-tests
+    mkdir -p repos/taichi/python/taichi
+    EXAMPLES=$(cat <<EOF | python3 | tail -n 1
 import taichi.examples
 print(taichi.examples.__path__[0])
 EOF
 )
-ln -sf $EXAMPLES repos/taichi/python/taichi/examples
-ln -sf taichi-release-tests/truths truths
-python3 taichi-release-tests/run.py --log=DEBUG --runners 1 taichi-release-tests/timelines
+    ln -sf $EXAMPLES repos/taichi/python/taichi/examples
+    ln -sf taichi-release-tests/truths truths
+    python3 taichi-release-tests/run.py --log=DEBUG --runners 1 taichi-release-tests/timelines
+fi
 
 python3 tests/run_tests.py --cpp
 

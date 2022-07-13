@@ -249,8 +249,6 @@ endif()
 add_subdirectory(taichi/common)
 target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE taichi_common)
 
-add_subdirectory(taichi/util)
-target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE taichi_util)
 
 add_subdirectory(taichi/rhi/interop)
 target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE interop_rhi)
@@ -328,6 +326,10 @@ if(TI_WITH_LLVM)
     add_subdirectory(taichi/runtime/wasm)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE wasm_runtime)
 endif()
+
+
+add_subdirectory(taichi/util)
+target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE taichi_util)
 
 if (TI_WITH_CUDA_TOOLKIT)
     if("$ENV{CUDA_TOOLKIT_ROOT_DIR}" STREQUAL "")

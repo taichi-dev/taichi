@@ -27,6 +27,8 @@ class Runtime {
   virtual taichi::lang::Device &get() = 0;
 
   virtual TiAotModule load_aot_module(const char *module_path) = 0;
+  virtual taichi::lang::DeviceAllocation allocate_memory(
+      const taichi::lang::Device::AllocParams &params);
   virtual void buffer_copy(const taichi::lang::DevicePtr &dst,
                            const taichi::lang::DevicePtr &src,
                            size_t size) = 0;
@@ -54,12 +56,15 @@ class AotModule {
 
 namespace {
 
-taichi::lang::DeviceAllocation devmem2devalloc(Runtime &runtime,
-                                               TiMemory devmem) {
+[[maybe_unused]] taichi::lang::DeviceAllocation devmem2devalloc(
+    Runtime &runtime,
+    TiMemory devmem) {
   return taichi::lang::DeviceAllocation{
       &runtime.get(), (taichi::lang::DeviceAllocationId)((size_t)devmem - 1)};
 }
-TiMemory devalloc2devmem(const taichi::lang::DeviceAllocation &devalloc) {
+
+[[maybe_unused]] TiMemory devalloc2devmem(
+    const taichi::lang::DeviceAllocation &devalloc) {
   return (TiMemory)((size_t)devalloc.alloc_id + 1);
 }
 

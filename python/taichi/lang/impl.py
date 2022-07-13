@@ -99,7 +99,7 @@ def begin_frontend_if(ast_builder, cond):
 
 
 @taichi_scope
-def subscript(value, *_indices, skip_reordered=False):
+def subscript(value, *_indices, skip_reordered=False, get_ref=False):
     if isinstance(value, np.ndarray):
         return value.__getitem__(_indices)
 
@@ -131,7 +131,7 @@ def subscript(value, *_indices, skip_reordered=False):
         index_dim = indices_expr_group.size()
 
     if is_taichi_class(value):
-        return value._subscript(*_indices)
+        return value._subscript(*_indices, get_ref=get_ref)
     if isinstance(value, MeshElementFieldProxy):
         return value.subscript(*_indices)
     if isinstance(value, MeshRelationAccessProxy):

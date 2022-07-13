@@ -58,7 +58,7 @@ CompileConfig::CompileConfig() {
   print_kernel_llvm_ir = false;
   print_kernel_nvptx = false;
   print_kernel_llvm_ir_optimized = false;
-  num_compile_threads = 0;
+  num_compile_threads = 2;
 
   // CUDA backend options:
   device_memory_GB = 1;  // by default, preallocate 1 GB GPU memory

@@ -12,9 +12,10 @@ from taichi.lang._ndrange import _Ndrange, ndrange
 from taichi.lang.ast.ast_transformer_utils import (Builder, LoopStatus,
                                                    ReturnStatus)
 from taichi.lang.ast.symbol_resolver import ASTResolver
-from taichi.lang.exception import TaichiSyntaxError
-from taichi.lang.matrix import MatrixType
-from taichi.lang.util import is_taichi_class, to_taichi_type
+from taichi.lang.exception import TaichiSyntaxError, TaichiTypeError
+from taichi.lang.matrix import (Matrix, MatrixType, _PyScopeMatrixImpl,
+                                _TiScopeMatrixImpl)
+from taichi.lang.util import in_taichi_scope, is_taichi_class, to_taichi_type
 from taichi.types import (annotations, ndarray_type, primitive_types,
                           texture_type)
 from taichi.types.utils import is_integral
@@ -103,6 +104,26 @@ class ASTTransformer(Builder):
         return None
 
     @staticmethod
+    def build_assign_slice(ctx, node_target, values, is_static_assign):
+        target = ASTTransformer.build_Subscript(ctx, node_target, get_ref=True)
+        if isinstance(node_target.value.ptr, Matrix):
+            if isinstance(node_target.value.ptr._impl, _TiScopeMatrixImpl):
+                target._assign(values)
+            elif isinstance(node_target.value.ptr._impl, _PyScopeMatrixImpl):
+                if in_taichi_scope():
+                    raise TaichiTypeError(
+                        'PyScope matrix cannot be assigned in Taichi Scope')
+                node_target.ptr._assign(node_target.slice.ptr, values)
+            else:
+                raise TaichiTypeError(f'{type(target)} cannot be subscripted')
+        else:
+            ASTTransformer.build_assign_basic(ctx,
+                                              target,
+                                              values,
+                                              is_static_assign,
+                                              build_target=False)
+
+    @staticmethod
     def build_assign_unpack(ctx, node_target, values, is_static_assign):
         """Build the unpack assignments like this: (target1, target2) = (value1, value2).
         The function should be called only if the node target is a tuple.
@@ -114,6 +135,10 @@ class ASTTransformer(Builder):
             values: A node/list representing the values.
             is_static_assign: A boolean value indicating whether this is a static assignment
         """
+        if isinstance(node_target, ast.Subscript):
+            return ASTTransformer.build_assign_slice(ctx, node_target, values,
+                                                     is_static_assign)
+
         if not isinstance(node_target, ast.Tuple):
             return ASTTransformer.build_assign_basic(ctx, node_target, values,
                                                      is_static_assign)
@@ -139,7 +164,11 @@ class ASTTransformer(Builder):
         return None
 
     @staticmethod
-    def build_assign_basic(ctx, target, value, is_static_assign):
+    def build_assign_basic(ctx,
+                           target,
+                           value,
+                           is_static_assign,
+                           build_target=True):
         """Build basic assignment like this: target = value.
 
          Args:
@@ -160,7 +189,10 @@ class ASTTransformer(Builder):
             var = impl.expr_init(value)
             ctx.create_variable(target.id, var)
         else:
-            var = build_stmt(ctx, target)
+            if build_target:
+                var = build_stmt(ctx, target)
+            else:
+                var = target
             try:
                 var._assign(value)
             except AttributeError:
@@ -190,12 +222,14 @@ class ASTTransformer(Builder):
         return False
 
     @staticmethod
-    def build_Subscript(ctx, node):
+    def build_Subscript(ctx, node, get_ref=False):
         build_stmt(ctx, node.value)
         build_stmt(ctx, node.slice)
         if not ASTTransformer.is_tuple(node.slice):
             node.slice.ptr = [node.slice.ptr]
-        node.ptr = impl.subscript(node.value.ptr, *node.slice.ptr)
+        node.ptr = impl.subscript(node.value.ptr,
+                                  *node.slice.ptr,
+                                  get_ref=get_ref)
         return node.ptr
 
     @staticmethod

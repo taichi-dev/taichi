@@ -121,3 +121,49 @@ def compile_kernel_aot(arch):
     m = ti.aot.Module(arch)
     m.add_kernel(run, template_args={'arr': arr})
     m.save(dir_name, 'whatever')
+
+
+def compile_graph_aot(arch):
+    ti.init(arch=arch)
+
+    @ti.kernel
+    def run0(base: int, arr: ti.types.ndarray(field_dim=1, dtype=ti.i32)):
+        for i in arr:
+            arr[i] += [base + i]
+
+    @ti.kernel
+    def run1(base: int, arr: ti.types.ndarray(field_dim=1, dtype=ti.i32)):
+        for i in arr:
+            arr[i] += [base + i]
+
+    @ti.kernel
+    def run2(base: int, arr: ti.types.ndarray(field_dim=1, dtype=ti.i32)):
+        for i in arr:
+            arr[i] += [base + i]
+
+    arr = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
+                       'arr',
+                       ti.i32,
+                       field_dim=1,
+                       element_shape=(1, ))
+
+    base0 = ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'base0', ti.i32)
+
+    base1 = ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'base2', ti.i32)
+
+    base2 = ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'base1', ti.i32)
+
+    g_builder = ti.graph.GraphBuilder()
+
+    g_builder.dispatch(run0, base0, arr)
+    g_builder.dispatch(run1, base1, arr)
+    g_builder.dispatch(run2, base2, arr)
+
+    run_graph = g_builder.compile()
+
+    assert "TAICHI_AOT_FOLDER_PATH" in os.environ.keys()
+    tmpdir = str(os.environ["TAICHI_AOT_FOLDER_PATH"])
+
+    mod = ti.aot.Module(arch)
+    mod.add_graph('run_graph', run_graph)
+    mod.save(tmpdir, '')

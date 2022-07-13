@@ -2,13 +2,15 @@
 
 #include <memory>
 
+#ifdef TI_WITH_LLVM
 #include "llvm/IR/Module.h"
 #include "taichi/common/core.h"
 #include "taichi/common/serialization.h"
 #include "taichi/runtime/llvm/launch_arg_info.h"
 #include "taichi/program/kernel.h"
 #include "taichi/util/io.h"
-#include "taichi/codegen/llvm/codegen_llvm.h"
+#include "taichi/codegen/llvm/llvm_compiled_data.h"
+
 namespace taichi {
 namespace lang {
 
@@ -192,3 +194,4 @@ class LlvmOfflineCacheFileWriter {
 
 }  // namespace lang
 }  // namespace taichi
+#endif  // TI_WITH_LLVM

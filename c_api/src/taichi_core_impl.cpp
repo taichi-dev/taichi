@@ -1,5 +1,6 @@
 #include "taichi_core_impl.h"
 #include "taichi_vulkan_impl.h"
+#include "taichi_llvm_impl.h"
 #include "taichi/program/ndarray.h"
 
 Runtime::Runtime(taichi::Arch arch) : arch(arch) {
@@ -14,6 +15,12 @@ VulkanRuntime *Runtime::as_vk() {
 #else
   return nullptr;
 #endif
+}
+
+taichi::lang::DeviceAllocation Runtime::allocate_memory(
+    const taichi::lang::Device::AllocParams &params) {
+  taichi::lang::DeviceAllocation devalloc = this->get().allocate_memory(params);
+  return devalloc;
 }
 
 AotModule::AotModule(Runtime &runtime,
@@ -47,6 +54,17 @@ TiRuntime ti_create_runtime(TiArch arch) {
     case TI_ARCH_VULKAN:
       return (TiRuntime)(static_cast<Runtime *>(new VulkanRuntimeOwned));
 #endif  // TI_WITH_VULKAN
+#ifdef TI_WITH_LLVM
+    case TI_ARCH_X64:
+      return (TiRuntime)(static_cast<Runtime *>(
+          new capi::LlvmRuntime(taichi::Arch::x64)));
+    case TI_ARCH_ARM64:
+      return (TiRuntime)(static_cast<Runtime *>(
+          new capi::LlvmRuntime(taichi::Arch::arm64)));
+    case TI_ARCH_CUDA:
+      return (TiRuntime)(static_cast<Runtime *>(
+          new capi::LlvmRuntime(taichi::Arch::cuda)));
+#endif  // TI_WITH_LLVM
     default:
       TI_WARN("ignored attempt to create runtime on unknown arch");
       return TI_NULL_HANDLE;
@@ -88,10 +106,12 @@ TiMemory ti_allocate_memory(TiRuntime runtime,
   params.host_read = createInfo->host_read;
   params.export_sharing = createInfo->export_sharing;
   params.usage = usage;
+
   taichi::lang::DeviceAllocation devalloc =
-      ((Runtime *)runtime)->get().allocate_memory(params);
+      ((Runtime *)runtime)->allocate_memory(params);
   return devalloc2devmem(devalloc);
 }
+
 void ti_free_memory(TiRuntime runtime, TiMemory devmem) {
   if (runtime == nullptr) {
     TI_WARN("ignored attempt to free memory on runtime of null handle");
@@ -241,14 +261,25 @@ void ti_launch_kernel(TiRuntime runtime,
         std::vector<int> shape(ndarray.shape.dims,
                                ndarray.shape.dims + ndarray.shape.dim_count);
 
+        size_t total_array_size = 1;
+        for (const auto &val : shape) {
+          total_array_size *= val;
+        }
+
         if (ndarray.elem_shape.dim_count != 0) {
           std::vector<int> elem_shape(
               ndarray.elem_shape.dims,
               ndarray.elem_shape.dims + ndarray.elem_shape.dim_count);
 
+          for (const auto &val : elem_shape) {
+            total_array_size *= val;
+          }
+
           runtime_context.set_arg_devalloc(i, *devalloc, shape, elem_shape);
+          runtime_context.set_array_runtime_size(i, total_array_size);
         } else {
           runtime_context.set_arg_devalloc(i, *devalloc, shape);
+          runtime_context.set_array_runtime_size(i, total_array_size);
         }
 
         devallocs.emplace_back(std::move(devalloc));

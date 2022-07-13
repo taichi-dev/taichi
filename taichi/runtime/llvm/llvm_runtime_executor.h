@@ -3,6 +3,8 @@
 #include <cstddef>
 #include <memory>
 
+#ifdef TI_WITH_LLVM
+
 #include "taichi/rhi/llvm/llvm_device.h"
 #include "taichi/runtime/llvm/llvm_offline_cache.h"
 #include "taichi/runtime/llvm/snode_tree_buffer_manager.h"
@@ -65,6 +67,8 @@ class LlvmRuntimeExecutor {
 
   Device *get_compute_device();
 
+  LlvmDevice *llvm_device();
+
   void synchronize();
 
  private:
@@ -116,7 +120,6 @@ class LlvmRuntimeExecutor {
   /* -------------------------- */
   cuda::CudaDevice *cuda_device();
   cpu::CpuDevice *cpu_device();
-  LlvmDevice *llvm_device();
 
   void initialize_host();
 
@@ -161,3 +164,5 @@ class LlvmRuntimeExecutor {
 
 }  // namespace lang
 }  // namespace taichi
+
+#endif  // TI_WITH_LLVM

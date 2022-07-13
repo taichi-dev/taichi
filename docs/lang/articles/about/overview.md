@@ -2,7 +2,7 @@
 sidebar_position: 1
 ---
 
-# Why a new programming language
+# Why a New Programming Language
 
 Imagine you'd like to write a new particle-based fluid algorithm. You started simple, didn't spend much time before finding a reference C++/CUDA work online (or derived the work from your labmate, <s>un</s>fortunately). `cmake .. && make`, you typed. Oops, cmake threw out an error due to a random incompatible third party library. Installed and rebuilt, now it passed. Then you ran it, which immediately segfaulted (without any stacktrace, of course). Then you started gazing at the code, placed the necessary asset files at the right place, fixed a few dangling pointers and reran. It... actually worked, until you plugged in your revised algorithm. Now another big fight with the GPU or CPU code. More often than not, you get lost in the language details.
 
@@ -17,7 +17,7 @@ To be fair, a domain-specific language (DSL) with a Python frontend is not somet
 * Taichi heavily optimizes the source code using various compiler technologies: common subexpression elimination, dead code elimination, control flow graph analysis, etc. These optimizations are backend neutral, because Taichi hosts its own intermediate representation (IR) layer.
 * JIT compilation provides additional optimization opportunities.
 
-That said, Taichi goes beyond a Python JIT transpiler. One of the initial design goals is to *decouple the computation from the data structures*. The mechanism that Taichi provides is a set of generic data containers, called *SNode* (/ˈsnoʊd/). SNodes can be used to compose hierarchical, dense or sparse, multi-dimensional fields conveniently. Switching between array-of-structures and structure-of-arrays layouts is usually a matter of ≤10 lines of code. This has sparked many use cases in numerical simulation. If you are interested to learn them, please check out [Fields (advanced)](../advanced/layout.md), [Sparse spatial data structures](../advanced/sparse.md), or [the original Taichi paper](https://yuanming.taichi.graphics/publication/2019-taichi/taichi-lang.pdf).
+That said, Taichi goes beyond a Python JIT transpiler. One of the initial design goals is to *decouple the computation from the data structures*. The mechanism that Taichi provides is a set of generic data containers, called *SNode* (/ˈsnoʊd/). SNodes can be used to compose hierarchical, dense or sparse, multi-dimensional fields conveniently. Switching between array-of-structures and structure-of-arrays layouts is usually a matter of ≤10 lines of code. This has sparked many use cases in numerical simulation. If you are interested to learn them, please check out [Fields (advanced)](../basic/layout.md), [Sparse spatial data structures](../basic/sparse.md), or [the original Taichi paper](https://yuanming.taichi.graphics/publication/2019-taichi/taichi-lang.pdf).
 
 The concept of decoupling is further extended to the type system. With GPU memory capacity and bandwidth becoming the major bottlenecks nowadays, it is vital to be able to pack more data per memory unit. Since 2021, Taichi has introduced customizable quantized types, allowing for the definition of fixed point or floating point numbers with arbitrary bits (still needs to be under 64). This has allowed an MPM simulation of over 400 million particles on a single GPU device. Learn more details in [the QuanTaichi paper](https://yuanming.taichi.graphics/publication/2021-quantaichi/quantaichi.pdf).
 

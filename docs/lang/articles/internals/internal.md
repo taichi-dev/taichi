@@ -2,7 +2,7 @@
 sidebar_position: 1
 ---
 
-# Internal designs
+# Internal Designs
 
 ## Intermediate representation (IR)
 

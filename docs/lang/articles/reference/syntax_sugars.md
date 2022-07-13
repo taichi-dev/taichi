@@ -2,7 +2,7 @@
 sidebar_position: 2
 ---
 
-# Syntax sugars
+# Syntax Sugars
 
 ## Aliases
 

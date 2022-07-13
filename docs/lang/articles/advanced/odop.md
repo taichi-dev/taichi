@@ -1,8 +1,8 @@
 ---
-sidebar_position: 0
+sidebar_position: 2
 ---
 
-# Objective data-oriented programming
+# Objective Data-oriented Programming
 
 Taichi is a
 [data-oriented](https://en.wikipedia.org/wiki/Data-oriented_design)

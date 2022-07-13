@@ -74,9 +74,9 @@ A Taichi value has a Taichi type, which is one of the following:
 - A primitive type, as described in [Type system](../basic/type.md)
 - A compound type, as described in [Type system](../basic/type.md)
 - An ndarray type, as introduced in [Run a Taichi Program using Ndarray on
-Android](../advanced/ndarray_android.md)
+Android](../deployment/ndarray_android.md)
 - A sparse matrix builder type, as introduced in [Sparse
-Matrix](../advanced/sparse_matrix.md)
+Matrix](../math/sparse_matrix.md)
 
 :::note
 An informal quick summary of evaluation rules:

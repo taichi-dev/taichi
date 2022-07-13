@@ -4,8 +4,6 @@ sidebar_position: 1
 
 # Contribution Guidelines
 
-
-
 Thank you for your interest in contributing to Taichi. Taichi was born as an academic research project. Though we are working hard to improve its code quality, Taichi has a long way to go to become a mature, large-scale engineering project. This is also why we decided to open source Taichi from the very beginning: We rely on our community to help Taichi evolve and thrive. From document updates, bug fix, to feature implementation, wherever you spot an issue, you are very welcome to file a PR (pull request) with us!:-)
 
 Centered around the common process of taking on an issue, testing, and making a corresponding PR, this document provides guidelines, tips, and major considerations for Taichi's contributors. We highly recommend that you spend some time familiarizing yourself with this contribution guide before contributing to Taichi.
@@ -55,6 +53,18 @@ We welcome all kinds of contributions, including but not limited to:
 - Posting blog articles and tutorials
 - Enhancing compiler performance
 - Minor updates to documentation, codes, or annotations.
+
+## File an issue
+
+If you would like to propose a new feature, or if you spot a potential issue, you can file an issue with Taichi.
+
+:::note
+When you try to report potential bugs in an issue, please consider running `ti diagnose` and offer its output as an attachment. This helps the maintainers to learn more about the context and the system information of your environment to make the debugging process more efficient and solve your issue more easily.
+:::
+
+:::caution
+When filing your issue, review it once again to ensure that no sensitive information about your data or yourself creeps in.
+:::
 
 ## Take over an issue
 
@@ -136,7 +146,7 @@ No problem, the CI bot will run the code checkers and format your codes automati
 
 <!-- Todo: Make this a reusable fragment. -->
 
-> For more style information for your C++ code, see [our C++ style](./cpp_style.md).
+> For more style information for your C++ code, see [our C++ style](#c-style).
 
 ### Run integration tests
 
@@ -212,15 +222,10 @@ Your PR will make it into the commit history in the the master branch or even Ta
 [tag1] [tag2]...[tagN] Your PR title must be short but carry necessary info
 
 ^----^ ^----^...^----^ ^--------------------------------------------------^
-
 |      |        |      |
-
 |      |        |      +---> Capitalize the initial of your title.
-
 |      |        +---> Adjacent tags are separated with precisely one space.
-
 |      +--->  Frequently used tags: [cuda], [lang], [ci], [ir], [refactor].
-
 +--->  Prepend at least one tag to your PR title.
 ```
 
@@ -292,6 +297,38 @@ Here, we do not want to repeat some best practices summarized in the following G
   - [Code Health: Understanding Code In Review](https://testing.googleblog.com/2018/05/code-health-understanding-code-in-review.html)
   - [Code Health: Respectful Reviews == Useful Reviews](https://testing.googleblog.com/2019/11/code-health-respectful-reviews-useful.html)
   - [How to have your PR merged quickly](https://testing.googleblog.com/2017/06/code-health-too-many-comments-on-your.html)
+
+## C++ style
+
+We generally follow [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html). One major exception is the naming convention of functions: Taichi adopts the snake case for function naming, as opposed to the camel case [suggested in Google's style](https://google.github.io/styleguide/cppguide.html#Function_Names), e.g. `this_is_a_taichi_function()`.
+
+Below we highlight some of the most widely used styles.
+
+### Naming conventions
+
+- Class and struct names should use the camel case, for example, `CodegenLlvm`.
+  - Prefer capitalizing only the first letter of an acronym/abbreviation ([examples](https://google.github.io/styleguide/jsguide.html#naming-camel-case-defined)).
+- Variable names should use the snake case, for example, `llvm_context`.
+- Private class member variable names should end with an `_`, for example, `id_to_snodes_`.
+- Constant names should use the camel case, with a prefix `k`, for example, `constexpr int kTaichiMaxNumArgs = 64;`.
+- Macros should start with `TI_`, for example, `TI_NOT_IMPLEMENTED`.
+  - In general, avoid using macros as much as possible.
+  - Avoid using `TI_NAMESPACE_BEGIN/END` in the new code.
+
+### Rule of thumbs
+
+- Use `const` as much as possible, for example, function parameter types, class member functions, and more.
+- Provide default initializers to the class member variables, at least for the POD types.
+  ```cpp
+  class Foo {
+   private:
+    int x_{0};
+    char* buf_{nullptr};
+  };
+  ```
+- Embrace the smart pointers and avoid `new` and `delete`.
+- Mark the constructor `explicit` to prevent the compiler from doing any implicit conversion.
+- Avoid virtual function calls in the constructors or destructors ([explanation](https://wiki.sei.cmu.edu/confluence/display/cplusplus/OOP50-CPP.+Do+not+invoke+virtual+functions+from+constructors+or+destructors)).
 
 ## Compilation warnings
 

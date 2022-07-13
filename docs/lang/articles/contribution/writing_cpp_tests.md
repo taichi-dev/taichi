@@ -2,7 +2,7 @@
 sidebar_position: 4
 ---
 
-# Workflow for writing a C++ test
+# Write a C++ test
 
 We strongly recommend each developer to write C++ unit tests when sending a PR.
 
@@ -37,6 +37,6 @@ Consider polishing the C++ test infrastructure:
 * Have a unified script to control the execution of which set of tests
 :::
 
-## Adding a new test case
+## Add a new test case
 
 Please follow [Googletest Primer](https://google.github.io/googletest/primer.html) and [Advanced googletest Topics](https://google.github.io/googletest/advanced.html).

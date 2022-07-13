@@ -1,8 +1,8 @@
 ---
-sidebar_position: 8
+sidebar_position: 2
 ---
 
-# Performance tuning
+# Performance Tuning
 
 ## For-loop decorators
 

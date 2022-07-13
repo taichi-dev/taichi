@@ -1,11 +1,11 @@
 ---
-sidebar_position: 6
+sidebar_position: 3
 ---
 
-# Sparse spatial data structures
+# Sparse Spatial Data Structures
 
 :::note
-Prerequisite: please read the [Fields](../basic/field.md), [Fields (advanced)](layout.md), and [SNodes](../internals/internal.md#data-structure-organization) first.
+Prerequisite: please read the [Fields](./field.md), [Fields (advanced)](./layout.md), and [SNodes](../internals/internal.md#data-structure-organization) first.
 :::
 
 ![image](https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/doc/sparse_grids_3d.jpg)
@@ -14,7 +14,7 @@ Figure: A 3D fluid simulation that uses both particles and grids. Left to right:
 ## Motivation
 
 High-resolution 2D/3D grids are often needed in large-scale spatial computation, such as physical simulation, rendering, and 3D reconstruction.
-However, these grids tend to consume a huge amount of memory space and computation if we use dense data structures (see [field](../basic/field.md) and [field advanced](layout.md)).
+However, these grids tend to consume a huge amount of memory space and computation if we use dense data structures (see [field](./field.md) and [field advanced](./layout.md)).
 While a programmer may allocate large dense grids to store spatial data (especially physical quantities such as a density or velocity field),
 oftentimes, they only care about a small fraction of this dense grid since the rest may be empty space (vacuum or air).
 
@@ -48,7 +48,7 @@ In Taichi, programmers can compose data structures similar to VDB and SPGrid wit
 
 
 :::note
-Sparse matrices are usually **not** implemented in Taichi via sparse spatial data structures. See [sparse matrix](sparse_matrix.md) instead.
+Sparse matrices are usually **not** implemented in Taichi via sparse spatial data structures. See [sparse matrix](../math/sparse_matrix.md) instead.
 :::
 
 ## Sparse spatial data structures in Taichi

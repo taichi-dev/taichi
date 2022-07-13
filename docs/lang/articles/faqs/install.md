@@ -4,7 +4,7 @@ sidebar_position: 2
 
 # Installation Troubleshooting
 
-### Linux issues
+## Linux issues
 
 - If Taichi crashes and reports
   `` /usr/lib/libstdc++.so.6: version `CXXABI_1.3.11' not found ``:
@@ -19,13 +19,13 @@ sidebar_position: 2
   ```
 
 
-### Windows issues
+## Windows issues
 
 - If Taichi crashes and reports `ImportError` on Windows. Please
   consider installing [Microsoft Visual C++
   Redistributable](https://aka.ms/vs/16/release/vc_redist.x64.exe).
 
-### Python issues
+## Python issues
 
 - If `pip` could not find a satisfying package,
   i.e.,
@@ -49,7 +49,7 @@ sidebar_position: 2
     # 64bit
     ```
 
-### CUDA issues
+## CUDA issues
 
 - If Taichi crashes with the following errors:
 
@@ -114,7 +114,7 @@ sidebar_position: 2
     `~/.bashrc`. This disables the CUDA backend completely and
     Taichi will fall back on other GPU backends such as OpenGL.
 
-### OpenGL issues
+## OpenGL issues
 
 - If Taichi crashes with a stack backtrace containing a line of
   `glfwCreateWindow` (see
@@ -144,14 +144,14 @@ sidebar_position: 2
     than OpenGL. This disables the OpenGL backend detection to avoid
     incompatibilities.
 
-### Installation interrupted
+## Installation interrupted
 During the installation, the downloading process is interrupted because of `HTTPSConnection` error. You can try installing Taichi from a mirror source.
 
 ```
 pip install taichi -i https://pypi.douban.com/simple
 ```
 
-### Other issues
+## Other issues
 
 - If none of those above address your problem, please report this by
   [opening an

@@ -2,7 +2,7 @@
 sidebar_position: 2
 ---
 
-# Developer installation
+# Developer Installation
 
 ## Target audience
 

@@ -2,7 +2,7 @@
 sidebar_position: 1
 ---
 
-# Run a Taichi Program using Ndarray on Android
+# Run a Taichi Program Using Ndarray on Android
 
 Taichi's JIT (Just In Time) module compiles a Taichi kernel to the compute shaders according to the specified backend (`arch` in `ti.init()`) and executes these shaders in Taichi's JIT runtime. Taichi's AOT (Ahead of Time) module, however, builds and saves the necessary compute shaders so that you can load and execute these shaders in your own runtime without a Python environment.
 

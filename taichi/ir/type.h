@@ -272,7 +272,10 @@ class BitStructType : public Type {
  public:
   BitStructType(PrimitiveType *physical_type,
                 std::vector<Type *> member_types,
-                std::vector<int> member_bit_offsets);
+                std::vector<int> member_bit_offsets,
+                std::vector<bool> member_owns_shared_exponents,
+                std::vector<int> member_exponents,
+                std::vector<std::vector<int>> member_exponent_users);
 
   std::string to_string() const override;
 
@@ -280,7 +283,7 @@ class BitStructType : public Type {
     return physical_type_;
   }
 
-  int get_num_memebrs() const {
+  int get_num_members() const {
     return (int)member_types_.size();
   }
 
@@ -292,10 +295,25 @@ class BitStructType : public Type {
     return member_bit_offsets_[i];
   }
 
+  bool get_member_owns_shard_exponent(int i) const {
+    return member_owns_shared_exponents_[i];
+  }
+
+  int get_member_exponent(int i) const {
+    return member_exponents_[i];
+  }
+
+  const std::vector<int> &get_member_exponent_users(int i) const {
+    return member_exponent_users_[i];
+  }
+
  private:
   PrimitiveType *physical_type_;
   std::vector<Type *> member_types_;
   std::vector<int> member_bit_offsets_;
+  std::vector<bool> member_owns_shared_exponents_;
+  std::vector<int> member_exponents_;
+  std::vector<std::vector<int>> member_exponent_users_;
 };
 
 class QuantArrayType : public Type {

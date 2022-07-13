@@ -185,9 +185,13 @@ class BitStructTypeBuilder {
       : physical_type_(physical_type) {
   }
 
-  int add_member(Type *member_type) {
+  std::tuple<int, int> add_member(Type *member_type) {
+    int old_num_members = member_types_.size();
     member_types_.push_back(member_type);
     member_bit_offsets_.push_back(member_total_bits_);
+    member_owns_shared_exponents_.push_back(false);
+    member_exponents_.push_back(-1);
+    member_exponent_users_.push_back({});
     QuantIntType *member_qit = nullptr;
     if (auto qit = member_type->cast<QuantIntType>()) {
       member_qit = qit;
@@ -204,12 +208,24 @@ class BitStructTypeBuilder {
     TI_ERROR_IF(member_total_bits_ > physical_bits,
                 "BitStructType overflows: {} bits used out of {}.",
                 member_total_bits_, physical_bits);
-    return old_member_total_bits;
+    return std::make_tuple(old_num_members, old_member_total_bits);
+  }
+
+  void set_member_owns_shared_exponent(int id) {
+    member_owns_shared_exponents_[id] = true;
+  }
+
+  void set_member_exponent(int id, int exponent_id) {
+    member_exponents_[id] = exponent_id;
+  }
+
+  void add_member_exponent_user(int id, int user_id) {
+    member_exponent_users_[id].push_back(user_id);
   }
 
   Type *build() const {
     return TypeFactory::get_instance().get_bit_struct_type(
-        physical_type_, member_types_, member_bit_offsets_);
+        physical_type_, member_types_, member_bit_offsets_, member_owns_shared_exponents_, member_exponents_, member_exponent_users_);
   }
 
  private:
@@ -217,6 +233,9 @@ class BitStructTypeBuilder {
   std::vector<Type *> member_types_;
   std::vector<int> member_bit_offsets_;
   int member_total_bits_{0};
+  std::vector<bool> member_owns_shared_exponents_;
+  std::vector<int> member_exponents_;
+  std::vector<std::vector<int>> member_exponent_users_;
 };
 
 }  // namespace lang

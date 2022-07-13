@@ -12,4 +12,4 @@ target_include_directories(${LLVM_RHI}
     ${PROJECT_SOURCE_DIR}
   )
 
-target_link_libraries(${LLVM_RHI} PRIVATE taichi_common)
+target_link_libraries(${LLVM_RHI} PRIVATE taichi_util)

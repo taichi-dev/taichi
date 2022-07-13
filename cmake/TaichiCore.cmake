@@ -103,10 +103,8 @@ file(GLOB TAICHI_CORE_SOURCE
     "taichi/struct/*"
     "taichi/system/*"
     "taichi/transforms/*"
-    "taichi/util/*"
     "taichi/gui/*"
     "taichi/platform/cuda/*" "taichi/platform/mac/*" "taichi/platform/windows/*"
-    "taichi/lang_util.h" "taichi/lang_util.cpp"
     "taichi/runtime/*.h" "taichi/runtime/*.cpp"
     "taichi/rhi/*.h" "taichi/rhi/*.cpp"
 )
@@ -215,7 +213,6 @@ endif()
 # TODO: replace these includes per target basis
 target_include_directories(${CORE_LIBRARY_NAME} PRIVATE ${CMAKE_SOURCE_DIR})
 target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/include)
-target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/spdlog/include)
 target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Tools/include)
 target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/PicoSHA2)
 target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/eigen)
@@ -253,6 +250,8 @@ endif()
 add_subdirectory(taichi/common)
 target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE taichi_common)
 
+add_subdirectory(taichi/util)
+target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE taichi_util)
 
 add_subdirectory(taichi/rhi/interop)
 target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE interop_rhi)

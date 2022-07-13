@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "taichi/inc/constants.h"
-#include "taichi/lang_util.h"
+#include "taichi/util/lang_util.h"
 #include "taichi/program/program.h"
 #include "taichi/runtime/metal/data_types.h"
 #include "taichi/runtime/metal/kernel_manager.h"

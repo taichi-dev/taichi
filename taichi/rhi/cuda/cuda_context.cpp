@@ -4,7 +4,7 @@
 #include <unordered_map>
 #include <mutex>
 
-#include "taichi/lang_util.h"
+#include "taichi/util/lang_util.h"
 #include "taichi/program/program.h"
 #include "taichi/system/threading.h"
 #include "taichi/rhi/cuda/cuda_driver.h"

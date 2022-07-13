@@ -12,7 +12,7 @@
 #include "cc_utils.h"
 #include "codegen_cc.h"
 #include "context.h"
-#include "taichi/lang_util.h"
+#include "taichi/util/lang_util.h"
 #include <vector>
 #include <memory>
 

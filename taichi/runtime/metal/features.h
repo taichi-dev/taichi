@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include "taichi/lang_util.h"
+#include "taichi/util/lang_util.h"
 
 TLANG_NAMESPACE_BEGIN
 namespace metal {

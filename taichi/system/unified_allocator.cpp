@@ -6,7 +6,7 @@
 #include "taichi/rhi/cuda/cuda_device.h"
 
 #endif
-#include "taichi/lang_util.h"
+#include "taichi/util/lang_util.h"
 #include "taichi/system/unified_allocator.h"
 #include "taichi/system/virtual_memory.h"
 #include "taichi/system/timer.h"

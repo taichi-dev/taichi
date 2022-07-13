@@ -40,7 +40,7 @@
 #include "llvm/Demangle/Demangle.h"
 #include "llvm/Bitcode/BitcodeWriter.h"
 
-#include "taichi/lang_util.h"
+#include "taichi/util/lang_util.h"
 #include "taichi/jit/jit_session.h"
 #include "taichi/common/task.h"
 #include "taichi/util/environ_config.h"

@@ -13,7 +13,7 @@
 #include "taichi/ir/ir.h"
 #include "taichi/ir/type_factory.h"
 #include "taichi/ir/snode.h"
-#include "taichi/lang_util.h"
+#include "taichi/util/lang_util.h"
 #include "taichi/program/program_impl.h"
 #include "taichi/program/callable.h"
 #include "taichi/program/function.h"

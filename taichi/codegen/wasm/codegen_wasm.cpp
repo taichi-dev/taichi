@@ -3,7 +3,7 @@
 #include "taichi/codegen/llvm/codegen_llvm.h"
 #include "taichi/common/core.h"
 #include "taichi/util/io.h"
-#include "taichi/lang_util.h"
+#include "taichi/util/lang_util.h"
 #include "taichi/program/program.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"

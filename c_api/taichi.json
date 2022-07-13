@@ -71,6 +71,11 @@
                     "inc_cases": "archs"
                 },
                 {
+                    "name": "data_type",
+                    "type": "enumeration",
+                    "inc_cases": "data_type"
+                },
+                {
                     "name": "argument_type",
                     "type": "enumeration",
                     "cases": {
@@ -162,6 +167,10 @@
                         {
                             "name": "elem_shape",
                             "type": "structure.nd_shape"
+                        },
+                        {
+                            "name": "elem_type",
+                            "type": "enumeration.data_type"
                         }
                     ]
                 },

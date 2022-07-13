@@ -261,6 +261,13 @@ jobs:
   build_and_test_cpu_windows:
     name: Build and Test Windows (CPU)
     needs: check_files
+    strategy:
+      matrix:
+        include:
+          - os: windows-2019
+            llvmVer : '15'
+          - os: windows-2019
+            llvmVer : '10'
     timeout-minutes: 90
     runs-on: windows-2019
     permissions:
@@ -298,7 +305,7 @@ jobs:
           fi
           docker create --name taichi_build_test \
             ghcr.io/taichi-dev/taichidev-cpu-windows:v0.0.1 \
-            C:/taichi/.github/workflows/scripts/win_build_test_cpu.ps1
+            C:/taichi/.github/workflows/scripts/win_build_test_cpu.ps1 -llvmVer ${{ matrix.llvmVer }}
           tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx | docker cp - taichi_build_test:C:/
           docker start -a taichi_build_test
           rm -rf ccache_cache
@@ -317,7 +324,6 @@ jobs:
       #     name: broken-wheel
       #     path: dist/*
       #     retention-days: 7
-
 
   build_and_test_gpu_linux:
     name: Build and Test (GPU)
@@ -349,6 +355,16 @@ jobs:
             exit 0
           fi
           mkdir -m777 shared
+          for i in {0..9}; do
+            if xset -display ":$i" -q >/dev/null 2>&1; then
+              break
+            fi
+          done
+          if [ $? -ne 0 ]; then
+            echo "No display!"
+            exit 1
+          fi
+          export DISPLAY=:$i
           docker create --user dev --name taichi_build --gpus all -v /tmp/.X11-unix:/tmp/.X11-unix \
             -e PY -e GPU_BUILD -e PROJECT_NAME -e TAICHI_CMAKE_ARGS -e DISPLAY \
             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.0 \
@@ -367,7 +383,6 @@ jobs:
           GPU_BUILD: ON
           PROJECT_NAME: taichi
           TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-          DISPLAY: :1
 
       - name: Test
         id: test
@@ -375,6 +390,16 @@ jobs:
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
           fi
+          for i in {0..9}; do
+            if xset -display ":$i" -q >/dev/null 2>&1; then
+              break
+            fi
+          done
+          if [ $? -ne 0 ]; then
+            echo "No display!"
+            exit 1
+          fi
+          export DISPLAY=:$i
           docker create --user dev --name taichi_test --gpus all -v /tmp/.X11-unix:/tmp/.X11-unix \
             -e DISPLAY -e PY -e GPU_TEST -e TI_WANTED_ARCHS \
              registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.0 \
@@ -389,7 +414,6 @@ jobs:
         env:
           PY: py38
           GPU_TEST: ON
-          DISPLAY: :1
           TI_WANTED_ARCHS: 'cpu,cuda,vulkan,opengl'
           TI_DEVICE_MEMORY_GB: '0.7'
 
@@ -563,6 +587,16 @@ jobs:
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
           fi
+          for i in {0..9}; do
+            if xset -display ":$i" -q >/dev/null 2>&1; then
+              break
+            fi
+          done
+          if [ $? -ne 0 ]; then
+            echo "No display!"
+            exit 1
+          fi
+          export DISPLAY=:$i
           docker create --user dev --name taichi_build_desktop --gpus all -v /tmp/.X11-unix:/tmp/.X11-unix \
             -e PY -e GPU_BUILD -e PROJECT_NAME -e TAICHI_CMAKE_ARGS -e DISPLAY -e EXPORT_CORE\
             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.0 \
@@ -577,7 +611,6 @@ jobs:
           GPU_BUILD: ON
           PROJECT_NAME: taichi
           TAICHI_CMAKE_ARGS: -DTI_WITH_VULKAN:BOOL=ON -DTI_WITH_CUDA:BOOL=ON -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_LLVM:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache -DTI_EXPORT_CORE:BOOL=ON
-          DISPLAY: :1
 
       - name: clean docker container
         if: always()

@@ -1,6 +1,3 @@
-from taichi.types.primitive_types import f32
-
-
 class NdarrayTypeMetadata:
     def __init__(self, element_type, shape=None, layout=None):
         self.element_type = element_type
@@ -20,13 +17,12 @@ class NdarrayType:
         field_dim (Union[Int, NoneType]): None if not specified, number of field dimensions. This argument is ignored for external arrays for now.
         layout (Union[Layout, NoneType], optional): None if not specified (will be treated as Layout.AOS for external arrays), Layout.AOS or Layout.SOA.
     """
-    def __init__(
-            self,
-            dtype=f32,  # TODO: default should be None
-            element_dim=None,
-            element_shape=None,
-            field_dim=None,
-            layout=None):
+    def __init__(self,
+                 dtype=None,
+                 element_dim=None,
+                 element_shape=None,
+                 field_dim=None,
+                 layout=None):
         if element_dim is not None and (element_dim < 0 or element_dim > 2):
             raise ValueError(
                 "Only scalars, vectors, and matrices are allowed as elements of ti.types.ndarray()"

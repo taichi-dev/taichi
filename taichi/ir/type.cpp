@@ -166,12 +166,13 @@ bool QuantFloatType::get_is_signed() const {
   return digits_type_->as<QuantIntType>()->get_is_signed();
 }
 
-BitStructType::BitStructType(PrimitiveType *physical_type,
-                             std::vector<Type *> member_types,
-                             std::vector<int> member_bit_offsets,
-                             std::vector<bool> member_owns_shared_exponents,
-                             std::vector<int> member_exponents,
-                             std::vector<std::vector<int>> member_exponent_users)
+BitStructType::BitStructType(
+    PrimitiveType *physical_type,
+    std::vector<Type *> member_types,
+    std::vector<int> member_bit_offsets,
+    std::vector<bool> member_owns_shared_exponents,
+    std::vector<int> member_exponents,
+    std::vector<std::vector<int>> member_exponent_users)
     : physical_type_(physical_type),
       member_types_(member_types),
       member_bit_offsets_(member_bit_offsets),
@@ -203,7 +204,9 @@ std::string BitStructType::to_string() const {
     str += fmt::format("{}: {}@{}", i, member_types_[i]->to_string(),
                        member_bit_offsets_[i]);
     if (member_exponents_[i] != -1) {
-      str += fmt::format(" {}exp={}", member_owns_shared_exponents_[i] ? "shared_" : "", member_exponents_[i]);
+      str += fmt::format(" {}exp={}",
+                         member_owns_shared_exponents_[i] ? "shared_" : "",
+                         member_exponents_[i]);
     }
     if (i + 1 < num_members) {
       str += ", ";

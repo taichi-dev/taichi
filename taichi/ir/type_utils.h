@@ -225,7 +225,9 @@ class BitStructTypeBuilder {
 
   Type *build() const {
     return TypeFactory::get_instance().get_bit_struct_type(
-        physical_type_, member_types_, member_bit_offsets_, member_owns_shared_exponents_, member_exponents_, member_exponent_users_);
+        physical_type_, member_types_, member_bit_offsets_,
+        member_owns_shared_exponents_, member_exponents_,
+        member_exponent_users_);
   }
 
  private:

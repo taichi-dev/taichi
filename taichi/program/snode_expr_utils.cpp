@@ -66,7 +66,8 @@ void place_child(Expr *expr_arg,
       } else {
         auto &exp_node = parent->insert_children(SNodeType::place);
         exp_node.dt = exp;
-        std::tie(exp_node.id_in_bit_struct, exp_node.bit_offset) = parent->bit_struct_type_builder->add_member(exp);
+        std::tie(exp_node.id_in_bit_struct, exp_node.bit_offset) =
+            parent->bit_struct_type_builder->add_member(exp);
         exp_node.name = glb_var_expr->ident.raw_name() + "_exp";
         new_exp_snode = &exp_node;
         if (parent->placing_shared_exp) {
@@ -91,16 +92,20 @@ void place_child(Expr *expr_arg,
     (*snode_to_exprs)[glb_var_expr->snode] = glb_var_expr;
     child.dt = glb_var_expr->dt;
     if (parent->bit_struct_type_builder) {
-      std::tie(child.id_in_bit_struct, child.bit_offset) = parent->bit_struct_type_builder->add_member(child.dt);
+      std::tie(child.id_in_bit_struct, child.bit_offset) =
+          parent->bit_struct_type_builder->add_member(child.dt);
       if (parent->placing_shared_exp) {
         child.owns_shared_exponent = true;
-        parent->bit_struct_type_builder->set_member_owns_shared_exponent(child.id_in_bit_struct);
+        parent->bit_struct_type_builder->set_member_owns_shared_exponent(
+            child.id_in_bit_struct);
       }
       if (new_exp_snode) {
         child.exp_snode = new_exp_snode;
-        parent->bit_struct_type_builder->set_member_exponent(child.id_in_bit_struct, new_exp_snode->id_in_bit_struct);
+        parent->bit_struct_type_builder->set_member_exponent(
+            child.id_in_bit_struct, new_exp_snode->id_in_bit_struct);
         new_exp_snode->exponent_users.push_back(&child);
-        parent->bit_struct_type_builder->add_member_exponent_user(new_exp_snode->id_in_bit_struct, child.id_in_bit_struct);
+        parent->bit_struct_type_builder->add_member_exponent_user(
+            new_exp_snode->id_in_bit_struct, child.id_in_bit_struct);
       }
     }
     if (!offset.empty())

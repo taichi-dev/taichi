@@ -295,7 +295,7 @@ class BitStructType : public Type {
     return member_bit_offsets_[i];
   }
 
-  bool get_member_owns_shard_exponent(int i) const {
+  bool get_member_owns_shared_exponent(int i) const {
     return member_owns_shared_exponents_[i];
   }
 

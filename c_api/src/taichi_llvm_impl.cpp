@@ -1,4 +1,3 @@
-
 #include "taichi_core_impl.h"
 #include "taichi_llvm_impl.h"
 
@@ -16,7 +15,7 @@ LlvmRuntime::LlvmRuntime(taichi::Arch arch) : Runtime(arch) {
   executor_ = std::make_unique<taichi::lang::LlvmRuntimeExecutor>(cfg, nullptr);
 
   taichi::lang::Device *compute_device = executor_->get_compute_device();
-  std::unique_ptr<taichi::lang::MemoryPool> memory_pool =
+  memory_pool_ =
       taichi::arch_is_cpu(arch)
           ? std::make_unique<taichi::lang::MemoryPool>(arch, compute_device)
           : nullptr;
@@ -28,7 +27,7 @@ LlvmRuntime::LlvmRuntime(taichi::Arch arch) : Runtime(arch) {
   // since it returns a temporary copy of the internal data pointer,
   // thus we won't be able to modify the address where the std::array's data
   // pointer is pointing to.
-  executor_->materialize_runtime(memory_pool.get(), nullptr /*kNoProfiler*/,
+  executor_->materialize_runtime(memory_pool_.get(), nullptr /*kNoProfiler*/,
                                  &result_buffer);
 }
 

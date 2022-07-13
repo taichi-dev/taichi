@@ -24,6 +24,7 @@ enum class StmtOpCode : std::uint8_t {
   NIL,
   EnterBlock,
   ExitBlock,
+  StopGrad,
 #define PER_STATEMENT(x) x,
 #include "taichi/inc/frontend_statements.inc.h"
 #undef PER_STATEMENT
@@ -260,6 +261,8 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     for (auto &stmt : block->statements) {
       stmt->accept(this);
     }
+    emit(StmtOpCode::StopGrad);
+    emit(block->stop_gradients);
     emit(StmtOpCode::ExitBlock);
   }
 

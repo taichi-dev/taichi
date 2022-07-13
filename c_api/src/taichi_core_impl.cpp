@@ -17,6 +17,12 @@ VulkanRuntime *Runtime::as_vk() {
 #endif
 }
 
+taichi::lang::DeviceAllocation Runtime::allocate_memory(
+    const taichi::lang::Device::AllocParams &params) {
+  taichi::lang::DeviceAllocation devalloc = this->get().allocate_memory(params);
+  return devalloc;
+}
+
 AotModule::AotModule(Runtime &runtime,
                      std::unique_ptr<taichi::lang::aot::Module> &&aot_module)
     : runtime_(&runtime), aot_module_(std::move(aot_module)) {
@@ -100,10 +106,12 @@ TiMemory ti_allocate_memory(TiRuntime runtime,
   params.host_read = createInfo->host_read;
   params.export_sharing = createInfo->export_sharing;
   params.usage = usage;
+
   taichi::lang::DeviceAllocation devalloc =
-      ((Runtime *)runtime)->get().allocate_memory(params);
+      ((Runtime *)runtime)->allocate_memory(params);
   return devalloc2devmem(devalloc);
 }
+
 void ti_free_memory(TiRuntime runtime, TiMemory devmem) {
   if (runtime == nullptr) {
     TI_WARN("ignored attempt to free memory on runtime of null handle");

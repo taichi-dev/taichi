@@ -27,6 +27,8 @@ class Runtime {
   virtual taichi::lang::Device &get() = 0;
 
   virtual TiAotModule load_aot_module(const char *module_path) = 0;
+  virtual taichi::lang::DeviceAllocation allocate_memory(
+      const taichi::lang::Device::AllocParams &params);
   virtual void buffer_copy(const taichi::lang::DevicePtr &dst,
                            const taichi::lang::DevicePtr &src,
                            size_t size) = 0;

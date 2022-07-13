@@ -74,7 +74,7 @@ std::vector<float32> &SwapChain::dump_depth_buffer() {
 
   for (int i = 0; i < w; i++) {
     for (int j = 0; j < h; j++) {
-        depth_buffer_data_[i * h + (h - j - 1)] = ptr[j * w + i];
+      depth_buffer_data_[i * h + (h - j - 1)] = ptr[j * w + i];
     }
   }
   app_context_->device().unmap(depth_buffer);

@@ -133,7 +133,7 @@ class Window:
             2d numpy array: [width, height] with (0.0~1.0) float-format.
         """
         return self.window.get_depth_buffer()
-        
+
     def get_image_buffer(self):
         """Get the window content to numpy array.
 

@@ -1148,9 +1148,10 @@ inline void buffer_image_copy_ti_to_vk(VkBufferImageCopy &copy_info,
   copy_info.imageOffset.z = params.image_offset.z;
   copy_info.imageSubresource.aspectMask =
       params.image_aspect_flag;  // FIXME: add option in BufferImageCopyParams
-                                  // to support copying depth images
-                                  // FIXED: added an option in BufferImageCopyParams
-                                  // as image_aspect_flag by yuhaoLong(mocki)
+                                 // to support copying depth images
+                                 // FIXED: added an option in
+                                 // BufferImageCopyParams as image_aspect_flag
+                                 // by yuhaoLong(mocki)
   copy_info.imageSubresource.baseArrayLayer = params.image_base_layer;
   copy_info.imageSubresource.layerCount = params.image_layer_count;
   copy_info.imageSubresource.mipLevel = params.image_mip_level;
@@ -2449,9 +2450,9 @@ void VulkanSurface::present_image(
   device_->wait_idle();
 }
 
-DeviceAllocation VulkanSurface::get_depth_data(DeviceAllocation& depth_alloc) {
+DeviceAllocation VulkanSurface::get_depth_data(DeviceAllocation &depth_alloc) {
   auto *stream = device_->get_graphics_stream();
-  
+
   auto [w, h] = get_size();
   size_t size_bytes = w * h * 4;
 

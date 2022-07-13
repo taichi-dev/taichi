@@ -271,42 +271,6 @@ class TypeCheck : public IRVisitor {
     val = cast_stmt;
   }
 
-  bool is_assertion_for_pow(AssertStmt *stmt, BinaryOpStmt *cond) {
-    /*
-     * returns true if stmt is asserting cond for pow
-     * TODO(AD1024): maybe consider a structural comparator?
-     * */
-    if (!stmt->cond->is<BinaryOpStmt>())
-      return false;
-    auto lhs_cond = stmt->cond->cast<BinaryOpStmt>();
-    // check whether both are asserting on the same lhs stmt
-    if (lhs_cond->lhs != cond->lhs)
-      return false;
-    auto stmt_val = lhs_cond->rhs;
-    auto rhs_stmt = stmt_val;
-    if (!stmt_val->is<ConstStmt>()) {
-      // Handle cast case (e.g. i32 -> i64) added by type check
-      auto cast_stmt = stmt_val->cast<UnaryOpStmt>();
-      if (!cast_stmt) {
-        return false;
-      }
-      rhs_stmt = cast_stmt->operand;
-    }
-    auto val = rhs_stmt->cast<ConstStmt>();
-    if (!val) {
-      return false;
-    }
-    auto cond_val = cond->rhs->cast<ConstStmt>();
-    if (val->val.data.size() != cond_val->val.data.size())
-      return false;
-    for (size_t i = 0; i < val->val.data.size(); ++i) {
-      if (!val->val[i].equal_type_and_value(cond_val->val[i])) {
-        return false;
-      }
-    }
-    return true;
-  }
-
   void visit(BinaryOpStmt *stmt) override {
     auto error = [&](std::string comment = "") {
       if (comment == "") {
@@ -390,32 +354,6 @@ class TypeCheck : public IRVisitor {
     matching = matching && (stmt->lhs->ret_type == stmt->rhs->ret_type);
     if (!matching) {
       error();
-    }
-    // Insert assertions if debug is on
-    if (stmt->op_type == BinaryOpType::pow) {
-      if (is_integral(stmt->rhs->ret_type) &&
-          is_integral(stmt->lhs->ret_type)) {
-        if (config_.debug) {
-          auto iter = stmt->parent->find(stmt);
-          auto compare_rhs = Stmt::make<ConstStmt>(TypedConstant(0));
-          auto compare = std::make_unique<BinaryOpStmt>(
-              BinaryOpType::cmp_ge, stmt->rhs, compare_rhs.get());
-          compare->ret_type = PrimitiveType::i32;
-          if (iter == stmt->parent->statements.begin() ||
-              !(--iter)->get()->is<AssertStmt>() ||
-              !is_assertion_for_pow(iter->get()->cast<AssertStmt>(),
-                                    compare.get())) {
-            std::string msg =
-                "Negative exponent for integer pows are not allowed";
-            auto assert_stmt = std::make_unique<AssertStmt>(
-                compare.get(), msg, std::vector<Stmt *>());
-            assert_stmt->accept(this);
-            stmt->insert_before_me(std::move(compare_rhs));
-            stmt->insert_before_me(std::move(compare));
-            stmt->insert_before_me(std::move(assert_stmt));
-          }
-        }
-      }
     }
     if (is_comparison(stmt->op_type)) {
       stmt->ret_type = TypeFactory::create_vector_or_scalar_type(

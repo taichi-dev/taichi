@@ -63,7 +63,7 @@ uint32_t SwapChain::height() {
 taichi::lang::Surface &SwapChain::surface() {
   return *(surface_.get());
 }
-std::vector<float32> &SwapChain::dump_depth_buffer() {
+std::vector<float> &SwapChain::dump_depth_buffer() {
   auto [w, h] = surface_->get_size();
   curr_width_ = w;
   curr_height_ = h;

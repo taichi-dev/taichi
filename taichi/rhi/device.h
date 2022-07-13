@@ -286,7 +286,7 @@ struct BufferImageCopyParams {
   } image_extent;
   uint32_t image_base_layer{0};
   uint32_t image_layer_count{1};
-  uint32_t image_aspect_flag{0};
+  uint32_t image_aspect_flag{1};
 };
 
 struct ImageCopyParams {

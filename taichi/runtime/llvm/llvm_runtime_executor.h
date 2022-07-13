@@ -3,6 +3,8 @@
 #include <cstddef>
 #include <memory>
 
+#ifdef TI_WITH_LLVM
+
 #include "taichi/rhi/llvm/llvm_device.h"
 #include "taichi/runtime/llvm/llvm_offline_cache.h"
 #include "taichi/runtime/llvm/snode_tree_buffer_manager.h"
@@ -162,3 +164,5 @@ class LlvmRuntimeExecutor {
 
 }  // namespace lang
 }  // namespace taichi
+
+#endif  // TI_WITH_LLVM

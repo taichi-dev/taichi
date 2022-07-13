@@ -9,25 +9,13 @@
 #include "taichi/ir/ir.h"
 #include "taichi/runtime/llvm/launch_arg_info.h"
 #include "taichi/codegen/llvm/llvm_codegen_utils.h"
+#include "taichi/codegen/llvm/llvm_compiled_data.h"
 #include "taichi/program/program.h"
 
 namespace taichi {
 namespace lang {
 
 class CodeGenLLVM;
-
-class OffloadedTask {
- public:
-  std::string name;
-  int block_dim{0};
-  int grid_dim{0};
-
-  OffloadedTask(const std::string &name = "",
-                int block_dim = 0,
-                int grid_dim = 0)
-      : name(name), block_dim(block_dim), grid_dim(grid_dim){};
-  TI_IO_DEF(name, block_dim, grid_dim);
-};
 
 class FunctionCreationGuard {
  public:
@@ -40,19 +28,6 @@ class FunctionCreationGuard {
   FunctionCreationGuard(CodeGenLLVM *mb, std::vector<llvm::Type *> arguments);
 
   ~FunctionCreationGuard();
-};
-
-struct LLVMCompiledData {
-  std::vector<OffloadedTask> tasks;
-  std::unique_ptr<llvm::Module> module{nullptr};
-  LLVMCompiledData() = default;
-  LLVMCompiledData(LLVMCompiledData &&) = default;
-  LLVMCompiledData(std::vector<OffloadedTask> tasks,
-                   std::unique_ptr<llvm::Module> module)
-      : tasks(std::move(tasks)), module(std::move(module)) {
-  }
-  LLVMCompiledData clone() const;
-  TI_IO_DEF(tasks);
 };
 
 class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {

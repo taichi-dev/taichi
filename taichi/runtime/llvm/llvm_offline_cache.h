@@ -8,7 +8,8 @@
 #include "taichi/runtime/llvm/launch_arg_info.h"
 #include "taichi/program/kernel.h"
 #include "taichi/util/io.h"
-#include "taichi/codegen/llvm/codegen_llvm.h"
+#include "taichi/codegen/llvm/llvm_compiled_data.h"
+
 namespace taichi {
 namespace lang {
 

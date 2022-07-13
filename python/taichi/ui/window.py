@@ -126,6 +126,14 @@ class Window:
         """
         return self.window.write_image(filename)
 
+    def get_depth_buffer(self):
+        """Get the depth information of current scene to numpy array.
+
+        Returns:
+            2d numpy array: [width, height] with (0.0~1.0) float-format.
+        """
+        return self.window.get_depth_buffer()
+        
     def get_image_buffer(self):
         """Get the window content to numpy array.
 

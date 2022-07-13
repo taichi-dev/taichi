@@ -19,9 +19,9 @@ TEST(Type, BitTypes) {
   auto u16 = TypeFactory::get_instance().get_primitive_int_type(16, false);
 
   auto bs =
-      TypeFactory::get_instance().get_bit_struct_type(u16, {qi5, qu11}, {0, 5});
+      TypeFactory::get_instance().get_bit_struct_type(u16, {qi5, qu11}, {0, 5}, {false, false}, {-1, -1}, {{}, {}});
 
-  EXPECT_EQ(bs->to_string(), "bs(qi5@0, qu11@5)");
+  EXPECT_EQ(bs->to_string(), "bs(0: qi5@0, 1: qu11@5)");
 
   auto qi1 = TypeFactory::get_instance().get_quant_int_type(1, true, i32);
   auto qa = TypeFactory::get_instance().get_quant_array_type(i32, qi1, 32);

@@ -260,6 +260,73 @@ def test_pow_f64(tifunc, npfunc):
 
 
 @test_utils.test()
+def test_select():
+    N = 5
+    loss = ti.field(ti.f32, shape=N)
+    x = ti.field(ti.f32, shape=N)
+    y = ti.field(ti.f32, shape=N)
+    ti.root.lazy_grad()
+
+    for i in range(N):
+        x[i] = i
+        y[i] = -i
+        loss.grad[i] = 1.0
+
+    @ti.kernel
+    def func():
+        for i in range(N):
+            loss[i] += ti.select(i % 2, x[i], y[i])
+
+    func()
+    func.grad()
+    for i in range(N):
+        if i % 2:
+            assert loss[i] == i
+        else:
+            assert loss[i] == -i
+        assert x.grad[i] == i % 2 * 1.0
+        assert y.grad[i] == (not i % 2) * 1.0
+
+
+@test_utils.test()
+def test_select_fwd():
+    N = 5
+    loss = ti.field(ti.f32, shape=N)
+    x = ti.field(ti.f32, shape=N)
+    y = ti.field(ti.f32, shape=N)
+    ti.root.lazy_dual()
+
+    for i in range(N):
+        x[i] = i
+        y[i] = -i
+
+    @ti.kernel
+    def func():
+        for i in range(N):
+            loss[i] = ti.select(i % 2, x[i], y[i])
+
+    with ti.ad.FwdMode(loss=loss, parameters=x, seed=[1.0 for _ in range(N)]):
+        func()
+
+    for i in range(N):
+        if i % 2:
+            assert loss[i] == i
+        else:
+            assert loss[i] == -i
+        assert loss.dual[i] == i % 2 * 1.0
+
+    with ti.ad.FwdMode(loss=loss, parameters=y, seed=[1.0 for _ in range(N)]):
+        func()
+
+    for i in range(N):
+        if i % 2:
+            assert loss[i] == i
+        else:
+            assert loss[i] == -i
+        assert loss.dual[i] == (not i % 2) * 1.0
+
+
+@test_utils.test()
 def test_obey_kernel_simplicity():
     x = ti.field(ti.f32)
     y = ti.field(ti.f32)

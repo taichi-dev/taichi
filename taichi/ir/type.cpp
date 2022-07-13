@@ -180,20 +180,37 @@ BitStructType::BitStructType(
       member_exponents_(member_exponents),
       member_exponent_users_(member_exponent_users) {
   TI_ASSERT(member_types_.size() == member_bit_offsets_.size());
-  int physical_type_bits = data_type_bits(physical_type);
+  TI_ASSERT(member_types_.size() == member_owns_shared_exponents_.size());
+  TI_ASSERT(member_types_.size() == member_exponents_.size());
+  TI_ASSERT(member_types_.size() == member_exponent_users_.size());
+  int physical_type_bits = data_type_bits(physical_type_);
+  int member_total_bits = 0;
   for (auto i = 0; i < member_types_.size(); ++i) {
     QuantIntType *component_qit = nullptr;
     if (auto qit = member_types_[i]->cast<QuantIntType>()) {
       component_qit = qit;
     } else if (auto qfxt = member_types_[i]->cast<QuantFixedType>()) {
       component_qit = qfxt->get_digits_type()->as<QuantIntType>();
-    } else if (auto qflt = member_types_[i]->cast<QuantFloatType>()) {
-      component_qit = qflt->get_digits_type()->as<QuantIntType>();
     } else {
-      TI_NOT_IMPLEMENTED
+      TI_ASSERT(member_types_[i]->is<QuantFloatType>());
+      auto qflt = member_types_[i]->as<QuantFloatType>();
+      component_qit = qflt->get_digits_type()->as<QuantIntType>();
     }
-    auto bits_end = component_qit->get_num_bits() + member_bit_offsets_[i];
-    TI_ASSERT(physical_type_bits >= bits_end)
+    TI_ASSERT(member_bit_offsets_[i] == member_total_bits);
+    member_total_bits += component_qit->get_num_bits();
+  }
+  TI_ASSERT(physical_type_bits >= member_total_bits);
+  for (auto i = 0; i < member_types_.size(); ++i) {
+    auto exponent = member_exponents_[i];
+    if (member_owns_shared_exponents_[i]) {
+      TI_ASSERT(exponent != -1);
+    }
+    if (exponent != -1) {
+      TI_ASSERT(std::find(member_exponent_users_[exponent].begin(), member_exponent_users_[exponent].end(), i) != member_exponent_users_[exponent].end());
+    }
+    for (auto user: member_exponent_users_[i]) {
+      TI_ASSERT(member_exponents_[user] == i);
+    }
   }
 }
 

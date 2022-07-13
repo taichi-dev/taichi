@@ -206,9 +206,11 @@ BitStructType::BitStructType(
       TI_ASSERT(exponent != -1);
     }
     if (exponent != -1) {
-      TI_ASSERT(std::find(member_exponent_users_[exponent].begin(), member_exponent_users_[exponent].end(), i) != member_exponent_users_[exponent].end());
+      TI_ASSERT(std::find(member_exponent_users_[exponent].begin(),
+                          member_exponent_users_[exponent].end(),
+                          i) != member_exponent_users_[exponent].end());
     }
-    for (auto user: member_exponent_users_[i]) {
+    for (auto user : member_exponent_users_[i]) {
       TI_ASSERT(member_exponents_[user] == i);
     }
   }

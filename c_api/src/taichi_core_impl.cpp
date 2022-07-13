@@ -344,50 +344,50 @@ void ti_launch_compute_graph(TiRuntime runtime,
             ndarray.elem_shape.dims,
             ndarray.elem_shape.dims + ndarray.elem_shape.dim_count);
 
-        const taichi::lang::DataType* prim_ty;
+        const taichi::lang::DataType *prim_ty;
         switch (ndarray.elem_type) {
-        case TI_DATA_TYPE_F16:
-          prim_ty = &taichi::lang::PrimitiveType::f16;
-          break;
-        case TI_DATA_TYPE_F32:
-          prim_ty = &taichi::lang::PrimitiveType::f32;
-          break;
-        case TI_DATA_TYPE_F64:
-          prim_ty = &taichi::lang::PrimitiveType::f64;
-          break;
-        case TI_DATA_TYPE_I8:
-          prim_ty = &taichi::lang::PrimitiveType::i8;
-          break;
-        case TI_DATA_TYPE_I16:
-          prim_ty = &taichi::lang::PrimitiveType::i16;
-          break;
-        case TI_DATA_TYPE_I32:
-          prim_ty = &taichi::lang::PrimitiveType::i32;
-          break;
-        case TI_DATA_TYPE_I64:
-          prim_ty = &taichi::lang::PrimitiveType::i64;
-          break;
-        case TI_DATA_TYPE_U8:
-          prim_ty = &taichi::lang::PrimitiveType::u8;
-          break;
-        case TI_DATA_TYPE_U16:
-          prim_ty = &taichi::lang::PrimitiveType::u16;
-          break;
-        case TI_DATA_TYPE_U32:
-          prim_ty = &taichi::lang::PrimitiveType::u32;
-          break;
-        case TI_DATA_TYPE_U64:
-          prim_ty = &taichi::lang::PrimitiveType::u64;
-          break;
-        case TI_DATA_TYPE_GEN:
-          prim_ty = &taichi::lang::PrimitiveType::gen;
-          break;
-        default:
-          TI_ERROR("unexpected data type");
+          case TI_DATA_TYPE_F16:
+            prim_ty = &taichi::lang::PrimitiveType::f16;
+            break;
+          case TI_DATA_TYPE_F32:
+            prim_ty = &taichi::lang::PrimitiveType::f32;
+            break;
+          case TI_DATA_TYPE_F64:
+            prim_ty = &taichi::lang::PrimitiveType::f64;
+            break;
+          case TI_DATA_TYPE_I8:
+            prim_ty = &taichi::lang::PrimitiveType::i8;
+            break;
+          case TI_DATA_TYPE_I16:
+            prim_ty = &taichi::lang::PrimitiveType::i16;
+            break;
+          case TI_DATA_TYPE_I32:
+            prim_ty = &taichi::lang::PrimitiveType::i32;
+            break;
+          case TI_DATA_TYPE_I64:
+            prim_ty = &taichi::lang::PrimitiveType::i64;
+            break;
+          case TI_DATA_TYPE_U8:
+            prim_ty = &taichi::lang::PrimitiveType::u8;
+            break;
+          case TI_DATA_TYPE_U16:
+            prim_ty = &taichi::lang::PrimitiveType::u16;
+            break;
+          case TI_DATA_TYPE_U32:
+            prim_ty = &taichi::lang::PrimitiveType::u32;
+            break;
+          case TI_DATA_TYPE_U64:
+            prim_ty = &taichi::lang::PrimitiveType::u64;
+            break;
+          case TI_DATA_TYPE_GEN:
+            prim_ty = &taichi::lang::PrimitiveType::gen;
+            break;
+          default:
+            TI_ERROR("unexpected data type");
         }
 
-        ndarrays.emplace_back(taichi::lang::Ndarray(
-            devalloc, *prim_ty, shape, elem_shape));
+        ndarrays.emplace_back(
+            taichi::lang::Ndarray(devalloc, *prim_ty, shape, elem_shape));
         arg_map.emplace(std::make_pair(
             arg.name, taichi::lang::aot::IValue::create(ndarrays.back())));
         break;

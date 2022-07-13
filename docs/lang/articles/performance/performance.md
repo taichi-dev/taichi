@@ -47,9 +47,6 @@ def fill():
         val[i] = i
 ```
 
-
-> For **performance profiling** utilities, please see [Profiler](./profiler.md).
-
 ### Background: Thread hierarchy of GPUs
 
 To better understand how the mentioned for-loop is parallelized, we briefly

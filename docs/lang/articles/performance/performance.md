@@ -47,9 +47,8 @@ def fill():
         val[i] = i
 ```
 
-:::note
-For **performance profiling** utilities, please see [Profiler](./profiler.md).
-:::
+
+> For **performance profiling** utilities, please see [Profiler](./profiler.md).
 
 ### Background: Thread hierarchy of GPUs
 

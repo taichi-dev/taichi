@@ -18,6 +18,7 @@ from taichi.lang.util import is_taichi_class, to_taichi_type
 from taichi.types import (annotations, ndarray_type, primitive_types,
                           texture_type)
 from taichi.types.utils import is_integral
+from taichi.lang.snode import SNode, append
 
 if version_info < (3, 9):
     from astunparse import unparse
@@ -603,8 +604,15 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_Attribute(ctx, node):
-        build_stmt(ctx, node.value)
-        node.ptr = getattr(node.value.ptr, node.attr)
+        if node.attr.id == "append":
+            if isinstance(node.value, ast.Subscript):
+                x = build_stmt(ctx, node.value.value)
+                slice = build_stmt(ctx, node.value.slice)
+                node.ptr = lambda val: append(x.parent(), slice, val)
+
+        else:
+            build_stmt(ctx, node.value)
+            node.ptr = getattr(node.value.ptr, node.attr)
         return node.ptr
 
     @staticmethod

@@ -2,6 +2,7 @@ import taichi.lang
 from taichi._lib import core as _ti_core
 from taichi.lang.util import (python_scope, to_numpy_type, to_paddle_type,
                               to_pytorch_type)
+from taichi.lang.snode import SNode
 
 
 class Field:

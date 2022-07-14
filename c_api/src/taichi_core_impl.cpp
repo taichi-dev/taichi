@@ -23,6 +23,10 @@ taichi::lang::DeviceAllocation Runtime::allocate_memory(
   return devalloc;
 }
 
+void Runtime::deallocate_memory(TiMemory devmem) {
+  this->get().dealloc_memory(devmem2devalloc(*this, devmem));
+}
+
 AotModule::AotModule(Runtime &runtime,
                      std::unique_ptr<taichi::lang::aot::Module> &&aot_module)
     : runtime_(&runtime), aot_module_(std::move(aot_module)) {
@@ -128,7 +132,7 @@ void ti_free_memory(TiRuntime runtime, TiMemory devmem) {
   }
 
   Runtime *runtime2 = (Runtime *)runtime;
-  runtime2->get().dealloc_memory(devmem2devalloc(*runtime2, devmem));
+  runtime2->deallocate_memory(devmem);
 }
 
 void *ti_map_memory(TiRuntime runtime, TiMemory devmem) {

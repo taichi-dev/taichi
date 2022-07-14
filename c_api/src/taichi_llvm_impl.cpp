@@ -5,7 +5,10 @@
 
 #include "taichi/runtime/llvm/llvm_runtime_executor.h"
 #include "taichi/runtime/cpu/aot_module_loader_impl.h"
+
+#ifdef TI_WITH_CUDA
 #include "taichi/runtime/cuda/aot_module_loader_impl.h"
+#endif
 
 namespace capi {
 
@@ -49,6 +52,18 @@ taichi::lang::DeviceAllocation LlvmRuntime::allocate_memory(
        llvm_runtime, result_buffer});
 }
 
+void LlvmRuntime::deallocate_memory(TiMemory devmem) {
+  taichi::lang::CompileConfig *config = executor_->get_config();
+  if (taichi::arch_is_cpu(config->arch)) {
+    // For memory allocated through Device::allocate_memory_runtime(),
+    // the corresponding Device::deallocate_memory() interface has not been
+    // implemented yet...
+    TI_NOT_IMPLEMENTED;
+  }
+
+  Runtime::deallocate_memory(devmem);
+}
+
 TiAotModule LlvmRuntime::load_aot_module(const char *module_path) {
   auto *config = executor_->get_config();
   std::unique_ptr<taichi::lang::aot::Module> aot_module{nullptr};
@@ -60,11 +75,15 @@ TiAotModule LlvmRuntime::load_aot_module(const char *module_path) {
     aot_module = taichi::lang::cpu::make_aot_module(aot_params);
 
   } else {
+#ifdef TI_WITH_CUDA
     TI_ASSERT(config->arch == taichi::Arch::cuda);
     taichi::lang::cuda::AotModuleParams aot_params;
     aot_params.executor_ = executor_.get();
     aot_params.module_path = module_path;
     aot_module = taichi::lang::cuda::make_aot_module(aot_params);
+#else
+    TI_NOT_IMPLEMENTED;
+#endif
   }
 
   // Insert LLVMRuntime to RuntimeContext

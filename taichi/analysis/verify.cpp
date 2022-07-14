@@ -45,16 +45,15 @@ class IRVerifier : public BasicStmtVisitor {
           break;
         }
       }
-      TI_ASSERT_INFO(
-          found,
-          "IR broken: stmt {} {} cannot have operand {} {}."
-          " If you are using autodiff, please check out"
-          " https://docs.taichi-lang.org/docs/"
-          "differences_between_taichi_and_python_programs"
-          " If it doesn't help, please open an issue at"
-          " https://github.com/taichi-dev/taichi to help us improve."
-          " Thanks in advance!",
-          stmt->type(), stmt->id, op->type(), op->id);
+      TI_ASSERT_INFO(found,
+                     "IR broken: stmt {} {} cannot have operand {} {}."
+                     " If you are using autodiff, please check out"
+                     " https://docs.taichi-lang.org/docs/"
+                     "differences_between_taichi_and_python_programs"
+                     " If it doesn't help, please open an issue at"
+                     " https://github.com/taichi-dev/taichi to help us improve."
+                     " Thanks in advance!",
+                     stmt->type(), stmt->id, op->type(), op->id);
     }
     visible_stmts_.back().insert(stmt);
   }

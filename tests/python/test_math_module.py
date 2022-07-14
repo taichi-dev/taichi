@@ -1,7 +1,7 @@
 import pytest
 
 import taichi as ti
-from taichi.math import inf, isinf, isnan, nan, vdir, pi
+from taichi.math import inf, isinf, isnan, nan, pi, vdir
 from tests import test_utils
 
 

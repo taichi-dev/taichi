@@ -1435,9 +1435,10 @@ void CodeGenLLVM::create_global_load(GlobalLoadStmt *stmt,
           load_quant_fixed(ptr, qfxt, physical_type, should_cache_as_read_only);
     } else {
       TI_ASSERT(val_type->is<QuantFloatType>());
+      TI_ASSERT(get_ch->input_snode->dt->is<BitStructType>());
       llvm_val[stmt] = load_quant_float(
-          ptr, get_ch->output_snode, val_type->as<QuantFloatType>(),
-          physical_type, should_cache_as_read_only);
+          ptr, get_ch->input_snode->dt->as<BitStructType>(),
+          get_ch->output_snode->id_in_bit_struct, should_cache_as_read_only);
     }
   } else {
     // Byte pointer case.

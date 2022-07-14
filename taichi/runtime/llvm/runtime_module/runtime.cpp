@@ -199,6 +199,22 @@ DEFINE_UNARY_REAL_FUNC(asin)
 DEFINE_UNARY_REAL_FUNC(cos)
 DEFINE_UNARY_REAL_FUNC(sin)
 
+#define DEFINE_FAST_POW(T) \
+  T pow_##T(T x, T n) {    \
+    T ans = 1;             \
+    T tmp = x;             \
+    while (n > 0) {        \
+      if (n & 1)           \
+        ans *= tmp;        \
+      tmp *= tmp;          \
+      n >>= 1;             \
+    }                      \
+    return ans;            \
+  }
+
+DEFINE_FAST_POW(i32)
+DEFINE_FAST_POW(i64)
+
 int abs_i32(int a) {
   if (a > 0) {
     return a;
@@ -295,30 +311,6 @@ f32 atan2_f32(f32 a, f32 b) {
 
 f64 atan2_f64(f64 a, f64 b) {
   return std::atan2(a, b);
-}
-
-i32 pow_i32(i32 x, i32 n) {
-  i32 tmp = x;
-  i32 ans = 1;
-  while (n) {
-    if (n & 1)
-      ans *= tmp;
-    tmp *= tmp;
-    n >>= 1;
-  }
-  return ans;
-}
-
-i64 pow_i64(i64 x, i64 n) {
-  i64 tmp = x;
-  i64 ans = 1;
-  while (n) {
-    if (n & 1)
-      ans *= tmp;
-    tmp *= tmp;
-    n >>= 1;
-  }
-  return ans;
 }
 
 f32 pow_f32(f32 a, f32 b) {

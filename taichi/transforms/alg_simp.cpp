@@ -299,6 +299,9 @@ class AlgSimp : public BasicStmtVisitor {
       } else if (exponent == std::round(exponent) && exponent < 0 &&
                  exponent >= -max_weaken_exponent) {
         // a ** -n -> 1 / a ** n
+        if (is_integral(stmt->lhs->ret_type)) {
+          TI_ERROR("negative exponent in integer pow is not allowed.");
+        }
         auto one = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(1));
         auto one_raw = one.get();
         modifier.insert_before(stmt, std::move(one));

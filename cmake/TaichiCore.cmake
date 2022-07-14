@@ -249,7 +249,6 @@ endif()
 add_subdirectory(taichi/common)
 target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE taichi_common)
 
-
 add_subdirectory(taichi/rhi/interop)
 target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE interop_rhi)
 

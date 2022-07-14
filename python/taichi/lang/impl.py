@@ -302,37 +302,27 @@ class PyTaichi:
                 f'{bar}Please consider specifying a shape for them. E.g.,' +
                 '\n\n  x = ti.field(float, shape=(2, 3))')
 
-    def _check_grad_field_not_placed(self):
+    def _check_gradient_field_not_placed(self, gradient_type):
         not_placed = set()
-        for _var in self.grad_vars:
+        gradient_vars = []
+        if gradient_type == "grad":
+            gradient_vars = self.grad_vars
+        elif gradient_type == "dual":
+            gradient_vars = self.dual_vars
+        for _var in gradient_vars:
             if _var.ptr.snode() is None:
                 not_placed.add(self._get_tb(_var))
 
         if len(not_placed):
             bar = '=' * 44 + '\n'
             raise RuntimeError(
-                f'These field(s) requrie `needs_grad=True`, however their grad field(s) are not placed:\n{bar}'
+                f'These field(s) requrie `needs_{gradient_type}=True`, however their {gradient_type} field(s) are not placed:\n{bar}'
                 + f'{bar}'.join(not_placed) +
-                f'{bar}Please consider place the grad field(s). E.g.,' +
-                '\n\n  ti.root.dense(ti.i, 1).place(x.grad)' +
+                f'{bar}Please consider place the {gradient_type} field(s). E.g.,'
+                + '\n\n  ti.root.dense(ti.i, 1).place(x.{gradient_type})' +
                 '\n\n Or specify a shape for the field(s). E.g.,' +
-                '\n\n  x = ti.field(float, shape=(2, 3), needs_grad=True)')
-
-    def _check_dual_field_not_placed(self):
-        not_placed = set()
-        for _var in self.dual_vars:
-            if _var.ptr.snode() is None:
-                not_placed.add(self._get_tb(_var))
-
-        if len(not_placed):
-            bar = '=' * 44 + '\n'
-            raise RuntimeError(
-                f'These field(s) requrie `needs_dual=True`, however their dual field(s) are not placed:\n{bar}'
-                + f'{bar}'.join(not_placed) +
-                f'{bar}Please consider place the dual field(s). E.g.,' +
-                '\n\n  ti.root.dense(ti.i, 1).place(x.dual)' +
-                '\n\n Or specify a shape for the field(s). E.g.,' +
-                '\n\n  x = ti.field(float, shape=(2, 3), needs_dual=True)')
+                '\n\n  x = ti.field(float, shape=(2, 3), needs_{gradient_type}=True)'
+            )
 
     def _check_matrix_field_member_shape(self):
         for _field in self.matrix_fields:
@@ -355,8 +345,8 @@ class PyTaichi:
         self.materialized = True
 
         self._check_field_not_placed()
-        self._check_grad_field_not_placed()
-        self._check_dual_field_not_placed()
+        self._check_gradient_field_not_placed("grad")
+        self._check_gradient_field_not_placed("dual")
         self._check_matrix_field_member_shape()
         self._calc_matrix_field_dynamic_index_stride()
         self.global_vars = []
@@ -562,12 +552,10 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
         x.ptr.set_dual(x_dual.ptr)
         if needs_dual:
             pytaichi.dual_vars.append(x_dual)
-    elif needs_grad:
+    elif needs_grad or needs_dual:
         raise TaichiRuntimeError(
-            f'{dtype} is not supported for field with `needs_grad=True`.')
-    elif needs_dual:
-        raise TaichiRuntimeError(
-            f'{dtype} is not supported for field with `needs_dual=True`.')
+            f'{dtype} is not supported for field with `needs_grad=True` or `needs_dual=True`.'
+        )
 
     return x, x_grad, x_dual
 

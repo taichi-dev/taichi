@@ -17,6 +17,7 @@ target_include_directories(spirv_codegen
     ${PROJECT_SOURCE_DIR}/external/include
     ${PROJECT_SOURCE_DIR}/external/SPIRV-Headers/include
     ${PROJECT_SOURCE_DIR}/external/SPIRV-Reflect
+    ${LLVM_INCLUDE_DIRS}
   )
 
 target_link_libraries(spirv_codegen PRIVATE taichi_util)

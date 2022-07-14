@@ -97,7 +97,6 @@ class ASTTransformer(Builder):
         # Ref https://github.com/taichi-dev/taichi/issues/2659.
         values = node.value.ptr if is_static_assign else impl.expr_init(
             node.value.ptr)
-
         for node_target in node.targets:
             ASTTransformer.build_assign_unpack(ctx, node_target, values,
                                                is_static_assign)

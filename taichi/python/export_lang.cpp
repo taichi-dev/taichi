@@ -303,6 +303,7 @@ void export_lang(py::module &m) {
       .def("insert_external_func_call", &ASTBuilder::insert_external_func_call)
       .def("expr_alloca", &ASTBuilder::expr_alloca)
       .def("expr_alloca_local_tensor", &ASTBuilder::expr_alloca_local_tensor)
+      .def("expr_alloca_scratch_pad", &ASTBuilder::expr_alloca_scratch_pad)
       .def("create_assert_stmt", &ASTBuilder::create_assert_stmt)
       .def("expr_assign", &ASTBuilder::expr_assign)
       .def("begin_frontend_range_for", &ASTBuilder::begin_frontend_range_for)

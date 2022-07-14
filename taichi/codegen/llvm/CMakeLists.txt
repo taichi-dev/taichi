@@ -13,6 +13,7 @@ target_include_directories(llvm_codegen
   PRIVATE
     ${PROJECT_SOURCE_DIR}
     ${PROJECT_SOURCE_DIR}/external/eigen
+    ${LLVM_INCLUDE_DIRS}
   )
 
 target_link_libraries(llvm_codegen PRIVATE taichi_util)

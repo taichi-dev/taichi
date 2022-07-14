@@ -1147,8 +1147,11 @@ inline void buffer_image_copy_ti_to_vk(VkBufferImageCopy &copy_info,
   copy_info.imageOffset.y = params.image_offset.y;
   copy_info.imageOffset.z = params.image_offset.z;
   copy_info.imageSubresource.aspectMask =
-      VK_IMAGE_ASPECT_COLOR_BIT;  // FIXME: add option in BufferImageCopyParams
-                                  // to support copying depth images
+      params.image_aspect_flag;  // FIXME: add option in BufferImageCopyParams
+                                 // to support copying depth images
+                                 // FIXED: added an option in
+                                 // BufferImageCopyParams as image_aspect_flag
+                                 // by yuhaoLong(mocki)
   copy_info.imageSubresource.baseArrayLayer = params.image_base_layer;
   copy_info.imageSubresource.layerCount = params.image_layer_count;
   copy_info.imageSubresource.mipLevel = params.image_mip_level;
@@ -2377,6 +2380,9 @@ VulkanSurface::~VulkanSurface() {
     }
     swapchain_images_.clear();
   }
+  if (depth_buffer_ != kDeviceNullAllocation) {
+    device_->dealloc_memory(depth_buffer_);
+  }
   if (screenshot_buffer_ != kDeviceNullAllocation) {
     device_->dealloc_memory(screenshot_buffer_);
   }
@@ -2444,6 +2450,38 @@ void VulkanSurface::present_image(
   device_->wait_idle();
 }
 
+DeviceAllocation VulkanSurface::get_depth_data(DeviceAllocation &depth_alloc) {
+  auto *stream = device_->get_graphics_stream();
+
+  auto [w, h] = get_size();
+  size_t size_bytes = w * h * 4;
+
+  if (depth_buffer_ == kDeviceNullAllocation) {
+    Device::AllocParams params{size_bytes, /*host_wrtie*/ false,
+                               /*host_read*/ true, /*export_sharing*/ false,
+                               AllocUsage::Uniform};
+    depth_buffer_ = device_->allocate_memory(params);
+  }
+
+  device_->image_transition(depth_alloc, ImageLayout::present_src,
+                            ImageLayout::transfer_src);
+
+  std::unique_ptr<CommandList> cmd_list{nullptr};
+
+  BufferImageCopyParams copy_params;
+  copy_params.image_extent.x = w;
+  copy_params.image_extent.y = h;
+  copy_params.image_aspect_flag = VK_IMAGE_ASPECT_DEPTH_BIT;
+  cmd_list = stream->new_command_list();
+  cmd_list->image_to_buffer(depth_buffer_.get_ptr(), depth_alloc,
+                            ImageLayout::transfer_src, copy_params);
+  cmd_list->image_transition(depth_alloc, ImageLayout::transfer_src,
+                             ImageLayout::present_src);
+  stream->submit_synced(cmd_list.get());
+
+  return depth_buffer_;
+}
+
 DeviceAllocation VulkanSurface::get_image_data() {
   auto *stream = device_->get_graphics_stream();
   DeviceAllocation img_alloc = swapchain_images_[image_index_];
@@ -2491,6 +2529,7 @@ DeviceAllocation VulkanSurface::get_image_data() {
   BufferImageCopyParams copy_params;
   copy_params.image_extent.x = w;
   copy_params.image_extent.y = h;
+  copy_params.image_aspect_flag = VK_IMAGE_ASPECT_COLOR_BIT;
   cmd_list = stream->new_command_list();
   // TODO: directly map the image to cpu memory
   cmd_list->image_to_buffer(screenshot_buffer_.get_ptr(), img_alloc,

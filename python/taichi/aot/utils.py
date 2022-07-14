@@ -52,12 +52,12 @@ def produce_injected_args(kernel, symbolic_args=None):
                 field_dim = anno.field_dim
                 dtype = anno.dtype
 
-            if element_shape is None or anno.field_dim is None:
+            if element_shape is None or field_dim is None:
                 raise TaichiCompilationError(
                     'Please either specify both `element_shape` and `field_dim` '
                     'in the param annotation, or provide an example '
                     f'ndarray for param={arg.name}')
-            if field_dim != anno.field_dim:
+            if anno.field_dim is not None and field_dim != anno.field_dim:
                 raise TaichiCompilationError(
                     f'{field_dim} from Arg {arg.name} doesn\'t match kernel\'s annotated field_dim={anno.field_dim}'
                 )
@@ -69,20 +69,19 @@ def produce_injected_args(kernel, symbolic_args=None):
                 )
 
             if element_dim is None or element_dim == 0:
-                injected_args.append(
-                    ScalarNdarray(dtype, (2, ) * anno.field_dim))
+                injected_args.append(ScalarNdarray(dtype, (2, ) * field_dim))
             elif element_dim == 1:
                 injected_args.append(
                     VectorNdarray(element_shape[0],
                                   dtype=dtype,
-                                  shape=(2, ) * anno.field_dim,
+                                  shape=(2, ) * field_dim,
                                   layout=Layout.AOS))
             elif element_dim == 2:
                 injected_args.append(
                     MatrixNdarray(element_shape[0],
                                   element_shape[1],
                                   dtype=dtype,
-                                  shape=(2, ) * anno.field_dim,
+                                  shape=(2, ) * field_dim,
                                   layout=Layout.AOS))
             else:
                 raise RuntimeError('')

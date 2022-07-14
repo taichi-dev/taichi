@@ -3,7 +3,7 @@
 #include <array>
 
 #include <spirv/unified1/spirv.hpp>
-#include "taichi/lang_util.h"
+#include "taichi/util/lang_util.h"
 #include "taichi/ir/type.h"
 #include "taichi/util/testing.h"
 #include "taichi/codegen/spirv/snode_struct_compiler.h"

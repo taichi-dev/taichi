@@ -1,6 +1,6 @@
 // Definitions of utility functions and enums
 
-#include "taichi/lang_util.h"
+#include "taichi/util/lang_util.h"
 
 #include "taichi/math/linalg.h"
 #include "taichi/rhi/arch.h"

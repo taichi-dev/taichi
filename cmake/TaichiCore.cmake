@@ -95,8 +95,6 @@ file(GLOB TAICHI_CORE_SOURCE
     "taichi/analysis/*.cpp" "taichi/analysis/*.h" #IR
     "taichi/aot/*.cpp" "taichi/aot/*.h" #RT?
     "taichi/codegen/*.cpp" "taichi/codegen/*.h" #CODEGEN
-    "taichi/codegen/spirv/*" #CODEGEN
-    "taichi/common/*"
     "taichi/ir/*"
     "taichi/jit/*"
     "taichi/math/*"
@@ -104,10 +102,8 @@ file(GLOB TAICHI_CORE_SOURCE
     "taichi/struct/*"
     "taichi/system/*"
     "taichi/transforms/*"
-    "taichi/util/*"
     "taichi/gui/*"
     "taichi/platform/cuda/*" "taichi/platform/mac/*" "taichi/platform/windows/*"
-    "taichi/lang_util.h" "taichi/lang_util.cpp"
     "taichi/runtime/*.h" "taichi/runtime/*.cpp"
     "taichi/rhi/*.h" "taichi/rhi/*.cpp"
 )
@@ -216,7 +212,6 @@ endif()
 # TODO: replace these includes per target basis
 target_include_directories(${CORE_LIBRARY_NAME} PRIVATE ${CMAKE_SOURCE_DIR})
 target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/include)
-target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/spdlog/include)
 target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Tools/include)
 target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/PicoSHA2)
 target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/eigen)
@@ -249,6 +244,10 @@ if(DEFINED ENV{LLVM_DIR})
     set(LLVM_DIR $ENV{LLVM_DIR})
     message("Getting LLVM_DIR=${LLVM_DIR} from the environment variable")
 endif()
+
+
+add_subdirectory(taichi/common)
+target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE taichi_common)
 
 add_subdirectory(taichi/rhi/interop)
 target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE interop_rhi)
@@ -316,7 +315,6 @@ if(TI_WITH_LLVM)
     add_subdirectory(taichi/runtime/llvm)
     add_subdirectory(taichi/runtime/program_impls/llvm)
 
-    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE llvm_rhi)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE llvm_codegen)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE llvm_runtime)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE llvm_program_impl)
@@ -327,6 +325,10 @@ if(TI_WITH_LLVM)
     add_subdirectory(taichi/runtime/wasm)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE wasm_runtime)
 endif()
+
+
+add_subdirectory(taichi/util)
+target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE taichi_util)
 
 if (TI_WITH_CUDA_TOOLKIT)
     if("$ENV{CUDA_TOOLKIT_ROOT_DIR}" STREQUAL "")
@@ -377,12 +379,10 @@ endif()
 set(SPIRV_SKIP_EXECUTABLES true)
 set(SPIRV-Headers_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/SPIRV-Headers)
 add_subdirectory(external/SPIRV-Tools)
-# NOTE: SPIRV-Tools-opt must come before SPIRV-Tools
-# https://github.com/KhronosGroup/SPIRV-Tools/issues/1569#issuecomment-390250792
-target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE SPIRV-Tools-opt ${SPIRV_TOOLS})
+add_subdirectory(taichi/codegen/spirv)
+target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE spirv_codegen)
 
-target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Headers/include)
-target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Reflect)
+
 
 add_subdirectory(taichi/runtime/gfx)
 target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE gfx_runtime)

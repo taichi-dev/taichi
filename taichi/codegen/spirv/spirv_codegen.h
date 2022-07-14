@@ -1,6 +1,6 @@
 #pragma once
 
-#include "taichi/lang_util.h"
+#include "taichi/util/lang_util.h"
 
 #include "taichi/codegen/spirv/snode_struct_compiler.h"
 #include "taichi/codegen/spirv/kernel_utils.h"

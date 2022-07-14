@@ -6,7 +6,7 @@
 #include <string>
 
 #include "taichi/common/trait.h"
-#include "taichi/lang_util.h"
+#include "taichi/util/lang_util.h"
 #include "taichi/platform/mac/objc_api.h"
 
 namespace taichi {

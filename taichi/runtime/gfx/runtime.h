@@ -1,5 +1,5 @@
 #pragma once
-#include "taichi/lang_util.h"
+#include "taichi/util/lang_util.h"
 
 #include <vector>
 #include <chrono>

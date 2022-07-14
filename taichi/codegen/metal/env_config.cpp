@@ -1,6 +1,6 @@
 #include "taichi/codegen/metal/env_config.h"
 
-#include "taichi/lang_util.h"
+#include "taichi/util/lang_util.h"
 #include "taichi/util/environ_config.h"
 
 TLANG_NAMESPACE_BEGIN

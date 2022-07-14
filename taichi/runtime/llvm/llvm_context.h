@@ -9,7 +9,7 @@
 #include <functional>
 #include <thread>
 
-#include "taichi/lang_util.h"
+#include "taichi/util/lang_util.h"
 #include "taichi/runtime/llvm/llvm_fwd.h"
 #include "taichi/ir/snode.h"
 #include "taichi/jit/jit_session.h"

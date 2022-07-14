@@ -27,16 +27,17 @@ from taichi.lang.util import (cook_dtype, get_traceback, is_taichi_class,
 from taichi.types.primitive_types import all_types, f16, f32, f64, i32, i64
 
 
-
 @taichi_scope
 def expr_init_local_tensor(shape, element_type, elements):
     return get_runtime().prog.current_ast_builder().expr_alloca_local_tensor(
         shape, element_type, elements)
 
+
 @taichi_scope
 def expr_init_scratch_pad(shape, element_type):
     return get_runtime().prog.current_ast_builder().expr_alloca_scratch_pad(
         shape, element_type)
+
 
 @taichi_scope
 def expr_init(rhs):

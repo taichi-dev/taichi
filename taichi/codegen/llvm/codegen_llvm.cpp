@@ -129,13 +129,15 @@ void CodeGenLLVM::visit(AllocaStmt *stmt) {
     auto array_size = tlctx->get_constant(tensor_type->get_num_elements());
     // Return type is [array_size x type]*.
     if (stmt->is_shared) {
-      size_t data_element_size = tlctx->get_type_size(tlctx->get_data_type(tensor_type->get_element_type()));
-      auto type = llvm::ArrayType::get(llvm::Type::getInt8Ty(*llvm_context),
-                                        data_element_size * tensor_type->get_num_elements());
+      size_t data_element_size = tlctx->get_type_size(
+          tlctx->get_data_type(tensor_type->get_element_type()));
+      auto type = llvm::ArrayType::get(
+          llvm::Type::getInt8Ty(*llvm_context),
+          data_element_size * tensor_type->get_num_elements());
       auto base = new llvm::GlobalVariable(
           *module, type, false, llvm::GlobalValue::ExternalLinkage, nullptr,
-          fmt::format("shared_array_{}", stmt->id), nullptr, llvm::GlobalVariable::NotThreadLocal,
-          3 /*addrspace=shared*/);
+          fmt::format("shared_array_{}", stmt->id), nullptr,
+          llvm::GlobalVariable::NotThreadLocal, 3 /*addrspace=shared*/);
       base->setAlignment(llvm::MaybeAlign(8));
 
       auto ptr = builder->CreateGEP(
@@ -145,7 +147,7 @@ void CodeGenLLVM::visit(AllocaStmt *stmt) {
           base, {tlctx->get_constant(0), tlctx->get_constant(0)});
       auto ptr_type = llvm::PointerType::get(
           tlctx->get_data_type(tensor_type->get_element_type()), 0);
-        llvm_val[stmt] = builder->CreatePointerCast(ptr, ptr_type);
+      llvm_val[stmt] = builder->CreatePointerCast(ptr, ptr_type);
     } else {
       llvm_val[stmt] = create_entry_block_alloca(type, 0, array_size);
     }

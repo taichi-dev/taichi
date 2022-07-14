@@ -63,14 +63,15 @@ class FrontendAllocaStmt : public Stmt {
  public:
   Identifier ident;
 
-  FrontendAllocaStmt(const Identifier &lhs, DataType type) : ident(lhs), is_shared(false) {
+  FrontendAllocaStmt(const Identifier &lhs, DataType type)
+      : ident(lhs), is_shared(false) {
     ret_type = TypeFactory::create_vector_or_scalar_type(1, type);
   }
 
   FrontendAllocaStmt(const Identifier &lhs,
                      std::vector<int> shape,
-                     DataType element, 
-                     bool is_shared=false)
+                     DataType element,
+                     bool is_shared = false)
       : ident(lhs), is_shared(is_shared) {
     ret_type = DataType(TypeFactory::create_tensor_type(shape, element));
   }

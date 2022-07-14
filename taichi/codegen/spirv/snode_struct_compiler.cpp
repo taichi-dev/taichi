@@ -92,7 +92,7 @@ class StructCompiler {
         auto &ch = sn->ch[i];
         auto child_offset = cell_stride;
         auto *ch_snode = ch.get();
-        cell_stride += compute_snode_size(ch_snode);
+        cell_stride += snode_size;
         snode_descriptors_.find(ch_snode->id)
             ->second.mem_offset_in_parent_cell = child_offset;
       }

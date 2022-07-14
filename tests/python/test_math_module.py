@@ -1,7 +1,7 @@
 import pytest
 
 import taichi as ti
-from taichi.math import inf, isinf, isnan, nan
+from taichi.math import inf, isinf, isnan, nan, vdir, pi
 from tests import test_utils
 
 
@@ -28,3 +28,14 @@ def _test_inf_nan(dt):
 @test_utils.test()
 def test_inf_nan_f32(dt):
     _test_inf_nan(dt)
+
+
+@test_utils.test()
+def test_vdir():
+    ti.init()
+
+    @ti.kernel
+    def make_test():
+        assert all(vdir(pi / 2) == [0, 1])
+
+    make_test()

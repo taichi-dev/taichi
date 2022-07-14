@@ -139,6 +139,7 @@ class SNode {
   std::unique_ptr<BitStructTypeBuilder> bit_struct_type_builder{nullptr};
   SNode *exp_snode{nullptr};  // for QuantFloatType
   int bit_offset{0};          // for children of bit_struct only
+  int id_in_bit_struct{0};    // for children of bit_struct only
   bool placing_shared_exp{false};
   SNode *currently_placing_exp_snode{nullptr};
   Type *currently_placing_exp_snode_dtype{nullptr};

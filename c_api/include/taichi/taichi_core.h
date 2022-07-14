@@ -52,6 +52,25 @@ typedef enum TiArch {
   TI_ARCH_MAX_ENUM = 0xffffffff,
 } TiArch;
 
+// enumeration.data_type
+typedef enum TiDataType {
+  TI_DATA_TYPE_F16 = 0,
+  TI_DATA_TYPE_F32 = 1,
+  TI_DATA_TYPE_F64 = 2,
+  TI_DATA_TYPE_I8 = 3,
+  TI_DATA_TYPE_I16 = 4,
+  TI_DATA_TYPE_I32 = 5,
+  TI_DATA_TYPE_I64 = 6,
+  TI_DATA_TYPE_U1 = 7,
+  TI_DATA_TYPE_U8 = 8,
+  TI_DATA_TYPE_U16 = 9,
+  TI_DATA_TYPE_U32 = 10,
+  TI_DATA_TYPE_U64 = 11,
+  TI_DATA_TYPE_GEN = 12,
+  TI_DATA_TYPE_UNKNOWN = 13,
+  TI_DATA_TYPE_MAX_ENUM = 0xffffffff,
+} TiDataType;
+
 // enumeration.argument_type
 typedef enum TiArgumentType {
   TI_ARGUMENT_TYPE_I32 = 0,
@@ -96,6 +115,7 @@ typedef struct TiNdArray {
   TiMemory memory;
   TiNdShape shape;
   TiNdShape elem_shape;
+  TiDataType elem_type;
 } TiNdArray;
 
 // union.argument_value

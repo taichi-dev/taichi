@@ -42,6 +42,8 @@ class Window final : public WindowBase {
 
   void write_image(const std::string &filename) override;
 
+  std::vector<float> &get_depth_buffer(uint32_t &w, uint32_t &h) override;
+
   std::vector<uint32_t> &get_image_buffer(uint32_t &w, uint32_t &h) override;
 
   ~Window();

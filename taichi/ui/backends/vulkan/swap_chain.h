@@ -16,6 +16,8 @@ class TI_DLL_EXPORT SwapChain {
 
   void resize(uint32_t width, uint32_t height);
 
+  std::vector<float> &dump_depth_buffer();
+
   std::vector<uint32_t> &dump_image_buffer();
 
   void write_image(const std::string &filename);
@@ -28,6 +30,8 @@ class TI_DLL_EXPORT SwapChain {
   taichi::lang::DeviceAllocation depth_allocation_;
 
   std::unique_ptr<taichi::lang::Surface> surface_;
+
+  std::vector<float> depth_buffer_data_;
 
   std::vector<uint32_t> image_buffer_data_;
 

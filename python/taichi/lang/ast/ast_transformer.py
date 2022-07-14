@@ -19,6 +19,7 @@ from taichi.types import (annotations, ndarray_type, primitive_types,
                           texture_type)
 from taichi.types.utils import is_integral
 from taichi.lang.snode import append
+from taichi.lang.field import Field
 
 if version_info < (3, 9):
     from astunparse import unparse
@@ -604,14 +605,13 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_Attribute(ctx, node):
-        if node.attr == "append":
-            if isinstance(node.value, ast.Subscript):
-                x = build_stmt(ctx, node.value.value)
-                if not hasattr(x, "parent") and x.parent().ptr.type != _ti_core.SNodeType.dynamic:
-                    raise TaichiSyntaxError(f"In Taichi scope the `append` method is only defined for dynamic SNodes, but {x} is encountered")
-                index = build_stmt(ctx, node.value.slice)
-                node.value.ptr = None
-                node.ptr = lambda val: append(x.parent(), index, val)
+        if node.attr == "append" and isinstance(node.value, ast.Subscript):
+            x = build_stmt(ctx, node.value.value)
+            if not isinstance(x, Field) or x.parent().ptr.type != _ti_core.SNodeType.dynamic:
+                raise TaichiSyntaxError(f"In Taichi scope the `append` method is only defined for dynamic SNodes, but {x} is encountered")
+            index = build_stmt(ctx, node.value.slice)
+            node.value.ptr = None
+            node.ptr = lambda val: append(x.parent(), index, val)
         else:
             build_stmt(ctx, node.value)
             node.ptr = getattr(node.value.ptr, node.attr)

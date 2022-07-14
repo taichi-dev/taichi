@@ -81,11 +81,11 @@ class StructCompiler {
         element_strides.push_back({compute_snode_size(ch.get()), i});
         i += 1;
       }
-      std::sort(element_strides.begin(), element_strides.end(),
-                [](const std::pair<size_t, int> &a,
-                   const std::pair<size_t, int> &b) {
-                  return a.first < b.first;
-                });
+      std::sort(
+          element_strides.begin(), element_strides.end(),
+          [](const std::pair<size_t, int> &a, const std::pair<size_t, int> &b) {
+            return a.first < b.first;
+          });
 
       std::size_t cell_stride = 0;
       for (auto &[snode_size, i] : element_strides) {

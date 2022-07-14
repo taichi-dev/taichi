@@ -1071,6 +1071,7 @@ class Matrix(TaichiOperations):
               name="",
               offset=None,
               needs_grad=False,
+              needs_dual=False,
               layout=Layout.AOS):
         """Construct a data container to hold all elements of the Matrix.
 
@@ -1083,6 +1084,7 @@ class Matrix(TaichiOperations):
             offset (Union[int, tuple of int], optional): The coordinate offset
                 of all elements in a field.
             needs_grad (bool, optional): Whether the Matrix need grad field (reverse mode autodiff).
+            needs_dual (bool, optional): Whether the Matrix need dual field (forward mode autodiff).
             layout (Layout, optional): The field layout, either Array Of
                 Structure (AOS) or Structure Of Array (SOA).
 
@@ -1101,7 +1103,8 @@ class Matrix(TaichiOperations):
                     entries.append(
                         impl.create_field_member(dtype[i],
                                                  name=name,
-                                                 needs_grad=needs_grad))
+                                                 needs_grad=needs_grad,
+                                                 needs_dual=needs_dual))
             else:
                 assert len(np.shape(dtype)) == 2 and len(dtype) == n and len(
                     dtype[0]
@@ -1111,13 +1114,15 @@ class Matrix(TaichiOperations):
                         entries.append(
                             impl.create_field_member(dtype[i][j],
                                                      name=name,
-                                                     needs_grad=needs_grad))
+                                                     needs_grad=needs_grad,
+                                                     needs_dual=needs_dual))
         else:
             for _ in range(n * m):
                 entries.append(
                     impl.create_field_member(dtype,
                                              name=name,
-                                             needs_grad=needs_grad))
+                                             needs_grad=needs_grad,
+                                             needs_dual=needs_dual))
         entries, entries_grad, entries_dual = zip(*entries)
 
         entries, entries_grad, entries_dual = MatrixField(
@@ -1153,12 +1158,20 @@ class Matrix(TaichiOperations):
                         impl.root.dense(impl.index_nd(dim),
                                         shape).place(ScalarField(e),
                                                      offset=offset)
+                if needs_dual:
+                    for e in entries_dual._get_field_members():
+                        impl.root.dense(impl.index_nd(dim),
+                                        shape).place(ScalarField(e),
+                                                     offset=offset)
             else:
                 impl.root.dense(impl.index_nd(dim), shape).place(entries,
                                                                  offset=offset)
                 if needs_grad:
                     impl.root.dense(impl.index_nd(dim),
                                     shape).place(entries_grad, offset=offset)
+                if needs_dual:
+                    impl.root.dense(impl.index_nd(dim),
+                                    shape).place(entries_dual, offset=offset)
         return entries
 
     @classmethod

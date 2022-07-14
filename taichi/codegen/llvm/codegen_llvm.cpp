@@ -734,10 +734,8 @@ llvm::Value *CodeGenLLVM::create_print(std::string tag,
         builder->CreateFPExt(value, tlctx->get_data_type(PrimitiveType::f64));
   args.push_back(value);
 
-  auto func_type_func =
-      get_runtime_function("get_func_type_host_printf");
-  return create_call(runtime_printf, func_type_func->getFunctionType(),
-                     args);
+  auto func_type_func = get_runtime_function("get_func_type_host_printf");
+  return create_call(runtime_printf, func_type_func->getFunctionType(), args);
 }
 
 llvm::Value *CodeGenLLVM::create_print(std::string tag, llvm::Value *value) {
@@ -797,8 +795,8 @@ void CodeGenLLVM::visit(PrintStmt *stmt) {
   args.insert(args.begin(),
               builder->CreateGlobalStringPtr(formats.c_str(), "format_string"));
   auto func_type_func = get_runtime_function("get_func_type_host_printf");
-  llvm_val[stmt] = create_call(runtime_printf, func_type_func->getFunctionType()
-      , args);
+  llvm_val[stmt] =
+      create_call(runtime_printf, func_type_func->getFunctionType(), args);
 }
 
 void CodeGenLLVM::visit(ConstStmt *stmt) {
@@ -2017,8 +2015,7 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     // initialize the coordinates
     auto new_coordinates = create_entry_block_alloca(physical_coordinate_ty);
 
-    create_call(refine,
-                {parent_coordinates, new_coordinates,
+    create_call(refine, {parent_coordinates, new_coordinates,
                          builder->CreateLoad(
 #ifdef TI_LLVM_15
                              loop_index_ty,
@@ -2161,7 +2158,8 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     struct_for_func = patched_struct_for_func;
   }
   // Loop over nodes in the element list, in parallel
-  create_call(struct_for_func,
+  create_call(
+      struct_for_func,
       {get_context(), tlctx->get_constant(leaf_block->id),
        tlctx->get_constant(list_element_size), tlctx->get_constant(num_splits),
        body, tlctx->get_constant(stmt->tls_size),

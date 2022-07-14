@@ -133,7 +133,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   llvm::Value *create_call(llvm::Function *func,
                            llvm::ArrayRef<llvm::Value *> args = {});
 
-  llvm::Value *create_call(llvm::Value *func, llvm::FunctionType *func_ty,
+  llvm::Value *create_call(llvm::Value *func,
+                           llvm::FunctionType *func_ty,
                            llvm::ArrayRef<llvm::Value *> args = {});
 
   llvm::Value *create_call(std::string func_name,

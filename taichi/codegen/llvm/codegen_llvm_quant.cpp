@@ -22,8 +22,8 @@ llvm::Value *CodeGenLLVM::atomic_add_quant_int(AtomicOpStmt *stmt,
   // FIXME: get ptr_ty from taichi instead of llvm.
   auto physical_type = builder->getInt32Ty();
   if (stmt->dest->is<taichi::lang::GetChStmt>()) {
-    physical_type = cast<llvm::IntegerType>(llvm_type((*((taichi::lang::GetChStmt *)stmt->dest))
-        .input_snode->physical_type));
+    physical_type = cast<llvm::IntegerType>(llvm_type(
+        (*((taichi::lang::GetChStmt *)stmt->dest)).input_snode->physical_type));
   }
 #else
   auto physical_type = byte_ptr->getType()->getPointerElementType();

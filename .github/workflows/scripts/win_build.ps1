@@ -71,6 +71,7 @@ if ($installVulkan) {
     $env:TAICHI_CMAKE_ARGS += " -DTI_WITH_VULKAN:BOOL=ON"
 }
 
+$env:TAICHI_CMAKE_ARGS += " -DTI_WITH_C_API:BOOL=ON"
 $env:TAICHI_CMAKE_ARGS += " -DTI_WITH_DX11:BOOL=ON"
 
 Pop-Location

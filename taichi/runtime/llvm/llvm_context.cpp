@@ -529,12 +529,6 @@ void TaichiLLVMContext::set_struct_module(
       continue;
     }
     TI_ASSERT(!data->runtime_module);
-    data->struct_module.reset();
-    old_contexts_.push_back(std::move(data->thread_safe_llvm_context));
-    data->thread_safe_llvm_context =
-        std::make_unique<llvm::orc::ThreadSafeContext>(
-            std::make_unique<llvm::LLVMContext>());
-    data->llvm_context = data->thread_safe_llvm_context->getContext();
     data->struct_module = clone_module_to_context(
         this_thread_data->struct_module.get(), data->llvm_context);
   }

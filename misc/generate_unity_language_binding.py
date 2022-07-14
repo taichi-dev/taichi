@@ -239,7 +239,7 @@ def print_module_header(module):
         "using System.Runtime.InteropServices;",
         "using System.Collections.Generic;",
         "",
-        "namespace Taichi {",
+        "namespace Taichi.Generated {",
     ]
 
     for x in module.declr_reg:
@@ -251,7 +251,7 @@ def print_module_header(module):
 
     out += [
         "",
-        "} // namespace Taichi",
+        "} // namespace Taichi.Generated",
         "",
     ]
 

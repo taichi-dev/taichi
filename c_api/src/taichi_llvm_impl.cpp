@@ -83,7 +83,7 @@ void LlvmRuntime::submit() {
 }
 
 void LlvmRuntime::wait() {
-  executor_->sychronize();
+  executor_->synchronize();
 }
 
 }  // namespace capi

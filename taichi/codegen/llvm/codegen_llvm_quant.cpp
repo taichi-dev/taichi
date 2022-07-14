@@ -554,9 +554,9 @@ llvm::Value *CodeGenLLVM::load_quant_float(llvm::Value *digits_ptr,
                                            Type *physical_type,
                                            bool should_cache_as_read_only,
                                            bool shared_exponent) {
-  auto digits = load_quant_int(digits_ptr,
-                               qflt->get_digits_type()->as<QuantIntType>(),
-                               physical_type, should_cache_as_read_only);
+  auto digits =
+      load_quant_int(digits_ptr, qflt->get_digits_type()->as<QuantIntType>(),
+                     physical_type, should_cache_as_read_only);
   auto exponent_val = load_quant_int(
       exponent_ptr, qflt->get_exponent_type()->as<QuantIntType>(),
       physical_type, should_cache_as_read_only);

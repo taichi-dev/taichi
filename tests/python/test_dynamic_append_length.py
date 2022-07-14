@@ -14,9 +14,10 @@ def _test_dynamic_append_length(dt):
             for j in range(i):
                 x[i].append(j)
         for i in range(10):
-            assert(ti.length(x.parent(), i) == i)
+            assert (ti.length(x.parent(), i) == i)
             for j in range(i):
-                assert(x[i, j] == j)
+                assert (x[i, j] == j)
+
     test()
 
 
@@ -25,6 +26,9 @@ def test_dynamic_append_length_f32():
     _test_dynamic_append_length(ti.f32)
 
 
-@test_utils.test(exclude=[ti.cc, ti.opengl], default_fp=ti.f64, require=ti.extension.data64, debug=True)
+@test_utils.test(exclude=[ti.cc, ti.opengl],
+                 default_fp=ti.f64,
+                 require=ti.extension.data64,
+                 debug=True)
 def test_dynamic_append_length_f64():
     _test_dynamic_append_length(ti.f64)

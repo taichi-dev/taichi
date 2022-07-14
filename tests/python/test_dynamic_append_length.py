@@ -17,7 +17,7 @@ def _test_dynamic_append_length(dt):
     test()
 
 
-@test_utils.test(default_fp=ti.f32)
+@test_utils.test(arch=ti.cpu, default_fp=ti.f32)
 def test_dynamic_append_length_f32():
     _test_dynamic_append_length(ti.f32)
 

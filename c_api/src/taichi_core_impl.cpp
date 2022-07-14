@@ -2,6 +2,7 @@
 #include "taichi_vulkan_impl.h"
 #include "taichi_llvm_impl.h"
 #include "taichi/program/ndarray.h"
+#include <iostream>
 
 Runtime::Runtime(taichi::Arch arch) : arch(arch) {
 }
@@ -51,23 +52,28 @@ Runtime &AotModule::runtime() {
 TiRuntime ti_create_runtime(TiArch arch) {
   switch (arch) {
 #ifdef TI_WITH_VULKAN
-    case TI_ARCH_VULKAN:
+    case TI_ARCH_VULKAN: {
       return (TiRuntime)(static_cast<Runtime *>(new VulkanRuntimeOwned));
+    }
 #endif  // TI_WITH_VULKAN
 #ifdef TI_WITH_LLVM
-    case TI_ARCH_X64:
+    case TI_ARCH_X64: {
       return (TiRuntime)(static_cast<Runtime *>(
           new capi::LlvmRuntime(taichi::Arch::x64)));
-    case TI_ARCH_ARM64:
+    }
+    case TI_ARCH_ARM64: {
       return (TiRuntime)(static_cast<Runtime *>(
           new capi::LlvmRuntime(taichi::Arch::arm64)));
-    case TI_ARCH_CUDA:
+    }
+    case TI_ARCH_CUDA: {
       return (TiRuntime)(static_cast<Runtime *>(
           new capi::LlvmRuntime(taichi::Arch::cuda)));
+    }
 #endif  // TI_WITH_LLVM
-    default:
+    default: {
       TI_WARN("ignored attempt to create runtime on unknown arch");
       return TI_NULL_HANDLE;
+    }
   }
   return TI_NULL_HANDLE;
 }

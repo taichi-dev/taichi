@@ -83,7 +83,7 @@ make_vulkan_runtime_creator_params() {
 
   // FIXME: (penguinliong) Vulkan runtime should be created outside.
   taichi::lang::vulkan::VulkanDeviceCreator::Params params{};
-  params.api_version = VK_API_VERSION_1_3;
+  params.api_version = std::nullopt;
   params.additional_instance_extensions = extensions;
   params.additional_device_extensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
   return params;

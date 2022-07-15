@@ -45,6 +45,9 @@ struct VulkanQueueFamilyIndices {
 class TI_DLL_EXPORT VulkanDeviceCreator {
  public:
   struct Params {
+    // User-provided API version. If assigned, the users MUST list all
+    // their desired extensions in `additional_instance_extensions` and
+    // `additional_device_extensions`; no extension is enabled by default.
     std::optional<uint32_t> api_version;
     bool is_for_ui{false};
     std::vector<std::string> additional_instance_extensions;
@@ -67,12 +70,13 @@ class TI_DLL_EXPORT VulkanDeviceCreator {
   }
 
  private:
-  void create_instance();
+  void create_instance(bool manual_create);
   void setup_debug_messenger();
   void create_surface();
   void pick_physical_device();
-  void create_logical_device();
+  void create_logical_device(bool manual_create);
 
+  uint32_t api_version_{VK_API_VERSION_1_0};
   VkInstance instance_{VK_NULL_HANDLE};
   VkDebugUtilsMessengerEXT debug_messenger_{VK_NULL_HANDLE};
   VkPhysicalDevice physical_device_{VK_NULL_HANDLE};

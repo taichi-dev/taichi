@@ -766,7 +766,7 @@ def vdir(ang):
         >>> @ti.kernel
         >>> def test():
         >>>     x = pi / 2
-        >>>     print(vdir(x))  # [0, 1]
+        >>>     print(ti.math.vdir(x))  # [0, 1]
 
     Returns:
         a 2d vector with argument equals `ang`.

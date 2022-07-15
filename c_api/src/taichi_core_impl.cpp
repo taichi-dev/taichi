@@ -165,7 +165,9 @@ void ti_unmap_memory(TiRuntime runtime, TiMemory devmem) {
 
 TiEvent ti_create_event(TiRuntime runtime) {
   Runtime *runtime2 = (Runtime *)runtime;
-  return (TiEvent)runtime2->get().create_event().release();
+  std::unique_ptr<taichi::lang::DeviceEvent> event = runtime2->get().create_event();
+  Event* event2 = new Event(*runtime2, std::move(event));
+  return (TiEvent)event2;
 }
 void ti_destroy_event(TiEvent event) {
   if (event == nullptr) {

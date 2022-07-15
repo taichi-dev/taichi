@@ -116,7 +116,7 @@ struct CompileConfig {
   double offline_cache_cleaning_factor{0.25};        // [0.f, 1.f]
 
   int num_compile_threads{0};
-  uint32_t spirv_version{0};
+  std::string vk_api_version;
 
   CompileConfig();
 };

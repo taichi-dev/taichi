@@ -119,7 +119,19 @@ void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
 #endif
 
   VulkanDeviceCreator::Params evd_params;
-  evd_params.api_version = VulkanEnvSettings::kApiVersion();
+  if (config->vk_api_version.empty()) {
+    // Don't assign the API version by default. Otherwise we have to provide all
+    // the extensions to be enabled. `VulkanDeviceCreator` would automatically
+    // select a usable version for us.
+    evd_params.api_version = std::nullopt;
+  } else {
+    size_t idot1 = config->vk_api_version.find('.');
+    size_t idot2 = config->vk_api_version.find('.', idot1 + 1);
+    int32_t major = std::atoll(config->vk_api_version.c_str());
+    int32_t minor = std::atoll(config->vk_api_version.c_str() + idot1 + 1);
+    int32_t patch = std::atoll(config->vk_api_version.c_str() + idot2 + 1);
+    evd_params.api_version = VK_MAKE_API_VERSION(0, major, minor, patch);
+  }
 #if !defined(ANDROID) && !defined(TI_EMSCRIPTENED)
   if (glfw_window) {
     // then we should be able to create a device with graphics abilities
@@ -143,10 +155,6 @@ void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
 #endif
 
   embedded_device_ = std::make_unique<VulkanDeviceCreator>(evd_params);
-  if (config->spirv_version != 0) {
-    embedded_device_->device()->set_cap(DeviceCapability::spirv_version,
-                                        config->spirv_version);
-  }
 
   gfx::GfxRuntime::Params params;
   params.host_result_buffer = *result_buffer_ptr;

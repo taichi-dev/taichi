@@ -195,14 +195,27 @@ VulkanDeviceCreator::VulkanDeviceCreator(
   }
 
   ti_device_ = std::make_unique<VulkanDevice>();
+  bool manual_create;
+  if (params_.api_version.has_value()) {
+    // The version client specified to use
+    //
+    // If the user provided an API version then the device creation process is
+    // totally directed by the information provided externally.
+    api_version_ = params_.api_version.value();
+    manual_create = true;
+  } else {
+    // The highest version designed to use
+    api_version_ = VulkanEnvSettings::kApiVersion();
+    manual_create = false;
+  }
 
-  create_instance();
+  create_instance(manual_create);
   setup_debug_messenger();
   if (params_.is_for_ui) {
     create_surface();
   }
   pick_physical_device();
-  create_logical_device();
+  create_logical_device(manual_create);
 
   {
     VulkanDevice::Params params;
@@ -232,21 +245,14 @@ VulkanDeviceCreator::~VulkanDeviceCreator() {
   vkDestroyInstance(instance_, kNoVkAllocCallbacks);
 }
 
-void VulkanDeviceCreator::create_instance() {
+void VulkanDeviceCreator::create_instance(bool manual_create) {
   VkApplicationInfo app_info{};
   app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
   app_info.pApplicationName = "Taichi Vulkan Backend";
   app_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
   app_info.pEngineName = "No Engine";
   app_info.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-
-  if (params_.api_version.has_value()) {
-    // The version client specified to use
-    app_info.apiVersion = params_.api_version.value();
-  } else {
-    // The highest version designed to use
-    app_info.apiVersion = VK_API_VERSION_1_3;
-  }
+  app_info.apiVersion = VulkanEnvSettings::kApiVersion();
 
   VkInstanceCreateInfo create_info{};
   create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -278,9 +284,11 @@ void VulkanDeviceCreator::create_instance() {
     extensions.insert(std::string(ext));
   }
 
-  uint32_t num_instance_extensions;
-  vkEnumerateInstanceExtensionProperties(nullptr, &num_instance_extensions,
-                                         nullptr);
+  uint32_t num_instance_extensions = 0;
+  if (!manual_create) {
+    vkEnumerateInstanceExtensionProperties(nullptr, &num_instance_extensions,
+                                          nullptr);
+  }
   std::vector<VkExtensionProperties> supported_extensions(
       num_instance_extensions);
   vkEnumerateInstanceExtensionProperties(nullptr, &num_instance_extensions,
@@ -319,7 +327,7 @@ void VulkanDeviceCreator::create_instance() {
     // https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VkApplicationInfo.html
     // Vulkan 1.0 implementation will return this when api version is not 1.0
     // Vulkan 1.1+ implementation will work with maximum version set
-    app_info.apiVersion = VK_API_VERSION_1_0;
+    api_version_ = app_info.apiVersion = VK_API_VERSION_1_0;
 
     res = vkCreateInstance(&create_info, kNoVkAllocCallbacks, &instance_);
   }
@@ -395,7 +403,7 @@ void VulkanDeviceCreator::pick_physical_device() {
   queue_family_indices_ = find_queue_families(physical_device_, surface_);
 }
 
-void VulkanDeviceCreator::create_logical_device() {
+void VulkanDeviceCreator::create_logical_device(bool manual_create) {
   std::vector<VkDeviceQueueCreateInfo> queue_create_infos;
   std::unordered_set<uint32_t> unique_families;
 
@@ -431,15 +439,24 @@ void VulkanDeviceCreator::create_logical_device() {
           VK_API_VERSION_MINOR(physical_device_properties.apiVersion),
           VK_API_VERSION_PATCH(physical_device_properties.apiVersion));
 
-  ti_device_->set_cap(DeviceCapability::vk_api_version,
-                      physical_device_properties.apiVersion);
+  if (manual_create) {
+    TI_INFO("User decided to create Vulkan {} Device version {}.{}.{}",
+          VK_API_VERSION_VARIANT(api_version_),
+          VK_API_VERSION_MAJOR(api_version_),
+          VK_API_VERSION_MINOR(api_version_),
+          VK_API_VERSION_PATCH(api_version_));
+  } else {
+    api_version_ = physical_device_properties.apiVersion;
+  }
+
+  ti_device_->set_cap(DeviceCapability::vk_api_version, api_version_);
   ti_device_->set_cap(DeviceCapability::spirv_version, 0x10000);
 
-  if (physical_device_properties.apiVersion >= VK_API_VERSION_1_3) {
+  if (api_version_ >= VK_API_VERSION_1_3) {
     ti_device_->set_cap(DeviceCapability::spirv_version, 0x10500);
-  } else if (physical_device_properties.apiVersion >= VK_API_VERSION_1_2) {
+  } else if (api_version_ >= VK_API_VERSION_1_2) {
     ti_device_->set_cap(DeviceCapability::spirv_version, 0x10500);
-  } else if (physical_device_properties.apiVersion >= VK_API_VERSION_1_1) {
+  } else if (api_version_ >= VK_API_VERSION_1_1) {
     ti_device_->set_cap(DeviceCapability::spirv_version, 0x10300);
   }
 
@@ -447,8 +464,10 @@ void VulkanDeviceCreator::create_logical_device() {
   std::vector<const char *> enabled_extensions;
 
   uint32_t extension_count = 0;
-  vkEnumerateDeviceExtensionProperties(physical_device_, nullptr,
-                                       &extension_count, nullptr);
+  if (!manual_create) {
+    vkEnumerateDeviceExtensionProperties(physical_device_, nullptr,
+                                        &extension_count, nullptr);
+  }
   std::vector<VkExtensionProperties> extension_properties(extension_count);
   vkEnumerateDeviceExtensionProperties(
       physical_device_, nullptr, &extension_count, extension_properties.data());
@@ -537,7 +556,7 @@ void VulkanDeviceCreator::create_logical_device() {
                "Taichi GPU GUI requires wide lines support");
   }
 
-  if (physical_device_properties.apiVersion >= VK_API_VERSION_1_1) {
+  if (api_version_ >= VK_API_VERSION_1_1) {
     VkPhysicalDeviceSubgroupProperties subgroup_properties{};
     subgroup_properties.sType =
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES;
@@ -604,8 +623,7 @@ void VulkanDeviceCreator::create_logical_device() {
       enabled_extensions.end()
 
 #define CHECK_VERSION(major, minor)        \
-  physical_device_properties.apiVersion >= \
-      VK_MAKE_API_VERSION(0, major, minor, 0)
+  api_version_ >= VK_MAKE_API_VERSION(0, major, minor, 0)
 
     // Variable ptr
     if (CHECK_VERSION(1, 1) ||

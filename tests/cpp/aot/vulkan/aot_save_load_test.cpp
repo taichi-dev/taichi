@@ -163,8 +163,7 @@ TEST(AotSaveLoad, Vulkan) {
 
   // Create Taichi Device for computation
   lang::vulkan::VulkanDeviceCreator::Params evd_params;
-  evd_params.api_version =
-      taichi::lang::vulkan::VulkanEnvSettings::kApiVersion();
+  evd_params.api_version = std::nullopt;
   auto embedded_device =
       std::make_unique<taichi::lang::vulkan::VulkanDeviceCreator>(evd_params);
 
@@ -236,8 +235,7 @@ TEST(AotSaveLoad, VulkanNdarray) {
 
   // Create Taichi Device for computation
   lang::vulkan::VulkanDeviceCreator::Params evd_params;
-  evd_params.api_version =
-      taichi::lang::vulkan::VulkanEnvSettings::kApiVersion();
+  evd_params.api_version = std::nullopt;
   auto embedded_device =
       std::make_unique<taichi::lang::vulkan::VulkanDeviceCreator>(evd_params);
 
@@ -343,8 +341,7 @@ TEST(AotLoadGraph, Vulkan) {
 
   // Create Taichi Device for computation
   lang::vulkan::VulkanDeviceCreator::Params evd_params;
-  evd_params.api_version =
-      taichi::lang::vulkan::VulkanEnvSettings::kApiVersion();
+  evd_params.api_version = std::nullopt;
   auto embedded_device =
       std::make_unique<taichi::lang::vulkan::VulkanDeviceCreator>(evd_params);
   taichi::lang::vulkan::VulkanDevice *device_ =
@@ -422,8 +419,7 @@ TEST(AotLoadGraph, Mpm88) {
 
   // Create Taichi Device for computation
   lang::vulkan::VulkanDeviceCreator::Params evd_params;
-  evd_params.api_version =
-      taichi::lang::vulkan::VulkanEnvSettings::kApiVersion();
+  evd_params.api_version = std::nullopt;
   auto embedded_device =
       std::make_unique<taichi::lang::vulkan::VulkanDeviceCreator>(evd_params);
   taichi::lang::vulkan::VulkanDevice *device_ =

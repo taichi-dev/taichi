@@ -17,6 +17,7 @@ RUN apt-get update && \
                        wget \
                        git \
                        unzip \
+                       ffmpeg \
                        libxrandr-dev \
                        libxinerama-dev \
                        libxcursor-dev \

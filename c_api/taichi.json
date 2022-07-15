@@ -597,6 +597,20 @@
                             "by_mut": true
                         }
                     ]
+                },
+                {
+                    "name": "submit_and_signal_vulkan_event",
+                    "is_extension": true,
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "name": "event",
+                            "type": "VkEvent"
+                        }
+                    ]
                 }
             ]
         },

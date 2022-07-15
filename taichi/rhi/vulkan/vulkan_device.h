@@ -406,6 +406,8 @@ class VulkanCommandList : public CommandList {
                   ImageLayout src_img_layout,
                   const ImageCopyParams &params) override;
 
+  void signal_event(VkEvent event);
+
   vkapi::IVkRenderPass current_renderpass();
 
   // Vulkan specific functions
@@ -527,6 +529,12 @@ class VulkanStream : public Stream {
   // Command pools are per-thread
   vkapi::IVkCommandPool command_pool_;
   std::vector<TrackedCmdbuf> submitted_cmdbuffers_;
+
+  StreamSemaphore submit_and_signal_event(
+      CommandList *cmdlist,
+      const std::vector<StreamSemaphore> &wait_semaphores,
+      VkEvent event);
+
 };
 
 class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {

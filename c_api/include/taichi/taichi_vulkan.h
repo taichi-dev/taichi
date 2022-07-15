@@ -53,6 +53,10 @@ ti_export_vulkan_memory(TiRuntime runtime,
                         TiMemory memory,
                         TiVulkanMemoryInteropInfo *interop_info);
 
+// function.submit_and_signal_vulkan_event
+TI_DLL_EXPORT void TI_API_CALL
+ti_submit_and_signal_vulkan_event_ext(TiRuntime runtime, VkEvent event);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus

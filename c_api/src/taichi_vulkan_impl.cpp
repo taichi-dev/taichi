@@ -252,4 +252,14 @@ void ti_export_vulkan_memory(TiRuntime runtime,
   interop_info->usage = buffer.get()->usage;
 }
 
+void ti_submit_and_signal_vulkan_event_ext(TiRuntime runtime, VkEvent event) {
+  if (runtime == nullptr) {
+    TI_WARN(
+        "ignored attempt to set vulkan event from runtime of null handle");
+    return;
+  }
+  VulkanRuntime *runtime2 = ((Runtime *)runtime)->as_vk();
+  runtime2->submit_and_signal_event(event);
+}
+
 #endif  // TI_WITH_VULKAN

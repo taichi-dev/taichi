@@ -435,7 +435,7 @@ void ti_reset_event(TiRuntime runtime, TiEvent event) {
 }
 
 void ti_wait_event(TiRuntime runtime, TiEvent event) {
-  ((Runtime*)runtime)->wait_event(&((Event*)event)->get());
+  ((Runtime *)runtime)->wait_event(&((Event *)event)->get());
 }
 
 void ti_submit(TiRuntime runtime) {

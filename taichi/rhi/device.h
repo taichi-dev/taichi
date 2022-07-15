@@ -395,7 +395,7 @@ class CommandList {
   virtual void reset_event(DeviceEvent *event) {
     TI_NOT_IMPLEMENTED
   }
-  virtual void wait_event(DeviceEvent* event) {
+  virtual void wait_event(DeviceEvent *event) {
     TI_NOT_IMPLEMENTED
   }
 };

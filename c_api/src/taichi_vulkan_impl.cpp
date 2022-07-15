@@ -132,7 +132,7 @@ void VulkanRuntime::signal_event(taichi::lang::DeviceEvent *event) {
 void VulkanRuntime::reset_event(taichi::lang::DeviceEvent *event) {
   get_gfx_runtime().reset_event(event);
 }
-void VulkanRuntime::wait_event(taichi::lang::DeviceEvent* event) {
+void VulkanRuntime::wait_event(taichi::lang::DeviceEvent *event) {
   get_gfx_runtime().wait_event(event);
 }
 void VulkanRuntime::wait() {

@@ -1254,11 +1254,12 @@ void VulkanCommandList::reset_event(DeviceEvent *event) {
   vkCmdResetEvent(buffer_->buffer, event2->vkapi_ref->event,
                   VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
 }
-void VulkanCommandList::wait_event(DeviceEvent* event) {
-  VulkanDeviceEvent* event2 = static_cast<VulkanDeviceEvent*>(event);
+void VulkanCommandList::wait_event(DeviceEvent *event) {
+  VulkanDeviceEvent *event2 = static_cast<VulkanDeviceEvent *>(event);
   vkCmdWaitEvents(buffer_->buffer, 1, &event2->vkapi_ref->event,
-    VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-    0, nullptr, 0, nullptr, 0, nullptr);
+                  VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                  VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, nullptr, 0, nullptr, 0,
+                  nullptr);
 }
 
 void VulkanCommandList::set_line_width(float width) {

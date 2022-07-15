@@ -38,6 +38,9 @@ class Runtime {
   virtual void reset_event(taichi::lang::DeviceEvent *event) {
     TI_NOT_IMPLEMENTED
   }
+  virtual void wait_event(taichi::lang::DeviceEvent* event) {
+    TI_NOT_IMPLEMENTED
+  }
   virtual void submit() = 0;
   virtual void wait() = 0;
 

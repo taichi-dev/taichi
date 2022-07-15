@@ -418,6 +418,7 @@ class VulkanCommandList : public CommandList {
 
   void signal_event(DeviceEvent *event) override;
   void reset_event(DeviceEvent *event) override;
+  void wait_event(DeviceEvent *event) override;
 
   vkapi::IVkRenderPass current_renderpass();
 

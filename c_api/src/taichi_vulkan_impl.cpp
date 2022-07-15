@@ -132,6 +132,9 @@ void VulkanRuntime::signal_event(taichi::lang::DeviceEvent *event) {
 void VulkanRuntime::reset_event(taichi::lang::DeviceEvent *event) {
   get_gfx_runtime().reset_event(event);
 }
+void VulkanRuntime::wait_event(taichi::lang::DeviceEvent* event) {
+  get_gfx_runtime().wait_event(event);
+}
 void VulkanRuntime::wait() {
   // (penguinliong) It's currently waiting for the entire runtime to stop.
   // Should be simply waiting for its fence to finish.

@@ -571,6 +571,11 @@ void GfxRuntime::reset_event(DeviceEvent *event) {
   current_cmdlist_->reset_event(event);
   submit_current_cmdlist_if_timeout();
 }
+void GfxRuntime::wait_event(DeviceEvent* event) {
+  ensure_current_cmdlist();
+  current_cmdlist_->wait_event(event);
+  submit_current_cmdlist_if_timeout();
+}
 
 void GfxRuntime::synchronize() {
   flush();

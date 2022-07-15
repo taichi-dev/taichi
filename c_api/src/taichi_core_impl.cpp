@@ -434,6 +434,10 @@ void ti_reset_event(TiRuntime runtime, TiEvent event) {
   ((Runtime *)runtime)->reset_event(&((Event *)event)->get());
 }
 
+void ti_wait_event(TiRuntime runtime, TiEvent event) {
+  ((Runtime*)runtime)->wait_event(&((Event*)event)->get());
+}
+
 void ti_submit(TiRuntime runtime) {
   if (runtime == nullptr) {
     TI_WARN("ignored attempt to submit to runtime of null handle");

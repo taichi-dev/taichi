@@ -417,6 +417,19 @@
                     ]
                 },
                 {
+                    "name": "wait_event",
+                    "type": "function",
+                    "is_device_command": true,
+                    "parameters": [
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "type": "handle.event"
+                        }
+                    ]
+                },
+                {
                     "name": "submit",
                     "type": "function",
                     "parameters": [

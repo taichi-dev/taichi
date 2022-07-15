@@ -104,6 +104,7 @@ class TI_DLL_EXPORT GfxRuntime {
 
   void signal_event(DeviceEvent *event);
   void reset_event(DeviceEvent *event);
+  void wait_event(DeviceEvent *event);
 
   void synchronize();
 

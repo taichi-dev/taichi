@@ -13,6 +13,7 @@ check_in_docker() {
 export TI_SKIP_VERSION_CHECK=ON
 export TI_CI=1
 export TI_IN_DOCKER=$(check_in_docker)
+export LD_LIBRARY_PATH=$PWD/build/:$LD_LIBRARY_PATH
 
 if [[ "$TI_IN_DOCKER" == "true" ]]; then
     source $HOME/miniconda/etc/profile.d/conda.sh

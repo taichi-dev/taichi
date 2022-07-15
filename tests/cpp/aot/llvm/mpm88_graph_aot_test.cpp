@@ -4,13 +4,10 @@
 #include "taichi/runtime/llvm/llvm_runtime_executor.h"
 #include "taichi/system/memory_pool.h"
 #include "taichi/runtime/cpu/aot_module_loader_impl.h"
+#include "taichi/runtime/cuda/aot_module_loader_impl.h"
 #include "taichi/runtime/llvm/llvm_aot_module_loader.h"
-
-#ifdef TI_WITH_CUDA
 #include "taichi/rhi/cuda/cuda_driver.h"
 #include "taichi/platform/cuda/detect_cuda.h"
-#include "taichi/runtime/cuda/aot_module_loader_impl.h"
-#endif
 
 #define TI_RUNTIME_HOST
 #include "taichi/program/context.h"
@@ -107,7 +104,6 @@ TEST(LlvmCGraph, Mpm88Cpu) {
 }
 
 TEST(LlvmCGraph, Mpm88Cuda) {
-#ifdef TI_WITH_CUDA
   if (is_cuda_api_available()) {
     CompileConfig cfg;
     cfg.arch = Arch::cuda;
@@ -189,5 +185,4 @@ TEST(LlvmCGraph, Mpm88Cuda) {
     g_update->run(args);
     exec.synchronize();
   }
-#endif
 }

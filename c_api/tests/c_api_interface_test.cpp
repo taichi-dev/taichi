@@ -8,13 +8,6 @@ TEST(CapiDryRun, Runtime) {
     TiRuntime runtime = ti_create_runtime(arch);
     ti_destroy_runtime(runtime);
   }
-
-#ifdef TI_WITH_CUDA
-  // CUDA Runtime
-  TiArch arch = TiArch::TI_ARCH_CUDA;
-  TiRuntime runtime = ti_create_runtime(arch);
-  ti_destroy_runtime(runtime);
-#endif
 }
 
 TEST(CapiDryRun, MemoryAllocation) {
@@ -37,17 +30,6 @@ TEST(CapiDryRun, MemoryAllocation) {
 
     ti_destroy_runtime(runtime);
   }
-
-#ifdef TI_WITH_CUDA
-  // CUDA Runtime
-  TiArch arch = TiArch::TI_ARCH_CUDA;
-  TiRuntime runtime = ti_create_runtime(arch);
-
-  TiMemory memory = ti_allocate_memory(runtime, &alloc_info);
-  ti_free_memory(runtime, memory);
-
-  ti_destroy_runtime(runtime);
-#endif
 }
 
 TEST(CapiDryRun, CpuAotModule) {
@@ -66,24 +48,4 @@ TEST(CapiDryRun, CpuAotModule) {
 
     ti_destroy_runtime(runtime);
   }
-}
-
-TEST(CapiDryRun, CudaAotModule) {
-#ifdef TI_WITH_CUDA
-  const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
-
-  std::stringstream aot_mod_ss;
-  aot_mod_ss << folder_dir;
-
-  {
-    // CUDA Runtime
-    TiArch arch = TiArch::TI_ARCH_CUDA;
-    TiRuntime runtime = ti_create_runtime(arch);
-
-    TiAotModule aot_mod = ti_load_aot_module(runtime, aot_mod_ss.str().c_str());
-    ti_destroy_aot_module(aot_mod);
-
-    ti_destroy_runtime(runtime);
-  }
-#endif
 }

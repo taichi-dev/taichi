@@ -3,6 +3,7 @@
 
 #ifdef TI_WITH_LLVM
 
+#include "taichi/program/compile_config.h"
 #include "taichi/runtime/llvm/llvm_runtime_executor.h"
 #include "taichi/runtime/cpu/aot_module_loader_impl.h"
 
@@ -13,9 +14,11 @@
 namespace capi {
 
 LlvmRuntime::LlvmRuntime(taichi::Arch arch) : Runtime(arch) {
-  taichi::lang::CompileConfig cfg;
-  cfg.arch = arch;
-  executor_ = std::make_unique<taichi::lang::LlvmRuntimeExecutor>(cfg, nullptr);
+  cfg_ = std::make_unique<taichi::lang::CompileConfig>();
+  cfg_->arch = arch;
+
+  executor_ =
+      std::make_unique<taichi::lang::LlvmRuntimeExecutor>(*cfg_.get(), nullptr);
 
   taichi::lang::Device *compute_device = executor_->get_compute_device();
   memory_pool_ =

@@ -74,7 +74,7 @@ void AppContext::init(Program *prog,
   // there is no active current program (usage from external library for AOT
   // modules for example).
   if (config.ti_arch != Arch::vulkan || prog == nullptr) {
-    VulkanDeviceCreator::Params evd_params {};
+    VulkanDeviceCreator::Params evd_params{};
     evd_params.additional_instance_extensions =
         get_required_instance_extensions();
     evd_params.additional_device_extensions = get_required_device_extensions();

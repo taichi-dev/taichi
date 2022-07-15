@@ -287,7 +287,7 @@ void VulkanDeviceCreator::create_instance(bool manual_create) {
   uint32_t num_instance_extensions = 0;
   if (!manual_create) {
     vkEnumerateInstanceExtensionProperties(nullptr, &num_instance_extensions,
-                                          nullptr);
+                                           nullptr);
   }
   std::vector<VkExtensionProperties> supported_extensions(
       num_instance_extensions);
@@ -441,10 +441,10 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
 
   if (manual_create) {
     TI_INFO("User decided to create Vulkan {} Device version {}.{}.{}",
-          VK_API_VERSION_VARIANT(api_version_),
-          VK_API_VERSION_MAJOR(api_version_),
-          VK_API_VERSION_MINOR(api_version_),
-          VK_API_VERSION_PATCH(api_version_));
+            VK_API_VERSION_VARIANT(api_version_),
+            VK_API_VERSION_MAJOR(api_version_),
+            VK_API_VERSION_MINOR(api_version_),
+            VK_API_VERSION_PATCH(api_version_));
   } else {
     api_version_ = physical_device_properties.apiVersion;
   }
@@ -466,7 +466,7 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
   uint32_t extension_count = 0;
   if (!manual_create) {
     vkEnumerateDeviceExtensionProperties(physical_device_, nullptr,
-                                        &extension_count, nullptr);
+                                         &extension_count, nullptr);
   }
   std::vector<VkExtensionProperties> extension_properties(extension_count);
   vkEnumerateDeviceExtensionProperties(
@@ -622,7 +622,7 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
                [=](const char *o) { return strcmp(ext, o) == 0; }) != \
       enabled_extensions.end()
 
-#define CHECK_VERSION(major, minor)        \
+#define CHECK_VERSION(major, minor) \
   api_version_ >= VK_MAKE_API_VERSION(0, major, minor, 0)
 
     // Variable ptr

@@ -295,6 +295,11 @@ struct ImageCopyParams {
   uint32_t depth{1};
 };
 
+class DeviceEvent {
+public:
+  virtual ~DeviceEvent() {}
+};
+
 class CommandList {
  public:
   virtual ~CommandList() {
@@ -383,6 +388,12 @@ class CommandList {
                           const ImageCopyParams &params) {
     TI_NOT_IMPLEMENTED
   }
+  virtual void signal_event(DeviceEvent* event) {
+    TI_NOT_IMPLEMENTED
+  }
+  virtual void reset_event(DeviceEvent* event) {
+    TI_NOT_IMPLEMENTED
+  }
 };
 
 struct PipelineSourceDesc {
@@ -466,6 +477,10 @@ class Device {
   virtual std::unique_ptr<Pipeline> create_pipeline(
       const PipelineSourceDesc &src,
       std::string name = "Pipeline") = 0;
+
+  virtual std::unique_ptr<DeviceEvent> create_event() {
+    TI_NOT_IMPLEMENTED
+  }
 
   std::unique_ptr<DeviceAllocationGuard> allocate_memory_unique(
       const AllocParams &params) {

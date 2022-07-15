@@ -273,14 +273,13 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   llvm::Value *reconstruct_quant_fixed(llvm::Value *digits,
                                        QuantFixedType *qfxt);
 
-  llvm::Value *load_quant_float(llvm::Value *digits_bit_ptr,
-                                SNode *digits_snode,
-                                QuantFloatType *qflt,
-                                Type *physical_type,
+  llvm::Value *load_quant_float(llvm::Value *digits_ptr,
+                                BitStructType *bit_struct,
+                                int digits_id,
                                 bool should_cache_as_read_only);
 
-  llvm::Value *load_quant_float(llvm::Value *digits_bit_ptr,
-                                llvm::Value *exponent_bit_ptr,
+  llvm::Value *load_quant_float(llvm::Value *digits_ptr,
+                                llvm::Value *exponent_ptr,
                                 QuantFloatType *qflt,
                                 Type *physical_type,
                                 bool should_cache_as_read_only,

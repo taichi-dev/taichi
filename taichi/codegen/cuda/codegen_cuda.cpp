@@ -272,8 +272,19 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     TI_ASSERT(output_address_type != nullptr);
 
     // element_type is the data type for the binary operation.
+#ifdef TI_LLVM_15
+    llvm::Type *element_address_type = nullptr;
+    if (output_address_type->isOpaquePointerTy()) {
+      element_address_type =
+          llvm::PointerType::get(output_address_type->getContext(), 0);
+    } else {
+      llvm::Type *element_type = output_address_type->getPointerElementType();
+      element_address_type = element_type->getPointerTo();
+    }
+#else
     llvm::Type *element_type = output_address_type->getPointerElementType();
     llvm::Type *element_address_type = element_type->getPointerTo();
+#endif
 
     int atomic_size = 32;
     llvm::Type *atomic_type = builder->getIntNTy(atomic_size);

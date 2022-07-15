@@ -130,7 +130,11 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void emit_gc(OffloadedStmt *stmt);
 
+  llvm::Value *create_call(llvm::Function *func,
+                           llvm::ArrayRef<llvm::Value *> args = {});
+
   llvm::Value *create_call(llvm::Value *func,
+                           llvm::FunctionType *func_ty,
                            llvm::ArrayRef<llvm::Value *> args = {});
 
   llvm::Value *create_call(std::string func_name,
@@ -219,16 +223,19 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   void visit(PtrOffsetStmt *stmt) override;
 
   void store_quant_int(llvm::Value *bit_ptr,
+                       PrimitiveType *physical_ty,
                        QuantIntType *qit,
                        llvm::Value *value,
                        bool atomic);
 
   void store_quant_fixed(llvm::Value *bit_ptr,
+                         PrimitiveType *physical_ty,
                          QuantFixedType *qfxt,
                          llvm::Value *value,
                          bool atomic);
 
   void store_masked(llvm::Value *byte_ptr,
+                    llvm::Type *byte_ptr_ty,
                     uint64 mask,
                     llvm::Value *value,
                     bool atomic);

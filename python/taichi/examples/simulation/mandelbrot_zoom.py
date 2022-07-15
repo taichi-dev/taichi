@@ -3,7 +3,7 @@ from taichi.math import cmul, dot, log2, vec2, vec3
 
 ti.init(arch=ti.gpu)
 
-MAXITERS = 100
+MAXITERS = 5
 width, height = 800, 640
 pixels = ti.Vector.field(3, ti.f32, shape=(width, height))
 

@@ -32,8 +32,6 @@ def test_inf_nan_f32(dt):
 
 @test_utils.test()
 def test_vdir():
-    ti.init()
-
     @ti.kernel
     def make_test():
         assert all(vdir(pi / 2) == [0, 1])

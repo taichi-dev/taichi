@@ -46,15 +46,14 @@ Runtime &AotModule::runtime() {
   return *runtime_;
 }
 
-Event::Event(
-  Runtime& runtime,
-  std::unique_ptr<taichi::lang::DeviceEvent> event
-) : runtime_(&runtime), event_(std::move(event)) {}
+Event::Event(Runtime &runtime, std::unique_ptr<taichi::lang::DeviceEvent> event)
+    : runtime_(&runtime), event_(std::move(event)) {
+}
 
-taichi::lang::DeviceEvent& Event::get() {
+taichi::lang::DeviceEvent &Event::get() {
   return *event_;
 }
-Runtime& Event::runtime() {
+Runtime &Event::runtime() {
   return *runtime_;
 }
 
@@ -165,8 +164,9 @@ void ti_unmap_memory(TiRuntime runtime, TiMemory devmem) {
 
 TiEvent ti_create_event(TiRuntime runtime) {
   Runtime *runtime2 = (Runtime *)runtime;
-  std::unique_ptr<taichi::lang::DeviceEvent> event = runtime2->get().create_event();
-  Event* event2 = new Event(*runtime2, std::move(event));
+  std::unique_ptr<taichi::lang::DeviceEvent> event =
+      runtime2->get().create_event();
+  Event *event2 = new Event(*runtime2, std::move(event));
   return (TiEvent)event2;
 }
 void ti_destroy_event(TiEvent event) {
@@ -175,7 +175,7 @@ void ti_destroy_event(TiEvent event) {
     return;
   }
 
-  delete (Event*)event;
+  delete (Event *)event;
 }
 
 void ti_copy_memory_device_to_device(TiRuntime runtime,
@@ -427,11 +427,11 @@ void ti_launch_compute_graph(TiRuntime runtime,
 }
 
 void ti_signal_event(TiRuntime runtime, TiEvent event) {
-  ((Runtime*)runtime)->signal_event(&((Event*)event)->get());
+  ((Runtime *)runtime)->signal_event(&((Event *)event)->get());
 }
 
 void ti_reset_event(TiRuntime runtime, TiEvent event) {
-  ((Runtime*)runtime)->reset_event(&((Event*)event)->get());
+  ((Runtime *)runtime)->reset_event(&((Event *)event)->get());
 }
 
 void ti_submit(TiRuntime runtime) {

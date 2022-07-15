@@ -350,12 +350,13 @@ class VulkanPipeline : public Pipeline {
 };
 
 class VulkanDeviceEvent : public DeviceEvent {
-public:
-  VulkanDeviceEvent(vkapi::IVkEvent event) : vkapi_ref(event) {}
+ public:
+  VulkanDeviceEvent(vkapi::IVkEvent event) : vkapi_ref(event) {
+  }
   ~VulkanDeviceEvent() {
   }
 
-  vkapi::IVkEvent vkapi_ref { nullptr };
+  vkapi::IVkEvent vkapi_ref{nullptr};
 };
 
 class VulkanCommandList : public CommandList {
@@ -415,8 +416,8 @@ class VulkanCommandList : public CommandList {
                   ImageLayout src_img_layout,
                   const ImageCopyParams &params) override;
 
-  void signal_event(DeviceEvent* event) override;
-  void reset_event(DeviceEvent* event) override;
+  void signal_event(DeviceEvent *event) override;
+  void reset_event(DeviceEvent *event) override;
 
   vkapi::IVkRenderPass current_renderpass();
 

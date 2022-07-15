@@ -98,12 +98,12 @@ IDeviceObj create_device_obj(VkDevice device) {
 }
 
 IVkEvent create_event(VkDevice device,
-  VkSemaphoreCreateFlags flags,
-  void* pnext) {
+                      VkSemaphoreCreateFlags flags,
+                      void *pnext) {
   IVkEvent obj = std::make_shared<DeviceObjVkEvent>();
   obj->device = device;
 
-  VkEventCreateInfo info {};
+  VkEventCreateInfo info{};
   info.sType = VK_STRUCTURE_TYPE_EVENT_CREATE_INFO;
   info.pNext = pnext;
   info.flags = flags;

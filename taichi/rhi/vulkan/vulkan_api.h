@@ -21,11 +21,13 @@ IDeviceObj create_device_obj(VkDevice device);
 // VkEvent
 struct DeviceObjVkEvent : public DeviceObj {
   bool external{false};
-  VkEvent event { VK_NULL_HANDLE };
+  VkEvent event{VK_NULL_HANDLE};
   ~DeviceObjVkEvent() override;
 };
 using IVkEvent = std::shared_ptr<DeviceObjVkEvent>;
-IVkEvent create_event(VkDevice device, VkEventCreateFlags flags, void *pnext = nullptr);
+IVkEvent create_event(VkDevice device,
+                      VkEventCreateFlags flags,
+                      void *pnext = nullptr);
 
 // VkSemaphore
 struct DeviceObjVkSemaphore : public DeviceObj {

@@ -32,10 +32,10 @@ class Runtime {
   virtual void buffer_copy(const taichi::lang::DevicePtr &dst,
                            const taichi::lang::DevicePtr &src,
                            size_t size) = 0;
-  virtual void signal_event(taichi::lang::DeviceEvent* event) {
+  virtual void signal_event(taichi::lang::DeviceEvent *event) {
     TI_NOT_IMPLEMENTED
   }
-  virtual void reset_event(taichi::lang::DeviceEvent* event) {
+  virtual void reset_event(taichi::lang::DeviceEvent *event) {
     TI_NOT_IMPLEMENTED
   }
   virtual void submit() = 0;
@@ -61,14 +61,14 @@ class AotModule {
 };
 
 class Event {
-  Runtime* runtime_;
+  Runtime *runtime_;
   std::unique_ptr<taichi::lang::DeviceEvent> event_;
-public:
-  Event(Runtime& runtime,
-        std::unique_ptr<taichi::lang::DeviceEvent> event);
 
-  taichi::lang::DeviceEvent& get();
-  Runtime& runtime();
+ public:
+  Event(Runtime &runtime, std::unique_ptr<taichi::lang::DeviceEvent> event);
+
+  taichi::lang::DeviceEvent &get();
+  Runtime &runtime();
 };
 
 namespace {

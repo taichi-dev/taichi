@@ -1,5 +1,6 @@
 #include "gtest/gtest.h"
 #include "taichi/taichi_core.h"
+#include "taichi/platform/cuda/detect_cuda.h"
 
 TEST(CapiDryRun, Runtime) {
   {
@@ -10,10 +11,12 @@ TEST(CapiDryRun, Runtime) {
   }
 
 #ifdef TI_WITH_CUDA
-  // CUDA Runtime
-  TiArch arch = TiArch::TI_ARCH_CUDA;
-  TiRuntime runtime = ti_create_runtime(arch);
-  ti_destroy_runtime(runtime);
+  if (taichi::is_cuda_api_available()) {
+    // CUDA Runtime
+    TiArch arch = TiArch::TI_ARCH_CUDA;
+    TiRuntime runtime = ti_create_runtime(arch);
+    ti_destroy_runtime(runtime);
+  }
 #endif
 }
 
@@ -39,14 +42,16 @@ TEST(CapiDryRun, MemoryAllocation) {
   }
 
 #ifdef TI_WITH_CUDA
-  // CUDA Runtime
-  TiArch arch = TiArch::TI_ARCH_CUDA;
-  TiRuntime runtime = ti_create_runtime(arch);
+  if (taichi::is_cuda_api_available()) {
+    // CUDA Runtime
+    TiArch arch = TiArch::TI_ARCH_CUDA;
+    TiRuntime runtime = ti_create_runtime(arch);
 
-  TiMemory memory = ti_allocate_memory(runtime, &alloc_info);
-  ti_free_memory(runtime, memory);
+    TiMemory memory = ti_allocate_memory(runtime, &alloc_info);
+    ti_free_memory(runtime, memory);
 
-  ti_destroy_runtime(runtime);
+    ti_destroy_runtime(runtime);
+  }
 #endif
 }
 
@@ -70,20 +75,23 @@ TEST(CapiDryRun, CpuAotModule) {
 
 TEST(CapiDryRun, CudaAotModule) {
 #ifdef TI_WITH_CUDA
-  const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
+  if (taichi::is_cuda_api_available()) {
+    const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
 
-  std::stringstream aot_mod_ss;
-  aot_mod_ss << folder_dir;
+    std::stringstream aot_mod_ss;
+    aot_mod_ss << folder_dir;
 
-  {
-    // CUDA Runtime
-    TiArch arch = TiArch::TI_ARCH_CUDA;
-    TiRuntime runtime = ti_create_runtime(arch);
+    {
+      // CUDA Runtime
+      TiArch arch = TiArch::TI_ARCH_CUDA;
+      TiRuntime runtime = ti_create_runtime(arch);
 
-    TiAotModule aot_mod = ti_load_aot_module(runtime, aot_mod_ss.str().c_str());
-    ti_destroy_aot_module(aot_mod);
+      TiAotModule aot_mod =
+          ti_load_aot_module(runtime, aot_mod_ss.str().c_str());
+      ti_destroy_aot_module(aot_mod);
 
-    ti_destroy_runtime(runtime);
+      ti_destroy_runtime(runtime);
+    }
   }
 #endif
 }

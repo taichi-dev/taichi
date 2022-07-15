@@ -69,6 +69,17 @@ def _test_cpp():
         cpp_test_filename = 'taichi_cpp_tests'
         capi_test_filename = 'taichi_c_api_tests'
         build_dir = os.path.join(curr_dir, '../build')
+    """
+    print(os.listdir(build_dir))
+    os.system("echo !!!!!!!!!!!!!!!!!!!!!!")
+    os.system(f"echo {os.listdir(build_dir)}")
+    test_file = os.path.join(build_dir, capi_test_filename)
+    os.system(f"echo {test_file}")
+    os.system(f"objdump -x {test_file} |grep RPATH")
+    os.system("echo !!!!!!!!!!!!!!!!!!!!!!")
+    os.system(f"readelf -d {test_file} |head -20")
+    os.system("echo !!!!!!!!!!!!!!!!!!!!!!")
+    """
 
     # Run C-API test cases
     exclude_tests_cmd = _test_cpp_aot(capi_test_filename, build_dir,

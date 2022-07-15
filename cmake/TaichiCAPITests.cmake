@@ -23,7 +23,9 @@ if (WIN32)
     set_target_properties(${C_API_TESTS_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL ${TESTS_OUTPUT_DIR})
     set_target_properties(${C_API_TESTS_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO ${TESTS_OUTPUT_DIR})
 endif()
+
 target_link_libraries(${C_API_TESTS_NAME} PRIVATE taichi_c_api)
+target_link_libraries(${C_API_TESTS_NAME} PRIVATE taichi_isolated_core)
 target_link_libraries(${C_API_TESTS_NAME} PRIVATE gtest_main)
 
 target_include_directories(${C_API_TESTS_NAME}

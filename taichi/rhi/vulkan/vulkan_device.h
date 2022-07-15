@@ -349,6 +349,15 @@ class VulkanPipeline : public Pipeline {
   vkapi::IVkPipelineLayout pipeline_layout_{VK_NULL_HANDLE};
 };
 
+class VulkanDeviceEvent : public DeviceEvent {
+public:
+  VulkanDeviceEvent(vkapi::IVkEvent event) : vkapi_ref(event) {}
+  ~VulkanDeviceEvent() {
+  }
+
+  vkapi::IVkEvent vkapi_ref { nullptr };
+};
+
 class VulkanCommandList : public CommandList {
  public:
   VulkanCommandList(VulkanDevice *ti_device,
@@ -406,7 +415,8 @@ class VulkanCommandList : public CommandList {
                   ImageLayout src_img_layout,
                   const ImageCopyParams &params) override;
 
-  void signal_event(VkEvent event);
+  void signal_event(DeviceEvent* event) override;
+  void reset_event(DeviceEvent* event) override;
 
   vkapi::IVkRenderPass current_renderpass();
 
@@ -529,12 +539,6 @@ class VulkanStream : public Stream {
   // Command pools are per-thread
   vkapi::IVkCommandPool command_pool_;
   std::vector<TrackedCmdbuf> submitted_cmdbuffers_;
-
-  StreamSemaphore submit_and_signal_event(
-      CommandList *cmdlist,
-      const std::vector<StreamSemaphore> &wait_semaphores,
-      VkEvent event);
-
 };
 
 class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
@@ -556,6 +560,7 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
   std::unique_ptr<Pipeline> create_pipeline(
       const PipelineSourceDesc &src,
       std::string name = "Pipeline") override;
+  std::unique_ptr<DeviceEvent> create_event() override;
 
   DeviceAllocation allocate_memory(const AllocParams &params) override;
   void dealloc_memory(DeviceAllocation handle) override;

@@ -1596,14 +1596,10 @@ std::unique_ptr<CommandList> VulkanStream::new_command_list() {
   return std::make_unique<VulkanCommandList>(&device_, this, buffer);
 }
 
-StreamSemaphore VulkanStream::submit_and_signal_event(
+StreamSemaphore VulkanStream::submit(
     CommandList *cmdlist_,
-    const std::vector<StreamSemaphore> &wait_semaphores,
-    VkEvent event) {
+    const std::vector<StreamSemaphore> &wait_semaphores) {
   VulkanCommandList *cmdlist = static_cast<VulkanCommandList *>(cmdlist_);
-  if (event != VK_NULL_HANDLE) {
-    cmdlist->signal_event(event);
-  }
   vkapi::IVkCommandBuffer buffer = cmdlist->finalize();
 
   /*
@@ -1659,12 +1655,6 @@ StreamSemaphore VulkanStream::submit_and_signal_event(
                         "failed to submit command buffer");
 
   return std::make_shared<VulkanStreamSemaphoreObject>(semaphore);
-}
-
-StreamSemaphore VulkanStream::submit(
-    CommandList *cmdlist_,
-    const std::vector<StreamSemaphore> &wait_semaphores) {
-  return submit_and_signal_event(cmdlist_, wait_semaphores, VK_NULL_HANDLE);
 }
 
 StreamSemaphore VulkanStream::submit_synced(

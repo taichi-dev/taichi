@@ -25,6 +25,11 @@ typedef struct TiVulkanMemoryInteropInfo {
   VkBufferUsageFlags usage;
 } TiVulkanMemoryInteropInfo;
 
+// structure.vulkan_event_interop_info
+typedef struct TiVulkanEventInteropInfo {
+  VkEvent event;
+} TiVulkanEventInteropInfo;
+
 // function.create_vulkan_runtime
 TI_DLL_EXPORT TiRuntime TI_API_CALL
 ti_create_vulkan_runtime_ext(uint32_t api_version,
@@ -53,9 +58,16 @@ ti_export_vulkan_memory(TiRuntime runtime,
                         TiMemory memory,
                         TiVulkanMemoryInteropInfo *interop_info);
 
-// function.submit_and_signal_vulkan_event
+// function.import_vulkan_event
+TI_DLL_EXPORT TiEvent TI_API_CALL
+ti_import_vulkan_event(TiRuntime runtime,
+                       const TiVulkanEventInteropInfo *interop_info);
+
+// function.export_vulkan_event
 TI_DLL_EXPORT void TI_API_CALL
-ti_submit_and_signal_vulkan_event_ext(TiRuntime runtime, VkEvent event);
+ti_export_vulkan_event(TiRuntime runtime,
+                       TiEvent event,
+                       TiVulkanEventInteropInfo *interop_info);
 
 #ifdef __cplusplus
 }  // extern "C"

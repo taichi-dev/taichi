@@ -24,7 +24,7 @@ taichi::lang::DeviceAllocation Runtime::allocate_memory(
 }
 
 AotModule::AotModule(Runtime &runtime,
-                     std::unique_ptr<taichi::lang::aot::Module> &&aot_module)
+                     std::unique_ptr<taichi::lang::aot::Module> aot_module)
     : runtime_(&runtime), aot_module_(std::move(aot_module)) {
 }
 
@@ -43,6 +43,18 @@ taichi::lang::aot::Module &AotModule::get() {
   return *aot_module_;
 }
 Runtime &AotModule::runtime() {
+  return *runtime_;
+}
+
+Event::Event(
+  Runtime& runtime,
+  std::unique_ptr<taichi::lang::DeviceEvent> event
+) : runtime_(&runtime), event_(std::move(event)) {}
+
+taichi::lang::DeviceEvent& Event::get() {
+  return *event_;
+}
+Runtime& Event::runtime() {
   return *runtime_;
 }
 
@@ -149,6 +161,19 @@ void ti_unmap_memory(TiRuntime runtime, TiMemory devmem) {
   }
   Runtime *runtime2 = (Runtime *)runtime;
   runtime2->get().unmap(devmem2devalloc(*runtime2, devmem));
+}
+
+TiEvent ti_create_event(TiRuntime runtime) {
+  Runtime *runtime2 = (Runtime *)runtime;
+  return (TiEvent)runtime2->get().create_event().release();
+}
+void ti_destroy_event(TiEvent event) {
+  if (event == nullptr) {
+    TI_WARN("ignored attempt to destroy event of null handle");
+    return;
+  }
+
+  delete (Event*)event;
 }
 
 void ti_copy_memory_device_to_device(TiRuntime runtime,
@@ -398,6 +423,15 @@ void ti_launch_compute_graph(TiRuntime runtime,
   }
   ((taichi::lang::aot::CompiledGraph *)compute_graph)->run(arg_map);
 }
+
+void ti_signal_event(TiRuntime runtime, TiEvent event) {
+  ((Runtime*)runtime)->signal_event(&((Event*)event)->get());
+}
+
+void ti_reset_event(TiRuntime runtime, TiEvent event) {
+  ((Runtime*)runtime)->reset_event(&((Event*)event)->get());
+}
+
 void ti_submit(TiRuntime runtime) {
   if (runtime == nullptr) {
     TI_WARN("ignored attempt to submit to runtime of null handle");

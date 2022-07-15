@@ -25,6 +25,8 @@ class VulkanRuntime : public Runtime {
   virtual void buffer_copy(const taichi::lang::DevicePtr &dst,
                            const taichi::lang::DevicePtr &src,
                            size_t size) override final;
+  virtual void signal_event(taichi::lang::DeviceEvent* event) override final;
+  virtual void reset_event(taichi::lang::DeviceEvent* event) override final;
   virtual void submit() override final;
   virtual void wait() override final;
 };

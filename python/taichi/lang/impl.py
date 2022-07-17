@@ -229,6 +229,7 @@ class PyTaichi:
         self.current_kernel = None
         self.global_vars = []
         self.grad_vars = []
+        self.dual_vars = []
         self.matrix_fields = []
         self.default_fp = f32
         self.default_ip = i32
@@ -301,21 +302,27 @@ class PyTaichi:
                 f'{bar}Please consider specifying a shape for them. E.g.,' +
                 '\n\n  x = ti.field(float, shape=(2, 3))')
 
-    def _check_grad_field_not_placed(self):
+    def _check_gradient_field_not_placed(self, gradient_type):
         not_placed = set()
-        for _var in self.grad_vars:
+        gradient_vars = []
+        if gradient_type == "grad":
+            gradient_vars = self.grad_vars
+        elif gradient_type == "dual":
+            gradient_vars = self.dual_vars
+        for _var in gradient_vars:
             if _var.ptr.snode() is None:
                 not_placed.add(self._get_tb(_var))
 
         if len(not_placed):
             bar = '=' * 44 + '\n'
             raise RuntimeError(
-                f'These field(s) requrie `needs_grad=True`, however their grad field(s) are not placed:\n{bar}'
+                f'These field(s) requrie `needs_{gradient_type}=True`, however their {gradient_type} field(s) are not placed:\n{bar}'
                 + f'{bar}'.join(not_placed) +
-                f'{bar}Please consider place the grad field(s). E.g.,' +
-                '\n\n  ti.root.dense(ti.i, 1).place(x.grad)' +
+                f'{bar}Please consider place the {gradient_type} field(s). E.g.,'
+                + '\n\n  ti.root.dense(ti.i, 1).place(x.{gradient_type})' +
                 '\n\n Or specify a shape for the field(s). E.g.,' +
-                '\n\n  x = ti.field(float, shape=(2, 3), needs_grad=True)')
+                '\n\n  x = ti.field(float, shape=(2, 3), needs_{gradient_type}=True)'
+            )
 
     def _check_matrix_field_member_shape(self):
         for _field in self.matrix_fields:
@@ -338,11 +345,13 @@ class PyTaichi:
         self.materialized = True
 
         self._check_field_not_placed()
-        self._check_grad_field_not_placed()
+        self._check_gradient_field_not_placed("grad")
+        self._check_gradient_field_not_placed("dual")
         self._check_matrix_field_member_shape()
         self._calc_matrix_field_dynamic_index_stride()
         self.global_vars = []
         self.grad_vars = []
+        self.dual_vars = []
         self.matrix_fields = []
 
     def _register_signal_handlers(self):
@@ -505,7 +514,7 @@ Example::
 
 
 @python_scope
-def create_field_member(dtype, name, needs_grad):
+def create_field_member(dtype, name, needs_grad, needs_dual):
     dtype = cook_dtype(dtype)
 
     # primal
@@ -541,15 +550,23 @@ def create_field_member(dtype, name, needs_grad):
         x_dual.ptr.set_name(name + ".dual")
         x_dual.ptr.set_is_primal(False)
         x.ptr.set_dual(x_dual.ptr)
-    elif needs_grad:
+        if needs_dual:
+            pytaichi.dual_vars.append(x_dual)
+    elif needs_grad or needs_dual:
         raise TaichiRuntimeError(
-            f'{dtype} is not supported for field with `needs_grad=True`.')
+            f'{dtype} is not supported for field with `needs_grad=True` or `needs_dual=True`.'
+        )
 
     return x, x_grad, x_dual
 
 
 @python_scope
-def field(dtype, shape=None, name="", offset=None, needs_grad=False):
+def field(dtype,
+          shape=None,
+          name="",
+          offset=None,
+          needs_grad=False,
+          needs_dual=False):
     """Defines a Taichi field.
 
     A Taichi field can be viewed as an abstract N-dimensional array, hiding away
@@ -566,6 +583,8 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False):
         offset (Union[int, tuple[int]], optional): offset of the field domain.
         needs_grad (bool, optional): whether this field participates in autodiff (reverse mode)
             and thus needs an adjoint field to store the gradients.
+        needs_dual (bool, optional): whether this field participates in autodiff (forward mode)
+            and thus needs an dual field to store the gradients.
 
     Example::
 
@@ -592,7 +611,8 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False):
     assert (offset is None or shape
             is not None), 'The shape cannot be None when offset is being set'
 
-    x, x_grad, x_dual = create_field_member(dtype, name, needs_grad)
+    x, x_grad, x_dual = create_field_member(dtype, name, needs_grad,
+                                            needs_dual)
     x, x_grad, x_dual = ScalarField(x), ScalarField(x_grad), ScalarField(
         x_dual)
 
@@ -604,6 +624,8 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False):
         root.dense(index_nd(dim), shape).place(x, offset=offset)
         if needs_grad:
             root.dense(index_nd(dim), shape).place(x_grad)
+        if needs_dual:
+            root.dense(index_nd(dim), shape).place(x_dual)
     return x
 
 

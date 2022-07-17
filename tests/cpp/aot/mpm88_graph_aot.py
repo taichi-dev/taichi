@@ -9,7 +9,7 @@ args = parser.parse_args()
 
 
 def compile_mpm88_graph(arch):
-    ti.init(arch)
+    ti.init(arch, vk_api_version="1.0")
     if ti.lang.impl.current_cfg().arch != arch:
         return
     n_particles = 8192

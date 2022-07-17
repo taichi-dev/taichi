@@ -7,12 +7,9 @@ target_sources(${LLVM_RHI}
     llvm_device.cpp
   )
 
-#TODO 4832, some dependencies here should not be required as they
-# are build requirements of other targets.
 target_include_directories(${LLVM_RHI}
   PRIVATE
     ${PROJECT_SOURCE_DIR}
-    ${PROJECT_SOURCE_DIR}/external/spdlog/include
-    ${PROJECT_SOURCE_DIR}/external/glfw/include
-    ${LLVM_INCLUDE_DIRS}
   )
+
+target_link_libraries(${LLVM_RHI} PRIVATE taichi_util)

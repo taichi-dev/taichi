@@ -8,7 +8,7 @@
 #include "taichi/rhi/device.h"
 #include "taichi/runtime/metal/kernel_utils.h"
 #include "taichi/codegen/metal/struct_metal.h"
-#include "taichi/lang_util.h"
+#include "taichi/util/lang_util.h"
 #include "taichi/program/compile_config.h"
 #include "taichi/program/kernel_profiler.h"
 #include "taichi/system/memory_pool.h"

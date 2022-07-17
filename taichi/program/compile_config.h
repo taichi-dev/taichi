@@ -1,7 +1,7 @@
 #pragma once
 
 #include "taichi/rhi/arch.h"
-#include "taichi/lang_util.h"
+#include "taichi/util/lang_util.h"
 
 namespace taichi {
 namespace lang {
@@ -116,6 +116,7 @@ struct CompileConfig {
   double offline_cache_cleaning_factor{0.25};        // [0.f, 1.f]
 
   int num_compile_threads{0};
+  std::string vk_api_version;
 
   CompileConfig();
 };

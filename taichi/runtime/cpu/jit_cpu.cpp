@@ -43,7 +43,7 @@
 
 #endif
 
-#include "taichi/lang_util.h"
+#include "taichi/util/lang_util.h"
 #include "taichi/program/program.h"
 #include "taichi/jit/jit_session.h"
 #include "taichi/util/file_sequence_writer.h"

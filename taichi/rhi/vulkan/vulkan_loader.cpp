@@ -1,6 +1,6 @@
 #include "taichi/rhi/vulkan/vulkan_common.h"
 
-#include "taichi/lang_util.h"
+#include "taichi/util/lang_util.h"
 #include "taichi/rhi/vulkan/vulkan_loader.h"
 #include "taichi/common/logging.h"
 

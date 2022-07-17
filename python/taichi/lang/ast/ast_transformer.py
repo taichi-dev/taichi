@@ -13,8 +13,10 @@ from taichi.lang.ast.ast_transformer_utils import (Builder, LoopStatus,
                                                    ReturnStatus)
 from taichi.lang.ast.symbol_resolver import ASTResolver
 from taichi.lang.exception import TaichiSyntaxError, TaichiTypeError
+from taichi.lang.field import Field
 from taichi.lang.matrix import (Matrix, MatrixType, _PyScopeMatrixImpl,
                                 _TiScopeMatrixImpl)
+from taichi.lang.snode import append
 from taichi.lang.util import in_taichi_scope, is_taichi_class, to_taichi_type
 from taichi.types import (annotations, ndarray_type, primitive_types,
                           texture_type)
@@ -637,8 +639,19 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_Attribute(ctx, node):
-        build_stmt(ctx, node.value)
-        node.ptr = getattr(node.value.ptr, node.attr)
+        if node.attr == "append" and isinstance(node.value, ast.Subscript):
+            x = build_stmt(ctx, node.value.value)
+            if not isinstance(x, Field) or x.parent(
+            ).ptr.type != _ti_core.SNodeType.dynamic:
+                raise TaichiSyntaxError(
+                    f"In Taichi scope the `append` method is only defined for dynamic SNodes, but {x} is encountered"
+                )
+            index = build_stmt(ctx, node.value.slice)
+            node.value.ptr = None
+            node.ptr = lambda val: append(x.parent(), index, val)
+        else:
+            build_stmt(ctx, node.value)
+            node.ptr = getattr(node.value.ptr, node.attr)
         return node.ptr
 
     @staticmethod

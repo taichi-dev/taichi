@@ -733,7 +733,9 @@ llvm::Value *CodeGenLLVM::create_print(std::string tag,
     value =
         builder->CreateFPExt(value, tlctx->get_data_type(PrimitiveType::f64));
   args.push_back(value);
-  return create_call(runtime_printf, args);
+
+  auto func_type_func = get_runtime_function("get_func_type_host_printf");
+  return create_call(runtime_printf, func_type_func->getFunctionType(), args);
 }
 
 llvm::Value *CodeGenLLVM::create_print(std::string tag, llvm::Value *value) {
@@ -792,8 +794,9 @@ void CodeGenLLVM::visit(PrintStmt *stmt) {
   auto runtime_printf = call("LLVMRuntime_get_host_printf", get_runtime());
   args.insert(args.begin(),
               builder->CreateGlobalStringPtr(formats.c_str(), "format_string"));
-
-  llvm_val[stmt] = create_call(runtime_printf, args);
+  auto func_type_func = get_runtime_function("get_func_type_host_printf");
+  llvm_val[stmt] =
+      create_call(runtime_printf, func_type_func->getFunctionType(), args);
 }
 
 void CodeGenLLVM::visit(ConstStmt *stmt) {
@@ -924,22 +927,17 @@ void CodeGenLLVM::emit_gc(OffloadedStmt *stmt) {
   call("node_gc", get_runtime(), tlctx->get_constant(snode));
 }
 
+llvm::Value *CodeGenLLVM::create_call(llvm::Function *func,
+                                      llvm::ArrayRef<llvm::Value *> args) {
+  return create_call(func, func->getFunctionType(), args);
+}
+
 llvm::Value *CodeGenLLVM::create_call(llvm::Value *func,
+                                      llvm::FunctionType *func_ty,
                                       llvm::ArrayRef<llvm::Value *> args_arr) {
   std::vector<llvm::Value *> args = args_arr;
-  check_func_call_signature(func, args, builder.get());
+  check_func_call_signature(func_ty, func->getName(), args, builder.get());
 #ifdef TI_LLVM_15
-  llvm::FunctionType *func_ty = nullptr;
-  if (auto *fn = llvm::dyn_cast<llvm::Function>(func)) {
-    func_ty = fn->getFunctionType();
-  } else if (auto *fn_ptr = llvm::dyn_cast<llvm::CallInst>(func)) {
-    auto *fn_ret_ty = fn_ptr->getCalledFunction()->getReturnType();
-    fn_ret_ty = fn_ret_ty->getPointerElementType();
-    func_ty = llvm::cast<llvm::FunctionType>(fn_ret_ty);
-  } else if (auto *fn_global = llvm::dyn_cast<llvm::GlobalVariable>(func)) {
-    func_ty = llvm::cast<llvm::FunctionType>(fn_global->getValueType());
-  }
-  TI_ASSERT(func_ty);
   return builder->CreateCall(func_ty, func, args);
 #else
   return builder->CreateCall(func, args);
@@ -1403,9 +1401,13 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
           pointee_type->to_string());
     }
     if (auto qit = pointee_type->cast<QuantIntType>()) {
-      store_quant_int(llvm_val[stmt->dest], qit, llvm_val[stmt->val], true);
+      store_quant_int(llvm_val[stmt->dest],
+                      stmt->dest->as<GetChStmt>()->input_snode->physical_type,
+                      qit, llvm_val[stmt->val], true);
     } else if (auto qfxt = pointee_type->cast<QuantFixedType>()) {
-      store_quant_fixed(llvm_val[stmt->dest], qfxt, llvm_val[stmt->val], true);
+      store_quant_fixed(llvm_val[stmt->dest],
+                        stmt->dest->as<GetChStmt>()->input_snode->physical_type,
+                        qfxt, llvm_val[stmt->val], true);
     } else {
       TI_NOT_IMPLEMENTED;
     }
@@ -1435,9 +1437,10 @@ void CodeGenLLVM::create_global_load(GlobalLoadStmt *stmt,
           load_quant_fixed(ptr, qfxt, physical_type, should_cache_as_read_only);
     } else {
       TI_ASSERT(val_type->is<QuantFloatType>());
+      TI_ASSERT(get_ch->input_snode->dt->is<BitStructType>());
       llvm_val[stmt] = load_quant_float(
-          ptr, get_ch->output_snode, val_type->as<QuantFloatType>(),
-          physical_type, should_cache_as_read_only);
+          ptr, get_ch->input_snode->dt->as<BitStructType>(),
+          get_ch->output_snode->id_in_bit_struct, should_cache_as_read_only);
     }
   } else {
     // Byte pointer case.
@@ -2453,7 +2456,7 @@ void CodeGenLLVM::visit_call_shared_object(ExternalFuncCallStmt *stmt) {
 
   auto addr = tlctx->get_constant((std::size_t)stmt->so_func);
   auto func = builder->CreateIntToPtr(addr, func_ptr_type);
-  create_call(func, arg_values);
+  create_call(func, func_type, arg_values);
 }
 
 void CodeGenLLVM::visit(ExternalFuncCallStmt *stmt) {

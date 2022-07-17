@@ -8,7 +8,7 @@
 #include <unordered_map>
 
 #include "taichi/ir/ir.h"
-#include "taichi/lang_util.h"
+#include "taichi/util/lang_util.h"
 #define TI_RUNTIME_HOST
 #include "taichi/program/context.h"
 #undef TI_RUNTIME_HOST

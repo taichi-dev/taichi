@@ -10,7 +10,7 @@
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"
 #include "taichi/program/program.h"
-#include "taichi/lang_util.h"
+#include "taichi/util/lang_util.h"
 #include "taichi/rhi/cuda/cuda_driver.h"
 #include "taichi/rhi/cuda/cuda_context.h"
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
@@ -272,8 +272,19 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     TI_ASSERT(output_address_type != nullptr);
 
     // element_type is the data type for the binary operation.
+#ifdef TI_LLVM_15
+    llvm::Type *element_address_type = nullptr;
+    if (output_address_type->isOpaquePointerTy()) {
+      element_address_type =
+          llvm::PointerType::get(output_address_type->getContext(), 0);
+    } else {
+      llvm::Type *element_type = output_address_type->getPointerElementType();
+      element_address_type = element_type->getPointerTo();
+    }
+#else
     llvm::Type *element_type = output_address_type->getPointerElementType();
     llvm::Type *element_address_type = element_type->getPointerTo();
+#endif
 
     int atomic_size = 32;
     llvm::Type *atomic_type = builder->getIntNTy(atomic_size);

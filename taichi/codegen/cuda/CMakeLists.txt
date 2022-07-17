@@ -9,9 +9,9 @@ target_sources(cuda_codegen
 target_include_directories(cuda_codegen
   PRIVATE
     ${PROJECT_SOURCE_DIR}
-    ${PROJECT_SOURCE_DIR}/external/spdlog/include
     ${PROJECT_SOURCE_DIR}/external/eigen
     ${LLVM_INCLUDE_DIRS}
   )
 
+target_link_libraries(cuda_codegen PRIVATE taichi_util)
 target_link_libraries(cuda_codegen PRIVATE cuda_runtime)

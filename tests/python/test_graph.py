@@ -35,6 +35,25 @@ def test_ndarray_int():
 
 
 @test_utils.test(arch=ti.vulkan)
+def test_ndarray_0dim():
+    @ti.kernel
+    def test(pos: ti.types.ndarray(dtype=ti.i32, field_dim=0)):
+        pos[None] = 1
+
+    sym_pos = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
+                           'pos',
+                           ti.i32,
+                           field_dim=0)
+    g_init = ti.graph.GraphBuilder()
+    g_init.dispatch(test, sym_pos)
+    g = g_init.compile()
+
+    a = ti.ndarray(ti.i32, shape=())
+    g.run({'pos': a})
+    assert a.to_numpy() == 1
+
+
+@test_utils.test(arch=ti.vulkan)
 def test_ndarray_float():
     n = 4
 

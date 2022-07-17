@@ -41,7 +41,7 @@ STR(
     int32_t pow_i32(int32_t x, int32_t n) {
       int32_t tmp = x;
       int32_t ans = 1;
-      while (n) {
+      while (n > (int32_t)(0)) {
         if (n & 1)
           ans *= tmp;
         tmp *= tmp;

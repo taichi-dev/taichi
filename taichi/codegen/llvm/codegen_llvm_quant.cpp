@@ -18,7 +18,16 @@ inline void update_mask(uint64 &mask, uint32 num_bits, uint32 offset) {
 llvm::Value *CodeGenLLVM::atomic_add_quant_int(AtomicOpStmt *stmt,
                                                QuantIntType *qit) {
   auto [byte_ptr, bit_offset] = load_bit_ptr(llvm_val[stmt->dest]);
+#ifdef TI_LLVM_15
+  // FIXME: get ptr_ty from taichi instead of llvm.
+  auto physical_type = builder->getInt32Ty();
+  if (stmt->dest->is<taichi::lang::GetChStmt>()) {
+    physical_type = cast<llvm::IntegerType>(llvm_type(
+        (*((taichi::lang::GetChStmt *)stmt->dest)).input_snode->physical_type));
+  }
+#else
   auto physical_type = byte_ptr->getType()->getPointerElementType();
+#endif
   return create_call(
       fmt::format("atomic_add_partial_bits_b{}",
                   physical_type->getIntegerBitWidth()),
@@ -30,7 +39,16 @@ llvm::Value *CodeGenLLVM::atomic_add_quant_int(AtomicOpStmt *stmt,
 llvm::Value *CodeGenLLVM::atomic_add_quant_fixed(AtomicOpStmt *stmt,
                                                  QuantFixedType *qfxt) {
   auto [byte_ptr, bit_offset] = load_bit_ptr(llvm_val[stmt->dest]);
+#ifdef TI_LLVM_15
+  // FIXME: get ptr_ty from taichi instead of llvm.
+  auto physical_type = builder->getInt32Ty();
+  if (stmt->dest->is<taichi::lang::GetChStmt>()) {
+    physical_type = cast<llvm::IntegerType>(llvm_type(
+        (*((taichi::lang::GetChStmt *)stmt->dest)).input_snode->physical_type));
+  }
+#else
   auto physical_type = byte_ptr->getType()->getPointerElementType();
+#endif
   auto qit = qfxt->get_digits_type()->as<QuantIntType>();
   auto val_store = to_quant_fixed(llvm_val[stmt->val], qfxt);
   val_store = builder->CreateSExt(val_store, physical_type);
@@ -63,11 +81,17 @@ llvm::Value *CodeGenLLVM::to_quant_fixed(llvm::Value *real,
 }
 
 void CodeGenLLVM::store_quant_int(llvm::Value *bit_ptr,
+                                  PrimitiveType *physical_ty,
                                   QuantIntType *qit,
                                   llvm::Value *value,
                                   bool atomic) {
   auto [byte_ptr, bit_offset] = load_bit_ptr(bit_ptr);
+#ifdef TI_LLVM_15
+  // FIXME: get ptr_ty from taichi instead of llvm.
+  auto physical_type = llvm_type(physical_ty);
+#else
   auto physical_type = byte_ptr->getType()->getPointerElementType();
+#endif
   // TODO(type): CUDA only supports atomicCAS on 32- and 64-bit integers.
   // Try to support 8/16-bit physical types.
   create_call(fmt::format("{}set_partial_bits_b{}", atomic ? "atomic_" : "",
@@ -77,14 +101,17 @@ void CodeGenLLVM::store_quant_int(llvm::Value *bit_ptr,
 }
 
 void CodeGenLLVM::store_quant_fixed(llvm::Value *bit_ptr,
+                                    PrimitiveType *physical_ty,
                                     QuantFixedType *qfxt,
                                     llvm::Value *value,
                                     bool atomic) {
-  store_quant_int(bit_ptr, qfxt->get_digits_type()->as<QuantIntType>(),
+  store_quant_int(bit_ptr, physical_ty,
+                  qfxt->get_digits_type()->as<QuantIntType>(),
                   to_quant_fixed(value, qfxt), atomic);
 }
 
 void CodeGenLLVM::store_masked(llvm::Value *byte_ptr,
+                               llvm::Type *byte_ptr_ty,
                                uint64 mask,
                                llvm::Value *value,
                                bool atomic) {
@@ -92,7 +119,7 @@ void CodeGenLLVM::store_masked(llvm::Value *byte_ptr,
     // do not store anything
     return;
   }
-  auto physical_type = byte_ptr->getType()->getPointerElementType();
+  auto physical_type = byte_ptr_ty;
   uint64 full_mask = (~(uint64)0) >> (64 - physical_type->getIntegerBitWidth());
   if ((!atomic || prog->config.quant_opt_atomic_demotion) &&
       ((mask & full_mask) == full_mask)) {
@@ -288,7 +315,8 @@ void CodeGenLLVM::visit(BitStructStoreStmt *stmt) {
       }
       update_mask(mask, qit->get_num_bits(), ch->bit_offset);
     }
-    store_masked(llvm_val[stmt->ptr], mask, bit_struct_val, stmt->is_atomic);
+    store_masked(llvm_val[stmt->ptr], llvm_type(bit_struct_physical_type), mask,
+                 bit_struct_val, stmt->is_atomic);
   }
 }
 
@@ -405,7 +433,8 @@ void CodeGenLLVM::store_quant_floats_with_shared_exponents(
       update_mask(mask, num_digit_bits, digits_bit_offset);
     }
   }
-  store_masked(llvm_val[stmt->ptr], mask, masked_val, stmt->is_atomic);
+  store_masked(llvm_val[stmt->ptr], llvm_type(bit_struct_physical_type), mask,
+               masked_val, stmt->is_atomic);
 }
 
 llvm::Value *CodeGenLLVM::extract_exponent_from_f32(llvm::Value *f) {
@@ -532,32 +561,33 @@ llvm::Value *CodeGenLLVM::reconstruct_quant_fixed(llvm::Value *digits,
   return builder->CreateFMul(cast, s);
 }
 
-llvm::Value *CodeGenLLVM::load_quant_float(llvm::Value *digits_bit_ptr,
-                                           SNode *digits_snode,
-                                           QuantFloatType *qflt,
-                                           Type *physical_type,
+llvm::Value *CodeGenLLVM::load_quant_float(llvm::Value *digits_ptr,
+                                           BitStructType *bit_struct,
+                                           int digits_id,
                                            bool should_cache_as_read_only) {
-  auto exponent_snode = digits_snode->exp_snode;
-  // Compute the bit pointer of the exponent bits.
-  TI_ASSERT(digits_snode->parent == exponent_snode->parent);
-  auto exponent_bit_ptr = offset_bit_ptr(
-      digits_bit_ptr, exponent_snode->bit_offset - digits_snode->bit_offset);
-  return load_quant_float(digits_bit_ptr, exponent_bit_ptr, qflt, physical_type,
-                          should_cache_as_read_only,
-                          digits_snode->owns_shared_exponent);
+  auto exponent_id = bit_struct->get_member_exponent(digits_id);
+  auto exponent_bit_offset = bit_struct->get_member_bit_offset(exponent_id);
+  auto digits_bit_offset = bit_struct->get_member_bit_offset(digits_id);
+  auto bit_offset_delta = exponent_bit_offset - digits_bit_offset;
+  auto exponent_ptr = offset_bit_ptr(digits_ptr, bit_offset_delta);
+  auto qflt = bit_struct->get_member_type(digits_id)->as<QuantFloatType>();
+  auto physical_type = bit_struct->get_physical_type();
+  auto shared_exponent = bit_struct->get_member_owns_shared_exponent(digits_id);
+  return load_quant_float(digits_ptr, exponent_ptr, qflt, physical_type,
+                          should_cache_as_read_only, shared_exponent);
 }
 
-llvm::Value *CodeGenLLVM::load_quant_float(llvm::Value *digits_bit_ptr,
-                                           llvm::Value *exponent_bit_ptr,
+llvm::Value *CodeGenLLVM::load_quant_float(llvm::Value *digits_ptr,
+                                           llvm::Value *exponent_ptr,
                                            QuantFloatType *qflt,
                                            Type *physical_type,
                                            bool should_cache_as_read_only,
                                            bool shared_exponent) {
-  auto digits = load_quant_int(digits_bit_ptr,
-                               qflt->get_digits_type()->as<QuantIntType>(),
-                               physical_type, should_cache_as_read_only);
+  auto digits =
+      load_quant_int(digits_ptr, qflt->get_digits_type()->as<QuantIntType>(),
+                     physical_type, should_cache_as_read_only);
   auto exponent_val = load_quant_int(
-      exponent_bit_ptr, qflt->get_exponent_type()->as<QuantIntType>(),
+      exponent_ptr, qflt->get_exponent_type()->as<QuantIntType>(),
       physical_type, should_cache_as_read_only);
   return reconstruct_quant_float(digits, exponent_val, qflt, shared_exponent);
 }

@@ -1,8 +1,8 @@
 ---
-sidebar_position: 6
+sidebar_position: 2
 ---
 
-# Objective data-oriented programming
+# Objective Data-oriented Programming
 
 Taichi is a
 [data-oriented](https://en.wikipedia.org/wiki/Data-oriented_design)
@@ -279,7 +279,8 @@ print(b.num())  # 7
 ```
 
 ## Python classes as Taichi struct types
-Taichi provides custom [struct types](../basic/type.md#compound-types) for developers to associate pieces of data together. However, it is often convenient to have:
+
+Taichi provides custom [struct types](../type/type.md#compound-types) for developers to associate pieces of data together. However, it is often convenient to have:
   1. A Python representation of the struct type which is more object oriented.
   2. Functions associated with a struct type. (C++ style structs)
 
@@ -325,7 +326,7 @@ class Sphere:
         return self.radius == 0.0
 ```
 
-Functions associated with structs follow the same [scope rules](../basic/syntax.md#taichi-scope-vs-python-scope) as normal functions, in that they can be in Taichi or Python scope.  Each instance of the `Sphere` struct type now will have the above functions added to them.  The functions can be called such as:
+Functions associated with structs follow the same [scope rules](../kernels/syntax.md#taichi-scope-vs-python-scope) as normal functions, in that they can be in Taichi or Python scope.  Each instance of the `Sphere` struct type now will have the above functions added to them.  The functions can be called such as:
 
 ```python
 a_python_struct = Sphere(center=vec3(0.0), radius=1.0)

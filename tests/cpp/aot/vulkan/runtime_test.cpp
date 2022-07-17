@@ -34,8 +34,7 @@ TEST(RuntimeTest, ViewDevAllocAsNdarray) {
 
   // Create Taichi Device for computation
   lang::vulkan::VulkanDeviceCreator::Params evd_params;
-  evd_params.api_version =
-      taichi::lang::vulkan::VulkanEnvSettings::kApiVersion();
+  evd_params.api_version = std::nullopt;
   auto embedded_device =
       std::make_unique<taichi::lang::vulkan::VulkanDeviceCreator>(evd_params);
   taichi::lang::vulkan::VulkanDevice *device_ =

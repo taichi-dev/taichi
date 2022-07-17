@@ -62,37 +62,24 @@ class Graph:
         # Support native python numerical types (int, float), Ndarray.
         # Taichi Matrix types are flattened into (int, float) arrays.
         # TODO diminish the flatten behavior when Matrix becomes a Taichi native type.
-        arg_ptrs = {}
-        arg_ints = {}
-        arg_floats = {}
-        arg_doubles = {}
-
+        flattened = {}
         for k, v in args.items():
             if isinstance(v, Ndarray):
-                arg_ptrs[k] = v.arr
-            elif isinstance(v, int):
-                arg_ints[k] = v
-            elif isinstance(v, float):
-                arg_floats[k] = v
+                flattened[k] = v.arr
             elif isinstance(v, Matrix):
                 mat_val_id = 0
                 for a in range(v.n):
                     for b in range(v.m):
                         key = f"{k}_mat_arg_{mat_val_id}"
                         mat_val_id += 1
-                        if isinstance(v[a, b], int):
-                            arg_ints[key] = int(v[a, b])
-                        elif isinstance(v[a, b], float):
-                            arg_floats[key] = float(v[a, b])
-                        else:
-                            raise TaichiRuntimeError(
-                                f'Only python int, float are supported as matrix runtime arguments but got {type(v)}'
-                            )
+                        flattened[key] = v[a, b]
+            elif isinstance(v, (int, float)):
+                flattened[k] = v
             else:
                 raise TaichiRuntimeError(
-                    f'Only python int, float and ti.Ndarray are supported as runtime arguments but got {type(v)}'
+                    f'Only python int, float, ti.Matrix and ti.Ndarray are supported as runtime arguments but got {type(v)}'
                 )
-        self._compiled_graph.run(arg_ptrs, arg_ints, arg_floats, arg_doubles)
+        self._compiled_graph.run(flattened)
 
 
 def Arg(tag, name, dtype, field_dim=0, element_shape=()):

@@ -19,7 +19,6 @@ def test_shared_array_save():
             a[i] = pad[tid]
             ti.simt.block.sync()
     func()
-    print(a)
     for i in range(pad_num):
         assert a[i * block_dim + 7] == 14.0
         assert a[i * block_dim + 29] == 58.0

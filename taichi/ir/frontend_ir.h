@@ -913,7 +913,11 @@ class ASTBuilder {
   }
 
   void block_dim(int v) {
-    // TI_ASSERT(bit::is_power_of_two(v));
+    if (arch_ == Arch::cuda) {
+      TI_ASSERT(v % 32 == 0);
+    } else {
+      TI_ASSERT(bit::is_power_of_two(v));
+    }
     for_loop_dec_.config.block_dim = v;
   }
 

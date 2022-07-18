@@ -34,7 +34,7 @@ def expr_init_local_tensor(shape, element_type, elements):
 
 
 @taichi_scope
-def expr_init_scratch_pad(shape, element_type):
+def expr_init_shared_array(shape, element_type):
     return get_runtime().prog.current_ast_builder().expr_alloca_shared_array(
         shape, element_type)
 

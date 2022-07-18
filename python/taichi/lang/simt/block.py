@@ -12,7 +12,7 @@ class SharedArray:
     def __init__(self, shape, dtype):
         self.shape = shape
         self.dtype = dtype
-        self.shared_array_proxy = impl.expr_init_scratch_pad(shape, dtype)
+        self.shared_array_proxy = impl.expr_init_shared_array(shape, dtype)
 
     @taichi_scope
     def _subscript(self, indices, get_ref=False):

@@ -16,5 +16,4 @@ class SharedArray:
 
     @taichi_scope
     def _subscript(self, indices, get_ref=False):
-        return impl.make_index_expr(self.shared_array_proxy, (indices,))
-    
+        return impl.make_index_expr(self.shared_array_proxy, (indices, ))

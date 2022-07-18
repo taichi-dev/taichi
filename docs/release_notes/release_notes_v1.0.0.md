@@ -40,7 +40,7 @@ Compiled Taichi kernels can be saved from a Python process, then loaded and run 
 
 ```python
 # In Python app.py
-module = ti.aot.Module(ti.vulkan) 
+module = ti.aot.Module(ti.vulkan)
 module.add_kernel(my_kernel, template_args={'x': x})
 module.save('my_app')
 ```
@@ -264,7 +264,7 @@ ti.init()
 def foo(mat: ti.types.matrix(3, 3, ti.i32)) -> ti.types.matrix(2, 2, ti.i32)
     corners = mat[::2, ::2]
     return corners
-  
+
 mat = ti.Matrix([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
 corners = foo(mat)  # [[1 3] [7 9]]
 ```
@@ -280,7 +280,7 @@ ti.init(dynamic_index=True)
 def foo(mat: ti.types.matrix(3, 3, ti.i32), ind: ti.i32) -> ti.types.matrix(3, 1, ti.i32):
     col = mat[:, ind]
     return col
-  
+
 mat = ti.Matrix([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
 col = foo(mat, 2)  # [3 6 9]
 ```

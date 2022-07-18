@@ -83,6 +83,10 @@ LlvmOfflineCacheFileReader::LlvmOfflineCacheFileReader(
     : path_(path), data_(std::move(data)), format_(format) {
 }
 
+size_t LlvmOfflineCacheFileReader::get_num_snode_trees() {
+  return data_.fields.size();
+}
+
 bool LlvmOfflineCacheFileReader::get_field_cache(
     LlvmOfflineCache::FieldCacheData &res,
     int snode_tree_id) {

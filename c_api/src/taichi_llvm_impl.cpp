@@ -5,6 +5,7 @@
 
 #include "taichi/program/compile_config.h"
 #include "taichi/runtime/llvm/llvm_runtime_executor.h"
+#include "taichi/runtime/llvm/llvm_aot_module_loader.h"
 #include "taichi/runtime/cpu/aot_module_loader_impl.h"
 
 #ifdef TI_WITH_CUDA
@@ -87,6 +88,19 @@ TiAotModule LlvmRuntime::load_aot_module(const char *module_path) {
 #else
     TI_NOT_IMPLEMENTED;
 #endif
+  }
+
+  /* TODO(zhanlue): expose allocate/deallocate_snode_tree_type() to C-API
+     Let's initialize SNodeTrees automatically for now since SNodeTreeType isn't
+     ready yet.
+  */
+  auto *llvm_aot_module =
+      dynamic_cast<taichi::lang::LlvmAotModule *>(aot_module.get());
+  TI_ASSERT(llvm_aot_module != nullptr);
+  for (size_t i = 0; i < llvm_aot_module->get_num_snode_trees(); i++) {
+    auto *snode_tree = aot_module->get_field(std::to_string(i));
+    taichi::lang::allocate_aot_snode_tree_type(aot_module.get(), snode_tree,
+                                               this->result_buffer);
   }
 
   // Insert LLVMRuntime to RuntimeContext

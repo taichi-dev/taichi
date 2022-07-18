@@ -54,9 +54,9 @@ std::unique_ptr<aot::CompiledGraph> LlvmAotModule::get_graph(std::string name) {
   return std::make_unique<aot::CompiledGraph>(std::move(graph));
 }
 
-void finalize_aot_field(aot::Module *aot_module,
-                        aot::Field *aot_field,
-                        uint64 *result_buffer) {
+void allocate_aot_snode_tree_type(aot::Module *aot_module,
+                                  aot::Field *aot_field,
+                                  uint64 *result_buffer) {
   auto *llvm_aot_module = dynamic_cast<LlvmAotModule *>(aot_module);
   auto *aot_field_impl = dynamic_cast<llvm_aot::FieldImpl *>(aot_field);
 

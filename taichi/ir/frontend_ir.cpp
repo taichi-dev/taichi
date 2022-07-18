@@ -985,8 +985,8 @@ Expr ASTBuilder::expr_alloca_local_tensor(const std::vector<int> &shape,
   return var;
 }
 
-Expr ASTBuilder::expr_alloca_scratch_pad(const std::vector<int> &shape,
-                                         const DataType &element_type) {
+Expr ASTBuilder::expr_alloca_shared_array(const std::vector<int> &shape,
+                                          const DataType &element_type) {
   auto var = Expr(std::make_shared<IdExpression>(get_next_id()));
   this->insert(std::make_unique<FrontendAllocaStmt>(
       std::static_pointer_cast<IdExpression>(var.expr)->id, shape, element_type,

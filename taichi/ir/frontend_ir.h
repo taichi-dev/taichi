@@ -878,7 +878,7 @@ class ASTBuilder {
   Expr expr_alloca_local_tensor(const std::vector<int> &shape,
                                 const DataType &element_type,
                                 const ExprGroup &elements);
-  Expr expr_alloca_scratch_pad(const std::vector<int> &shape,
+  Expr expr_alloca_shared_array(const std::vector<int> &shape,
                                const DataType &element_type);
   void expr_assign(const Expr &lhs, const Expr &rhs, std::string tb);
   void create_assert_stmt(const Expr &cond,
@@ -913,7 +913,7 @@ class ASTBuilder {
   }
 
   void block_dim(int v) {
-    TI_ASSERT(bit::is_power_of_two(v));
+    //TI_ASSERT(bit::is_power_of_two(v));
     for_loop_dec_.config.block_dim = v;
   }
 

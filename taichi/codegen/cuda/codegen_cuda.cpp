@@ -538,8 +538,11 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
   llvm::Value *create_intrinsic_load(llvm::Value *ptr,
                                      llvm::Type *ty) override {
     // Issue an "__ldg" instruction to cache data in the read-only data cache.
-    auto intrin = ty->isFloatingPointTy() ? llvm::Intrinsic::nvvm_ldg_global_f : llvm::Intrinsic::nvvm_ldg_global_i;
-    return builder->CreateIntrinsic(intrin, {ty, llvm::PointerType::get(ty, 0)}, {ptr, tlctx->get_constant(ty->getScalarSizeInBits())});
+    auto intrin = ty->isFloatingPointTy() ? llvm::Intrinsic::nvvm_ldg_global_f
+                                          : llvm::Intrinsic::nvvm_ldg_global_i;
+    return builder->CreateIntrinsic(
+        intrin, {ty, llvm::PointerType::get(ty, 0)},
+        {ptr, tlctx->get_constant(ty->getScalarSizeInBits())});
   }
 
   void visit(GlobalLoadStmt *stmt) override {

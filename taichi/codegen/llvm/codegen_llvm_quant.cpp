@@ -352,7 +352,8 @@ void CodeGenLLVM::store_quant_floats_with_shared_exponents(
           input != stmt->ch_ids.end()) {
         floats.push_back(llvm_val[stmt->values[input - stmt->ch_ids.begin()]]);
       } else {
-        floats.push_back(extract_quant_float(local_bit_struct, bit_struct, ch_id));
+        floats.push_back(
+            extract_quant_float(local_bit_struct, bit_struct, ch_id));
       }
     }
     // convert to i32 for bit operations
@@ -487,8 +488,12 @@ llvm::Value *CodeGenLLVM::extract_quant_float(llvm::Value *physical_value,
   auto exponent_bit_offset = bit_struct->get_member_bit_offset(exponent_id);
   auto digits_bit_offset = bit_struct->get_member_bit_offset(digits_id);
   auto shared_exponent = bit_struct->get_member_owns_shared_exponent(digits_id);
-  auto digits = extract_quant_int(physical_value, tlctx->get_constant(digits_bit_offset), qflt->get_digits_type()->as<QuantIntType>());
-  auto exponent = extract_quant_int(physical_value, tlctx->get_constant(exponent_bit_offset), qflt->get_exponent_type()->as<QuantIntType>());
+  auto digits =
+      extract_quant_int(physical_value, tlctx->get_constant(digits_bit_offset),
+                        qflt->get_digits_type()->as<QuantIntType>());
+  auto exponent = extract_quant_int(
+      physical_value, tlctx->get_constant(exponent_bit_offset),
+      qflt->get_exponent_type()->as<QuantIntType>());
   return reconstruct_quant_float(digits, exponent, qflt, shared_exponent);
 }
 

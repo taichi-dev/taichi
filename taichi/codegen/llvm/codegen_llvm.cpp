@@ -1430,7 +1430,9 @@ void CodeGenLLVM::create_global_load(GlobalLoadStmt *stmt,
     auto get_ch = stmt->src->as<GetChStmt>();
     auto physical_type = llvm_type(get_ch->input_snode->physical_type);
     auto [byte_ptr, bit_offset] = load_bit_ptr(ptr);
-    auto physical_value = should_cache_as_read_only ? create_intrinsic_load(byte_ptr, physical_type) : builder->CreateLoad(physical_type, byte_ptr);
+    auto physical_value = should_cache_as_read_only
+                              ? create_intrinsic_load(byte_ptr, physical_type)
+                              : builder->CreateLoad(physical_type, byte_ptr);
     if (auto qit = val_type->cast<QuantIntType>()) {
       llvm_val[stmt] = extract_quant_int(physical_value, bit_offset, qit);
     } else if (auto qfxt = val_type->cast<QuantFixedType>()) {
@@ -1440,7 +1442,9 @@ void CodeGenLLVM::create_global_load(GlobalLoadStmt *stmt,
     } else {
       TI_ASSERT(val_type->is<QuantFloatType>());
       TI_ASSERT(get_ch->input_snode->dt->is<BitStructType>());
-      llvm_val[stmt] = extract_quant_float(physical_value, get_ch->input_snode->dt->as<BitStructType>(), get_ch->output_snode->id_in_bit_struct);
+      llvm_val[stmt] = extract_quant_float(
+          physical_value, get_ch->input_snode->dt->as<BitStructType>(),
+          get_ch->output_snode->id_in_bit_struct);
     }
   } else {
     // Byte pointer case.

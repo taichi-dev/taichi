@@ -4,7 +4,7 @@ set(TAICHI_C_API_NAME taichi_c_api)
 
 file(GLOB_RECURSE C_API_SOURCE "c_api/src/*.cpp")
 if(NOT TI_BUILD_TESTS)
-    list(REMOVE_ITEM C_API_SOURCE "c_api/src/c_api_interface_test.cpp")
+    list(REMOVE_ITEM C_API_SOURCE "c_api/src/c_api_test_utils.cpp")
 endif()
 
 add_library(${TAICHI_C_API_NAME} SHARED ${C_API_SOURCE})

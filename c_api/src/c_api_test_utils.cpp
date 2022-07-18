@@ -1,4 +1,5 @@
 #include "c_api_test_utils.h"
+#include "taichi/platform/cuda/detect_cuda.h"
 
 #ifdef TI_WITH_VULKAN
 #include "taichi/rhi/vulkan/vulkan_loader.h"
@@ -13,6 +14,10 @@ bool is_vulkan_available() {
 #else
   return false;
 #endif
+}
+
+bool is_cuda_available() {
+  return taichi::is_cuda_api_available();
 }
 
 }  // namespace utils

@@ -193,4 +193,7 @@ option(TI_WITH_C_API "build taichi runtime c-api library" OFF)
 
 if (TI_WITH_C_API)
   include(cmake/TaichiCAPI.cmake)
+  if (TI_BUILD_TESTS)
+    include(cmake/TaichiCAPITests.cmake)
+  endif()
 endif()

@@ -23,6 +23,10 @@ taichi::lang::DeviceAllocation Runtime::allocate_memory(
   return devalloc;
 }
 
+void Runtime::deallocate_memory(TiMemory devmem) {
+  this->get().dealloc_memory(devmem2devalloc(*this, devmem));
+}
+
 AotModule::AotModule(Runtime &runtime,
                      std::unique_ptr<taichi::lang::aot::Module> &&aot_module)
     : runtime_(&runtime), aot_module_(std::move(aot_module)) {
@@ -51,23 +55,28 @@ Runtime &AotModule::runtime() {
 TiRuntime ti_create_runtime(TiArch arch) {
   switch (arch) {
 #ifdef TI_WITH_VULKAN
-    case TI_ARCH_VULKAN:
+    case TI_ARCH_VULKAN: {
       return (TiRuntime)(static_cast<Runtime *>(new VulkanRuntimeOwned));
+    }
 #endif  // TI_WITH_VULKAN
 #ifdef TI_WITH_LLVM
-    case TI_ARCH_X64:
+    case TI_ARCH_X64: {
       return (TiRuntime)(static_cast<Runtime *>(
           new capi::LlvmRuntime(taichi::Arch::x64)));
-    case TI_ARCH_ARM64:
+    }
+    case TI_ARCH_ARM64: {
       return (TiRuntime)(static_cast<Runtime *>(
           new capi::LlvmRuntime(taichi::Arch::arm64)));
-    case TI_ARCH_CUDA:
+    }
+    case TI_ARCH_CUDA: {
       return (TiRuntime)(static_cast<Runtime *>(
           new capi::LlvmRuntime(taichi::Arch::cuda)));
+    }
 #endif  // TI_WITH_LLVM
-    default:
+    default: {
       TI_WARN("ignored attempt to create runtime on unknown arch");
       return TI_NULL_HANDLE;
+    }
   }
   return TI_NULL_HANDLE;
 }
@@ -123,7 +132,7 @@ void ti_free_memory(TiRuntime runtime, TiMemory devmem) {
   }
 
   Runtime *runtime2 = (Runtime *)runtime;
-  runtime2->get().dealloc_memory(devmem2devalloc(*runtime2, devmem));
+  runtime2->deallocate_memory(devmem);
 }
 
 void *ti_map_memory(TiRuntime runtime, TiMemory devmem) {

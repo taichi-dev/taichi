@@ -33,6 +33,11 @@ __aot_test_cases = {
     [os.path.join('cpp', 'aot', 'mpm88_graph_aot.py'), "--arch=vulkan"],
 }
 
+__capi_aot_test_cases = {
+    "CapiDryRun.CpuAotModule":
+    [os.path.join('cpp', 'aot', 'llvm', 'kernel_aot_test.py'), "--arch=cpu"],
+}
+
 
 def print_aot_test_guide():
     message = f"""

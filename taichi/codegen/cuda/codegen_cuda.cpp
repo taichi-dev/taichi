@@ -535,21 +535,11 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     return true;  // on CUDA, pass the argument by value
   }
 
-  llvm::Value *create_intrinsic_load(const DataType &dtype,
-                                     llvm::Value *data_ptr) override {
-    // Issue an CUDA "__ldg" instruction so that data are cached in
-    // the CUDA read-only data cache.
-    auto llvm_dtype = llvm_type(dtype);
-    auto llvm_dtype_ptr = llvm::PointerType::get(llvm_type(dtype), 0);
-    llvm::Intrinsic::ID intrin;
-    if (is_real(dtype)) {
-      intrin = llvm::Intrinsic::nvvm_ldg_global_f;
-    } else {
-      intrin = llvm::Intrinsic::nvvm_ldg_global_i;
-    }
-    return builder->CreateIntrinsic(
-        intrin, {llvm_dtype, llvm_dtype_ptr},
-        {data_ptr, tlctx->get_constant(data_type_size(dtype))});
+  llvm::Value *create_intrinsic_load(llvm::Value *ptr,
+                                     llvm::Type *ty) override {
+    // Issue an "__ldg" instruction to cache data in the read-only data cache.
+    auto intrin = ty->isFloatingPointTy() ? llvm::Intrinsic::nvvm_ldg_global_f : llvm::Intrinsic::nvvm_ldg_global_i;
+    return builder->CreateIntrinsic(intrin, {ty, llvm::PointerType::get(ty, 0)}, {ptr, tlctx->get_constant(ty->getScalarSizeInBits())});
   }
 
   void visit(GlobalLoadStmt *stmt) override {

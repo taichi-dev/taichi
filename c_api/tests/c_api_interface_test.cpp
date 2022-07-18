@@ -1,10 +1,18 @@
 #include "gtest/gtest.h"
+#include "c_api_test_utils.h"
 #include "taichi/taichi_core.h"
 
 TEST(CapiDryRun, Runtime) {
   {
     // CPU Runtime
     TiArch arch = TiArch::TI_ARCH_X64;
+    TiRuntime runtime = ti_create_runtime(arch);
+    ti_destroy_runtime(runtime);
+  }
+
+  if (capi::utils::is_vulkan_available()) {
+    // Vulkan Runtime
+    TiArch arch = TiArch::TI_ARCH_VULKAN;
     TiRuntime runtime = ti_create_runtime(arch);
     ti_destroy_runtime(runtime);
   }

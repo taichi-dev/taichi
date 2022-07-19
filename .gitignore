@@ -87,3 +87,5 @@ imgui.ini
 /venv/
 /_skbuild/
 .cache
+/out
+/build-android-aarch64

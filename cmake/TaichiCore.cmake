@@ -163,11 +163,11 @@ endif()
 # library into a shared lib.
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-# The short-term goal is to have a sub-library, "taichi_isolated_core", that is
+# The short-term goal is to have a sub-library, "taichi_core", that is
 # mostly Taichi-focused, free from the "application" layer such as pybind11 or
 # GUI. At a minimum, we must decouple from pybind11/python-environment. Then we
 # can 1) unit test a major part of Taichi, and 2) integrate a new frontend lang
-# with "taichi_isolated_core".
+# with "taichi_core".
 #
 # TODO(#2198): Long-term speaking, we should create a separate library for each
 # sub-module. This way we can guarantee that the lib dependencies form a DAG.
@@ -186,14 +186,7 @@ if (TAICHI_EMBIND_SOURCE)
 endif()
 
 
-# TODO(#2196): Rename these CMAKE variables:
-# CORE_LIBRARY_NAME --> TAICHI_ISOLATED_CORE_LIB_NAME
-# CORE_WITH_PYBIND_LIBRARY_NAME --> TAICHI_CORE_LIB_NAME
-#
-# However, the better strategy is probably to rename the actual library:
-#
-# taichi_isolated_core --> taichi_core
-set(CORE_LIBRARY_NAME taichi_isolated_core)
+set(CORE_LIBRARY_NAME taichi_core)
 add_library(${CORE_LIBRARY_NAME} OBJECT ${TAICHI_CORE_SOURCE})
 
 if (APPLE)

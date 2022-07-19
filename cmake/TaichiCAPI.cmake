@@ -4,7 +4,7 @@ set(TAICHI_C_API_NAME taichi_c_api)
 
 file(GLOB_RECURSE C_API_SOURCE "c_api/src/*.cpp")
 add_library(${TAICHI_C_API_NAME} SHARED ${C_API_SOURCE})
-target_link_libraries(${TAICHI_C_API_NAME} PRIVATE taichi_isolated_core)
+target_link_libraries(${TAICHI_C_API_NAME} PRIVATE taichi_core)
 
 set(C_API_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")
 set_target_properties(${TAICHI_C_API_NAME} PROPERTIES

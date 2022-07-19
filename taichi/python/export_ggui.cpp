@@ -292,7 +292,7 @@ struct PyWindow {
     window->write_image(filename);
   }
 
-  void copy_depth_buffer_to_ndarray(Ndarray* depth_arr) {
+  void copy_depth_buffer_to_ndarray(Ndarray *depth_arr) {
     window->copy_depth_buffer_to_ndarray(depth_arr);
   }
 
@@ -403,7 +403,8 @@ void export_ggui(py::module &m) {
       .def("get_canvas", &PyWindow::get_canvas)
       .def("show", &PyWindow::show)
       .def("write_image", &PyWindow::write_image)
-      .def("copy_depth_buffer_to_ndarray", &PyWindow::copy_depth_buffer_to_ndarray)
+      .def("copy_depth_buffer_to_ndarray",
+           &PyWindow::copy_depth_buffer_to_ndarray)
       .def("get_depth_buffer", &PyWindow::get_depth_buffer)
       .def("get_image_buffer", &PyWindow::get_image_buffer)
       .def("is_pressed", &PyWindow::is_pressed)

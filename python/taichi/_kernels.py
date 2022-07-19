@@ -1,5 +1,6 @@
 from os import stat
 from random import randrange
+
 from taichi._lib.utils import get_os_name
 from taichi.lang import ops
 from taichi.lang._ndrange import ndrange
@@ -180,8 +181,11 @@ def ext_arr_to_matrix(arr: ndarray_type.ndarray(), mat: template(),
                 else:
                     mat[I][p, q] = arr[I, p, q]
 
+
 @kernel
-def ext_arr_from_vulkan_layout_to_normal_layout(vk_image : ndarray_type.ndarray(), normal_image : ndarray_type.ndarray()):
+def ext_arr_from_vulkan_layout_to_normal_layout(
+        vk_image: ndarray_type.ndarray(),
+        normal_image: ndarray_type.ndarray()):
     w = vk_image.shape[0]
     h = vk_image.shape[1]
     for i, j in ndrange(*normal_image.shape):
@@ -189,7 +193,6 @@ def ext_arr_from_vulkan_layout_to_normal_layout(vk_image : ndarray_type.ndarray(
         i_vk = size // h
         j_vk = size % h
         normal_image[i, j] = vk_image[i_vk, j_vk]
-    
 
 
 @kernel

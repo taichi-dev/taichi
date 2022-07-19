@@ -88,7 +88,7 @@ class TI_DLL_EXPORT Module {
 
   Kernel *get_kernel(const std::string &name);
   KernelTemplate *get_kernel_template(const std::string &name);
-  Field *get_field(const std::string &name);
+  Field *get_snode_tree(const std::string &name);
 
   virtual std::unique_ptr<aot::CompiledGraph> get_graph(std::string name) {
     TI_NOT_IMPLEMENTED;

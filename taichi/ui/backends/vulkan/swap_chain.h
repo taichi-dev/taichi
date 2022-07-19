@@ -16,6 +16,8 @@ class TI_DLL_EXPORT SwapChain {
 
   void resize(uint32_t width, uint32_t height);
 
+  bool copy_depth_buffer_to_ndarray(taichi::lang::DevicePtr& arr_dev_ptr);
+
   std::vector<float> &dump_depth_buffer();
 
   std::vector<uint32_t> &dump_image_buffer();

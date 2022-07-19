@@ -45,6 +45,56 @@ void SwapChain::resize(uint32_t width, uint32_t height) {
   create_depth_resources();
 }
 
+bool SwapChain::copy_depth_buffer_to_ndarray(taichi::lang::DevicePtr& arr_dev_ptr) {
+  auto [w, h] = surface_->get_size();
+  size_t copy_size = w * h * 4;
+
+  Device::MemcpyCapability memcpy_cap = Device::check_memcpy_capability(
+      arr_dev_ptr, depth_allocation_.get_ptr(), copy_size);
+
+  auto& device = app_context_->device();
+  auto *stream = device.get_graphics_stream();
+  std::unique_ptr<CommandList> cmd_list{nullptr};
+
+  if (memcpy_cap == Device::MemcpyCapability::Direct) {
+    Device::AllocParams params{copy_size, /*host_wrtie*/ false,
+                               /*host_read*/ false, /*export_sharing*/ true,
+                               AllocUsage::Uniform};
+                               
+    auto depth_staging_buffer = device.allocate_memory(params);
+
+    device.image_transition(depth_allocation_, ImageLayout::present_src,
+                            ImageLayout::transfer_src);
+
+    BufferImageCopyParams copy_params;
+    copy_params.image_extent.x = w;
+    copy_params.image_extent.y = h;
+    copy_params.image_aspect_flag = VK_IMAGE_ASPECT_DEPTH_BIT;
+    cmd_list = stream->new_command_list();
+    cmd_list->image_to_buffer(depth_staging_buffer.get_ptr(), depth_allocation_,
+                              ImageLayout::transfer_src, copy_params);
+    cmd_list->image_transition(depth_allocation_, ImageLayout::transfer_src,
+                              ImageLayout::present_src);
+    stream->submit_synced(cmd_list.get());
+    Device::memcpy_direct(arr_dev_ptr, depth_staging_buffer.get_ptr(), copy_size);
+
+    device.dealloc_memory(depth_staging_buffer);
+
+  } else if (memcpy_cap == Device::MemcpyCapability::RequiresStagingBuffer) {
+    DeviceAllocation depth_buffer = surface_->get_depth_data(depth_allocation_);
+    DeviceAllocation field_buffer(arr_dev_ptr);
+    float *src_ptr = (float *)app_context_->device().map(depth_buffer);
+    float *dst_ptr = (float *)arr_dev_ptr.device->map(field_buffer);
+    memcpy(dst_ptr, src_ptr, copy_size);
+    app_context_->device().unmap(depth_buffer);
+    arr_dev_ptr.device->unmap(field_buffer);
+  } else {
+    TI_NOT_IMPLEMENTED;
+    return 0;
+  }
+  return 1;
+}
+
 void SwapChain::cleanup() {
   app_context_->device().destroy_image(depth_allocation_);
   surface_.reset();

@@ -1,6 +1,9 @@
 #include "taichi/ui/backends/vulkan/window.h"
 #include "taichi/program/callable.h"
 
+#include "taichi/program/program.h"
+#include "taichi/ui/utils/utils.h"
+
 using taichi::lang::Program;
 
 TI_UI_NAMESPACE_BEGIN
@@ -97,6 +100,46 @@ void Window::write_image(const std::string &filename) {
     draw_frame();
   }
   renderer_->swap_chain().write_image(filename);
+  if (!config_.show_window) {
+    prepare_for_next_frame();
+  }
+}
+
+void Window::copy_depth_buffer_to_ndarray(taichi::lang::Ndarray* depth_arr) {
+  if (!drawn_frame_) {
+    draw_frame();
+  }
+
+  if (depth_arr->dtype != taichi::lang::PrimitiveType::f32) {
+    TI_ERROR("Data type of depth field must be ti.f32!");
+  }
+  int w = renderer_->swap_chain().width();
+  int h = renderer_->swap_chain().height();
+
+  int depth_width = depth_arr->shape[0];
+  int depth_height = depth_arr->shape[1];
+
+  if (depth_width != w || depth_height != h) {
+    TI_ERROR("Width and height of Depth-Ndarray not matched with the window!");
+  }
+
+  // We might not have a current program if GGUI is used in external apps to
+  // load AOT modules
+  Program *prog = renderer_->app_context().prog();
+
+  if (prog) {
+    prog->flush();
+  }
+
+  // If there is no current program, VBO information should be provided directly
+  // instead of accessing through the current SNode
+  if (depth_arr->ndarray_alloc_ == taichi::lang::kDeviceNullAllocation) {
+    TI_ERROR("Null Allocation for Depth-Ndarray!");
+  }
+
+  auto arr_dev_ptr = depth_arr->ndarray_alloc_.get_ptr();
+  renderer_->swap_chain().copy_depth_buffer_to_ndarray(arr_dev_ptr);
+
   if (!config_.show_window) {
     prepare_for_next_frame();
   }

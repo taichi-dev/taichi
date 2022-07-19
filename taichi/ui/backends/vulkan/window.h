@@ -21,6 +21,7 @@
 #include "taichi/ui/backends/vulkan/renderer.h"
 #include "taichi/ui/common/window_base.h"
 #include "taichi/ui/backends/vulkan/gui.h"
+#include "taichi/program/ndarray.h"
 
 namespace taichi {
 namespace lang {
@@ -41,6 +42,8 @@ class Window final : public WindowBase {
   virtual GuiBase *GUI() override;
 
   void write_image(const std::string &filename) override;
+
+  void copy_depth_buffer_to_ndarray(taichi::lang::Ndarray* depth_arr) override;
 
   std::vector<float> &get_depth_buffer(uint32_t &w, uint32_t &h) override;
 

@@ -324,8 +324,8 @@ void CodeGenLLVM::store_quant_floats_with_shared_exponents(
     BitStructStoreStmt *stmt) {
   // handle each exponent separately
   auto snode = stmt->get_bit_struct_snode();
-  auto bit_struct_physical_type =
-      snode->dt->as<BitStructType>()->get_physical_type();
+  auto bit_struct = snode->dt->as<BitStructType>();
+  auto bit_struct_physical_type = bit_struct->get_physical_type();
   auto local_bit_struct = builder->CreateLoad(
 #ifdef TI_LLVM_15
       llvm_type(bit_struct_physical_type),
@@ -352,7 +352,8 @@ void CodeGenLLVM::store_quant_floats_with_shared_exponents(
           input != stmt->ch_ids.end()) {
         floats.push_back(llvm_val[stmt->values[input - stmt->ch_ids.begin()]]);
       } else {
-        floats.push_back(extract_quant_float(local_bit_struct, user));
+        floats.push_back(
+            extract_quant_float(local_bit_struct, bit_struct, ch_id));
       }
     }
     // convert to i32 for bit operations
@@ -479,34 +480,21 @@ llvm::Value *CodeGenLLVM::extract_digits_from_f32_with_shared_exponent(
   return builder->CreateLShr(digits, exp_offset);
 }
 
-llvm::Value *CodeGenLLVM::extract_quant_float(llvm::Value *local_bit_struct,
-                                              SNode *digits_snode) {
-  auto qflt = digits_snode->dt->as<QuantFloatType>();
-  auto exponent_type = qflt->get_exponent_type()->as<QuantIntType>();
-  auto digits_type = qflt->get_digits_type()->as<QuantIntType>();
-  auto digits = extract_quant_int(local_bit_struct,
-                                  tlctx->get_constant(digits_snode->bit_offset),
-                                  digits_type);
+llvm::Value *CodeGenLLVM::extract_quant_float(llvm::Value *physical_value,
+                                              BitStructType *bit_struct,
+                                              int digits_id) {
+  auto qflt = bit_struct->get_member_type(digits_id)->as<QuantFloatType>();
+  auto exponent_id = bit_struct->get_member_exponent(digits_id);
+  auto exponent_bit_offset = bit_struct->get_member_bit_offset(exponent_id);
+  auto digits_bit_offset = bit_struct->get_member_bit_offset(digits_id);
+  auto shared_exponent = bit_struct->get_member_owns_shared_exponent(digits_id);
+  auto digits =
+      extract_quant_int(physical_value, tlctx->get_constant(digits_bit_offset),
+                        qflt->get_digits_type()->as<QuantIntType>());
   auto exponent = extract_quant_int(
-      local_bit_struct,
-      tlctx->get_constant(digits_snode->exp_snode->bit_offset), exponent_type);
-  return reconstruct_quant_float(digits, exponent, qflt,
-                                 digits_snode->owns_shared_exponent);
-}
-
-llvm::Value *CodeGenLLVM::load_quant_int(llvm::Value *ptr,
-                                         QuantIntType *qit,
-                                         Type *physical_type,
-                                         bool should_cache_as_read_only) {
-  auto [byte_ptr, bit_offset] = load_bit_ptr(ptr);
-  auto physical_value = should_cache_as_read_only
-                            ? create_intrinsic_load(physical_type, byte_ptr)
-                            : builder->CreateLoad(
-#ifdef TI_LLVM_15
-                                  llvm_type(physical_type),
-#endif
-                                  byte_ptr);
-  return extract_quant_int(physical_value, bit_offset, qit);
+      physical_value, tlctx->get_constant(exponent_bit_offset),
+      qflt->get_exponent_type()->as<QuantIntType>());
+  return reconstruct_quant_float(digits, exponent, qflt, shared_exponent);
 }
 
 llvm::Value *CodeGenLLVM::extract_quant_int(llvm::Value *physical_value,
@@ -537,15 +525,6 @@ llvm::Value *CodeGenLLVM::extract_quant_int(llvm::Value *physical_value,
                                 qit->get_is_signed());
 }
 
-llvm::Value *CodeGenLLVM::load_quant_fixed(llvm::Value *ptr,
-                                           QuantFixedType *qfxt,
-                                           Type *physical_type,
-                                           bool should_cache_as_read_only) {
-  auto digits = load_quant_int(ptr, qfxt->get_digits_type()->as<QuantIntType>(),
-                               physical_type, should_cache_as_read_only);
-  return reconstruct_quant_fixed(digits, qfxt);
-}
-
 llvm::Value *CodeGenLLVM::reconstruct_quant_fixed(llvm::Value *digits,
                                                   QuantFixedType *qfxt) {
   // Compute float(digits) * scale
@@ -559,37 +538,6 @@ llvm::Value *CodeGenLLVM::reconstruct_quant_fixed(llvm::Value *digits,
   llvm::Value *s = tlctx->get_constant(qfxt->get_scale());
   s = builder->CreateFPCast(s, llvm_type(compute_type));
   return builder->CreateFMul(cast, s);
-}
-
-llvm::Value *CodeGenLLVM::load_quant_float(llvm::Value *digits_ptr,
-                                           BitStructType *bit_struct,
-                                           int digits_id,
-                                           bool should_cache_as_read_only) {
-  auto exponent_id = bit_struct->get_member_exponent(digits_id);
-  auto exponent_bit_offset = bit_struct->get_member_bit_offset(exponent_id);
-  auto digits_bit_offset = bit_struct->get_member_bit_offset(digits_id);
-  auto bit_offset_delta = exponent_bit_offset - digits_bit_offset;
-  auto exponent_ptr = offset_bit_ptr(digits_ptr, bit_offset_delta);
-  auto qflt = bit_struct->get_member_type(digits_id)->as<QuantFloatType>();
-  auto physical_type = bit_struct->get_physical_type();
-  auto shared_exponent = bit_struct->get_member_owns_shared_exponent(digits_id);
-  return load_quant_float(digits_ptr, exponent_ptr, qflt, physical_type,
-                          should_cache_as_read_only, shared_exponent);
-}
-
-llvm::Value *CodeGenLLVM::load_quant_float(llvm::Value *digits_ptr,
-                                           llvm::Value *exponent_ptr,
-                                           QuantFloatType *qflt,
-                                           Type *physical_type,
-                                           bool should_cache_as_read_only,
-                                           bool shared_exponent) {
-  auto digits =
-      load_quant_int(digits_ptr, qflt->get_digits_type()->as<QuantIntType>(),
-                     physical_type, should_cache_as_read_only);
-  auto exponent_val = load_quant_int(
-      exponent_ptr, qflt->get_exponent_type()->as<QuantIntType>(),
-      physical_type, should_cache_as_read_only);
-  return reconstruct_quant_float(digits, exponent_val, qflt, shared_exponent);
 }
 
 llvm::Value *CodeGenLLVM::reconstruct_quant_float(

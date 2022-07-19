@@ -34,8 +34,14 @@ __aot_test_cases = {
 }
 
 __capi_aot_test_cases = {
-    "CapiDryRun.CpuAotModule":
+    "CapiAotTest.CpuKernel":
     [os.path.join('cpp', 'aot', 'llvm', 'kernel_aot_test.py'), "--arch=cpu"],
+    "CapiAotTest.CudaKernel":
+    [os.path.join('cpp', 'aot', 'llvm', 'kernel_aot_test.py'), "--arch=cuda"],
+    "CapiDryRun.VulkanAotModule": [
+        os.path.join('cpp', 'aot', 'llvm', 'kernel_aot_test.py'),
+        "--arch=vulkan"
+    ],
 }
 
 

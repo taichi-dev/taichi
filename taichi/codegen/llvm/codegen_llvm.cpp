@@ -2154,6 +2154,7 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
               llvm::IRBuilderBase::InsertPointGuard guard(*builder);
               builder->SetInsertPoint(alloca);
               auto *new_alloca = builder->CreateAlloca(new_type);
+              new_alloca->setAlignment(MaybeAlign(8));
               replaced_alloca_types += 1;
               for (llvm::User *user: alloca->users()) {
                 if (llvm::GetElementPtrInst *gep = llvm::dyn_cast<llvm::GetElementPtrInst>(user)) {
@@ -2164,11 +2165,13 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
                       auto *new_gep = builder->CreateGEP(new_alloca, indices);
                       llvm::cast<llvm::GetElementPtrInst>(new_gep)->setIsInBounds(true);
                       gep->replaceAllUsesWith(new_gep);
+                      gep->eraseFromParent();
+                      break;
                     }
                   }
                 }
               }
-              alloca->removeFromParent();
+              alloca->eraseFromParent();
               changed = true;
               break;
             }

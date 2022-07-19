@@ -45,14 +45,15 @@ void SwapChain::resize(uint32_t width, uint32_t height) {
   create_depth_resources();
 }
 
-bool SwapChain::copy_depth_buffer_to_ndarray(taichi::lang::DevicePtr& arr_dev_ptr) {
+bool SwapChain::copy_depth_buffer_to_ndarray(
+    taichi::lang::DevicePtr &arr_dev_ptr) {
   auto [w, h] = surface_->get_size();
   size_t copy_size = w * h * 4;
 
   Device::MemcpyCapability memcpy_cap = Device::check_memcpy_capability(
       arr_dev_ptr, depth_allocation_.get_ptr(), copy_size);
 
-  auto& device = app_context_->device();
+  auto &device = app_context_->device();
   auto *stream = device.get_graphics_stream();
   std::unique_ptr<CommandList> cmd_list{nullptr};
 
@@ -60,7 +61,7 @@ bool SwapChain::copy_depth_buffer_to_ndarray(taichi::lang::DevicePtr& arr_dev_pt
     Device::AllocParams params{copy_size, /*host_wrtie*/ false,
                                /*host_read*/ false, /*export_sharing*/ true,
                                AllocUsage::Uniform};
-                               
+
     auto depth_staging_buffer = device.allocate_memory(params);
 
     device.image_transition(depth_allocation_, ImageLayout::present_src,
@@ -74,9 +75,10 @@ bool SwapChain::copy_depth_buffer_to_ndarray(taichi::lang::DevicePtr& arr_dev_pt
     cmd_list->image_to_buffer(depth_staging_buffer.get_ptr(), depth_allocation_,
                               ImageLayout::transfer_src, copy_params);
     cmd_list->image_transition(depth_allocation_, ImageLayout::transfer_src,
-                              ImageLayout::present_src);
+                               ImageLayout::present_src);
     stream->submit_synced(cmd_list.get());
-    Device::memcpy_direct(arr_dev_ptr, depth_staging_buffer.get_ptr(), copy_size);
+    Device::memcpy_direct(arr_dev_ptr, depth_staging_buffer.get_ptr(),
+                          copy_size);
 
     device.dealloc_memory(depth_staging_buffer);
 

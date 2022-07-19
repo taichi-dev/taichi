@@ -1,5 +1,6 @@
 from os import stat
 from random import randrange
+
 from taichi._lib.utils import get_os_name
 from taichi.lang import ops
 from taichi.lang._ndrange import ndrange
@@ -180,10 +181,13 @@ def ext_arr_to_matrix(arr: ndarray_type.ndarray(), mat: template(),
                 else:
                     mat[I][p, q] = arr[I, p, q]
 
+
 @kernel
-def ext_arr_from_vulkan_layout_to_normal_layout(vk_image : ndarray_type.ndarray(), normal_image : ndarray_type.ndarray()):
-    '''extract ndarray of raw vulkan memory layout to normal memory layout.
-    Explanation of why using ti.ndarray:
+def ext_arr_from_vulkan_layout_to_normal_layout(
+        vk_image: ndarray_type.ndarray(),
+        normal_image: ndarray_type.ndarray()):
+    '''extract ndarray of raw vulkan memory layout to normal memory 
+    layout. Explanation of why using ti.ndarray:
         ti.field struct has a complicated memory layout under unpacked 
     mode (which is default mode for taichi), so the physical address of 
     your index numbers may not directly to the right place(field memory
@@ -199,7 +203,6 @@ def ext_arr_from_vulkan_layout_to_normal_layout(vk_image : ndarray_type.ndarray(
         i_vk = size // h
         j_vk = size % h
         normal_image[i, j] = vk_image[i_vk, j_vk]
-    
 
 
 @kernel

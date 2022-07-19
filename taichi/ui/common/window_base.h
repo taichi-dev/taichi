@@ -42,8 +42,8 @@ class WindowBase {
 
   virtual void write_image(const std::string &filename) = 0;
 
-  virtual void copy_depth_buffer_to_ndarray(taichi::lang::Ndarray*) = 0;
-  
+  virtual void copy_depth_buffer_to_ndarray(taichi::lang::Ndarray *) = 0;
+
   virtual std::vector<float> &get_depth_buffer(uint32_t &w, uint32_t &h) = 0;
 
   virtual std::vector<uint32_t> &get_image_buffer(uint32_t &w, uint32_t &h) = 0;

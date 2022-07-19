@@ -13,5 +13,7 @@ if __name__ == "__main__":
         compile_kernel_aot(arch=ti.cpu)
     elif args.arch == "cuda":
         compile_kernel_aot(arch=ti.cuda)
+    elif args.arch == "vulkan":
+        compile_kernel_aot(arch=ti.vulkan)
     else:
         assert False

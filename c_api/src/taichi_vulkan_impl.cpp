@@ -126,6 +126,15 @@ void VulkanRuntime::buffer_copy(const taichi::lang::DevicePtr &dst,
 void VulkanRuntime::submit() {
   get_gfx_runtime().flush();
 }
+void VulkanRuntime::signal_event(taichi::lang::DeviceEvent *event) {
+  get_gfx_runtime().signal_event(event);
+}
+void VulkanRuntime::reset_event(taichi::lang::DeviceEvent *event) {
+  get_gfx_runtime().reset_event(event);
+}
+void VulkanRuntime::wait_event(taichi::lang::DeviceEvent *event) {
+  get_gfx_runtime().wait_event(event);
+}
 void VulkanRuntime::wait() {
   // (penguinliong) It's currently waiting for the entire runtime to stop.
   // Should be simply waiting for its fence to finish.
@@ -250,6 +259,45 @@ void ti_export_vulkan_memory(TiRuntime runtime,
   interop_info->buffer = buffer.get()->buffer;
   interop_info->size = buffer.get()->size;
   interop_info->usage = buffer.get()->usage;
+}
+
+TiEvent ti_import_vulkan_event(TiRuntime runtime,
+                               const TiVulkanEventInteropInfo *interop_info) {
+  if (runtime == nullptr) {
+    TI_WARN("ignored attempt to import vulkan event to runtime of null handle");
+    return TI_NULL_HANDLE;
+  }
+  Runtime *runtime2 = (Runtime *)runtime;
+  if (runtime2->arch != taichi::Arch::vulkan) {
+    TI_WARN("ignored attempt to import vulkan memory to non-vulkan runtime");
+    return TI_NULL_HANDLE;
+  }
+
+  vkapi::IVkEvent event = std::make_unique<vkapi::DeviceObjVkEvent>();
+  event->device = runtime2->as_vk()->get_vk().vk_device();
+  event->event = interop_info->event;
+  event->external = true;
+
+  std::unique_ptr<taichi::lang::DeviceEvent> event2(
+      new taichi::lang::vulkan::VulkanDeviceEvent(std::move(event)));
+
+  return (TiEvent) new Event(*runtime2, std::move(event2));
+}
+void ti_export_vulkan_event(TiRuntime runtime,
+                            TiEvent event,
+                            TiVulkanEventInteropInfo *interop_info) {
+  if (runtime == nullptr) {
+    TI_WARN(
+        "ignored attempt to export vulkan memory from runtime of null handle");
+    return;
+  }
+  if (event == nullptr) {
+    TI_WARN("ignored attempt to export vulkan memory of null handle");
+    return;
+  }
+  auto event2 =
+      (taichi::lang::vulkan::VulkanDeviceEvent *)(&((Event *)event)->get());
+  interop_info->event = event2->vkapi_ref->event;
 }
 
 #endif  // TI_WITH_VULKAN

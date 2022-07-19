@@ -93,8 +93,8 @@ def test_xdg_basedir(tmpdir):
         # environment to the native C++ code.
         os.putenv("XDG_CACHE_HOME", str(tmpdir))
 
-        ti_core = ti._lib.utils.import_ti_core()
-        repo_dir = ti_core.get_repo_dir()
+        ti_python_core = ti._lib.utils.import_ti_python_core()
+        repo_dir = ti_python_core.get_repo_dir()
 
         repo_path = pathlib.Path(repo_dir).resolve()
         expected_path = pathlib.Path(tmpdir / "taichi").resolve()
@@ -157,19 +157,19 @@ def test_init_bad_arg():
 
 
 def test_init_require_version():
-    ti_core = ti._lib.utils.import_ti_core()
-    require_version = '{}.{}.{}'.format(ti_core.get_version_major(),
-                                        ti_core.get_version_minor(),
-                                        ti_core.get_version_patch())
+    ti_python_core = ti._lib.utils.import_ti_python_core()
+    require_version = '{}.{}.{}'.format(ti_python_core.get_version_major(),
+                                        ti_python_core.get_version_minor(),
+                                        ti_python_core.get_version_patch())
     ti.init(_test_mode=True, debug=True, require_version=require_version)
 
 
 def test_init_bad_require_version():
     with pytest.raises(Exception):
-        ti_core = ti._lib.utils.import_ti_core()
+        ti_python_core = ti._lib.utils.import_ti_python_core()
         bad_require_version = '{}.{}.{}'.format(
-            ti_core.get_version_major(), ti_core.get_version_minor(),
-            ti_core.get_version_patch() + 1)
+            ti_python_core.get_version_major(), ti_python_core.get_version_minor(),
+            ti_python_core.get_version_patch() + 1)
         ti.init(_test_mode=True,
                 debug=True,
                 require_version=bad_require_version)

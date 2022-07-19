@@ -1,10 +1,10 @@
 import os
 
-from taichi._lib import core as ti_core
+from taichi._lib import core as ti_python_core
 
 
 def record_action_entry(name, contents):
-    ti_core.record_action_entry(name, list(contents.items()))
+    ti_python_core.record_action_entry(name, list(contents.items()))
 
 
 def record_action_hint(name, content=None):
@@ -44,7 +44,7 @@ def start_recording(filename):
         >>>     compute_loss()
         >>> do_some_works()
     """
-    ti_core.start_recording(filename)
+    ti_python_core.start_recording(filename)
 
 
 def stop_recording():
@@ -52,7 +52,7 @@ def stop_recording():
 
     This function should be called in pair with :func:`~ti.aot.start_recording`.
     """
-    ti_core.stop_recording()
+    ti_python_core.stop_recording()
 
 
 class RecordKernelGroup:

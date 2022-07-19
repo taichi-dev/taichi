@@ -469,7 +469,7 @@ endforeach ()
 message("PYTHON_LIBRARIES: " ${PYTHON_LIBRARIES})
 
 if(TI_WITH_PYTHON AND NOT TI_EMSCRIPTENED)
-    set(CORE_WITH_PYBIND_LIBRARY_NAME taichi_core)
+    set(CORE_WITH_PYBIND_LIBRARY_NAME taichi_python)
     # Cannot compile Python source code with Android, but TI_EXPORT_CORE should be set and
     # Android should only use the isolated library ignoring those source code.
     if (NOT ANDROID)

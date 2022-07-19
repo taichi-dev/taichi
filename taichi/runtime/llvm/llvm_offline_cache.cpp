@@ -1,7 +1,6 @@
 #include "llvm_offline_cache.h"
 
 #include <queue>
-#include <llvm/IR/Verifier.h>
 
 #include "llvm/AsmParser/Parser.h"
 #include "llvm/Bitcode/BitcodeReader.h"
@@ -115,7 +114,7 @@ bool LlvmOfflineCacheFileReader::get_kernel_cache(
       std::string filename_prefix =
           taichi::join_path(path_, key + "." + std::to_string(i));
       data.module = load_module(filename_prefix, key, llvm_ctx);
-      TI_ASSERT_INFO(data.module, filename_prefix);
+      TI_ASSERT(data.module);
     }
     res.compiled_data_list.emplace_back(data.tasks,
                                         llvm::CloneModule(*data.module));
@@ -163,12 +162,6 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
   for (auto &[k, v] : data_.kernels) {
     std::size_t size = 0;  // bytes
     std::string filename_prefix = taichi::join_path(path, k);
-    TI_INFO(k);
-    if (k == "n8542378083d4ef42a02a6e755484a30cb83a43b9017ef1a6c4f22eb15ee78971") {
-      auto *func = v.compiled_data_list[0].module->getFunction("parallel_struct_for1");
-      func->print(llvm::outs());
-      TI_ASSERT(!llvm::verifyFunction(*func, &llvm::errs()));
-    }
 
     auto write_llvm_module =
         [&filename_prefix](
@@ -182,7 +175,7 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
           return llvm_os.tell();
         };
     {
-//      mangle_offloaded_task_name(k, v.compiled_data_list);
+      mangle_offloaded_task_name(k, v.compiled_data_list);
       for (int i = 0; i < v.compiled_data_list.size(); i++) {
         auto &data = v.compiled_data_list[i];
         auto *mod = data.module.get();

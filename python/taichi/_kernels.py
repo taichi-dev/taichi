@@ -178,21 +178,15 @@ def ext_arr_to_matrix(arr: ndarray_type.ndarray(), mat: template(),
                 else:
                     mat[I][p, q] = arr[I, p, q]
 
-
+# extract ndarray of raw vulkan memory layout to normal memory layout.
+# the vulkan layout stored in ndarray : width-by-width stored along n-
+# darray's shape[1] which is the height-axis(So use [size // h, size %
+#  h]). And the height-order of vulkan layout is flip up-down.(So take
+# [size = (h - 1 - j) * w + i] to get the index)
 @kernel
 def ext_arr_from_vulkan_layout_to_normal_layout(
         vk_image: ndarray_type.ndarray(),
         normal_image: ndarray_type.ndarray()):
-    '''extract ndarray of raw vulkan memory layout to normal memory
-    layout. Explanation of why using ti.ndarray:
-        ti.field struct has a complicated memory layout under unpacked
-    mode (which is default mode for taichi), so the physical address of
-    your index numbers may not directly to the right place(field memory
-    must be padding to power of 2, and there may be some dirty data on
-    the  memory). As for ti.ndarray, it does not have this problem,
-    because  it's memory layout is what you see, and there is no other
-    designs for it.
-    '''
     w = vk_image.shape[0]
     h = vk_image.shape[1]
     for i, j in ndrange(*normal_image.shape):

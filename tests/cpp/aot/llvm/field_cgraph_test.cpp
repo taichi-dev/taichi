@@ -20,7 +20,7 @@ void run_graph_tests(aot::Module *mod,
                      LlvmRuntimeExecutor *exec,
                      uint64 *result_buffer) {
   // Initialize SNodeTree
-  aot::Field *snode_tree_0 = mod->get_field("0" /*snode_tree_id*/);
+  aot::Field *snode_tree_0 = mod->get_snode_tree("0" /*snode_tree_id*/);
   allocate_aot_snode_tree_type(mod, snode_tree_0, result_buffer);
 
   /* Test with Graph */

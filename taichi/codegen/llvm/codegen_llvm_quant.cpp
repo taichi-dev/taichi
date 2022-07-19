@@ -143,7 +143,10 @@ llvm::Value *CodeGenLLVM::get_exponent_offset(llvm::Value *exponent,
       tlctx->get_constant(0));
 }
 
-llvm::Value *CodeGenLLVM::quant_int_or_quant_fixed_to_bits(llvm::Value *val, Type *input_type, llvm::Type *output_type) {
+llvm::Value *CodeGenLLVM::quant_int_or_quant_fixed_to_bits(
+    llvm::Value *val,
+    Type *input_type,
+    llvm::Type *output_type) {
   QuantIntType *qit = nullptr;
   if (auto qfxt = input_type->cast<QuantFixedType>()) {
     qit = qfxt->get_digits_type()->as<QuantIntType>();
@@ -295,9 +298,11 @@ void CodeGenLLVM::visit(BitStructStoreStmt *stmt) {
       } else {
         qit = dtype->as<QuantIntType>();
       }
-      update_mask(mask, qit->get_num_bits(), bit_struct->get_member_bit_offset(ch_id));
+      update_mask(mask, qit->get_num_bits(),
+                  bit_struct->get_member_bit_offset(ch_id));
     }
-    store_masked(llvm_val[stmt->ptr], physical_type, mask, bit_struct_val, stmt->is_atomic);
+    store_masked(llvm_val[stmt->ptr], physical_type, mask, bit_struct_val,
+                 stmt->is_atomic);
   }
 }
 
@@ -323,8 +328,7 @@ void CodeGenLLVM::store_quant_floats_with_shared_exponents(
           input != stmt->ch_ids.end()) {
         floats.push_back(llvm_val[stmt->values[input - stmt->ch_ids.begin()]]);
       } else {
-        floats.push_back(
-            extract_quant_float(physical_value, bit_struct, user));
+        floats.push_back(extract_quant_float(physical_value, bit_struct, user));
       }
     }
     // convert to i32 for bit operations
@@ -339,7 +343,8 @@ void CodeGenLLVM::store_quant_floats_with_shared_exponents(
       }
     }
 
-    auto first_qflt = bit_struct->get_member_type(exponent_users[0])->as<QuantFloatType>();
+    auto first_qflt =
+        bit_struct->get_member_type(exponent_users[0])->as<QuantFloatType>();
     auto exponent_offset = get_exponent_offset(max_exp_bits, first_qflt);
 
     auto max_exp_bits_to_store =
@@ -357,8 +362,10 @@ void CodeGenLLVM::store_quant_floats_with_shared_exponents(
     } else {
       masked_val = builder->CreateOr(masked_val, val);
     }
-    update_mask(mask, bit_struct->get_member_type(i)->as<QuantIntType>()->get_num_bits(),
-                bit_offset);
+    update_mask(
+        mask,
+        bit_struct->get_member_type(i)->as<QuantIntType>()->get_num_bits(),
+        bit_offset);
 
     for (int c = 0; c < (int)exponent_users.size(); c++) {
       auto user = exponent_users[c];
@@ -396,8 +403,8 @@ void CodeGenLLVM::store_quant_floats_with_shared_exponents(
       update_mask(mask, num_digit_bits, digits_bit_offset);
     }
   }
-  store_masked(llvm_val[stmt->ptr], physical_type, mask,
-               masked_val, stmt->is_atomic);
+  store_masked(llvm_val[stmt->ptr], physical_type, mask, masked_val,
+               stmt->is_atomic);
 }
 
 llvm::Value *CodeGenLLVM::extract_exponent_from_f32(llvm::Value *f) {

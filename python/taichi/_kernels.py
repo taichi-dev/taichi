@@ -1,6 +1,3 @@
-from os import stat
-from random import randrange
-
 from taichi._lib.utils import get_os_name
 from taichi.lang import ops
 from taichi.lang._ndrange import ndrange

@@ -5,8 +5,6 @@ from taichi._lib import core as _ti_core
 from taichi.lang._ndarray import Ndarray
 from taichi.lang.impl import default_cfg, get_runtime, ndarray
 
-from taichi import ndarray
-
 from .canvas import Canvas
 from .constants import PRESS, RELEASE
 from .imgui import Gui

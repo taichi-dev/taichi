@@ -69,24 +69,6 @@ TEST(CapiDryRun, MemoryAllocation) {
   }
 }
 
-TEST(CapiDryRun, CpuAotModule) {
-  const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
-
-  std::stringstream aot_mod_ss;
-  aot_mod_ss << folder_dir;
-
-  {
-    // CPU Runtime
-    TiArch arch = TiArch::TI_ARCH_X64;
-    TiRuntime runtime = ti_create_runtime(arch);
-
-    TiAotModule aot_mod = ti_load_aot_module(runtime, aot_mod_ss.str().c_str());
-    ti_destroy_aot_module(aot_mod);
-
-    ti_destroy_runtime(runtime);
-  }
-}
-
 TEST(CapiDryRun, VulkanAotModule) {
   if (capi::utils::is_vulkan_available()) {
     const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
@@ -97,27 +79,6 @@ TEST(CapiDryRun, VulkanAotModule) {
     {
       // Vulkan Runtime
       TiArch arch = TiArch::TI_ARCH_VULKAN;
-      TiRuntime runtime = ti_create_runtime(arch);
-
-      TiAotModule aot_mod =
-          ti_load_aot_module(runtime, aot_mod_ss.str().c_str());
-      ti_destroy_aot_module(aot_mod);
-
-      ti_destroy_runtime(runtime);
-    }
-  }
-}
-
-TEST(CapiDryRun, CudaAotModule) {
-  if (capi::utils::is_cuda_available()) {
-    const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
-
-    std::stringstream aot_mod_ss;
-    aot_mod_ss << folder_dir;
-
-    {
-      // Vulkan Runtime
-      TiArch arch = TiArch::TI_ARCH_CUDA;
       TiRuntime runtime = ti_create_runtime(arch);
 
       TiAotModule aot_mod =

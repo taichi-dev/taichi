@@ -33,12 +33,25 @@ def expr_init_local_tensor(shape, element_type, elements):
 
 
 @taichi_scope
+def expr_init_matrix(shape, element_type, elements):
+    return get_runtime().prog.current_ast_builder().expr_alloca_matrix(
+        shape, element_type, elements)
+
+
+@taichi_scope
+def expr_init_indexed_matrix(mat, indices):
+    pass
+
+
+@taichi_scope
 def expr_init(rhs):
     if rhs is None:
         return Expr(get_runtime().prog.current_ast_builder().expr_alloca())
     if isinstance(rhs, Matrix) and (hasattr(rhs, "_DIM")):
         return type(rhs)(*rhs.to_list())
     if isinstance(rhs, Matrix):
+        if current_cfg().real_matrix:
+            return rhs
         return Matrix(rhs.to_list())
     if isinstance(rhs, Struct):
         return Struct(rhs.to_dict(include_methods=True))

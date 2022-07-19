@@ -196,6 +196,7 @@ void export_lang(py::module &m) {
       .def_readwrite("ndarray_use_cached_allocator",
                      &CompileConfig::ndarray_use_cached_allocator)
       .def_readwrite("use_mesh", &CompileConfig::use_mesh)
+      .def_readwrite("real_matrix", &CompileConfig::real_matrix)
       .def_readwrite("cc_compile_cmd", &CompileConfig::cc_compile_cmd)
       .def_readwrite("cc_link_cmd", &CompileConfig::cc_link_cmd)
       .def_readwrite("async_opt_passes", &CompileConfig::async_opt_passes)
@@ -302,6 +303,7 @@ void export_lang(py::module &m) {
       .def("insert_activate", &ASTBuilder::insert_snode_activate)
       .def("insert_external_func_call", &ASTBuilder::insert_external_func_call)
       .def("expr_alloca", &ASTBuilder::expr_alloca)
+      .def("expr_alloca_matrix", &ASTBuilder::expr_alloca_local_matrix)
       .def("expr_alloca_local_tensor", &ASTBuilder::expr_alloca_local_tensor)
       .def("create_assert_stmt", &ASTBuilder::create_assert_stmt)
       .def("expr_assign", &ASTBuilder::expr_assign)

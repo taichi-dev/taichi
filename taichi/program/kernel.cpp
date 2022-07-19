@@ -63,6 +63,7 @@ Kernel::Kernel(Program &program,
 
 void Kernel::compile() {
   CurrentCallableGuard _(program, this);
+  TI_TRACE("compiling kernel {}", name);
   compiled_ = program->compile(*this);
 }
 
@@ -111,9 +112,11 @@ void Kernel::lower(bool to_executable) {
 
 void Kernel::operator()(LaunchContextBuilder &ctx_builder) {
   if (!program->config.async_mode || this->is_evaluator) {
+    TI_TRACE("called kernel::operator()");
     if (!compiled_) {
       compile();
     }
+    TI_TRACE("compiled");
 
     if (!this->from_offline_cache_) {
       for (auto &offloaded : ir->as<Block>()->statements) {
@@ -121,7 +124,9 @@ void Kernel::operator()(LaunchContextBuilder &ctx_builder) {
       }
     }
 
+    TI_TRACE("calling compiled_");
     compiled_(ctx_builder.get_context());
+    TI_TRACE("called compiled_");
 
     program->sync = (program->sync && arch_is_cpu(arch));
     // Note that Kernel::arch may be different from program.config.arch
@@ -441,12 +446,14 @@ void Kernel::init(Program &program,
     // concurrently, we need to lock this block of code together with
     // taichi::lang::context with a mutex.
     CurrentCallableGuard _(this->program, this);
+    TI_TRACE("Calling func in {}", name);
     func();
     ir->as<Block>()->kernel = this;
   }
 
   if (!program.config.lazy_compilation)
     compile();
+  TI_TRACE("Finish compiling {}", name);
 }
 
 // static

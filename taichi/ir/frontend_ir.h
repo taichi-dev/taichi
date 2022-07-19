@@ -499,6 +499,25 @@ class GlobalVariableExpression : public Expression {
   TI_DEFINE_ACCEPT_FOR_EXPRESSION
 };
 
+class MatrixExpression : public Expression {
+ public:
+  std::vector<Expr> elements;
+  DataType dt;
+
+  MatrixExpression(const std::vector<Expr> &elements,
+                   std::vector<int> shape,
+                   DataType element_type)
+      : elements(elements) {
+    this->dt = DataType(TypeFactory::create_tensor_type(shape, element_type));
+  }
+
+  void type_check(CompileConfig *config) override;
+
+  void flatten(FlattenContext *ctx) override;
+
+  TI_DEFINE_ACCEPT_FOR_EXPRESSION
+};
+
 class IndexExpression : public Expression {
  public:
   // `var` is one of GlobalVariableExpression, ExternalTensorExpression,
@@ -871,6 +890,10 @@ class ASTBuilder {
                                  const ExprGroup &args,
                                  const ExprGroup &outputs);
   Expr expr_alloca();
+  Expr expr_alloca_local_matrix(const std::vector<int> &shape,
+                                const DataType &dt,
+                                const std::vector<Expr> &elements);
+  Expr expr_indexed_matrix(const Expr &matrix, const ExprGroup &indices);
   Expr expr_alloca_local_tensor(const std::vector<int> &shape,
                                 const DataType &element_type,
                                 const ExprGroup &elements);

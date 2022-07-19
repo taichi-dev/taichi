@@ -286,7 +286,9 @@ FunctionType CodeGenCPU::codegen() {
   auto *llvm_prog = get_llvm_program(prog);
   auto *tlctx = llvm_prog->get_llvm_context(kernel->arch);
   auto &config = prog->config;
+  TI_TRACE("in codegen()");
   std::string kernel_key = get_hashed_offline_cache_key(&config, kernel);
+  TI_TRACE("in codegen() 1");
   kernel->set_kernel_key_for_cache(kernel_key);
   if (config.offline_cache && !config.async_mode &&
       this->supports_offline_cache() && !kernel->is_evaluator) {
@@ -299,6 +301,7 @@ FunctionType CodeGenCPU::codegen() {
     }
   }
   if (!kernel->lowered()) {
+    TI_TRACE("calling lowering");
     kernel->lower(/*to_executable=*/false);
   }
 

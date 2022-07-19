@@ -97,6 +97,29 @@ def _gen_swizzles(cls):
     return cls
 
 
+class _Matrix:
+    def __init__(self, arr, dt, is_vec=False):
+        cast = (
+            lambda x: ops_mod.cast(x, dt)
+        ) if dt else lambda x: x if isinstance(x, expr.Expr) else expr.Expr(x)
+        if is_vec:
+            self._impl = impl.expr_init_matrix([len(arr)], dt,
+                                               [cast(elt).ptr for elt in arr])
+        else:
+            self._impl = impl.expr_init_matrix(
+                [len(arr), len(arr[0])], dt,
+                [cast(elt).ptr for row in arr for elt in row])
+        self.dt = dt
+
+    def __getitem__(self, key):
+        # TODO(@AD1024): create IndexMatrixStmt here
+        raise NotImplementedError()
+
+    def __setitem__(self, key, value):
+        # TODO(@AD1024): create IndexMatrixStmt here
+        raise NotImplementedError()
+
+
 class _MatrixBaseImpl:
     def __init__(self, m, n, entries):
         self.m = m
@@ -308,6 +331,10 @@ def _make_entries_initializer(is_matrix: bool) -> _MatrixEntriesInitializer:
             return [[x] for x in arr]
 
         def no_dynamic_index(self, arr, dt):
+            if impl.current_cfg().real_matrix:
+                if dt is None:
+                    dt = self.infer_dt(arr)
+                return _Matrix(arr, dt, is_vec=True)
             return [[impl.expr_init(ops_mod.cast(x, dt) if dt else x)]
                     for x in arr]
 
@@ -333,6 +360,10 @@ def _make_entries_initializer(is_matrix: bool) -> _MatrixEntriesInitializer:
             return [list(row) for row in arr]
 
         def no_dynamic_index(self, arr, dt):
+            if impl.current_cfg().real_matrix:
+                if dt is None:
+                    dt = self.infer_dt(arr)
+                return _Matrix(arr, dt)
             return [[
                 impl.expr_init(ops_mod.cast(x, dt) if dt else x) for x in row
             ] for row in arr]
@@ -435,10 +466,16 @@ class Matrix(TaichiOperations):
                 local_tensor_proxy, mat = initializer.with_dynamic_index(
                     arr, dt)
 
-        self.n, self.m = len(mat), 1
-        if len(mat) > 0:
-            self.m = len(mat[0])
-        entries = [x for row in mat for x in row]
+        if impl.current_cfg().real_matrix:
+            self.n, self.m = len(arr), 1
+            if len(arr) > 0:
+                self.m = len(arr[0])
+            entries = mat
+        else:
+            self.n, self.m = len(mat), 1
+            if len(mat) > 0:
+                self.m = len(mat[0])
+            entries = [x for row in mat for x in row]
 
         if self.n * self.m > 32 and not suppress_warning:
             warning(

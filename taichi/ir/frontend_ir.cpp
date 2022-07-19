@@ -429,6 +429,15 @@ Stmt *make_tensor_access(Expression::FlattenContext *ctx,
   return ctx->push_back<PtrOffsetStmt>(var->stmt, offset_stmt);
 }
 
+void MatrixExpression::type_check(CompileConfig *config) {
+  // TODO: typecheck matrix
+}
+
+void MatrixExpression::flatten(FlattenContext *ctx) {
+  // TODO: implement flatten
+  TI_NOT_IMPLEMENTED
+}
+
 bool IndexExpression::is_field() const {
   return var.is<GlobalVariableExpression>();
 }
@@ -958,6 +967,22 @@ Expr ASTBuilder::expr_alloca() {
       std::static_pointer_cast<IdExpression>(var.expr)->id,
       PrimitiveType::unknown));
   return var;
+}
+
+Expr ASTBuilder::expr_alloca_local_matrix(const std::vector<int> &shape,
+                                          const DataType &dt,
+                                          const std::vector<Expr> &elements) {
+  auto var = Expr(std::make_shared<IdExpression>(get_next_id()));
+  this->insert(std::make_unique<FrontendAllocaStmt>(
+      std::static_pointer_cast<IdExpression>(var.expr)->id, shape, dt));
+  auto rhs = Expr(std::make_shared<MatrixExpression>(elements, shape, dt));
+  this->insert(std::make_unique<FrontendAssignStmt>(var, rhs));
+  return var;
+}
+
+Expr ASTBuilder::expr_indexed_matrix(const Expr &matrix,
+                                     const ExprGroup &indices) {
+  return Expr(std::make_shared<IndexExpression>(matrix, indices));
 }
 
 Expr ASTBuilder::expr_alloca_local_tensor(const std::vector<int> &shape,

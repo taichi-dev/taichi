@@ -51,7 +51,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     for (int i = 0; i < values.size(); i++) {
       auto value_ptr = builder->CreateGEP(
 #ifdef TI_LLVM_15
-          stype,
+          stype,aaaaaaaa
 #endif
           value_arr, {tlctx->get_constant(0), tlctx->get_constant(i)});
       builder->CreateStore(values[i], value_ptr);

@@ -1,6 +1,7 @@
 #include "llvm_offline_cache.h"
 
 #include <queue>
+#include <llvm/IR/Verifier.h>
 
 #include "llvm/AsmParser/Parser.h"
 #include "llvm/Bitcode/BitcodeReader.h"
@@ -114,7 +115,7 @@ bool LlvmOfflineCacheFileReader::get_kernel_cache(
       std::string filename_prefix =
           taichi::join_path(path_, key + "." + std::to_string(i));
       data.module = load_module(filename_prefix, key, llvm_ctx);
-      TI_ASSERT(data.module);
+      TI_ASSERT_INFO(data.module, filename_prefix);
     }
     res.compiled_data_list.emplace_back(data.tasks,
                                         llvm::CloneModule(*data.module));
@@ -142,7 +143,12 @@ std::unique_ptr<llvm::Module> LlvmOfflineCacheFileReader::load_module(
   } else if (format_ & Format::LL) {
     const std::string filename = path_prefix + ".ll";
     llvm::SMDiagnostic err;
-    return llvm::parseAssemblyFile(filename, err, llvm_ctx);
+    auto ret = llvm::parseAssemblyFile(filename, err, llvm_ctx);
+    if (!ret) {
+      err.print(filename.c_str(), llvm::errs());
+      TI_ERROR("Fail to parse {}: {}", filename, err.getMessage().str());
+    }
+    return ret;
   }
   TI_ERROR("Unknown LLVM format={}", format_);
   return nullptr;
@@ -157,6 +163,12 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
   for (auto &[k, v] : data_.kernels) {
     std::size_t size = 0;  // bytes
     std::string filename_prefix = taichi::join_path(path, k);
+    TI_INFO(k);
+    if (k == "n8542378083d4ef42a02a6e755484a30cb83a43b9017ef1a6c4f22eb15ee78971") {
+      auto *func = v.compiled_data_list[0].module->getFunction("parallel_struct_for1");
+      func->print(llvm::outs());
+      TI_ASSERT(!llvm::verifyFunction(*func, &llvm::errs()));
+    }
 
     auto write_llvm_module =
         [&filename_prefix](

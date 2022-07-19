@@ -68,7 +68,7 @@ KernelTemplate *Module::get_kernel_template(const std::string &name) {
   return kt_ptr;
 }
 
-Field *Module::get_field(const std::string &name) {
+Field *Module::get_snode_tree(const std::string &name) {
   auto itr = loaded_fields_.find(name);
   if (itr != loaded_fields_.end()) {
     return itr->second.get();

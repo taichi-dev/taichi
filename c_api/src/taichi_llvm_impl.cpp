@@ -98,7 +98,7 @@ TiAotModule LlvmRuntime::load_aot_module(const char *module_path) {
       dynamic_cast<taichi::lang::LlvmAotModule *>(aot_module.get());
   TI_ASSERT(llvm_aot_module != nullptr);
   for (size_t i = 0; i < llvm_aot_module->get_num_snode_trees(); i++) {
-    auto *snode_tree = aot_module->get_field(std::to_string(i));
+    auto *snode_tree = aot_module->get_snode_tree(std::to_string(i));
     taichi::lang::allocate_aot_snode_tree_type(aot_module.get(), snode_tree,
                                                this->result_buffer);
   }

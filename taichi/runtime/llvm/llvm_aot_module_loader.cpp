@@ -64,7 +64,7 @@ void allocate_aot_snode_tree_type(aot::Module *aot_module,
   TI_ASSERT(aot_field_impl != nullptr);
 
   auto *runtime_executor = llvm_aot_module->get_runtime_executor();
-  const auto &field_cache = aot_field_impl->get_field();
+  const auto &field_cache = aot_field_impl->get_snode_tree_cache();
 
   int snode_tree_id = field_cache.tree_id;
   if (!llvm_aot_module->is_snode_tree_initialized(snode_tree_id)) {

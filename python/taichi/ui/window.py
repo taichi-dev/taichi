@@ -3,15 +3,14 @@ import pathlib
 from taichi._kernels import ext_arr_from_vulkan_layout_to_normal_layout
 from taichi._lib import core as _ti_core
 from taichi.lang._ndarray import Ndarray
-from taichi.lang.impl import default_cfg, field, get_runtime, ndarray
-from yaml import ScalarNode
+from taichi.lang.impl import default_cfg, get_runtime, ndarray
 
 from taichi import ndarray
 
 from .canvas import Canvas
 from .constants import PRESS, RELEASE
 from .imgui import Gui
-from .utils import check_ggui_availability, get_field_info
+from .utils import check_ggui_availability
 
 
 class Window:

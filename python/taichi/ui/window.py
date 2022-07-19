@@ -140,11 +140,11 @@ class Window:
         """
         return self.window.write_image(filename)
 
-    def copy_depth_buffer_to_ndarray(self, depth):
-        """fetch the depth information of current scene to ti.Ndarray.
+    def get_depth_buffer_faster(self, depth):
+        """fetch the depth information of current scene to ti.ndarray/ti.field
            (support copy from vulkan to cuda/cpu which is a faster version)
         Args:
-            depth (Ndarray): [window_width, window_height] carries depth information.
+            depth(ti.ndarray/ti.field): [window_width, window_height] carries depth information.
         """
         if not (len(depth.shape) == 2 and depth.dtype == f32):
             print("Only Support 2d-shape and ti.f32 data format.")

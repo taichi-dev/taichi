@@ -126,7 +126,7 @@ class LLVMModuleBuilder {
     std::vector<llvm::Value *> args = arglist;
     check_func_call_signature(func->getFunctionType(), func->getName(), args,
                               builder);
-    return builder->CreateCall(func, arglist);
+    return builder->CreateCall(func, args);
   }
 
   template <typename... Args>

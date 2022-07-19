@@ -38,6 +38,10 @@ LlvmRuntime::LlvmRuntime(taichi::Arch arch) : Runtime(arch) {
                                  &result_buffer);
 }
 
+void LlvmRuntime::check_runtime_error() {
+  executor_->check_runtime_error(this->result_buffer);
+}
+
 taichi::lang::Device &LlvmRuntime::get() {
   taichi::lang::Device *device = executor_->get_compute_device();
   return *device;

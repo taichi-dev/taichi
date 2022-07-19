@@ -17,6 +17,8 @@ class LlvmRuntime : public Runtime {
  public:
   LlvmRuntime(taichi::Arch arch);
 
+  void check_runtime_error();
+
  private:
   /* Internally used interfaces */
   taichi::lang::Device &get() override;

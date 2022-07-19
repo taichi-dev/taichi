@@ -1,6 +1,5 @@
 import pathlib
 
-from numpy import isin
 from taichi._kernels import (arr_vulkan_layout_to_arr_normal_layout,
                              arr_vulkan_layout_to_field_normal_layout)
 from taichi._lib import core as _ti_core
@@ -70,10 +69,7 @@ class Window:
                 If it is None, then all events are returned.
         """
         if tag is None:
-            return self.window.get_events(_ti_core.EventType.Any)
-        if tag is PRESS:
-            return self.window.get_events(_ti_core.EventType.Press)
-        if tag is RELEASE:
+            return self.window.get_eventfrom numpy import isin
             return self.window.get_events(_ti_core.EventType.Release)
         raise Exception("unrecognized event tag")
 
@@ -149,7 +145,7 @@ class Window:
         if not (len(depth.shape) == 2 and depth.dtype == f32):
             print("Only Support 2d-shape and ti.f32 data format.")
             exit()
-        if (not (isinstance(depth, Ndarray) or isinstance(depth, Field))):
+        if not (isinstance(depth, Ndarray) or isinstance(depth, Field)):
             print("Only Support Ndarray and Field data type.")
             exit()
         tmp_depth = get_depth_ndarray(self.window)

@@ -1476,7 +1476,7 @@ class MatrixField(Field):
         length = len(paths[0])
         if any(
                 len(path) != length or ti_python_core.is_quant(path[length -
-                                                             1]._dtype)
+                                                                    1]._dtype)
                 for path in paths):
             return
         for i in range(length):

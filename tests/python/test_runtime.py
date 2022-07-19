@@ -168,7 +168,8 @@ def test_init_bad_require_version():
     with pytest.raises(Exception):
         ti_python_core = ti._lib.utils.import_ti_python_core()
         bad_require_version = '{}.{}.{}'.format(
-            ti_python_core.get_version_major(), ti_python_core.get_version_minor(),
+            ti_python_core.get_version_major(),
+            ti_python_core.get_version_minor(),
             ti_python_core.get_version_patch() + 1)
         ti.init(_test_mode=True,
                 debug=True,

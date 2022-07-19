@@ -3,7 +3,7 @@ import os
 import taichi as ti
 
 
-def compile_field_aot(arch):
+def compile_field_aot(arch, compile_for_cgraph=False):
     # Make sure "debug" mode is on
     # in both python & C++ tests
     ti.init(arch=arch, debug=True)
@@ -87,22 +87,46 @@ def compile_field_aot(arch):
     assert "TAICHI_AOT_FOLDER_PATH" in os.environ.keys()
     dir_name = str(os.environ["TAICHI_AOT_FOLDER_PATH"])
 
-    m = ti.aot.Module(arch)
+    if compile_for_cgraph:
+        g_builder = ti.graph.GraphBuilder()
 
-    m.add_kernel(init_fields, template_args={})
-    m.add_kernel(check_init_x, template_args={})
-    m.add_kernel(check_init_y, template_args={})
+        base0 = ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'base0', ti.i32)
+        base1 = ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'base1', ti.i32)
 
-    m.add_kernel(deactivate_pointer_fields, template_args={})
-    m.add_kernel(activate_pointer_fields, template_args={})
+        g_builder.dispatch(init_fields, base0)
+        g_builder.dispatch(check_init_x, base1)
+        g_builder.dispatch(check_init_y)
+        g_builder.dispatch(deactivate_pointer_fields)
+        g_builder.dispatch(activate_pointer_fields)
+        g_builder.dispatch(check_deactivate_pointer_fields)
+        g_builder.dispatch(check_activate_pointer_fields)
 
-    m.add_kernel(check_deactivate_pointer_fields, template_args={})
-    m.add_kernel(check_activate_pointer_fields, template_args={})
+        run_graph = g_builder.compile()
 
-    m.add_field("x", x)
-    m.add_field("y", y)
+        m = ti.aot.Module(arch)
 
-    m.save(dir_name, 'whatever')
+        m.add_field("x", x)
+        m.add_field("y", y)
+
+        m.add_graph('run_graph', run_graph)
+        m.save(dir_name, '')
+    else:
+        m = ti.aot.Module(arch)
+
+        m.add_kernel(init_fields, template_args={})
+        m.add_kernel(check_init_x, template_args={})
+        m.add_kernel(check_init_y, template_args={})
+
+        m.add_kernel(deactivate_pointer_fields, template_args={})
+        m.add_kernel(activate_pointer_fields, template_args={})
+
+        m.add_kernel(check_deactivate_pointer_fields, template_args={})
+        m.add_kernel(check_activate_pointer_fields, template_args={})
+
+        m.add_field("x", x)
+        m.add_field("y", y)
+
+        m.save(dir_name, 'whatever')
 
 
 def compile_kernel_aot(arch):

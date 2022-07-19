@@ -9,6 +9,7 @@ import taichi as ti
 vbo_field_cache = {}
 depth_ndarray_cache = {}
 
+
 def get_vbo_field(vertices):
     if vertices not in vbo_field_cache:
         N = vertices.shape[0]
@@ -22,12 +23,14 @@ def get_vbo_field(vertices):
         return vbo
     return vbo_field_cache[vertices]
 
+
 def get_depth_ndarray(window):
     if window not in depth_ndarray_cache:
         w, h = window.get_window_shape()
-        depth_field = ndarray(dtype = ti.f32, shape = w * h)
+        depth_field = ndarray(dtype=ti.f32, shape=w * h)
         depth_ndarray_cache[window] = depth_field
     return depth_ndarray_cache[window]
+
 
 @kernel
 def copy_to_vbo(vbo: template(), src: template(), offset: template(),

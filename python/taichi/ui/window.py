@@ -153,7 +153,7 @@ class Window:
             exit()
         tmp_depth = get_depth_ndarray(self.window)
         self.window.copy_depth_buffer_to_ndarray(tmp_depth.arr)
-        if (isinstance(depth, Ndarray)):
+        if isinstance(depth, Ndarray):
             arr_vulkan_layout_to_arr_normal_layout(tmp_depth, depth)
         else:
             arr_vulkan_layout_to_field_normal_layout(tmp_depth, depth)

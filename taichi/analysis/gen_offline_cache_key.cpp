@@ -53,7 +53,7 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
   using IRVisitor::visit;
 
  public:
-  ASTSerializer(Program *prog, std::ostream *os) : prog_(prog), os_(os) {
+  ASTSerializer(Program *prog, std::ostream *os) : ExpressionVisitor(true), prog_(prog), os_(os) {
     this->allow_undefined_visitor = true;
   }
 
@@ -66,11 +66,11 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
   }
 
   void visit(Expression *expr) override {
-    expr->accept(this);
+    this->ExpressionVisitor::visit(expr);
   }
 
   void visit(Stmt *stmt) override {
-    stmt->accept(this);
+    this->IRVisitor::visit(stmt);
   }
 
   void visit(ExprGroup &expr_group) override {
@@ -81,11 +81,17 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     emit(ExprOpCode::ArgLoadExpression);
     emit(expr->dt);
     emit(expr->arg_id);
+    emit(expr->is_ptr);
   }
 
   void visit(TexturePtrExpression *expr) override {
     emit(ExprOpCode::TexturePtrExpression);
     emit(expr->arg_id);
+    emit(expr->num_dims);
+    emit(expr->is_storage);
+    emit(expr->num_channels);
+    emit(expr->channel_format);
+    emit(expr->lod);
   }
 
   void visit(TextureOpExpression *expr) override {
@@ -126,9 +132,9 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
 
   void visit(InternalFuncCallExpression *expr) override {
     emit(ExprOpCode::InternalFuncCallExpression);
-    emit(expr->with_runtime_context);
     emit(expr->func_name);
     emit(expr->args);
+    emit(expr->with_runtime_context);
   }
 
   void visit(ExternalTensorExpression *expr) override {
@@ -196,16 +202,8 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     emit(ExprOpCode::SNodeOpExpression);
     emit(expr->op_type);
     emit(expr->snode);
-    std::size_t count = expr->indices.size();
-    if (expr->value.expr)
-      ++count;
-    emit(count);
-    for (const auto &i : expr->indices.exprs) {
-      emit(i);
-    }
-    if (expr->value.expr) {
-      emit(expr->value);
-    }
+    emit(expr->indices.exprs);
+    emit(expr->value);
   }
 
   void visit(ConstExpression *expr) override {
@@ -259,7 +257,7 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     emit(StmtOpCode::EnterBlock);
     emit(static_cast<std::size_t>(block->statements.size()));
     for (auto &stmt : block->statements) {
-      stmt->accept(this);
+      emit(stmt.get());
     }
     emit(StmtOpCode::StopGrad);
     emit(block->stop_gradients);
@@ -287,7 +285,6 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
 
   void visit(FrontendAllocaStmt *stmt) override {
     emit(StmtOpCode::FrontendAllocaStmt);
-    emit(stmt->ret_type);
     emit(stmt->ident);
   }
 
@@ -302,16 +299,8 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     emit(StmtOpCode::FrontendSNodeOpStmt);
     emit(stmt->op_type);
     emit(stmt->snode);
-    std::size_t count = stmt->indices.size();
-    if (stmt->val.expr)
-      ++count;
-    emit(count);
-    for (const auto &i : stmt->indices.exprs) {
-      emit(i);
-    }
-    if (stmt->val.expr) {
-      emit(stmt->val);
-    }
+    emit(stmt->indices.exprs);
+    emit(stmt->val);
   }
 
   void visit(FrontendIfStmt *stmt) override {
@@ -341,8 +330,7 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
       if (std::holds_alternative<Expr>(c)) {
         emit(std::get<Expr>(c).expr);
       } else {
-        const auto &str = std::get<std::string>(c);
-        emit(str);
+        emit(std::get<std::string>(c));
       }
     }
   }
@@ -372,11 +360,7 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     } else {
       emit(ForLoopType::StructFor);
       emit(stmt->loop_var_id);
-      if (stmt->global_var.is<GlobalVariableExpression>()) {
-        emit(stmt->global_var.cast<GlobalVariableExpression>()->snode);
-      } else {
-        emit(stmt->global_var);
-      }
+      emit(stmt->global_var);
     }
     emit(stmt->is_bit_vectorized);
     emit(stmt->num_cpu_threads);
@@ -388,7 +372,6 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
 
   void visit(FrontendReturnStmt *stmt) override {
     emit(StmtOpCode::FrontendReturnStmt);
-    emit(stmt->ret_type);
     emit(stmt->values.exprs);
   }
 
@@ -575,9 +558,27 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
 
   void emit(const Expr &expr) {
     if (expr) {
+      emit(expr.const_value);
+      emit(expr.atomic);
+      auto *e = expr.expr.get();
+      emit(e->stmt);
+      emit(e->attributes);
+      emit(e->ret_type);
       expr.expr->accept(this);
     } else {
       emit(ExprOpCode::NIL);
+    }
+  }
+
+  void emit(Stmt *stmt) {
+    if (stmt) {
+      emit(stmt->get_operands());
+      emit(stmt->erased);
+      emit(stmt->fields_registered);
+      emit(stmt->ret_type);
+      stmt->accept(this);
+    } else {
+      emit(StmtOpCode::NIL);
     }
   }
 

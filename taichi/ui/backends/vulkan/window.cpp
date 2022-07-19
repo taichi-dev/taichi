@@ -105,7 +105,8 @@ void Window::write_image(const std::string &filename) {
   }
 }
 
-void Window::copy_depth_buffer_to_ndarray(const taichi::lang::Ndarray& depth_arr) {
+void Window::copy_depth_buffer_to_ndarray(
+    const taichi::lang::Ndarray &depth_arr) {
   if (!drawn_frame_) {
     draw_frame();
   }

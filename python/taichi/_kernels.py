@@ -178,6 +178,7 @@ def ext_arr_to_matrix(arr: ndarray_type.ndarray(), mat: template(),
                 else:
                     mat[I][p, q] = arr[I, p, q]
 
+
 # extract ndarray of raw vulkan memory layout to normal memory layout.
 # the vulkan layout stored in ndarray : width-by-width stored along n-
 # darray's shape[1] which is the height-axis(So use [size // h, size %

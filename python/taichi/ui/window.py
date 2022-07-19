@@ -1,12 +1,16 @@
 import pathlib
 
 from taichi._lib import core as _ti_core
-from taichi.lang.impl import default_cfg, get_runtime
+from taichi.lang.impl import default_cfg, get_runtime, field, ndarray
+from taichi import ndarray
+from taichi._kernels import ext_arr_from_vulkan_layout_to_normal_layout
+from taichi.lang._ndarray import Ndarray
+from yaml import ScalarNode
 
 from .canvas import Canvas
 from .constants import PRESS, RELEASE
 from .imgui import Gui
-from .utils import check_ggui_availability
+from .utils import check_ggui_availability, get_field_info
 
 
 class Window:
@@ -125,6 +129,21 @@ class Window:
             filename (str): output filename.
         """
         return self.window.write_image(filename)
+
+    def copy_depth_buffer_to_ndarray(self, depth : Ndarray):
+        """fetch the depth information of current scene to ti.Ndarray.
+           (support copy from vulkan to cuda/cpu which is a faster version)
+        Args:
+            depth (Ndarray): [window_width, window_height] carries depth information.
+        """
+        if not (isinstance(depth, Ndarray)
+                    and len(depth.shape) == 2):
+            print("Only Support 2d-Ndarray and ti.f32 data format.")
+            exit()
+        depth_tmp = ndarray(depth.dtype, shape = depth.shape)
+        self.window.copy_depth_buffer_to_ndarray(depth_tmp.arr)
+        ext_arr_from_vulkan_layout_to_normal_layout(depth_tmp, depth)
+        
 
     def get_depth_buffer(self):
         """Get the depth information of current scene to numpy array.

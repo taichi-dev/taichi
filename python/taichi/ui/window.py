@@ -1,5 +1,4 @@
 import pathlib
-
 from taichi._kernels import (arr_vulkan_layout_to_arr_normal_layout,
                              arr_vulkan_layout_to_field_normal_layout)
 from taichi._lib import core as _ti_core
@@ -69,7 +68,10 @@ class Window:
                 If it is None, then all events are returned.
         """
         if tag is None:
-            return self.window.get_eventfrom numpy import isin
+            return self.window.get_events(_ti_core.EventType.Any)
+        if tag is PRESS:
+            return self.window.get_events(_ti_core.EventType.Press)
+        if tag is RELEASE:
             return self.window.get_events(_ti_core.EventType.Release)
         raise Exception("unrecognized event tag")
 

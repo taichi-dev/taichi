@@ -1416,8 +1416,8 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
   }
 }
 
-llvm::Value *CodeGenLLVM::create_intrinsic_load(const DataType &dtype,
-                                                llvm::Value *data_ptr) {
+llvm::Value *CodeGenLLVM::create_intrinsic_load(llvm::Value *ptr,
+                                                llvm::Type *ty) {
   TI_NOT_IMPLEMENTED;
 }
 
@@ -1428,24 +1428,28 @@ void CodeGenLLVM::create_global_load(GlobalLoadStmt *stmt,
   if (ptr_type->is_bit_pointer()) {
     auto val_type = ptr_type->get_pointee_type();
     auto get_ch = stmt->src->as<GetChStmt>();
-    auto physical_type = get_ch->input_snode->physical_type;
+    auto physical_type = llvm_type(get_ch->input_snode->physical_type);
+    auto [byte_ptr, bit_offset] = load_bit_ptr(ptr);
+    auto physical_value = should_cache_as_read_only
+                              ? create_intrinsic_load(byte_ptr, physical_type)
+                              : builder->CreateLoad(physical_type, byte_ptr);
     if (auto qit = val_type->cast<QuantIntType>()) {
-      llvm_val[stmt] =
-          load_quant_int(ptr, qit, physical_type, should_cache_as_read_only);
+      llvm_val[stmt] = extract_quant_int(physical_value, bit_offset, qit);
     } else if (auto qfxt = val_type->cast<QuantFixedType>()) {
-      llvm_val[stmt] =
-          load_quant_fixed(ptr, qfxt, physical_type, should_cache_as_read_only);
+      qit = qfxt->get_digits_type()->as<QuantIntType>();
+      auto digits = extract_quant_int(physical_value, bit_offset, qit);
+      llvm_val[stmt] = reconstruct_quant_fixed(digits, qfxt);
     } else {
       TI_ASSERT(val_type->is<QuantFloatType>());
       TI_ASSERT(get_ch->input_snode->dt->is<BitStructType>());
-      llvm_val[stmt] = load_quant_float(
-          ptr, get_ch->input_snode->dt->as<BitStructType>(),
-          get_ch->output_snode->id_in_bit_struct, should_cache_as_read_only);
+      llvm_val[stmt] = extract_quant_float(
+          physical_value, get_ch->input_snode->dt->as<BitStructType>(),
+          get_ch->output_snode->id_in_bit_struct);
     }
   } else {
     // Byte pointer case.
     if (should_cache_as_read_only) {
-      llvm_val[stmt] = create_intrinsic_load(stmt->ret_type, ptr);
+      llvm_val[stmt] = create_intrinsic_load(ptr, llvm_type(stmt->ret_type));
     } else {
       llvm_val[stmt] =
           builder->CreateLoad(tlctx->get_data_type(stmt->ret_type), ptr);
@@ -1608,14 +1612,6 @@ std::tuple<llvm::Value *, llvm::Value *> CodeGenLLVM::load_bit_ptr(
 #endif
 
   return std::make_tuple(byte_ptr, bit_offset);
-}
-
-llvm::Value *CodeGenLLVM::offset_bit_ptr(llvm::Value *bit_ptr,
-                                         int bit_offset_delta) {
-  auto [byte_ptr, bit_offset] = load_bit_ptr(bit_ptr);
-  auto new_bit_offset =
-      builder->CreateAdd(bit_offset, tlctx->get_constant(bit_offset_delta));
-  return create_bit_ptr(byte_ptr, new_bit_offset);
 }
 
 void CodeGenLLVM::visit(SNodeLookupStmt *stmt) {

@@ -158,6 +158,7 @@ if __name__ == "__main__":
         BuiltInType("VkQueue", "VkQueue"),
         BuiltInType("VkBuffer", "VkBuffer"),
         BuiltInType("VkBufferUsageFlags", "VkBufferUsageFlags"),
+        BuiltInType("VkEvent", "VkEvent"),
     }
 
     for module in Module.load_all(builtin_tys):

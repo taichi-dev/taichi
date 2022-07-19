@@ -155,7 +155,7 @@ def expected_archs():
     all supported archs except archs specified in it will be returned.
     If `TI_WANTED_ARCHS` is not set, all supported archs will be returned.
     Returns:
-        List[taichi_core.Arch]: All expected archs on the machine.
+        List[taichi_python.Arch]: All expected archs on the machine.
     """
     archs = set([cpu, cuda, metal, vulkan, opengl, cc])
     # TODO: now expected_archs is not called per test so we cannot test it

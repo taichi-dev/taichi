@@ -1,9 +1,9 @@
 # Optional environment variables supported by setup.py:
 #   {DEBUG, RELWITHDEBINFO, MINSIZEREL}
-#     build the C++ taichi_core extension with various build types.
+#     build the C++ taichi_python extension with various build types.
 #
 #   TAICHI_CMAKE_ARGS
-#     extra cmake args for C++ taichi_core extension.
+#     extra cmake args for C++ taichi_python extension.
 
 import glob
 import multiprocessing

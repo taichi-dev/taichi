@@ -89,8 +89,6 @@ if(NOT TI_WITH_LLVM)
     set(TI_WITH_CUDA_TOOLKIT OFF)
 endif()
 
-
-## TODO 4832: Split source per target, do not include everything in taichi_core_source
 file(GLOB TAICHI_CORE_SOURCE
     "taichi/analysis/*.cpp" "taichi/analysis/*.h" #IR
     "taichi/aot/*.cpp" "taichi/aot/*.h" #RT?
@@ -194,11 +192,7 @@ endif()
 #
 # However, the better strategy is probably to rename the actual library:
 #
-# taichi_core --> taichi_pylib (this requires python-side refactoring...)
 # taichi_isolated_core --> taichi_core
-#
-# But this requires more efforts, because taichi_core is already referenced
-# everywhere in python.
 set(CORE_LIBRARY_NAME taichi_isolated_core)
 add_library(${CORE_LIBRARY_NAME} OBJECT ${TAICHI_CORE_SOURCE})
 

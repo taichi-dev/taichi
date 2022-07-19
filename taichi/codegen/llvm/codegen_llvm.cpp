@@ -2152,14 +2152,17 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
             auto *new_alloca = builder->CreateAlloca(new_type);
             new_alloca->setAlignment(MaybeAlign(8));
             replaced_alloca_types += 1;
-            for (llvm::User *user: alloca->users()) {
-              if (llvm::GetElementPtrInst *gep = llvm::dyn_cast<llvm::GetElementPtrInst>(user)) {
+            for (llvm::User *user : alloca->users()) {
+              if (llvm::GetElementPtrInst *gep =
+                      llvm::dyn_cast<llvm::GetElementPtrInst>(user)) {
                 if (gep->getPointerOperand() == alloca) {
-                  std::vector<Value *> indices(gep->idx_begin(), gep->idx_end());
+                  std::vector<Value *> indices(gep->idx_begin(),
+                                               gep->idx_end());
                   {
                     builder->SetInsertPoint(gep);
                     auto *new_gep = builder->CreateGEP(new_alloca, indices);
-                    llvm::cast<llvm::GetElementPtrInst>(new_gep)->setIsInBounds(true);
+                    llvm::cast<llvm::GetElementPtrInst>(new_gep)->setIsInBounds(
+                        true);
                     gep->replaceAllUsesWith(new_gep);
                     gep->eraseFromParent();
                     break;

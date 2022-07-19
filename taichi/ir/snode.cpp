@@ -325,7 +325,7 @@ SNode *SNode::get_dual() const {
 
 void SNode::set_snode_tree_id(int id) {
   snode_tree_id_ = id;
-  for (auto &child: ch) {
+  for (auto &child : ch) {
     child->set_snode_tree_id(id);
   }
 }

@@ -1,14 +1,17 @@
 import pathlib
+from numpy import isin
 
-from taichi._kernels import ext_arr_from_vulkan_layout_to_normal_layout
 from taichi._lib import core as _ti_core
 from taichi.lang._ndarray import Ndarray
-from taichi.lang.impl import default_cfg, get_runtime, ndarray
+from taichi.lang.impl import default_cfg, get_runtime,Field
+from taichi.ui.staging_buffer import get_depth_ndarray
+from taichi._kernels import arr_vulkan_layout_to_arr_normal_layout, arr_vulkan_layout_to_field_normal_layout
 
 from .canvas import Canvas
 from .constants import PRESS, RELEASE
 from .imgui import Gui
 from .utils import check_ggui_availability
+from taichi import f32
 
 
 class Window:
@@ -120,6 +123,13 @@ class Window:
         """
         return self.window.show()
 
+    def get_window_shape(self):
+        """Return the shape of window.
+        Return:
+            tuple : (width, height)
+        """
+        return self.window.get_window_shape()
+
     def write_image(self, filename):
         """Save the window content to an image file.
 
@@ -128,18 +138,24 @@ class Window:
         """
         return self.window.write_image(filename)
 
-    def copy_depth_buffer_to_ndarray(self, depth: Ndarray):
+    def copy_depth_buffer_to_ndarray(self, depth):
         """fetch the depth information of current scene to ti.Ndarray.
            (support copy from vulkan to cuda/cpu which is a faster version)
         Args:
             depth (Ndarray): [window_width, window_height] carries depth information.
         """
-        if not (isinstance(depth, Ndarray) and len(depth.shape) == 2):
-            print("Only Support 2d-Ndarray and ti.f32 data format.")
+        if not (len(depth.shape) == 2 and depth.dtype == f32):
+            print("Only Support 2d-shape and ti.f32 data format.")
             exit()
-        depth_tmp = ndarray(depth.dtype, shape=depth.shape)
-        self.window.copy_depth_buffer_to_ndarray(depth_tmp.arr)
-        ext_arr_from_vulkan_layout_to_normal_layout(depth_tmp, depth)
+        if (not (isinstance(depth, Ndarray) or isinstance(depth, Field))):
+            print("Only Support Ndarray and Field data type.")
+            exit()
+        tmp_depth = get_depth_ndarray(self.window)
+        self.window.copy_depth_buffer_to_ndarray(tmp_depth.arr)
+        if (isinstance(depth, Ndarray)):
+            arr_vulkan_layout_to_arr_normal_layout(tmp_depth, depth)
+        else:
+            arr_vulkan_layout_to_field_normal_layout(tmp_depth, depth)
 
     def get_depth_buffer(self):
         """Get the depth information of current scene to numpy array.

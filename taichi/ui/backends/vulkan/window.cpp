@@ -95,6 +95,10 @@ Window::~Window() {
   }
 }
 
+std::pair<uint32_t, uint32_t> Window::get_window_shape() {
+  return {renderer_->swap_chain().width(),renderer_->swap_chain().height()};
+}
+
 void Window::write_image(const std::string &filename) {
   if (!drawn_frame_) {
     draw_frame();
@@ -116,11 +120,10 @@ void Window::copy_depth_buffer_to_ndarray(const taichi::lang::Ndarray& depth_arr
   int w = renderer_->swap_chain().width();
   int h = renderer_->swap_chain().height();
 
-  int depth_width = depth_arr.shape[0];
-  int depth_height = depth_arr.shape[1];
+  int size = depth_arr.shape[0];
 
-  if (depth_width != w || depth_height != h) {
-    TI_ERROR("Width and height of Depth-Ndarray not matched with the window!");
+  if (size != w * h) {
+    TI_ERROR("Size of Depth-Ndarray not matched with the window!");
   }
 
   // We might not have a current program if GGUI is used in external apps to

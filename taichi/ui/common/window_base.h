@@ -40,6 +40,8 @@ class WindowBase {
 
   virtual void show();
 
+  virtual std::pair<uint32_t, uint32_t> get_window_shape() = 0;
+
   virtual void write_image(const std::string &filename) = 0;
 
   virtual void copy_depth_buffer_to_ndarray(const taichi::lang::Ndarray&) = 0;

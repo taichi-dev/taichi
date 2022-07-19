@@ -41,6 +41,8 @@ class Window final : public WindowBase {
   virtual CanvasBase *get_canvas() override;
   virtual GuiBase *GUI() override;
 
+  std::pair<uint32_t, uint32_t> get_window_shape() override;
+
   void write_image(const std::string &filename) override;
 
   void copy_depth_buffer_to_ndarray(const taichi::lang::Ndarray& depth_arr) override;

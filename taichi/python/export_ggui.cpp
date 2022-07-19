@@ -288,6 +288,11 @@ struct PyWindow {
     window = std::make_unique<vulkan::Window>(prog, config);
   }
 
+  py::tuple get_window_shape() {
+    auto [w, h] = window->get_window_shape();
+    return pybind11::make_tuple(w, h);
+  }
+
   void write_image(const std::string &filename) {
     window->write_image(filename);
   }
@@ -402,6 +407,7 @@ void export_ggui(py::module &m) {
                     Arch, bool>())
       .def("get_canvas", &PyWindow::get_canvas)
       .def("show", &PyWindow::show)
+      .def("get_window_shape", &PyWindow::get_window_shape)
       .def("write_image", &PyWindow::write_image)
       .def("copy_depth_buffer_to_ndarray",
            &PyWindow::copy_depth_buffer_to_ndarray)

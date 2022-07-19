@@ -182,7 +182,7 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
           return llvm_os.tell();
         };
     {
-      mangle_offloaded_task_name(k, v.compiled_data_list);
+//      mangle_offloaded_task_name(k, v.compiled_data_list);
       for (int i = 0; i < v.compiled_data_list.size(); i++) {
         auto &data = v.compiled_data_list[i];
         auto *mod = data.module.get();

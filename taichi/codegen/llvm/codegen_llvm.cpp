@@ -3,7 +3,7 @@
 #include <algorithm>
 
 #ifdef TI_WITH_LLVM
-
+#include "llvm/Transforms/Utils/BasicBlockUtils.h"
 #include "llvm/Bitcode/BitcodeReader.h"
 #include "llvm/IR/Module.h"
 #include "llvm/Linker/Linker.h"
@@ -2130,25 +2130,49 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     // Find the "1" in "char tls_buffer[1]" and replace it with
     // "tls_buffer_size"
     for (auto &bb : *patched_struct_for_func) {
-      for (llvm::Instruction &inst : bb) {
-        auto alloca = llvm::dyn_cast<AllocaInst>(&inst);
-        if (!alloca ||
+      bool changed = true;
+      while (changed) {
+        changed = false;
+        for (llvm::Instruction &inst : bb) {
+          auto alloca = llvm::dyn_cast<AllocaInst>(&inst);
+          if (!alloca ||
 #ifdef TI_LLVM_15
-            alloca->getAlign().value() != 8
+              alloca->getAlign().value() != 8
 #else
-            alloca->getAlignment() != 8
+              alloca->getAlignment() != 8
 #endif
-        )
-          continue;
-        auto alloca_type = alloca->getAllocatedType();
-        auto char_type = llvm::Type::getInt8Ty(*llvm_context);
-        // Allocated type should be array [1 x i8]
-        if (alloca_type->isArrayTy() &&
-            alloca_type->getArrayNumElements() == 1 &&
-            alloca_type->getArrayElementType() == char_type) {
-          auto new_type = llvm::ArrayType::get(char_type, stmt->tls_size);
-          alloca->setAllocatedType(new_type);
-          replaced_alloca_types += 1;
+          )
+            continue;
+          auto alloca_type = alloca->getAllocatedType();
+          auto char_type = llvm::Type::getInt8Ty(*llvm_context);
+          // Allocated type should be array [1 x i8]
+          if (alloca_type->isArrayTy() &&
+              alloca_type->getArrayNumElements() == 1 &&
+              alloca_type->getArrayElementType() == char_type) {
+            auto new_type = llvm::ArrayType::get(char_type, stmt->tls_size);
+            {
+              llvm::IRBuilderBase::InsertPointGuard guard(*builder);
+              builder->SetInsertPoint(alloca);
+              auto *new_alloca = builder->CreateAlloca(new_type);
+              replaced_alloca_types += 1;
+              for (llvm::User *user: alloca->users()) {
+                if (llvm::GetElementPtrInst *gep = llvm::dyn_cast<llvm::GetElementPtrInst>(user)) {
+                  if (gep->getPointerOperand() == alloca) {
+                    std::vector<Value *> indices(gep->idx_begin(), gep->idx_end());
+                    {
+                      builder->SetInsertPoint(gep);
+                      auto *new_gep = builder->CreateGEP(new_alloca, indices);
+                      llvm::cast<llvm::GetElementPtrInst>(new_gep)->setIsInBounds(true);
+                      gep->replaceAllUsesWith(new_gep);
+                    }
+                  }
+                }
+              }
+              alloca->removeFromParent();
+              changed = true;
+              break;
+            }
+          }
         }
       }
     }

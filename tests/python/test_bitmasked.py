@@ -30,10 +30,12 @@ def _test_basic():
     assert s[None] == 42
 
 
-@test_utils.test(require=ti.extension.sparse)
+@test_utils.test(arch=ti.cuda, print_ir=True, require=ti.extension.sparse)
 def test_basic():
     _test_basic()
-
+#
+# ti.init(arch=ti.cuda)
+# test_basic()
 
 @test_utils.test(require=[ti.extension.sparse, ti.extension.packed],
                  packed=True)

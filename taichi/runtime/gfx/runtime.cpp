@@ -561,6 +561,22 @@ void GfxRuntime::buffer_copy(DevicePtr dst, DevicePtr src, size_t size) {
   submit_current_cmdlist_if_timeout();
 }
 
+void GfxRuntime::signal_event(DeviceEvent *event) {
+  ensure_current_cmdlist();
+  current_cmdlist_->signal_event(event);
+  submit_current_cmdlist_if_timeout();
+}
+void GfxRuntime::reset_event(DeviceEvent *event) {
+  ensure_current_cmdlist();
+  current_cmdlist_->reset_event(event);
+  submit_current_cmdlist_if_timeout();
+}
+void GfxRuntime::wait_event(DeviceEvent *event) {
+  ensure_current_cmdlist();
+  current_cmdlist_->wait_event(event);
+  submit_current_cmdlist_if_timeout();
+}
+
 void GfxRuntime::synchronize() {
   flush();
   device_->wait_idle();

@@ -293,7 +293,7 @@ struct PyWindow {
   }
 
   void copy_depth_buffer_to_ndarray(Ndarray *depth_arr) {
-    window->copy_depth_buffer_to_ndarray(depth_arr);
+    window->copy_depth_buffer_to_ndarray(*depth_arr);
   }
 
   py::array_t<float> get_depth_buffer() {

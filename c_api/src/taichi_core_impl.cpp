@@ -207,6 +207,7 @@ void ti_destroy_aot_module(TiAotModule mod) {
 
   delete (AotModule *)mod;
 }
+
 TiKernel ti_get_aot_module_kernel(TiAotModule mod, const char *name) {
   if (mod == nullptr) {
     TI_WARN("ignored attempt to get kernel from aot module of null handle");
@@ -214,6 +215,7 @@ TiKernel ti_get_aot_module_kernel(TiAotModule mod, const char *name) {
   }
   return (TiKernel)((AotModule *)mod)->get().get_kernel(name);
 }
+
 TiComputeGraph ti_get_aot_module_compute_graph(TiAotModule mod,
                                                const char *name) {
   if (mod == nullptr) {

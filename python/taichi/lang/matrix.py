@@ -1700,7 +1700,13 @@ class MatrixType(CompoundType):
 
             # initialize by a 2d list, e.g. matnxm([list1, list2, ..., listn])
             else:
-                entries = x
+                entries = []
+                for y in x:
+                    li = list(y)
+                    if len(li) != self.m:
+                        raise TaichiCompilationError(f"Dimension not match: the dimention of {y} is not equal to {self.m}")
+                    entries.append(li)
+
         else:
             # initialize by mxn scalars, e.g. matnxm(1, 2, 3, ..., nxm)
             if len(args) == self.m * self.n:

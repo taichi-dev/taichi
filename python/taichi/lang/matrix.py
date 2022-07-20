@@ -1694,7 +1694,7 @@ class MatrixType(CompoundType):
             elif isinstance(x, Matrix):
                 assert len(
                     x.entries
-                ) == self.m * self.n, f"Cannot create a {self.n}x{self.m} matrix with {len(x.entries)} entries"
+                ) == self.m * self.n, f"Cannot create a {self.n}x{self.m} matrix from a matrix with {len(x.entries)} entries"
                 entries = [[x.entries[k * self.m + i] for i in range(self.m)]
                            for k in range(self.n)]
 
@@ -1714,7 +1714,7 @@ class MatrixType(CompoundType):
             # otherwise the user input is invalid
             else:
                 raise TaichiCompilationError(
-                    f"Cannot create a {self.n}x{self.m} matrix with given input {args}"
+                    f"Cannot create a {self.n}x{self.m} matrix from the given input: {args}"
                 )
 
         #  type cast

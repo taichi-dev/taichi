@@ -1698,7 +1698,7 @@ class MatrixType(CompoundType):
                 entries = [[x.entries[k * self.m + i] for i in range(self.m)]
                            for k in range(self.n)]
 
-            # initialize by a 2d list, e.g. matnxm([list1, list2, ..., listn)
+            # initialize by a 2d list, e.g. matnxm([list1, list2, ..., listn])
             else:
                 entries = x
         else:

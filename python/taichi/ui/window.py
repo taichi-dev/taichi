@@ -139,7 +139,7 @@ class Window:
         """
         return self.window.write_image(filename)
 
-    def get_depth_buffer_faster(self, depth):
+    def get_depth_buffer(self, depth):
         """fetch the depth information of current scene to ti.ndarray/ti.field
            (support copy from vulkan to cuda/cpu which is a faster version)
         Args:
@@ -158,13 +158,13 @@ class Window:
         else:
             arr_vulkan_layout_to_field_normal_layout(tmp_depth, depth)
 
-    def get_depth_buffer(self):
+    def get_depth_buffer_as_numpy(self):
         """Get the depth information of current scene to numpy array.
 
         Returns:
             2d numpy array: [width, height] with (0.0~1.0) float-format.
         """
-        return self.window.get_depth_buffer()
+        return self.window.get_depth_buffer_as_numpy()
 
     def get_image_buffer(self):
         """Get the window content to numpy array.

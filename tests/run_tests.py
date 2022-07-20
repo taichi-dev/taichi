@@ -47,8 +47,8 @@ def _test_cpp_aot(test_filename, build_dir, test_info):
         env_copy = os.environ.copy()
         env_copy.update(extra_env)
 
-        subprocess.check_call([sys.executable, python_file_path, args],
-                              env=env_copy)
+        cmd_list = [sys.executable, python_file_path] + args.split(" ")
+        subprocess.check_call(cmd_list, env=env_copy)
 
         # Run AOT C++ codes
         _run_cpp_test(test_filename, build_dir,

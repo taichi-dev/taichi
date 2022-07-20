@@ -1,6 +1,7 @@
 import pytest
 
 import taichi as ti
+import numpy as np
 from tests import test_utils
 
 
@@ -39,13 +40,19 @@ def test_vector_arg():
 
 @test_utils.test()
 def test_matrix_fancy_arg():
-    from taichi.math import vec3
+    from taichi.math import vec3, mat3
 
     mat4x3 = ti.types.matrix(4, 3, float)
     mat2x6 = ti.types.matrix(2, 6, float)
 
+    a = np.random.random(3)
+    b = np.random.random((3, 3))
+
     v = vec3(0, 1, 2)
     v = vec3([0, 1, 2])
+
+    M = mat3(a, a, a)
+    M = mat3(b)
 
     m = mat4x3([1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12])
 

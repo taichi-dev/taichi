@@ -1644,32 +1644,74 @@ class MatrixType(CompoundType):
         self.dtype = cook_dtype(dtype)
 
     def __call__(self, *args):
+        """Return a matrix matching the shape and dtype.
+
+        This function will try to convert the input to a `n x m` matrix, with n, m being
+        the number of rows/cols of this matrix type.
+
+        Example::
+
+            >>> mat4x3 = MatrixType(4, 3, float)
+            >>> mat2x6 = MatrixType(2, 6, float)
+
+            Create from n x m scalars, of a 1d list of n x m scalars:
+
+                >>> m = mat4x3([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
+                >>> m = mat4x3(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)
+
+            Create from n vectors/lists, with each one of dimension m:
+
+                >>> m = mat4x3([1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12])
+
+            Create from a single scalar
+
+                >>> m = mat4x3(1)
+
+            Create from another 2d list/matrix, as long as they have the same number of entries
+
+                >>> m = mat4x3([[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12]])
+                >>> m = mat4x3(m)
+                >>> k = mat2x6(m)
+
+        """
         if len(args) == 0:
             raise TaichiSyntaxError(
                 "Custom type instances need to be created with an initial value."
             )
         elif len(args) == 1:
-            # fill a single scalar
+            x = args[0]
+
+            # initialize by a single scalar, e.g. matnxm(1)
             if isinstance(args[0], (numbers.Number, expr.Expr)):
                 return self.filled_with_scalar(args[0])
-            # fill a single vector or matrix
-            entries = args[0]
+
+            # initialize by a 1d list of n x m scalars, e.g. matnxm([1, 2, ..., nxm])
+            if len(x) == self.m * self.n:
+                entries = [[x[k * self.m + i] for i in range(self.m)] for k in range(self.n)]
+
+            # initialize by a matrix of n x m entries, e.g. matnxm(mat)
+            elif isinstance(x, Matrix):
+                assert len(x.entries) == self.m * self.n, f"Cannot create a {self.n}x{self.m} matrix with {len(x.entries)} entries"
+                entries = [[x.entries[k * self.m + i] for i in range(self.m)] for k in range(self.n)]
+
+            # initialize by a 2d list, e.g. matnxm([list1, list2, ..., listn)
+            else:
+                entries = x
         else:
-            # fill in a concatenation of scalars/vectors/matrices
-            entries = []
-            for x in args:
-                if isinstance(x, (list, tuple)):
-                    entries += x
-                elif isinstance(x, Matrix):
-                    entries += x.entries
-                else:
-                    entries.append(x)
-        # convert vector to nx1 matrix
-        if isinstance(entries[0], numbers.Number):
-            entries = [[e] for e in entries]
-        # type cast
-        mat = self.cast(Matrix(entries, dt=self.dtype))
-        return mat
+            # initialize by mxn scalars, e.g. matnxm(1, 2, 3, ..., nxm)
+            if len(args) == self.m * self.n:
+                entries = [[args[k * self.m + i] for i in range(self.m)] for k in range(self.n)]
+
+            # initialize by n row vectors, e.g. matnxm(vec1, vec2, ..., vecn)
+            elif len(args) == self.n:
+                entries = [list(x) for x in args]
+
+            # otherwise the user input is invalid
+            else:
+                raise TaichiCompilationError(f"Cannot create a {self.n}x{self.m} matrix with given input {args}")
+
+        #  type cast
+        return self.cast(Matrix(entries, dt=self.dtype))
 
     def cast(self, mat):
         # sanity check shape

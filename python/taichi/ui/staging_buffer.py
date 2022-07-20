@@ -27,7 +27,7 @@ def get_vbo_field(vertices):
 def get_depth_ndarray(window):
     if window not in depth_ndarray_cache:
         w, h = window.get_window_shape()
-        depth_field = ndarray(dtype=ti.f32, shape=w * h)
+        depth_arr = ndarray(dtype=ti.f32, shape=w * h)
         depth_ndarray_cache[window] = depth_field
     return depth_ndarray_cache[window]
 

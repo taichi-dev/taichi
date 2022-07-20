@@ -1457,4 +1457,40 @@ void auto_diff(IRNode *root,
 
 }  // namespace irpass
 
+namespace irpass {
+class GloablDataAccessRuleChecker : public BasicStmtVisitor {
+ public:
+  using BasicStmtVisitor::visit;
+
+  void visit(GlobalLoadStmt *stmt) override {
+    // std::cout << "GlobalLoadStmt: "<< stmt->id << " " << stmt << " src "<<
+    // stmt->src->id << " " << stmt->src << std::endl;
+    loaded_global_field_.insert(stmt->src);
+  }
+
+  void visit(GlobalStoreStmt *stmt) override {
+    // std::cout << "GlobalStoreStmt: "<< stmt->id << " " << stmt << " val "<<
+    // stmt->val->id << " " << stmt->val << " dest "<< stmt->dest->id << " " <<
+    // stmt->dest << std::endl;
+    if (loaded_global_field_.find(stmt->dest) != loaded_global_field_.end()) {
+      is_valid_ = false;
+    }
+  }
+
+  static bool run(IRNode *root) {
+    GloablDataAccessRuleChecker checker;
+    root->accept(&checker);
+    return checker.is_valid_;
+  }
+
+ private:
+  bool is_valid_ = true;
+  std::set<Stmt *> loaded_global_field_;
+};
+
+bool differentiation_validation_check(IRNode *root,
+                                      const CompileConfig &config) {
+  return irpass::GloablDataAccessRuleChecker::run(root);
+}
+}  // namespace irpass
 TLANG_NAMESPACE_END

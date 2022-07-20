@@ -97,8 +97,8 @@ def compile_field_aot(arch, compile_for_cgraph=False):
         g_builder.dispatch(check_init_x, base1)
         g_builder.dispatch(check_init_y)
         g_builder.dispatch(deactivate_pointer_fields)
-        g_builder.dispatch(activate_pointer_fields)
         g_builder.dispatch(check_deactivate_pointer_fields)
+        g_builder.dispatch(activate_pointer_fields)
         g_builder.dispatch(check_activate_pointer_fields)
 
         run_graph = g_builder.compile()

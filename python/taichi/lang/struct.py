@@ -648,21 +648,19 @@ class StructType(CompoundType):
                 self.members[k] = cook_dtype(dtype)
 
     def __call__(self, *args, **kwargs):
-        if len(args) == 0:
-            if kwargs == {}:
-                raise TaichiSyntaxError(
-                    "Custom type instances need to be created with an initial value."
-                )
+        d = {}
+        items = self.members.items()
+        for index, pair in enumerate(items):
+            name, dtype = pair
+            if index < len(args):
+                d[name] = args[index]
             else:
-                # initialize struct members by keywords
-                entries = Struct(kwargs)
-        elif len(args) == 1:
-            # fill a single scalar
-            if isinstance(args[0], (numbers.Number, expr.Expr)):
-                entries = self.filled_with_scalar(args[0])
-            else:
-                # initialize struct members by dictionary
-                entries = Struct(args[0])
+                if isinstance(dtype, CompoundType):
+                    d[name] = kwargs.get(name, dtype(0))
+                else:
+                    d[name] = 0
+        
+        entries = Struct(d)
         struct = self.cast(entries)
         return struct
 

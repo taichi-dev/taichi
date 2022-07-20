@@ -652,13 +652,17 @@ class StructType(CompoundType):
         items = self.members.items()
         for index, pair in enumerate(items):
             name, dtype = pair
-            if index < len(args):
-                d[name] = args[index]
-            else:
-                if isinstance(dtype, CompoundType):
-                    d[name] = kwargs.get(name, dtype(0))
+            if isinstance(dtype, CompoundType):
+                if index < len(args):            
+                    d[name] = dtype(args[index])
                 else:
-                    d[name] = 0
+                    d[name] = kwargs.get(name, dtype(0))
+            else:
+                if index < len(args):
+                    d[name] = args[index]
+                else:
+                    d[name] = kwargs.get(name, 0)
+
 
         entries = Struct(d)
         struct = self.cast(entries)

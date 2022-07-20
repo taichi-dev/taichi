@@ -1235,9 +1235,15 @@ llvm::Value *CodeGenLLVM::quant_type_atomic(AtomicOpStmt *stmt) {
 
   auto dst_type = stmt->dest->ret_type->as<PointerType>()->get_pointee_type();
   if (auto qit = dst_type->cast<QuantIntType>()) {
-    return atomic_add_quant_int(llvm_val[stmt->dest], llvm_type(stmt->dest->as<GetChStmt>()->input_snode->physical_type), qit, llvm_val[stmt->val], is_signed(stmt->val->ret_type));
+    return atomic_add_quant_int(
+        llvm_val[stmt->dest],
+        llvm_type(stmt->dest->as<GetChStmt>()->input_snode->physical_type), qit,
+        llvm_val[stmt->val], is_signed(stmt->val->ret_type));
   } else if (auto qfxt = dst_type->cast<QuantFixedType>()) {
-    return atomic_add_quant_fixed(llvm_val[stmt->dest], llvm_type(stmt->dest->as<GetChStmt>()->input_snode->physical_type), qfxt, llvm_val[stmt->val]);
+    return atomic_add_quant_fixed(
+        llvm_val[stmt->dest],
+        llvm_type(stmt->dest->as<GetChStmt>()->input_snode->physical_type),
+        qfxt, llvm_val[stmt->val]);
   } else {
     return nullptr;
   }

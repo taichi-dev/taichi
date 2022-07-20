@@ -1690,7 +1690,7 @@ class MatrixType(CompoundType):
             if isinstance(x, (list, tuple)):
                 entries += x
             elif isinstance(x, np.ndarray):
-                entries += list(x)
+                entries += list(x.ravel())
             elif isinstance(x, Matrix):
                 entries += x.entries
             else:

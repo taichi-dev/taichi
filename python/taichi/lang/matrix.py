@@ -1687,12 +1687,16 @@ class MatrixType(CompoundType):
 
             # initialize by a 1d list of n x m scalars, e.g. matnxm([1, 2, ..., nxm])
             if len(x) == self.m * self.n:
-                entries = [[x[k * self.m + i] for i in range(self.m)] for k in range(self.n)]
+                entries = [[x[k * self.m + i] for i in range(self.m)]
+                           for k in range(self.n)]
 
             # initialize by a matrix of n x m entries, e.g. matnxm(mat)
             elif isinstance(x, Matrix):
-                assert len(x.entries) == self.m * self.n, f"Cannot create a {self.n}x{self.m} matrix with {len(x.entries)} entries"
-                entries = [[x.entries[k * self.m + i] for i in range(self.m)] for k in range(self.n)]
+                assert len(
+                    x.entries
+                ) == self.m * self.n, f"Cannot create a {self.n}x{self.m} matrix with {len(x.entries)} entries"
+                entries = [[x.entries[k * self.m + i] for i in range(self.m)]
+                           for k in range(self.n)]
 
             # initialize by a 2d list, e.g. matnxm([list1, list2, ..., listn)
             else:
@@ -1700,7 +1704,8 @@ class MatrixType(CompoundType):
         else:
             # initialize by mxn scalars, e.g. matnxm(1, 2, 3, ..., nxm)
             if len(args) == self.m * self.n:
-                entries = [[args[k * self.m + i] for i in range(self.m)] for k in range(self.n)]
+                entries = [[args[k * self.m + i] for i in range(self.m)]
+                           for k in range(self.n)]
 
             # initialize by n row vectors, e.g. matnxm(vec1, vec2, ..., vecn)
             elif len(args) == self.n:
@@ -1708,7 +1713,9 @@ class MatrixType(CompoundType):
 
             # otherwise the user input is invalid
             else:
-                raise TaichiCompilationError(f"Cannot create a {self.n}x{self.m} matrix with given input {args}")
+                raise TaichiCompilationError(
+                    f"Cannot create a {self.n}x{self.m} matrix with given input {args}"
+                )
 
         #  type cast
         return self.cast(Matrix(entries, dt=self.dtype))

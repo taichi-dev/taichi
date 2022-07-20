@@ -26,8 +26,9 @@ class Function : public Callable {
   std::optional<std::string> &try_get_ast_serialization_data() {
     return ast_serialization_data_;
   }
+
  private:
-  std::optional<std::string> ast_serialization_data_; // For generating AST-Key
+  std::optional<std::string> ast_serialization_data_;  // For generating AST-Key
 };
 
 }  // namespace lang

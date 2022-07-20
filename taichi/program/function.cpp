@@ -19,7 +19,7 @@ void Function::set_function_body(const std::function<void()> &func) {
     CurrentCallableGuard _(program, this);
     func();
   }
-  if (program->config.offline_cache) { // For generating AST-Key
+  if (program->config.offline_cache) {  // For generating AST-Key
     std::ostringstream oss;
     gen_offline_cache_key(program, ir.get(), &oss);
     ast_serialization_data_ = oss.str();

@@ -1678,12 +1678,12 @@ class MatrixType(CompoundType):
             raise TaichiSyntaxError(
                 "Custom type instances need to be created with an initial value."
             )
-        elif len(args) == 1:
+        if len(args) == 1:
             x = args[0]
 
             # initialize by a single scalar, e.g. matnxm(1)
-            if isinstance(args[0], (numbers.Number, expr.Expr)):
-                return self.filled_with_scalar(args[0])
+            if isinstance(x, (numbers.Number, expr.Expr)):
+                return self.filled_with_scalar(x)
 
             # initialize by a 1d list of n x m scalars, e.g. matnxm([1, 2, ..., nxm])
             if len(x) == self.m * self.n:
@@ -1726,11 +1726,20 @@ class MatrixType(CompoundType):
                         )
                     entries.append(li)
 
-            # otherwise the user input is invalid
+            # otherwise create a vector from mixed lengths, like glsl vec3(v.xy, 1.0)
             else:
-                raise TaichiCompilationError(
-                    f"Cannot create a {self.n}x{self.m} matrix from {len(args)} inputs"
-                )
+                if self.m != 1:
+                    raise TaichiCompilationError(
+                        f"Cannot create a {self.n}x{self.m} matrix from {len(args)} inputs"
+                    )
+                entries = []
+                for x in args:
+                    if isinstance(x, (list, tuple)):
+                        entries += x
+                    elif isinstance(x, Matrix):
+                        entries += x.entries
+                    else:
+                        entries.append(x)
 
         #  type cast
         return self.cast(Matrix(entries, dt=self.dtype))

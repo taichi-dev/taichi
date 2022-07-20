@@ -2150,7 +2150,7 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
             llvm::IRBuilderBase::InsertPointGuard guard(*builder);
             builder->SetInsertPoint(alloca);
             auto *new_alloca = builder->CreateAlloca(new_type);
-            new_alloca->setAlignment(MaybeAlign(8));
+            new_alloca->setAlignment(Align(8));
             replaced_alloca_types += 1;
             for (llvm::User *user : alloca->users()) {
               if (llvm::GetElementPtrInst *gep =

@@ -2160,7 +2160,7 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
                                                gep->idx_end());
                   {
                     builder->SetInsertPoint(gep);
-                    auto *new_gep = builder->CreateGEP(new_alloca, indices);
+                    auto *new_gep = builder->CreateGEP(new_type, new_alloca, indices);
                     llvm::cast<llvm::GetElementPtrInst>(new_gep)->setIsInBounds(
                         true);
                     gep->replaceAllUsesWith(new_gep);

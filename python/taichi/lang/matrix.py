@@ -1719,7 +1719,9 @@ class MatrixType(CompoundType):
                 for y in args:
                     li = list(y)
                     if len(li) != self.m:
-                        raise TaichiCompilationError(f"Dimension not match: the length of {y} is not equal to {self.m}")
+                        raise TaichiCompilationError(
+                            f"Dimension not match: the length of {y} is not equal to {self.m}"
+                        )
                     entries.append(li)
 
             # otherwise the user input is invalid

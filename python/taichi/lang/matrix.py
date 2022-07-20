@@ -1727,7 +1727,7 @@ class MatrixType(CompoundType):
             # otherwise the user input is invalid
             else:
                 raise TaichiCompilationError(
-                    f"Cannot create a {self.n}x{self.m} matrix from the given input: {args}"
+                    f"Cannot create a {self.n}x{self.m} matrix from {len(args)} inputs"
                 )
 
         #  type cast

@@ -9,8 +9,8 @@
 
 TI_NAMESPACE_BEGIN
 
-PYBIND11_MODULE(taichi_core, m) {
-  m.doc() = "taichi_core";
+PYBIND11_MODULE(taichi_python, m) {
+  m.doc() = "taichi_python";
 
   for (auto &kv : InterfaceHolder::get_instance()->methods) {
     kv.second(&m);

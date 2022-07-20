@@ -40,8 +40,8 @@ void kernel_aot_test(TiArch arch) {
                      .value = std::move(arg_value)};
 
   // Kernel Execution
-  uint32_t arg_count = 2;
-  TiArgument args[2] = {std::move(arg0), std::move(arg1)};
+  constexpr uint32_t arg_count = 2;
+  TiArgument args[arg_count] = {std::move(arg0), std::move(arg1)};
 
   ti_launch_kernel(runtime, k_run, arg_count, &args[0]);
 

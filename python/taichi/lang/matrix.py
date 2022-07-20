@@ -2,7 +2,7 @@ import numbers
 from collections.abc import Iterable
 
 import numpy as np
-from taichi._lib import core as ti_core
+from taichi._lib import core as ti_python_core
 from taichi.lang import expr, impl
 from taichi.lang import ops as ops_mod
 from taichi.lang import runtime_ops
@@ -293,7 +293,7 @@ class _MatrixEntriesInitializer:
             return impl.get_runtime().default_fp
         if isinstance(entry, expr.Expr):
             dt = entry.ptr.get_ret_type()
-            if dt == ti_core.DataType_unknown:
+            if dt == ti_python_core.DataType_unknown:
                 raise TypeError(
                     'Element type of the matrix cannot be inferred. Please set dt instead for now.'
                 )
@@ -424,9 +424,9 @@ class Matrix(TaichiOperations):
             elif not impl.current_cfg().dynamic_index:
                 mat = initializer.no_dynamic_index(arr, dt)
             else:
-                if not ti_core.is_extension_supported(
+                if not ti_python_core.is_extension_supported(
                         impl.current_cfg().arch,
-                        ti_core.Extension.dynamic_index):
+                        ti_python_core.Extension.dynamic_index):
                     raise Exception(
                         f"Backend {impl.current_cfg().arch} doesn't support dynamic index"
                     )
@@ -954,7 +954,7 @@ class Matrix(TaichiOperations):
             to invoke `repr` to show the object... e.g.:
 
             TypeError: make_const_expr_f32(): incompatible function arguments. The following argument types are supported:
-                1. (arg0: float) -> taichi_core.Expr
+                1. (arg0: float) -> taichi_python.Expr
 
             Invoked with: <Taichi 2x1 Matrix>
 
@@ -1427,11 +1427,11 @@ class _MatrixFieldElement(_IntermediateMatrix):
 
     Args:
         field (MatrixField): The matrix field.
-        indices (taichi_core.ExprGroup): Indices of the element.
+        indices (taichi_python.ExprGroup): Indices of the element.
     """
     def __init__(self, field, indices):
         super().__init__(field.n, field.m, [
-            expr.Expr(ti_core.subscript(e.ptr, indices))
+            expr.Expr(ti_python_core.subscript(e.ptr, indices))
             for e in field._get_field_members()
         ])
         self._impl.dynamic_index_stride = field.dynamic_index_stride
@@ -1475,8 +1475,8 @@ class MatrixField(Field):
             return
         length = len(paths[0])
         if any(
-                len(path) != length or ti_core.is_quant(path[length -
-                                                             1]._dtype)
+                len(path) != length or ti_python_core.is_quant(path[length -
+                                                                    1]._dtype)
                 for path in paths):
             return
         for i in range(length):
@@ -1484,7 +1484,7 @@ class MatrixField(Field):
                 depth_below_lca = i
                 break
         for i in range(depth_below_lca, length - 1):
-            if any(path[i].ptr.type != ti_core.SNodeType.dense
+            if any(path[i].ptr.type != ti_python_core.SNodeType.dense
                    or path[i]._cell_size_bytes != paths[0][i]._cell_size_bytes
                    or path[i + 1]._offset_bytes_in_parent_cell != paths[0][
                        i + 1]._offset_bytes_in_parent_cell for path in paths):

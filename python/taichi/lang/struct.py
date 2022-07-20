@@ -498,7 +498,7 @@ class StructField(Field):
         """Gets representative field member for loop range info.
 
         Returns:
-            taichi_core.Expr: Representative (first) field member.
+            taichi_python.Expr: Representative (first) field member.
         """
         return self._members[0]._loop_range()
 

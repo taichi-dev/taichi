@@ -1686,7 +1686,7 @@ class BitStructStoreStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
-  SNode *get_bit_struct_snode() const;
+  BitStructType *get_bit_struct() const;
 
   bool common_statement_eliminable() const override {
     return false;

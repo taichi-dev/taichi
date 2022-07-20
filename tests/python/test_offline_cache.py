@@ -1,3 +1,4 @@
+import atexit
 import functools
 import math
 import threading
@@ -13,6 +14,7 @@ import taichi as ti
 from tests import test_utils
 
 OFFLINE_CACHE_TEMP_DIR = mkdtemp()
+atexit.register(lambda: rmdir(OFFLINE_CACHE_TEMP_DIR))
 
 supported_archs_offline_cache = [ti.cpu, ti.cuda]
 supported_archs_offline_cache = [
@@ -516,67 +518,68 @@ def test_offline_cache_cleaning(curr_arch, factor, policy):
         tmp_offline_cache_file_path())) - count_of_cache_file == rem
 
 
-# @pytest.mark.parametrize('curr_arch', supported_archs_offline_cache)
-# @_test_offline_cache_dec
-# def test_offline_cache_for_kernels_calling_real_func(curr_arch):
-#     count_of_cache_file = len(listdir(tmp_offline_cache_file_path()))
+# FIXME: Change [ti.cpu] to `supported_archs_offline_cache` after fixing bugs of real-function on gpu
+@pytest.mark.parametrize('curr_arch', [ti.cpu])
+@_test_offline_cache_dec
+def test_offline_cache_for_kernels_calling_real_func(curr_arch):
+    count_of_cache_file = len(listdir(tmp_offline_cache_file_path()))
 
-#     def helper1():
-#         @ti.experimental.real_func
-#         def sum(l: ti.i32, r: ti.i32) -> ti.i32:
-#             if l == r:
-#                 return l
-#             else:
-#                 return sum(l, (l + r) // 2) + sum((l + r) // 2 + 1, r)
+    def helper1():
+        @ti.experimental.real_func
+        def sum(l: ti.i32, r: ti.i32) -> ti.i32:
+            if l == r:
+                return l
+            else:
+                return sum(l, (l + r) // 2) + sum((l + r) // 2 + 1, r)
 
-#         @ti.kernel
-#         def get_sum() -> ti.i32:
-#             return sum(0, 99)
+        @ti.kernel
+        def get_sum() -> ti.i32:
+            return sum(0, 99)
 
-#         assert get_sum() == 99 * 50
+        assert get_sum() == 99 * 50
 
-#     def helper2():
-#         @ti.experimental.real_func
-#         def sum(l: ti.i32, r: ti.i32) -> ti.i32:
-#             if l == r:
-#                 return l
-#             else:
-#                 return sum((l + r) // 2 + 1, r) + sum(l, (l + r) // 2)
+    def helper2():
+        @ti.experimental.real_func
+        def sum(l: ti.i32, r: ti.i32) -> ti.i32:
+            if l == r:
+                return l
+            else:
+                return sum((l + r) // 2 + 1, r) + sum(l, (l + r) // 2)
 
-#         @ti.kernel
-#         def get_sum() -> ti.i32:
-#             return sum(0, 99)
+        @ti.kernel
+        def get_sum() -> ti.i32:
+            return sum(0, 99)
 
-#         assert get_sum() == 99 * 50
+        assert get_sum() == 99 * 50
 
-#     assert len(listdir(tmp_offline_cache_file_path())
-#                ) - count_of_cache_file == get_expected_num_cache_files()
-#     ti.init(arch=curr_arch,
-#             enable_fallback=False,
-#             **current_thread_ext_options())
-#     helper1()
+    assert len(listdir(tmp_offline_cache_file_path())
+               ) - count_of_cache_file == get_expected_num_cache_files()
+    ti.init(arch=curr_arch,
+            enable_fallback=False,
+            **current_thread_ext_options())
+    helper1()
 
-#     ti.init(arch=curr_arch,
-#             enable_fallback=False,
-#             **current_thread_ext_options())
-#     assert len(listdir(tmp_offline_cache_file_path())
-#                ) - count_of_cache_file == get_expected_num_cache_files([1])
-#     helper1()
+    ti.init(arch=curr_arch,
+            enable_fallback=False,
+            **current_thread_ext_options())
+    assert len(listdir(tmp_offline_cache_file_path())
+               ) - count_of_cache_file == get_expected_num_cache_files([1])
+    helper1()
 
-#     ti.init(arch=curr_arch,
-#             enable_fallback=False,
-#             **current_thread_ext_options())
-#     assert len(listdir(tmp_offline_cache_file_path())
-#                ) - count_of_cache_file == get_expected_num_cache_files([1])
-#     helper2()
+    ti.init(arch=curr_arch,
+            enable_fallback=False,
+            **current_thread_ext_options())
+    assert len(listdir(tmp_offline_cache_file_path())
+               ) - count_of_cache_file == get_expected_num_cache_files([1])
+    helper2()
 
-#     ti.init(arch=curr_arch,
-#             enable_fallback=False,
-#             **current_thread_ext_options())
-#     assert len(listdir(tmp_offline_cache_file_path())
-#                ) - count_of_cache_file == get_expected_num_cache_files([1, 1])
-#     helper2()
+    ti.init(arch=curr_arch,
+            enable_fallback=False,
+            **current_thread_ext_options())
+    assert len(listdir(tmp_offline_cache_file_path())
+               ) - count_of_cache_file == get_expected_num_cache_files([1, 1])
+    helper2()
 
-#     ti.reset()
-#     assert len(listdir(tmp_offline_cache_file_path())
-#                ) - count_of_cache_file == get_expected_num_cache_files([1, 1])
+    ti.reset()
+    assert len(listdir(tmp_offline_cache_file_path())
+               ) - count_of_cache_file == get_expected_num_cache_files([1, 1])

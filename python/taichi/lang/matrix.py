@@ -1679,77 +1679,33 @@ class MatrixType(CompoundType):
                 "Custom type instances need to be created with an initial value."
             )
         if len(args) == 1:
-            x = args[0]
-
             # initialize by a single scalar, e.g. matnxm(1)
-            if isinstance(x, (numbers.Number, expr.Expr)):
-                return self.filled_with_scalar(x)
-
-            # initialize by a 1d list of n x m scalars, e.g. matnxm([1, 2, ..., nxm])
-            if len(x) == self.m * self.n:
-                entries = [[x[k * self.m + i] for i in range(self.m)]
-                           for k in range(self.n)]
-
-            # initialize by a matrix of n x m entries, e.g. matnxm(mat)
+            if isinstance(args[0], (numbers.Number, expr.Expr)):
+                return self.filled_with_scalar(args[0])
+            args = args[0]
+        # collect all input entries to a 1d list and then reshape
+        # this is mostly for glsl style like vec4(v.xyz, 1.)
+        entries = []
+        for x in args:
+            if isinstance(x, (list, tuple)):
+                entries += x
+            elif isinstance(x, np.ndarray):
+                entries += list(x)
             elif isinstance(x, Matrix):
-                assert len(
-                    x.entries
-                ) == self.m * self.n, f"Cannot create a {self.n}x{self.m} matrix from a matrix with {len(x.entries)} entries"
-                entries = [[x.entries[k * self.m + i] for i in range(self.m)]
-                           for k in range(self.n)]
-
-            # initialize by a 2d list, e.g. matnxm([list1, list2, ..., listn])
+                entries += x.entries
             else:
-                entries = []
-                for y in x:
-                    li = list(y)
-                    if len(li) != self.m:
-                        raise TaichiCompilationError(
-                            f"Dimension not match: the dimention of {y} is not equal to {self.m}"
-                        )
-                    entries.append(li)
-
-        else:
-            # initialize by mxn scalars, e.g. matnxm(1, 2, 3, ..., nxm)
-            if len(args) == self.m * self.n:
-                entries = [[args[k * self.m + i] for i in range(self.m)]
-                           for k in range(self.n)]
-
-            # initialize by n row vectors, e.g. matnxm(vec1, vec2, ..., vecn)
-            elif len(args) == self.n:
-                entries = []
-                for y in args:
-                    li = list(y)
-                    if len(li) != self.m:
-                        raise TaichiCompilationError(
-                            f"Dimension not match: the dimension of {y} is not equal to {self.m}"
-                        )
-                    entries.append(li)
-
-            # otherwise create a vector from mixed lengths, like glsl vec3(v.xy, 1.0)
-            else:
-                if self.m != 1:
-                    raise TaichiCompilationError(
-                        f"Cannot create a {self.n}x{self.m} matrix from {len(args)} inputs"
-                    )
-                entries = []
-                for x in args:
-                    if isinstance(x, (list, tuple)):
-                        entries += x
-                    elif isinstance(x, Matrix):
-                        entries += x.entries
-                    else:
-                        entries.append(x)
+                entries.append(x)
+            
+        if len(entries) != self.m * self.n:
+            raise TaichiSyntaxError(
+                f"Incompatible arguments for the custom vector/matrix type: ({self.n}, {self.m}), ({len(entries)})"
+            )
+        entries = [[entries[k * self.m + i] for i in range(self.m)] for k in range(self.n)]
 
         #  type cast
         return self.cast(Matrix(entries, dt=self.dtype))
 
     def cast(self, mat):
-        # sanity check shape
-        if self.m != mat.m or self.n != mat.n:
-            raise TaichiSyntaxError(
-                f"Incompatible arguments for the custom vector/matrix type: ({self.n}, {self.m}), ({mat.n}, {mat.m})"
-            )
         if in_python_scope():
             return Matrix([[
                 int(mat(i, j)) if self.dtype in primitive_types.integer_types

@@ -63,16 +63,20 @@ class FrontendAllocaStmt : public Stmt {
  public:
   Identifier ident;
 
-  FrontendAllocaStmt(const Identifier &lhs, DataType type) : ident(lhs) {
+  FrontendAllocaStmt(const Identifier &lhs, DataType type)
+      : ident(lhs), is_shared(false) {
     ret_type = TypeFactory::create_vector_or_scalar_type(1, type);
   }
 
   FrontendAllocaStmt(const Identifier &lhs,
                      std::vector<int> shape,
-                     DataType element)
-      : ident(lhs) {
+                     DataType element,
+                     bool is_shared = false)
+      : ident(lhs), is_shared(is_shared) {
     ret_type = DataType(TypeFactory::create_tensor_type(shape, element));
   }
+
+  bool is_shared;
 
   TI_DEFINE_ACCEPT
 };
@@ -874,6 +878,8 @@ class ASTBuilder {
   Expr expr_alloca_local_tensor(const std::vector<int> &shape,
                                 const DataType &element_type,
                                 const ExprGroup &elements);
+  Expr expr_alloca_shared_array(const std::vector<int> &shape,
+                                const DataType &element_type);
   void expr_assign(const Expr &lhs, const Expr &rhs, std::string tb);
   void create_assert_stmt(const Expr &cond,
                           const std::string &msg,
@@ -907,7 +913,11 @@ class ASTBuilder {
   }
 
   void block_dim(int v) {
-    TI_ASSERT(bit::is_power_of_two(v));
+    if (arch_ == Arch::cuda) {
+      TI_ASSERT((v % 32 == 0) || bit::is_power_of_two(v));
+    } else {
+      TI_ASSERT(bit::is_power_of_two(v));
+    }
     for_loop_dec_.config.block_dim = v;
   }
 

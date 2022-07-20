@@ -1,7 +1,7 @@
 import numbers
 from types import MethodType
 
-from taichi.lang import expr, impl, ops
+from taichi.lang import impl, ops
 from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiSyntaxError

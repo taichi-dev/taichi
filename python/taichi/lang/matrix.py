@@ -1695,12 +1695,13 @@ class MatrixType(CompoundType):
                 entries += x.entries
             else:
                 entries.append(x)
-            
+
         if len(entries) != self.m * self.n:
             raise TaichiSyntaxError(
                 f"Incompatible arguments for the custom vector/matrix type: ({self.n}, {self.m}), ({len(entries)})"
             )
-        entries = [[entries[k * self.m + i] for i in range(self.m)] for k in range(self.n)]
+        entries = [[entries[k * self.m + i] for i in range(self.m)]
+                   for k in range(self.n)]
 
         #  type cast
         return self.cast(Matrix(entries, dt=self.dtype))

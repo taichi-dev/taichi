@@ -1709,7 +1709,12 @@ class MatrixType(CompoundType):
 
             # initialize by n row vectors, e.g. matnxm(vec1, vec2, ..., vecn)
             elif len(args) == self.n:
-                entries = [list(x) for x in args]
+                entries = []
+                for y in args:
+                    li = list(y)
+                    if len(li) != self.m:
+                        raise TaichiCompilationError(f"Dimension not match: the length of {y} is not equal to {self.m}")
+                    entries.append(li)
 
             # otherwise the user input is invalid
             else:

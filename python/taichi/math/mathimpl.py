@@ -13,7 +13,6 @@ import taichi as ti
 _get_uint_ip = lambda: ti.u32 if impl.get_runtime(
 ).default_ip == ti.i32 else ti.u64
 
-
 vec2 = ti.types.vector(2, impl.get_runtime().default_fp)
 """2D floating vector type.
 """

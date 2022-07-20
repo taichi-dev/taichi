@@ -659,7 +659,7 @@ class StructType(CompoundType):
                     d[name] = kwargs.get(name, dtype(0))
                 else:
                     d[name] = 0
-        
+
         entries = Struct(d)
         struct = self.cast(entries)
         return struct

@@ -234,8 +234,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
                          llvm::Value *value,
                          bool atomic);
 
-  void store_masked(llvm::Value *byte_ptr,
-                    llvm::Type *byte_ptr_ty,
+  void store_masked(llvm::Value *ptr,
+                    llvm::Type *ty,
                     uint64 mask,
                     llvm::Value *value,
                     bool atomic);
@@ -244,7 +244,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   llvm::Value *quant_int_or_quant_fixed_to_bits(llvm::Value *val,
                                                 Type *input_type,
-                                                Type *output_type);
+                                                llvm::Type *output_type);
 
   void visit(BitStructStoreStmt *stmt) override;
 

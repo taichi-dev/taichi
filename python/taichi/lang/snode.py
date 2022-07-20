@@ -238,10 +238,10 @@ class SNode:
         return ret
 
     def _loop_range(self):
-        """Gets the taichi_core.Expr wrapping the taichi_core.GlobalVariableExpression corresponding to `self` to serve as loop range.
+        """Gets the taichi_python.Expr wrapping the taichi_python.GlobalVariableExpression corresponding to `self` to serve as loop range.
 
         Returns:
-            taichi_core.Expr: See above.
+            taichi_python.Expr: See above.
         """
         return impl.get_runtime().prog.global_var_expr_from_snode(self.ptr)
 

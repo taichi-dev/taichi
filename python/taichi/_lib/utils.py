@@ -31,7 +31,7 @@ def get_os_name():
     assert False, f"Unknown platform name {name}"
 
 
-def import_ti_core():
+def import_ti_python_core():
     if get_os_name() != 'win':
         # pylint: disable=E1101
         old_flags = sys.getdlopenflags()
@@ -41,10 +41,10 @@ def import_ti_core():
         os.environ['PATH'] += os.pathsep + pyddir
     try:
         from taichi._lib.core import \
-            taichi_core as core  # pylint: disable=C0415
+            taichi_python as core  # pylint: disable=C0415
     except Exception as e:
         if isinstance(e, ImportError):
-            print(Fore.YELLOW + "Share object taichi_core import failed, "
+            print(Fore.YELLOW + "Share object taichi_python import failed, "
                   "check this page for possible solutions:\n"
                   "https://docs.taichi-lang.org/docs/install" + Fore.RESET)
             if get_os_name() == 'win':
@@ -83,7 +83,7 @@ package_root = os.path.join(
 
 def get_core_shared_object():
     directory = os.path.join(package_root, '_lib')
-    return os.path.join(directory, 'libtaichi_core.so')
+    return os.path.join(directory, 'libtaichi_python.so')
 
 
 def print_red_bold(*args, **kwargs):
@@ -99,13 +99,13 @@ def check_exists(src):
         )
 
 
-ti_core = import_ti_core()
+ti_python_core = import_ti_python_core()
 
-ti_core.set_python_package_dir(package_root)
+ti_python_core.set_python_package_dir(package_root)
 
 log_level = os.environ.get('TI_LOG_LEVEL', '')
 if log_level:
-    ti_core.set_logging_level(log_level)
+    ti_python_core.set_logging_level(log_level)
 
 
 def get_dll_name(name):
@@ -119,7 +119,7 @@ def get_dll_name(name):
 
 
 def at_startup():
-    ti_core.set_core_state_python_imported(True)
+    ti_python_core.set_core_state_python_imported(True)
 
 
 at_startup()
@@ -133,23 +133,25 @@ def compare_version(latest, current):
 
 def _print_taichi_header():
     header = '[Taichi] '
-    header += f'version {ti_core.get_version_string()}, '
+    header += f'version {ti_python_core.get_version_string()}, '
 
     try:
-        timestamp_path = os.path.join(ti_core.get_repo_dir(), 'timestamp')
+        timestamp_path = os.path.join(ti_python_core.get_repo_dir(),
+                                      'timestamp')
         if os.path.exists(timestamp_path):
             latest_version = ''
             with open(timestamp_path, 'r') as f:
                 latest_version = f.readlines()[1].rstrip()
-            if compare_version(latest_version, ti_core.get_version_string()):
+            if compare_version(latest_version,
+                               ti_python_core.get_version_string()):
                 header += f'latest version {latest_version}, '
     except:
         pass
 
-    llvm_target_support = ti_core.get_llvm_target_support()
+    llvm_target_support = ti_python_core.get_llvm_target_support()
     header += f'llvm {llvm_target_support}, '
 
-    commit_hash = ti_core.get_commit_hash()
+    commit_hash = ti_python_core.get_commit_hash()
     commit_hash = commit_hash[:8]
     header += f'commit {commit_hash}, '
 

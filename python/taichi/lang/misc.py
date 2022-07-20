@@ -182,8 +182,8 @@ def is_extension_supported(arch, ext):
     """Checks whether an extension is supported on an arch.
 
     Args:
-        arch (taichi_core.Arch): Specified arch.
-        ext (taichi_core.Extension): Specified extension.
+        arch (taichi_python.Arch): Specified arch.
+        ext (taichi_python.Extension): Specified extension.
 
     Returns:
         bool: Whether `ext` is supported on `arch`.
@@ -261,7 +261,7 @@ class _SpecialConfig:
 def prepare_sandbox():
     '''
     Returns a temporary directory, which will be automatically deleted on exit.
-    It may contain the taichi_core shared object or some misc. files.
+    It may contain the taichi_python shared object or some misc. files.
     '''
     tmp_dir = tempfile.mkdtemp(prefix='taichi-')
     atexit.register(shutil.rmtree, tmp_dir)
@@ -703,7 +703,7 @@ def is_arch_supported(arch, use_gles=False):
     """Checks whether an arch is supported on the machine.
 
     Args:
-        arch (taichi_core.Arch): Specified arch.
+        arch (taichi_python.Arch): Specified arch.
         use_gles (bool): If True, check is GLES is available otherwise
           check if GLSL is available. Only effective when `arch` is `ti.opengl`.
           Default is `False`.

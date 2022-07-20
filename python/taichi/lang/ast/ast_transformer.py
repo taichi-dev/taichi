@@ -399,11 +399,11 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_call_if_is_builtin(ctx, node, args, keywords):
-
         def len_for_dynamic_snode(node):
             if isinstance(node.value, ast.Subscript):
                 x = build_stmt(ctx, node.value.value)
-                if not isinstance(x, Field) or x.parent().ptr.type == _ti_core.SNodeType.dynamic:
+                if not isinstance(x, Field) or x.parent(
+                ).ptr.type == _ti_core.SNodeType.dynamic:
                     raise TaichiSyntaxError(
                         f"In Taichi scope the `len` method is only defined for dynamic SNodes, but {x} is encountered"
                     )
@@ -411,7 +411,8 @@ class ASTTransformer(Builder):
                 return lambda: length(x.parent(), index)
             else:
                 x = build_stmt(ctx, node.value)
-                if isinstance(x, Field) and x.parent().ptr.type == _ti_core.SNodeType.dynamic:
+                if isinstance(x, Field) and x.parent(
+                ).ptr.type == _ti_core.SNodeType.dynamic:
                     return lambda: length(x.parent, [])
                 else:
                     return x.__len__

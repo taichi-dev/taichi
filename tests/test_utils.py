@@ -25,6 +25,14 @@ __aot_test_cases = {
     [os.path.join('cpp', 'aot', 'llvm', 'graph_aot_test.py'), "--arch=cpu"],
     "LlvmCGraph.RunGraphCuda":
     [os.path.join('cpp', 'aot', 'llvm', 'graph_aot_test.py'), "--arch=cuda"],
+    "LlvmCGraph.CpuField": [
+        os.path.join('cpp', 'aot', 'llvm', 'field_aot_test.py'),
+        "--arch=cpu --cgraph"
+    ],
+    "LlvmCGraph.CudaField": [
+        os.path.join('cpp', 'aot', 'llvm', 'field_aot_test.py'),
+        "--arch=cuda --cgraph"
+    ],
     "LlvmCGraph.Mpm88Cpu":
     [os.path.join('cpp', 'aot', 'mpm88_graph_aot.py'), "--arch=cpu"],
     "LlvmCGraph.Mpm88Cuda":
@@ -34,6 +42,10 @@ __aot_test_cases = {
 }
 
 __capi_aot_test_cases = {
+    "CapiGraphTest.CpuGraph":
+    [os.path.join('cpp', 'aot', 'llvm', 'graph_aot_test.py'), "--arch=cpu"],
+    "CapiGraphTest.CudaGraph":
+    [os.path.join('cpp', 'aot', 'llvm', 'graph_aot_test.py'), "--arch=cuda"],
     "CapiAotTest.CpuKernel":
     [os.path.join('cpp', 'aot', 'llvm', 'kernel_aot_test.py'), "--arch=cpu"],
     "CapiAotTest.CudaKernel":

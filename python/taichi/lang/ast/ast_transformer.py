@@ -16,7 +16,7 @@ from taichi.lang.exception import TaichiSyntaxError, TaichiTypeError
 from taichi.lang.field import Field
 from taichi.lang.matrix import (Matrix, MatrixType, _PyScopeMatrixImpl,
                                 _TiScopeMatrixImpl)
-from taichi.lang.snode import append
+from taichi.lang.snode import append, length
 from taichi.lang.util import in_taichi_scope, is_taichi_class, to_taichi_type
 from taichi.types import (annotations, ndarray_type, primitive_types,
                           texture_type)
@@ -399,6 +399,23 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_call_if_is_builtin(ctx, node, args, keywords):
+
+        def len_for_dynamic_snode(node):
+            if isinstance(node.value, ast.Subscript):
+                x = build_stmt(ctx, node.value.value)
+                if not isinstance(x, Field) or x.parent().ptr.type == _ti_core.SNodeType.dynamic:
+                    raise TaichiSyntaxError(
+                        f"In Taichi scope the `len` method is only defined for dynamic SNodes, but {x} is encountered"
+                    )
+                index = build_stmt(ctx, node.value.slice)
+                return lambda: length(x.parent(), index)
+            else:
+                x = build_stmt(ctx, node.value)
+                if isinstance(x, Field) and x.parent().ptr.type == _ti_core.SNodeType.dynamic:
+                    return lambda: length(x.parent, [])
+                else:
+                    return x.__len__
+
         func = node.func.ptr
         replace_func = {
             id(print): impl.ti_print,
@@ -410,6 +427,7 @@ class ASTTransformer(Builder):
             id(all): ti_ops.ti_all,
             id(abs): abs,
             id(pow): pow,
+            id(len): len_for_dynamic_snode,
         }
         if id(func) in replace_func:
             node.ptr = replace_func[id(func)](*args, **keywords)

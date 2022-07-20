@@ -120,8 +120,8 @@ class IRPrinter : public IRVisitor {
 
   void visit(FrontendAllocaStmt *alloca) override {
     std::string shared_suffix = (alloca->is_shared) ? "(shared)" : "";
-    print("{}${} = alloca{} {}", alloca->type_hint(), alloca->id,
-          shared_suffix, alloca->ident.name());
+    print("{}${} = alloca{} {}", alloca->type_hint(), alloca->id, shared_suffix,
+          alloca->ident.name());
   }
 
   void visit(FrontendAssertStmt *assert) override {

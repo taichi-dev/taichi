@@ -28,7 +28,7 @@ def get_depth_ndarray(window):
     if window not in depth_ndarray_cache:
         w, h = window.get_window_shape()
         depth_arr = ndarray(dtype=ti.f32, shape=w * h)
-        depth_ndarray_cache[window] = depth_field
+        depth_ndarray_cache[window] = depth_arr
     return depth_ndarray_cache[window]
 
 

@@ -14,7 +14,6 @@ import taichi as ti
 from tests import test_utils
 
 OFFLINE_CACHE_TEMP_DIR = mkdtemp()
-atexit.register(lambda: rmdir(OFFLINE_CACHE_TEMP_DIR))
 
 supported_archs_offline_cache = [ti.cpu, ti.cuda]
 supported_archs_offline_cache = [

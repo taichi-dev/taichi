@@ -1,3 +1,4 @@
+from taichi.lang.impl import ndarray
 from taichi.lang.kernel_impl import kernel
 from taichi.lang.matrix import Vector
 from taichi.types.annotations import template
@@ -6,6 +7,7 @@ from taichi.types.primitive_types import f32, u8
 import taichi as ti
 
 vbo_field_cache = {}
+depth_ndarray_cache = {}
 
 
 def get_vbo_field(vertices):
@@ -20,6 +22,14 @@ def get_vbo_field(vertices):
         vbo_field_cache[vertices] = vbo
         return vbo
     return vbo_field_cache[vertices]
+
+
+def get_depth_ndarray(window):
+    if window not in depth_ndarray_cache:
+        w, h = window.get_window_shape()
+        depth_arr = ndarray(dtype=ti.f32, shape=w * h)
+        depth_ndarray_cache[window] = depth_arr
+    return depth_ndarray_cache[window]
 
 
 @kernel

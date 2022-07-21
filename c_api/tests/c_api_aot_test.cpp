@@ -43,7 +43,10 @@ void kernel_aot_test(TiArch arch) {
   constexpr uint32_t arg_count = 2;
   TiArgument args[arg_count] = {std::move(arg0), std::move(arg1)};
 
-  ti_launch_kernel(runtime, k_run, arg_count, &args[0]);
+  ti_cmd_launch_kernel(runtime, k_run, arg_count, &args[0]);
+
+  ti_submit(runtime);
+  ti_wait(runtime);
 
   // Check Results
   auto *data = reinterpret_cast<int32_t *>(ti_map_memory(runtime, memory));

@@ -63,7 +63,10 @@ void graph_aot_test(TiArch arch) {
       std::move(arr_named_arg),
   };
 
-  ti_launch_compute_graph(runtime, run_graph, arg_count, &named_args[0]);
+  ti_cmd_launch_compute_graph(runtime, run_graph, arg_count, &named_args[0]);
+
+  ti_submit(runtime);
+  ti_wait(runtime);
 
   // Check Results
   auto *data = reinterpret_cast<int32_t *>(ti_map_memory(runtime, arr_memory));

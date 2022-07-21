@@ -187,7 +187,7 @@ void ti_destroy_event(TiEvent event) {
   delete (Event *)event;
 }
 
-void ti_copy_memory_device_to_device(TiRuntime runtime,
+void ti_cmd_copy_memory_device_to_device(TiRuntime runtime,
                                      const TiMemorySlice *dst_memory,
                                      const TiMemorySlice *src_memory) {
   if (runtime == nullptr) {
@@ -254,7 +254,7 @@ TiComputeGraph ti_get_aot_module_compute_graph(TiAotModule mod,
   return (TiComputeGraph)&aot_module->get_cgraph(name);
 }
 
-void ti_launch_kernel(TiRuntime runtime,
+void ti_cmd_launch_kernel(TiRuntime runtime,
                       TiKernel kernel,
                       uint32_t arg_count,
                       const TiArgument *args) {
@@ -330,7 +330,7 @@ void ti_launch_kernel(TiRuntime runtime,
   ((taichi::lang::aot::Kernel *)kernel)->launch(&runtime_context);
 }
 
-void ti_launch_compute_graph(TiRuntime runtime,
+void ti_cmd_launch_compute_graph(TiRuntime runtime,
                              TiComputeGraph compute_graph,
                              uint32_t arg_count,
                              const TiNamedArgument *args) {
@@ -437,15 +437,15 @@ void ti_launch_compute_graph(TiRuntime runtime,
   ((taichi::lang::aot::CompiledGraph *)compute_graph)->run(arg_map);
 }
 
-void ti_signal_event(TiRuntime runtime, TiEvent event) {
+void ti_cmd_signal_event(TiRuntime runtime, TiEvent event) {
   ((Runtime *)runtime)->signal_event(&((Event *)event)->get());
 }
 
-void ti_reset_event(TiRuntime runtime, TiEvent event) {
+void ti_cmd_reset_event(TiRuntime runtime, TiEvent event) {
   ((Runtime *)runtime)->reset_event(&((Event *)event)->get());
 }
 
-void ti_wait_event(TiRuntime runtime, TiEvent event) {
+void ti_cmd_wait_event(TiRuntime runtime, TiEvent event) {
   ((Runtime *)runtime)->wait_event(&((Event *)event)->get());
 }
 

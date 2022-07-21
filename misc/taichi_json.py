@@ -110,6 +110,10 @@ class EntryBase:
                 suffix += [str(version)]
             self.version = version
 
+        if "is_device_command" in j and j["is_device_command"]:
+            self.is_device_command = True
+            prefix += ["cmd"]
+
         self.name = Name(j["name"], prefix, suffix)
         self.id = f"{clazz}.{self.name}"
 

@@ -171,29 +171,34 @@ TI_DLL_EXPORT void TI_API_CALL ti_destroy_event(TiEvent event);
 
 // function.copy_memory_device_to_device
 TI_DLL_EXPORT void TI_API_CALL
-ti_copy_memory_device_to_device(TiRuntime runtime,
-                                const TiMemorySlice *dst_memory,
-                                const TiMemorySlice *src_memory);
+ti_cmd_copy_memory_device_to_device(TiRuntime runtime,
+                                    const TiMemorySlice *dst_memory,
+                                    const TiMemorySlice *src_memory);
 
 // function.launch_kernel
-TI_DLL_EXPORT void TI_API_CALL ti_launch_kernel(TiRuntime runtime,
-                                                TiKernel kernel,
-                                                uint32_t arg_count,
-                                                const TiArgument *args);
+TI_DLL_EXPORT void TI_API_CALL ti_cmd_launch_kernel(TiRuntime runtime,
+                                                    TiKernel kernel,
+                                                    uint32_t arg_count,
+                                                    const TiArgument *args);
 
 // function.launch_compute_graph
 TI_DLL_EXPORT void TI_API_CALL
-ti_launch_compute_graph(TiRuntime runtime,
-                        TiComputeGraph compute_graph,
-                        uint32_t arg_count,
-                        const TiNamedArgument *args);
+ti_cmd_launch_compute_graph(TiRuntime runtime,
+                            TiComputeGraph compute_graph,
+                            uint32_t arg_count,
+                            const TiNamedArgument *args);
 
 // function.signal_event
-TI_DLL_EXPORT void TI_API_CALL ti_signal_event(TiRuntime runtime,
-                                               TiEvent event);
+TI_DLL_EXPORT void TI_API_CALL ti_cmd_signal_event(TiRuntime runtime,
+                                                   TiEvent event);
 
 // function.reset_event
-TI_DLL_EXPORT void TI_API_CALL ti_reset_event(TiRuntime runtime, TiEvent event);
+TI_DLL_EXPORT void TI_API_CALL ti_cmd_reset_event(TiRuntime runtime,
+                                                  TiEvent event);
+
+// function.wait_event
+TI_DLL_EXPORT void TI_API_CALL ti_cmd_wait_event(TiRuntime runtime,
+                                                 TiEvent event);
 
 // function.submit
 TI_DLL_EXPORT void TI_API_CALL ti_submit(TiRuntime runtime);

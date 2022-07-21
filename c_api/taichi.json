@@ -741,6 +741,7 @@
                     "name": "launch_kernel_async",
                     "vendor": "unity",
                     "type": "function",
+                    "is_device_command": true,
                     "parameters": [
                         {
                             "type": "handle.runtime"
@@ -763,6 +764,7 @@
                     "name": "launch_compute_graph_async",
                     "vendor": "unity",
                     "type": "function",
+                    "is_device_command": true,
                     "parameters": [
                         {
                             "type": "handle.runtime"
@@ -785,6 +787,7 @@
                     "name": "copy_memory_to_native_buffer_async",
                     "vendor": "unity",
                     "type": "function",
+                    "is_device_command": true,
                     "parameters": [
                         {
                             "type": "handle.runtime"
@@ -854,6 +857,7 @@
                     "name": "submit_async",
                     "vendor": "unity",
                     "type": "function",
+                    "is_device_command": true,
                     "parameters": [
                         {
                             "name": "@return",

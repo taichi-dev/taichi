@@ -844,18 +844,9 @@ class TaichiMain:
         parser.add_argument(
             'hdrout_name',
             help='The output C header file name, e.g. program.h')
-        parser.add_argument(
-            '-e',
-            '--emscripten',
-            required=False,
-            default=False,
-            dest='emscripten',
-            action='store_true',
-            help='Generate output C file for Emscripten instead of raw C')
         args = parser.parse_args(arguments)
 
-        cc_compose.main(args.fin_name, args.fout_name, args.hdrout_name,
-                        args.emscripten)
+        cc_compose.main(args.fin_name, args.fout_name, args.hdrout_name)
 
     @staticmethod
     @register

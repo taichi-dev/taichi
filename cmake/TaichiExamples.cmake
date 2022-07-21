@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 3.0)
 
-if(NOT TI_EMSCRIPTENED)
-
 set(EXAMPLES_NAME taichi_cpp_examples)
 
 file(GLOB_RECURSE TAICHI_EXAMPLES_SOURCE
@@ -35,4 +33,3 @@ target_include_directories(${EXAMPLES_NAME}
     ${PROJECT_SOURCE_DIR}/external/spdlog/include
     ${PROJECT_SOURCE_DIR}/external/eigen
   )
-endif()

@@ -8,7 +8,6 @@ option(TI_WITH_OPENGL "Build with the OpenGL backend" ON)
 option(TI_WITH_CC "Build with the C backend" ON)
 option(TI_WITH_VULKAN "Build with the Vulkan backend" OFF)
 option(TI_WITH_DX11 "Build with the DX11 backend" OFF)
-option(TI_EMSCRIPTENED "Build using emscripten" OFF)
 
 # Force symbols to be 'hidden' by default so nothing is exported from the Taichi
 # library including the third-party dependencies.
@@ -31,18 +30,6 @@ if(ANDROID)
     set(TI_WITH_OPENGL OFF)
     set(TI_WITH_CC OFF)
     set(TI_WITH_DX11 OFF)
-endif()
-
-if(TI_EMSCRIPTENED)
-    set(TI_WITH_LLVM OFF)
-    set(TI_WITH_METAL OFF)
-    set(TI_WITH_CUDA OFF)
-    set(TI_WITH_OPENGL OFF)
-    set(TI_WITH_CC OFF)
-    set(TI_WITH_DX11 OFF)
-
-    set(TI_WITH_VULKAN ON)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_EMSCRIPTENED")
 endif()
 
 if(UNIX AND NOT APPLE)
@@ -74,7 +61,7 @@ if (WIN32)
 endif()
 
 set(TI_WITH_GGUI OFF)
-if(TI_WITH_VULKAN AND NOT TI_EMSCRIPTENED)
+if(TI_WITH_VULKAN)
     set(TI_WITH_GGUI ON)
 endif()
 
@@ -212,7 +199,7 @@ target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/FP16/include)
 set(LIBRARY_NAME ${CORE_LIBRARY_NAME})
 
 # GLFW not available on Android
-if (TI_WITH_OPENGL OR TI_WITH_VULKAN AND NOT ANDROID AND NOT TI_EMSCRIPTENED)
+if (TI_WITH_OPENGL OR TI_WITH_VULKAN AND NOT ANDROID)
   set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
   set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
   set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
@@ -455,7 +442,7 @@ endforeach ()
 
 message("PYTHON_LIBRARIES: " ${PYTHON_LIBRARIES})
 
-if(TI_WITH_PYTHON AND NOT TI_EMSCRIPTENED)
+if(TI_WITH_PYTHON)
     set(CORE_WITH_PYBIND_LIBRARY_NAME taichi_python)
     # Cannot compile Python source code with Android, but TI_EXPORT_CORE should be set and
     # Android should only use the isolated library ignoring those source code.
@@ -511,16 +498,6 @@ if(TI_WITH_PYTHON AND NOT TI_EMSCRIPTENED)
     install(TARGETS ${CORE_WITH_PYBIND_LIBRARY_NAME}
             RUNTIME DESTINATION ${INSTALL_LIB_DIR}/core
             LIBRARY DESTINATION ${INSTALL_LIB_DIR}/core)
-endif()
-
-if(TI_EMSCRIPTENED)
-    set(CORE_WITH_EMBIND_LIBRARY_NAME taichi)
-    add_executable(${CORE_WITH_EMBIND_LIBRARY_NAME} ${TAICHI_EMBIND_SOURCE})
-    target_link_libraries(${CORE_WITH_EMBIND_LIBRARY_NAME} PRIVATE ${CORE_LIBRARY_NAME})
-    target_compile_options(${CORE_WITH_EMBIND_LIBRARY_NAME} PRIVATE "-Oz")
-    # target_compile_options(${CORE_LIBRARY_NAME} PRIVATE "-Oz")
-    set_target_properties(${CORE_LIBRARY_NAME} PROPERTIES LINK_FLAGS "-s ERROR_ON_UNDEFINED_SYMBOLS=0 -s ASSERTIONS=1")
-    set_target_properties(${CORE_WITH_EMBIND_LIBRARY_NAME} PROPERTIES LINK_FLAGS "--bind -s MODULARIZE=1 -s EXPORT_NAME=createTaichiModule -s WASM=0  --memory-init-file 0 -Oz --closure 1 -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s ASSERTIONS=1 -s NO_DISABLE_EXCEPTION_CATCHING")
 endif()
 
 if(TI_WITH_GGUI)

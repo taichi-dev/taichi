@@ -4,7 +4,7 @@
 #include "taichi/rhi/vulkan/vulkan_loader.h"
 #include "taichi/common/logging.h"
 
-#if !defined(ANDROID) && !defined(TI_EMSCRIPTENED)
+#if !defined(ANDROID)
 #include "GLFW/glfw3.h"
 #endif
 
@@ -93,11 +93,12 @@ bool VulkanLoader::init() {
     if (initialized) {
       return;
     }
-#if defined(TI_EMSCRIPTENED)
-    initialized = true;
-#elif defined(__APPLE__)
-    vulkan_rt_ = std::make_unique<DynamicLoader>(runtime_lib_dir() + "/libMoltenVK.dylib");
-    PFN_vkGetInstanceProcAddr get_proc_addr = (PFN_vkGetInstanceProcAddr)vulkan_rt_->load_function("vkGetInstanceProcAddr");
+#if defined(__APPLE__)
+    vulkan_rt_ = std::make_unique<DynamicLoader>(runtime_lib_dir() +
+                                                 "/libMoltenVK.dylib");
+    PFN_vkGetInstanceProcAddr get_proc_addr =
+        (PFN_vkGetInstanceProcAddr)vulkan_rt_->load_function(
+            "vkGetInstanceProcAddr");
 
     volkInitializeCustom(get_proc_addr);
     initialized = true;
@@ -112,17 +113,11 @@ bool VulkanLoader::init() {
 
 void VulkanLoader::load_instance(VkInstance instance) {
   vulkan_instance_ = instance;
-#if defined(TI_EMSCRIPTENED)
-#else
   volkLoadInstance(instance);
-#endif
 }
 void VulkanLoader::load_device(VkDevice device) {
   vulkan_device_ = device;
-#if defined(TI_EMSCRIPTENED)
-#else
   volkLoadDevice(device);
-#endif
 }
 
 PFN_vkVoidFunction VulkanLoader::load_function(const char *name) {

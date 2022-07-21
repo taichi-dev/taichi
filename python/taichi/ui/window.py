@@ -1,5 +1,6 @@
 import pathlib
 
+from numpy import zeros
 from taichi._kernels import (arr_vulkan_layout_to_arr_normal_layout,
                              arr_vulkan_layout_to_field_normal_layout)
 from taichi._lib import core as _ti_core
@@ -8,7 +9,6 @@ from taichi.lang.impl import Field, default_cfg, get_runtime
 from taichi.ui.staging_buffer import get_depth_ndarray
 
 from taichi import f32
-from numpy import zeros
 
 from .canvas import Canvas
 from .constants import PRESS, RELEASE

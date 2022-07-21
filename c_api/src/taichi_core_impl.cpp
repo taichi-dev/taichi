@@ -188,8 +188,8 @@ void ti_destroy_event(TiEvent event) {
 }
 
 void ti_cmd_copy_memory_device_to_device(TiRuntime runtime,
-                                     const TiMemorySlice *dst_memory,
-                                     const TiMemorySlice *src_memory) {
+                                         const TiMemorySlice *dst_memory,
+                                         const TiMemorySlice *src_memory) {
   if (runtime == nullptr) {
     TI_WARN("ignored attempt to copy memory on runtime of null handle");
     return;
@@ -255,9 +255,9 @@ TiComputeGraph ti_get_aot_module_compute_graph(TiAotModule mod,
 }
 
 void ti_cmd_launch_kernel(TiRuntime runtime,
-                      TiKernel kernel,
-                      uint32_t arg_count,
-                      const TiArgument *args) {
+                          TiKernel kernel,
+                          uint32_t arg_count,
+                          const TiArgument *args) {
   if (runtime == nullptr) {
     TI_WARN("ignored attempt to launch kernel on runtime of null handle");
     return;
@@ -331,9 +331,9 @@ void ti_cmd_launch_kernel(TiRuntime runtime,
 }
 
 void ti_cmd_launch_compute_graph(TiRuntime runtime,
-                             TiComputeGraph compute_graph,
-                             uint32_t arg_count,
-                             const TiNamedArgument *args) {
+                                 TiComputeGraph compute_graph,
+                                 uint32_t arg_count,
+                                 const TiNamedArgument *args) {
   if (runtime == nullptr) {
     TI_WARN(
         "ignored attempt to launch compute graph on runtime of null handle");

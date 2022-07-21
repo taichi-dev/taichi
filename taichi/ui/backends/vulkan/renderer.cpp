@@ -71,7 +71,8 @@ void Renderer::circles(const CirclesInfo &info) {
 }
 
 void Renderer::scene_lines(const SceneLinesInfo &info, Scene *scene) {
-  SceneLines *scene_lines = get_renderable_of_type<SceneLines>(info.renderable_info.vbo_attrs);
+  SceneLines *scene_lines =
+      get_renderable_of_type<SceneLines>(info.renderable_info.vbo_attrs);
   scene_lines->update_data(info, *scene);
   next_renderable_ += 1;
 }
@@ -96,7 +97,9 @@ void Renderer::scene(Scene *scene) {
   float aspect_ratio = swap_chain_.width() / (float)swap_chain_.height();
   scene->update_ubo(aspect_ratio);
 
-  int object_count = scene->mesh_infos_.size() + scene->particles_infos_.size() + scene->scene_lines_infos_.size();
+  int object_count = scene->mesh_infos_.size() +
+                     scene->particles_infos_.size() +
+                     scene->scene_lines_infos_.size();
   int mesh_id = 0;
   int particles_id = 0;
   int scene_lines_id = 0;
@@ -112,8 +115,8 @@ void Renderer::scene(Scene *scene) {
       ++particles_id;
     }
     // Scene Lines
-    if (scene_lines_id < scene->scene_lines_infos_.size() && 
-        scene->scene_lines_infos_[scene_lines_id].object_id == i){
+    if (scene_lines_id < scene->scene_lines_infos_.size() &&
+        scene->scene_lines_infos_[scene_lines_id].object_id == i) {
       scene_lines(scene->scene_lines_infos_[scene_lines_id], scene);
       ++scene_lines_id;
     }

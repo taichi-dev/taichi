@@ -10,7 +10,7 @@ namespace vulkan {
 using namespace taichi::lang;
 using namespace taichi::lang::vulkan;
 
-void SceneLines::update_data(const SceneLinesInfo &info, const Scene& scene) {
+void SceneLines::update_data(const SceneLinesInfo &info, const Scene &scene) {
   Renderable::update_data(info.renderable_info);
 
   update_ubo(info, scene);
@@ -19,8 +19,8 @@ void SceneLines::update_data(const SceneLinesInfo &info, const Scene& scene) {
 }
 
 void SceneLines::init_scene_lines(AppContext *app_context,
-                                    int vertices_count,
-                                    int indices_count) {
+                                  int vertices_count,
+                                  int indices_count) {
   RenderableConfig config = {
       vertices_count,
       indices_count,
@@ -46,7 +46,7 @@ SceneLines::SceneLines(AppContext *app_context, VertexAttributes vbo_attrs) {
   init_scene_lines(app_context, 4, 6);
 }
 
-void SceneLines::update_ubo(const SceneLinesInfo& info, const Scene& scene) {
+void SceneLines::update_ubo(const SceneLinesInfo &info, const Scene &scene) {
   UniformBufferObject ubo{};
   ubo.scene = scene.current_ubo_;
   ubo.color = info.color;

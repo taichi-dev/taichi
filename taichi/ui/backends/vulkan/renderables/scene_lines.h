@@ -29,7 +29,7 @@ class SceneLines final : public Renderable {
  public:
   SceneLines(AppContext *app_context, VertexAttributes vbo_attrs);
 
-  void update_data(const SceneLinesInfo &info, const Scene& scene);
+  void update_data(const SceneLinesInfo &info, const Scene &scene);
 
   virtual void record_this_frame_commands(
       taichi::lang::CommandList *command_list) override;
@@ -45,7 +45,7 @@ class SceneLines final : public Renderable {
                         int vertices_count,
                         int indices_count);
 
-  void update_ubo(const SceneLinesInfo& info, const Scene& scene);
+  void update_ubo(const SceneLinesInfo &info, const Scene &scene);
 
   virtual void cleanup() override;
 

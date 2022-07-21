@@ -87,7 +87,7 @@ class Scene:
             camera (:class:`~taichi.ui.Camera`): A camera instance.
         """
         self.scene.set_camera(camera.ptr)
-        
+
     def lines(self,
               vertices,
               width,
@@ -115,8 +115,8 @@ class Scene:
         vbo_info = get_field_info(vbo)
         indices_info = get_field_info(indices)
         self.scene.lines(vbo_info, indices_info, has_per_vertex_color, color,
-                          width)
-        
+                         width)
+
     def mesh(self,
              vertices,
              indices=None,

@@ -6,7 +6,6 @@ from taichi.lang.kernel_impl import func, pyfunc
 from taichi.lang.matrix import Matrix, Vector
 from taichi.types import f32, f64
 
-
 @func
 def _randn(dt):
     """

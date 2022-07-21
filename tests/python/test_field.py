@@ -280,3 +280,19 @@ def test_invalid_slicing():
     ):
         val = ti.field(ti.i32, shape=(2, 2))
         val[0, :]
+
+
+@test_utils.test()
+def test_field_fill():
+    x = ti.field(int, shape=(3, 3))
+    x.fill(2)
+
+    y = ti.field(float, shape=(3, 3))
+    y.fill(2.0)
+
+    @ti.kernel
+    def test():
+        x.fill(3)
+        y.fill(3.0)
+
+    test()

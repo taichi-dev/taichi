@@ -1463,6 +1463,7 @@ class GloablDataAccessRuleChecker : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
 
   void visit(GlobalLoadStmt *stmt) override {
+    // If a global field has been loaded (read), then it cannot be modified anymore.
     // std::cout << "GlobalLoadStmt: "<< stmt->id << " " << stmt << " src "<<
     // stmt->src->id << " " << stmt->src << std::endl;
     loaded_global_field_.insert(stmt->src);
@@ -1470,6 +1471,15 @@ class GloablDataAccessRuleChecker : public BasicStmtVisitor {
 
   void visit(GlobalStoreStmt *stmt) override {
     // std::cout << "GlobalStoreStmt: "<< stmt->id << " " << stmt << " val "<<
+    // stmt->val->id << " " << stmt->val << " dest "<< stmt->dest->id << " " <<
+    // stmt->dest << std::endl;
+    if (loaded_global_field_.find(stmt->dest) != loaded_global_field_.end()) {
+      is_valid_ = false;
+    }
+  }
+
+  void visit(AtomicOpStmt *stmt) override {
+    // std::cout << "AtomicOpStmt: "<< stmt->id << " " << stmt << " val "<<
     // stmt->val->id << " " << stmt->val << " dest "<< stmt->dest->id << " " <<
     // stmt->dest << std::endl;
     if (loaded_global_field_.find(stmt->dest) != loaded_global_field_.end()) {

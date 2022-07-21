@@ -444,6 +444,10 @@ class Stream {
       const std::vector<StreamSemaphore> &wait_semaphores = {}) = 0;
 
   virtual void command_sync() = 0;
+
+  virtual double device_time_elapsed_us() const {
+    TI_NOT_IMPLEMENTED
+  }
 };
 
 class Device {

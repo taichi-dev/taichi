@@ -773,6 +773,7 @@ VulkanCommandList::VulkanCommandList(VulkanDevice *ti_device,
     : ti_device_(ti_device),
       stream_(stream),
       device_(ti_device->vk_device()),
+      query_pool_(vkapi::create_query_pool(ti_device->vk_device())),
       buffer_(buffer) {
   VkCommandBufferBeginInfo info{};
   info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -781,6 +782,7 @@ VulkanCommandList::VulkanCommandList(VulkanDevice *ti_device,
   info.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 
   vkBeginCommandBuffer(buffer->buffer, &info);
+  vkCmdWriteTimestamp(buffer->buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, query_pool_->query_pool, 0);
 }
 
 VulkanCommandList::~VulkanCommandList() {
@@ -971,6 +973,10 @@ void VulkanCommandList::dispatch(uint32_t x, uint32_t y, uint32_t z) {
 
 vkapi::IVkCommandBuffer VulkanCommandList::vk_command_buffer() {
   return buffer_;
+}
+
+vkapi::IVkQueryPool VulkanCommandList::vk_query_pool() {
+  return query_pool_;
 }
 
 void VulkanCommandList::begin_renderpass(int x0,
@@ -1279,6 +1285,7 @@ vkapi::IVkRenderPass VulkanCommandList::current_renderpass() {
 
 vkapi::IVkCommandBuffer VulkanCommandList::finalize() {
   if (!finalized_) {
+    vkCmdWriteTimestamp(buffer_->buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, query_pool_->query_pool, 1);
     vkEndCommandBuffer(buffer_->buffer);
     finalized_ = true;
   }
@@ -1616,6 +1623,7 @@ StreamSemaphore VulkanStream::submit(
     const std::vector<StreamSemaphore> &wait_semaphores) {
   VulkanCommandList *cmdlist = static_cast<VulkanCommandList *>(cmdlist_);
   vkapi::IVkCommandBuffer buffer = cmdlist->finalize();
+  vkapi::IVkQueryPool query_pool = cmdlist->vk_query_pool();
 
   /*
   if (in_flight_cmdlists_.find(buffer) != in_flight_cmdlists_.end()) {
@@ -1663,7 +1671,7 @@ StreamSemaphore VulkanStream::submit(
     });
   */
 
-  submitted_cmdbuffers_.push_back(TrackedCmdbuf{fence, buffer});
+  submitted_cmdbuffers_.push_back(TrackedCmdbuf{fence, buffer, query_pool});
 
   BAIL_ON_VK_BAD_RESULT(vkQueueSubmit(queue_, /*submitCount=*/1, &submit_info,
                                       /*fence=*/fence->fence),
@@ -1683,7 +1691,25 @@ StreamSemaphore VulkanStream::submit_synced(
 void VulkanStream::command_sync() {
   vkQueueWaitIdle(queue_);
 
+  VkPhysicalDeviceProperties props{};
+  vkGetPhysicalDeviceProperties(device_.vk_physical_device(), &props);
+
+  for (const auto& cmdbuf : submitted_cmdbuffers_) {
+    if (cmdbuf.query_pool == nullptr) { continue; }
+
+    uint64_t t[2];
+    vkGetQueryPoolResults(device_.vk_device(), cmdbuf.query_pool->query_pool,
+      0, 2, sizeof(uint64_t) * 2, &t, sizeof(uint64_t),
+      VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+    double duration_us = (t[1] - t[0]) * props.limits.timestampPeriod / 1000.0;
+    device_time_elapsed_us_ += duration_us;
+  }
+
   submitted_cmdbuffers_.clear();
+}
+
+double VulkanStream::device_time_elapsed_us() const {
+  return device_time_elapsed_us_;
 }
 
 std::unique_ptr<Pipeline> VulkanDevice::create_raster_pipeline(

@@ -1527,7 +1527,8 @@ class MatrixField(Field):
             from taichi._kernels import fill_matrix  # pylint: disable=C0415
             fill_matrix(self, val)
         else:
-            from taichi._funcs import field_fill_taichi_scope  # pylint: disable=C0415
+            from taichi._funcs import \
+                field_fill_taichi_scope  # pylint: disable=C0415
             field_fill_taichi_scope(self, val)
 
     @python_scope

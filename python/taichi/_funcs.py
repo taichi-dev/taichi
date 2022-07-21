@@ -5,6 +5,7 @@ from taichi.lang.impl import expr_init, get_runtime, grouped, static
 from taichi.lang.kernel_impl import func, pyfunc
 from taichi.lang.matrix import Matrix, Vector
 from taichi.types import f32, f64
+from taichi.types.annotations import template
 
 
 @func
@@ -616,7 +617,7 @@ def solve(A, b, dt=None):
 
 
 @func
-def field_fill_taichi_scope(F, val):
+def field_fill_taichi_scope(F: template(), val):
     for I in grouped(F):
         F[I] = val
 

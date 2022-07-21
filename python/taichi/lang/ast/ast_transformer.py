@@ -783,7 +783,7 @@ class ASTTransformer(Builder):
                     raise TaichiSyntaxError(
                         f'"{type(node_op).__name__}" is not supported in Taichi kernels.'
                     )
-            val = ti_ops.bit_and(val, op(l, r))
+            val = op(l, r) if val is True else ti_ops.bit_and(val, op(l, r))
         node.ptr = val
         return node.ptr
 

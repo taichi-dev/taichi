@@ -1,8 +1,10 @@
 import taichi.lang
 from taichi._lib import core as _ti_core
-from taichi.lang.util import (python_scope, to_numpy_type, to_paddle_type, in_python_scope,
-                              to_pytorch_type)
+from taichi.lang.util import (in_python_scope, python_scope, to_numpy_type,
+                              to_paddle_type, to_pytorch_type)
+
 import taichi as ti
+
 
 class Field:
     """Taichi field with SNode implementation.

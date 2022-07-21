@@ -1463,9 +1463,9 @@ class GloablDataAccessRuleChecker : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
 
   void visit(GlobalLoadStmt *stmt) override {
-    // If a global field has been loaded (read), then it cannot be modified anymore.
-    // std::cout << "GlobalLoadStmt: "<< stmt->id << " " << stmt << " src "<<
-    // stmt->src->id << " " << stmt->src << std::endl;
+    // If a global field has been loaded (read), then it cannot be modified
+    // anymore. std::cout << "GlobalLoadStmt: "<< stmt->id << " " << stmt << "
+    // src "<< stmt->src->id << " " << stmt->src << std::endl;
     loaded_global_field_.insert(stmt->src);
   }
 

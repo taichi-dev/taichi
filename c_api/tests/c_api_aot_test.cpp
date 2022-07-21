@@ -45,9 +45,6 @@ void kernel_aot_test(TiArch arch) {
 
   ti_cmd_launch_kernel(runtime, k_run, arg_count, &args[0]);
 
-  ti_submit(runtime);
-  ti_wait(runtime);
-
   // Check Results
   auto *data = reinterpret_cast<int32_t *>(ti_map_memory(runtime, memory));
 

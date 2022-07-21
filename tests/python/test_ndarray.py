@@ -660,3 +660,17 @@ def test_ndarray_grouped():
             for k in range(2):
                 for p in range(2):
                     assert a2[i, j][k, p] == k * k
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_ndarray_as_template():
+    @ti.kernel
+    def func(arr_src: ti.template(), arr_dst: ti.template()):
+        for i, j in ti.ndrange(*arr_src.shape):
+            arr_dst[i, j] = arr_src[i, j]
+
+    arr_0 = ti.ndarray(ti.f32, shape=(5, 10))
+    arr_1 = ti.ndarray(ti.f32, shape=(5, 10))
+    with pytest.raises(ti.TaichiRuntimeTypeError,
+                       match=r"Ndarray shouldn't be passed in via"):
+        func(arr_0, arr_1)

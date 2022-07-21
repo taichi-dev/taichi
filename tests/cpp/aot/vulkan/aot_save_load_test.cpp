@@ -210,7 +210,7 @@ TEST(AotSaveLoad, Vulkan) {
   vulkan_runtime->synchronize();
 
   // Retrieve data
-  auto x_field = vk_module->get_field("place");
+  auto x_field = vk_module->get_snode_tree("place");
   EXPECT_NE(x_field, nullptr);
 }
 

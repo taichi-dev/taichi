@@ -115,6 +115,8 @@ class LlvmOfflineCacheFileReader {
   bool get_field_cache(LlvmOfflineCache::FieldCacheData &res,
                        int snode_tree_id);
 
+  size_t get_num_snode_trees();
+
   static std::unique_ptr<LlvmOfflineCacheFileReader> make(
       const std::string &path,
       LlvmOfflineCache::Format format = LlvmOfflineCache::Format::LL);

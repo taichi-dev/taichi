@@ -25,6 +25,14 @@ __aot_test_cases = {
     [os.path.join('cpp', 'aot', 'llvm', 'graph_aot_test.py'), "--arch=cpu"],
     "LlvmCGraph.RunGraphCuda":
     [os.path.join('cpp', 'aot', 'llvm', 'graph_aot_test.py'), "--arch=cuda"],
+    "LlvmCGraph.CpuField": [
+        os.path.join('cpp', 'aot', 'llvm', 'field_aot_test.py'),
+        "--arch=cpu --cgraph"
+    ],
+    "LlvmCGraph.CudaField": [
+        os.path.join('cpp', 'aot', 'llvm', 'field_aot_test.py'),
+        "--arch=cuda --cgraph"
+    ],
     "LlvmCGraph.Mpm88Cpu":
     [os.path.join('cpp', 'aot', 'mpm88_graph_aot.py'), "--arch=cpu"],
     "LlvmCGraph.Mpm88Cuda":
@@ -34,14 +42,18 @@ __aot_test_cases = {
 }
 
 __capi_aot_test_cases = {
-    "CapiDryRun.CpuAotModule":
+    "CapiGraphTest.CpuGraph":
+    [os.path.join('cpp', 'aot', 'llvm', 'graph_aot_test.py'), "--arch=cpu"],
+    "CapiGraphTest.CudaGraph":
+    [os.path.join('cpp', 'aot', 'llvm', 'graph_aot_test.py'), "--arch=cuda"],
+    "CapiAotTest.CpuKernel":
     [os.path.join('cpp', 'aot', 'llvm', 'kernel_aot_test.py'), "--arch=cpu"],
+    "CapiAotTest.CudaKernel":
+    [os.path.join('cpp', 'aot', 'llvm', 'kernel_aot_test.py'), "--arch=cuda"],
     "CapiDryRun.VulkanAotModule": [
         os.path.join('cpp', 'aot', 'llvm', 'kernel_aot_test.py'),
         "--arch=vulkan"
     ],
-    "CapiDryRun.CudaAotModule":
-    [os.path.join('cpp', 'aot', 'llvm', 'kernel_aot_test.py'), "--arch=cuda"],
 }
 
 
@@ -161,7 +173,7 @@ def expected_archs():
     all supported archs except archs specified in it will be returned.
     If `TI_WANTED_ARCHS` is not set, all supported archs will be returned.
     Returns:
-        List[taichi_core.Arch]: All expected archs on the machine.
+        List[taichi_python.Arch]: All expected archs on the machine.
     """
     archs = set([cpu, cuda, metal, vulkan, opengl, cc])
     # TODO: now expected_archs is not called per test so we cannot test it

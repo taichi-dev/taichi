@@ -8,7 +8,7 @@ if(NOT TI_BUILD_TESTS)
 endif()
 
 add_library(${TAICHI_C_API_NAME} SHARED ${C_API_SOURCE})
-target_link_libraries(${TAICHI_C_API_NAME} PRIVATE taichi_isolated_core)
+target_link_libraries(${TAICHI_C_API_NAME} PRIVATE taichi_core)
 
 set(C_API_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")
 set_target_properties(${TAICHI_C_API_NAME} PROPERTIES

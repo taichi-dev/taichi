@@ -1,7 +1,13 @@
 import pathlib
 
+from taichi._kernels import (arr_vulkan_layout_to_arr_normal_layout,
+                             arr_vulkan_layout_to_field_normal_layout)
 from taichi._lib import core as _ti_core
-from taichi.lang.impl import default_cfg, get_runtime
+from taichi.lang._ndarray import Ndarray
+from taichi.lang.impl import Field, default_cfg, get_runtime
+from taichi.ui.staging_buffer import get_depth_ndarray
+
+from taichi import f32
 
 from .canvas import Canvas
 from .constants import PRESS, RELEASE
@@ -118,6 +124,13 @@ class Window:
         """
         return self.window.show()
 
+    def get_window_shape(self):
+        """Return the shape of window.
+        Return:
+            tuple : (width, height)
+        """
+        return self.window.get_window_shape()
+
     def write_image(self, filename):
         """Save the window content to an image file.
 
@@ -126,13 +139,32 @@ class Window:
         """
         return self.window.write_image(filename)
 
-    def get_depth_buffer(self):
+    def get_depth_buffer(self, depth):
+        """fetch the depth information of current scene to ti.ndarray/ti.field
+           (support copy from vulkan to cuda/cpu which is a faster version)
+        Args:
+            depth(ti.ndarray/ti.field): [window_width, window_height] carries depth information.
+        """
+        if not (len(depth.shape) == 2 and depth.dtype == f32):
+            print("Only Support 2d-shape and ti.f32 data format.")
+            exit()
+        if not (isinstance(depth, Ndarray) or isinstance(depth, Field)):
+            print("Only Support Ndarray and Field data type.")
+            exit()
+        tmp_depth = get_depth_ndarray(self.window)
+        self.window.copy_depth_buffer_to_ndarray(tmp_depth.arr)
+        if isinstance(depth, Ndarray):
+            arr_vulkan_layout_to_arr_normal_layout(tmp_depth, depth)
+        else:
+            arr_vulkan_layout_to_field_normal_layout(tmp_depth, depth)
+
+    def get_depth_buffer_as_numpy(self):
         """Get the depth information of current scene to numpy array.
 
         Returns:
             2d numpy array: [width, height] with (0.0~1.0) float-format.
         """
-        return self.window.get_depth_buffer()
+        return self.window.get_depth_buffer_as_numpy()
 
     def get_image_buffer(self):
         """Get the window content to numpy array.

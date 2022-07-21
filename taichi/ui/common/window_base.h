@@ -14,6 +14,7 @@
 #include "taichi/ui/common/event.h"
 #include "taichi/ui/common/gui_base.h"
 #include "taichi/ui/common/app_config.h"
+#include "taichi/program/ndarray.h"
 
 TI_UI_NAMESPACE_BEGIN
 
@@ -39,7 +40,11 @@ class WindowBase {
 
   virtual void show();
 
+  virtual std::pair<uint32_t, uint32_t> get_window_shape() = 0;
+
   virtual void write_image(const std::string &filename) = 0;
+
+  virtual void copy_depth_buffer_to_ndarray(const taichi::lang::Ndarray &) = 0;
 
   virtual std::vector<float> &get_depth_buffer(uint32_t &w, uint32_t &h) = 0;
 

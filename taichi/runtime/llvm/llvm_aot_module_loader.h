@@ -6,9 +6,13 @@
 namespace taichi {
 namespace lang {
 
-TI_DLL_EXPORT void finalize_aot_field(aot::Module *aot_module,
-                                      aot::Field *aot_field,
-                                      uint64 *result_buffer);
+/* TODO(zhanlue) refactor this interface once SNodeTreeType is available
+   The "aot::Field" created by "make_new_field()" is a SNodeTree in essense.
+   Therefore we're actually initializing the entire SNodeTree.
+*/
+TI_DLL_EXPORT void allocate_aot_snode_tree_type(aot::Module *aot_module,
+                                                aot::Field *aot_field,
+                                                uint64 *result_buffer);
 
 class LlvmAotModule : public aot::Module {
  public:
@@ -38,6 +42,10 @@ class LlvmAotModule : public aot::Module {
     return executor_;
   }
 
+  size_t get_num_snode_trees() {
+    return cache_reader_->get_num_snode_trees();
+  }
+
   void set_initialized_snode_tree(int snode_tree_id) {
     initialized_snode_tree_ids.insert(snode_tree_id);
   }
@@ -59,6 +67,11 @@ class LlvmAotModule : public aot::Module {
   std::unique_ptr<aot::Kernel> make_new_kernel(
       const std::string &name) override;
 
+  /* TODO(zhanlue): replace "make_new_field()" with "make_snode_tree()" once
+     SNodeTreeType is available Field is not a standalone data structure - it is
+     essentially part of a SNodeTree object. User should always operate on a
+     "SNodeTree" instead of a "Field".
+  */
   std::unique_ptr<aot::Field> make_new_field(const std::string &name) override;
 
   LlvmRuntimeExecutor *const executor_{nullptr};

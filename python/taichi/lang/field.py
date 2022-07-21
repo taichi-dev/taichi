@@ -3,8 +3,6 @@ from taichi._lib import core as _ti_core
 from taichi.lang.util import (in_python_scope, python_scope, to_numpy_type,
                               to_paddle_type, to_pytorch_type)
 
-import taichi as ti
-
 
 class Field:
     """Taichi field with SNode implementation.
@@ -269,15 +267,11 @@ class ScalarField(Field):
     def fill(self, val):
         """Fills this scalar field with a specified value.
         """
-        @ti.func
-        def field_fill_taichi_scope(F, val):
-            for I in ti.grouped(F):
-                self[I] = val
-
         if in_python_scope():
             from taichi._kernels import fill_tensor  # pylint: disable=C0415
             fill_tensor(self, val)
         else:
+            from taichi._funcs import field_fill_taichi_scope  # pylint: disable=C0415
             field_fill_taichi_scope(self, val)
 
     @python_scope

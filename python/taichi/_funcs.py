@@ -1,7 +1,7 @@
 import math
 
 from taichi.lang import impl, matrix, ops
-from taichi.lang.impl import expr_init, get_runtime, static
+from taichi.lang.impl import expr_init, get_runtime, static, grouped
 from taichi.lang.kernel_impl import func, pyfunc
 from taichi.lang.matrix import Matrix, Vector
 from taichi.types import f32, f64
@@ -613,6 +613,12 @@ def solve(A, b, dt=None):
     if A.n == 3:
         return _gauss_elimination_3x3(Ab, dt)
     raise Exception("Solver only supports 2D and 3D matrices.")
+
+
+@func
+def field_fill_taichi_scope(F, val):
+    for I in grouped(F):
+        F[I] = val
 
 
 __all__ = ['randn', 'polar_decompose', 'eig', 'sym_eig', 'svd', 'solve']

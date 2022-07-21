@@ -290,9 +290,13 @@ def test_field_fill():
     y = ti.field(float, shape=(3, 3))
     y.fill(2.0)
 
+    z = ti.Vector.field(3, float, shape=(3, 3))
+    z.fill([1, 2, 3])
+
     @ti.kernel
     def test():
         x.fill(3)
         y.fill(3.0)
+        z.fill([4, 5, 6])
 
     test()

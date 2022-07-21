@@ -2179,8 +2179,8 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
       auto *new_alloca = builder->CreateAlloca(new_type);
       new_alloca->setAlignment(Align(8));
       TI_ASSERT(alloca->hasOneUse());
-      auto *gep = llvm::dyn_cast<llvm::GetElementPtrInst>(alloca->user_back());
-      TI_ASSERT(gep && gep->getPointerOperand() == alloca);
+      auto *gep = llvm::cast<llvm::GetElementPtrInst>(alloca->user_back());
+      TI_ASSERT(gep->getPointerOperand() == alloca);
       std::vector<Value *> indices(gep->idx_begin(),
                                    gep->idx_end());
       builder->SetInsertPoint(gep);

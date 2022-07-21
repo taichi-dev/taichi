@@ -197,9 +197,16 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(SNodeOpStmt *stmt) override;
 
-  llvm::Value *atomic_add_quant_fixed(AtomicOpStmt *stmt, QuantFixedType *qfxt);
+  llvm::Value *atomic_add_quant_fixed(llvm::Value *ptr,
+                                      llvm::Type *physical_type,
+                                      QuantFixedType *qfxt,
+                                      llvm::Value *value);
 
-  llvm::Value *atomic_add_quant_int(AtomicOpStmt *stmt, QuantIntType *qit);
+  llvm::Value *atomic_add_quant_int(llvm::Value *ptr,
+                                    llvm::Type *physical_type,
+                                    QuantIntType *qit,
+                                    llvm::Value *value,
+                                    bool value_is_signed);
 
   llvm::Value *to_quant_fixed(llvm::Value *real, QuantFixedType *qfxt);
 
@@ -222,14 +229,14 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(PtrOffsetStmt *stmt) override;
 
-  void store_quant_int(llvm::Value *bit_ptr,
-                       PrimitiveType *physical_ty,
+  void store_quant_int(llvm::Value *ptr,
+                       llvm::Type *physical_type,
                        QuantIntType *qit,
                        llvm::Value *value,
                        bool atomic);
 
-  void store_quant_fixed(llvm::Value *bit_ptr,
-                         PrimitiveType *physical_ty,
+  void store_quant_fixed(llvm::Value *ptr,
+                         llvm::Type *physical_type,
                          QuantFixedType *qfxt,
                          llvm::Value *value,
                          bool atomic);

@@ -1257,9 +1257,15 @@ llvm::Value *CodeGenLLVM::quant_type_atomic(AtomicOpStmt *stmt) {
 
   auto dst_type = stmt->dest->ret_type->as<PointerType>()->get_pointee_type();
   if (auto qit = dst_type->cast<QuantIntType>()) {
-    return atomic_add_quant_int(stmt, qit);
+    return atomic_add_quant_int(
+        llvm_val[stmt->dest],
+        llvm_type(stmt->dest->as<GetChStmt>()->input_snode->physical_type), qit,
+        llvm_val[stmt->val], is_signed(stmt->val->ret_type));
   } else if (auto qfxt = dst_type->cast<QuantFixedType>()) {
-    return atomic_add_quant_fixed(stmt, qfxt);
+    return atomic_add_quant_fixed(
+        llvm_val[stmt->dest],
+        llvm_type(stmt->dest->as<GetChStmt>()->input_snode->physical_type),
+        qfxt, llvm_val[stmt->val]);
   } else {
     return nullptr;
   }
@@ -1415,20 +1421,18 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
   auto ptr_type = stmt->dest->ret_type->as<PointerType>();
   if (ptr_type->is_bit_pointer()) {
     auto pointee_type = ptr_type->get_pointee_type();
-    if (stmt->dest->as<GetChStmt>()->input_snode->type ==
-        SNodeType::bit_struct) {
+    auto snode = stmt->dest->as<GetChStmt>()->input_snode;
+    if (snode->type == SNodeType::bit_struct) {
       TI_ERROR(
           "Bit struct stores with type {} should have been handled by "
           "BitStructStoreStmt.",
           pointee_type->to_string());
     }
     if (auto qit = pointee_type->cast<QuantIntType>()) {
-      store_quant_int(llvm_val[stmt->dest],
-                      stmt->dest->as<GetChStmt>()->input_snode->physical_type,
+      store_quant_int(llvm_val[stmt->dest], llvm_type(snode->physical_type),
                       qit, llvm_val[stmt->val], true);
     } else if (auto qfxt = pointee_type->cast<QuantFixedType>()) {
-      store_quant_fixed(llvm_val[stmt->dest],
-                        stmt->dest->as<GetChStmt>()->input_snode->physical_type,
+      store_quant_fixed(llvm_val[stmt->dest], llvm_type(snode->physical_type),
                         qfxt, llvm_val[stmt->val], true);
     } else {
       TI_NOT_IMPLEMENTED;

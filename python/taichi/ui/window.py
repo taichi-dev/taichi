@@ -10,7 +10,6 @@ from taichi.ui.staging_buffer import get_depth_ndarray
 
 from taichi import f32
 
-
 from .canvas import Canvas
 from .constants import PRESS, RELEASE
 from .imgui import Gui

@@ -60,6 +60,7 @@ void SceneLines::create_bindings() {
   Renderable::create_bindings();
   ResourceBinder *binder = pipeline_->resource_binder();
   binder->buffer(0, 0, uniform_buffer_);
+  binder->rw_buffer(0, 1, storage_buffer_);
 }
 
 void SceneLines::record_this_frame_commands(CommandList *command_list) {

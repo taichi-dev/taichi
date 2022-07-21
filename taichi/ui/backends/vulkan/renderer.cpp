@@ -96,7 +96,7 @@ void Renderer::scene(Scene *scene) {
   float aspect_ratio = swap_chain_.width() / (float)swap_chain_.height();
   scene->update_ubo(aspect_ratio);
 
-  int object_count = scene->mesh_infos_.size() + scene->particles_infos_.size() + scene->mesh_infos_.size();
+  int object_count = scene->mesh_infos_.size() + scene->particles_infos_.size() + scene->scene_lines_infos_.size();
   int mesh_id = 0;
   int particles_id = 0;
   int scene_lines_id = 0;
@@ -112,7 +112,8 @@ void Renderer::scene(Scene *scene) {
       ++particles_id;
     }
     // Scene Lines
-    if (particles_id < scene->scene_lines_infos_.size() && scene->scene_lines_infos_[scene_lines_id].object_id == i){
+    if (scene_lines_id < scene->scene_lines_infos_.size() && 
+        scene->scene_lines_infos_[scene_lines_id].object_id == i){
       scene_lines(scene->scene_lines_infos_[scene_lines_id], scene);
       ++scene_lines_id;
     }
@@ -120,6 +121,7 @@ void Renderer::scene(Scene *scene) {
   scene->next_object_id_ = 0;
   scene->mesh_infos_.clear();
   scene->particles_infos_.clear();
+  scene->scene_lines_infos_.clear();
   scene->point_lights_.clear();
 }
 

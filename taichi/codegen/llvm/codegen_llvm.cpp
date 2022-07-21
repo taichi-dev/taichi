@@ -3,7 +3,6 @@
 #include <algorithm>
 
 #ifdef TI_WITH_LLVM
-
 #include "llvm/Bitcode/BitcodeReader.h"
 #include "llvm/IR/Module.h"
 #include "llvm/Linker/Linker.h"
@@ -2147,37 +2146,52 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     auto patched_struct_for_func =
         llvm::CloneFunction(struct_for_func, value_map);
 
-    int replaced_alloca_types = 0;
+    int num_found_alloca = 0;
+    llvm::AllocaInst *alloca = nullptr;
+
+    auto char_type = llvm::Type::getInt8Ty(*llvm_context);
 
     // Find the "1" in "char tls_buffer[1]" and replace it with
     // "tls_buffer_size"
     for (auto &bb : *patched_struct_for_func) {
       for (llvm::Instruction &inst : bb) {
-        auto alloca = llvm::dyn_cast<AllocaInst>(&inst);
-        if (!alloca ||
+        auto now_alloca = llvm::dyn_cast<AllocaInst>(&inst);
+        if (!now_alloca ||
 #ifdef TI_LLVM_15
-            alloca->getAlign().value() != 8
+            now_alloca->getAlign().value() != 8
 #else
-            alloca->getAlignment() != 8
+            now_alloca->getAlignment() != 8
 #endif
         )
           continue;
-        auto alloca_type = alloca->getAllocatedType();
-        auto char_type = llvm::Type::getInt8Ty(*llvm_context);
+        auto alloca_type = now_alloca->getAllocatedType();
         // Allocated type should be array [1 x i8]
         if (alloca_type->isArrayTy() &&
             alloca_type->getArrayNumElements() == 1 &&
             alloca_type->getArrayElementType() == char_type) {
-          auto new_type = llvm::ArrayType::get(char_type, stmt->tls_size);
-          alloca->setAllocatedType(new_type);
-          replaced_alloca_types += 1;
+          alloca = now_alloca;
+          num_found_alloca++;
         }
       }
     }
-
     // There should be **exactly** one replacement.
-    TI_ASSERT(replaced_alloca_types == 1);
-
+    TI_ASSERT(num_found_alloca == 1 && alloca);
+    auto new_type = llvm::ArrayType::get(char_type, stmt->tls_size);
+    {
+      llvm::IRBuilderBase::InsertPointGuard guard(*builder);
+      builder->SetInsertPoint(alloca);
+      auto *new_alloca = builder->CreateAlloca(new_type);
+      new_alloca->setAlignment(Align(8));
+      TI_ASSERT(alloca->hasOneUse());
+      auto *gep = llvm::cast<llvm::GetElementPtrInst>(alloca->user_back());
+      TI_ASSERT(gep->getPointerOperand() == alloca);
+      std::vector<Value *> indices(gep->idx_begin(), gep->idx_end());
+      builder->SetInsertPoint(gep);
+      auto *new_gep = builder->CreateInBoundsGEP(new_type, new_alloca, indices);
+      gep->replaceAllUsesWith(new_gep);
+      gep->eraseFromParent();
+      alloca->eraseFromParent();
+    }
     struct_for_func = patched_struct_for_func;
   }
   // Loop over nodes in the element list, in parallel

@@ -282,7 +282,7 @@ def test_invalid_slicing():
         val[0, :]
 
 
-@test_utils.test()
+@test_utils.test(exclude=[ti.cc], debug=True)
 def test_field_fill():
     x = ti.field(int, shape=(3, 3))
     x.fill(2)

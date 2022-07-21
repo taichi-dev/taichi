@@ -1,6 +1,6 @@
 import pathlib
-import numpy
 
+import numpy
 from taichi._kernels import (arr_vulkan_layout_to_arr_normal_layout,
                              arr_vulkan_layout_to_field_normal_layout)
 from taichi._lib import core as _ti_core

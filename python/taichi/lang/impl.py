@@ -19,6 +19,7 @@ from taichi.lang.mesh import (ConvType, MeshElementFieldProxy, MeshInstance,
                               MeshRelationAccessProxy,
                               MeshReorderedMatrixFieldProxy,
                               MeshReorderedScalarFieldProxy, element_type_name)
+from taichi.lang.simt.block import SharedArray
 from taichi.lang.snode import SNode
 from taichi.lang.struct import Struct, StructField, _IntermediateStruct
 from taichi.lang.util import (cook_dtype, get_traceback, is_taichi_class,
@@ -33,6 +34,12 @@ def expr_init_local_tensor(shape, element_type, elements):
 
 
 @taichi_scope
+def expr_init_shared_array(shape, element_type):
+    return get_runtime().prog.current_ast_builder().expr_alloca_shared_array(
+        shape, element_type)
+
+
+@taichi_scope
 def expr_init(rhs):
     if rhs is None:
         return Expr(get_runtime().prog.current_ast_builder().expr_alloca())
@@ -40,6 +47,8 @@ def expr_init(rhs):
         return type(rhs)(*rhs.to_list())
     if isinstance(rhs, Matrix):
         return Matrix(rhs.to_list())
+    if isinstance(rhs, SharedArray):
+        return rhs
     if isinstance(rhs, Struct):
         return Struct(rhs.to_dict(include_methods=True))
     if isinstance(rhs, list):

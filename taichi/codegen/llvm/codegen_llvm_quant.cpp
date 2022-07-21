@@ -15,42 +15,26 @@ inline void update_mask(uint64 &mask, uint32 num_bits, uint32 offset) {
 
 }  // namespace
 
-llvm::Value *CodeGenLLVM::atomic_add_quant_int(AtomicOpStmt *stmt,
-                                               QuantIntType *qit) {
-  auto [byte_ptr, bit_offset] = load_bit_ptr(llvm_val[stmt->dest]);
-#ifdef TI_LLVM_15
-  // FIXME: get ptr_ty from taichi instead of llvm.
-  auto physical_type = builder->getInt32Ty();
-  if (stmt->dest->is<taichi::lang::GetChStmt>()) {
-    physical_type = cast<llvm::IntegerType>(llvm_type(
-        (*((taichi::lang::GetChStmt *)stmt->dest)).input_snode->physical_type));
-  }
-#else
-  auto physical_type = byte_ptr->getType()->getPointerElementType();
-#endif
+llvm::Value *CodeGenLLVM::atomic_add_quant_int(llvm::Value *ptr,
+                                               llvm::Type *physical_type,
+                                               QuantIntType *qit,
+                                               llvm::Value *value,
+                                               bool value_is_signed) {
+  auto [byte_ptr, bit_offset] = load_bit_ptr(ptr);
   return create_call(
       fmt::format("atomic_add_partial_bits_b{}",
                   physical_type->getIntegerBitWidth()),
       {byte_ptr, bit_offset, tlctx->get_constant(qit->get_num_bits()),
-       builder->CreateIntCast(llvm_val[stmt->val], physical_type,
-                              is_signed(stmt->val->ret_type))});
+       builder->CreateIntCast(value, physical_type, value_is_signed)});
 }
 
-llvm::Value *CodeGenLLVM::atomic_add_quant_fixed(AtomicOpStmt *stmt,
-                                                 QuantFixedType *qfxt) {
-  auto [byte_ptr, bit_offset] = load_bit_ptr(llvm_val[stmt->dest]);
-#ifdef TI_LLVM_15
-  // FIXME: get ptr_ty from taichi instead of llvm.
-  auto physical_type = builder->getInt32Ty();
-  if (stmt->dest->is<taichi::lang::GetChStmt>()) {
-    physical_type = cast<llvm::IntegerType>(llvm_type(
-        (*((taichi::lang::GetChStmt *)stmt->dest)).input_snode->physical_type));
-  }
-#else
-  auto physical_type = byte_ptr->getType()->getPointerElementType();
-#endif
+llvm::Value *CodeGenLLVM::atomic_add_quant_fixed(llvm::Value *ptr,
+                                                 llvm::Type *physical_type,
+                                                 QuantFixedType *qfxt,
+                                                 llvm::Value *value) {
+  auto [byte_ptr, bit_offset] = load_bit_ptr(ptr);
   auto qit = qfxt->get_digits_type()->as<QuantIntType>();
-  auto val_store = to_quant_fixed(llvm_val[stmt->val], qfxt);
+  auto val_store = to_quant_fixed(value, qfxt);
   val_store = builder->CreateSExt(val_store, physical_type);
   return create_call(fmt::format("atomic_add_partial_bits_b{}",
                                  physical_type->getIntegerBitWidth()),
@@ -80,18 +64,12 @@ llvm::Value *CodeGenLLVM::to_quant_fixed(llvm::Value *real,
   }
 }
 
-void CodeGenLLVM::store_quant_int(llvm::Value *bit_ptr,
-                                  PrimitiveType *physical_ty,
+void CodeGenLLVM::store_quant_int(llvm::Value *ptr,
+                                  llvm::Type *physical_type,
                                   QuantIntType *qit,
                                   llvm::Value *value,
                                   bool atomic) {
-  auto [byte_ptr, bit_offset] = load_bit_ptr(bit_ptr);
-#ifdef TI_LLVM_15
-  // FIXME: get ptr_ty from taichi instead of llvm.
-  auto physical_type = llvm_type(physical_ty);
-#else
-  auto physical_type = byte_ptr->getType()->getPointerElementType();
-#endif
+  auto [byte_ptr, bit_offset] = load_bit_ptr(ptr);
   // TODO(type): CUDA only supports atomicCAS on 32- and 64-bit integers.
   // Try to support 8/16-bit physical types.
   create_call(fmt::format("{}set_partial_bits_b{}", atomic ? "atomic_" : "",
@@ -100,12 +78,12 @@ void CodeGenLLVM::store_quant_int(llvm::Value *bit_ptr,
                builder->CreateIntCast(value, physical_type, false)});
 }
 
-void CodeGenLLVM::store_quant_fixed(llvm::Value *bit_ptr,
-                                    PrimitiveType *physical_ty,
+void CodeGenLLVM::store_quant_fixed(llvm::Value *ptr,
+                                    llvm::Type *physical_type,
                                     QuantFixedType *qfxt,
                                     llvm::Value *value,
                                     bool atomic) {
-  store_quant_int(bit_ptr, physical_ty,
+  store_quant_int(ptr, physical_type,
                   qfxt->get_digits_type()->as<QuantIntType>(),
                   to_quant_fixed(value, qfxt), atomic);
 }

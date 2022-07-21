@@ -18,17 +18,20 @@ class Function;
  */
 class AllocaStmt : public Stmt {
  public:
-  AllocaStmt(DataType type) {
+  AllocaStmt(DataType type) : is_shared(false) {
     ret_type = TypeFactory::create_vector_or_scalar_type(1, type);
     TI_STMT_REG_FIELDS;
   }
 
-  AllocaStmt(int width, DataType type) {
+  AllocaStmt(int width, DataType type) : is_shared(false) {
     ret_type = TypeFactory::create_vector_or_scalar_type(width, type);
     TI_STMT_REG_FIELDS;
   }
 
-  AllocaStmt(const std::vector<int> &shape, DataType type) {
+  AllocaStmt(const std::vector<int> &shape,
+             DataType type,
+             bool is_shared = false)
+      : is_shared(is_shared) {
     ret_type = TypeFactory::create_tensor_type(shape, type);
     TI_STMT_REG_FIELDS;
   }
@@ -41,7 +44,8 @@ class AllocaStmt : public Stmt {
     return false;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type);
+  bool is_shared;
+  TI_STMT_DEF_FIELDS(ret_type, is_shared);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 

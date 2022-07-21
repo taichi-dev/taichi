@@ -21,6 +21,7 @@ namespace py = pybind11;
 #include "taichi/rhi/vulkan/vulkan_loader.h"
 #include "taichi/ui/common/field_info.h"
 #include "taichi/ui/common/gui_base.h"
+#include "taichi/program/ndarray.h"
 #include <memory>
 
 TI_UI_NAMESPACE_BEGIN
@@ -287,11 +288,20 @@ struct PyWindow {
     window = std::make_unique<vulkan::Window>(prog, config);
   }
 
+  py::tuple get_window_shape() {
+    auto [w, h] = window->get_window_shape();
+    return pybind11::make_tuple(w, h);
+  }
+
   void write_image(const std::string &filename) {
     window->write_image(filename);
   }
 
-  py::array_t<float> get_depth_buffer() {
+  void copy_depth_buffer_to_ndarray(Ndarray *depth_arr) {
+    window->copy_depth_buffer_to_ndarray(*depth_arr);
+  }
+
+  py::array_t<float> get_depth_buffer_as_numpy() {
     uint32_t w, h;
     auto &depth_buffer = window->get_depth_buffer(w, h);
 
@@ -397,8 +407,11 @@ void export_ggui(py::module &m) {
                     Arch, bool>())
       .def("get_canvas", &PyWindow::get_canvas)
       .def("show", &PyWindow::show)
+      .def("get_window_shape", &PyWindow::get_window_shape)
       .def("write_image", &PyWindow::write_image)
-      .def("get_depth_buffer", &PyWindow::get_depth_buffer)
+      .def("copy_depth_buffer_to_ndarray",
+           &PyWindow::copy_depth_buffer_to_ndarray)
+      .def("get_depth_buffer_as_numpy", &PyWindow::get_depth_buffer_as_numpy)
       .def("get_image_buffer", &PyWindow::get_image_buffer)
       .def("is_pressed", &PyWindow::is_pressed)
       .def("get_cursor_pos", &PyWindow::py_get_cursor_pos)

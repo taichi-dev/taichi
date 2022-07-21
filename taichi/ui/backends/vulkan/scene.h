@@ -10,6 +10,7 @@ class Scene final : public SceneBase {
   friend class Renderer;
   friend class Particles;
   friend class Mesh;
+  friend class SceneLines;
 
  private:
   struct SceneUniformBuffer {

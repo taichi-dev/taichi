@@ -1803,5 +1803,35 @@ class MeshPatchIndexStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+class MatrixInitStmt : public Stmt {
+ public:
+  std::vector<Stmt *> values;
+
+  MatrixInitStmt(const std::vector<Stmt *> &values) : values(values) {
+    TI_STMT_REG_FIELDS;
+  }
+
+  TI_STMT_DEF_FIELDS(ret_type);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
+class IndexStmt : public Stmt {
+ public:
+  Stmt *target;
+  std::vector<Stmt *> indices;
+
+  IndexStmt(Stmt *target, const std::vector<Stmt *> &indices)
+      : target(target), indices(indices) {
+    TI_STMT_REG_FIELDS;
+  }
+
+  bool has_global_side_effect() const override {
+    return false;
+  }
+
+  TI_STMT_DEF_FIELDS(ret_type);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
 }  // namespace lang
 }  // namespace taichi

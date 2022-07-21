@@ -87,7 +87,23 @@ class Scene:
             camera (:class:`~taichi.ui.Camera`): A camera instance.
         """
         self.scene.set_camera(camera.ptr)
-
+        
+    def lines(self,
+              vertices,
+              width,
+              indices=None,
+              color=(0.5, 0.5, 0.5),
+              per_vertex_color=None):
+        vbo = get_vbo_field(vertices)
+        copy_vertices_to_vbo(vbo, vertices)
+        has_per_vertex_color = per_vertex_color is not None
+        if has_per_vertex_color:
+            copy_colors_to_vbo(vbo, per_vertex_color)
+        vbo_info = get_field_info(vbo)
+        indices_info = get_field_info(indices)
+        self.scene.lines(vbo_info, indices_info, has_per_vertex_color, color,
+                          width)
+        
     def mesh(self,
              vertices,
              indices=None,
@@ -141,7 +157,9 @@ class Scene:
             normals = gen_normals(vertices, indices)
         if vertex_count is None:
             vertex_count = vertices.shape[0]
-        if index_count is None:
+        if indices is None:
+            index_count = vertex_count  # FIXME : Need to confirm
+        else:
             index_count = indices.shape[0]
         copy_normals_to_vbo(vbo, normals)
         vbo_info = get_field_info(vbo)

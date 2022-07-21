@@ -1,4 +1,5 @@
 import pathlib
+import numpy
 
 from taichi._kernels import (arr_vulkan_layout_to_arr_normal_layout,
                              arr_vulkan_layout_to_field_normal_layout)
@@ -8,7 +9,7 @@ from taichi.lang.impl import Field, default_cfg, get_runtime
 from taichi.ui.staging_buffer import get_depth_ndarray
 
 from taichi import f32
-from numpy import zeros
+
 
 from .canvas import Canvas
 from .constants import PRESS, RELEASE
@@ -167,7 +168,7 @@ class Window:
         """
         tmp_depth = get_depth_ndarray(self.window)
         self.window.copy_depth_buffer_to_ndarray(tmp_depth.arr)
-        depth_numpy_arr = zeros(self.get_window_shape())
+        depth_numpy_arr = numpy.zeros(self.get_window_shape())
         arr_vulkan_layout_to_arr_normal_layout(tmp_depth, depth_numpy_arr)
         return depth_numpy_arr
 

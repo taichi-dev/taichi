@@ -256,7 +256,7 @@ void CFGNode::reaching_definition_analysis(bool after_lower_access) {
 }
 
 bool CFGNode::store_to_load_forwarding(bool after_lower_access,
-                                       bool with_autodiff_after) {
+                                       bool autodiff_enabled) {
   bool modified = false;
   for (int i = begin_location; i < end_location; i++) {
     // Store-to-load forwarding
@@ -275,7 +275,7 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access,
         result = get_store_forwarding_data(alloca, i);
       }
     } else if (auto global_load = stmt->cast<GlobalLoadStmt>()) {
-      if (!after_lower_access && !with_autodiff_after) {
+      if (!after_lower_access && !autodiff_enabled) {
         result = get_store_forwarding_data(global_load->src, i);
       }
     }
@@ -298,32 +298,28 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access,
     // Identical store elimination
     if (auto local_store = stmt->cast<LocalStoreStmt>()) {
       result = get_store_forwarding_data(local_store->dest, i);
-      if (result) {
-        if (result->is<AllocaStmt>()) {
-          if (!with_autodiff_after) {
-            // special case of alloca (initialized to 0)
-            if (auto stored_data = local_store->val->cast<ConstStmt>()) {
-              bool all_zero = true;
-              for (auto &val : stored_data->val.data) {
-                if (!val.equal_value(0)) {
-                  all_zero = false;
-                  break;
-                }
-              }
-              if (all_zero) {
-                erase(i);  // This causes end_location--
-                i--;       // to cancel i++ in the for loop
-                modified = true;
-              }
+      if (result && result->is<AllocaStmt>() && !autodiff_enabled) {
+        // special case of alloca (initialized to 0)
+        if (auto stored_data = local_store->val->cast<ConstStmt>()) {
+          bool all_zero = true;
+          for (auto &val : stored_data->val.data) {
+            if (!val.equal_value(0)) {
+              all_zero = false;
+              break;
             }
           }
-        } else {
-          // not alloca
-          if (irpass::analysis::same_value(result, local_store->val)) {
+          if (all_zero) {
             erase(i);  // This causes end_location--
             i--;       // to cancel i++ in the for loop
             modified = true;
           }
+        }
+      } else {
+        // not alloca
+        if (irpass::analysis::same_value(result, local_store->val)) {
+          erase(i);  // This causes end_location--
+          i--;       // to cancel i++ in the for loop
+          modified = true;
         }
       }
     } else if (auto global_store = stmt->cast<GlobalStoreStmt>()) {
@@ -847,14 +843,14 @@ bool ControlFlowGraph::unreachable_code_elimination() {
 }
 
 bool ControlFlowGraph::store_to_load_forwarding(bool after_lower_access,
-                                                bool with_autodiff_after) {
+                                                bool autodiff_enabled) {
   TI_AUTO_PROF;
   reaching_definition_analysis(after_lower_access);
   const int num_nodes = size();
   bool modified = false;
   for (int i = 0; i < num_nodes; i++) {
     if (nodes[i]->store_to_load_forwarding(after_lower_access,
-                                           with_autodiff_after))
+                                           autodiff_enabled))
       modified = true;
   }
   return modified;

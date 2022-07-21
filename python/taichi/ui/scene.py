@@ -94,6 +94,19 @@ class Scene:
               indices=None,
               color=(0.5, 0.5, 0.5),
               per_vertex_color=None):
+        """Declare multi-lines inside the scene.
+        Args:
+            vertices: a taichi 3D Vector field, where each element indicate the
+                3D location of points of lines.
+            width: the line width (maybe different on different systems).
+            indices: a taichi int field of shape (2 * #points), which indicate
+                the points indices of the lines. If this is None, then it is
+                assumed that the points are already arranged in lines order.
+            color: a global color of the mesh as 3 floats representing RGB values.
+                If `per_vertex_color` is provided, this is ignored.
+            per_vertex_color (Tuple[float]): a taichi 3D vector field, where each
+                element indicate the RGB color of the line.
+        """
         vbo = get_vbo_field(vertices)
         copy_vertices_to_vbo(vbo, vertices)
         has_per_vertex_color = per_vertex_color is not None

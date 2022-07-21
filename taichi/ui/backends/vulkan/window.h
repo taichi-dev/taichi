@@ -48,8 +48,6 @@ class Window final : public WindowBase {
   void copy_depth_buffer_to_ndarray(
       const taichi::lang::Ndarray &depth_arr) override;
 
-  std::vector<float> &get_depth_buffer(uint32_t &w, uint32_t &h) override;
-
   std::vector<uint32_t> &get_image_buffer(uint32_t &w, uint32_t &h) override;
 
   ~Window();

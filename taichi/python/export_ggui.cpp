@@ -319,16 +319,6 @@ struct PyWindow {
     window->copy_depth_buffer_to_ndarray(*depth_arr);
   }
 
-  py::array_t<float> get_depth_buffer_as_numpy() {
-    uint32_t w, h;
-    auto &depth_buffer = window->get_depth_buffer(w, h);
-
-    return py::array_t<float>(
-        py::detail::any_container<ssize_t>({w, h}),
-        py::detail::any_container<ssize_t>({sizeof(float) * h, sizeof(float)}),
-        depth_buffer.data(), nullptr);
-  }
-
   py::array_t<float> get_image_buffer() {
     uint32_t w, h;
     auto &img_buffer = window->get_image_buffer(w, h);
@@ -429,7 +419,6 @@ void export_ggui(py::module &m) {
       .def("write_image", &PyWindow::write_image)
       .def("copy_depth_buffer_to_ndarray",
            &PyWindow::copy_depth_buffer_to_ndarray)
-      .def("get_depth_buffer_as_numpy", &PyWindow::get_depth_buffer_as_numpy)
       .def("get_image_buffer", &PyWindow::get_image_buffer)
       .def("is_pressed", &PyWindow::is_pressed)
       .def("get_cursor_pos", &PyWindow::py_get_cursor_pos)

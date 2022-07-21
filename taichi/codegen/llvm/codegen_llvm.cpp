@@ -128,7 +128,29 @@ void CodeGenLLVM::visit(AllocaStmt *stmt) {
     auto type = tlctx->get_data_type(tensor_type->get_element_type());
     auto array_size = tlctx->get_constant(tensor_type->get_num_elements());
     // Return type is [array_size x type]*.
-    llvm_val[stmt] = create_entry_block_alloca(type, 0, array_size);
+    if (stmt->is_shared) {
+      size_t data_element_size = tlctx->get_type_size(
+          tlctx->get_data_type(tensor_type->get_element_type()));
+      auto type = llvm::ArrayType::get(
+          llvm::Type::getInt8Ty(*llvm_context),
+          data_element_size * tensor_type->get_num_elements());
+      auto base = new llvm::GlobalVariable(
+          *module, type, false, llvm::GlobalValue::ExternalLinkage, nullptr,
+          fmt::format("shared_array_{}", stmt->id), nullptr,
+          llvm::GlobalVariable::NotThreadLocal, 3 /*addrspace=shared*/);
+      base->setAlignment(llvm::MaybeAlign(8));
+
+      auto ptr = builder->CreateGEP(
+#ifdef TI_LLVM_15
+          base->getValueType(),
+#endif
+          base, {tlctx->get_constant(0), tlctx->get_constant(0)});
+      auto ptr_type = llvm::PointerType::get(
+          tlctx->get_data_type(tensor_type->get_element_type()), 0);
+      llvm_val[stmt] = builder->CreatePointerCast(ptr, ptr_type);
+    } else {
+      llvm_val[stmt] = create_entry_block_alloca(type, 0, array_size);
+    }
   } else {
     TI_ASSERT(stmt->width() == 1);
     llvm_val[stmt] =
@@ -1235,9 +1257,15 @@ llvm::Value *CodeGenLLVM::quant_type_atomic(AtomicOpStmt *stmt) {
 
   auto dst_type = stmt->dest->ret_type->as<PointerType>()->get_pointee_type();
   if (auto qit = dst_type->cast<QuantIntType>()) {
-    return atomic_add_quant_int(stmt, qit);
+    return atomic_add_quant_int(
+        llvm_val[stmt->dest],
+        llvm_type(stmt->dest->as<GetChStmt>()->input_snode->physical_type), qit,
+        llvm_val[stmt->val], is_signed(stmt->val->ret_type));
   } else if (auto qfxt = dst_type->cast<QuantFixedType>()) {
-    return atomic_add_quant_fixed(stmt, qfxt);
+    return atomic_add_quant_fixed(
+        llvm_val[stmt->dest],
+        llvm_type(stmt->dest->as<GetChStmt>()->input_snode->physical_type),
+        qfxt, llvm_val[stmt->val]);
   } else {
     return nullptr;
   }
@@ -1393,20 +1421,18 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
   auto ptr_type = stmt->dest->ret_type->as<PointerType>();
   if (ptr_type->is_bit_pointer()) {
     auto pointee_type = ptr_type->get_pointee_type();
-    if (stmt->dest->as<GetChStmt>()->input_snode->type ==
-        SNodeType::bit_struct) {
+    auto snode = stmt->dest->as<GetChStmt>()->input_snode;
+    if (snode->type == SNodeType::bit_struct) {
       TI_ERROR(
           "Bit struct stores with type {} should have been handled by "
           "BitStructStoreStmt.",
           pointee_type->to_string());
     }
     if (auto qit = pointee_type->cast<QuantIntType>()) {
-      store_quant_int(llvm_val[stmt->dest],
-                      stmt->dest->as<GetChStmt>()->input_snode->physical_type,
+      store_quant_int(llvm_val[stmt->dest], llvm_type(snode->physical_type),
                       qit, llvm_val[stmt->val], true);
     } else if (auto qfxt = pointee_type->cast<QuantFixedType>()) {
-      store_quant_fixed(llvm_val[stmt->dest],
-                        stmt->dest->as<GetChStmt>()->input_snode->physical_type,
+      store_quant_fixed(llvm_val[stmt->dest], llvm_type(snode->physical_type),
                         qfxt, llvm_val[stmt->val], true);
     } else {
       TI_NOT_IMPLEMENTED;

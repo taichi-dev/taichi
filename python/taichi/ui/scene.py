@@ -157,10 +157,11 @@ class Scene:
             normals = gen_normals(vertices, indices)
         if vertex_count is None:
             vertex_count = vertices.shape[0]
-        if indices is None:
-            index_count = vertex_count  # FIXME : Need to confirm
-        else:
-            index_count = indices.shape[0]
+        if index_count is None:
+            if indices is None:
+                index_count = vertex_count  # FIXME : Need to confirm
+            else:
+                index_count = indices.shape[0]
         copy_normals_to_vbo(vbo, normals)
         vbo_info = get_field_info(vbo)
         indices_info = get_field_info(indices)

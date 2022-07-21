@@ -128,9 +128,6 @@ def get_cmake_args():
         f'-DTI_VERSION_MINOR={TI_VERSION_MINOR}',
         f'-DTI_VERSION_PATCH={TI_VERSION_PATCH}',
     ]
-    emscriptened = os.getenv('TI_EMSCRIPTENED', '0') in ('1', 'ON')
-    if emscriptened:
-        cmake_args += ['-DTI_EMSCRIPTENED=ON']
 
     if sys.platform != 'win32':
         os.environ['SKBUILD_BUILD_OPTIONS'] = f'-j{num_threads}'

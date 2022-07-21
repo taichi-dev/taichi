@@ -290,4 +290,6 @@ def test():
 
 
 if __name__ == '__main__':
+    os.environ['TI_OFFLINE_CACHE'] = '1'
+    os.environ['TI_OFFLINE_CACHE_FILE_PATH'] = 'RUN_TESTS_JOC_PATH'
     test()

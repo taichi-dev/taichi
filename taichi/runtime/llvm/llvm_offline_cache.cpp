@@ -146,7 +146,12 @@ std::unique_ptr<llvm::Module> LlvmOfflineCacheFileReader::load_module(
   } else if (format_ & Format::LL) {
     const std::string filename = path_prefix + ".ll";
     llvm::SMDiagnostic err;
-    return llvm::parseAssemblyFile(filename, err, llvm_ctx);
+    auto ret = llvm::parseAssemblyFile(filename, err, llvm_ctx);
+    if (!ret) {
+      err.print(filename.c_str(), llvm::errs());
+      TI_ERROR("Fail to parse {}: {}", filename, err.getMessage().str());
+    }
+    return ret;
   }
   TI_ERROR("Unknown LLVM format={}", format_);
   return nullptr;

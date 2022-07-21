@@ -185,26 +185,25 @@ def ext_arr_to_matrix(arr: ndarray_type.ndarray(), mat: template(),
 #  h]). And the height-order of vulkan layout is flip up-down.(So take
 # [size = (h - 1 - j) * w + i] to get the index)
 @kernel
-def arr_vulkan_layout_to_arr_normal_layout(
-        vk_image: ndarray_type.ndarray(),
-        normal_image: ndarray_type.ndarray()):
-    static_assert(len(normal_image.shape) == 2)
-    w = normal_image.shape[0]
-    h = normal_image.shape[1]
+def arr_vulkan_layout_to_arr_normal_layout(vk_arr: ndarray_type.ndarray(),
+                                           normal_arr: ndarray_type.ndarray()):
+    static_assert(len(normal_arr.shape) == 2)
+    w = normal_arr.shape[0]
+    h = normal_arr.shape[1]
     for i, j in ndrange(w, h):
-        normal_image[i, j] = vk_image[(h - 1 - j) * w + i]
+        normal_arr[i, j] = vk_arr[(h - 1 - j) * w + i]
 
 
 # extract ndarray of raw vulkan memory layout into a taichi-field data
 # structure with normal memory layout.
 @kernel
-def arr_vulkan_layout_to_field_normal_layout(vk_image: ndarray_type.ndarray(),
-                                             normal_image: template()):
-    static_assert(len(normal_image.shape) == 2)
-    w = normal_image.shape[0]
-    h = normal_image.shape[1]
+def arr_vulkan_layout_to_field_normal_layout(vk_arr: ndarray_type.ndarray(),
+                                             normal_field: template()):
+    static_assert(len(normal_field.shape) == 2)
+    w = normal_field.shape[0]
+    h = normal_field.shape[1]
     for i, j in ndrange(w, h):
-        normal_image[i, j] = vk_image[(h - 1 - j) * w + i]
+        normal_field[i, j] = vk_arr[(h - 1 - j) * w + i]
 
 
 @kernel

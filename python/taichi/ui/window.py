@@ -8,6 +8,7 @@ from taichi.lang.impl import Field, default_cfg, get_runtime
 from taichi.ui.staging_buffer import get_depth_ndarray
 
 from taichi import f32
+from numpy import zeros
 
 from .canvas import Canvas
 from .constants import PRESS, RELEASE
@@ -148,7 +149,7 @@ class Window:
         if not (len(depth.shape) == 2 and depth.dtype == f32):
             print("Only Support 2d-shape and ti.f32 data format.")
             exit()
-        if not (isinstance(depth, Ndarray) or isinstance(depth, Field)):
+        if not isinstance(depth, (Ndarray, Field)):
             print("Only Support Ndarray and Field data type.")
             exit()
         tmp_depth = get_depth_ndarray(self.window)
@@ -164,7 +165,11 @@ class Window:
         Returns:
             2d numpy array: [width, height] with (0.0~1.0) float-format.
         """
-        return self.window.get_depth_buffer_as_numpy()
+        tmp_depth = get_depth_ndarray(self.window)
+        self.window.copy_depth_buffer_to_ndarray(tmp_depth.arr)
+        depth_numpy_arr = zeros(self.get_window_shape())
+        arr_vulkan_layout_to_arr_normal_layout(tmp_depth, depth_numpy_arr)
+        return depth_numpy_arr
 
     def get_image_buffer(self):
         """Get the window content to numpy array.

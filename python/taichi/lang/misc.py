@@ -754,6 +754,7 @@ def get_host_arch_list():
 def get_compute_stream_device_time_elapsed_us() -> float:
     return impl.get_runtime().prog.get_compute_stream_device_time_elapsed_us()
 
+
 __all__ = [
     'i', 'ij', 'ijk', 'ijkl', 'ijl', 'ik', 'ikl', 'il', 'j', 'jk', 'jkl', 'jl',
     'k', 'kl', 'l', 'x86_64', 'x64', 'dx11', 'wasm', 'arm64', 'cc', 'cpu',

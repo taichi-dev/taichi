@@ -617,7 +617,7 @@ def solve(A, b, dt=None):
 
 
 @func
-def field_fill_taichi_scope(F: template(), val):
+def field_fill_taichi_scope(F: template(), val: template()):
     for I in grouped(F):
         F[I] = val
 

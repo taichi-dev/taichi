@@ -28,12 +28,22 @@ struct ParticlesInfo {
   int object_id{0};
 };
 
+struct SceneLinesInfo {
+  RenderableInfo renderable_info;
+  glm::vec3 color;
+  float width{0};
+  int object_id{0};
+};
+
 class SceneBase {
  public:
   void set_camera(const Camera &camera) {
     camera_ = camera;
   }
-
+  void lines(const SceneLinesInfo &info) {
+    scene_lines_infos_.push_back(info);
+    scene_lines_infos_.back().object_id = next_object_id_++;
+  }
   void mesh(const MeshInfo &info) {
     mesh_infos_.push_back(info);
     mesh_infos_.back().object_id = next_object_id_++;
@@ -54,6 +64,7 @@ class SceneBase {
   Camera camera_;
   glm::vec3 ambient_light_color_ = glm::vec3(0.1, 0.1, 0.1);
   std::vector<PointLight> point_lights_;
+  std::vector<SceneLinesInfo> scene_lines_infos_;
   std::vector<MeshInfo> mesh_infos_;
   std::vector<ParticlesInfo> particles_infos_;
   int next_object_id_ = 0;

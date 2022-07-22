@@ -136,6 +136,24 @@ struct PyScene {
     scene->set_camera(camera.camera);
   }
 
+  void lines(FieldInfo vbo,
+             FieldInfo indices,
+             bool has_per_vertex_color,
+             py::tuple color_,
+             float width) {
+    RenderableInfo renderable_info;
+    renderable_info.vbo = vbo;
+    renderable_info.indices = indices;
+    renderable_info.has_per_vertex_color = has_per_vertex_color;
+
+    SceneLinesInfo info;
+    info.renderable_info = renderable_info;
+    info.color = tuple_to_vec3(color_);
+    info.width = width;
+
+    return scene->lines(info);
+  }
+
   void mesh(FieldInfo vbo,
             bool has_per_vertex_color,
             FieldInfo indices,
@@ -433,6 +451,7 @@ void export_ggui(py::module &m) {
   py::class_<PyScene>(m, "PyScene")
       .def(py::init<>())
       .def("set_camera", &PyScene::set_camera)
+      .def("lines", &PyScene::lines)
       .def("mesh", &PyScene::mesh)
       .def("particles", &PyScene::particles)
       .def("point_light", &PyScene::point_light)

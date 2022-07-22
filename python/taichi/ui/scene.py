@@ -120,9 +120,9 @@ class Scene:
                 index of the first vertex to draw.
             vertex_count: int type(ohterwise float type will be floored to int),
                 only avaliable when `indices` is not provided, which is the number
-                of vertices to draw. There are 2 cases that we will change your 
-                vertex_count. [1] If the `vertex_count` is a odd number, then we 
-                will change it to `vertex_count` - 1. [2] If `vertex_offset` plus 
+                of vertices to draw. There are 2 cases that we will change your
+                vertex_count. [1] If the `vertex_count` is a odd number, then we
+                will change it to `vertex_count` - 1. [2] If `vertex_offset` plus
                 `vertex_count` greater than vertices.shape[0], then we will reduce
                 `vertex_count` to no more than vertices.shape[0].
             index_offset: int type(ohterwise float type will be floored to int),
@@ -140,7 +140,8 @@ class Scene:
             else:
                 index_count = indices.shape[0]
         if vertex_count % 2:
-            print("Warning! Odd drawing count will be cut to neast even number")
+            print(
+                "Warning! Odd drawing count will be cut to neast even number")
             vertex_count -= 1
         if vertex_count + vertex_offset > vertices.shape[0]:
             print("Warning! Drawing count greater than shape will be cut")
@@ -155,7 +156,7 @@ class Scene:
         indices_info = get_field_info(indices)
         self.scene.lines(vbo_info, indices_info, has_per_vertex_color, color,
                          width, index_count, index_offset, vertex_count,
-                        vertex_offset)
+                         vertex_offset)
 
     def mesh(self,
              vertices,

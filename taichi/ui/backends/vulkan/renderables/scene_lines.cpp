@@ -69,7 +69,9 @@ void SceneLines::record_this_frame_commands(CommandList *command_list) {
   command_list->set_line_width(curr_width_);
 
   if (indexed_) {
-    command_list->draw_indexed(config_.draw_index_count, config_.draw_first_vertex, config_.draw_first_index);
+    command_list->draw_indexed(config_.draw_index_count,
+                               config_.draw_first_vertex,
+                               config_.draw_first_index);
   } else {
     command_list->draw(config_.draw_vertex_count, config_.draw_first_vertex);
   }

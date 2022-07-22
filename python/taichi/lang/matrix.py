@@ -107,11 +107,10 @@ def make_matrix(arr, dt=None, suppress_warning=False, is_ref=False):
         return impl.expr_init_matrix([0], dt, [])
     if not isinstance(arr[0], Iterable):
         return impl.expr_init_matrix([len(arr)], dt,
-                                            [cast(elt).ptr for elt in arr])
-    else:
-        return impl.expr_init_matrix(
-            [len(arr), len(arr[0])], dt,
-            [cast(elt).ptr for row in arr for elt in row])
+                                     [cast(elt).ptr for elt in arr])
+    return impl.expr_init_matrix([len(arr), len(arr[0])], dt,
+                                 [cast(elt).ptr for row in arr for elt in row])
+
 
 class _MatrixBaseImpl:
     def __init__(self, m, n, entries):

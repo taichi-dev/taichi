@@ -438,14 +438,17 @@ void MatrixExpression::type_check(CompileConfig *config) {
 
 void MatrixExpression::flatten(FlattenContext *ctx) {
   // TODO: implement flatten
-  std::vector<Stmt *> values;
+  TI_ASSERT(this->dt->is<TensorType>());
+  std::vector<LocalAddress> values;
   for (auto &elt : elements) {
     flatten_rvalue(elt, ctx);
-    values.push_back(elt->stmt);
+    auto elt_alloca = ctx->push_back<AllocaStmt>(elt->stmt->ret_type);
+    ctx->push_back<LocalStoreStmt>(elt_alloca, elt->stmt);
+    values.push_back(LocalAddress(elt_alloca, 0));
   }
-  ctx->push_back(std::make_unique<MatrixInitStmt>(values));
-  stmt = ctx->back_stmt();
-  stmt->ret_type = this->ret_type;
+  stmt = ctx->push_back<LocalLoadStmt>(values,
+                                       this->dt->as<TensorType>()->get_shape());
+  stmt->ret_type = this->dt;
 }
 
 bool IndexExpression::is_field() const {
@@ -982,13 +985,8 @@ Expr ASTBuilder::expr_alloca() {
 Expr ASTBuilder::expr_alloca_local_matrix(const std::vector<int> &shape,
                                           const std::optional<DataType> &dt,
                                           const std::vector<Expr> &elements) {
-  // auto var = Expr(std::make_shared<IdExpression>(get_next_id()));
   auto dtype = dt.value_or(PrimitiveType::unknown);
-  // this->insert(std::make_unique<FrontendAllocaStmt>(
-  //     std::static_pointer_cast<IdExpression>(var.expr)->id, shape, dtype));
-  auto rhs = Expr(std::make_shared<MatrixExpression>(elements, shape, dtype));
-  // this->insert(std::make_unique<FrontendAssignStmt>(var, rhs));
-  return rhs;
+  return Expr(std::make_shared<MatrixExpression>(elements, shape, dtype));
 }
 
 Expr ASTBuilder::expr_indexed_matrix(const Expr &matrix,

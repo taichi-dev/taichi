@@ -175,6 +175,8 @@ class TensorType : public Type {
     return shape_;
   }
 
+  int vector_width() const;
+
   Type *get_compute_type() override {
     return this;
   }

@@ -37,7 +37,7 @@ std::string block_dim_info(int block_dim) {
 std::string to_string(const LaneAttribute<LocalAddress> &ptr) {
   std::string ret = " [";
   for (int i = 0; i < (int)ptr.size(); i++) {
-    ret += fmt::format("{}[{}]", ptr[i].var->name(), ptr[i].offset);
+    ret += fmt::format("{}", ptr[i].var->name());
     if (i + 1 < (int)ptr.size())
       ret += ", ";
   }
@@ -790,6 +790,19 @@ class IRPrinter : public IRVisitor {
 
   void visit(ReferenceStmt *stmt) override {
     print("{}{} = ref({})", stmt->type_hint(), stmt->name(), stmt->var->name());
+  }
+
+  void visit(MatrixInitStmt *stmt) override {
+    std::string result = "";
+    result += fmt::format("{}{} = [", stmt->type_hint(), stmt->name());
+    for (int i = 0; i < stmt->values.size(); ++i) {
+      result += stmt->values[i]->name();
+      if (i != stmt->values.size() - 1) {
+        result += ", ";
+      }
+    }
+    result += "]";
+    print(result);
   }
 
  private:

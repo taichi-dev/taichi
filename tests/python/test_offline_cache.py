@@ -160,6 +160,7 @@ def _test_closing_offline_cache_for_a_kernel(curr_arch, kernel, args, result):
 
     ti.init(arch=curr_arch,
             enable_fallback=False,
+            offline_cache=False,
             offline_cache_file_path=tmp_offline_cache_file_path())
     res1 = kernel(*args)
     assert len(listdir(tmp_offline_cache_file_path())
@@ -167,6 +168,7 @@ def _test_closing_offline_cache_for_a_kernel(curr_arch, kernel, args, result):
 
     ti.init(arch=curr_arch,
             enable_fallback=False,
+            offline_cache=False,
             offline_cache_file_path=tmp_offline_cache_file_path())
     assert len(listdir(tmp_offline_cache_file_path())
                ) - count_of_cache_file == get_expected_num_cache_files()

@@ -6,13 +6,6 @@ layout(location = 0) out vec4 out_color;
 
 layout(location = 1) in vec3 selected_color;
 
-layout(binding = 0) uniform UBO {
-  SceneUBO scene;
-  vec3 color;
-  int use_per_vertex_color;
-}
-ubo;
-
 void main() {
   out_color = vec4(selected_color, 1);
 }

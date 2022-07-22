@@ -1497,7 +1497,6 @@ class MatrixField(Field):
                 return
         self.dynamic_index_stride = stride
 
-    @python_scope
     def fill(self, val):
         """Fills this matrix field with specified values.
 
@@ -1523,8 +1522,14 @@ class MatrixField(Field):
             val = tuple(val_tuple)
         assert len(val) == self.n
         assert len(val[0]) == self.m
-        from taichi._kernels import fill_matrix  # pylint: disable=C0415
-        fill_matrix(self, val)
+
+        if in_python_scope():
+            from taichi._kernels import fill_matrix  # pylint: disable=C0415
+            fill_matrix(self, val)
+        else:
+            from taichi._funcs import \
+                field_fill_taichi_scope  # pylint: disable=C0415
+            field_fill_taichi_scope(self, val)
 
     @python_scope
     def to_numpy(self, keep_dims=False, dtype=None):

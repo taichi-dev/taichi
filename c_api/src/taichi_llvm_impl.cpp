@@ -119,7 +119,10 @@ void LlvmRuntime::buffer_copy(const taichi::lang::DevicePtr &dst,
 }
 
 void LlvmRuntime::submit() {
-  TI_NOT_IMPLEMENTED;
+  // Currently implementations in LLVM backends don't support asynchronous
+  // submit so the submit semantic is already fulfilled at this point. Return
+  // right away.
+  return;
 }
 
 void LlvmRuntime::wait() {

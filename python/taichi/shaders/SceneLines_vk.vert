@@ -15,11 +15,6 @@ struct SceneUBO {
   int point_light_count;
 };
 
-struct PointLight {
-  vec3 pos;
-  vec3 color;
-};
-
 layout(binding = 0) uniform UBO {
   SceneUBO scene;
   vec3 color;

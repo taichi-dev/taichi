@@ -114,7 +114,7 @@ class Scene:
                 If `per_vertex_color` is provided, this is ignored.
             per_vertex_color (Tuple[float]): a taichi 3D vector field, where each
                 element indicate the RGB color of the line.
-            vertex_offset: int type(ohterwise float type will be floored to int),
+            vertex_offset: int type(otherwise float type will be floored to int),
                 if 'indices' is provided, this means the value added to the vertex
                 index before indexing into the vertex buffer, else this means the
                 index of the first vertex to draw.

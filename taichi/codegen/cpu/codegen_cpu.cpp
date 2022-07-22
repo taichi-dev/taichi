@@ -15,12 +15,12 @@ TLANG_NAMESPACE_BEGIN
 
 namespace {
 
-class CodeGenLLVMCPU : public CodeGenLLVM {
+class ModuleCodeGenCPU : public ModuleCodeGenLLVM {
  public:
   using IRVisitor::visit;
 
-  CodeGenLLVMCPU(Kernel *kernel, IRNode *ir)
-      : CodeGenLLVM(kernel, ir, nullptr) {
+  ModuleCodeGenCPU(Kernel *kernel, IRNode *ir)
+      : ModuleCodeGenLLVM(kernel, ir, nullptr) {
     TI_AUTO_PROF
   }
 
@@ -212,9 +212,9 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
 
   void visit(ExternalFuncCallStmt *stmt) override {
     if (stmt->type == ExternalFuncCallStmt::BITCODE) {
-      CodeGenLLVM::visit_call_bitcode(stmt);
+      ModuleCodeGenLLVM::visit_call_bitcode(stmt);
     } else if (stmt->type == ExternalFuncCallStmt::SHARED_OBJECT) {
-      CodeGenLLVM::visit_call_shared_object(stmt);
+      ModuleCodeGenLLVM::visit_call_shared_object(stmt);
     } else {
       TI_NOT_IMPLEMENTED
     }
@@ -225,9 +225,9 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
 
 #ifdef TI_WITH_LLVM
 // static
-std::unique_ptr<CodeGenLLVM> CodeGenCPU::make_codegen_llvm(Kernel *kernel,
+std::unique_ptr<ModuleCodeGenLLVM> KernelCodeGenCPU::make_codegen_llvm(Kernel *kernel,
                                                            IRNode *ir) {
-  return std::make_unique<CodeGenLLVMCPU>(kernel, ir);
+  return std::make_unique<ModuleCodeGenCPU>(kernel, ir);
 }
 
 FunctionType CPUModuleToFunctionConverter::convert(
@@ -274,14 +274,14 @@ FunctionType CPUModuleToFunctionConverter::convert(
   };
 }
 
-LLVMCompiledData CodeGenCPU::modulegen(std::unique_ptr<llvm::Module> &&module,
+LLVMCompiledData KernelCodeGenCPU::modulegen(std::unique_ptr<llvm::Module> &&module,
                                        OffloadedStmt *stmt) {
-  CodeGenLLVMCPU gen(kernel, stmt);
+  ModuleCodeGenCPU gen(kernel, stmt);
   return gen.run_compilation();
 }
 #endif  // TI_WITH_LLVM
 
-FunctionType CodeGenCPU::codegen() {
+FunctionType KernelCodeGenCPU::codegen() {
   TI_AUTO_PROF;
   auto *llvm_prog = get_llvm_program(prog);
   auto *tlctx = llvm_prog->get_llvm_context(kernel->arch);

@@ -314,6 +314,11 @@ void JITSessionCPU::global_optimize_module_cpu(llvm::Module *module) {
     function_pass_manager.doFinalization();
   }
 
+  module_pass_manager.add(llvm::createLoopStrengthReducePass());
+  module_pass_manager.add(llvm::createIndVarSimplifyPass());
+  module_pass_manager.add(llvm::createSeparateConstOffsetFromGEPPass(false));
+  module_pass_manager.add(llvm::createEarlyCSEPass(true));
+
   {
     TI_PROFILER("llvm_module_pass");
     module_pass_manager.run(*module);

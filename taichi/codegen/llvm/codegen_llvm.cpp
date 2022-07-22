@@ -776,12 +776,16 @@ void CodeGenLLVM::visit(PrintStmt *stmt) {
     if (std::holds_alternative<Stmt *>(content)) {
       auto arg_stmt = std::get<Stmt *>(content);
       auto value = llvm_val[arg_stmt];
-      if (arg_stmt->ret_type->is_primitive(PrimitiveTypeID::f32) ||
-          arg_stmt->ret_type->is_primitive(PrimitiveTypeID::f16))
-        value = builder->CreateFPExt(value,
-                                     tlctx->get_data_type(PrimitiveType::f64));
-      args.push_back(value);
-      formats += data_type_format(arg_stmt->ret_type);
+      if (arg_stmt->ret_type->is<TensorType>()) {
+        formats += data_type_format(arg_stmt->ret_type);
+      } else {
+        if (arg_stmt->ret_type->is_primitive(PrimitiveTypeID::f32) ||
+            arg_stmt->ret_type->is_primitive(PrimitiveTypeID::f16))
+          value = builder->CreateFPExt(value,
+                                      tlctx->get_data_type(PrimitiveType::f64));
+        args.push_back(value);
+        formats += data_type_format(arg_stmt->ret_type);
+      }
     } else {
       auto arg_str = std::get<std::string>(content);
       auto value = builder->CreateGlobalStringPtr(arg_str, "content_string");

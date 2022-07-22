@@ -99,10 +99,12 @@ class Scene:
               index_offset: int = 0,
               index_count: int = None):
         """Declare multi-lines inside the scene.
+        
         Note that under current situation, for example, there you have 4 vertices,
         vertices.shape[0] is 4. So there will be 2 lines, first line's two points
         are vertices[0] and vertices[1], and the second line's two points are
         vertices[2] and vertices[3].
+        
         Args:
             vertices: a taichi 3D Vector field, where each element indicate the
                 3D location of points of lines.
@@ -170,9 +172,11 @@ class Scene:
              index_offset: int = 0,
              index_count: int = None):
         """Declare a mesh inside the scene.
+        
         if you indicate the index_offset and index_count, the normals will also
         be sliced by the args, and the shading resultes will not be affected.
         (It is equal to make a part of the mesh visible)
+        
         Args:
             vertices: a taichi 3D Vector field, where each element indicate the
                 3D location of a vertex.

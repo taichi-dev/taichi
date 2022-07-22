@@ -93,8 +93,16 @@ class Scene:
               width,
               indices=None,
               color=(0.5, 0.5, 0.5),
-              per_vertex_color=None):
+              per_vertex_color=None,
+              vertex_offset: int = 0,
+              vertex_count: int = None,
+              index_offset: int = 0,
+              index_count: int = None):
         """Declare multi-lines inside the scene.
+        Note that under current situation, for example, there you have 4 vertices,
+        vertices.shape[0] is 4. So there will be 2 lines, first line's two points
+        are vertices[0] and vertices[1], and the second line's two points are
+        vertices[2] and vertices[3].
         Args:
             vertices: a taichi 3D Vector field, where each element indicate the
                 3D location of points of lines.
@@ -106,7 +114,38 @@ class Scene:
                 If `per_vertex_color` is provided, this is ignored.
             per_vertex_color (Tuple[float]): a taichi 3D vector field, where each
                 element indicate the RGB color of the line.
+            vertex_offset: int type(ohterwise float type will be floored to int),
+                if 'indices' is provided, this means the value added to the vertex
+                index before indexing into the vertex buffer, else this means the
+                index of the first vertex to draw.
+            vertex_count: int type(ohterwise float type will be floored to int),
+                only avaliable when `indices` is not provided, which is the number
+                of vertices to draw. There are 2 cases that we will change your 
+                vertex_count. [1] If the `vertex_count` is a odd number, then we 
+                will change it to `vertex_count` - 1. [2] If `vertex_offset` plus 
+                `vertex_count` greater than vertices.shape[0], then we will reduce
+                `vertex_count` to no more than vertices.shape[0].
+            index_offset: int type(ohterwise float type will be floored to int),
+                only avaliable when `indices` is provided, which is the base index
+                within the index buffer.
+            index_count: int type(ohterwise float type will be floored to int),
+                only avaliable when `indices` is provided, which is the the number
+                of vertices to draw.
         """
+        if vertex_count is None:
+            vertex_count = vertices.shape[0]
+        if index_count is None:
+            if indices is None:
+                index_count = vertex_count
+            else:
+                index_count = indices.shape[0]
+        if vertex_count % 2:
+            print("Warning! Odd drawing count will be cut to neast even number")
+            vertex_count -= 1
+        if vertex_count + vertex_offset > vertices.shape[0]:
+            print("Warning! Drawing count greater than shape will be cut")
+            vertex_count = vertices.shape[0] - vertex_offset
+            vertex_count -= vertex_count % 2
         vbo = get_vbo_field(vertices)
         copy_vertices_to_vbo(vbo, vertices)
         has_per_vertex_color = per_vertex_color is not None
@@ -115,7 +154,8 @@ class Scene:
         vbo_info = get_field_info(vbo)
         indices_info = get_field_info(indices)
         self.scene.lines(vbo_info, indices_info, has_per_vertex_color, color,
-                         width)
+                         width, index_count, index_offset, vertex_count,
+                        vertex_offset)
 
     def mesh(self,
              vertices,

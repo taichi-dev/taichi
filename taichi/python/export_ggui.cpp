@@ -140,11 +140,20 @@ struct PyScene {
              FieldInfo indices,
              bool has_per_vertex_color,
              py::tuple color_,
-             float width) {
+             float width,
+             float draw_index_count,
+             float draw_first_index,
+             float draw_vertex_count,
+             float draw_first_vertex) {
     RenderableInfo renderable_info;
     renderable_info.vbo = vbo;
     renderable_info.indices = indices;
     renderable_info.has_per_vertex_color = has_per_vertex_color;
+    renderable_info.has_user_customized_draw = true;
+    renderable_info.draw_index_count = (int)draw_index_count;
+    renderable_info.draw_first_index = (int)draw_first_index;
+    renderable_info.draw_vertex_count = (int)draw_vertex_count;
+    renderable_info.draw_first_vertex = (int)draw_first_vertex;
 
     SceneLinesInfo info;
     info.renderable_info = renderable_info;

@@ -22,6 +22,13 @@ class Function : public Callable {
   void set_function_body(std::unique_ptr<IRNode> func_body);
 
   [[nodiscard]] std::string get_name() const override;
+
+  std::optional<std::string> &try_get_ast_serialization_data() {
+    return ast_serialization_data_;
+  }
+
+ private:
+  std::optional<std::string> ast_serialization_data_;  // For generating AST-Key
 };
 
 }  // namespace lang

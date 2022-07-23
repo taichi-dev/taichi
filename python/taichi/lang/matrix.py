@@ -102,7 +102,7 @@ def make_matrix(arr, dt=None, suppress_warning=False, is_ref=False):
         return Matrix(arr, dt, suppress_warning, is_ref)
     cast = (
         lambda x: ops_mod.cast(x, dt)
-    ) if dt else lambda x: x if isinstance(x, expr.Expr) else expr.Expr(x)
+    ) if dt else (lambda x: x if isinstance(x, expr.Expr) else expr.Expr(x))
     if len(arr) == 0:
         return impl.expr_init_matrix([0], dt, [])
     if not isinstance(arr[0], Iterable):

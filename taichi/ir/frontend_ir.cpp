@@ -439,15 +439,17 @@ void MatrixExpression::type_check(CompileConfig *config) {
 void MatrixExpression::flatten(FlattenContext *ctx) {
   // TODO: implement flatten
   TI_ASSERT(this->dt->is<TensorType>());
-  std::vector<LocalAddress> values;
+  // std::vector<LocalAddress> values;
+  std::vector<Stmt *> values;
   for (auto &elt : elements) {
     flatten_rvalue(elt, ctx);
-    auto elt_alloca = ctx->push_back<AllocaStmt>(elt->stmt->ret_type);
-    ctx->push_back<LocalStoreStmt>(elt_alloca, elt->stmt);
-    values.push_back(LocalAddress(elt_alloca, 0));
+    // auto elt_alloca = ctx->push_back<AllocaStmt>(elt->stmt->ret_type);
+    // ctx->push_back<LocalStoreStmt>(elt_alloca, elt->stmt);
+    values.push_back(elt->stmt);
   }
-  stmt = ctx->push_back<LocalLoadStmt>(values,
-                                       this->dt->as<TensorType>()->get_shape());
+  // stmt = ctx->push_back<LocalLoadStmt>(values,
+  //                                      this->dt->as<TensorType>()->get_shape());
+  stmt = ctx->push_back<MatrixInitStmt>(values);
   stmt->ret_type = this->dt;
 }
 

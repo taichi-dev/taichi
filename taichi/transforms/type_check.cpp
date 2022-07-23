@@ -86,8 +86,7 @@ class TypeCheck : public IRVisitor {
 
   void visit(LocalLoadStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    // TI_ASSERT_INFO(stmt->src.size() == 1, "Vectorization has been
-    // disabled.");
+    TI_ASSERT_INFO(stmt->src.size() == 1, "Vectorization has been disabled.");
     TI_ASSERT(stmt->src[0].var->is<AllocaStmt>() ||
               stmt->src[0].var->is<PtrOffsetStmt>());
     if (auto ptr_offset_stmt = stmt->src[0].var->cast<PtrOffsetStmt>()) {

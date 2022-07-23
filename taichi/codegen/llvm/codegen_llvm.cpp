@@ -2468,6 +2468,19 @@ void CodeGenLLVM::visit(MeshPatchIndexStmt *stmt) {
   llvm_val[stmt] = get_arg(2);
 }
 
+void CodeGenLLVM::visit(MatrixInitStmt *stmt) {
+  TI_TRACE("build matrix init");
+  auto type = tlctx->get_data_type(stmt->ret_type->as<TensorType>()->get_element_type());
+  auto *vectorty = llvm::VectorType::get(type, stmt->width());
+  llvm::Value *vec = llvm::UndefValue::get(vectorty);
+  for (int i = 0; i < stmt->values.size(); ++i) {
+    auto *elem = llvm_val[stmt->values[i]];
+    vec = builder->CreateInsertElement(vec, elem, i);
+  }
+  llvm_val[stmt] = vec;
+  // llvm_val[stmt] = tlctx->get_constant(0);
+}
+
 void CodeGenLLVM::eliminate_unused_functions() {
   TaichiLLVMContext::eliminate_unused_functions(
       module.get(), [&](std::string func_name) {

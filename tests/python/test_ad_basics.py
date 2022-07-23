@@ -426,7 +426,7 @@ def test_ad_precision_2():
     def func():
         loss[None] = x[None]
 
-    with ti.Tape(loss):
+    with ti.ad.Tape(loss):
         func()
 
     assert x.grad[None] == 1
@@ -443,7 +443,7 @@ def test_ad_rand():
 
     x[None] = 10
     with pytest.raises(RuntimeError) as e:
-        with ti.Tape(loss):
+        with ti.ad.Tape(loss):
             work()
     assert 'RandStmt not supported' in e.value.args[0]
 
@@ -472,7 +472,7 @@ def test_ad_frac():
     field1 = ti.field(dtype=ti.f32, shape=(n, ), needs_grad=True)
     loss = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
 
-    with ti.Tape(loss):
+    with ti.ad.Tape(loss):
         ti_frac(field0, field1)
         calc_loss(field1, loss)
 

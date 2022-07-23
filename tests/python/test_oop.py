@@ -79,7 +79,7 @@ def test_oop():
     arr.inc2(4)
     assert arr.val[3, 4] == 7
 
-    with ti.Tape(loss=arr.total):
+    with ti.ad.Tape(loss=arr.total):
         arr.reduce()
 
     for i in range(arr.n):
@@ -90,7 +90,7 @@ def test_oop():
     def double():
         double_total[None] = 2 * arr.total[None]
 
-    with ti.Tape(loss=double_total):
+    with ti.ad.Tape(loss=double_total):
         arr.reduce()
         double()
 
@@ -137,9 +137,9 @@ def test_oop_two_items():
     assert arr1.val[3, 4] == arr1_inc
     assert arr2.val[8, 6] == arr2_inc
 
-    with ti.Tape(loss=arr1.total):
+    with ti.ad.Tape(loss=arr1.total):
         arr1.reduce()
-    with ti.Tape(loss=arr2.total, clear_gradients=False):
+    with ti.ad.Tape(loss=arr2.total, clear_gradients=False):
         arr2.reduce()
     for i in range(arr1.n):
         for j in range(arr1.m):
@@ -172,7 +172,7 @@ def test_oop_inherit_ok():
 
     ti.root.lazy_grad()
 
-    with ti.Tape(loss=arr.total):
+    with ti.ad.Tape(loss=arr.total):
         arr.reduce()
     for i in range(arr.n):
         for j in range(arr.n):

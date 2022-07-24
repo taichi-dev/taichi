@@ -204,7 +204,7 @@ jobs:
     needs: matrix_prep
     strategy:
       fail-fast: false
-      matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
+      matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix_osx) }}
     runs-on: [self-hosted, macos-10.15]
     env:
       PY: ${{ matrix.python }}

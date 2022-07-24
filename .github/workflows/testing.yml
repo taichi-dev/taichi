@@ -208,14 +208,12 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: macos-10.15
+          - os: [[self-hosted, macos-10.15], macos-latest]
             python: 3.7
             with_cc: OFF
             with_cpp_tests: ON
             wanted_archs: 'cpu'
-    runs-on:
-    - self-hosted
-    - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     env:
       PY: ${{ matrix.python }}
     steps:

@@ -58,6 +58,7 @@ std::unique_ptr<KernelCodeGen> KernelCodeGen::create(Arch arch,
 bool KernelCodeGen::maybe_read_compilation_from_cache(
     const std::string &kernel_key,
     std::vector<LLVMCompiledData> &data) {
+  TI_AUTO_PROF;
   const auto &config = prog->config;
   auto reader =
       LlvmOfflineCacheFileReader::make(config.offline_cache_file_path);

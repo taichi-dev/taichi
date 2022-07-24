@@ -283,6 +283,7 @@ LLVMCompiledData CodeGenCPU::modulegen(std::unique_ptr<llvm::Module> &&module,
 
 FunctionType CodeGenCPU::codegen() {
   TI_AUTO_PROF;
+  // TODO(PGZXB): move the offline cache part to the base class
   auto *llvm_prog = get_llvm_program(prog);
   auto *tlctx = llvm_prog->get_llvm_context(kernel->arch);
   auto &config = prog->config;
@@ -293,6 +294,7 @@ FunctionType CodeGenCPU::codegen() {
     std::vector<LLVMCompiledData> res;
     const bool ok = maybe_read_compilation_from_cache(kernel_key, res);
     if (ok) {
+      TI_DEBUG("Create kernel '{}' from cache (key='{}')", kernel->get_name(), kernel_key);
       CPUModuleToFunctionConverter converter(
           tlctx, get_llvm_program(prog)->get_runtime_executor());
       return converter.convert(kernel, std::move(res));
@@ -330,6 +332,7 @@ FunctionType CodeGenCPU::codegen() {
   }
 
   if (!kernel->is_evaluator) {
+    TI_DEBUG("Cache kernel '{}' (key='{}')", kernel->get_name(), kernel_key);
     cache_module(kernel_key, data);
   }
 

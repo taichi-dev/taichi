@@ -52,26 +52,27 @@ void place_child(Expr *expr_arg,
     TI_ERROR_IF(glb_var_expr->snode != nullptr,
                 "This variable has been placed.");
     SNode *new_exp_snode = nullptr;
-    if (auto cft = glb_var_expr->dt->cast<CustomFloatType>()) {
-      if (auto exp = cft->get_exponent_type()) {
-        // Non-empty exponent type. First create a place SNode for the
-        // exponent value.
-        if (parent->placing_shared_exp &&
-            parent->currently_placing_exp_snode != nullptr) {
-          // Reuse existing exponent
-          TI_ASSERT_INFO(parent->currently_placing_exp_snode_dtype == exp,
-                         "CustomFloatTypes with shared exponents must have "
-                         "exactly the same exponent type.");
-          new_exp_snode = parent->currently_placing_exp_snode;
-        } else {
-          auto &exp_node = parent->insert_children(SNodeType::place);
-          exp_node.dt = exp;
-          exp_node.name = glb_var_expr->ident.raw_name() + "_exp";
-          new_exp_snode = &exp_node;
-          if (parent->placing_shared_exp) {
-            parent->currently_placing_exp_snode = new_exp_snode;
-            parent->currently_placing_exp_snode_dtype = exp;
-          }
+    if (auto qflt = glb_var_expr->dt->cast<QuantFloatType>()) {
+      auto exp = qflt->get_exponent_type();
+      // Non-empty exponent type. First create a place SNode for the
+      // exponent value.
+      if (parent->placing_shared_exp &&
+          parent->currently_placing_exp_snode != nullptr) {
+        // Reuse existing exponent
+        TI_ASSERT_INFO(parent->currently_placing_exp_snode_dtype == exp,
+                       "QuantFloatTypes with shared exponents must have "
+                       "exactly the same exponent type.");
+        new_exp_snode = parent->currently_placing_exp_snode;
+      } else {
+        auto &exp_node = parent->insert_children(SNodeType::place);
+        exp_node.dt = exp;
+        std::tie(exp_node.id_in_bit_struct, exp_node.bit_offset) =
+            parent->bit_struct_type_builder->add_member(exp);
+        exp_node.name = glb_var_expr->ident.raw_name() + "_exp";
+        new_exp_snode = &exp_node;
+        if (parent->placing_shared_exp) {
+          parent->currently_placing_exp_snode = new_exp_snode;
+          parent->currently_placing_exp_snode_dtype = exp;
         }
       }
     }
@@ -89,31 +90,51 @@ void place_child(Expr *expr_arg,
     glb_var_expr->snode->grad_info =
         std::make_unique<GradInfoImpl>(glb_var_expr.get());
     (*snode_to_exprs)[glb_var_expr->snode] = glb_var_expr;
-    if (parent->placing_shared_exp) {
-      child.owns_shared_exponent = true;
-    }
     child.dt = glb_var_expr->dt;
-    if (new_exp_snode) {
-      child.exp_snode = new_exp_snode;
-      new_exp_snode->exponent_users.push_back(&child);
+    if (parent->bit_struct_type_builder) {
+      std::tie(child.id_in_bit_struct, child.bit_offset) =
+          parent->bit_struct_type_builder->add_member(child.dt);
+      if (parent->placing_shared_exp) {
+        child.owns_shared_exponent = true;
+        parent->bit_struct_type_builder->set_member_owns_shared_exponent(
+            child.id_in_bit_struct);
+      }
+      if (new_exp_snode) {
+        child.exp_snode = new_exp_snode;
+        parent->bit_struct_type_builder->set_member_exponent(
+            child.id_in_bit_struct, new_exp_snode->id_in_bit_struct);
+        new_exp_snode->exponent_users.push_back(&child);
+        parent->bit_struct_type_builder->add_member_exponent_user(
+            new_exp_snode->id_in_bit_struct, child.id_in_bit_struct);
+      }
     }
     if (!offset.empty())
       child.set_index_offsets(offset);
   }
 }
 
-void make_lazy_grad(SNode *snode, SNodeGlobalVarExprMap *snode_to_exprs) {
+void make_lazy_grad(SNode *snode,
+                    SNodeGlobalVarExprMap *snode_to_exprs,
+                    bool is_adjoint,
+                    bool is_dual) {
   if (snode->type == SNodeType::place)
     return;
   for (auto &c : snode->ch) {
-    make_lazy_grad(c.get(), snode_to_exprs);
+    make_lazy_grad(c.get(), snode_to_exprs, is_adjoint, is_dual);
   }
   std::vector<Expr> new_grads;
   for (auto &c : snode->ch) {
-    // TODO: handle the dual SNode
-    if (c->type == SNodeType::place && c->is_primal() && needs_grad(c->dt) &&
-        !c->has_adjoint()) {
-      new_grads.push_back(snode_to_exprs->at(c.get())->adjoint);
+    if (is_adjoint) {
+      if (c->type == SNodeType::place && c->is_primal() && is_real(c->dt) &&
+          !c->has_adjoint()) {
+        new_grads.push_back(snode_to_exprs->at(c.get())->adjoint);
+      }
+    }
+    if (is_dual) {
+      if (c->type == SNodeType::place && c->is_primal() && is_real(c->dt) &&
+          !c->has_dual()) {
+        new_grads.push_back(snode_to_exprs->at(c.get())->dual);
+      }
     }
   }
   for (auto p : new_grads) {

@@ -1,4 +1,5 @@
 #include "taichi/system/profiler.h"
+#include "spdlog/fmt/bundled/color.h"
 
 TI_NAMESPACE_BEGIN
 

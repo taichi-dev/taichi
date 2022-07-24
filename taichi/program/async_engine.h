@@ -8,69 +8,18 @@
 #include <unordered_map>
 
 #include "taichi/ir/ir.h"
-#include "taichi/lang_util.h"
+#include "taichi/util/lang_util.h"
 #define TI_RUNTIME_HOST
 #include "taichi/program/context.h"
 #undef TI_RUNTIME_HOST
 #include "taichi/program/async_utils.h"
 #include "taichi/program/ir_bank.h"
 #include "taichi/program/state_flow_graph.h"
+#include "taichi/program/parallel_executor.h"
 
 TLANG_NAMESPACE_BEGIN
 
 // TODO(yuanming-hu): split into multiple files
-
-class ParallelExecutor {
- public:
-  using TaskType = std::function<void()>;
-
-  explicit ParallelExecutor(const std::string &name, int num_threads);
-  ~ParallelExecutor();
-
-  void enqueue(const TaskType &func);
-
-  void flush();
-
-  int get_num_threads() {
-    return num_threads_;
-  }
-
- private:
-  enum class ExecutorStatus {
-    uninitialized,
-    initialized,
-    finalized,
-  };
-
-  void worker_loop();
-
-  // Must be called while holding |mut|.
-  bool flush_cv_cond();
-
-  std::string name_;
-  int num_threads_;
-  std::atomic<int> thread_counter_{0};
-  std::mutex mut_;
-
-  // All guarded by |mut|
-  ExecutorStatus status_;
-  std::vector<std::thread> threads_;
-  std::deque<TaskType> task_queue_;
-  int running_threads_;
-
-  // Used to signal the workers that they can start polling from |task_queue|.
-  std::condition_variable init_cv_;
-  // Used by |this| to instruct the worker thread that there is an event:
-  // * task being enqueued
-  // * shutting down
-  std::condition_variable worker_cv_;
-  // Used by a worker thread to unblock the caller from waiting for a flush.
-  //
-  // TODO: Instead of having this as a member variable, we can enqueue a
-  // callback upon flush(). The flush() will then block waiting for that
-  // callback to be executed?
-  std::condition_variable flush_cv_;
-};
 
 // Compiles the offloaded and optimized IR to the target backend's executable.
 using BackendExecCompilationFunc =

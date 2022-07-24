@@ -69,8 +69,8 @@ def regress_raw():
             regress.grad()
         print('Loss =', loss[None])
         update()
-        for i in range(number_coeffs):
-            print(coeffs[i], end=', ')
+        for j in range(number_coeffs):
+            print(coeffs[j], end=', ')
         print()
 
 

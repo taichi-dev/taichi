@@ -99,18 +99,12 @@ bool Type::is_primitive(PrimitiveTypeID type) const {
   }
 }
 
-std::string CustomIntType::to_string() const {
-  return fmt::format("c{}{}", is_signed_ ? 'i' : 'u', num_bits_);
+std::string QuantIntType::to_string() const {
+  return fmt::format("q{}{}", is_signed_ ? 'i' : 'u', num_bits_);
 }
 
-CustomIntType::CustomIntType(int num_bits,
-                             bool is_signed,
-                             Type *compute_type,
-                             Type *physical_type)
-    : compute_type_(compute_type),
-      physical_type_(physical_type),
-      num_bits_(num_bits),
-      is_signed_(is_signed) {
+QuantIntType::QuantIntType(int num_bits, bool is_signed, Type *compute_type)
+    : compute_type_(compute_type), num_bits_(num_bits), is_signed_(is_signed) {
   if (compute_type == nullptr) {
     auto type_id = is_signed ? PrimitiveTypeID::i32 : PrimitiveTypeID::u32;
     this->compute_type_ =
@@ -118,73 +112,107 @@ CustomIntType::CustomIntType(int num_bits,
   }
 }
 
-CustomFloatType::CustomFloatType(Type *digits_type,
-                                 Type *exponent_type,
-                                 Type *compute_type,
-                                 float64 scale)
+QuantFixedType::QuantFixedType(Type *digits_type,
+                               Type *compute_type,
+                               float64 scale)
+    : digits_type_(digits_type), compute_type_(compute_type), scale_(scale) {
+  TI_ASSERT(digits_type->is<QuantIntType>());
+  TI_ASSERT(compute_type->is<PrimitiveType>());
+  TI_ASSERT(is_real(compute_type));
+}
+
+std::string QuantFixedType::to_string() const {
+  return fmt::format("qfx(d={} c={} s={})", digits_type_->to_string(),
+                     compute_type_->to_string(), scale_);
+}
+
+bool QuantFixedType::get_is_signed() const {
+  return digits_type_->as<QuantIntType>()->get_is_signed();
+}
+
+QuantFloatType::QuantFloatType(Type *digits_type,
+                               Type *exponent_type,
+                               Type *compute_type)
     : digits_type_(digits_type),
       exponent_type_(exponent_type),
-      compute_type_(compute_type),
-      scale_(scale) {
-  TI_ASSERT(digits_type->is<CustomIntType>());
-  TI_ASSERT(compute_type->is<PrimitiveType>());
-  TI_ASSERT(is_real(compute_type->as<PrimitiveType>()));
-
-  if (exponent_type_) {
-    // We only support f32 as compute type when when using exponents
-    TI_ASSERT(compute_type_->is_primitive(PrimitiveTypeID::f32));
-    // Exponent must be unsigned custom int
-    TI_ASSERT(exponent_type->is<CustomIntType>());
-    TI_ASSERT(exponent_type->as<CustomIntType>()->get_num_bits() <= 8);
-    TI_ASSERT(exponent_type->as<CustomIntType>()->get_is_signed() == false);
-    TI_ASSERT(get_digit_bits() <= 23);
-  }
+      compute_type_(compute_type) {
+  TI_ASSERT(digits_type->is<QuantIntType>());
+  // We only support f32 as compute type when when using exponents
+  TI_ASSERT(compute_type_->is_primitive(PrimitiveTypeID::f32));
+  // Exponent must be unsigned quant int
+  TI_ASSERT(exponent_type->is<QuantIntType>());
+  TI_ASSERT(exponent_type->as<QuantIntType>()->get_num_bits() <= 8);
+  TI_ASSERT(exponent_type->as<QuantIntType>()->get_is_signed() == false);
+  TI_ASSERT(get_digit_bits() <= 23);
 }
 
-std::string CustomFloatType::to_string() const {
-  std::string e, s;
-  if (exponent_type_)
-    e = fmt::format(" e={}", exponent_type_->to_string());
-  if (scale_ != 1)
-    s = fmt::format(" s={}", scale_);
-  return fmt::format("cf(d={}{} c={}{})", digits_type_->to_string(), e,
-                     compute_type_->to_string(), s);
+std::string QuantFloatType::to_string() const {
+  return fmt::format("qfl(d={} e={} c={})", digits_type_->to_string(),
+                     exponent_type_->to_string(), compute_type_->to_string());
 }
 
-int CustomFloatType::get_exponent_conversion_offset() const {
+int QuantFloatType::get_exponent_conversion_offset() const {
   // Note that f32 has exponent offset -127
-  return 127 -
-         (1 << (exponent_type_->as<CustomIntType>()->get_num_bits() - 1)) + 1;
+  return 127 - (1 << (exponent_type_->as<QuantIntType>()->get_num_bits() - 1)) +
+         1;
 }
 
-int CustomFloatType::get_digit_bits() const {
-  return digits_type_->as<CustomIntType>()->get_num_bits() -
+int QuantFloatType::get_digit_bits() const {
+  return digits_type_->as<QuantIntType>()->get_num_bits() -
          (int)get_is_signed();
 }
 
-bool CustomFloatType::get_is_signed() const {
-  return digits_type_->as<CustomIntType>()->get_is_signed();
+bool QuantFloatType::get_is_signed() const {
+  return digits_type_->as<QuantIntType>()->get_is_signed();
 }
 
-BitStructType::BitStructType(PrimitiveType *physical_type,
-                             std::vector<Type *> member_types,
-                             std::vector<int> member_bit_offsets)
+BitStructType::BitStructType(
+    PrimitiveType *physical_type,
+    const std::vector<Type *> &member_types,
+    const std::vector<int> &member_bit_offsets,
+    const std::vector<bool> &member_owns_shared_exponents,
+    const std::vector<int> &member_exponents,
+    const std::vector<std::vector<int>> &member_exponent_users)
     : physical_type_(physical_type),
       member_types_(member_types),
-      member_bit_offsets_(member_bit_offsets) {
+      member_bit_offsets_(member_bit_offsets),
+      member_owns_shared_exponents_(member_owns_shared_exponents),
+      member_exponents_(member_exponents),
+      member_exponent_users_(member_exponent_users) {
   TI_ASSERT(member_types_.size() == member_bit_offsets_.size());
-  int physical_type_bits = data_type_bits(physical_type);
+  TI_ASSERT(member_types_.size() == member_owns_shared_exponents_.size());
+  TI_ASSERT(member_types_.size() == member_exponents_.size());
+  TI_ASSERT(member_types_.size() == member_exponent_users_.size());
+  int physical_type_bits = data_type_bits(physical_type_);
+  int member_total_bits = 0;
   for (auto i = 0; i < member_types_.size(); ++i) {
-    CustomIntType *component_cit = nullptr;
-    if (auto cit = member_types_[i]->cast<CustomIntType>()) {
-      component_cit = cit;
-    } else if (auto cft = member_types_[i]->cast<CustomFloatType>()) {
-      component_cit = cft->get_digits_type()->as<CustomIntType>();
+    QuantIntType *component_qit = nullptr;
+    if (auto qit = member_types_[i]->cast<QuantIntType>()) {
+      component_qit = qit;
+    } else if (auto qfxt = member_types_[i]->cast<QuantFixedType>()) {
+      component_qit = qfxt->get_digits_type()->as<QuantIntType>();
     } else {
-      TI_NOT_IMPLEMENTED
+      TI_ASSERT(member_types_[i]->is<QuantFloatType>());
+      auto qflt = member_types_[i]->as<QuantFloatType>();
+      component_qit = qflt->get_digits_type()->as<QuantIntType>();
     }
-    auto bits_end = component_cit->get_num_bits() + member_bit_offsets_[i];
-    TI_ASSERT(physical_type_bits >= bits_end)
+    TI_ASSERT(member_bit_offsets_[i] == member_total_bits);
+    member_total_bits += component_qit->get_num_bits();
+  }
+  TI_ASSERT(physical_type_bits >= member_total_bits);
+  for (auto i = 0; i < member_types_.size(); ++i) {
+    auto exponent = member_exponents_[i];
+    if (member_owns_shared_exponents_[i]) {
+      TI_ASSERT(exponent != -1);
+    }
+    if (exponent != -1) {
+      TI_ASSERT(std::find(member_exponent_users_[exponent].begin(),
+                          member_exponent_users_[exponent].end(),
+                          i) != member_exponent_users_[exponent].end());
+    }
+    for (auto user : member_exponent_users_[i]) {
+      TI_ASSERT(member_exponents_[user] == i);
+    }
   }
 }
 
@@ -192,8 +220,13 @@ std::string BitStructType::to_string() const {
   std::string str = "bs(";
   int num_members = (int)member_bit_offsets_.size();
   for (int i = 0; i < num_members; i++) {
-    str += fmt::format("{}@{}", member_types_[i]->to_string(),
+    str += fmt::format("{}: {}@{}", i, member_types_[i]->to_string(),
                        member_bit_offsets_[i]);
+    if (member_exponents_[i] != -1) {
+      str += fmt::format(" {}exp={}",
+                         member_owns_shared_exponents_[i] ? "shared_" : "",
+                         member_exponents_[i]);
+    }
     if (i + 1 < num_members) {
       str += ", ";
     }
@@ -201,8 +234,8 @@ std::string BitStructType::to_string() const {
   return str + ")";
 }
 
-std::string BitArrayType::to_string() const {
-  return fmt::format("ba({}x{})", element_type_->to_string(), num_elements_);
+std::string QuantArrayType::to_string() const {
+  return fmt::format("qa({}x{})", element_type_->to_string(), num_elements_);
 }
 
 std::string TypedConstant::stringify() const {

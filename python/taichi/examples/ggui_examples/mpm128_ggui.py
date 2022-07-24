@@ -1,5 +1,3 @@
-import numpy as np
-
 import taichi as ti
 
 arch = ti.vulkan if ti._lib.core.with_vulkan() else ti.cuda
@@ -47,10 +45,10 @@ def substep():
         fx = x[p] * inv_dx - base.cast(float)
         # Quadratic kernels  [http://mpm.graphics   Eqn. 123, with x=fx, fx-1,fx-2]
         w = [0.5 * (1.5 - fx)**2, 0.75 - (fx - 1)**2, 0.5 * (fx - 0.5)**2]
-        F[p] = (ti.Matrix.identity(float, 2) +
-                dt * C[p]) @ F[p]  # deformation gradient update
-        h = max(0.1, min(5, ti.exp(10 * (1.0 - Jp[p])))
-                )  # Hardening coefficient: snow gets harder when compressed
+        # deformation gradient update
+        F[p] = (ti.Matrix.identity(float, 2) + dt * C[p]) @ F[p]
+        # Hardening coefficient: snow gets harder when compressed
+        h = max(0.1, min(5, ti.exp(10 * (1.0 - Jp[p]))))
         if material[p] == 1:  # jelly, make it softer
             h = 0.3
         mu, la = mu_0 * h, lambda_0 * h
@@ -66,18 +64,18 @@ def substep():
             Jp[p] *= sig[d, d] / new_sig
             sig[d, d] = new_sig
             J *= new_sig
-        if material[
-                p] == 0:  # Reset deformation gradient to avoid numerical instability
+        if material[p] == 0:
+            # Reset deformation gradient to avoid numerical instability
             F[p] = ti.Matrix.identity(float, 2) * ti.sqrt(J)
         elif material[p] == 2:
-            F[p] = U @ sig @ V.transpose(
-            )  # Reconstruct elastic deformation gradient after plasticity
+            # Reconstruct elastic deformation gradient after plasticity
+            F[p] = U @ sig @ V.transpose()
         stress = 2 * mu * (F[p] - U @ V.transpose()) @ F[p].transpose(
         ) + ti.Matrix.identity(float, 2) * la * J * (J - 1)
         stress = (-dt * p_vol * 4 * inv_dx * inv_dx) * stress
         affine = stress + p_mass * C[p]
-        for i, j in ti.static(ti.ndrange(
-                3, 3)):  # Loop over 3x3 grid node neighborhood
+        # Loop over 3x3 grid node neighborhood
+        for i, j in ti.static(ti.ndrange(3, 3)):
             offset = ti.Vector([i, j])
             dpos = (offset.cast(float) - fx) * dx
             weight = w[i][0] * w[j][1]
@@ -94,17 +92,20 @@ def substep():
                 0.01 + dist.norm()) * attractor_strength[None] * dt * 100
             if i < 3 and grid_v[i, j][0] < 0:
                 grid_v[i, j][0] = 0  # Boundary conditions
-            if i > n_grid - 3 and grid_v[i, j][0] > 0: grid_v[i, j][0] = 0
-            if j < 3 and grid_v[i, j][1] < 0: grid_v[i, j][1] = 0
-            if j > n_grid - 3 and grid_v[i, j][1] > 0: grid_v[i, j][1] = 0
+            if i > n_grid - 3 and grid_v[i, j][0] > 0:
+                grid_v[i, j][0] = 0
+            if j < 3 and grid_v[i, j][1] < 0:
+                grid_v[i, j][1] = 0
+            if j > n_grid - 3 and grid_v[i, j][1] > 0:
+                grid_v[i, j][1] = 0
     for p in x:  # grid to particle (G2P)
         base = (x[p] * inv_dx - 0.5).cast(int)
         fx = x[p] * inv_dx - base.cast(float)
         w = [0.5 * (1.5 - fx)**2, 0.75 - (fx - 1.0)**2, 0.5 * (fx - 0.5)**2]
         new_v = ti.Vector.zero(float, 2)
         new_C = ti.Matrix.zero(float, 2, 2)
-        for i, j in ti.static(ti.ndrange(
-                3, 3)):  # loop over 3x3 grid node neighborhood
+        # loop over 3x3 grid node neighborhood
+        for i, j in ti.static(ti.ndrange(3, 3)):
             dpos = ti.Vector([i, j]).cast(float) - fx
             g_v = grid_v[base + ti.Vector([i, j])]
             weight = w[i][0] * w[j][1]
@@ -136,42 +137,54 @@ def render():
         snow[i] = x[i + 2 * group_size]
 
 
-print(
-    "[Hint] Use WSAD/arrow keys to control gravity. Use left/right mouse bottons to attract/repel. Press R to reset."
-)
+def main():
+    print(
+        "[Hint] Use WSAD/arrow keys to control gravity. Use left/right mouse buttons to attract/repel. Press R to reset."
+    )
 
-res = (512, 512)
-window = ti.ui.Window("Taichi MLS-MPM-128", res=res, vsync=True)
-canvas = window.get_canvas()
-radius = 0.003
+    res = (512, 512)
+    window = ti.ui.Window("Taichi MLS-MPM-128", res=res, vsync=True)
+    canvas = window.get_canvas()
+    radius = 0.003
 
-reset()
-gravity[None] = [0, -1]
+    reset()
+    gravity[None] = [0, -1]
 
-while window.running:
-    if window.get_event(ti.ui.PRESS):
-        if window.event.key == 'r': reset()
-        elif window.event.key in [ti.ui.ESCAPE]: break
-    if window.event is not None: gravity[None] = [0, 0]  # if had any event
-    if window.is_pressed(ti.ui.LEFT, 'a'): gravity[None][0] = -1
-    if window.is_pressed(ti.ui.RIGHT, 'd'): gravity[None][0] = 1
-    if window.is_pressed(ti.ui.UP, 'w'): gravity[None][1] = 1
-    if window.is_pressed(ti.ui.DOWN, 's'): gravity[None][1] = -1
-    mouse = window.get_cursor_pos()
-    mouse_circle[0] = ti.Vector([mouse[0], mouse[1]])
-    canvas.circles(mouse_circle, color=(0.2, 0.4, 0.6), radius=0.05)
-    attractor_pos[None] = [mouse[0], mouse[1]]
-    attractor_strength[None] = 0
-    if window.is_pressed(ti.ui.LMB):
-        attractor_strength[None] = 1
-    if window.is_pressed(ti.ui.RMB):
-        attractor_strength[None] = -1
+    while window.running:
+        if window.get_event(ti.ui.PRESS):
+            if window.event.key == 'r':
+                reset()
+            elif window.event.key in [ti.ui.ESCAPE]:
+                break
+        if window.event is not None:
+            gravity[None] = [0, 0]  # if had any event
+        if window.is_pressed(ti.ui.LEFT, 'a'):
+            gravity[None][0] = -1
+        if window.is_pressed(ti.ui.RIGHT, 'd'):
+            gravity[None][0] = 1
+        if window.is_pressed(ti.ui.UP, 'w'):
+            gravity[None][1] = 1
+        if window.is_pressed(ti.ui.DOWN, 's'):
+            gravity[None][1] = -1
+        mouse = window.get_cursor_pos()
+        mouse_circle[0] = ti.Vector([mouse[0], mouse[1]])
+        canvas.circles(mouse_circle, color=(0.2, 0.4, 0.6), radius=0.05)
+        attractor_pos[None] = [mouse[0], mouse[1]]
+        attractor_strength[None] = 0
+        if window.is_pressed(ti.ui.LMB):
+            attractor_strength[None] = 1
+        if window.is_pressed(ti.ui.RMB):
+            attractor_strength[None] = -1
 
-    for s in range(int(2e-3 // dt)):
-        substep()
-    render()
-    canvas.set_background_color((0.067, 0.184, 0.255))
-    canvas.circles(water, radius=radius, color=(0, 0.5, 0.5))
-    canvas.circles(jelly, radius=radius, color=(0.93, 0.33, 0.23))
-    canvas.circles(snow, radius=radius, color=(1, 1, 1))
-    window.show()
+        for s in range(int(2e-3 // dt)):
+            substep()
+        render()
+        canvas.set_background_color((0.067, 0.184, 0.255))
+        canvas.circles(water, radius=radius, color=(0, 0.5, 0.5))
+        canvas.circles(jelly, radius=radius, color=(0.93, 0.33, 0.23))
+        canvas.circles(snow, radius=radius, color=(1, 1, 1))
+        window.show()
+
+
+if __name__ == '__main__':
+    main()

@@ -3,11 +3,11 @@
 #include <array>
 
 #include <spirv/unified1/spirv.hpp>
-#include "taichi/lang_util.h"
+#include "taichi/util/lang_util.h"
 #include "taichi/ir/type.h"
 #include "taichi/util/testing.h"
 #include "taichi/codegen/spirv/snode_struct_compiler.h"
-#include "taichi/backends/device.h"
+#include "taichi/rhi/device.h"
 #include "taichi/ir/statements.h"
 
 namespace taichi {
@@ -43,6 +43,7 @@ enum class TypeKind {
   kStruct,
   kPtr,
   kFunc,
+  kImage
 };
 
 // Represent the SPIRV Type
@@ -73,6 +74,7 @@ enum class ValueKind {
   kStructArrayPtr,
   kVariablePtr,
   kPhysicalPtr,
+  kTexture,
   kFunction,
   kExtInst
 };
@@ -324,6 +326,9 @@ class IRBuilder {
   // Get the pointer type that points to value_type
   SType get_pointer_type(const SType &value_type,
                          spv::StorageClass storage_class);
+  // Get an image type
+  SType get_sampled_image_type(const SType &primitive_type, int num_dimensions);
+  SType get_storage_image_type(BufferFormat format, int num_dimensions);
   // Get a value_type[num_elems] type
   SType get_array_type(const SType &value_type, uint32_t num_elems);
   // Get a struct{ value_type[num_elems] } type
@@ -346,6 +351,29 @@ class IRBuilder {
                         uint32_t binding,
                         const std::string &name);
   Value struct_array_access(const SType &res_type, Value buffer, Value index);
+
+  Value texture_argument(int num_channels,
+                         int num_dimensions,
+                         uint32_t descriptor_set,
+                         uint32_t binding);
+
+  Value storage_image_argument(int num_channels,
+                               int num_dimensions,
+                               uint32_t descriptor_set,
+                               uint32_t binding,
+                               BufferFormat format);
+
+  Value sample_texture(Value texture_var,
+                       const std::vector<Value> &args,
+                       Value lod);
+
+  Value fetch_texel(Value texture_var,
+                    const std::vector<Value> &args,
+                    Value lod);
+
+  Value image_load(Value image_var, const std::vector<Value> &args);
+
+  void image_store(Value image_var, const std::vector<Value> &args);
 
   // Declare a new function
   // NOTE: only support void kernel function, i.e. main
@@ -442,6 +470,14 @@ class IRBuilder {
   Value query_value(std::string name) const;
   // Check whether a value has been evaluated
   bool check_value_existence(const std::string &name) const;
+  // Create a new SSA value
+  Value new_value(const SType &type, ValueKind flag) {
+    Value val;
+    val.id = id_counter_++;
+    val.stype = type;
+    val.flag = flag;
+    return val;
+  }
 
   // Support easy access to trivial data types
   SType i64_type() const {
@@ -496,14 +532,6 @@ class IRBuilder {
   Value rand_i32(Value global_tmp_);
 
  private:
-  Value new_value(const SType &type, ValueKind flag) {
-    Value val;
-    val.id = id_counter_++;
-    val.stype = type;
-    val.flag = flag;
-    return val;
-  }
-
   Value get_const(const SType &dtype, const uint64_t *pvalue, bool cache);
   SType declare_primitive_type(DataType dt);
 
@@ -536,7 +564,12 @@ class IRBuilder {
   SType t_void_;
   SType t_void_func_;
   // gl compute shader related type(s) and variables
+  SType t_v2_int_;
+  SType t_v3_int_;
   SType t_v3_uint_;
+  SType t_v4_fp32_;
+  SType t_v3_fp32_;
+  SType t_v2_fp32_;
   Value gl_global_invocation_id_;
   Value gl_num_work_groups_;
   Value gl_work_group_size_;
@@ -552,6 +585,9 @@ class IRBuilder {
 
   // map from value to its pointer type
   std::map<std::pair<uint32_t, spv::StorageClass>, SType> pointer_type_tbl_;
+  std::map<std::pair<uint32_t, int>, SType> sampled_image_ptr_tbl_;
+  std::map<std::pair<BufferFormat, int>, SType> storage_image_ptr_tbl_;
+
   // map from constant int to its value
   std::map<std::pair<uint32_t, uint64_t>, Value> const_tbl_;
   // map from raw_name(string) to Value

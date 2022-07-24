@@ -3,7 +3,7 @@
 #include "taichi/ir/ir.h"
 #include "taichi/ir/offloaded_task_type.h"
 #include "taichi/ir/stmt_op_types.h"
-#include "taichi/backends/arch.h"
+#include "taichi/rhi/arch.h"
 #include "taichi/ir/mesh.h"
 
 #include <optional>
@@ -18,17 +18,20 @@ class Function;
  */
 class AllocaStmt : public Stmt {
  public:
-  AllocaStmt(DataType type) {
+  AllocaStmt(DataType type) : is_shared(false) {
     ret_type = TypeFactory::create_vector_or_scalar_type(1, type);
     TI_STMT_REG_FIELDS;
   }
 
-  AllocaStmt(int width, DataType type) {
+  AllocaStmt(int width, DataType type) : is_shared(false) {
     ret_type = TypeFactory::create_vector_or_scalar_type(width, type);
     TI_STMT_REG_FIELDS;
   }
 
-  AllocaStmt(const std::vector<int> &shape, DataType type) {
+  AllocaStmt(const std::vector<int> &shape,
+             DataType type,
+             bool is_shared = false)
+      : is_shared(is_shared) {
     ret_type = TypeFactory::create_tensor_type(shape, type);
     TI_STMT_REG_FIELDS;
   }
@@ -41,7 +44,8 @@ class AllocaStmt : public Stmt {
     return false;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type);
+  bool is_shared;
+  TI_STMT_DEF_FIELDS(ret_type, is_shared);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
@@ -734,7 +738,7 @@ class ConstStmt : public Stmt {
   explicit ConstStmt(const LaneAttribute<TypedConstant> &val) : val(val) {
     TI_ASSERT(val.size() == 1);  // TODO: support vectorized case
     ret_type = val[0].dt;
-    for (int i = 0; i < val.size(); i++) {
+    for (std::size_t i = 0; i < val.size(); i++) {
       TI_ASSERT(val[0].dt == val[i].dt);
     }
     TI_STMT_REG_FIELDS;
@@ -768,7 +772,7 @@ class RangeForStmt : public Stmt {
   Stmt *begin, *end;
   std::unique_ptr<Block> body;
   bool reversed;
-  int bit_vectorize;
+  bool is_bit_vectorized;
   int num_cpu_threads;
   int block_dim;
   bool strictly_serialized;
@@ -777,7 +781,7 @@ class RangeForStmt : public Stmt {
   RangeForStmt(Stmt *begin,
                Stmt *end,
                std::unique_ptr<Block> &&body,
-               int bit_vectorize,
+               bool is_bit_vectorized,
                int num_cpu_threads,
                int block_dim,
                bool strictly_serialized,
@@ -796,7 +800,7 @@ class RangeForStmt : public Stmt {
   TI_STMT_DEF_FIELDS(begin,
                      end,
                      reversed,
-                     bit_vectorize,
+                     is_bit_vectorized,
                      num_cpu_threads,
                      block_dim,
                      strictly_serialized);
@@ -814,14 +818,14 @@ class StructForStmt : public Stmt {
   std::unique_ptr<Block> block_initialization;
   std::unique_ptr<Block> block_finalization;
   std::vector<int> index_offsets;
-  int bit_vectorize;
+  bool is_bit_vectorized;
   int num_cpu_threads;
   int block_dim;
   MemoryAccessOptions mem_access_opt;
 
   StructForStmt(SNode *snode,
                 std::unique_ptr<Block> &&body,
-                int bit_vectorize,
+                bool is_bit_vectorized,
                 int num_cpu_threads,
                 int block_dim);
 
@@ -833,7 +837,7 @@ class StructForStmt : public Stmt {
 
   TI_STMT_DEF_FIELDS(snode,
                      index_offsets,
-                     bit_vectorize,
+                     is_bit_vectorized,
                      num_cpu_threads,
                      block_dim,
                      mem_access_opt);
@@ -847,7 +851,7 @@ class MeshForStmt : public Stmt {
  public:
   mesh::Mesh *mesh;
   std::unique_ptr<Block> body;
-  int bit_vectorize;
+  bool is_bit_vectorized;
   int num_cpu_threads;
   int block_dim;
   mesh::MeshElementType major_from_type;
@@ -858,7 +862,7 @@ class MeshForStmt : public Stmt {
   MeshForStmt(mesh::Mesh *mesh,
               mesh::MeshElementType element_type,
               std::unique_ptr<Block> &&body,
-              int bit_vectorize,
+              bool is_bit_vectorized,
               int num_cpu_threads,
               int block_dim);
 
@@ -869,7 +873,7 @@ class MeshForStmt : public Stmt {
   std::unique_ptr<Stmt> clone() const override;
 
   TI_STMT_DEF_FIELDS(mesh,
-                     bit_vectorize,
+                     is_bit_vectorized,
                      num_cpu_threads,
                      block_dim,
                      major_from_type,
@@ -1172,6 +1176,7 @@ class OffloadedStmt : public Stmt {
   int grid_dim{1};
   int block_dim{1};
   bool reversed{false};
+  bool is_bit_vectorized{false};
   int num_cpu_threads{1};
   Stmt *end_stmt{nullptr};
   std::string range_hint = "";
@@ -1451,12 +1456,40 @@ class Texture;
 class TexturePtrStmt : public Stmt {
  public:
   Stmt *arg_load_stmt{nullptr};
+  int dimensions{2};
+  bool is_storage{false};
 
-  explicit TexturePtrStmt(Stmt *stmt) : arg_load_stmt(stmt) {
+  // Optional, for storage textures
+  int num_channels{0};
+  DataType channel_format{PrimitiveType::f32};
+  int lod{0};
+
+  explicit TexturePtrStmt(Stmt *stmt,
+                          int dimensions,
+                          bool is_storage,
+                          int num_channels,
+                          DataType channel_format,
+                          int lod)
+      : arg_load_stmt(stmt),
+        dimensions(dimensions),
+        is_storage(is_storage),
+        num_channels(num_channels),
+        channel_format(channel_format),
+        lod(lod) {
     TI_STMT_REG_FIELDS;
   }
 
-  TI_STMT_DEF_FIELDS(arg_load_stmt);
+  explicit TexturePtrStmt(Stmt *stmt, int dimensions)
+      : arg_load_stmt(stmt), dimensions(dimensions), is_storage(false) {
+    TI_STMT_REG_FIELDS;
+  }
+
+  TI_STMT_DEF_FIELDS(arg_load_stmt,
+                     dimensions,
+                     is_storage,
+                     num_channels,
+                     channel_format,
+                     lod);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
@@ -1471,6 +1504,16 @@ class TextureOpStmt : public Stmt {
                          const std::vector<Stmt *> &args)
       : op(op), texture_ptr(texture_ptr), args(args) {
     TI_STMT_REG_FIELDS;
+  }
+
+  /*
+  bool has_global_side_effect() const override {
+    return op == TextureOpType::kStore;
+  }
+  */
+
+  bool common_statement_eliminable() const override {
+    return op != TextureOpType::kStore;
   }
 
   TI_STMT_DEF_FIELDS(op, texture_ptr, args);
@@ -1647,7 +1690,7 @@ class BitStructStoreStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
-  SNode *get_bit_struct_snode() const;
+  BitStructType *get_bit_struct() const;
 
   bool common_statement_eliminable() const override {
     return false;

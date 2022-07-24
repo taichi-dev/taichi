@@ -636,3 +636,41 @@ def test_different_shape():
     y = ti.ndarray(dtype=ti.f32, shape=(n2, n2))
     init(3, y)
     assert (y.to_numpy() == (np.ones(shape=(n2, n2)) * 3)).all()
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_ndarray_grouped():
+    @ti.kernel
+    def func(a: ti.types.ndarray()):
+        for i in ti.grouped(a):
+            for j, k in ti.ndrange(2, 2):
+                a[i][j, k] = j * j
+
+    a1 = ti.Matrix.ndarray(2, 2, ti.i32, shape=5)
+    func(a1)
+    for i in range(5):
+        for j in range(2):
+            for k in range(2):
+                assert a1[i][j, k] == j * j
+
+    a2 = ti.Matrix.ndarray(2, 2, ti.i32, shape=(3, 3))
+    func(a2)
+    for i in range(3):
+        for j in range(3):
+            for k in range(2):
+                for p in range(2):
+                    assert a2[i, j][k, p] == k * k
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_ndarray_as_template():
+    @ti.kernel
+    def func(arr_src: ti.template(), arr_dst: ti.template()):
+        for i, j in ti.ndrange(*arr_src.shape):
+            arr_dst[i, j] = arr_src[i, j]
+
+    arr_0 = ti.ndarray(ti.f32, shape=(5, 10))
+    arr_1 = ti.ndarray(ti.f32, shape=(5, 10))
+    with pytest.raises(ti.TaichiRuntimeTypeError,
+                       match=r"Ndarray shouldn't be passed in via"):
+        func(arr_0, arr_1)

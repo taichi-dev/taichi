@@ -1,6 +1,6 @@
 #include "taichi/program/kernel.h"
 
-#include "taichi/backends/cuda/cuda_driver.h"
+#include "taichi/rhi/cuda/cuda_driver.h"
 #include "taichi/codegen/codegen.h"
 #include "taichi/common/logging.h"
 #include "taichi/common/task.h"
@@ -13,7 +13,7 @@
 #include "taichi/util/statistics.h"
 
 #ifdef TI_WITH_LLVM
-#include "taichi/llvm/llvm_program.h"
+#include "taichi/runtime/program_impls/llvm/llvm_program.h"
 #endif
 
 TLANG_NAMESPACE_BEGIN
@@ -248,7 +248,9 @@ void Kernel::LaunchContextBuilder::set_arg_external_array(
 
   ctx_->set_arg(arg_id, ptr);
   ctx_->set_array_runtime_size(arg_id, size);
-  ctx_->set_array_is_device_allocation(arg_id, is_device_allocation);
+  ctx_->set_array_device_allocation_type(
+      arg_id, is_device_allocation ? RuntimeContext::DevAllocType::kNdarray
+                                   : RuntimeContext::DevAllocType::kNone);
 }
 
 void Kernel::LaunchContextBuilder::set_arg_external_array_with_shape(
@@ -278,6 +280,22 @@ void Kernel::LaunchContextBuilder::set_arg_ndarray(int arg_id,
   }
 }
 
+void Kernel::LaunchContextBuilder::set_arg_texture(int arg_id,
+                                                   const Texture &tex) {
+  intptr_t ptr = tex.get_device_allocation_ptr_as_int();
+  ctx_->set_arg(arg_id, ptr);
+  ctx_->set_array_device_allocation_type(
+      arg_id, RuntimeContext::DevAllocType::kTexture);
+}
+
+void Kernel::LaunchContextBuilder::set_arg_rw_texture(int arg_id,
+                                                      const Texture &tex) {
+  intptr_t ptr = tex.get_device_allocation_ptr_as_int();
+  ctx_->set_arg(arg_id, ptr);
+  ctx_->set_array_device_allocation_type(
+      arg_id, RuntimeContext::DevAllocType::kRWTexture);
+}
+
 void Kernel::LaunchContextBuilder::set_arg_raw(int arg_id, uint64 d) {
   TI_ASSERT_INFO(!kernel_->args[arg_id].is_array,
                  "Assigning scalar value to external (numpy) array argument is "
@@ -293,12 +311,7 @@ void Kernel::LaunchContextBuilder::set_arg_raw(int arg_id, uint64 d) {
 }
 
 RuntimeContext &Kernel::LaunchContextBuilder::get_context() {
-#ifdef TI_WITH_LLVM
-  if (auto *llvm_program_impl = kernel_->program->get_llvm_program_impl()) {
-    ctx_->runtime = llvm_program_impl->get_llvm_runtime();
-  }
-#endif
-  ctx_->result_buffer = kernel_->program->result_buffer;
+  kernel_->program->prepare_runtime_context(ctx_);
   return *ctx_;
 }
 
@@ -405,11 +418,7 @@ void Kernel::init(Program &program,
   this->autodiff_mode = autodiff_mode;
   this->lowered_ = false;
   this->program = &program;
-#ifdef TI_WITH_LLVM
-  if (auto *llvm_program_impl = program.get_llvm_program_impl()) {
-    llvm_program_impl->maybe_initialize_cuda_llvm_context();
-  }
-#endif
+
   is_accessor = false;
   is_evaluator = false;
   compiled_ = nullptr;
@@ -445,4 +454,20 @@ bool Kernel::supports_lowering(Arch arch) {
   return arch_is_cpu(arch) || (arch == Arch::cuda) || (arch == Arch::metal);
 }
 
+void Kernel::offload_to_executable(IRNode *stmt) {
+  CurrentCallableGuard _(program, this);
+  auto config = program->config;
+  bool verbose = config.print_ir;
+  if ((is_accessor && !config.print_accessor_ir) ||
+      (is_evaluator && !config.print_evaluator_ir))
+    verbose = false;
+  irpass::offload_to_executable(
+      stmt, config, this, verbose,
+      /*determine_ad_stack_size=*/autodiff_mode == AutodiffMode::kReverse,
+      /*lower_global_access=*/true,
+      /*make_block_local=*/config.make_thread_local,
+      /*make_block_local=*/
+      is_extension_supported(config.arch, Extension::bls) &&
+          config.make_block_local);
+}
 TLANG_NAMESPACE_END

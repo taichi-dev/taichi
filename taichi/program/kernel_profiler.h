@@ -1,7 +1,7 @@
 #pragma once
 
-#include "taichi/backends/arch.h"
-#include "taichi/lang_util.h"
+#include "taichi/rhi/arch.h"
+#include "taichi/util/lang_util.h"
 
 #include <algorithm>
 #include <map>

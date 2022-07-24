@@ -23,7 +23,7 @@ class TypeCheck : public IRVisitor {
                          Stmt *&val,
                          const std::string &stmt_name) {
     auto dst_type = dst->ret_type.ptr_removed();
-    if (dst_type->is<CustomIntType>() || dst_type->is<CustomFloatType>()) {
+    if (is_quant(dst_type)) {
       // We force the value type to be the compute_type of the bit pointer.
       // Casting from compute_type to physical_type is handled in codegen.
       dst_type = dst_type->get_compute_type();
@@ -301,7 +301,7 @@ class TypeCheck : public IRVisitor {
     }
 
     // Some backends such as vulkan doesn't support fp64
-    // Always promote to fp32 unless neccessary
+    // Always promote to fp32 unless necessary
     if (stmt->op_type == BinaryOpType::atan2) {
       if (stmt->rhs->ret_type == PrimitiveType::f64 ||
           stmt->lhs->ret_type == PrimitiveType::f64) {
@@ -446,10 +446,10 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(SNodeLookupStmt *stmt) override {
-    if (stmt->snode->type == SNodeType::bit_array) {
-      auto bit_array_type = stmt->snode->dt;
+    if (stmt->snode->type == SNodeType::quant_array) {
+      auto quant_array_type = stmt->snode->dt;
       auto element_type =
-          bit_array_type->cast<BitArrayType>()->get_element_type();
+          quant_array_type->cast<QuantArrayType>()->get_element_type();
       auto pointer_type =
           TypeFactory::get_instance().get_pointer_type(element_type, true);
       stmt->ret_type = pointer_type;

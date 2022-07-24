@@ -186,22 +186,11 @@ class TensorType : public Type {
   Type *element_{nullptr};
 };
 
-class CustomIntType : public Type {
+class QuantIntType : public Type {
  public:
-  CustomIntType(int num_bits,
-                bool is_signed,
-                Type *compute_type = nullptr,
-                Type *physical_type = nullptr);
+  QuantIntType(int num_bits, bool is_signed, Type *compute_type = nullptr);
 
   std::string to_string() const override;
-
-  void set_physical_type(Type *physical_type) {
-    this->physical_type_ = physical_type;
-  }
-
-  Type *get_physical_type() {
-    return physical_type_;
-  }
 
   Type *get_compute_type() override {
     return compute_type_;
@@ -219,23 +208,41 @@ class CustomIntType : public Type {
   // TODO(type): for now we can uniformly use i32 as the "compute_type". It may
   // be a good idea to make "compute_type" also customizable.
   Type *compute_type_{nullptr};
-  Type *physical_type_{nullptr};
   int num_bits_{32};
   bool is_signed_{true};
 };
 
-class CustomFloatType : public Type {
+class QuantFixedType : public Type {
  public:
-  CustomFloatType(Type *digits_type,
-                  Type *exponent_type,
-                  Type *compute_type,
-                  float64 scale);
+  QuantFixedType(Type *digits_type, Type *compute_type, float64 scale);
 
   std::string to_string() const override;
+
+  bool get_is_signed() const;
+
+  Type *get_digits_type() {
+    return digits_type_;
+  }
+
+  Type *get_compute_type() override {
+    return compute_type_;
+  }
 
   float64 get_scale() const {
     return scale_;
   }
+
+ private:
+  Type *digits_type_{nullptr};
+  Type *compute_type_{nullptr};
+  float64 scale_{1.0};
+};
+
+class QuantFloatType : public Type {
+ public:
+  QuantFloatType(Type *digits_type, Type *exponent_type, Type *compute_type);
+
+  std::string to_string() const override;
 
   Type *get_digits_type() {
     return digits_type_;
@@ -259,14 +266,16 @@ class CustomFloatType : public Type {
   Type *digits_type_{nullptr};
   Type *exponent_type_{nullptr};
   Type *compute_type_{nullptr};
-  float64 scale_;
 };
 
 class BitStructType : public Type {
  public:
   BitStructType(PrimitiveType *physical_type,
-                std::vector<Type *> member_types,
-                std::vector<int> member_bit_offsets);
+                const std::vector<Type *> &member_types,
+                const std::vector<int> &member_bit_offsets,
+                const std::vector<bool> &member_owns_shared_exponents,
+                const std::vector<int> &member_exponents,
+                const std::vector<std::vector<int>> &member_exponent_users);
 
   std::string to_string() const override;
 
@@ -274,7 +283,7 @@ class BitStructType : public Type {
     return physical_type_;
   }
 
-  int get_num_memebrs() const {
+  int get_num_members() const {
     return (int)member_types_.size();
   }
 
@@ -286,23 +295,43 @@ class BitStructType : public Type {
     return member_bit_offsets_[i];
   }
 
+  bool get_member_owns_shared_exponent(int i) const {
+    return member_owns_shared_exponents_[i];
+  }
+
+  int get_member_exponent(int i) const {
+    return member_exponents_[i];
+  }
+
+  const std::vector<int> &get_member_exponent_users(int i) const {
+    return member_exponent_users_[i];
+  }
+
  private:
   PrimitiveType *physical_type_;
   std::vector<Type *> member_types_;
   std::vector<int> member_bit_offsets_;
+  std::vector<bool> member_owns_shared_exponents_;
+  std::vector<int> member_exponents_;
+  std::vector<std::vector<int>> member_exponent_users_;
 };
 
-class BitArrayType : public Type {
+class QuantArrayType : public Type {
  public:
-  BitArrayType(PrimitiveType *physical_type,
-               Type *element_type_,
-               int num_elements_)
+  QuantArrayType(PrimitiveType *physical_type,
+                 Type *element_type_,
+                 int num_elements_)
       : physical_type_(physical_type),
         element_type_(element_type_),
         num_elements_(num_elements_) {
-    // TODO: avoid assertion?
-    TI_ASSERT(element_type_->is<CustomIntType>());
-    element_num_bits_ = element_type_->as<CustomIntType>()->get_num_bits();
+    if (auto qit = element_type_->cast<QuantIntType>()) {
+      element_num_bits_ = qit->get_num_bits();
+    } else if (auto qfxt = element_type_->cast<QuantFixedType>()) {
+      element_num_bits_ =
+          qfxt->get_digits_type()->as<QuantIntType>()->get_num_bits();
+    } else {
+      TI_ERROR("Quant array only supports quant int/fixed type for now.");
+    }
   }
 
   std::string to_string() const override;

@@ -107,8 +107,8 @@ class SNode:
         """
         return SNode(self.ptr.bit_struct(num_bits, impl.current_cfg().packed))
 
-    def bit_array(self, axes, dimensions, num_bits):
-        """Adds a bit_array SNode as a child component of `self`.
+    def quant_array(self, axes, dimensions, num_bits):
+        """Adds a quant_array SNode as a child component of `self`.
 
         Args:
             axes (List[Axis]): Axes to activate.
@@ -121,8 +121,8 @@ class SNode:
         if isinstance(dimensions, int):
             dimensions = [dimensions] * len(axes)
         return SNode(
-            self.ptr.bit_array(axes, dimensions, num_bits,
-                               impl.current_cfg().packed))
+            self.ptr.quant_array(axes, dimensions, num_bits,
+                                 impl.current_cfg().packed))
 
     def place(self, *args, offset=None, shared_exponent=False):
         """Places a list of Taichi fields under the `self` container.
@@ -165,7 +165,12 @@ class SNode:
         To know more details about primal, adjoint fields and ``lazy_grad()``,
         please see Page 4 and Page 13-14 of DiffTaichi Paper: https://arxiv.org/pdf/1910.00935.pdf
         """
-        self.ptr.lazy_grad()
+        self.ptr.lazy_grad(True, False)
+
+    def lazy_dual(self):
+        """Automatically place the dual fields following the layout of their primal fields.
+        """
+        self.ptr.lazy_grad(False, True)
 
     def parent(self, n=1):
         """Gets an ancestor of `self` in the SNode tree.
@@ -182,8 +187,10 @@ class SNode:
             n -= 1
         if p is None:
             return None
+
         if p.type == _ti_core.SNodeType.root:
             return impl.root
+
         return SNode(p)
 
     def _path_from_root(self):
@@ -231,10 +238,10 @@ class SNode:
         return ret
 
     def _loop_range(self):
-        """Gets the taichi_core.Expr wrapping the taichi_core.GlobalVariableExpression corresponding to `self` to serve as loop range.
+        """Gets the taichi_python.Expr wrapping the taichi_python.GlobalVariableExpression corresponding to `self` to serve as loop range.
 
         Returns:
-            taichi_core.Expr: See above.
+            taichi_python.Expr: See above.
         """
         return impl.get_runtime().prog.global_var_expr_from_snode(self.ptr)
 

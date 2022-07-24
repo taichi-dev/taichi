@@ -14,7 +14,7 @@
 #include <set>
 #endif
 #include "taichi/ir/ir.h"
-#include "taichi/lang_util.h"
+#include "taichi/util/lang_util.h"
 #include "taichi/program/async_utils.h"
 #include "taichi/program/program.h"
 #include "taichi/util/bit.h"

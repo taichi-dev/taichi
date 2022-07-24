@@ -1,6 +1,7 @@
 from taichi.lang import impl, simt
 from taichi.lang._ndarray import *
 from taichi.lang._ndrange import ndrange
+from taichi.lang._texture import Texture
 from taichi.lang.enums import Layout
 from taichi.lang.exception import *
 from taichi.lang.field import *
@@ -20,6 +21,6 @@ __all__ = [
         'any_array', 'ast', 'common_ops', 'enums', 'exception', 'expr', 'impl',
         'inspect', 'kernel_arguments', 'kernel_impl', 'matrix', 'mesh', 'misc',
         'ops', 'platform', 'runtime_ops', 'shell', 'snode', 'source_builder',
-        'struct', 'tape', 'util'
+        'struct', 'util'
     ]
 ]

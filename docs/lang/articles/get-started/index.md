@@ -72,13 +72,25 @@ There are a few of extra requirements depend on which operating system you are u
   </TabItem>
 </Tabs>
 
-See the [Installation Troubleshooting](../misc/install.md) if you run into any issues when installing Taichi.
+See the [Installation Troubleshooting](../faqs/install.md) if you run into any issues when installing Taichi.
+
+A successful installation of Taichi should add a CLI (Command-Line Interface) to your system, which is helpful to perform several routine tasks quickly. To invoke the CLI, please run `ti` or `python3 -m taichi`.
+
+## Examples
+
+Taichi provides a set of bundled examples. You could run `ti example -h` to print the help message and get a list of available example names.
+
+For instance, to run the basic `fractal` example, try: `ti example fractal` from your shell. (`ti example fractal.py` should also work)
+
+You may print the source code of example by running `ti example -p fractal`, or `ti example -P fractal` for print with syntax highlight.
+
+You may also save the example to current work directory by running `ti example -s fractal`.
 
 ## Hello, world!
 
 We introduce the Taichi programming language through a very basic _fractal_ example.
 
-Running the Taichi code below using either `python3 fractal.py` or `ti example fractal` _(you can find more information about the Taichi CLI in the [Command line utilities](../misc/cli_utilities.md) section)_ will give you an animation of [Julia set](https://en.wikipedia.org/wiki/Julia_set):
+Running the Taichi code below using either `python3 fractal.py` or `ti example fractal` will give you an animation of [Julia set](https://en.wikipedia.org/wiki/Julia_set):
 
 <center>
 
@@ -173,7 +185,7 @@ Taichi **kernels** are defined with the decorator `@ti.kernel`. They can be call
 
 Taichi **functions** are defined with the decorator `@ti.func`. They can *only* be called by Taichi kernels or other Taichi functions.
 
-See [syntax](../basic/syntax.md) for more details about Taichi kernels and functions.
+See [syntax](../kernels/syntax.md) for more details about Taichi kernels and functions.
 
 The language used in Taichi kernels and functions looks exactly like Python, yet the Taichi frontend compiler converts it into a language
 that is **compiled, statically-typed, lexically-scoped, parallel and differentiable**.
@@ -250,7 +262,7 @@ def bar(k: ti.i32):
 *Struct-for loops* are particularly useful when iterating over (sparse) field elements. In the `fractal.py` above, `for i, j in pixels` loops over all the pixel coordinates, i.e.,`(0, 0), (0, 1), (0, 2), ... , (0, 319), (1, 0), ..., (639, 319)`.
 
 :::note
-Struct-for is the key to [sparse computation](../advanced/sparse.md) in Taichi, as it will only loop over active elements in a sparse field. In dense fields, all elements are active.
+Struct-for is the key to [sparse computation](../basic/sparse.md) in Taichi, as it will only loop over active elements in a sparse field. In dense fields, all elements are active.
 :::
 
 :::caution WARNING
@@ -301,7 +313,7 @@ def foo():
 
 ### GUI system
 
-Taichi provides a CPU-based [GUI system](../gui/gui_system.md) for you to render your results on the screen.
+Taichi provides a CPU-based [GUI system](../visualization/gui_system.md) for you to render your results on the screen.
 
 ```python
 gui = ti.GUI("Julia Set", res=(n * 2, n))

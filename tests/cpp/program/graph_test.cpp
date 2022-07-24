@@ -8,7 +8,7 @@
 #include "tests/cpp/ir/ndarray_kernel.h"
 #include "taichi/program/graph_builder.h"
 #ifdef TI_WITH_VULKAN
-#include "taichi/backends/vulkan/vulkan_loader.h"
+#include "taichi/rhi/vulkan/vulkan_loader.h"
 #endif
 
 using namespace taichi;
@@ -30,7 +30,7 @@ TEST(GraphTest, SimpleGraphRun) {
 
   auto g_builder = std::make_unique<GraphBuilder>();
   auto seq = g_builder->seq();
-  auto arr_arg = aot::Arg{aot::ArgKind::kNdarray, "arr", PrimitiveType::i32};
+  auto arr_arg = aot::Arg{aot::ArgKind::kNdarray, "arr", PrimitiveType::i32, 1};
   seq->dispatch(ker1.get(), {arr_arg});
   seq->dispatch(ker2.get(), {arr_arg, aot::Arg{
                                           aot::ArgKind::kScalar,
@@ -48,6 +48,7 @@ TEST(GraphTest, SimpleGraphRun) {
   args.insert({"x", aot::IValue::create<int>(2)});
 
   g->run(args);
+  test_prog.prog()->synchronize();
   EXPECT_EQ(array.read_int({0}), 2);
   EXPECT_EQ(array.read_int({1}), 2);
   EXPECT_EQ(array.read_int({2}), 42);

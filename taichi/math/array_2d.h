@@ -209,7 +209,7 @@ class ArrayND<2, T> {
   typedef typename std::vector<T>::iterator iterator;
   int size;
   Vector2i res;
-  Vector2 storage_offset = Vector2(0.5f, 0.5f);  // defualt : center storage
+  Vector2 storage_offset = Vector2(0.5f, 0.5f);  // default : center storage
  public:
   std::vector<T> data;
   template <typename S>

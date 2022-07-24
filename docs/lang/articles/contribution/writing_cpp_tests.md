@@ -1,8 +1,8 @@
 ---
-sidebar_position: 11
+sidebar_position: 4
 ---
 
-# Workflow for writing a C++ test
+# Write a C++ test
 
 We strongly recommend each developer to write C++ unit tests when sending a PR.
 
@@ -14,9 +14,8 @@ We strongly recommend each developer to write C++ unit tests when sending a PR.
 ## Build and run Taichi C++ tests
 
 ```bash
-# inside build/
-cmake .. -DTI_BUILD_TESTS=ON # ... other regular Taichi cmake args
-make
+# build taichi with tests enabled
+TAICHI_CMAKE_ARGS="-DTI_BUILD_TESTS:BOOL=ON" python setup.py develop
 
 # run the C++ test
 TI_LIB_DIR=$TAICHI_INSTALL_DIR/_lib/runtime ./taichi_cpp_tests
@@ -37,6 +36,6 @@ Consider polishing the C++ test infrastructure:
 * Have a unified script to control the execution of which set of tests
 :::
 
-## Adding a new test case
+## Add a new test case
 
 Please follow [Googletest Primer](https://google.github.io/googletest/primer.html) and [Advanced googletest Topics](https://google.github.io/googletest/advanced.html).

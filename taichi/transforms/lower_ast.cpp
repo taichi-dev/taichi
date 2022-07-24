@@ -71,7 +71,8 @@ class LowerAST : public IRVisitor {
     if (stmt->ret_type->is<TensorType>()) {
       auto tensor_type = stmt->ret_type->cast<TensorType>();
       auto lowered = std::make_unique<AllocaStmt>(
-          tensor_type->get_shape(), tensor_type->get_element_type());
+          tensor_type->get_shape(), tensor_type->get_element_type(),
+          stmt->is_shared);
       block->local_var_to_stmt.insert(std::make_pair(ident, lowered.get()));
       stmt->parent->replace_with(stmt, std::move(lowered));
     } else {
@@ -198,8 +199,9 @@ class LowerAST : public IRVisitor {
       // statement
       if (is_good_range_for) {
         auto &&new_for = std::make_unique<RangeForStmt>(
-            begin->stmt, end->stmt, std::move(stmt->body), stmt->bit_vectorize,
-            stmt->num_cpu_threads, stmt->block_dim, stmt->strictly_serialized);
+            begin->stmt, end->stmt, std::move(stmt->body),
+            stmt->is_bit_vectorized, stmt->num_cpu_threads, stmt->block_dim,
+            stmt->strictly_serialized);
         new_for->body->insert(std::make_unique<LoopIndexStmt>(new_for.get(), 0),
                               0);
         new_for->body->local_var_to_stmt[stmt->loop_var_id[0]] =
@@ -257,7 +259,7 @@ class LowerAST : public IRVisitor {
     } else if (stmt->mesh_for) {
       auto &&new_for = std::make_unique<MeshForStmt>(
           stmt->mesh, stmt->element_type, std::move(stmt->body),
-          stmt->bit_vectorize, stmt->num_cpu_threads, stmt->block_dim);
+          stmt->is_bit_vectorized, stmt->num_cpu_threads, stmt->block_dim);
       new_for->body->insert(std::make_unique<LoopIndexStmt>(new_for.get(), 0),
                             0);
       new_for->body->local_var_to_stmt[stmt->loop_var_id[0]] =
@@ -291,7 +293,7 @@ class LowerAST : public IRVisitor {
         snode = snode->parent;
 
       auto &&new_for = std::make_unique<StructForStmt>(
-          snode, std::move(stmt->body), stmt->bit_vectorize,
+          snode, std::move(stmt->body), stmt->is_bit_vectorized,
           stmt->num_cpu_threads, stmt->block_dim);
       new_for->index_offsets = offsets;
       VecStatement new_statements;
@@ -324,7 +326,7 @@ class LowerAST : public IRVisitor {
       }
       // TODO: add a note explaining why shape might be empty.
       auto &&new_for = std::make_unique<RangeForStmt>(
-          begin, end, std::move(stmt->body), stmt->bit_vectorize,
+          begin, end, std::move(stmt->body), stmt->is_bit_vectorized,
           stmt->num_cpu_threads, stmt->block_dim, stmt->strictly_serialized,
           /*range_hint=*/fmt::format("arg {}", tensor->arg_id));
       VecStatement new_statements;
@@ -390,20 +392,20 @@ class LowerAST : public IRVisitor {
       fctx.push_back<LocalStoreStmt>(
           assign->parent->lookup_var(assign->lhs.cast<IdExpression>()->id),
           expr->stmt);
-    } else if (dest.is<TensorElementExpression>()) {
+    } else if (dest.is<IndexExpression>()) {
+      auto ix = dest.cast<IndexExpression>();
       flatten_lvalue(dest, &fctx);
-      auto tensor_ptr = dest.cast<TensorElementExpression>();
-      if (tensor_ptr->is_local_tensor()) {
+      if (ix->is_local()) {
         fctx.push_back<LocalStoreStmt>(dest->stmt, expr->stmt);
-      } else if (tensor_ptr->is_global_tensor()) {
-        fctx.push_back<GlobalStoreStmt>(dest->stmt, expr->stmt);
       } else {
-        TI_NOT_IMPLEMENTED
+        fctx.push_back<GlobalStoreStmt>(dest->stmt, expr->stmt);
       }
-    } else {  // global variable
-      TI_ASSERT(dest.is<GlobalPtrExpression>() ||
-                (dest.is<ArgLoadExpression>() &&
-                 dest.cast<ArgLoadExpression>()->is_ptr));
+    } else if (dest.is<StrideExpression>()) {
+      flatten_lvalue(dest, &fctx);
+      fctx.push_back<GlobalStoreStmt>(dest->stmt, expr->stmt);
+    } else {
+      TI_ASSERT(dest.is<ArgLoadExpression>() &&
+                dest.cast<ArgLoadExpression>()->is_ptr);
       flatten_lvalue(dest, &fctx);
       fctx.push_back<GlobalStoreStmt>(dest->stmt, expr->stmt);
     }

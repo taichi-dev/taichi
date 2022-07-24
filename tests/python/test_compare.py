@@ -198,3 +198,17 @@ def test_non_static_is():
             return tp is ti.f32
 
         is_f32(ti.f32)
+
+
+@test_utils.test(default_ip=ti.i64, require=ti.extension.data64)
+def test_compare_ret_type():
+    # The purpose of this test is to make sure a comparison returns i32
+    # regardless of default_ip so that it can always serve as the condition of
+    # an if statement.
+    @ti.kernel
+    def foo():
+        for i in range(100):
+            if i == 0:
+                pass
+
+    foo()

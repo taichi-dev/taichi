@@ -38,7 +38,7 @@ if (WIN32)
 else()
     if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
         message("Clang compiler detected. Using std=c++17.")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -fsized-deallocation")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -fsized-deallocation -Wno-deprecated-declarations")
     elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
         message("GNU compiler detected. Using std=c++17.")
         message(WARNING "It is detected that you are using gcc as the compiler. This is an experimental feature. Consider adding -DCMAKE_CXX_COMPILER=clang argument to CMake to switch to clang (or MSVC on Windows).")
@@ -72,7 +72,7 @@ endif()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-private-field ")
 
     # [Global] By evaluating "constexpr", compiler throws a warning for functions known to be dead at compile time.
-    # However, some of these "constexpr" are debug flags and will be manually enabled upon debuging.
+    # However, some of these "constexpr" are debug flags and will be manually enabled upon debugging.
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unneeded-internal-declaration ")
 endif ()
 

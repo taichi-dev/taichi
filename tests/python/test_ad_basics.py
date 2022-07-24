@@ -54,6 +54,32 @@ def grad_test(tifunc, npfunc=None):
     assert x.grad[0] == test_utils.approx(grad(npfunc)(v), rel=1e-4)
 
 
+def grad_test_fwd(tifunc, npfunc=None):
+    npfunc = npfunc or tifunc
+
+    print(
+        f'arch={ti.lang.impl.current_cfg().arch} default_fp={ti.lang.impl.current_cfg().default_fp}'
+    )
+    x = ti.field(ti.lang.impl.current_cfg().default_fp)
+    y = ti.field(ti.lang.impl.current_cfg().default_fp)
+
+    ti.root.dense(ti.i, 1).place(x, x.dual, y, y.dual)
+
+    @ti.kernel
+    def func():
+        for i in x:
+            y[i] = tifunc(x[i])
+
+    v = 0.234
+
+    x[0] = v
+    with ti.ad.FwdMode(loss=y, parameters=x, seed=[1.0]):
+        func()
+
+    assert y[0] == test_utils.approx(npfunc(v), rel=1e-4)
+    assert y.dual[0] == test_utils.approx(grad(npfunc)(v), rel=1e-4)
+
+
 @if_has_autograd
 @test_utils.test()
 def test_size1():
@@ -67,6 +93,7 @@ def test_size1():
 
 @pytest.mark.parametrize('tifunc', [
     lambda x: x,
+    lambda x: ti.abs(-x),
     lambda x: -x,
     lambda x: x * x,
     lambda x: x**2,
@@ -77,9 +104,10 @@ def test_size1():
     lambda x: (x - 3) * (x - 1) + x * x,
 ])
 @if_has_autograd
-@test_utils.test()
+@test_utils.test(exclude=[ti.cc])
 def test_poly(tifunc):
     grad_test(tifunc)
+    grad_test_fwd(tifunc)
 
 
 @pytest.mark.parametrize('tifunc,npfunc', [
@@ -90,9 +118,10 @@ def test_poly(tifunc):
     (lambda x: ti.asin(x), lambda x: np.arcsin(x)),
 ])
 @if_has_autograd
-@test_utils.test(exclude=[ti.vulkan, ti.dx11])
+@test_utils.test(exclude=[ti.cc])
 def test_trigonometric(tifunc, npfunc):
     grad_test(tifunc, npfunc)
+    grad_test_fwd(tifunc, npfunc)
 
 
 @pytest.mark.parametrize('tifunc', [
@@ -101,9 +130,10 @@ def test_trigonometric(tifunc, npfunc):
     lambda x: (x + 1) * (x + 2) / ((x - 1) * (x + 3)),
 ])
 @if_has_autograd
-@test_utils.test()
+@test_utils.test(exclude=[ti.cc])
 def test_frac(tifunc):
     grad_test(tifunc)
+    grad_test_fwd(tifunc)
 
 
 @pytest.mark.parametrize('tifunc,npfunc', [
@@ -112,9 +142,10 @@ def test_frac(tifunc):
     (lambda x: ti.log(x), lambda x: np.log(x)),
 ])
 @if_has_autograd
-@test_utils.test()
+@test_utils.test(exclude=[ti.cc])
 def test_unary(tifunc, npfunc):
     grad_test(tifunc, npfunc)
+    grad_test_fwd(tifunc, npfunc)
 
 
 @pytest.mark.parametrize('tifunc,npfunc', [
@@ -128,9 +159,10 @@ def test_unary(tifunc, npfunc):
     (lambda x: ti.max(1, x), lambda x: np.maximum(1, x)),
 ])
 @if_has_autograd
-@test_utils.test()
+@test_utils.test(exclude=[ti.cc])
 def test_minmax(tifunc, npfunc):
     grad_test(tifunc, npfunc)
+    grad_test_fwd(tifunc, npfunc)
 
 
 @if_has_autograd
@@ -157,14 +189,37 @@ def test_mod():
     func2.grad()
 
 
+@if_has_autograd
+@test_utils.test()
+def test_mod_fwd():
+    x = ti.field(ti.f32)
+    y = ti.field(ti.f32)
+
+    ti.root.dense(ti.i, 1).place(x, y)
+    ti.root.lazy_dual()
+
+    @ti.kernel
+    def func():
+        y[0] = x[0] % 3
+
+    @ti.kernel
+    def func2():
+        ti.atomic_add(y[0], x[0] % 3)
+
+    with ti.ad.FwdMode(loss=y, parameters=x, seed=[1.0]):
+        func()
+        func2()
+
+
 @pytest.mark.parametrize('tifunc,npfunc', [
     (lambda x: ti.atan2(0.4, x), lambda x: np.arctan2(0.4, x)),
     (lambda y: ti.atan2(y, 0.4), lambda y: np.arctan2(y, 0.4)),
 ])
 @if_has_autograd
-@test_utils.test()
+@test_utils.test(exclude=[ti.cc])
 def test_atan2(tifunc, npfunc):
     grad_test(tifunc, npfunc)
+    grad_test_fwd(tifunc, npfunc)
 
 
 @pytest.mark.parametrize('tifunc,npfunc', [
@@ -172,9 +227,12 @@ def test_atan2(tifunc, npfunc):
     (lambda y: ti.atan2(y, 0.4), lambda y: np.arctan2(y, 0.4)),
 ])
 @if_has_autograd
-@test_utils.test(require=ti.extension.data64, default_fp=ti.f64)
+@test_utils.test(require=ti.extension.data64,
+                 default_fp=ti.f64,
+                 exclude=[ti.cc])
 def test_atan2_f64(tifunc, npfunc):
     grad_test(tifunc, npfunc)
+    grad_test_fwd(tifunc, npfunc)
 
 
 @pytest.mark.parametrize('tifunc,npfunc', [
@@ -182,9 +240,10 @@ def test_atan2_f64(tifunc, npfunc):
     (lambda y: y**0.4, lambda y: np.power(y, 0.4)),
 ])
 @if_has_autograd
-@test_utils.test()
+@test_utils.test(exclude=[ti.cc])
 def test_pow(tifunc, npfunc):
     grad_test(tifunc, npfunc)
+    grad_test_fwd(tifunc, npfunc)
 
 
 @pytest.mark.parametrize('tifunc,npfunc', [
@@ -192,9 +251,79 @@ def test_pow(tifunc, npfunc):
     (lambda y: y**0.4, lambda y: np.power(y, 0.4)),
 ])
 @if_has_autograd
-@test_utils.test(require=ti.extension.data64, default_fp=ti.f64)
+@test_utils.test(require=ti.extension.data64,
+                 default_fp=ti.f64,
+                 exclude=[ti.cc])
 def test_pow_f64(tifunc, npfunc):
     grad_test(tifunc, npfunc)
+    grad_test_fwd(tifunc, npfunc)
+
+
+@test_utils.test()
+def test_select():
+    N = 5
+    loss = ti.field(ti.f32, shape=N)
+    x = ti.field(ti.f32, shape=N)
+    y = ti.field(ti.f32, shape=N)
+    ti.root.lazy_grad()
+
+    for i in range(N):
+        x[i] = i
+        y[i] = -i
+        loss.grad[i] = 1.0
+
+    @ti.kernel
+    def func():
+        for i in range(N):
+            loss[i] += ti.select(i % 2, x[i], y[i])
+
+    func()
+    func.grad()
+    for i in range(N):
+        if i % 2:
+            assert loss[i] == i
+        else:
+            assert loss[i] == -i
+        assert x.grad[i] == i % 2 * 1.0
+        assert y.grad[i] == (not i % 2) * 1.0
+
+
+@test_utils.test()
+def test_select_fwd():
+    N = 5
+    loss = ti.field(ti.f32, shape=N)
+    x = ti.field(ti.f32, shape=N)
+    y = ti.field(ti.f32, shape=N)
+    ti.root.lazy_dual()
+
+    for i in range(N):
+        x[i] = i
+        y[i] = -i
+
+    @ti.kernel
+    def func():
+        for i in range(N):
+            loss[i] = ti.select(i % 2, x[i], y[i])
+
+    with ti.ad.FwdMode(loss=loss, parameters=x, seed=[1.0 for _ in range(N)]):
+        func()
+
+    for i in range(N):
+        if i % 2:
+            assert loss[i] == i
+        else:
+            assert loss[i] == -i
+        assert loss.dual[i] == i % 2 * 1.0
+
+    with ti.ad.FwdMode(loss=loss, parameters=y, seed=[1.0 for _ in range(N)]):
+        func()
+
+    for i in range(N):
+        if i % 2:
+            assert loss[i] == i
+        else:
+            assert loss[i] == -i
+        assert loss.dual[i] == (not i % 2) * 1.0
 
 
 @test_utils.test()
@@ -351,3 +480,31 @@ def test_ad_frac():
     expected = np.modf(randoms)[0] * 2
     for i in range(n):
         assert grads[i] == test_utils.approx(expected[i], rel=1e-4)
+
+
+@test_utils.test()
+def test_ad_global_store_forwarding():
+    x = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
+    a = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
+    b = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
+    c = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
+    d = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
+    e = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
+
+    @ti.kernel
+    def func():
+        a[None] = x[None]
+        b[None] = a[None] * 2
+        c[None] = b[None] * 3
+        d[None] = c[None] * 4
+        e[None] = d[None] * 5
+
+    x[None] = 1
+
+    with ti.ad.Tape(loss=e):
+        func()
+    assert x.grad[None] == 120.0
+    assert a.grad[None] == 120.0
+    assert b.grad[None] == 60.0
+    assert c.grad[None] == 20.0
+    assert d.grad[None] == 5.0

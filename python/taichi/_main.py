@@ -12,7 +12,10 @@ from functools import wraps
 from pathlib import Path
 
 import numpy as np
+import rich
 from colorama import Fore
+from rich.console import Console
+from rich.syntax import Syntax
 from taichi._lib import core as _ti_core
 from taichi._lib import utils
 from taichi.tools import cc_compose, diagnose, video
@@ -21,7 +24,7 @@ import taichi as ti
 
 
 def timer(func):
-    """Function decorator to benchmark a function runnign time."""
+    """Function decorator to benchmark a function running time."""
     @wraps(func)
     def wrapper(*args, **kwargs):
         start = timeit.default_timer()
@@ -34,7 +37,7 @@ def timer(func):
 
 
 def registerableCLI(cls):
-    """Class decorator to register methodss with @register into a set."""
+    """Class decorator to register methods with @register into a set."""
     cls.registered_commands = set([])
     for name in dir(cls):
         method = getattr(cls, name)
@@ -137,7 +140,7 @@ class TaichiMain:
         return support_choice_with_dot_py
 
     @register
-    def gallery(self, argumets: list = sys.argv[2:]):
+    def gallery(self, arguments: list = sys.argv[2:]):
         """Use mouse to select and run taichi examples in an interactive gui."""
         # set the spacing parameters in the gallery image
         slide_bar = 14
@@ -198,17 +201,9 @@ class TaichiMain:
             script = list(examples_dir.rglob(f"{example_name}.py"))[0]
             print("Demo source code:")
             print()
-            try:
-                import rich.console  # pylint: disable=C0415
-                import rich.syntax  # pylint: disable=C0415
-                content = rich.syntax.Syntax.from_path(script,
-                                                       line_numbers=True)
-                console = rich.console.Console()
-                console.print(content)
-            except ImportError:
-                with open(script, "r") as f:
-                    shutil.copyfileobj(f, sys.stdout)
-
+            content = Syntax.from_path(script, line_numbers=True)
+            console = rich.console.Console()
+            console.print(content)
             self._exec_python_file(script)
 
         while gui.running:
@@ -230,15 +225,43 @@ class TaichiMain:
     @register
     def example(self, arguments: list = sys.argv[2:]):
         """Run an example by name (or name.py)"""
+        def colormap(index, name):
+            from colorsys import hls_to_rgb  # pylint: disable=C0415
+            x = (ord(name[0].upper()) - 64.0) / 26.0
+            r, g, b = hls_to_rgb(x, 0.4, 1.0)
+            r = hex(int(r * 255) % 16)[2:]
+            g = hex(int(g * 255) % 16)[2:]
+            b = hex(int(b * 255) % 16)[2:]
+            return f"{index}: [#{r}{r}{g}{g}{b}{b}]{name}"
+
+        console = Console()
+        table = rich.table.Table(
+            box=rich.box.HORIZONTALS,
+            show_header=False,
+            header_style='bold #2070b2',
+            title='[bold][#3fdda4]TAICHI[#f8e020] EXAMPLES')
+
+        ncols = 3
         choices = TaichiMain._get_available_examples()
+        nrows, rem = divmod(len(choices), ncols)
+        if rem > 0:
+            nrows += 1
+        names = sorted(choices.keys())
+        for k in range(nrows):
+            table.add_row(
+                *
+                [colormap(j, names[j]) for j in range(k, len(choices), nrows)])
 
         parser = argparse.ArgumentParser(prog='ti example',
                                          description=f"{self.example.__doc__}")
-        parser.add_argument(
-            "name",
-            help="Name of an example (supports .py extension too)\n",
-            type=TaichiMain._example_choices_type(choices.keys()),
-            choices=sorted(choices.keys()))
+        parser.add_argument("name",
+                            type=TaichiMain._example_choices_type(
+                                choices.keys()),
+                            choices=sorted(choices.keys()),
+                            help=console.print(table),
+                            nargs="?",
+                            default=None,
+                            metavar="name")
         parser.add_argument(
             '-p',
             '--print',
@@ -265,30 +288,32 @@ class TaichiMain:
         args = parser.parse_args(arguments)
 
         examples_dir = TaichiMain._get_examples_dir()
-        target = str(
-            (examples_dir / choices[args.name] / f"{args.name}.py").resolve())
+        example_name = args.name
+        if example_name is None:
+            index = int(input("Please input the number of the example: "))
+            while not 0 <= index < len(names):
+                index = int(
+                    input(
+                        f"Example [{index}] does not exist. Please try again: "
+                    ))
+            example_name = names[index]
+        target = str((examples_dir / choices[example_name] /
+                      f"{example_name}.py").resolve())
         # path for examples needs to be modified for implicit relative imports
-        sys.path.append(str((examples_dir / choices[args.name]).resolve()))
+        sys.path.append(str((examples_dir / choices[example_name]).resolve()))
 
         # Short circuit for testing
         if self.test_mode:
             return args
 
         if args.save:
-            print(f"Saving example {args.name} to current directory...")
+            print(f"Saving example {example_name} to current directory...")
             shutil.copy(target, '.')
             return 0
 
         if args.pretty_print:
-            try:
-                import rich.console  # pylint: disable=C0415
-                import rich.syntax  # pylint: disable=C0415
-            except ImportError:
-                print('To make -P work, please: python3 -m pip install rich')
-                return 1
-            # https://rich.readthedocs.io/en/latest/syntax.html
             syntax = rich.syntax.Syntax.from_path(target, line_numbers=True)
-            console = rich.console.Console()
+            console = Console()
             console.print(syntax)
             return 0
 
@@ -297,11 +322,9 @@ class TaichiMain:
                 print(f.read())
             return 0
 
-        print(f"Running example {args.name} ...")
+        print(f"Running example {example_name} ...")
 
         runpy.run_path(target, run_name='__main__')
-
-        return None
 
     @staticmethod
     @register
@@ -821,18 +844,9 @@ class TaichiMain:
         parser.add_argument(
             'hdrout_name',
             help='The output C header file name, e.g. program.h')
-        parser.add_argument(
-            '-e',
-            '--emscripten',
-            required=False,
-            default=False,
-            dest='emscripten',
-            action='store_true',
-            help='Generate output C file for Emscripten instead of raw C')
         args = parser.parse_args(arguments)
 
-        cc_compose.main(args.fin_name, args.fout_name, args.hdrout_name,
-                        args.emscripten)
+        cc_compose.main(args.fin_name, args.fout_name, args.hdrout_name)
 
     @staticmethod
     @register

@@ -34,7 +34,7 @@
 #include "taichi/program/kernel_profiler.h"
 
 #if defined(TI_WITH_CUDA)
-#include "taichi/backends/cuda/cuda_context.h"
+#include "taichi/rhi/cuda/cuda_context.h"
 #endif
 
 TI_NAMESPACE_BEGIN
@@ -59,6 +59,7 @@ TLANG_NAMESPACE_END
 TI_NAMESPACE_BEGIN
 void export_lang(py::module &m) {
   using namespace taichi::lang;
+  using namespace std::placeholders;
 
   py::register_exception<TaichiTypeError>(m, "TaichiTypeError",
                                           PyExc_TypeError);
@@ -161,6 +162,8 @@ void export_lang(py::module &m) {
                      &CompileConfig::move_loop_invariant_outside_if)
       .def_readwrite("default_cpu_block_dim",
                      &CompileConfig::default_cpu_block_dim)
+      .def_readwrite("cpu_block_dim_adaptive",
+                     &CompileConfig::cpu_block_dim_adaptive)
       .def_readwrite("default_gpu_block_dim",
                      &CompileConfig::default_gpu_block_dim)
       .def_readwrite("gpu_max_reg", &CompileConfig::gpu_max_reg)
@@ -235,7 +238,15 @@ void export_lang(py::module &m) {
                      &CompileConfig::auto_mesh_local_default_occupacy)
       .def_readwrite("offline_cache", &CompileConfig::offline_cache)
       .def_readwrite("offline_cache_file_path",
-                     &CompileConfig::offline_cache_file_path);
+                     &CompileConfig::offline_cache_file_path)
+      .def_readwrite("offline_cache_cleaning_policy",
+                     &CompileConfig::offline_cache_cleaning_policy)
+      .def_readwrite("offline_cache_max_size_of_files",
+                     &CompileConfig::offline_cache_max_size_of_files)
+      .def_readwrite("offline_cache_cleaning_factor",
+                     &CompileConfig::offline_cache_cleaning_factor)
+      .def_readwrite("num_compile_threads", &CompileConfig::num_compile_threads)
+      .def_readwrite("vk_api_version", &CompileConfig::vk_api_version);
 
   m.def("reset_default_compile_config",
         [&]() { default_compile_config = CompileConfig(); });
@@ -292,6 +303,7 @@ void export_lang(py::module &m) {
       .def("insert_external_func_call", &ASTBuilder::insert_external_func_call)
       .def("expr_alloca", &ASTBuilder::expr_alloca)
       .def("expr_alloca_local_tensor", &ASTBuilder::expr_alloca_local_tensor)
+      .def("expr_alloca_shared_array", &ASTBuilder::expr_alloca_shared_array)
       .def("create_assert_stmt", &ASTBuilder::create_assert_stmt)
       .def("expr_assign", &ASTBuilder::expr_assign)
       .def("begin_frontend_range_for", &ASTBuilder::begin_frontend_range_for)
@@ -448,6 +460,14 @@ void export_lang(py::module &m) {
           py::arg("element_shape") = py::tuple(),
           py::arg("layout") = ExternalArrayLayout::kNull,
           py::return_value_policy::reference)
+      .def(
+          "create_texture",
+          [&](Program *program, const DataType &dt, int num_channels,
+              const std::vector<int> &shape) -> Texture * {
+            return program->create_texture(dt, num_channels, shape);
+          },
+          py::arg("dt"), py::arg("num_channels"),
+          py::arg("shape") = py::tuple(), py::return_value_policy::reference)
       .def("get_ndarray_data_ptr_as_int",
            [](Program *program, Ndarray *ndarray) {
              return program->get_ndarray_data_ptr_as_int(ndarray);
@@ -504,7 +524,8 @@ void export_lang(py::module &m) {
                                bool))(&SNode::bitmasked),
            py::return_value_policy::reference)
       .def("bit_struct", &SNode::bit_struct, py::return_value_policy::reference)
-      .def("bit_array", &SNode::bit_array, py::return_value_policy::reference)
+      .def("quant_array", &SNode::quant_array,
+           py::return_value_policy::reference)
       .def("place", &SNode::place)
       .def("data_type", [](SNode *snode) { return snode->dt; })
       .def("name", [](SNode *snode) { return snode->name; })
@@ -560,17 +581,27 @@ void export_lang(py::module &m) {
       .def_readonly("element_shape", &Ndarray::element_shape)
       .def_readonly("shape", &Ndarray::shape);
 
+  py::class_<Texture>(m, "Texture")
+      .def("device_allocation_ptr", &Texture::get_device_allocation_ptr_as_int)
+      .def("from_ndarray", &Texture::from_ndarray)
+      .def("from_snode", &Texture::from_snode);
+
   py::enum_<aot::ArgKind>(m, "ArgKind")
       .value("SCALAR", aot::ArgKind::kScalar)
       .value("NDARRAY", aot::ArgKind::kNdarray)
+      // Using this MATRIX as Scalar alias, we can move to native matrix type
+      // when supported
+      .value("MATRIX", aot::ArgKind::kMatrix)
       .export_values();
 
   py::class_<aot::Arg>(m, "Arg")
-      .def(py::init<aot::ArgKind, std::string, DataType &, std::vector<int>>(),
+      .def(py::init<aot::ArgKind, std::string, DataType &, size_t,
+                    std::vector<int>>(),
            py::arg("tag"), py::arg("name"), py::arg("dtype"),
-           py::arg("element_shape") = py::tuple())
+           py::arg("field_dim"), py::arg("element_shape"))
       .def_readonly("name", &aot::Arg::name)
       .def_readonly("element_shape", &aot::Arg::element_shape)
+      .def_readonly("field_dim", &aot::Arg::field_dim)
       .def("dtype", &aot::Arg::dtype);
 
   py::class_<Node>(m, "Node");
@@ -589,21 +620,49 @@ void export_lang(py::module &m) {
       .def("seq", &GraphBuilder::seq, py::return_value_policy::reference);
 
   py::class_<aot::CompiledGraph>(m, "CompiledGraph")
-      .def("run", [](aot::CompiledGraph *self, const py::dict &arg_ptrs,
-                     const py::dict &arg_ints, const py::dict &arg_floats) {
+      .def("run", [](aot::CompiledGraph *self, const py::dict &pyargs) {
         std::unordered_map<std::string, aot::IValue> args;
-        for (auto it : arg_ptrs) {
-          auto &val = it.second.cast<Ndarray &>();
-          args.insert(
-              {py::cast<std::string>(it.first), aot::IValue::create(val)});
-        }
-        for (auto it : arg_ints) {
-          args.insert({py::cast<std::string>(it.first),
-                       aot::IValue::create(py::cast<int>(it.second))});
-        }
-        for (auto it : arg_floats) {
-          args.insert({py::cast<std::string>(it.first),
-                       aot::IValue::create(py::cast<double>(it.second))});
+        for (auto it : pyargs) {
+          std::string arg_name = py::cast<std::string>(it.first);
+          auto tag = self->args[arg_name].tag;
+          if (tag == aot::ArgKind::kNdarray) {
+            auto &val = it.second.cast<Ndarray &>();
+            args.insert(
+                {py::cast<std::string>(it.first), aot::IValue::create(val)});
+          } else if (tag == aot::ArgKind::kScalar ||
+                     tag == aot::ArgKind::kMatrix) {
+            std::string arg_name = py::cast<std::string>(it.first);
+            auto expected_dtype = self->args[arg_name].dtype();
+            if (expected_dtype == PrimitiveType::i32) {
+              args.insert(
+                  {arg_name, aot::IValue::create(py::cast<int>(it.second))});
+            } else if (expected_dtype == PrimitiveType::i64) {
+              args.insert(
+                  {arg_name, aot::IValue::create(py::cast<int64>(it.second))});
+            } else if (expected_dtype == PrimitiveType::f32) {
+              args.insert(
+                  {arg_name, aot::IValue::create(py::cast<float>(it.second))});
+            } else if (expected_dtype == PrimitiveType::f64) {
+              args.insert(
+                  {arg_name, aot::IValue::create(py::cast<double>(it.second))});
+            } else if (expected_dtype == PrimitiveType::i16) {
+              args.insert(
+                  {arg_name, aot::IValue::create(py::cast<int16>(it.second))});
+            } else if (expected_dtype == PrimitiveType::u32) {
+              args.insert(
+                  {arg_name, aot::IValue::create(py::cast<uint32>(it.second))});
+            } else if (expected_dtype == PrimitiveType::u64) {
+              args.insert(
+                  {arg_name, aot::IValue::create(py::cast<uint64>(it.second))});
+            } else if (expected_dtype == PrimitiveType::u16) {
+              args.insert(
+                  {arg_name, aot::IValue::create(py::cast<uint16>(it.second))});
+            } else {
+              TI_NOT_IMPLEMENTED;
+            }
+          } else {
+            TI_NOT_IMPLEMENTED;
+          }
         }
         self->run(args);
       });
@@ -634,6 +693,9 @@ void export_lang(py::module &m) {
       .def("set_arg_external_array_with_shape",
            &Kernel::LaunchContextBuilder::set_arg_external_array_with_shape)
       .def("set_arg_ndarray", &Kernel::LaunchContextBuilder::set_arg_ndarray)
+      .def("set_arg_texture", &Kernel::LaunchContextBuilder::set_arg_texture)
+      .def("set_arg_rw_texture",
+           &Kernel::LaunchContextBuilder::set_arg_rw_texture)
       .def("set_extra_arg_int",
            &Kernel::LaunchContextBuilder::set_extra_arg_int);
 
@@ -654,8 +716,6 @@ void export_lang(py::module &m) {
            [](Expr *expr) { return expr->is<GlobalVariableExpression>(); })
       .def("is_external_var",
            [](Expr *expr) { return expr->is<ExternalTensorExpression>(); })
-      .def("is_global_ptr",
-           [](Expr *expr) { return expr->is<GlobalPtrExpression>(); })
       .def("is_primal",
            [](Expr *expr) {
              return expr->cast<GlobalVariableExpression>()->is_primal;
@@ -684,7 +744,7 @@ void export_lang(py::module &m) {
         // The reason that there are both get_raw_address() and
         // get_underlying_ptr_address() is that Expr itself is mostly wrapper
         // around its underlying |expr| (of type Expression). Expr |e| can be
-        // temporary, while the underlying |expr| is mostly persistant.
+        // temporary, while the underlying |expr| is mostly persistent.
         //
         // Same get_raw_address() implies that get_underlying_ptr_address() are
         // also the same. The reverse is not true.
@@ -841,8 +901,19 @@ void export_lang(py::module &m) {
   m.def("make_const_expr_fp",
         Expr::make<ConstExpression, const DataType &, float64>);
 
-  m.def("make_global_ptr_expr",
-        Expr::make<GlobalPtrExpression, const Expr &, const ExprGroup &>);
+  m.def("make_texture_ptr_expr", Expr::make<TexturePtrExpression, int, int>);
+  m.def("make_rw_texture_ptr_expr",
+        Expr::make<TexturePtrExpression, int, int, int, const DataType &, int>);
+
+  auto &&texture =
+      py::enum_<TextureOpType>(m, "TextureOpType", py::arithmetic());
+  for (int t = 0; t <= (int)TextureOpType::kStore; t++)
+    texture.value(texture_op_type_name(TextureOpType(t)).c_str(),
+                  TextureOpType(t));
+  texture.export_values();
+  m.def("make_texture_op_expr",
+        Expr::make<TextureOpExpression, const TextureOpType &, const Expr &,
+                   const ExprGroup &>);
 
   auto &&bin = py::enum_<BinaryOpType>(m, "BinaryOpType", py::arithmetic());
   for (int t = 0; t <= (int)BinaryOpType::undefined; t++)
@@ -865,7 +936,7 @@ void export_lang(py::module &m) {
 #undef PER_TYPE
 
   m.def("data_type_size", data_type_size);
-  m.def("is_custom_type", is_custom_type);
+  m.def("is_quant", is_quant);
   m.def("is_integral", is_integral);
   m.def("is_signed", is_signed);
   m.def("is_real", is_real);
@@ -882,8 +953,11 @@ void export_lang(py::module &m) {
     return expr[expr_group];
   });
 
-  m.def("make_tensor_element_expr",
-        Expr::make<TensorElementExpression, const Expr &, const ExprGroup &,
+  m.def("make_index_expr",
+        Expr::make<IndexExpression, const Expr &, const ExprGroup &>);
+
+  m.def("make_stride_expr",
+        Expr::make<StrideExpression, const Expr &, const ExprGroup &,
                    const std::vector<int> &, int>);
 
   m.def("get_external_tensor_dim", [](const Expr &expr) {
@@ -928,7 +1002,6 @@ void export_lang(py::module &m) {
   });
 
   m.def("test_throw", [] { throw IRModified(); });
-  m.def("needs_grad", needs_grad);
 
 #if TI_WITH_LLVM
   m.def("libdevice_path", libdevice_path);
@@ -1010,13 +1083,15 @@ void export_lang(py::module &m) {
   // the factory methods, otherwise pybind11 will delete the Types owned by
   // TypeFactory on Python-scope pointer destruction.
   py::class_<TypeFactory>(m, "TypeFactory")
-      .def("get_custom_int_type", &TypeFactory::get_custom_int_type,
+      .def("get_quant_int_type", &TypeFactory::get_quant_int_type,
            py::arg("num_bits"), py::arg("is_signed"), py::arg("compute_type"),
            py::return_value_policy::reference)
-      .def("get_custom_float_type", &TypeFactory::get_custom_float_type,
+      .def("get_quant_fixed_type", &TypeFactory::get_quant_fixed_type,
+           py::arg("digits_type"), py::arg("compute_type"), py::arg("scale"),
+           py::return_value_policy::reference)
+      .def("get_quant_float_type", &TypeFactory::get_quant_float_type,
            py::arg("digits_type"), py::arg("exponent_type"),
-           py::arg("compute_type"), py::arg("scale"),
-           py::return_value_policy::reference);
+           py::arg("compute_type"), py::return_value_policy::reference);
 
   m.def("get_type_factory_instance", TypeFactory::get_instance,
         py::return_value_policy::reference);
@@ -1206,6 +1281,13 @@ void export_lang(py::module &m) {
           mesh_ptr.ptr->relations.insert(std::pair(
               type, mesh::MeshLocalRelation(value, patch_offset, offset)));
         });
+
+  m.def("wait_for_debugger", []() {
+#ifdef WIN32
+    while (!::IsDebuggerPresent())
+      ::Sleep(100);
+#endif
+  });
 }
 
 TI_NAMESPACE_END

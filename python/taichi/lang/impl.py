@@ -19,18 +19,24 @@ from taichi.lang.mesh import (ConvType, MeshElementFieldProxy, MeshInstance,
                               MeshRelationAccessProxy,
                               MeshReorderedMatrixFieldProxy,
                               MeshReorderedScalarFieldProxy, element_type_name)
+from taichi.lang.simt.block import SharedArray
 from taichi.lang.snode import SNode
 from taichi.lang.struct import Struct, StructField, _IntermediateStruct
-from taichi.lang.tape import TapeImpl
 from taichi.lang.util import (cook_dtype, get_traceback, is_taichi_class,
                               python_scope, taichi_scope, warning)
-from taichi.types.primitive_types import f16, f32, f64, i32, i64, types
+from taichi.types.primitive_types import all_types, f16, f32, f64, i32, i64
 
 
 @taichi_scope
 def expr_init_local_tensor(shape, element_type, elements):
     return get_runtime().prog.current_ast_builder().expr_alloca_local_tensor(
         shape, element_type, elements)
+
+
+@taichi_scope
+def expr_init_shared_array(shape, element_type):
+    return get_runtime().prog.current_ast_builder().expr_alloca_shared_array(
+        shape, element_type)
 
 
 @taichi_scope
@@ -41,6 +47,8 @@ def expr_init(rhs):
         return type(rhs)(*rhs.to_list())
     if isinstance(rhs, Matrix):
         return Matrix(rhs.to_list())
+    if isinstance(rhs, SharedArray):
+        return rhs
     if isinstance(rhs, Struct):
         return Struct(rhs.to_dict(include_methods=True))
     if isinstance(rhs, list):
@@ -100,7 +108,7 @@ def begin_frontend_if(ast_builder, cond):
 
 
 @taichi_scope
-def subscript(value, *_indices, skip_reordered=False):
+def subscript(value, *_indices, skip_reordered=False, get_ref=False):
     if isinstance(value, np.ndarray):
         return value.__getitem__(_indices)
 
@@ -132,7 +140,7 @@ def subscript(value, *_indices, skip_reordered=False):
         index_dim = indices_expr_group.size()
 
     if is_taichi_class(value):
-        return value._subscript(*_indices)
+        return value._subscript(*_indices, get_ref=get_ref)
     if isinstance(value, MeshElementFieldProxy):
         return value.subscript(*_indices)
     if isinstance(value, MeshRelationAccessProxy):
@@ -197,10 +205,15 @@ def subscript(value, *_indices, skip_reordered=False):
 
 
 @taichi_scope
-def make_tensor_element_expr(_var, _indices, shape, stride):
+def make_stride_expr(_var, _indices, shape, stride):
     return Expr(
-        _ti_core.make_tensor_element_expr(_var, make_expr_group(*_indices),
-                                          shape, stride))
+        _ti_core.make_stride_expr(_var, make_expr_group(*_indices), shape,
+                                  stride))
+
+
+@taichi_scope
+def make_index_expr(_var, _indices):
+    return Expr(_ti_core.make_index_expr(_var, make_expr_group(*_indices)))
 
 
 class SrcInfoGuard:
@@ -220,21 +233,23 @@ class PyTaichi:
         self.materialized = False
         self.prog = None
         self.compiled_functions = {}
-        self.compiled_grad_functions = {}
         self.src_info_stack = []
         self.inside_kernel = False
         self.current_kernel = None
         self.global_vars = []
+        self.grad_vars = []
+        self.dual_vars = []
         self.matrix_fields = []
         self.default_fp = f32
         self.default_ip = i32
         self.target_tape = None
+        self.fwd_mode_manager = None
         self.grad_replaced = False
         self.kernels = kernels or []
         self._signal_handler_registry = None
 
     def get_num_compiled_functions(self):
-        return len(self.compiled_functions) + len(self.compiled_grad_functions)
+        return len(self.compiled_functions)
 
     def src_info_guard(self, info):
         return SrcInfoGuard(self.src_info_stack, info)
@@ -296,6 +311,28 @@ class PyTaichi:
                 f'{bar}Please consider specifying a shape for them. E.g.,' +
                 '\n\n  x = ti.field(float, shape=(2, 3))')
 
+    def _check_gradient_field_not_placed(self, gradient_type):
+        not_placed = set()
+        gradient_vars = []
+        if gradient_type == "grad":
+            gradient_vars = self.grad_vars
+        elif gradient_type == "dual":
+            gradient_vars = self.dual_vars
+        for _var in gradient_vars:
+            if _var.ptr.snode() is None:
+                not_placed.add(self._get_tb(_var))
+
+        if len(not_placed):
+            bar = '=' * 44 + '\n'
+            raise RuntimeError(
+                f'These field(s) requrie `needs_{gradient_type}=True`, however their {gradient_type} field(s) are not placed:\n{bar}'
+                + f'{bar}'.join(not_placed) +
+                f'{bar}Please consider place the {gradient_type} field(s). E.g.,'
+                + '\n\n  ti.root.dense(ti.i, 1).place(x.{gradient_type})' +
+                '\n\n Or specify a shape for the field(s). E.g.,' +
+                '\n\n  x = ti.field(float, shape=(2, 3), needs_{gradient_type}=True)'
+            )
+
     def _check_matrix_field_member_shape(self):
         for _field in self.matrix_fields:
             shapes = [
@@ -317,9 +354,13 @@ class PyTaichi:
         self.materialized = True
 
         self._check_field_not_placed()
+        self._check_gradient_field_not_placed("grad")
+        self._check_gradient_field_not_placed("dual")
         self._check_matrix_field_member_shape()
         self._calc_matrix_field_dynamic_index_stride()
         self.global_vars = []
+        self.grad_vars = []
+        self.dual_vars = []
         self.matrix_fields = []
 
     def _register_signal_handlers(self):
@@ -332,9 +373,6 @@ class PyTaichi:
             self.prog = None
         self._signal_handler_registry = None
         self.materialized = False
-
-    def get_tape(self, loss=None):
-        return TapeImpl(self, loss)
 
     def sync(self):
         self.materialize()
@@ -421,7 +459,7 @@ class _UninitializedRootFieldsBuilder:
 # gets delayed. `_root_fb` will only exist in the taichi.lang.impl module, so
 # writing to it is would result in less for maintenance cost.
 #
-# `_root_fb` will be overriden inside :func:`taichi.lang.init`.
+# `_root_fb` will be overridden inside :func:`taichi.lang.init`.
 _root_fb = _UninitializedRootFieldsBuilder()
 
 
@@ -485,31 +523,59 @@ Example::
 
 
 @python_scope
-def create_field_member(dtype, name):
+def create_field_member(dtype, name, needs_grad, needs_dual):
     dtype = cook_dtype(dtype)
 
     # primal
-    x = Expr(get_runtime().prog.make_id_expr(""))
+    prog = get_runtime().prog
+    if prog is None:
+        raise TaichiRuntimeError(
+            "Cannont create field, maybe you forgot to call `ti.init()` first?"
+        )
+
+    x = Expr(prog.make_id_expr(""))
     x.declaration_tb = get_traceback(stacklevel=4)
     x.ptr = _ti_core.global_new(x.ptr, dtype)
     x.ptr.set_name(name)
     x.ptr.set_is_primal(True)
     pytaichi.global_vars.append(x)
 
-    x_adjoint = None
-    if _ti_core.needs_grad(dtype):
+    x_grad = None
+    x_dual = None
+    if _ti_core.is_real(dtype):
         # adjoint
-        x_adjoint = Expr(get_runtime().prog.make_id_expr(""))
-        x_adjoint.ptr = _ti_core.global_new(x_adjoint.ptr, dtype)
-        x_adjoint.ptr.set_name(name + ".grad")
-        x_adjoint.ptr.set_is_primal(False)
-        x.ptr.set_adjoint(x_adjoint.ptr)
+        x_grad = Expr(get_runtime().prog.make_id_expr(""))
+        x_grad.declaration_tb = get_traceback(stacklevel=4)
+        x_grad.ptr = _ti_core.global_new(x_grad.ptr, dtype)
+        x_grad.ptr.set_name(name + ".grad")
+        x_grad.ptr.set_is_primal(False)
+        x.ptr.set_adjoint(x_grad.ptr)
+        if needs_grad:
+            pytaichi.grad_vars.append(x_grad)
 
-    return x, x_adjoint
+        # dual
+        x_dual = Expr(get_runtime().prog.make_id_expr(""))
+        x_dual.ptr = _ti_core.global_new(x_dual.ptr, dtype)
+        x_dual.ptr.set_name(name + ".dual")
+        x_dual.ptr.set_is_primal(False)
+        x.ptr.set_dual(x_dual.ptr)
+        if needs_dual:
+            pytaichi.dual_vars.append(x_dual)
+    elif needs_grad or needs_dual:
+        raise TaichiRuntimeError(
+            f'{dtype} is not supported for field with `needs_grad=True` or `needs_dual=True`.'
+        )
+
+    return x, x_grad, x_dual
 
 
 @python_scope
-def field(dtype, shape=None, name="", offset=None, needs_grad=False):
+def field(dtype,
+          shape=None,
+          name="",
+          offset=None,
+          needs_grad=False,
+          needs_dual=False):
     """Defines a Taichi field.
 
     A Taichi field can be viewed as an abstract N-dimensional array, hiding away
@@ -524,8 +590,10 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False):
         shape (Union[int, tuple[int]], optional): shape of the field.
         name (str, optional): name of the field.
         offset (Union[int, tuple[int]], optional): offset of the field domain.
-        needs_grad (bool, optional): whether this field participates in autodiff
+        needs_grad (bool, optional): whether this field participates in autodiff (reverse mode)
             and thus needs an adjoint field to store the gradients.
+        needs_dual (bool, optional): whether this field participates in autodiff (forward mode)
+            and thus needs an dual field to store the gradients.
 
     Example::
 
@@ -552,15 +620,21 @@ def field(dtype, shape=None, name="", offset=None, needs_grad=False):
     assert (offset is None or shape
             is not None), 'The shape cannot be None when offset is being set'
 
-    x, x_adjoint = create_field_member(dtype, name)
-    x, x_adjoint = ScalarField(x), ScalarField(x_adjoint)
-    x._set_grad(x_adjoint, reverse_mode=True)
+    x, x_grad, x_dual = create_field_member(dtype, name, needs_grad,
+                                            needs_dual)
+    x, x_grad, x_dual = ScalarField(x), ScalarField(x_grad), ScalarField(
+        x_dual)
+
+    x._set_grad(x_grad)
+    x._set_dual(x_dual)
 
     if shape is not None:
         dim = len(shape)
         root.dense(index_nd(dim), shape).place(x, offset=offset)
         if needs_grad:
-            root.dense(index_nd(dim), shape).place(x_adjoint)
+            root.dense(index_nd(dim), shape).place(x_grad)
+        if needs_dual:
+            root.dense(index_nd(dim), shape).place(x_dual)
     return x
 
 
@@ -584,7 +658,7 @@ def ndarray(dtype, shape, layout=Layout.NULL):
     """
     if isinstance(shape, numbers.Number):
         shape = (shape, )
-    if dtype in types:
+    if dtype in all_types:
         assert layout == Layout.NULL
         return ScalarNdarray(dtype, shape)
     if isinstance(dtype, MatrixType):
@@ -603,7 +677,7 @@ def ti_format_list_to_content_entries(raw):
         return Expr(_var).ptr
 
     def list_ti_repr(_var):
-        yield '['  # distinguishing tuple & list will increase maintainance cost
+        yield '['  # distinguishing tuple & list will increase maintenance cost
         for i, v in enumerate(_var):
             if i:
                 yield ', '

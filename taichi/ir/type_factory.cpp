@@ -45,43 +45,58 @@ Type *TypeFactory::get_pointer_type(Type *element, bool is_bit_pointer) {
   return pointer_types_[key].get();
 }
 
-Type *TypeFactory::get_custom_int_type(int num_bits,
-                                       bool is_signed,
-                                       Type *compute_type) {
+Type *TypeFactory::get_quant_int_type(int num_bits,
+                                      bool is_signed,
+                                      Type *compute_type) {
   auto key = std::make_tuple(num_bits, is_signed, compute_type);
-  if (custom_int_types_.find(key) == custom_int_types_.end()) {
-    custom_int_types_[key] =
-        std::make_unique<CustomIntType>(num_bits, is_signed, compute_type);
+  if (quant_int_types_.find(key) == quant_int_types_.end()) {
+    quant_int_types_[key] =
+        std::make_unique<QuantIntType>(num_bits, is_signed, compute_type);
   }
-  return custom_int_types_[key].get();
+  return quant_int_types_[key].get();
 }
 
-Type *TypeFactory::get_custom_float_type(Type *digits_type,
-                                         Type *exponent_type,
-                                         Type *compute_type,
-                                         float64 scale) {
-  auto key = std::make_tuple(digits_type, exponent_type, compute_type, scale);
-  if (custom_float_types_.find(key) == custom_float_types_.end()) {
-    custom_float_types_[key] = std::make_unique<CustomFloatType>(
-        digits_type, exponent_type, compute_type, scale);
+Type *TypeFactory::get_quant_fixed_type(Type *digits_type,
+                                        Type *compute_type,
+                                        float64 scale) {
+  auto key = std::make_tuple(digits_type, compute_type, scale);
+  if (quant_fixed_types_.find(key) == quant_fixed_types_.end()) {
+    quant_fixed_types_[key] =
+        std::make_unique<QuantFixedType>(digits_type, compute_type, scale);
   }
-  return custom_float_types_[key].get();
+  return quant_fixed_types_[key].get();
 }
 
-Type *TypeFactory::get_bit_struct_type(PrimitiveType *physical_type,
-                                       std::vector<Type *> member_types,
-                                       std::vector<int> member_bit_offsets) {
+Type *TypeFactory::get_quant_float_type(Type *digits_type,
+                                        Type *exponent_type,
+                                        Type *compute_type) {
+  auto key = std::make_tuple(digits_type, exponent_type, compute_type);
+  if (quant_float_types_.find(key) == quant_float_types_.end()) {
+    quant_float_types_[key] = std::make_unique<QuantFloatType>(
+        digits_type, exponent_type, compute_type);
+  }
+  return quant_float_types_[key].get();
+}
+
+Type *TypeFactory::get_bit_struct_type(
+    PrimitiveType *physical_type,
+    const std::vector<Type *> &member_types,
+    const std::vector<int> &member_bit_offsets,
+    const std::vector<bool> &member_owns_shared_exponents,
+    const std::vector<int> &member_exponents,
+    const std::vector<std::vector<int>> &member_exponent_users) {
   bit_struct_types_.push_back(std::make_unique<BitStructType>(
-      physical_type, member_types, member_bit_offsets));
+      physical_type, member_types, member_bit_offsets,
+      member_owns_shared_exponents, member_exponents, member_exponent_users));
   return bit_struct_types_.back().get();
 }
 
-Type *TypeFactory::get_bit_array_type(PrimitiveType *physical_type,
-                                      Type *element_type,
-                                      int num_elements) {
-  bit_array_types_.push_back(std::make_unique<BitArrayType>(
+Type *TypeFactory::get_quant_array_type(PrimitiveType *physical_type,
+                                        Type *element_type,
+                                        int num_elements) {
+  quant_array_types_.push_back(std::make_unique<QuantArrayType>(
       physical_type, element_type, num_elements));
-  return bit_array_types_.back().get();
+  return quant_array_types_.back().get();
 }
 
 PrimitiveType *TypeFactory::get_primitive_int_type(int bits, bool is_signed) {

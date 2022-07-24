@@ -1,7 +1,7 @@
 #pragma once
 
-#include "taichi/backends/arch.h"
-#include "taichi/lang_util.h"
+#include "taichi/rhi/arch.h"
+#include "taichi/util/lang_util.h"
 
 namespace taichi {
 namespace lang {
@@ -48,6 +48,7 @@ struct CompileConfig {
   DataType default_ip;
   std::string extra_flags;
   int default_cpu_block_dim;
+  bool cpu_block_dim_adaptive;
   int default_gpu_block_dim;
   int gpu_max_reg;
   int ad_stack_size{0};  // 0 = adaptive
@@ -109,6 +110,13 @@ struct CompileConfig {
   // Offline cache options
   bool offline_cache{false};
   std::string offline_cache_file_path{get_repo_dir() + "ticache"};
+  std::string offline_cache_cleaning_policy{
+      "never"};  // "never"|"version"|"lru"|"fifo"
+  int offline_cache_max_size_of_files{1024 * 1024};  // bytes
+  double offline_cache_cleaning_factor{0.25};        // [0.f, 1.f]
+
+  int num_compile_threads{0};
+  std::string vk_api_version;
 
   CompileConfig();
 };

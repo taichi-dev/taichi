@@ -27,6 +27,7 @@ colors = ti.Vector.field(3, dtype=float, shape=n * n)
 
 bending_springs = False
 
+
 @ti.kernel
 def initialize_mass_points():
     random_offset = ti.Vector([ti.random() - 0.5, ti.random() - 0.5]) * 0.1
@@ -58,20 +59,28 @@ def initialize_mesh_indices():
         else:
             colors[i * n + j] = (1, 0.334, 0.52)
 
+
 initialize_mesh_indices()
 
 spring_offsets = []
-if bending_springs:
-    for i in range(-1, 2):
-        for j in range(-1, 2):
-            if (i, j) != (0, 0):
-                spring_offsets.append(ti.Vector([i, j]))
 
-else:
-    for i in range(-2, 3):
-        for j in range(-2, 3):
-            if (i, j) != (0, 0) and abs(i) + abs(j) <= 2:
-                spring_offsets.append(ti.Vector([i, j]))
+
+def initialize_spring_offsets():
+    if bending_springs:
+        for i in range(-1, 2):
+            for j in range(-1, 2):
+                if (i, j) != (0, 0):
+                    spring_offsets.append(ti.Vector([i, j]))
+
+    else:
+        for i in range(-2, 3):
+            for j in range(-2, 3):
+                if (i, j) != (0, 0) and abs(i) + abs(j) <= 2:
+                    spring_offsets.append(ti.Vector([i, j]))
+
+
+initialize_spring_offsets()
+
 
 @ti.kernel
 def substep():
@@ -87,7 +96,7 @@ def substep():
                 v_ij = v[i] - v[j]
                 d = x_ij.normalized()
                 current_dist = x_ij.norm()
-                original_dist = quad_size * float(i - j).norm()
+                original_dist = quad_size * float(i - j).norm()  # pylint: disable=no-member
                 # Spring force
                 force += -spring_Y * d * (current_dist / original_dist - 1)
                 # Dashpot damping
@@ -105,48 +114,54 @@ def substep():
         x[i] += dt * v[i]
 
 
-
 @ti.kernel
 def update_vertices():
     for i, j in ti.ndrange(n, n):
         vertices[i * n + j] = x[i, j]
 
 
-window = ti.ui.Window("Taichi Cloth Simulation on GGUI", (1024, 1024),
-                      vsync=True)
-canvas = window.get_canvas()
-canvas.set_background_color((1, 1, 1))
-scene = ti.ui.Scene()
-camera = ti.ui.make_camera()
+def main():
+    window = ti.ui.Window("Taichi Cloth Simulation on GGUI", (768, 768),
+                          vsync=True)
+    canvas = window.get_canvas()
+    canvas.set_background_color((1, 1, 1))
+    scene = ti.ui.Scene()
+    camera = ti.ui.make_camera()
 
-current_t = 0.0
-initialize_mass_points()
+    current_t = 0.0
+    initialize_mass_points()
 
-while window.running:
-    if current_t > 1.5:
-        # Reset
-        initialize_mass_points()
-        current_t = 0
+    while window.running:
+        if current_t > 1.5:
+            # Reset
+            initialize_mass_points()
+            current_t = 0
 
-    for i in range(substeps):
-        substep()
-        current_t += dt
-    update_vertices()
+        for i in range(substeps):
+            substep()
+            current_t += dt
+        update_vertices()
 
-    camera.position(0.0, 0.0, 3)
-    camera.lookat(0.0, 0.0, 0)
-    scene.set_camera(camera)
+        camera.position(0.0, 0.0, 3)
+        camera.lookat(0.0, 0.0, 0)
+        scene.set_camera(camera)
 
-    scene.point_light(pos=(0, 1, 2), color=(1, 1, 1))
-    scene.ambient_light((0.5, 0.5, 0.5))
-    scene.mesh(vertices,
-               indices=indices,
-               per_vertex_color=colors,
-               two_sided=True)
+        scene.point_light(pos=(0, 1, 2), color=(1, 1, 1))
+        scene.ambient_light((0.5, 0.5, 0.5))
+        scene.mesh(vertices,
+                   indices=indices,
+                   per_vertex_color=colors,
+                   two_sided=True)
 
-    # Draw a smaller ball to avoid visual penetration
-    scene.particles(ball_center, radius=ball_radius * 0.95, color=(0.5, 0.42, 0.8))
-    canvas.scene(scene)
-    window.show()
+        # Draw a smaller ball to avoid visual penetration
+        scene.particles(ball_center,
+                        radius=ball_radius * 0.95,
+                        color=(0.5, 0.42, 0.8))
+        canvas.scene(scene)
+        window.show()
 
-#TODO: include self-collision handling
+    #TODO: include self-collision handling
+
+
+if __name__ == '__main__':
+    main()

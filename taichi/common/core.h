@@ -35,7 +35,7 @@
 
 // Avoid dependency on glibc 2.27
 #if defined(TI_PLATFORM_LINUX) && defined(TI_ARCH_x64)
-// objdump -T libtaichi_core.so| grep  GLIBC_2.27
+// objdump -T libtaichi_python.so| grep  GLIBC_2.27
 __asm__(".symver logf,logf@GLIBC_2.2.5");
 __asm__(".symver powf,powf@GLIBC_2.2.5");
 __asm__(".symver expf,expf@GLIBC_2.2.5");
@@ -109,7 +109,7 @@ static_assert(__cplusplus >= 201402L, "C++14 required.");
 #define DEBUG_TRIGGER
 #endif
 
-#define TI_STATIC_ASSERT(x) static_assert((x), #x);
+#define TI_STATIC_ASSERT(x) static_assert((x), #x)
 
 #define TI_NAMESPACE_BEGIN namespace taichi {
 #define TI_NAMESPACE_END }
@@ -241,10 +241,10 @@ std::vector<uint8> read(const std::string fn, bool verbose = false);
 //******************************************************************************
 
 inline std::vector<std::string> split_string(const std::string &s,
-                                             const std::string &seperators) {
+                                             const std::string &separators) {
   std::vector<std::string> ret;
   bool is_seperator[256] = {false};
-  for (auto &ch : seperators) {
+  for (auto &ch : separators) {
     is_seperator[(unsigned int)ch] = true;
   }
   int begin = 0;

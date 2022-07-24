@@ -1,8 +1,8 @@
 ---
-sidebar_position: 6
+sidebar_position: 2
 ---
 
-# Objective data-oriented programming
+# Objective Data-oriented Programming
 
 Taichi is a
 [data-oriented](https://en.wikipedia.org/wiki/Data-oriented_design)
@@ -43,7 +43,7 @@ a = TiArray(32)
 a.inc()
 ```
 
-Programmers used to define Taichi fields in `__init__` functions of `@ti.data_oriented` classes. With the new **Dynamic SNode** feature (released in `v0.8.0`, see [Field (advanced)](layout.md#dynamic-field-allocation-and-destruction) for more details), you can define Taichi fields **at any places** of Python-scope functions. For example,
+Definitions of Taichi fields can be made not only in _init_ functions, but also at any place of a Python-scope function in a data-oriented class. For example,
 
 ```python {21,25}
 import taichi as ti
@@ -174,9 +174,6 @@ Common decorators that are pre-built in Python, `@staticmethod`[^1] and `@classm
 [^1]: [Python built-in functions - staticmethod](https://docs.python.org/3/library/functions.html#staticmethod)
 [^2]: [Python built-in functions - classmethod](https://docs.python.org/3/library/functions.html#classmethod)
 
-:::note
-`@property` decorator is not supported now in the stable version. Would be fixed soon in the `v0.8.2` release. If in need, you can try it on the nightly version.
-:::
 
 `staticmethod` example :
 
@@ -282,7 +279,8 @@ print(b.num())  # 7
 ```
 
 ## Python classes as Taichi struct types
-Taichi provides custom [struct types](../basic/type.md#compound-types) for developers to associate pieces of data together. However, it is often convenient to have:
+
+Taichi provides custom [struct types](../type/type.md#compound-types) for developers to associate pieces of data together. However, it is often convenient to have:
   1. A Python representation of the struct type which is more object oriented.
   2. Functions associated with a struct type. (C++ style structs)
 
@@ -328,7 +326,7 @@ class Sphere:
         return self.radius == 0.0
 ```
 
-Functions associated with structs follow the same [scope rules](../basic/syntax.md#taichi-scope-vs-python-scope) as normal functions, in that they can be in Taichi or Python scope.  Each instance of the `Sphere` struct type now will have the above functions added to them.  The functions can be called such as:
+Functions associated with structs follow the same [scope rules](../kernels/syntax.md#taichi-scope-vs-python-scope) as normal functions, in that they can be in Taichi or Python scope.  Each instance of the `Sphere` struct type now will have the above functions added to them.  The functions can be called such as:
 
 ```python
 a_python_struct = Sphere(center=vec3(0.0), radius=1.0)

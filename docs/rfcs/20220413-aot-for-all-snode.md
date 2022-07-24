@@ -46,7 +46,7 @@ While this is convenient for Python users, it imposes challenges for the deploym
 
 1. Taichi fields are currently implemented as global variables.
 
-    This would result in the Taichi kernels being "not pure" and relying on implicit information. When saving such kernels into the AOT module, it is also necessary to save all the depdendant global states. Ideally, users should be able to create Taichi fields, and pass them into Taichi kernels as parameters.
+    This would result in the Taichi kernels being "not pure" and relying on implicit information. When saving such kernels into the AOT module, it is also necessary to save all the dependent global states. Ideally, users should be able to create Taichi fields, and pass them into Taichi kernels as parameters.
 
 2. SNodes types are missing from the AOT module.
 
@@ -143,7 +143,7 @@ The only change from the existing API is that, you will need to prepend the fiel
 
 There will be two ways to retrieve a field from a tree:
 
-* By name: `add_field()` takes in a `name` parameter. After building a SNode tree, Taichi will generate an attribute for each registered field on that tree. This allows you to directly write `tr.x` to access the field named `'x'`. `name` serves as the unique identifer of the field in the tree. Note that when placing, it is the names being passed in.
+* By name: `add_field()` takes in a `name` parameter. After building a SNode tree, Taichi will generate an attribute for each registered field on that tree. This allows you to directly write `tr.x` to access the field named `'x'`. `name` serves as the unique identifier of the field in the tree. Note that when placing, it is the names being passed in.
 * By field handle: You can also use the field handle returned by `add_field()` to access a field. Here's an example:
    ```py
    builder = ti.SNodeTreeBuilder()

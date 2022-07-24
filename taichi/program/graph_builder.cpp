@@ -37,6 +37,14 @@ GraphBuilder::GraphBuilder() {
 
 Node *GraphBuilder::new_dispatch_node(Kernel *kernel,
                                       const std::vector<aot::Arg> &args) {
+  for (const auto &arg : args) {
+    if (all_args_.find(arg.name) != all_args_.end()) {
+      TI_ERROR_IF(all_args_[arg.name] != arg,
+                  "An arg with name {} already exists!", arg.name);
+    } else {
+      all_args_[arg.name] = arg;
+    }
+  }
   all_nodes_.push_back(std::make_unique<Dispatch>(kernel, args));
   return all_nodes_.back().get();
 }
@@ -49,7 +57,7 @@ Sequential *GraphBuilder::new_sequential_node() {
 std::unique_ptr<aot::CompiledGraph> GraphBuilder::compile() {
   std::vector<aot::CompiledDispatch> dispatches;
   seq()->compile(dispatches);
-  aot::CompiledGraph graph{dispatches};
+  aot::CompiledGraph graph{dispatches, all_args_};
   return std::make_unique<aot::CompiledGraph>(std::move(graph));
 }
 

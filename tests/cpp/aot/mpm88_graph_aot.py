@@ -1,11 +1,16 @@
+import argparse
 import os
 
 import taichi as ti
 
+parser = argparse.ArgumentParser()
+parser.add_argument("--arch", type=str)
+args = parser.parse_args()
 
-def compile_mpm88_graph():
-    ti.init(ti.vulkan)
-    if ti.lang.impl.current_cfg().arch != ti.vulkan:
+
+def compile_mpm88_graph(arch):
+    ti.init(arch, vk_api_version="1.0")
+    if ti.lang.impl.current_cfg().arch != arch:
         return
     n_particles = 8192
     n_grid = 128
@@ -100,30 +105,37 @@ def compile_mpm88_graph():
     sym_x = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                          'x',
                          ti.f32,
+                         field_dim=1,
                          element_shape=(2, ))
     sym_v = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                          'v',
                          ti.f32,
+                         field_dim=1,
                          element_shape=(2, ))
     sym_C = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                          'C',
                          ti.f32,
+                         field_dim=1,
                          element_shape=(2, 2))
     sym_J = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                          'J',
                          ti.f32,
+                         field_dim=1,
                          element_shape=())
     sym_grid_v = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                               'grid_v',
                               ti.f32,
+                              field_dim=2,
                               element_shape=(2, ))
     sym_grid_m = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                               'grid_m',
                               ti.f32,
+                              field_dim=2,
                               element_shape=())
     sym_pos = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                            'pos',
                            ti.f32,
+                           field_dim=1,
                            element_shape=(3, ))
 
     g_init_builder = ti.graph.GraphBuilder()
@@ -160,10 +172,18 @@ def compile_mpm88_graph():
 
     assert "TAICHI_AOT_FOLDER_PATH" in os.environ.keys()
     tmpdir = str(os.environ["TAICHI_AOT_FOLDER_PATH"])
-    mod = ti.aot.Module(ti.vulkan)
+    mod = ti.aot.Module(arch)
     mod.add_graph('init', g_init)
     mod.add_graph('update', g_update)
     mod.save(tmpdir, '')
 
 
-compile_mpm88_graph()
+if __name__ == "__main__":
+    if args.arch == "cpu":
+        compile_mpm88_graph(arch=ti.cpu)
+    elif args.arch == "cuda":
+        compile_mpm88_graph(arch=ti.cuda)
+    elif args.arch == "vulkan":
+        compile_mpm88_graph(arch=ti.vulkan)
+    else:
+        assert False

@@ -73,8 +73,8 @@ jobs:
           fi
           # https://docs.github.com/en/packages/managing-github-packages-using-github-actions-workflows/publishing-and-installing-a-package-with-github-actions#upgrading-a-workflow-that-accesses-ghcrio
           echo $CR_PAT | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-          docker pull ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.3.0
-          docker run -id --user dev --name check_clang_tidy ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.3.0 /bin/bash
+          docker pull ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.3.2
+          docker run -id --user dev --name check_clang_tidy ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.3.2 /bin/bash
           tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner 1000 --group 1000 | docker cp - check_clang_tidy:/home/dev/
           docker exec --user root check_clang_tidy apt install -y clang-tidy-10
           docker exec --user dev check_clang_tidy /home/dev/taichi/.github/workflows/scripts/check_clang_tidy.sh "$CI_SETUP_CMAKE_ARGS"
@@ -121,7 +121,7 @@ jobs:
           fi
           # https://docs.github.com/en/packages/managing-github-packages-using-github-actions-workflows/publishing-and-installing-a-package-with-github-actions#upgrading-a-workflow-that-accesses-ghcrio
           echo $CR_PAT | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-          docker pull ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.3.0
+          docker pull ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.3.2
         env:
           CR_PAT: ${{ secrets.GITHUB_TOKEN }}
 
@@ -133,7 +133,7 @@ jobs:
           mkdir -m777 shared
           docker create --user dev --name taichi_build \
             -e PY -e PROJECT_NAME -e TAICHI_CMAKE_ARGS \
-            ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.3.0 \
+            ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.3.2 \
             /home/dev/taichi/.github/workflows/scripts/unix_build.sh
           # A tarball is needed because sccache needs some permissions that only the file owner has.
           # 1000 is the uid and gid of user "dev" in the container.
@@ -150,11 +150,12 @@ jobs:
           TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }} -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
       - name: Test
+        id: test
         run: |
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
           fi
-          docker create --user dev --name taichi_test -e PY -e TI_WANTED_ARCHS ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.3.0 /home/dev/unix_test.sh
+          docker create --user dev --name taichi_test -e PY -e TI_WANTED_ARCHS ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.3.2 /home/dev/unix_test.sh
           docker cp .github/workflows/scripts/unix_test.sh taichi_test:/home/dev/unix_test.sh
           docker cp shared/dist/ taichi_test:/home/dev/
           docker cp shared/build/ taichi_test:/home/dev/
@@ -170,6 +171,14 @@ jobs:
         if: always()
         run: |
           docker rm taichi_build taichi_test -f
+
+      - name: Save wheel if test failed
+        if: failure() && steps.test.conclusion == 'failure'
+        uses: actions/upload-artifact@v3
+        with:
+          name: broken-wheel
+          path: shared/dist/*
+          retention-days: 7
 
   build_and_test_cpu_mac:
     name: Build and Test macos (CPU)
@@ -223,6 +232,7 @@ jobs:
         env:
           TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }} -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }} -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           CXX: clang++
+
       # [DEBUG] Copy this step around to enable debugging inside Github Action instances.
       #- name: Setup tmate session
       #  uses: mxschmitt/action-tmate@v3
@@ -230,6 +240,7 @@ jobs:
       #    limit-access-to-actor: true
 
       - name: Test
+        id: test
         run: |
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
@@ -239,9 +250,24 @@ jobs:
           TI_WANTED_ARCHS: ${{ matrix.wanted_archs }}
           TI_CI: 1
 
+      - name: Save wheel if test failed
+        if: failure() && steps.test.conclusion == 'failure'
+        uses: actions/upload-artifact@v3
+        with:
+          name: broken-wheel
+          path: dist/*
+          retention-days: 7
+
   build_and_test_cpu_windows:
     name: Build and Test Windows (CPU)
     needs: check_files
+    strategy:
+      matrix:
+        include:
+          - os: windows-2019
+            llvmVer : '15'
+          - os: windows-2019
+            llvmVer : '10'
     timeout-minutes: 90
     runs-on: windows-2019
     permissions:
@@ -270,6 +296,7 @@ jobs:
         env:
           CR_PAT: ${{ secrets.GITHUB_TOKEN }}
 
+      # TODO: split build and test
       - name: Build and Test
         shell: bash
         run: |
@@ -278,7 +305,7 @@ jobs:
           fi
           docker create --name taichi_build_test \
             ghcr.io/taichi-dev/taichidev-cpu-windows:v0.0.1 \
-            C:/taichi/.github/workflows/scripts/win_build_test_cpu.ps1
+            C:/taichi/.github/workflows/scripts/win_build_test_cpu.ps1 -llvmVer ${{ matrix.llvmVer }}
           tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx | docker cp - taichi_build_test:C:/
           docker start -a taichi_build_test
           rm -rf ccache_cache
@@ -289,6 +316,14 @@ jobs:
         if: always()
         run: |
           docker rm taichi_build_test -f
+
+      # - name: Save wheel if test failed
+      #   if: failure() && steps.build_and_test.conclusion == 'failure'
+      #   uses: actions/upload-artifact@v3
+      #   with:
+      #     name: broken-wheel
+      #     path: dist/*
+      #     retention-days: 7
 
   build_and_test_gpu_linux:
     name: Build and Test (GPU)
@@ -320,9 +355,21 @@ jobs:
             exit 0
           fi
           mkdir -m777 shared
-          docker create --user dev --name taichi_build --gpus all -v /tmp/.X11-unix:/tmp/.X11-unix \
+          for i in {0..9}; do
+            if xset -display ":$i" -q >/dev/null 2>&1; then
+              break
+            fi
+          done
+          if [ $? -ne 0 ]; then
+            echo "No display!"
+            exit 1
+          fi
+          export DISPLAY=:$i
+          docker create --user dev --name taichi_build \
+            --gpus 'all,"capabilities=graphics,utility,display,video,compute"' \
+            -v /tmp/.X11-unix:/tmp/.X11-unix \
             -e PY -e GPU_BUILD -e PROJECT_NAME -e TAICHI_CMAKE_ARGS -e DISPLAY \
-            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.0 \
+            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.1 \
             /home/dev/taichi/.github/workflows/scripts/unix_build.sh
           # A tarball is needed because sccache needs some permissions that only the file owner has.
           # 1000 is the uid and gid of user "dev" in the container.
@@ -338,16 +385,28 @@ jobs:
           GPU_BUILD: ON
           PROJECT_NAME: taichi
           TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-          DISPLAY: :1
 
       - name: Test
+        id: test
         run: |
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
           fi
-          docker create --user dev --name taichi_test --gpus all -v /tmp/.X11-unix:/tmp/.X11-unix \
-            -e DISPLAY -e PY -e GPU_TEST -e TI_WANTED_ARCHS \
-             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.0 \
+          for i in {0..9}; do
+            if xset -display ":$i" -q >/dev/null 2>&1; then
+              break
+            fi
+          done
+          if [ $? -ne 0 ]; then
+            echo "No display!"
+            exit 1
+          fi
+          export DISPLAY=:$i
+          docker create --user dev --name taichi_test \
+            --gpus 'all,"capabilities=graphics,utility,display,video,compute"' \
+            -v /tmp/.X11-unix:/tmp/.X11-unix \
+            -e DISPLAY -e PY -e GPU_TEST -e TI_WANTED_ARCHS -e TI_RUN_RELEASE_TESTS \
+             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.1 \
              /home/dev/unix_test.sh
           docker cp .github/workflows/scripts/unix_test.sh taichi_test:/home/dev/unix_test.sh
           docker cp shared/dist/ taichi_test:/home/dev/
@@ -359,14 +418,23 @@ jobs:
         env:
           PY: py38
           GPU_TEST: ON
-          DISPLAY: :1
           TI_WANTED_ARCHS: 'cpu,cuda,vulkan,opengl'
           TI_DEVICE_MEMORY_GB: '0.7'
+          TI_RUN_RELEASE_TESTS: '1'
+
 
       - name: clean docker container
         if: always()
         run: |
           docker rm taichi_build taichi_test -f
+
+      - name: Save wheel if test failed
+        if: failure() && steps.test.conclusion == 'failure'
+        uses: actions/upload-artifact@v3
+        with:
+          name: broken-wheel
+          path: shared/dist/*
+          retention-days: 7
 
   build_and_test_windows:
     name: Build and Test Windows
@@ -406,19 +474,30 @@ jobs:
         if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
           .\.github\workflows\scripts\win_build.ps1 -installVulkan -install -libsDir C:\
+        env:
+          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_DX11:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON
 
       - name: Test
+        id: test
         shell: powershell
         if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
           .\.github\workflows\scripts\win_test.ps1
         env:
           TI_WANTED_ARCHS: cpu,cuda,opengl
-          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF
           TI_SKIP_VERSION_CHECK: ON
           TI_CI: 1
           PYTHON: '3.7'
           TI_DEVICE_MEMORY_GB: '0.7'
+          TI_RUN_RELEASE_TESTS: '1'
+
+      - name: Save wheel if test failed
+        if: failure() && steps.test.conclusion == 'failure'
+        uses: actions/upload-artifact@v3
+        with:
+          name: broken-wheel
+          path: dist/*
+          retention-days: 7
 
   build_and_test_m1:
     name: Build and Test (Apple M1)
@@ -461,6 +540,7 @@ jobs:
           CXX: clang++
 
       - name: Test
+        id: test
         run: |
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
@@ -472,6 +552,15 @@ jobs:
           PY: ${{ matrix.python }}
           PLATFORM: 'm1'
           TI_CI: 1
+          TI_RUN_RELEASE_TESTS: '1'
+
+      - name: Save wheel if test failed
+        if: failure() && steps.test.conclusion == 'failure'
+        uses: actions/upload-artifact@v3
+        with:
+          name: broken-wheel
+          path: dist/*
+          retention-days: 7
 
   build_libtaichi_export:
     name: Build libtaichi_export.so(GPU)
@@ -505,9 +594,19 @@ jobs:
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
           fi
+          for i in {0..9}; do
+            if xset -display ":$i" -q >/dev/null 2>&1; then
+              break
+            fi
+          done
+          if [ $? -ne 0 ]; then
+            echo "No display!"
+            exit 1
+          fi
+          export DISPLAY=:$i
           docker create --user dev --name taichi_build_desktop --gpus all -v /tmp/.X11-unix:/tmp/.X11-unix \
             -e PY -e GPU_BUILD -e PROJECT_NAME -e TAICHI_CMAKE_ARGS -e DISPLAY -e EXPORT_CORE\
-            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.0 \
+            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.1 \
             /home/dev/taichi/.github/workflows/scripts/unix_build.sh
           # A tarball is needed because sccache needs some permissions that only the file owner has.
           # 1000 is the uid and gid of user "dev" in the container.
@@ -518,9 +617,7 @@ jobs:
           PY: ${{ matrix.python }}
           GPU_BUILD: ON
           PROJECT_NAME: taichi
-          TAICHI_CMAKE_ARGS: -DTI_WITH_VULKAN:BOOL=ON -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_LLVM:BOOL=OFF -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache -DTI_EXPORT_CORE:BOOL=ON
-          EXPORT_CORE: 1
-          DISPLAY: :1
+          TAICHI_CMAKE_ARGS: -DTI_WITH_VULKAN:BOOL=ON -DTI_WITH_CUDA:BOOL=ON -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_LLVM:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache -DTI_EXPORT_CORE:BOOL=ON
 
       - name: clean docker container
         if: always()

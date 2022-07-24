@@ -7,11 +7,13 @@
 #include "taichi/struct/snode_tree.h"
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/program/kernel_profiler.h"
-#include "taichi/backends/device.h"
+#include "taichi/rhi/device.h"
 #include "taichi/aot/graph_data.h"
 
 namespace taichi {
 namespace lang {
+
+struct RuntimeContext;
 
 class ProgramImpl {
  public:
@@ -97,6 +99,42 @@ class ProgramImpl {
     return kDeviceNullAllocation;
   }
   virtual ~ProgramImpl() {
+  }
+
+  // TODO: Move to Runtime Object
+  virtual uint64_t *get_ndarray_alloc_info_ptr(const DeviceAllocation &alloc) {
+    TI_ERROR(
+        "get_ndarray_alloc_info_ptr() not implemented on the current backend");
+    return nullptr;
+  }
+
+  // TODO: Move to Runtime Object
+  virtual void fill_ndarray(const DeviceAllocation &alloc,
+                            std::size_t size,
+                            uint32_t data) {
+    TI_ERROR("fill_ndarray() not implemented on the current backend");
+  }
+
+  // TODO: Move to Runtime Object
+  virtual void prepare_runtime_context(RuntimeContext *ctx) {
+  }
+
+  virtual void print_memory_profiler_info(
+      std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
+      uint64 *result_buffer) {
+    TI_ERROR(
+        "print_memory_profiler_info() not implemented on the current backend");
+  }
+
+  virtual void check_runtime_error(uint64 *result_buffer) {
+    TI_ERROR("check_runtime_error() not implemented on the current backend");
+  }
+
+  virtual void finalize() {
+  }
+
+  virtual uint64 fetch_result_uint64(int i, uint64 *result_buffer) {
+    return result_buffer[i];
   }
 
  private:

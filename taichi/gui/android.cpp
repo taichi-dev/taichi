@@ -1,6 +1,6 @@
 #include "taichi/gui/gui.h"
 
-// GGUI is not suppored on Android as the window management is handled by the
+// GGUI is not supported on Android as the window management is handled by the
 // framework directly. It also provides a Canvas through Skia library that users
 // can leverage for rendering of 2D elements (circle, rectangle, ...)
 #if defined(TI_GUI_ANDROID)

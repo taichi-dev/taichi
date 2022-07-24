@@ -38,7 +38,9 @@ __deprecated_names__ = {
     'imshow': 'tools.imshow',
     'imwrite': 'tools.imwrite',
     'ext_arr': 'types.ndarray',
-    'any_arr': 'types.ndarray'
+    'any_arr': 'types.ndarray',
+    'Tape': 'ad.Tape',
+    'clear_all_gradients': 'ad.clear_all_gradients'
 }
 
 __customized_deprecations__ = {

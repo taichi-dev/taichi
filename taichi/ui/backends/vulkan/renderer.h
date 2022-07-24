@@ -30,6 +30,7 @@
 #include "renderables/particles.h"
 #include "renderables/circles.h"
 #include "renderables/lines.h"
+#include "renderables/scene_lines.h"
 
 namespace taichi {
 namespace lang {
@@ -44,6 +45,7 @@ namespace vulkan {
 class TI_DLL_EXPORT Renderer {
  public:
   void init(lang::Program *prog, TaichiWindow *window, const AppConfig &config);
+  ~Renderer();
   void cleanup();
 
   void prepare_for_next_frame();
@@ -61,6 +63,8 @@ class TI_DLL_EXPORT Renderer {
   void mesh(const MeshInfo &info, Scene *scene);
 
   void particles(const ParticlesInfo &info, Scene *scene);
+
+  void scene_lines(const SceneLinesInfo &info, Scene *scene);
 
   void scene(Scene *scene);
 

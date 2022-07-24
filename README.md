@@ -3,15 +3,15 @@
 </div>
 
 ---
-
 [![Latest Release](https://img.shields.io/github/v/release/taichi-dev/taichi?color=blue&label=Latest%20Release)](https://github.com/taichi-dev/taichi/releases/latest)
 [![downloads](https://pepy.tech/badge/taichi)](https://pepy.tech/project/taichi)
 [![CI](https://github.com/taichi-dev/taichi/actions/workflows/testing.yml/badge.svg)](https://github.com/taichi-dev/taichi/actions/workflows/testing.yml)
 [![Nightly Release](https://github.com/taichi-dev/taichi/actions/workflows/release.yml/badge.svg)](https://github.com/taichi-dev/taichi/actions/workflows/release.yml)
-[![Python Codecov Status](https://img.shields.io/codecov/c/github/taichi-dev/taichi?label=Python%20Coverage&logo=codecov)](https://codecov.io/gh/taichi-dev/taichi/src/master)
+<a href="https://join.slack.com/t/taichicommunity/shared_invite/zt-14ic8j6no-Fd~wKNpfskXLfqDr58Tddg"><img src="https://img.shields.io/badge/join-us%20on%20slack-gray.svg?longCache=true&logo=slack&colorB=red"></a>
 
-```py
-import taichi as ti
+```shell
+pip install taichi  # Install Taichi Lang
+ti gallery          # Launch demo gallery
 ```
 
 ## What is Taichi Lang?
@@ -173,6 +173,7 @@ Voxel Challenge 2022 is open for [submissions](https://github.com/taichi-dev/vox
 
 - [Taichi Lang examples](https://github.com/taichi-dev/taichi/tree/master/python/taichi/examples)
 - [Advanced Taichi Lang examples](https://github.com/taichi-dev/advanced_examples)
+- [Awesome Taichi](https://github.com/taichi-dev/awesome-taichi)
 - [DiffTaichi](https://github.com/taichi-dev/difftaichi)
 - [Taichi elements](https://github.com/taichi-dev/taichi_elements)
 - [Taichi Houdini](https://github.com/taichi-dev/taichi_houdini)

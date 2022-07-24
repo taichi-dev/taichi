@@ -4,14 +4,13 @@
 
 #include "taichi/ir/statements.h"
 #include "taichi/program/extension.h"
-#include "taichi/backends/cpu/codegen_cpu.h"
+#include "taichi/codegen/cpu/codegen_cpu.h"
 #include "taichi/struct/struct.h"
-#include "taichi/struct/struct_llvm.h"
-#include "taichi/backends/metal/api.h"
-#include "taichi/backends/wasm/aot_module_builder_impl.h"
-#include "taichi/backends/opengl/opengl_program.h"
-#include "taichi/backends/metal/metal_program.h"
-#include "taichi/backends/cc/cc_program.h"
+#include "taichi/runtime/metal/api.h"
+#include "taichi/runtime/wasm/aot_module_builder_impl.h"
+#include "taichi/runtime/program_impls/opengl/opengl_program.h"
+#include "taichi/runtime/program_impls/metal/metal_program.h"
+#include "taichi/codegen/cc/cc_program.h"
 #include "taichi/platform/cuda/detect_cuda.h"
 #include "taichi/system/unified_allocator.h"
 #include "taichi/system/timeline.h"
@@ -22,19 +21,24 @@
 #include "taichi/util/statistics.h"
 #include "taichi/math/arithmetic.h"
 #ifdef TI_WITH_LLVM
-#include "taichi/llvm/llvm_program.h"
+#include "taichi/runtime/program_impls/llvm/llvm_program.h"
+#include "taichi/codegen/llvm/struct_llvm.h"
 #endif
 
 #if defined(TI_WITH_CC)
-#include "taichi/backends/cc/cc_program.h"
+#include "taichi/codegen/cc/cc_program.h"
 #endif
 #ifdef TI_WITH_VULKAN
 #include "taichi/runtime/program_impls/vulkan/vulkan_program.h"
-#include "taichi/backends/vulkan/vulkan_loader.h"
+#include "taichi/rhi/vulkan/vulkan_loader.h"
+#endif
+#ifdef TI_WITH_OPENGL
+#include "taichi/runtime/program_impls/opengl/opengl_program.h"
+#include "taichi/rhi/opengl/opengl_api.h"
 #endif
 #ifdef TI_WITH_DX11
-#include "taichi/backends/dx/dx_program.h"
-#include "taichi/backends/dx/dx_api.h"
+#include "taichi/runtime/program_impls/dx/dx_program.h"
+#include "taichi/rhi/dx/dx_api.h"
 #endif
 
 #if defined(TI_ARCH_x64)
@@ -46,16 +50,15 @@ namespace taichi {
 namespace lang {
 std::atomic<int> Program::num_instances_;
 
-Program::Program(Arch desired_arch)
-    : snode_rw_accessors_bank_(this), ndarray_rw_accessors_bank_(this) {
+Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   TI_TRACE("Program initializing...");
 
-  // For performance considerations and correctness of CustomFloatType
+  // For performance considerations and correctness of QuantFloatType
   // operations, we force floating-point operations to flush to zero on all
   // backends (including CPUs).
 #if defined(TI_ARCH_x64)
   _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
-#elif !defined(TI_EMSCRIPTENED)
+#else
   // Enforce flush to zero on arm64 CPUs
   // https://developer.arm.com/documentation/100403/0201/register-descriptions/advanced-simd-and-floating-point-registers/aarch64-register-descriptions/fpcr--floating-point-control-register?lang=en
   std::uint64_t fpcr;
@@ -102,8 +105,12 @@ Program::Program(Arch desired_arch)
     TI_ERROR("This taichi is not compiled with DX11");
 #endif
   } else if (config.arch == Arch::opengl) {
+#ifdef TI_WITH_OPENGL
     TI_ASSERT(opengl::initialize_opengl(config.use_gles));
     program_impl_ = std::make_unique<OpenglProgramImpl>(config);
+#else
+    TI_ERROR("This taichi is not compiled with OpenGL");
+#endif
   } else if (config.arch == Arch::cc) {
 #ifdef TI_WITH_CC
     program_impl_ = std::make_unique<CCProgramImpl>(config);
@@ -125,13 +132,6 @@ Program::Program(Arch desired_arch)
   total_compilation_time_ = 0;
   num_instances_ += 1;
   SNode::counter = 0;
-  if (arch_uses_llvm(config.arch)) {
-#if TI_WITH_LLVM
-    static_cast<LlvmProgramImpl *>(program_impl_.get())->initialize_host();
-#else
-    TI_NOT_IMPLEMENTED
-#endif
-  }
 
   result_buffer = nullptr;
   current_callable = nullptr;
@@ -223,25 +223,18 @@ SNode *Program::get_snode_root(int tree_id) {
 }
 
 void Program::check_runtime_error() {
-#ifdef TI_WITH_LLVM
-  TI_ASSERT(arch_uses_llvm(config.arch));
-  static_cast<LlvmProgramImpl *>(program_impl_.get())
-      ->check_runtime_error(result_buffer);
-#else
-  TI_ERROR("Llvm disabled");
-#endif
+  program_impl_->check_runtime_error(result_buffer);
 }
 
 void Program::synchronize() {
-  if (!sync) {
-    if (config.async_mode) {
-      async_engine->synchronize();
-    }
-    if (arch_uses_llvm(config.arch) || config.arch == Arch::metal ||
-        config.arch == Arch::vulkan) {
-      program_impl_->synchronize();
-    }
+  if (config.async_mode && !sync) {
+    async_engine->synchronize();
     sync = true;
+  }
+  // Normal mode shouldn't be affected by `sync` flag.
+  if (arch_uses_llvm(config.arch) || config.arch == Arch::metal ||
+      config.arch == Arch::vulkan || config.arch == Arch::opengl) {
+    program_impl_->synchronize();
   }
 }
 
@@ -405,75 +398,15 @@ Kernel &Program::get_snode_writer(SNode *snode) {
   return ker;
 }
 
-Kernel &Program::get_ndarray_reader(Ndarray *ndarray) {
-  auto kernel_name =
-      fmt::format("ndarray_reader_{}", ndarray_reader_counter_++);
-  NdarrayRwKeys keys{ndarray->total_shape().size(), ndarray->dtype};
-  auto &ker = kernel([keys, this] {
-    ExprGroup indices;
-    for (int i = 0; i < keys.num_active_indices; i++) {
-      indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
-    }
-    auto ret = Stmt::make<FrontendReturnStmt>(
-        ExprGroup(Expr(Expr::make<ExternalTensorExpression>(
-            keys.dtype, keys.num_active_indices,
-            /*arg_id=*/keys.num_active_indices, 0))[indices]));
-    this->current_ast_builder()->insert(std::move(ret));
-  });
-  ker.set_arch(get_accessor_arch());
-  ker.name = kernel_name;
-  ker.is_accessor = true;
-  for (int i = 0; i < keys.num_active_indices; i++) {
-    ker.insert_arg(PrimitiveType::i32, /*is_array=*/false);
-  }
-  ker.insert_arg(keys.dtype, /*is_array=*/true);
-  ker.insert_ret(keys.dtype);
-  return ker;
-}
-
-Kernel &Program::get_ndarray_writer(Ndarray *ndarray) {
-  auto kernel_name =
-      fmt::format("ndarray_writer_{}", ndarray_writer_counter_++);
-  NdarrayRwKeys keys{ndarray->total_shape().size(), ndarray->dtype};
-  auto &ker = kernel([keys, this] {
-    ExprGroup indices;
-    for (int i = 0; i < keys.num_active_indices; i++) {
-      indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
-    }
-    auto expr = Expr(Expr::make<ExternalTensorExpression>(
-        keys.dtype, keys.num_active_indices,
-        /*arg_id=*/keys.num_active_indices + 1, 0))[indices];
-    this->current_ast_builder()->insert_assignment(
-        expr, Expr::make<ArgLoadExpression>(keys.num_active_indices,
-                                            keys.dtype->get_compute_type()));
-  });
-  ker.set_arch(get_accessor_arch());
-  ker.name = kernel_name;
-  ker.is_accessor = true;
-  for (int i = 0; i < keys.num_active_indices; i++)
-    ker.insert_arg(PrimitiveType::i32, false);
-  ker.insert_arg(keys.dtype, false);
-  ker.insert_arg(keys.dtype, true);
-  return ker;
-}
-
 uint64 Program::fetch_result_uint64(int i) {
-  if (arch_uses_llvm(config.arch)) {
-#ifdef TI_WITH_LLVM
-    return static_cast<LlvmProgramImpl *>(program_impl_.get())
-        ->fetch_result<uint64>(i, result_buffer);
-#else
-    TI_NOT_IMPLEMENTED
-#endif
-  }
-  return result_buffer[i];
+  return program_impl_->fetch_result_uint64(i, result_buffer);
 }
 
 void Program::finalize() {
   synchronize();
   if (async_engine)
     async_engine = nullptr;  // Finalize the async engine threads before
-                             // anything else gets destoried.
+                             // anything else gets destroyed.
 
   TI_TRACE("Program finalizing...");
   if (config.print_benchmark_stat) {
@@ -512,13 +445,8 @@ void Program::finalize() {
 
   synchronize();
   memory_pool_->terminate();
-
   if (arch_uses_llvm(config.arch)) {
-#if TI_WITH_LLVM
-    static_cast<LlvmProgramImpl *>(program_impl_.get())->finalize();
-#else
-    TI_NOT_IMPLEMENTED
-#endif
+    program_impl_->finalize();
   }
 
   Stmt::reset_counter();
@@ -539,13 +467,7 @@ int Program::default_block_dim(const CompileConfig &config) {
 }
 
 void Program::print_memory_profiler_info() {
-#ifdef TI_WITH_LLVM
-  TI_ASSERT(arch_uses_llvm(config.arch));
-  static_cast<LlvmProgramImpl *>(program_impl_.get())
-      ->print_memory_profiler_info(snode_trees_, result_buffer);
-#else
-  TI_ERROR("Llvm disabled");
-#endif
+  program_impl_->print_memory_profiler_info(snode_trees_, result_buffer);
 }
 
 std::size_t Program::get_snode_num_dynamically_allocated(SNode *snode) {
@@ -564,31 +486,41 @@ Ndarray *Program::create_ndarray(const DataType type,
   return ndarrays_.back().get();
 }
 
+Texture *Program::create_texture(const DataType type,
+                                 int num_channels,
+                                 const std::vector<int> &shape) {
+  if (shape.size() == 1) {
+    textures_.push_back(
+        std::make_unique<Texture>(this, type, num_channels, shape[0], 1, 1));
+  } else if (shape.size() == 2) {
+    textures_.push_back(std::make_unique<Texture>(this, type, num_channels,
+                                                  shape[0], shape[1], 1));
+  } else if (shape.size() == 3) {
+    textures_.push_back(std::make_unique<Texture>(
+        this, type, num_channels, shape[0], shape[1], shape[2]));
+  } else {
+    TI_ERROR("Texture shape invalid");
+  }
+  return textures_.back().get();
+}
+
 intptr_t Program::get_ndarray_data_ptr_as_int(const Ndarray *ndarray) {
   uint64_t *data_ptr{nullptr};
-#ifdef TI_WITH_LLVM
   if (arch_is_cpu(config.arch) || config.arch == Arch::cuda) {
     // For the LLVM backends, device allocation is a physical pointer.
-    data_ptr = get_llvm_program_impl()->get_ndarray_alloc_info_ptr(
-        ndarray->ndarray_alloc_);
+    data_ptr =
+        program_impl_->get_ndarray_alloc_info_ptr(ndarray->ndarray_alloc_);
   }
-#else
-  TI_ERROR("Llvm disabled");
-#endif
 
   return reinterpret_cast<intptr_t>(data_ptr);
 }
 
 void Program::fill_ndarray_fast(Ndarray *ndarray, uint32_t val) {
-// This is a temporary solution to bypass device api.
-// Should be moved to CommandList once available in CUDA.
-#ifdef TI_WITH_LLVM
-  get_llvm_program_impl()->fill_ndarray(
+  // This is a temporary solution to bypass device api.
+  // Should be moved to CommandList once available in CUDA.
+  program_impl_->fill_ndarray(
       ndarray->ndarray_alloc_,
       ndarray->get_nelement() * ndarray->get_element_size(), val);
-#else
-  TI_ERROR("Not supported");
-#endif
 }
 
 Program::~Program() {
@@ -615,14 +547,6 @@ std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(Arch arch) {
   return nullptr;
 }
 
-LlvmProgramImpl *Program::get_llvm_program_impl() {
-#ifdef TI_WITH_LLVM
-  return static_cast<LlvmProgramImpl *>(program_impl_.get());
-#else
-  TI_ERROR("Llvm disabled");
-#endif
-}
-
 int Program::allocate_snode_tree_id() {
   if (free_snode_tree_ids_.empty()) {
     return snode_trees_.size();
@@ -631,6 +555,11 @@ int Program::allocate_snode_tree_id() {
     free_snode_tree_ids_.pop();
     return id;
   }
+}
+
+void Program::prepare_runtime_context(RuntimeContext *ctx) {
+  ctx->result_buffer = result_buffer;
+  program_impl_->prepare_runtime_context(ctx);
 }
 
 }  // namespace lang

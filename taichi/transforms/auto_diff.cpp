@@ -706,7 +706,7 @@ class MakeAdjoint : public ADTransform {
       return;  // primal may be int variable
     if (alloca_->is<AdStackAllocaStmt>()) {
       auto alloca = alloca_->cast<AdStackAllocaStmt>();
-      if (needs_grad(alloca->ret_type)) {
+      if (is_real(alloca->ret_type)) {
         insert<AdStackAccAdjointStmt>(alloca, load(value));
       }
     } else {
@@ -719,7 +719,7 @@ class MakeAdjoint : public ADTransform {
   }
 
   Stmt *adjoint(Stmt *stmt) {
-    if (!needs_grad(stmt->ret_type)) {
+    if (!is_real(stmt->ret_type) || stmt->is<ConstStmt>()) {
       return constant(0);
     }
     if (adjoint_stmt.find(stmt) == adjoint_stmt.end()) {
@@ -736,7 +736,7 @@ class MakeAdjoint : public ADTransform {
       // GlobalLoadStmt is not inside a range-for
       // Code sample:
       // a and b require grad
-      // Case 1 (GlobalLoadStmt is ouside the for-loop, compute 5 times and
+      // Case 1 (GlobalLoadStmt is outside the for-loop, compute 5 times and
       // accumulate once, alloca history value is needed):
       // for i in range(5):
       //     p = a[i]
@@ -783,7 +783,11 @@ class MakeAdjoint : public ADTransform {
     } else if (stmt->op_type == UnaryOpType::cos) {
       accumulate(stmt->operand, negate(mul(adjoint(stmt), sin(stmt->operand))));
     } else if (stmt->op_type == UnaryOpType::tan) {
-      TI_NOT_IMPLEMENTED
+      // The derivative of `tan` is `1 / cos^2`, which has many singular points
+      // causing NaNs. Though the NaNs are expected, it is error prone and hard
+      // to debug. Therefore we currently don't support computing derivative for
+      // `tan`.
+      TI_NOT_IMPLEMENTED;
     } else if (stmt->op_type == UnaryOpType::tanh) {
       accumulate(stmt->operand,
                  mul(adjoint(stmt), sub(constant(1), sqr(stmt))));
@@ -812,7 +816,7 @@ class MakeAdjoint : public ADTransform {
       // do nothing
     } else {
       TI_P(unary_op_type_name(stmt->op_type));
-      TI_NOT_IMPLEMENTED
+      TI_NOT_IMPLEMENTED;
     }
   }
 
@@ -857,7 +861,7 @@ class MakeAdjoint : public ADTransform {
       // do nothing
     } else {
       TI_WARN("gradient of binary op {}", binary_op_type_name(bin->op_type));
-      TI_NOT_IMPLEMENTED
+      TI_NOT_IMPLEMENTED;
     }
   }
 
@@ -951,7 +955,7 @@ class MakeAdjoint : public ADTransform {
   // Equivalent to AdStackLoadTopStmt when no stack is needed
   void visit(LocalLoadStmt *stmt) override {
     // TI_ASSERT(!needs_grad(stmt->ret_type));
-    if (needs_grad(stmt->ret_type))
+    if (is_real(stmt->ret_type))
       accumulate(stmt->src.data[0].var, load(adjoint(stmt)));
   }
 
@@ -965,7 +969,7 @@ class MakeAdjoint : public ADTransform {
     // iteration should be cleared after this iteration has been done
     // 2. If the alloca serves as the dest of multiple LocalStoreStmt, only the
     // last LocalStoreStmt should be taken account of
-    if (needs_grad(stmt->dest->ret_type)) {
+    if (is_real(stmt->dest->ret_type)) {
       auto dtype = stmt->dest->ret_type;
       auto zero = insert<ConstStmt>(TypedConstant(dtype, 0));
       insert<LocalStoreStmt>(adjoint(stmt->dest), zero);
@@ -973,7 +977,7 @@ class MakeAdjoint : public ADTransform {
   }
 
   void visit(AdStackLoadTopStmt *stmt) override {
-    if (needs_grad(stmt->ret_type))
+    if (is_real(stmt->ret_type))
       insert<AdStackAccAdjointStmt>(stmt->stack, load(adjoint(stmt)));
   }
 
@@ -1041,12 +1045,12 @@ class MakeDual : public ADTransform {
   using ADTransform::visit;
   Stmt *current_stmt;
   Block *current_block;
-  // Block *alloca_block;
+  Block *alloca_block;
   std::map<Stmt *, Stmt *> dual_stmt;
 
   MakeDual(Block *block) {
     current_stmt = nullptr;
-    // alloca_block = block;
+    alloca_block = block;
     current_block = block;
   }
 
@@ -1071,6 +1075,250 @@ class MakeDual : public ADTransform {
       current_stmt = stmt;
       stmt->accept(this);
     }
+  }
+
+  // Accumulate [value] to the dual of [primal]
+  void accumulate(Stmt *primal, Stmt *value) {
+    auto alloca_ = dual(primal);
+    if (!alloca_ || alloca_->is<ConstStmt>())
+      return;  // primal may be int variable
+
+    TI_ASSERT(alloca_->is<AllocaStmt>());
+    auto alloca = alloca_->as<AllocaStmt>();
+    TI_ASSERT(alloca->width() == 1);
+    auto local_load = insert<LocalLoadStmt>(LocalAddress(alloca, 0));
+    insert<LocalStoreStmt>(alloca, add(local_load, value));
+  }
+
+  Stmt *dual(Stmt *stmt) {
+    if (!is_real(stmt->ret_type)) {
+      return constant(0);
+    }
+    if (dual_stmt.find(stmt) == dual_stmt.end()) {
+      // normal SSA cases
+
+      // create the alloca
+      // auto alloca =
+      //    Stmt::make<AllocaStmt>(1, get_current_program().config.gradient_dt);
+      // maybe it's better to use the statement data type than the default type
+      auto alloca = Stmt::make<AllocaStmt>(1, stmt->ret_type);
+      dual_stmt[stmt] = alloca.get();
+
+      // TODO: check whether there are any edge cases for the alloca_block
+      alloca_block->insert(std::move(alloca), 0);
+    }
+    return dual_stmt[stmt];
+  }
+
+  void visit(UnaryOpStmt *stmt) override {
+    if (stmt->op_type == UnaryOpType::neg) {
+      accumulate(stmt, negate(dual(stmt->operand)));
+    } else if (stmt->op_type == UnaryOpType::abs) {
+      accumulate(stmt, mul(sgn(stmt->operand), dual(stmt->operand)));
+    } else if (stmt->op_type == UnaryOpType::sin) {
+      accumulate(stmt, mul(cos(stmt->operand), dual(stmt->operand)));
+    } else if (stmt->op_type == UnaryOpType::cos) {
+      accumulate(stmt, negate(mul(sin(stmt->operand), dual(stmt->operand))));
+    } else if (stmt->op_type == UnaryOpType::tan) {
+      // The derivative of `tan` is `1 / cos^2`, which has many singular points
+      // causing NaNs. Though the NaNs are expected, it is error prone and hard
+      // to debug. Therefore we currently don't support computing derivative for
+      // `tan`.
+      TI_NOT_IMPLEMENTED;
+    } else if (stmt->op_type == UnaryOpType::tanh) {
+      accumulate(stmt, mul(sub(constant(1), sqr(stmt)), dual(stmt->operand)));
+    } else if (stmt->op_type == UnaryOpType::asin) {
+      accumulate(stmt, mul(div(constant(1),
+                               sqrt(sub(constant(1), sqr(stmt->operand)))),
+                           dual(stmt->operand)));
+    } else if (stmt->op_type == UnaryOpType::acos) {
+      accumulate(stmt,
+                 mul(negate(div(constant(1),
+                                sqrt(sub(constant(1), sqr(stmt->operand))))),
+                     dual(stmt->operand)));
+    } else if (stmt->op_type == UnaryOpType::exp) {
+      accumulate(stmt, mul(stmt, dual(stmt->operand)));
+    } else if (stmt->op_type == UnaryOpType::log) {
+      accumulate(stmt, div(dual(stmt->operand), stmt->operand));
+    } else if (stmt->op_type == UnaryOpType::sqrt) {
+      accumulate(stmt, mul(div(constant(0.5f), sqrt(stmt->operand)),
+                           dual(stmt->operand)));
+    } else if (stmt->op_type == UnaryOpType::cast_value) {
+      if (is_real(stmt->cast_type) && is_real(stmt->operand->ret_type)) {
+        accumulate(stmt, dual(stmt->operand));
+      }
+    } else if (stmt->op_type == UnaryOpType::logic_not) {
+      // do nothing
+    } else {
+      TI_P(unary_op_type_name(stmt->op_type));
+      TI_NOT_IMPLEMENTED
+    }
+  }
+
+  void visit(BinaryOpStmt *bin) override {
+    if (bin->op_type == BinaryOpType::add) {
+      accumulate(bin, dual(bin->lhs));
+      accumulate(bin, dual(bin->rhs));
+    } else if (bin->op_type == BinaryOpType::sub) {
+      accumulate(bin, dual(bin->lhs));
+      accumulate(bin, negate(dual(bin->rhs)));
+    } else if (bin->op_type == BinaryOpType::mul) {
+      // d (x * y) = y * dx + x * dy
+      accumulate(bin, mul(bin->lhs, dual(bin->rhs)));
+      accumulate(bin, mul(bin->rhs, dual(bin->lhs)));
+    } else if (bin->op_type == BinaryOpType::mod) {
+      // Do nothing
+    } else if (bin->op_type == BinaryOpType::div) {
+      accumulate(bin, div(dual(bin->lhs), bin->rhs));
+      accumulate(bin, negate(div(mul(dual(bin->rhs), bin->lhs),
+                                 mul(bin->rhs, bin->rhs))));
+    } else if (bin->op_type == BinaryOpType::atan2) {
+      auto numerator = add(sqr(bin->lhs), sqr(bin->rhs));
+      accumulate(bin, div(mul(bin->rhs, dual(bin->lhs)), numerator));
+      accumulate(bin, negate(div(mul(bin->lhs, dual(bin->rhs)), numerator)));
+    } else if (bin->op_type == BinaryOpType::pow) {
+      // d (x ^ y) = x ^ (y-1) * (y * dx + log(x) * x * dy)
+      auto common_coeff =
+          pow(bin->lhs, sub(bin->rhs, constant(1)));  // x ^ (y-1)
+      accumulate(bin, mul(dual(bin->lhs), mul(bin->rhs, common_coeff)));
+      accumulate(bin, mul(dual(bin->rhs),
+                          mul(log(bin->lhs), mul(bin->lhs, common_coeff))));
+    } else if (bin->op_type == BinaryOpType::min ||
+               bin->op_type == BinaryOpType::max) {
+      auto cmp = bin->op_type == BinaryOpType::min ? cmp_lt(bin->lhs, bin->rhs)
+                                                   : cmp_lt(bin->rhs, bin->lhs);
+      auto zero = insert<ConstStmt>(TypedConstant(bin->ret_type));
+      accumulate(bin, sel(cmp, dual(bin->lhs), zero));
+      accumulate(bin, sel(cmp, zero, dual(bin->rhs)));
+    } else if (bin->op_type == BinaryOpType::floordiv) {
+      // do nothing
+    } else if (is_comparison(bin->op_type) || is_bit_op(bin->op_type)) {
+      // do nothing
+    } else {
+      TI_WARN("gradient of binary op {}", binary_op_type_name(bin->op_type));
+      TI_NOT_IMPLEMENTED
+    }
+  }
+
+  void visit(TernaryOpStmt *stmt) override {
+    TI_ASSERT(stmt->op_type == TernaryOpType::select);
+    auto zero = insert<ConstStmt>(TypedConstant(stmt->ret_type));
+    accumulate(stmt, insert<TernaryOpStmt>(TernaryOpType::select, stmt->op1,
+                                           load(dual(stmt->op2)), zero));
+    accumulate(stmt, insert<TernaryOpStmt>(TernaryOpType::select, stmt->op1,
+                                           zero, load(dual(stmt->op3))));
+  }
+
+  void visit(IfStmt *if_stmt) override {
+    if (if_stmt->true_statements) {
+      std::vector<Stmt *> true_statements;
+      for (auto &stmt : if_stmt->true_statements->statements) {
+        true_statements.push_back(stmt.get());
+      }
+
+      for (auto stmt : true_statements) {
+        current_stmt = stmt;
+        stmt->accept(this);
+      }
+    }
+    if (if_stmt->false_statements) {
+      std::vector<Stmt *> false_statements;
+      for (auto &stmt : if_stmt->false_statements->statements) {
+        false_statements.push_back(stmt.get());
+      }
+
+      for (auto stmt : false_statements) {
+        current_stmt = stmt;
+        stmt->accept(this);
+      }
+    }
+  }
+
+  void visit(RangeForStmt *for_stmt) override {
+    std::vector<Stmt *> statements;
+    // always make a copy since the list can be modified.
+    for (auto &stmt : for_stmt->body->statements) {
+      statements.push_back(stmt.get());
+    }
+    auto previous_alloca_block = alloca_block;
+    alloca_block = for_stmt->body.get();
+    for (auto stmt : statements) {
+      current_stmt = stmt;
+      stmt->accept(this);
+    }
+    alloca_block = previous_alloca_block;
+  }
+
+  void visit(StructForStmt *for_stmt) override {
+    alloca_block = for_stmt->body.get();
+    for_stmt->body->accept(this);
+  }
+
+  void visit(LocalLoadStmt *stmt) override {
+    // TI_ASSERT(!needs_grad(stmt->ret_type));
+    accumulate(stmt, dual(stmt->src.data[0].var));
+  }
+
+  void visit(LocalStoreStmt *stmt) override {
+    // Clear the dual of the dest before local store,
+    // Because LocalStoreStmt overwrites the dest,
+    // If the alloca serves as the dest of multiple LocalStoreStmt, only the
+    // last LocalStoreStmt should be taken account of, i.e, its history should
+    // be cleared
+    if (is_real(stmt->dest->ret_type)) {
+      auto dtype = stmt->dest->ret_type;
+      auto zero = insert<ConstStmt>(TypedConstant(dtype, 0));
+      insert<LocalStoreStmt>(dual(stmt->dest), zero);
+    }
+
+    accumulate(stmt->dest, dual(stmt->val));
+  }
+
+  void visit(GlobalLoadStmt *stmt) override {
+    // issue global store to dual
+    GlobalPtrStmt *src = stmt->src->as<GlobalPtrStmt>();
+    TI_ASSERT(src->width() == 1);
+    auto snodes = src->snodes;
+    if (!snodes[0]->has_dual()) {
+      // No dual SNode. Do nothing
+      return;
+    }
+    if (gradients_stopped(stmt, snodes[0])) {
+      // gradients stopped, do nothing.
+      return;
+    }
+    TI_ASSERT(snodes[0]->get_dual() != nullptr);
+    snodes[0] = snodes[0]->get_dual();
+    auto dual_ptr = insert<GlobalPtrStmt>(snodes, src->indices);
+    accumulate(stmt, insert<GlobalLoadStmt>(dual_ptr));
+  }
+
+  void visit(GlobalStoreStmt *stmt) override {
+    GlobalPtrStmt *dest = stmt->dest->as<GlobalPtrStmt>();
+    TI_ASSERT(dest->width() == 1);
+    auto snodes = dest->snodes;
+    if (!snodes[0]->has_dual()) {
+      // no gradient (likely integer types)
+      return;
+    }
+    TI_ASSERT(snodes[0]->get_dual() != nullptr);
+    snodes[0] = snodes[0]->get_dual();
+    auto dual_ptr = insert<GlobalPtrStmt>(snodes, dest->indices);
+    insert<AtomicOpStmt>(AtomicOpType::add, dual_ptr, load(dual(stmt->val)));
+  }
+
+  void visit(AtomicOpStmt *stmt) override {
+    GlobalPtrStmt *dest = stmt->dest->as<GlobalPtrStmt>();
+    TI_ASSERT(dest->width() == 1);
+    auto snodes = dest->snodes;
+    if (!snodes[0]->has_dual()) {
+      // no gradient (likely integer types)
+      return;
+    }
+    TI_ASSERT(snodes[0]->get_dual() != nullptr);
+    snodes[0] = snodes[0]->get_dual();
+    auto dual_ptr = insert<GlobalPtrStmt>(snodes, dest->indices);
+    insert<AtomicOpStmt>(AtomicOpType::add, dual_ptr, load(dual(stmt->val)));
   }
 };
 
@@ -1201,7 +1449,6 @@ void auto_diff(IRNode *root,
   } else if (autodiff_mode == AutodiffMode::kForward) {
     // Forward mode autodiff
     Block *block = root->as<Block>();
-    PromoteSSA2LocalVar::run(block);
     MakeDual::run(block);
   }
   type_check(root, config);

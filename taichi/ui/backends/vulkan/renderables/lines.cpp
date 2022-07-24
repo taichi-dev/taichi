@@ -2,7 +2,7 @@
 
 #include "taichi/ui/utils/utils.h"
 
-#include "taichi/backends/vulkan/vulkan_device.h"
+#include "taichi/rhi/vulkan/vulkan_device.h"
 
 TI_UI_NAMESPACE_BEGIN
 
@@ -27,6 +27,10 @@ void Lines::init_lines(AppContext *app_context,
       indices_count,
       vertices_count,
       indices_count,
+      vertices_count,
+      0,
+      indices_count,
+      0,
       sizeof(UniformBufferObject),
       0,
       true,

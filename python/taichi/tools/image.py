@@ -78,7 +78,7 @@ def imread(filename, channels=0):
 
     Args:
         filename (str): An image filename to load from.
-        channels (int, optinal): The channels hint of input image, Default to 0.
+        channels (int, optional): The channels hint of input image, Default to 0.
 
     Returns:
         np.ndarray : An output image loaded from given filename.

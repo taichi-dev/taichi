@@ -13,8 +13,9 @@ endif()
 file(GLOB_RECURSE TAICHI_TESTS_SOURCE
         "tests/cpp/analysis/*.cpp"
         "tests/cpp/aot/*.cpp"
+        "tests/cpp/aot/llvm/*.cpp"
+        "tests/cpp/aot/vulkan/*.cpp"
         "tests/cpp/backends/*.cpp"
-        "tests/cpp/backends/llvm/*.cpp"
         "tests/cpp/codegen/*.cpp"
         "tests/cpp/common/*.cpp"
         "tests/cpp/ir/*.cpp"
@@ -33,7 +34,7 @@ if (WIN32)
     set_target_properties(${TESTS_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL ${TESTS_OUTPUT_DIR})
     set_target_properties(${TESTS_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO ${TESTS_OUTPUT_DIR})
 endif()
-target_link_libraries(${TESTS_NAME} PRIVATE taichi_isolated_core)
+target_link_libraries(${TESTS_NAME} PRIVATE taichi_core)
 target_link_libraries(${TESTS_NAME} PRIVATE gtest_main)
 
 target_include_directories(${TESTS_NAME}

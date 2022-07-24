@@ -1,7 +1,7 @@
 #include "mesh.h"
 
 #include "taichi/ui/utils/utils.h"
-#include "taichi/backends/vulkan/vulkan_device.h"
+#include "taichi/rhi/vulkan/vulkan_device.h"
 
 TI_UI_NAMESPACE_BEGIN
 
@@ -51,6 +51,10 @@ void Mesh::init_mesh(AppContext *app_context,
       indices_count,
       vertices_count,
       indices_count,
+      vertices_count,
+      0,
+      indices_count,
+      0,
       sizeof(UniformBufferObject),
       1,
       true,

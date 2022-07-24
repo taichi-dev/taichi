@@ -34,6 +34,7 @@ CompileConfig::CompileConfig() {
   verbose_kernel_launches = false;
   kernel_profiler = false;
   default_cpu_block_dim = 32;
+  cpu_block_dim_adaptive = true;
   default_gpu_block_dim = 128;
   gpu_max_reg = 0;  // 0 means using the default value from the CUDA driver.
   verbose = true;
@@ -57,6 +58,7 @@ CompileConfig::CompileConfig() {
   print_kernel_llvm_ir = false;
   print_kernel_nvptx = false;
   print_kernel_llvm_ir_optimized = false;
+  num_compile_threads = 2;
 
   // CUDA backend options:
   device_memory_GB = 1;  // by default, preallocate 1 GB GPU memory

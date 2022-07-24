@@ -2,6 +2,22 @@ import taichi as ti
 from tests import test_utils
 
 
+@test_utils.test()
+def test_ad_nested_for():
+    N = 5
+
+    loss = ti.field(float, shape=(), needs_grad=True)
+
+    @ti.kernel
+    def nested_for():
+        for i in range(N):
+            for j in range(N):
+                pass
+
+    with ti.ad.Tape(loss=loss):
+        nested_for()
+
+
 @test_utils.test(require=ti.extension.adstack)
 def test_ad_sum():
     N = 10
@@ -24,7 +40,7 @@ def test_ad_sum():
     compute_sum()
 
     for i in range(N):
-        assert p[i] == 3 * b[i] + 1
+        assert p[i] == a[i] * b[i] + 1
         p.grad[i] = 1
 
     compute_sum.grad()
@@ -547,7 +563,9 @@ def test_inner_loops_local_variable_adaptive_stack_size_kernel_grad():
     assert x.grad[None] == 36.0
 
 
-@test_utils.test(require=ti.extension.adstack, ad_stack_size=0)
+@test_utils.test(require=ti.extension.adstack,
+                 ad_stack_size=0,
+                 exclude=[ti.cc])
 def test_more_inner_loops_local_variable_adaptive_stack_size_tape():
     x = ti.field(dtype=float, shape=(), needs_grad=True)
     arr = ti.field(dtype=float, shape=(2), needs_grad=True)
@@ -574,7 +592,9 @@ def test_more_inner_loops_local_variable_adaptive_stack_size_tape():
     assert x.grad[None] == 36.0
 
 
-@test_utils.test(require=ti.extension.adstack, ad_stack_size=32)
+@test_utils.test(require=ti.extension.adstack,
+                 ad_stack_size=32,
+                 exclude=[ti.cc])
 def test_more_inner_loops_local_variable_fixed_stack_size_tape():
     x = ti.field(dtype=float, shape=(), needs_grad=True)
     arr = ti.field(dtype=float, shape=(2), needs_grad=True)

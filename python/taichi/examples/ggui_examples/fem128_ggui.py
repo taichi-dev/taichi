@@ -60,11 +60,13 @@ def advance():
         disp2 = disp.norm_sqr()
         if disp2 <= ball_radius**2:
             NoV = vel[i].dot(disp)
-            if NoV < 0: vel[i] -= NoV * disp / disp2
+            if NoV < 0:
+                vel[i] -= NoV * disp / disp2
         cond = pos[i] < 0 and vel[i] < 0 or pos[i] > 1 and vel[i] > 0
         # rect boundary condition:
         for j in ti.static(range(pos.n)):
-            if cond[j]: vel[i][j] = 0
+            if cond[j]:
+                vel[i][j] = 0
         pos[i] += dt * vel[i]
 
 
@@ -142,35 +144,40 @@ def render():
     canvas.circles(vertexPositions, radius=0.003, color=(1, 0.6, 0.2))
 
 
-init_mesh()
-init_pos()
-gravity[None] = [0, -1]
+def main():
+    init_mesh()
+    init_pos()
+    gravity[None] = [0, -1]
 
-print(
-    "[Hint] Use WSAD/arrow keys to control gravity. Use left/right mouse bottons to attract/repel. Press R to reset."
-)
-while window.running:
-    for e in window.get_events(ti.ui.PRESS):
-        if e.key == ti.ui.ESCAPE:
-            window.running = False
-        elif e.key == 'r':
-            init_pos()
-        elif e.key in ('a', ti.ui.LEFT):
-            gravity[None] = [-1, 0]
-        elif e.key in ('d', ti.ui.RIGHT):
-            gravity[None] = [+1, 0]
-        elif e.key in ('s', ti.ui.DOWN):
-            gravity[None] = [0, -1]
-        elif e.key in ('w', ti.ui.UP):
-            gravity[None] = [0, +1]
+    print(
+        "[Hint] Use WSAD/arrow keys to control gravity. Use left/right mouse buttons to attract/repel. Press R to reset."
+    )
+    while window.running:
+        for e in window.get_events(ti.ui.PRESS):
+            if e.key == ti.ui.ESCAPE:
+                window.running = False
+            elif e.key == 'r':
+                init_pos()
+            elif e.key in ('a', ti.ui.LEFT):
+                gravity[None] = [-1, 0]
+            elif e.key in ('d', ti.ui.RIGHT):
+                gravity[None] = [+1, 0]
+            elif e.key in ('s', ti.ui.DOWN):
+                gravity[None] = [0, -1]
+            elif e.key in ('w', ti.ui.UP):
+                gravity[None] = [0, +1]
 
-    mouse_pos = window.get_cursor_pos()
-    attractor_pos[None] = mouse_pos
-    attractor_strength[None] = window.is_pressed(
-        ti.ui.LMB) - window.is_pressed(ti.ui.RMB)
-    for i in range(50):
-        with ti.Tape(loss=U):
-            update_U()
-        advance()
-    render()
-    window.show()
+        mouse_pos = window.get_cursor_pos()
+        attractor_pos[None] = mouse_pos
+        attractor_strength[None] = window.is_pressed(
+            ti.ui.LMB) - window.is_pressed(ti.ui.RMB)
+        for i in range(50):
+            with ti.Tape(loss=U):
+                update_U()
+            advance()
+        render()
+        window.show()
+
+
+if __name__ == '__main__':
+    main()

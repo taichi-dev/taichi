@@ -3,25 +3,26 @@
 #include <memory>
 #include <functional>
 
-#include "taichi/llvm/llvm_fwd.h"
-#include "taichi/lang_util.h"
+#include "taichi/runtime/llvm/llvm_fwd.h"
+#include "taichi/util/lang_util.h"
 #include "taichi/jit/jit_module.h"
 
 TLANG_NAMESPACE_BEGIN
 
 // Backend JIT compiler for all archs
 
-class LlvmProgramImpl;
+class TaichiLLVMContext;
+struct CompileConfig;
 
 class JITSession {
- private:
-  LlvmProgramImpl *llvm_prog_;
-
  protected:
+  TaichiLLVMContext *tlctx_;
+  CompileConfig *config_;
+
   std::vector<std::unique_ptr<JITModule>> modules;
 
  public:
-  JITSession(LlvmProgramImpl *llvm_prog);
+  JITSession(TaichiLLVMContext *tlctx, CompileConfig *config);
 
   virtual JITModule *add_module(std::unique_ptr<llvm::Module> M,
                                 int max_reg = 0) = 0;
@@ -34,18 +35,14 @@ class JITSession {
 
   virtual llvm::DataLayout get_data_layout() = 0;
 
-  static std::unique_ptr<JITSession> create(LlvmProgramImpl *llvm_prog,
+  static std::unique_ptr<JITSession> create(TaichiLLVMContext *tlctx,
+                                            CompileConfig *config,
                                             Arch arch);
 
   virtual void global_optimize_module(llvm::Module *module) {
   }
 
   virtual ~JITSession() = default;
-
- protected:
-  LlvmProgramImpl *llvm_prog() const {
-    return llvm_prog_;
-  }
 };
 
 TLANG_NAMESPACE_END

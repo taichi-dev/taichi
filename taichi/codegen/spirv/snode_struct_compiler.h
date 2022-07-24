@@ -5,6 +5,8 @@
 
 #include "taichi/ir/snode.h"
 
+#include "spirv_types.h"
+
 namespace taichi {
 namespace lang {
 namespace spirv {
@@ -49,6 +51,10 @@ struct CompiledSNodeStructs {
   const SNode *root{nullptr};
   // Map from SNode ID to its descriptor.
   SNodeDescriptorsMap snode_descriptors;
+
+  // TODO: Use the new type compiler
+  // tinyir::Block *type_factory;
+  // const tinyir::Type *root_type;
 };
 
 CompiledSNodeStructs compile_snode_structs(SNode &root);

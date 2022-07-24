@@ -13,7 +13,7 @@
 #include <stdexcept>
 #include <vector>
 
-#include "taichi/backends/vulkan/vulkan_device.h"
+#include "taichi/rhi/vulkan/vulkan_device.h"
 #include "taichi/ui/backends/vulkan/app_context.h"
 #include "taichi/ui/backends/vulkan/swap_chain.h"
 #include "taichi/ui/backends/vulkan/vertex.h"
@@ -29,6 +29,10 @@ struct RenderableConfig {
   int max_indices_count{0};
   int vertices_count{0};
   int indices_count{0};
+  int draw_vertex_count{0};
+  int draw_first_vertex{0};
+  int draw_index_count{0};
+  int draw_first_index{0};
   size_t ubo_size{0};
   size_t ssbo_size{0};
   bool blending{false};

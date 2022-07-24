@@ -38,7 +38,7 @@ Gui::Gui(AppContext *app_context, SwapChain *swap_chain, TaichiWindow *window) {
 
 void Gui::init_render_resources(VkRenderPass render_pass) {
   ImGui_ImplVulkan_LoadFunctions(
-      load_vk_function_for_gui);  // this is becaus we're using volk.
+      load_vk_function_for_gui);  // this is because we're using volk.
 
   auto &device = app_context_->device();
 
@@ -216,6 +216,9 @@ void Gui::cleanup() {
   ImGui::DestroyContext();
 }
 
+Gui::~Gui() {
+  cleanup();
+}
 bool Gui::is_empty() {
   return is_empty_;
 }

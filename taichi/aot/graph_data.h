@@ -4,6 +4,9 @@
 #include <unordered_map>
 #include "taichi/ir/type.h"
 #include "taichi/aot/module_data.h"
+#define TI_RUNTIME_HOST
+#include "taichi/program/context.h"
+#undef TI_RUNTIME_HOST
 
 template <typename T, typename G>
 T taichi_union_cast_with_different_sizes(G g);
@@ -12,10 +15,10 @@ namespace taichi {
 namespace lang {
 class AotModuleBuilder;
 class Ndarray;
-struct RuntimeContext;
+
 namespace aot {
-// Currently only scalar and ndarray are supported.
-enum class ArgKind { kScalar, kNdarray, kUnknown };
+// Currently only scalar, matrix and ndarray are supported.
+enum class ArgKind { kScalar, kMatrix, kNdarray, kUnknown };
 
 /**
  * Symbolic argument used in building `Dispatch` nodes in the `Graph`.
@@ -25,6 +28,7 @@ struct Arg {
   std::string name;
   // TODO: real element dtype = dtype + element_shape
   PrimitiveTypeID dtype_id;
+  size_t field_dim;
   std::vector<int> element_shape;
 
   // For serialization & deserialization
@@ -32,22 +36,34 @@ struct Arg {
       : tag(ArgKind::kUnknown),
         name(""),
         dtype_id(PrimitiveTypeID::unknown),
+        field_dim(0),
         element_shape({}) {
   }
 
   explicit Arg(ArgKind tag,
                const std::string &name,
+
                PrimitiveTypeID dtype_id,
+               size_t field_dim,
                const std::vector<int> &element_shape)
-      : tag(tag), name(name), dtype_id(dtype_id), element_shape(element_shape) {
+      : tag(tag),
+        name(name),
+        dtype_id(dtype_id),
+        field_dim(field_dim),
+        element_shape(element_shape) {
   }
 
   // Python/C++ interface that's user facing.
   explicit Arg(ArgKind tag,
                const std::string &name,
+
                const DataType &dtype,
+               size_t field_dim = 0,
                const std::vector<int> &element_shape = {})
-      : tag(tag), name(name), element_shape(element_shape) {
+      : tag(tag),
+        name(name),
+        field_dim(field_dim),
+        element_shape(element_shape) {
     dtype_id = dtype->as<PrimitiveType>()->type;
   }
 
@@ -55,7 +71,17 @@ struct Arg {
     return PrimitiveType::get(dtype_id);
   }
 
-  TI_IO_DEF(name, dtype_id, tag, element_shape);
+  bool operator==(const Arg &other) const {
+    return tag == other.tag && name == other.name &&
+           field_dim == other.field_dim && dtype_id == other.dtype_id &&
+           element_shape == other.element_shape;
+  }
+
+  bool operator!=(const Arg &other) const {
+    return !(*this == other);
+  }
+
+  TI_IO_DEF(name, dtype_id, field_dim, tag, element_shape);
 };
 
 /**
@@ -112,6 +138,8 @@ struct CompiledDispatch {
 
 struct TI_DLL_EXPORT CompiledGraph {
   std::vector<CompiledDispatch> dispatches;
+  std::unordered_map<std::string, aot::Arg> args;
+  RuntimeContext ctx_;
 
   void run(const std::unordered_map<std::string, IValue> &args) const;
 

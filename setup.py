@@ -1,9 +1,9 @@
 # Optional environment variables supported by setup.py:
 #   {DEBUG, RELWITHDEBINFO, MINSIZEREL}
-#     build the C++ taichi_core extension with various build types.
+#     build the C++ taichi_python extension with various build types.
 #
 #   TAICHI_CMAKE_ARGS
-#     extra cmake args for C++ taichi_core extension.
+#     extra cmake args for C++ taichi_python extension.
 
 import glob
 import multiprocessing
@@ -128,9 +128,6 @@ def get_cmake_args():
         f'-DTI_VERSION_MINOR={TI_VERSION_MINOR}',
         f'-DTI_VERSION_PATCH={TI_VERSION_PATCH}',
     ]
-    emscriptened = os.getenv('TI_EMSCRIPTENED', '0') in ('1', 'ON')
-    if emscriptened:
-        cmake_args += ['-DTI_EMSCRIPTENED=ON']
 
     if sys.platform != 'win32':
         os.environ['SKBUILD_BUILD_OPTIONS'] = f'-j{num_threads}'
@@ -156,7 +153,7 @@ setup(name=project_name,
       url='https://github.com/taichi-dev/taichi',
       python_requires=">=3.6,<3.11",
       install_requires=[
-          'numpy', 'sourceinspect>=0.0.4', 'colorama',
+          'numpy', 'sourceinspect>=0.0.4', 'colorama', 'rich',
           'astunparse;python_version<"3.9"'
       ],
       data_files=[(os.path.join('_lib', 'runtime'), data_files)],

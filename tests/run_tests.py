@@ -1,39 +1,38 @@
 import argparse
 import os
 import pdb
+import platform
 import subprocess
 import sys
 import tempfile
 import warnings
 
-from test_utils import __aot_test_cases, print_aot_test_guide
+from test_utils import (__aot_test_cases, __capi_aot_test_cases,
+                        print_aot_test_guide)
 
 import taichi as ti
 
 
-def _run_cpp_test(gtest_option="", extra_env=None):
+def _run_cpp_test(test_filename, build_dir, gtest_option="", extra_env=None):
     ti.reset()
     print("Running C++ tests...")
     ti_lib_dir = os.path.join(ti.__path__[0], '_lib', 'runtime')
+    fullpath = os.path.join(build_dir, test_filename)
 
-    cpp_test_filename = 'taichi_cpp_tests'
-    curr_dir = os.path.dirname(os.path.abspath(__file__))
-    build_dir = os.path.join(curr_dir, '../build')
-
-    if os.path.exists(os.path.join(build_dir, cpp_test_filename)):
+    if os.path.exists(fullpath):
         env_copy = os.environ.copy()
         env_copy['TI_LIB_DIR'] = ti_lib_dir
 
-        cmd = [f'./{cpp_test_filename}']
+        cmd = [fullpath]
         if gtest_option: cmd.append(gtest_option)
         if extra_env: env_copy.update(extra_env)
 
         subprocess.check_call(cmd, env=env_copy, cwd=build_dir)
 
 
-def _test_cpp_aot():
+def _test_cpp_aot(test_filename, build_dir, test_info):
     tests_visited = []
-    for cpp_test_name, python_rpath in __aot_test_cases.items():
+    for cpp_test_name, (python_rpath, args) in test_info.items():
         # Temporary folder will be removed upon handle destruction
         temp_handle = tempfile.TemporaryDirectory()
         temp_folderpath = temp_handle.name
@@ -41,14 +40,19 @@ def _test_cpp_aot():
         curr_dir = os.path.dirname(os.path.abspath(__file__))
         python_file_path = os.path.join(curr_dir, python_rpath)
 
-        extra_env = {"TAICHI_AOT_FOLDER_PATH": temp_folderpath}
+        extra_env = {
+            "TAICHI_AOT_FOLDER_PATH": temp_folderpath,
+        }
+
         env_copy = os.environ.copy()
         env_copy.update(extra_env)
 
-        subprocess.check_call([sys.executable, python_file_path], env=env_copy)
+        cmd_list = [sys.executable, python_file_path] + args.split(" ")
+        subprocess.check_call(cmd_list, env=env_copy)
 
         # Run AOT C++ codes
-        _run_cpp_test(f"--gtest_filter={cpp_test_name}", extra_env)
+        _run_cpp_test(test_filename, build_dir,
+                      f"--gtest_filter={cpp_test_name}", extra_env)
         tests_visited.append(cpp_test_name)
 
     exclude_tests_cmd = "--gtest_filter=-" + ":".join(tests_visited)
@@ -56,11 +60,27 @@ def _test_cpp_aot():
 
 
 def _test_cpp():
+    curr_dir = os.path.dirname(os.path.abspath(__file__))
+    if platform.system() == "Windows":
+        cpp_test_filename = 'taichi_cpp_tests.exe'
+        capi_test_filename = 'taichi_c_api_tests.exe'
+        build_dir = os.path.join(curr_dir, '../bin')
+    else:
+        cpp_test_filename = 'taichi_cpp_tests'
+        capi_test_filename = 'taichi_c_api_tests'
+        build_dir = os.path.join(curr_dir, '../build')
+
+    # Run C-API test cases
+    exclude_tests_cmd = _test_cpp_aot(capi_test_filename, build_dir,
+                                      __capi_aot_test_cases)
+    _run_cpp_test(capi_test_filename, build_dir, exclude_tests_cmd)
+
     # Run AOT test cases
-    exclude_tests_cmd = _test_cpp_aot()
+    exclude_tests_cmd = _test_cpp_aot(cpp_test_filename, build_dir,
+                                      __aot_test_cases)
 
     # Run rest of the cpp tests
-    _run_cpp_test(exclude_tests_cmd)
+    _run_cpp_test(cpp_test_filename, build_dir, exclude_tests_cmd)
 
 
 def _test_python(args):
@@ -107,6 +127,11 @@ def _test_python(args):
             pytest_args += ['--failed-first']
         if args.fail_fast:
             pytest_args += ['--exitfirst']
+        if args.timeout > 0:
+            pytest_args += [
+                '--durations=15', '-p', 'pytest_hardtle',
+                f'--timeout={args.timeout}'
+            ]
     except AttributeError:
         pass
 
@@ -137,7 +162,7 @@ def _test_python(args):
 def test():
     """Run the tests"""
     parser = argparse.ArgumentParser(
-        description=f"Run taichi cpp & python tess")
+        description=f"Run taichi cpp & python test")
     parser.add_argument('files',
                         nargs='*',
                         help='Test name(s) to be run, e.g. "cli"')
@@ -199,6 +224,13 @@ def test():
                         dest='coverage',
                         action='store_true',
                         help='Run tests and record the coverage result')
+    parser.add_argument('-T',
+                        '--timeout',
+                        required=False,
+                        default=600,
+                        type=int,
+                        dest='timeout',
+                        help='Per test timeout (only apply to python tests)')
     parser.add_argument(
         '-A',
         '--cov-append',

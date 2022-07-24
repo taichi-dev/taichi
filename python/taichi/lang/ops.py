@@ -351,15 +351,22 @@ def rsqrt(x):
 
 
 @unary
-def round(x):  # pylint: disable=redefined-builtin
+def _round(x):
+    return _unary_operation(_ti_core.expr_round, builtins.round, x)
+
+
+def round(x, dtype=None):  # pylint: disable=redefined-builtin
     """Round to the nearest integer, element-wise.
 
     Args:
         x (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
             A scalar or a matrix.
 
+        dtype: (:mod:`~taichi.types.primitive_types`): the returned type, default to `None`. If \
+            set to `None` the retuned value will have the same type with `x`.
+
     Returns:
-        The nearest integer of `x`.
+        The nearest integer of `x`, with return value type `dtype`.
 
     Example::
 
@@ -369,35 +376,50 @@ def round(x):  # pylint: disable=redefined-builtin
         >>>     print(ti.round(x))
         [-2., 1., 3.]
     """
-    return _unary_operation(_ti_core.expr_round, builtins.round, x)
+    result = _round(x)
+    if dtype is not None:
+        result = cast(result, dtype)
+    return result
 
 
 @unary
-def floor(x):
-    """Return the floor of the input, element-wise.
+def _floor(x):
+    return _unary_operation(_ti_core.expr_floor, math.floor, x)
 
+
+def floor(x, dtype=None):
+    """Return the floor of the input, element-wise.
     The floor of the scalar `x` is the largest integer `k`, such that `k <= x`.
 
     Args:
         x (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
             Input scalar or matrix.
 
+        dtype: (:mod:`~taichi.types.primitive_types`): the returned type, default to `None`. If \
+            set to `None` the retuned value will have the same type with `x`.
+
     Returns:
-        The floor of each element in `x`, with float type.
+        The floor of each element in `x`, with return value type `dtype`.
 
     Example::
-
         >>> @ti.kernel
         >>> def test():
-        >>>     x = ti.Matrix([3.14, -1.5])
-        >>>     y = ti.floor(x)
-        >>>     print(y)  # [3.0, -2.0]
+        >>>     x = ti.Matrix([-1.1, 2.2, 3.])
+        >>>     y = ti.floor(x, ti.f64)
+        >>>     print(y)  # [-2.000000000000, 2.000000000000, 3.000000000000]
     """
-    return _unary_operation(_ti_core.expr_floor, math.floor, x)
+    result = _floor(x)
+    if dtype is not None:
+        result = cast(result, dtype)
+    return result
 
 
 @unary
-def ceil(x):
+def _ceil(x):
+    return _unary_operation(_ti_core.expr_ceil, math.ceil, x)
+
+
+def ceil(x, dtype=None):
     """Return the ceiling of the input, element-wise.
 
     The ceil of the scalar `x` is the smallest integer `k`, such that `k >= x`.
@@ -406,8 +428,11 @@ def ceil(x):
         x (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
             Input scalar or matrix.
 
+        dtype: (:mod:`~taichi.types.primitive_types`): the returned type, default to `None`. If \
+            set to `None` the retuned value will have the same type with `x`.
+
     Returns:
-        The ceiling of each element in `x`, with float dtype.
+        The ceiling of each element in `x`, with return value type `dtype`.
 
     Example::
 
@@ -417,7 +442,10 @@ def ceil(x):
         >>>     y = ti.ceil(x)
         >>>     print(y)  # [4.0, -1.0]
     """
-    return _unary_operation(_ti_core.expr_ceil, math.ceil, x)
+    result = _ceil(x)
+    if dtype is not None:
+        result = cast(result, dtype)
+    return result
 
 
 @unary
@@ -706,6 +734,8 @@ def pow(x, a):  # pylint: disable=W0622
 
     Negative values raised to a non-integral value will return `nan`.
     A zero value raised to a negative value will return `inf`.
+    If debug mode or optimization passes are on, an exception will be raised
+    when an integral value is raised to a negative value; otherwise 1 will be returned.
 
     Args:
         x (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \

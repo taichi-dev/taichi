@@ -104,6 +104,30 @@ class CheckOutOfBound : public BasicStmtVisitor {
     set_done(stmt);
   }
 
+  void visit(BinaryOpStmt *stmt) override {
+    // Insert assertions if debug is on
+    if (is_done(stmt)) {
+      return;
+    }
+    if (stmt->op_type == BinaryOpType::pow) {
+      if (is_integral(stmt->rhs->ret_type) &&
+          is_integral(stmt->lhs->ret_type)) {
+        auto compare_rhs = Stmt::make<ConstStmt>(TypedConstant(0));
+        auto compare = std::make_unique<BinaryOpStmt>(
+            BinaryOpType::cmp_ge, stmt->rhs, compare_rhs.get());
+        compare->ret_type = PrimitiveType::i32;
+        std::string msg = "Negative exponent for integer pows are not allowed";
+        auto assert_stmt = std::make_unique<AssertStmt>(compare.get(), msg,
+                                                        std::vector<Stmt *>());
+        assert_stmt->accept(this);
+        modifier.insert_before(stmt, std::move(compare_rhs));
+        modifier.insert_before(stmt, std::move(compare));
+        modifier.insert_before(stmt, std::move(assert_stmt));
+        set_done(stmt);
+      }
+    }
+  }
+
   static bool run(IRNode *node,
                   const CompileConfig &config,
                   const std::string &kernel_name) {

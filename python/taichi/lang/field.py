@@ -1,7 +1,7 @@
 import taichi.lang
 from taichi._lib import core as _ti_core
-from taichi.lang.util import (python_scope, to_numpy_type, to_paddle_type,
-                              to_pytorch_type)
+from taichi.lang.util import (in_python_scope, python_scope, to_numpy_type,
+                              to_paddle_type, to_pytorch_type)
 
 
 class Field:
@@ -19,7 +19,6 @@ class Field:
         self.vars = _vars
         self.host_accessors = None
         self.grad = None
-        self.adjoint = None
         self.dual = None
 
     @property
@@ -90,31 +89,16 @@ class Field:
         """Gets representative field member for loop range info.
 
         Returns:
-            taichi_core.Expr: Representative (first) field member.
+            taichi_python.Expr: Representative (first) field member.
         """
         return self.vars[0].ptr
 
-    def _set_grad(self, grad, reverse_mode=True):
-        """Binds corresponding gradient field to adjoint or dual.
-
+    def _set_grad(self, grad):
+        """Sets corresponding grad field (reverse mode).
         Args:
-            grad (Field): Corresponding gradient field.
-            reverse_mode (Bool): set for reverse or forward mode
+            grad (Field): Corresponding grad field.
         """
-        if reverse_mode:
-            self._set_adjoint(grad)
-            self.grad = self.adjoint
-        else:
-            self._set_dual(grad)
-            self.grad = self.dual
-
-    def _set_adjoint(self, adjoint):
-        """Sets corresponding adjoint field (reverse mode).
-
-        Args:
-            adjoint (Field): Corresponding adjoint field.
-        """
-        self.adjoint = adjoint
+        self.grad = grad
 
     def _set_dual(self, dual):
         """Sets corresponding dual field (forward mode).
@@ -280,12 +264,16 @@ class ScalarField(Field):
     def __init__(self, var):
         super().__init__([var])
 
-    @python_scope
     def fill(self, val):
         """Fills this scalar field with a specified value.
         """
-        from taichi._kernels import fill_tensor  # pylint: disable=C0415
-        fill_tensor(self, val)
+        if in_python_scope():
+            from taichi._kernels import fill_tensor  # pylint: disable=C0415
+            fill_tensor(self, val)
+        else:
+            from taichi._funcs import \
+                field_fill_taichi_scope  # pylint: disable=C0415
+            field_fill_taichi_scope(self, val)
 
     @python_scope
     def to_numpy(self, dtype=None):

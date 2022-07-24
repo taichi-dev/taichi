@@ -11,6 +11,9 @@ class FullSimplifyPass : public Pass {
 
   struct Args {
     bool after_lower_access;
+    // Switch off some optimization in store forwarding if there is an autodiff
+    // pass after the full_simplify
+    bool autodiff_enabled;
     Program *program;
   };
 };

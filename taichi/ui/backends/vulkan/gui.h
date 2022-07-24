@@ -15,7 +15,7 @@
 #include <imgui_impl_vulkan.h>
 #include "taichi/ui/backends/vulkan/app_context.h"
 #include "taichi/ui/common/gui_base.h"
-#include "taichi/backends/vulkan/vulkan_device.h"
+#include "taichi/rhi/vulkan/vulkan_device.h"
 
 TI_UI_NAMESPACE_BEGIN
 
@@ -24,6 +24,7 @@ namespace vulkan {
 class TI_DLL_EXPORT Gui final : public GuiBase {
  public:
   Gui(AppContext *app_context, SwapChain *swap_chain, TaichiWindow *window);
+  ~Gui();
   void cleanup();
 
   void init_render_resources(VkRenderPass render_pass);

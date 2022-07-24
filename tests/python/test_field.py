@@ -118,6 +118,78 @@ def test_field_needs_grad():
     func()
 
 
+@test_utils.test()
+def test_field_needs_grad_dtype():
+    with pytest.raises(
+            RuntimeError,
+            match=
+            r".* is not supported for field with `needs_grad=True` or `needs_dual=True`."
+    ):
+        a = ti.field(int, shape=1, needs_grad=True)
+    with pytest.raises(
+            RuntimeError,
+            match=
+            r".* is not supported for field with `needs_grad=True` or `needs_dual=True`."
+    ):
+        b = ti.Vector.field(3, int, shape=1, needs_grad=True)
+    with pytest.raises(
+            RuntimeError,
+            match=
+            r".* is not supported for field with `needs_grad=True` or `needs_dual=True`."
+    ):
+        c = ti.Matrix.field(2, 3, int, shape=1, needs_grad=True)
+    with pytest.raises(
+            RuntimeError,
+            match=
+            r".* is not supported for field with `needs_grad=True` or `needs_dual=True`."
+    ):
+        d = ti.Struct.field(
+            {
+                "pos": ti.types.vector(3, int),
+                "vel": ti.types.vector(3, float),
+                "acc": ti.types.vector(3, float),
+                "mass": ti.f32,
+            },
+            shape=1,
+            needs_grad=True)
+
+
+@test_utils.test()
+def test_field_needs_dual_dtype():
+    with pytest.raises(
+            RuntimeError,
+            match=
+            r".* is not supported for field with `needs_grad=True` or `needs_dual=True`."
+    ):
+        a = ti.field(int, shape=1, needs_dual=True)
+    with pytest.raises(
+            RuntimeError,
+            match=
+            r".* is not supported for field with `needs_grad=True` or `needs_dual=True`."
+    ):
+        b = ti.Vector.field(3, int, shape=1, needs_dual=True)
+    with pytest.raises(
+            RuntimeError,
+            match=
+            r".* is not supported for field with `needs_grad=True` or `needs_dual=True`."
+    ):
+        c = ti.Matrix.field(2, 3, int, shape=1, needs_dual=True)
+    with pytest.raises(
+            RuntimeError,
+            match=
+            r".* is not supported for field with `needs_grad=True` or `needs_dual=True`."
+    ):
+        d = ti.Struct.field(
+            {
+                "pos": ti.types.vector(3, int),
+                "vel": ti.types.vector(3, float),
+                "acc": ti.types.vector(3, float),
+                "mass": ti.f32,
+            },
+            shape=1,
+            needs_dual=True)
+
+
 @pytest.mark.parametrize('dtype', [ti.f32, ti.f64])
 def test_default_fp(dtype):
     ti.init(default_fp=dtype)
@@ -208,3 +280,23 @@ def test_invalid_slicing():
     ):
         val = ti.field(ti.i32, shape=(2, 2))
         val[0, :]
+
+
+@test_utils.test(exclude=[ti.cc], debug=True)
+def test_field_fill():
+    x = ti.field(int, shape=(3, 3))
+    x.fill(2)
+
+    y = ti.field(float, shape=(3, 3))
+    y.fill(2.0)
+
+    z = ti.Vector.field(3, float, shape=(3, 3))
+    z.fill([1, 2, 3])
+
+    @ti.kernel
+    def test():
+        x.fill(3)
+        y.fill(3.0)
+        z.fill([4, 5, 6])
+
+    test()

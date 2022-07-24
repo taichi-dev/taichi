@@ -55,6 +55,8 @@ def update():
     for i, j in ti.ndrange((1, shape[0] - 1), (1, shape[1] - 1)):
         acceleration = gravity * laplacian(i, j) - damping * velocity[i, j]
         velocity[i, j] = velocity[i, j] + acceleration * dt
+
+    for i, j in ti.ndrange((1, shape[0] - 1), (1, shape[1] - 1)):
         height[i, j] = height[i, j] + velocity[i, j] * dt
 
 
@@ -71,20 +73,25 @@ def visualize_wave():
         pixels[i, j] = (1 - brightness) * color + brightness * light_color
 
 
-print("[Hint] click on the window to create waves")
+def main():
+    print("[Hint] click on the window to create waves")
 
-reset()
-gui = ti.GUI('Water Wave', shape)
-while gui.running:
-    for e in gui.get_events(ti.GUI.PRESS):
-        if e.key in [ti.GUI.ESCAPE, ti.GUI.EXIT]:
-            gui.running = False
-        elif e.key == 'r':
-            reset()
-        elif e.key == ti.GUI.LMB:
-            x, y = e.pos
-            create_wave(3, x * shape[0], y * shape[1])
-    update()
-    visualize_wave()
-    gui.set_image(pixels)
-    gui.show()
+    reset()
+    gui = ti.GUI('Water Wave', shape)
+    while gui.running:
+        for e in gui.get_events(ti.GUI.PRESS):
+            if e.key in [ti.GUI.ESCAPE, ti.GUI.EXIT]:
+                gui.running = False
+            elif e.key == 'r':
+                reset()
+            elif e.key == ti.GUI.LMB:
+                x, y = e.pos
+                create_wave(3, x * shape[0], y * shape[1])
+        update()
+        visualize_wave()
+        gui.set_image(pixels)
+        gui.show()
+
+
+if __name__ == '__main__':
+    main()

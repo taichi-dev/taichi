@@ -1,7 +1,7 @@
 #include "taichi/aot/module_loader.h"
 
 #include "taichi/runtime/gfx/aot_module_loader_impl.h"
-#include "taichi/backends/metal/aot_module_loader_impl.h"
+#include "taichi/runtime/metal/aot_module_loader_impl.h"
 
 namespace taichi {
 namespace lang {
@@ -68,7 +68,7 @@ KernelTemplate *Module::get_kernel_template(const std::string &name) {
   return kt_ptr;
 }
 
-Field *Module::get_field(const std::string &name) {
+Field *Module::get_snode_tree(const std::string &name) {
   auto itr = loaded_fields_.find(name);
   if (itr != loaded_fields_.end()) {
     return itr->second.get();

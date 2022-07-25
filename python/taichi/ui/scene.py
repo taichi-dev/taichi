@@ -101,7 +101,7 @@ class Scene:
         """Declare multi-lines inside the scene.
 
         Note that under current situation, for example, there you have 4 vertices,
-        vertices.shape[0] is 4. So there will be 2 lines, first line's two points
+        vertices.shape[0] is 4. So there will be 2 lines, the first line's two points
         are vertices[0] and vertices[1], and the second line's two points are
         vertices[2] and vertices[3].
 
@@ -117,13 +117,13 @@ class Scene:
             per_vertex_color (Tuple[float]): a taichi 3D vector field, where each
                 element indicate the RGB color of the line.
             vertex_offset: int type(otherwise float type will be floored to int),
-                if 'indices' is provided, this means the value added to the vertex
-                index before indexing into the vertex buffer, else this means the
+                if 'indices' is provided, this refers to the value added to the vertex
+                index before indexing into the vertex buffer, else this refers to the
                 index of the first vertex to draw.
             vertex_count: int type(ohterwise float type will be floored to int),
-                only avaliable when `indices` is not provided, which is the number
+                only available when `indices` is not provided, which is the number
                 of vertices to draw. There are 2 cases that we will change your
-                vertex_count. [1] If the `vertex_count` is a odd number, then we
+                `vertex_count`. [1] If the `vertex_count` is an odd number, then we
                 will change it to `vertex_count` - 1. [2] If `vertex_offset` plus
                 `vertex_count` greater than vertices.shape[0], then we will reduce
                 `vertex_count` to no more than vertices.shape[0].
@@ -192,18 +192,18 @@ class Scene:
                 element indicate the RGB color of a vertex.
             two_sided (bool): whether or not the triangles should be able to be
                 seen from both sides.
-            vertex_offset: int type(ohterwise float type will be floored to int),
-                if 'indices' is provided, this means the value added to the vertex
-                index before indexing into the vertex buffer, else this means the
+            vertex_offset: int type(otherwise float type will be floored to int),
+                if 'indices' is provided, this refers to the value added to the vertex
+                index before indexing into the vertex buffer, else this refers to the
                 index of the first vertex to draw.
             vertex_count: int type(ohterwise float type will be floored to int),
-                only avaliable when `indices` is not provided, which is the number
+                only available when `indices` is not provided, which is the number
                 of vertices to draw.
             index_offset: int type(ohterwise float type will be floored to int),
-                only avaliable when `indices` is provided, which is the base index
+                only available when `indices` is provided, which is the base index
                 within the index buffer.
             index_count: int type(ohterwise float type will be floored to int),
-                only avaliable when `indices` is provided, which is the the number
+                only available when `indices` is provided, which is the the number
                 of vertices to draw.
         """
         vbo = get_vbo_field(vertices)

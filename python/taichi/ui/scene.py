@@ -116,21 +116,21 @@ class Scene:
                 If `per_vertex_color` is provided, this is ignored.
             per_vertex_color (Tuple[float]): a taichi 3D vector field, where each
                 element indicate the RGB color of the line.
-            vertex_offset: int type(otherwise float type will be floored to int),
+            vertex_offset (int, optional):
                 if 'indices' is provided, this refers to the value added to the vertex
                 index before indexing into the vertex buffer, else this refers to the
                 index of the first vertex to draw.
-            vertex_count: int type(ohterwise float type will be floored to int),
+            vertex_count (int, optional):
                 only available when `indices` is not provided, which is the number
                 of vertices to draw. There are 2 cases that we will change your
                 `vertex_count`. [1] If the `vertex_count` is an odd number, then we
                 will change it to `vertex_count` - 1. [2] If `vertex_offset` plus
                 `vertex_count` greater than vertices.shape[0], then we will reduce
                 `vertex_count` to no more than vertices.shape[0].
-            index_offset: int type (otherwise float type will be floored to int).
+            index_offset (int, optional):
                 Only available when `indices` is provided, which is the base index
                 within the index buffer.
-            index_count: int type (otherwise float type will be floored to int),
+            index_count (int, optional):
                 Only available when `indices` is provided, which is the number
                 of vertices to draw.
         """
@@ -192,17 +192,17 @@ class Scene:
                 element indicate the RGB color of a vertex.
             two_sided (bool): whether or not the triangles should be able to be
                 seen from both sides.
-            vertex_offset: int type(otherwise float type will be floored to int),
+            vertex_offset (int, optional):
                 if 'indices' is provided, this refers to the value added to the vertex
                 index before indexing into the vertex buffer, else this refers to the
                 index of the first vertex to draw.
-            vertex_count: int type(ohterwise float type will be floored to int),
+            vertex_count (int, optional):
                 only available when `indices` is not provided, which is the number
                 of vertices to draw.
-            index_offset: int type(ohterwise float type will be floored to int),
+            index_offset (int, optional):
                 only available when `indices` is provided, which is the base index
                 within the index buffer.
-            index_count: int type(ohterwise float type will be floored to int),
+            index_count (int, optional):
                 only available when `indices` is provided, which is the the number
                 of vertices to draw.
         """
@@ -244,9 +244,9 @@ class Scene:
                 values. If `per_vertex_color` is provided, this is ignored.
             per_vertex_color (Tuple[float]): a taichi 3D vector field, where each
                 element indicate the RGB color of a particle.
-            index_offset: int type(ohterwise float type will be floored to int),
+            index_offset (int, optional):
                 the index of the first vertex to draw.
-            index_count: int type(ohterwise float type will be floored to int),
+            index_count (int, optional):
                 the number of vertices to draw.
         """
         vbo = get_vbo_field(centers)

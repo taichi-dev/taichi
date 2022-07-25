@@ -302,9 +302,10 @@ struct PyWindow {
     // todo: support other ggui backends
     if (!lang::vulkan::is_vulkan_api_available()) {
       throw std::runtime_error("Vulkan must be available for GGUI");
-    }
-    else if (ti_arch == Arch::opengl) {
-      throw std::runtime_error("GGUI is not supported on opengl backend, please use cpu, vulkan or cuda backends");
+    } else if (ti_arch == Arch::opengl) {
+      throw std::runtime_error(
+          "GGUI is not supported on opengl backend, please use cpu, vulkan or "
+          "cuda backends");
     }
     window = std::make_unique<vulkan::Window>(prog, config);
   }

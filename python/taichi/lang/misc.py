@@ -228,16 +228,15 @@ class _EnvironmentConfigurator:
         # TI_ASYNC=1  : True
         name = 'TI_' + key.upper()
         value = os.environ.get(name, '')
-        if len(value):
-            self[key] = _cast(value)
-            if key in self.kwargs:
-                _ti_core.warn(
-                    f'ti.init argument "{key}" overridden by environment variable {name}={value}'
-                )
-                del self.kwargs[key]  # mark as recognized
-        elif key in self.kwargs:
+        if key in self.kwargs:
             self[key] = self.kwargs[key]
+            if value:
+                _ti_core.warn(
+                    f'Environment variable {name}={value} overridden by ti.init argument "{key}"'
+                )
             del self.kwargs[key]  # mark as recognized
+        elif value:
+            self[key] = _cast(value)
 
     def __getitem__(self, key):
         return getattr(self.cfg, key)
@@ -369,9 +368,9 @@ def init(arch=None,
     if env_default_fp:
         if default_fp is not None:
             _ti_core.warn(
-                f'ti.init argument "default_fp" overridden by environment variable TI_DEFAULT_FP={env_default_fp}'
+                f'Environment variable TI_DEFAULT_FP={env_default_fp} overridden by ti.init argument "default_fp"'
             )
-        if env_default_fp == '32':
+        elif env_default_fp == '32':
             default_fp = f32
         elif env_default_fp == '64':
             default_fp = f64
@@ -383,9 +382,9 @@ def init(arch=None,
     if env_default_ip:
         if default_ip is not None:
             _ti_core.warn(
-                f'ti.init argument "default_ip" overridden by environment variable TI_DEFAULT_IP={env_default_ip}'
+                f'Environment variable TI_DEFAULT_IP={env_default_ip} overridden by ti.init argument "default_ip"'
             )
-        if env_default_ip == '32':
+        elif env_default_ip == '32':
             default_ip = i32
         elif env_default_ip == '64':
             default_ip = i64

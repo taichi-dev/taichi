@@ -36,7 +36,7 @@ class Tape:
             >>>     for I in ti.grouped(x):
             >>>         y[None] += x[I] ** a
             >>>
-            >>> with ti.Tape(loss = y):
+            >>> with ti.ad.Tape(loss = y):
             >>>     sum(2)
         """
         self.calls = []
@@ -111,7 +111,7 @@ def clear_all_gradients():
 
 def grad_replaced(func):
     """A decorator for python function to customize gradient with Taichi's autodiff
-    system, e.g. `ti.Tape()` and `kernel.grad()`.
+    system, e.g. `ti.ad.Tape()` and `kernel.grad()`.
 
     This decorator forces Taichi's autodiff system to use a user-defined gradient
     function for the decorated function. Its customized gradient must be decorated
@@ -186,7 +186,7 @@ def grad_for(primal):
 
 def no_grad(func):
     """A decorator for python function to skip gradient calculation within Taichi's
-    autodiff system, e.g. `ti.Tape()` and `kernel.grad()`.
+    autodiff system, e.g. `ti.ad.Tape()` and `kernel.grad()`.
     This decorator forces Taichi's autodiff system to use an empty gradient function
     for the decorated function.
 

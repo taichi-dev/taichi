@@ -100,13 +100,62 @@ def python_kernel3(a, mat):
     return a * mat
 
 
-simple_kernels_to_test = [
-    (kernel0, (), python_kernel0, 1),
-    (kernel1, (100, 200, 10.2), python_kernel1, 1),
-    (kernel2, (1024, ), python_kernel2, 3),
-    (kernel3, (10, ti.Matrix([[1, 2], [256, 1024]],
-                             ti.i32)), python_kernel3, 1),
-]
+@ti.func
+def func_sum(lo: ti.i32, hi: ti.i32) -> ti.i32:
+    res = 0
+    for i in range(lo, hi):
+        res += i
+    return res
+
+
+@ti.func
+def func_mul(lo: ti.i32, hi: ti.i32) -> ti.i32:
+    res = 1
+    for i in range(lo, hi):
+        res *= i
+    return res
+
+
+@ti.kernel
+def kernel4(lo: ti.i32, hi: ti.i32, n: ti.i32) -> ti.i32:
+    res = 0
+    for i in range(n):
+        res += func_sum(lo, hi)
+    return res
+
+
+def python_kernel4(lo: ti.i32, hi: ti.i32, n: ti.i32):
+    res = 0
+    for i in range(n):
+        for j in range(lo, hi):
+            res += j
+    return res
+
+
+@ti.kernel
+def kernel5(lo: ti.i32, hi: ti.i32, n: ti.i32) -> ti.i32:
+    res = 1
+    for i in range(n):
+        res *= func_mul(lo, hi)
+    return res
+
+
+def python_kernel5(lo: ti.i32, hi: ti.i32, n: ti.i32):
+    res = 1
+    for i in range(n):
+        for j in range(lo, hi):
+            res *= j
+    return res
+
+
+simple_kernels_to_test = [(kernel0, (), python_kernel0, 1),
+                          (kernel1, (100, 200, 10.2), python_kernel1, 1),
+                          (kernel2, (1024, ), python_kernel2, 3),
+                          (kernel3, (10,
+                                     ti.Matrix([[1, 2], [256, 1024]],
+                                               ti.i32)), python_kernel3, 1),
+                          (kernel4, (1, 10, 2), python_kernel4, 3),
+                          (kernel5, (1, 2, 2), python_kernel5, 3)]
 
 
 def _test_offline_cache_dec(func):
@@ -160,6 +209,7 @@ def _test_closing_offline_cache_for_a_kernel(curr_arch, kernel, args, result):
 
     ti.init(arch=curr_arch,
             enable_fallback=False,
+            offline_cache=False,
             offline_cache_file_path=tmp_offline_cache_file_path())
     res1 = kernel(*args)
     assert len(listdir(tmp_offline_cache_file_path())
@@ -167,6 +217,7 @@ def _test_closing_offline_cache_for_a_kernel(curr_arch, kernel, args, result):
 
     ti.init(arch=curr_arch,
             enable_fallback=False,
+            offline_cache=False,
             offline_cache_file_path=tmp_offline_cache_file_path())
     assert len(listdir(tmp_offline_cache_file_path())
                ) - count_of_cache_file == get_expected_num_cache_files()
@@ -467,3 +518,70 @@ def test_offline_cache_cleaning(curr_arch, factor, policy):
         rem += 2
     assert len(listdir(
         tmp_offline_cache_file_path())) - count_of_cache_file == rem
+
+
+# FIXME: Change [ti.cpu] to `supported_archs_offline_cache` after fixing bugs of real-function on gpu
+@pytest.mark.parametrize('curr_arch', [ti.cpu])
+@_test_offline_cache_dec
+def test_offline_cache_for_kernels_calling_real_func(curr_arch):
+    count_of_cache_file = len(listdir(tmp_offline_cache_file_path()))
+
+    def helper1():
+        @ti.experimental.real_func
+        def sum(l: ti.i32, r: ti.i32) -> ti.i32:
+            if l == r:
+                return l
+            else:
+                return sum(l, (l + r) // 2) + sum((l + r) // 2 + 1, r)
+
+        @ti.kernel
+        def get_sum() -> ti.i32:
+            return sum(0, 99)
+
+        assert get_sum() == 99 * 50
+
+    def helper2():
+        @ti.experimental.real_func
+        def sum(l: ti.i32, r: ti.i32) -> ti.i32:
+            if l == r:
+                return l
+            else:
+                return sum((l + r) // 2 + 1, r) + sum(l, (l + r) // 2)
+
+        @ti.kernel
+        def get_sum() -> ti.i32:
+            return sum(0, 99)
+
+        assert get_sum() == 99 * 50
+
+    assert len(listdir(tmp_offline_cache_file_path())
+               ) - count_of_cache_file == get_expected_num_cache_files()
+    ti.init(arch=curr_arch,
+            enable_fallback=False,
+            **current_thread_ext_options())
+    helper1()
+
+    ti.init(arch=curr_arch,
+            enable_fallback=False,
+            **current_thread_ext_options())
+    assert len(listdir(tmp_offline_cache_file_path())
+               ) - count_of_cache_file == get_expected_num_cache_files([1])
+    helper1()
+
+    ti.init(arch=curr_arch,
+            enable_fallback=False,
+            **current_thread_ext_options())
+    assert len(listdir(tmp_offline_cache_file_path())
+               ) - count_of_cache_file == get_expected_num_cache_files([1])
+    helper2()
+
+    ti.init(arch=curr_arch,
+            enable_fallback=False,
+            **current_thread_ext_options())
+    assert len(listdir(tmp_offline_cache_file_path())
+               ) - count_of_cache_file == get_expected_num_cache_files([1, 1])
+    helper2()
+
+    ti.reset()
+    assert len(listdir(tmp_offline_cache_file_path())
+               ) - count_of_cache_file == get_expected_num_cache_files([1, 1])

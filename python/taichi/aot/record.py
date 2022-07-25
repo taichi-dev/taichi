@@ -40,7 +40,7 @@ def start_recording(filename):
         >>>     for i in x:
         >>>         x[i] -= x.grad[i]
         >>>
-        >>> with ti.Tape(loss):
+        >>> with ti.ad.Tape(loss):
         >>>     compute_loss()
         >>> do_some_works()
     """

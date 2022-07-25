@@ -1,7 +1,7 @@
 import taichi.lang
 from taichi._lib import core as _ti_core
-from taichi.lang.util import (python_scope, to_numpy_type, to_paddle_type,
-                              to_pytorch_type)
+from taichi.lang.util import (in_python_scope, python_scope, to_numpy_type,
+                              to_paddle_type, to_pytorch_type)
 
 
 class Field:
@@ -264,12 +264,16 @@ class ScalarField(Field):
     def __init__(self, var):
         super().__init__([var])
 
-    @python_scope
     def fill(self, val):
         """Fills this scalar field with a specified value.
         """
-        from taichi._kernels import fill_tensor  # pylint: disable=C0415
-        fill_tensor(self, val)
+        if in_python_scope():
+            from taichi._kernels import fill_tensor  # pylint: disable=C0415
+            fill_tensor(self, val)
+        else:
+            from taichi._funcs import \
+                field_fill_taichi_scope  # pylint: disable=C0415
+            field_fill_taichi_scope(self, val)
 
     @python_scope
     def to_numpy(self, dtype=None):

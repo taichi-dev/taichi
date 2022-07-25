@@ -136,6 +136,24 @@ struct PyScene {
     scene->set_camera(camera.camera);
   }
 
+  void lines(FieldInfo vbo,
+             FieldInfo indices,
+             bool has_per_vertex_color,
+             py::tuple color_,
+             float width) {
+    RenderableInfo renderable_info;
+    renderable_info.vbo = vbo;
+    renderable_info.indices = indices;
+    renderable_info.has_per_vertex_color = has_per_vertex_color;
+
+    SceneLinesInfo info;
+    info.renderable_info = renderable_info;
+    info.color = tuple_to_vec3(color_);
+    info.width = width;
+
+    return scene->lines(info);
+  }
+
   void mesh(FieldInfo vbo,
             bool has_per_vertex_color,
             FieldInfo indices,
@@ -301,16 +319,6 @@ struct PyWindow {
     window->copy_depth_buffer_to_ndarray(*depth_arr);
   }
 
-  py::array_t<float> get_depth_buffer_as_numpy() {
-    uint32_t w, h;
-    auto &depth_buffer = window->get_depth_buffer(w, h);
-
-    return py::array_t<float>(
-        py::detail::any_container<ssize_t>({w, h}),
-        py::detail::any_container<ssize_t>({sizeof(float) * h, sizeof(float)}),
-        depth_buffer.data(), nullptr);
-  }
-
   py::array_t<float> get_image_buffer() {
     uint32_t w, h;
     auto &img_buffer = window->get_image_buffer(w, h);
@@ -411,7 +419,6 @@ void export_ggui(py::module &m) {
       .def("write_image", &PyWindow::write_image)
       .def("copy_depth_buffer_to_ndarray",
            &PyWindow::copy_depth_buffer_to_ndarray)
-      .def("get_depth_buffer_as_numpy", &PyWindow::get_depth_buffer_as_numpy)
       .def("get_image_buffer", &PyWindow::get_image_buffer)
       .def("is_pressed", &PyWindow::is_pressed)
       .def("get_cursor_pos", &PyWindow::py_get_cursor_pos)
@@ -444,6 +451,7 @@ void export_ggui(py::module &m) {
   py::class_<PyScene>(m, "PyScene")
       .def(py::init<>())
       .def("set_camera", &PyScene::set_camera)
+      .def("lines", &PyScene::lines)
       .def("mesh", &PyScene::mesh)
       .def("particles", &PyScene::particles)
       .def("point_light", &PyScene::point_light)

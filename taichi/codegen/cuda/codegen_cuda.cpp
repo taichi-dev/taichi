@@ -23,12 +23,12 @@ using namespace llvm;
 // NVVM IR Spec:
 // https://docs.nvidia.com/cuda/archive/10.0/pdf/NVVM_IR_Specification.pdf
 
-class CodeGenLLVMCUDA : public CodeGenLLVM {
+class TaskCodeGenCUDA : public TaskCodeGenLLVM {
  public:
   using IRVisitor::visit;
 
-  CodeGenLLVMCUDA(Kernel *kernel, IRNode *ir = nullptr)
-      : CodeGenLLVM(kernel, ir) {
+  TaskCodeGenCUDA(Kernel *kernel, IRNode *ir = nullptr)
+      : TaskCodeGenLLVM(kernel, ir) {
   }
 
   llvm::Value *create_print(std::string tag,
@@ -627,7 +627,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
 
   void visit(ExternalFuncCallStmt *stmt) override {
     if (stmt->type == ExternalFuncCallStmt::BITCODE) {
-      CodeGenLLVM::visit_call_bitcode(stmt);
+      TaskCodeGenLLVM::visit_call_bitcode(stmt);
     } else {
       TI_NOT_IMPLEMENTED
     }
@@ -644,7 +644,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
   void visit(BinaryOpStmt *stmt) override {
     auto op = stmt->op_type;
     if (op != BinaryOpType::atan2 && op != BinaryOpType::pow) {
-      return CodeGenLLVM::visit(stmt);
+      return TaskCodeGenLLVM::visit(stmt);
     }
 
     auto ret_type = stmt->ret_type;
@@ -699,9 +699,10 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
 
 #ifdef TI_WITH_LLVM
 // static
-std::unique_ptr<CodeGenLLVM> CodeGenCUDA::make_codegen_llvm(Kernel *kernel,
-                                                            IRNode *ir) {
-  return std::make_unique<CodeGenLLVMCUDA>(kernel, ir);
+std::unique_ptr<TaskCodeGenLLVM> KernelCodeGenCUDA::make_codegen_llvm(
+    Kernel *kernel,
+    IRNode *ir) {
+  return std::make_unique<TaskCodeGenCUDA>(kernel, ir);
 }
 #endif  // TI_WITH_LLVM
 
@@ -724,7 +725,7 @@ static void set_arg_external_array(RuntimeContext *ctx,
                                    : RuntimeContext::DevAllocType::kNone);
 }
 
-FunctionType CodeGenCUDA::codegen() {
+FunctionType KernelCodeGenCUDA::codegen() {
   TI_AUTO_PROF
   // TODO: move the offline cache part to the base class
   auto *llvm_prog = get_llvm_program(prog);
@@ -737,6 +738,8 @@ FunctionType CodeGenCUDA::codegen() {
     std::vector<LLVMCompiledData> res;
     const bool ok = maybe_read_compilation_from_cache(kernel_key, res);
     if (ok) {
+      TI_DEBUG("Create kernel '{}' from cache (key='{}')", kernel->get_name(),
+               kernel_key);
       CUDAModuleToFunctionConverter converter(
           tlctx, get_llvm_program(prog)->get_runtime_executor());
       return converter.convert(kernel, std::move(res));
@@ -746,7 +749,7 @@ FunctionType CodeGenCUDA::codegen() {
     kernel->lower(/*to_executable=*/false);
   }
 
-  CodeGenLLVMCUDA gen(kernel, ir);
+  TaskCodeGenCUDA gen(kernel, ir);
   auto compiled_res = gen.run_compilation();
 
   CUDAModuleToFunctionConverter converter{gen.tlctx,
@@ -754,6 +757,7 @@ FunctionType CodeGenCUDA::codegen() {
   std::vector<LLVMCompiledData> data_list;
   data_list.push_back(std::move(compiled_res));
   if (!kernel->is_evaluator) {
+    TI_DEBUG("Cache kernel '{}', key='{}'", kernel->get_name(), kernel_key);
     cache_module(kernel_key, data_list);
   }
 
@@ -823,8 +827,8 @@ FunctionType CUDAModuleToFunctionConverter::convert(
 
         } else if (arr_sz > 0) {
           // arg_buffers[i] is a DeviceAllocation*
-          // TODO: Unwraps DeviceAllocation* can be done at CodeGenLLVM since
-          // it's shared by cpu and cuda.
+          // TODO: Unwraps DeviceAllocation* can be done at TaskCodeGenLLVM
+          // since it's shared by cpu and cuda.
           DeviceAllocation *ptr =
               static_cast<DeviceAllocation *>(arg_buffers[i]);
           device_buffers[i] = executor->get_ndarray_alloc_info_ptr(*ptr);

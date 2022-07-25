@@ -15,22 +15,23 @@
 namespace taichi {
 namespace lang {
 
-class CodeGenLLVM;
+class TaskCodeGenLLVM;
 
 class FunctionCreationGuard {
  public:
-  CodeGenLLVM *mb;
+  TaskCodeGenLLVM *mb;
   llvm::Function *old_func;
   llvm::Function *body;
   llvm::BasicBlock *old_entry, *allocas, *entry, *old_final, *final;
   llvm::IRBuilder<>::InsertPoint ip;
 
-  FunctionCreationGuard(CodeGenLLVM *mb, std::vector<llvm::Type *> arguments);
+  FunctionCreationGuard(TaskCodeGenLLVM *mb,
+                        std::vector<llvm::Type *> arguments);
 
   ~FunctionCreationGuard();
 };
 
-class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
+class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
  public:
   Kernel *kernel;
   IRNode *ir;
@@ -65,9 +66,9 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   using IRVisitor::visit;
   using LLVMModuleBuilder::call;
 
-  CodeGenLLVM(Kernel *kernel,
-              IRNode *ir = nullptr,
-              std::unique_ptr<llvm::Module> &&module = nullptr);
+  TaskCodeGenLLVM(Kernel *kernel,
+                  IRNode *ir = nullptr,
+                  std::unique_ptr<llvm::Module> &&module = nullptr);
 
   Arch current_arch() {
     return kernel->arch;
@@ -387,7 +388,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   llvm::Value *bitcast_from_u64(llvm::Value *val, DataType type);
   llvm::Value *bitcast_to_u64(llvm::Value *val, DataType type);
 
-  ~CodeGenLLVM() override = default;
+  ~TaskCodeGenLLVM() override = default;
 };
 
 }  // namespace lang

@@ -51,7 +51,8 @@ TEST_F(InliningTest, ArgLoadOfArgLoad) {
   irpass::type_check(kernel_block, CompileConfig());
 
   irpass::inlining(kernel_block, CompileConfig(), {});
-  irpass::full_simplify(kernel_block, CompileConfig(), {false, prog_.get()});
+  irpass::full_simplify(kernel_block, CompileConfig(),
+                        {false, false, prog_.get()});
 
   EXPECT_EQ(kernel_block->size(), 4);
   EXPECT_TRUE(irpass::analysis::same_statements(func_block, kernel_block));

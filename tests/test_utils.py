@@ -42,6 +42,10 @@ __aot_test_cases = {
 }
 
 __capi_aot_test_cases = {
+    "CapiAotTest.CpuField":
+    [os.path.join('cpp', 'aot', 'llvm', 'field_aot_test.py'), "--arch=cpu"],
+    "CapiAotTest.CudaField":
+    [os.path.join('cpp', 'aot', 'llvm', 'field_aot_test.py'), "--arch=cuda"],
     "CapiGraphTest.CpuGraph":
     [os.path.join('cpp', 'aot', 'llvm', 'graph_aot_test.py'), "--arch=cpu"],
     "CapiGraphTest.CudaGraph":

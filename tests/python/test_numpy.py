@@ -217,7 +217,7 @@ def test_numpy_struct_for():
 
 @test_utils.test()
 def test_numpy_op_with_matrix():
-    a = np.cos(1)
+    a = np.cos(0)
     b = ti.Vector([1, 2])
     c = np.array([0, 1])
     x = a + b
@@ -228,7 +228,10 @@ def test_numpy_op_with_matrix():
     @ti.kernel
     def test():
         x = a + b
+        assert all(x == [2.0, 3.0])
         x = c + b
+        assert all(x == [1., 3.])
         x = b + a
+        assert all(x == [2.0, 3.0])
 
     test()

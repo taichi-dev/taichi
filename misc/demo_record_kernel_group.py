@@ -21,6 +21,6 @@ def do_some_works():
 
 with ti.aot.RecordKernelGroup('my_substep'):
     x.fill(0)
-    with ti.Tape(loss):
+    with ti.ad.Tape(loss):
         compute_loss()
     do_some_works()

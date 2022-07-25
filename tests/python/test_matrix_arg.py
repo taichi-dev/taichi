@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 
 import taichi as ti
@@ -35,3 +36,36 @@ def test_vector_arg():
         return vec[0] + vec[1] + vec[2]
 
     assert foo(vec1) == 6
+
+
+@test_utils.test()
+def test_matrix_fancy_arg():
+    from taichi.math import mat3, vec3
+
+    mat4x3 = ti.types.matrix(4, 3, float)
+    mat2x6 = ti.types.matrix(2, 6, float)
+
+    a = np.random.random(3)
+    b = np.random.random((3, 3))
+
+    v = vec3(0, 1, 2)
+    v = vec3([0, 1, 2])
+
+    M = mat3(a, a, a)
+    M = mat3(b)
+
+    m = mat4x3([1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12])
+
+    m = mat4x3([[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12]])
+
+    m = mat4x3(vec3(1, 2, 3), vec3(4, 5, 6), vec3(7, 8, 9), vec3(10, 11, 12))
+
+    m = mat4x3([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
+
+    m = mat4x3(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)
+
+    m = mat4x3(1)
+
+    m = mat4x3(m)
+
+    k = mat2x6(m)

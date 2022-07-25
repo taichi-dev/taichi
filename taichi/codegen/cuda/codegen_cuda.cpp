@@ -737,6 +737,8 @@ FunctionType CodeGenCUDA::codegen() {
     std::vector<LLVMCompiledData> res;
     const bool ok = maybe_read_compilation_from_cache(kernel_key, res);
     if (ok) {
+      TI_DEBUG("Create kernel '{}' from cache (key='{}')", kernel->get_name(),
+               kernel_key);
       CUDAModuleToFunctionConverter converter(
           tlctx, get_llvm_program(prog)->get_runtime_executor());
       return converter.convert(kernel, std::move(res));
@@ -754,6 +756,7 @@ FunctionType CodeGenCUDA::codegen() {
   std::vector<LLVMCompiledData> data_list;
   data_list.push_back(std::move(compiled_res));
   if (!kernel->is_evaluator) {
+    TI_DEBUG("Cache kernel '{}', key='{}'", kernel->get_name(), kernel_key);
     cache_module(kernel_key, data_list);
   }
 

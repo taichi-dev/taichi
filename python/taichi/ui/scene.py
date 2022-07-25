@@ -128,7 +128,7 @@ class Scene:
                 `vertex_count` greater than vertices.shape[0], then we will reduce
                 `vertex_count` to no more than vertices.shape[0].
             index_offset: int type (otherwise float type will be floored to int).
-                only avaliable when `indices` is provided, which is the base index
+                Only available when `indices` is provided, which is the base index
                 within the index buffer.
             index_count: int type(ohterwise float type will be floored to int),
                 only avaliable when `indices` is provided, which is the the number

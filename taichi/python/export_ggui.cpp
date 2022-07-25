@@ -306,7 +306,7 @@ struct PyWindow {
     }
     if (!lang::vulkan::is_vulkan_api_available()) {
       throw std::runtime_error("Vulkan must be available for GGUI");
-    }
+    } 
     window = std::make_unique<vulkan::Window>(prog, config);
   }
 

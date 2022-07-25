@@ -223,7 +223,8 @@ def test_numpy_op_with_matrix():
     arr2d = np.array([[0, 1], [2, 3]])
     mat = ti.Matrix([[0, 1], [2, 3]])
 
-    assert isinstance(scalar + vec, ti.Matrix) and isinstance(mat + arr2d, ti.Matrix)
+    assert isinstance(scalar + vec, ti.Matrix) and isinstance(
+        mat + arr2d, ti.Matrix)
 
     @ti.kernel
     def test():

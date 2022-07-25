@@ -228,5 +228,8 @@ def test_numpy_op_with_matrix():
         assert all(x == [2.0, 3.0])
         x = vec + scalar
         assert all(x == [2.0, 3.0])
-
+        y = scalar / vec
+        assert all(y == [1.0, 0.5])
+        y = vec / scalar
+        assert all(y == [1.0, 2.0])
     test()

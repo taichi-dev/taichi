@@ -64,7 +64,7 @@ void SetImage::update_data(const SetImageInfo &info) {
   app_context_->device().image_transition(texture_, ImageLayout::shader_read,
                                           ImageLayout::transfer_dst);
 
-  uint64_t img_size = pixels * data_type_size(texture_dtype_) * 4;
+  uint64_t img_size = image_size();
 
   // If there is no current program, VBO information should be provided directly
   // instead of accessing through the current SNode
@@ -142,7 +142,7 @@ void SetImage::init_set_image(AppContext *app_context,
 }
 
 void SetImage::create_texture() {
-  size_t image_size = width * height * data_type_size(texture_dtype_) * 4;
+  size_t img_size = image_size();
 
   ImageParams params;
   params.dimension = ImageDimension::d2D;
@@ -159,13 +159,13 @@ void SetImage::create_texture() {
 
   texture_ = app_context_->device().create_image(params);
 
-  Device::AllocParams cpu_staging_buffer_params{image_size, true, false, false,
+  Device::AllocParams cpu_staging_buffer_params{img_size, true, false, false,
                                                 AllocUsage::Uniform};
   cpu_staging_buffer_ =
       app_context_->device().allocate_memory(cpu_staging_buffer_params);
 
   Device::AllocParams gpu_staging_buffer_params{
-      image_size, false, false, app_context_->requires_export_sharing(),
+      img_size, false, false, app_context_->requires_export_sharing(),
       AllocUsage::Uniform};
   gpu_staging_buffer_ =
       app_context_->device().allocate_memory(gpu_staging_buffer_params);

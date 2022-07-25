@@ -1,10 +1,11 @@
 import argparse
 
-import taichi as ti
-
 import pytest
 
+import taichi as ti
+
 FRAMES = 200
+
 
 @pytest.mark.skipif(1, reason="Consume too much time, so skip it.")
 def test_cornell_box():

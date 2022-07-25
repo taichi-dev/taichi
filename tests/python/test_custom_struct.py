@@ -396,3 +396,23 @@ def test_copy_struct_in_taichi_scope():
         assert a.b == 3
 
     test()
+
+
+@test_utils.test(debug=True)
+def test_dataclass():
+    vec3 = ti.types.vector(3, float)
+
+    @ti.dataclass
+    class Foo:
+        pos: vec3
+        vel: vec3
+        mass: float
+
+    @ti.kernel
+    def test():
+        A = Foo((1, 1, 1), mass=2)
+        assert all(A.pos == [1.0, 1.0, 1.0])
+        assert all(A.vel == [0.0, 0.0, 0.0])
+        assert A.mass == 2.0
+
+    test()

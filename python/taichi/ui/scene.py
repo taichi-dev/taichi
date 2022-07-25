@@ -130,7 +130,7 @@ class Scene:
             index_offset: int type (otherwise float type will be floored to int).
                 Only available when `indices` is provided, which is the base index
                 within the index buffer.
-            index_count: int type(ohterwise float type will be floored to int),
+            index_count: int type (otherwise float type will be floored to int),
                 only avaliable when `indices` is provided, which is the the number
                 of vertices to draw.
         """

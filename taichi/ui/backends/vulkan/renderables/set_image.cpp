@@ -59,8 +59,6 @@ void SetImage::update_data(const SetImageInfo &info) {
 
   update_ubo(img.shape[0] / (float)new_width, img.shape[1] / (float)new_height);
 
-  int pixels = width * height;
-
   app_context_->device().image_transition(texture_, ImageLayout::shader_read,
                                           ImageLayout::transfer_dst);
 

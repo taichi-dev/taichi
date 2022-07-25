@@ -33,7 +33,7 @@ class CreateBitStructStores : public BasicStmtVisitor {
     // We only handle bit_struct pointers here.
 
     auto s = Stmt::make<BitStructStoreStmt>(get_ch->input_ptr,
-                                            std::vector<int>{get_ch->chid},
+                                            std::vector<int>{get_ch->output_snode->id_in_bit_struct},
                                             std::vector<Stmt *>{stmt->val});
     stmt->replace_with(VecStatement(std::move(s)));
   }

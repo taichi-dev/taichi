@@ -355,7 +355,7 @@ class KernelCodegenImpl : public IRVisitor {
       TI_ASSERT(stmt->ret_type->as<PointerType>()->is_bit_pointer());
       const auto *bit_struct_ty = in_snode->dt->cast<BitStructType>();
       const auto bit_offset =
-          bit_struct_ty->get_member_bit_offset(in_snode->child_id(out_snode));
+          bit_struct_ty->get_member_bit_offset(out_snode->id_in_bit_struct);
       // stmt->input_ptr is the "base" member in the generated SNode struct.
       emit("SNodeBitPointer {}({}, /*offset=*/{});", stmt->raw_name(),
            stmt->input_ptr->raw_name(), bit_offset);

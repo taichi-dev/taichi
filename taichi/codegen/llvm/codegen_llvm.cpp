@@ -1688,8 +1688,7 @@ void CodeGenLLVM::visit(GetChStmt *stmt) {
     llvm_val[stmt] = llvm_val[stmt->input_ptr];
   } else if (stmt->ret_type->as<PointerType>()->is_bit_pointer()) {
     auto bit_struct = stmt->input_snode->dt->cast<BitStructType>();
-    auto bit_offset = bit_struct->get_member_bit_offset(
-        stmt->input_snode->child_id(stmt->output_snode));
+    auto bit_offset = bit_struct->get_member_bit_offset(stmt->output_snode->id_in_bit_struct);
     auto offset = tlctx->get_constant(bit_offset);
     llvm_val[stmt] = create_bit_ptr(llvm_val[stmt->input_ptr], offset);
   } else {

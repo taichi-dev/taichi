@@ -107,7 +107,7 @@ def check_ggui_availability():
         wheel_tag = try_get_wheel_tag(taichi)
         if platform.system(
         ) == "Linux" and wheel_tag and 'manylinux2014' in wheel_tag:
-            libc_ver = try_get_loaded_libc_vrsion()
+            libc_ver = try_get_loaded_libc_version()
             if libc_ver and libc_ver < (2, 27):
                 raise GGUINotAvailableException(
                     "GGUI is not available since you have installed a restricted version of taichi. "

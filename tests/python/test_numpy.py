@@ -213,3 +213,13 @@ def test_numpy_struct_for():
     func2(n)
     for i, j, k in ti.ndrange(98, 76, 54):
         assert n[i, j, k] == i + j + k
+
+
+@test_utils.test(require=ti.extension.data64)
+def test_numpy_i64_index():
+    @ti.kernel
+    def foo(a: ti.types.ndarray(), i: ti.i64) -> ti.i64:
+        return a[i]
+
+    x = np.array([1, 2, 3])
+    assert foo(x, 1) == 2

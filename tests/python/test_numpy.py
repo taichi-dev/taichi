@@ -222,8 +222,7 @@ def test_numpy_op_with_matrix():
     c = np.array([0, 1])
     x = a + b
     y = c + b
-    assert isinstance(x, ti.Matrix) and isinstance(
-        y, ti.Matrix)
+    assert isinstance(x, ti.Matrix) and isinstance(y, ti.Matrix)
 
     @ti.kernel
     def test():

@@ -19,6 +19,7 @@ namespace py = pybind11;
 #include "taichi/ui/backends/vulkan/canvas.h"
 #include "taichi/ui/backends/vulkan/scene.h"
 #include "taichi/rhi/vulkan/vulkan_loader.h"
+#include "taichi/rhi/arch.h"
 #include "taichi/ui/common/field_info.h"
 #include "taichi/ui/common/gui_base.h"
 #include "taichi/program/ndarray.h"
@@ -300,11 +301,11 @@ struct PyWindow {
                         vsync,   show_window,        package_path,
                         ti_arch, is_packed_mode};
     // todo: support other ggui backends
+    if (!(taichi::arch_is_cpu(ti_arch) || ti_arch == Arch::vulkan || ti_arch == Arch::cuda)) {
+      throw std::runtime_error("GGUI is only supported on cpu, vulkan and cuda backends");
+    }
     if (!lang::vulkan::is_vulkan_api_available()) {
       throw std::runtime_error("Vulkan must be available for GGUI");
-    }
-    else if (ti_arch == Arch::opengl) {
-      throw std::runtime_error("GGUI is not supported on opengl backend, please use cpu, vulkan or cuda backends");
     }
     window = std::make_unique<vulkan::Window>(prog, config);
   }

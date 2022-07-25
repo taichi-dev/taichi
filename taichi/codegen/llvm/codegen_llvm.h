@@ -25,7 +25,8 @@ class FunctionCreationGuard {
   llvm::BasicBlock *old_entry, *allocas, *entry, *old_final, *final;
   llvm::IRBuilder<>::InsertPoint ip;
 
-  FunctionCreationGuard(TaskCodeGenLLVM *mb, std::vector<llvm::Type *> arguments);
+  FunctionCreationGuard(TaskCodeGenLLVM *mb,
+                        std::vector<llvm::Type *> arguments);
 
   ~FunctionCreationGuard();
 };
@@ -66,8 +67,8 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   using LLVMModuleBuilder::call;
 
   TaskCodeGenLLVM(Kernel *kernel,
-              IRNode *ir = nullptr,
-              std::unique_ptr<llvm::Module> &&module = nullptr);
+                  IRNode *ir = nullptr,
+                  std::unique_ptr<llvm::Module> &&module = nullptr);
 
   Arch current_arch() {
     return kernel->arch;

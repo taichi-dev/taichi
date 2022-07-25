@@ -16,7 +16,7 @@ class KernelCodeGenCUDA : public KernelCodeGen {
 // TODO: Stop defining this macro guards in the headers
 #ifdef TI_WITH_LLVM
   static std::unique_ptr<TaskCodeGenLLVM> make_codegen_llvm(Kernel *kernel,
-                                                        IRNode *ir);
+                                                            IRNode *ir);
 #endif  // TI_WITH_LLVM
 
   bool supports_offline_cache() const override {

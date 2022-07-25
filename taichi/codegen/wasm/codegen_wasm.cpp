@@ -255,8 +255,9 @@ FunctionType KernelCodeGenWASM::codegen() {
   };
 }
 
-LLVMCompiledData KernelCodeGenWASM::modulegen(std::unique_ptr<llvm::Module> &&module,
-                                        OffloadedStmt *stmt) {
+LLVMCompiledData KernelCodeGenWASM::modulegen(
+    std::unique_ptr<llvm::Module> &&module,
+    OffloadedStmt *stmt) {
   bool init_flag = module == nullptr;
   std::vector<OffloadedTask> name_list;
   auto gen = std::make_unique<TaskCodeGenWASM>(kernel, ir, std::move(module));

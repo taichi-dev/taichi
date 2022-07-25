@@ -699,8 +699,9 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
 
 #ifdef TI_WITH_LLVM
 // static
-std::unique_ptr<TaskCodeGenLLVM> KernelCodeGenCUDA::make_codegen_llvm(Kernel *kernel,
-                                                            IRNode *ir) {
+std::unique_ptr<TaskCodeGenLLVM> KernelCodeGenCUDA::make_codegen_llvm(
+    Kernel *kernel,
+    IRNode *ir) {
   return std::make_unique<TaskCodeGenCUDA>(kernel, ir);
 }
 #endif  // TI_WITH_LLVM
@@ -823,8 +824,8 @@ FunctionType CUDAModuleToFunctionConverter::convert(
 
         } else if (arr_sz > 0) {
           // arg_buffers[i] is a DeviceAllocation*
-          // TODO: Unwraps DeviceAllocation* can be done at TaskCodeGenLLVM since
-          // it's shared by cpu and cuda.
+          // TODO: Unwraps DeviceAllocation* can be done at TaskCodeGenLLVM
+          // since it's shared by cpu and cuda.
           DeviceAllocation *ptr =
               static_cast<DeviceAllocation *>(arg_buffers[i]);
           device_buffers[i] = executor->get_ndarray_alloc_info_ptr(*ptr);

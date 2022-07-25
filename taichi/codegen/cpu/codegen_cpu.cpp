@@ -225,8 +225,9 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
 
 #ifdef TI_WITH_LLVM
 // static
-std::unique_ptr<TaskCodeGenLLVM> KernelCodeGenCPU::make_codegen_llvm(Kernel *kernel,
-                                                           IRNode *ir) {
+std::unique_ptr<TaskCodeGenLLVM> KernelCodeGenCPU::make_codegen_llvm(
+    Kernel *kernel,
+    IRNode *ir) {
   return std::make_unique<TaskCodeGenCPU>(kernel, ir);
 }
 
@@ -274,8 +275,9 @@ FunctionType CPUModuleToFunctionConverter::convert(
   };
 }
 
-LLVMCompiledData KernelCodeGenCPU::modulegen(std::unique_ptr<llvm::Module> &&module,
-                                       OffloadedStmt *stmt) {
+LLVMCompiledData KernelCodeGenCPU::modulegen(
+    std::unique_ptr<llvm::Module> &&module,
+    OffloadedStmt *stmt) {
   TaskCodeGenCPU gen(kernel, stmt);
   return gen.run_compilation();
 }

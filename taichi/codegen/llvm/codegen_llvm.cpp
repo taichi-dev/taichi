@@ -260,8 +260,8 @@ std::unique_ptr<RuntimeObject> TaskCodeGenLLVM::emit_struct_meta_object(
 }
 
 void TaskCodeGenLLVM::emit_struct_meta_base(const std::string &name,
-                                        llvm::Value *node_meta,
-                                        SNode *snode) {
+                                            llvm::Value *node_meta,
+                                            SNode *snode) {
   RuntimeObject common("StructMeta", this, builder.get(), node_meta);
   std::size_t element_size;
   if (snode->type == SNodeType::dense) {
@@ -312,8 +312,8 @@ void TaskCodeGenLLVM::emit_struct_meta_base(const std::string &name,
 }
 
 TaskCodeGenLLVM::TaskCodeGenLLVM(Kernel *kernel,
-                         IRNode *ir,
-                         std::unique_ptr<llvm::Module> &&module)
+                                 IRNode *ir,
+                                 std::unique_ptr<llvm::Module> &&module)
     // TODO: simplify LLVMModuleBuilder ctor input
     : LLVMModuleBuilder(
           module == nullptr ? get_llvm_program(kernel->program)
@@ -738,8 +738,8 @@ void TaskCodeGenLLVM::visit(IfStmt *if_stmt) {
 }
 
 llvm::Value *TaskCodeGenLLVM::create_print(std::string tag,
-                                       DataType dt,
-                                       llvm::Value *value) {
+                                           DataType dt,
+                                           llvm::Value *value) {
   if (!arch_is_cpu(kernel->arch)) {
     TI_WARN("print not supported on arch {}", arch_name(kernel->arch));
     return nullptr;
@@ -759,7 +759,8 @@ llvm::Value *TaskCodeGenLLVM::create_print(std::string tag,
   return create_call(runtime_printf, func_type_func->getFunctionType(), args);
 }
 
-llvm::Value *TaskCodeGenLLVM::create_print(std::string tag, llvm::Value *value) {
+llvm::Value *TaskCodeGenLLVM::create_print(std::string tag,
+                                           llvm::Value *value) {
   if (value->getType() == llvm::Type::getFloatTy(*llvm_context))
     return create_print(
         tag,
@@ -923,8 +924,8 @@ void TaskCodeGenLLVM::visit(WhileStmt *stmt) {
 }
 
 llvm::Value *TaskCodeGenLLVM::cast_pointer(llvm::Value *val,
-                                       std::string dest_ty_name,
-                                       int addr_space) {
+                                           std::string dest_ty_name,
+                                           int addr_space) {
   return builder->CreateBitCast(
       val, llvm::PointerType::get(get_runtime_type(dest_ty_name), addr_space));
 }
@@ -949,13 +950,14 @@ void TaskCodeGenLLVM::emit_gc(OffloadedStmt *stmt) {
 }
 
 llvm::Value *TaskCodeGenLLVM::create_call(llvm::Function *func,
-                                      llvm::ArrayRef<llvm::Value *> args) {
+                                          llvm::ArrayRef<llvm::Value *> args) {
   return create_call(func, func->getFunctionType(), args);
 }
 
-llvm::Value *TaskCodeGenLLVM::create_call(llvm::Value *func,
-                                      llvm::FunctionType *func_ty,
-                                      llvm::ArrayRef<llvm::Value *> args_arr) {
+llvm::Value *TaskCodeGenLLVM::create_call(
+    llvm::Value *func,
+    llvm::FunctionType *func_ty,
+    llvm::ArrayRef<llvm::Value *> args_arr) {
   std::vector<llvm::Value *> args = args_arr;
   check_func_call_signature(func_ty, func->getName(), args, builder.get());
 #ifdef TI_LLVM_15
@@ -966,7 +968,7 @@ llvm::Value *TaskCodeGenLLVM::create_call(llvm::Value *func,
 }
 
 llvm::Value *TaskCodeGenLLVM::create_call(std::string func_name,
-                                      llvm::ArrayRef<llvm::Value *> args) {
+                                          llvm::ArrayRef<llvm::Value *> args) {
   auto func = get_runtime_function(func_name);
   return create_call(func, args);
 }
@@ -1062,7 +1064,8 @@ void TaskCodeGenLLVM::visit(RangeForStmt *for_stmt) {
   create_naive_range_for(for_stmt);
 }
 
-llvm::Value *TaskCodeGenLLVM::bitcast_from_u64(llvm::Value *val, DataType type) {
+llvm::Value *TaskCodeGenLLVM::bitcast_from_u64(llvm::Value *val,
+                                               DataType type) {
   llvm::Type *dest_ty = nullptr;
   TI_ASSERT(!type->is<PointerType>());
   if (auto qit = type->cast<QuantIntType>()) {
@@ -1442,12 +1445,12 @@ void TaskCodeGenLLVM::visit(GlobalStoreStmt *stmt) {
 }
 
 llvm::Value *TaskCodeGenLLVM::create_intrinsic_load(llvm::Value *ptr,
-                                                llvm::Type *ty) {
+                                                    llvm::Type *ty) {
   TI_NOT_IMPLEMENTED;
 }
 
 void TaskCodeGenLLVM::create_global_load(GlobalLoadStmt *stmt,
-                                     bool should_cache_as_read_only) {
+                                         bool should_cache_as_read_only) {
   auto ptr = llvm_val[stmt->src];
   auto ptr_type = stmt->src->ret_type->as<PointerType>();
   if (ptr_type->is_bit_pointer()) {
@@ -1527,10 +1530,11 @@ std::string TaskCodeGenLLVM::get_runtime_snode_name(SNode *snode) {
   }
 }
 
-llvm::Value *TaskCodeGenLLVM::call(SNode *snode,
-                               llvm::Value *node_ptr,
-                               const std::string &method,
-                               const std::vector<llvm::Value *> &arguments) {
+llvm::Value *TaskCodeGenLLVM::call(
+    SNode *snode,
+    llvm::Value *node_ptr,
+    const std::string &method,
+    const std::vector<llvm::Value *> &arguments) {
   auto prefix = get_runtime_snode_name(snode);
   auto s = emit_struct_meta(snode);
   auto s_ptr =
@@ -1583,7 +1587,7 @@ void TaskCodeGenLLVM::visit(LinearizeStmt *stmt) {
 void TaskCodeGenLLVM::visit(IntegerOffsetStmt *stmt){TI_NOT_IMPLEMENTED}
 
 llvm::Value *TaskCodeGenLLVM::create_bit_ptr(llvm::Value *byte_ptr,
-                                         llvm::Value *bit_offset) {
+                                             llvm::Value *bit_offset) {
   // 1. define the bit pointer struct (X=8/16/32/64)
   // struct bit_pointer_X {
   //    iX* byte_ptr;
@@ -1798,7 +1802,7 @@ void TaskCodeGenLLVM::visit(ExternalTensorShapeAlongAxisStmt *stmt) {
 }
 
 std::string TaskCodeGenLLVM::init_offloaded_task_function(OffloadedStmt *stmt,
-                                                      std::string suffix) {
+                                                          std::string suffix) {
   current_loop_reentry = nullptr;
   current_while_after_loop = nullptr;
 
@@ -1887,7 +1891,8 @@ std::tuple<llvm::Value *, llvm::Value *> TaskCodeGenLLVM::get_range_for_bounds(
   return std::tuple(begin, end);
 }
 
-void TaskCodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
+void TaskCodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt,
+                                                bool spmd) {
   using namespace llvm;
   // TODO: instead of constructing tons of LLVM IR, writing the logic in
   // runtime.cpp may be a cleaner solution. See
@@ -2616,7 +2621,8 @@ llvm::Value *TaskCodeGenLLVM::create_xlogue(std::unique_ptr<Block> &block) {
   return xlogue;
 }
 
-llvm::Value *TaskCodeGenLLVM::create_mesh_xlogue(std::unique_ptr<Block> &block) {
+llvm::Value *TaskCodeGenLLVM::create_mesh_xlogue(
+    std::unique_ptr<Block> &block) {
   llvm::Value *xlogue;
 
   auto xlogue_type = get_mesh_xlogue_function_type();

@@ -16,10 +16,10 @@ inline void update_mask(uint64 &mask, uint32 num_bits, uint32 offset) {
 }  // namespace
 
 llvm::Value *TaskCodeGenLLVM::atomic_add_quant_int(llvm::Value *ptr,
-                                               llvm::Type *physical_type,
-                                               QuantIntType *qit,
-                                               llvm::Value *value,
-                                               bool value_is_signed) {
+                                                   llvm::Type *physical_type,
+                                                   QuantIntType *qit,
+                                                   llvm::Value *value,
+                                                   bool value_is_signed) {
   auto [byte_ptr, bit_offset] = load_bit_ptr(ptr);
   return create_call(
       fmt::format("atomic_add_partial_bits_b{}",
@@ -29,9 +29,9 @@ llvm::Value *TaskCodeGenLLVM::atomic_add_quant_int(llvm::Value *ptr,
 }
 
 llvm::Value *TaskCodeGenLLVM::atomic_add_quant_fixed(llvm::Value *ptr,
-                                                 llvm::Type *physical_type,
-                                                 QuantFixedType *qfxt,
-                                                 llvm::Value *value) {
+                                                     llvm::Type *physical_type,
+                                                     QuantFixedType *qfxt,
+                                                     llvm::Value *value) {
   auto [byte_ptr, bit_offset] = load_bit_ptr(ptr);
   auto qit = qfxt->get_digits_type()->as<QuantIntType>();
   auto val_store = to_quant_fixed(value, qfxt);
@@ -43,7 +43,7 @@ llvm::Value *TaskCodeGenLLVM::atomic_add_quant_fixed(llvm::Value *ptr,
 }
 
 llvm::Value *TaskCodeGenLLVM::to_quant_fixed(llvm::Value *real,
-                                         QuantFixedType *qfxt) {
+                                             QuantFixedType *qfxt) {
   // Compute int(real * (1.0 / scale) + 0.5)
   auto compute_type = qfxt->get_compute_type();
   auto s = builder->CreateFPCast(tlctx->get_constant(1.0 / qfxt->get_scale()),
@@ -65,10 +65,10 @@ llvm::Value *TaskCodeGenLLVM::to_quant_fixed(llvm::Value *real,
 }
 
 void TaskCodeGenLLVM::store_quant_int(llvm::Value *ptr,
-                                  llvm::Type *physical_type,
-                                  QuantIntType *qit,
-                                  llvm::Value *value,
-                                  bool atomic) {
+                                      llvm::Type *physical_type,
+                                      QuantIntType *qit,
+                                      llvm::Value *value,
+                                      bool atomic) {
   auto [byte_ptr, bit_offset] = load_bit_ptr(ptr);
   // TODO(type): CUDA only supports atomicCAS on 32- and 64-bit integers.
   // Try to support 8/16-bit physical types.
@@ -79,20 +79,20 @@ void TaskCodeGenLLVM::store_quant_int(llvm::Value *ptr,
 }
 
 void TaskCodeGenLLVM::store_quant_fixed(llvm::Value *ptr,
-                                    llvm::Type *physical_type,
-                                    QuantFixedType *qfxt,
-                                    llvm::Value *value,
-                                    bool atomic) {
+                                        llvm::Type *physical_type,
+                                        QuantFixedType *qfxt,
+                                        llvm::Value *value,
+                                        bool atomic) {
   store_quant_int(ptr, physical_type,
                   qfxt->get_digits_type()->as<QuantIntType>(),
                   to_quant_fixed(value, qfxt), atomic);
 }
 
 void TaskCodeGenLLVM::store_masked(llvm::Value *ptr,
-                               llvm::Type *ty,
-                               uint64 mask,
-                               llvm::Value *value,
-                               bool atomic) {
+                                   llvm::Type *ty,
+                                   uint64 mask,
+                                   llvm::Value *value,
+                                   bool atomic) {
   if (!mask) {
     // do not store anything
     return;
@@ -110,7 +110,7 @@ void TaskCodeGenLLVM::store_masked(llvm::Value *ptr,
 }
 
 llvm::Value *TaskCodeGenLLVM::get_exponent_offset(llvm::Value *exponent,
-                                              QuantFloatType *qflt) {
+                                                  QuantFloatType *qflt) {
   // Since we have fewer bits in the exponent type than in f32, an
   // offset is necessary to make sure the stored exponent values are
   // representable by the exponent quant int type.
@@ -392,7 +392,8 @@ llvm::Value *TaskCodeGenLLVM::extract_exponent_from_f32(llvm::Value *f) {
   return builder->CreateAnd(exp_bits, tlctx->get_constant((1 << 8) - 1));
 }
 
-llvm::Value *TaskCodeGenLLVM::extract_digits_from_f32(llvm::Value *f, bool full) {
+llvm::Value *TaskCodeGenLLVM::extract_digits_from_f32(llvm::Value *f,
+                                                      bool full) {
   TI_ASSERT(f->getType() == llvm::Type::getFloatTy(*llvm_context));
   f = builder->CreateBitCast(f, llvm::Type::getInt32Ty(*llvm_context));
   auto digits = builder->CreateAnd(f, tlctx->get_constant((1 << 23) - 1));
@@ -428,8 +429,8 @@ llvm::Value *TaskCodeGenLLVM::extract_digits_from_f32_with_shared_exponent(
 }
 
 llvm::Value *TaskCodeGenLLVM::extract_quant_float(llvm::Value *physical_value,
-                                              BitStructType *bit_struct,
-                                              int digits_id) {
+                                                  BitStructType *bit_struct,
+                                                  int digits_id) {
   auto qflt = bit_struct->get_member_type(digits_id)->as<QuantFloatType>();
   auto exponent_id = bit_struct->get_member_exponent(digits_id);
   auto exponent_bit_offset = bit_struct->get_member_bit_offset(exponent_id);
@@ -445,8 +446,8 @@ llvm::Value *TaskCodeGenLLVM::extract_quant_float(llvm::Value *physical_value,
 }
 
 llvm::Value *TaskCodeGenLLVM::extract_quant_int(llvm::Value *physical_value,
-                                            llvm::Value *bit_offset,
-                                            QuantIntType *qit) {
+                                                llvm::Value *bit_offset,
+                                                QuantIntType *qit) {
   auto physical_type = physical_value->getType();
   //  bit shifting
   //    first left shift `physical_type - (offset + num_bits)`
@@ -473,7 +474,7 @@ llvm::Value *TaskCodeGenLLVM::extract_quant_int(llvm::Value *physical_value,
 }
 
 llvm::Value *TaskCodeGenLLVM::reconstruct_quant_fixed(llvm::Value *digits,
-                                                  QuantFixedType *qfxt) {
+                                                      QuantFixedType *qfxt) {
   // Compute float(digits) * scale
   llvm::Value *cast = nullptr;
   auto compute_type = qfxt->get_compute_type()->as<PrimitiveType>();

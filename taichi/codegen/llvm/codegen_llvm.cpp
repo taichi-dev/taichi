@@ -125,10 +125,9 @@ void CodeGenLLVM::visit(Block *stmt_list) {
 void CodeGenLLVM::visit(AllocaStmt *stmt) {
   if (stmt->ret_type->is<TensorType>()) {
     auto tensor_type = stmt->ret_type->cast<TensorType>();
-    auto type = tlctx->get_data_type(tensor_type->get_element_type());
-    auto array_size = tlctx->get_constant(tensor_type->get_num_elements());
+    auto type = tlctx->get_data_type(tensor_type);
     // Return type is [array_size x type]*.
-    llvm_val[stmt] = create_entry_block_alloca(type, 0, array_size);
+    llvm_val[stmt] = create_entry_block_alloca(type, false);
   } else {
     TI_ASSERT(stmt->width() == 1);
     llvm_val[stmt] =
@@ -777,6 +776,10 @@ void CodeGenLLVM::visit(PrintStmt *stmt) {
       auto arg_stmt = std::get<Stmt *>(content);
       auto value = llvm_val[arg_stmt];
       if (arg_stmt->ret_type->is<TensorType>()) {
+        auto dtype = arg_stmt->ret_type->cast<TensorType>();
+        for (int i = 0; i < dtype->get_num_elements(); ++i) {
+          args.push_back(builder->CreateExtractElement(value, i));
+        }
         formats += data_type_format(arg_stmt->ret_type);
       } else {
         if (arg_stmt->ret_type->is_primitive(PrimitiveTypeID::f32) ||
@@ -2469,10 +2472,8 @@ void CodeGenLLVM::visit(MeshPatchIndexStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(MatrixInitStmt *stmt) {
-  TI_TRACE("build matrix init");
-  auto type = tlctx->get_data_type(stmt->ret_type->as<TensorType>()->get_element_type());
-  auto *vectorty = llvm::VectorType::get(type, stmt->width());
-  llvm::Value *vec = llvm::UndefValue::get(vectorty);
+  auto type = tlctx->get_data_type(stmt->ret_type->as<TensorType>());
+  llvm::Value *vec = llvm::UndefValue::get(type);
   for (int i = 0; i < stmt->values.size(); ++i) {
     auto *elem = llvm_val[stmt->values[i]];
     vec = builder->CreateInsertElement(vec, elem, i);

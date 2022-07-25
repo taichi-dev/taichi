@@ -412,8 +412,7 @@ class Matrix(TaichiOperations):
         if method == "__call__":
             name = ufunc.__name__
             return getattr(self, f"__{name}__")(args[0].tolist(), **kwargs)
-        else:
-            raise NotImplemented
+        raise NotImplemented
 
     def __init__(self, arr, dt=None, suppress_warning=False, is_ref=False):
         local_tensor_proxy = None

@@ -20,7 +20,7 @@ TLANG_NAMESPACE_BEGIN
 
 // TODO(k-ye): Hide FunctionCreationGuard inside cpp file
 FunctionCreationGuard::FunctionCreationGuard(
-    ModuleCodeGenLLVM *mb,
+    TaskCodeGenLLVM *mb,
     std::vector<llvm::Type *> arguments)
     : mb(mb) {
   // Create the loop body function
@@ -95,14 +95,14 @@ class CodeGenStmtGuard {
   Setter setter_;
 };
 
-CodeGenStmtGuard make_loop_reentry_guard(ModuleCodeGenLLVM *cg) {
+CodeGenStmtGuard make_loop_reentry_guard(TaskCodeGenLLVM *cg) {
   return CodeGenStmtGuard([cg]() { return cg->current_loop_reentry; },
                           [cg](llvm::BasicBlock *saved_stmt) {
                             cg->current_loop_reentry = saved_stmt;
                           });
 }
 
-CodeGenStmtGuard make_while_after_loop_guard(ModuleCodeGenLLVM *cg) {
+CodeGenStmtGuard make_while_after_loop_guard(TaskCodeGenLLVM *cg) {
   return CodeGenStmtGuard([cg]() { return cg->current_while_after_loop; },
                           [cg](llvm::BasicBlock *saved_stmt) {
                             cg->current_while_after_loop = saved_stmt;
@@ -111,8 +111,8 @@ CodeGenStmtGuard make_while_after_loop_guard(ModuleCodeGenLLVM *cg) {
 
 }  // namespace
 
-// ModuleCodeGenLLVM
-void ModuleCodeGenLLVM::visit(Block *stmt_list) {
+// TaskCodeGenLLVM
+void TaskCodeGenLLVM::visit(Block *stmt_list) {
   for (auto &stmt : stmt_list->statements) {
     stmt->accept(this);
     if (returned) {
@@ -121,7 +121,7 @@ void ModuleCodeGenLLVM::visit(Block *stmt_list) {
   }
 }
 
-void ModuleCodeGenLLVM::visit(AllocaStmt *stmt) {
+void TaskCodeGenLLVM::visit(AllocaStmt *stmt) {
   if (stmt->ret_type->is<TensorType>()) {
     auto tensor_type = stmt->ret_type->cast<TensorType>();
     auto type = tlctx->get_data_type(tensor_type->get_element_type());
@@ -161,7 +161,7 @@ void ModuleCodeGenLLVM::visit(AllocaStmt *stmt) {
   }
 }
 
-void ModuleCodeGenLLVM::visit(RandStmt *stmt) {
+void TaskCodeGenLLVM::visit(RandStmt *stmt) {
   if (stmt->ret_type->is_primitive(PrimitiveTypeID::f16)) {
     // Promoting to f32 since there's no rand_f16 support in runtime.cpp.
     auto val_f32 = create_call("rand_f32", {get_context()});
@@ -174,7 +174,7 @@ void ModuleCodeGenLLVM::visit(RandStmt *stmt) {
   }
 }
 
-void ModuleCodeGenLLVM::emit_extra_unary(UnaryOpStmt *stmt) {
+void TaskCodeGenLLVM::emit_extra_unary(UnaryOpStmt *stmt) {
   auto input = llvm_val[stmt->operand];
   auto input_taichi_type = stmt->operand->ret_type;
   if (input_taichi_type->is_primitive(PrimitiveTypeID::f16)) {
@@ -228,7 +228,7 @@ void ModuleCodeGenLLVM::emit_extra_unary(UnaryOpStmt *stmt) {
   }
 }
 
-std::unique_ptr<RuntimeObject> ModuleCodeGenLLVM::emit_struct_meta_object(
+std::unique_ptr<RuntimeObject> TaskCodeGenLLVM::emit_struct_meta_object(
     SNode *snode) {
   std::unique_ptr<RuntimeObject> meta;
   if (snode->type == SNodeType::dense) {
@@ -259,7 +259,7 @@ std::unique_ptr<RuntimeObject> ModuleCodeGenLLVM::emit_struct_meta_object(
   return meta;
 }
 
-void ModuleCodeGenLLVM::emit_struct_meta_base(const std::string &name,
+void TaskCodeGenLLVM::emit_struct_meta_base(const std::string &name,
                                         llvm::Value *node_meta,
                                         SNode *snode) {
   RuntimeObject common("StructMeta", this, builder.get(), node_meta);
@@ -311,7 +311,7 @@ void ModuleCodeGenLLVM::emit_struct_meta_base(const std::string &name,
                get_runtime_function(snode->refine_coordinates_func_name()));
 }
 
-ModuleCodeGenLLVM::ModuleCodeGenLLVM(Kernel *kernel,
+TaskCodeGenLLVM::TaskCodeGenLLVM(Kernel *kernel,
                          IRNode *ir,
                          std::unique_ptr<llvm::Module> &&module)
     // TODO: simplify LLVMModuleBuilder ctor input
@@ -334,10 +334,10 @@ ModuleCodeGenLLVM::ModuleCodeGenLLVM(Kernel *kernel,
   kernel_name = kernel->name + "_kernel";
 }
 
-void ModuleCodeGenLLVM::visit(DecorationStmt *stmt) {
+void TaskCodeGenLLVM::visit(DecorationStmt *stmt) {
 }
 
-void ModuleCodeGenLLVM::visit(UnaryOpStmt *stmt) {
+void TaskCodeGenLLVM::visit(UnaryOpStmt *stmt) {
   auto input = llvm_val[stmt->operand];
   auto input_type = input->getType();
   auto op = stmt->op_type;
@@ -430,7 +430,7 @@ void ModuleCodeGenLLVM::visit(UnaryOpStmt *stmt) {
 #undef UNARY_INTRINSIC
 }
 
-void ModuleCodeGenLLVM::visit(BinaryOpStmt *stmt) {
+void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
   auto op = stmt->op_type;
   auto ret_type = stmt->ret_type;
 
@@ -667,7 +667,7 @@ void ModuleCodeGenLLVM::visit(BinaryOpStmt *stmt) {
   }
 }
 
-llvm::Type *ModuleCodeGenLLVM::llvm_type(DataType dt) {
+llvm::Type *TaskCodeGenLLVM::llvm_type(DataType dt) {
   if (dt->is_primitive(PrimitiveTypeID::i8) ||
       dt->is_primitive(PrimitiveTypeID::u8)) {
     return llvm::Type::getInt8Ty(*llvm_context);
@@ -694,18 +694,18 @@ llvm::Type *ModuleCodeGenLLVM::llvm_type(DataType dt) {
   return nullptr;
 }
 
-llvm::Type *ModuleCodeGenLLVM::llvm_ptr_type(DataType dt) {
+llvm::Type *TaskCodeGenLLVM::llvm_ptr_type(DataType dt) {
   return llvm::PointerType::get(llvm_type(dt), 0);
 }
 
-void ModuleCodeGenLLVM::visit(TernaryOpStmt *stmt) {
+void TaskCodeGenLLVM::visit(TernaryOpStmt *stmt) {
   TI_ASSERT(stmt->op_type == TernaryOpType::select);
   llvm_val[stmt] = builder->CreateSelect(
       builder->CreateTrunc(llvm_val[stmt->op1], llvm_type(PrimitiveType::u1)),
       llvm_val[stmt->op2], llvm_val[stmt->op3]);
 }
 
-void ModuleCodeGenLLVM::visit(IfStmt *if_stmt) {
+void TaskCodeGenLLVM::visit(IfStmt *if_stmt) {
   // TODO: take care of vectorized cases
   llvm::BasicBlock *true_block =
       llvm::BasicBlock::Create(*llvm_context, "true_block", func);
@@ -737,7 +737,7 @@ void ModuleCodeGenLLVM::visit(IfStmt *if_stmt) {
   builder->SetInsertPoint(after_if);
 }
 
-llvm::Value *ModuleCodeGenLLVM::create_print(std::string tag,
+llvm::Value *TaskCodeGenLLVM::create_print(std::string tag,
                                        DataType dt,
                                        llvm::Value *value) {
   if (!arch_is_cpu(kernel->arch)) {
@@ -759,7 +759,7 @@ llvm::Value *ModuleCodeGenLLVM::create_print(std::string tag,
   return create_call(runtime_printf, func_type_func->getFunctionType(), args);
 }
 
-llvm::Value *ModuleCodeGenLLVM::create_print(std::string tag, llvm::Value *value) {
+llvm::Value *TaskCodeGenLLVM::create_print(std::string tag, llvm::Value *value) {
   if (value->getType() == llvm::Type::getFloatTy(*llvm_context))
     return create_print(
         tag,
@@ -791,7 +791,7 @@ llvm::Value *ModuleCodeGenLLVM::create_print(std::string tag, llvm::Value *value
     TI_NOT_IMPLEMENTED
 }
 
-void ModuleCodeGenLLVM::visit(PrintStmt *stmt) {
+void TaskCodeGenLLVM::visit(PrintStmt *stmt) {
   TI_ASSERT(stmt->width() == 1);
   std::vector<llvm::Value *> args;
   std::string formats;
@@ -820,7 +820,7 @@ void ModuleCodeGenLLVM::visit(PrintStmt *stmt) {
       create_call(runtime_printf, func_type_func->getFunctionType(), args);
 }
 
-void ModuleCodeGenLLVM::visit(ConstStmt *stmt) {
+void TaskCodeGenLLVM::visit(ConstStmt *stmt) {
   TI_ASSERT(stmt->width() == 1);
   auto val = stmt->val[0];
   if (val.dt->is_primitive(PrimitiveTypeID::f32)) {
@@ -862,7 +862,7 @@ void ModuleCodeGenLLVM::visit(ConstStmt *stmt) {
   }
 }
 
-void ModuleCodeGenLLVM::visit(WhileControlStmt *stmt) {
+void TaskCodeGenLLVM::visit(WhileControlStmt *stmt) {
   using namespace llvm;
 
   BasicBlock *after_break =
@@ -874,7 +874,7 @@ void ModuleCodeGenLLVM::visit(WhileControlStmt *stmt) {
   builder->SetInsertPoint(after_break);
 }
 
-void ModuleCodeGenLLVM::visit(ContinueStmt *stmt) {
+void TaskCodeGenLLVM::visit(ContinueStmt *stmt) {
   using namespace llvm;
   auto stmt_in_off_range_for = [stmt]() {
     TI_ASSERT(stmt->scope != nullptr);
@@ -898,7 +898,7 @@ void ModuleCodeGenLLVM::visit(ContinueStmt *stmt) {
   builder->SetInsertPoint(after_continue);
 }
 
-void ModuleCodeGenLLVM::visit(WhileStmt *stmt) {
+void TaskCodeGenLLVM::visit(WhileStmt *stmt) {
   using namespace llvm;
   BasicBlock *body = BasicBlock::Create(*llvm_context, "while_loop_body", func);
   builder->CreateBr(body);
@@ -922,14 +922,14 @@ void ModuleCodeGenLLVM::visit(WhileStmt *stmt) {
   builder->SetInsertPoint(after_loop);
 }
 
-llvm::Value *ModuleCodeGenLLVM::cast_pointer(llvm::Value *val,
+llvm::Value *TaskCodeGenLLVM::cast_pointer(llvm::Value *val,
                                        std::string dest_ty_name,
                                        int addr_space) {
   return builder->CreateBitCast(
       val, llvm::PointerType::get(get_runtime_type(dest_ty_name), addr_space));
 }
 
-void ModuleCodeGenLLVM::emit_list_gen(OffloadedStmt *listgen) {
+void TaskCodeGenLLVM::emit_list_gen(OffloadedStmt *listgen) {
   auto snode_child = listgen->snode;
   auto snode_parent = listgen->snode->parent;
   auto meta_child = cast_pointer(emit_struct_meta(snode_child), "StructMeta");
@@ -943,17 +943,17 @@ void ModuleCodeGenLLVM::emit_list_gen(OffloadedStmt *listgen) {
   }
 }
 
-void ModuleCodeGenLLVM::emit_gc(OffloadedStmt *stmt) {
+void TaskCodeGenLLVM::emit_gc(OffloadedStmt *stmt) {
   auto snode = stmt->snode->id;
   call("node_gc", get_runtime(), tlctx->get_constant(snode));
 }
 
-llvm::Value *ModuleCodeGenLLVM::create_call(llvm::Function *func,
+llvm::Value *TaskCodeGenLLVM::create_call(llvm::Function *func,
                                       llvm::ArrayRef<llvm::Value *> args) {
   return create_call(func, func->getFunctionType(), args);
 }
 
-llvm::Value *ModuleCodeGenLLVM::create_call(llvm::Value *func,
+llvm::Value *TaskCodeGenLLVM::create_call(llvm::Value *func,
                                       llvm::FunctionType *func_ty,
                                       llvm::ArrayRef<llvm::Value *> args_arr) {
   std::vector<llvm::Value *> args = args_arr;
@@ -965,13 +965,13 @@ llvm::Value *ModuleCodeGenLLVM::create_call(llvm::Value *func,
 #endif
 }
 
-llvm::Value *ModuleCodeGenLLVM::create_call(std::string func_name,
+llvm::Value *TaskCodeGenLLVM::create_call(std::string func_name,
                                       llvm::ArrayRef<llvm::Value *> args) {
   auto func = get_runtime_function(func_name);
   return create_call(func, args);
 }
 
-void ModuleCodeGenLLVM::create_increment(llvm::Value *ptr, llvm::Value *value) {
+void TaskCodeGenLLVM::create_increment(llvm::Value *ptr, llvm::Value *value) {
   auto original_value = builder->CreateLoad(
 #ifdef TI_LLVM_15
       value->getType(),
@@ -980,7 +980,7 @@ void ModuleCodeGenLLVM::create_increment(llvm::Value *ptr, llvm::Value *value) {
   builder->CreateStore(builder->CreateAdd(original_value, value), ptr);
 }
 
-void ModuleCodeGenLLVM::create_naive_range_for(RangeForStmt *for_stmt) {
+void TaskCodeGenLLVM::create_naive_range_for(RangeForStmt *for_stmt) {
   using namespace llvm;
   BasicBlock *body = BasicBlock::Create(*llvm_context, "for_loop_body", func);
   BasicBlock *loop_inc =
@@ -1058,11 +1058,11 @@ void ModuleCodeGenLLVM::create_naive_range_for(RangeForStmt *for_stmt) {
   builder->SetInsertPoint(after_loop);
 }
 
-void ModuleCodeGenLLVM::visit(RangeForStmt *for_stmt) {
+void TaskCodeGenLLVM::visit(RangeForStmt *for_stmt) {
   create_naive_range_for(for_stmt);
 }
 
-llvm::Value *ModuleCodeGenLLVM::bitcast_from_u64(llvm::Value *val, DataType type) {
+llvm::Value *TaskCodeGenLLVM::bitcast_from_u64(llvm::Value *val, DataType type) {
   llvm::Type *dest_ty = nullptr;
   TI_ASSERT(!type->is<PointerType>());
   if (auto qit = type->cast<QuantIntType>()) {
@@ -1091,7 +1091,7 @@ llvm::Value *ModuleCodeGenLLVM::bitcast_from_u64(llvm::Value *val, DataType type
   }
 }
 
-llvm::Value *ModuleCodeGenLLVM::bitcast_to_u64(llvm::Value *val, DataType type) {
+llvm::Value *TaskCodeGenLLVM::bitcast_to_u64(llvm::Value *val, DataType type) {
   auto intermediate_bits = 0;
   if (type.is_pointer()) {
     return builder->CreatePtrToInt(val, tlctx->get_data_type<int64>());
@@ -1113,7 +1113,7 @@ llvm::Value *ModuleCodeGenLLVM::bitcast_to_u64(llvm::Value *val, DataType type) 
                              dest_ty);
 }
 
-void ModuleCodeGenLLVM::visit(ArgLoadStmt *stmt) {
+void TaskCodeGenLLVM::visit(ArgLoadStmt *stmt) {
   auto raw_arg = call(builder.get(), "RuntimeContext_get_args", get_context(),
                       tlctx->get_constant(stmt->arg_id));
 
@@ -1127,7 +1127,7 @@ void ModuleCodeGenLLVM::visit(ArgLoadStmt *stmt) {
   }
 }
 
-void ModuleCodeGenLLVM::visit(ReturnStmt *stmt) {
+void TaskCodeGenLLVM::visit(ReturnStmt *stmt) {
   auto types = stmt->element_types();
   if (std::any_of(types.begin(), types.end(),
                   [](const DataType &t) { return t.is_pointer(); })) {
@@ -1146,7 +1146,7 @@ void ModuleCodeGenLLVM::visit(ReturnStmt *stmt) {
   returned = true;
 }
 
-void ModuleCodeGenLLVM::visit(LocalLoadStmt *stmt) {
+void TaskCodeGenLLVM::visit(LocalLoadStmt *stmt) {
   TI_ASSERT(stmt->width() == 1);
 #ifdef TI_LLVM_15
   // FIXME: get ptr_ty from taichi instead of llvm.
@@ -1164,11 +1164,11 @@ void ModuleCodeGenLLVM::visit(LocalLoadStmt *stmt) {
 #endif
 }
 
-void ModuleCodeGenLLVM::visit(LocalStoreStmt *stmt) {
+void TaskCodeGenLLVM::visit(LocalStoreStmt *stmt) {
   builder->CreateStore(llvm_val[stmt->val], llvm_val[stmt->dest]);
 }
 
-void ModuleCodeGenLLVM::visit(AssertStmt *stmt) {
+void TaskCodeGenLLVM::visit(AssertStmt *stmt) {
   TI_ASSERT((int)stmt->args.size() <= taichi_error_message_max_num_arguments);
   auto argument_buffer_size = llvm::ArrayType::get(
       llvm::Type::getInt64Ty(*llvm_context), stmt->args.size());
@@ -1215,7 +1215,7 @@ void ModuleCodeGenLLVM::visit(AssertStmt *stmt) {
   llvm_val[stmt] = create_call("taichi_assert_format", args);
 }
 
-void ModuleCodeGenLLVM::visit(SNodeOpStmt *stmt) {
+void TaskCodeGenLLVM::visit(SNodeOpStmt *stmt) {
   auto snode = stmt->snode;
   if (stmt->op_type == SNodeOpType::append) {
     TI_ASSERT(snode->type == SNodeType::dynamic);
@@ -1244,11 +1244,11 @@ void ModuleCodeGenLLVM::visit(SNodeOpStmt *stmt) {
   }
 }
 
-llvm::Value *ModuleCodeGenLLVM::optimized_reduction(AtomicOpStmt *stmt) {
+llvm::Value *TaskCodeGenLLVM::optimized_reduction(AtomicOpStmt *stmt) {
   return nullptr;
 }
 
-llvm::Value *ModuleCodeGenLLVM::quant_type_atomic(AtomicOpStmt *stmt) {
+llvm::Value *TaskCodeGenLLVM::quant_type_atomic(AtomicOpStmt *stmt) {
   // TODO(type): support all AtomicOpTypes on quant types
   if (stmt->op_type != AtomicOpType::add) {
     return nullptr;
@@ -1270,7 +1270,7 @@ llvm::Value *ModuleCodeGenLLVM::quant_type_atomic(AtomicOpStmt *stmt) {
   }
 }
 
-llvm::Value *ModuleCodeGenLLVM::integral_type_atomic(AtomicOpStmt *stmt) {
+llvm::Value *TaskCodeGenLLVM::integral_type_atomic(AtomicOpStmt *stmt) {
   if (!is_integral(stmt->val->ret_type)) {
     return nullptr;
   }
@@ -1296,7 +1296,7 @@ llvm::Value *ModuleCodeGenLLVM::integral_type_atomic(AtomicOpStmt *stmt) {
                                   llvm::AtomicOrdering::SequentiallyConsistent);
 }
 
-llvm::Value *ModuleCodeGenLLVM::atomic_op_using_cas(
+llvm::Value *TaskCodeGenLLVM::atomic_op_using_cas(
     llvm::Value *dest,
     llvm::Value *val,
     std::function<llvm::Value *(llvm::Value *, llvm::Value *)> op) {
@@ -1338,7 +1338,7 @@ llvm::Value *ModuleCodeGenLLVM::atomic_op_using_cas(
   return old_val;
 }
 
-llvm::Value *ModuleCodeGenLLVM::real_type_atomic(AtomicOpStmt *stmt) {
+llvm::Value *TaskCodeGenLLVM::real_type_atomic(AtomicOpStmt *stmt) {
   if (!is_real(stmt->val->ret_type)) {
     return nullptr;
   }
@@ -1386,7 +1386,7 @@ llvm::Value *ModuleCodeGenLLVM::real_type_atomic(AtomicOpStmt *stmt) {
                      {llvm_val[stmt->dest], llvm_val[stmt->val]});
 }
 
-void ModuleCodeGenLLVM::visit(AtomicOpStmt *stmt) {
+void TaskCodeGenLLVM::visit(AtomicOpStmt *stmt) {
   bool is_local = stmt->dest->is<AllocaStmt>();
   if (is_local) {
     TI_ERROR("Local atomics should have been demoted.");
@@ -1410,11 +1410,11 @@ void ModuleCodeGenLLVM::visit(AtomicOpStmt *stmt) {
   }
 }
 
-void ModuleCodeGenLLVM::visit(GlobalPtrStmt *stmt) {
+void TaskCodeGenLLVM::visit(GlobalPtrStmt *stmt) {
   TI_ERROR("Global Ptrs should have been lowered.");
 }
 
-void ModuleCodeGenLLVM::visit(GlobalStoreStmt *stmt) {
+void TaskCodeGenLLVM::visit(GlobalStoreStmt *stmt) {
   TI_ASSERT(llvm_val[stmt->val]);
   TI_ASSERT(llvm_val[stmt->dest]);
   auto ptr_type = stmt->dest->ret_type->as<PointerType>();
@@ -1441,12 +1441,12 @@ void ModuleCodeGenLLVM::visit(GlobalStoreStmt *stmt) {
   }
 }
 
-llvm::Value *ModuleCodeGenLLVM::create_intrinsic_load(llvm::Value *ptr,
+llvm::Value *TaskCodeGenLLVM::create_intrinsic_load(llvm::Value *ptr,
                                                 llvm::Type *ty) {
   TI_NOT_IMPLEMENTED;
 }
 
-void ModuleCodeGenLLVM::create_global_load(GlobalLoadStmt *stmt,
+void TaskCodeGenLLVM::create_global_load(GlobalLoadStmt *stmt,
                                      bool should_cache_as_read_only) {
   auto ptr = llvm_val[stmt->src];
   auto ptr_type = stmt->src->ret_type->as<PointerType>();
@@ -1482,11 +1482,11 @@ void ModuleCodeGenLLVM::create_global_load(GlobalLoadStmt *stmt,
   }
 }
 
-void ModuleCodeGenLLVM::visit(GlobalLoadStmt *stmt) {
+void TaskCodeGenLLVM::visit(GlobalLoadStmt *stmt) {
   create_global_load(stmt, false);
 }
 
-void ModuleCodeGenLLVM::visit(ElementShuffleStmt *stmt){
+void TaskCodeGenLLVM::visit(ElementShuffleStmt *stmt){
     TI_NOT_IMPLEMENTED
     /*
     auto init = stmt->elements.serialize(
@@ -1504,7 +1504,7 @@ void ModuleCodeGenLLVM::visit(ElementShuffleStmt *stmt){
     */
 }
 
-std::string ModuleCodeGenLLVM::get_runtime_snode_name(SNode *snode) {
+std::string TaskCodeGenLLVM::get_runtime_snode_name(SNode *snode) {
   if (snode->type == SNodeType::root) {
     return "Root";
   } else if (snode->type == SNodeType::dense) {
@@ -1527,7 +1527,7 @@ std::string ModuleCodeGenLLVM::get_runtime_snode_name(SNode *snode) {
   }
 }
 
-llvm::Value *ModuleCodeGenLLVM::call(SNode *snode,
+llvm::Value *TaskCodeGenLLVM::call(SNode *snode,
                                llvm::Value *node_ptr,
                                const std::string &method,
                                const std::vector<llvm::Value *> &arguments) {
@@ -1547,7 +1547,7 @@ llvm::Value *ModuleCodeGenLLVM::call(SNode *snode,
   return call(builder.get(), prefix + "_" + method, func_arguments);
 }
 
-void ModuleCodeGenLLVM::visit(GetRootStmt *stmt) {
+void TaskCodeGenLLVM::visit(GetRootStmt *stmt) {
   if (stmt->root() == nullptr)
     llvm_val[stmt] = builder->CreateBitCast(
         get_root(SNodeTree::kFirstID),
@@ -1563,14 +1563,14 @@ void ModuleCodeGenLLVM::visit(GetRootStmt *stmt) {
             0));
 }
 
-void ModuleCodeGenLLVM::visit(BitExtractStmt *stmt) {
+void TaskCodeGenLLVM::visit(BitExtractStmt *stmt) {
   int mask = (1u << (stmt->bit_end - stmt->bit_begin)) - 1;
   llvm_val[stmt] = builder->CreateAnd(
       builder->CreateLShr(llvm_val[stmt->input], stmt->bit_begin),
       tlctx->get_constant(mask));
 }
 
-void ModuleCodeGenLLVM::visit(LinearizeStmt *stmt) {
+void TaskCodeGenLLVM::visit(LinearizeStmt *stmt) {
   llvm::Value *val = tlctx->get_constant(0);
   for (int i = 0; i < (int)stmt->inputs.size(); i++) {
     val = builder->CreateAdd(
@@ -1580,9 +1580,9 @@ void ModuleCodeGenLLVM::visit(LinearizeStmt *stmt) {
   llvm_val[stmt] = val;
 }
 
-void ModuleCodeGenLLVM::visit(IntegerOffsetStmt *stmt){TI_NOT_IMPLEMENTED}
+void TaskCodeGenLLVM::visit(IntegerOffsetStmt *stmt){TI_NOT_IMPLEMENTED}
 
-llvm::Value *ModuleCodeGenLLVM::create_bit_ptr(llvm::Value *byte_ptr,
+llvm::Value *TaskCodeGenLLVM::create_bit_ptr(llvm::Value *byte_ptr,
                                          llvm::Value *bit_offset) {
   // 1. define the bit pointer struct (X=8/16/32/64)
   // struct bit_pointer_X {
@@ -1612,7 +1612,7 @@ llvm::Value *ModuleCodeGenLLVM::create_bit_ptr(llvm::Value *byte_ptr,
   return bit_ptr;
 }
 
-std::tuple<llvm::Value *, llvm::Value *> ModuleCodeGenLLVM::load_bit_ptr(
+std::tuple<llvm::Value *, llvm::Value *> TaskCodeGenLLVM::load_bit_ptr(
     llvm::Value *bit_ptr) {
 #ifdef TI_LLVM_15
   // FIXME: get ptr_ty from taichi instead of llvm.
@@ -1639,7 +1639,7 @@ std::tuple<llvm::Value *, llvm::Value *> ModuleCodeGenLLVM::load_bit_ptr(
   return std::make_tuple(byte_ptr, bit_offset);
 }
 
-void ModuleCodeGenLLVM::visit(SNodeLookupStmt *stmt) {
+void TaskCodeGenLLVM::visit(SNodeLookupStmt *stmt) {
   llvm::Value *parent = nullptr;
   parent = llvm_val[stmt->input_snode];
   TI_ASSERT(parent);
@@ -1682,7 +1682,7 @@ void ModuleCodeGenLLVM::visit(SNodeLookupStmt *stmt) {
   }
 }
 
-void ModuleCodeGenLLVM::visit(GetChStmt *stmt) {
+void TaskCodeGenLLVM::visit(GetChStmt *stmt) {
   if (stmt->input_snode->type == SNodeType::quant_array) {
     llvm_val[stmt] = llvm_val[stmt->input_ptr];
   } else if (stmt->ret_type->as<PointerType>()->is_bit_pointer()) {
@@ -1703,7 +1703,7 @@ void ModuleCodeGenLLVM::visit(GetChStmt *stmt) {
   }
 }
 
-void ModuleCodeGenLLVM::visit(PtrOffsetStmt *stmt) {
+void TaskCodeGenLLVM::visit(PtrOffsetStmt *stmt) {
   if (stmt->is_local_ptr()) {
 #ifdef TI_LLVM_15
     // FIXME: get ptr_ty from taichi instead of llvm.
@@ -1742,7 +1742,7 @@ void ModuleCodeGenLLVM::visit(PtrOffsetStmt *stmt) {
   }
 }
 
-void ModuleCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
+void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
   TI_ASSERT(stmt->width() == 1);
 
   auto argload = stmt->base_ptrs[0]->as<ArgLoadStmt>();
@@ -1789,7 +1789,7 @@ void ModuleCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
       base, linear_index);
 }
 
-void ModuleCodeGenLLVM::visit(ExternalTensorShapeAlongAxisStmt *stmt) {
+void TaskCodeGenLLVM::visit(ExternalTensorShapeAlongAxisStmt *stmt) {
   const auto arg_id = stmt->arg_id;
   const auto axis = stmt->axis;
   llvm_val[stmt] = create_call(
@@ -1797,7 +1797,7 @@ void ModuleCodeGenLLVM::visit(ExternalTensorShapeAlongAxisStmt *stmt) {
       {get_context(), tlctx->get_constant(arg_id), tlctx->get_constant(axis)});
 }
 
-std::string ModuleCodeGenLLVM::init_offloaded_task_function(OffloadedStmt *stmt,
+std::string TaskCodeGenLLVM::init_offloaded_task_function(OffloadedStmt *stmt,
                                                       std::string suffix) {
   current_loop_reentry = nullptr;
   current_while_after_loop = nullptr;
@@ -1833,7 +1833,7 @@ std::string ModuleCodeGenLLVM::init_offloaded_task_function(OffloadedStmt *stmt,
   return task_kernel_name;
 }
 
-void ModuleCodeGenLLVM::finalize_offloaded_task_function() {
+void TaskCodeGenLLVM::finalize_offloaded_task_function() {
   if (!returned) {
     builder->CreateBr(final_block);
   } else {
@@ -1855,8 +1855,7 @@ void ModuleCodeGenLLVM::finalize_offloaded_task_function() {
   // TI_INFO("Kernel function verified.");
 }
 
-std::tuple<llvm::Value *, llvm::Value *>
-ModuleCodeGenLLVM::get_range_for_bounds(
+std::tuple<llvm::Value *, llvm::Value *> TaskCodeGenLLVM::get_range_for_bounds(
     OffloadedStmt *stmt) {
   llvm::Value *begin, *end;
   if (stmt->const_begin) {
@@ -1888,11 +1887,11 @@ ModuleCodeGenLLVM::get_range_for_bounds(
   return std::tuple(begin, end);
 }
 
-void ModuleCodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
+void TaskCodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
   using namespace llvm;
   // TODO: instead of constructing tons of LLVM IR, writing the logic in
   // runtime.cpp may be a cleaner solution. See
-  // ModuleCodeGenCPU::create_offload_range_for as an example.
+  // TaskCodeGenCPU::create_offload_range_for as an example.
 
   llvm::Function *body = nullptr;
   auto leaf_block = stmt->snode;
@@ -2209,7 +2208,7 @@ void ModuleCodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd
   block_corner_coordinates = nullptr;
 }
 
-void ModuleCodeGenLLVM::visit(LoopIndexStmt *stmt) {
+void TaskCodeGenLLVM::visit(LoopIndexStmt *stmt) {
   if (stmt->loop->is<OffloadedStmt>() &&
       stmt->loop->as<OffloadedStmt>()->task_type ==
           OffloadedStmt::TaskType::struct_for) {
@@ -2242,7 +2241,7 @@ void ModuleCodeGenLLVM::visit(LoopIndexStmt *stmt) {
   }
 }
 
-void ModuleCodeGenLLVM::visit(LoopLinearIndexStmt *stmt) {
+void TaskCodeGenLLVM::visit(LoopLinearIndexStmt *stmt) {
   if (stmt->loop->is<OffloadedStmt>() &&
       (stmt->loop->as<OffloadedStmt>()->task_type ==
            OffloadedStmt::TaskType::struct_for ||
@@ -2254,7 +2253,7 @@ void ModuleCodeGenLLVM::visit(LoopLinearIndexStmt *stmt) {
   }
 }
 
-void ModuleCodeGenLLVM::visit(BlockCornerIndexStmt *stmt) {
+void TaskCodeGenLLVM::visit(BlockCornerIndexStmt *stmt) {
   if (stmt->loop->is<OffloadedStmt>() &&
       stmt->loop->as<OffloadedStmt>()->task_type ==
           OffloadedStmt::TaskType::struct_for) {
@@ -2288,7 +2287,7 @@ void ModuleCodeGenLLVM::visit(BlockCornerIndexStmt *stmt) {
   }
 }
 
-void ModuleCodeGenLLVM::visit(GlobalTemporaryStmt *stmt) {
+void TaskCodeGenLLVM::visit(GlobalTemporaryStmt *stmt) {
   auto runtime = get_runtime();
   auto buffer = call("get_temporary_pointer", runtime,
                      tlctx->get_constant((int64)stmt->offset));
@@ -2307,7 +2306,7 @@ void ModuleCodeGenLLVM::visit(GlobalTemporaryStmt *stmt) {
   }
 }
 
-void ModuleCodeGenLLVM::visit(ThreadLocalPtrStmt *stmt) {
+void TaskCodeGenLLVM::visit(ThreadLocalPtrStmt *stmt) {
   auto base = get_tls_base_ptr();
   TI_ASSERT(stmt->width() == 1);
   auto ptr = builder->CreateGEP(
@@ -2320,7 +2319,7 @@ void ModuleCodeGenLLVM::visit(ThreadLocalPtrStmt *stmt) {
   llvm_val[stmt] = builder->CreatePointerCast(ptr, ptr_type);
 }
 
-void ModuleCodeGenLLVM::visit(BlockLocalPtrStmt *stmt) {
+void TaskCodeGenLLVM::visit(BlockLocalPtrStmt *stmt) {
   TI_ASSERT(bls_buffer);
   auto base = bls_buffer;
   TI_ASSERT(stmt->width() == 1);
@@ -2334,7 +2333,7 @@ void ModuleCodeGenLLVM::visit(BlockLocalPtrStmt *stmt) {
   llvm_val[stmt] = builder->CreatePointerCast(ptr, ptr_type);
 }
 
-void ModuleCodeGenLLVM::visit(ClearListStmt *stmt) {
+void TaskCodeGenLLVM::visit(ClearListStmt *stmt) {
   auto snode_child = stmt->snode;
   auto snode_parent = stmt->snode->parent;
   auto meta_child = cast_pointer(emit_struct_meta(snode_child), "StructMeta");
@@ -2342,7 +2341,7 @@ void ModuleCodeGenLLVM::visit(ClearListStmt *stmt) {
   call("clear_list", get_runtime(), meta_parent, meta_child);
 }
 
-void ModuleCodeGenLLVM::visit(InternalFuncStmt *stmt) {
+void TaskCodeGenLLVM::visit(InternalFuncStmt *stmt) {
   std::vector<llvm::Value *> args;
 
   if (stmt->with_runtime_context)
@@ -2354,7 +2353,7 @@ void ModuleCodeGenLLVM::visit(InternalFuncStmt *stmt) {
   llvm_val[stmt] = create_call(stmt->func_name, args);
 }
 
-void ModuleCodeGenLLVM::visit(AdStackAllocaStmt *stmt) {
+void TaskCodeGenLLVM::visit(AdStackAllocaStmt *stmt) {
   TI_ASSERT(stmt->width() == 1);
   TI_ASSERT_INFO(stmt->max_size > 0,
                  "Adaptive autodiff stack's size should have been determined.");
@@ -2366,11 +2365,11 @@ void ModuleCodeGenLLVM::visit(AdStackAllocaStmt *stmt) {
   call("stack_init", llvm_val[stmt]);
 }
 
-void ModuleCodeGenLLVM::visit(AdStackPopStmt *stmt) {
+void TaskCodeGenLLVM::visit(AdStackPopStmt *stmt) {
   call("stack_pop", llvm_val[stmt->stack]);
 }
 
-void ModuleCodeGenLLVM::visit(AdStackPushStmt *stmt) {
+void TaskCodeGenLLVM::visit(AdStackPushStmt *stmt) {
   auto stack = stmt->stack->as<AdStackAllocaStmt>();
   call("stack_push", llvm_val[stack], tlctx->get_constant(stack->max_size),
        tlctx->get_constant(stack->element_size_in_bytes()));
@@ -2382,7 +2381,7 @@ void ModuleCodeGenLLVM::visit(AdStackPushStmt *stmt) {
   builder->CreateStore(llvm_val[stmt->v], primal_ptr);
 }
 
-void ModuleCodeGenLLVM::visit(AdStackLoadTopStmt *stmt) {
+void TaskCodeGenLLVM::visit(AdStackLoadTopStmt *stmt) {
   auto stack = stmt->stack->as<AdStackAllocaStmt>();
   auto primal_ptr = call("stack_top_primal", llvm_val[stack],
                          tlctx->get_constant(stack->element_size_in_bytes()));
@@ -2396,7 +2395,7 @@ void ModuleCodeGenLLVM::visit(AdStackLoadTopStmt *stmt) {
       primal_ptr);
 }
 
-void ModuleCodeGenLLVM::visit(AdStackLoadTopAdjStmt *stmt) {
+void TaskCodeGenLLVM::visit(AdStackLoadTopAdjStmt *stmt) {
   auto stack = stmt->stack->as<AdStackAllocaStmt>();
   auto adjoint = call("stack_top_adjoint", llvm_val[stack],
                       tlctx->get_constant(stack->element_size_in_bytes()));
@@ -2410,7 +2409,7 @@ void ModuleCodeGenLLVM::visit(AdStackLoadTopAdjStmt *stmt) {
       adjoint);
 }
 
-void ModuleCodeGenLLVM::visit(AdStackAccAdjointStmt *stmt) {
+void TaskCodeGenLLVM::visit(AdStackAccAdjointStmt *stmt) {
   auto stack = stmt->stack->as<AdStackAllocaStmt>();
   auto adjoint_ptr = call("stack_top_adjoint", llvm_val[stack],
                           tlctx->get_constant(stack->element_size_in_bytes()));
@@ -2427,15 +2426,15 @@ void ModuleCodeGenLLVM::visit(AdStackAccAdjointStmt *stmt) {
   builder->CreateStore(new_val, adjoint_ptr);
 }
 
-void ModuleCodeGenLLVM::visit(RangeAssumptionStmt *stmt) {
+void TaskCodeGenLLVM::visit(RangeAssumptionStmt *stmt) {
   llvm_val[stmt] = llvm_val[stmt->input];
 }
 
-void ModuleCodeGenLLVM::visit(LoopUniqueStmt *stmt) {
+void TaskCodeGenLLVM::visit(LoopUniqueStmt *stmt) {
   llvm_val[stmt] = llvm_val[stmt->input];
 }
 
-void ModuleCodeGenLLVM::visit_call_bitcode(ExternalFuncCallStmt *stmt) {
+void TaskCodeGenLLVM::visit_call_bitcode(ExternalFuncCallStmt *stmt) {
   TI_ASSERT(stmt->type == ExternalFuncCallStmt::BITCODE);
   std::vector<llvm::Value *> arg_values;
   for (const auto &s : stmt->arg_stmts)
@@ -2468,7 +2467,7 @@ void ModuleCodeGenLLVM::visit_call_bitcode(ExternalFuncCallStmt *stmt) {
   create_call(func_ptr, arg_values);
 }
 
-void ModuleCodeGenLLVM::visit_call_shared_object(ExternalFuncCallStmt *stmt) {
+void TaskCodeGenLLVM::visit_call_shared_object(ExternalFuncCallStmt *stmt) {
   TI_ASSERT(stmt->type == ExternalFuncCallStmt::SHARED_OBJECT);
   std::vector<llvm::Type *> arg_types;
   std::vector<llvm::Value *> arg_values;
@@ -2496,15 +2495,15 @@ void ModuleCodeGenLLVM::visit_call_shared_object(ExternalFuncCallStmt *stmt) {
   create_call(func, func_type, arg_values);
 }
 
-void ModuleCodeGenLLVM::visit(ExternalFuncCallStmt *stmt) {
+void TaskCodeGenLLVM::visit(ExternalFuncCallStmt *stmt) {
   TI_NOT_IMPLEMENTED
 }
 
-void ModuleCodeGenLLVM::visit(MeshPatchIndexStmt *stmt) {
+void TaskCodeGenLLVM::visit(MeshPatchIndexStmt *stmt) {
   llvm_val[stmt] = get_arg(2);
 }
 
-void ModuleCodeGenLLVM::eliminate_unused_functions() {
+void TaskCodeGenLLVM::eliminate_unused_functions() {
   TaichiLLVMContext::eliminate_unused_functions(
       module.get(), [&](std::string func_name) {
         for (auto &task : offloaded_tasks) {
@@ -2515,18 +2514,18 @@ void ModuleCodeGenLLVM::eliminate_unused_functions() {
       });
 }
 
-FunctionCreationGuard ModuleCodeGenLLVM::get_function_creation_guard(
+FunctionCreationGuard TaskCodeGenLLVM::get_function_creation_guard(
     std::vector<llvm::Type *> argument_types) {
   return FunctionCreationGuard(this, argument_types);
 }
 
-void ModuleCodeGenLLVM::initialize_context() {
+void TaskCodeGenLLVM::initialize_context() {
   tlctx = get_llvm_program(prog)->get_llvm_context(kernel->arch);
   llvm_context = tlctx->get_this_thread_context();
   builder = std::make_unique<llvm::IRBuilder<>>(*llvm_context);
 }
 
-llvm::Value *ModuleCodeGenLLVM::get_arg(int i) {
+llvm::Value *TaskCodeGenLLVM::get_arg(int i) {
   std::vector<llvm::Value *> args;
   for (auto &arg : func->args()) {
     args.push_back(&arg);
@@ -2534,61 +2533,61 @@ llvm::Value *ModuleCodeGenLLVM::get_arg(int i) {
   return args[i];
 }
 
-llvm::Value *ModuleCodeGenLLVM::get_context() {
+llvm::Value *TaskCodeGenLLVM::get_context() {
   return get_arg(0);
 }
 
-llvm::Value *ModuleCodeGenLLVM::get_tls_base_ptr() {
+llvm::Value *TaskCodeGenLLVM::get_tls_base_ptr() {
   return get_arg(1);
 }
 
-llvm::Type *ModuleCodeGenLLVM::get_tls_buffer_type() {
+llvm::Type *TaskCodeGenLLVM::get_tls_buffer_type() {
   return llvm::Type::getInt8PtrTy(*llvm_context);
 }
 
-std::vector<llvm::Type *> ModuleCodeGenLLVM::get_xlogue_argument_types() {
+std::vector<llvm::Type *> TaskCodeGenLLVM::get_xlogue_argument_types() {
   return {llvm::PointerType::get(get_runtime_type("RuntimeContext"), 0),
           get_tls_buffer_type()};
 }
 
-std::vector<llvm::Type *> ModuleCodeGenLLVM::get_mesh_xlogue_argument_types() {
+std::vector<llvm::Type *> TaskCodeGenLLVM::get_mesh_xlogue_argument_types() {
   return {llvm::PointerType::get(get_runtime_type("RuntimeContext"), 0),
           get_tls_buffer_type(), tlctx->get_data_type<uint32_t>()};
 }
 
-llvm::Type *ModuleCodeGenLLVM::get_xlogue_function_type() {
+llvm::Type *TaskCodeGenLLVM::get_xlogue_function_type() {
   return llvm::FunctionType::get(llvm::Type::getVoidTy(*llvm_context),
                                  get_xlogue_argument_types(), false);
 }
 
-llvm::Type *ModuleCodeGenLLVM::get_mesh_xlogue_function_type() {
+llvm::Type *TaskCodeGenLLVM::get_mesh_xlogue_function_type() {
   return llvm::FunctionType::get(llvm::Type::getVoidTy(*llvm_context),
                                  get_mesh_xlogue_argument_types(), false);
 }
 
-llvm::Value *ModuleCodeGenLLVM::get_root(int snode_tree_id) {
+llvm::Value *TaskCodeGenLLVM::get_root(int snode_tree_id) {
   return create_call("LLVMRuntime_get_roots",
                      {get_runtime(), tlctx->get_constant(snode_tree_id)});
 }
 
-llvm::Value *ModuleCodeGenLLVM::get_runtime() {
+llvm::Value *TaskCodeGenLLVM::get_runtime() {
   auto runtime_ptr = create_call("RuntimeContext_get_runtime", {get_context()});
   return builder->CreateBitCast(
       runtime_ptr, llvm::PointerType::get(get_runtime_type("LLVMRuntime"), 0));
 }
 
-llvm::Value *ModuleCodeGenLLVM::emit_struct_meta(SNode *snode) {
+llvm::Value *TaskCodeGenLLVM::emit_struct_meta(SNode *snode) {
   auto obj = emit_struct_meta_object(snode);
   TI_ASSERT(obj != nullptr);
   return obj->ptr;
 }
 
-void ModuleCodeGenLLVM::emit_to_module() {
+void TaskCodeGenLLVM::emit_to_module() {
   TI_AUTO_PROF
   ir->accept(this);
 }
 
-LLVMCompiledData ModuleCodeGenLLVM::run_compilation() {
+LLVMCompiledData TaskCodeGenLLVM::run_compilation() {
   // Final lowering
 
   auto config = kernel->program->config;
@@ -2600,7 +2599,7 @@ LLVMCompiledData ModuleCodeGenLLVM::run_compilation() {
   return {std::move(this->offloaded_tasks), std::move(this->module)};
 }
 
-llvm::Value *ModuleCodeGenLLVM::create_xlogue(std::unique_ptr<Block> &block) {
+llvm::Value *TaskCodeGenLLVM::create_xlogue(std::unique_ptr<Block> &block) {
   llvm::Value *xlogue;
 
   auto xlogue_type = get_xlogue_function_type();
@@ -2617,7 +2616,7 @@ llvm::Value *ModuleCodeGenLLVM::create_xlogue(std::unique_ptr<Block> &block) {
   return xlogue;
 }
 
-llvm::Value *ModuleCodeGenLLVM::create_mesh_xlogue(std::unique_ptr<Block> &block) {
+llvm::Value *TaskCodeGenLLVM::create_mesh_xlogue(std::unique_ptr<Block> &block) {
   llvm::Value *xlogue;
 
   auto xlogue_type = get_mesh_xlogue_function_type();
@@ -2634,11 +2633,11 @@ llvm::Value *ModuleCodeGenLLVM::create_mesh_xlogue(std::unique_ptr<Block> &block
   return xlogue;
 }
 
-void ModuleCodeGenLLVM::visit(ReferenceStmt *stmt) {
+void TaskCodeGenLLVM::visit(ReferenceStmt *stmt) {
   llvm_val[stmt] = llvm_val[stmt->var];
 }
 
-void ModuleCodeGenLLVM::visit(FuncCallStmt *stmt) {
+void TaskCodeGenLLVM::visit(FuncCallStmt *stmt) {
   if (!func_map.count(stmt->func)) {
     auto guard = get_function_creation_guard(
         {llvm::PointerType::get(get_runtime_type("RuntimeContext"), 0)});

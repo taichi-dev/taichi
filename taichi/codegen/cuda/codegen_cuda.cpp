@@ -23,12 +23,12 @@ using namespace llvm;
 // NVVM IR Spec:
 // https://docs.nvidia.com/cuda/archive/10.0/pdf/NVVM_IR_Specification.pdf
 
-class ModuleCodeGenCUDA : public ModuleCodeGenLLVM {
+class TaskCodeGenCUDA : public TaskCodeGenLLVM {
  public:
   using IRVisitor::visit;
 
-  ModuleCodeGenCUDA(Kernel *kernel, IRNode *ir = nullptr)
-      : ModuleCodeGenLLVM(kernel, ir) {
+  TaskCodeGenCUDA(Kernel *kernel, IRNode *ir = nullptr)
+      : TaskCodeGenLLVM(kernel, ir) {
   }
 
   llvm::Value *create_print(std::string tag,
@@ -627,7 +627,7 @@ class ModuleCodeGenCUDA : public ModuleCodeGenLLVM {
 
   void visit(ExternalFuncCallStmt *stmt) override {
     if (stmt->type == ExternalFuncCallStmt::BITCODE) {
-      ModuleCodeGenLLVM::visit_call_bitcode(stmt);
+      TaskCodeGenLLVM::visit_call_bitcode(stmt);
     } else {
       TI_NOT_IMPLEMENTED
     }
@@ -644,7 +644,7 @@ class ModuleCodeGenCUDA : public ModuleCodeGenLLVM {
   void visit(BinaryOpStmt *stmt) override {
     auto op = stmt->op_type;
     if (op != BinaryOpType::atan2 && op != BinaryOpType::pow) {
-      return ModuleCodeGenLLVM::visit(stmt);
+      return TaskCodeGenLLVM::visit(stmt);
     }
 
     auto ret_type = stmt->ret_type;
@@ -699,9 +699,9 @@ class ModuleCodeGenCUDA : public ModuleCodeGenLLVM {
 
 #ifdef TI_WITH_LLVM
 // static
-std::unique_ptr<ModuleCodeGenLLVM> KernelCodeGenCUDA::make_codegen_llvm(Kernel *kernel,
+std::unique_ptr<TaskCodeGenLLVM> KernelCodeGenCUDA::make_codegen_llvm(Kernel *kernel,
                                                             IRNode *ir) {
-  return std::make_unique<ModuleCodeGenCUDA>(kernel, ir);
+  return std::make_unique<TaskCodeGenCUDA>(kernel, ir);
 }
 #endif  // TI_WITH_LLVM
 
@@ -746,7 +746,7 @@ FunctionType KernelCodeGenCUDA::codegen() {
     kernel->lower(/*to_executable=*/false);
   }
 
-  ModuleCodeGenCUDA gen(kernel, ir);
+  TaskCodeGenCUDA gen(kernel, ir);
   auto compiled_res = gen.run_compilation();
 
   CUDAModuleToFunctionConverter converter{gen.tlctx,
@@ -823,7 +823,7 @@ FunctionType CUDAModuleToFunctionConverter::convert(
 
         } else if (arr_sz > 0) {
           // arg_buffers[i] is a DeviceAllocation*
-          // TODO: Unwraps DeviceAllocation* can be done at ModuleCodeGenLLVM since
+          // TODO: Unwraps DeviceAllocation* can be done at TaskCodeGenLLVM since
           // it's shared by cpu and cuda.
           DeviceAllocation *ptr =
               static_cast<DeviceAllocation *>(arg_buffers[i]);

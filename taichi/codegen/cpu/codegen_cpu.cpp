@@ -15,12 +15,12 @@ TLANG_NAMESPACE_BEGIN
 
 namespace {
 
-class ModuleCodeGenCPU : public ModuleCodeGenLLVM {
+class TaskCodeGenCPU : public TaskCodeGenLLVM {
  public:
   using IRVisitor::visit;
 
-  ModuleCodeGenCPU(Kernel *kernel, IRNode *ir)
-      : ModuleCodeGenLLVM(kernel, ir, nullptr) {
+  TaskCodeGenCPU(Kernel *kernel, IRNode *ir)
+      : TaskCodeGenLLVM(kernel, ir, nullptr) {
     TI_AUTO_PROF
   }
 
@@ -212,9 +212,9 @@ class ModuleCodeGenCPU : public ModuleCodeGenLLVM {
 
   void visit(ExternalFuncCallStmt *stmt) override {
     if (stmt->type == ExternalFuncCallStmt::BITCODE) {
-      ModuleCodeGenLLVM::visit_call_bitcode(stmt);
+      TaskCodeGenLLVM::visit_call_bitcode(stmt);
     } else if (stmt->type == ExternalFuncCallStmt::SHARED_OBJECT) {
-      ModuleCodeGenLLVM::visit_call_shared_object(stmt);
+      TaskCodeGenLLVM::visit_call_shared_object(stmt);
     } else {
       TI_NOT_IMPLEMENTED
     }
@@ -225,9 +225,9 @@ class ModuleCodeGenCPU : public ModuleCodeGenLLVM {
 
 #ifdef TI_WITH_LLVM
 // static
-std::unique_ptr<ModuleCodeGenLLVM> KernelCodeGenCPU::make_codegen_llvm(Kernel *kernel,
+std::unique_ptr<TaskCodeGenLLVM> KernelCodeGenCPU::make_codegen_llvm(Kernel *kernel,
                                                            IRNode *ir) {
-  return std::make_unique<ModuleCodeGenCPU>(kernel, ir);
+  return std::make_unique<TaskCodeGenCPU>(kernel, ir);
 }
 
 FunctionType CPUModuleToFunctionConverter::convert(
@@ -276,7 +276,7 @@ FunctionType CPUModuleToFunctionConverter::convert(
 
 LLVMCompiledData KernelCodeGenCPU::modulegen(std::unique_ptr<llvm::Module> &&module,
                                        OffloadedStmt *stmt) {
-  ModuleCodeGenCPU gen(kernel, stmt);
+  TaskCodeGenCPU gen(kernel, stmt);
   return gen.run_compilation();
 }
 #endif  // TI_WITH_LLVM

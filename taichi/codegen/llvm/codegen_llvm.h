@@ -15,22 +15,22 @@
 namespace taichi {
 namespace lang {
 
-class ModuleCodeGenLLVM;
+class TaskCodeGenLLVM;
 
 class FunctionCreationGuard {
  public:
-  ModuleCodeGenLLVM *mb;
+  TaskCodeGenLLVM *mb;
   llvm::Function *old_func;
   llvm::Function *body;
   llvm::BasicBlock *old_entry, *allocas, *entry, *old_final, *final;
   llvm::IRBuilder<>::InsertPoint ip;
 
-  FunctionCreationGuard(ModuleCodeGenLLVM *mb, std::vector<llvm::Type *> arguments);
+  FunctionCreationGuard(TaskCodeGenLLVM *mb, std::vector<llvm::Type *> arguments);
 
   ~FunctionCreationGuard();
 };
 
-class ModuleCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
+class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
  public:
   Kernel *kernel;
   IRNode *ir;
@@ -65,7 +65,7 @@ class ModuleCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   using IRVisitor::visit;
   using LLVMModuleBuilder::call;
 
-  ModuleCodeGenLLVM(Kernel *kernel,
+  TaskCodeGenLLVM(Kernel *kernel,
               IRNode *ir = nullptr,
               std::unique_ptr<llvm::Module> &&module = nullptr);
 
@@ -387,7 +387,7 @@ class ModuleCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   llvm::Value *bitcast_from_u64(llvm::Value *val, DataType type);
   llvm::Value *bitcast_to_u64(llvm::Value *val, DataType type);
 
-  ~ModuleCodeGenLLVM() override = default;
+  ~TaskCodeGenLLVM() override = default;
 };
 
 }  // namespace lang

@@ -19,14 +19,14 @@ constexpr std::array<const char *, 5> kPreloadedFuncNames = {
     "wasm_set_kernel_parameter_f32", "wasm_set_print_buffer", "wasm_print"};
 }
 
-class ModuleCodeGenWASM : public ModuleCodeGenLLVM {
+class TaskCodeGenWASM : public TaskCodeGenLLVM {
  public:
   using IRVisitor::visit;
 
-  ModuleCodeGenWASM(Kernel *kernel,
+  TaskCodeGenWASM(Kernel *kernel,
                   IRNode *ir,
                   std::unique_ptr<llvm::Module> &&M = nullptr)
-      : ModuleCodeGenLLVM(kernel, ir, std::move(M)) {
+      : TaskCodeGenLLVM(kernel, ir, std::move(M)) {
     TI_AUTO_PROF
   }
 
@@ -244,7 +244,7 @@ class ModuleCodeGenWASM : public ModuleCodeGenLLVM {
 
 FunctionType KernelCodeGenWASM::codegen() {
   TI_AUTO_PROF
-  ModuleCodeGenWASM gen(kernel, ir);
+  TaskCodeGenWASM gen(kernel, ir);
   auto res = gen.run_compilation();
   gen.tlctx->add_module(std::move(res.module));
   auto kernel_symbol = gen.tlctx->lookup_function_pointer(res.tasks[0].name);
@@ -259,7 +259,7 @@ LLVMCompiledData KernelCodeGenWASM::modulegen(std::unique_ptr<llvm::Module> &&mo
                                         OffloadedStmt *stmt) {
   bool init_flag = module == nullptr;
   std::vector<OffloadedTask> name_list;
-  auto gen = std::make_unique<ModuleCodeGenWASM>(kernel, ir, std::move(module));
+  auto gen = std::make_unique<TaskCodeGenWASM>(kernel, ir, std::move(module));
 
   name_list.emplace_back(nullptr);
   name_list[0].name = gen->init_taichi_kernel_function();

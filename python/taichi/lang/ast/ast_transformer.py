@@ -427,9 +427,12 @@ class ASTTransformer(Builder):
         func = node.func.ptr
         if id(func) in primitive_types.type_ids:
             if len(args) != 1 or keywords:
-                raise TaichiSyntaxError("A primitive type can only decorate a single expression.")
+                raise TaichiSyntaxError(
+                    "A primitive type can only decorate a single expression.")
             if is_taichi_class(args[0]):
-                raise TaichiSyntaxError("A primitive type cannot decorate an expression with a compound type.")
+                raise TaichiSyntaxError(
+                    "A primitive type cannot decorate an expression with a compound type."
+                )
             if isinstance(args[0], expr.Expr):
                 node.ptr = ti_ops.cast(args[0], func)
             else:

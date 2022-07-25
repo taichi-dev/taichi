@@ -50,7 +50,9 @@ def test_literal_compound_error():
 
     with pytest.raises(
             ti.TaichiSyntaxError,
-            match="A primitive type cannot decorate an expression with a compound type."):
+            match=
+            "A primitive type cannot decorate an expression with a compound type."
+    ):
         expr_error()
 
 

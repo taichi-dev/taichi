@@ -217,20 +217,23 @@ def test_numpy_struct_for():
 
 @test_utils.test()
 def test_numpy_op_with_matrix():
-    a = np.cos(0)
-    b = ti.Vector([1, 2])
-    c = np.array([0, 1])
-    x = a + b
-    y = c + b
-    assert isinstance(x, ti.Matrix) and isinstance(y, ti.Matrix)
+    scalar = np.cos(0)
+    arr = np.array([0, 1])
+    vec = ti.Vector([1, 2])
+    arr2d = np.array([[0, 1], [2, 3]])
+    mat = ti.Matrix([[0, 1], [2, 3]])
+
+    assert isinstance(scalar + vec, ti.Matrix) and isinstance(mat + arr2d, ti.Matrix)
 
     @ti.kernel
     def test():
-        x = a + b
+        x = scalar + vec
         assert all(x == [2.0, 3.0])
-        x = c + b
-        assert all(x == [1., 3.])
-        x = b + a
+        x = vec + scalar
         assert all(x == [2.0, 3.0])
+        x = arr + vec
+        assert all(x == [1.0, 3.0])
+        y = arr2d + mat
+        assert all(y == [[0, 2], [4, 6]])
 
     test()

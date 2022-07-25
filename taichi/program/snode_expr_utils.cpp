@@ -67,7 +67,8 @@ void place_child(Expr *expr_arg,
     (*snode_to_exprs)[glb_var_expr->snode] = glb_var_expr;
     child.dt = glb_var_expr->dt;
     if (parent->bit_struct_type_builder) {
-      child.id_in_bit_struct = parent->bit_struct_type_builder->add_member(child.dt);
+      child.id_in_bit_struct =
+          parent->bit_struct_type_builder->add_member(child.dt);
     }
     if (!offset.empty())
       child.set_index_offsets(offset);

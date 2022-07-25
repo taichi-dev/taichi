@@ -137,7 +137,7 @@ class SNode {
   std::unique_ptr<GradInfoProvider> grad_info{nullptr};
 
   std::unique_ptr<BitStructTypeBuilder> bit_struct_type_builder{nullptr};
-  int id_in_bit_struct{0};    // for children of bit_struct only
+  int id_in_bit_struct{0};  // for children of bit_struct only
 
   // is_bit_level=false: the SNode is not bitpacked
   // is_bit_level=true: the SNode is bitpacked (i.e., strictly inside bit_struct

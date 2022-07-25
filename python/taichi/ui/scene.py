@@ -131,7 +131,7 @@ class Scene:
                 Only available when `indices` is provided, which is the base index
                 within the index buffer.
             index_count: int type (otherwise float type will be floored to int),
-                only avaliable when `indices` is provided, which is the the number
+                Only available when `indices` is provided, which is the number
                 of vertices to draw.
         """
         if vertex_count is None:

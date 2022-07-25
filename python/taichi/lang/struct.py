@@ -653,7 +653,7 @@ class StructType(CompoundType):
         for index, pair in enumerate(items):
             name, dtype = pair
             if isinstance(dtype, CompoundType):
-                if index < len(args):            
+                if index < len(args):
                     d[name] = dtype(args[index])
                 else:
                     d[name] = kwargs.get(name, dtype(0))

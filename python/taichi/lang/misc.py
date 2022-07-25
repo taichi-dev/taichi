@@ -384,7 +384,7 @@ def init(arch=None,
             _ti_core.warn(
                 f'Environment variable TI_DEFAULT_IP={env_default_ip} overridden by ti.init argument "default_ip"'
             )
-        if env_default_ip == '32':
+        elif env_default_ip == '32':
             default_ip = i32
         elif env_default_ip == '64':
             default_ip = i64

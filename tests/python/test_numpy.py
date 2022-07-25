@@ -213,3 +213,20 @@ def test_numpy_struct_for():
     func2(n)
     for i, j, k in ti.ndrange(98, 76, 54):
         assert n[i, j, k] == i + j + k
+
+
+@test_utils.test()
+def test_numpy_op_with_matrix():
+    a = np.cos(1)
+    b = ti.Vector([1, 2])
+    c = np.array([0, 1])
+    x = a + b
+    y = c + b
+    assert isinstance(x, ti.lang.matrix.Matrix) and isinstance(y, ti.lang.matrix.Matrix)
+    @ti.kernel
+    def test():
+        x = a + b
+        x = c + b
+        x = b + a
+
+    test()

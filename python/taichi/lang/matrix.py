@@ -405,15 +405,6 @@ class Matrix(TaichiOperations):
     _is_taichi_class = True
     __array_priority__ = 1000
 
-    def __array_ufunc__(self, ufunc, method, *args, **kwargs):
-        """Make sure operations between a numpy ndarray and Taichi matrix always return a Matrix.
-        This function is called only when the first operand is a numpy ndarray.
-        """
-        if method == "__call__":
-            name = ufunc.__name__
-            return getattr(self, f"__{name}__")(args[0].tolist(), **kwargs)
-        raise NotImplemented
-
     def __init__(self, arr, dt=None, suppress_warning=False, is_ref=False):
         local_tensor_proxy = None
 

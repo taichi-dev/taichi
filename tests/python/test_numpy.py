@@ -218,13 +218,9 @@ def test_numpy_struct_for():
 @test_utils.test(debug=True)
 def test_numpy_op_with_matrix():
     scalar = np.cos(0)
-    arr = np.array([0, 1])
     vec = ti.Vector([1, 2])
-    arr2d = np.array([[0, 1], [2, 3]])
-    mat = ti.Matrix([[0, 1], [2, 3]])
-
     assert isinstance(scalar + vec, ti.Matrix) and isinstance(
-        mat + arr2d, ti.Matrix)
+        vec + scalar, ti.Matrix)
 
     @ti.kernel
     def test():
@@ -232,9 +228,5 @@ def test_numpy_op_with_matrix():
         assert all(x == [2.0, 3.0])
         x = vec + scalar
         assert all(x == [2.0, 3.0])
-        x = arr + vec
-        assert all(x == [1.0, 3.0])
-        y = arr2d + mat
-        assert all(y == [[0, 2], [4, 6]])
 
     test()

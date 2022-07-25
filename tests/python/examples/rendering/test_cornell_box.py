@@ -1,13 +1,10 @@
 import argparse
 
-import pytest
-
 import taichi as ti
 
 FRAMES = 200
 
 
-@pytest.mark.skipif(1, reason="Consume too much time, so skip it.")
 def test_cornell_box():
     from taichi.examples.rendering.cornell_box import render, tonemap
     for i in range(FRAMES):

@@ -1,7 +1,5 @@
 import random
 
-import pytest
-
 import taichi as ti
 from tests import test_utils
 
@@ -46,7 +44,6 @@ class MPMSolver:
             self.build_pid()
 
 
-@pytest.mark.skipif(1, reason="Consume too much time, so skip it.")
 @test_utils.test(require=ti.extension.sparse,
                  exclude=[ti.metal],
                  device_memory_GB=1.0)
@@ -56,7 +53,6 @@ def test_mpm_particle_list_no_leakage():
     mpm.step()
 
 
-@pytest.mark.skipif(1, reason="Consume too much time, so skip it.")
 @test_utils.test(require=[ti.extension.sparse, ti.extension.packed],
                  exclude=[ti.metal],
                  device_memory_GB=1.0,

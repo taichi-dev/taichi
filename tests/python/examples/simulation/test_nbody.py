@@ -1,13 +1,10 @@
 import argparse
 
-import pytest
-
 import taichi as ti
 
 FRAMES = 100
 
 
-@pytest.mark.skipif(1, reason="Consume too much time, so skip it.")
 def test_nbody():
     from taichi.examples.simulation.nbody import (compute_force, initialize,
                                                   substepping, update)

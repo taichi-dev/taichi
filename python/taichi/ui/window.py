@@ -30,10 +30,6 @@ class Window:
         package_path = str(pathlib.Path(__file__).parent.parent)
 
         ti_arch = default_cfg().arch
-        from taichi.lang.misc import opengl  # pylint: disable=import-outside-toplevel
-        if ti_arch == opengl:
-            raise RuntimeError("GGUI not supported on arch=opengl")
-
         is_packed = default_cfg().packed
         self.window = _ti_core.PyWindow(get_runtime().prog, name, res, vsync,
                                         show_window, package_path, ti_arch,

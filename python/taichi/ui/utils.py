@@ -99,6 +99,9 @@ def check_ggui_availability():
     """Checks if the `GGUI` environment is available.
     """
     if _ti_core.GGUI_AVAILABLE:
+        from taichi.lang.misc import opengl  # pylint: disable=import-outside-toplevel
+        if default_cfg().arch == opengl:
+            raise RuntimeError("GGUI not supported on arch=opengl")
         return
 
     try:

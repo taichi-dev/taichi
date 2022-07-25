@@ -11,9 +11,9 @@
 namespace taichi {
 namespace lang {
 
-class CodeGenWASM : public KernelCodeGen {
+class KernelCodeGenWASM : public KernelCodeGen {
  public:
-  CodeGenWASM(Kernel *kernel, IRNode *ir = nullptr)
+  KernelCodeGenWASM(Kernel *kernel, IRNode *ir = nullptr)
       : KernelCodeGen(kernel, ir) {
   }
 

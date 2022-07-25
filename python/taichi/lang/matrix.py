@@ -403,7 +403,7 @@ class Matrix(TaichiOperations):
         0
     """
     _is_taichi_class = True
-    __arrar_priority__ = 1000
+    __array_priority__ = 1000
 
     def __array_ufunc__(self, ufunc, method, *args, **kwargs):
         """Make sure operations between a numpy ndarray and Taichi matrix always return a Matrix.

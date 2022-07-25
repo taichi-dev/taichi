@@ -2,7 +2,7 @@ from taichi.lang.impl import ndarray
 from taichi.lang.kernel_impl import kernel
 from taichi.lang.matrix import Vector
 from taichi.types.annotations import template
-from taichi.types.primitive_types import f32, u32, u8
+from taichi.types.primitive_types import f32, u8, u32
 
 import taichi as ti
 
@@ -93,7 +93,7 @@ def copy_colors_to_vbo(vbo, colors):
 
 @ti.kernel
 def copy_image_f32_to_pack32_rgba(src: ti.template(), dst: ti.template(),
-                         num_components: ti.template()):
+                                  num_components: ti.template()):
     for i, j in src:
         pack = u32(0)
         for k in ti.static(range(num_components)):
@@ -109,7 +109,7 @@ def copy_image_f32_to_pack32_rgba(src: ti.template(), dst: ti.template(),
 
 @ti.kernel
 def copy_image_u8_to_pack32_rgba(src: ti.template(), dst: ti.template(),
-                        num_components: ti.template()):
+                                 num_components: ti.template()):
     for i, j in src:
         pack = u32(0)
         for k in ti.static(range(num_components)):

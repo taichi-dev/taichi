@@ -215,7 +215,7 @@ def test_numpy_struct_for():
         assert n[i, j, k] == i + j + k
 
 
-@test_utils.test()
+@test_utils.test(debug=True)
 def test_numpy_op_with_matrix():
     scalar = np.cos(0)
     arr = np.array([0, 1])

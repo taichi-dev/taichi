@@ -780,8 +780,7 @@ class Kernel:
             ret_dt = self.return_type
             has_ret = ret_dt is not None
 
-            if has_ret or (impl.current_cfg().async_mode
-                           and has_external_arrays):
+            if has_ret:
                 runtime_ops.sync()
 
             if has_ret:

@@ -1,6 +1,5 @@
 // Lists of extension features
 PER_EXTENSION(sparse)       // Sparse data structures
-PER_EXTENSION(async_mode)   // Asynchronous execution mode
 PER_EXTENSION(quant)        // Quantization
 PER_EXTENSION(mesh)         // MeshTaichi
 PER_EXTENSION(quant_basic)  // Basic operations in quantization

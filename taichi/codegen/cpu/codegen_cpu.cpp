@@ -291,7 +291,7 @@ FunctionType KernelCodeGenCPU::codegen() {
   auto &config = prog->config;
   std::string kernel_key = get_hashed_offline_cache_key(&config, kernel);
   kernel->set_kernel_key_for_cache(kernel_key);
-  if (config.offline_cache && !config.async_mode &&
+  if (config.offline_cache &&
       this->supports_offline_cache() && !kernel->is_evaluator) {
     std::vector<LLVMCompiledData> res;
     const bool ok = maybe_read_compilation_from_cache(kernel_key, res);

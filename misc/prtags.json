@@ -30,7 +30,6 @@
   "bug"             : "Bug fixes",
   "test"            : "Tests",
   "benchmark"       : "Benchmarking",
-  "async"           : "AsyncEngine",
   "mesh"            : "MeshTaichi",
   "workflow"        : "GitHub Actions/Workflows",
   "linux"           : "Linux",

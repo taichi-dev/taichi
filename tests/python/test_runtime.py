@@ -57,7 +57,6 @@ init_args = {
     'print_ir': [False, TF],
     'verbose': [True, TF],
     'fast_math': [True, TF],
-    'async_mode': [False, TF],
     'flatten_if': [False, TF],
     'simplify_before_lower_access': [True, TF],
     'simplify_after_lower_access': [True, TF],

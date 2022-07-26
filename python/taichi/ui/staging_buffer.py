@@ -88,7 +88,7 @@ def copy_colors_to_vbo(vbo, colors):
         raise Exception('colors can only be 3D/4D vector fields')
     copy_to_vbo(vbo, colors, 8, colors.n)
     if colors.n == 3:
-        fill_vbo(vbo, 1.0, 11, 1)
+        fill_vbo(vbo, ti.cast(1.0, ti.f32), 11, 1)
 
 
 @ti.kernel

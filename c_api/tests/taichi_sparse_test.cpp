@@ -2,7 +2,7 @@
 #include "c_api_test_utils.h"
 #include "taichi/taichi_core.h"
 
-static void field_aot_test(TiArch arch) {
+static void taichi_sparse_test(TiArch arch) {
   const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
 
   std::stringstream aot_mod_ss;
@@ -49,6 +49,6 @@ static void field_aot_test(TiArch arch) {
 TEST(CapiTaichiSparseTest, Cuda) {
   if (capi::utils::is_cuda_available()) {
     TiArch arch = TiArch::TI_ARCH_CUDA;
-    field_aot_test(arch);
+    taichi_sparse_test(arch);
   }
 }

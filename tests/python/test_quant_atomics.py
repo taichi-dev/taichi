@@ -17,7 +17,9 @@ def test_quant_int_atomics():
     y = ti.field(dtype=qi5)
     z = ti.field(dtype=qu2)
 
-    ti.root.bit_struct(num_bits=32).place(x, y, z)
+    bitpack = ti.BitpackedFields(max_num_bits=32)
+    bitpack.place(x, y, z)
+    ti.root.place(bitpack)
 
     x[None] = 3
     y[None] = 2
@@ -74,7 +76,9 @@ def test_quant_fixed_atomics():
     x = ti.field(dtype=qfxt13)
     y = ti.field(dtype=qfxt19)
 
-    ti.root.bit_struct(num_bits=32).place(x, y)
+    bitpack = ti.BitpackedFields(max_num_bits=32)
+    bitpack.place(x, y)
+    ti.root.place(bitpack)
 
     @ti.kernel
     def foo():

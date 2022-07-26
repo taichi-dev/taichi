@@ -181,8 +181,8 @@ inline TypedConstant get_min_value(DataType dt) {
 
 class BitStructTypeBuilder {
  public:
-  explicit BitStructTypeBuilder(PrimitiveType *physical_type)
-      : physical_type_(physical_type) {
+  explicit BitStructTypeBuilder(int max_num_bits) {
+      physical_type_ = TypeFactory::get_instance().get_primitive_int_type(max_num_bits);
   }
 
   int add_member(Type *member_type) {
@@ -225,7 +225,7 @@ class BitStructTypeBuilder {
     is_placing_shared_exponent_ = false;
   }
 
-  Type *build() const {
+  BitStructType *build() const {
     return TypeFactory::get_instance().get_bit_struct_type(
         physical_type_, member_types_, member_bit_offsets_,
         member_owns_shared_exponents_, member_exponents_,

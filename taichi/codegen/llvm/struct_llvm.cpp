@@ -85,7 +85,6 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
                   "bit_struct physical type must be at least 32 bits on "
                   "non-CPU backends.");
     }
-    snode.dt = snode.bit_struct_type_builder->build();
     body_type = tlctx_->get_data_type(snode.physical_type);
   } else if (type == SNodeType::quant_array) {
     // A quant array SNode should have only one child

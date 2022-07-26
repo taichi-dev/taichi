@@ -20,6 +20,7 @@ using SNodeGlobalVarExprMap =
 
 void place_child(Expr *expr_arg,
                  const std::vector<int> &offset,
+                 int id_in_bit_struct,
                  SNode *parent,
                  SNodeGlobalVarExprMap *snode_to_exprs);
 

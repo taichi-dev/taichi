@@ -11,7 +11,9 @@ def test_quant_fixed():
     qfxt = ti.types.quant.fixed(frac=32, range=2)
     x = ti.field(dtype=qfxt)
 
-    ti.root.bit_struct(num_bits=32).place(x)
+    bitpack = ti.BitpackedFields(max_num_bits=32)
+    bitpack.place(x)
+    ti.root.place(bitpack)
 
     @ti.kernel
     def foo():
@@ -33,10 +35,12 @@ def test_quant_fixed_matrix_rotation():
 
     x = ti.Matrix.field(2, 2, dtype=qfxt)
 
-    ti.root.bit_struct(num_bits=32).place(x.get_scalar_field(0, 0),
-                                          x.get_scalar_field(0, 1))
-    ti.root.bit_struct(num_bits=32).place(x.get_scalar_field(1, 0),
-                                          x.get_scalar_field(1, 1))
+    bitpack = ti.BitpackedFields(max_num_bits=32)
+    bitpack.place(x.get_scalar_field(0, 0), x.get_scalar_field(0, 1))
+    ti.root.place(bitpack)
+    bitpack = ti.BitpackedFields(max_num_bits=32)
+    bitpack.place(x.get_scalar_field(1, 0), x.get_scalar_field(1, 1))
+    ti.root.place(bitpack)
 
     x[None] = [[1.0, 0.0], [0.0, 1.0]]
 
@@ -60,7 +64,9 @@ def test_quant_fixed_implicit_cast():
     qfxt = ti.types.quant.fixed(frac=13, scale=0.1)
     x = ti.field(dtype=qfxt)
 
-    ti.root.bit_struct(num_bits=32).place(x)
+    bitpack = ti.BitpackedFields(max_num_bits=32)
+    bitpack.place(x)
+    ti.root.place(bitpack)
 
     @ti.kernel
     def foo():
@@ -75,7 +81,9 @@ def test_quant_fixed_cache_read_only():
     qfxt = ti.types.quant.fixed(frac=15, scale=0.1)
     x = ti.field(dtype=qfxt)
 
-    ti.root.bit_struct(num_bits=32).place(x)
+    bitpack = ti.BitpackedFields(max_num_bits=32)
+    bitpack.place(x)
+    ti.root.place(bitpack)
 
     @ti.kernel
     def test(data: ti.f32):

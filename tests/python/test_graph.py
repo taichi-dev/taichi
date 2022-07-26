@@ -307,3 +307,69 @@ def test_arg_int(dt):
     graph = builder.compile()
     graph.run({"mat": 1234, 'b': k})
     assert k.to_numpy()[0] == 1234
+
+
+@test_utils.test(arch=ti.vulkan)
+def test_texture():
+    res = (256, 256)
+
+    @ti.kernel
+    def make_texture(tex: ti.types.rw_texture(num_dimensions=2,
+                                              num_channels=1,
+                                              channel_format=ti.f32,
+                                              lod=0)):
+        for i, j in ti.ndrange(128, 128):
+            tex.store(ti.Vector([i, j]), ti.Vector([0.1, 0.0, 0.0, 0.0]))
+
+    @ti.kernel
+    def paint(t: ti.f32, pixels: ti.types.ndarray(field_dim=2),
+              tex: ti.types.texture(num_dimensions=2)):
+        for i, j in pixels:
+            uv = ti.Vector([i / res[0], j / res[1]])
+            warp_uv = uv + ti.Vector(
+                [ti.cos(t + uv.x * 5.0),
+                 ti.sin(t + uv.y * 5.0)]) * 0.1
+            c = ti.math.vec4(0.0)
+            if uv.x > 0.5:
+                c = tex.sample_lod(warp_uv, 0.0)
+            else:
+                c = tex.fetch(ti.cast(warp_uv * 128, ti.i32), 0)
+            pixels[i, j] = [c.r, c.r, c.r, 1.0]
+
+    _t = ti.graph.Arg(ti.graph.ArgKind.SCALAR, 't', ti.f32)
+    _pixels_arr = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
+                               'pixels_arr',
+                               ti.f32,
+                               field_dim=2,
+                               element_shape=(4, ))
+
+    _rw_tex = ti.graph.Arg(ti.graph.ArgKind.RWTEXTURE,
+                           'rw_tex',
+                           channel_format=ti.f32,
+                           shape=(128, 128),
+                           num_channels=1)
+    _tex = ti.graph.Arg(ti.graph.ArgKind.TEXTURE,
+                        'tex',
+                        channel_format=ti.f32,
+                        shape=(128, 128),
+                        num_channels=1)
+
+    g_builder = ti.graph.GraphBuilder()
+    g_builder.dispatch(make_texture, _rw_tex)
+    g_builder.dispatch(paint, _t, _pixels_arr, _tex)
+    g = g_builder.compile()
+
+    pixels_arr = ti.Vector.ndarray(4, dtype=float, shape=res)
+    texture = ti.Texture(ti.f32, 1, (128, 128))
+    t = 1
+
+    g.run({
+        'rw_tex': texture,
+        't': t,
+        'pixels_arr': pixels_arr,
+        'tex': texture
+    })
+    pixels = pixels_arr.to_numpy()
+    for i in range(res[0]):
+        for j in range(res[1]):
+            assert test_utils.allclose(pixels[i, j], [0.1, 0.1, 0.1, 1.])

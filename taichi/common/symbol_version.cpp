@@ -3,6 +3,8 @@
     The use of this software is governed by the LICENSE file.
 *******************************************************************************/
 
+#include "taichi/common/platform_macros.h"
+
 #if defined(TI_PLATFORM_WINDOWS)
 #include "taichi/platform/windows/windows.h"
 #else

@@ -728,6 +728,13 @@ static void set_arg_external_array(RuntimeContext *ctx,
                                    : RuntimeContext::DevAllocType::kNone);
 }
 
+LLVMCompiledData KernelCodeGenCUDA::modulegen(
+    std::unique_ptr<llvm::Module> &&module,
+    OffloadedStmt *stmt) {
+  TaskCodeGenCUDA gen(kernel, stmt);
+  return gen.run_compilation();
+}
+
 FunctionType KernelCodeGenCUDA::codegen() {
   TI_AUTO_PROF
   // TODO: move the offline cache part to the base class
@@ -807,7 +814,8 @@ FunctionType CUDAModuleToFunctionConverter::convert(
       tlctx_->mark_function_as_cuda_kernel(func, task.block_dim);
     }
     auto jit = tlctx_->jit.get();
-    cuda_modules.push_back(jit->add_module(std::move(mod), executor_->get_config()->gpu_max_reg));
+    cuda_modules.push_back(
+        jit->add_module(std::move(mod), executor_->get_config()->gpu_max_reg));
     offloaded_tasks.push_back(std::move(tasks));
   }
 
@@ -884,7 +892,7 @@ FunctionType CUDAModuleToFunctionConverter::convert(
         TI_TRACE("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
                  task.block_dim);
         cuda_modules[i]->launch(task.name, task.grid_dim, task.block_dim, 0,
-                            {&context});
+                                {&context});
       }
     }
 

@@ -1084,10 +1084,13 @@ void export_lang(py::module &m) {
   py::class_<BitStructType>(m, "BitStructType");
   py::class_<BitStructTypeBuilder>(m, "BitStructTypeBuilder")
       .def(py::init<int>())
-      .def("begin_placing_shared_exponent", &BitStructTypeBuilder::begin_placing_shared_exponent)
-      .def("end_placing_shared_exponent", &BitStructTypeBuilder::end_placing_shared_exponent)
+      .def("begin_placing_shared_exponent",
+           &BitStructTypeBuilder::begin_placing_shared_exponent)
+      .def("end_placing_shared_exponent",
+           &BitStructTypeBuilder::end_placing_shared_exponent)
       .def("add_member", &BitStructTypeBuilder::add_member)
-      .def("build", &BitStructTypeBuilder::build, py::return_value_policy::reference);
+      .def("build", &BitStructTypeBuilder::build,
+           py::return_value_policy::reference);
 
   m.def("decl_tensor_type",
         [&](std::vector<int> shape, const DataType &element_type) {

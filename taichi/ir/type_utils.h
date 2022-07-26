@@ -182,7 +182,8 @@ inline TypedConstant get_min_value(DataType dt) {
 class BitStructTypeBuilder {
  public:
   explicit BitStructTypeBuilder(int max_num_bits) {
-      physical_type_ = TypeFactory::get_instance().get_primitive_int_type(max_num_bits);
+    physical_type_ =
+        TypeFactory::get_instance().get_primitive_int_type(max_num_bits);
   }
 
   int add_member(Type *member_type) {

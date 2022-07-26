@@ -131,7 +131,9 @@ class SNode:
         for arg in args:
             if isinstance(arg, BitpackedFields):
                 bit_struct_type = arg.bit_struct_type_builder.build()
-                bit_struct_snode = self.ptr.bit_struct(bit_struct_type, impl.current_cfg().packed)
+                bit_struct_snode = self.ptr.bit_struct(
+                    bit_struct_type,
+                    impl.current_cfg().packed)
                 for (field, id_in_bit_struct) in arg.fields:
                     bit_struct_snode.place(field, offset, id_in_bit_struct)
             elif isinstance(arg, Field):

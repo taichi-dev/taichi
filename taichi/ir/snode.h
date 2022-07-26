@@ -137,7 +137,7 @@ class SNode {
 
   // Quant
   PrimitiveType *physical_type{nullptr};  // for bit_struct and quant_array only
-  int id_in_bit_struct{-1};  // for children of bit_struct only
+  int id_in_bit_struct{-1};               // for children of bit_struct only
   bool is_bit_level{false};  // true if inside bit_struct or quant_array
 
   // Whether the path from root to |this| contains only `dense` SNodes.

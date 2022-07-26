@@ -1118,7 +1118,7 @@ class ASTTransformer(Builder):
                 "'else' clause for 'while' not supported in Taichi kernels")
 
         with ctx.loop_scope_guard():
-            ctx.ast_builder.begin_frontend_while(expr.Expr(1).ptr)
+            ctx.ast_builder.begin_frontend_while(expr.Expr(1, dtype=primitive_types.i32).ptr)
             while_cond = build_stmt(ctx, node.test)
             impl.begin_frontend_if(ctx.ast_builder, while_cond)
             ctx.ast_builder.begin_frontend_if_true()

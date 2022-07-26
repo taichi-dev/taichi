@@ -23,7 +23,6 @@ class IRNodeComparator : public IRVisitor {
   // GlobalLoadStmt, RandStmt, etc.).
   bool check_same_value_;
 
-
  public:
   bool same;
 

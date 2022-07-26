@@ -153,7 +153,6 @@ class TI_DLL_EXPORT Program {
 
   StreamSemaphore flush();
 
-
   /**
    * Materializes the runtime.
    */

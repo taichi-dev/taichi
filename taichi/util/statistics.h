@@ -2,7 +2,7 @@
 
 #include "taichi/common/core.h"
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 class Statistics {
  public:
@@ -27,4 +27,4 @@ class Statistics {
 
 extern Statistics stat;
 
-TI_NAMESPACE_END
+}  // namespace taichi

@@ -11,8 +11,9 @@ target_sources(metal_codegen
 target_include_directories(metal_codegen
   PRIVATE
     ${PROJECT_SOURCE_DIR}
-    ${PROJECT_SOURCE_DIR}/external/eigen
     ${LLVM_INCLUDE_DIRS}
+  PUBLIC
+    ${PROJECT_SOURCE_DIR}/external/eigen
   )
 
 target_link_libraries(metal_codegen PRIVATE taichi_util)

@@ -10,7 +10,7 @@ target_sources(taichi_common
   )
 
 target_include_directories(taichi_common
-  PUBLIC #TODO: do we really need to expose spdlog headers?
+  PUBLIC
     ${PROJECT_SOURCE_DIR}/external/spdlog/include
   PRIVATE
     ${PROJECT_SOURCE_DIR}

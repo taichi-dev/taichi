@@ -6,8 +6,7 @@
 
 #include "taichi/common/core.h"
 
-TI_NAMESPACE_BEGIN
-
+namespace taichi {
 namespace bit {
 
 TI_FORCE_INLINE constexpr bool is_power_of_two(int32 x) {
@@ -202,5 +201,4 @@ class Bitset {
 };
 
 }  // namespace bit
-
-TI_NAMESPACE_END
+}  // namespace taichi

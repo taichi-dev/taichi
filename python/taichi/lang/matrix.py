@@ -403,6 +403,7 @@ class Matrix(TaichiOperations):
         0
     """
     _is_taichi_class = True
+    __array_priority__ = 1000
 
     def __init__(self, arr, dt=None, suppress_warning=False, is_ref=False):
         local_tensor_proxy = None

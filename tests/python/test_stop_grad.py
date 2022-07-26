@@ -21,7 +21,7 @@ def test_normal_grad():
     for i in range(n):
         x[i] = i
 
-    with ti.Tape(loss):
+    with ti.ad.Tape(loss):
         func()
 
     for i in range(n):
@@ -48,7 +48,7 @@ def test_stop_grad():
     for i in range(n):
         x[i] = i
 
-    with ti.Tape(loss):
+    with ti.ad.Tape(loss):
         func()
 
     for i in range(n):
@@ -78,7 +78,7 @@ def test_stop_grad2():
     for i in range(n):
         x[i] = i
 
-    with ti.Tape(loss):
+    with ti.ad.Tape(loss):
         func()
 
     # If without stop, grad x.grad[i] = i * 4

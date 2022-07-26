@@ -30,7 +30,7 @@ void autograd() {
           energy += c[i]
 
   init()
-  with ti.Tape(energy):
+  with ti.ad.Tape(energy):
       cal()
       support()
 

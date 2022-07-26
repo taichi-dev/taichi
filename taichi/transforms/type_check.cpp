@@ -423,6 +423,13 @@ class TypeCheck : public IRVisitor {
     stmt->ret_type.set_is_pointer(true);
     stmt->ret_type = TypeFactory::create_vector_or_scalar_type(
         stmt->base_ptrs.size(), stmt->base_ptrs[0]->ret_type);
+    for (int i = 0; i < stmt->indices.size(); i++) {
+      TI_ASSERT(is_integral(stmt->indices[i]->ret_type));
+      if (stmt->indices[i]->ret_type != PrimitiveType::i32) {
+        stmt->indices[i] =
+            insert_type_cast_before(stmt, stmt->indices[i], PrimitiveType::i32);
+      }
+    }
   }
 
   void visit(LoopIndexStmt *stmt) override {

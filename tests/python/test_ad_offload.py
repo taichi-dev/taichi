@@ -17,7 +17,7 @@ def test_offload_order():
         # for i in x:
         #     z[None] += y[i]
 
-    with ti.Tape(z):
+    with ti.ad.Tape(z):
         forward()
 
     # for i in range(n):

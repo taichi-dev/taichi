@@ -89,12 +89,6 @@ void compile_to_offloads(IRNode *ir,
   }
 
   if (autodiff_mode != AutodiffMode::kNone) {
-    // Check whether the kernel obeys the autodiff limitation e.g., gloabl data
-    // access rule
-    bool is_valid = irpass::differentiation_validation_check(ir, config);
-    std::cout << "is " << kernel->name << " obey GDAR: " << is_valid
-              << std::endl;
-
     // Remove local atomics here so that we don't have to handle their gradients
     irpass::demote_atomics(ir, config);
 
@@ -105,6 +99,14 @@ void compile_to_offloads(IRNode *ir,
     irpass::full_simplify(ir, config,
                           {false, /*autodiff_enabled*/ false, kernel->program});
     print("Gradient");
+    irpass::analysis::verify(ir);
+  }
+
+  if (config.debug || config.check_autodiff_valid) {
+    // Check whether the kernel obeys the autodiff limitation e.g., gloabl data
+    // access rule
+    irpass::differentiation_validation_check(ir, config);
+    print("Autodiff valid checked");
     irpass::analysis::verify(ir);
   }
 

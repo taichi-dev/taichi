@@ -1469,12 +1469,10 @@ class GloablDataAccessRuleChecker : public BasicStmtVisitor {
   }
 
   void visit(GlobalStoreStmt *stmt) override {
-    // std::cout << "GlobalStoreStmt: "<< stmt->id << " " << stmt << " val "<<
-    // stmt->val->id << " " << stmt->val << " dest "<< stmt->dest->id << " " <<
-    // stmt->dest << std::endl;
-    if (loaded_global_field_.find(stmt->dest) != loaded_global_field_.end()) {
-      is_valid_ = false;
-    }
+    bool loaded = false;
+    auto assert = Stmt::make<AssertStmt>(
+        loaded, "Breaks the global data access rule.", std::vector<Stmt *>());
+    stmt.insert_before(stmt, std::move(assert));
   }
 
   static bool run(IRNode *root) {

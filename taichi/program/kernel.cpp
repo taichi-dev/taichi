@@ -6,7 +6,6 @@
 #include "taichi/common/task.h"
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
-#include "taichi/program/async_engine.h"
 #include "taichi/program/extension.h"
 #include "taichi/program/program.h"
 #include "taichi/util/action_recorder.h"
@@ -110,33 +109,23 @@ void Kernel::lower(bool to_executable) {
 }
 
 void Kernel::operator()(LaunchContextBuilder &ctx_builder) {
-  if (!program->config.async_mode || this->is_evaluator) {
-    if (!compiled_) {
-      compile();
-    }
+  if (!compiled_) {
+    compile();
+  }
 
-    if (!this->from_offline_cache_) {
-      for (auto &offloaded : ir->as<Block>()->statements) {
-        account_for_offloaded(offloaded->as<OffloadedStmt>());
-      }
+  if (!this->from_offline_cache_) {
+    for (auto &offloaded : ir->as<Block>()->statements) {
+      account_for_offloaded(offloaded->as<OffloadedStmt>());
     }
+  }
 
-    compiled_(ctx_builder.get_context());
+  compiled_(ctx_builder.get_context());
 
-    program->sync = (program->sync && arch_is_cpu(arch));
-    // Note that Kernel::arch may be different from program.config.arch
-    if (program->config.debug && (arch_is_cpu(program->config.arch) ||
-                                  program->config.arch == Arch::cuda)) {
-      program->check_runtime_error();
-    }
-  } else {
-    program->sync = false;
-    program->async_engine->launch(this, ctx_builder.get_context());
-    // Note that Kernel::arch may be different from program.config.arch
-    if (program->config.debug && arch_is_cpu(arch) &&
-        arch_is_cpu(program->config.arch)) {
-      program->check_runtime_error();
-    }
+  program->sync = (program->sync && arch_is_cpu(arch));
+  // Note that Kernel::arch may be different from program.config.arch
+  if (program->config.debug && (arch_is_cpu(program->config.arch) ||
+                                program->config.arch == Arch::cuda)) {
+    program->check_runtime_error();
   }
 }
 

@@ -172,7 +172,7 @@ timeline_save = lambda fn: impl.get_runtime().prog.timeline_save(fn)  # pylint: 
 extension = _ti_core.Extension
 """An instance of Taichi extension.
 
-The list of currently available extensions is ['sparse', 'async_mode', 'quant', \
+The list of currently available extensions is ['sparse', 'quant', \
     'mesh', 'quant_basic', 'data64', 'adstack', 'bls', 'assertion', \
         'extfunc', 'packed', 'dynamic_index'].
 """
@@ -223,9 +223,9 @@ class _EnvironmentConfigurator:
 
         self.keys.append(key)
 
-        # TI_ASYNC=   : no effect
-        # TI_ASYNC=0  : False
-        # TI_ASYNC=1  : True
+        # TI_OFFLINE_CACHE=   : no effect
+        # TI_OFFLINE_CACHE=0  : False
+        # TI_OFFLINE_CACHE=1  : True
         name = 'TI_' + key.upper()
         value = os.environ.get(name, '')
         if key in self.kwargs:

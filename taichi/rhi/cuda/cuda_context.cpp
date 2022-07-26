@@ -78,9 +78,10 @@ void CUDAContext::launch(void *func,
                          unsigned grid_dim,
                          unsigned block_dim,
                          std::size_t dynamic_shared_mem_bytes) {
-  // It is important to keep a handle since in async mode
+  // It is important to keep a handle since in async mode (deleted)
   // a constant folding kernel may happen during a kernel launch
   // then profiler->start and profiler->stop mismatch.
+  // TODO: should we keep the handle?
 
   KernelProfilerBase::TaskHandle task_handle;
   // Kernel launch

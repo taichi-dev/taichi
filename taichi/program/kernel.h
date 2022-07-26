@@ -166,7 +166,7 @@ class TI_DLL_EXPORT Kernel : public Callable {
   std::unique_ptr<aot::Kernel> compiled_aot_kernel_{nullptr};
   // A flag to record whether |ir| has been fully lowered.
   // lower initial AST all the way down to a bunch of
-  // OffloadedStmt for async execution
+  // OffloadedStmt for async execution TODO(Lin): Check this comment
   bool lowered_{false};
   std::atomic<uint64> task_counter_{0};
   std::string kernel_key_;

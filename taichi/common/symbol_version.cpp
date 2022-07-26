@@ -4,6 +4,7 @@
 *******************************************************************************/
 
 #include "taichi/common/platform_macros.h"
+#include <math.h>
 
 #if defined(TI_PLATFORM_WINDOWS)
 #include "taichi/platform/windows/windows.h"

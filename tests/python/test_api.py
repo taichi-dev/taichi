@@ -86,7 +86,8 @@ user_api[ti] = [
     'sparse_matrix_builder', 'sqrt', 'static', 'static_assert', 'static_print',
     'stop_grad', 'svd', 'swizzle_generator', 'sym_eig', 'sync', 'tan', 'tanh',
     'template', 'tools', 'types', 'u16', 'u32', 'u64', 'u8', 'ui', 'uint16',
-    'uint32', 'uint64', 'uint8', 'vulkan', 'wasm', 'x64', 'x86_64', 'zero'
+    'uint32', 'uint64', 'uint8', 'vulkan', 'wasm', 'x64', 'x86_64', 'zero',
+    'get_compute_stream_device_time_elapsed_us'
 ]
 user_api[ti.ad] = [
     'FwdMode', 'Tape', 'clear_all_gradients', 'grad_for', 'grad_replaced',

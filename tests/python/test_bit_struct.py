@@ -169,3 +169,35 @@ def test_bit_struct_struct_for():
             assert x[i] == approx(i, abs=1e-3)
         else:
             assert x[i] == 0
+
+
+@test_utils.test(require=ti.extension.quant_basic, debug=True)
+def test_multiple_types():
+    f15 = ti.types.quant.float(exp=5, frac=10)
+    f18 = ti.types.quant.float(exp=5, frac=13)
+    u4 = ti.types.quant.int(bits=4, signed=False)
+
+    p = ti.field(dtype=f15)
+    q = ti.field(dtype=f18)
+    r = ti.field(dtype=u4)
+
+    cell = ti.root.dense(ti.i, 12).bit_struct(num_bits=32)
+    cell.place(p, q, shared_exponent=True)
+    cell.place(r)
+
+    @ti.kernel
+    def set_val():
+        for i in p:
+            p[i] = i * 3
+            q[i] = i * 2
+            r[i] = i
+
+    @ti.kernel
+    def verify_val():
+        for i in p:
+            assert p[i] == i * 3
+            assert q[i] == i * 2
+            assert r[i] == i
+
+    set_val()
+    verify_val()

@@ -11,7 +11,9 @@ def test_quant_float_unsigned():
     qflt = ti.types.quant.float(exp=6, frac=13, signed=False)
     x = ti.field(dtype=qflt)
 
-    ti.root.bit_struct(num_bits=32).place(x)
+    bitpack = ti.BitpackedFields(max_num_bits=32)
+    bitpack.place(x)
+    ti.root.place(bitpack)
 
     tests = [
         0, 1 / 1024, 1.75 / 1024, 0.25, 0.5, 0.75, 1, 2, 3, 4, 5, 6, 7, 128,
@@ -30,7 +32,9 @@ def test_quant_float_signed():
     qflt = ti.types.quant.float(exp=6, frac=13, signed=True)
     x = ti.field(dtype=qflt)
 
-    ti.root.bit_struct(num_bits=32).place(x)
+    bitpack = ti.BitpackedFields(max_num_bits=32)
+    bitpack.place(x)
+    ti.root.place(bitpack)
 
     tests = [0, 0.125, 0.5, 2, 4, 6, 7, 8, 9]
 
@@ -58,7 +62,9 @@ def test_quant_float_precision(digits_bits):
     qflt = ti.types.quant.float(exp=8, frac=digits_bits)
     x = ti.field(dtype=qflt)
 
-    ti.root.bit_struct(num_bits=32).place(x)
+    bitpack = ti.BitpackedFields(max_num_bits=32)
+    bitpack.place(x)
+    ti.root.place(bitpack)
 
     tests = [np.float32(np.pi), np.float32(np.pi * (1 << 100))]
 
@@ -79,7 +85,9 @@ def test_quant_float_truncation(signed):
     qflt = ti.types.quant.float(exp=5, frac=2, signed=signed)
     x = ti.field(dtype=qflt)
 
-    ti.root.bit_struct(num_bits=32).place(x)
+    bitpack = ti.BitpackedFields(max_num_bits=32)
+    bitpack.place(x)
+    ti.root.place(bitpack)
 
     # Sufficient digits
     for v in [1, 1.5]:
@@ -107,7 +115,9 @@ def test_quant_float_atomic_demotion():
     qflt = ti.types.quant.float(exp=5, frac=2)
     x = ti.field(dtype=qflt)
 
-    ti.root.bit_struct(num_bits=32).place(x)
+    bitpack = ti.BitpackedFields(max_num_bits=32)
+    bitpack.place(x)
+    ti.root.place(bitpack)
 
     @ti.kernel
     def foo():

@@ -1104,10 +1104,12 @@ class TaskCodegen : public IRVisitor {
           spv::OpControlBarrier,
           ir_->int_immediate_number(ir_->i32_type(), spv::ScopeWorkgroup),
           ir_->int_immediate_number(ir_->i32_type(), spv::ScopeWorkgroup),
-          ir_->int_immediate_number(ir_->i32_type(), spv::MemorySemanticsWorkgroupMemoryMask | spv::MemorySemanticsAcquireReleaseMask));
+          ir_->int_immediate_number(ir_->i32_type(), spv::MemorySemanticsWorkgroupMemoryMask | spv::MemorySemanticsAcquireReleaseMask | spv::MemorySemanticsSequentiallyConsistentMask));
       val = ir_->const_i32_zero_;
+    } else if (stmt->func_name == "localInvocationId") {
+      val = ir_->cast(ir_->i32_type(), ir_->get_local_invocation_id(0));
     } else if (stmt->func_name == "vkGlobalThreadIdx") {
-      val = ir_->get_global_invocation_id(0);
+      val = ir_->cast(ir_->i32_type(), ir_->get_global_invocation_id(0));
     } else if (stmt->func_name == "workgroupMemoryBarrier") {
       ir_->make_inst(
           spv::OpMemoryBarrier,

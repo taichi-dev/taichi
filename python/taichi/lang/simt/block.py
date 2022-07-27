@@ -16,6 +16,10 @@ def mem_sync():
     elif impl.get_runtime().prog.config.arch == _ti_core.vulkan:
         return impl.call_internal("workgroupMemoryBarrier", with_runtime_context=False)
 
+def thread_idx():
+    if impl.get_runtime().prog.config.arch == _ti_core.vulkan:
+        return impl.call_internal("localInvocationId", with_runtime_context=False)
+
 def global_thread_idx():
     if impl.get_runtime().prog.config.arch == _ti_core.vulkan:
         return impl.call_internal("vkGlobalThreadIdx", with_runtime_context=False)

@@ -18,6 +18,5 @@ target_link_libraries(llvm_program_impl PRIVATE llvm_codegen)
 
 target_link_libraries(llvm_program_impl PRIVATE cpu_runtime)
 if (TI_WITH_CUDA)
-    target_link_libraries(llvm_program_impl PRIVATE cuda_codegen)
     target_link_libraries(llvm_program_impl PRIVATE cuda_runtime)
 endif()

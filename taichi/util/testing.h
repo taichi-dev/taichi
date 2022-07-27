@@ -5,13 +5,11 @@
 
 #pragma once
 
-#include "taichi/common/core.h"
-
 #define BENCHMARK CATCH_BENCHMARK
 #include <catch.hpp>
 #undef BENCHMARK
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 #define TI_CHECK_EQUAL(A, B, tolerance)              \
   {                                                  \
@@ -37,4 +35,4 @@ TI_NAMESPACE_BEGIN
 
 int run_tests(std::vector<std::string> argv);
 
-TI_NAMESPACE_END
+}  // namespace taichi

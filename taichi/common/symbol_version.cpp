@@ -3,7 +3,8 @@
     The use of this software is governed by the LICENSE file.
 *******************************************************************************/
 
-#include "taichi/common/core.h"
+#include "taichi/common/platform_macros.h"
+#include <math.h>
 
 #if defined(TI_PLATFORM_WINDOWS)
 #include "taichi/platform/windows/windows.h"
@@ -12,8 +13,7 @@
 #include <unistd.h>
 #endif
 
-TI_NAMESPACE_BEGIN
-
+namespace taichi {
 extern "C" {
 #if defined(TI_PLATFORM_LINUX) && defined(TI_ARCH_x64)
 // Avoid dependency on higher glibc versions such as 2.27 or 2.29
@@ -57,5 +57,4 @@ float __wrap_pow(float x, float y) {
 }
 #endif
 }
-
-TI_NAMESPACE_END
+}  // namespace taichi

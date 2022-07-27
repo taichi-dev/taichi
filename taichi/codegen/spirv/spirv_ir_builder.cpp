@@ -1120,6 +1120,19 @@ Value IRBuilder::alloca_variable(const SType &type) {
   return ret;
 }
 
+Value IRBuilder::alloca_workgroup_array(const SType &arr_type) {
+  Value arr_ret = new_value(arr_type, ValueKind::kVariablePtr);
+  ib_.begin(spv::OpVariable)
+      .add_seq(arr_type, arr_ret, spv::StorageClassWorkgroup)
+      .commit(&global_);
+  SType ptr_type = get_pointer_type(arr_type, spv::StorageClassWorkgroup);
+  Value ret = new_value(ptr_type, ValueKind::kVariablePtr);
+  ib_.begin(spv::OpVariable)
+      .add_seq(ptr_type, ret, spv::StorageClassWorkgroup)
+      .commit(&global_);
+  return ret;
+}
+
 Value IRBuilder::load_variable(Value pointer, const SType &res_type) {
   TI_ASSERT(pointer.flag == ValueKind::kVariablePtr ||
             pointer.flag == ValueKind::kStructArrayPtr ||

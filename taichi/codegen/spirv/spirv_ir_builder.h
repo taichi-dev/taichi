@@ -461,6 +461,7 @@ class IRBuilder {
 
   // Local allocate, load, store methods
   Value alloca_variable(const SType &type);
+  Value alloca_workgroup_array(const SType &type);
   Value load_variable(Value pointer, const SType &res_type);
   void store_variable(Value pointer, Value value);
 

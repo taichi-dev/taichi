@@ -195,7 +195,9 @@ jobs:
             with_cc: OFF
             with_cpp_tests: ON
             wanted_archs: 'cpu'
-    runs-on: [self-hosted, ${{ matrix.os }}]
+    runs-on:
+    - self-hosted
+    - ${{ matrix.os }}
     env:
       PY: ${{ matrix.python }}
     steps:

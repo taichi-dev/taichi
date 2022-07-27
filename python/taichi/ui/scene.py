@@ -297,6 +297,9 @@ class Scene:
                 index_count = vertex_count
             else:
                 index_count = indices.shape[0]
+        if transforms and (transforms.m != 4 or transforms.n != 4):
+            print("Error! Transform matrix must be 4x4 shape")
+            exit()
         copy_normals_to_vbo(vbo, normals)
         vbo_info = get_field_info(vbo)
         indices_info = get_field_info(indices)

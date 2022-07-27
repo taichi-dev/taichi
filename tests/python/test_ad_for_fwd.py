@@ -351,3 +351,176 @@ def test_triple_for_loops_bls():
     for i in range(N - M):
         for k in range(N):
             assert f.dual[i, k] == 2 * M
+
+
+@test_utils.test(exclude=[ti.cc])
+def test_mixed_inner_loops():
+    x = ti.field(dtype=ti.f32, shape=(), needs_dual=True)
+    arr = ti.field(dtype=ti.f32, shape=(5))
+    loss = ti.field(dtype=ti.f32, shape=(), needs_dual=True)
+
+    @ti.kernel
+    def mixed_inner_loops():
+        for i in arr:
+            loss[None] += ti.sin(x[None])
+            for j in range(2):
+                loss[None] += ti.sin(x[None]) + 1.0
+
+    x[None] = 0.0
+    with ti.ad.FwdMode(loss=loss, parameters=x):
+        mixed_inner_loops()
+
+    assert loss[None] == 10.0
+    assert loss.dual[None] == 15.0
+
+
+@test_utils.test(exclude=[ti.cc])
+def test_inner_loops_local_variable():
+    x = ti.field(dtype=float, shape=(), needs_dual=True)
+    arr = ti.field(dtype=float, shape=(2), needs_dual=True)
+    loss = ti.field(dtype=float, shape=(), needs_dual=True)
+
+    @ti.kernel
+    def inner_loops_local_variable():
+        for i in arr:
+            for j in range(3):
+                s = 0.0
+                t = 0.0
+                for k in range(3):
+                    s += ti.sin(x[None]) + 1.0
+                    t += ti.sin(x[None])
+                loss[None] += s + t
+
+    x[None] = 0.0
+    with ti.ad.FwdMode(loss=loss, parameters=x):
+        inner_loops_local_variable()
+
+    assert loss[None] == 18.0
+    assert loss.dual[None] == 36.0
+
+
+@test_utils.test(exclude=[ti.cc])
+def test_more_inner_loops_local_variable():
+    x = ti.field(dtype=float, shape=(), needs_dual=True)
+    arr = ti.field(dtype=float, shape=(2), needs_dual=True)
+    loss = ti.field(dtype=float, shape=(), needs_dual=True)
+
+    @ti.kernel
+    def more_inner_loops_local_variable():
+        for i in arr:
+            for j in range(2):
+                s = 0.0
+                for k in range(3):
+                    u = 0.0
+                    s += ti.sin(x[None]) + 1.0
+                    for l in range(2):
+                        u += ti.sin(x[None])
+                    loss[None] += u
+                loss[None] += s
+
+    x[None] = 0.0
+    with ti.ad.FwdMode(loss=loss, parameters=x):
+        more_inner_loops_local_variable()
+
+    assert loss[None] == 12.0
+    assert loss.dual[None] == 36.0
+
+
+@test_utils.test(exclude=[ti.cc])
+def test_stacked_inner_loops_local_variable():
+    x = ti.field(dtype=float, shape=(), needs_dual=True)
+    arr = ti.field(dtype=float, shape=(2), needs_dual=True)
+    loss = ti.field(dtype=float, shape=(), needs_dual=True)
+
+    @ti.kernel
+    def stacked_inner_loops_local_variable():
+        for i in arr:
+            loss[None] += ti.sin(x[None])
+            for j in range(3):
+                s = 0.0
+                for k in range(3):
+                    s += ti.sin(x[None]) + 1.0
+                loss[None] += s
+            for j in range(3):
+                s = 0.0
+                for k in range(3):
+                    s += ti.sin(x[None]) + 1.0
+                loss[None] += s
+
+    x[None] = 0.0
+    with ti.ad.FwdMode(loss=loss, parameters=x):
+        stacked_inner_loops_local_variable()
+
+    assert loss[None] == 36.0
+    assert loss.dual[None] == 38.0
+
+
+@test_utils.test(exclude=[ti.cc])
+def test_stacked_mixed_ib_and_non_ib_inner_loops_local_variable():
+    x = ti.field(dtype=float, shape=(), needs_dual=True)
+    arr = ti.field(dtype=float, shape=(2), needs_dual=True)
+    loss = ti.field(dtype=float, shape=(), needs_dual=True)
+
+    @ti.kernel
+    def stacked_mixed_ib_and_non_ib_inner_loops_local_variable():
+        for i in arr:
+            loss[None] += ti.sin(x[None])
+            for j in range(3):
+                for k in range(3):
+                    loss[None] += ti.sin(x[None]) + 1.0
+            for j in range(3):
+                s = 0.0
+                for k in range(3):
+                    s += ti.sin(x[None]) + 1.0
+                loss[None] += s
+            for j in range(3):
+                for k in range(3):
+                    loss[None] += ti.sin(x[None]) + 1.0
+
+    x[None] = 0.0
+    with ti.ad.FwdMode(loss=loss, parameters=x):
+        stacked_mixed_ib_and_non_ib_inner_loops_local_variable()
+
+    assert loss[None] == 54.0
+    assert loss.dual[None] == 56.0
+
+
+@test_utils.test(exclude=[ti.cc])
+def test_large_for_loops_adaptive_stack_size():
+    x = ti.field(dtype=float, shape=(), needs_dual=True)
+    arr = ti.field(dtype=float, shape=(2), needs_dual=True)
+    loss = ti.field(dtype=float, shape=(), needs_dual=True)
+
+    @ti.kernel
+    def test_large_loop():
+        for i in range(5):
+            for j in range(2000):
+                for k in range(1000):
+                    loss[None] += ti.sin(x[None]) + 1.0
+
+    with ti.ad.FwdMode(loss=loss, parameters=x):
+        test_large_loop()
+
+    assert loss[None] == 1e7
+    assert loss.dual[None] == 1e7
+
+
+@test_utils.test(exclude=[ti.cc])
+def test_multiple_ib():
+    x = ti.field(float, (), needs_dual=True)
+    y = ti.field(float, (), needs_dual=True)
+
+    @ti.kernel
+    def compute_y():
+        for j in range(2):
+            for i in range(3):
+                y[None] += x[None]
+            for i in range(3):
+                y[None] += x[None]
+
+    x[None] = 1.0
+    with ti.ad.FwdMode(loss=y, parameters=x):
+        compute_y()
+
+    assert y[None] == 12.0
+    assert y.dual[None] == 12.0

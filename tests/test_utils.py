@@ -43,7 +43,7 @@ __aot_test_cases = {
 
 __capi_aot_test_cases = {
     "CapiTaichiSparseTest.Cuda":
-    [os.path.join('..', 'c_api', 'tests', 'taichi_sparse_test.py'), ""],
+    [os.path.join('cpp', 'aot', 'llvm', 'taichi_sparse_test.py'), ""],
     "CapiAotTest.CpuField":
     [os.path.join('cpp', 'aot', 'llvm', 'field_aot_test.py'), "--arch=cpu"],
     "CapiAotTest.CudaField":

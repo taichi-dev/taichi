@@ -236,6 +236,24 @@ class IRNodeComparator : public IRVisitor {
     basic_check(stmt);
   }
 
+  void visit(MatrixInitStmt *stmt) override {
+    basic_check(stmt);
+    if (!same)
+      return;
+    auto o = other_node_->as<MatrixInitStmt>();
+    if (stmt->values.size() != o->values.size()) {
+      same = false;
+      return;
+    }
+    for (int i = 0; i < stmt->values.size(); ++i) {
+      other_node_ = o->values[i];
+      stmt->values[i]->accept(this);
+      other_node_ = o;
+      if (!same)
+        return;
+    }
+  }
+
   void visit(IfStmt *stmt) override {
     basic_check(stmt);
     if (!same)

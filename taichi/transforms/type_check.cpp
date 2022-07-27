@@ -327,6 +327,10 @@ class TypeCheck : public IRVisitor {
       }
     }
 
+    if (stmt->lhs->ret_type->is<TensorType>()) {
+
+    }
+
     if (stmt->lhs->ret_type != stmt->rhs->ret_type) {
       DataType ret_type;
       if (is_shift_op(stmt->op_type)) {
@@ -555,6 +559,20 @@ class TypeCheck : public IRVisitor {
   void visit(ReferenceStmt *stmt) override {
     stmt->ret_type = stmt->var->ret_type;
     stmt->ret_type.set_is_pointer(true);
+  }
+
+  void visit(MatrixInitStmt *stmt) override {
+    TI_ASSERT_INFO(stmt->ret_type->is<TensorType>(), "Matrix should have tensor type, got {}", stmt->ret_type->to_string());
+    auto tensor_type = stmt->ret_type->as<TensorType>();
+    auto element_dtype = tensor_type->get_element_type();
+    for (auto elt : stmt->values) {
+      element_dtype = promoted_type(element_dtype, elt->ret_type);
+    }
+    for (int i = 0; i < stmt->values.size(); ++i) {
+      if (element_dtype != stmt->values[i]->ret_type) {
+        cast(stmt->values[i], element_dtype);
+      }
+    }
   }
 };
 

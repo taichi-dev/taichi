@@ -87,8 +87,9 @@ void auto_diff(IRNode *root,
  * Check whether the kernel obeys the autodiff limitation e.g., gloabl data
  * access rule
  */
-bool differentiation_validation_check(IRNode *root,
-                                      const CompileConfig &config);
+void differentiation_validation_check(IRNode *root,
+                                      const CompileConfig &config,
+                                      const std::string &kernel_name);
 
 /**
  * Determine all adaptive AD-stacks' size. This pass is idempotent, i.e.,

@@ -1473,14 +1473,12 @@ class GloablDataAccessRuleChecker : public BasicStmtVisitor {
     snodes[0] = snodes[0]->get_adjoint_loaded_flag();
     auto gloabl_ptr =
         stmt->insert_after_me(Stmt::make<GlobalPtrStmt>(snodes, src->indices));
-    auto create_flag = gloabl_ptr->insert_after_me(
+    auto one = gloabl_ptr->insert_after_me(
         Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(1)));
-    create_flag->insert_after_me(
-        Stmt::make<GlobalStoreStmt>(gloabl_ptr, create_flag));
+    one->insert_after_me(Stmt::make<GlobalStoreStmt>(gloabl_ptr, one));
   }
 
-  void visit(GlobalStoreStmt *stmt) override {
-    GlobalPtrStmt *dest = stmt->dest->as<GlobalPtrStmt>();
+  void visit_gloabl_store_stmt_and_atomic_add(Stmt *stmt, GlobalPtrStmt *dest) {
     TI_ASSERT(dest->width() == 1);
     auto snodes = dest->snodes;
     if (!snodes[0]->has_adjoint_loaded_flag()) {
@@ -1496,25 +1494,38 @@ class GloablDataAccessRuleChecker : public BasicStmtVisitor {
         Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(0)));
     auto check_equal = stmt->insert_before_me(
         Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_eq, global_load, zero));
-    stmt->insert_before_me(Stmt::make<AssertStmt>(
-        check_equal, "Breaks the global data access rule.",
-        std::vector<Stmt *>()));
+    std::string msg = fmt::format(
+        "(kernel={}) Breaks the global data access rule. Snode {} is "
+        "overwritten unexpectedly.",
+        kernel_name_, dest->snodes[0]->get_node_type_name());
+    stmt->insert_before_me(
+        Stmt::make<AssertStmt>(check_equal, msg, std::vector<Stmt *>()));
   }
 
-  static bool run(IRNode *root) {
+  void visit(GlobalStoreStmt *stmt) override {
+    GlobalPtrStmt *dest = stmt->dest->as<GlobalPtrStmt>();
+    visit_gloabl_store_stmt_and_atomic_add(stmt, dest);
+  }
+
+  void visit(AtomicOpStmt *stmt) override {
+    GlobalPtrStmt *dest = stmt->dest->as<GlobalPtrStmt>();
+    visit_gloabl_store_stmt_and_atomic_add(stmt, dest);
+  }
+
+  static void run(IRNode *root, const std::string &kernel_name) {
     GloablDataAccessRuleChecker checker;
+    checker.kernel_name_ = kernel_name;
     root->accept(&checker);
-    return checker.is_valid_;
   }
 
  private:
-  bool is_valid_ = true;
-  std::set<Stmt *> loaded_global_field_;
+  std::string kernel_name_;
 };
 
-bool differentiation_validation_check(IRNode *root,
-                                      const CompileConfig &config) {
-  return irpass::GloablDataAccessRuleChecker::run(root);
+void differentiation_validation_check(IRNode *root,
+                                      const CompileConfig &config,
+                                      const std::string &kernel_name) {
+  return irpass::GloablDataAccessRuleChecker::run(root, kernel_name);
 }
 }  // namespace irpass
 TLANG_NAMESPACE_END

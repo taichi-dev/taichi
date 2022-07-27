@@ -88,11 +88,11 @@ void compile_to_offloads(IRNode *ir,
     irpass::analysis::gather_meshfor_relation_types(ir);
   }
 
-  if ((config.debug || config.check_autodiff_valid) &&
+  if (config.debug && config.check_autodiff_valid &&
       autodiff_mode == AutodiffMode::kReverse) {
     // Check whether the kernel obeys the autodiff limitation e.g., gloabl data
     // access rule
-    irpass::differentiation_validation_check(ir, config);
+    irpass::differentiation_validation_check(ir, config, kernel->get_name());
     print("Autodiff valid checked");
     irpass::analysis::verify(ir);
   }

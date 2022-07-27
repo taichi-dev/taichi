@@ -85,7 +85,7 @@ jobs:
   build_and_test_cpu_linux:
     name: Build and Test linux (CPU)
     needs: check_files
-    timeout-minutes: 60
+    timeout-minutes: 90
     strategy:
       matrix:
         include:
@@ -183,7 +183,7 @@ jobs:
   build_and_test_cpu_mac:
     name: Build and Test macos (CPU)
     needs: check_files
-    timeout-minutes: 60
+    timeout-minutes: 90
     strategy:
       matrix:
         include:

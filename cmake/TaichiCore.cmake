@@ -196,6 +196,7 @@ target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/eigen)
 
 target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/FP16/include)
 
+target_link_options(${CORE_LIBRARY_NAME} PUBLIC -Wl,--exclude-libs=ALL)
 set(LIBRARY_NAME ${CORE_LIBRARY_NAME})
 
 # GLFW not available on Android

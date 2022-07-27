@@ -157,7 +157,7 @@ a = np.empty(shape=(n, m), dtype=np.int32)
 
 @ti.kernel
 def test_numpy(arr: ti.types.ndarray()):
-    # you can access the shape of the pass array in kernel
+    # You can access the shape of the passed array in the kernel
     for i in range(arr.shape[0]):
         for j in range(arr.shape[1]):
             arr[i, j] += i + j

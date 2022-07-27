@@ -2,8 +2,6 @@
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/statements.h"
 #include "taichi/ir/visitors.h"
-#include "taichi/program/async_utils.h"
-#include "taichi/program/ir_bank.h"
 #include <unordered_map>
 #include <unordered_set>
 
@@ -25,20 +23,13 @@ class IRNodeComparator : public IRVisitor {
   // GlobalLoadStmt, RandStmt, etc.).
   bool check_same_value_;
 
-  std::unordered_set<AsyncState> possibly_modified_states_;
-  bool all_states_can_be_modified_;
-  IRBank *ir_bank_;
-
  public:
   bool same;
 
   explicit IRNodeComparator(
       IRNode *other_node,
       const std::optional<std::unordered_map<int, int>> &id_map,
-      bool check_same_value,
-      const std::optional<std::unordered_set<AsyncState>>
-          &possibly_modified_states,
-      IRBank *ir_bank)
+      bool check_same_value)
       : other_node_(other_node) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
@@ -49,20 +40,7 @@ class IRNodeComparator : public IRVisitor {
     } else {
       recursively_check_ = false;
     }
-    if (possibly_modified_states.has_value()) {
-      TI_ASSERT_INFO(check_same_value,
-                     "The parameter possibly_modified_states "
-                     "is only supported when check_same_value is true");
-      TI_ASSERT_INFO(ir_bank,
-                     "The parameter possibly_modified_states "
-                     "requires ir_bank")
-      all_states_can_be_modified_ = false;
-      this->possibly_modified_states_ = possibly_modified_states.value();
-    } else {
-      all_states_can_be_modified_ = true;
-    }
     check_same_value_ = check_same_value;
-    ir_bank_ = ir_bank;
   }
 
   void map_id(int this_id, int other_id) {
@@ -146,26 +124,8 @@ class IRNodeComparator : public IRVisitor {
     // because if this condition does not hold,
     // same_value(stmt1, stmt2) returns false anyway.
     if (check_same_value_ && identical_stmts_can_have_different_value) {
-      if (all_states_can_be_modified_) {
-        same = false;
-        return;
-      } else {
-        bool same_value = false;
-        if (auto global_load = stmt->cast<GlobalLoadStmt>()) {
-          if (auto global_ptr = global_load->src->cast<GlobalPtrStmt>()) {
-            TI_ASSERT(global_ptr->width() == 1);
-            if (possibly_modified_states_.count(ir_bank_->get_async_state(
-                    global_ptr->snodes[0], AsyncState::Type::value)) == 0) {
-              same_value = true;
-            }
-          }
-          // TODO: other cases?
-        }
-        if (!same_value) {
-          same = false;
-          return;
-        }
-      }
+      same = false;
+      return;
     }
 
     bool field_checked = false;
@@ -308,15 +268,8 @@ class IRNodeComparator : public IRVisitor {
   static bool run(IRNode *root1,
                   IRNode *root2,
                   const std::optional<std::unordered_map<int, int>> &id_map,
-                  bool check_same_value,
-                  const std::optional<std::unordered_set<AsyncState>>
-                      &possibly_modified_states,
-                  IRBank *ir_bank) {
-    // We need to distinguish the case of an empty
-    // std::unordered_set<AsyncState> (assuming every SNodes are unchanged)
-    // and empty (assuming nothing), so we use std::optional<> here.
-    IRNodeComparator comparator(root2, id_map, check_same_value,
-                                possibly_modified_states, ir_bank);
+                  bool check_same_value) {
+    IRNodeComparator comparator(root2, id_map, check_same_value);
     root1->accept(&comparator);
     return comparator.same;
   }
@@ -366,25 +319,9 @@ bool same_statements(
   if (!root1 || !root2)
     return false;
   return IRNodeComparator::run(root1, root2, id_map,
-                               /*check_same_value=*/false, std::nullopt,
-                               /*ir_bank=*/nullptr);
+                               /*check_same_value=*/false);
 }
-bool same_value(Stmt *stmt1,
-                Stmt *stmt2,
-                const AsyncStateSet &possibly_modified_states,
-                IRBank *ir_bank,
-                const std::optional<std::unordered_map<int, int>> &id_map) {
-  // Test if two statements definitely have the same value.
-  if (stmt1 == stmt2)
-    return true;
-  if (!stmt1 || !stmt2)
-    return false;
-  return IRNodeComparator::run(
-      stmt1, stmt2, id_map, /*check_same_value=*/true,
-      std::make_optional<std::unordered_set<AsyncState>>(
-          possibly_modified_states.s),
-      ir_bank);
-}
+
 bool same_value(Stmt *stmt1,
                 Stmt *stmt2,
                 const std::optional<std::unordered_map<int, int>> &id_map) {
@@ -394,8 +331,7 @@ bool same_value(Stmt *stmt1,
   if (!stmt1 || !stmt2)
     return false;
   return IRNodeComparator::run(stmt1, stmt2, id_map,
-                               /*check_same_value=*/true, std::nullopt,
-                               /*ir_bank=*/nullptr);
+                               /*check_same_value=*/true);
 }
 }  // namespace irpass::analysis
 

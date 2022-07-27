@@ -10,7 +10,7 @@ namespace lang {
 namespace cuda {
 
 LLVMCompiledData AotModuleBuilderImpl::compile_kernel(Kernel *kernel) {
-  auto cgen = CodeGenCUDA::make_codegen_llvm(kernel, /*ir=*/nullptr);
+  auto cgen = KernelCodeGenCUDA::make_codegen_llvm(kernel, /*ir=*/nullptr);
   return cgen->run_compilation();
 }
 

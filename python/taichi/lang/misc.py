@@ -172,7 +172,7 @@ timeline_save = lambda fn: impl.get_runtime().prog.timeline_save(fn)  # pylint: 
 extension = _ti_core.Extension
 """An instance of Taichi extension.
 
-The list of currently available extensions is ['sparse', 'async_mode', 'quant', \
+The list of currently available extensions is ['sparse', 'quant', \
     'mesh', 'quant_basic', 'data64', 'adstack', 'bls', 'assertion', \
         'extfunc', 'packed', 'dynamic_index'].
 """
@@ -223,21 +223,20 @@ class _EnvironmentConfigurator:
 
         self.keys.append(key)
 
-        # TI_ASYNC=   : no effect
-        # TI_ASYNC=0  : False
-        # TI_ASYNC=1  : True
+        # TI_OFFLINE_CACHE=   : no effect
+        # TI_OFFLINE_CACHE=0  : False
+        # TI_OFFLINE_CACHE=1  : True
         name = 'TI_' + key.upper()
         value = os.environ.get(name, '')
-        if len(value):
-            self[key] = _cast(value)
-            if key in self.kwargs:
-                _ti_core.warn(
-                    f'ti.init argument "{key}" overridden by environment variable {name}={value}'
-                )
-                del self.kwargs[key]  # mark as recognized
-        elif key in self.kwargs:
+        if key in self.kwargs:
             self[key] = self.kwargs[key]
+            if value:
+                _ti_core.warn(
+                    f'Environment variable {name}={value} overridden by ti.init argument "{key}"'
+                )
             del self.kwargs[key]  # mark as recognized
+        elif value:
+            self[key] = _cast(value)
 
     def __getitem__(self, key):
         return getattr(self.cfg, key)
@@ -369,9 +368,9 @@ def init(arch=None,
     if env_default_fp:
         if default_fp is not None:
             _ti_core.warn(
-                f'ti.init argument "default_fp" overridden by environment variable TI_DEFAULT_FP={env_default_fp}'
+                f'Environment variable TI_DEFAULT_FP={env_default_fp} overridden by ti.init argument "default_fp"'
             )
-        if env_default_fp == '32':
+        elif env_default_fp == '32':
             default_fp = f32
         elif env_default_fp == '64':
             default_fp = f64
@@ -383,9 +382,9 @@ def init(arch=None,
     if env_default_ip:
         if default_ip is not None:
             _ti_core.warn(
-                f'ti.init argument "default_ip" overridden by environment variable TI_DEFAULT_IP={env_default_ip}'
+                f'Environment variable TI_DEFAULT_IP={env_default_ip} overridden by ti.init argument "default_ip"'
             )
-        if env_default_ip == '32':
+        elif env_default_ip == '32':
             default_ip = i32
         elif env_default_ip == '64':
             default_ip = i64
@@ -752,10 +751,15 @@ def get_host_arch_list():
     return [_ti_core.host_arch()]
 
 
+def get_compute_stream_device_time_elapsed_us() -> float:
+    return impl.get_runtime().prog.get_compute_stream_device_time_elapsed_us()
+
+
 __all__ = [
     'i', 'ij', 'ijk', 'ijkl', 'ijl', 'ik', 'ikl', 'il', 'j', 'jk', 'jkl', 'jl',
     'k', 'kl', 'l', 'x86_64', 'x64', 'dx11', 'wasm', 'arm64', 'cc', 'cpu',
     'cuda', 'gpu', 'metal', 'opengl', 'vulkan', 'extension', 'loop_config',
     'global_thread_idx', 'assume_in_range', 'block_local', 'cache_read_only',
-    'init', 'mesh_local', 'no_activate', 'reset', 'mesh_patch_idx'
+    'init', 'mesh_local', 'no_activate', 'reset', 'mesh_patch_idx',
+    'get_compute_stream_device_time_elapsed_us'
 ]

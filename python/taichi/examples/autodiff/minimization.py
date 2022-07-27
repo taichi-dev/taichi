@@ -30,7 +30,7 @@ def main():
 
     # Optimize with 100 gradient descent iterations
     for k in range(100):
-        with ti.Tape(loss=L):
+        with ti.ad.Tape(loss=L):
             reduce()
         print('Loss =', L[None])
         gradient_descent()

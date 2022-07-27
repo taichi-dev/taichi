@@ -276,7 +276,6 @@ Now, Taichi supports the following extensions:
 | Name          | Extension details                                             |
 | ------------- | ------------------------------------------------------------- |
 | sparse        | Sparse data structures                                        |
-| async_mode    | Asynchronous execution mode                                   |
 | quant_basic   | Basic operations in quantization                              |
 | quant         | Full quantization functionalities                             |
 | data64        | 64-bit data and arithmetic                                   |

@@ -265,9 +265,6 @@ void SNode::print() {
     fmt::print("  ");
   }
   fmt::print("{}", get_node_type_name_hinted());
-  if (exp_snode) {
-    fmt::print(" exp={}", exp_snode->get_node_type_name());
-  }
   fmt::print("\n");
   for (auto &c : ch) {
     c->print();
@@ -289,16 +286,13 @@ bool SNode::need_activation() const {
 }
 
 void SNode::begin_shared_exp_placement() {
-  TI_ASSERT(!placing_shared_exp);
-  TI_ASSERT(currently_placing_exp_snode == nullptr);
-  placing_shared_exp = true;
+  TI_ASSERT(bit_struct_type_builder);
+  bit_struct_type_builder->begin_placing_shared_exponent();
 }
 
 void SNode::end_shared_exp_placement() {
-  TI_ASSERT(placing_shared_exp);
-  TI_ASSERT(currently_placing_exp_snode != nullptr);
-  currently_placing_exp_snode = nullptr;
-  placing_shared_exp = false;
+  TI_ASSERT(bit_struct_type_builder);
+  bit_struct_type_builder->end_placing_shared_exponent();
 }
 
 bool SNode::is_primal() const {

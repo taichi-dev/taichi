@@ -37,12 +37,12 @@ std::unique_ptr<KernelCodeGen> KernelCodeGen::create(Arch arch,
                                                      Stmt *stmt) {
 #ifdef TI_WITH_LLVM
   if (arch_is_cpu(arch) && arch != Arch::wasm) {
-    return std::make_unique<CodeGenCPU>(kernel, stmt);
+    return std::make_unique<KernelCodeGenCPU>(kernel, stmt);
   } else if (arch == Arch::wasm) {
-    return std::make_unique<CodeGenWASM>(kernel, stmt);
+    return std::make_unique<KernelCodeGenWASM>(kernel, stmt);
   } else if (arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
-    return std::make_unique<CodeGenCUDA>(kernel, stmt);
+    return std::make_unique<KernelCodeGenCUDA>(kernel, stmt);
 #else
     TI_NOT_IMPLEMENTED
 #endif
@@ -58,6 +58,7 @@ std::unique_ptr<KernelCodeGen> KernelCodeGen::create(Arch arch,
 bool KernelCodeGen::maybe_read_compilation_from_cache(
     const std::string &kernel_key,
     std::vector<LLVMCompiledData> &data) {
+  TI_AUTO_PROF;
   const auto &config = prog->config;
   auto reader =
       LlvmOfflineCacheFileReader::make(config.offline_cache_file_path);

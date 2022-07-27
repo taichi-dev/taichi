@@ -76,8 +76,8 @@ std::string data_type_format(DataType dt) {
     return "%d";
   } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
     // f16 (and f32) is converted to f64 before printing, see
-    // CodeGenLLVM::visit(PrintStmt *stmt) and
-    // CodeGenLLVMCUDA::visit(PrintStmt *stmt) for more details.
+    // TaskCodeGenLLVM::visit(PrintStmt *stmt) and
+    // TaskCodeGenCUDA::visit(PrintStmt *stmt) for more details.
     return "%f";
   } else {
     TI_NOT_IMPLEMENTED

@@ -286,7 +286,12 @@ positional_item      ::= assignment_expression | "*" expression
 The `primary` must be evaluated to one of:
 - A [Taichi function](../kernels/syntax.md#taichi-function).
 - A [Taichi builtin function](./operator.md#other-arithmetic-functions).
-- A Taichi primitive type, which serves as a type annotation for a literal. In this case, the `positional_arguments` must be evaluated to a single Python value, and the Python value will be turned into a Taichi value with that annotated type.
+- A Taichi primitive type. In this case, the `positional_arguments` must only
+  contain one item. If the item is evaluated to a Python value, then the
+  primitive type serves as a type annotation for a literal, and the Python value
+  will be turned into a Taichi value with that annotated type. Otherwise, the
+  primitive type serves as a syntax sugar for `ti.cast()`, but the item cannot
+  have a compound type.
 - A Python callable object. If not inside a [static expression](#static-expressions), a warning is produced.
 
 ### The power operator

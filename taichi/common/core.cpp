@@ -4,9 +4,12 @@
 *******************************************************************************/
 
 #include "taichi/common/core.h"
-
 #include "taichi/common/version.h"
 #include "taichi/common/commit_hash.h"
+
+#include <spdlog/fmt/fmt.h>
+#include <cstdlib>
+#include "taichi/common/logging.h"
 
 #if defined(TI_PLATFORM_WINDOWS)
 #include "taichi/platform/windows/windows.h"

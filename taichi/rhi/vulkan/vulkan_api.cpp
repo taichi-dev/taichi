@@ -90,6 +90,9 @@ DeviceObjVkAccelerationStructureKHR::~DeviceObjVkAccelerationStructureKHR() {
 
   destroy_raytracing_pipeline_khr(device, accel, nullptr);
 }
+DeviceObjVkQueryPool::~DeviceObjVkQueryPool() {
+  vkDestroyQueryPool(device, query_pool, nullptr);
+}
 
 IDeviceObj create_device_obj(VkDevice device) {
   IDeviceObj obj = std::make_shared<DeviceObj>();
@@ -546,6 +549,22 @@ IVkAccelerationStructureKHR create_acceleration_structure(
 
   create_acceleration_structure_khr(buffer->device, &info, nullptr,
                                     &obj->accel);
+
+  return obj;
+}
+
+IVkQueryPool create_query_pool(VkDevice device) {
+  VkQueryPoolCreateInfo info{};
+  info.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
+  info.pNext = nullptr;
+  info.queryCount = 2;
+  info.queryType = VK_QUERY_TYPE_TIMESTAMP;
+
+  VkQueryPool query_pool;
+  vkCreateQueryPool(device, &info, nullptr, &query_pool);
+  IVkQueryPool obj = std::make_shared<DeviceObjVkQueryPool>();
+  obj->device = device;
+  obj->query_pool = query_pool;
 
   return obj;
 }

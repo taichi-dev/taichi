@@ -402,25 +402,14 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
 
  private:
   void emit_dependencies() {
-    // Serialize dependent real-func recursively
-    std::ostringstream temp_oss;
-    auto *curr_os = this->get_ostream();
-    this->set_ostream(&temp_oss);
-    std::size_t last_size{0};
-    do {
-      last_size = real_funcs_.size();
-      for (auto &[func, v] : real_funcs_) {
-        auto &[id, visited] = v;
-        if (!visited) {
-          visited = true;
-          func->ir->accept(this);  // Maybe add new func
-        }
+    // Serialize dependent real-functions
+    emit(real_funcs_.size());
+    for (auto &[func, id] : real_funcs_) {
+      if (auto &ast_str = func->try_get_ast_serialization_data();
+          ast_str.has_value()) {
+        emit_bytes(ast_str->c_str(), ast_str->size());
       }
-    } while (real_funcs_.size() > last_size);
-    this->set_ostream(curr_os);
-    emit(static_cast<std::size_t>(real_funcs_.size()));
-    auto real_funcs_ast_string = temp_oss.str();
-    emit_bytes(real_funcs_ast_string.data(), real_funcs_ast_string.size());
+    }
 
     // Serialize snode_trees(Temporary: using offline-cache-key of SNode)
     // Note: The result of serializing snode_tree_roots_ is not parsable now
@@ -493,11 +482,11 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     TI_ASSERT(func);
     auto iter = real_funcs_.find(func);
     if (iter != real_funcs_.end()) {
-      emit(iter->second.first);
+      emit(iter->second);
     } else {
-      auto [iter, ok] = real_funcs_.insert({func, {real_funcs_.size(), false}});
+      auto [iter, ok] = real_funcs_.insert({func, real_funcs_.size()});
       TI_ASSERT(ok);
-      emit(iter->second.first);
+      emit(iter->second);
     }
   }
 
@@ -638,7 +627,7 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
   Program *prog_{nullptr};
   std::ostream *os_{nullptr};
   std::unordered_set<SNode *> snode_tree_roots_;
-  std::unordered_map<Function *, std::pair<std::size_t, bool>> real_funcs_;
+  std::unordered_map<Function *, std::size_t> real_funcs_;
   std::vector<char> string_pool_;
 };
 

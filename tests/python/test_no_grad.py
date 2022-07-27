@@ -21,7 +21,7 @@ def test_no_grad():
         for i in range(N):
             ti.atomic_add(loss[None], x[i]**2)
 
-    with ti.Tape(loss):
+    with ti.ad.Tape(loss):
         func()
 
 

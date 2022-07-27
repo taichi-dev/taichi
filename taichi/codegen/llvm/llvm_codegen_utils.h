@@ -95,7 +95,11 @@ class LLVMModuleBuilder {
     if (!f) {
       TI_ERROR("LLVMRuntime function {} not found.", name);
     }
-    f = llvm::cast<llvm::Function>(module->getOrInsertFunction(name, f->getFunctionType(), f->getAttributes()).getCallee());
+    f = llvm::cast<llvm::Function>(
+        module
+            ->getOrInsertFunction(name, f->getFunctionType(),
+                                  f->getAttributes())
+            .getCallee());
     return f;
   }
 
@@ -104,7 +108,11 @@ class LLVMModuleBuilder {
     if (!f) {
       TI_ERROR("Struct function {} not found.", name);
     }
-    f = llvm::cast<llvm::Function>(module->getOrInsertFunction(name, f->getFunctionType(), f->getAttributes()).getCallee());
+    f = llvm::cast<llvm::Function>(
+        module
+            ->getOrInsertFunction(name, f->getFunctionType(),
+                                  f->getAttributes())
+            .getCallee());
     return f;
   }
 
@@ -129,10 +137,8 @@ class LLVMModuleBuilder {
     return builder->CreateCall(func, arglist);
   }
 
-
   template <typename... Args>
-  llvm::Value *call_struct_func(const std::string &func_name,
-                    Args &&...args) {
+  llvm::Value *call_struct_func(const std::string &func_name, Args &&...args) {
     auto func = get_struct_function(func_name);
     auto arglist = std::vector<llvm::Value *>({args...});
     check_func_call_signature(func->getFunctionType(), func->getName(), arglist,

@@ -14,7 +14,6 @@
 #include "taichi/ir/snode.h"
 #include "taichi/jit/jit_session.h"
 
-
 namespace taichi {
 namespace lang {
 

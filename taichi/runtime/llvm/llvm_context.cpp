@@ -722,8 +722,11 @@ TaichiLLVMContext::ThreadLocalData *TaichiLLVMContext::get_this_thread_data() {
     std::stringstream ss;
     ss << tid;
     TI_TRACE("Creating thread local data for thread {}", ss.str());
-    per_thread_data_[tid] = std::make_unique<ThreadLocalData>(std::make_unique<llvm::orc::ThreadSafeContext>(std::make_unique<llvm::LLVMContext>()));
-    per_thread_data_[tid]->runtime_module = module_from_file(get_runtime_fn(arch_));
+    per_thread_data_[tid] = std::make_unique<ThreadLocalData>(
+        std::make_unique<llvm::orc::ThreadSafeContext>(
+            std::make_unique<llvm::LLVMContext>()));
+    per_thread_data_[tid]->runtime_module =
+        module_from_file(get_runtime_fn(arch_));
   }
   return per_thread_data_[tid].get();
 }
@@ -846,8 +849,8 @@ llvm::Function *TaichiLLVMContext::get_struct_function(
 
 llvm::Type *TaichiLLVMContext::get_runtime_type(const std::string &name) {
 #ifdef TI_LLVM_15
-  auto ty = llvm::StructType::getTypeByName(get_this_thread_runtime_module()->getContext(),
-                                            ("struct." + name));
+  auto ty = llvm::StructType::getTypeByName(
+      get_this_thread_runtime_module()->getContext(), ("struct." + name));
 #else
   auto ty = get_this_thread_runtime_module()->getTypeByName("struct." + name);
 #endif
@@ -868,7 +871,9 @@ TaichiLLVMContext::ThreadLocalData::~ThreadLocalData() {
 }
 
 TaichiLLVMContext::ThreadLocalData::ThreadLocalData(
-    std::unique_ptr<llvm::orc::ThreadSafeContext> ctx) : thread_safe_llvm_context(std::move(ctx)), llvm_context(thread_safe_llvm_context->getContext()) {
+    std::unique_ptr<llvm::orc::ThreadSafeContext> ctx)
+    : thread_safe_llvm_context(std::move(ctx)),
+      llvm_context(thread_safe_llvm_context->getContext()) {
 }
 
 TI_REGISTER_TASK(make_slim_libdevice);

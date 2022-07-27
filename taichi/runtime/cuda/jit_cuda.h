@@ -93,7 +93,8 @@ class JITSessionCUDA : public JITSession {
       : JITSession(tlctx, config), data_layout(data_layout) {
   }
 
-  JITModule *create_jit_module(std::unique_ptr<llvm::Module> M, int max_reg) override;
+  JITModule *create_jit_module(std::unique_ptr<llvm::Module> M,
+                               int max_reg) override;
 
   llvm::DataLayout get_data_layout() override {
     return data_layout;

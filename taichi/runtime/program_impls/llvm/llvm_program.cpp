@@ -38,7 +38,8 @@ LlvmProgramImpl::clone_struct_compiler_initial_context(
   if (has_multiple_snode_trees) {
     return tlctx->clone_struct_module();
   }
-  return std::make_unique<llvm::Module>("struct", *tlctx->get_this_thread_context());
+  return std::make_unique<llvm::Module>("struct",
+                                        *tlctx->get_this_thread_context());
 }
 
 std::unique_ptr<StructCompiler> LlvmProgramImpl::compile_snode_tree_types_impl(

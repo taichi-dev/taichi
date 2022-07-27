@@ -192,15 +192,13 @@ jobs:
             with_cc: OFF
             with_cpp_tests: ON
             wanted_archs: 'cpu'
-    runs-on: ${{ matrix.os }}
+    runs-on: [self-hosted, ${{ matrix.os }}]
+    env:
+      PY: ${{ matrix.python }}
     steps:
       - uses: actions/checkout@v2
         with:
           submodules: 'recursive'
-
-      - uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python }}
 
       - name: Get sccache cache
         uses: actions/cache@v2
@@ -217,7 +215,7 @@ jobs:
           fi
           python misc/ci_download.py
         env:
-          CI_PLATFORM: ${{ matrix.os }}
+          CI_PLATFORM: macos
 
       - name: Build & Install
         run: |
@@ -227,6 +225,9 @@ jobs:
           fi
           mkdir -p sccache_cache
           export PATH=`pwd`/taichi-llvm/bin/:$PATH
+          # miniconda / miniforge
+          export PATH=$(ls -d ~/mini*/envs/$PY/bin):$PATH
+          bash .github/workflows/scripts/unix_build.sh
           .github/workflows/scripts/unix_build.sh
           brew uninstall molten-vk
         env:

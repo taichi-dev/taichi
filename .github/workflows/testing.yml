@@ -132,6 +132,7 @@ jobs:
           .github/workflows/scripts/unix_test.sh
         env:
           TI_WANTED_ARCHS: ${{ matrix.wanted_archs }}
+          TI_SKIP_CPP_TESTS: Disabled because Vulkan is supported but not working on buildbot4
 
       - name: Save wheel if test failed
         if: failure() && steps.test.conclusion == 'failure'

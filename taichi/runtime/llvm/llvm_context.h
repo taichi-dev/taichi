@@ -14,6 +14,7 @@
 #include "taichi/ir/snode.h"
 #include "taichi/jit/jit_session.h"
 
+
 namespace taichi {
 namespace lang {
 
@@ -26,11 +27,12 @@ class LlvmProgramImpl;
 class TaichiLLVMContext {
  private:
   struct ThreadLocalData {
-    llvm::LLVMContext *llvm_context{nullptr};
     std::unique_ptr<llvm::orc::ThreadSafeContext> thread_safe_llvm_context{
         nullptr};
+    llvm::LLVMContext *llvm_context{nullptr};
     std::unique_ptr<llvm::Module> runtime_module{nullptr};
     std::unique_ptr<llvm::Module> struct_module{nullptr};
+    ThreadLocalData(std::unique_ptr<llvm::orc::ThreadSafeContext> ctx);
     ~ThreadLocalData();
   };
 
@@ -68,7 +70,7 @@ class TaichiLLVMContext {
    *
    * @param module Module containing the JIT compiled SNode structs.
    */
-  void set_struct_module(const std::unique_ptr<llvm::Module> &module);
+  void set_struct_module(std::unique_ptr<Module> module);
 
   /**
    * Clones the LLVM module compiled from llvm/runtime.cpp
@@ -77,7 +79,7 @@ class TaichiLLVMContext {
    */
   std::unique_ptr<llvm::Module> clone_runtime_module();
 
-  std::unique_ptr<llvm::Module> clone_module(const std::string &file);
+  std::unique_ptr<llvm::Module> module_from_file(const std::string &file);
 
   JITModule *add_module(std::unique_ptr<llvm::Module> module);
 
@@ -98,6 +100,7 @@ class TaichiLLVMContext {
   llvm::Type *get_data_type(DataType dt);
 
   llvm::Module *get_this_thread_struct_module();
+  llvm::Module *get_this_thread_runtime_module();
 
   template <typename T>
   llvm::Type *get_data_type() {
@@ -133,6 +136,11 @@ class TaichiLLVMContext {
   void add_function_to_snode_tree(int id, std::string func);
 
   void delete_functions_of_snode_tree(int id);
+
+  llvm::Function *get_runtime_function(const std::string &name);
+  llvm::Function *get_struct_function(const std::string &name);
+
+  llvm::Type *get_runtime_type(const std::string &name);
 
  private:
   std::unique_ptr<llvm::Module> clone_module_to_context(

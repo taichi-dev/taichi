@@ -814,8 +814,8 @@ FunctionType CUDAModuleToFunctionConverter::convert(
       tlctx_->mark_function_as_cuda_kernel(func, task.block_dim);
     }
     auto jit = tlctx_->jit.get();
-    cuda_modules.push_back(
-        jit->add_module(std::move(mod), executor_->get_config()->gpu_max_reg));
+    cuda_modules.push_back(jit->create_jit_module(
+        std::move(mod), executor_->get_config()->gpu_max_reg));
     offloaded_tasks.push_back(std::move(tasks));
   }
 

@@ -235,6 +235,8 @@ FunctionType CPUModuleToFunctionConverter::convert(
     const std::string &kernel_name,
     const std::vector<LlvmLaunchArgInfo> &args,
     std::vector<LLVMCompiledData> &&data) const {
+  tlctx_->add_module(tlctx_->clone_runtime_module());
+  tlctx_->add_module(tlctx_->clone_struct_module());
   for (auto &datum : data) {
     tlctx_->add_module(std::move(datum.module));
   }

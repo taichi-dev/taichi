@@ -179,7 +179,7 @@ class JITSessionCPU : public JITSession {
     global_optimize_module_cpu(module);
   }
 
-  JITModule *add_module(std::unique_ptr<llvm::Module> M, int max_reg) override {
+  JITModule *create_jit_module(std::unique_ptr<llvm::Module> M, int max_reg) override {
     TI_ASSERT(max_reg == 0);  // No need to specify max_reg on CPUs
     TI_ASSERT(M);
     global_optimize_module_cpu(M.get());
@@ -189,22 +189,26 @@ class JITSessionCPU : public JITSession {
     TI_ASSERT(dylib_expect);
     auto &dylib = dylib_expect.get();
 #else
-    auto &dylib = es_.createJITDylib(fmt::format("{}", module_counter_));
+    auto &dylib = es_.createJITDylib(fmt::format("{}", module_counter_)).get();
 #endif
     dylib.addGenerator(
         cantFail(llvm::orc::DynamicLibrarySearchGenerator::GetForCurrentProcess(
             dl_.getGlobalPrefix())));
-    auto *thread_safe_context =
-        this->tlctx_->get_this_thread_thread_safe_context();
-    cantFail(compile_layer_.add(
-        dylib,
-        llvm::orc::ThreadSafeModule(std::move(M), *thread_safe_context)));
+    add_module_to_dylib(std::move(M), &dylib);
     all_libs_.push_back(&dylib);
     auto new_module = std::make_unique<JITModuleCPU>(this, &dylib);
     auto new_module_raw_ptr = new_module.get();
     modules.push_back(std::move(new_module));
     module_counter_++;
     return new_module_raw_ptr;
+  }
+
+  void add_module_to_dylib(std::unique_ptr<llvm::Module> M, JITDylib *dylib) {
+    auto *thread_safe_context =
+        this->tlctx_->get_this_thread_thread_safe_context();
+    cantFail(compile_layer_.add(
+        *dylib,
+        llvm::orc::ThreadSafeModule(std::move(M), *thread_safe_context)));
   }
 
   void *lookup(const std::string Name) override {

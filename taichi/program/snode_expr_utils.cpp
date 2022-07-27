@@ -137,11 +137,13 @@ void make_lazy_grad(SNode *snode,
     if (is_adjoint) {
       if (c->type == SNodeType::place && c->is_primal() && is_real(c->dt) &&
           !c->has_adjoint()) {
+        std::cout << "is_adjoint allocating " << std::endl;
         new_grads.push_back(snode_to_exprs->at(c.get())->adjoint);
       }
     }
     if (is_global_data_access_rule_check_buffer) {
-      if (c->type == SNodeType::place && c->is_primal()) {
+      if (c->type == SNodeType::place && c->is_primal() && is_real(c->dt)) {
+        std::cout << "is flag allocating " << std::endl;
         new_grads.push_back(snode_to_exprs->at(c.get())->adjoint_loaded_flag);
       }
     }
@@ -155,6 +157,8 @@ void make_lazy_grad(SNode *snode,
   for (auto p : new_grads) {
     place_child(&p, /*offset=*/{}, snode, snode_to_exprs);
   }
+  std::cout << " FLAG " << is_global_data_access_rule_check_buffer
+            << " finalizing lazy grad " << std::endl;
 }
 
 }  // namespace lang

@@ -1466,6 +1466,10 @@ class GloablDataAccessRuleChecker : public BasicStmtVisitor {
     GlobalPtrStmt *src = stmt->src->as<GlobalPtrStmt>();
     TI_ASSERT(src->width() == 1);
     auto snodes = src->snodes;
+    if (!snodes[0]->has_adjoint_loaded_flag()) {
+      return;
+    }
+    TI_ASSERT(snodes[0]->get_adjoint_loaded_flag() != nullptr);
     snodes[0] = snodes[0]->get_adjoint_loaded_flag();
     auto gloabl_ptr =
         stmt->insert_after_me(Stmt::make<GlobalPtrStmt>(snodes, src->indices));
@@ -1479,6 +1483,10 @@ class GloablDataAccessRuleChecker : public BasicStmtVisitor {
     GlobalPtrStmt *dest = stmt->dest->as<GlobalPtrStmt>();
     TI_ASSERT(dest->width() == 1);
     auto snodes = dest->snodes;
+    if (!snodes[0]->has_adjoint_loaded_flag()) {
+      return;
+    }
+    TI_ASSERT(snodes[0]->get_adjoint_loaded_flag() != nullptr);
     snodes[0] = snodes[0]->get_adjoint_loaded_flag();
     auto global_ptr = stmt->insert_before_me(
         Stmt::make<GlobalPtrStmt>(snodes, dest->indices));

@@ -295,6 +295,8 @@ class SNode {
 
   SNode *get_adjoint() const;
 
+  bool has_adjoint_loaded_flag() const;
+
   SNode *get_adjoint_loaded_flag() const;
 
   bool has_dual() const;

@@ -212,16 +212,16 @@ struct PyScene {
   }
 
   void mesh_instance(FieldInfo vbo,
-            bool has_per_vertex_color,
-            FieldInfo indices,
-            py::tuple color,
-            bool two_sided,
-            FieldInfo transforms,
-            float draw_first_instance,
-            float draw_index_count,
-            float draw_first_index,
-            float draw_vertex_count,
-            float draw_first_vertex) {
+                     bool has_per_vertex_color,
+                     FieldInfo indices,
+                     py::tuple color,
+                     bool two_sided,
+                     FieldInfo transforms,
+                     float draw_first_instance,
+                     float draw_index_count,
+                     float draw_first_index,
+                     float draw_vertex_count,
+                     float draw_first_vertex) {
     RenderableInfo renderable_info;
     renderable_info.vbo = vbo;
     renderable_info.has_per_vertex_color = has_per_vertex_color;
@@ -242,7 +242,7 @@ struct PyScene {
     }
     info.mesh_attribute_info.mesh_attribute = transforms;
     info.mesh_attribute_info.has_attribute = transforms.valid;
-    
+
     scene->mesh(info);
   }
 

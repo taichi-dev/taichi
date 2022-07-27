@@ -227,22 +227,23 @@ class Scene:
         self.scene.mesh(vbo_info, has_per_vertex_color, indices_info, color,
                         two_sided, index_count, index_offset, vertex_count,
                         vertex_offset)
+
     def mesh_instance(self,
-             vertices,
-             indices=None,
-             normals=None,
-             color=(0.5, 0.5, 0.5),
-             per_vertex_color=None,
-             two_sided=False,
-             transforms = None,
-             draw_first_instance : int = 0,
-             vertex_offset: int = 0,
-             vertex_count: int = None,
-             index_offset: int = 0,
-             index_count: int = None):
+                      vertices,
+                      indices=None,
+                      normals=None,
+                      color=(0.5, 0.5, 0.5),
+                      per_vertex_color=None,
+                      two_sided=False,
+                      transforms=None,
+                      draw_first_instance: int = 0,
+                      vertex_offset: int = 0,
+                      vertex_count: int = None,
+                      index_offset: int = 0,
+                      index_count: int = None):
         """Declare lots of mesh instances inside the scene.
 
-        If transforms is given, then according to the shape of transforms, we will 
+        If transforms is given, then according to the shape of transforms, we will
         draw mesh instances based on the transforms, and you can indicate which instance
         to draw first. If you indicate the index_offset and index_count, the normals will also
         be sliced by the args, and the shading resultes will not be affected.
@@ -304,10 +305,11 @@ class Scene:
         vbo_info = get_field_info(vbo)
         indices_info = get_field_info(indices)
         transform_info = get_field_info(transforms)
-        self.scene.mesh_instance(vbo_info, has_per_vertex_color, indices_info, color,
-                        two_sided, transform_info, draw_first_instance, index_count, index_offset, vertex_count,
-                        vertex_offset)
-        
+        self.scene.mesh_instance(vbo_info, has_per_vertex_color, indices_info,
+                                 color, two_sided, transform_info,
+                                 draw_first_instance, index_count,
+                                 index_offset, vertex_count, vertex_offset)
+
     def particles(self,
                   centers,
                   radius,

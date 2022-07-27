@@ -713,10 +713,12 @@ void export_lang(py::module &m) {
       .def("set_adjoint", &Expr::set_adjoint)
       .def("set_dual", &Expr::set_dual)
       .def("set_attribute", &Expr::set_attribute)
-      .def("get_dt",
-           [&](Expr *expr) -> const Type * {
-             return expr->cast<GlobalVariableExpression>()->dt;
-           }, py::return_value_policy::reference)
+      .def(
+          "get_dt",
+          [&](Expr *expr) -> const Type * {
+            return expr->cast<GlobalVariableExpression>()->dt;
+          },
+          py::return_value_policy::reference)
       .def("get_ret_type", &Expr::get_ret_type)
       .def("type_check", &Expr::type_check)
       .def("get_expr_name",

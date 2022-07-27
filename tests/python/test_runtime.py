@@ -63,6 +63,7 @@ init_args = {
     'simplify_after_lower_access': [True, TF],
     'kernel_profiler': [False, TF],
     'check_out_of_bound': [False, TF],
+    'check_autodiff_valid': [False, TF],
     'print_accessor_ir': [False, TF],
     'print_evaluator_ir': [False, TF],
     'print_struct_llvm_ir': [False, TF],

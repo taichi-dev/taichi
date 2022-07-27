@@ -37,6 +37,13 @@ class Expr(TaichiOperations):
         if self.tb:
             self.ptr.set_tb(self.tb)
         self.ptr.type_check(impl.get_runtime().prog.config)
+        
+    def __getitem__(self, *indices):
+        if not isinstance(indices, (list, tuple)):
+            indices = (indices,)
+        
+        indices = make_expr_group(*indices)
+        return impl.get_runtime().prog.current_ast_builder().expr_indexed_matrix(self.ptr, indices)
 
     def __hash__(self):
         return self.ptr.get_raw_address()

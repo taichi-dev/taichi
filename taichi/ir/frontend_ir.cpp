@@ -412,6 +412,9 @@ Stmt *make_tensor_access(Expression::FlattenContext *ctx,
                          std::vector<int> shape,
                          int stride) {
   flatten_lvalue(var, ctx);
+  if (var->stmt->ret_type->is_primitive(PrimitiveTypeID::unknown)) {
+    var->stmt->ret_type = var->ret_type;
+  }
   Stmt *offset_stmt = ctx->push_back<ConstStmt>(TypedConstant(0));
   for (int i = 0; i < (int)indices.size(); ++i) {
     flatten_rvalue(indices[i], ctx);
@@ -993,6 +996,7 @@ Expr ASTBuilder::expr_alloca_local_matrix(const std::vector<int> &shape,
 
 Expr ASTBuilder::expr_indexed_matrix(const Expr &matrix,
                                      const ExprGroup &indices) {
+  TI_ASSERT(matrix.get_ret_type()->is<TensorType>());
   return Expr(std::make_shared<IndexExpression>(matrix, indices));
 }
 

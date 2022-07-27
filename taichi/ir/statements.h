@@ -1826,10 +1826,10 @@ class MatrixInitStmt : public Stmt {
 class IndexStmt : public Stmt {
  public:
   Stmt *target;
-  std::vector<Stmt *> indices;
+  Stmt *index;
 
-  IndexStmt(Stmt *target, const std::vector<Stmt *> &indices)
-      : target(target), indices(indices) {
+  IndexStmt(Stmt *target, Stmt *index)
+      : target(target), index(index) {
     TI_STMT_REG_FIELDS;
   }
 
@@ -1837,7 +1837,7 @@ class IndexStmt : public Stmt {
     return false;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type);
+  TI_STMT_DEF_FIELDS(ret_type, target, index);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 

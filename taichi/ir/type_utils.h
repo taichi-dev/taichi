@@ -80,8 +80,6 @@ inline bool is_quant(DataType dt) {
 }
 
 inline bool is_real(DataType dt) {
-  if (dt->is<TensorType>())
-    return is_real(dt->as<TensorType>()->get_element_type());
   return dt->is_primitive(PrimitiveTypeID::f16) ||
          dt->is_primitive(PrimitiveTypeID::f32) ||
          dt->is_primitive(PrimitiveTypeID::f64) || dt->is<QuantFixedType>() ||

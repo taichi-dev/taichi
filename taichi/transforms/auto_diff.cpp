@@ -1463,16 +1463,34 @@ class GloablDataAccessRuleChecker : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
 
   void visit(GlobalLoadStmt *stmt) override {
-    // std::cout << "GlobalLoadStmt: "<< stmt->id << " " << stmt << " src "<<
-    // stmt->src->id << " " << stmt->src << std::endl;
-    loaded_global_field_.insert(stmt->src);
+    GlobalPtrStmt *src = stmt->src->as<GlobalPtrStmt>();
+    TI_ASSERT(src->width() == 1);
+    auto snodes = src->snodes;
+    snodes[0] = snodes[0]->get_adjoint_loaded_flag();
+    auto gloabl_ptr =
+        stmt->insert_after_me(Stmt::make<GlobalPtrStmt>(snodes, src->indices));
+    auto create_flag = gloabl_ptr->insert_after_me(
+        Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(1)));
+    create_flag->insert_after_me(
+        Stmt::make<GlobalStoreStmt>(gloabl_ptr, create_flag));
   }
 
   void visit(GlobalStoreStmt *stmt) override {
-    bool loaded = false;
-    auto assert = Stmt::make<AssertStmt>(
-        loaded, "Breaks the global data access rule.", std::vector<Stmt *>());
-    stmt.insert_before(stmt, std::move(assert));
+    GlobalPtrStmt *dest = stmt->dest->as<GlobalPtrStmt>();
+    TI_ASSERT(dest->width() == 1);
+    auto snodes = dest->snodes;
+    snodes[0] = snodes[0]->get_adjoint_loaded_flag();
+    auto global_ptr = stmt->insert_before_me(
+        Stmt::make<GlobalPtrStmt>(snodes, dest->indices));
+    auto global_load =
+        stmt->insert_before_me(Stmt::make<GlobalLoadStmt>(global_ptr));
+    auto zero = stmt->insert_before_me(
+        Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(0)));
+    auto check_equal = stmt->insert_before_me(
+        Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_eq, global_load, zero));
+    stmt->insert_before_me(Stmt::make<AssertStmt>(
+        check_equal, "Breaks the global data access rule.",
+        std::vector<Stmt *>()));
   }
 
   static bool run(IRNode *root) {

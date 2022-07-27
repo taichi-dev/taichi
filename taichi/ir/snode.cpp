@@ -318,6 +318,11 @@ SNode *SNode::get_adjoint() const {
   return grad_info->adjoint_snode();
 }
 
+SNode *SNode::get_adjoint_loaded_flag() const {
+  TI_ASSERT(has_adjoint());
+  return grad_info->adjoint_snode_loaded_flag_snode();
+}
+
 SNode *SNode::get_dual() const {
   TI_ASSERT(has_dual());
   return grad_info->dual_snode();

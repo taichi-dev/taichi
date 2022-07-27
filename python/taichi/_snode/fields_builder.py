@@ -134,6 +134,11 @@ class FieldsBuilder:
         self.empty = False
         self.root.lazy_dual()
 
+    def allocate_global_data_access_rule_check_buffer(self):
+        self._check_not_finalized()
+        self.empty = False
+        self.root.allocate_global_data_access_rule_check_buffer()
+
     def finalize(self, raise_warning=True):
         """Constructs the SNodeTree and finalizes this builder.
 

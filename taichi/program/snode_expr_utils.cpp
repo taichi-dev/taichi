@@ -32,6 +32,14 @@ class GradInfoImpl final : public SNode::GradInfoProvider {
     return dual.snode();
   }
 
+  SNode *adjoint_snode_loaded_flag_snode() const override {
+    auto &adjoint_loaded_flag = glb_var_->adjoint_loaded_flag;
+    if (adjoint_loaded_flag.expr == nullptr) {
+      return nullptr;
+    }
+    return adjoint_loaded_flag.snode();
+  }
+
  private:
   GlobalVariableExpression *glb_var_;
 };
@@ -116,11 +124,13 @@ void place_child(Expr *expr_arg,
 void make_lazy_grad(SNode *snode,
                     SNodeGlobalVarExprMap *snode_to_exprs,
                     bool is_adjoint,
-                    bool is_dual) {
+                    bool is_dual,
+                    bool is_global_data_access_rule_check_buffer) {
   if (snode->type == SNodeType::place)
     return;
   for (auto &c : snode->ch) {
-    make_lazy_grad(c.get(), snode_to_exprs, is_adjoint, is_dual);
+    make_lazy_grad(c.get(), snode_to_exprs, is_adjoint, is_dual,
+                   is_global_data_access_rule_check_buffer);
   }
   std::vector<Expr> new_grads;
   for (auto &c : snode->ch) {
@@ -128,6 +138,13 @@ void make_lazy_grad(SNode *snode,
       if (c->type == SNodeType::place && c->is_primal() && is_real(c->dt) &&
           !c->has_adjoint()) {
         new_grads.push_back(snode_to_exprs->at(c.get())->adjoint);
+      }
+    }
+    if (is_global_data_access_rule_check_buffer) {
+      if (c->type == SNodeType::place && c->is_primal()) {
+        std::cout << " before push back adjoint loaded flag" << std::endl;
+        new_grads.push_back(snode_to_exprs->at(c.get())->adjoint_loaded_flag);
+        std::cout << " after push back adjoint loaded flag" << std::endl;
       }
     }
     if (is_dual) {

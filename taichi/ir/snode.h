@@ -95,6 +95,7 @@ class SNode {
     virtual bool is_primal() const = 0;
     virtual SNode *adjoint_snode() const = 0;
     virtual SNode *dual_snode() const = 0;
+    virtual SNode *adjoint_snode_loaded_flag_snode() const = 0;
 
     template <typename T>
     T *cast() {
@@ -294,6 +295,8 @@ class SNode {
 
   SNode *get_adjoint() const;
 
+  SNode *get_adjoint_loaded_flag() const;
+
   bool has_dual() const;
 
   SNode *get_dual() const;
@@ -335,8 +338,11 @@ class SNode {
     place_child(&expr, offset, this, snode_to_glb_var_exprs_);
   }
 
-  void lazy_grad(bool is_adjoint, bool is_dual) {
-    make_lazy_grad(this, snode_to_glb_var_exprs_, is_adjoint, is_dual);
+  void lazy_grad(bool is_adjoint,
+                 bool is_dual,
+                 bool is_global_data_access_rule_check_buffer) {
+    make_lazy_grad(this, snode_to_glb_var_exprs_, is_adjoint, is_dual,
+                   is_global_data_access_rule_check_buffer);
   }
 
   int64 read_int(const std::vector<int> &i);

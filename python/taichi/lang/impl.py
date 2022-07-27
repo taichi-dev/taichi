@@ -282,6 +282,10 @@ class PyTaichi:
             # invocation. Example case:
             # https://github.com/taichi-dev/taichi/blob/27bb1dc3227d9273a79fcb318fdb06fd053068f5/tests/python/test_ad_basics.py#L260-L266
             return
+        if get_runtime().prog.config.debug or get_runtime(
+        ).prog.config.check_autodiff_valid:
+            print("allocate buffer")
+            root.allocate_global_data_access_rule_check_buffer()
         root.finalize(raise_warning=not is_first_call)
         global _root_fb
         _root_fb = FieldsBuilder()
@@ -542,6 +546,7 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
 
     x_grad = None
     x_dual = None
+    x_grad_loaded_flag = None
     if _ti_core.is_real(dtype):
         # adjoint
         x_grad = Expr(get_runtime().prog.make_id_expr(""))
@@ -552,6 +557,15 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
         x.ptr.set_adjoint(x_grad.ptr)
         if needs_grad:
             pytaichi.grad_vars.append(x_grad)
+
+        if prog.config.debug or prog.config.check_autodiff_valid:
+            x_grad_loaded_flag = Expr(get_runtime().prog.make_id_expr(""))
+            # x_grad_loaded_flag.declaration_tb = get_traceback(stacklevel=4)
+            x_grad_loaded_flag.ptr = _ti_core.global_new(
+                x_grad_loaded_flag.ptr, cook_dtype(int))
+            x_grad_loaded_flag.ptr.set_name(name + ".grad_loaded_flag")
+            x_grad_loaded_flag.ptr.set_is_primal(False)
+            x.ptr.set_adjoint_loaded_flag(x_grad_loaded_flag.ptr)
 
         # dual
         x_dual = Expr(get_runtime().prog.make_id_expr(""))

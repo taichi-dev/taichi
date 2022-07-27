@@ -61,6 +61,9 @@ void autograd() {
       SNode *dual_snode() const override {
         return snode;
       }
+      SNode *adjoint_snode_loaded_flag_snode() const override {
+        return nullptr;
+      }
     };
     class GradInfoAdjoint final : public SNode::GradInfoProvider {
      public:
@@ -73,6 +76,9 @@ void autograd() {
         return nullptr;
       }
       SNode *dual_snode() const override {
+        return nullptr;
+      }
+      SNode *adjoint_snode_loaded_flag_snode() const override {
         return nullptr;
       }
     };

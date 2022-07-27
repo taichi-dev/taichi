@@ -255,7 +255,8 @@ class Field:
         return [SNodeHostAccess(e, key) for e in self.host_accessors]
 
     def __iter__(self):
-        raise NotImplementedError("Struct for is only available in Taichi scope.")
+        raise NotImplementedError(
+            "Struct for is only available in Taichi scope.")
 
 
 class ScalarField(Field):

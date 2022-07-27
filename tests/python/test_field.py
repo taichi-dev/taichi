@@ -305,6 +305,7 @@ def test_field_fill():
 @test_utils.test()
 def test_python_for_in():
     x = ti.field(int, shape=3)
-    with pytest.raises(NotImplementedError, match="Struct for is only available in Taichi scope"):
+    with pytest.raises(NotImplementedError,
+                       match="Struct for is only available in Taichi scope"):
         for i in x:
             pass

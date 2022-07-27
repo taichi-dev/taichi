@@ -1061,12 +1061,26 @@ void VulkanCommandList::draw(uint32_t num_verticies, uint32_t start_vertex) {
             /*firstInstance=*/0);
 }
 
+void VulkanCommandList::draw_instance(uint32_t num_verticies, uint32_t num_instances, uint32_t start_vertex, uint32_t start_instance){
+  vkCmdDraw(buffer_->buffer, num_verticies, num_instances, start_vertex, start_instance);
+}
+
 void VulkanCommandList::draw_indexed(uint32_t num_indicies,
                                      uint32_t start_vertex,
                                      uint32_t start_index) {
   vkCmdDrawIndexed(buffer_->buffer, num_indicies, /*instanceCount=*/1,
                    start_index, start_vertex,
                    /*firstInstance=*/0);
+}
+
+void VulkanCommandList::draw_indexed_instance(uint32_t num_indicies,
+                            uint32_t num_instances,
+                            uint32_t start_vertex,
+                            uint32_t start_index,
+                            uint32_t start_instance) {
+   vkCmdDrawIndexed(buffer_->buffer, num_indicies, num_instances,
+                   start_index, start_vertex,
+                   start_instance);
 }
 
 void VulkanCommandList::image_transition(DeviceAllocation img,

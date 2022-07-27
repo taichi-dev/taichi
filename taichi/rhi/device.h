@@ -347,6 +347,12 @@ class CommandList {
   virtual void draw(uint32_t num_verticies, uint32_t start_vertex = 0) {
     TI_NOT_IMPLEMENTED
   }
+  virtual void draw_instance(uint32_t num_verticies, 
+                      uint32_t num_instances,
+                      uint32_t start_vertex = 0,
+                      uint32_t start_instance = 0) {
+    TI_NOT_IMPLEMENTED
+  }
   virtual void clear_color(float r, float g, float b, float a) {
     TI_NOT_IMPLEMENTED
   }
@@ -356,6 +362,13 @@ class CommandList {
   virtual void draw_indexed(uint32_t num_indicies,
                             uint32_t start_vertex = 0,
                             uint32_t start_index = 0) {
+    TI_NOT_IMPLEMENTED
+  }
+  virtual void draw_indexed_instance(uint32_t num_indicies,
+                            uint32_t num_instances,
+                            uint32_t start_vertex = 0,
+                            uint32_t start_index = 0,
+                            uint32_t start_instance = 0) {
     TI_NOT_IMPLEMENTED
   }
   virtual void image_transition(DeviceAllocation img,

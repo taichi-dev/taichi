@@ -8,7 +8,7 @@ import tempfile
 import warnings
 
 from test_utils import (__aot_test_cases, __capi_aot_test_cases,
-                        print_aot_test_guide)
+                        expected_archs, print_aot_test_guide)
 
 import taichi as ti
 
@@ -32,7 +32,11 @@ def _run_cpp_test(test_filename, build_dir, gtest_option="", extra_env=None):
 
 def _test_cpp_aot(test_filename, build_dir, test_info):
     tests_visited = []
-    for cpp_test_name, (python_rpath, args) in test_info.items():
+    wanted_archs = expected_archs()
+    for cpp_test_name, (arch, python_rpath, args) in test_info.items():
+        tests_visited.append(cpp_test_name)
+        if arch not in wanted_archs:
+            continue
         # Temporary folder will be removed upon handle destruction
         temp_handle = tempfile.TemporaryDirectory()
         temp_folderpath = temp_handle.name
@@ -47,13 +51,13 @@ def _test_cpp_aot(test_filename, build_dir, test_info):
         env_copy = os.environ.copy()
         env_copy.update(extra_env)
 
-        cmd_list = [sys.executable, python_file_path] + args.split(" ")
+        cmd_list = [sys.executable, python_file_path
+                    ] + args.split(" ") + [f'--arch={arch}']
         subprocess.check_call(cmd_list, env=env_copy)
 
         # Run AOT C++ codes
         _run_cpp_test(test_filename, build_dir,
                       f"--gtest_filter={cpp_test_name}", extra_env)
-        tests_visited.append(cpp_test_name)
 
     exclude_tests_cmd = "--gtest_filter=-" + ":".join(tests_visited)
     return exclude_tests_cmd

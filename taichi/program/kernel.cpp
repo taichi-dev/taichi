@@ -112,11 +112,9 @@ void Kernel::lower(bool to_executable) {
 
 void Kernel::operator()(LaunchContextBuilder &ctx_builder) {
   if (!program->config.async_mode || this->is_evaluator) {
-    TI_TRACE("called kernel::operator()");
     if (!compiled_) {
       compile();
     }
-    TI_TRACE("compiled");
 
     if (!this->from_offline_cache_) {
       for (auto &offloaded : ir->as<Block>()->statements) {
@@ -124,9 +122,7 @@ void Kernel::operator()(LaunchContextBuilder &ctx_builder) {
       }
     }
 
-    TI_TRACE("calling compiled_");
     compiled_(ctx_builder.get_context());
-    TI_TRACE("called compiled_");
 
     program->sync = (program->sync && arch_is_cpu(arch));
     // Note that Kernel::arch may be different from program.config.arch

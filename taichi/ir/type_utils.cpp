@@ -53,7 +53,9 @@ int data_type_size(DataType t) {
   }
 }
 
-std::string tensor_type_format_helper(const std::vector<int> &shape, std::string format_str, int dim) {
+std::string tensor_type_format_helper(const std::vector<int> &shape,
+                                      std::string format_str,
+                                      int dim) {
   std::string fmt = "[";
   for (int i = 0; i < shape[dim]; ++i) {
     if (dim != shape.size() - 1) {

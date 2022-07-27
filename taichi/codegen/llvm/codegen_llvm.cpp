@@ -784,8 +784,8 @@ void CodeGenLLVM::visit(PrintStmt *stmt) {
       } else {
         if (arg_stmt->ret_type->is_primitive(PrimitiveTypeID::f32) ||
             arg_stmt->ret_type->is_primitive(PrimitiveTypeID::f16))
-          value = builder->CreateFPExt(value,
-                                      tlctx->get_data_type(PrimitiveType::f64));
+          value = builder->CreateFPExt(
+              value, tlctx->get_data_type(PrimitiveType::f64));
         args.push_back(value);
         formats += data_type_format(arg_stmt->ret_type);
       }
@@ -1713,8 +1713,8 @@ void CodeGenLLVM::visit(PtrOffsetStmt *stmt) {
     auto stmt_dtype = stmt->origin->ret_type->as<TensorType>();
     auto element_dtype = stmt_dtype->get_element_type();
     auto llvm_type = tlctx->get_data_type(element_dtype);
-    auto casted_ptr = builder->CreateBitCast(llvm_val[stmt->origin],
-                              llvm::PointerType::get(llvm_type, 0));
+    auto casted_ptr = builder->CreateBitCast(
+        llvm_val[stmt->origin], llvm::PointerType::get(llvm_type, 0));
     llvm_val[stmt] = builder->CreateGEP(casted_ptr, llvm_val[stmt->offset]);
 #endif
   } else {

@@ -1828,8 +1828,7 @@ class IndexStmt : public Stmt {
   Stmt *target;
   Stmt *index;
 
-  IndexStmt(Stmt *target, Stmt *index)
-      : target(target), index(index) {
+  IndexStmt(Stmt *target, Stmt *index) : target(target), index(index) {
     TI_STMT_REG_FIELDS;
   }
 

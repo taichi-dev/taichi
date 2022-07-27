@@ -142,9 +142,7 @@ void make_lazy_grad(SNode *snode,
     }
     if (is_global_data_access_rule_check_buffer) {
       if (c->type == SNodeType::place && c->is_primal()) {
-        std::cout << " before push back adjoint loaded flag" << std::endl;
         new_grads.push_back(snode_to_exprs->at(c.get())->adjoint_loaded_flag);
-        std::cout << " after push back adjoint loaded flag" << std::endl;
       }
     }
     if (is_dual) {

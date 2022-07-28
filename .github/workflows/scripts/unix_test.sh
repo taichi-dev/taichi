@@ -65,7 +65,10 @@ EOF
     python3 taichi-release-tests/run.py --log=DEBUG --runners 1 taichi-release-tests/timelines
 fi
 
-python3 tests/run_tests.py --cpp
+
+if [ ! -z $TI_SKIP_CPP_TESTS ]; then
+    python3 tests/run_tests.py --cpp
+fi
 
 if [ -z "$GPU_TEST" ]; then
     if [[ $PLATFORM == *"m1"* ]]; then

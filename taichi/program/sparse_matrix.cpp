@@ -202,19 +202,25 @@ void CuSparseMatrix::build_csr(void *csr_ptr,
                                void *csr_indices_ptr,
                                void *csr_values_ptr,
                                int nnz) {
+#if define(TI_WITH_CUDA)
   CUSPARSEDriver::get_instance().cpCreateCsr(
       &matrix_, rows_, cols_, nnz, csr_ptr, csr_indices_ptr, csr_values_ptr,
       CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I, CUSPARSE_INDEX_BASE_ZERO,
       CUDA_R_32F);
+#endif
 }
 CuSparseMatrix::~CuSparseMatrix() {
+#if define(TI_WITH_CUDA)
   CUSPARSEDriver::get_instance().cpDestroySpMat(matrix_);
+#endif
 }
 void make_sparse_matrix_from_ndarray_cusparse(Program *prog,
                                               SparseMatrix &sm,
                                               const Ndarray &row_offsets,
                                               const Ndarray &col_indices,
                                               const Ndarray &values) {
+#if define(TI_WITH_CUDA)
+  std::string sdtype = taichi::lang::data_type_name(sm.get_data_type());
   if (!CUSPARSEDriver::get_instance().is_loaded()) {
     bool load_success = CUSPARSEDriver::get_instance().load_cusparse();
     if (!load_success) {
@@ -226,9 +232,11 @@ void make_sparse_matrix_from_ndarray_cusparse(Program *prog,
   size_t values_csr = prog->get_ndarray_data_ptr_as_int(&values);
   int nnz = values.get_nelement();
   sm.build_csr((void *)row_csr, (void *)col_csr, (void *)values_csr, nnz);
+#endif
 }
 
 void CuSparseMatrix::spmv(Program *prog, const Ndarray &x, Ndarray &y) {
+#if define(TI_WITH_CUDA)
   size_t dX = prog->get_ndarray_data_ptr_as_int(&x);
   size_t dY = prog->get_ndarray_data_ptr_as_int(&y);
 
@@ -256,6 +264,7 @@ void CuSparseMatrix::spmv(Program *prog, const Ndarray &x, Ndarray &y) {
   CUSPARSEDriver::get_instance().cpDestroyDnVec(vecY);
   CUSPARSEDriver::get_instance().cpDestroy(cusparse_handle);
   CUDADriver::get_instance().mem_free(dBuffer);
+#endif
 }
 
 }  // namespace lang

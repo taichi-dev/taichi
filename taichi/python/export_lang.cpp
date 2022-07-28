@@ -399,6 +399,9 @@ void export_lang(py::module &m) {
       .def("make_sparse_matrix_from_ndarray_cusparse",
            [](Program *program, CuSparseMatrix &sm, const Ndarray &row_csr,
               const Ndarray &col_csr, const Ndarray &val_csr) {
+             TI_ERROR_IF(!arch_is_cpu(program->config.arch) &&
+                             !arch_uses_cuda(program->config.arch),
+                         "SparseMatrix only supports CPU and CUDA for now.");
              return make_sparse_matrix_from_ndarray_cusparse(
                  program, sm, row_csr, col_csr, val_csr);
            })

@@ -97,7 +97,7 @@ class Expr {
 
   void set_dual(const Expr &o);
 
-  void set_adjoint_loaded_flag(const Expr &o);
+  void set_adjoint_flag(const Expr &o);
 
   void set_attribute(const std::string &key, const std::string &value);
 

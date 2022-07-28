@@ -127,17 +127,18 @@ class FieldsBuilder:
         self.empty = False
         self.root.lazy_grad()
 
+    def allocate_grad_flag(self):
+        """Same as :func:`taichi.lang.snode.SNode.allocate_grad_flag`"""
+        self._check_not_finalized()
+        self.empty = False
+        self.root.allocate_grad_flag()
+
     def lazy_dual(self):
         """Same as :func:`taichi.lang.snode.SNode.lazy_dual`"""
         # TODO: This complicates the implementation. Figure out why we need this
         self._check_not_finalized()
         self.empty = False
         self.root.lazy_dual()
-
-    def allocate_global_data_access_rule_check_buffer(self):
-        self._check_not_finalized()
-        self.empty = False
-        self.root.allocate_global_data_access_rule_check_buffer()
 
     def finalize(self, raise_warning=True):
         """Constructs the SNodeTree and finalizes this builder.

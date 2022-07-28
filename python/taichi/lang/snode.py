@@ -165,15 +165,20 @@ class SNode:
         To know more details about primal, adjoint fields and ``lazy_grad()``,
         please see Page 4 and Page 13-14 of DiffTaichi Paper: https://arxiv.org/pdf/1910.00935.pdf
         """
-        self.ptr.lazy_grad(True, False, False)
+        if impl.get_runtime().prog.config.debug and impl.get_runtime(
+        ).prog.config.check_autodiff_valid:
+            self.ptr.lazy_grad(True, False, True)
+        else:
+            self.ptr.lazy_grad(True, False, False)
 
     def lazy_dual(self):
         """Automatically place the dual fields following the layout of their primal fields.
         """
         self.ptr.lazy_grad(False, True, False)
 
-    def allocate_global_data_access_rule_check_buffer(self):
-        print("FB ajoint flag")
+    def allocate_grad_flag(self):
+        """Automatically place the adjoint flag fields following the layout of their primal fields for global data access rule checker
+        """
         self.ptr.lazy_grad(False, False, True)
 
     def parent(self, n=1):

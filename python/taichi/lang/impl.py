@@ -24,7 +24,7 @@ from taichi.lang.snode import SNode
 from taichi.lang.struct import Struct, StructField, _IntermediateStruct
 from taichi.lang.util import (cook_dtype, get_traceback, is_taichi_class,
                               python_scope, taichi_scope, warning)
-from taichi.types.primitive_types import all_types, f16, f32, f64, i32, i64
+from taichi.types.primitive_types import all_types, f16, f32, f64, i32, i64, u8
 
 
 @taichi_scope
@@ -282,10 +282,6 @@ class PyTaichi:
             # invocation. Example case:
             # https://github.com/taichi-dev/taichi/blob/27bb1dc3227d9273a79fcb318fdb06fd053068f5/tests/python/test_ad_basics.py#L260-L266
             return
-        if get_runtime().prog.config.debug or get_runtime(
-        ).prog.config.check_autodiff_valid:
-            print("allocate buffer")
-            root.allocate_global_data_access_rule_check_buffer()
         root.finalize(raise_warning=not is_first_call)
         global _root_fb
         _root_fb = FieldsBuilder()
@@ -337,6 +333,12 @@ class PyTaichi:
                 '\n\n  x = ti.field(float, shape=(2, 3), needs_{gradient_type}=True)'
             )
 
+    @staticmethod
+    def _allocate_gradient_flag():
+        if root.finalized:
+            return
+        root.allocate_grad_flag()
+
     def _check_matrix_field_member_shape(self):
         for _field in self.matrix_fields:
             shapes = [
@@ -354,6 +356,7 @@ class PyTaichi:
             _field._calc_dynamic_index_stride()
 
     def materialize(self):
+        self._allocate_gradient_flag()
         self.materialize_root_fb(not self.materialized)
         self.materialized = True
 
@@ -546,7 +549,8 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
 
     x_grad = None
     x_dual = None
-    x_grad_loaded_flag = None
+    # The x_grad_flag is used for global data access rule checker
+    x_grad_flag = None
     if _ti_core.is_real(dtype):
         # adjoint
         x_grad = Expr(get_runtime().prog.make_id_expr(""))
@@ -559,13 +563,13 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
             pytaichi.grad_vars.append(x_grad)
 
         if prog.config.debug or prog.config.check_autodiff_valid:
-            x_grad_loaded_flag = Expr(get_runtime().prog.make_id_expr(""))
-            # x_grad_loaded_flag.declaration_tb = get_traceback(stacklevel=4)
-            x_grad_loaded_flag.ptr = _ti_core.global_new(
-                x_grad_loaded_flag.ptr, cook_dtype(int))
-            x_grad_loaded_flag.ptr.set_name(name + ".grad_loaded_flag")
-            x_grad_loaded_flag.ptr.set_is_primal(False)
-            x.ptr.set_adjoint_loaded_flag(x_grad_loaded_flag.ptr)
+            # adjoint flag
+            x_grad_flag = Expr(get_runtime().prog.make_id_expr(""))
+            x_grad_flag.ptr = _ti_core.global_new(x_grad_flag.ptr,
+                                                  cook_dtype(u8))
+            x_grad_flag.ptr.set_name(name + ".grad_flag")
+            x_grad_flag.ptr.set_is_primal(False)
+            x.ptr.set_adjoint_flag(x_grad_flag.ptr)
 
         # dual
         x_dual = Expr(get_runtime().prog.make_id_expr(""))

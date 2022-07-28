@@ -309,9 +309,8 @@ bool SNode::has_adjoint() const {
   return is_primal() && (grad_info->adjoint_snode() != nullptr);
 }
 
-bool SNode::has_adjoint_loaded_flag() const {
-  return is_primal() &&
-         (grad_info->adjoint_snode_loaded_flag_snode() != nullptr);
+bool SNode::has_adjoint_flag() const {
+  return is_primal() && (grad_info->adjoint_flag_snode() != nullptr);
 }
 
 bool SNode::has_dual() const {
@@ -323,9 +322,9 @@ SNode *SNode::get_adjoint() const {
   return grad_info->adjoint_snode();
 }
 
-SNode *SNode::get_adjoint_loaded_flag() const {
+SNode *SNode::get_adjoint_flag() const {
   // TI_ASSERT(has_adjoint());
-  return grad_info->adjoint_snode_loaded_flag_snode();
+  return grad_info->adjoint_flag_snode();
 }
 
 SNode *SNode::get_dual() const {

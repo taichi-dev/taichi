@@ -95,7 +95,7 @@ class SNode {
     virtual bool is_primal() const = 0;
     virtual SNode *adjoint_snode() const = 0;
     virtual SNode *dual_snode() const = 0;
-    virtual SNode *adjoint_snode_loaded_flag_snode() const = 0;
+    virtual SNode *adjoint_flag_snode() const = 0;
 
     template <typename T>
     T *cast() {
@@ -295,9 +295,9 @@ class SNode {
 
   SNode *get_adjoint() const;
 
-  bool has_adjoint_loaded_flag() const;
+  bool has_adjoint_flag() const;
 
-  SNode *get_adjoint_loaded_flag() const;
+  SNode *get_adjoint_flag() const;
 
   bool has_dual() const;
 

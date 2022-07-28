@@ -32,12 +32,12 @@ class GradInfoImpl final : public SNode::GradInfoProvider {
     return dual.snode();
   }
 
-  SNode *adjoint_snode_loaded_flag_snode() const override {
-    auto &adjoint_loaded_flag = glb_var_->adjoint_loaded_flag;
-    if (adjoint_loaded_flag.expr == nullptr) {
+  SNode *adjoint_flag_snode() const override {
+    auto &adjoint_flag = glb_var_->adjoint_flag;
+    if (adjoint_flag.expr == nullptr) {
       return nullptr;
     }
-    return adjoint_loaded_flag.snode();
+    return adjoint_flag.snode();
   }
 
  private:
@@ -125,24 +125,29 @@ void make_lazy_grad(SNode *snode,
                     SNodeGlobalVarExprMap *snode_to_exprs,
                     bool is_adjoint,
                     bool is_dual,
-                    bool is_global_data_access_rule_check_buffer) {
+                    bool is_adjoint_flag) {
   if (snode->type == SNodeType::place)
     return;
   for (auto &c : snode->ch) {
     make_lazy_grad(c.get(), snode_to_exprs, is_adjoint, is_dual,
-                   is_global_data_access_rule_check_buffer);
+                   is_adjoint_flag);
   }
   std::vector<Expr> new_grads;
   for (auto &c : snode->ch) {
+    bool collected_for_adjoint = false;
     if (is_adjoint) {
       if (c->type == SNodeType::place && c->is_primal() && is_real(c->dt) &&
           !c->has_adjoint()) {
         new_grads.push_back(snode_to_exprs->at(c.get())->adjoint);
+        collected_for_adjoint = true;
       }
     }
-    if (is_global_data_access_rule_check_buffer) {
-      if (c->type == SNodeType::place && c->is_primal() && is_real(c->dt)) {
-        new_grads.push_back(snode_to_exprs->at(c.get())->adjoint_loaded_flag);
+    if (is_adjoint_flag) {
+      // Only allocate adjoint_flag for field with adjoint or ready for
+      // allocating adjoint
+      if (c->type == SNodeType::place && c->is_primal() && is_real(c->dt) &&
+          (c->has_adjoint() || collected_for_adjoint)) {
+        new_grads.push_back(snode_to_exprs->at(c.get())->adjoint_flag);
       }
     }
     if (is_dual) {

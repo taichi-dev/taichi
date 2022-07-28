@@ -14,7 +14,7 @@ cfg = impl.default_cfg
 
 
 def _get_uint_ip():
-    dt = ti.u64 if impl.get_runtime().default_ip == ti.i64 else ti.u32
+    dt = ti.u64 if cfg().default_ip == ti.i64 else ti.u32
     return dt
 
 

@@ -141,6 +141,8 @@ void Mesh::init_mesh(AppContext *app_context,
 
   Renderable::init(config, app_context);
   Renderable::init_render_resources();
+
+  create_mesh_storage_buffers();
 }
 
 void Mesh::create_bindings() {
@@ -153,7 +155,7 @@ void Mesh::create_bindings() {
 
 void Mesh::create_mesh_storage_buffers() {
   if (mesh_ssbo_size_ == 0) {
-    return;
+    mesh_ssbo_size_ = 4 * 4 * sizeof(float);
   }
   Device::AllocParams sb_params{mesh_ssbo_size_, true, false, true,
                                 AllocUsage::Storage};

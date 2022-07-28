@@ -298,6 +298,13 @@ if(TI_WITH_LLVM)
 
     add_subdirectory(taichi/runtime/wasm)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE wasm_runtime)
+
+    if (LINUX)
+        # Remove symbols from llvm static libs
+        foreach(LETTER ${llvm_libs})
+            target_link_options(${CORE_LIBRARY_NAME} PUBLIC -Wl,--exclude-libs=lib${LETTER}.a)
+        endforeach()
+    endif()
 endif()
 
 

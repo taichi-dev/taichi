@@ -163,7 +163,7 @@ def test_taichi_scope_matrix_operations_with_global_matrices(ops):
     assert np.allclose(r2[None].to_numpy(), ops(a, c))
 
 
-@test_utils.test()
+@test_utils.test(exclude=[ti.cc])
 def test_matrix_non_constant_index_numpy():
     @ti.kernel
     def func1(a: ti.types.ndarray(element_dim=2)):
@@ -566,3 +566,41 @@ def test_python_scope_inplace_operator():
         m1, m2 = ti.Matrix(a), ti.Matrix(b)
         m1 = ops(m1, m2)
         assert np.allclose(m1.to_numpy(), ops(a, b))
+
+
+@test_utils.test()
+def test_slice_assign_basic():
+    @ti.kernel
+    def foo():
+        m = ti.Matrix([[0., 0., 0., 0.] for _ in range(3)])
+        vec = ti.Vector([1., 2., 3., 4.])
+        m[0, :] = vec.transpose()
+        ref = ti.Matrix([[1., 2., 3., 4.], [0., 0., 0., 0.], [0., 0., 0., 0.]])
+        assert all(m == ref)
+
+        m[1, 1:3] = ti.Vector([1., 2.]).transpose()
+        ref = ti.Matrix([[1., 2., 3., 4.], [0., 1., 2., 0.], [0., 0., 0., 0.]])
+        assert all(m == ref)
+
+        m1 = ti.Matrix([[1., 1., 1., 1.] for _ in range(2)])
+        m[:2, :] = m1
+        ref = ti.Matrix([[1., 1., 1., 1.], [1., 1., 1., 1.], [0., 0., 0., 0.]])
+        assert all(m == ref)
+
+    foo()
+
+
+@test_utils.test(dynamic_index=True)
+def test_slice_assign_dynamic_index():
+    @ti.kernel
+    def foo(i: ti.i32, ref: ti.template()):
+        m = ti.Matrix([[0., 0., 0., 0.] for _ in range(3)])
+        vec = ti.Vector([1., 2., 3., 4.])
+        m[i, :] = vec.transpose()
+        assert all(m == ref)
+
+    for i in range(3):
+        foo(
+            i,
+            ti.Matrix([[1., 2., 3., 4.] if j == i else [0., 0., 0., 0.]
+                       for j in range(3)]))

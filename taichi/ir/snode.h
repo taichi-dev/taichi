@@ -128,24 +128,20 @@ class SNode {
   int chunk_size{0};
   std::size_t cell_size_bytes{0};
   std::size_t offset_bytes_in_parent_cell{0};
-  PrimitiveType *physical_type{nullptr};  // for bit_struct and bit_array only
+  PrimitiveType *physical_type{nullptr};  // for bit_struct and quant_array only
   DataType dt;
   bool has_ambient{false};
   TypedConstant ambient_val;
   // Note: parent will not be set until structural nodes are compiled!
   SNode *parent{nullptr};
   std::unique_ptr<GradInfoProvider> grad_info{nullptr};
-  SNode *exp_snode{nullptr};  // for QuantFloatType
-  int bit_offset{0};          // for children of bit_struct only
-  bool placing_shared_exp{false};
-  SNode *currently_placing_exp_snode{nullptr};
-  Type *currently_placing_exp_snode_dtype{nullptr};
-  bool owns_shared_exponent{false};
-  std::vector<SNode *> exponent_users;
+
+  std::unique_ptr<BitStructTypeBuilder> bit_struct_type_builder{nullptr};
+  int id_in_bit_struct{0};  // for children of bit_struct only
 
   // is_bit_level=false: the SNode is not bitpacked
   // is_bit_level=true: the SNode is bitpacked (i.e., strictly inside bit_struct
-  // or bit_array)
+  // or quant_array)
   bool is_bit_level{false};
 
   // Whether the path from root to |this| contains only `dense` SNodes.
@@ -245,10 +241,10 @@ class SNode {
 
   SNode &bit_struct(int bits, bool packed);
 
-  SNode &bit_array(const std::vector<Axis> &axes,
-                   const std::vector<int> &sizes,
-                   int bits,
-                   bool packed);
+  SNode &quant_array(const std::vector<Axis> &axes,
+                     const std::vector<int> &sizes,
+                     int bits,
+                     bool packed);
 
   void print();
 
@@ -332,8 +328,8 @@ class SNode {
     place_child(&expr, offset, this, snode_to_glb_var_exprs_);
   }
 
-  void lazy_grad() {
-    make_lazy_grad(this, snode_to_glb_var_exprs_);
+  void lazy_grad(bool is_adjoint, bool is_dual) {
+    make_lazy_grad(this, snode_to_glb_var_exprs_, is_adjoint, is_dual);
   }
 
   int64 read_int(const std::vector<int> &i);

@@ -33,13 +33,17 @@ class TypeFactory {
                              Type *exponent_type,
                              Type *compute_type);
 
-  Type *get_bit_struct_type(PrimitiveType *physical_type,
-                            std::vector<Type *> member_types,
-                            std::vector<int> member_bit_offsets);
+  Type *get_bit_struct_type(
+      PrimitiveType *physical_type,
+      const std::vector<Type *> &member_types,
+      const std::vector<int> &member_bit_offsets,
+      const std::vector<bool> &member_owns_shared_exponents,
+      const std::vector<int> &member_exponents,
+      const std::vector<std::vector<int>> &member_exponent_users);
 
-  Type *get_bit_array_type(PrimitiveType *physical_type,
-                           Type *element_type,
-                           int num_elements);
+  Type *get_quant_array_type(PrimitiveType *physical_type,
+                             Type *element_type,
+                             int num_elements);
 
   static DataType create_vector_or_scalar_type(int width,
                                                DataType element,
@@ -77,7 +81,7 @@ class TypeFactory {
   std::vector<std::unique_ptr<Type>> bit_struct_types_;
 
   // TODO: avoid duplication
-  std::vector<std::unique_ptr<Type>> bit_array_types_;
+  std::vector<std::unique_ptr<Type>> quant_array_types_;
 
   std::mutex mut_;
 };

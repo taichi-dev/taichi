@@ -4,7 +4,7 @@
 #include <functional>
 
 #include "taichi/inc/constants.h"
-#include "taichi/lang_util.h"
+#include "taichi/util/lang_util.h"
 #include "taichi/program/kernel_profiler.h"
 
 TLANG_NAMESPACE_BEGIN

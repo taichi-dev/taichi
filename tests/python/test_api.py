@@ -70,20 +70,21 @@ user_api[ti] = [
     'arm64', 'asin', 'assume_in_range', 'atan2', 'atomic_add', 'atomic_and',
     'atomic_max', 'atomic_min', 'atomic_or', 'atomic_sub', 'atomic_xor',
     'axes', 'bit_cast', 'bit_shr', 'block_local', 'cache_read_only', 'cast',
-    'cc', 'ceil', 'cos', 'cpu', 'cuda', 'data_oriented', 'deactivate',
-    'deactivate_all_snodes', 'dx11', 'eig', 'exp', 'experimental', 'extension',
-    'f16', 'f32', 'f64', 'field', 'float16', 'float32', 'float64', 'floor',
-    'func', 'get_addr', 'global_thread_idx', 'gpu', 'graph', 'grouped',
-    'hex_to_rgb', 'i', 'i16', 'i32', 'i64', 'i8', 'ij', 'ijk', 'ijkl', 'ijl',
-    'ik', 'ikl', 'il', 'init', 'int16', 'int32', 'int64', 'int8', 'is_active',
-    'is_logging_effective', 'j', 'jk', 'jkl', 'jl', 'k', 'kernel', 'kl', 'l',
-    'lang', 'length', 'linalg', 'log', 'loop_config', 'math', 'max',
-    'mesh_local', 'mesh_patch_idx', 'metal', 'min', 'ndarray', 'ndrange',
-    'no_activate', 'one', 'opengl', 'polar_decompose', 'pow', 'profiler',
-    'randn', 'random', 'raw_div', 'raw_mod', 'ref', 'rescale_index', 'reset',
-    'rgb_to_hex', 'root', 'round', 'rsqrt', 'select', 'set_logging_level',
-    'simt', 'sin', 'solve', 'sparse_matrix_builder', 'sqrt', 'static',
-    'static_assert', 'static_print', 'stop_grad', 'struct_class', 'svd',
+    'cc', 'ceil', 'cos', 'cpu', 'cuda', 'data_oriented', 'dataclass',
+    'deactivate', 'deactivate_all_snodes', 'dx11', 'eig', 'exp',
+    'experimental', 'extension', 'f16', 'f32', 'f64', 'field', 'float16',
+    'float32', 'float64', 'floor', 'func', 'get_addr',
+    'get_compute_stream_device_time_elapsed_us', 'global_thread_idx', 'gpu',
+    'graph', 'grouped', 'hex_to_rgb', 'i', 'i16', 'i32', 'i64', 'i8', 'ij',
+    'ijk', 'ijkl', 'ijl', 'ik', 'ikl', 'il', 'init', 'int16', 'int32', 'int64',
+    'int8', 'is_active', 'is_logging_effective', 'j', 'jk', 'jkl', 'jl', 'k',
+    'kernel', 'kl', 'l', 'lang', 'length', 'linalg', 'log', 'loop_config',
+    'math', 'max', 'mesh_local', 'mesh_patch_idx', 'metal', 'min', 'ndarray',
+    'ndrange', 'no_activate', 'one', 'opengl', 'polar_decompose', 'pow',
+    'profiler', 'randn', 'random', 'raw_div', 'raw_mod', 'ref',
+    'rescale_index', 'reset', 'rgb_to_hex', 'root', 'round', 'rsqrt', 'select',
+    'set_logging_level', 'simt', 'sin', 'solve', 'sparse_matrix_builder',
+    'sqrt', 'static', 'static_assert', 'static_print', 'stop_grad', 'svd',
     'swizzle_generator', 'sym_eig', 'sync', 'tan', 'tanh', 'template', 'tools',
     'types', 'u16', 'u32', 'u64', 'u8', 'ui', 'uint16', 'uint32', 'uint64',
     'uint8', 'vulkan', 'wasm', 'x64', 'x86_64', 'zero'
@@ -97,18 +98,18 @@ user_api[ti.Field] = [
     'parent', 'shape', 'snode', 'to_numpy', 'to_paddle', 'to_torch'
 ]
 user_api[ti.FieldsBuilder] = [
-    'bit_array', 'bit_struct', 'bitmasked', 'deactivate_all', 'dense',
-    'dynamic', 'finalize', 'lazy_grad', 'place', 'pointer'
+    'bit_struct', 'bitmasked', 'deactivate_all', 'dense', 'dynamic',
+    'finalize', 'lazy_dual', 'lazy_grad', 'place', 'pointer', 'quant_array'
 ]
 user_api[ti.math] = [
     'acos', 'asin', 'atan2', 'cconj', 'cdiv', 'ceil', 'cexp', 'cinv', 'clamp',
     'clog', 'cmul', 'cos', 'cpow', 'cross', 'csqrt', 'degrees', 'determinant',
-    'distance', 'dot', 'e', 'exp', 'eye', 'floor', 'fract', 'inverse', 'ivec2',
-    'ivec3', 'ivec4', 'length', 'log', 'log2', 'mat2', 'mat3', 'mat4', 'max',
-    'min', 'mix', 'mod', 'normalize', 'pi', 'pow', 'radians', 'reflect',
-    'refract', 'rot2', 'rot3', 'rotate2d', 'rotate3d', 'round', 'sign', 'sin',
-    'smoothstep', 'sqrt', 'step', 'tan', 'tanh', 'uvec2', 'uvec3', 'uvec4',
-    'vec2', 'vec3', 'vec4'
+    'distance', 'dot', 'e', 'exp', 'eye', 'floor', 'fract', 'inf', 'inverse',
+    'isinf', 'isnan', 'ivec2', 'ivec3', 'ivec4', 'length', 'log', 'log2',
+    'mat2', 'mat3', 'mat4', 'max', 'min', 'mix', 'mod', 'nan', 'normalize',
+    'pi', 'pow', 'radians', 'reflect', 'refract', 'rot2', 'rot3', 'rotate2d',
+    'rotate3d', 'round', 'sign', 'sin', 'smoothstep', 'sqrt', 'step', 'tan',
+    'tanh', 'uvec2', 'uvec3', 'uvec4', 'vdir', 'vec2', 'vec3', 'vec4'
 ]
 user_api[ti.Matrix] = _get_expected_matrix_apis()
 user_api[ti.MatrixField] = [
@@ -120,10 +121,11 @@ user_api[ti.MatrixNdarray] = [
     'copy_from', 'element_shape', 'fill', 'from_numpy', 'get_type', 'to_numpy'
 ]
 user_api[ti.Ndarray] = ['copy_from', 'element_shape', 'fill', 'get_type']
-user_api[ti.Texture] = ['device_allocation_ptr', 'from_ndarray']
+user_api[ti.Texture] = ['device_allocation_ptr', 'from_field', 'from_ndarray']
 user_api[ti.SNode] = [
-    'bit_array', 'bit_struct', 'bitmasked', 'deactivate_all', 'dense',
-    'dynamic', 'lazy_grad', 'parent', 'place', 'pointer', 'shape'
+    'bit_struct', 'bitmasked', 'deactivate_all', 'dense', 'dynamic',
+    'lazy_dual', 'lazy_grad', 'parent', 'place', 'pointer', 'quant_array',
+    'shape'
 ]
 user_api[ti.ScalarField] = [
     'copy_from', 'dtype', 'fill', 'from_numpy', 'from_paddle', 'from_torch',

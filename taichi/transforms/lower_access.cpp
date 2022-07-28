@@ -135,7 +135,7 @@ class LowerAccess : public IRVisitor {
     auto merge = Stmt::make<ElementShuffleStmt>(lanes, true);
     if (ptr->is_bit_vectorized) {
       // if the global ptr is bit vectorized, we start from the place snode
-      // and find the parent bit array snode, use its physical type
+      // and find the parent quant array snode, use its physical type
       auto parent_ret_type = ptr->snodes[0]->parent->physical_type;
       auto ptr_ret_type =
           TypeFactory::get_instance().get_pointer_type(parent_ret_type);

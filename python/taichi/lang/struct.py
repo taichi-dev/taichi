@@ -1,7 +1,7 @@
 import numbers
 from types import MethodType
 
-from taichi.lang import expr, impl, ops
+from taichi.lang import impl, ops
 from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiSyntaxError
@@ -18,7 +18,7 @@ class Struct(TaichiOperations):
 
     A struct is a dictionary-like data structure that stores members as
     (key, value) pairs. Valid data members of a struct can be scalars,
-    matrices or other dictionary-like stuctures.
+    matrices or other dictionary-like structures.
 
     Args:
         entries (Dict[str, Union[Dict, Expr, Matrix, Struct]]): \
@@ -272,6 +272,7 @@ class Struct(TaichiOperations):
               name="<Struct>",
               offset=None,
               needs_grad=False,
+              needs_dual=False,
               layout=Layout.AOS):
         """Creates a :class:`~taichi.StructField` with each element
         has this struct as its type.
@@ -285,7 +286,8 @@ class Struct(TaichiOperations):
             offset (Tuple[int]): offset of the indices of the created field.
                 For example if `offset=(-10, -10)` the indices of the field
                 will start at `(-10, -10)`, not `(0, 0)`.
-            needs_grad (bool): enabling gradient field or not.
+            needs_grad (bool): enabling grad field (reverse mode autodiff) or not.
+            needs_dual (bool): enabling dual field (forward mode autodiff) or not.
             layout: AOS or SOA.
 
         Example:
@@ -321,13 +323,15 @@ class Struct(TaichiOperations):
                 field_dict[key] = dtype.field(shape=None,
                                               name=field_name,
                                               offset=offset,
-                                              needs_grad=needs_grad)
+                                              needs_grad=needs_grad,
+                                              needs_dual=needs_dual)
             else:
                 field_dict[key] = impl.field(dtype,
                                              shape=None,
                                              name=field_name,
                                              offset=offset,
-                                             needs_grad=needs_grad)
+                                             needs_grad=needs_grad,
+                                             needs_dual=needs_dual)
 
         if shape is not None:
             if isinstance(shape, numbers.Number):
@@ -348,6 +352,10 @@ class Struct(TaichiOperations):
                     for e in field_dict.values():
                         impl.root.dense(impl.index_nd(dim),
                                         shape).place(e.grad, offset=offset)
+                if needs_dual:
+                    for e in field_dict.values():
+                        impl.root.dense(impl.index_nd(dim),
+                                        shape).place(e.dual, offset=offset)
             else:
                 impl.root.dense(impl.index_nd(dim),
                                 shape).place(*tuple(field_dict.values()),
@@ -356,6 +364,12 @@ class Struct(TaichiOperations):
                     grads = tuple(e.grad for e in field_dict.values())
                     impl.root.dense(impl.index_nd(dim),
                                     shape).place(*grads, offset=offset)
+
+                if needs_dual:
+                    duals = tuple(e.dual for e in field_dict.values())
+                    impl.root.dense(impl.index_nd(dim),
+                                    shape).place(*duals, offset=offset)
+
         return StructField(field_dict, methods, name=name)
 
 
@@ -378,7 +392,7 @@ class _IntermediateStruct(Struct):
 class StructField(Field):
     """Taichi struct field with SNode implementation.
 
-       Instead of directly contraining Expr entries, the StructField object
+       Instead of directly constraining Expr entries, the StructField object
        directly hosts members as `Field` instances to support nested structs.
 
     Args:
@@ -387,11 +401,29 @@ class StructField(Field):
             to each struct instance in the field.
         name (string, optional): The custom name of the field.
     """
-    def __init__(self, field_dict, struct_methods, name=None):
+    def __init__(self, field_dict, struct_methods, name=None, is_primal=True):
         # will not call Field initializer
         self.field_dict = field_dict
         self.struct_methods = struct_methods
         self.name = name
+        self.grad = None
+        self.dual = None
+        if is_primal:
+            grad_field_dict = {}
+            for k, v in self.field_dict.items():
+                grad_field_dict[k] = v.grad
+            self.grad = StructField(grad_field_dict,
+                                    struct_methods,
+                                    name + ".grad",
+                                    is_primal=False)
+
+            dual_field_dict = {}
+            for k, v in self.field_dict.items():
+                dual_field_dict[k] = v.dual
+            self.dual = StructField(dual_field_dict,
+                                    struct_methods,
+                                    name + ".dual",
+                                    is_primal=False)
         self._register_fields()
 
     @property
@@ -466,7 +498,7 @@ class StructField(Field):
         """Gets representative field member for loop range info.
 
         Returns:
-            taichi_core.Expr: Representative (first) field member.
+            taichi_python.Expr: Representative (first) field member.
         """
         return self._members[0]._loop_range()
 
@@ -616,21 +648,22 @@ class StructType(CompoundType):
                 self.members[k] = cook_dtype(dtype)
 
     def __call__(self, *args, **kwargs):
-        if len(args) == 0:
-            if kwargs == {}:
-                raise TaichiSyntaxError(
-                    "Custom type instances need to be created with an initial value."
-                )
+        d = {}
+        items = self.members.items()
+        for index, pair in enumerate(items):
+            name, dtype = pair
+            if isinstance(dtype, CompoundType):
+                if index < len(args):
+                    d[name] = dtype(args[index])
+                else:
+                    d[name] = kwargs.get(name, dtype(0))
             else:
-                # initialize struct members by keywords
-                entries = Struct(kwargs)
-        elif len(args) == 1:
-            # fill a single scalar
-            if isinstance(args[0], (numbers.Number, expr.Expr)):
-                entries = self.filled_with_scalar(args[0])
-            else:
-                # initialize struct members by dictionary
-                entries = Struct(args[0])
+                if index < len(args):
+                    d[name] = args[index]
+                else:
+                    d[name] = kwargs.get(name, 0)
+
+        entries = Struct(d)
         struct = self.cast(entries)
         return struct
 
@@ -668,7 +701,7 @@ class StructType(CompoundType):
         return Struct.field(self.members, self.methods, **kwargs)
 
 
-def struct_class(cls):
+def dataclass(cls):
     """Converts a class with field annotations and methods into a taichi struct type.
 
     This will return a normal custom struct type, with the functions added to it.
@@ -681,7 +714,7 @@ def struct_class(cls):
 
     Example::
 
-        >>> @ti.stuct_class
+        >>> @ti.dataclass
         >>> class Sphere:
         >>>     center: vec3
         >>>     radius: ti.f32
@@ -700,7 +733,7 @@ def struct_class(cls):
         A taichi struct with the annotations as fields
             and methods from the class attached.
     """
-    # save the annotaion fields for the struct
+    # save the annotation fields for the struct
     fields = cls.__annotations__
     # get the class methods to be attached to the struct types
     fields['__struct_methods'] = {
@@ -711,4 +744,4 @@ def struct_class(cls):
     return StructType(**fields)
 
 
-__all__ = ["Struct", "StructField", "struct_class"]
+__all__ = ["Struct", "StructField", "dataclass"]

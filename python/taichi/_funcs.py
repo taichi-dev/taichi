@@ -1,10 +1,11 @@
 import math
 
 from taichi.lang import impl, matrix, ops
-from taichi.lang.impl import expr_init, get_runtime, static
+from taichi.lang.impl import expr_init, get_runtime, grouped, static
 from taichi.lang.kernel_impl import func, pyfunc
 from taichi.lang.matrix import Matrix, Vector
 from taichi.types import f32, f64
+from taichi.types.annotations import template
 
 
 @func
@@ -594,7 +595,7 @@ def solve(A, b, dt=None):
     Returns:
         x (ti.Vector(n, 1)): the solution of Ax=b.
     """
-    assert A.n == A.m, "Only sqaure matrix is supported"
+    assert A.n == A.m, "Only square matrix is supported"
     assert A.n >= 2 and A.n <= 3, "Only 2D and 3D matrices are supported"
     assert A.m == b.n, "Matrix and Vector dimension dismatch"
     if dt is None:
@@ -613,6 +614,12 @@ def solve(A, b, dt=None):
     if A.n == 3:
         return _gauss_elimination_3x3(Ab, dt)
     raise Exception("Solver only supports 2D and 3D matrices.")
+
+
+@func
+def field_fill_taichi_scope(F: template(), val: template()):
+    for I in grouped(F):
+        F[I] = val
 
 
 __all__ = ['randn', 'polar_decompose', 'eig', 'sym_eig', 'svd', 'solve']

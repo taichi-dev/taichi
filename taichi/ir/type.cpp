@@ -103,14 +103,8 @@ std::string QuantIntType::to_string() const {
   return fmt::format("q{}{}", is_signed_ ? 'i' : 'u', num_bits_);
 }
 
-QuantIntType::QuantIntType(int num_bits,
-                           bool is_signed,
-                           Type *compute_type,
-                           Type *physical_type)
-    : compute_type_(compute_type),
-      physical_type_(physical_type),
-      num_bits_(num_bits),
-      is_signed_(is_signed) {
+QuantIntType::QuantIntType(int num_bits, bool is_signed, Type *compute_type)
+    : compute_type_(compute_type), num_bits_(num_bits), is_signed_(is_signed) {
   if (compute_type == nullptr) {
     auto type_id = is_signed ? PrimitiveTypeID::i32 : PrimitiveTypeID::u32;
     this->compute_type_ =
@@ -172,27 +166,53 @@ bool QuantFloatType::get_is_signed() const {
   return digits_type_->as<QuantIntType>()->get_is_signed();
 }
 
-BitStructType::BitStructType(PrimitiveType *physical_type,
-                             std::vector<Type *> member_types,
-                             std::vector<int> member_bit_offsets)
+BitStructType::BitStructType(
+    PrimitiveType *physical_type,
+    const std::vector<Type *> &member_types,
+    const std::vector<int> &member_bit_offsets,
+    const std::vector<bool> &member_owns_shared_exponents,
+    const std::vector<int> &member_exponents,
+    const std::vector<std::vector<int>> &member_exponent_users)
     : physical_type_(physical_type),
       member_types_(member_types),
-      member_bit_offsets_(member_bit_offsets) {
+      member_bit_offsets_(member_bit_offsets),
+      member_owns_shared_exponents_(member_owns_shared_exponents),
+      member_exponents_(member_exponents),
+      member_exponent_users_(member_exponent_users) {
   TI_ASSERT(member_types_.size() == member_bit_offsets_.size());
-  int physical_type_bits = data_type_bits(physical_type);
+  TI_ASSERT(member_types_.size() == member_owns_shared_exponents_.size());
+  TI_ASSERT(member_types_.size() == member_exponents_.size());
+  TI_ASSERT(member_types_.size() == member_exponent_users_.size());
+  int physical_type_bits = data_type_bits(physical_type_);
+  int member_total_bits = 0;
   for (auto i = 0; i < member_types_.size(); ++i) {
     QuantIntType *component_qit = nullptr;
     if (auto qit = member_types_[i]->cast<QuantIntType>()) {
       component_qit = qit;
     } else if (auto qfxt = member_types_[i]->cast<QuantFixedType>()) {
       component_qit = qfxt->get_digits_type()->as<QuantIntType>();
-    } else if (auto qflt = member_types_[i]->cast<QuantFloatType>()) {
-      component_qit = qflt->get_digits_type()->as<QuantIntType>();
     } else {
-      TI_NOT_IMPLEMENTED
+      TI_ASSERT(member_types_[i]->is<QuantFloatType>());
+      auto qflt = member_types_[i]->as<QuantFloatType>();
+      component_qit = qflt->get_digits_type()->as<QuantIntType>();
     }
-    auto bits_end = component_qit->get_num_bits() + member_bit_offsets_[i];
-    TI_ASSERT(physical_type_bits >= bits_end)
+    TI_ASSERT(member_bit_offsets_[i] == member_total_bits);
+    member_total_bits += component_qit->get_num_bits();
+  }
+  TI_ASSERT(physical_type_bits >= member_total_bits);
+  for (auto i = 0; i < member_types_.size(); ++i) {
+    auto exponent = member_exponents_[i];
+    if (member_owns_shared_exponents_[i]) {
+      TI_ASSERT(exponent != -1);
+    }
+    if (exponent != -1) {
+      TI_ASSERT(std::find(member_exponent_users_[exponent].begin(),
+                          member_exponent_users_[exponent].end(),
+                          i) != member_exponent_users_[exponent].end());
+    }
+    for (auto user : member_exponent_users_[i]) {
+      TI_ASSERT(member_exponents_[user] == i);
+    }
   }
 }
 
@@ -200,8 +220,13 @@ std::string BitStructType::to_string() const {
   std::string str = "bs(";
   int num_members = (int)member_bit_offsets_.size();
   for (int i = 0; i < num_members; i++) {
-    str += fmt::format("{}@{}", member_types_[i]->to_string(),
+    str += fmt::format("{}: {}@{}", i, member_types_[i]->to_string(),
                        member_bit_offsets_[i]);
+    if (member_exponents_[i] != -1) {
+      str += fmt::format(" {}exp={}",
+                         member_owns_shared_exponents_[i] ? "shared_" : "",
+                         member_exponents_[i]);
+    }
     if (i + 1 < num_members) {
       str += ", ";
     }
@@ -209,8 +234,8 @@ std::string BitStructType::to_string() const {
   return str + ")";
 }
 
-std::string BitArrayType::to_string() const {
-  return fmt::format("ba({}x{})", element_type_->to_string(), num_elements_);
+std::string QuantArrayType::to_string() const {
+  return fmt::format("qa({}x{})", element_type_->to_string(), num_elements_);
 }
 
 std::string TypedConstant::stringify() const {

@@ -1,6 +1,7 @@
 $ErrorActionPreference = "Stop"
 
 $env:PYTHONUNBUFFERED = 1
+$env:TI_CI = 1
 
 . venv\Scripts\activate.ps1
 python -c "import taichi"
@@ -14,6 +15,20 @@ if ("$env:TI_WANTED_ARCHS".Contains("cuda")) {
 } else {
     pip install "torch; python_version < '3.10'"
     pip install "paddlepaddle==2.3.0; python_version < '3.10'"
+}
+
+
+if ("$env:TI_RUN_RELEASE_TESTS" -eq "1") {
+    echo "Running release tests"
+    # release tests
+    pip install PyYAML
+    git clone https://github.com/taichi-dev/taichi-release-tests
+    mkdir -p repos/taichi/python/taichi
+    $EXAMPLES = & python -c 'import taichi.examples as e; print(e.__path__._path[0])' | Select-Object -Last 1
+    New-Item -Target $EXAMPLES -Path repos/taichi/python/taichi/examples -ItemType Junction
+    New-Item -Target taichi-release-tests/truths -Path truths -ItemType Junction
+    python taichi-release-tests/run.py --log=DEBUG --runners 1 taichi-release-tests/timelines
+    if (-not $?) { exit 1 }
 }
 
 # Run C++ tests

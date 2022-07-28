@@ -1,19 +1,18 @@
 #include "taichi/aot/graph_data.h"
 #include "taichi/program/ndarray.h"
-#define TI_RUNTIME_HOST
-#include "taichi/program/context.h"
-#undef TI_RUNTIME_HOST
+#include "taichi/program/texture.h"
 
 namespace taichi {
 namespace lang {
 namespace aot {
+
 void CompiledGraph::run(
     const std::unordered_map<std::string, IValue> &args) const {
-  RuntimeContext ctx;
   for (const auto &dispatch : dispatches) {
-    memset(&ctx, 0, sizeof(RuntimeContext));
+    RuntimeContext ctx = ctx_;
 
     TI_ASSERT(dispatch.compiled_kernel);
+
     // Populate args metadata into RuntimeContext
     const auto &symbolic_args_ = dispatch.symbolic_args;
     for (int i = 0; i < symbolic_args_.size(); ++i) {
@@ -24,19 +23,33 @@ void CompiledGraph::run(
       const aot::IValue &ival = found->second;
       if (ival.tag == aot::ArgKind::kNdarray) {
         Ndarray *arr = reinterpret_cast<Ndarray *>(ival.val);
-        TI_ERROR_IF(ival.tag != aot::ArgKind::kNdarray,
-                    "Required a ndarray for argument {}", symbolic_arg.name);
         TI_ERROR_IF(arr->element_shape != symbolic_arg.element_shape,
                     "Mismatched shape information for argument {}",
                     symbolic_arg.name);
+        TI_ERROR_IF(arr->shape.size() != symbolic_arg.field_dim,
+                    "Dispatch node is compiled for argument {} with "
+                    "field_dim={} but got an ndarray with field_dim={}",
+                    symbolic_arg.name, symbolic_arg.field_dim,
+                    arr->shape.size());
+        TI_ERROR_IF(arr->dtype != symbolic_arg.dtype(),
+                    "Dispatch node is compiled for argument {} with "
+                    "dtype={} but got an ndarray with dtype={}",
+                    symbolic_arg.name, symbolic_arg.dtype().to_string(),
+                    arr->dtype.to_string());
+
         set_runtime_ctx_ndarray(&ctx, i, arr);
-      } else {
-        TI_ERROR_IF(ival.tag != aot::ArgKind::kScalar,
-                    "Required a scalar for argument {}", symbolic_arg.name);
+      } else if (ival.tag == aot::ArgKind::kScalar) {
         ctx.set_arg(i, ival.val);
+      } else if (ival.tag == aot::ArgKind::kTexture) {
+        Texture *tex = reinterpret_cast<Texture *>(ival.val);
+        ctx.set_arg_texture(i, tex->get_device_allocation_ptr_as_int());
+      } else if (ival.tag == aot::ArgKind::kRWTexture) {
+        Texture *tex = reinterpret_cast<Texture *>(ival.val);
+        ctx.set_arg_rw_texture(i, tex->get_device_allocation_ptr_as_int());
+      } else {
+        TI_ERROR("Error in compiled graph: unknown tag {}", ival.tag);
       }
     }
-
     dispatch.compiled_kernel->launch(&ctx);
   }
 }

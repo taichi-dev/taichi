@@ -57,7 +57,7 @@ def test_kernel_template_gradient():
     for i in range(16):
         x[i] = i
 
-    with ti.Tape(loss):
+    with ti.ad.Tape(loss):
         double(x, y)
         double(y, z)
         compute_loss()

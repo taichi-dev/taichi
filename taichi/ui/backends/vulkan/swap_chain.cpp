@@ -45,6 +45,58 @@ void SwapChain::resize(uint32_t width, uint32_t height) {
   create_depth_resources();
 }
 
+bool SwapChain::copy_depth_buffer_to_ndarray(
+    taichi::lang::DevicePtr &arr_dev_ptr) {
+  auto [w, h] = surface_->get_size();
+  size_t copy_size = w * h * 4;
+
+  Device::MemcpyCapability memcpy_cap = Device::check_memcpy_capability(
+      arr_dev_ptr, depth_allocation_.get_ptr(), copy_size);
+
+  auto &device = app_context_->device();
+  auto *stream = device.get_graphics_stream();
+  std::unique_ptr<CommandList> cmd_list{nullptr};
+
+  if (memcpy_cap == Device::MemcpyCapability::Direct) {
+    Device::AllocParams params{copy_size, /*host_wrtie*/ false,
+                               /*host_read*/ false, /*export_sharing*/ true,
+                               AllocUsage::Uniform};
+
+    auto depth_staging_buffer = device.allocate_memory(params);
+
+    device.image_transition(depth_allocation_, ImageLayout::depth_attachment,
+                            ImageLayout::transfer_src);
+
+    BufferImageCopyParams copy_params;
+    copy_params.image_extent.x = w;
+    copy_params.image_extent.y = h;
+    copy_params.image_aspect_flag = VK_IMAGE_ASPECT_DEPTH_BIT;
+    cmd_list = stream->new_command_list();
+    cmd_list->image_to_buffer(depth_staging_buffer.get_ptr(), depth_allocation_,
+                              ImageLayout::transfer_src, copy_params);
+    cmd_list->image_transition(depth_allocation_, ImageLayout::transfer_src,
+                               ImageLayout::depth_attachment);
+    stream->submit_synced(cmd_list.get());
+    Device::memcpy_direct(arr_dev_ptr, depth_staging_buffer.get_ptr(),
+                          copy_size);
+
+    device.dealloc_memory(depth_staging_buffer);
+
+  } else if (memcpy_cap == Device::MemcpyCapability::RequiresStagingBuffer) {
+    DeviceAllocation depth_buffer = surface_->get_depth_data(depth_allocation_);
+    DeviceAllocation field_buffer(arr_dev_ptr);
+    float *src_ptr = (float *)app_context_->device().map(depth_buffer);
+    float *dst_ptr = (float *)arr_dev_ptr.device->map(field_buffer);
+    memcpy(dst_ptr, src_ptr, copy_size);
+    app_context_->device().unmap(depth_buffer);
+    arr_dev_ptr.device->unmap(field_buffer);
+  } else {
+    TI_NOT_IMPLEMENTED;
+    return 0;
+  }
+  return 1;
+}
+
 void SwapChain::cleanup() {
   app_context_->device().destroy_image(depth_allocation_);
   surface_.reset();
@@ -64,28 +116,43 @@ taichi::lang::Surface &SwapChain::surface() {
   return *(surface_.get());
 }
 
-void SwapChain::write_image(const std::string &filename) {
+std::vector<uint32_t> &SwapChain::dump_image_buffer() {
   auto [w, h] = surface_->get_size();
+  curr_width_ = w;
+  curr_height_ = h;
+  image_buffer_data_.clear();
+  image_buffer_data_.resize(w * h);
   DeviceAllocation img_buffer = surface_->get_image_data();
   unsigned char *ptr = (unsigned char *)app_context_->device().map(img_buffer);
   auto format = surface_->image_format();
+  uint32_t *u32ptr = (uint32_t *)ptr;
   if (format == BufferFormat::bgra8 || format == BufferFormat::bgra8srgb) {
-    TI_TRACE("Converting BGRA8 to RGBA for file output");
-    std::vector<uint32_t> converted(w * h);
-    uint32_t *u32ptr = (uint32_t *)ptr;
+    TI_TRACE(
+        "Converting BGRA8 to RGBA8 for converting image format to a standard "
+        "format");
     for (int j = 0; j < h; j++) {
       for (int i = 0; i < w; i++) {
         auto pixel = u32ptr[j * w + i];
-        converted[j * w + i] = ((pixel << 16) & 0xFF0000) |
-                               (pixel & 0x0000FF00) | ((pixel >> 16) & 0xFF) |
-                               (pixel & 0xFF000000);
+        image_buffer_data_[j * w + i] =
+            ((pixel << 16) & 0xFF0000) | (pixel & 0x0000FF00) |
+            ((pixel >> 16) & 0xFF) | (pixel & 0xFF000000);
       }
     }
-    imwrite(filename, (size_t)converted.data(), w, h, 4);
   } else {
-    imwrite(filename, (size_t)ptr, w, h, 4);
+    for (int j = 0; j < h; j++) {
+      for (int i = 0; i < w; i++) {
+        image_buffer_data_[j * w + i] = u32ptr[j * w + i];
+      }
+    }
   }
   app_context_->device().unmap(img_buffer);
+  return image_buffer_data_;
+}
+
+void SwapChain::write_image(const std::string &filename) {
+  dump_image_buffer();
+  imwrite(filename, (size_t)image_buffer_data_.data(), curr_width_,
+          curr_height_, 4);
 }
 
 }  // namespace vulkan

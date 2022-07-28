@@ -1,5 +1,3 @@
-import os
-
 import numpy as np
 
 import taichi as ti
@@ -32,11 +30,11 @@ indices = np.array([0, 1, 5, 4] * 12) + np.repeat(
     np.array(list(np.arange(0, 3)) * 4) + 4 * np.repeat(np.arange(4), 3), 4)
 writer.add_faces(indices)
 
-# Add custome vertex channel, the input should include a key, a supported datatype and, the data np.array
+# Add custom vertex channel, the input should include a key, a supported datatype and, the data np.array
 vdata = np.random.rand(20)
 writer.add_vertex_channel("vdata1", "double", vdata)
 
-# Add custome face channel
+# Add custom face channel
 foo_data = np.zeros(12)
 writer.add_face_channel("foo_key", "foo_data_type", foo_data)
 # error! because "foo_data_type" is not a supported datatype. Supported ones are

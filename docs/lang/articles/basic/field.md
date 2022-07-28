@@ -1,5 +1,5 @@
 ---
-sidebar_position: 4
+sidebar_position: 1
 ---
 
 # Fields
@@ -74,7 +74,7 @@ while gui.running:
 ```
 
 :::tip
-With Taichi versions earlier than v0.8.0, you cannot allocate new fields after executing a kernel. Starting from v0.8.0, you can use the `FieldsBuilder` class to dynamically allocate or destruct fields. See the [Field (advanced)](../advanced/layout.md) for more information.
+With Taichi versions earlier than v0.8.0, you cannot allocate new fields after executing a kernel. Starting from v0.8.0, you can use the `FieldsBuilder` class to dynamically allocate or destruct fields. See the [Field (advanced)](../basic/layout.md) for more information.
 :::
 
 :::caution WARNING
@@ -234,7 +234,7 @@ Struct fields are fields that store user-defined structs. Members of a struct el
 The following code snippet declares a 1D field of particle information (position, velocity, acceleration, and mass) using `ti.Struct.field()`. Note that:
 
 - Member variables `pos`, `vel`, `acc`, and `mass` are provided in the dictionary format.
-- [Compound types](type.md#compound-types), such as `ti.types.vector`, `ti.types.matrix`, and `ti.types.struct`, can be used to declare vectors, matrices, or structs as struct members.
+- [Compound types](../type/type.md#compound-types), such as `ti.types.vector`, `ti.types.matrix`, and `ti.types.struct`, can be used to declare vectors, matrices, or structs as struct members.
 
 ```python
 # Declare a 1D struct field using the ti.Struct.field() method

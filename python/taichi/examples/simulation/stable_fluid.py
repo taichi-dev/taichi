@@ -29,10 +29,7 @@ time_c = 2
 maxfps = 60
 dye_decay = 1 - 1 / (maxfps * time_c)
 force_radius = res / 2.0
-gravity = True
 debug = False
-paused = False
-use_sparse_matrix = False
 
 use_sparse_matrix = args.use_sp_mat
 
@@ -89,7 +86,7 @@ if use_sparse_matrix:
 
     N = res * res
     K = ti.linalg.SparseMatrixBuilder(N, N, max_num_triplets=N * 6)
-    b = ti.field(ti.f32, shape=N)
+    F_b = ti.field(ti.f32, shape=N)
 
     fill_laplacian_matrix(K)
     L = K.build()
@@ -128,13 +125,13 @@ def bilerp(vf, p):
 
 # 3rd order Runge-Kutta
 @ti.func
-def backtrace(vf: ti.template(), p, dt: ti.template()):
+def backtrace(vf: ti.template(), p, dt_: ti.template()):
     v1 = bilerp(vf, p)
-    p1 = p - 0.5 * dt * v1
+    p1 = p - 0.5 * dt_ * v1
     v2 = bilerp(vf, p1)
-    p2 = p - 0.75 * dt * v2
+    p2 = p - 0.75 * dt_ * v2
     v3 = bilerp(vf, p2)
-    p -= dt * ((2 / 9) * v1 + (1 / 3) * v2 + (4 / 9) * v3)
+    p -= dt_ * ((2 / 9) * v1 + (1 / 3) * v2 + (4 / 9) * v3)
     return p
 
 
@@ -251,8 +248,8 @@ def apply_pressure(p_in: ti.types.ndarray(), p_out: ti.template()):
 
 
 def solve_pressure_sp_mat():
-    copy_divergence(velocity_divs, b)
-    x = solver.solve(b)
+    copy_divergence(velocity_divs, F_b)
+    x = solver.solve(F_b)
     apply_pressure(x, pressures_pair.cur)
 
 
@@ -289,7 +286,7 @@ def step(mouse_data):
         print(f'divergence={div_s}')
 
 
-class MouseDataGen(object):
+class MouseDataGen:
     def __init__(self):
         self.prev_mouse = None
         self.prev_color = None
@@ -324,56 +321,62 @@ def reset():
     dyes_pair.cur.fill(0)
 
 
-visualize_d = True  #visualize dye (default)
-visualize_v = False  #visualize velocity
-visualize_c = False  #visualize curl
+def main():
+    global debug, curl_strength
+    visualize_d = True  #visualize dye (default)
+    visualize_v = False  #visualize velocity
+    visualize_c = False  #visualize curl
 
-gui = ti.GUI('Stable Fluid', (res, res))
-md_gen = MouseDataGen()
+    paused = False
 
-while gui.running:
-    if gui.get_event(ti.GUI.PRESS):
-        e = gui.event
-        if e.key == ti.GUI.ESCAPE:
-            break
-        elif e.key == 'r':
-            paused = False
-            reset()
-        elif e.key == 's':
-            if curl_strength:
-                curl_strength = 0
-            else:
-                curl_strength = 7
-        elif e.key == 'g':
-            gravity = not gravity
-        elif e.key == 'v':
-            visualize_v = True
-            visualize_c = False
-            visualize_d = False
-        elif e.key == 'd':
-            visualize_d = True
-            visualize_v = False
-            visualize_c = False
-        elif e.key == 'c':
-            visualize_c = True
-            visualize_d = False
-            visualize_v = False
-        elif e.key == 'p':
-            paused = not paused
-        elif e.key == 'd':
-            debug = not debug
+    gui = ti.GUI('Stable Fluid', (res, res))
+    md_gen = MouseDataGen()
 
-    # Debug divergence:
-    # print(max((abs(velocity_divs.to_numpy().reshape(-1)))))
+    while gui.running:
+        if gui.get_event(ti.GUI.PRESS):
+            e = gui.event
+            if e.key == ti.GUI.ESCAPE:
+                break
+            elif e.key == 'r':
+                paused = False
+                reset()
+            elif e.key == 's':
+                if curl_strength:
+                    curl_strength = 0
+                else:
+                    curl_strength = 7
+            elif e.key == 'v':
+                visualize_v = True
+                visualize_c = False
+                visualize_d = False
+            elif e.key == 'd':
+                visualize_d = True
+                visualize_v = False
+                visualize_c = False
+            elif e.key == 'c':
+                visualize_c = True
+                visualize_d = False
+                visualize_v = False
+            elif e.key == 'p':
+                paused = not paused
+            elif e.key == 'd':
+                debug = not debug
 
-    if not paused:
-        mouse_data = md_gen(gui)
-        step(mouse_data)
-    if visualize_c:
-        vorticity(velocities_pair.cur)
-        gui.set_image(velocity_curls.to_numpy() * 0.03 + 0.5)
-    elif visualize_d:
-        gui.set_image(dyes_pair.cur)
-    elif visualize_v:
-        gui.set_image(velocities_pair.cur.to_numpy() * 0.01 + 0.5)
-    gui.show()
+        # Debug divergence:
+        # print(max((abs(velocity_divs.to_numpy().reshape(-1)))))
+
+        if not paused:
+            mouse_data = md_gen(gui)
+            step(mouse_data)
+        if visualize_c:
+            vorticity(velocities_pair.cur)
+            gui.set_image(velocity_curls.to_numpy() * 0.03 + 0.5)
+        elif visualize_d:
+            gui.set_image(dyes_pair.cur)
+        elif visualize_v:
+            gui.set_image(velocities_pair.cur.to_numpy() * 0.01 + 0.5)
+        gui.show()
+
+
+if __name__ == '__main__':
+    main()

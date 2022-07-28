@@ -1,4 +1,4 @@
-import matplotlib.cm as cm
+from matplotlib import cm
 
 import taichi as ti
 
@@ -10,14 +10,14 @@ import taichi as ti
 real = ti.f32
 ti.init(arch=ti.gpu, default_fp=real)
 
-N = 1024  # grid resolution
+N = 512  # grid resolution
 CFL = .9  # keep below 1
 method = 1  # 0:muscl, 1:thinc
 IC_type = 0  # 0:sod
 BC_type = 0  # 0:walls
 
 img_field = 0  # 0:density, 1: schlieren, 2:vorticity, 3: velocity mag
-res = 1024  # gui resolution
+res = 512  # gui resolution
 cmap_name = 'magma_r'  # python colormap
 use_fixed_caxis = 0  # 1: use fixed caxis limits, 0: automatic caxis limits
 fixed_caxis = [0.0, 5.0]  # fixed caxis limits
@@ -213,19 +213,19 @@ def HLLC_flux(qL, qR, n):
 
     # HLLC flux.
     HLLC = ti.Vector([0.0, 0.0, 0.0, 0.0])
-    if (0 <= sL):
+    if 0 <= sL:
         HLLC = fL
-    elif (0 <= sM):
+    elif 0 <= sM:
         qsL = rL * (sL-vnL)/(sL-sM) \
                   * ti.Vector([1.0, sM*nx-vtL*ny,sM*ny+vtL*nx, \
                                qL[3]/rL + (sM-vnL)*(sM+pL/(rL*(sL-vnL)))])
         HLLC = fL + sL * (qsL - qL)
-    elif (0 <= sR):
+    elif 0 <= sR:
         qsR = rR * (sR-vnR)/(sR-sM) \
                    * ti.Vector([1.0, sM*nx-vtR*ny,sM*ny+vtR*nx, \
                                 qR[3]/rR + (sM-vnR)*(sM+pR/(rR*(sR-vnR)))])
         HLLC = fR + sR * (qsR - qR)
-    elif (0 >= sR):
+    elif 0 >= sR:
         HLLC = fR
 
     return HLLC
@@ -315,7 +315,7 @@ def thinc(wl, wc, wr, beta):
 
 @ti.kernel
 def compute_F_thinc():
-    # reconstruct primitve variables on interior faces of each cell using
+    # reconstruct primitive variables on interior faces of each cell using
     #    multiple candidate thinc reconstructions
     for i, j in Q:
         if is_interior_cell(i, j):
@@ -430,39 +430,44 @@ def paint():
         elif img_field == 3:  # velocity magnitude
             img[i, j] = ti.sqrt(Q[ii, jj][1]**2 + Q[ii, jj][2]**2)
 
-    max = -1.0e10
-    min = 1.0e10
+    max_ = -1.0e10
+    min_ = 1.0e10
     for i, j in img:
-        ti.atomic_max(max, img[i, j])
-        ti.atomic_min(min, img[i, j])
+        ti.atomic_max(max_, img[i, j])
+        ti.atomic_min(min_, img[i, j])
 
     for i, j in img:
         if use_fixed_caxis:
-            min = fixed_caxis[0]
-            max = fixed_caxis[1]
-        img[i, j] = (img[i, j] - min) / (max - min)
+            min_ = fixed_caxis[0]
+            max_ = fixed_caxis[1]
+        img[i, j] = (img[i, j] - min_) / (max_ - min_)
 
 
-gui = ti.GUI('Euler Equations', (res, res))
-cmap = cm.get_cmap(cmap_name)
-set_ic()
-set_bc()
+def main():
+    gui = ti.GUI('Euler Equations', (res, res))
+    cmap = cm.get_cmap(cmap_name)
+    set_ic()
+    set_bc()
 
-n = 0
-while gui.running:
-    calc_dt()
-    copy_to_old()
-    for rk_step in range(2):
-        compute_W()
-        if method == 0:
-            compute_F_muscl()
-        else:
-            compute_F_thinc()
-        update_Q(rk_step)
-        set_bc()
+    n = 0
+    while gui.running:
+        calc_dt()
+        copy_to_old()
+        for rk_step in range(2):
+            compute_W()
+            if method == 0:
+                compute_F_muscl()
+            else:
+                compute_F_thinc()
+            update_Q(rk_step)
+            set_bc()
 
-    if n % 10 == 0:
-        paint()
-        gui.set_image(cmap(img.to_numpy()))
-        gui.show()
-    n += 1
+        if n % 10 == 0:
+            paint()
+            gui.set_image(cmap(img.to_numpy()))
+            gui.show()
+        n += 1
+
+
+if __name__ == '__main__':
+    main()

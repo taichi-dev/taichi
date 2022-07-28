@@ -119,7 +119,8 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(FrontendAllocaStmt *alloca) override {
-    print("{}${} = alloca {}", alloca->type_hint(), alloca->id,
+    std::string shared_suffix = (alloca->is_shared) ? "(shared)" : "";
+    print("{}${} = alloca{} {}", alloca->type_hint(), alloca->id, shared_suffix,
           alloca->ident.name());
   }
 
@@ -187,7 +188,8 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(AllocaStmt *alloca) override {
-    print("{}${} = alloca", alloca->type_hint(), alloca->id);
+    std::string shared_suffix = (alloca->is_shared) ? "(shared)" : "";
+    print("{}${} = alloca{}", alloca->type_hint(), alloca->id, shared_suffix);
   }
 
   void visit(RandStmt *stmt) override {
@@ -355,17 +357,19 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(RangeForStmt *for_stmt) override {
-    print("{} : {}for in range({}, {}) (bit_vectorize {}) {}{{",
-          for_stmt->name(), for_stmt->reversed ? "reversed " : "",
-          for_stmt->begin->name(), for_stmt->end->name(),
-          for_stmt->bit_vectorize, block_dim_info(for_stmt->block_dim));
+    print("{} : {}for in range({}, {}) {}{}{{", for_stmt->name(),
+          for_stmt->reversed ? "reversed " : "", for_stmt->begin->name(),
+          for_stmt->end->name(),
+          for_stmt->is_bit_vectorized ? "(bit_vectorized) " : "",
+          block_dim_info(for_stmt->block_dim));
     for_stmt->body->accept(this);
     print("}}");
   }
 
   void visit(StructForStmt *for_stmt) override {
-    print("{} : struct for in {} (bit_vectorize {}) {}{}{{", for_stmt->name(),
-          for_stmt->snode->get_node_type_name_hinted(), for_stmt->bit_vectorize,
+    print("{} : struct for in {} {}{}{}{{", for_stmt->name(),
+          for_stmt->snode->get_node_type_name_hinted(),
+          for_stmt->is_bit_vectorized ? "(bit_vectorized) " : "",
           scratch_pad_info(for_stmt->mem_access_opt),
           block_dim_info(for_stmt->block_dim));
     for_stmt->body->accept(this);

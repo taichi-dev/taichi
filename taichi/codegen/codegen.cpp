@@ -4,11 +4,13 @@
 
 #include "taichi/util/statistics.h"
 #if defined(TI_WITH_LLVM)
-#include "taichi/backends/cpu/codegen_cpu.h"
-#include "taichi/backends/wasm/codegen_wasm.h"
+#include "taichi/codegen/cpu/codegen_cpu.h"
+#include "taichi/codegen/wasm/codegen_wasm.h"
+#include "taichi/runtime/llvm/llvm_offline_cache.h"
+#include "taichi/runtime/program_impls/llvm/llvm_program.h"
 #endif
 #if defined(TI_WITH_CUDA)
-#include "taichi/backends/cuda/codegen_cuda.h"
+#include "taichi/codegen/cuda/codegen_cuda.h"
 #endif
 #include "taichi/system/timer.h"
 #include "taichi/ir/analysis.h"
@@ -35,12 +37,12 @@ std::unique_ptr<KernelCodeGen> KernelCodeGen::create(Arch arch,
                                                      Stmt *stmt) {
 #ifdef TI_WITH_LLVM
   if (arch_is_cpu(arch) && arch != Arch::wasm) {
-    return std::make_unique<CodeGenCPU>(kernel, stmt);
+    return std::make_unique<KernelCodeGenCPU>(kernel, stmt);
   } else if (arch == Arch::wasm) {
-    return std::make_unique<CodeGenWASM>(kernel, stmt);
+    return std::make_unique<KernelCodeGenWASM>(kernel, stmt);
   } else if (arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
-    return std::make_unique<CodeGenCUDA>(kernel, stmt);
+    return std::make_unique<KernelCodeGenCUDA>(kernel, stmt);
 #else
     TI_NOT_IMPLEMENTED
 #endif
@@ -51,5 +53,48 @@ std::unique_ptr<KernelCodeGen> KernelCodeGen::create(Arch arch,
   TI_ERROR("Llvm disabled");
 #endif
 }
+#ifdef TI_WITH_LLVM
 
+bool KernelCodeGen::maybe_read_compilation_from_cache(
+    const std::string &kernel_key,
+    std::vector<LLVMCompiledData> &data) {
+  TI_AUTO_PROF;
+  const auto &config = prog->config;
+  auto reader =
+      LlvmOfflineCacheFileReader::make(config.offline_cache_file_path);
+  if (!reader) {
+    return false;
+  }
+
+  LlvmOfflineCache::KernelCacheData cache_data;
+  auto *tlctx = get_llvm_program(prog)->get_llvm_context(config.arch);
+  auto &llvm_ctx = *tlctx->get_this_thread_context();
+
+  if (!reader->get_kernel_cache(cache_data, kernel_key, llvm_ctx)) {
+    return false;
+  }
+  data.swap(cache_data.compiled_data_list);
+  kernel->set_from_offline_cache();
+  return true;
+}
+
+void KernelCodeGen::cache_module(const std::string &kernel_key,
+                                 const std::vector<LLVMCompiledData> &data) {
+  get_llvm_program(prog)->cache_kernel(kernel_key, data,
+                                       infer_launch_args(kernel));
+}
+
+ModuleToFunctionConverter::ModuleToFunctionConverter(
+    TaichiLLVMContext *tlctx,
+    LlvmRuntimeExecutor *executor)
+    : tlctx_(tlctx), executor_(executor) {
+}
+
+FunctionType ModuleToFunctionConverter::convert(
+    const Kernel *kernel,
+    std::vector<LLVMCompiledData> &&data) const {
+  return convert(kernel->name, infer_launch_args(kernel), std::move(data));
+}
+
+#endif
 TLANG_NAMESPACE_END

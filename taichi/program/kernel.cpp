@@ -1,19 +1,18 @@
 #include "taichi/program/kernel.h"
 
-#include "taichi/backends/cuda/cuda_driver.h"
+#include "taichi/rhi/cuda/cuda_driver.h"
 #include "taichi/codegen/codegen.h"
 #include "taichi/common/logging.h"
 #include "taichi/common/task.h"
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
-#include "taichi/program/async_engine.h"
 #include "taichi/program/extension.h"
 #include "taichi/program/program.h"
 #include "taichi/util/action_recorder.h"
 #include "taichi/util/statistics.h"
 
 #ifdef TI_WITH_LLVM
-#include "taichi/llvm/llvm_program.h"
+#include "taichi/runtime/program_impls/llvm/llvm_program.h"
 #endif
 
 TLANG_NAMESPACE_BEGIN
@@ -110,33 +109,23 @@ void Kernel::lower(bool to_executable) {
 }
 
 void Kernel::operator()(LaunchContextBuilder &ctx_builder) {
-  if (!program->config.async_mode || this->is_evaluator) {
-    if (!compiled_) {
-      compile();
-    }
+  if (!compiled_) {
+    compile();
+  }
 
-    if (!this->from_offline_cache_) {
-      for (auto &offloaded : ir->as<Block>()->statements) {
-        account_for_offloaded(offloaded->as<OffloadedStmt>());
-      }
+  if (!this->from_offline_cache_) {
+    for (auto &offloaded : ir->as<Block>()->statements) {
+      account_for_offloaded(offloaded->as<OffloadedStmt>());
     }
+  }
 
-    compiled_(ctx_builder.get_context());
+  compiled_(ctx_builder.get_context());
 
-    program->sync = (program->sync && arch_is_cpu(arch));
-    // Note that Kernel::arch may be different from program.config.arch
-    if (program->config.debug && (arch_is_cpu(program->config.arch) ||
-                                  program->config.arch == Arch::cuda)) {
-      program->check_runtime_error();
-    }
-  } else {
-    program->sync = false;
-    program->async_engine->launch(this, ctx_builder.get_context());
-    // Note that Kernel::arch may be different from program.config.arch
-    if (program->config.debug && arch_is_cpu(arch) &&
-        arch_is_cpu(program->config.arch)) {
-      program->check_runtime_error();
-    }
+  program->sync = (program->sync && arch_is_cpu(arch));
+  // Note that Kernel::arch may be different from program.config.arch
+  if (program->config.debug && (arch_is_cpu(program->config.arch) ||
+                                program->config.arch == Arch::cuda)) {
+    program->check_runtime_error();
   }
 }
 
@@ -288,6 +277,14 @@ void Kernel::LaunchContextBuilder::set_arg_texture(int arg_id,
       arg_id, RuntimeContext::DevAllocType::kTexture);
 }
 
+void Kernel::LaunchContextBuilder::set_arg_rw_texture(int arg_id,
+                                                      const Texture &tex) {
+  intptr_t ptr = tex.get_device_allocation_ptr_as_int();
+  ctx_->set_arg(arg_id, ptr);
+  ctx_->set_array_device_allocation_type(
+      arg_id, RuntimeContext::DevAllocType::kRWTexture);
+}
+
 void Kernel::LaunchContextBuilder::set_arg_raw(int arg_id, uint64 d) {
   TI_ASSERT_INFO(!kernel_->args[arg_id].is_array,
                  "Assigning scalar value to external (numpy) array argument is "
@@ -303,12 +300,7 @@ void Kernel::LaunchContextBuilder::set_arg_raw(int arg_id, uint64 d) {
 }
 
 RuntimeContext &Kernel::LaunchContextBuilder::get_context() {
-#ifdef TI_WITH_LLVM
-  if (auto *llvm_program_impl = kernel_->program->get_llvm_program_impl()) {
-    ctx_->runtime = llvm_program_impl->get_llvm_runtime();
-  }
-#endif
-  ctx_->result_buffer = kernel_->program->result_buffer;
+  kernel_->program->prepare_runtime_context(ctx_);
   return *ctx_;
 }
 
@@ -451,4 +443,20 @@ bool Kernel::supports_lowering(Arch arch) {
   return arch_is_cpu(arch) || (arch == Arch::cuda) || (arch == Arch::metal);
 }
 
+void Kernel::offload_to_executable(IRNode *stmt) {
+  CurrentCallableGuard _(program, this);
+  auto config = program->config;
+  bool verbose = config.print_ir;
+  if ((is_accessor && !config.print_accessor_ir) ||
+      (is_evaluator && !config.print_evaluator_ir))
+    verbose = false;
+  irpass::offload_to_executable(
+      stmt, config, this, verbose,
+      /*determine_ad_stack_size=*/autodiff_mode == AutodiffMode::kReverse,
+      /*lower_global_access=*/true,
+      /*make_block_local=*/config.make_thread_local,
+      /*make_block_local=*/
+      is_extension_supported(config.arch, Extension::bls) &&
+          config.make_block_local);
+}
 TLANG_NAMESPACE_END

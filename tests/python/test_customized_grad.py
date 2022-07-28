@@ -29,7 +29,7 @@ def test_customized_kernels_tape():
     def backward(mul):
         func.grad(mul)
 
-    with ti.Tape(loss=total):
+    with ti.ad.Tape(loss=total):
         forward(4)
     assert x.grad[0] == 4
 
@@ -93,7 +93,7 @@ def test_customized_kernels_indirect():
     def backward(mul):
         func.grad(mul)
 
-    with ti.Tape(loss=total):
+    with ti.ad.Tape(loss=total):
         forward(4)
     assert x.grad[0] == 4
 
@@ -128,7 +128,7 @@ def test_customized_kernels_oop():
 
     ti.root.lazy_grad()
 
-    with ti.Tape(loss=a.total):
+    with ti.ad.Tape(loss=a.total):
         a.forward(4)
     assert a.x.grad[0] == 4
 
@@ -166,7 +166,7 @@ def test_customized_kernels_oop2():
 
     ti.root.lazy_grad()
 
-    with ti.Tape(loss=a.total):
+    with ti.ad.Tape(loss=a.total):
         a.forward(4)
     assert a.x.grad[0] == 4
 
@@ -193,7 +193,7 @@ def test_decorated_primal_is_taichi_kernel():
         def backward(mul):
             func.grad(mul)
 
-    with ti.Tape(loss=total):
+    with ti.ad.Tape(loss=total):
         func(4)
 
 
@@ -213,7 +213,7 @@ def test_decorated_primal_missing_decorator():
         for i in range(n):
             ti.atomic_add(total[None], x[i] * mul)
 
-    def foward(mul):
+    def forward(mul):
         func(mul)
         func(mul)
 
@@ -223,7 +223,7 @@ def test_decorated_primal_missing_decorator():
         def backward(mul):
             func.grad(mul)
 
-    with ti.Tape(loss=total):
+    with ti.ad.Tape(loss=total):
         func(4)
 
 
@@ -248,7 +248,7 @@ def test_customized_kernels_tape_no_grad():
         func(mul)
         func(mul)
 
-    with ti.Tape(loss=total):
+    with ti.ad.Tape(loss=total):
         forward(4)
         func(5)
     assert x.grad[0] == 5

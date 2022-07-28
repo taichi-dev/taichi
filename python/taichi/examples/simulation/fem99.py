@@ -54,11 +54,13 @@ def advance():
         disp2 = disp.norm_sqr()
         if disp2 <= ball_radius**2:
             NoV = vel[i].dot(disp)
-            if NoV < 0: vel[i] -= NoV * disp / disp2
+            if NoV < 0:
+                vel[i] -= NoV * disp / disp2
         # rect boundary condition:
         cond = (pos[i] < 0) & (vel[i] < 0) | (pos[i] > 1) & (vel[i] > 0)
         for j in ti.static(range(pos.n)):
-            if cond[j]: vel[i][j] = 0
+            if cond[j]:
+                vel[i][j] = 0
         pos[i] += dt * vel[i]
 
 
@@ -87,19 +89,24 @@ def init_mesh():
         f2v[k + 1] = [c, d, a]
 
 
-init_mesh()
-init_pos()
-gui = ti.GUI('FEM99')
-while gui.running:
-    for e in gui.get_events():
-        if e.key == gui.ESCAPE:
-            gui.running = False
-        elif e.key == 'r':
-            init_pos()
-    for i in range(30):
-        with ti.Tape(loss=U):
-            update_U()
-        advance()
-    gui.circles(pos.to_numpy(), radius=2, color=0xffaa33)
-    gui.circle(ball_pos, radius=ball_radius * 512, color=0x666666)
-    gui.show()
+def main():
+    init_mesh()
+    init_pos()
+    gui = ti.GUI('FEM99')
+    while gui.running:
+        for e in gui.get_events():
+            if e.key == gui.ESCAPE:
+                gui.running = False
+            elif e.key == 'r':
+                init_pos()
+        for i in range(30):
+            with ti.ad.Tape(loss=U):
+                update_U()
+            advance()
+        gui.circles(pos.to_numpy(), radius=2, color=0xffaa33)
+        gui.circle(ball_pos, radius=ball_radius * 512, color=0x666666)
+        gui.show()
+
+
+if __name__ == '__main__':
+    main()

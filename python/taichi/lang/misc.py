@@ -149,7 +149,7 @@ dx11 = _ti_core.dx11
 """
 # ----------------------
 
-gpu = [cuda, metal, opengl, vulkan, dx11]
+gpu = [cuda, metal, vulkan, opengl, dx11]
 """A list of GPU backends supported on the current system.
 Currently contains 'cuda', 'metal', 'opengl', 'vulkan', 'dx11'.
 
@@ -172,7 +172,7 @@ timeline_save = lambda fn: impl.get_runtime().prog.timeline_save(fn)  # pylint: 
 extension = _ti_core.Extension
 """An instance of Taichi extension.
 
-The list of currently available extensions is ['sparse', 'async_mode', 'quant', \
+The list of currently available extensions is ['sparse', 'quant', \
     'mesh', 'quant_basic', 'data64', 'adstack', 'bls', 'assertion', \
         'extfunc', 'packed', 'dynamic_index'].
 """
@@ -182,8 +182,8 @@ def is_extension_supported(arch, ext):
     """Checks whether an extension is supported on an arch.
 
     Args:
-        arch (taichi_core.Arch): Specified arch.
-        ext (taichi_core.Extension): Specified extension.
+        arch (taichi_python.Arch): Specified arch.
+        ext (taichi_python.Extension): Specified extension.
 
     Returns:
         bool: Whether `ext` is supported on `arch`.
@@ -223,21 +223,20 @@ class _EnvironmentConfigurator:
 
         self.keys.append(key)
 
-        # TI_ASYNC=   : no effect
-        # TI_ASYNC=0  : False
-        # TI_ASYNC=1  : True
+        # TI_OFFLINE_CACHE=   : no effect
+        # TI_OFFLINE_CACHE=0  : False
+        # TI_OFFLINE_CACHE=1  : True
         name = 'TI_' + key.upper()
         value = os.environ.get(name, '')
-        if len(value):
-            self[key] = _cast(value)
-            if key in self.kwargs:
-                _ti_core.warn(
-                    f'ti.init argument "{key}" overridden by environment variable {name}={value}'
-                )
-                del self.kwargs[key]  # mark as recognized
-        elif key in self.kwargs:
+        if key in self.kwargs:
             self[key] = self.kwargs[key]
+            if value:
+                _ti_core.warn(
+                    f'Environment variable {name}={value} overridden by ti.init argument "{key}"'
+                )
             del self.kwargs[key]  # mark as recognized
+        elif value:
+            self[key] = _cast(value)
 
     def __getitem__(self, key):
         return getattr(self.cfg, key)
@@ -261,7 +260,7 @@ class _SpecialConfig:
 def prepare_sandbox():
     '''
     Returns a temporary directory, which will be automatically deleted on exit.
-    It may contain the taichi_core shared object or some misc. files.
+    It may contain the taichi_python shared object or some misc. files.
     '''
     tmp_dir = tempfile.mkdtemp(prefix='taichi-')
     atexit.register(shutil.rmtree, tmp_dir)
@@ -369,9 +368,9 @@ def init(arch=None,
     if env_default_fp:
         if default_fp is not None:
             _ti_core.warn(
-                f'ti.init argument "default_fp" overridden by environment variable TI_DEFAULT_FP={env_default_fp}'
+                f'Environment variable TI_DEFAULT_FP={env_default_fp} overridden by ti.init argument "default_fp"'
             )
-        if env_default_fp == '32':
+        elif env_default_fp == '32':
             default_fp = f32
         elif env_default_fp == '64':
             default_fp = f64
@@ -383,9 +382,9 @@ def init(arch=None,
     if env_default_ip:
         if default_ip is not None:
             _ti_core.warn(
-                f'ti.init argument "default_ip" overridden by environment variable TI_DEFAULT_IP={env_default_ip}'
+                f'Environment variable TI_DEFAULT_IP={env_default_ip} overridden by ti.init argument "default_ip"'
             )
-        if env_default_ip == '32':
+        elif env_default_ip == '32':
             default_ip = i32
         elif env_default_ip == '64':
             default_ip = i64
@@ -454,7 +453,7 @@ def init(arch=None,
 
     impl._root_fb = _snode.FieldsBuilder()
 
-    if not os.environ.get("TI_DISABLE_SIGNAL_HANDLERS", False):
+    if cfg.debug:
         impl.get_runtime()._register_signal_handlers()
 
     # Recover the current working directory (https://github.com/taichi-dev/taichi/issues/4811)
@@ -586,13 +585,35 @@ def _block_dim(dim):
     get_runtime().prog.current_ast_builder().block_dim(dim)
 
 
-def loop_config(*, block_dim=None, serialize=False, parallelize=None):
+def _block_dim_adaptive(block_dim_adaptive):
+    """Enable/Disable backends set block_dim adaptively.
+    """
+    if get_runtime().prog.config.arch != cpu:
+        _logging.warn('Adaptive block_dim is supported on CPU backend only')
+    else:
+        get_runtime().prog.config.cpu_block_dim_adaptive = block_dim_adaptive
+
+
+def _bit_vectorize():
+    """Enable bit vectorization of struct fors on quant_arrays.
+    """
+    get_runtime().prog.current_ast_builder().bit_vectorize()
+
+
+def loop_config(*,
+                block_dim=None,
+                serialize=False,
+                parallelize=None,
+                block_dim_adaptive=True,
+                bit_vectorize=False):
     """Sets directives for the next loop
 
     Args:
         block_dim (int): The number of threads in a block on GPU
         serialize (bool): Whether to let the for loop execute serially, `serialize=True` equals to `parallelize=1`
         parallelize (int): The number of threads to use on CPU
+        block_dim_adaptive (bool): Whether to allow backends set block_dim adaptively, enabled by default
+        bit_vectorize (bool): Whether to enable bit vectorization of struct fors on quant_arrays.
 
     Examples::
 
@@ -617,6 +638,19 @@ def loop_config(*, block_dim=None, serialize=False, parallelize=None):
             # If the kernel is run on the CUDA backend, each block will have 16 threads.
             for i in range(n):
                 val[i] = i
+
+        u1 = ti.types.quant.int(bits=1, signed=False)
+        x = ti.field(dtype=u1)
+        y = ti.field(dtype=u1)
+        cell = ti.root.dense(ti.ij, (128, 4))
+        cell.quant_array(ti.j, 32).place(x)
+        cell.quant_array(ti.j, 32).place(y)
+        @ti.kernel
+        def copy():
+            ti.loop_config(bit_vectorize=True)
+            # 32 bits, instead of 1 bit, will be copied at a time
+            for i, j in x:
+                y[i, j] = x[i, j]
     """
     if block_dim is not None:
         _block_dim(block_dim)
@@ -625,6 +659,12 @@ def loop_config(*, block_dim=None, serialize=False, parallelize=None):
         _parallelize(1)
     elif parallelize is not None:
         _parallelize(parallelize)
+
+    if not block_dim_adaptive:
+        _block_dim_adaptive(block_dim_adaptive)
+
+    if bit_vectorize:
+        _bit_vectorize()
 
 
 def global_thread_idx():
@@ -662,7 +702,7 @@ def is_arch_supported(arch, use_gles=False):
     """Checks whether an arch is supported on the machine.
 
     Args:
-        arch (taichi_core.Arch): Specified arch.
+        arch (taichi_python.Arch): Specified arch.
         use_gles (bool): If True, check is GLES is available otherwise
           check if GLSL is available. Only effective when `arch` is `ti.opengl`.
           Default is `False`.
@@ -711,10 +751,15 @@ def get_host_arch_list():
     return [_ti_core.host_arch()]
 
 
+def get_compute_stream_device_time_elapsed_us() -> float:
+    return impl.get_runtime().prog.get_compute_stream_device_time_elapsed_us()
+
+
 __all__ = [
     'i', 'ij', 'ijk', 'ijkl', 'ijl', 'ik', 'ikl', 'il', 'j', 'jk', 'jkl', 'jl',
     'k', 'kl', 'l', 'x86_64', 'x64', 'dx11', 'wasm', 'arm64', 'cc', 'cpu',
     'cuda', 'gpu', 'metal', 'opengl', 'vulkan', 'extension', 'loop_config',
     'global_thread_idx', 'assume_in_range', 'block_local', 'cache_read_only',
-    'init', 'mesh_local', 'no_activate', 'reset', 'mesh_patch_idx'
+    'init', 'mesh_local', 'no_activate', 'reset', 'mesh_patch_idx',
+    'get_compute_stream_device_time_elapsed_us'
 ]

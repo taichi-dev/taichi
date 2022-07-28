@@ -1,5 +1,5 @@
-# The reason we import just the taichi.core.util module, instead of the ti_core
-# object within it, is that ti_core is stateful. While in practice ti_core is
+# The reason we import just the taichi.core.util module, instead of the ti_python_core
+# object within it, is that ti_python_core is stateful. While in practice ti_python_core is
 # loaded during the import procedure, it's probably still good to delay the
 # access to it.
 

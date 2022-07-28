@@ -12,16 +12,30 @@ from taichi.lang._ndrange import _Ndrange, ndrange
 from taichi.lang.ast.ast_transformer_utils import (Builder, LoopStatus,
                                                    ReturnStatus)
 from taichi.lang.ast.symbol_resolver import ASTResolver
-from taichi.lang.exception import TaichiSyntaxError
-from taichi.lang.matrix import MatrixType
-from taichi.lang.util import is_taichi_class, to_taichi_type
+from taichi.lang.exception import TaichiSyntaxError, TaichiTypeError
+from taichi.lang.field import Field
+from taichi.lang.matrix import (Matrix, MatrixType, _PyScopeMatrixImpl,
+                                _TiScopeMatrixImpl)
+from taichi.lang.snode import append
+from taichi.lang.util import in_taichi_scope, is_taichi_class, to_taichi_type
 from taichi.types import (annotations, ndarray_type, primitive_types,
                           texture_type)
+from taichi.types.utils import is_integral
 
 if version_info < (3, 9):
     from astunparse import unparse
 else:
     from ast import unparse
+
+
+def boundary_type_cast_warning(expression):
+    expr_dtype = expression.ptr.get_ret_type()
+    if not is_integral(expr_dtype) or expr_dtype in [
+            primitive_types.i64, primitive_types.u64, primitive_types.u32
+    ]:
+        warnings.warn(
+            f"Casting range_for boundary values from {expr_dtype} to i32, which may cause numerical issues",
+            Warning)
 
 
 class ASTTransformer(Builder):
@@ -46,7 +60,7 @@ class ASTTransformer(Builder):
     @staticmethod
     def build_assign_annotated(ctx, target, value, is_static_assign,
                                annotation):
-        """Build an annotated assginment like this: target: annotation = value.
+        """Build an annotated assignment like this: target: annotation = value.
 
          Args:
             ctx (ast_builder_utils.BuilderContext): The builder context.
@@ -92,6 +106,26 @@ class ASTTransformer(Builder):
         return None
 
     @staticmethod
+    def build_assign_slice(ctx, node_target, values, is_static_assign):
+        target = ASTTransformer.build_Subscript(ctx, node_target, get_ref=True)
+        if isinstance(node_target.value.ptr, Matrix):
+            if isinstance(node_target.value.ptr._impl, _TiScopeMatrixImpl):
+                target._assign(values)
+            elif isinstance(node_target.value.ptr._impl, _PyScopeMatrixImpl):
+                if in_taichi_scope():
+                    raise TaichiTypeError(
+                        'PyScope matrix cannot be assigned in Taichi Scope')
+                node_target.ptr._assign(node_target.slice.ptr, values)
+            else:
+                raise TaichiTypeError(f'{type(target)} cannot be subscripted')
+        else:
+            ASTTransformer.build_assign_basic(ctx,
+                                              target,
+                                              values,
+                                              is_static_assign,
+                                              build_target=False)
+
+    @staticmethod
     def build_assign_unpack(ctx, node_target, values, is_static_assign):
         """Build the unpack assignments like this: (target1, target2) = (value1, value2).
         The function should be called only if the node target is a tuple.
@@ -103,6 +137,10 @@ class ASTTransformer(Builder):
             values: A node/list representing the values.
             is_static_assign: A boolean value indicating whether this is a static assignment
         """
+        if isinstance(node_target, ast.Subscript):
+            return ASTTransformer.build_assign_slice(ctx, node_target, values,
+                                                     is_static_assign)
+
         if not isinstance(node_target, ast.Tuple):
             return ASTTransformer.build_assign_basic(ctx, node_target, values,
                                                      is_static_assign)
@@ -128,8 +166,12 @@ class ASTTransformer(Builder):
         return None
 
     @staticmethod
-    def build_assign_basic(ctx, target, value, is_static_assign):
-        """Build basic assginment like this: target = value.
+    def build_assign_basic(ctx,
+                           target,
+                           value,
+                           is_static_assign,
+                           build_target=True):
+        """Build basic assignment like this: target = value.
 
          Args:
             ctx (ast_builder_utils.BuilderContext): The builder context.
@@ -149,7 +191,10 @@ class ASTTransformer(Builder):
             var = impl.expr_init(value)
             ctx.create_variable(target.id, var)
         else:
-            var = build_stmt(ctx, target)
+            if build_target:
+                var = build_stmt(ctx, target)
+            else:
+                var = target
             try:
                 var._assign(value)
             except AttributeError:
@@ -179,12 +224,14 @@ class ASTTransformer(Builder):
         return False
 
     @staticmethod
-    def build_Subscript(ctx, node):
+    def build_Subscript(ctx, node, get_ref=False):
         build_stmt(ctx, node.value)
         build_stmt(ctx, node.slice)
         if not ASTTransformer.is_tuple(node.slice):
             node.slice.ptr = [node.slice.ptr]
-        node.ptr = impl.subscript(node.value.ptr, *node.slice.ptr)
+        node.ptr = impl.subscript(node.value.ptr,
+                                  *node.slice.ptr,
+                                  get_ref=get_ref)
         return node.ptr
 
     @staticmethod
@@ -379,10 +426,17 @@ class ASTTransformer(Builder):
     def build_call_if_is_type(ctx, node, args, keywords):
         func = node.func.ptr
         if id(func) in primitive_types.type_ids:
-            if len(args) != 1 or keywords or isinstance(args[0], expr.Expr):
+            if len(args) != 1 or keywords:
                 raise TaichiSyntaxError(
-                    "Type annotation can only be given to a single literal.")
-            node.ptr = expr.Expr(args[0], dtype=func)
+                    "A primitive type can only decorate a single expression.")
+            if is_taichi_class(args[0]):
+                raise TaichiSyntaxError(
+                    "A primitive type cannot decorate an expression with a compound type."
+                )
+            if isinstance(args[0], expr.Expr):
+                node.ptr = ti_ops.cast(args[0], func)
+            else:
+                node.ptr = expr.Expr(args[0], dtype=func)
             return True
         return False
 
@@ -484,8 +538,19 @@ class ASTTransformer(Builder):
                             ctx.arg_features[i][3]))
                 elif isinstance(ctx.func.arguments[i].annotation,
                                 texture_type.TextureType):
-                    ctx.create_variable(arg.arg,
-                                        kernel_arguments.decl_texture_arg())
+                    ctx.create_variable(
+                        arg.arg,
+                        kernel_arguments.decl_texture_arg(
+                            ctx.func.arguments[i].annotation.num_dimensions))
+                elif isinstance(ctx.func.arguments[i].annotation,
+                                texture_type.RWTextureType):
+                    ctx.create_variable(
+                        arg.arg,
+                        kernel_arguments.decl_rw_texture_arg(
+                            ctx.func.arguments[i].annotation.num_dimensions,
+                            ctx.func.arguments[i].annotation.num_channels,
+                            ctx.func.arguments[i].annotation.channel_format,
+                            ctx.func.arguments[i].annotation.lod))
                 elif isinstance(ctx.func.arguments[i].annotation, MatrixType):
                     ctx.create_variable(
                         arg.arg,
@@ -581,8 +646,19 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_Attribute(ctx, node):
-        build_stmt(ctx, node.value)
-        node.ptr = getattr(node.value.ptr, node.attr)
+        if node.attr == "append" and isinstance(node.value, ast.Subscript):
+            x = build_stmt(ctx, node.value.value)
+            if not isinstance(x, Field) or x.parent(
+            ).ptr.type != _ti_core.SNodeType.dynamic:
+                raise TaichiSyntaxError(
+                    f"In Taichi scope the `append` method is only defined for dynamic SNodes, but {x} is encountered"
+                )
+            index = build_stmt(ctx, node.value.slice)
+            node.value.ptr = None
+            node.ptr = lambda val: append(x.parent(), index, val)
+        else:
+            build_stmt(ctx, node.value)
+            node.ptr = getattr(node.value.ptr, node.attr)
         return node.ptr
 
     @staticmethod
@@ -715,6 +791,8 @@ class ASTTransformer(Builder):
                         f'"{type(node_op).__name__}" is not supported in Taichi kernels.'
                     )
             val = ti_ops.bit_and(val, op(l, r))
+        if not isinstance(val, bool):
+            val = ti_ops.cast(val, primitive_types.i32)
         node.ptr = val
         return node.ptr
 
@@ -797,17 +875,25 @@ class ASTTransformer(Builder):
                     f"Range should have 1 or 2 arguments, found {len(node.iter.args)}"
                 )
             if len(node.iter.args) == 2:
-                begin = ti_ops.cast(
-                    expr.Expr(build_stmt(ctx, node.iter.args[0])),
-                    primitive_types.i32)
-                end = ti_ops.cast(
-                    expr.Expr(build_stmt(ctx, node.iter.args[1])),
-                    primitive_types.i32)
+                begin_expr = expr.Expr(build_stmt(ctx, node.iter.args[0]))
+                end_expr = expr.Expr(build_stmt(ctx, node.iter.args[1]))
+
+                # Warning for implicit dtype conversion
+                boundary_type_cast_warning(begin_expr)
+                boundary_type_cast_warning(end_expr)
+
+                begin = ti_ops.cast(begin_expr, primitive_types.i32)
+                end = ti_ops.cast(end_expr, primitive_types.i32)
+
             else:
+                end_expr = expr.Expr(build_stmt(ctx, node.iter.args[0]))
+
+                # Warning for implicit dtype conversion
+                boundary_type_cast_warning(end_expr)
+
                 begin = ti_ops.cast(expr.Expr(0), primitive_types.i32)
-                end = ti_ops.cast(
-                    expr.Expr(build_stmt(ctx, node.iter.args[0])),
-                    primitive_types.i32)
+                end = ti_ops.cast(end_expr, primitive_types.i32)
+
             ctx.ast_builder.begin_frontend_range_for(loop_var.ptr, begin.ptr,
                                                      end.ptr)
             build_stmts(ctx, node.body)
@@ -1039,7 +1125,8 @@ class ASTTransformer(Builder):
                 "'else' clause for 'while' not supported in Taichi kernels")
 
         with ctx.loop_scope_guard():
-            ctx.ast_builder.begin_frontend_while(expr.Expr(1).ptr)
+            ctx.ast_builder.begin_frontend_while(
+                expr.Expr(1, dtype=primitive_types.i32).ptr)
             while_cond = build_stmt(ctx, node.test)
             impl.begin_frontend_if(ctx.ast_builder, while_cond)
             ctx.ast_builder.begin_frontend_if_true()

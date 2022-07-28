@@ -4,8 +4,8 @@
 #define VK_NO_PROTOTYPES
 #include "taichi/taichi_vulkan.h"
 #include "taichi/runtime/gfx/runtime.h"
-#include "taichi/backends/vulkan/vulkan_device.h"
-#include "taichi/backends/vulkan/vulkan_device_creator.h"
+#include "taichi/rhi/vulkan/vulkan_device.h"
+#include "taichi/rhi/vulkan/vulkan_device_creator.h"
 
 #include "taichi_core_impl.h"
 
@@ -22,6 +22,12 @@ class VulkanRuntime : public Runtime {
   virtual taichi::lang::gfx::GfxRuntime &get_gfx_runtime() = 0;
 
   virtual TiAotModule load_aot_module(const char *module_path) override final;
+  virtual void buffer_copy(const taichi::lang::DevicePtr &dst,
+                           const taichi::lang::DevicePtr &src,
+                           size_t size) override final;
+  virtual void signal_event(taichi::lang::DeviceEvent *event) override final;
+  virtual void reset_event(taichi::lang::DeviceEvent *event) override final;
+  virtual void wait_event(taichi::lang::DeviceEvent *event) override final;
   virtual void submit() override final;
   virtual void wait() override final;
 };

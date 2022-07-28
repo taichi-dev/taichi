@@ -6,7 +6,8 @@
 
 #include "taichi/ir/offloaded_task_type.h"
 #include "taichi/ir/type.h"
-#include "taichi/backends/device.h"
+#include "taichi/ir/transforms.h"
+#include "taichi/rhi/device.h"
 
 namespace taichi {
 namespace lang {
@@ -70,6 +71,9 @@ struct TaskAttributes {
   struct TextureBind {
     int arg_id{0};
     int binding{0};
+    bool is_storage{false};
+
+    TI_IO_DEF(arg_id, binding, is_storage);
   };
 
   std::string name;
@@ -83,7 +87,7 @@ struct TaskAttributes {
   OffloadedTaskType task_type;
 
   struct RangeForAttributes {
-    // |begin| has differen meanings depending on |const_begin|:
+    // |begin| has different meanings depending on |const_begin|:
     // * true : It is the left boundary of the loop known at compile time.
     // * false: It is the offset of the begin in the global tmps buffer.
     //
@@ -113,6 +117,7 @@ struct TaskAttributes {
             advisory_num_threads_per_group,
             task_type,
             buffer_binds,
+            texture_binds,
             range_for_attribs);
 };
 
@@ -172,7 +177,7 @@ class KernelContextAttributes {
   struct RetAttributes : public AttribsBase {};
 
   KernelContextAttributes() = default;
-  explicit KernelContextAttributes(const Kernel &kernel);
+  explicit KernelContextAttributes(const Kernel &kernel, Device *device);
 
   /**
    * Whether this kernel has any argument
@@ -234,11 +239,14 @@ class KernelContextAttributes {
     return args_bytes();
   }
 
+  std::vector<irpass::ExternalPtrAccess> arr_access;
+
   TI_IO_DEF(arg_attribs_vec_,
             ret_attribs_vec_,
             args_bytes_,
             rets_bytes_,
-            extra_args_bytes_);
+            extra_args_bytes_,
+            arr_access);
 
  private:
   std::vector<ArgAttributes> arg_attribs_vec_;

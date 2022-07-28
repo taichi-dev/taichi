@@ -1,6 +1,6 @@
 #pragma once
 
-#include <taichi/backends/device.h>
+#include <taichi/rhi/device.h>
 
 TI_UI_NAMESPACE_BEGIN
 namespace vulkan {
@@ -16,6 +16,10 @@ class TI_DLL_EXPORT SwapChain {
 
   void resize(uint32_t width, uint32_t height);
 
+  bool copy_depth_buffer_to_ndarray(taichi::lang::DevicePtr &arr_dev_ptr);
+
+  std::vector<uint32_t> &dump_image_buffer();
+
   void write_image(const std::string &filename);
 
   void cleanup();
@@ -26,6 +30,8 @@ class TI_DLL_EXPORT SwapChain {
   taichi::lang::DeviceAllocation depth_allocation_;
 
   std::unique_ptr<taichi::lang::Surface> surface_;
+
+  std::vector<uint32_t> image_buffer_data_;
 
   class AppContext *app_context_;
 

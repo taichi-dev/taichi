@@ -19,37 +19,6 @@ std::string data_type_name(DataType t) {
     TI_NOT_IMPLEMENTED
 }
 
-std::string data_type_format(DataType dt) {
-  if (dt->is_primitive(PrimitiveTypeID::i16)) {
-    return "%hd";
-  } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
-    return "%hu";
-  } else if (dt->is_primitive(PrimitiveTypeID::i32)) {
-    return "%d";
-  } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
-    return "%u";
-  } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
-    // Use %lld on Windows.
-    // Discussion: https://github.com/taichi-dev/taichi/issues/2522
-    return "%lld";
-  } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
-    return "%llu";
-  } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
-    return "%f";
-  } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
-    return "%.12f";
-  } else if (dt->is<QuantIntType>()) {
-    return "%d";
-  } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
-    // f16 (and f32) is converted to f64 before printing, see
-    // CodeGenLLVM::visit(PrintStmt *stmt) and
-    // CodeGenLLVMCUDA::visit(PrintStmt *stmt) for more details.
-    return "%f";
-  } else {
-    TI_NOT_IMPLEMENTED
-  }
-}
-
 int data_type_size(DataType t) {
   // TODO:
   //  1. Ensure in the old code, pointer attributes of t are correct (by
@@ -80,6 +49,37 @@ int data_type_size(DataType t) {
 
 #undef REGISTER_DATA_TYPE
   else {
+    TI_NOT_IMPLEMENTED
+  }
+}
+
+std::string data_type_format(DataType dt) {
+  if (dt->is_primitive(PrimitiveTypeID::i16)) {
+    return "%hd";
+  } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
+    return "%hu";
+  } else if (dt->is_primitive(PrimitiveTypeID::i32)) {
+    return "%d";
+  } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
+    return "%u";
+  } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
+    // Use %lld on Windows.
+    // Discussion: https://github.com/taichi-dev/taichi/issues/2522
+    return "%lld";
+  } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
+    return "%llu";
+  } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
+    return "%f";
+  } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
+    return "%.12f";
+  } else if (dt->is<QuantIntType>()) {
+    return "%d";
+  } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
+    // f16 (and f32) is converted to f64 before printing, see
+    // TaskCodeGenLLVM::visit(PrintStmt *stmt) and
+    // TaskCodeGenCUDA::visit(PrintStmt *stmt) for more details.
+    return "%f";
+  } else {
     TI_NOT_IMPLEMENTED
   }
 }

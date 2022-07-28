@@ -301,7 +301,7 @@ class TypeCheck : public IRVisitor {
     }
 
     // Some backends such as vulkan doesn't support fp64
-    // Always promote to fp32 unless neccessary
+    // Always promote to fp32 unless necessary
     if (stmt->op_type == BinaryOpType::atan2) {
       if (stmt->rhs->ret_type == PrimitiveType::f64 ||
           stmt->lhs->ret_type == PrimitiveType::f64) {
@@ -423,6 +423,13 @@ class TypeCheck : public IRVisitor {
     stmt->ret_type.set_is_pointer(true);
     stmt->ret_type = TypeFactory::create_vector_or_scalar_type(
         stmt->base_ptrs.size(), stmt->base_ptrs[0]->ret_type);
+    for (int i = 0; i < stmt->indices.size(); i++) {
+      TI_ASSERT(is_integral(stmt->indices[i]->ret_type));
+      if (stmt->indices[i]->ret_type != PrimitiveType::i32) {
+        stmt->indices[i] =
+            insert_type_cast_before(stmt, stmt->indices[i], PrimitiveType::i32);
+      }
+    }
   }
 
   void visit(LoopIndexStmt *stmt) override {
@@ -446,10 +453,10 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(SNodeLookupStmt *stmt) override {
-    if (stmt->snode->type == SNodeType::bit_array) {
-      auto bit_array_type = stmt->snode->dt;
+    if (stmt->snode->type == SNodeType::quant_array) {
+      auto quant_array_type = stmt->snode->dt;
       auto element_type =
-          bit_array_type->cast<BitArrayType>()->get_element_type();
+          quant_array_type->cast<QuantArrayType>()->get_element_type();
       auto pointer_type =
           TypeFactory::get_instance().get_pointer_type(element_type, true);
       stmt->ret_type = pointer_type;

@@ -1,10 +1,10 @@
 #pragma once
-#include "taichi/lang_util.h"
+#include "taichi/util/lang_util.h"
 
 #include <vector>
 #include <chrono>
 
-#include "taichi/backends/device.h"
+#include "taichi/rhi/device.h"
 #include "taichi/codegen/spirv/snode_struct_compiler.h"
 #include "taichi/codegen/spirv/kernel_utils.h"
 #include "taichi/codegen/spirv/spirv_codegen.h"
@@ -54,12 +54,11 @@ class CompiledTaichiKernel {
   size_t get_args_buffer_size() const;
   size_t get_ret_buffer_size() const;
 
-  void generate_command_list(
-      CommandList *cmdlist,
-      DeviceAllocationGuard *args_buffer,
-      DeviceAllocationGuard *ret_buffer,
-      const std::unordered_map<int, DeviceAllocation> &ext_arrs,
-      const std::unordered_map<int, DeviceAllocation> &textures) const;
+  Pipeline *get_pipeline(int i);
+
+  DeviceAllocation *get_buffer_bind(const BufferInfo &bind) {
+    return input_buffers_[bind];
+  }
 
  private:
   TaichiKernelAttributes ti_kernel_attribs_;
@@ -101,6 +100,12 @@ class TI_DLL_EXPORT GfxRuntime {
 
   void launch_kernel(KernelHandle handle, RuntimeContext *host_ctx);
 
+  void buffer_copy(DevicePtr dst, DevicePtr src, size_t size);
+
+  void signal_event(DeviceEvent *event);
+  void reset_event(DeviceEvent *event);
+  void wait_event(DeviceEvent *event);
+
   void synchronize();
 
   StreamSemaphore flush();
@@ -115,6 +120,9 @@ class TI_DLL_EXPORT GfxRuntime {
 
  private:
   friend class taichi::lang::gfx::SNodeTreeManager;
+
+  void ensure_current_cmdlist();
+  void submit_current_cmdlist_if_timeout();
 
   void init_nonroot_buffers();
 

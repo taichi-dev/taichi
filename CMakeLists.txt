@@ -2,7 +2,7 @@
 # The Taichi Programming Language
 #*********************************************************************
 
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.17)
 
 project(taichi)
 
@@ -72,7 +72,7 @@ endif()
 
 if (WIN32)
   # For `Debug` configs MSVC links to a debuggable runtime by default which has
-  # symbol conflicts with the prebuilt LLVM in `Release`. We shoule be providing
+  # symbol conflicts with the prebuilt LLVM in `Release`. We should be providing
   # prebuilt LLVMs for both `Debug` and `Release` but LLVM 10 cannot be built by
   # MSVC in `Debug` config because MSVC would try to fill uninitialize memory
   # with `0xCC` but it too breaks `LLVMTableGen` which is depended on by almost
@@ -80,7 +80,10 @@ if (WIN32)
   #
   # FIXME: (penguinliong) This is fixed in later releases of LLVM so maybe
   # someday we can distribute `Debug` libraries, if it's ever needed.
-  SET(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreadedDLL)
+  if (NOT TI_LLVM_15)
+    SET(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreadedDLL)
+  endif()
+  message("CMAKE_MSVC_RUNTIME_LIBRARY: ${CMAKE_MSVC_RUNTIME_LIBRARY}")
 endif()
 
 # No support of Python for Android build; or in any case taichi is integrated
@@ -100,6 +103,10 @@ if (TI_BUILD_TESTS)
 endif()
 
 option(TI_BUILD_EXAMPLES "Build the CPP examples" ON)
+
+if(NOT TI_WITH_LLVM OR NOT TI_WITH_METAL)
+    set(TI_BUILD_EXAMPLES OFF)
+endif()
 
 if (TI_BUILD_EXAMPLES)
   include(cmake/TaichiExamples.cmake)
@@ -143,7 +150,11 @@ if (APPLE)
   set(CLANG_OSX_FLAGS "-isysroot${CMAKE_OSX_SYSROOT}")
   set(CLANG_HIGHEST_VERSION "12")
 else()
-  set(CLANG_HIGHEST_VERSION "11")
+  if (TI_LLVM_15)
+    set(CLANG_HIGHEST_VERSION "15")
+  else()
+    set(CLANG_HIGHEST_VERSION "11")
+  endif()
 endif()
 
 check_clang_version()
@@ -162,7 +173,7 @@ if (${CLANG_VERSION_MAJOR} VERSION_GREATER ${CLANG_HIGHEST_VERSION})
 endif()
 
 if (TI_WITH_LLVM)
-  add_subdirectory(taichi/runtime/llvm)
+  add_subdirectory(taichi/runtime/llvm/runtime_module)
 endif()
 
 configure_file(taichi/common/version.h.in ${CMAKE_SOURCE_DIR}/taichi/common/version.h)
@@ -182,4 +193,7 @@ option(TI_WITH_C_API "build taichi runtime c-api library" OFF)
 
 if (TI_WITH_C_API)
   include(cmake/TaichiCAPI.cmake)
+  if (TI_BUILD_TESTS)
+    include(cmake/TaichiCAPITests.cmake)
+  endif()
 endif()

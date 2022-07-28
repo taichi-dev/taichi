@@ -7,14 +7,14 @@
 #include "taichi/ir/stmt_op_types.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/expression.h"
-#include "taichi/backends/arch.h"
+#include "taichi/rhi/arch.h"
 #include "taichi/program/function.h"
 #include "taichi/ir/mesh.h"
 
 TLANG_NAMESPACE_BEGIN
 
 struct ForLoopConfig {
-  int bit_vectorize{0};
+  bool is_bit_vectorized{false};
   int num_cpu_threads{0};
   bool strictly_serialized{false};
   MemoryAccessOptions mem_access_opt;
@@ -63,16 +63,20 @@ class FrontendAllocaStmt : public Stmt {
  public:
   Identifier ident;
 
-  FrontendAllocaStmt(const Identifier &lhs, DataType type) : ident(lhs) {
+  FrontendAllocaStmt(const Identifier &lhs, DataType type)
+      : ident(lhs), is_shared(false) {
     ret_type = TypeFactory::create_vector_or_scalar_type(1, type);
   }
 
   FrontendAllocaStmt(const Identifier &lhs,
                      std::vector<int> shape,
-                     DataType element)
-      : ident(lhs) {
+                     DataType element,
+                     bool is_shared = false)
+      : ident(lhs), is_shared(is_shared) {
     ret_type = DataType(TypeFactory::create_tensor_type(shape, element));
   }
+
+  bool is_shared;
 
   TI_DEFINE_ACCEPT
 };
@@ -161,7 +165,7 @@ class FrontendForStmt : public Stmt {
   Expr global_var;
   std::unique_ptr<Block> body;
   std::vector<Identifier> loop_var_id;
-  int bit_vectorize;
+  bool is_bit_vectorized;
   int num_cpu_threads;
   bool strictly_serialized;
   MemoryAccessOptions mem_access_opt;
@@ -298,8 +302,29 @@ class Texture;
 class TexturePtrExpression : public Expression {
  public:
   int arg_id;
+  int num_dims;
+  bool is_storage{false};
 
-  TexturePtrExpression(int arg_id) : arg_id(arg_id) {
+  // Optional, for storage textures
+  int num_channels{0};
+  DataType channel_format{PrimitiveType::f32};
+  int lod{0};
+
+  TexturePtrExpression(int arg_id, int num_dims = 2)
+      : arg_id(arg_id), num_dims(num_dims) {
+  }
+
+  TexturePtrExpression(int arg_id,
+                       int num_dims,
+                       int num_channels,
+                       DataType channel_format,
+                       int lod)
+      : arg_id(arg_id),
+        num_dims(num_dims),
+        is_storage(true),
+        num_channels(num_channels),
+        channel_format(channel_format),
+        lod(lod) {
   }
 
   void type_check(CompileConfig *config) override;
@@ -478,12 +503,14 @@ class GlobalVariableExpression : public Expression {
   TI_DEFINE_ACCEPT_FOR_EXPRESSION
 };
 
-class GlobalPtrExpression : public Expression {
+class IndexExpression : public Expression {
  public:
+  // `var` is one of GlobalVariableExpression, ExternalTensorExpression,
+  // IdExpression
   Expr var;
   ExprGroup indices;
 
-  GlobalPtrExpression(const Expr &var, const ExprGroup &indices)
+  IndexExpression(const Expr &var, const ExprGroup &indices)
       : var(var), indices(indices) {
   }
 
@@ -495,29 +522,37 @@ class GlobalPtrExpression : public Expression {
     return true;
   }
 
+  // whether the LocalLoad/Store or GlobalLoad/Store is to be used on the
+  // compiled stmt
+  bool is_local() const;
+  bool is_global() const;
+
   TI_DEFINE_ACCEPT_FOR_EXPRESSION
+
+ private:
+  bool is_field() const;
+  bool is_ndarray() const;
+  bool is_tensor() const;
 };
 
-class TensorElementExpression : public Expression {
+class StrideExpression : public Expression {
  public:
+  // `var` must be an IndexExpression on a GlobalVariableExpression
+  // therefore the access is always global
   Expr var;
   ExprGroup indices;
   std::vector<int> shape;
   int stride{0};
 
-  TensorElementExpression(const Expr &var,
-                          const ExprGroup &indices,
-                          const std::vector<int> &shape,
-                          int stride)
+  StrideExpression(const Expr &var,
+                   const ExprGroup &indices,
+                   const std::vector<int> &shape,
+                   int stride)
       : var(var), indices(indices), shape(shape), stride(stride) {
     // TODO: shape & indices check
   }
 
   void type_check(CompileConfig *config) override;
-
-  bool is_local_tensor() const;
-
-  bool is_global_tensor() const;
 
   void flatten(FlattenContext *ctx) override;
 
@@ -791,7 +826,7 @@ class ASTBuilder {
     }
 
     void reset() {
-      config.bit_vectorize = -1;
+      config.is_bit_vectorized = false;
       config.num_cpu_threads = 0;
       config.uniform = false;
       config.mem_access_opt.clear();
@@ -843,6 +878,8 @@ class ASTBuilder {
   Expr expr_alloca_local_tensor(const std::vector<int> &shape,
                                 const DataType &element_type,
                                 const ExprGroup &elements);
+  Expr expr_alloca_shared_array(const std::vector<int> &shape,
+                                const DataType &element_type);
   void expr_assign(const Expr &lhs, const Expr &rhs, std::string tb);
   void create_assert_stmt(const Expr &cond,
                           const std::string &msg,
@@ -863,8 +900,8 @@ class ASTBuilder {
   void create_scope(std::unique_ptr<Block> &list, LoopType tp = NotLoop);
   void pop_scope();
 
-  void bit_vectorize(int v) {
-    for_loop_dec_.config.bit_vectorize = v;
+  void bit_vectorize() {
+    for_loop_dec_.config.is_bit_vectorized = true;
   }
 
   void parallelize(int v) {
@@ -876,7 +913,11 @@ class ASTBuilder {
   }
 
   void block_dim(int v) {
-    TI_ASSERT(bit::is_power_of_two(v));
+    if (arch_ == Arch::cuda) {
+      TI_ASSERT((v % 32 == 0) || bit::is_power_of_two(v));
+    } else {
+      TI_ASSERT(bit::is_power_of_two(v));
+    }
     for_loop_dec_.config.block_dim = v;
   }
 

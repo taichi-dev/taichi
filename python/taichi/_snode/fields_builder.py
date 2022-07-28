@@ -22,7 +22,7 @@ class FieldsBuilder:
         fb.dense(ti.ij, 8).place(x)
         fb.pointer(ti.ij, 8).dense(ti.ij, 4).place(y)
 
-        # Afer this line, `x` and `y` are placed. No more fields can be placed
+        # After this line, `x` and `y` are placed. No more fields can be placed
         # into `fb`.
         #
         # The tree looks like the following:
@@ -104,12 +104,12 @@ class FieldsBuilder:
         self.empty = False
         return self.root.bit_struct(num_bits)
 
-    def bit_array(self, indices: Union[Sequence[_Axis], _Axis],
-                  dimensions: Union[Sequence[int], int], num_bits: int):
-        """Same as :func:`taichi.lang.snode.SNode.bit_array`"""
+    def quant_array(self, indices: Union[Sequence[_Axis], _Axis],
+                    dimensions: Union[Sequence[int], int], num_bits: int):
+        """Same as :func:`taichi.lang.snode.SNode.quant_array`"""
         self._check_not_finalized()
         self.empty = False
-        return self.root.bit_array(indices, dimensions, num_bits)
+        return self.root.quant_array(indices, dimensions, num_bits)
 
     def place(self,
               *args: Any,
@@ -126,6 +126,13 @@ class FieldsBuilder:
         self._check_not_finalized()
         self.empty = False
         self.root.lazy_grad()
+
+    def lazy_dual(self):
+        """Same as :func:`taichi.lang.snode.SNode.lazy_dual`"""
+        # TODO: This complicates the implementation. Figure out why we need this
+        self._check_not_finalized()
+        self.empty = False
+        self.root.lazy_dual()
 
     def finalize(self, raise_warning=True):
         """Constructs the SNodeTree and finalizes this builder.

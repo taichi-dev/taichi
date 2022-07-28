@@ -1,7 +1,5 @@
 import argparse
 
-import numpy as np
-
 import taichi as ti
 
 ti.init(arch=ti.vulkan)
@@ -97,15 +95,16 @@ def init_particles(x: ti.any_arr(field_dim=1), v: ti.any_arr(field_dim=1),
         J[i] = 1
 
 
-x = ti.Vector.ndarray(2, ti.f32, shape=(n_particles))
-v = ti.Vector.ndarray(2, ti.f32, shape=(n_particles))
+F_x = ti.Vector.ndarray(2, ti.f32, shape=(n_particles))
+F_v = ti.Vector.ndarray(2, ti.f32, shape=(n_particles))
 
-C = ti.Matrix.ndarray(2, 2, ti.f32, shape=(n_particles))
-J = ti.ndarray(ti.f32, shape=(n_particles))
-grid_v = ti.Vector.ndarray(2, ti.f32, shape=(n_grid, n_grid))
-grid_m = ti.ndarray(ti.f32, shape=(n_grid, n_grid))
+F_C = ti.Matrix.ndarray(2, 2, ti.f32, shape=(n_particles))
+F_J = ti.ndarray(ti.f32, shape=(n_particles))
+F_grid_v = ti.Vector.ndarray(2, ti.f32, shape=(n_grid, n_grid))
+F_grid_m = ti.ndarray(ti.f32, shape=(n_grid, n_grid))
 
-if __name__ == "__main__":
+
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--baseline', action='store_true')
     args, unknown = parser.parse_known_args()
@@ -116,21 +115,31 @@ if __name__ == "__main__":
         sym_x = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                              'x',
                              ti.f32,
+                             field_dim=1,
                              element_shape=(2, ))
         sym_v = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                              'v',
                              ti.f32,
+                             field_dim=1,
                              element_shape=(2, ))
         sym_C = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                              'C',
                              ti.f32,
+                             field_dim=1,
                              element_shape=(2, 2))
-        sym_J = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'J', ti.f32)
+        sym_J = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
+                             'J',
+                             ti.f32,
+                             field_dim=1)
         sym_grid_v = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                                   'grid_v',
                                   ti.f32,
+                                  field_dim=2,
                                   element_shape=(2, ))
-        sym_grid_m = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'grid_m', ti.f32)
+        sym_grid_m = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
+                                  'grid_m',
+                                  ti.f32,
+                                  field_dim=2)
         g_init_builder = ti.graph.GraphBuilder()
         g_init_builder.dispatch(init_particles, sym_x, sym_v, sym_J)
 
@@ -151,30 +160,34 @@ if __name__ == "__main__":
         g_update = g_update_builder.compile()
 
         # Run
-        g_init.run({'x': x, 'v': v, 'J': J})
+        g_init.run({'x': F_x, 'v': F_v, 'J': F_J})
 
         gui = ti.GUI('MPM88')
         while gui.running:
             g_update.run({
-                'x': x,
-                'v': v,
-                'C': C,
-                'J': J,
-                'grid_v': grid_v,
-                'grid_m': grid_m
+                'x': F_x,
+                'v': F_v,
+                'C': F_C,
+                'J': F_J,
+                'grid_v': F_grid_v,
+                'grid_m': F_grid_m
             })
             gui.clear(0x112F41)
-            gui.circles(x.to_numpy(), radius=1.5, color=0x068587)
+            gui.circles(F_x.to_numpy(), radius=1.5, color=0x068587)  # false+, pylint: disable=no-member
             gui.show()
     else:
-        init_particles(x, v, J)
+        init_particles(F_x, F_v, F_J)
         gui = ti.GUI('MPM88')
         while gui.running and not gui.get_event(gui.ESCAPE):
             for s in range(N_ITER):
-                substep_reset_grid(grid_v, grid_m)
-                substep_p2g(x, v, C, J, grid_v, grid_m)
-                substep_update_grid_v(grid_v, grid_m)
-                substep_g2p(x, v, C, J, grid_v)
+                substep_reset_grid(F_grid_v, F_grid_m)
+                substep_p2g(F_x, F_v, F_C, F_J, F_grid_v, F_grid_m)
+                substep_update_grid_v(F_grid_v, F_grid_m)
+                substep_g2p(F_x, F_v, F_C, F_J, F_grid_v)
             gui.clear(0x112F41)
-            gui.circles(x.to_numpy(), radius=1.5, color=0x068587)
+            gui.circles(F_x.to_numpy(), radius=1.5, color=0x068587)  # false+, pylint: disable=no-member
             gui.show()
+
+
+if __name__ == '__main__':
+    main()

@@ -5,13 +5,14 @@
 
 #include "taichi/inc/constants.h"
 #include "taichi/ir/type_utils.h"
-#include "taichi/backends/device.h"
+#include "taichi/rhi/device.h"
 
 namespace taichi {
 namespace lang {
 
 class Program;
 class Ndarray;
+class SNode;
 
 class TI_DLL_EXPORT Texture {
  public:
@@ -38,6 +39,8 @@ class TI_DLL_EXPORT Texture {
   intptr_t get_device_allocation_ptr_as_int() const;
 
   void from_ndarray(Ndarray *ndarray);
+
+  void from_snode(SNode *snode);
 
   DeviceAllocation get_device_allocation() const {
     return texture_alloc_;

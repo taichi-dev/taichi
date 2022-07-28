@@ -78,20 +78,25 @@ Type *TypeFactory::get_quant_float_type(Type *digits_type,
   return quant_float_types_[key].get();
 }
 
-Type *TypeFactory::get_bit_struct_type(PrimitiveType *physical_type,
-                                       std::vector<Type *> member_types,
-                                       std::vector<int> member_bit_offsets) {
+Type *TypeFactory::get_bit_struct_type(
+    PrimitiveType *physical_type,
+    const std::vector<Type *> &member_types,
+    const std::vector<int> &member_bit_offsets,
+    const std::vector<bool> &member_owns_shared_exponents,
+    const std::vector<int> &member_exponents,
+    const std::vector<std::vector<int>> &member_exponent_users) {
   bit_struct_types_.push_back(std::make_unique<BitStructType>(
-      physical_type, member_types, member_bit_offsets));
+      physical_type, member_types, member_bit_offsets,
+      member_owns_shared_exponents, member_exponents, member_exponent_users));
   return bit_struct_types_.back().get();
 }
 
-Type *TypeFactory::get_bit_array_type(PrimitiveType *physical_type,
-                                      Type *element_type,
-                                      int num_elements) {
-  bit_array_types_.push_back(std::make_unique<BitArrayType>(
+Type *TypeFactory::get_quant_array_type(PrimitiveType *physical_type,
+                                        Type *element_type,
+                                        int num_elements) {
+  quant_array_types_.push_back(std::make_unique<QuantArrayType>(
       physical_type, element_type, num_elements));
-  return bit_array_types_.back().get();
+  return quant_array_types_.back().get();
 }
 
 PrimitiveType *TypeFactory::get_primitive_int_type(int bits, bool is_signed) {

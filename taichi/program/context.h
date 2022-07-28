@@ -18,7 +18,7 @@ struct RuntimeContext {
     kNone = 0,
     kNdarray = 1,
     kTexture = 2,
-    kImage = 3
+    kRWTexture = 3
   };
 
   LLVMRuntime *runtime{nullptr};
@@ -78,9 +78,14 @@ struct RuntimeContext {
     return taichi_union_cast_with_different_sizes<T>(result_buffer[i]);
   }
 
-  void set_arg_texture(int arg_id, DeviceAllocation &alloc) {
-    args[arg_id] = taichi_union_cast_with_different_sizes<uint64>(&alloc);
+  void set_arg_texture(int arg_id, intptr_t alloc_ptr) {
+    args[arg_id] = taichi_union_cast_with_different_sizes<uint64>(alloc_ptr);
     set_array_device_allocation_type(arg_id, DevAllocType::kTexture);
+  }
+
+  void set_arg_rw_texture(int arg_id, intptr_t alloc_ptr) {
+    args[arg_id] = taichi_union_cast_with_different_sizes<uint64>(alloc_ptr);
+    set_array_device_allocation_type(arg_id, DevAllocType::kRWTexture);
   }
 
   void set_arg_devalloc(int arg_id,

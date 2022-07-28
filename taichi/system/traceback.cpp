@@ -15,8 +15,8 @@
 #include <mutex>
 #include "spdlog/fmt/bundled/color.h"
 
-#if defined(__APPLE__) || (defined(__unix__) && !defined(__linux__)) && \
-                              !defined(ANDROID) && !defined(TI_EMSCRIPTENED)
+#if defined(__APPLE__) || \
+    (defined(__unix__) && !defined(__linux__)) && !defined(ANDROID)
 #include <execinfo.h>
 #include <cxxabi.h>
 #endif
@@ -205,7 +205,7 @@ void print_traceback() {
   // TODO: print line number instead of offset
   // (https://stackoverflow.com/questions/8278691/how-to-fix-backtrace-line-number-error-in-c)
 
-  // record stack trace upto 128 frames
+  // record stack trace up to 128 frames
   void *callstack[128] = {};
   // collect stack frames
   int frames = backtrace((void **)callstack, 128);
@@ -308,12 +308,6 @@ void print_traceback() {
   fmt::print(fg(fmt::color::magenta), "* Taichi Compiler Stack Traceback *\n");
   fmt::print(fg(fmt::color::magenta), "***********************************\n");
   fmt::print(fg(fmt::color::magenta), "NOT SUPPORTED ON ANDROID\n");
-#elif defined(TI_EMSCRIPTENED)
-  // Not supported
-  fmt::print(fg(fmt::color::magenta), "***********************************\n");
-  fmt::print(fg(fmt::color::magenta),
-             "* Emscriptened Taichi Compiler Stack Traceback *\n");
-  fmt::print(fg(fmt::color::magenta), "***********************************\n");
 #else
   // Based on http://man7.org/linux/man-pages/man3/backtrace.3.html
   constexpr int BT_BUF_SIZE = 1024;

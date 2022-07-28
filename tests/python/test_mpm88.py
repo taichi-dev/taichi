@@ -113,18 +113,6 @@ def _is_appveyor():
     return os.getenv('APPVEYOR', '').lower() == 'true'
 
 
-#TODO: Remove exclude of ti.metal
-@pytest.mark.skipif(_is_appveyor(), reason='Stuck on Appveyor.')
-@test_utils.test(require=ti.extension.async_mode,
-                 exclude=[ti.metal],
-                 async_mode=True)
-def test_mpm88_async():
-    # It seems that all async tests on Appveyor run super slow. For example,
-    # on Appveyor, 10+ tests have passed during the execution of
-    # test_fuse_dense_x2y2z. Maybe thread synchronizations are expensive?
-    run_mpm88_test()
-
-
 @test_utils.test(arch=[ti.cpu, ti.cuda, ti.opengl])
 def test_mpm88_numpy_and_ndarray():
     import numpy as np

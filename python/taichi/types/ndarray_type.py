@@ -1,6 +1,3 @@
-from taichi.types.primitive_types import f32
-
-
 class NdarrayTypeMetadata:
     def __init__(self, element_type, shape=None, layout=None):
         self.element_type = element_type
@@ -21,7 +18,7 @@ class NdarrayType:
         layout (Union[Layout, NoneType], optional): None if not specified (will be treated as Layout.AOS for external arrays), Layout.AOS or Layout.SOA.
     """
     def __init__(self,
-                 dtype=f32,
+                 dtype=None,
                  element_dim=None,
                  element_shape=None,
                  field_dim=None,

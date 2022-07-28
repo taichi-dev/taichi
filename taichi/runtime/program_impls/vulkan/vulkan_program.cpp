@@ -4,7 +4,7 @@
 #include "taichi/runtime/gfx/snode_tree_manager.h"
 #include "taichi/runtime/gfx/aot_module_loader_impl.h"
 
-#if !defined(ANDROID) && !defined(TI_EMSCRIPTENED)
+#if !defined(ANDROID)
 #include "GLFW/glfw3.h"
 #endif
 
@@ -26,7 +26,6 @@ std::vector<std::string> get_required_instance_extensions() {
 #else
   std::vector<std::string> extensions;
 
-#ifndef TI_EMSCRIPTENED
   uint32_t glfw_ext_count = 0;
   const char **glfw_extensions;
   glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_ext_count);
@@ -34,7 +33,6 @@ std::vector<std::string> get_required_instance_extensions() {
   for (int i = 0; i < glfw_ext_count; ++i) {
     extensions.push_back(glfw_extensions[i]);
   }
-#endif
   // VulkanDeviceCreator will check that these are supported
   extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
 #if TI_WITH_CUDA
@@ -96,7 +94,6 @@ void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
   *result_buffer_ptr = (uint64 *)memory_pool->allocate(
       sizeof(uint64) * taichi_result_buffer_entries, 8);
 
-#ifndef TI_EMSCRIPTENED
 // Android is meant to be embedded in other application only so the creation of
 // the device and other states is left to the caller/host.
 // The following code is only used when Taichi is running on its own.
@@ -116,11 +113,22 @@ void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
     }
   }
 #endif
-#endif
 
   VulkanDeviceCreator::Params evd_params;
-  evd_params.api_version = VulkanEnvSettings::kApiVersion();
-#if !defined(ANDROID) && !defined(TI_EMSCRIPTENED)
+  if (config->vk_api_version.empty()) {
+    // Don't assign the API version by default. Otherwise we have to provide all
+    // the extensions to be enabled. `VulkanDeviceCreator` would automatically
+    // select a usable version for us.
+    evd_params.api_version = std::nullopt;
+  } else {
+    size_t idot1 = config->vk_api_version.find('.');
+    size_t idot2 = config->vk_api_version.find('.', idot1 + 1);
+    int32_t major = std::atoll(config->vk_api_version.c_str());
+    int32_t minor = std::atoll(config->vk_api_version.c_str() + idot1 + 1);
+    int32_t patch = std::atoll(config->vk_api_version.c_str() + idot2 + 1);
+    evd_params.api_version = VK_MAKE_API_VERSION(0, major, minor, patch);
+  }
+#if !defined(ANDROID)
   if (glfw_window) {
     // then we should be able to create a device with graphics abilities
     evd_params.additional_instance_extensions =
@@ -191,6 +199,7 @@ std::unique_ptr<aot::Kernel> VulkanProgramImpl::make_aot_kernel(
   std::vector<gfx::CompiledSNodeStructs> compiled_structs;
   gfx::GfxRuntime::RegisterParams kparams =
       gfx::run_codegen(&kernel, get_compute_device(), compiled_structs);
+
   return std::make_unique<gfx::KernelImpl>(vulkan_runtime_.get(),
                                            std::move(kparams));
 }

@@ -13,7 +13,7 @@
 #include "taichi/ir/ir.h"
 #include "taichi/ir/type_factory.h"
 #include "taichi/ir/snode.h"
-#include "taichi/lang_util.h"
+#include "taichi/util/lang_util.h"
 #include "taichi/program/program_impl.h"
 #include "taichi/program/callable.h"
 #include "taichi/program/function.h"
@@ -21,7 +21,6 @@
 #include "taichi/program/kernel_profiler.h"
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/program/snode_rw_accessors_bank.h"
-#include "taichi/program/ndarray_rw_accessors_bank.h"
 #include "taichi/program/context.h"
 #include "taichi/runtime/runtime.h"
 #include "taichi/struct/snode_tree.h"
@@ -77,8 +76,6 @@ namespace taichi {
 namespace lang {
 
 class StructCompiler;
-class LlvmProgramImpl;
-class AsyncEngine;
 
 /**
  * Note [Backend-specific ProgramImpl]
@@ -101,8 +98,6 @@ class TI_DLL_EXPORT Program {
   bool sync{false};  // device/host synchronized?
 
   uint64 *result_buffer{nullptr};  // Note result_buffer is used by all backends
-
-  std::unique_ptr<AsyncEngine> async_engine{nullptr};
 
   std::vector<std::unique_ptr<Kernel>> kernels;
 
@@ -158,10 +153,6 @@ class TI_DLL_EXPORT Program {
 
   StreamSemaphore flush();
 
-  // See AsyncEngine::flush().
-  // Only useful when async mode is enabled.
-  void async_flush();
-
   /**
    * Materializes the runtime.
    */
@@ -195,8 +186,7 @@ class TI_DLL_EXPORT Program {
 
   // TODO: This function is doing two things: 1) compiling CHI IR, and 2)
   // offloading them to each backend. We should probably separate the logic?
-  // TODO: Optional offloaded is used by async mode, we might refactor it in the
-  // future.
+  // TODO(Lin): remove the offloaded parameter
   FunctionType compile(Kernel &kernel, OffloadedStmt *offloaded = nullptr);
 
   std::unique_ptr<aot::Kernel> make_aot_kernel(Kernel &kernel) {
@@ -208,10 +198,6 @@ class TI_DLL_EXPORT Program {
   Kernel &get_snode_reader(SNode *snode);
 
   Kernel &get_snode_writer(SNode *snode);
-
-  Kernel &get_ndarray_reader(Ndarray *ndarray);
-
-  Kernel &get_ndarray_writer(Ndarray *ndarray);
 
   uint64 fetch_result_uint64(int i);
 
@@ -253,10 +239,6 @@ class TI_DLL_EXPORT Program {
 
   inline SNodeRwAccessorsBank &get_snode_rw_accessors_bank() {
     return snode_rw_accessors_bank_;
-  }
-
-  inline NdarrayRwAccessorsBank &get_ndarray_rw_accessors_bank() {
-    return ndarray_rw_accessors_bank_;
   }
 
   /**
@@ -301,8 +283,6 @@ class TI_DLL_EXPORT Program {
 
   std::unique_ptr<AotModuleBuilder> make_aot_module_builder(Arch arch);
 
-  LlvmProgramImpl *get_llvm_program_impl();
-
   DevicePtr get_snode_tree_device_ptr(int tree_id) {
     return program_impl_->get_snode_tree_device_ptr(tree_id);
   }
@@ -343,6 +323,30 @@ class TI_DLL_EXPORT Program {
     return Identifier(global_id_counter_++, name);
   }
 
+  void prepare_runtime_context(RuntimeContext *ctx);
+
+  /**
+   * TODO(zhanlue): Remove this interface
+   *
+   * Gets the underlying ProgramImpl object
+   *
+   * This interface is essentially a hack to temporarily accommodate
+   * historical design issues with LLVM backend
+   *
+   * Please limit its use to LLVM backend only
+   */
+  ProgramImpl *get_program_impl() {
+    TI_ASSERT(arch_uses_llvm(config.arch));
+    return program_impl_.get();
+  }
+
+  // TODO(zhanlue): Move these members and corresponding interfaces to
+  // ProgramImpl Ideally, Program should serve as a pure interface class and all
+  // the implementations should fall inside ProgramImpl
+  //
+  // Once we migrated these implementations to ProgramImpl, lower-level objects
+  // could store ProgramImpl rather than Program.
+
  private:
   uint64 ndarray_writer_counter_{0};
   uint64 ndarray_reader_counter_{0};
@@ -351,7 +355,6 @@ class TI_DLL_EXPORT Program {
   // SNode information that requires using Program.
   SNodeGlobalVarExprMap snode_to_glb_var_exprs_;
   SNodeRwAccessorsBank snode_rw_accessors_bank_;
-  NdarrayRwAccessorsBank ndarray_rw_accessors_bank_;
 
   std::vector<std::unique_ptr<SNodeTree>> snode_trees_;
   std::stack<int> free_snode_tree_ids_;

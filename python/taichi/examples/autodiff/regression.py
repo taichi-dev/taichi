@@ -59,7 +59,7 @@ def regress_raw():
 
     for i in range(1000):
         if use_tape:
-            with ti.Tape(loss=loss):
+            with ti.ad.Tape(loss=loss):
                 regress()
         else:
             ti.clear_all_gradients()
@@ -69,8 +69,8 @@ def regress_raw():
             regress.grad()
         print('Loss =', loss[None])
         update()
-        for i in range(number_coeffs):
-            print(coeffs[i], end=', ')
+        for j in range(number_coeffs):
+            print(coeffs[j], end=', ')
         print()
 
 

@@ -1,11 +1,11 @@
-from taichi._lib import core as ti_core
+from taichi._lib import core as ti_python_core
 
 # ========================================
 # real types
 
 # ----------------------------------------
 
-float16 = ti_core.DataType_f16
+float16 = ti_python_core.DataType_f16
 """16-bit precision floating point data type.
 """
 
@@ -17,7 +17,7 @@ f16 = float16
 
 # ----------------------------------------
 
-float32 = ti_core.DataType_f32
+float32 = ti_python_core.DataType_f32
 """32-bit single precision floating point data type.
 """
 
@@ -29,7 +29,7 @@ f32 = float32
 
 # ----------------------------------------
 
-float64 = ti_core.DataType_f64
+float64 = ti_python_core.DataType_f64
 """64-bit double precision floating point data type.
 """
 
@@ -45,7 +45,7 @@ f64 = float64
 
 # ----------------------------------------
 
-int8 = ti_core.DataType_i8
+int8 = ti_python_core.DataType_i8
 """8-bit signed integer data type.
 """
 
@@ -57,7 +57,7 @@ i8 = int8
 
 # ----------------------------------------
 
-int16 = ti_core.DataType_i16
+int16 = ti_python_core.DataType_i16
 """16-bit signed integer data type.
 """
 
@@ -69,7 +69,7 @@ i16 = int16
 
 # ----------------------------------------
 
-int32 = ti_core.DataType_i32
+int32 = ti_python_core.DataType_i32
 """32-bit signed integer data type.
 """
 
@@ -81,7 +81,7 @@ i32 = int32
 
 # ----------------------------------------
 
-int64 = ti_core.DataType_i64
+int64 = ti_python_core.DataType_i64
 """64-bit signed integer data type.
 """
 
@@ -93,7 +93,7 @@ i64 = int64
 
 # ----------------------------------------
 
-uint8 = ti_core.DataType_u8
+uint8 = ti_python_core.DataType_u8
 """8-bit unsigned integer data type.
 """
 
@@ -105,7 +105,7 @@ u8 = uint8
 
 # ----------------------------------------
 
-uint16 = ti_core.DataType_u16
+uint16 = ti_python_core.DataType_u16
 """16-bit unsigned integer data type.
 """
 
@@ -117,7 +117,7 @@ u16 = uint16
 
 # ----------------------------------------
 
-uint32 = ti_core.DataType_u32
+uint32 = ti_python_core.DataType_u32
 """32-bit unsigned integer data type.
 """
 
@@ -129,7 +129,7 @@ u32 = uint32
 
 # ----------------------------------------
 
-uint64 = ti_core.DataType_u64
+uint64 = ti_python_core.DataType_u64
 """64-bit unsigned integer data type.
 """
 
@@ -157,8 +157,8 @@ real_type_ids = [id(t) for t in real_types]
 integer_types = [i8, i16, i32, i64, u8, u16, u32, u64, int]
 integer_type_ids = [id(t) for t in integer_types]
 
-types = real_types + integer_types
-type_ids = [id(t) for t in types]
+all_types = real_types + integer_types
+type_ids = [id(t) for t in all_types]
 
 __all__ = [
     'float32',

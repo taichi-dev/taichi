@@ -1,16 +1,19 @@
 cmake_minimum_required(VERSION 3.0)
 
-
-
-
 set(TAICHI_C_API_NAME taichi_c_api)
 
 file(GLOB_RECURSE C_API_SOURCE "c_api/src/*.cpp")
+if(NOT TI_BUILD_TESTS)
+    list(REMOVE_ITEM C_API_SOURCE "c_api/src/c_api_test_utils.cpp")
+endif()
+
 add_library(${TAICHI_C_API_NAME} SHARED ${C_API_SOURCE})
-target_link_libraries(${TAICHI_C_API_NAME} PRIVATE taichi_isolated_core)
+target_link_libraries(${TAICHI_C_API_NAME} PRIVATE taichi_core)
+
+set(C_API_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")
 set_target_properties(${TAICHI_C_API_NAME} PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build"
-    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")
+    LIBRARY_OUTPUT_DIRECTORY ${C_API_OUTPUT_DIRECTORY}
+    ARCHIVE_OUTPUT_DIRECTORY ${C_API_OUTPUT_DIRECTORY})
 
 target_include_directories(${TAICHI_C_API_NAME}
     PUBLIC

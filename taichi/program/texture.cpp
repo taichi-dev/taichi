@@ -1,7 +1,8 @@
 #include "taichi/program/texture.h"
 #include "taichi/program/ndarray.h"
 #include "taichi/program/program.h"
-#include "taichi/backends/device.h"
+#include "taichi/rhi/device.h"
+#include "taichi/ir/snode.h"
 
 namespace taichi {
 namespace lang {
@@ -126,10 +127,63 @@ void Texture::from_ndarray(Ndarray *ndarray) {
   params.image_extent.y = height_;
   params.image_extent.z = depth_;
 
+  cmdlist->buffer_barrier(ndarray->ndarray_alloc_);
   cmdlist->image_transition(texture_alloc_, ImageLayout::undefined,
                             ImageLayout::transfer_dst);
   cmdlist->buffer_to_image(texture_alloc_, ndarray->ndarray_alloc_.get_ptr(0),
                            ImageLayout::transfer_dst, params);
+
+  stream->submit_synced(cmdlist.get(), {semaphore});
+}
+
+DevicePtr get_device_ptr(taichi::lang::Program *program, SNode *snode) {
+  SNode *dense_parent = snode->parent;
+  SNode *root = dense_parent->parent;
+
+  int tree_id = root->get_snode_tree_id();
+  DevicePtr root_ptr = program->get_snode_tree_device_ptr(tree_id);
+
+  int64 offset = 0;
+
+  int child_id = root->child_id(dense_parent);
+
+  TI_ASSERT_INFO(root == program->get_snode_root(tree_id),
+                 "SNode roots don't match");
+
+  for (int i = 0; i < child_id; ++i) {
+    SNode *child = root->ch[i].get();
+    offset += child->cell_size_bytes * child->num_cells_per_container;
+  }
+
+  return root_ptr.get_ptr(offset);
+}
+
+void Texture::from_snode(SNode *snode) {
+  auto semaphore = prog_->flush();
+
+  TI_ASSERT(snode->is_path_all_dense);
+
+  GraphicsDevice *device =
+      static_cast<GraphicsDevice *>(prog_->get_graphics_device());
+
+  DevicePtr devptr = get_device_ptr(prog_, snode);
+
+  Stream *stream = device->get_compute_stream();
+  auto cmdlist = stream->new_command_list();
+
+  BufferImageCopyParams params;
+  params.buffer_row_length = snode->shape_along_axis(0);
+  params.buffer_image_height = snode->shape_along_axis(1);
+  params.image_mip_level = 0;
+  params.image_extent.x = width_;
+  params.image_extent.y = height_;
+  params.image_extent.z = depth_;
+
+  cmdlist->buffer_barrier(devptr);
+  cmdlist->image_transition(texture_alloc_, ImageLayout::undefined,
+                            ImageLayout::transfer_dst);
+  cmdlist->buffer_to_image(texture_alloc_, devptr, ImageLayout::transfer_dst,
+                           params);
 
   stream->submit_synced(cmdlist.get(), {semaphore});
 }

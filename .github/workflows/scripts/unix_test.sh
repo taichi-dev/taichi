@@ -1,6 +1,8 @@
 #!/bin/bash
 set -ex
 
+export PYTHONUNBUFFERED=1
+
 check_in_docker() {
     # This is a temporary solution to detect in a docker, but it should work
     if [[ $(whoami) == "dev" ]]; then
@@ -13,6 +15,7 @@ check_in_docker() {
 export TI_SKIP_VERSION_CHECK=ON
 export TI_CI=1
 export TI_IN_DOCKER=$(check_in_docker)
+export LD_LIBRARY_PATH=$PWD/build/:$LD_LIBRARY_PATH
 
 if [[ "$TI_IN_DOCKER" == "true" ]]; then
     source $HOME/miniconda/etc/profile.d/conda.sh
@@ -48,7 +51,24 @@ ti diagnose
 ti changelog
 echo "wanted archs: $TI_WANTED_ARCHS"
 
-python3 tests/run_tests.py --cpp
+if [ "$TI_RUN_RELEASE_TESTS" == "1" ]; then
+    python3 -m pip install PyYAML
+    git clone https://github.com/taichi-dev/taichi-release-tests
+    mkdir -p repos/taichi/python/taichi
+    EXAMPLES=$(cat <<EOF | python3 | tail -n 1
+import taichi.examples
+print(taichi.examples.__path__[0])
+EOF
+)
+    ln -sf $EXAMPLES repos/taichi/python/taichi/examples
+    ln -sf taichi-release-tests/truths truths
+    python3 taichi-release-tests/run.py --log=DEBUG --runners 1 taichi-release-tests/timelines
+fi
+
+
+if [ ! -z $TI_SKIP_CPP_TESTS ]; then
+    python3 tests/run_tests.py --cpp
+fi
 
 if [ -z "$GPU_TEST" ]; then
     if [[ $PLATFORM == *"m1"* ]]; then

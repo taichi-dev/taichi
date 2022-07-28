@@ -335,6 +335,10 @@ class TaichiCallableTemplateMapper:
                 return tuple(
                     TaichiCallableTemplateMapper.extract_arg(item, anno)
                     for item in arg)
+            if isinstance(arg, taichi.lang._ndarray.Ndarray):
+                raise TaichiRuntimeTypeError(
+                    'Ndarray shouldn\'t be passed in via `ti.template()`, please annotate your kernel using `ti.types.ndarray(...)` instead'
+                )
             return arg
         if isinstance(anno, texture_type.TextureType):
             return '#'
@@ -466,8 +470,10 @@ class Kernel:
                     raise TaichiSyntaxError(
                         'Taichi kernels parameters must be type annotated')
             else:
-                if isinstance(annotation, (template, ndarray_type.NdarrayType,
-                                           texture_type.TextureType)):
+                if isinstance(
+                        annotation,
+                    (template, ndarray_type.NdarrayType,
+                     texture_type.TextureType, texture_type.RWTextureType)):
                     pass
                 elif id(annotation) in primitive_types.type_ids:
                     pass
@@ -665,6 +671,12 @@ class Kernel:
                     has_external_arrays = True
                     v = v.tex
                     launch_ctx.set_arg_texture(actual_argument_slot, v)
+                elif isinstance(needed,
+                                texture_type.RWTextureType) and isinstance(
+                                    v, taichi.lang._texture.Texture):
+                    has_external_arrays = True
+                    v = v.tex
+                    launch_ctx.set_arg_rw_texture(actual_argument_slot, v)
                 elif isinstance(
                         needed,
                         ndarray_type.NdarrayType) and (self.match_ext_arr(v)):
@@ -768,8 +780,7 @@ class Kernel:
             ret_dt = self.return_type
             has_ret = ret_dt is not None
 
-            if has_ret or (impl.current_cfg().async_mode
-                           and has_external_arrays):
+            if has_ret:
                 runtime_ops.sync()
 
             if has_ret:

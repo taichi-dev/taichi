@@ -73,6 +73,7 @@ class GraphBuilder {
 
  private:
   std::unique_ptr<Sequential> seq_{nullptr};
+  std::unordered_map<std::string, aot::Arg> all_args_;
   std::vector<std::unique_ptr<Node>> all_nodes_;
 };
 

@@ -213,3 +213,24 @@ def test_numpy_struct_for():
     func2(n)
     for i, j, k in ti.ndrange(98, 76, 54):
         assert n[i, j, k] == i + j + k
+
+
+@test_utils.test(debug=True)
+def test_numpy_op_with_matrix():
+    scalar = np.cos(0)
+    vec = ti.Vector([1, 2])
+    assert isinstance(scalar + vec, ti.Matrix) and isinstance(
+        vec + scalar, ti.Matrix)
+
+    @ti.kernel
+    def test():
+        x = scalar + vec
+        assert all(x == [2.0, 3.0])
+        x = vec + scalar
+        assert all(x == [2.0, 3.0])
+        y = scalar / vec
+        assert all(y == [1.0, 0.5])
+        y = vec / scalar
+        assert all(y == [1.0, 2.0])
+
+    test()

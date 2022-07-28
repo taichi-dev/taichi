@@ -1,6 +1,7 @@
 
 #include <vector>
 #include "pybind11/pybind11.h"
+#include <pybind11/numpy.h>
 #include "pybind11/stl.h"
 
 #include "taichi/common/interface.h"
@@ -17,9 +18,11 @@ namespace py = pybind11;
 #include "taichi/ui/common/camera.h"
 #include "taichi/ui/backends/vulkan/canvas.h"
 #include "taichi/ui/backends/vulkan/scene.h"
-#include "taichi/backends/vulkan/vulkan_loader.h"
+#include "taichi/rhi/vulkan/vulkan_loader.h"
+#include "taichi/rhi/arch.h"
 #include "taichi/ui/common/field_info.h"
 #include "taichi/ui/common/gui_base.h"
+#include "taichi/program/ndarray.h"
 #include <memory>
 
 TI_UI_NAMESPACE_BEGIN
@@ -32,6 +35,21 @@ glm::vec3 tuple_to_vec3(pybind11::tuple t) {
 
 pybind11::tuple vec3_to_tuple(glm::vec3 v) {
   return pybind11::make_tuple(v.x, v.y, v.z);
+}
+
+// Here we convert the 2d-array to numpy array using pybind. Refs:
+// https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html?highlight=array_t#vectorizing-functions
+// https://stackoverflow.com/questions/44659924/returning-numpy-arrays-via-pybind11
+py::array_t<float> mat4_to_nparray(glm::mat4 mat) {
+  // Here we must explicitly pass args using py::detail::any_container<ssize_t>.
+  // Refs:
+  // https://stackoverflow.com/questions/54055530/error-no-matching-function-for-call-to-pybind11buffer-infobuffer-info
+  return py::array_t<float>(
+      py::detail::any_container<ssize_t>({4, 4}),  // shape (rows, cols)
+      py::detail::any_container<ssize_t>(
+          {sizeof(float) * 4, sizeof(float)}),  // strides in bytes
+      glm::value_ptr(mat),                      // buffer pointer
+      nullptr);
 }
 
 struct PyGui {
@@ -99,6 +117,12 @@ struct PyCamera {
   void z_far(float z_far_) {
     camera.z_far = z_far_;
   }
+  py::array_t<float> get_view_matrix() {
+    return mat4_to_nparray(camera.get_view_matrix());
+  }
+  py::array_t<float> get_projection_matrix(float aspect_ratio) {
+    return mat4_to_nparray(camera.get_projection_matrix(aspect_ratio));
+  }
 };
 
 struct PyScene {
@@ -113,15 +137,51 @@ struct PyScene {
     scene->set_camera(camera.camera);
   }
 
+  void lines(FieldInfo vbo,
+             FieldInfo indices,
+             bool has_per_vertex_color,
+             py::tuple color_,
+             float width,
+             float draw_index_count,
+             float draw_first_index,
+             float draw_vertex_count,
+             float draw_first_vertex) {
+    RenderableInfo renderable_info;
+    renderable_info.vbo = vbo;
+    renderable_info.indices = indices;
+    renderable_info.has_per_vertex_color = has_per_vertex_color;
+    renderable_info.has_user_customized_draw = true;
+    renderable_info.draw_index_count = (int)draw_index_count;
+    renderable_info.draw_first_index = (int)draw_first_index;
+    renderable_info.draw_vertex_count = (int)draw_vertex_count;
+    renderable_info.draw_first_vertex = (int)draw_first_vertex;
+
+    SceneLinesInfo info;
+    info.renderable_info = renderable_info;
+    info.color = tuple_to_vec3(color_);
+    info.width = width;
+
+    return scene->lines(info);
+  }
+
   void mesh(FieldInfo vbo,
             bool has_per_vertex_color,
             FieldInfo indices,
             py::tuple color,
-            bool two_sided) {
+            bool two_sided,
+            float draw_index_count,
+            float draw_first_index,
+            float draw_vertex_count,
+            float draw_first_vertex) {
     RenderableInfo renderable_info;
     renderable_info.vbo = vbo;
     renderable_info.has_per_vertex_color = has_per_vertex_color;
     renderable_info.indices = indices;
+    renderable_info.has_user_customized_draw = true;
+    renderable_info.draw_index_count = (int)draw_index_count;
+    renderable_info.draw_first_index = (int)draw_first_index;
+    renderable_info.draw_vertex_count = (int)draw_vertex_count;
+    renderable_info.draw_first_vertex = (int)draw_first_vertex;
 
     MeshInfo info;
     info.renderable_info = renderable_info;
@@ -134,10 +194,15 @@ struct PyScene {
   void particles(FieldInfo vbo,
                  bool has_per_vertex_color,
                  py::tuple color_,
-                 float radius) {
+                 float radius,
+                 float draw_vertex_count,
+                 float draw_first_vertex) {
     RenderableInfo renderable_info;
     renderable_info.vbo = vbo;
+    renderable_info.has_user_customized_draw = true;
     renderable_info.has_per_vertex_color = has_per_vertex_color;
+    renderable_info.draw_vertex_count = (int)draw_vertex_count;
+    renderable_info.draw_first_vertex = (int)draw_first_vertex;
 
     ParticlesInfo info;
     info.renderable_info = renderable_info;
@@ -245,14 +310,60 @@ struct PyWindow {
                         vsync,   show_window,        package_path,
                         ti_arch, is_packed_mode};
     // todo: support other ggui backends
+    if (!(taichi::arch_is_cpu(ti_arch) || ti_arch == Arch::vulkan ||
+          ti_arch == Arch::cuda)) {
+      throw std::runtime_error(
+          "GGUI is only supported on cpu, vulkan and cuda backends");
+    }
     if (!lang::vulkan::is_vulkan_api_available()) {
       throw std::runtime_error("Vulkan must be available for GGUI");
     }
     window = std::make_unique<vulkan::Window>(prog, config);
   }
 
+  py::tuple get_window_shape() {
+    auto [w, h] = window->get_window_shape();
+    return pybind11::make_tuple(w, h);
+  }
+
   void write_image(const std::string &filename) {
     window->write_image(filename);
+  }
+
+  void copy_depth_buffer_to_ndarray(Ndarray *depth_arr) {
+    window->copy_depth_buffer_to_ndarray(*depth_arr);
+  }
+
+  py::array_t<float> get_image_buffer() {
+    uint32_t w, h;
+    auto &img_buffer = window->get_image_buffer(w, h);
+
+    float *image = new float[w * h * 4];
+    // Here we must match the numpy 3d array memory layout. Refs:
+    // https://numpy.org/doc/stable/reference/arrays.ndarray.html
+    for (int i = 0; i < w; i++) {
+      for (int j = 0; j < h; j++) {
+        auto pixel = img_buffer[j * w + i];
+        for (int k = 0; k < 4; k++) {
+          // must flip up-down to match the numpy array memory layout
+          image[i * h * 4 + (h - j - 1) * 4 + k] = (pixel & 0xFF) / 255.0;
+          pixel >>= 8;
+        }
+      }
+    }
+    // Here we must pass a deconstructor to free the memory in python scope.
+    // Refs:
+    // https://stackoverflow.com/questions/44659924/returning-numpy-arrays-via-pybind11
+    py::capsule free_imgae(image, [](void *tmp) {
+      float *image = reinterpret_cast<float *>(tmp);
+      delete[] image;
+    });
+
+    return py::array_t<float>(
+        py::detail::any_container<ssize_t>({w, h, 4}),
+        py::detail::any_container<ssize_t>(
+            {sizeof(float) * h * 4, sizeof(float) * 4, sizeof(float)}),
+        image, free_imgae);
   }
 
   void show() {
@@ -319,7 +430,11 @@ void export_ggui(py::module &m) {
                     Arch, bool>())
       .def("get_canvas", &PyWindow::get_canvas)
       .def("show", &PyWindow::show)
+      .def("get_window_shape", &PyWindow::get_window_shape)
       .def("write_image", &PyWindow::write_image)
+      .def("copy_depth_buffer_to_ndarray",
+           &PyWindow::copy_depth_buffer_to_ndarray)
+      .def("get_image_buffer", &PyWindow::get_image_buffer)
       .def("is_pressed", &PyWindow::is_pressed)
       .def("get_cursor_pos", &PyWindow::py_get_cursor_pos)
       .def("is_running", &PyWindow::is_running)
@@ -351,6 +466,7 @@ void export_ggui(py::module &m) {
   py::class_<PyScene>(m, "PyScene")
       .def(py::init<>())
       .def("set_camera", &PyScene::set_camera)
+      .def("lines", &PyScene::lines)
       .def("mesh", &PyScene::mesh)
       .def("particles", &PyScene::particles)
       .def("point_light", &PyScene::point_light)
@@ -368,7 +484,9 @@ void export_ggui(py::module &m) {
       .def("top", &PyCamera::top)
       .def("bottom", &PyCamera::bottom)
       .def("z_near", &PyCamera::z_near)
-      .def("z_far", &PyCamera::z_far);
+      .def("z_far", &PyCamera::z_far)
+      .def("get_view_matrix", &PyCamera::get_view_matrix)
+      .def("get_projection_matrix", &PyCamera::get_projection_matrix);
 
   py::class_<Event>(m, "Event")
       .def_property("key", &Event::get_key, &Event::set_key);

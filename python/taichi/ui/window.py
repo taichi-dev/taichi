@@ -28,7 +28,6 @@ class Window:
     def __init__(self, name, res, vsync=False, show_window=True):
         check_ggui_availability()
         package_path = str(pathlib.Path(__file__).parent.parent)
-
         ti_arch = default_cfg().arch
         is_packed = default_cfg().packed
         self.window = _ti_core.PyWindow(get_runtime().prog, name, res, vsync,

@@ -1091,7 +1091,7 @@ class MakeDual : public ADTransform {
   }
 
   Stmt *dual(Stmt *stmt) {
-    if (!is_real(stmt->ret_type)) {
+    if (!is_real(stmt->ret_type) || stmt->is<ConstStmt>()) {
       return constant(0);
     }
     if (dual_stmt.find(stmt) == dual_stmt.end()) {

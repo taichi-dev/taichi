@@ -12,9 +12,11 @@ import taichi as ti
 
 cfg = impl.default_cfg
 
+
 def _get_uint_ip():
     dt = ti.u64 if cfg().default_ip == ti.i64 else ti.u32
     return dt
+
 
 vec2 = ti.types.vector(2, cfg().default_fp)
 """2D floating vector type.

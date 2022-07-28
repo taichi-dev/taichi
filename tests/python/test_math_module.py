@@ -41,7 +41,6 @@ def test_vdir():
 
 @test_utils.test(default_fp=ti.f32, debug=True)
 def test_vector_types_f32():
-
     @ti.dataclass
     class Ray:
 
@@ -52,9 +51,7 @@ def test_vector_types_f32():
 
     @ti.kernel
     def test():
-        ray = Ray(ti.math.vec3(pi),
-                  ti.math.vec2(0.5, 0.5),
-                  ti.math.mat3(1))
+        ray = Ray(ti.math.vec3(pi), ti.math.vec2(0.5, 0.5), ti.math.mat3(1))
 
     test()
 
@@ -64,7 +61,6 @@ def test_vector_types_f32():
                  default_ip=ti.i64,
                  debug=True)
 def test_vector_types_f64():
-
     @ti.dataclass
     class Ray:
 
@@ -77,9 +73,7 @@ def test_vector_types_f64():
     def test():
         pi = 3.14159265358
         N = ti.u64(2**63 - 1)
-        ray = Ray(ti.math.vec3(pi),
-                  ti.math.vec2(pi),
-                  id=ti.math.uvec2(N))
+        ray = Ray(ti.math.vec3(pi), ti.math.vec2(pi), id=ti.math.uvec2(N))
 
         assert abs(ray.pos.x - pi) < 1e-10
         assert ray.id.x == N

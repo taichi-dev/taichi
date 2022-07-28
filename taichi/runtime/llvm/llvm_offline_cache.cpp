@@ -105,6 +105,7 @@ bool LlvmOfflineCacheFileReader::get_kernel_cache(
     LlvmOfflineCache::KernelCacheData &res,
     const std::string &key,
     llvm::LLVMContext &llvm_ctx) {
+  TI_AUTO_PROF;
   auto itr = data_.kernels.find(key);
   if (itr == data_.kernels.end()) {
     TI_DEBUG("Cannot find kernel={}", key);
@@ -137,6 +138,7 @@ std::unique_ptr<llvm::Module> LlvmOfflineCacheFileReader::load_module(
     const std::string &path_prefix,
     const std::string &key,
     llvm::LLVMContext &llvm_ctx) const {
+  TI_AUTO_PROF;
   if (format_ & Format::BC) {
     LlvmModuleBitcodeLoader loader;
     return loader.set_bitcode_path(path_prefix + ".bc")
@@ -259,7 +261,10 @@ void LlvmOfflineCacheFileWriter::mangle_offloaded_task_name(
     for (auto &e : compiled_data_list) {
       for (auto &offload : e.tasks) {
         std::string mangled_name = kernel_key + std::to_string(cnt++);
-
+        TI_DEBUG(
+            "Mangle offloaded-task from internal name '{}' to offline cache "
+            "key '{}'",
+            offload.name, mangled_name);
         auto func = e.module->getFunction(offload.name);
         TI_ASSERT(func != nullptr);
         func->setName(mangled_name);

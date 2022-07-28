@@ -403,6 +403,7 @@ class Matrix(TaichiOperations):
         0
     """
     _is_taichi_class = True
+    __array_priority__ = 1000
 
     def __init__(self, arr, dt=None, suppress_warning=False, is_ref=False):
         local_tensor_proxy = None
@@ -1649,39 +1650,69 @@ class MatrixType(CompoundType):
         self.dtype = cook_dtype(dtype)
 
     def __call__(self, *args):
+        """Return a matrix matching the shape and dtype.
+
+        This function will try to convert the input to a `n x m` matrix, with n, m being
+        the number of rows/cols of this matrix type.
+
+        Example::
+
+            >>> mat4x3 = MatrixType(4, 3, float)
+            >>> mat2x6 = MatrixType(2, 6, float)
+
+            Create from n x m scalars, of a 1d list of n x m scalars:
+
+                >>> m = mat4x3([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
+                >>> m = mat4x3(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)
+
+            Create from n vectors/lists, with each one of dimension m:
+
+                >>> m = mat4x3([1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12])
+
+            Create from a single scalar
+
+                >>> m = mat4x3(1)
+
+            Create from another 2d list/matrix, as long as they have the same number of entries
+
+                >>> m = mat4x3([[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12]])
+                >>> m = mat4x3(m)
+                >>> k = mat2x6(m)
+
+        """
         if len(args) == 0:
             raise TaichiSyntaxError(
                 "Custom type instances need to be created with an initial value."
             )
-        elif len(args) == 1:
-            # fill a single scalar
+        if len(args) == 1:
+            # initialize by a single scalar, e.g. matnxm(1)
             if isinstance(args[0], (numbers.Number, expr.Expr)):
                 return self.filled_with_scalar(args[0])
-            # fill a single vector or matrix
-            entries = args[0]
-        else:
-            # fill in a concatenation of scalars/vectors/matrices
-            entries = []
-            for x in args:
-                if isinstance(x, (list, tuple)):
-                    entries += x
-                elif isinstance(x, Matrix):
-                    entries += x.entries
-                else:
-                    entries.append(x)
-        # convert vector to nx1 matrix
-        if isinstance(entries[0], numbers.Number):
-            entries = [[e] for e in entries]
-        # type cast
-        mat = self.cast(Matrix(entries, dt=self.dtype))
-        return mat
+            args = args[0]
+        # collect all input entries to a 1d list and then reshape
+        # this is mostly for glsl style like vec4(v.xyz, 1.)
+        entries = []
+        for x in args:
+            if isinstance(x, (list, tuple)):
+                entries += x
+            elif isinstance(x, np.ndarray):
+                entries += list(x.ravel())
+            elif isinstance(x, Matrix):
+                entries += x.entries
+            else:
+                entries.append(x)
+
+        if len(entries) != self.m * self.n:
+            raise TaichiSyntaxError(
+                f"Incompatible arguments for the custom vector/matrix type: ({self.n}, {self.m}), ({len(entries)})"
+            )
+        entries = [[entries[k * self.m + i] for i in range(self.m)]
+                   for k in range(self.n)]
+
+        #  type cast
+        return self.cast(Matrix(entries, dt=self.dtype))
 
     def cast(self, mat):
-        # sanity check shape
-        if self.m != mat.m or self.n != mat.n:
-            raise TaichiSyntaxError(
-                f"Incompatible arguments for the custom vector/matrix type: ({self.n}, {self.m}), ({mat.n}, {mat.m})"
-            )
         if in_python_scope():
             return Matrix([[
                 int(mat(i, j)) if self.dtype in primitive_types.integer_types

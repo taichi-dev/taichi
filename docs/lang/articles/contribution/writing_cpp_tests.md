@@ -14,9 +14,8 @@ We strongly recommend each developer to write C++ unit tests when sending a PR.
 ## Build and run Taichi C++ tests
 
 ```bash
-# inside build/
-cmake .. -DTI_BUILD_TESTS=ON # ... other regular Taichi cmake args
-make
+# build taichi with tests enabled
+TAICHI_CMAKE_ARGS="-DTI_BUILD_TESTS:BOOL=ON" python setup.py develop
 
 # run the C++ test
 TI_LIB_DIR=$TAICHI_INSTALL_DIR/_lib/runtime ./taichi_cpp_tests

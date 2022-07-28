@@ -47,16 +47,16 @@ really error-prone and hard to maintain.
 
 If you run into this situation, Taichi's handy automatic differentiation (autodiff)
 system comes to your rescue! Taichi supports gradient evaluation through
-either `ti.Tape()` or the more flexible `kernel.grad()` syntax.
+either `ti.ad.Tape()` or the more flexible `kernel.grad()` syntax.
 
-## Using `ti.Tape()`
+## Using `ti.ad.Tape()`
 
 Let's still take the `compute_y` kernel above for an explanation.
-Using `ti.Tape()` is the easiest way to obtain a kernel that computes `dy/dx`:
+Using `ti.ad.Tape()` is the easiest way to obtain a kernel that computes `dy/dx`:
 
 1.  Enable `needs_grad=True` option when declaring fields involved in
     the derivative chain.
-2.  Use context manager `with ti.Tape(y):` to capture the kernel invocations which you want to automatically differentiate.
+2.  Use context manager `with ti.ad.Tape(y):` to capture the kernel invocations which you want to automatically differentiate.
 3.  Now `dy/dx` value at current `x` is available at `x.grad[None]`.
 
 The following code snippet explains the steps above:
@@ -69,7 +69,7 @@ y = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
 def compute_y():
     y[None] = ti.sin(x[None])
 
-with ti.Tape(y):
+with ti.ad.Tape(y):
     compute_y()
 
 print('dy/dx =', x.grad[None], ' at x =', x[None])
@@ -119,7 +119,7 @@ def advance():
 
 
 def substep():
-    with ti.Tape(loss=U):
+    with ti.ad.Tape(loss=U):
         # Kernel invocations in this scope will later contribute to partial derivatives of
         # U with respect to input variables such as x.
         compute_U(
@@ -144,7 +144,7 @@ while gui.running:
 
 :::note
 
-The argument `U` to `ti.Tape(U)` must be a 0D field.
+The argument `U` to `ti.ad.Tape(U)` must be a 0D field.
 
 To use autodiff with multiple output variables, see the
 `kernel.grad()` usage below.
@@ -152,7 +152,7 @@ To use autodiff with multiple output variables, see the
 
 :::note
 
-`ti.Tape(U)` automatically sets _`U[None]`_ to `0` on
+`ti.ad.Tape(U)` automatically sets _`U[None]`_ to `0` on
 start up.
 :::
 
@@ -166,13 +166,13 @@ for examples on using autodiff-based force evaluation MPM and FEM.
 
 ## Using `kernel.grad()`
 
-As mentioned above, `ti.Tape()` can only track a 0D field as the output variable.
+As mentioned above, `ti.ad.Tape()` can only track a 0D field as the output variable.
 If there are multiple output variables that you want to back-propagate
-gradients to inputs, call `kernel.grad()` instead of `ti.Tape()`.
-Different from using `ti.Tape()`, you need to set the `grad` of the output variables themselves to `1` manually
+gradients to inputs, call `kernel.grad()` instead of `ti.ad.Tape()`.
+Different from using `ti.ad.Tape()`, you need to set the `grad` of the output variables themselves to `1` manually
 before calling `kernel.grad()`. The reason is that the `grad` of the output variables themselves
 will always be multiplied to the `grad` with respect to the inputs at the end of the back-propagation.
-By calling `ti.Tape()`, you have the program do this under the hood.
+By calling `ti.ad.Tape()`, you have the program do this under the hood.
 
 ```python {13-14}
 import taichi as ti
@@ -257,10 +257,10 @@ for i in range(N):
 b[None] = 10
 loss.grad[None] = 1
 
-with ti.Tape(loss):
+with ti.ad.Tape(loss):
     func_broke_rule_1()
 # Call func_equivalent to see the correct result
-# with ti.Tape(loss):
+# with ti.ad.Tape(loss):
     # func_equivalent()
 
 assert x.grad[1] == 10.0
@@ -357,7 +357,7 @@ def manipulation_in_kernel():
 
 
 x[None] = 0.0
-with ti.Tape(loss=loss):
+with ti.ad.Tape(loss=loss):
     # The line below in python scope only contribute to the forward pass
     # but not the backward pass i.e., not auto-differentiated.
     loss[None] += ti.sin(x[None]) + 1.0
@@ -412,13 +412,13 @@ def forward(mul):
 def backward(mul):
     func.grad(mul)
 
-with ti.Tape(loss=total):
+with ti.ad.Tape(loss=total):
     forward(4)
 
 assert x.grad[0] == 4
 ```
 
-Customized gradient function works with both `ti.Tape()` and `kernel.grad()`. More examples can be found at `test_customized_grad.py`.
+Customized gradient function works with both `ti.ad.Tape()` and `kernel.grad()`. More examples can be found at `test_customized_grad.py`.
 
 ### Checkpointing
 

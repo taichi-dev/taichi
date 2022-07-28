@@ -15,5 +15,5 @@ target_include_directories(opengl_program_impl
     ${LLVM_INCLUDE_DIRS}
   )
 
-target_link_libraries(opengl_program_impl PRIVATE opengl_rhi)
 target_link_libraries(opengl_program_impl PRIVATE gfx_runtime)
+target_link_libraries(opengl_program_impl PRIVATE opengl_rhi)

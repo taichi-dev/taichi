@@ -288,4 +288,12 @@ IVkAccelerationStructureKHR create_acceleration_structure(
     VkDeviceSize size,
     VkAccelerationStructureTypeKHR type);
 
+// VkQueryPool
+struct DeviceObjVkQueryPool : public DeviceObj {
+  VkQueryPool query_pool{VK_NULL_HANDLE};
+  ~DeviceObjVkQueryPool() override;
+};
+using IVkQueryPool = std::shared_ptr<DeviceObjVkQueryPool>;
+IVkQueryPool create_query_pool(VkDevice device);
+
 }  // namespace vkapi

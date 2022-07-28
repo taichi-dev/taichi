@@ -9,7 +9,7 @@ class FrontendTypeCheck : public IRVisitor {
   void check_cond_type(const Expr &cond, std::string stmt_name) {
     if (!cond->ret_type->is_primitive(PrimitiveTypeID::i32))
       throw TaichiTypeError(fmt::format(
-          "`{0}` conditions must be of type int32; found {1}. Consider using "
+          "`{0}` conditions must be of type i32; found {1}. Consider using "
           "`{0} x != 0` instead of `{0} x` for float values.",
           stmt_name, cond->ret_type->to_string()));
   }

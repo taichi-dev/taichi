@@ -14,7 +14,7 @@ def test_minimization():
         y[i] = random.random()
 
     for k in range(100):
-        with ti.Tape(loss=L):
+        with ti.ad.Tape(loss=L):
             reduce()
         gradient_descent()
 

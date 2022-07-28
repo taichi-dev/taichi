@@ -72,6 +72,8 @@ struct TaskAttributes {
     int arg_id{0};
     int binding{0};
     bool is_storage{false};
+
+    TI_IO_DEF(arg_id, binding, is_storage);
   };
 
   std::string name;
@@ -115,6 +117,7 @@ struct TaskAttributes {
             advisory_num_threads_per_group,
             task_type,
             buffer_binds,
+            texture_binds,
             range_for_attribs);
 };
 

@@ -426,10 +426,17 @@ class ASTTransformer(Builder):
     def build_call_if_is_type(ctx, node, args, keywords):
         func = node.func.ptr
         if id(func) in primitive_types.type_ids:
-            if len(args) != 1 or keywords or isinstance(args[0], expr.Expr):
+            if len(args) != 1 or keywords:
                 raise TaichiSyntaxError(
-                    "Type annotation can only be given to a single literal.")
-            node.ptr = expr.Expr(args[0], dtype=func)
+                    "A primitive type can only decorate a single expression.")
+            if is_taichi_class(args[0]):
+                raise TaichiSyntaxError(
+                    "A primitive type cannot decorate an expression with a compound type."
+                )
+            if isinstance(args[0], expr.Expr):
+                node.ptr = ti_ops.cast(args[0], func)
+            else:
+                node.ptr = expr.Expr(args[0], dtype=func)
             return True
         return False
 
@@ -1118,7 +1125,8 @@ class ASTTransformer(Builder):
                 "'else' clause for 'while' not supported in Taichi kernels")
 
         with ctx.loop_scope_guard():
-            ctx.ast_builder.begin_frontend_while(expr.Expr(1).ptr)
+            ctx.ast_builder.begin_frontend_while(
+                expr.Expr(1, dtype=primitive_types.i32).ptr)
             while_cond = build_stmt(ctx, node.test)
             impl.begin_frontend_if(ctx.ast_builder, while_cond)
             ctx.ast_builder.begin_frontend_if_true()

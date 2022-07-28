@@ -381,6 +381,9 @@ uint64 Program::fetch_result_uint64(int i) {
 }
 
 void Program::finalize() {
+  if (finalized_) {
+    return;
+  }
   synchronize();
 
   TI_TRACE("Program finalizing...");
@@ -498,8 +501,7 @@ void Program::fill_ndarray_fast(Ndarray *ndarray, uint32_t val) {
 }
 
 Program::~Program() {
-  if (!finalized_)
-    finalize();
+  finalize();
 }
 
 std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(Arch arch) {

@@ -9,19 +9,13 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
-#include <cstring>
 #include <iostream>
-#include <cstdlib>
-#include <cstdio>
-#include <cstddef>
-#include <cstdint>
-#include <utility>
 #include <type_traits>
 #include <cstdint>
 #include <algorithm>
-#include <memory>
-#include <csignal>
 #include <vector>
+#include <string>
+#include <functional>
 
 //******************************************************************************
 //                                 System State

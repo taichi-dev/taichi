@@ -1,10 +1,10 @@
-#include "taichi/common/core.h"
+#include "taichi/common/logging.h"
 #include "taichi/util/image_io.h"
 
 #include "stb_image.h"
 #include "stb_image_write.h"
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 void imwrite(const std::string &filename,
              size_t ptr,
@@ -45,4 +45,4 @@ std::vector<size_t> imread(const std::string &filename, int comp) {
   return ret;
 }
 
-TI_NAMESPACE_END
+}  // namespace taichi

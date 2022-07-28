@@ -298,6 +298,7 @@ FunctionType KernelCodeGenCPU::codegen() {
     if (ok) {
       TI_DEBUG("Create kernel '{}' from cache (key='{}')", kernel->get_name(),
                kernel_key);
+      cache_module(kernel_key, res);
       CPUModuleToFunctionConverter converter(
           tlctx, get_llvm_program(prog)->get_runtime_executor());
       return converter.convert(kernel, std::move(res));

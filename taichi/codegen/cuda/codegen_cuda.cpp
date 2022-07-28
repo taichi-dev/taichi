@@ -16,6 +16,9 @@
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
 #include "taichi/util/action_recorder.h"
 #include "taichi/analysis/offline_cache_util.h"
+#include "taichi/ir/analysis.h"
+#include "taichi/ir/transforms.h"
+
 TLANG_NAMESPACE_BEGIN
 
 using namespace llvm;
@@ -725,6 +728,13 @@ static void set_arg_external_array(RuntimeContext *ctx,
                                    : RuntimeContext::DevAllocType::kNone);
 }
 
+LLVMCompiledData KernelCodeGenCUDA::modulegen(
+    std::unique_ptr<llvm::Module> &&module,
+    OffloadedStmt *stmt) {
+  TaskCodeGenCUDA gen(kernel, stmt);
+  return gen.run_compilation();
+}
+
 FunctionType KernelCodeGenCUDA::codegen() {
   TI_AUTO_PROF
   // TODO: move the offline cache part to the base class
@@ -740,6 +750,7 @@ FunctionType KernelCodeGenCUDA::codegen() {
     if (ok) {
       TI_DEBUG("Create kernel '{}' from cache (key='{}')", kernel->get_name(),
                kernel_key);
+      cache_module(kernel_key, res);
       CUDAModuleToFunctionConverter converter(
           tlctx, get_llvm_program(prog)->get_runtime_executor());
       return converter.convert(kernel, std::move(res));
@@ -749,39 +760,67 @@ FunctionType KernelCodeGenCUDA::codegen() {
     kernel->lower(/*to_executable=*/false);
   }
 
-  TaskCodeGenCUDA gen(kernel, ir);
-  auto compiled_res = gen.run_compilation();
+  auto block = dynamic_cast<Block *>(kernel->ir.get());
+  auto &worker = get_llvm_program(kernel->program)->compilation_workers;
+  TI_ASSERT(block);
 
-  CUDAModuleToFunctionConverter converter{gen.tlctx,
-                                          llvm_prog->get_runtime_executor()};
-  std::vector<LLVMCompiledData> data_list;
-  data_list.push_back(std::move(compiled_res));
+  auto &offloads = block->statements;
+  std::vector<LLVMCompiledData> data(offloads.size());
+  using TaskFunc = int32 (*)(void *);
+  std::vector<TaskFunc> task_funcs(offloads.size());
+  for (int i = 0; i < offloads.size(); i++) {
+    auto compile_func = [&, i] {
+      auto offload =
+          irpass::analysis::clone(offloads[i].get(), offloads[i]->get_kernel());
+      irpass::re_id(offload.get());
+      auto new_data = this->modulegen(nullptr, offload->as<OffloadedStmt>());
+      data[i].tasks = std::move(new_data.tasks);
+      data[i].module = std::move(new_data.module);
+    };
+    if (kernel->is_evaluator) {
+      compile_func();
+    } else {
+      worker.enqueue(compile_func);
+    }
+  }
   if (!kernel->is_evaluator) {
-    TI_DEBUG("Cache kernel '{}', key='{}'", kernel->get_name(), kernel_key);
-    cache_module(kernel_key, data_list);
+    worker.flush();
   }
 
-  return converter.convert(this->kernel, std::move(data_list));
+  if (!kernel->is_evaluator) {
+    TI_DEBUG("Cache kernel '{}' (key='{}')", kernel->get_name(), kernel_key);
+    cache_module(kernel_key, data);
+  }
+
+  CUDAModuleToFunctionConverter converter{tlctx,
+                                          llvm_prog->get_runtime_executor()};
+
+  return converter.convert(this->kernel, std::move(data));
 }
 
 FunctionType CUDAModuleToFunctionConverter::convert(
     const std::string &kernel_name,
     const std::vector<LlvmLaunchArgInfo> &args,
     std::vector<LLVMCompiledData> &&data) const {
-  auto &mod = data[0].module;
-  auto &tasks = data[0].tasks;
 #ifdef TI_WITH_CUDA
-  for (const auto &task : tasks) {
-    llvm::Function *func = mod->getFunction(task.name);
-    TI_ASSERT(func);
-    tlctx_->mark_function_as_cuda_kernel(func, task.block_dim);
+  std::vector<JITModule *> cuda_modules;
+  std::vector<std::vector<OffloadedTask>> offloaded_tasks;
+  cuda_modules.reserve(data.size());
+  for (auto &datum : data) {
+    auto &mod = datum.module;
+    auto &tasks = datum.tasks;
+    for (const auto &task : tasks) {
+      llvm::Function *func = mod->getFunction(task.name);
+      TI_ASSERT(func);
+      tlctx_->mark_function_as_cuda_kernel(func, task.block_dim);
+    }
+    auto jit = tlctx_->jit.get();
+    cuda_modules.push_back(
+        jit->add_module(std::move(mod), executor_->get_config()->gpu_max_reg));
+    offloaded_tasks.push_back(std::move(tasks));
   }
 
-  auto jit = tlctx_->jit.get();
-  auto cuda_module =
-      jit->add_module(std::move(mod), executor_->get_config()->gpu_max_reg);
-
-  return [cuda_module, kernel_name, args, offloaded_tasks = tasks,
+  return [cuda_modules, kernel_name, args, offloaded_tasks,
           executor = this->executor_](RuntimeContext &context) {
     CUDAContext::get_instance().make_current();
     std::vector<void *> arg_buffers(args.size(), nullptr);
@@ -849,12 +888,15 @@ FunctionType CUDAModuleToFunctionConverter::convert(
       CUDADriver::get_instance().stream_synchronize(nullptr);
     }
 
-    for (auto task : offloaded_tasks) {
-      TI_TRACE("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
-               task.block_dim);
-      cuda_module->launch(task.name, task.grid_dim, task.block_dim, 0,
-                          {&context});
+    for (int i = 0; i < offloaded_tasks.size(); i++) {
+      for (auto &task : offloaded_tasks[i]) {
+        TI_TRACE("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
+                 task.block_dim);
+        cuda_modules[i]->launch(task.name, task.grid_dim, task.block_dim, 0,
+                                {&context});
+      }
     }
+
     // copy data back to host
     if (transferred) {
       CUDADriver::get_instance().stream_synchronize(nullptr);

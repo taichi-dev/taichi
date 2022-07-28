@@ -212,3 +212,142 @@ def test_double_for_loops():
 
     for i in range(N):
         assert f.dual[i] == 2 * i
+
+
+@test_utils.test(exclude=[ti.cc])
+def test_double_for_loops_more_nests():
+    N = 6
+    a = ti.field(ti.f32, shape=N, needs_dual=True)
+    b = ti.field(ti.f32, shape=N, needs_dual=True)
+    c = ti.field(ti.i32, shape=(N, N // 2))
+    f = ti.field(ti.f32, shape=(N, N // 2), needs_dual=True)
+
+    @ti.kernel
+    def double_for():
+        for i in range(N):
+            for k in range(N // 2):
+                weight = 1.0
+                for j in range(c[i, k]):
+                    weight *= a[i]
+                s = 0.0
+                for j in range(c[i, k] * 2):
+                    s += weight + b[i]
+                f[i, k] = s
+
+    a.fill(2)
+    b.fill(1)
+
+    for i in range(N):
+        for k in range(N // 2):
+            c[i, k] = i + k
+
+    double_for()
+
+    for i in range(N):
+        for k in range(N // 2):
+            assert f[i, k] == 2 * (i + k) * (1 + 2**(i + k))
+
+    with ti.ad.FwdMode(loss=f, parameters=a, seed=[1.0 for _ in range(N)]):
+        double_for()
+
+    for i in range(N):
+        total_grad_a = 0
+        for k in range(N // 2):
+            total_grad_a = 2 * (i + k)**2 * 2**(i + k - 1)
+            assert f.dual[i, k] == total_grad_a
+
+    with ti.ad.FwdMode(loss=f, parameters=b, seed=[1.0 for _ in range(N)]):
+        double_for()
+
+    for i in range(N):
+        total_grad_b = 0
+        for k in range(N // 2):
+            total_grad_b = 2 * (i + k)
+            assert f.dual[i, k] == total_grad_b
+
+
+@test_utils.test(exclude=[ti.cc])
+def test_complex_body():
+    N = 5
+    a = ti.field(ti.f32, shape=N, needs_dual=True)
+    b = ti.field(ti.f32, shape=N, needs_dual=True)
+    c = ti.field(ti.i32, shape=N)
+    f = ti.field(ti.f32, shape=N, needs_dual=True)
+    g = ti.field(ti.f32, shape=N, needs_dual=False)
+
+    @ti.kernel
+    def complex():
+        for i in range(N):
+            weight = 2.0
+            tot = 0.0
+            tot_weight = 0.0
+            for j in range(c[i]):
+                tot_weight += weight + 1
+                tot += (weight + 1) * a[i]
+                weight = weight + 1
+                weight = weight * 4
+                weight = ti.cast(weight, ti.f64)
+                weight = ti.cast(weight, ti.f32)
+
+            g[i] = tot_weight
+            f[i] = tot
+
+    a.fill(2)
+    b.fill(1)
+
+    for i in range(N):
+        c[i] = i
+
+    with ti.ad.FwdMode(loss=f, parameters=a, seed=[1.0 for _ in range(N)]):
+        complex()
+
+    for i in range(N):
+        assert f.dual[i] == g[i]
+
+
+@test_utils.test(exclude=[ti.cc])
+def test_triple_for_loops_bls():
+    N = 8
+    M = 3
+    a = ti.field(ti.f32, shape=N, needs_dual=True)
+    b = ti.field(ti.f32, shape=2 * N, needs_dual=True)
+    f = ti.field(ti.f32, shape=(N - M, N), needs_dual=True)
+
+    @ti.kernel
+    def triple_for():
+        ti.block_local(a)
+        ti.block_local(b)
+        for i in range(N - M):
+            for k in range(N):
+                weight = 1.0
+                for j in range(M):
+                    weight *= a[i + j]
+                s = 0.0
+                for j in range(2 * M):
+                    s += weight + b[2 * i + j]
+                f[i, k] = s
+
+    a.fill(2)
+
+    for i in range(2 * N):
+        b[i] = i
+
+    triple_for()
+
+    for i in range(N - M):
+        for k in range(N):
+            assert f[i, k] == 2 * M * 2**M + (4 * i + 2 * M - 1) * M
+
+    with ti.ad.FwdMode(loss=f, parameters=a, seed=[1.0 for _ in range(N)]):
+        triple_for()
+
+    for i in range(N - M):
+        for k in range(N):
+            assert f.dual[i, k] == 2 * M * M * 2**(M - 1)
+
+    with ti.ad.FwdMode(loss=f, parameters=b, seed=[1.0 for _ in range(2 * N)]):
+        triple_for()
+
+    for i in range(N - M):
+        for k in range(N):
+            assert f.dual[i, k] == 2 * M

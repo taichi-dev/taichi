@@ -71,7 +71,7 @@ def test_vector_types_f64():
         pos: ti.math.vec3
         uv: ti.math.vec2
         mat: ti.math.mat3
-        _id: ti.math.uvec2
+        id: ti.math.uvec2
 
     @ti.kernel
     def test():

@@ -78,9 +78,10 @@ bool LlvmOfflineCacheFileReader::load_meta_data(
     }
   }
 
-  std::string lock_path = taichi::join_path(cache_file_path, kMetadataFileLockName);
+  std::string lock_path =
+      taichi::join_path(cache_file_path, kMetadataFileLockName);
   if (lock_with_file(lock_path)) {
-    auto _ = taichi::make_cleanup([&lock_path](){
+    auto _ = taichi::make_cleanup([&lock_path]() {
       if (!unlock_with_file(lock_path)) {
         TI_WARN("Unlock {} failed", lock_path);
       }
@@ -187,7 +188,7 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
 
     auto write_llvm_module =
         [](const std::string &filename,
-            std::function<void(llvm::raw_os_ostream & os)> writer) {
+           std::function<void(llvm::raw_os_ostream & os)> writer) {
           std::ofstream os(filename, std::ios::out | std::ios::binary);
           TI_ERROR_IF(!os.is_open(), "File {} open failed", filename);
           llvm::raw_os_ostream llvm_os{os};
@@ -203,22 +204,22 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
         std::string suffix = "." + std::to_string(i);
         if (format & Format::LL) {
           std::string filename = filename_prefix + suffix + ".ll";
-          if (taichi::try_lock_with_file(filename)) { // Not exists
-            size += write_llvm_module(filename,
-                                      [mod](llvm::raw_os_ostream &os) {
-                                        mod->print(os, /*AAW=*/nullptr);
-                                      });
+          if (taichi::try_lock_with_file(filename)) {  // Not exists
+            size +=
+                write_llvm_module(filename, [mod](llvm::raw_os_ostream &os) {
+                  mod->print(os, /*AAW=*/nullptr);
+                });
           } else {
             TI_DEBUG("Cache file {} exists", filename);
           }
         }
         if (format & Format::BC) {
           std::string filename = filename_prefix + suffix + ".bc";
-          if (taichi::try_lock_with_file(filename)) { // Not exists
-            size += write_llvm_module(filename,
-                                      [mod](llvm::raw_os_ostream &os) {
-                                        llvm::WriteBitcodeToFile(*mod, os);
-                                      });
+          if (taichi::try_lock_with_file(filename)) {  // Not exists
+            size +=
+                write_llvm_module(filename, [mod](llvm::raw_os_ostream &os) {
+                  llvm::WriteBitcodeToFile(*mod, os);
+                });
           } else {
             TI_DEBUG("Cache file {} exists", filename);
           }
@@ -239,7 +240,8 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
   data_.size = new_kernels_size;
 
   // Merge with old metadata
-  // TODO(PGZXB): There are potential bugs here. In the future, I will re-design the format of metadata file to fix the bug with low overhead.
+  // TODO(PGZXB): There are potential bugs here. In the future, I will re-design
+  // the format of metadata file to fix the bug with low overhead.
   if (merge_with_old) {
     LlvmOfflineCache old_data;
     if (LlvmOfflineCacheFileReader::load_meta_data(old_data, path)) {
@@ -251,13 +253,16 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
   // Note: Don't use std::tmpnam, which is not safe
   bool ok = false;
   std::string target_path = get_llvm_cache_metadata_file_path(path);
-  std::string tmp_basepath = fmt::format("{}{}_", target_path, std::chrono::steady_clock::now().time_since_epoch().count());
+  std::string tmp_basepath =
+      fmt::format("{}{}_", target_path,
+                  std::chrono::steady_clock::now().time_since_epoch().count());
   for (int try_i = 0; try_i < kMaxTryDumpMetadata; ++try_i) {
-    if (std::string f = tmp_basepath + std::to_string(try_i) + ".tcb"; try_lock_with_file(f)) {
+    if (std::string f = tmp_basepath + std::to_string(try_i) + ".tcb";
+        try_lock_with_file(f)) {
       write_to_binary_file(data_, f);
       std::string lock_path = taichi::join_path(path, kMetadataFileLockName);
       if (lock_with_file(lock_path)) {
-        auto _ = taichi::make_cleanup([&lock_path](){
+        auto _ = taichi::make_cleanup([&lock_path]() {
           if (!unlock_with_file(lock_path)) {
             TI_WARN("Unlock {} failed", lock_path);
           }

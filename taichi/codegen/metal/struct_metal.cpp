@@ -263,8 +263,9 @@ class StructCompiler {
       // outside.
       if (n > std::numeric_limits<int>::max()) {
         TI_WARN(
-            "Snode index might be out of int32 boundary but int64 is not "
-            "supported on metal backend.");
+            "{}: Snode index might be out of int32 boundary but int64 is not "
+            "supported on metal backend.",
+            node_name);
       }
       emit("  constant static constexpr int n = {};", n);
       emit_snode_stride(snty, ch_name, n);

@@ -48,9 +48,9 @@ def fixed(bits, signed=True, max_value=1.0, compute=None, scale=None):
     underlying_type = int(bits=bits, signed=signed, compute=i32)
     if scale is None:
         if signed:
-            scale = max_value / 2 ** (bits - 1)
+            scale = max_value / 2**(bits - 1)
         else:
-            scale = max_value / 2 ** bits
+            scale = max_value / 2**bits
     return _type_factory.get_quant_fixed_type(underlying_type, compute, scale)
 
 

@@ -70,7 +70,8 @@ class CCTransformer : public IRVisitor {
   }
 
   void visit(Stmt *stmt) override {
-    TI_WARN("[cc] unsupported statement type {}", typeid(*stmt).name());
+    TI_WARN("[cc] unsupported statement type {}\n{}", typeid(*stmt).name(),
+            stmt->tb);
   }
 
   void visit(BitExtractStmt *stmt) override {

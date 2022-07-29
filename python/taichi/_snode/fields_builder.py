@@ -99,11 +99,11 @@ class FieldsBuilder:
         return self.root.bitmasked(indices, dimensions)
 
     def quant_array(self, indices: Union[Sequence[_Axis], _Axis],
-                    dimensions: Union[Sequence[int], int], num_bits: int):
+                    dimensions: Union[Sequence[int], int], max_num_bits: int):
         """Same as :func:`taichi.lang.snode.SNode.quant_array`"""
         self._check_not_finalized()
         self.empty = False
-        return self.root.quant_array(indices, dimensions, num_bits)
+        return self.root.quant_array(indices, dimensions, max_num_bits)
 
     def place(self,
               *args: Any,

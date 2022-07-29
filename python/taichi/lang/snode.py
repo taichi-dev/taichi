@@ -96,13 +96,13 @@ class SNode:
             self.ptr.bitmasked(axes, dimensions,
                                impl.current_cfg().packed))
 
-    def quant_array(self, axes, dimensions, num_bits):
+    def quant_array(self, axes, dimensions, max_num_bits):
         """Adds a quant_array SNode as a child component of `self`.
 
         Args:
             axes (List[Axis]): Axes to activate.
             dimensions (Union[List[int], int]): Shape of each axis.
-            num_bits (int): Number of bits to use.
+            max_num_bits (int): Maximum number of bits it can hold.
 
         Returns:
             The added :class:`~taichi.lang.SNode` instance.
@@ -110,7 +110,7 @@ class SNode:
         if isinstance(dimensions, int):
             dimensions = [dimensions] * len(axes)
         return SNode(
-            self.ptr.quant_array(axes, dimensions, num_bits,
+            self.ptr.quant_array(axes, dimensions, max_num_bits,
                                  impl.current_cfg().packed))
 
     def place(self, *args, offset=None):

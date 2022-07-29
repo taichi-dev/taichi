@@ -28,7 +28,7 @@ def test_quant_time_integration(use_quant, use_exponent, use_shared_exp):
                 bitpack.place(x.get_scalar_field(1))
                 ti.root.place(bitpack)
         else:
-            qfxt = ti.types.quant.fixed(frac=16, range=2)
+            qfxt = ti.types.quant.fixed(bits=16, max_value=2)
             x = ti.Vector.field(2, dtype=qfxt)
             bitpack = ti.BitpackedFields(max_num_bits=32)
             bitpack.place(x)

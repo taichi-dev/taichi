@@ -47,6 +47,7 @@ To get started with the Taichi Language, simply install it with `pip`:
 ```shell
 python3 -m pip install taichi
 ```
+````mdx-code-block
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
@@ -71,7 +72,7 @@ There are a few of extra requirements depend on which operating system you are u
 
   </TabItem>
 </Tabs>
-
+````
 See the [Installation Troubleshooting](../faqs/install.md) if you run into any issues when installing Taichi.
 
 A successful installation of Taichi should add a CLI (Command-Line Interface) to your system, which is helpful to perform several routine tasks quickly. To invoke the CLI, please run `ti` or `python3 -m taichi`.

@@ -26,7 +26,8 @@ void place_child(Expr *expr_arg,
 void make_lazy_grad(SNode *snode,
                     SNodeGlobalVarExprMap *snode_to_exprs,
                     bool is_adjoint,
-                    bool is_dual);
+                    bool is_dual,
+                    bool is_adjoint_flag);
 
 }  // namespace lang
 }  // namespace taichi

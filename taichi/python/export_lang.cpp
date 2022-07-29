@@ -136,6 +136,8 @@ void export_lang(py::module &m) {
       .def_readwrite("debug", &CompileConfig::debug)
       .def_readwrite("cfg_optimization", &CompileConfig::cfg_optimization)
       .def_readwrite("check_out_of_bound", &CompileConfig::check_out_of_bound)
+      .def_readwrite("check_autodiff_valid",
+                     &CompileConfig::check_autodiff_valid)
       .def_readwrite("print_accessor_ir", &CompileConfig::print_accessor_ir)
       .def_readwrite("print_evaluator_ir", &CompileConfig::print_evaluator_ir)
       .def_readwrite("use_llvm", &CompileConfig::use_llvm)
@@ -508,6 +510,7 @@ void export_lang(py::module &m) {
       .def("read_uint", &SNode::read_uint)
       .def("read_float", &SNode::read_float)
       .def("has_adjoint", &SNode::has_adjoint)
+      .def("has_adjoint_flag", &SNode::has_adjoint_flag)
       .def("has_dual", &SNode::has_dual)
       .def("is_primal", &SNode::is_primal)
       .def("is_place", &SNode::is_place)
@@ -713,6 +716,7 @@ void export_lang(py::module &m) {
              expr->cast<GlobalVariableExpression>()->is_primal = v;
            })
       .def("set_adjoint", &Expr::set_adjoint)
+      .def("set_adjoint_flag", &Expr::set_adjoint_flag)
       .def("set_dual", &Expr::set_dual)
       .def("set_attribute", &Expr::set_attribute)
       .def("get_ret_type", &Expr::get_ret_type)

@@ -23,6 +23,7 @@ CompileConfig::CompileConfig() {
   debug = false;
   cfg_optimization = true;
   check_out_of_bound = false;
+  check_autodiff_valid = false;
   lazy_compilation = true;
   serial_schedule = false;
   simplify_before_lower_access = true;

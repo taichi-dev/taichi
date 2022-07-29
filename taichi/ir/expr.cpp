@@ -59,6 +59,10 @@ void Expr::set_dual(const Expr &o) {
   this->cast<GlobalVariableExpression>()->dual.set(o);
 }
 
+void Expr::set_adjoint_flag(const Expr &o) {
+  this->cast<GlobalVariableExpression>()->adjoint_flag.set(o);
+}
+
 Expr::Expr(int16 x) : Expr() {
   expr = std::make_shared<ConstExpression>(PrimitiveType::i16, x);
 }

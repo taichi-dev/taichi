@@ -24,7 +24,8 @@ from taichi.lang.snode import SNode
 from taichi.lang.struct import Struct, StructField, _IntermediateStruct
 from taichi.lang.util import (cook_dtype, get_traceback, is_taichi_class,
                               python_scope, taichi_scope, warning)
-from taichi.types.primitive_types import all_types, f16, f32, f64, i32, i64
+from taichi.types.primitive_types import (all_types, f16, f32, f64, i32, i64,
+                                          u8, u32)
 
 
 @taichi_scope
@@ -333,6 +334,12 @@ class PyTaichi:
                 '\n\n  x = ti.field(float, shape=(2, 3), needs_{gradient_type}=True)'
             )
 
+    @staticmethod
+    def _allocate_gradient_flag():
+        if root.finalized:
+            return
+        root.allocate_grad_flag()
+
     def _check_matrix_field_member_shape(self):
         for _field in self.matrix_fields:
             shapes = [
@@ -350,6 +357,9 @@ class PyTaichi:
             _field._calc_dynamic_index_stride()
 
     def materialize(self):
+        if get_runtime().prog.config.debug and get_runtime(
+        ).prog.config.check_autodiff_valid:
+            self._allocate_gradient_flag()
         self.materialize_root_fb(not self.materialized)
         self.materialized = True
 
@@ -542,6 +552,8 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
 
     x_grad = None
     x_dual = None
+    # The x_grad_flag is used for global data access rule checker
+    x_grad_flag = None
     if _ti_core.is_real(dtype):
         # adjoint
         x_grad = Expr(get_runtime().prog.make_id_expr(""))
@@ -552,6 +564,20 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
         x.ptr.set_adjoint(x_grad.ptr)
         if needs_grad:
             pytaichi.grad_vars.append(x_grad)
+
+        if prog.config.debug or prog.config.check_autodiff_valid:
+            # adjoint flag
+            x_grad_flag = Expr(get_runtime().prog.make_id_expr(""))
+            dtype = u8
+            if prog.config.arch == _ti_core.opengl:
+                dtype = i32
+            elif prog.config.arch == _ti_core.vulkan:
+                dtype = u32
+            x_grad_flag.ptr = _ti_core.global_new(x_grad_flag.ptr,
+                                                  cook_dtype(dtype))
+            x_grad_flag.ptr.set_name(name + ".grad_flag")
+            x_grad_flag.ptr.set_is_primal(False)
+            x.ptr.set_adjoint_flag(x_grad_flag.ptr)
 
         # dual
         x_dual = Expr(get_runtime().prog.make_id_expr(""))

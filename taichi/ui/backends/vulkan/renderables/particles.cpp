@@ -66,6 +66,7 @@ void Particles::init_particles(AppContext *app_context,
       app_context->config.package_path + "/shaders/Particles_vk_vert.spv",
       app_context->config.package_path + "/shaders/Particles_vk_frag.spv",
       TopologyType::Points,
+      PolygonMode::Fill,
       vbo_attrs,
   };
 

@@ -88,32 +88,26 @@ struct RuntimeContext {
     set_array_device_allocation_type(arg_id, DevAllocType::kRWTexture);
   }
 
-  void set_arg_devalloc(int arg_id,
-                        DeviceAllocation &alloc,
-                        const std::vector<int> &shape) {
-    args[arg_id] = taichi_union_cast_with_different_sizes<uint64>(&alloc);
+  void set_arg_external_array(int arg_id, uintptr_t ptr, uint64 size) {
+    set_arg(arg_id, ptr);
+    set_array_runtime_size(arg_id, size);
+    set_array_device_allocation_type(arg_id,
+                                     RuntimeContext::DevAllocType::kNdarray);
+  }
+
+  void set_arg_ndarray(int arg_id,
+                       intptr_t devalloc_ptr,
+                       const std::vector<int> &shape) {
+    args[arg_id] = taichi_union_cast_with_different_sizes<uint64>(devalloc_ptr);
     set_array_device_allocation_type(arg_id, DevAllocType::kNdarray);
     TI_ASSERT(shape.size() <= taichi_max_num_indices);
+    size_t total_size = 1;
     for (int i = 0; i < shape.size(); i++) {
       extra_args[arg_id][i] = shape[i];
+      total_size *= shape[i];
     }
+    set_array_runtime_size(arg_id, total_size);
   }
-
-  void set_arg_devalloc(int arg_id,
-                        DeviceAllocation &alloc,
-                        const std::vector<int> &shape,
-                        const std::vector<int> &element_shape) {
-    args[arg_id] = taichi_union_cast_with_different_sizes<uint64>(&alloc);
-    set_array_device_allocation_type(arg_id, DevAllocType::kNdarray);
-    TI_ASSERT(shape.size() + element_shape.size() <= taichi_max_num_indices);
-    for (int i = 0; i < shape.size(); i++) {
-      extra_args[arg_id][i] = shape[i];
-    }
-    for (int i = 0; i < element_shape.size(); i++) {
-      extra_args[arg_id][i + shape.size()] = element_shape[i];
-    }
-  }
-
 #endif
 };
 

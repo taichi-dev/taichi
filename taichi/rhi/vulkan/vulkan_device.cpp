@@ -2265,7 +2265,6 @@ VulkanSurface::VulkanSurface(VulkanDevice *device, const SurfaceConfig &config)
 
     vkCreateAndroidSurfaceKHR(device->vk_instance(), &createInfo, nullptr,
                               &surface_);
-  }
 #else
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     VkResult err = glfwCreateWindowSurface(device->vk_instance(), window_, NULL,
@@ -2274,6 +2273,7 @@ VulkanSurface::VulkanSurface(VulkanDevice *device, const SurfaceConfig &config)
       TI_ERROR("Failed to create window surface ({})", err);
       return;
     }
+#endif
 
     create_swap_chain();
 
@@ -2290,7 +2290,6 @@ VulkanSurface::VulkanSurface(VulkanDevice *device, const SurfaceConfig &config)
     swapchain_images_.push_back(device->create_image(params));
     swapchain_images_.push_back(device->create_image(params));
   }
-#endif
 }
 
 void VulkanSurface::create_swap_chain() {

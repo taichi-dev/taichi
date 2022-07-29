@@ -10,7 +10,7 @@ def test_1D_quant_array():
 
     N = 32
 
-    ti.root.quant_array(ti.i, N, num_bits=32).place(x)
+    ti.root.quant_array(ti.i, N, max_num_bits=32).place(x)
 
     @ti.kernel
     def set_val():
@@ -31,7 +31,7 @@ def test_1D_quant_array_negative():
     N = 4
     qi7 = ti.types.quant.int(7)
     x = ti.field(dtype=qi7)
-    ti.root.quant_array(ti.i, N, num_bits=32).place(x)
+    ti.root.quant_array(ti.i, N, max_num_bits=32).place(x)
 
     @ti.kernel
     def assign():
@@ -45,13 +45,13 @@ def test_1D_quant_array_negative():
 
 @test_utils.test(require=ti.extension.quant, debug=True)
 def test_1D_quant_array_fixed():
-    qfxt = ti.types.quant.fixed(frac=8, range=2)
+    qfxt = ti.types.quant.fixed(bits=8, max_value=2)
 
     x = ti.field(dtype=qfxt)
 
     N = 4
 
-    ti.root.quant_array(ti.i, N, num_bits=32).place(x)
+    ti.root.quant_array(ti.i, N, max_num_bits=32).place(x)
 
     @ti.kernel
     def set_val():
@@ -75,7 +75,7 @@ def test_2D_quant_array():
 
     M, N = 4, 8
 
-    ti.root.quant_array(ti.ij, (M, N), num_bits=32).place(x)
+    ti.root.quant_array(ti.ij, (M, N), max_num_bits=32).place(x)
 
     @ti.kernel
     def set_val():
@@ -102,7 +102,7 @@ def test_quant_array_struct_for():
 
     x = ti.field(dtype=qi7)
     cell.dense(ti.i, block_size // 4).quant_array(ti.i, 4,
-                                                  num_bits=32).place(x)
+                                                  max_num_bits=32).place(x)
 
     @ti.kernel
     def activate():

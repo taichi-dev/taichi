@@ -27,13 +27,13 @@ def int(bits, signed=True, compute=None):  # pylint: disable=W0622
     return _type_factory.get_quant_int_type(bits, signed, compute)
 
 
-def fixed(frac, signed=True, range=1.0, compute=None, scale=None):  # pylint: disable=W0622
+def fixed(bits, signed=True, max_value=1.0, compute=None, scale=None):
     """Generates a quantized type for fixed-point real numbers.
 
     Args:
-        frac (int): Number of bits.
+        bits (int): Number of bits.
         signed (bool): Signed or unsigned.
-        range (float): Range of the number.
+        max_value (float): Maximum value of the number.
         compute (DataType): Type for computation.
         scale (float): Scaling factor. The argument is prioritized over range.
 
@@ -44,14 +44,14 @@ def fixed(frac, signed=True, range=1.0, compute=None, scale=None):  # pylint: di
         compute = impl.get_runtime().default_fp
     if isinstance(compute, _ti_python_core.DataType):
         compute = compute.get_ptr()
-    # TODO: handle cases with frac > 32
-    frac_type = int(bits=frac, signed=signed, compute=i32)
+    # TODO: handle cases with bits > 32
+    underlying_type = int(bits=bits, signed=signed, compute=i32)
     if scale is None:
         if signed:
-            scale = range / 2**(frac - 1)
+            scale = max_value / 2**(bits - 1)
         else:
-            scale = range / 2**frac
-    return _type_factory.get_quant_fixed_type(frac_type, compute, scale)
+            scale = max_value / 2**bits
+    return _type_factory.get_quant_fixed_type(underlying_type, compute, scale)
 
 
 def float(exp, frac, signed=True, compute=None):  # pylint: disable=W0622

@@ -9,10 +9,12 @@
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/raw_os_ostream.h"
 #include "llvm/Transforms/Utils/Cloning.h"
+#include "taichi/common/cleanup.h"
 #include "taichi/common/version.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/program/kernel.h"
 #include "taichi/runtime/llvm/llvm_context.h"
+#include "taichi/util/lock.h"
 
 namespace taichi {
 namespace lang {
@@ -20,6 +22,9 @@ namespace {
 
 using Format = LlvmOfflineCache::Format;
 constexpr char kMetadataFilename[] = "metadata";
+constexpr char kCacheCleanLockName[] = "ticache_clean.lock";
+constexpr char kMetadataFileLockName[] = "metadata.lock";
+constexpr int kMaxTryDumpMetadata = 16;
 
 static bool is_current_llvm_cache_version(
     const LlvmOfflineCache::Version &ver) {
@@ -72,8 +77,19 @@ bool LlvmOfflineCacheFileReader::load_meta_data(
       return false;
     }
   }
-  read_from_binary_file(data, tcb_path);
-  return true;
+
+  std::string lock_path = taichi::join_path(cache_file_path, kMetadataFileLockName);
+  if (lock_with_file(lock_path)) {
+    auto _ = taichi::make_cleanup([&lock_path](){
+      if (!unlock_with_file(lock_path)) {
+        TI_WARN("Unlock {} failed", lock_path);
+      }
+    });
+    read_from_binary_file(data, tcb_path);
+    return true;
+  }
+  TI_WARN("Lock {} failed", lock_path);
+  return false;
 }
 
 LlvmOfflineCacheFileReader::LlvmOfflineCacheFileReader(
@@ -170,10 +186,8 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
     std::string filename_prefix = taichi::join_path(path, k);
 
     auto write_llvm_module =
-        [&filename_prefix](
-            const std::string &suffix,
+        [](const std::string &filename,
             std::function<void(llvm::raw_os_ostream & os)> writer) {
-          const std::string filename = filename_prefix + suffix;
           std::ofstream os(filename, std::ios::out | std::ios::binary);
           TI_ERROR_IF(!os.is_open(), "File {} open failed", filename);
           llvm::raw_os_ostream llvm_os{os};
@@ -188,16 +202,26 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
         TI_ASSERT(mod != nullptr);
         std::string suffix = "." + std::to_string(i);
         if (format & Format::LL) {
-          size += write_llvm_module(suffix + ".ll",
-                                    [mod](llvm::raw_os_ostream &os) {
-                                      mod->print(os, /*AAW=*/nullptr);
-                                    });
+          std::string filename = filename_prefix + suffix + ".ll";
+          if (taichi::try_lock_with_file(filename)) { // Not exists
+            size += write_llvm_module(filename,
+                                      [mod](llvm::raw_os_ostream &os) {
+                                        mod->print(os, /*AAW=*/nullptr);
+                                      });
+          } else {
+            TI_DEBUG("Cache file {} exists", filename);
+          }
         }
         if (format & Format::BC) {
-          size += write_llvm_module(suffix + ".bc",
-                                    [mod](llvm::raw_os_ostream &os) {
-                                      llvm::WriteBitcodeToFile(*mod, os);
-                                    });
+          std::string filename = filename_prefix + suffix + ".bc";
+          if (taichi::try_lock_with_file(filename)) { // Not exists
+            size += write_llvm_module(filename,
+                                      [mod](llvm::raw_os_ostream &os) {
+                                        llvm::WriteBitcodeToFile(*mod, os);
+                                      });
+          } else {
+            TI_DEBUG("Cache file {} exists", filename);
+          }
         }
       }
     }
@@ -206,7 +230,6 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
     TI_ASSERT(v.created_at);
     TI_ASSERT(v.last_used_at);
     v.size = size;
-    TI_ASSERT(v.compiled_data_list.empty() || v.size > 0);
     new_kernels_size += v.size;
   }
 
@@ -214,19 +237,45 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
   data_.version[1] = TI_VERSION_MINOR;
   data_.version[2] = TI_VERSION_PATCH;
   data_.size = new_kernels_size;
+
   // Merge with old metadata
+  // TODO(PGZXB): There are potential bugs here. In the future, I will re-design the format of metadata file to fix the bug with low overhead.
   if (merge_with_old) {
     LlvmOfflineCache old_data;
     if (LlvmOfflineCacheFileReader::load_meta_data(old_data, path)) {
       merge_with(std::move(old_data));
     }
   }
+
   // Dump metadata
-  write_to_binary_file(data_, get_llvm_cache_metadata_file_path(path));
-  // For debugging
-  TextSerializer ts;
-  ts.serialize_to_json("cache", data_);
-  ts.write_to_file(get_llvm_cache_metadata_json_file_path(path));
+  // Note: Don't use std::tmpnam, which is not safe
+  bool ok = false;
+  std::string target_path = get_llvm_cache_metadata_file_path(path);
+  std::string tmp_basepath = fmt::format("{}{}_", target_path, std::chrono::steady_clock::now().time_since_epoch().count());
+  for (int try_i = 0; try_i < kMaxTryDumpMetadata; ++try_i) {
+    if (std::string f = tmp_basepath + std::to_string(try_i) + ".tcb"; try_lock_with_file(f)) {
+      write_to_binary_file(data_, f);
+      std::string lock_path = taichi::join_path(path, kMetadataFileLockName);
+      if (lock_with_file(lock_path)) {
+        auto _ = taichi::make_cleanup([&lock_path](){
+          if (!unlock_with_file(lock_path)) {
+            TI_WARN("Unlock {} failed", lock_path);
+          }
+        });
+        ok = taichi::force_rename(f, target_path);
+      } else {
+        TI_WARN("Lock {} failed", lock_path);
+      }
+      // For debugging
+      TextSerializer ts;
+      ts.serialize_to_json("cache", data_);
+      ts.write_to_file(get_llvm_cache_metadata_json_file_path(path));
+      break;
+    }
+  }
+  if (!ok) {
+    TI_WARN("Dump metadata file {} failed", target_path);
+  }
 }
 
 void LlvmOfflineCacheFileWriter::merge_with(LlvmOfflineCache &&data) {

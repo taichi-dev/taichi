@@ -50,6 +50,8 @@ Layout of a `dense` SNode:
 
 `pointer` is usually the go-to sparse SNode you should consider. It allocates memory only when a cell is actually activated, and recycles to a memory pool once it is deactivated. This saves the memory resource in large-scale grid computation. You can mentally view it as an `std::array<Cell*, N>`.
 
+Upon initialization, Taichi preallocates a chunk of memory space, namely `ambient_elements`, which is shared across all the inactive `dynamic` and `pointer` SNodes. Therefore dereferencing an inactive `pointer` SNode will generate the default value stored in `ambient_elements` (usually zero).
+
 Layout of a `pointer` SNode:
 
 ```sh
@@ -122,6 +124,8 @@ The deactivation and the checking-for-active procedures are quite similar. We om
   * `dense(ti.ij, (2, 4)).dynamic(ti.j, 8)`: This results in an error, because `dynamic`'s axis and `dense`'s overlaps on axis `j`.
 
 Below shows the layout of a `dynamic` SNode. Logically speaking, `dynamic` SNode can be viewed as `std::vector<int32_t>`. However, `dynamic` is implemented as a singly linked list of *chunks*.
+
+Upon initialization, Taichi preallocates a chunk of memory space, namely `ambient_elements`, which is shared across all the inactive `pointer` and `dynamic` SNodes. Therefore dereferencing an inactive `dynamic` SNode will generate the default value stored in `ambient_elements` (usually zero).
 
 ```sh
 # `n` stores the number of elements in this dynammic SNode cell

@@ -841,7 +841,7 @@ FunctionType CUDAModuleToFunctionConverter::convert(
             device_buffers[i] = arg_buffers[i];
           }
           // device_buffers[i] saves a raw ptr on CUDA device.
-          context.set_arg_external_array(i, (uint64)device_buffers[i], arr_sz);
+          context.set_arg(i, (uint64)device_buffers[i]);
 
         } else if (arr_sz > 0) {
           // arg_buffers[i] is a DeviceAllocation*
@@ -857,7 +857,7 @@ FunctionType CUDAModuleToFunctionConverter::convert(
           arg_buffers[i] = device_buffers[i];
 
           // device_buffers[i] saves the unwrapped raw ptr from arg_buffers[i]
-          context.set_arg_external_array(i, (uint64)device_buffers[i], arr_sz);
+          context.set_arg(i, (uint64)device_buffers[i]);
         }
       }
     }

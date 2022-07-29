@@ -129,7 +129,8 @@ void run_snode() {
   auto ctx_ret = kernel_ret->make_launch_context();
   auto ctx_ext = kernel_ext->make_launch_context();
   std::vector<int> ext_arr(n);
-  ctx_ext.set_arg_external_array(0, taichi::uint64(ext_arr.data()), n, false);
+  ctx_ext.set_arg_external_array_with_shape(0, taichi::uint64(ext_arr.data()),
+                                            n, {n});
 
   (*kernel_init)(ctx_init);
   (*kernel_ret)(ctx_ret);

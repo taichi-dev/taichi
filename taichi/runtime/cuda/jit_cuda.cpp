@@ -191,6 +191,14 @@ std::string JITSessionCUDA::compile_module_to_ptx(
   // Override default to generate verbose assembly.
   target_machine->Options.MCOptions.AsmVerbose = true;
 
+  /*
+    Optimization for llvm::GetElementPointer:
+    https://github.com/taichi-dev/taichi/issues/5472 The three other passes
+    "loop-reduce", "ind-vars", "cse" serves as preprocessing for
+    "separate-const-offset-gep".
+
+    Note there's an update for "separate-const-offset-gep" in llvm-12.
+  */
   module_pass_manager.add(llvm::createLoopStrengthReducePass());
   module_pass_manager.add(llvm::createIndVarSimplifyPass());
   module_pass_manager.add(llvm::createSeparateConstOffsetFromGEPPass(false));

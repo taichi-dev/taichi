@@ -259,14 +259,9 @@ void Kernel::LaunchContextBuilder::set_arg_external_array_with_shape(
 void Kernel::LaunchContextBuilder::set_arg_ndarray(int arg_id,
                                                    const Ndarray &arr) {
   intptr_t ptr = arr.get_device_allocation_ptr_as_int();
-  uint64 arr_size = arr.get_element_size() * arr.get_nelement();
-  this->set_arg_external_array(arg_id, ptr, arr_size,
-                               /*is_device_allocation=*/true);
   TI_ASSERT_INFO(arr.shape.size() <= taichi_max_num_indices,
                  "External array cannot have > {max_num_indices} indices");
-  for (uint64 i = 0; i < arr.shape.size(); ++i) {
-    this->set_extra_arg_int(arg_id, i, arr.shape[i]);
-  }
+  ctx_->set_arg_ndarray(arg_id, ptr, arr.shape);
 }
 
 void Kernel::LaunchContextBuilder::set_arg_texture(int arg_id,

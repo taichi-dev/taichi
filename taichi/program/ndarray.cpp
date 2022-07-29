@@ -190,19 +190,5 @@ void Ndarray::write_float(const std::vector<int> &i, float64 val) {
   write<float>(i, val);
 }
 
-void set_runtime_ctx_ndarray(RuntimeContext *ctx,
-                             int arg_id,
-                             Ndarray *ndarray) {
-  ctx->set_arg_devalloc(arg_id, ndarray->ndarray_alloc_, ndarray->shape);
-
-  uint64_t total_array_size = 1;
-  for (const auto &dim : ndarray->total_shape()) {
-    total_array_size *= dim;
-  }
-  total_array_size *= data_type_size(ndarray->dtype);
-
-  ctx->set_array_runtime_size(arg_id, total_array_size);
-}
-
 }  // namespace lang
 }  // namespace taichi

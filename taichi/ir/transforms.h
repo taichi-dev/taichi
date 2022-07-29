@@ -84,6 +84,13 @@ void auto_diff(IRNode *root,
                AutodiffMode autodiffMode,
                bool use_stack = false);
 /**
+ * Check whether the kernel obeys the autodiff limitation e.g., gloabl data
+ * access rule
+ */
+void differentiation_validation_check(IRNode *root,
+                                      const CompileConfig &config,
+                                      const std::string &kernel_name);
+/**
  * Determine all adaptive AD-stacks' size. This pass is idempotent, i.e.,
  * there are no side effects if called more than once or called when not needed.
  * @return Whether the IR is modified, i.e., whether there exists adaptive
@@ -152,6 +159,7 @@ void compile_to_offloads(IRNode *ir,
                          bool verbose,
                          AutodiffMode autodiff_mode,
                          bool ad_use_stack,
+                         bool check_autodiff_valid,
                          bool start_from_ast);
 
 void offload_to_executable(IRNode *ir,
@@ -169,6 +177,7 @@ void compile_to_executable(IRNode *ir,
                            Kernel *kernel,
                            AutodiffMode autodiff_mode,
                            bool ad_use_stack,
+                           bool check_autodiff_valid,
                            bool verbose,
                            bool lower_global_access = true,
                            bool make_thread_local = false,

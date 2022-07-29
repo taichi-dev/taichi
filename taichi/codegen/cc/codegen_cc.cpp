@@ -48,10 +48,11 @@ class CCTransformer : public IRVisitor {
     auto ir = kernel_->ir.get();
     auto config = kernel_->program->config;
     config.demote_dense_struct_fors = true;
-    irpass::compile_to_executable(ir, config, kernel_,
-                                  /*autodiff_mode=*/kernel_->autodiff_mode,
-                                  /*ad_use_stack=*/true, config.print_ir,
-                                  /*lower_global_access*/ true);
+    irpass::compile_to_executable(
+        ir, config, kernel_,
+        /*autodiff_mode=*/kernel_->autodiff_mode,
+        /*ad_use_stack=*/true, kernel_->check_autodiff_valid, config.print_ir,
+        /*lower_global_access*/ true);
   }
 
   std::string get_source() {

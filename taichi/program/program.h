@@ -164,9 +164,11 @@ class TI_DLL_EXPORT Program {
 
   Kernel &kernel(const std::function<void()> &body,
                  const std::string &name = "",
-                 AutodiffMode autodiff_mode = AutodiffMode::kNone) {
+                 AutodiffMode autodiff_mode = AutodiffMode::kNone,
+                 bool check_autodiff_valid = false) {
     // Expr::set_allow_store(true);
-    auto func = std::make_unique<Kernel>(*this, body, name, autodiff_mode);
+    auto func = std::make_unique<Kernel>(*this, body, name, autodiff_mode,
+                                         check_autodiff_valid);
     // Expr::set_allow_store(false);
     kernels.emplace_back(std::move(func));
     return *kernels.back();
@@ -174,9 +176,11 @@ class TI_DLL_EXPORT Program {
 
   Kernel &kernel(const std::function<void(Kernel *)> &body,
                  const std::string &name = "",
-                 AutodiffMode autodiff_mode = AutodiffMode::kNone) {
+                 AutodiffMode autodiff_mode = AutodiffMode::kNone,
+                 bool check_autodiff_valid = false) {
     // Expr::set_allow_store(true);
-    auto func = std::make_unique<Kernel>(*this, body, name, autodiff_mode);
+    auto func = std::make_unique<Kernel>(*this, body, name, autodiff_mode,
+                                         check_autodiff_valid);
     // Expr::set_allow_store(false);
     kernels.emplace_back(std::move(func));
     return *kernels.back();

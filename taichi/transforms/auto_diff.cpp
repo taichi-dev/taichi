@@ -1455,6 +1455,76 @@ void auto_diff(IRNode *root,
   irpass::analysis::verify(root);
 }
 
+class GloablDataAccessRuleChecker : public BasicStmtVisitor {
+ public:
+  using BasicStmtVisitor::visit;
+
+  void visit(GlobalLoadStmt *stmt) override {
+    GlobalPtrStmt *src = stmt->src->as<GlobalPtrStmt>();
+    TI_ASSERT(src->width() == 1);
+    auto snodes = src->snodes;
+    if (!snodes[0]->has_adjoint_flag()) {
+      return;
+    }
+    TI_ASSERT(snodes[0]->get_adjoint_flag() != nullptr);
+    snodes[0] = snodes[0]->get_adjoint_flag();
+    auto gloabl_ptr =
+        stmt->insert_after_me(Stmt::make<GlobalPtrStmt>(snodes, src->indices));
+    auto one = gloabl_ptr->insert_after_me(
+        Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(1)));
+    one->insert_after_me(Stmt::make<GlobalStoreStmt>(gloabl_ptr, one));
+  }
+
+  void visit_gloabl_store_stmt_and_atomic_add(Stmt *stmt, GlobalPtrStmt *dest) {
+    TI_ASSERT(dest->width() == 1);
+    auto snodes = dest->snodes;
+    if (!snodes[0]->has_adjoint_flag()) {
+      return;
+    }
+    TI_ASSERT(snodes[0]->get_adjoint_flag() != nullptr);
+    snodes[0] = snodes[0]->get_adjoint_flag();
+    auto global_ptr = stmt->insert_before_me(
+        Stmt::make<GlobalPtrStmt>(snodes, dest->indices));
+    auto global_load =
+        stmt->insert_before_me(Stmt::make<GlobalLoadStmt>(global_ptr));
+    auto zero = stmt->insert_before_me(
+        Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(0)));
+    auto check_equal = stmt->insert_before_me(
+        Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_eq, global_load, zero));
+    std::string msg = fmt::format(
+        "(kernel={}) Breaks the global data access rule. Snode {} is "
+        "overwritten unexpectedly.",
+        kernel_name_, dest->snodes[0]->get_node_type_name());
+    stmt->insert_before_me(
+        Stmt::make<AssertStmt>(check_equal, msg, std::vector<Stmt *>()));
+  }
+
+  void visit(GlobalStoreStmt *stmt) override {
+    GlobalPtrStmt *dest = stmt->dest->as<GlobalPtrStmt>();
+    visit_gloabl_store_stmt_and_atomic_add(stmt, dest);
+  }
+
+  void visit(AtomicOpStmt *stmt) override {
+    GlobalPtrStmt *dest = stmt->dest->as<GlobalPtrStmt>();
+    visit_gloabl_store_stmt_and_atomic_add(stmt, dest);
+  }
+
+  static void run(IRNode *root, const std::string &kernel_name) {
+    GloablDataAccessRuleChecker checker;
+    checker.kernel_name_ = kernel_name;
+    root->accept(&checker);
+  }
+
+ private:
+  std::string kernel_name_;
+};
+
+void differentiation_validation_check(IRNode *root,
+                                      const CompileConfig &config,
+                                      const std::string &kernel_name) {
+  return irpass::GloablDataAccessRuleChecker::run(root, kernel_name);
+}
+
 }  // namespace irpass
 
 TLANG_NAMESPACE_END

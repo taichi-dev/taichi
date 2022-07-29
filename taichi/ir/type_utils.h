@@ -203,9 +203,6 @@ class BitStructTypeBuilder {
         }
       }
       auto digits_id = add_member_impl(member_type);
-      if (is_placing_shared_exponent_) {
-        member_owns_shared_exponents_[digits_id] = true;
-      }
       member_exponents_[digits_id] = exponent_id;
       member_exponent_users_[exponent_id].push_back(digits_id);
       return digits_id;
@@ -228,9 +225,7 @@ class BitStructTypeBuilder {
 
   BitStructType *build() const {
     return TypeFactory::get_instance().get_bit_struct_type(
-        physical_type_, member_types_, member_bit_offsets_,
-        member_owns_shared_exponents_, member_exponents_,
-        member_exponent_users_);
+        physical_type_, member_types_, member_bit_offsets_, member_exponents_, member_exponent_users_);
   }
 
  private:
@@ -238,7 +233,6 @@ class BitStructTypeBuilder {
     int old_num_members = member_types_.size();
     member_types_.push_back(member_type);
     member_bit_offsets_.push_back(member_total_bits_);
-    member_owns_shared_exponents_.push_back(false);
     member_exponents_.push_back(-1);
     member_exponent_users_.push_back({});
     QuantIntType *member_qit = nullptr;
@@ -263,7 +257,6 @@ class BitStructTypeBuilder {
   std::vector<Type *> member_types_;
   std::vector<int> member_bit_offsets_;
   int member_total_bits_{0};
-  std::vector<bool> member_owns_shared_exponents_;
   std::vector<int> member_exponents_;
   std::vector<std::vector<int>> member_exponent_users_;
   bool is_placing_shared_exponent_{false};

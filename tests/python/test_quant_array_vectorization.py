@@ -18,9 +18,9 @@ def test_vectorized_struct_for():
 
     block = ti.root.pointer(ti.ij, (n_blocks, n_blocks))
     block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).quant_array(
-        ti.j, bits, num_bits=bits).place(x)
+        ti.j, bits, max_num_bits=bits).place(x)
     block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).quant_array(
-        ti.j, bits, num_bits=bits).place(y)
+        ti.j, bits, max_num_bits=bits).place(y)
 
     @ti.kernel
     def init():
@@ -61,11 +61,11 @@ def test_offset_load():
 
     block = ti.root.pointer(ti.ij, (n_blocks, n_blocks))
     block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).quant_array(
-        ti.j, bits, num_bits=bits).place(x)
+        ti.j, bits, max_num_bits=bits).place(x)
     block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).quant_array(
-        ti.j, bits, num_bits=bits).place(y)
+        ti.j, bits, max_num_bits=bits).place(y)
     block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).quant_array(
-        ti.j, bits, num_bits=bits).place(z)
+        ti.j, bits, max_num_bits=bits).place(z)
 
     @ti.kernel
     def init():
@@ -121,11 +121,11 @@ def test_evolve():
 
     block = ti.root.pointer(ti.ij, (n_blocks, n_blocks))
     block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).quant_array(
-        ti.j, bits, num_bits=bits).place(x)
+        ti.j, bits, max_num_bits=bits).place(x)
     block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).quant_array(
-        ti.j, bits, num_bits=bits).place(y)
+        ti.j, bits, max_num_bits=bits).place(y)
     block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).quant_array(
-        ti.j, bits, num_bits=bits).place(z)
+        ti.j, bits, max_num_bits=bits).place(z)
 
     @ti.kernel
     def init():

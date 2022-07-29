@@ -12,7 +12,6 @@ import taichi as ti
 
 cfg = impl.default_cfg
 
-
 vec2 = ti.types.vector(2, cfg().default_fp)
 """2D floating vector type.
 """

@@ -351,7 +351,9 @@ def init(arch=None,
         check_require_version(require_version)
 
     if "default_up" in kwargs:
-        raise KeyError("'default_up' is always the unsigned type of 'default_ip'. Please set 'default_ip' instead.")
+        raise KeyError(
+            "'default_up' is always the unsigned type of 'default_ip'. Please set 'default_ip' instead."
+        )
     # Make a deepcopy in case these args reference to items from ti.cfg, which are
     # actually references. If no copy is made and the args are indeed references,
     # ti.reset() could override the args to their default values.

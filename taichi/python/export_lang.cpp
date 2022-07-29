@@ -175,6 +175,7 @@ void export_lang(py::module &m) {
       .def_readwrite("timeline", &CompileConfig::timeline)
       .def_readwrite("default_fp", &CompileConfig::default_fp)
       .def_readwrite("default_ip", &CompileConfig::default_ip)
+      .def_readwrite("default_up", &CompileConfig::default_up)
       .def_readwrite("device_memory_GB", &CompileConfig::device_memory_GB)
       .def_readwrite("device_memory_fraction",
                      &CompileConfig::device_memory_fraction)

@@ -13,11 +13,6 @@ import taichi as ti
 cfg = impl.default_cfg
 
 
-def _get_uint_ip():
-    dt = ti.u64 if cfg().default_ip == ti.i64 else ti.u32
-    return dt
-
-
 vec2 = ti.types.vector(2, cfg().default_fp)
 """2D floating vector type.
 """
@@ -42,15 +37,15 @@ ivec4 = ti.types.vector(4, cfg().default_ip)
 """3D signed int vector type.
 """
 
-uvec2 = ti.types.vector(2, _get_uint_ip())
+uvec2 = ti.types.vector(2, cfg().default_up)
 """2D unsigned int vector type.
 """
 
-uvec3 = ti.types.vector(3, _get_uint_ip())
+uvec3 = ti.types.vector(3, cfg().default_up)
 """3D unsigned int vector type.
 """
 
-uvec4 = ti.types.vector(4, _get_uint_ip())
+uvec4 = ti.types.vector(4, cfg().default_up)
 """4D unsigned int vector type.
 """
 

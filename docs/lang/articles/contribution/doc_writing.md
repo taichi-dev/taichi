@@ -206,7 +206,6 @@ import TabItem from '@theme/TabItem';
   <TabItem value="orange">This is an orange 🍊.</TabItem>
   <TabItem value="banana">This is a banana 🍌.</TabItem>
 </Tabs>
-````
 ## Footnotes
 
 To add footnotes, use:
@@ -250,6 +249,7 @@ import TOCInline from '@theme/TOCInline';
 ```
 
 to insert an in-line ToC:
+
 ````mdx-code-block
 import TOCInline from '@theme/TOCInline';
 

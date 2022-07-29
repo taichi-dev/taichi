@@ -172,7 +172,7 @@ class SNode:
         """
         self.ptr.lazy_grad(False, True, False)
 
-    def allocate_grad_flag(self):
+    def _allocate_grad_flag(self):
         """Automatically place the adjoint flag fields following the layout of their primal fields for global data access rule checker
         """
         self.ptr.lazy_grad(False, False, True)

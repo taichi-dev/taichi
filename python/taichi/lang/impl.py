@@ -338,7 +338,7 @@ class PyTaichi:
     def _allocate_gradient_flag():
         if root.finalized:
             return
-        root.allocate_grad_flag()
+        root._allocate_grad_flag()
 
     def _check_matrix_field_member_shape(self):
         for _field in self.matrix_fields:

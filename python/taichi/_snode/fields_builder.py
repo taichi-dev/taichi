@@ -127,11 +127,11 @@ class FieldsBuilder:
         self.empty = False
         self.root.lazy_grad()
 
-    def allocate_grad_flag(self):
-        """Same as :func:`taichi.lang.snode.SNode.allocate_grad_flag`"""
+    def _allocate_grad_flag(self):
+        """Same as :func:`taichi.lang.snode.SNode._allocate_grad_flag`"""
         self._check_not_finalized()
         self.empty = False
-        self.root.allocate_grad_flag()
+        self.root._allocate_grad_flag()
 
     def lazy_dual(self):
         """Same as :func:`taichi.lang.snode.SNode.lazy_dual`"""

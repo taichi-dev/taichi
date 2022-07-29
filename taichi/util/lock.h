@@ -23,7 +23,7 @@ inline bool try_lock_with_file(const std::string &path) {
   if (fd != -1) ::_close(fd);
 #else
   // See https://www.man7.org/linux/man-pages/man2/open.2.html
-  fd = ::open(path.c_str(), O_CREAT | O_EXCL | O_RDWR);
+  fd = ::open(path.c_str(), O_CREAT | O_EXCL, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
   if (fd != -1) ::close(fd);
 #endif
   return fd != -1;

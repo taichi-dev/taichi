@@ -49,7 +49,8 @@ inline bool rename(const std::string &old_path, const std::string &dest_path) {
   return std::rename(old_path.c_str(), dest_path.c_str()) == 0;
 }
 
-inline bool force_rename(const std::string &old_path, const std::string &dest_path) {
+inline bool force_rename(const std::string &old_path,
+                         const std::string &dest_path) {
   if (taichi::rename(old_path, dest_path)) {
     return true;
   }

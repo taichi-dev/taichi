@@ -9,7 +9,6 @@ from taichi.types.primitive_types import f32
 from .staging_buffer import (copy_colors_to_vbo, copy_normals_to_vbo,
                              copy_vertices_to_vbo, get_vbo_field)
 from .utils import check_ggui_availability, get_field_info
-    
 
 normals_field_cache = {}
 
@@ -172,7 +171,7 @@ class Scene:
              vertex_count: int = None,
              index_offset: int = 0,
              index_count: int = None,
-             display_mode : int = 0):
+             display_mode: int = 0):
         """Declare a mesh inside the scene.
 
         if you indicate the index_offset and index_count, the normals will also
@@ -249,7 +248,7 @@ class Scene:
                       vertex_count: int = None,
                       index_offset: int = 0,
                       index_count: int = None,
-                      display_mode : int = 0):
+                      display_mode: int = 0):
         """Declare lots of mesh instances inside the scene.
 
         If transforms is given, then according to the shape of transforms, we will
@@ -322,8 +321,8 @@ class Scene:
         transform_info = get_field_info(transforms)
         self.scene.mesh_instance(vbo_info, has_per_vertex_color, indices_info,
                                  color, two_sided, transform_info,
-                                 instance_offset, index_count,
-                                 index_offset, vertex_count, vertex_offset, display_mode)
+                                 instance_offset, index_count, index_offset,
+                                 vertex_count, vertex_offset, display_mode)
 
     def particles(self,
                   centers,

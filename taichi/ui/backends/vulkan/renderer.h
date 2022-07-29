@@ -79,7 +79,7 @@ class TI_DLL_EXPORT Renderer {
 
  private:
   glm::vec3 background_color_ = glm::vec3(0.45f, 0.55f, 0.60f);
-  
+
   std::vector<std::unique_ptr<Renderable>> renderables_;
   int next_renderable_;
 

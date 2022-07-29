@@ -9,6 +9,7 @@ from taichi.types.primitive_types import f32
 from .staging_buffer import (copy_colors_to_vbo, copy_normals_to_vbo,
                              copy_vertices_to_vbo, get_vbo_field)
 from .utils import check_ggui_availability, get_field_info
+    
 
 normals_field_cache = {}
 
@@ -170,7 +171,8 @@ class Scene:
              vertex_offset: int = 0,
              vertex_count: int = None,
              index_offset: int = 0,
-             index_count: int = None):
+             index_count: int = None,
+             display_mode : int = 0):
         """Declare a mesh inside the scene.
 
         if you indicate the index_offset and index_count, the normals will also
@@ -205,6 +207,9 @@ class Scene:
             index_count (int, optional):
                 only available when `indices` is provided, which is the the number
                 of vertices to draw.
+            display_mode (int, optional):
+                there are 3 types of diplay mode, 0 equals Fill mode(Fill colors to all triagnles)
+                1 equals Line mode(WareFrame), 2 equals Point mode.
         """
         vbo = get_vbo_field(vertices)
         copy_vertices_to_vbo(vbo, vertices)
@@ -220,13 +225,16 @@ class Scene:
                 index_count = vertex_count  # FIXME : Need to confirm
             else:
                 index_count = indices.shape[0]
+        if display_mode < 0 or display_mode >= 3:
+            print("Error! display_mode must be 0(Fill), 1(Line), 2(Point)")
+            exit()
         copy_normals_to_vbo(vbo, normals)
         vbo_info = get_field_info(vbo)
         indices_info = get_field_info(indices)
 
         self.scene.mesh(vbo_info, has_per_vertex_color, indices_info, color,
                         two_sided, index_count, index_offset, vertex_count,
-                        vertex_offset)
+                        vertex_offset, display_mode)
 
     def mesh_instance(self,
                       vertices,
@@ -236,11 +244,12 @@ class Scene:
                       per_vertex_color=None,
                       two_sided=False,
                       transforms=None,
-                      draw_first_instance: int = 0,
+                      instance_offset: int = 0,
                       vertex_offset: int = 0,
                       vertex_count: int = None,
                       index_offset: int = 0,
-                      index_count: int = None):
+                      index_count: int = None,
+                      display_mode : int = 0):
         """Declare lots of mesh instances inside the scene.
 
         If transforms is given, then according to the shape of transforms, we will
@@ -267,9 +276,9 @@ class Scene:
             transforms (ti.Matrix.field, optional):
                 The Matrix must be 4x4 size with N instances, and data type should
                 be ti.f32, ti.i32, ti.u32. If None, then it behaves like raw mesh (no copy).
-            draw_first_instance (int, optional):
+            instance_offset (int, optional):
                 Default value is 0 which means no offset to show mesh instances. Otherwise,
-                the mesh instances will show from the `draw_first_instance`.
+                the mesh instances will show from the `instance_offset`.
             vertex_offset (int, optional):
                 if 'indices' is provided, this refers to the value added to the vertex
                 index before indexing into the vertex buffer, else this refers to the
@@ -283,6 +292,9 @@ class Scene:
             index_count (int, optional):
                 only available when `indices` is provided, which is the the number
                 of vertices to draw.
+            display_mode (int, optional):
+                there are 3 types of diplay mode, 0 equals Fill mode(Fill colors to all triagnles)
+                1 equals Line mode(WareFrame), 2 equals Point mode.
         """
         vbo = get_vbo_field(vertices)
         copy_vertices_to_vbo(vbo, vertices)
@@ -301,14 +313,17 @@ class Scene:
         if transforms and (transforms.m != 4 or transforms.n != 4):
             print("Error! Transform matrix must be 4x4 shape")
             exit()
+        if display_mode < 0 or display_mode >= 3:
+            print("Error! display_mode must be 0(Fill), 1(Line), 2(Point)")
+            exit()
         copy_normals_to_vbo(vbo, normals)
         vbo_info = get_field_info(vbo)
         indices_info = get_field_info(indices)
         transform_info = get_field_info(transforms)
         self.scene.mesh_instance(vbo_info, has_per_vertex_color, indices_info,
                                  color, two_sided, transform_info,
-                                 draw_first_instance, index_count,
-                                 index_offset, vertex_count, vertex_offset)
+                                 instance_offset, index_count,
+                                 index_offset, vertex_count, vertex_offset, display_mode)
 
     def particles(self,
                   centers,

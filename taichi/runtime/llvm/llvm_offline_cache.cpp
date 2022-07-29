@@ -22,7 +22,7 @@ namespace {
 
 using Format = LlvmOfflineCache::Format;
 constexpr char kMetadataFilename[] = "metadata";
-constexpr char kCacheCleanLockName[] = "ticache_clean.lock";
+// constexpr char kCacheCleanLockName[] = "ticache_clean.lock";
 constexpr char kMetadataFileLockName[] = "metadata.lock";
 constexpr int kMaxTryDumpMetadata = 16;
 

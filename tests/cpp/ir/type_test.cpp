@@ -22,7 +22,8 @@ TEST(Type, TypeToString) {
   EXPECT_EQ(bs1->to_string(), "bs(0: qi5@0, 1: qu7@5)");
 
   auto bs2 = TypeFactory::get_instance().get_bit_struct_type(
-      u32, {qu7, qfl, qu7, qfl}, {0, 7, 12, 19}, {-1, 0, -1, 2}, {{1}, {}, {3}, {}});
+      u32, {qu7, qfl, qu7, qfl}, {0, 7, 12, 19}, {-1, 0, -1, 2},
+      {{1}, {}, {3}, {}});
   EXPECT_EQ(bs2->to_string(),
             "bs(0: qu7@0, 1: qfl(d=qi5 e=qu7 c=f32)@7 exp=0, 2: qu7@12, 3: "
             "qfl(d=qi5 e=qu7 c=f32)@19 exp=2)");

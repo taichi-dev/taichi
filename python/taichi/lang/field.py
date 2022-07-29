@@ -433,7 +433,9 @@ class BitpackedFields:
         if shared_exponent:
             self.bit_struct_type_builder.end_placing_shared_exponent()
             if count <= 1:
-                raise TaichiSyntaxError("At least 2 fields need to be placed when shared_exponent=True")
+                raise TaichiSyntaxError(
+                    "At least 2 fields need to be placed when shared_exponent=True"
+                )
 
 
 __all__ = ["BitpackedFields", "Field", "ScalarField"]

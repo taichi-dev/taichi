@@ -85,7 +85,8 @@ BitStructType *TypeFactory::get_bit_struct_type(
     const std::vector<int> &member_exponents,
     const std::vector<std::vector<int>> &member_exponent_users) {
   bit_struct_types_.push_back(std::make_unique<BitStructType>(
-      physical_type, member_types, member_bit_offsets, member_exponents, member_exponent_users));
+      physical_type, member_types, member_bit_offsets, member_exponents,
+      member_exponent_users));
   return bit_struct_types_.back().get();
 }
 

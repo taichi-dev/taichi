@@ -295,7 +295,8 @@ class BitStructType : public Type {
   }
 
   bool get_member_owns_shared_exponent(int i) const {
-    return member_exponents_[i] != -1 && member_exponent_users_[member_exponents_[i]].size() > 1;
+    return member_exponents_[i] != -1 &&
+           member_exponent_users_[member_exponents_[i]].size() > 1;
   }
 
   int get_member_exponent(int i) const {

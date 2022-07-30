@@ -190,7 +190,10 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
   taichi::create_directories(path);
   std::size_t new_kernels_size = 0;  // bytes
 
-  for (auto &[k, v] : data_.kernels) {
+  using Iter = typename decltype(data_.kernels)::iterator;
+  std::vector<Iter> iters_to_erased;
+  for (auto iter = data_.kernels.begin(); iter != data_.kernels.end(); ++iter) {
+    auto &[k, v] = *iter;
     std::size_t size = 0;  // bytes
     std::string filename_prefix = taichi::join_path(path, k);
 
@@ -242,8 +245,12 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
     new_kernels_size += v.size;
 
     if (v.size == 0) {  // The kernel cache has been saved
-      data_.kernels.erase(k);
+      iters_to_erased.push_back(iter);
     }
+  }
+
+  for (auto &iter : iters_to_erased) {
+    data_.kernels.erase(iter);
   }
 
   data_.version[0] = TI_VERSION_MAJOR;
@@ -437,25 +444,27 @@ void LlvmOfflineCacheFileWriter::clean_cache(const std::string &path,
       if (cache_data.kernels.empty()) {  // Remove
         ok_rm_meta = taichi::remove(get_llvm_cache_metadata_file_path(path));
         taichi::remove(
-            get_llvm_cache_metadata_json_file_path(path));  // debugging file
-      } else {                                              // Update
+            get_llvm_cache_metadata_json_file_path(path));
+      } else {  // Update
         // TODO(PGZXB): Potential bug here. Redesign metadata file format to fix
         // the bug.
         std::string target_path = get_llvm_cache_metadata_file_path(path);
         write_to_binary_file(cache_data, target_path);
+        ok_rm_meta = true;
       }
     }
-    if (!cache_data.kernels.empty()) {
-      // For debugging (Not safe: without locking)
-      TextSerializer ts;
-      ts.serialize_to_json("cache", cache_data);
-      ts.write_to_file(get_llvm_cache_metadata_json_file_path(path));
-    }
-
-    // 2. Remove cache files
-    for (const auto &f : files_to_rm) {
-      auto file_path = taichi::join_path(path, f);
-      taichi::remove(file_path);
+    if (ok_rm_meta) {
+      if (!cache_data.kernels.empty()) {
+        // For debugging (Not safe: without locking)
+        TextSerializer ts;
+        ts.serialize_to_json("cache", cache_data);
+        ts.write_to_file(get_llvm_cache_metadata_json_file_path(path));
+      }
+      // 2. Remove cache files
+      for (const auto &f : files_to_rm) {
+        auto file_path = taichi::join_path(path, f);
+        taichi::remove(file_path);
+      }
     }
   }
 }

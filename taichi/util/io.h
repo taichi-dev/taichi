@@ -45,18 +45,6 @@ inline bool remove(const std::string &path) {
   return std::remove(path.c_str()) == 0;
 }
 
-inline bool rename(const std::string &old_path, const std::string &dest_path) {
-  return std::rename(old_path.c_str(), dest_path.c_str()) == 0;
-}
-
-inline bool force_rename(const std::string &old_path, const std::string &dest_path) {
-  if (taichi::rename(old_path, dest_path)) {
-    return true;
-  }
-  // Try delete dest-path and Retry rename
-  return taichi::remove(dest_path) && taichi::rename(old_path, dest_path);
-}
-
 template <typename T>
 void write_to_disk(const T &dat, std::string fn) {
   FILE *f = fopen(fn.c_str(), "wb");

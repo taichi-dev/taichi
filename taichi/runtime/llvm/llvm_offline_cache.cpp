@@ -141,7 +141,7 @@ bool LlvmOfflineCacheFileReader::get_kernel_cache(
       data.module = load_module(filename_prefix, key, llvm_ctx);
       if (!data.module) {
         data_.kernels.erase(itr);
-        return false;
+        return false; // Must return
       }
     }
     res.compiled_data_list.emplace_back(data.tasks,
@@ -185,22 +185,25 @@ std::unique_ptr<llvm::Module> LlvmOfflineCacheFileReader::load_module(
 void LlvmOfflineCacheFileWriter::dump(const std::string &path,
                                       LlvmOfflineCache::Format format,
                                       bool merge_with_old) {
+  auto write_llvm_module =
+    [](const std::string &filename,
+        std::function<void(llvm::raw_os_ostream & os)> writer) {
+      std::ofstream os(filename, std::ios::out | std::ios::binary);
+      TI_ERROR_IF(!os.is_open(), "File {} open failed", filename);
+      llvm::raw_os_ostream llvm_os{os};
+      writer(llvm_os);
+      return llvm_os.tell();
+    };
+
+  using Iter = typename decltype(data_.kernels)::iterator;
   taichi::create_directories(path);
   std::size_t new_kernels_size = 0;  // bytes
+  std::vector<Iter> iters_to_erased; // Kernels which have been saved
 
-  for (auto &[k, v] : data_.kernels) {
+  for (auto iter = data_.kernels.begin(); iter != data_.kernels.end(); ++iter) {
+    auto &[k, v] = *iter;
     std::size_t size = 0;  // bytes
     std::string filename_prefix = taichi::join_path(path, k);
-
-    auto write_llvm_module =
-        [](const std::string &filename,
-            std::function<void(llvm::raw_os_ostream & os)> writer) {
-          std::ofstream os(filename, std::ios::out | std::ios::binary);
-          TI_ERROR_IF(!os.is_open(), "File {} open failed", filename);
-          llvm::raw_os_ostream llvm_os{os};
-          writer(llvm_os);
-          return llvm_os.tell();
-        };
     {
       mangle_offloaded_task_name(k, v.compiled_data_list);
       for (int i = 0; i < v.compiled_data_list.size(); i++) {
@@ -240,8 +243,13 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
     new_kernels_size += v.size;
 
     if (v.size == 0) { // The kernel cache has been saved
-      data_.kernels.erase(k);
+      iters_to_erased.push_back(iter);
     }
+  }
+
+  // Erase the kernels which aren't needed to re-saved
+  for (auto &iter : iters_to_erased) {
+    data_.kernels.erase(iter);
   }
 
   data_.version[0] = TI_VERSION_MAJOR;
@@ -412,8 +420,8 @@ void LlvmOfflineCacheFileWriter::clean_cache(const std::string &path,
           files_to_rm.push_back(f);
         }
       }
-      cache_data.kernels.erase(e->kernel_key);
       cache_data.size -= e->size;
+      cache_data.kernels.erase(e->kernel_key);
       q.pop();
     }
     { // 1. Remove/Update metadata files with locking

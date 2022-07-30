@@ -207,6 +207,24 @@ class LlvmProgramImpl : public ProgramImpl {
   void check_runtime_error(uint64 *result_buffer) override {
     runtime_exec_->check_runtime_error(result_buffer);
   }
+  
+  size_t get_field_in_tree_offset(int tree_id, const SNode *child) {
+    // FIXME: Compute the proper offset. Current method taken from GGUI code
+    size_t offset = 0;
+
+    SNode *dense_parent = child->parent;
+    SNode *root = dense_parent->parent;
+
+    int tree_id = root->get_snode_tree_id();
+    int child_id = root->child_id(dense_parent);
+
+    for (int i = 0; i < child_id; ++i) {
+      SNode *child = root->ch[i].get();
+      offset += child->cell_size_bytes * child->num_cells_per_container;
+    }
+
+    return offset;
+  }
 
   DevicePtr get_snode_tree_device_ptr(int tree_id) override {
     return runtime_exec_->get_snode_tree_device_ptr(tree_id);

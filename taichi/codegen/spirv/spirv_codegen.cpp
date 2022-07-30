@@ -777,9 +777,9 @@ class TaskCodegen : public IRVisitor {
     spirv::Value bin_value = spirv::Value();
 
     TI_WARN_IF(lhs_value.stype.id != rhs_value.stype.id,
-               "${} type {} != ${} type {}", lhs_name,
+               "${} type {} != ${} type {}\n{}", lhs_name,
                lhs_value.stype.dt->to_string(), rhs_name,
-               rhs_value.stype.dt->to_string());
+               rhs_value.stype.dt->to_string(), bin->tb);
 
     if (false) {
     }

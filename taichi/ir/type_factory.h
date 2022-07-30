@@ -33,7 +33,7 @@ class TypeFactory {
                              Type *exponent_type,
                              Type *compute_type);
 
-  Type *get_bit_struct_type(
+  BitStructType *get_bit_struct_type(
       PrimitiveType *physical_type,
       const std::vector<Type *> &member_types,
       const std::vector<int> &member_bit_offsets,
@@ -78,7 +78,7 @@ class TypeFactory {
       quant_float_types_;
 
   // TODO: avoid duplication
-  std::vector<std::unique_ptr<Type>> bit_struct_types_;
+  std::vector<std::unique_ptr<BitStructType>> bit_struct_types_;
 
   // TODO: avoid duplication
   std::vector<std::unique_ptr<Type>> quant_array_types_;

@@ -525,9 +525,7 @@ void export_lang(py::module &m) {
            [](SNode *snode) { return snode->num_active_indices; })
       .def_readonly("cell_size_bytes", &SNode::cell_size_bytes)
       .def_readonly("offset_bytes_in_parent_cell",
-                    &SNode::offset_bytes_in_parent_cell)
-      .def("begin_shared_exp_placement", &SNode::begin_shared_exp_placement)
-      .def("end_shared_exp_placement", &SNode::end_shared_exp_placement);
+                    &SNode::offset_bytes_in_parent_cell);
 
   py::class_<SNodeTree>(m, "SNodeTree")
       .def("id", &SNodeTree::id)
@@ -671,8 +669,6 @@ void export_lang(py::module &m) {
   py::class_<Kernel::LaunchContextBuilder>(m, "KernelLaunchContext")
       .def("set_arg_int", &Kernel::LaunchContextBuilder::set_arg_int)
       .def("set_arg_float", &Kernel::LaunchContextBuilder::set_arg_float)
-      .def("set_arg_external_array",
-           &Kernel::LaunchContextBuilder::set_arg_external_array)
       .def("set_arg_external_array_with_shape",
            &Kernel::LaunchContextBuilder::set_arg_external_array_with_shape)
       .def("set_arg_ndarray", &Kernel::LaunchContextBuilder::set_arg_ndarray)
@@ -715,6 +711,12 @@ void export_lang(py::module &m) {
       .def("set_adjoint", &Expr::set_adjoint)
       .def("set_dual", &Expr::set_dual)
       .def("set_attribute", &Expr::set_attribute)
+      .def(
+          "get_dt",
+          [&](Expr *expr) -> const Type * {
+            return expr->cast<GlobalVariableExpression>()->dt;
+          },
+          py::return_value_policy::reference)
       .def("get_ret_type", &Expr::get_ret_type)
       .def("type_check", &Expr::type_check)
       .def("get_expr_name",
@@ -1078,6 +1080,17 @@ void export_lang(py::module &m) {
 
   m.def("get_type_factory_instance", TypeFactory::get_instance,
         py::return_value_policy::reference);
+
+  py::class_<BitStructType>(m, "BitStructType");
+  py::class_<BitStructTypeBuilder>(m, "BitStructTypeBuilder")
+      .def(py::init<int>())
+      .def("begin_placing_shared_exponent",
+           &BitStructTypeBuilder::begin_placing_shared_exponent)
+      .def("end_placing_shared_exponent",
+           &BitStructTypeBuilder::end_placing_shared_exponent)
+      .def("add_member", &BitStructTypeBuilder::add_member)
+      .def("build", &BitStructTypeBuilder::build,
+           py::return_value_policy::reference);
 
   m.def("decl_tensor_type",
         [&](std::vector<int> shape, const DataType &element_type) {

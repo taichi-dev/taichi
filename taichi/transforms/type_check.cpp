@@ -150,7 +150,8 @@ class TypeCheck : public IRVisitor {
       stmt->ret_type =
           TypeFactory::get_instance().get_pointer_type(stmt->snodes[0]->dt);
     } else
-      TI_WARN("[{}] Type inference failed: snode is nullptr.", stmt->name());
+      TI_WARN("[{}] Type inference failed: snode is nullptr.\n{}", stmt->name(),
+              stmt->tb);
     for (int l = 0; l < stmt->snodes.size(); l++) {
       if (stmt->snodes[l]->parent->num_active_indices != 0 &&
           stmt->snodes[l]->parent->num_active_indices != stmt->indices.size()) {
@@ -163,8 +164,9 @@ class TypeCheck : public IRVisitor {
     for (int i = 0; i < stmt->indices.size(); i++) {
       if (!is_integral(stmt->indices[i]->ret_type)) {
         TI_WARN(
-            "[{}] Field index {} not integral, casting into int32 implicitly",
-            stmt->name(), i);
+            "[{}] Field index {} not integral, casting into int32 "
+            "implicitly\n{}",
+            stmt->name(), i, stmt->tb);
         stmt->indices[i] =
             insert_type_cast_before(stmt, stmt->indices[i], PrimitiveType::i32);
       }

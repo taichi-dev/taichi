@@ -78,7 +78,7 @@ Type *TypeFactory::get_quant_float_type(Type *digits_type,
   return quant_float_types_[key].get();
 }
 
-Type *TypeFactory::get_bit_struct_type(
+BitStructType *TypeFactory::get_bit_struct_type(
     PrimitiveType *physical_type,
     const std::vector<Type *> &member_types,
     const std::vector<int> &member_bit_offsets,

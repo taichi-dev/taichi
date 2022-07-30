@@ -114,8 +114,8 @@ TEST(IRBuilder, ExternalPtr) {
   auto ker = std::make_unique<Kernel>(*test_prog.prog(), std::move(block));
   ker->insert_arg(get_data_type<int>(), /*is_array=*/true);
   auto launch_ctx = ker->make_launch_context();
-  launch_ctx.set_arg_external_array(/*arg_id=*/0, (uint64)array.get(), size,
-                                    /*is_device_allocation=*/false);
+  launch_ctx.set_arg_external_array_with_shape(
+      /*arg_id=*/0, (uint64)array.get(), size, {size});
   (*ker)(launch_ctx);
   EXPECT_EQ(array[0], 2);
   EXPECT_EQ(array[1], 1);
@@ -139,9 +139,7 @@ TEST(IRBuilder, Ndarray) {
   array.write_int({2}, 40);
   auto ker1 = setup_kernel1(test_prog.prog());
   auto launch_ctx1 = ker1->make_launch_context();
-  launch_ctx1.set_arg_external_array(
-      /*arg_id=*/0, array.get_device_allocation_ptr_as_int(), size,
-      /*is_device_allocation=*/true);
+  launch_ctx1.set_arg_ndarray(/*arg_id=*/0, array);
   (*ker1)(launch_ctx1);
   EXPECT_EQ(array.read_int({0}), 2);
   EXPECT_EQ(array.read_int({1}), 1);
@@ -149,9 +147,7 @@ TEST(IRBuilder, Ndarray) {
 
   auto ker2 = setup_kernel2(test_prog.prog());
   auto launch_ctx2 = ker2->make_launch_context();
-  launch_ctx2.set_arg_external_array(
-      /*arg_id=*/0, array.get_device_allocation_ptr_as_int(), size,
-      /*is_device_allocation=*/true);
+  launch_ctx2.set_arg_ndarray(/*arg_id=*/0, array);
   launch_ctx2.set_arg_int(/*arg_id=*/1, 3);
   (*ker2)(launch_ctx2);
   EXPECT_EQ(array.read_int({0}), 2);

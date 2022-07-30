@@ -34,6 +34,7 @@ Installation instructions vary depending on which operating system (OS) you are 
 
 ## Prerequisites
 
+````mdx-code-block
 <Tabs
   defaultValue="unix"
   values={[
@@ -66,13 +67,14 @@ Installation instructions vary depending on which operating system (OS) you are 
 </TabItem>
 
 </Tabs>
-
+````
 ### Install Clang
 
 <blockquote>
 This Clang compiler is used to compile the Taichi device runtime. It is **not required** to use this compiler for the C++ compiler.
 </blockquote>
 
+````mdx-code-block
 <Tabs
   defaultValue="arch"
   values={[
@@ -153,7 +155,7 @@ Some Linux distributions may require additional packages to build Taichi. Keep a
 </TabItem>
 
 </Tabs>
-
+````
 ### Install LLVM
 
 #### Install pre-built, customized LLVM binaries
@@ -162,6 +164,7 @@ We provide pre-built, customized LLVM binaries. For now, Taichi supports LLVM 10
 
 1. Download and install customized binaries from the following list per your system environment:
 
+````mdx-code-block
 <Tabs
   defaultValue="llvm_linux"
   values={[
@@ -185,9 +188,9 @@ We provide pre-built, customized LLVM binaries. For now, Taichi supports LLVM 10
     <a href="https://github.com/taichi-dev/taichi_assets/releases/download/llvm10_msvc2022/taichi-llvm-10.0.0-msvc2022.zip">LLVM 10.0.0 for Windows MSVC 2022</a>
 </TabItem>
 </Tabs>
-
 2. Configure environment variable:
 
+````mdx-code-block
 <Tabs
   defaultValue="linux"
   values={[
@@ -216,7 +219,7 @@ Add an environment variable `LLVM_DIR` with value `<Path to the extracted LLVM b
 </TabItem>
 
 </Tabs>
-
+````
 
 <details>
 
@@ -224,6 +227,7 @@ Add an environment variable `LLVM_DIR` with value `<Path to the extracted LLVM b
 
 We provide instructions here if you need to build LLVM 10.0.0 from source.
 
+````mdx-code-block
 <Tabs
   defaultValue="linux"
   values={[
@@ -282,7 +286,6 @@ cmake --build . --target=INSTALL --config=Release
 </TabItem>
 
 </Tabs>
-
 </details>
 
 ## Install optional dependencies
@@ -298,6 +301,7 @@ This section works for you if you have a Nvidia GPU supporting CUDA. Note that t
 
 To install CUDA:
 
+````mdx-code-block
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
@@ -352,6 +356,7 @@ import TabItem from '@theme/TabItem';
 
 You must install the Vulkan SDK in order to debug Taichi's Vulkan backend. To proceed:
 
+````mdx-code-block
 <Tabs
   defaultValue="linux"
   values={[
@@ -393,10 +398,12 @@ You must install the Vulkan SDK in order to debug Taichi's Vulkan backend. To pr
 </TabItem>
 
 </Tabs>
+````
 </details>
 
 ## Build Taichi from source
 
+````mdx-code-block
 <Tabs
   defaultValue="linux"
   values={[
@@ -478,7 +485,6 @@ If you want to build Taichi with Clang or maybe utilize `ccache` to cache and sp
 </TabItem>
 
 </Tabs>
-
 ## Troubleshooting and debugging
 
 ### `llvm-as` cannot be opened on macOS

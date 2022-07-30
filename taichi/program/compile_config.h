@@ -94,7 +94,7 @@ struct CompileConfig {
 
   // Offline cache options
   bool offline_cache{true};
-  std::string offline_cache_file_path{get_repo_dir() + "tmp0011_ticache"};
+  std::string offline_cache_file_path{get_repo_dir() + "tmp0012_ticache"};
   std::string offline_cache_cleaning_policy{
       "lru"};  // "never"|"version"|"lru"|"fifo"
   int offline_cache_max_size_of_files{1024 * 1024};  // bytes

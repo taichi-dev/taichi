@@ -443,8 +443,7 @@ void LlvmOfflineCacheFileWriter::clean_cache(const std::string &path,
 
       if (cache_data.kernels.empty()) {  // Remove
         ok_rm_meta = taichi::remove(get_llvm_cache_metadata_file_path(path));
-        taichi::remove(
-            get_llvm_cache_metadata_json_file_path(path));
+        taichi::remove(get_llvm_cache_metadata_json_file_path(path));
       } else {  // Update
         // TODO(PGZXB): Potential bug here. Redesign metadata file format to fix
         // the bug.

@@ -136,7 +136,10 @@ bool LlvmOfflineCacheFileReader::get_kernel_cache(
       std::string filename_prefix =
           taichi::join_path(path_, key + "." + std::to_string(i));
       data.module = load_module(filename_prefix, key, llvm_ctx);
-      TI_ASSERT(data.module);
+      if (!data.module) {
+        data_.kernels.erase(itr);
+        return false;
+      }
     }
     res.compiled_data_list.emplace_back(data.tasks,
                                         llvm::CloneModule(*data.module));
@@ -166,9 +169,9 @@ std::unique_ptr<llvm::Module> LlvmOfflineCacheFileReader::load_module(
     const std::string filename = path_prefix + ".ll";
     llvm::SMDiagnostic err;
     auto ret = llvm::parseAssemblyFile(filename, err, llvm_ctx);
-    if (!ret) {
-      err.print(filename.c_str(), llvm::errs());
-      TI_ERROR("Fail to parse {}: {}", filename, err.getMessage().str());
+    if (!ret) { // File not found or Parse failed
+      TI_DEBUG("Fail to parse {}: {}", filename, err.getMessage().str());
+      return nullptr;
     }
     return ret;
   }
@@ -271,7 +274,7 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
       } else {
         TI_WARN("Lock {} failed", lock_path);
       }
-      // For debugging
+      // For debugging (Not safe: without locking)
       TextSerializer ts;
       ts.serialize_to_json("cache", data_);
       ts.write_to_file(get_llvm_cache_metadata_json_file_path(path));

@@ -207,7 +207,7 @@ class LlvmProgramImpl : public ProgramImpl {
   void check_runtime_error(uint64 *result_buffer) override {
     runtime_exec_->check_runtime_error(result_buffer);
   }
-  
+
   size_t get_field_in_tree_offset(int tree_id, const SNode *child) override {
     // FIXME: Compute the proper offset. Current method taken from GGUI code
     size_t offset = 0;

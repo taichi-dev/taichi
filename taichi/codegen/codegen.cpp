@@ -60,14 +60,14 @@ bool KernelCodeGen::maybe_read_compilation_from_cache(
     std::vector<LLVMCompiledData> &data) {
   TI_AUTO_PROF;
   const auto &config = prog->config;
-  auto reader =
-      LlvmOfflineCacheFileReader::make(config.offline_cache_file_path);
+  auto *llvm_prog = get_llvm_program(prog);
+  const auto &reader = llvm_prog->get_cache_reader();
   if (!reader) {
     return false;
   }
 
   LlvmOfflineCache::KernelCacheData cache_data;
-  auto *tlctx = get_llvm_program(prog)->get_llvm_context(config.arch);
+  auto *tlctx = llvm_prog->get_llvm_context(config.arch);
   auto &llvm_ctx = *tlctx->get_this_thread_context();
 
   if (!reader->get_kernel_cache(cache_data, kernel_key, llvm_ctx)) {

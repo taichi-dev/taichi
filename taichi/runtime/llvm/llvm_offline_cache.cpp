@@ -169,7 +169,7 @@ std::unique_ptr<llvm::Module> LlvmOfflineCacheFileReader::load_module(
     const std::string filename = path_prefix + ".ll";
     llvm::SMDiagnostic err;
     auto ret = llvm::parseAssemblyFile(filename, err, llvm_ctx);
-    if (!ret) { // File not found or Parse failed
+    if (!ret) {  // File not found or Parse failed
       TI_DEBUG("Fail to parse {}: {}", filename, err.getMessage().str());
       return nullptr;
     }

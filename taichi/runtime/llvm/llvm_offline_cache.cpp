@@ -436,10 +436,12 @@ void LlvmOfflineCacheFileWriter::clean_cache(const std::string &path,
         write_to_binary_file(cache_data,  target_path);
       }
     }
-    // For debugging (Not safe: without locking)
-    TextSerializer ts;
-    ts.serialize_to_json("cache", cache_data);
-    ts.write_to_file(get_llvm_cache_metadata_json_file_path(path));
+    if (!cache_data.kernels.empty()) {
+      // For debugging (Not safe: without locking)
+      TextSerializer ts;
+      ts.serialize_to_json("cache", cache_data);
+      ts.write_to_file(get_llvm_cache_metadata_json_file_path(path));
+    }
 
     // 2. Remove cache files
     for (const auto &f : files_to_rm) {

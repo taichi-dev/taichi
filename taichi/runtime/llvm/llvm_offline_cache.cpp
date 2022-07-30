@@ -84,7 +84,7 @@ bool LlvmOfflineCacheFileReader::load_meta_data(
 
   std::string lock_path = taichi::join_path(cache_file_path, kMetadataFileLockName);
   if (lock_with_file(lock_path)) {
-    auto _ = taichi::make_cleanup([&lock_path](){
+    auto _ = make_cleanup([&lock_path](){
       if (!unlock_with_file(lock_path)) {
         TI_WARN("Unlock {} failed", lock_path);
       }
@@ -213,7 +213,7 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
         std::string suffix = "." + std::to_string(i);
         if (format & Format::LL) {
           std::string filename = filename_prefix + suffix + ".ll";
-          if (taichi::try_lock_with_file(filename)) { // Not exists
+          if (try_lock_with_file(filename)) { // Not exists
             size += write_llvm_module(filename,
                                       [mod](llvm::raw_os_ostream &os) {
                                         mod->print(os, /*AAW=*/nullptr);
@@ -224,7 +224,7 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
         }
         if (format & Format::BC) {
           std::string filename = filename_prefix + suffix + ".bc";
-          if (taichi::try_lock_with_file(filename)) { // Not exists
+          if (try_lock_with_file(filename)) { // Not exists
             size += write_llvm_module(filename,
                                       [mod](llvm::raw_os_ostream &os) {
                                         llvm::WriteBitcodeToFile(*mod, os);
@@ -344,12 +344,12 @@ void LlvmOfflineCacheFileWriter::clean_cache(const std::string &path,
 
   // Try lock: Only one cleaner at a time
   std::string lock_path = taichi::join_path(path, kCacheCleanLockName);
-  if (!taichi::try_lock_with_file(lock_path)) {
+  if (!try_lock_with_file(lock_path)) {
     return;
   }
-  auto _ = taichi::make_cleanup([&lock_path]() {
+  auto _ = make_cleanup([&lock_path]() {
     TI_DEBUG("Stop cleaning cache");
-    if (!taichi::unlock_with_file(lock_path)) {
+    if (!unlock_with_file(lock_path)) {
       TI_WARN("Unlock {} failed", lock_path);
     }
   });
@@ -426,12 +426,12 @@ void LlvmOfflineCacheFileWriter::clean_cache(const std::string &path,
     }
     { // 1. Remove/Update metadata files with locking
       std::string metadata_lock_path = taichi::join_path(path, kMetadataFileLockName);
-      if (!taichi::lock_with_file(metadata_lock_path, 100, 10)) {
+      if (!lock_with_file(metadata_lock_path, 100, 10)) {
         TI_WARN("Lock {} failed", metadata_lock_path);
         return;
       }
       auto _ = make_cleanup([&metadata_lock_path]() {
-        if (!taichi::unlock_with_file(metadata_lock_path)) {
+        if (!unlock_with_file(metadata_lock_path)) {
           TI_WARN("Unlock {} failed", metadata_lock_path);
         }
       });

@@ -443,20 +443,24 @@ void LlvmOfflineCacheFileWriter::clean_cache(const std::string &path,
         // TODO(PGZXB): Potential bug here. Redesign metadata file format to fix the bug.
         std::string target_path = get_llvm_cache_metadata_file_path(path);
         write_to_binary_file(cache_data,  target_path);
+        ok_rm_meta = true;
       }
-    }
-    if (!cache_data.kernels.empty()) {
-      // For debugging (Not safe: without locking)
-      TextSerializer ts;
-      ts.serialize_to_json("cache", cache_data);
-      ts.write_to_file(get_llvm_cache_metadata_json_file_path(path));
     }
 
     // 2. Remove cache files
-    for (const auto &f : files_to_rm) {
-      auto file_path = taichi::join_path(path, f);
-      taichi::remove(file_path);
+    if (ok_rm_meta) {
+      if (!cache_data.kernels.empty()) {
+        // For debugging (Not safe: without locking)
+        TextSerializer ts;
+        ts.serialize_to_json("cache", cache_data);
+        ts.write_to_file(get_llvm_cache_metadata_json_file_path(path));
+      }
+      for (const auto &f : files_to_rm) {
+        auto file_path = taichi::join_path(path, f);
+        taichi::remove(file_path);
+      }
     }
+
   }
 }
 

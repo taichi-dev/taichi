@@ -94,11 +94,11 @@ struct CompileConfig {
 
   // Offline cache options
   bool offline_cache{true};
-  std::string offline_cache_file_path{get_repo_dir() + "tmp0008_ticache"};
+  std::string offline_cache_file_path{get_repo_dir() + "tmp0010_ticache"};
   std::string offline_cache_cleaning_policy{
-      "never"};  // "never"|"version"|"lru"|"fifo"
+      "lru"};  // "never"|"version"|"lru"|"fifo"
   int offline_cache_max_size_of_files{1024 * 1024};  // bytes
-  double offline_cache_cleaning_factor{0.25};        // [0.f, 1.f]
+  double offline_cache_cleaning_factor{0.5};        // [0.f, 1.f]
 
   int num_compile_threads{0};
   std::string vk_api_version;

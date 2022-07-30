@@ -208,14 +208,13 @@ class LlvmProgramImpl : public ProgramImpl {
     runtime_exec_->check_runtime_error(result_buffer);
   }
   
-  size_t get_field_in_tree_offset(int tree_id, const SNode *child) {
+  size_t get_field_in_tree_offset(int tree_id, const SNode *child) override {
     // FIXME: Compute the proper offset. Current method taken from GGUI code
     size_t offset = 0;
 
     SNode *dense_parent = child->parent;
     SNode *root = dense_parent->parent;
 
-    int tree_id = root->get_snode_tree_id();
     int child_id = root->child_id(dense_parent);
 
     for (int i = 0; i < child_id; ++i) {

@@ -80,7 +80,7 @@ class VulkanProgramImpl : public ProgramImpl {
     return nullptr;
   }
 
-  size_t get_field_in_tree_offset(int tree_id, const SNode *child) {
+  size_t get_field_in_tree_offset(int tree_id, const SNode *child) override {
     return snode_tree_mgr_->get_field_in_tree_offset(tree_id, child);
   }
 

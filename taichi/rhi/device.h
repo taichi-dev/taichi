@@ -199,7 +199,7 @@ enum class PolygonMode : int {
   Point = 2,
 };
 
-enum class TI_DLL_EXPORT BufferFormat : uint32_t {
+enum class BufferFormat : uint32_t {
   r8,
   rg8,
   rgba8,
@@ -254,9 +254,9 @@ class Pipeline {
   virtual ResourceBinder *resource_binder() = 0;
 };
 
-enum class TI_DLL_EXPORT ImageDimension { d1D, d2D, d3D };
+enum class ImageDimension { d1D, d2D, d3D };
 
-enum class TI_DLL_EXPORT ImageLayout {
+enum class ImageLayout {
   undefined,
   shader_read,
   shader_write,

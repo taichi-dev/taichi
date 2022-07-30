@@ -24,7 +24,6 @@ using Format = LlvmOfflineCache::Format;
 constexpr char kMetadataFilename[] = "metadata";
 constexpr char kCacheCleanLockName[] = "ticache_clean.lock";
 constexpr char kMetadataFileLockName[] = "metadata.lock";
-constexpr int kMaxTryDumpMetadata = 16;
 
 static bool is_current_llvm_cache_version(
     const LlvmOfflineCache::Version &ver) {

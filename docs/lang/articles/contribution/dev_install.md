@@ -155,7 +155,9 @@ Some Linux distributions may require additional packages to build Taichi. Keep a
 </TabItem>
 
 </Tabs>
+
 ````
+
 ### Install LLVM
 
 #### Install pre-built, customized LLVM binaries
@@ -188,6 +190,9 @@ We provide pre-built, customized LLVM binaries. For now, Taichi supports LLVM 10
     <a href="https://github.com/taichi-dev/taichi_assets/releases/download/llvm10_msvc2022/taichi-llvm-10.0.0-msvc2022.zip">LLVM 10.0.0 for Windows MSVC 2022</a>
 </TabItem>
 </Tabs>
+
+````
+
 2. Configure environment variable:
 
 ````mdx-code-block
@@ -286,6 +291,9 @@ cmake --build . --target=INSTALL --config=Release
 </TabItem>
 
 </Tabs>
+
+````
+
 </details>
 
 ## Install optional dependencies

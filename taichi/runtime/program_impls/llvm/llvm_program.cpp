@@ -24,7 +24,8 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
   runtime_exec_ = std::make_unique<LlvmRuntimeExecutor>(config_, profiler);
   cache_data_ = std::make_unique<LlvmOfflineCache>();
   if (config_.offline_cache) {
-    cache_reader_ = LlvmOfflineCacheFileReader::make(config_.offline_cache_file_path);
+    cache_reader_ =
+        LlvmOfflineCacheFileReader::make(config_.offline_cache_file_path);
   }
 }
 

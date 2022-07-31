@@ -66,6 +66,9 @@ struct PyGui {
   bool checkbox(std::string name, bool old_value) {
     return gui->checkbox(name, old_value);
   }
+  int slider_int(std::string name, int old_value, int minimum, int maximum) {
+    return gui->slider_int(name, old_value, minimum, maximum);
+  }
   float slider_float(std::string name,
                      float old_value,
                      float minimum,
@@ -498,6 +501,7 @@ void export_ggui(py::module &m) {
       .def("end", &PyGui::end)
       .def("text", &PyGui::text)
       .def("checkbox", &PyGui::checkbox)
+      .def("slider_int", &PyGui::slider_int)
       .def("slider_float", &PyGui::slider_float)
       .def("color_edit_3", &PyGui::color_edit_3)
       .def("button", &PyGui::button);

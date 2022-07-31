@@ -34,7 +34,7 @@ if (!$llvmVer.CompareTo("10")) {
 } else {
     if (-not (Test-Path "taichi_llvm_15")) {
         WriteInfo("Download and extract LLVM")
-        curl.exe --retry 10 --retry-delay 5 https://github.com/python3kgae/taichi_assets/releases/download/llvm15_vs2019_clang/taichi-x64-Release.zip -LO
+        curl.exe --retry 10 --retry-delay 5 https://github.com/python3kgae/taichi_assets/releases/download/llvm15_vs2022_clang/taichi-x64-Release.zip -LO
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE; }
         7z x taichi-x64-Release.zip -otaichi_llvm_15
     }

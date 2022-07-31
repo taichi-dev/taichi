@@ -496,6 +496,8 @@ If you want to build Taichi with Clang or maybe utilize `ccache` to cache and sp
 </TabItem>
 
 </Tabs>
+````
+
 ## Troubleshooting and debugging
 
 ### `llvm-as` cannot be opened on macOS

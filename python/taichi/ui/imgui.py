@@ -71,7 +71,7 @@ class Gui:
             old_value (bool): whether the checkbox is currently checked.
         """
         return self.gui.checkbox(text, old_value)
-    
+
     def slider_int(self, text, old_value, minimum, maximum):
         """Declares a slider, and returns its newest value.
 

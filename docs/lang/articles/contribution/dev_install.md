@@ -153,7 +153,6 @@ Some Linux distributions may require additional packages to build Taichi. Keep a
 :::
 
 </TabItem>
-
 </Tabs>
 
 ````
@@ -227,7 +226,6 @@ Add an environment variable `LLVM_DIR` with value `<Path to the extracted LLVM b
 ````
 
 <details>
-
 <summary><font color="#006284"><h4>Build LLVM 10.0.0 from source</h4></font></summary>
 
 We provide instructions here if you need to build LLVM 10.0.0 from source.

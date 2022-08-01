@@ -146,11 +146,9 @@ class Window:
             depth(ti.ndarray/ti.field): [window_width, window_height] carries depth information.
         """
         if not (len(depth.shape) == 2 and depth.dtype == f32):
-            print("Only Support 2d-shape and ti.f32 data format.")
-            exit()
+            raise Exception("Only Support 2d-shape and ti.f32 data format.")
         if not isinstance(depth, (Ndarray, Field)):
-            print("Only Support Ndarray and Field data type.")
-            exit()
+            raise Exception("Only Support Ndarray and Field data type.")
         tmp_depth = get_depth_ndarray(self.window)
         self.window.copy_depth_buffer_to_ndarray(tmp_depth.arr)
         if isinstance(depth, Ndarray):

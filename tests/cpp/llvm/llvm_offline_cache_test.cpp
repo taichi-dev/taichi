@@ -125,7 +125,8 @@ TEST_P(LlvmOfflineCacheTest, ReadWrite) {
 
     ASSERT_NE(kcache.compiled_data_list[0].module, nullptr);
     kcache.compiled_data_list[0].module->dump();
-    auto jit_module = tlctx_->create_jit_module(std::move(kcache.compiled_data_list[0].module));
+    auto jit_module = tlctx_->create_jit_module(
+        std::move(kcache.compiled_data_list[0].module));
     using FuncType = int (*)(int, int);
     FuncType my_add = (FuncType)jit_module->lookup_function(kTaskName);
     const auto res = my_add(40, 2);

@@ -510,7 +510,8 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_struct_module() {
   return llvm::CloneModule(*struct_module);
 }
 
-void TaichiLLVMContext::set_struct_module(std::unique_ptr<llvm::Module> module) {
+void TaichiLLVMContext::set_struct_module(
+    std::unique_ptr<llvm::Module> module) {
   TI_ASSERT(std::this_thread::get_id() == main_thread_id_);
   auto this_thread_data = get_this_thread_data();
   TI_ASSERT(module);
@@ -519,13 +520,16 @@ void TaichiLLVMContext::set_struct_module(std::unique_ptr<llvm::Module> module) 
     TI_ERROR("module broken");
   }
   // TODO: Move this after ``if (!arch_is_cpu(arch))``.
-  llvm::Linker::linkModules(*this_thread_data->struct_module, std::move(module));
+  llvm::Linker::linkModules(*this_thread_data->struct_module,
+                            std::move(module));
   for (auto &[id, data] : per_thread_data_) {
     if (id == std::this_thread::get_id()) {
       continue;
     }
-    llvm::Linker::linkModules(*data->struct_module, clone_module_to_context(
-        this_thread_data->struct_module.get(), data->llvm_context));
+    llvm::Linker::linkModules(
+        *data->struct_module,
+        clone_module_to_context(this_thread_data->struct_module.get(),
+                                data->llvm_context));
   }
 }
 template <typename T>
@@ -648,7 +652,8 @@ llvm::DataLayout TaichiLLVMContext::get_data_layout() {
   return jit->get_data_layout();
 }
 
-JITModule *TaichiLLVMContext::create_jit_module(std::unique_ptr<llvm::Module> module) {
+JITModule *TaichiLLVMContext::create_jit_module(
+    std::unique_ptr<llvm::Module> module) {
   return jit->create_jit_module(std::move(module));
 }
 
@@ -816,8 +821,8 @@ void TaichiLLVMContext::delete_functions_of_snode_tree(int id) {
   if (!snode_tree_funcs_.count(id)) {
     return;
   }
-  //Removing a module in the JIT is not available in LLVM 10
-  //TODO(Lin): remove the module in the JIT in LLVM 15
+  // Removing a module in the JIT is not available in LLVM 10
+  // TODO(Lin): remove the module in the JIT in LLVM 15
   llvm::Module *module = get_this_thread_struct_module();
   for (auto str : snode_tree_funcs_[id]) {
     auto *func = module->getFunction(str);

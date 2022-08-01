@@ -22,7 +22,6 @@ namespace {
 
 using Format = LlvmOfflineCache::Format;
 constexpr char kMetadataFilename[] = "metadata";
-constexpr char kCacheCleanLockName[] = "ticache_clean.lock";
 constexpr char kMetadataFileLockName[] = "metadata.lock";
 
 static bool is_current_llvm_cache_version(
@@ -345,9 +344,10 @@ void LlvmOfflineCacheFileWriter::clean_cache(const std::string &path,
     return;
   }
 
-  // Try lock: Only one cleaner at a time
-  std::string lock_path = taichi::join_path(path, kCacheCleanLockName);
-  if (!try_lock_with_file(lock_path)) {
+  // Lock: Only one cleaner at a time
+  std::string lock_path = taichi::join_path(path, kMetadataFileLockName);
+  if (!lock_with_file(lock_path)) {
+    TI_WARN("Lock {} failed", lock_path);
     return;
   }
   auto _ = make_cleanup([&lock_path]() {
@@ -362,7 +362,9 @@ void LlvmOfflineCacheFileWriter::clean_cache(const std::string &path,
   // TODO(PGZXB): High overhead. Redesign metadata file format to reduce
   // overhead.
   LlvmOfflineCache cache_data;
-  LlvmOfflineCacheFileReader::load_meta_data(cache_data, path);
+  if (!LlvmOfflineCacheFileReader::load_meta_data(cache_data, path, false)) {
+    return;
+  }
 
   if ((policy & CleanOldVersion) &&
       !is_current_llvm_cache_version(cache_data.version)) {
@@ -370,9 +372,11 @@ void LlvmOfflineCacheFileWriter::clean_cache(const std::string &path,
                   taichi::remove(get_llvm_cache_metadata_json_file_path(path));
         ok) {
       for (const auto &[k, v] : cache_data.kernels) {
-        const auto files = get_possible_llvm_cache_filename_by_key(k);
-        for (const auto &f : files) {
-          taichi::remove(taichi::join_path(path, f));
+        for (int i = 0; i < v.compiled_data_list.size(); i++) {
+          for (const auto &f : get_possible_llvm_cache_filename_by_key(
+                  v.kernel_key + "." + std::to_string(i))) {
+            taichi::remove(taichi::join_path(path, f));
+          }
         }
       }
     }
@@ -429,30 +433,16 @@ void LlvmOfflineCacheFileWriter::clean_cache(const std::string &path,
       cache_data.kernels.erase(e->kernel_key);
       q.pop();
     }
-    {  // 1. Remove/Update metadata files with locking
-      std::string metadata_lock_path =
-          taichi::join_path(path, kMetadataFileLockName);
-      if (!lock_with_file(metadata_lock_path, 100, 10)) {
-        TI_WARN("Lock {} failed", metadata_lock_path);
-        return;
-      }
-      auto _ = make_cleanup([&metadata_lock_path]() {
-        if (!unlock_with_file(metadata_lock_path)) {
-          TI_WARN("Unlock {} failed", metadata_lock_path);
-        }
-      });
 
-      if (cache_data.kernels.empty()) {  // Remove
-        ok_rm_meta = taichi::remove(get_llvm_cache_metadata_file_path(path));
-        taichi::remove(
-            get_llvm_cache_metadata_json_file_path(path));  // debugging file
-      } else {                                              // Update
-        // TODO(PGZXB): Potential bug here. Redesign metadata file format to fix
-        // the bug.
-        std::string target_path = get_llvm_cache_metadata_file_path(path);
-        write_to_binary_file(cache_data, target_path);
-        ok_rm_meta = true;
-      }
+    // 1. Remove/Update metadata files
+    if (cache_data.kernels.empty()) {  // Remove
+      ok_rm_meta = taichi::remove(get_llvm_cache_metadata_file_path(path));
+      taichi::remove(  // debugging file
+          get_llvm_cache_metadata_json_file_path(path));
+    } else { // Update
+      std::string target_path = get_llvm_cache_metadata_file_path(path);
+      write_to_binary_file(cache_data, target_path);
+      ok_rm_meta = true;
     }
 
     // 2. Remove cache files
@@ -467,6 +457,8 @@ void LlvmOfflineCacheFileWriter::clean_cache(const std::string &path,
         auto file_path = taichi::join_path(path, f);
         taichi::remove(file_path);
       }
+    } else {
+      TI_WARN("Remove metadata file failed");
     }
   }
 }

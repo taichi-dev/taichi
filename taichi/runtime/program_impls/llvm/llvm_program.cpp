@@ -35,10 +35,11 @@ std::unique_ptr<llvm::Module>
 LlvmProgramImpl::clone_struct_compiler_initial_context(
     bool has_multiple_snode_trees,
     TaichiLLVMContext *tlctx) {
-  if (has_multiple_snode_trees) {
-    return tlctx->clone_struct_module();
-  }
-  return tlctx->clone_runtime_module();
+//  if (has_multiple_snode_trees) {
+//    return tlctx->clone_struct_module();
+//  }
+  return std::make_unique<llvm::Module>("struct",
+                                        *tlctx->get_this_thread_context());
 }
 
 std::unique_ptr<StructCompiler> LlvmProgramImpl::compile_snode_tree_types_impl(

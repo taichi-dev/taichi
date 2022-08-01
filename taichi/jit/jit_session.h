@@ -24,8 +24,8 @@ class JITSession {
  public:
   JITSession(TaichiLLVMContext *tlctx, CompileConfig *config);
 
-  virtual JITModule *add_module(std::unique_ptr<llvm::Module> M,
-                                int max_reg = 0) = 0;
+  virtual JITModule *create_jit_module(std::unique_ptr<llvm::Module> M,
+                                       int max_reg = 0) = 0;
 
   // virtual void remove_module(JITModule *module) = 0;
 

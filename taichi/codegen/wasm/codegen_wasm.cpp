@@ -246,7 +246,7 @@ FunctionType KernelCodeGenWASM::codegen() {
   TI_AUTO_PROF
   TaskCodeGenWASM gen(kernel, ir);
   auto res = gen.run_compilation();
-  gen.tlctx->add_module(std::move(res.module));
+  gen.tlctx->create_jit_module(std::move(res.module));
   auto kernel_symbol = gen.tlctx->lookup_function_pointer(res.tasks[0].name);
   return [=](RuntimeContext &context) {
     TI_TRACE("Launching Taichi Kernel Function");

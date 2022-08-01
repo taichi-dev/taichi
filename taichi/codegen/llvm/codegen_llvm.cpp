@@ -304,11 +304,11 @@ void TaskCodeGenLLVM::emit_struct_meta_base(const std::string &name,
   // snodes, even if they have the same type.
   if (snode->parent)
     common.set("from_parent_element",
-               get_runtime_function(snode->get_ch_from_parent_func_name()));
+               get_struct_function(snode->get_ch_from_parent_func_name()));
 
   if (snode->type != SNodeType::place)
     common.set("refine_coordinates",
-               get_runtime_function(snode->refine_coordinates_func_name()));
+               get_struct_function(snode->refine_coordinates_func_name()));
 }
 
 TaskCodeGenLLVM::TaskCodeGenLLVM(Kernel *kernel,
@@ -316,9 +316,11 @@ TaskCodeGenLLVM::TaskCodeGenLLVM(Kernel *kernel,
                                  std::unique_ptr<llvm::Module> &&module)
     // TODO: simplify LLVMModuleBuilder ctor input
     : LLVMModuleBuilder(
-          module == nullptr ? get_llvm_program(kernel->program)
-                                  ->get_llvm_context(kernel->arch)
-                                  ->clone_struct_module()
+          module == nullptr ? std::make_unique<llvm::Module>(
+                                  "kernel",
+                                  *get_llvm_program(kernel->program)
+                                       ->get_llvm_context(kernel->arch)
+                                       ->get_this_thread_context())
                             : std::move(module),
           get_llvm_program(kernel->program)->get_llvm_context(kernel->arch)),
       kernel(kernel),
@@ -1974,7 +1976,7 @@ void TaskCodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt,
         create_entry_block_alloca(physical_coordinate_ty);
 
     auto refine =
-        get_runtime_function(leaf_block->refine_coordinates_func_name());
+        get_struct_function(leaf_block->refine_coordinates_func_name());
     // A block corner is the global coordinate/index of the lower-left corner
     // cell within that block, and is the same for all the cells within that
     // block.
@@ -2053,8 +2055,7 @@ void TaskCodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt,
     // needed to make final coordinates non-consecutive, since each thread will
     // process multiple coordinates via vectorization
     if (stmt->is_bit_vectorized) {
-      refine =
-          get_runtime_function(stmt->snode->refine_coordinates_func_name());
+      refine = get_struct_function(stmt->snode->refine_coordinates_func_name());
       create_call(refine,
                   {new_coordinates, new_coordinates, tlctx->get_constant(0)});
     }

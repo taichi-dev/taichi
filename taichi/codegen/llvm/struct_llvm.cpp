@@ -293,7 +293,7 @@ void StructCompilerLLVM::run(SNode &root) {
   auto node_type = get_llvm_node_type(module.get(), &root);
   root_size = tlctx_->get_type_size(node_type);
 
-  tlctx_->set_struct_module(module);
+  tlctx_->set_struct_module(std::move(module));
 }
 
 llvm::Type *StructCompilerLLVM::get_stub(llvm::Module *module,

@@ -76,7 +76,7 @@ class InvokeRefineCoordinatesBuilder : public LLVMModuleBuilder {
                                 builder.get()};
     parent_coords.set("val", index0, parent_coords_first_component);
     auto *refine_fn =
-        get_runtime_function(snode->refine_coordinates_func_name());
+        get_struct_function(snode->refine_coordinates_func_name());
     RuntimeObject child_coords{kLLVMPhysicalCoordinatesName, this,
                                builder.get()};
     builder->CreateCall(refine_fn,

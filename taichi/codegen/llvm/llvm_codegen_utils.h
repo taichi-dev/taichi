@@ -73,7 +73,7 @@ class LLVMModuleBuilder {
 #ifdef TI_LLVM_15
       alloca->setAlignment(llvm::Align(alignment));
 #else
-      alloca->setAlignment(llvm::MaybeAlign(alignment));
+      alloca->setAlignment(llvm::Align(alignment));
 #endif
     }
     return alloca;
@@ -87,35 +87,32 @@ class LLVMModuleBuilder {
   }
 
   llvm::Type *get_runtime_type(const std::string &name) {
-#ifdef TI_LLVM_15
-    auto ty = llvm::StructType::getTypeByName(module->getContext(),
-                                              ("struct." + name));
-#else
-    auto ty = module->getTypeByName("struct." + name);
-#endif
-    if (!ty) {
-      TI_ERROR("LLVMRuntime type {} not found.", name);
-    }
-    return ty;
+    return tlctx->get_runtime_type(name);
   }
 
   llvm::Function *get_runtime_function(const std::string &name) {
-    auto f = module->getFunction(name);
+    auto f = tlctx->get_runtime_function(name);
     if (!f) {
       TI_ERROR("LLVMRuntime function {} not found.", name);
     }
-#ifdef TI_LLVM_15
-    f->removeFnAttr(llvm::Attribute::OptimizeNone);
-    f->removeFnAttr(llvm::Attribute::NoInline);
-    f->addFnAttr(llvm::Attribute::AlwaysInline);
-#else
-    f->removeAttribute(llvm::AttributeList::FunctionIndex,
-                       llvm::Attribute::OptimizeNone);
-    f->removeAttribute(llvm::AttributeList::FunctionIndex,
-                       llvm::Attribute::NoInline);
-    f->addAttribute(llvm::AttributeList::FunctionIndex,
-                    llvm::Attribute::AlwaysInline);
-#endif
+    f = llvm::cast<llvm::Function>(
+        module
+            ->getOrInsertFunction(name, f->getFunctionType(),
+                                  f->getAttributes())
+            .getCallee());
+    return f;
+  }
+
+  llvm::Function *get_struct_function(const std::string &name) {
+    auto f = tlctx->get_struct_function(name);
+    if (!f) {
+      TI_ERROR("Struct function {} not found.", name);
+    }
+    f = llvm::cast<llvm::Function>(
+        module
+            ->getOrInsertFunction(name, f->getFunctionType(),
+                                  f->getAttributes())
+            .getCallee());
     return f;
   }
 
@@ -134,6 +131,15 @@ class LLVMModuleBuilder {
                     const std::string &func_name,
                     Args &&...args) {
     auto func = get_runtime_function(func_name);
+    auto arglist = std::vector<llvm::Value *>({args...});
+    check_func_call_signature(func->getFunctionType(), func->getName(), arglist,
+                              builder);
+    return builder->CreateCall(func, arglist);
+  }
+
+  template <typename... Args>
+  llvm::Value *call_struct_func(const std::string &func_name, Args &&...args) {
+    auto func = get_struct_function(func_name);
     auto arglist = std::vector<llvm::Value *>({args...});
     check_func_call_signature(func->getFunctionType(), func->getName(), arglist,
                               builder);

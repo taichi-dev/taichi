@@ -6,6 +6,9 @@
 #include "taichi/inc/constants.h"
 #include "taichi/util/lang_util.h"
 #include "taichi/program/kernel_profiler.h"
+#ifdef TI_WITH_LLVM
+#include "taichi/runtime/llvm/llvm_fwd.h"
+#endif
 
 TLANG_NAMESPACE_BEGIN
 
@@ -23,7 +26,9 @@ class JITModule {
   // For example, a CPU function, or a serial GPU function
   // This function returns a function pointer
   virtual void *lookup_function(const std::string &name) = 0;
-
+#ifdef TI_WITH_LLVM
+  virtual void add_module(std::unique_ptr<llvm::Module> module) {TI_NOT_IMPLEMENTED};
+#endif
   // Unfortunately, this can't be virtual since it's a template function
   template <typename... Args>
   std::function<void(Args...)> get_function(const std::string &name) {

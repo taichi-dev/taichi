@@ -520,16 +520,26 @@ void TaichiLLVMContext::set_struct_module(
     TI_ERROR("module broken");
   }
   // TODO: Move this after ``if (!arch_is_cpu(arch))``.
-  llvm::Linker::linkModules(*this_thread_data->struct_module,
-                            std::move(module));
+  if (this_thread_data->struct_module) {
+    llvm::Linker::linkModules(*this_thread_data->struct_module,
+                              std::move(module));
+  } else {
+    this_thread_data->struct_module = std::move(module);
+  }
+
   for (auto &[id, data] : per_thread_data_) {
     if (id == std::this_thread::get_id()) {
       continue;
     }
-    llvm::Linker::linkModules(
-        *data->struct_module,
-        clone_module_to_context(this_thread_data->struct_module.get(),
-                                data->llvm_context));
+    if (data->struct_module) {
+      llvm::Linker::linkModules(
+          *data->struct_module,
+          clone_module_to_context(this_thread_data->struct_module.get(),
+                                  data->llvm_context));
+    } else {
+      data->struct_module = clone_module_to_context(this_thread_data->struct_module.get(),
+                                                    data->llvm_context);
+    }
   }
 }
 template <typename T>
@@ -721,18 +731,19 @@ void TaichiLLVMContext::eliminate_unused_functions(
 }
 
 TaichiLLVMContext::ThreadLocalData *TaichiLLVMContext::get_this_thread_data() {
-  std::lock_guard<std::mutex> _(thread_map_mut_);
   auto tid = std::this_thread::get_id();
-  if (per_thread_data_.find(tid) == per_thread_data_.end()) {
-    std::stringstream ss;
-    ss << tid;
-    TI_TRACE("Creating thread local data for thread {}", ss.str());
-    per_thread_data_[tid] = std::make_unique<ThreadLocalData>(
-        std::make_unique<llvm::orc::ThreadSafeContext>(
-            std::make_unique<llvm::LLVMContext>()));
-    per_thread_data_[tid]->runtime_module =
-        module_from_file(get_runtime_fn(arch_));
+  {
+    std::lock_guard<std::mutex> _(thread_map_mut_);
+    if (per_thread_data_.find(tid) == per_thread_data_.end()) {
+      std::stringstream ss;
+      ss << tid;
+      TI_TRACE("Creating thread local data for thread {}", ss.str());
+      per_thread_data_[tid] = std::make_unique<ThreadLocalData>(
+          std::make_unique<llvm::orc::ThreadSafeContext>(
+              std::make_unique<llvm::LLVMContext>()));
+    }
   }
+
   return per_thread_data_[tid].get();
 }
 

@@ -217,12 +217,11 @@ def test_multiple_types():
 
 @test_utils.test()
 def test_invalid_place():
+    f15 = ti.types.quant.float(exp=5, frac=10)
+    p = ti.field(dtype=f15)
+    bitpack = ti.BitpackedFields(max_num_bits=32)
     with pytest.raises(
             ti.TaichiCompilationError,
             match=
             'At least 2 fields need to be placed when shared_exponent=True'):
-        f15 = ti.types.quant.float(exp=5, frac=10)
-        p = ti.field(dtype=f15)
-        bitpack = ti.BitpackedFields(max_num_bits=32)
         bitpack.place(p, shared_exponent=True)
-        ti.root.dense(ti.i, 12).place(bitpack)

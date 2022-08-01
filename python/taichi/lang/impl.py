@@ -24,7 +24,8 @@ from taichi.lang.snode import SNode
 from taichi.lang.struct import Struct, StructField, _IntermediateStruct
 from taichi.lang.util import (cook_dtype, get_traceback, is_taichi_class,
                               python_scope, taichi_scope, warning)
-from taichi.types.primitive_types import all_types, f16, f32, f64, i32, i64
+from taichi.types.primitive_types import (all_types, f16, f32, f64, i32, i64,
+                                          u32, u64)
 
 
 @taichi_scope
@@ -242,6 +243,7 @@ class PyTaichi:
         self.matrix_fields = []
         self.default_fp = f32
         self.default_ip = i32
+        self.default_up = u32
         self.target_tape = None
         self.fwd_mode_manager = None
         self.grad_replaced = False
@@ -265,7 +267,9 @@ class PyTaichi:
     def set_default_ip(self, ip):
         assert ip in [i32, i64]
         self.default_ip = ip
+        self.default_up = u32 if ip == i32 else u64
         default_cfg().default_ip = self.default_ip
+        default_cfg().default_up = self.default_up
 
     def create_program(self):
         if self.prog is None:

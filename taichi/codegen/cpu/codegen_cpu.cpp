@@ -1,4 +1,5 @@
 #include "taichi/codegen/cpu/codegen_cpu.h"
+#include "llvm/Linker/Linker.h"
 
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
 #include "taichi/common/core.h"
@@ -236,7 +237,7 @@ FunctionType CPUModuleToFunctionConverter::convert(
     const std::vector<LlvmLaunchArgInfo> &args,
     std::vector<LLVMCompiledData> &&data) const {
   auto *jit_module = tlctx_->create_jit_module(tlctx_->clone_runtime_module());
-//  jit_module->add_module(tlctx_->clone_struct_module());
+  jit_module->add_module(tlctx_->clone_struct_module());
   for (auto &datum : data) {
     jit_module->add_module(std::move(datum.module));
   }

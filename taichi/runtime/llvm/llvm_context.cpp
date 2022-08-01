@@ -293,7 +293,6 @@ void TaichiLLVMContext::init_runtime_jit_module() {
 
 std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
   TI_AUTO_PROF
-  TI_ASSERT(std::this_thread::get_id() == main_thread_id_);
   auto *mod = get_this_thread_runtime_module();
 
   std::unique_ptr<llvm::Module> cloned;
@@ -762,7 +761,10 @@ TaichiLLVMContext::get_this_thread_thread_safe_context() {
 
 llvm::Module *TaichiLLVMContext::get_this_thread_struct_module() {
   ThreadLocalData *data = get_this_thread_data();
-  TI_ASSERT(data->struct_module);
+  if (!data->struct_module) {
+    data->struct_module = clone_module_to_this_thread_context(
+        main_thread_data_->struct_module.get());
+  }
   return data->struct_module.get();
 }
 
@@ -876,6 +878,11 @@ llvm::Type *TaichiLLVMContext::get_runtime_type(const std::string &name) {
     TI_ERROR("LLVMRuntime type {} not found.", name);
   }
   return ty;
+}
+std::unique_ptr<llvm::Module> TaichiLLVMContext::new_module(std::string name) {
+  auto new_mod = std::make_unique<llvm::Module>(name, *get_this_thread_context());
+  new_mod->setDataLayout(get_this_thread_runtime_module()->getDataLayout());
+  return new_mod;
 }
 
 TaichiLLVMContext::ThreadLocalData::~ThreadLocalData() {

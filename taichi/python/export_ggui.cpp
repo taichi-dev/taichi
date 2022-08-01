@@ -176,7 +176,7 @@ struct PyScene {
             float draw_first_index,
             float draw_vertex_count,
             float draw_first_vertex,
-            int display_mode) {
+            taichi::lang::PolygonMode display_mode) {
     RenderableInfo renderable_info;
     renderable_info.vbo = vbo;
     renderable_info.has_per_vertex_color = has_per_vertex_color;
@@ -186,7 +186,7 @@ struct PyScene {
     renderable_info.draw_first_index = (int)draw_first_index;
     renderable_info.draw_vertex_count = (int)draw_vertex_count;
     renderable_info.draw_first_vertex = (int)draw_first_vertex;
-    renderable_info.display_mode = taichi::lang::PolygonMode(display_mode);
+    renderable_info.display_mode = display_mode;
 
     MeshInfo info;
     info.renderable_info = renderable_info;
@@ -228,7 +228,7 @@ struct PyScene {
                      float draw_first_index,
                      float draw_vertex_count,
                      float draw_first_vertex,
-                     int display_mode) {
+                     taichi::lang::PolygonMode display_mode) {
     RenderableInfo renderable_info;
     renderable_info.vbo = vbo;
     renderable_info.has_per_vertex_color = has_per_vertex_color;
@@ -238,7 +238,7 @@ struct PyScene {
     renderable_info.draw_first_index = (int)draw_first_index;
     renderable_info.draw_vertex_count = (int)draw_vertex_count;
     renderable_info.draw_first_vertex = (int)draw_first_vertex;
-    renderable_info.display_mode = taichi::lang::PolygonMode(display_mode);
+    renderable_info.display_mode = display_mode;
 
     MeshInfo info;
     info.renderable_info = renderable_info;
@@ -570,6 +570,12 @@ void export_ggui(py::module &m) {
   py::enum_<ProjectionMode>(m, "ProjectionMode")
       .value("Perspective", ProjectionMode::Perspective)
       .value("Orthogonal", ProjectionMode::Orthogonal)
+      .export_values();
+  
+  py::enum_<taichi::lang::PolygonMode>(m, "DisplayMode", py::arithmetic())
+      .value("Fill", taichi::lang::PolygonMode::Fill)
+      .value("Line", taichi::lang::PolygonMode::Line)
+      .value("Point", taichi::lang::PolygonMode::Point)
       .export_values();
 }
 

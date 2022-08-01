@@ -12,6 +12,22 @@ from .utils import check_ggui_availability, get_field_info
 
 normals_field_cache = {}
 
+class DisplayMode_:
+    Fill = _ti_core.DisplayMode.Fill
+    Line = _ti_core.DisplayMode.Line
+    Point = _ti_core.DisplayMode.Point
+    @staticmethod
+    def __call__(mode : int):
+        if mode == 0:
+            return DisplayMode_.Fill
+        elif mode == 1:
+            return DisplayMode_.Line
+        elif mode == 2:
+            return DisplayMode_.Point
+        else:
+            raise Exception("Error!Only support 3 kinds of DisplayMode(0:Fill, 1:Line, 2:Point)")
+
+DisplayMode = DisplayMode_()
 
 def get_normals_field(vertices):
     if vertices not in normals_field_cache:
@@ -171,7 +187,7 @@ class Scene:
              vertex_count: int = None,
              index_offset: int = 0,
              index_count: int = None,
-             display_mode: int = 0):
+             display_mode = DisplayMode.Fill):
         """Declare a mesh inside the scene.
 
         if you indicate the index_offset and index_count, the normals will also
@@ -206,9 +222,9 @@ class Scene:
             index_count (int, optional):
                 only available when `indices` is provided, which is the the number
                 of vertices to draw.
-            display_mode (int, optional):
-                there are 3 types of diplay mode, 0 equals Fill mode(Fill colors to all triagnles)
-                1 equals Line mode(WareFrame), 2 equals Point mode.
+            display_mode (Enum of DisplayMode, optional):
+                there are 3 types of diplay mode, Fill mode(Fill colors to all triagnles)
+                Line mode(WareFrame), Point mode.
         """
         vbo = get_vbo_field(vertices)
         copy_vertices_to_vbo(vbo, vertices)
@@ -224,9 +240,6 @@ class Scene:
                 index_count = vertex_count  # FIXME : Need to confirm
             else:
                 index_count = indices.shape[0]
-        if display_mode < 0 or display_mode >= 3:
-            print("Error! display_mode must be 0(Fill), 1(Line), 2(Point)")
-            exit()
         copy_normals_to_vbo(vbo, normals)
         vbo_info = get_field_info(vbo)
         indices_info = get_field_info(indices)
@@ -248,7 +261,7 @@ class Scene:
                       vertex_count: int = None,
                       index_offset: int = 0,
                       index_count: int = None,
-                      display_mode: int = 0):
+                      display_mode = DisplayMode.Fill):
         """Declare lots of mesh instances inside the scene.
 
         If transforms is given, then according to the shape of transforms, we will
@@ -291,9 +304,9 @@ class Scene:
             index_count (int, optional):
                 only available when `indices` is provided, which is the the number
                 of vertices to draw.
-            display_mode (int, optional):
-                there are 3 types of diplay mode, 0 equals Fill mode(Fill colors to all triagnles)
-                1 equals Line mode(WareFrame), 2 equals Point mode.
+            display_mode (Enum of DisplayMode, optional):
+                there are 3 types of diplay mode, Fill mode(Fill colors to all triagnles)
+                Line mode(WareFrame), Point mode.
         """
         vbo = get_vbo_field(vertices)
         copy_vertices_to_vbo(vbo, vertices)
@@ -310,11 +323,7 @@ class Scene:
             else:
                 index_count = indices.shape[0]
         if transforms and (transforms.m != 4 or transforms.n != 4):
-            print("Error! Transform matrix must be 4x4 shape")
-            exit()
-        if display_mode < 0 or display_mode >= 3:
-            print("Error! display_mode must be 0(Fill), 1(Line), 2(Point)")
-            exit()
+            raise Exception("Error! Transform matrix must be 4x4 shape")
         copy_normals_to_vbo(vbo, normals)
         vbo_info = get_field_info(vbo)
         indices_info = get_field_info(indices)

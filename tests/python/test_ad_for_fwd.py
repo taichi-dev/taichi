@@ -367,7 +367,7 @@ def test_mixed_inner_loops():
                 loss[None] += ti.sin(x[None]) + 1.0
 
     x[None] = 0.0
-    with ti.ad.FwdMode(loss=loss, parameters=x):
+    with ti.ad.FwdMode(loss=loss, param=x):
         mixed_inner_loops()
 
     assert loss[None] == 10.0
@@ -392,7 +392,7 @@ def test_inner_loops_local_variable():
                 loss[None] += s + t
 
     x[None] = 0.0
-    with ti.ad.FwdMode(loss=loss, parameters=x):
+    with ti.ad.FwdMode(loss=loss, param=x):
         inner_loops_local_variable()
 
     assert loss[None] == 18.0
@@ -419,7 +419,7 @@ def test_more_inner_loops_local_variable():
                 loss[None] += s
 
     x[None] = 0.0
-    with ti.ad.FwdMode(loss=loss, parameters=x):
+    with ti.ad.FwdMode(loss=loss, param=x):
         more_inner_loops_local_variable()
 
     assert loss[None] == 12.0
@@ -448,7 +448,7 @@ def test_stacked_inner_loops_local_variable():
                 loss[None] += s
 
     x[None] = 0.0
-    with ti.ad.FwdMode(loss=loss, parameters=x):
+    with ti.ad.FwdMode(loss=loss, param=x):
         stacked_inner_loops_local_variable()
 
     assert loss[None] == 36.0
@@ -478,7 +478,7 @@ def test_stacked_mixed_ib_and_non_ib_inner_loops_local_variable():
                     loss[None] += ti.sin(x[None]) + 1.0
 
     x[None] = 0.0
-    with ti.ad.FwdMode(loss=loss, parameters=x):
+    with ti.ad.FwdMode(loss=loss, param=x):
         stacked_mixed_ib_and_non_ib_inner_loops_local_variable()
 
     assert loss[None] == 54.0
@@ -498,7 +498,7 @@ def test_large_for_loops_adaptive_stack_size():
                 for k in range(1000):
                     loss[None] += ti.sin(x[None]) + 1.0
 
-    with ti.ad.FwdMode(loss=loss, parameters=x):
+    with ti.ad.FwdMode(loss=loss, param=x):
         test_large_loop()
 
     assert loss[None] == 1e7
@@ -519,7 +519,7 @@ def test_multiple_ib():
                 y[None] += x[None]
 
     x[None] = 1.0
-    with ti.ad.FwdMode(loss=y, parameters=x):
+    with ti.ad.FwdMode(loss=y, param=x):
         compute_y()
 
     assert y[None] == 12.0

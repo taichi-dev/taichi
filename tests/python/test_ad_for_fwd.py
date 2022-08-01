@@ -353,7 +353,8 @@ def test_triple_for_loops_bls():
             assert f.dual[i, k] == 2 * M
 
 
-@test_utils.test(exclude=[ti.cc, ti.opengl])
+# TODO: recover the exclude after the spriv issue #5555 is fixed
+@test_utils.test(exclude=[ti.cc, ti.opengl, ti.vulkan])
 def test_mixed_inner_loops():
     x = ti.field(dtype=ti.f32, shape=(), needs_dual=True)
     arr = ti.field(dtype=ti.f32, shape=(5))
@@ -426,7 +427,8 @@ def test_more_inner_loops_local_variable():
     assert loss.dual[None] == 36.0
 
 
-@test_utils.test(exclude=[ti.cc, ti.opengl])
+# TODO: recover the exclude after the spriv issue #5555 is fixed
+@test_utils.test(exclude=[ti.cc, ti.opengl, ti.vulkan])
 def test_stacked_inner_loops_local_variable():
     x = ti.field(dtype=float, shape=(), needs_dual=True)
     arr = ti.field(dtype=float, shape=(2), needs_dual=True)
@@ -455,7 +457,8 @@ def test_stacked_inner_loops_local_variable():
     assert loss.dual[None] == 38.0
 
 
-@test_utils.test(exclude=[ti.cc, ti.opengl])
+# TODO: recover the exclude after the spriv issue #5555 is fixed
+@test_utils.test(exclude=[ti.cc, ti.opengl, ti.vulkan])
 def test_stacked_mixed_ib_and_non_ib_inner_loops_local_variable():
     x = ti.field(dtype=float, shape=(), needs_dual=True)
     arr = ti.field(dtype=float, shape=(2), needs_dual=True)
@@ -552,7 +555,8 @@ def test_multiple_ib_multiple_outermost():
     assert y.dual[None] == 24.0
 
 
-@test_utils.test(exclude=[ti.cc, ti.opengl])
+# TODO: recover the exclude after the spriv issue #5555 is fixed
+@test_utils.test(exclude=[ti.cc, ti.opengl, ti.vulkan])
 def test_multiple_ib_multiple_outermost_mixed():
     x = ti.field(float, (), needs_dual=True)
     y = ti.field(float, (), needs_dual=True)
@@ -580,7 +584,8 @@ def test_multiple_ib_multiple_outermost_mixed():
     assert y.dual[None] == 42.0
 
 
-@test_utils.test(exclude=[ti.cc, ti.opengl])
+# TODO: recover the exclude after the spriv issue #5555 is fixed
+@test_utils.test(exclude=[ti.cc, ti.opengl, ti.vulkan])
 def test_multiple_ib_mixed():
     x = ti.field(float, (), needs_dual=True)
     y = ti.field(float, (), needs_dual=True)
@@ -658,7 +663,8 @@ def test_multiple_ib_deeper_non_scalar():
         assert y.dual[i] == i * 10.0
 
 
-@test_utils.test(exclude=[ti.cc, ti.opengl])
+# TODO: recover the exclude after the spriv issue #5555 is fixed
+@test_utils.test(exclude=[ti.cc, ti.opengl, ti.vulkan])
 def test_multiple_ib_inner_mixed():
     x = ti.field(float, (), needs_dual=True)
     y = ti.field(float, (), needs_dual=True)

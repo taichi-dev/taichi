@@ -226,7 +226,7 @@ Add an environment variable `LLVM_DIR` with value `<Path to the extracted LLVM b
 ````
 
 <details>
-<summary><font color="#006284"><h4>Build LLVM 10.0.0 from source</h4></font></summary>
+<summary><font color="#006284">Build LLVM 10.0.0 from source</font></summary>
 
 We provide instructions here if you need to build LLVM 10.0.0 from source.
 
@@ -301,7 +301,7 @@ cmake --build . --target=INSTALL --config=Release
 This section provides instructions on installing these two optional dependencies.
 
 <details>
-<summary><font color="#006284"><h3>Install CUDA</h3></font></summary>
+<summary><font color="#006284">Install CUDA</font></summary>
 
 This section works for you if you have a Nvidia GPU supporting CUDA. Note that the required CUDA version is 10.0+.
 
@@ -361,7 +361,7 @@ import TabItem from '@theme/TabItem';
 </details>
 
 <details>
-<summary><font color="#006284"><h3>Install Vulkan</h3></font></summary>
+<summary><font color="#006284">Install Vulkan</font></summary>
 
 You must install the Vulkan SDK in order to debug Taichi's Vulkan backend. To proceed:
 

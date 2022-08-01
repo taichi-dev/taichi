@@ -198,14 +198,15 @@ class TaskCodegen : public IRVisitor {
     if (alloca->ret_type->is<TensorType>()) {
       // Alloca for shared memory / workgroup memory
       if (!alloca->is_shared) {
-        TI_ERROR("Tensor type for dyanmic index is not yet supported on Vulkan.");
+        TI_ERROR(
+            "Tensor type for dyanmic index is not yet supported on Vulkan.");
       }
       auto tensor_type = alloca->ret_type->cast<TensorType>();
       auto elem_num = tensor_type->get_num_elements();
-      spirv::SType elem_type = ir_->get_primitive_type(tensor_type->get_element_type());
+      spirv::SType elem_type =
+          ir_->get_primitive_type(tensor_type->get_element_type());
 
       spirv::SType arr_type = ir_->get_array_type(elem_type, elem_num);
-      // spirv::Value ptr_val = ir_->alloca_variable(arr_type, spv::StorageClassWorkgroup);
       spirv::Value ptr_val = ir_->alloca_workgroup_array(arr_type);
       ir_->register_value(alloca->raw_name(), ptr_val);
     } else {
@@ -218,11 +219,14 @@ class TaskCodegen : public IRVisitor {
   }
 
   void visit(PtrOffsetStmt *stmt) override {
-    spirv::SType data_type = ir_->get_primitive_type(stmt->element_type().ptr_removed());
-    spirv::SType ptr_type = ir_->get_pointer_type(data_type, spv::StorageClassWorkgroup);
+    spirv::SType data_type =
+        ir_->get_primitive_type(stmt->element_type().ptr_removed());
+    spirv::SType ptr_type =
+        ir_->get_pointer_type(data_type, spv::StorageClassWorkgroup);
     auto origin_val = ir_->query_value(stmt->origin->raw_name());
     auto offset_val = ir_->query_value(stmt->offset->raw_name());
-    Value offset_ptr = ir_->make_value(spv::OpAccessChain, ptr_type, origin_val, offset_val);
+    Value offset_ptr =
+        ir_->make_value(spv::OpAccessChain, ptr_type, origin_val, offset_val);
     ir_->register_value(stmt->raw_name(), offset_ptr);
   }
 
@@ -1104,7 +1108,9 @@ class TaskCodegen : public IRVisitor {
           spv::OpControlBarrier,
           ir_->int_immediate_number(ir_->i32_type(), spv::ScopeWorkgroup),
           ir_->int_immediate_number(ir_->i32_type(), spv::ScopeWorkgroup),
-          ir_->int_immediate_number(ir_->i32_type(), spv::MemorySemanticsWorkgroupMemoryMask | spv::MemorySemanticsAcquireReleaseMask | spv::MemorySemanticsSequentiallyConsistentMask));
+          ir_->int_immediate_number(
+              ir_->i32_type(), spv::MemorySemanticsWorkgroupMemoryMask |
+                                   spv::MemorySemanticsAcquireReleaseMask));
       val = ir_->const_i32_zero_;
     } else if (stmt->func_name == "localInvocationId") {
       val = ir_->cast(ir_->i32_type(), ir_->get_local_invocation_id(0));
@@ -1114,7 +1120,9 @@ class TaskCodegen : public IRVisitor {
       ir_->make_inst(
           spv::OpMemoryBarrier,
           ir_->int_immediate_number(ir_->i32_type(), spv::ScopeWorkgroup),
-          ir_->int_immediate_number(ir_->i32_type(), spv::MemorySemanticsWorkgroupMemoryMask | spv::MemorySemanticsAcquireReleaseMask));
+          ir_->int_immediate_number(
+              ir_->i32_type(), spv::MemorySemanticsWorkgroupMemoryMask |
+                                   spv::MemorySemanticsAcquireReleaseMask));
       val = ir_->const_i32_zero_;
     } else if (stmt->func_name == "subgroupElect") {
       val = ir_->make_value(
@@ -2349,7 +2357,7 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
              task_res.spirv_code.size(), optimized_spv.size());
 
     // Enable to dump SPIR-V assembly of kernels
-#if 1
+#if 0
     std::string spirv_asm;
     spirv_tools_->Disassemble(optimized_spv, &spirv_asm);
     auto kernel_name = tp.ti_kernel_name;

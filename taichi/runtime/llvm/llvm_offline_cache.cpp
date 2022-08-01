@@ -374,7 +374,7 @@ void LlvmOfflineCacheFileWriter::clean_cache(const std::string &path,
       for (const auto &[k, v] : cache_data.kernels) {
         for (int i = 0; i < v.compiled_data_list.size(); i++) {
           for (const auto &f : get_possible_llvm_cache_filename_by_key(
-                  v.kernel_key + "." + std::to_string(i))) {
+                   v.kernel_key + "." + std::to_string(i))) {
             taichi::remove(taichi::join_path(path, f));
           }
         }
@@ -439,7 +439,7 @@ void LlvmOfflineCacheFileWriter::clean_cache(const std::string &path,
       ok_rm_meta = taichi::remove(get_llvm_cache_metadata_file_path(path));
       taichi::remove(  // debugging file
           get_llvm_cache_metadata_json_file_path(path));
-    } else { // Update
+    } else {  // Update
       std::string target_path = get_llvm_cache_metadata_file_path(path);
       write_to_binary_file(cache_data, target_path);
       ok_rm_meta = true;

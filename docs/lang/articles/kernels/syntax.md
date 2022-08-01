@@ -149,7 +149,7 @@ def error_multiple_return() -> (ti.i32, ti.f32):
 
 ```python
 @ti.kernel
-def test_sign(x):
+def test_sign(x: float) -> float:
     if x >= 0:
         return 1.0
     else:
@@ -161,7 +161,7 @@ As a workaround, you can save the result in a local variable and return it at th
 
 ```python
 @ti.kernel
-def test_sign(x):
+def test_sign(x: float) -> float:
     sign = 1.0
     if x < 0:
         sign = -1.0

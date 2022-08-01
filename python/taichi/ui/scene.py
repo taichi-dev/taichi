@@ -12,12 +12,14 @@ from .utils import check_ggui_availability, get_field_info
 
 normals_field_cache = {}
 
+
 class DisplayMode_:
     Fill = _ti_core.DisplayMode.Fill
     Line = _ti_core.DisplayMode.Line
     Point = _ti_core.DisplayMode.Point
+
     @staticmethod
-    def __call__(mode : int):
+    def __call__(mode: int):
         if mode == 0:
             return DisplayMode_.Fill
         elif mode == 1:
@@ -25,9 +27,13 @@ class DisplayMode_:
         elif mode == 2:
             return DisplayMode_.Point
         else:
-            raise Exception("Error!Only support 3 kinds of DisplayMode(0:Fill, 1:Line, 2:Point)")
+            raise Exception(
+                "Error!Only support 3 kinds of DisplayMode(0:Fill, 1:Line, 2:Point)"
+            )
+
 
 DisplayMode = DisplayMode_()
+
 
 def get_normals_field(vertices):
     if vertices not in normals_field_cache:
@@ -187,7 +193,7 @@ class Scene:
              vertex_count: int = None,
              index_offset: int = 0,
              index_count: int = None,
-             display_mode = DisplayMode.Fill):
+             display_mode=DisplayMode.Fill):
         """Declare a mesh inside the scene.
 
         if you indicate the index_offset and index_count, the normals will also
@@ -261,7 +267,7 @@ class Scene:
                       vertex_count: int = None,
                       index_offset: int = 0,
                       index_count: int = None,
-                      display_mode = DisplayMode.Fill):
+                      display_mode=DisplayMode.Fill):
         """Declare lots of mesh instances inside the scene.
 
         If transforms is given, then according to the shape of transforms, we will

@@ -26,9 +26,13 @@ class DisplayMode_:
             return DisplayMode_.Line
         if mode == 2:
             return DisplayMode_.Point
-        raise Exception("Error!Only support 3 kinds of DisplayMode(0:Fill, 1:Line, 2:Point)")
+        raise Exception(
+            "Error!Only support 3 kinds of DisplayMode(0:Fill, 1:Line, 2:Point)"
+        )
+
 
 DisplayMode = DisplayMode_()
+
 
 def get_normals_field(vertices):
     if vertices not in normals_field_cache:

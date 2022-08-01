@@ -103,9 +103,6 @@ static void get_offline_cache_key_of_snode_impl(
   serializer(snode->chunk_size);
   serializer(snode->cell_size_bytes);
   serializer(snode->offset_bytes_in_parent_cell);
-  if (snode->physical_type) {
-    serializer(snode->physical_type->to_string());
-  }
   serializer(snode->dt->to_string());
   serializer(snode->has_ambient);
   if (!snode->ambient_val.dt->is_primitive(PrimitiveTypeID::unknown)) {
@@ -119,22 +116,10 @@ static void get_offline_cache_key_of_snode_impl(
       get_offline_cache_key_of_snode_impl(dual_snode, serializer, visited);
     }
   }
-  if (snode->exp_snode) {
-    get_offline_cache_key_of_snode_impl(snode->exp_snode, serializer, visited);
+  if (snode->physical_type) {
+    serializer(snode->physical_type->to_string());
   }
-  serializer(snode->bit_offset);
-  serializer(snode->placing_shared_exp);
-  serializer(snode->owns_shared_exponent);
-  for (auto s : snode->exponent_users) {
-    get_offline_cache_key_of_snode_impl(s, serializer, visited);
-  }
-  if (snode->currently_placing_exp_snode) {
-    get_offline_cache_key_of_snode_impl(snode->currently_placing_exp_snode,
-                                        serializer, visited);
-  }
-  if (snode->currently_placing_exp_snode_dtype) {
-    serializer(snode->currently_placing_exp_snode_dtype->to_string());
-  }
+  serializer(snode->id_in_bit_struct);
   serializer(snode->is_bit_level);
   serializer(snode->is_path_all_dense);
   serializer(snode->node_type_name);

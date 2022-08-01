@@ -38,7 +38,7 @@ class FieldImpl : public aot::Field {
       : field_(std::move(field)) {
   }
 
-  LlvmOfflineCache::FieldCacheData get_field() const {
+  LlvmOfflineCache::FieldCacheData get_snode_tree_cache() const {
     return field_;
   }
 

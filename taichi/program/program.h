@@ -76,7 +76,6 @@ namespace taichi {
 namespace lang {
 
 class StructCompiler;
-class AsyncEngine;
 
 /**
  * Note [Backend-specific ProgramImpl]
@@ -99,8 +98,6 @@ class TI_DLL_EXPORT Program {
   bool sync{false};  // device/host synchronized?
 
   uint64 *result_buffer{nullptr};  // Note result_buffer is used by all backends
-
-  std::unique_ptr<AsyncEngine> async_engine{nullptr};
 
   std::vector<std::unique_ptr<Kernel>> kernels;
 
@@ -156,10 +153,6 @@ class TI_DLL_EXPORT Program {
 
   StreamSemaphore flush();
 
-  // See AsyncEngine::flush().
-  // Only useful when async mode is enabled.
-  void async_flush();
-
   /**
    * Materializes the runtime.
    */
@@ -193,8 +186,7 @@ class TI_DLL_EXPORT Program {
 
   // TODO: This function is doing two things: 1) compiling CHI IR, and 2)
   // offloading them to each backend. We should probably separate the logic?
-  // TODO: Optional offloaded is used by async mode, we might refactor it in the
-  // future.
+  // TODO(Lin): remove the offloaded parameter
   FunctionType compile(Kernel &kernel, OffloadedStmt *offloaded = nullptr);
 
   std::unique_ptr<aot::Kernel> make_aot_kernel(Kernel &kernel) {

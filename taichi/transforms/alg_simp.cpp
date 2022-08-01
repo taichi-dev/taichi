@@ -169,7 +169,7 @@ class AlgSimp : public BasicStmtVisitor {
     if (fast_math && rhs && is_real(rhs->ret_type) &&
         stmt->op_type != BinaryOpType::floordiv) {
       if (alg_is_zero(rhs)) {
-        TI_WARN("Potential division by 0");
+        TI_WARN("Potential division by 0\n{}", stmt->tb);
       } else {
         // a / const -> a * (1 / const)
         auto reciprocal = Stmt::make_typed<ConstStmt>(

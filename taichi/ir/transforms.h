@@ -34,6 +34,7 @@ bool simplify(IRNode *root, const CompileConfig &config);
 bool cfg_optimization(
     IRNode *root,
     bool after_lower_access,
+    bool autodiff_enabled,
     const std::optional<ControlFlowGraph::LiveVarAnalysisConfig>
         &lva_config_opt = std::nullopt);
 bool alg_simp(IRNode *root, const CompileConfig &config);
@@ -143,7 +144,8 @@ std::unordered_map<int, ExternalPtrAccess> detect_external_ptr_access_in_task(
 // compile_to_offloads does the basic compilation to create all the offloaded
 // tasks of a Taichi kernel. It's worth pointing out that this doesn't demote
 // dense struct fors. This is a necessary workaround to prevent the async
-// engine from fusing incompatible offloaded tasks.
+// engine from fusing incompatible offloaded tasks. TODO(Lin): check this
+// comment
 void compile_to_offloads(IRNode *ir,
                          const CompileConfig &config,
                          Kernel *kernel,

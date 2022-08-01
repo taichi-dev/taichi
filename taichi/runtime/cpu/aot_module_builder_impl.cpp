@@ -10,7 +10,7 @@ namespace lang {
 namespace cpu {
 
 LLVMCompiledData AotModuleBuilderImpl::compile_kernel(Kernel *kernel) {
-  auto cgen = CodeGenCPU::make_codegen_llvm(kernel, /*ir=*/nullptr);
+  auto cgen = KernelCodeGenCPU::make_codegen_llvm(kernel, /*ir=*/nullptr);
   return cgen->run_compilation();
 }
 

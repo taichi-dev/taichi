@@ -6,7 +6,6 @@
 #include "taichi/common/task.h"
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
-#include "taichi/program/async_engine.h"
 #include "taichi/program/extension.h"
 #include "taichi/program/program.h"
 #include "taichi/util/action_recorder.h"
@@ -110,33 +109,23 @@ void Kernel::lower(bool to_executable) {
 }
 
 void Kernel::operator()(LaunchContextBuilder &ctx_builder) {
-  if (!program->config.async_mode || this->is_evaluator) {
-    if (!compiled_) {
-      compile();
-    }
+  if (!compiled_) {
+    compile();
+  }
 
-    if (!this->from_offline_cache_) {
-      for (auto &offloaded : ir->as<Block>()->statements) {
-        account_for_offloaded(offloaded->as<OffloadedStmt>());
-      }
+  if (!this->from_offline_cache_) {
+    for (auto &offloaded : ir->as<Block>()->statements) {
+      account_for_offloaded(offloaded->as<OffloadedStmt>());
     }
+  }
 
-    compiled_(ctx_builder.get_context());
+  compiled_(ctx_builder.get_context());
 
-    program->sync = (program->sync && arch_is_cpu(arch));
-    // Note that Kernel::arch may be different from program.config.arch
-    if (program->config.debug && (arch_is_cpu(program->config.arch) ||
-                                  program->config.arch == Arch::cuda)) {
-      program->check_runtime_error();
-    }
-  } else {
-    program->sync = false;
-    program->async_engine->launch(this, ctx_builder.get_context());
-    // Note that Kernel::arch may be different from program.config.arch
-    if (program->config.debug && arch_is_cpu(arch) &&
-        arch_is_cpu(program->config.arch)) {
-      program->check_runtime_error();
-    }
+  program->sync = (program->sync && arch_is_cpu(arch));
+  // Note that Kernel::arch may be different from program.config.arch
+  if (program->config.debug && (arch_is_cpu(program->config.arch) ||
+                                program->config.arch == Arch::cuda)) {
+    program->check_runtime_error();
   }
 }
 
@@ -231,11 +220,11 @@ void Kernel::LaunchContextBuilder::set_extra_arg_int(int i, int j, int32 d) {
   ctx_->extra_args[i][j] = d;
 }
 
-void Kernel::LaunchContextBuilder::set_arg_external_array(
+void Kernel::LaunchContextBuilder::set_arg_external_array_with_shape(
     int arg_id,
     uintptr_t ptr,
     uint64 size,
-    bool is_device_allocation) {
+    const std::vector<int64> &shape) {
   TI_ASSERT_INFO(
       kernel_->args[arg_id].is_array,
       "Assigning external (numpy) array to scalar argument is not allowed.");
@@ -246,38 +235,17 @@ void Kernel::LaunchContextBuilder::set_arg_external_array(
        ActionArg("address", fmt::format("0x{:x}", ptr)),
        ActionArg("array_size_in_bytes", (int64)size)});
 
-  ctx_->set_arg(arg_id, ptr);
-  ctx_->set_array_runtime_size(arg_id, size);
-  ctx_->set_array_device_allocation_type(
-      arg_id, is_device_allocation ? RuntimeContext::DevAllocType::kNdarray
-                                   : RuntimeContext::DevAllocType::kNone);
-}
-
-void Kernel::LaunchContextBuilder::set_arg_external_array_with_shape(
-    int arg_id,
-    uintptr_t ptr,
-    uint64 size,
-    const std::vector<int64> &shape) {
-  this->set_arg_external_array(arg_id, ptr, size,
-                               /*is_device_allocation=*/false);
   TI_ASSERT_INFO(shape.size() <= taichi_max_num_indices,
                  "External array cannot have > {max_num_indices} indices");
-  for (uint64 i = 0; i < shape.size(); ++i) {
-    this->set_extra_arg_int(arg_id, i, shape[i]);
-  }
+  ctx_->set_arg_external_array(arg_id, ptr, size, shape);
 }
 
 void Kernel::LaunchContextBuilder::set_arg_ndarray(int arg_id,
                                                    const Ndarray &arr) {
   intptr_t ptr = arr.get_device_allocation_ptr_as_int();
-  uint64 arr_size = arr.get_element_size() * arr.get_nelement();
-  this->set_arg_external_array(arg_id, ptr, arr_size,
-                               /*is_device_allocation=*/true);
   TI_ASSERT_INFO(arr.shape.size() <= taichi_max_num_indices,
                  "External array cannot have > {max_num_indices} indices");
-  for (uint64 i = 0; i < arr.shape.size(); ++i) {
-    this->set_extra_arg_int(arg_id, i, arr.shape[i]);
-  }
+  ctx_->set_arg_ndarray(arg_id, ptr, arr.shape);
 }
 
 void Kernel::LaunchContextBuilder::set_arg_texture(int arg_id,

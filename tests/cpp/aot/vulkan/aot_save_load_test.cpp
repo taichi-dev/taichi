@@ -210,7 +210,7 @@ TEST(AotSaveLoad, Vulkan) {
   vulkan_runtime->synchronize();
 
   // Retrieve data
-  auto x_field = vk_module->get_field("place");
+  auto x_field = vk_module->get_snode_tree("place");
   EXPECT_NE(x_field, nullptr);
 }
 
@@ -272,7 +272,8 @@ TEST(AotSaveLoad, VulkanNdarray) {
   DeviceAllocation devalloc_arr_ =
       embedded_device->device()->allocate_memory(alloc_params);
   Ndarray arr = Ndarray(devalloc_arr_, PrimitiveType::i32, {size});
-  taichi::lang::set_runtime_ctx_ndarray(&host_ctx, 0, &arr);
+  host_ctx.set_arg_ndarray(0, arr.get_device_allocation_ptr_as_int(),
+                           arr.shape);
   int src[size] = {0};
   src[0] = 2;
   src[2] = 40;

@@ -7,6 +7,7 @@ namespace taichi {
 namespace lang {
 class LlvmRuntimeExecutor;
 class MemoryPool;
+struct CompileConfig;
 }  // namespace lang
 }  // namespace taichi
 
@@ -16,6 +17,8 @@ class LlvmRuntime : public Runtime {
  public:
   LlvmRuntime(taichi::Arch arch);
 
+  void check_runtime_error();
+
  private:
   /* Internally used interfaces */
   taichi::lang::Device &get() override;
@@ -23,6 +26,7 @@ class LlvmRuntime : public Runtime {
   TiAotModule load_aot_module(const char *module_path) override;
   taichi::lang::DeviceAllocation allocate_memory(
       const taichi::lang::Device::AllocParams &params) override;
+  void deallocate_memory(TiMemory devmem) override;
 
   void buffer_copy(const taichi::lang::DevicePtr &dst,
                    const taichi::lang::DevicePtr &src,
@@ -36,6 +40,7 @@ class LlvmRuntime : public Runtime {
   taichi::uint64 *result_buffer{nullptr};
   std::unique_ptr<taichi::lang::LlvmRuntimeExecutor> executor_{nullptr};
   std::unique_ptr<taichi::lang::MemoryPool> memory_pool_{nullptr};
+  std::unique_ptr<taichi::lang::CompileConfig> cfg_{nullptr};
 };
 
 }  // namespace capi

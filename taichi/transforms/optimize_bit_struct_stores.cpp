@@ -32,9 +32,10 @@ class CreateBitStructStores : public BasicStmtVisitor {
 
     // We only handle bit_struct pointers here.
 
-    auto s = Stmt::make<BitStructStoreStmt>(get_ch->input_ptr,
-                                            std::vector<int>{get_ch->chid},
-                                            std::vector<Stmt *>{stmt->val});
+    auto s = Stmt::make<BitStructStoreStmt>(
+        get_ch->input_ptr,
+        std::vector<int>{get_ch->output_snode->id_in_bit_struct},
+        std::vector<Stmt *>{stmt->val});
     stmt->replace_with(VecStatement(std::move(s)));
   }
 };
@@ -146,7 +147,7 @@ class DemoteAtomicBitStructStores : public BasicStmtVisitor {
     } else if (current_offloaded->task_type == OffloadedTaskType::range_for ||
                current_offloaded->task_type == OffloadedTaskType::mesh_for ||
                current_offloaded->task_type == OffloadedTaskType::struct_for) {
-      auto *snode = stmt->get_bit_struct_snode();
+      auto *snode = stmt->ptr->as<SNodeLookupStmt>()->snode;
       // Find the nearest non-bit-level ancestor
       while (snode->is_bit_level) {
         snode = snode->parent;

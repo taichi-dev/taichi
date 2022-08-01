@@ -102,6 +102,10 @@ class TI_DLL_EXPORT GfxRuntime {
 
   void buffer_copy(DevicePtr dst, DevicePtr src, size_t size);
 
+  void signal_event(DeviceEvent *event);
+  void reset_event(DeviceEvent *event);
+  void wait_event(DeviceEvent *event);
+
   void synchronize();
 
   StreamSemaphore flush();

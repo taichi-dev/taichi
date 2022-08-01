@@ -12,8 +12,6 @@ target_sources(metal_runtime
     runtime_utils.cpp
   )
 
-#TODO #4832, some path here should not be included as they are
-# dependencies of other targets.
 target_include_directories(metal_runtime
   PRIVATE
     ${PROJECT_SOURCE_DIR}
@@ -22,9 +20,9 @@ target_include_directories(metal_runtime
     ${PROJECT_SOURCE_DIR}/external/glad/include
     ${PROJECT_SOURCE_DIR}/external/eigen
     ${PROJECT_SOURCE_DIR}/external/glfw/include
-  PRIVATE
-    ${PROJECT_SOURCE_DIR}/external/spdlog/include
     ${LLVM_INCLUDE_DIRS}
+  PUBLIC
+    ${PROJECT_SOURCE_DIR}/external/spdlog/include
   )
 
 target_link_libraries(metal_runtime PRIVATE metal_rhi)

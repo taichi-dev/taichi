@@ -7,25 +7,17 @@ import sys
 import tempfile
 import warnings
 
-from test_utils import __aot_test_cases, print_aot_test_guide
+from test_utils import (__aot_test_cases, __capi_aot_test_cases,
+                        print_aot_test_guide)
 
 import taichi as ti
 
 
-def _run_cpp_test(gtest_option="", extra_env=None):
+def _run_cpp_test(test_filename, build_dir, gtest_option="", extra_env=None):
     ti.reset()
     print("Running C++ tests...")
     ti_lib_dir = os.path.join(ti.__path__[0], '_lib', 'runtime')
-
-    curr_dir = os.path.dirname(os.path.abspath(__file__))
-    if platform.system() == "Windows":
-        cpp_test_filename = 'taichi_cpp_tests.exe'
-        build_dir = os.path.join(curr_dir, '../bin')
-    else:
-        cpp_test_filename = 'taichi_cpp_tests'
-        build_dir = os.path.join(curr_dir, '../build')
-
-    fullpath = os.path.join(build_dir, cpp_test_filename)
+    fullpath = os.path.join(build_dir, test_filename)
 
     if os.path.exists(fullpath):
         env_copy = os.environ.copy()
@@ -38,9 +30,9 @@ def _run_cpp_test(gtest_option="", extra_env=None):
         subprocess.check_call(cmd, env=env_copy, cwd=build_dir)
 
 
-def _test_cpp_aot():
+def _test_cpp_aot(test_filename, build_dir, test_info):
     tests_visited = []
-    for cpp_test_name, (python_rpath, args) in __aot_test_cases.items():
+    for cpp_test_name, (python_rpath, args) in test_info.items():
         # Temporary folder will be removed upon handle destruction
         temp_handle = tempfile.TemporaryDirectory()
         temp_folderpath = temp_handle.name
@@ -55,11 +47,12 @@ def _test_cpp_aot():
         env_copy = os.environ.copy()
         env_copy.update(extra_env)
 
-        subprocess.check_call([sys.executable, python_file_path, args],
-                              env=env_copy)
+        cmd_list = [sys.executable, python_file_path] + args.split(" ")
+        subprocess.check_call(cmd_list, env=env_copy)
 
         # Run AOT C++ codes
-        _run_cpp_test(f"--gtest_filter={cpp_test_name}", extra_env)
+        _run_cpp_test(test_filename, build_dir,
+                      f"--gtest_filter={cpp_test_name}", extra_env)
         tests_visited.append(cpp_test_name)
 
     exclude_tests_cmd = "--gtest_filter=-" + ":".join(tests_visited)
@@ -67,11 +60,27 @@ def _test_cpp_aot():
 
 
 def _test_cpp():
+    curr_dir = os.path.dirname(os.path.abspath(__file__))
+    if platform.system() == "Windows":
+        cpp_test_filename = 'taichi_cpp_tests.exe'
+        capi_test_filename = 'taichi_c_api_tests.exe'
+        build_dir = os.path.join(curr_dir, '../bin')
+    else:
+        cpp_test_filename = 'taichi_cpp_tests'
+        capi_test_filename = 'taichi_c_api_tests'
+        build_dir = os.path.join(curr_dir, '../build')
+
+    # Run C-API test cases
+    exclude_tests_cmd = _test_cpp_aot(capi_test_filename, build_dir,
+                                      __capi_aot_test_cases)
+    _run_cpp_test(capi_test_filename, build_dir, exclude_tests_cmd)
+
     # Run AOT test cases
-    exclude_tests_cmd = _test_cpp_aot()
+    exclude_tests_cmd = _test_cpp_aot(cpp_test_filename, build_dir,
+                                      __aot_test_cases)
 
     # Run rest of the cpp tests
-    _run_cpp_test(exclude_tests_cmd)
+    _run_cpp_test(cpp_test_filename, build_dir, exclude_tests_cmd)
 
 
 def _test_python(args):

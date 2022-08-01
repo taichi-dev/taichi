@@ -54,9 +54,9 @@ std::unique_ptr<aot::CompiledGraph> LlvmAotModule::get_graph(std::string name) {
   return std::make_unique<aot::CompiledGraph>(std::move(graph));
 }
 
-void finalize_aot_field(aot::Module *aot_module,
-                        aot::Field *aot_field,
-                        uint64 *result_buffer) {
+void allocate_aot_snode_tree_type(aot::Module *aot_module,
+                                  aot::Field *aot_field,
+                                  uint64 *result_buffer) {
   auto *llvm_aot_module = dynamic_cast<LlvmAotModule *>(aot_module);
   auto *aot_field_impl = dynamic_cast<llvm_aot::FieldImpl *>(aot_field);
 
@@ -64,7 +64,7 @@ void finalize_aot_field(aot::Module *aot_module,
   TI_ASSERT(aot_field_impl != nullptr);
 
   auto *runtime_executor = llvm_aot_module->get_runtime_executor();
-  const auto &field_cache = aot_field_impl->get_field();
+  const auto &field_cache = aot_field_impl->get_snode_tree_cache();
 
   int snode_tree_id = field_cache.tree_id;
   if (!llvm_aot_module->is_snode_tree_initialized(snode_tree_id)) {

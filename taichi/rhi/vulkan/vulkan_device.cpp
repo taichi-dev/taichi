@@ -773,6 +773,7 @@ VulkanCommandList::VulkanCommandList(VulkanDevice *ti_device,
     : ti_device_(ti_device),
       stream_(stream),
       device_(ti_device->vk_device()),
+      query_pool_(vkapi::create_query_pool(ti_device->vk_device())),
       buffer_(buffer) {
   VkCommandBufferBeginInfo info{};
   info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -781,6 +782,8 @@ VulkanCommandList::VulkanCommandList(VulkanDevice *ti_device,
   info.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 
   vkBeginCommandBuffer(buffer->buffer, &info);
+  vkCmdWriteTimestamp(buffer->buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                      query_pool_->query_pool, 0);
 }
 
 VulkanCommandList::~VulkanCommandList() {
@@ -973,6 +976,10 @@ vkapi::IVkCommandBuffer VulkanCommandList::vk_command_buffer() {
   return buffer_;
 }
 
+vkapi::IVkQueryPool VulkanCommandList::vk_query_pool() {
+  return query_pool_;
+}
+
 void VulkanCommandList::begin_renderpass(int x0,
                                          int y0,
                                          int x1,
@@ -1061,12 +1068,29 @@ void VulkanCommandList::draw(uint32_t num_verticies, uint32_t start_vertex) {
             /*firstInstance=*/0);
 }
 
+void VulkanCommandList::draw_instance(uint32_t num_verticies,
+                                      uint32_t num_instances,
+                                      uint32_t start_vertex,
+                                      uint32_t start_instance) {
+  vkCmdDraw(buffer_->buffer, num_verticies, num_instances, start_vertex,
+            start_instance);
+}
+
 void VulkanCommandList::draw_indexed(uint32_t num_indicies,
                                      uint32_t start_vertex,
                                      uint32_t start_index) {
   vkCmdDrawIndexed(buffer_->buffer, num_indicies, /*instanceCount=*/1,
                    start_index, start_vertex,
                    /*firstInstance=*/0);
+}
+
+void VulkanCommandList::draw_indexed_instance(uint32_t num_indicies,
+                                              uint32_t num_instances,
+                                              uint32_t start_vertex,
+                                              uint32_t start_index,
+                                              uint32_t start_instance) {
+  vkCmdDrawIndexed(buffer_->buffer, num_indicies, num_instances, start_index,
+                   start_vertex, start_instance);
 }
 
 void VulkanCommandList::image_transition(DeviceAllocation img,
@@ -1102,6 +1126,8 @@ void VulkanCommandList::image_transition(DeviceAllocation img,
       VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
   stages[VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL] =
       VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+  stages[VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL] =
+      VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
   stages[VK_IMAGE_LAYOUT_PRESENT_SRC_KHR] = VK_PIPELINE_STAGE_TRANSFER_BIT;
 
   static std::unordered_map<VkImageLayout, VkAccessFlagBits> access;
@@ -1113,6 +1139,9 @@ void VulkanCommandList::image_transition(DeviceAllocation img,
   access[VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL] = VK_ACCESS_MEMORY_READ_BIT;
   access[VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL] =
       VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+  access[VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL] =
+      VkAccessFlagBits(VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
+                       VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
   access[VK_IMAGE_LAYOUT_PRESENT_SRC_KHR] = VK_ACCESS_MEMORY_READ_BIT;
 
   if (stages.find(old_layout) == stages.end() ||
@@ -1244,6 +1273,24 @@ void VulkanCommandList::blit_image(DeviceAllocation dst_img,
   buffer_->refs.push_back(src_vk_image);
 }
 
+void VulkanCommandList::signal_event(DeviceEvent *event) {
+  VulkanDeviceEvent *event2 = static_cast<VulkanDeviceEvent *>(event);
+  vkCmdSetEvent(buffer_->buffer, event2->vkapi_ref->event,
+                VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+}
+void VulkanCommandList::reset_event(DeviceEvent *event) {
+  VulkanDeviceEvent *event2 = static_cast<VulkanDeviceEvent *>(event);
+  vkCmdResetEvent(buffer_->buffer, event2->vkapi_ref->event,
+                  VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+}
+void VulkanCommandList::wait_event(DeviceEvent *event) {
+  VulkanDeviceEvent *event2 = static_cast<VulkanDeviceEvent *>(event);
+  vkCmdWaitEvents(buffer_->buffer, 1, &event2->vkapi_ref->event,
+                  VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                  VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, nullptr, 0, nullptr, 0,
+                  nullptr);
+}
+
 void VulkanCommandList::set_line_width(float width) {
   if (ti_device_->get_cap(DeviceCapability::wide_lines)) {
     vkCmdSetLineWidth(buffer_->buffer, width);
@@ -1256,6 +1303,8 @@ vkapi::IVkRenderPass VulkanCommandList::current_renderpass() {
 
 vkapi::IVkCommandBuffer VulkanCommandList::finalize() {
   if (!finalized_) {
+    vkCmdWriteTimestamp(buffer_->buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                        query_pool_->query_pool, 1);
     vkEndCommandBuffer(buffer_->buffer);
     finalized_ = true;
   }
@@ -1332,6 +1381,11 @@ std::unique_ptr<Pipeline> VulkanDevice::create_pipeline(
   params.name = name;
 
   return std::make_unique<VulkanPipeline>(params);
+}
+
+std::unique_ptr<DeviceEvent> VulkanDevice::create_event() {
+  return std::unique_ptr<DeviceEvent>(
+      new VulkanDeviceEvent(vkapi::create_event(device_, 0)));
 }
 
 // #define TI_VULKAN_DEBUG_ALLOCATIONS
@@ -1588,6 +1642,7 @@ StreamSemaphore VulkanStream::submit(
     const std::vector<StreamSemaphore> &wait_semaphores) {
   VulkanCommandList *cmdlist = static_cast<VulkanCommandList *>(cmdlist_);
   vkapi::IVkCommandBuffer buffer = cmdlist->finalize();
+  vkapi::IVkQueryPool query_pool = cmdlist->vk_query_pool();
 
   /*
   if (in_flight_cmdlists_.find(buffer) != in_flight_cmdlists_.end()) {
@@ -1635,7 +1690,7 @@ StreamSemaphore VulkanStream::submit(
     });
   */
 
-  submitted_cmdbuffers_.push_back(TrackedCmdbuf{fence, buffer});
+  submitted_cmdbuffers_.push_back(TrackedCmdbuf{fence, buffer, query_pool});
 
   BAIL_ON_VK_BAD_RESULT(vkQueueSubmit(queue_, /*submitCount=*/1, &submit_info,
                                       /*fence=*/fence->fence),
@@ -1655,7 +1710,27 @@ StreamSemaphore VulkanStream::submit_synced(
 void VulkanStream::command_sync() {
   vkQueueWaitIdle(queue_);
 
+  VkPhysicalDeviceProperties props{};
+  vkGetPhysicalDeviceProperties(device_.vk_physical_device(), &props);
+
+  for (const auto &cmdbuf : submitted_cmdbuffers_) {
+    if (cmdbuf.query_pool == nullptr) {
+      continue;
+    }
+
+    uint64_t t[2];
+    vkGetQueryPoolResults(device_.vk_device(), cmdbuf.query_pool->query_pool, 0,
+                          2, sizeof(uint64_t) * 2, &t, sizeof(uint64_t),
+                          VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+    double duration_us = (t[1] - t[0]) * props.limits.timestampPeriod / 1000.0;
+    device_time_elapsed_us_ += duration_us;
+  }
+
   submitted_cmdbuffers_.clear();
+}
+
+double VulkanStream::device_time_elapsed_us() const {
+  return device_time_elapsed_us_;
 }
 
 std::unique_ptr<Pipeline> VulkanDevice::create_raster_pipeline(
@@ -1817,13 +1892,14 @@ DeviceAllocation VulkanDevice::create_image(const ImageParams &params) {
   image_info.format = buffer_format_ti_to_vk(params.format);
   image_info.tiling = VK_IMAGE_TILING_OPTIMAL;
   image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-  image_info.usage =
-      VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT |
-      VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
+  image_info.usage = VK_IMAGE_USAGE_SAMPLED_BIT |
+                     VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+                     VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
   if (is_depth) {
     image_info.usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
   } else {
-    image_info.usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    image_info.usage |=
+        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
   }
   image_info.samples = VK_SAMPLE_COUNT_1_BIT;
 
@@ -2191,7 +2267,6 @@ VkPresentModeKHR choose_swap_present_mode(
 
 VulkanSurface::VulkanSurface(VulkanDevice *device, const SurfaceConfig &config)
     : config_(config), device_(device) {
-#if !defined(TI_EMSCRIPTENED)
 #ifdef ANDROID
   window_ = (ANativeWindow *)config.window_handle;
 #else
@@ -2232,7 +2307,6 @@ VulkanSurface::VulkanSurface(VulkanDevice *device, const SurfaceConfig &config)
     swapchain_images_.push_back(device->create_image(params));
     swapchain_images_.push_back(device->create_image(params));
   }
-#endif
 }
 
 void VulkanSurface::create_swap_chain() {
@@ -2288,7 +2362,7 @@ void VulkanSurface::create_swap_chain() {
 #ifdef ANDROID
   width = ANativeWindow_getWidth(window_);
   height = ANativeWindow_getHeight(window_);
-#elif !defined(TI_EMSCRIPTENED)
+#else
   glfwGetFramebufferSize(window_, &width, &height);
 #endif
 
@@ -2401,7 +2475,7 @@ std::pair<uint32_t, uint32_t> VulkanSurface::get_size() {
 #ifdef ANDROID
   width = ANativeWindow_getWidth(window_);
   height = ANativeWindow_getHeight(window_);
-#elif !defined(TI_EMSCRIPTENED)
+#else
   glfwGetFramebufferSize(window_, &width, &height);
 #endif
   return std::make_pair(width, height);

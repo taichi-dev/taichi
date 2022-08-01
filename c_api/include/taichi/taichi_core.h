@@ -26,6 +26,9 @@ typedef struct TiRuntime_t *TiRuntime;
 // handle.aot_module
 typedef struct TiAotModule_t *TiAotModule;
 
+// handle.event
+typedef struct TiEvent_t *TiEvent;
+
 // handle.memory
 typedef struct TiMemory_t *TiMemory;
 
@@ -160,6 +163,12 @@ TI_DLL_EXPORT void *TI_API_CALL ti_map_memory(TiRuntime runtime,
 TI_DLL_EXPORT void TI_API_CALL ti_unmap_memory(TiRuntime runtime,
                                                TiMemory memory);
 
+// function.create_event
+TI_DLL_EXPORT TiEvent TI_API_CALL ti_create_event(TiRuntime runtime);
+
+// function.destroy_event
+TI_DLL_EXPORT void TI_API_CALL ti_destroy_event(TiEvent event);
+
 // function.copy_memory_device_to_device
 TI_DLL_EXPORT void TI_API_CALL
 ti_copy_memory_device_to_device(TiRuntime runtime,
@@ -178,6 +187,13 @@ ti_launch_compute_graph(TiRuntime runtime,
                         TiComputeGraph compute_graph,
                         uint32_t arg_count,
                         const TiNamedArgument *args);
+
+// function.signal_event
+TI_DLL_EXPORT void TI_API_CALL ti_signal_event(TiRuntime runtime,
+                                               TiEvent event);
+
+// function.reset_event
+TI_DLL_EXPORT void TI_API_CALL ti_reset_event(TiRuntime runtime, TiEvent event);
 
 // function.submit
 TI_DLL_EXPORT void TI_API_CALL ti_submit(TiRuntime runtime);

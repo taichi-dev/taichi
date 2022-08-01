@@ -29,9 +29,20 @@ class Runtime {
   virtual TiAotModule load_aot_module(const char *module_path) = 0;
   virtual taichi::lang::DeviceAllocation allocate_memory(
       const taichi::lang::Device::AllocParams &params);
+  virtual void deallocate_memory(TiMemory devmem);
+
   virtual void buffer_copy(const taichi::lang::DevicePtr &dst,
                            const taichi::lang::DevicePtr &src,
                            size_t size) = 0;
+  virtual void signal_event(taichi::lang::DeviceEvent *event) {
+    TI_NOT_IMPLEMENTED
+  }
+  virtual void reset_event(taichi::lang::DeviceEvent *event) {
+    TI_NOT_IMPLEMENTED
+  }
+  virtual void wait_event(taichi::lang::DeviceEvent *event) {
+    TI_NOT_IMPLEMENTED
+  }
   virtual void submit() = 0;
   virtual void wait() = 0;
 
@@ -47,10 +58,21 @@ class AotModule {
 
  public:
   AotModule(Runtime &runtime,
-            std::unique_ptr<taichi::lang::aot::Module> &&aot_module);
+            std::unique_ptr<taichi::lang::aot::Module> aot_module);
 
   taichi::lang::aot::CompiledGraph &get_cgraph(const std::string &name);
   taichi::lang::aot::Module &get();
+  Runtime &runtime();
+};
+
+class Event {
+  Runtime *runtime_;
+  std::unique_ptr<taichi::lang::DeviceEvent> event_;
+
+ public:
+  Event(Runtime &runtime, std::unique_ptr<taichi::lang::DeviceEvent> event);
+
+  taichi::lang::DeviceEvent &get();
   Runtime &runtime();
 };
 

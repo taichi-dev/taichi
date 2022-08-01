@@ -6,7 +6,7 @@
 
 #ifdef ANDROID
 #include <android/native_window_jni.h>
-#elif !defined(TI_EMSCRIPTENED)
+#else
 #include <GLFW/glfw3.h>
 #endif
 
@@ -349,6 +349,16 @@ class VulkanPipeline : public Pipeline {
   vkapi::IVkPipelineLayout pipeline_layout_{VK_NULL_HANDLE};
 };
 
+class VulkanDeviceEvent : public DeviceEvent {
+ public:
+  VulkanDeviceEvent(vkapi::IVkEvent event) : vkapi_ref(event) {
+  }
+  ~VulkanDeviceEvent() {
+  }
+
+  vkapi::IVkEvent vkapi_ref{nullptr};
+};
+
 class VulkanCommandList : public CommandList {
  public:
   VulkanCommandList(VulkanDevice *ti_device,
@@ -378,9 +388,18 @@ class VulkanCommandList : public CommandList {
                         bool depth_clear) override;
   void end_renderpass() override;
   void draw(uint32_t num_verticies, uint32_t start_vertex = 0) override;
+  void draw_instance(uint32_t num_verticies,
+                     uint32_t num_instances,
+                     uint32_t start_vertex = 0,
+                     uint32_t start_instance = 0) override;
   void draw_indexed(uint32_t num_indicies,
                     uint32_t start_vertex = 0,
                     uint32_t start_index = 0) override;
+  void draw_indexed_instance(uint32_t num_indicies,
+                             uint32_t num_instances,
+                             uint32_t start_vertex = 0,
+                             uint32_t start_index = 0,
+                             uint32_t start_instance = 0) override;
   void set_line_width(float width) override;
   void image_transition(DeviceAllocation img,
                         ImageLayout old_layout,
@@ -406,18 +425,24 @@ class VulkanCommandList : public CommandList {
                   ImageLayout src_img_layout,
                   const ImageCopyParams &params) override;
 
+  void signal_event(DeviceEvent *event) override;
+  void reset_event(DeviceEvent *event) override;
+  void wait_event(DeviceEvent *event) override;
+
   vkapi::IVkRenderPass current_renderpass();
 
   // Vulkan specific functions
   vkapi::IVkCommandBuffer finalize();
 
   vkapi::IVkCommandBuffer vk_command_buffer();
+  vkapi::IVkQueryPool vk_query_pool();
 
  private:
   bool finalized_{false};
   VulkanDevice *ti_device_;
   VulkanStream *stream_;
   VkDevice device_;
+  vkapi::IVkQueryPool query_pool_;
   vkapi::IVkCommandBuffer buffer_;
   VulkanPipeline *current_pipeline_{nullptr};
 
@@ -464,7 +489,7 @@ class VulkanSurface : public Surface {
   vkapi::IVkSemaphore image_available_;
 #ifdef ANDROID
   ANativeWindow *window_;
-#elif !defined(TI_EMSCRIPTENED)
+#else
   GLFWwindow *window_;
 #endif
   BufferFormat image_format_;
@@ -514,10 +539,13 @@ class VulkanStream : public Stream {
 
   void command_sync() override;
 
+  double device_time_elapsed_us() const override;
+
  private:
   struct TrackedCmdbuf {
     vkapi::IVkFence fence;
     vkapi::IVkCommandBuffer buf;
+    vkapi::IVkQueryPool query_pool;
   };
 
   VulkanDevice &device_;
@@ -527,6 +555,7 @@ class VulkanStream : public Stream {
   // Command pools are per-thread
   vkapi::IVkCommandPool command_pool_;
   std::vector<TrackedCmdbuf> submitted_cmdbuffers_;
+  double device_time_elapsed_us_;
 };
 
 class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
@@ -548,6 +577,7 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
   std::unique_ptr<Pipeline> create_pipeline(
       const PipelineSourceDesc &src,
       std::string name = "Pipeline") override;
+  std::unique_ptr<DeviceEvent> create_event() override;
 
   DeviceAllocation allocate_memory(const AllocParams &params) override;
   void dealloc_memory(DeviceAllocation handle) override;

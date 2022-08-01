@@ -57,10 +57,6 @@ enum AliasResult { same, uncertain, different };
 
 class ControlFlowGraph;
 
-struct TaskMeta;
-class IRBank;
-class AsyncStateSet;
-
 // IR Analysis
 namespace irpass {
 namespace analysis {
@@ -113,19 +109,6 @@ std::unique_ptr<std::unordered_set<AtomicOpStmt *>> gather_used_atomics(
     IRNode *root);
 std::vector<Stmt *> get_load_pointers(Stmt *load_stmt);
 
-/**
- * Get all input SNode value states of an offloaded task with control-flow
- * graph analysis.
- * The global temporary value state and SNodeOpStmts are not considered.
- *
- * @param root
- *   The offloaded task.
- * @param meta
- *   The result is stored in meta->input_states.
- * @param ir_bank
- *   The IR bank (only IRBank::get_async_state() is used).
- */
-void get_meta_input_value_states(IRNode *root, TaskMeta *meta, IRBank *ir_bank);
 Stmt *get_store_data(Stmt *store_stmt);
 std::vector<Stmt *> get_store_destination(Stmt *store_stmt);
 bool has_store_or_atomic(IRNode *root, const std::vector<Stmt *> &vars);
@@ -166,28 +149,7 @@ bool same_statements(
     IRNode *root1,
     IRNode *root2,
     const std::optional<std::unordered_map<int, int>> &id_map = std::nullopt);
-/**
- * Test if stmt1 and stmt2 definitely have the same value.
- *
- * @param stmt1
- *   The first stmt to check.
- *
- * @param stmt2
- *   The second stmt to check.
- *
- * @param possibly_modified_states
- *   Assumes that only states in possibly_modified_states can be modified
- *   between stmt1 and stmt2.
- *
- * @param id_map
- *   Same as in same_statements(root1, root2, id_map).
- */
-bool same_value(
-    Stmt *stmt1,
-    Stmt *stmt2,
-    const AsyncStateSet &possibly_modified_states,
-    IRBank *ir_bank,
-    const std::optional<std::unordered_map<int, int>> &id_map = std::nullopt);
+
 /**
  * Test if stmt1 and stmt2 definitely have the same value.
  * Any global fields can be modified between stmt1 and stmt2.

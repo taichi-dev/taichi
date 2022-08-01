@@ -34,12 +34,11 @@ class ComposerBase:
 
 
 class ComposerCC(ComposerBase):
-    def __init__(self, entries, fout, hdrout, emscripten=False):
+    def __init__(self, entries, fout, hdrout):
         super().__init__(entries)
 
         self.fout = fout
         self.hdrout = hdrout
-        self.emscripten = emscripten
 
     def emit(self, line):
         print(line, file=self.fout)
@@ -48,9 +47,6 @@ class ComposerCC(ComposerBase):
         print(line, file=self.hdrout)
 
     def run(self):
-        if self.emscripten:
-            self.emit('#include <emscripten.h>')
-
         super().run()
 
         for key, launches in self.groups.items():
@@ -70,8 +66,6 @@ class ComposerCC(ComposerBase):
 
         self.emit(source)
         self.emit_header(source)
-        if self.emscripten:
-            self.emit('EMSCRIPTEN_KEEPALIVE')
         self.emit('struct Ti_S0root Ti_root;')
         self.emit('')
 
@@ -79,23 +73,12 @@ class ComposerCC(ComposerBase):
         gtmp_size = e['gtmp_size']
         extr_size = 4 * 1024 * 1024  # pinpoint: 4 MB
 
-        if self.emscripten:
-            self.emit('EMSCRIPTEN_KEEPALIVE')
-            self.emit(f'Ti_i8 Ti_extr[{extr_size}];')
-
         self.emit(f'Ti_i8 Ti_gtmp[{gtmp_size}];')
 
-        if self.emscripten:
-            self.emit('EMSCRIPTEN_KEEPALIVE')
-
         self.emit('union Ti_BitCast Ti_args[8];')
-        if self.emscripten:
-            self.emit('EMSCRIPTEN_KEEPALIVE')
         self.emit('Ti_i32 Ti_earg[8 * 8];')
         self.emit('')
 
-        if self.emscripten:
-            self.emit('EMSCRIPTEN_KEEPALIVE')
         self.emit_header('extern struct Ti_Context Ti_ctx;')
         self.emit_header('')
         self.emit('struct Ti_Context Ti_ctx = {')
@@ -106,8 +89,6 @@ class ComposerCC(ComposerBase):
     def do_compile_kernel(self, e):
         source = e['kernel_source']
 
-        if self.emscripten:
-            self.emit('EMSCRIPTEN_KEEPALIVE')
         self.emit(source)
         self.emit('')
         declaration = source.split('{', 1)[0].strip()
@@ -130,7 +111,7 @@ class ComposerCC(ComposerBase):
         self.emit_header(f'extern {declaration};')
 
 
-def main(fin_name, fout_name, hdrout_name, emscripten=False):
+def main(fin_name, fout_name, hdrout_name):
     import yaml  # pylint: disable=C0415
     with open(fin_name, 'r') as fin:
         warnings.filterwarnings('ignore')
@@ -138,7 +119,7 @@ def main(fin_name, fout_name, hdrout_name, emscripten=False):
 
     with open(hdrout_name, 'w') as hdrout:
         with open(fout_name, 'w') as fout:
-            comp = ComposerCC(obj, fout, hdrout, emscripten)
+            comp = ComposerCC(obj, fout, hdrout)
             comp.run()
 
 

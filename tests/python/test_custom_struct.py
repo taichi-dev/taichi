@@ -179,9 +179,9 @@ def test_struct_type():
 
     init_taichi_scope()
     for i in range(n):
-        assert x[i].idx == 1
+        assert x[i].idx == 0
         assert np.allclose(x[i].line.linedir.to_numpy(), 1.0)
-        assert x[i].line.length == 1.0
+        assert x[i].line.length == 0.0
     run_taichi_scope()
     for i in range(n):
         assert x[i].idx == i
@@ -189,9 +189,9 @@ def test_struct_type():
         assert x[i].line.length == i + 0.5
     init_python_scope()
     for i in range(n):
-        assert x[i].idx == 3
+        assert x[i].idx == 0
         assert np.allclose(x[i].line.linedir.to_numpy(), 3.0)
-        assert x[i].line.length == 3.0
+        assert x[i].line.length == 0.0
     run_python_scope()
     for i in range(n):
         assert x[i].idx == i
@@ -293,20 +293,20 @@ def test_compound_type_implicit_cast():
 
     @ti.kernel
     def f2i_taichi_scope() -> int:
-        s = structi(2.5)
+        s = structi(2.5, (2.5, 2.5))
         return s.a + s.b[0] + s.b[1]
 
     def f2i_python_scope():
-        s = structi(2.5)
+        s = structi(2.5, (2.5, 2.5))
         return s.a + s.b[0] + s.b[1]
 
     @ti.kernel
     def i2f_taichi_scope() -> float:
-        s = structf(2)
+        s = structf(2, (2, 2))
         return s.a + s.b[0] + s.b[1]
 
     def i2f_python_scope():
-        s = structf(2)
+        s = structf(2, (2, 2))
         return s.a + s.b[0] + s.b[1]
 
     int_value = f2i_taichi_scope()
@@ -394,5 +394,25 @@ def test_copy_struct_in_taichi_scope():
         assert b.b == 9
         assert a.a == 2
         assert a.b == 3
+
+    test()
+
+
+@test_utils.test(debug=True)
+def test_dataclass():
+    vec3 = ti.types.vector(3, float)
+
+    @ti.dataclass
+    class Foo:
+        pos: vec3
+        vel: vec3
+        mass: float
+
+    @ti.kernel
+    def test():
+        A = Foo((1, 1, 1), mass=2)
+        assert all(A.pos == [1.0, 1.0, 1.0])
+        assert all(A.vel == [0.0, 0.0, 0.0])
+        assert A.mass == 2.0
 
     test()

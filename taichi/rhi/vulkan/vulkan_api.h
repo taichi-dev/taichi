@@ -18,6 +18,17 @@ struct DeviceObj {
 using IDeviceObj = std::shared_ptr<DeviceObj>;
 IDeviceObj create_device_obj(VkDevice device);
 
+// VkEvent
+struct DeviceObjVkEvent : public DeviceObj {
+  bool external{false};
+  VkEvent event{VK_NULL_HANDLE};
+  ~DeviceObjVkEvent() override;
+};
+using IVkEvent = std::shared_ptr<DeviceObjVkEvent>;
+IVkEvent create_event(VkDevice device,
+                      VkEventCreateFlags flags,
+                      void *pnext = nullptr);
+
 // VkSemaphore
 struct DeviceObjVkSemaphore : public DeviceObj {
   VkSemaphore semaphore{VK_NULL_HANDLE};
@@ -276,5 +287,13 @@ IVkAccelerationStructureKHR create_acceleration_structure(
     VkDeviceSize offset,
     VkDeviceSize size,
     VkAccelerationStructureTypeKHR type);
+
+// VkQueryPool
+struct DeviceObjVkQueryPool : public DeviceObj {
+  VkQueryPool query_pool{VK_NULL_HANDLE};
+  ~DeviceObjVkQueryPool() override;
+};
+using IVkQueryPool = std::shared_ptr<DeviceObjVkQueryPool>;
+IVkQueryPool create_query_pool(VkDevice device);
 
 }  // namespace vkapi

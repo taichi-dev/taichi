@@ -270,7 +270,9 @@ def test_struct_for_quant():
     qi13 = ti.types.quant.int(13, True)
     x = ti.field(dtype=qi13)
 
-    ti.root.dense(ti.i, n).bit_struct(num_bits=32).place(x)
+    bitpack = ti.BitpackedFields(max_num_bits=32)
+    bitpack.place(x)
+    ti.root.dense(ti.i, n).place(bitpack)
 
     @ti.kernel
     def count() -> int:

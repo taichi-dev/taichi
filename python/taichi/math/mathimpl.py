@@ -68,50 +68,22 @@ def uvec4(*args):
     return ti.types.vector(4, _get_uint_ip())(*args)  # pylint: disable=E1101
 
 
-def _gen_matrix(n, *args):
-    """Supports more matrix construction routines.
-
-    1. Usual construction (from a 2d list or a single scalar).
-    2. From a 1-D array of n*n elements (glsl style).
-    3. From a list of n-D vectors (glsl style).
-    """
-    if len(args) == n * n:  # initialize with n*n scalars
-        data = [[args[k * n + i] for i in range(n)] for k in range(n)]
-        return ti.Matrix(data, float)
-
-    if len(args) == n:  # initialize with n vectors
-        # Matrix.rows() will do implicit type inference
-        data = [list(x) for x in args]
-        return ti.Matrix(data, float)
-
-    if len(args) == 1:  # initialize with a scalar, a matrix or a 1d list
-        x = args[0]
-        if isinstance(x, ti.Matrix):
-            return x
-
-        if hasattr(x, "__len__") and len(x) == n * n:
-            data = [[x[k * n + i] for i in range(n)] for k in range(n)]
-            return ti.Matrix(data, float)
-
-    return ti.types.matrix(n, n, float)(*args)  # pylint: disable=E1101
-
-
 def mat2(*args):
     """2x2 floating matrix type.
     """
-    return _gen_matrix(2, *args)
+    return ti.types.matrix(2, 2, float)(*args)  # pylint: disable=E1101
 
 
 def mat3(*args):
     """3x3 floating matrix type.
     """
-    return _gen_matrix(3, *args)
+    return ti.types.matrix(3, 3, float)(*args)  # pylint: disable=E1101
 
 
 def mat4(*args):
     """4x4 floating matrix type.
     """
-    return _gen_matrix(4, *args)
+    return ti.types.matrix(4, 4, float)(*args)  # pylint: disable=E1101
 
 
 @ti.func

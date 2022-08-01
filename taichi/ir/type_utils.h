@@ -181,11 +181,60 @@ inline TypedConstant get_min_value(DataType dt) {
 
 class BitStructTypeBuilder {
  public:
-  explicit BitStructTypeBuilder(PrimitiveType *physical_type)
-      : physical_type_(physical_type) {
+  explicit BitStructTypeBuilder(int max_num_bits) {
+    physical_type_ =
+        TypeFactory::get_instance().get_primitive_int_type(max_num_bits);
   }
 
-  std::tuple<int, int> add_member(Type *member_type) {
+  int add_member(Type *member_type) {
+    if (auto qflt = member_type->cast<QuantFloatType>()) {
+      auto exponent_type = qflt->get_exponent_type();
+      auto exponent_id = -1;
+      if (is_placing_shared_exponent_ && current_shared_exponent_ != -1) {
+        // Reuse existing exponent
+        TI_ASSERT_INFO(member_types_[current_shared_exponent_] == exponent_type,
+                       "QuantFloatTypes with shared exponents must have "
+                       "exactly the same exponent type.");
+        exponent_id = current_shared_exponent_;
+      } else {
+        exponent_id = add_member_impl(exponent_type);
+        if (is_placing_shared_exponent_) {
+          current_shared_exponent_ = exponent_id;
+        }
+      }
+      auto digits_id = add_member_impl(member_type);
+      if (is_placing_shared_exponent_) {
+        member_owns_shared_exponents_[digits_id] = true;
+      }
+      member_exponents_[digits_id] = exponent_id;
+      member_exponent_users_[exponent_id].push_back(digits_id);
+      return digits_id;
+    }
+    return add_member_impl(member_type);
+  }
+
+  void begin_placing_shared_exponent() {
+    TI_ASSERT(!is_placing_shared_exponent_);
+    TI_ASSERT(current_shared_exponent_ == -1);
+    is_placing_shared_exponent_ = true;
+  }
+
+  void end_placing_shared_exponent() {
+    TI_ASSERT(is_placing_shared_exponent_);
+    TI_ASSERT(current_shared_exponent_ != -1);
+    current_shared_exponent_ = -1;
+    is_placing_shared_exponent_ = false;
+  }
+
+  BitStructType *build() const {
+    return TypeFactory::get_instance().get_bit_struct_type(
+        physical_type_, member_types_, member_bit_offsets_,
+        member_owns_shared_exponents_, member_exponents_,
+        member_exponent_users_);
+  }
+
+ private:
+  int add_member_impl(Type *member_type) {
     int old_num_members = member_types_.size();
     member_types_.push_back(member_type);
     member_bit_offsets_.push_back(member_total_bits_);
@@ -202,35 +251,14 @@ class BitStructTypeBuilder {
     } else {
       TI_ERROR("Only a QuantType can be a member of a BitStructType.");
     }
-    auto old_member_total_bits = member_total_bits_;
     member_total_bits_ += member_qit->get_num_bits();
     auto physical_bits = data_type_bits(physical_type_);
     TI_ERROR_IF(member_total_bits_ > physical_bits,
                 "BitStructType overflows: {} bits used out of {}.",
                 member_total_bits_, physical_bits);
-    return std::make_tuple(old_num_members, old_member_total_bits);
+    return old_num_members;
   }
 
-  void set_member_owns_shared_exponent(int id) {
-    member_owns_shared_exponents_[id] = true;
-  }
-
-  void set_member_exponent(int id, int exponent_id) {
-    member_exponents_[id] = exponent_id;
-  }
-
-  void add_member_exponent_user(int id, int user_id) {
-    member_exponent_users_[id].push_back(user_id);
-  }
-
-  Type *build() const {
-    return TypeFactory::get_instance().get_bit_struct_type(
-        physical_type_, member_types_, member_bit_offsets_,
-        member_owns_shared_exponents_, member_exponents_,
-        member_exponent_users_);
-  }
-
- private:
   PrimitiveType *physical_type_{nullptr};
   std::vector<Type *> member_types_;
   std::vector<int> member_bit_offsets_;
@@ -238,6 +266,8 @@ class BitStructTypeBuilder {
   std::vector<bool> member_owns_shared_exponents_;
   std::vector<int> member_exponents_;
   std::vector<std::vector<int>> member_exponent_users_;
+  bool is_placing_shared_exponent_{false};
+  int current_shared_exponent_{-1};
 };
 
 }  // namespace lang

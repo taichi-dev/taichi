@@ -15,6 +15,7 @@ check_in_docker() {
 export TI_SKIP_VERSION_CHECK=ON
 export TI_CI=1
 export TI_IN_DOCKER=$(check_in_docker)
+export LD_LIBRARY_PATH=$PWD/build/:$LD_LIBRARY_PATH
 
 if [[ "$TI_IN_DOCKER" == "true" ]]; then
     source $HOME/miniconda/etc/profile.d/conda.sh
@@ -64,7 +65,10 @@ EOF
     python3 taichi-release-tests/run.py --log=DEBUG --runners 1 taichi-release-tests/timelines
 fi
 
-python3 tests/run_tests.py --cpp
+
+if [ ! -z $TI_SKIP_CPP_TESTS ]; then
+    python3 tests/run_tests.py --cpp
+fi
 
 if [ -z "$GPU_TEST" ]; then
     if [[ $PLATFORM == *"m1"* ]]; then

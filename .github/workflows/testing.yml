@@ -9,6 +9,9 @@ concurrency:
   group: ${{ github.event.number || github.run_id }}
   cancel-in-progress: true
 
+env:
+  TI_CI: "1"
+
 jobs:
   check_files:
     name: Check files
@@ -192,15 +195,15 @@ jobs:
             with_cc: OFF
             with_cpp_tests: ON
             wanted_archs: 'cpu'
-    runs-on: ${{ matrix.os }}
+    runs-on:
+    - self-hosted
+    - ${{ matrix.os }}
+    env:
+      PY: ${{ matrix.python }}
     steps:
       - uses: actions/checkout@v2
         with:
           submodules: 'recursive'
-
-      - uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python }}
 
       - name: Get sccache cache
         uses: actions/cache@v2
@@ -210,23 +213,27 @@ jobs:
           restore-keys: |
             sccache-mac-
 
-      - name: Download Pre-Built LLVM 10.0.0
+      - name: Setup Python PATH && Download Pre-Built LLVM 10.0.0
         run: |
-          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
+          export PATH=`pwd`/taichi-llvm/bin/:$PATH
+          # miniconda / miniforge
+          export PATH=$(ls -d ~/mini*/envs/$PY/bin):$PATH
+          if [[ "${{needs.check_files.outputs.run_job}}" == "false" ]]; then
             exit 0
           fi
           python misc/ci_download.py
+          echo PATH=$PATH >> $GITHUB_ENV
+          #
         env:
-          CI_PLATFORM: ${{ matrix.os }}
+          CI_PLATFORM: macos
 
       - name: Build & Install
         run: |
-          brew install molten-vk
-          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
+          if [[ "${{needs.check_files.outputs.run_job}}" == "false" ]]; then
             exit 0
           fi
+          brew install molten-vk
           mkdir -p sccache_cache
-          export PATH=`pwd`/taichi-llvm/bin/:$PATH
           .github/workflows/scripts/unix_build.sh
           brew uninstall molten-vk
         env:
@@ -242,13 +249,13 @@ jobs:
       - name: Test
         id: test
         run: |
-          if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
+          if [[ "${{needs.check_files.outputs.run_job}}" == "false" ]]; then
             exit 0
           fi
           .github/workflows/scripts/unix_test.sh
         env:
           TI_WANTED_ARCHS: ${{ matrix.wanted_archs }}
-          TI_CI: 1
+          TI_SKIP_CPP_TESTS: Disabled because Vulkan is supported but not working on buildbot4
 
       - name: Save wheel if test failed
         if: failure() && steps.test.conclusion == 'failure'

@@ -71,31 +71,31 @@ def test_matrix():
 @test_utils.test(require=ti.extension.quant_basic)
 def test_quant_type():
     qit1 = ti.types.quant.int(bits=10, signed=True)
-    qfxt1 = ti.types.quant.fixed(frac=10, signed=True, scale=0.1)
+    qfxt1 = ti.types.quant.fixed(bits=10, signed=True, scale=0.1)
     qit2 = ti.types.quant.int(bits=22, signed=False)
-    qfxt2 = ti.types.quant.fixed(frac=22, signed=False, scale=0.1)
+    qfxt2 = ti.types.quant.fixed(bits=22, signed=False, scale=0.1)
     type_list = [[qit1, qfxt2], [qfxt1, qit2]]
     a = ti.Matrix.field(len(type_list), len(type_list[0]), dtype=type_list)
     b = ti.Matrix.field(len(type_list), len(type_list[0]), dtype=type_list)
     c = ti.Matrix.field(len(type_list), len(type_list[0]), dtype=type_list)
-    ti.root.dense(ti.i,
-                  1).bit_struct(num_bits=32).place(a.get_scalar_field(0, 0),
-                                                   a.get_scalar_field(0, 1))
-    ti.root.dense(ti.i,
-                  1).bit_struct(num_bits=32).place(a.get_scalar_field(1, 0),
-                                                   a.get_scalar_field(1, 1))
-    ti.root.dense(ti.i,
-                  1).bit_struct(num_bits=32).place(b.get_scalar_field(0, 0),
-                                                   b.get_scalar_field(0, 1))
-    ti.root.dense(ti.i,
-                  1).bit_struct(num_bits=32).place(b.get_scalar_field(1, 0),
-                                                   b.get_scalar_field(1, 1))
-    ti.root.dense(ti.i,
-                  1).bit_struct(num_bits=32).place(c.get_scalar_field(0, 0),
-                                                   c.get_scalar_field(0, 1))
-    ti.root.dense(ti.i,
-                  1).bit_struct(num_bits=32).place(c.get_scalar_field(1, 0),
-                                                   c.get_scalar_field(1, 1))
+    bitpack = ti.BitpackedFields(max_num_bits=32)
+    bitpack.place(a.get_scalar_field(0, 0), a.get_scalar_field(0, 1))
+    ti.root.dense(ti.i, 1).place(bitpack)
+    bitpack = ti.BitpackedFields(max_num_bits=32)
+    bitpack.place(a.get_scalar_field(1, 0), a.get_scalar_field(1, 1))
+    ti.root.dense(ti.i, 1).place(bitpack)
+    bitpack = ti.BitpackedFields(max_num_bits=32)
+    bitpack.place(b.get_scalar_field(0, 0), b.get_scalar_field(0, 1))
+    ti.root.dense(ti.i, 1).place(bitpack)
+    bitpack = ti.BitpackedFields(max_num_bits=32)
+    bitpack.place(b.get_scalar_field(1, 0), b.get_scalar_field(1, 1))
+    ti.root.dense(ti.i, 1).place(bitpack)
+    bitpack = ti.BitpackedFields(max_num_bits=32)
+    bitpack.place(c.get_scalar_field(0, 0), c.get_scalar_field(0, 1))
+    ti.root.dense(ti.i, 1).place(bitpack)
+    bitpack = ti.BitpackedFields(max_num_bits=32)
+    bitpack.place(c.get_scalar_field(1, 0), c.get_scalar_field(1, 1))
+    ti.root.dense(ti.i, 1).place(bitpack)
 
     @ti.kernel
     def init():

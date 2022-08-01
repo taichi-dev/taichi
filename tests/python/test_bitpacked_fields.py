@@ -15,7 +15,9 @@ def test_simple_array():
 
     N = 12
 
-    ti.root.dense(ti.i, N).bit_struct(num_bits=32).place(x, y)
+    bitpack = ti.BitpackedFields(max_num_bits=32)
+    bitpack.place(x, y)
+    ti.root.dense(ti.i, N).place(bitpack)
 
     @ti.kernel
     def set_val():
@@ -32,7 +34,7 @@ def test_simple_array():
     set_val()
     verify_val()
 
-    # Test bit_struct SNode read and write in Python-scope by calling the wrapped, untranslated function body
+    # Test read and write in Python-scope by calling the wrapped, untranslated function body
     set_val.__wrapped__()
     verify_val.__wrapped__()
 
@@ -55,7 +57,9 @@ def test_quant_int_load_and_store():
          [0, 0, 0], [123, 4567, 8], [10, 31, 11]],
         dtype=np.int32)
 
-    ti.root.bit_struct(num_bits=32).place(x, y, z)
+    bitpack = ti.BitpackedFields(max_num_bits=32)
+    bitpack.place(x, y, z)
+    ti.root.place(bitpack)
     test_case = ti.Vector.field(3, dtype=ti.i32, shape=len(test_case_np))
     test_case.from_numpy(test_case_np)
 
@@ -75,7 +79,7 @@ def test_quant_int_load_and_store():
         set_val(idx)
         verify_val(idx)
 
-    # Test bit_struct SNode read and write in Python-scope by calling the wrapped, untranslated function body
+    # Test read and write in Python-scope by calling the wrapped, untranslated function body
     for idx in range(len(test_case_np)):
         set_val.__wrapped__(idx)
         verify_val.__wrapped__(idx)
@@ -85,7 +89,9 @@ def test_quant_int_load_and_store():
 def test_quant_int_full_struct():
     qit = ti.types.quant.int(32, True)
     x = ti.field(dtype=qit)
-    ti.root.dense(ti.i, 1).bit_struct(num_bits=32).place(x)
+    bitpack = ti.BitpackedFields(max_num_bits=32)
+    bitpack.place(x)
+    ti.root.dense(ti.i, 1).place(bitpack)
 
     x[0] = 15
     assert x[0] == 15
@@ -94,9 +100,9 @@ def test_quant_int_full_struct():
     assert x[0] == 12
 
 
-def test_bit_struct():
-    def test_single_bit_struct(physical_type, compute_type, quant_bits,
-                               test_case):
+def test_bitpacked_fields():
+    def test_single_bitpacked_fields(physical_type, compute_type, quant_bits,
+                                     test_case):
         ti.init(arch=ti.cpu, debug=True)
 
         qit1 = ti.types.quant.int(quant_bits[0], True, compute_type)
@@ -106,7 +112,9 @@ def test_bit_struct():
         a = ti.field(dtype=qit1)
         b = ti.field(dtype=qit2)
         c = ti.field(dtype=qit3)
-        ti.root.bit_struct(num_bits=physical_type).place(a, b, c)
+        bitpack = ti.BitpackedFields(max_num_bits=physical_type)
+        bitpack.place(a, b, c)
+        ti.root.place(bitpack)
 
         @ti.kernel
         def set_val(test_val: ti.types.ndarray()):
@@ -125,33 +133,36 @@ def test_bit_struct():
 
         ti.reset()
 
-    test_single_bit_struct(8, ti.i8, [3, 3, 2],
-                           np.array([2**2 - 1, 2**3 - 1, -2**1]))
-    test_single_bit_struct(16, ti.i16, [4, 7, 5],
-                           np.array([2**3 - 1, 2**7 - 1, -2**4]))
-    test_single_bit_struct(32, ti.i32, [17, 11, 4],
-                           np.array([2**16 - 1, 2**10 - 1, -2**3]))
-    test_single_bit_struct(64, ti.i64, [32, 23, 9],
-                           np.array([2**31 - 1, 2**23 - 1, -2**8]))
-    test_single_bit_struct(32, ti.i16, [7, 12, 13],
-                           np.array([2**6 - 1, 2**12 - 1, -2**12]))
-    test_single_bit_struct(64, ti.i32, [18, 22, 24],
-                           np.array([2**17 - 1, 2**22 - 1, -2**23]))
+    test_single_bitpacked_fields(8, ti.i8, [3, 3, 2],
+                                 np.array([2**2 - 1, 2**3 - 1, -2**1]))
+    test_single_bitpacked_fields(16, ti.i16, [4, 7, 5],
+                                 np.array([2**3 - 1, 2**7 - 1, -2**4]))
+    test_single_bitpacked_fields(32, ti.i32, [17, 11, 4],
+                                 np.array([2**16 - 1, 2**10 - 1, -2**3]))
+    test_single_bitpacked_fields(64, ti.i64, [32, 23, 9],
+                                 np.array([2**31 - 1, 2**23 - 1, -2**8]))
+    test_single_bitpacked_fields(32, ti.i16, [7, 12, 13],
+                                 np.array([2**6 - 1, 2**12 - 1, -2**12]))
+    test_single_bitpacked_fields(64, ti.i32, [18, 22, 24],
+                                 np.array([2**17 - 1, 2**22 - 1, -2**23]))
 
-    test_single_bit_struct(16, ti.i16, [5, 5, 6], np.array([15, 5, 20]))
-    test_single_bit_struct(32, ti.i32, [10, 10, 12], np.array([11, 19, 2020]))
+    test_single_bitpacked_fields(16, ti.i16, [5, 5, 6], np.array([15, 5, 20]))
+    test_single_bitpacked_fields(32, ti.i32, [10, 10, 12],
+                                 np.array([11, 19, 2020]))
 
 
 @test_utils.test(require=[ti.extension.quant_basic, ti.extension.sparse],
                  debug=True)
-def test_bit_struct_struct_for():
+def test_bitpacked_fields_struct_for():
     block_size = 16
     N = 64
     cell = ti.root.pointer(ti.i, N // block_size)
-    fixed32 = ti.types.quant.fixed(frac=32, range=1024)
+    fixed32 = ti.types.quant.fixed(bits=32, max_value=1024)
 
     x = ti.field(dtype=fixed32)
-    cell.dense(ti.i, block_size).bit_struct(32).place(x)
+    bitpack = ti.BitpackedFields(max_num_bits=32)
+    bitpack.place(x)
+    cell.dense(ti.i, block_size).place(bitpack)
 
     for i in range(N):
         if i // block_size % 2 == 0:
@@ -169,3 +180,36 @@ def test_bit_struct_struct_for():
             assert x[i] == approx(i, abs=1e-3)
         else:
             assert x[i] == 0
+
+
+@test_utils.test(require=ti.extension.quant_basic, debug=True)
+def test_multiple_types():
+    f15 = ti.types.quant.float(exp=5, frac=10)
+    f18 = ti.types.quant.float(exp=5, frac=13)
+    u4 = ti.types.quant.int(bits=4, signed=False)
+
+    p = ti.field(dtype=f15)
+    q = ti.field(dtype=f18)
+    r = ti.field(dtype=u4)
+
+    bitpack = ti.BitpackedFields(max_num_bits=32)
+    bitpack.place(p, q, shared_exponent=True)
+    bitpack.place(r)
+    ti.root.dense(ti.i, 12).place(bitpack)
+
+    @ti.kernel
+    def set_val():
+        for i in p:
+            p[i] = i * 3
+            q[i] = i * 2
+            r[i] = i
+
+    @ti.kernel
+    def verify_val():
+        for i in p:
+            assert p[i] == i * 3
+            assert q[i] == i * 2
+            assert r[i] == i
+
+    set_val()
+    verify_val()

@@ -15,22 +15,23 @@
 namespace taichi {
 namespace lang {
 
-class CodeGenLLVM;
+class TaskCodeGenLLVM;
 
 class FunctionCreationGuard {
  public:
-  CodeGenLLVM *mb;
+  TaskCodeGenLLVM *mb;
   llvm::Function *old_func;
   llvm::Function *body;
   llvm::BasicBlock *old_entry, *allocas, *entry, *old_final, *final;
   llvm::IRBuilder<>::InsertPoint ip;
 
-  FunctionCreationGuard(CodeGenLLVM *mb, std::vector<llvm::Type *> arguments);
+  FunctionCreationGuard(TaskCodeGenLLVM *mb,
+                        std::vector<llvm::Type *> arguments);
 
   ~FunctionCreationGuard();
 };
 
-class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
+class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
  public:
   Kernel *kernel;
   IRNode *ir;
@@ -65,9 +66,9 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   using IRVisitor::visit;
   using LLVMModuleBuilder::call;
 
-  CodeGenLLVM(Kernel *kernel,
-              IRNode *ir = nullptr,
-              std::unique_ptr<llvm::Module> &&module = nullptr);
+  TaskCodeGenLLVM(Kernel *kernel,
+                  IRNode *ir = nullptr,
+                  std::unique_ptr<llvm::Module> &&module = nullptr);
 
   Arch current_arch() {
     return kernel->arch;
@@ -197,9 +198,16 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(SNodeOpStmt *stmt) override;
 
-  llvm::Value *atomic_add_quant_fixed(AtomicOpStmt *stmt, QuantFixedType *qfxt);
+  llvm::Value *atomic_add_quant_fixed(llvm::Value *ptr,
+                                      llvm::Type *physical_type,
+                                      QuantFixedType *qfxt,
+                                      llvm::Value *value);
 
-  llvm::Value *atomic_add_quant_int(AtomicOpStmt *stmt, QuantIntType *qit);
+  llvm::Value *atomic_add_quant_int(llvm::Value *ptr,
+                                    llvm::Type *physical_type,
+                                    QuantIntType *qit,
+                                    llvm::Value *value,
+                                    bool value_is_signed);
 
   llvm::Value *to_quant_fixed(llvm::Value *real, QuantFixedType *qfxt);
 
@@ -222,20 +230,20 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(PtrOffsetStmt *stmt) override;
 
-  void store_quant_int(llvm::Value *bit_ptr,
-                       PrimitiveType *physical_ty,
+  void store_quant_int(llvm::Value *ptr,
+                       llvm::Type *physical_type,
                        QuantIntType *qit,
                        llvm::Value *value,
                        bool atomic);
 
-  void store_quant_fixed(llvm::Value *bit_ptr,
-                         PrimitiveType *physical_ty,
+  void store_quant_fixed(llvm::Value *ptr,
+                         llvm::Type *physical_type,
                          QuantFixedType *qfxt,
                          llvm::Value *value,
                          bool atomic);
 
-  void store_masked(llvm::Value *byte_ptr,
-                    llvm::Type *byte_ptr_ty,
+  void store_masked(llvm::Value *ptr,
+                    llvm::Type *ty,
                     uint64 mask,
                     llvm::Value *value,
                     bool atomic);
@@ -244,51 +252,29 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   llvm::Value *quant_int_or_quant_fixed_to_bits(llvm::Value *val,
                                                 Type *input_type,
-                                                Type *output_type);
+                                                llvm::Type *output_type);
 
   void visit(BitStructStoreStmt *stmt) override;
 
   void store_quant_floats_with_shared_exponents(BitStructStoreStmt *stmt);
 
-  llvm::Value *extract_quant_float(llvm::Value *local_bit_struct,
-                                   SNode *digits_snode);
-
-  virtual llvm::Value *create_intrinsic_load(const DataType &dtype,
-                                             llvm::Value *data_ptr);
-
-  llvm::Value *load_quant_int(llvm::Value *ptr,
-                              QuantIntType *qit,
-                              Type *physical_type,
-                              bool should_cache_as_read_only);
+  llvm::Value *extract_quant_float(llvm::Value *physical_value,
+                                   BitStructType *bit_struct,
+                                   int digits_id);
 
   llvm::Value *extract_quant_int(llvm::Value *physical_value,
                                  llvm::Value *bit_offset,
                                  QuantIntType *qit);
 
-  llvm::Value *load_quant_fixed(llvm::Value *ptr,
-                                QuantFixedType *qfxt,
-                                Type *physical_type,
-                                bool should_cache_as_read_only);
-
   llvm::Value *reconstruct_quant_fixed(llvm::Value *digits,
                                        QuantFixedType *qfxt);
-
-  llvm::Value *load_quant_float(llvm::Value *digits_ptr,
-                                BitStructType *bit_struct,
-                                int digits_id,
-                                bool should_cache_as_read_only);
-
-  llvm::Value *load_quant_float(llvm::Value *digits_ptr,
-                                llvm::Value *exponent_ptr,
-                                QuantFloatType *qflt,
-                                Type *physical_type,
-                                bool should_cache_as_read_only,
-                                bool shared_exponent);
 
   llvm::Value *reconstruct_quant_float(llvm::Value *input_digits,
                                        llvm::Value *input_exponent_val,
                                        QuantFloatType *qflt,
                                        bool shared_exponent);
+
+  virtual llvm::Value *create_intrinsic_load(llvm::Value *ptr, llvm::Type *ty);
 
   void create_global_load(GlobalLoadStmt *stmt, bool should_cache_as_read_only);
 
@@ -307,8 +293,6 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   llvm::Value *create_bit_ptr(llvm::Value *byte_ptr, llvm::Value *bit_offset);
 
   std::tuple<llvm::Value *, llvm::Value *> load_bit_ptr(llvm::Value *bit_ptr);
-
-  llvm::Value *offset_bit_ptr(llvm::Value *bit_ptr, int bit_offset_delta);
 
   void visit(SNodeLookupStmt *stmt) override;
 
@@ -404,7 +388,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   llvm::Value *bitcast_from_u64(llvm::Value *val, DataType type);
   llvm::Value *bitcast_to_u64(llvm::Value *val, DataType type);
 
-  ~CodeGenLLVM() override = default;
+  ~TaskCodeGenLLVM() override = default;
 };
 
 }  // namespace lang

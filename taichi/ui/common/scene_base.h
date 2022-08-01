@@ -14,11 +14,19 @@ struct alignas(16) PointLight {
   glm::vec4 color;
 };
 
+struct MeshAttributeInfo {
+  FieldInfo mesh_attribute;
+  bool has_attribute{false};
+};
+
 struct MeshInfo {
   RenderableInfo renderable_info;
   glm::vec3 color;
   bool two_sided{false};
   int object_id{0};
+  int num_instances{1};
+  int start_instance{0};
+  MeshAttributeInfo mesh_attribute_info;
 };
 
 struct ParticlesInfo {
@@ -28,12 +36,22 @@ struct ParticlesInfo {
   int object_id{0};
 };
 
+struct SceneLinesInfo {
+  RenderableInfo renderable_info;
+  glm::vec3 color;
+  float width{0};
+  int object_id{0};
+};
+
 class SceneBase {
  public:
   void set_camera(const Camera &camera) {
     camera_ = camera;
   }
-
+  void lines(const SceneLinesInfo &info) {
+    scene_lines_infos_.push_back(info);
+    scene_lines_infos_.back().object_id = next_object_id_++;
+  }
   void mesh(const MeshInfo &info) {
     mesh_infos_.push_back(info);
     mesh_infos_.back().object_id = next_object_id_++;
@@ -54,6 +72,7 @@ class SceneBase {
   Camera camera_;
   glm::vec3 ambient_light_color_ = glm::vec3(0.1, 0.1, 0.1);
   std::vector<PointLight> point_lights_;
+  std::vector<SceneLinesInfo> scene_lines_infos_;
   std::vector<MeshInfo> mesh_infos_;
   std::vector<ParticlesInfo> particles_infos_;
   int next_object_id_ = 0;

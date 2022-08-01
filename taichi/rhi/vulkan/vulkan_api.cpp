@@ -54,6 +54,12 @@ DeviceObjVkFramebuffer::~DeviceObjVkFramebuffer() {
   vkDestroyFramebuffer(device, framebuffer, nullptr);
 }
 
+DeviceObjVkEvent::~DeviceObjVkEvent() {
+  if (!external) {
+    vkDestroyEvent(device, event, nullptr);
+  }
+}
+
 DeviceObjVkSemaphore::~DeviceObjVkSemaphore() {
   vkDestroySemaphore(device, semaphore, nullptr);
 }
@@ -84,10 +90,28 @@ DeviceObjVkAccelerationStructureKHR::~DeviceObjVkAccelerationStructureKHR() {
 
   destroy_raytracing_pipeline_khr(device, accel, nullptr);
 }
+DeviceObjVkQueryPool::~DeviceObjVkQueryPool() {
+  vkDestroyQueryPool(device, query_pool, nullptr);
+}
 
 IDeviceObj create_device_obj(VkDevice device) {
   IDeviceObj obj = std::make_shared<DeviceObj>();
   obj->device = device;
+  return obj;
+}
+
+IVkEvent create_event(VkDevice device,
+                      VkSemaphoreCreateFlags flags,
+                      void *pnext) {
+  IVkEvent obj = std::make_shared<DeviceObjVkEvent>();
+  obj->device = device;
+
+  VkEventCreateInfo info{};
+  info.sType = VK_STRUCTURE_TYPE_EVENT_CREATE_INFO;
+  info.pNext = pnext;
+  info.flags = flags;
+
+  vkCreateEvent(device, &info, nullptr, &obj->event);
   return obj;
 }
 
@@ -525,6 +549,22 @@ IVkAccelerationStructureKHR create_acceleration_structure(
 
   create_acceleration_structure_khr(buffer->device, &info, nullptr,
                                     &obj->accel);
+
+  return obj;
+}
+
+IVkQueryPool create_query_pool(VkDevice device) {
+  VkQueryPoolCreateInfo info{};
+  info.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
+  info.pNext = nullptr;
+  info.queryCount = 2;
+  info.queryType = VK_QUERY_TYPE_TIMESTAMP;
+
+  VkQueryPool query_pool;
+  vkCreateQueryPool(device, &info, nullptr, &query_pool);
+  IVkQueryPool obj = std::make_shared<DeviceObjVkQueryPool>();
+  obj->device = device;
+  obj->query_pool = query_pool;
 
   return obj;
 }

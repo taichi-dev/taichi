@@ -12,8 +12,6 @@ target_sources(llvm_runtime
     snode_tree_buffer_manager.cpp
   )
 
-#TODO #4832, some path here should not be included as they are
-# dependencies of other targets.
 target_include_directories(llvm_runtime
   PRIVATE
     ${PROJECT_SOURCE_DIR}

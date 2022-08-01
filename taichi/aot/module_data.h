@@ -44,6 +44,14 @@ struct BufferBind {
   TI_IO_DEF(buffer, binding);
 };
 
+struct TextureBind {
+  int arg_id;
+  int binding;
+  bool is_storage;
+
+  TI_IO_DEF(arg_id, binding, is_storage);
+};
+
 struct CompiledOffloadedTask {
   std::string type;
   std::string range_hint;
@@ -53,8 +61,15 @@ struct CompiledOffloadedTask {
   int gpu_block_size{0};
 
   std::vector<BufferBind> buffer_binds;
+  std::vector<TextureBind> texture_binds;
 
-  TI_IO_DEF(type, range_hint, name, source_path, gpu_block_size, buffer_binds);
+  TI_IO_DEF(type,
+            range_hint,
+            name,
+            source_path,
+            gpu_block_size,
+            buffer_binds,
+            texture_binds);
 };
 
 struct ScalarArg {

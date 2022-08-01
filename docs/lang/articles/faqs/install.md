@@ -129,9 +129,9 @@ sidebar_position: 2
 
   ... (many lines, omitted)
 
-  /lib/python3.8/site-packages/taichi/core/../lib/taichi_core.so: _glfwPlatformCreateWindow
-  /lib/python3.8/site-packages/taichi/core/../lib/taichi_core.so: glfwCreateWindow
-  /lib/python3.8/site-packages/taichi/core/../lib/taichi_core.so: taichi::lang::opengl::initialize_opengl(bool)
+  /lib/python3.8/site-packages/taichi/core/../lib/taichi_python.so: _glfwPlatformCreateWindow
+  /lib/python3.8/site-packages/taichi/core/../lib/taichi_python.so: glfwCreateWindow
+  /lib/python3.8/site-packages/taichi/core/../lib/taichi_python.so: taichi::lang::opengl::initialize_opengl(bool)
 
   ... (many lines, omitted)
   ```

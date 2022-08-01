@@ -201,7 +201,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
-    runs-on: macos-10.15
+    runs-on: [self-hosted, macos-10.15]
+    env:
+      PY: ${{ matrix.python }}
     steps:
       - uses: actions/checkout@v2
         with:
@@ -215,21 +217,19 @@ jobs:
           restore-keys: |
             sccache-mac-
 
-      - uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python }}
-
       - name: Download Pre-Built LLVM 10.0.0
         run: python misc/ci_download.py
         env:
-          CI_PLATFORM: macos-10.15
+          CI_PLATFORM: macos
 
       - name: Create Python Wheel
         run: |
           brew install molten-vk
           export PATH=$(pwd)/taichi-llvm/bin/:$PATH
+          export PATH=$(ls -d ~/mini*/envs/$PY/bin):$PATH
           bash .github/workflows/scripts/unix_build.sh
           brew uninstall molten-vk
+          echo PATH=$PATH >> $GITHUB_ENV
         env:
           TAICHI_CMAKE_ARGS: -DTI_WITH_VULKAN:BOOL=ON -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           PROJECT_NAME: ${{ matrix.name }}

@@ -34,6 +34,7 @@ class KernelProfilerCUDA : public KernelProfilerBase {
              uint32_t block_size,
              uint32_t dynamic_smem_size);
   void sync() override;
+  void update() override;
   void clear() override;
   void stop(KernelProfilerBase::TaskHandle handle) override;
 

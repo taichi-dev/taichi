@@ -32,7 +32,7 @@ class InvokeRefineCoordinatesBuilder : public LLVMModuleBuilder {
   static FuncType build(const SNode *snode, TaichiLLVMContext *tlctx) {
     InvokeRefineCoordinatesBuilder mb{tlctx};
     mb.run_jit(snode);
-    tlctx->add_module(std::move(mb.module));
+    tlctx->create_jit_module(std::move(mb.module));
     auto *fn = tlctx->lookup_function_pointer(kFuncName);
     return reinterpret_cast<FuncType>(fn);
   }

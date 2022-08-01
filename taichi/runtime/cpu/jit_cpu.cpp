@@ -191,7 +191,7 @@ class JITSessionCPU : public JITSession {
     TI_ASSERT(dylib_expect);
     auto &dylib = dylib_expect.get();
 #else
-    auto &dylib = es_.createJITDylib(fmt::format("{}", module_counter_)).get();
+    auto &dylib = es_.createJITDylib(fmt::format("{}", module_counter_));
 #endif
     dylib.addGenerator(
         cantFail(llvm::orc::DynamicLibrarySearchGenerator::GetForCurrentProcess(

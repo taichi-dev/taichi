@@ -70,11 +70,7 @@ class LLVMModuleBuilder {
     builder->SetInsertPoint(entry_block);
     auto alloca = builder->CreateAlloca(type, (unsigned)0, array_size);
     if (alignment != 0) {
-#ifdef TI_LLVM_15
       alloca->setAlignment(llvm::Align(alignment));
-#else
-      alloca->setAlignment(llvm::Align(alignment));
-#endif
     }
     return alloca;
   }
@@ -142,7 +138,7 @@ class LLVMModuleBuilder {
     auto func = get_struct_function(func_name);
     auto arglist = std::vector<llvm::Value *>({args...});
     check_func_call_signature(func->getFunctionType(), func->getName(), arglist,
-                              builder);
+                              builder.get());
     return builder->CreateCall(func, arglist);
   }
 

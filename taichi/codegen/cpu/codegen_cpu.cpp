@@ -235,10 +235,10 @@ FunctionType CPUModuleToFunctionConverter::convert(
     const std::string &kernel_name,
     const std::vector<LlvmLaunchArgInfo> &args,
     std::vector<LLVMCompiledData> &&data) const {
-  tlctx_->create_jit_module(tlctx_->clone_runtime_module());
-  tlctx_->create_jit_module(tlctx_->clone_struct_module());
+  auto *jit_module = tlctx_->create_jit_module(tlctx_->clone_runtime_module());
+  jit_module->add_module(tlctx_->clone_struct_module());
   for (auto &datum : data) {
-    tlctx_->create_jit_module(std::move(datum.module));
+    jit_module->add_module(std::move(datum.module));
   }
 
   using TaskFunc = int32 (*)(void *);
@@ -246,7 +246,7 @@ FunctionType CPUModuleToFunctionConverter::convert(
   task_funcs.reserve(data.size());
   for (auto &datum : data) {
     for (auto &task : datum.tasks) {
-      auto *func_ptr = tlctx_->lookup_function_pointer(task.name);
+      auto *func_ptr = jit_module->lookup_function(task.name);
       TI_ASSERT_INFO(func_ptr, "Offloaded datum function {} not found",
                      task.name);
       task_funcs.push_back((TaskFunc)(func_ptr));

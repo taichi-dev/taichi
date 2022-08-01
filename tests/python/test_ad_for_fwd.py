@@ -2,7 +2,7 @@ import taichi as ti
 from tests import test_utils
 
 
-@test_utils.test()
+@test_utils.test(exclude=[ti.cc, ti.opengl])
 def test_ad_sum_fwd():
     N = 10
     a = ti.field(ti.f32, shape=N)
@@ -44,7 +44,7 @@ def test_ad_sum_fwd():
         assert p.dual[i] == b[i]
 
 
-@test_utils.test()
+@test_utils.test(exclude=[ti.cc, ti.opengl])
 def test_ad_sum_local_atomic_fwd():
     N = 10
     a = ti.field(ti.f32, shape=N)
@@ -74,7 +74,7 @@ def test_ad_sum_local_atomic_fwd():
         assert p.dual[i] == b[i]
 
 
-@test_utils.test()
+@test_utils.test(exclude=[ti.cc, ti.opengl])
 def test_ad_power_fwd():
     N = 10
     a = ti.field(ti.f32, shape=N)
@@ -104,7 +104,7 @@ def test_ad_power_fwd():
         assert p.dual[i] == b[i] * 3**(b[i] - 1)
 
 
-@test_utils.test()
+@test_utils.test(exclude=[ti.cc, ti.opengl])
 def test_ad_fibonacci_fwd():
     N = 15
     a = ti.field(ti.f32, shape=N)
@@ -143,7 +143,7 @@ def test_ad_fibonacci_fwd():
         assert f.dual[i] == f[i]
 
 
-@test_utils.test()
+@test_utils.test(exclude=[ti.cc, ti.opengl])
 def test_ad_fibonacci_index_fwd():
     N = 5
     M = 10
@@ -175,7 +175,7 @@ def test_ad_fibonacci_index_fwd():
         assert b[i] == is_fib * N
 
 
-@test_utils.test(exclude=[ti.cc])
+@test_utils.test(exclude=[ti.cc, ti.opengl])
 def test_double_for_loops():
     N = 5
     a = ti.field(ti.f32, shape=N)
@@ -214,7 +214,7 @@ def test_double_for_loops():
         assert f.dual[i] == 2 * i
 
 
-@test_utils.test(exclude=[ti.cc])
+@test_utils.test(exclude=[ti.cc, ti.opengl])
 def test_double_for_loops_more_nests():
     N = 6
     a = ti.field(ti.f32, shape=N, needs_dual=True)
@@ -266,7 +266,7 @@ def test_double_for_loops_more_nests():
             assert f.dual[i, k] == total_grad_b
 
 
-@test_utils.test(exclude=[ti.cc])
+@test_utils.test(exclude=[ti.cc, ti.opengl])
 def test_complex_body():
     N = 5
     a = ti.field(ti.f32, shape=N, needs_dual=True)
@@ -305,7 +305,7 @@ def test_complex_body():
         assert f.dual[i] == g[i]
 
 
-@test_utils.test(exclude=[ti.cc])
+@test_utils.test(exclude=[ti.cc, ti.opengl])
 def test_triple_for_loops_bls():
     N = 8
     M = 3
@@ -353,7 +353,7 @@ def test_triple_for_loops_bls():
             assert f.dual[i, k] == 2 * M
 
 
-@test_utils.test(exclude=[ti.cc])
+@test_utils.test(exclude=[ti.cc, ti.opengl])
 def test_mixed_inner_loops():
     x = ti.field(dtype=ti.f32, shape=(), needs_dual=True)
     arr = ti.field(dtype=ti.f32, shape=(5))
@@ -374,7 +374,7 @@ def test_mixed_inner_loops():
     assert loss.dual[None] == 15.0
 
 
-@test_utils.test(exclude=[ti.cc])
+@test_utils.test(exclude=[ti.cc, ti.opengl])
 def test_inner_loops_local_variable():
     x = ti.field(dtype=float, shape=(), needs_dual=True)
     arr = ti.field(dtype=float, shape=(2), needs_dual=True)
@@ -399,7 +399,7 @@ def test_inner_loops_local_variable():
     assert loss.dual[None] == 36.0
 
 
-@test_utils.test(exclude=[ti.cc])
+@test_utils.test(exclude=[ti.cc, ti.opengl])
 def test_more_inner_loops_local_variable():
     x = ti.field(dtype=float, shape=(), needs_dual=True)
     arr = ti.field(dtype=float, shape=(2), needs_dual=True)
@@ -426,7 +426,7 @@ def test_more_inner_loops_local_variable():
     assert loss.dual[None] == 36.0
 
 
-@test_utils.test(exclude=[ti.cc])
+@test_utils.test(exclude=[ti.cc, ti.opengl])
 def test_stacked_inner_loops_local_variable():
     x = ti.field(dtype=float, shape=(), needs_dual=True)
     arr = ti.field(dtype=float, shape=(2), needs_dual=True)
@@ -455,7 +455,7 @@ def test_stacked_inner_loops_local_variable():
     assert loss.dual[None] == 38.0
 
 
-@test_utils.test(exclude=[ti.cc])
+@test_utils.test(exclude=[ti.cc, ti.opengl])
 def test_stacked_mixed_ib_and_non_ib_inner_loops_local_variable():
     x = ti.field(dtype=float, shape=(), needs_dual=True)
     arr = ti.field(dtype=float, shape=(2), needs_dual=True)
@@ -485,7 +485,7 @@ def test_stacked_mixed_ib_and_non_ib_inner_loops_local_variable():
     assert loss.dual[None] == 56.0
 
 
-@test_utils.test(exclude=[ti.cc])
+@test_utils.test(exclude=[ti.cc, ti.opengl])
 def test_large_for_loops_adaptive_stack_size():
     x = ti.field(dtype=float, shape=(), needs_dual=True)
     arr = ti.field(dtype=float, shape=(2), needs_dual=True)
@@ -505,7 +505,7 @@ def test_large_for_loops_adaptive_stack_size():
     assert loss.dual[None] == 1e7
 
 
-@test_utils.test(exclude=[ti.cc])
+@test_utils.test(exclude=[ti.cc, ti.opengl])
 def test_multiple_ib():
     x = ti.field(float, (), needs_dual=True)
     y = ti.field(float, (), needs_dual=True)

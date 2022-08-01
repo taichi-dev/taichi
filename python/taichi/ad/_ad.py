@@ -223,13 +223,13 @@ def no_grad(func):
 
 
 class FwdMode:
-    def __init__(self, loss, parameters, seed=None, clear_gradients=True):
+    def __init__(self, loss, param, seed=None, clear_gradients=True):
         self.calls = []
         self.entered = False
         self.kernels_recovered = False
         self.runtime = impl.get_runtime()
         self.loss = loss
-        self.parameters = parameters
+        self.parameters = param
         self.seed = seed
         self.clear_gradients = clear_gradients
 

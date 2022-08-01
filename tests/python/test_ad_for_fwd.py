@@ -27,7 +27,7 @@ def test_ad_sum_fwd():
     for i in range(N):
         assert p[i] == a[i] * b[i] + 1
 
-    with ti.ad.FwdMode(loss=p, parameters=a, seed=[1.0 for _ in range(N)]):
+    with ti.ad.FwdMode(loss=p, param=a, seed=[1.0 for _ in range(N)]):
         compute_sum()
 
     for i in range(N):
@@ -35,7 +35,7 @@ def test_ad_sum_fwd():
         assert a.dual[i] == 0
 
     with ti.ad.FwdMode(loss=p,
-                       parameters=a,
+                       param=a,
                        seed=[1.0 for _ in range(N)],
                        clear_gradients=False):
         pass
@@ -64,7 +64,7 @@ def test_ad_sum_local_atomic_fwd():
         a[i] = 3
         b[i] = i
 
-    with ti.ad.FwdMode(loss=p, parameters=a, seed=[1.0 for _ in range(N)]):
+    with ti.ad.FwdMode(loss=p, param=a, seed=[1.0 for _ in range(N)]):
         compute_sum()
 
     for i in range(N):
@@ -94,7 +94,7 @@ def test_ad_power_fwd():
         a[i] = 3
         b[i] = i
 
-    with ti.ad.FwdMode(loss=p, parameters=a, seed=[1.0 for _ in range(N)]):
+    with ti.ad.FwdMode(loss=p, param=a, seed=[1.0 for _ in range(N)]):
         power()
 
     for i in range(N):
@@ -128,7 +128,7 @@ def test_ad_fibonacci_fwd():
         c[i] = i
 
     fib()
-    with ti.ad.FwdMode(loss=f, parameters=a, seed=[1.0 for _ in range(N)]):
+    with ti.ad.FwdMode(loss=f, param=a, seed=[1.0 for _ in range(N)]):
         fib()
 
     for i in range(N):
@@ -137,7 +137,7 @@ def test_ad_fibonacci_fwd():
         else:
             assert f.dual[i] == f[i - 1]
 
-    with ti.ad.FwdMode(loss=f, parameters=b, seed=[1.0 for _ in range(N)]):
+    with ti.ad.FwdMode(loss=f, param=b, seed=[1.0 for _ in range(N)]):
         fib()
     for i in range(N):
         assert f.dual[i] == f[i]
@@ -166,7 +166,7 @@ def test_ad_fibonacci_index_fwd():
 
     a.fill(1)
 
-    with ti.ad.FwdMode(loss=f, parameters=a, seed=[1.0 for _ in range(M)]):
+    with ti.ad.FwdMode(loss=f, param=a, seed=[1.0 for _ in range(M)]):
         fib()
 
     for i in range(M):
@@ -201,13 +201,13 @@ def test_double_for_loops():
     for i in range(N):
         c[i] = i
 
-    with ti.ad.FwdMode(loss=f, parameters=a, seed=[1.0 for _ in range(N)]):
+    with ti.ad.FwdMode(loss=f, param=a, seed=[1.0 for _ in range(N)]):
         double_for()
 
     for i in range(N):
         assert f.dual[i] == 2 * i * i * 2**(i - 1)
 
-    with ti.ad.FwdMode(loss=f, parameters=b, seed=[1.0 for _ in range(N)]):
+    with ti.ad.FwdMode(loss=f, param=b, seed=[1.0 for _ in range(N)]):
         double_for()
 
     for i in range(N):
@@ -247,7 +247,7 @@ def test_double_for_loops_more_nests():
         for k in range(N // 2):
             assert f[i, k] == 2 * (i + k) * (1 + 2**(i + k))
 
-    with ti.ad.FwdMode(loss=f, parameters=a, seed=[1.0 for _ in range(N)]):
+    with ti.ad.FwdMode(loss=f, param=a, seed=[1.0 for _ in range(N)]):
         double_for()
 
     for i in range(N):
@@ -256,7 +256,7 @@ def test_double_for_loops_more_nests():
             total_grad_a = 2 * (i + k)**2 * 2**(i + k - 1)
             assert f.dual[i, k] == total_grad_a
 
-    with ti.ad.FwdMode(loss=f, parameters=b, seed=[1.0 for _ in range(N)]):
+    with ti.ad.FwdMode(loss=f, param=b, seed=[1.0 for _ in range(N)]):
         double_for()
 
     for i in range(N):
@@ -298,7 +298,7 @@ def test_complex_body():
     for i in range(N):
         c[i] = i
 
-    with ti.ad.FwdMode(loss=f, parameters=a, seed=[1.0 for _ in range(N)]):
+    with ti.ad.FwdMode(loss=f, param=a, seed=[1.0 for _ in range(N)]):
         complex()
 
     for i in range(N):
@@ -338,14 +338,14 @@ def test_triple_for_loops_bls():
         for k in range(N):
             assert f[i, k] == 2 * M * 2**M + (4 * i + 2 * M - 1) * M
 
-    with ti.ad.FwdMode(loss=f, parameters=a, seed=[1.0 for _ in range(N)]):
+    with ti.ad.FwdMode(loss=f, param=a, seed=[1.0 for _ in range(N)]):
         triple_for()
 
     for i in range(N - M):
         for k in range(N):
             assert f.dual[i, k] == 2 * M * M * 2**(M - 1)
 
-    with ti.ad.FwdMode(loss=f, parameters=b, seed=[1.0 for _ in range(2 * N)]):
+    with ti.ad.FwdMode(loss=f, param=b, seed=[1.0 for _ in range(2 * N)]):
         triple_for()
 
     for i in range(N - M):

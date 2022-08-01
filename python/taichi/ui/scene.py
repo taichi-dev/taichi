@@ -14,9 +14,9 @@ normals_field_cache = {}
 
 
 class DisplayMode_:
-    Fill = _ti_core.DisplayMode.Fill
-    Line = _ti_core.DisplayMode.Line
-    Point = _ti_core.DisplayMode.Point
+    Fill = _ti_core.DisplayMode.Fill if _ti_core.GGUI_AVAILABLE else None
+    Line = _ti_core.DisplayMode.Line if _ti_core.GGUI_AVAILABLE else None
+    Point = _ti_core.DisplayMode.Point if _ti_core.GGUI_AVAILABLE else None
 
     @staticmethod
     def __call__(mode: int):

@@ -572,7 +572,7 @@ void export_ggui(py::module &m) {
       .value("Orthogonal", ProjectionMode::Orthogonal)
       .export_values();
 
-  py::enum_<taichi::lang::PolygonMode>(m, "DisplayMode", py::arithmetic())
+  py::enum_<taichi::lang::PolygonMode>(m, "DisplayMode")
       .value("Fill", taichi::lang::PolygonMode::Fill)
       .value("Line", taichi::lang::PolygonMode::Line)
       .value("Point", taichi::lang::PolygonMode::Point)

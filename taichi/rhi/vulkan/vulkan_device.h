@@ -436,6 +436,8 @@ class VulkanCommandList : public CommandList {
   vkapi::IVkCommandBuffer vk_command_buffer();
   vkapi::IVkQueryPool vk_query_pool();
 
+  VkImageLayout get_image_layout(const DeviceAllocation& image);
+
  private:
   friend class VulkanStream;
 
@@ -466,8 +468,6 @@ class VulkanCommandList : public CommandList {
     VkImageLayout new_layout;
   };
   std::unordered_map<DeviceAllocationId, PendingImageLayout> pending_image_layouts_;
-
-  VkImageLayout get_image_layout(const DeviceAllocation& image);
 };
 
 class VulkanSurface : public Surface {
@@ -679,6 +679,8 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
       VulkanResourceBinder::Set &set);
   vkapi::IVkDescriptorSet alloc_desc_set(vkapi::IVkDescriptorSetLayout layout);
 
+  VkImageLayout get_image_layout(const DeviceAllocation& image);
+
  private:
   friend VulkanSurface;
   friend VulkanCommandList;
@@ -728,8 +730,6 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
 
   unordered_map<uint32_t, ImageAllocInternal> image_allocations_;
   std::unordered_map<DeviceAllocationId, VkImageLayout> tracked_image_layouts_;
-
-  VkImageLayout get_image_layout(const DeviceAllocation& image);
 
   // Renderpass
   unordered_map<VulkanRenderPassDesc,

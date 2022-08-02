@@ -2149,6 +2149,10 @@ vkapi::IVkDescriptorSet VulkanDevice::alloc_desc_set(
   return set;
 }
 
+VkImageLayout VulkanDevice::get_image_layout(const DeviceAllocation& image) {
+  return tracked_image_layouts_.at(image.alloc_id);
+}
+
 void VulkanDevice::create_vma_allocator() {
   VmaAllocatorCreateInfo allocatorInfo = {};
   allocatorInfo.vulkanApiVersion =
@@ -2251,10 +2255,6 @@ void VulkanDevice::new_descriptor_pool() {
   pool_info.poolSizeCount = pool_sizes.size();
   pool_info.pPoolSizes = pool_sizes.data();
   desc_pool_ = vkapi::create_descriptor_pool(device_, &pool_info);
-}
-
-VkImageLayout VulkanDevice::get_image_layout(const DeviceAllocation& image) {
-  return tracked_image_layouts_.at(image.alloc_id);
 }
 
 VkPresentModeKHR choose_swap_present_mode(

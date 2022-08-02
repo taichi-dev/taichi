@@ -126,7 +126,7 @@ def copy_image_u8_to_pack32_rgba(src: ti.template(), dst: ti.template(),
 image_field_cache = {}
 
 
-def to_pack32_rgba(image):
+def to_rgba8(image):
     if not hasattr(image, 'n') or image.m != 1:
         raise Exception(
             'the input image needs to be a Vector field (matrix with 1 column)'

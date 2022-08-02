@@ -1,5 +1,5 @@
 from .staging_buffer import (copy_colors_to_vbo, copy_vertices_to_vbo,
-                             get_vbo_field, to_pack32_rgba)
+                             get_vbo_field, to_rgba8)
 from .utils import get_field_info
 
 
@@ -28,7 +28,7 @@ class Canvas:
             img (numpy.ndarray, :class:`~taichi.MatrixField`, :class:`~taichi.Field`): \
                 the image to be shown.
         """
-        staging_img = to_pack32_rgba(img)
+        staging_img = to_rgba8(img)
         info = get_field_info(staging_img)
         self.canvas.set_image(info)
 

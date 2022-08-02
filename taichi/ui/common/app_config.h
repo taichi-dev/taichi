@@ -3,7 +3,6 @@
 #include <string>
 #include "taichi/ui/utils/utils.h"
 #include "taichi/rhi/arch.h"
-#include "taichi/rhi/vulkan/vulkan_device.h"
 
 namespace taichi {
 namespace ui {

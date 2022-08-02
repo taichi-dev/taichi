@@ -50,9 +50,9 @@ void Mesh::update_data(const MeshInfo &info, const Scene &scene) {
           "ti.i32");
     }
 
-    size_t correct_mesh_ssbo_size = attr_field.shape[0] * attr_field.matrix_rows *
-                                    attr_field.matrix_cols *
-                                    data_type_size(attr_field.dtype);
+    size_t correct_mesh_ssbo_size =
+        attr_field.shape[0] * attr_field.matrix_rows * attr_field.matrix_cols *
+        data_type_size(attr_field.dtype);
 
     if (correct_mesh_ssbo_size != mesh_ssbo_size_) {
       resize_mesh_storage_buffers(correct_mesh_ssbo_size);

@@ -14,6 +14,11 @@
 #include "taichi/codegen/cuda/codegen_cuda.h"
 #endif
 
+#if defined(TI_WITH_DX12)
+#include "taichi/runtime/dx12/aot_module_builder_impl.h"
+#include "taichi/codegen/dx12/codegen_dx12.h"
+#endif
+
 namespace taichi {
 namespace lang {
 
@@ -55,7 +60,11 @@ std::unique_ptr<StructCompiler> LlvmProgramImpl::compile_snode_tree_types_impl(
         has_multiple_snode_trees, runtime_exec_->llvm_context_host_.get());
     struct_compiler = std::make_unique<StructCompilerLLVM>(
         host_arch(), this, std::move(host_module), tree->id());
-
+  } else if (config->arch == Arch::dx12) {
+    auto device_module = clone_struct_compiler_initial_context(
+        has_multiple_snode_trees, runtime_exec_->llvm_context_device_.get());
+    struct_compiler = std::make_unique<StructCompilerLLVM>(
+        Arch::dx12, this, std::move(device_module), tree->id());
   } else {
     TI_ASSERT(config->arch == Arch::cuda);
     auto device_module = clone_struct_compiler_initial_context(
@@ -96,6 +105,12 @@ std::unique_ptr<AotModuleBuilder> LlvmProgramImpl::make_aot_module_builder() {
 #if defined(TI_WITH_CUDA)
   if (config->arch == Arch::cuda) {
     return std::make_unique<cuda::AotModuleBuilderImpl>(this);
+  }
+#endif
+
+#if defined(TI_WITH_DX12)
+  if (config->arch == Arch::dx12) {
+    return std::make_unique<directx12::AotModuleBuilderImpl>(this);
   }
 #endif
 

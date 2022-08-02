@@ -1,5 +1,6 @@
 #include "taichi/aot/module_loader.h"
 
+#include "taichi/runtime/dx12/aot_module_loader_impl.h"
 #include "taichi/runtime/gfx/aot_module_loader_impl.h"
 #include "taichi/runtime/metal/aot_module_loader_impl.h"
 
@@ -37,6 +38,10 @@ std::unique_ptr<Module> Module::load(Arch arch, std::any mod_params) {
   } else if (arch == Arch::dx11) {
 #ifdef TI_WITH_DX11
     return gfx::make_aot_module(mod_params, arch);
+#endif
+  } else if (arch == Arch::dx12) {
+#ifdef TI_WITH_DX12
+    return directx12::make_aot_module(mod_params, arch);
 #endif
   } else if (arch == Arch::metal) {
 #ifdef TI_WITH_METAL

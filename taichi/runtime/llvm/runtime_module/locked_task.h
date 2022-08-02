@@ -9,6 +9,12 @@ class lock_guard {
     if (test())
       func();
     mutex_unlock_i32(lock);
+#elif ARCH_dx12
+    // FIXME: create dx12 implementation.
+    mutex_lock_i32(lock);
+    if (test())
+      func();
+    mutex_unlock_i32(lock);
 #else
     // CUDA
 

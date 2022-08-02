@@ -123,7 +123,7 @@ struct ModuleData {
 
   size_t root_buffer_size;
 
-  void dump_json(std::string path) {
+  void dump_json(std::string path) const {
     TextSerializer ts;
     ts.serialize_to_json("aot_data", *this);
     ts.write_to_file(path);

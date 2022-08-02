@@ -328,6 +328,8 @@ Arch Program::get_accessor_arch() {
     return Arch::cc;
   } else if (config.arch == Arch::dx11) {
     return Arch::dx11;
+  } else if (config.arch == Arch::dx12) {
+    return Arch::dx12;
   } else {
     return get_host_arch();
   }

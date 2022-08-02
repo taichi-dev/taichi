@@ -316,12 +316,9 @@ def _make_entries_initializer(is_matrix: bool) -> _MatrixEntriesInitializer:
                 expr.make_expr_group([expr.Expr(x) for x in arr]))
             mat = []
             for i in range(len(arr)):
-                mat.append(
-                    list([
-                        impl.make_index_expr(
+                mat.append(impl.make_index_expr(
                             local_tensor_proxy,
-                            (expr.Expr(i, dtype=primitive_types.i32), ))
-                    ]))
+                            (expr.Expr(i, dtype=primitive_types.i32), )))
             return local_tensor_proxy, mat
 
         def _get_entry_to_infer(self, arr):
@@ -437,11 +434,10 @@ class Matrix(TaichiOperations):
                     dt = initializer.infer_dt(arr)
                 local_tensor_proxy, mat = initializer.with_dynamic_index(
                     arr, dt)
-
         self.n, self.m = len(mat), 1
         if self.ndim > 1:
             self.m = len(mat[0])
-        entries = [x for row in mat for x in row] if is_matrix else [x for x in mat]
+        entries = [x for row in mat for x in row] if self.ndim > 1 else [x for x in mat]
 
         if self.n * self.m > 32 and not suppress_warning:
             warning(

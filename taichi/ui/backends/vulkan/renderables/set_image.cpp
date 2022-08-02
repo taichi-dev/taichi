@@ -48,6 +48,7 @@ void SetImage::update_data(const SetImageInfo &info) {
   // @TODO: Make the number of channel configurable?
   TI_ASSERT(img.dtype == taichi::lang::PrimitiveType::f32 ||
             img.dtype == taichi::lang::PrimitiveType::u32);
+  texture_dtype_ = img.dtype;
 
   int new_channels = img.matrix_cols * img.matrix_rows;
   if (img.dtype == taichi::lang::PrimitiveType::u32) {
@@ -62,18 +63,20 @@ void SetImage::update_data(const SetImageInfo &info) {
   int new_width = get_correct_dimension(img.shape[0]);
   int new_height = get_correct_dimension(img.shape[1]);
 
-  if (new_width != width || new_height != height || new_channels != channels) {
+  if (new_width != width || new_height != height) {
     destroy_texture();
     free_buffers();
-    init_set_image(app_context_, new_width, new_height, new_channels);
+    init_set_image(app_context_, new_width, new_height);
   }
 
   update_ubo(img.shape[0] / (float)new_width, img.shape[1] / (float)new_height);
 
+  int pixels = width * height;
+
   app_context_->device().image_transition(texture_, ImageLayout::shader_read,
                                           ImageLayout::transfer_dst);
 
-  uint64_t img_size = image_size();
+  uint64_t img_size = pixels * data_type_size(texture_dtype_) * 4;
 
   // If there is no current program, VBO information should be provided directly
   // instead of accessing through the current SNode
@@ -114,13 +117,12 @@ void SetImage::update_data(const SetImageInfo &info) {
 }
 
 SetImage::SetImage(AppContext *app_context, VertexAttributes vbo_attrs) {
-  init_set_image(app_context, 1, 1, 4);
+  init_set_image(app_context, 1, 1);
 }
 
 void SetImage::init_set_image(AppContext *app_context,
                               int img_width,
-                              int img_height,
-                              int img_channels) {
+                              int img_height) {
   RenderableConfig config = {
       6,
       6,
@@ -142,7 +144,6 @@ void SetImage::init_set_image(AppContext *app_context,
 
   width = img_width;
   height = img_height;
-  channels = img_channels;
 
   create_texture();
 
@@ -153,7 +154,7 @@ void SetImage::init_set_image(AppContext *app_context,
 }
 
 void SetImage::create_texture() {
-  size_t img_size = image_size();
+  size_t image_size = width * height * data_type_size(texture_dtype_) * 4;
 
   ImageParams params;
   params.dimension = ImageDimension::d2D;
@@ -170,13 +171,13 @@ void SetImage::create_texture() {
 
   texture_ = app_context_->device().create_image(params);
 
-  Device::AllocParams cpu_staging_buffer_params{img_size, true, false, false,
+  Device::AllocParams cpu_staging_buffer_params{image_size, true, false, false,
                                                 AllocUsage::Uniform};
   cpu_staging_buffer_ =
       app_context_->device().allocate_memory(cpu_staging_buffer_params);
 
   Device::AllocParams gpu_staging_buffer_params{
-      img_size, false, false, app_context_->requires_export_sharing(),
+      image_size, false, false, app_context_->requires_export_sharing(),
       AllocUsage::Uniform};
   gpu_staging_buffer_ =
       app_context_->device().allocate_memory(gpu_staging_buffer_params);

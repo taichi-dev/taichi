@@ -28,7 +28,7 @@ namespace vulkan {
 
 class SetImage final : public Renderable {
  public:
-  int width, height, channels;
+  int width, height;
 
   struct UniformBufferObject {
     // in non_packed_mode,
@@ -53,8 +53,7 @@ class SetImage final : public Renderable {
  private:
   void init_set_image(AppContext *app_context,
                       int img_width,
-                      int img_height,
-                      int img_channels);
+                      int img_height);
 
   virtual void create_bindings() override;
 
@@ -68,10 +67,6 @@ class SetImage final : public Renderable {
   int get_correct_dimension(int dimension);
 
   void update_ubo(float x_factor, float y_factor);
-
-  inline uint64_t image_size() const {
-    return width * height * data_type_size(texture_dtype_) * channels;
-  }
 };
 
 }  // namespace vulkan

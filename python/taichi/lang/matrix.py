@@ -305,11 +305,10 @@ class _MatrixEntriesInitializer:
 def _make_entries_initializer(is_matrix: bool) -> _MatrixEntriesInitializer:
     class _VecImpl(_MatrixEntriesInitializer):
         def pyscope_or_ref(self, arr):
-            return [[x] for x in arr]
+            return [x for x in arr]
 
         def no_dynamic_index(self, arr, dt):
-            return [[impl.expr_init(ops_mod.cast(x, dt) if dt else x)]
-                    for x in arr]
+            return [impl.expr_init(ops_mod.cast(x, dt) if dt else x) for x in arr]
 
         def with_dynamic_index(self, arr, dt):
             local_tensor_proxy = impl.expr_init_local_tensor(
@@ -414,11 +413,13 @@ class Matrix(TaichiOperations):
             )
         if len(arr) == 0:
             mat = []
+            self.ndim = 0
         elif isinstance(arr[0], Matrix):
             raise Exception('cols/rows required when using list of vectors')
         else:
             is_matrix = isinstance(arr[0], Iterable)
             initializer = _make_entries_initializer(is_matrix)
+            self.ndim = 2 if is_matrix else 1
 
             if in_python_scope() or is_ref:
                 mat = initializer.pyscope_or_ref(arr)
@@ -437,9 +438,9 @@ class Matrix(TaichiOperations):
                     arr, dt)
 
         self.n, self.m = len(mat), 1
-        if len(mat) > 0:
+        if self.ndim > 1:
             self.m = len(mat[0])
-        entries = [x for row in mat for x in row]
+        entries = [x for row in mat for x in row] if is_matrix else [x for x in mat]
 
         if self.n * self.m > 32 and not suppress_warning:
             warning(
@@ -540,6 +541,7 @@ class Matrix(TaichiOperations):
             The value of the element at a specific position of a matrix.
 
         """
+        assert len(indices) == self.ndim, f"Expected {self.ndim} indices, got {len(indices)}"
         return self._impl[indices]
 
     @python_scope
@@ -550,6 +552,7 @@ class Matrix(TaichiOperations):
             indices (Sequence[Expr]): the indices of a element.
 
         """
+        assert len(indices) == self.ndim, f"Expected {self.ndim} indices, got {len(indices)}"
         self._impl[indices] = item
 
     def __call__(self, *args, **kwargs):
@@ -584,6 +587,7 @@ class Matrix(TaichiOperations):
 
     @taichi_scope
     def _subscript(self, *indices, get_ref=False):
+        assert len(indices) == self.ndim, f"Expected {self.ndim} indices, got {len(indices)}"
         if isinstance(self._impl, _PyScopeMatrixImpl):
             # This can happen in these cases:
             # 1. A Python scope matrix is passed into a Taichi kernel as ti.template()
@@ -598,6 +602,8 @@ class Matrix(TaichiOperations):
         This is similar to `numpy.ndarray`'s `flatten` and `ravel` methods,
         the difference is that this function always returns a new list.
         """
+        if self.ndim == 1:
+            return [self(i, j) for j in range(self.m) for i in range(self.n)]
         return [[self(i, j) for j in range(self.m)] for i in range(self.n)]
 
     @taichi_scope

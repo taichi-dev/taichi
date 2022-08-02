@@ -198,7 +198,7 @@ def subscript(value, *_indices, skip_reordered=False, get_ref=False):
         ret = _IntermediateMatrix(n, m, [
             any_array_access.subscript(i, j) for i in range(n)
             for j in range(m)
-        ])
+        ], ndim=element_dim)
         ret.any_array_access = any_array_access
         return ret
     # Directly evaluate in Python for non-Taichi types

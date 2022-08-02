@@ -28,7 +28,7 @@ def matrix(n, m, dtype):
         >>> mat2x2 = ti.types.matrix(2, 2, ti.f32)  # 2x2 matrix type
         >>> M = mat2x2([[1., 2.], [3., 4.]])  # an instance of this type
     """
-    return taichi.lang.matrix.MatrixType(n, m, dtype)
+    return taichi.lang.matrix.MatrixType(n, m, 2, dtype)
 
 
 def vector(n, dtype):
@@ -46,7 +46,7 @@ def vector(n, dtype):
         >>> vec3 = ti.types.vector(3, ti.f32)  # 3d vector type
         >>> v = vec3([1., 2., 3.])  # an instance of this type
     """
-    return taichi.lang.matrix.MatrixType(n, 1, dtype)
+    return taichi.lang.matrix.MatrixType(n, 1, 1, dtype)
 
 
 def struct(**kwargs):

@@ -538,6 +538,8 @@ class Matrix(TaichiOperations):
             The value of the element at a specific position of a matrix.
 
         """
+        if not isinstance(indices, Iterable):
+            indices = [indices]
         assert len(indices) == self.ndim, f"Expected {self.ndim} indices, got {len(indices)}"
         return self._impl[indices]
 
@@ -549,6 +551,8 @@ class Matrix(TaichiOperations):
             indices (Sequence[Expr]): the indices of a element.
 
         """
+        if not isinstance(indices, Iterable):
+            indices = [indices]
         assert len(indices) == self.ndim, f"Expected {self.ndim} indices, got {len(indices)}"
         self._impl[indices] = item
 
@@ -1414,11 +1418,18 @@ class _IntermediateMatrix(Matrix):
         m (int): Number of columns of the matrix.
         entries (List[Expr]): All entries of the matrix.
     """
-    def __init__(self, n, m, entries):
+    def __init__(self, n, m, entries, ndim=None):
         assert isinstance(entries, list)
         assert n * m == len(entries), "Number of entries doesn't match n * m"
         self.n = n
         self.m = m
+        if ndim is not None:
+            self.ndim = ndim
+        else:
+            if len(entries) == 0:
+                self.ndim = 0
+            else:
+                self.ndim = 2 if isinstance(entries[0], Iterable) else 1
         self._impl = _TiScopeMatrixImpl(m,
                                         n,
                                         entries,
@@ -1647,9 +1658,10 @@ class MatrixField(Field):
 
 
 class MatrixType(CompoundType):
-    def __init__(self, n, m, dtype):
+    def __init__(self, n, m, ndim, dtype):
         self.n = n
         self.m = m
+        self.ndim = ndim
         self.dtype = cook_dtype(dtype)
 
     def __call__(self, *args):

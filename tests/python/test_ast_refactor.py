@@ -1015,7 +1015,7 @@ def test_grouped_static_for_cast():
         ret = 0.
         for I in ti.static(ti.grouped(ti.ndrange((4, 5), (3, 5), 5))):
             tmp = I.cast(float)
-            ret += tmp[2] / 2
+            ret += tmp[0, 2] / 2
         return ret
 
     assert foo() == test_utils.approx(10)

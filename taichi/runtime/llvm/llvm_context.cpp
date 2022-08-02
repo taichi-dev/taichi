@@ -536,8 +536,8 @@ void TaichiLLVMContext::set_struct_module(
           clone_module_to_context(this_thread_data->struct_module.get(),
                                   data->llvm_context));
     } else {
-      data->struct_module = clone_module_to_context(this_thread_data->struct_module.get(),
-                                                    data->llvm_context);
+      data->struct_module = clone_module_to_context(
+          this_thread_data->struct_module.get(), data->llvm_context);
     }
   }
 }
@@ -880,7 +880,8 @@ llvm::Type *TaichiLLVMContext::get_runtime_type(const std::string &name) {
   return ty;
 }
 std::unique_ptr<llvm::Module> TaichiLLVMContext::new_module(std::string name) {
-  auto new_mod = std::make_unique<llvm::Module>(name, *get_this_thread_context());
+  auto new_mod =
+      std::make_unique<llvm::Module>(name, *get_this_thread_context());
   new_mod->setDataLayout(get_this_thread_runtime_module()->getDataLayout());
   return new_mod;
 }

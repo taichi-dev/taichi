@@ -316,7 +316,9 @@ TaskCodeGenLLVM::TaskCodeGenLLVM(Kernel *kernel,
                                  std::unique_ptr<llvm::Module> &&module)
     // TODO: simplify LLVMModuleBuilder ctor input
     : LLVMModuleBuilder(
-          module == nullptr ? get_llvm_program(kernel->program)->get_llvm_context(kernel->arch)->new_module("kernel")
+          module == nullptr ? get_llvm_program(kernel->program)
+                                  ->get_llvm_context(kernel->arch)
+                                  ->new_module("kernel")
                             : std::move(module),
           get_llvm_program(kernel->program)->get_llvm_context(kernel->arch)),
       kernel(kernel),
@@ -1694,10 +1696,10 @@ void TaskCodeGenLLVM::visit(GetChStmt *stmt) {
     auto offset = tlctx->get_constant(bit_offset);
     llvm_val[stmt] = create_bit_ptr(llvm_val[stmt->input_ptr], offset);
   } else {
-    auto ch = call_struct_func(stmt->output_snode->get_ch_from_parent_func_name(),
-                          builder->CreateBitCast(
-                              llvm_val[stmt->input_ptr],
-                              llvm::PointerType::getInt8PtrTy(*llvm_context)));
+    auto ch = call_struct_func(
+        stmt->output_snode->get_ch_from_parent_func_name(),
+        builder->CreateBitCast(llvm_val[stmt->input_ptr],
+                               llvm::PointerType::getInt8PtrTy(*llvm_context)));
     llvm_val[stmt] = builder->CreateBitCast(
         ch, llvm::PointerType::get(StructCompilerLLVM::get_llvm_node_type(
                                        module.get(), stmt->output_snode),

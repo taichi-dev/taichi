@@ -298,7 +298,7 @@ class Scene:
                 Default value is 0 which means no offset to show mesh instances. Otherwise,
                 the mesh instances will show from the `instance_offset`.
             instance_count (int, optional):
-                Default value is None which takes the shape value of transforms.
+                The default value is None. If this parameter is not provided, instance_count = transforms.shape[0] - instance_offset.
             vertex_offset (int, optional):
                 if 'indices' is provided, this refers to the value added to the vertex
                 index before indexing into the vertex buffer, else this refers to the

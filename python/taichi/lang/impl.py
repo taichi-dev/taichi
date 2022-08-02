@@ -24,8 +24,7 @@ from taichi.lang.snode import SNode
 from taichi.lang.struct import Struct, StructField, _IntermediateStruct
 from taichi.lang.util import (cook_dtype, get_traceback, is_taichi_class,
                               python_scope, taichi_scope, warning)
-from taichi.types.primitive_types import (all_types, f16, f32, f64, i32, i64,
-                                          u8, u32)
+from taichi.types.primitive_types import all_types, f16, f32, f64, i32, i64, u8
 
 
 @taichi_scope
@@ -335,7 +334,7 @@ class PyTaichi:
             )
 
     @staticmethod
-    def _allocate_gradient_flag():
+    def _allocate_gradient_visited():
         if root.finalized:
             return
         root._allocate_grad_visited()
@@ -357,9 +356,8 @@ class PyTaichi:
             _field._calc_dynamic_index_stride()
 
     def materialize(self):
-        if get_runtime(
-        ).prog.config.debug and self.target_tape and self.target_tape.check_autodiff_valid:
-            self._allocate_gradient_flag()
+        if get_runtime().prog.config.debug:
+            self._allocate_gradient_visited()
         self.materialize_root_fb(not self.materialized)
         self.materialized = True
 
@@ -569,10 +567,8 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
             # adjoint flag
             x_grad_visited = Expr(get_runtime().prog.make_id_expr(""))
             dtype = u8
-            if prog.config.arch == _ti_core.opengl:
+            if prog.config.arch == _ti_core.opengl or prog.config.arch == _ti_core.vulkan:
                 dtype = i32
-            elif prog.config.arch == _ti_core.vulkan:
-                dtype = u32
             x_grad_visited.ptr = _ti_core.global_new(x_grad_visited.ptr,
                                                      cook_dtype(dtype))
             x_grad_visited.ptr.set_name(name + ".grad_visited")

@@ -97,28 +97,6 @@ void make_lazy_place(
   std::vector<Expr> new_places;
   for (auto &c : snode->ch) {
     collect(c, new_places, snode_to_exprs);
-    // bool collected_for_adjoint = false;
-    // if (is_adjoint) {
-    //   if (c->type == SNodeType::place && c->is_primal() && is_real(c->dt) &&
-    //       !c->has_adjoint()) {
-    //     new_grads.push_back(snode_to_exprs->at(c.get())->adjoint);
-    //     collected_for_adjoint = true;
-    //   }
-    // }
-    // if (is_adjoint_visited) {
-    //   // Only allocate adjoint_visited for field with adjoint or ready for
-    //   // allocating adjoint
-    //   if (c->type == SNodeType::place && c->is_primal() && is_real(c->dt) &&
-    //       (c->has_adjoint() || collected_for_adjoint)) {
-    //     new_grads.push_back(snode_to_exprs->at(c.get())->adjoint_visited);
-    //   }
-    // }
-    // if (is_dual) {
-    //   if (c->type == SNodeType::place && c->is_primal() && is_real(c->dt) &&
-    //       !c->has_dual()) {
-    //     new_grads.push_back(snode_to_exprs->at(c.get())->dual);
-    //   }
-    // }
   }
   for (auto p : new_places) {
     place_child(&p, /*offset=*/{}, snode, snode_to_exprs);

@@ -153,10 +153,10 @@ bool KernelProfilerCUDA::statistics_on_traced_records() {
 }
 
 void KernelProfilerCUDA::sync() {
-  // sync
   CUDADriver::get_instance().stream_synchronize(nullptr);
+}
 
-  // update
+void KernelProfilerCUDA::update() {
   if (tool_ == ProfilingToolkit::event) {
     event_toolkit_->update_record(records_size_after_sync_, traced_records_);
     event_toolkit_->update_timeline(traced_records_);
@@ -173,6 +173,7 @@ void KernelProfilerCUDA::sync() {
 
 void KernelProfilerCUDA::clear() {
   // sync(); //decoupled: trigger from the foront end
+  update();
   total_time_ms_ = 0;
   records_size_after_sync_ = 0;
   traced_records_.clear();
@@ -238,6 +239,9 @@ void KernelProfilerCUDA::stop(KernelProfilerBase::TaskHandle handle) {
   TI_NOT_IMPLEMENTED;
 }
 void KernelProfilerCUDA::sync() {
+  TI_NOT_IMPLEMENTED;
+}
+void KernelProfilerCUDA::update() {
   TI_NOT_IMPLEMENTED;
 }
 void KernelProfilerCUDA::clear() {

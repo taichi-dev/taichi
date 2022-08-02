@@ -21,7 +21,6 @@ class TI_DLL_EXPORT Kernel : public Callable {
 
   bool is_accessor{false};
   bool is_evaluator{false};
-  bool check_autodiff_valid{false};
   AutodiffMode autodiff_mode{AutodiffMode::kNone};
 
   class LaunchContextBuilder {
@@ -74,20 +73,17 @@ class TI_DLL_EXPORT Kernel : public Callable {
   Kernel(Program &program,
          const std::function<void()> &func,
          const std::string &name = "",
-         AutodiffMode autodiff_mode = AutodiffMode::kNone,
-         bool check_autodiff_valid = false);
+         AutodiffMode autodiff_mode = AutodiffMode::kNone);
 
   Kernel(Program &program,
          const std::function<void(Kernel *)> &func,
          const std::string &name = "",
-         AutodiffMode autodiff_mode = AutodiffMode::kNone,
-         bool check_autodiff_valid = false);
+         AutodiffMode autodiff_mode = AutodiffMode::kNone);
 
   Kernel(Program &program,
          std::unique_ptr<IRNode> &&ir,
          const std::string &name = "",
-         AutodiffMode autodiff_mode = AutodiffMode::kNone,
-         bool check_autodiff_valid = false);
+         AutodiffMode autodiff_mode = AutodiffMode::kNone);
 
   bool lowered() const {
     return lowered_;
@@ -158,8 +154,7 @@ class TI_DLL_EXPORT Kernel : public Callable {
   void init(Program &program,
             const std::function<void()> &func,
             const std::string &name = "",
-            AutodiffMode autodiff_mode = AutodiffMode::kNone,
-            bool check_autodiff_valid = false);
+            AutodiffMode autodiff_mode = AutodiffMode::kNone);
 
   // True if |ir| is a frontend AST. False if it's already offloaded to CHI IR.
   bool ir_is_ast_{false};

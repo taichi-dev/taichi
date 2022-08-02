@@ -93,6 +93,7 @@ void export_lang(py::module &m) {
 
   py::enum_<AutodiffMode>(m, "AutodiffMode", py::arithmetic())
       .value("NONE", AutodiffMode::kNone)
+      .value("CHECK_AD_VALID", AutodiffMode::kCheckAutodiffValid)
       .value("FORWARD", AutodiffMode::kForward)
       .value("REVERSE", AutodiffMode::kReverse)
       .export_values();
@@ -136,8 +137,6 @@ void export_lang(py::module &m) {
       .def_readwrite("debug", &CompileConfig::debug)
       .def_readwrite("cfg_optimization", &CompileConfig::cfg_optimization)
       .def_readwrite("check_out_of_bound", &CompileConfig::check_out_of_bound)
-      .def_readwrite("check_autodiff_valid",
-                     &CompileConfig::check_autodiff_valid)
       .def_readwrite("print_accessor_ir", &CompileConfig::print_accessor_ir)
       .def_readwrite("print_evaluator_ir", &CompileConfig::print_evaluator_ir)
       .def_readwrite("use_llvm", &CompileConfig::use_llvm)
@@ -365,11 +364,9 @@ void export_lang(py::module &m) {
       .def(
           "create_kernel",
           [](Program *program, const std::function<void(Kernel *)> &body,
-             const std::string &name, AutodiffMode autodiff_mode,
-             bool check_autodiff_valid) -> Kernel * {
+             const std::string &name, AutodiffMode autodiff_mode) -> Kernel * {
             py::gil_scoped_release release;
-            return &program->kernel(body, name, autodiff_mode,
-                                    check_autodiff_valid);
+            return &program->kernel(body, name, autodiff_mode);
           },
           py::return_value_policy::reference)
       .def("create_function", &Program::create_function,
@@ -508,11 +505,13 @@ void export_lang(py::module &m) {
           [](SNode *snode, int i) -> SNode * { return snode->ch[i].get(); },
           py::return_value_policy::reference)
       .def("lazy_grad", &SNode::lazy_grad)
+      .def("lazy_dual", &SNode::lazy_dual)
+      .def("allocate_grad_visited", &SNode::allocate_grad_visited)
       .def("read_int", &SNode::read_int)
       .def("read_uint", &SNode::read_uint)
       .def("read_float", &SNode::read_float)
       .def("has_adjoint", &SNode::has_adjoint)
-      .def("has_adjoint_flag", &SNode::has_adjoint_flag)
+      .def("has_adjoint_visited", &SNode::has_adjoint_visited)
       .def("has_dual", &SNode::has_dual)
       .def("is_primal", &SNode::is_primal)
       .def("is_place", &SNode::is_place)
@@ -718,7 +717,7 @@ void export_lang(py::module &m) {
              expr->cast<GlobalVariableExpression>()->is_primal = v;
            })
       .def("set_adjoint", &Expr::set_adjoint)
-      .def("set_adjoint_flag", &Expr::set_adjoint_flag)
+      .def("set_adjoint_visited", &Expr::set_adjoint_visited)
       .def("set_dual", &Expr::set_dual)
       .def("set_attribute", &Expr::set_attribute)
       .def("get_ret_type", &Expr::get_ret_type)

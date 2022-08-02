@@ -411,10 +411,10 @@ class Kernel:
         self.func = _func
         self.kernel_counter = Kernel.counter
         Kernel.counter += 1
-        assert autodiff_mode in (AutodiffMode.NONE, AutodiffMode.FORWARD,
-                                 AutodiffMode.REVERSE)
+        assert autodiff_mode in (AutodiffMode.NONE,
+                                 AutodiffMode.CHECK_AD_VALID,
+                                 AutodiffMode.FORWARD, AutodiffMode.REVERSE)
         self.autodiff_mode = autodiff_mode
-        self.check_autodiff_valid = False
         self.grad = None
         self.arguments = []
         self.return_type = None
@@ -540,12 +540,12 @@ class Kernel:
                 self.runtime.inside_kernel = False
                 self.runtime.current_kernel = None
 
-        if self.autodiff_mode == AutodiffMode.NONE and self.runtime.target_tape and not self.runtime.grad_replaced and self.runtime.prog.config.debug and self.runtime.prog.config.check_autodiff_valid:
-            self.check_autodiff_valid = True
+        if self.autodiff_mode == AutodiffMode.NONE and self.runtime.target_tape and not self.runtime.grad_replaced and self.runtime.prog.config.debug:
+            # The autodiff valid check happens on forward kernel
+            self.autodiff_mode = AutodiffMode.CHECK_AD_VALID
 
         taichi_kernel = impl.get_runtime().prog.create_kernel(
-            taichi_ast_generator, kernel_name, self.autodiff_mode,
-            self.check_autodiff_valid)
+            taichi_ast_generator, kernel_name, self.autodiff_mode)
 
         self.kernel_cpp = taichi_kernel
 

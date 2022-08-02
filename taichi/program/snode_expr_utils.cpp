@@ -32,12 +32,12 @@ class GradInfoImpl final : public SNode::GradInfoProvider {
     return dual.snode();
   }
 
-  SNode *adjoint_flag_snode() const override {
-    auto &adjoint_flag = glb_var_->adjoint_flag;
-    if (adjoint_flag.expr == nullptr) {
+  SNode *adjoint_visited_snode() const override {
+    auto &adjoint_visited = glb_var_->adjoint_visited;
+    if (adjoint_visited.expr == nullptr) {
       return nullptr;
     }
-    return adjoint_flag.snode();
+    return adjoint_visited.snode();
   }
 
  private:
@@ -83,43 +83,44 @@ void place_child(Expr *expr_arg,
   }
 }
 
-void make_lazy_grad(SNode *snode,
-                    SNodeGlobalVarExprMap *snode_to_exprs,
-                    bool is_adjoint,
-                    bool is_dual,
-                    bool is_adjoint_flag) {
+void make_lazy_place(
+    SNode *snode,
+    SNodeGlobalVarExprMap *snode_to_exprs,
+    const std::function<void(std::unique_ptr<SNode> &,
+                             std::vector<Expr> &,
+                             SNodeGlobalVarExprMap *snode_to_exprs)> &collect) {
   if (snode->type == SNodeType::place)
     return;
   for (auto &c : snode->ch) {
-    make_lazy_grad(c.get(), snode_to_exprs, is_adjoint, is_dual,
-                   is_adjoint_flag);
+    make_lazy_place(c.get(), snode_to_exprs, collect);
   }
-  std::vector<Expr> new_grads;
+  std::vector<Expr> new_places;
   for (auto &c : snode->ch) {
-    bool collected_for_adjoint = false;
-    if (is_adjoint) {
-      if (c->type == SNodeType::place && c->is_primal() && is_real(c->dt) &&
-          !c->has_adjoint()) {
-        new_grads.push_back(snode_to_exprs->at(c.get())->adjoint);
-        collected_for_adjoint = true;
-      }
-    }
-    if (is_adjoint_flag) {
-      // Only allocate adjoint_flag for field with adjoint or ready for
-      // allocating adjoint
-      if (c->type == SNodeType::place && c->is_primal() && is_real(c->dt) &&
-          (c->has_adjoint() || collected_for_adjoint)) {
-        new_grads.push_back(snode_to_exprs->at(c.get())->adjoint_flag);
-      }
-    }
-    if (is_dual) {
-      if (c->type == SNodeType::place && c->is_primal() && is_real(c->dt) &&
-          !c->has_dual()) {
-        new_grads.push_back(snode_to_exprs->at(c.get())->dual);
-      }
-    }
+    collect(c, new_places, snode_to_exprs);
+    // bool collected_for_adjoint = false;
+    // if (is_adjoint) {
+    //   if (c->type == SNodeType::place && c->is_primal() && is_real(c->dt) &&
+    //       !c->has_adjoint()) {
+    //     new_grads.push_back(snode_to_exprs->at(c.get())->adjoint);
+    //     collected_for_adjoint = true;
+    //   }
+    // }
+    // if (is_adjoint_visited) {
+    //   // Only allocate adjoint_visited for field with adjoint or ready for
+    //   // allocating adjoint
+    //   if (c->type == SNodeType::place && c->is_primal() && is_real(c->dt) &&
+    //       (c->has_adjoint() || collected_for_adjoint)) {
+    //     new_grads.push_back(snode_to_exprs->at(c.get())->adjoint_visited);
+    //   }
+    // }
+    // if (is_dual) {
+    //   if (c->type == SNodeType::place && c->is_primal() && is_real(c->dt) &&
+    //       !c->has_dual()) {
+    //     new_grads.push_back(snode_to_exprs->at(c.get())->dual);
+    //   }
+    // }
   }
-  for (auto p : new_grads) {
+  for (auto p : new_places) {
     place_child(&p, /*offset=*/{}, snode, snode_to_exprs);
   }
 }

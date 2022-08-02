@@ -35,7 +35,6 @@ void compile_to_offloads(IRNode *ir,
                          bool verbose,
                          AutodiffMode autodiff_mode,
                          bool ad_use_stack,
-                         bool check_autodiff_valid,
                          bool start_from_ast) {
   TI_AUTO_PROF;
 
@@ -89,8 +88,7 @@ void compile_to_offloads(IRNode *ir,
     irpass::analysis::gather_meshfor_relation_types(ir);
   }
 
-  if (config.debug && config.check_autodiff_valid && check_autodiff_valid &&
-      autodiff_mode == AutodiffMode::kNone) {
+  if (config.debug && autodiff_mode == AutodiffMode::kCheckAutodiffValid) {
     // Check whether the kernel obeys the autodiff limitation e.g., gloabl data
     // access rule
     // This check should be performed in the forward kernel i.e., autodiff_mode
@@ -281,7 +279,6 @@ void compile_to_executable(IRNode *ir,
                            Kernel *kernel,
                            AutodiffMode autodiff_mode,
                            bool ad_use_stack,
-                           bool check_autodiff_valid,
                            bool verbose,
                            bool lower_global_access,
                            bool make_thread_local,
@@ -290,7 +287,7 @@ void compile_to_executable(IRNode *ir,
   TI_AUTO_PROF;
 
   compile_to_offloads(ir, config, kernel, verbose, autodiff_mode, ad_use_stack,
-                      check_autodiff_valid, start_from_ast);
+                      start_from_ast);
 
   offload_to_executable(
       ir, config, kernel, verbose,

@@ -22,25 +22,21 @@ class Function;
 Kernel::Kernel(Program &program,
                const std::function<void()> &func,
                const std::string &primal_name,
-               AutodiffMode autodiff_mode,
-               bool check_autodiff_valid) {
-  this->init(program, func, primal_name, autodiff_mode, check_autodiff_valid);
+               AutodiffMode autodiff_mode) {
+  this->init(program, func, primal_name, autodiff_mode);
 }
 
 Kernel::Kernel(Program &program,
                const std::function<void(Kernel *)> &func,
                const std::string &primal_name,
-               AutodiffMode autodiff_mode,
-               bool check_autodiff_valid) {
-  this->init(program, std::bind(func, this), primal_name, autodiff_mode,
-             check_autodiff_valid);
+               AutodiffMode autodiff_mode) {
+  this->init(program, std::bind(func, this), primal_name, autodiff_mode);
 }
 
 Kernel::Kernel(Program &program,
                std::unique_ptr<IRNode> &&ir,
                const std::string &primal_name,
-               AutodiffMode autodiff_mode,
-               bool check_autodiff_valid)
+               AutodiffMode autodiff_mode)
     : autodiff_mode(autodiff_mode), lowered_(false) {
   this->ir = std::move(ir);
   this->program = &program;
@@ -96,7 +92,6 @@ void Kernel::lower(bool to_executable) {
     irpass::compile_to_executable(
         ir.get(), config, this, /*autodiff_mode=*/autodiff_mode,
         /*ad_use_stack=*/true,
-        /*check_autodiff_valid*/ check_autodiff_valid,
         /*verbose*/ verbose,
         /*lower_global_access=*/to_executable,
         /*make_thread_local=*/config.make_thread_local,
@@ -108,7 +103,6 @@ void Kernel::lower(bool to_executable) {
     irpass::compile_to_offloads(ir.get(), config, this, verbose,
                                 /*autodiff_mode=*/autodiff_mode,
                                 /*ad_use_stack=*/true,
-                                /*check_autodiff_valid*/ check_autodiff_valid,
                                 /*start_from_ast=*/ir_is_ast_);
   }
 
@@ -410,10 +404,8 @@ std::string Kernel::get_name() const {
 void Kernel::init(Program &program,
                   const std::function<void()> &func,
                   const std::string &primal_name,
-                  AutodiffMode autodiff_mode,
-                  bool check_autodiff_valid) {
+                  AutodiffMode autodiff_mode) {
   this->autodiff_mode = autodiff_mode;
-  this->check_autodiff_valid = check_autodiff_valid;
   this->lowered_ = false;
   this->program = &program;
 

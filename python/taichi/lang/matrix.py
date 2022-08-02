@@ -238,10 +238,12 @@ class _TiScopeMatrixImpl(_MatrixBaseImpl):
                 j = [j]
             if len(indices) == 1:
                 return Vector([self._subscript(is_global_mat, a) for a in i],
-                              is_ref=get_ref, ndim=1)
+                              is_ref=get_ref,
+                              ndim=1)
             return Matrix([[self._subscript(is_global_mat, a, b) for b in j]
                            for a in i],
-                          is_ref=get_ref, ndim=1)
+                          is_ref=get_ref,
+                          ndim=1)
 
         if self.any_array_access:
             return self.any_array_access.subscript(i, j)
@@ -405,7 +407,12 @@ class Matrix(TaichiOperations):
     _is_taichi_class = True
     __array_priority__ = 1000
 
-    def __init__(self, arr, dt=None, suppress_warning=False, is_ref=False, ndim=None):
+    def __init__(self,
+                 arr,
+                 dt=None,
+                 suppress_warning=False,
+                 is_ref=False,
+                 ndim=None):
         local_tensor_proxy = None
 
         if not isinstance(arr, (list, tuple, np.ndarray)):
@@ -468,14 +475,16 @@ class Matrix(TaichiOperations):
     def _element_wise_binary(self, foo, other):
         other = self._broadcast_copy(other)
         return Matrix([[foo(self(i, j), other(i, j)) for j in range(self.m)]
-                       for i in range(self.n)], ndim=self.ndim)
+                       for i in range(self.n)],
+                      ndim=self.ndim)
 
     def _broadcast_copy(self, other):
         if isinstance(other, (list, tuple)):
             other = Matrix(other)
         if not isinstance(other, Matrix):
             other = Matrix([[other for _ in range(self.m)]
-                            for _ in range(self.n)], ndim=self.ndim)
+                            for _ in range(self.n)],
+                           ndim=self.ndim)
         assert self.m == other.m and self.n == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
         return other
 
@@ -484,7 +493,8 @@ class Matrix(TaichiOperations):
         extra = self._broadcast_copy(extra)
         return Matrix([[
             foo(self(i, j), other(i, j), extra(i, j)) for j in range(self.m)
-        ] for i in range(self.n)], ndim=self.ndim)
+        ] for i in range(self.n)],
+                      ndim=self.ndim)
 
     def _element_wise_writeback_binary(self, foo, other):
         if foo.__name__ == 'assign' and not isinstance(other,
@@ -496,11 +506,13 @@ class Matrix(TaichiOperations):
         other = self._broadcast_copy(other)
         entries = [[foo(self(i, j), other(i, j)) for j in range(self.m)]
                    for i in range(self.n)]
-        return self if foo.__name__ == 'assign' else Matrix(entries, ndim=self.ndim)
+        return self if foo.__name__ == 'assign' else Matrix(entries,
+                                                            ndim=self.ndim)
 
     def _element_wise_unary(self, foo):
         return Matrix([[foo(self(i, j)) for j in range(self.m)]
-                       for i in range(self.n)], ndim=self.ndim)
+                       for i in range(self.n)],
+                      ndim=self.ndim)
 
     def __matmul__(self, other):
         """Matrix-matrix or matrix-vector multiply.
@@ -548,7 +560,9 @@ class Matrix(TaichiOperations):
         """
         if not isinstance(indices, Iterable):
             indices = [indices]
-        assert len(indices) == self.ndim, f"Expected {self.ndim} indices, got {len(indices)}"
+        assert len(
+            indices
+        ) == self.ndim, f"Expected {self.ndim} indices, got {len(indices)}"
         return self._impl[indices]
 
     @python_scope
@@ -561,7 +575,9 @@ class Matrix(TaichiOperations):
         """
         if not isinstance(indices, Iterable):
             indices = [indices]
-        assert len(indices) == self.ndim, f"Expected {self.ndim} indices, got {len(indices)}"
+        assert len(
+            indices
+        ) == self.ndim, f"Expected {self.ndim} indices, got {len(indices)}"
         self._impl[indices] = item
 
     def __call__(self, *args, **kwargs):
@@ -596,7 +612,9 @@ class Matrix(TaichiOperations):
 
     @taichi_scope
     def _subscript(self, *indices, get_ref=False):
-        assert len(indices) == self.ndim, f"Expected {self.ndim} indices, got {len(indices)}"
+        assert len(
+            indices
+        ) == self.ndim, f"Expected {self.ndim} indices, got {len(indices)}"
         if isinstance(self._impl, _PyScopeMatrixImpl):
             # This can happen in these cases:
             # 1. A Python scope matrix is passed into a Taichi kernel as ti.template()
@@ -633,7 +651,8 @@ class Matrix(TaichiOperations):
         """
         return Matrix(
             [[ops_mod.cast(self(i, j), dtype) for j in range(self.m)]
-             for i in range(self.n)], ndim=self.ndim)
+             for i in range(self.n)],
+            ndim=self.ndim)
 
     def trace(self):
         """The sum of a matrix diagonal elements.
@@ -1142,8 +1161,10 @@ class Matrix(TaichiOperations):
         entries, entries_grad, entries_dual = zip(*entries)
 
         entries, entries_grad, entries_dual = MatrixField(
-            entries, n, m, element_dim), MatrixField(entries_grad, n,
-                                        m, element_dim), MatrixField(entries_grad, n, m, element_dim)
+            entries, n, m, element_dim), MatrixField(entries_grad, n, m,
+                                                     element_dim), MatrixField(
+                                                         entries_grad, n, m,
+                                                         element_dim)
 
         entries._set_grad(entries_grad)
         entries._set_dual(entries_dual)
@@ -1453,10 +1474,13 @@ class _MatrixFieldElement(_IntermediateMatrix):
         indices (taichi_python.ExprGroup): Indices of the element.
     """
     def __init__(self, field, indices):
-        super().__init__(field.n, field.m, [
-            expr.Expr(ti_python_core.subscript(e.ptr, indices))
-            for e in field._get_field_members()
-        ], ndim=field.ndim)
+        super().__init__(
+            field.n,
+            field.m, [
+                expr.Expr(ti_python_core.subscript(e.ptr, indices))
+                for e in field._get_field_members()
+            ],
+            ndim=field.ndim)
         self._impl.dynamic_index_stride = field.dynamic_index_stride
 
 
@@ -1659,7 +1683,8 @@ class MatrixField(Field):
         key = self._pad_key(key)
         _host_access = self._host_access(key)
         return Matrix([[_host_access[i * self.m + j] for j in range(self.m)]
-                       for i in range(self.n)], ndim=self.ndim)
+                       for i in range(self.n)],
+                      ndim=self.ndim)
 
     def __repr__(self):
         # make interactive shell happy, prevent materialization

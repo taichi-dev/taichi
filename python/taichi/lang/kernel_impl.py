@@ -726,8 +726,7 @@ class Kernel:
                                 val = v[a, b] if needed.ndim == 2 else v[a]
                                 if not isinstance(val, (int, float)):
                                     raise TaichiRuntimeTypeError.get(
-                                        i, needed.dtype.to_string(),
-                                        type(val))
+                                        i, needed.dtype.to_string(), type(val))
                                 launch_ctx.set_arg_float(
                                     actual_argument_slot, float(val))
                                 actual_argument_slot += 1
@@ -737,8 +736,7 @@ class Kernel:
                                 val = v[a, b] if needed.ndim == 2 else v[a]
                                 if not isinstance(val, int):
                                     raise TaichiRuntimeTypeError.get(
-                                        i, needed.dtype.to_string(),
-                                        type(val))
+                                        i, needed.dtype.to_string(), type(val))
                                 launch_ctx.set_arg_int(actual_argument_slot,
                                                        int(val))
                                 actual_argument_slot += 1

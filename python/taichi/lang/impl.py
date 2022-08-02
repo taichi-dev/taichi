@@ -195,10 +195,12 @@ def subscript(value, *_indices, skip_reordered=False, get_ref=False):
         n = value.element_shape[0]
         m = 1 if element_dim == 1 else value.element_shape[1]
         any_array_access = AnyArrayAccess(value, _indices)
-        ret = _IntermediateMatrix(n, m, [
-            any_array_access.subscript(i, j) for i in range(n)
-            for j in range(m)
-        ], ndim=element_dim)
+        ret = _IntermediateMatrix(n,
+                                  m, [
+                                      any_array_access.subscript(i, j)
+                                      for i in range(n) for j in range(m)
+                                  ],
+                                  ndim=element_dim)
         ret.any_array_access = any_array_access
         return ret
     # Directly evaluate in Python for non-Taichi types

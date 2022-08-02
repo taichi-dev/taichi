@@ -60,7 +60,8 @@ def _matrix_transpose(mat):
         Transpose of the input matrix.
     """
     return matrix.Matrix([[mat(i, j) for i in range(mat.n)]
-                          for j in range(mat.m)], ndim=mat.ndim)
+                          for j in range(mat.m)],
+                         ndim=mat.ndim)
 
 
 @pyfunc

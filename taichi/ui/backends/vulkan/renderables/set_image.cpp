@@ -73,6 +73,19 @@ void SetImage::update_data(const SetImageInfo &info) {
     img_dev_ptr = get_device_ptr(prog, img.snode);
   }
 
+  std::cout << "------ gpu_staging_buffer ------" << std::endl;
+  std::cout << "offset: " << img_dev_ptr.offset << std::endl;
+  std::cout << "alloc_id: " << img_dev_ptr.alloc_id << std::endl;
+  std::cout << "device: " << img_dev_ptr.device << std::endl;
+  std::cout << "------------" << std::endl;
+
+  std::cout << "------ image ------" << std::endl;
+  std::cout << "offset: " << gpu_staging_buffer_.get_ptr().offset << std::endl;
+  std::cout << "alloc_id: " << gpu_staging_buffer_.get_ptr().alloc_id
+            << std::endl;
+  std::cout << "device: " << gpu_staging_buffer_.get_ptr().device << std::endl;
+  std::cout << "------------" << std::endl;
+
   Device::MemcpyCapability memcpy_cap = Device::check_memcpy_capability(
       gpu_staging_buffer_.get_ptr(), img_dev_ptr, img_size);
   if (memcpy_cap == Device::MemcpyCapability::Direct) {

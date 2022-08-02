@@ -215,7 +215,6 @@ def compile_dynamic_aot(arch):
     def deactivate():
         ti.deactivate(x.parent(), 0)
         x[1, 0] += 2
-        x[1, 1] += 4
 
     @ti.kernel
     def check_value_0():
@@ -245,7 +244,7 @@ def compile_dynamic_aot(arch):
         assert x[0, 1] == 0
         assert x[0, 2] == 0
         assert x[1, 0] == 9
-        assert x[1, 1] == 11
+        assert x[1, 1] == 7
         assert x[2, 0] == 9
         assert x[3, 0] == 12
 

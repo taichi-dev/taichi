@@ -126,8 +126,7 @@ class GLCommandList : public CommandList {
   void draw_indexed(uint32_t num_indicies,
                     uint32_t start_vertex = 0,
                     uint32_t start_index = 0) override;
-  void image_transition(DeviceAllocation img,
-                        ImageLayout new_layout) override;
+  void image_transition(DeviceAllocation img, ImageLayout new_layout) override;
   void buffer_to_image(DeviceAllocation dst_img,
                        DevicePtr src_buf,
                        ImageLayout img_layout,
@@ -277,8 +276,7 @@ class GLDevice : public GraphicsDevice {
   DeviceAllocation create_image(const ImageParams &params) override;
   void destroy_image(DeviceAllocation handle) override;
 
-  void image_transition(DeviceAllocation img,
-                        ImageLayout new_layout) override;
+  void image_transition(DeviceAllocation img, ImageLayout new_layout) override;
   void buffer_to_image(DeviceAllocation dst_img,
                        DevicePtr src_buf,
                        ImageLayout img_layout,

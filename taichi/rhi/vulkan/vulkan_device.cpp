@@ -980,12 +980,13 @@ vkapi::IVkQueryPool VulkanCommandList::vk_query_pool() {
   return query_pool_;
 }
 
-VkImageLayout VulkanCommandList::get_image_layout(const DeviceAllocation& image) {
+VkImageLayout VulkanCommandList::get_image_layout(
+    const DeviceAllocation &image) {
   auto it = pending_image_layouts_.find(image.alloc_id);
   if (it == pending_image_layouts_.end()) {
     VkImageLayout old_layout = ti_device_->get_image_layout(image);
 
-    PendingImageLayout pending_layout {};
+    PendingImageLayout pending_layout{};
     pending_layout.old_layout = old_layout;
     pending_layout.new_layout = old_layout;
     pending_image_layouts_[image.alloc_id] = std::move(pending_layout);
@@ -1713,11 +1714,11 @@ StreamSemaphore VulkanStream::submit(
                                       /*fence=*/fence->fence),
                         "failed to submit command buffer");
 
-
-  for (const auto& pair : cmdlist->pending_image_layouts_) {
-    VkImageLayout& tracked_layout = device_.tracked_image_layouts_.at(pair.first);
+  for (const auto &pair : cmdlist->pending_image_layouts_) {
+    VkImageLayout &tracked_layout =
+        device_.tracked_image_layouts_.at(pair.first);
     TI_ERROR_IF(pair.second.old_layout != tracked_layout,
-      "Image layout tracking records mismatched");
+                "Image layout tracking records mismatched");
     device_.tracked_image_layouts_.at(pair.first) = pair.second.new_layout;
   }
 
@@ -2149,7 +2150,7 @@ vkapi::IVkDescriptorSet VulkanDevice::alloc_desc_set(
   return set;
 }
 
-VkImageLayout VulkanDevice::get_image_layout(const DeviceAllocation& image) {
+VkImageLayout VulkanDevice::get_image_layout(const DeviceAllocation &image) {
   return tracked_image_layouts_.at(image.alloc_id);
 }
 
@@ -2453,9 +2454,8 @@ void VulkanSurface::create_swap_chain() {
     vkapi::IVkImageView view =
         vkapi::create_image_view(device_->vk_device(), image, &view_info);
 
-    swapchain_images_.push_back(
-        device_->import_vk_image(image, view, surface_format.format,
-        VK_IMAGE_LAYOUT_UNDEFINED));
+    swapchain_images_.push_back(device_->import_vk_image(
+        image, view, surface_format.format, VK_IMAGE_LAYOUT_UNDEFINED));
   }
 }
 

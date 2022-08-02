@@ -371,8 +371,7 @@ class CommandList {
                                      uint32_t start_instance = 0) {
     TI_NOT_IMPLEMENTED
   }
-  virtual void image_transition(DeviceAllocation img,
-                                ImageLayout new_layout) {
+  virtual void image_transition(DeviceAllocation img, ImageLayout new_layout) {
     TI_NOT_IMPLEMENTED
   }
   virtual void buffer_to_image(DeviceAllocation dst_img,
@@ -643,8 +642,7 @@ class TI_DLL_EXPORT GraphicsDevice : public Device {
   virtual DeviceAllocation create_image(const ImageParams &params) = 0;
   virtual void destroy_image(DeviceAllocation handle) = 0;
 
-  virtual void image_transition(DeviceAllocation img,
-                                ImageLayout new_layout);
+  virtual void image_transition(DeviceAllocation img, ImageLayout new_layout);
   virtual void buffer_to_image(DeviceAllocation dst_img,
                                DevicePtr src_buf,
                                ImageLayout img_layout,

@@ -28,7 +28,6 @@ void SwapChain::create_depth_resources() {
   ImageParams params;
   params.dimension = ImageDimension::d2D;
   params.format = BufferFormat::depth32f;
-  params.initial_layout = ImageLayout::undefined;
   params.x = curr_width_;
   params.y = curr_height_;
   params.export_sharing = false;
@@ -64,8 +63,7 @@ bool SwapChain::copy_depth_buffer_to_ndarray(
 
     auto depth_staging_buffer = device.allocate_memory(params);
 
-    device.image_transition(depth_allocation_, ImageLayout::depth_attachment,
-                            ImageLayout::transfer_src);
+    device.image_transition(depth_allocation_, ImageLayout::transfer_src);
 
     BufferImageCopyParams copy_params;
     copy_params.image_extent.x = w;
@@ -74,8 +72,6 @@ bool SwapChain::copy_depth_buffer_to_ndarray(
     cmd_list = stream->new_command_list();
     cmd_list->image_to_buffer(depth_staging_buffer.get_ptr(), depth_allocation_,
                               ImageLayout::transfer_src, copy_params);
-    cmd_list->image_transition(depth_allocation_, ImageLayout::transfer_src,
-                               ImageLayout::depth_attachment);
     stream->submit_synced(cmd_list.get());
     Device::memcpy_direct(arr_dev_ptr, depth_staging_buffer.get_ptr(),
                           copy_size);

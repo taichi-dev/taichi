@@ -980,6 +980,22 @@ vkapi::IVkQueryPool VulkanCommandList::vk_query_pool() {
   return query_pool_;
 }
 
+VkImageLayout VulkanCommandList::get_image_layout(const DeviceAllocation& image) {
+  auto it = pending_image_layouts_.find(image.alloc_id);
+  if (it == pending_image_layouts_.end()) {
+    VkImageLayout old_layout = ti_device_->get_image_layout(image);
+
+    PendingImageLayout pending_layout {};
+    pending_layout.old_layout = old_layout;
+    pending_layout.new_layout = old_layout;
+    pending_image_layouts_[image.alloc_id] = std::move(pending_layout);
+
+    return old_layout;
+  } else {
+    return it->second.new_layout;
+  }
+}
+
 void VulkanCommandList::begin_renderpass(int x0,
                                          int y0,
                                          int x1,
@@ -1094,11 +1110,10 @@ void VulkanCommandList::draw_indexed_instance(uint32_t num_indicies,
 }
 
 void VulkanCommandList::image_transition(DeviceAllocation img,
-                                         ImageLayout old_layout_,
                                          ImageLayout new_layout_) {
   auto [image, view, format] = ti_device_->get_vk_image(img);
 
-  VkImageLayout old_layout = image_layout_ti_to_vk(old_layout_);
+  VkImageLayout old_layout = get_image_layout(img);
   VkImageLayout new_layout = image_layout_ti_to_vk(new_layout_);
 
   VkImageMemoryBarrier barrier{};
@@ -1161,6 +1176,8 @@ void VulkanCommandList::image_transition(DeviceAllocation img,
   vkCmdPipelineBarrier(buffer_->buffer, source_stage, destination_stage, 0, 0,
                        nullptr, 0, nullptr, 1, &barrier);
   buffer_->refs.push_back(image);
+
+  pending_image_layouts_.at(img.alloc_id).new_layout = new_layout;
 }
 
 inline void buffer_image_copy_ti_to_vk(VkBufferImageCopy &copy_info,
@@ -1696,6 +1713,14 @@ StreamSemaphore VulkanStream::submit(
                                       /*fence=*/fence->fence),
                         "failed to submit command buffer");
 
+
+  for (const auto& pair : cmdlist->pending_image_layouts_) {
+    VkImageLayout& tracked_layout = device_.tracked_image_layouts_.at(pair.first);
+    TI_ERROR_IF(pair.second.old_layout != tracked_layout,
+      "Image layout tracking records mismatched");
+    device_.tracked_image_layouts_.at(pair.first) = pair.second.new_layout;
+  }
+
   return std::make_shared<VulkanStreamSemaphoreObject>(semaphore);
 }
 
@@ -1977,9 +2002,7 @@ DeviceAllocation VulkanDevice::create_image(const ImageParams &params) {
         vkapi::create_image_view(device_, alloc.image, &view_info));
   }
 
-  if (params.initial_layout != ImageLayout::undefined) {
-    image_transition(handle, ImageLayout::undefined, params.initial_layout);
-  }
+  tracked_image_layouts_[handle.alloc_id] = VK_IMAGE_LAYOUT_UNDEFINED;
 
 #ifdef TI_VULKAN_DEBUG_ALLOCATIONS
   TI_TRACE("Allocate VK image {}, alloc_id={}", (void *)alloc.image,
@@ -2228,6 +2251,10 @@ void VulkanDevice::new_descriptor_pool() {
   desc_pool_ = vkapi::create_descriptor_pool(device_, &pool_info);
 }
 
+VkImageLayout VulkanDevice::get_image_layout(const DeviceAllocation& image) {
+  return tracked_image_layouts_.at(image.alloc_id);
+}
+
 VkPresentModeKHR choose_swap_present_mode(
     const std::vector<VkPresentModeKHR> &available_present_modes,
     bool vsync,
@@ -2298,7 +2325,6 @@ VulkanSurface::VulkanSurface(VulkanDevice *device, const SurfaceConfig &config)
   } else {
     ImageParams params = {ImageDimension::d2D,
                           BufferFormat::rgba8,
-                          ImageLayout::present_src,
                           config.width,
                           config.height,
                           1,
@@ -2505,6 +2531,8 @@ void VulkanSurface::present_image(
     const std::vector<StreamSemaphore> &wait_semaphores) {
   std::vector<VkSemaphore> vk_wait_semaphores;
 
+  device_->image_transition(get_target_image(), ImageLayout::present_src);
+
   for (const StreamSemaphore &sema_ : wait_semaphores) {
     auto sema = std::static_pointer_cast<VulkanStreamSemaphoreObject>(sema_);
     vk_wait_semaphores.push_back(sema->vkapi_ref->semaphore);
@@ -2537,9 +2565,6 @@ DeviceAllocation VulkanSurface::get_depth_data(DeviceAllocation &depth_alloc) {
     depth_buffer_ = device_->allocate_memory(params);
   }
 
-  device_->image_transition(depth_alloc, ImageLayout::present_src,
-                            ImageLayout::transfer_src);
-
   std::unique_ptr<CommandList> cmd_list{nullptr};
 
   BufferImageCopyParams copy_params;
@@ -2547,10 +2572,9 @@ DeviceAllocation VulkanSurface::get_depth_data(DeviceAllocation &depth_alloc) {
   copy_params.image_extent.y = h;
   copy_params.image_aspect_flag = VK_IMAGE_ASPECT_DEPTH_BIT;
   cmd_list = stream->new_command_list();
+  cmd_list->image_transition(depth_alloc, ImageLayout::transfer_src);
   cmd_list->image_to_buffer(depth_buffer_.get_ptr(), depth_alloc,
                             ImageLayout::transfer_src, copy_params);
-  cmd_list->image_transition(depth_alloc, ImageLayout::transfer_src,
-                             ImageLayout::present_src);
   stream->submit_synced(cmd_list.get());
 
   return depth_buffer_;
@@ -2582,8 +2606,7 @@ DeviceAllocation VulkanSurface::get_image_data() {
     screenshot_buffer_ = device_->allocate_memory(params);
   }
 
-  device_->image_transition(img_alloc, ImageLayout::present_src,
-                            ImageLayout::transfer_src);
+  device_->image_transition(img_alloc, ImageLayout::transfer_src);
 
   std::unique_ptr<CommandList> cmd_list{nullptr};
 
@@ -2614,8 +2637,6 @@ DeviceAllocation VulkanSurface::get_image_data() {
                                ImageLayout::transfer_dst);
   }
   */
-  cmd_list->image_transition(img_alloc, ImageLayout::transfer_src,
-                             ImageLayout::present_src);
   stream->submit_synced(cmd_list.get());
 
   return screenshot_buffer_;

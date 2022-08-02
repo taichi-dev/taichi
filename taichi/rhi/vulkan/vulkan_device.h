@@ -402,7 +402,6 @@ class VulkanCommandList : public CommandList {
                              uint32_t start_instance = 0) override;
   void set_line_width(float width) override;
   void image_transition(DeviceAllocation img,
-                        ImageLayout old_layout,
                         ImageLayout new_layout) override;
   void buffer_to_image(DeviceAllocation dst_img,
                        DevicePtr src_buf,
@@ -438,6 +437,8 @@ class VulkanCommandList : public CommandList {
   vkapi::IVkQueryPool vk_query_pool();
 
  private:
+  friend class VulkanStream;
+
   bool finalized_{false};
   VulkanDevice *ti_device_;
   VulkanStream *stream_;
@@ -457,6 +458,16 @@ class VulkanCommandList : public CommandList {
   vkapi::IVkRenderPass current_renderpass_{VK_NULL_HANDLE};
   vkapi::IVkFramebuffer current_framebuffer_{VK_NULL_HANDLE};
   uint32_t viewport_width_{0}, viewport_height_{0};
+
+  struct PendingImageLayout {
+    // Image layout at the first time the command buffer referred to an image.
+    VkImageLayout old_layout;
+    // Expected image layout after the execution of this command buffer.
+    VkImageLayout new_layout;
+  };
+  std::unordered_map<DeviceAllocationId, PendingImageLayout> pending_image_layouts_;
+
+  VkImageLayout get_image_layout(const DeviceAllocation& image);
 };
 
 class VulkanSurface : public Surface {
@@ -669,6 +680,8 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
 
  private:
   friend VulkanSurface;
+  friend VulkanCommandList;
+  friend VulkanStream;
 
   void create_vma_allocator();
   void new_descriptor_pool();
@@ -713,6 +726,9 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
   };
 
   unordered_map<uint32_t, ImageAllocInternal> image_allocations_;
+  std::unordered_map<DeviceAllocationId, VkImageLayout> tracked_image_layouts_;
+
+  VkImageLayout get_image_layout(const DeviceAllocation& image);
 
   // Renderpass
   unordered_map<VulkanRenderPassDesc,

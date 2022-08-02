@@ -149,11 +149,10 @@ void Device::print_all_cap() const {
 }
 
 void GraphicsDevice::image_transition(DeviceAllocation img,
-                                      ImageLayout old_layout,
                                       ImageLayout new_layout) {
   Stream *stream = get_graphics_stream();
   auto cmd_list = stream->new_command_list();
-  cmd_list->image_transition(img, old_layout, new_layout);
+  cmd_list->image_transition(img, new_layout);
   stream->submit_synced(cmd_list.get());
 }
 void GraphicsDevice::buffer_to_image(DeviceAllocation dst_img,

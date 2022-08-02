@@ -67,8 +67,7 @@ void SetImage::update_data(const SetImageInfo &info) {
 
   int pixels = width * height;
 
-  app_context_->device().image_transition(texture_, ImageLayout::shader_read,
-                                          ImageLayout::transfer_dst);
+  app_context_->device().image_transition(texture_, ImageLayout::transfer_dst);
 
   uint64_t img_size = pixels * data_type_size(texture_dtype_) * 4;
 
@@ -101,8 +100,7 @@ void SetImage::update_data(const SetImageInfo &info) {
   cmd_list->buffer_to_image(texture_, gpu_staging_buffer_.get_ptr(0),
                             ImageLayout::transfer_dst, copy_params);
 
-  cmd_list->image_transition(texture_, ImageLayout::transfer_dst,
-                             ImageLayout::shader_read);
+  cmd_list->image_transition(texture_, ImageLayout::shader_read);
   if (data_ready_sema) {
     stream->submit(cmd_list.get(), {data_ready_sema});
   } else {
@@ -156,7 +154,6 @@ void SetImage::create_texture() {
   if (texture_dtype_ == taichi::lang::PrimitiveType::f32) {
     params.format = BufferFormat::rgba32f;
   }
-  params.initial_layout = ImageLayout::shader_read;
   // these are flipped because taichi is y-major and vulkan is x-major
   params.x = height;
   params.y = width;

@@ -498,12 +498,10 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
     for (auto &bind : attribs.texture_binds) {
       DeviceAllocation texture = textures.at(bind.arg_id);
       if (bind.is_storage) {
-        current_cmdlist_->image_transition(texture, ImageLayout::undefined,
-                                           ImageLayout::shader_read_write);
+        current_cmdlist_->image_transition(texture, ImageLayout::shader_read_write);
         binder->rw_image(0, bind.binding, texture, 0);
       } else {
-        current_cmdlist_->image_transition(texture, ImageLayout::undefined,
-                                           ImageLayout::shader_read);
+        current_cmdlist_->image_transition(texture, ImageLayout::shader_read);
         binder->image(0, bind.binding, texture, {});
       }
     }

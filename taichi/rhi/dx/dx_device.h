@@ -145,7 +145,6 @@ class Dx11CommandList : public CommandList {
                     uint32_t start_vertex = 0,
                     uint32_t start_index = 0) override;
   void image_transition(DeviceAllocation img,
-                        ImageLayout old_layout,
                         ImageLayout new_layout) override;
   void buffer_to_image(DeviceAllocation dst_img,
                        DevicePtr src_buf,
@@ -196,7 +195,6 @@ class Dx11Device : public GraphicsDevice {
   void destroy_image(DeviceAllocation handle) override;
 
   void image_transition(DeviceAllocation img,
-                        ImageLayout old_layout,
                         ImageLayout new_layout) override;
   void buffer_to_image(DeviceAllocation dst_img,
                        DevicePtr src_buf,

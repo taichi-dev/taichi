@@ -372,7 +372,6 @@ class CommandList {
     TI_NOT_IMPLEMENTED
   }
   virtual void image_transition(DeviceAllocation img,
-                                ImageLayout old_layout,
                                 ImageLayout new_layout) {
     TI_NOT_IMPLEMENTED
   }
@@ -600,7 +599,6 @@ struct SurfaceConfig {
 struct TI_DLL_EXPORT ImageParams {
   ImageDimension dimension;
   BufferFormat format;
-  ImageLayout initial_layout;
   uint32_t x{1};
   uint32_t y{1};
   uint32_t z{1};
@@ -646,7 +644,6 @@ class TI_DLL_EXPORT GraphicsDevice : public Device {
   virtual void destroy_image(DeviceAllocation handle) = 0;
 
   virtual void image_transition(DeviceAllocation img,
-                                ImageLayout old_layout,
                                 ImageLayout new_layout);
   virtual void buffer_to_image(DeviceAllocation dst_img,
                                DevicePtr src_buf,

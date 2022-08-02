@@ -48,7 +48,7 @@ void Renderable::update_data(const RenderableInfo &info) {
     prog->flush();
   }
 
-  bool is_pipeline_reset = false;
+  bool needs_pipeline_reset = false;
 
   // Check if we need to update Graphics Pipeline
   if (info.display_mode != config_.polygon_type) {

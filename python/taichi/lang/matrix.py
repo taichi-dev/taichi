@@ -238,10 +238,10 @@ class _TiScopeMatrixImpl(_MatrixBaseImpl):
                 j = [j]
             if len(indices) == 1:
                 return Vector([self._subscript(is_global_mat, a) for a in i],
-                              is_ref=get_ref)
+                              is_ref=get_ref, ndim=1)
             return Matrix([[self._subscript(is_global_mat, a, b) for b in j]
                            for a in i],
-                          is_ref=get_ref)
+                          is_ref=get_ref, ndim=1)
 
         if self.any_array_access:
             return self.any_array_access.subscript(i, j)
@@ -305,10 +305,11 @@ class _MatrixEntriesInitializer:
 def _make_entries_initializer(is_matrix: bool) -> _MatrixEntriesInitializer:
     class _VecImpl(_MatrixEntriesInitializer):
         def pyscope_or_ref(self, arr):
-            return [x for x in arr]
+            return [[x] for x in arr]
 
         def no_dynamic_index(self, arr, dt):
-            return [impl.expr_init(ops_mod.cast(x, dt) if dt else x) for x in arr]
+            return [[impl.expr_init(ops_mod.cast(x, dt) if dt else x)]
+                    for x in arr]
 
         def with_dynamic_index(self, arr, dt):
             local_tensor_proxy = impl.expr_init_local_tensor(
@@ -316,9 +317,12 @@ def _make_entries_initializer(is_matrix: bool) -> _MatrixEntriesInitializer:
                 expr.make_expr_group([expr.Expr(x) for x in arr]))
             mat = []
             for i in range(len(arr)):
-                mat.append(impl.make_index_expr(
+                mat.append(
+                    list([
+                        impl.make_index_expr(
                             local_tensor_proxy,
-                            (expr.Expr(i, dtype=primitive_types.i32), )))
+                            (expr.Expr(i, dtype=primitive_types.i32), ))
+                    ]))
             return local_tensor_proxy, mat
 
         def _get_entry_to_infer(self, arr):
@@ -435,9 +439,9 @@ class Matrix(TaichiOperations):
                 local_tensor_proxy, mat = initializer.with_dynamic_index(
                     arr, dt)
         self.n, self.m = len(mat), 1
-        if self.ndim > 1:
+        if len(mat) > 0:
             self.m = len(mat[0])
-        entries = [x for row in mat for x in row] if self.ndim > 1 else [x for x in mat]
+        entries = [x for row in mat for x in row]
 
         if ndim is not None:
             # override ndim after reading data from mat
@@ -471,7 +475,7 @@ class Matrix(TaichiOperations):
             other = Matrix(other)
         if not isinstance(other, Matrix):
             other = Matrix([[other for _ in range(self.m)]
-                            for _ in range(self.n)], ndim=other.ndim)
+                            for _ in range(self.n)], ndim=self.ndim)
         assert self.m == other.m and self.n == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
         return other
 
@@ -607,8 +611,6 @@ class Matrix(TaichiOperations):
         This is similar to `numpy.ndarray`'s `flatten` and `ravel` methods,
         the difference is that this function always returns a new list.
         """
-        if self.ndim == 1:
-            return [self(i, j) for j in range(self.m) for i in range(self.n)]
         return [[self(i, j) for j in range(self.m)] for i in range(self.n)]
 
     @taichi_scope
@@ -1084,7 +1086,8 @@ class Matrix(TaichiOperations):
               offset=None,
               needs_grad=False,
               needs_dual=False,
-              layout=Layout.AOS):
+              layout=Layout.AOS,
+              ndim=None):
         """Construct a data container to hold all elements of the Matrix.
 
         Args:
@@ -1104,6 +1107,7 @@ class Matrix(TaichiOperations):
             :class:`~taichi.Matrix`: A matrix.
         """
         entries = []
+        element_dim = ndim if ndim is not None else 2
         if isinstance(dtype, (list, tuple, np.ndarray)):
             # set different dtype for each element in Matrix
             # see #2135
@@ -1138,8 +1142,8 @@ class Matrix(TaichiOperations):
         entries, entries_grad, entries_dual = zip(*entries)
 
         entries, entries_grad, entries_dual = MatrixField(
-            entries, n, m), MatrixField(entries_grad, n,
-                                        m), MatrixField(entries_grad, n, m)
+            entries, n, m, element_dim), MatrixField(entries_grad, n,
+                                        m, element_dim), MatrixField(entries_grad, n, m, element_dim)
 
         entries._set_grad(entries_grad)
         entries._set_dual(entries_dual)
@@ -1189,7 +1193,7 @@ class Matrix(TaichiOperations):
     @classmethod
     def _Vector_field(cls, n, dtype, *args, **kwargs):
         """ti.Vector.field"""
-        return cls.field(n, 1, dtype, *args, **kwargs)
+        return cls.field(n, 1, dtype, ndim=1, *args, **kwargs)
 
     @classmethod
     @python_scope
@@ -1400,7 +1404,7 @@ def Vector(arr, dt=None, **kwargs):
         >>> u + v
         [4 6]
     """
-    return Matrix(arr, dt=dt, **kwargs)
+    return Matrix(arr, dt=dt, **kwargs, ndim=1)
 
 
 Vector.field = Matrix._Vector_field
@@ -1452,7 +1456,7 @@ class _MatrixFieldElement(_IntermediateMatrix):
         super().__init__(field.n, field.m, [
             expr.Expr(ti_python_core.subscript(e.ptr, indices))
             for e in field._get_field_members()
-        ])
+        ], ndim=field.ndim)
         self._impl.dynamic_index_stride = field.dynamic_index_stride
 
 
@@ -1464,11 +1468,12 @@ class MatrixField(Field):
         n (Int): Number of rows.
         m (Int): Number of columns.
     """
-    def __init__(self, _vars, n, m):
+    def __init__(self, _vars, n, m, ndim):
         assert len(_vars) == n * m
         super().__init__(_vars)
         self.n = n
         self.m = m
+        self.ndim = ndim
         self.dynamic_index_stride = None
 
     def get_scalar_field(self, *indices):
@@ -1654,7 +1659,7 @@ class MatrixField(Field):
         key = self._pad_key(key)
         _host_access = self._host_access(key)
         return Matrix([[_host_access[i * self.m + j] for j in range(self.m)]
-                       for i in range(self.n)])
+                       for i in range(self.n)], ndim=self.ndim)
 
     def __repr__(self):
         # make interactive shell happy, prevent materialization

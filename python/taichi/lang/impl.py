@@ -45,9 +45,9 @@ def expr_init(rhs):
     if rhs is None:
         return Expr(get_runtime().prog.current_ast_builder().expr_alloca())
     if isinstance(rhs, Matrix) and (hasattr(rhs, "_DIM")):
-        return type(rhs)(*rhs.to_list())
+        return type(rhs)(*rhs.to_list(), ndim=rhs.ndim)
     if isinstance(rhs, Matrix):
-        return Matrix(rhs.to_list())
+        return Matrix(rhs.to_list(), ndim=rhs.ndim)
     if isinstance(rhs, SharedArray):
         return rhs
     if isinstance(rhs, Struct):

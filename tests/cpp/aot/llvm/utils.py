@@ -210,6 +210,9 @@ def compile_bitmasked_aot(arch):
 
     @ti.kernel
     def deactivate():
+        x[3] = x[2] + 4.0
+        x[2] = x[3] + x[3]
+
         ti.deactivate(pixel, 4)
         ti.deactivate(pixel, 5)
 
@@ -231,6 +234,9 @@ def compile_bitmasked_aot(arch):
 
     @ti.kernel
     def check_value_1():
+        assert x[3] == 5.0
+        assert x[2] == 10.0
+
         assert ti.is_active(pixel, 2)
         assert ti.is_active(pixel, 3)
         assert not ti.is_active(pixel, 4)

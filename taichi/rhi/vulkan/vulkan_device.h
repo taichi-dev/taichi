@@ -663,7 +663,8 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
 
   DeviceAllocation import_vk_image(vkapi::IVkImage image,
                                    vkapi::IVkImageView view,
-                                   VkFormat format);
+                                   VkFormat format,
+                                   VkImageLayout layout);
 
   vkapi::IVkImageView get_vk_imageview(const DeviceAllocation &alloc) const;
 

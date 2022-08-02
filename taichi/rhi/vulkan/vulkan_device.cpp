@@ -1858,7 +1858,8 @@ DeviceAllocation VulkanDevice::import_vkbuffer(vkapi::IVkBuffer buffer) {
 
 DeviceAllocation VulkanDevice::import_vk_image(vkapi::IVkImage image,
                                                vkapi::IVkImageView view,
-                                               VkFormat format) {
+                                               VkFormat format,
+                                               VkImageLayout layout) {
   ImageAllocInternal alloc_int;
   alloc_int.external = true;
   alloc_int.image = image;
@@ -1870,6 +1871,7 @@ DeviceAllocation VulkanDevice::import_vk_image(vkapi::IVkImage image,
   alloc.alloc_id = alloc_cnt_++;
 
   image_allocations_[alloc.alloc_id] = alloc_int;
+  tracked_image_layouts_[alloc.alloc_id] = layout;
 
   return alloc;
 }
@@ -2452,7 +2454,8 @@ void VulkanSurface::create_swap_chain() {
         vkapi::create_image_view(device_->vk_device(), image, &view_info);
 
     swapchain_images_.push_back(
-        device_->import_vk_image(image, view, surface_format.format));
+        device_->import_vk_image(image, view, surface_format.format,
+        VK_IMAGE_LAYOUT_UNDEFINED));
   }
 }
 

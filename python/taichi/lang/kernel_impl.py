@@ -540,10 +540,6 @@ class Kernel:
                 self.runtime.inside_kernel = False
                 self.runtime.current_kernel = None
 
-        if self.autodiff_mode == AutodiffMode.NONE and self.runtime.target_tape and not self.runtime.grad_replaced and self.runtime.prog.config.debug:
-            # The autodiff valid check happens on forward kernel
-            self.autodiff_mode = AutodiffMode.CHECK_AD_VALID
-
         taichi_kernel = impl.get_runtime().prog.create_kernel(
             taichi_ast_generator, kernel_name, self.autodiff_mode)
 
@@ -758,7 +754,12 @@ class Kernel:
             # Both the class kernels and the plain-function kernels are unified now.
             # In both cases, |self.grad| is another Kernel instance that computes the
             # gradient. For class kernels, args[0] is always the kernel owner.
-            if self.autodiff_mode == AutodiffMode.NONE and self.runtime.target_tape and not self.runtime.grad_replaced:
+            if (
+                    self.autodiff_mode == AutodiffMode.NONE
+                    or self.autodiff_mode == AutodiffMode.CHECK_AD_VALID
+            ) and self.runtime.target_tape and not self.runtime.grad_replaced:
+                print("capture ",
+                      self.autodiff_mode == AutodiffMode.CHECK_AD_VALID)
                 self.runtime.target_tape.insert(self, args)
 
             if actual_argument_slot > 8 and (
@@ -839,6 +840,9 @@ class Kernel:
             mode_original = self.autodiff_mode
             self.autodiff_mode = AutodiffMode.FORWARD
             self.runtime.fwd_mode_manager.insert(self, mode_original)
+        elif self.runtime.target_tape and self.runtime.target_tape.check_autodiff_valid:
+            # The autodiff valid check happens on forward kernel
+            self.autodiff_mode = AutodiffMode.CHECK_AD_VALID
 
         if self.autodiff_mode != AutodiffMode.NONE and impl.current_cfg(
         ).opt_level == 0:

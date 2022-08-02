@@ -92,9 +92,8 @@ void compile_to_offloads(IRNode *ir,
     // Check whether the kernel obeys the autodiff limitation e.g., gloabl data
     // access rule
     // This check should be performed in the forward kernel i.e., autodiff_mode
-    // == AutodiffMode::kNone
+    // == AutodiffMode::kCheckAutodiffValid
     irpass::differentiation_validation_check(ir, config, kernel->get_name());
-    print("Autodiff valid checked");
     irpass::analysis::verify(ir);
   }
 

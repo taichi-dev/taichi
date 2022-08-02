@@ -1,11 +1,5 @@
 import pytest
 
-<<<<<<< HEAD
-from numpy import float16
-
-=======
->>>>>>> f567be1be... [autodiff] Add the global data access rule checker
-
 import taichi as ti
 from tests import test_utils
 

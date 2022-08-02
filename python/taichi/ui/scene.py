@@ -262,14 +262,15 @@ class Scene:
                       two_sided=False,
                       transforms=None,
                       instance_offset: int = 0,
+                      instance_count: int = None,
                       vertex_offset: int = 0,
                       vertex_count: int = None,
                       index_offset: int = 0,
                       index_count: int = None,
                       display_mode=DisplayMode.Fill):
-        """Declare lots of mesh instances inside the scene.
+        """Declare mesh instances inside the scene.
 
-        If transforms is given, then according to the shape of transforms, we will
+        If transforms is given, then according to the shape of transforms, it will
         draw mesh instances based on the transforms, and you can indicate which instance
         to draw first. If you indicate the index_offset and index_count, the normals will also
         be sliced by the args, and the shading resultes will not be affected.
@@ -296,6 +297,8 @@ class Scene:
             instance_offset (int, optional):
                 Default value is 0 which means no offset to show mesh instances. Otherwise,
                 the mesh instances will show from the `instance_offset`.
+            instance_count (int, optional):
+                Default value is None which takes the shape value of transforms.
             vertex_offset (int, optional):
                 if 'indices' is provided, this refers to the value added to the vertex
                 index before indexing into the vertex buffer, else this refers to the
@@ -308,10 +311,9 @@ class Scene:
                 within the index buffer.
             index_count (int, optional):
                 only available when `indices` is provided, which is the the number
-                of vertices to draw.
+                of indices to draw.
             display_mode (Enum of DisplayMode, optional):
-                there are 3 types of diplay mode, Fill mode(Fill colors to all triagnles)
-                Line mode(WareFrame), Point mode.
+                there are 3 types of diplay mode, Fill mode (Fill faces), Line mode (WareFrame), Point mode.
         """
         vbo = get_vbo_field(vertices)
         copy_vertices_to_vbo(vbo, vertices)
@@ -327,6 +329,8 @@ class Scene:
                 index_count = vertex_count
             else:
                 index_count = indices.shape[0]
+        if instance_count is None:
+            instance_count = transforms.shape[0]
         if transforms and (transforms.m != 4 or transforms.n != 4):
             raise Exception("Error! Transform matrix must be 4x4 shape")
         copy_normals_to_vbo(vbo, normals)
@@ -334,7 +338,7 @@ class Scene:
         indices_info = get_field_info(indices)
         transform_info = get_field_info(transforms)
         self.scene.mesh_instance(vbo_info, has_per_vertex_color, indices_info,
-                                 color, two_sided, transform_info,
+                                 color, two_sided, transform_info, instance_count,
                                  instance_offset, index_count, index_offset,
                                  vertex_count, vertex_offset, display_mode)
 

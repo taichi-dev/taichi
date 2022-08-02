@@ -401,7 +401,7 @@ class Matrix(TaichiOperations):
     _is_taichi_class = True
     __array_priority__ = 1000
 
-    def __init__(self, arr, dt=None, suppress_warning=False, is_ref=False):
+    def __init__(self, arr, dt=None, suppress_warning=False, is_ref=False, ndim=None):
         local_tensor_proxy = None
 
         if not isinstance(arr, (list, tuple, np.ndarray)):
@@ -439,6 +439,10 @@ class Matrix(TaichiOperations):
             self.m = len(mat[0])
         entries = [x for row in mat for x in row] if self.ndim > 1 else [x for x in mat]
 
+        if ndim is not None:
+            # override ndim after reading data from mat
+            self.ndim = ndim
+
         if self.n * self.m > 32 and not suppress_warning:
             warning(
                 f'Taichi matrices/vectors with {self.n}x{self.m} > 32 entries are not suggested.'
@@ -460,14 +464,14 @@ class Matrix(TaichiOperations):
     def _element_wise_binary(self, foo, other):
         other = self._broadcast_copy(other)
         return Matrix([[foo(self(i, j), other(i, j)) for j in range(self.m)]
-                       for i in range(self.n)])
+                       for i in range(self.n)], ndim=self.ndim)
 
     def _broadcast_copy(self, other):
         if isinstance(other, (list, tuple)):
             other = Matrix(other)
         if not isinstance(other, Matrix):
             other = Matrix([[other for _ in range(self.m)]
-                            for _ in range(self.n)])
+                            for _ in range(self.n)], ndim=other.ndim)
         assert self.m == other.m and self.n == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
         return other
 
@@ -476,7 +480,7 @@ class Matrix(TaichiOperations):
         extra = self._broadcast_copy(extra)
         return Matrix([[
             foo(self(i, j), other(i, j), extra(i, j)) for j in range(self.m)
-        ] for i in range(self.n)])
+        ] for i in range(self.n)], ndim=self.ndim)
 
     def _element_wise_writeback_binary(self, foo, other):
         if foo.__name__ == 'assign' and not isinstance(other,
@@ -488,11 +492,11 @@ class Matrix(TaichiOperations):
         other = self._broadcast_copy(other)
         entries = [[foo(self(i, j), other(i, j)) for j in range(self.m)]
                    for i in range(self.n)]
-        return self if foo.__name__ == 'assign' else Matrix(entries)
+        return self if foo.__name__ == 'assign' else Matrix(entries, ndim=self.ndim)
 
     def _element_wise_unary(self, foo):
         return Matrix([[foo(self(i, j)) for j in range(self.m)]
-                       for i in range(self.n)])
+                       for i in range(self.n)], ndim=self.ndim)
 
     def __matmul__(self, other):
         """Matrix-matrix or matrix-vector multiply.
@@ -627,7 +631,7 @@ class Matrix(TaichiOperations):
         """
         return Matrix(
             [[ops_mod.cast(self(i, j), dtype) for j in range(self.m)]
-             for i in range(self.n)])
+             for i in range(self.n)], ndim=self.ndim)
 
     def trace(self):
         """The sum of a matrix diagonal elements.

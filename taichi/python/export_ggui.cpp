@@ -247,7 +247,7 @@ struct PyScene {
     info.two_sided = two_sided;
     if (transforms.valid) {
       info.start_instance = (int)draw_first_instance;
-      info.num_instances = draw_instance_count > transforms.shape[0]
+      info.num_instances = (draw_instance_count + info.start_instance) > transforms.shape[0]
                                ? transforms.shape[0]
                                : (int)draw_instance_count;
     }

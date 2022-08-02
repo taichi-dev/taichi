@@ -52,7 +52,7 @@ void Renderable::update_data(const RenderableInfo &info) {
 
   // Check if we need to update Graphics Pipeline
   if (info.display_mode != config_.polygon_type) {
-    is_pipeline_reset = true;
+    needs_pipeline_reset = true;
     config_.polygon_type = info.display_mode;
     pipeline_.reset();
     create_graphics_pipeline();
@@ -98,7 +98,7 @@ void Renderable::update_data(const RenderableInfo &info) {
     config_.draw_first_index = 0;
   }
 
-  if (is_pipeline_reset || num_vertices > config_.max_vertices_count ||
+  if (needs_pipeline_reset || num_vertices > config_.max_vertices_count ||
       num_indices > config_.max_indices_count) {
     free_buffers();
     config_.max_vertices_count = num_vertices;

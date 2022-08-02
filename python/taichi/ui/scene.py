@@ -39,7 +39,7 @@ def gen_normals_kernel(vertices: template(), normals: template()):
 @kernel
 def gen_normals_kernel_indexed(vertices: template(), indices: template(),
                                normals: template(), weights: template()):
-    num_triangles = indices.shape[0] / 3
+    num_triangles = indices.shape[0] // 3
     num_vertices = vertices.shape[0]
     for i in range(num_vertices):
         normals[i] = Vector([0.0, 0.0, 0.0])

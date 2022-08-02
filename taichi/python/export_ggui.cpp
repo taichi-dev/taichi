@@ -246,7 +246,9 @@ struct PyScene {
     info.color = tuple_to_vec3(color);
     info.two_sided = two_sided;
     if (transforms.valid) {
-      info.num_instances = draw_instance_count > transforms.shape[0] ? transforms.shape[0] : (int)draw_instance_count;
+      info.num_instances = draw_instance_count > transforms.shape[0]
+                               ? transforms.shape[0]
+                               : (int)draw_instance_count;
       info.start_instance = (int)draw_first_instance;
     }
     info.mesh_attribute_info.mesh_attribute = transforms;

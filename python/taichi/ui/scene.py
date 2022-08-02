@@ -338,9 +338,10 @@ class Scene:
         indices_info = get_field_info(indices)
         transform_info = get_field_info(transforms)
         self.scene.mesh_instance(vbo_info, has_per_vertex_color, indices_info,
-                                 color, two_sided, transform_info, instance_count,
-                                 instance_offset, index_count, index_offset,
-                                 vertex_count, vertex_offset, display_mode)
+                                 color, two_sided, transform_info,
+                                 instance_count, instance_offset, index_count,
+                                 index_offset, vertex_count, vertex_offset,
+                                 display_mode)
 
     def particles(self,
                   centers,

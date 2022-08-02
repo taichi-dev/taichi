@@ -134,10 +134,6 @@ if (TI_WITH_CUDA)
   list(APPEND TAICHI_CORE_SOURCE ${TAICHI_CUDA_RUNTIME_SOURCE})
 endif()
 
-if(NOT CUDA_VERSION)
-    set(CUDA_VERSION 10.0)
-endif()
-
 ## TODO: Remove CC backend
 if (TI_WITH_CC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_CC")
@@ -150,12 +146,6 @@ endif()
 # library into a shared lib.
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-# The short-term goal is to have a sub-library, "taichi_core", that is
-# mostly Taichi-focused, free from the "application" layer such as pybind11 or
-# GUI. At a minimum, we must decouple from pybind11/python-environment. Then we
-# can 1) unit test a major part of Taichi, and 2) integrate a new frontend lang
-# with "taichi_core".
-#
 # TODO(#2198): Long-term speaking, we should create a separate library for each
 # sub-module. This way we can guarantee that the lib dependencies form a DAG.
 file(GLOB TAICHI_PYBIND_SOURCE
@@ -218,7 +208,6 @@ if(DEFINED ENV{LLVM_DIR})
     set(LLVM_DIR $ENV{LLVM_DIR})
     message("Getting LLVM_DIR=${LLVM_DIR} from the environment variable")
 endif()
-
 
 add_subdirectory(taichi/common)
 target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE taichi_common)

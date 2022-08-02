@@ -3,6 +3,7 @@
 This module supplies two decorators for users to customize their
 gradient computation task.
 """
+import warnings
 from functools import reduce
 
 from taichi.lang import impl
@@ -31,7 +32,7 @@ class Tape:
         Args:
             loss(:class:`~taichi.lang.expr.Expr`): The loss field, which shape should be ().
             clear_gradients(Bool): Before `with` body start, clear all gradients or not.
-            check_autodiff_valid(Bool): Check whether the code inside the context manager is autodiff valid, e.g., agree with the global data access rule
+            check_autodiff_valid(Bool): Check whether the code inside the context manager is autodiff valid, e.g., agree with the global data access rule.
 
         Example::
 
@@ -49,6 +50,10 @@ class Tape:
         self.clear_gradients = clear_gradients
         self.check_autodiff_valid = check_autodiff_valid
         self.runtime = impl.get_runtime()
+        if not self.runtime.prog.config.debug and self.check_autodiff_valid:
+            warnings.warn(
+                "Debug mode is disabled, autodiff valid check will not work. Please specify `ti.init(debug=True)` to enable the check.",
+                Warning)
         self.eval_on_exit = loss is not None
         self.loss = loss
 

@@ -1,4 +1,3 @@
-from numpy import dtype
 from taichi.lang.impl import ndarray
 from taichi.lang.kernel_impl import kernel
 from taichi.lang.matrix import Vector

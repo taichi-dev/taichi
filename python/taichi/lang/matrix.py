@@ -414,6 +414,7 @@ class Matrix(TaichiOperations):
         if len(arr) == 0:
             mat = []
             self.ndim = 0
+            is_matrix = False
         elif isinstance(arr[0], Matrix):
             raise Exception('cols/rows required when using list of vectors')
         else:

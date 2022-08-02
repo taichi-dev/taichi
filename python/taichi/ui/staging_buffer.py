@@ -1,3 +1,4 @@
+from numpy import dtype
 from taichi.lang.impl import ndarray
 from taichi.lang.kernel_impl import kernel
 from taichi.lang.matrix import Vector
@@ -95,15 +96,13 @@ def copy_colors_to_vbo(vbo, colors):
 def copy_image_f32_to_rgba8(src: ti.template(), dst: ti.template(),
                             num_components: ti.template()):
     for i, j in src:
-        pack = u32(0)
+        px = ti.Vector([0, 0, 0, 0xff], dt=u32)
         for k in ti.static(range(num_components)):
             c = src[i, j][k]
             c = max(0.0, min(1.0, c))
             c = c * 255
-            pack = (pack << 8) | ti.cast(c, u32)
-        if num_components < 4:
-            # alpha channel
-            pack = pack | u32(0xff000000)
+            px[k] = ti.cast(c, u32)
+        pack = (px[0] << 0 | px[1] << 8 | px[2] << 16 | px[3] << 24)
         dst[i, j] = pack
 
 
@@ -111,13 +110,10 @@ def copy_image_f32_to_rgba8(src: ti.template(), dst: ti.template(),
 def copy_image_u8_to_rgba8(src: ti.template(), dst: ti.template(),
                            num_components: ti.template()):
     for i, j in src:
-        pack = u32(0)
+        px = ti.Vector([0, 0, 0, 0xff], dt=u32)
         for k in ti.static(range(num_components)):
-            c = ti.cast(src[i, j][k], u32)
-            pack = (pack << 8) | ti.cast(c, u32)
-        if num_components < 4:
-            # alpha channel
-            pack = pack | u32(0xff000000)
+            px[k] = ti.cast(src[i, j][k], u32)
+        pack = (px[0] << 0 | px[1] << 8 | px[2] << 16 | px[3] << 24)
         dst[i, j] = pack
 
 

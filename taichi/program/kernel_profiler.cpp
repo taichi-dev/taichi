@@ -72,6 +72,9 @@ class DefaultProfiler : public KernelProfilerBase {
   void sync() override {
   }
 
+  void update() override {
+  }
+
   void clear() override {
     // sync(); //decoupled: trigger from the foront end
     total_time_ms_ = 0;

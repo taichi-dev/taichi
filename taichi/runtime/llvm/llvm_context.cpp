@@ -519,12 +519,7 @@ void TaichiLLVMContext::set_struct_module(
     TI_ERROR("module broken");
   }
   // TODO: Move this after ``if (!arch_is_cpu(arch))``.
-  if (this_thread_data->struct_module) {
-    llvm::Linker::linkModules(*this_thread_data->struct_module,
-                              std::move(module));
-  } else {
-    this_thread_data->struct_module = std::move(module);
-  }
+
 
   for (auto &[id, data] : per_thread_data_) {
     if (id == std::this_thread::get_id()) {
@@ -533,12 +528,20 @@ void TaichiLLVMContext::set_struct_module(
     if (data->struct_module) {
       llvm::Linker::linkModules(
           *data->struct_module,
-          clone_module_to_context(this_thread_data->struct_module.get(),
+          clone_module_to_context(module.get(),
                                   data->llvm_context));
     } else {
       data->struct_module = clone_module_to_context(
-          this_thread_data->struct_module.get(), data->llvm_context);
+          module.get(), data->llvm_context);
     }
+  }
+  if (this_thread_data->struct_module) {
+//    this_thread_data->struct_module->print(llvm::outs(), nullptr);
+//    module->print(llvm::outs(), nullptr);
+    llvm::Linker::linkModules(*this_thread_data->struct_module,
+                              std::move(module));
+  } else {
+    this_thread_data->struct_module = std::move(module);
   }
 }
 template <typename T>

@@ -92,7 +92,7 @@ def copy_colors_to_vbo(vbo, colors):
 
 
 @ti.kernel
-def copy_image_f32_to_pack32_rgba(src: ti.template(), dst: ti.template(),
+def copy_image_f32_to_rgba8(src: ti.template(), dst: ti.template(),
                                   num_components: ti.template()):
     for i, j in src:
         pack = u32(0)
@@ -100,7 +100,7 @@ def copy_image_f32_to_pack32_rgba(src: ti.template(), dst: ti.template(),
             c = src[i, j][k]
             c = max(0.0, min(1.0, c))
             c = c * 255
-            pack = (pack << (8 * k)) | ti.cast(c, u32)
+            pack = (pack << 8) | ti.cast(c, u32)
         if num_components < 4:
             # alpha channel
             pack = pack | u32(0xff000000)
@@ -108,13 +108,13 @@ def copy_image_f32_to_pack32_rgba(src: ti.template(), dst: ti.template(),
 
 
 @ti.kernel
-def copy_image_u8_to_pack32_rgba(src: ti.template(), dst: ti.template(),
+def copy_image_u8_to_rgba8(src: ti.template(), dst: ti.template(),
                                  num_components: ti.template()):
     for i, j in src:
         pack = u32(0)
         for k in ti.static(range(num_components)):
             c = ti.cast(src[i, j][k], u32)
-            pack = (pack << (8 * k)) | ti.cast(c, u32)
+            pack = (pack << 8) | ti.cast(c, u32)
         if num_components < 4:
             # alpha channel
             pack = pack | u32(0xff000000)
@@ -142,9 +142,9 @@ def to_rgba8(image):
         staging_img = image_field_cache[image]
 
     if image.dtype == u8:
-        copy_image_u8_to_pack32_rgba(image, staging_img, image.n)
+        copy_image_u8_to_rgba8(image, staging_img, image.n)
     elif image.dtype == f32:
-        copy_image_f32_to_pack32_rgba(image, staging_img, image.n)
+        copy_image_f32_to_rgba8(image, staging_img, image.n)
     else:
         raise Exception("dtype of input image must either be u8 or f32")
     return staging_img

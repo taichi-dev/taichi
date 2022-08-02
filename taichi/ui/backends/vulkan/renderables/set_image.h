@@ -28,7 +28,7 @@ namespace vulkan {
 
 class SetImage final : public Renderable {
  public:
-  int width, height;
+  int width, height, channels;
 
   struct UniformBufferObject {
     // in non_packed_mode,
@@ -47,11 +47,11 @@ class SetImage final : public Renderable {
   taichi::lang::DeviceAllocation cpu_staging_buffer_;
   taichi::lang::DeviceAllocation gpu_staging_buffer_;
 
-  taichi::lang::DataType texture_dtype_{taichi::lang::PrimitiveType::u32};
+  taichi::lang::DataType texture_dtype_{taichi::lang::PrimitiveType::u8};
   taichi::lang::DeviceAllocation texture_;
 
  private:
-  void init_set_image(AppContext *app_context, int img_width, int img_height);
+  void init_set_image(AppContext *app_context, int img_width, int img_height, int img_channels);
 
   virtual void create_bindings() override;
 
@@ -67,7 +67,7 @@ class SetImage final : public Renderable {
   void update_ubo(float x_factor, float y_factor);
 
   inline uint64_t image_size() const {
-    return width * height * data_type_size(texture_dtype_);
+    return width * height * data_type_size(texture_dtype_) * channels;
   }
 };
 

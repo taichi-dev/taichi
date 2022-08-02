@@ -46,15 +46,25 @@ void SetImage::update_data(const SetImageInfo &info) {
   // [0; 255]
   //
   // @TODO: Make the number of channel configurable?
-  texture_dtype_ = img.dtype;
+  TI_ASSERT(img.dtype == taichi::lang::PrimitiveType::f32 || img.dtype == taichi::lang::PrimitiveType::u32);
+
+  int new_channels = img.matrix_cols * img.matrix_rows;
+  if (img.dtype == taichi::lang::PrimitiveType::u32) {
+    texture_dtype_ = taichi::lang::PrimitiveType::u8;
+    TI_ASSERT(new_channels == 1);
+    new_channels = 4;
+  } else {
+    texture_dtype_ = img.dtype;
+    TI_ASSERT(new_channels == 4);
+  }
 
   int new_width = get_correct_dimension(img.shape[0]);
   int new_height = get_correct_dimension(img.shape[1]);
 
-  if (new_width != width || new_height != height) {
+  if (new_width != width || new_height != height || new_channels != channels) {
     destroy_texture();
     free_buffers();
-    init_set_image(app_context_, new_width, new_height);
+    init_set_image(app_context_, new_width, new_height, new_channels);
   }
 
   update_ubo(img.shape[0] / (float)new_width, img.shape[1] / (float)new_height);
@@ -103,12 +113,13 @@ void SetImage::update_data(const SetImageInfo &info) {
 }
 
 SetImage::SetImage(AppContext *app_context, VertexAttributes vbo_attrs) {
-  init_set_image(app_context, 1, 1);
+  init_set_image(app_context, 1, 1, 4);
 }
 
 void SetImage::init_set_image(AppContext *app_context,
                               int img_width,
-                              int img_height) {
+                              int img_height,
+                              int img_channels) {
   RenderableConfig config = {
       6,
       6,
@@ -130,6 +141,7 @@ void SetImage::init_set_image(AppContext *app_context,
 
   width = img_width;
   height = img_height;
+  channels = img_channels;
 
   create_texture();
 

@@ -347,7 +347,7 @@ void LlvmOfflineCacheFileWriter::clean_cache(const std::string &path,
   LlvmOfflineCache cache_data;
   std::vector<std::string> files_to_rm;
   bool ok_rm_meta = false;
-  
+
   // 1. Remove/Update metadata files
   {
     std::string lock_path = taichi::join_path(path, kMetadataFileLockName);
@@ -372,13 +372,14 @@ void LlvmOfflineCacheFileWriter::clean_cache(const std::string &path,
 
     if ((policy & CleanOldVersion) &&
         !is_current_llvm_cache_version(cache_data.version)) {
-      if (bool ok = taichi::remove(get_llvm_cache_metadata_file_path(path)) &&
-                    taichi::remove(get_llvm_cache_metadata_json_file_path(path));
+      if (bool ok =
+              taichi::remove(get_llvm_cache_metadata_file_path(path)) &&
+              taichi::remove(get_llvm_cache_metadata_json_file_path(path));
           ok) {
         for (const auto &[k, v] : cache_data.kernels) {
           for (int i = 0; i < v.compiled_data_list.size(); i++) {
             for (const auto &f : get_possible_llvm_cache_filename_by_key(
-                    v.kernel_key + "." + std::to_string(i))) {
+                     v.kernel_key + "." + std::to_string(i))) {
               taichi::remove(taichi::join_path(path, f));
             }
           }
@@ -427,7 +428,7 @@ void LlvmOfflineCacheFileWriter::clean_cache(const std::string &path,
         const auto *e = q.top();
         for (int i = 0; i < e->compiled_data_list.size(); i++) {
           for (const auto &f : get_possible_llvm_cache_filename_by_key(
-                  e->kernel_key + "." + std::to_string(i))) {
+                   e->kernel_key + "." + std::to_string(i))) {
             files_to_rm.push_back(f);
           }
         }

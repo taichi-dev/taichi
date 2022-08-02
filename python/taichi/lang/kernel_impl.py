@@ -303,6 +303,8 @@ class Func:
                     raise TaichiSyntaxError(
                         f'Taichi function `{self.func.__name__}` parameter `{arg_name}` must be type annotated'
                     )
+            elif isinstance(annotation, ndarray_type.ndarray):
+                annotation = template()
             else:
                 if not id(annotation
                           ) in primitive_types.type_ids and not isinstance(

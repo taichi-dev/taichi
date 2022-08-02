@@ -93,7 +93,7 @@ def copy_colors_to_vbo(vbo, colors):
 
 @ti.kernel
 def copy_image_f32_to_rgba8(src: ti.template(), dst: ti.template(),
-                                  num_components: ti.template()):
+                            num_components: ti.template()):
     for i, j in src:
         pack = u32(0)
         for k in ti.static(range(num_components)):
@@ -109,7 +109,7 @@ def copy_image_f32_to_rgba8(src: ti.template(), dst: ti.template(),
 
 @ti.kernel
 def copy_image_u8_to_rgba8(src: ti.template(), dst: ti.template(),
-                                 num_components: ti.template()):
+                           num_components: ti.template()):
     for i, j in src:
         pack = u32(0)
         for k in ti.static(range(num_components)):

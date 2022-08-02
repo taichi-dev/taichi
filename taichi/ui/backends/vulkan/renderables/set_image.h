@@ -51,7 +51,10 @@ class SetImage final : public Renderable {
   taichi::lang::DeviceAllocation texture_;
 
  private:
-  void init_set_image(AppContext *app_context, int img_width, int img_height, int img_channels);
+  void init_set_image(AppContext *app_context,
+                      int img_width,
+                      int img_height,
+                      int img_channels);
 
   virtual void create_bindings() override;
 

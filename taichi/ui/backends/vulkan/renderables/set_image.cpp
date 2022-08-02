@@ -46,7 +46,8 @@ void SetImage::update_data(const SetImageInfo &info) {
   // [0; 255]
   //
   // @TODO: Make the number of channel configurable?
-  TI_ASSERT(img.dtype == taichi::lang::PrimitiveType::f32 || img.dtype == taichi::lang::PrimitiveType::u32);
+  TI_ASSERT(img.dtype == taichi::lang::PrimitiveType::f32 ||
+            img.dtype == taichi::lang::PrimitiveType::u32);
 
   int new_channels = img.matrix_cols * img.matrix_rows;
   if (img.dtype == taichi::lang::PrimitiveType::u32) {

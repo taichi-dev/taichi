@@ -18,7 +18,6 @@ using namespace taichi::lang::directx12;
 
 #define DEBUG_TYPE "dxil-taichi-runtime-context-lower"
 
-
 namespace {
 
 class TaichiRuntimeContextLower : public ModulePass {
@@ -38,12 +37,11 @@ char TaichiRuntimeContextLower::ID = 0;
 
 }  // end anonymous namespace
 
-
 INITIALIZE_PASS(TaichiRuntimeContextLower,
-                      DEBUG_TYPE,
-                      "Lower taichi RuntimeContext",
-                      false,
-                      false)
+                DEBUG_TYPE,
+                "Lower taichi RuntimeContext",
+                false,
+                false)
 
 llvm::ModulePass *llvm::createTaichiRuntimeContextLowerPass() {
   return new TaichiRuntimeContextLower();

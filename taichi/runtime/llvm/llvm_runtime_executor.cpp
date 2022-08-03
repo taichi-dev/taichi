@@ -121,7 +121,7 @@ LlvmRuntimeExecutor::LlvmRuntimeExecutor(CompileConfig &config,
     llvm_context_device_ =
         std::make_unique<TaichiLLVMContext>(config_, Arch::dx12);
     // FIXME: add dx12 JIT.
-    //llvm_context_device_->init_runtime_jit_module();
+    // llvm_context_device_->init_runtime_jit_module();
   }
 #endif
 

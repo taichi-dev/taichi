@@ -9,7 +9,7 @@ class Function;
 class Module;
 class Type;
 class GlobalVariable;
-}
+}  // namespace llvm
 
 namespace taichi {
 namespace lang {
@@ -26,13 +26,12 @@ enum class BufferSpaceId {
   Args = 3,
   Runtime = 4,
   Result = 5,
-  UtilCBuffer = 6, // For things like Num work groups.
+  UtilCBuffer = 6,  // For things like Num work groups.
 };
 
 enum ResourceAddressSpace {
   CBuffer = 4,
 };
-
 
 void mark_function_as_cs_entry(llvm::Function *);
 bool is_cs_entry(llvm::Function *);
@@ -52,7 +51,6 @@ extern const char *NumWorkGroupsCBName;
 }  // namespace lang
 }  // namespace taichi
 
-
 namespace llvm {
 class ModulePass;
 class PassRegistry;
@@ -64,11 +62,10 @@ void initializeTaichiRuntimeContextLowerPass(PassRegistry &);
 /// Pass to convert modules into DXIL-compatable modules
 ModulePass *createTaichiRuntimeContextLowerPass();
 
-
 /// Initializer for taichi intrinsic lower.
 void initializeTaichiIntrinsicLowerPass(PassRegistry &);
 
 /// Pass to lower taichi intrinsic into DXIL intrinsic.
 ModulePass *createTaichiIntrinsicLowerPass(taichi::lang::CompileConfig *config);
 
-}
+}  // namespace llvm

@@ -13,8 +13,7 @@ namespace directx12 {
 namespace {
 class FieldImpl : public aot::Field {
  public:
-  explicit FieldImpl(const aot::CompiledFieldData &field)
-      : field_(field) {
+  explicit FieldImpl(const aot::CompiledFieldData &field) : field_(field) {
   }
 
  private:
@@ -40,9 +39,9 @@ class AotModuleImpl : public aot::Module {
     }
 
     // FIXME: enable once write graph to graphs_dx12.tcb.
-    //const std::string graph_path =
+    // const std::string graph_path =
     //    fmt::format("{}/graphs_dx12.tcb", params.module_path);
-    //read_from_binary_file(graphs_, graph_path);
+    // read_from_binary_file(graphs_, graph_path);
   }
 
   std::unique_ptr<aot::CompiledGraph> get_graph(std::string name) override {
@@ -103,7 +102,7 @@ class AotModuleImpl : public aot::Module {
   }
 
   std::vector<uint8_t> read_dxil_container(const std::string &output_dir,
-                                      const std::string &name) {
+                                           const std::string &name) {
     const std::string path = fmt::format("{}/{}.dxc", output_dir, name);
     std::vector<uint8_t> source_code;
     std::ifstream fs(path, std::ios_base::binary | std::ios::ate);
@@ -127,6 +126,6 @@ std::unique_ptr<aot::Module> make_aot_module(std::any mod_params,
   return std::make_unique<AotModuleImpl>(params, device_api_backend);
 }
 
-}  // namespace gfx
+}  // namespace directx12
 }  // namespace lang
 }  // namespace taichi

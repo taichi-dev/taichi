@@ -11,7 +11,6 @@ class KernelImpl : public aot::Kernel {
 
   void launch(RuntimeContext *ctx) override {
   }
-
 };
 }  // namespace directx12
 }  // namespace lang

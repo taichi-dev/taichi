@@ -102,7 +102,6 @@ using namespace lang;
   aot_builder->dump(".", "");
 }
 
-
 #ifdef TI_WITH_DX12
 
 TEST(AotSaveLoad, DX12) {
@@ -134,7 +133,6 @@ TEST(AotSaveLoad, DX12) {
   EXPECT_FALSE(ret2_kernel);
 
   // FIXME: test run kernels and check the result.
-
 }
 
 #endif

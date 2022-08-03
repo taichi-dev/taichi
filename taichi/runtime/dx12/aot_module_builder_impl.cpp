@@ -17,8 +17,6 @@ AotModuleBuilderImpl::AotModuleBuilderImpl(LlvmProgramImpl *prog) : prog(prog) {
 
 void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
                                            Kernel *kernel) {
-
-
   auto &dxil_codes = module_data.dxil_codes[identifier];
   auto &compiled_kernel = module_data.kernels[identifier];
 
@@ -50,11 +48,11 @@ void AotModuleBuilderImpl::add_field_per_backend(const std::string &identifier,
   // matter too much for now.
   TI_ERROR_IF(!all_fields_are_dense_in_container(rep_snode->parent),
               "AOT: only supports dense field");
-  
+
   const auto &field = prog->get_cached_field(rep_snode->get_snode_tree_id());
 
-  //const auto &dense_desc =
-  //    compiled_structs_[0].snode_descriptors.at(rep_snode->parent->id);
+  // const auto &dense_desc =
+  //     compiled_structs_[0].snode_descriptors.at(rep_snode->parent->id);
 
   aot::CompiledFieldData field_data;
   field_data.field_name = identifier;
@@ -64,7 +62,7 @@ void AotModuleBuilderImpl::add_field_per_backend(const std::string &identifier,
   field_data.shape = shape;
   // FIXME: calc mem_offset_in_parent for llvm path.
   field_data.mem_offset_in_parent = field.snode_metas[0].chunk_size;
-  //dense_desc.mem_offset_in_parent_cell;
+  // dense_desc.mem_offset_in_parent_cell;
   if (!is_scalar) {
     field_data.element_shape = {row_num, column_num};
   }
@@ -122,13 +120,13 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir,
     }
   }
 
-  const std::string json_path = fmt::format("{}/metadata_dx12.json", output_dir);
+  const std::string json_path =
+      fmt::format("{}/metadata_dx12.json", output_dir);
   tmp_module_data.dump_json(json_path);
 
   // FIXME: dump graph to different file.
-  //dump_graph(output_dir);
+  // dump_graph(output_dir);
 }
-
 
 }  // namespace directx12
 }  // namespace lang

@@ -148,8 +148,9 @@ class TaskCodeGenLLVMDX12 : public TaskCodeGenLLVM {
 
 #ifdef TI_WITH_LLVM
 
-static std::vector<uint8_t> generate_dxil_from_llvm(LLVMCompiledData &compiled_data,
-                                    taichi::lang::Kernel *kernel) {
+static std::vector<uint8_t> generate_dxil_from_llvm(
+    LLVMCompiledData &compiled_data,
+    taichi::lang::Kernel *kernel) {
   // generate dxil from llvm ir.
   auto offloaded_local = compiled_data.tasks;
   auto module = compiled_data.module.get();
@@ -162,7 +163,8 @@ static std::vector<uint8_t> generate_dxil_from_llvm(LLVMCompiledData &compiled_d
     // FIXME: save task.block_dim like
     // tlctx->mark_function_as_cuda_kernel(func, task.block_dim);
   }
-  auto dx_container = directx12::global_optimize_module(module, kernel->program->config);
+  auto dx_container =
+      directx12::global_optimize_module(module, kernel->program->config);
   // validate and sign dx container.
   return directx12::validate_and_sign(dx_container);
 }
@@ -197,8 +199,7 @@ KernelCodeGenDX12::CompileResult KernelCodeGenDX12::compile() {
     aot::CompiledOffloadedTask task;
     // FIXME: build all fields for task.
     task.name = fmt::format("{}_{}_{}", kernel->get_name(),
-                            offload_stmt->task_name(),
-                            i);
+                            offload_stmt->task_name(), i);
     task.type = offload_stmt->task_name();
     Result.tasks.emplace_back(task);
   }
@@ -209,7 +210,7 @@ KernelCodeGenDX12::CompileResult KernelCodeGenDX12::compile() {
 
 LLVMCompiledData KernelCodeGenDX12::modulegen(
     std::unique_ptr<llvm::Module> &&module,
-                                       OffloadedStmt *stmt) {
+    OffloadedStmt *stmt) {
   TaskCodeGenLLVMDX12 gen(kernel, stmt);
   return gen.run_compilation();
 }
@@ -217,7 +218,6 @@ LLVMCompiledData KernelCodeGenDX12::modulegen(
 
 FunctionType KernelCodeGenDX12::codegen() {
   // FIXME: implement codegen.
-  return [](RuntimeContext &ctx) {
-  };
+  return [](RuntimeContext &ctx) {};
 }
 TLANG_NAMESPACE_END

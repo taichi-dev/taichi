@@ -1778,11 +1778,8 @@ class MatrixType(CompoundType):
 
     def field(self, **kwargs):
         assert kwargs.get("ndim", self.ndim) == self.ndim
-        kwargs.update({"ndim" : self.ndim})
-        return Matrix.field(self.n,
-                            self.m,
-                            dtype=self.dtype,
-                            **kwargs)
+        kwargs.update({"ndim": self.ndim})
+        return Matrix.field(self.n, self.m, dtype=self.dtype, **kwargs)
 
 
 class MatrixNdarray(Ndarray):

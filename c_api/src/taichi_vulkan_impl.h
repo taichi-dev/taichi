@@ -14,7 +14,7 @@ class VulkanRuntimeImported;
 class VulkanRuntimeOwned;
 class VulkanContext;
 
-class TI_DLL_EXPORT VulkanRuntime : public Runtime {
+class VulkanRuntime : public Runtime {
  public:
   VulkanRuntime();
 
@@ -31,7 +31,7 @@ class TI_DLL_EXPORT VulkanRuntime : public Runtime {
   virtual void submit() override final;
   virtual void wait() override final;
 };
-class TI_DLL_EXPORT VulkanRuntimeImported : public VulkanRuntime {
+class VulkanRuntimeImported : public VulkanRuntime {
   // A dirty workaround to ensure the device is fully initialized before
   // construction of `gfx_runtime_`.
   struct Workaround {
@@ -49,7 +49,7 @@ class TI_DLL_EXPORT VulkanRuntimeImported : public VulkanRuntime {
   virtual taichi::lang::Device &get() override final;
   virtual taichi::lang::gfx::GfxRuntime &get_gfx_runtime() override final;
 };
-class TI_DLL_EXPORT VulkanRuntimeOwned : public VulkanRuntime {
+class VulkanRuntimeOwned : public VulkanRuntime {
   taichi::lang::vulkan::VulkanDeviceCreator vk_device_creator_;
   taichi::lang::gfx::GfxRuntime gfx_runtime_;
 

@@ -99,8 +99,8 @@ struct CompileConfig {
   std::string offline_cache_cleaning_policy{
       "lru"};  // "never"|"version"|"lru"|"fifo"
   int offline_cache_max_size_of_files{100 * 1024 *
-                                      1024};  // bytes, default: 100MB
-  double offline_cache_cleaning_factor{0.25};        // [0.f, 1.f]
+                                      1024};   // bytes, default: 100MB
+  double offline_cache_cleaning_factor{0.25};  // [0.f, 1.f]
 
   int num_compile_threads{0};
   std::string vk_api_version;

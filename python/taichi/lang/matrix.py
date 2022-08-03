@@ -238,8 +238,7 @@ class _TiScopeMatrixImpl(_MatrixBaseImpl):
                 j = [j]
             if len(indices) == 1:
                 return Vector([self._subscript(is_global_mat, a) for a in i],
-                              is_ref=get_ref,
-                              ndim=1)
+                              is_ref=get_ref)
             return Matrix([[self._subscript(is_global_mat, a, b) for b in j]
                            for a in i],
                           is_ref=get_ref,

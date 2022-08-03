@@ -12,28 +12,6 @@ from .utils import check_ggui_availability, get_field_info
 
 normals_field_cache = {}
 
-
-class DisplayMode_:
-    Fill = _ti_core.DisplayMode.Fill if _ti_core.GGUI_AVAILABLE else None
-    Line = _ti_core.DisplayMode.Line if _ti_core.GGUI_AVAILABLE else None
-    Point = _ti_core.DisplayMode.Point if _ti_core.GGUI_AVAILABLE else None
-
-    @staticmethod
-    def __call__(mode: int):
-        if mode == 0:
-            return DisplayMode_.Fill
-        if mode == 1:
-            return DisplayMode_.Line
-        if mode == 2:
-            return DisplayMode_.Point
-        raise Exception(
-            "Error!Only support 3 kinds of DisplayMode(0:Fill, 1:Line, 2:Point)"
-        )
-
-
-DisplayMode = DisplayMode_()
-
-
 def get_normals_field(vertices):
     if vertices not in normals_field_cache:
         N = vertices.shape[0]
@@ -192,7 +170,7 @@ class Scene:
              vertex_count: int = None,
              index_offset: int = 0,
              index_count: int = None,
-             display_mode=DisplayMode.Fill):
+             show_wareframe: bool = False):
         """Declare a mesh inside the scene.
 
         if you indicate the index_offset and index_count, the normals will also
@@ -227,9 +205,8 @@ class Scene:
             index_count (int, optional):
                 only available when `indices` is provided, which is the the number
                 of vertices to draw.
-            display_mode (Enum of DisplayMode, optional):
-                there are 3 types of diplay mode, Fill mode(Fill colors to all triagnles)
-                Line mode(WareFrame), Point mode.
+            show_wareframe (bool, optional):
+                turn on/off WareFrame mode.
         """
         vbo = get_vbo_field(vertices)
         copy_vertices_to_vbo(vbo, vertices)
@@ -251,7 +228,7 @@ class Scene:
 
         self.scene.mesh(vbo_info, has_per_vertex_color, indices_info, color,
                         two_sided, index_count, index_offset, vertex_count,
-                        vertex_offset, display_mode)
+                        vertex_offset, show_wareframe)
 
     def mesh_instance(self,
                       vertices,
@@ -267,7 +244,7 @@ class Scene:
                       vertex_count: int = None,
                       index_offset: int = 0,
                       index_count: int = None,
-                      display_mode=DisplayMode.Fill):
+                      show_wareframe: bool = False):
         """Declare mesh instances inside the scene.
 
         If transforms is given, then according to the shape of transforms, it will
@@ -312,8 +289,8 @@ class Scene:
             index_count (int, optional):
                 only available when `indices` is provided, which is the the number
                 of indices to draw.
-            display_mode (Enum of DisplayMode, optional):
-                there are 3 types of diplay mode, Fill mode (Fill faces), Line mode (WareFrame), Point mode.
+            show_wareframe (bool, optional):
+                turn on/off WareFrame mode.
         """
         vbo = get_vbo_field(vertices)
         copy_vertices_to_vbo(vbo, vertices)
@@ -341,7 +318,7 @@ class Scene:
                                  color, two_sided, transform_info,
                                  instance_count, instance_offset, index_count,
                                  index_offset, vertex_count, vertex_offset,
-                                 display_mode)
+                                 show_wareframe)
 
     def particles(self,
                   centers,

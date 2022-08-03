@@ -176,7 +176,7 @@ struct PyScene {
             float draw_first_index,
             float draw_vertex_count,
             float draw_first_vertex,
-            taichi::lang::PolygonMode display_mode) {
+            bool show_wareframe) {
     RenderableInfo renderable_info;
     renderable_info.vbo = vbo;
     renderable_info.has_per_vertex_color = has_per_vertex_color;
@@ -186,7 +186,7 @@ struct PyScene {
     renderable_info.draw_first_index = (int)draw_first_index;
     renderable_info.draw_vertex_count = (int)draw_vertex_count;
     renderable_info.draw_first_vertex = (int)draw_first_vertex;
-    renderable_info.display_mode = display_mode;
+    renderable_info.display_mode = show_wareframe ? taichi::lang::PolygonMode::Line : taichi::lang::PolygonMode::Fill;
 
     MeshInfo info;
     info.renderable_info = renderable_info;
@@ -229,7 +229,7 @@ struct PyScene {
                      float draw_first_index,
                      float draw_vertex_count,
                      float draw_first_vertex,
-                     taichi::lang::PolygonMode display_mode) {
+                     bool show_wareframe) {
     RenderableInfo renderable_info;
     renderable_info.vbo = vbo;
     renderable_info.has_per_vertex_color = has_per_vertex_color;
@@ -239,7 +239,7 @@ struct PyScene {
     renderable_info.draw_first_index = (int)draw_first_index;
     renderable_info.draw_vertex_count = (int)draw_vertex_count;
     renderable_info.draw_first_vertex = (int)draw_first_vertex;
-    renderable_info.display_mode = display_mode;
+    renderable_info.display_mode = show_wareframe ? taichi::lang::PolygonMode::Line : taichi::lang::PolygonMode::Fill;
 
     MeshInfo info;
     info.renderable_info = renderable_info;

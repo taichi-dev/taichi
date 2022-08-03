@@ -51,9 +51,9 @@ void Renderable::update_data(const RenderableInfo &info) {
   bool needs_pipeline_reset = false;
 
   // Check if we need to update Graphics Pipeline
-  if (info.display_mode != config_.polygon_type) {
+  if (info.display_mode != config_.polygon_mode) {
     needs_pipeline_reset = true;
-    config_.polygon_type = info.display_mode;
+    config_.polygon_mode = info.display_mode;
     pipeline_.reset();
     create_graphics_pipeline();
   }
@@ -175,7 +175,7 @@ void Renderable::create_graphics_pipeline() {
 
   RasterParams raster_params;
   raster_params.prim_topology = config_.topology_type;
-  raster_params.polygon_mode = config_.polygon_type;
+  raster_params.polygon_mode = config_.polygon_mode;
   raster_params.depth_test = true;
   raster_params.depth_write = true;
 

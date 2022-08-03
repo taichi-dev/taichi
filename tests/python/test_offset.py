@@ -124,7 +124,7 @@ def test_offset_must_throw_scalar():
             match='The dimensionality of shape and offset must be the same'):
         a = ti.field(dtype=ti.f32, shape=3, offset=(3, 4))
     with pytest.raises(ti.TaichiCompilationError,
-                       match='Shape cannot be None when offset is set'):
+                       match='shape cannot be None when offset is set'):
         b = ti.field(dtype=ti.f32, shape=None, offset=(3, 4))
 
 
@@ -135,7 +135,7 @@ def test_offset_must_throw_vector():
             match='The dimensionality of shape and offset must be the same'):
         a = ti.Vector.field(3, dtype=ti.f32, shape=3, offset=(3, 4))
     with pytest.raises(ti.TaichiCompilationError,
-                       match='Shape cannot be None when offset is set'):
+                       match='shape cannot be None when offset is set'):
         b = ti.Vector.field(3, dtype=ti.f32, shape=None, offset=(3, ))
 
 
@@ -150,5 +150,5 @@ def test_offset_must_throw_matrix():
                             shape=(32, 16, 8),
                             offset=(32, 16))
     with pytest.raises(ti.TaichiCompilationError,
-                       match='Shape cannot be None when offset is set'):
+                       match='shape cannot be None when offset is set'):
         b = ti.Matrix.field(3, 3, dtype=ti.i32, shape=None, offset=(32, 16))

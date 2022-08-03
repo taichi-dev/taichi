@@ -128,7 +128,7 @@ def test_order_must_throw_scalar():
             match='The dimensionality of shape and order must be the same'):
         a = ti.field(dtype=ti.f32, shape=3, order='ij')
     with pytest.raises(ti.TaichiCompilationError,
-                       match='Shape cannot be None when order is set'):
+                       match='shape cannot be None when order is set'):
         b = ti.field(dtype=ti.f32, shape=None, order='i')
     with pytest.raises(ti.TaichiCompilationError,
                        match='The axes in order must be different'):
@@ -144,7 +144,7 @@ def test_order_must_throw_vector():
             match='The dimensionality of shape and order must be the same'):
         a = ti.Vector.field(3, dtype=ti.f32, shape=3, order='ij')
     with pytest.raises(ti.TaichiCompilationError,
-                       match='Shape cannot be None when order is set'):
+                       match='shape cannot be None when order is set'):
         b = ti.Vector.field(3, dtype=ti.f32, shape=None, order='i')
     with pytest.raises(ti.TaichiCompilationError,
                        match='The axes in order must be different'):

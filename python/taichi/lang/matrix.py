@@ -1140,10 +1140,10 @@ class Matrix(TaichiOperations):
         if shape is None:
             if offset is not None:
                 raise TaichiSyntaxError(
-                    'Shape cannot be None when offset is set')
+                    'shape cannot be None when offset is set')
             if order is not None:
                 raise TaichiSyntaxError(
-                    'Shape cannot be None when order is set')
+                    'shape cannot be None when order is set')
         else:
             if isinstance(shape, numbers.Number):
                 shape = (shape, )

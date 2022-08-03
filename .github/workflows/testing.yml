@@ -663,8 +663,6 @@ jobs:
             registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.5 \
             /home/dev/taichi/.github/workflows/scripts/android-build.sh build-ext
 
-          redis-cli --raw -h $REDIS_HOST get android-build-credentials >> $GITHUB_ENV
-
       - name: Test For Android AOT (export core)
         run: |
           docker rm taichi_test_android -f

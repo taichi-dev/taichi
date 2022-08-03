@@ -19,9 +19,6 @@ function build-and-smoke-test-android-aot-demo {
     ANDROID_APP_ROOT=$APP_ROOT/android
     JNI_PATH=$ANDROID_APP_ROOT/app/src/main/jniLibs/arm64-v8a/
 
-    # cd $APP_ROOT/python
-    # python3 implicit_fem.py --aot
-
     mkdir -p $JNI_PATH
     cp taichi/build/libtaichi_export_core.so $JNI_PATH
     cd $ANDROID_APP_ROOT

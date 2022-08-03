@@ -262,19 +262,30 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access) {
     auto stmt = block->statements[i].get();
     Stmt *result = nullptr;
     if (auto local_load = stmt->cast<LocalLoadStmt>()) {
-      for (int i = 0; i < local_load->src.size(); ++i) {
-        bool regular = true;
-        auto alloca = local_load->src[i].var;
-        for (int l = 0; l < stmt->width(); l++) {
-          if (local_load->src[l].offset != l ||
-              local_load->src[l].var != alloca) {
-            regular = false;
-          }
-        }
-        if (regular) {
-          result = get_store_forwarding_data(alloca, i);
+      bool regular = true;
+      auto alloca = local_load->src[0].var;
+      for (int l = 0; l < stmt->width(); l++) {
+        if (local_load->src[l].offset != l ||
+            local_load->src[l].var != alloca) {
+          regular = false;
         }
       }
+      if (regular) {
+        result = get_store_forwarding_data(alloca, i);
+      }
+      // for (int i = 0; i < local_load->src.size(); ++i) {
+      //   bool regular = true;
+      //   auto alloca = local_load->src[i].var;
+      //   for (int l = 0; l < stmt->width(); l++) {
+      //     if (local_load->src[l].offset != l ||
+      //         local_load->src[l].var != alloca) {
+      //       regular = false;
+      //     }
+      //   }
+      //   if (regular) {
+      //     result = get_store_forwarding_data(alloca, i);
+      //   }
+      // }
     } else if (auto global_load = stmt->cast<GlobalLoadStmt>()) {
       if (!after_lower_access) {
         bool store_forwarding = true;

@@ -479,7 +479,7 @@ class ASTTransformer(Builder):
             node.ptr = impl.ti_format(*args, **keywords)
             return node.ptr
 
-        if isinstance(node.func, ast.Attribute) and node.func.ptr == Matrix:
+        if isinstance(node.func, ast.Attribute) and func == Matrix:
             node.ptr = matrix.make_matrix(*args, **keywords)
             return node.ptr
 

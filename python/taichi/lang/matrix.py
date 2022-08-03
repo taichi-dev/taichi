@@ -97,9 +97,9 @@ def _gen_swizzles(cls):
     return cls
 
 
-def make_matrix(arr, dt=None, suppress_warning=False, is_ref=False):
+def make_matrix(arr, dt=None, suppress_warning=False, is_ref=False, **kwargs):
     if not impl.current_cfg().real_matrix or in_python_scope():
-        return Matrix(arr, dt, suppress_warning, is_ref)
+        return Matrix(arr, dt, suppress_warning, is_ref, **kwargs)
     cast = (lambda x: ops_mod.cast(x, dt)) if dt else (
         lambda x: x if isinstance(x, expr.Expr) else expr.Expr(x))
     if len(arr) == 0:
@@ -322,10 +322,6 @@ def _make_entries_initializer(is_matrix: bool) -> _MatrixEntriesInitializer:
             return [[x] for x in arr]
 
         def no_dynamic_index(self, arr, dt):
-            if impl.current_cfg().real_matrix:
-                if dt is None:
-                    dt = self.infer_dt(arr)
-                return _Matrix(arr, dt, is_vec=True)
             return [[impl.expr_init(ops_mod.cast(x, dt) if dt else x)]
                     for x in arr]
 
@@ -351,10 +347,6 @@ def _make_entries_initializer(is_matrix: bool) -> _MatrixEntriesInitializer:
             return [list(row) for row in arr]
 
         def no_dynamic_index(self, arr, dt):
-            if impl.current_cfg().real_matrix:
-                if dt is None:
-                    dt = self.infer_dt(arr)
-                return _Matrix(arr, dt)
             return [[
                 impl.expr_init(ops_mod.cast(x, dt) if dt else x) for x in row
             ] for row in arr]

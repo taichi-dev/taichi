@@ -41,12 +41,6 @@ __aot_test_cases = {
         os.path.join('cpp', 'aot', 'llvm', 'field_aot_test.py'),
         "--arch=cuda --cgraph"
     ],
-    "LlvmCGraph.Mpm88Cpu":
-    [os.path.join('cpp', 'aot', 'mpm88_graph_aot.py'), "--arch=cpu"],
-    "LlvmCGraph.Mpm88Cuda":
-    [os.path.join('cpp', 'aot', 'mpm88_graph_aot.py'), "--arch=cuda"],
-    "AotLoadGraph.Mpm88":
-    [os.path.join('cpp', 'aot', 'mpm88_graph_aot.py'), "--arch=vulkan"],
 }
 
 __capi_aot_test_cases = {
@@ -68,6 +62,10 @@ __capi_aot_test_cases = {
         os.path.join('cpp', 'aot', 'llvm', 'kernel_aot_test.py'),
         "--arch=vulkan"
     ],
+    "CapiMpm88Test.Cuda":
+    [os.path.join('cpp', 'aot', 'mpm88_graph_aot.py'), "--arch=cuda"],
+    "CapiMpm88Test.Vulkan":
+    [os.path.join('cpp', 'aot', 'mpm88_graph_aot.py'), "--arch=vulkan"],
 }
 
 

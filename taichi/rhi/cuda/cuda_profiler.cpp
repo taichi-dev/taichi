@@ -130,8 +130,22 @@ void KernelProfilerCUDA::trace(KernelProfilerBase::TaskHandle &task_handle,
 }
 
 void KernelProfilerCUDA::stop(KernelProfilerBase::TaskHandle handle) {
-  if (tool_ == ProfilingToolkit::event)
+  if (tool_ == ProfilingToolkit::event) {
     CUDADriver::get_instance().event_record(handle, 0);
+    CUDADriver::get_instance().stream_synchronize(nullptr);
+
+    // get elapsed time and destroy events
+    auto record = event_toolkit_->get_current_event_record();
+    CUDADriver::get_instance().event_elapsed_time(
+        &record.kernel_elapsed_time_in_ms, record.start_event,
+        record.stop_event);
+    CUDADriver::get_instance().event_elapsed_time(
+        &record.time_since_base, event_toolkit_->get_base_event(),
+        record.start_event);
+
+    CUDADriver::get_instance().event_destroy(record.start_event);
+    CUDADriver::get_instance().event_destroy(record.stop_event);
+  }
 }
 
 bool KernelProfilerCUDA::statistics_on_traced_records() {
@@ -297,7 +311,6 @@ KernelProfilerBase::TaskHandle EventToolkit::start_with_handle(
       }
     }
   }
-
   return record.stop_event;
 }
 
@@ -313,18 +326,6 @@ void EventToolkit::update_record(
 
   uint32_t idx = 0;
   for (auto &record : event_records_) {
-    CUDADriver::get_instance().event_elapsed_time(
-        &record.kernel_elapsed_time_in_ms, record.start_event,
-        record.stop_event);
-    CUDADriver::get_instance().event_elapsed_time(
-        &record.time_since_base, base_event_, record.start_event);
-
-    // TODO: the following two lines seem to increases profiler overhead a
-    // little bit. Is there a way to avoid the overhead while not creating
-    // too many events?
-    CUDADriver::get_instance().event_destroy(record.start_event);
-    CUDADriver::get_instance().event_destroy(record.stop_event);
-
     // copy to traced_records_ then clear event_records_
     traced_records[records_size_after_sync + idx].kernel_elapsed_time_in_ms =
         record.kernel_elapsed_time_in_ms;

@@ -699,6 +699,8 @@ class StructType(CompoundType):
         return Struct(entries)
 
     def field(self, **kwargs):
+        if "ndim" in kwargs:
+            kwargs.pop("ndim")
         return Struct.field(self.members, self.methods, **kwargs)
 
 

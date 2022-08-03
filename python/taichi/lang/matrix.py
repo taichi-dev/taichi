@@ -628,7 +628,9 @@ class Matrix(TaichiOperations):
         This is similar to `numpy.ndarray`'s `flatten` and `ravel` methods,
         the difference is that this function always returns a new list.
         """
-        return [[self(i, j) for j in range(self.m)] for i in range(self.n)]
+        if self.ndim == 2:
+            return [[self(i, j) for j in range(self.m)] for i in range(self.n)]
+        return [self(i, j) for j in range(self.m) for i in range(self.n)]
 
     @taichi_scope
     def cast(self, dtype):
@@ -1775,9 +1777,10 @@ class MatrixType(CompoundType):
                    ndim=self.ndim))
 
     def field(self, **kwargs):
+        assert kwargs.get("ndim", self.ndim) == self.ndim
+        kwargs.update({"ndim" : self.ndim})
         return Matrix.field(self.n,
                             self.m,
-                            ndim=self.ndim,
                             dtype=self.dtype,
                             **kwargs)
 

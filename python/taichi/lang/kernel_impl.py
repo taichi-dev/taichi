@@ -791,11 +791,13 @@ class Kernel:
                 elif id(ret_dt.dtype) in primitive_types.integer_type_ids:
                     it = iter(t_kernel.get_ret_int_tensor(0))
                     ret = Matrix([[next(it) for _ in range(ret_dt.m)]
-                                  for _ in range(ret_dt.n)], ndim=getattr(ret_dt, 'ndim', 2))
+                                  for _ in range(ret_dt.n)],
+                                 ndim=getattr(ret_dt, 'ndim', 2))
                 else:
                     it = iter(t_kernel.get_ret_float_tensor(0))
                     ret = Matrix([[next(it) for _ in range(ret_dt.m)]
-                                  for _ in range(ret_dt.n)], ndim=getattr(ret_dt, 'ndim', 2))
+                                  for _ in range(ret_dt.n)],
+                                 ndim=getattr(ret_dt, 'ndim', 2))
             if callbacks:
                 for c in callbacks:
                     c()

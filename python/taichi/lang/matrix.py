@@ -1765,15 +1765,21 @@ class MatrixType(CompoundType):
             return Matrix([[
                 int(mat(i, j)) if self.dtype in primitive_types.integer_types
                 else float(mat(i, j)) for j in range(self.m)
-            ] for i in range(self.n)], ndim=self.ndim)
+            ] for i in range(self.n)],
+                          ndim=self.ndim)
         return mat.cast(self.dtype)
 
     def filled_with_scalar(self, value):
         return self.cast(
-            Matrix([[value for _ in range(self.m)] for _ in range(self.n)], ndim=self.ndim))
+            Matrix([[value for _ in range(self.m)] for _ in range(self.n)],
+                   ndim=self.ndim))
 
     def field(self, **kwargs):
-        return Matrix.field(self.n, self.m, ndim=self.ndim, dtype=self.dtype, **kwargs)
+        return Matrix.field(self.n,
+                            self.m,
+                            ndim=self.ndim,
+                            dtype=self.dtype,
+                            **kwargs)
 
 
 class MatrixNdarray(Ndarray):

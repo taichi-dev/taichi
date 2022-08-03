@@ -23,6 +23,10 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
       compilation_workers("compile", config_.num_compile_threads) {
   runtime_exec_ = std::make_unique<LlvmRuntimeExecutor>(config_, profiler);
   cache_data_ = std::make_unique<LlvmOfflineCache>();
+  if (config_.offline_cache) {
+    cache_reader_ =
+        LlvmOfflineCacheFileReader::make(config_.offline_cache_file_path);
+  }
 }
 
 FunctionType LlvmProgramImpl::compile(Kernel *kernel,

@@ -31,6 +31,8 @@ class SNodeTreeManager {
 
   void destroy_snode_tree(SNodeTree *snode_tree);
 
+  size_t get_field_in_tree_offset(int tree_id, const SNode *child);
+
   DevicePtr get_snode_tree_device_ptr(int tree_id);
 
  private:

@@ -283,6 +283,10 @@ class TI_DLL_EXPORT Program {
 
   std::unique_ptr<AotModuleBuilder> make_aot_module_builder(Arch arch);
 
+  size_t get_field_in_tree_offset(int tree_id, const SNode *child) {
+    return program_impl_->get_field_in_tree_offset(tree_id, child);
+  }
+
   DevicePtr get_snode_tree_device_ptr(int tree_id) {
     return program_impl_->get_snode_tree_device_ptr(tree_id);
   }

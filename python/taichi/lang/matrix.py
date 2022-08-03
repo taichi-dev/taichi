@@ -1638,7 +1638,7 @@ class MatrixField(Field):
             paddle.Tensor: The result paddle tensor.
         """
         import paddle  # pylint: disable=C0415
-        as_vector = self.m == 1 and not keep_dims
+        as_vector = self.m == 1 and not keep_dims and self.ndim == 1
         shape_ext = (self.n, ) if as_vector else (self.n, self.m)
         # pylint: disable=E1101
         # paddle.empty() doesn't support argument `place``
@@ -1660,7 +1660,7 @@ class MatrixField(Field):
             >>> arr = numpp.ones((3, 3, 2, 2))
             >>> m.from_numpy(arr)
         """
-        if len(arr.shape) == len(self.shape) + 1:
+        if len(arr.shape) == len(self.shape) + 1 and self.ndim == 1:
             as_vector = True
             assert self.m == 1, "This is not a vector field"
         else:

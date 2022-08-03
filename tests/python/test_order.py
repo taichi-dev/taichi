@@ -110,7 +110,7 @@ def test_order_vector():
     for i in range(X):
         for j in range(Y):
             assert a[i, j] == b[i, j] == c[i, j] == d[i, j] == [i, j]
-            for k in range(2):
+            for k in range(Z):
                 assert a_addr + (i * (Y * Z) + j * Z + k) * S == \
                        get_field_addr(a.get_scalar_field(k), i, j)
                 assert b_addr + (j * (X * Z) + i * Z + k) * S == \

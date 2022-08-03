@@ -1758,22 +1758,22 @@ class MatrixType(CompoundType):
                    for k in range(self.n)]
 
         #  type cast
-        return self.cast(Matrix(entries, dt=self.dtype))
+        return self.cast(Matrix(entries, dt=self.dtype, ndim=self.ndim))
 
     def cast(self, mat):
         if in_python_scope():
             return Matrix([[
                 int(mat(i, j)) if self.dtype in primitive_types.integer_types
                 else float(mat(i, j)) for j in range(self.m)
-            ] for i in range(self.n)])
+            ] for i in range(self.n)], ndim=self.ndim)
         return mat.cast(self.dtype)
 
     def filled_with_scalar(self, value):
         return self.cast(
-            Matrix([[value for _ in range(self.m)] for _ in range(self.n)]))
+            Matrix([[value for _ in range(self.m)] for _ in range(self.n)], ndim=self.ndim))
 
     def field(self, **kwargs):
-        return Matrix.field(self.n, self.m, dtype=self.dtype, **kwargs)
+        return Matrix.field(self.n, self.m, ndim=self.ndim, dtype=self.dtype, **kwargs)
 
 
 class MatrixNdarray(Ndarray):

@@ -9,7 +9,6 @@
 #include "mpm88_test.hpp"
 
 #include "c_api_test_utils.h"
-#include "taichi/taichi_vulkan.h"
 
 #if defined(TI_WITH_LLVM) && defined(TI_WITH_CUDA) && defined(TI_WITH_VULKAN)
 
@@ -190,7 +189,6 @@ class MPM88DemoImpl {
 
   TiRuntime runtime_;
   TiAotModule module_{nullptr};
-  TiVulkanRuntimeInteropInfo interop_info;
 
   std::unique_ptr<NdarrayAndMem> x_{nullptr};
   std::unique_ptr<NdarrayAndMem> v_{nullptr};

@@ -12,6 +12,7 @@ from .utils import check_ggui_availability, get_field_info
 
 normals_field_cache = {}
 
+
 def get_normals_field(vertices):
     if vertices not in normals_field_cache:
         N = vertices.shape[0]

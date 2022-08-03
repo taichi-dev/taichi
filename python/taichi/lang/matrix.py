@@ -1660,7 +1660,7 @@ class MatrixField(Field):
             >>> arr = numpp.ones((3, 3, 2, 2))
             >>> m.from_numpy(arr)
         """
-        if len(arr.shape) == len(self.shape) + 1 and self.ndim == 1:
+        if len(arr.shape) == len(self.shape) + 1:
             as_vector = True
             assert self.m == 1, "This is not a vector field"
         else:

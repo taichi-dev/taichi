@@ -11,6 +11,7 @@ def test_order_scalar():
     Y = 8
     Z = 4
     S = 4
+
     a = ti.field(ti.i32, shape=(X, Y, Z), order='ijk')
     b = ti.field(ti.i32, shape=(X, Y, Z), order='ikj')
     c = ti.field(ti.i32, shape=(X, Y, Z), order='jik')
@@ -34,35 +35,30 @@ def test_order_scalar():
         return ti.get_addr(a, [i, j, k])
 
     fill()
+
+    a_addr = get_field_addr(a, 0, 0, 0)
+    b_addr = get_field_addr(b, 0, 0, 0)
+    c_addr = get_field_addr(c, 0, 0, 0)
+    d_addr = get_field_addr(d, 0, 0, 0)
+    e_addr = get_field_addr(e, 0, 0, 0)
+    f_addr = get_field_addr(f, 0, 0, 0)
     for i in range(X):
         for j in range(Y):
             for k in range(Z):
-                assert a[i, j, k] == b[i, j, k] == c[i, j, k] == d[
-                    i, j, k] == e[i, j, k] == f[i, j, k] == i * j * k
-                assert get_field_addr(
-                    a, 0, 0, 0) + (i *
-                                   (Y * Z) + j * Z + k) * S == get_field_addr(
-                                       a, i, j, k)
-                assert get_field_addr(
-                    b, 0, 0, 0) + (i *
-                                   (Z * Y) + k * Y + j) * S == get_field_addr(
-                                       b, i, j, k)
-                assert get_field_addr(
-                    c, 0, 0, 0) + (j *
-                                   (X * Z) + i * Z + k) * S == get_field_addr(
-                                       c, i, j, k)
-                assert get_field_addr(
-                    d, 0, 0, 0) + (j *
-                                   (Z * X) + k * X + i) * S == get_field_addr(
-                                       d, i, j, k)
-                assert get_field_addr(
-                    e, 0, 0, 0) + (k *
-                                   (X * Y) + i * Y + j) * S == get_field_addr(
-                                       e, i, j, k)
-                assert get_field_addr(
-                    f, 0, 0, 0) + (k *
-                                   (Y * X) + j * X + i) * S == get_field_addr(
-                                       f, i, j, k)
+                assert a[i, j, k] == b[i, j, k] == c[i, j, k] == i * j * k
+                assert d[i, j, k] == e[i, j, k] == f[i, j, k] == i * j * k
+                assert a_addr + (i * (Y * Z) + j * Z + k) * S == \
+                       get_field_addr(a, i, j, k)
+                assert b_addr + (i * (Z * Y) + k * Y + j) * S == \
+                       get_field_addr(b, i, j, k)
+                assert c_addr + (j * (X * Z) + i * Z + k) * S == \
+                       get_field_addr(c, i, j, k)
+                assert d_addr + (j * (Z * X) + k * X + i) * S == \
+                       get_field_addr(d, i, j, k)
+                assert e_addr + (k * (X * Y) + i * Y + j) * S == \
+                       get_field_addr(e, i, j, k)
+                assert f_addr + (k * (Y * X) + j * X + i) * S == \
+                       get_field_addr(f, i, j, k)
 
 
 @test_utils.test(arch=get_host_arch_list())
@@ -71,6 +67,7 @@ def test_order_vector():
     Y = 2
     Z = 2
     S = 4
+
     a = ti.Vector.field(Z,
                         ti.i32,
                         shape=(X, Y),
@@ -105,22 +102,23 @@ def test_order_vector():
         return ti.get_addr(a, [i, j])
 
     fill()
+
+    a_addr = get_field_addr(a, 0, 0)
+    b_addr = get_field_addr(b, 0, 0)
+    c_addr = get_field_addr(c, 0, 0)
+    d_addr = get_field_addr(d, 0, 0)
     for i in range(X):
         for j in range(Y):
             assert a[i, j] == b[i, j] == c[i, j] == d[i, j] == [i, j]
             for k in range(2):
-                assert get_field_addr(
-                    a, 0, 0) + (i * (Y * Z) + j * Z + k) * S == get_field_addr(
-                        a.get_scalar_field(k), i, j)
-                assert get_field_addr(
-                    b, 0, 0) + (j * (X * Z) + i * Z + k) * S == get_field_addr(
-                        b.get_scalar_field(k), i, j)
-                assert get_field_addr(
-                    c, 0, 0) + (k * (X * Y) + i * Y + j) * S == get_field_addr(
-                        c.get_scalar_field(k), i, j)
-                assert get_field_addr(
-                    d, 0, 0) + (k * (Y * X) + j * X + i) * S == get_field_addr(
-                        d.get_scalar_field(k), i, j)
+                assert a_addr + (i * (Y * Z) + j * Z + k) * S == \
+                       get_field_addr(a.get_scalar_field(k), i, j)
+                assert b_addr + (j * (X * Z) + i * Z + k) * S == \
+                       get_field_addr(b.get_scalar_field(k), i, j)
+                assert c_addr + (k * (X * Y) + i * Y + j) * S == \
+                       get_field_addr(c.get_scalar_field(k), i, j)
+                assert d_addr + (k * (Y * X) + j * X + i) * S == \
+                       get_field_addr(d.get_scalar_field(k), i, j)
 
 
 @test_utils.test(arch=get_host_arch_list())

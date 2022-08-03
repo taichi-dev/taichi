@@ -48,6 +48,10 @@ bool arch_uses_llvm(Arch arch) {
           arch == Arch::wasm);
 }
 
+bool arch_uses_cuda(Arch arch) {
+  return arch == Arch::cuda;
+}
+
 bool arch_is_gpu(Arch arch) {
   return !arch_is_cpu(arch);
 }

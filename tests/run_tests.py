@@ -273,11 +273,14 @@ def test():
                         default=False,
                         dest='with_offline_cache',
                         help='Run tests with offline_cache=True')
-    parser.add_argument('--rerun-with-offline-cache',
-                        type=int,
-                        dest='rerun_with_offline_cache',
-                        default=0,
-                        help='Rerun all tests with offline_cache=True for given times, together with --with-offline-cache')
+    parser.add_argument(
+        '--rerun-with-offline-cache',
+        type=int,
+        dest='rerun_with_offline_cache',
+        default=0,
+        help=
+        'Rerun all tests with offline_cache=True for given times, together with --with-offline-cache'
+    )
 
     run_count = 1
     args = parser.parse_args()
@@ -302,7 +305,7 @@ def test():
         atexit.register(lambda: shutil.rmtree(tmp_cache_file_path))
         if not os.environ.get('TI_OFFLINE_CACHE_CLEANING_POLICY'):
             os.environ['TI_OFFLINE_CACHE_CLEANING_POLICY'] = 'never'
-    else: # Default: disable offline cache
+    else:  # Default: disable offline cache
         os.environ['TI_OFFLINE_CACHE'] = '0'
 
     if args.cpp:

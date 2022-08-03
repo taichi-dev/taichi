@@ -67,15 +67,19 @@ bool is_same_type(llvm::Type *a, llvm::Type *b) {
     if (len_same == 0) {
       return false;
     }
-    if (a_name[len_same - 1] != '.') {
+    int dot_pos = len_same - 1;
+    while (dot_pos && a_name[dot_pos] != '.') {
+      dot_pos--;
+    }
+    if (!dot_pos) {
       return false;
     }
-    for (int i = len_same; i < a_name.size(); i++) {
+    for (int i = dot_pos + 1; i < a_name.size(); i++) {
       if (!std::isdigit(a_name[i])) {
         return false;
       }
     }
-    for (int i = len_same; i < b_name.size(); i++) {
+    for (int i = dot_pos + 1; i < b_name.size(); i++) {
       if (!std::isdigit(b_name[i])) {
         return false;
       }

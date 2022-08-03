@@ -1,7 +1,9 @@
 import argparse
+import atexit
 import os
 import pdb
 import platform
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -266,7 +268,18 @@ def test():
                         action='store_true',
                         default=False,
                         help='Show AOT test programming guide')
+    parser.add_argument('--with-offline-cache',
+                        action='store_true',
+                        default=False,
+                        dest='with_offline_cache',
+                        help='Run tests with offline_cache=True')
+    parser.add_argument('--rerun-with-offline-cache',
+                        type=int,
+                        dest='rerun_with_offline_cache',
+                        default=0,
+                        help='Rerun all tests with offline_cache=True for given times, together with --rerun-with-offline-cache')
 
+    run_count = 1
     args = parser.parse_args()
     print(args)
 
@@ -281,12 +294,24 @@ def test():
         print(f'Running on Arch={arch}')
         os.environ['TI_WANTED_ARCHS'] = arch
 
+    if args.with_offline_cache:
+        tmp_cache_file_path = tempfile.mkdtemp()
+        run_count += args.rerun_with_offline_cache
+        os.environ['TI_OFFLINE_CACHE'] = '1'
+        os.environ['TI_OFFLINE_CACHE_FILE_PATH'] = tmp_cache_file_path
+        atexit.register(lambda: shutil.rmtree(tmp_cache_file_path))
+        if not os.environ.get('TI_OFFLINE_CACHE_CLEANING_POLICY'):
+            os.environ['TI_OFFLINE_CACHE_CLEANING_POLICY'] = 'never'
+    else: # Default: disable offline cache
+        os.environ['TI_OFFLINE_CACHE'] = '0'
+
     if args.cpp:
         _test_cpp()
         return
 
-    if _test_python(args) != 0:
-        exit(1)
+    for _ in range(run_count):
+        if _test_python(args) != 0:
+            exit(1)
 
 
 if __name__ == '__main__':

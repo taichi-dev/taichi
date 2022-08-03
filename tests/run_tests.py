@@ -277,7 +277,7 @@ def test():
                         type=int,
                         dest='rerun_with_offline_cache',
                         default=0,
-                        help='Rerun all tests with offline_cache=True for given times, together with --rerun-with-offline-cache')
+                        help='Rerun all tests with offline_cache=True for given times, together with --with-offline-cache')
 
     run_count = 1
     args = parser.parse_args()

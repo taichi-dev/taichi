@@ -39,7 +39,7 @@ class InvokeRefineCoordinatesBuilder : public LLVMModuleBuilder {
 
  private:
   InvokeRefineCoordinatesBuilder(TaichiLLVMContext *tlctx)
-      : LLVMModuleBuilder(tlctx->clone_struct_module(), tlctx) {
+      : LLVMModuleBuilder(tlctx->clone_runtime_module(), tlctx) {
     this->llvm_context = this->tlctx->get_this_thread_context();
     this->builder = std::make_unique<llvm::IRBuilder<>>(*llvm_context);
   }

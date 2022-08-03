@@ -31,7 +31,7 @@ class TaichiLLVMContext {
     llvm::LLVMContext *llvm_context{nullptr};
     std::unique_ptr<llvm::Module> runtime_module{nullptr};
     std::unique_ptr<llvm::Module> struct_module{nullptr};
-    std::unique_ptr<JITModule> jit_module{nullptr};
+    std::vector<std::unique_ptr<llvm::Module>> struct_modules;
     ThreadLocalData(std::unique_ptr<llvm::orc::ThreadSafeContext> ctx);
     ~ThreadLocalData();
   };
@@ -40,6 +40,7 @@ class TaichiLLVMContext {
   std::unique_ptr<JITSession> jit{nullptr};
   // main_thread is defined to be the thread that runs the initializer
   JITModule *runtime_jit_module{nullptr};
+  JITModule *main_jit_module{nullptr};
 
   TaichiLLVMContext(CompileConfig *config, Arch arch);
 
@@ -63,14 +64,14 @@ class TaichiLLVMContext {
    *
    * @return The cloned module.
    */
-  std::unique_ptr<llvm::Module> clone_struct_module();
+  //  std::unique_ptr<llvm::Module> clone_struct_module();
 
   /**
    * Updates the LLVM module of the JIT compiled SNode structs.
    *
    * @param module Module containing the JIT compiled SNode structs.
    */
-  void set_struct_module(std::unique_ptr<llvm::Module> module);
+  void add_struct_module(std::unique_ptr<llvm::Module> module);
 
   /**
    * Clones the LLVM module compiled from llvm/runtime.cpp
@@ -99,7 +100,7 @@ class TaichiLLVMContext {
 
   llvm::Type *get_data_type(DataType dt);
 
-  llvm::Module *get_this_thread_struct_module();
+  void fetch_this_thread_struct_module();
   llvm::Module *get_this_thread_runtime_module();
 
   template <typename T>

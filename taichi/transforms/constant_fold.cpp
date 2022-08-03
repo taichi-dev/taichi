@@ -247,7 +247,7 @@ class ConstantFold : public BasicStmtVisitor {
         break;
       }
     }
-
+    folder.modifier.modify_ir();
     program->config = program_compile_config_org;
 
     return modified;

@@ -252,7 +252,7 @@ void JITModuleCPU::add_module(std::unique_ptr<llvm::Module> module) {
 void JITSessionCPU::global_optimize_module_cpu(llvm::Module *module) {
   TI_AUTO_PROF
   if (llvm::verifyModule(*module, &llvm::errs())) {
-    //    module->print(llvm::errs(), nullptr);
+    module->print(llvm::errs(), nullptr);
     TI_ERROR("Module broken");
   }
 

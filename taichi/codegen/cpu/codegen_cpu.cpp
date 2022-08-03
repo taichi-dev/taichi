@@ -1,5 +1,4 @@
 #include "taichi/codegen/cpu/codegen_cpu.h"
-#include "llvm/Linker/Linker.h"
 
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
 #include "taichi/common/core.h"
@@ -236,10 +235,8 @@ FunctionType CPUModuleToFunctionConverter::convert(
     const std::string &kernel_name,
     const std::vector<LlvmLaunchArgInfo> &args,
     std::vector<LLVMCompiledData> &&data) const {
-  auto *jit_module = tlctx_->create_jit_module(tlctx_->clone_runtime_module());
-  jit_module->add_module(tlctx_->clone_struct_module());
   for (auto &datum : data) {
-    jit_module->add_module(std::move(datum.module));
+    tlctx_->main_jit_module->add_module(std::move(datum.module));
   }
 
   using TaskFunc = int32 (*)(void *);
@@ -247,7 +244,7 @@ FunctionType CPUModuleToFunctionConverter::convert(
   task_funcs.reserve(data.size());
   for (auto &datum : data) {
     for (auto &task : datum.tasks) {
-      auto *func_ptr = jit_module->lookup_function(task.name);
+      auto *func_ptr = tlctx_->main_jit_module->lookup_function(task.name);
       TI_ASSERT_INFO(func_ptr, "Offloaded datum function {} not found",
                      task.name);
       task_funcs.push_back((TaskFunc)(func_ptr));
@@ -320,6 +317,7 @@ FunctionType KernelCodeGenCPU::codegen() {
   std::vector<TaskFunc> task_funcs(offloads.size());
   for (int i = 0; i < offloads.size(); i++) {
     auto compile_func = [&, i] {
+      tlctx->fetch_this_thread_struct_module();
       auto offload =
           irpass::analysis::clone(offloads[i].get(), offloads[i]->get_kernel());
       irpass::re_id(offload.get());

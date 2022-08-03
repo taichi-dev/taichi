@@ -19,23 +19,22 @@ std::string type_name(llvm::Type *type) {
  * "." following by a number. For example, "RuntimeContext" may be renamed to
  * names like "RuntimeContext.0" and "RuntimeContext.8".
  */
-bool is_same_type(llvm::Type *required, llvm::Type *provided) {
-  if (required == provided) {
+bool is_same_type(llvm::Type *a, llvm::Type *b) {
+  if (a == b) {
     return true;
   }
-  if (required->isPointerTy() != provided->isPointerTy()) {
+  if (a->isPointerTy() != b->isPointerTy()) {
     return false;
   }
-  if (required->isPointerTy()) {
-    required = required->getPointerElementType();
-    provided = provided->getPointerElementType();
+  if (a->isPointerTy()) {
+    return is_same_type(a->getPointerElementType(), b->getPointerElementType());
   }
-  if (required->isFunctionTy() != provided->isFunctionTy()) {
+  if (a->isFunctionTy() != b->isFunctionTy()) {
     return false;
   }
-  if (required->isFunctionTy()) {
-    auto req_func = llvm::dyn_cast<llvm::FunctionType>(required);
-    auto prov_func = llvm::dyn_cast<llvm::FunctionType>(provided);
+  if (a->isFunctionTy()) {
+    auto req_func = llvm::dyn_cast<llvm::FunctionType>(a);
+    auto prov_func = llvm::dyn_cast<llvm::FunctionType>(b);
     if (!is_same_type(req_func->getReturnType(), prov_func->getReturnType())) {
       return false;
     }
@@ -50,10 +49,50 @@ bool is_same_type(llvm::Type *required, llvm::Type *provided) {
     }
     return true;
   }
-  auto req_name = type_name(required);
-  auto prov_name = type_name(provided);
-  int min_len = std::min(req_name.size(), prov_name.size());
-  return req_name.substr(0, min_len) == prov_name.substr(0, min_len);
+
+  auto a_name = type_name(a);
+  auto b_name = type_name(b);
+  if (a_name.size() > b_name.size()) {
+    std::swap(a_name, b_name);
+  }
+  int len_same = 0;
+  while (len_same < a_name.size()) {
+    if (a_name[len_same] != b_name[len_same]) {
+      break;
+    }
+    len_same++;
+  }
+  if (len_same != a_name.size()) {
+    // a and b are both xxx.yyy, yyy are all numbers
+    if (len_same == 0) {
+      return false;
+    }
+    if (a_name[len_same - 1] != '.') {
+      return false;
+    }
+    for (int i = len_same; i < a_name.size(); i++) {
+      if (!std::isdigit(a_name[i])) {
+        return false;
+      }
+    }
+    for (int i = len_same; i < b_name.size(); i++) {
+      if (!std::isdigit(b_name[i])) {
+        return false;
+      }
+    }
+  } else {
+    // a is xxx, and b is xxx.yyy, yyy are all numbers
+    TI_ASSERT(len_same != b_name.size());
+    if (b_name[len_same] != '.') {
+      return false;
+    }
+    for (int i = len_same + 1; i < b_name.size(); i++) {
+      if (!std::isdigit(b_name[i])) {
+        return false;
+      }
+    }
+  }
+  return true;
 }
 
 void check_func_call_signature(llvm::FunctionType *func_type,

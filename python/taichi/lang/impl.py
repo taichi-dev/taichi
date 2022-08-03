@@ -9,7 +9,8 @@ from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang._ndrange import GroupedNDRange, _Ndrange
 from taichi.lang.any_array import AnyArray, AnyArrayAccess
 from taichi.lang.enums import Layout
-from taichi.lang.exception import TaichiRuntimeError, TaichiSyntaxError, TaichiTypeError
+from taichi.lang.exception import (TaichiRuntimeError, TaichiSyntaxError,
+                                   TaichiTypeError)
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.kernel_arguments import SparseMatrixProxy
@@ -526,7 +527,8 @@ Example::
 """
 
 
-def _create_snode(axis_seq: Sequence[int], shape_seq: Sequence[numbers.Number], same_level: bool):
+def _create_snode(axis_seq: Sequence[int], shape_seq: Sequence[numbers.Number],
+                  same_level: bool):
     dim = len(axis_seq)
     assert dim == len(shape_seq)
     snode = root
@@ -628,8 +630,10 @@ def field(dtype,
             >>> ti.root.dense(ti.j, shape=8).dense(ti.i, shape=16).place(x4)
 
     """
-    x, x_grad, x_dual = create_field_member(dtype, name, needs_grad, needs_dual)
-    x, x_grad, x_dual = ScalarField(x), ScalarField(x_grad), ScalarField(x_dual)
+    x, x_grad, x_dual = create_field_member(dtype, name, needs_grad,
+                                            needs_dual)
+    x, x_grad, x_dual = ScalarField(x), ScalarField(x_grad), ScalarField(
+        x_dual)
     x._set_grad(x_grad)
     x._set_dual(x_dual)
 
@@ -645,12 +649,16 @@ def field(dtype,
             offset = (offset, )
         dim = len(shape)
         if offset is not None and dim != len(offset):
-            raise TaichiSyntaxError(f'The dimensionality of shape and offset must be the same ({dim} != {len(offset)})')
+            raise TaichiSyntaxError(
+                f'The dimensionality of shape and offset must be the same ({dim} != {len(offset)})'
+            )
         axis_seq = []
         shape_seq = []
         if order is not None:
             if dim != len(order):
-                raise TaichiSyntaxError(f'The dimensionality of shape and order must be the same ({dim} != {len(order)})')
+                raise TaichiSyntaxError(
+                    f'The dimensionality of shape and order must be the same ({dim} != {len(order)})'
+                )
             if dim != len(set(order)):
                 raise TaichiSyntaxError('The axes in order must be different')
             for ch in order:
@@ -665,9 +673,11 @@ def field(dtype,
         same_level = order is None
         _create_snode(axis_seq, shape_seq, same_level).place(x, offset=offset)
         if needs_grad:
-            _create_snode(axis_seq, shape_seq, same_level).place(x_grad, offset=offset)
+            _create_snode(axis_seq, shape_seq, same_level).place(x_grad,
+                                                                 offset=offset)
         if needs_dual:
-            _create_snode(axis_seq, shape_seq, same_level).place(x_dual, offset=offset)
+            _create_snode(axis_seq, shape_seq, same_level).place(x_dual,
+                                                                 offset=offset)
     return x
 
 

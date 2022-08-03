@@ -1,5 +1,6 @@
 import pytest
 from taichi.lang.misc import get_host_arch_list
+
 import taichi as ti
 from tests import test_utils
 
@@ -28,20 +29,40 @@ def test_order_scalar():
             f[i, j, k] = i * j * k
 
     @ti.kernel
-    def get_field_addr(a: ti.template(), i: ti.i32, j: ti.i32, k: ti.i32) -> ti.u64:
+    def get_field_addr(a: ti.template(), i: ti.i32, j: ti.i32,
+                       k: ti.i32) -> ti.u64:
         return ti.get_addr(a, [i, j, k])
 
     fill()
     for i in range(X):
         for j in range(Y):
             for k in range(Z):
-                assert a[i, j, k] == b[i, j, k] == c[i, j, k] == d[i, j, k] == e[i, j, k] == f[i, j, k] == i * j * k
-                assert get_field_addr(a, 0, 0, 0) + (i * (Y * Z) + j * Z + k) * S == get_field_addr(a, i, j, k)
-                assert get_field_addr(b, 0, 0, 0) + (i * (Z * Y) + k * Y + j) * S == get_field_addr(b, i, j, k)
-                assert get_field_addr(c, 0, 0, 0) + (j * (X * Z) + i * Z + k) * S == get_field_addr(c, i, j, k)
-                assert get_field_addr(d, 0, 0, 0) + (j * (Z * X) + k * X + i) * S == get_field_addr(d, i, j, k)
-                assert get_field_addr(e, 0, 0, 0) + (k * (X * Y) + i * Y + j) * S == get_field_addr(e, i, j, k)
-                assert get_field_addr(f, 0, 0, 0) + (k * (Y * X) + j * X + i) * S == get_field_addr(f, i, j, k)
+                assert a[i, j, k] == b[i, j, k] == c[i, j, k] == d[
+                    i, j, k] == e[i, j, k] == f[i, j, k] == i * j * k
+                assert get_field_addr(
+                    a, 0, 0, 0) + (i *
+                                   (Y * Z) + j * Z + k) * S == get_field_addr(
+                                       a, i, j, k)
+                assert get_field_addr(
+                    b, 0, 0, 0) + (i *
+                                   (Z * Y) + k * Y + j) * S == get_field_addr(
+                                       b, i, j, k)
+                assert get_field_addr(
+                    c, 0, 0, 0) + (j *
+                                   (X * Z) + i * Z + k) * S == get_field_addr(
+                                       c, i, j, k)
+                assert get_field_addr(
+                    d, 0, 0, 0) + (j *
+                                   (Z * X) + k * X + i) * S == get_field_addr(
+                                       d, i, j, k)
+                assert get_field_addr(
+                    e, 0, 0, 0) + (k *
+                                   (X * Y) + i * Y + j) * S == get_field_addr(
+                                       e, i, j, k)
+                assert get_field_addr(
+                    f, 0, 0, 0) + (k *
+                                   (Y * X) + j * X + i) * S == get_field_addr(
+                                       f, i, j, k)
 
 
 @test_utils.test(arch=get_host_arch_list())
@@ -50,10 +71,26 @@ def test_order_vector():
     Y = 2
     Z = 2
     S = 4
-    a = ti.Vector.field(Z, ti.i32, shape=(X, Y), order='ij', layout=ti.Layout.AOS)
-    b = ti.Vector.field(Z, ti.i32, shape=(X, Y), order='ji', layout=ti.Layout.AOS)
-    c = ti.Vector.field(Z, ti.i32, shape=(X, Y), order='ij', layout=ti.Layout.SOA)
-    d = ti.Vector.field(Z, ti.i32, shape=(X, Y), order='ji', layout=ti.Layout.SOA)
+    a = ti.Vector.field(Z,
+                        ti.i32,
+                        shape=(X, Y),
+                        order='ij',
+                        layout=ti.Layout.AOS)
+    b = ti.Vector.field(Z,
+                        ti.i32,
+                        shape=(X, Y),
+                        order='ji',
+                        layout=ti.Layout.AOS)
+    c = ti.Vector.field(Z,
+                        ti.i32,
+                        shape=(X, Y),
+                        order='ij',
+                        layout=ti.Layout.SOA)
+    d = ti.Vector.field(Z,
+                        ti.i32,
+                        shape=(X, Y),
+                        order='ji',
+                        layout=ti.Layout.SOA)
 
     @ti.kernel
     def fill():
@@ -72,19 +109,31 @@ def test_order_vector():
         for j in range(Y):
             assert a[i, j] == b[i, j] == c[i, j] == d[i, j] == [i, j]
             for k in range(2):
-                assert get_field_addr(a, 0, 0) + (i * (Y * Z) + j * Z + k) * S == get_field_addr(a.get_scalar_field(k), i, j)
-                assert get_field_addr(b, 0, 0) + (j * (X * Z) + i * Z + k) * S == get_field_addr(b.get_scalar_field(k), i, j)
-                assert get_field_addr(c, 0, 0) + (k * (X * Y) + i * Y + j) * S == get_field_addr(c.get_scalar_field(k), i, j)
-                assert get_field_addr(d, 0, 0) + (k * (Y * X) + j * X + i) * S == get_field_addr(d.get_scalar_field(k), i, j)
+                assert get_field_addr(
+                    a, 0, 0) + (i * (Y * Z) + j * Z + k) * S == get_field_addr(
+                        a.get_scalar_field(k), i, j)
+                assert get_field_addr(
+                    b, 0, 0) + (j * (X * Z) + i * Z + k) * S == get_field_addr(
+                        b.get_scalar_field(k), i, j)
+                assert get_field_addr(
+                    c, 0, 0) + (k * (X * Y) + i * Y + j) * S == get_field_addr(
+                        c.get_scalar_field(k), i, j)
+                assert get_field_addr(
+                    d, 0, 0) + (k * (Y * X) + j * X + i) * S == get_field_addr(
+                        d.get_scalar_field(k), i, j)
 
 
 @test_utils.test(arch=get_host_arch_list())
 def test_order_must_throw_scalar():
-    with pytest.raises(ti.TaichiCompilationError, match='The dimensionality of shape and order must be the same'):
+    with pytest.raises(
+            ti.TaichiCompilationError,
+            match='The dimensionality of shape and order must be the same'):
         a = ti.field(dtype=ti.f32, shape=3, order='ij')
-    with pytest.raises(ti.TaichiCompilationError, match='Shape cannot be None when order is set'):
+    with pytest.raises(ti.TaichiCompilationError,
+                       match='Shape cannot be None when order is set'):
         b = ti.field(dtype=ti.f32, shape=None, order='i')
-    with pytest.raises(ti.TaichiCompilationError, match='The axes in order must be different'):
+    with pytest.raises(ti.TaichiCompilationError,
+                       match='The axes in order must be different'):
         c = ti.field(dtype=ti.f32, shape=(3, 4, 3), order='iji')
     with pytest.raises(ti.TaichiCompilationError, match='Invalid axis'):
         d = ti.field(dtype=ti.f32, shape=(3, 4, 3), order='ijl')
@@ -92,11 +141,15 @@ def test_order_must_throw_scalar():
 
 @test_utils.test(arch=get_host_arch_list())
 def test_order_must_throw_vector():
-    with pytest.raises(ti.TaichiCompilationError, match='The dimensionality of shape and order must be the same'):
+    with pytest.raises(
+            ti.TaichiCompilationError,
+            match='The dimensionality of shape and order must be the same'):
         a = ti.Vector.field(3, dtype=ti.f32, shape=3, order='ij')
-    with pytest.raises(ti.TaichiCompilationError, match='Shape cannot be None when order is set'):
+    with pytest.raises(ti.TaichiCompilationError,
+                       match='Shape cannot be None when order is set'):
         b = ti.Vector.field(3, dtype=ti.f32, shape=None, order='i')
-    with pytest.raises(ti.TaichiCompilationError, match='The axes in order must be different'):
+    with pytest.raises(ti.TaichiCompilationError,
+                       match='The axes in order must be different'):
         c = ti.Vector.field(3, dtype=ti.f32, shape=(3, 4, 3), order='iii')
     with pytest.raises(ti.TaichiCompilationError, match='Invalid axis'):
         d = ti.Vector.field(3, dtype=ti.f32, shape=(3, 4, 3), order='ihj')

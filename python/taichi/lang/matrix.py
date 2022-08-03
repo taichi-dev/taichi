@@ -1139,9 +1139,11 @@ class Matrix(TaichiOperations):
 
         if shape is None:
             if offset is not None:
-                raise TaichiSyntaxError('Shape cannot be None when offset is set')
+                raise TaichiSyntaxError(
+                    'Shape cannot be None when offset is set')
             if order is not None:
-                raise TaichiSyntaxError('Shape cannot be None when order is set')
+                raise TaichiSyntaxError(
+                    'Shape cannot be None when order is set')
         else:
             if isinstance(shape, numbers.Number):
                 shape = (shape, )
@@ -1149,14 +1151,19 @@ class Matrix(TaichiOperations):
                 offset = (offset, )
             dim = len(shape)
             if offset is not None and dim != len(offset):
-                raise TaichiSyntaxError(f'The dimensionality of shape and offset must be the same ({dim} != {len(offset)})')
+                raise TaichiSyntaxError(
+                    f'The dimensionality of shape and offset must be the same ({dim} != {len(offset)})'
+                )
             axis_seq = []
             shape_seq = []
             if order is not None:
                 if dim != len(order):
-                    raise TaichiSyntaxError(f'The dimensionality of shape and order must be the same ({dim} != {len(order)})')
+                    raise TaichiSyntaxError(
+                        f'The dimensionality of shape and order must be the same ({dim} != {len(order)})'
+                    )
                 if dim != len(set(order)):
-                    raise TaichiSyntaxError('The axes in order must be different')
+                    raise TaichiSyntaxError(
+                        'The axes in order must be different')
                 for ch in order:
                     axis = ord(ch) - ord('i')
                     if axis < 0 or axis >= dim:
@@ -1169,19 +1176,30 @@ class Matrix(TaichiOperations):
             same_level = order is None
             if layout == Layout.SOA:
                 for e in entries._get_field_members():
-                    impl._create_snode(axis_seq, shape_seq, same_level).place(ScalarField(e), offset=offset)
+                    impl._create_snode(axis_seq, shape_seq,
+                                       same_level).place(ScalarField(e),
+                                                         offset=offset)
                 if needs_grad:
                     for e in entries_grad._get_field_members():
-                        impl._create_snode(axis_seq, shape_seq, same_level).place(ScalarField(e), offset=offset)
+                        impl._create_snode(axis_seq, shape_seq,
+                                           same_level).place(ScalarField(e),
+                                                             offset=offset)
                 if needs_dual:
                     for e in entries_dual._get_field_members():
-                        impl._create_snode(axis_seq, shape_seq, same_level).place(ScalarField(e), offset=offset)
+                        impl._create_snode(axis_seq, shape_seq,
+                                           same_level).place(ScalarField(e),
+                                                             offset=offset)
             else:
-                impl._create_snode(axis_seq, shape_seq, same_level).place(entries, offset=offset)
+                impl._create_snode(axis_seq, shape_seq,
+                                   same_level).place(entries, offset=offset)
                 if needs_grad:
-                    impl._create_snode(axis_seq, shape_seq, same_level).place(entries_grad, offset=offset)
+                    impl._create_snode(axis_seq, shape_seq,
+                                       same_level).place(entries_grad,
+                                                         offset=offset)
                 if needs_dual:
-                    impl._create_snode(axis_seq, shape_seq, same_level).place(entries_dual, offset=offset)
+                    impl._create_snode(axis_seq, shape_seq,
+                                       same_level).place(entries_dual,
+                                                         offset=offset)
         return entries
 
     @classmethod

@@ -25,8 +25,6 @@ class MPM88Demo {
   void Step();
 
  private:
-  std::unique_ptr<taichi::lang::vulkan::VulkanDeviceCreator> vk_device_creator_{
-      nullptr};
   std::unique_ptr<MPM88DemoImpl> impl_{nullptr};
 };
 }  // namespace demo

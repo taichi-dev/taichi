@@ -8,9 +8,6 @@
 
 #include "mpm88_test.hpp"
 
-#include "taichi/rhi/vulkan/vulkan_device.h"
-#include "taichi/rhi/vulkan/vulkan_device_creator.h"
-
 #include "c_api_test_utils.h"
 #include "taichi/taichi_vulkan.h"
 
@@ -24,9 +21,7 @@ constexpr size_t N_ITER = 50;
 
 class MPM88DemoImpl {
  public:
-  MPM88DemoImpl(const std::string &aot_path,
-                TiArch arch,
-                taichi::lang::vulkan::VulkanDevice *vk_device) {
+  MPM88DemoImpl(const std::string &aot_path, TiArch arch) {
     InitTaichiRuntime(arch);
 
     module_ = ti_load_aot_module(runtime_, aot_path.c_str());
@@ -44,8 +39,7 @@ class MPM88DemoImpl {
                              {kNrParticles}, vec2_shape);
 
     pos_ = NdarrayAndMem::Make(runtime_, TiDataType::TI_DATA_TYPE_F32,
-                               {kNrParticles}, vec3_shape, false, false,
-                               vk_device);
+                               {kNrParticles}, vec3_shape, false, false);
 
     C_ = NdarrayAndMem::Make(runtime_, TiDataType::TI_DATA_TYPE_F32,
                              {kNrParticles}, mat2_shape);
@@ -130,15 +124,14 @@ class MPM88DemoImpl {
         const std::vector<int> &arr_shape,
         const std::vector<int> &element_shape = {},
         bool host_read = false,
-        bool host_write = false,
-        taichi::lang::vulkan::VulkanDevice *vk_device_ = nullptr) {
+        bool host_write = false) {
       // TODO: Cannot use data_type_size() until
       // https://github.com/taichi-dev/taichi/pull/5220.
       // uint64_t_t alloc_size = taichi::lang::data_type_size(dtype);
-      uint64_t alloc_size = 1;
-      TI_ASSERT(dtype == TiDataType::TI_DATA_TYPE_F32 ||
-                dtype == TiDataType::TI_DATA_TYPE_I32 ||
-                dtype == TiDataType::TI_DATA_TYPE_U32);
+      uint64_t alloc_size = 4;
+      assert(dtype == TiDataType::TI_DATA_TYPE_F32 ||
+             dtype == TiDataType::TI_DATA_TYPE_I32 ||
+             dtype == TiDataType::TI_DATA_TYPE_U32);
       alloc_size = 4;
 
       for (int s : arr_shape) {
@@ -151,35 +144,14 @@ class MPM88DemoImpl {
       auto res = std::make_unique<NdarrayAndMem>();
       res->runtime_ = runtime;
 
-      if (!vk_device_) {
-        TiMemoryAllocateInfo alloc_info;
-        alloc_info.size = alloc_size;
-        alloc_info.host_write = false;
-        alloc_info.host_read = false;
-        alloc_info.export_sharing = false;
-        alloc_info.usage = TiMemoryUsageFlagBits::TI_MEMORY_USAGE_STORAGE_BIT;
+      TiMemoryAllocateInfo alloc_info;
+      alloc_info.size = alloc_size;
+      alloc_info.host_write = false;
+      alloc_info.host_read = false;
+      alloc_info.export_sharing = false;
+      alloc_info.usage = TiMemoryUsageFlagBits::TI_MEMORY_USAGE_STORAGE_BIT;
 
-        res->memory_ = ti_allocate_memory(res->runtime_, &alloc_info);
-
-      } else {
-        taichi::lang::Device::AllocParams alloc_params;
-        alloc_params.host_read = false;
-        alloc_params.host_write = false;
-        alloc_params.size = alloc_size;
-        alloc_params.usage = taichi::lang::AllocUsage::Storage;
-
-        res->devalloc_ = vk_device_->allocate_memory(alloc_params);
-
-        res->interop_info.buffer =
-            vk_device_->get_vkbuffer(res->devalloc_).get()->buffer;
-        res->interop_info.size =
-            vk_device_->get_vkbuffer(res->devalloc_).get()->size;
-        res->interop_info.usage =
-            vk_device_->get_vkbuffer(res->devalloc_).get()->usage;
-
-        res->memory_ =
-            ti_import_vulkan_memory(res->runtime_, &res->interop_info);
-      }
+      res->memory_ = ti_allocate_memory(res->runtime_, &alloc_info);
 
       TiNdShape shape;
       shape.dim_count = static_cast<uint32_t>(arr_shape.size());
@@ -205,9 +177,6 @@ class MPM88DemoImpl {
 
       return res;
     }
-
-    TiVulkanMemoryInteropInfo interop_info;
-    taichi::lang::DeviceAllocation devalloc_;
 
    private:
     TiRuntime runtime_;
@@ -245,26 +214,8 @@ class MPM88DemoImpl {
 };
 
 MPM88Demo::MPM88Demo(const std::string &aot_path, TiArch arch) {
-  taichi::lang::vulkan::VulkanDevice *device = nullptr;
-  if (arch == TiArch::TI_ARCH_VULKAN) {
-    // Mimics the vulkan device from renderer
-    taichi::lang::vulkan::VulkanDeviceCreator::Params evd_params{};
-    evd_params.is_for_ui = false;
-    evd_params.surface_creator = nullptr;
-    evd_params.additional_instance_extensions = {
-        "VK_KHR_get_physical_device_properties2",
-        "VK_KHR_external_memory_capabilities",
-        "VK_KHR_external_semaphore_capabilities", "VK_EXT_debug_utils"};
-    evd_params.additional_device_extensions = {"VK_KHR_swapchain",
-                                               "VK_KHR_external_memory_fd",
-                                               "VK_KHR_external_semaphore_fd"};
-    vk_device_creator_ =
-        std::make_unique<taichi::lang::vulkan::VulkanDeviceCreator>(evd_params);
-    device = vk_device_creator_->device();
-  }
-
   // Create Taichi Device for computation
-  impl_ = std::make_unique<MPM88DemoImpl>(aot_path, arch, device);
+  impl_ = std::make_unique<MPM88DemoImpl>(aot_path, arch);
 }
 
 void MPM88Demo::Step() {

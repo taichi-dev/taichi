@@ -24,10 +24,6 @@ target_include_directories(${C_API_TESTS_NAME}
     ${PROJECT_SOURCE_DIR}/c_api/include
     ${PROJECT_SOURCE_DIR}/c_api/src
     ${PROJECT_SOURCE_DIR}/c_api/tests
-    ${PROJECT_SOURCE_DIR}/external/Vulkan-Headers/include/
-    ${PROJECT_SOURCE_DIR}/external/volk/
-    ${PROJECT_SOURCE_DIR}/external/spdlog/include/
-    ${PROJECT_SOURCE_DIR}/external/VulkanMemoryAllocator/include/
   )
 
 add_test(NAME ${C_API_TESTS_NAME} COMMAND ${C_API_TESTS_NAME})

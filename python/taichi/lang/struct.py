@@ -324,7 +324,8 @@ class Struct(TaichiOperations):
                                               name=field_name,
                                               offset=offset,
                                               needs_grad=needs_grad,
-                                              needs_dual=needs_dual)
+                                              needs_dual=needs_dual,
+                                              ndim=getattr(dtype, 'ndim', 2))
             else:
                 field_dict[key] = impl.field(dtype,
                                              shape=None,

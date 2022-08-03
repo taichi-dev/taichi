@@ -226,7 +226,10 @@ def fill_matrix(mat: template(), vals: template()):
     for I in grouped(mat):
         for p in static(range(mat.n)):
             for q in static(range(mat.m)):
-                mat[I][p, q] = vals[p][q]
+                if static(mat[I].ndim == 2):
+                    mat[I][p, q] = vals[p][q]
+                else:
+                    mat[I][p] = vals[p][q]
 
 
 @kernel

@@ -17,7 +17,6 @@ add_executable(${C_API_TESTS_NAME} ${TAICHI_C_API_TESTS_SOURCE})
 
 target_link_libraries(${C_API_TESTS_NAME} PRIVATE taichi_c_api)
 target_link_libraries(${C_API_TESTS_NAME} PRIVATE gtest_main)
-target_link_libraries(${C_API_TESTS_NAME} PRIVATE ${llvm_libs})
 
 target_include_directories(${C_API_TESTS_NAME}
   PRIVATE
@@ -26,16 +25,9 @@ target_include_directories(${C_API_TESTS_NAME}
     ${PROJECT_SOURCE_DIR}/c_api/src
     ${PROJECT_SOURCE_DIR}/c_api/tests
     ${PROJECT_SOURCE_DIR}/external/Vulkan-Headers/include/
-    ${PROJECT_SOURCE_DIR}/external/SPIRV-Tools/include/
     ${PROJECT_SOURCE_DIR}/external/volk/
-    ${PROJECT_SOURCE_DIR}/external/glm/
-    ${PROJECT_SOURCE_DIR}/external/imgui/
-    ${PROJECT_SOURCE_DIR}/external/glfw/include
-    ${PROJECT_SOURCE_DIR}/external/imgui/backends
-    ${PROJECT_SOURCE_DIR}/external/eigen/
     ${PROJECT_SOURCE_DIR}/external/spdlog/include/
     ${PROJECT_SOURCE_DIR}/external/VulkanMemoryAllocator/include/
-    ${LLVM_INCLUDE_DIRS}
   )
 
 add_test(NAME ${C_API_TESTS_NAME} COMMAND ${C_API_TESTS_NAME})

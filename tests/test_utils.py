@@ -44,6 +44,10 @@ __aot_test_cases = {
 }
 
 __capi_aot_test_cases = {
+    "CapiMpm88Test.Vulkan":
+    [os.path.join('cpp', 'aot', 'mpm88_graph_aot.py'), "--arch=vulkan"],
+    "CapiMpm88Test.Cuda":
+    [os.path.join('cpp', 'aot', 'mpm88_graph_aot.py'), "--arch=cuda"],
     "CapiTaichiSparseTest.Cuda":
     [os.path.join('cpp', 'aot', 'llvm', 'taichi_sparse_test.py'), ""],
     "CapiAotTest.CpuField":
@@ -62,10 +66,6 @@ __capi_aot_test_cases = {
         os.path.join('cpp', 'aot', 'llvm', 'kernel_aot_test.py'),
         "--arch=vulkan"
     ],
-    "CapiMpm88Test.Cuda":
-    [os.path.join('cpp', 'aot', 'mpm88_graph_aot.py'), "--arch=cuda"],
-    "CapiMpm88Test.Vulkan":
-    [os.path.join('cpp', 'aot', 'mpm88_graph_aot.py'), "--arch=vulkan"],
 }
 
 

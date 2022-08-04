@@ -248,16 +248,14 @@ FunctionType CPUModuleToFunctionConverter::convert(
     for (auto &task : datum.tasks) {
       offloaded_names.insert(task.name);
     }
-    linker.linkInModule(
-        tlctx_->clone_module_to_context(
-                  datum.module.get(), tlctx_->linking_data->llvm_context));
+    linker.linkInModule(tlctx_->clone_module_to_context(
+        datum.module.get(), tlctx_->linking_data->llvm_context));
     //    tlctx_->main_jit_module->add_module(std::move(datum.module));
   }
   for (auto tree_id : used_tree_ids) {
-    linker.linkInModule(
-        tlctx_->clone_module_to_context(
-                  tlctx_->linking_data->struct_modules[tree_id].get(),
-                  tlctx_->linking_data->llvm_context));
+    linker.linkInModule(tlctx_->clone_module_to_context(
+        tlctx_->linking_data->struct_modules[tree_id].get(),
+        tlctx_->linking_data->llvm_context));
   }
   tlctx_->eliminate_unused_functions(mod.get(),
                                      [&](std::string func_name) -> bool {

@@ -1,4 +1,5 @@
 import pytest
+from taichi.lang.misc import get_host_arch_list
 
 import taichi as ti
 from tests import test_utils
@@ -116,26 +117,38 @@ def test_offset_for_matrix():
             assert a[i, j][0, 0] == i + j
 
 
-@test_utils.test()
-def test_offset_must_throw_var():
-    with pytest.raises(AssertionError):
-        a = ti.field(dtype=ti.float32, shape=3, offset=(3, 4))
-        b = ti.field(dtype=ti.float32, shape=None, offset=(3, 4))
+@test_utils.test(arch=get_host_arch_list())
+def test_offset_must_throw_scalar():
+    with pytest.raises(
+            ti.TaichiCompilationError,
+            match='The dimensionality of shape and offset must be the same'):
+        a = ti.field(dtype=ti.f32, shape=3, offset=(3, 4))
+    with pytest.raises(ti.TaichiCompilationError,
+                       match='shape cannot be None when offset is set'):
+        b = ti.field(dtype=ti.f32, shape=None, offset=(3, 4))
 
 
-@test_utils.test()
+@test_utils.test(arch=get_host_arch_list())
 def test_offset_must_throw_vector():
-    with pytest.raises(AssertionError):
-        a = ti.Vector.field(3, dtype=ti.float32, shape=3, offset=(3, 4))
-        b = ti.Vector.field(3, dtype=ti.float32, shape=None, offset=(3, ))
+    with pytest.raises(
+            ti.TaichiCompilationError,
+            match='The dimensionality of shape and offset must be the same'):
+        a = ti.Vector.field(3, dtype=ti.f32, shape=3, offset=(3, 4))
+    with pytest.raises(ti.TaichiCompilationError,
+                       match='shape cannot be None when offset is set'):
+        b = ti.Vector.field(3, dtype=ti.f32, shape=None, offset=(3, ))
 
 
-@test_utils.test()
+@test_utils.test(arch=get_host_arch_list())
 def test_offset_must_throw_matrix():
-    with pytest.raises(AssertionError):
-        c = ti.Matrix.field(3,
+    with pytest.raises(
+            ti.TaichiCompilationError,
+            match='The dimensionality of shape and offset must be the same'):
+        a = ti.Matrix.field(3,
                             3,
                             dtype=ti.i32,
                             shape=(32, 16, 8),
                             offset=(32, 16))
-        d = ti.Matrix.field(3, 3, dtype=ti.i32, shape=None, offset=(32, 16))
+    with pytest.raises(ti.TaichiCompilationError,
+                       match='shape cannot be None when offset is set'):
+        b = ti.Matrix.field(3, 3, dtype=ti.i32, shape=None, offset=(32, 16))

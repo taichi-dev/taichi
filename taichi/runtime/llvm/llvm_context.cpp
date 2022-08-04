@@ -110,7 +110,6 @@ TaichiLLVMContext::TaichiLLVMContext(CompileConfig *config, Arch arch)
 #endif
   }
   jit = JITSession::create(this, config, arch);
-  main_jit_module = create_jit_module(clone_runtime_module());
   TI_TRACE("Taichi llvm context created.");
 }
 
@@ -537,7 +536,6 @@ void TaichiLLVMContext::add_struct_module(std::unique_ptr<llvm::Module> module,
     data->struct_modules[tree_id] =
         clone_module_to_context(module.get(), data->llvm_context);
   }
-  main_jit_module->add_module(std::move(module));
 }
 template <typename T>
 llvm::Value *TaichiLLVMContext::get_constant(DataType dt, T t) {

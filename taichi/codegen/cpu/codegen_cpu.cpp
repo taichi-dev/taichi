@@ -240,6 +240,7 @@ FunctionType CPUModuleToFunctionConverter::convert(
   auto mod = llvm::CloneModule(*tlctx_->linking_data->runtime_module);
   std::unordered_set<int> used_tree_ids;
   std::unordered_set<std::string> offloaded_names;
+  llvm::Linker linker(*mod);
   for (auto &datum : data) {
     for (auto tree_id : datum.used_tree_ids) {
       used_tree_ids.insert(tree_id);
@@ -247,14 +248,14 @@ FunctionType CPUModuleToFunctionConverter::convert(
     for (auto &task : datum.tasks) {
       offloaded_names.insert(task.name);
     }
-    llvm::Linker::linkModules(
-        *mod, tlctx_->clone_module_to_context(
+    linker.linkInModule(
+        tlctx_->clone_module_to_context(
                   datum.module.get(), tlctx_->linking_data->llvm_context));
     //    tlctx_->main_jit_module->add_module(std::move(datum.module));
   }
   for (auto tree_id : used_tree_ids) {
-    llvm::Linker::linkModules(
-        *mod, tlctx_->clone_module_to_context(
+    linker.linkInModule(
+        tlctx_->clone_module_to_context(
                   tlctx_->linking_data->struct_modules[tree_id].get(),
                   tlctx_->linking_data->llvm_context));
   }

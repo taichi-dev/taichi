@@ -34,6 +34,7 @@ class KernelProfilerCUDA : public KernelProfilerBase {
              uint32_t block_size,
              uint32_t dynamic_smem_size);
   void sync() override;
+  void update() override;
   void clear() override;
   void stop(KernelProfilerBase::TaskHandle handle) override;
 
@@ -84,6 +85,14 @@ class EventToolkit {
   void *base_event_{nullptr};
   // for cuEvent profiling, clear after sync()
   std::vector<EventRecord> event_records_;
+
+ public:
+  EventRecord *get_current_event_record() {
+    return &(event_records_.back());
+  }
+  void *get_base_event() const {
+    return base_event_;
+  }
 };
 
 TLANG_NAMESPACE_END

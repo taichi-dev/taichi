@@ -80,6 +80,6 @@ if __name__ == '__main__':
     save = sys.argv[3] if len(sys.argv) > 3 else False
     res = main(ver, repo)
     if save:
-        with open('./python/taichi/CHANGELOG.md', 'w') as f:
+        with open('./python/taichi/CHANGELOG.md', 'w', encoding='utf-8') as f:
             f.write(res)
     print(res)

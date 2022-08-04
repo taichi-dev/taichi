@@ -174,12 +174,12 @@ void autograd() {
   auto ctx_backward = kernel_backward->make_launch_context();
   auto ctx_ext = kernel_ext->make_launch_context();
   std::vector<float> ext_a(n), ext_b(n), ext_c(n);
-  ctx_ext.set_arg_external_array(0, taichi::uint64(ext_a.data()), n,
-                                 /*is_device_allocation=*/false);
-  ctx_ext.set_arg_external_array(1, taichi::uint64(ext_b.data()), n,
-                                 /*is_device_allocation=*/false);
-  ctx_ext.set_arg_external_array(2, taichi::uint64(ext_c.data()), n,
-                                 /*is_device_allocation=*/false);
+  ctx_ext.set_arg_external_array_with_shape(0, taichi::uint64(ext_a.data()), n,
+                                            {n});
+  ctx_ext.set_arg_external_array_with_shape(1, taichi::uint64(ext_b.data()), n,
+                                            {n});
+  ctx_ext.set_arg_external_array_with_shape(2, taichi::uint64(ext_c.data()), n,
+                                            {n});
 
   (*kernel_init)(ctx_init);
   (*kernel_forward)(ctx_forward);

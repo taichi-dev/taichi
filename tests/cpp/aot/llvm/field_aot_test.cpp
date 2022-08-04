@@ -16,9 +16,9 @@
 namespace taichi {
 namespace lang {
 
-void run_field_tests(aot::Module *mod,
-                     LlvmRuntimeExecutor *exec,
-                     uint64 *result_buffer) {
+static void run_field_tests(aot::Module *mod,
+                            LlvmRuntimeExecutor *exec,
+                            uint64 *result_buffer) {
   aot::Kernel *k_init_fields = mod->get_kernel("init_fields");
   aot::Kernel *k_check_init_x = mod->get_kernel("check_init_x");
   aot::Kernel *k_check_init_y = mod->get_kernel("check_init_y");

@@ -1068,12 +1068,29 @@ void VulkanCommandList::draw(uint32_t num_verticies, uint32_t start_vertex) {
             /*firstInstance=*/0);
 }
 
+void VulkanCommandList::draw_instance(uint32_t num_verticies,
+                                      uint32_t num_instances,
+                                      uint32_t start_vertex,
+                                      uint32_t start_instance) {
+  vkCmdDraw(buffer_->buffer, num_verticies, num_instances, start_vertex,
+            start_instance);
+}
+
 void VulkanCommandList::draw_indexed(uint32_t num_indicies,
                                      uint32_t start_vertex,
                                      uint32_t start_index) {
   vkCmdDrawIndexed(buffer_->buffer, num_indicies, /*instanceCount=*/1,
                    start_index, start_vertex,
                    /*firstInstance=*/0);
+}
+
+void VulkanCommandList::draw_indexed_instance(uint32_t num_indicies,
+                                              uint32_t num_instances,
+                                              uint32_t start_vertex,
+                                              uint32_t start_index,
+                                              uint32_t start_instance) {
+  vkCmdDrawIndexed(buffer_->buffer, num_indicies, num_instances, start_index,
+                   start_vertex, start_instance);
 }
 
 void VulkanCommandList::image_transition(DeviceAllocation img,
@@ -2265,7 +2282,6 @@ VulkanSurface::VulkanSurface(VulkanDevice *device, const SurfaceConfig &config)
 
     vkCreateAndroidSurfaceKHR(device->vk_instance(), &createInfo, nullptr,
                               &surface_);
-  }
 #else
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     VkResult err = glfwCreateWindowSurface(device->vk_instance(), window_, NULL,
@@ -2274,6 +2290,7 @@ VulkanSurface::VulkanSurface(VulkanDevice *device, const SurfaceConfig &config)
       TI_ERROR("Failed to create window surface ({})", err);
       return;
     }
+#endif
 
     create_swap_chain();
 
@@ -2290,7 +2307,6 @@ VulkanSurface::VulkanSurface(VulkanDevice *device, const SurfaceConfig &config)
     swapchain_images_.push_back(device->create_image(params));
     swapchain_images_.push_back(device->create_image(params));
   }
-#endif
 }
 
 void VulkanSurface::create_swap_chain() {

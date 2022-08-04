@@ -73,7 +73,7 @@ def grad_test_fwd(tifunc, npfunc=None):
     v = 0.234
 
     x[0] = v
-    with ti.ad.FwdMode(loss=y, parameters=x, seed=[1.0]):
+    with ti.ad.FwdMode(loss=y, param=x, seed=[1.0]):
         func()
 
     assert y[0] == test_utils.approx(npfunc(v), rel=1e-4)
@@ -206,7 +206,7 @@ def test_mod_fwd():
     def func2():
         ti.atomic_add(y[0], x[0] % 3)
 
-    with ti.ad.FwdMode(loss=y, parameters=x, seed=[1.0]):
+    with ti.ad.FwdMode(loss=y, param=x, seed=[1.0]):
         func()
         func2()
 
@@ -305,7 +305,7 @@ def test_select_fwd():
         for i in range(N):
             loss[i] = ti.select(i % 2, x[i], y[i])
 
-    with ti.ad.FwdMode(loss=loss, parameters=x, seed=[1.0 for _ in range(N)]):
+    with ti.ad.FwdMode(loss=loss, param=x, seed=[1.0 for _ in range(N)]):
         func()
 
     for i in range(N):
@@ -315,7 +315,7 @@ def test_select_fwd():
             assert loss[i] == -i
         assert loss.dual[i] == i % 2 * 1.0
 
-    with ti.ad.FwdMode(loss=loss, parameters=y, seed=[1.0 for _ in range(N)]):
+    with ti.ad.FwdMode(loss=loss, param=y, seed=[1.0 for _ in range(N)]):
         func()
 
     for i in range(N):

@@ -159,7 +159,9 @@ def test_quant_int_extension():
     a = ti.field(dtype=qi5)
     b = ti.field(dtype=qu7)
 
-    ti.root.bit_struct(num_bits=32).place(a, b)
+    bitpack = ti.BitpackedFields(max_num_bits=32)
+    bitpack.place(a, b)
+    ti.root.place(bitpack)
 
     @ti.kernel
     def run_cast_int():

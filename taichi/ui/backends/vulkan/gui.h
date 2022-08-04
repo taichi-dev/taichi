@@ -38,6 +38,10 @@ class TI_DLL_EXPORT Gui final : public GuiBase {
   virtual void end() override;
   virtual void text(std::string text) override;
   virtual bool checkbox(std::string name, bool old_value) override;
+  virtual int slider_int(std::string name,
+                         int old_value,
+                         int minimum,
+                         int maximum) override;
   virtual float slider_float(std::string name,
                              float old_value,
                              float minimum,

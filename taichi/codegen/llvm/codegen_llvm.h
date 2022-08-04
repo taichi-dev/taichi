@@ -145,8 +145,8 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   llvm::Function *get_struct_function(const std::string &name, int tree_id);
   template <typename... Args>
   llvm::Value *call_struct_func(int tree_id,
-                                                 const std::string &func_name,
-                                                 Args &&...args);
+                                const std::string &func_name,
+                                Args &&...args);
   llvm::Value *call(SNode *snode,
                     llvm::Value *node_ptr,
                     const std::string &method,

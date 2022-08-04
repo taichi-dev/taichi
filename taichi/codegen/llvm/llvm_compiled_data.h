@@ -27,8 +27,11 @@ struct LLVMCompiledData {
   LLVMCompiledData() = default;
   LLVMCompiledData(LLVMCompiledData &&) = default;
   LLVMCompiledData(std::vector<OffloadedTask> tasks,
-                   std::unique_ptr<llvm::Module> module, std::unordered_set<int> used_tree_ids)
-      : tasks(std::move(tasks)), module(std::move(module)), used_tree_ids(std::move(used_tree_ids)) {
+                   std::unique_ptr<llvm::Module> module,
+                   std::unordered_set<int> used_tree_ids)
+      : tasks(std::move(tasks)),
+        module(std::move(module)),
+        used_tree_ids(std::move(used_tree_ids)) {
   }
   LLVMCompiledData clone() const;
   TI_IO_DEF(tasks);

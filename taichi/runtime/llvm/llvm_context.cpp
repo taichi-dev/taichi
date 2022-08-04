@@ -525,7 +525,8 @@ void TaichiLLVMContext::add_struct_module(std::unique_ptr<llvm::Module> module,
     module->print(llvm::errs(), nullptr);
     TI_ERROR("module broken");
   }
-  linking_data->struct_modules[tree_id] = clone_module_to_context(module.get(), linking_data->llvm_context);
+  linking_data->struct_modules[tree_id] =
+      clone_module_to_context(module.get(), linking_data->llvm_context);
   // TODO: Move this after ``if (!arch_is_cpu(arch))``.
   this_thread_data->struct_modules[tree_id] = llvm::CloneModule(*module);
   for (auto &[id, data] : per_thread_data_) {

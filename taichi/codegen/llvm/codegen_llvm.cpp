@@ -975,7 +975,8 @@ llvm::Value *TaskCodeGenLLVM::create_call(std::string func_name,
   return create_call(func, args);
 }
 
-llvm::Function *TaskCodeGenLLVM::get_struct_function(const std::string &name, int tree_id) {
+llvm::Function *TaskCodeGenLLVM::get_struct_function(const std::string &name,
+                                                     int tree_id) {
   used_tree_ids.insert(tree_id);
   auto f = tlctx->get_struct_function(name, tree_id);
   if (!f) {
@@ -983,16 +984,15 @@ llvm::Function *TaskCodeGenLLVM::get_struct_function(const std::string &name, in
   }
   f = llvm::cast<llvm::Function>(
       module
-          ->getOrInsertFunction(name, f->getFunctionType(),
-                                f->getAttributes())
+          ->getOrInsertFunction(name, f->getFunctionType(), f->getAttributes())
           .getCallee());
   return f;
 }
 
 template <typename... Args>
 llvm::Value *TaskCodeGenLLVM::call_struct_func(int tree_id,
-                              const std::string &func_name,
-                              Args &&...args) {
+                                               const std::string &func_name,
+                                               Args &&...args) {
   auto func = get_struct_function(func_name, tree_id);
   auto arglist = std::vector<llvm::Value *>({args...});
   check_func_call_signature(func->getFunctionType(), func->getName(), arglist,
@@ -2630,7 +2630,8 @@ LLVMCompiledData TaskCodeGenLLVM::run_compilation() {
   emit_to_module();
   eliminate_unused_functions();
 
-  return {std::move(this->offloaded_tasks), std::move(this->module), std::move(used_tree_ids)};
+  return {std::move(this->offloaded_tasks), std::move(this->module),
+          std::move(used_tree_ids)};
 }
 
 llvm::Value *TaskCodeGenLLVM::create_xlogue(std::unique_ptr<Block> &block) {

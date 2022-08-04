@@ -240,7 +240,7 @@ FunctionType CPUModuleToFunctionConverter::convert(
   std::unordered_set<int> used_tree_ids;
   std::unordered_set<std::string> offloaded_names;
   for (auto &datum : data) {
-    for (auto tree_id: datum.used_tree_ids) {
+    for (auto tree_id : datum.used_tree_ids) {
       used_tree_ids.insert(tree_id);
     }
     for (auto &task : datum.tasks) {
@@ -253,9 +253,15 @@ FunctionType CPUModuleToFunctionConverter::convert(
   }
   for (auto tree_id : used_tree_ids) {
     TI_INFO("adding SNodeTree {}", tree_id);
-    llvm::Linker::linkModules(*mod, tlctx_->clone_module_to_context(tlctx_->linking_data->struct_modules[tree_id].get(), tlctx_->linking_data->llvm_context));
+    llvm::Linker::linkModules(
+        *mod, tlctx_->clone_module_to_context(
+                  tlctx_->linking_data->struct_modules[tree_id].get(),
+                  tlctx_->linking_data->llvm_context));
   }
-  tlctx_->eliminate_unused_functions(mod.get(), [&](std::string func_name)->bool {return offloaded_names.count(func_name);});
+  tlctx_->eliminate_unused_functions(mod.get(),
+                                     [&](std::string func_name) -> bool {
+                                       return offloaded_names.count(func_name);
+                                     });
   auto jit_module = tlctx_->create_jit_module(std::move(mod));
 
   using TaskFunc = int32 (*)(void *);

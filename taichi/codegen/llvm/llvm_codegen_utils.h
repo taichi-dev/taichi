@@ -99,7 +99,6 @@ class LLVMModuleBuilder {
     return f;
   }
 
-
   llvm::Value *call(llvm::IRBuilder<> *builder,
                     const std::string &func_name,
                     const std::vector<llvm::Value *> &arglist) {
@@ -120,7 +119,6 @@ class LLVMModuleBuilder {
                               builder);
     return builder->CreateCall(func, arglist);
   }
-
 
   template <typename... Args>
   llvm::Value *call(const std::string &func_name, Args &&...args) {

@@ -1,7 +1,7 @@
 name: Publishing Release
 on:
   schedule:
-    - cron: '0 0 * * *'
+    - cron: '0 20 * * *'  # GMT 20 == GMT+8 04
   workflow_dispatch:
     # Manually trigger the release workflow, a version must be provided
     inputs:
@@ -110,7 +110,8 @@ jobs:
       - name: Test
         run: |
           docker create --user dev --name taichi_test --gpus all -v /tmp/.X11-unix:/tmp/.X11-unix \
-            -e DISPLAY -e PY -e GPU_TEST registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.0 \
+            -e DISPLAY -e PY -e GPU_TEST \
+            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.0 \
             /home/dev/unix_test.sh
           docker cp .github/workflows/scripts/unix_test.sh taichi_test:/home/dev/unix_test.sh
           docker cp .github/workflows/scripts/libcommon.sh taichi_test:/home/dev/libcommon.sh
@@ -177,7 +178,8 @@ jobs:
       - name: Test
         run: |
           docker create --user dev --name taichi_test --gpus all -e TI_WANTED_ARCHS \
-            -e PY -e GPU_TEST registry.taichigraphics.com/taichidev-manylinux2014-cuda:v0.0.0 \
+            -e PY -e GPU_TEST \
+            registry.taichigraphics.com/taichidev-manylinux2014-cuda:v0.0.0 \
             /home/dev/unix_test.sh
           docker cp .github/workflows/scripts/unix_test.sh taichi_test:/home/dev/unix_test.sh
           docker cp .github/workflows/scripts/libcommon.sh taichi_test:/home/dev/libcommon.sh

@@ -512,6 +512,7 @@ void TaichiLLVMContext::link_module_with_cuda_libdevice(
 
 void TaichiLLVMContext::add_struct_module(std::unique_ptr<llvm::Module> module,
                                           int tree_id) {
+  TI_AUTO_PROF;
   TI_ASSERT(std::this_thread::get_id() == main_thread_id_);
   auto this_thread_data = get_this_thread_data();
   TI_ASSERT(module);
@@ -843,6 +844,7 @@ llvm::Function *TaichiLLVMContext::get_runtime_function(
 }
 
 llvm::Module *TaichiLLVMContext::get_this_thread_runtime_module() {
+  TI_AUTO_PROF;
   auto data = get_this_thread_data();
   if (!data->runtime_module) {
     data->runtime_module = module_from_file(get_runtime_fn(arch_));

@@ -93,7 +93,7 @@ void export_lang(py::module &m) {
 
   py::enum_<AutodiffMode>(m, "AutodiffMode", py::arithmetic())
       .value("NONE", AutodiffMode::kNone)
-      .value("CHECK_AD_VALID", AutodiffMode::kCheckAutodiffValid)
+      .value("VALIDATION", AutodiffMode::kCheckAutodiffValid)
       .value("FORWARD", AutodiffMode::kForward)
       .value("REVERSE", AutodiffMode::kReverse)
       .export_values();

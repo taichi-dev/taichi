@@ -24,12 +24,10 @@ void place_child(Expr *expr_arg,
                  SNode *parent,
                  SNodeGlobalVarExprMap *snode_to_exprs);
 
-void make_lazy_place(
-    SNode *snode,
-    SNodeGlobalVarExprMap *snode_to_exprs,
-    const std::function<void(std::unique_ptr<SNode> &,
-                             std::vector<Expr> &,
-                             SNodeGlobalVarExprMap *snode_to_exprs)> &collect);
+void make_lazy_place(SNode *snode,
+                     SNodeGlobalVarExprMap *snode_to_exprs,
+                     const std::function<void(std::unique_ptr<SNode> &,
+                                              std::vector<Expr> &)> &collect);
 
 }  // namespace lang
 }  // namespace taichi

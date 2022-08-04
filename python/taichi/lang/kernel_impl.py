@@ -411,8 +411,7 @@ class Kernel:
         self.func = _func
         self.kernel_counter = Kernel.counter
         Kernel.counter += 1
-        assert autodiff_mode in (AutodiffMode.NONE,
-                                 AutodiffMode.CHECK_AD_VALID,
+        assert autodiff_mode in (AutodiffMode.NONE, AutodiffMode.VALIDATION,
                                  AutodiffMode.FORWARD, AutodiffMode.REVERSE)
         self.autodiff_mode = autodiff_mode
         self.grad = None
@@ -756,10 +755,8 @@ class Kernel:
             # gradient. For class kernels, args[0] is always the kernel owner.
             if (
                     self.autodiff_mode == AutodiffMode.NONE
-                    or self.autodiff_mode == AutodiffMode.CHECK_AD_VALID
+                    or self.autodiff_mode == AutodiffMode.VALIDATION
             ) and self.runtime.target_tape and not self.runtime.grad_replaced:
-                print("capture ",
-                      self.autodiff_mode == AutodiffMode.CHECK_AD_VALID)
                 self.runtime.target_tape.insert(self, args)
 
             if actual_argument_slot > 8 and (
@@ -842,7 +839,7 @@ class Kernel:
             self.runtime.fwd_mode_manager.insert(self, mode_original)
         elif self.runtime.target_tape and self.runtime.target_tape.check_autodiff_valid:
             # The autodiff valid check happens on forward kernel
-            self.autodiff_mode = AutodiffMode.CHECK_AD_VALID
+            self.autodiff_mode = AutodiffMode.VALIDATION
 
         if self.autodiff_mode != AutodiffMode.NONE and impl.current_cfg(
         ).opt_level == 0:

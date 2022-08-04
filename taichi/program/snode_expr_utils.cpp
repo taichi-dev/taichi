@@ -83,12 +83,10 @@ void place_child(Expr *expr_arg,
   }
 }
 
-void make_lazy_place(
-    SNode *snode,
-    SNodeGlobalVarExprMap *snode_to_exprs,
-    const std::function<void(std::unique_ptr<SNode> &,
-                             std::vector<Expr> &,
-                             SNodeGlobalVarExprMap *snode_to_exprs)> &collect) {
+void make_lazy_place(SNode *snode,
+                     SNodeGlobalVarExprMap *snode_to_exprs,
+                     const std::function<void(std::unique_ptr<SNode> &,
+                                              std::vector<Expr> &)> &collect) {
   if (snode->type == SNodeType::place)
     return;
   for (auto &c : snode->ch) {
@@ -96,7 +94,7 @@ void make_lazy_place(
   }
   std::vector<Expr> new_places;
   for (auto &c : snode->ch) {
-    collect(c, new_places, snode_to_exprs);
+    collect(c, new_places);
   }
   for (auto p : new_places) {
     place_child(&p, /*offset=*/{}, snode, snode_to_exprs);

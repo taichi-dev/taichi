@@ -15,9 +15,6 @@ def test_nbody():
             compute_force()
             update()
 
-    ti.profiler.print_scoped_profiler_info()
-    ti.profiler.print_kernel_profiler_info('trace')
-
 
 def video_nbody(result_dir):
     from taichi.examples.simulation.nbody import (compute_force, initialize,

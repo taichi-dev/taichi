@@ -99,18 +99,6 @@ class LLVMModuleBuilder {
     return f;
   }
 
-  llvm::Function *get_struct_function(const std::string &name, int tree_id) {
-    auto f = tlctx->get_struct_function(name, tree_id);
-    if (!f) {
-      TI_ERROR("Struct function {} not found.", name);
-    }
-    f = llvm::cast<llvm::Function>(
-        module
-            ->getOrInsertFunction(name, f->getFunctionType(),
-                                  f->getAttributes())
-            .getCallee());
-    return f;
-  }
 
   llvm::Value *call(llvm::IRBuilder<> *builder,
                     const std::string &func_name,
@@ -133,16 +121,6 @@ class LLVMModuleBuilder {
     return builder->CreateCall(func, arglist);
   }
 
-  template <typename... Args>
-  llvm::Value *call_struct_func(int tree_id,
-                                const std::string &func_name,
-                                Args &&...args) {
-    auto func = get_struct_function(func_name, tree_id);
-    auto arglist = std::vector<llvm::Value *>({args...});
-    check_func_call_signature(func->getFunctionType(), func->getName(), arglist,
-                              builder.get());
-    return builder->CreateCall(func, arglist);
-  }
 
   template <typename... Args>
   llvm::Value *call(const std::string &func_name, Args &&...args) {

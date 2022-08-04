@@ -237,12 +237,25 @@ FunctionType CPUModuleToFunctionConverter::convert(
     const std::vector<LlvmLaunchArgInfo> &args,
     std::vector<LLVMCompiledData> &&data) const {
   auto mod = llvm::CloneModule(*tlctx_->linking_data->runtime_module);
+  std::unordered_set<int> used_tree_ids;
+  std::unordered_set<std::string> offloaded_names;
   for (auto &datum : data) {
+    for (auto tree_id: datum.used_tree_ids) {
+      used_tree_ids.insert(tree_id);
+    }
+    for (auto &task : datum.tasks) {
+      offloaded_names.insert(task.name);
+    }
     llvm::Linker::linkModules(
         *mod, tlctx_->clone_module_to_context(
                   datum.module.get(), tlctx_->linking_data->llvm_context));
     //    tlctx_->main_jit_module->add_module(std::move(datum.module));
   }
+  for (auto tree_id : used_tree_ids) {
+    TI_INFO("adding SNodeTree {}", tree_id);
+    llvm::Linker::linkModules(*mod, tlctx_->clone_module_to_context(tlctx_->linking_data->struct_modules[tree_id].get(), tlctx_->linking_data->llvm_context));
+  }
+  tlctx_->eliminate_unused_functions(mod.get(), [&](std::string func_name)->bool {return offloaded_names.count(func_name);});
   auto jit_module = tlctx_->create_jit_module(std::move(mod));
 
   using TaskFunc = int32 (*)(void *);
@@ -330,6 +343,7 @@ FunctionType KernelCodeGenCPU::codegen() {
       auto new_data = this->modulegen(nullptr, offload->as<OffloadedStmt>());
       data[i].tasks = std::move(new_data.tasks);
       data[i].module = std::move(new_data.module);
+      data[i].used_tree_ids = std::move(new_data.used_tree_ids);
     };
     if (kernel->is_evaluator) {
       compile_func();

@@ -122,7 +122,7 @@ bool LlvmOfflineCacheFileReader::get_kernel_cache(
       TI_ASSERT(data.module);
     }
     res.compiled_data_list.emplace_back(data.tasks,
-                                        llvm::CloneModule(*data.module));
+                                        llvm::CloneModule(*data.module), data.used_tree_ids);
   }
 
   kernel_data.last_used_at = std::time(nullptr);

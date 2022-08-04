@@ -57,6 +57,8 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   llvm::BasicBlock *func_body_bb;
   llvm::BasicBlock *final_block;
   std::set<std::string> linked_modules;
+  std::unordered_set<int> used_tree_ids;
+
   bool returned{false};
 
   std::unordered_map<const Stmt *, std::vector<llvm::Value *>> loop_vars_llvm;
@@ -140,6 +142,11 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   llvm::Value *create_call(std::string func_name,
                            llvm::ArrayRef<llvm::Value *> args = {});
+  llvm::Function *get_struct_function(const std::string &name, int tree_id);
+  template <typename... Args>
+  llvm::Value *call_struct_func(int tree_id,
+                                                 const std::string &func_name,
+                                                 Args &&...args);
   llvm::Value *call(SNode *snode,
                     llvm::Value *node_ptr,
                     const std::string &method,

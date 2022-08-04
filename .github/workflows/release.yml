@@ -113,6 +113,7 @@ jobs:
             -e DISPLAY -e PY -e GPU_TEST registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.0 \
             /home/dev/unix_test.sh
           docker cp .github/workflows/scripts/unix_test.sh taichi_test:/home/dev/unix_test.sh
+          docker cp .github/workflows/scripts/libcommon.sh taichi_test:/home/dev/libcommon.sh
           docker cp ./requirements_test.txt taichi_test:/home/dev/requirements_test.txt
           docker cp shared/dist/ taichi_test:/home/dev/
           docker cp shared/build/ taichi_test:/home/dev/
@@ -179,6 +180,7 @@ jobs:
             -e PY -e GPU_TEST registry.taichigraphics.com/taichidev-manylinux2014-cuda:v0.0.0 \
             /home/dev/unix_test.sh
           docker cp .github/workflows/scripts/unix_test.sh taichi_test:/home/dev/unix_test.sh
+          docker cp .github/workflows/scripts/libcommon.sh taichi_test:/home/dev/libcommon.sh
           docker cp ./requirements_test.txt taichi_test:/home/dev/requirements_test.txt
           docker cp shared/dist/ taichi_test:/home/dev/
           docker cp shared/build/ taichi_test:/home/dev/

@@ -65,7 +65,6 @@ if(TI_WITH_VULKAN)
     set(TI_WITH_GGUI ON)
 endif()
 
-
 if (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/external/glad/src/gl.c")
     set(TI_WITH_OPENGL OFF)
     message(WARNING "external/glad submodule not detected. Settings TI_WITH_OPENGL to OFF.")
@@ -118,6 +117,11 @@ endif()
 
 if (TI_LLVM_15)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_LLVM_15")
+endif()
+
+## This version var is only used to locate slim_libdevice.10.bc
+if(NOT CUDA_VERSION)
+    set(CUDA_VERSION 10.0)
 endif()
 
 if (TI_WITH_CUDA)

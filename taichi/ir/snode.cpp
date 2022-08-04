@@ -296,36 +296,35 @@ void SNode::end_shared_exp_placement() {
 }
 
 void SNode::lazy_grad() {
-  make_lazy_place(this, snode_to_glb_var_exprs_,
-                  [&](std::unique_ptr<SNode> &c, std::vector<Expr> &new_grads,
-                      SNodeGlobalVarExprMap *snode_to_exprs) {
-                    if (c->type == SNodeType::place && c->is_primal() &&
-                        is_real(c->dt) && !c->has_adjoint()) {
-                      new_grads.push_back(snode_to_exprs->at(c.get())->adjoint);
-                    }
-                  });
+  make_lazy_place(
+      this, snode_to_glb_var_exprs_,
+      [this](std::unique_ptr<SNode> &c, std::vector<Expr> &new_grads) {
+        if (c->type == SNodeType::place && c->is_primal() && is_real(c->dt) &&
+            !c->has_adjoint()) {
+          new_grads.push_back(snode_to_glb_var_exprs_->at(c.get())->adjoint);
+        }
+      });
 }
 
 void SNode::lazy_dual() {
-  make_lazy_place(this, snode_to_glb_var_exprs_,
-                  [&](std::unique_ptr<SNode> &c, std::vector<Expr> &new_duals,
-                      SNodeGlobalVarExprMap *snode_to_exprs) {
-                    if (c->type == SNodeType::place && c->is_primal() &&
-                        is_real(c->dt) && !c->has_dual()) {
-                      new_duals.push_back(snode_to_exprs->at(c.get())->dual);
-                    }
-                  });
+  make_lazy_place(
+      this, snode_to_glb_var_exprs_,
+      [this](std::unique_ptr<SNode> &c, std::vector<Expr> &new_duals) {
+        if (c->type == SNodeType::place && c->is_primal() && is_real(c->dt) &&
+            !c->has_dual()) {
+          new_duals.push_back(snode_to_glb_var_exprs_->at(c.get())->dual);
+        }
+      });
 }
 
 void SNode::allocate_grad_visited() {
   make_lazy_place(
       this, snode_to_glb_var_exprs_,
-      [&](std::unique_ptr<SNode> &c, std::vector<Expr> &new_grad_visiteds,
-          SNodeGlobalVarExprMap *snode_to_exprs) {
+      [this](std::unique_ptr<SNode> &c, std::vector<Expr> &new_grad_visiteds) {
         if (c->type == SNodeType::place && c->is_primal() && is_real(c->dt) &&
             c->has_adjoint()) {
           new_grad_visiteds.push_back(
-              snode_to_exprs->at(c.get())->adjoint_visited);
+              snode_to_glb_var_exprs_->at(c.get())->adjoint_visited);
         }
       });
 }

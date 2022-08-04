@@ -14,10 +14,7 @@ from taichi import _snode
 
 
 class Tape:
-    def __init__(self,
-                 loss=None,
-                 clear_gradients=True,
-                 check_autodiff_valid=False):
+    def __init__(self, loss=None, clear_gradients=True, validation=False):
         """A context manager for reverse mode autodiff :class:`~taichi.ad.Tape`. The
         context manager would catching all of the callings of functions that
         decorated by :func:`~taichi.lang.kernel_impl.kernel` or
@@ -32,7 +29,7 @@ class Tape:
         Args:
             loss(:class:`~taichi.lang.expr.Expr`): The loss field, which shape should be ().
             clear_gradients(Bool): Before `with` body start, clear all gradients or not.
-            check_autodiff_valid(Bool): Check whether the code inside the context manager is autodiff valid, e.g., agree with the global data access rule.
+            validation(Bool): Check whether the code inside the context manager is autodiff valid, e.g., agree with the global data access rule.
 
         Example::
 
@@ -48,9 +45,9 @@ class Tape:
         self.entered = False
         self.gradient_evaluated = False
         self.clear_gradients = clear_gradients
-        self.check_autodiff_valid = check_autodiff_valid
+        self.validation = validation
         self.runtime = impl.get_runtime()
-        if not self.runtime.prog.config.debug and self.check_autodiff_valid:
+        if not self.runtime.prog.config.debug and self.validation:
             warnings.warn(
                 "Debug mode is disabled, autodiff valid check will not work. Please specify `ti.init(debug=True)` to enable the check.",
                 Warning)

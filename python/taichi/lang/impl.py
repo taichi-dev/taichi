@@ -567,7 +567,7 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
             # adjoint flag
             x_grad_visited = Expr(get_runtime().prog.make_id_expr(""))
             dtype = u8
-            if prog.config.arch == _ti_core.opengl or prog.config.arch == _ti_core.vulkan:
+            if prog.config.arch in (_ti_core.opengl, _ti_core.vulkan):
                 dtype = i32
             x_grad_visited.ptr = _ti_core.global_new(x_grad_visited.ptr,
                                                      cook_dtype(dtype))

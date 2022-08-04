@@ -7,9 +7,9 @@ from taichi.lang.impl import grouped, static, static_assert
 from taichi.lang.kernel_impl import kernel
 from taichi.lang.runtime_ops import sync
 from taichi.lang.snode import deactivate
-from taichi.types import ndarray_type
+from taichi.types import ndarray_type, texture_type, vector
 from taichi.types.annotations import template
-from taichi.types.primitive_types import f16, f32, f64, u8
+from taichi.types.primitive_types import f16, f32, f64, i32, u8
 
 
 # A set of helper (meta)functions
@@ -179,6 +179,33 @@ def ext_arr_to_matrix(arr: ndarray_type.ndarray(), mat: template(),
                     mat[I][p, q] = arr[I, p, q]
 
 
+# extract ndarray of raw vulkan memory layout to normal memory layout.
+# the vulkan layout stored in ndarray : width-by-width stored along n-
+# darray's shape[1] which is the height-axis(So use [size // h, size %
+#  h]). And the height-order of vulkan layout is flip up-down.(So take
+# [size = (h - 1 - j) * w + i] to get the index)
+@kernel
+def arr_vulkan_layout_to_arr_normal_layout(vk_arr: ndarray_type.ndarray(),
+                                           normal_arr: ndarray_type.ndarray()):
+    static_assert(len(normal_arr.shape) == 2)
+    w = normal_arr.shape[0]
+    h = normal_arr.shape[1]
+    for i, j in ndrange(w, h):
+        normal_arr[i, j] = vk_arr[(h - 1 - j) * w + i]
+
+
+# extract ndarray of raw vulkan memory layout into a taichi-field data
+# structure with normal memory layout.
+@kernel
+def arr_vulkan_layout_to_field_normal_layout(vk_arr: ndarray_type.ndarray(),
+                                             normal_field: template()):
+    static_assert(len(normal_field.shape) == 2)
+    w = normal_field.shape[0]
+    h = normal_field.shape[1]
+    for i, j in ndrange(w, h):
+        normal_field[i, j] = vk_arr[(h - 1 - j) * w + i]
+
+
 @kernel
 def clear_gradients(_vars: template()):
     for I in grouped(ScalarField(Expr(_vars[0]))):
@@ -212,6 +239,31 @@ def snode_deactivate(b: template()):
 def snode_deactivate_dynamic(b: template()):
     for I in grouped(b.parent()):
         deactivate(b, I)
+
+
+@kernel
+def load_texture_from_numpy(tex: texture_type.rw_texture(num_dimensions=2,
+                                                         num_channels=4,
+                                                         channel_format=u8,
+                                                         lod=0),
+                            img: ndarray_type.ndarray(field_dim=2,
+                                                      element_shape=(3, ))):
+    for i, j in img:
+        tex.store(
+            vector(2, i32)([i, j]),
+            vector(4, f32)([img[i, j][0], img[i, j][1], img[i, j][2], 0]) /
+            255.)
+
+
+@kernel
+def save_texture_to_numpy(tex: texture_type.rw_texture(num_dimensions=2,
+                                                       num_channels=4,
+                                                       channel_format=u8,
+                                                       lod=0),
+                          img: ndarray_type.ndarray(field_dim=2,
+                                                    element_shape=(3, ))):
+    for i, j in img:
+        img[i, j] = ops.round(tex.load(vector(2, i32)([i, j])).rgb * 255)
 
 
 # Odd-even merge sort

@@ -1,7 +1,8 @@
 import taichi.lang
 from taichi._lib import core as _ti_core
-from taichi.lang.util import (python_scope, to_numpy_type, to_paddle_type,
-                              to_pytorch_type)
+from taichi.lang.exception import TaichiSyntaxError
+from taichi.lang.util import (in_python_scope, python_scope, to_numpy_type,
+                              to_paddle_type, to_pytorch_type)
 
 
 class Field:
@@ -89,7 +90,7 @@ class Field:
         """Gets representative field member for loop range info.
 
         Returns:
-            taichi_core.Expr: Representative (first) field member.
+            taichi_python.Expr: Representative (first) field member.
         """
         return self.vars[0].ptr
 
@@ -254,6 +255,10 @@ class Field:
     def _host_access(self, key):
         return [SNodeHostAccess(e, key) for e in self.host_accessors]
 
+    def __iter__(self):
+        raise NotImplementedError(
+            "Struct for is only available in Taichi scope.")
+
 
 class ScalarField(Field):
     """Taichi scalar field with SNode implementation.
@@ -264,12 +269,16 @@ class ScalarField(Field):
     def __init__(self, var):
         super().__init__([var])
 
-    @python_scope
     def fill(self, val):
         """Fills this scalar field with a specified value.
         """
-        from taichi._kernels import fill_tensor  # pylint: disable=C0415
-        fill_tensor(self, val)
+        if in_python_scope():
+            from taichi._kernels import fill_tensor  # pylint: disable=C0415
+            fill_tensor(self, val)
+        else:
+            from taichi._funcs import \
+                field_fill_taichi_scope  # pylint: disable=C0415
+            field_fill_taichi_scope(self, val)
 
     @python_scope
     def to_numpy(self, dtype=None):
@@ -393,4 +402,40 @@ class SNodeHostAccess:
         self.key = key
 
 
-__all__ = ["Field", "ScalarField"]
+class BitpackedFields:
+    """Taichi bitpacked fields, where fields with quantized types are packed together.
+
+    Args:
+        max_num_bits (int): Maximum number of bits all fields inside can occupy in total. Only 32 or 64 is allowed.
+    """
+    def __init__(self, max_num_bits):
+        self.fields = []
+        self.bit_struct_type_builder = _ti_core.BitStructTypeBuilder(
+            max_num_bits)
+
+    def place(self, *args, shared_exponent=False):
+        """Places a list of fields with quantized types inside.
+
+        Args:
+            *args (List[Field]): A list of fields with quantized types to place.
+            shared_exponent (bool): Whether the fields have a shared exponent.
+        """
+        if shared_exponent:
+            self.bit_struct_type_builder.begin_placing_shared_exponent()
+        count = 0
+        for arg in args:
+            assert isinstance(arg, Field)
+            for var in arg._get_field_members():
+                self.fields.append((var.ptr,
+                                    self.bit_struct_type_builder.add_member(
+                                        var.ptr.get_dt())))
+                count += 1
+        if shared_exponent:
+            self.bit_struct_type_builder.end_placing_shared_exponent()
+            if count <= 1:
+                raise TaichiSyntaxError(
+                    "At least 2 fields need to be placed when shared_exponent=True"
+                )
+
+
+__all__ = ["BitpackedFields", "Field", "ScalarField"]

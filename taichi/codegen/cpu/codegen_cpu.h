@@ -9,15 +9,16 @@
 
 TLANG_NAMESPACE_BEGIN
 
-class CodeGenCPU : public KernelCodeGen {
+class KernelCodeGenCPU : public KernelCodeGen {
  public:
-  CodeGenCPU(Kernel *kernel, IRNode *ir = nullptr) : KernelCodeGen(kernel, ir) {
+  KernelCodeGenCPU(Kernel *kernel, IRNode *ir = nullptr)
+      : KernelCodeGen(kernel, ir) {
   }
 
   // TODO: Stop defining this macro guards in the headers
 #ifdef TI_WITH_LLVM
-  static std::unique_ptr<CodeGenLLVM> make_codegen_llvm(Kernel *kernel,
-                                                        IRNode *ir);
+  static std::unique_ptr<TaskCodeGenLLVM> make_codegen_llvm(Kernel *kernel,
+                                                            IRNode *ir);
 
   bool supports_offline_cache() const override {
     return true;

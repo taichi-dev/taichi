@@ -2,6 +2,7 @@ from taichi._lib import core as _ti_core
 from taichi.aot.utils import produce_injected_args
 from taichi.lang import kernel_impl
 from taichi.lang._ndarray import Ndarray
+from taichi.lang._texture import Texture
 from taichi.lang.exception import TaichiRuntimeError
 from taichi.lang.matrix import Matrix, MatrixType
 
@@ -66,6 +67,8 @@ class Graph:
         for k, v in args.items():
             if isinstance(v, Ndarray):
                 flattened[k] = v.arr
+            elif isinstance(v, Texture):
+                flattened[k] = v.tex
             elif isinstance(v, Matrix):
                 mat_val_id = 0
                 for a in range(v.n):
@@ -82,7 +85,14 @@ class Graph:
         self._compiled_graph.run(flattened)
 
 
-def Arg(tag, name, dtype, field_dim=0, element_shape=()):
+def Arg(tag,
+        name,
+        dtype=None,
+        field_dim=0,
+        element_shape=(),
+        channel_format=None,
+        shape=(),
+        num_channels=None):
     if isinstance(dtype, MatrixType):
         if len(element_shape) > 0:
             raise TaichiRuntimeError(
@@ -101,6 +111,16 @@ def Arg(tag, name, dtype, field_dim=0, element_shape=()):
             arg_list.append(arg_sublist)
         return arg_list
 
+    if tag == ArgKind.TEXTURE or tag == ArgKind.RWTEXTURE:
+        if channel_format is None or len(shape) == 0 or num_channels is None:
+            raise TaichiRuntimeError(
+                'channel_format, num_channels and shape arguments are required for texture arguments'
+            )
+        return _ti_core.Arg(tag,
+                            name,
+                            channel_format=channel_format,
+                            num_channels=num_channels,
+                            shape=shape)
     return _ti_core.Arg(tag, name, dtype, field_dim, element_shape)
 
 

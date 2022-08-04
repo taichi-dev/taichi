@@ -16,9 +16,9 @@
 namespace taichi {
 namespace lang {
 
-void run_field_tests(aot::Module *mod,
-                     LlvmRuntimeExecutor *exec,
-                     uint64 *result_buffer) {
+static void run_field_tests(aot::Module *mod,
+                            LlvmRuntimeExecutor *exec,
+                            uint64 *result_buffer) {
   aot::Kernel *k_init_fields = mod->get_kernel("init_fields");
   aot::Kernel *k_check_init_x = mod->get_kernel("check_init_x");
   aot::Kernel *k_check_init_y = mod->get_kernel("check_init_y");
@@ -33,12 +33,9 @@ void run_field_tests(aot::Module *mod,
   aot::Kernel *k_check_activate_pointer_fields =
       mod->get_kernel("check_activate_pointer_fields");
 
-  // Initialize Fields
-  aot::Field *field_x = mod->get_field("0" /*snode_tree_id*/);
-  aot::Field *field_y = mod->get_field("0" /*snode_tree_id*/);
-
-  finalize_aot_field(mod, field_x, result_buffer);
-  finalize_aot_field(mod, field_y, result_buffer);
+  // Initialize SNodeTree
+  aot::Field *snode_tree_0 = mod->get_snode_tree("0" /*snode_tree_id*/);
+  allocate_aot_snode_tree_type(mod, snode_tree_0, result_buffer);
 
   int base_value = 10;
   /* -------- Test Case 1 ------ */

@@ -2,7 +2,7 @@
 # The Taichi Programming Language
 #*********************************************************************
 
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.17)
 
 project(taichi)
 
@@ -150,7 +150,11 @@ if (APPLE)
   set(CLANG_OSX_FLAGS "-isysroot${CMAKE_OSX_SYSROOT}")
   set(CLANG_HIGHEST_VERSION "12")
 else()
-  set(CLANG_HIGHEST_VERSION "11")
+  if (TI_LLVM_15)
+    set(CLANG_HIGHEST_VERSION "15")
+  else()
+    set(CLANG_HIGHEST_VERSION "11")
+  endif()
 endif()
 
 check_clang_version()
@@ -189,4 +193,7 @@ option(TI_WITH_C_API "build taichi runtime c-api library" OFF)
 
 if (TI_WITH_C_API)
   include(cmake/TaichiCAPI.cmake)
+  if (TI_BUILD_TESTS)
+    include(cmake/TaichiCAPITests.cmake)
+  endif()
 endif()

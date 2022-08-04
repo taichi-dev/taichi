@@ -115,12 +115,15 @@ class LlvmOfflineCacheFileReader {
   bool get_field_cache(LlvmOfflineCache::FieldCacheData &res,
                        int snode_tree_id);
 
+  size_t get_num_snode_trees();
+
   static std::unique_ptr<LlvmOfflineCacheFileReader> make(
       const std::string &path,
       LlvmOfflineCache::Format format = LlvmOfflineCache::Format::LL);
 
   static bool load_meta_data(LlvmOfflineCache &data,
-                             const std::string &cache_file_path);
+                             const std::string &cache_file_path,
+                             bool with_lock = true);
 
  private:
   LlvmOfflineCacheFileReader(const std::string &path,

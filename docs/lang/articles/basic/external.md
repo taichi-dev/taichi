@@ -2,7 +2,7 @@
 sidebar_position: 5
 ---
 
-# Interacting with external arrays
+# Interacting with External Arrays
 
 Although Taichi fields are mainly used in Taichi-scope, in some cases efficiently manipulating Taichi field data in Python-scope could also be
 helpful.
@@ -152,16 +152,16 @@ import numpy as np
 ti.init()
 
 n, m = 4, 7
+a = np.empty(shape=(n, m), dtype=np.int32)
 
 
 @ti.kernel
 def test_numpy(arr: ti.types.ndarray()):
-    for i in range(n):
-        for j in range(m):
+    # You can access the shape of the passed array in the kernel
+    for i in range(arr.shape[0]):
+        for j in range(arr.shape[1]):
             arr[i, j] += i + j
 
-
-a = np.empty(shape=(n, m), dtype=np.int32)
 
 for i in range(n):
     for j in range(m):

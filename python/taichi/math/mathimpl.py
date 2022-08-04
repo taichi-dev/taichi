@@ -2,116 +2,63 @@
 """
 Math functions for glsl-like functions and other stuff.
 """
-from math import e, pi
+from math import e, inf, nan, pi
 
 from taichi.lang import impl
 from taichi.lang.ops import (acos, asin, atan2, ceil, cos, exp, floor, log,
-                             max, min, pow, round, sin, sqrt, tan, tanh)
+                             max, min, pow, round, sin, sqrt, tan, tanh, unary)
 
 import taichi as ti
 
-_get_uint_ip = lambda: ti.u32 if impl.get_runtime(
-).default_ip == ti.i32 else ti.u64
+cfg = impl.default_cfg
 
+vec2 = ti.types.vector(2, cfg().default_fp)
+"""2D floating vector type.
+"""
 
-def vec2(*args):
-    """2D floating vector type.
-    """
-    return ti.types.vector(2, float)(*args)  # pylint: disable=E1101
+vec3 = ti.types.vector(3, cfg().default_fp)
+"""3D floating vector type.
+"""
 
+vec4 = ti.types.vector(4, cfg().default_fp)
+"""4D floating vector type.
+"""
 
-def vec3(*args):
-    """3D floating vector type.
-    """
-    return ti.types.vector(3, float)(*args)  # pylint: disable=E1101
+ivec2 = ti.types.vector(2, cfg().default_ip)
+"""2D signed int vector type.
+"""
 
+ivec3 = ti.types.vector(3, cfg().default_ip)
+"""3D signed int vector type.
+"""
 
-def vec4(*args):
-    """4D floating vector type.
-    """
-    return ti.types.vector(4, float)(*args)  # pylint: disable=E1101
+ivec4 = ti.types.vector(4, cfg().default_ip)
+"""3D signed int vector type.
+"""
 
+uvec2 = ti.types.vector(2, cfg().default_up)
+"""2D unsigned int vector type.
+"""
 
-def ivec2(*args):
-    """2D signed int vector type.
-    """
-    return ti.types.vector(2, int)(*args)  # pylint: disable=E1101
+uvec3 = ti.types.vector(3, cfg().default_up)
+"""3D unsigned int vector type.
+"""
 
+uvec4 = ti.types.vector(4, cfg().default_up)
+"""4D unsigned int vector type.
+"""
 
-def ivec3(*args):
-    """3D signed int vector type.
-    """
-    return ti.types.vector(3, int)(*args)  # pylint: disable=E1101
+mat2 = ti.types.matrix(2, 2, cfg().default_fp)
+"""2x2 floating matrix type.
+"""
 
+mat3 = ti.types.matrix(3, 3, cfg().default_fp)
+"""3x3 floating matrix type.
+"""
 
-def ivec4(*args):
-    """4D signed int vector type.
-    """
-    return ti.types.vector(4, int)(*args)  # pylint: disable=E1101
-
-
-def uvec2(*args):
-    """2D unsigned int vector type.
-    """
-    return ti.types.vector(2, _get_uint_ip())(*args)  # pylint: disable=E1101
-
-
-def uvec3(*args):
-    """3D unsigned int vector type.
-    """
-    return ti.types.vector(3, _get_uint_ip())(*args)  # pylint: disable=E1101
-
-
-def uvec4(*args):
-    """4D unsigned int vector type.
-    """
-    return ti.types.vector(4, _get_uint_ip())(*args)  # pylint: disable=E1101
-
-
-def _gen_matrix(n, *args):
-    """Supports more matrix construction routines.
-
-    1. Usual construction (from a 2d list or a single scalar).
-    2. From a 1-D array of n*n elements (glsl style).
-    3. From a list of n-D vectors (glsl style).
-    """
-    if len(args) == n * n:  # initialize with n*n scalars
-        data = [[args[k * n + i] for i in range(n)] for k in range(n)]
-        return ti.Matrix(data, float)
-
-    if len(args) == n:  # initialize with n vectors
-        # Matrix.rows() will do implicit type inference
-        data = [list(x) for x in args]
-        return ti.Matrix(data, float)
-
-    if len(args) == 1:  # initialize with a scalar, a matrix or a 1d list
-        x = args[0]
-        if isinstance(x, ti.Matrix):
-            return x
-
-        if hasattr(x, "__len__") and len(x) == n * n:
-            data = [[x[k * n + i] for i in range(n)] for k in range(n)]
-            return ti.Matrix(data, float)
-
-    return ti.types.matrix(n, n, float)(*args)  # pylint: disable=E1101
-
-
-def mat2(*args):
-    """2x2 floating matrix type.
-    """
-    return _gen_matrix(2, *args)
-
-
-def mat3(*args):
-    """3x3 floating matrix type.
-    """
-    return _gen_matrix(3, *args)
-
-
-def mat4(*args):
-    """4x4 floating matrix type.
-    """
-    return _gen_matrix(4, *args)
+mat4 = ti.types.matrix(4, 4, cfg().default_fp)
+"""4x4 floating matrix type.
+"""
 
 
 @ti.func
@@ -691,12 +638,96 @@ def inverse(mat):  # pylint: disable=R1710
     return mat.inverse()
 
 
+@unary
+@ti.func
+def isinf(x):
+    """Determines whether the parameter is positive or negative infinity, element-wise.
+
+    Args:
+        x (:mod:`~taichi.types.primitive_types`, :class:`taichi.Matrix`): The input.
+
+    Example:
+
+       >>> @ti.kernel
+       >>> def test():
+       >>>     x = vec4(inf, -inf, nan, 1)
+       >>>     ti.math.isinf(x)
+       >>>
+       >>> test()
+       [1, 1, 0, 0]
+
+    Returns:
+        For each element i of the result, returns 1 if x[i] is posititve or negative floating point infinity and 0 otherwise.
+    """
+    ftype = impl.get_runtime().default_fp
+    fx = ti.cast(x, ftype)
+    if ti.static(ftype == ti.f64):
+        y = ti.bit_cast(fx, ti.u64)
+        return (ti.cast(y >> 32, ti.u32)
+                & 0x7fffffff) == 0x7ff00000 and (ti.cast(y, ti.u32) == 0)
+
+    y = ti.bit_cast(fx, ti.u32)
+    return (y & 0x7fffffff) == 0x7f800000
+
+
+@unary
+@ti.func
+def isnan(x):
+    """Determines whether the parameter is a number, element-wise.
+
+    Args:
+        x (:mod:`~taichi.types.primitive_types`, :class:`taichi.Matrix`): The input.
+
+    Example:
+
+       >>> @ti.kernel
+       >>> def test():
+       >>>     x = vec4(nan, -nan, inf, 1)
+       >>>     ti.math.isnan(x)
+       >>>
+       >>> test()
+       [1, 1, 0, 0]
+
+    Returns:
+        For each element i of the result, returns 1 if x[i] is posititve or negative floating point NaN (Not a Number) and 0 otherwise.
+    """
+    ftype = impl.get_runtime().default_fp
+    fx = ti.cast(x, ftype)
+    if ti.static(ftype == ti.f64):
+        y = ti.bit_cast(fx, ti.u64)
+        return (ti.cast(y >> 32, ti.u32)
+                & 0x7fffffff) + (ti.cast(y, ti.u32) != 0) > 0x7ff00000
+
+    y = ti.bit_cast(fx, ti.u32)
+    return (y & 0x7fffffff) > 0x7f800000
+
+
+@ti.func
+def vdir(ang):
+    """Returns the 2d unit vector with argument equals `ang`.
+
+    x (:mod:`~taichi.types.primitive_types`): The input angle in radians.
+
+    Example:
+
+        >>> @ti.kernel
+        >>> def test():
+        >>>     x = pi / 2
+        >>>     print(ti.math.vdir(x))  # [0, 1]
+
+    Returns:
+        a 2d vector with argument equals `ang`.
+    """
+    return vec2(cos(ang), sin(ang))
+
+
 __all__ = [
     "acos", "asin", "atan2", "ceil", "clamp", "cos", "cross", "degrees",
     "determinant", "distance", "dot", "e", "exp", "eye", "floor", "fract",
-    "inverse", "ivec2", "ivec3", "ivec4", "length", "log", "log2", "mat2",
-    "mat3", "mat4", "max", "min", "mix", "mod", "normalize", "pi", "pow",
-    "radians", "reflect", "refract", "rot2", "rot3", "rotate2d", "rotate3d",
-    "round", "sign", "sin", "smoothstep", "sqrt", "step", "tan", "tanh",
-    "uvec2", "uvec3", "uvec4", "vec2", "vec3", "vec4"
+    "inf", "inverse", "isinf", "isnan", "ivec2", "ivec3", "ivec4", "length",
+    "log", "log2", "mat2", "mat3", "mat4", "max", "min", "mix", "mod", "nan",
+    "normalize", "pi", "pow", "radians", "reflect", "refract", "rot2", "rot3",
+    "rotate2d", "rotate3d", "round", "sign", "sin", "smoothstep", "sqrt",
+    "step", "tan", "tanh", "uvec2", "uvec3", "uvec4", "vdir", "vec2", "vec3",
+    "vec4"
 ]

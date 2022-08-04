@@ -13,8 +13,10 @@ from taichi.lang.ast.ast_transformer_utils import (Builder, LoopStatus,
                                                    ReturnStatus)
 from taichi.lang.ast.symbol_resolver import ASTResolver
 from taichi.lang.exception import TaichiSyntaxError, TaichiTypeError
+from taichi.lang.field import Field
 from taichi.lang.matrix import (Matrix, MatrixType, _PyScopeMatrixImpl,
                                 _TiScopeMatrixImpl)
+from taichi.lang.snode import append
 from taichi.lang.util import in_taichi_scope, is_taichi_class, to_taichi_type
 from taichi.types import (annotations, ndarray_type, primitive_types,
                           texture_type)
@@ -424,10 +426,17 @@ class ASTTransformer(Builder):
     def build_call_if_is_type(ctx, node, args, keywords):
         func = node.func.ptr
         if id(func) in primitive_types.type_ids:
-            if len(args) != 1 or keywords or isinstance(args[0], expr.Expr):
+            if len(args) != 1 or keywords:
                 raise TaichiSyntaxError(
-                    "Type annotation can only be given to a single literal.")
-            node.ptr = expr.Expr(args[0], dtype=func)
+                    "A primitive type can only decorate a single expression.")
+            if is_taichi_class(args[0]):
+                raise TaichiSyntaxError(
+                    "A primitive type cannot decorate an expression with a compound type."
+                )
+            if isinstance(args[0], expr.Expr):
+                node.ptr = ti_ops.cast(args[0], func)
+            else:
+                node.ptr = expr.Expr(args[0], dtype=func)
             return True
         return False
 
@@ -641,8 +650,19 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_Attribute(ctx, node):
-        build_stmt(ctx, node.value)
-        node.ptr = getattr(node.value.ptr, node.attr)
+        if node.attr == "append" and isinstance(node.value, ast.Subscript):
+            x = build_stmt(ctx, node.value.value)
+            if not isinstance(x, Field) or x.parent(
+            ).ptr.type != _ti_core.SNodeType.dynamic:
+                raise TaichiSyntaxError(
+                    f"In Taichi scope the `append` method is only defined for dynamic SNodes, but {x} is encountered"
+                )
+            index = build_stmt(ctx, node.value.slice)
+            node.value.ptr = None
+            node.ptr = lambda val: append(x.parent(), index, val)
+        else:
+            build_stmt(ctx, node.value)
+            node.ptr = getattr(node.value.ptr, node.attr)
         return node.ptr
 
     @staticmethod
@@ -775,6 +795,8 @@ class ASTTransformer(Builder):
                         f'"{type(node_op).__name__}" is not supported in Taichi kernels.'
                     )
             val = ti_ops.bit_and(val, op(l, r))
+        if not isinstance(val, bool):
+            val = ti_ops.cast(val, primitive_types.i32)
         node.ptr = val
         return node.ptr
 
@@ -1107,7 +1129,8 @@ class ASTTransformer(Builder):
                 "'else' clause for 'while' not supported in Taichi kernels")
 
         with ctx.loop_scope_guard():
-            ctx.ast_builder.begin_frontend_while(expr.Expr(1).ptr)
+            ctx.ast_builder.begin_frontend_while(
+                expr.Expr(1, dtype=primitive_types.i32).ptr)
             while_cond = build_stmt(ctx, node.test)
             impl.begin_frontend_if(ctx.ast_builder, while_cond)
             ctx.ast_builder.begin_frontend_if_true()

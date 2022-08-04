@@ -25,7 +25,7 @@ def test_literal_multi_args_error():
 
     with pytest.raises(
             ti.TaichiSyntaxError,
-            match="Type annotation can only be given to a single literal."):
+            match="A primitive type can only decorate a single expression."):
         multi_args_error()
 
 
@@ -37,20 +37,22 @@ def test_literal_keywords_error():
 
     with pytest.raises(
             ti.TaichiSyntaxError,
-            match="Type annotation can only be given to a single literal."):
+            match="A primitive type can only decorate a single expression."):
         keywords_error()
 
 
 @test_utils.test()
-def test_literal_expr_error():
+def test_literal_compound_error():
     @ti.kernel
     def expr_error():
-        a = 1
+        a = ti.Vector([1])
         b = ti.f16(a)
 
     with pytest.raises(
             ti.TaichiSyntaxError,
-            match="Type annotation can only be given to a single literal."):
+            match=
+            "A primitive type cannot decorate an expression with a compound type."
+    ):
         expr_error()
 
 

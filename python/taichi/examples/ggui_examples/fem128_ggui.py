@@ -172,7 +172,7 @@ def main():
         attractor_strength[None] = window.is_pressed(
             ti.ui.LMB) - window.is_pressed(ti.ui.RMB)
         for i in range(50):
-            with ti.Tape(loss=U):
+            with ti.ad.Tape(loss=U):
                 update_U()
             advance()
         render()

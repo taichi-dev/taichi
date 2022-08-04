@@ -1,12 +1,12 @@
 ---
-sidebar_position: 9
+sidebar_position: 6
 ---
 
-# Documentation writing guide
+# Markdown Syntax
 
 This section briefly introduces syntax that will help you write documentation on this website. Note that the documentation is written in an extended version of [Markdown](https://daringfireball.net/projects/markdown/syntax), so most of the time you don't need special syntax besides the basic Markdown syntax.
 
-## 1. Code blocks
+## Code blocks
 
 This website supports inserting code blocks with highlighted lines. For example, the following snippet:
 
@@ -40,7 +40,7 @@ def paint(t: float):
         pixels[i, j] = 1 - iterations * 0.02
 ```
 
-## 2. Tables
+## Tables
 
 ```md
 | Some Table Col 1 | Some Table Col 2 |
@@ -60,7 +60,7 @@ def paint(t: float):
 [Tables Generator](https://www.tablesgenerator.com/markdown_tables) is a great tool for generating and re-formatting Markdown tables.
 :::
 
-## 3. Cross-references
+## Cross-references
 
 To link to another section within the same article, you would use `[Return to ## 1. Code blocks](#1-code-blocks)`: [Return to ## 1. Code blocks](#1-code-blocks).
 
@@ -70,7 +70,7 @@ is docs-versioning and IDE/GitHub friendly:
 - `Return to [Contribution guidelines](./contributor_guide.md)`: Return to [Contribution guidelines](./contributor_guide.md)
 - `Return to [Getting Started](../get-started/index.md#fields)`: Return to [Getting Started](../get-started/index.md#fields)
 
-## 4. Centered text blocks
+## Centered text blocks
 
 To make a text or image block centered, use:
 
@@ -101,7 +101,7 @@ You **HAVE TO** insert blank lines to make them work:
 
 :::
 
-## 5. Text with color backgrounds
+## Text with color backgrounds
 
 You could use the following to highlight your text:
 
@@ -117,7 +117,7 @@ You could use the following to highlight your text:
 <span id="inline-yellow"> Text with a yellow background </span>,
 <span id="inline-green"> Text with a green background </span>
 
-## 6. Custom containers
+## Custom containers
 
 As you already saw in this guide several times, you could add custom containers:
 
@@ -171,10 +171,9 @@ This is a danger!
 This is a danger!
 :::
 
-## 7. Code groups
+## Code groups
 
 You could also insert tab-based code groups:
-
 ```md
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
@@ -192,6 +191,7 @@ import TabItem from '@theme/TabItem';
 </Tabs>
 ```
 
+````mdx-code-block
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
@@ -206,8 +206,7 @@ import TabItem from '@theme/TabItem';
   <TabItem value="orange">This is an orange 🍊.</TabItem>
   <TabItem value="banana">This is a banana 🍌.</TabItem>
 </Tabs>
-
-## 8. Footnotes
+## Footnotes
 
 To add footnotes, use:
 
@@ -229,17 +228,17 @@ This sentence[^1] has two footnotes[^2]. (See the footnotes at the bottom of thi
 
 ---
 
-## 9. Images
+## Images
 
 Inserting images is as straight-forward as using the ordinary Markdown syntax:
 
 ```md
-![kernel](./life_of_kernel_lowres.jpg)
+![kernel](../internals/life_of_kernel_lowres.jpg)
 ```
 
-![kernel](./life_of_kernel_lowres.jpg)
+![kernel](../internals/life_of_kernel_lowres.jpg)
 
-## 10. In-line Table of Contents (ToC)
+## In-line Table of Contents (ToC)
 
 You could use:
 
@@ -251,6 +250,8 @@ import TOCInline from '@theme/TOCInline';
 
 to insert an in-line ToC:
 
+````mdx-code-block
 import TOCInline from '@theme/TOCInline';
 
 <TOCInline toc={toc} />
+````

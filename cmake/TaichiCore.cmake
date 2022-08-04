@@ -8,7 +8,6 @@ option(TI_WITH_OPENGL "Build with the OpenGL backend" ON)
 option(TI_WITH_CC "Build with the C backend" ON)
 option(TI_WITH_VULKAN "Build with the Vulkan backend" OFF)
 option(TI_WITH_DX11 "Build with the DX11 backend" OFF)
-option(TI_EMSCRIPTENED "Build using emscripten" OFF)
 
 # Force symbols to be 'hidden' by default so nothing is exported from the Taichi
 # library including the third-party dependencies.
@@ -31,18 +30,6 @@ if(ANDROID)
     set(TI_WITH_OPENGL OFF)
     set(TI_WITH_CC OFF)
     set(TI_WITH_DX11 OFF)
-endif()
-
-if(TI_EMSCRIPTENED)
-    set(TI_WITH_LLVM OFF)
-    set(TI_WITH_METAL OFF)
-    set(TI_WITH_CUDA OFF)
-    set(TI_WITH_OPENGL OFF)
-    set(TI_WITH_CC OFF)
-    set(TI_WITH_DX11 OFF)
-
-    set(TI_WITH_VULKAN ON)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_EMSCRIPTENED")
 endif()
 
 if(UNIX AND NOT APPLE)
@@ -74,7 +61,7 @@ if (WIN32)
 endif()
 
 set(TI_WITH_GGUI OFF)
-if(TI_WITH_VULKAN AND NOT TI_EMSCRIPTENED)
+if(TI_WITH_VULKAN)
     set(TI_WITH_GGUI ON)
 endif()
 
@@ -89,8 +76,6 @@ if(NOT TI_WITH_LLVM)
     set(TI_WITH_CUDA_TOOLKIT OFF)
 endif()
 
-
-## TODO 4832: Split source per target, do not include everything in taichi_core_source
 file(GLOB TAICHI_CORE_SOURCE
     "taichi/analysis/*.cpp" "taichi/analysis/*.h" #IR
     "taichi/aot/*.cpp" "taichi/aot/*.h" #RT?
@@ -165,11 +150,11 @@ endif()
 # library into a shared lib.
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-# The short-term goal is to have a sub-library, "taichi_isolated_core", that is
+# The short-term goal is to have a sub-library, "taichi_core", that is
 # mostly Taichi-focused, free from the "application" layer such as pybind11 or
 # GUI. At a minimum, we must decouple from pybind11/python-environment. Then we
 # can 1) unit test a major part of Taichi, and 2) integrate a new frontend lang
-# with "taichi_isolated_core".
+# with "taichi_core".
 #
 # TODO(#2198): Long-term speaking, we should create a separate library for each
 # sub-module. This way we can guarantee that the lib dependencies form a DAG.
@@ -188,18 +173,7 @@ if (TAICHI_EMBIND_SOURCE)
 endif()
 
 
-# TODO(#2196): Rename these CMAKE variables:
-# CORE_LIBRARY_NAME --> TAICHI_ISOLATED_CORE_LIB_NAME
-# CORE_WITH_PYBIND_LIBRARY_NAME --> TAICHI_CORE_LIB_NAME
-#
-# However, the better strategy is probably to rename the actual library:
-#
-# taichi_core --> taichi_pylib (this requires python-side refactoring...)
-# taichi_isolated_core --> taichi_core
-#
-# But this requires more efforts, because taichi_core is already referenced
-# everywhere in python.
-set(CORE_LIBRARY_NAME taichi_isolated_core)
+set(CORE_LIBRARY_NAME taichi_core)
 add_library(${CORE_LIBRARY_NAME} OBJECT ${TAICHI_CORE_SOURCE})
 
 if (APPLE)
@@ -225,7 +199,7 @@ target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/FP16/include)
 set(LIBRARY_NAME ${CORE_LIBRARY_NAME})
 
 # GLFW not available on Android
-if (TI_WITH_OPENGL OR TI_WITH_VULKAN AND NOT ANDROID AND NOT TI_EMSCRIPTENED)
+if (TI_WITH_OPENGL OR TI_WITH_VULKAN AND NOT ANDROID)
   set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
   set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
   set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
@@ -324,6 +298,13 @@ if(TI_WITH_LLVM)
 
     add_subdirectory(taichi/runtime/wasm)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE wasm_runtime)
+
+    if (LINUX)
+        # Remove symbols from llvm static libs
+        foreach(LETTER ${llvm_libs})
+            target_link_options(${CORE_LIBRARY_NAME} PUBLIC -Wl,--exclude-libs=lib${LETTER}.a)
+        endforeach()
+    endif()
 endif()
 
 
@@ -331,19 +312,10 @@ add_subdirectory(taichi/util)
 target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE taichi_util)
 
 if (TI_WITH_CUDA_TOOLKIT)
-    if("$ENV{CUDA_TOOLKIT_ROOT_DIR}" STREQUAL "")
-        message(FATAL_ERROR "TI_WITH_CUDA_TOOLKIT is ON but CUDA_TOOLKIT_ROOT_DIR not found")
-    else()
-        message(STATUS "TI_WITH_CUDA_TOOLKIT = ON")
-        message(STATUS "CUDA_TOOLKIT_ROOT_DIR=$ENV{CUDA_TOOLKIT_ROOT_DIR}")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_CUDA_TOOLKIT")
-        target_include_directories(${CORE_LIBRARY_NAME} PRIVATE $ENV{CUDA_TOOLKIT_ROOT_DIR}/include)
-        target_link_directories(${CORE_LIBRARY_NAME} PRIVATE $ENV{CUDA_TOOLKIT_ROOT_DIR}/lib64)
-        #libraries for cuda kernel profiler CuptiToolkit
-        target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE cupti nvperf_host)
-    endif()
-else()
-    message(STATUS "TI_WITH_CUDA_TOOLKIT = OFF")
+    find_package(CUDAToolkit REQUIRED)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_CUDA_TOOLKIT")
+    target_include_directories(${CORE_LIBRARY_NAME} PUBLIC ${CUDAToolkit_INCLUDE_DIRS})
+    target_link_libraries(${CORE_LIBRARY_NAME} PUBLIC CUDA::cupti)
 endif()
 
 if (TI_WITH_METAL)
@@ -468,8 +440,8 @@ endforeach ()
 
 message("PYTHON_LIBRARIES: " ${PYTHON_LIBRARIES})
 
-if(TI_WITH_PYTHON AND NOT TI_EMSCRIPTENED)
-    set(CORE_WITH_PYBIND_LIBRARY_NAME taichi_core)
+if(TI_WITH_PYTHON)
+    set(CORE_WITH_PYBIND_LIBRARY_NAME taichi_python)
     # Cannot compile Python source code with Android, but TI_EXPORT_CORE should be set and
     # Android should only use the isolated library ignoring those source code.
     if (NOT ANDROID)
@@ -524,16 +496,6 @@ if(TI_WITH_PYTHON AND NOT TI_EMSCRIPTENED)
     install(TARGETS ${CORE_WITH_PYBIND_LIBRARY_NAME}
             RUNTIME DESTINATION ${INSTALL_LIB_DIR}/core
             LIBRARY DESTINATION ${INSTALL_LIB_DIR}/core)
-endif()
-
-if(TI_EMSCRIPTENED)
-    set(CORE_WITH_EMBIND_LIBRARY_NAME taichi)
-    add_executable(${CORE_WITH_EMBIND_LIBRARY_NAME} ${TAICHI_EMBIND_SOURCE})
-    target_link_libraries(${CORE_WITH_EMBIND_LIBRARY_NAME} PRIVATE ${CORE_LIBRARY_NAME})
-    target_compile_options(${CORE_WITH_EMBIND_LIBRARY_NAME} PRIVATE "-Oz")
-    # target_compile_options(${CORE_LIBRARY_NAME} PRIVATE "-Oz")
-    set_target_properties(${CORE_LIBRARY_NAME} PROPERTIES LINK_FLAGS "-s ERROR_ON_UNDEFINED_SYMBOLS=0 -s ASSERTIONS=1")
-    set_target_properties(${CORE_WITH_EMBIND_LIBRARY_NAME} PROPERTIES LINK_FLAGS "--bind -s MODULARIZE=1 -s EXPORT_NAME=createTaichiModule -s WASM=0  --memory-init-file 0 -Oz --closure 1 -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s ASSERTIONS=1 -s NO_DISABLE_EXCEPTION_CATCHING")
 endif()
 
 if(TI_WITH_GGUI)

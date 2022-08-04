@@ -9,19 +9,13 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
-#include <cstring>
 #include <iostream>
-#include <cstdlib>
-#include <cstdio>
-#include <cstddef>
-#include <cstdint>
-#include <utility>
 #include <type_traits>
 #include <cstdint>
 #include <algorithm>
-#include <memory>
-#include <csignal>
 #include <vector>
+#include <string>
+#include <functional>
 
 //******************************************************************************
 //                                 System State
@@ -35,7 +29,7 @@
 
 // Avoid dependency on glibc 2.27
 #if defined(TI_PLATFORM_LINUX) && defined(TI_ARCH_x64)
-// objdump -T libtaichi_core.so| grep  GLIBC_2.27
+// objdump -T libtaichi_python.so| grep  GLIBC_2.27
 __asm__(".symver logf,logf@GLIBC_2.2.5");
 __asm__(".symver powf,powf@GLIBC_2.2.5");
 __asm__(".symver expf,expf@GLIBC_2.2.5");

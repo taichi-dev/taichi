@@ -36,7 +36,6 @@ struct CompileConfig {
   bool timeline{false};
   bool verbose;
   bool fast_math;
-  bool async_mode;
   bool dynamic_index;
   bool flatten_if;
   bool make_thread_local;
@@ -47,6 +46,7 @@ struct CompileConfig {
   bool real_matrix;
   DataType default_fp;
   DataType default_ip;
+  DataType default_up;
   std::string extra_flags;
   int default_cpu_block_dim;
   bool cpu_block_dim_adaptive;
@@ -80,20 +80,6 @@ struct CompileConfig {
   bool allow_nv_shader_extension{true};
   bool use_gles{false};
 
-  // Async options
-  int async_opt_passes{3};
-  bool async_opt_fusion{true};
-  int async_opt_fusion_max_iter{0};  // 0 means unlimited
-  bool async_opt_listgen{true};
-  bool async_opt_activation_demotion{true};
-  bool async_opt_dse{true};
-  bool async_listgen_fast_filtering{true};
-  std::string async_opt_intermediate_file;
-  // Setting 0 effectively means do not automatically flush
-  int async_flush_every{50};
-  // Setting 0 effectively means unlimited
-  int async_max_fuse_per_task{1};
-
   bool quant_opt_store_fusion{true};
   bool quant_opt_atomic_demotion{true};
 
@@ -109,14 +95,16 @@ struct CompileConfig {
   int auto_mesh_local_default_occupacy{4};
 
   // Offline cache options
-  bool offline_cache{false};
+  bool offline_cache{true};
   std::string offline_cache_file_path{get_repo_dir() + "ticache"};
   std::string offline_cache_cleaning_policy{
-      "never"};  // "never"|"version"|"lru"|"fifo"
-  int offline_cache_max_size_of_files{1024 * 1024};  // bytes
-  double offline_cache_cleaning_factor{0.25};        // [0.f, 1.f]
+      "lru"};  // "never"|"version"|"lru"|"fifo"
+  int offline_cache_max_size_of_files{100 * 1024 *
+                                      1024};   // bytes, default: 100MB
+  double offline_cache_cleaning_factor{0.25};  // [0.f, 1.f]
 
   int num_compile_threads{0};
+  std::string vk_api_version;
 
   CompileConfig();
 };

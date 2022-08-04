@@ -46,7 +46,13 @@ void SetImage::update_data(const SetImageInfo &info) {
   // [0; 255]
   //
   // @TODO: Make the number of channel configurable?
-  texture_dtype_ = img.dtype;
+  TI_ASSERT(img.dtype == taichi::lang::PrimitiveType::f32 ||
+            img.dtype == taichi::lang::PrimitiveType::u32);
+  if (img.dtype == taichi::lang::PrimitiveType::u32) {
+    texture_dtype_ = taichi::lang::PrimitiveType::u8;
+  } else {
+    texture_dtype_ = img.dtype;
+  }
 
   int new_width = get_correct_dimension(img.shape[0]);
   int new_height = get_correct_dimension(img.shape[1]);

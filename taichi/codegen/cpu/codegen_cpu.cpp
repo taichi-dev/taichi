@@ -15,12 +15,12 @@ TLANG_NAMESPACE_BEGIN
 
 namespace {
 
-class CodeGenLLVMCPU : public CodeGenLLVM {
+class TaskCodeGenCPU : public TaskCodeGenLLVM {
  public:
   using IRVisitor::visit;
 
-  CodeGenLLVMCPU(Kernel *kernel, IRNode *ir)
-      : CodeGenLLVM(kernel, ir, nullptr) {
+  TaskCodeGenCPU(Kernel *kernel, IRNode *ir)
+      : TaskCodeGenLLVM(kernel, ir, nullptr) {
     TI_AUTO_PROF
   }
 
@@ -212,9 +212,9 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
 
   void visit(ExternalFuncCallStmt *stmt) override {
     if (stmt->type == ExternalFuncCallStmt::BITCODE) {
-      CodeGenLLVM::visit_call_bitcode(stmt);
+      TaskCodeGenLLVM::visit_call_bitcode(stmt);
     } else if (stmt->type == ExternalFuncCallStmt::SHARED_OBJECT) {
-      CodeGenLLVM::visit_call_shared_object(stmt);
+      TaskCodeGenLLVM::visit_call_shared_object(stmt);
     } else {
       TI_NOT_IMPLEMENTED
     }
@@ -225,9 +225,10 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
 
 #ifdef TI_WITH_LLVM
 // static
-std::unique_ptr<CodeGenLLVM> CodeGenCPU::make_codegen_llvm(Kernel *kernel,
-                                                           IRNode *ir) {
-  return std::make_unique<CodeGenLLVMCPU>(kernel, ir);
+std::unique_ptr<TaskCodeGenLLVM> KernelCodeGenCPU::make_codegen_llvm(
+    Kernel *kernel,
+    IRNode *ir) {
+  return std::make_unique<TaskCodeGenCPU>(kernel, ir);
 }
 
 FunctionType CPUModuleToFunctionConverter::convert(
@@ -274,25 +275,30 @@ FunctionType CPUModuleToFunctionConverter::convert(
   };
 }
 
-LLVMCompiledData CodeGenCPU::modulegen(std::unique_ptr<llvm::Module> &&module,
-                                       OffloadedStmt *stmt) {
-  CodeGenLLVMCPU gen(kernel, stmt);
+LLVMCompiledData KernelCodeGenCPU::modulegen(
+    std::unique_ptr<llvm::Module> &&module,
+    OffloadedStmt *stmt) {
+  TaskCodeGenCPU gen(kernel, stmt);
   return gen.run_compilation();
 }
 #endif  // TI_WITH_LLVM
 
-FunctionType CodeGenCPU::codegen() {
+FunctionType KernelCodeGenCPU::codegen() {
   TI_AUTO_PROF;
+  // TODO(PGZXB): move the offline cache part to the base class
   auto *llvm_prog = get_llvm_program(prog);
   auto *tlctx = llvm_prog->get_llvm_context(kernel->arch);
   auto &config = prog->config;
   std::string kernel_key = get_hashed_offline_cache_key(&config, kernel);
   kernel->set_kernel_key_for_cache(kernel_key);
-  if (config.offline_cache && !config.async_mode &&
-      this->supports_offline_cache() && !kernel->is_evaluator) {
+  if (config.offline_cache && this->supports_offline_cache() &&
+      !kernel->is_evaluator) {
     std::vector<LLVMCompiledData> res;
     const bool ok = maybe_read_compilation_from_cache(kernel_key, res);
     if (ok) {
+      TI_DEBUG("Create kernel '{}' from cache (key='{}')", kernel->get_name(),
+               kernel_key);
+      cache_module(kernel_key, res);
       CPUModuleToFunctionConverter converter(
           tlctx, get_llvm_program(prog)->get_runtime_executor());
       return converter.convert(kernel, std::move(res));
@@ -330,6 +336,7 @@ FunctionType CodeGenCPU::codegen() {
   }
 
   if (!kernel->is_evaluator) {
+    TI_DEBUG("Cache kernel '{}' (key='{}')", kernel->get_name(), kernel_key);
     cache_module(kernel_key, data);
   }
 

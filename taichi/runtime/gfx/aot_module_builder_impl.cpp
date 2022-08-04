@@ -91,6 +91,11 @@ class AotDataConverter {
              buffer_bind.binding});
       }
     }
+
+    for (auto &texture_bind : in.texture_binds) {
+      res.texture_binds.push_back(
+          {texture_bind.arg_id, texture_bind.binding, texture_bind.is_storage});
+    }
     return res;
   }
 };

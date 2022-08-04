@@ -18,7 +18,6 @@
 #include "taichi/ir/statements.h"
 #include "taichi/program/graph_builder.h"
 #include "taichi/program/extension.h"
-#include "taichi/program/async_engine.h"
 #include "taichi/program/ndarray.h"
 #include "taichi/python/export.h"
 #include "taichi/math/svd.h"
@@ -43,10 +42,6 @@ bool test_threading();
 TI_NAMESPACE_END
 
 TLANG_NAMESPACE_BEGIN
-void async_print_sfg();
-
-std::string async_dump_dot(std::optional<std::string> rankdir,
-                           int embed_states_threshold);
 
 Expr expr_index(const Expr &expr, const Expr &index) {
   return expr[index];
@@ -180,6 +175,7 @@ void export_lang(py::module &m) {
       .def_readwrite("timeline", &CompileConfig::timeline)
       .def_readwrite("default_fp", &CompileConfig::default_fp)
       .def_readwrite("default_ip", &CompileConfig::default_ip)
+      .def_readwrite("default_up", &CompileConfig::default_up)
       .def_readwrite("device_memory_GB", &CompileConfig::device_memory_GB)
       .def_readwrite("device_memory_fraction",
                      &CompileConfig::device_memory_fraction)
@@ -187,7 +183,6 @@ void export_lang(py::module &m) {
       .def_readwrite("advanced_optimization",
                      &CompileConfig::advanced_optimization)
       .def_readwrite("ad_stack_size", &CompileConfig::ad_stack_size)
-      .def_readwrite("async_mode", &CompileConfig::async_mode)
       .def_readwrite("dynamic_index", &CompileConfig::dynamic_index)
       .def_readwrite("flatten_if", &CompileConfig::flatten_if)
       .def_readwrite("make_thread_local", &CompileConfig::make_thread_local)
@@ -199,21 +194,6 @@ void export_lang(py::module &m) {
       .def_readwrite("real_matrix", &CompileConfig::real_matrix)
       .def_readwrite("cc_compile_cmd", &CompileConfig::cc_compile_cmd)
       .def_readwrite("cc_link_cmd", &CompileConfig::cc_link_cmd)
-      .def_readwrite("async_opt_passes", &CompileConfig::async_opt_passes)
-      .def_readwrite("async_opt_fusion", &CompileConfig::async_opt_fusion)
-      .def_readwrite("async_opt_fusion_max_iter",
-                     &CompileConfig::async_opt_fusion_max_iter)
-      .def_readwrite("async_opt_listgen", &CompileConfig::async_opt_listgen)
-      .def_readwrite("async_opt_activation_demotion",
-                     &CompileConfig::async_opt_activation_demotion)
-      .def_readwrite("async_opt_dse", &CompileConfig::async_opt_dse)
-      .def_readwrite("async_listgen_fast_filtering",
-                     &CompileConfig::async_listgen_fast_filtering)
-      .def_readwrite("async_opt_intermediate_file",
-                     &CompileConfig::async_opt_intermediate_file)
-      .def_readwrite("async_flush_every", &CompileConfig::async_flush_every)
-      .def_readwrite("async_max_fuse_per_task",
-                     &CompileConfig::async_max_fuse_per_task)
       .def_readwrite("quant_opt_store_fusion",
                      &CompileConfig::quant_opt_store_fusion)
       .def_readwrite("quant_opt_atomic_demotion",
@@ -246,8 +226,8 @@ void export_lang(py::module &m) {
                      &CompileConfig::offline_cache_max_size_of_files)
       .def_readwrite("offline_cache_cleaning_factor",
                      &CompileConfig::offline_cache_cleaning_factor)
-      .def_readwrite("num_compile_threads",
-                     &CompileConfig::num_compile_threads);
+      .def_readwrite("num_compile_threads", &CompileConfig::num_compile_threads)
+      .def_readwrite("vk_api_version", &CompileConfig::vk_api_version);
 
   m.def("reset_default_compile_config",
         [&]() { default_compile_config = CompileConfig(); });
@@ -306,6 +286,7 @@ void export_lang(py::module &m) {
       .def("expr_alloca_matrix", &ASTBuilder::expr_alloca_local_matrix)
       .def("expr_indexed_matrix", &ASTBuilder::expr_indexed_matrix)
       .def("expr_alloca_local_tensor", &ASTBuilder::expr_alloca_local_tensor)
+      .def("expr_alloca_shared_array", &ASTBuilder::expr_alloca_shared_array)
       .def("create_assert_stmt", &ASTBuilder::create_assert_stmt)
       .def("expr_assign", &ASTBuilder::expr_assign)
       .def("begin_frontend_range_for", &ASTBuilder::begin_frontend_range_for)
@@ -335,6 +316,10 @@ void export_lang(py::module &m) {
       .def_readonly("config", &Program::config)
       .def("sync_kernel_profiler",
            [](Program *program) { program->profiler->sync(); })
+      .def("update_kernel_profiler",
+           [](Program *program) { program->profiler->update(); })
+      .def("clear_kernel_profiler",
+           [](Program *program) { program->profiler->clear(); })
       .def("query_kernel_profile_info",
            [](Program *program, const std::string &name) {
              return program->query_kernel_profile_info(name);
@@ -346,6 +331,12 @@ void export_lang(py::module &m) {
       .def(
           "get_kernel_profiler_device_name",
           [](Program *program) { return program->profiler->get_device_name(); })
+      .def("get_compute_stream_device_time_elapsed_us",
+           [](Program *program) {
+             return program->get_compute_device()
+                 ->get_compute_stream()
+                 ->device_time_elapsed_us();
+           })
       .def("reinit_kernel_profiler_with_metrics",
            [](Program *program, const std::vector<std::string> metrics) {
              return program->profiler->reinit_with_metrics(metrics);
@@ -356,7 +347,6 @@ void export_lang(py::module &m) {
            [](Program *program, const std::string toolkit_name) {
              return program->profiler->set_profiler_toolkit(toolkit_name);
            })
-      .def("clear_kernel_profile_info", &Program::clear_kernel_profile_info)
       .def("timeline_clear",
            [](Program *) { Timelines::get_instance().clear(); })
       .def("timeline_save",
@@ -369,12 +359,7 @@ void export_lang(py::module &m) {
       .def("visualize_layout", &Program::visualize_layout)
       .def("get_snode_num_dynamically_allocated",
            &Program::get_snode_num_dynamically_allocated)
-      .def("benchmark_rebuild_graph",
-           [](Program *program) {
-             program->async_engine->sfg->benchmark_rebuild_graph();
-           })
       .def("synchronize", &Program::synchronize)
-      .def("async_flush", &Program::async_flush)
       .def("materialize_runtime", &Program::materialize_runtime)
       .def("make_aot_module_builder", &Program::make_aot_module_builder)
       .def("get_snode_tree_size", &Program::get_snode_tree_size)
@@ -413,16 +398,6 @@ void export_lang(py::module &m) {
                          "SparseMatrix only supports CPU for now.");
              return make_sparse_matrix_from_ndarray(program, sm, ndarray);
            })
-      .def(
-          "dump_dot",
-          [](Program *program, std::optional<std::string> rankdir,
-             int embed_states_threshold) {
-            // https://pybind11.readthedocs.io/en/stable/advanced/functions.html#allow-prohibiting-none-arguments
-            return program->async_engine->sfg->dump_dot(rankdir,
-                                                        embed_states_threshold);
-          },
-          py::arg("rankdir").none(true),
-          py::arg("embed_states_threshold"))  // FIXME:
       .def("no_activate",
            [](Program *program, SNode *snode) {
              // TODO(#2193): Also apply to @ti.func?
@@ -430,8 +405,6 @@ void export_lang(py::module &m) {
              TI_ASSERT(kernel);
              kernel->no_activate.push_back(snode);
            })
-      .def("print_sfg",
-           [](Program *program) { return program->async_engine->sfg->print(); })
       .def("decl_arg",
            [&](Program *program, const DataType &dt, bool is_array) {
              return program->current_callable->insert_arg(dt, is_array);
@@ -559,9 +532,7 @@ void export_lang(py::module &m) {
            [](SNode *snode) { return snode->num_active_indices; })
       .def_readonly("cell_size_bytes", &SNode::cell_size_bytes)
       .def_readonly("offset_bytes_in_parent_cell",
-                    &SNode::offset_bytes_in_parent_cell)
-      .def("begin_shared_exp_placement", &SNode::begin_shared_exp_placement)
-      .def("end_shared_exp_placement", &SNode::end_shared_exp_placement);
+                    &SNode::offset_bytes_in_parent_cell);
 
   py::class_<SNodeTree>(m, "SNodeTree")
       .def("id", &SNodeTree::id)
@@ -594,6 +565,8 @@ void export_lang(py::module &m) {
       // Using this MATRIX as Scalar alias, we can move to native matrix type
       // when supported
       .value("MATRIX", aot::ArgKind::kMatrix)
+      .value("TEXTURE", aot::ArgKind::kTexture)
+      .value("RWTEXTURE", aot::ArgKind::kRWTexture)
       .export_values();
 
   py::class_<aot::Arg>(m, "Arg")
@@ -601,10 +574,17 @@ void export_lang(py::module &m) {
                     std::vector<int>>(),
            py::arg("tag"), py::arg("name"), py::arg("dtype"),
            py::arg("field_dim"), py::arg("element_shape"))
+      .def(py::init<aot::ArgKind, std::string, DataType &, size_t,
+                    std::vector<int>>(),
+           py::arg("tag"), py::arg("name"), py::arg("channel_format"),
+           py::arg("num_channels"), py::arg("shape"))
       .def_readonly("name", &aot::Arg::name)
       .def_readonly("element_shape", &aot::Arg::element_shape)
+      .def_readonly("texture_shape", &aot::Arg::element_shape)
       .def_readonly("field_dim", &aot::Arg::field_dim)
-      .def("dtype", &aot::Arg::dtype);
+      .def_readonly("num_channels", &aot::Arg::num_channels)
+      .def("dtype", &aot::Arg::dtype)
+      .def("channel_format", &aot::Arg::dtype);
 
   py::class_<Node>(m, "Node");
 
@@ -631,6 +611,12 @@ void export_lang(py::module &m) {
             auto &val = it.second.cast<Ndarray &>();
             args.insert(
                 {py::cast<std::string>(it.first), aot::IValue::create(val)});
+          } else if (tag == aot::ArgKind::kTexture ||
+                     tag == aot::ArgKind::kRWTexture) {
+            auto &val = it.second.cast<Texture &>();
+            args.insert(
+                {py::cast<std::string>(it.first), aot::IValue::create(val)});
+
           } else if (tag == aot::ArgKind::kScalar ||
                      tag == aot::ArgKind::kMatrix) {
             std::string arg_name = py::cast<std::string>(it.first);
@@ -690,8 +676,6 @@ void export_lang(py::module &m) {
   py::class_<Kernel::LaunchContextBuilder>(m, "KernelLaunchContext")
       .def("set_arg_int", &Kernel::LaunchContextBuilder::set_arg_int)
       .def("set_arg_float", &Kernel::LaunchContextBuilder::set_arg_float)
-      .def("set_arg_external_array",
-           &Kernel::LaunchContextBuilder::set_arg_external_array)
       .def("set_arg_external_array_with_shape",
            &Kernel::LaunchContextBuilder::set_arg_external_array_with_shape)
       .def("set_arg_ndarray", &Kernel::LaunchContextBuilder::set_arg_ndarray)
@@ -734,6 +718,12 @@ void export_lang(py::module &m) {
       .def("set_adjoint", &Expr::set_adjoint)
       .def("set_dual", &Expr::set_dual)
       .def("set_attribute", &Expr::set_attribute)
+      .def(
+          "get_dt",
+          [&](Expr *expr) -> const Type * {
+            return expr->cast<GlobalVariableExpression>()->dt;
+          },
+          py::return_value_policy::reference)
       .def("get_ret_type", &Expr::get_ret_type)
       .def("type_check", &Expr::type_check)
       .def("get_expr_name",
@@ -1097,6 +1087,17 @@ void export_lang(py::module &m) {
 
   m.def("get_type_factory_instance", TypeFactory::get_instance,
         py::return_value_policy::reference);
+
+  py::class_<BitStructType>(m, "BitStructType");
+  py::class_<BitStructTypeBuilder>(m, "BitStructTypeBuilder")
+      .def(py::init<int>())
+      .def("begin_placing_shared_exponent",
+           &BitStructTypeBuilder::begin_placing_shared_exponent)
+      .def("end_placing_shared_exponent",
+           &BitStructTypeBuilder::end_placing_shared_exponent)
+      .def("add_member", &BitStructTypeBuilder::add_member)
+      .def("build", &BitStructTypeBuilder::build,
+           py::return_value_policy::reference);
 
   m.def("decl_tensor_type",
         [&](std::vector<int> shape, const DataType &element_type) {

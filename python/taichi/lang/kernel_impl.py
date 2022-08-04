@@ -335,6 +335,10 @@ class TaichiCallableTemplateMapper:
                 return tuple(
                     TaichiCallableTemplateMapper.extract_arg(item, anno)
                     for item in arg)
+            if isinstance(arg, taichi.lang._ndarray.Ndarray):
+                raise TaichiRuntimeTypeError(
+                    'Ndarray shouldn\'t be passed in via `ti.template()`, please annotate your kernel using `ti.types.ndarray(...)` instead'
+                )
             return arg
         if isinstance(anno, texture_type.TextureType):
             return '#'
@@ -776,8 +780,7 @@ class Kernel:
             ret_dt = self.return_type
             has_ret = ret_dt is not None
 
-            if has_ret or (impl.current_cfg().async_mode
-                           and has_external_arrays):
+            if has_ret:
                 runtime_ops.sync()
 
             if has_ret:

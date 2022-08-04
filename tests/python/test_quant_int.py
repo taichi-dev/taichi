@@ -7,7 +7,9 @@ def test_quant_int_implicit_cast():
     qi13 = ti.types.quant.int(13, True)
     x = ti.field(dtype=qi13)
 
-    ti.root.bit_struct(num_bits=32).place(x)
+    bitpack = ti.BitpackedFields(max_num_bits=32)
+    bitpack.place(x)
+    ti.root.place(bitpack)
 
     @ti.kernel
     def foo():

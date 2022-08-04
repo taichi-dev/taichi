@@ -72,11 +72,27 @@ class StructCompiler {
       sn_desc.cell_stride = data_type_size(sn->dt);
       sn_desc.container_stride = sn_desc.cell_stride;
     } else {
-      std::size_t cell_stride = 0;
+      // Sort by size, so that smaller subfields are placed first.
+      // This accelerates Nvidia's GLSL compiler, as the compiler tries to
+      // place all statically accessed fields
+      std::vector<std::pair<size_t, int>> element_strides;
+      int i = 0;
       for (auto &ch : sn->ch) {
+        element_strides.push_back({compute_snode_size(ch.get()), i});
+        i += 1;
+      }
+      std::sort(
+          element_strides.begin(), element_strides.end(),
+          [](const std::pair<size_t, int> &a, const std::pair<size_t, int> &b) {
+            return a.first < b.first;
+          });
+
+      std::size_t cell_stride = 0;
+      for (auto &[snode_size, i] : element_strides) {
+        auto &ch = sn->ch[i];
         auto child_offset = cell_stride;
         auto *ch_snode = ch.get();
-        cell_stride += compute_snode_size(ch_snode);
+        cell_stride += snode_size;
         snode_descriptors_.find(ch_snode->id)
             ->second.mem_offset_in_parent_cell = child_offset;
       }

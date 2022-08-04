@@ -23,8 +23,12 @@ taichi::lang::DeviceAllocation Runtime::allocate_memory(
   return devalloc;
 }
 
+void Runtime::deallocate_memory(TiMemory devmem) {
+  this->get().dealloc_memory(devmem2devalloc(*this, devmem));
+}
+
 AotModule::AotModule(Runtime &runtime,
-                     std::unique_ptr<taichi::lang::aot::Module> &&aot_module)
+                     std::unique_ptr<taichi::lang::aot::Module> aot_module)
     : runtime_(&runtime), aot_module_(std::move(aot_module)) {
 }
 
@@ -46,28 +50,44 @@ Runtime &AotModule::runtime() {
   return *runtime_;
 }
 
+Event::Event(Runtime &runtime, std::unique_ptr<taichi::lang::DeviceEvent> event)
+    : runtime_(&runtime), event_(std::move(event)) {
+}
+
+taichi::lang::DeviceEvent &Event::get() {
+  return *event_;
+}
+Runtime &Event::runtime() {
+  return *runtime_;
+}
+
 // -----------------------------------------------------------------------------
 
 TiRuntime ti_create_runtime(TiArch arch) {
   switch (arch) {
 #ifdef TI_WITH_VULKAN
-    case TI_ARCH_VULKAN:
+    case TI_ARCH_VULKAN: {
       return (TiRuntime)(static_cast<Runtime *>(new VulkanRuntimeOwned));
+    }
 #endif  // TI_WITH_VULKAN
 #ifdef TI_WITH_LLVM
-    case TI_ARCH_X64:
+    case TI_ARCH_X64: {
       return (TiRuntime)(static_cast<Runtime *>(
           new capi::LlvmRuntime(taichi::Arch::x64)));
-    case TI_ARCH_ARM64:
+    }
+    case TI_ARCH_ARM64: {
       return (TiRuntime)(static_cast<Runtime *>(
           new capi::LlvmRuntime(taichi::Arch::arm64)));
-    case TI_ARCH_CUDA:
+    }
+    case TI_ARCH_CUDA: {
       return (TiRuntime)(static_cast<Runtime *>(
           new capi::LlvmRuntime(taichi::Arch::cuda)));
+    }
 #endif  // TI_WITH_LLVM
-    default:
+    default: {
       TI_WARN("ignored attempt to create runtime on unknown arch");
       return TI_NULL_HANDLE;
+    }
   }
   return TI_NULL_HANDLE;
 }
@@ -123,7 +143,7 @@ void ti_free_memory(TiRuntime runtime, TiMemory devmem) {
   }
 
   Runtime *runtime2 = (Runtime *)runtime;
-  runtime2->get().dealloc_memory(devmem2devalloc(*runtime2, devmem));
+  runtime2->deallocate_memory(devmem);
 }
 
 void *ti_map_memory(TiRuntime runtime, TiMemory devmem) {
@@ -149,6 +169,22 @@ void ti_unmap_memory(TiRuntime runtime, TiMemory devmem) {
   }
   Runtime *runtime2 = (Runtime *)runtime;
   runtime2->get().unmap(devmem2devalloc(*runtime2, devmem));
+}
+
+TiEvent ti_create_event(TiRuntime runtime) {
+  Runtime *runtime2 = (Runtime *)runtime;
+  std::unique_ptr<taichi::lang::DeviceEvent> event =
+      runtime2->get().create_event();
+  Event *event2 = new Event(*runtime2, std::move(event));
+  return (TiEvent)event2;
+}
+void ti_destroy_event(TiEvent event) {
+  if (event == nullptr) {
+    TI_WARN("ignored attempt to destroy event of null handle");
+    return;
+  }
+
+  delete (Event *)event;
 }
 
 void ti_copy_memory_device_to_device(TiRuntime runtime,
@@ -198,6 +234,7 @@ void ti_destroy_aot_module(TiAotModule mod) {
 
   delete (AotModule *)mod;
 }
+
 TiKernel ti_get_aot_module_kernel(TiAotModule mod, const char *name) {
   if (mod == nullptr) {
     TI_WARN("ignored attempt to get kernel from aot module of null handle");
@@ -205,6 +242,7 @@ TiKernel ti_get_aot_module_kernel(TiAotModule mod, const char *name) {
   }
   return (TiKernel)((AotModule *)mod)->get().get_kernel(name);
 }
+
 TiComputeGraph ti_get_aot_module_compute_graph(TiAotModule mod,
                                                const char *name) {
   if (mod == nullptr) {
@@ -261,26 +299,7 @@ void ti_launch_kernel(TiRuntime runtime,
         std::vector<int> shape(ndarray.shape.dims,
                                ndarray.shape.dims + ndarray.shape.dim_count);
 
-        size_t total_array_size = 1;
-        for (const auto &val : shape) {
-          total_array_size *= val;
-        }
-
-        if (ndarray.elem_shape.dim_count != 0) {
-          std::vector<int> elem_shape(
-              ndarray.elem_shape.dims,
-              ndarray.elem_shape.dims + ndarray.elem_shape.dim_count);
-
-          for (const auto &val : elem_shape) {
-            total_array_size *= val;
-          }
-
-          runtime_context.set_arg_devalloc(i, *devalloc, shape, elem_shape);
-          runtime_context.set_array_runtime_size(i, total_array_size);
-        } else {
-          runtime_context.set_arg_devalloc(i, *devalloc, shape);
-          runtime_context.set_array_runtime_size(i, total_array_size);
-        }
+        runtime_context.set_arg_ndarray(i, (intptr_t)devalloc.get(), shape);
 
         devallocs.emplace_back(std::move(devalloc));
         break;
@@ -398,6 +417,19 @@ void ti_launch_compute_graph(TiRuntime runtime,
   }
   ((taichi::lang::aot::CompiledGraph *)compute_graph)->run(arg_map);
 }
+
+void ti_signal_event(TiRuntime runtime, TiEvent event) {
+  ((Runtime *)runtime)->signal_event(&((Event *)event)->get());
+}
+
+void ti_reset_event(TiRuntime runtime, TiEvent event) {
+  ((Runtime *)runtime)->reset_event(&((Event *)event)->get());
+}
+
+void ti_wait_event(TiRuntime runtime, TiEvent event) {
+  ((Runtime *)runtime)->wait_event(&((Event *)event)->get());
+}
+
 void ti_submit(TiRuntime runtime) {
   if (runtime == nullptr) {
     TI_WARN("ignored attempt to submit to runtime of null handle");

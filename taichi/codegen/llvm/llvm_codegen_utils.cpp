@@ -56,23 +56,17 @@ bool is_same_type(llvm::Type *required, llvm::Type *provided) {
   return req_name.substr(0, min_len) == prov_name.substr(0, min_len);
 }
 
-void check_func_call_signature(llvm::Value *func,
+void check_func_call_signature(llvm::FunctionType *func_type,
+                               llvm::StringRef func_name,
                                std::vector<llvm::Value *> &arglist,
                                llvm::IRBuilder<> *builder) {
-  llvm::FunctionType *func_type = nullptr;
-  if (llvm::Function *fn = llvm::dyn_cast<llvm::Function>(func)) {
-    func_type = fn->getFunctionType();
-  } else if (auto *call = llvm::dyn_cast<llvm::CallInst>(func)) {
-    func_type = llvm::cast_or_null<llvm::FunctionType>(
-        func->getType()->getPointerElementType());
-  }
   int num_params = func_type->getFunctionNumParams();
   if (func_type->isFunctionVarArg()) {
     TI_ASSERT(num_params <= arglist.size());
   } else {
     TI_ERROR_IF(num_params != arglist.size(),
                 "Function \"{}\" requires {} arguments but {} provided",
-                std::string(func->getName()), num_params, arglist.size());
+                std::string(func_name), num_params, arglist.size());
   }
 
   for (int i = 0; i < num_params; i++) {
@@ -91,8 +85,8 @@ void check_func_call_signature(llvm::Value *func,
         arglist[i] = builder->CreatePointerCast(arglist[i], required);
         continue;
       }
-      TI_INFO("Function : {}", std::string(func->getName()));
-      TI_INFO("    Type : {}", type_name(func->getType()));
+      TI_INFO("Function : {}", std::string(func_name));
+      TI_INFO("    Type : {}", type_name(func_type));
       if (&required->getContext() != &provided->getContext()) {
         TI_INFO("  parameter {} types are from different contexts", i);
         TI_INFO("    required from context {}",

@@ -5,6 +5,7 @@
 #include "taichi/util/io.h"
 #include "taichi/util/lang_util.h"
 #include "taichi/program/program.h"
+#include "llvm/Linker/Linker.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"
 #include "taichi/util/statistics.h"
@@ -235,16 +236,19 @@ FunctionType CPUModuleToFunctionConverter::convert(
     const std::string &kernel_name,
     const std::vector<LlvmLaunchArgInfo> &args,
     std::vector<LLVMCompiledData> &&data) const {
+  auto mod = llvm::CloneModule(*tlctx_->linking_data->runtime_module);
   for (auto &datum : data) {
-    tlctx_->main_jit_module->add_module(std::move(datum.module));
+    llvm::Linker::linkModules(*mod, tlctx_->clone_module_to_context(datum.module.get(), tlctx_->linking_data->llvm_context));
+//    tlctx_->main_jit_module->add_module(std::move(datum.module));
   }
+  auto jit_module = tlctx_->create_jit_module(std::move(mod));
 
   using TaskFunc = int32 (*)(void *);
   std::vector<TaskFunc> task_funcs;
   task_funcs.reserve(data.size());
   for (auto &datum : data) {
     for (auto &task : datum.tasks) {
-      auto *func_ptr = tlctx_->main_jit_module->lookup_function(task.name);
+      auto *func_ptr = jit_module->lookup_function(task.name);
       TI_ASSERT_INFO(func_ptr, "Offloaded datum function {} not found",
                      task.name);
       task_funcs.push_back((TaskFunc)(func_ptr));

@@ -41,6 +41,8 @@ class TaichiLLVMContext {
   JITModule *runtime_jit_module{nullptr};
   JITModule *main_jit_module{nullptr};
 
+  std::unique_ptr<ThreadLocalData> linking_data{nullptr};
+
   TaichiLLVMContext(CompileConfig *config, Arch arch);
 
   virtual ~TaichiLLVMContext();
@@ -143,11 +145,11 @@ class TaichiLLVMContext {
   llvm::Type *get_runtime_type(const std::string &name);
 
   std::unique_ptr<llvm::Module> new_module(std::string name);
-
- private:
   std::unique_ptr<llvm::Module> clone_module_to_context(
       llvm::Module *module,
       llvm::LLVMContext *target_context);
+
+ private:
 
   void link_module_with_cuda_libdevice(std::unique_ptr<llvm::Module> &module);
 

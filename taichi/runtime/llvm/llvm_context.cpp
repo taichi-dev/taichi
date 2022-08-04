@@ -68,6 +68,10 @@ TaichiLLVMContext::TaichiLLVMContext(CompileConfig *config, Arch arch)
   TI_TRACE("Creating Taichi llvm context for arch: {}", arch_name(arch));
   main_thread_id_ = std::this_thread::get_id();
   main_thread_data_ = get_this_thread_data();
+  linking_data = std::make_unique<ThreadLocalData>(
+      std::make_unique<llvm::orc::ThreadSafeContext>(
+          std::make_unique<llvm::LLVMContext>()));
+  linking_data->runtime_module = clone_module_to_context(get_this_thread_runtime_module(), linking_data->llvm_context);
   llvm::remove_fatal_error_handler();
   llvm::install_fatal_error_handler(
 #ifdef TI_LLVM_15
@@ -520,6 +524,7 @@ void TaichiLLVMContext::add_struct_module(std::unique_ptr<llvm::Module> module,
     module->print(llvm::errs(), nullptr);
     TI_ERROR("module broken");
   }
+  llvm::Linker::linkModules(*linking_data->runtime_module, clone_module_to_context(module.get(), linking_data->llvm_context));
   // TODO: Move this after ``if (!arch_is_cpu(arch))``.
   this_thread_data->struct_modules[tree_id] = llvm::CloneModule(*module);
   for (auto &[id, data] : per_thread_data_) {

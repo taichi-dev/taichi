@@ -31,7 +31,3 @@ def test_sort():
     test_sort_for_dtype(ti.f32, 1)
     test_sort_for_dtype(ti.f32, 256)
     test_sort_for_dtype(ti.f32, 100001)
-
-
-ti.init()
-test_sort()

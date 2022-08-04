@@ -236,6 +236,7 @@ FunctionType CPUModuleToFunctionConverter::convert(
     const std::string &kernel_name,
     const std::vector<LlvmLaunchArgInfo> &args,
     std::vector<LLVMCompiledData> &&data) const {
+  TI_AUTO_PROF;
   auto mod = llvm::CloneModule(*tlctx_->linking_data->runtime_module);
   std::unordered_set<int> used_tree_ids;
   std::unordered_set<std::string> offloaded_names;

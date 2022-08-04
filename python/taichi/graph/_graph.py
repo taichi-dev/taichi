@@ -75,7 +75,10 @@ class Graph:
                     for b in range(v.m):
                         key = f"{k}_mat_arg_{mat_val_id}"
                         mat_val_id += 1
-                        flattened[key] = v[a, b]
+                        if v.ndim == 2:
+                            flattened[key] = v[a, b]
+                        else:
+                            flattened[key] = v[a]
             elif isinstance(v, (int, float)):
                 flattened[k] = v
             else:

@@ -750,8 +750,7 @@ void TaichiLLVMContext::fetch_this_thread_struct_module() {
   ThreadLocalData *data = get_this_thread_data();
   if (data->struct_modules.empty()) {
     for (auto &[id, mod] : main_thread_data_->struct_modules) {
-      data->struct_modules[id] =
-          clone_module_to_this_thread_context(mod.get());
+      data->struct_modules[id] = clone_module_to_this_thread_context(mod.get());
     }
   }
 }

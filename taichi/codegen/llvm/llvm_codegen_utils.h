@@ -134,7 +134,9 @@ class LLVMModuleBuilder {
   }
 
   template <typename... Args>
-  llvm::Value *call_struct_func(int tree_id, const std::string &func_name, Args &&...args) {
+  llvm::Value *call_struct_func(int tree_id,
+                                const std::string &func_name,
+                                Args &&...args) {
     auto func = get_struct_function(func_name, tree_id);
     auto arglist = std::vector<llvm::Value *>({args...});
     check_func_call_signature(func->getFunctionType(), func->getName(), arglist,

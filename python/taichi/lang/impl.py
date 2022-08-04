@@ -51,7 +51,7 @@ def expr_init(rhs):
     if isinstance(rhs, SharedArray):
         return rhs
     if isinstance(rhs, Struct):
-        return Struct(rhs.to_dict(include_methods=True))
+        return Struct(rhs.to_dict(include_methods=True, include_ndim=True))
     if isinstance(rhs, list):
         return [expr_init(e) for e in rhs]
     if isinstance(rhs, tuple):

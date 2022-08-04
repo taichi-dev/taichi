@@ -144,7 +144,7 @@ class TaichiLLVMContext {
 
   llvm::Type *get_runtime_type(const std::string &name);
 
-  std::unique_ptr<llvm::Module> new_module(std::string name);
+  std::unique_ptr<llvm::Module> new_module(std::string name, llvm::LLVMContext *context = nullptr);
   std::unique_ptr<llvm::Module> clone_module_to_context(
       llvm::Module *module,
       llvm::LLVMContext *target_context);

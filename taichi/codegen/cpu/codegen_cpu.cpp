@@ -237,9 +237,9 @@ FunctionType CPUModuleToFunctionConverter::convert(
     const std::vector<LlvmLaunchArgInfo> &args,
     std::vector<LLVMCompiledData> &&data) const {
   TI_AUTO_PROF;
-  auto mod = llvm::CloneModule(*tlctx_->linking_data->runtime_module);
   std::unordered_set<int> used_tree_ids;
   std::unordered_set<std::string> offloaded_names;
+  auto mod = tlctx_->new_module("kernel", tlctx_->linking_data->llvm_context);
   llvm::Linker linker(*mod);
   for (auto &datum : data) {
     for (auto tree_id : datum.used_tree_ids) {
@@ -254,9 +254,11 @@ FunctionType CPUModuleToFunctionConverter::convert(
   }
   for (auto tree_id : used_tree_ids) {
     linker.linkInModule(tlctx_->clone_module_to_context(
-        tlctx_->linking_data->struct_modules[tree_id].get(),
-        tlctx_->linking_data->llvm_context));
+                            tlctx_->linking_data->struct_modules[tree_id].get(),
+                            tlctx_->linking_data->llvm_context), llvm::Linker::LinkOnlyNeeded);
   }
+  linker.linkInModule(llvm::CloneModule(*tlctx_->linking_data->runtime_module), llvm::Linker::LinkOnlyNeeded);
+
   tlctx_->eliminate_unused_functions(mod.get(),
                                      [&](std::string func_name) -> bool {
                                        return offloaded_names.count(func_name);

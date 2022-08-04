@@ -875,9 +875,9 @@ llvm::Type *TaichiLLVMContext::get_runtime_type(const std::string &name) {
   }
   return ty;
 }
-std::unique_ptr<llvm::Module> TaichiLLVMContext::new_module(std::string name) {
+std::unique_ptr<llvm::Module> TaichiLLVMContext::new_module(std::string name, llvm::LLVMContext *context) {
   auto new_mod =
-      std::make_unique<llvm::Module>(name, *get_this_thread_context());
+      std::make_unique<llvm::Module>(name, context ? *context : *get_this_thread_context());
   new_mod->setDataLayout(get_this_thread_runtime_module()->getDataLayout());
   return new_mod;
 }

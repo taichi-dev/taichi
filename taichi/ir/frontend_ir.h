@@ -379,18 +379,21 @@ class BinaryOpExpression : public Expression {
 
   BinaryOpExpression(const BinaryOpType &type, const Expr &lhs, const Expr &rhs)
       : type(type) {
-
     auto to_broadcast_tensor = [](const Expr &elt, const DataType &dt) -> Expr {
       TI_ASSERT(dt->is<TensorType>());
       auto tensor_type = dt->as<TensorType>();
       auto elt_type = tensor_type->get_element_type();
-      TI_ASSERT_INFO(elt_type->is<PrimitiveType>(), "Only primitive types are supported in Tensors, got {}", elt_type->to_string());
+      TI_ASSERT_INFO(elt_type->is<PrimitiveType>(),
+                     "Only primitive types are supported in Tensors, got {}",
+                     elt_type->to_string());
       std::vector<Expr> broadcast_values(tensor_type->get_num_elements(), elt);
-      return Expr::make<MatrixExpression>(broadcast_values, tensor_type->get_shape(), elt_type);
+      return Expr::make<MatrixExpression>(broadcast_values,
+                                          tensor_type->get_shape(), elt_type);
     };
 
     auto unify_expr = [&](const Expr &e1, const Expr &e2) {
-      if ((!e1->ret_type->is<TensorType>() && !e2->ret_type->is<TensorType>()) ||
+      if ((!e1->ret_type->is<TensorType>() &&
+           !e2->ret_type->is<TensorType>()) ||
           (e1->ret_type->is<TensorType>() && e2->ret_type->is<TensorType>())) {
         return std::tuple(e1, e2);
       }

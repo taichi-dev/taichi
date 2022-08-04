@@ -219,12 +219,15 @@ void BinaryOpExpression::type_check(CompileConfig *config) {
     } else {
       TI_ASSERT(rhs_type->is<TensorType>());
       auto rhs_tensor_type = rhs_type->cast<TensorType>();
-      if (rhs_tensor_type->get_shape() != lhs_type->cast<TensorType>()->get_shape())
+      if (rhs_tensor_type->get_shape() !=
+          lhs_type->cast<TensorType>()->get_shape())
         error();
-      ret_type = promoted_type(dtype, rhs_type->as<TensorType>()->get_element_type());
+      ret_type =
+          promoted_type(dtype, rhs_type->as<TensorType>()->get_element_type());
     }
     // TODO: shape check!
-    ret_type = TypeFactory::create_tensor_type(lhs_type->cast<TensorType>()->get_shape(), ret_type);
+    ret_type = TypeFactory::create_tensor_type(
+        lhs_type->cast<TensorType>()->get_shape(), ret_type);
     return;
   }
 

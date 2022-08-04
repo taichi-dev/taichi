@@ -311,7 +311,10 @@ class TypeCheck : public IRVisitor {
           cast(stmt->lhs, default_fp);
         } else {
           TI_ASSERT(stmt->lhs->ret_type->is<TensorType>());
-          cast(stmt->lhs, TypeFactory::create_tensor_type(stmt->lhs->ret_type->as<TensorType>()->get_shape(), default_fp));
+          cast(stmt->lhs,
+               TypeFactory::create_tensor_type(
+                   stmt->lhs->ret_type->as<TensorType>()->get_shape(),
+                   default_fp));
         }
       }
       if (!is_real(stmt->rhs->ret_type)) {
@@ -319,7 +322,10 @@ class TypeCheck : public IRVisitor {
           cast(stmt->rhs, default_fp);
         } else {
           TI_ASSERT(stmt->rhs->ret_type->is<TensorType>());
-          cast(stmt->rhs, TypeFactory::create_tensor_type(stmt->rhs->ret_type->as<TensorType>()->get_shape(), default_fp));
+          cast(stmt->rhs,
+               TypeFactory::create_tensor_type(
+                   stmt->rhs->ret_type->as<TensorType>()->get_shape(),
+                   default_fp));
         }
       }
       stmt->op_type = BinaryOpType::div;
@@ -344,15 +350,31 @@ class TypeCheck : public IRVisitor {
     auto rhs_is_tensor = stmt->rhs->ret_type->is<TensorType>();
 
     if (lhs_is_tensor || rhs_is_tensor) {
-      auto lhs_dtype = lhs_is_tensor ? DataType(stmt->lhs->ret_type->as<TensorType>()->get_element_type())
-                                      : stmt->lhs->ret_type;
-      auto rhs_dtype = rhs_is_tensor ? DataType(stmt->rhs->ret_type->as<TensorType>()->get_element_type())
-                                      : stmt->rhs->ret_type;
+      auto lhs_dtype =
+          lhs_is_tensor
+              ? DataType(
+                    stmt->lhs->ret_type->as<TensorType>()->get_element_type())
+              : stmt->lhs->ret_type;
+      auto rhs_dtype =
+          rhs_is_tensor
+              ? DataType(
+                    stmt->rhs->ret_type->as<TensorType>()->get_element_type())
+              : stmt->rhs->ret_type;
       auto dtype = promoted_type(lhs_dtype, rhs_dtype);
       if (dtype != lhs_dtype)
-        cast(stmt->lhs, lhs_is_tensor ? TypeFactory::create_tensor_type(stmt->lhs->ret_type->as<TensorType>()->get_shape(), dtype) : dtype);
+        cast(
+            stmt->lhs,
+            lhs_is_tensor
+                ? TypeFactory::create_tensor_type(
+                      stmt->lhs->ret_type->as<TensorType>()->get_shape(), dtype)
+                : dtype);
       if (dtype != rhs_dtype)
-        cast(stmt->rhs, rhs_is_tensor ? TypeFactory::create_tensor_type(stmt->rhs->ret_type->as<TensorType>()->get_shape(), dtype) : dtype);
+        cast(
+            stmt->rhs,
+            rhs_is_tensor
+                ? TypeFactory::create_tensor_type(
+                      stmt->rhs->ret_type->as<TensorType>()->get_shape(), dtype)
+                : dtype);
       // TODO: add shape inference for matrix ops below
       stmt->ret_type = stmt->lhs->ret_type;
       return;
@@ -596,7 +618,9 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(MatrixInitStmt *stmt) override {
-    TI_ASSERT_INFO(stmt->ret_type->is<TensorType>(), "Matrix should have tensor type, got {}", stmt->ret_type->to_string());
+    TI_ASSERT_INFO(stmt->ret_type->is<TensorType>(),
+                   "Matrix should have tensor type, got {}",
+                   stmt->ret_type->to_string());
     auto tensor_type = stmt->ret_type->as<TensorType>();
     auto element_dtype = tensor_type->get_element_type();
     for (auto elt : stmt->values) {
@@ -608,7 +632,8 @@ class TypeCheck : public IRVisitor {
       }
     }
     if (element_dtype != tensor_type->get_element_type()) {
-      stmt->ret_type = TypeFactory::create_tensor_type(tensor_type->get_shape(), element_dtype);
+      stmt->ret_type = TypeFactory::create_tensor_type(tensor_type->get_shape(),
+                                                       element_dtype);
     }
   }
 };

@@ -133,7 +133,8 @@ class ConstantFold : public BasicStmtVisitor {
   }
 
   void visit(BinaryOpStmt *stmt) override {
-    if (stmt->lhs->ret_type->is<TensorType>() || stmt->rhs->ret_type->is<TensorType>())
+    if (stmt->lhs->ret_type->is<TensorType>() ||
+        stmt->rhs->ret_type->is<TensorType>())
       return;
     auto lhs = stmt->lhs->cast<ConstStmt>();
     auto rhs = stmt->rhs->cast<ConstStmt>();

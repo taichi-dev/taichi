@@ -368,19 +368,21 @@ void TaskCodeGenLLVM::visit(UnaryOpStmt *stmt) {
     if (from == to) {
       llvm_val[stmt] = llvm_val[stmt->operand];
     } else if (from->is<TensorType>()) {
-        TI_ASSERT_INFO(to->is<TensorType>(),
-                        "Only tensor to tensor cast is supported, {} provided", to->to_string());
-        auto from_ty = from->cast<TensorType>()->get_element_type();
-        auto to_ty = to->cast<TensorType>()->get_element_type();
-        cast_op = get_cast_op(from_ty, to_ty);
-        auto type = tlctx->get_data_type(to->cast<TensorType>());
-        llvm::Value *vec = llvm::UndefValue::get(type);
-        for (int i = 0; i < from->cast<TensorType>()->get_num_elements(); ++i) {
-          auto elem = builder->CreateExtractElement(llvm_val[stmt->operand], i);
-          auto cast_input = builder->CreateCast(cast_op, elem, tlctx->get_data_type(to_ty));
-          vec = builder->CreateInsertElement(vec, cast_input, i);
-        }
-        llvm_val[stmt] = vec;
+      TI_ASSERT_INFO(to->is<TensorType>(),
+                     "Only tensor to tensor cast is supported, {} provided",
+                     to->to_string());
+      auto from_ty = from->cast<TensorType>()->get_element_type();
+      auto to_ty = to->cast<TensorType>()->get_element_type();
+      cast_op = get_cast_op(from_ty, to_ty);
+      auto type = tlctx->get_data_type(to->cast<TensorType>());
+      llvm::Value *vec = llvm::UndefValue::get(type);
+      for (int i = 0; i < from->cast<TensorType>()->get_num_elements(); ++i) {
+        auto elem = builder->CreateExtractElement(llvm_val[stmt->operand], i);
+        auto cast_input =
+            builder->CreateCast(cast_op, elem, tlctx->get_data_type(to_ty));
+        vec = builder->CreateInsertElement(vec, cast_input, i);
+      }
+      llvm_val[stmt] = vec;
     } else if (is_real(from) != is_real(to)) {
       cast_op = get_cast_op(from, to);
       auto cast_type = to->is_primitive(PrimitiveTypeID::f16)
@@ -453,11 +455,13 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
   auto ret_type = stmt->ret_type;
 
   auto is_real_tensor = [](const DataType &dt) {
-    return dt->is<TensorType>() && is_real(dt->cast<TensorType>()->get_element_type());
+    return dt->is<TensorType>() &&
+           is_real(dt->cast<TensorType>()->get_element_type());
   };
 
   auto is_integral_tensor = [](const DataType &dt) {
-    return dt->is<TensorType>() && is_integral(dt->cast<TensorType>()->get_element_type());
+    return dt->is<TensorType>() &&
+           is_integral(dt->cast<TensorType>()->get_element_type());
   };
 
   if (op == BinaryOpType::add) {

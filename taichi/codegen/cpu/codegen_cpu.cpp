@@ -255,9 +255,11 @@ FunctionType CPUModuleToFunctionConverter::convert(
   for (auto tree_id : used_tree_ids) {
     linker.linkInModule(tlctx_->clone_module_to_context(
                             tlctx_->linking_data->struct_modules[tree_id].get(),
-                            tlctx_->linking_data->llvm_context), llvm::Linker::LinkOnlyNeeded);
+                            tlctx_->linking_data->llvm_context),
+                        llvm::Linker::LinkOnlyNeeded);
   }
-  linker.linkInModule(llvm::CloneModule(*tlctx_->linking_data->runtime_module), llvm::Linker::LinkOnlyNeeded);
+  linker.linkInModule(llvm::CloneModule(*tlctx_->linking_data->runtime_module),
+                      llvm::Linker::LinkOnlyNeeded);
 
   tlctx_->eliminate_unused_functions(mod.get(),
                                      [&](std::string func_name) -> bool {

@@ -58,8 +58,7 @@ class Struct(TaichiOperations):
 
         for k, v in self.entries.items():
             if isinstance(v, (list, tuple)):
-                if k in matrix_ndim:
-                    v = Matrix(v, ndim=self.entries['__matrix_ndim'][k])
+                v = Matrix(v, ndim=matrix_ndim.get(k))
             if isinstance(v, dict):
                 v = Struct(v)
             self.entries[k] = v if in_python_scope() else impl.expr_init(v)

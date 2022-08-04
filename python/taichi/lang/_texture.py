@@ -127,15 +127,31 @@ class Texture:
         self.shape = arr_shape
 
     def from_ndarray(self, ndarray):
+        """Loads an ndarray to texture.
+
+        Args:
+            ndarray (ti.Ndarray): Source ndarray to load from.
+        """
         self.tex.from_ndarray(ndarray.arr)
 
     def from_field(self, field):
+        """Loads a field to texture.
+
+        Args:
+            field (ti.Field): Source field to load from.
+        """
         self.tex.from_snode(field.snode.ptr)
 
-    def device_allocation_ptr(self):
+    def _device_allocation_ptr(self):
         return self.tex.device_allocation_ptr()
 
     def from_image(self, image):
+        """Loads a PIL image to texture. This method is only allowed a 2D texture with `ti.u8` dtype and `num_channels=4`.
+
+        Args:
+            image (PIL.Image.Image): Source PIL image to load from.
+
+        """
         from PIL import Image  # pylint: disable=import-outside-toplevel
         assert isinstance(image, Image.Image)
         if image.mode != 'RGB':
@@ -152,6 +168,14 @@ class Texture:
         load_texture_from_numpy(self, arr)
 
     def to_image(self):
+        """Saves a texture to a PIL image in RGB mode. This method is only allowed a 2D texture with `ti.u8` dtype and `num_channels=4`.
+
+        Returns:
+            img (PIL.Image.Image): a PIL image in RGB mode, with the same size as source texture.
+        """
+        assert self.num_dims == 2
+        assert self.dtype == u8
+        assert self.num_channels == 4
         from PIL import Image  # pylint: disable=import-outside-toplevel
         res = np.zeros(self.shape + (3, ), np.uint8)
         from taichi._kernels import \

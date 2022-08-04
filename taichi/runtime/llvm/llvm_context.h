@@ -30,8 +30,7 @@ class TaichiLLVMContext {
         nullptr};
     llvm::LLVMContext *llvm_context{nullptr};
     std::unique_ptr<llvm::Module> runtime_module{nullptr};
-    std::unique_ptr<llvm::Module> struct_module{nullptr};
-    std::vector<std::unique_ptr<llvm::Module>> struct_modules;
+    std::unordered_map<int, std::unique_ptr<llvm::Module>> struct_modules;
     ThreadLocalData(std::unique_ptr<llvm::orc::ThreadSafeContext> ctx);
     ~ThreadLocalData();
   };
@@ -71,7 +70,7 @@ class TaichiLLVMContext {
    *
    * @param module Module containing the JIT compiled SNode structs.
    */
-  void add_struct_module(std::unique_ptr<llvm::Module> module);
+  void add_struct_module(std::unique_ptr<llvm::Module> module, int tree_id);
 
   /**
    * Clones the LLVM module compiled from llvm/runtime.cpp
@@ -139,7 +138,7 @@ class TaichiLLVMContext {
   void delete_functions_of_snode_tree(int id);
 
   llvm::Function *get_runtime_function(const std::string &name);
-  llvm::Function *get_struct_function(const std::string &name);
+  llvm::Function *get_struct_function(const std::string &name, int tree_id);
 
   llvm::Type *get_runtime_type(const std::string &name);
 

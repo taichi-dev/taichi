@@ -1479,7 +1479,7 @@ class _MatrixFieldElement(_IntermediateMatrix):
                 expr.Expr(ti_python_core.subscript(e.ptr, indices))
                 for e in field._get_field_members()
             ],
-            ndim=getattr(field.ndim, 2))
+            ndim=getattr(field, "ndim", 2))
         self._impl.dynamic_index_stride = field.dynamic_index_stride
 
 

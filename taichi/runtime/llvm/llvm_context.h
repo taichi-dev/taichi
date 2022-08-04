@@ -150,7 +150,6 @@ class TaichiLLVMContext {
       llvm::LLVMContext *target_context);
 
  private:
-
   void link_module_with_cuda_libdevice(std::unique_ptr<llvm::Module> &module);
 
   static int num_instructions(llvm::Function *func);

@@ -238,8 +238,10 @@ FunctionType CPUModuleToFunctionConverter::convert(
     std::vector<LLVMCompiledData> &&data) const {
   auto mod = llvm::CloneModule(*tlctx_->linking_data->runtime_module);
   for (auto &datum : data) {
-    llvm::Linker::linkModules(*mod, tlctx_->clone_module_to_context(datum.module.get(), tlctx_->linking_data->llvm_context));
-//    tlctx_->main_jit_module->add_module(std::move(datum.module));
+    llvm::Linker::linkModules(
+        *mod, tlctx_->clone_module_to_context(
+                  datum.module.get(), tlctx_->linking_data->llvm_context));
+    //    tlctx_->main_jit_module->add_module(std::move(datum.module));
   }
   auto jit_module = tlctx_->create_jit_module(std::move(mod));
 

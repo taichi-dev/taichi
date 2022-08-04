@@ -252,7 +252,6 @@ FunctionType CPUModuleToFunctionConverter::convert(
     //    tlctx_->main_jit_module->add_module(std::move(datum.module));
   }
   for (auto tree_id : used_tree_ids) {
-    TI_INFO("adding SNodeTree {}", tree_id);
     llvm::Linker::linkModules(
         *mod, tlctx_->clone_module_to_context(
                   tlctx_->linking_data->struct_modules[tree_id].get(),

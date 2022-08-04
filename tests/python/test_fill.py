@@ -38,6 +38,9 @@ def test_fill_matrix_scalar():
 
     val.fill(2)
 
+    ti.profiler.print_scoped_profiler_info()
+    ti.profiler.print_kernel_profiler_info()
+
     for i in range(n):
         for j in range(m):
             for p in range(2):

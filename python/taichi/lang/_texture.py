@@ -1,8 +1,9 @@
+import numpy as np
 from taichi._lib import core as _ti_core
 from taichi.lang import impl
 from taichi.lang.util import taichi_scope
-
-import taichi as ti
+from taichi.types import vector
+from taichi.types.primitive_types import f32, u8
 
 
 class TextureSampler:
@@ -33,7 +34,7 @@ class TextureSampler:
         a = impl.call_internal("composite_extract_3",
                                v,
                                with_runtime_context=False)
-        return ti.Vector([r, g, b, a])
+        return vector(4, f32)([r, g, b, a])
 
     @taichi_scope
     def fetch(self, index, lod):
@@ -58,7 +59,7 @@ class TextureSampler:
         a = impl.call_internal("composite_extract_3",
                                v,
                                with_runtime_context=False)
-        return ti.Vector([r, g, b, a])
+        return vector(4, f32)([r, g, b, a])
 
 
 class RWTextureAccessor:
@@ -89,7 +90,7 @@ class RWTextureAccessor:
         a = impl.call_internal("composite_extract_3",
                                v,
                                with_runtime_context=False)
-        return ti.Vector([r, g, b, a])
+        return vector(4, f32)([r, g, b, a])
 
     @taichi_scope
     def store(self, index, value):
@@ -123,6 +124,7 @@ class Texture:
         self.dtype = dtype
         self.num_channels = num_channels
         self.num_dims = len(arr_shape)
+        self.shape = arr_shape
 
     def from_ndarray(self, ndarray):
         self.tex.from_ndarray(ndarray.arr)
@@ -132,3 +134,27 @@ class Texture:
 
     def device_allocation_ptr(self):
         return self.tex.device_allocation_ptr()
+
+    def from_image(self, image):
+        from PIL import Image  # pylint: disable=import-outside-toplevel
+        assert isinstance(image, Image.Image)
+        if image.mode != 'RGB':
+            image = image.convert('RGB')
+        assert image.size == tuple(self.shape)
+
+        assert self.num_dims == 2
+        assert self.dtype == u8
+        assert self.num_channels == 4
+        image = image.transpose(Image.Transpose.ROTATE_90)
+        arr = np.asarray(image)
+        from taichi._kernels import \
+            load_texture_from_numpy  # pylint: disable=import-outside-toplevel
+        load_texture_from_numpy(self, arr)
+
+    def to_image(self):
+        from PIL import Image  # pylint: disable=import-outside-toplevel
+        res = np.zeros(self.shape + (3, ), np.uint8)
+        from taichi._kernels import \
+            save_texture_to_numpy  # pylint: disable=import-outside-toplevel
+        save_texture_to_numpy(self, res)
+        return Image.fromarray(res).transpose(Image.TRANSPOSE.ROTATE_270)

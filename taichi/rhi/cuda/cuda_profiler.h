@@ -87,11 +87,12 @@ class EventToolkit {
   std::vector<EventRecord> event_records_;
 
  public:
-  EventRecord get_current_event_record() const {
-    return event_records_.back();
+  EventRecord *get_current_event_record() {
+    return &(event_records_.back());
   }
   void *get_base_event() const {
     return base_event_;
-  };
+  }
+};
 
-  TLANG_NAMESPACE_END
+TLANG_NAMESPACE_END

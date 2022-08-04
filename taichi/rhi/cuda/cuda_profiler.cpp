@@ -137,14 +137,13 @@ void KernelProfilerCUDA::stop(KernelProfilerBase::TaskHandle handle) {
     // get elapsed time and destroy events
     auto record = event_toolkit_->get_current_event_record();
     CUDADriver::get_instance().event_elapsed_time(
-        &record.kernel_elapsed_time_in_ms, record.start_event,
-        record.stop_event);
+        &record->kernel_elapsed_time_in_ms, record->start_event, handle);
     CUDADriver::get_instance().event_elapsed_time(
-        &record.time_since_base, event_toolkit_->get_base_event(),
-        record.start_event);
+        &record->time_since_base, event_toolkit_->get_base_event(),
+        record->start_event);
 
-    CUDADriver::get_instance().event_destroy(record.start_event);
-    CUDADriver::get_instance().event_destroy(record.stop_event);
+    CUDADriver::get_instance().event_destroy(record->start_event);
+    CUDADriver::get_instance().event_destroy(record->stop_event);
   }
 }
 

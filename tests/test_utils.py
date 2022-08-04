@@ -21,6 +21,10 @@ __aot_test_cases = {
     [os.path.join('cpp', 'aot', 'llvm', 'field_aot_test.py'), "--arch=cpu"],
     "LlvmAotTest.CudaField":
     [os.path.join('cpp', 'aot', 'llvm', 'field_aot_test.py'), "--arch=cuda"],
+    "LlvmAotTest.CpuDynamic":
+    [os.path.join('cpp', 'aot', 'llvm', 'dynamic_aot_test.py'), "--arch=cpu"],
+    "LlvmAotTest.CudaDynamic":
+    [os.path.join('cpp', 'aot', 'llvm', 'dynamic_aot_test.py'), "--arch=cuda"],
     "LlvmAotTest.CpuBitmasked": [
         os.path.join('cpp', 'aot', 'llvm', 'bitmasked_aot_test.py'),
         "--arch=cpu"

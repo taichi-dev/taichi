@@ -57,7 +57,7 @@ def test_adjoint_visited_needs_grad():
         x[None] = 1
 
     with pytest.warns(Warning) as record:
-        with ti.ad.Tape(loss=x, check_autodiff_valid=True):
+        with ti.ad.Tape(loss=x, validation=True):
             test()
 
     warn_raised = False

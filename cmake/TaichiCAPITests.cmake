@@ -23,7 +23,6 @@ target_include_directories(${C_API_TESTS_NAME}
     ${PROJECT_SOURCE_DIR}
     ${PROJECT_SOURCE_DIR}/c_api/include
     ${PROJECT_SOURCE_DIR}/c_api/src
-    ${PROJECT_SOURCE_DIR}/c_api/tests
   )
 
 add_test(NAME ${C_API_TESTS_NAME} COMMAND ${C_API_TESTS_NAME})

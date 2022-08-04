@@ -6,9 +6,8 @@
 
 #include "gtest/gtest.h"
 
-#include "mpm88_test.hpp"
-
 #include "c_api_test_utils.h"
+#include "taichi/taichi_core.h"
 
 #if defined(TI_WITH_LLVM) && defined(TI_WITH_CUDA) && defined(TI_WITH_VULKAN)
 
@@ -211,19 +210,6 @@ class MPM88DemoImpl {
   TiArgument k_substep_g2p_args_[6];
 };
 
-MPM88Demo::MPM88Demo(const std::string &aot_path, TiArch arch) {
-  // Create Taichi Device for computation
-  impl_ = std::make_unique<MPM88DemoImpl>(aot_path, arch);
-}
-
-void MPM88Demo::Step() {
-  impl_->Step();
-}
-
-MPM88Demo::~MPM88Demo() {
-  impl_.reset();
-}
-
 }  // namespace demo
 
 TEST(CapiMpm88Test, Cuda) {
@@ -233,9 +219,9 @@ TEST(CapiMpm88Test, Cuda) {
     std::stringstream aot_mod_ss;
     aot_mod_ss << folder_dir;
 
-    auto mpm88_demo = std::make_unique<demo::MPM88Demo>(
-        aot_mod_ss.str().c_str(), TiArch::TI_ARCH_CUDA);
-    mpm88_demo->Step();
+    auto impl = std::make_unique<demo::MPM88DemoImpl>(aot_mod_ss.str().c_str(),
+                                                      TiArch::TI_ARCH_CUDA);
+    impl->Step();
   }
 }
 
@@ -246,9 +232,9 @@ TEST(CapiMpm88Test, Vulkan) {
     std::stringstream aot_mod_ss;
     aot_mod_ss << folder_dir;
 
-    auto mpm88_demo = std::make_unique<demo::MPM88Demo>(
-        aot_mod_ss.str().c_str(), TiArch::TI_ARCH_VULKAN);
-    mpm88_demo->Step();
+    auto impl = std::make_unique<demo::MPM88DemoImpl>(aot_mod_ss.str().c_str(),
+                                                      TiArch::TI_ARCH_VULKAN);
+    impl->Step();
   }
 }
 #endif

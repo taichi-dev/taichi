@@ -103,6 +103,7 @@ def clear_all_gradients():
             if not ch.is_place():
                 visit(SNode(ch))
             else:
+                # TODO: control to clear adjoint, dual, adjoint_flag
                 if not ch.is_primal():
                     places.append(ch.get_expr())
 

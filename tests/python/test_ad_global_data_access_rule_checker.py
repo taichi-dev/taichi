@@ -1,11 +1,10 @@
 import pytest
-from numpy import float16
 
 import taichi as ti
 from tests import test_utils
 
 
-@test_utils.test(debug=True)
+@test_utils.test(debug=True, exclude=[ti.cc])
 def test_adjoint_visited_needs_grad():
     x = ti.field(float, shape=(), needs_grad=True)
 
@@ -13,12 +12,13 @@ def test_adjoint_visited_needs_grad():
     def test():
         x[None] = 1
 
-    test()
+    with ti.ad.Tape(loss=x, validation=True):
+        test()
 
     assert x.snode.ptr.has_adjoint_visited()
 
 
-@test_utils.test(debug=True)
+@test_utils.test(debug=True, exclude=[ti.cc])
 def test_adjoint_visited_lazy_grad():
     x = ti.field(float, shape=())
     ti.root.lazy_grad()
@@ -27,12 +27,13 @@ def test_adjoint_visited_lazy_grad():
     def test():
         x[None] = 1
 
-    test()
+    with ti.ad.Tape(loss=x, validation=True):
+        test()
 
     assert x.snode.ptr.has_adjoint_visited()
 
 
-@test_utils.test(debug=True)
+@test_utils.test(debug=True, exclude=[ti.cc])
 def test_adjoint_visited_place_grad():
     x = ti.field(float)
     y = ti.field(float)
@@ -42,7 +43,8 @@ def test_adjoint_visited_place_grad():
     def test():
         x[None] = 1
 
-    test()
+    with ti.ad.Tape(loss=x, validation=True):
+        test()
 
     assert x.snode.ptr.has_adjoint_visited()
     assert not y.snode.ptr.has_adjoint_visited()
@@ -66,3 +68,26 @@ def test_adjoint_visited_needs_grad():
                 0]:
             warn_raised = True
     assert warn_raised
+
+
+@test_utils.test(require=ti.extension.assertion, exclude=[ti.cc], debug=True)
+def test_break_gdar_rule_1():
+    N = 16
+    x = ti.field(dtype=ti.f32, shape=N, needs_grad=True)
+    loss = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
+    b = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
+
+    @ti.kernel
+    def func_broke_rule_1():
+        loss[None] = x[1] * b[None]
+        b[None] += 100
+
+    for i in range(N):
+        x[i] = i
+
+    b[None] = 10
+    loss.grad[None] = 1
+
+    with pytest.raises(ti.TaichiAssertionError):
+        with ti.ad.Tape(loss=loss, validation=True):
+            func_broke_rule_1()

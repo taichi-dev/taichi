@@ -111,7 +111,7 @@ struct Keys {
   DEFINE_KEY(Return);
   DEFINE_KEY(Tab);
   DEFINE_KEY(BackSpace);
-  DEFINE_KEY(Space);
+  static inline const std::string Space = " ";
   DEFINE_KEY(Up);
   DEFINE_KEY(Down);
   DEFINE_KEY(Left);
@@ -133,7 +133,6 @@ inline std::unordered_map<std::string, int> get_keys_map() {
       {Keys::Tab, GLFW_KEY_TAB},
       {Keys::BackSpace, GLFW_KEY_BACKSPACE},
       {Keys::Space, GLFW_KEY_SPACE},
-      {" ", GLFW_KEY_SPACE},
       {Keys::Up, GLFW_KEY_UP},
       {Keys::Down, GLFW_KEY_DOWN},
       {Keys::Left, GLFW_KEY_LEFT},

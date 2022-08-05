@@ -230,13 +230,13 @@ def no_grad(func):
 
 
 class FwdMode:
-    def __init__(self, loss, parameters, seed=None, clear_gradients=True):
+    def __init__(self, loss, param, seed=None, clear_gradients=True):
         self.calls = []
         self.entered = False
         self.kernels_recovered = False
         self.runtime = impl.get_runtime()
         self.loss = loss
-        self.parameters = parameters
+        self.param = param
         self.seed = seed
         self.clear_gradients = clear_gradients
 
@@ -255,14 +255,14 @@ class FwdMode:
         # which is out of scope of the current design for this interface.
 
         # TODO: support vector field and matrix field
-        assert isinstance(self.parameters, ScalarField)
+        assert isinstance(self.param, ScalarField)
 
         def shape_flatten(shape):
             return reduce((lambda x, y: x * y), list(shape))
 
         # Handle 0-D field
-        if len(self.parameters.shape) != 0:
-            parameters_shape_flatten = shape_flatten(self.parameters.shape)
+        if len(self.param.shape) != 0:
+            parameters_shape_flatten = shape_flatten(self.param.shape)
         else:
             parameters_shape_flatten = 1
 
@@ -283,15 +283,15 @@ class FwdMode:
 
         # Set seed for each variable
         if len(self.seed) == 1:
-            if len(self.parameters.shape) == 0:
+            if len(self.param.shape) == 0:
                 # e.g., x= ti.field(float, shape = ())
-                self.parameters.dual[None] = 1.0 * self.seed[0]
+                self.param.dual[None] = 1.0 * self.seed[0]
             else:
                 # e.g., ti.root.dense(ti.i, 1).place(x.dual)
-                self.parameters.dual[0] = 1.0 * self.seed[0]
+                self.param.dual[0] = 1.0 * self.seed[0]
         else:
             for idx, s in enumerate(self.seed):
-                self.parameters.dual[idx] = 1.0 * s
+                self.param.dual[idx] = 1.0 * s
 
         # Clear gradients
         if self.clear_gradients:
@@ -318,15 +318,15 @@ class FwdMode:
     def clear_seed(self):
         # clear seed values
         if len(self.seed) == 1:
-            if len(self.parameters.shape) == 0:
+            if len(self.param.shape) == 0:
                 # e.g., x= ti.field(float, shape = ())
-                self.parameters.dual[None] = 0.0
+                self.param.dual[None] = 0.0
             else:
                 # e.g., ti.root.dense(ti.i, 1).place(x.dual)
-                self.parameters.dual[0] = 0.0
+                self.param.dual[0] = 0.0
         else:
             for idx, s in enumerate(self.seed):
-                self.parameters.dual[idx] = 0.0
+                self.param.dual[idx] = 0.0
 
 
 __all__ = [

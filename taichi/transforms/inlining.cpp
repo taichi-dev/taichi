@@ -39,8 +39,9 @@ class Inliner : public BasicStmtVisitor {
             return s->is<ReturnStmt>();
           }).size() > 1) {
         TI_WARN(
-            "Multiple returns in function \"{}\" may not be handled properly.",
-            func->get_name());
+            "Multiple returns in function \"{}\" may not be handled "
+            "properly.\n{}",
+            func->get_name(), stmt->tb);
       }
       // Use a local variable to store the return value
       auto *return_address = inlined_ir->as<Block>()->insert(

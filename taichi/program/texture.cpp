@@ -143,19 +143,7 @@ DevicePtr get_device_ptr(taichi::lang::Program *program, SNode *snode) {
   int tree_id = root->get_snode_tree_id();
   DevicePtr root_ptr = program->get_snode_tree_device_ptr(tree_id);
 
-  int64 offset = 0;
-
-  int child_id = root->child_id(dense_parent);
-
-  TI_ASSERT_INFO(root == program->get_snode_root(tree_id),
-                 "SNode roots don't match");
-
-  for (int i = 0; i < child_id; ++i) {
-    SNode *child = root->ch[i].get();
-    offset += child->cell_size_bytes * child->num_cells_per_container;
-  }
-
-  return root_ptr.get_ptr(offset);
+  return root_ptr.get_ptr(program->get_field_in_tree_offset(tree_id, snode));
 }
 
 void Texture::from_snode(SNode *snode) {

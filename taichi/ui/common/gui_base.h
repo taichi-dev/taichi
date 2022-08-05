@@ -14,6 +14,10 @@ class GuiBase {
   virtual void end() = 0;
   virtual void text(std::string text) = 0;
   virtual bool checkbox(std::string name, bool old_value) = 0;
+  virtual int slider_int(std::string name,
+                         int old_value,
+                         int minimum,
+                         int maximum) = 0;
   virtual float slider_float(std::string name,
                              float old_value,
                              float minimum,

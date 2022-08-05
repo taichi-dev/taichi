@@ -118,11 +118,9 @@ For the CUDA backend, `KernelProfiler` has an experimental GPU profiling toolkit
 
 Prerequisites to using CUPTI:
 1. Install CUDA Toolkit.
-2. Add environment variable:
-    - `export CUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda` to your shell configuration files such as `~/.bashrc` and `~/.zshrc`
-3. Build Taichi from source with CUDA toolkit:
+2. Build Taichi from source with CUDA toolkit:
     - `TAICHI_CMAKE_ARGS="-DTI_WITH_CUDA_TOOLKIT:BOOL=ON" python3 setup.py develop --user`
-4. Resolve privileges issue of Nvidia profiling module (run with `sudo` to get administrative privileges):
+3. Resolve privileges issue of Nvidia profiling module (run with `sudo` to get administrative privileges):
     - Add `options nvidia NVreg_RestrictProfilingToAdminUsers=0` to `/etc/modprobe.d/nvidia-kernel-common.conf`
     - Then `reboot` should resolve the permission issue (probably needs running `update-initramfs -u` before `reboot`)
     - See also [ERR_NVGPUCTRPERM](https://developer.nvidia.com/ERR_NVGPUCTRPERM).

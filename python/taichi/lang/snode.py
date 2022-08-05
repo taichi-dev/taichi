@@ -2,7 +2,7 @@ import numbers
 
 from taichi._lib import core as _ti_core
 from taichi.lang import expr, impl, matrix
-from taichi.lang.field import Field
+from taichi.lang.field import BitpackedFields, Field
 
 
 class SNode:
@@ -96,24 +96,13 @@ class SNode:
             self.ptr.bitmasked(axes, dimensions,
                                impl.current_cfg().packed))
 
-    def bit_struct(self, num_bits: int):
-        """Adds a bit_struct SNode as a child component of `self`.
-
-        Args:
-            num_bits: Number of bits to use.
-
-        Returns:
-            The added :class:`~taichi.lang.SNode` instance.
-        """
-        return SNode(self.ptr.bit_struct(num_bits, impl.current_cfg().packed))
-
-    def quant_array(self, axes, dimensions, num_bits):
+    def quant_array(self, axes, dimensions, max_num_bits):
         """Adds a quant_array SNode as a child component of `self`.
 
         Args:
             axes (List[Axis]): Axes to activate.
             dimensions (Union[List[int], int]): Shape of each axis.
-            num_bits (int): Number of bits to use.
+            max_num_bits (int): Maximum number of bits it can hold.
 
         Returns:
             The added :class:`~taichi.lang.SNode` instance.
@@ -121,16 +110,15 @@ class SNode:
         if isinstance(dimensions, int):
             dimensions = [dimensions] * len(axes)
         return SNode(
-            self.ptr.quant_array(axes, dimensions, num_bits,
+            self.ptr.quant_array(axes, dimensions, max_num_bits,
                                  impl.current_cfg().packed))
 
-    def place(self, *args, offset=None, shared_exponent=False):
+    def place(self, *args, offset=None):
         """Places a list of Taichi fields under the `self` container.
 
         Args:
             *args (List[ti.field]): A list of Taichi fields to place.
             offset (Union[Number, tuple[Number]]): Offset of the field domain.
-            shared_exponent (bool): Only useful for quant types.
 
         Returns:
             The `self` container.
@@ -139,20 +127,23 @@ class SNode:
             offset = ()
         if isinstance(offset, numbers.Number):
             offset = (offset, )
-        if shared_exponent:
-            self.ptr.begin_shared_exp_placement()
 
         for arg in args:
-            if isinstance(arg, Field):
+            if isinstance(arg, BitpackedFields):
+                bit_struct_type = arg.bit_struct_type_builder.build()
+                bit_struct_snode = self.ptr.bit_struct(
+                    bit_struct_type,
+                    impl.current_cfg().packed)
+                for (field, id_in_bit_struct) in arg.fields:
+                    bit_struct_snode.place(field, offset, id_in_bit_struct)
+            elif isinstance(arg, Field):
                 for var in arg._get_field_members():
-                    self.ptr.place(var.ptr, offset)
+                    self.ptr.place(var.ptr, offset, -1)
             elif isinstance(arg, list):
                 for x in arg:
                     self.place(x, offset=offset)
             else:
                 raise ValueError(f'{arg} cannot be placed')
-        if shared_exponent:
-            self.ptr.end_shared_exp_placement()
         return self
 
     def lazy_grad(self):

@@ -498,11 +498,10 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
     for (auto &bind : attribs.texture_binds) {
       DeviceAllocation texture = textures.at(bind.arg_id);
       if (bind.is_storage) {
-        current_cmdlist_->image_transition(texture,
-                                           ImageLayout::shader_read_write);
+        transition_image(texture, ImageLayout::shader_read_write);
         binder->rw_image(0, bind.binding, texture, 0);
       } else {
-        current_cmdlist_->image_transition(texture, ImageLayout::shader_read);
+        transition_image(texture, ImageLayout::shader_read);
         binder->image(0, bind.binding, texture, {});
       }
     }
@@ -558,6 +557,13 @@ void GfxRuntime::buffer_copy(DevicePtr dst, DevicePtr src, size_t size) {
   ensure_current_cmdlist();
   current_cmdlist_->buffer_copy(dst, src, size);
   submit_current_cmdlist_if_timeout();
+}
+void GfxRuntime::transition_image(DeviceAllocation image, ImageLayout layout) {
+  ImageLayout& last_layout = last_image_layouts_[image.alloc_id];
+  ensure_current_cmdlist();
+  current_cmdlist_->image_transition(image, last_layout, layout);
+  submit_current_cmdlist_if_timeout();
+  last_layout = layout;
 }
 
 void GfxRuntime::signal_event(DeviceEvent *event) {

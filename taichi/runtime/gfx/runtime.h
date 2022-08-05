@@ -102,6 +102,8 @@ class TI_DLL_EXPORT GfxRuntime {
 
   void buffer_copy(DevicePtr dst, DevicePtr src, size_t size);
 
+  void transition_image(DeviceAllocation image, ImageLayout layout);
+
   void signal_event(DeviceEvent *event);
   void reset_event(DeviceEvent *event);
   void wait_event(DeviceEvent *event);
@@ -142,6 +144,7 @@ class TI_DLL_EXPORT GfxRuntime {
   std::vector<std::unique_ptr<CompiledTaichiKernel>> ti_kernels_;
 
   std::unordered_map<DeviceAllocation *, size_t> root_buffers_size_map_;
+  std::unordered_map<DeviceAllocationId, ImageLayout> last_image_layouts_;
 };
 
 GfxRuntime::RegisterParams run_codegen(

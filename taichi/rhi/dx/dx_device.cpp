@@ -225,6 +225,7 @@ void Dx11CommandList::draw_indexed(uint32_t num_indicies,
 }
 
 void Dx11CommandList::image_transition(DeviceAllocation img,
+                                       ImageLayout old_layout,
                                        ImageLayout new_layout) {
   TI_NOT_IMPLEMENTED;
 }
@@ -799,6 +800,7 @@ void Dx11Device::destroy_image(DeviceAllocation handle) {
 }
 
 void Dx11Device::image_transition(DeviceAllocation img,
+                                  ImageLayout old_layout,
                                   ImageLayout new_layout) {
   TI_NOT_IMPLEMENTED;
 }

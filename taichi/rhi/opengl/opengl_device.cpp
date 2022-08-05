@@ -433,6 +433,7 @@ void GLCommandList::draw_indexed(uint32_t num_indicies,
 }
 
 void GLCommandList::image_transition(DeviceAllocation img,
+                                     ImageLayout old_layout,
                                      ImageLayout new_layout) {
   auto cmd = std::make_unique<CmdImageTransition>();
   recorded_commands_.push_back(std::move(cmd));
@@ -673,7 +674,7 @@ void GLDevice::destroy_image(DeviceAllocation handle) {
   image_to_int_format_.erase(handle.alloc_id);
 }
 
-void GLDevice::image_transition(DeviceAllocation img, ImageLayout new_layout) {
+void GLDevice::image_transition(DeviceAllocation img, ImageLayout old_layout, ImageLayout new_layout) {
   glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT | GL_TEXTURE_UPDATE_BARRIER_BIT |
                   GL_SHADER_IMAGE_ACCESS_BARRIER_BIT |
                   GL_FRAMEBUFFER_BARRIER_BIT);

@@ -63,7 +63,7 @@ bool SwapChain::copy_depth_buffer_to_ndarray(
 
     auto depth_staging_buffer = device.allocate_memory(params);
 
-    device.image_transition(depth_allocation_, ImageLayout::transfer_src);
+    device.image_transition(depth_allocation_, ImageLayout::depth_attachment, ImageLayout::transfer_src);
 
     BufferImageCopyParams copy_params;
     copy_params.image_extent.x = w;

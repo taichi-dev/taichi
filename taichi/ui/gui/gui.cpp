@@ -1,4 +1,4 @@
-#include "taichi/gui/gui.h"
+#include "taichi/ui/gui/gui.h"
 
 TI_NAMESPACE_BEGIN
 

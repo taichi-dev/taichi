@@ -28,7 +28,31 @@ if (TI_WITH_VULKAN)
     add_subdirectory(backends/vulkan)
     target_link_libraries(taichi_ui PRIVATE taichi_ui_vulkan)
 else()
-    message(STATUS "UI is not compiled with Vulkan on")
+    #TODO should we throw an error here?
+    message(STATUS "UI is not compiled with Vulkan ON")
 endif ()
 
 target_link_libraries(taichi_ui PRIVATE taichi_common)
+
+# Dear ImGui
+add_definitions(-DIMGUI_IMPL_VULKAN_NO_PROTOTYPES)
+set(IMGUI_DIR ${PROJECT_SOURCE_DIR}/external/imgui)
+file(GLOB TAICHI_IMGUI_SOURCE
+  ${IMGUI_DIR}/backends/imgui_impl_vulkan.cpp
+  ${IMGUI_DIR}/imgui.cpp
+  ${IMGUI_DIR}/imgui_draw.cpp
+  ${IMGUI_DIR}/imgui_tables.cpp
+  ${IMGUI_DIR}/imgui_widgets.cpp
+)
+if(ANDROID)
+    list(APPEND TAICHI_IMGUI_SOURCE ${IMGUI_DIR}/backends/imgui_impl_android.cpp)
+    add_library(imgui ${TAICHI_IMGUI_SOURCE})
+else()
+    list(APPEND TAICHI_IMGUI_SOURCE ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp)
+    add_library(imgui ${TAICHI_IMGUI_SOURCE})
+    target_include_directories(imgui PRIVATE ${PROJECT_SOURCE_DIR}/external/glfw/include)
+endif()
+
+target_include_directories(imgui PUBLIC ${IMGUI_DIR} ${IMGUI_DIR}/backends ..)
+target_include_directories(imgui PRIVATE ${PROJECT_SOURCE_DIR}/external/Vulkan-Headers/include)
+target_link_libraries(taichi_ui PRIVATE imgui)

@@ -378,29 +378,6 @@ foreach (source IN LISTS TAICHI_CORE_SOURCE)
 endforeach ()
 
 if(TI_WITH_GGUI)
-    # Dear ImGui
-    add_definitions(-DIMGUI_IMPL_VULKAN_NO_PROTOTYPES)
-    set(IMGUI_DIR external/imgui)
-    file(GLOB TAICHI_IMGUI_SOURCE
-      ${IMGUI_DIR}/backends/imgui_impl_vulkan.cpp
-      ${IMGUI_DIR}/imgui.cpp
-      ${IMGUI_DIR}/imgui_draw.cpp
-      ${IMGUI_DIR}/imgui_tables.cpp
-      ${IMGUI_DIR}/imgui_widgets.cpp
-    )
-    if(ANDROID)
-        list(APPEND TAICHI_IMGUI_SOURCE ${IMGUI_DIR}/backends/imgui_impl_android.cpp)
-        add_library(imgui ${TAICHI_IMGUI_SOURCE})
-    else()
-        list(APPEND TAICHI_IMGUI_SOURCE ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp)
-        add_library(imgui ${TAICHI_IMGUI_SOURCE})
-        target_include_directories(imgui PRIVATE external/glfw/include)
-    endif()
-    target_include_directories(imgui PUBLIC ${IMGUI_DIR} ${IMGUI_DIR}/backends ..)
-    target_include_directories(imgui PRIVATE external/Vulkan-Headers/include)
-    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE imgui)
-
-    # Taichi GUI/GGUI
     add_subdirectory(taichi/ui)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE taichi_ui)
 endif()

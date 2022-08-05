@@ -320,7 +320,6 @@ void LlvmOfflineCacheFileWriter::mangle_offloaded_task_name(
     const std::string &kernel_key,
     std::vector<LLVMCompiledData> &compiled_data_list) {
   if (!mangled_) {
-    std::size_t cnt = 0;
     for (auto &e : compiled_data_list) {
       for (auto &offload : e.tasks) {
         std::string mangled_name =

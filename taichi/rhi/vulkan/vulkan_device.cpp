@@ -2501,7 +2501,8 @@ void VulkanSurface::present_image(
   std::vector<VkSemaphore> vk_wait_semaphores;
 
   // Already transitioned to `present_src` at the end of the render pass.
-  //device_->image_transition(get_target_image(), ImageLayout::color_attachment,
+  // device_->image_transition(get_target_image(),
+  // ImageLayout::color_attachment,
   //                          ImageLayout::present_src);
 
   for (const StreamSemaphore &sema_ : wait_semaphores) {
@@ -2600,11 +2601,13 @@ DeviceAllocation VulkanSurface::get_image_data() {
   copy_params.image_extent.y = h;
   copy_params.image_aspect_flag = VK_IMAGE_ASPECT_COLOR_BIT;
   cmd_list = stream->new_command_list();
-  cmd_list->image_transition(img_alloc, ImageLayout::present_src, ImageLayout::transfer_src);
+  cmd_list->image_transition(img_alloc, ImageLayout::present_src,
+                             ImageLayout::transfer_src);
   // TODO: directly map the image to cpu memory
   cmd_list->image_to_buffer(screenshot_buffer_.get_ptr(), img_alloc,
                             ImageLayout::transfer_src, copy_params);
-  cmd_list->image_transition(img_alloc, ImageLayout::transfer_src, ImageLayout::present_src);
+  cmd_list->image_transition(img_alloc, ImageLayout::transfer_src,
+                             ImageLayout::present_src);
   /*
   if (config_.window_handle) {
     cmd_list->image_transition(screenshot_image_, ImageLayout::transfer_src,

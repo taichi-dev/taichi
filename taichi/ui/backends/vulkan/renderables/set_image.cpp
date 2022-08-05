@@ -98,7 +98,7 @@ void SetImage::update_data(const SetImageInfo &info) {
 
   auto stream = app_context_->device().get_graphics_stream();
   auto cmd_list = stream->new_command_list();
-  cmd_list->image_transition(texture_, ImageLayout::transfer_src,
+  cmd_list->image_transition(texture_, ImageLayout::undefined,
                              ImageLayout::transfer_dst);
   cmd_list->buffer_to_image(texture_, gpu_staging_buffer_.get_ptr(0),
                             ImageLayout::transfer_dst, copy_params);

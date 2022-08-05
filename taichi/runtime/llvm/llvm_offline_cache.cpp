@@ -323,7 +323,8 @@ void LlvmOfflineCacheFileWriter::mangle_offloaded_task_name(
     std::size_t cnt = 0;
     for (auto &e : compiled_data_list) {
       for (auto &offload : e.tasks) {
-        std::string mangled_name = offline_cache::mangle_name(offload.name, kernel_key);
+        std::string mangled_name =
+            offline_cache::mangle_name(offload.name, kernel_key);
         TI_DEBUG(
             "Mangle offloaded-task from internal name '{}' to offline cache "
             "key '{}'",

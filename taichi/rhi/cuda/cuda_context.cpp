@@ -90,8 +90,10 @@ void CUDAContext::launch(void *func,
     KernelProfilerCUDA *profiler_cuda =
         dynamic_cast<KernelProfilerCUDA *>(profiler_);
     std::string primal_task_name, key;
-    bool valid = offline_cache::try_demangle_name(task_name, primal_task_name, key);
-    profiler_cuda->trace(task_handle, valid ? primal_task_name : task_name, func, grid_dim, block_dim, 0);
+    bool valid =
+        offline_cache::try_demangle_name(task_name, primal_task_name, key);
+    profiler_cuda->trace(task_handle, valid ? primal_task_name : task_name,
+                         func, grid_dim, block_dim, 0);
   }
 
   auto context_guard = CUDAContext::get_instance().get_guard();

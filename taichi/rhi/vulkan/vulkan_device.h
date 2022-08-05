@@ -438,8 +438,6 @@ class VulkanCommandList : public CommandList {
   vkapi::IVkQueryPool vk_query_pool();
 
  private:
-  friend class VulkanStream;
-
   bool finalized_{false};
   VulkanDevice *ti_device_;
   VulkanStream *stream_;
@@ -459,13 +457,6 @@ class VulkanCommandList : public CommandList {
   vkapi::IVkRenderPass current_renderpass_{VK_NULL_HANDLE};
   vkapi::IVkFramebuffer current_framebuffer_{VK_NULL_HANDLE};
   uint32_t viewport_width_{0}, viewport_height_{0};
-
-  struct PendingImageLayout {
-    // Image layout at the first time the command buffer referred to an image.
-    VkImageLayout old_layout;
-    // Expected image layout after the execution of this command buffer.
-    VkImageLayout new_layout;
-  };
 };
 
 class VulkanSurface : public Surface {
@@ -661,8 +652,7 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
 
   DeviceAllocation import_vk_image(vkapi::IVkImage image,
                                    vkapi::IVkImageView view,
-                                   VkFormat format,
-                                   VkImageLayout layout);
+                                   VkFormat format);
 
   vkapi::IVkImageView get_vk_imageview(const DeviceAllocation &alloc) const;
 

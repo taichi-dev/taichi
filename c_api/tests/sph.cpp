@@ -5,7 +5,6 @@
 
 #include "c_api_test_utils.h"
 #include "taichi/taichi_core.h"
-#include "taichi/taichi_helpers.h"
 
 #define NR_PARTICLES 8000
 constexpr int SUBSTEPS = 5;
@@ -32,42 +31,42 @@ void run(TiArch arch, const std::string &folder_dir) {
   const std::vector<int> shape_1d = {NR_PARTICLES};
   const std::vector<int> vec3_shape = {3};
 
-  auto N_ = make_ndarray(runtime, TiDataType::TI_DATA_TYPE_I32, shape_1d.data(),
-                         1, vec3_shape.data(), 1, false /*host_read*/,
-                         false /*host_write*/
+  auto N_ = capi::utils::make_ndarray(runtime, TiDataType::TI_DATA_TYPE_I32,
+                                      shape_1d.data(), 1, vec3_shape.data(), 1,
+                                      false /*host_read*/, false /*host_write*/
   );
-  auto den_ =
-      make_ndarray(runtime, TiDataType::TI_DATA_TYPE_F32, shape_1d.data(), 1,
-                   nullptr, 0, false /*host_read*/, false /*host_write*/
-      );
-  auto pre_ =
-      make_ndarray(runtime, TiDataType::TI_DATA_TYPE_F32, shape_1d.data(), 1,
-                   nullptr, 0, false /*host_read*/, false /*host_write*/
-      );
+  auto den_ = capi::utils::make_ndarray(
+      runtime, TiDataType::TI_DATA_TYPE_F32, shape_1d.data(), 1, nullptr, 0,
+      false /*host_read*/, false /*host_write*/
+  );
+  auto pre_ = capi::utils::make_ndarray(
+      runtime, TiDataType::TI_DATA_TYPE_F32, shape_1d.data(), 1, nullptr, 0,
+      false /*host_read*/, false /*host_write*/
+  );
 
-  auto pos_ = make_ndarray(runtime, TiDataType::TI_DATA_TYPE_F32,
-                           shape_1d.data(), 1, vec3_shape.data(), 1,
-                           false /*host_read*/, false /*host_write*/
+  auto pos_ = capi::utils::make_ndarray(
+      runtime, TiDataType::TI_DATA_TYPE_F32, shape_1d.data(), 1,
+      vec3_shape.data(), 1, false /*host_read*/, false /*host_write*/
   );
-  auto vel_ = make_ndarray(runtime, TiDataType::TI_DATA_TYPE_F32,
-                           shape_1d.data(), 1, vec3_shape.data(), 1,
-                           false /*host_read*/, false /*host_write*/
+  auto vel_ = capi::utils::make_ndarray(
+      runtime, TiDataType::TI_DATA_TYPE_F32, shape_1d.data(), 1,
+      vec3_shape.data(), 1, false /*host_read*/, false /*host_write*/
   );
-  auto acc_ = make_ndarray(runtime, TiDataType::TI_DATA_TYPE_F32,
-                           shape_1d.data(), 1, vec3_shape.data(), 1,
-                           false /*host_read*/, false /*host_write*/
+  auto acc_ = capi::utils::make_ndarray(
+      runtime, TiDataType::TI_DATA_TYPE_F32, shape_1d.data(), 1,
+      vec3_shape.data(), 1, false /*host_read*/, false /*host_write*/
   );
-  auto boundary_box_ = make_ndarray(runtime, TiDataType::TI_DATA_TYPE_F32,
-                                    shape_1d.data(), 1, vec3_shape.data(), 1,
-                                    false /*host_read*/, false /*host_write*/
+  auto boundary_box_ = capi::utils::make_ndarray(
+      runtime, TiDataType::TI_DATA_TYPE_F32, shape_1d.data(), 1,
+      vec3_shape.data(), 1, false /*host_read*/, false /*host_write*/
   );
-  auto spawn_box_ = make_ndarray(runtime, TiDataType::TI_DATA_TYPE_F32,
-                                 shape_1d.data(), 1, vec3_shape.data(), 1,
-                                 false /*host_read*/, false /*host_write*/
+  auto spawn_box_ = capi::utils::make_ndarray(
+      runtime, TiDataType::TI_DATA_TYPE_F32, shape_1d.data(), 1,
+      vec3_shape.data(), 1, false /*host_read*/, false /*host_write*/
   );
-  auto gravity_ = make_ndarray(runtime, TiDataType::TI_DATA_TYPE_F32, nullptr,
-                               0, vec3_shape.data(), 1, false /*host_read*/,
-                               false /*host_write*/);
+  auto gravity_ = capi::utils::make_ndarray(
+      runtime, TiDataType::TI_DATA_TYPE_F32, nullptr, 0, vec3_shape.data(), 1,
+      false /*host_read*/, false /*host_write*/);
 
   TiArgument k_initialize_args[3];
   TiArgument k_initialize_particle_args[4];

@@ -5,7 +5,6 @@
 
 #include "c_api_test_utils.h"
 #include "taichi/taichi_core.h"
-#include "taichi/taichi_helpers.h"
 
 namespace demo {
 
@@ -27,33 +26,34 @@ class MPM88DemoImpl {
     const std::vector<int> vec3_shape = {3};
     const std::vector<int> mat2_shape = {2, 2};
 
-    x_ = make_ndarray(runtime_, TiDataType::TI_DATA_TYPE_F32, shape_1d.data(),
-                      1, vec2_shape.data(), 1,
-                      /*host_read=*/false, /*host_write=*/false);
+    x_ = capi::utils::make_ndarray(runtime_, TiDataType::TI_DATA_TYPE_F32,
+                                   shape_1d.data(), 1, vec2_shape.data(), 1,
+                                   /*host_read=*/false, /*host_write=*/false);
 
-    v_ = make_ndarray(runtime_, TiDataType::TI_DATA_TYPE_F32, shape_1d.data(),
-                      1, vec2_shape.data(), 1,
-                      /*host_read=*/false, /*host_write=*/false);
+    v_ = capi::utils::make_ndarray(runtime_, TiDataType::TI_DATA_TYPE_F32,
+                                   shape_1d.data(), 1, vec2_shape.data(), 1,
+                                   /*host_read=*/false, /*host_write=*/false);
 
-    pos_ = make_ndarray(runtime_, TiDataType::TI_DATA_TYPE_F32, shape_1d.data(),
-                        1, vec3_shape.data(), 1,
-                        /*host_read=*/false, /*host_write=*/false);
+    pos_ = capi::utils::make_ndarray(runtime_, TiDataType::TI_DATA_TYPE_F32,
+                                     shape_1d.data(), 1, vec3_shape.data(), 1,
+                                     /*host_read=*/false, /*host_write=*/false);
 
-    C_ = make_ndarray(runtime_, TiDataType::TI_DATA_TYPE_F32, shape_1d.data(),
-                      1, mat2_shape.data(), 2,
-                      /*host_read=*/false, /*host_write=*/false);
+    C_ = capi::utils::make_ndarray(runtime_, TiDataType::TI_DATA_TYPE_F32,
+                                   shape_1d.data(), 1, mat2_shape.data(), 2,
+                                   /*host_read=*/false, /*host_write=*/false);
 
-    J_ = make_ndarray(runtime_, TiDataType::TI_DATA_TYPE_F32, shape_1d.data(),
-                      1, nullptr, 0,
-                      /*host_read=*/false, /*host_write=*/false);
+    J_ = capi::utils::make_ndarray(runtime_, TiDataType::TI_DATA_TYPE_F32,
+                                   shape_1d.data(), 1, nullptr, 0,
+                                   /*host_read=*/false, /*host_write=*/false);
 
-    grid_v_ = make_ndarray(runtime_, TiDataType::TI_DATA_TYPE_F32,
-                           shape_2d.data(), 2, vec2_shape.data(), 1,
-                           /*host_read=*/false, /*host_write=*/false);
+    grid_v_ =
+        capi::utils::make_ndarray(runtime_, TiDataType::TI_DATA_TYPE_F32,
+                                  shape_2d.data(), 2, vec2_shape.data(), 1,
+                                  /*host_read=*/false, /*host_write=*/false);
 
-    grid_m_ = make_ndarray(runtime_, TiDataType::TI_DATA_TYPE_F32,
-                           shape_2d.data(), 2, nullptr, 0,
-                           /*host_read=*/false, /*host_write=*/false);
+    grid_m_ = capi::utils::make_ndarray(
+        runtime_, TiDataType::TI_DATA_TYPE_F32, shape_2d.data(), 2, nullptr, 0,
+        /*host_read=*/false, /*host_write=*/false);
 
     k_init_particles_ = ti_get_aot_module_kernel(module_, "init_particles");
     k_substep_g2p_ = ti_get_aot_module_kernel(module_, "substep_g2p");
@@ -118,13 +118,13 @@ class MPM88DemoImpl {
   TiRuntime runtime_;
   TiAotModule module_{nullptr};
 
-  TiNdarrayAndMem x_{nullptr};
-  TiNdarrayAndMem v_{nullptr};
-  TiNdarrayAndMem J_{nullptr};
-  TiNdarrayAndMem C_{nullptr};
-  TiNdarrayAndMem grid_v_{nullptr};
-  TiNdarrayAndMem grid_m_{nullptr};
-  TiNdarrayAndMem pos_{nullptr};
+  capi::utils::TiNdarrayAndMem x_{nullptr};
+  capi::utils::TiNdarrayAndMem v_{nullptr};
+  capi::utils::TiNdarrayAndMem J_{nullptr};
+  capi::utils::TiNdarrayAndMem C_{nullptr};
+  capi::utils::TiNdarrayAndMem grid_v_{nullptr};
+  capi::utils::TiNdarrayAndMem grid_m_{nullptr};
+  capi::utils::TiNdarrayAndMem pos_{nullptr};
 
   TiKernel k_init_particles_{nullptr};
   TiKernel k_substep_reset_grid_{nullptr};

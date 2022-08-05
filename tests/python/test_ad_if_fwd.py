@@ -17,7 +17,7 @@ def test_ad_if_simple_fwd():
             y[None] = x[None]
 
     x[None] = 1
-    with ti.ad.FwdMode(loss=y, parameters=x, seed=[1.0]):
+    with ti.ad.FwdMode(loss=y, param=x, seed=[1.0]):
         func()
 
     assert y.dual[None] == 1
@@ -38,7 +38,7 @@ def test_ad_if():
 
     x[0] = 0
     x[1] = 1
-    with ti.ad.FwdMode(loss=y, parameters=x, seed=[1.0, 1.0]):
+    with ti.ad.FwdMode(loss=y, param=x, seed=[1.0, 1.0]):
         func(0)
         func(1)
     assert y.dual[0] == 2
@@ -76,7 +76,7 @@ def test_ad_if_nested():
     for i in range(n):
         assert y[i] == i % 4
 
-    with ti.ad.FwdMode(loss=y, parameters=z, seed=[1.0 for _ in range(n)]):
+    with ti.ad.FwdMode(loss=y, param=z, seed=[1.0 for _ in range(n)]):
         func()
 
     for i in range(n):
@@ -101,7 +101,7 @@ def test_ad_if_mutable():
     x[0] = 0
     x[1] = 1
 
-    with ti.ad.FwdMode(loss=y, parameters=x, seed=[1.0, 1.0]):
+    with ti.ad.FwdMode(loss=y, param=x, seed=[1.0, 1.0]):
         func(0)
         func(1)
 
@@ -128,7 +128,7 @@ def test_ad_if_parallel():
     x[0] = 0
     x[1] = 1
 
-    with ti.ad.FwdMode(loss=y, parameters=x, seed=[1.0, 1.0]):
+    with ti.ad.FwdMode(loss=y, param=x, seed=[1.0, 1.0]):
         func()
 
     assert y.dual[0] == 2
@@ -154,7 +154,7 @@ def test_ad_if_parallel_f64():
     x[0] = 0
     x[1] = 1
 
-    with ti.ad.FwdMode(loss=y, parameters=x, seed=[1.0, 1.0]):
+    with ti.ad.FwdMode(loss=y, param=x, seed=[1.0, 1.0]):
         func()
 
     assert y.dual[0] == 2
@@ -180,7 +180,7 @@ def test_ad_if_parallel_complex():
     x[0] = 0
     x[1] = 2
 
-    with ti.ad.FwdMode(loss=y, parameters=x, seed=[1.0, 1.0]):
+    with ti.ad.FwdMode(loss=y, param=x, seed=[1.0, 1.0]):
         func()
 
     assert y.dual[0] == 0
@@ -206,7 +206,7 @@ def test_ad_if_parallel_complex_f64():
     x[0] = 0
     x[1] = 2
 
-    with ti.ad.FwdMode(loss=y, parameters=x, seed=[1.0, 1.0]):
+    with ti.ad.FwdMode(loss=y, param=x, seed=[1.0, 1.0]):
         func()
 
     assert y.dual[0] == 0

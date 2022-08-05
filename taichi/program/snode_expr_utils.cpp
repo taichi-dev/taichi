@@ -48,12 +48,13 @@ class GradInfoImpl final : public SNode::GradInfoProvider {
 
 void place_child(Expr *expr_arg,
                  const std::vector<int> &offset,
+                 int id_in_bit_struct,
                  SNode *parent,
                  SNodeGlobalVarExprMap *snode_to_exprs) {
   if (parent->type == SNodeType::root) {
     // never directly place to root
     auto &ds = parent->dense(std::vector<Axis>(), {}, false);
-    place_child(expr_arg, offset, &ds, snode_to_exprs);
+    place_child(expr_arg, offset, id_in_bit_struct, &ds, snode_to_exprs);
   } else {
     TI_ASSERT(expr_arg->is<GlobalVariableExpression>());
     auto glb_var_expr = expr_arg->cast<GlobalVariableExpression>();
@@ -74,10 +75,7 @@ void place_child(Expr *expr_arg,
         std::make_unique<GradInfoImpl>(glb_var_expr.get());
     (*snode_to_exprs)[glb_var_expr->snode] = glb_var_expr;
     child.dt = glb_var_expr->dt;
-    if (parent->bit_struct_type_builder) {
-      child.id_in_bit_struct =
-          parent->bit_struct_type_builder->add_member(child.dt);
-    }
+    child.id_in_bit_struct = id_in_bit_struct;
     if (!offset.empty())
       child.set_index_offsets(offset);
   }
@@ -97,7 +95,7 @@ void make_lazy_place(SNode *snode,
     collect(c, new_places);
   }
   for (auto p : new_places) {
-    place_child(&p, /*offset=*/{}, snode, snode_to_exprs);
+    place_child(&p, /*offset=*/{}, -1, snode, snode_to_exprs);
   }
 }
 

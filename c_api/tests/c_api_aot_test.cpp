@@ -2,7 +2,7 @@
 #include "c_api_test_utils.h"
 #include "taichi/taichi_core.h"
 
-void kernel_aot_test(TiArch arch) {
+static void kernel_aot_test(TiArch arch) {
   uint32_t kArrLen = 32;
   int arg0_val = 0;
 
@@ -57,7 +57,7 @@ void kernel_aot_test(TiArch arch) {
   ti_destroy_runtime(runtime);
 }
 
-void field_aot_test(TiArch arch) {
+static void field_aot_test(TiArch arch) {
   int base_val = 10;
 
   const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");

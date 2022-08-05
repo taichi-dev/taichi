@@ -72,8 +72,5 @@ class TI_DLL_EXPORT Ndarray {
   Program *prog_{nullptr};
 };
 
-// TODO: move this as a method inside RuntimeContext once Ndarray is decoupled
-// with Program
-void set_runtime_ctx_ndarray(RuntimeContext *ctx, int arg_id, Ndarray *ndarray);
 }  // namespace lang
 }  // namespace taichi

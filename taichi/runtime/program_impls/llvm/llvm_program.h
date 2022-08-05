@@ -208,6 +208,23 @@ class LlvmProgramImpl : public ProgramImpl {
     runtime_exec_->check_runtime_error(result_buffer);
   }
 
+  size_t get_field_in_tree_offset(int tree_id, const SNode *child) override {
+    // FIXME: Compute the proper offset. Current method taken from GGUI code
+    size_t offset = 0;
+
+    SNode *dense_parent = child->parent;
+    SNode *root = dense_parent->parent;
+
+    int child_id = root->child_id(dense_parent);
+
+    for (int i = 0; i < child_id; ++i) {
+      SNode *child = root->ch[i].get();
+      offset += child->cell_size_bytes * child->num_cells_per_container;
+    }
+
+    return offset;
+  }
+
   DevicePtr get_snode_tree_device_ptr(int tree_id) override {
     return runtime_exec_->get_snode_tree_device_ptr(tree_id);
   }
@@ -226,6 +243,10 @@ class LlvmProgramImpl : public ProgramImpl {
 
   LlvmRuntimeExecutor *get_runtime_executor() {
     return runtime_exec_.get();
+  }
+
+  const std::unique_ptr<LlvmOfflineCacheFileReader> &get_cache_reader() {
+    return cache_reader_;
   }
 
   // TODO(zhanlue): Rearrange llvm::Context's ownership
@@ -257,15 +278,18 @@ class LlvmProgramImpl : public ProgramImpl {
   // 2. LlvmProgramImpl
   //
   // Make sure the above mentioned objects are destructed in order.
-  ~LlvmProgramImpl() {
+  ~LlvmProgramImpl() override {
     // Explicitly enforce "LlvmOfflineCache::CachedKernelData::owned_module"
     // destructs before
     // "LlvmRuntimeExecutor::TaichiLLVMContext::ThreadSafeContext"
 
-    // 1. Destructs cahce_data_
+    // 1. Destructs cache_data_
     cache_data_.reset();
 
-    // 2. Destructs runtime_exec_
+    // 2. Destructs cache_reader_
+    cache_reader_.reset();
+
+    // 3. Destructs runtime_exec_
     runtime_exec_.reset();
   }
   ParallelExecutor compilation_workers;  // parallel compilation
@@ -274,6 +298,7 @@ class LlvmProgramImpl : public ProgramImpl {
   std::size_t num_snode_trees_processed_{0};
   std::unique_ptr<LlvmRuntimeExecutor> runtime_exec_;
   std::unique_ptr<LlvmOfflineCache> cache_data_;
+  std::unique_ptr<LlvmOfflineCacheFileReader> cache_reader_;
 };
 
 LlvmProgramImpl *get_llvm_program(Program *prog);

@@ -31,6 +31,7 @@ CompileConfig::CompileConfig() {
   move_loop_invariant_outside_if = false;
   default_fp = PrimitiveType::f32;
   default_ip = PrimitiveType::i32;
+  default_up = PrimitiveType::u32;
   verbose_kernel_launches = false;
   kernel_profiler = false;
   default_cpu_block_dim = 32;

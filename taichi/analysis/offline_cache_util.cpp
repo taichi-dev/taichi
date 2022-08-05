@@ -179,9 +179,11 @@ constexpr std::size_t min_mangled_name_length = offline_cache_key_length + 2;
 
 std::string mangle_name(const std::string &primal_name,
                         const std::string &key) {
-  TI_ASSERT(key.size() == offline_cache_key_length);
   // Result: {primal_name}{key: char[65]}_{(checksum(primal_name)) ^
   // checksum(key)}
+  if (key.size() != offline_cache_key_length) {
+    return primal_name;
+  }
   std::size_t checksum1{0}, checksum2{0};
   for (auto &e : primal_name) {
     checksum1 += std::size_t(e);

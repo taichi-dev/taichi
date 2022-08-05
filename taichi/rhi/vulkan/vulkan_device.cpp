@@ -2501,7 +2501,8 @@ void VulkanSurface::present_image(
     const std::vector<StreamSemaphore> &wait_semaphores) {
   std::vector<VkSemaphore> vk_wait_semaphores;
 
-  device_->image_transition(get_target_image(), ImageLayout::color_attachment, ImageLayout::present_src);
+  device_->image_transition(get_target_image(), ImageLayout::color_attachment,
+                            ImageLayout::present_src);
 
   for (const StreamSemaphore &sema_ : wait_semaphores) {
     auto sema = std::static_pointer_cast<VulkanStreamSemaphoreObject>(sema_);
@@ -2542,7 +2543,8 @@ DeviceAllocation VulkanSurface::get_depth_data(DeviceAllocation &depth_alloc) {
   copy_params.image_extent.y = h;
   copy_params.image_aspect_flag = VK_IMAGE_ASPECT_DEPTH_BIT;
   cmd_list = stream->new_command_list();
-  cmd_list->image_transition(depth_alloc, ImageLayout::depth_attachment, ImageLayout::transfer_src);
+  cmd_list->image_transition(depth_alloc, ImageLayout::depth_attachment,
+                             ImageLayout::transfer_src);
   cmd_list->image_to_buffer(depth_buffer_.get_ptr(), depth_alloc,
                             ImageLayout::transfer_src, copy_params);
   stream->submit_synced(cmd_list.get());
@@ -2576,7 +2578,8 @@ DeviceAllocation VulkanSurface::get_image_data() {
     screenshot_buffer_ = device_->allocate_memory(params);
   }
 
-  device_->image_transition(img_alloc, ImageLayout::color_attachment, ImageLayout::transfer_src);
+  device_->image_transition(img_alloc, ImageLayout::color_attachment,
+                            ImageLayout::transfer_src);
 
   std::unique_ptr<CommandList> cmd_list{nullptr};
 

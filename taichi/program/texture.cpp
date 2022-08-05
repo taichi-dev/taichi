@@ -127,7 +127,8 @@ void Texture::from_ndarray(Ndarray *ndarray) {
   params.image_extent.z = depth_;
 
   cmdlist->buffer_barrier(ndarray->ndarray_alloc_);
-  cmdlist->image_transition(texture_alloc_, ImageLayout::undefined, ImageLayout::transfer_dst);
+  cmdlist->image_transition(texture_alloc_, ImageLayout::undefined,
+                            ImageLayout::transfer_dst);
   cmdlist->buffer_to_image(texture_alloc_, ndarray->ndarray_alloc_.get_ptr(0),
                            ImageLayout::transfer_dst, params);
 
@@ -166,7 +167,8 @@ void Texture::from_snode(SNode *snode) {
   params.image_extent.z = depth_;
 
   cmdlist->buffer_barrier(devptr);
-  cmdlist->image_transition(texture_alloc_, ImageLayout::undefined, ImageLayout::transfer_dst);
+  cmdlist->image_transition(texture_alloc_, ImageLayout::undefined,
+                            ImageLayout::transfer_dst);
   cmdlist->buffer_to_image(texture_alloc_, devptr, ImageLayout::transfer_dst,
                            params);
 

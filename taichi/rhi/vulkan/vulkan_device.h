@@ -401,7 +401,9 @@ class VulkanCommandList : public CommandList {
                              uint32_t start_index = 0,
                              uint32_t start_instance = 0) override;
   void set_line_width(float width) override;
-  void image_transition(DeviceAllocation img, ImageLayout old_layout, ImageLayout new_layout) override;
+  void image_transition(DeviceAllocation img,
+                        ImageLayout old_layout,
+                        ImageLayout new_layout) override;
   void buffer_to_image(DeviceAllocation dst_img,
                        DevicePtr src_buf,
                        ImageLayout img_layout,

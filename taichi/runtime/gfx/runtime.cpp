@@ -559,7 +559,7 @@ void GfxRuntime::buffer_copy(DevicePtr dst, DevicePtr src, size_t size) {
   submit_current_cmdlist_if_timeout();
 }
 void GfxRuntime::transition_image(DeviceAllocation image, ImageLayout layout) {
-  ImageLayout& last_layout = last_image_layouts_[image.alloc_id];
+  ImageLayout &last_layout = last_image_layouts_[image.alloc_id];
   ensure_current_cmdlist();
   current_cmdlist_->image_transition(image, last_layout, layout);
   submit_current_cmdlist_if_timeout();

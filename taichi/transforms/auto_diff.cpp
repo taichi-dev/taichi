@@ -990,7 +990,9 @@ class MakeAdjoint : public ADTransform {
   void visit(GlobalLoadStmt *stmt) override {
     // issue global store to adjoint
     if (stmt->src->is<ExternalPtrStmt>()) {
-      TI_ERROR("Src of GlobalLoadStmt does not support ExternalPtrStmt now.")
+      TI_ERROR(
+          "Importing data from external array (such as numpy array) not "
+          "supported in AutoDiff for now")
     }
     GlobalPtrStmt *src = stmt->src->as<GlobalPtrStmt>();
     TI_ASSERT(src->width() == 1);
@@ -1012,7 +1014,9 @@ class MakeAdjoint : public ADTransform {
   void visit(GlobalStoreStmt *stmt) override {
     // erase and replace with global load adjoint
     if (stmt->dest->is<ExternalPtrStmt>()) {
-      TI_ERROR("Dest of GlobalStoreStmt does not support ExternalPtrStmt now.")
+      TI_ERROR(
+          "Exporting data to external array (such as numpy array) not "
+          "supported in AutoDiff for now")
     }
     GlobalPtrStmt *dest = stmt->dest->as<GlobalPtrStmt>();
     TI_ASSERT(dest->width() == 1);

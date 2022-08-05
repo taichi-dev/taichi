@@ -9,10 +9,27 @@ TiNdarrayAndMem make_ndarray(TiRuntime runtime,
                              int element_dims,
                              bool host_read,
                              bool host_write) {
-  size_t alloc_size = 4;
-  assert(dtype == TiDataType::TI_DATA_TYPE_F32 ||
-         dtype == TiDataType::TI_DATA_TYPE_I32 ||
-         dtype == TiDataType::TI_DATA_TYPE_U32);
+  size_t alloc_size = 1;
+  if (dtype == TiDataType::TI_DATA_TYPE_F64 ||
+      dtype == TiDataType::TI_DATA_TYPE_I64 ||
+      dtype == TiDataType::TI_DATA_TYPE_U64) {
+    alloc_size = 8;
+
+  } else if (dtype == TiDataType::TI_DATA_TYPE_F32 ||
+             dtype == TiDataType::TI_DATA_TYPE_I32 ||
+             dtype == TiDataType::TI_DATA_TYPE_U32) {
+    alloc_size = 4;
+
+  } else if (dtype == TI_DATA_TYPE_F16 || dtype == TI_DATA_TYPE_I16 ||
+             dtype == TI_DATA_TYPE_U16) {
+    alloc_size = 2;
+
+  } else if (dtype == TI_DATA_TYPE_I8 || dtype == TI_DATA_TYPE_U8) {
+    alloc_size = 1;
+
+  } else {
+    assert(false);
+  }
 
   for (int i = 0; i < arr_dims; i++) {
     alloc_size *= arr_shape[i];

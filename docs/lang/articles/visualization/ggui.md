@@ -94,6 +94,7 @@ Note that you need to call `point_light()` for every frame. Similar to the `canv
 ### 3D Geometries
 
 ```python
+scene.lines(vertices, width, indices, color, per_vertex_color)
 scene.mesh(vertices, indices, normals, color, per_vertex_color)
 scene.particles(vertices, radius, color, per_vertex_color)
 ```
@@ -108,6 +109,212 @@ If a mesh has `num` triangles, the `indices` should be a 1D scalar field with a 
 
 `normals` is an optional parameter for `scene.mesh()`.
 
+:::example
+
+1. Example of drawing 3d-lines
+
+```python
+import taichi as ti
+
+ti.init(arch=ti.cuda)
+
+N = 10
+
+particles_pos = ti.Vector.field(3, dtype=ti.f32, shape = N)
+points_pos = ti.Vector.field(3, dtype=ti.f32, shape = N)
+        
+@ti.kernel
+def init_points_pos(points : ti.template()):
+    for i in range(points.shape[0]):
+        points[i] = [i for j in ti.static(range(3))]
+
+init_points_pos(particles_pos)
+init_points_pos(points_pos)
+
+window = ti.ui.Window("Test for Drawing 3d-lines", (768, 768))
+canvas = window.get_canvas()
+scene = ti.ui.Scene()
+camera = ti.ui.make_camera()
+camera.position(5, 2, 2)
+
+while window.running:
+    camera.track_user_inputs(window, movement_speed=0.03, hold_key=ti.ui.RMB)
+    scene.set_camera(camera)
+    scene.ambient_light((0.8, 0.8, 0.8))
+    scene.point_light(pos=(0.5, 1.5, 1.5), color=(1, 1, 1))
+    
+    scene.particles(particles_pos, color = (0.68, 0.26, 0.19), radius = 0.1)
+    # Here draw 3d-lines in the scene
+    scene.lines(points_pos, color = (0.28, 0.68, 0.99), width = 5.0)
+    canvas.scene(scene)
+    window.show()
+```
+
+### Advanced 3d Geometries
+
+```python
+scene.lines(vertices, width, indices, color, per_vertex_color, vertex_offset, vertex_count, index_offset, index_count)
+
+scene.mesh(vertices, indices, normals, color, per_vertex_color, vertex_offset, vertex_count, index_offset, index_count, show_wareframe)
+
+scene.particles(vertices, radius, color, per_vertex_color, index_offset, index_count)
+
+scene.mesh_instance(vertices, indices, normals, color, per_vertex_color, vertex_offset, vertex_count, index_offset, index_count, show_wareframe)
+```
+
+The additional arguments `vertex_offset`, `vertex_count`, `index_offset` and `index_count` are here for you to control the visiable part of the particles and mesh. And for `mesh` and `mesh_instance`, you can choose if to show wareframe mode through setting `show_wareframe`.
+
+:::example
+
+1. Example of drawing a part of the mesh/particles
+
+```python
+# For particles
+# draw 2-th to 7-th particles
+scene.particles(center, radius, 
+index_offset = 1, 
+index_count = 6) 
+
+# For mesh
+# 1. with indices
+scene.mesh(vertices, indices, 
+index_offset  = user_defined_first_indices_index, 
+index_count   = user_defined_index_count, 
+# vertex_offset default is set 0, and is not necessary
+# to be passed by a value otherwise you must.
+vertex_offset = user_defined_vertex_offset)
+
+# usually used as below:
+# draw 11-th to 111-th mesh vertexes
+scene.mesh(vertices, indices, 
+index_offset  = 10, 
+index_count   = 100)
+
+# 2. without indices (similar to particles' example as above)
+scene.mesh(vertices, 
+vertex_offset = user_defined_first_vertex_index, 
+vertex_count  = user_defined_vertex_count)
+```
+2. Example of drawing part of lines
+```python
+import taichi as ti
+
+ti.init(arch=ti.cuda)
+
+N = 10
+
+particles_pos = ti.Vector.field(3, dtype=ti.f32, shape = N)
+points_pos = ti.Vector.field(3, dtype=ti.f32, shape = N)
+points_indices = ti.Vector.field(1, dtype=ti.i32, shape = N)
+        
+@ti.kernel
+def init_points_pos(points : ti.template()):
+    for i in range(points.shape[0]):
+        points[i] = [i for j in range(3)]
+        # points[i] = [ti.sin(i * 1.0), i * 0.2, ti.cos(i * 1.0)]
+        
+@ti.kernel
+def init_points_indices(points_indices : ti.template()):
+    for i in range(N):
+        points_indices[i][0] = i // 2 + i % 2
+
+init_points_pos(particles_pos)
+init_points_pos(points_pos)
+init_points_indices(points_indices)
+
+window = ti.ui.Window("Test for Drawing 3d-lines", (768, 768))
+canvas = window.get_canvas()
+scene = ti.ui.Scene()
+camera = ti.ui.make_camera()
+camera.position(5, 2, 2)
+
+while window.running:
+    camera.track_user_inputs(window, movement_speed=0.03, hold_key=ti.ui.RMB)
+    scene.set_camera(camera)
+    scene.ambient_light((0.8, 0.8, 0.8))
+    scene.point_light(pos=(0.5, 1.5, 1.5), color=(1, 1, 1))
+    
+    scene.particles(particles_pos, color = (0.68, 0.26, 0.19), radius = 0.1)
+    # Here you will get visible part from the 3rd point with (N - 4) points.
+    scene.lines(points_pos, color = (0.28, 0.68, 0.99), width = 5.0, vertex_count = N - 4, vertex_offset = 2)
+    # Using indices to indicate which vertex to be used
+    # scene.lines(points_pos, color = (0.28, 0.68, 0.99), width = 5.0, indices = points_indices)
+    # Case 1, vertex_count will be changed to N - 2 when drawing.
+    # scene.lines(points_pos, color = (0.28, 0.68, 0.99), width = 5.0, vertex_count = N - 1, vertex_offset = 0)
+    # Case 2, vertex_count will be changed to N - 2 when drawing.
+    # scene.lines(points_pos, color = (0.28, 0.68, 0.99), width = 5.0, vertex_count = N, vertex_offset = 2)
+    canvas.scene(scene)
+    window.show()
+```
+
+3. Details of mesh instancing
+```python
+num_instance  = 100
+m_transforms = ti.Matrix.field(4, 4, dtype = ti.f32, shape = num_instance)
+
+
+# For example: A object is scaled by 2, rotated by rotMat, translated by t = [1, 2, 3], then
+#
+# The ScaleMatrix is:
+# 2, 0, 0, 0
+# 0, 2, 0, 0
+# 0, 0, 2, 0
+# 0, 0, 0, 1
+#
+# The RotationMatrix is:
+# https://en.wikipedia.org/wiki/Rotation_matrix#General_rotations
+# 
+# The TranslationMatrix is:
+# 1, 0, 0, 1
+# 0, 1, 0, 2
+# 0, 0, 1, 3
+# 0, 0, 0, 1
+#
+# Let TransformMatrix = TranslationMatrix @ RotationMatrix @ ScaleMatrix, the final TransformMatrix is:
+#   2 * rotMat00,     rotMat01,       rotMat02, 1
+#       rotMat10, 2 * rotMat11,       rotMat12, 2
+#       rotMat20,     rotMat21,   2 * rotMat22, 3
+#              0,            0,              0, 1
+...
+
+# Here draw mesh instances (will draw from the 1st instance)
+scene.mesh_instance(vertices, indices, transforms = m_transforms, instance_offset = 1)
+```
+4. Example of setting wareframe mode
+```python
+
+window = ti.ui.Window("Display Mesh", (1024, 1024), vsync=True)
+canvas = window.get_canvas()
+scene = ti.ui.Scene()
+camera = ti.ui.make_camera()
+
+# slider_int usage
+some_int_type_value = 0
+def show_options():
+    global some_int_type_value
+
+    window.GUI.begin("Display Panel", 0.05, 0.1, 0.2, 0.15)
+    display_mode = window.GUI.slider_int("Value Range", some_int_type_value, 0, 5)
+    window.GUI.end()
+
+while window.running:
+    
+    ...
+    # if to show wareframe 
+    scene.mesh_instance(vertices, indices, instance_count = 100 , show_wareframe = True)
+    
+    canvas.scene(scene)
+    show_options()
+    window.show()
+```
+
+
+
+:::note
+For `mesh`, `lines` and `mesh_instance`, if `indices` is not provided, you should use `vertex_offset` and `vertex_count` to control. Otherwise, use `index_count`, `index_offset` and `vertex_offset` to control
+
+
+
 :::
 
 ### Rendering the scene
@@ -116,6 +323,54 @@ You can render a scene on a canvas.
 
 ```python
 canvas.scene(scene)
+```
+
+### Fetching Color/Depth information
+
+```python
+img = window.get_image_buffer()
+window.get_depth_buffer(scene_depth)
+depth = window.get_depth_buffer_as_numpy()
+```
+
+After renderring current scene, you can fetch color & depth information of current scene through these APIs. `get_image_buffer` and `get_depth_buffer_as_numpy` will copy the gpu data to numpy array(cpu). `get_depth_buffer` will copy gpu data to taichi field(depend on which arch you choose, if you want to copy from gpu to gpu, then we suggest you use `get_depth_buffer` cause it shows high performance).
+
+:::example
+
+1. Example of fetching color information
+```python
+window = ti.ui.Window("Test for getting image buffer from ggui", (768, 768), vsync=True)
+video_manager = ti.tools.VideoManager("OutputDir")
+
+while window.running:
+    render_scene()
+    img = window.get_image_buffer()
+    video_manager.write_frame(img)
+    window.show()
+
+video_manager.make_video(gif=True, mp4=True)
+```
+
+2. Example of fetching depth information
+```python
+window_shape = (720, 1080)
+window = ti.ui.Window("Test for copy depth memory", window_shape)
+canvas = window.get_canvas()
+scene = ti.ui.Scene()
+camera = ti.ui.make_camera()
+
+# get the shape of window
+w, h = window.get_window_shape()
+# depth field/ndarray must have ti.f32 data type and 2d shape.
+# and shape must be equal to the window shape
+scene_depth = ti.ndarray(ti.f32, shape = (w, h))
+# scene_depth = ti.field(ti.f32, shape = (w, h))
+
+while window.running:
+    render()
+    canvas.scene(scene)
+    window.get_depth_buffer(scene_depth)
+    window.show()
 ```
 
 ## GUI components

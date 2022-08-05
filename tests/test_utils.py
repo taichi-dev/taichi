@@ -46,14 +46,20 @@ __aot_test_cases = {
         "--arch=cuda --cgraph"
     ],
     "LlvmCGraph.Mpm88Cpu":
-    [os.path.join('cpp', 'aot', 'mpm88_graph_aot.py'), "--arch=cpu"],
+    [os.path.join('cpp', 'aot', 'mpm88_graph_aot.py'), "--arch=cpu --cgraph"],
     "LlvmCGraph.Mpm88Cuda":
-    [os.path.join('cpp', 'aot', 'mpm88_graph_aot.py'), "--arch=cuda"],
-    "AotLoadGraph.Mpm88":
-    [os.path.join('cpp', 'aot', 'mpm88_graph_aot.py'), "--arch=vulkan"],
+    [os.path.join('cpp', 'aot', 'mpm88_graph_aot.py'), "--arch=cuda --cgraph"],
+    "AotLoadGraph.Mpm88": [
+        os.path.join('cpp', 'aot', 'mpm88_graph_aot.py'),
+        "--arch=vulkan --cgraph"
+    ],
 }
 
 __capi_aot_test_cases = {
+    "CapiMpm88Test.Vulkan":
+    [os.path.join('cpp', 'aot', 'mpm88_graph_aot.py'), "--arch=vulkan"],
+    "CapiMpm88Test.Cuda":
+    [os.path.join('cpp', 'aot', 'mpm88_graph_aot.py'), "--arch=cuda"],
     "CapiTaichiSparseTest.Cuda":
     [os.path.join('cpp', 'aot', 'llvm', 'taichi_sparse_test.py'), ""],
     "CapiAotTest.CpuField":

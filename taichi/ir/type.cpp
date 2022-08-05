@@ -1,4 +1,3 @@
-#include <numeric>
 #include "taichi/ir/type.h"
 
 #include "taichi/ir/type_factory.h"
@@ -89,7 +88,11 @@ std::string TensorType::to_string() const {
 }
 
 int TensorType::vector_width() const {
-  return std::reduce(shape_.begin(), shape_.end(), 1, std::multiplies<int>());
+  int vw = 1;
+  for (auto dim : shape_) {
+    vw *= dim;
+  }
+  return vw;
 }
 
 int Type::vector_width() const {

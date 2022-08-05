@@ -989,6 +989,9 @@ class MakeAdjoint : public ADTransform {
 
   void visit(GlobalLoadStmt *stmt) override {
     // issue global store to adjoint
+    if (stmt->src->is<ExternalPtrStmt>()) {
+      TI_ERROR("Src of GlobalLoadStmt does not support ExternalPtrStmt now.")
+    }
     GlobalPtrStmt *src = stmt->src->as<GlobalPtrStmt>();
     TI_ASSERT(src->width() == 1);
     auto snodes = src->snodes;
@@ -1009,7 +1012,7 @@ class MakeAdjoint : public ADTransform {
   void visit(GlobalStoreStmt *stmt) override {
     // erase and replace with global load adjoint
     if (stmt->dest->is<ExternalPtrStmt>()) {
-      TI_NOT_IMPLEMENTED;
+      TI_ERROR("Dest of GlobalStoreStmt does not support ExternalPtrStmt now.")
     }
     GlobalPtrStmt *dest = stmt->dest->as<GlobalPtrStmt>();
     TI_ASSERT(dest->width() == 1);

@@ -2577,7 +2577,7 @@ DeviceAllocation VulkanSurface::get_image_data() {
     screenshot_buffer_ = device_->allocate_memory(params);
   }
 
-  device_->image_transition(img_alloc, ImageLayout::color_attachment,
+  device_->image_transition(img_alloc, ImageLayout::present_src,
                             ImageLayout::transfer_src);
 
   std::unique_ptr<CommandList> cmd_list{nullptr};

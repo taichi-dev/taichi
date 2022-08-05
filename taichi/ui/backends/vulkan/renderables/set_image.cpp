@@ -102,6 +102,7 @@ void SetImage::update_data(const SetImageInfo &info) {
                              ImageLayout::transfer_dst);
   cmd_list->buffer_to_image(texture_, gpu_staging_buffer_.get_ptr(0),
                             ImageLayout::transfer_dst, copy_params);
+
   cmd_list->image_transition(texture_, ImageLayout::transfer_dst,
                              ImageLayout::shader_read);
   if (data_ready_sema) {

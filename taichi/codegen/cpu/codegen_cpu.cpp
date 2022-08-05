@@ -308,6 +308,20 @@ FunctionType KernelCodeGenCPU::codegen() {
     kernel->lower(/*to_executable=*/false);
   }
 
+  if (!config.num_compile_threads) {
+    TaskCodeGenCPU gen(kernel, ir);
+    auto compiled_res = gen.run_compilation();
+
+    CPUModuleToFunctionConverter converter{gen.tlctx,
+                                           llvm_prog->get_runtime_executor()};
+    std::vector<LLVMCompiledData> data_list;
+    data_list.push_back(std::move(compiled_res));
+    if (!kernel->is_evaluator) {
+      cache_module(kernel_key, data_list);
+    }
+    return converter.convert(this->kernel, std::move(data_list));
+  }
+
   auto block = dynamic_cast<Block *>(kernel->ir.get());
   auto &worker = get_llvm_program(kernel->program)->compilation_workers;
   TI_ASSERT(block);

@@ -53,6 +53,7 @@ def current_thread_ext_options():
     return {
         'offline_cache': True,
         'offline_cache_file_path': tmp_offline_cache_file_path(),
+        'num_compile_threads': 2,
     }
 
 

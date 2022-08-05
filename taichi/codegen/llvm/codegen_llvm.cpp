@@ -557,7 +557,7 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
         create_call("min_" #x, {llvm_val[stmt->lhs], llvm_val[stmt->rhs]}); \
   }
 
-    if (is_real(ret_type) || is_real_tensor) {
+    if (is_real(ret_type) || is_real_tensor(ret_type)) {
       llvm_val[stmt] =
           builder->CreateMinNum(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
     }
@@ -1436,6 +1436,7 @@ void TaskCodeGenLLVM::visit(AtomicOpStmt *stmt) {
   if (is_local) {
     TI_ERROR("Local atomics should have been demoted.");
   }
+  TI_TRACE("Atomic: {} ({}, {})", stmt->ret_type->to_string(), stmt->dest->ret_type->to_string(), stmt->val->ret_type->to_string());
   TI_ASSERT(stmt->width() == 1);
   for (int l = 0; l < stmt->width(); l++) {
     llvm::Value *old_value;

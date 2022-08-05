@@ -1,9 +1,8 @@
 import argparse
 import math
-import tempfile
+import os
 
 import numpy as np
-from attr import field
 
 import taichi as ti
 

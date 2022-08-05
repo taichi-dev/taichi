@@ -55,7 +55,7 @@ def test_abs_fwd():
     for i in range(N):
         y[i] = i - 10
 
-    with ti.ad.FwdMode(loss=x, parameters=y, seed=[1.0 for _ in range(N)]):
+    with ti.ad.FwdMode(loss=x, param=y, seed=[1.0 for _ in range(N)]):
         func()
 
     def sgn(x):

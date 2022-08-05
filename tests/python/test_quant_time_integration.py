@@ -17,14 +17,22 @@ def test_quant_time_integration(use_quant, use_exponent, use_shared_exp):
             qflt = ti.types.quant.float(exp=6, frac=13)
             x = ti.Vector.field(2, dtype=qflt)
             if use_shared_exp:
-                ti.root.bit_struct(num_bits=32).place(x, shared_exponent=True)
+                bitpack = ti.BitpackedFields(max_num_bits=32)
+                bitpack.place(x, shared_exponent=True)
+                ti.root.place(bitpack)
             else:
-                ti.root.bit_struct(num_bits=32).place(x.get_scalar_field(0))
-                ti.root.bit_struct(num_bits=32).place(x.get_scalar_field(1))
+                bitpack = ti.BitpackedFields(max_num_bits=32)
+                bitpack.place(x.get_scalar_field(0))
+                ti.root.place(bitpack)
+                bitpack = ti.BitpackedFields(max_num_bits=32)
+                bitpack.place(x.get_scalar_field(1))
+                ti.root.place(bitpack)
         else:
-            qfxt = ti.types.quant.fixed(frac=16, range=2)
+            qfxt = ti.types.quant.fixed(bits=16, max_value=2)
             x = ti.Vector.field(2, dtype=qfxt)
-            ti.root.bit_struct(num_bits=32).place(x)
+            bitpack = ti.BitpackedFields(max_num_bits=32)
+            bitpack.place(x)
+            ti.root.place(bitpack)
     else:
         x = ti.Vector.field(2, dtype=ti.f32, shape=())
 

@@ -622,6 +622,7 @@ Stream *GLDevice::get_graphics_stream() {
 }
 
 void GLDevice::wait_idle() {
+  glFinish();
 }
 
 std::unique_ptr<Surface> GLDevice::create_surface(const SurfaceConfig &config) {

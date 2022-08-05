@@ -174,7 +174,6 @@ This is a danger!
 ## Code groups
 
 You could also insert tab-based code groups:
-
 ```md
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
@@ -192,6 +191,7 @@ import TabItem from '@theme/TabItem';
 </Tabs>
 ```
 
+````mdx-code-block
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
@@ -206,7 +206,6 @@ import TabItem from '@theme/TabItem';
   <TabItem value="orange">This is an orange 🍊.</TabItem>
   <TabItem value="banana">This is a banana 🍌.</TabItem>
 </Tabs>
-
 ## Footnotes
 
 To add footnotes, use:
@@ -251,6 +250,8 @@ import TOCInline from '@theme/TOCInline';
 
 to insert an in-line ToC:
 
+````mdx-code-block
 import TOCInline from '@theme/TOCInline';
 
 <TOCInline toc={toc} />
+````

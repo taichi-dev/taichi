@@ -98,27 +98,20 @@ class FieldsBuilder:
         self.empty = False
         return self.root.bitmasked(indices, dimensions)
 
-    def bit_struct(self, num_bits: int):
-        """Same as :func:`taichi.lang.snode.SNode.bit_struct`"""
-        self._check_not_finalized()
-        self.empty = False
-        return self.root.bit_struct(num_bits)
-
     def quant_array(self, indices: Union[Sequence[_Axis], _Axis],
-                    dimensions: Union[Sequence[int], int], num_bits: int):
+                    dimensions: Union[Sequence[int], int], max_num_bits: int):
         """Same as :func:`taichi.lang.snode.SNode.quant_array`"""
         self._check_not_finalized()
         self.empty = False
-        return self.root.quant_array(indices, dimensions, num_bits)
+        return self.root.quant_array(indices, dimensions, max_num_bits)
 
     def place(self,
               *args: Any,
-              offset: Optional[Union[Sequence[int], int]] = None,
-              shared_exponent: bool = False):
+              offset: Optional[Union[Sequence[int], int]] = None):
         """Same as :func:`taichi.lang.snode.SNode.place`"""
         self._check_not_finalized()
         self.empty = False
-        self.root.place(*args, offset=offset, shared_exponent=shared_exponent)
+        self.root.place(*args, offset=offset)
 
     def lazy_grad(self):
         """Same as :func:`taichi.lang.snode.SNode.lazy_grad`"""

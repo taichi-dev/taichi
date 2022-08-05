@@ -129,7 +129,6 @@ class SNode {
   int chunk_size{0};
   std::size_t cell_size_bytes{0};
   std::size_t offset_bytes_in_parent_cell{0};
-  PrimitiveType *physical_type{nullptr};  // for bit_struct and quant_array only
   DataType dt;
   bool has_ambient{false};
   TypedConstant ambient_val;
@@ -137,13 +136,10 @@ class SNode {
   SNode *parent{nullptr};
   std::unique_ptr<GradInfoProvider> grad_info{nullptr};
 
-  std::unique_ptr<BitStructTypeBuilder> bit_struct_type_builder{nullptr};
-  int id_in_bit_struct{0};  // for children of bit_struct only
-
-  // is_bit_level=false: the SNode is not bitpacked
-  // is_bit_level=true: the SNode is bitpacked (i.e., strictly inside bit_struct
-  // or quant_array)
-  bool is_bit_level{false};
+  // Quant
+  PrimitiveType *physical_type{nullptr};  // for bit_struct and quant_array only
+  int id_in_bit_struct{-1};               // for children of bit_struct only
+  bool is_bit_level{false};  // true if inside bit_struct or quant_array
 
   // Whether the path from root to |this| contains only `dense` SNodes.
   bool is_path_all_dense{true};
@@ -240,7 +236,7 @@ class SNode {
     return snode_type_name(type);
   }
 
-  SNode &bit_struct(int bits, bool packed);
+  SNode &bit_struct(BitStructType *bit_struct_type, bool packed);
 
   SNode &quant_array(const std::vector<Axis> &axes,
                      const std::vector<int> &sizes,
@@ -329,8 +325,8 @@ class SNode {
 
   int shape_along_axis(int i) const;
 
-  void place(Expr &expr, const std::vector<int> &offset) {
-    place_child(&expr, offset, this, snode_to_glb_var_exprs_);
+  void place(Expr &expr, const std::vector<int> &offset, int id_in_bit_struct) {
+    place_child(&expr, offset, id_in_bit_struct, this, snode_to_glb_var_exprs_);
   }
 
   void lazy_grad();
@@ -348,10 +344,6 @@ class SNode {
   Expr get_expr() const;
 
   uint64 fetch_reader_result();  // TODO: refactor
-
-  void begin_shared_exp_placement();
-
-  void end_shared_exp_placement();
 
   // SNodeTree part
 

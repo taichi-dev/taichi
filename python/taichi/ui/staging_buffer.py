@@ -2,7 +2,7 @@ from taichi.lang.impl import ndarray
 from taichi.lang.kernel_impl import kernel
 from taichi.lang.matrix import Vector
 from taichi.types.annotations import template
-from taichi.types.primitive_types import f32, u8
+from taichi.types.primitive_types import f32, u8, u32
 
 import taichi as ti
 
@@ -41,7 +41,7 @@ def copy_to_vbo(vbo: template(), src: template(), offset: template(),
 
 
 @kernel
-def fill_vbo(vbo: template(), value: template(), offset: template(),
+def fill_vbo(vbo: template(), value: f32, offset: template(),
              num_components: template()):
     for i in vbo:
         for c in ti.static(range(num_components)):
@@ -88,32 +88,32 @@ def copy_colors_to_vbo(vbo, colors):
         raise Exception('colors can only be 3D/4D vector fields')
     copy_to_vbo(vbo, colors, 8, colors.n)
     if colors.n == 3:
-        fill_vbo(vbo, ti.cast(1.0, ti.f32), 11, 1)
+        fill_vbo(vbo, 1.0, 11, 1)
 
 
 @ti.kernel
-def copy_image_f32_to_u8(src: ti.template(), dst: ti.template(),
-                         num_components: ti.template()):
+def copy_image_f32_to_rgba8(src: ti.template(), dst: ti.template(),
+                            num_components: ti.template()):
     for i, j in src:
+        px = ti.Vector([0, 0, 0, 0xff], dt=u32)
         for k in ti.static(range(num_components)):
             c = src[i, j][k]
             c = max(0.0, min(1.0, c))
             c = c * 255
-            dst[i, j][k] = ti.cast(c, u8)
-        if num_components < 4:
-            # alpha channel
-            dst[i, j][3] = u8(255)
+            px[k] = ti.cast(c, u32)
+        pack = (px[0] << 0 | px[1] << 8 | px[2] << 16 | px[3] << 24)
+        dst[i, j] = pack
 
 
 @ti.kernel
-def copy_image_u8_to_u8(src: ti.template(), dst: ti.template(),
-                        num_components: ti.template()):
+def copy_image_u8_to_rgba8(src: ti.template(), dst: ti.template(),
+                           num_components: ti.template()):
     for i, j in src:
+        px = ti.Vector([0, 0, 0, 0xff], dt=u32)
         for k in ti.static(range(num_components)):
-            dst[i, j][k] = ti.cast(src[i, j][k], ti.u8)
-        if num_components < 4:
-            # alpha channel
-            dst[i, j][3] = u8(255)
+            px[k] = ti.cast(src[i, j][k], u32)
+        pack = (px[0] << 0 | px[1] << 8 | px[2] << 16 | px[3] << 24)
+        dst[i, j] = pack
 
 
 # ggui renderer always assumes the input image to be u8 RGBA
@@ -121,7 +121,7 @@ def copy_image_u8_to_u8(src: ti.template(), dst: ti.template(),
 image_field_cache = {}
 
 
-def to_u8_rgba(image):
+def to_rgba8(image):
     if not hasattr(image, 'n') or image.m != 1:
         raise Exception(
             'the input image needs to be a Vector field (matrix with 1 column)'
@@ -130,20 +130,16 @@ def to_u8_rgba(image):
         raise Exception(
             "the shape of the image must be of the form (width,height)")
 
-    if image.dtype == u8 and image.n == 4:
-        # already in the desired format
-        return image
-
     if image not in image_field_cache:
-        staging_img = Vector.field(4, u8, image.shape)
+        staging_img = ti.field(u32, image.shape)
         image_field_cache[image] = staging_img
     else:
         staging_img = image_field_cache[image]
 
     if image.dtype == u8:
-        copy_image_u8_to_u8(image, staging_img, image.n)
+        copy_image_u8_to_rgba8(image, staging_img, image.n)
     elif image.dtype == f32:
-        copy_image_f32_to_u8(image, staging_img, image.n)
+        copy_image_f32_to_rgba8(image, staging_img, image.n)
     else:
         raise Exception("dtype of input image must either be u8 or f32")
     return staging_img

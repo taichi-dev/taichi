@@ -2,6 +2,8 @@
 #include "taichi/program/ndarray.h"
 #include "taichi/program/texture.h"
 
+#include <numeric>
+
 namespace taichi {
 namespace lang {
 namespace aot {
@@ -37,7 +39,8 @@ void CompiledGraph::run(
                     symbolic_arg.name, symbolic_arg.dtype().to_string(),
                     arr->dtype.to_string());
 
-        set_runtime_ctx_ndarray(&ctx, i, arr);
+        ctx.set_arg_ndarray(i, arr->get_device_allocation_ptr_as_int(),
+                            arr->shape);
       } else if (ival.tag == aot::ArgKind::kScalar) {
         ctx.set_arg(i, ival.val);
       } else if (ival.tag == aot::ArgKind::kTexture) {

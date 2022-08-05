@@ -16,6 +16,7 @@ struct RenderableInfo {
   int draw_first_vertex{0};
   int draw_index_count{0};
   int draw_first_index{0};
+  taichi::lang::PolygonMode display_mode{taichi::lang::PolygonMode::Fill};
 };
 
 TI_UI_NAMESPACE_END

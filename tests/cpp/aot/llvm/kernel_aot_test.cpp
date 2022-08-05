@@ -30,6 +30,7 @@ TEST(LlvmAotTest, CpuKernel) {
   constexpr int kArrLen = 32;
   constexpr int kArrBytes = kArrLen * sizeof(int32_t);
   auto arr_devalloc = exec.allocate_memory_ndarray(kArrBytes, result_buffer);
+  Ndarray arr = Ndarray(arr_devalloc, PrimitiveType::i32, {kArrLen});
 
   cpu::AotModuleParams aot_params;
   const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
@@ -44,8 +45,8 @@ TEST(LlvmAotTest, CpuKernel) {
   RuntimeContext ctx;
   ctx.runtime = exec.get_llvm_runtime();
   ctx.set_arg(0, /*v=*/0);
-  ctx.set_arg_devalloc(/*arg_id=*/1, arr_devalloc, /*shape=*/{kArrLen});
-  ctx.set_array_runtime_size(/*arg_id=*/1, kArrBytes);
+  ctx.set_arg_ndarray(/*arg_id=*/1, arr.get_device_allocation_ptr_as_int(),
+                      /*shape=*/arr.shape);
   k_run->launch(&ctx);
 
   auto *data = reinterpret_cast<int32_t *>(
@@ -70,6 +71,7 @@ TEST(LlvmAotTest, CudaKernel) {
     constexpr int kArrLen = 32;
     constexpr int kArrBytes = kArrLen * sizeof(int32_t);
     auto arr_devalloc = exec.allocate_memory_ndarray(kArrBytes, result_buffer);
+    Ndarray arr = Ndarray(arr_devalloc, PrimitiveType::i32, {kArrLen});
 
     cuda::AotModuleParams aot_params;
     const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
@@ -83,8 +85,8 @@ TEST(LlvmAotTest, CudaKernel) {
     RuntimeContext ctx;
     ctx.runtime = exec.get_llvm_runtime();
     ctx.set_arg(0, /*v=*/0);
-    ctx.set_arg_devalloc(/*arg_id=*/1, arr_devalloc, /*shape=*/{kArrLen});
-    ctx.set_array_runtime_size(/*arg_id=*/1, kArrBytes);
+    ctx.set_arg_ndarray(/*arg_id=*/1, arr.get_device_allocation_ptr_as_int(),
+                        /*shape=*/arr.shape);
     k_run->launch(&ctx);
 
     auto *data = reinterpret_cast<int32_t *>(

@@ -45,6 +45,7 @@ struct CompileConfig {
   bool use_mesh;
   DataType default_fp;
   DataType default_ip;
+  DataType default_up;
   std::string extra_flags;
   int default_cpu_block_dim;
   bool cpu_block_dim_adaptive;

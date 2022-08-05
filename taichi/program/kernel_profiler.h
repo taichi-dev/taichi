@@ -61,6 +61,8 @@ class KernelProfilerBase {
 
   virtual void sync() = 0;
 
+  virtual void update() = 0;
+
   virtual bool set_profiler_toolkit(std::string toolkit_name) {
     return false;
   }

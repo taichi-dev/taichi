@@ -1,5 +1,5 @@
 import numpy as np
-from pytest import approx
+import pytest
 
 import taichi as ti
 from tests import test_utils
@@ -177,7 +177,7 @@ def test_bitpacked_fields_struct_for():
 
     for i in range(N):
         if i // block_size % 2 == 0:
-            assert x[i] == approx(i, abs=1e-3)
+            assert x[i] == pytest.approx(i, abs=1e-3)
         else:
             assert x[i] == 0
 
@@ -213,3 +213,15 @@ def test_multiple_types():
 
     set_val()
     verify_val()
+
+
+@test_utils.test()
+def test_invalid_place():
+    f15 = ti.types.quant.float(exp=5, frac=10)
+    p = ti.field(dtype=f15)
+    bitpack = ti.BitpackedFields(max_num_bits=32)
+    with pytest.raises(
+            ti.TaichiCompilationError,
+            match=
+            'At least 2 fields need to be placed when shared_exponent=True'):
+        bitpack.place(p, shared_exponent=True)

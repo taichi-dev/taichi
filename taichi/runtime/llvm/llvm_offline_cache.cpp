@@ -9,6 +9,7 @@
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/raw_os_ostream.h"
 #include "llvm/Transforms/Utils/Cloning.h"
+#include "taichi/analysis/offline_cache_util.h"
 #include "taichi/common/cleanup.h"
 #include "taichi/common/version.h"
 #include "taichi/ir/transforms.h"
@@ -22,7 +23,6 @@ namespace {
 
 using Format = LlvmOfflineCache::Format;
 constexpr char kMetadataFilename[] = "metadata";
-constexpr char kCacheCleanLockName[] = "ticache_clean.lock";
 constexpr char kMetadataFileLockName[] = "metadata.lock";
 
 static bool is_current_llvm_cache_version(
@@ -86,7 +86,7 @@ bool LlvmOfflineCacheFileReader::load_meta_data(
   std::string lock_path =
       taichi::join_path(cache_file_path, kMetadataFileLockName);
   if (lock_with_file(lock_path)) {
-    auto _ = taichi::make_cleanup([&lock_path]() {
+    auto _ = make_cleanup([&lock_path]() {
       if (!unlock_with_file(lock_path)) {
         TI_WARN("Unlock {} failed", lock_path);
       }
@@ -143,7 +143,7 @@ bool LlvmOfflineCacheFileReader::get_kernel_cache(
       data.module = load_module(filename_prefix, key, llvm_ctx);
       if (!data.module) {
         data_.kernels.erase(itr);
-        return false;
+        return false;  // Must return
       }
     }
     res.compiled_data_list.emplace_back(data.tasks,
@@ -187,25 +187,25 @@ std::unique_ptr<llvm::Module> LlvmOfflineCacheFileReader::load_module(
 void LlvmOfflineCacheFileWriter::dump(const std::string &path,
                                       LlvmOfflineCache::Format format,
                                       bool merge_with_old) {
-  taichi::create_directories(path);
-  std::size_t new_kernels_size = 0;  // bytes
+  auto write_llvm_module =
+      [](const std::string &filename,
+         std::function<void(llvm::raw_os_ostream & os)> writer) {
+        std::ofstream os(filename, std::ios::out | std::ios::binary);
+        TI_ERROR_IF(!os.is_open(), "File {} open failed", filename);
+        llvm::raw_os_ostream llvm_os{os};
+        writer(llvm_os);
+        return llvm_os.tell();
+      };
 
   using Iter = typename decltype(data_.kernels)::iterator;
-  std::vector<Iter> iters_to_erased;
+  taichi::create_directories(path);
+  std::size_t new_kernels_size = 0;   // bytes
+  std::vector<Iter> iters_to_erased;  // Kernels which have been saved
+
   for (auto iter = data_.kernels.begin(); iter != data_.kernels.end(); ++iter) {
     auto &[k, v] = *iter;
     std::size_t size = 0;  // bytes
     std::string filename_prefix = taichi::join_path(path, k);
-
-    auto write_llvm_module =
-        [](const std::string &filename,
-           std::function<void(llvm::raw_os_ostream & os)> writer) {
-          std::ofstream os(filename, std::ios::out | std::ios::binary);
-          TI_ERROR_IF(!os.is_open(), "File {} open failed", filename);
-          llvm::raw_os_ostream llvm_os{os};
-          writer(llvm_os);
-          return llvm_os.tell();
-        };
     {
       mangle_offloaded_task_name(k, v.compiled_data_list);
       for (int i = 0; i < v.compiled_data_list.size(); i++) {
@@ -215,7 +215,7 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
         std::string suffix = "." + std::to_string(i);
         if (format & Format::LL) {
           std::string filename = filename_prefix + suffix + ".ll";
-          if (taichi::try_lock_with_file(filename)) {  // Not exists
+          if (try_lock_with_file(filename)) {  // Not exists
             size +=
                 write_llvm_module(filename, [mod](llvm::raw_os_ostream &os) {
                   mod->print(os, /*AAW=*/nullptr);
@@ -226,7 +226,7 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
         }
         if (format & Format::BC) {
           std::string filename = filename_prefix + suffix + ".bc";
-          if (taichi::try_lock_with_file(filename)) {  // Not exists
+          if (try_lock_with_file(filename)) {  // Not exists
             size +=
                 write_llvm_module(filename, [mod](llvm::raw_os_ostream &os) {
                   llvm::WriteBitcodeToFile(*mod, os);
@@ -249,6 +249,7 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
     }
   }
 
+  // Erase the kernels which aren't needed to re-saved
   for (auto &iter : iters_to_erased) {
     data_.kernels.erase(iter);
   }
@@ -322,7 +323,8 @@ void LlvmOfflineCacheFileWriter::mangle_offloaded_task_name(
     std::size_t cnt = 0;
     for (auto &e : compiled_data_list) {
       for (auto &offload : e.tasks) {
-        std::string mangled_name = kernel_key + std::to_string(cnt++);
+        std::string mangled_name =
+            offline_cache::mangle_name(offload.name, kernel_key);
         TI_DEBUG(
             "Mangle offloaded-task from internal name '{}' to offline cache "
             "key '{}'",
@@ -344,126 +346,122 @@ void LlvmOfflineCacheFileWriter::clean_cache(const std::string &path,
     return;
   }
 
-  // Try lock: Only one cleaner at a time
-  std::string lock_path = taichi::join_path(path, kCacheCleanLockName);
-  if (!taichi::try_lock_with_file(lock_path)) {
-    return;
-  }
-  auto _ = taichi::make_cleanup([&lock_path]() {
-    TI_DEBUG("Stop cleaning cache");
-    if (!taichi::unlock_with_file(lock_path)) {
-      TI_WARN("Unlock {} failed", lock_path);
-    }
-  });
-
-  TI_DEBUG("Start cleaning cache");
-
-  // TODO(PGZXB): High overhead. Redesign metadata file format to reduce
-  // overhead.
   LlvmOfflineCache cache_data;
-  LlvmOfflineCacheFileReader::load_meta_data(cache_data, path);
+  std::vector<std::string> files_to_rm;
+  bool ok_rm_meta = false;
 
-  if ((policy & CleanOldVersion) &&
-      !is_current_llvm_cache_version(cache_data.version)) {
-    if (bool ok = taichi::remove(get_llvm_cache_metadata_file_path(path)) &&
-                  taichi::remove(get_llvm_cache_metadata_json_file_path(path));
-        ok) {
-      for (const auto &[k, v] : cache_data.kernels) {
-        const auto files = get_possible_llvm_cache_filename_by_key(k);
-        for (const auto &f : files) {
-          taichi::remove(taichi::join_path(path, f));
+  // 1. Remove/Update metadata files
+  {
+    std::string lock_path = taichi::join_path(path, kMetadataFileLockName);
+    if (!lock_with_file(lock_path)) {
+      TI_WARN("Lock {} failed", lock_path);
+      return;
+    }
+    auto _ = make_cleanup([&lock_path]() {
+      TI_DEBUG("Stop cleaning cache");
+      if (!unlock_with_file(lock_path)) {
+        TI_WARN("Unlock {} failed", lock_path);
+      }
+    });
+
+    TI_DEBUG("Start cleaning cache");
+
+    // TODO(PGZXB): High overhead. Redesign metadata file format to reduce
+    // overhead.
+    if (!LlvmOfflineCacheFileReader::load_meta_data(cache_data, path, false)) {
+      return;
+    }
+
+    if ((policy & CleanOldVersion) &&
+        !is_current_llvm_cache_version(cache_data.version)) {
+      if (bool ok =
+              taichi::remove(get_llvm_cache_metadata_file_path(path)) &&
+              taichi::remove(get_llvm_cache_metadata_json_file_path(path));
+          ok) {
+        for (const auto &[k, v] : cache_data.kernels) {
+          for (int i = 0; i < v.compiled_data_list.size(); i++) {
+            for (const auto &f : get_possible_llvm_cache_filename_by_key(
+                     v.kernel_key + "." + std::to_string(i))) {
+              taichi::remove(taichi::join_path(path, f));
+            }
+          }
         }
       }
+      return;
     }
-    return;
-  }
 
-  if (cache_data.size < max_bytes ||
-      static_cast<std::size_t>(cleaning_factor * cache_data.kernels.size()) ==
-          0) {
-    return;
-  }
+    if (cache_data.size < max_bytes ||
+        static_cast<std::size_t>(cleaning_factor * cache_data.kernels.size()) ==
+            0) {
+      return;
+    }
 
-  // LRU or FIFO
-  using KerData = LlvmOfflineCache::KernelCacheData;
-  using Comparator = std::function<bool(const KerData *, const KerData *)>;
-  using PriQueue =
-      std::priority_queue<const KerData *, std::vector<const KerData *>,
-                          Comparator>;
+    // LRU or FIFO
+    using KerData = LlvmOfflineCache::KernelCacheData;
+    using Comparator = std::function<bool(const KerData *, const KerData *)>;
+    using PriQueue =
+        std::priority_queue<const KerData *, std::vector<const KerData *>,
+                            Comparator>;
 
-  Comparator cmp{nullptr};
-  if (policy & CleanOldUsed) {  // LRU
-    cmp = [](const KerData *a, const KerData *b) -> bool {
-      return a->last_used_at < b->last_used_at;
-    };
-  } else if (policy & CleanOldCreated) {  // FIFO
-    cmp = [](const KerData *a, const KerData *b) -> bool {
-      return a->created_at < b->created_at;
-    };
-  }
-  if (cmp) {
-    PriQueue q(cmp);
-    std::vector<std::string> files_to_rm;
-    bool ok_rm_meta = false;
-    std::size_t cnt = cleaning_factor * cache_data.kernels.size();
-    TI_ASSERT(cnt != 0);
-    for (auto &[k, v] : cache_data.kernels) {
-      if (q.size() == cnt && cmp(&v, q.top())) {
+    Comparator cmp{nullptr};
+    if (policy & CleanOldUsed) {  // LRU
+      cmp = [](const KerData *a, const KerData *b) -> bool {
+        return a->last_used_at < b->last_used_at;
+      };
+    } else if (policy & CleanOldCreated) {  // FIFO
+      cmp = [](const KerData *a, const KerData *b) -> bool {
+        return a->created_at < b->created_at;
+      };
+    }
+    if (cmp) {
+      PriQueue q(cmp);
+      std::size_t cnt = cleaning_factor * cache_data.kernels.size();
+      TI_ASSERT(cnt != 0);
+      for (auto &[k, v] : cache_data.kernels) {
+        if (q.size() == cnt && cmp(&v, q.top())) {
+          q.pop();
+        }
+        if (q.size() < cnt) {
+          q.push(&v);
+        }
+      }
+      TI_ASSERT(q.size() <= cnt);
+      while (!q.empty()) {
+        const auto *e = q.top();
+        for (int i = 0; i < e->compiled_data_list.size(); i++) {
+          for (const auto &f : get_possible_llvm_cache_filename_by_key(
+                   e->kernel_key + "." + std::to_string(i))) {
+            files_to_rm.push_back(f);
+          }
+        }
+        cache_data.size -= e->size;
+        cache_data.kernels.erase(e->kernel_key);
         q.pop();
       }
-      if (q.size() < cnt) {
-        q.push(&v);
-      }
-    }
-    TI_ASSERT(q.size() <= cnt);
-    while (!q.empty()) {
-      const auto *e = q.top();
-      for (int i = 0; i < e->compiled_data_list.size(); i++) {
-        for (const auto &f : get_possible_llvm_cache_filename_by_key(
-                 e->kernel_key + "." + std::to_string(i))) {
-          files_to_rm.push_back(f);
-        }
-      }
-      cache_data.kernels.erase(e->kernel_key);
-      cache_data.size -= e->size;
-      q.pop();
-    }
-    {  // 1. Remove/Update metadata files with locking
-      std::string metadata_lock_path =
-          taichi::join_path(path, kMetadataFileLockName);
-      if (!taichi::lock_with_file(metadata_lock_path, 100, 10)) {
-        TI_WARN("Lock {} failed", metadata_lock_path);
-        return;
-      }
-      auto _ = make_cleanup([&metadata_lock_path]() {
-        if (!taichi::unlock_with_file(metadata_lock_path)) {
-          TI_WARN("Unlock {} failed", metadata_lock_path);
-        }
-      });
 
       if (cache_data.kernels.empty()) {  // Remove
         ok_rm_meta = taichi::remove(get_llvm_cache_metadata_file_path(path));
-        taichi::remove(get_llvm_cache_metadata_json_file_path(path));
+        taichi::remove(  // debugging file
+            get_llvm_cache_metadata_json_file_path(path));
       } else {  // Update
-        // TODO(PGZXB): Potential bug here. Redesign metadata file format to fix
-        // the bug.
         std::string target_path = get_llvm_cache_metadata_file_path(path);
         write_to_binary_file(cache_data, target_path);
         ok_rm_meta = true;
       }
     }
-    if (ok_rm_meta) {
-      if (!cache_data.kernels.empty()) {
-        // For debugging (Not safe: without locking)
-        TextSerializer ts;
-        ts.serialize_to_json("cache", cache_data);
-        ts.write_to_file(get_llvm_cache_metadata_json_file_path(path));
-      }
-      // 2. Remove cache files
-      for (const auto &f : files_to_rm) {
-        auto file_path = taichi::join_path(path, f);
-        taichi::remove(file_path);
-      }
+  }
+
+  // 2. Remove cache files
+  if (ok_rm_meta) {
+    if (!cache_data.kernels.empty()) {
+      // For debugging (Not safe: without locking)
+      TextSerializer ts;
+      ts.serialize_to_json("cache", cache_data);
+      ts.write_to_file(get_llvm_cache_metadata_json_file_path(path));
+    }
+    for (const auto &f : files_to_rm) {
+      auto file_path = taichi::join_path(path, f);
+      taichi::remove(file_path);
     }
   }
 }

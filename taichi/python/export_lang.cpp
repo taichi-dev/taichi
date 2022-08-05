@@ -175,6 +175,7 @@ void export_lang(py::module &m) {
       .def_readwrite("timeline", &CompileConfig::timeline)
       .def_readwrite("default_fp", &CompileConfig::default_fp)
       .def_readwrite("default_ip", &CompileConfig::default_ip)
+      .def_readwrite("default_up", &CompileConfig::default_up)
       .def_readwrite("device_memory_GB", &CompileConfig::device_memory_GB)
       .def_readwrite("device_memory_fraction",
                      &CompileConfig::device_memory_fraction)
@@ -312,6 +313,10 @@ void export_lang(py::module &m) {
       .def_readonly("config", &Program::config)
       .def("sync_kernel_profiler",
            [](Program *program) { program->profiler->sync(); })
+      .def("update_kernel_profiler",
+           [](Program *program) { program->profiler->update(); })
+      .def("clear_kernel_profiler",
+           [](Program *program) { program->profiler->clear(); })
       .def("query_kernel_profile_info",
            [](Program *program, const std::string &name) {
              return program->query_kernel_profile_info(name);
@@ -339,7 +344,6 @@ void export_lang(py::module &m) {
            [](Program *program, const std::string toolkit_name) {
              return program->profiler->set_profiler_toolkit(toolkit_name);
            })
-      .def("clear_kernel_profile_info", &Program::clear_kernel_profile_info)
       .def("timeline_clear",
            [](Program *) { Timelines::get_instance().clear(); })
       .def("timeline_save",

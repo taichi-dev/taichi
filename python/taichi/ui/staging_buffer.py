@@ -1,10 +1,10 @@
+import numpy as np
 from taichi.lang.impl import ndarray
 from taichi.lang.kernel_impl import kernel
 from taichi.lang.matrix import Vector
 from taichi.types.annotations import template
 from taichi.types.primitive_types import f32, u8, u32
 
-import numpy as np
 import taichi as ti
 
 vbo_field_cache = {}
@@ -99,7 +99,8 @@ def copy_image_f32_to_rgba8_grayscale(src: ti.template(), dst: ti.template()):
         c = max(0.0, min(1.0, c))
         c = c * 255
         c_u32 = ti.cast(c, u32)
-        pack = (c_u32 << 0 | c_u32 << 8 | c_u32 << 16 | ti.cast(0xff, u32) << 24)
+        pack = (c_u32 << 0 | c_u32 << 8 | c_u32 << 16
+                | ti.cast(0xff, u32) << 24)
         dst[i, j] = pack
 
 
@@ -125,7 +126,8 @@ def copy_image_f32_to_rgba8(src: ti.template(), dst: ti.template(),
 def copy_image_u8_to_rgba8_grayscale(src: ti.template(), dst: ti.template()):
     for i, j in src:
         c_u32 = ti.cast(src[i, j], u32)
-        pack = (c_u32 << 0 | c_u32 << 8 | c_u32 << 16 | ti.cast(0xff, u32) << 24)
+        pack = (c_u32 << 0 | c_u32 << 8 | c_u32 << 16
+                | ti.cast(0xff, u32) << 24)
         dst[i, j] = pack
 
 
@@ -158,7 +160,8 @@ def to_rgba8(image):
             channels = image.shape[2]
         else:
             raise Exception(
-                "the shape of the image must be of the form (width,height) or (width,height,channels)")
+                "the shape of the image must be of the form (width,height) or (width,height,channels)"
+            )
 
     if image not in image_field_cache:
         staging_img = ti.field(u32, image.shape[0:2])

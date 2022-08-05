@@ -7,8 +7,6 @@
 #include "taichi/taichi_core.h"
 #include "taichi/taichi_helpers.h"
 
-#if defined(TI_WITH_LLVM) && defined(TI_WITH_CUDA) && defined(TI_WITH_VULKAN)
-
 namespace demo {
 
 constexpr int kNrParticles = 8192 * 2;
@@ -168,4 +166,3 @@ TEST(CapiMpm88Test, Vulkan) {
     impl->Step();
   }
 }
-#endif

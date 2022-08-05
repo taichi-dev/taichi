@@ -122,7 +122,8 @@ class LlvmOfflineCacheFileReader {
       LlvmOfflineCache::Format format = LlvmOfflineCache::Format::LL);
 
   static bool load_meta_data(LlvmOfflineCache &data,
-                             const std::string &cache_file_path);
+                             const std::string &cache_file_path,
+                             bool with_lock = true);
 
  private:
   LlvmOfflineCacheFileReader(const std::string &path,

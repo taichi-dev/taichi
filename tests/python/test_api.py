@@ -60,20 +60,20 @@ def _get_expected_matrix_apis():
 
 user_api = {}
 user_api[ti] = [
-    'CRITICAL', 'DEBUG', 'ERROR', 'Field', 'FieldsBuilder', 'GUI', 'INFO',
-    'Layout', 'Matrix', 'MatrixField', 'MatrixNdarray', 'Mesh', 'Ndarray',
-    'SNode', 'ScalarField', 'ScalarNdarray', 'Struct', 'StructField', 'TRACE',
-    'TaichiAssertionError', 'TaichiCompilationError', 'TaichiNameError',
-    'TaichiRuntimeError', 'TaichiRuntimeTypeError', 'TaichiSyntaxError',
-    'TaichiTypeError', 'TetMesh', 'Texture', 'TriMesh', 'Vector',
-    'VectorNdarray', 'WARN', 'abs', 'acos', 'activate', 'ad', 'aot', 'append',
-    'arm64', 'asin', 'assume_in_range', 'atan2', 'atomic_add', 'atomic_and',
-    'atomic_max', 'atomic_min', 'atomic_or', 'atomic_sub', 'atomic_xor',
-    'axes', 'bit_cast', 'bit_shr', 'block_local', 'cache_read_only', 'cast',
-    'cc', 'ceil', 'cos', 'cpu', 'cuda', 'data_oriented', 'dataclass',
-    'deactivate', 'deactivate_all_snodes', 'dx11', 'eig', 'exp',
-    'experimental', 'extension', 'f16', 'f32', 'f64', 'field', 'float16',
-    'float32', 'float64', 'floor', 'func', 'get_addr',
+    'BitpackedFields', 'CRITICAL', 'DEBUG', 'ERROR', 'Field', 'FieldsBuilder',
+    'GUI', 'INFO', 'Layout', 'Matrix', 'MatrixField', 'MatrixNdarray', 'Mesh',
+    'Ndarray', 'SNode', 'ScalarField', 'ScalarNdarray', 'Struct',
+    'StructField', 'TRACE', 'TaichiAssertionError', 'TaichiCompilationError',
+    'TaichiNameError', 'TaichiRuntimeError', 'TaichiRuntimeTypeError',
+    'TaichiSyntaxError', 'TaichiTypeError', 'TetMesh', 'Texture', 'TriMesh',
+    'Vector', 'VectorNdarray', 'WARN', 'abs', 'acos', 'activate', 'ad', 'aot',
+    'append', 'arm64', 'asin', 'assume_in_range', 'atan2', 'atomic_add',
+    'atomic_and', 'atomic_max', 'atomic_min', 'atomic_or', 'atomic_sub',
+    'atomic_xor', 'axes', 'bit_cast', 'bit_shr', 'block_local',
+    'cache_read_only', 'cast', 'cc', 'ceil', 'cos', 'cpu', 'cuda',
+    'data_oriented', 'dataclass', 'deactivate', 'deactivate_all_snodes',
+    'dx11', 'eig', 'exp', 'experimental', 'extension', 'f16', 'f32', 'f64',
+    'field', 'float16', 'float32', 'float64', 'floor', 'func', 'get_addr',
     'get_compute_stream_device_time_elapsed_us', 'global_thread_idx', 'gpu',
     'graph', 'grouped', 'hex_to_rgb', 'i', 'i16', 'i32', 'i64', 'i8', 'ij',
     'ijk', 'ijkl', 'ijl', 'ik', 'ikl', 'il', 'init', 'int16', 'int32', 'int64',
@@ -98,8 +98,8 @@ user_api[ti.Field] = [
     'parent', 'shape', 'snode', 'to_numpy', 'to_paddle', 'to_torch'
 ]
 user_api[ti.FieldsBuilder] = [
-    'bit_struct', 'bitmasked', 'deactivate_all', 'dense', 'dynamic',
-    'finalize', 'lazy_dual', 'lazy_grad', 'place', 'pointer', 'quant_array'
+    'bitmasked', 'deactivate_all', 'dense', 'dynamic', 'finalize', 'lazy_dual',
+    'lazy_grad', 'place', 'pointer', 'quant_array'
 ]
 user_api[ti.math] = [
     'acos', 'asin', 'atan2', 'cconj', 'cdiv', 'ceil', 'cexp', 'cinv', 'clamp',
@@ -121,11 +121,10 @@ user_api[ti.MatrixNdarray] = [
     'copy_from', 'element_shape', 'fill', 'from_numpy', 'get_type', 'to_numpy'
 ]
 user_api[ti.Ndarray] = ['copy_from', 'element_shape', 'fill', 'get_type']
-user_api[ti.Texture] = ['device_allocation_ptr', 'from_field', 'from_ndarray']
+user_api[ti.Texture] = ['from_field', 'from_image', 'from_ndarray', 'to_image']
 user_api[ti.SNode] = [
-    'bit_struct', 'bitmasked', 'deactivate_all', 'dense', 'dynamic',
-    'lazy_dual', 'lazy_grad', 'parent', 'place', 'pointer', 'quant_array',
-    'shape'
+    'bitmasked', 'deactivate_all', 'dense', 'dynamic', 'lazy_dual',
+    'lazy_grad', 'parent', 'place', 'pointer', 'quant_array', 'shape'
 ]
 user_api[ti.ScalarField] = [
     'copy_from', 'dtype', 'fill', 'from_numpy', 'from_paddle', 'from_torch',

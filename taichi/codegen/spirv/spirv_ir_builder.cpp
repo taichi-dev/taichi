@@ -875,6 +875,24 @@ Value IRBuilder::get_num_work_groups(uint32_t dim_index) {
   return this->make_value(spv::OpLoad, t_uint32_, ptr);
 }
 
+Value IRBuilder::get_local_invocation_id(uint32_t dim_index) {
+  if (gl_local_invocation_id_.id == 0) {
+    SType ptr_type = this->get_pointer_type(t_v3_uint_, spv::StorageClassInput);
+    gl_local_invocation_id_ = new_value(ptr_type, ValueKind::kVectorPtr);
+    ib_.begin(spv::OpVariable)
+        .add_seq(ptr_type, gl_local_invocation_id_, spv::StorageClassInput)
+        .commit(&global_);
+    this->decorate(spv::OpDecorate, gl_local_invocation_id_,
+                   spv::DecorationBuiltIn, spv::BuiltInLocalInvocationId);
+  }
+  SType pint_type = this->get_pointer_type(t_uint32_, spv::StorageClassInput);
+  Value ptr = this->make_value(
+      spv::OpAccessChain, pint_type, gl_local_invocation_id_,
+      uint_immediate_number(t_uint32_, static_cast<uint64_t>(dim_index)));
+
+  return this->make_value(spv::OpLoad, t_uint32_, ptr);
+}
+
 Value IRBuilder::get_global_invocation_id(uint32_t dim_index) {
   if (gl_global_invocation_id_.id == 0) {
     SType ptr_type = this->get_pointer_type(t_v3_uint_, spv::StorageClassInput);
@@ -1117,6 +1135,15 @@ Value IRBuilder::alloca_variable(const SType &type) {
   ib_.begin(spv::OpVariable)
       .add_seq(ptr_type, ret, spv::StorageClassFunction)
       .commit(&func_header_);
+  return ret;
+}
+
+Value IRBuilder::alloca_workgroup_array(const SType &arr_type) {
+  SType ptr_type = get_pointer_type(arr_type, spv::StorageClassWorkgroup);
+  Value ret = new_value(ptr_type, ValueKind::kVariablePtr);
+  ib_.begin(spv::OpVariable)
+      .add_seq(ptr_type, ret, spv::StorageClassWorkgroup)
+      .commit(&global_);
   return ret;
 }
 

@@ -388,9 +388,18 @@ class VulkanCommandList : public CommandList {
                         bool depth_clear) override;
   void end_renderpass() override;
   void draw(uint32_t num_verticies, uint32_t start_vertex = 0) override;
+  void draw_instance(uint32_t num_verticies,
+                     uint32_t num_instances,
+                     uint32_t start_vertex = 0,
+                     uint32_t start_instance = 0) override;
   void draw_indexed(uint32_t num_indicies,
                     uint32_t start_vertex = 0,
                     uint32_t start_index = 0) override;
+  void draw_indexed_instance(uint32_t num_indicies,
+                             uint32_t num_instances,
+                             uint32_t start_vertex = 0,
+                             uint32_t start_index = 0,
+                             uint32_t start_instance = 0) override;
   void set_line_width(float width) override;
   void image_transition(DeviceAllocation img,
                         ImageLayout old_layout,

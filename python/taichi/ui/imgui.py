@@ -72,6 +72,20 @@ class Gui:
         """
         return self.gui.checkbox(text, old_value)
 
+    def slider_int(self, text, old_value, minimum, maximum):
+        """Declares a slider, and returns its newest value.
+
+        Args:
+            text (str): a line of text to be shown next to the slider
+            old_value (int) : the current value of the slider.
+            minimum (int): the minimum value of the slider.
+            maximum (int): the maximum value of the slider.
+
+        Returns:
+            int: the updated value of the slider.
+        """
+        return self.gui.slider_int(text, old_value, minimum, maximum)
+
     def slider_float(self, text, old_value, minimum, maximum):
         """Declares a slider, and returns its newest value.
 

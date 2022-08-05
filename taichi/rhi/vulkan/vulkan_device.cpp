@@ -2420,8 +2420,8 @@ void VulkanSurface::create_swap_chain() {
     vkapi::IVkImageView view =
         vkapi::create_image_view(device_->vk_device(), image, &view_info);
 
-    swapchain_images_.push_back(device_->import_vk_image(
-        image, view, surface_format.format));
+    swapchain_images_.push_back(
+        device_->import_vk_image(image, view, surface_format.format));
   }
 }
 

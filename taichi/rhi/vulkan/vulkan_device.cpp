@@ -2546,6 +2546,8 @@ DeviceAllocation VulkanSurface::get_depth_data(DeviceAllocation &depth_alloc) {
                              ImageLayout::transfer_src);
   cmd_list->image_to_buffer(depth_buffer_.get_ptr(), depth_alloc,
                             ImageLayout::transfer_src, copy_params);
+  cmd_list->image_transition(depth_alloc, ImageLayout::transfer_src,
+                             ImageLayout::depth_attachment);
   stream->submit_synced(cmd_list.get());
 
   return depth_buffer_;

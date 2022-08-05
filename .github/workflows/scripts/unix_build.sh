@@ -7,7 +7,7 @@ IN_DOCKER=$(check_in_docker)
 [[ "$IN_DOCKER" == "true" ]] && cd taichi
 
 build_taichi_wheel() {
-    git fetch origin master
+    git fetch origin master --tags
     PROJECT_TAGS=""
     EXTRA_ARGS=""
     if [ "$PROJECT_NAME" = "taichi-nightly" ]; then
@@ -21,7 +21,7 @@ build_taichi_wheel() {
             EXTRA_ARGS="-p manylinux_2_27_x86_64"
         fi
     fi
-    python3 misc/make_changelog.py origin/master ./ True
+    python3 misc/make_changelog.py --ver origin/master --repo_dir ./ --save
 
     TAICHI_CMAKE_ARGS="${TAICHI_CMAKE_ARGS} -DTI_WITH_C_API=ON"
     exec env TAICHI_CMAKE_ARGS="${TAICHI_CMAKE_ARGS}" python3 setup.py $PROJECT_TAGS bdist_wheel $EXTRA_ARGS

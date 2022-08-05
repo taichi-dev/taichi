@@ -1436,7 +1436,8 @@ void TaskCodeGenLLVM::visit(AtomicOpStmt *stmt) {
   if (is_local) {
     TI_ERROR("Local atomics should have been demoted.");
   }
-  TI_TRACE("Atomic: {} ({}, {})", stmt->ret_type->to_string(), stmt->dest->ret_type->to_string(), stmt->val->ret_type->to_string());
+  TI_TRACE("Atomic: {} ({}, {})", stmt->ret_type->to_string(),
+           stmt->dest->ret_type->to_string(), stmt->val->ret_type->to_string());
   TI_ASSERT(stmt->width() == 1);
   for (int l = 0; l < stmt->width(); l++) {
     llvm::Value *old_value;

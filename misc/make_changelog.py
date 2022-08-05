@@ -1,4 +1,4 @@
-# Usage: make_changelog.py v1.0.4 --save
+# Usage: make_changelog.py --ver origin/master --save
 
 import argparse
 import json

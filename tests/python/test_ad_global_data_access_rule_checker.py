@@ -12,7 +12,7 @@ def test_adjoint_visited_needs_grad():
     def test():
         x[None] = 1
 
-    with ti.ad.Tape(loss=x, check_autodiff_valid=True):
+    with ti.ad.Tape(loss=x, validation=True):
         test()
 
     assert x.snode.ptr.has_adjoint_visited()
@@ -27,7 +27,7 @@ def test_adjoint_visited_lazy_grad():
     def test():
         x[None] = 1
 
-    with ti.ad.Tape(loss=x, check_autodiff_valid=True):
+    with ti.ad.Tape(loss=x, validation=True):
         test()
 
     assert x.snode.ptr.has_adjoint_visited()
@@ -43,7 +43,7 @@ def test_adjoint_visited_place_grad():
     def test():
         x[None] = 1
 
-    with ti.ad.Tape(loss=x, check_autodiff_valid=True):
+    with ti.ad.Tape(loss=x, validation=True):
         test()
 
     assert x.snode.ptr.has_adjoint_visited()
@@ -89,5 +89,5 @@ def test_break_gdar_rule_1():
     loss.grad[None] = 1
 
     with pytest.raises(ti.TaichiAssertionError):
-        with ti.ad.Tape(loss=loss, check_autodiff_valid=True):
+        with ti.ad.Tape(loss=loss, validation=True):
             func_broke_rule_1()

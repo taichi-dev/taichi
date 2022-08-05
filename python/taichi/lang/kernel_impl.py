@@ -837,7 +837,7 @@ class Kernel:
             mode_original = self.autodiff_mode
             self.autodiff_mode = AutodiffMode.FORWARD
             self.runtime.fwd_mode_manager.insert(self, mode_original)
-        elif self.runtime.target_tape and self.runtime.target_tape.check_autodiff_valid:
+        elif self.runtime.target_tape and self.runtime.target_tape.validation:
             # The autodiff valid check happens on forward kernel
             self.autodiff_mode = AutodiffMode.VALIDATION
 

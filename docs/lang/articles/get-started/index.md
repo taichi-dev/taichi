@@ -19,7 +19,7 @@ For developers who are interested in the compiler, computer graphics, or high-pe
 
 ### Python
 
-3.6/3.7/3.8/3.9/3.10 (64-bit)
+3.7/3.8/3.9/3.10 (64-bit)
 
 :::note
 

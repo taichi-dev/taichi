@@ -1008,7 +1008,9 @@ class MakeAdjoint : public ADTransform {
 
   void visit(GlobalStoreStmt *stmt) override {
     // erase and replace with global load adjoint
-    TI_ASSERT(!stmt->dest->is<ExternalPtrStmt>());
+    if (stmt->dest->is<ExternalPtrStmt>()) {
+      TI_NOT_IMPLEMENTED;
+    }
     GlobalPtrStmt *dest = stmt->dest->as<GlobalPtrStmt>();
     TI_ASSERT(dest->width() == 1);
     auto snodes = dest->snodes;

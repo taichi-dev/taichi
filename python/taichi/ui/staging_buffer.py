@@ -1,6 +1,7 @@
 from taichi.lang.impl import ndarray
 from taichi.lang.kernel_impl import kernel
 from taichi.lang.matrix import Vector
+from taichi.lang._texture import Texture
 from taichi.types.annotations import template
 from taichi.types.primitive_types import f32, u8, u32
 
@@ -92,6 +93,16 @@ def copy_colors_to_vbo(vbo, colors):
 
 
 @ti.kernel
+def copy_texture_to_rgba8(src: ti.types.texture(num_dimensions=2), dst: ti.template(), w: ti.i32, h: ti.i32):
+    for (i, j) in ti.ndrange(w, h):
+        c = src.fetch(ti.Vector([i, j]), 0)
+        c = max(0.0, min(1.0, c))
+        c = c * 255
+        px = ti.cast(c, u32)
+        dst[i, j] = (px[0] << 0 | px[1] << 8 | px[2] << 16 | px[3] << 24)
+
+
+@ti.kernel
 def copy_image_f32_to_rgba8(src: ti.template(), dst: ti.template(),
                             num_components: ti.template()):
     for i, j in src:
@@ -122,7 +133,9 @@ image_field_cache = {}
 
 
 def to_rgba8(image):
-    if not hasattr(image, 'n') or image.m != 1:
+    is_texture = isinstance(image, Texture)
+
+    if not is_texture and (not hasattr(image, 'n') or image.m != 1):
         raise Exception(
             'the input image needs to be a Vector field (matrix with 1 column)'
         )
@@ -136,10 +149,13 @@ def to_rgba8(image):
     else:
         staging_img = image_field_cache[image]
 
-    if image.dtype == u8:
+    if isinstance(image, Texture):
+        copy_texture_to_rgba8(image, staging_img, *image.shape[0:2])
+    elif image.dtype == u8:
         copy_image_u8_to_rgba8(image, staging_img, image.n)
     elif image.dtype == f32:
         copy_image_f32_to_rgba8(image, staging_img, image.n)
     else:
         raise Exception("dtype of input image must either be u8 or f32")
+
     return staging_img

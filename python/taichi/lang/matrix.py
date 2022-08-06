@@ -1203,11 +1203,6 @@ class Matrix(TaichiOperations):
         return entries
 
     @classmethod
-    def _Vector_field(cls, n, dtype, *args, **kwargs):
-        """ti.Vector.field"""
-        return cls.field(n, 1, dtype, *args, **kwargs)
-
-    @classmethod
     @python_scope
     def ndarray(cls, n, m, dtype, shape, layout=Layout.AOS):
         """Defines a Taichi ndarray with matrix elements.
@@ -1230,26 +1225,6 @@ class Matrix(TaichiOperations):
         if isinstance(shape, numbers.Number):
             shape = (shape, )
         return MatrixNdarray(n, m, dtype, shape, layout)
-
-    @classmethod
-    @python_scope
-    def _Vector_ndarray(cls, n, dtype, shape, layout=Layout.AOS):
-        """Defines a Taichi ndarray with vector elements.
-
-        Args:
-            n (int): Size of the vector.
-            dtype (DataType): Data type of each value.
-            shape (Union[int, tuple[int]]): Shape of the ndarray.
-            layout (Layout, optional): Memory layout, AOS by default.
-
-        Example:
-            The code below shows how a Taichi ndarray with vector elements can be declared and defined::
-
-                >>> x = ti.Vector.ndarray(3, ti.f32, shape=(16, 8))
-        """
-        if isinstance(shape, numbers.Number):
-            shape = (shape, )
-        return VectorNdarray(n, dtype, shape, layout)
 
     @staticmethod
     def rows(rows):
@@ -1396,38 +1371,54 @@ class Matrix(TaichiOperations):
         return _matrix_outer_product(self, other)
 
 
-def Vector(arr, dt=None, **kwargs):
-    """Constructs a vector from given array.
+class Vector(Matrix):
+    def __init__(self, arr, dt=None, **kwargs):
+        """Constructs a vector from given array.
 
-    A vector is an instance of a 2-D matrix with the second dimension being equal to 1.
+        A vector is an instance of a 2-D matrix with the second dimension being equal to 1.
 
-    Args:
-        arr (Union[list, tuple, np.ndarray]): The initial values of the Vector.
-        dt (:mod:`~taichi.types.primitive_types`): data type of the vector.
+        Args:
+            arr (Union[list, tuple, np.ndarray]): The initial values of the Vector.
+            dt (:mod:`~taichi.types.primitive_types`): data type of the vector.
 
-    Returns:
-        :class:`~taichi.Matrix`: A vector instance.
+        Returns:
+            :class:`~taichi.Matrix`: A vector instance.
 
-    Example::
-        >>> u = ti.Vector([1, 2])
-        >>> print(u.m, u.n)  # verify a vector is a matrix of shape (n, 1)
-        2 1
-        >>> v = ti.Vector([3, 4])
-        >>> u + v
-        [4 6]
-    """
-    return Matrix(arr, dt=dt, **kwargs)
+        Example::
+            >>> u = ti.Vector([1, 2])
+            >>> print(u.m, u.n)  # verify a vector is a matrix of shape (n, 1)
+            2 1
+            >>> v = ti.Vector([3, 4])
+            >>> u + v
+            [4 6]
+        """
+        super().__init__(arr, dt=dt, **kwargs)
 
 
-Vector.field = Matrix._Vector_field
-Vector.ndarray = Matrix._Vector_ndarray
-Vector.zero = Matrix.zero
-Vector.one = Matrix.one
-Vector.dot = Matrix.dot
-Vector.cross = Matrix.cross
-Vector.outer_product = Matrix.outer_product
-Vector.unit = Matrix.unit
-Vector.normalized = Matrix.normalized
+    @classmethod
+    def field(cls, n, dtype, *args, **kwargs):
+        """ti.Vector.field"""
+        return super().field(n, 1, dtype, *args, **kwargs)
+
+    @classmethod
+    @python_scope
+    def ndarray(cls, n, dtype, shape, layout=Layout.AOS):
+        """Defines a Taichi ndarray with vector elements.
+
+        Args:
+            n (int): Size of the vector.
+            dtype (DataType): Data type of each value.
+            shape (Union[int, tuple[int]]): Shape of the ndarray.
+            layout (Layout, optional): Memory layout, AOS by default.
+
+        Example:
+            The code below shows how a Taichi ndarray with vector elements can be declared and defined::
+
+                >>> x = ti.Vector.ndarray(3, ti.f32, shape=(16, 8))
+        """
+        if isinstance(shape, numbers.Number):
+            shape = (shape, )
+        return VectorNdarray(n, dtype, shape, layout)
 
 
 class _IntermediateMatrix(Matrix):

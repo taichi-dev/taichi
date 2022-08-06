@@ -12,7 +12,9 @@ def test_shared_exponents(exponent_bits):
     qflt2 = ti.types.quant.float(exp=exponent_bits, frac=14, signed=False)
     a = ti.field(dtype=qflt1)
     b = ti.field(dtype=qflt2)
-    ti.root.bit_struct(num_bits=32).place(a, b, shared_exponent=True)
+    bitpack = ti.BitpackedFields(max_num_bits=32)
+    bitpack.place(a, b, shared_exponent=True)
+    ti.root.place(bitpack)
 
     assert a[None] == 0.0
     assert b[None] == 0.0
@@ -75,7 +77,9 @@ def test_shared_exponent_add(exponent_bits):
     qflt2 = ti.types.quant.float(exp=exponent_bits, frac=14, signed=False)
     a = ti.field(dtype=qflt1)
     b = ti.field(dtype=qflt2)
-    ti.root.bit_struct(num_bits=32).place(a, b, shared_exponent=True)
+    bitpack = ti.BitpackedFields(max_num_bits=32)
+    bitpack.place(a, b, shared_exponent=True)
+    ti.root.place(bitpack)
 
     @ti.kernel
     def foo(x: ti.f32, y: ti.f32):
@@ -108,7 +112,9 @@ def test_shared_exponent_borrow(exponent_bits):
     qflt2 = ti.types.quant.float(exp=exponent_bits, frac=14, signed=False)
     a = ti.field(dtype=qflt1)
     b = ti.field(dtype=qflt2)
-    ti.root.bit_struct(num_bits=32).place(a, b, shared_exponent=True)
+    bitpack = ti.BitpackedFields(max_num_bits=32)
+    bitpack.place(a, b, shared_exponent=True)
+    ti.root.place(bitpack)
 
     @ti.kernel
     def foo(x: ti.f32, y: ti.f32):
@@ -134,7 +140,9 @@ def test_shared_exponent_negative(exponent_bits):
     qflt2 = ti.types.quant.float(exp=exponent_bits, frac=14, signed=True)
     a = ti.field(dtype=qflt1)
     b = ti.field(dtype=qflt2)
-    ti.root.bit_struct(num_bits=32).place(a, b, shared_exponent=True)
+    bitpack = ti.BitpackedFields(max_num_bits=32)
+    bitpack.place(a, b, shared_exponent=True)
+    ti.root.place(bitpack)
 
     a[None] = 37
     assert a[None] == 37

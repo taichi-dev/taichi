@@ -136,12 +136,10 @@ SNode &SNode::dynamic(const Axis &expr, int n, int chunk_size, bool packed) {
   return snode;
 }
 
-SNode &SNode::bit_struct(int num_bits, bool packed) {
+SNode &SNode::bit_struct(BitStructType *bit_struct_type, bool packed) {
   auto &snode = create_node({}, {}, SNodeType::bit_struct, packed);
-  snode.physical_type =
-      TypeFactory::get_instance().get_primitive_int_type(num_bits, false);
-  snode.bit_struct_type_builder =
-      std::make_unique<BitStructTypeBuilder>(snode.physical_type);
+  snode.dt = bit_struct_type;
+  snode.physical_type = bit_struct_type->get_physical_type();
   return snode;
 }
 
@@ -265,9 +263,6 @@ void SNode::print() {
     fmt::print("  ");
   }
   fmt::print("{}", get_node_type_name_hinted());
-  if (exp_snode) {
-    fmt::print(" exp={}", exp_snode->get_node_type_name());
-  }
   fmt::print("\n");
   for (auto &c : ch) {
     c->print();
@@ -286,19 +281,6 @@ void SNode::set_index_offsets(std::vector<int> index_offsets_) {
 bool SNode::need_activation() const {
   return type == SNodeType::pointer || type == SNodeType::hash ||
          type == SNodeType::bitmasked || type == SNodeType::dynamic;
-}
-
-void SNode::begin_shared_exp_placement() {
-  TI_ASSERT(!placing_shared_exp);
-  TI_ASSERT(currently_placing_exp_snode == nullptr);
-  placing_shared_exp = true;
-}
-
-void SNode::end_shared_exp_placement() {
-  TI_ASSERT(placing_shared_exp);
-  TI_ASSERT(currently_placing_exp_snode != nullptr);
-  currently_placing_exp_snode = nullptr;
-  placing_shared_exp = false;
 }
 
 bool SNode::is_primal() const {

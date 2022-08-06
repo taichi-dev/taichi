@@ -1,3 +1,4 @@
+Pillow>=9.1.0
 pytest
 pytest-xdist
 pytest-rerunfailures

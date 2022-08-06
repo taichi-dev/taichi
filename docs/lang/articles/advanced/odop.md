@@ -225,7 +225,7 @@ print(arr.val[0, 0])  # 3
 arr.inc2(4)
 print(arr.val[0, 0])  # 7
 
-with ti.Tape(loss=arr.total):
+with ti.ad.Tape(loss=arr.total):
     arr.reduce()
 
 for i in range(arr.n):
@@ -236,7 +236,7 @@ for i in range(arr.n):
 def double():
     double_total[None] = 2 * arr.total[None]
 
-with ti.Tape(loss=double_total):
+with ti.ad.Tape(loss=double_total):
     arr.reduce()
     double()
 

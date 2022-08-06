@@ -14,11 +14,19 @@ struct alignas(16) PointLight {
   glm::vec4 color;
 };
 
+struct MeshAttributeInfo {
+  FieldInfo mesh_attribute;
+  bool has_attribute{false};
+};
+
 struct MeshInfo {
   RenderableInfo renderable_info;
   glm::vec3 color;
   bool two_sided{false};
   int object_id{0};
+  int num_instances{1};
+  int start_instance{0};
+  MeshAttributeInfo mesh_attribute_info;
 };
 
 struct ParticlesInfo {

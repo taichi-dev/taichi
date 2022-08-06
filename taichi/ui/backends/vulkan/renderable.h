@@ -40,6 +40,7 @@ struct RenderableConfig {
   std::string fragment_shader_path;
   taichi::lang::TopologyType topology_type{
       taichi::lang::TopologyType::Triangles};
+  taichi::lang::PolygonMode polygon_mode{taichi::lang::PolygonMode::Fill};
   VertexAttributes vbo_attrs{VboHelpers::all()};
 
   size_t vbo_size() const {

@@ -204,11 +204,14 @@ def test_non_static_is():
 def test_compare_ret_type():
     # The purpose of this test is to make sure a comparison returns i32
     # regardless of default_ip so that it can always serve as the condition of
-    # an if statement.
+    # an if/while statement.
     @ti.kernel
     def foo():
         for i in range(100):
             if i == 0:
                 pass
+        i = 100
+        while i != 0:
+            i -= 1
 
     foo()

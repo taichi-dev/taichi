@@ -16,6 +16,9 @@
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
 #include "taichi/util/action_recorder.h"
 #include "taichi/analysis/offline_cache_util.h"
+#include "taichi/ir/analysis.h"
+#include "taichi/ir/transforms.h"
+
 TLANG_NAMESPACE_BEGIN
 
 using namespace llvm;
@@ -23,12 +26,12 @@ using namespace llvm;
 // NVVM IR Spec:
 // https://docs.nvidia.com/cuda/archive/10.0/pdf/NVVM_IR_Specification.pdf
 
-class CodeGenLLVMCUDA : public CodeGenLLVM {
+class TaskCodeGenCUDA : public TaskCodeGenLLVM {
  public:
   using IRVisitor::visit;
 
-  CodeGenLLVMCUDA(Kernel *kernel, IRNode *ir = nullptr)
-      : CodeGenLLVM(kernel, ir) {
+  TaskCodeGenCUDA(Kernel *kernel, IRNode *ir = nullptr)
+      : TaskCodeGenLLVM(kernel, ir) {
   }
 
   llvm::Value *create_print(std::string tag,
@@ -627,7 +630,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
 
   void visit(ExternalFuncCallStmt *stmt) override {
     if (stmt->type == ExternalFuncCallStmt::BITCODE) {
-      CodeGenLLVM::visit_call_bitcode(stmt);
+      TaskCodeGenLLVM::visit_call_bitcode(stmt);
     } else {
       TI_NOT_IMPLEMENTED
     }
@@ -644,7 +647,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
   void visit(BinaryOpStmt *stmt) override {
     auto op = stmt->op_type;
     if (op != BinaryOpType::atan2 && op != BinaryOpType::pow) {
-      return CodeGenLLVM::visit(stmt);
+      return TaskCodeGenLLVM::visit(stmt);
     }
 
     auto ret_type = stmt->ret_type;
@@ -699,32 +702,21 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
 
 #ifdef TI_WITH_LLVM
 // static
-std::unique_ptr<CodeGenLLVM> CodeGenCUDA::make_codegen_llvm(Kernel *kernel,
-                                                            IRNode *ir) {
-  return std::make_unique<CodeGenLLVMCUDA>(kernel, ir);
+std::unique_ptr<TaskCodeGenLLVM> KernelCodeGenCUDA::make_codegen_llvm(
+    Kernel *kernel,
+    IRNode *ir) {
+  return std::make_unique<TaskCodeGenCUDA>(kernel, ir);
 }
 #endif  // TI_WITH_LLVM
 
-static void set_arg_external_array(RuntimeContext *ctx,
-                                   const std::string &kernel_name,
-                                   int arg_id,
-                                   uintptr_t ptr,
-                                   uint64 size,
-                                   bool is_device_allocation) {
-  ActionRecorder::get_instance().record(
-      "set_kernel_arg_ext_ptr",
-      {ActionArg("kernel_name", kernel_name), ActionArg("arg_id", arg_id),
-       ActionArg("address", fmt::format("0x{:x}", ptr)),
-       ActionArg("array_size_in_bytes", (int64)size)});
-
-  ctx->set_arg(arg_id, ptr);
-  ctx->set_array_runtime_size(arg_id, size);
-  ctx->set_array_device_allocation_type(
-      arg_id, is_device_allocation ? RuntimeContext::DevAllocType::kNdarray
-                                   : RuntimeContext::DevAllocType::kNone);
+LLVMCompiledData KernelCodeGenCUDA::modulegen(
+    std::unique_ptr<llvm::Module> &&module,
+    OffloadedStmt *stmt) {
+  TaskCodeGenCUDA gen(kernel, stmt);
+  return gen.run_compilation();
 }
 
-FunctionType CodeGenCUDA::codegen() {
+FunctionType KernelCodeGenCUDA::codegen() {
   TI_AUTO_PROF
   // TODO: move the offline cache part to the base class
   auto *llvm_prog = get_llvm_program(prog);
@@ -732,11 +724,14 @@ FunctionType CodeGenCUDA::codegen() {
   auto &config = prog->config;
   std::string kernel_key = get_hashed_offline_cache_key(&config, kernel);
   kernel->set_kernel_key_for_cache(kernel_key);
-  if (config.offline_cache && !config.async_mode &&
-      this->supports_offline_cache() && !kernel->is_evaluator) {
+  if (config.offline_cache && this->supports_offline_cache() &&
+      !kernel->is_evaluator) {
     std::vector<LLVMCompiledData> res;
     const bool ok = maybe_read_compilation_from_cache(kernel_key, res);
     if (ok) {
+      TI_DEBUG("Create kernel '{}' from cache (key='{}')", kernel->get_name(),
+               kernel_key);
+      cache_module(kernel_key, res);
       CUDAModuleToFunctionConverter converter(
           tlctx, get_llvm_program(prog)->get_runtime_executor());
       return converter.convert(kernel, std::move(res));
@@ -746,38 +741,67 @@ FunctionType CodeGenCUDA::codegen() {
     kernel->lower(/*to_executable=*/false);
   }
 
-  CodeGenLLVMCUDA gen(kernel, ir);
-  auto compiled_res = gen.run_compilation();
+  auto block = dynamic_cast<Block *>(kernel->ir.get());
+  auto &worker = get_llvm_program(kernel->program)->compilation_workers;
+  TI_ASSERT(block);
 
-  CUDAModuleToFunctionConverter converter{gen.tlctx,
-                                          llvm_prog->get_runtime_executor()};
-  std::vector<LLVMCompiledData> data_list;
-  data_list.push_back(std::move(compiled_res));
+  auto &offloads = block->statements;
+  std::vector<LLVMCompiledData> data(offloads.size());
+  using TaskFunc = int32 (*)(void *);
+  std::vector<TaskFunc> task_funcs(offloads.size());
+  for (int i = 0; i < offloads.size(); i++) {
+    auto compile_func = [&, i] {
+      auto offload =
+          irpass::analysis::clone(offloads[i].get(), offloads[i]->get_kernel());
+      irpass::re_id(offload.get());
+      auto new_data = this->modulegen(nullptr, offload->as<OffloadedStmt>());
+      data[i].tasks = std::move(new_data.tasks);
+      data[i].module = std::move(new_data.module);
+    };
+    if (kernel->is_evaluator) {
+      compile_func();
+    } else {
+      worker.enqueue(compile_func);
+    }
+  }
   if (!kernel->is_evaluator) {
-    cache_module(kernel_key, data_list);
+    worker.flush();
   }
 
-  return converter.convert(this->kernel, std::move(data_list));
+  if (!kernel->is_evaluator) {
+    TI_DEBUG("Cache kernel '{}' (key='{}')", kernel->get_name(), kernel_key);
+    cache_module(kernel_key, data);
+  }
+
+  CUDAModuleToFunctionConverter converter{tlctx,
+                                          llvm_prog->get_runtime_executor()};
+
+  return converter.convert(this->kernel, std::move(data));
 }
 
 FunctionType CUDAModuleToFunctionConverter::convert(
     const std::string &kernel_name,
     const std::vector<LlvmLaunchArgInfo> &args,
     std::vector<LLVMCompiledData> &&data) const {
-  auto &mod = data[0].module;
-  auto &tasks = data[0].tasks;
 #ifdef TI_WITH_CUDA
-  for (const auto &task : tasks) {
-    llvm::Function *func = mod->getFunction(task.name);
-    TI_ASSERT(func);
-    tlctx_->mark_function_as_cuda_kernel(func, task.block_dim);
+  std::vector<JITModule *> cuda_modules;
+  std::vector<std::vector<OffloadedTask>> offloaded_tasks;
+  cuda_modules.reserve(data.size());
+  for (auto &datum : data) {
+    auto &mod = datum.module;
+    auto &tasks = datum.tasks;
+    for (const auto &task : tasks) {
+      llvm::Function *func = mod->getFunction(task.name);
+      TI_ASSERT(func);
+      tlctx_->mark_function_as_cuda_kernel(func, task.block_dim);
+    }
+    auto jit = tlctx_->jit.get();
+    cuda_modules.push_back(
+        jit->add_module(std::move(mod), executor_->get_config()->gpu_max_reg));
+    offloaded_tasks.push_back(std::move(tasks));
   }
 
-  auto jit = tlctx_->jit.get();
-  auto cuda_module =
-      jit->add_module(std::move(mod), executor_->get_config()->gpu_max_reg);
-
-  return [cuda_module, kernel_name, args, offloaded_tasks = tasks,
+  return [cuda_modules, kernel_name, args, offloaded_tasks,
           executor = this->executor_](RuntimeContext &context) {
     CUDAContext::get_instance().make_current();
     std::vector<void *> arg_buffers(args.size(), nullptr);
@@ -817,14 +841,12 @@ FunctionType CUDAModuleToFunctionConverter::convert(
             device_buffers[i] = arg_buffers[i];
           }
           // device_buffers[i] saves a raw ptr on CUDA device.
-          set_arg_external_array(&context, kernel_name, i,
-                                 (uint64)device_buffers[i], arr_sz,
-                                 /*is_device_allocation=*/false);
+          context.set_arg(i, (uint64)device_buffers[i]);
 
         } else if (arr_sz > 0) {
           // arg_buffers[i] is a DeviceAllocation*
-          // TODO: Unwraps DeviceAllocation* can be done at CodeGenLLVM since
-          // it's shared by cpu and cuda.
+          // TODO: Unwraps DeviceAllocation* can be done at TaskCodeGenLLVM
+          // since it's shared by cpu and cuda.
           DeviceAllocation *ptr =
               static_cast<DeviceAllocation *>(arg_buffers[i]);
           device_buffers[i] = executor->get_ndarray_alloc_info_ptr(*ptr);
@@ -835,9 +857,7 @@ FunctionType CUDAModuleToFunctionConverter::convert(
           arg_buffers[i] = device_buffers[i];
 
           // device_buffers[i] saves the unwrapped raw ptr from arg_buffers[i]
-          set_arg_external_array(&context, kernel_name, i,
-                                 (uint64)device_buffers[i], arr_sz,
-                                 /*is_device_allocation=*/false);
+          context.set_arg(i, (uint64)device_buffers[i]);
         }
       }
     }
@@ -845,12 +865,15 @@ FunctionType CUDAModuleToFunctionConverter::convert(
       CUDADriver::get_instance().stream_synchronize(nullptr);
     }
 
-    for (auto task : offloaded_tasks) {
-      TI_TRACE("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
-               task.block_dim);
-      cuda_module->launch(task.name, task.grid_dim, task.block_dim, 0,
-                          {&context});
+    for (int i = 0; i < offloaded_tasks.size(); i++) {
+      for (auto &task : offloaded_tasks[i]) {
+        TI_TRACE("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
+                 task.block_dim);
+        cuda_modules[i]->launch(task.name, task.grid_dim, task.block_dim, 0,
+                                {&context});
+      }
     }
+
     // copy data back to host
     if (transferred) {
       CUDADriver::get_instance().stream_synchronize(nullptr);

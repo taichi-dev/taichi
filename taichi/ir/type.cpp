@@ -170,17 +170,14 @@ BitStructType::BitStructType(
     PrimitiveType *physical_type,
     const std::vector<Type *> &member_types,
     const std::vector<int> &member_bit_offsets,
-    const std::vector<bool> &member_owns_shared_exponents,
     const std::vector<int> &member_exponents,
     const std::vector<std::vector<int>> &member_exponent_users)
     : physical_type_(physical_type),
       member_types_(member_types),
       member_bit_offsets_(member_bit_offsets),
-      member_owns_shared_exponents_(member_owns_shared_exponents),
       member_exponents_(member_exponents),
       member_exponent_users_(member_exponent_users) {
   TI_ASSERT(member_types_.size() == member_bit_offsets_.size());
-  TI_ASSERT(member_types_.size() == member_owns_shared_exponents_.size());
   TI_ASSERT(member_types_.size() == member_exponents_.size());
   TI_ASSERT(member_types_.size() == member_exponent_users_.size());
   int physical_type_bits = data_type_bits(physical_type_);
@@ -202,9 +199,6 @@ BitStructType::BitStructType(
   TI_ASSERT(physical_type_bits >= member_total_bits);
   for (auto i = 0; i < member_types_.size(); ++i) {
     auto exponent = member_exponents_[i];
-    if (member_owns_shared_exponents_[i]) {
-      TI_ASSERT(exponent != -1);
-    }
     if (exponent != -1) {
       TI_ASSERT(std::find(member_exponent_users_[exponent].begin(),
                           member_exponent_users_[exponent].end(),
@@ -224,7 +218,7 @@ std::string BitStructType::to_string() const {
                        member_bit_offsets_[i]);
     if (member_exponents_[i] != -1) {
       str += fmt::format(" {}exp={}",
-                         member_owns_shared_exponents_[i] ? "shared_" : "",
+                         get_member_owns_shared_exponent(i) ? "shared_" : "",
                          member_exponents_[i]);
     }
     if (i + 1 < num_members) {

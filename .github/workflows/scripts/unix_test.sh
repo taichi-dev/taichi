@@ -1,16 +1,9 @@
 #!/bin/bash
 set -ex
 
-export PYTHONUNBUFFERED=1
+. $(dirname $0)/libcommon.sh
 
-check_in_docker() {
-    # This is a temporary solution to detect in a docker, but it should work
-    if [[ $(whoami) == "dev" ]]; then
-        echo "true"
-    else
-        echo "false"
-    fi
-}
+export PYTHONUNBUFFERED=1
 
 export TI_SKIP_VERSION_CHECK=ON
 export TI_CI=1
@@ -65,7 +58,10 @@ EOF
     python3 taichi-release-tests/run.py --log=DEBUG --runners 1 taichi-release-tests/timelines
 fi
 
-python3 tests/run_tests.py --cpp
+
+if [ ! -z $TI_SKIP_CPP_TESTS ]; then
+    python3 tests/run_tests.py --cpp
+fi
 
 if [ -z "$GPU_TEST" ]; then
     if [[ $PLATFORM == *"m1"* ]]; then

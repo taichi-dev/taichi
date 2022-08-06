@@ -16,7 +16,6 @@
 #include "taichi/system/timeline.h"
 #include "taichi/ir/snode.h"
 #include "taichi/ir/frontend_ir.h"
-#include "taichi/program/async_engine.h"
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/util/statistics.h"
 #include "taichi/math/arithmetic.h"
@@ -138,15 +137,6 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   sync = true;
   finalized_ = false;
 
-  if (config.async_mode) {
-    TI_WARN("Running in async mode. This is experimental.");
-    TI_ASSERT(is_extension_supported(config.arch, Extension::async_mode));
-    async_engine = std::make_unique<AsyncEngine>(
-        &config, [this](Kernel &kernel, OffloadedStmt *offloaded) {
-          return this->compile(kernel, offloaded);
-        });
-  }
-
   if (!is_extension_supported(config.arch, Extension::assertion)) {
     if (config.check_out_of_bound) {
       TI_WARN("Out-of-bound access checking is not supported on arch={}",
@@ -227,10 +217,6 @@ void Program::check_runtime_error() {
 }
 
 void Program::synchronize() {
-  if (config.async_mode && !sync) {
-    async_engine->synchronize();
-    sync = true;
-  }
   // Normal mode shouldn't be affected by `sync` flag.
   if (arch_uses_llvm(config.arch) || config.arch == Arch::metal ||
       config.arch == Arch::vulkan || config.arch == Arch::opengl) {
@@ -240,14 +226,6 @@ void Program::synchronize() {
 
 StreamSemaphore Program::flush() {
   return program_impl_->flush();
-}
-
-void Program::async_flush() {
-  if (!config.async_mode) {
-    TI_WARN("No point calling async_flush() when async mode is disabled.");
-    return;
-  }
-  async_engine->flush();
 }
 
 int Program::get_snode_tree_size() {
@@ -403,10 +381,10 @@ uint64 Program::fetch_result_uint64(int i) {
 }
 
 void Program::finalize() {
+  if (finalized_) {
+    return;
+  }
   synchronize();
-  if (async_engine)
-    async_engine = nullptr;  // Finalize the async engine threads before
-                             // anything else gets destroyed.
 
   TI_TRACE("Program finalizing...");
   if (config.print_benchmark_stat) {
@@ -450,7 +428,6 @@ void Program::finalize() {
   }
 
   Stmt::reset_counter();
-  TaskLaunchRecord::reset_counter();
 
   finalized_ = true;
   num_instances_ -= 1;
@@ -524,8 +501,7 @@ void Program::fill_ndarray_fast(Ndarray *ndarray, uint32_t val) {
 }
 
 Program::~Program() {
-  if (!finalized_)
-    finalize();
+  finalize();
 }
 
 std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(Arch arch) {

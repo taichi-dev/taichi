@@ -39,11 +39,6 @@ class TI_DLL_EXPORT Kernel : public Callable {
 
     void set_extra_arg_int(int i, int j, int32 d);
 
-    void set_arg_external_array(int arg_id,
-                                uintptr_t ptr,
-                                uint64 size,
-                                bool is_device_allocation);
-
     void set_arg_external_array_with_shape(int arg_id,
                                            uintptr_t ptr,
                                            uint64 size,
@@ -166,7 +161,7 @@ class TI_DLL_EXPORT Kernel : public Callable {
   std::unique_ptr<aot::Kernel> compiled_aot_kernel_{nullptr};
   // A flag to record whether |ir| has been fully lowered.
   // lower initial AST all the way down to a bunch of
-  // OffloadedStmt for async execution
+  // OffloadedStmt for async execution TODO(Lin): Check this comment
   bool lowered_{false};
   std::atomic<uint64> task_counter_{0};
   std::string kernel_key_;

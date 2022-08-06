@@ -860,7 +860,8 @@ class MakeAdjoint : public ADTransform {
     } else if (is_comparison(bin->op_type) || is_bit_op(bin->op_type)) {
       // do nothing
     } else {
-      TI_WARN("gradient of binary op {}", binary_op_type_name(bin->op_type));
+      TI_WARN("gradient of binary op {}\n{}", binary_op_type_name(bin->op_type),
+              bin->tb);
       TI_NOT_IMPLEMENTED;
     }
   }
@@ -1091,7 +1092,7 @@ class MakeDual : public ADTransform {
   }
 
   Stmt *dual(Stmt *stmt) {
-    if (!is_real(stmt->ret_type)) {
+    if (!is_real(stmt->ret_type) || stmt->is<ConstStmt>()) {
       return constant(0);
     }
     if (dual_stmt.find(stmt) == dual_stmt.end()) {
@@ -1195,7 +1196,8 @@ class MakeDual : public ADTransform {
     } else if (is_comparison(bin->op_type) || is_bit_op(bin->op_type)) {
       // do nothing
     } else {
-      TI_WARN("gradient of binary op {}", binary_op_type_name(bin->op_type));
+      TI_WARN("gradient of binary op {}\n{}", binary_op_type_name(bin->op_type),
+              bin->tb);
       TI_NOT_IMPLEMENTED
     }
   }

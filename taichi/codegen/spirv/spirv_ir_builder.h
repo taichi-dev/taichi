@@ -427,6 +427,7 @@ class IRBuilder {
   void set_work_group_size(const std::array<int, 3> group_size);
   Value get_work_group_size(uint32_t dim_index);
   Value get_num_work_groups(uint32_t dim_index);
+  Value get_local_invocation_id(uint32_t dim_index);
   Value get_global_invocation_id(uint32_t dim_index);
   Value get_subgroup_invocation_id();
   Value get_subgroup_size();
@@ -461,6 +462,7 @@ class IRBuilder {
 
   // Local allocate, load, store methods
   Value alloca_variable(const SType &type);
+  Value alloca_workgroup_array(const SType &type);
   Value load_variable(Value pointer, const SType &res_type);
   void store_variable(Value pointer, Value value);
 
@@ -571,6 +573,7 @@ class IRBuilder {
   SType t_v3_fp32_;
   SType t_v2_fp32_;
   Value gl_global_invocation_id_;
+  Value gl_local_invocation_id_;
   Value gl_num_work_groups_;
   Value gl_work_group_size_;
   Value subgroup_local_invocation_id_;

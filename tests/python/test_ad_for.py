@@ -454,7 +454,7 @@ def test_mixed_inner_loops_tape():
                 loss[None] += ti.sin(x[None]) + 1.0
 
     x[None] = 0.0
-    with ti.Tape(loss=loss):
+    with ti.ad.Tape(loss=loss):
         mixed_inner_loops_tape()
 
     assert loss[None] == 10.0
@@ -479,7 +479,7 @@ def test_inner_loops_local_variable_fixed_stack_size_tape():
                 loss[None] += s + t
 
     x[None] = 0.0
-    with ti.Tape(loss=loss):
+    with ti.ad.Tape(loss=loss):
         test_inner_loops_local_variable()
 
     assert loss[None] == 18.0
@@ -530,7 +530,7 @@ def test_inner_loops_local_variable_adaptive_stack_size_tape():
                 loss[None] += s + t
 
     x[None] = 0.0
-    with ti.Tape(loss=loss):
+    with ti.ad.Tape(loss=loss):
         test_inner_loops_local_variable()
 
     assert loss[None] == 18.0
@@ -585,7 +585,7 @@ def test_more_inner_loops_local_variable_adaptive_stack_size_tape():
                 loss[None] += s
 
     x[None] = 0.0
-    with ti.Tape(loss=loss):
+    with ti.ad.Tape(loss=loss):
         test_more_inner_loops_local_variable()
 
     assert loss[None] == 12.0
@@ -614,7 +614,7 @@ def test_more_inner_loops_local_variable_fixed_stack_size_tape():
                 loss[None] += s
 
     x[None] = 0.0
-    with ti.Tape(loss=loss):
+    with ti.ad.Tape(loss=loss):
         test_more_inner_loops_local_variable()
 
     assert loss[None] == 12.0
@@ -768,7 +768,7 @@ def test_large_for_loops_adaptive_stack_size():
                 for k in range(1000):
                     loss[None] += ti.sin(x[None]) + 1.0
 
-    with ti.Tape(loss=loss):
+    with ti.ad.Tape(loss=loss):
         test_large_loop()
 
     assert loss[None] == 1e7
@@ -790,7 +790,7 @@ def test_large_for_loops_fixed_stack_size():
                 for k in range(1000):
                     loss[None] += ti.sin(x[None]) + 1.0
 
-    with ti.Tape(loss=loss):
+    with ti.ad.Tape(loss=loss):
         test_large_loop()
 
     assert loss[None] == 1e7
@@ -811,7 +811,7 @@ def test_multiple_ib():
                 y[None] += x[None]
 
     x[None] = 1.0
-    with ti.Tape(y):
+    with ti.ad.Tape(y):
         compute_y()
 
     assert y[None] == 12.0
@@ -837,7 +837,7 @@ def test_multiple_ib_multiple_outermost():
                 y[None] += x[None]
 
     x[None] = 1.0
-    with ti.Tape(y):
+    with ti.ad.Tape(y):
         compute_y()
 
     assert y[None] == 24.0
@@ -865,7 +865,7 @@ def test_multiple_ib_multiple_outermost_mixed():
                     y[None] += x[None]
 
     x[None] = 1.0
-    with ti.Tape(y):
+    with ti.ad.Tape(y):
         compute_y()
 
     assert y[None] == 42.0
@@ -890,7 +890,7 @@ def test_multiple_ib_mixed():
                 y[None] += x[None]
 
     x[None] = 1.0
-    with ti.Tape(y):
+    with ti.ad.Tape(y):
         compute_y()
 
     assert y[None] == 30.0
@@ -916,7 +916,7 @@ def test_multiple_ib_deeper():
                         y[None] += x[None]
 
     x[None] = 1.0
-    with ti.Tape(y):
+    with ti.ad.Tape(y):
         compute_y()
 
     assert y[None] == 42.0
@@ -975,7 +975,7 @@ def test_multiple_ib_inner_mixed():
                         y[None] += x[None]
 
     x[None] = 1.0
-    with ti.Tape(y):
+    with ti.ad.Tape(y):
         compute_y()
 
     assert y[None] == 78.0

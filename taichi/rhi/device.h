@@ -199,7 +199,7 @@ enum class PolygonMode : int {
   Point = 2,
 };
 
-enum class BufferFormat : uint32_t {
+enum class TI_DLL_EXPORT BufferFormat : uint32_t {
   r8,
   rg8,
   rgba8,
@@ -254,9 +254,9 @@ class Pipeline {
   virtual ResourceBinder *resource_binder() = 0;
 };
 
-enum class ImageDimension { d1D, d2D, d3D };
+enum class TI_DLL_EXPORT ImageDimension { d1D, d2D, d3D };
 
-enum class ImageLayout {
+enum class TI_DLL_EXPORT ImageLayout {
   undefined,
   shader_read,
   shader_write,
@@ -347,6 +347,12 @@ class CommandList {
   virtual void draw(uint32_t num_verticies, uint32_t start_vertex = 0) {
     TI_NOT_IMPLEMENTED
   }
+  virtual void draw_instance(uint32_t num_verticies,
+                             uint32_t num_instances,
+                             uint32_t start_vertex = 0,
+                             uint32_t start_instance = 0) {
+    TI_NOT_IMPLEMENTED
+  }
   virtual void clear_color(float r, float g, float b, float a) {
     TI_NOT_IMPLEMENTED
   }
@@ -356,6 +362,13 @@ class CommandList {
   virtual void draw_indexed(uint32_t num_indicies,
                             uint32_t start_vertex = 0,
                             uint32_t start_index = 0) {
+    TI_NOT_IMPLEMENTED
+  }
+  virtual void draw_indexed_instance(uint32_t num_indicies,
+                                     uint32_t num_instances,
+                                     uint32_t start_vertex = 0,
+                                     uint32_t start_index = 0,
+                                     uint32_t start_instance = 0) {
     TI_NOT_IMPLEMENTED
   }
   virtual void image_transition(DeviceAllocation img,
@@ -444,6 +457,10 @@ class Stream {
       const std::vector<StreamSemaphore> &wait_semaphores = {}) = 0;
 
   virtual void command_sync() = 0;
+
+  virtual double device_time_elapsed_us() const {
+    TI_NOT_IMPLEMENTED
+  }
 };
 
 class Device {
@@ -580,7 +597,7 @@ struct SurfaceConfig {
   uint32_t height{1};
 };
 
-struct ImageParams {
+struct TI_DLL_EXPORT ImageParams {
   ImageDimension dimension;
   BufferFormat format;
   ImageLayout initial_layout;

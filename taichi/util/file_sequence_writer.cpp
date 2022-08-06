@@ -3,9 +3,10 @@
 #include "llvm/Support/raw_ostream.h"
 #endif
 
+#include "taichi/ir/transforms.h"
 #include "taichi/util/file_sequence_writer.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
 
 FileSequenceWriter::FileSequenceWriter(std::string filename_template,
                                        std::string file_type)
@@ -29,9 +30,9 @@ std::string FileSequenceWriter::write(const std::string &str) {
   return fn;
 }
 
-std::string FileSequenceWriter::write(IRNode *irnode) {
+std::string FileSequenceWriter::write(lang::IRNode *irnode) {
   std::string content;
-  irpass::print(irnode, &content);
+  lang::irpass::print(irnode, &content);
   return write(content);
 }
 
@@ -42,4 +43,4 @@ std::pair<std::ofstream, std::string> FileSequenceWriter::create_new_file() {
   return {std::ofstream(fn), fn};
 }
 
-TLANG_NAMESPACE_END
+}  // namespace taichi

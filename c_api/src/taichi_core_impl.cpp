@@ -299,26 +299,7 @@ void ti_launch_kernel(TiRuntime runtime,
         std::vector<int> shape(ndarray.shape.dims,
                                ndarray.shape.dims + ndarray.shape.dim_count);
 
-        size_t total_array_size = 1;
-        for (const auto &val : shape) {
-          total_array_size *= val;
-        }
-
-        if (ndarray.elem_shape.dim_count != 0) {
-          std::vector<int> elem_shape(
-              ndarray.elem_shape.dims,
-              ndarray.elem_shape.dims + ndarray.elem_shape.dim_count);
-
-          for (const auto &val : elem_shape) {
-            total_array_size *= val;
-          }
-
-          runtime_context.set_arg_devalloc(i, *devalloc, shape, elem_shape);
-          runtime_context.set_array_runtime_size(i, total_array_size);
-        } else {
-          runtime_context.set_arg_devalloc(i, *devalloc, shape);
-          runtime_context.set_array_runtime_size(i, total_array_size);
-        }
+        runtime_context.set_arg_ndarray(i, (intptr_t)devalloc.get(), shape);
 
         devallocs.emplace_back(std::move(devalloc));
         break;

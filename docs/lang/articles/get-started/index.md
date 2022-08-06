@@ -19,7 +19,7 @@ For developers who are interested in the compiler, computer graphics, or high-pe
 
 ### Python
 
-3.6/3.7/3.8/3.9/3.10 (64-bit)
+3.7/3.8/3.9/3.10 (64-bit)
 
 :::note
 
@@ -48,10 +48,12 @@ To get started with the Taichi Language, simply install it with `pip`:
 python3 -m pip install taichi
 ```
 
+There are a few of extra requirements depend on which operating system you are using:
+
+````mdx-code-block
+
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
-
-There are a few of extra requirements depend on which operating system you are using:
 
 <Tabs
   defaultValue="arch-linux"
@@ -71,6 +73,7 @@ There are a few of extra requirements depend on which operating system you are u
 
   </TabItem>
 </Tabs>
+````
 
 See the [Installation Troubleshooting](../faqs/install.md) if you run into any issues when installing Taichi.
 

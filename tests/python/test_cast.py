@@ -11,7 +11,11 @@ def test_cast_uint_to_float(dtype):
     def func(a: dtype) -> ti.f32:
         return ti.cast(a, ti.f32)
 
-    assert func(255) == 255
+    @ti.kernel
+    def func_sugar(a: dtype) -> ti.f32:
+        return ti.f32(a)
+
+    assert func(255) == func_sugar(255) == 255
 
 
 @pytest.mark.parametrize('dtype', [ti.u8, ti.u16, ti.u32])
@@ -21,7 +25,11 @@ def test_cast_float_to_uint(dtype):
     def func(a: ti.f32) -> dtype:
         return ti.cast(a, dtype)
 
-    assert func(255) == 255
+    @ti.kernel
+    def func_sugar(a: ti.f32) -> dtype:
+        return dtype(a)
+
+    assert func(255) == func_sugar(255) == 255
 
 
 @test_utils.test()
@@ -151,7 +159,9 @@ def test_quant_int_extension():
     a = ti.field(dtype=qi5)
     b = ti.field(dtype=qu7)
 
-    ti.root.bit_struct(num_bits=32).place(a, b)
+    bitpack = ti.BitpackedFields(max_num_bits=32)
+    bitpack.place(a, b)
+    ti.root.place(bitpack)
 
     @ti.kernel
     def run_cast_int():

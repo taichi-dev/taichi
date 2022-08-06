@@ -100,7 +100,7 @@ def main():
             elif e.key == 'r':
                 init_pos()
         for i in range(30):
-            with ti.Tape(loss=U):
+            with ti.ad.Tape(loss=U):
                 update_U()
             advance()
         gui.circles(pos.to_numpy(), radius=2, color=0xffaa33)

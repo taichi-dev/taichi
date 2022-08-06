@@ -31,6 +31,7 @@ CompileConfig::CompileConfig() {
   move_loop_invariant_outside_if = false;
   default_fp = PrimitiveType::f32;
   default_ip = PrimitiveType::i32;
+  default_up = PrimitiveType::u32;
   verbose_kernel_launches = false;
   kernel_profiler = false;
   default_cpu_block_dim = 32;
@@ -39,7 +40,6 @@ CompileConfig::CompileConfig() {
   gpu_max_reg = 0;  // 0 means using the default value from the CUDA driver.
   verbose = true;
   fast_math = true;
-  async_mode = false;
   dynamic_index = false;
   flatten_if = false;
   make_thread_local = true;

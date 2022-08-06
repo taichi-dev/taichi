@@ -4,7 +4,7 @@
 
 #include "taichi/common/core.h"
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 struct ActionArg {
   ActionArg(const std::string &key, const std::string &val)
@@ -61,4 +61,4 @@ class ActionRecorder {
   bool running_{false};
 };
 
-TI_NAMESPACE_END
+}  // namespace taichi

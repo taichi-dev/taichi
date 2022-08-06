@@ -1394,7 +1394,6 @@ class Vector(Matrix):
         """
         super().__init__(arr, dt=dt, **kwargs)
 
-
     @classmethod
     def field(cls, n, dtype, *args, **kwargs):
         """ti.Vector.field"""

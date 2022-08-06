@@ -1,3 +1,4 @@
+import numpy as np
 from taichi.lang.impl import ndarray
 from taichi.lang.kernel_impl import kernel
 from taichi.lang.matrix import Vector
@@ -5,7 +6,6 @@ from taichi.types.annotations import template
 from taichi.types.primitive_types import f32, u8, u32
 
 import taichi as ti
-import numpy as np
 
 vbo_field_cache = {}
 depth_ndarray_cache = {}
@@ -142,7 +142,8 @@ def copy_image_f32_to_rgba8_np(src: ti.types.ndarray(), dst: ti.template(),
 
 @ti.kernel
 def copy_image_u8_to_rgba8(src: ti.template(), dst: ti.template(),
-                           num_components: ti.template(), gray_scale: ti.template()):
+                           num_components: ti.template(),
+                           gray_scale: ti.template()):
     for i, j in ti.ndrange(src.shape[0], src.shape[1]):
         px = ti.Vector([0, 0, 0, 0xff], dt=u32)
         if ti.static(gray_scale):
@@ -159,7 +160,8 @@ def copy_image_u8_to_rgba8(src: ti.template(), dst: ti.template(),
 
 @ti.kernel
 def copy_image_u8_to_rgba8_np(src: ti.types.ndarray(), dst: ti.template(),
-                              num_components: ti.template(), gray_scale: ti.template()):
+                              num_components: ti.template(),
+                              gray_scale: ti.template()):
     for i, j in ti.ndrange(src.shape[0], src.shape[1]):
         px = ti.Vector([0, 0, 0, 0xff], dt=u32)
         if ti.static(gray_scale):
@@ -187,7 +189,8 @@ def to_rgba8(image):
             channels = image.shape[2]
         else:
             raise Exception(
-                "the shape of the image must be of the form (width,height) or (width,height,channels)")
+                "the shape of the image must be of the form (width,height) or (width,height,channels)"
+            )
 
     staging_key = image.shape[0:2] if src_numpy else image
     if staging_key not in image_field_cache:
@@ -203,7 +206,8 @@ def to_rgba8(image):
             copy_image_u8_to_rgba8(image, staging_img, channels, gray_scale)
     elif image.dtype == f32 or image.dtype == np.float32:
         if src_numpy:
-            copy_image_f32_to_rgba8_np(image, staging_img, channels, gray_scale)
+            copy_image_f32_to_rgba8_np(image, staging_img, channels,
+                                       gray_scale)
         else:
             copy_image_f32_to_rgba8(image, staging_img, channels, gray_scale)
     else:

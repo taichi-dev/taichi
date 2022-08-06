@@ -6,6 +6,7 @@ gradient computation task.
 import warnings
 from functools import reduce
 
+import numpy as np
 from taichi.lang import impl
 from taichi.lang.field import ScalarField
 from taichi.lang.snode import SNode
@@ -291,8 +292,7 @@ class FwdMode:
                 # e.g., ti.root.dense(ti.i, 1).place(x.dual)
                 self.param.dual[0] = 1.0 * self.seed[0]
         else:
-            for idx, s in enumerate(self.seed):
-                self.param.dual[idx] = 1.0 * s
+            self.param.dual.from_numpy(np.array(self.seed))
 
         # Clear gradients
         if self.clear_gradients:
@@ -326,8 +326,7 @@ class FwdMode:
                 # e.g., ti.root.dense(ti.i, 1).place(x.dual)
                 self.param.dual[0] = 0.0
         else:
-            for idx, s in enumerate(self.seed):
-                self.param.dual[idx] = 0.0
+            self.param.dual.fill(0)
 
 
 __all__ = [

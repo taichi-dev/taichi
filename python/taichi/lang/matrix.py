@@ -1746,6 +1746,81 @@ class MatrixType(CompoundType):
         return Matrix.field(self.n, self.m, dtype=self.dtype, **kwargs)
 
 
+class VectorType(MatrixType):
+    def __init__(self, n, dtype):
+        super().__init__(n, 1, dtype)
+    def __call__(self, *args):
+        """Return a vector matching the shape and dtype.
+
+        This function will try to convert the input to a `n x m` matrix, with n, m being
+        the number of rows/cols of this matrix type.
+
+        Example::
+
+            >>> vec3 = VectorType(3, float)
+
+            Create from n scalars:
+
+                >>> v = vec3(1, 2, 3)
+
+            Create from a list/tuple of n scalars:
+
+                >>> v = vec3([1, 2, 3])
+
+            Create from a single scalar
+
+                >>> v = vec3(1)
+
+            Create from another 2d list/matrix, as long as they have the same number of entries
+
+                >>> v = vec3([1, 2, 3])
+                >>> u = vec3(u)
+
+        """
+        if len(args) == 0:
+            raise TaichiSyntaxError(
+                "Custom type instances need to be created with an initial value."
+            )
+        if len(args) == 1:
+            # initialize by a single scalar, e.g. matnxm(1)
+            if isinstance(args[0], (numbers.Number, expr.Expr)):
+                return self.filled_with_scalar(args[0])
+            args = args[0]
+        # collect all input entries to a 1d list and then reshape
+        # this is mostly for glsl style like vec4(v.xyz, 1.)
+        entries = []
+        for x in args:
+            if isinstance(x, (list, tuple)):
+                entries += x
+            elif isinstance(x, np.ndarray):
+                entries += list(x.ravel())
+            elif isinstance(x, Matrix):
+                entries += x.entries
+            else:
+                entries.append(x)
+
+        if len(entries) != self.n:
+            raise TaichiSyntaxError(
+                f"Incompatible arguments for the custom vector type: ({self.n}), ({len(entries)})"
+            )
+
+        #  type cast
+        return self.cast(Vector(entries, dt=self.dtype))
+
+    def cast(self, vec):
+        if in_python_scope():
+            return Vector([
+                int(vec(i)) if self.dtype in primitive_types.integer_types
+                else float(vec(i)) for i in range(self.n)])
+        return vec.cast(self.dtype)
+
+    def filled_with_scalar(self, value):
+        return self.cast(
+            Vector([value for _ in range(self.n)]))
+
+    def field(self, **kwargs):
+        return Vector.field(self.n, dtype=self.dtype, **kwargs)
+
 class MatrixNdarray(Ndarray):
     """Taichi ndarray with matrix elements.
 

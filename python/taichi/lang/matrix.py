@@ -1748,6 +1748,7 @@ class MatrixType(CompoundType):
 class VectorType(MatrixType):
     def __init__(self, n, dtype):
         super().__init__(n, 1, dtype)
+
     def __call__(self, *args):
         """Return a vector matching the shape and dtype.
 
@@ -1809,16 +1810,17 @@ class VectorType(MatrixType):
     def cast(self, vec):
         if in_python_scope():
             return Vector([
-                int(vec(i)) if self.dtype in primitive_types.integer_types
-                else float(vec(i)) for i in range(self.n)])
+                int(vec(i)) if self.dtype in primitive_types.integer_types else
+                float(vec(i)) for i in range(self.n)
+            ])
         return vec.cast(self.dtype)
 
     def filled_with_scalar(self, value):
-        return self.cast(
-            Vector([value for _ in range(self.n)]))
+        return self.cast(Vector([value for _ in range(self.n)]))
 
     def field(self, **kwargs):
         return Vector.field(self.n, dtype=self.dtype, **kwargs)
+
 
 class MatrixNdarray(Ndarray):
     """Taichi ndarray with matrix elements.

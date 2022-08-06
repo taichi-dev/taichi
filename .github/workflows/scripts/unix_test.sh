@@ -76,11 +76,7 @@ if [ -z "$GPU_TEST" ]; then
         if [[ $OSTYPE == "linux-"* ]]; then
             python3 tests/run_tests.py -vr2 -t1 -k "paddle" -a "$TI_WANTED_ARCHS"
         fi
-<<<<<<< HEAD
         python3 tests/run_tests.py -vr2 -t1 -k "cornell_box" -a "$TI_WANTED_ARCHS"
-=======
-        python3 tests/run_tests.py -vr2 -t2 -k "not paddle" -a "$TI_WANTED_ARCHS"
->>>>>>> e682bfd695a2c8b0f38d39d0c556d72a084bb64e
     fi
 else
     # Split per arch to increase parallelism for linux GPU tests

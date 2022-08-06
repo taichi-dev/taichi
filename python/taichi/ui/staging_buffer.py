@@ -4,8 +4,8 @@ from taichi.lang.matrix import Vector
 from taichi.types.annotations import template
 from taichi.types.primitive_types import f32, u8, u32
 
-import numpy as np
 import taichi as ti
+import numpy as np
 
 vbo_field_cache = {}
 depth_ndarray_cache = {}
@@ -93,52 +93,80 @@ def copy_colors_to_vbo(vbo, colors):
 
 
 @ti.kernel
-def copy_image_f32_to_rgba8_grayscale(src: ti.template(), dst: ti.template()):
-    for i, j in src:
-        c = src[i, j]
-        c = max(0.0, min(1.0, c))
-        c = c * 255
-        c_u32 = ti.cast(c, u32)
-        pack = (c_u32 << 0 | c_u32 << 8 | c_u32 << 16 | ti.cast(0xff, u32) << 24)
-        dst[i, j] = pack
-
-
-@ti.kernel
 def copy_image_f32_to_rgba8(src: ti.template(), dst: ti.template(),
-                            num_components: ti.template()):
+                            num_components: ti.template(),
+                            gray_scale: ti.template()):
     for i, j in ti.ndrange(src.shape[0], src.shape[1]):
         px = ti.Vector([0, 0, 0, 0xff], dt=u32)
-        for k in ti.static(range(num_components)):
+        if ti.static(gray_scale):
             c = 0.0
-            if ti.static(len(src.shape) == 3):
-                c = src[i, j, k]
-            else:
-                c = src[i, j][k]
+            c = src[i, j]
             c = max(0.0, min(1.0, c))
             c = c * 255
-            px[k] = ti.cast(c, u32)
+            px[0] = px[1] = px[2] = ti.cast(c, u32)
+        else:
+            for k in ti.static(range(num_components)):
+                c = 0.0
+                if ti.static(len(src.shape) == 3):
+                    c = src[i, j, k]
+                else:
+                    c = src[i, j][k]
+                c = max(0.0, min(1.0, c))
+                c = c * 255
+                px[k] = ti.cast(c, u32)
         pack = (px[0] << 0 | px[1] << 8 | px[2] << 16 | px[3] << 24)
         dst[i, j] = pack
 
 
 @ti.kernel
-def copy_image_u8_to_rgba8_grayscale(src: ti.template(), dst: ti.template()):
-    for i, j in src:
-        c_u32 = ti.cast(src[i, j], u32)
-        pack = (c_u32 << 0 | c_u32 << 8 | c_u32 << 16 | ti.cast(0xff, u32) << 24)
+def copy_image_f32_to_rgba8_np(src: ti.types.ndarray(), dst: ti.template(),
+                               num_components: ti.template(),
+                               gray_scale: ti.template()):
+    for i, j in ti.ndrange(src.shape[0], src.shape[1]):
+        px = ti.Vector([0, 0, 0, 0xff], dt=u32)
+        if ti.static(gray_scale):
+            c = 0.0
+            c = src[i, j]
+            c = max(0.0, min(1.0, c))
+            c = c * 255
+            px[0] = px[1] = px[2] = ti.cast(c, u32)
+        else:
+            for k in ti.static(range(num_components)):
+                c = src[i, j, k]
+                c = max(0.0, min(1.0, c))
+                c = c * 255
+                px[k] = ti.cast(c, u32)
+        pack = (px[0] << 0 | px[1] << 8 | px[2] << 16 | px[3] << 24)
         dst[i, j] = pack
 
 
 @ti.kernel
 def copy_image_u8_to_rgba8(src: ti.template(), dst: ti.template(),
-                           num_components: ti.template()):
-    for i, j in ti.ndrange(src.n, src.m):
+                           num_components: ti.template(), gray_scale: ti.template()):
+    for i, j in ti.ndrange(src.shape[0], src.shape[1]):
         px = ti.Vector([0, 0, 0, 0xff], dt=u32)
-        for k in ti.static(range(num_components)):
-            if ti.static(len(src.shape) == 3):
+        if ti.static(gray_scale):
+            px[0] = px[1] = px[2] = ti.cast(src[i, j], u32)
+        else:
+            for k in ti.static(range(num_components)):
+                if ti.static(len(src.shape) == 3):
+                    px[k] = ti.cast(src[i, j, k], u32)
+                else:
+                    px[k] = ti.cast(src[i, j][k], u32)
+        pack = (px[0] << 0 | px[1] << 8 | px[2] << 16 | px[3] << 24)
+        dst[i, j] = pack
+
+
+@ti.kernel
+def copy_image_u8_to_rgba8_np(src: ti.types.ndarray(), dst: ti.template(),
+                              num_components: ti.template(), gray_scale: ti.template()):
+    for i, j in ti.ndrange(src.shape[0], src.shape[1]):
+        px = ti.Vector([0, 0, 0, 0xff], dt=u32)
+        if ti.static(gray_scale):
+            px[0] = px[1] = px[2] = ti.cast(src[i, j], u32)
+        else:
+            for k in ti.static(range(num_components)):
                 px[k] = ti.cast(src[i, j, k], u32)
-            else:
-                px[k] = ti.cast(src[i, j][k], u32)
         pack = (px[0] << 0 | px[1] << 8 | px[2] << 16 | px[3] << 24)
         dst[i, j] = pack
 
@@ -151,6 +179,7 @@ image_field_cache = {}
 def to_rgba8(image):
     gray_scale = not hasattr(image, 'n') and len(image.shape) == 2
     channels = 3
+    src_numpy = isinstance(image, np.ndarray)
     if not gray_scale:
         if len(image.shape) == 2:
             channels = image.n
@@ -160,23 +189,23 @@ def to_rgba8(image):
             raise Exception(
                 "the shape of the image must be of the form (width,height) or (width,height,channels)")
 
-    if image not in image_field_cache:
+    staging_key = image.shape[0:2] if src_numpy else image
+    if staging_key not in image_field_cache:
         staging_img = ti.field(u32, image.shape[0:2])
-        image_field_cache[image] = staging_img
+        image_field_cache[staging_key] = staging_img
     else:
-        staging_img = image_field_cache[image]
+        staging_img = image_field_cache[staging_key]
 
-    if image.dtype == u8:
-        if gray_scale:
-            copy_image_u8_to_rgba8_grayscale(image, staging_img)
+    if image.dtype == u8 or image.dtype == np.uint8:
+        if src_numpy:
+            copy_image_u8_to_rgba8_np(image, staging_img, channels, gray_scale)
         else:
-            copy_image_u8_to_rgba8(image, staging_img, channels)
-    elif image.dtype == f32:
-        if gray_scale:
-            copy_image_f32_to_rgba8_grayscale(image, staging_img)
+            copy_image_u8_to_rgba8(image, staging_img, channels, gray_scale)
+    elif image.dtype == f32 or image.dtype == np.float32:
+        if src_numpy:
+            copy_image_f32_to_rgba8_np(image, staging_img, channels, gray_scale)
         else:
-            copy_image_f32_to_rgba8(image, staging_img, channels)
-
+            copy_image_f32_to_rgba8(image, staging_img, channels, gray_scale)
     else:
         raise Exception("dtype of input image must either be u8 or f32")
     return staging_img

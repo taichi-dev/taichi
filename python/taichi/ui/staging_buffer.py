@@ -1,7 +1,7 @@
+from taichi.lang._texture import Texture
 from taichi.lang.impl import ndarray
 from taichi.lang.kernel_impl import kernel
 from taichi.lang.matrix import Vector
-from taichi.lang._texture import Texture
 from taichi.types.annotations import template
 from taichi.types.primitive_types import f32, u8, u32
 
@@ -93,7 +93,8 @@ def copy_colors_to_vbo(vbo, colors):
 
 
 @ti.kernel
-def copy_texture_to_rgba8(src: ti.types.texture(num_dimensions=2), dst: ti.template(), w: ti.i32, h: ti.i32):
+def copy_texture_to_rgba8(src: ti.types.texture(num_dimensions=2),
+                          dst: ti.template(), w: ti.i32, h: ti.i32):
     for (i, j) in ti.ndrange(w, h):
         c = src.fetch(ti.Vector([i, j]), 0)
         c = max(0.0, min(1.0, c))

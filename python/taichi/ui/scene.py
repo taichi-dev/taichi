@@ -372,4 +372,4 @@ class Scene:
             >>> scene = ti.ui.Scene()
             >>> scene.ambient_light([0.2, 0.2, 0.2])
         """
-        self.scene.ambient_light(color)
+        self.scene.ambient_light(tuple(color))

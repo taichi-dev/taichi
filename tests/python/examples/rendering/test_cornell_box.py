@@ -2,7 +2,7 @@ import argparse
 
 import taichi as ti
 
-FRAMES = 200
+FRAMES = 20
 
 
 def test_cornell_box():

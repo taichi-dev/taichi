@@ -1,6 +1,7 @@
-from .staging_buffer import (copy_colors_to_vbo, copy_vertices_to_vbo,
-                             get_vbo_field, to_rgba8)
+import taichi as ti
+from .staging_buffer import (get_vbo, to_rgba8)
 from .utils import get_field_info
+from .scene import Scene
 
 
 class Canvas:
@@ -51,12 +52,12 @@ class Canvas:
             per_vertex_color (Tuple[float]): a taichi 3D vector field, \
                 where each element indicate the RGB color of a vertex.
         """
-        vbo = get_vbo_field(vertices)
-        copy_vertices_to_vbo(vbo, vertices)
+        vbo = get_vbo(vertices)
+        vbo.set_positions(vertices)
         has_per_vertex_color = per_vertex_color is not None
         if has_per_vertex_color:
-            copy_colors_to_vbo(vbo, per_vertex_color)
-        vbo_info = get_field_info(vbo)
+            vbo.set_colors(per_vertex_color)
+        vbo_info = vbo.get_field_info()
         indices_info = get_field_info(indices)
         self.canvas.triangles(vbo_info, indices_info, has_per_vertex_color,
                               color)
@@ -81,12 +82,12 @@ class Canvas:
             per_vertex_color (tuple[float]): a taichi 3D vector field, where \
                 each element indicate the RGB color of a vertex.
         """
-        vbo = get_vbo_field(vertices)
-        copy_vertices_to_vbo(vbo, vertices)
+        vbo = get_vbo(vertices)
+        vbo.set_positions(vertices)
         has_per_vertex_color = per_vertex_color is not None
         if has_per_vertex_color:
-            copy_colors_to_vbo(vbo, per_vertex_color)
-        vbo_info = get_field_info(vbo)
+            vbo.set_colors(per_vertex_color)
+        vbo_info = vbo.get_field_info()
         indices_info = get_field_info(indices)
         self.canvas.lines(vbo_info, indices_info, has_per_vertex_color, color,
                           width)
@@ -107,15 +108,15 @@ class Canvas:
             per_vertex_color (Tuple[float]): a taichi 3D vector field, where \
                 each element indicate the RGB color of a circle.
         """
-        vbo = get_vbo_field(centers)
-        copy_vertices_to_vbo(vbo, centers)
+        vbo = get_vbo(centers)
+        vbo.set_positions(centers)
         has_per_vertex_color = per_vertex_color is not None
         if has_per_vertex_color:
-            copy_colors_to_vbo(vbo, per_vertex_color)
-        vbo_info = get_field_info(vbo)
+            vbo.set_colors(per_vertex_color)
+        vbo_info = vbo.get_field_info()
         self.canvas.circles(vbo_info, has_per_vertex_color, color, radius)
 
-    def scene(self, scene):
+    def scene(self, scene: Scene):
         """Draw a 3D scene on the canvas
 
         Args:

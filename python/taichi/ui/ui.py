@@ -6,6 +6,7 @@ from .constants import *  # pylint: disable=unused-import,wildcard-import
 from .imgui import Gui  # pylint: disable=unused-import
 from .scene import Scene  # pylint: disable=unused-import
 from .utils import check_ggui_availability
+from .staging_buffer import set_max_vbo_pool_size  # pylint: disable=unused-import
 from .window import Window  # pylint: disable=unused-import
 
 

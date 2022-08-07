@@ -6,8 +6,7 @@ from taichi.lang.ops import atomic_add
 from taichi.types.annotations import template
 from taichi.types.primitive_types import f32
 
-from .staging_buffer import (copy_colors_to_vbo, copy_normals_to_vbo,
-                             copy_vertices_to_vbo, get_vbo_field)
+from .staging_buffer import get_vbo
 from .utils import check_ggui_availability, get_field_info
 
 normals_field_cache = {}
@@ -149,12 +148,12 @@ class Scene:
             print("Warning! Drawing count greater than shape will be cut")
             vertex_count = vertices.shape[0] - vertex_offset
             vertex_count -= vertex_count % 2
-        vbo = get_vbo_field(vertices)
-        copy_vertices_to_vbo(vbo, vertices)
+        vbo = get_vbo(vertices)
+        vbo.set_positions(vertices)
         has_per_vertex_color = per_vertex_color is not None
         if has_per_vertex_color:
-            copy_colors_to_vbo(vbo, per_vertex_color)
-        vbo_info = get_field_info(vbo)
+            vbo.set_colors(per_vertex_color)
+        vbo_info = vbo.get_field_info()
         indices_info = get_field_info(indices)
         self.scene.lines(vbo_info, indices_info, has_per_vertex_color, color,
                          width, index_count, index_offset, vertex_count,
@@ -209,11 +208,11 @@ class Scene:
             show_wareframe (bool, optional):
                 turn on/off WareFrame mode.
         """
-        vbo = get_vbo_field(vertices)
-        copy_vertices_to_vbo(vbo, vertices)
+        vbo = get_vbo(vertices)
+        vbo.set_positions(vertices)
         has_per_vertex_color = per_vertex_color is not None
         if has_per_vertex_color:
-            copy_colors_to_vbo(vbo, per_vertex_color)
+            vbo.set_colors(per_vertex_color)
         if normals is None:
             normals = gen_normals(vertices, indices)
         if vertex_count is None:
@@ -223,8 +222,8 @@ class Scene:
                 index_count = vertex_count  # FIXME : Need to confirm
             else:
                 index_count = indices.shape[0]
-        copy_normals_to_vbo(vbo, normals)
-        vbo_info = get_field_info(vbo)
+        vbo.set_normals(normals)
+        vbo_info = vbo.get_field_info()
         indices_info = get_field_info(indices)
 
         self.scene.mesh(vbo_info, has_per_vertex_color, indices_info, color,
@@ -293,11 +292,11 @@ class Scene:
             show_wareframe (bool, optional):
                 turn on/off WareFrame mode.
         """
-        vbo = get_vbo_field(vertices)
-        copy_vertices_to_vbo(vbo, vertices)
+        vbo = get_vbo(vertices)
+        vbo.set_positions(vertices)
         has_per_vertex_color = per_vertex_color is not None
         if has_per_vertex_color:
-            copy_colors_to_vbo(vbo, per_vertex_color)
+            vbo.set_colors(per_vertex_color)
         if normals is None:
             normals = gen_normals(vertices, indices)
         if vertex_count is None:
@@ -311,8 +310,8 @@ class Scene:
             instance_count = transforms.shape[0]
         if transforms and (transforms.m != 4 or transforms.n != 4):
             raise Exception("Error! Transform matrix must be 4x4 shape")
-        copy_normals_to_vbo(vbo, normals)
-        vbo_info = get_field_info(vbo)
+        vbo.set_normals(normals)
+        vbo_info = vbo.get_field_info()
         indices_info = get_field_info(indices)
         transform_info = get_field_info(transforms)
         self.scene.mesh_instance(vbo_info, has_per_vertex_color, indices_info,
@@ -342,14 +341,14 @@ class Scene:
             index_count (int, optional):
                 the number of vertices to draw.
         """
-        vbo = get_vbo_field(centers)
-        copy_vertices_to_vbo(vbo, centers)
+        vbo = get_vbo(centers)
+        vbo.set_positions(centers)
         has_per_vertex_color = per_vertex_color is not None
         if has_per_vertex_color:
-            copy_colors_to_vbo(vbo, per_vertex_color)
+            vbo.set_colors(per_vertex_color)
         if index_count is None:
             index_count = centers.shape[0]
-        vbo_info = get_field_info(vbo)
+        vbo_info = vbo.get_field_info()
         self.scene.particles(vbo_info, has_per_vertex_color, color, radius,
                              index_count, index_offset)
 

@@ -6,7 +6,7 @@ from taichi._kernels import (arr_vulkan_layout_to_arr_normal_layout,
 from taichi._lib import core as _ti_core
 from taichi.lang._ndarray import Ndarray
 from taichi.lang.impl import Field, default_cfg, get_runtime
-from taichi.ui.staging_buffer import get_depth_ndarray
+from taichi.ui.staging_buffer import get_depth_ndarray, reset_vbo_pool
 
 from taichi import f32
 
@@ -122,7 +122,9 @@ class Window:
     def show(self):
         """Display this window.
         """
-        return self.window.show()
+        rv = self.window.show()
+        reset_vbo_pool()
+        return rv
 
     def get_window_shape(self):
         """Return the shape of window.

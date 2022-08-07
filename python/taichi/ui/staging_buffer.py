@@ -1,28 +1,17 @@
+from collections import defaultdict
+import numpy as np
 from taichi.lang.impl import ndarray
 from taichi.lang.kernel_impl import kernel
 from taichi.lang.matrix import Vector
+from taichi.lang._texture import Texture
+from taichi.types import ndarray_type
 from taichi.types.annotations import template
 from taichi.types.primitive_types import f32, u8, u32
 
 import taichi as ti
+from taichi.ui.utils import GGUIException, get_field_info
 
-vbo_field_cache = {}
 depth_ndarray_cache = {}
-
-
-def get_vbo_field(vertices):
-    if vertices not in vbo_field_cache:
-        N = vertices.shape[0]
-        pos = 3
-        normal = 3
-        tex_coord = 2
-        color = 4
-        vertex_stride = pos + normal + tex_coord + color
-        vbo = Vector.field(vertex_stride, f32, shape=(N, ))
-        vbo_field_cache[vertices] = vbo
-        return vbo
-    return vbo_field_cache[vertices]
-
 
 def get_depth_ndarray(window):
     if window not in depth_ndarray_cache:
@@ -32,23 +21,7 @@ def get_depth_ndarray(window):
     return depth_ndarray_cache[window]
 
 
-@kernel
-def copy_to_vbo(vbo: template(), src: template(), offset: template(),
-                num_components: template()):
-    for i in src:
-        for c in ti.static(range(num_components)):
-            vbo[i][offset + c] = src[i][c]
-
-
-@kernel
-def fill_vbo(vbo: template(), value: f32, offset: template(),
-             num_components: template()):
-    for i in vbo:
-        for c in ti.static(range(num_components)):
-            vbo[i][offset + c] = value
-
-
-def validate_input_field(f, name):
+def validate_input_field(f, name, min_comp, max_comp):
     if f.dtype != f32:
         raise Exception(f"{name} needs to have dtype f32")
     if hasattr(f, 'n'):
@@ -59,37 +32,147 @@ def validate_input_field(f, name):
         raise Exception(f'{name} needs to be a Vector field')
     if len(f.shape) != 1:
         raise Exception(f"the shape of {name} needs to be 1-dimensional")
+    if not min_comp <= f.n <= max_comp:
+        if min_comp == max_comp:
+            raise Exception(f"{name} can only have {min_comp} component")
+        else:
+            raise Exception(f"{name} can only have {min_comp} to {max_comp} vector components")
+
+def validate_input_arr(f, name, min_comp, max_comp):
+    if f.dtype != np.float32:
+        raise Exception(f"numpy array {name} needs to have dtype np.float32")
+    if len(f.shape) != 2:
+        raise Exception(f"the shape of numpy array {name} needs to be 2-dimensional")
+    if not min_comp <= f.shape[-1] <= max_comp:
+        if min_comp == max_comp:
+            raise Exception(f"{name} can only have {min_comp} component")
+        else:
+            raise Exception(f"numpy array {name} can only have {min_comp} to {max_comp} vector components")
 
 
-def copy_vertices_to_vbo(vbo, vertices):
-    validate_input_field(vertices, "vertices")
-    if not 2 <= vertices.n <= 3:
-        raise Exception('vertices can only be 2D or 3D vector fields')
-    copy_to_vbo(vbo, vertices, 0, vertices.n)
+def validate_input(f, name, min_comp, max_comp):
+    if isinstance(f, np.ndarray):
+        validate_input_arr(f, name, min_comp, max_comp)
+    else:
+        validate_input_field(f, name, min_comp, max_comp)
+
+@kernel
+def copy_field_to_vbo(vbo: template(), src: template(), offset: template(),
+                num_components: template()):
+    for i in src:
+        for c in ti.static(range(num_components)):
+            vbo[i][offset + c] = src[i][c]
+
+@kernel
+def copy_arr_to_vbo(vbo: template(), src: ndarray_type.ndarray(), offset: template(),
+                num_components: template()):
+    for i in vbo:
+        for c in ti.static(range(num_components)):
+            vbo[i][offset + c] = src[i, c]
+
+def copy_to_vbo(vbo, src, offset):
+    if isinstance(src, np.ndarray):
+        copy_arr_to_vbo(vbo, src, offset, src.shape[-1])
+    else:
+        copy_field_to_vbo(vbo, src, offset, src.n)
+
+@kernel
+def fill_vbo(vbo: template(), value: f32, offset: template(),
+             num_components: template()):
+    for i in vbo:
+        for c in ti.static(range(num_components)):
+            vbo[i][offset + c] = value
+
+class Vbo:
+    def __init__(self, N):
+        pos = 3
+        normal = 3
+        tex_coord = 2
+        color = 4
+        vertex_stride = pos + normal + tex_coord + color
+
+        self.vbo = Vector.field(vertex_stride, f32, shape=(N, ))
+        self.N = N
+        
+    def set_positions(self, positions):
+        validate_input(positions, "vertex positions", 2, 3)
+        copy_to_vbo(self.vbo, positions, 0)
+
+    def set_normals(self, normals):
+        n = validate_input(normals, "normals", 3, 3)
+        copy_to_vbo(self.vbo, normals, 3)
+
+    def set_texcoords(self, texcoords):
+        n = validate_input(texcoords, "texcoords", 2, 2)
+        copy_to_vbo(self.vbo, texcoords, 6)
+
+    def set_colors(self, colors):
+        n = validate_input(colors, "colors", 3, 4)
+        copy_to_vbo(self.vbo, colors, 8)
+        if isinstance(f, np.ndarray):
+            if colors.n == 3:
+                fill_vbo(self.vbo, 1.0, 11, 1)
+        else:
+            if colors.shape[-1] == 3:
+                fill_vbo(self.vbo, 1.0, 11, 1)
+
+    def get_field_info(self):
+        return get_field_info(self.vbo)
+
+class VboPool:
+    def __init__(self, max_pool_size):
+        """Create a VBO pool for a window."""
+        self.count = 0
+        self.pool = defaultdict(list) # number of vertices -> vbo
+        self.max_size = max_pool_size
+        self.allocated = []
+
+    def allocate(self, N):
+        if self.count >= N:
+            msg = f"""The VBO pool refuse to allocate another VBO because the
+            pool has been saturated. To solve this problem, please try:
+            1. Ensure you called `ti.ui.Window.show()` at the end of the frame;
+            2. Or less likely, set a larger pool size via
+            `ti.ui.set_max_vbo_pool_size`, or remove this allocation constraint
+            by setting it to 0.
+            """
+            raise GGUIException(msg)
+        vbo = Vbo(N)
+        self.count += 1
+        return vbo
+
+    def acquire(self, N):
+        """Acquire a VBO to contain N vertices."""
+        pool = self.pool[N]
+        vbo = None
+        if pool:
+            vbo = pool.pop()
+        else:
+            vbo = self.allocate(N)
+        self.allocated += [vbo]
+        return vbo
+
+    def reset(self):
+        """Release VBO occupations after the rendering of this frame. Should be
+        called only by `ti.ui.Window.show()`.
+        """
+        for vbo in self.allocated:
+            self.pool[vbo.N] += [vbo]
+        self.allocated.clear()
+
+DEFAULT_VBO_POOL_SIZE = 100
+vbo_pool = VboPool(DEFAULT_VBO_POOL_SIZE)
+def set_max_vbo_pool_size(pool_size):
+    global vbo_pool
+    vbo_pool = VboPool(pool_size)
+
+def get_vbo(positions):
+    N = positions.shape[0]
+    return vbo_pool.acquire(N)
 
 
-def copy_normals_to_vbo(vbo, normals):
-    validate_input_field(normals, "normals")
-    if normals.n != 3:
-        raise Exception('normals can only be 3D vector fields')
-    copy_to_vbo(vbo, normals, 3, normals.n)
-
-
-def copy_texcoords_to_vbo(vbo, texcoords):
-    validate_input_field(texcoords, "texcoords")
-    if texcoords.n != 2:
-        raise Exception('texcoords can only be 3D vector fields')
-    copy_to_vbo(vbo, texcoords, 6, texcoords.n)
-
-
-def copy_colors_to_vbo(vbo, colors):
-    validate_input_field(colors, "colors")
-    if colors.n != 3 and colors.n != 4:
-        raise Exception('colors can only be 3D/4D vector fields')
-    copy_to_vbo(vbo, colors, 8, colors.n)
-    if colors.n == 3:
-        fill_vbo(vbo, 1.0, 11, 1)
-
+def reset_vbo_pool():
+    vbo_pool.reset()
 
 @ti.kernel
 def copy_image_f32_to_rgba8(src: ti.template(), dst: ti.template(),

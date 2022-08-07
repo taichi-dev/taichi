@@ -91,7 +91,11 @@ def try_get_loaded_libc_version():
         return None
 
 
-class GGUINotAvailableException(Exception):
+class GGUIException(Exception):
+    pass
+
+
+class GGUINotAvailableException(GGUIException):
     pass
 
 

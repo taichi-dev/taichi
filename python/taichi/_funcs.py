@@ -6,7 +6,7 @@ from taichi.lang.kernel_impl import func, pyfunc
 from taichi.lang.matrix import Matrix, Vector
 from taichi.types import f32, f64
 from taichi.types.annotations import template
-
+from taichi.lang import ops as ops_mod
 
 @func
 def _randn(dt):
@@ -48,6 +48,26 @@ def randn(dt=None):
         dt = impl.get_runtime().default_fp
     return _randn(dt)
 
+@pyfunc
+def _matrix_get_rotation(angle, v):
+    """Get the rotation matrix by an angle with the vector as a rotation axis
+
+    Args:
+        angle (:float:): angle in radians unit.
+        rotation axis (3d vector)
+
+    Returns:
+        Rotation matrix.
+    """
+    c = ops_mod.cos(angle)
+    s = ops_mod.sin(angle)
+        
+    axis = v.normalized()
+    temp = (1 - c) * axis
+    return Matrix([[          c + temp[0] * axis[0], temp[0] * axis[1] + s * axis[2], temp[0] * axis[2] - s * axis[1], 0.],
+                      [temp[1] * axis[0] - s * axis[2],           c + temp[1] * axis[1], temp[1] * axis[2] + s * axis[0], 0.],
+                      [temp[2] * axis[0] + s * axis[1], temp[2] * axis[1] - s * axis[0],           c + temp[2] * axis[2], 0.],
+                      [                             0.,                              0.,                              0., 1.]])
 
 @pyfunc
 def _matrix_transpose(mat):

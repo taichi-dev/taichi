@@ -292,7 +292,7 @@ class FwdMode:
                 # e.g., ti.root.dense(ti.i, 1).place(x.dual)
                 self.param.dual[0] = 1.0 * self.seed[0]
         else:
-            self.param.dual.from_numpy(np.array(self.seed))
+            self.param.dual.from_numpy(np.array(self.seed, dtype=np.float32))
 
         # Clear gradients
         if self.clear_gradients:

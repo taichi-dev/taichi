@@ -362,7 +362,7 @@ class Scene:
             color (list, tuple, :class:`~taichi.types.vector(3, float)`):
                 (r, g, b) triple for the color of the light, in the range [0, 1].
         """
-        self.scene.point_light(pos, color)
+        self.scene.point_light(tuple(pos), tuple(color))
 
     def ambient_light(self, color):
         """Set the ambient color of this scene.

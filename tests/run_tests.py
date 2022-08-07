@@ -297,16 +297,16 @@ def test():
         print(f'Running on Arch={arch}')
         os.environ['TI_WANTED_ARCHS'] = arch
 
-    # if args.with_offline_cache:
-    #     tmp_cache_file_path = tempfile.mkdtemp()
-    #     run_count += args.rerun_with_offline_cache
-    #     os.environ['TI_OFFLINE_CACHE'] = '1'
-    #     os.environ['TI_OFFLINE_CACHE_FILE_PATH'] = tmp_cache_file_path
-    #     atexit.register(lambda: shutil.rmtree(tmp_cache_file_path))
-    #     if not os.environ.get('TI_OFFLINE_CACHE_CLEANING_POLICY'):
-    #         os.environ['TI_OFFLINE_CACHE_CLEANING_POLICY'] = 'never'
-    # else:  # Default: disable offline cache
-    #     os.environ['TI_OFFLINE_CACHE'] = '0'
+    if args.with_offline_cache:
+        tmp_cache_file_path = tempfile.mkdtemp()
+        run_count += args.rerun_with_offline_cache
+        os.environ['TI_OFFLINE_CACHE'] = '1'
+        os.environ['TI_OFFLINE_CACHE_FILE_PATH'] = tmp_cache_file_path
+        atexit.register(lambda: shutil.rmtree(tmp_cache_file_path))
+        if not os.environ.get('TI_OFFLINE_CACHE_CLEANING_POLICY'):
+            os.environ['TI_OFFLINE_CACHE_CLEANING_POLICY'] = 'never'
+    else:  # Default: disable offline cache
+        os.environ['TI_OFFLINE_CACHE'] = '0'
 
     if args.cpp:
         _test_cpp()

@@ -60,38 +60,38 @@ fi
 
 
 if [ ! -z $TI_SKIP_CPP_TESTS ]; then
-    python3 tests/run_tests.py --cpp
+    python3 tests/run_tests.py --cpp --with-offline-cache
 fi
 
 if [ -z "$GPU_TEST" ]; then
     if [[ $PLATFORM == *"m1"* ]]; then
 	# Split per arch to avoid flaky test
-        python3 tests/run_tests.py -vr2 -t4 -k "not torch and not paddle" -a cpu
+        python3 tests/run_tests.py -vr2 -t4 -k "not torch and not paddle" -a cpu --with-offline-cache
         # Run metal and vulkan separately so that they don't use M1 chip simultaneously.
-        python3 tests/run_tests.py -vr2 -t4 -k "not torch and not paddle" -a vulkan
-        python3 tests/run_tests.py -vr2 -t2 -k "not torch and not paddle" -a metal
-        python3 tests/run_tests.py -vr2 -t1 -k "torch" -a "$TI_WANTED_ARCHS"
+        # python3 tests/run_tests.py -vr2 -t4 -k "not torch and not paddle" -a vulkan
+        # python3 tests/run_tests.py -vr2 -t2 -k "not torch and not paddle" -a metal
+        python3 tests/run_tests.py -vr2 -t1 -k "torch" -a "$TI_WANTED_ARCHS" --with-offline-cache
     else
         # Fail fast, give priority to the error-prone tests
         if [[ $OSTYPE == "linux-"* ]]; then
-            python3 tests/run_tests.py -vr2 -t1 -k "paddle" -a "$TI_WANTED_ARCHS"
+            python3 tests/run_tests.py -vr2 -t1 -k "paddle" -a "$TI_WANTED_ARCHS" --with-offline-cache
         fi
-        python3 tests/run_tests.py -vr2 -t4 -k "not paddle" -a "$TI_WANTED_ARCHS"
+        python3 tests/run_tests.py -vr2 -t4 -k "not paddle" -a "$TI_WANTED_ARCHS" --with-offline-cache
     fi
 else
     # Split per arch to increase parallelism for linux GPU tests
     if [[ $TI_WANTED_ARCHS == *"cuda"* ]]; then
-        python3 tests/run_tests.py -vr2 -t4 -k "not torch and not paddle" -a cuda
+        python3 tests/run_tests.py -vr2 -t4 -k "not torch and not paddle" -a cuda --with-offline-cache
     fi
     if [[ $TI_WANTED_ARCHS == *"cpu"* ]]; then
-        python3 tests/run_tests.py -vr2 -t8 -k "not torch and not paddle" -a cpu
+        python3 tests/run_tests.py -vr2 -t8 -k "not torch and not paddle" -a cpu --with-offline-cache
     fi
-    if [[ $TI_WANTED_ARCHS == *"vulkan"* ]]; then
-        python3 tests/run_tests.py -vr2 -t8 -k "not torch and not paddle" -a vulkan
-    fi
-    if [[ $TI_WANTED_ARCHS == *"opengl"* ]]; then
-        python3 tests/run_tests.py -vr2 -t4 -k "not torch and not paddle" -a opengl
-    fi
-    python3 tests/run_tests.py -vr2 -t1 -k "torch" -a "$TI_WANTED_ARCHS"
+    # if [[ $TI_WANTED_ARCHS == *"vulkan"* ]]; then
+    #     python3 tests/run_tests.py -vr2 -t8 -k "not torch and not paddle" -a vulkan
+    # fi
+    # if [[ $TI_WANTED_ARCHS == *"opengl"* ]]; then
+    #     python3 tests/run_tests.py -vr2 -t4 -k "not torch and not paddle" -a opengl
+    # fi
+    python3 tests/run_tests.py -vr2 -t1 -k "torch" -a "$TI_WANTED_ARCHS" --with-offline-cache
     # Paddle's paddle.fluid.core.Tensor._ptr() is only available on develop branch, and CUDA version on linux will get error `Illegal Instruction`
 fi

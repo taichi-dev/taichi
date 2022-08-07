@@ -32,27 +32,27 @@ if ("$env:TI_RUN_RELEASE_TESTS" -eq "1") {
 }
 
 # Run C++ tests
-python tests/run_tests.py --cpp --with-offline-cache
+python tests/run_tests.py --cpp --with-offline-cache --rerun-with-offline-cache 1
 if (-not $?) { exit 1 }
 
 # Fail fast, give priority to the error-prone tests
-python tests/run_tests.py -vr2 -t1 -k "paddle" -a cpu --with-offline-cache
+python tests/run_tests.py -vr2 -t1 -k "paddle" -a cpu --with-offline-cache --rerun-with-offline-cache 1
 if (-not $?) { exit 1 }
 
 # Disable paddle for the remaining test
 $env:TI_ENABLE_PADDLE = "0"
 
 if ("$env:TI_WANTED_ARCHS".Contains("cuda")) {
-  python tests/run_tests.py -vr2 -t4 -k "not torch and not paddle" -a cuda --with-offline-cache
+  python tests/run_tests.py -vr2 -t4 -k "not torch and not paddle" -a cuda --with-offline-cache --rerun-with-offline-cache 1
   if (-not $?) { exit 1 }
 }
 if ("$env:TI_WANTED_ARCHS".Contains("cpu")) {
-  python tests/run_tests.py -vr2 -t6 -k "not torch and not paddle" -a cpu --with-offline-cache
+  python tests/run_tests.py -vr2 -t6 -k "not torch and not paddle" -a cpu --with-offline-cache --rerun-with-offline-cache 1
   if (-not $?) { exit 1 }
 }
 # if ("$env:TI_WANTED_ARCHS".Contains("opengl")) {
 #   python tests/run_tests.py -vr2 -t4 -k "not torch and not paddle" -a opengl
 #   if (-not $?) { exit 1 }
 # }
-python tests/run_tests.py -vr2 -t1 -k "torch" -a "$env:TI_WANTED_ARCHS" --with-offline-cache
+python tests/run_tests.py -vr2 -t1 -k "torch" -a "$env:TI_WANTED_ARCHS" --with-offline-cache --rerun-with-offline-cache 1
 if (-not $?) { exit 1 }

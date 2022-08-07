@@ -121,4 +121,6 @@ class Canvas:
         Args:
             scene (:class:`~taichi.ui.Scene`): an instance of :class:`~taichi.ui.Scene`.
         """
+        # FIXME: (penguinliong) Add a point light to ensure the allocation of light source SSBO.
+        scene.point_light((0.0, 0.0, 0.0), (0.0, 0.0, 0.0))
         self.canvas.scene(scene.scene)

@@ -304,6 +304,9 @@ class TI_DLL_EXPORT Program {
                                            uint64 *result_buffer) {
     return program_impl_->allocate_memory_ndarray(alloc_size, result_buffer);
   }
+  DeviceAllocation allocate_texture(const ImageParams& params) {
+    return program_impl_->allocate_texture(params);
+  }
 
   Ndarray *create_ndarray(
       const DataType type,

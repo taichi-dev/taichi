@@ -28,6 +28,7 @@ void SwapChain::create_depth_resources() {
   ImageParams params;
   params.dimension = ImageDimension::d2D;
   params.format = BufferFormat::depth32f;
+  params.initial_layout = ImageLayout::undefined;
   params.x = curr_width_;
   params.y = curr_height_;
   params.export_sharing = false;

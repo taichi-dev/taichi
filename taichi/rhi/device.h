@@ -600,6 +600,7 @@ struct SurfaceConfig {
 struct TI_DLL_EXPORT ImageParams {
   ImageDimension dimension;
   BufferFormat format;
+  ImageLayout initial_layout{ImageLayout::undefined};
   uint32_t x{1};
   uint32_t y{1};
   uint32_t z{1};

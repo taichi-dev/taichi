@@ -669,8 +669,6 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
 
  private:
   friend VulkanSurface;
-  friend VulkanCommandList;
-  friend VulkanStream;
 
   void create_vma_allocator();
   void new_descriptor_pool();

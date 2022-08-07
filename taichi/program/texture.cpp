@@ -34,6 +34,7 @@ Texture::Texture(Program *prog,
   img_params.x = width;
   img_params.y = height;
   img_params.z = depth;
+  img_params.initial_layout = ImageLayout::undefined;
   texture_alloc_ = device->create_image(img_params);
 
   format_ = img_params.format;

@@ -158,6 +158,7 @@ void SetImage::create_texture() {
   if (texture_dtype_ == taichi::lang::PrimitiveType::f32) {
     params.format = BufferFormat::rgba32f;
   }
+  params.initial_layout = ImageLayout::shader_read;
   // these are flipped because taichi is y-major and vulkan is x-major
   params.x = height;
   params.y = width;

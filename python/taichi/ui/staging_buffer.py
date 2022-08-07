@@ -128,7 +128,7 @@ class VboPool:
         self.allocated = []
 
     def allocate(self, N):
-        if self.count >= N:
+        if self.count >= self.max_size:
             msg = f"""The VBO pool refuse to allocate another VBO because the
             pool has been saturated. To solve this problem, please try:
             1. Ensure you called `ti.ui.Window.show()` at the end of the frame;

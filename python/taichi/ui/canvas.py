@@ -1,4 +1,3 @@
-import taichi as ti
 from .staging_buffer import (get_vbo, to_rgba8)
 from .utils import get_field_info
 from .scene import Scene

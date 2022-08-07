@@ -3,7 +3,6 @@ import numpy as np
 from taichi.lang.impl import ndarray
 from taichi.lang.kernel_impl import kernel
 from taichi.lang.matrix import Vector
-from taichi.lang._texture import Texture
 from taichi.types import ndarray_type
 from taichi.types.annotations import template
 from taichi.types.primitive_types import f32, u8, u32
@@ -129,7 +128,7 @@ class VboPool:
 
     def allocate(self, N):
         if self.count >= self.max_size:
-            msg = f"""The VBO pool refuse to allocate another VBO because the
+            msg = """The VBO pool refuse to allocate another VBO because the
             pool has been saturated. To solve this problem, please try:
             1. Ensure you called `ti.ui.Window.show()` at the end of the frame;
             2. Or less likely, set a larger pool size via

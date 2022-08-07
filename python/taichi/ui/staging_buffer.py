@@ -99,17 +99,17 @@ class Vbo:
         copy_to_vbo(self.vbo, positions, 0)
 
     def set_normals(self, normals):
-        n = validate_input(normals, "normals", 3, 3)
+        validate_input(normals, "normals", 3, 3)
         copy_to_vbo(self.vbo, normals, 3)
 
     def set_texcoords(self, texcoords):
-        n = validate_input(texcoords, "texcoords", 2, 2)
+        validate_input(texcoords, "texcoords", 2, 2)
         copy_to_vbo(self.vbo, texcoords, 6)
 
     def set_colors(self, colors):
-        n = validate_input(colors, "colors", 3, 4)
+        validate_input(colors, "colors", 3, 4)
         copy_to_vbo(self.vbo, colors, 8)
-        if isinstance(f, np.ndarray):
+        if isinstance(colors, np.ndarray):
             if colors.n == 3:
                 fill_vbo(self.vbo, 1.0, 11, 1)
         else:

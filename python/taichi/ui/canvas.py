@@ -1,6 +1,6 @@
-from .staging_buffer import (get_vbo, to_rgba8)
-from .utils import get_field_info
 from .scene import Scene
+from .staging_buffer import get_vbo, to_rgba8
+from .utils import get_field_info
 
 
 class Canvas:

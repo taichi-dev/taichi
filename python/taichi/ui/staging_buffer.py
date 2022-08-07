@@ -1,4 +1,5 @@
 from collections import defaultdict
+
 import numpy as np
 from taichi.lang.impl import ndarray
 from taichi.lang.kernel_impl import kernel
@@ -11,6 +12,7 @@ import taichi as ti
 from taichi.ui.utils import GGUIException, get_field_info
 
 depth_ndarray_cache = {}
+
 
 def get_depth_ndarray(window):
     if window not in depth_ndarray_cache:
@@ -35,18 +37,24 @@ def validate_input_field(f, name, min_comp, max_comp):
         if min_comp == max_comp:
             raise Exception(f"{name} can only have {min_comp} component")
         else:
-            raise Exception(f"{name} can only have {min_comp} to {max_comp} vector components")
+            raise Exception(
+                f"{name} can only have {min_comp} to {max_comp} vector components"
+            )
+
 
 def validate_input_arr(f, name, min_comp, max_comp):
     if f.dtype != np.float32:
         raise Exception(f"numpy array {name} needs to have dtype np.float32")
     if len(f.shape) != 2:
-        raise Exception(f"the shape of numpy array {name} needs to be 2-dimensional")
+        raise Exception(
+            f"the shape of numpy array {name} needs to be 2-dimensional")
     if not min_comp <= f.shape[-1] <= max_comp:
         if min_comp == max_comp:
             raise Exception(f"{name} can only have {min_comp} component")
         else:
-            raise Exception(f"numpy array {name} can only have {min_comp} to {max_comp} vector components")
+            raise Exception(
+                f"numpy array {name} can only have {min_comp} to {max_comp} vector components"
+            )
 
 
 def validate_input(f, name, min_comp, max_comp):
@@ -55,19 +63,22 @@ def validate_input(f, name, min_comp, max_comp):
     else:
         validate_input_field(f, name, min_comp, max_comp)
 
+
 @kernel
 def copy_field_to_vbo(vbo: template(), src: template(), offset: template(),
-                num_components: template()):
+                      num_components: template()):
     for i in src:
         for c in ti.static(range(num_components)):
             vbo[i][offset + c] = src[i][c]
 
+
 @kernel
-def copy_arr_to_vbo(vbo: template(), src: ndarray_type.ndarray(), offset: template(),
-                num_components: template()):
+def copy_arr_to_vbo(vbo: template(), src: ndarray_type.ndarray(),
+                    offset: template(), num_components: template()):
     for i in vbo:
         for c in ti.static(range(num_components)):
             vbo[i][offset + c] = src[i, c]
+
 
 def copy_to_vbo(vbo, src, offset):
     if isinstance(src, np.ndarray):
@@ -75,12 +86,14 @@ def copy_to_vbo(vbo, src, offset):
     else:
         copy_field_to_vbo(vbo, src, offset, src.n)
 
+
 @kernel
 def fill_vbo(vbo: template(), value: f32, offset: template(),
              num_components: template()):
     for i in vbo:
         for c in ti.static(range(num_components)):
             vbo[i][offset + c] = value
+
 
 class Vbo:
     def __init__(self, N):
@@ -92,7 +105,7 @@ class Vbo:
 
         self.vbo = Vector.field(vertex_stride, f32, shape=(N, ))
         self.N = N
-        
+
     def set_positions(self, positions):
         validate_input(positions, "vertex positions", 2, 3)
         copy_to_vbo(self.vbo, positions, 0)
@@ -118,11 +131,12 @@ class Vbo:
     def get_field_info(self):
         return get_field_info(self.vbo)
 
+
 class VboPool:
     def __init__(self, max_pool_size):
         """Create a VBO pool for a window."""
         self.count = 0
-        self.pool = defaultdict(list) # number of vertices -> vbo
+        self.pool = defaultdict(list)  # number of vertices -> vbo
         self.max_size = max_pool_size
         self.allocated = []
 
@@ -159,11 +173,15 @@ class VboPool:
             self.pool[vbo.N] += [vbo]
         self.allocated.clear()
 
+
 DEFAULT_VBO_POOL_SIZE = 100
 vbo_pool = VboPool(DEFAULT_VBO_POOL_SIZE)
+
+
 def set_max_vbo_pool_size(pool_size):
     global vbo_pool
     vbo_pool = VboPool(pool_size)
+
 
 def get_vbo(positions):
     N = positions.shape[0]
@@ -172,6 +190,7 @@ def get_vbo(positions):
 
 def reset_vbo_pool():
     vbo_pool.reset()
+
 
 @ti.kernel
 def copy_image_f32_to_rgba8(src: ti.template(), dst: ti.template(),

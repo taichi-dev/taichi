@@ -352,7 +352,7 @@ while window.running:
 video_manager.make_video(gif=True, mp4=True)
 ```
 
-2. Example of fetching depth information
+2. An example of fetching the depth information
 ```python
 window_shape = (720, 1080)
 window = ti.ui.Window("Test for copy depth memory", window_shape)

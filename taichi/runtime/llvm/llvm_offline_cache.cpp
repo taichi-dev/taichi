@@ -156,6 +156,18 @@ bool LlvmOfflineCacheFileReader::get_kernel_cache(
   res.last_used_at = kernel_data.last_used_at;
   res.kernel_key = key;
   res.args = kernel_data.args;
+
+  // Verify the `res: LlvmOfflineCache::FieldCacheData`
+  const auto &compiled_data = res.compiled_data_list;
+  for (const auto &e : compiled_data) {
+    const auto &tasks = e.tasks;
+    for (const auto &t : tasks) {
+      if (e.module->getFunction(t.name) == nullptr) {
+        return false;
+      }
+    }
+  }
+
   return true;
 }
 

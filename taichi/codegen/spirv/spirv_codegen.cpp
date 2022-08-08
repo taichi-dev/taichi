@@ -146,6 +146,10 @@ class TaskCodegen : public IRVisitor {
     }
   }
 
+  void visit(PrintStmt *print_stmt) override {
+    TI_WARN("Printing is not yet supported in Vulkan");
+  }
+
   void visit(ConstStmt *const_stmt) override {
     TI_ASSERT(const_stmt->width() == 1);
 

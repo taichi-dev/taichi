@@ -70,7 +70,8 @@ def produce_injected_args(kernel, symbolic_args=None):
                     f' Arg {arg.name}\'s dtype {dtype.to_string()} doesn\'t match kernel\'s annotated dtype={anno.dtype.to_string()}'
                 )
 
-            if element_dim is None or element_dim == 0:
+            if element_dim is None or element_dim == 0 or element_shape == (
+                    1, ):
                 injected_args.append(ScalarNdarray(dtype, (2, ) * field_dim))
             elif element_dim == 1:
                 injected_args.append(

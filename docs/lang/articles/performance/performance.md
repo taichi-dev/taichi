@@ -235,7 +235,7 @@ We address the problem by introducing the "offline" cache feature, that could du
 * `offline_cache_cleaning_policy: str`: The policy used to replace out-of-date files in the cache. Optional polices: `'never'`, `'version'`, `'lru'` or `'fifo'`. Default: `'lru'`.
   * `'never'`: Never clean, keep all the cache files. Ignore the `offline_cache_max_size_of_files` configuration;
   * `'version'`: Only discard old-version cache files with respect to the kernel function;
-  * `'lru'`: Discard the cache files that are least recently used;
+  * `'lru'`: Discards the cached files least used recently;
   * `'fifo'`: Discard the cache files that are earliest added.
 
 To verify the effect, run some examples twice and observe the launch overhead:

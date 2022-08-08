@@ -230,7 +230,7 @@ A taichi kernel is implicitly compiled the first time it is invoked. The compila
 
 We address the problem by introducing the "offline" cache feature, that could dump and save the compilation cache on disk for future runs. The first launch overhead can be drastically reduced in repeated runs. Taichi now automatically constructs and maintains the offline cache by default. We also provide several options in `ti.init` to configure the detailed behaviors of offline cache.
 * `offline_cache: bool`: Enables or disables offline cache. Default: `True`.
-* `offline_cache_file_path: str`: The offline cache file directory. Default: `'C:\taichi_cache\ticache\'` on Windows and `'~/.cache/taichi/ticache/'` on unix-like systems. Directories are created automatically.
+* `offline_cache_file_path: str`: Directory holding the offline cached files. Default: `'C:\taichi_cache\ticache\'` on Windows and `'~/.cache/taichi/ticache/'` on unix-like systems. Directories are automatically populated.
 * `offline_cache_max_size_of_files: int32`: Maximum size of the cached files in Bytes. Default: 100MB. A cleaning process is triggered when the size of the cached files exceeds this limit.
 * `offline_cache_cleaning_policy: str`: The policy used to replace out-of-date files in the cache. Optional polices: `'never'`, `'version'`, `'lru'` or `'fifo'`. Default: `'lru'`.
   * `'never'`: Never clean, keep all the cache files. Ignore the `offline_cache_max_size_of_files` configuration;

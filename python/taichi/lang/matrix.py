@@ -1752,8 +1752,7 @@ class VectorType(MatrixType):
     def __call__(self, *args):
         """Return a vector matching the shape and dtype.
 
-        This function will try to convert the input to a `n x m` matrix, with n, m being
-        the number of rows/cols of this matrix type.
+        This function will try to convert the input to a `n`-component vector.
 
         Example::
 
@@ -1770,11 +1769,6 @@ class VectorType(MatrixType):
             Create from a single scalar
 
                 >>> v = vec3(1)
-
-            Create from another 2d list/matrix, as long as they have the same number of entries
-
-                >>> v = vec3([1, 2, 3])
-                >>> u = vec3(u)
 
         """
         if len(args) == 0:

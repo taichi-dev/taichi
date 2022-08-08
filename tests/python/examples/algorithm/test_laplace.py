@@ -3,7 +3,7 @@ import os
 import pytest
 
 
-@pytest.mark.skipif(os.environ.get('TI_LITE_TEST'), reason='Lite test')
+@pytest.mark.skipif(os.environ.get('TI_LITE_TEST') or '0', reason='Lite test')
 def test_laplace():
     from taichi.examples.algorithm.laplace import laplace, x, y
 

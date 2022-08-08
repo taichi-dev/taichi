@@ -360,7 +360,7 @@ canvas = window.get_canvas()
 scene = ti.ui.Scene()
 camera = ti.ui.make_camera()
 
-# get the shape of window
+# Get the shape of the window
 w, h = window.get_window_shape()
 # depth field/ndarray must have ti.f32 data type and 2d shape.
 # and shape must be equal to the window shape

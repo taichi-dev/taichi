@@ -363,7 +363,7 @@ camera = ti.ui.make_camera()
 # Get the shape of the window
 w, h = window.get_window_shape()
 # depth field/ndarray must have ti.f32 data type and 2d shape.
-# and shape must be equal to the window shape
+# or, in other words, the shape must equal the window's shape
 scene_depth = ti.ndarray(ti.f32, shape = (w, h))
 # scene_depth = ti.field(ti.f32, shape = (w, h))
 

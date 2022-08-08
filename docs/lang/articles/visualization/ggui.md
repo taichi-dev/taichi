@@ -333,7 +333,8 @@ window.get_depth_buffer(scene_depth)
 depth = window.get_depth_buffer_as_numpy()
 ```
 
-After renderring current scene, you can fetch color & depth information of current scene through these APIs. `get_image_buffer` and `get_depth_buffer_as_numpy` will copy the gpu data to numpy array(cpu). `get_depth_buffer` will copy gpu data to taichi field(depend on which arch you choose, if you want to copy from gpu to gpu, then we suggest you use `get_depth_buffer` cause it shows high performance).
+After rendering the current scene, you can fetch the color and depth information of the current scene using `get_image_buffer()` and `get_depth_buffer_as_numpy()`, which copy the gpu data to a NumPy array(cpu). 
+`get_depth_buffer()` copies the GPU data to a Taichi field (depend on the `arch` you choose) or copies data from GPU to GPU.
 
 :::example
 

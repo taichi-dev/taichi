@@ -193,7 +193,8 @@ DeviceAllocation VulkanProgramImpl::allocate_memory_ndarray(
        /*export_sharing=*/false});
 }
 
-DeviceAllocation VulkanProgramImpl::allocate_texture(const ImageParams& params) {
+DeviceAllocation VulkanProgramImpl::allocate_texture(
+    const ImageParams &params) {
   return vulkan_runtime_->create_image(params);
 }
 

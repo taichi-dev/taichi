@@ -645,7 +645,7 @@ class TI_DLL_EXPORT GraphicsDevice : public Device {
   // You are not expected to call this directly. If you want to use this image
   // in a taichi kernel, you usually want to create the image via
   // `GfxRuntime::create_image`. `GfxRuntime` is available in `ProgramImpl`
-  // of GPU backends. 
+  // of GPU backends.
   virtual DeviceAllocation create_image(const ImageParams &params) = 0;
   virtual void destroy_image(DeviceAllocation handle) = 0;
 

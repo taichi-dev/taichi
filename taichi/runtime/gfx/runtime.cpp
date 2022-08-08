@@ -559,9 +559,10 @@ void GfxRuntime::buffer_copy(DevicePtr dst, DevicePtr src, size_t size) {
   submit_current_cmdlist_if_timeout();
 }
 
-DeviceAllocation GfxRuntime::create_image(const ImageParams& params) {
-  GraphicsDevice* gfx_device = dynamic_cast<GraphicsDevice*>(device_);
-  TI_ERROR_IF(gfx_device == nullptr, "Image can only be created on a graphics device");
+DeviceAllocation GfxRuntime::create_image(const ImageParams &params) {
+  GraphicsDevice *gfx_device = dynamic_cast<GraphicsDevice *>(device_);
+  TI_ERROR_IF(gfx_device == nullptr,
+              "Image can only be created on a graphics device");
   DeviceAllocation image = gfx_device->create_image(params);
   last_image_layouts_[image.alloc_id] = params.initial_layout;
   return image;

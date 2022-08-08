@@ -82,3 +82,13 @@ def test_floor_div_pythonic():
             if j != 0:
                 func(i, j)
                 assert z[None] == i // j
+
+
+@test_utils.test()
+def test_float_floordiv_one():
+    @ti.kernel
+    def func() -> ti.f32:
+        a = 0.5
+        return a % 1
+
+    assert func() == 0.5

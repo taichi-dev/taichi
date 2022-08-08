@@ -1,7 +1,7 @@
 #!/bin/bash
 set -ex
 
-. $(dirname $0)/libcommon.sh
+. $(dirname $0)/common-utils.sh
 
 IN_DOCKER=$(check_in_docker)
 [[ "$IN_DOCKER" == "true" ]] && cd taichi

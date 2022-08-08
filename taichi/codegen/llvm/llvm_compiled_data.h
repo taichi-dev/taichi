@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include <unordered_set>
 #include "llvm/IR/Module.h"
 
 namespace taichi {

@@ -884,6 +884,38 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::new_module(
   return new_mod;
 }
 
+std::unique_ptr<LLVMCompiledData> TaichiLLVMContext::link_compile_data(
+    std::vector<std::unique_ptr<LLVMCompiledData>> data_list) {
+  auto linked = std::make_unique<LLVMCompiledData>();
+  std::unordered_set<int> used_tree_ids;
+  std::unordered_set<std::string> offloaded_names;
+  auto mod = new_module("kernel", linking_data->llvm_context);
+  llvm::Linker linker(*mod);
+  for (auto &datum : data_list) {
+    for (auto tree_id : datum->used_tree_ids) {
+      used_tree_ids.insert(tree_id);
+    }
+    for (auto &task : datum->tasks) {
+      offloaded_names.insert(task.name);
+      linked->tasks.push_back(std::move(task));
+    }
+    linker.linkInModule(clone_module_to_context(
+        datum->module.get(), linking_data->llvm_context));
+  }
+  for (auto tree_id : used_tree_ids) {
+    linker.linkInModule(llvm::CloneModule(*linking_data->struct_modules[tree_id]),
+                        llvm::Linker::LinkOnlyNeeded);
+  }
+  linker.linkInModule(llvm::CloneModule(*linking_data->runtime_module),
+                      llvm::Linker::LinkOnlyNeeded);
+  eliminate_unused_functions(mod.get(),
+                             [&](std::string func_name) -> bool {
+                               return offloaded_names.count(func_name);
+                             });
+  linked->module = std::move(mod);
+  return linked;
+}
+
 TaichiLLVMContext::ThreadLocalData::~ThreadLocalData() {
   runtime_module.reset();
   struct_modules.clear();

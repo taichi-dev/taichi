@@ -13,6 +13,7 @@
 #include "taichi/runtime/llvm/llvm_fwd.h"
 #include "taichi/ir/snode.h"
 #include "taichi/jit/jit_session.h"
+#include "taichi/codegen/llvm/llvm_compiled_data.h"
 
 namespace taichi {
 namespace lang {
@@ -150,6 +151,8 @@ class TaichiLLVMContext {
   std::unique_ptr<llvm::Module> clone_module_to_context(
       llvm::Module *module,
       llvm::LLVMContext *target_context);
+
+  std::unique_ptr<LLVMCompiledData> link_compile_data(std::vector<std::unique_ptr<LLVMCompiledData>> data_list);
 
  private:
   void link_module_with_cuda_libdevice(std::unique_ptr<llvm::Module> &module);

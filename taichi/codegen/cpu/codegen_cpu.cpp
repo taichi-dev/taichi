@@ -237,35 +237,7 @@ FunctionType CPUModuleToFunctionConverter::convert(
     const std::vector<LlvmLaunchArgInfo> &args,
     std::vector<LLVMCompiledData> &&data) const {
   TI_AUTO_PROF;
-  std::unordered_set<int> used_tree_ids;
-  std::unordered_set<std::string> offloaded_names;
-  auto mod = tlctx_->new_module("kernel", tlctx_->linking_data->llvm_context);
-  llvm::Linker linker(*mod);
-  for (auto &datum : data) {
-    for (auto tree_id : datum.used_tree_ids) {
-      used_tree_ids.insert(tree_id);
-    }
-    for (auto &task : datum.tasks) {
-      offloaded_names.insert(task.name);
-    }
-    linker.linkInModule(tlctx_->clone_module_to_context(
-        datum.module.get(), tlctx_->linking_data->llvm_context));
-    //    tlctx_->main_jit_module->add_module(std::move(datum.module));
-  }
-  for (auto tree_id : used_tree_ids) {
-    linker.linkInModule(tlctx_->clone_module_to_context(
-                            tlctx_->linking_data->struct_modules[tree_id].get(),
-                            tlctx_->linking_data->llvm_context),
-                        llvm::Linker::LinkOnlyNeeded);
-  }
-  linker.linkInModule(llvm::CloneModule(*tlctx_->linking_data->runtime_module),
-                      llvm::Linker::LinkOnlyNeeded);
-
-  tlctx_->eliminate_unused_functions(mod.get(),
-                                     [&](std::string func_name) -> bool {
-                                       return offloaded_names.count(func_name);
-                                     });
-  auto jit_module = tlctx_->create_jit_module(std::move(mod));
+  auto jit_module = tlctx_->create_jit_module(std::move(data.back().module));
 
   using TaskFunc = int32 (*)(void *);
   std::vector<TaskFunc> task_funcs;
@@ -341,7 +313,7 @@ FunctionType KernelCodeGenCPU::codegen() {
   TI_ASSERT(block);
 
   auto &offloads = block->statements;
-  std::vector<LLVMCompiledData> data(offloads.size());
+  std::vector<std::unique_ptr<LLVMCompiledData>> data(offloads.size());
   using TaskFunc = int32 (*)(void *);
   std::vector<TaskFunc> task_funcs(offloads.size());
   for (int i = 0; i < offloads.size(); i++) {
@@ -351,9 +323,10 @@ FunctionType KernelCodeGenCPU::codegen() {
           irpass::analysis::clone(offloads[i].get(), offloads[i]->get_kernel());
       irpass::re_id(offload.get());
       auto new_data = this->modulegen(nullptr, offload->as<OffloadedStmt>());
-      data[i].tasks = std::move(new_data.tasks);
-      data[i].module = std::move(new_data.module);
-      data[i].used_tree_ids = std::move(new_data.used_tree_ids);
+      data[i] = std::make_unique<LLVMCompiledData>(std::move(new_data));
+//      data[i].tasks = std::move(new_data.tasks);
+//      data[i].module = std::move(new_data.module);
+//      data[i].used_tree_ids = std::move(new_data.used_tree_ids);
     };
     if (kernel->is_evaluator) {
       compile_func();
@@ -364,14 +337,17 @@ FunctionType KernelCodeGenCPU::codegen() {
   if (!kernel->is_evaluator) {
     worker.flush();
   }
+  auto linked = tlctx->link_compile_data(std::move(data));
+  std::vector<LLVMCompiledData> linked_data;
+  linked_data.push_back(std::move(*linked));
 
   if (!kernel->is_evaluator) {
     TI_DEBUG("Cache kernel '{}' (key='{}')", kernel->get_name(), kernel_key);
-    cache_module(kernel_key, data);
+    cache_module(kernel_key, linked_data);
   }
 
   CPUModuleToFunctionConverter converter(
       tlctx, get_llvm_program(prog)->get_runtime_executor());
-  return converter.convert(kernel, std::move(data));
+  return converter.convert(kernel, std::move(linked_data));
 }
 TLANG_NAMESPACE_END

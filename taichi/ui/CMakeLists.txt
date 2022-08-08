@@ -17,6 +17,7 @@ target_include_directories(taichi_ui
     ${PROJECT_SOURCE_DIR}
     ${PROJECT_SOURCE_DIR}/external/glfw/include
     ${PROJECT_SOURCE_DIR}/external/eigen
+    ${PROJECT_SOURCE_DIR}/external/volk
     ${LLVM_INCLUDE_DIRS}
   PUBLIC
     ${PROJECT_SOURCE_DIR}/external/glm

@@ -117,10 +117,6 @@ if (TI_WITH_CC)
   list(APPEND TAICHI_CORE_SOURCE ${TAICHI_CC_SOURCE})
 endif()
 
-if(TI_WITH_GGUI)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_GGUI")
-endif()
-
 # This compiles all the libraries with -fPIC, which is critical to link a static
 # library into a shared lib.
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -377,13 +373,11 @@ foreach (source IN LISTS TAICHI_CORE_SOURCE)
     source_group("${source_path_msvc}" FILES "${source}")
 endforeach ()
 
-if(TI_WITH_GGUI)
-    # PUBLIC as required by python module
-    target_include_directories(${CORE_LIBRARY_NAME} PUBLIC external/glm)
-
-    add_subdirectory(taichi/ui)
-    target_link_libraries(taichi_ui PUBLIC ${CORE_LIBRARY_NAME})
-endif()
+# TODO Use TI_WITH_UI/TI_WITH_GGUI to guard the compilation of this target.
+# This requires refactoring on the python/export_*.cpp as well as better
+# Error message on the Python side.
+add_subdirectory(taichi/ui)
+target_link_libraries(taichi_ui PUBLIC ${CORE_LIBRARY_NAME})
 
 if(TI_WITH_PYTHON)
     message("PYTHON_LIBRARIES: " ${PYTHON_LIBRARIES})
@@ -407,9 +401,13 @@ if(TI_WITH_PYTHON)
     endif()
     # It is actually possible to link with an OBJECT library
     # https://cmake.org/cmake/help/v3.13/command/target_link_libraries.html?highlight=target_link_libraries#linking-object-libraries
+
     if(TI_WITH_GGUI)
-        target_link_libraries(${CORE_WITH_PYBIND_LIBRARY_NAME} PRIVATE taichi_ui)
+        target_compile_definitions(${CORE_WITH_PYBIND_LIBRARY_NAME} PRIVATE -DTI_WITH_GGUI)
     endif()
+    # TODO Use TI_WITH_UI/TI_WITH_GGUI to guard the linking of this target.
+    target_link_libraries(${CORE_WITH_PYBIND_LIBRARY_NAME} PRIVATE taichi_ui)
+
     target_link_libraries(${CORE_WITH_PYBIND_LIBRARY_NAME} PRIVATE ${CORE_LIBRARY_NAME})
 
 

@@ -238,7 +238,7 @@ We address the problem by introducing the "offline" cache feature, that could du
   * `'lru'`: Discard the cache files that are least recently used;
   * `'fifo'`: Discard the cache files that are earliest added.
 
-To verify the effect, you can try running some examples twice and observe the launch overhead:
+To verify the effect, run some examples twice and observe the launch overhead:
 ![](../static/assets/effect_of_offline_cache.png)
 
 Currently, we release offline cache support for CPU and CUDA backends. Other backends will also get support in the future.

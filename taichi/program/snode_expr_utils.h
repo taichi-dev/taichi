@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <unordered_map>
+#include <functional>
 #include <vector>
 
 // This file groups the set of helpers that need the Expr associated with a
@@ -24,10 +25,10 @@ void place_child(Expr *expr_arg,
                  SNode *parent,
                  SNodeGlobalVarExprMap *snode_to_exprs);
 
-void make_lazy_grad(SNode *snode,
-                    SNodeGlobalVarExprMap *snode_to_exprs,
-                    bool is_adjoint,
-                    bool is_dual);
+void make_lazy_place(SNode *snode,
+                     SNodeGlobalVarExprMap *snode_to_exprs,
+                     const std::function<void(std::unique_ptr<SNode> &,
+                                              std::vector<Expr> &)> &collect);
 
 }  // namespace lang
 }  // namespace taichi

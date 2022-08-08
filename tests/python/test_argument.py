@@ -181,3 +181,25 @@ def test_function_keyword_args_duplicate():
     with pytest.raises(ti.TaichiSyntaxError,
                        match="Multiple values for argument 'a'"):
         duplicate()
+
+
+@test_utils.test()
+def test_kernel_scalar_arg_mutable():
+    @ti.kernel
+    def foo(a: ti.i32) -> ti.i32:
+        for i in range(10):
+            a += i
+        return a
+
+    assert foo(10) == 55
+
+
+@test_utils.test()
+def test_kernel_scalar_arg_reassign():
+    @ti.kernel
+    def foo(a: ti.i32) -> ti.i32:
+        if True:
+            a = 1
+        return a
+
+    assert foo(10) == 1

@@ -563,9 +563,9 @@ class ASTTransformer(Builder):
                         kernel_arguments.decl_scalar_arg(
                             ctx.func.arguments[i].annotation))
                 else:
-                    ctx.global_vars[
-                        arg.arg] = kernel_arguments.decl_scalar_arg(
-                            ctx.func.arguments[i].annotation)
+                    ctx.create_variable(
+                        arg.arg, impl.expr_init(kernel_arguments.decl_scalar_arg(
+                            ctx.func.arguments[i].annotation)))
             # remove original args
             node.args.args = []
 

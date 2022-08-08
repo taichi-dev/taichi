@@ -1,14 +1,10 @@
 import argparse
-import os
-
-import pytest
 
 import taichi as ti
 
 FRAMES = 100
 
 
-@pytest.mark.skipif(os.environ.get('TI_LITE_TEST'), reason='Lite test')
 def test_mpm99():
     from taichi.examples.simulation.mpm99 import dt, initialize, substep
 
@@ -18,7 +14,6 @@ def test_mpm99():
             substep()
 
 
-@pytest.mark.skipif(os.environ.get('TI_LITE_TEST'), reason='Lite test')
 def video_mpm99(result_dir):
     from taichi.examples.simulation.mpm99 import (dt, initialize, material,
                                                   substep, x)

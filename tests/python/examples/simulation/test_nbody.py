@@ -1,14 +1,10 @@
 import argparse
-import os
-
-import pytest
 
 import taichi as ti
 
 FRAMES = 100
 
 
-@pytest.mark.skipif(os.environ.get('TI_LITE_TEST'), reason='Lite test')
 def test_nbody():
     from taichi.examples.simulation.nbody import (compute_force, initialize,
                                                   substepping, update)
@@ -20,7 +16,6 @@ def test_nbody():
             update()
 
 
-@pytest.mark.skipif(os.environ.get('TI_LITE_TEST'), reason='Lite test')
 def video_nbody(result_dir):
     from taichi.examples.simulation.nbody import (compute_force, initialize,
                                                   planet_radius, pos,

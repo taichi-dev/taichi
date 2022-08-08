@@ -18,7 +18,7 @@ if ("$env:TI_WANTED_ARCHS".Contains("cuda")) {
 }
 
 
-if ("$env:TI_RUN_RELEASE_TESTS" -eq "1" -and -not "$env:TI_LITE_TEST") {
+if ("$env:TI_RUN_RELEASE_TESTS" -eq "1") {
     echo "Running release tests"
     # release tests
     pip install PyYAML

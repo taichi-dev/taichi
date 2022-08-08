@@ -233,7 +233,7 @@ We address the problem by introducing the "offline" cache feature, that could du
 * `offline_cache_file_path: str`: Directory holding the offline cached files. Default: `'C:\taichi_cache\ticache\'` on Windows and `'~/.cache/taichi/ticache/'` on unix-like systems. Directories are automatically populated.
 * `offline_cache_max_size_of_files: int32`: Maximum size of the cached files in Bytes. Default: 100MB. A cleaning process is triggered when the size of the cached files exceeds this limit.
 * `offline_cache_cleaning_policy: str`: Policy about how to replace outdated files in the cache. Options: `'never'`, `'version'`, `'lru'` and `'fifo'`. Default: `'lru'`.
-  * `'never'`: Never clean, keep all the cache files. Ignore the `offline_cache_max_size_of_files` configuration;
+  * `'never'`: Never cleans and keeps all the cached files regardless of the `offline_cache_max_size_of_files` configuration;
   * `'version'`: Discards only the old-version cached files with respect to the kernel function;
   * `'lru'`: Discards the cached files least used recently;
   * `'fifo'`: Discards the cached files added in the earliest.

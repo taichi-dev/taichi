@@ -359,7 +359,7 @@ def test_copy_python_scope_struct_to_taichi_scope():
     test()
 
 
-@test_utils.test(debug=True)
+@test_utils.test(exclude=[ti.cc], debug=True)
 def test_copy_struct_field_element_to_taichi_scope():
     a = ti.Struct.field({'a': ti.i32, 'b': ti.i32}, shape=())
     a[None].a = 2

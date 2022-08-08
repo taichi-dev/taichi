@@ -26,7 +26,7 @@ from taichi.lang.struct import Struct, StructField, _IntermediateStruct
 from taichi.lang.util import (cook_dtype, get_traceback, is_taichi_class,
                               python_scope, taichi_scope, warning)
 from taichi.types.primitive_types import (all_types, f16, f32, f64, i32, i64,
-                                          u32, u64)
+                                          u8, u32, u64)
 
 
 @taichi_scope
@@ -338,6 +338,12 @@ class PyTaichi:
                 '\n\n  x = ti.field(float, shape=(2, 3), needs_{gradient_type}=True)'
             )
 
+    @staticmethod
+    def _allocate_gradient_visited():
+        if root.finalized:
+            return
+        root._allocate_grad_visited()
+
     def _check_matrix_field_member_shape(self):
         for _field in self.matrix_fields:
             shapes = [
@@ -355,6 +361,8 @@ class PyTaichi:
             _field._calc_dynamic_index_stride()
 
     def materialize(self):
+        if get_runtime().prog.config.debug:
+            self._allocate_gradient_visited()
         self.materialize_root_fb(not self.materialized)
         self.materialized = True
 
@@ -560,6 +568,8 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
 
     x_grad = None
     x_dual = None
+    # The x_grad_visited is used for global data access rule checker
+    x_grad_visited = None
     if _ti_core.is_real(dtype):
         # adjoint
         x_grad = Expr(get_runtime().prog.make_id_expr(""))
@@ -570,6 +580,18 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
         x.ptr.set_adjoint(x_grad.ptr)
         if needs_grad:
             pytaichi.grad_vars.append(x_grad)
+
+        if prog.config.debug:
+            # adjoint flag
+            x_grad_visited = Expr(get_runtime().prog.make_id_expr(""))
+            dtype = u8
+            if prog.config.arch in (_ti_core.opengl, _ti_core.vulkan):
+                dtype = i32
+            x_grad_visited.ptr = _ti_core.global_new(x_grad_visited.ptr,
+                                                     cook_dtype(dtype))
+            x_grad_visited.ptr.set_name(name + ".grad_visited")
+            x_grad_visited.ptr.set_is_primal(False)
+            x.ptr.set_adjoint_visited(x_grad_visited.ptr)
 
         # dual
         x_dual = Expr(get_runtime().prog.make_id_expr(""))

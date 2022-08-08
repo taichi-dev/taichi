@@ -481,6 +481,7 @@ class GlobalVariableExpression : public Expression {
   bool is_primal{true};
   Expr adjoint;
   Expr dual;
+  Expr adjoint_visited;
 
   GlobalVariableExpression(DataType dt, const Identifier &ident)
       : ident(ident), dt(dt) {

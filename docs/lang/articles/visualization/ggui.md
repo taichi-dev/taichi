@@ -253,7 +253,7 @@ num_instance  = 100
 m_transforms = ti.Matrix.field(4, 4, dtype = ti.f32, shape = num_instance)
 
 
-# For example: A object is scaled by 2, rotated by rotMat, translated by t = [1, 2, 3], then
+# For example: An object is scaled by 2, rotated by rotMat, and translated by t = [1, 2, 3], then
 #
 # The ScaleMatrix is:
 # 2, 0, 0, 0

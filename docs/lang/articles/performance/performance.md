@@ -234,7 +234,7 @@ We address the problem by introducing the "offline" cache feature, that could du
 * `offline_cache_max_size_of_files: int32`: Maximum size of the cached files in Bytes. Default: 100MB. A cleaning process is triggered when the size of the cached files exceeds this limit.
 * `offline_cache_cleaning_policy: str`: The policy used to replace out-of-date files in the cache. Optional polices: `'never'`, `'version'`, `'lru'` or `'fifo'`. Default: `'lru'`.
   * `'never'`: Never clean, keep all the cache files. Ignore the `offline_cache_max_size_of_files` configuration;
-  * `'version'`: Only discard old-version cache files with respect to the kernel function;
+  * `'version'`: Discards only the old-version cached files with respect to the kernel function;
   * `'lru'`: Discards the cached files least used recently;
   * `'fifo'`: Discard the cache files that are earliest added.
 

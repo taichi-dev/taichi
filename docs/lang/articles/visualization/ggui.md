@@ -311,7 +311,7 @@ while window.running:
 
 
 :::note
-For `mesh`, `lines` and `mesh_instance`, if `indices` is not provided, you should use `vertex_offset` and `vertex_count` to control. Otherwise, use `index_count`, `index_offset` and `vertex_offset` to control
+For `mesh()`, `lines()` and `mesh_instance()`, if `indices` is not provided, use `vertex_offset` and `vertex_count` to control; otherwise, use `index_count`, `index_offset` and `vertex_offset` instead.
 
 
 

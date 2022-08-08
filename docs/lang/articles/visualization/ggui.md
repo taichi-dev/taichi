@@ -270,7 +270,7 @@ m_transforms = ti.Matrix.field(4, 4, dtype = ti.f32, shape = num_instance)
 # 0, 0, 1, 3
 # 0, 0, 0, 1
 #
-# Let TransformMatrix = TranslationMatrix @ RotationMatrix @ ScaleMatrix, the final TransformMatrix is:
+# Let TransformMatrix = TranslationMatrix @ RotationMatrix @ ScaleMatrix, then the final TransformMatrix is:
 #   2 * rotMat00,     rotMat01,       rotMat02, 1
 #       rotMat10, 2 * rotMat11,       rotMat12, 2
 #       rotMat20,     rotMat21,   2 * rotMat22, 3

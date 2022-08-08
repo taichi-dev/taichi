@@ -162,7 +162,7 @@ scene.particles(vertices, radius, color, per_vertex_color, index_offset, index_c
 scene.mesh_instance(vertices, indices, normals, color, per_vertex_color, vertex_offset, vertex_count, index_offset, index_count, show_wareframe)
 ```
 
-The additional arguments `vertex_offset`, `vertex_count`, `index_offset` and `index_count` are here for you to control the visiable part of the particles and mesh. And for `mesh` and `mesh_instance`, you can choose if to show wareframe mode through setting `show_wareframe`.
+The additional arguments `vertex_offset`, `vertex_count`, `index_offset` and `index_count` control the visible part of the particles and mesh. For the `mesh()` and `mesh_instance()` methods, set whether to show wareframe mode through setting `show_wareframe`.
 
 :::example
 

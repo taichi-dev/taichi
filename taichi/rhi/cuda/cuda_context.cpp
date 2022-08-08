@@ -9,6 +9,7 @@
 #include "taichi/system/threading.h"
 #include "taichi/rhi/cuda/cuda_driver.h"
 #include "taichi/rhi/cuda/cuda_profiler.h"
+#include "taichi/analysis/offline_cache_util.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -88,7 +89,11 @@ void CUDAContext::launch(void *func,
   if (profiler_) {
     KernelProfilerCUDA *profiler_cuda =
         dynamic_cast<KernelProfilerCUDA *>(profiler_);
-    profiler_cuda->trace(task_handle, task_name, func, grid_dim, block_dim, 0);
+    std::string primal_task_name, key;
+    bool valid =
+        offline_cache::try_demangle_name(task_name, primal_task_name, key);
+    profiler_cuda->trace(task_handle, valid ? primal_task_name : task_name,
+                         func, grid_dim, block_dim, 0);
   }
 
   auto context_guard = CUDAContext::get_instance().get_guard();

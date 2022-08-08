@@ -237,7 +237,7 @@ while window.running:
     scene.particles(particles_pos, color = (0.68, 0.26, 0.19), radius = 0.1)
     # Here you will get visible part from the 3rd point with (N - 4) points.
     scene.lines(points_pos, color = (0.28, 0.68, 0.99), width = 5.0, vertex_count = N - 4, vertex_offset = 2)
-    # Using indices to indicate which vertex to be used
+    # Using indices to indicate which vertex to use
     # scene.lines(points_pos, color = (0.28, 0.68, 0.99), width = 5.0, indices = points_indices)
     # Case 1, vertex_count will be changed to N - 2 when drawing.
     # scene.lines(points_pos, color = (0.28, 0.68, 0.99), width = 5.0, vertex_count = N - 1, vertex_offset = 0)

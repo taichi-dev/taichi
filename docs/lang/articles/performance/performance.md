@@ -241,7 +241,7 @@ We address the problem by introducing the "offline" cache feature, that could du
 To verify the effect, run some examples twice and observe the launch overhead:
 ![](../static/assets/effect_of_offline_cache.png)
 
-Currently, we release offline cache support for CPU and CUDA backends. Other backends will also get support in the future.
+For now, the offline cache feature works *only* on the CPU and CUDA backends.
 
 :::note
 If your code behaves abnormally, disable offline cache by setting the environment variable `TI_OFFLINE_CACHE=0` or `offline_cache=False` in the `ti.init()` method call and file an issue with us on [Taichi's GitHub repo](https://github.com/taichi-dev/taichi/issues/new/choose).

@@ -1,20 +1,15 @@
 import argparse
-import os
-
-import pytest
 
 import taichi as ti
 
 FRAMES = 100
 
 
-@pytest.mark.skipif(os.environ.get('TI_LITE_TEST'), reason='Lite test')
 def test_taichi_logo():
     from taichi.examples.rendering.taichi_logo import paint
     paint()
 
 
-@pytest.mark.skipif(os.environ.get('TI_LITE_TEST'), reason='Lite test')
 def video_taichi_logo(result_dir):
     from taichi.examples.rendering.taichi_logo import n, paint, x
     video_manager = ti.tools.VideoManager(output_dir=result_dir,

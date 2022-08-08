@@ -11,21 +11,8 @@ concurrency:
 
 env:
   TI_CI: "1"
-  TI_LITE_TEST: ${{ github.event_name == 'pull_request' && ! contains(github.event.pull_request.labels.*.name, 'error-prone') && '1' || '' }}
 
 jobs:
-  show_environ:
-    name: Show Environment Variables
-    runs-on: [self-hosted]
-    steps:
-    - name: Environment Variables
-      run: env
-    - name: Github Object
-      run: |
-        cat <<'EOF'
-        ${{ toJson(github) }}
-        EOF
-
   check_files:
     name: Check files
     # Disable this workflow on forks
@@ -148,7 +135,6 @@ jobs:
           fi
           mkdir -m777 shared
           docker create --user dev --name taichi_build \
-            -e TI_LITE_TEST \
             -e PY -e PROJECT_NAME -e TAICHI_CMAKE_ARGS \
             ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.3.2 \
             /home/dev/taichi/.github/workflows/scripts/unix_build.sh
@@ -172,10 +158,7 @@ jobs:
           if [[ ${{needs.check_files.outputs.run_job}} == false ]]; then
             exit 0
           fi
-          docker create --user dev --name taichi_test \
-            -e PY -e TI_WANTED_ARCHS \
-            -e TI_LITE_TEST \
-            ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.3.2 /home/dev/unix_test.sh
+          docker create --user dev --name taichi_test -e PY -e TI_WANTED_ARCHS ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.3.2 /home/dev/unix_test.sh
           docker cp .github/workflows/scripts/unix_test.sh taichi_test:/home/dev/unix_test.sh
           docker cp .github/workflows/scripts/libcommon.sh taichi_test:/home/dev/libcommon.sh
           docker cp shared/dist/ taichi_test:/home/dev/
@@ -329,7 +312,6 @@ jobs:
             exit 0
           fi
           docker create --name taichi_build_test \
-            -e TI_LITE_TEST \
             ghcr.io/taichi-dev/taichidev-cpu-windows:v0.0.1 \
             C:/taichi/.github/workflows/scripts/win_build_test_cpu.ps1 -llvmVer ${{ matrix.llvmVer }}
           tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx | docker cp - taichi_build_test:C:/
@@ -392,7 +374,6 @@ jobs:
           fi
           export DISPLAY=:$i
           docker create --user dev --name taichi_build \
-            -e TI_LITE_TEST \
             --gpus 'all,"capabilities=graphics,utility,display,video,compute"' \
             -v /tmp/.X11-unix:/tmp/.X11-unix \
             -e PY -e GPU_BUILD -e PROJECT_NAME -e TAICHI_CMAKE_ARGS -e DISPLAY \
@@ -432,7 +413,6 @@ jobs:
           docker create --user dev --name taichi_test \
             --gpus 'all,"capabilities=graphics,utility,display,video,compute"' \
             -v /tmp/.X11-unix:/tmp/.X11-unix \
-            -e TI_LITE_TEST \
             -e DISPLAY -e PY -e GPU_TEST -e TI_WANTED_ARCHS -e TI_RUN_RELEASE_TESTS \
              registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.1 \
              /home/dev/unix_test.sh
@@ -447,7 +427,7 @@ jobs:
         env:
           PY: py38
           GPU_TEST: ON
-          TI_WANTED_ARCHS: 'cuda,vulkan,opengl'
+          TI_WANTED_ARCHS: 'cpu,cuda,vulkan,opengl'
           TI_DEVICE_MEMORY_GB: '0.7'
           TI_RUN_RELEASE_TESTS: '1'
 
@@ -513,7 +493,7 @@ jobs:
         run: |
           .\.github\workflows\scripts\win_test.ps1
         env:
-          TI_WANTED_ARCHS: cuda,opengl
+          TI_WANTED_ARCHS: cpu,cuda,opengl
           TI_SKIP_VERSION_CHECK: ON
           TI_CI: 1
           PYTHON: '3.7'
@@ -577,7 +557,7 @@ jobs:
           export PATH=/Users/github/miniforge3/envs/$PY/bin:$PATH
           .github/workflows/scripts/unix_test.sh
         env:
-          TI_WANTED_ARCHS: 'cpu,metal,vulkan'
+          TI_WANTED_ARCHS: 'metal,vulkan,cpu'
           PY: ${{ matrix.python }}
           PLATFORM: 'm1'
           TI_CI: 1
@@ -634,7 +614,6 @@ jobs:
           fi
           export DISPLAY=:$i
           docker create --user dev --name taichi_build_desktop --gpus all -v /tmp/.X11-unix:/tmp/.X11-unix \
-            -e TI_LITE_TEST \
             -e PY -e GPU_BUILD -e PROJECT_NAME -e TAICHI_CMAKE_ARGS -e DISPLAY -e EXPORT_CORE\
             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.1 \
             /home/dev/taichi/.github/workflows/scripts/unix_build.sh
@@ -677,7 +656,6 @@ jobs:
           chown -R 1000:1000 .
           docker run -i --user dev --name taichi_build_android \
             -e SCCACHE_ROOT=/var/lib/sccache \
-            -e TI_LITE_TEST \
             -v $(pwd):/home/dev/taichi \
             -v $(readlink -f ~/sccache):/var/lib/sccache \
             -v $(readlink -f ~/git-cache):/var/lib/git-cache \
@@ -693,7 +671,6 @@ jobs:
           chown -R 1000:1000 .
           docker run -i --user dev --name taichi_test_android \
             -e REDIS_HOST \
-            -e TI_LITE_TEST \
             -v $(pwd):/home/dev/taichi \
             -v $(readlink -f ~/build-cache)/pip:/home/dev/.cache/pip \
             -v $(readlink -f ~/build-cache)/dot-gradle:/home/dev/.gradle \
@@ -704,7 +681,6 @@ jobs:
         run: |
           chown -R 1000:1000 .
           docker run -i --rm --user dev \
-            -e TI_LITE_TEST \
             -v $(pwd):/home/dev/taichi \
             -v $(readlink -f ~/git-cache):/var/lib/git-cache \
             -v $(readlink -f ~/build-cache)/pip:/home/dev/.cache/pip \
@@ -714,7 +690,6 @@ jobs:
       - name: Build Taichi-UnityExample
         run: |
           docker run -i --rm --user dev \
-            -e TI_LITE_TEST \
             -v $(pwd):/home/dev/taichi \
             -v $(readlink -f ~/git-cache):/var/lib/git-cache \
             -v $(readlink -f ~/build-cache)/pip:/home/dev/.cache/pip \
@@ -726,7 +701,6 @@ jobs:
         run: |
           chown -R 1000:1000 .
           docker run -i --rm --user dev \
-            -e TI_LITE_TEST \
             -v $(pwd):/home/dev/taichi \
             -v $(readlink -f ~/git-cache):/var/lib/git-cache \
             -e REDIS_HOST \

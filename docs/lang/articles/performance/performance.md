@@ -236,7 +236,7 @@ We address the problem by introducing the "offline" cache feature, that could du
   * `'never'`: Never clean, keep all the cache files. Ignore the `offline_cache_max_size_of_files` configuration;
   * `'version'`: Discards only the old-version cached files with respect to the kernel function;
   * `'lru'`: Discards the cached files least used recently;
-  * `'fifo'`: Discard the cache files that are earliest added.
+  * `'fifo'`: Discards the cached files added in the earliest.
 
 To verify the effect, run some examples twice and observe the launch overhead:
 ![](../static/assets/effect_of_offline_cache.png)

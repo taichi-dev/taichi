@@ -211,7 +211,7 @@ class LowerAST : public IRVisitor {
         // transform into a structure as
         // i = begin - 1; while (1) { i += 1; if (i >= end) break; original
         // body; }
-        fctx.push_back<AllocaStmt>(PrimitiveType::u32);
+        fctx.push_back<AllocaStmt>(PrimitiveType::i32);
         auto loop_var = fctx.back_stmt();
         stmt->parent->local_var_to_stmt[stmt->loop_var_id[0]] = loop_var;
         auto const_one = fctx.push_back<ConstStmt>(TypedConstant((int32)1));

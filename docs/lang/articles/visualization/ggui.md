@@ -111,7 +111,7 @@ If a mesh has `num` triangles, the `indices` should be a 1D scalar field with a 
 
 :::example
 
-1. Example of drawing 3d-lines
+1. An example of drawing 3d-lines
 
 ```python
 import taichi as ti

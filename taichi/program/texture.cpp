@@ -116,6 +116,10 @@ void Texture::from_ndarray(Ndarray *ndarray) {
 
   GraphicsDevice *device =
       static_cast<GraphicsDevice *>(prog_->get_graphics_device());
+
+  device->image_transition(texture_alloc_, ImageLayout::undefined,
+                            ImageLayout::transfer_dst);
+
   Stream *stream = device->get_compute_stream();
   auto cmdlist = stream->new_command_list();
 
@@ -128,8 +132,6 @@ void Texture::from_ndarray(Ndarray *ndarray) {
   params.image_extent.z = depth_;
 
   cmdlist->buffer_barrier(ndarray->ndarray_alloc_);
-  cmdlist->image_transition(texture_alloc_, ImageLayout::undefined,
-                            ImageLayout::transfer_dst);
   cmdlist->buffer_to_image(texture_alloc_, ndarray->ndarray_alloc_.get_ptr(0),
                            ImageLayout::transfer_dst, params);
 
@@ -154,6 +156,9 @@ void Texture::from_snode(SNode *snode) {
   GraphicsDevice *device =
       static_cast<GraphicsDevice *>(prog_->get_graphics_device());
 
+  device->image_transition(texture_alloc_, ImageLayout::undefined,
+                           ImageLayout::transfer_dst);
+
   DevicePtr devptr = get_device_ptr(prog_, snode);
 
   Stream *stream = device->get_compute_stream();
@@ -168,8 +173,6 @@ void Texture::from_snode(SNode *snode) {
   params.image_extent.z = depth_;
 
   cmdlist->buffer_barrier(devptr);
-  cmdlist->image_transition(texture_alloc_, ImageLayout::undefined,
-                            ImageLayout::transfer_dst);
   cmdlist->buffer_to_image(texture_alloc_, devptr, ImageLayout::transfer_dst,
                            params);
 

@@ -126,3 +126,17 @@ def test_datatype_string():
             ti.f64
     ]:
         assert ty.to_string() == str(ty)
+
+
+@test_utils.test()
+def test_nested_for_with_atomic():
+    x = ti.field(dtype=ti.f32, shape=())
+
+    @ti.kernel
+    def nested_loops():
+        for i in range(2):
+            x[None] += 1
+            for j in range(1):
+                x[None] += 2
+
+    nested_loops()

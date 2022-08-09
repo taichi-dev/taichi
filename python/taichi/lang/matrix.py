@@ -1203,11 +1203,6 @@ class Matrix(TaichiOperations):
         return entries
 
     @classmethod
-    def _Vector_field(cls, n, dtype, *args, **kwargs):
-        """ti.Vector.field"""
-        return cls.field(n, 1, dtype, *args, **kwargs)
-
-    @classmethod
     @python_scope
     def ndarray(cls, n, m, dtype, shape, layout=Layout.AOS):
         """Defines a Taichi ndarray with matrix elements.
@@ -1230,26 +1225,6 @@ class Matrix(TaichiOperations):
         if isinstance(shape, numbers.Number):
             shape = (shape, )
         return MatrixNdarray(n, m, dtype, shape, layout)
-
-    @classmethod
-    @python_scope
-    def _Vector_ndarray(cls, n, dtype, shape, layout=Layout.AOS):
-        """Defines a Taichi ndarray with vector elements.
-
-        Args:
-            n (int): Size of the vector.
-            dtype (DataType): Data type of each value.
-            shape (Union[int, tuple[int]]): Shape of the ndarray.
-            layout (Layout, optional): Memory layout, AOS by default.
-
-        Example:
-            The code below shows how a Taichi ndarray with vector elements can be declared and defined::
-
-                >>> x = ti.Vector.ndarray(3, ti.f32, shape=(16, 8))
-        """
-        if isinstance(shape, numbers.Number):
-            shape = (shape, )
-        return VectorNdarray(n, dtype, shape, layout)
 
     @staticmethod
     def rows(rows):
@@ -1396,38 +1371,53 @@ class Matrix(TaichiOperations):
         return _matrix_outer_product(self, other)
 
 
-def Vector(arr, dt=None, **kwargs):
-    """Constructs a vector from given array.
+class Vector(Matrix):
+    def __init__(self, arr, dt=None, **kwargs):
+        """Constructs a vector from given array.
 
-    A vector is an instance of a 2-D matrix with the second dimension being equal to 1.
+        A vector is an instance of a 2-D matrix with the second dimension being equal to 1.
 
-    Args:
-        arr (Union[list, tuple, np.ndarray]): The initial values of the Vector.
-        dt (:mod:`~taichi.types.primitive_types`): data type of the vector.
+        Args:
+            arr (Union[list, tuple, np.ndarray]): The initial values of the Vector.
+            dt (:mod:`~taichi.types.primitive_types`): data type of the vector.
 
-    Returns:
-        :class:`~taichi.Matrix`: A vector instance.
+        Returns:
+            :class:`~taichi.Matrix`: A vector instance.
 
-    Example::
-        >>> u = ti.Vector([1, 2])
-        >>> print(u.m, u.n)  # verify a vector is a matrix of shape (n, 1)
-        2 1
-        >>> v = ti.Vector([3, 4])
-        >>> u + v
-        [4 6]
-    """
-    return Matrix(arr, dt=dt, **kwargs)
+        Example::
+            >>> u = ti.Vector([1, 2])
+            >>> print(u.m, u.n)  # verify a vector is a matrix of shape (n, 1)
+            2 1
+            >>> v = ti.Vector([3, 4])
+            >>> u + v
+            [4 6]
+        """
+        super().__init__(arr, dt=dt, **kwargs)
 
+    @classmethod
+    def field(cls, n, dtype, *args, **kwargs):
+        """ti.Vector.field"""
+        return super().field(n, 1, dtype, *args, **kwargs)
 
-Vector.field = Matrix._Vector_field
-Vector.ndarray = Matrix._Vector_ndarray
-Vector.zero = Matrix.zero
-Vector.one = Matrix.one
-Vector.dot = Matrix.dot
-Vector.cross = Matrix.cross
-Vector.outer_product = Matrix.outer_product
-Vector.unit = Matrix.unit
-Vector.normalized = Matrix.normalized
+    @classmethod
+    @python_scope
+    def ndarray(cls, n, dtype, shape, layout=Layout.AOS):
+        """Defines a Taichi ndarray with vector elements.
+
+        Args:
+            n (int): Size of the vector.
+            dtype (DataType): Data type of each value.
+            shape (Union[int, tuple[int]]): Shape of the ndarray.
+            layout (Layout, optional): Memory layout, AOS by default.
+
+        Example:
+            The code below shows how a Taichi ndarray with vector elements can be declared and defined::
+
+                >>> x = ti.Vector.ndarray(3, ti.f32, shape=(16, 8))
+        """
+        if isinstance(shape, numbers.Number):
+            shape = (shape, )
+        return VectorNdarray(n, dtype, shape, layout)
 
 
 class _IntermediateMatrix(Matrix):
@@ -1753,6 +1743,77 @@ class MatrixType(CompoundType):
 
     def field(self, **kwargs):
         return Matrix.field(self.n, self.m, dtype=self.dtype, **kwargs)
+
+
+class VectorType(MatrixType):
+    def __init__(self, n, dtype):
+        super().__init__(n, 1, dtype)
+
+    def __call__(self, *args):
+        """Return a vector matching the shape and dtype.
+
+        This function will try to convert the input to a `n`-component vector.
+
+        Example::
+
+            >>> vec3 = VectorType(3, float)
+
+            Create from n scalars:
+
+                >>> v = vec3(1, 2, 3)
+
+            Create from a list/tuple of n scalars:
+
+                >>> v = vec3([1, 2, 3])
+
+            Create from a single scalar
+
+                >>> v = vec3(1)
+
+        """
+        if len(args) == 0:
+            raise TaichiSyntaxError(
+                "Custom type instances need to be created with an initial value."
+            )
+        if len(args) == 1:
+            # initialize by a single scalar, e.g. matnxm(1)
+            if isinstance(args[0], (numbers.Number, expr.Expr)):
+                return self.filled_with_scalar(args[0])
+            args = args[0]
+        # collect all input entries to a 1d list and then reshape
+        # this is mostly for glsl style like vec4(v.xyz, 1.)
+        entries = []
+        for x in args:
+            if isinstance(x, (list, tuple)):
+                entries += x
+            elif isinstance(x, np.ndarray):
+                entries += list(x.ravel())
+            elif isinstance(x, Matrix):
+                entries += x.entries
+            else:
+                entries.append(x)
+
+        if len(entries) != self.n:
+            raise TaichiSyntaxError(
+                f"Incompatible arguments for the custom vector type: ({self.n}), ({len(entries)})"
+            )
+
+        #  type cast
+        return self.cast(Vector(entries, dt=self.dtype))
+
+    def cast(self, vec):
+        if in_python_scope():
+            return Vector([
+                int(vec(i)) if self.dtype in primitive_types.integer_types else
+                float(vec(i)) for i in range(self.n)
+            ])
+        return vec.cast(self.dtype)
+
+    def filled_with_scalar(self, value):
+        return self.cast(Vector([value for _ in range(self.n)]))
+
+    def field(self, **kwargs):
+        return Vector.field(self.n, dtype=self.dtype, **kwargs)
 
 
 class MatrixNdarray(Ndarray):

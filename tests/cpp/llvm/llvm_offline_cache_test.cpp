@@ -106,7 +106,7 @@ TEST_P(LlvmOfflineCacheTest, ReadWrite) {
     task.grid_dim = kGridDim;
     tasks.push_back(task);
     kcache.compiled_data_list.emplace_back(tasks, make_module(*llvm_ctx),
-                                           std::unordered_set<int>());
+                                           std::unordered_set<int>(), std::unordered_set<int>());
     kcache.args = arg_infos;
     writer.add_kernel_cache(kKernelName, std::move(kcache));
     writer.set_no_mangle();

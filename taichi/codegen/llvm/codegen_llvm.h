@@ -58,6 +58,7 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   llvm::BasicBlock *final_block;
   std::set<std::string> linked_modules;
   std::unordered_set<int> used_tree_ids;
+  std::unordered_set<int> struct_for_tls_sizes;
 
   bool returned{false};
 

@@ -881,12 +881,16 @@ std::unique_ptr<LLVMCompiledData> TaichiLLVMContext::link_compile_data(
     std::vector<std::unique_ptr<LLVMCompiledData>> data_list) {
   auto linked = std::make_unique<LLVMCompiledData>();
   std::unordered_set<int> used_tree_ids;
+  std::unordered_set<int> tls_sizes;
   std::unordered_set<std::string> offloaded_names;
   auto mod = new_module("kernel", link_context_data->llvm_context);
   llvm::Linker linker(*mod);
   for (auto &datum : data_list) {
     for (auto tree_id : datum->used_tree_ids) {
       used_tree_ids.insert(tree_id);
+    }
+    for (auto tls_size: datum->struct_for_tls_sizes) {
+      tls_sizes.insert(tls_size);
     }
     for (auto &task : datum->tasks) {
       offloaded_names.insert(task.name);
@@ -898,13 +902,72 @@ std::unique_ptr<LLVMCompiledData> TaichiLLVMContext::link_compile_data(
   for (auto tree_id : used_tree_ids) {
     linker.linkInModule(llvm::CloneModule(*link_context_data->struct_modules[tree_id]), llvm::Linker::LinkOnlyNeeded);
   }
-  linker.linkInModule(llvm::CloneModule(*link_context_data->runtime_module), llvm::Linker::LinkOnlyNeeded);
+  auto runtime_module = llvm::CloneModule(*link_context_data->runtime_module);
+  for (auto tls_size : tls_sizes) {
+    add_struct_for_func(runtime_module.get(), tls_size);
+  }
+  linker.linkInModule(std::move(runtime_module), llvm::Linker::LinkOnlyNeeded);
   eliminate_unused_functions(mod.get(),
                              [&](std::string func_name) -> bool {
                                return offloaded_names.count(func_name);
                              });
   linked->module = std::move(mod);
   return linked;
+}
+
+void TaichiLLVMContext::add_struct_for_func(llvm::Module *module, int tls_size) {
+  auto struct_for_func = module->getFunction("parallel_struct_for");
+  auto &llvm_context = module->getContext();
+  auto value_map = llvm::ValueToValueMapTy();
+  auto patched_struct_for_func =
+      llvm::CloneFunction(struct_for_func, value_map);
+  patched_struct_for_func->setName("parallel_struct_for_" + std::to_string(tls_size));
+
+  int num_found_alloca = 0;
+  llvm::AllocaInst *alloca = nullptr;
+
+  auto char_type = llvm::Type::getInt8Ty(llvm_context);
+
+  // Find the "1" in "char tls_buffer[1]" and replace it with
+  // "tls_buffer_size"
+  for (auto &bb : *patched_struct_for_func) {
+    for (llvm::Instruction &inst : bb) {
+      auto now_alloca = llvm::dyn_cast<AllocaInst>(&inst);
+      if (!now_alloca ||
+#ifdef TI_LLVM_15
+          now_alloca->getAlign().value() != 8
+#else
+          now_alloca->getAlignment() != 8
+#endif
+      )
+        continue;
+      auto alloca_type = now_alloca->getAllocatedType();
+      // Allocated type should be array [1 x i8]
+      if (alloca_type->isArrayTy() &&
+          alloca_type->getArrayNumElements() == 1 &&
+          alloca_type->getArrayElementType() == char_type) {
+        alloca = now_alloca;
+        num_found_alloca++;
+      }
+    }
+  }
+  // There should be **exactly** one replacement.
+  TI_ASSERT(num_found_alloca == 1 && alloca);
+  auto new_type = llvm::ArrayType::get(char_type, tls_size);
+  {
+    llvm::IRBuilder<> builder(alloca);
+    auto *new_alloca = builder.CreateAlloca(new_type);
+    new_alloca->setAlignment(Align(8));
+    TI_ASSERT(alloca->hasOneUse());
+    auto *gep = llvm::cast<llvm::GetElementPtrInst>(alloca->user_back());
+    TI_ASSERT(gep->getPointerOperand() == alloca);
+    std::vector<Value *> indices(gep->idx_begin(), gep->idx_end());
+    builder.SetInsertPoint(gep);
+    auto *new_gep = builder.CreateInBoundsGEP(new_type, new_alloca, indices);
+    gep->replaceAllUsesWith(new_gep);
+    gep->eraseFromParent();
+    alloca->eraseFromParent();
+  }
 }
 
 TaichiLLVMContext::ThreadLocalData::~ThreadLocalData() {

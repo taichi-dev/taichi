@@ -165,6 +165,7 @@ class TaichiLLVMContext {
   ThreadLocalData *get_this_thread_data();
 
   void update_runtime_jit_module(std::unique_ptr<llvm::Module> module);
+  void add_struct_for_func(llvm::Module *module, int tls_size);
 
   std::unordered_map<std::thread::id, std::unique_ptr<ThreadLocalData>>
       per_thread_data_;

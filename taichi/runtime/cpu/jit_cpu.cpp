@@ -90,7 +90,6 @@ class JITModuleCPU : public JITModule {
   }
 
   void *lookup_function(const std::string &name) override;
-  void add_module(std::unique_ptr<llvm::Module> module) override;
 
   bool direct_dispatch() const override {
     return true;
@@ -243,10 +242,6 @@ class JITSessionCPU : public JITSession {
 
 void *JITModuleCPU::lookup_function(const std::string &name) {
   return session_->lookup_in_module(dylib_, name);
-}
-
-void JITModuleCPU::add_module(std::unique_ptr<llvm::Module> module) {
-  session_->add_module_to_dylib(std::move(module), dylib_);
 }
 
 void JITSessionCPU::global_optimize_module_cpu(llvm::Module *module) {

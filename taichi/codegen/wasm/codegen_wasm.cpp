@@ -277,7 +277,7 @@ LLVMCompiledData KernelCodeGenWASM::modulegen(
 
   gen->tlctx->jit->global_optimize_module(gen->module.get());
 
-  return {name_list, std::move(gen->module), {}};
+  return {name_list, std::move(gen->module), {}, {}};
 }
 }  // namespace lang
 }  // namespace taichi

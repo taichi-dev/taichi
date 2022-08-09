@@ -185,7 +185,7 @@ index_count   = user_defined_index_count,
 vertex_offset = user_defined_vertex_offset)
 
 # usually used as below:
-# draw 11-th to 111-th mesh vertexes
+# draw the 11-th to 111-th mesh vertexes
 scene.mesh(vertices, indices,
 index_offset  = 10,
 index_count   = 100)

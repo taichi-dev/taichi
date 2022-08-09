@@ -1217,7 +1217,7 @@ Value IRBuilder::float_atomic(AtomicOpType op_type,
     Label exit = new_label();
 
     make_inst(spv::OpBranch, head);
-    make_inst(spv::OpLabel, head);
+    start_label(head);
     make_inst(spv::OpLoopMerge, branch_true, merge, 0);
     make_inst(spv::OpBranch, body);
     make_inst(spv::OpLabel, body);
@@ -1261,7 +1261,7 @@ Value IRBuilder::float_atomic(AtomicOpType op_type,
       make_inst(spv::OpLabel, merge);
       make_inst(spv::OpBranch, head);
     }
-    make_inst(spv::OpLabel, exit);
+    start_label(exit);
 
     return make_value(spv::OpBitcast, t_fp32_,
                       load_variable(ret_val_int, t_uint32_));

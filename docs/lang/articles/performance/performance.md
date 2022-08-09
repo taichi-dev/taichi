@@ -226,7 +226,7 @@ As a rule of thumb, run benchmarks to decide whether to enable BLS or not.
 
 ## Offline Cache
 
-A taichi kernel is implicitly compiled the first time it is invoked. The compilation yieldings are kept in an "online" in-memory cache to reduce the overhead in subsequent function calls. As long as the kernel function is unchanged, it can be directly loaded and launched. However, the cache is no longer availabe when the entire program runs down to its termination. Taichi re-compiles all the kernel functions and constructs the "online" in-memory cache when the user runs the program again. The first launch of a Taichi function is always slow due to compilation overhead.
+A Taichi kernel is implicitly compiled the first time it is called. The compilation results are kept in an online in-memory cache to reduce the overhead in the subsequent function calls. As long as the kernel function is unchanged, it can be directly loaded and launched. The cache, however, is no longer available when the program terminates. Then, if you run the program again, Taichi has to re-compile all kernel functions and reconstruct the online in-memory cache. And the first launch of a Taichi function is always slow due to the compilation overhead.
 
 We address this problem by introducing the *offline* cache feature, which dumps and saves the compilation cache on disk for future runs. The first launch overhead can be drastically reduced in repeated runs. Taichi now constructs and maintains an offline cache by default, as well as providing several options in `ti.init()` for configuring the offline cache behavior.
 * `offline_cache: bool`: Enables or disables offline cache. Default: `True`.

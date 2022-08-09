@@ -2170,7 +2170,13 @@ void TaskCodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt,
   auto struct_for_func = get_runtime_function("parallel_struct_for");
 
   if (arch_is_gpu(current_arch())) {
-    struct_for_func = llvm::cast<llvm::Function>(module->getOrInsertFunction("parallel_struct_for_" + std::to_string(stmt->tls_size), struct_for_func->getFunctionType(), struct_for_func->getAttributes()).getCallee());
+    struct_for_func = llvm::cast<llvm::Function>(
+        module
+            ->getOrInsertFunction(
+                "parallel_struct_for_" + std::to_string(stmt->tls_size),
+                struct_for_func->getFunctionType(),
+                struct_for_func->getAttributes())
+            .getCallee());
     struct_for_tls_sizes.insert(stmt->tls_size);
     // Note that on CUDA local array allocation must have a compile-time
     // constant size. Therefore, instead of passing in the tls_buffer_size
@@ -2657,7 +2663,8 @@ void TaskCodeGenLLVM::visit(FuncCallStmt *stmt) {
 }
 
 LLVMCompiledData LLVMCompiledData::clone() const {
-  return {tasks, llvm::CloneModule(*module), used_tree_ids, struct_for_tls_sizes};
+  return {tasks, llvm::CloneModule(*module), used_tree_ids,
+          struct_for_tls_sizes};
 }
 
 TLANG_NAMESPACE_END

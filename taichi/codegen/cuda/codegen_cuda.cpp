@@ -796,8 +796,8 @@ FunctionType CUDAModuleToFunctionConverter::convert(
   }
 
   auto jit = tlctx_->jit.get();
-  auto cuda_module =
-      jit->create_jit_module(std::move(mod), executor_->get_config()->gpu_max_reg);
+  auto cuda_module = jit->create_jit_module(
+      std::move(mod), executor_->get_config()->gpu_max_reg);
 
   return [cuda_module, kernel_name, args, offloaded_tasks = tasks,
           executor = this->executor_](RuntimeContext &context) {

@@ -75,8 +75,10 @@ TaichiLLVMContext::TaichiLLVMContext(CompileConfig *config, Arch arch)
       get_this_thread_runtime_module(), link_context_data->llvm_context);
 
   if (arch_ == Arch::cuda) {
-    TI_ASSERT(get_this_thread_runtime_module()->getFunction("__nv_fabsf") != nullptr);
-    TI_ASSERT(link_context_data->runtime_module->getFunction("__nv_fabsf") != nullptr);
+    TI_ASSERT(get_this_thread_runtime_module()->getFunction("__nv_fabsf") !=
+              nullptr);
+    TI_ASSERT(link_context_data->runtime_module->getFunction("__nv_fabsf") !=
+              nullptr);
   }
 
   llvm::remove_fatal_error_handler();
@@ -508,8 +510,8 @@ void TaichiLLVMContext::link_module_with_cuda_libdevice(
     auto func = module->getFunction(func_name);
     if (!func) {
       TI_INFO("Function {} not found", func_name);
-    } //else
-//      func->setLinkage(llvm::Function::InternalLinkage);
+    }  // else
+    //      func->setLinkage(llvm::Function::InternalLinkage);
   }
 }
 
@@ -889,7 +891,7 @@ std::unique_ptr<LLVMCompiledData> TaichiLLVMContext::link_compile_data(
     for (auto tree_id : datum->used_tree_ids) {
       used_tree_ids.insert(tree_id);
     }
-    for (auto tls_size: datum->struct_for_tls_sizes) {
+    for (auto tls_size : datum->struct_for_tls_sizes) {
       tls_sizes.insert(tls_size);
     }
     for (auto &task : datum->tasks) {
@@ -900,28 +902,31 @@ std::unique_ptr<LLVMCompiledData> TaichiLLVMContext::link_compile_data(
         datum->module.get(), link_context_data->llvm_context));
   }
   for (auto tree_id : used_tree_ids) {
-    linker.linkInModule(llvm::CloneModule(*link_context_data->struct_modules[tree_id]), llvm::Linker::LinkOnlyNeeded);
+    linker.linkInModule(
+        llvm::CloneModule(*link_context_data->struct_modules[tree_id]),
+        llvm::Linker::LinkOnlyNeeded);
   }
   auto runtime_module = llvm::CloneModule(*link_context_data->runtime_module);
   for (auto tls_size : tls_sizes) {
     add_struct_for_func(runtime_module.get(), tls_size);
   }
   linker.linkInModule(std::move(runtime_module), llvm::Linker::LinkOnlyNeeded);
-  eliminate_unused_functions(mod.get(),
-                             [&](std::string func_name) -> bool {
-                               return offloaded_names.count(func_name);
-                             });
+  eliminate_unused_functions(mod.get(), [&](std::string func_name) -> bool {
+    return offloaded_names.count(func_name);
+  });
   linked->module = std::move(mod);
   return linked;
 }
 
-void TaichiLLVMContext::add_struct_for_func(llvm::Module *module, int tls_size) {
+void TaichiLLVMContext::add_struct_for_func(llvm::Module *module,
+                                            int tls_size) {
   auto struct_for_func = module->getFunction("parallel_struct_for");
   auto &llvm_context = module->getContext();
   auto value_map = llvm::ValueToValueMapTy();
   auto patched_struct_for_func =
       llvm::CloneFunction(struct_for_func, value_map);
-  patched_struct_for_func->setName("parallel_struct_for_" + std::to_string(tls_size));
+  patched_struct_for_func->setName("parallel_struct_for_" +
+                                   std::to_string(tls_size));
 
   int num_found_alloca = 0;
   llvm::AllocaInst *alloca = nullptr;
@@ -943,8 +948,7 @@ void TaichiLLVMContext::add_struct_for_func(llvm::Module *module, int tls_size) 
         continue;
       auto alloca_type = now_alloca->getAllocatedType();
       // Allocated type should be array [1 x i8]
-      if (alloca_type->isArrayTy() &&
-          alloca_type->getArrayNumElements() == 1 &&
+      if (alloca_type->isArrayTy() && alloca_type->getArrayNumElements() == 1 &&
           alloca_type->getArrayElementType() == char_type) {
         alloca = now_alloca;
         num_found_alloca++;

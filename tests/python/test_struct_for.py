@@ -240,8 +240,10 @@ def test_struct_for_branching():
     func2()
     func3()
 
+
 # ti.init(ti.cuda)
 # test_struct_for_branching()
+
 
 @test_utils.test(require=ti.extension.sparse)
 def test_struct_for_pointer_block():

@@ -35,7 +35,7 @@ struct LLVMCompiledData {
       : tasks(std::move(tasks)),
         module(std::move(module)),
         used_tree_ids(std::move(used_tree_ids)),
-        struct_for_tls_sizes(std::move(struct_for_tls_sizes)){
+        struct_for_tls_sizes(std::move(struct_for_tls_sizes)) {
   }
   LLVMCompiledData clone() const;
   TI_IO_DEF(tasks);

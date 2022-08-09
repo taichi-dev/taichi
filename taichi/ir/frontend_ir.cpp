@@ -1026,9 +1026,11 @@ Expr ASTBuilder::expr_indexed_matrix(const Expr &matrix,
       }
     }
     shape_str += "]";
-    TI_ERROR("Indexed matrix of shape {} has wrong number of indices. Expected {} but got "
-             "{}.",
-             shape_str, shape.size(), indices.size());
+    TI_ERROR(
+        "Indexed matrix of shape {} has wrong number of indices. Expected {} "
+        "but got "
+        "{}.",
+        shape_str, shape.size(), indices.size());
   }
   return Expr(std::make_shared<IndexExpression>(matrix, indices));
 }

@@ -1784,7 +1784,8 @@ void TaskCodeGenLLVM::visit(PtrOffsetStmt *stmt) {
           llvm_val[stmt->origin], llvm::PointerType::get(llvm_type, 0));
       llvm_val[stmt] = builder->CreateGEP(casted_ptr, llvm_val[stmt->offset]);
     } else {
-      llvm_val[stmt] = builder->CreateGEP(llvm_val[stmt->origin], llvm_val[stmt->offset]);
+      llvm_val[stmt] =
+          builder->CreateGEP(llvm_val[stmt->origin], llvm_val[stmt->offset]);
     }
 #endif
   } else {

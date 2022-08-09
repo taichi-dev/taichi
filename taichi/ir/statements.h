@@ -1827,22 +1827,5 @@ class MatrixInitStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
-class IndexStmt : public Stmt {
- public:
-  Stmt *target;
-  Stmt *index;
-
-  IndexStmt(Stmt *target, Stmt *index) : target(target), index(index) {
-    TI_STMT_REG_FIELDS;
-  }
-
-  bool has_global_side_effect() const override {
-    return false;
-  }
-
-  TI_STMT_DEF_FIELDS(ret_type, target, index);
-  TI_DEFINE_ACCEPT_AND_CLONE
-};
-
 }  // namespace lang
 }  // namespace taichi

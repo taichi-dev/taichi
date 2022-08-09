@@ -125,6 +125,7 @@ void TaskCodeGenLLVM::visit(AllocaStmt *stmt) {
   if (stmt->ret_type->is<TensorType>()) {
     auto tensor_type = stmt->ret_type->cast<TensorType>();
     auto type = tlctx->get_data_type(tensor_type);
+    auto array_size = tlctx->get_constant(tensor_type->get_num_elements());
     // Return type is [array_size x type]*.
     if (stmt->is_shared) {
       size_t data_element_size = tlctx->get_type_size(
@@ -147,7 +148,7 @@ void TaskCodeGenLLVM::visit(AllocaStmt *stmt) {
           tlctx->get_data_type(tensor_type->get_element_type()), 0);
       llvm_val[stmt] = builder->CreatePointerCast(ptr, ptr_type);
     } else {
-      llvm_val[stmt] = create_entry_block_alloca(type, false);
+      llvm_val[stmt] = create_entry_block_alloca(type, 0, array_size);
     }
   } else {
     TI_ASSERT(stmt->width() == 1);
@@ -1774,12 +1775,16 @@ void TaskCodeGenLLVM::visit(PtrOffsetStmt *stmt) {
     llvm_val[stmt] = builder->CreateGEP(ptr_ty, llvm_val[stmt->origin],
                                         llvm_val[stmt->offset]);
 #else
-    auto stmt_dtype = stmt->origin->ret_type->as<TensorType>();
-    auto element_dtype = stmt_dtype->get_element_type();
-    auto llvm_type = tlctx->get_data_type(element_dtype);
-    auto casted_ptr = builder->CreateBitCast(
-        llvm_val[stmt->origin], llvm::PointerType::get(llvm_type, 0));
-    llvm_val[stmt] = builder->CreateGEP(casted_ptr, llvm_val[stmt->offset]);
+    if (stmt->origin->ret_type->is<TensorType>()) {
+      auto stmt_dtype = stmt->origin->ret_type->cast<TensorType>();
+      auto element_dtype = stmt_dtype->get_element_type();
+      auto llvm_type = tlctx->get_data_type(element_dtype);
+      auto casted_ptr = builder->CreateBitCast(
+          llvm_val[stmt->origin], llvm::PointerType::get(llvm_type, 0));
+      llvm_val[stmt] = builder->CreateGEP(casted_ptr, llvm_val[stmt->offset]);
+    } else {
+      llvm_val[stmt] = builder->CreateGEP(llvm_val[stmt->origin], llvm_val[stmt->offset]);
+    }
 #endif
   } else {
     auto origin_address = builder->CreatePtrToInt(

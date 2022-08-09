@@ -1188,6 +1188,8 @@ void flatten_rvalue(Expr ptr, Expression::FlattenContext *ctx) {
     }
   } else if (ptr.is<IndexExpression>()) {
     auto ix = ptr.cast<IndexExpression>();
+    // if (ix->var->ret_type->is<TensorType>())
+    //   return;
     if (ix->is_local()) {
       flatten_local_load(ptr, ctx);
     } else {

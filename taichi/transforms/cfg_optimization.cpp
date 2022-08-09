@@ -21,8 +21,8 @@ bool cfg_optimization(
     cfg->simplify_graph();
     if (cfg->store_to_load_forwarding(after_lower_access, autodiff_enabled))
       modified = true;
-    if (cfg->dead_store_elimination(after_lower_access, lva_config_opt))
-      modified = true;
+    // if (cfg->dead_store_elimination(after_lower_access, lva_config_opt))
+    //   modified = true;
     if (modified)
       result_modified = true;
     else

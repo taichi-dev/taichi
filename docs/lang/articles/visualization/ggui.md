@@ -144,7 +144,7 @@ while window.running:
     scene.point_light(pos=(0.5, 1.5, 1.5), color=(1, 1, 1))
 
     scene.particles(particles_pos, color = (0.68, 0.26, 0.19), radius = 0.1)
-    # Here draw 3d-lines in the scene
+    # Draw 3d-lines in the scene
     scene.lines(points_pos, color = (0.28, 0.68, 0.99), width = 5.0)
     canvas.scene(scene)
     window.show()

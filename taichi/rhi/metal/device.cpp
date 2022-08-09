@@ -206,6 +206,11 @@ class CommandListImpl : public CommandList {
 
   // Graphics commands are not implemented on Metal
  private:
+  friend class StreamImpl;
+  nsobj_unique_ptr<MTLCommandBuffer> take_cmdbuf() {
+    return std::move(command_buffer_);
+  }
+
   ComputeEncoderBuilder *get_or_make_compute_builder() {
     if (!inflight_compute_builder_.has_value()) {
       inflight_compute_builder_ = ComputeEncoderBuilder{};
@@ -232,6 +237,9 @@ class StreamImpl : public Stream {
                       AllocToMTLBufferMapper *alloc_buf_mapper)
       : command_queue_(command_queue), alloc_buf_mapper_(alloc_buf_mapper) {
   }
+  ~StreamImpl() override {
+    command_sync();
+  }
 
   std::unique_ptr<CommandList> new_command_list() override {
     auto cb = new_command_buffer(command_queue_);
@@ -243,8 +251,10 @@ class StreamImpl : public Stream {
   StreamSemaphore submit(
       CommandList *cmdlist,
       const std::vector<StreamSemaphore> &wait_semaphores) override {
-    auto *cb = static_cast<CommandListImpl *>(cmdlist)->command_buffer();
+    CommandListImpl* cmdlist2 = static_cast<CommandListImpl *>(cmdlist);
+    auto *cb = cmdlist2->command_buffer();
     commit_command_buffer(cb);
+    committed_cmdlists_.emplace_back(std::move(cmdlist2->take_cmdbuf()));
 
     // FIXME: Implement semaphore mechanism for Metal backend
     //        and return the actual semaphore corresponding to the submitted
@@ -254,18 +264,21 @@ class StreamImpl : public Stream {
   StreamSemaphore submit_synced(
       CommandList *cmdlist,
       const std::vector<StreamSemaphore> &wait_semaphores) override {
-    auto *cb = static_cast<CommandListImpl *>(cmdlist)->command_buffer();
-    commit_command_buffer(cb);
-    wait_until_completed(cb);
+    submit(cmdlist, wait_semaphores);
+    command_sync();
 
     return nullptr;
   }
 
   void command_sync() override {
-    // No-op on Metal
+    for (auto& cb : committed_cmdlists_) {
+      wait_until_completed(cb.get());
+    }
+    committed_cmdlists_.clear();
   }
 
  private:
+  std::vector<nsobj_unique_ptr<MTLCommandBuffer>> committed_cmdlists_;
   MTLCommandQueue *const command_queue_;
   AllocToMTLBufferMapper *const alloc_buf_mapper_;
   uint32_t list_counter_{0};

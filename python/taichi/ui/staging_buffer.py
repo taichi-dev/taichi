@@ -138,7 +138,7 @@ def to_rgba8(image):
 
     if not is_texture and (not hasattr(image, 'n') or image.m != 1):
         raise Exception(
-            'the input image needs to be a Vector field (matrix with 1 column)'
+            'the input image needs to be a Vector field (matrix with 1 column) or a texture'
         )
     if len(image.shape) != 2:
         raise Exception(

@@ -1387,9 +1387,6 @@ class BackupSSA : public BasicStmtVisitor {
             backup_alloca[op] = backup_stack_alloca_ptr;
             irpass::replace_all_usages_with(leaf_to_root.back(), op,
                                             backup_stack_alloca_ptr);
-          } else {
-            irpass::replace_all_usages_with(leaf_to_root.back(), op,
-                                            backup_alloca[op]);
           }
         } else {
           auto alloca = load(op);

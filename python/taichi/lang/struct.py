@@ -326,12 +326,19 @@ class Struct(TaichiOperations):
         for key, dtype in members.items():
             field_name = name + '.' + key
             if isinstance(dtype, CompoundType):
-                field_dict[key] = dtype.field(shape=None,
-                                              name=field_name,
-                                              offset=offset,
-                                              needs_grad=needs_grad,
-                                              needs_dual=needs_dual,
-                                              ndim=getattr(dtype, 'ndim', 2))
+                if isinstance(dtype, StructType):
+                    field_dict[key] = dtype.field(shape=None,
+                                                name=field_name,
+                                                offset=offset,
+                                                needs_grad=needs_grad,
+                                                needs_dual=needs_dual)
+                else:
+                    field_dict[key] = dtype.field(shape=None,
+                                                name=field_name,
+                                                offset=offset,
+                                                needs_grad=needs_grad,
+                                                needs_dual=needs_dual,
+                                                ndim=getattr(dtype, 'ndim', 2))
             else:
                 field_dict[key] = impl.field(dtype,
                                              shape=None,
@@ -705,8 +712,6 @@ class StructType(CompoundType):
         return Struct(entries)
 
     def field(self, **kwargs):
-        if "ndim" in kwargs:
-            kwargs.pop("ndim")
         return Struct.field(self.members, self.methods, **kwargs)
 
 

@@ -8,7 +8,7 @@ add_library(taichi_ui OBJECT
     gui/x11.cpp
   )
 
-if(NOT ANDROID)
+if(TI_WITH_GGUI AND NOT ANDROID)
   target_sources(taichi_ui PRIVATE common/window_base.cpp)
 endif()
 

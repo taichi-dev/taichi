@@ -19,7 +19,7 @@ target_sources(taichi_ui_vulkan
     renderables/triangles.cpp
   )
 
-if(NOT ANDROID)
+if(TI_WITH_GGUI AND NOT ANDROID)
   target_sources(taichi_ui_vulkan PRIVATE window.cpp)
 endif()
 

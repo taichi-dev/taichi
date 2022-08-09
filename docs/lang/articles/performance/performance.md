@@ -223,3 +223,26 @@ we found BLS to be more effective for caching the destinations of the atomic ope
 
 As a rule of thumb, run benchmarks to decide whether to enable BLS or not.
 :::
+
+## Offline Cache
+
+A Taichi kernel is implicitly compiled the first time it is called. The compilation results are kept in an *online* in-memory cache to reduce the overhead in the subsequent function calls. As long as the kernel function is unchanged, it can be directly loaded and launched. The cache, however, is no longer available when the program terminates. Then, if you run the program again, Taichi has to re-compile all kernel functions and reconstruct the *online* in-memory cache. And the first launch of a Taichi function is always slow due to the compilation overhead.
+
+We address this problem by introducing the *offline* cache feature, which dumps and saves the compilation cache on disk for future runs. The first launch overhead can be drastically reduced in repeated runs. Taichi now constructs and maintains an offline cache by default, as well as providing several options in `ti.init()` for configuring the offline cache behavior.
+* `offline_cache: bool`: Enables or disables offline cache. Default: `True`.
+* `offline_cache_file_path: str`: Directory holding the offline cached files. Default: `'C:\taichi_cache\ticache\'` on Windows and `'~/.cache/taichi/ticache/'` on unix-like systems. Directories are automatically populated.
+* `offline_cache_max_size_of_files: int32`: Maximum size of the cached files in Bytes. Default: 100MB. A cleaning process is triggered when the size of the cached files exceeds this limit.
+* `offline_cache_cleaning_policy: str`: Policy about how to replace outdated files in the cache. Options: `'never'`, `'version'`, `'lru'` and `'fifo'`. Default: `'lru'`.
+  * `'never'`: Never cleans and keeps all the cached files regardless of the `offline_cache_max_size_of_files` configuration;
+  * `'version'`: Discards only the old-version cached files with respect to the kernel function;
+  * `'lru'`: Discards the cached files least used recently;
+  * `'fifo'`: Discards the cached files added in the earliest.
+
+To verify the effect, run some examples twice and observe the launch overhead:
+![](../static/assets/effect_of_offline_cache.png)
+
+For now, the offline cache feature works *only* on the CPU and CUDA backends.
+
+:::note
+If your code behaves abnormally, disable offline cache by setting the environment variable `TI_OFFLINE_CACHE=0` or `offline_cache=False` in the `ti.init()` method call and file an issue with us on [Taichi's GitHub repo](https://github.com/taichi-dev/taichi/issues/new/choose).
+:::

@@ -190,7 +190,7 @@ scene.mesh(vertices, indices,
 index_offset  = 10,
 index_count   = 100)
 
-# 2. without indices (similar to particles' example as above)
+# 2. without indices (similar to the particles' example above)
 scene.mesh(vertices,
 vertex_offset = user_defined_first_vertex_index,
 vertex_count  = user_defined_vertex_count)

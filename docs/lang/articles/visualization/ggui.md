@@ -170,7 +170,7 @@ The additional arguments `vertex_offset`, `vertex_count`, `index_offset` and `in
 
 ```python
 # For particles
-# draw 2-th to 7-th particles
+# draw the 2-th to 7-th particles
 scene.particles(center, radius,
 index_offset = 1,
 index_count = 6)

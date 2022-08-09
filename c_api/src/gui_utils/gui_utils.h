@@ -3,7 +3,11 @@
 // handle.gui
 typedef struct TiGui_t *TiGui;
 
-TiGui ti_create_gui();
+TiGui ti_create_gui(TiArch arch,
+                    const char *shader_path,
+                    int window_h,
+                    int window_w,
+                    bool is_packed_mode);
 
 void ti_destroy_gui(TiGui gui);
 

@@ -2,7 +2,11 @@
 
 #include "c_api/src/gui_utils/gui_utils.h"
 
-TiGui ti_create_gui() {
+TiGui ti_create_gui(TiArch arch,
+                    const char *shader_path,
+                    int window_h,
+                    int window_w,
+                    bool is_packed_mode) {
   TI_NOT_IMPLEMENTED;
 }
 
@@ -17,7 +21,6 @@ int ti_set_image_info(TiGui gui,
                       int *shape,
                       int num_axes) {
   TI_NOT_IMPLEMENTED;
-  // return the key to img_info as handle
 }
 
 int ti_set_circle_info(TiGui gui,
@@ -27,8 +30,6 @@ int ti_set_circle_info(TiGui gui,
                        int *shape,
                        int num_axes) {
   TI_NOT_IMPLEMENTED;
-
-  // return the key to circle_info as handle
 }
 
 int ti_render_circle(TiGui gui, int circle_renderable_handle) {

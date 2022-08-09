@@ -118,7 +118,7 @@ void Texture::from_ndarray(Ndarray *ndarray) {
       static_cast<GraphicsDevice *>(prog_->get_graphics_device());
 
   device->image_transition(texture_alloc_, ImageLayout::undefined,
-                            ImageLayout::transfer_dst);
+                           ImageLayout::transfer_dst);
 
   Stream *stream = device->get_compute_stream();
   auto cmdlist = stream->new_command_list();

@@ -43,7 +43,7 @@ class OpenglProgramImpl : public ProgramImpl {
 
   DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
                                            uint64 *result_buffer) override;
-  DeviceAllocation allocate_texture(const ImageParams& params) override;
+  DeviceAllocation allocate_texture(const ImageParams &params) override;
 
   Device *get_compute_device() override {
     return device_.get();

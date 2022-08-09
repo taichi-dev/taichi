@@ -80,7 +80,8 @@ DeviceAllocation OpenglProgramImpl::allocate_memory_ndarray(
       {alloc_size, /*host_write=*/false, /*host_read=*/false,
        /*export_sharing=*/false});
 }
-DeviceAllocation OpenglProgramImpl::allocate_texture(const ImageParams& params) {
+DeviceAllocation OpenglProgramImpl::allocate_texture(
+    const ImageParams &params) {
   return runtime_->create_image(params);
 }
 

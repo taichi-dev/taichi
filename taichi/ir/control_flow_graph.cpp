@@ -515,7 +515,8 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
       }
     }
     auto load_ptrs = irpass::analysis::get_load_pointers(stmt);
-    if (load_ptrs.size() == 1 && store_ptrs.empty() && stmt->width() == 1 && !stmt->is<PtrOffsetStmt>()) {
+    if (load_ptrs.size() == 1 && store_ptrs.empty() && stmt->width() == 1 &&
+        !stmt->is<PtrOffsetStmt>()) {
       // Identical load elimination
       auto load_ptr = load_ptrs.front();
       if (!after_lower_access ||

@@ -108,8 +108,10 @@ def copy_image_f32_to_rgba8(src: ti.template(), dst: ti.template(),
             for k in ti.static(range(num_components)):
                 c = 0.0
                 if ti.static(len(src.shape) == 3):
+                    # 3D field source image
                     c = src[i, j, k]
                 else:
+                    # 2D vector field source image
                     c = src[i, j][k]
                 c = max(0.0, min(1.0, c))
                 c = c * 255
@@ -151,8 +153,10 @@ def copy_image_u8_to_rgba8(src: ti.template(), dst: ti.template(),
         else:
             for k in ti.static(range(num_components)):
                 if ti.static(len(src.shape) == 3):
+                    # 3D field source image
                     px[k] = ti.cast(src[i, j, k], u32)
                 else:
+                    # 2D vector field source image
                     px[k] = ti.cast(src[i, j][k], u32)
         pack = (px[0] << 0 | px[1] << 8 | px[2] << 16 | px[3] << 24)
         dst[i, j] = pack

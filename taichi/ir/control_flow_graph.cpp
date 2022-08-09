@@ -463,6 +463,7 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
           // Neither used in other nodes nor used in this node.
           if (!stmt->is<AtomicOpStmt>()) {
             // Eliminate the dead store.
+            TI_TRACE("Elminate dead store: {}", block->operator[](i)->name());
             erase(i);
             modified = true;
             continue;
@@ -514,7 +515,7 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
       }
     }
     auto load_ptrs = irpass::analysis::get_load_pointers(stmt);
-    if (load_ptrs.size() == 1 && store_ptrs.empty() && stmt->width() == 1) {
+    if (load_ptrs.size() == 1 && store_ptrs.empty() && stmt->width() == 1 && !stmt->is<PtrOffsetStmt>()) {
       // Identical load elimination
       auto load_ptr = load_ptrs.front();
       if (!after_lower_access ||

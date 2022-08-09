@@ -23,13 +23,10 @@ target_include_directories(taichi_ui
     ${PROJECT_SOURCE_DIR}/external/glm
   )
 
-if (TI_WITH_VULKAN)
-    add_subdirectory(backends/vulkan)
-    target_link_libraries(taichi_ui PRIVATE taichi_ui_vulkan)
-else()
-    #TODO should we throw an error here?
-    message(STATUS "UI is not compiled with Vulkan ON")
-endif ()
+#TODO Guard this with TI_WITH_VULKAN
+#     Now always build to align with taichi_ui
+add_subdirectory(backends/vulkan)
+target_link_libraries(taichi_ui PUBLIC taichi_ui_vulkan)
 
 target_link_libraries(taichi_ui PRIVATE taichi_core)
 target_link_libraries(taichi_ui PRIVATE taichi_common)
@@ -54,6 +51,6 @@ else()
 endif()
 
 target_include_directories(imgui PUBLIC ${IMGUI_DIR} ${IMGUI_DIR}/backends ..)
-target_include_directories(imgui PRIVATE ${PROJECT_SOURCE_DIR}/external/Vulkan-Headers/include)
+target_include_directories(imgui PUBLIC ${PROJECT_SOURCE_DIR}/external/Vulkan-Headers/include)
 
 target_link_libraries(taichi_ui PRIVATE imgui)

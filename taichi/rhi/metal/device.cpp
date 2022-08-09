@@ -251,7 +251,7 @@ class StreamImpl : public Stream {
   StreamSemaphore submit(
       CommandList *cmdlist,
       const std::vector<StreamSemaphore> &wait_semaphores) override {
-    CommandListImpl* cmdlist2 = static_cast<CommandListImpl *>(cmdlist);
+    CommandListImpl *cmdlist2 = static_cast<CommandListImpl *>(cmdlist);
     auto *cb = cmdlist2->command_buffer();
     commit_command_buffer(cb);
     committed_cmdlists_.emplace_back(std::move(cmdlist2->take_cmdbuf()));
@@ -271,7 +271,7 @@ class StreamImpl : public Stream {
   }
 
   void command_sync() override {
-    for (auto& cb : committed_cmdlists_) {
+    for (auto &cb : committed_cmdlists_) {
       wait_until_completed(cb.get());
     }
     committed_cmdlists_.clear();

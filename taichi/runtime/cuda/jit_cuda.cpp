@@ -36,6 +36,7 @@ JITModule *JITSessionCUDA ::create_jit_module(std::unique_ptr<llvm::Module> M,
   }
 
   TI_ASSERT(num_options <= max_num_options);
+  TI_INFO("ptx: {}", ptx);
 
   CUDADriver::get_instance().module_load_data_ex(
       &cuda_module, ptx.c_str(), num_options, options, option_values);

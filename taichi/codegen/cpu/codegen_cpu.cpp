@@ -324,9 +324,6 @@ FunctionType KernelCodeGenCPU::codegen() {
       irpass::re_id(offload.get());
       auto new_data = this->modulegen(nullptr, offload->as<OffloadedStmt>());
       data[i] = std::make_unique<LLVMCompiledData>(std::move(new_data));
-//      data[i].tasks = std::move(new_data.tasks);
-//      data[i].module = std::move(new_data.module);
-//      data[i].used_tree_ids = std::move(new_data.used_tree_ids);
     };
     if (kernel->is_evaluator) {
       compile_func();

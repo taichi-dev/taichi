@@ -336,7 +336,6 @@ llvm::Type *StructCompilerLLVM::get_llvm_element_type(llvm::Module *module,
 
 llvm::Function *StructCompilerLLVM::create_function(llvm::FunctionType *ft,
                                                     std::string func_name) {
-  tlctx_->add_function_to_snode_tree(snode_tree_id_, func_name);
   return llvm::Function::Create(ft, llvm::Function::ExternalLinkage, func_name,
                                 *module);
 }

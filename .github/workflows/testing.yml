@@ -101,7 +101,7 @@ jobs:
   build_and_test_cpu_linux:
     name: Build and Test linux (CPU)
     needs: check_files
-    timeout-minutes: 90
+    timeout-minutes: 60
     strategy:
       matrix:
         include:

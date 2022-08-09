@@ -42,7 +42,7 @@ class TaichiLLVMContext {
   JITModule *runtime_jit_module{nullptr};
   JITModule *main_jit_module{nullptr};
 
-  std::unique_ptr<ThreadLocalData> linking_data{nullptr};
+  std::unique_ptr<ThreadLocalData> link_context_data{nullptr};
 
   TaichiLLVMContext(CompileConfig *config, Arch arch);
 
@@ -136,9 +136,7 @@ class TaichiLLVMContext {
 
   void mark_function_as_cuda_kernel(llvm::Function *func, int block_dim = 0);
 
-  void add_function_to_snode_tree(int id, std::string func);
-
-  void delete_functions_of_snode_tree(int id);
+  void delete_snode_tree(int id);
 
   llvm::Function *get_runtime_function(const std::string &name);
   llvm::Function *get_struct_function(const std::string &name, int tree_id);

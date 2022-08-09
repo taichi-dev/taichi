@@ -597,8 +597,7 @@ void LlvmRuntimeExecutor::materialize_runtime(MemoryPool *memory_pool,
 }
 
 void LlvmRuntimeExecutor::destroy_snode_tree(SNodeTree *snode_tree) {
-  get_llvm_context(host_arch())
-      ->delete_functions_of_snode_tree(snode_tree->id());
+  get_llvm_context(host_arch())->delete_snode_tree(snode_tree->id());
   snode_tree_buffer_manager_->destroy(snode_tree);
 }
 

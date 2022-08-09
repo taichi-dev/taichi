@@ -68,11 +68,11 @@ TaichiLLVMContext::TaichiLLVMContext(CompileConfig *config, Arch arch)
   TI_TRACE("Creating Taichi llvm context for arch: {}", arch_name(arch));
   main_thread_id_ = std::this_thread::get_id();
   main_thread_data_ = get_this_thread_data();
-  linking_data = std::make_unique<ThreadLocalData>(
+  link_context_data = std::make_unique<ThreadLocalData>(
       std::make_unique<llvm::orc::ThreadSafeContext>(
           std::make_unique<llvm::LLVMContext>()));
-  linking_data->runtime_module = clone_module_to_context(
-      get_this_thread_runtime_module(), linking_data->llvm_context);
+  link_context_data->runtime_module = clone_module_to_context(
+      get_this_thread_runtime_module(), link_context_data->llvm_context);
   llvm::remove_fatal_error_handler();
   llvm::install_fatal_error_handler(
 #ifdef TI_LLVM_15
@@ -524,10 +524,9 @@ void TaichiLLVMContext::add_struct_module(std::unique_ptr<llvm::Module> module,
     module->print(llvm::errs(), nullptr);
     TI_ERROR("module broken");
   }
-  linking_data->struct_modules[tree_id] =
-      clone_module_to_context(module.get(), linking_data->llvm_context);
+  link_context_data->struct_modules[tree_id] =
+      clone_module_to_context(module.get(), link_context_data->llvm_context);
   // TODO: Move this after ``if (!arch_is_cpu(arch))``.
-  this_thread_data->struct_modules[tree_id] = llvm::CloneModule(*module);
   for (auto &[id, data] : per_thread_data_) {
     if (id == std::this_thread::get_id()) {
       continue;
@@ -536,6 +535,7 @@ void TaichiLLVMContext::add_struct_module(std::unique_ptr<llvm::Module> module,
     data->struct_modules[tree_id] =
         clone_module_to_context(module.get(), data->llvm_context);
   }
+  this_thread_data->struct_modules[tree_id] = std::move(module);
 }
 template <typename T>
 llvm::Value *TaichiLLVMContext::get_constant(DataType dt, T t) {
@@ -823,24 +823,11 @@ void TaichiLLVMContext::update_runtime_jit_module(
   runtime_jit_module = create_jit_module(std::move(module));
 }
 
-void TaichiLLVMContext::delete_functions_of_snode_tree(int id) {
-  if (!snode_tree_funcs_.count(id)) {
-    return;
+void TaichiLLVMContext::delete_snode_tree(int id) {
+  TI_ASSERT(link_context_data->struct_modules.erase(id));
+  for (auto &[thread_id, data] : per_thread_data_) {
+    TI_ASSERT(data->struct_modules.erase(id));
   }
-  // Removing a module in the JIT is not available in LLVM 10
-  // TODO(Lin): remove the module in the JIT in LLVM 15
-  // FIXME(Lin)
-  //  llvm::Module *module = fetch_this_thread_struct_module();
-  //  for (auto str : snode_tree_funcs_[id]) {
-  //    auto *func = module->getFunction(str);
-  //    func->eraseFromParent();
-  //  }
-  //  snode_tree_funcs_.erase(id);
-  //  add_struct_module(std::move(get_this_thread_data()->struct_module));
-}
-
-void TaichiLLVMContext::add_function_to_snode_tree(int id, std::string func) {
-  snode_tree_funcs_[id].push_back(func);
 }
 
 llvm::Function *TaichiLLVMContext::get_runtime_function(
@@ -889,7 +876,7 @@ std::unique_ptr<LLVMCompiledData> TaichiLLVMContext::link_compile_data(
   auto linked = std::make_unique<LLVMCompiledData>();
   std::unordered_set<int> used_tree_ids;
   std::unordered_set<std::string> offloaded_names;
-  auto mod = new_module("kernel", linking_data->llvm_context);
+  auto mod = new_module("kernel", link_context_data->llvm_context);
   llvm::Linker linker(*mod);
   for (auto &datum : data_list) {
     for (auto tree_id : datum->used_tree_ids) {
@@ -900,14 +887,12 @@ std::unique_ptr<LLVMCompiledData> TaichiLLVMContext::link_compile_data(
       linked->tasks.push_back(std::move(task));
     }
     linker.linkInModule(clone_module_to_context(
-        datum->module.get(), linking_data->llvm_context));
+        datum->module.get(), link_context_data->llvm_context));
   }
   for (auto tree_id : used_tree_ids) {
-    linker.linkInModule(llvm::CloneModule(*linking_data->struct_modules[tree_id]),
-                        llvm::Linker::LinkOnlyNeeded);
+    linker.linkInModule(llvm::CloneModule(*link_context_data->struct_modules[tree_id]));
   }
-  linker.linkInModule(llvm::CloneModule(*linking_data->runtime_module),
-                      llvm::Linker::LinkOnlyNeeded);
+  linker.linkInModule(llvm::CloneModule(*link_context_data->runtime_module));
   eliminate_unused_functions(mod.get(),
                              [&](std::string func_name) -> bool {
                                return offloaded_names.count(func_name);

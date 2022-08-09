@@ -36,6 +36,8 @@ def test_abs():
         assert x[i] == abs(y[i])
         assert y.grad[i] == sgn(y[i])
 
+ti.init(ti.cuda)
+test_abs()
 
 @test_utils.test()
 def test_abs_fwd():

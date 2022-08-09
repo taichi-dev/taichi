@@ -275,11 +275,11 @@ def test_set_image_with_texture():
     window = ti.ui.Window('test', (640, 480), show_window=True)
     canvas = window.get_canvas()
 
-    img = ti.Texture(ti.f32, 1, (512, 512))
+    img = ti.Texture(ti.f32, 4, (512, 512))
 
     @ti.kernel
     def init_img(img: ti.types.rw_texture(num_dimensions=2,
-                                          num_channels=2,
+                                          num_channels=4,
                                           channel_format=ti.f32,
                                           lod=0)):
         for i, j in ti.ndrange(512, 512):

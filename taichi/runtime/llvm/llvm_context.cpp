@@ -73,6 +73,12 @@ TaichiLLVMContext::TaichiLLVMContext(CompileConfig *config, Arch arch)
           std::make_unique<llvm::LLVMContext>()));
   link_context_data->runtime_module = clone_module_to_context(
       get_this_thread_runtime_module(), link_context_data->llvm_context);
+
+  if (arch_ == Arch::cuda) {
+    TI_ASSERT(get_this_thread_runtime_module()->getFunction("__nv_fabsf") != nullptr);
+    TI_ASSERT(link_context_data->runtime_module->getFunction("__nv_fabsf") != nullptr);
+  }
+
   llvm::remove_fatal_error_handler();
   llvm::install_fatal_error_handler(
 #ifdef TI_LLVM_15
@@ -502,8 +508,8 @@ void TaichiLLVMContext::link_module_with_cuda_libdevice(
     auto func = module->getFunction(func_name);
     if (!func) {
       TI_INFO("Function {} not found", func_name);
-    } else
-      func->setLinkage(llvm::Function::InternalLinkage);
+    } //else
+//      func->setLinkage(llvm::Function::InternalLinkage);
   }
 }
 
@@ -890,9 +896,9 @@ std::unique_ptr<LLVMCompiledData> TaichiLLVMContext::link_compile_data(
         datum->module.get(), link_context_data->llvm_context));
   }
   for (auto tree_id : used_tree_ids) {
-    linker.linkInModule(llvm::CloneModule(*link_context_data->struct_modules[tree_id]));
+    linker.linkInModule(llvm::CloneModule(*link_context_data->struct_modules[tree_id]), llvm::Linker::LinkOnlyNeeded);
   }
-  linker.linkInModule(llvm::CloneModule(*link_context_data->runtime_module));
+  linker.linkInModule(llvm::CloneModule(*link_context_data->runtime_module), llvm::Linker::LinkOnlyNeeded);
   eliminate_unused_functions(mod.get(),
                              [&](std::string func_name) -> bool {
                                return offloaded_names.count(func_name);

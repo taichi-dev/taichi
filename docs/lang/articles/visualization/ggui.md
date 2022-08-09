@@ -181,7 +181,7 @@ scene.mesh(vertices, indices,
 index_offset  = user_defined_first_indices_index,
 index_count   = user_defined_index_count,
 # vertex_offset is set to 0 by default, and it is not necessary
-# to be passed by a value otherwise you must.
+# to assign vertex_offset a value that otherwise you must.
 vertex_offset = user_defined_vertex_offset)
 
 # usually used as below:

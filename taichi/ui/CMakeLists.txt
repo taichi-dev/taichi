@@ -27,6 +27,10 @@ target_include_directories(taichi_ui
 target_link_libraries(taichi_ui PRIVATE taichi_core)
 target_link_libraries(taichi_ui PRIVATE taichi_common)
 
+
+########################################################
+###                     GGUI                        ####
+########################################################
 if(TI_WITH_GGUI)
   # Dear ImGui
   add_definitions(-DIMGUI_IMPL_VULKAN_NO_PROTOTYPES)
@@ -51,9 +55,7 @@ if(TI_WITH_GGUI)
   target_include_directories(imgui PUBLIC ${PROJECT_SOURCE_DIR}/external/Vulkan-Headers/include)
 
   target_link_libraries(taichi_ui PRIVATE imgui)
-endif()
 
-#TODO Guard this with TI_WITH_VULKAN
-#     Now always build to align with taichi_ui
-add_subdirectory(backends/vulkan)
-target_link_libraries(taichi_ui PUBLIC taichi_ui_vulkan)
+  add_subdirectory(backends/vulkan)
+  target_link_libraries(taichi_ui PUBLIC taichi_ui_vulkan)
+endif()

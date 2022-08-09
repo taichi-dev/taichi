@@ -19,7 +19,7 @@ target_sources(taichi_ui_vulkan
     renderables/triangles.cpp
   )
 
-if(TI_WITH_GGUI AND NOT ANDROID)
+if(NOT ANDROID)
   target_sources(taichi_ui_vulkan PRIVATE window.cpp)
 endif()
 
@@ -40,10 +40,7 @@ target_include_directories(taichi_ui_vulkan
 
 target_link_libraries(taichi_ui_vulkan PRIVATE taichi_core)
 target_link_libraries(taichi_ui_vulkan PRIVATE taichi_common)
-
-if(TI_WITH_GGUI)
-  target_link_libraries(taichi_ui_vulkan PRIVATE imgui)
-endif()
+target_link_libraries(taichi_ui_vulkan PRIVATE imgui)
 
 if(TI_WITH_VULKAN)
   target_link_libraries(taichi_ui_vulkan PUBLIC vulkan_rhi)

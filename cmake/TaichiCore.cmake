@@ -373,9 +373,9 @@ foreach (source IN LISTS TAICHI_CORE_SOURCE)
     source_group("${source_path_msvc}" FILES "${source}")
 endforeach ()
 
-# TODO Use TI_WITH_UI/TI_WITH_GGUI to guard the compilation of this target.
+# TODO Use TI_WITH_UI to guard the compilation of this target.
 # This requires refactoring on the python/export_*.cpp as well as better
-# Error message on the Python side.
+# error message on the Python side.
 add_subdirectory(taichi/ui)
 target_link_libraries(taichi_ui PUBLIC ${CORE_LIBRARY_NAME})
 

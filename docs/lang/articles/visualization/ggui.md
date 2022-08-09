@@ -277,7 +277,7 @@ m_transforms = ti.Matrix.field(4, 4, dtype = ti.f32, shape = num_instance)
 #              0,            0,              0, 1
 ...
 
-# Here draw mesh instances (will draw from the 1st instance)
+# Draw mesh instances (from the 1st instance)
 scene.mesh_instance(vertices, indices, transforms = m_transforms, instance_offset = 1)
 ```
 4. Example of setting wireframe mode

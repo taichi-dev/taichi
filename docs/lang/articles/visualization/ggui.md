@@ -155,14 +155,14 @@ while window.running:
 ```python
 scene.lines(vertices, width, indices, color, per_vertex_color, vertex_offset, vertex_count, index_offset, index_count)
 
-scene.mesh(vertices, indices, normals, color, per_vertex_color, vertex_offset, vertex_count, index_offset, index_count, show_wareframe)
+scene.mesh(vertices, indices, normals, color, per_vertex_color, vertex_offset, vertex_count, index_offset, index_count, show_wireframe)
 
 scene.particles(vertices, radius, color, per_vertex_color, index_offset, index_count)
 
-scene.mesh_instance(vertices, indices, normals, color, per_vertex_color, vertex_offset, vertex_count, index_offset, index_count, show_wareframe)
+scene.mesh_instance(vertices, indices, normals, color, per_vertex_color, vertex_offset, vertex_count, index_offset, index_count, show_wireframe)
 ```
 
-The additional arguments `vertex_offset`, `vertex_count`, `index_offset` and `index_count` control the visible part of the particles and mesh. For the `mesh()` and `mesh_instance()` methods, set whether to show wareframe mode through setting `show_wareframe`.
+The additional arguments `vertex_offset`, `vertex_count`, `index_offset` and `index_count` control the visible part of the particles and mesh. For the `mesh()` and `mesh_instance()` methods, set whether to show wireframe mode through setting `show_wireframe`.
 
 :::example
 
@@ -280,7 +280,7 @@ m_transforms = ti.Matrix.field(4, 4, dtype = ti.f32, shape = num_instance)
 # Here draw mesh instances (will draw from the 1st instance)
 scene.mesh_instance(vertices, indices, transforms = m_transforms, instance_offset = 1)
 ```
-4. Example of setting wareframe mode
+4. Example of setting wireframe mode
 ```python
 
 window = ti.ui.Window("Display Mesh", (1024, 1024), vsync=True)
@@ -300,8 +300,8 @@ def show_options():
 while window.running:
 
     ...
-    # if to show wareframe
-    scene.mesh_instance(vertices, indices, instance_count = 100 , show_wareframe = True)
+    # if to show wireframe
+    scene.mesh_instance(vertices, indices, instance_count = 100 , show_wireframe = True)
 
     canvas.scene(scene)
     show_options()
@@ -311,7 +311,15 @@ while window.running:
 
 
 :::note
-For `mesh()`, `lines()` and `mesh_instance()`, if `indices` is not provided, use `vertex_offset` and `vertex_count` to control; otherwise, use `index_count`, `index_offset` and `vertex_offset` instead.
+
+If `indices` is not provided, consider using like this:
+```python
+scene.mesh(vertices, normals, color, per_vertex_color, vertex_offset, vertex_count, wireframe)
+```
+If `indices` is provided, consider using like this:
+```python
+scene.mesh(vertices, indices, normals, color, per_vertex_color, vertex_offset, index_offset, index_count, wireframe)
+```
 
 
 

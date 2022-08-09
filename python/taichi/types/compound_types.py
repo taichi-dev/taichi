@@ -46,7 +46,7 @@ def vector(n, dtype):
         >>> vec3 = ti.types.vector(3, ti.f32)  # 3d vector type
         >>> v = vec3([1., 2., 3.])  # an instance of this type
     """
-    return taichi.lang.matrix.MatrixType(n, 1, dtype)
+    return taichi.lang.matrix.VectorType(n, dtype)
 
 
 def struct(**kwargs):

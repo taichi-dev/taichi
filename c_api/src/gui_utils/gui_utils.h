@@ -1,3 +1,5 @@
+#pragma once
+
 #include "taichi/taichi_core.h"
 
 // handle.gui

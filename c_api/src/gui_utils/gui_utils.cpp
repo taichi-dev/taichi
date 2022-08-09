@@ -1,6 +1,7 @@
 #include "taichi/common/logging.h"
 
 #include "c_api/src/gui_utils/gui_utils.h"
+#include "c_api/src/gui_utils/gui_helper.h"
 
 TiGui ti_create_gui(TiArch arch,
                     const char *shader_path,

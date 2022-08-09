@@ -10,20 +10,13 @@ add_library(${TAICHI_GUI_API_NAME} SHARED ${GUI_API_SOURCE})
 target_link_libraries(${TAICHI_GUI_API_NAME} PRIVATE taichi_core)
 target_link_libraries(${TAICHI_GUI_API_NAME} PRIVATE taichi_c_api)
 
-set(GUI_API_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")
+set(GUI_API_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/build")
 set_target_properties(${TAICHI_GUI_API_NAME} PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY ${GUI_API_OUTPUT_DIRECTORY}
     ARCHIVE_OUTPUT_DIRECTORY ${GUI_API_OUTPUT_DIRECTORY})
 
 target_include_directories(${TAICHI_GUI_API_NAME}
-    PUBLIC
-        # Used when building the library:
-        $<BUILD_INTERFACE:${taichi_c_api_BINARY_DIR}/c_api/include>
-        $<BUILD_INTERFACE:${taichi_c_api_SOURCE_DIR}/c_api/include>
-        # Used when installing the library:
-        $<INSTALL_INTERFACE:/c_api/include>
     PRIVATE
-        # Used only when building the library:
         ${PROJECT_SOURCE_DIR}
         ${PROJECT_SOURCE_DIR}/c_api/include
         ${CMAKE_CURRENT_SOURCE_DIR}/external/spdlog/include
@@ -31,4 +24,9 @@ target_include_directories(${TAICHI_GUI_API_NAME}
         ${CMAKE_CURRENT_SOURCE_DIR}/external/VulkanMemoryAllocator/include
         ${CMAKE_CURRENT_SOURCE_DIR}/external/SPIRV-Tools/include
         ${CMAKE_CURRENT_SOURCE_DIR}/external/volk
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/glfw/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/glm
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/eigen
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/imgui
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/imgui/backends
     )

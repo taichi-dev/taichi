@@ -1378,6 +1378,8 @@ class BackupSSA : public BasicStmtVisitor {
           // Just create another AdStackLoadTopStmt
           stmt->set_operand(i, stmt->insert_before_me(op->clone()));
         } else if (op->is<AdStackAllocaStmt>()) {
+          // Backup AdStackAllocaStmt because it should not be local stored and
+          // local loaded
           auto stack_alloca = op->as<AdStackAllocaStmt>();
           if (backup_alloca.find(op) == backup_alloca.end()) {
             auto backup_stack_alloca = Stmt::make<AdStackAllocaStmt>(
@@ -1385,6 +1387,8 @@ class BackupSSA : public BasicStmtVisitor {
             auto backup_stack_alloca_ptr = backup_stack_alloca.get();
             independent_block->insert(std::move(backup_stack_alloca), 0);
             backup_alloca[op] = backup_stack_alloca_ptr;
+            // Replace usages of all blocks i.e., the entry point for the
+            // replace is the top level block
             irpass::replace_all_usages_with(leaf_to_root.back(), op,
                                             backup_stack_alloca_ptr);
           }

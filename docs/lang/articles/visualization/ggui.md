@@ -195,7 +195,7 @@ scene.mesh(vertices,
 vertex_offset = user_defined_first_vertex_index,
 vertex_count  = user_defined_vertex_count)
 ```
-2. Example of drawing part of lines
+2. An example of drawing part of lines
 ```python
 import taichi as ti
 

@@ -30,6 +30,9 @@ target_include_directories(taichi_ui_vulkan
     ${PROJECT_SOURCE_DIR}/external/eigen
     ${PROJECT_SOURCE_DIR}/external/volk
     ${PROJECT_SOURCE_DIR}/external/VulkanMemoryAllocator/include
+    ${PROJECT_SOURCE_DIR}/external/imgui
+    ${PROJECT_SOURCE_DIR}/external/imgui/backends
+    ${PROJECT_SOURCE_DIR}/external/Vulkan-Headers/include
     ${LLVM_INCLUDE_DIRS}
   PUBLIC
     ${PROJECT_SOURCE_DIR}/external/glfw/include
@@ -37,7 +40,10 @@ target_include_directories(taichi_ui_vulkan
 
 target_link_libraries(taichi_ui_vulkan PRIVATE taichi_core)
 target_link_libraries(taichi_ui_vulkan PRIVATE taichi_common)
-target_link_libraries(taichi_ui_vulkan PRIVATE imgui)
+
+if(TI_WITH_GGUI)
+  target_link_libraries(taichi_ui_vulkan PRIVATE imgui)
+endif()
 
 if(TI_WITH_VULKAN)
   target_link_libraries(taichi_ui_vulkan PUBLIC vulkan_rhi)

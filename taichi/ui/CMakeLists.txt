@@ -23,34 +23,36 @@ target_include_directories(taichi_ui
     ${PROJECT_SOURCE_DIR}/external/glm
   )
 
+target_link_libraries(taichi_ui PRIVATE taichi_core)
+target_link_libraries(taichi_ui PRIVATE taichi_common)
+
+if(TI_WITH_GGUI)
+  # Dear ImGui
+  add_definitions(-DIMGUI_IMPL_VULKAN_NO_PROTOTYPES)
+  set(IMGUI_DIR ${PROJECT_SOURCE_DIR}/external/imgui)
+  file(GLOB TAICHI_IMGUI_SOURCE
+    ${IMGUI_DIR}/backends/imgui_impl_vulkan.cpp
+    ${IMGUI_DIR}/imgui.cpp
+    ${IMGUI_DIR}/imgui_draw.cpp
+    ${IMGUI_DIR}/imgui_tables.cpp
+    ${IMGUI_DIR}/imgui_widgets.cpp
+  )
+  if(ANDROID)
+      list(APPEND TAICHI_IMGUI_SOURCE ${IMGUI_DIR}/backends/imgui_impl_android.cpp)
+      add_library(imgui ${TAICHI_IMGUI_SOURCE})
+  else()
+      list(APPEND TAICHI_IMGUI_SOURCE ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp)
+      add_library(imgui ${TAICHI_IMGUI_SOURCE})
+      target_include_directories(imgui PRIVATE ${PROJECT_SOURCE_DIR}/external/glfw/include)
+  endif()
+
+  target_include_directories(imgui PUBLIC ${IMGUI_DIR} ${IMGUI_DIR}/backends ..)
+  target_include_directories(imgui PUBLIC ${PROJECT_SOURCE_DIR}/external/Vulkan-Headers/include)
+
+  target_link_libraries(taichi_ui PRIVATE imgui)
+endif()
+
 #TODO Guard this with TI_WITH_VULKAN
 #     Now always build to align with taichi_ui
 add_subdirectory(backends/vulkan)
 target_link_libraries(taichi_ui PUBLIC taichi_ui_vulkan)
-
-target_link_libraries(taichi_ui PRIVATE taichi_core)
-target_link_libraries(taichi_ui PRIVATE taichi_common)
-
-# Dear ImGui
-add_definitions(-DIMGUI_IMPL_VULKAN_NO_PROTOTYPES)
-set(IMGUI_DIR ${PROJECT_SOURCE_DIR}/external/imgui)
-file(GLOB TAICHI_IMGUI_SOURCE
-  ${IMGUI_DIR}/backends/imgui_impl_vulkan.cpp
-  ${IMGUI_DIR}/imgui.cpp
-  ${IMGUI_DIR}/imgui_draw.cpp
-  ${IMGUI_DIR}/imgui_tables.cpp
-  ${IMGUI_DIR}/imgui_widgets.cpp
-)
-if(ANDROID)
-    list(APPEND TAICHI_IMGUI_SOURCE ${IMGUI_DIR}/backends/imgui_impl_android.cpp)
-    add_library(imgui ${TAICHI_IMGUI_SOURCE})
-else()
-    list(APPEND TAICHI_IMGUI_SOURCE ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp)
-    add_library(imgui ${TAICHI_IMGUI_SOURCE})
-    target_include_directories(imgui PRIVATE ${PROJECT_SOURCE_DIR}/external/glfw/include)
-endif()
-
-target_include_directories(imgui PUBLIC ${IMGUI_DIR} ${IMGUI_DIR}/backends ..)
-target_include_directories(imgui PUBLIC ${PROJECT_SOURCE_DIR}/external/Vulkan-Headers/include)
-
-target_link_libraries(taichi_ui PRIVATE imgui)

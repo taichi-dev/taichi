@@ -157,18 +157,27 @@ bool LlvmOfflineCacheFileReader::get_kernel_cache(
   res.kernel_key = key;
   res.args = kernel_data.args;
 
-  // Verify the `res: LlvmOfflineCache::FieldCacheData`
-  const auto &compiled_data = res.compiled_data_list;
-  for (const auto &e : compiled_data) {
-    const auto &tasks = e.tasks;
+  // Verify the `res: LlvmOfflineCache::KernelCacheData`
+  bool verified_all = true;
+  const auto &compiled_data_list = res.compiled_data_list;
+  for (std::size_t i = 0; i < compiled_data_list.size(); ++i) {
+    const auto &data  = compiled_data_list[i];
+    const auto &tasks = data.tasks;
+    bool verified = true;
     for (const auto &t : tasks) {
-      if (e.module->getFunction(t.name) == nullptr) {
-        return false;
+      if (data.module->getFunction(t.name) == nullptr) {
+        verified = false;
+        verified_all = false;
+      }
+    }
+    if (!verified) {
+      for (const auto &f : get_possible_llvm_cache_filename_by_key(key + "." + std::to_string(i))) {
+        taichi::remove(taichi::join_path(path_, f));
       }
     }
   }
 
-  return true;
+  return verified_all;
 }
 
 std::unique_ptr<llvm::Module> LlvmOfflineCacheFileReader::load_module(

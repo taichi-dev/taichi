@@ -40,7 +40,6 @@ class TaichiLLVMContext {
   std::unique_ptr<JITSession> jit{nullptr};
   // main_thread is defined to be the thread that runs the initializer
   JITModule *runtime_jit_module{nullptr};
-  JITModule *main_jit_module{nullptr};
 
   std::unique_ptr<ThreadLocalData> link_context_data{nullptr};
 

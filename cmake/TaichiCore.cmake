@@ -8,6 +8,7 @@ option(TI_WITH_OPENGL "Build with the OpenGL backend" ON)
 option(TI_WITH_CC "Build with the C backend" ON)
 option(TI_WITH_VULKAN "Build with the Vulkan backend" OFF)
 option(TI_WITH_DX11 "Build with the DX11 backend" OFF)
+option(TI_WITH_GGUI "Build with GGUI" OFF)
 
 # Force symbols to be 'hidden' by default so nothing is exported from the Taichi
 # library including the third-party dependencies.
@@ -60,7 +61,6 @@ if (WIN32)
     endif()
 endif()
 
-set(TI_WITH_GGUI OFF)
 if(TI_WITH_VULKAN)
     set(TI_WITH_GGUI ON)
 endif()
@@ -76,9 +76,7 @@ if(NOT TI_WITH_LLVM)
 endif()
 
 file(GLOB TAICHI_CORE_SOURCE
-    "taichi/analysis/*.cpp" "taichi/analysis/*.h" #IR
-    "taichi/aot/*.cpp" "taichi/aot/*.h" #RT?
-    "taichi/codegen/*.cpp" "taichi/codegen/*.h" #CODEGEN
+    "taichi/analysis/*.cpp" "taichi/analysis/*.h"
     "taichi/ir/*"
     "taichi/jit/*"
     "taichi/math/*"
@@ -86,30 +84,12 @@ file(GLOB TAICHI_CORE_SOURCE
     "taichi/struct/*"
     "taichi/system/*"
     "taichi/transforms/*"
-    "taichi/gui/*"
+    "taichi/aot/*.cpp" "taichi/aot/*.h"
     "taichi/platform/cuda/*" "taichi/platform/mac/*" "taichi/platform/windows/*"
+    "taichi/codegen/*.cpp" "taichi/codegen/*.h"
     "taichi/runtime/*.h" "taichi/runtime/*.cpp"
     "taichi/rhi/*.h" "taichi/rhi/*.cpp"
 )
-file(GLOB TAICHI_GGUI_SOURCE
-    "taichi/ui/*.cpp"  "taichi/ui/*/*.cpp" "taichi/ui/*/*/*.cpp"
-    "taichi/ui/*/*/*/*.cpp" "taichi/ui/*/*/*/*/*.cpp" "taichi/ui/*.h"
-    "taichi/ui/*/*.h" "taichi/ui/*/*/*.h" "taichi/ui/*/*/*/*.h" "taichi/ui/*/*/*/*/*.h"
-)
-file(GLOB TAICHI_GGUI_GLFW_SOURCE
-  "taichi/ui/common/window_base.cpp"
-  "taichi/ui/backends/vulkan/window.cpp"
-)
-
-if(TI_WITH_GGUI)
-    add_definitions(-DTI_WITH_GGUI)
-
-    # Remove GLFW dependencies from the build for Android
-    if(ANDROID)
-        list(REMOVE_ITEM TAICHI_GGUI_SOURCE ${TAICHI_GGUI_GLFW_SOURCE})
-    endif()
-    list(APPEND TAICHI_CORE_SOURCE ${TAICHI_GGUI_SOURCE})
-endif()
 
 if(TI_WITH_LLVM)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_LLVM")
@@ -136,7 +116,6 @@ if (TI_WITH_CC)
   file(GLOB TAICHI_CC_SOURCE "taichi/codegen/cc/*.h" "taichi/codegen/cc/*.cpp")
   list(APPEND TAICHI_CORE_SOURCE ${TAICHI_CC_SOURCE})
 endif()
-
 
 # This compiles all the libraries with -fPIC, which is critical to link a static
 # library into a shared lib.
@@ -394,19 +373,24 @@ foreach (source IN LISTS TAICHI_CORE_SOURCE)
     source_group("${source_path_msvc}" FILES "${source}")
 endforeach ()
 
-message("PYTHON_LIBRARIES: " ${PYTHON_LIBRARIES})
+# TODO Use TI_WITH_UI to guard the compilation of this target.
+# This requires refactoring on the python/export_*.cpp as well as better
+# error message on the Python side.
+add_subdirectory(taichi/ui)
+target_link_libraries(taichi_ui PUBLIC ${CORE_LIBRARY_NAME})
 
 if(TI_WITH_PYTHON)
+    message("PYTHON_LIBRARIES: " ${PYTHON_LIBRARIES})
     set(CORE_WITH_PYBIND_LIBRARY_NAME taichi_python)
     # Cannot compile Python source code with Android, but TI_EXPORT_CORE should be set and
     # Android should only use the isolated library ignoring those source code.
     if (NOT ANDROID)
-	# NO_EXTRAS is required here to avoid llvm symbol error during build
+        # NO_EXTRAS is required here to avoid llvm symbol error during build
         file(GLOB TAICHI_PYBIND_SOURCE
             "taichi/python/*.cpp"
             "taichi/python/*.h"
         )
-	pybind11_add_module(${CORE_WITH_PYBIND_LIBRARY_NAME} NO_EXTRAS ${TAICHI_PYBIND_SOURCE})
+        pybind11_add_module(${CORE_WITH_PYBIND_LIBRARY_NAME} NO_EXTRAS ${TAICHI_PYBIND_SOURCE})
     else()
         add_library(${CORE_WITH_PYBIND_LIBRARY_NAME} SHARED)
     endif ()
@@ -415,8 +399,13 @@ if(TI_WITH_PYTHON)
     if (LINUX)
         target_link_options(${CORE_WITH_PYBIND_LIBRARY_NAME} PUBLIC -Wl,--exclude-libs=ALL)
     endif()
-    # It is actually possible to link with an OBJECT library
-    # https://cmake.org/cmake/help/v3.13/command/target_link_libraries.html?highlight=target_link_libraries#linking-object-libraries
+
+    if(TI_WITH_GGUI)
+        target_compile_definitions(${CORE_WITH_PYBIND_LIBRARY_NAME} PRIVATE -DTI_WITH_GGUI)
+        target_link_libraries(${CORE_WITH_PYBIND_LIBRARY_NAME} PRIVATE taichi_ui_vulkan)
+    endif()
+
+    target_link_libraries(${CORE_WITH_PYBIND_LIBRARY_NAME} PRIVATE taichi_ui)
     target_link_libraries(${CORE_WITH_PYBIND_LIBRARY_NAME} PRIVATE ${CORE_LIBRARY_NAME})
 
     target_include_directories(${CORE_WITH_PYBIND_LIBRARY_NAME}
@@ -455,35 +444,6 @@ if(TI_WITH_PYTHON)
     install(TARGETS ${CORE_WITH_PYBIND_LIBRARY_NAME}
             RUNTIME DESTINATION ${INSTALL_LIB_DIR}/core
             LIBRARY DESTINATION ${INSTALL_LIB_DIR}/core)
-endif()
-
-if(TI_WITH_GGUI)
-    # PUBLIC as required by python module
-    target_include_directories(${CORE_LIBRARY_NAME} PUBLIC external/glm)
-
-    # Dear ImGui
-    add_definitions(-DIMGUI_IMPL_VULKAN_NO_PROTOTYPES)
-    set(IMGUI_DIR external/imgui)
-    file(GLOB TAICHI_IMGUI_SOURCE
-      ${IMGUI_DIR}/backends/imgui_impl_vulkan.cpp
-      ${IMGUI_DIR}/imgui.cpp
-      ${IMGUI_DIR}/imgui_draw.cpp
-      ${IMGUI_DIR}/imgui_tables.cpp
-      ${IMGUI_DIR}/imgui_widgets.cpp
-    )
-
-    if(ANDROID)
-        list(APPEND TAICHI_IMGUI_SOURCE ${IMGUI_DIR}/backends/imgui_impl_android.cpp)
-        add_library(imgui ${TAICHI_IMGUI_SOURCE})
-    else()
-        list(APPEND TAICHI_IMGUI_SOURCE ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp)
-        add_library(imgui ${TAICHI_IMGUI_SOURCE})
-        target_include_directories(imgui PRIVATE external/glfw/include)
-    endif()
-
-    target_include_directories(imgui PUBLIC ${IMGUI_DIR} ${IMGUI_DIR}/backends ..)
-    target_include_directories(imgui PRIVATE external/Vulkan-Headers/include)
-    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE imgui)
 endif()
 
 if (NOT APPLE)

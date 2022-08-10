@@ -35,6 +35,23 @@ def test_ndarray_int():
 
 
 @test_utils.test(arch=ti.vulkan)
+def test_ndarray_1dim_scalar():
+    @ti.kernel
+    def ti_test_debug(arr: ti.types.ndarray(field_dim=1)):
+        arr[0] = 0
+
+    debug_arr = ti.ndarray(ti.i32, shape=5)
+    sym_debug_arr = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
+                                 'debug_arr',
+                                 ti.i32,
+                                 field_dim=1,
+                                 element_shape=(1, ))
+
+    g_builder = ti.graph.GraphBuilder()
+    g_builder.dispatch(ti_test_debug, sym_debug_arr)
+
+
+@test_utils.test(arch=ti.vulkan)
 def test_ndarray_0dim():
     @ti.kernel
     def test(pos: ti.types.ndarray(dtype=ti.i32, field_dim=0)):

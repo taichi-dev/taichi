@@ -64,6 +64,8 @@ __capi_aot_test_cases = {
     [os.path.join('cpp', 'aot', 'sph_aot.py'), "--arch=vulkan"],
     "CapiSphTest.Cuda":
     [os.path.join('cpp', 'aot', 'sph_aot.py'), "--arch=cuda"],
+    "CapiCometTest.Cuda":
+    [os.path.join('cpp', 'aot', 'comet_aot.py'), "--arch=cuda"],
     "CapiTaichiSparseTest.Cuda":
     [os.path.join('cpp', 'aot', 'llvm', 'taichi_sparse_test.py'), ""],
     "CapiAotTest.CpuField":

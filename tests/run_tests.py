@@ -229,7 +229,7 @@ def test():
     parser.add_argument('-T',
                         '--timeout',
                         required=False,
-                        default=3000,
+                        default=600,
                         type=int,
                         dest='timeout',
                         help='Per test timeout (only apply to python tests)')

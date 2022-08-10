@@ -152,12 +152,13 @@ void SetImage::init_set_image(AppContext *app_context,
 void SetImage::create_texture() {
   size_t image_size = width * height * data_type_size(texture_dtype_) * 4;
 
-  ImageParams params{};
+  ImageParams params;
   params.dimension = ImageDimension::d2D;
   params.format = BufferFormat::rgba8;
   if (texture_dtype_ == taichi::lang::PrimitiveType::f32) {
     params.format = BufferFormat::rgba32f;
   }
+  params.initial_layout = ImageLayout::shader_read;
   // these are flipped because taichi is y-major and vulkan is x-major
   params.x = height;
   params.y = width;

@@ -571,13 +571,14 @@ def main():
         show_window = False
     window = ti.ui.Window("Diff SPH", screen_res, show_window=show_window)
     scene = ti.ui.Scene()
-    camera = ti.ui.make_camera()
+    camera = ti.ui.Camera()
     camera.position(0.5, 1.0, 2.0)
     camera.up(0.0, 1.0, 0.0)
     camera.lookat(0.5, 0.5, 0.5)
     camera.fov(70)
     scene.set_camera(camera)
     canvas = window.get_canvas()
+    gui = window.get_gui()
     movement_speed = 0.02
 
     if TRAIN:
@@ -639,7 +640,7 @@ def main():
                         canvas.scene(scene)
                         if TRAIN_OUTPUT_IMG:
                             if i % substeps == 0:
-                                window.write_image(
+                                window.save_image(
                                     f'output_img/{opt_iter}/{i:04}.png')
                         if TRAIN_VISUAL_SHOW:
                             window.show()
@@ -675,17 +676,16 @@ def main():
         cnt = 0
         paused = ti.field(int, shape=())
         while window.running:
-            window.GUI.begin("Diff SPH", 0.05, 0.05, 0.2, 0.2)
-            window.GUI.text("Space: pause")
-            window.GUI.text("Set target positions:")
+            with gui.sub_window("Diff SPH", 0.05, 0.05, 0.2, 0.2) as w:
+                w.text("Space: pause")
+                w.text("Set target positions:")
 
-            target_centers[current_data_offset][0] = window.GUI.slider_float(
-                "X", target_centers[current_data_offset][0], 0.05, 0.45)
-            target_centers[current_data_offset][1] = window.GUI.slider_float(
-                "Y", target_centers[current_data_offset][1], 0.4, 1.0)
-            target_centers[current_data_offset][2] = window.GUI.slider_float(
-                "Z", target_centers[current_data_offset][2], 0.05, 0.45)
-            window.GUI.end()
+                target_centers[current_data_offset][0] = w.slider_float(
+                    "X", target_centers[current_data_offset][0], 0.05, 0.45)
+                target_centers[current_data_offset][1] = w.slider_float(
+                    "Y", target_centers[current_data_offset][1], 0.4, 1.0)
+                target_centers[current_data_offset][2] = w.slider_float(
+                    "Z", target_centers[current_data_offset][2], 0.05, 0.45)
 
             if not paused[None]:
                 fill_input_states(current_data_offset)
@@ -734,7 +734,7 @@ def main():
             if INFER_OUTPUT_IMG:
                 if cnt % 2 == 0:
                     os.makedirs("demo_output_interactive/", exist_ok=True)
-                    window.write_image(f'demo_output_interactive/{cnt:04}.png')
+                    window.save_image(f'demo_output_interactive/{cnt:04}.png')
             window.show()
 
 

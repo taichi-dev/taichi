@@ -25,7 +25,7 @@ class Canvas:
         """Set the content of this canvas to an `img`.
 
         Args:
-            img (numpy.ndarray, :class:`~taichi.MatrixField`, :class:`~taichi.Field`): \
+            img (numpy.ndarray, :class:`~taichi.MatrixField`, :class:`~taichi.Field`, :class:`~taichi.Texture`): \
                 the image to be shown.
         """
         staging_img = to_rgba8(img)

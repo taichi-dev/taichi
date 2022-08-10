@@ -1,5 +1,4 @@
-#include "taichi/ui/common/field_info.h"
-#include "taichi/program/program.h"
+#include "taichi/program/field_info.h"
 
 namespace taichi {
 

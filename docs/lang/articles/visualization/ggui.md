@@ -123,12 +123,12 @@ canvas.scene(scene)
 The design of GGUI's GUI components follows the [Dear ImGui](https://github.com/ocornut/imgui) APIs.
 
 ```python
-window.GUI.begin(name, x, y, width, height)
-window.GUI.text(text)
-is_clicked = window.GUI.button(name)
-new_value = window.GUI.slider_float(name, old_value, min_value, max_value)
-new_color = window.GUI.color_edit_3(name, old_color)
-window.GUI.end()
+gui = window.get_gui()
+with gui.sub_window(name, x, y, width, height):
+    gui.text(text)
+    is_clicked = gui.button(name)
+    new_value = gui.slider_float(name, old_value, min_value, max_value)
+    new_color = gui.color_edit_3(name, old_color)
 ```
 
 ## Show a window

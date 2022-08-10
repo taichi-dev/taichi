@@ -273,15 +273,16 @@ def test_set_image():
 @test_utils.test(arch=supported_archs)
 def test_imgui():
     window = ti.ui.Window('test', (640, 480), show_window=False)
+    gui = window.get_gui()
 
     def render():
-        with window.GUI.sub_window("window 0", 0.1, 0.1, 0.8, 0.2) as w:
+        with gui.sub_window("window 0", 0.1, 0.1, 0.8, 0.2) as w:
             w.text("Hello Taichi!")
             w.text("Hello Again!")
-        with window.GUI.sub_window("window 1", 0.1, 0.4, 0.8, 0.2) as w:
+        with gui.sub_window("window 1", 0.1, 0.4, 0.8, 0.2) as w:
             w.button("Press to unlease creativity")
             w.slider_float('creativity level', 100.0, 0.0, 100.0)
-        with window.GUI.sub_window("window 2", 0.1, 0.7, 0.8, 0.2) as w:
+        with gui.sub_window("window 2", 0.1, 0.7, 0.8, 0.2) as w:
             w.color_edit_3('Heyy', (0, 0, 1))
 
     for _ in range(RENDER_REPEAT):

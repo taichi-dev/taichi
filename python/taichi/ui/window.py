@@ -112,7 +112,13 @@ class Window:
 
     @property
     def GUI(self):
-        """Returns a IMGUI handle. See :class`~taichi.ui.ui.Gui` """
+        """Returns a IMGUI handle. See :class`~taichi.ui.ui.Gui` This is an
+        deprecated interface, please use `~taichi.ui.Window.get_gui` instead.
+        """
+        return self.get_gui()
+
+    def get_gui(self):
+        """Returns a IMGUI handle. See :class`~taichi.ui.ui.Gui`"""
         return Gui(self.window.GUI())
 
     def get_cursor_pos(self):

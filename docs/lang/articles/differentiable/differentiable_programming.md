@@ -488,7 +488,7 @@ The `dual` here indicates `dual number`in math. The reason for using the name is
 The `ti.ad.FwdMode` automatically clears the dual field of `loss`.
 :::
 
-ti.ad.FwdMode support multiple inputs and outputs. The param can be a N-D field and the loss can be an individual or a list of N-D fields. The argument `seed` is the 'vector' in Jacobian-vector product, which used to control the parameter that is computed derivative with respect to. Here we show three cases with multiple inputs and outputs. With seed=[1.0, 0.0] or seed=[0.0, 1.0]  , we can compute the derivatives solely with respect to x_0 or x_1.
+ti.ad.FwdMode support multiple inputs and outputs. The param can be a N-D field and the loss can be an individual or a list of N-D fields. The argument `seed` is the 'vector' in Jacobian-vector product, which used to control the parameter that is computed derivative with respect to. Here we show three cases with multiple inputs and outputs. With `seed=[1.0, 0.0] `or `seed=[0.0, 1.0]`  , we can compute the derivatives solely with respect to `x_0` or `x_1`.
 
 ```python
 import taichi as ti
@@ -522,5 +522,5 @@ The `seed` argument is required if the `param` is not a scalar field.
 :::
 
 :::tip
-Similar to reverse mode autodiff, Taichi provides an API ti.root.lazy_dual() that automatically places the dual fields following the layout of their primal fields.
+Similar to reverse mode autodiff, Taichi provides an API `ti.root.lazy_dual()` that automatically places the dual fields following the layout of their primal fields.
 :::

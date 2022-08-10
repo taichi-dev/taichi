@@ -157,7 +157,7 @@ def test_geometry_3d():
     window = ti.ui.Window('test', (640, 480), show_window=False)
     canvas = window.get_canvas()
     scene = ti.ui.Scene()
-    camera = ti.ui.make_camera()
+    camera = ti.ui.Camera()
     camera.position(0.0, 0.0, 1.5)
     camera.lookat(0.0, 0.0, 0)
     scene.set_camera(camera)
@@ -302,7 +302,7 @@ def test_exit_without_showing():
 @test_utils.test(arch=supported_archs)
 def test_get_camera_view_and_projection_matrix():
     scene = ti.ui.Scene()
-    camera = ti.ui.make_camera()
+    camera = ti.ui.Camera()
     camera.position(0, 0, 3)
     camera.lookat(0, 0, 0)
 

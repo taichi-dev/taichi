@@ -248,7 +248,7 @@ window = ti.ui.Window("Real MPM 3D", res, vsync=True)
 
 canvas = window.get_canvas()
 scene = ti.ui.Scene()
-camera = ti.ui.make_camera()
+camera = ti.ui.Camera()
 camera.position(0.5, 1.0, 1.95)
 camera.lookat(0.5, 0.3, 0.5)
 camera.fov(55)

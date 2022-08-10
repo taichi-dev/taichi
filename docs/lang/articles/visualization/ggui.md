@@ -71,7 +71,7 @@ scene = ti.ui.Scene()
 ### Configure camera
 
 ```python
-camera = ti.ui.make_camera()
+camera = ti.ui.Camera()
 camera.position(pos)
 camera.lookat(pos)
 camera.up(dir)

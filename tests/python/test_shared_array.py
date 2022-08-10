@@ -4,7 +4,7 @@ import taichi as ti
 from tests import test_utils
 
 
-@test_utils.test(arch=[ti.cuda, ti.vulkan], vk_api_version="1.0")
+@test_utils.test(arch=[ti.cuda, ti.vulkan])
 def test_shared_array_nested_loop():
     block_dim = 128
     nBlocks = 64

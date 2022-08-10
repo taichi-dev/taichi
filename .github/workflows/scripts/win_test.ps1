@@ -4,6 +4,7 @@ $env:PYTHONUNBUFFERED = 1
 $env:TI_CI = 1
 $env:TI_OFFLINE_CACHE_FILE_PATH = Join-Path -Path $pwd -ChildPath ".cache\taichi"
 if (Test-Path $env:TI_OFFLINE_CACHE_FILE_PATH) {
+    Write-Host "Deleting old offline cache"
     Remove-Item -Path $env:TI_OFFLINE_CACHE_FILE_PATH -Force -Recurse
 }
 

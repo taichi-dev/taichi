@@ -158,7 +158,7 @@ for illustration:
 Q = ti.Vector.field(4, dtype=ti.f32, shape=(N, N))
 ```
 
-An element of `Q` now occupies `4 x 32 = 128 bits`. If you can make it fit in
+An element of `Q` now occupies 4 x 32 = 128 bits. If you can make it fit in
 64 bits, then the memory usage can get halved. A direct and first attempt is to
 use quantized floating-point numbers with a shared exponent:
 
@@ -214,8 +214,8 @@ N = 512
 M = 32
 x = ti.field(dtype=u1)
 y = ti.field(dtype=u1)
-ti.root.dense(ti.i, N / M).quant_array(ti.i, M, max_num_bits=M).place(x)
-ti.root.dense(ti.i, N / M).quant_array(ti.i, M, max_num_bits=M).place(y)
+ti.root.dense(ti.i, N // M).quant_array(ti.i, M, max_num_bits=M).place(x)
+ti.root.dense(ti.i, N // M).quant_array(ti.i, M, max_num_bits=M).place(y)
 
 @ti.kernel
 def assign_vectorized():
@@ -234,12 +234,12 @@ so you can dig into details there.
 
 ### [Game of Life](https://github.com/taichi-dev/quantaichi/tree/main/gol)
 
-![image](https://github.com/taichi-dev/quantaichi/blob/main/pics/teaser_gol.jpg)
+![image](https://github.com/taichi-dev/quantaichi/raw/main/pics/teaser_gol.jpg)
 
 ### [Eulerian Fluid](https://github.com/taichi-dev/quantaichi/tree/main/eulerian_fluid)
 
-![image](https://github.com/taichi-dev/quantaichi/blob/main/pics/smoke_result.png)
+![image](https://github.com/taichi-dev/quantaichi/raw/main/pics/smoke_result.png)
 
 ### [MLS-MPM](https://github.com/taichi-dev/taichi_elements/blob/master/demo/demo_quantized_simulation_letters.py)
 
-![image](https://github.com/taichi-dev/quantaichi/blob/main/pics/mpm-235.jpg)
+![image](https://github.com/taichi-dev/quantaichi/raw/main/pics/mpm-235.jpg)

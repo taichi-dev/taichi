@@ -15,6 +15,11 @@ function build-and-smoke-test-android-aot-demo {
     export TAICHI_REPO_DIR=$(pwd)/taichi
 
     git clone https://github.com/taichi-dev/taichi-aot-demo
+
+    # Normally we checkout the master's commit Id: https://github.com/taichi-dev/taichi-aot-demo/commit/master
+    # As for why we need this explicit commit Id here, refer to: https://docs.taichi-lang.org/docs/master/contributor_guide#handle-special-ci-failures
+    cd taichi-aot-demo && git checkout c3348e1e3fc9a2bdef70b947c24510f2da29ea13 && cd -
+
     APP_ROOT=taichi-aot-demo/implicit_fem
     ANDROID_APP_ROOT=$APP_ROOT/android
     JNI_PATH=$ANDROID_APP_ROOT/app/src/main/jniLibs/arm64-v8a/

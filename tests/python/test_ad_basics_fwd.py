@@ -103,3 +103,23 @@ def test_handle_shape_accessed_by_none():
 
     with ti.ad.FwdMode(loss=d, param=c):
         func()
+
+
+@test_utils.test()
+def test_clear_all_dual_field():
+    x = ti.field(float, shape=(), needs_dual=True)
+    y = ti.field(float, shape=(), needs_dual=True)
+    loss = ti.field(float, shape=(), needs_dual=True)
+
+    x[None] = 2.0
+    y[None] = 3.0
+
+    @ti.kernel
+    def clear_dual_test():
+        y[None] = x[None]**2
+        loss[None] += y[None]
+
+    for _ in range(5):
+        with ti.ad.FwdMode(loss=loss, param=x):
+            clear_dual_test()
+        assert y.dual[None] == 4.0

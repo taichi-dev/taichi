@@ -274,6 +274,11 @@ class FwdMode:
         else:
             assert parameters_shape_flatten == len(self.seed)
 
+        # Clear gradients
+        if self.clear_gradients:
+            # TODO: the clear gradients should be controlled to clear adjoint/dual/adjoint_visited respectively
+            clear_all_gradients()
+
         # Set seed for each variable
         if len(self.seed) == 1:
             if len(self.param.shape) == 0:
@@ -285,11 +290,6 @@ class FwdMode:
         else:
             for idx, s in enumerate(self.seed):
                 self.param.dual[idx] = 1.0 * s
-
-        # Clear gradients
-        if self.clear_gradients:
-            for ls in self.loss:
-                ls.dual.fill(0)
 
         # Attach the context manager to the runtime
         self.runtime.fwd_mode_manager = self

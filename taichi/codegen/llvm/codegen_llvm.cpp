@@ -1523,6 +1523,7 @@ void TaskCodeGenLLVM::create_global_load(GlobalLoadStmt *stmt,
     if (should_cache_as_read_only) {
       llvm_val[stmt] = create_intrinsic_load(ptr, llvm_type(stmt->ret_type));
     } else {
+      ptr->dump();
       llvm_val[stmt] =
           builder->CreateLoad(tlctx->get_data_type(stmt->ret_type), ptr);
     }

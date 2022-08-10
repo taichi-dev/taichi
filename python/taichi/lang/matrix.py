@@ -125,7 +125,7 @@ class _MatrixBaseImpl:
             args = args + (0, )
         # TODO(#1004): See if it's possible to support indexing at runtime
         for i, a in enumerate(args):
-            if not isinstance(a, int):
+            if not isinstance(a, (int, np.integer)):
                 raise TaichiSyntaxError(
                     f'The {i}-th index of a Matrix/Vector must be a compile-time constant '
                     f'integer, got {type(a)}.\n'

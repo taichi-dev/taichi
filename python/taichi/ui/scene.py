@@ -171,7 +171,7 @@ class Scene:
              vertex_count: int = None,
              index_offset: int = 0,
              index_count: int = None,
-             show_wareframe: bool = False):
+             show_wireframe: bool = False):
         """Declare a mesh inside the scene.
 
         if you indicate the index_offset and index_count, the normals will also
@@ -206,7 +206,7 @@ class Scene:
             index_count (int, optional):
                 only available when `indices` is provided, which is the the number
                 of vertices to draw.
-            show_wareframe (bool, optional):
+            show_wireframe (bool, optional):
                 turn on/off WareFrame mode.
         """
         vbo = get_vbo_field(vertices)
@@ -229,7 +229,7 @@ class Scene:
 
         self.scene.mesh(vbo_info, has_per_vertex_color, indices_info, color,
                         two_sided, index_count, index_offset, vertex_count,
-                        vertex_offset, show_wareframe)
+                        vertex_offset, show_wireframe)
 
     def mesh_instance(self,
                       vertices,
@@ -245,7 +245,7 @@ class Scene:
                       vertex_count: int = None,
                       index_offset: int = 0,
                       index_count: int = None,
-                      show_wareframe: bool = False):
+                      show_wireframe: bool = False):
         """Declare mesh instances inside the scene.
 
         If transforms is given, then according to the shape of transforms, it will
@@ -290,7 +290,7 @@ class Scene:
             index_count (int, optional):
                 only available when `indices` is provided, which is the the number
                 of indices to draw.
-            show_wareframe (bool, optional):
+            show_wireframe (bool, optional):
                 turn on/off WareFrame mode.
         """
         vbo = get_vbo_field(vertices)
@@ -319,7 +319,7 @@ class Scene:
                                  color, two_sided, transform_info,
                                  instance_count, instance_offset, index_count,
                                  index_offset, vertex_count, vertex_offset,
-                                 show_wareframe)
+                                 show_wireframe)
 
     def particles(self,
                   centers,

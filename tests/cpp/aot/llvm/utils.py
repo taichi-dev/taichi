@@ -153,17 +153,17 @@ def compile_graph_aot(arch):
     @ti.kernel
     def run0(base: int, arr: ti.types.ndarray(field_dim=1, dtype=ti.i32)):
         for i in arr:
-            arr[i] += [base + i]
+            arr[i] += base + i
 
     @ti.kernel
     def run1(base: int, arr: ti.types.ndarray(field_dim=1, dtype=ti.i32)):
         for i in arr:
-            arr[i] += [base + i]
+            arr[i] += base + i
 
     @ti.kernel
     def run2(base: int, arr: ti.types.ndarray(field_dim=1, dtype=ti.i32)):
         for i in arr:
-            arr[i] += [base + i]
+            arr[i] += base + i
 
     arr = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                        'arr',

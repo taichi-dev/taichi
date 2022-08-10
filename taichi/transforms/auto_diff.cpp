@@ -1391,6 +1391,8 @@ class BackupSSA : public BasicStmtVisitor {
             // replace is the top level block
             irpass::replace_all_usages_with(leaf_to_root.back(), op,
                                             backup_stack_alloca_ptr);
+            // Erase the outdated AdStackAllocaStmt
+            op->parent->erase(op);
           }
         } else {
           auto alloca = load(op);

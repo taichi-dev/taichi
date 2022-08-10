@@ -4,7 +4,7 @@ import taichi as ti
 from tests import test_utils
 
 
-@test_utils.test(debug=True, exclude=[ti.cc])
+@test_utils.test(debug=True, check_autodiff_valid=True, exclude=[ti.cc])
 def test_adjoint_visited_needs_grad():
     x = ti.field(float, shape=(), needs_grad=True)
 
@@ -18,7 +18,7 @@ def test_adjoint_visited_needs_grad():
     assert x.snode.ptr.has_adjoint_visited()
 
 
-@test_utils.test(debug=True, exclude=[ti.cc])
+@test_utils.test(debug=True, check_autodiff_valid=True, exclude=[ti.cc])
 def test_adjoint_visited_lazy_grad():
     x = ti.field(float, shape=())
     ti.root.lazy_grad()
@@ -33,7 +33,7 @@ def test_adjoint_visited_lazy_grad():
     assert x.snode.ptr.has_adjoint_visited()
 
 
-@test_utils.test(debug=True, exclude=[ti.cc])
+@test_utils.test(debug=True, check_autodiff_valid=True, exclude=[ti.cc])
 def test_adjoint_visited_place_grad():
     x = ti.field(float)
     y = ti.field(float)
@@ -50,7 +50,7 @@ def test_adjoint_visited_place_grad():
     assert not y.snode.ptr.has_adjoint_visited()
 
 
-@test_utils.test(debug=False)
+@test_utils.test(debug=False, check_autodiff_valid=True)
 def test_adjoint_visited_needs_grad():
     x = ti.field(float, shape=(), needs_grad=True)
 
@@ -70,7 +70,10 @@ def test_adjoint_visited_needs_grad():
     assert warn_raised
 
 
-@test_utils.test(require=ti.extension.assertion, exclude=[ti.cc], debug=True)
+@test_utils.test(require=ti.extension.assertion,
+                 exclude=[ti.cc],
+                 debug=True,
+                 check_autodiff_valid=True)
 def test_break_gdar_rule_1():
     N = 16
     x = ti.field(dtype=ti.f32, shape=N, needs_grad=True)

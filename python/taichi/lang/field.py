@@ -352,8 +352,9 @@ class ScalarField(Field):
         # Check for potential slicing behaviour
         # for instance: x[0, :]
         padded_key = self._pad_key(key)
+        import numpy as np  # pylint: disable=C0415
         for key in padded_key:
-            if not isinstance(key, int):
+            if not isinstance(key, (int, np.integer)):
                 raise TypeError(
                     f"Detected illegal element of type: {type(key)}. "
                     f"Please be aware that slicing a ti.field is not supported so far."

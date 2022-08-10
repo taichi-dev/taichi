@@ -15,6 +15,7 @@ function build-and-smoke-test-android-aot-demo {
     export TAICHI_REPO_DIR=$(pwd)/taichi
 
     git clone https://github.com/taichi-dev/taichi-aot-demo
+    cd taichi-aot-demo && git checkout c3348e1e3fc9a2bdef70b947c24510f2da29ea13 && cd -
     APP_ROOT=taichi-aot-demo/implicit_fem
     ANDROID_APP_ROOT=$APP_ROOT/android
     JNI_PATH=$ANDROID_APP_ROOT/app/src/main/jniLibs/arm64-v8a/

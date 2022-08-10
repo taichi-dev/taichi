@@ -111,7 +111,7 @@ If a mesh has `num` triangles, the `indices` should be a 1D scalar field with a 
 
 :::example
 
-1. Example of drawing 3d-lines
+1. An example of drawing 3d-lines
 
 ```python
 import taichi as ti
@@ -144,7 +144,7 @@ while window.running:
     scene.point_light(pos=(0.5, 1.5, 1.5), color=(1, 1, 1))
 
     scene.particles(particles_pos, color = (0.68, 0.26, 0.19), radius = 0.1)
-    # Here draw 3d-lines in the scene
+    # Draw 3d-lines in the scene
     scene.lines(points_pos, color = (0.28, 0.68, 0.99), width = 5.0)
     canvas.scene(scene)
     window.show()
@@ -170,7 +170,7 @@ The additional arguments `vertex_offset`, `vertex_count`, `index_offset` and `in
 
 ```python
 # For particles
-# draw 2-th to 7-th particles
+# draw the 2-th to 7-th particles
 scene.particles(center, radius,
 index_offset = 1,
 index_count = 6)
@@ -180,22 +180,22 @@ index_count = 6)
 scene.mesh(vertices, indices,
 index_offset  = user_defined_first_indices_index,
 index_count   = user_defined_index_count,
-# vertex_offset default is set 0, and is not necessary
-# to be passed by a value otherwise you must.
+# vertex_offset is set to 0 by default, and it is not necessary
+# to assign vertex_offset a value that otherwise you must.
 vertex_offset = user_defined_vertex_offset)
 
 # usually used as below:
-# draw 11-th to 111-th mesh vertexes
+# draw the 11-th to 111-th mesh vertexes
 scene.mesh(vertices, indices,
 index_offset  = 10,
 index_count   = 100)
 
-# 2. without indices (similar to particles' example as above)
+# 2. without indices (similar to the particles' example above)
 scene.mesh(vertices,
 vertex_offset = user_defined_first_vertex_index,
 vertex_count  = user_defined_vertex_count)
 ```
-2. Example of drawing part of lines
+2. An example of drawing part of lines
 ```python
 import taichi as ti
 
@@ -277,7 +277,7 @@ m_transforms = ti.Matrix.field(4, 4, dtype = ti.f32, shape = num_instance)
 #              0,            0,              0, 1
 ...
 
-# Here draw mesh instances (will draw from the 1st instance)
+# Draw mesh instances (from the 1st instance)
 scene.mesh_instance(vertices, indices, transforms = m_transforms, instance_offset = 1)
 ```
 4. Example of setting wireframe mode

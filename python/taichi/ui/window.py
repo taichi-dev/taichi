@@ -145,7 +145,9 @@ class Window:
         Args:
             filename (str): output filename.
         """
-        warnings.warn("`Window.write_image()` is renamed to `Window.save_image()`", DeprecationWarning)
+        warnings.warn(
+            "`Window.write_image()` is renamed to `Window.save_image()`",
+            DeprecationWarning)
         return self.save_image(filename)
 
     def save_image(self, filename):

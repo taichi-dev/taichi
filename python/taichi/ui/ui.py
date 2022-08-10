@@ -1,4 +1,5 @@
 import warnings
+
 from taichi._lib import core as _ti_core
 
 from .camera import Camera
@@ -18,7 +19,9 @@ def make_camera():
 
         >>> camera = ti.ui.make_camera()
     """
-    warnings.warn("`ti.ui.make_camera()` is deprecated, please use `ti.ui.Camera()` instead", DeprecationWarning)
+    warnings.warn(
+        "`ti.ui.make_camera()` is deprecated, please use `ti.ui.Camera()` instead",
+        DeprecationWarning)
     return Camera()
 
 

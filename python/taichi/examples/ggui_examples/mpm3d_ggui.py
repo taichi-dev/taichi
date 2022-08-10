@@ -276,18 +276,17 @@ def show_options():
         GRAVITY[2] = w.slider_float("z", GRAVITY[2], -10, 10)
 
     with gui.sub_window("Options", 0.05, 0.45, 0.2, 0.4) as w:
-        use_random_colors = w.checkbox("use_random_colors",
-                                                use_random_colors)
+        use_random_colors = w.checkbox("use_random_colors", use_random_colors)
         if not use_random_colors:
-            material_colors[WATER] = w.color_edit_3(
-                "water color", material_colors[WATER])
-            material_colors[SNOW] = w.color_edit_3(
-                "snow color", material_colors[SNOW])
-            material_colors[JELLY] = w.color_edit_3(
-                "jelly color", material_colors[JELLY])
+            material_colors[WATER] = w.color_edit_3("water color",
+                                                    material_colors[WATER])
+            material_colors[SNOW] = w.color_edit_3("snow color",
+                                                   material_colors[SNOW])
+            material_colors[JELLY] = w.color_edit_3("jelly color",
+                                                    material_colors[JELLY])
             set_color_by_material(np.array(material_colors, dtype=np.float32))
         particles_radius = w.slider_float("particles radius ",
-                                                particles_radius, 0, 0.1)
+                                          particles_radius, 0, 0.1)
         if w.button("restart"):
             init()
         if paused:

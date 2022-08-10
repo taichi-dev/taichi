@@ -166,12 +166,12 @@ def main():
             )
             w.text("C: clear all; Space: pause")
             spring_Y[None] = w.slider_float("Spring Young's modulus",
-                                                    spring_Y[None], 100, 10000)
+                                            spring_Y[None], 100, 10000)
             drag_damping[None] = w.slider_float("Drag damping",
-                                                        drag_damping[None], 0.0,
-                                                        10)
-            dashpot_damping[None] = w.slider_float(
-                "Dashpot damping", dashpot_damping[None], 10, 1000)
+                                                drag_damping[None], 0.0, 10)
+            dashpot_damping[None] = w.slider_float("Dashpot damping",
+                                                   dashpot_damping[None], 10,
+                                                   1000)
 
         window.show()
 

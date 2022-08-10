@@ -72,12 +72,12 @@ my_kernel(24, 3.2)  # The system prints 27.2
 
 The upper limit for element numbers is backend-specific:
 
-- 8 on OpenGL backend
-- 64 on CPU, Vulkan, CUDA, or Metal
+- 64 on CPU, Vulkan, CUDA, OpenGL or Metal
 
 :::note
 - The number of elements in a scalar argument is always 1.
 - The number of the elements in a `ti.Matrix` or in a `ti.Vector` is the actual number of scalars inside of them.
+- The upper limit of array arguments (`ti.types.ndarray()`) is 32 and they must be the first 32 among all 64 arguments.
 :::
 
 ```python

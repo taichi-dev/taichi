@@ -759,16 +759,14 @@ class Kernel:
             ) and self.runtime.target_tape and not self.runtime.grad_replaced:
                 self.runtime.target_tape.insert(self, args)
 
-            if actual_argument_slot > 8 and (
-                    impl.current_cfg().arch == _ti_core.opengl
-                    or impl.current_cfg().arch == _ti_core.cc):
+            if actual_argument_slot > 8 and impl.current_cfg(
+            ).arch == _ti_core.cc:
                 raise TaichiRuntimeError(
                     f"The number of elements in kernel arguments is too big! Do not exceed 8 on {_ti_core.arch_name(impl.current_cfg().arch)} backend."
                 )
 
-            if actual_argument_slot > 64 and (
-                (impl.current_cfg().arch != _ti_core.opengl
-                 and impl.current_cfg().arch != _ti_core.cc)):
+            if actual_argument_slot > 64 and impl.current_cfg(
+            ).arch != _ti_core.cc:
                 raise TaichiRuntimeError(
                     f"The number of elements in kernel arguments is too big! Do not exceed 64 on {_ti_core.arch_name(impl.current_cfg().arch)} backend."
                 )

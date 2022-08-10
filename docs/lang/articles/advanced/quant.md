@@ -117,12 +117,42 @@ leave more bits for components with larger absolute values. You can use
 `place(x, y, z, shared_exponent=True)` to make fields `x, y, z` share a common
 exponent.
 
-#### Example 1
+#### Your first program
 
-In a 3D Eulerian fluid simulation, a voxel may need to store a 3D vector for
-velocity, and an integer value for cell category with three possible values:
-"source", "Dirichlet boundary", and "Neumann boundar". You can then store all
-information with a single 32-bit `ti.BitpackedFields`:
+You probably cannot wait to write your first Taichi program with quantized data
+types. The easiest way is to modify the data definitions of an existing example.
+Assume you want to save memory for
+[examples/simulation/euler.py](https://github.com/taichi-dev/taichi/blob/master/python/taichi/examples/simulation/euler.py).
+Because most data definitions in the example are similar, here only field `Q` is
+used for illustration:
+
+```python
+Q = ti.Vector.field(4, dtype=ti.f32, shape=(N, N))
+```
+
+An element of `Q` now occupies 4 x 32 = 128 bits. If you can fit it in
+64 bits, then the memory usage is halved. A direct and first attempt is to
+use quantized floating-point numbers with a shared exponent:
+
+```python
+float_type_c = ti.types.quant.float(exp=8, frac=14)
+Q_old = ti.Vector.field(4, dtype=float_type_c)
+bitpack = ti.BitpackedFields(max_num_bits=64)
+bitpack.place(Q_old, shared_exponent=True)
+ti.root.dense(ti.ij, (N, N)).place(bitpack)
+```
+
+Surprisingly, you find that there is no obvious difference in visual effects
+after the change, and you now successfully finish a Taichi program with
+quantized data types! More attempts are left to you.
+
+#### More complicated quantization schemes
+
+Here comes a more complicated scenario. In a 3D Eulerian fluid simulation, a
+voxel may need to store a 3D vector for velocity, and an integer value for cell
+category with three possible values: "source", "Dirichlet boundary", and
+"Neumann boundar". You can actually store all information with a single 32-bit
+`ti.BitpackedFields`:
 
 ```python
 velocity_component_type = ti.types.quant.float(exp=6, frac=8, compute=ti.f32)
@@ -146,32 +176,6 @@ just 4 bytes. Note that you can still use velocity and cell_category in the
 computation code, as if they are `ti.f32` and `ti.u8`.
 
 ![image](../static/assets/bitpacked_fields_layout_example.png)
-
-#### Example 2
-
-Here is a simpler example for you to try out. Assume you want to save memory for
-[examples/simulation/euler.py](https://github.com/taichi-dev/taichi/blob/master/python/taichi/examples/simulation/euler.py).
-Most data definitions in the example are similar, so here only field `Q` is used
-for illustration:
-
-```python
-Q = ti.Vector.field(4, dtype=ti.f32, shape=(N, N))
-```
-
-An element of `Q` now occupies 4 x 32 = 128 bits. If you can fit it in
-64 bits, then the memory usage is halved. A direct and first attempt is to
-use quantized floating-point numbers with a shared exponent:
-
-```python
-float_type_c = ti.types.quant.float(exp=8, frac=14)
-Q_old = ti.Vector.field(4, dtype=float_type_c)
-bitpack = ti.BitpackedFields(max_num_bits=64)
-bitpack.place(Q_old, shared_exponent=True)
-ti.root.dense(ti.ij, (N, N)).place(bitpack)
-```
-
-Surprisingly, you may find that there is no obvious difference in visual effects
-after the change. More attempts are left to you.
 
 ### Quant arrays
 

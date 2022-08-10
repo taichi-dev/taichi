@@ -193,7 +193,7 @@ can reinterpret a primitive type into an array of a quantized type:
 bin_value_type = ti.types.quant.int(bits=4, signed=False)
 
 # The quant array for 512 x 512 bin values
-array = ti.root.dense(ti.ij, (512, 64)).quant_array(ti.i, 8, max_num_bits=32)
+array = ti.root.dense(ti.ij, (512, 64)).quant_array(ti.j, 8, max_num_bits=32)
 # Place the unsigned 4-bit bin value into the array
 array.place(bin_value_type)
 ```

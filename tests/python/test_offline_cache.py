@@ -193,15 +193,15 @@ def _test_offline_cache_for_a_kernel(curr_arch, kernel, args, result,
     ti.init(arch=curr_arch,
             enable_fallback=False,
             **current_thread_ext_options())
-    assert len(listdir(tmp_offline_cache_file_path(
-    ))) - count_of_cache_file == get_expected_num_cache_files(1)
+    assert len(listdir(tmp_offline_cache_file_path())
+               ) - count_of_cache_file == get_expected_num_cache_files(1)
     res2 = kernel(*args)
     assert res1 == test_utils.approx(result) and res1 == test_utils.approx(
         res2)
 
     ti.reset()
-    assert len(listdir(tmp_offline_cache_file_path(
-    ))) - count_of_cache_file == get_expected_num_cache_files(1)
+    assert len(listdir(tmp_offline_cache_file_path())
+               ) - count_of_cache_file == get_expected_num_cache_files(1)
 
 
 @_test_offline_cache_dec

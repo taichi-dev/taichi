@@ -386,6 +386,19 @@ Wrap the lines of interest with the following two macros; then warnings are igno
 #endif
 ```
 
+## Handle special CI failures
+Taichi's CI system is implemented using the [Github Actions](https://github.com/features/actions), the entrance of which lies in [testing.yaml](https://github.com/taichi-dev/taichi/blob/master/.github/workflows/testing.yml). Depending on the CI pipeline, `testing.yml` will execute one of the corresponding test scripts under [this directory](https://github.com/taichi-dev/taichi/tree/master/.github/workflows/scripts)
+
+There are a few CI pipelines that work slightly different from the standard CI pipeline:
+
+### CI pipeline - Build Android Demos
+`Build Andriod Demos` builds both [taichi-repo](https://github.com/taichi-dev/taichi) with your PR applied and an external [taichi-aot-demo](https://github.com/taichi-dev/taichi-aot-demo) repo. After that, it executes the demos from `taichi-aot-demo` with the just-compiled Taichi program and libraries.
+
+If your PR to `taichi-repo` contains changes to some public interface, you may need to adjust the codes in `taichi-aot-demo` to avoid breaking the demos. To achieve that, please follow these steps:
+1. File your PR to `taichi-repo`. If this PR changes the public interface, then it probably breaks the demos thus fail the `Build Android Demos` CI pipeline - Don't panic, this is expected.
+2. Update the demo codes in `taichi-aot-demo` to make it work with the above mentioned PR, then file a separate PR to `taichi-aot-demo` repo and have it merged.
+3. In the original PR to `taichi-repo`, update the commit id for `taichi-aot-demo` in [aot-demo.sh](https://github.com/taichi-dev/taichi/blob/master/.github/workflows/scripts/aot-demo.sh). This time your PR is expected to pass `Build Android Demos`.
+
 ##  Still have issues?
 
 If you encounter any issue that is not covered here, feel free to ask us on GitHub discussions or [open an issue on GitHub](https://github.com/taichi-dev/taichi/issues/new?labels=potential+bug&template=bug_report.md) with all the details attached. We are always there to help!

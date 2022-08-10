@@ -16,7 +16,7 @@ env:
 jobs:
   show_environ:
     name: Show Environment Variables
-    runs-on: [self-hosted]
+    runs-on: [self-hosted, Linux]
     steps:
     - name: Environment Variables
       run: env

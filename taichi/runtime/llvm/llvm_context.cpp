@@ -910,7 +910,9 @@ std::unique_ptr<LLVMCompiledData> TaichiLLVMContext::link_compile_data(
   for (auto tls_size : tls_sizes) {
     add_struct_for_func(runtime_module.get(), tls_size);
   }
-  linker.linkInModule(std::move(runtime_module), llvm::Linker::LinkOnlyNeeded | llvm::Linker::OverrideFromSrc);
+  linker.linkInModule(
+      std::move(runtime_module),
+      llvm::Linker::LinkOnlyNeeded | llvm::Linker::OverrideFromSrc);
   eliminate_unused_functions(mod.get(), [&](std::string func_name) -> bool {
     return offloaded_names.count(func_name);
   });

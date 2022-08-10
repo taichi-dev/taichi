@@ -724,7 +724,8 @@ llvm::Type *TaskCodeGenLLVM::llvm_type(DataType dt) {
     auto element_type = llvm_type(tensor_type->get_element_type());
     return llvm::VectorType::get(
         element_type,
-        llvm::ElementCount(tensor_type->get_num_elements(), false));
+        tensor_type->get_num_elements(),
+        false);
   } else {
     TI_NOT_IMPLEMENTED;
   }

@@ -139,7 +139,7 @@ llvm::Type *TaichiLLVMContext::get_data_type(DataType dt) {
     auto vectorty = dt->as<TensorType>();
     auto dtype = this->get_data_type(vectorty->get_element_type());
     return llvm::VectorType::get(
-        dtype, llvm::ElementCount(vectorty->get_num_elements(), false));
+        dtype, vectorty->get_num_elements(), false);
   } else {
     TI_INFO(data_type_name(dt));
     TI_NOT_IMPLEMENTED

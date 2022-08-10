@@ -23,7 +23,7 @@ def get_temp_png():
 
 def write_temp_image(window):
     f = get_temp_png()
-    window.write_image(f)
+    window.save_image(f)
     try:
         os.remove(f)
     except OSError:
@@ -33,12 +33,12 @@ def write_temp_image(window):
 def verify_image(window, image_name, tolerance=0.1):
     if REGENERATE_GROUNDTRUTH_IMAGES:
         ground_truth_name = f"tests/python/expected/{image_name}.png"
-        window.write_image(ground_truth_name)
+        window.save_image(ground_truth_name)
     else:
         ground_truth_name = str(
             pathlib.Path(__file__).parent) + f"/expected/{image_name}.png"
         actual_name = get_temp_png()
-        window.write_image(actual_name)
+        window.save_image(actual_name)
         ground_truth_np = ti.tools.imread(ground_truth_name)
         actual_np = ti.tools.imread(actual_name)
         assert len(ground_truth_np.shape) == len(actual_np.shape)

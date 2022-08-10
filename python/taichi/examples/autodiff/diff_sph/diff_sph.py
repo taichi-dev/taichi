@@ -639,7 +639,7 @@ def main():
                         canvas.scene(scene)
                         if TRAIN_OUTPUT_IMG:
                             if i % substeps == 0:
-                                window.write_image(
+                                window.save_image(
                                     f'output_img/{opt_iter}/{i:04}.png')
                         if TRAIN_VISUAL_SHOW:
                             window.show()
@@ -734,7 +734,7 @@ def main():
             if INFER_OUTPUT_IMG:
                 if cnt % 2 == 0:
                     os.makedirs("demo_output_interactive/", exist_ok=True)
-                    window.write_image(f'demo_output_interactive/{cnt:04}.png')
+                    window.save_image(f'demo_output_interactive/{cnt:04}.png')
             window.show()
 
 

@@ -1,4 +1,5 @@
 import pathlib
+import warnings
 
 import numpy
 from taichi._kernels import (arr_vulkan_layout_to_arr_normal_layout,
@@ -132,6 +133,16 @@ class Window:
         return self.window.get_window_shape()
 
     def write_image(self, filename):
+        """Save the window content to an image file. This is an deprecated
+        interface; please use `save_image` instead.
+
+        Args:
+            filename (str): output filename.
+        """
+        warnings.warn("`Window.write_image()` is renamed to `Window.save_image()`", DeprecationWarning)
+        return self.save_image(filename)
+
+    def save_image(self, filename):
         """Save the window content to an image file.
 
         Args:

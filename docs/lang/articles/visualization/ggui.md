@@ -191,10 +191,10 @@ while window.running:
 To write the current frame in the window to an image file:
 
 ```python
-window.write_image(filename)
+window.save_image(filename)
 ```
 
-Note that you must call `window.write_image()` before calling `window.show()`.
+Note that you must call `window.save_image()` before calling `window.show()`.
 
 ## Off-screen rendering
 
@@ -204,4 +204,4 @@ GGUI supports saving frames to images without showing the window. This is also k
 window = ti.ui.Window('Window Title', (640, 360), show_window = False)
 ```
 
-Then you can call `window.write_image()` as normal and remove the `window.show()` call at the end.
+Then you can call `window.save_image()` as normal and remove the `window.show()` call at the end.

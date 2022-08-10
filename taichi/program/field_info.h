@@ -1,12 +1,21 @@
 #pragma once
-#include "taichi/ui/utils/utils.h"
-
 #include "taichi/ir/type_utils.h"
 #include "taichi/ir/snode.h"
 #include "taichi/rhi/device.h"
 #include "taichi/program/program.h"
 
-TI_UI_NAMESPACE_BEGIN
+#define DEFINE_PROPERTY(Type, name)       \
+  Type name;                              \
+  void set_##name(const Type &new_name) { \
+    name = new_name;                      \
+  }                                       \
+  Type get_##name() {                     \
+    return name;                          \
+  }
+
+namespace taichi {
+
+namespace ui {
 
 enum class FieldSource : int {
   TaichiCuda = 0,
@@ -46,4 +55,6 @@ struct FieldInfo {
 taichi::lang::DevicePtr get_device_ptr(taichi::lang::Program *program,
                                        taichi::lang::SNode *snode);
 
-TI_UI_NAMESPACE_END
+}  // namespace ui
+
+}  // namespace taichi

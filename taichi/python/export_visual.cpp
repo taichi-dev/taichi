@@ -5,7 +5,7 @@
 
 #include "taichi/python/export.h"
 #include "taichi/util/image_io.h"
-#include "taichi/gui/gui.h"
+#include "taichi/ui/gui/gui.h"
 
 TI_NAMESPACE_BEGIN
 

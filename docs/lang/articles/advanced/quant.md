@@ -34,7 +34,7 @@ u5 = ti.types.quant.int(bits=5, signed=False)  # 5-bit unsigned integer type
 
 [Fixed-point numbers](https://en.wikipedia.org/wiki/Fixed-point_arithmetic) are
 an old way to represent real numbers. The internal representation of a fixed-point number is simply an integer, and
-its actual value equals to the integer multiplied by a predetermined scaling
+its actual value equals to the integer multiplied by a predefined scaling
 factor. Based on the support for quantized integers, Taichi provides *quantized
 fixed-point numbers* as follows:
 
@@ -47,7 +47,7 @@ fixed_type_c = ti.types.quant.fixed(bits=6, signed=False, scale=1.0)  # 6-bit un
 `scale` is the scaling factor mentioned above. Because fixed-point numbers are
 especially useful when you know the actual value is guaranteed to be within a
 range, Taichi allows you to simply set `max_value` and will calculate the
-scaling factor for you.
+scaling factor accordingly.
 
 ### Quantized floating-point numbers
 
@@ -91,7 +91,7 @@ provides. In fact, some special constructs are introduced to eliminate the gap.
 
 ### Bitpacked fields
 
-`ti.BitpackedFields` is introduced to pack a group of fields whose `dtype`s are
+`ti.BitpackedFields` packs a group of fields whose `dtype`s are
 quantized data types together so that they are stored with one primitive type.
 You can then place a `ti.BitpackedFields` instance under any SNode as if each member field
 is placed individually.
@@ -158,8 +158,8 @@ for illustration:
 Q = ti.Vector.field(4, dtype=ti.f32, shape=(N, N))
 ```
 
-An element of `Q` now occupies 4 x 32 = 128 bits. If you can make it fit in
-64 bits, then the memory usage can get halved. A direct and first attempt is to
+An element of `Q` now occupies 4 x 32 = 128 bits. If you can fit it in
+64 bits, then the memory usage is halved. A direct and first attempt is to
 use quantized floating-point numbers with a shared exponent:
 
 ```python
@@ -182,7 +182,7 @@ u32 type, to represent bin values of a histogram:
 
 ![image](../static/assets/quant_array_layout_example.png)
 
-Quant arrays are now introduced to help you. A `quant_array` is a SNode which
+Quant array is exactly what you need. A `quant_array` is a SNode which
 can reinterpret a primitive type into an array of a quantized type:
 
 ```python

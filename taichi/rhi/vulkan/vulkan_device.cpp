@@ -782,6 +782,7 @@ VulkanCommandList::VulkanCommandList(VulkanDevice *ti_device,
   info.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 
   vkBeginCommandBuffer(buffer->buffer, &info);
+  vkCmdResetQueryPool(buffer->buffer, query_pool_->query_pool, 0, 2);
   vkCmdWriteTimestamp(buffer->buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
                       query_pool_->query_pool, 0);
 }
@@ -1722,7 +1723,6 @@ void VulkanStream::command_sync() {
     vkGetQueryPoolResults(device_.vk_device(), cmdbuf.query_pool->query_pool, 0,
                           2, sizeof(uint64_t) * 2, &t, sizeof(uint64_t),
                           VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
-    vkResetQueryPool(device_.vk_device(), cmdbuf.query_pool->query_pool, 0, 2);
     double duration_us = (t[1] - t[0]) * props.limits.timestampPeriod / 1000.0;
     device_time_elapsed_us_ += duration_us;
   }

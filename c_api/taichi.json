@@ -61,6 +61,11 @@
                     "is_dispatchable": false
                 },
                 {
+                    "name": "texture",
+                    "type": "handle",
+                    "is_dispatchable": false
+                },
+                {
                     "name": "kernel",
                     "type": "handle",
                     "is_dispatchable": false
@@ -86,7 +91,8 @@
                     "cases": {
                         "i32": 0,
                         "f32": 1,
-                        "ndarray": 2
+                        "ndarray": 2,
+                        "texture": 3
                     }
                 },
                 {
@@ -180,6 +186,128 @@
                     ]
                 },
                 {
+                    "name": "texture_usage",
+                    "type": "bit_field",
+                    "bits": {
+                        "storage": 0,
+                        "sampled": 1,
+                        "attachment": 2
+                    }
+                },
+                {
+                    "name": "texture_dimension",
+                    "type": "enumeration",
+                    "cases": {
+                        "1d": 0,
+                        "2d": 1,
+                        "3d": 2,
+                        "1d_array": 3,
+                        "2d_array": 4,
+                        "cube": 5
+                    }
+                },
+                {
+                    "name": "texture_layout",
+                    "type": "enumeration",
+                    "inc_cases": "image_layout"
+                },
+                {
+                    "name": "texture_format",
+                    "type": "enumeration",
+                    "inc_cases": "buffer_format"
+                },
+                {
+                    "name": "texture_offset",
+                    "type": "structure",
+                    "fields": [
+                        {
+                            "name": "x",
+                            "type": "uint32_t"
+                        },
+                        {
+                            "name": "y",
+                            "type": "uint32_t"
+                        },
+                        {
+                            "name": "z",
+                            "type": "uint32_t"
+                        },
+                        {
+                            "name": "array_layer_offset",
+                            "type": "uint32_t"
+                        }
+                    ]
+                },
+                {
+                    "name": "texture_extent",
+                    "type": "structure",
+                    "fields": [
+                        {
+                            "name": "width",
+                            "type": "uint32_t"
+                        },
+                        {
+                            "name": "height",
+                            "type": "uint32_t"
+                        },
+                        {
+                            "name": "depth",
+                            "type": "uint32_t"
+                        },
+                        {
+                            "name": "array_layer_count",
+                            "type": "uint32_t"
+                        }
+                    ]
+                },
+                {
+                    "name": "texture_allocate_info",
+                    "type": "structure",
+                    "fields": [
+                        {
+                            "name": "dimension",
+                            "type": "enumeration.texture_dimension"
+                        },
+                        {
+                            "name": "extent",
+                            "type": "structure.texture_extent"
+                        },
+                        {
+                            "name": "mip_level_count",
+                            "type": "uint32_t"
+                        },
+                        {
+                            "name": "format",
+                            "type": "enumeration.texture_format"
+                        },
+                        {
+                            "name": "usage",
+                            "type": "bit_field.texture_usage"
+                        }
+                    ]
+                },
+                {
+                    "name": "texture_slice",
+                    "type": "structure",
+                    "fields": [
+                        {
+                            "type": "handle.texture"
+                        },
+                        {
+                            "name": "offset",
+                            "type": "structure.texture_offset"
+                        },
+                        {
+                            "name": "extent",
+                            "type": "structure.texture_extent"
+                        },
+                        {
+                            "name": "mip_level",
+                            "type": "uint32_t"
+                        }
+                    ]
+                },
+                {
                     "name": "argument_value",
                     "type": "union",
                     "variants": [
@@ -194,6 +322,10 @@
                         {
                             "name": "ndarray",
                             "type": "structure.nd_array"
+                        },
+                        {
+                            "name": "texture",
+                            "type": "handle.texture"
                         }
                     ]
                 },
@@ -305,6 +437,36 @@
                     ]
                 },
                 {
+                    "name": "allocate_texture",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "name": "@return",
+                            "type": "handle.texture"
+                        },
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "name": "allocate_info",
+                            "type": "structure.texture_allocate_info",
+                            "by_ref": true
+                        }
+                    ]
+                },
+                {
+                    "name": "free_texture",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "type": "handle.texture"
+                        }
+                    ]
+                },
+                {
                     "name": "create_event",
                     "type": "function",
                     "parameters": [
@@ -343,6 +505,43 @@
                             "name": "src_memory",
                             "type": "structure.memory_slice",
                             "by_ref": true
+                        }
+                    ]
+                },
+                {
+                    "name": "copy_texture_device_to_device",
+                    "type": "function",
+                    "is_device_command": true,
+                    "parameters": [
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "name": "dst_texture",
+                            "type": "structure.texture_slice",
+                            "by_ref": true
+                        },
+                        {
+                            "name": "src_texture",
+                            "type": "structure.texture_slice",
+                            "by_ref": true
+                        }
+                    ]
+                },
+                {
+                    "name": "transition_texture",
+                    "type": "function",
+                    "is_device_command": true,
+                    "parameters": [
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "type": "handle.texture"
+                        },
+                        {
+                            "name": "layout",
+                            "type": "enumeration.texture_layout"
                         }
                     ]
                 },
@@ -573,6 +772,48 @@
                     ]
                 },
                 {
+                    "name": "vulkan_texture_interop_info",
+                    "type": "structure",
+                    "fields": [
+                        {
+                            "name": "image",
+                            "type": "VkImage"
+                        },
+                        {
+                            "name": "image_type",
+                            "type": "VkImageType"
+                        },
+                        {
+                            "name": "format",
+                            "type": "VkFormat"
+                        },
+                        {
+                            "name": "extent",
+                            "type": "VkExtent3D"
+                        },
+                        {
+                            "name": "mip_level_count",
+                            "type": "uint32_t"
+                        },
+                        {
+                            "name": "array_layer_count",
+                            "type": "uint32_t"
+                        },
+                        {
+                            "name": "sample_count",
+                            "type": "VkSampleCountFlagBits"
+                        },
+                        {
+                            "name": "tiling",
+                            "type": "VkImageTiling"
+                        },
+                        {
+                            "name": "usage",
+                            "type": "VkImageUsageFlags"
+                        }
+                    ]
+                },
+                {
                     "name": "vulkan_event_interop_info",
                     "type": "structure",
                     "fields": [
@@ -673,6 +914,41 @@
                         {
                             "name": "interop_info",
                             "type": "structure.vulkan_memory_interop_info",
+                            "by_mut": true
+                        }
+                    ]
+                },
+                {
+                    "name": "import_vulkan_texture",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "name": "@return",
+                            "type": "handle.texture"
+                        },
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "name": "interop_info",
+                            "type": "structure.vulkan_texture_interop_info",
+                            "by_ref": true
+                        }
+                    ]
+                },
+                {
+                    "name": "export_vulkan_texture",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "type": "handle.texture"
+                        },
+                        {
+                            "name": "interop_info",
+                            "type": "structure.vulkan_texture_interop_info",
                             "by_mut": true
                         }
                     ]

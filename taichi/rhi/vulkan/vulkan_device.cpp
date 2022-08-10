@@ -1798,7 +1798,8 @@ std::tuple<vkapi::IVkImage, vkapi::IVkImageView, VkFormat>
 VulkanDevice::get_vk_image(const DeviceAllocation &alloc) const {
   const ImageAllocInternal &alloc_int = image_allocations_.at(alloc.alloc_id);
 
-  return std::make_tuple(alloc_int.image, alloc_int.view, alloc_int.format);
+  return std::make_tuple(alloc_int.image, alloc_int.view,
+                         alloc_int.image->format);
 }
 
 vkapi::IVkFramebuffer VulkanDevice::get_framebuffer(
@@ -1833,12 +1834,11 @@ DeviceAllocation VulkanDevice::import_vkbuffer(vkapi::IVkBuffer buffer) {
 
 DeviceAllocation VulkanDevice::import_vk_image(vkapi::IVkImage image,
                                                vkapi::IVkImageView view,
-                                               VkFormat format) {
+                                               VkImageLayout layout) {
   ImageAllocInternal alloc_int;
   alloc_int.external = true;
   alloc_int.image = image;
   alloc_int.view = view;
-  alloc_int.format = format;
 
   DeviceAllocation alloc;
   alloc.device = this;
@@ -1892,14 +1892,23 @@ DeviceAllocation VulkanDevice::create_image(const ImageParams &params) {
   image_info.format = buffer_format_ti_to_vk(params.format);
   image_info.tiling = VK_IMAGE_TILING_OPTIMAL;
   image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-  image_info.usage = VK_IMAGE_USAGE_SAMPLED_BIT |
-                     VK_IMAGE_USAGE_TRANSFER_DST_BIT |
-                     VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+  image_info.usage =
+      VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+  if (params.usage & ImageAllocUsage::Sampled) {
+    image_info.usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
+  }
+
   if (is_depth) {
-    image_info.usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    if (params.usage & ImageAllocUsage::Attachment) {
+      image_info.usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    }
   } else {
-    image_info.usage |=
-        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
+    if (params.usage & ImageAllocUsage::Storage) {
+      image_info.usage |= VK_IMAGE_USAGE_STORAGE_BIT;
+    }
+    if (params.usage & ImageAllocUsage::Attachment) {
+      image_info.usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    }
   }
   image_info.samples = VK_SAMPLE_COUNT_1_BIT;
 
@@ -1913,8 +1922,6 @@ DeviceAllocation VulkanDevice::create_image(const ImageParams &params) {
     image_info.queueFamilyIndexCount = 2;
     image_info.pQueueFamilyIndices = queue_family_indices;
   }
-
-  alloc.format = image_info.format;
 
   bool export_sharing = params.export_sharing &&
                         this->get_cap(DeviceCapability::vk_has_external_memory);
@@ -1975,10 +1982,6 @@ DeviceAllocation VulkanDevice::create_image(const ImageParams &params) {
     view_info.subresourceRange.levelCount = 1;
     alloc.view_lods.push_back(
         vkapi::create_image_view(device_, alloc.image, &view_info));
-  }
-
-  if (params.initial_layout != ImageLayout::undefined) {
-    image_transition(handle, ImageLayout::undefined, params.initial_layout);
   }
 
 #ifdef TI_VULKAN_DEBUG_ALLOCATIONS
@@ -2298,7 +2301,7 @@ VulkanSurface::VulkanSurface(VulkanDevice *device, const SurfaceConfig &config)
   } else {
     ImageParams params = {ImageDimension::d2D,
                           BufferFormat::rgba8,
-                          ImageLayout::present_src,
+                          ImageLayout::undefined,
                           config.width,
                           config.height,
                           1,
@@ -2367,6 +2370,8 @@ void VulkanSurface::create_swap_chain() {
 #endif
 
   VkExtent2D extent = {uint32_t(width), uint32_t(height)};
+  VkImageUsageFlags usage =
+      VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 
   VkSwapchainCreateInfoKHR createInfo;
   createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -2378,8 +2383,7 @@ void VulkanSurface::create_swap_chain() {
   createInfo.imageColorSpace = surface_format.colorSpace;
   createInfo.imageExtent = extent;
   createInfo.imageArrayLayers = 1;
-  createInfo.imageUsage =
-      VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+  createInfo.imageUsage = usage;
   createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
   createInfo.queueFamilyIndexCount = 0;
   createInfo.pQueueFamilyIndices = nullptr;
@@ -2405,28 +2409,14 @@ void VulkanSurface::create_swap_chain() {
   image_format_ = buffer_format_vk_to_ti(surface_format.format);
 
   for (VkImage img : swapchain_images) {
-    VkImageViewCreateInfo view_info{};
-    view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    view_info.pNext = nullptr;
-    view_info.image = img;
-    view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    view_info.format = surface_format.format;
-    view_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-    view_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-    view_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-    view_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-    view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    view_info.subresourceRange.baseMipLevel = 0;
-    view_info.subresourceRange.levelCount = 1;
-    view_info.subresourceRange.baseArrayLayer = 0;
-    view_info.subresourceRange.layerCount = 1;
-
-    vkapi::IVkImage image = vkapi::create_image(device_->vk_device(), img);
+    vkapi::IVkImage image = vkapi::create_image(
+        device_->vk_device(), img, surface_format.format, VK_IMAGE_TYPE_2D,
+        VkExtent3D{uint32_t(width), uint32_t(height), 1}, 1u, 1u, usage);
     vkapi::IVkImageView view =
-        vkapi::create_image_view(device_->vk_device(), image, &view_info);
+        vkapi::create_image_view(device_->vk_device(), image);
 
     swapchain_images_.push_back(
-        device_->import_vk_image(image, view, surface_format.format));
+        device_->import_vk_image(image, view, VK_IMAGE_LAYOUT_UNDEFINED));
   }
 }
 

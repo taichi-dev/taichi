@@ -186,6 +186,7 @@ struct DeviceObjVkImage : public DeviceObj {
   uint32_t depth{1};
   uint32_t mip_levels{1};
   uint32_t array_layers{1};
+  VkImageUsageFlags usage{0};
   VmaAllocator allocator{nullptr};
   VmaAllocation allocation{nullptr};
   ~DeviceObjVkImage() override;
@@ -197,7 +198,14 @@ IVkImage create_image(VkDevice device,
                       VkImageCreateInfo *image_info,
                       VmaAllocationCreateInfo *alloc_info);
 // Importing external image
-IVkImage create_image(VkDevice device, VkImage image);
+IVkImage create_image(VkDevice device,
+                      VkImage image,
+                      VkFormat format,
+                      VkImageType type,
+                      VkExtent3D extent,
+                      uint32_t mip_levels,
+                      uint32_t array_layers,
+                      VkImageUsageFlags usage);
 
 // VkImageView
 struct DeviceObjVkImageView : public DeviceObj {
@@ -209,6 +217,7 @@ struct DeviceObjVkImageView : public DeviceObj {
   ~DeviceObjVkImageView() override;
 };
 using IVkImageView = std::shared_ptr<DeviceObjVkImageView>;
+IVkImageView create_image_view(VkDevice device, IVkImage image);
 IVkImageView create_image_view(VkDevice device,
                                IVkImage image,
                                VkImageViewCreateInfo *create_info);

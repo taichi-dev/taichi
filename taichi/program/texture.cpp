@@ -8,13 +8,11 @@ namespace taichi {
 namespace lang {
 
 Texture::Texture(Program *prog,
-                 const DataType type,
-                 int num_channels,
+                 BufferFormat format,
                  int width,
                  int height,
                  int depth)
-    : dtype_(type),
-      num_channels_(num_channels),
+    : format_(format),
       width_(width),
       height_(height),
       depth_(depth),
@@ -22,15 +20,16 @@ Texture::Texture(Program *prog,
   GraphicsDevice *device =
       static_cast<GraphicsDevice *>(prog_->get_graphics_device());
 
-  TI_TRACE(
-      "Create image, gfx device {}, type={}, channels={}, w={}, h={}, d={}",
-      (void *)device, type.to_string(), num_channels, width, height, depth);
+  auto [type, num_channels] = buffer_format2type_channels(format);
+  TI_TRACE("Create image, gfx device {}, format={}, w={}, h={}, d={}",
+           (void *)device, type.to_string(), num_channels, width, height,
+           depth);
 
   TI_ASSERT(num_channels > 0 && num_channels <= 4);
 
-  ImageParams img_params;
+  ImageParams img_params{};
   img_params.dimension = depth > 1 ? ImageDimension::d3D : ImageDimension::d2D;
-  img_params.format = get_format(type, num_channels);
+  img_params.format = format;
   img_params.x = width;
   img_params.y = height;
   img_params.z = depth;
@@ -43,68 +42,16 @@ Texture::Texture(Program *prog,
 }
 
 Texture::Texture(DeviceAllocation &devalloc,
-                 const DataType type,
-                 int num_channels,
+                 BufferFormat format,
                  int width,
                  int height,
                  int depth)
     : texture_alloc_(devalloc),
-      dtype_(type),
-      num_channels_(num_channels),
+      format_(format),
       width_(width),
       height_(height),
       depth_(depth) {
-  format_ = get_format(type, num_channels);
-}
-
-BufferFormat Texture::get_format(DataType type, int num_channels) {
-  BufferFormat format;
-  if (type == PrimitiveType::f16) {
-    if (num_channels == 1) {
-      format = BufferFormat::r16f;
-    } else if (num_channels == 2) {
-      format = BufferFormat::rg16f;
-    } else if (num_channels == 4) {
-      format = BufferFormat::rgba16f;
-    } else {
-      TI_ERROR("Invalid texture channels");
-    }
-  } else if (type == PrimitiveType::u16) {
-    if (num_channels == 1) {
-      format = BufferFormat::r16;
-    } else if (num_channels == 2) {
-      format = BufferFormat::rg16;
-    } else if (num_channels == 4) {
-      format = BufferFormat::rgba16;
-    } else {
-      TI_ERROR("Invalid texture channels");
-    }
-  } else if (type == PrimitiveType::u8) {
-    if (num_channels == 1) {
-      format = BufferFormat::r8;
-    } else if (num_channels == 2) {
-      format = BufferFormat::rg8;
-    } else if (num_channels == 4) {
-      format = BufferFormat::rgba8;
-    } else {
-      TI_ERROR("Invalid texture channels");
-    }
-  } else if (type == PrimitiveType::f32) {
-    if (num_channels == 1) {
-      format = BufferFormat::r32f;
-    } else if (num_channels == 2) {
-      format = BufferFormat::rg32f;
-    } else if (num_channels == 3) {
-      format = BufferFormat::rgb32f;
-    } else if (num_channels == 4) {
-      format = BufferFormat::rgba32f;
-    } else {
-      TI_ERROR("Invalid texture channels");
-    }
-  } else {
-    TI_ERROR("Invalid texture dtype");
-  }
-  return format;
+  format_ = format;
 }
 
 intptr_t Texture::get_device_allocation_ptr_as_int() const {

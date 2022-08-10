@@ -123,6 +123,7 @@ def main():
     window = ti.ui.Window('Explicit Mass Spring System', (768, 768),
                           vsync=True)
     canvas = window.get_canvas()
+    gui = window.get_gui()
 
     spring_Y[None] = 1000
     drag_damping[None] = 1
@@ -159,19 +160,18 @@ def main():
         canvas.lines(x, indices=indices, color=(0, 0, 0), width=0.01)
         canvas.circles(x, per_vertex_color=per_vertex_color, radius=0.02)
 
-        window.GUI.begin("mass spring", 0.05, 0.05, 0.9, 0.2)
-        window.GUI.text(
-            "Left click: add mass point (with shift to fix); Right click: attract"
-        )
-        window.GUI.text("C: clear all; Space: pause")
-        spring_Y[None] = window.GUI.slider_float("Spring Young's modulus",
-                                                 spring_Y[None], 100, 10000)
-        drag_damping[None] = window.GUI.slider_float("Drag damping",
-                                                     drag_damping[None], 0.0,
-                                                     10)
-        dashpot_damping[None] = window.GUI.slider_float(
-            "Dashpot damping", dashpot_damping[None], 10, 1000)
-        window.GUI.end()
+        with gui.sub_window("mass spring", 0.05, 0.05, 0.9, 0.2) as w:
+            w.text(
+                "Left click: add mass point (with shift to fix); Right click: attract"
+            )
+            w.text("C: clear all; Space: pause")
+            spring_Y[None] = w.slider_float("Spring Young's modulus",
+                                            spring_Y[None], 100, 10000)
+            drag_damping[None] = w.slider_float("Drag damping",
+                                                drag_damping[None], 0.0, 10)
+            dashpot_damping[None] = w.slider_float("Dashpot damping",
+                                                   dashpot_damping[None], 10,
+                                                   1000)
 
         window.show()
 

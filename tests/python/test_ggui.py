@@ -23,7 +23,7 @@ def get_temp_png():
 
 def write_temp_image(window):
     f = get_temp_png()
-    window.write_image(f)
+    window.save_image(f)
     try:
         os.remove(f)
     except OSError:
@@ -33,12 +33,12 @@ def write_temp_image(window):
 def verify_image(window, image_name, tolerance=0.1):
     if REGENERATE_GROUNDTRUTH_IMAGES:
         ground_truth_name = f"tests/python/expected/{image_name}.png"
-        window.write_image(ground_truth_name)
+        window.save_image(ground_truth_name)
     else:
         ground_truth_name = str(
             pathlib.Path(__file__).parent) + f"/expected/{image_name}.png"
         actual_name = get_temp_png()
-        window.write_image(actual_name)
+        window.save_image(actual_name)
         ground_truth_np = ti.tools.imread(ground_truth_name)
         actual_np = ti.tools.imread(actual_name)
         assert len(ground_truth_np.shape) == len(actual_np.shape)
@@ -157,7 +157,7 @@ def test_geometry_3d():
     window = ti.ui.Window('test', (640, 480), show_window=False)
     canvas = window.get_canvas()
     scene = ti.ui.Scene()
-    camera = ti.ui.make_camera()
+    camera = ti.ui.Camera()
     camera.position(0.0, 0.0, 1.5)
     camera.lookat(0.0, 0.0, 0)
     scene.set_camera(camera)
@@ -273,15 +273,16 @@ def test_set_image():
 @test_utils.test(arch=supported_archs)
 def test_imgui():
     window = ti.ui.Window('test', (640, 480), show_window=False)
+    gui = window.get_gui()
 
     def render():
-        with window.GUI.sub_window("window 0", 0.1, 0.1, 0.8, 0.2) as w:
+        with gui.sub_window("window 0", 0.1, 0.1, 0.8, 0.2) as w:
             w.text("Hello Taichi!")
             w.text("Hello Again!")
-        with window.GUI.sub_window("window 1", 0.1, 0.4, 0.8, 0.2) as w:
+        with gui.sub_window("window 1", 0.1, 0.4, 0.8, 0.2) as w:
             w.button("Press to unlease creativity")
             w.slider_float('creativity level', 100.0, 0.0, 100.0)
-        with window.GUI.sub_window("window 2", 0.1, 0.7, 0.8, 0.2) as w:
+        with gui.sub_window("window 2", 0.1, 0.7, 0.8, 0.2) as w:
             w.color_edit_3('Heyy', (0, 0, 1))
 
     for _ in range(RENDER_REPEAT):
@@ -302,7 +303,7 @@ def test_exit_without_showing():
 @test_utils.test(arch=supported_archs)
 def test_get_camera_view_and_projection_matrix():
     scene = ti.ui.Scene()
-    camera = ti.ui.make_camera()
+    camera = ti.ui.Camera()
     camera.position(0, 0, 3)
     camera.lookat(0, 0, 0)
 

@@ -457,7 +457,7 @@ There are two modes of automatic differentiation, forward and reverse mode. The 
 ### Using `ti.ad.FwdMode`
 The usage of `ti.ad.FwdMode` is very similar to `ti.ad.Tape`. Here we reuse the example for reverse mode above for an explanation.
 1. Enable `needs_dual=True` option when declaring fields involved in the derivative chain.
-2. Use context manager with `ti.ad.FwdMode(loss=y, param=x)`: to capture the kernel invocations which you want to automatically differentiate. The loss and param are the output and input of the function respectively.
+2. Use context manager with `ti.ad.FwdMode(loss=y, param=x)`: to capture the kernel invocations which you want to automatically differentiate. The `loss` and `param` are the output and input of the function respectively.
 3. Now dy/dx value at current x is available at function output `y.dual[None]`.
 The following code snippet explains the steps above:
 
@@ -518,7 +518,7 @@ print('dy/dx_1 =', y.dual, ' at x_1 =', x[1])
 ```
 
 :::note
-The `seed` should be specified by users if the `param` is not a scalar field.
+The `seed` argument is required if the `param` is not a scalar field.
 :::
 
 :::tip

@@ -484,7 +484,7 @@ void export_ggui(py::module &m) {
       .def("write_image", &PyWindow::write_image)
       .def("copy_depth_buffer_to_ndarray",
            &PyWindow::copy_depth_buffer_to_ndarray)
-      .def("get_image_buffer", &PyWindow::get_image_buffer)
+      .def("get_image_buffer_as_numpy", &PyWindow::get_image_buffer)
       .def("is_pressed", &PyWindow::is_pressed)
       .def("get_cursor_pos", &PyWindow::py_get_cursor_pos)
       .def("is_running", &PyWindow::is_running)

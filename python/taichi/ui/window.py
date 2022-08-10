@@ -168,13 +168,13 @@ class Window:
         arr_vulkan_layout_to_arr_normal_layout(tmp_depth, depth_numpy_arr)
         return depth_numpy_arr
 
-    def get_image_buffer(self):
+    def get_image_buffer_as_numpy(self):
         """Get the window content to numpy array.
 
         Returns:
             3d numpy array: [width, height, channels] with (0.0~1.0) float-format color.
         """
-        return self.window.get_image_buffer()
+        return self.window.get_image_buffer_as_numpy()
 
     def destroy(self):
         """Destroy this window. The window will be unavailable then.

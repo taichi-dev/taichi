@@ -126,7 +126,7 @@ def main():
     canvas = window.get_canvas()
     canvas.set_background_color((1, 1, 1))
     scene = ti.ui.Scene()
-    camera = ti.ui.make_camera()
+    camera = ti.ui.Camera()
 
     current_t = 0.0
     initialize_mass_points()

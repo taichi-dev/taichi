@@ -71,7 +71,7 @@ scene = ti.ui.Scene()
 ### Configure camera
 
 ```python
-camera = ti.ui.make_camera()
+camera = ti.ui.Camera()
 camera.position(pos)
 camera.lookat(pos)
 camera.up(dir)
@@ -123,12 +123,12 @@ canvas.scene(scene)
 The design of GGUI's GUI components follows the [Dear ImGui](https://github.com/ocornut/imgui) APIs.
 
 ```python
-window.GUI.begin(name, x, y, width, height)
-window.GUI.text(text)
-is_clicked = window.GUI.button(name)
-new_value = window.GUI.slider_float(name, old_value, min_value, max_value)
-new_color = window.GUI.color_edit_3(name, old_color)
-window.GUI.end()
+gui = window.get_gui()
+with gui.sub_window(name, x, y, width, height):
+    gui.text(text)
+    is_clicked = gui.button(name)
+    new_value = gui.slider_float(name, old_value, min_value, max_value)
+    new_color = gui.color_edit_3(name, old_color)
 ```
 
 ## Show a window
@@ -191,10 +191,10 @@ while window.running:
 To write the current frame in the window to an image file:
 
 ```python
-window.write_image(filename)
+window.save_image(filename)
 ```
 
-Note that you must call `window.write_image()` before calling `window.show()`.
+Note that you must call `window.save_image()` before calling `window.show()`.
 
 ## Off-screen rendering
 
@@ -204,4 +204,4 @@ GGUI supports saving frames to images without showing the window. This is also k
 window = ti.ui.Window('Window Title', (640, 360), show_window = False)
 ```
 
-Then you can call `window.write_image()` as normal and remove the `window.show()` call at the end.
+Then you can call `window.save_image()` as normal and remove the `window.show()` call at the end.

@@ -72,7 +72,7 @@ float_type_b = ti.types.quant.float(exp=6, frac=9, signed=False)  # 15-bit unsig
 All the parameters you've seen above are specifying the *storage type* of a
 quantized data type. However, most quantized data types have no native support
 on hardware, so an actual value of that quantized data type needs to convert to
-a primitive type ("*compute type*") when it is involved in computation. 
+a primitive type ("*compute type*") when it is involved in computation.
 
 The default compute type for quantized integers is `ti.i32`, while the default
 compute type for quantized fixed-point/floating-point numbers is `ti.f32`. You

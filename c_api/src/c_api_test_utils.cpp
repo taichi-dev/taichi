@@ -95,13 +95,13 @@ TiNdarrayAndMem make_ndarray(TiRuntime runtime,
     e_shape.dims[i] = element_shape[i];
   }
 
-  TiNdArray arg_array {};
+  TiNdArray arg_array{};
   arg_array.memory = res.memory_;
   arg_array.shape = shape;
   arg_array.elem_shape = e_shape;
   arg_array.elem_type = dtype;
 
-  TiArgumentValue arg_value {};
+  TiArgumentValue arg_value{};
   arg_value.ndarray = arg_array;
 
   res.arg_.type = TiArgumentType::TI_ARGUMENT_TYPE_NDARRAY;

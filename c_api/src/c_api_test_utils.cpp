@@ -60,7 +60,7 @@ TiNdarrayAndMem make_ndarray(TiRuntime runtime,
     alloc_size = 1;
 
   } else {
-    assert(false);
+    TI_ASSERT(false);
   }
 
   for (int i = 0; i < arr_dims; i++) {
@@ -95,15 +95,17 @@ TiNdarrayAndMem make_ndarray(TiRuntime runtime,
     e_shape.dims[i] = element_shape[i];
   }
 
-  TiNdArray arg_array = {.memory = res.memory_,
-                         .shape = shape,
-                         .elem_shape = e_shape,
-                         .elem_type = dtype};
+  TiNdArray arg_array {};
+  arg_array.memory = res.memory_;
+  arg_array.shape = shape;
+  arg_array.elem_shape = e_shape;
+  arg_array.elem_type = dtype;
 
-  TiArgumentValue arg_value = {.ndarray = arg_array};
+  TiArgumentValue arg_value {};
+  arg_value.ndarray = arg_array;
 
-  res.arg_ = {.type = TiArgumentType::TI_ARGUMENT_TYPE_NDARRAY,
-              .value = arg_value};
+  res.arg_.type = TiArgumentType::TI_ARGUMENT_TYPE_NDARRAY;
+  res.arg_.value = arg_value;
 
   return res;
 }

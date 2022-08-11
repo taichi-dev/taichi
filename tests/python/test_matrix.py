@@ -33,12 +33,11 @@ def check_epsilon_equal(mat_cal, mat_ref, epsilon) -> int:
     return err
 
 @ti.kernel
-def check_eulerAngleX() -> int:
+def check_eulerAngleX_0() -> int:
     identity = ti.Matrix.identity(ti.f32, 4)
     error = 0
     Angle = math.pi * 0.5
     X = ti.Vector([1.0, 0.0, 0.0])
-    Y = ti.Vector([0.0, 1.0, 0.0, 1.0])
     Y = ti.Vector([0.0, 1.0, 0.0, 1.0])
     Y1 = ti.Matrix.rotate_by_vector(identity, Angle, X) @ Y
     Y2 = ti.Matrix.eulerAngleX(Angle) @ Y
@@ -53,6 +52,14 @@ def check_eulerAngleX() -> int:
     error += check_epsilon_equal(Y1, Y5, 0.00001)
     error += check_epsilon_equal(Y1, Y6, 0.00001)
     error += check_epsilon_equal(Y1, Y7, 0.00001)
+    return error
+
+@ti.kernel
+def check_eulerAngleX_1() -> int:
+    identity = ti.Matrix.identity(ti.f32, 4)
+    error = 0
+    Angle = math.pi * 0.5
+    X = ti.Vector([1.0, 0.0, 0.0])
     Z = ti.Vector([0.0, 0.0, 1.0, 1.0])
     Z1 = ti.Matrix.rotate_by_vector(identity, Angle, X) @ Z
     Z2 = ti.Matrix.eulerAngleX(Angle) @ Z
@@ -71,7 +78,7 @@ def check_eulerAngleX() -> int:
 
 
 @ti.kernel
-def check_eulerAngleY() -> int:
+def check_eulerAngleY_0() -> int:
     identity = ti.Matrix.identity(ti.f32, 4)
     error = 0
     Angle = math.pi * 0.5
@@ -91,7 +98,15 @@ def check_eulerAngleY() -> int:
     error += check_epsilon_equal(X1, X5, 0.00001)
     error += check_epsilon_equal(X1, X6, 0.00001)
     error += check_epsilon_equal(X1, X7, 0.00001)
+    return error
 
+@ti.kernel
+def check_eulerAngleY_1() -> int:
+    identity = ti.Matrix.identity(ti.f32, 4)
+    error = 0
+    Angle = math.pi * 0.5
+    Y = ti.Vector([0.0, 1.0, 0.0])
+    
     Z = ti.Vector([0.0, 0.0, 1.0, 1.0])
     Z1 = ti.Matrix.eulerAngleY(Angle) @ Z
     Z2 = ti.Matrix.rotate_by_vector(identity, Angle, Y) @ Z
@@ -107,28 +122,31 @@ def check_eulerAngleY() -> int:
     error += check_epsilon_equal(Z1, Z5, 0.00001)
     error += check_epsilon_equal(Z1, Z6, 0.00001)
     error += check_epsilon_equal(Z1, Z7, 0.00001)
-
     return error
 
-
 @ti.kernel
-def check_eulerAngleZ() -> int:
+def check_eulerAngleZ_0() -> int:
     identity = ti.Matrix.identity(ti.f32, 4)
     error = 0
     Angle = math.pi * 0.5
     Z = ti.Vector([0.0, 0.0, 1.0])
     X = ti.Vector([1.0, 0.0, 0.0, 1.0])
     X1 = ti.Matrix.rotate_by_vector(identity, Angle, Z) @ X
-    X2 = ti.Matrix.eulerAngleZ(Angle) @ X
-    X3 = ti.Matrix.eulerAngleZX(Angle, 0.0) @ X
-    X4 = ti.Matrix.eulerAngleXZ(0.0, Angle) @ X
     X5 = ti.Matrix.eulerAngleZY(Angle, 0.0) @ X
     X6 = ti.Matrix.eulerAngleYZ(0.0, Angle) @ X
     X7 = ti.Matrix.eulerAngleYXZ(0., 0., Angle) @ X
     error += check_epsilon_equal(X1, X5, 0.00001)
     error += check_epsilon_equal(X1, X6, 0.00001)
     error += check_epsilon_equal(X1, X7, 0.00001)
+    return error
+
+@ti.kernel
+def check_eulerAngleZ_1() -> int:
+    identity = ti.Matrix.identity(ti.f32, 4)
+    error = 0
+    Angle = math.pi * 0.5
     Y = ti.Vector([1.0, 0.0, 0.0, 1.0])
+    Z = ti.Vector([0.0, 0.0, 1.0])
     Z1 = ti.Matrix.rotate_by_vector(identity, Angle, Z) @ Y
     Z2 = ti.Matrix.eulerAngleZ(Angle) @ Y
     Z3 = ti.Matrix.eulerAngleZX(Angle, 0.0) @ Y
@@ -301,9 +319,12 @@ def check_eulerAngleYXZ() -> int:
 @test_utils.test(arch=get_host_arch_list())
 def test_rotation():
     error = 0
-    error += check_eulerAngleX()
-    error += check_eulerAngleY()
-    error += check_eulerAngleZ()
+    error += check_eulerAngleX_0()
+    error += check_eulerAngleX_1()
+    error += check_eulerAngleY_0()
+    error += check_eulerAngleY_1()
+    error += check_eulerAngleZ_0()
+    error += check_eulerAngleZ_1()
     error += check_eulerAngleXY()
     error += check_eulerAngleYX()
     error += check_eulerAngleXZ()

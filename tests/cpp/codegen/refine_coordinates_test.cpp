@@ -2,6 +2,7 @@
 #include "gtest/gtest.h"
 
 #include <memory>
+#include <unordered_set>
 
 #include "llvm/IR/Function.h"
 #include "llvm/IR/Type.h"
@@ -32,14 +33,21 @@ class InvokeRefineCoordinatesBuilder : public LLVMModuleBuilder {
   static FuncType build(const SNode *snode, TaichiLLVMContext *tlctx) {
     InvokeRefineCoordinatesBuilder mb{tlctx};
     mb.run_jit(snode);
-    tlctx->create_jit_module(std::move(mb.module));
-    auto *fn = tlctx->lookup_function_pointer(kFuncName);
+    LLVMCompiledData data;
+    data.module = std::move(mb.module);
+    data.used_tree_ids = std::move(mb.used_snode_tree_ids);
+    data.tasks.emplace_back(kFuncName);
+    std::vector<std::unique_ptr<LLVMCompiledData>> data_list;
+    data_list.push_back(std::make_unique<LLVMCompiledData>(std::move(data)));
+    auto linked_data = tlctx->link_compile_data(std::move(data_list));
+    auto *jit = tlctx->create_jit_module(std::move(linked_data->module));
+    auto *fn = jit->lookup_function(kFuncName);
     return reinterpret_cast<FuncType>(fn);
   }
 
  private:
   InvokeRefineCoordinatesBuilder(TaichiLLVMContext *tlctx)
-      : LLVMModuleBuilder(tlctx->clone_runtime_module(), tlctx) {
+      : LLVMModuleBuilder(tlctx->new_module("kernel"), tlctx) {
     this->llvm_context = this->tlctx->get_this_thread_context();
     this->builder = std::make_unique<llvm::IRBuilder<>>(*llvm_context);
   }
@@ -75,8 +83,10 @@ class InvokeRefineCoordinatesBuilder : public LLVMModuleBuilder {
     RuntimeObject parent_coords{kLLVMPhysicalCoordinatesName, this,
                                 builder.get()};
     parent_coords.set("val", index0, parent_coords_first_component);
-    auto *refine_fn = tlctx->get_struct_function(
+    auto *refine_fn_struct = tlctx->get_struct_function(
         snode->refine_coordinates_func_name(), snode->get_snode_tree_id());
+    auto *refine_fn = module->getOrInsertFunction(refine_fn_struct->getName(), refine_fn_struct->getFunctionType(), refine_fn_struct->getAttributes()).getCallee();
+    used_snode_tree_ids.insert(snode->get_snode_tree_id());
     RuntimeObject child_coords{kLLVMPhysicalCoordinatesName, this,
                                builder.get()};
     builder->CreateCall(refine_fn,
@@ -86,6 +96,7 @@ class InvokeRefineCoordinatesBuilder : public LLVMModuleBuilder {
 
     llvm::verifyFunction(*func);
   }
+  std::unordered_set<int> used_snode_tree_ids;
 };
 
 struct BitsRange {
@@ -120,7 +131,7 @@ class RefineCoordinatesTest : public ::testing::Test {
     leaf_snode.dt = PrimitiveType::f32;
 
     auto sc = std::make_unique<StructCompilerLLVM>(
-        arch_, &config_, tlctx_, tlctx_->clone_runtime_module(),
+        arch_, &config_, tlctx_, tlctx_->new_module("struct"),
         /*snode_tree_id=*/0);
     sc->run(*root_snode_);
   }

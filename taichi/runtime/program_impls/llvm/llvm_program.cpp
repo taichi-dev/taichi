@@ -32,7 +32,7 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
 FunctionType LlvmProgramImpl::compile(Kernel *kernel,
                                       OffloadedStmt *offloaded) {
   auto codegen = KernelCodeGen::create(kernel->arch, kernel, offloaded);
-  return codegen->codegen();
+  return codegen->compile_to_function();
 }
 
 std::unique_ptr<llvm::Module>

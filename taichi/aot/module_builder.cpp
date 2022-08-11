@@ -6,7 +6,8 @@ namespace lang {
 
 void AotModuleBuilder::add(const std::string &identifier, Kernel *kernel) {
   if (!kernel->lowered() && Kernel::supports_lowering(kernel->arch)) {
-    kernel->lower();
+    kernel->lower(/*to_executable=*/!(arch_uses_llvm(kernel->arch) &&
+                                      kernel->arch != Arch::wasm));
   }
   add_per_backend(identifier, kernel);
 }

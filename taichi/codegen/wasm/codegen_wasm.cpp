@@ -9,6 +9,7 @@
 #include "taichi/ir/statements.h"
 #include "taichi/util/statistics.h"
 #include "taichi/util/file_sequence_writer.h"
+#include "taichi/runtime/program_impls/llvm/llvm_program.h"
 
 namespace taichi {
 namespace lang {
@@ -242,16 +243,13 @@ class TaskCodeGenWASM : public TaskCodeGenLLVM {
   }
 };
 
-FunctionType KernelCodeGenWASM::codegen() {
+FunctionType KernelCodeGenWASM::compile_to_function() {
   TI_AUTO_PROF
-  TaskCodeGenWASM gen(kernel, ir);
-  auto res = gen.run_compilation();
-  std::vector<std::unique_ptr<LLVMCompiledData>> data;
-  data.push_back(std::make_unique<LLVMCompiledData>(std::move(res)));
-  auto linked = gen.tlctx->link_compile_data(std::move(data));
-  gen.tlctx->create_jit_module(std::move(linked->module));
+  auto linked = compile_kernel_to_module();
+  auto *tlctx = get_llvm_program(prog)->get_llvm_context(kernel->arch);
+  tlctx->create_jit_module(std::move(linked.module));
   auto kernel_symbol =
-      gen.tlctx->lookup_function_pointer(linked->tasks[0].name);
+      tlctx->lookup_function_pointer(linked.tasks[0].name);
   return [=](RuntimeContext &context) {
     TI_TRACE("Launching Taichi Kernel Function");
     auto func = (int32(*)(void *))kernel_symbol;
@@ -259,7 +257,7 @@ FunctionType KernelCodeGenWASM::codegen() {
   };
 }
 
-LLVMCompiledData KernelCodeGenWASM::modulegen(
+LLVMCompiledData KernelCodeGenWASM::compile_task(
     std::unique_ptr<llvm::Module> &&module,
     OffloadedStmt *stmt) {
   bool init_flag = module == nullptr;
@@ -283,5 +281,15 @@ LLVMCompiledData KernelCodeGenWASM::modulegen(
 
   return {name_list, std::move(gen->module), {}, {}};
 }
+
+LLVMCompiledData KernelCodeGenWASM::compile_kernel_to_module() {
+  auto *tlctx = get_llvm_program(prog)->get_llvm_context(kernel->arch);
+  auto res = compile_task();
+  std::vector<std::unique_ptr<LLVMCompiledData>> data;
+  data.push_back(std::make_unique<LLVMCompiledData>(std::move(res)));
+  auto linked = tlctx->link_compile_data(std::move(data));
+  return std::move(*linked);
+}
+
 }  // namespace lang
 }  // namespace taichi

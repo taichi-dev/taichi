@@ -709,75 +709,19 @@ std::unique_ptr<TaskCodeGenLLVM> KernelCodeGenCUDA::make_codegen_llvm(
 }
 #endif  // TI_WITH_LLVM
 
-LLVMCompiledData KernelCodeGenCUDA::modulegen(
+LLVMCompiledData KernelCodeGenCUDA::compile_task(
     std::unique_ptr<llvm::Module> &&module,
     OffloadedStmt *stmt) {
   TaskCodeGenCUDA gen(kernel, stmt);
   return gen.run_compilation();
 }
 
-FunctionType KernelCodeGenCUDA::codegen() {
+FunctionType KernelCodeGenCUDA::compile_to_function() {
   TI_AUTO_PROF
-  // TODO: move the offline cache part to the base class
-  auto *llvm_prog = get_llvm_program(prog);
-  auto *tlctx = llvm_prog->get_llvm_context(kernel->arch);
-  auto &config = prog->config;
-  std::string kernel_key = get_hashed_offline_cache_key(&config, kernel);
-  kernel->set_kernel_key_for_cache(kernel_key);
-  if (config.offline_cache && this->supports_offline_cache() &&
-      !kernel->is_evaluator) {
-    std::vector<LLVMCompiledData> res;
-    const bool ok = maybe_read_compilation_from_cache(kernel_key, res);
-    if (ok) {
-      TI_DEBUG("Create kernel '{}' from cache (key='{}')", kernel->get_name(),
-               kernel_key);
-      cache_module(kernel_key, res);
-      CUDAModuleToFunctionConverter converter(
-          tlctx, get_llvm_program(prog)->get_runtime_executor());
-      return converter.convert(kernel, std::move(res));
-    }
-  }
-  if (!kernel->lowered()) {
-    kernel->lower(/*to_executable=*/false);
-  }
-
-  auto block = dynamic_cast<Block *>(kernel->ir.get());
-  auto &worker = get_llvm_program(kernel->program)->compilation_workers;
-  TI_ASSERT(block);
-
-  auto &offloads = block->statements;
-  std::vector<std::unique_ptr<LLVMCompiledData>> data(offloads.size());
-  using TaskFunc = int32 (*)(void *);
-  std::vector<TaskFunc> task_funcs(offloads.size());
-  for (int i = 0; i < offloads.size(); i++) {
-    auto compile_func = [&, i] {
-      tlctx->fetch_this_thread_struct_module();
-      auto offload =
-          irpass::analysis::clone(offloads[i].get(), offloads[i]->get_kernel());
-      irpass::re_id(offload.get());
-      auto new_data = this->modulegen(nullptr, offload->as<OffloadedStmt>());
-      data[i] = std::make_unique<LLVMCompiledData>(std::move(new_data));
-    };
-    if (kernel->is_evaluator) {
-      compile_func();
-    } else {
-      worker.enqueue(compile_func);
-    }
-  }
-  if (!kernel->is_evaluator) {
-    worker.flush();
-  }
-
-  auto linked = tlctx->link_compile_data(std::move(data));
   std::vector<LLVMCompiledData> linked_data;
-  linked_data.push_back(std::move(*linked));
-  if (!kernel->is_evaluator) {
-    TI_DEBUG("Cache kernel '{}' (key='{}')", kernel->get_name(), kernel_key);
-    cache_module(kernel_key, linked_data);
-  }
+  linked_data.push_back(compile_kernel_to_module());
 
-  CUDAModuleToFunctionConverter converter{tlctx,
-                                          llvm_prog->get_runtime_executor()};
+  CUDAModuleToFunctionConverter converter{get_llvm_program(prog)->get_llvm_context(kernel->arch), get_llvm_program(prog)->get_runtime_executor()};
 
   return converter.convert(this->kernel, std::move(linked_data));
 }

@@ -2442,8 +2442,8 @@ void VulkanSurface::create_swap_chain() {
         image->format == VK_FORMAT_D32_SFLOAT) {
       aspect = VK_IMAGE_ASPECT_DEPTH_BIT;
     } else if (image->format == VK_FORMAT_D16_UNORM_S8_UINT ||
-              image->format == VK_FORMAT_D24_UNORM_S8_UINT ||
-              image->format == VK_FORMAT_D32_SFLOAT_S8_UINT) {
+               image->format == VK_FORMAT_D24_UNORM_S8_UINT ||
+               image->format == VK_FORMAT_D32_SFLOAT_S8_UINT) {
       aspect = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
     } else {
       aspect = VK_IMAGE_ASPECT_COLOR_BIT;

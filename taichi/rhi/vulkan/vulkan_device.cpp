@@ -1987,6 +1987,10 @@ DeviceAllocation VulkanDevice::create_image(const ImageParams &params) {
         vkapi::create_image_view(device_, alloc.image, &view_info));
   }
 
+  if (params.initial_layout != ImageLayout::undefined) {
+    image_transition(handle, ImageLayout::undefined, params.initial_layout);
+  }
+
 #ifdef TI_VULKAN_DEBUG_ALLOCATIONS
   TI_TRACE("Allocate VK image {}, alloc_id={}", (void *)alloc.image,
            handle.alloc_id);
@@ -2304,7 +2308,7 @@ VulkanSurface::VulkanSurface(VulkanDevice *device, const SurfaceConfig &config)
   } else {
     ImageParams params = {ImageDimension::d2D,
                           BufferFormat::rgba8,
-                          ImageLayout::undefined,
+                          ImageLayout::present_src,
                           config.width,
                           config.height,
                           1,
@@ -2456,7 +2460,7 @@ void VulkanSurface::create_swap_chain() {
         vkapi::create_image_view(device_->vk_device(), image, &create_info);
 
     swapchain_images_.push_back(
-        device_->import_vk_image(image, view, VK_IMAGE_LAYOUT_UNDEFINED));
+        device_->import_vk_image(image, view, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR));
   }
 }
 

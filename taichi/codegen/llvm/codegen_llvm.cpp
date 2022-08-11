@@ -1484,6 +1484,10 @@ void TaskCodeGenLLVM::visit(GlobalStoreStmt *stmt) {
       TI_NOT_IMPLEMENTED;
     }
   } else {
+    TI_TRACE("Store {} to {}", stmt->val->name(),
+             stmt->dest->name());
+    llvm_val[stmt->val]->dump();
+    llvm_val[stmt->dest]->dump();
     builder->CreateStore(llvm_val[stmt->val], llvm_val[stmt->dest]);
   }
 }

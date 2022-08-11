@@ -463,7 +463,6 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
           // Neither used in other nodes nor used in this node.
           if (!stmt->is<AtomicOpStmt>()) {
             // Eliminate the dead store.
-            TI_TRACE("Elminate dead store: {}", block->operator[](i)->name());
             erase(i);
             modified = true;
             continue;

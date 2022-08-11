@@ -222,8 +222,9 @@ void BinaryOpExpression::type_check(CompileConfig *config) {
       if (rhs_tensor_type->get_shape() !=
           lhs_type->cast<TensorType>()->get_shape())
         error();
-      ret_type =
-          promoted_type(dtype, rhs_type->as<TensorType>()->get_element_type());
+      auto rhs_elem_type = rhs_type->as<TensorType>()->get_element_type();
+      if (rhs_elem_type != PrimitiveType::unknown)
+        ret_type = promoted_type(dtype, rhs_elem_type);
     }
     // TODO: shape check!
     ret_type = TypeFactory::create_tensor_type(

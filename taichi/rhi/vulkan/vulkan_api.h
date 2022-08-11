@@ -217,7 +217,6 @@ struct DeviceObjVkImageView : public DeviceObj {
   ~DeviceObjVkImageView() override;
 };
 using IVkImageView = std::shared_ptr<DeviceObjVkImageView>;
-IVkImageView create_image_view(VkDevice device, IVkImage image);
 IVkImageView create_image_view(VkDevice device,
                                IVkImage image,
                                VkImageViewCreateInfo *create_info);

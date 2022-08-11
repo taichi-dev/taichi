@@ -488,20 +488,20 @@ def test_stacked_mixed_ib_and_non_ib_inner_loops_local_variable():
 
 
 @test_utils.test(exclude=archs_excluded_fwd)
-def test_large_for_loops_adaptive_stack_size():
+def test_large_for_loops():
     x = ti.field(dtype=float, shape=(), needs_dual=True)
     arr = ti.field(dtype=float, shape=(2), needs_dual=True)
     loss = ti.field(dtype=float, shape=(), needs_dual=True)
 
     @ti.kernel
-    def test_large_loop():
-        for i in range(5):
-            for j in range(2000):
-                for k in range(1000):
+    def large_for_loop():
+        for i in range(20000):
+            for j in range(100):
+                for k in range(5):
                     loss[None] += ti.sin(x[None]) + 1.0
 
     with ti.ad.FwdMode(loss=loss, param=x):
-        test_large_loop()
+        large_for_loop()
 
     assert loss[None] == 1e7
     assert loss.dual[None] == 1e7

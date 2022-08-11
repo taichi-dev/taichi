@@ -11,7 +11,7 @@ concurrency:
 
 env:
   TI_CI: "1"
-  TI_LITE_TEST: ${{ github.event_name == 'pull_request' && ! contains(github.event.pull_request.labels.*.name, 'error-prone') && '1' || '' }}
+  TI_LITE_TEST: ${{ github.event_name == 'pull_request' && ! contains(github.event.pull_request.labels.*.name, 'full-ci') && ! startsWith(github.base_ref, 'rc-') && '1' || '' }}
 
 jobs:
   show_environ:

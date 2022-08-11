@@ -361,7 +361,8 @@ class PyTaichi:
             _field._calc_dynamic_index_stride()
 
     def materialize(self):
-        if get_runtime().prog.config.debug:
+        if get_runtime().prog.config.debug and get_runtime(
+        ).prog.config.validate_autodiff:
             self._allocate_gradient_visited()
         self.materialize_root_fb(not self.materialized)
         self.materialized = True

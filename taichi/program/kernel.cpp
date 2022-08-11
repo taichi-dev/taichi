@@ -91,7 +91,8 @@ void Kernel::lower(bool to_executable) {
   if (to_executable) {
     irpass::compile_to_executable(
         ir.get(), config, this, /*autodiff_mode=*/autodiff_mode,
-        /*ad_use_stack=*/true, verbose,
+        /*ad_use_stack=*/true,
+        /*verbose*/ verbose,
         /*lower_global_access=*/to_executable,
         /*make_thread_local=*/config.make_thread_local,
         /*make_block_local=*/
@@ -220,11 +221,11 @@ void Kernel::LaunchContextBuilder::set_extra_arg_int(int i, int j, int32 d) {
   ctx_->extra_args[i][j] = d;
 }
 
-void Kernel::LaunchContextBuilder::set_arg_external_array(
+void Kernel::LaunchContextBuilder::set_arg_external_array_with_shape(
     int arg_id,
     uintptr_t ptr,
     uint64 size,
-    bool is_device_allocation) {
+    const std::vector<int64> &shape) {
   TI_ASSERT_INFO(
       kernel_->args[arg_id].is_array,
       "Assigning external (numpy) array to scalar argument is not allowed.");
@@ -235,38 +236,17 @@ void Kernel::LaunchContextBuilder::set_arg_external_array(
        ActionArg("address", fmt::format("0x{:x}", ptr)),
        ActionArg("array_size_in_bytes", (int64)size)});
 
-  ctx_->set_arg(arg_id, ptr);
-  ctx_->set_array_runtime_size(arg_id, size);
-  ctx_->set_array_device_allocation_type(
-      arg_id, is_device_allocation ? RuntimeContext::DevAllocType::kNdarray
-                                   : RuntimeContext::DevAllocType::kNone);
-}
-
-void Kernel::LaunchContextBuilder::set_arg_external_array_with_shape(
-    int arg_id,
-    uintptr_t ptr,
-    uint64 size,
-    const std::vector<int64> &shape) {
-  this->set_arg_external_array(arg_id, ptr, size,
-                               /*is_device_allocation=*/false);
   TI_ASSERT_INFO(shape.size() <= taichi_max_num_indices,
                  "External array cannot have > {max_num_indices} indices");
-  for (uint64 i = 0; i < shape.size(); ++i) {
-    this->set_extra_arg_int(arg_id, i, shape[i]);
-  }
+  ctx_->set_arg_external_array(arg_id, ptr, size, shape);
 }
 
 void Kernel::LaunchContextBuilder::set_arg_ndarray(int arg_id,
                                                    const Ndarray &arr) {
   intptr_t ptr = arr.get_device_allocation_ptr_as_int();
-  uint64 arr_size = arr.get_element_size() * arr.get_nelement();
-  this->set_arg_external_array(arg_id, ptr, arr_size,
-                               /*is_device_allocation=*/true);
   TI_ASSERT_INFO(arr.shape.size() <= taichi_max_num_indices,
                  "External array cannot have > {max_num_indices} indices");
-  for (uint64 i = 0; i < arr.shape.size(); ++i) {
-    this->set_extra_arg_int(arg_id, i, arr.shape[i]);
-  }
+  ctx_->set_arg_ndarray(arg_id, ptr, arr.shape);
 }
 
 void Kernel::LaunchContextBuilder::set_arg_texture(int arg_id,

@@ -87,3 +87,4 @@ imgui.ini
 /venv/
 /_skbuild/
 .cache
+.do-not-clean

@@ -1,4 +1,4 @@
-#include "taichi/gui/gui.h"
+#include "taichi/ui/gui/gui.h"
 
 #if defined(TI_GUI_X11)
 #include <X11/Xlib.h>

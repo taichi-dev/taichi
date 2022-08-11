@@ -35,7 +35,7 @@ Texture::Texture(Program *prog,
   img_params.y = height;
   img_params.z = depth;
   img_params.initial_layout = ImageLayout::undefined;
-  texture_alloc_ = device->create_image(img_params);
+  texture_alloc_ = prog_->allocate_texture(img_params);
 
   format_ = img_params.format;
 
@@ -116,6 +116,10 @@ void Texture::from_ndarray(Ndarray *ndarray) {
 
   GraphicsDevice *device =
       static_cast<GraphicsDevice *>(prog_->get_graphics_device());
+
+  device->image_transition(texture_alloc_, ImageLayout::undefined,
+                           ImageLayout::transfer_dst);
+
   Stream *stream = device->get_compute_stream();
   auto cmdlist = stream->new_command_list();
 
@@ -128,8 +132,6 @@ void Texture::from_ndarray(Ndarray *ndarray) {
   params.image_extent.z = depth_;
 
   cmdlist->buffer_barrier(ndarray->ndarray_alloc_);
-  cmdlist->image_transition(texture_alloc_, ImageLayout::undefined,
-                            ImageLayout::transfer_dst);
   cmdlist->buffer_to_image(texture_alloc_, ndarray->ndarray_alloc_.get_ptr(0),
                            ImageLayout::transfer_dst, params);
 
@@ -143,19 +145,7 @@ DevicePtr get_device_ptr(taichi::lang::Program *program, SNode *snode) {
   int tree_id = root->get_snode_tree_id();
   DevicePtr root_ptr = program->get_snode_tree_device_ptr(tree_id);
 
-  int64 offset = 0;
-
-  int child_id = root->child_id(dense_parent);
-
-  TI_ASSERT_INFO(root == program->get_snode_root(tree_id),
-                 "SNode roots don't match");
-
-  for (int i = 0; i < child_id; ++i) {
-    SNode *child = root->ch[i].get();
-    offset += child->cell_size_bytes * child->num_cells_per_container;
-  }
-
-  return root_ptr.get_ptr(offset);
+  return root_ptr.get_ptr(program->get_field_in_tree_offset(tree_id, snode));
 }
 
 void Texture::from_snode(SNode *snode) {
@@ -165,6 +155,9 @@ void Texture::from_snode(SNode *snode) {
 
   GraphicsDevice *device =
       static_cast<GraphicsDevice *>(prog_->get_graphics_device());
+
+  device->image_transition(texture_alloc_, ImageLayout::undefined,
+                           ImageLayout::transfer_dst);
 
   DevicePtr devptr = get_device_ptr(prog_, snode);
 
@@ -180,8 +173,6 @@ void Texture::from_snode(SNode *snode) {
   params.image_extent.z = depth_;
 
   cmdlist->buffer_barrier(devptr);
-  cmdlist->image_transition(texture_alloc_, ImageLayout::undefined,
-                            ImageLayout::transfer_dst);
   cmdlist->buffer_to_image(texture_alloc_, devptr, ImageLayout::transfer_dst,
                            params);
 

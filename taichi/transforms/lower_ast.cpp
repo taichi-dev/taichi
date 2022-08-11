@@ -209,41 +209,38 @@ class LowerAST : public IRVisitor {
         fctx.push_back(std::move(new_for));
       } else {
         // transform into a structure as
-        // i = begin; while (1) { if (i >= end) break; original body; i += 1; }
+        // i = begin - 1; while (1) { i += 1; if (i >= end) break; original
+        // body; }
         fctx.push_back<AllocaStmt>(PrimitiveType::i32);
         auto loop_var = fctx.back_stmt();
         stmt->parent->local_var_to_stmt[stmt->loop_var_id[0]] = loop_var;
-        fctx.push_back<LocalStoreStmt>(loop_var, begin->stmt);
+        auto const_one = fctx.push_back<ConstStmt>(TypedConstant((int32)1));
+        auto begin_minus_one = fctx.push_back<BinaryOpStmt>(
+            BinaryOpType::sub, begin->stmt, const_one);
+        fctx.push_back<LocalStoreStmt>(loop_var, begin_minus_one);
         auto loop_var_addr = LaneAttribute<LocalAddress>(
             LocalAddress(loop_var->as<AllocaStmt>(), 0));
         VecStatement load_and_compare;
         auto loop_var_load_stmt =
             load_and_compare.push_back<LocalLoadStmt>(loop_var_addr);
+        auto loop_var_add_one = load_and_compare.push_back<BinaryOpStmt>(
+            BinaryOpType::add, loop_var_load_stmt, const_one);
+
         auto cond_stmt = load_and_compare.push_back<BinaryOpStmt>(
-            BinaryOpType::cmp_lt, loop_var_load_stmt, end->stmt);
+            BinaryOpType::cmp_lt, loop_var_add_one, end->stmt);
 
         auto &&new_while = std::make_unique<WhileStmt>(std::move(stmt->body));
         auto mask = std::make_unique<AllocaStmt>(PrimitiveType::i32);
         new_while->mask = mask.get();
+
+        // insert break
+        load_and_compare.push_back<WhileControlStmt>(new_while->mask,
+                                                     cond_stmt);
+        load_and_compare.push_back<LocalStoreStmt>(loop_var, loop_var_add_one);
         auto &stmts = new_while->body;
         for (int i = 0; i < (int)load_and_compare.size(); i++) {
           stmts->insert(std::move(load_and_compare[i]), i);
         }
-
-        VecStatement increase_and_store;
-        auto const_one =
-            increase_and_store.push_back<ConstStmt>(TypedConstant((int32)1));
-        auto loop_var_add_one = increase_and_store.push_back<BinaryOpStmt>(
-            BinaryOpType::add, loop_var_load_stmt, const_one);
-        increase_and_store.push_back<LocalStoreStmt>(loop_var,
-                                                     loop_var_add_one);
-        for (int i = 0; i < (int)increase_and_store.size(); i++) {
-          stmts->insert(std::move(increase_and_store[i]), stmts->size());
-        }
-        // insert break
-        stmts->insert(
-            std::make_unique<WhileControlStmt>(new_while->mask, cond_stmt),
-            load_and_compare.size());
 
         stmt->insert_before_me(
             std::make_unique<AllocaStmt>(PrimitiveType::i32));

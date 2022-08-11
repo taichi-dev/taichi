@@ -1,4 +1,4 @@
-#include "taichi/gui/gui.h"
+#include "taichi/ui/gui/gui.h"
 
 // GGUI is not supported on Android as the window management is handled by the
 // framework directly. It also provides a Canvas through Skia library that users

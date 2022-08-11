@@ -1,7 +1,7 @@
 name: Publishing Release
 on:
   schedule:
-    - cron: '0 0 * * *'
+    - cron: '0 20 * * *'  # GMT 20 == GMT+8 04
   workflow_dispatch:
     # Manually trigger the release workflow, a version must be provided
     inputs:
@@ -50,13 +50,13 @@ jobs:
         run: |
           if [ -n "$RELEASE_VERSION" ]; then
             # For production release, we run on five python versions.
-            echo '::set-output name=matrix::{"include":[{"name":"taichi","python":"3.6","conda_python":"py36"},{"name":"taichi","python":"3.7","conda_python":"py37"},{"name":"taichi","python":"3.8","conda_python":"py38"},{"name":"taichi","python":"3.9","conda_python":"py39"},{"name":"taichi","python":"3.10","conda_python":"py310"}]}"'
+            echo '::set-output name=matrix::{"include":[{"name":"taichi","python":"3.7","conda_python":"py37"},{"name":"taichi","python":"3.8","conda_python":"py38"},{"name":"taichi","python":"3.9","conda_python":"py39"},{"name":"taichi","python":"3.10","conda_python":"py310"}]}"'
 
             # M1 only supports py38, py39, and py310(conda), so change matrix.
             echo '::set-output name=matrix_osx::{"include":[{"name":"taichi","python":"3.8"},{"name":"taichi","python":"3.9"},{"name":"taichi","python":"3.10"}]}"'
           else
             # For nightly release, we run on three python versions.
-            echo '::set-output name=matrix::{"include":[{"name":"taichi-nightly","python":"3.6","conda_python":"py36"},{"name":"taichi-nightly","python":"3.7","conda_python":"py37"},{"name":"taichi-nightly","python":"3.8","conda_python":"py38"},{"name":"taichi-nightly","python":"3.9","conda_python":"py39"},{"name":"taichi-nightly","python":"3.10","conda_python":"py310"}]}"'
+            echo '::set-output name=matrix::{"include":[{"name":"taichi-nightly","python":"3.7","conda_python":"py37"},{"name":"taichi-nightly","python":"3.8","conda_python":"py38"},{"name":"taichi-nightly","python":"3.9","conda_python":"py39"},{"name":"taichi-nightly","python":"3.10","conda_python":"py310"}]}"'
 
             # M1 only supports py38 and py310(conda), so change matrix.
             echo '::set-output name=matrix_osx::{"include":[{"name":"taichi-nightly","python":"3.8"},{"name":"taichi-nightly","python":"3.9"},{"name":"taichi-nightly","python":"3.10"}]}"'
@@ -110,9 +110,11 @@ jobs:
       - name: Test
         run: |
           docker create --user dev --name taichi_test --gpus all -v /tmp/.X11-unix:/tmp/.X11-unix \
-            -e DISPLAY -e PY -e GPU_TEST registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.0 \
+            -e DISPLAY -e PY -e GPU_TEST \
+            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.0 \
             /home/dev/unix_test.sh
           docker cp .github/workflows/scripts/unix_test.sh taichi_test:/home/dev/unix_test.sh
+          docker cp .github/workflows/scripts/common-utils.sh taichi_test:/home/dev/common-utils.sh
           docker cp ./requirements_test.txt taichi_test:/home/dev/requirements_test.txt
           docker cp shared/dist/ taichi_test:/home/dev/
           docker cp shared/build/ taichi_test:/home/dev/
@@ -176,9 +178,11 @@ jobs:
       - name: Test
         run: |
           docker create --user dev --name taichi_test --gpus all -e TI_WANTED_ARCHS \
-            -e PY -e GPU_TEST registry.taichigraphics.com/taichidev-manylinux2014-cuda:v0.0.0 \
+            -e PY -e GPU_TEST \
+            registry.taichigraphics.com/taichidev-manylinux2014-cuda:v0.0.0 \
             /home/dev/unix_test.sh
           docker cp .github/workflows/scripts/unix_test.sh taichi_test:/home/dev/unix_test.sh
+          docker cp .github/workflows/scripts/common-utils.sh taichi_test:/home/dev/common-utils.sh
           docker cp ./requirements_test.txt taichi_test:/home/dev/requirements_test.txt
           docker cp shared/dist/ taichi_test:/home/dev/
           docker cp shared/build/ taichi_test:/home/dev/

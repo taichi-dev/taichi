@@ -18,19 +18,24 @@ TEST(Type, TypeToString) {
   auto qfl = TypeFactory::get_instance().get_quant_float_type(qi5, qu7, f32);
 
   auto bs1 = TypeFactory::get_instance().get_bit_struct_type(
-      u16, {qi5, qu7}, {0, 5}, {false, false}, {-1, -1}, {{}, {}});
+      /*physical_type=*/u16, /*member_types=*/{qi5, qu7},
+      /*member_bit_offsets=*/{0, 5}, /*member_exponents=*/{-1, -1},
+      /*member_exponent_users=*/{{}, {}});
   EXPECT_EQ(bs1->to_string(), "bs(0: qi5@0, 1: qu7@5)");
 
   auto bs2 = TypeFactory::get_instance().get_bit_struct_type(
-      u32, {qu7, qfl, qu7, qfl}, {0, 7, 12, 19}, {false, false, false, false},
-      {-1, 0, -1, 2}, {{1}, {}, {3}, {}});
+      /*physical_type=*/u32, /*member_types=*/{qu7, qfl, qu7, qfl},
+      /*member_bit_offsets=*/{0, 7, 12, 19},
+      /*member_exponents=*/{-1, 0, -1, 2},
+      /*member_exponent_users=*/{{1}, {}, {3}, {}});
   EXPECT_EQ(bs2->to_string(),
             "bs(0: qu7@0, 1: qfl(d=qi5 e=qu7 c=f32)@7 exp=0, 2: qu7@12, 3: "
             "qfl(d=qi5 e=qu7 c=f32)@19 exp=2)");
 
   auto bs3 = TypeFactory::get_instance().get_bit_struct_type(
-      u32, {qu7, qfl, qfl}, {0, 7, 12}, {false, true, true}, {-1, 0, 0},
-      {{1, 2}, {}, {}});
+      /*physical_type=*/u32, /*member_types=*/{qu7, qfl, qfl},
+      /*member_bit_offsets=*/{0, 7, 12}, /*member_exponents=*/{-1, 0, 0},
+      /*member_exponent_users=*/{{1, 2}, {}, {}});
   EXPECT_EQ(bs3->to_string(),
             "bs(0: qu7@0, 1: qfl(d=qi5 e=qu7 c=f32)@7 shared_exp=0, 2: "
             "qfl(d=qi5 e=qu7 c=f32)@12 shared_exp=0)");

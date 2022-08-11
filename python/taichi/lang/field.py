@@ -1,5 +1,6 @@
 import taichi.lang
 from taichi._lib import core as _ti_core
+from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.util import (in_python_scope, python_scope, to_numpy_type,
                               to_paddle_type, to_pytorch_type)
 
@@ -351,8 +352,9 @@ class ScalarField(Field):
         # Check for potential slicing behaviour
         # for instance: x[0, :]
         padded_key = self._pad_key(key)
+        import numpy as np  # pylint: disable=C0415
         for key in padded_key:
-            if not isinstance(key, int):
+            if not isinstance(key, (int, np.integer)):
                 raise TypeError(
                     f"Detected illegal element of type: {type(key)}. "
                     f"Please be aware that slicing a ti.field is not supported so far."
@@ -401,4 +403,40 @@ class SNodeHostAccess:
         self.key = key
 
 
-__all__ = ["Field", "ScalarField"]
+class BitpackedFields:
+    """Taichi bitpacked fields, where fields with quantized types are packed together.
+
+    Args:
+        max_num_bits (int): Maximum number of bits all fields inside can occupy in total. Only 32 or 64 is allowed.
+    """
+    def __init__(self, max_num_bits):
+        self.fields = []
+        self.bit_struct_type_builder = _ti_core.BitStructTypeBuilder(
+            max_num_bits)
+
+    def place(self, *args, shared_exponent=False):
+        """Places a list of fields with quantized types inside.
+
+        Args:
+            *args (List[Field]): A list of fields with quantized types to place.
+            shared_exponent (bool): Whether the fields have a shared exponent.
+        """
+        if shared_exponent:
+            self.bit_struct_type_builder.begin_placing_shared_exponent()
+        count = 0
+        for arg in args:
+            assert isinstance(arg, Field)
+            for var in arg._get_field_members():
+                self.fields.append((var.ptr,
+                                    self.bit_struct_type_builder.add_member(
+                                        var.ptr.get_dt())))
+                count += 1
+        if shared_exponent:
+            self.bit_struct_type_builder.end_placing_shared_exponent()
+            if count <= 1:
+                raise TaichiSyntaxError(
+                    "At least 2 fields need to be placed when shared_exponent=True"
+                )
+
+
+__all__ = ["BitpackedFields", "Field", "ScalarField"]

@@ -23,6 +23,7 @@ CompileConfig::CompileConfig() {
   debug = false;
   cfg_optimization = true;
   check_out_of_bound = false;
+  validate_autodiff = false;
   lazy_compilation = true;
   serial_schedule = false;
   simplify_before_lower_access = true;
@@ -31,6 +32,7 @@ CompileConfig::CompileConfig() {
   move_loop_invariant_outside_if = false;
   default_fp = PrimitiveType::f32;
   default_ip = PrimitiveType::i32;
+  default_up = PrimitiveType::u32;
   verbose_kernel_launches = false;
   kernel_profiler = false;
   default_cpu_block_dim = 32;

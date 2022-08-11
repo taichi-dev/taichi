@@ -709,25 +709,6 @@ std::unique_ptr<TaskCodeGenLLVM> KernelCodeGenCUDA::make_codegen_llvm(
 }
 #endif  // TI_WITH_LLVM
 
-static void set_arg_external_array(RuntimeContext *ctx,
-                                   const std::string &kernel_name,
-                                   int arg_id,
-                                   uintptr_t ptr,
-                                   uint64 size,
-                                   bool is_device_allocation) {
-  ActionRecorder::get_instance().record(
-      "set_kernel_arg_ext_ptr",
-      {ActionArg("kernel_name", kernel_name), ActionArg("arg_id", arg_id),
-       ActionArg("address", fmt::format("0x{:x}", ptr)),
-       ActionArg("array_size_in_bytes", (int64)size)});
-
-  ctx->set_arg(arg_id, ptr);
-  ctx->set_array_runtime_size(arg_id, size);
-  ctx->set_array_device_allocation_type(
-      arg_id, is_device_allocation ? RuntimeContext::DevAllocType::kNdarray
-                                   : RuntimeContext::DevAllocType::kNone);
-}
-
 LLVMCompiledData KernelCodeGenCUDA::modulegen(
     std::unique_ptr<llvm::Module> &&module,
     OffloadedStmt *stmt) {
@@ -860,9 +841,7 @@ FunctionType CUDAModuleToFunctionConverter::convert(
             device_buffers[i] = arg_buffers[i];
           }
           // device_buffers[i] saves a raw ptr on CUDA device.
-          set_arg_external_array(&context, kernel_name, i,
-                                 (uint64)device_buffers[i], arr_sz,
-                                 /*is_device_allocation=*/false);
+          context.set_arg(i, (uint64)device_buffers[i]);
 
         } else if (arr_sz > 0) {
           // arg_buffers[i] is a DeviceAllocation*
@@ -878,9 +857,7 @@ FunctionType CUDAModuleToFunctionConverter::convert(
           arg_buffers[i] = device_buffers[i];
 
           // device_buffers[i] saves the unwrapped raw ptr from arg_buffers[i]
-          set_arg_external_array(&context, kernel_name, i,
-                                 (uint64)device_buffers[i], arr_sz,
-                                 /*is_device_allocation=*/false);
+          context.set_arg(i, (uint64)device_buffers[i]);
         }
       }
     }

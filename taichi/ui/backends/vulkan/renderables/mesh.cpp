@@ -50,9 +50,9 @@ void Mesh::update_data(const MeshInfo &info, const Scene &scene) {
           "ti.i32");
     }
 
-    size_t correct_mesh_ssbo_size = num_instances_ * attr_field.matrix_rows *
-                                    attr_field.matrix_cols *
-                                    data_type_size(attr_field.dtype);
+    size_t correct_mesh_ssbo_size =
+        attr_field.shape[0] * attr_field.matrix_rows * attr_field.matrix_cols *
+        data_type_size(attr_field.dtype);
 
     if (correct_mesh_ssbo_size != mesh_ssbo_size_) {
       resize_mesh_storage_buffers(correct_mesh_ssbo_size);
@@ -137,6 +137,7 @@ void Mesh::init_mesh(AppContext *app_context,
       app_context->config.package_path + "/shaders/Mesh_vk_vert.spv",
       app_context->config.package_path + "/shaders/Mesh_vk_frag.spv",
       TopologyType::Triangles,
+      PolygonMode::Fill,
       vbo_attrs,
   };
 

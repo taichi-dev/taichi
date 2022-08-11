@@ -20,7 +20,7 @@ namespace py = pybind11;
 #include "taichi/ui/backends/vulkan/scene.h"
 #include "taichi/rhi/vulkan/vulkan_loader.h"
 #include "taichi/rhi/arch.h"
-#include "taichi/ui/common/field_info.h"
+#include "taichi/program/field_info.h"
 #include "taichi/ui/common/gui_base.h"
 #include "taichi/program/ndarray.h"
 #include <memory>
@@ -65,6 +65,9 @@ struct PyGui {
   }
   bool checkbox(std::string name, bool old_value) {
     return gui->checkbox(name, old_value);
+  }
+  int slider_int(std::string name, int old_value, int minimum, int maximum) {
+    return gui->slider_int(name, old_value, minimum, maximum);
   }
   float slider_float(std::string name,
                      float old_value,
@@ -172,7 +175,8 @@ struct PyScene {
             float draw_index_count,
             float draw_first_index,
             float draw_vertex_count,
-            float draw_first_vertex) {
+            float draw_first_vertex,
+            bool show_wireframe) {
     RenderableInfo renderable_info;
     renderable_info.vbo = vbo;
     renderable_info.has_per_vertex_color = has_per_vertex_color;
@@ -182,6 +186,9 @@ struct PyScene {
     renderable_info.draw_first_index = (int)draw_first_index;
     renderable_info.draw_vertex_count = (int)draw_vertex_count;
     renderable_info.draw_first_vertex = (int)draw_first_vertex;
+    renderable_info.display_mode = show_wireframe
+                                       ? taichi::lang::PolygonMode::Line
+                                       : taichi::lang::PolygonMode::Fill;
 
     MeshInfo info;
     info.renderable_info = renderable_info;
@@ -218,11 +225,13 @@ struct PyScene {
                      py::tuple color,
                      bool two_sided,
                      FieldInfo transforms,
+                     float draw_instance_count,
                      float draw_first_instance,
                      float draw_index_count,
                      float draw_first_index,
                      float draw_vertex_count,
-                     float draw_first_vertex) {
+                     float draw_first_vertex,
+                     bool show_wireframe) {
     RenderableInfo renderable_info;
     renderable_info.vbo = vbo;
     renderable_info.has_per_vertex_color = has_per_vertex_color;
@@ -232,14 +241,20 @@ struct PyScene {
     renderable_info.draw_first_index = (int)draw_first_index;
     renderable_info.draw_vertex_count = (int)draw_vertex_count;
     renderable_info.draw_first_vertex = (int)draw_first_vertex;
+    renderable_info.display_mode = show_wireframe
+                                       ? taichi::lang::PolygonMode::Line
+                                       : taichi::lang::PolygonMode::Fill;
 
     MeshInfo info;
     info.renderable_info = renderable_info;
     info.color = tuple_to_vec3(color);
     info.two_sided = two_sided;
     if (transforms.valid) {
-      info.num_instances = transforms.shape[0];
       info.start_instance = (int)draw_first_instance;
+      info.num_instances =
+          (draw_instance_count + info.start_instance) > transforms.shape[0]
+              ? (transforms.shape[0] - info.start_instance)
+              : (int)draw_instance_count;
     }
     info.mesh_attribute_info.mesh_attribute = transforms;
     info.mesh_attribute_info.has_attribute = transforms.valid;
@@ -469,7 +484,7 @@ void export_ggui(py::module &m) {
       .def("write_image", &PyWindow::write_image)
       .def("copy_depth_buffer_to_ndarray",
            &PyWindow::copy_depth_buffer_to_ndarray)
-      .def("get_image_buffer", &PyWindow::get_image_buffer)
+      .def("get_image_buffer_as_numpy", &PyWindow::get_image_buffer)
       .def("is_pressed", &PyWindow::is_pressed)
       .def("get_cursor_pos", &PyWindow::py_get_cursor_pos)
       .def("is_running", &PyWindow::is_running)
@@ -494,6 +509,7 @@ void export_ggui(py::module &m) {
       .def("end", &PyGui::end)
       .def("text", &PyGui::text)
       .def("checkbox", &PyGui::checkbox)
+      .def("slider_int", &PyGui::slider_int)
       .def("slider_float", &PyGui::slider_float)
       .def("color_edit_3", &PyGui::color_edit_3)
       .def("button", &PyGui::button);
@@ -562,6 +578,12 @@ void export_ggui(py::module &m) {
   py::enum_<ProjectionMode>(m, "ProjectionMode")
       .value("Perspective", ProjectionMode::Perspective)
       .value("Orthogonal", ProjectionMode::Orthogonal)
+      .export_values();
+
+  py::enum_<taichi::lang::PolygonMode>(m, "DisplayMode")
+      .value("Fill", taichi::lang::PolygonMode::Fill)
+      .value("Line", taichi::lang::PolygonMode::Line)
+      .value("Point", taichi::lang::PolygonMode::Point)
       .export_values();
 }
 

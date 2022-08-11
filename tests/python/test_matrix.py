@@ -23,6 +23,7 @@ test_vector_arrays = [
     np.array([83, 12])
 ]
 
+
 @ti.func
 def check_epsilon_equal(mat_cal, mat_ref, epsilon) -> int:
     assert mat_cal.n == mat_ref.n and mat_cal.m == mat_ref.m
@@ -31,6 +32,7 @@ def check_epsilon_equal(mat_cal, mat_ref, epsilon) -> int:
         for j in ti.static(range(mat_cal.m)):
             err = ti.abs(mat_cal[i, j] - mat_ref[i, j]) > epsilon
     return err
+
 
 @ti.kernel
 def check_eulerAngleX_0() -> int:
@@ -53,6 +55,7 @@ def check_eulerAngleX_0() -> int:
     error += check_epsilon_equal(Y1, Y6, 0.00001)
     error += check_epsilon_equal(Y1, Y7, 0.00001)
     return error
+
 
 @ti.kernel
 def check_eulerAngleX_1() -> int:
@@ -100,13 +103,14 @@ def check_eulerAngleY_0() -> int:
     error += check_epsilon_equal(X1, X7, 0.00001)
     return error
 
+
 @ti.kernel
 def check_eulerAngleY_1() -> int:
     identity = ti.Matrix.identity(ti.f32, 4)
     error = 0
     Angle = math.pi * 0.5
     Y = ti.Vector([0.0, 1.0, 0.0])
-    
+
     Z = ti.Vector([0.0, 0.0, 1.0, 1.0])
     Z1 = ti.Matrix.eulerAngleY(Angle) @ Z
     Z2 = ti.Matrix.rotate_by_vector(identity, Angle, Y) @ Z
@@ -124,6 +128,7 @@ def check_eulerAngleY_1() -> int:
     error += check_epsilon_equal(Z1, Z7, 0.00001)
     return error
 
+
 @ti.kernel
 def check_eulerAngleZ_0() -> int:
     identity = ti.Matrix.identity(ti.f32, 4)
@@ -139,6 +144,7 @@ def check_eulerAngleZ_0() -> int:
     error += check_epsilon_equal(X1, X6, 0.00001)
     error += check_epsilon_equal(X1, X7, 0.00001)
     return error
+
 
 @ti.kernel
 def check_eulerAngleZ_1() -> int:
@@ -175,11 +181,13 @@ def check_eulerAngleXY() -> int:
 
     axisX = ti.Vector([1.0, 0.0, 0.0])
     axisY = ti.Vector([0.0, 1.0, 0.0])
-    
-    V1 = ti.Matrix.rotate_by_vector(identity, AngleY, axisY) @ ti.Matrix.rotate_by_vector(identity, AngleX, axisX) @ V
+
+    V1 = ti.Matrix.rotate_by_vector(identity, AngleY,
+                                    axisY) @ ti.Matrix.rotate_by_vector(
+                                        identity, AngleX, axisX) @ V
     V2 = ti.Matrix.eulerAngleXY(AngleX, AngleY) @ V
     V3 = ti.Matrix.eulerAngleY(AngleY) @ ti.Matrix.eulerAngleX(AngleX) @ V
-    
+
     error += check_epsilon_equal(V1, V2, 0.00001)
     error += check_epsilon_equal(V1, V3, 0.00001)
     return error
@@ -195,8 +203,9 @@ def check_eulerAngleYX() -> int:
     AngleY = math.pi * 0.25
     axisX = ti.Vector([1.0, 0.0, 0.0])
     axisY = ti.Vector([0.0, 1.0, 0.0])
-    
-    V1 = (ti.Matrix.rotate_by_vector(identity, AngleX, axisX) @ ti.Matrix.rotate_by_vector(identity, AngleY, axisY)) @ V
+
+    V1 = (ti.Matrix.rotate_by_vector(identity, AngleX, axisX)
+          @ ti.Matrix.rotate_by_vector(identity, AngleY, axisY)) @ V
     V2 = ti.Matrix.eulerAngleYX(AngleY, AngleX) @ V
     V3 = ti.Matrix.eulerAngleX(AngleX) @ ti.Matrix.eulerAngleY(AngleY) @ V
 
@@ -216,10 +225,12 @@ def check_eulerAngleXZ() -> int:
     AngleZ = math.pi * 0.25
     axisX = ti.Vector([1.0, 0.0, 0.0])
     axisZ = ti.Vector([0.0, 0.0, 1.0])
-    V1 = ti.Matrix.rotate_by_vector(identity, AngleZ, axisZ) @ ti.Matrix.rotate_by_vector(identity, AngleX, axisX) @ V
+    V1 = ti.Matrix.rotate_by_vector(identity, AngleZ,
+                                    axisZ) @ ti.Matrix.rotate_by_vector(
+                                        identity, AngleX, axisX) @ V
     V2 = ti.Matrix.eulerAngleXZ(AngleX, AngleZ) @ V
     V3 = ti.Matrix.eulerAngleZ(AngleZ) @ ti.Matrix.eulerAngleX(AngleX) @ V
-    
+
     error += check_epsilon_equal(V1, V2, 0.00001)
     error += check_epsilon_equal(V1, V3, 0.00001)
     return error
@@ -235,7 +246,8 @@ def check_eulerAngleZX() -> int:
     AngleZ = math.pi * 0.25
     axisX = ti.Vector([1.0, 0.0, 0.0])
     axisZ = ti.Vector([0.0, 0.0, 1.0])
-    V1 = (ti.Matrix.rotate_by_vector(identity, AngleX, axisX) @ ti.Matrix.rotate_by_vector(identity, AngleZ, axisZ)) @ V
+    V1 = (ti.Matrix.rotate_by_vector(identity, AngleX, axisX)
+          @ ti.Matrix.rotate_by_vector(identity, AngleZ, axisZ)) @ V
     V2 = ti.Matrix.eulerAngleZX(AngleZ, AngleX) @ V
     V3 = ti.Matrix.eulerAngleX(AngleX) @ ti.Matrix.eulerAngleZ(AngleZ) @ V
     error += check_epsilon_equal(V1, V2, 0.00001)
@@ -246,15 +258,16 @@ def check_eulerAngleZX() -> int:
 @ti.kernel
 def check_eulerAngleYZ() -> int:
     identity = ti.Matrix.identity(ti.f32, 4)
-    error = 0 
+    error = 0
     V = ti.Vector([1.0, 1.0, 1.0, 1.0])
-    
+
     AngleY = math.pi * 0.5
     AngleZ = math.pi * 0.25
-    axisX = ti.Vector([1.0, 0.0, 0.0]) 
-    axisY = ti.Vector([0.0, 1.0, 0.0]) 
-    axisZ = ti.Vector([0.0, 0.0, 1.0]) 
-    V1 = (ti.Matrix.rotate_by_vector(identity, AngleZ, axisZ) @ ti.Matrix.rotate_by_vector(identity, AngleY, axisY)) @ V
+    axisX = ti.Vector([1.0, 0.0, 0.0])
+    axisY = ti.Vector([0.0, 1.0, 0.0])
+    axisZ = ti.Vector([0.0, 0.0, 1.0])
+    V1 = (ti.Matrix.rotate_by_vector(identity, AngleZ, axisZ)
+          @ ti.Matrix.rotate_by_vector(identity, AngleY, axisY)) @ V
     V2 = ti.Matrix.eulerAngleYZ(AngleY, AngleZ) @ V
     V3 = ti.Matrix.eulerAngleZ(AngleZ) @ ti.Matrix.eulerAngleY(AngleY) @ V
     error += check_epsilon_equal(V1, V2, 0.00001)
@@ -273,7 +286,8 @@ def check_eulerAngleZY() -> int:
     AngleZ = math.pi * 0.25
     axisY = ti.Vector([0.0, 1.0, 0.0])
     axisZ = ti.Vector([0.0, 0.0, 1.0])
-    V1 = (ti.Matrix.rotate_by_vector(identity, AngleY, axisY) @ ti.Matrix.rotate_by_vector(identity, AngleZ, axisZ)) @ V
+    V1 = (ti.Matrix.rotate_by_vector(identity, AngleY, axisY)
+          @ ti.Matrix.rotate_by_vector(identity, AngleZ, axisZ)) @ V
     V2 = ti.Matrix.eulerAngleZY(AngleZ, AngleY) @ V
     V3 = ti.Matrix.eulerAngleY(AngleY) @ ti.Matrix.eulerAngleZ(AngleZ) @ V
     error += check_epsilon_equal(V1, V2, 0.00001)
@@ -284,37 +298,38 @@ def check_eulerAngleZY() -> int:
 @ti.kernel
 def check_eulerAngleYXZ() -> int:
     error = 0
-    
-    first =  1.046
+
+    first = 1.046
     second = 0.52
     third = -0.785
     axisX = ti.Vector([1.0, 0.0, 0.0])
     axisY = ti.Vector([0.0, 1.0, 0.0])
     axisZ = ti.Vector([0.0, 0.0, 1.0])
-    
+
     rotationEuler = ti.Matrix.eulerAngleYXZ(first, second, third)
-    rotationInvertedY  = ti.Matrix.eulerAngleZ(third) @ ti.Matrix.eulerAngleX(second) @ ti.Matrix.eulerAngleY(-first)
+    rotationInvertedY = ti.Matrix.eulerAngleZ(third) @ ti.Matrix.eulerAngleX(
+        second) @ ti.Matrix.eulerAngleY(-first)
     rotationDumb = ti.Matrix.zero(ti.f32, 4, 4)
     rotationDumb = ti.Matrix.rotate_by_vector(rotationDumb, first, axisY)
     rotationDumb = ti.Matrix.rotate_by_vector(rotationDumb, second, axisX)
     rotationDumb = ti.Matrix.rotate_by_vector(rotationDumb, third, axisZ)
-    
+
     dif0 = rotationEuler - rotationDumb
     dif1 = rotationEuler - rotationInvertedY
-    
-    difRef0 = ti.Matrix([[ 0.05048351, -0.61339645, -0.78816002,  0.        ],
-                         [ 0.65833154,  0.61388511, -0.4355969 ,  0.        ],
-                         [ 0.75103329, -0.49688014,  0.4348093 ,  0.        ],
-                         [ 0.        ,  0.        ,  0.        ,  1.        ]])
-    difRef1 = ti.Matrix([[-0.60788802,  0.,         -1.22438441,  0.        ],
-                         [ 0.60837229,  0.,         -1.22340979,  0.        ],
-                         [ 1.50206658,  0.,          0.        ,  0.        ],
-                         [ 0.        ,  0.,          0.        ,  0.        ]])
+
+    difRef0 = ti.Matrix([[0.05048351, -0.61339645, -0.78816002, 0.],
+                         [0.65833154, 0.61388511, -0.4355969, 0.],
+                         [0.75103329, -0.49688014, 0.4348093, 0.],
+                         [0., 0., 0., 1.]])
+    difRef1 = ti.Matrix([[-0.60788802, 0., -1.22438441, 0.],
+                         [0.60837229, 0., -1.22340979, 0.],
+                         [1.50206658, 0., 0., 0.], [0., 0., 0., 0.]])
 
     error += check_epsilon_equal(dif0, difRef0, 0.00001)
     error += check_epsilon_equal(dif1, difRef1, 0.00001)
 
     return error
+
 
 @test_utils.test(arch=get_host_arch_list())
 def test_rotation():
@@ -333,19 +348,20 @@ def test_rotation():
     error += check_eulerAngleZY()
     error += check_eulerAngleYXZ()
     assert error == 0
-    
+
+
 @test_utils.test(arch=get_host_arch_list())
 @ti.kernel
 def test_translate():
     error = 0
     translate_vec = ti.Vector([1., 2., 3.])
-    translate_mat = ti.Matrix.translate(translate_vec[0], translate_vec[1], translate_vec[2])
-    translate_ref = ti.Matrix([[1., 0., 0., 1.],
-                               [0., 1., 0., 2.],
-                               [0., 0., 1., 3.],
-                               [0., 0., 0., 1.]])
+    translate_mat = ti.Matrix.translate(translate_vec[0], translate_vec[1],
+                                        translate_vec[2])
+    translate_ref = ti.Matrix([[1., 0., 0., 1.], [0., 1., 0., 2.],
+                               [0., 0., 1., 3.], [0., 0., 0., 1.]])
     error += check_epsilon_equal(translate_mat, translate_ref, 0.00001)
     assert error == 0
+
 
 @test_utils.test(arch=get_host_arch_list())
 @ti.kernel
@@ -353,13 +369,12 @@ def test_scale():
     error = 0
     scale_vec = ti.Vector([1., 2., 3.])
     scale_mat = ti.Matrix.scale(scale_vec[0], scale_vec[1], scale_vec[2])
-    scale_ref = ti.Matrix([[1., 0., 0., 0.],
-                           [0., 2., 0., 0.],
-                           [0., 0., 3., 0.],
-                           [0., 0., 0., 1.]])
+    scale_ref = ti.Matrix([[1., 0., 0., 0.], [0., 2., 0., 0.],
+                           [0., 0., 3., 0.], [0., 0., 0., 1.]])
     error += check_epsilon_equal(scale_mat, scale_ref, 0.00001)
     assert error == 0
-    
+
+
 def test_taichi_scope_matrix_operations_with_global_matrices(ops):
     a, b, c = test_matrix_arrays[:3]
     m1, m2 = ti.Matrix(a), ti.Matrix(b)

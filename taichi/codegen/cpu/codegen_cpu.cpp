@@ -289,7 +289,9 @@ FunctionType KernelCodeGenCPU::compile_to_function() {
   linked_data.push_back(compile_kernel_to_module());
 
   CPUModuleToFunctionConverter converter(
-      get_llvm_program(prog)->get_llvm_context(kernel->arch), get_llvm_program(prog)->get_runtime_executor());
-  return converter.convert(kernel, std::move(linked_data)); // TODO(Lin): get rid of vector
+      get_llvm_program(prog)->get_llvm_context(kernel->arch),
+      get_llvm_program(prog)->get_runtime_executor());
+  return converter.convert(
+      kernel, std::move(linked_data));  // TODO(Lin): get rid of vector
 }
 TLANG_NAMESPACE_END

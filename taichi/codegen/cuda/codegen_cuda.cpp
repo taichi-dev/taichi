@@ -721,7 +721,9 @@ FunctionType KernelCodeGenCUDA::compile_to_function() {
   std::vector<LLVMCompiledData> linked_data;
   linked_data.push_back(compile_kernel_to_module());
 
-  CUDAModuleToFunctionConverter converter{get_llvm_program(prog)->get_llvm_context(kernel->arch), get_llvm_program(prog)->get_runtime_executor()};
+  CUDAModuleToFunctionConverter converter{
+      get_llvm_program(prog)->get_llvm_context(kernel->arch),
+      get_llvm_program(prog)->get_runtime_executor()};
 
   return converter.convert(this->kernel, std::move(linked_data));
 }

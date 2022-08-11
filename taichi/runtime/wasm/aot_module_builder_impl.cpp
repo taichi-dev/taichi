@@ -39,7 +39,8 @@ void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
   auto module_info =
       KernelCodeGenWASM(kernel, nullptr).compile_kernel_to_module();
   module_ = std::move(module_info.module);
-  llvm::Linker::linkModules(*module_, std::move(module_info.module), llvm::Linker::OverrideFromSrc);
+  llvm::Linker::linkModules(*module_, std::move(module_info.module),
+                            llvm::Linker::OverrideFromSrc);
 
   for (auto &task : module_info.tasks)
     name_list_.push_back(task.name);

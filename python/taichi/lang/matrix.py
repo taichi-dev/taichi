@@ -96,6 +96,7 @@ def _gen_swizzles(cls):
             setattr(cls, prop_key, prop)
     return cls
 
+
 class _MatrixBaseImpl:
     def __init__(self, m, n, entries):
         self.m = m
@@ -1043,6 +1044,7 @@ class Matrix(TaichiOperations):
         """
         return Matrix([[ops_mod.cast(int(i == j), dt) for j in range(n)]
                        for i in range(n)])
+
     @staticmethod
     def translate(dx, dy, dz):
         """Constructs a translate Matrix with shape (4, 4).
@@ -1054,7 +1056,7 @@ class Matrix(TaichiOperations):
 
         Returns:
             :class:`~taichi.Matrix`: An `4 x 4` translate matrix.
-        
+
         Example:
 
             >>> import math
@@ -1064,11 +1066,9 @@ class Matrix(TaichiOperations):
              [ 0 0 1 3]
              [ 0 0 0 1]]
         """
-        return Matrix([[1., 0., 0., dx],
-                       [0., 1., 0., dy],
-                       [0., 0., 1., dz],
+        return Matrix([[1., 0., 0., dx], [0., 1., 0., dy], [0., 0., 1., dz],
                        [0., 0., 0., 1.]])
-        
+
     @staticmethod
     def scale(sx, sy, sz):
         """Constructs a scale Matrix with shape (4, 4).
@@ -1080,7 +1080,7 @@ class Matrix(TaichiOperations):
 
         Returns:
             :class:`~taichi.Matrix`: An `4 x 4` translate matrix.
-            
+
         Example:
 
             >>> import math
@@ -1090,56 +1090,51 @@ class Matrix(TaichiOperations):
              [ 0 0 3 0]
              [ 0 0 0 1]]
         """
-        return Matrix([[sx, 0., 0., 0.],
-                       [0., sy, 0., 0.],
-                       [0., 0., sz, 0.],
+        return Matrix([[sx, 0., 0., 0.], [0., sy, 0., 0.], [0., 0., sz, 0.],
                        [0., 0., 0., 1.]])
-    
+
     @staticmethod
     def eulerAngleX(angleX):
         """Creates a 3D 4 * 4 homogeneous rotation matrix from an euler angle X.
 
         Args:
             angleX (float): angle in radians unit around X axis
-            
+
         """
         cosX = ops_mod.cos(angleX)
         sinX = ops_mod.sin(angleX)
-        
-        return Matrix([[1.,    0.,   0.,   0.],
-                       [0.,  cosX,  sinX,  0.],
-                       [0., -sinX,  cosX,  0.],
-                       [0.,    0.,    0.,  1.]])
+
+        return Matrix([[1., 0., 0., 0.], [0., cosX, sinX, 0.],
+                       [0., -sinX, cosX, 0.], [0., 0., 0., 1.]])
+
     @staticmethod
     def eulerAngleY(angleY):
         """Creates a 3D 4 * 4 homogeneous rotation matrix from an euler angle Y.
 
         Args:
             angleY (float): angle in radians unit around Y axis
-        
+
         """
         cosY = ops_mod.cos(angleY)
         sinY = ops_mod.sin(angleY)
-        
-        return Matrix([[cosY, 0., -sinY, 0.],
-                       [  0., 1.,    0., 0.],
-                       [sinY, 0.,  cosY, 0.],
-                       [  0., 0.,    0., 1.]])
+
+        return Matrix([[cosY, 0., -sinY, 0.], [0., 1., 0., 0.],
+                       [sinY, 0., cosY, 0.], [0., 0., 0., 1.]])
+
     @staticmethod
     def eulerAngleZ(angleZ):
         """Creates a 3D 4 * 4 homogeneous rotation matrix from an euler angle Z.
 
         Args:
             angleZ (float): angle in radians unit around Z axis
-        
+
         """
         cosZ = ops_mod.cos(angleZ)
         sinZ = ops_mod.sin(angleZ)
-        
-        return Matrix([[ cosZ, sinZ, 0., 0.],
-                       [-sinZ, cosZ, 0., 0.],
-                       [   0.,   0., 1., 0.],
-                       [   0.,   0., 0., 1.]])
+
+        return Matrix([[cosZ, sinZ, 0., 0.], [-sinZ, cosZ, 0., 0.],
+                       [0., 0., 1., 0.], [0., 0., 0., 1.]])
+
     @staticmethod
     def eulerAngleXY(angleX, angleY):
         """Creates a 3D 4 * 4 homogeneous rotation matrix from euler angles(X * Y).
@@ -1147,18 +1142,18 @@ class Matrix(TaichiOperations):
         Args:
             angleX (float): angle in radians unit around X axis
             angleY (float): angle in radians unit around Y axis
-        
+
         """
         cosX = ops_mod.cos(angleX)
         sinX = ops_mod.sin(angleX)
         cosY = ops_mod.cos(angleY)
         sinY = ops_mod.sin(angleY)
-        
+
         return Matrix([[cosY, -sinX * -sinY, cosX * -sinY, 0.],
-                       [  0.,          cosX,         sinX, 0.],
-                       [sinY,  -sinX * cosY,  cosX * cosY, 0.],
-                       [  0.,            0.,            0.,1.]])
-    
+                       [0., cosX, sinX, 0.],
+                       [sinY, -sinX * cosY, cosX * cosY, 0.], [0., 0., 0.,
+                                                               1.]])
+
     @staticmethod
     def eulerAngleYX(angleY, angleX):
         """Creates a 3D 4 * 4 homogeneous rotation matrix from euler angles(Y * X).
@@ -1166,18 +1161,18 @@ class Matrix(TaichiOperations):
         Args:
             angleY (float): angle in radians unit around Y axis
             angleX (float): angle in radians unit around X axis
-        
+
         """
         cosX = ops_mod.cos(angleX)
         sinX = ops_mod.sin(angleX)
         cosY = ops_mod.cos(angleY)
         sinY = ops_mod.sin(angleY)
-        
+
         return Matrix([[cosY, 0., -sinY, 0.],
                        [sinY * sinX, cosX, cosY * sinX, 0.],
-                       [sinY * cosX, -sinX, cosY * cosX, 0.],
-                       [0.,0.,0.,1.]])
-        
+                       [sinY * cosX, -sinX, cosY * cosX, 0.], [0., 0., 0.,
+                                                               1.]])
+
     @staticmethod
     def eulerAngleXZ(angleX, angleZ):
         """Creates a 3D 4 * 4 homogeneous rotation matrix from euler angles(X * Z).
@@ -1185,10 +1180,10 @@ class Matrix(TaichiOperations):
         Args:
             angleX (float): angle in radians unit around X axis
             angleZ (float): angle in radians unit around Z axis
-        
+
         """
         return Matrix.eulerAngleZ(angleZ) @ Matrix.eulerAngleX(angleX)
-    
+
     @staticmethod
     def eulerAngleZX(angleZ, angleX):
         """Creates a 3D 4 * 4 homogeneous rotation matrix from euler angles(Z * X).
@@ -1196,10 +1191,10 @@ class Matrix(TaichiOperations):
         Args:
             angleZ (float): angle in radians unit around Z axis
             angleX (float): angle in radians unit around X axis
-        
+
         """
         return Matrix.eulerAngleX(angleX) @ Matrix.eulerAngleZ(angleZ)
-    
+
     @staticmethod
     def eulerAngleYZ(angleY, angleZ):
         """Creates a 3D 4 * 4 homogeneous rotation matrix from euler angles(Y * Z).
@@ -1207,10 +1202,10 @@ class Matrix(TaichiOperations):
         Args:
             angleY (float): angle in radians unit around Y axis
             angleZ (float): angle in radians unit around Z axis
-        
+
         """
         return Matrix.eulerAngleZ(angleZ) @ Matrix.eulerAngleY(angleY)
-    
+
     @staticmethod
     def eulerAngleZY(angleZ, angleY):
         """Creates a 3D 4 * 4 homogeneous rotation matrix from euler angles(Z * Y).
@@ -1218,10 +1213,10 @@ class Matrix(TaichiOperations):
         Args:
             angleZ (float): angle in radians unit around Z axis
             angleY (float): angle in radians unit around Y axis
-        
+
         """
         return Matrix.eulerAngleY(angleY) @ Matrix.eulerAngleZ(angleZ)
-    
+
     @staticmethod
     def eulerAngleXYZ(t1, t2, t3):
         """Creates a 3D 4 * 4 homogeneous rotation matrix from euler angles(X * Y * Z).
@@ -1237,12 +1232,12 @@ class Matrix(TaichiOperations):
         s1 = ops_mod.sin(-t1)
         s2 = ops_mod.sin(-t2)
         s3 = ops_mod.sin(-t3)
-        
-        return Matrix([[c2 * c3, -c1 * s3 + s1*s2*c3, s1*s3+c1*s2*c3, 0.],
-                       [c2*s3, c1*c3+s1*s2*s3, -s1*c3+c1*s2*s3,0.],
-                       [-s2,s1*c2, c1*c2,0.],
-                       [0.,0.,0.,1.]])
-        
+
+        return Matrix(
+            [[c2 * c3, -c1 * s3 + s1 * s2 * c3, s1 * s3 + c1 * s2 * c3, 0.],
+             [c2 * s3, c1 * c3 + s1 * s2 * s3, -s1 * c3 + c1 * s2 * s3, 0.],
+             [-s2, s1 * c2, c1 * c2, 0.], [0., 0., 0., 1.]])
+
     @staticmethod
     def eulerAngleYXZ(yaw, pitch, roll):
         """Creates a 3D 4 * 4 homogeneous rotation matrix from euler angles(Y * X * Z).
@@ -1258,11 +1253,12 @@ class Matrix(TaichiOperations):
         sp = ops_mod.sin(pitch)
         cb = ops_mod.cos(roll)
         sb = ops_mod.sin(roll)
-        
-        return Matrix([[ ch * cb + sh * sp * sb, sb * cp, -sh * cb + ch * sp * sb, 0.],
-                       [-ch * sb + sh * sp * cb, cb * cp,  sb * sh + ch * sp * cb, 0.],
-                       [sh * cp, -sp, ch * cp, 0.],
-                       [0.,0.,0.,1.]])
+
+        return Matrix(
+            [[ch * cb + sh * sp * sb, sb * cp, -sh * cb + ch * sp * sb, 0.],
+             [-ch * sb + sh * sp * cb, cb * cp, sb * sh + ch * sp * cb, 0.],
+             [sh * cp, -sp, ch * cp, 0.], [0., 0., 0., 1.]])
+
     @staticmethod
     def eulerAngleXZX(t1, t2, t3):
         """Creates a 3D 4 * 4 homogeneous rotation matrix from euler angles(X * Z * X).
@@ -1278,11 +1274,13 @@ class Matrix(TaichiOperations):
         s1 = ops_mod.sin(t1)
         s2 = ops_mod.sin(t2)
         s3 = ops_mod.sin(t3)
-        
-        return Matrix([[c2, c1 * s2, s1 * s2, 0.],
-                       [-c3*s2, c1*c2*c3-s1*s3, -c1*s3+c2*c3*s1,0.],
-                       [s2*s3,-c3*s1-c1*c2*s3, c1*c3-c2*s1*s3,0.],
-                       [0.,0.,0.,1.]])
+
+        return Matrix(
+            [[c2, c1 * s2, s1 * s2, 0.],
+             [-c3 * s2, c1 * c2 * c3 - s1 * s3, -c1 * s3 + c2 * c3 * s1, 0.],
+             [s2 * s3, -c3 * s1 - c1 * c2 * s3, c1 * c3 - c2 * s1 * s3, 0.],
+             [0., 0., 0., 1.]])
+
     @staticmethod
     def eulerAngleXYX(t1, t2, t3):
         """Creates a 3D 4 * 4 homogeneous rotation matrix from euler angles(X * Y * X).
@@ -1298,11 +1296,13 @@ class Matrix(TaichiOperations):
         s1 = ops_mod.sin(t1)
         s2 = ops_mod.sin(t2)
         s3 = ops_mod.sin(t3)
-        
-        return Matrix([[c2, s1 * s2, -c1 * s2, 0.],
-                       [s2*s3, c1*c3-c2*s1*s3, c3*s1+c1*c2*s3,0.],
-                       [c3*s2,-c1*s3-c2*c3*s1, c1*c2*c3-s1*s3,0.],
-                       [0.,0.,0.,1.]])
+
+        return Matrix(
+            [[c2, s1 * s2, -c1 * s2, 0.],
+             [s2 * s3, c1 * c3 - c2 * s1 * s3, c3 * s1 + c1 * c2 * s3, 0.],
+             [c3 * s2, -c1 * s3 - c2 * c3 * s1, c1 * c2 * c3 - s1 * s3, 0.],
+             [0., 0., 0., 1.]])
+
     @staticmethod
     def eulerAngleYXY(t1, t2, t3):
         """Creates a 3D 4 * 4 homogeneous rotation matrix from euler angles(Y * X * Y).
@@ -1318,11 +1318,13 @@ class Matrix(TaichiOperations):
         s1 = ops_mod.sin(t1)
         s2 = ops_mod.sin(t2)
         s3 = ops_mod.sin(t3)
-        
-        return Matrix([[c1 * c3 - c2 * s1 * s3, s2* s3, -c3 * s1 - c1 * c2 * s3, 0.],
-                       [s1*s2, c2, c1 * s2,0.],
-                       [c1 * s3 + c2 * c3 * s1,-c3*s2, c1 * c2 * c3 - s1 * s3,0.],
-                       [0.,0.,0.,1.]])
+
+        return Matrix(
+            [[c1 * c3 - c2 * s1 * s3, s2 * s3, -c3 * s1 - c1 * c2 * s3, 0.],
+             [s1 * s2, c2, c1 * s2, 0.],
+             [c1 * s3 + c2 * c3 * s1, -c3 * s2, c1 * c2 * c3 - s1 * s3, 0.],
+             [0., 0., 0., 1.]])
+
     @staticmethod
     def eulerAngleYZY(t1, t2, t3):
         """Creates a 3D 4 * 4 homogeneous rotation matrix from euler angles(Y * Z * Y).
@@ -1338,12 +1340,13 @@ class Matrix(TaichiOperations):
         s1 = ops_mod.sin(t1)
         s2 = ops_mod.sin(t2)
         s3 = ops_mod.sin(t3)
-        
-        return Matrix([[c1 *c2 * c3 - s1 * s3, c3 * s2, -c1 * s3 - c2 * c3 * s1, 0.],
-                       [-c1 * s2, c2, s1 * s2, 0.],
-                       [c3 * s1 + c1 * c2 * s3, -s2 * s3, c1 * c3 - c2 * s1 * s3, 0.],
-                       [0.,0.,0.,1.]])
-    
+
+        return Matrix(
+            [[c1 * c2 * c3 - s1 * s3, c3 * s2, -c1 * s3 - c2 * c3 * s1, 0.],
+             [-c1 * s2, c2, s1 * s2, 0.],
+             [c3 * s1 + c1 * c2 * s3, -s2 * s3, c1 * c3 - c2 * s1 * s3, 0.],
+             [0., 0., 0., 1.]])
+
     @staticmethod
     def eulerAngleZYZ(t1, t2, t3):
         """Creates a 3D 4 * 4 homogeneous rotation matrix from euler angles(Z * Y * Z).
@@ -1359,11 +1362,12 @@ class Matrix(TaichiOperations):
         s1 = ops_mod.sin(t1)
         s2 = ops_mod.sin(t2)
         s3 = ops_mod.sin(t3)
-        
-        return Matrix([[c1 * c2 * c3 - s1 * s3, c1 * s3 + c2 * c3 * s1, -c3 * s2, 0.],
-                       [-c3 * s1 - c1 * c2 * s3, c1 * c3 - c2 * s1 * s3, s2 * s3, 0.],
-                       [c1 * s2, s1 * s2, c2, 0.],
-                       [0.,0.,0.,1.]])
+
+        return Matrix(
+            [[c1 * c2 * c3 - s1 * s3, c1 * s3 + c2 * c3 * s1, -c3 * s2, 0.],
+             [-c3 * s1 - c1 * c2 * s3, c1 * c3 - c2 * s1 * s3, s2 * s3, 0.],
+             [c1 * s2, s1 * s2, c2, 0.], [0., 0., 0., 1.]])
+
     @staticmethod
     def eulerAngleZXZ(t1, t2, t3):
         """Creates a 3D 4 * 4 homogeneous rotation matrix from euler angles(Z * X * Z).
@@ -1379,11 +1383,12 @@ class Matrix(TaichiOperations):
         s1 = ops_mod.sin(t1)
         s2 = ops_mod.sin(t2)
         s3 = ops_mod.sin(t3)
-        
-        return Matrix([[c1 * c3 - c2 * s1 * s3, c3 * s1 + c1 * c2 * s3, s2 * s3, 0.],
-                       [-c1 * s3 - c2 * c3 * s1, c1 * c2 * c3 - s1 * s3, c3 * s2, 0.],
-                       [s1 * s2, -c1 * s2, c2, 0.],
-                       [0.,0.,0.,1.]])
+
+        return Matrix(
+            [[c1 * c3 - c2 * s1 * s3, c3 * s1 + c1 * c2 * s3, s2 * s3, 0.],
+             [-c1 * s3 - c2 * c3 * s1, c1 * c2 * c3 - s1 * s3, c3 * s2, 0.],
+             [s1 * s2, -c1 * s2, c2, 0.], [0., 0., 0., 1.]])
+
     @staticmethod
     def eulerAngleXZY(t1, t2, t3):
         """Creates a 3D 4 * 4 homogeneous rotation matrix from euler angles(X * Z * Y).
@@ -1399,12 +1404,13 @@ class Matrix(TaichiOperations):
         s1 = ops_mod.sin(t1)
         s2 = ops_mod.sin(t2)
         s3 = ops_mod.sin(t3)
-        
-        return Matrix([[c2 * c3, s1 * s3 + c1 * c3 * s2, c3 * s1 * s2 - c1 * s3, 0.],
-                       [-s2, c1 * c2, c2 * s1, 0.],
-                       [c2 * s3, c1 * s2 * s3 - c3 * s1, c1 * c3 + s1 * s2 *s3, 0.],
-                       [0.,0.,0.,1.]])
-    
+
+        return Matrix(
+            [[c2 * c3, s1 * s3 + c1 * c3 * s2, c3 * s1 * s2 - c1 * s3, 0.],
+             [-s2, c1 * c2, c2 * s1, 0.],
+             [c2 * s3, c1 * s2 * s3 - c3 * s1, c1 * c3 + s1 * s2 * s3, 0.],
+             [0., 0., 0., 1.]])
+
     @staticmethod
     def eulerAngleYZX(t1, t2, t3):
         """Creates a 3D 4 * 4 homogeneous rotation matrix from euler angles(Y * Z * X).
@@ -1420,12 +1426,13 @@ class Matrix(TaichiOperations):
         s1 = ops_mod.sin(t1)
         s2 = ops_mod.sin(t2)
         s3 = ops_mod.sin(t3)
-        
-        return Matrix([[c1 * c2, s2, -c2 * s1, 0.],
-                       [s1 * s3 - c1 * c3 * s2, c2 * c3, c1 * s3 + c3 * s1 * s2, 0.],
-                       [c3 * s1 + c1 * s2 * s3, -c2 * s3, c1 * c3 - s1 * s2 * s3, 0.],
-                       [0.,0.,0.,1.]])
-    
+
+        return Matrix(
+            [[c1 * c2, s2, -c2 * s1, 0.],
+             [s1 * s3 - c1 * c3 * s2, c2 * c3, c1 * s3 + c3 * s1 * s2, 0.],
+             [c3 * s1 + c1 * s2 * s3, -c2 * s3, c1 * c3 - s1 * s2 * s3, 0.],
+             [0., 0., 0., 1.]])
+
     @staticmethod
     def eulerAngleZYX(t1, t2, t3):
         """Creates a 3D 4 * 4 homogeneous rotation matrix from euler angles(Z * Y * X).
@@ -1441,12 +1448,13 @@ class Matrix(TaichiOperations):
         s1 = ops_mod.sin(t1)
         s2 = ops_mod.sin(t2)
         s3 = ops_mod.sin(t3)
-        
-        return Matrix([[c1 * c2, c2 * s1, -s2, 0.],
-                       [c1 * s2 * s3 - c3 * s1, c1 * c3 + s1 * s2 * s3, c2 * s3, 0.],
-                       [s1 * s3 + c1 * c3 * s2, c3 * s1 * s2 - c1 * s3, c2 * c3, 0.],
-                       [0.,0.,0.,1.]])
-    
+
+        return Matrix(
+            [[c1 * c2, c2 * s1, -s2, 0.],
+             [c1 * s2 * s3 - c3 * s1, c1 * c3 + s1 * s2 * s3, c2 * s3, 0.],
+             [s1 * s3 + c1 * c3 * s2, c3 * s1 * s2 - c1 * s3, c2 * c3, 0.],
+             [0., 0., 0., 1.]])
+
     @staticmethod
     def eulerAngleZXY(t1, t2, t3):
         """Creates a 3D 4 * 4 homogeneous rotation matrix from euler angles(Z * X * Y).
@@ -1462,12 +1470,13 @@ class Matrix(TaichiOperations):
         s1 = ops_mod.sin(t1)
         s2 = ops_mod.sin(t2)
         s3 = ops_mod.sin(t3)
-        
-        return Matrix([[c1 * c3 - s1 * s2 * s3, c3 * s1 + c1 * s2 * s3, -c2 * s3, 0.],
-                       [-c2 * s1, c1 * c2, s2, 0.],
-                       [c1 * s3 + c3 * s1 * s2, s1 * s3 - c1 * c3 * s2, c2 * c3, 0.],
-                       [0.,0.,0.,1.]])
-        
+
+        return Matrix(
+            [[c1 * c3 - s1 * s2 * s3, c3 * s1 + c1 * s2 * s3, -c2 * s3, 0.],
+             [-c2 * s1, c1 * c2, s2, 0.],
+             [c1 * s3 + c3 * s1 * s2, s1 * s3 - c1 * c3 * s2, c2 * c3, 0.],
+             [0., 0., 0., 1.]])
+
     @staticmethod
     def yawPitchRoll(yaw, pitch, roll):
         """Creates a 3D 4 * 4 homogeneous rotation matrix from euler angles(Y * X * Z).
@@ -1483,11 +1492,12 @@ class Matrix(TaichiOperations):
         sp = ops_mod.sin(pitch)
         cb = ops_mod.cos(roll)
         sb = ops_mod.sin(roll)
-        
-        return Matrix([[ ch * cb + sh * sp * sb, sb * cp, -sh * cb + ch * sp * sb, 0.],
-                       [-ch * sb + sh * sp * cb, cb * cp,  sb * sh + ch * sp * cb, 0.],
-                       [sh * cp, -sp, ch * cp, 0.],
-                       [0.,0.,0.,1.]])
+
+        return Matrix(
+            [[ch * cb + sh * sp * sb, sb * cp, -sh * cb + ch * sp * sb, 0.],
+             [-ch * sb + sh * sp * cb, cb * cp, sb * sh + ch * sp * cb, 0.],
+             [sh * cp, -sp, ch * cp, 0.], [0., 0., 0., 1.]])
+
     @staticmethod
     def rotate_by_vector(m, angle, v):
         """ rotate the matrix by an angle with the vector as the rotation axis
@@ -1506,11 +1516,10 @@ class Matrix(TaichiOperations):
             raise Exception("Error! shape of m must be (4 x 4)")
         if not (v.n == 3 and v.m == 1):
             raise Exception("Error! shape of v must be (3 x 1)")
-        
+
         from taichi._funcs import _matrix_get_rotation  # pylint: disable=C0415
         return _matrix_get_rotation(angle, v) @ m
-    
-    
+
     @staticmethod
     def rotation2d(alpha):
         """Returns the matrix representation of the 2D
@@ -1527,9 +1536,10 @@ class Matrix(TaichiOperations):
         return Matrix([[ops_mod.cos(alpha), -ops_mod.sin(alpha)],
                        [ops_mod.sin(alpha),
                         ops_mod.cos(alpha)]])
+
     @staticmethod
     def rotation3d(angle):
-        """Creates a 3D 3 * 3 homogeneous rotation matrix from an euler angle. 
+        """Creates a 3D 3 * 3 homogeneous rotation matrix from an euler angle.
 
         Args:
             angle (float): angle in radians unit around Z axis
@@ -1544,12 +1554,11 @@ class Matrix(TaichiOperations):
         """
         c = ops_mod.cos(angle)
         s = ops_mod.sin(angle)
-        return Matrix([[c, s, 0.0],
-                       [-s, c, 0.0],
-                       [0.0,0.0,1.0]])
+        return Matrix([[c, s, 0.0], [-s, c, 0.0], [0.0, 0.0, 1.0]])
+
     @staticmethod
     def rotation4d(angleX, angleY, angleZ):
-        """Creates a 3D 4 * 4 homogeneous rotation matrix from an euler angle(Y * X * Z). 
+        """Creates a 3D 4 * 4 homogeneous rotation matrix from an euler angle(Y * X * Z).
 
         Args:
             angleX (float): angle in radians unit around X axis
@@ -1565,7 +1574,7 @@ class Matrix(TaichiOperations):
              [ 0.          0.          0.          1.        ]]
         """
         return Matrix.yawPitchRoll(angleZ, angleX, angleY)
-    
+
     @classmethod
     @python_scope
     def field(cls,

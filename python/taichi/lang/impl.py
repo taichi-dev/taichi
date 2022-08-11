@@ -362,7 +362,7 @@ class PyTaichi:
 
     def materialize(self):
         if get_runtime().prog.config.debug and get_runtime(
-        ).prog.config.check_autodiff_valid:
+        ).prog.config.validate_autodiff:
             self._allocate_gradient_visited()
         self.materialize_root_fb(not self.materialized)
         self.materialized = True

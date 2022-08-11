@@ -2420,41 +2420,16 @@ void VulkanSurface::create_swap_chain() {
         device_->vk_device(), img, surface_format.format, VK_IMAGE_TYPE_2D,
         VkExtent3D{uint32_t(width), uint32_t(height), 1}, 1u, 1u, usage);
 
-    VkImageViewType image_view_type = VK_IMAGE_VIEW_TYPE_MAX_ENUM;
-    if (image->array_layers > 1) {
-      if (image->type == VK_IMAGE_TYPE_1D) {
-        image_view_type = VK_IMAGE_VIEW_TYPE_1D_ARRAY;
-      } else if (image->type == VK_IMAGE_TYPE_2D) {
-        image_view_type = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
-      }
-    } else {
-      if (image->type == VK_IMAGE_TYPE_1D) {
-        image_view_type = VK_IMAGE_VIEW_TYPE_1D;
-      } else if (image->type == VK_IMAGE_TYPE_2D) {
-        image_view_type = VK_IMAGE_VIEW_TYPE_2D;
-      } else if (image->type == VK_IMAGE_TYPE_3D) {
-        image_view_type = VK_IMAGE_VIEW_TYPE_3D;
-      }
-    }
-
-    VkImageAspectFlags aspect{};
-    if (image->format == VK_FORMAT_D16_UNORM ||
-        image->format == VK_FORMAT_D32_SFLOAT) {
-      aspect = VK_IMAGE_ASPECT_DEPTH_BIT;
-    } else if (image->format == VK_FORMAT_D16_UNORM_S8_UINT ||
-               image->format == VK_FORMAT_D24_UNORM_S8_UINT ||
-               image->format == VK_FORMAT_D32_SFLOAT_S8_UINT) {
-      aspect = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
-    } else {
-      aspect = VK_IMAGE_ASPECT_COLOR_BIT;
-    }
-
     VkImageViewCreateInfo create_info{};
     create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     create_info.image = image->image;
-    create_info.viewType = image_view_type;
+    create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
     create_info.format = image->format;
-    create_info.subresourceRange.aspectMask = aspect;
+    create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    create_info.subresourceRange.baseMipLevel = 0;
+    create_info.subresourceRange.levelCount = 1;
+    create_info.subresourceRange.baseArrayLayer = 0;
+    create_info.subresourceRange.layerCount = 1;
 
     vkapi::IVkImageView view =
         vkapi::create_image_view(device_->vk_device(), image, &create_info);

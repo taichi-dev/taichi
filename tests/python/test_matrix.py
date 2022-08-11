@@ -2,10 +2,10 @@ import math
 import operator
 
 import numpy as np
+import pytest
 from taichi.lang import impl
 from taichi.lang.kernel_impl import kernel
 from taichi.lang.misc import get_host_arch_list
-import pytest
 
 import taichi as ti
 from tests import test_utils
@@ -374,7 +374,8 @@ def test_scale():
                            [0., 0., 3., 0.], [0., 0., 0., 1.]])
     error += check_epsilon_equal(scale_mat, scale_ref, 0.00001)
     assert error == 0
-    
+
+
 @test_utils.test(arch=get_host_arch_list())
 def test_python_scope_vector_operations():
     for ops in vector_operation_types:

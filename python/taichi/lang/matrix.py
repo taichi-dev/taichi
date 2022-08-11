@@ -1508,7 +1508,7 @@ class Matrix(TaichiOperations):
             raise Exception("Error! shape of v must be (3 x 1)")
         
         from taichi._funcs import _matrix_get_rotation  # pylint: disable=C0415
-        return _matrix_get_rotation(m, angle, v) @ m
+        return _matrix_get_rotation(angle, v) @ m
     
     
     @staticmethod

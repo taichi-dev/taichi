@@ -2,7 +2,6 @@ import math
 
 from taichi.lang import impl, matrix
 from taichi.lang import ops
-from taichi.lang import ops as ops_mod
 from taichi.lang.impl import expr_init, get_runtime, grouped, static
 from taichi.lang.kernel_impl import func, pyfunc
 from taichi.lang.matrix import Matrix, Vector
@@ -62,8 +61,8 @@ def _matrix_get_rotation(angle, v):
     Returns:
         Rotation matrix.
     """
-    c = ops_mod.cos(angle)
-    s = ops_mod.sin(angle)
+    c = ops.cos(angle)
+    s = ops.sin(angle)
 
     axis = v.normalized()
     temp = (1 - c) * axis

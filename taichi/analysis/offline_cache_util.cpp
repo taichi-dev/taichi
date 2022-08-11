@@ -161,7 +161,8 @@ std::string get_hashed_offline_cache_key(CompileConfig *config,
     compile_config_key = get_offline_cache_key_of_compile_config(config);
   }
 
-  std::string autodiff_mode = std::to_string(static_cast<std::size_t>(kernel->autodiff_mode));
+  std::string autodiff_mode =
+      std::to_string(static_cast<std::size_t>(kernel->autodiff_mode));
   picosha2::hash256_one_by_one hasher;
   hasher.process(compile_config_key.begin(), compile_config_key.end());
   hasher.process(kernel_ast_string.begin(), kernel_ast_string.end());
@@ -169,7 +170,7 @@ std::string get_hashed_offline_cache_key(CompileConfig *config,
   hasher.finish();
 
   auto res = picosha2::get_hash_hex_string(hasher);
-  res.insert(res.begin(), 'T'); // The key must start with a letter
+  res.insert(res.begin(), 'T');  // The key must start with a letter
   return res;
 }
 

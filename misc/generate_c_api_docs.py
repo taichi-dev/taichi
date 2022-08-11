@@ -1,11 +1,12 @@
+import re
 from collections import defaultdict
 from pathlib import Path
-import re
+
+from generate_c_api import get_declr, get_field, get_type_name
 from taichi_json import (Alias, BitField, BuiltInType, Definition, EntryBase,
                          Enumeration, Field, Function, Handle, Module,
                          Structure, Union)
 
-from generate_c_api import (get_type_name, get_field, get_declr)
 
 def get_title(x: EntryBase):
     ty = type(x)
@@ -63,7 +64,6 @@ def print_module_doc(module: Module, templ):
             continue
         documented_syms[cur_sym] += [line]
 
-
     for x in module.declr_reg:
         declr = module.declr_reg.resolve(x)
 
@@ -94,8 +94,10 @@ def generate_module_header(module):
     if Path(templ_path).exists():
         with open(templ_path) as f:
             templ = f.readlines()
-    else: 
-        print(f"ignored {templ_path} because the documentation template cannot be found")
+    else:
+        print(
+            f"ignored {templ_path} because the documentation template cannot be found"
+        )
         return
 
     print(f"processing module '{module.name}'")

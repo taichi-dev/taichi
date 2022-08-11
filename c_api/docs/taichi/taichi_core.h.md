@@ -167,7 +167,7 @@ Free a memory allocation.
 
 `function.map_memory`
 
-Map an on-device memory to a host-addressible space. The user MUST ensure the device is not being used by any device command before the map. 
+Map an on-device memory to a host-addressible space. The user MUST ensure the device is not being used by any device command before the map.
 
 `function.unmap_memory`
 

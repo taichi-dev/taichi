@@ -282,6 +282,7 @@ void ti_export_vulkan_memory(TiRuntime runtime,
 TiTexture ti_import_vulkan_texture(
     TiRuntime runtime,
     const TiVulkanTextureInteropInfo *interop_info,
+    VkImageViewType view_type,
     VkImageLayout layout) {
   if (runtime == nullptr) {
     TI_WARN(
@@ -296,13 +297,37 @@ TiTexture ti_import_vulkan_texture(
   taichi::lang::vulkan::VulkanDevice &vk_runtime =
       static_cast<VulkanRuntime *>(runtime2)->get_vk();
 
+  bool is_depth = interop_info->format == VK_FORMAT_D16_UNORM ||
+                  interop_info->format == VK_FORMAT_D16_UNORM_S8_UINT ||
+                  interop_info->format == VK_FORMAT_D24_UNORM_S8_UINT ||
+                  interop_info->format == VK_FORMAT_D32_SFLOAT ||
+                  interop_info->format == VK_FORMAT_D32_SFLOAT_S8_UINT ||
+                  interop_info->format == VK_FORMAT_X8_D24_UNORM_PACK32;
+
   vkapi::IVkImage image =
       vkapi::create_image(vk_runtime.vk_device(), interop_info->image,
                           interop_info->format, interop_info->image_type,
                           interop_info->extent, interop_info->mip_level_count,
                           interop_info->array_layer_count, interop_info->usage);
+
+  VkImageViewCreateInfo view_info{};
+  view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+  view_info.pNext = nullptr;
+  view_info.viewType = view_type;
+  view_info.format = interop_info->format;
+  view_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+  view_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+  view_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+  view_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+  view_info.subresourceRange.aspectMask =
+      is_depth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+  view_info.subresourceRange.baseMipLevel = 0;
+  view_info.subresourceRange.levelCount = interop_info->mip_level_count;
+  view_info.subresourceRange.baseArrayLayer = 0;
+  view_info.subresourceRange.layerCount = interop_info->array_layer_count;
+
   vkapi::IVkImageView image_view =
-      vkapi::create_image_view(vk_runtime.vk_device(), image);
+      vkapi::create_image_view(vk_runtime.vk_device(), image, &view_info);
 
   taichi::lang::DeviceAllocation image2 =
       vk_runtime.import_vk_image(image, image_view, layout);

@@ -933,6 +933,14 @@
                             "name": "interop_info",
                             "type": "structure.vulkan_texture_interop_info",
                             "by_ref": true
+                        },
+                        {
+                            "name": "view_type",
+                            "type": "VkImageViewType"
+                        },
+                        {
+                            "name": "layout",
+                            "type": "VkImageLayout"
                         }
                     ]
                 },

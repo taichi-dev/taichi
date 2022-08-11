@@ -74,7 +74,9 @@ ti_export_vulkan_memory(TiRuntime runtime,
 // function.import_vulkan_texture
 TI_DLL_EXPORT TiTexture TI_API_CALL
 ti_import_vulkan_texture(TiRuntime runtime,
-                         const TiVulkanTextureInteropInfo *interop_info);
+                         const TiVulkanTextureInteropInfo *interop_info,
+                         VkImageViewType view_type,
+                         VkImageLayout layout);
 
 // function.export_vulkan_texture
 TI_DLL_EXPORT void TI_API_CALL

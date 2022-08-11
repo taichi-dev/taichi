@@ -1,6 +1,6 @@
 #pragma once
 
-#include "taichi/ui/common/field_info.h"
+#include "taichi/program/field_info.h"
 #include "taichi/ui/common/scene_base.h"
 #include "taichi/ui/common/renderable_info.h"
 #include "taichi/ui/utils/utils.h"

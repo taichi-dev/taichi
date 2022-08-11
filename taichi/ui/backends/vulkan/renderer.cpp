@@ -154,6 +154,8 @@ void Renderer::draw_frame(Gui *gui) {
                                      background_color_[2], 1};
   auto semaphore = swap_chain_.surface().acquire_next_image();
   auto image = swap_chain_.surface().get_target_image();
+  cmd_list->image_transition(image, ImageLayout::undefined,
+                             ImageLayout::color_attachment);
   auto depth_image = swap_chain_.depth_allocation();
   cmd_list->begin_renderpass(
       /*xmin=*/0, /*ymin=*/0, /*xmax=*/swap_chain_.width(),

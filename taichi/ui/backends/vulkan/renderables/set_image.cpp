@@ -32,6 +32,7 @@ void SetImage::update_data(const SetImageInfo &info) {
   // We might not have a current program if GGUI is used in external apps to
   // load AOT modules
   Program *prog = app_context_->prog();
+  StreamSemaphore sema = nullptr;
 
   const FieldInfo &img = info.img;
 
@@ -76,12 +77,22 @@ void SetImage::update_data(const SetImageInfo &info) {
   DevicePtr img_dev_ptr = info.img.dev_alloc.get_ptr();
   if (prog) {
     img_dev_ptr = get_device_ptr(prog, img.snode);
+    if (img_dev_ptr.device != &app_context_->device()) {
+      sema = prog->flush();
+    }
   }
+  bool use_enqueued_op =
+      prog && (img_dev_ptr.device == &app_context_->device());
 
   Device::MemcpyCapability memcpy_cap = Device::check_memcpy_capability(
       gpu_staging_buffer_.get_ptr(), img_dev_ptr, img_size);
   if (memcpy_cap == Device::MemcpyCapability::Direct) {
-    Device::memcpy_direct(gpu_staging_buffer_.get_ptr(), img_dev_ptr, img_size);
+    // If it's the same device, we do not use the staging buffer and directly
+    // copy from the src ptr to the image in the `copy_op`
+    if (!use_enqueued_op) {
+      Device::memcpy_direct(gpu_staging_buffer_.get_ptr(), img_dev_ptr,
+                            img_size);
+    }
   } else if (memcpy_cap == Device::MemcpyCapability::RequiresStagingBuffer) {
     Device::memcpy_via_staging(gpu_staging_buffer_.get_ptr(),
                                cpu_staging_buffer_.get_ptr(), img_dev_ptr,
@@ -95,25 +106,31 @@ void SetImage::update_data(const SetImageInfo &info) {
   copy_params.image_extent.x = height;
   copy_params.image_extent.y = width;
 
-  auto copy_op = [texture = this->texture_,
-                  gpu_staging_buffer = gpu_staging_buffer_,
-                  copy_params](Device *device, CommandList *cmdlist) {
+  DevicePtr src_ptr =
+      use_enqueued_op ? img_dev_ptr : gpu_staging_buffer_.get_ptr(0);
+
+  auto copy_op = [texture = this->texture_, src_ptr, copy_params](
+                     Device *device, CommandList *cmdlist) {
     cmdlist->image_transition(texture, ImageLayout::undefined,
                               ImageLayout::transfer_dst);
-    cmdlist->buffer_to_image(texture, gpu_staging_buffer.get_ptr(0),
-                             ImageLayout::transfer_dst, copy_params);
-
+    cmdlist->buffer_barrier(src_ptr);
+    cmdlist->buffer_to_image(texture, src_ptr, ImageLayout::transfer_dst,
+                             copy_params);
     cmdlist->image_transition(texture, ImageLayout::transfer_dst,
                               ImageLayout::shader_read);
   };
 
-  if (prog) {
+  if (use_enqueued_op) {
     prog->enqueue_compute_op_lambda(copy_op, {});
   } else {
     auto stream = app_context_->device().get_graphics_stream();
     auto cmd_list = stream->new_command_list();
     copy_op(&app_context_->device(), cmd_list.get());
-    stream->submit(cmd_list.get());
+    if (sema) {
+      stream->submit(cmd_list.get(), {sema});
+    } else {
+      stream->submit(cmd_list.get());
+    }
   }
 }
 

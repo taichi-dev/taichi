@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Core Functionalities
 
-Taichi Core exposes all necessary interfaces to offload AOT modules to Taichi. Here lists the features universally available disregards to any specific backend. The Taichi Core APIs are guaranteed to be forward compatible.
+Taichi Core exposes all necessary interfaces to offload AOT modules to Taichi. Here lists the features universally available disregards to any specific backend. These APIs are still in active development so is subject to change.
 
 ## Availability
 
@@ -13,7 +13,7 @@ Taichi C-API has bridged the following backends:
 |Backend|Offload Target|Maintenance Tier|
 |-|-|-|
 |Vulkan|GPU|Tier 1|
-|CUDA|GPU (NVIDIA)|Tier 1|
+|CUDA (LLVM)|GPU (NVIDIA)|Tier 1|
 |CPU (LLVM)|CPU|Tier 1|
 |DirectX 11|GPU (Windows)|N/A|
 |Metal|GPU (macOS, iOS)|N/A|
@@ -53,8 +53,6 @@ mai.size = 1024; // Size in bytes.
 mai.usage = TI_MEMORY_USAGE_STORAGE_BIT;
 TiMemory memory = ti_allocate_memory(runtime, &mai);
 ```
-
-**NOTE** You don't need to allocate memory for field allocations. They are automatically allocated when the AOT module is loaded.
 
 You MAY free allocated memory explicitly; but memory allocations will be automatically freed when the related `handle.runtime` is destroyed.
 

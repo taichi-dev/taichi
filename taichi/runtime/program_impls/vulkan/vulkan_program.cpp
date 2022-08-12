@@ -209,6 +209,12 @@ std::unique_ptr<aot::Kernel> VulkanProgramImpl::make_aot_kernel(
                                            std::move(kparams));
 }
 
+void VulkanProgramImpl::enqueue_compute_op_lambda(
+    std::function<void(Device *device, CommandList *cmdlist)> op,
+    const std::vector<ComputeOpImageRef> &image_refs) {
+  vulkan_runtime_->enqueue_compute_op_lambda(op, image_refs);
+}
+
 VulkanProgramImpl::~VulkanProgramImpl() {
   vulkan_runtime_.reset();
   embedded_device_.reset();

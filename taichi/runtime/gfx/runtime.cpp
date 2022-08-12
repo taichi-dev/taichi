@@ -702,6 +702,23 @@ size_t GfxRuntime::get_root_buffer_size(int id) const {
   return it->second;
 }
 
+void GfxRuntime::enqueue_compute_op_lambda(
+    std::function<void(Device *device, CommandList *cmdlist)> op,
+    const std::vector<ComputeOpImageRef> &image_refs) {
+  for (const auto &ref : image_refs) {
+    TI_ASSERT(last_image_layouts_.find(ref.image.alloc_id) !=
+              last_image_layouts_.end());
+    transition_image(ref.image, ref.initial_layout);
+  }
+
+  ensure_current_cmdlist();
+  op(device_, current_cmdlist_.get());
+  
+  for (const auto &ref : image_refs) {
+    last_image_layouts_[ref.image.alloc_id] = ref.final_layout;
+  }
+}
+
 GfxRuntime::RegisterParams run_codegen(
     Kernel *kernel,
     Device *device,

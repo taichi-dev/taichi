@@ -193,6 +193,11 @@ DeviceAllocation VulkanProgramImpl::allocate_memory_ndarray(
        /*export_sharing=*/false});
 }
 
+DeviceAllocation VulkanProgramImpl::allocate_texture(
+    const ImageParams &params) {
+  return vulkan_runtime_->create_image(params);
+}
+
 std::unique_ptr<aot::Kernel> VulkanProgramImpl::make_aot_kernel(
     Kernel &kernel) {
   spirv::lower(&kernel);

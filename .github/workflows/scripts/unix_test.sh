@@ -1,7 +1,7 @@
 #!/bin/bash
 set -ex
 
-. $(dirname $0)/libcommon.sh
+. $(dirname $0)/common-utils.sh
 
 export PYTHONUNBUFFERED=1
 
@@ -68,7 +68,7 @@ if [ -z "$GPU_TEST" ]; then
 	# Split per arch to avoid flaky test
         python3 tests/run_tests.py -vr2 -t4 -k "not torch and not paddle" -a cpu
         # Run metal and vulkan separately so that they don't use M1 chip simultaneously.
-        # python3 tests/run_tests.py -vr2 -t4 -k "not torch and not paddle" -a vulkan
+        python3 tests/run_tests.py -vr2 -t4 -k "not torch and not paddle" -a vulkan
         python3 tests/run_tests.py -vr2 -t2 -k "not torch and not paddle" -a metal
         python3 tests/run_tests.py -vr2 -t1 -k "torch" -a "$TI_WANTED_ARCHS"
     else

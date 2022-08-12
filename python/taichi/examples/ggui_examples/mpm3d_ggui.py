@@ -247,8 +247,9 @@ res = (1080, 720)
 window = ti.ui.Window("Real MPM 3D", res, vsync=True)
 
 canvas = window.get_canvas()
+gui = window.get_gui()
 scene = ti.ui.Scene()
-camera = ti.ui.make_camera()
+camera = ti.ui.Camera()
 camera.position(0.5, 1.0, 1.95)
 camera.lookat(0.5, 0.3, 0.5)
 camera.fov(55)
@@ -260,45 +261,40 @@ def show_options():
     global particles_radius
     global curr_preset_id
 
-    window.GUI.begin("Presets", 0.05, 0.1, 0.2, 0.15)
-    old_preset = curr_preset_id
-    for i in range(len(presets)):
-        if window.GUI.checkbox(preset_names[i], curr_preset_id == i):
-            curr_preset_id = i
-    if curr_preset_id != old_preset:
-        init()
-        paused = True
-    window.GUI.end()
-
-    window.GUI.begin("Gravity", 0.05, 0.3, 0.2, 0.1)
-    GRAVITY[0] = window.GUI.slider_float("x", GRAVITY[0], -10, 10)
-    GRAVITY[1] = window.GUI.slider_float("y", GRAVITY[1], -10, 10)
-    GRAVITY[2] = window.GUI.slider_float("z", GRAVITY[2], -10, 10)
-    window.GUI.end()
-
-    window.GUI.begin("Options", 0.05, 0.45, 0.2, 0.4)
-
-    use_random_colors = window.GUI.checkbox("use_random_colors",
-                                            use_random_colors)
-    if not use_random_colors:
-        material_colors[WATER] = window.GUI.color_edit_3(
-            "water color", material_colors[WATER])
-        material_colors[SNOW] = window.GUI.color_edit_3(
-            "snow color", material_colors[SNOW])
-        material_colors[JELLY] = window.GUI.color_edit_3(
-            "jelly color", material_colors[JELLY])
-        set_color_by_material(np.array(material_colors, dtype=np.float32))
-    particles_radius = window.GUI.slider_float("particles radius ",
-                                               particles_radius, 0, 0.1)
-    if window.GUI.button("restart"):
-        init()
-    if paused:
-        if window.GUI.button("Continue"):
-            paused = False
-    else:
-        if window.GUI.button("Pause"):
+    with gui.sub_window("Presets", 0.05, 0.1, 0.2, 0.15) as w:
+        old_preset = curr_preset_id
+        for i in range(len(presets)):
+            if w.checkbox(preset_names[i], curr_preset_id == i):
+                curr_preset_id = i
+        if curr_preset_id != old_preset:
+            init()
             paused = True
-    window.GUI.end()
+
+    with gui.sub_window("Gravity", 0.05, 0.3, 0.2, 0.1) as w:
+        GRAVITY[0] = w.slider_float("x", GRAVITY[0], -10, 10)
+        GRAVITY[1] = w.slider_float("y", GRAVITY[1], -10, 10)
+        GRAVITY[2] = w.slider_float("z", GRAVITY[2], -10, 10)
+
+    with gui.sub_window("Options", 0.05, 0.45, 0.2, 0.4) as w:
+        use_random_colors = w.checkbox("use_random_colors", use_random_colors)
+        if not use_random_colors:
+            material_colors[WATER] = w.color_edit_3("water color",
+                                                    material_colors[WATER])
+            material_colors[SNOW] = w.color_edit_3("snow color",
+                                                   material_colors[SNOW])
+            material_colors[JELLY] = w.color_edit_3("jelly color",
+                                                    material_colors[JELLY])
+            set_color_by_material(np.array(material_colors, dtype=np.float32))
+        particles_radius = w.slider_float("particles radius ",
+                                          particles_radius, 0, 0.1)
+        if w.button("restart"):
+            init()
+        if paused:
+            if w.button("Continue"):
+                paused = False
+        else:
+            if w.button("Pause"):
+                paused = True
 
 
 def render():

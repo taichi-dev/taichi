@@ -43,7 +43,6 @@ install(TARGETS ${TAICHI_C_API_NAME} EXPORT ${TAICHI_C_API_NAME}Targets
     INCLUDES DESTINATION c_api/include
     )
 
-message( --------------------- ${CMAKE_INSTALL_LIBDIR})
 # Install the export set, which contains the meta data of the target
 install(EXPORT ${TAICHI_C_API_NAME}Targets
     FILE ${TAICHI_C_API_NAME}Targets.cmake

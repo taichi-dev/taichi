@@ -64,14 +64,13 @@ bool SwapChain::copy_depth_buffer_to_ndarray(
 
     auto depth_staging_buffer = device.allocate_memory(params);
 
-    device.image_transition(depth_allocation_, ImageLayout::depth_attachment,
-                            ImageLayout::transfer_src);
-
     BufferImageCopyParams copy_params;
     copy_params.image_extent.x = w;
     copy_params.image_extent.y = h;
     copy_params.image_aspect_flag = VK_IMAGE_ASPECT_DEPTH_BIT;
     cmd_list = stream->new_command_list();
+    cmd_list->image_transition(depth_allocation_, ImageLayout::depth_attachment,
+                               ImageLayout::transfer_src);
     cmd_list->image_to_buffer(depth_staging_buffer.get_ptr(), depth_allocation_,
                               ImageLayout::transfer_src, copy_params);
     cmd_list->image_transition(depth_allocation_, ImageLayout::transfer_src,

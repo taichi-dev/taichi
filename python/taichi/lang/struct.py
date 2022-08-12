@@ -53,11 +53,12 @@ class Struct(TaichiOperations):
                 "Custom structs need to be initialized using either dictionary or keyword arguments"
             )
         self.methods = self.entries.pop("__struct_methods", {})
+        matrix_ndim = self.entries.pop("__matrix_ndim", {})
         self._register_methods()
 
         for k, v in self.entries.items():
             if isinstance(v, (list, tuple)):
-                v = Matrix(v)
+                v = Matrix(v, ndim=matrix_ndim.get(k))
             if isinstance(v, dict):
                 v = Struct(v)
             self.entries[k] = v if in_python_scope() else impl.expr_init(v)
@@ -244,7 +245,7 @@ class Struct(TaichiOperations):
     def __repr__(self):
         return str(self.to_dict())
 
-    def to_dict(self, include_methods=False):
+    def to_dict(self, include_methods=False, include_ndim=False):
         """Converts the Struct to a dictionary.
 
         Args:
@@ -261,6 +262,11 @@ class Struct(TaichiOperations):
         }
         if include_methods:
             res_dict['__struct_methods'] = self.methods
+        if include_ndim:
+            res_dict['__matrix_ndim'] = dict()
+            for k, v in self.entries.items():
+                if isinstance(v, Matrix):
+                    res_dict['__matrix_ndim'][k] = v.ndim
         return res_dict
 
     @classmethod
@@ -320,11 +326,20 @@ class Struct(TaichiOperations):
         for key, dtype in members.items():
             field_name = name + '.' + key
             if isinstance(dtype, CompoundType):
-                field_dict[key] = dtype.field(shape=None,
-                                              name=field_name,
-                                              offset=offset,
-                                              needs_grad=needs_grad,
-                                              needs_dual=needs_dual)
+                if isinstance(dtype, StructType):
+                    field_dict[key] = dtype.field(shape=None,
+                                                  name=field_name,
+                                                  offset=offset,
+                                                  needs_grad=needs_grad,
+                                                  needs_dual=needs_dual)
+                else:
+                    field_dict[key] = dtype.field(shape=None,
+                                                  name=field_name,
+                                                  offset=offset,
+                                                  needs_grad=needs_grad,
+                                                  needs_dual=needs_dual,
+                                                  ndim=getattr(
+                                                      dtype, 'ndim', 2))
             else:
                 field_dict[key] = impl.field(dtype,
                                              shape=None,

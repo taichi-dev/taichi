@@ -47,7 +47,7 @@ my_kernel()
 x_torch = x.to_torch()
 print(x_torch)  # torch.tensor([0, 2, 4, 6])
 
-x.from_numpy(torch.tensor([1, 7, 3, 5]))
+x.from_torch(torch.tensor([1, 7, 3, 5]))
 print(x[0])  # 1
 print(x[1])  # 7
 print(x[2])  # 3
@@ -66,7 +66,7 @@ my_kernel()
 x_paddle = x.to_paddle()
 print(x_paddle)  # paddle.Tensor([0, 2, 4, 6])
 
-x.from_numpy(paddle.to_tensor([1, 7, 3, 5]))
+x.from_paddle(paddle.to_tensor([1, 7, 3, 5]))
 print(x[0])  # 1
 print(x[1])  # 7
 print(x[2])  # 3
@@ -152,16 +152,16 @@ import numpy as np
 ti.init()
 
 n, m = 4, 7
+a = np.empty(shape=(n, m), dtype=np.int32)
 
 
 @ti.kernel
 def test_numpy(arr: ti.types.ndarray()):
-    for i in range(n):
-        for j in range(m):
+    # You can access the shape of the passed array in the kernel
+    for i in range(arr.shape[0]):
+        for j in range(arr.shape[1]):
             arr[i, j] += i + j
 
-
-a = np.empty(shape=(n, m), dtype=np.int32)
 
 for i in range(n):
     for j in range(m):

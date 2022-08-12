@@ -481,6 +481,7 @@ class GlobalVariableExpression : public Expression {
   bool is_primal{true};
   Expr adjoint;
   Expr dual;
+  Expr adjoint_visited;
 
   GlobalVariableExpression(DataType dt, const Identifier &ident)
       : ident(ident), dt(dt) {
@@ -913,7 +914,7 @@ class ASTBuilder {
   }
 
   void block_dim(int v) {
-    if (arch_ == Arch::cuda) {
+    if (arch_ == Arch::cuda || arch_ == Arch::vulkan) {
       TI_ASSERT((v % 32 == 0) || bit::is_power_of_two(v));
     } else {
       TI_ASSERT(bit::is_power_of_two(v));

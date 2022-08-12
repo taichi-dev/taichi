@@ -16,7 +16,7 @@
 using namespace taichi;
 using namespace lang;
 
-constexpr int NR_PARTICLES = 8192;
+constexpr int NR_PARTICLES = 8192 * 5;
 constexpr int N_GRID = 128;
 
 TEST(LlvmCGraph, Mpm88Cpu) {

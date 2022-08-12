@@ -92,3 +92,21 @@ def test_for_break_complex():
                 assert x[i, j] == 0
             else:
                 assert x[i, j] == 100 * i + j
+
+
+@test_utils.test()
+def test_serial_for_with_break_and_continue():
+    @ti.kernel
+    def test_kernel() -> ti.i32:
+        stop = 0
+        sum = 0
+        ti.loop_config(serialize=True)
+        for i in range(10):
+            if i % 2 == 0:
+                continue
+            sum += i
+            if stop:
+                break
+        return sum
+
+    assert test_kernel() == 25

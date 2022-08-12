@@ -55,10 +55,10 @@ def test_matrix():
         c[None] = a[None] + b[None]
 
     def verify():
-        assert isinstance(a[None][0], float)
-        assert isinstance(a[None][1], int)
-        assert isinstance(b[None][0], float)
-        assert isinstance(b[None][1], int)
+        assert isinstance(a[None][0, 0], float)
+        assert isinstance(a[None][0, 1], int)
+        assert isinstance(b[None][0, 0], float)
+        assert isinstance(b[None][0, 1], int)
         assert c[None][0, 0] == 3.0
         assert c[None][0, 1] == 7
         assert c[None][1, 0] == -1
@@ -71,9 +71,9 @@ def test_matrix():
 @test_utils.test(require=ti.extension.quant_basic)
 def test_quant_type():
     qit1 = ti.types.quant.int(bits=10, signed=True)
-    qfxt1 = ti.types.quant.fixed(frac=10, signed=True, scale=0.1)
+    qfxt1 = ti.types.quant.fixed(bits=10, signed=True, scale=0.1)
     qit2 = ti.types.quant.int(bits=22, signed=False)
-    qfxt2 = ti.types.quant.fixed(frac=22, signed=False, scale=0.1)
+    qfxt2 = ti.types.quant.fixed(bits=22, signed=False, scale=0.1)
     type_list = [[qit1, qfxt2], [qfxt1, qit2]]
     a = ti.Matrix.field(len(type_list), len(type_list[0]), dtype=type_list)
     b = ti.Matrix.field(len(type_list), len(type_list[0]), dtype=type_list)

@@ -88,11 +88,17 @@ struct RuntimeContext {
     set_array_device_allocation_type(arg_id, DevAllocType::kRWTexture);
   }
 
-  void set_arg_external_array(int arg_id, uintptr_t ptr, uint64 size) {
+  void set_arg_external_array(int arg_id,
+                              uintptr_t ptr,
+                              uint64 size,
+                              const std::vector<int64> &shape) {
     set_arg(arg_id, ptr);
     set_array_runtime_size(arg_id, size);
     set_array_device_allocation_type(arg_id,
-                                     RuntimeContext::DevAllocType::kNdarray);
+                                     RuntimeContext::DevAllocType::kNone);
+    for (uint64 i = 0; i < shape.size(); ++i) {
+      extra_args[arg_id][i] = shape[i];
+    }
   }
 
   void set_arg_ndarray(int arg_id,

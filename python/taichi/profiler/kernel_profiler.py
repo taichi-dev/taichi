@@ -107,7 +107,7 @@ class KernelProfiler:
         #sync first
         impl.get_runtime().prog.sync_kernel_profiler()
         #then clear backend & frontend info
-        impl.get_runtime().prog.clear_kernel_profile_info()
+        impl.get_runtime().prog.clear_kernel_profiler()
         self._clear_frontend()
 
         return None
@@ -199,6 +199,7 @@ class KernelProfiler:
     def _update_records(self):
         """Acquires kernel records from a backend."""
         impl.get_runtime().prog.sync_kernel_profiler()
+        impl.get_runtime().prog.update_kernel_profiler()
         self._clear_frontend()
         self._traced_records = impl.get_runtime(
         ).prog.get_kernel_profiler_records()

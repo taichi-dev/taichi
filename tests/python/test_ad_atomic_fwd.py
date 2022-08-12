@@ -20,7 +20,7 @@ def test_ad_reduce_fwd():
         x[i] = i
         total_loss += i * i
 
-    with ti.ad.FwdMode(loss=loss, parameters=x, seed=[1.0 for _ in range(N)]):
+    with ti.ad.FwdMode(loss=loss, param=x, seed=[1.0 for _ in range(N)]):
         func()
 
     assert total_loss == test_utils.approx(loss[None])

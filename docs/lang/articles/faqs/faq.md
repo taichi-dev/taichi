@@ -6,7 +6,7 @@ sidebar_position: 1
 
 ### Why does my `pip` complain `package not found` when installing Taichi?
 
-You may have a Python interpreter with an unsupported version. Currently, Taichi only supports Python 3.6/3.7/3.8 (64-bit) . For more information about installation-specific issues, please check [Installation Troubleshooting](./install.md).
+You may have a Python interpreter with an unsupported version. Currently, Taichi only supports Python 3.7/3.8/3.9/3.10 (64-bit) . For more information about installation-specific issues, please check [Installation Troubleshooting](./install.md).
 
 ### Does Taichi provide built-in constants such as `ti.pi`?
 

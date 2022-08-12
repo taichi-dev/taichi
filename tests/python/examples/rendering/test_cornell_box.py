@@ -1,10 +1,14 @@
 import argparse
+import os
+
+import pytest
 
 import taichi as ti
 
 FRAMES = 200
 
 
+@pytest.mark.skipif(os.environ.get('TI_LITE_TEST') or '0', reason='Lite test')
 def test_cornell_box():
     from taichi.examples.rendering.cornell_box import render, tonemap
     for i in range(FRAMES):
@@ -14,6 +18,7 @@ def test_cornell_box():
             tonemap(i)
 
 
+@pytest.mark.skipif(os.environ.get('TI_LITE_TEST') or '0', reason='Lite test')
 def video_cornell_box(result_dir):
     from taichi.examples.rendering.cornell_box import (render, tonemap,
                                                        tonemapped_buffer)

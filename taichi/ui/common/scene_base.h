@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include "taichi/ui/common/field_info.h"
+#include "taichi/program/field_info.h"
 #include "taichi/ui/common/renderable_info.h"
 #include "taichi/ui/common/camera.h"
 #include "taichi/ui/utils/utils.h"

@@ -338,7 +338,7 @@ By default, Taichi implicitly fits a field in a larger buffer with power-of-two 
 
 For example, a `(18, 65)` field is materialized with a `(32, 128)` buffer, which is acceptable. As field size grows, the padding strategy can be exaggeratedly unbearable: `(129, 6553600)` will be expanded to `(256, 6335600)`, which allocates considerable unused blank memory. Therefore, Taichi provides the optional packed mode to allocate buffer that tightly fits the requested field shape. It is especially useful when memory usage is a major concern.
 
-To leverage the packed mode, spcifify `packed` in `ti.init()` argument:
+To leverage the packed mode, specify `packed` in `ti.init()` argument:
 
 ```python
 ti.init()  # default: packed=False

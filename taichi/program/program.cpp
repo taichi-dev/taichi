@@ -466,15 +466,16 @@ Ndarray *Program::create_ndarray(const DataType type,
 Texture *Program::create_texture(const DataType type,
                                  int num_channels,
                                  const std::vector<int> &shape) {
+  BufferFormat buffer_format = type_channels2buffer_format(type, num_channels);
   if (shape.size() == 1) {
     textures_.push_back(
-        std::make_unique<Texture>(this, type, num_channels, shape[0], 1, 1));
+        std::make_unique<Texture>(this, buffer_format, shape[0], 1, 1));
   } else if (shape.size() == 2) {
-    textures_.push_back(std::make_unique<Texture>(this, type, num_channels,
-                                                  shape[0], shape[1], 1));
+    textures_.push_back(
+        std::make_unique<Texture>(this, buffer_format, shape[0], shape[1], 1));
   } else if (shape.size() == 3) {
-    textures_.push_back(std::make_unique<Texture>(
-        this, type, num_channels, shape[0], shape[1], shape[2]));
+    textures_.push_back(std::make_unique<Texture>(this, buffer_format, shape[0],
+                                                  shape[1], shape[2]));
   } else {
     TI_ERROR("Texture shape invalid");
   }

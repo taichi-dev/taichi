@@ -88,6 +88,15 @@ void compile_to_offloads(IRNode *ir,
     irpass::analysis::gather_meshfor_relation_types(ir);
   }
 
+  if (config.debug && autodiff_mode == AutodiffMode::kCheckAutodiffValid) {
+    // Check whether the kernel obeys the autodiff limitation e.g., gloabl data
+    // access rule
+    // This check should be performed in the forward kernel i.e., autodiff_mode
+    // == AutodiffMode::kCheckAutodiffValid
+    irpass::differentiation_validation_check(ir, config, kernel->get_name());
+    irpass::analysis::verify(ir);
+  }
+
   if (autodiff_mode != AutodiffMode::kNone) {
     // Remove local atomics here so that we don't have to handle their gradients
     irpass::demote_atomics(ir, config);

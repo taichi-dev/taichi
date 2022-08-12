@@ -48,6 +48,16 @@ void Renderable::update_data(const RenderableInfo &info) {
     prog->flush();
   }
 
+  bool needs_pipeline_reset = false;
+
+  // Check if we need to update Graphics Pipeline
+  if (info.display_mode != config_.polygon_mode) {
+    needs_pipeline_reset = true;
+    config_.polygon_mode = info.display_mode;
+    pipeline_.reset();
+    create_graphics_pipeline();
+  }
+
   int num_vertices = info.vbo.shape[0];
   int draw_num_vertices = info.draw_vertex_count;
   int draw_first_vertices = info.draw_first_vertex % num_vertices;
@@ -88,7 +98,7 @@ void Renderable::update_data(const RenderableInfo &info) {
     config_.draw_first_index = 0;
   }
 
-  if (num_vertices > config_.max_vertices_count ||
+  if (needs_pipeline_reset || num_vertices > config_.max_vertices_count ||
       num_indices > config_.max_indices_count) {
     free_buffers();
     config_.max_vertices_count = num_vertices;
@@ -165,6 +175,7 @@ void Renderable::create_graphics_pipeline() {
 
   RasterParams raster_params;
   raster_params.prim_topology = config_.topology_type;
+  raster_params.polygon_mode = config_.polygon_mode;
   raster_params.depth_test = true;
   raster_params.depth_write = true;
 

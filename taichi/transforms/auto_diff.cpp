@@ -860,7 +860,8 @@ class MakeAdjoint : public ADTransform {
     } else if (is_comparison(bin->op_type) || is_bit_op(bin->op_type)) {
       // do nothing
     } else {
-      TI_WARN("gradient of binary op {}", binary_op_type_name(bin->op_type));
+      TI_WARN("gradient of binary op {}\n{}", binary_op_type_name(bin->op_type),
+              bin->tb);
       TI_NOT_IMPLEMENTED;
     }
   }
@@ -988,6 +989,11 @@ class MakeAdjoint : public ADTransform {
 
   void visit(GlobalLoadStmt *stmt) override {
     // issue global store to adjoint
+    if (stmt->src->is<ExternalPtrStmt>()) {
+      TI_ERROR(
+          "Importing data from external array (such as numpy array) not "
+          "supported in AutoDiff for now")
+    }
     GlobalPtrStmt *src = stmt->src->as<GlobalPtrStmt>();
     TI_ASSERT(src->width() == 1);
     auto snodes = src->snodes;
@@ -1007,6 +1013,11 @@ class MakeAdjoint : public ADTransform {
 
   void visit(GlobalStoreStmt *stmt) override {
     // erase and replace with global load adjoint
+    if (stmt->dest->is<ExternalPtrStmt>()) {
+      TI_ERROR(
+          "Exporting data to external array (such as numpy array) not "
+          "supported in AutoDiff for now")
+    }
     GlobalPtrStmt *dest = stmt->dest->as<GlobalPtrStmt>();
     TI_ASSERT(dest->width() == 1);
     auto snodes = dest->snodes;
@@ -1195,7 +1206,8 @@ class MakeDual : public ADTransform {
     } else if (is_comparison(bin->op_type) || is_bit_op(bin->op_type)) {
       // do nothing
     } else {
-      TI_WARN("gradient of binary op {}", binary_op_type_name(bin->op_type));
+      TI_WARN("gradient of binary op {}\n{}", binary_op_type_name(bin->op_type),
+              bin->tb);
       TI_NOT_IMPLEMENTED
     }
   }
@@ -1365,6 +1377,23 @@ class BackupSSA : public BasicStmtVisitor {
         if (op->is<AdStackLoadTopStmt>()) {
           // Just create another AdStackLoadTopStmt
           stmt->set_operand(i, stmt->insert_before_me(op->clone()));
+        } else if (op->is<AdStackAllocaStmt>()) {
+          // Backup AdStackAllocaStmt because it should not be local stored and
+          // local loaded
+          auto stack_alloca = op->as<AdStackAllocaStmt>();
+          if (backup_alloca.find(op) == backup_alloca.end()) {
+            auto backup_stack_alloca = Stmt::make<AdStackAllocaStmt>(
+                stack_alloca->dt, stack_alloca->max_size);
+            auto backup_stack_alloca_ptr = backup_stack_alloca.get();
+            independent_block->insert(std::move(backup_stack_alloca), 0);
+            backup_alloca[op] = backup_stack_alloca_ptr;
+            // Replace usages of all blocks i.e., the entry point for the
+            // replace is the top level block
+            irpass::replace_all_usages_with(leaf_to_root.back(), op,
+                                            backup_stack_alloca_ptr);
+            // Erase the outdated AdStackAllocaStmt
+            op->parent->erase(op);
+          }
         } else {
           auto alloca = load(op);
           TI_ASSERT(op->width() == 1);
@@ -1453,6 +1482,76 @@ void auto_diff(IRNode *root,
   }
   type_check(root, config);
   irpass::analysis::verify(root);
+}
+
+class GloablDataAccessRuleChecker : public BasicStmtVisitor {
+ public:
+  using BasicStmtVisitor::visit;
+
+  void visit(GlobalLoadStmt *stmt) override {
+    GlobalPtrStmt *src = stmt->src->as<GlobalPtrStmt>();
+    TI_ASSERT(src->width() == 1);
+    auto snodes = src->snodes;
+    if (!snodes[0]->has_adjoint_visited()) {
+      return;
+    }
+    TI_ASSERT(snodes[0]->get_adjoint_visited() != nullptr);
+    snodes[0] = snodes[0]->get_adjoint_visited();
+    auto gloabl_ptr =
+        stmt->insert_after_me(Stmt::make<GlobalPtrStmt>(snodes, src->indices));
+    auto one = gloabl_ptr->insert_after_me(
+        Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(1)));
+    one->insert_after_me(Stmt::make<GlobalStoreStmt>(gloabl_ptr, one));
+  }
+
+  void visit_gloabl_store_stmt_and_atomic_add(Stmt *stmt, GlobalPtrStmt *dest) {
+    TI_ASSERT(dest->width() == 1);
+    auto snodes = dest->snodes;
+    if (!snodes[0]->has_adjoint_visited()) {
+      return;
+    }
+    TI_ASSERT(snodes[0]->get_adjoint_visited() != nullptr);
+    snodes[0] = snodes[0]->get_adjoint_visited();
+    auto global_ptr = stmt->insert_before_me(
+        Stmt::make<GlobalPtrStmt>(snodes, dest->indices));
+    auto global_load =
+        stmt->insert_before_me(Stmt::make<GlobalLoadStmt>(global_ptr));
+    auto zero = stmt->insert_before_me(
+        Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(0)));
+    auto check_equal = stmt->insert_before_me(
+        Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_eq, global_load, zero));
+    std::string msg = fmt::format(
+        "(kernel={}) Breaks the global data access rule. Snode {} is "
+        "overwritten unexpectedly.",
+        kernel_name_, dest->snodes[0]->get_node_type_name());
+    stmt->insert_before_me(
+        Stmt::make<AssertStmt>(check_equal, msg, std::vector<Stmt *>()));
+  }
+
+  void visit(GlobalStoreStmt *stmt) override {
+    GlobalPtrStmt *dest = stmt->dest->as<GlobalPtrStmt>();
+    visit_gloabl_store_stmt_and_atomic_add(stmt, dest);
+  }
+
+  void visit(AtomicOpStmt *stmt) override {
+    GlobalPtrStmt *dest = stmt->dest->as<GlobalPtrStmt>();
+    visit_gloabl_store_stmt_and_atomic_add(stmt, dest);
+  }
+
+  static void run(IRNode *root, const std::string &kernel_name) {
+    GloablDataAccessRuleChecker checker;
+    checker.kernel_name_ = kernel_name;
+    root->accept(&checker);
+  }
+
+ private:
+  std::string kernel_name_;
+};
+
+void differentiation_validation_check(IRNode *root,
+                                      const CompileConfig &config,
+                                      const std::string &kernel_name) {
+  return irpass::GloablDataAccessRuleChecker::run(root, kernel_name);
 }
 
 }  // namespace irpass

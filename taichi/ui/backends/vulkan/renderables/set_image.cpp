@@ -46,7 +46,13 @@ void SetImage::update_data(const SetImageInfo &info) {
   // [0; 255]
   //
   // @TODO: Make the number of channel configurable?
-  texture_dtype_ = img.dtype;
+  TI_ASSERT(img.dtype == taichi::lang::PrimitiveType::f32 ||
+            img.dtype == taichi::lang::PrimitiveType::u32);
+  if (img.dtype == taichi::lang::PrimitiveType::u32) {
+    texture_dtype_ = taichi::lang::PrimitiveType::u8;
+  } else {
+    texture_dtype_ = img.dtype;
+  }
 
   int new_width = get_correct_dimension(img.shape[0]);
   int new_height = get_correct_dimension(img.shape[1]);
@@ -61,7 +67,7 @@ void SetImage::update_data(const SetImageInfo &info) {
 
   int pixels = width * height;
 
-  app_context_->device().image_transition(texture_, ImageLayout::shader_read,
+  app_context_->device().image_transition(texture_, ImageLayout::undefined,
                                           ImageLayout::transfer_dst);
 
   uint64_t img_size = pixels * data_type_size(texture_dtype_) * 4;
@@ -92,6 +98,8 @@ void SetImage::update_data(const SetImageInfo &info) {
 
   auto stream = app_context_->device().get_graphics_stream();
   auto cmd_list = stream->new_command_list();
+  cmd_list->image_transition(texture_, ImageLayout::undefined,
+                             ImageLayout::transfer_dst);
   cmd_list->buffer_to_image(texture_, gpu_staging_buffer_.get_ptr(0),
                             ImageLayout::transfer_dst, copy_params);
 

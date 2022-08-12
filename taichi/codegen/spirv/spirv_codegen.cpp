@@ -146,6 +146,10 @@ class TaskCodegen : public IRVisitor {
     }
   }
 
+  void visit(PrintStmt *print_stmt) override {
+    TI_WARN("Printing is not yet supported in Vulkan");
+  }
+
   void visit(ConstStmt *const_stmt) override {
     TI_ASSERT(const_stmt->width() == 1);
 
@@ -195,10 +199,40 @@ class TaskCodegen : public IRVisitor {
   }
 
   void visit(AllocaStmt *alloca) override {
-    spirv::SType src_type = ir_->get_primitive_type(alloca->element_type());
-    spirv::Value ptr_val = ir_->alloca_variable(src_type);
-    ir_->store_variable(ptr_val, ir_->get_zero(src_type));
-    ir_->register_value(alloca->raw_name(), ptr_val);
+    if (alloca->ret_type->is<TensorType>()) {
+      // Alloca for shared memory / workgroup memory
+      if (!alloca->is_shared) {
+        TI_ERROR(
+            "Tensor type for dyanmic index is not yet supported on Vulkan.");
+      }
+      auto tensor_type = alloca->ret_type->cast<TensorType>();
+      auto elem_num = tensor_type->get_num_elements();
+      spirv::SType elem_type =
+          ir_->get_primitive_type(tensor_type->get_element_type());
+
+      spirv::SType arr_type = ir_->get_array_type(elem_type, elem_num);
+      spirv::Value ptr_val = ir_->alloca_workgroup_array(arr_type);
+      shared_array_binds_.push_back(ptr_val);
+      ir_->register_value(alloca->raw_name(), ptr_val);
+    } else {
+      // Alloca for a single variable
+      spirv::SType src_type = ir_->get_primitive_type(alloca->element_type());
+      spirv::Value ptr_val = ir_->alloca_variable(src_type);
+      ir_->store_variable(ptr_val, ir_->get_zero(src_type));
+      ir_->register_value(alloca->raw_name(), ptr_val);
+    }
+  }
+
+  void visit(PtrOffsetStmt *stmt) override {
+    spirv::SType data_type =
+        ir_->get_primitive_type(stmt->element_type().ptr_removed());
+    spirv::SType ptr_type =
+        ir_->get_pointer_type(data_type, spv::StorageClassWorkgroup);
+    auto origin_val = ir_->query_value(stmt->origin->raw_name());
+    auto offset_val = ir_->query_value(stmt->offset->raw_name());
+    Value offset_ptr =
+        ir_->make_value(spv::OpAccessChain, ptr_type, origin_val, offset_val);
+    ir_->register_value(stmt->raw_name(), offset_ptr);
   }
 
   void visit(LocalLoadStmt *stmt) override {
@@ -777,9 +811,9 @@ class TaskCodegen : public IRVisitor {
     spirv::Value bin_value = spirv::Value();
 
     TI_WARN_IF(lhs_value.stype.id != rhs_value.stype.id,
-               "${} type {} != ${} type {}", lhs_name,
+               "${} type {} != ${} type {}\n{}", lhs_name,
                lhs_value.stype.dt->to_string(), rhs_name,
-               rhs_value.stype.dt->to_string());
+               rhs_value.stype.dt->to_string(), bin->tb);
 
     if (false) {
     }
@@ -1074,7 +1108,28 @@ class TaskCodegen : public IRVisitor {
         "subgroupInclusiveMax", "subgroupInclusiveAnd", "subgroupInclusiveOr",
         "subgroupInclusiveXor"};
 
-    if (stmt->func_name == "subgroupElect") {
+    if (stmt->func_name == "workgroupBarrier") {
+      ir_->make_inst(
+          spv::OpControlBarrier,
+          ir_->int_immediate_number(ir_->i32_type(), spv::ScopeWorkgroup),
+          ir_->int_immediate_number(ir_->i32_type(), spv::ScopeWorkgroup),
+          ir_->int_immediate_number(
+              ir_->i32_type(), spv::MemorySemanticsWorkgroupMemoryMask |
+                                   spv::MemorySemanticsAcquireReleaseMask));
+      val = ir_->const_i32_zero_;
+    } else if (stmt->func_name == "localInvocationId") {
+      val = ir_->cast(ir_->i32_type(), ir_->get_local_invocation_id(0));
+    } else if (stmt->func_name == "vkGlobalThreadIdx") {
+      val = ir_->cast(ir_->i32_type(), ir_->get_global_invocation_id(0));
+    } else if (stmt->func_name == "workgroupMemoryBarrier") {
+      ir_->make_inst(
+          spv::OpMemoryBarrier,
+          ir_->int_immediate_number(ir_->i32_type(), spv::ScopeWorkgroup),
+          ir_->int_immediate_number(
+              ir_->i32_type(), spv::MemorySemanticsWorkgroupMemoryMask |
+                                   spv::MemorySemanticsAcquireReleaseMask));
+      val = ir_->const_i32_zero_;
+    } else if (stmt->func_name == "subgroupElect") {
       val = ir_->make_value(
           spv::OpGroupNonUniformElect, ir_->bool_type(),
           ir_->int_immediate_number(ir_->i32_type(), spv::ScopeSubgroup));
@@ -1517,6 +1572,7 @@ class TaskCodegen : public IRVisitor {
     ir_->set_work_group_size(group_size);
     std::vector<spirv::Value> buffers;
     if (device_->get_cap(DeviceCapability::spirv_version) > 0x10300) {
+      buffers = shared_array_binds_;
       for (const auto &bb : task_attribs_.buffer_binds) {
         for (auto &it : buffer_value_map_) {
           if (it.first.first == bb.buffer) {
@@ -2170,6 +2226,7 @@ class TaskCodegen : public IRVisitor {
                      BufferInfoTypeTupleHasher>
       buffer_binding_map_;
   std::vector<TextureBind> texture_binds_;
+  std::vector<spirv::Value> shared_array_binds_;
   spirv::Value kernel_function_;
   spirv::Label kernel_return_label_;
   bool gen_label_{false};

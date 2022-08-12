@@ -411,8 +411,8 @@ class Kernel:
         self.func = _func
         self.kernel_counter = Kernel.counter
         Kernel.counter += 1
-        assert autodiff_mode in (AutodiffMode.NONE, AutodiffMode.FORWARD,
-                                 AutodiffMode.REVERSE)
+        assert autodiff_mode in (AutodiffMode.NONE, AutodiffMode.VALIDATION,
+                                 AutodiffMode.FORWARD, AutodiffMode.REVERSE)
         self.autodiff_mode = autodiff_mode
         self.grad = None
         self.arguments = []
@@ -753,19 +753,20 @@ class Kernel:
             # Both the class kernels and the plain-function kernels are unified now.
             # In both cases, |self.grad| is another Kernel instance that computes the
             # gradient. For class kernels, args[0] is always the kernel owner.
-            if self.autodiff_mode == AutodiffMode.NONE and self.runtime.target_tape and not self.runtime.grad_replaced:
+            if (
+                    self.autodiff_mode == AutodiffMode.NONE
+                    or self.autodiff_mode == AutodiffMode.VALIDATION
+            ) and self.runtime.target_tape and not self.runtime.grad_replaced:
                 self.runtime.target_tape.insert(self, args)
 
-            if actual_argument_slot > 8 and (
-                    impl.current_cfg().arch == _ti_core.opengl
-                    or impl.current_cfg().arch == _ti_core.cc):
+            if actual_argument_slot > 8 and impl.current_cfg(
+            ).arch == _ti_core.cc:
                 raise TaichiRuntimeError(
                     f"The number of elements in kernel arguments is too big! Do not exceed 8 on {_ti_core.arch_name(impl.current_cfg().arch)} backend."
                 )
 
-            if actual_argument_slot > 64 and (
-                (impl.current_cfg().arch != _ti_core.opengl
-                 and impl.current_cfg().arch != _ti_core.cc)):
+            if actual_argument_slot > 64 and impl.current_cfg(
+            ).arch != _ti_core.cc:
                 raise TaichiRuntimeError(
                     f"The number of elements in kernel arguments is too big! Do not exceed 64 on {_ti_core.arch_name(impl.current_cfg().arch)} backend."
                 )
@@ -836,6 +837,9 @@ class Kernel:
             mode_original = self.autodiff_mode
             self.autodiff_mode = AutodiffMode.FORWARD
             self.runtime.fwd_mode_manager.insert(self, mode_original)
+        elif self.runtime.target_tape and self.runtime.target_tape.validation:
+            # The autodiff valid check happens on forward kernel
+            self.autodiff_mode = AutodiffMode.VALIDATION
 
         if self.autodiff_mode != AutodiffMode.NONE and impl.current_cfg(
         ).opt_level == 0:

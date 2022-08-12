@@ -1,10 +1,14 @@
 import argparse
+import os
+
+import pytest
 
 import taichi as ti
 
 FRAMES = 100
 
 
+@pytest.mark.skipif(os.environ.get('TI_LITE_TEST') or '0', reason='Lite test')
 def test_ad_gravity():
     from taichi.examples.simulation.ad_gravity import init, substep
 
@@ -14,6 +18,7 @@ def test_ad_gravity():
             substep()
 
 
+@pytest.mark.skipif(os.environ.get('TI_LITE_TEST') or '0', reason='Lite test')
 def video_ad_gravity(result_dir):
     import numpy as np
     from taichi.examples.simulation.ad_gravity import init, substep, x

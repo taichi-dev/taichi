@@ -1,4 +1,5 @@
 import pathlib
+import warnings
 
 import numpy
 from taichi._kernels import (arr_vulkan_layout_to_arr_normal_layout,
@@ -111,7 +112,13 @@ class Window:
 
     @property
     def GUI(self):
-        """Returns a IMGUI handle. See :class`~taichi.ui.ui.Gui` """
+        """Returns a IMGUI handle. See :class`~taichi.ui.ui.Gui` This is an
+        deprecated interface, please use `~taichi.ui.Window.get_gui` instead.
+        """
+        return self.get_gui()
+
+    def get_gui(self):
+        """Returns a IMGUI handle. See :class`~taichi.ui.ui.Gui`"""
         return Gui(self.window.GUI())
 
     def get_cursor_pos(self):
@@ -132,6 +139,18 @@ class Window:
         return self.window.get_window_shape()
 
     def write_image(self, filename):
+        """Save the window content to an image file. This is an deprecated
+        interface; please use `save_image` instead.
+
+        Args:
+            filename (str): output filename.
+        """
+        warnings.warn(
+            "`Window.write_image()` is renamed to `Window.save_image()`",
+            DeprecationWarning)
+        return self.save_image(filename)
+
+    def save_image(self, filename):
         """Save the window content to an image file.
 
         Args:
@@ -146,11 +165,9 @@ class Window:
             depth(ti.ndarray/ti.field): [window_width, window_height] carries depth information.
         """
         if not (len(depth.shape) == 2 and depth.dtype == f32):
-            print("Only Support 2d-shape and ti.f32 data format.")
-            exit()
+            raise Exception("Only Support 2d-shape and ti.f32 data format.")
         if not isinstance(depth, (Ndarray, Field)):
-            print("Only Support Ndarray and Field data type.")
-            exit()
+            raise Exception("Only Support Ndarray and Field data type.")
         tmp_depth = get_depth_ndarray(self.window)
         self.window.copy_depth_buffer_to_ndarray(tmp_depth.arr)
         if isinstance(depth, Ndarray):
@@ -170,13 +187,13 @@ class Window:
         arr_vulkan_layout_to_arr_normal_layout(tmp_depth, depth_numpy_arr)
         return depth_numpy_arr
 
-    def get_image_buffer(self):
+    def get_image_buffer_as_numpy(self):
         """Get the window content to numpy array.
 
         Returns:
             3d numpy array: [width, height, channels] with (0.0~1.0) float-format color.
         """
-        return self.window.get_image_buffer()
+        return self.window.get_image_buffer_as_numpy()
 
     def destroy(self):
         """Destroy this window. The window will be unavailable then.

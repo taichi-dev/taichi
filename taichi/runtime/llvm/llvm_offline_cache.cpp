@@ -9,11 +9,13 @@
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/raw_os_ostream.h"
 #include "llvm/Transforms/Utils/Cloning.h"
+#include "taichi/analysis/offline_cache_util.h"
 #include "taichi/common/cleanup.h"
 #include "taichi/common/version.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/program/kernel.h"
 #include "taichi/runtime/llvm/llvm_context.h"
+#include "taichi/util/io.h"
 #include "taichi/util/lock.h"
 
 namespace taichi {
@@ -155,7 +157,29 @@ bool LlvmOfflineCacheFileReader::get_kernel_cache(
   res.last_used_at = kernel_data.last_used_at;
   res.kernel_key = key;
   res.args = kernel_data.args;
-  return true;
+
+  // Verify the `res: LlvmOfflineCache::KernelCacheData`
+  bool verified_all = true;
+  const auto &compiled_data_list = res.compiled_data_list;
+  for (std::size_t i = 0; i < compiled_data_list.size(); ++i) {
+    const auto &data = compiled_data_list[i];
+    const auto &tasks = data.tasks;
+    bool verified = true;
+    for (const auto &t : tasks) {
+      if (data.module->getFunction(t.name) == nullptr) {
+        verified = false;
+        verified_all = false;
+      }
+    }
+    if (!verified) {
+      for (const auto &f : get_possible_llvm_cache_filename_by_key(
+               key + "." + std::to_string(i))) {
+        taichi::remove(taichi::join_path(path_, f));
+      }
+    }
+  }
+
+  return verified_all;
 }
 
 std::unique_ptr<llvm::Module> LlvmOfflineCacheFileReader::load_module(
@@ -319,10 +343,10 @@ void LlvmOfflineCacheFileWriter::mangle_offloaded_task_name(
     const std::string &kernel_key,
     std::vector<LLVMCompiledData> &compiled_data_list) {
   if (!mangled_) {
-    std::size_t cnt = 0;
     for (auto &e : compiled_data_list) {
       for (auto &offload : e.tasks) {
-        std::string mangled_name = kernel_key + std::to_string(cnt++);
+        std::string mangled_name =
+            offline_cache::mangle_name(offload.name, kernel_key);
         TI_DEBUG(
             "Mangle offloaded-task from internal name '{}' to offline cache "
             "key '{}'",

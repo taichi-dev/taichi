@@ -1,5 +1,7 @@
 import argparse
+import os
 
+import pytest
 from taichi.lang import impl
 
 import taichi as ti
@@ -7,11 +9,13 @@ import taichi as ti
 FRAMES = 100
 
 
+@pytest.mark.skipif(os.environ.get('TI_LITE_TEST') or '0', reason='Lite test')
 def test_print_offset():
     from taichi.examples.algorithm.print_offset import fill
     fill()
 
 
+@pytest.mark.skipif(os.environ.get('TI_LITE_TEST') or '0', reason='Lite test')
 def video_print_offset(result_dir):
     from taichi.examples.algorithm.print_offset import a, fill, m, n
     video_manager = ti.tools.VideoManager(output_dir=result_dir,

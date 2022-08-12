@@ -146,6 +146,10 @@ class TaskCodegen : public IRVisitor {
     }
   }
 
+  void visit(PrintStmt *print_stmt) override {
+    TI_WARN("Printing is not yet supported in Vulkan");
+  }
+
   void visit(ConstStmt *const_stmt) override {
     TI_ASSERT(const_stmt->width() == 1);
 
@@ -208,6 +212,7 @@ class TaskCodegen : public IRVisitor {
 
       spirv::SType arr_type = ir_->get_array_type(elem_type, elem_num);
       spirv::Value ptr_val = ir_->alloca_workgroup_array(arr_type);
+      shared_array_binds_.push_back(ptr_val);
       ir_->register_value(alloca->raw_name(), ptr_val);
     } else {
       // Alloca for a single variable
@@ -1567,6 +1572,7 @@ class TaskCodegen : public IRVisitor {
     ir_->set_work_group_size(group_size);
     std::vector<spirv::Value> buffers;
     if (device_->get_cap(DeviceCapability::spirv_version) > 0x10300) {
+      buffers = shared_array_binds_;
       for (const auto &bb : task_attribs_.buffer_binds) {
         for (auto &it : buffer_value_map_) {
           if (it.first.first == bb.buffer) {
@@ -2220,6 +2226,7 @@ class TaskCodegen : public IRVisitor {
                      BufferInfoTypeTupleHasher>
       buffer_binding_map_;
   std::vector<TextureBind> texture_binds_;
+  std::vector<spirv::Value> shared_array_binds_;
   spirv::Value kernel_function_;
   spirv::Label kernel_return_label_;
   bool gen_label_{false};

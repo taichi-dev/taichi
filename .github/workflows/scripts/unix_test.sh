@@ -1,16 +1,9 @@
 #!/bin/bash
 set -ex
 
-export PYTHONUNBUFFERED=1
+. $(dirname $0)/common-utils.sh
 
-check_in_docker() {
-    # This is a temporary solution to detect in a docker, but it should work
-    if [[ $(whoami) == "dev" ]]; then
-        echo "true"
-    else
-        echo "false"
-    fi
-}
+export PYTHONUNBUFFERED=1
 
 export TI_SKIP_VERSION_CHECK=ON
 export TI_CI=1
@@ -51,7 +44,7 @@ ti diagnose
 ti changelog
 echo "wanted archs: $TI_WANTED_ARCHS"
 
-if [ "$TI_RUN_RELEASE_TESTS" == "1" ]; then
+if [ "$TI_RUN_RELEASE_TESTS" == "1" -a -z "$TI_LITE_TEST" ]; then
     python3 -m pip install PyYAML
     git clone https://github.com/taichi-dev/taichi-release-tests
     mkdir -p repos/taichi/python/taichi
@@ -66,7 +59,7 @@ EOF
 fi
 
 
-if [ ! -z $TI_SKIP_CPP_TESTS ]; then
+if [ -z "$TI_SKIP_CPP_TESTS" ]; then
     python3 tests/run_tests.py --cpp
 fi
 

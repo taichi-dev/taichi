@@ -3,8 +3,10 @@
 This module supplies two decorators for users to customize their
 gradient computation task.
 """
+import warnings
 from functools import reduce
 
+import numpy as np
 from taichi.lang import impl
 from taichi.lang.field import ScalarField
 from taichi.lang.snode import SNode
@@ -13,7 +15,7 @@ from taichi import _snode
 
 
 class Tape:
-    def __init__(self, loss=None, clear_gradients=True):
+    def __init__(self, loss=None, clear_gradients=True, validation=False):
         """A context manager for reverse mode autodiff :class:`~taichi.ad.Tape`. The
         context manager would catching all of the callings of functions that
         decorated by :func:`~taichi.lang.kernel_impl.kernel` or
@@ -28,6 +30,7 @@ class Tape:
         Args:
             loss(:class:`~taichi.lang.expr.Expr`): The loss field, which shape should be ().
             clear_gradients(Bool): Before `with` body start, clear all gradients or not.
+            validation(Bool): Check whether the code inside the context manager is autodiff valid, e.g., agree with the global data access rule.
 
         Example::
 
@@ -43,7 +46,12 @@ class Tape:
         self.entered = False
         self.gradient_evaluated = False
         self.clear_gradients = clear_gradients
+        self.validation = validation
         self.runtime = impl.get_runtime()
+        if not self.runtime.prog.config.debug and self.validation:
+            warnings.warn(
+                "Debug mode is disabled, autodiff valid check will not work. Please specify `ti.init(debug=True)` to enable the check.",
+                Warning)
         self.eval_on_exit = loss is not None
         self.loss = loss
 
@@ -96,6 +104,7 @@ def clear_all_gradients():
             if not ch.is_place():
                 visit(SNode(ch))
             else:
+                # TODO: control to clear adjoint, dual, adjoint_flag
                 if not ch.is_primal():
                     places.append(ch.get_expr())
 
@@ -274,6 +283,11 @@ class FwdMode:
         else:
             assert parameters_shape_flatten == len(self.seed)
 
+        # Clear gradients
+        if self.clear_gradients:
+            # TODO: the clear gradients should be controlled to clear adjoint/dual/adjoint_visited respectively
+            clear_all_gradients()
+
         # Set seed for each variable
         if len(self.seed) == 1:
             if len(self.param.shape) == 0:
@@ -283,13 +297,7 @@ class FwdMode:
                 # e.g., ti.root.dense(ti.i, 1).place(x.dual)
                 self.param.dual[0] = 1.0 * self.seed[0]
         else:
-            for idx, s in enumerate(self.seed):
-                self.param.dual[idx] = 1.0 * s
-
-        # Clear gradients
-        if self.clear_gradients:
-            for ls in self.loss:
-                ls.dual.fill(0)
+            self.param.dual.from_numpy(np.array(self.seed, dtype=np.float32))
 
         # Attach the context manager to the runtime
         self.runtime.fwd_mode_manager = self
@@ -318,8 +326,7 @@ class FwdMode:
                 # e.g., ti.root.dense(ti.i, 1).place(x.dual)
                 self.param.dual[0] = 0.0
         else:
-            for idx, s in enumerate(self.seed):
-                self.param.dual[idx] = 0.0
+            self.param.dual.fill(0)
 
 
 __all__ = [

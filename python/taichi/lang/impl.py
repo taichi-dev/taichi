@@ -1,6 +1,6 @@
 import numbers
 from types import FunctionType, MethodType
-from typing import Iterable
+from typing import Iterable, Sequence
 
 import numpy as np
 from taichi._lib import core as _ti_core
@@ -9,7 +9,8 @@ from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang._ndrange import GroupedNDRange, _Ndrange
 from taichi.lang.any_array import AnyArray, AnyArrayAccess
 from taichi.lang.enums import Layout
-from taichi.lang.exception import TaichiRuntimeError, TaichiTypeError
+from taichi.lang.exception import (TaichiRuntimeError, TaichiSyntaxError,
+                                   TaichiTypeError)
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.kernel_arguments import SparseMatrixProxy
@@ -25,7 +26,7 @@ from taichi.lang.struct import Struct, StructField, _IntermediateStruct
 from taichi.lang.util import (cook_dtype, get_traceback, is_taichi_class,
                               python_scope, taichi_scope, warning)
 from taichi.types.primitive_types import (all_types, f16, f32, f64, i32, i64,
-                                          u32, u64)
+                                          u8, u32, u64)
 
 
 @taichi_scope
@@ -339,6 +340,12 @@ class PyTaichi:
                 '\n\n  x = ti.field(float, shape=(2, 3), needs_{gradient_type}=True)'
             )
 
+    @staticmethod
+    def _allocate_gradient_visited():
+        if root.finalized:
+            return
+        root._allocate_grad_visited()
+
     def _check_matrix_field_member_shape(self):
         for _field in self.matrix_fields:
             shapes = [
@@ -356,6 +363,9 @@ class PyTaichi:
             _field._calc_dynamic_index_stride()
 
     def materialize(self):
+        if get_runtime().prog.config.debug and get_runtime(
+        ).prog.config.validate_autodiff:
+            self._allocate_gradient_visited()
         self.materialize_root_fb(not self.materialized)
         self.materialized = True
 
@@ -528,6 +538,19 @@ Example::
 """
 
 
+def _create_snode(axis_seq: Sequence[int], shape_seq: Sequence[numbers.Number],
+                  same_level: bool):
+    dim = len(axis_seq)
+    assert dim == len(shape_seq)
+    snode = root
+    if same_level:
+        snode = snode.dense(axes(*axis_seq), shape_seq)
+    else:
+        for i in range(dim):
+            snode = snode.dense(axes(axis_seq[i]), (shape_seq[i], ))
+    return snode
+
+
 @python_scope
 def create_field_member(dtype, name, needs_grad, needs_dual):
     dtype = cook_dtype(dtype)
@@ -548,6 +571,8 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
 
     x_grad = None
     x_dual = None
+    # The x_grad_visited is used for global data access rule checker
+    x_grad_visited = None
     if _ti_core.is_real(dtype):
         # adjoint
         x_grad = Expr(get_runtime().prog.make_id_expr(""))
@@ -558,6 +583,18 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
         x.ptr.set_adjoint(x_grad.ptr)
         if needs_grad:
             pytaichi.grad_vars.append(x_grad)
+
+        if prog.config.debug:
+            # adjoint flag
+            x_grad_visited = Expr(get_runtime().prog.make_id_expr(""))
+            dtype = u8
+            if prog.config.arch in (_ti_core.opengl, _ti_core.vulkan):
+                dtype = i32
+            x_grad_visited.ptr = _ti_core.global_new(x_grad_visited.ptr,
+                                                     cook_dtype(dtype))
+            x_grad_visited.ptr.set_name(name + ".grad_visited")
+            x_grad_visited.ptr.set_is_primal(False)
+            x.ptr.set_adjoint_visited(x_grad_visited.ptr)
 
         # dual
         x_dual = Expr(get_runtime().prog.make_id_expr(""))
@@ -578,6 +615,7 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
 @python_scope
 def field(dtype,
           shape=None,
+          order=None,
           name="",
           offset=None,
           needs_grad=False,
@@ -594,6 +632,7 @@ def field(dtype,
     Args:
         dtype (DataType): data type of the field.
         shape (Union[int, tuple[int]], optional): shape of the field.
+        order (str, optional): order of the shape laid out in memory.
         name (str, optional): name of the field.
         offset (Union[int, tuple[int]], optional): offset of the field domain.
         needs_grad (bool, optional): whether this field participates in autodiff (reverse mode)
@@ -606,41 +645,64 @@ def field(dtype,
         The code below shows how a Taichi field can be declared and defined::
 
             >>> x1 = ti.field(ti.f32, shape=(16, 8))
-            >>>
             >>> # Equivalently
             >>> x2 = ti.field(ti.f32)
             >>> ti.root.dense(ti.ij, shape=(16, 8)).place(x2)
+            >>>
+            >>> x3 = ti.field(ti.f32, shape=(16, 8), order='ji')
+            >>> # Equivalently
+            >>> x4 = ti.field(ti.f32)
+            >>> ti.root.dense(ti.j, shape=8).dense(ti.i, shape=16).place(x4)
+
     """
-
-    if isinstance(shape, numbers.Number):
-        shape = (shape, )
-
-    if isinstance(offset, numbers.Number):
-        offset = (offset, )
-
-    if shape is not None and offset is not None:
-        assert len(shape) == len(
-            offset
-        ), f'The dimensionality of shape and offset must be the same  ({len(shape)} != {len(offset)})'
-
-    assert (offset is None or shape
-            is not None), 'The shape cannot be None when offset is being set'
-
     x, x_grad, x_dual = create_field_member(dtype, name, needs_grad,
                                             needs_dual)
     x, x_grad, x_dual = ScalarField(x), ScalarField(x_grad), ScalarField(
         x_dual)
-
     x._set_grad(x_grad)
     x._set_dual(x_dual)
 
-    if shape is not None:
+    if shape is None:
+        if offset is not None:
+            raise TaichiSyntaxError('shape cannot be None when offset is set')
+        if order is not None:
+            raise TaichiSyntaxError('shape cannot be None when order is set')
+    else:
+        if isinstance(shape, numbers.Number):
+            shape = (shape, )
+        if isinstance(offset, numbers.Number):
+            offset = (offset, )
         dim = len(shape)
-        root.dense(index_nd(dim), shape).place(x, offset=offset)
+        if offset is not None and dim != len(offset):
+            raise TaichiSyntaxError(
+                f'The dimensionality of shape and offset must be the same ({dim} != {len(offset)})'
+            )
+        axis_seq = []
+        shape_seq = []
+        if order is not None:
+            if dim != len(order):
+                raise TaichiSyntaxError(
+                    f'The dimensionality of shape and order must be the same ({dim} != {len(order)})'
+                )
+            if dim != len(set(order)):
+                raise TaichiSyntaxError('The axes in order must be different')
+            for ch in order:
+                axis = ord(ch) - ord('i')
+                if axis < 0 or axis >= dim:
+                    raise TaichiSyntaxError(f'Invalid axis {ch}')
+                axis_seq.append(axis)
+                shape_seq.append(shape[axis])
+        else:
+            axis_seq = list(range(dim))
+            shape_seq = list(shape)
+        same_level = order is None
+        _create_snode(axis_seq, shape_seq, same_level).place(x, offset=offset)
         if needs_grad:
-            root.dense(index_nd(dim), shape).place(x_grad)
+            _create_snode(axis_seq, shape_seq, same_level).place(x_grad,
+                                                                 offset=offset)
         if needs_dual:
-            root.dense(index_nd(dim), shape).place(x_dual)
+            _create_snode(axis_seq, shape_seq, same_level).place(x_dual,
+                                                                 offset=offset)
     return x
 
 

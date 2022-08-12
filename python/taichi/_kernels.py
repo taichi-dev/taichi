@@ -7,9 +7,9 @@ from taichi.lang.impl import grouped, static, static_assert
 from taichi.lang.kernel_impl import kernel
 from taichi.lang.runtime_ops import sync
 from taichi.lang.snode import deactivate
-from taichi.types import ndarray_type
+from taichi.types import ndarray_type, texture_type, vector
 from taichi.types.annotations import template
-from taichi.types.primitive_types import f16, f32, f64, u8
+from taichi.types.primitive_types import f16, f32, f64, i32, u8
 
 
 # A set of helper (meta)functions
@@ -254,6 +254,31 @@ def snode_deactivate(b: template()):
 def snode_deactivate_dynamic(b: template()):
     for I in grouped(b.parent()):
         deactivate(b, I)
+
+
+@kernel
+def load_texture_from_numpy(tex: texture_type.rw_texture(num_dimensions=2,
+                                                         num_channels=4,
+                                                         channel_format=u8,
+                                                         lod=0),
+                            img: ndarray_type.ndarray(field_dim=2,
+                                                      element_shape=(3, ))):
+    for i, j in img:
+        tex.store(
+            vector(2, i32)([i, j]),
+            vector(4, f32)([img[i, j][0], img[i, j][1], img[i, j][2], 0]) /
+            255.)
+
+
+@kernel
+def save_texture_to_numpy(tex: texture_type.rw_texture(num_dimensions=2,
+                                                       num_channels=4,
+                                                       channel_format=u8,
+                                                       lod=0),
+                          img: ndarray_type.ndarray(field_dim=2,
+                                                    element_shape=(3, ))):
+    for i, j in img:
+        img[i, j] = ops.round(tex.load(vector(2, i32)([i, j])).rgb * 255)
 
 
 # Odd-even merge sort

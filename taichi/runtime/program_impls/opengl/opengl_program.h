@@ -43,6 +43,7 @@ class OpenglProgramImpl : public ProgramImpl {
 
   DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
                                            uint64 *result_buffer) override;
+  DeviceAllocation allocate_texture(const ImageParams &params) override;
 
   Device *get_compute_device() override {
     return device_.get();
@@ -50,6 +51,10 @@ class OpenglProgramImpl : public ProgramImpl {
 
   Device *get_graphics_device() override {
     return device_.get();
+  }
+
+  size_t get_field_in_tree_offset(int tree_id, const SNode *child) override {
+    return snode_tree_mgr_->get_field_in_tree_offset(tree_id, child);
   }
 
   DevicePtr get_snode_tree_device_ptr(int tree_id) override {

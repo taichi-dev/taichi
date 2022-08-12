@@ -323,7 +323,7 @@ def test_copy_python_scope_matrix_to_taichi_scope():
     test()
 
 
-@test_utils.test(debug=True)
+@test_utils.test(exclude=[ti.cc], debug=True)
 def test_copy_matrix_field_element_to_taichi_scope():
     a = ti.Vector.field(3, ti.i32, shape=())
     a[None] = ti.Vector([1, 2, 3])

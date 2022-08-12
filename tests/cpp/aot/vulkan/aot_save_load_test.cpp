@@ -405,7 +405,7 @@ TEST(AotLoadGraph, Mpm88) {
   if (!vulkan::is_vulkan_api_available()) {
     return;
   }
-  constexpr int NR_PARTICLES = 8192;
+  constexpr int NR_PARTICLES = 8192 * 5;
   constexpr int N_GRID = 128;
 
   // API based on proposal https://github.com/taichi-dev/taichi/issues/3642
@@ -526,4 +526,5 @@ TEST(AotLoadGraph, Mpm88) {
   device_->dealloc_memory(devalloc_grid_m);
   device_->dealloc_memory(devalloc_pos);
 }
+
 #endif

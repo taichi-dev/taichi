@@ -367,9 +367,11 @@ class PtrOffsetStmt : public Stmt {
 
   bool is_local_ptr() const {
     if (origin->is<AllocaStmt>() || origin->is<GlobalTemporaryStmt>()) {
-      auto is_tensor_type = origin->ret_type->is<PointerType>() ?
-                          origin->ret_type->cast<PointerType>()->get_pointee_type()->is<TensorType>() :
-                          origin->ret_type->is<TensorType>();
+      auto is_tensor_type = origin->ret_type->is<PointerType>()
+                                ? origin->ret_type->cast<PointerType>()
+                                      ->get_pointee_type()
+                                      ->is<TensorType>()
+                                : origin->ret_type->is<TensorType>();
       TI_ASSERT_INFO(is_tensor_type,
                      "PtrOffsetStmt can only be used for Alloca (TensorType).");
     }

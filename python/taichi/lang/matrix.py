@@ -103,12 +103,14 @@ def make_matrix(arr, dt=None, suppress_warning=False, is_ref=False, **kwargs):
     cast = (lambda x: ops_mod.cast(x, dt)) if dt else (
         lambda x: x if isinstance(x, expr.Expr) else expr.Expr(x))
     if len(arr) == 0:
-        return  impl.expr_init(impl.expr_init_matrix([0], dt, []))
+        return impl.expr_init(impl.expr_init_matrix([0], dt, []))
     if not isinstance(arr[0], Iterable):
-        return impl.expr_init(impl.expr_init_matrix([len(arr)], dt,
-                                     [cast(elt).ptr for elt in arr]))
-    return impl.expr_init(impl.expr_init_matrix([len(arr), len(arr[0])], dt,
-                                 [cast(elt).ptr for row in arr for elt in row]))
+        return impl.expr_init(
+            impl.expr_init_matrix([len(arr)], dt,
+                                  [cast(elt).ptr for elt in arr]))
+    return impl.expr_init(
+        impl.expr_init_matrix([len(arr), len(arr[0])], dt,
+                              [cast(elt).ptr for row in arr for elt in row]))
 
 
 class _MatrixBaseImpl:

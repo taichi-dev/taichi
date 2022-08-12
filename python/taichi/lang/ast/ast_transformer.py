@@ -14,8 +14,8 @@ from taichi.lang.ast.ast_transformer_utils import (Builder, LoopStatus,
 from taichi.lang.ast.symbol_resolver import ASTResolver
 from taichi.lang.exception import TaichiSyntaxError, TaichiTypeError
 from taichi.lang.field import Field
-from taichi.lang.matrix import (Matrix, MatrixType, _PyScopeMatrixImpl,
-                                _TiScopeMatrixImpl, Vector)
+from taichi.lang.matrix import (Matrix, MatrixType, Vector, _PyScopeMatrixImpl,
+                                _TiScopeMatrixImpl)
 from taichi.lang.snode import append
 from taichi.lang.util import in_taichi_scope, is_taichi_class, to_taichi_type
 from taichi.types import (annotations, ndarray_type, primitive_types,
@@ -488,7 +488,8 @@ class ASTTransformer(Builder):
             node.ptr = impl.ti_format(*args, **keywords)
             return node.ptr
 
-        if isinstance(node.func, ast.Attribute) and func == Matrix or func == Vector:
+        if isinstance(node.func,
+                      ast.Attribute) and func == Matrix or func == Vector:
             node.ptr = matrix.make_matrix(*args, **keywords)
             return node.ptr
 

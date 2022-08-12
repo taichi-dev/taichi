@@ -196,7 +196,7 @@ image_field_cache = {}
 
 def to_rgba8(image):
     is_texture = isinstance(image, Texture)
-    
+
     gray_scale = not hasattr(image, 'n') and len(image.shape) == 2
     if not is_texture and not gray_scale or image.m != 1):
         raise Exception(
@@ -204,7 +204,7 @@ def to_rgba8(image):
         )
     channels = 3
     src_numpy = isinstance(image, np.ndarray)
-    
+
     if not gray_scale:
         if len(image.shape) == 2:
             channels = image.n
@@ -216,13 +216,13 @@ def to_rgba8(image):
             )
 
     staging_key = image.shape[0:2] if src_numpy else image
-    
+
     if staging_key not in image_field_cache:
         staging_img = ti.field(u32, image.shape[0:2])
         image_field_cache[staging_key] = staging_img
     else:
         staging_img = image_field_cache[staging_key]
-        
+
     if isinstance(image, Texture):
         copy_texture_to_rgba8(image, staging_img, *image.shape[0:2])
     elif image.dtype == u8 or image.dtype == np.uint8:

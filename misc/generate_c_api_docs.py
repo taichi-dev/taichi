@@ -101,7 +101,7 @@ def generate_module_header(module):
         return
 
     print(f"processing module '{module.name}'")
-    path = f"docs/c_api/{module.name}.md"
+    path = f"docs/lang/articles/c-api/{module.name}.md"
     with open(path, "w") as f:
         f.write(print_module_doc(module, templ))
 

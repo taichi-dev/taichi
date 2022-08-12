@@ -3,7 +3,7 @@
 #include <memory>
 #include <vector>
 #include "taichi/taichi_core.h"
-#include "taichi/gui/gui.h"
+#include "taichi/ui/gui/gui.h"
 #include "taichi/ui/backends/vulkan/renderer.h"
 
 namespace gui_api {

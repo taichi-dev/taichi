@@ -1,5 +1,5 @@
 #include "c_api/src/gui_utils/gui_helper.h"
-#include "taichi/gui/gui.h"
+#include "taichi/ui/gui/gui.h"
 #include "taichi/ui/backends/vulkan/renderer.h"
 
 namespace gui_api {

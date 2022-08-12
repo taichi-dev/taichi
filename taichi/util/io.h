@@ -18,8 +18,7 @@
 
 TI_NAMESPACE_BEGIN
 
-inline bool path_exists(const std::string &dir)
-{
+inline bool path_exists(const std::string &dir) {
   struct stat buffer;
   return stat(dir.c_str(), &buffer) == 0;
 }

@@ -110,7 +110,8 @@ class LoopScopeGuard:
 
 
 class NonStaticIfGuard:
-    def __init__(self, if_node: ast.If, loop_attribute: LoopScopeAttribute, non_static_status: NonStaticControlFlowStatus):
+    def __init__(self, if_node: ast.If, loop_attribute: LoopScopeAttribute,
+                 non_static_status: NonStaticControlFlowStatus):
         self.loop_attribute = loop_attribute
         self.if_node = if_node
         self.non_static_guard = NonStaticControlFlowGuard(non_static_status)
@@ -185,8 +186,10 @@ class ASTTransformerContext:
                               self.non_static_control_flow_guard())
 
     def non_static_if_guard(self, if_node: ast.If):
-        return NonStaticIfGuard(if_node, self.current_loop_scope() if self.loop_scopes else None,
-                                self.non_static_control_flow_status)
+        return NonStaticIfGuard(
+            if_node,
+            self.current_loop_scope() if self.loop_scopes else None,
+            self.non_static_control_flow_status)
 
     def non_static_control_flow_guard(self):
         return NonStaticControlFlowGuard(self.non_static_control_flow_status)

@@ -1280,7 +1280,8 @@ class ASTTransformer(Builder):
     @staticmethod
     def build_Break(ctx, node):
         if ctx.is_in_static_for():
-            nearest_non_static_if: ast.If = ctx.current_loop_scope().nearest_non_static_if
+            nearest_non_static_if: ast.If = ctx.current_loop_scope(
+            ).nearest_non_static_if
             if nearest_non_static_if:
                 msg = ctx.get_pos_info(nearest_non_static_if.test)
                 msg += "\n" + ctx.get_pos_info(node)

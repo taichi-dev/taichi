@@ -346,8 +346,8 @@ def scan_add_inclusive(arr_in: template(), in_beg: i32, in_end: i32,
                        sum_smem: template(), single_block: template(),
                        inclusive_add: template(), barrier: template()):
     WARP_SZ = 32
-    BLOCK_SZ = 128
-    loop_config(block_dim=128)
+    BLOCK_SZ = 64
+    loop_config(block_dim=64)
     for i in range(in_beg, in_end):
         val = arr_in[i]
 
@@ -385,8 +385,8 @@ def scan_add_inclusive(arr_in: template(), in_beg: i32, in_end: i32,
 
 @kernel
 def uniform_add(arr_in: template(), in_beg: i32, in_end: i32):
-    BLOCK_SZ = 128
-    loop_config(block_dim=128)
+    BLOCK_SZ = 64
+    loop_config(block_dim=64)
     for i in range(in_beg + BLOCK_SZ, in_end):
         block_id = int((i - in_beg) // BLOCK_SZ)
         arr_in[i] += arr_in[in_end + block_id - 1]
@@ -403,7 +403,7 @@ def blit_from_field_to_field(
 # Ref[0]: https://developer.download.nvidia.com/compute/cuda/1.1-Beta/x86_website/projects/scan/doc/scan.pdf
 # Ref[1]: https://github.com/NVIDIA/cuda-samples/blob/master/Samples/2_Concepts_and_Techniques/shfl_scan/shfl_scan.cu
 def prefix_sum_inclusive_inplace(input_arr, length):
-    BLOCK_SZ = 128
+    BLOCK_SZ = 64
     GRID_SZ = int((length + BLOCK_SZ - 1) / BLOCK_SZ)
 
     # Buffer position and length

@@ -107,7 +107,9 @@ def print_module_doc(module: Module, templ):
         if re.match(SYM_PATTERN, line):
             cur_sym = line[1:-1]
             continue
-        documented_syms[cur_sym] += [resolve_inline_symbols_to_names(module, line)]
+        documented_syms[cur_sym] += [
+            resolve_inline_symbols_to_names(module, line)
+        ]
 
     is_first = True
     for x in module.declr_reg:

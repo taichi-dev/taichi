@@ -19,13 +19,11 @@ Taichi C-API has bridged the following backends:
 |Metal|GPU (macOS, iOS)|N/A|
 |OpenGL|GPU|N/A|
 
-The backends with tier 1 support are the most intensively developed and tested ones. In contrast, you would expect a delay in fixes against minor issues on tier 2 backends. The backends currently unsupported might become supported.
+The backends with tier 1 support are the most intensively developed and tested ones. In contrast, you would expect a delay in fixes against minor issues on tier 2 backends. The backends currently unsupported might become supported. Among all the tier 1 backends, Vulkan has the most outstanding cross-platform compatibility, so most of the new features will be first available on Vulkan.
 
-Among all the tier 1 backends, Vulkan has the most outstanding cross-platform compatibility, so most of the new features will be first available on Vulkan.
+For convenience, in the following text (and other C-API documentations), the term **host** refers to the user of the C-API; the term **device** refers to the logical (conceptual) compute device that Taichi Runtime offloads its compute tasks to. A *device* might not be an actual discrete processor away from the CPU and the *host* MAY NOT be able to access the memory allocated on the *device*.
 
-For convenience, in the following text (and other C-API documentations), the term *host* refers to the user of the C-API; the term *device* refers to the logical (conceptual) compute device that Taichi Runtime offloads its compute tasks to. A *device* might not be an actual discrete processor away from the CPU and the *host* MAY NOT be able to access the memory allocated on the *device*.
-
-Unless explicitly explained, *device*, *backend*, *offload targer* and *GPU* can be used interchangeably; *host*, "user code", "user procedure" and "CPU" can too be used interchangeably.
+Unless explicitly explained, **device**, **backend**, **offload targer** and **GPU** are used interchangeably; **host**, **user code**, **user procedure** and **CPU** are used interchangeably too.
 
 ## How to...
 

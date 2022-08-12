@@ -50,7 +50,7 @@ def print_module_doc(module: Module, templ):
     for i in range(len(templ)):
         line = templ[i]
         out += [line.strip()]
-        if line.startswith("## Declarations"):
+        if line.startswith("## API Reference"):
             break
 
     out += [""]
@@ -86,6 +86,8 @@ def print_module_doc(module: Module, templ):
             out += documented_syms[x]
         else:
             print(f"WARNING: `{x}` is not documented")
+
+    out += [""]
 
     return '\n'.join(out)
 

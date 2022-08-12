@@ -51,7 +51,7 @@ class TI_DLL_EXPORT Texture {
   }
 
   std::array<int, 3> get_size() const {
-    return { width_, height_, depth_ };
+    return {width_, height_, depth_};
   }
 
  private:

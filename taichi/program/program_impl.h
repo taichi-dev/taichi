@@ -13,7 +13,7 @@
 namespace taichi {
 namespace lang {
 
- // Represents an image resource reference for a compute/render Op
+// Represents an image resource reference for a compute/render Op
 struct ComputeOpImageRef {
   DeviceAllocation image;
   // The requested initial layout of the image, when Op is invoked

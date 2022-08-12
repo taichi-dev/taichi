@@ -713,7 +713,7 @@ void GfxRuntime::enqueue_compute_op_lambda(
 
   ensure_current_cmdlist();
   op(device_, current_cmdlist_.get());
-  
+
   for (const auto &ref : image_refs) {
     last_image_layouts_[ref.image.alloc_id] = ref.final_layout;
   }

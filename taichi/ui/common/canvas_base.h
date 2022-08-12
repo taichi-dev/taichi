@@ -11,7 +11,7 @@ namespace lang {
 class Texture;
 
 }
-}
+}  // namespace taichi
 
 TI_UI_NAMESPACE_BEGIN
 

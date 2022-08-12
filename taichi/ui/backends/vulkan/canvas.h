@@ -44,7 +44,7 @@ class TI_DLL_EXPORT Canvas final : public CanvasBase {
   virtual void set_image(const SetImageInfo &info) override;
 
   virtual void set_image(taichi::lang::Texture *tex) override;
-  
+
   virtual void triangles(const TrianglesInfo &info) override;
 
   virtual void circles(const CirclesInfo &info) override;

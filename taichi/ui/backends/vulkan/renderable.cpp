@@ -39,7 +39,11 @@ void Renderable::init_buffers() {
   create_bindings();
 }
 
-void copy_helper(Program *prog, DevicePtr dst, DevicePtr src, DevicePtr staging, size_t size) {
+void copy_helper(Program *prog,
+                 DevicePtr dst,
+                 DevicePtr src,
+                 DevicePtr staging,
+                 size_t size) {
   if (prog && dst.device == src.device &&
       dst.device == prog->get_graphics_device()) {
     prog->enqueue_compute_op_lambda(
@@ -50,7 +54,8 @@ void copy_helper(Program *prog, DevicePtr dst, DevicePtr src, DevicePtr staging,
         },
         {});
   } else {
-    Device::MemcpyCapability memcpy_cap = Device::check_memcpy_capability(dst, src, size);
+    Device::MemcpyCapability memcpy_cap =
+        Device::check_memcpy_capability(dst, src, size);
     if (memcpy_cap == Device::MemcpyCapability::Direct) {
       Device::memcpy_direct(dst, src, size);
     } else if (memcpy_cap == Device::MemcpyCapability::RequiresStagingBuffer) {

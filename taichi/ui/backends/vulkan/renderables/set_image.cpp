@@ -22,7 +22,7 @@ int SetImage::get_correct_dimension(int dimension) {
 }
 
 void SetImage::update_ubo(float x_factor, float y_factor, bool transpose) {
-  UniformBufferObject ubo = { x_factor, y_factor, int(transpose) };
+  UniformBufferObject ubo = {x_factor, y_factor, int(transpose)};
   void *mapped = app_context_->device().map(uniform_buffer_);
   memcpy(mapped, &ubo, sizeof(ubo));
   app_context_->device().unmap(uniform_buffer_);
@@ -66,7 +66,8 @@ void SetImage::update_data(const SetImageInfo &info) {
     init_set_image(app_context_, new_width, new_height, fmt);
   }
 
-  update_ubo(img.shape[0] / (float)new_width, img.shape[1] / (float)new_height, true);
+  update_ubo(img.shape[0] / (float)new_width, img.shape[1] / (float)new_height,
+             true);
 
   int pixels = width * height;
 
@@ -144,8 +145,9 @@ void SetImage::update_data(Texture *tex) {
                  "Must be a 2D image! Received image shape: {}x{}x{}", shape[0],
                  shape[1], shape[2]);
 
-  // Reminder: y/x is flipped in Taichi. I would like to use the correct orientation,
-  // but we have existing code already using the previous convention
+  // Reminder: y/x is flipped in Taichi. I would like to use the correct
+  // orientation, but we have existing code already using the previous
+  // convention
   if (shape[1] != width || shape[0] != height || fmt != format_) {
     destroy_texture();
     free_buffers();
@@ -158,30 +160,31 @@ void SetImage::update_data(Texture *tex) {
   copy_params.width = shape[0];
   copy_params.height = shape[1];
   copy_params.depth = shape[2];
-  
+
   DeviceAllocation src_alloc = tex->get_device_allocation();
-  auto copy_op = [texture = this->texture_, src_alloc, copy_params](Device *device, CommandList *cmdlist) {
+  auto copy_op = [texture = this->texture_, src_alloc, copy_params](
+                     Device *device, CommandList *cmdlist) {
     cmdlist->image_transition(texture, ImageLayout::undefined,
-                               ImageLayout::transfer_dst);
-    cmdlist->copy_image(texture, src_alloc,
-                         ImageLayout::transfer_dst, ImageLayout::transfer_src,
-                         copy_params);
+                              ImageLayout::transfer_dst);
+    cmdlist->copy_image(texture, src_alloc, ImageLayout::transfer_dst,
+                        ImageLayout::transfer_src, copy_params);
     cmdlist->image_transition(texture, ImageLayout::transfer_dst,
-                               ImageLayout::shader_read);
+                              ImageLayout::shader_read);
   };
 
   // In the current state if we called this direct image update data method, we
   // gurantee to have a program.
-  // FIXME: However, if we don't have a Program, where does the layout come from?
+  // FIXME: However, if we don't have a Program, where does the layout come
+  // from?
   if (prog) {
     prog->enqueue_compute_op_lambda(
-        copy_op,
-        {ComputeOpImageRef{src_alloc, ImageLayout::transfer_src, ImageLayout::transfer_src}});
+        copy_op, {ComputeOpImageRef{src_alloc, ImageLayout::transfer_src,
+                                    ImageLayout::transfer_src}});
   } else {
     auto stream = app_context_->device().get_graphics_stream();
     auto cmd_list = stream->new_command_list();
     copy_op(&app_context_->device(), cmd_list.get());
-    stream->submit(cmd_list.get());  
+    stream->submit(cmd_list.get());
   }
 }
 

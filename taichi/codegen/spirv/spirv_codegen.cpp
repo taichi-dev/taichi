@@ -2380,7 +2380,7 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
                          std::ios::binary | std::ios::out);
       fout.write(reinterpret_cast<const char *>(optimized_spv.data()),
                  optimized_spv.size() * sizeof(uint32_t));
-      fout.close();      
+      fout.close();
     }
 #endif
 

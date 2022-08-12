@@ -1151,7 +1151,7 @@ class ASTTransformer(Builder):
                 build_stmts(ctx, node.orelse)
             return node
 
-        with ctx.non_static_control_flow_guard():
+        with ctx.non_static_if_guard():
             impl.begin_frontend_if(ctx.ast_builder, node.test.ptr)
             ctx.ast_builder.begin_frontend_if_true()
             build_stmts(ctx, node.body)
@@ -1280,6 +1280,13 @@ class ASTTransformer(Builder):
     @staticmethod
     def build_Break(ctx, node):
         if ctx.is_in_static_for():
+            nearest_non_static_if: ast.If = ctx.current_loop_scope().nearest_non_static_if
+            if nearest_non_static_if:
+                msg = ctx.get_pos_info(nearest_non_static_if.test)
+                msg += "\n" + ctx.get_pos_info(node)
+                msg += "\nThe test expression of the `If` statement is not a compile-time constant, " \
+                       "so the `break` statement may not function as expected."
+                warnings.warn(msg)
             ctx.set_loop_status(LoopStatus.Break)
         else:
             ctx.ast_builder.insert_break_stmt()

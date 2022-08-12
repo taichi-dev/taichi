@@ -20,7 +20,7 @@ namespace py = pybind11;
 #include "taichi/ui/backends/vulkan/scene.h"
 #include "taichi/rhi/vulkan/vulkan_loader.h"
 #include "taichi/rhi/arch.h"
-#include "taichi/ui/common/field_info.h"
+#include "taichi/program/field_info.h"
 #include "taichi/ui/common/gui_base.h"
 #include "taichi/program/ndarray.h"
 #include <memory>
@@ -176,7 +176,7 @@ struct PyScene {
             float draw_first_index,
             float draw_vertex_count,
             float draw_first_vertex,
-            bool show_wareframe) {
+            bool show_wireframe) {
     RenderableInfo renderable_info;
     renderable_info.vbo = vbo;
     renderable_info.has_per_vertex_color = has_per_vertex_color;
@@ -186,7 +186,7 @@ struct PyScene {
     renderable_info.draw_first_index = (int)draw_first_index;
     renderable_info.draw_vertex_count = (int)draw_vertex_count;
     renderable_info.draw_first_vertex = (int)draw_first_vertex;
-    renderable_info.display_mode = show_wareframe
+    renderable_info.display_mode = show_wireframe
                                        ? taichi::lang::PolygonMode::Line
                                        : taichi::lang::PolygonMode::Fill;
 
@@ -231,7 +231,7 @@ struct PyScene {
                      float draw_first_index,
                      float draw_vertex_count,
                      float draw_first_vertex,
-                     bool show_wareframe) {
+                     bool show_wireframe) {
     RenderableInfo renderable_info;
     renderable_info.vbo = vbo;
     renderable_info.has_per_vertex_color = has_per_vertex_color;
@@ -241,7 +241,7 @@ struct PyScene {
     renderable_info.draw_first_index = (int)draw_first_index;
     renderable_info.draw_vertex_count = (int)draw_vertex_count;
     renderable_info.draw_first_vertex = (int)draw_first_vertex;
-    renderable_info.display_mode = show_wareframe
+    renderable_info.display_mode = show_wireframe
                                        ? taichi::lang::PolygonMode::Line
                                        : taichi::lang::PolygonMode::Fill;
 
@@ -484,7 +484,7 @@ void export_ggui(py::module &m) {
       .def("write_image", &PyWindow::write_image)
       .def("copy_depth_buffer_to_ndarray",
            &PyWindow::copy_depth_buffer_to_ndarray)
-      .def("get_image_buffer", &PyWindow::get_image_buffer)
+      .def("get_image_buffer_as_numpy", &PyWindow::get_image_buffer)
       .def("is_pressed", &PyWindow::is_pressed)
       .def("get_cursor_pos", &PyWindow::py_get_cursor_pos)
       .def("is_running", &PyWindow::is_running)

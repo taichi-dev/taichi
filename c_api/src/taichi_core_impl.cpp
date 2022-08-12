@@ -17,13 +17,12 @@ VulkanRuntime *Runtime::as_vk() {
 #endif
 }
 
-taichi::lang::DeviceAllocation Runtime::allocate_memory(
+TiMemory Runtime::allocate_memory(
     const taichi::lang::Device::AllocParams &params) {
   taichi::lang::DeviceAllocation devalloc = this->get().allocate_memory(params);
-  return devalloc;
+  return devalloc2devmem(*this, devalloc);
 }
-
-void Runtime::deallocate_memory(TiMemory devmem) {
+void Runtime::free_memory(TiMemory devmem) {
   this->get().dealloc_memory(devmem2devalloc(*this, devmem));
 }
 
@@ -127,9 +126,8 @@ TiMemory ti_allocate_memory(TiRuntime runtime,
   params.export_sharing = createInfo->export_sharing;
   params.usage = usage;
 
-  taichi::lang::DeviceAllocation devalloc =
-      ((Runtime *)runtime)->allocate_memory(params);
-  return devalloc2devmem(devalloc);
+  TiMemory devmem = ((Runtime *)runtime)->allocate_memory(params);
+  return devmem;
 }
 
 void ti_free_memory(TiRuntime runtime, TiMemory devmem) {
@@ -143,7 +141,7 @@ void ti_free_memory(TiRuntime runtime, TiMemory devmem) {
   }
 
   Runtime *runtime2 = (Runtime *)runtime;
-  runtime2->deallocate_memory(devmem);
+  runtime2->free_memory(devmem);
 }
 
 void *ti_map_memory(TiRuntime runtime, TiMemory devmem) {
@@ -169,6 +167,40 @@ void ti_unmap_memory(TiRuntime runtime, TiMemory devmem) {
   }
   Runtime *runtime2 = (Runtime *)runtime;
   runtime2->get().unmap(devmem2devalloc(*runtime2, devmem));
+}
+
+TiTexture ti_allocate_texture(TiRuntime runtime,
+                              const TiTextureAllocateInfo *allocate_info) {
+  TI_ERROR_IF(allocate_info->mip_level_count > 1,
+              "Multi mip-level is not supported yet");
+  TI_ERROR_IF(allocate_info->extent.array_layer_count > 1,
+              "Array texture is not supported yet");
+
+  taichi::lang::ImageAllocUsage usage{};
+  if (allocate_info->usage & TI_TEXTURE_USAGE_STORAGE_BIT) {
+    usage = usage | taichi::lang::ImageAllocUsage::Storage;
+  }
+  if (allocate_info->usage & TI_TEXTURE_USAGE_SAMPLED_BIT) {
+    usage = usage | taichi::lang::ImageAllocUsage::Sampled;
+  }
+  if (allocate_info->usage & TI_TEXTURE_USAGE_ATTACHMENT_BIT) {
+    usage = usage | taichi::lang::ImageAllocUsage::Attachment;
+  }
+
+  taichi::lang::ImageParams params{};
+  params.x = allocate_info->extent.width;
+  params.y = allocate_info->extent.height;
+  params.z = allocate_info->extent.depth;
+  params.dimension = (taichi::lang::ImageDimension)allocate_info->dimension;
+  params.format = (taichi::lang::BufferFormat)allocate_info->format;
+  params.export_sharing = false;
+  params.usage = usage;
+
+  TiTexture devtex = ((Runtime *)runtime)->allocate_texture(params);
+  return devtex;
+}
+void ti_free_texture(TiRuntime runtime, TiTexture devtex) {
+  ((Runtime *)runtime)->free_texture(devtex);
 }
 
 TiEvent ti_create_event(TiRuntime runtime) {
@@ -212,6 +244,54 @@ void ti_copy_memory_device_to_device(TiRuntime runtime,
   auto src = devmem2devalloc(*runtime2, src_memory->memory)
                  .get_ptr(src_memory->offset);
   runtime2->buffer_copy(dst, src, dst_memory->size);
+}
+
+void ti_copy_texture_device_to_device(TiRuntime runtime,
+                                      const TiTextureSlice *dst_texture,
+                                      const TiTextureSlice *src_texture) {
+  if (dst_texture == nullptr || dst_texture->texture == nullptr) {
+    TI_WARN("ignored attempt to copy to dst texture of null handle");
+    return;
+  }
+  if (src_texture == nullptr || src_texture->texture == nullptr) {
+    TI_WARN("ignored attempt to copy from src texture of null handle");
+    return;
+  }
+  if (src_texture->extent.width != dst_texture->extent.width ||
+      src_texture->extent.height != dst_texture->extent.height ||
+      src_texture->extent.depth != dst_texture->extent.depth ||
+      src_texture->extent.array_layer_count !=
+          dst_texture->extent.array_layer_count) {
+    TI_WARN("ignored attempt to copy texture of mismatched extent");
+    return;
+  }
+  Runtime *runtime2 = (Runtime *)runtime;
+  auto dst = devtex2devalloc(*runtime2, dst_texture->texture);
+  auto src = devtex2devalloc(*runtime2, src_texture->texture);
+
+  taichi::lang::ImageCopyParams params{};
+  params.width = dst_texture->extent.width;
+  params.height = dst_texture->extent.height;
+  params.depth = dst_texture->extent.depth;
+  runtime2->copy_image(dst, src, params);
+}
+void ti_transition_texture(TiRuntime runtime,
+                           TiTexture texture,
+                           TiTextureLayout layout) {
+  if (runtime == nullptr) {
+    TI_WARN("ignored attempt to transition memory on runtime of null handle");
+    return;
+  }
+  if (texture == nullptr) {
+    TI_WARN("ignored attempt to transition texture of null handle");
+    return;
+  }
+
+  Runtime *runtime2 = (Runtime *)runtime;
+  auto image = devtex2devalloc(*runtime2, texture);
+  auto layout2 = (taichi::lang::ImageLayout)layout;
+
+  runtime2->transition_image(image, layout2);
 }
 
 TiAotModule ti_load_aot_module(TiRuntime runtime, const char *module_path) {

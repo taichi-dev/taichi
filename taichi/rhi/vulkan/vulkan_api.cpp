@@ -399,6 +399,7 @@ IVkImage create_image(VkDevice device,
   image->depth = image_info->extent.depth;
   image->mip_levels = image_info->mipLevels;
   image->array_layers = image_info->arrayLayers;
+  image->usage = alloc_info->usage;
 
   vmaCreateImage(allocator, image_info, alloc_info, &image->image,
                  &image->allocation, nullptr);
@@ -406,10 +407,25 @@ IVkImage create_image(VkDevice device,
   return image;
 }
 
-IVkImage create_image(VkDevice device, VkImage image) {
+IVkImage create_image(VkDevice device,
+                      VkImage image,
+                      VkFormat format,
+                      VkImageType type,
+                      VkExtent3D extent,
+                      uint32_t mip_levels,
+                      uint32_t array_layers,
+                      VkImageUsageFlags usage) {
   IVkImage obj = std::make_shared<DeviceObjVkImage>();
   obj->device = device;
   obj->image = image;
+  obj->format = format;
+  obj->type = type;
+  obj->width = extent.width;
+  obj->height = extent.height;
+  obj->depth = extent.depth;
+  obj->mip_levels = mip_levels;
+  obj->array_layers = array_layers;
+  obj->usage = usage;
 
   return obj;
 }
@@ -425,7 +441,8 @@ IVkImageView create_image_view(VkDevice device,
 
   create_info->image = image->image;
 
-  vkCreateImageView(device, create_info, nullptr, &view->view);
+  VkResult res = vkCreateImageView(device, create_info, nullptr, &view->view);
+  BAIL_ON_VK_BAD_RESULT(res, "failed to create image view");
 
   return view;
 }

@@ -154,7 +154,8 @@ class AlgSimp : public BasicStmtVisitor {
     auto rhs = stmt->rhs->cast<ConstStmt>();
     TI_ASSERT(stmt->op_type == BinaryOpType::div ||
               stmt->op_type == BinaryOpType::floordiv);
-    if (alg_is_one(rhs)) {
+    if (alg_is_one(rhs) && !(is_real(stmt->lhs->ret_type) &&
+                             stmt->op_type == BinaryOpType::floordiv)) {
       // a / 1 -> a
       stmt->replace_usages_with(stmt->lhs);
       modifier.erase(stmt);

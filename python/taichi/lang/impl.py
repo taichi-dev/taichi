@@ -26,7 +26,7 @@ from taichi.lang.struct import Struct, StructField, _IntermediateStruct
 from taichi.lang.util import (cook_dtype, get_traceback, is_taichi_class,
                               python_scope, taichi_scope, warning)
 from taichi.types.primitive_types import (all_types, f16, f32, f64, i32, i64,
-                                          u32, u64)
+                                          u8, u32, u64)
 
 
 @taichi_scope
@@ -46,13 +46,13 @@ def expr_init(rhs):
     if rhs is None:
         return Expr(get_runtime().prog.current_ast_builder().expr_alloca())
     if isinstance(rhs, Matrix) and (hasattr(rhs, "_DIM")):
-        return type(rhs)(*rhs.to_list())
+        return Matrix(*rhs.to_list(), ndim=rhs.ndim)
     if isinstance(rhs, Matrix):
-        return Matrix(rhs.to_list())
+        return Matrix(rhs.to_list(), ndim=rhs.ndim)
     if isinstance(rhs, SharedArray):
         return rhs
     if isinstance(rhs, Struct):
-        return Struct(rhs.to_dict(include_methods=True))
+        return Struct(rhs.to_dict(include_methods=True, include_ndim=True))
     if isinstance(rhs, list):
         return [expr_init(e) for e in rhs]
     if isinstance(rhs, tuple):
@@ -196,10 +196,12 @@ def subscript(value, *_indices, skip_reordered=False, get_ref=False):
         n = value.element_shape[0]
         m = 1 if element_dim == 1 else value.element_shape[1]
         any_array_access = AnyArrayAccess(value, _indices)
-        ret = _IntermediateMatrix(n, m, [
-            any_array_access.subscript(i, j) for i in range(n)
-            for j in range(m)
-        ])
+        ret = _IntermediateMatrix(n,
+                                  m, [
+                                      any_array_access.subscript(i, j)
+                                      for i in range(n) for j in range(m)
+                                  ],
+                                  ndim=element_dim)
         ret.any_array_access = any_array_access
         return ret
     # Directly evaluate in Python for non-Taichi types
@@ -338,6 +340,12 @@ class PyTaichi:
                 '\n\n  x = ti.field(float, shape=(2, 3), needs_{gradient_type}=True)'
             )
 
+    @staticmethod
+    def _allocate_gradient_visited():
+        if root.finalized:
+            return
+        root._allocate_grad_visited()
+
     def _check_matrix_field_member_shape(self):
         for _field in self.matrix_fields:
             shapes = [
@@ -355,6 +363,9 @@ class PyTaichi:
             _field._calc_dynamic_index_stride()
 
     def materialize(self):
+        if get_runtime().prog.config.debug and get_runtime(
+        ).prog.config.validate_autodiff:
+            self._allocate_gradient_visited()
         self.materialize_root_fb(not self.materialized)
         self.materialized = True
 
@@ -560,6 +571,8 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
 
     x_grad = None
     x_dual = None
+    # The x_grad_visited is used for global data access rule checker
+    x_grad_visited = None
     if _ti_core.is_real(dtype):
         # adjoint
         x_grad = Expr(get_runtime().prog.make_id_expr(""))
@@ -570,6 +583,18 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
         x.ptr.set_adjoint(x_grad.ptr)
         if needs_grad:
             pytaichi.grad_vars.append(x_grad)
+
+        if prog.config.debug:
+            # adjoint flag
+            x_grad_visited = Expr(get_runtime().prog.make_id_expr(""))
+            dtype = u8
+            if prog.config.arch in (_ti_core.opengl, _ti_core.vulkan):
+                dtype = i32
+            x_grad_visited.ptr = _ti_core.global_new(x_grad_visited.ptr,
+                                                     cook_dtype(dtype))
+            x_grad_visited.ptr.set_name(name + ".grad_visited")
+            x_grad_visited.ptr.set_is_primal(False)
+            x.ptr.set_adjoint_visited(x_grad_visited.ptr)
 
         # dual
         x_dual = Expr(get_runtime().prog.make_id_expr(""))

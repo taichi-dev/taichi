@@ -60,7 +60,8 @@ def decl_scalar_arg(dtype):
 def decl_matrix_arg(matrixtype):
     return Matrix(
         [[decl_scalar_arg(matrixtype.dtype) for _ in range(matrixtype.m)]
-         for _ in range(matrixtype.n)])
+         for _ in range(matrixtype.n)],
+        ndim=matrixtype.ndim)
 
 
 def decl_sparse_matrix(dtype):

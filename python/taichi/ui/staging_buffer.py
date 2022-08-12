@@ -1,4 +1,5 @@
 import numpy as np
+from taichi.lang._texture import Texture
 from taichi.lang.impl import ndarray
 from taichi.lang.kernel_impl import kernel
 from taichi.lang.matrix import Vector
@@ -93,6 +94,17 @@ def copy_colors_to_vbo(vbo, colors):
 
 
 @ti.kernel
+def copy_texture_to_rgba8(src: ti.types.texture(num_dimensions=2),
+                          dst: ti.template(), w: ti.i32, h: ti.i32):
+    for (i, j) in ti.ndrange(w, h):
+        c = src.fetch(ti.Vector([i, j]), 0)
+        c = max(0.0, min(1.0, c))
+        c = c * 255
+        px = ti.cast(c, u32)
+        dst[i, j] = (px[0] << 0 | px[1] << 8 | px[2] << 16 | px[3] << 24)
+
+
+@ti.kernel
 def copy_image_f32_to_rgba8(src: ti.template(), dst: ti.template(),
                             num_components: ti.template(),
                             gray_scale: ti.template()):
@@ -183,9 +195,16 @@ image_field_cache = {}
 
 
 def to_rgba8(image):
+    is_texture = isinstance(image, Texture)
+    
     gray_scale = not hasattr(image, 'n') and len(image.shape) == 2
+    if not is_texture and not gray_scale or image.m != 1):
+        raise Exception(
+            'the input image needs to be a Vector field (matrix with 1 column) or a ndarray or a texture'
+        )
     channels = 3
     src_numpy = isinstance(image, np.ndarray)
+    
     if not gray_scale:
         if len(image.shape) == 2:
             channels = image.n
@@ -197,13 +216,16 @@ def to_rgba8(image):
             )
 
     staging_key = image.shape[0:2] if src_numpy else image
+    
     if staging_key not in image_field_cache:
         staging_img = ti.field(u32, image.shape[0:2])
         image_field_cache[staging_key] = staging_img
     else:
         staging_img = image_field_cache[staging_key]
-
-    if image.dtype == u8 or image.dtype == np.uint8:
+        
+    if isinstance(image, Texture):
+        copy_texture_to_rgba8(image, staging_img, *image.shape[0:2])
+    elif image.dtype == u8 or image.dtype == np.uint8:
         if src_numpy:
             copy_image_u8_to_rgba8_np(image, staging_img, channels, gray_scale)
         else:
@@ -216,4 +238,5 @@ def to_rgba8(image):
             copy_image_f32_to_rgba8(image, staging_img, channels, gray_scale)
     else:
         raise Exception("dtype of input image must either be u8 or f32")
+
     return staging_img

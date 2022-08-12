@@ -138,6 +138,18 @@ class PLYWriter:
     #     self.add_vertex_channel("ny", "float", normal[:, 1])
     #     self.add_vertex_channel("nz", "float", normal[:, 2])
 
+    def add_vertex_vel(self, vx: np.array, vy: np.array, vz: np.array):
+        """Add velocity vectors at the vertices.
+
+         Args:
+             vx (`numpy.array(float)`): x-coordinates of the velocity vectors.
+             vy (`numpy.array(float)`): y-coordinates of the velocity vectors.
+             vz (`numpy.array(float)`): z-coordinates of the velocity vectors.
+        """
+        self.add_vertex_channel("vx", "float", vx)
+        self.add_vertex_channel("vy", "float", vy)
+        self.add_vertex_channel("vz", "float", vz)
+
     def add_vertex_color(self, r: np.array, g: np.array, b: np.array):
         """Sets the (r, g, b) channels of the colors at the vertices.
 

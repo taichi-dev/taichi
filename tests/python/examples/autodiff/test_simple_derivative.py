@@ -1,14 +1,19 @@
 import argparse
+import os
+
+import pytest
 
 from tests import test_utils
 
 
+@pytest.mark.skipif(os.environ.get('TI_LITE_TEST') or '0', reason='Lite test')
 def test_simple_derivative():
     from taichi.examples.autodiff.simple_derivative import initialize
 
     initialize()
 
 
+@pytest.mark.skipif(os.environ.get('TI_LITE_TEST') or '0', reason='Lite test')
 def pic_simple_derivative(result_dir):
     from matplotlib import pyplot as plt
     from taichi.examples.autodiff.simple_derivative import (grad_xs,

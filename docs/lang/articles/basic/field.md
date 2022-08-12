@@ -12,6 +12,10 @@ Fields in Taichi are the _global_ data containers that can be accessed from both
 A 0D (zero-dimensional) field contains *only* one element.
 :::
 
+:::note
+Taichi's field adopts a different coordinate system when it's used to store the content of an image, compared with `NumPy`'s and `matplotlib`'s. In a Taichi's field the (0, 0)-entry will represent the pixel located at the lower left corner of the image, with the first axes extends to the right direction of the image, and the second axes extends to the up direction of the image.
+:::
+
 ## Scalar fields
 
 Scalar fields refer to the fields that store scalars and are the most basic fields. A 0D scalar field is a single scalar.

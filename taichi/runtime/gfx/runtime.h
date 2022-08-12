@@ -11,7 +11,7 @@
 #include "taichi/program/compile_config.h"
 #include "taichi/struct/snode_tree.h"
 #include "taichi/program/snode_expr_utils.h"
-#include "taichi/program/program.h"
+#include "taichi/program/program_impl.h"
 
 namespace taichi {
 namespace lang {

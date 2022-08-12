@@ -11,12 +11,6 @@ export TI_IN_DOCKER=$(check_in_docker)
 export LD_LIBRARY_PATH=$PWD/build/:$LD_LIBRARY_PATH
 export TI_OFFLINE_CACHE_FILE_PATH=$PWD/.cache/taichi
 
-[ -d $TI_OFFLINE_CACHE_FILE_PATH ] && echo "Directory $TI_OFFLINE_CACHE_FILE_PATH exists."
-
-[ ! -d $TI_OFFLINE_CACHE_FILE_PATH ] && echo "Directory $TI_OFFLINE_CACHE_FILE_PATH DOES NOT exists."
-
-rm -rf $TI_OFFLINE_CACHE_FILE_PATH
-
 if [[ "$TI_IN_DOCKER" == "true" ]]; then
     source $HOME/miniconda/etc/profile.d/conda.sh
     conda activate "$PY"

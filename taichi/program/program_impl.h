@@ -102,6 +102,11 @@ class ProgramImpl {
                                                    uint64 *result_buffer) {
     return kDeviceNullAllocation;
   }
+
+  virtual DeviceAllocation allocate_texture(const ImageParams &params) {
+    return kDeviceNullAllocation;
+  }
+
   virtual ~ProgramImpl() {
   }
 

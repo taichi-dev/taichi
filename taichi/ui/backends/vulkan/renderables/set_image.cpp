@@ -67,7 +67,7 @@ void SetImage::update_data(const SetImageInfo &info) {
 
   int pixels = width * height;
 
-  app_context_->device().image_transition(texture_, ImageLayout::shader_read,
+  app_context_->device().image_transition(texture_, ImageLayout::undefined,
                                           ImageLayout::transfer_dst);
 
   uint64_t img_size = pixels * data_type_size(texture_dtype_) * 4;
@@ -98,6 +98,8 @@ void SetImage::update_data(const SetImageInfo &info) {
 
   auto stream = app_context_->device().get_graphics_stream();
   auto cmd_list = stream->new_command_list();
+  cmd_list->image_transition(texture_, ImageLayout::undefined,
+                             ImageLayout::transfer_dst);
   cmd_list->buffer_to_image(texture_, gpu_staging_buffer_.get_ptr(0),
                             ImageLayout::transfer_dst, copy_params);
 

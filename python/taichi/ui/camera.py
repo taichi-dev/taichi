@@ -1,26 +1,23 @@
 from math import pi
 
+from taichi._lib import core as _ti_core
 from taichi.lang.matrix import Vector
 
-from .utils import euler_to_vec, vec_to_euler
+from .utils import check_ggui_availability, euler_to_vec, vec_to_euler
 
 
 class Camera:
     """The Camera class.
 
-    You should not instantiate this class by calling the `__init__` method
-    directly, please use the helper function :func:`~taichi.ui.make_camera()`
-    instead.
-
-    Args:
-        ptr (:class:`~taichi._ti_core.PyCamera`): An instance of the `PyCamera` \
-            class from the C++ level.
+    You should also manually set the camera parameters like `camera.position`,
+    `camera.lookat`, `camera.up`, etc. The default settings may not work for
+    your scene.
 
     Example::
 
         >>> scene = ti.ui.Scene()  # assume you have a scene
         >>>
-        >>> camera = ti.ui.make_camera()
+        >>> camera = ti.ui.Camera()
         >>> camera.position(1, 1, 1)  # set camera position
         >>> camera.lookat(0, 0, 0)  # set camera lookat
         >>> camera.up(0, 1, 0)  # set camera up vector
@@ -30,8 +27,9 @@ class Camera:
         >>> window = ti.ui.Window("GGUI Camera", res=(640, 480), vsync=True)
         >>> camera.track_user_inputs(window, movement_speed=0.03, hold_key=ti.ui.RMB)
     """
-    def __init__(self, ptr):
-        self.ptr = ptr
+    def __init__(self):
+        check_ggui_availability()
+        self.ptr = _ti_core.PyCamera()
 
         self.position(0.0, 0.0, 0.0)
         self.lookat(0.0, 0.0, 1.0)

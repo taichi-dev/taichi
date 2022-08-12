@@ -498,12 +498,10 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
     for (auto &bind : attribs.texture_binds) {
       DeviceAllocation texture = textures.at(bind.arg_id);
       if (bind.is_storage) {
-        current_cmdlist_->image_transition(texture, ImageLayout::undefined,
-                                           ImageLayout::shader_read_write);
+        transition_image(texture, ImageLayout::shader_read_write);
         binder->rw_image(0, bind.binding, texture, 0);
       } else {
-        current_cmdlist_->image_transition(texture, ImageLayout::undefined,
-                                           ImageLayout::shader_read);
+        transition_image(texture, ImageLayout::shader_read);
         binder->image(0, bind.binding, texture, {});
       }
     }
@@ -558,7 +556,32 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
 void GfxRuntime::buffer_copy(DevicePtr dst, DevicePtr src, size_t size) {
   ensure_current_cmdlist();
   current_cmdlist_->buffer_copy(dst, src, size);
-  submit_current_cmdlist_if_timeout();
+}
+
+void GfxRuntime::copy_image(DeviceAllocation dst,
+                            DeviceAllocation src,
+                            const ImageCopyParams &params) {
+  ensure_current_cmdlist();
+  transition_image(dst, ImageLayout::transfer_dst);
+  transition_image(src, ImageLayout::transfer_src);
+  current_cmdlist_->copy_image(dst, src, ImageLayout::transfer_dst,
+                               ImageLayout::transfer_src, params);
+}
+
+DeviceAllocation GfxRuntime::create_image(const ImageParams &params) {
+  GraphicsDevice *gfx_device = dynamic_cast<GraphicsDevice *>(device_);
+  TI_ERROR_IF(gfx_device == nullptr,
+              "Image can only be created on a graphics device");
+  DeviceAllocation image = gfx_device->create_image(params);
+  last_image_layouts_[image.alloc_id] = params.initial_layout;
+  return image;
+}
+
+void GfxRuntime::transition_image(DeviceAllocation image, ImageLayout layout) {
+  ImageLayout &last_layout = last_image_layouts_.at(image.alloc_id);
+  ensure_current_cmdlist();
+  current_cmdlist_->image_transition(image, last_layout, layout);
+  last_layout = layout;
 }
 
 void GfxRuntime::signal_event(DeviceEvent *event) {

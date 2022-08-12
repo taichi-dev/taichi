@@ -2,54 +2,51 @@ import re
 from collections import defaultdict
 from pathlib import Path
 
-from generate_c_api import get_declr, get_field, get_type_name
+from generate_c_api import get_declr, get_human_readable_name
 from taichi_json import (Alias, BitField, BuiltInType, Definition, EntryBase,
                          Enumeration, Field, Function, Handle, Module,
                          Structure, Union)
 
+SYM_PATTERN = r"\`(\w+\.\w+)\`"
+
 
 def get_title(x: EntryBase):
-    ty = type(x)
-    if ty is BuiltInType:
+    if isinstance(x, BuiltInType):
         return ""
 
-    elif ty is Alias:
-        return f"Alias `{get_type_name(x)}`"
+    extra = ""
+    if isinstance(x, Function) and x.is_device_command:
+        extra += " (Device Command)"
 
-    elif ty is Definition:
-        return f"Definition `{x.name.screaming_snake_case}`"
-
-    elif ty is Handle:
-        return f"Handle `{get_type_name(x)}`"
-
-    elif ty is Enumeration:
-        return f"Enumeration `{get_type_name(x)}`"
-
-    elif ty is BitField:
-        return f"Bit Field `{get_type_name(x)}`"
-
-    elif ty is Structure:
-        return f"Structure `{get_type_name(x)}`"
-
-    elif ty is Union:
-        return f"Union `{get_type_name(x)}`"
-
-    elif ty is Function:
-        extra = ""
-        if x.is_device_command:
-            extra += " (Device Command)"
-        return f"Function `{x.name.snake_case}`" + extra
-
+    if isinstance(x, (Alias, Definition, Handle, Enumeration, BitField, Structure, Union, Function)):
+        return f"{type(x).__name__} `{get_human_readable_name(x)}`" + extra
     else:
         raise RuntimeError(f"'{x.id}' doesn't need title")
+
+
+def resolve_inline_symbols(module: Module, line: str):
+    matches = re.findall(SYM_PATTERN, line)
+
+    replacements = {}
+    for m in matches:
+        sym = str(m)
+        replacements[sym] = module.declr_reg.resolve(sym)
+
+    for old, new in replacements.items():
+        if new is None:
+            print(f"WARNING: Unresolved inline symbol `{old}`")
+        else:
+            line = line.replace(old, get_human_readable_name(new))
+    return line
 
 
 def print_module_doc(module: Module, templ):
     out = []
 
     for i in range(len(templ)):
-        line = templ[i]
-        out += [line.strip()]
+        line = templ[i].strip()
+        line = resolve_inline_symbols(module, line)
+        out += [line]
         if line.startswith("## API Reference"):
             break
 
@@ -59,7 +56,7 @@ def print_module_doc(module: Module, templ):
     documented_syms = defaultdict(list)
     for line in templ[i:]:
         line = line.strip()
-        if re.match(r"\`\w+\.\w+\`", line):
+        if re.match(SYM_PATTERN, line):
             cur_sym = line[1:-1]
             continue
         documented_syms[cur_sym] += [line]

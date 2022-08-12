@@ -37,7 +37,7 @@ To work with Taichi, you first create an runtime instance. You SHOULD only creat
 TiRuntime runtime = ti_create_runtime(TI_ARCH_VULKAN);
 ```
 
-When your program reaches the end, you SHOULD destroy the runtime instance. Please ensure any other related resources have been destroyed before the `handle.runtime` itself.
+When your program reaches the end, you SHOULD destroy the runtime instance. Please ensure any other related resources have been destroyed before the `TiRuntime` itself.
 
 ```cpp
 ti_destroy_runtime(runtime);
@@ -56,7 +56,7 @@ TiMemory memory = ti_allocate_memory(runtime, &mai);
 
 **NOTE** You don't need to allocate memory for field allocations. They are automatically allocated when the AOT module is loaded.
 
-You MAY free allocated memory explicitly; but memory allocations will be automatically freed when the related `handle.runtime` is destroyed.
+You MAY free allocated memory explicitly; but memory allocations will be automatically freed when the related `TiRuntime` is destroyed.
 
 ```cpp
 ti_free_memory(runtime, memory);
@@ -113,7 +113,7 @@ TiAotModule aot_module = ti_load_aot_module(runtime, "/path/to/aot/module");
 
 `/path/to/aot/module` should point to the directory that contains a `metadata.tcb`.
 
-You can destroy an unused AOT module if you have done with it; but please ensure there is no kernel or compute graph related to it pending to `function.submit`.
+You can destroy an unused AOT module if you have done with it; but please ensure there is no kernel or compute graph related to it pending to `ti_submit`.
 
 ```cpp
 ti_destroy_aot_module(aot_module);
@@ -174,7 +174,7 @@ named_arg2.argument = args[2];
 ti_launch_compute_graph(runtime, compute_graph, named_args.size(), named_args.data());
 ```
 
-When you have launched all kernels and compute graphs for this batch, you should `function.submit` and `function.wait` for the execution to finish.
+When you have launched all kernels and compute graphs for this batch, you should `ti_submit` and `ti_wait` for the execution to finish.
 
 ```cpp
 ti_submit(runtime);
@@ -360,7 +360,7 @@ typedef enum TiArgumentType {
 Types of kernel and compute graph argument.
 
 ---
-### Bit Field `TiMemoryUsageFlagBits`
+### BitField `TiMemoryUsageFlagBits`
 
 ```c
 // bit_field.memory_usage

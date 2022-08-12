@@ -98,7 +98,7 @@ CUSPARSEDriver &CUSPARSEDriver::get_instance() {
 }
 
 bool CUSPARSEDriver::load_cusparse() {
-  cusparse_loaded_ = load_lib("libcusparse.so", "cusparse.dll");
+  cusparse_loaded_ = load_lib("libcusparse.so", "cusparse64_11.dll");
 
   if (!cusparse_loaded_) {
     return false;

@@ -376,6 +376,7 @@ class Matrix(TaichiOperations):
         dt (:mod:`~taichi.types.primitive_types`): the element data type.
         suppress_warning (bool): whether raise warning or not when the matrix contains more \
             than 32 elements.
+        ndim (int optional): the number of dimensions of the matrix; forced reshape if given.
 
     Example::
 
@@ -450,6 +451,7 @@ class Matrix(TaichiOperations):
 
         if ndim is not None:
             # override ndim after reading data from mat
+            assert ndim in (0, 1, 2)
             self.ndim = ndim
 
         if self.n * self.m > 32 and not suppress_warning:
@@ -1508,9 +1510,11 @@ class MatrixField(Field):
         vars (List[Expr]): Field members.
         n (Int): Number of rows.
         m (Int): Number of columns.
+        ndim (Int): Number of dimensions; forced reshape if given.
     """
-    def __init__(self, _vars, n, m, ndim):
+    def __init__(self, _vars, n, m, ndim=2):
         assert len(_vars) == n * m
+        assert ndim in (0, 1, 2)
         super().__init__(_vars)
         self.n = n
         self.m = m

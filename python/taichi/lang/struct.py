@@ -328,17 +328,18 @@ class Struct(TaichiOperations):
             if isinstance(dtype, CompoundType):
                 if isinstance(dtype, StructType):
                     field_dict[key] = dtype.field(shape=None,
-                                                name=field_name,
-                                                offset=offset,
-                                                needs_grad=needs_grad,
-                                                needs_dual=needs_dual)
+                                                  name=field_name,
+                                                  offset=offset,
+                                                  needs_grad=needs_grad,
+                                                  needs_dual=needs_dual)
                 else:
                     field_dict[key] = dtype.field(shape=None,
-                                                name=field_name,
-                                                offset=offset,
-                                                needs_grad=needs_grad,
-                                                needs_dual=needs_dual,
-                                                ndim=getattr(dtype, 'ndim', 2))
+                                                  name=field_name,
+                                                  offset=offset,
+                                                  needs_grad=needs_grad,
+                                                  needs_dual=needs_dual,
+                                                  ndim=getattr(
+                                                      dtype, 'ndim', 2))
             else:
                 field_dict[key] = impl.field(dtype,
                                              shape=None,

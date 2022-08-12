@@ -723,22 +723,22 @@ class Kernel:
                     if id(needed.dtype) in primitive_types.real_type_ids:
                         for a in range(needed.n):
                             for b in range(needed.m):
-                                if not isinstance(v[a, b], (int, float)):
+                                val = v[a, b] if needed.ndim == 2 else v[a]
+                                if not isinstance(val, (int, float)):
                                     raise TaichiRuntimeTypeError.get(
-                                        i, needed.dtype.to_string(),
-                                        type(v[a, b]))
+                                        i, needed.dtype.to_string(), type(val))
                                 launch_ctx.set_arg_float(
-                                    actual_argument_slot, float(v[a, b]))
+                                    actual_argument_slot, float(val))
                                 actual_argument_slot += 1
                     elif id(needed.dtype) in primitive_types.integer_type_ids:
                         for a in range(needed.n):
                             for b in range(needed.m):
-                                if not isinstance(v[a, b], int):
+                                val = v[a, b] if needed.ndim == 2 else v[a]
+                                if not isinstance(val, int):
                                     raise TaichiRuntimeTypeError.get(
-                                        i, needed.dtype.to_string(),
-                                        type(v[a, b]))
+                                        i, needed.dtype.to_string(), type(val))
                                 launch_ctx.set_arg_int(actual_argument_slot,
-                                                       int(v[a, b]))
+                                                       int(val))
                                 actual_argument_slot += 1
                     else:
                         raise ValueError(
@@ -792,11 +792,13 @@ class Kernel:
                 elif id(ret_dt.dtype) in primitive_types.integer_type_ids:
                     it = iter(t_kernel.get_ret_int_tensor(0))
                     ret = Matrix([[next(it) for _ in range(ret_dt.m)]
-                                  for _ in range(ret_dt.n)])
+                                  for _ in range(ret_dt.n)],
+                                 ndim=getattr(ret_dt, 'ndim', 2))
                 else:
                     it = iter(t_kernel.get_ret_float_tensor(0))
                     ret = Matrix([[next(it) for _ in range(ret_dt.m)]
-                                  for _ in range(ret_dt.n)])
+                                  for _ in range(ret_dt.n)],
+                                 ndim=getattr(ret_dt, 'ndim', 2))
             if callbacks:
                 for c in callbacks:
                     c()

@@ -164,9 +164,15 @@ def matrix_to_ext_arr(mat: template(), arr: ndarray_type.ndarray(),
         for p in static(range(mat.n)):
             for q in static(range(mat.m)):
                 if static(as_vector):
-                    arr[I, p] = mat[I][p]
+                    if static(getattr(mat, "ndim", 2) == 1):
+                        arr[I, p] = mat[I][p]
+                    else:
+                        arr[I, p] = mat[I][p, q]
                 else:
-                    arr[I, p, q] = mat[I][p, q]
+                    if static(getattr(mat, "ndim", 2) == 1):
+                        arr[I, p, q] = mat[I][p]
+                    else:
+                        arr[I, p, q] = mat[I][p, q]
 
 
 @kernel
@@ -175,10 +181,16 @@ def ext_arr_to_matrix(arr: ndarray_type.ndarray(), mat: template(),
     for I in grouped(mat):
         for p in static(range(mat.n)):
             for q in static(range(mat.m)):
-                if static(as_vector):
-                    mat[I][p] = arr[I, p]
+                if static(getattr(mat, "ndim", 2) == 1):
+                    if static(as_vector):
+                        mat[I][p] = arr[I, p]
+                    else:
+                        mat[I][p] = arr[I, p, q]
                 else:
-                    mat[I][p, q] = arr[I, p, q]
+                    if static(as_vector):
+                        mat[I][p, q] = arr[I, p]
+                    else:
+                        mat[I][p, q] = arr[I, p, q]
 
 
 # extract ndarray of raw vulkan memory layout to normal memory layout.
@@ -228,7 +240,10 @@ def fill_matrix(mat: template(), vals: template()):
     for I in grouped(mat):
         for p in static(range(mat.n)):
             for q in static(range(mat.m)):
-                mat[I][p, q] = vals[p][q]
+                if static(mat[I].ndim == 2):
+                    mat[I][p, q] = vals[p][q]
+                else:
+                    mat[I][p] = vals[p][q]
 
 
 @kernel

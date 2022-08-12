@@ -25,6 +25,19 @@ typedef struct TiVulkanMemoryInteropInfo {
   VkBufferUsageFlags usage;
 } TiVulkanMemoryInteropInfo;
 
+// structure.vulkan_texture_interop_info
+typedef struct TiVulkanTextureInteropInfo {
+  VkImage image;
+  VkImageType image_type;
+  VkFormat format;
+  VkExtent3D extent;
+  uint32_t mip_level_count;
+  uint32_t array_layer_count;
+  VkSampleCountFlagBits sample_count;
+  VkImageTiling tiling;
+  VkImageUsageFlags usage;
+} TiVulkanTextureInteropInfo;
+
 // structure.vulkan_event_interop_info
 typedef struct TiVulkanEventInteropInfo {
   VkEvent event;
@@ -57,6 +70,19 @@ TI_DLL_EXPORT void TI_API_CALL
 ti_export_vulkan_memory(TiRuntime runtime,
                         TiMemory memory,
                         TiVulkanMemoryInteropInfo *interop_info);
+
+// function.import_vulkan_texture
+TI_DLL_EXPORT TiTexture TI_API_CALL
+ti_import_vulkan_texture(TiRuntime runtime,
+                         const TiVulkanTextureInteropInfo *interop_info,
+                         VkImageViewType view_type,
+                         VkImageLayout layout);
+
+// function.export_vulkan_texture
+TI_DLL_EXPORT void TI_API_CALL
+ti_export_vulkan_texture(TiRuntime runtime,
+                         TiTexture texture,
+                         TiVulkanTextureInteropInfo *interop_info);
 
 // function.import_vulkan_event
 TI_DLL_EXPORT TiEvent TI_API_CALL

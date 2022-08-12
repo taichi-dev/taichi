@@ -24,9 +24,9 @@ class LlvmRuntime : public Runtime {
   taichi::lang::Device &get() override;
 
   TiAotModule load_aot_module(const char *module_path) override;
-  taichi::lang::DeviceAllocation allocate_memory(
+  TiMemory allocate_memory(
       const taichi::lang::Device::AllocParams &params) override;
-  void deallocate_memory(TiMemory devmem) override;
+  void free_memory(TiMemory devmem) override;
 
   void buffer_copy(const taichi::lang::DevicePtr &dst,
                    const taichi::lang::DevicePtr &src,

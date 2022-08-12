@@ -556,7 +556,16 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
 void GfxRuntime::buffer_copy(DevicePtr dst, DevicePtr src, size_t size) {
   ensure_current_cmdlist();
   current_cmdlist_->buffer_copy(dst, src, size);
-  submit_current_cmdlist_if_timeout();
+}
+
+void GfxRuntime::copy_image(DeviceAllocation dst,
+                            DeviceAllocation src,
+                            const ImageCopyParams &params) {
+  ensure_current_cmdlist();
+  transition_image(dst, ImageLayout::transfer_dst);
+  transition_image(src, ImageLayout::transfer_src);
+  current_cmdlist_->copy_image(dst, src, ImageLayout::transfer_dst,
+                               ImageLayout::transfer_src, params);
 }
 
 DeviceAllocation GfxRuntime::create_image(const ImageParams &params) {

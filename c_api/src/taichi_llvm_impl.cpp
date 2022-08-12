@@ -47,7 +47,7 @@ taichi::lang::Device &LlvmRuntime::get() {
   return *device;
 }
 
-taichi::lang::DeviceAllocation LlvmRuntime::allocate_memory(
+TiMemory LlvmRuntime::allocate_memory(
     const taichi::lang::Device::AllocParams &params) {
   taichi::lang::CompileConfig *config = executor_->get_config();
   taichi::lang::TaichiLLVMContext *tlctx =
@@ -55,21 +55,23 @@ taichi::lang::DeviceAllocation LlvmRuntime::allocate_memory(
   taichi::lang::LLVMRuntime *llvm_runtime = executor_->get_llvm_runtime();
   taichi::lang::LlvmDevice *llvm_device = executor_->llvm_device();
 
-  return llvm_device->allocate_memory_runtime(
-      {params, config->ndarray_use_cached_allocator, tlctx->runtime_jit_module,
-       llvm_runtime, result_buffer});
+  taichi::lang::DeviceAllocation devalloc =
+      llvm_device->allocate_memory_runtime(
+          {params, config->ndarray_use_cached_allocator,
+           tlctx->runtime_jit_module, llvm_runtime, result_buffer});
+  return devalloc2devmem(*this, devalloc);
 }
 
-void LlvmRuntime::deallocate_memory(TiMemory devmem) {
+void LlvmRuntime::free_memory(TiMemory devmem) {
   taichi::lang::CompileConfig *config = executor_->get_config();
   if (taichi::arch_is_cpu(config->arch)) {
     // For memory allocated through Device::allocate_memory_runtime(),
-    // the corresponding Device::deallocate_memory() interface has not been
+    // the corresponding Device::free_memory() interface has not been
     // implemented yet...
     TI_NOT_IMPLEMENTED;
   }
 
-  Runtime::deallocate_memory(devmem);
+  Runtime::free_memory(devmem);
 }
 
 TiAotModule LlvmRuntime::load_aot_module(const char *module_path) {

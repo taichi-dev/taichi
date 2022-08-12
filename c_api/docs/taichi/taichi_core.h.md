@@ -130,7 +130,7 @@ TiKernel kernel = ti_get_aot_module_kernel(aot_module, "foo");
 TiComputeGraph compute_graph = ti_get_aot_module_compute_graph(aot_module, "bar");
 ```
 
-You can launch a kernel with positional arguments. Please ensure the types, the sizes and the order matches the source code in Python.  
+You can launch a kernel with positional arguments. Please ensure the types, the sizes and the order matches the source code in Python.
 
 ```cpp
 TiNdArray ndarray{};

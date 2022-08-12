@@ -13,7 +13,7 @@ A 0D (zero-dimensional) field contains *only* one element.
 :::
 
 :::note
-Taichi's field adopts a different coordinate system when it's used to store the content of an image, compared with `NumPy`'s and `matplotlib`'s. In a Taichi's field the (0, 0)-entry will represent the pixel located at the lower left corner of the image, with the first axes extends to the right direction of the image, and the second axes extends to the up direction of the image.
+Taichi's field adopts a different coordinate system when it's used to store the content of an image, compared with `NumPy`'s and `matplotlib`'s. In a Taichi's field the (0, 0)-entry will represent the pixel located at the lower left corner of the image, with the first axes extends to the right direction of the image, and the second axes extends to the up direction of the image. Hence if you want to call the `field.to_numpy()` method and display the numpy array via `matplotlb`'s `imshow` function, you will need to rotate the array 90 degrees clockwise.
 :::
 
 ## Scalar fields

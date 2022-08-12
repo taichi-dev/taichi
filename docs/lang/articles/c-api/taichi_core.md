@@ -2,15 +2,191 @@
 sidebar_position: 1
 ---
 
-# Core Functionality
+# Core Functionalities
 
 Taichi Core exposes all necessary interfaces to offload AOT modules to Taichi. Here lists the features universally available disregards to any specific backend. The Taichi Core APIs are guaranteed to be forward compatible.
 
-TODO: (@PENGUINLIONG) Example usage.
+## Availability
 
-## Declarations
+Taichi C-API has bridged the following backends:
 
----
+|Backend|Offload Target|Maintenance Tier|
+|-|-|-|
+|Vulkan|GPU|Tier 1|
+|CUDA|GPU (NVIDIA)|Tier 1|
+|CPU (LLVM)|CPU|Tier 1|
+|DirectX 11|GPU (Windows)|N/A|
+|Metal|GPU (macOS, iOS)|N/A|
+|OpenGL|GPU|N/A|
+
+The backends with tier 1 support are the most intensively developed and tested ones. In contrast, you would expect a delay in fixes against minor issues on tier 2 backends. The backends currently unsupported might become supported.
+
+Among all the tier 1 backends, Vulkan has the most outstanding cross-platform compatibility, so most of the new features will be first available on Vulkan.
+
+For convenience, in the following text (and other C-API documentations), the term *host* refers to the user of the C-API; the term *device* refers to the logical (conceptual) compute device that Taichi Runtime offloads its compute tasks to. A *device* might not be an actual discrete processor away from the CPU and the *host* MAY NOT be able to access the memory allocated on the *device*.
+
+Unless explicitly explained, *device*, *backend*, *offload targer* and *GPU* can be used interchangeably; *host*, "user code", "user procedure" and "CPU" can too be used interchangeably.
+
+## How to...
+
+In this section we give an brief introduction about what you might want to do with the Taichi C-API.
+
+### Create and destroy a Runtime Instance
+
+To work with Taichi, you first create an runtime instance. You SHOULD only create a single runtime per thread. Currently we don't officially claim that multiple runtime instances can coexist in a process, please feel free to [report issues](https://github.com/taichi-dev/taichi/issues) if you encountered any problem with such usage.
+
+```cpp
+TiRuntime runtime = ti_create_runtime(TI_ARCH_VULKAN);
+```
+
+When your program reaches the end, you SHOULD destroy the runtime instance. Please ensure any other related resources have been destroyed before the `handle.runtime` itself.
+
+```cpp
+ti_destroy_runtime(runtime);
+```
+
+### Allocate and Free Device-Only Memory
+
+Allocate a piece of memory that is only visible to the device. On GPU backends, it usually means that the memory is located in the graphics memory (GRAM).
+
+```cpp
+TiMemoryAllocateInfo mai {};
+mai.size = 1024; // Size in bytes.
+mai.usage = TI_MEMORY_USAGE_STORAGE_BIT;
+TiMemory memory = ti_allocate_memory(runtime, &mai);
+```
+
+**NOTE** You don't need to allocate memory for field allocations. They are automatically allocated when the AOT module is loaded.
+
+You MAY free allocated memory explicitly; but memory allocations will be automatically freed when the related `handle.runtime` is destroyed.
+
+```cpp
+ti_free_memory(runtime, memory);
+```
+
+### Allocate Host-Accessible Memory
+
+To allow data to be streamed into the memory, `host_write` MUST be set true.
+
+```cpp
+TiMemoryAllocateInfo mai {};
+mai.size = 1024; // Size in bytes.
+mai.host_write = true;
+mai.usage = TI_MEMORY_USAGE_STORAGE_BIT;
+TiMemory steaming_memory = ti_allocate_memory(runtime, &mai);
+
+// ...
+
+std::vector<uint8_t> src = some_random_data_source();
+
+void* dst = ti_map_memory(runtime, steaming_memory);
+std::memcpy(dst, src.data(), src.size());
+ti_unmap_memory(runtime, streaming_memory);
+```
+
+To read data back to the host, `host_read` MUST be set true.
+
+```cpp
+TiMemoryAllocateInfo mai {};
+mai.size = 1024; // Size in bytes.
+mai.host_write = true;
+mai.usage = TI_MEMORY_USAGE_STORAGE_BIT;
+TiMemory read_back_memory = ti_allocate_memory(runtime, &mai);
+
+// ...
+
+std::vector<uint8_t> dst(1024);
+void* src = ti_map_memory(runtime, read_back_memory);
+std::memcpy(dst.data(), src, dst.size());
+ti_unmap_memory(runtime, read_back_memory);
+
+ti_free_memory(runtime, read_back_memory);
+```
+
+**NOTE** `host_read` and `host_write` can be set true simultaneously. But please note that host-accessible allocations MAY slow down computation on a GPU because the limited bus bandwidth between the host memory and the device.
+
+### Load and destroy a Taichi AOT Module
+
+You can load a Taichi AOT module from the filesystem.
+
+```cpp
+TiAotModule aot_module = ti_load_aot_module(runtime, "/path/to/aot/module");
+```
+
+`/path/to/aot/module` should point to the directory that contains a `metadata.tcb`.
+
+You can destroy an unused AOT module if you have done with it; but please ensure there is no kernel or compute graph related to it pending to `function.submit`.
+
+```cpp
+ti_destroy_aot_module(aot_module);
+```
+
+### Launch Kernels and Compute Graphs
+
+You can extract kernels and compute graphs from an AOT module. Kernel and compute graphs are a part of the module, so you don't have to destroy them.
+
+```cpp
+TiKernel kernel = ti_get_aot_module_kernel(aot_module, "foo");
+TiComputeGraph compute_graph = ti_get_aot_module_compute_graph(aot_module, "bar");
+```
+
+You can launch a kernel with positional arguments. Please ensure the types, the sizes and the order matches the source code in Python.
+
+```cpp
+TiNdArray ndarray{};
+ndarray.memory = get_some_memory();
+ndarray.shape.dim_count = 1;
+ndarray.shape.dims[0] = 16;
+ndarray.elem_shape.dim_count = 2;
+ndarray.elem_shape.dims[0] = 4;
+ndarray.elem_shape.dims[1] = 4;
+ndarray.elem_type = TI_DATA_TYPE_F32;
+
+std::array<TiArgument, 3> args{};
+
+TiArgument& arg0 = args[0];
+arg0.type = TI_ARGUMENT_TYPE_I32;
+arg0.value.i32 = 123;
+
+TiArgument& arg1 = args[1];
+arg1.type = TI_ARGUMENT_TYPE_F32;
+arg1.value.f32 = 123.0f;
+
+TiArgument& arg2 = args[2];
+arg1.type = TI_ARGUMENT_TYPE_NDARRAY;
+arg1.value.ndarray = ndarray;
+
+ti_launch_kernel(runtime, kernel, args.size(), args.data());
+```
+
+You can launch a compute graph in a similar way. But additionally please ensure the argument names matches those in the Python source.
+
+```cpp
+std::array<TiNamedArgument, 3> named_args{};
+TiNamedArgument& named_arg0 = named_args[0];
+named_arg0.name = "foo";
+named_arg0.argument = args[0];
+TiNamedArgument& named_arg1 = named_args[1];
+named_arg1.name = "bar";
+named_arg1.argument = args[1];
+TiNamedArgument& named_arg2 = named_args[2];
+named_arg2.name = "baz";
+named_arg2.argument = args[2];
+
+ti_launch_compute_graph(runtime, compute_graph, named_args.size(), named_args.data());
+```
+
+When you have launched all kernels and compute graphs for this batch, you should `function.submit` and `function.wait` for the execution to finish.
+
+```cpp
+ti_submit(runtime);
+ti_wait(runtime);
+```
+
+**WARNING** This part is subject to change. We're gonna introduce multi-queue in the future.
+
+## API Reference
+
 ### Alias `TiBool`
 
 ```c
@@ -68,7 +244,7 @@ A sentinal invalid handle that will never be produced from a valid call to Taich
 typedef struct TiRuntime_t* TiRuntime;
 ```
 
-Taichi runtime represents an instance of a logical computating device and its internal dynamic states. The user is responsible to synchronize any use of `handle.runtime`.
+Taichi runtime represents an instance of a logical computating device and its internal dynamic states. The user is responsible to synchronize any use of `handle.runtime`. The user MUST NOT manipulate multiple `handle.runtime`s in a same thread.
 
 ---
 ### Handle `TiAotModule`

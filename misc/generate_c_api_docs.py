@@ -64,11 +64,16 @@ def print_module_doc(module: Module, templ):
             continue
         documented_syms[cur_sym] += [line]
 
+    is_first = True
     for x in module.declr_reg:
         declr = module.declr_reg.resolve(x)
 
+        if is_first:
+            is_first = False
+        else:
+            out += ["---"]
+
         out += [
-            "---",
             f"### {get_title(declr)}",
             "",
             "```c",
@@ -101,7 +106,7 @@ def generate_module_header(module):
         return
 
     print(f"processing module '{module.name}'")
-    path = f"docs/lang/articles/c-api/{module.name}.md"
+    path = f"docs/lang/articles/c-api/{module.name[7:-2]}.md"
     with open(path, "w") as f:
         f.write(print_module_doc(module, templ))
 

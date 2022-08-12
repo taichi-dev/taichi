@@ -8,8 +8,8 @@ import taichi as ti
 
 screen_res = (1000, 1000)
 
-boundary_box_np = np.array([[0, 0, 0], [1, 1, 1]])
-spawn_box_np = np.array([[0.3, 0.3, 0.3], [0.7, 0.7, 0.7]])
+boundary_box_np = np.array([[0, 0, 0], [1, 1, 1]], dtype=np.float32)
+spawn_box_np = np.array([[0.3, 0.3, 0.3], [0.7, 0.7, 0.7]], dtype=np.float32)
 
 particle_radius = 0.01
 particle_diameter = particle_radius * 2

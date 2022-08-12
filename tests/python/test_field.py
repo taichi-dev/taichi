@@ -2,6 +2,7 @@
 To test our new `ti.field` API is functional (#1500)
 '''
 
+import numpy as np
 import pytest
 from taichi.lang import impl
 from taichi.lang.misc import get_host_arch_list
@@ -280,6 +281,27 @@ def test_invalid_slicing():
     ):
         val = ti.field(ti.i32, shape=(2, 2))
         val[0, :]
+
+
+@test_utils.test()
+def test_indexing_with_np_int():
+    val = ti.field(ti.i32, shape=(2))
+    idx = np.int32(0)
+    val[idx]
+
+
+@test_utils.test()
+def test_indexing_vec_field_with_np_int():
+    val = ti.Vector.field(2, ti.i32, shape=(2))
+    idx = np.int32(0)
+    val[idx][idx]
+
+
+@test_utils.test()
+def test_indexing_mat_field_with_np_int():
+    val = ti.Matrix.field(2, 2, ti.i32, shape=(2))
+    idx = np.int32(0)
+    val[idx][idx, idx]
 
 
 @test_utils.test(exclude=[ti.cc], debug=True)

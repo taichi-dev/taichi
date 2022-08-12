@@ -6,8 +6,7 @@ file(GLOB_RECURSE GUI_API_SOURCE "c_api/src/gui_utils/*.cpp")
 
 add_library(${TAICHI_GUI_API_NAME} SHARED ${GUI_API_SOURCE})
 
-# TODO(jim19930609): link with "gui" target instead of "taichi_core" target
-target_link_libraries(${TAICHI_GUI_API_NAME} PRIVATE taichi_core)
+target_link_libraries(${TAICHI_GUI_API_NAME} PRIVATE taichi_ui)
 target_link_libraries(${TAICHI_GUI_API_NAME} PRIVATE taichi_c_api)
 
 set(GUI_API_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/build")

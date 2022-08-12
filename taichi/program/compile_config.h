@@ -11,6 +11,7 @@ struct CompileConfig {
   bool debug;
   bool cfg_optimization;
   bool check_out_of_bound;
+  bool validate_autodiff;
   int simd_width;
   bool lazy_compilation;
   int opt_level;

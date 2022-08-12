@@ -32,6 +32,9 @@ typedef struct TiEvent_t *TiEvent;
 // handle.memory
 typedef struct TiMemory_t *TiMemory;
 
+// handle.texture
+typedef struct TiTexture_t *TiTexture;
+
 // handle.kernel
 typedef struct TiKernel_t *TiKernel;
 
@@ -79,6 +82,7 @@ typedef enum TiArgumentType {
   TI_ARGUMENT_TYPE_I32 = 0,
   TI_ARGUMENT_TYPE_F32 = 1,
   TI_ARGUMENT_TYPE_NDARRAY = 2,
+  TI_ARGUMENT_TYPE_TEXTURE = 3,
   TI_ARGUMENT_TYPE_MAX_ENUM = 0xffffffff,
 } TiArgumentType;
 
@@ -121,11 +125,129 @@ typedef struct TiNdArray {
   TiDataType elem_type;
 } TiNdArray;
 
+// bit_field.texture_usage
+typedef enum TiTextureUsageFlagBits {
+  TI_TEXTURE_USAGE_STORAGE_BIT = 1 << 0,
+  TI_TEXTURE_USAGE_SAMPLED_BIT = 1 << 1,
+  TI_TEXTURE_USAGE_ATTACHMENT_BIT = 1 << 2,
+} TiTextureUsageFlagBits;
+typedef TiFlags TiTextureUsageFlags;
+
+// enumeration.texture_dimension
+typedef enum TiTextureDimension {
+  TI_TEXTURE_DIMENSION_1D = 0,
+  TI_TEXTURE_DIMENSION_2D = 1,
+  TI_TEXTURE_DIMENSION_3D = 2,
+  TI_TEXTURE_DIMENSION_1D_ARRAY = 3,
+  TI_TEXTURE_DIMENSION_2D_ARRAY = 4,
+  TI_TEXTURE_DIMENSION_CUBE = 5,
+  TI_TEXTURE_DIMENSION_MAX_ENUM = 0xffffffff,
+} TiTextureDimension;
+
+// enumeration.texture_layout
+typedef enum TiTextureLayout {
+  TI_TEXTURE_LAYOUT_UNDEFINED = 0,
+  TI_TEXTURE_LAYOUT_SHADER_READ = 1,
+  TI_TEXTURE_LAYOUT_SHADER_WRITE = 2,
+  TI_TEXTURE_LAYOUT_SHADER_READ_WRITE = 3,
+  TI_TEXTURE_LAYOUT_COLOR_ATTACHMENT = 4,
+  TI_TEXTURE_LAYOUT_COLOR_ATTACHMENT_READ = 5,
+  TI_TEXTURE_LAYOUT_DEPTH_ATTACHMENT = 6,
+  TI_TEXTURE_LAYOUT_DEPTH_ATTACHMENT_READ = 7,
+  TI_TEXTURE_LAYOUT_TRANSFER_DST = 8,
+  TI_TEXTURE_LAYOUT_TRANSFER_SRC = 9,
+  TI_TEXTURE_LAYOUT_PRESENT_SRC = 10,
+  TI_TEXTURE_LAYOUT_MAX_ENUM = 0xffffffff,
+} TiTextureLayout;
+
+// enumeration.texture_format
+typedef enum TiTextureFormat {
+  TI_TEXTURE_FORMAT_UNKNOWN = 0,
+  TI_TEXTURE_FORMAT_R8 = 1,
+  TI_TEXTURE_FORMAT_RG8 = 2,
+  TI_TEXTURE_FORMAT_RGBA8 = 3,
+  TI_TEXTURE_FORMAT_RGBA8SRGB = 4,
+  TI_TEXTURE_FORMAT_BGRA8 = 5,
+  TI_TEXTURE_FORMAT_BGRA8SRGB = 6,
+  TI_TEXTURE_FORMAT_R8U = 7,
+  TI_TEXTURE_FORMAT_RG8U = 8,
+  TI_TEXTURE_FORMAT_RGBA8U = 9,
+  TI_TEXTURE_FORMAT_R8I = 10,
+  TI_TEXTURE_FORMAT_RG8I = 11,
+  TI_TEXTURE_FORMAT_RGBA8I = 12,
+  TI_TEXTURE_FORMAT_R16 = 13,
+  TI_TEXTURE_FORMAT_RG16 = 14,
+  TI_TEXTURE_FORMAT_RGB16 = 15,
+  TI_TEXTURE_FORMAT_RGBA16 = 16,
+  TI_TEXTURE_FORMAT_R16U = 17,
+  TI_TEXTURE_FORMAT_RG16U = 18,
+  TI_TEXTURE_FORMAT_RGB16U = 19,
+  TI_TEXTURE_FORMAT_RGBA16U = 20,
+  TI_TEXTURE_FORMAT_R16I = 21,
+  TI_TEXTURE_FORMAT_RG16I = 22,
+  TI_TEXTURE_FORMAT_RGB16I = 23,
+  TI_TEXTURE_FORMAT_RGBA16I = 24,
+  TI_TEXTURE_FORMAT_R16F = 25,
+  TI_TEXTURE_FORMAT_RG16F = 26,
+  TI_TEXTURE_FORMAT_RGB16F = 27,
+  TI_TEXTURE_FORMAT_RGBA16F = 28,
+  TI_TEXTURE_FORMAT_R32U = 29,
+  TI_TEXTURE_FORMAT_RG32U = 30,
+  TI_TEXTURE_FORMAT_RGB32U = 31,
+  TI_TEXTURE_FORMAT_RGBA32U = 32,
+  TI_TEXTURE_FORMAT_R32I = 33,
+  TI_TEXTURE_FORMAT_RG32I = 34,
+  TI_TEXTURE_FORMAT_RGB32I = 35,
+  TI_TEXTURE_FORMAT_RGBA32I = 36,
+  TI_TEXTURE_FORMAT_R32F = 37,
+  TI_TEXTURE_FORMAT_RG32F = 38,
+  TI_TEXTURE_FORMAT_RGB32F = 39,
+  TI_TEXTURE_FORMAT_RGBA32F = 40,
+  TI_TEXTURE_FORMAT_DEPTH16 = 41,
+  TI_TEXTURE_FORMAT_DEPTH24STENCIL8 = 42,
+  TI_TEXTURE_FORMAT_DEPTH32F = 43,
+  TI_TEXTURE_FORMAT_MAX_ENUM = 0xffffffff,
+} TiTextureFormat;
+
+// structure.texture_offset
+typedef struct TiTextureOffset {
+  uint32_t x;
+  uint32_t y;
+  uint32_t z;
+  uint32_t array_layer_offset;
+} TiTextureOffset;
+
+// structure.texture_extent
+typedef struct TiTextureExtent {
+  uint32_t width;
+  uint32_t height;
+  uint32_t depth;
+  uint32_t array_layer_count;
+} TiTextureExtent;
+
+// structure.texture_allocate_info
+typedef struct TiTextureAllocateInfo {
+  TiTextureDimension dimension;
+  TiTextureExtent extent;
+  uint32_t mip_level_count;
+  TiTextureFormat format;
+  TiTextureUsageFlagBits usage;
+} TiTextureAllocateInfo;
+
+// structure.texture_slice
+typedef struct TiTextureSlice {
+  TiTexture texture;
+  TiTextureOffset offset;
+  TiTextureExtent extent;
+  uint32_t mip_level;
+} TiTextureSlice;
+
 // union.argument_value
 typedef union TiArgumentValue {
   int32_t i32;
   float f32;
   TiNdArray ndarray;
+  TiTexture texture;
 } TiArgumentValue;
 
 // structure.argument
@@ -163,6 +285,15 @@ TI_DLL_EXPORT void *TI_API_CALL ti_map_memory(TiRuntime runtime,
 TI_DLL_EXPORT void TI_API_CALL ti_unmap_memory(TiRuntime runtime,
                                                TiMemory memory);
 
+// function.allocate_texture
+TI_DLL_EXPORT TiTexture TI_API_CALL
+ti_allocate_texture(TiRuntime runtime,
+                    const TiTextureAllocateInfo *allocate_info);
+
+// function.free_texture
+TI_DLL_EXPORT void TI_API_CALL ti_free_texture(TiRuntime runtime,
+                                               TiTexture texture);
+
 // function.create_event
 TI_DLL_EXPORT TiEvent TI_API_CALL ti_create_event(TiRuntime runtime);
 
@@ -174,6 +305,17 @@ TI_DLL_EXPORT void TI_API_CALL
 ti_copy_memory_device_to_device(TiRuntime runtime,
                                 const TiMemorySlice *dst_memory,
                                 const TiMemorySlice *src_memory);
+
+// function.copy_texture_device_to_device
+TI_DLL_EXPORT void TI_API_CALL
+ti_copy_texture_device_to_device(TiRuntime runtime,
+                                 const TiTextureSlice *dst_texture,
+                                 const TiTextureSlice *src_texture);
+
+// function.transition_texture
+TI_DLL_EXPORT void TI_API_CALL ti_transition_texture(TiRuntime runtime,
+                                                     TiTexture texture,
+                                                     TiTextureLayout layout);
 
 // function.launch_kernel
 TI_DLL_EXPORT void TI_API_CALL ti_launch_kernel(TiRuntime runtime,
@@ -194,6 +336,9 @@ TI_DLL_EXPORT void TI_API_CALL ti_signal_event(TiRuntime runtime,
 
 // function.reset_event
 TI_DLL_EXPORT void TI_API_CALL ti_reset_event(TiRuntime runtime, TiEvent event);
+
+// function.wait_event
+TI_DLL_EXPORT void TI_API_CALL ti_wait_event(TiRuntime runtime, TiEvent event);
 
 // function.submit
 TI_DLL_EXPORT void TI_API_CALL ti_submit(TiRuntime runtime);

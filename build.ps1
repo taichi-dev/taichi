@@ -144,13 +144,18 @@ if ($env:VK_SDK_PATH) {
 
 # Chain up the cmake arguments.
 Write-Host "Will build Taichi ($BuildType) with the following CMake args:"
-$env:TAICHI_CMAKE_ARGS = ""
+$TaichiCMakeArgs = $env:TAICHI_CMAKE_ARGS
 foreach ($Pair in $CMakeArgs.GetEnumerator()) {
     $Key = $Pair | Select-Object -ExpandProperty Key
     $Value = ($Pair | Select-Object -ExpandProperty Value) -replace "\\", "/"
-    Write-Host "  $Key = $Value"
-    $env:TAICHI_CMAKE_ARGS += " -D$Key=`"$Value`""
+    if (-not ($TaichiCMakeArgs.Contains("-D$Key"))) {
+        $TaichiCMakeArgs += " -D$Key=`"$Value`""
+    }
 }
+foreach ($arg in $TaichiCMakeArgs.Split()) {
+    Write-Host "  $arg"
+}
+$env:TAICHI_CMAKE_ARGS = $TaichiCMakeArgs
 
 # Install in userspace?
 $BuildExpr = "python setup.py develop";

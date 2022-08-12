@@ -108,6 +108,15 @@ taichi::lang::gfx::GfxRuntime &VulkanRuntimeOwned::get_gfx_runtime() {
   return gfx_runtime_;
 }
 
+TiTexture VulkanRuntime::allocate_texture(
+    const taichi::lang::ImageParams &params) {
+  taichi::lang::DeviceAllocation devalloc = get_vk().create_image(params);
+  return devalloc2devtex(*this, devalloc);
+}
+void VulkanRuntime::free_texture(TiTexture texture) {
+  get_vk().destroy_image(devtex2devalloc(*this, texture));
+}
+
 TiAotModule VulkanRuntime::load_aot_module(const char *module_path) {
   taichi::lang::gfx::AotModuleParams params{};
   params.module_path = module_path;
@@ -122,6 +131,16 @@ void VulkanRuntime::buffer_copy(const taichi::lang::DevicePtr &dst,
                                 const taichi::lang::DevicePtr &src,
                                 size_t size) {
   get_gfx_runtime().buffer_copy(dst, src, size);
+}
+void VulkanRuntime::copy_image(const taichi::lang::DeviceAllocation &dst,
+                               const taichi::lang::DeviceAllocation &src,
+                               const taichi::lang::ImageCopyParams &params) {
+  get_gfx_runtime().copy_image(dst, src, params);
+}
+void VulkanRuntime::transition_image(
+    const taichi::lang::DeviceAllocation &image,
+    taichi::lang::ImageLayout layout) {
+  get_gfx_runtime().transition_image(image, layout);
 }
 void VulkanRuntime::submit() {
   get_gfx_runtime().flush();
@@ -239,7 +258,7 @@ TiMemory ti_import_vulkan_memory(
       vkapi::create_buffer(vk_runtime.vk_device(), interop_info->buffer,
                            interop_info->size, interop_info->usage);
   taichi::lang::DeviceAllocation devalloc = vk_runtime.import_vkbuffer(buffer);
-  return devalloc2devmem(devalloc);
+  return devalloc2devmem(*runtime2, devalloc);
 }
 void ti_export_vulkan_memory(TiRuntime runtime,
                              TiMemory devmem,
@@ -259,6 +278,88 @@ void ti_export_vulkan_memory(TiRuntime runtime,
   interop_info->buffer = buffer.get()->buffer;
   interop_info->size = buffer.get()->size;
   interop_info->usage = buffer.get()->usage;
+}
+TiTexture ti_import_vulkan_texture(
+    TiRuntime runtime,
+    const TiVulkanTextureInteropInfo *interop_info,
+    VkImageViewType view_type,
+    VkImageLayout layout) {
+  if (runtime == nullptr) {
+    TI_WARN(
+        "ignored attempt to import vulkan texture from runtime of null handle");
+    return TI_NULL_HANDLE;
+  }
+  Runtime *runtime2 = ((Runtime *)runtime)->as_vk();
+  if (runtime2->arch != taichi::Arch::vulkan) {
+    TI_WARN("ignored attempt to import vulkan texture to non-vulkan runtime");
+    return TI_NULL_HANDLE;
+  }
+  taichi::lang::vulkan::VulkanDevice &vk_runtime =
+      static_cast<VulkanRuntime *>(runtime2)->get_vk();
+
+  bool is_depth = interop_info->format == VK_FORMAT_D16_UNORM ||
+                  interop_info->format == VK_FORMAT_D16_UNORM_S8_UINT ||
+                  interop_info->format == VK_FORMAT_D24_UNORM_S8_UINT ||
+                  interop_info->format == VK_FORMAT_D32_SFLOAT ||
+                  interop_info->format == VK_FORMAT_D32_SFLOAT_S8_UINT ||
+                  interop_info->format == VK_FORMAT_X8_D24_UNORM_PACK32;
+
+  vkapi::IVkImage image =
+      vkapi::create_image(vk_runtime.vk_device(), interop_info->image,
+                          interop_info->format, interop_info->image_type,
+                          interop_info->extent, interop_info->mip_level_count,
+                          interop_info->array_layer_count, interop_info->usage);
+
+  VkImageViewCreateInfo view_info{};
+  view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+  view_info.pNext = nullptr;
+  view_info.viewType = view_type;
+  view_info.format = interop_info->format;
+  view_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+  view_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+  view_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+  view_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+  view_info.subresourceRange.aspectMask =
+      is_depth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+  view_info.subresourceRange.baseMipLevel = 0;
+  view_info.subresourceRange.levelCount = interop_info->mip_level_count;
+  view_info.subresourceRange.baseArrayLayer = 0;
+  view_info.subresourceRange.layerCount = interop_info->array_layer_count;
+
+  vkapi::IVkImageView image_view =
+      vkapi::create_image_view(vk_runtime.vk_device(), image, &view_info);
+
+  taichi::lang::DeviceAllocation image2 =
+      vk_runtime.import_vk_image(image, image_view, layout);
+  return devalloc2devtex(*runtime2, image2);
+}
+
+void ti_export_vulkan_texture(TiRuntime runtime,
+                              TiTexture texture,
+                              TiVulkanTextureInteropInfo *interop_info) {
+  if (runtime == nullptr) {
+    TI_WARN(
+        "ignored attempt to export vulkan texture from runtime of null handle");
+    return;
+  }
+  if (texture == nullptr) {
+    TI_WARN("ignored attempt to export vulkan texture of null handle");
+    return;
+  }
+  VulkanRuntime *runtime2 = ((Runtime *)runtime)->as_vk();
+  taichi::lang::DeviceAllocation devalloc = devtex2devalloc(*runtime2, texture);
+  vkapi::IVkImage image =
+      std::get<0>(runtime2->get_vk().get_vk_image(devalloc));
+  interop_info->image = image->image;
+  interop_info->image_type = image->type;
+  interop_info->extent.width = image->width;
+  interop_info->extent.height = image->height;
+  interop_info->extent.depth = image->depth;
+  interop_info->mip_level_count = image->mip_levels;
+  interop_info->array_layer_count = image->array_layers;
+  interop_info->sample_count = VK_SAMPLE_COUNT_1_BIT;
+  interop_info->tiling = VK_IMAGE_TILING_OPTIMAL;
+  interop_info->usage = image->usage;
 }
 
 TiEvent ti_import_vulkan_event(TiRuntime runtime,

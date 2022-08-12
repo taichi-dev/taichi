@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Core Functionalities
 
-Taichi Core exposes all necessary interfaces to offload AOT modules to Taichi. Here lists the features universally available disregards to any specific backend. The Taichi Core APIs are guaranteed to be forward compatible.
+Taichi Core exposes all necessary interfaces to offload AOT modules to Taichi. Here lists the features universally available disregards to any specific backend. These APIs are still in active development so is subject to change.
 
 ## Availability
 
@@ -13,7 +13,7 @@ Taichi C-API has bridged the following backends:
 |Backend|Offload Target|Maintenance Tier|
 |-|-|-|
 |Vulkan|GPU|Tier 1|
-|CUDA|GPU (NVIDIA)|Tier 1|
+|CUDA (LLVM)|GPU (NVIDIA)|Tier 1|
 |CPU (LLVM)|CPU|Tier 1|
 |DirectX 11|GPU (Windows)|N/A|
 |Metal|GPU (macOS, iOS)|N/A|
@@ -53,8 +53,6 @@ mai.size = 1024; // Size in bytes.
 mai.usage = TI_MEMORY_USAGE_STORAGE_BIT;
 TiMemory memory = ti_allocate_memory(runtime, &mai);
 ```
-
-**NOTE** You don't need to allocate memory for field allocations. They are automatically allocated when the AOT module is loaded.
 
 You MAY free allocated memory explicitly; but memory allocations will be automatically freed when the related `TiRuntime` is destroyed.
 
@@ -192,7 +190,7 @@ ti_wait(runtime);
 typedef uint32_t TiBool;
 ```
 
-A boolean value. Can be either `definition.true` or `definition.false`. Assignment with other values could lead to undefined behavior.
+A boolean value. Can be either `TI_TRUE` or `TI_FALSE`. Assignment with other values could lead to undefined behavior.
 
 ---
 ### Definition `TI_FALSE`
@@ -242,7 +240,7 @@ A sentinal invalid handle that will never be produced from a valid call to Taich
 typedef struct TiRuntime_t* TiRuntime;
 ```
 
-Taichi runtime represents an instance of a logical computating device and its internal dynamic states. The user is responsible to synchronize any use of `handle.runtime`. The user MUST NOT manipulate multiple `handle.runtime`s in a same thread.
+Taichi runtime represents an instance of a logical computating device and its internal dynamic states. The user is responsible to synchronize any use of `TiRuntime`. The user MUST NOT manipulate multiple `TiRuntime`s in a same thread.
 
 ---
 ### Handle `TiAotModule`
@@ -359,6 +357,10 @@ typedef enum TiArgumentType {
 
 Types of kernel and compute graph argument.
 
+- `TI_ARGUMENT_TYPE_I32`: Signed 32-bit integer.
+- `TI_ARGUMENT_TYPE_F32`: Signed 32-bit floating-point number.
+- `TI_ARGUMENT_TYPE_NDARRAY`: ND-array wrapped around a `TiMemory`.
+
 ---
 ### BitField `TiMemoryUsageFlagBits`
 
@@ -375,6 +377,11 @@ typedef TiFlags TiMemoryUsageFlags;
 
 Usages of a memory allocation.
 
+- `TI_MEMORY_USAGE_STORAGE_BIT`: The memory can be read/write accessed by any shader, you usually only need to set this flag.
+- `TI_MEMORY_USAGE_UNIFORM_BIT`: The memory can be used as a uniform buffer in graphics pipelines.
+- `TI_MEMORY_USAGE_VERTEX_BIT`: The memory can be used as a vertex buffer in graphics pipelines.
+- `TI_MEMORY_USAGE_INDEX_BIT`: The memory can be used as a index buffer in graphics pipelines.
+
 ---
 ### Structure `TiMemoryAllocateInfo`
 
@@ -390,6 +397,12 @@ typedef struct TiMemoryAllocateInfo {
 ```
 
 Parameters of a newly allocated memory.
+
+- `TiMemoryAllocateInfo.size`: Size of the allocation in bytes.
+- `TiMemoryAllocateInfo.host_write`: True if the host needs to write to the allocated memory.
+- `TiMemoryAllocateInfo.host_read`: True if the host needs to read from the allocated memory.
+- `TiMemoryAllocateInfo.export_sharing`: True if the memory allocation needs to be exported to other backends (e.g., from Vulkan to CUDA).
+- `TiMemoryAllocateInfo.usage`: All possible usage of this memory allocation. In most of the cases, `TI_MEMORY_USAGE_STORAGE_BIT` is enough.
 
 ---
 ### Structure `TiMemorySlice`
@@ -483,7 +496,7 @@ TI_DLL_EXPORT TiRuntime TI_API_CALL ti_create_runtime(
 );
 ```
 
-Create a Taichi Runtime with the specified `enumeration.arch`.
+Create a Taichi Runtime with the specified `TiArch`.
 
 ---
 ### Function `ti_destroy_runtime`
@@ -628,7 +641,7 @@ TI_DLL_EXPORT void TI_API_CALL ti_signal_event(
 );
 ```
 
-Set an event primitive to a signaled state, so the queues waiting upon the event can go on execution. If the event has been signaled before, the event MUST be reset with `function.reset_event`; otherwise it is an undefined behavior.
+Set an event primitive to a signaled state, so the queues waiting upon the event can go on execution. If the event has been signaled before, the event MUST be reset with `ti_reset_event`; otherwise it is an undefined behavior.
 
 ---
 ### Function `ti_reset_event` (Device Command)
@@ -691,7 +704,7 @@ TI_DLL_EXPORT TiAotModule TI_API_CALL ti_load_aot_module(
 );
 ```
 
-Load a precompiled AOT module from the filesystem. `definition.null_handle` is returned if the runtime failed to load the AOT module from the given path.
+Load a precompiled AOT module from the filesystem. `TI_NULL_HANDLE` is returned if the runtime failed to load the AOT module from the given path.
 
 ---
 ### Function `ti_destroy_aot_module`
@@ -716,7 +729,7 @@ TI_DLL_EXPORT TiKernel TI_API_CALL ti_get_aot_module_kernel(
 );
 ```
 
-Get a precompiled Taichi kernel from the AOT module. `definition.null_handle` is returned if the module does not have a kernel of the specified name.
+Get a precompiled Taichi kernel from the AOT module. `TI_NULL_HANDLE` is returned if the module does not have a kernel of the specified name.
 
 ---
 ### Function `ti_get_aot_module_compute_graph`
@@ -729,4 +742,4 @@ TI_DLL_EXPORT TiComputeGraph TI_API_CALL ti_get_aot_module_compute_graph(
 );
 ```
 
-Get a precompiled compute graph from the AOt module. `definition.null_handle` is returned if the module does not have a kernel of the specified name.
+Get a precompiled compute graph from the AOt module. `TI_NULL_HANDLE` is returned if the module does not have a kernel of the specified name.

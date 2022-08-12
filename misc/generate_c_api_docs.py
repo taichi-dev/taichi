@@ -7,7 +7,7 @@ from taichi_json import (Alias, BitField, BuiltInType, Definition, EntryBase,
                          Enumeration, Field, Function, Handle, Module,
                          Structure, Union)
 
-SYM_PATTERN = r"\`(\w+\.\w+)\`"
+SYM_PATTERN = r"\`(\w+\.\w+(?:\.\w+)?)\`"
 
 
 def get_title(x: EntryBase):
@@ -24,19 +24,66 @@ def get_title(x: EntryBase):
         raise RuntimeError(f"'{x.id}' doesn't need title")
 
 
-def resolve_inline_symbols(module: Module, line: str):
+def get_human_readable_field_name(x: EntryBase, field_name: str):
+    out = None
+    if isinstance(x, Enumeration):
+        out = x.name.extend(field_name).screaming_snake_case
+    elif isinstance(x, BitField):
+        out = x.name.extend(field_name).extend('bit').screaming_snake_case
+    elif isinstance(x, Structure):
+        for field in x.fields:
+            if field.name.snake_case == field_name:
+                out = f"{x.name.upper_camel_case}.{field.name.snake_case}"
+                break
+    elif isinstance(x, Union):
+        for field in x.variants:
+            if field.name.snake_case == field_name:
+                out = f"{x.name.upper_camel_case}.{field.name.snake_case}"
+                break
+    return out
+
+
+def resolve_symbol_to_name(module: Module, id: str):
+    try:
+        ifirst_dot = id.index('.')
+    except ValueError:
+        return None
+
+    field_name = ""
+    try:
+        isecond_dot = id.index('.', ifirst_dot + 1)
+        field_name = id[isecond_dot + 1:]
+        id = id[:isecond_dot]
+    except ValueError:
+        pass
+
+    out = module.declr_reg.resolve(id)
+
+    try:
+        if field_name:
+            out = get_human_readable_field_name(out, field_name)
+        else:
+            out = get_human_readable_name(out)
+    except:
+        print(f"WARNING: Unable to resolve symbol {id}")
+        out = id
+
+    return out
+
+
+def resolve_inline_symbols_to_names(module: Module, line: str):
     matches = re.findall(SYM_PATTERN, line)
 
     replacements = {}
     for m in matches:
-        sym = str(m)
-        replacements[sym] = module.declr_reg.resolve(sym)
+        id = str(m)
+        replacements[id] = resolve_symbol_to_name(module, id)
 
     for old, new in replacements.items():
         if new is None:
             print(f"WARNING: Unresolved inline symbol `{old}`")
         else:
-            line = line.replace(old, get_human_readable_name(new))
+            line = line.replace(old, new)
     return line
 
 
@@ -45,7 +92,7 @@ def print_module_doc(module: Module, templ):
 
     for i in range(len(templ)):
         line = templ[i].strip()
-        line = resolve_inline_symbols(module, line)
+        line = resolve_inline_symbols_to_names(module, line)
         out += [line]
         if line.startswith("## API Reference"):
             break
@@ -59,7 +106,7 @@ def print_module_doc(module: Module, templ):
         if re.match(SYM_PATTERN, line):
             cur_sym = line[1:-1]
             continue
-        documented_syms[cur_sym] += [line]
+        documented_syms[cur_sym] += [resolve_inline_symbols_to_names(module, line)]
 
     is_first = True
     for x in module.declr_reg:

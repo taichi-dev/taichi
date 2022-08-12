@@ -239,13 +239,28 @@ Elementary (primitive) data types.
 
 Types of kernel and compute graph argument.
 
+- `enumeration.argument_type.i32`: Signed 32-bit integer.
+- `enumeration.argument_type.f32`: Signed 32-bit floating-point number.
+- `enumeration.argument_type.ndarray`: ND-array wrapped around a `handle.memory`.
+
 `bit_field.memory_usage`
 
 Usages of a memory allocation.
 
+- `bit_field.memory_usage.storage`: The memory can be read/write accessed by any shader, you usually only need to set this flag.
+- `bit_field.memory_usage.uniform`: The memory can be used as a uniform buffer in graphics pipelines.
+- `bit_field.memory_usage.vertex`: The memory can be used as a vertex buffer in graphics pipelines.
+- `bit_field.memory_usage.index`: The memory can be used as a index buffer in graphics pipelines.
+
 `structure.memory_allocate_info`
 
 Parameters of a newly allocated memory.
+
+- `structure.memory_allocate_info.size`: Size of the allocation in bytes.
+- `structure.memory_allocate_info.host_write`: True if the host needs to write to the allocated memory.
+- `structure.memory_allocate_info.host_read`: True if the host needs to read from the allocated memory.
+- `structure.memory_allocate_info.export_sharing`: True if the memory allocation needs to be exported to other backends (e.g., from Vulkan to CUDA).
+- `structure.memory_allocate_info.usage`: All possible usage of this memory allocation. In most of the cases, `bit_field.memory_usage.storage` is enough.
 
 `structure.memory_slice`
 

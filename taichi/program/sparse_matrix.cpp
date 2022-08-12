@@ -252,13 +252,13 @@ void CuSparseMatrix::spmv(Program *prog, const Ndarray &x, Ndarray &y) {
   size_t bufferSize = 0;
   CUSPARSEDriver::get_instance().cpSpMV_bufferSize(
       cusparse_handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, matrix_, vecX,
-      &beta, vecY, CUDA_R_32F, CUSPARSE_SPMV_CSR_ALG1, &bufferSize);
+      &beta, vecY, CUDA_R_32F, CUSPARSE_CSRMV_ALG1, &bufferSize);
 
   void *dBuffer = NULL;
   CUDADriver::get_instance().malloc(&dBuffer, bufferSize);
   CUSPARSEDriver::get_instance().cpSpMV(
       cusparse_handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, matrix_, vecX,
-      &beta, vecY, CUDA_R_32F, CUSPARSE_SPMV_CSR_ALG1, dBuffer);
+      &beta, vecY, CUDA_R_32F, CUSPARSE_CSRMV_ALG1, dBuffer);
 
   CUSPARSEDriver::get_instance().cpDestroyDnVec(vecX);
   CUSPARSEDriver::get_instance().cpDestroyDnVec(vecY);

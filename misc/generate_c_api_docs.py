@@ -18,7 +18,8 @@ def get_title(x: EntryBase):
     if isinstance(x, Function) and x.is_device_command:
         extra += " (Device Command)"
 
-    if isinstance(x, (Alias, Definition, Handle, Enumeration, BitField, Structure, Union, Function)):
+    if isinstance(x, (Alias, Definition, Handle, Enumeration, BitField,
+                      Structure, Union, Function)):
         return f"{type(x).__name__} `{get_human_readable_name(x)}`" + extra
     else:
         raise RuntimeError(f"'{x.id}' doesn't need title")

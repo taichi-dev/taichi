@@ -216,7 +216,7 @@ def test_geometry_3d():
         0, 1, 2, 3, 1, 2, 4, 5, 6, 7, 5, 6, 0, 1, 4, 5, 1, 4, 2, 3, 6, 7, 3, 6,
         0, 2, 4, 6, 2, 4, 1, 3, 5, 7, 3, 5
     ],
-                          dtype=np.int32)
+        dtype=np.int32)
     indices.from_numpy(indices_np)
 
     def render():
@@ -255,6 +255,35 @@ def test_set_image():
     def init_img():
         for i, j in img:
             img[i, j] = ti.Vector([i, j, 0, 512], dt=ti.f32) / 512
+
+    init_img()
+
+    def render():
+        canvas.set_image(img)
+
+    for _ in range(RENDER_REPEAT):
+        render()
+        write_temp_image(window)
+    render()
+    verify_image(window, 'test_set_image')
+    window.destroy()
+
+
+@pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
+@test_utils.test(arch=supported_archs)
+def test_set_image_flat_field():
+    window = ti.ui.Window('test', (640, 480), show_window=False)
+    canvas = window.get_canvas()
+
+    img = ti.field(ti.f32, (512, 512, 4))
+
+    @ti.kernel
+    def init_img():
+        for i, j in ti.ndrange(img.shape[0], img.shape[1]):
+            img[i, j, 0] = i / 512
+            img[i, j, 1] = j / 512
+            img[i, j, 2] = 0
+            img[i, j, 3] = 1.0
 
     init_img()
 

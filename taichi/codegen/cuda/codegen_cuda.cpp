@@ -218,6 +218,7 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
                        {llvm_val[stmt->dest], llvm_val[stmt->val]});
   }
 
+#ifndef TI_LLVM_15
   // A huge hack for supporting f16 atomic add/max/min! Borrowed from
   // https://github.com/tensorflow/tensorflow/blob/470d58a83470f8ede3beaa584e6992bc71b7baa6/tensorflow/compiler/xla/service/gpu/ir_emitter.cc#L378-L490
   // The reason is that LLVM10 does not support generating atomicCAS for f16 on
@@ -275,19 +276,8 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
     TI_ASSERT(output_address_type != nullptr);
 
     // element_type is the data type for the binary operation.
-#ifdef TI_LLVM_15
-    llvm::Type *element_address_type = nullptr;
-    if (output_address_type->isOpaquePointerTy()) {
-      element_address_type =
-          llvm::PointerType::get(output_address_type->getContext(), 0);
-    } else {
-      llvm::Type *element_type = output_address_type->getPointerElementType();
-      element_address_type = element_type->getPointerTo();
-    }
-#else
     llvm::Type *element_type = output_address_type->getPointerElementType();
     llvm::Type *element_address_type = element_type->getPointerTo();
-#endif
 
     int atomic_size = 32;
     llvm::Type *atomic_type = builder->getIntNTy(atomic_size);
@@ -327,9 +317,6 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
     // Use the value from the memory that atomicCAS operates on to initialize
     // cas_old_output.
     llvm::Value *cas_old_output = builder->CreateLoad(
-#ifdef TI_LLVM_15
-        atomic_type,
-#endif
         atomic_memory_address, "cas_old_output");
     builder->CreateStore(cas_old_output, cas_old_output_address);
 
@@ -344,24 +331,15 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
     {
       // Use cas_old_output to initialize cas_new_output.
       cas_old_output = builder->CreateLoad(
-#ifdef TI_LLVM_15
-          atomic_type,
-#endif
           cas_old_output_address, "cas_old_output");
       builder->CreateStore(cas_old_output, cas_new_output_address);
 
       auto binop_output = op(builder->CreateLoad(
-#ifdef TI_LLVM_15
-                                 atomic_type,
-#endif
                                  binop_output_address),
                              val);
       builder->CreateStore(binop_output, binop_output_address);
 
       llvm::Value *cas_new_output = builder->CreateLoad(
-#ifdef TI_LLVM_15
-          atomic_type,
-#endif
           cas_new_output_address, "cas_new_output");
 
       // Emit code to perform the atomicCAS operation
@@ -369,9 +347,6 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
       //                                       cas_new_output);
       llvm::Value *ret_value = builder->CreateAtomicCmpXchg(
           atomic_memory_address, cas_old_output, cas_new_output,
-#ifdef TI_LLVM_15
-          llvm::MaybeAlign(0),
-#endif
           llvm::AtomicOrdering::SequentiallyConsistent,
           llvm::AtomicOrdering::SequentiallyConsistent);
 
@@ -391,6 +366,7 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
 
     return output_address;
   }
+#endif
 
   void visit(RangeForStmt *for_stmt) override {
     create_naive_range_for(for_stmt);

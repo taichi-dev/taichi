@@ -136,7 +136,8 @@ def copy_image_f32_to_rgba8(src: ti.template(), dst: ti.template(),
 def copy_image_f32_to_rgba8_np(src: ti.types.ndarray(), dst: ti.template(),
                                num_components: ti.template(),
                                gray_scale: ti.template()):
-    for i, j in ti.ndrange(src.shape[0], src.shape[1]):
+    for I in ti.grouped(src):
+        i, j = I[0], I[1]
         px = ti.Vector([0, 0, 0, 0xff], dt=u32)
         if ti.static(gray_scale):
             c = 0.0
@@ -178,7 +179,8 @@ def copy_image_u8_to_rgba8(src: ti.template(), dst: ti.template(),
 def copy_image_u8_to_rgba8_np(src: ti.types.ndarray(), dst: ti.template(),
                               num_components: ti.template(),
                               gray_scale: ti.template()):
-    for i, j in ti.ndrange(src.shape[0], src.shape[1]):
+    for I in ti.grouped(src):
+        i, j = I[0], I[1]
         px = ti.Vector([0, 0, 0, 0xff], dt=u32)
         if ti.static(gray_scale):
             px[0] = px[1] = px[2] = ti.cast(src[i, j], u32)
@@ -227,21 +229,22 @@ def to_rgba8(image):
     else:
         staging_img = image_field_cache[staging_key]
 
-    if isinstance(image, Texture):
+    if is_texture:
         copy_texture_to_rgba8(image, staging_img, *image.shape[0:2])
-    elif image.dtype == u8 or image.dtype == np.uint8:
-        if is_numpy:
-            copy_image_u8_to_rgba8_np(image, staging_img, channels,
-                                      is_grayscale)
-        else:
-            copy_image_u8_to_rgba8(image, staging_img, channels, is_grayscale)
-    elif image.dtype == f32 or image.dtype == np.float32:
-        if is_numpy:
+    elif is_numpy:
+        if image.dtype == np.uint8:
+            copy_image_u8_to_rgba8_np(image, staging_img, channels, is_grayscale)
+        elif image.dtype == np.float32:
             copy_image_f32_to_rgba8_np(image, staging_img, channels,
                                        is_grayscale)
         else:
-            copy_image_f32_to_rgba8(image, staging_img, channels, is_grayscale)
+            raise Exception("dtype of input image must either be u8 or f32")
     else:
-        raise Exception("dtype of input image must either be u8 or f32")
+        if image.dtype == u8:
+            copy_image_u8_to_rgba8(image, staging_img, channels, is_grayscale)
+        elif image.dtype == f32:
+            copy_image_f32_to_rgba8(image, staging_img, channels, is_grayscale)
+        else:
+            raise Exception("dtype of input image must either be u8 or f32")
 
     return staging_img

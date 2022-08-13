@@ -33,13 +33,13 @@ def get_human_readable_field_name(x: EntryBase, field_name: str):
         out = x.name.extend(field_name).extend('bit').screaming_snake_case
     elif isinstance(x, Structure):
         for field in x.fields:
-            if field.name.snake_case == field_name:
-                out = f"{x.name.upper_camel_case}.{field.name.snake_case}"
+            if str(field.name) == field_name:
+                out = str(field.name)
                 break
     elif isinstance(x, Union):
         for field in x.variants:
-            if field.name.snake_case == field_name:
-                out = f"{x.name.upper_camel_case}.{field.name.snake_case}"
+            if str(field.name) == field_name:
+                out = str(field.name)
                 break
     return out
 

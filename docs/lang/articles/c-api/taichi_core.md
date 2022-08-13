@@ -99,7 +99,7 @@ ti_unmap_memory(runtime, read_back_memory);
 ti_free_memory(runtime, read_back_memory);
 ```
 
-**NOTE** `host_read` and `host_write` can be set true simultaneously. But please note that host-accessible allocations MAY slow down computation on a GPU because the limited bus bandwidth between the host memory and the device.
+**NOTE** `host_read` and `host_write` can be set true simultaneously. But please note that host-accessible allocations MAY slow down computation on GPU because of the limited bus bandwidth between the host memory and the device.
 
 ### Load and destroy a Taichi AOT Module
 
@@ -220,7 +220,9 @@ A condition or a predicate is satisfied; a statement is valid.
 typedef uint32_t TiFlags;
 ```
 
-A bit field that can be used to represent 32 orthogonal flags.
+A bit field that can be used to represent 32 orthogonal flags. Bits unspecified in the corresponding flag enum are ignored.
+
+**NOTE** Enumerations and bit-field flags in the C-API have a `TI_XXX_MAX_ENUM` case to ensure the enum to have a 32-bit range and in-memory size. It has no semantical impact and can be safely ignored.
 
 ---
 ### Definition `TI_NULL_HANDLE`
@@ -240,7 +242,7 @@ A sentinal invalid handle that will never be produced from a valid call to Taich
 typedef struct TiRuntime_t* TiRuntime;
 ```
 
-Taichi runtime represents an instance of a logical computating device and its internal dynamic states. The user is responsible to synchronize any use of `TiRuntime`. The user MUST NOT manipulate multiple `TiRuntime`s in a same thread.
+Taichi runtime represents an instance of a logical backend and its internal dynamic state. The user is responsible to synchronize any use of `TiRuntime`. The user MUST NOT manipulate multiple `TiRuntime`s in a same thread.
 
 ---
 ### Handle `TiAotModule`
@@ -290,7 +292,7 @@ A Taichi kernel that can be launched on device for execution.
 typedef struct TiComputeGraph_t* TiComputeGraph;
 ```
 
-A collection of Taichi kernels (a compute graph) to be launched on device with predefined order.
+A collection of Taichi kernels (a compute graph) to be launched on device in predefined order.
 
 ---
 ### Enumeration `TiArch`
@@ -314,7 +316,12 @@ typedef enum TiArch {
 } TiArch;
 ```
 
-Types of logical offload devices.
+Types of backend archs.
+
+- `TI_ARCH_X64`: x64 native CPU backend.
+- `TI_ARCH_ARM64`: Arm64 native CPU backend.
+- `TI_ARCH_CUDA`: NVIDIA CUDA GPU backend.
+- `TI_ARCH_VULKAN`: Vulkan GPU backend.
 
 ---
 ### Enumeration `TiDataType`
@@ -340,7 +347,19 @@ typedef enum TiDataType {
 } TiDataType;
 ```
 
-Elementary (primitive) data types.
+Elementary (primitive) data types. There might be vendor-specific constraints on the available data types so it's recommended to use 32-bit data types if multi-platform distribution is desired.
+
+- `TI_DATA_TYPE_F16`: 16-bit IEEE 754 floating-point number.
+- `TI_DATA_TYPE_F32`: 32-bit IEEE 754 floating-point number.
+- `TI_DATA_TYPE_F64`: 64-bit IEEE 754 floating-point number.
+- `TI_DATA_TYPE_I8`: 8-bit one's complement signed integer.
+- `TI_DATA_TYPE_I16`: 16-bit one's complement signed integer.
+- `TI_DATA_TYPE_I32`: 32-bit one's complement signed integer.
+- `TI_DATA_TYPE_I64`: 64-bit one's complement signed integer.
+- `TI_DATA_TYPE_U8`: 8-bit unsigned integer.
+- `TI_DATA_TYPE_U16`: 16-bit unsigned integer.
+- `TI_DATA_TYPE_U32`: 32-bit unsigned integer.
+- `TI_DATA_TYPE_U64`: 64-bit unsigned integer.
 
 ---
 ### Enumeration `TiArgumentType`
@@ -398,11 +417,11 @@ typedef struct TiMemoryAllocateInfo {
 
 Parameters of a newly allocated memory.
 
-- `TiMemoryAllocateInfo.size`: Size of the allocation in bytes.
-- `TiMemoryAllocateInfo.host_write`: True if the host needs to write to the allocated memory.
-- `TiMemoryAllocateInfo.host_read`: True if the host needs to read from the allocated memory.
-- `TiMemoryAllocateInfo.export_sharing`: True if the memory allocation needs to be exported to other backends (e.g., from Vulkan to CUDA).
-- `TiMemoryAllocateInfo.usage`: All possible usage of this memory allocation. In most of the cases, `TI_MEMORY_USAGE_STORAGE_BIT` is enough.
+- `size`: Size of the allocation in bytes.
+- `host_write`: True if the host needs to write to the allocated memory.
+- `host_read`: True if the host needs to read from the allocated memory.
+- `export_sharing`: True if the memory allocation needs to be exported to other backends (e.g., from Vulkan to CUDA).
+- `usage`: All possible usage of this memory allocation. In most of the cases, `TI_MEMORY_USAGE_STORAGE_BIT` is enough.
 
 ---
 ### Structure `TiMemorySlice`
@@ -416,7 +435,11 @@ typedef struct TiMemorySlice {
 } TiMemorySlice;
 ```
 
-A subsection of a memory allocation.
+A subsection of a memory allocation. The sum of `offset` and `size` cannot exceed the size of `memory`.
+
+- `memory`: The subsectioned memory allocation.
+- `offset`: Offset from the beginning of the allocation.
+- `size`: Size of the subsection.
 
 ---
 ### Structure `TiNdShape`
@@ -429,7 +452,10 @@ typedef struct TiNdShape {
 } TiNdShape;
 ```
 
-Multi-dimensional size of an ND-array.
+Multi-dimensional size of an ND-array. Dimension sizes after `dim_count` are ignored.
+
+- `dim_count`: Number of dimensions.
+- `dims`: Dimension sizes.
 
 ---
 ### Structure `TiNdArray`
@@ -446,6 +472,11 @@ typedef struct TiNdArray {
 
 Multi-dimentional array of dense primitive data.
 
+- `memory`: Memory bound to the ND-array.
+- `shape`: Shape of the ND-array.
+- `elem_shape`: Shape of the ND-array elements. You usually need to set this if it's a vector or matrix ND-array.
+- `elem_type`: Primitive data type of the ND-array elements.
+
 ---
 ### Union `TiArgumentValue`
 
@@ -460,6 +491,10 @@ typedef union TiArgumentValue {
 
 A scalar or structured argument value.
 
+- `i32`: Value of a 32-bit one's complement signed integer.
+- `f32`: Value of a 32-bit IEEE 754 floating-poing number.
+- `ndarray`: An ND-array to be bound.
+
 ---
 ### Structure `TiArgument`
 
@@ -473,6 +508,9 @@ typedef struct TiArgument {
 
 An argument value to feed kernels.
 
+- `type`: Type of the argument.
+- `value`: Value of the argument.
+
 ---
 ### Structure `TiNamedArgument`
 
@@ -485,6 +523,9 @@ typedef struct TiNamedArgument {
 ```
 
 An named argument value to feed compute graphcs.
+
+- `name`: Name of the argument.
+- `argument`: Argument body.
 
 ---
 ### Function `ti_create_runtime`
@@ -628,7 +669,7 @@ TI_DLL_EXPORT void TI_API_CALL ti_launch_compute_graph(
 );
 ```
 
-Launch a Taichi kernel with provided named arguments. The named arguments MUST have the same count, names and types as in the source code.
+Launch a Taichi compute graph with provided named arguments. The named arguments MUST have the same count, names and types as in the source code.
 
 ---
 ### Function `ti_signal_event` (Device Command)

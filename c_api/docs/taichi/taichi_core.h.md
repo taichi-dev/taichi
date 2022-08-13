@@ -99,7 +99,7 @@ ti_unmap_memory(runtime, read_back_memory);
 ti_free_memory(runtime, read_back_memory);
 ```
 
-**NOTE** `host_read` and `host_write` can be set true simultaneously. But please note that host-accessible allocations MAY slow down computation on a GPU because the limited bus bandwidth between the host memory and the device.
+**NOTE** `host_read` and `host_write` can be set true simultaneously. But please note that host-accessible allocations MAY slow down computation on GPU because of the limited bus bandwidth between the host memory and the device.
 
 ### Load and destroy a Taichi AOT Module
 
@@ -197,7 +197,9 @@ A condition or a predicate is not satisfied; a statement is invalid.
 
 `alias.flags`
 
-A bit field that can be used to represent 32 orthogonal flags.
+A bit field that can be used to represent 32 orthogonal flags. Bits unspecified in the corresponding flag enum are ignored.
+
+**NOTE** Enumerations and bit-field flags in the C-API have a `TI_XXX_MAX_ENUM` case to ensure the enum to have a 32-bit range and in-memory size. It has no semantical impact and can be safely ignored.
 
 `definition.null_handle`
 
@@ -205,7 +207,7 @@ A sentinal invalid handle that will never be produced from a valid call to Taich
 
 `handle.runtime`
 
-Taichi runtime represents an instance of a logical computating device and its internal dynamic states. The user is responsible to synchronize any use of `handle.runtime`. The user MUST NOT manipulate multiple `handle.runtime`s in a same thread.
+Taichi runtime represents an instance of a logical backend and its internal dynamic state. The user is responsible to synchronize any use of `handle.runtime`. The user MUST NOT manipulate multiple `handle.runtime`s in a same thread.
 
 `handle.aot_module`
 
@@ -225,15 +227,32 @@ A Taichi kernel that can be launched on device for execution.
 
 `handle.compute_graph`
 
-A collection of Taichi kernels (a compute graph) to be launched on device with predefined order.
+A collection of Taichi kernels (a compute graph) to be launched on device in predefined order.
 
 `enumeration.arch`
 
-Types of logical offload devices.
+Types of backend archs.
+
+- `enumeration.arch.x64`: x64 native CPU backend.
+- `enumeration.arch.arm64`: Arm64 native CPU backend.
+- `enumeration.arch.cuda`: NVIDIA CUDA GPU backend.
+- `enumeration.arch.vulkan`: Vulkan GPU backend.
 
 `enumeration.data_type`
 
-Elementary (primitive) data types.
+Elementary (primitive) data types. There might be vendor-specific constraints on the available data types so it's recommended to use 32-bit data types if multi-platform distribution is desired.
+
+- `enumeration.data_type.f16`: 16-bit IEEE 754 floating-point number.
+- `enumeration.data_type.f32`: 32-bit IEEE 754 floating-point number.
+- `enumeration.data_type.f64`: 64-bit IEEE 754 floating-point number.
+- `enumeration.data_type.i8`: 8-bit one's complement signed integer.
+- `enumeration.data_type.i16`: 16-bit one's complement signed integer.
+- `enumeration.data_type.i32`: 32-bit one's complement signed integer.
+- `enumeration.data_type.i64`: 64-bit one's complement signed integer.
+- `enumeration.data_type.u8`: 8-bit unsigned integer.
+- `enumeration.data_type.u16`: 16-bit unsigned integer.
+- `enumeration.data_type.u32`: 32-bit unsigned integer.
+- `enumeration.data_type.u64`: 64-bit unsigned integer.
 
 `enumeration.argument_type`
 
@@ -264,27 +283,49 @@ Parameters of a newly allocated memory.
 
 `structure.memory_slice`
 
-A subsection of a memory allocation.
+A subsection of a memory allocation. The sum of `structure.memory_slice.offset` and `structure.memory_slice.size` cannot exceed the size of `structure.memory_slice.memory`.
+
+- `structure.memory_slice.memory`: The subsectioned memory allocation.
+- `structure.memory_slice.offset`: Offset from the beginning of the allocation.
+- `structure.memory_slice.size`: Size of the subsection.
 
 `structure.nd_shape`
 
-Multi-dimensional size of an ND-array.
+Multi-dimensional size of an ND-array. Dimension sizes after `structure.nd_shape.dim_count` are ignored.
+
+- `structure.nd_shape.dim_count`: Number of dimensions.
+- `structure.nd_shape.dims`: Dimension sizes.
 
 `structure.nd_array`
 
 Multi-dimentional array of dense primitive data.
 
+- `structure.nd_array.memory`: Memory bound to the ND-array.
+- `structure.nd_array.shape`: Shape of the ND-array.
+- `structure.nd_array.elem_shape`: Shape of the ND-array elements. You usually need to set this if it's a vector or matrix ND-array.
+- `structure.nd_array.elem_type`: Primitive data type of the ND-array elements.
+
 `union.argument_value`
 
 A scalar or structured argument value.
+
+- `union.argument_value.i32`: Value of a 32-bit one's complement signed integer.
+- `union.argument_value.f32`: Value of a 32-bit IEEE 754 floating-poing number.
+- `union.argument_value.ndarray`: An ND-array to be bound.
 
 `structure.argument`
 
 An argument value to feed kernels.
 
+- `structure.argument.type`: Type of the argument.
+- `structure.argument.value`: Value of the argument.
+
 `structure.named_argument`
 
 An named argument value to feed compute graphcs.
+
+- `structure.named_argument.name`: Name of the argument.
+- `structure.named_argument.argument`: Argument body.
 
 `function.create_runtime`
 
@@ -328,7 +369,7 @@ Launch a Taichi kernel with provided arguments. The arguments MUST have the same
 
 `function.launch_compute_graph`
 
-Launch a Taichi kernel with provided named arguments. The named arguments MUST have the same count, names and types as in the source code.
+Launch a Taichi compute graph with provided named arguments. The named arguments MUST have the same count, names and types as in the source code.
 
 `function.signal_event`
 

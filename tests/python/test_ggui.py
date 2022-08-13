@@ -216,7 +216,7 @@ def test_geometry_3d():
         0, 1, 2, 3, 1, 2, 4, 5, 6, 7, 5, 6, 0, 1, 4, 5, 1, 4, 2, 3, 6, 7, 3, 6,
         0, 2, 4, 6, 2, 4, 1, 3, 5, 7, 3, 5
     ],
-        dtype=np.int32)
+                          dtype=np.int32)
     indices.from_numpy(indices_np)
 
     def render():

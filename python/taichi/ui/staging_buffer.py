@@ -198,16 +198,15 @@ def to_rgba8(image):
     is_texture = isinstance(image, Texture)
     is_grayscale = not hasattr(image, 'n') and len(image.shape) == 2
     is_numpy = isinstance(image, np.ndarray)
-    is_non_grayscale_field = (hasattr(image, 'n') and image.m == 1) or len(image.shape) == 3
+    is_non_grayscale_field = (hasattr(image, 'n') and image.m == 1) or len(
+        image.shape) == 3
 
     if not is_texture and not is_grayscale and not is_numpy and not is_non_grayscale_field:
-        raise Exception(
-            'the input image needs to be either:\n'
-            'a Vector field (matrix with 1 column)\n'
-            'a 2D(grayscale)/3D field\n'
-            'a 2D(grayscale)/3D numpy ndarray\n'
-            'a texture'
-        )
+        raise Exception('the input image needs to be either:\n'
+                        'a Vector field (matrix with 1 column)\n'
+                        'a 2D(grayscale)/3D field\n'
+                        'a 2D(grayscale)/3D numpy ndarray\n'
+                        'a texture')
     channels = 3
 
     if not is_grayscale:
@@ -232,7 +231,8 @@ def to_rgba8(image):
         copy_texture_to_rgba8(image, staging_img, *image.shape[0:2])
     elif image.dtype == u8 or image.dtype == np.uint8:
         if is_numpy:
-            copy_image_u8_to_rgba8_np(image, staging_img, channels, is_grayscale)
+            copy_image_u8_to_rgba8_np(image, staging_img, channels,
+                                      is_grayscale)
         else:
             copy_image_u8_to_rgba8(image, staging_img, channels, is_grayscale)
     elif image.dtype == f32 or image.dtype == np.float32:

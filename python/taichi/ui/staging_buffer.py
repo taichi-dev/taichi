@@ -233,7 +233,8 @@ def to_rgba8(image):
         copy_texture_to_rgba8(image, staging_img, *image.shape[0:2])
     elif is_numpy:
         if image.dtype == np.uint8:
-            copy_image_u8_to_rgba8_np(image, staging_img, channels, is_grayscale)
+            copy_image_u8_to_rgba8_np(image, staging_img, channels,
+                                      is_grayscale)
         elif image.dtype == np.float32:
             copy_image_f32_to_rgba8_np(image, staging_img, channels,
                                        is_grayscale)

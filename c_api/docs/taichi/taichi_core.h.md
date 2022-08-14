@@ -43,7 +43,7 @@ When your program reaches the end, you SHOULD destroy the runtime instance. Plea
 ti_destroy_runtime(runtime);
 ```
 
-### Allocate and Free Device-Only Memory
+### Allocate and Free Memory
 
 Allocate a piece of memory that is only visible to the device. On GPU backends, it usually means that the memory is located in the graphics memory (GRAM).
 
@@ -61,6 +61,8 @@ ti_free_memory(runtime, memory);
 ```
 
 ### Allocate Host-Accessible Memory
+
+By default, memory allocations are physically or conceptually local to the offload target for performance reasons. You can configure the allocate info to enable host access to memory allocations. But please note that host-accessible allocations MAY slow down computation on GPU because of the limited bus bandwidth between the host memory and the device.
 
 To allow data to be streamed into the memory, `host_write` MUST be set true.
 
@@ -99,7 +101,7 @@ ti_unmap_memory(runtime, read_back_memory);
 ti_free_memory(runtime, read_back_memory);
 ```
 
-**NOTE** `host_read` and `host_write` can be set true simultaneously. But please note that host-accessible allocations MAY slow down computation on GPU because of the limited bus bandwidth between the host memory and the device.
+**NOTE** `host_read` and `host_write` can be set true simultaneously.
 
 ### Load and destroy a Taichi AOT Module
 

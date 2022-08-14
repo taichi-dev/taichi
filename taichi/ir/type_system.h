@@ -2,6 +2,7 @@
 
 #include "taichi/ir/ir.h"
 #include "taichi/ir/frontend_ir.h"
+#include "taichi/ir/type_utils.h"
 
 namespace taichi {
 namespace lang {
@@ -15,6 +16,7 @@ class TyVar;
 
 class TypeExpression {
  public:
+  virtual ~TypeExpression() = default;
   virtual void unify(int pos,
                      DataType dt,
                      std::map<Identifier, DataType> &solutions) const = 0;
@@ -93,8 +95,18 @@ class TyVarUnsolved : public TypeSystemError {
 
 class Trait {
  public:
-  virtual bool validate(const DataType dt) = 0;
+  virtual bool validate(const DataType dt) const = 0;
   virtual std::string to_string() const = 0;
+};
+
+class DynamicTrait : public Trait {
+ private:
+  std::string name;
+  std::function<bool (const DataType dt)> impl;
+ public:
+  DynamicTrait(std::string name, std::function<bool (const DataType dt)> impl) : name(name), impl(impl) {}
+  bool validate(const DataType dt) const override;
+  std::string to_string() const override;
 };
 
 class TraitMismatch : public TypeSystemError {
@@ -124,15 +136,39 @@ class Signature {
   const TypeExpr ret_type;
 
  public:
+  Signature(std::vector<Constraint>constraints, std::vector<TypeExpr>parameters, TypeExpr ret_type) : constraints(constraints), parameters(parameters), ret_type(ret_type) {}
   DataType type_check(std::vector<DataType> arguments) const;
 };
 
 class Operation {
-  const Signature sig;
   const std::string name;
+  const Signature sig;
  public:
+  Operation(std::string name, Signature sig) : name(name), sig(sig) {}
   void type_check(std::vector<DataType> arg_types) const;
-  virtual void flatten(Expression::FlattenContext *ctx, std::vector<Expr> args) const = 0;
+  virtual Stmt *flatten(Expression::FlattenContext *ctx, std::vector<Expr> args) const = 0;
+};
+
+class StaticTraits {
+  static std::shared_ptr<StaticTraits> traits;
+ public:
+  static std::shared_ptr<StaticTraits> get();
+  StaticTraits() {}
+  const Trait *real = new DynamicTrait("Real", is_real);
+  const Trait *integral = new DynamicTrait("Integral", is_integral);
+  const Trait *primitve = new DynamicTrait("Primitive", [](const DataType dt) { return dt->is<PrimitiveType>(); });
+  const Trait *scalar = new DynamicTrait("Scalar", [](const DataType dt) { return is_real(dt) || is_integral(dt); });
+};
+
+
+class InternalOps {
+  static std::shared_ptr<StaticTraits> ops;
+ public:
+
+};
+
+class InternalTestOps {
+
 };
 
 }

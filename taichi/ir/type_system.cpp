@@ -1,4 +1,5 @@
 #include "taichi/ir/type_system.h"
+#include "taichi/ir/statements.h"
 
 namespace taichi {
 namespace lang {
@@ -122,6 +123,58 @@ void Operation::type_check(std::vector<DataType> arg_types) const {
     throw TaichiTypeError(msg);
   }
 }
+
+bool DynamicTrait::validate(const DataType dt) const {
+  return impl(dt);
+}
+
+std::string DynamicTrait::to_string() const {
+  return name;
+}
+
+std::shared_ptr<StaticTraits> StaticTraits::get() {
+  if (traits == nullptr) {
+    traits = std::make_shared<StaticTraits>();
+  }
+  return traits;
+}
+
+std::vector<TypeExpr> type_exprs_from_dts(std::vector<DataType> params) {
+  std::vector<TypeExpr> exprs;
+  for (auto dt : params) {
+    exprs.push_back(std::make_shared<TyMono>(dt));
+  }
+  return exprs;
+}
+
+std::vector<Stmt *> get_all_stmts(std::vector<Expr> args, Expression::FlattenContext *ctx) {
+  std::vector<Stmt *> stmts;
+  for (auto arg : args) {
+    arg->flatten(ctx);
+    stmts.push_back(ctx->back_stmt());
+  }
+  return stmts;
+}
+
+class InternalCallOperation : public Operation {
+  const std::string internal_call_name_;
+
+ public:
+  InternalCallOperation(std::string name,
+                        std::string internal_name,
+                        std::vector<DataType> params,
+                        DataType result)
+      : Operation(name,
+                  Signature({}, {}, std::make_shared<TyMono>(result))),
+        internal_call_name_(internal_name) {
+  }
+
+  Stmt *flatten(Expression::FlattenContext *ctx,
+                std::vector<Expr> args) const override {
+    return ctx->push_back<InternalFuncStmt>(internal_call_name_,
+                                            get_all_stmts(args, ctx));
+  }
+};
 
 }
 }

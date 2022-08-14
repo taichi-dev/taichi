@@ -66,8 +66,7 @@ def resolve_symbol_to_name(module: Module, id: str):
         if field_name:
             out = get_human_readable_field_name(out, field_name)
         else:
-            href = "#" + get_title(out).lower().replace(' ', '-').replace(
-                '`', '')
+            href = "#" + get_title(out).lower().replace(' ', '-').replace('`', '').replace('(', '').replace(')', '')
             out = get_human_readable_name(out)
     except:
         print(f"WARNING: Unable to resolve symbol {id}")

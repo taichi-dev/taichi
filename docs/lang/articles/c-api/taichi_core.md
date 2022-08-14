@@ -684,7 +684,7 @@ TI_DLL_EXPORT void TI_API_CALL ti_signal_event(
 );
 ```
 
-Set an event primitive to a signaled state, so the queues waiting upon the event can go on execution. If the event has been signaled before, the event MUST be reset with [`ti_reset_event`](#function-ti_reset_event-(device-command)); otherwise it is an undefined behavior.
+Set an event primitive to a signaled state, so the queues waiting upon the event can go on execution. If the event has been signaled before, the event MUST be reset with [`ti_reset_event`](#function-ti_reset_event-device-command); otherwise it is an undefined behavior.
 
 ---
 ### Function `ti_reset_event` (Device Command)

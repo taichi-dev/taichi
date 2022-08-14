@@ -45,6 +45,7 @@ def get_human_readable_field_name(x: EntryBase, field_name: str):
 
 
 def resolve_symbol_to_name(module: Module, id: str):
+    """Returns the resolved symbol and its hyperlink (if available)"""
     try:
         ifirst_dot = id.index('.')
     except ValueError:
@@ -59,17 +60,19 @@ def resolve_symbol_to_name(module: Module, id: str):
         pass
 
     out = module.declr_reg.resolve(id)
+    href = None
 
     try:
         if field_name:
             out = get_human_readable_field_name(out, field_name)
         else:
+            href = "#" + get_title(out).lower().replace(' ', '-').replace('`', '')
             out = get_human_readable_name(out)
     except:
         print(f"WARNING: Unable to resolve symbol {id}")
         out = id
 
-    return out
+    return out, href
 
 
 def resolve_inline_symbols_to_names(module: Module, line: str):
@@ -80,11 +83,15 @@ def resolve_inline_symbols_to_names(module: Module, line: str):
         id = str(m)
         replacements[id] = resolve_symbol_to_name(module, id)
 
-    for old, new in replacements.items():
+    for old, (new, href) in replacements.items():
         if new is None:
             print(f"WARNING: Unresolved inline symbol `{old}`")
         else:
-            line = line.replace(old, new)
+            if href is None:
+                new = f"`{new}`"
+            else:
+                new = f"[`{new}`]({href})"
+            line = line.replace(f"`{old}`", new)
     return line
 
 

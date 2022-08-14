@@ -22,11 +22,11 @@ def get_field(x: Field):
     is_dyn_array = x.count and not isinstance(x.count, int)
 
     is_ptr = x.by_ref or x.by_mut or is_dyn_array
-    const_q = "const" if not x.by_mut else ""
+    const_q = "const " if not x.by_mut else ""
     type_name = get_type_name(x.type)
 
     if is_ptr:
-        return f"{const_q} {type_name}* {x.name}"
+        return f"{const_q}{type_name}* {x.name}"
     elif x.count:
         return f"{type_name} {x.name}[{x.count}]"
     else:

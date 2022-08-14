@@ -2,7 +2,7 @@
 sidebar_position: 1
 ---
 
-# Core Functionalities
+# Core Functionality
 
 Taichi Core exposes all necessary interfaces to offload AOT modules to Taichi. Here lists the features universally available disregards to any specific backend. These APIs are still in active development so is subject to change.
 

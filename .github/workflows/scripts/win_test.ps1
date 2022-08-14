@@ -2,6 +2,7 @@ $ErrorActionPreference = "Stop"
 
 $env:PYTHONUNBUFFERED = 1
 $env:TI_CI = 1
+$env:TI_OFFLINE_CACHE_FILE_PATH = Join-Path -Path $pwd -ChildPath ".cache\taichi"
 
 . venv\Scripts\activate.ps1
 python -c "import taichi"
@@ -18,7 +19,7 @@ if ("$env:TI_WANTED_ARCHS".Contains("cuda")) {
 }
 
 
-if ("$env:TI_RUN_RELEASE_TESTS" -eq "1") {
+if ("$env:TI_RUN_RELEASE_TESTS" -eq "1" -and -not "$env:TI_LITE_TEST") {
     echo "Running release tests"
     # release tests
     pip install PyYAML

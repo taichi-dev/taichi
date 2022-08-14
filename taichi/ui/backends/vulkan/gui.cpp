@@ -159,6 +159,13 @@ bool Gui::checkbox(std::string name, bool old_value) {
   ImGui::Checkbox(name.c_str(), &old_value);
   return old_value;
 }
+int Gui::slider_int(std::string name, int old_value, int minimum, int maximum) {
+  if (!initialized()) {
+    return old_value;
+  }
+  ImGui::SliderInt(name.c_str(), &old_value, minimum, maximum);
+  return old_value;
+}
 float Gui::slider_float(std::string name,
                         float old_value,
                         float minimum,

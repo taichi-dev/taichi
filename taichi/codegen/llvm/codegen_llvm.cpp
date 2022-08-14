@@ -1823,10 +1823,14 @@ std::string TaskCodeGenLLVM::init_offloaded_task_function(OffloadedStmt *stmt,
     kernel_args.push_back(&arg);
   }
   kernel_args[0]->setName("context");
-
+#ifdef TI_LLVM_15
+  if (kernel_argument_by_val())
+    func->addParamAttr(
+        0, llvm::Attribute::getWithByValType(*llvm_context, context_ty));
+#else
   if (kernel_argument_by_val())
     func->addParamAttr(0, llvm::Attribute::ByVal);
-
+#endif
   // entry_block has all the allocas
   this->entry_block = llvm::BasicBlock::Create(*llvm_context, "entry", func);
   this->final_block = llvm::BasicBlock::Create(*llvm_context, "final", func);

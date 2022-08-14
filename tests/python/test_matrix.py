@@ -4,6 +4,7 @@ import operator
 import numpy as np
 import pytest
 from taichi.lang import impl
+from taichi.lang.exception import TaichiCompilationError
 from taichi.lang.misc import get_host_arch_list
 
 import taichi as ti
@@ -322,7 +323,7 @@ def test_copy_python_scope_matrix_to_taichi_scope():
     test()
 
 
-@test_utils.test(debug=True)
+@test_utils.test(exclude=[ti.cc], debug=True)
 def test_copy_matrix_field_element_to_taichi_scope():
     a = ti.Vector.field(3, ti.i32, shape=())
     a[None] = ti.Vector([1, 2, 3])
@@ -604,3 +605,97 @@ def test_slice_assign_dynamic_index():
             i,
             ti.Matrix([[1., 2., 3., 4.] if j == i else [0., 0., 0., 0.]
                        for j in range(3)]))
+
+
+@test_utils.test()
+def test_indexing():
+    @ti.kernel
+    def foo():
+        m = ti.Matrix([[0., 0., 0., 0.] for _ in range(4)])
+        print(m[0])
+
+    with pytest.raises(TaichiCompilationError,
+                       match=r'Expected 2 indices, got 1'):
+        foo()
+
+    @ti.kernel
+    def bar():
+        vec = ti.Vector([1, 2, 3, 4])
+        print(vec[0, 0])
+
+    with pytest.raises(TaichiCompilationError,
+                       match=r'Expected 1 indices, got 2'):
+        bar()
+
+
+@test_utils.test()
+def test_indexing_in_fields():
+    f = ti.Matrix.field(3, 3, ti.f32, shape=())
+
+    @ti.kernel
+    def foo():
+        f[None][0, 0] = 1.0
+        print(f[None][0])
+
+    with pytest.raises(TaichiCompilationError,
+                       match=r'Expected 2 indices, got 1'):
+        foo()
+
+    g = ti.Vector.field(3, ti.f32, shape=())
+
+    @ti.kernel
+    def bar():
+        g[None][0] = 1.0
+        print(g[None][0, 0])
+
+    with pytest.raises(TaichiCompilationError,
+                       match=r'Expected 1 indices, got 2'):
+        bar()
+
+
+@test_utils.test()
+def test_indexing_in_struct():
+    @ti.kernel
+    def foo():
+        s = ti.Struct(a=ti.Vector([0, 0, 0]), b=2)
+        print(s.a[0, 0])
+
+    with pytest.raises(TaichiCompilationError,
+                       match=r'Expected 1 indices, got 2'):
+        foo()
+
+    @ti.kernel
+    def bar():
+        s = ti.Struct(m=ti.Matrix([[0, 0, 0], [0, 0, 0]]), n=2)
+        print(s.m[0])
+
+    with pytest.raises(TaichiCompilationError,
+                       match=r'Expected 2 indices, got 1'):
+        bar()
+
+
+@test_utils.test()
+def test_indexing_in_struct_field():
+
+    s = ti.Struct.field(
+        {
+            'v': ti.types.vector(3, ti.f32),
+            'm': ti.types.matrix(3, 3, ti.f32)
+        },
+        shape=())
+
+    @ti.kernel
+    def foo():
+        print(s[None].v[0, 0])
+
+    with pytest.raises(TaichiCompilationError,
+                       match=r'Expected 1 indices, got 2'):
+        foo()
+
+    @ti.kernel
+    def bar():
+        print(s[None].m[0])
+
+    with pytest.raises(TaichiCompilationError,
+                       match=r'Expected 2 indices, got 1'):
+        bar()

@@ -1,7 +1,9 @@
-# Usage: make_changelog.py [v0.x.y]
+# Usage: make_changelog.py --ver origin/master --save
 
+import argparse
 import json
 import os
+import re
 import sys
 
 from git import Repo
@@ -17,9 +19,23 @@ def load_pr_tags():
     return details
 
 
+def find_latest_tag_commit(tags):
+    for tag in reversed(tags):
+        s = re.match(r'v\s*([\d.]+)', tag.name)
+        print(f'Latest version tag is: {tag.name}')
+        if s is not None:
+            return tag.commit
+
+
 def main(ver=None, repo_dir='.'):
     g = Repo(repo_dir)
-    commits_with_tags = set([tag.commit for tag in g.tags])
+    g.tags.sort(key=lambda x: x.commit.committed_date, reverse=True)
+
+    # We need to find out the latest common commit among base and ver,
+    # everything after this commit should be listed in the changelog.
+
+    base_commit = find_latest_tag_commit(g.tags)
+    commits_in_base_tag = list(g.iter_commits(base_commit, max_count=200))
     commits = list(g.iter_commits(ver, max_count=200))
     begin, end = -1, 0
 
@@ -33,7 +49,7 @@ def main(ver=None, repo_dir='.'):
 
     for i, c in enumerate(commits):
         s = format(c)
-        if c in commits_with_tags and i > 0:
+        if c in commits_in_base_tag and i > 0:
             break
 
         tags = []
@@ -75,11 +91,13 @@ def main(ver=None, repo_dir='.'):
 
 
 if __name__ == '__main__':
-    ver = sys.argv[1] if len(sys.argv) > 1 else None
-    repo = sys.argv[2] if len(sys.argv) > 2 else '.'
-    save = sys.argv[3] if len(sys.argv) > 3 else False
-    res = main(ver, repo)
-    if save:
-        with open('./python/taichi/CHANGELOG.md', 'w') as f:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--ver")
+    parser.add_argument("--repo_dir", type=str, default='.')
+    parser.add_argument("--save", action="store_true", default=False)
+    args = parser.parse_args()
+    res = main(args.ver, args.repo_dir)
+    if args.save:
+        with open('./python/taichi/CHANGELOG.md', 'w', encoding='utf-8') as f:
             f.write(res)
     print(res)

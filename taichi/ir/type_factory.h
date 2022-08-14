@@ -37,7 +37,6 @@ class TypeFactory {
       PrimitiveType *physical_type,
       const std::vector<Type *> &member_types,
       const std::vector<int> &member_bit_offsets,
-      const std::vector<bool> &member_owns_shared_exponents,
       const std::vector<int> &member_exponents,
       const std::vector<std::vector<int>> &member_exponent_users);
 

@@ -782,6 +782,7 @@ VulkanCommandList::VulkanCommandList(VulkanDevice *ti_device,
   info.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 
   vkBeginCommandBuffer(buffer->buffer, &info);
+  vkCmdResetQueryPool(buffer->buffer, query_pool_->query_pool, 0, 2);
   vkCmdWriteTimestamp(buffer->buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
                       query_pool_->query_pool, 0);
 }
@@ -1798,7 +1799,8 @@ std::tuple<vkapi::IVkImage, vkapi::IVkImageView, VkFormat>
 VulkanDevice::get_vk_image(const DeviceAllocation &alloc) const {
   const ImageAllocInternal &alloc_int = image_allocations_.at(alloc.alloc_id);
 
-  return std::make_tuple(alloc_int.image, alloc_int.view, alloc_int.format);
+  return std::make_tuple(alloc_int.image, alloc_int.view,
+                         alloc_int.image->format);
 }
 
 vkapi::IVkFramebuffer VulkanDevice::get_framebuffer(
@@ -1833,12 +1835,11 @@ DeviceAllocation VulkanDevice::import_vkbuffer(vkapi::IVkBuffer buffer) {
 
 DeviceAllocation VulkanDevice::import_vk_image(vkapi::IVkImage image,
                                                vkapi::IVkImageView view,
-                                               VkFormat format) {
+                                               VkImageLayout layout) {
   ImageAllocInternal alloc_int;
   alloc_int.external = true;
   alloc_int.image = image;
   alloc_int.view = view;
-  alloc_int.format = format;
 
   DeviceAllocation alloc;
   alloc.device = this;
@@ -1892,14 +1893,26 @@ DeviceAllocation VulkanDevice::create_image(const ImageParams &params) {
   image_info.format = buffer_format_ti_to_vk(params.format);
   image_info.tiling = VK_IMAGE_TILING_OPTIMAL;
   image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-  image_info.usage = VK_IMAGE_USAGE_SAMPLED_BIT |
-                     VK_IMAGE_USAGE_TRANSFER_DST_BIT |
-                     VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+  image_info.usage =
+      VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+  if (params.usage & ImageAllocUsage::Sampled) {
+    image_info.usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
+  }
+
   if (is_depth) {
-    image_info.usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    if (params.usage & ImageAllocUsage::Storage) {
+      image_info.usage |= VK_IMAGE_USAGE_STORAGE_BIT;
+    }
+    if (params.usage & ImageAllocUsage::Attachment) {
+      image_info.usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    }
   } else {
-    image_info.usage |=
-        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
+    if (params.usage & ImageAllocUsage::Storage) {
+      image_info.usage |= VK_IMAGE_USAGE_STORAGE_BIT;
+    }
+    if (params.usage & ImageAllocUsage::Attachment) {
+      image_info.usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    }
   }
   image_info.samples = VK_SAMPLE_COUNT_1_BIT;
 
@@ -1913,8 +1926,6 @@ DeviceAllocation VulkanDevice::create_image(const ImageParams &params) {
     image_info.queueFamilyIndexCount = 2;
     image_info.pQueueFamilyIndices = queue_family_indices;
   }
-
-  alloc.format = image_info.format;
 
   bool export_sharing = params.export_sharing &&
                         this->get_cap(DeviceCapability::vk_has_external_memory);
@@ -2367,6 +2378,8 @@ void VulkanSurface::create_swap_chain() {
 #endif
 
   VkExtent2D extent = {uint32_t(width), uint32_t(height)};
+  VkImageUsageFlags usage =
+      VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 
   VkSwapchainCreateInfoKHR createInfo;
   createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -2378,8 +2391,7 @@ void VulkanSurface::create_swap_chain() {
   createInfo.imageColorSpace = surface_format.colorSpace;
   createInfo.imageExtent = extent;
   createInfo.imageArrayLayers = 1;
-  createInfo.imageUsage =
-      VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+  createInfo.imageUsage = usage;
   createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
   createInfo.queueFamilyIndexCount = 0;
   createInfo.pQueueFamilyIndices = nullptr;
@@ -2405,28 +2417,26 @@ void VulkanSurface::create_swap_chain() {
   image_format_ = buffer_format_vk_to_ti(surface_format.format);
 
   for (VkImage img : swapchain_images) {
-    VkImageViewCreateInfo view_info{};
-    view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    view_info.pNext = nullptr;
-    view_info.image = img;
-    view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    view_info.format = surface_format.format;
-    view_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-    view_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-    view_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-    view_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-    view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    view_info.subresourceRange.baseMipLevel = 0;
-    view_info.subresourceRange.levelCount = 1;
-    view_info.subresourceRange.baseArrayLayer = 0;
-    view_info.subresourceRange.layerCount = 1;
+    vkapi::IVkImage image = vkapi::create_image(
+        device_->vk_device(), img, surface_format.format, VK_IMAGE_TYPE_2D,
+        VkExtent3D{uint32_t(width), uint32_t(height), 1}, 1u, 1u, usage);
 
-    vkapi::IVkImage image = vkapi::create_image(device_->vk_device(), img);
+    VkImageViewCreateInfo create_info{};
+    create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    create_info.image = image->image;
+    create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    create_info.format = image->format;
+    create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    create_info.subresourceRange.baseMipLevel = 0;
+    create_info.subresourceRange.levelCount = 1;
+    create_info.subresourceRange.baseArrayLayer = 0;
+    create_info.subresourceRange.layerCount = 1;
+
     vkapi::IVkImageView view =
-        vkapi::create_image_view(device_->vk_device(), image, &view_info);
+        vkapi::create_image_view(device_->vk_device(), image, &create_info);
 
     swapchain_images_.push_back(
-        device_->import_vk_image(image, view, surface_format.format));
+        device_->import_vk_image(image, view, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR));
   }
 }
 
@@ -2505,6 +2515,11 @@ void VulkanSurface::present_image(
     const std::vector<StreamSemaphore> &wait_semaphores) {
   std::vector<VkSemaphore> vk_wait_semaphores;
 
+  // Already transitioned to `present_src` at the end of the render pass.
+  // device_->image_transition(get_target_image(),
+  // ImageLayout::color_attachment,
+  //                          ImageLayout::present_src);
+
   for (const StreamSemaphore &sema_ : wait_semaphores) {
     auto sema = std::static_pointer_cast<VulkanStreamSemaphoreObject>(sema_);
     vk_wait_semaphores.push_back(sema->vkapi_ref->semaphore);
@@ -2537,9 +2552,6 @@ DeviceAllocation VulkanSurface::get_depth_data(DeviceAllocation &depth_alloc) {
     depth_buffer_ = device_->allocate_memory(params);
   }
 
-  device_->image_transition(depth_alloc, ImageLayout::present_src,
-                            ImageLayout::transfer_src);
-
   std::unique_ptr<CommandList> cmd_list{nullptr};
 
   BufferImageCopyParams copy_params;
@@ -2547,10 +2559,12 @@ DeviceAllocation VulkanSurface::get_depth_data(DeviceAllocation &depth_alloc) {
   copy_params.image_extent.y = h;
   copy_params.image_aspect_flag = VK_IMAGE_ASPECT_DEPTH_BIT;
   cmd_list = stream->new_command_list();
+  cmd_list->image_transition(depth_alloc, ImageLayout::depth_attachment,
+                             ImageLayout::transfer_src);
   cmd_list->image_to_buffer(depth_buffer_.get_ptr(), depth_alloc,
                             ImageLayout::transfer_src, copy_params);
   cmd_list->image_transition(depth_alloc, ImageLayout::transfer_src,
-                             ImageLayout::present_src);
+                             ImageLayout::depth_attachment);
   stream->submit_synced(cmd_list.get());
 
   return depth_buffer_;
@@ -2582,9 +2596,6 @@ DeviceAllocation VulkanSurface::get_image_data() {
     screenshot_buffer_ = device_->allocate_memory(params);
   }
 
-  device_->image_transition(img_alloc, ImageLayout::present_src,
-                            ImageLayout::transfer_src);
-
   std::unique_ptr<CommandList> cmd_list{nullptr};
 
   /*
@@ -2605,17 +2616,19 @@ DeviceAllocation VulkanSurface::get_image_data() {
   copy_params.image_extent.y = h;
   copy_params.image_aspect_flag = VK_IMAGE_ASPECT_COLOR_BIT;
   cmd_list = stream->new_command_list();
+  cmd_list->image_transition(img_alloc, ImageLayout::present_src,
+                             ImageLayout::transfer_src);
   // TODO: directly map the image to cpu memory
   cmd_list->image_to_buffer(screenshot_buffer_.get_ptr(), img_alloc,
                             ImageLayout::transfer_src, copy_params);
+  cmd_list->image_transition(img_alloc, ImageLayout::transfer_src,
+                             ImageLayout::present_src);
   /*
   if (config_.window_handle) {
     cmd_list->image_transition(screenshot_image_, ImageLayout::transfer_src,
                                ImageLayout::transfer_dst);
   }
   */
-  cmd_list->image_transition(img_alloc, ImageLayout::transfer_src,
-                             ImageLayout::present_src);
   stream->submit_synced(cmd_list.get());
 
   return screenshot_buffer_;

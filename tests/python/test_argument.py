@@ -4,7 +4,7 @@ import taichi as ti
 from tests import test_utils
 
 
-@test_utils.test(arch=[ti.opengl, ti.cc])
+@test_utils.test(arch=[ti.cc])
 def test_exceed_max_eight():
     @ti.kernel
     def foo1(a: ti.i32, b: ti.i32, c: ti.i32, d: ti.i32, e: ti.i32, f: ti.i32,
@@ -181,3 +181,54 @@ def test_function_keyword_args_duplicate():
     with pytest.raises(ti.TaichiSyntaxError,
                        match="Multiple values for argument 'a'"):
         duplicate()
+
+
+@test_utils.test(exclude=[ti.cc])
+def test_args_with_many_ndarrays():
+
+    particle_num = 0
+    cluster_num = 0
+    permu_num = 0
+
+    particlePosition = ti.Vector.ndarray(3, ti.f32, shape=10)
+    outClusterPosition = ti.Vector.ndarray(3, ti.f32, shape=10)
+    outClusterOffsets = ti.ndarray(ti.i32, shape=10)
+    outClusterSizes = ti.ndarray(ti.i32, shape=10)
+    outClusterIndices = ti.ndarray(ti.i32, shape=10)
+
+    particle_pos = ti.Vector.ndarray(3, ti.f32, shape=20)
+    particle_prev_pos = ti.Vector.ndarray(3, ti.f32, shape=20)
+    particle_rest_pos = ti.Vector.ndarray(3, ti.f32, shape=20)
+    particle_index = ti.ndarray(ti.i32, shape=20)
+
+    cluster_rest_mass_center = ti.Vector.ndarray(3, ti.f32, shape=20)
+    cluster_begin = ti.ndarray(ti.i32, shape=20)
+
+    @ti.kernel
+    def ti_import_cluster_data(
+        center: ti.types.vector(3,
+                                ti.f32), particle_num: int, cluster_num: int,
+        permu_num: int, particlePosition: ti.types.ndarray(field_dim=1),
+        outClusterPosition: ti.types.ndarray(field_dim=1),
+        outClusterOffsets: ti.types.ndarray(field_dim=1),
+        outClusterSizes: ti.types.ndarray(field_dim=1),
+        outClusterIndices: ti.types.ndarray(field_dim=1),
+        particle_pos: ti.types.ndarray(field_dim=1),
+        particle_prev_pos: ti.types.ndarray(field_dim=1),
+        particle_rest_pos: ti.types.ndarray(field_dim=1),
+        cluster_rest_mass_center: ti.types.ndarray(field_dim=1),
+        cluster_begin: ti.types.ndarray(field_dim=1),
+        particle_index: ti.types.ndarray(field_dim=1)):
+
+        added_permu_num = outClusterIndices.shape[0]
+
+        for i in range(added_permu_num):
+            particle_index[i] = 1.0
+
+    center = ti.math.vec3(0, 0, 0)
+    ti_import_cluster_data(center, particle_num, cluster_num, permu_num,
+                           particlePosition, outClusterPosition,
+                           outClusterOffsets, outClusterSizes,
+                           outClusterIndices, particle_pos, particle_prev_pos,
+                           particle_rest_pos, cluster_rest_mass_center,
+                           cluster_begin, particle_index)

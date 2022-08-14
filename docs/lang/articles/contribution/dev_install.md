@@ -47,7 +47,7 @@ Installation instructions vary depending on which operating system (OS) you are 
 | Category                     | Prerequisites                                                                                                                                                                            |
 |:----------------------------:|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | OS                           | macOS / Ubuntu / Arch Linux / Other Linux distributions                                                                                                       |
-| Python                       | 3.6/3.7/3.8/3.9/3.10 We recommend installing Python from [Miniforge](https://github.com/conda-forge/miniforge/#download) conda if you are on a MacBook with M1 chip. |
+| Python                       | 3.7/3.8/3.9/3.10 We recommend installing Python from [Miniforge](https://github.com/conda-forge/miniforge/#download) conda if you are on a MacBook with M1 chip. |
 | Clang++                      | 8&leq; Clang++ &lt;12                                                                                                                                                                       |
 | LLVM                         | 10.0.0 (Taichi customized version)                                                                                                                                                       |
 | Command line tools for Xcode | For macOS users only: `xcode-select --install `                                                                                                                                          |
@@ -59,7 +59,7 @@ Installation instructions vary depending on which operating system (OS) you are 
 | Category      | Prerequisites                                                                                                                                                                            |
 |:-------------:|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | OS            | Windows 7/8/10/11                                                                                                       |
-| Python        | 3.6/3.7/3.8/3.9/3.10  |
+| Python        | 3.7/3.8/3.9/3.10  |
 | Clang++       | 8&leq; Clang++ &lt;12 (We provide pre-built versions in the clang section)                                            |
 | LLVM          | 10.0.0 (Taichi customized version)                                                                                                                                                       |
 | Visual Studio | Visual Studio 2019/2022 with "Desktop Development with C++" component. If you want to use Clang++ as the compiler, also install "C++ Clang Compiler for Windows" component  |
@@ -153,9 +153,10 @@ Some Linux distributions may require additional packages to build Taichi. Keep a
 :::
 
 </TabItem>
-
 </Tabs>
+
 ````
+
 ### Install LLVM
 
 #### Install pre-built, customized LLVM binaries
@@ -188,6 +189,9 @@ We provide pre-built, customized LLVM binaries. For now, Taichi supports LLVM 10
     <a href="https://github.com/taichi-dev/taichi_assets/releases/download/llvm10_msvc2022/taichi-llvm-10.0.0-msvc2022.zip">LLVM 10.0.0 for Windows MSVC 2022</a>
 </TabItem>
 </Tabs>
+
+````
+
 2. Configure environment variable:
 
 ````mdx-code-block
@@ -222,8 +226,7 @@ Add an environment variable `LLVM_DIR` with value `<Path to the extracted LLVM b
 ````
 
 <details>
-
-<summary><font color="#006284"><h4>Build LLVM 10.0.0 from source</h4></font></summary>
+<summary><font color="#006284">Build LLVM 10.0.0 from source</font></summary>
 
 We provide instructions here if you need to build LLVM 10.0.0 from source.
 
@@ -286,6 +289,9 @@ cmake --build . --target=INSTALL --config=Release
 </TabItem>
 
 </Tabs>
+
+````
+
 </details>
 
 ## Install optional dependencies
@@ -295,7 +301,7 @@ cmake --build . --target=INSTALL --config=Release
 This section provides instructions on installing these two optional dependencies.
 
 <details>
-<summary><font color="#006284"><h3>Install CUDA</h3></font></summary>
+<summary><font color="#006284">Install CUDA</font></summary>
 
 This section works for you if you have a Nvidia GPU supporting CUDA. Note that the required CUDA version is 10.0+.
 
@@ -349,10 +355,13 @@ import TabItem from '@theme/TabItem';
 </TabItem>
 
 </Tabs>
+
+````
+
 </details>
 
 <details>
-<summary><font color="#006284"><h3>Install Vulkan</h3></font></summary>
+<summary><font color="#006284">Install Vulkan</font></summary>
 
 You must install the Vulkan SDK in order to debug Taichi's Vulkan backend. To proceed:
 
@@ -485,6 +494,8 @@ If you want to build Taichi with Clang or maybe utilize `ccache` to cache and sp
 </TabItem>
 
 </Tabs>
+````
+
 ## Troubleshooting and debugging
 
 ### `llvm-as` cannot be opened on macOS

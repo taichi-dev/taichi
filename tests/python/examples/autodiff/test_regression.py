@@ -1,14 +1,19 @@
 import argparse
+import os
+
+import pytest
 
 from tests import test_utils
 
 
+@pytest.mark.skipif(os.environ.get('TI_LITE_TEST') or '0', reason='Lite test')
 def test_regression():
     from taichi.examples.autodiff.regression import initialize, regress_raw
     initialize()
     regress_raw()
 
 
+@pytest.mark.skipif(os.environ.get('TI_LITE_TEST') or '0', reason='Lite test')
 def pic_regression(result_dir):
     import numpy as np
     from matplotlib import pyplot as plt

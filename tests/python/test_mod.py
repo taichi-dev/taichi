@@ -60,3 +60,13 @@ def test_mod_scan():
                 func(i, j)
                 assert z[None] == i % j
                 assert w[None] == _c_mod(i, j)
+
+
+@test_utils.test()
+def test_py_style_float_const_mod_one():
+    @ti.kernel
+    def func() -> ti.f32:
+        a = 0.5
+        return a % 1
+
+    assert func() == 0.5

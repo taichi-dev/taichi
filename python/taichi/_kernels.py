@@ -3,13 +3,15 @@ from taichi.lang import ops
 from taichi.lang._ndrange import ndrange
 from taichi.lang.expr import Expr
 from taichi.lang.field import ScalarField
-from taichi.lang.impl import grouped, static, static_assert
-from taichi.lang.kernel_impl import kernel
+from taichi.lang.impl import current_cfg, field, grouped, static, static_assert
+from taichi.lang.kernel_impl import func, kernel
+from taichi.lang.misc import cuda, loop_config, vulkan
 from taichi.lang.runtime_ops import sync
+from taichi.lang.simt import block, subgroup, warp
 from taichi.lang.snode import deactivate
-from taichi.types import ndarray_type
+from taichi.types import ndarray_type, texture_type, vector
 from taichi.types.annotations import template
-from taichi.types.primitive_types import f16, f32, f64, u8
+from taichi.types.primitive_types import f16, f32, f64, i32, u8
 
 
 # A set of helper (meta)functions
@@ -162,9 +164,15 @@ def matrix_to_ext_arr(mat: template(), arr: ndarray_type.ndarray(),
         for p in static(range(mat.n)):
             for q in static(range(mat.m)):
                 if static(as_vector):
-                    arr[I, p] = mat[I][p]
+                    if static(getattr(mat, "ndim", 2) == 1):
+                        arr[I, p] = mat[I][p]
+                    else:
+                        arr[I, p] = mat[I][p, q]
                 else:
-                    arr[I, p, q] = mat[I][p, q]
+                    if static(getattr(mat, "ndim", 2) == 1):
+                        arr[I, p, q] = mat[I][p]
+                    else:
+                        arr[I, p, q] = mat[I][p, q]
 
 
 @kernel
@@ -173,10 +181,16 @@ def ext_arr_to_matrix(arr: ndarray_type.ndarray(), mat: template(),
     for I in grouped(mat):
         for p in static(range(mat.n)):
             for q in static(range(mat.m)):
-                if static(as_vector):
-                    mat[I][p] = arr[I, p]
+                if static(getattr(mat, "ndim", 2) == 1):
+                    if static(as_vector):
+                        mat[I][p] = arr[I, p]
+                    else:
+                        mat[I][p] = arr[I, p, q]
                 else:
-                    mat[I][p, q] = arr[I, p, q]
+                    if static(as_vector):
+                        mat[I][p, q] = arr[I, p]
+                    else:
+                        mat[I][p, q] = arr[I, p, q]
 
 
 # extract ndarray of raw vulkan memory layout to normal memory layout.
@@ -226,7 +240,10 @@ def fill_matrix(mat: template(), vals: template()):
     for I in grouped(mat):
         for p in static(range(mat.n)):
             for q in static(range(mat.m)):
-                mat[I][p, q] = vals[p][q]
+                if static(mat[I].ndim == 2):
+                    mat[I][p, q] = vals[p][q]
+                else:
+                    mat[I][p] = vals[p][q]
 
 
 @kernel
@@ -239,6 +256,31 @@ def snode_deactivate(b: template()):
 def snode_deactivate_dynamic(b: template()):
     for I in grouped(b.parent()):
         deactivate(b, I)
+
+
+@kernel
+def load_texture_from_numpy(tex: texture_type.rw_texture(num_dimensions=2,
+                                                         num_channels=4,
+                                                         channel_format=u8,
+                                                         lod=0),
+                            img: ndarray_type.ndarray(field_dim=2,
+                                                      element_shape=(3, ))):
+    for i, j in img:
+        tex.store(
+            vector(2, i32)([i, j]),
+            vector(4, f32)([img[i, j][0], img[i, j][1], img[i, j][2], 0]) /
+            255.)
+
+
+@kernel
+def save_texture_to_numpy(tex: texture_type.rw_texture(num_dimensions=2,
+                                                       num_channels=4,
+                                                       channel_format=u8,
+                                                       lod=0),
+                          img: ndarray_type.ndarray(field_dim=2,
+                                                    element_shape=(3, ))):
+    for i, j in img:
+        img[i, j] = ops.round(tex.load(vector(2, i32)([i, j])).rgb * 255)
 
 
 # Odd-even merge sort
@@ -283,3 +325,143 @@ def parallel_sort(keys, values=None):
             k = int(k / 2)
         p = int(p * 2)
     print(num_stages)
+
+
+@func
+def warp_shfl_up_i32(val: template()):
+    global_tid = block.global_thread_idx()
+    WARP_SZ = 32
+    lane_id = global_tid % WARP_SZ
+    # Intra-warp scan, manually unrolled
+    offset_j = 1
+    n = warp.shfl_up_i32(warp.active_mask(), val, offset_j)
+    if lane_id >= offset_j:
+        val += n
+    offset_j = 2
+    n = warp.shfl_up_i32(warp.active_mask(), val, offset_j)
+    if lane_id >= offset_j:
+        val += n
+    offset_j = 4
+    n = warp.shfl_up_i32(warp.active_mask(), val, offset_j)
+    if lane_id >= offset_j:
+        val += n
+    offset_j = 8
+    n = warp.shfl_up_i32(warp.active_mask(), val, offset_j)
+    if lane_id >= offset_j:
+        val += n
+    offset_j = 16
+    n = warp.shfl_up_i32(warp.active_mask(), val, offset_j)
+    if lane_id >= offset_j:
+        val += n
+    return val
+
+
+@kernel
+def scan_add_inclusive(arr_in: template(), in_beg: i32, in_end: i32,
+                       sum_smem: template(), single_block: template(),
+                       inclusive_add: template(), barrier: template()):
+    WARP_SZ = 32
+    BLOCK_SZ = 64
+    loop_config(block_dim=64)
+    for i in range(in_beg, in_end):
+        val = arr_in[i]
+
+        thread_id = i % BLOCK_SZ
+        block_id = int((i - in_beg) // BLOCK_SZ)
+        lane_id = thread_id % WARP_SZ
+        warp_id = thread_id // WARP_SZ
+
+        val = inclusive_add(val)
+        barrier()
+
+        # Put warp scan results to smem
+        # TODO replace smem with real smem when available
+        if thread_id % WARP_SZ == WARP_SZ - 1:
+            sum_smem[block_id, warp_id] = val
+        barrier()
+
+        # Inter-warp scan, use the first thread in the first warp
+        if warp_id == 0 and lane_id == 0:
+            for k in range(1, BLOCK_SZ / WARP_SZ):
+                sum_smem[block_id, k] += sum_smem[block_id, k - 1]
+        barrier()
+
+        # Update data with warp sums
+        warp_sum = 0
+        if warp_id > 0:
+            warp_sum = sum_smem[block_id, warp_id - 1]
+        val += warp_sum
+        arr_in[i] = val
+
+        # Update partial sums except the final block
+        if not single_block and (thread_id == BLOCK_SZ - 1):
+            arr_in[in_end + block_id] = val
+
+
+@kernel
+def uniform_add(arr_in: template(), in_beg: i32, in_end: i32):
+    BLOCK_SZ = 64
+    loop_config(block_dim=64)
+    for i in range(in_beg + BLOCK_SZ, in_end):
+        block_id = int((i - in_beg) // BLOCK_SZ)
+        arr_in[i] += arr_in[in_end + block_id - 1]
+
+
+@kernel
+def blit_from_field_to_field(
+        dst: template(), src: template(), offset: i32, size: i32):
+    for i in range(size):
+        dst[i + offset] = src[i]
+
+
+# Parallel Prefix Sum (Scan)
+# Ref[0]: https://developer.download.nvidia.com/compute/cuda/1.1-Beta/x86_website/projects/scan/doc/scan.pdf
+# Ref[1]: https://github.com/NVIDIA/cuda-samples/blob/master/Samples/2_Concepts_and_Techniques/shfl_scan/shfl_scan.cu
+def prefix_sum_inclusive_inplace(input_arr, length):
+    BLOCK_SZ = 64
+    GRID_SZ = int((length + BLOCK_SZ - 1) / BLOCK_SZ)
+
+    # Buffer position and length
+    # This is a single buffer implementation for ease of aot usage
+    ele_num = length
+    ele_nums = [ele_num]
+    start_pos = 0
+    ele_nums_pos = [start_pos]
+
+    while ele_num > 1:
+        ele_num = int((ele_num + BLOCK_SZ - 1) / BLOCK_SZ)
+        ele_nums.append(ele_num)
+        start_pos += BLOCK_SZ * ele_num
+        ele_nums_pos.append(start_pos)
+
+    if input_arr.dtype != i32:
+        raise RuntimeError("Only ti.i32 type is supported for prefix sum.")
+
+    large_arr = field(i32, shape=start_pos)
+    smem = field(i32, shape=(int(GRID_SZ), 64))
+
+    if current_cfg().arch == cuda:
+        inclusive_add = warp_shfl_up_i32
+        barrier = block.sync
+    elif current_cfg().arch == vulkan:
+        inclusive_add = subgroup.inclusive_add
+        barrier = subgroup.barrier
+    else:
+        raise RuntimeError(
+            f"{str(current_cfg().arch)} is not supported for prefix sum.")
+
+    blit_from_field_to_field(large_arr, input_arr, 0, length)
+
+    # Kogge-Stone construction
+    for i in range(len(ele_nums) - 1):
+        if i == len(ele_nums) - 2:
+            scan_add_inclusive(large_arr, ele_nums_pos[i], ele_nums_pos[i + 1],
+                               smem, True, inclusive_add, barrier)
+        else:
+            scan_add_inclusive(large_arr, ele_nums_pos[i], ele_nums_pos[i + 1],
+                               smem, False, inclusive_add, barrier)
+
+    for i in range(len(ele_nums) - 3, -1, -1):
+        uniform_add(large_arr, ele_nums_pos[i], ele_nums_pos[i + 1])
+
+    blit_from_field_to_field(input_arr, large_arr, 0, length)

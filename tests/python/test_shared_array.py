@@ -1,27 +1,48 @@
+import numpy as np
+
 import taichi as ti
 from tests import test_utils
 
 
-@test_utils.test(arch=ti.cuda)
-def test_shared_array_save():
+@test_utils.test(arch=[ti.cuda, ti.vulkan])
+def test_shared_array_nested_loop():
     block_dim = 128
-    pad_num = 16
-    a = ti.field(dtype=ti.f32, shape=(block_dim * pad_num, ))
+    nBlocks = 64
+    N = nBlocks * block_dim
+    v_arr = np.random.randn(N).astype(np.float32)
+    d_arr = np.random.randn(N).astype(np.float32)
+    a_arr = np.zeros(N).astype(np.float32)
+    reference = np.zeros(N).astype(np.float32)
 
     @ti.kernel
-    def func():
-        ti.loop_config(block_dim=block_dim)
-        for i in range(block_dim * pad_num):
-            g_tid = ti.global_thread_idx()
-            tid = g_tid % block_dim
-            pad = ti.simt.block.SharedArray((block_dim, ), ti.f32)
-            pad[tid] = tid * 2.0
-            ti.simt.block.sync()
-            a[i] = pad[tid]
-            ti.simt.block.sync()
+    def calc(v: ti.types.ndarray(field_dim=1),
+             d: ti.types.ndarray(field_dim=1),
+             a: ti.types.ndarray(field_dim=1)):
+        for i in range(N):
+            acc = 0.0
+            v_val = v[i]
+            for j in range(N):
+                acc += v_val * d[j]
+            a[i] = acc
 
-    func()
-    for i in range(pad_num):
-        assert a[i * block_dim + 7] == 14.0
-        assert a[i * block_dim + 29] == 58.0
-        assert a[i * block_dim + 127] == 254.0
+    @ti.kernel
+    def calc_shared_array(v: ti.types.ndarray(field_dim=1),
+                          d: ti.types.ndarray(field_dim=1),
+                          a: ti.types.ndarray(field_dim=1)):
+        ti.loop_config(block_dim=block_dim)
+        for i in range(nBlocks * block_dim):
+            tid = i % block_dim
+            pad = ti.simt.block.SharedArray((block_dim, ), ti.f32)
+            acc = 0.0
+            v_val = v[i]
+            for k in range(nBlocks):
+                pad[tid] = d[k * block_dim + tid]
+                ti.simt.block.sync()
+                for j in range(block_dim):
+                    acc += v_val * pad[j]
+                ti.simt.block.sync()
+            a[i] = acc
+
+    calc(v_arr, d_arr, reference)
+    calc_shared_array(v_arr, d_arr, a_arr)
+    assert np.allclose(reference, a_arr)

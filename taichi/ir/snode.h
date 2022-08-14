@@ -95,6 +95,7 @@ class SNode {
     virtual bool is_primal() const = 0;
     virtual SNode *adjoint_snode() const = 0;
     virtual SNode *dual_snode() const = 0;
+    virtual SNode *adjoint_visited_snode() const = 0;
 
     template <typename T>
     T *cast() {
@@ -283,6 +284,10 @@ class SNode {
 
   SNode *get_adjoint() const;
 
+  bool has_adjoint_visited() const;
+
+  SNode *get_adjoint_visited() const;
+
   bool has_dual() const;
 
   SNode *get_dual() const;
@@ -324,9 +329,11 @@ class SNode {
     place_child(&expr, offset, id_in_bit_struct, this, snode_to_glb_var_exprs_);
   }
 
-  void lazy_grad(bool is_adjoint, bool is_dual) {
-    make_lazy_grad(this, snode_to_glb_var_exprs_, is_adjoint, is_dual);
-  }
+  void lazy_grad();
+
+  void lazy_dual();
+
+  void allocate_grad_visited();
 
   int64 read_int(const std::vector<int> &i);
   uint64 read_uint(const std::vector<int> &i);

@@ -1,5 +1,5 @@
 from .staging_buffer import (copy_colors_to_vbo, copy_vertices_to_vbo,
-                             get_vbo_field, to_u8_rgba)
+                             get_vbo_field, to_rgba8)
 from .utils import get_field_info
 
 
@@ -25,10 +25,10 @@ class Canvas:
         """Set the content of this canvas to an `img`.
 
         Args:
-            img (numpy.ndarray, :class:`~taichi.MatrixField`, :class:`~taichi.Field`): \
+            img (numpy.ndarray, :class:`~taichi.MatrixField`, :class:`~taichi.Field`, :class:`~taichi.Texture`): \
                 the image to be shown.
         """
-        staging_img = to_u8_rgba(img)
+        staging_img = to_rgba8(img)
         info = get_field_info(staging_img)
         self.canvas.set_image(info)
 
@@ -121,4 +121,6 @@ class Canvas:
         Args:
             scene (:class:`~taichi.ui.Scene`): an instance of :class:`~taichi.ui.Scene`.
         """
+        # FIXME: (penguinliong) Add a point light to ensure the allocation of light source SSBO.
+        scene.point_light((0.0, 0.0, 0.0), (0.0, 0.0, 0.0))
         self.canvas.scene(scene.scene)

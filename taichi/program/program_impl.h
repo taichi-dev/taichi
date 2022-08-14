@@ -90,6 +90,10 @@ class ProgramImpl {
     return nullptr;
   }
 
+  virtual size_t get_field_in_tree_offset(int tree_id, const SNode *child) {
+    return 0;
+  }
+
   virtual DevicePtr get_snode_tree_device_ptr(int tree_id) {
     return kDeviceNullPtr;
   }
@@ -98,6 +102,11 @@ class ProgramImpl {
                                                    uint64 *result_buffer) {
     return kDeviceNullAllocation;
   }
+
+  virtual DeviceAllocation allocate_texture(const ImageParams &params) {
+    return kDeviceNullAllocation;
+  }
+
   virtual ~ProgramImpl() {
   }
 

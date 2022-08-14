@@ -20,8 +20,7 @@ class TI_DLL_EXPORT Texture {
    * Texture object allocation and deallocation is handled by Program.
    */
   explicit Texture(Program *prog,
-                   const DataType type,
-                   int num_channels,
+                   BufferFormat format,
                    int width,
                    int height,
                    int depth = 1);
@@ -30,8 +29,7 @@ class TI_DLL_EXPORT Texture {
    * It doesn't handle the allocation and deallocation.
    */
   explicit Texture(DeviceAllocation &devalloc,
-                   const DataType type,
-                   int num_channels,
+                   BufferFormat format,
                    int width,
                    int height,
                    int depth = 1);
@@ -56,8 +54,6 @@ class TI_DLL_EXPORT Texture {
   int width_;
   int height_;
   int depth_;
-
-  BufferFormat get_format(DataType type, int num_channels);
 
   Program *prog_{nullptr};
 };

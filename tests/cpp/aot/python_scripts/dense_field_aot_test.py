@@ -6,6 +6,10 @@ import taichi as ti
 
 def compile_dense_field_aot_test(arch):
     ti.init(arch)
+
+    if ti.lang.impl.current_cfg().arch != arch:
+        return
+
     n = 10
     place = ti.field(ti.i32, shape=(n, ))
 

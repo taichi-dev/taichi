@@ -7,6 +7,9 @@ import taichi as ti
 def compile_ndarray_kernel_aot_test(arch):
     ti.init(arch)
 
+    if ti.lang.impl.current_cfg().arch != arch:
+        return
+
     @ti.kernel
     def ker1(arr: ti.types.ndarray()):
         arr[1] = 1

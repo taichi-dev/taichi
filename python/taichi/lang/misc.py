@@ -337,8 +337,8 @@ def init(arch=None,
             * ``debug`` (bool): Enables the debug mode, under which Taichi does a few more things like boundary checks.
             * ``print_ir`` (bool): Prints the CHI IR of the Taichi kernels.
             * ``packed`` (bool): Enables the packed memory layout. See https://docs.taichi-lang.org/docs/layout.
-            *``offline_cache`` (bool)*: Enables offline cache of the compiled kernels. Default to True. When this is enabled Taichi will store the kernels as compiled binary executables on your local disk to accelerate futher calls.
-            *``random_seed`` (int)*: Sets the seed of the random generator. The default is 0.
+            *``offline_cache`` (bool): Enables offline cache of the compiled kernels. Default to True. When this is enabled Taichi will store the kernels as compiled binary executables on your local disk to accelerate futher calls.
+            *``random_seed`` (int): Sets the seed of the random generator. The default is 0.
     """
     # Check version for users every 7 days if not disabled by users.
     _version_check.start_version_check_thread()

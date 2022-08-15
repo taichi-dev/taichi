@@ -12,41 +12,14 @@
 #include "taichi/rhi/vulkan/vulkan_loader.h"
 #include "taichi/rhi/vulkan/vulkan_utils.h"
 #endif
+#ifdef TI_WITH_OPENGL
+#include "taichi/rhi/opengl/opengl_api.h"
+#endif
 
 using namespace taichi;
 using namespace lang;
 
-#ifdef TI_WITH_VULKAN
-TEST(RuntimeTest, ViewDevAllocAsNdarray) {
-  // Otherwise will segfault on macOS VM,
-  // where Vulkan is installed but no devices are present
-  if (!vulkan::is_vulkan_api_available()) {
-    return;
-  }
-
-  // API based on proposal https://github.com/taichi-dev/taichi/issues/3642
-  // Initialize Vulkan program
-  taichi::uint64 *result_buffer{nullptr};
-  auto memory_pool =
-      std::make_unique<taichi::lang::MemoryPool>(Arch::vulkan, nullptr);
-  result_buffer = (taichi::uint64 *)memory_pool->allocate(
-      sizeof(taichi::uint64) * taichi_result_buffer_entries, 8);
-
-  // Create Taichi Device for computation
-  lang::vulkan::VulkanDeviceCreator::Params evd_params;
-  evd_params.api_version = std::nullopt;
-  auto embedded_device =
-      std::make_unique<taichi::lang::vulkan::VulkanDeviceCreator>(evd_params);
-  taichi::lang::vulkan::VulkanDevice *device_ =
-      static_cast<taichi::lang::vulkan::VulkanDevice *>(
-          embedded_device->device());
-  // Create Vulkan runtime
-  gfx::GfxRuntime::Params params;
-  params.host_result_buffer = result_buffer;
-  params.device = device_;
-  auto vulkan_runtime =
-      std::make_unique<taichi::lang::gfx::GfxRuntime>(std::move(params));
-
+void view_devalloc_as_ndarray(Device *device_) {
   const int size = 40;
   taichi::lang::Device::AllocParams alloc_params;
   alloc_params.host_write = true;
@@ -67,5 +40,37 @@ TEST(RuntimeTest, ViewDevAllocAsNdarray) {
   EXPECT_EQ(arr2.total_shape()[1], 10);
 
   device_->dealloc_memory(devalloc_arr_);
+}
+
+#ifdef TI_WITH_VULKAN
+TEST(DeviceTest, ViewDevAllocAsNdarray) {
+  // Otherwise will segfault on macOS VM,
+  // where Vulkan is installed but no devices are present
+  if (!vulkan::is_vulkan_api_available()) {
+    return;
+  }
+
+  // Create Taichi Device for computation
+  lang::vulkan::VulkanDeviceCreator::Params evd_params;
+  evd_params.api_version = std::nullopt;
+  auto embedded_device =
+      std::make_unique<taichi::lang::vulkan::VulkanDeviceCreator>(evd_params);
+  taichi::lang::vulkan::VulkanDevice *device_ =
+      static_cast<taichi::lang::vulkan::VulkanDevice *>(
+          embedded_device->device());
+
+  view_devalloc_as_ndarray(device_);
+}
+#endif
+
+#ifdef TI_WITH_OPENGL
+TEST(DeviceTest, GLDevice) {
+  if (!opengl::is_opengl_api_available()) {
+    return;
+  }
+
+  auto device_ = taichi::lang::opengl::make_opengl_device();
+
+  view_devalloc_as_ndarray(device_.get());
 }
 #endif

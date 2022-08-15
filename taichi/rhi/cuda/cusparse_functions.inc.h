@@ -17,3 +17,5 @@ PER_CUSPARSE_FUNCTION(cpDestroyDnVec, cusparseDestroyDnVec, cusparseDnVecDescr_t
 // cusparse sparse matrix-vector multiplication
 PER_CUSPARSE_FUNCTION(cpSpMV_bufferSize, cusparseSpMV_bufferSize, cusparseHandle_t, cusparseOperation_t, const void*,cusparseSpMatDescr_t, cusparseDnVecDescr_t,const void*, cusparseDnVecDescr_t,cudaDataType, cusparseSpMVAlg_t, size_t*);
 PER_CUSPARSE_FUNCTION(cpSpMV, cusparseSpMV, cusparseHandle_t, cusparseOperation_t, const void*,cusparseSpMatDescr_t, cusparseDnVecDescr_t,const void*, cusparseDnVecDescr_t,cudaDataType, cusparseSpMVAlg_t, void*);
+
+PER_CUSPARSE_FUNCTION(cpCsrGet, cusparseCsrGet, cusparseSpMatDescr_t, int64_t* , int64_t*, int64_t*, void**, void** , void** , cusparseIndexType_t*, cusparseIndexType_t*, cusparseIndexBase_t*, cudaDataType*);

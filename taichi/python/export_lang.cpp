@@ -1214,7 +1214,8 @@ void export_lang(py::module &m) {
   MAKE_SPARSE_MATRIX(64, RowMajor, d);
 
   py::class_<CuSparseMatrix>(m, "CuSparseMatrix")
-      .def("spmv", &CuSparseMatrix::spmv);
+      .def("spmv", &CuSparseMatrix::spmv)
+      .def("to_string", &SparseMatrix::to_string);
 
   py::class_<SparseSolver>(m, "SparseSolver")
       .def("compute", &SparseSolver::compute)

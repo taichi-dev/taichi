@@ -282,5 +282,56 @@ void CuSparseMatrix::spmv(Program *prog, const Ndarray &x, Ndarray &y) {
 #endif
 }
 
+template <typename T, typename T1, typename T2>
+void csr_to_triplet(int64_t n_rows, T* row, T1* col, T2* value) {
+  // using Trip = Eigen::Triplet<T2>();
+  // std::vector<Trip> trips;
+  std::cout << "rows: " << n_rows << "\n";
+  // return;
+  for (int64_t i = 1; i <= n_rows; ++i) {
+      auto n_i = row[i] - row[i - 1];
+      std::cout << "n_i: " << n_i << std::endl;
+      // for (auto j = 0; j < n_i; ++j) {
+      //   std::cout << i-1 << ' ' << col[row[i-1]+j] << ' ' << value[row[i-1]+j] << std::endl;
+      //   // trips.push_back({i-1,col[row[i-1]+j],value[row[i-1]+j]});
+      // }
+  }
+
+}
+
+void CuSparseMatrix::print_helper() const {
+#if defined(TI_WITH_CUDA)
+  int64_t rows, cols, nnz;
+  float* dR, *dC, *dV;
+  cusparseIndexType_t row_type, column_type;
+  cusparseIndexBase_t idx_base;
+  cudaDataType value_type;
+  CUSPARSEDriver::get_instance().cpCsrGet(matrix_, &rows, &cols, &nnz, (void**)&dR, (void**)&dC, (void**)&dV, 
+                    &row_type, &column_type, &idx_base, &value_type);
+
+  // auto* hR = new int[rows+1];
+  auto* hC = new int[nnz];
+  auto* hV = new float[nnz];
+
+  auto hR = CUDADriver::get_instance().fetch<float>(dR);
+
+  
+  // std::cout << (row_type == CUSPARSE_INDEX_32I) << '\n';
+  // std::cout << (column_type == CUSPARSE_INDEX_32I) << '\n';
+  // std::cout << (value_type == CUDA_R_32F) << '\n';
+  // return;
+
+  csr_to_triplet<int, int, float>(rows+1, hR, hC, hV);
+  
+#endif
+}
+
+const std::string CuSparseMatrix::to_string() const {
+  std::ostringstream ostr;
+  ostr << "here!" << std::endl;
+  print_helper();
+  return ostr.str();
+}
+
 }  // namespace lang
 }  // namespace taichi

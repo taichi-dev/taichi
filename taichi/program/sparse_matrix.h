@@ -217,6 +217,10 @@ class CuSparseMatrix : public SparseMatrix {
 
   void print_info();
 
+  void print_helper() const;
+  
+  const std::string to_string() const override;
+
  private:
   cusparseSpMatDescr_t matrix_;
 };

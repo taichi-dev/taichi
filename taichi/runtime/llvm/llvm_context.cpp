@@ -135,6 +135,10 @@ llvm::Type *TaichiLLVMContext::get_data_type(DataType dt) {
     return llvm::Type::getInt64Ty(*ctx);
   } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
     return llvm::Type::getHalfTy(*ctx);
+  } else if (dt->is<TensorType>()) {
+    auto vectorty = dt->as<TensorType>();
+    auto dtype = this->get_data_type(vectorty->get_element_type());
+    return llvm::VectorType::get(dtype, vectorty->get_num_elements(), false);
   } else {
     TI_INFO(data_type_name(dt));
     TI_NOT_IMPLEMENTED

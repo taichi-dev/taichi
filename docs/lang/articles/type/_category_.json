@@ -1,5 +1,10 @@
 {
   "label": "Type System",
-  "id": "type-system",
+  "collapsible": true,
+  "collapsed": true,
+  "link" : {
+    "type": "doc",
+    "id": "type-system"
+  },
   "position": 3
 }

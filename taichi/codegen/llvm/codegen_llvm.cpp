@@ -1748,15 +1748,15 @@ void TaskCodeGenLLVM::visit(PtrOffsetStmt *stmt) {
                                         llvm_val[stmt->offset]);
 #else
     if (stmt->origin->ret_type->is<TensorType>() ||
-      (stmt->origin->ret_type->is<PointerType>() &&
-        stmt->origin->ret_type->cast<PointerType>()
-            ->get_pointee_type()
-            ->is<TensorType>())) {
+        (stmt->origin->ret_type->is<PointerType>() &&
+         stmt->origin->ret_type->cast<PointerType>()
+             ->get_pointee_type()
+             ->is<TensorType>())) {
       TensorType *stmt_dtype;
       if (stmt->origin->ret_type->is<PointerType>()) {
         stmt_dtype = stmt->origin->ret_type->cast<PointerType>()
-                          ->get_pointee_type()
-                          ->cast<TensorType>();
+                         ->get_pointee_type()
+                         ->cast<TensorType>();
       } else {
         stmt_dtype = stmt->origin->ret_type->cast<TensorType>();
       }

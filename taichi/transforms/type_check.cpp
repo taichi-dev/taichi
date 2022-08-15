@@ -535,8 +535,7 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(GlobalTemporaryStmt *stmt) override {
-    if (!stmt->ret_type->is<TensorType>())
-      stmt->ret_type.set_is_pointer(true);
+    stmt->ret_type.set_is_pointer(true);
   }
 
   void visit(InternalFuncStmt *stmt) override {

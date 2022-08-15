@@ -37,7 +37,7 @@ class Expr(TaichiOperations):
         if self.tb:
             self.ptr.set_tb(self.tb)
         self.ptr.type_check(impl.get_runtime().prog.config)
-    
+
     def __getitem__(self, *indices):
         if not isinstance(indices, (list, tuple)):
             indices = (indices, )

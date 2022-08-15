@@ -165,7 +165,7 @@ class AlgSimp : public BasicStmtVisitor {
         irpass::analysis::same_value(stmt->lhs, stmt->rhs)) {
       // fast_math or integral operands: a / a -> 1
       if (stmt->lhs->ret_type->is<PrimitiveType>() &&
-        stmt->rhs->ret_type->is<PrimitiveType>()) {
+          stmt->rhs->ret_type->is<PrimitiveType>()) {
         replace_with_one(stmt);
         return true;
       } else {
@@ -252,7 +252,7 @@ class AlgSimp : public BasicStmtVisitor {
                  irpass::analysis::same_value(stmt->lhs, stmt->rhs)) {
         // fast_math or integral operands: a -^ a -> 0
         if (stmt->lhs->ret_type->is<PrimitiveType>() &&
-          stmt->rhs->ret_type->is<PrimitiveType>()) {
+            stmt->rhs->ret_type->is<PrimitiveType>()) {
           replace_with_zero(stmt);
         } else {
           // TODO: handle tensor operations
@@ -362,7 +362,7 @@ class AlgSimp : public BasicStmtVisitor {
         // 0 << a -> 0
         // 0 >> a -> 0
         if (stmt->ret_type->is<TensorType>() ||
-          stmt->rhs->ret_type->is<TensorType>()) {
+            stmt->rhs->ret_type->is<TensorType>()) {
           // TODO: support tensor type
           return;
         }

@@ -117,7 +117,6 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
     emit(fmt::format(" (dt={})", expr->dt->to_string()));
   }
 
-
   void visit(IndexExpression *expr) override {
     expr->var->accept(this);
     emit('[');

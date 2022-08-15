@@ -170,9 +170,8 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     emit(expr->dt);
     for (auto elt : expr->elements) {
       emit(elt);
-    } 
+    }
   }
-
 
   void visit(StrideExpression *expr) override {
     emit(ExprOpCode::StrideExpression);

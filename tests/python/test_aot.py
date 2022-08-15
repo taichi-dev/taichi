@@ -231,7 +231,7 @@ def test_mpm88_aot():
             json.load(json_file)
 
 
-@test_utils.test(arch=ti.opengl)
+@test_utils.test(arch=[ti.opengl, ti.vulkan])
 def test_opengl_8_ssbo():
     # 6 ndarrays + gtmp + args
     n = 4
@@ -412,7 +412,7 @@ def test_mpm99_aot():
             json.load(json_file)
 
 
-@test_utils.test(arch=ti.opengl)
+@test_utils.test(arch=[ti.opengl, ti.vulkan])
 def test_mpm88_ndarray():
     dim = 2
     N = 64
@@ -506,7 +506,7 @@ def test_mpm88_ndarray():
             json.load(json_file)
 
 
-@test_utils.test(arch=ti.opengl)
+@test_utils.test(arch=[ti.opengl, ti.vulkan])
 def test_aot_ndarray_template_mixed():
     @ti.kernel
     def run(arr: ti.types.ndarray(), val1: ti.f32, val2: ti.template()):
@@ -524,7 +524,7 @@ def test_aot_ndarray_template_mixed():
             assert args_count == 2, res  # `arr` and `val1`
 
 
-@test_utils.test(arch=[ti.vulkan])
+@test_utils.test(arch=[ti.opengl, ti.vulkan])
 def test_archive():
     density = ti.field(float, shape=(4, 4))
 

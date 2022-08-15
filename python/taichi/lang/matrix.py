@@ -97,9 +97,7 @@ def _gen_swizzles(cls):
     return cls
 
 
-def make_matrix(arr, dt=None, suppress_warning=False, is_ref=False, **kwargs):
-    if not impl.current_cfg().real_matrix or in_python_scope():
-        return Matrix(arr, dt, suppress_warning, is_ref, **kwargs)
+def make_matrix(arr, dt=None):
     cast = (lambda x: ops_mod.cast(x, dt)) if dt else (
         lambda x: x if isinstance(x, expr.Expr) else expr.Expr(x))
     if len(arr) == 0:

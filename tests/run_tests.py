@@ -270,7 +270,8 @@ def test():
                         help='Show AOT test programming guide')
     parser.add_argument('--with-offline-cache',
                         action='store_true',
-                        default=os.environ.get('TI_TEST_OFFLINE_CACHE', '0') == '1',
+                        default=os.environ.get('TI_TEST_OFFLINE_CACHE',
+                                               '0') == '1',
                         dest='with_offline_cache',
                         help='Run tests with offline_cache=True')
     parser.add_argument(
@@ -310,8 +311,12 @@ def test():
             def size_of_dir(dir):
                 size = 0
                 for root, dirs, files in os.walk(dir):
-                    size += sum([os.path.getsize(os.path.join(root, name)) for name in files])
+                    size += sum([
+                        os.path.getsize(os.path.join(root, name))
+                        for name in files
+                    ])
                 return size
+
             n = len(os.listdir(tmp_cache_file_path))
             size = size_of_dir(tmp_cache_file_path)
             shutil.rmtree(tmp_cache_file_path)

@@ -606,8 +606,16 @@ class GlobalStoreStmt : public Stmt {
 class LocalLoadStmt : public Stmt {
  public:
   LaneAttribute<LocalAddress> src;
+  std::vector<int> shape;
 
-  explicit LocalLoadStmt(const LaneAttribute<LocalAddress> &src) : src(src) {
+  explicit LocalLoadStmt(const LaneAttribute<LocalAddress> &src)
+      : src(src), shape({static_cast<int>(src.data.size())}) {
+    TI_STMT_REG_FIELDS;
+  }
+
+  LocalLoadStmt(const LaneAttribute<LocalAddress> &src,
+                const std::vector<int> &shape)
+      : src(src), shape(shape) {
     TI_STMT_REG_FIELDS;
   }
 

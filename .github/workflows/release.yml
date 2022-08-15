@@ -250,6 +250,7 @@ jobs:
         run: .github/workflows/scripts/unix_test.sh
         env:
           TI_WANTED_ARCHS: 'cpu'
+          TI_SKIP_CPP_TESTS: Disabled because Vulkan is supported but not working on buildbot4
 
   build_and_test_m1:
     name: Build and Upload (Apple M1)

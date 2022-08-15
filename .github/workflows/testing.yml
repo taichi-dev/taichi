@@ -4,6 +4,8 @@ on:
     types: [opened, synchronize, reopened]
   push:
     branches: [master]
+  schedule:
+    - cron: '0 18 * * *'  # GMT 18 == GMT+8 02
 
 concurrency:
   group: ${{ github.event.number || github.run_id }}
@@ -12,6 +14,7 @@ concurrency:
 env:
   TI_CI: "1"
   TI_LITE_TEST: ${{ github.event_name == 'pull_request' && ! contains(github.event.pull_request.labels.*.name, 'full-ci') && ! startsWith(github.base_ref, 'rc-') && '1' || '' }}
+  TI_TEST_OFFLINE_CACHE: ${{ github.event.schedule == '0 18 * * *' && '1' || '' }}
 
 jobs:
   show_environ:
@@ -101,7 +104,7 @@ jobs:
   build_and_test_cpu_linux:
     name: Build and Test linux (CPU)
     needs: check_files
-    timeout-minutes: 60
+    timeout-minutes: ${{ env.TI_TEST_OFFLINE_CACHE != '1' && 60 || 120 }}
     strategy:
       matrix:
         include:
@@ -149,6 +152,7 @@ jobs:
           mkdir -m777 shared
           docker create --user dev --name taichi_build \
             -e TI_LITE_TEST \
+            -e TI_TEST_OFFLINE_CACHE \
             -e PY -e PROJECT_NAME -e TAICHI_CMAKE_ARGS \
             ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.3.2 \
             /home/dev/taichi/.github/workflows/scripts/unix_build.sh
@@ -175,6 +179,7 @@ jobs:
           docker create --user dev --name taichi_test \
             -e PY -e TI_WANTED_ARCHS \
             -e TI_LITE_TEST \
+            -e TI_TEST_OFFLINE_CACHE \
             ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.3.2 /home/dev/unix_test.sh
           docker cp .github/workflows/scripts/unix_test.sh taichi_test:/home/dev/unix_test.sh
           docker cp .github/workflows/scripts/common-utils.sh taichi_test:/home/dev/common-utils.sh
@@ -204,7 +209,7 @@ jobs:
   build_and_test_cpu_mac:
     name: Build and Test macos (CPU)
     needs: check_files
-    timeout-minutes: 60
+    timeout-minutes: ${{ env.TI_TEST_OFFLINE_CACHE != '1' && 60 || 120 }}
     strategy:
       matrix:
         include:
@@ -293,7 +298,7 @@ jobs:
             llvmVer : '15'
           - os: windows-2019
             llvmVer : '10'
-    timeout-minutes: 90
+    timeout-minutes: ${{ env.TI_TEST_OFFLINE_CACHE != '1' && 90 || 180 }}
     runs-on: windows-2019
     permissions:
       packages: read
@@ -330,6 +335,7 @@ jobs:
           fi
           docker create --name taichi_build_test \
             -e TI_LITE_TEST \
+            -e TI_TEST_OFFLINE_CACHE \
             ghcr.io/taichi-dev/taichidev-cpu-windows:v0.0.1 \
             C:/taichi/.github/workflows/scripts/win_build_test_cpu.ps1 -llvmVer ${{ matrix.llvmVer }}
           tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx | docker cp - taichi_build_test:C:/
@@ -354,7 +360,7 @@ jobs:
   build_and_test_gpu_linux:
     name: Build and Test (GPU)
     needs: check_files
-    timeout-minutes: 60
+    timeout-minutes: ${{ env.TI_TEST_OFFLINE_CACHE != '1' && 60 || 120 }}
     strategy:
       matrix:
         tags:
@@ -393,6 +399,7 @@ jobs:
           export DISPLAY=:$i
           docker create --user dev --name taichi_build \
             -e TI_LITE_TEST \
+            -e TI_TEST_OFFLINE_CACHE \
             --gpus 'all,"capabilities=graphics,utility,display,video,compute"' \
             -v /tmp/.X11-unix:/tmp/.X11-unix \
             -e PY -e GPU_BUILD -e PROJECT_NAME -e TAICHI_CMAKE_ARGS -e DISPLAY \
@@ -433,6 +440,7 @@ jobs:
             --gpus 'all,"capabilities=graphics,utility,display,video,compute"' \
             -v /tmp/.X11-unix:/tmp/.X11-unix \
             -e TI_LITE_TEST \
+            -e TI_TEST_OFFLINE_CACHE \
             -e DISPLAY -e PY -e GPU_TEST -e TI_WANTED_ARCHS -e TI_RUN_RELEASE_TESTS \
              registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.1 \
              /home/dev/unix_test.sh
@@ -469,7 +477,7 @@ jobs:
     name: Build and Test Windows
     needs: check_files
     runs-on: [self-hosted, windows, gpu]
-    timeout-minutes: 90
+    timeout-minutes: ${{ env.TI_TEST_OFFLINE_CACHE != '1' && 90 || 180 }}
     steps:
       # See also https://github.com/taichi-dev/taichi/issues/4161
       - name: Cleanup
@@ -531,7 +539,7 @@ jobs:
   build_and_test_m1:
     name: Build and Test (Apple M1)
     needs: check_files
-    timeout-minutes: 60
+    timeout-minutes: ${{ env.TI_TEST_OFFLINE_CACHE != '1' && 60 || 120 }}
     strategy:
       matrix:
         include:
@@ -593,6 +601,8 @@ jobs:
 
   build_android_demos:
     name: Build Android Demos
+    # Skip this job when testing the offline cache
+    if: ${{ env.TI_TEST_OFFLINE_CACHE != '1' }}
     needs: check_files
     runs-on: [self-hosted, Linux, cn]
     timeout-minutes: 60

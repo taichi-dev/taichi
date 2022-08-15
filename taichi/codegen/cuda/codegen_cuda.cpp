@@ -218,6 +218,10 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
                        {llvm_val[stmt->dest], llvm_val[stmt->val]});
   }
 
+  // LLVM15 already support f16 atomic in
+  // https://github.com/llvm/llvm-project/commit/0cb08e448af7167ada767e0526aa44980e72ad08
+  // the review is at https://reviews.llvm.org/D52416
+  // Limit the f16 hack to LLVM10 build.
 #ifndef TI_LLVM_15
   // A huge hack for supporting f16 atomic add/max/min! Borrowed from
   // https://github.com/tensorflow/tensorflow/blob/470d58a83470f8ede3beaa584e6992bc71b7baa6/tensorflow/compiler/xla/service/gpu/ir_emitter.cc#L378-L490
@@ -264,8 +268,6 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
   //       *cas_new_output_address);
   //   } while (!success);
   //
-  // TODO(sjwsl): Try to rewrite this after upgrading LLVM or supporting raw
-  // NVPTX
 
   llvm::Value *atomic_op_using_cas(
       llvm::Value *output_address,

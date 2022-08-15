@@ -54,6 +54,8 @@ def expr_init(rhs):
     if isinstance(rhs, Matrix) and (hasattr(rhs, "_DIM")):
         return Matrix(*rhs.to_list(), ndim=rhs.ndim)
     if isinstance(rhs, Matrix):
+        if current_cfg().real_matrix:
+            return rhs
         return Matrix(rhs.to_list(), ndim=rhs.ndim)
     if isinstance(rhs, SharedArray):
         return rhs

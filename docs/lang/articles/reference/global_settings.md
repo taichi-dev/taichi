@@ -21,7 +21,7 @@ sidebar_position: 3
 - Disable fast math to prevent possible undefined math behavior:
   `ti.init(fast_math=False)`.
 - To print intermediate IR generated: `ti.init(print_ir=True)`.
-- To disable offline cache of the compiled kernels: `ti.init(offline_cache=False)`. This will prohibit Taichi from saving compiled kernels to your local disk. 
+- To disable offline cache of the compiled kernels: `ti.init(offline_cache=False)`. This will prohibit Taichi from saving compiled kernels to your local disk.
 
 ## Runtime
 

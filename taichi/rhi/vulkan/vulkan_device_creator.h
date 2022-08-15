@@ -69,6 +69,10 @@ class TI_DLL_EXPORT VulkanDeviceCreator {
     return ti_device_.get();
   }
 
+  VkSurfaceKHR get_surface() {
+    return surface_;
+  }
+
  private:
   void create_instance(bool manual_create);
   void setup_debug_messenger();

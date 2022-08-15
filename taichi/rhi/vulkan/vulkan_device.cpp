@@ -867,8 +867,8 @@ void VulkanCommandList::bind_resources(ResourceBinder *ti_binder) {
 
   if (current_pipeline_->is_graphics()) {
     auto [idx_ptr, type] = binder->get_index_buffer();
-    auto index_buffer = ti_device_->get_vkbuffer(idx_ptr);
     if (idx_ptr.device) {
+      auto index_buffer = ti_device_->get_vkbuffer(idx_ptr);
       vkCmdBindIndexBuffer(buffer_->buffer, index_buffer->buffer,
                            idx_ptr.offset, type);
       buffer_->refs.push_back(index_buffer);
@@ -1407,16 +1407,16 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
   // FIXME: How to express this in a backend-neutral way?
   buffer_info.usage =
       VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-  if (params.usage & AllocUsage::Storage) {
+  if (params.usage && AllocUsage::Storage) {
     buffer_info.usage |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
   }
-  if (params.usage & AllocUsage::Uniform) {
+  if (params.usage && AllocUsage::Uniform) {
     buffer_info.usage |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
   }
-  if (params.usage & AllocUsage::Vertex) {
+  if (params.usage && AllocUsage::Vertex) {
     buffer_info.usage |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
   }
-  if (params.usage & AllocUsage::Index) {
+  if (params.usage && AllocUsage::Index) {
     buffer_info.usage |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
   }
 
@@ -2284,24 +2284,28 @@ VulkanSurface::VulkanSurface(VulkanDevice *device, const SurfaceConfig &config)
   window_ = (GLFWwindow *)config.window_handle;
 #endif
   if (window_) {
+    if (config.native_surface_handle) {
+      surface_ = (VkSurfaceKHR)config.native_surface_handle;
+    } else {
 #ifdef ANDROID
-    VkAndroidSurfaceCreateInfoKHR createInfo{
-        .sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR,
-        .pNext = nullptr,
-        .flags = 0,
-        .window = window_};
+      VkAndroidSurfaceCreateInfoKHR createInfo{
+          .sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR,
+          .pNext = nullptr,
+          .flags = 0,
+          .window = window_};
 
-    vkCreateAndroidSurfaceKHR(device->vk_instance(), &createInfo, nullptr,
-                              &surface_);
+      vkCreateAndroidSurfaceKHR(device->vk_instance(), &createInfo, nullptr,
+                                &surface_);
 #else
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    VkResult err = glfwCreateWindowSurface(device->vk_instance(), window_, NULL,
-                                           &surface_);
-    if (err) {
-      TI_ERROR("Failed to create window surface ({})", err);
-      return;
-    }
+      glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+      VkResult err = glfwCreateWindowSurface(device->vk_instance(), window_,
+                                             NULL, &surface_);
+      if (err) {
+        TI_ERROR("Failed to create window surface ({})", err);
+        return;
+      }
 #endif
+    }
 
     create_swap_chain();
 
@@ -2378,6 +2382,13 @@ void VulkanSurface::create_swap_chain() {
 #endif
 
   VkExtent2D extent = {uint32_t(width), uint32_t(height)};
+  extent.width = std::max(capabilities.minImageExtent.width,
+                          std::min(capabilities.maxImageExtent.width,
+                                   extent.width));
+  extent.height =
+      std::max(capabilities.minImageExtent.height,
+               std::min(capabilities.maxImageExtent.height, extent.height));
+  TI_INFO("Creating suface of {}x{}", width, height);
   VkImageUsageFlags usage =
       VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 

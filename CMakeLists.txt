@@ -104,13 +104,9 @@ endif()
 
 option(TI_BUILD_EXAMPLES "Build the CPP examples" ON)
 
-if(NOT TI_WITH_LLVM OR NOT TI_WITH_METAL)
-    set(TI_BUILD_EXAMPLES OFF)
-endif()
-
-if (TI_BUILD_EXAMPLES)
-  include(cmake/TaichiExamples.cmake)
-endif()
+# if(NOT TI_WITH_LLVM OR NOT TI_WITH_METAL)
+#     set(TI_BUILD_EXAMPLES OFF)
+# endif()
 
 message("C++ Flags: ${CMAKE_CXX_FLAGS}")
 message("Build type: ${CMAKE_BUILD_TYPE}")
@@ -197,3 +193,9 @@ if (TI_WITH_C_API)
     include(cmake/TaichiCAPITests.cmake)
   endif()
 endif()
+
+if (TI_BUILD_EXAMPLES)
+  include(cmake/TaichiExamples.cmake)
+endif()
+
+add_subdirectory(cpp_examples/rhi_examples)

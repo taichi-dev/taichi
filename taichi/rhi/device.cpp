@@ -282,49 +282,21 @@ void Device::memcpy_via_host(DevicePtr dst,
   TI_NOT_IMPLEMENTED;
 }
 
+const std::string to_string(DeviceCapability c) {
+#define PER_DEVICE_CAPABILITY(name) \
+  case DeviceCapability::name : return #name; break;
+  switch (c) {
+    #include "taichi/inc/rhi_constants.inc.h"
+    default:
+      return "Unknown";
+      break;
+  }
+#undef PER_DEVICE_CAPABILITY
+}
+
 void Device::print_all_cap() const {
-  const std::unordered_map<DeviceCapability, std::string> names{
-      {DeviceCapability::vk_api_version, "vk_api_version"},
-      {DeviceCapability::vk_has_physical_features2,
-       "vk_has_physical_features2"},
-      {DeviceCapability::vk_has_external_memory, "vk_has_external_memory"},
-      {DeviceCapability::vk_has_surface, "vk_has_surface"},
-      {DeviceCapability::vk_has_presentation, "vk_has_presentation"},
-      {DeviceCapability::spirv_version, "spirv_version"},
-      {DeviceCapability::spirv_has_int8, "spirv_has_int8"},
-      {DeviceCapability::spirv_has_int16, "spirv_has_int16"},
-      {DeviceCapability::spirv_has_int64, "spirv_has_int64"},
-      {DeviceCapability::spirv_has_float16, "spirv_has_float16"},
-      {DeviceCapability::spirv_has_float64, "spirv_has_float64"},
-      {DeviceCapability::spirv_has_atomic_i64, "spirv_has_atomic_i64"},
-      {DeviceCapability::spirv_has_atomic_float16, "spirv_has_atomic_float16"},
-      {DeviceCapability::spirv_has_atomic_float16_add,
-       "spirv_has_atomic_float16_add"},
-      {DeviceCapability::spirv_has_atomic_float16_minmax,
-       "spirv_has_atomic_float16_minmax"},
-      {DeviceCapability::spirv_has_atomic_float, "spirv_has_atomic_float"},
-      {DeviceCapability::spirv_has_atomic_float_add,
-       "spirv_has_atomic_float_add"},
-      {DeviceCapability::spirv_has_atomic_float_minmax,
-       "spirv_has_atomic_float_minmax"},
-      {DeviceCapability::spirv_has_atomic_float64, "spirv_has_atomic_float64"},
-      {DeviceCapability::spirv_has_atomic_float64_add,
-       "spirv_has_atomic_float64_add"},
-      {DeviceCapability::spirv_has_atomic_float64_minmax,
-       "spirv_has_atomic_float64_minmax"},
-      {DeviceCapability::spirv_has_variable_ptr, "spirv_has_variable_ptr"},
-      {DeviceCapability::spirv_has_physical_storage_buffer,
-       "spirv_has_physical_storage_buffer"},
-      {DeviceCapability::spirv_has_subgroup_basic, "spirv_has_subgroup_basic"},
-      {DeviceCapability::spirv_has_subgroup_vote, "spirv_has_subgroup_vote"},
-      {DeviceCapability::spirv_has_subgroup_arithmetic,
-       "spirv_has_subgroup_arithmetic"},
-      {DeviceCapability::spirv_has_subgroup_ballot,
-       "spirv_has_subgroup_ballot"},
-      {DeviceCapability::wide_lines, "wide_lines"},
-  };
   for (auto &pair : caps_) {
-    TI_TRACE("DeviceCapability::{} ({}) = {}", names.at(pair.first),
+    TI_TRACE("DeviceCapability::{} ({}) = {}", to_string(pair.first),
              int(pair.first), pair.second);
   }
 }

@@ -318,8 +318,8 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
 
     // Use the value from the memory that atomicCAS operates on to initialize
     // cas_old_output.
-    llvm::Value *cas_old_output = builder->CreateLoad(
-        atomic_memory_address, "cas_old_output");
+    llvm::Value *cas_old_output =
+        builder->CreateLoad(atomic_memory_address, "cas_old_output");
     builder->CreateStore(cas_old_output, cas_old_output_address);
 
     llvm::BasicBlock *loop_body_bb =
@@ -332,17 +332,15 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
     // loop body for one atomicCAS
     {
       // Use cas_old_output to initialize cas_new_output.
-      cas_old_output = builder->CreateLoad(
-          cas_old_output_address, "cas_old_output");
+      cas_old_output =
+          builder->CreateLoad(cas_old_output_address, "cas_old_output");
       builder->CreateStore(cas_old_output, cas_new_output_address);
 
-      auto binop_output = op(builder->CreateLoad(
-                                 binop_output_address),
-                             val);
+      auto binop_output = op(builder->CreateLoad(binop_output_address), val);
       builder->CreateStore(binop_output, binop_output_address);
 
-      llvm::Value *cas_new_output = builder->CreateLoad(
-          cas_new_output_address, "cas_new_output");
+      llvm::Value *cas_new_output =
+          builder->CreateLoad(cas_new_output_address, "cas_new_output");
 
       // Emit code to perform the atomicCAS operation
       // (cas_old_output, success) = atomicCAS(memory_address, cas_old_output,

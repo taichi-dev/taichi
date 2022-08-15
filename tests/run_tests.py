@@ -270,14 +270,15 @@ def test():
                         help='Show AOT test programming guide')
     parser.add_argument('--with-offline-cache',
                         action='store_true',
-                        default=False,
+                        default=os.environ.get('TI_TEST_OFFLINE_CACHE',
+                                               '0') == '1',
                         dest='with_offline_cache',
                         help='Run tests with offline_cache=True')
     parser.add_argument(
         '--rerun-with-offline-cache',
         type=int,
         dest='rerun_with_offline_cache',
-        default=0,
+        default=1,
         help=
         'Rerun all tests with offline_cache=True for given times, together with --with-offline-cache'
     )
@@ -298,13 +299,32 @@ def test():
         os.environ['TI_WANTED_ARCHS'] = arch
 
     if args.with_offline_cache:
-        tmp_cache_file_path = tempfile.mkdtemp()
         run_count += args.rerun_with_offline_cache
+        args.timeout *= run_count
+        tmp_cache_file_path = tempfile.mkdtemp()
         os.environ['TI_OFFLINE_CACHE'] = '1'
         os.environ['TI_OFFLINE_CACHE_FILE_PATH'] = tmp_cache_file_path
-        atexit.register(lambda: shutil.rmtree(tmp_cache_file_path))
         if not os.environ.get('TI_OFFLINE_CACHE_CLEANING_POLICY'):
             os.environ['TI_OFFLINE_CACHE_CLEANING_POLICY'] = 'never'
+
+        def print_and_remove():
+            def size_of_dir(dir):
+                size = 0
+                for root, dirs, files in os.walk(dir):
+                    size += sum([
+                        os.path.getsize(os.path.join(root, name))
+                        for name in files
+                    ])
+                return size
+
+            n = len(os.listdir(tmp_cache_file_path))
+            size = size_of_dir(tmp_cache_file_path)
+            shutil.rmtree(tmp_cache_file_path)
+            print('Summary of testing the offline cache:')
+            print(f'    The number of cache files: {n}')
+            print(f'    Size of cache files:       {size / 1024:.2f} KB')
+
+        atexit.register(print_and_remove)
     else:  # Default: disable offline cache
         os.environ['TI_OFFLINE_CACHE'] = '0'
 

@@ -1713,6 +1713,9 @@ void TaskCodeGenLLVM::visit(PtrOffsetStmt *stmt) {
     // FIXME: get ptr_ty from taichi instead of llvm.
     llvm::Type *ptr_ty = nullptr;
     auto *val = llvm_val[stmt->origin];
+    // For SharedArray which is in address space 3.
+    if (auto *addr_cast = llvm::dyn_cast<llvm::AddrSpaceCastOperator>(val))
+      val = addr_cast->getOperand(0);
     if (auto *alloc = llvm::dyn_cast<llvm::AllocaInst>(val))
       ptr_ty = alloc->getAllocatedType();
     else if (auto *gv = llvm::dyn_cast<llvm::GlobalVariable>(val))

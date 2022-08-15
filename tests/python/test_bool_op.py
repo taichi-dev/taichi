@@ -67,6 +67,7 @@ def test_static_and():
 
     assert func() == 0
 
+
 @test_utils.test(debug=True, default_ip=ti.i64)
 def test_condition_type():
     @ti.kernel

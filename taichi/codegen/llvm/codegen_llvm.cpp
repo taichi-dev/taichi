@@ -1747,8 +1747,30 @@ void TaskCodeGenLLVM::visit(PtrOffsetStmt *stmt) {
     llvm_val[stmt] = builder->CreateGEP(ptr_ty, llvm_val[stmt->origin],
                                         llvm_val[stmt->offset]);
 #else
-    llvm_val[stmt] =
-        builder->CreateGEP(llvm_val[stmt->origin], llvm_val[stmt->offset]);
+    if (stmt->origin->ret_type->is<TensorType>() ||
+      (stmt->origin->ret_type->is<PointerType>() &&
+        stmt->origin->ret_type->cast<PointerType>()
+            ->get_pointee_type()
+            ->is<TensorType>())) {
+      TensorType *stmt_dtype;
+      if (stmt->origin->ret_type->is<PointerType>()) {
+        stmt_dtype = stmt->origin->ret_type->cast<PointerType>()
+                          ->get_pointee_type()
+                          ->cast<TensorType>();
+      } else {
+        stmt_dtype = stmt->origin->ret_type->cast<TensorType>();
+      }
+      auto element_dtype = stmt_dtype->get_element_type();
+      auto llvm_type = tlctx->get_data_type(element_dtype);
+      auto casted_ptr = builder->CreateBitCast(
+          llvm_val[stmt->origin], llvm::PointerType::get(llvm_type, 0));
+      llvm_val[stmt] = builder->CreateBitCast(
+          builder->CreateGEP(casted_ptr, llvm_val[stmt->offset]),
+          llvm::PointerType::get(llvm_type, 0));
+    } else {
+      llvm_val[stmt] =
+          builder->CreateGEP(llvm_val[stmt->origin], llvm_val[stmt->offset]);
+    }
 #endif
   } else {
     auto origin_address = builder->CreatePtrToInt(

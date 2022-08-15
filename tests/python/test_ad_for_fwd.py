@@ -495,7 +495,7 @@ def test_large_for_loops():
 
     @ti.kernel
     def large_for_loop():
-        for i in range(20000):
+        for i in range(2000):
             for j in range(100):
                 for k in range(5):
                     loss[None] += ti.sin(x[None]) + 1.0
@@ -503,8 +503,8 @@ def test_large_for_loops():
     with ti.ad.FwdMode(loss=loss, param=x):
         large_for_loop()
 
-    assert loss[None] == 1e7
-    assert loss.dual[None] == 1e7
+    assert loss[None] == 1e6
+    assert loss.dual[None] == 1e6
 
 
 @test_utils.test(exclude=archs_excluded_fwd)

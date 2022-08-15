@@ -1,4 +1,5 @@
 from collections import defaultdict
+
 import numpy as np
 from taichi.lang._texture import Texture
 from taichi.lang.impl import ndarray

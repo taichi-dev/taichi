@@ -5,7 +5,7 @@ on:
   push:
     branches: [master]
   schedule:
-    - cron: '0 18 * * *'  # GMT 18 == GMT+8 02
+    - cron: '0 18 * * *'  # For testing the offline cache, GMT 18 == GMT+8 02
 
 concurrency:
   group: ${{ github.event.number || github.run_id }}
@@ -104,7 +104,7 @@ jobs:
   build_and_test_cpu_linux:
     name: Build and Test linux (CPU)
     needs: check_files
-    timeout-minutes: ${{ env.TI_TEST_OFFLINE_CACHE != '1' && 60 || 120 }}
+    timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 60 || 120 }}
     strategy:
       matrix:
         include:
@@ -209,7 +209,7 @@ jobs:
   build_and_test_cpu_mac:
     name: Build and Test macos (CPU)
     needs: check_files
-    timeout-minutes: ${{ env.TI_TEST_OFFLINE_CACHE != '1' && 60 || 120 }}
+    timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 60 || 120 }}
     strategy:
       matrix:
         include:
@@ -298,7 +298,7 @@ jobs:
             llvmVer : '15'
           - os: windows-2019
             llvmVer : '10'
-    timeout-minutes: ${{ env.TI_TEST_OFFLINE_CACHE != '1' && 90 || 180 }}
+    timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 180 }}
     runs-on: windows-2019
     permissions:
       packages: read
@@ -360,7 +360,7 @@ jobs:
   build_and_test_gpu_linux:
     name: Build and Test (GPU)
     needs: check_files
-    timeout-minutes: ${{ env.TI_TEST_OFFLINE_CACHE != '1' && 60 || 120 }}
+    timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 60 || 120 }}
     strategy:
       matrix:
         tags:
@@ -477,7 +477,7 @@ jobs:
     name: Build and Test Windows
     needs: check_files
     runs-on: [self-hosted, windows, gpu]
-    timeout-minutes: ${{ env.TI_TEST_OFFLINE_CACHE != '1' && 90 || 180 }}
+    timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 180 }}
     steps:
       # See also https://github.com/taichi-dev/taichi/issues/4161
       - name: Cleanup
@@ -539,7 +539,7 @@ jobs:
   build_and_test_m1:
     name: Build and Test (Apple M1)
     needs: check_files
-    timeout-minutes: ${{ env.TI_TEST_OFFLINE_CACHE != '1' && 60 || 120 }}
+    timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 60 || 120 }}
     strategy:
       matrix:
         include:
@@ -602,7 +602,7 @@ jobs:
   build_android_demos:
     name: Build Android Demos
     # Skip this job when testing the offline cache
-    if: ${{ env.TI_TEST_OFFLINE_CACHE != '1' }}
+    if: ${{ github.event.schedule != '0 18 * * *' }}
     needs: check_files
     runs-on: [self-hosted, Linux, cn]
     timeout-minutes: 60

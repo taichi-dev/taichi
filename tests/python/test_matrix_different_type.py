@@ -55,10 +55,10 @@ def test_matrix():
         c[None] = a[None] + b[None]
 
     def verify():
-        assert isinstance(a[None][0], float)
-        assert isinstance(a[None][1], int)
-        assert isinstance(b[None][0], float)
-        assert isinstance(b[None][1], int)
+        assert isinstance(a[None][0, 0], float)
+        assert isinstance(a[None][0, 1], int)
+        assert isinstance(b[None][0, 0], float)
+        assert isinstance(b[None][0, 1], int)
         assert c[None][0, 0] == 3.0
         assert c[None][0, 1] == 7
         assert c[None][1, 0] == -1

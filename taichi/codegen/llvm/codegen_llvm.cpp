@@ -341,6 +341,21 @@ void TaskCodeGenLLVM::visit(UnaryOpStmt *stmt) {
   auto input = llvm_val[stmt->operand];
   auto input_type = input->getType();
   auto op = stmt->op_type;
+  auto get_cast_op = [](auto from, auto to) {
+    llvm::CastInst::CastOps cast_op;
+    if (is_real(from) && is_integral(to)) {
+      cast_op = is_signed(to) ? llvm::Instruction::CastOps::FPToSI
+                              : llvm::Instruction::CastOps::FPToUI;
+    } else if (is_integral(from) && is_real(to)) {
+      cast_op = is_signed(from) ? llvm::Instruction::CastOps::SIToFP
+                                : llvm::Instruction::CastOps::UIToFP;
+    } else {
+      TI_P(data_type_name(from));
+      TI_P(data_type_name(to));
+      TI_NOT_IMPLEMENTED;
+    }
+    return cast_op;
+  };
 
 #define UNARY_INTRINSIC(x)                                                   \
   else if (op == UnaryOpType::x) {                                           \
@@ -353,18 +368,24 @@ void TaskCodeGenLLVM::visit(UnaryOpStmt *stmt) {
     auto to = stmt->cast_type;
     if (from == to) {
       llvm_val[stmt] = llvm_val[stmt->operand];
-    } else if (is_real(from) != is_real(to)) {
-      if (is_real(from) && is_integral(to)) {
-        cast_op = is_signed(to) ? llvm::Instruction::CastOps::FPToSI
-                                : llvm::Instruction::CastOps::FPToUI;
-      } else if (is_integral(from) && is_real(to)) {
-        cast_op = is_signed(from) ? llvm::Instruction::CastOps::SIToFP
-                                  : llvm::Instruction::CastOps::UIToFP;
-      } else {
-        TI_P(data_type_name(from));
-        TI_P(data_type_name(to));
-        TI_NOT_IMPLEMENTED;
+    } else if (from->is<TensorType>()) {
+      TI_ASSERT_INFO(to->is<TensorType>(),
+                     "Only tensor to tensor cast is supported, {} provided",
+                     to->to_string());
+      auto from_ty = from->cast<TensorType>()->get_element_type();
+      auto to_ty = to->cast<TensorType>()->get_element_type();
+      cast_op = get_cast_op(from_ty, to_ty);
+      auto type = tlctx->get_data_type(to->cast<TensorType>());
+      llvm::Value *vec = llvm::UndefValue::get(type);
+      for (int i = 0; i < from->cast<TensorType>()->get_num_elements(); ++i) {
+        auto elem = builder->CreateExtractElement(llvm_val[stmt->operand], i);
+        auto cast_input =
+            builder->CreateCast(cast_op, elem, tlctx->get_data_type(to_ty));
+        vec = builder->CreateInsertElement(vec, cast_input, i);
       }
+      llvm_val[stmt] = vec;
+    } else if (is_real(from) != is_real(to)) {
+      cast_op = get_cast_op(from, to);
       auto cast_type = to->is_primitive(PrimitiveTypeID::f16)
                            ? PrimitiveType::f32
                            : stmt->cast_type;
@@ -435,7 +456,7 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
   auto ret_type = stmt->ret_type;
 
   if (op == BinaryOpType::add) {
-    if (is_real(stmt->ret_type)) {
+    if (is_real(stmt->ret_type) || is_real_tensor(stmt->ret_type)) {
       llvm_val[stmt] =
           builder->CreateFAdd(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
     } else {
@@ -443,7 +464,7 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
           builder->CreateAdd(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
     }
   } else if (op == BinaryOpType::sub) {
-    if (is_real(stmt->ret_type)) {
+    if (is_real(stmt->ret_type) || is_real_tensor(stmt->ret_type)) {
       llvm_val[stmt] =
           builder->CreateFSub(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
     } else {
@@ -451,7 +472,7 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
           builder->CreateSub(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
     }
   } else if (op == BinaryOpType::mul) {
-    if (is_real(stmt->ret_type)) {
+    if (is_real(stmt->ret_type) || is_real_tensor(stmt->ret_type)) {
       llvm_val[stmt] =
           builder->CreateFMul(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
     } else {
@@ -459,7 +480,7 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
           builder->CreateMul(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
     }
   } else if (op == BinaryOpType::floordiv) {
-    if (is_integral(ret_type))
+    if (is_integral(ret_type) || is_integral_tensor(ret_type))
       llvm_val[stmt] =
           create_call(fmt::format("floordiv_{}", data_type_name(ret_type)),
                       {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
@@ -469,7 +490,7 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
           llvm::Intrinsic::floor, {tlctx->get_data_type(ret_type)}, {div});
     }
   } else if (op == BinaryOpType::div) {
-    if (is_real(stmt->ret_type)) {
+    if (is_real(stmt->ret_type) || is_real_tensor(stmt->ret_type)) {
       llvm_val[stmt] =
           builder->CreateFDiv(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
     } else {
@@ -492,7 +513,7 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
     llvm_val[stmt] =
         builder->CreateShl(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
   } else if (op == BinaryOpType::bit_sar) {
-    if (is_signed(stmt->lhs->element_type())) {
+    if (is_signed(stmt->lhs->element_type()) || is_signed_tensor(stmt->lhs->ret_type)) {
       llvm_val[stmt] =
           builder->CreateAShr(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
     } else {
@@ -506,7 +527,7 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
         create_call("max_" #x, {llvm_val[stmt->lhs], llvm_val[stmt->rhs]}); \
   }
 
-    if (is_real(ret_type)) {
+    if (is_real(ret_type) || is_real_tensor(ret_type)) {
       llvm_val[stmt] =
           builder->CreateMaxNum(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
     }
@@ -527,7 +548,7 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
         create_call("min_" #x, {llvm_val[stmt->lhs], llvm_val[stmt->rhs]}); \
   }
 
-    if (is_real(ret_type)) {
+    if (is_real(ret_type) || is_real_tensor(ret_type)) {
       llvm_val[stmt] =
           builder->CreateMinNum(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
     }
@@ -545,16 +566,16 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
     llvm::Value *cmp = nullptr;
     auto input_type = stmt->lhs->ret_type;
     if (op == BinaryOpType::cmp_eq) {
-      if (is_real(input_type)) {
+      if (is_real(input_type) || is_real_tensor(input_type)) {
         cmp = builder->CreateFCmpOEQ(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
       } else {
         cmp = builder->CreateICmpEQ(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
       }
     } else if (op == BinaryOpType::cmp_le) {
-      if (is_real(input_type)) {
+      if (is_real(input_type) || is_real_tensor(input_type)) {
         cmp = builder->CreateFCmpOLE(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
       } else {
-        if (is_signed(input_type)) {
+        if (is_signed(input_type) || is_signed_tensor(input_type)) {
           cmp =
               builder->CreateICmpSLE(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
         } else {
@@ -563,10 +584,10 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
         }
       }
     } else if (op == BinaryOpType::cmp_ge) {
-      if (is_real(input_type)) {
+      if (is_real(input_type) || is_real_tensor(input_type)) {
         cmp = builder->CreateFCmpOGE(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
       } else {
-        if (is_signed(input_type)) {
+        if (is_signed(input_type) || is_signed_tensor(input_type)) {
           cmp =
               builder->CreateICmpSGE(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
         } else {
@@ -575,10 +596,10 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
         }
       }
     } else if (op == BinaryOpType::cmp_lt) {
-      if (is_real(input_type)) {
+      if (is_real(input_type) || is_real_tensor(input_type)) {
         cmp = builder->CreateFCmpOLT(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
       } else {
-        if (is_signed(input_type)) {
+        if (is_signed(input_type) || is_signed_tensor(input_type)) {
           cmp =
               builder->CreateICmpSLT(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
         } else {
@@ -587,10 +608,10 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
         }
       }
     } else if (op == BinaryOpType::cmp_gt) {
-      if (is_real(input_type)) {
+      if (is_real(input_type) || is_real_tensor(input_type)) {
         cmp = builder->CreateFCmpOGT(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
       } else {
-        if (is_signed(input_type)) {
+        if (is_signed(input_type) || is_signed_tensor(input_type)) {
           cmp =
               builder->CreateICmpSGT(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
         } else {
@@ -599,7 +620,7 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
         }
       }
     } else if (op == BinaryOpType::cmp_ne) {
-      if (is_real(input_type)) {
+      if (is_real(input_type) || is_real_tensor(input_type)) {
         cmp = builder->CreateFCmpONE(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
       } else {
         cmp = builder->CreateICmpNE(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);

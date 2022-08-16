@@ -196,6 +196,27 @@ void BinaryOpExpression::type_check(CompileConfig *config) {
                     binary_op_type_symbol(type), lhs->ret_type->to_string(),
                     rhs->ret_type->to_string()));
   };
+
+  if (lhs_type->is<TensorType>()) {
+    auto dtype = lhs_type->as<TensorType>()->get_element_type();
+    if (rhs_type->is<PrimitiveType>()) {
+      ret_type = promoted_type(dtype, rhs_type);
+    } else {
+      TI_ASSERT(rhs_type->is<TensorType>());
+      auto rhs_tensor_type = rhs_type->cast<TensorType>();
+      if (rhs_tensor_type->get_shape() !=
+          lhs_type->cast<TensorType>()->get_shape())
+        error();
+      auto rhs_elem_type = rhs_type->as<TensorType>()->get_element_type();
+      if (rhs_elem_type != PrimitiveType::unknown)
+        ret_type = promoted_type(dtype, rhs_elem_type);
+    }
+    // TODO: shape check!
+    ret_type = TypeFactory::create_tensor_type(
+        lhs_type->cast<TensorType>()->get_shape(), ret_type);
+    return;
+  }
+
   if (!lhs_type->is<PrimitiveType>() || !rhs_type->is<PrimitiveType>())
     error();
   if (binary_is_bitwise(type) &&

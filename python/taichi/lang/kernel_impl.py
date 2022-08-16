@@ -720,7 +720,7 @@ class Kernel:
                             v.element_size() * v.size, array_shape)
 
                 elif isinstance(needed, MatrixType):
-                    if id(needed.dtype) in primitive_types.real_type_ids:
+                    if needed.dtype in primitive_types.real_types:
                         for a in range(needed.n):
                             for b in range(needed.m):
                                 val = v[a, b] if needed.ndim == 2 else v[a]
@@ -730,7 +730,7 @@ class Kernel:
                                 launch_ctx.set_arg_float(
                                     actual_argument_slot, float(val))
                                 actual_argument_slot += 1
-                    elif id(needed.dtype) in primitive_types.integer_type_ids:
+                    elif needed.dtype in primitive_types.integer_types:
                         for a in range(needed.n):
                             for b in range(needed.m):
                                 val = v[a, b] if needed.ndim == 2 else v[a]

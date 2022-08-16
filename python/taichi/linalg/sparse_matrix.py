@@ -6,7 +6,7 @@ from taichi.lang.field import Field
 from taichi.lang.impl import get_runtime
 from taichi.lang.matrix import Ndarray
 from taichi.lang.util import warning
-from taichi.types import annotations, f32
+from taichi.types import annotations, f32, i32
 
 
 class SparseMatrix:
@@ -208,14 +208,18 @@ class SparseMatrix:
             indices (ti.ndarray): CSR format index array of the matrix.
             indptr (ti.ndarray): CSR format index pointer array of the matrix.
         """
-        if isinstance(data, Ndarray) and isinstance(
-                indices, Ndarray) and isinstance(indptr, Ndarray):
+        if not isinstance(data, Ndarray) or not isinstance(
+                indices, Ndarray) or not isinstance(indptr, Ndarray):
+            raise TaichiRuntimeError(
+                'Sparse matrix only supports building from [ti.ndarray, ti.Vectorndarray, ti.Matrix.ndarray].'
+            )
+        elif data.dtype != f32 or indices.dtype != i32 or indptr.dtype != i32:
+            raise TaichiRuntimeError(
+                'Sparse matrix only supports building from float32 data, int32 indices and indptr.'
+            )
+        else:
             get_runtime().prog.make_sparse_matrix_from_ndarray_cusparse(
                 self.matrix, indptr.arr, indices.arr, data.arr)
-        else:
-            raise TaichiRuntimeError(
-                'Sparse matrix only supports building from [ti.ndarray, ti.Vectorndarray, ti.Matrix.ndarray]'
-            )
 
     def spmv(self, x, y):
         """Sparse matrix-vector multiplication using cuSparse.

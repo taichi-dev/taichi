@@ -67,7 +67,7 @@ class SparseMatrix {
                          void *csr_indices_ptr,
                          void *csr_values_ptr,
                          int nnz) {
-    TI_WARN("SparseMatrix::build_csr is not implemented yet");
+    TI_NOT_IMPLEMENTED;
   };
 
   inline const int num_rows() const {

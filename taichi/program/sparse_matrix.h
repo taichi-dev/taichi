@@ -60,7 +60,7 @@ class SparseMatrix {
   virtual ~SparseMatrix() = default;
 
   virtual void build_triplets(void *triplets_adr) {
-    TI_WARN("SparseMatrix::build_triplets is not implemented!");
+    TI_NOT_IMPLEMENTED;
   };
 
   virtual void build_csr(void *csr_ptr,

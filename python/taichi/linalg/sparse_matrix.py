@@ -211,11 +211,11 @@ class SparseMatrix:
         if not isinstance(data, Ndarray) or not isinstance(
                 indices, Ndarray) or not isinstance(indptr, Ndarray):
             raise TaichiRuntimeError(
-                'Sparse matrix only supports building from [ti.ndarray, ti.Vectorndarray, ti.Matrix.ndarray].'
+                'Sparse matrix only supports building from [ti.ndarray, ti.Vector.ndarray, ti.Matrix.ndarray].'
             )
         elif data.dtype != f32 or indices.dtype != i32 or indptr.dtype != i32:
             raise TaichiRuntimeError(
-                'Sparse matrix only supports building from float32 data, int32 indices and indptr.'
+                'Sparse matrix only supports building from float32 data and int32 indices/indptr.'
             )
         else:
             get_runtime().prog.make_sparse_matrix_from_ndarray_cusparse(
@@ -237,7 +237,7 @@ class SparseMatrix:
         """
         if not isinstance(x, Ndarray) or not isinstance(y, Ndarray):
             raise TaichiRuntimeError(
-                'Sparse matrix only supports building from [ti.ndarray, ti.Vectorndarray, ti.Matrix.ndarray]'
+                'Sparse matrix only supports building from [ti.ndarray, ti.Vector.ndarray, ti.Matrix.ndarray]'
             )
         if self.m != x.shape[0]:
             raise TaichiRuntimeError(

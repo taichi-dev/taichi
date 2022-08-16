@@ -98,5 +98,8 @@ RUN conda create -n py39 python=3.9 pytorch cudatoolkit=10.2 -c pytorch -y
 # TODO add torch to 3.10 when supported
 RUN conda create -n py310 python=3.10 -y
 
+# Remove mesa EGL driver, which interferes with the propritary NVIDIA drivers
+RUN rm -f /usr/lib/x86_64-linux-gnu/libEGL_mesa*
+
 WORKDIR /home/dev
 ENV LANG="C.UTF-8"

@@ -15,6 +15,32 @@ std::string get_cuda_error_message(uint32 err) {
   return fmt::format("CUDA Error {}: {}", err_name_ptr, err_string_ptr);
 }
 
+CUDADriverBase::CUDADriverBase() {
+  disabled_by_env_ = (get_environ_config("TI_ENABLE_CUDA", 1) == 0);
+  if (disabled_by_env_) {
+    TI_TRACE("CUDA driver disabled by enviroment variable \"TI_ENABLE_CUDA\".");
+  }
+}
+
+bool CUDADriverBase::load_lib(std::string lib_linux, std::string lib_windows) {
+#if defined(TI_PLATFORM_LINUX)
+  auto lib_name = lib_linux;
+#elif defined(TI_PLATFORM_WINDOWS)
+  auto lib_name = lib_windows;
+#else
+  static_assert(false, "Taichi CUDA driver supports only Windows and Linux.");
+#endif
+
+  loader_ = std::make_unique<DynamicLoader>(lib_name);
+  if (!loader_->loaded()) {
+    TI_WARN("{} lib not found.", lib_name);
+    return false;
+  } else {
+    TI_TRACE("{} loaded!", lib_name);
+    return true;
+  }
+}
+
 bool CUDADriver::detected() {
   return !disabled_by_env_ && cuda_version_valid_ && loader_->loaded();
 }
@@ -60,32 +86,6 @@ CUDADriver &CUDADriver::get_instance() {
   // initialize the CUDA context so that the driver APIs can be called later
   CUDAContext::get_instance();
   return get_instance_without_context();
-}
-
-CUDADriverBase::CUDADriverBase() {
-  disabled_by_env_ = (get_environ_config("TI_ENABLE_CUDA", 1) == 0);
-  if (disabled_by_env_) {
-    TI_TRACE("CUDA driver disabled by enviroment variable \"TI_ENABLE_CUDA\".");
-  }
-}
-
-bool CUDADriverBase::load_lib(std::string lib_linux, std::string lib_windows) {
-#if defined(TI_PLATFORM_LINUX)
-  auto lib_name = lib_linux;
-#elif defined(TI_PLATFORM_WINDOWS)
-  auto lib_name = lib_windows;
-#else
-  static_assert(false, "Taichi CUDA driver supports only Windows and Linux.");
-#endif
-
-  loader_ = std::make_unique<DynamicLoader>(lib_name);
-  if (!loader_->loaded()) {
-    TI_WARN("{} lib not found.", lib_name);
-    return false;
-  } else {
-    TI_TRACE("{} loaded!", lib_name);
-    return true;
-  }
 }
 
 CUSPARSEDriver::CUSPARSEDriver() {

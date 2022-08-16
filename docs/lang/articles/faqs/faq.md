@@ -87,7 +87,7 @@ pip install ./*
 
 ### Can I integrate Taichi and Houdini?
 
-The answer is an unequivocal Yes! Our contributor managed to embed [Taichi-element](https://github.com/taichi-dev/taichi_elements), a multi-material continuum physics engine, into Houdini as an extension, combining Houdini's flexibility in preprocessing with Taichi's strength in high-performance computation.
+The answer is an unequivocal Yes! Our contributors managed to embed [Taichi-element](https://github.com/taichi-dev/taichi_elements), a multi-material continuum physics engine, into Houdini as an extension, combining Houdini's flexibility in preprocessing with Taichi's strength in high-performance computation.
 
 You can follow the instructions provided [here](https://github.com/taichi-dev/taichi_houdini).
 

@@ -98,17 +98,18 @@ def _gen_swizzles(cls):
 
 
 def make_matrix(arr, dt=None):
-    cast = (lambda x: ops_mod.cast(x, dt)) if dt else (
-        lambda x: x if isinstance(x, expr.Expr) else expr.Expr(x))
     if len(arr) == 0:
-        return impl.expr_init(impl.expr_init_matrix([0], dt, []))
-    if not isinstance(arr[0], Iterable):
+        return impl.expr_init(impl.expr_init_local_tensor([0], ti_python_core.DataType_unknown, impl.make_expr_group([])))
+    is_matrix = isinstance(arr[0], Iterable)
+    if dt is None:
+        dt = _make_entries_initializer(is_matrix).infer_dt(arr)
+    if not is_matrix:
         return impl.expr_init(
-            impl.expr_init_matrix([len(arr)], dt,
-                                  [cast(elt).ptr for elt in arr]))
+            impl.expr_init_local_tensor([len(arr)], dt,
+                                  impl.make_expr_group([expr.Expr(elt) for elt in arr])))
     return impl.expr_init(
-        impl.expr_init_matrix([len(arr), len(arr[0])], dt,
-                              [cast(elt).ptr for row in arr for elt in row]))
+        impl.expr_init_local_tensor([len(arr), len(arr[0])], dt,
+                              impl.make_expr_group([expr.Expr(elt) for row in arr for elt in row])))
 
 
 class _MatrixBaseImpl:

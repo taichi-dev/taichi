@@ -164,14 +164,13 @@ class AlgSimp : public BasicStmtVisitor {
     if ((fast_math || is_integral(stmt->ret_type)) &&
         irpass::analysis::same_value(stmt->lhs, stmt->rhs)) {
       // fast_math or integral operands: a / a -> 1
-      if (stmt->lhs->ret_type->is<PrimitiveType>() &&
-          stmt->rhs->ret_type->is<PrimitiveType>()) {
-        replace_with_one(stmt);
-        return true;
-      } else {
-        // TODO: handle tensor division
+      if (stmt->lhs->ret_type->is<TensorType>() ||
+          stmt->rhs->ret_type->is<TensorType>()) {
+        // TODO: support tensor type
         return false;
       }
+      replace_with_one(stmt);
+      return true;
     }
     if (fast_math && rhs && is_real(rhs->ret_type) &&
         stmt->op_type != BinaryOpType::floordiv) {
@@ -251,12 +250,11 @@ class AlgSimp : public BasicStmtVisitor {
                  (fast_math || is_integral(stmt->ret_type)) &&
                  irpass::analysis::same_value(stmt->lhs, stmt->rhs)) {
         // fast_math or integral operands: a -^ a -> 0
-        if (stmt->lhs->ret_type->is<PrimitiveType>() &&
-            stmt->rhs->ret_type->is<PrimitiveType>()) {
-          replace_with_zero(stmt);
+        if (stmt->lhs->ret_type->is<TensorType>() &&
+            stmt->rhs->ret_type->is<TensorType>()) {
+          // TODO: support tensor type
         } else {
-          // TODO: handle tensor operations
-          return;
+          replace_with_zero(stmt);
         }
       }
     } else if (rhs && stmt->op_type == BinaryOpType::pow) {
@@ -267,6 +265,10 @@ class AlgSimp : public BasicStmtVisitor {
         modifier.erase(stmt);
       } else if (exponent == 0) {
         // a ** 0 -> 1
+        if (stmt->ret_type->is<TensorType>()) {
+          // TODO: support tensor type
+          return;
+        }
         replace_with_one(stmt);
       } else if (exponent == 0.5) {
         // a ** 0.5 -> sqrt(a)

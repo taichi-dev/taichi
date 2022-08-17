@@ -861,9 +861,10 @@ class ASTBuilder {
   Arch arch_;
   ForLoopDecoratorRecorder for_loop_dec_;
   int id_counter_{0};
+  bool use_real_matrix_{false};
 
  public:
-  ASTBuilder(Block *initial, Arch arch) : arch_(arch) {
+  ASTBuilder(Block *initial, Arch arch, bool real_matrix) : arch_(arch), use_real_matrix_(real_matrix) {
     stack_.push_back(initial);
     loop_state_stack_.push_back(None);
   }
@@ -964,7 +965,7 @@ class FrontendContext {
   std::unique_ptr<Block> root_node_;
 
  public:
-  FrontendContext(Arch arch);
+  FrontendContext(Arch arch, bool real_matrix);
 
   ASTBuilder &builder() {
     return *current_builder_;

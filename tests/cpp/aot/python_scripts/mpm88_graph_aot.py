@@ -237,5 +237,7 @@ if __name__ == "__main__":
         compile_mpm88(arch=ti.cuda, save_compute_graph=compile_for_cgraph)
     elif args.arch == "vulkan":
         compile_mpm88(arch=ti.vulkan, save_compute_graph=compile_for_cgraph)
+    elif args.arch == "opengl":
+        compile_mpm88(arch=ti.opengl, save_compute_graph=compile_for_cgraph)
     else:
         assert False

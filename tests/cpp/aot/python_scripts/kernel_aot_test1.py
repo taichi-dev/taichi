@@ -4,8 +4,11 @@ import os
 import taichi as ti
 
 
-def compile_kernel_aot(arch):
+def compile_kernel_aot_test1(arch):
     ti.init(arch=arch)
+
+    if ti.lang.impl.current_cfg().arch != arch:
+        return
 
     @ti.kernel
     def run(base: int, arr: ti.types.ndarray()):
@@ -28,10 +31,12 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.arch == "cpu":
-        compile_kernel_aot(arch=ti.cpu)
+        compile_kernel_aot_test1(arch=ti.cpu)
     elif args.arch == "cuda":
-        compile_kernel_aot(arch=ti.cuda)
+        compile_kernel_aot_test1(arch=ti.cuda)
     elif args.arch == "vulkan":
-        compile_kernel_aot(arch=ti.vulkan)
+        compile_kernel_aot_test1(arch=ti.vulkan)
+    elif args.arch == "opengl":
+        compile_kernel_aot_test1(arch=ti.opengl)
     else:
         assert False

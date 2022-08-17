@@ -7,6 +7,9 @@ import taichi as ti
 def compile_graph_aot(arch):
     ti.init(arch=arch)
 
+    if ti.lang.impl.current_cfg().arch != arch:
+        return
+
     @ti.kernel
     def run0(base: int, arr: ti.types.ndarray(field_dim=1, dtype=ti.i32)):
         for i in arr:
@@ -59,5 +62,9 @@ if __name__ == "__main__":
         compile_graph_aot(arch=ti.cpu)
     elif args.arch == "cuda":
         compile_graph_aot(arch=ti.cuda)
+    elif args.arch == "vulkan":
+        compile_graph_aot(arch=ti.vulkan)
+    elif args.arch == "opengl":
+        compile_graph_aot(arch=ti.opengl)
     else:
         assert False

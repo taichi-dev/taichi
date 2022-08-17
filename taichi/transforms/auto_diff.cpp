@@ -1002,7 +1002,9 @@ class MakeAdjoint : public ADTransform {
     }
 
     GlobalPtrStmt *src = nullptr;
+    bool is_ptr_offset = false;
     if (stmt->src->is<PtrOffsetStmt>()) {
+      is_ptr_offset = true;
       src = stmt->src->as<PtrOffsetStmt>()->origin->as<GlobalPtrStmt>();
     } else {
       src = stmt->src->as<GlobalPtrStmt>();
@@ -1021,6 +1023,10 @@ class MakeAdjoint : public ADTransform {
     TI_ASSERT(snodes[0]->get_adjoint() != nullptr);
     snodes[0] = snodes[0]->get_adjoint();
     auto adj_ptr = insert<GlobalPtrStmt>(snodes, src->indices);
+    if (is_ptr_offset) {
+      Stmt *adj_ptr = insert<PtrOffsetStmt>(
+          adj_ptr, stmt->src->as<PtrOffsetStmt>()->offset);
+    }
     insert<AtomicOpStmt>(AtomicOpType::add, adj_ptr, load(adjoint(stmt)));
   }
 
@@ -1033,7 +1039,9 @@ class MakeAdjoint : public ADTransform {
     }
 
     GlobalPtrStmt *dest = nullptr;
+    bool is_ptr_offset = false;
     if (stmt->dest->is<PtrOffsetStmt>()) {
+      is_ptr_offset = true;
       dest = stmt->dest->as<PtrOffsetStmt>()->origin->as<GlobalPtrStmt>();
     } else {
       dest = stmt->dest->as<GlobalPtrStmt>();
@@ -1048,6 +1056,10 @@ class MakeAdjoint : public ADTransform {
     TI_ASSERT(snodes[0]->get_adjoint() != nullptr);
     snodes[0] = snodes[0]->get_adjoint();
     auto adjoint_ptr = insert<GlobalPtrStmt>(snodes, dest->indices);
+    if (is_ptr_offset) {
+      Stmt *adjoint_ptr = insert<PtrOffsetStmt>(
+          adjoint_ptr, stmt->dest->as<PtrOffsetStmt>()->offset);
+    }
     auto load = insert<GlobalLoadStmt>(adjoint_ptr);
     accumulate(stmt->val, load);
     stmt->parent->erase(stmt);
@@ -1314,7 +1326,9 @@ class MakeDual : public ADTransform {
   void visit(GlobalLoadStmt *stmt) override {
     // issue global store to dual
     GlobalPtrStmt *src = nullptr;
+    bool is_ptr_offset = false;
     if (stmt->src->is<PtrOffsetStmt>()) {
+      is_ptr_offset = true;
       src = stmt->src->as<PtrOffsetStmt>()->origin->as<GlobalPtrStmt>();
     } else {
       src = stmt->src->as<GlobalPtrStmt>();
@@ -1332,12 +1346,18 @@ class MakeDual : public ADTransform {
     TI_ASSERT(snodes[0]->get_dual() != nullptr);
     snodes[0] = snodes[0]->get_dual();
     auto dual_ptr = insert<GlobalPtrStmt>(snodes, src->indices);
+    if (is_ptr_offset) {
+      Stmt *dual_ptr = insert<PtrOffsetStmt>(
+          dual_ptr, stmt->src->as<PtrOffsetStmt>()->offset);
+    }
     accumulate(stmt, insert<GlobalLoadStmt>(dual_ptr));
   }
 
   void visit(GlobalStoreStmt *stmt) override {
     GlobalPtrStmt *dest = nullptr;
+    bool is_ptr_offset = false;
     if (stmt->dest->is<PtrOffsetStmt>()) {
+      is_ptr_offset = true;
       dest = stmt->dest->as<PtrOffsetStmt>()->origin->as<GlobalPtrStmt>();
     } else {
       dest = stmt->dest->as<GlobalPtrStmt>();
@@ -1351,6 +1371,10 @@ class MakeDual : public ADTransform {
     TI_ASSERT(snodes[0]->get_dual() != nullptr);
     snodes[0] = snodes[0]->get_dual();
     auto dual_ptr = insert<GlobalPtrStmt>(snodes, dest->indices);
+    if (is_ptr_offset) {
+      Stmt *dual_ptr = insert<PtrOffsetStmt>(
+          dual_ptr, stmt->dest->as<PtrOffsetStmt>()->offset);
+    }
     insert<AtomicOpStmt>(AtomicOpType::add, dual_ptr, load(dual(stmt->val)));
   }
 

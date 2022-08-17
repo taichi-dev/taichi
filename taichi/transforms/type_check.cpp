@@ -221,7 +221,8 @@ class TypeCheck : public IRVisitor {
         DataType cast_dtype;
         if (is_tensor) {
           auto tensor_type = stmt->operand->ret_type->cast<TensorType>();
-          cast_dtype = TypeFactory::create_tensor_type(tensor_type->get_shape(), config_.default_fp);
+          cast_dtype = TypeFactory::create_tensor_type(tensor_type->get_shape(),
+                                                       config_.default_fp);
         } else {
           cast_dtype = config_.default_fp;
         }

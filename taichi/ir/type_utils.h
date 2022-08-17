@@ -12,12 +12,13 @@ TI_DLL_EXPORT int data_type_size(DataType t);
 
 TI_DLL_EXPORT std::string data_type_format(DataType dt);
 
-#define DEFINE_TENSOR_CHECK(func_name) inline bool  func_name##_tensor(DataType dt) {  \
-  if (auto tensor_type = dt->cast<TensorType>()) {                                    \
-    return func_name(tensor_type->get_element_type());                                \
-  }                                                                                   \
-  return false;                                                                       \
-}
+#define DEFINE_TENSOR_CHECK(func_name)                   \
+  inline bool func_name##_tensor(DataType dt) {          \
+    if (auto tensor_type = dt->cast<TensorType>()) {     \
+      return func_name(tensor_type->get_element_type()); \
+    }                                                    \
+    return false;                                        \
+  }
 
 inline int data_type_bits(DataType t) {
   return data_type_size(t) * 8;

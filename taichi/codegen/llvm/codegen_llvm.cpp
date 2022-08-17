@@ -520,7 +520,8 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
     llvm_val[stmt] =
         builder->CreateShl(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
   } else if (op == BinaryOpType::bit_sar) {
-    if (is_signed(stmt->lhs->element_type()) || is_signed_tensor(stmt->lhs->ret_type)) {
+    if (is_signed(stmt->lhs->element_type()) ||
+        is_signed_tensor(stmt->lhs->ret_type)) {
       llvm_val[stmt] =
           builder->CreateAShr(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
     } else {

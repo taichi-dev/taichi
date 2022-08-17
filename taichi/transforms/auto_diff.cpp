@@ -1024,8 +1024,8 @@ class MakeAdjoint : public ADTransform {
     snodes[0] = snodes[0]->get_adjoint();
     auto adj_ptr = insert<GlobalPtrStmt>(snodes, src->indices);
     if (is_ptr_offset) {
-      Stmt *adj_ptr = insert<PtrOffsetStmt>(
-          adj_ptr, stmt->src->as<PtrOffsetStmt>()->offset);
+      adj_ptr = insert<PtrOffsetStmt>(adj_ptr,
+                                      stmt->src->as<PtrOffsetStmt>()->offset);
     }
     insert<AtomicOpStmt>(AtomicOpType::add, adj_ptr, load(adjoint(stmt)));
   }
@@ -1057,32 +1057,39 @@ class MakeAdjoint : public ADTransform {
     snodes[0] = snodes[0]->get_adjoint();
     auto adjoint_ptr = insert<GlobalPtrStmt>(snodes, dest->indices);
     if (is_ptr_offset) {
-      Stmt *adjoint_ptr = insert<PtrOffsetStmt>(
+      adjoint_ptr = insert<PtrOffsetStmt>(
           adjoint_ptr, stmt->dest->as<PtrOffsetStmt>()->offset);
     }
-    auto load = insert<GlobalLoadStmt>(adjoint_ptr);
-    accumulate(stmt->val, load);
+    accumulate(stmt->val, insert<GlobalLoadStmt>(adjoint_ptr));
     stmt->parent->erase(stmt);
   }
 
   void visit(AtomicOpStmt *stmt) override {
     // erase and replace with global load adjoint
     GlobalPtrStmt *dest = nullptr;
+    bool is_ptr_offset = false;
     if (stmt->dest->is<PtrOffsetStmt>()) {
+      is_ptr_offset = true;
       dest = stmt->dest->as<PtrOffsetStmt>()->origin->as<GlobalPtrStmt>();
     } else {
       dest = stmt->dest->as<GlobalPtrStmt>();
     }
+
     TI_ASSERT(dest->width() == 1);
     auto snodes = dest->snodes;
-    if (snodes[0]->has_adjoint()) {
-      TI_ASSERT(snodes[0]->get_adjoint() != nullptr);
-      snodes[0] = snodes[0]->get_adjoint();
-      auto adjoint_ptr = insert<GlobalPtrStmt>(snodes, dest->indices);
-      accumulate(stmt->val, insert<GlobalLoadStmt>(adjoint_ptr));
-    } else {
+    if (!snodes[0]->has_adjoint()) {
       // no gradient (likely integer types)
+      return;
     }
+
+    TI_ASSERT(snodes[0]->get_adjoint() != nullptr);
+    snodes[0] = snodes[0]->get_adjoint();
+    auto adjoint_ptr = insert<GlobalPtrStmt>(snodes, dest->indices);
+    if (is_ptr_offset) {
+      adjoint_ptr = insert<PtrOffsetStmt>(
+          adjoint_ptr, stmt->dest->as<PtrOffsetStmt>()->offset);
+    }
+    accumulate(stmt->val, insert<GlobalLoadStmt>(adjoint_ptr));
     stmt->parent->erase(stmt);
   }
 };
@@ -1347,8 +1354,8 @@ class MakeDual : public ADTransform {
     snodes[0] = snodes[0]->get_dual();
     auto dual_ptr = insert<GlobalPtrStmt>(snodes, src->indices);
     if (is_ptr_offset) {
-      Stmt *dual_ptr = insert<PtrOffsetStmt>(
-          dual_ptr, stmt->src->as<PtrOffsetStmt>()->offset);
+      dual_ptr = insert<PtrOffsetStmt>(dual_ptr,
+                                       stmt->src->as<PtrOffsetStmt>()->offset);
     }
     accumulate(stmt, insert<GlobalLoadStmt>(dual_ptr));
   }
@@ -1372,15 +1379,17 @@ class MakeDual : public ADTransform {
     snodes[0] = snodes[0]->get_dual();
     auto dual_ptr = insert<GlobalPtrStmt>(snodes, dest->indices);
     if (is_ptr_offset) {
-      Stmt *dual_ptr = insert<PtrOffsetStmt>(
-          dual_ptr, stmt->dest->as<PtrOffsetStmt>()->offset);
+      dual_ptr = insert<PtrOffsetStmt>(dual_ptr,
+                                       stmt->dest->as<PtrOffsetStmt>()->offset);
     }
     insert<AtomicOpStmt>(AtomicOpType::add, dual_ptr, load(dual(stmt->val)));
   }
 
   void visit(AtomicOpStmt *stmt) override {
     GlobalPtrStmt *dest = nullptr;
+    bool is_ptr_offset = false;
     if (stmt->dest->is<PtrOffsetStmt>()) {
+      is_ptr_offset = true;
       dest = stmt->dest->as<PtrOffsetStmt>()->origin->as<GlobalPtrStmt>();
     } else {
       dest = stmt->dest->as<GlobalPtrStmt>();
@@ -1394,6 +1403,10 @@ class MakeDual : public ADTransform {
     TI_ASSERT(snodes[0]->get_dual() != nullptr);
     snodes[0] = snodes[0]->get_dual();
     auto dual_ptr = insert<GlobalPtrStmt>(snodes, dest->indices);
+    if (is_ptr_offset) {
+      dual_ptr = insert<PtrOffsetStmt>(dual_ptr,
+                                       stmt->dest->as<PtrOffsetStmt>()->offset);
+    }
     insert<AtomicOpStmt>(AtomicOpType::add, dual_ptr, load(dual(stmt->val)));
   }
 };

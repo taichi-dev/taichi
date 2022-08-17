@@ -283,20 +283,19 @@ void CuSparseMatrix::spmv(Program *prog, const Ndarray &x, Ndarray &y) {
 }
 
 template <typename T, typename T1, typename T2>
-void csr_to_triplet(int64_t n_rows, T* row, T1* col, T2* value) {
-  // using Trip = Eigen::Triplet<T2>();
-  // std::vector<Trip> trips;
-  std::cout << "rows: " << n_rows << "\n";
-  // return;
+void csr_to_triplet(int64_t n_rows, int n_cols, T* row, T1* col, T2* value) {
+  using Triplets = Eigen::Triplet<T2>;
+  std::vector<Triplets> trips;
   for (int64_t i = 1; i <= n_rows; ++i) {
       auto n_i = row[i] - row[i - 1];
-      std::cout << "n_i: " << n_i << std::endl;
-      // for (auto j = 0; j < n_i; ++j) {
-      //   std::cout << i-1 << ' ' << col[row[i-1]+j] << ' ' << value[row[i-1]+j] << std::endl;
-      //   // trips.push_back({i-1,col[row[i-1]+j],value[row[i-1]+j]});
-      // }
+      for (auto j = 0; j < n_i; ++j) {
+        trips.push_back({i-1,col[row[i-1]+j],value[row[i-1]+j]});
+      }
   }
-
+  Eigen::SparseMatrix<float> m(n_rows, n_cols);
+  m.setFromTriplets(trips.begin(), trips.end());
+  Eigen::IOFormat clean_fmt(4, 0, ", ", "\n", "[", "]");
+  std::cout << Eigen::MatrixXf(m.cast<float>()).format(clean_fmt) << std::endl;
 }
 
 void CuSparseMatrix::print_helper() const {
@@ -309,11 +308,18 @@ void CuSparseMatrix::print_helper() const {
   CUSPARSEDriver::get_instance().cpCsrGet(matrix_, &rows, &cols, &nnz, (void**)&dR, (void**)&dC, (void**)&dV, 
                     &row_type, &column_type, &idx_base, &value_type);
 
-  // auto* hR = new int[rows+1];
+  auto* hR = new int[rows+1];
   auto* hC = new int[nnz];
   auto* hV = new float[nnz];
 
-  auto hR = CUDADriver::get_instance().fetch<float>(dR);
+  // auto hR = CUDADriver::get_instance().fetch<float>(dR);
+
+  CUDADriver::get_instance().memcpy_device_to_host(
+        (void *)hR, (void *)dR, (rows+1) * sizeof(int32_t));
+  CUDADriver::get_instance().memcpy_device_to_host(
+        (void *)hC, (void *)dC, (nnz) * sizeof(int32_t));
+  CUDADriver::get_instance().memcpy_device_to_host(
+        (void *)hV, (void *)dV, (nnz) * sizeof(float));
 
   
   // std::cout << (row_type == CUSPARSE_INDEX_32I) << '\n';
@@ -321,14 +327,13 @@ void CuSparseMatrix::print_helper() const {
   // std::cout << (value_type == CUDA_R_32F) << '\n';
   // return;
 
-  csr_to_triplet<int, int, float>(rows+1, hR, hC, hV);
+  csr_to_triplet<int, int, float>(rows, cols, hR, hC, hV);
   
 #endif
 }
 
 const std::string CuSparseMatrix::to_string() const {
   std::ostringstream ostr;
-  ostr << "here!" << std::endl;
   print_helper();
   return ostr.str();
 }

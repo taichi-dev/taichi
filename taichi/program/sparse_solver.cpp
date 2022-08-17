@@ -95,5 +95,26 @@ std::unique_ptr<SparseSolver> make_sparse_solver(DataType dt,
     TI_ERROR("Not supported sparse solver type: {}", solver_type);
 }
 
+std::unique_ptr<SparseSolver> make_cusparse_solver(
+    DataType dt,
+    const std::string &solver_type,
+    const std::string &ordering) {
+#if defined(TI_WITH_CUDA)
+  if (!CUSOLVERDriver::get_instance().is_loaded()) {
+    bool load_success = CUSOLVERDriver::get_instance().load_cusolver();
+    if (!load_success) {
+      TI_ERROR("Failed to load cusolver library!");
+    }
+  }
+  int major_version, minor_version, patch_level;
+  CUSOLVERDriver::get_instance().csGetProperty(MAJOR_VERSION, &major_version);
+  CUSOLVERDriver::get_instance().csGetProperty(MINOR_VERSION, &minor_version);
+  CUSOLVERDriver::get_instance().csGetProperty(PATCH_LEVEL, &patch_level);
+  printf("CUDA solver version: %d.%d.%d\n", major_version, minor_version,
+         patch_level);
+#endif
+  return nullptr;
+}
+
 }  // namespace lang
 }  // namespace taichi

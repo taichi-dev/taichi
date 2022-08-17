@@ -434,8 +434,6 @@ typedef struct CUDA_EXTERNAL_SEMAPHORE_WAIT_PARAMS_st {
  */
 #define CUDA_ARRAY3D_COLOR_ATTACHMENT 0x20
 
-#endif
-
 // copy from cusparse.h
 struct cusparseContext;
 typedef struct cusparseContext *cusparseHandle_t;
@@ -500,3 +498,11 @@ typedef enum {
   CUSPARSE_SPMV_CSR_ALG2 = 3,
   CUSPARSE_SPMV_COO_ALG2 = 4
 } cusparseSpMVAlg_t;
+
+// copy from cusolver.h
+typedef enum libraryPropertyType_t {
+  MAJOR_VERSION,
+  MINOR_VERSION,
+  PATCH_LEVEL
+} libraryPropertyType;
+#endif

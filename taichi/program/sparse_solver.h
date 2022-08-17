@@ -35,5 +35,10 @@ std::unique_ptr<SparseSolver> make_sparse_solver(DataType dt,
                                                  const std::string &solver_type,
                                                  const std::string &ordering);
 
+std::unique_ptr<SparseSolver> make_cusparse_solver(
+    DataType dt,
+    const std::string &solver_type,
+    const std::string &ordering);
+
 }  // namespace lang
 }  // namespace taichi

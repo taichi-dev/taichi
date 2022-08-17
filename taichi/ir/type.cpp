@@ -87,14 +87,6 @@ std::string TensorType::to_string() const {
   return s;
 }
 
-int TensorType::vector_width() const {
-  int vw = 1;
-  for (auto dim : shape_) {
-    vw *= dim;
-  }
-  return vw;
-}
-
 int Type::vector_width() const {
   return 1;  // TODO: CPU vectorization
 }

@@ -15,5 +15,6 @@ target_include_directories(vulkan_program_impl
     ${LLVM_INCLUDE_DIRS}
   )
 
+target_link_libraries(vulkan_program_impl PRIVATE spirv_codegen)
 target_link_libraries(vulkan_program_impl PRIVATE gfx_runtime)
 target_link_libraries(vulkan_program_impl PRIVATE vulkan_rhi)

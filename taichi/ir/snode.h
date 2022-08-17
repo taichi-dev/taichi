@@ -93,6 +93,7 @@ class SNode {
    public:
     virtual ~GradInfoProvider() = default;
     virtual bool is_primal() const = 0;
+    virtual SNodeGradType get_snode_grad_type() const = 0;
     virtual SNode *adjoint_snode() const = 0;
     virtual SNode *dual_snode() const = 0;
     virtual SNode *adjoint_visited_snode() const = 0;
@@ -275,6 +276,8 @@ class SNode {
   bool need_activation() const;
 
   bool is_primal() const;
+
+  SNodeGradType get_snode_grad_type() const;
 
   bool is_place() const;
 

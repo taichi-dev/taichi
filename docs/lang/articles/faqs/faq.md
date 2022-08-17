@@ -71,18 +71,18 @@ These structures have to be decomposed into 1D Taichi fields. For example, when 
 
 Follow these steps to install Taichi on a server without Internet access.
 
-1. From a computer with Internet access, download the installation packages for dill, sourceinspect, and taichi, ensuring that this computer has the same operating system as the target server:
+1. From a computer with Internet access, pip download taichi, ensuring that this computer has the same operating system as the target server:
 
 ```plaintext
-pip download dill sourceinspect taichi
+pip download taichi
 ```
 
-2. Copy all the downloaded `*.whl` packages to your local server.
+This command will download the wheel package for taichi together with all its dependencies.
 
-3. On your local server, change directory to **/home/<user_name>/<taichi_tmp>/** and install Taichi using the following command:
+2. Copy the downloaded *.whl packages to your local server and install each with the following command. Note that you should first install all the dependencies and leave taichi installation to the last.
 
-```plaintext
-pip install ./*
+```
+python -m pip install xxxx.whl
 ```
 
 ### Can I integrate Taichi and Houdini?
@@ -91,42 +91,36 @@ The answer is an unequivocal Yes! Our contributors managed to embed [taichi_elem
 
 You can follow the instructions provided [here](https://github.com/taichi-dev/taichi_houdini).
 
-### How do I prevent precision loss in situations where 32-bit precision is required?
+### How do I accurately initialize a vector or matrix with `f64` precision when my default floating-point precision (`default_fp`) is `f32`?
 
-If you use the default `ti.f32`, then this is normal because `float32` has only six to seven decimal digits of precision. Even a constant is cast to a `float32` number by default. To solve this issue, declare `default_fp=ti.f64` in `ti.init`.
-
-For example, if you stay with `float32`:
+To better understand the question, look at the program below:
 
 ```python
 import taichi as ti
-ti.init(debug=True)
-@ti.func
-def get_f_stress3(f_stress):
-    res = ti.Matrix([[f_stress[0], f_stress[2], 0.0], [f_stress[2], f_stress[1], 0.0], [0.0, 0.0, f_stress[3]]], ti.f64)
-    return res
+
+ti.init()
+
 @ti.kernel
 def foo():
-    stress = get_f_stress3(f_stress)
-    print("σ =", stress)
-if __name__ == "__main__":
-    f_stress = ti.Vector([-0.742128, -1.731632, -0.000001, -0.742128], ti.f64)
-    foo()
+    A = ti.Vector([0.2, 0.0], ti.f64)
+    print('A =', A)
+
+    B = ti.Vector([ti.f64(0.2), 0.0], ti.f64)
+    print('B =', B)
+
+foo()
 ```
 
-The output becomes:
+You will get output:
 
- ```plaintext
- [Taichi] version 1.0.0, llvm 10.0.0, commit 6a15da85, win, python 3.8.1
-[Taichi] Starting on arch=x64
-σ = [[-0.742128014565, -0.000001000000, 0.000000000000], [-0.000001000000, -1.731631994247, 0.000000000000], [0.000000000000, 0.000000000000, -0.742128014565]]
- ```
+```
+A = [0.200000002980, 0.000000000000]
+B = [0.200000000000, 0.000000000000]
+```
 
-After switching to `float64` by setting `ti.init(debug=True, default_fp=ti.f64)`, you get the correct output:
+You may notice the value of `A` is slightly different from `[0.2, 0]`. This is because, by default, your float literals will be converted to `ti.f32`, and `0.2` in `ti.f32` precision will become `0.200000002980`. If you expect `A` and `B` to have `ti.f64` precision, use `ti.f64(0.2)` to preserve more effective digits here so that `0.2` keeps its `ti.f64` type.
 
-```plaintext
-σ = [[-0.742128000000, -0.000001000000, 0.000000000000], [-0.000001000000, -1.731632000000, 0.000000000000], [0.000000000000, 0.000000000000, -0.742128000000]]
- ```
-
+Alternatively, if you can afford the cost of having all floating-point operations in `f64` precision, you can directly initialize Taichi with `ti.init(..., default_fp=ti.f64)`.
 
 ### Why does it always return an error when I pass a list from the Python scope to a Taichi kernel?
 
@@ -146,7 +140,7 @@ def test(arr: list):
     for i in range(3):
         x[i] = arr[i]
 test(array)
- ```
+```
 
 You need to import NumPy:
 
@@ -161,4 +155,4 @@ def test(arr: ti.types.ndarray()):
     for i in range(3):
         x[i] = arr[i]
 test(array)
- ```
+```

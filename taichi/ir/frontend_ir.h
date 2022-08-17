@@ -864,7 +864,8 @@ class ASTBuilder {
   bool use_real_matrix_{false};
 
  public:
-  ASTBuilder(Block *initial, Arch arch, bool real_matrix) : arch_(arch), use_real_matrix_(real_matrix) {
+  ASTBuilder(Block *initial, Arch arch, bool real_matrix)
+      : arch_(arch), use_real_matrix_(real_matrix) {
     stack_.push_back(initial);
     loop_state_stack_.push_back(None);
   }

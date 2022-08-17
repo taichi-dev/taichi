@@ -89,7 +89,8 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
 
 FrontendContext::FrontendContext(Arch arch, bool real_matrix) {
   root_node_ = std::make_unique<Block>();
-  current_builder_ = std::make_unique<ASTBuilder>(root_node_.get(), arch, real_matrix);
+  current_builder_ =
+      std::make_unique<ASTBuilder>(root_node_.get(), arch, real_matrix);
 }
 
 FrontendForStmt::FrontendForStmt(const Expr &loop_var,
@@ -989,7 +990,7 @@ Expr ASTBuilder::expr_alloca_local_tensor(const std::vector<int> &shape,
                                           const DataType &element_type,
                                           const ExprGroup &elements) {
   if (this->use_real_matrix_) {
-    return make_local_matrix(shape,element_type, elements.exprs);
+    return make_local_matrix(shape, element_type, elements.exprs);
   }
   auto var = Expr(std::make_shared<IdExpression>(get_next_id()));
   this->insert(std::make_unique<FrontendAllocaStmt>(

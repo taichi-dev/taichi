@@ -146,6 +146,21 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir,
   dump_graph(output_dir);
 }
 
+std::optional<GfxRuntime::RegisterParams> AotModuleBuilderImpl::try_get_kernel_register_params(const std::string &kernel_name) const {
+  const auto &kernels = ti_aot_data_.kernels;
+  for (std::size_t i = 0; i < kernels.size(); ++i) {
+    if (kernels[i].name == kernel_name) {
+      GfxRuntime::RegisterParams result;
+      result.kernel_attribs = kernels[i];
+      result.task_spirv_source_codes = ti_aot_data_.spirv_codes[i];
+      // We only support a single SNodeTree during AOT.
+      result.num_snode_trees = 1;
+      return result;
+    }
+  }
+  return std::nullopt;
+}
+
 void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
                                            Kernel *kernel) {
   spirv::lower(kernel);

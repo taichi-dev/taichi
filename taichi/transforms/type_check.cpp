@@ -212,8 +212,20 @@ class TypeCheck : public IRVisitor {
       if (stmt->op_type == UnaryOpType::sqrt ||
           stmt->op_type == UnaryOpType::exp ||
           stmt->op_type == UnaryOpType::log) {
-        cast(stmt->operand, config_.default_fp);
-        stmt->ret_type = config_.default_fp;
+        bool is_tensor = stmt->operand->ret_type->is<TensorType>();
+        if (is_tensor && is_real_tensor(stmt->operand->ret_type)) {
+          // real tensor is OK for these operators
+          return;
+        }
+        DataType cast_dtype;
+        if (is_tensor) {
+          auto tensor_type = stmt->operand->ret_type->cast<TensorType>();
+          cast_dtype = TypeFactory::create_tensor_type(tensor_type->get_shape(), config_.default_fp);
+        } else {
+          cast_dtype = config_.default_fp;
+        }
+        cast(stmt->operand, cast_dtype);
+        stmt->ret_type = cast_dtype;
       }
     }
   }

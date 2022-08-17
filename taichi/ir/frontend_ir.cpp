@@ -151,19 +151,15 @@ void RandExpression::flatten(FlattenContext *ctx) {
 
 void UnaryOpExpression::type_check(CompileConfig *config) {
   TI_ASSERT_TYPE_CHECKED(operand);
-  if (!operand->ret_type->is<PrimitiveType>())
-    throw TaichiTypeError(
-        fmt::format("unsupported operand type(s) for '{}': '{}'",
-                    unary_op_type_name(type), operand->ret_type->to_string()));
   if ((type == UnaryOpType::round || type == UnaryOpType::floor ||
        type == UnaryOpType::ceil || is_trigonometric(type)) &&
-      !is_real(operand->ret_type))
+      !is_real(operand->ret_type) && !is_real_tensor(operand->ret_type))
     throw TaichiTypeError(
         fmt::format("'{}' takes real inputs only, however '{}' is provided",
                     unary_op_type_name(type), operand->ret_type->to_string()));
   if ((type == UnaryOpType::sqrt || type == UnaryOpType::exp ||
        type == UnaryOpType::log) &&
-      !is_real(operand->ret_type)) {
+      !is_real(operand->ret_type) && !is_real_tensor(operand->ret_type)) {
     ret_type = config->default_fp;
   } else {
     ret_type = is_cast() ? cast_type : operand->ret_type;

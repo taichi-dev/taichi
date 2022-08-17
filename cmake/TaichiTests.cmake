@@ -12,9 +12,7 @@ endif()
 # 2. Re-implement the legacy CPP tests using googletest
 file(GLOB_RECURSE TAICHI_TESTS_SOURCE
         "tests/cpp/analysis/*.cpp"
-        "tests/cpp/aot/*.cpp"
         "tests/cpp/aot/llvm/*.cpp"
-        "tests/cpp/aot/vulkan/*.cpp"
         "tests/cpp/backends/*.cpp"
         "tests/cpp/codegen/*.cpp"
         "tests/cpp/common/*.cpp"
@@ -23,6 +21,22 @@ file(GLOB_RECURSE TAICHI_TESTS_SOURCE
         "tests/cpp/program/*.cpp"
         "tests/cpp/struct/*.cpp"
         "tests/cpp/transforms/*.cpp")
+
+if (TI_WITH_OPENGL OR TI_WITH_VULKAN)
+    file(GLOB TAICHI_TESTS_GFX_UTILS_SOURCE
+        "tests/cpp/aot/gfx_utils.cpp")
+    list(APPEND TAICHI_TESTS_SOURCE ${TAICHI_TESTS_GFX_UTILS_SOURCE})
+endif()
+
+if(TI_WITH_VULKAN)
+  file(GLOB TAICHI_TESTS_VULKAN_SOURCE "tests/cpp/aot/vulkan/*.cpp")
+  list(APPEND TAICHI_TESTS_SOURCE ${TAICHI_TESTS_VULKAN_SOURCE})
+endif()
+
+if(TI_WITH_OPENGL)
+  file(GLOB TAICHI_TESTS_OPENGL_SOURCE "tests/cpp/aot/opengl/*.cpp")
+  list(APPEND TAICHI_TESTS_SOURCE ${TAICHI_TESTS_OPENGL_SOURCE})
+endif()
 
 add_executable(${TESTS_NAME} ${TAICHI_TESTS_SOURCE})
 if (WIN32)
@@ -36,6 +50,18 @@ if (WIN32)
 endif()
 target_link_libraries(${TESTS_NAME} PRIVATE taichi_core)
 target_link_libraries(${TESTS_NAME} PRIVATE gtest_main)
+
+if (TI_WITH_OPENGL OR TI_WITH_VULKAN)
+  target_link_libraries(${TESTS_NAME} PRIVATE gfx_runtime)
+endif()
+
+if (TI_WITH_VULKAN)
+  target_link_libraries(${TESTS_NAME} PRIVATE vulkan_rhi)
+endif()
+
+if (TI_WITH_OPENGL)
+  target_link_libraries(${TESTS_NAME} PRIVATE opengl_rhi)
+endif()
 
 target_include_directories(${TESTS_NAME}
   PRIVATE

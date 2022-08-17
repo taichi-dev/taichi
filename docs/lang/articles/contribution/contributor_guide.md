@@ -332,9 +332,9 @@ Below we highlight some of the most widely used styles.
 
 ## Deal with compilation warnings
 
-Taichi implements warning-free code by turning on `-Werror` by default. This means that Taichi takes warnings as errors, and we highly recommend that you resolve a warning as soon as it occurs. 
+Taichi implements warning-free code by turning on `-Werror` by default. This means that Taichi takes warnings as errors, and we highly recommend that you resolve a warning as soon as it occurs.
 
-In the following section, we provide several practical tips for handling some of the common scenarios that you may encounter during CI compilation. 
+In the following section, we provide several practical tips for handling some of the common scenarios that you may encounter during CI compilation.
 
 ### Deal with warnings that occur when compiling third-party header files
 
@@ -349,7 +349,7 @@ target_include_directories(${CORE_LIBRARY_NAME} SYSTEM PRIVATE external/VulkanMe
 
 ### Deal with warnings when compiling third-party libraries or targets
 
-Ideally, third-party libraries or targets ought to be built completely independent of your Taichi project. In practice, because of the design of the CMake system, CMake variables from the Taichi and third-party submodules are sometimes messed up. Therefore, we recommend that you disable warnings from a third-party library or target: 
+Ideally, third-party libraries or targets ought to be built completely independent of your Taichi project. In practice, because of the design of the CMake system, CMake variables from the Taichi and third-party submodules are sometimes messed up. Therefore, we recommend that you disable warnings from a third-party library or target:
 
 1. Separate the submodule's `CMAKE_CXX_FLAGS` from the same variable defined in Taichi.
 2. Remove the `-Wall` option from the submodule's `CMAKE_CXX_FLAGS` variables.
@@ -376,7 +376,7 @@ The approach presented here is *not* recommended, because it is *not* reliable a
 
 In rare situations where you can neither fix nor mute the warnings from specific code blocks via conventional approaches, your last approach is to mute them by decorating your code block using the `#pragma clang diagnostic` macros. Beware that `#pragma`s are not defined in the C++ standard and that their implementations depend heavily on the compiler. That is to say, this solution is neither stable nor elegant.
 
-To ignore all warnings from a specific code block, wrap it up with the following two groups of macros. Further, you can even replace `-Wall` with a group of warning types for finer control. See the following example: 
+To ignore all warnings from a specific code block, wrap it up with the following two groups of macros. Further, you can even replace `-Wall` with a group of warning types for finer control. See the following example:
 
 ```
 #if defined(__clang__)

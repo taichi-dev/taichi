@@ -87,7 +87,7 @@ pip install ./*
 
 ### Can I integrate Taichi and Houdini?
 
-The answer is an unequivocal Yes! Our contributors managed to embed [Taichi-element](https://github.com/taichi-dev/taichi_elements), a multi-material continuum physics engine, into Houdini as an extension, combining Houdini's flexibility in preprocessing with Taichi's strength in high-performance computation.
+The answer is an unequivocal Yes! Our contributors managed to embed [taichi_elements](https://github.com/taichi-dev/taichi_elements), a multi-material continuum physics engine, into Houdini as an extension, combining Houdini's flexibility in preprocessing with Taichi's strength in high-performance computation.
 
 You can follow the instructions provided [here](https://github.com/taichi-dev/taichi_houdini).
 
@@ -127,38 +127,25 @@ After switching to `float64` by setting `ti.init(debug=True, default_fp=ti.f64)`
 σ = [[-0.742128000000, -0.000001000000, 0.000000000000], [-0.000001000000, -1.731632000000, 0.000000000000], [0.000000000000, 0.000000000000, -0.742128000000]]
  ```
 
-### Could you recommend some reading materials for cloth simulation, or about multigrid methods in particular?
-
-[This paper](https://www.cs.cmu.edu/~baraff/papers/sig98.pdf) proposes an implicit integration method that enforces constraints on individual cloth particles.
-
-[This paper](https://www.cs.ubc.ca/~rbridson/docs/cloth2002.pdf) presents a collision handling algorithm compatible with any technique that simulates the internal dynamics of a piece of cloth.
-
-As for multigrid methods, you may be interested in an efficient multigrid scheme, which simulates high-resolution deformable objects in their full spaces at interactive frame rates, as explained in [this paper](http://tiantianliu.cn/papers/xian2019multigrid/xian2019multigrid.html).
 
 ### Why does it always return an error when I pass a list from the Python scope to a Taichi kernel?
 
-A Taichi kernel cannot take a Python list directly. You need to use NumPy Arrays as a bridge.
+A Taichi kernel **cannot** take a Python list directly. You need to use NumPy arrays as a bridge.
 
 For example, the following code snippet does not work:
 
 ```python
 import taichi as ti
+import numpy as np
 ti.init()
-def index_of(a, list):
-    for i in range(0, len(list)):
-        if list[i] == a: return i
-    return -1
+x = ti.field(ti.i32, shape=3)
+array = [10, 20, 30]
+
 @ti.kernel
-def sort_by_values(list1: list, values: list):
-    sorted_list = []
-    while len(sorted_list) != len(list1):
-        if index_of(min(values), values) in list1:
-            sorted_list.append(index_of(min(values), values))
-        values[index_of(min(values), values)] = math.inf
-    return sorted_list
-l1 = [0, 1, 2, 3, 4, 5]
-vs = [225, 114, 123, 53, 654, 15]
-r = sort_by_values(l1, vs)
+def test(arr: list):
+    for i in range(3):
+        x[i] = arr[i]
+test(array)
  ```
 
 You need to import NumPy:

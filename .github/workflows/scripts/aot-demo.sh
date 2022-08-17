@@ -10,6 +10,7 @@ export TI_CI=1
 function build-and-smoke-test-android-aot-demo {
     pushd taichi
     GIT_COMMIT=$(git rev-parse HEAD | cut -c1-7)
+    setup_python
     popd
 
     export TAICHI_REPO_DIR=$(pwd)/taichi
@@ -18,11 +19,19 @@ function build-and-smoke-test-android-aot-demo {
 
     # Normally we checkout the master's commit Id: https://github.com/taichi-dev/taichi-aot-demo/commit/master
     # As for why we need this explicit commit Id here, refer to: https://docs.taichi-lang.org/docs/master/contributor_guide#handle-special-ci-failures
-    cd taichi-aot-demo && git checkout 82aaecb9224ac24baf4abfdb5e94f1c6edb464c3 && cd -
+    pushd taichi-aot-demo
+    git checkout bd8fb7bf30a3494f4ecc671cd4d017b926afed10
+    popd
 
     APP_ROOT=taichi-aot-demo/implicit_fem
     ANDROID_APP_ROOT=$APP_ROOT/android
     JNI_PATH=$ANDROID_APP_ROOT/app/src/main/jniLibs/arm64-v8a/
+
+    pip install /taichi-wheel/*.whl
+    pushd $APP_ROOT/python
+    sudo chmod 0777 $HOME/.cache
+    python implicit_fem.py --aot
+    popd
 
     mkdir -p $JNI_PATH
     cp taichi/build/libtaichi_export_core.so $JNI_PATH

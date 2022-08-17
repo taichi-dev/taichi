@@ -405,7 +405,7 @@ jobs:
             --gpus 'all,"capabilities=graphics,utility,display,video,compute"' \
             -v /tmp/.X11-unix:/tmp/.X11-unix \
             -e PY -e GPU_BUILD -e PROJECT_NAME -e TAICHI_CMAKE_ARGS -e DISPLAY \
-            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.2 \
+            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.3 \
             /home/dev/taichi/.github/workflows/scripts/unix_build.sh
           # A tarball is needed because sccache needs some permissions that only the file owner has.
           # 1000 is the uid and gid of user "dev" in the container.
@@ -444,7 +444,7 @@ jobs:
             -e TI_LITE_TEST \
             -e TI_TEST_OFFLINE_CACHE \
             -e DISPLAY -e PY -e GPU_TEST -e TI_WANTED_ARCHS -e TI_RUN_RELEASE_TESTS \
-             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.2 \
+             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.3 \
              /home/dev/unix_test.sh
           docker cp .github/workflows/scripts/unix_test.sh taichi_test:/home/dev/unix_test.sh
           docker cp .github/workflows/scripts/common-utils.sh taichi_test:/home/dev/common-utils.sh
@@ -613,61 +613,95 @@ jobs:
       contents: read
     env:
       REDIS_HOST: 172.16.5.8
+      PY: py39
     steps:
       - uses: actions/checkout@v2
         name: Checkout taichi
         with:
           submodules: "recursive"
 
+      - name: Prepare Environment
+        run: >-
+          TAICHI_WHEEL_DIR=$(mktemp -d);
+          echo TAICHI_WHEEL_DIR=$TAICHI_WHEEL_DIR >> $GITHUB_ENV;
+          chmod 0777 $TAICHI_WHEEL_DIR;
+
+          echo DOCKER_RUN_ARGS="
+          -e PY
+          -e REDIS_HOST
+          -e TI_LITE_TEST
+          -e TAICHI_CMAKE_ARGS
+          -e SCCACHE_ROOT=/var/lib/sccache
+          -v $(pwd):/home/dev/taichi
+          -v $(readlink -f ~/sccache):/var/lib/sccache
+          -v $(readlink -f ~/git-cache):/var/lib/git-cache
+          -v $(readlink -f ~/build-cache)/pip:/home/dev/.cache/pip
+          -v $(readlink -f ~/build-cache)/dot-gradle:/home/dev/.gradle
+          -v $TAICHI_WHEEL_DIR:/taichi-wheel
+          " >> $GITHUB_ENV;
+
+          for i in {0..9}; do if xset -display ":$i" -q >/dev/null 2>&1; then break; fi; done;
+          if [ $? -ne 0 ]; then echo "No display!"; exit 1; fi;
+
+          echo DOCKER_RUN_GPU_ARGS="
+          --runtime=nvidia
+          -e DISPLAY=:$i
+          -e NVIDIA_VISIBLE_DEVICES=all
+          -e NVIDIA_DRIVER_CAPABILITIES=all
+          " >> $GITHUB_ENV;
+
+          mkdir -p ~/build-cache/pip; chmod 0777 ~/build-cache/pip;
+          mkdir -p ~/build-cache/dot-gradle; chmod 0777 ~/build-cache/dot-gradle;
+          mkdir -p ~/build-cache/pip; chmod 0777 ~/build-cache/pip;
+
+      - name: Build Host Taichi
+        run: |
+          docker rm -f taichi_build_host
+          docker run --user dev --name taichi_build_host \
+            $DOCKER_RUN_ARGS \
+            -v $TAICHI_WHEEL_DIR:/home/dev/taichi/dist \
+            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.3 \
+            /home/dev/taichi/.github/workflows/scripts/unix-build-v2.sh
+        env:
+          TAICHI_CMAKE_ARGS: >-
+            -DTI_WITH_OPENGL:BOOL=ON
+            -DTI_WITH_CC:BOOL=OFF
+            -DTI_WITH_VULKAN:BOOL=ON
+            -DCMAKE_C_COMPILER_LAUNCHER=sccache
+            -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
       - name: Build For Android
         run: |
+          git clean -fxd
           docker rm taichi_build_android -f
-          mkdir -p ~/build-cache/pip; chmod 0777 ~/build-cache/pip
           chown -R 1000:1000 .
           docker run -i --user dev --name taichi_build_android \
-            -e SCCACHE_ROOT=/var/lib/sccache \
-            -e TI_LITE_TEST \
-            -v $(pwd):/home/dev/taichi \
-            -v $(readlink -f ~/sccache):/var/lib/sccache \
-            -v $(readlink -f ~/git-cache):/var/lib/git-cache \
-            -v $(readlink -f ~/build-cache)/pip:/home/dev/.cache/pip \
-            registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.5 \
+            $DOCKER_RUN_ARGS \
+            registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.6 \
             /home/dev/taichi/.github/workflows/scripts/android-build.sh build-ext
 
       - name: Test For Android AOT (export core)
         run: |
           docker rm taichi_test_android -f
-          mkdir -p ~/build-cache/dot-gradle; chmod 0777 ~/build-cache/dot-gradle
-          mkdir -p ~/build-cache/pip; chmod 0777 ~/build-cache/pip
           chown -R 1000:1000 .
           docker run -i --user dev --name taichi_test_android \
-            -e REDIS_HOST \
-            -e TI_LITE_TEST \
-            -v $(pwd):/home/dev/taichi \
-            -v $(readlink -f ~/build-cache)/pip:/home/dev/.cache/pip \
-            -v $(readlink -f ~/build-cache)/dot-gradle:/home/dev/.gradle \
-            registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.5 \
+            $DOCKER_RUN_ARGS \
+            $DOCKER_RUN_GPU_ARGS \
+            registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.6 \
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh build-and-smoke-test-android-aot-demo
 
       - name: Prepare Unity Build Environment
         run: |
           chown -R 1000:1000 .
           docker run -i --rm --user dev \
-            -e TI_LITE_TEST \
-            -v $(pwd):/home/dev/taichi \
-            -v $(readlink -f ~/git-cache):/var/lib/git-cache \
-            -v $(readlink -f ~/build-cache)/pip:/home/dev/.cache/pip \
-            registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.5 \
+            $DOCKER_RUN_ARGS \
+            registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.6 \
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh prepare-unity-build-env
 
       - name: Build Taichi-UnityExample
         run: |
           docker run -i --rm --user dev \
-            -e TI_LITE_TEST \
-            -v $(pwd):/home/dev/taichi \
-            -v $(readlink -f ~/git-cache):/var/lib/git-cache \
-            -v $(readlink -f ~/build-cache)/pip:/home/dev/.cache/pip \
-            -v $(readlink -f ~/build-cache)/dot-gradle:/home/dev/.gradle \
+            $DOCKER_RUN_ARGS \
             registry.taichigraphics.com/unityci-editor:ubuntu-2020.3.14f1-android-1-with-secret-sauce \
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh build-unity-demo
 
@@ -675,9 +709,6 @@ jobs:
         run: |
           chown -R 1000:1000 .
           docker run -i --rm --user dev \
-            -e TI_LITE_TEST \
-            -v $(pwd):/home/dev/taichi \
-            -v $(readlink -f ~/git-cache):/var/lib/git-cache \
-            -e REDIS_HOST \
-            registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.5 \
+            $DOCKER_RUN_ARGS \
+            registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.6 \
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh smoke-test-unity-demo

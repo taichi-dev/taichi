@@ -321,6 +321,11 @@ bool SNode::is_primal() const {
   return grad_info && grad_info->is_primal();
 }
 
+SNodeGradType SNode::get_snode_grad_type() const {
+  TI_ASSERT(grad_info);
+  return grad_info->get_snode_grad_type();
+}
+
 bool SNode::has_adjoint() const {
   return is_primal() && (grad_info->adjoint_snode() != nullptr);
 }

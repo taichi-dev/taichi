@@ -55,6 +55,9 @@ void autograd() {
       bool is_primal() const override {
         return true;
       }
+      SNodeGradType get_snode_grad_type() const override {
+        return SNodeGradType::kPrimal;
+      }
       SNode *adjoint_snode() const override {
         return snode;
       }
@@ -71,6 +74,9 @@ void autograd() {
       }
       bool is_primal() const override {
         return false;
+      }
+      SNodeGradType get_snode_grad_type() const override {
+        return SNodeGradType::kAdjoint;
       }
       SNode *adjoint_snode() const override {
         return nullptr;

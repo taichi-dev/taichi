@@ -13,7 +13,11 @@ class GradInfoImpl final : public SNode::GradInfoProvider {
   }
 
   bool is_primal() const override {
-    return glb_var_->is_primal;
+    return glb_var_->snode_grad_type == SNodeGradType::kPrimal;
+  }
+
+  SNodeGradType get_snode_grad_type() const override {
+    return glb_var_->snode_grad_type;
   }
 
   SNode *adjoint_snode() const override {

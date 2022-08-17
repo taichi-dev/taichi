@@ -476,6 +476,7 @@ class GlobalVariableExpression : public Expression {
   DataType dt;
   std::string name;
   SNode *snode{nullptr};
+  SNodeGradType snode_grad_type;
   bool has_ambient{false};
   TypedConstant ambient_value;
   bool is_primal{true};

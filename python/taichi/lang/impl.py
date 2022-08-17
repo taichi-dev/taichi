@@ -8,7 +8,7 @@ from taichi._snode.fields_builder import FieldsBuilder
 from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang._ndrange import GroupedNDRange, _Ndrange
 from taichi.lang.any_array import AnyArray, AnyArrayAccess
-from taichi.lang.enums import Layout
+from taichi.lang.enums import Layout, SNodeGradType
 from taichi.lang.exception import (TaichiRuntimeError, TaichiSyntaxError,
                                    TaichiTypeError)
 from taichi.lang.expr import Expr, make_expr_group
@@ -566,7 +566,7 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
     x.declaration_tb = get_traceback(stacklevel=4)
     x.ptr = _ti_core.global_new(x.ptr, dtype)
     x.ptr.set_name(name)
-    x.ptr.set_is_primal(True)
+    x.ptr.set_grad_type(SNodeGradType.PRIMAL)
     pytaichi.global_vars.append(x)
 
     x_grad = None
@@ -579,7 +579,7 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
         x_grad.declaration_tb = get_traceback(stacklevel=4)
         x_grad.ptr = _ti_core.global_new(x_grad.ptr, dtype)
         x_grad.ptr.set_name(name + ".grad")
-        x_grad.ptr.set_is_primal(False)
+        x_grad.ptr.set_grad_type(SNodeGradType.ADJOINT)
         x.ptr.set_adjoint(x_grad.ptr)
         if needs_grad:
             pytaichi.grad_vars.append(x_grad)
@@ -593,14 +593,14 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
             x_grad_visited.ptr = _ti_core.global_new(x_grad_visited.ptr,
                                                      cook_dtype(dtype))
             x_grad_visited.ptr.set_name(name + ".grad_visited")
-            x_grad_visited.ptr.set_is_primal(False)
+            x_grad_visited.ptr.set_grad_type(SNodeGradType.ADJOINT_VISITED)
             x.ptr.set_adjoint_visited(x_grad_visited.ptr)
 
         # dual
         x_dual = Expr(get_runtime().prog.make_id_expr(""))
         x_dual.ptr = _ti_core.global_new(x_dual.ptr, dtype)
         x_dual.ptr.set_name(name + ".dual")
-        x_dual.ptr.set_is_primal(False)
+        x_dual.ptr.set_grad_type(SNodeGradType.DUAL)
         x.ptr.set_dual(x_dual.ptr)
         if needs_dual:
             pytaichi.dual_vars.append(x_dual)

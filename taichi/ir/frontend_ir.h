@@ -504,6 +504,10 @@ class GlobalVariableExpression : public Expression {
   TI_DEFINE_ACCEPT_FOR_EXPRESSION
 };
 
+/**
+ * Creating a local matrix;
+ * lowered from ti.Matrix with real_matrix=True
+ */
 class MatrixExpression : public Expression {
  public:
   std::vector<Expr> elements;

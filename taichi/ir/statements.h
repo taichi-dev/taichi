@@ -1807,6 +1807,9 @@ class MeshPatchIndexStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * Initialization of a local matrix
+ */
 class MatrixInitStmt : public Stmt {
  public:
   std::vector<Stmt *> values;

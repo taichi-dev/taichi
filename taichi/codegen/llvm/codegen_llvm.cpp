@@ -692,7 +692,7 @@ llvm::Type *TaskCodeGenLLVM::llvm_type(DataType dt) {
     auto tensor_type = dt->cast<TensorType>();
     auto element_type = llvm_type(tensor_type->get_element_type());
     return llvm::VectorType::get(element_type, tensor_type->get_num_elements(),
-                                 false);
+                                 /*scalable=*/false);
   } else {
     TI_NOT_IMPLEMENTED;
   }

@@ -240,7 +240,10 @@ std::unique_ptr<aot::Kernel> VulkanProgramImpl::make_aot_kernel(
 void VulkanProgramImpl::dump_cache_data_to_disk() {
   if (config->offline_cache) {
     taichi::create_directories(config->offline_cache_file_path);
-    get_caching_module_builder()->dump(config->offline_cache_file_path, "");
+    auto *cache_builder = static_cast<gfx::AotModuleBuilderImpl*>(get_caching_module_builder().get());
+    cache_builder->mangle_aot_data();
+    cache_builder->merge_with_old_meta_data(config->offline_cache_file_path);
+    cache_builder->dump(config->offline_cache_file_path, "");
   }
 }
 

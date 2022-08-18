@@ -22,6 +22,8 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
   void dump(const std::string &output_dir,
             const std::string &filename) const override;
 
+  void mangle_aot_data();
+  void merge_with_old_meta_data(const std::string &path);
   std::optional<GfxRuntime::RegisterParams> try_get_kernel_register_params(const std::string &kernel_name) const;
 
  private:

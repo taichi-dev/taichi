@@ -499,10 +499,36 @@ typedef enum {
   CUSPARSE_SPMV_COO_ALG2 = 4
 } cusparseSpMVAlg_t;
 
+typedef enum {
+  CUSPARSE_MATRIX_TYPE_GENERAL = 0,
+  CUSPARSE_MATRIX_TYPE_SYMMETRIC = 1,
+  CUSPARSE_MATRIX_TYPE_HERMITIAN = 2,
+  CUSPARSE_MATRIX_TYPE_TRIANGULAR = 3
+} cusparseMatrixType_t;
+
+typedef enum {
+  CUSPARSE_FILL_MODE_LOWER = 0,
+  CUSPARSE_FILL_MODE_UPPER = 1
+} cusparseFillMode_t;
+
+typedef enum {
+  CUSPARSE_DIAG_TYPE_NON_UNIT = 0,
+  CUSPARSE_DIAG_TYPE_UNIT = 1
+} cusparseDiagType_t;
+
 // copy from cusolver.h
 typedef enum libraryPropertyType_t {
   MAJOR_VERSION,
   MINOR_VERSION,
   PATCH_LEVEL
 } libraryPropertyType;
+
+typedef struct {
+  cusparseMatrixType_t MatrixType;
+  cusparseFillMode_t FillMode;
+  cusparseDiagType_t DiagType;
+  cusparseIndexBase_t IndexBase;
+} cusparseMatDescr_t;
+struct cusolverSpContext;
+typedef struct cusolverSpContext *cusolverSpHandle_t;
 #endif

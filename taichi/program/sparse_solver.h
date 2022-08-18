@@ -1,6 +1,7 @@
 #pragma once
 
 #include "taichi/ir/type.h"
+#include "taichi/rhi/cuda/cuda_driver.h"
 
 #include "sparse_matrix.h"
 
@@ -39,6 +40,12 @@ std::unique_ptr<SparseSolver> make_cusparse_solver(
     DataType dt,
     const std::string &solver_type,
     const std::string &ordering);
+
+void cu_solve(const Ndarray &row_offsets,
+              const Ndarray &col_indices,
+              const Ndarray &values,
+              const Ndarray &b,
+              Ndarray &x);
 
 }  // namespace lang
 }  // namespace taichi

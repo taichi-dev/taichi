@@ -1,4 +1,5 @@
 import numpy as np
+import scipy.io as sio
 
 import taichi as ti
 
@@ -51,3 +52,27 @@ else:
     print("Opps! Spmv Results is wrong.")
 
 solver = ti.linalg.SparseSolver(solver_type="LLT")
+
+# solver.solve(A, X, Y)
+
+# Read .mtx file
+A_coo = sio.mmread('misc/lap2D_5pt_n100.mtx')
+A_csr = A_coo.tocsr()
+
+nnz = A_csr.nnz
+nrows, ncols = A_csr.shape
+d_col_csr = ti.ndarray(shape=nnz, dtype=ti.i32)
+d_value_csr = ti.ndarray(shape=nnz, dtype=ti.f32)
+d_row_csr = ti.ndarray(shape=nrows + 1, dtype=ti.i32)
+
+d_value_csr.from_numpy(A_csr.data)
+d_col_csr.from_numpy(A_csr.indices)
+d_row_csr.from_numpy(A_csr.indptr)
+
+b = ti.ndarray(shape=A_csr.shape[0], dtype=ti.f32)
+b.fill(1.0)
+
+x = ti.ndarray(shape=A_csr.shape[1], dtype=ti.f32)
+x.fill(0.0)
+
+ti.linalg.cu_solve(d_row_csr, d_col_csr, d_value_csr, b, x)

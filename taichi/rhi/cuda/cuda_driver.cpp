@@ -121,8 +121,6 @@ CUSOLVERDriver &CUSOLVERDriver::get_instance() {
 
 bool CUSOLVERDriver::load_cusolver() {
   cusolver_loaded_ = load_lib("libcusolver.so", "cusolver.dll");
-  printf("cusolver loaded %d \n", cusolver_loaded_);
-
   if (!cusolver_loaded_) {
     return false;
   }

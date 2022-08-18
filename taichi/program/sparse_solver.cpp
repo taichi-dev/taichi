@@ -116,5 +116,26 @@ std::unique_ptr<SparseSolver> make_cusparse_solver(
   return nullptr;
 }
 
+void cu_solve(const Ndarray &row_offsets,
+              const Ndarray &col_indices,
+              const Ndarray &values,
+              const Ndarray &b,
+              Ndarray &x) {
+#if defined(TI_WITH_CUDA)
+  if (!CUSOLVERDriver::get_instance().is_loaded()) {
+    bool load_success = CUSOLVERDriver::get_instance().load_cusolver();
+    if (!load_success) {
+      TI_ERROR("Failed to load cusolver library!");
+    }
+  }
+  int major_version, minor_version, patch_level;
+  CUSOLVERDriver::get_instance().csGetProperty(MAJOR_VERSION, &major_version);
+  CUSOLVERDriver::get_instance().csGetProperty(MINOR_VERSION, &minor_version);
+  CUSOLVERDriver::get_instance().csGetProperty(PATCH_LEVEL, &patch_level);
+  printf("CUDA solver version: %d.%d.%d\n", major_version, minor_version,
+         patch_level);
+#endif
+}
+
 }  // namespace lang
 }  // namespace taichi

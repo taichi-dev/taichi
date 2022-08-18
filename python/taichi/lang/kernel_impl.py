@@ -312,8 +312,6 @@ class Func:
                     pass
                 elif isinstance(annotation, template):
                     pass
-                elif isinstance(annotation, sparse_matrix_builder):
-                    pass
                 elif isinstance(annotation, primitive_types.RefType):
                     pass
                 else:

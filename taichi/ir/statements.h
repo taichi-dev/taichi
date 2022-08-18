@@ -367,7 +367,12 @@ class PtrOffsetStmt : public Stmt {
 
   bool is_local_ptr() const {
     if (origin->is<AllocaStmt>() || origin->is<GlobalTemporaryStmt>()) {
-      TI_ASSERT_INFO(origin->ret_type->is<TensorType>(),
+      auto is_tensor_type = origin->ret_type->is<PointerType>()
+                                ? origin->ret_type->cast<PointerType>()
+                                      ->get_pointee_type()
+                                      ->is<TensorType>()
+                                : origin->ret_type->is<TensorType>();
+      TI_ASSERT_INFO(is_tensor_type,
                      "PtrOffsetStmt can only be used for Alloca (TensorType).");
     }
     return origin->is<AllocaStmt>() || origin->is<GlobalTemporaryStmt>();
@@ -601,8 +606,16 @@ class GlobalStoreStmt : public Stmt {
 class LocalLoadStmt : public Stmt {
  public:
   LaneAttribute<LocalAddress> src;
+  std::vector<int> shape;
 
-  explicit LocalLoadStmt(const LaneAttribute<LocalAddress> &src) : src(src) {
+  explicit LocalLoadStmt(const LaneAttribute<LocalAddress> &src)
+      : src(src), shape({static_cast<int>(src.data.size())}) {
+    TI_STMT_REG_FIELDS;
+  }
+
+  LocalLoadStmt(const LaneAttribute<LocalAddress> &src,
+                const std::vector<int> &shape)
+      : src(src), shape(shape) {
     TI_STMT_REG_FIELDS;
   }
 

@@ -456,6 +456,9 @@ Stmt *make_tensor_access(Expression::FlattenContext *ctx,
                          std::vector<int> shape,
                          int stride) {
   flatten_lvalue(var, ctx);
+  if (var->stmt->ret_type->is_primitive(PrimitiveTypeID::unknown)) {
+    var->stmt->ret_type = var->ret_type;
+  }
   Stmt *offset_stmt = ctx->push_back<ConstStmt>(TypedConstant(0));
   for (int i = 0; i < (int)indices.size(); ++i) {
     flatten_rvalue(indices[i], ctx);
@@ -1027,6 +1030,28 @@ Expr make_local_matrix(const std::vector<int> &shape,
                        const DataType &dt,
                        const std::vector<Expr> &elements) {
   return Expr(std::make_shared<MatrixExpression>(elements, shape, dt));
+}
+
+Expr ASTBuilder::expr_indexed_matrix(const Expr &matrix,
+                                     const ExprGroup &indices) {
+  TI_ASSERT(matrix.get_ret_type()->is<TensorType>());
+  auto shape = matrix.get_ret_type()->as<TensorType>()->get_shape();
+  if (indices.size() != shape.size()) {
+    std::string shape_str = "[";
+    if (shape.size() > 0) {
+      shape_str += std::to_string(shape[0]);
+      for (int i = 1; i < shape.size(); i++) {
+        shape_str += ", " + std::to_string(shape[i]);
+      }
+    }
+    shape_str += "]";
+    TI_ERROR(
+        "Indexed matrix of shape {} has wrong number of indices. Expected {} "
+        "but got "
+        "{}.",
+        shape_str, shape.size(), indices.size());
+  }
+  return Expr(std::make_shared<IndexExpression>(matrix, indices));
 }
 
 Expr ASTBuilder::expr_alloca_local_tensor(const std::vector<int> &shape,

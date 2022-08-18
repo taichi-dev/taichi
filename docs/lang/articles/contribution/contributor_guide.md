@@ -371,7 +371,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unneeded-internal-declaration ")
 ### Mute warnings from specific code blocks
 
 :::caution
-The approach presented here is *not* recommended, because it is *not* reliable and hence considered your last approach.
+The approach presented here is *not* recommended and considered your last approach, because it is *not* reliable.
 :::
 
 In rare situations where you can neither fix nor mute the warnings from specific code blocks via conventional approaches, your last approach is to mute them by decorating your code block using the `#pragma clang diagnostic` macros. Beware that `#pragma`s are not defined in the C++ standard and that their implementations depend heavily on the compiler. That is to say, this solution is neither stable nor elegant.

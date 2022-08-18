@@ -85,7 +85,7 @@ FunctionType compile_to_executable(Kernel *kernel,
 FunctionType VulkanProgramImpl::compile(Kernel *kernel,
                                         OffloadedStmt *offloaded) {
   // The Vulkan offline cache depends on AOT, which only supports a single SNodeTree. Hacking aot::Module can resolve this problem, but we prefer to fix it after supporting multiple SNodeTrees in AOT.
-  if (config->offline_cache && !kernel->is_evaluator && snode_tree_mgr_->get_compiled_structs().size() == 1) {
+  if (offline_cache::enabled_wip_offline_cache(config->offline_cache) && !kernel->is_evaluator && snode_tree_mgr_->get_compiled_structs().size() == 1) {
     auto kernel_key = get_hashed_offline_cache_key(config, kernel);
     kernel->set_kernel_key_for_cache(kernel_key);
     const auto &cached_module = get_cached_module();
@@ -238,7 +238,7 @@ std::unique_ptr<aot::Kernel> VulkanProgramImpl::make_aot_kernel(
 }
 
 void VulkanProgramImpl::dump_cache_data_to_disk() {
-  if (config->offline_cache) {
+  if (offline_cache::enabled_wip_offline_cache(config->offline_cache)) {
     auto path = offline_cache::get_cache_path_by_arch(config->offline_cache_file_path, config->arch);
     taichi::create_directories(path);
     auto *cache_builder = static_cast<gfx::AotModuleBuilderImpl*>(get_caching_module_builder().get());
@@ -249,14 +249,14 @@ void VulkanProgramImpl::dump_cache_data_to_disk() {
 }
 
 const std::unique_ptr<AotModuleBuilder> &VulkanProgramImpl::get_caching_module_builder() {
-  if (config->offline_cache && !caching_module_builder_) {
+  if (!caching_module_builder_) {
     caching_module_builder_ = make_aot_module_builder();
   }
   return caching_module_builder_;
 }
 
 const std::unique_ptr<aot::Module> &VulkanProgramImpl::get_cached_module() {
-  if (config->offline_cache && !cached_module_) {
+  if (!cached_module_) {
     auto path = offline_cache::get_cache_path_by_arch(config->offline_cache_file_path, config->arch);
     if (taichi::path_exists(taichi::join_path(path, "metadata.tcb")) &&
         taichi::path_exists(taichi::join_path(path, "graphs.tcb"))) {

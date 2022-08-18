@@ -1,6 +1,7 @@
 import atexit
 import functools
 import math
+import os
 import shutil
 import threading
 from os import listdir, remove, rmdir, stat
@@ -180,6 +181,8 @@ simple_kernels_to_test = [(kernel0, (), python_kernel0, 1),
 def _test_offline_cache_dec(func):
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
+        # Enable WIP offline cache only in the tests
+        os.environ['TI_WIP_OFFLINE_CACHE'] = '1'
         test_utils.mkdir_p(tmp_offline_cache_file_path())
         ret = None
         try:
@@ -189,6 +192,7 @@ def _test_offline_cache_dec(func):
         finally:
             ti.reset()
             shutil.rmtree(tmp_offline_cache_file_path())
+            os.environ['TI_WIP_OFFLINE_CACHE'] = '0'
         return ret
 
     return wrapped

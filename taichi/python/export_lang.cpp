@@ -104,6 +104,13 @@ void export_lang(py::module &m) {
       .def(py::self == py::self)
       .def("__hash__", &DataType::hash)
       .def("to_string", &DataType::to_string)
+      .def("get_shape", [](DataType *dtype) -> std::optional<std::vector<int>> {
+        if (auto tensor_type = (*dtype)->cast<TensorType>()) {
+          return std::optional<std::vector<int>>(tensor_type->get_shape());
+        } else {
+          return std::nullopt;
+        }
+      })
       .def("__str__", &DataType::to_string)
       .def(
           "get_ptr", [](DataType *dtype) -> Type * { return *dtype; },
@@ -938,6 +945,10 @@ void export_lang(py::module &m) {
   m.def("is_signed", is_signed);
   m.def("is_real", is_real);
   m.def("is_unsigned", is_unsigned);
+  m.def("is_real_tensor", is_real_tensor);
+  m.def("is_integral_tensor", is_integral_tensor);
+  m.def("is_signed_tensor", is_signed_tensor);
+  m.def("is_quant_tensor", is_quant_tensor);
 
   m.def("global_new", static_cast<Expr (*)(Expr, DataType)>(global_new));
   m.def("set_global_grad", [&](const Expr &expr) {

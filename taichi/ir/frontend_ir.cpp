@@ -157,10 +157,15 @@ void UnaryOpExpression::type_check(CompileConfig *config) {
     throw TaichiTypeError(
         fmt::format("'{}' takes real inputs only, however '{}' is provided",
                     unary_op_type_name(type), operand->ret_type->to_string()));
+  bool is_tensor_operand = operand->ret_type->is<TensorType>();
   if ((type == UnaryOpType::sqrt || type == UnaryOpType::exp ||
        type == UnaryOpType::log) &&
       !is_real(operand->ret_type) && !is_real_tensor(operand->ret_type)) {
-    ret_type = config->default_fp;
+    if (is_tensor_operand) {
+      ret_type = TypeFactory::create_tensor_type(operand->ret_type->cast<TensorType>()->get_shape(), config->default_fp);
+    } else {
+      ret_type = config->default_fp;
+    }
   } else {
     ret_type = is_cast() ? cast_type : operand->ret_type;
   }

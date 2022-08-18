@@ -316,7 +316,7 @@ class Func:
                     pass
                 else:
                     raise TaichiSyntaxError(
-                        f'Invalid type annotation (argument {i}) of Taichi kernel: {annotation}'
+                        f'Invalid type annotation (argument {i}) of Taichi function: {annotation}'
                     )
             self.arguments.append(
                 KernelArgument(annotation, param.name, param.default))

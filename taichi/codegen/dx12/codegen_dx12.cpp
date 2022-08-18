@@ -1,6 +1,5 @@
 #include "taichi/codegen/dx12/codegen_dx12.h"
 
-
 #include "taichi/rhi/dx12/dx12_api.h"
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
 #include "taichi/common/core.h"
@@ -30,7 +29,6 @@ LLVMCompiledData KernelCodeGenDX12::modulegen(
 
 FunctionType KernelCodeGenDX12::codegen() {
   // FIXME: implement codegen.
-  return [](RuntimeContext &ctx) {
-  };
+  return [](RuntimeContext &ctx) {};
 }
 TLANG_NAMESPACE_END

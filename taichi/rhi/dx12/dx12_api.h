@@ -14,8 +14,9 @@ bool is_dx12_api_available();
 
 std::shared_ptr<Device> make_dx12_device();
 
-std::vector<uint8_t> validate_and_sign(std::vector<uint8_t> &input_dxil_container);
+std::vector<uint8_t> validate_and_sign(
+    std::vector<uint8_t> &input_dxil_container);
 
-}  // namespace directx11
+}  // namespace directx12
 }  // namespace lang
 }  // namespace taichi

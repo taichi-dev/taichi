@@ -19,6 +19,8 @@ env:
 jobs:
   show_environ:
     name: Show Environment Variables
+    # Disable this workflow on forks
+    if: github.repository_owner == 'taichi-dev'
     runs-on: [self-hosted, Linux]
     steps:
     - name: Environment Variables

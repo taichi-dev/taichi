@@ -186,7 +186,7 @@ std::string get_cache_path_by_arch(const std::string &base_path, Arch arch) {
   } else if (arch == Arch::vulkan) {
     subdir = "gfx";
   } else {
-    TI_ERROR("Unsupported arch by offline cache");
+    return base_path;
   }
   return taichi::join_path(base_path, subdir);
 }

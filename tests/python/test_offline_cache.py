@@ -202,6 +202,7 @@ def _test_offline_cache_dec(func):
 def _test_offline_cache_for_a_kernel(curr_arch, kernel, args, result,
                                      num_offloads):
     count_of_cache_file = cache_files_cnt(curr_arch)
+
     def added_files(arch):
         return cache_files_cnt(curr_arch) - count_of_cache_file
 
@@ -214,18 +215,21 @@ def _test_offline_cache_for_a_kernel(curr_arch, kernel, args, result,
     ti.init(arch=curr_arch,
             enable_fallback=False,
             **current_thread_ext_options())
-    assert added_files(curr_arch) == expected_num_cache_files(curr_arch, [num_offloads])
+    assert added_files(curr_arch) == expected_num_cache_files(
+        curr_arch, [num_offloads])
     res2 = kernel(*args)
     assert res1 == test_utils.approx(result) and res1 == test_utils.approx(
         res2)
 
     ti.reset()
-    assert added_files(curr_arch) == expected_num_cache_files(curr_arch, [num_offloads])
+    assert added_files(curr_arch) == expected_num_cache_files(
+        curr_arch, [num_offloads])
 
 
 @_test_offline_cache_dec
 def _test_closing_offline_cache_for_a_kernel(curr_arch, kernel, args, result):
     count_of_cache_file = cache_files_cnt(curr_arch)
+
     def added_files(arch):
         return cache_files_cnt(curr_arch) - count_of_cache_file
 
@@ -273,6 +277,7 @@ def test_offline_cache_per_kernel(curr_arch):
 @_test_offline_cache_dec
 def test_multiple_ib_with_offline_cache(curr_arch):
     count_of_cache_file = cache_files_cnt(curr_arch)
+
     def added_files(arch):
         return cache_files_cnt(curr_arch) - count_of_cache_file
 
@@ -315,8 +320,10 @@ def test_multiple_ib_with_offline_cache(curr_arch):
 @_test_offline_cache_dec
 def test_calling_a_kernel_with_different_param_list(curr_arch):
     count_of_cache_file = cache_files_cnt(curr_arch)
+
     def added_files(arch):
         return cache_files_cnt(curr_arch) - count_of_cache_file
+
     mat_type = ti.types.matrix(2, 3, ti.i32)
 
     @ti.kernel
@@ -357,6 +364,7 @@ def test_calling_a_kernel_with_different_param_list(curr_arch):
 @_test_offline_cache_dec
 def test_snode_reader_and_writer_with_offline_cache(curr_arch):
     count_of_cache_file = cache_files_cnt(curr_arch)
+
     def added_files(arch):
         return cache_files_cnt(curr_arch) - count_of_cache_file
 
@@ -394,6 +402,7 @@ def test_snode_reader_and_writer_with_offline_cache(curr_arch):
 @_test_offline_cache_dec
 def test_calling_many_kernels(curr_arch):
     count_of_cache_file = cache_files_cnt(curr_arch)
+
     def added_files(arch):
         return cache_files_cnt(curr_arch) - count_of_cache_file
 
@@ -410,18 +419,19 @@ def test_calling_many_kernels(curr_arch):
     ti.init(arch=curr_arch,
             enable_fallback=False,
             **current_thread_ext_options())
-    assert added_files(curr_arch) == expected_num_cache_files(curr_arch, 
-                   [kern[3] for kern in simple_kernels_to_test])
+    assert added_files(curr_arch) == expected_num_cache_files(
+        curr_arch, [kern[3] for kern in simple_kernels_to_test])
     helper()
     ti.reset()
-    assert added_files(curr_arch) == expected_num_cache_files(curr_arch, 
-                   [kern[3] for kern in simple_kernels_to_test])
+    assert added_files(curr_arch) == expected_num_cache_files(
+        curr_arch, [kern[3] for kern in simple_kernels_to_test])
 
 
 @pytest.mark.parametrize('curr_arch', supported_archs_offline_cache)
 @_test_offline_cache_dec
 def test_offline_cache_with_changing_compile_config(curr_arch):
     count_of_cache_file = cache_files_cnt(curr_arch)
+
     def added_files(arch):
         return cache_files_cnt(curr_arch) - count_of_cache_file
 
@@ -448,7 +458,8 @@ def test_offline_cache_with_changing_compile_config(curr_arch):
     helper()
 
     ti.reset()
-    assert added_files(curr_arch) == expected_num_cache_files(curr_arch, [2, 2])
+    assert added_files(curr_arch) == expected_num_cache_files(
+        curr_arch, [2, 2])
     ti.init(arch=curr_arch,
             enable_fallback=False,
             default_fp=ti.f32,
@@ -457,11 +468,13 @@ def test_offline_cache_with_changing_compile_config(curr_arch):
     helper()
 
     ti.reset()
-    assert added_files(curr_arch) == expected_num_cache_files(curr_arch, [2, 2])
+    assert added_files(curr_arch) == expected_num_cache_files(
+        curr_arch, [2, 2])
 
 
 # FIXME: Currently, the Vulkan offline cache doesn't support cache cleaning
-@pytest.mark.parametrize('curr_arch', list(set(supported_archs_offline_cache) - {ti.vulkan}))
+@pytest.mark.parametrize(
+    'curr_arch', list(set(supported_archs_offline_cache) - {ti.vulkan}))
 @pytest.mark.parametrize('factor', [0.0, 0.25, 0.85, 1.0])
 @pytest.mark.parametrize('policy', ['never', 'version', 'lru', 'fifo'])
 @_test_offline_cache_dec
@@ -487,6 +500,7 @@ def test_offline_cache_cleaning(curr_arch, factor, policy):
     ] else (kernel_count - int(factor * kernel_count)) / kernel_count
 
     count_of_cache_file = cache_files_cnt(curr_arch)
+
     def added_files(arch):
         return cache_files_cnt(curr_arch) - count_of_cache_file
 
@@ -494,14 +508,15 @@ def test_offline_cache_cleaning(curr_arch, factor, policy):
 
     run_simple_kernels(1024**3)  # 1GB
     ti.reset()  # Dumping cache data
-    size_of_cache_files = cache_files_size(backend_specified_cache_path(curr_arch))
-    assert added_files(curr_arch) == expected_num_cache_files(curr_arch, 
-                   [kern[3] for kern in simple_kernels_to_test])
+    size_of_cache_files = cache_files_size(
+        backend_specified_cache_path(curr_arch))
+    assert added_files(curr_arch) == expected_num_cache_files(
+        curr_arch, [kern[3] for kern in simple_kernels_to_test])
 
     only_init(size_of_cache_files * 2)
     ti.reset()
-    assert added_files(curr_arch) == expected_num_cache_files(curr_arch, 
-                   [kern[3] for kern in simple_kernels_to_test])
+    assert added_files(curr_arch) == expected_num_cache_files(
+        curr_arch, [kern[3] for kern in simple_kernels_to_test])
 
     only_init(size_of_cache_files)
     ti.reset()
@@ -518,10 +533,12 @@ def test_offline_cache_cleaning(curr_arch, factor, policy):
 
 
 # FIXME: Change to `supported_archs_offline_cache` after fixing bugs of real-function on gpu
-@pytest.mark.parametrize('curr_arch', [ti.cpu] if ti.cpu in test_utils.expected_archs() else [])
+@pytest.mark.parametrize(
+    'curr_arch', [ti.cpu] if ti.cpu in test_utils.expected_archs() else [])
 @_test_offline_cache_dec
 def test_offline_cache_for_kernels_calling_real_func(curr_arch):
     count_of_cache_file = cache_files_cnt(curr_arch)
+
     def added_files(arch):
         return cache_files_cnt(curr_arch) - count_of_cache_file
 
@@ -574,8 +591,10 @@ def test_offline_cache_for_kernels_calling_real_func(curr_arch):
     ti.init(arch=curr_arch,
             enable_fallback=False,
             **current_thread_ext_options())
-    assert added_files(curr_arch) == expected_num_cache_files(curr_arch, [1, 1])
+    assert added_files(curr_arch) == expected_num_cache_files(
+        curr_arch, [1, 1])
     helper2()
 
     ti.reset()
-    assert added_files(curr_arch) == expected_num_cache_files(curr_arch, [1, 1])
+    assert added_files(curr_arch) == expected_num_cache_files(
+        curr_arch, [1, 1])

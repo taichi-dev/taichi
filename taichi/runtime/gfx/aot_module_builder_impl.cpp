@@ -132,11 +132,14 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir,
 
   auto converted = AotDataConverter::convert(ti_aot_data_);
   const auto &spirv_codes = ti_aot_data_.spirv_codes;
-  for (int i = 0; i < std::min(ti_aot_data_.kernels.size(), spirv_codes.size()); ++i) {
+  for (int i = 0; i < std::min(ti_aot_data_.kernels.size(), spirv_codes.size());
+       ++i) {
     auto &k = ti_aot_data_.kernels[i];
-    for (int j = 0; j < std::min(k.tasks_attribs.size(), spirv_codes[i].size()); ++j) {
+    for (int j = 0; j < std::min(k.tasks_attribs.size(), spirv_codes[i].size());
+         ++j) {
       if (!spirv_codes[i][j].empty()) {
-        std::string spv_path = write_spv_file(output_dir, k.tasks_attribs[j], spirv_codes[i][j]);
+        std::string spv_path =
+            write_spv_file(output_dir, k.tasks_attribs[j], spirv_codes[i][j]);
         converted.kernels[k.name].tasks[j].source_path = spv_path;
       }
     }
@@ -150,7 +153,7 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir,
 
 void AotModuleBuilderImpl::mangle_aot_data() {
   // Only for offline cache
-  for (auto &kernel: ti_aot_data_.kernels) {
+  for (auto &kernel : ti_aot_data_.kernels) {
     const auto &prefix = kernel.name;
     for (std::size_t i = 0; i < kernel.tasks_attribs.size(); ++i) {
       kernel.tasks_attribs[i].name = prefix + std::to_string(i);
@@ -165,11 +168,15 @@ void AotModuleBuilderImpl::merge_with_old_meta_data(const std::string &path) {
     TaichiAotData old_data;
     read_from_binary_file(old_data, filename);
     // Ignore root_buffer_size and fields which aren't needed for offline cache
-    ti_aot_data_.kernels.insert(ti_aot_data_.kernels.end(), old_data.kernels.begin(), old_data.kernels.end());
+    ti_aot_data_.kernels.insert(ti_aot_data_.kernels.end(),
+                                old_data.kernels.begin(),
+                                old_data.kernels.end());
   }
 }
 
-std::optional<GfxRuntime::RegisterParams> AotModuleBuilderImpl::try_get_kernel_register_params(const std::string &kernel_name) const {
+std::optional<GfxRuntime::RegisterParams>
+AotModuleBuilderImpl::try_get_kernel_register_params(
+    const std::string &kernel_name) const {
   const auto &kernels = ti_aot_data_.kernels;
   for (std::size_t i = 0; i < kernels.size(); ++i) {
     if (kernels[i].name == kernel_name) {

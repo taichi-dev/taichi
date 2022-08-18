@@ -68,7 +68,9 @@ VulkanProgramImpl::VulkanProgramImpl(CompileConfig &config)
     : ProgramImpl(config) {
 }
 
-FunctionType register_params_to_executable(gfx::GfxRuntime::RegisterParams &&params, gfx::GfxRuntime *runtime) {
+FunctionType register_params_to_executable(
+    gfx::GfxRuntime::RegisterParams &&params,
+    gfx::GfxRuntime *runtime) {
   auto handle = runtime->register_taichi_kernel(std::move(params));
   return [runtime, handle](RuntimeContext &ctx) {
     runtime->launch_kernel(handle, &ctx);
@@ -78,32 +80,42 @@ FunctionType register_params_to_executable(gfx::GfxRuntime::RegisterParams &&par
 FunctionType compile_to_executable(Kernel *kernel,
                                    gfx::GfxRuntime *runtime,
                                    gfx::SNodeTreeManager *snode_tree_mgr) {
-  return register_params_to_executable(gfx::run_codegen(kernel, runtime->get_ti_device(),
-            snode_tree_mgr->get_compiled_structs()), runtime);
+  return register_params_to_executable(
+      gfx::run_codegen(kernel, runtime->get_ti_device(),
+                       snode_tree_mgr->get_compiled_structs()),
+      runtime);
 }
 
 FunctionType VulkanProgramImpl::compile(Kernel *kernel,
                                         OffloadedStmt *offloaded) {
-  // The Vulkan offline cache depends on AOT, which only supports a single SNodeTree. Hacking aot::Module can resolve this problem, but we prefer to fix it after supporting multiple SNodeTrees in AOT.
-  if (offline_cache::enabled_wip_offline_cache(config->offline_cache) && !kernel->is_evaluator && snode_tree_mgr_->get_compiled_structs().size() == 1) {
+  // The Vulkan offline cache depends on AOT, which only supports a single
+  // SNodeTree. Hacking aot::Module can resolve this problem, but we prefer to
+  // fix it after supporting multiple SNodeTrees in AOT.
+  if (offline_cache::enabled_wip_offline_cache(config->offline_cache) &&
+      !kernel->is_evaluator &&
+      snode_tree_mgr_->get_compiled_structs().size() == 1) {
     auto kernel_key = get_hashed_offline_cache_key(config, kernel);
     kernel->set_kernel_key_for_cache(kernel_key);
     const auto &cached_module = get_cached_module();
     aot::Kernel *cached_kernel = nullptr;
-    if (cached_module && (cached_kernel = cached_module->get_kernel(kernel_key))) {
-      TI_DEBUG("Create kernel '{}' from cache (key='{}')", kernel->get_name(), kernel_key);
+    if (cached_module &&
+        (cached_kernel = cached_module->get_kernel(kernel_key))) {
+      TI_DEBUG("Create kernel '{}' from cache (key='{}')", kernel->get_name(),
+               kernel_key);
       kernel->set_from_offline_cache();
-      return [cached_kernel](RuntimeContext &ctx) {
-        cached_kernel->launch(&ctx);
-      };
-    } else { // Compile & Cache it
+      return
+          [cached_kernel](RuntimeContext &ctx) { cached_kernel->launch(&ctx); };
+    } else {  // Compile & Cache it
       TI_DEBUG("Cache kernel '{}' (key='{}')", kernel->get_name(), kernel_key);
-      auto *cache_builder = static_cast<gfx::AotModuleBuilderImpl*>(get_caching_module_builder().get());
+      auto *cache_builder = static_cast<gfx::AotModuleBuilderImpl *>(
+          get_caching_module_builder().get());
       TI_ASSERT(cache_builder != nullptr);
       cache_builder->add(kernel_key, kernel);
-      auto params_opt = cache_builder->try_get_kernel_register_params(kernel_key);
+      auto params_opt =
+          cache_builder->try_get_kernel_register_params(kernel_key);
       TI_ASSERT(params_opt.has_value());
-      return register_params_to_executable(std::move(params_opt.value()), vulkan_runtime_.get());
+      return register_params_to_executable(std::move(params_opt.value()),
+                                           vulkan_runtime_.get());
     }
   }
 
@@ -239,16 +251,19 @@ std::unique_ptr<aot::Kernel> VulkanProgramImpl::make_aot_kernel(
 
 void VulkanProgramImpl::dump_cache_data_to_disk() {
   if (offline_cache::enabled_wip_offline_cache(config->offline_cache)) {
-    auto path = offline_cache::get_cache_path_by_arch(config->offline_cache_file_path, config->arch);
+    auto path = offline_cache::get_cache_path_by_arch(
+        config->offline_cache_file_path, config->arch);
     taichi::create_directories(path);
-    auto *cache_builder = static_cast<gfx::AotModuleBuilderImpl*>(get_caching_module_builder().get());
+    auto *cache_builder = static_cast<gfx::AotModuleBuilderImpl *>(
+        get_caching_module_builder().get());
     cache_builder->mangle_aot_data();
     cache_builder->merge_with_old_meta_data(path);
     cache_builder->dump(path, "");
   }
 }
 
-const std::unique_ptr<AotModuleBuilder> &VulkanProgramImpl::get_caching_module_builder() {
+const std::unique_ptr<AotModuleBuilder>
+    &VulkanProgramImpl::get_caching_module_builder() {
   if (!caching_module_builder_) {
     caching_module_builder_ = make_aot_module_builder();
   }
@@ -257,7 +272,8 @@ const std::unique_ptr<AotModuleBuilder> &VulkanProgramImpl::get_caching_module_b
 
 const std::unique_ptr<aot::Module> &VulkanProgramImpl::get_cached_module() {
   if (!cached_module_) {
-    auto path = offline_cache::get_cache_path_by_arch(config->offline_cache_file_path, config->arch);
+    auto path = offline_cache::get_cache_path_by_arch(
+        config->offline_cache_file_path, config->arch);
     if (taichi::path_exists(taichi::join_path(path, "metadata.tcb")) &&
         taichi::path_exists(taichi::join_path(path, "graphs.tcb"))) {
       gfx::AotModuleParams params;

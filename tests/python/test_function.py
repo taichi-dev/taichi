@@ -334,3 +334,39 @@ def test_ref_atomic():
         assert a == 10.
 
     bar()
+
+
+@test_utils.test(arch=[ti.cpu, ti.gpu], debug=True)
+def test_func_ndarray_arg():
+    vec3 = ti.types.vector(3, ti.f32)
+
+    @ti.func
+    def test(a: ti.types.ndarray(field_dim=1)):
+        a[0] = [100, 100, 100]
+
+    @ti.kernel
+    def test_k(x: ti.types.ndarray(field_dim=1)):
+        test(x)
+
+    arr = ti.ndarray(vec3, shape=(4))
+    test_k(arr)
+
+    assert (arr[0] == [100, 100, 100])
+
+
+@test_utils.test(arch=[ti.cpu, ti.gpu], debug=True)
+def test_func_matrix_arg():
+    vec3 = ti.types.vector(3, ti.f32)
+
+    @ti.func
+    def test(a: vec3):
+        a[0] = 100
+
+    @ti.kernel
+    def test_k():
+        x = ti.Matrix([3, 4, 5])
+        test(x)
+
+        assert x[0] == 100
+
+    test_k()

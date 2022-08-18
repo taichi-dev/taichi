@@ -304,12 +304,21 @@ class Func:
                         f'Taichi function `{self.func.__name__}` parameter `{arg_name}` must be type annotated'
                     )
             else:
-                if not id(annotation
-                          ) in primitive_types.type_ids and not isinstance(
-                              annotation, template) and not isinstance(
-                                  annotation, primitive_types.RefType):
+                if isinstance(annotation, ndarray_type.NdarrayType):
+                    pass
+                elif isinstance(annotation, MatrixType):
+                    pass
+                elif id(annotation) in primitive_types.type_ids:
+                    pass
+                elif isinstance(annotation, template):
+                    pass
+                elif isinstance(annotation, sparse_matrix_builder):
+                    pass
+                elif isinstance(annotation, primitive_types.RefType):
+                    pass
+                else:
                     raise TaichiSyntaxError(
-                        f'Invalid type annotation (argument {i}) of Taichi function: {annotation}'
+                        f'Invalid type annotation (argument {i}) of Taichi kernel: {annotation}'
                     )
             self.arguments.append(
                 KernelArgument(annotation, param.name, param.default))

@@ -46,7 +46,6 @@ LlvmRuntimeExecutor::LlvmRuntimeExecutor(CompileConfig &config,
       TI_WARN("Falling back to {}.", arch_name(host_arch()));
     }
   }
-
   snode_tree_buffer_manager_ = std::make_unique<SNodeTreeBufferManager>(this);
   thread_pool_ = std::make_unique<ThreadPool>(config.cpu_max_num_threads);
   preallocated_device_buffer_ = nullptr;
@@ -84,6 +83,11 @@ LlvmRuntimeExecutor::LlvmRuntimeExecutor(CompileConfig &config,
       config.saturating_grid_dim = num_SMs * query_max_block_per_sm * 2;
     }
 #endif
+  } else if (config.arch == Arch::dx12) {
+#if defined(TI_WITH_DX12)
+    // FIXME: set value based on DX12.
+    config.max_block_dim = 1024;
+#endif
   }
 
   if (arch_is_cpu(config.arch)) {
@@ -106,6 +110,18 @@ LlvmRuntimeExecutor::LlvmRuntimeExecutor(CompileConfig &config,
     device_ = std::make_shared<cuda::CudaDevice>();
 
     this->maybe_initialize_cuda_llvm_context();
+  }
+#endif
+
+#ifdef TI_WITH_DX12
+  if (config.arch == Arch::dx12) {
+    // FIXME: add dx12 device.
+    device_ = std::make_shared<cpu::CpuDevice>();
+
+    llvm_context_device_ =
+        std::make_unique<TaichiLLVMContext>(config_, Arch::dx12);
+    // FIXME: add dx12 JIT.
+    //llvm_context_device_->init_runtime_jit_module();
   }
 #endif
 

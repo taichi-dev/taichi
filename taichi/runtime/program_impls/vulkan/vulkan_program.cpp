@@ -239,11 +239,12 @@ std::unique_ptr<aot::Kernel> VulkanProgramImpl::make_aot_kernel(
 
 void VulkanProgramImpl::dump_cache_data_to_disk() {
   if (config->offline_cache) {
-    taichi::create_directories(config->offline_cache_file_path);
+    auto path = offline_cache::get_cache_path_by_arch(config->offline_cache_file_path, config->arch);
+    taichi::create_directories(path);
     auto *cache_builder = static_cast<gfx::AotModuleBuilderImpl*>(get_caching_module_builder().get());
     cache_builder->mangle_aot_data();
-    cache_builder->merge_with_old_meta_data(config->offline_cache_file_path);
-    cache_builder->dump(config->offline_cache_file_path, "");
+    cache_builder->merge_with_old_meta_data(path);
+    cache_builder->dump(path, "");
   }
 }
 
@@ -255,13 +256,15 @@ const std::unique_ptr<AotModuleBuilder> &VulkanProgramImpl::get_caching_module_b
 }
 
 const std::unique_ptr<aot::Module> &VulkanProgramImpl::get_cached_module() {
-  if (config->offline_cache && !cached_module_ &&
-      taichi::path_exists(taichi::join_path(config->offline_cache_file_path, "metadata.tcb")) &&
-      taichi::path_exists(taichi::join_path(config->offline_cache_file_path, "graphs.tcb"))) {
-    gfx::AotModuleParams params;
-    params.module_path = config->offline_cache_file_path;
-    params.runtime = vulkan_runtime_.get();
-    cached_module_ = gfx::make_aot_module(params, config->arch);
+  if (config->offline_cache && !cached_module_) {
+    auto path = offline_cache::get_cache_path_by_arch(config->offline_cache_file_path, config->arch);
+    if (taichi::path_exists(taichi::join_path(path, "metadata.tcb")) &&
+        taichi::path_exists(taichi::join_path(path, "graphs.tcb"))) {
+      gfx::AotModuleParams params;
+      params.module_path = path;
+      params.runtime = vulkan_runtime_.get();
+      cached_module_ = gfx::make_aot_module(params, config->arch);
+    }
   }
   return cached_module_;
 }

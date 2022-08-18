@@ -179,6 +179,18 @@ namespace offline_cache {
 constexpr std::size_t offline_cache_key_length = 65;
 constexpr std::size_t min_mangled_name_length = offline_cache_key_length + 2;
 
+std::string get_cache_path_by_arch(const std::string &base_path, Arch arch) {
+  std::string subdir;
+  if (arch_uses_llvm(arch)) {
+    subdir = "llvm";
+  } else if (arch == Arch::vulkan) {
+    subdir = "gfx";
+  } else {
+    TI_ERROR("Unsupported arch by offline cache");
+  }
+  return taichi::join_path(base_path, subdir);
+}
+
 std::string mangle_name(const std::string &primal_name,
                         const std::string &key) {
   // Result: {primal_name}{key: char[65]}_{(checksum(primal_name)) ^

@@ -2,6 +2,8 @@
 
 #include <string>
 
+#include "taichi/rhi/arch.h"
+
 namespace taichi {
 namespace lang {
 
@@ -17,6 +19,7 @@ void gen_offline_cache_key(Program *prog, IRNode *ast, std::ostream *os);
 
 namespace offline_cache {
 
+std::string get_cache_path_by_arch(const std::string &base_path, Arch arch);
 std::string mangle_name(const std::string &primal_name, const std::string &key);
 bool try_demangle_name(const std::string &mangled_name,
                        std::string &primal_name,

@@ -467,10 +467,11 @@ def mod(x, y):
     """
     return x - y * ti.floor(x / y)
 
+
 @ti.func
 def translate(dx, dy, dz):
     """Constructs a translation Matrix with shape (4, 4).
-    
+
     Args:
         dx (float): delta x.
         dy (float): delta y.
@@ -480,7 +481,7 @@ def translate(dx, dy, dz):
         :class:`~taichi.math.mat4`: translation matrix.
 
     Example::
-    
+
         >>> import math
         >>> ti.Matrix.translate(1, 2, 3)
         [[ 1 0 0 1]
@@ -489,7 +490,8 @@ def translate(dx, dy, dz):
          [ 0 0 0 1]]
     """
     return mat4([[1., 0., 0., dx], [0., 1., 0., dy], [0., 0., 1., dz],
-                       [0., 0., 0., 1.]])
+                 [0., 0., 0., 1.]])
+
 
 @ti.func
 def scale(sx, sy, sz):
@@ -513,7 +515,8 @@ def scale(sx, sy, sz):
          [ 0 0 0 1]]
     """
     return mat4([[sx, 0., 0., 0.], [0., sy, 0., 0.], [0., 0., sz, 0.],
-                       [0., 0., 0., 1.]])
+                 [0., 0., 0., 1.]])
+
 
 @ti.func
 def rotate2d(p, ang):
@@ -527,7 +530,7 @@ def rotate2d(p, ang):
         :class:`~taichi.math.vec2`: The vector after rotation.
 
     Example::
-    
+
         >>> from taichi.math import *
         >>> @ti.kernel
         >>> def test():
@@ -573,11 +576,11 @@ def rotate3d(p, axis, ang):
 @ti.func
 def rot3d_by_axis(ang, axis):
     """rotate the matrix by an angle with the vector as the rotation axis
-    
+
     Args:
         ang (float): angle in radians unit
         axis (vec3): rotation axis
-        
+
     Returns:
         :class:`~taichi.math.mat4`: rotation matrix
     """
@@ -586,15 +589,24 @@ def rot3d_by_axis(ang, axis):
 
     axis = normalize(axis)
     temp = (1 - c) * axis
-    return mat4([[ c + temp[0] * axis[0], temp[0] * axis[1] + s * axis[2], temp[0] * axis[2] - s * axis[1], 0.],
-                     [ temp[1] * axis[0] - s * axis[2], c + temp[1] * axis[1], temp[1] * axis[2] + s * axis[0], 0.],
-                     [ temp[2] * axis[0] + s * axis[1], temp[2] * axis[1] - s * axis[0], c + temp[2] * axis[2], 0.], 
-                     [0., 0., 0., 1.]])
+    return mat4([[
+        c + temp[0] * axis[0], temp[0] * axis[1] + s * axis[2],
+        temp[0] * axis[2] - s * axis[1], 0.
+    ],
+                 [
+                     temp[1] * axis[0] - s * axis[2], c + temp[1] * axis[1],
+                     temp[1] * axis[2] + s * axis[0], 0.
+                 ],
+                 [
+                     temp[2] * axis[0] + s * axis[1],
+                     temp[2] * axis[1] - s * axis[0], c + temp[2] * axis[2], 0.
+                 ], [0., 0., 0., 1.]])
+
 
 @ti.func
 def rot3d_yaw_pitch_roll(yaw, pitch, roll):
     """Creates a 3D 4 * 4 homogeneous rotation matrix from euler angles(Y * X * Z).
-    
+
     Args:
         yaw   (float): yaw angle in radians unit
         pitch (float): pitch angle in radians unit
@@ -609,15 +621,16 @@ def rot3d_yaw_pitch_roll(yaw, pitch, roll):
     cb = ti.cos(roll)
     sb = ti.sin(roll)
 
-    return mat4([[ch * cb + sh * sp * sb, sb * cp, -sh * cb + ch * sp * sb, 0.],
-                    [-ch * sb + sh * sp * cb, cb * cp, sb * sh + ch * sp * cb, 0.],
-                    [sh * cp, -sp, ch * cp, 0.], 
-                    [0., 0., 0., 1.]])
+    return mat4(
+        [[ch * cb + sh * sp * sb, sb * cp, -sh * cb + ch * sp * sb, 0.],
+         [-ch * sb + sh * sp * cb, cb * cp, sb * sh + ch * sp * cb, 0.],
+         [sh * cp, -sp, ch * cp, 0.], [0., 0., 0., 1.]])
+
 
 @ti.func
 def rotation3d(ang_x, ang_y, ang_z):
     """ Creates a 3D 4 * 4 homogeneous rotation matrix from an euler angle(Y * X * Z).
-    
+
     Args:
         ang_x (float): angle in radians unit around X axis
         ang_y (float): angle in radians unit around Y axis
@@ -633,6 +646,7 @@ def rotation3d(ang_x, ang_y, ang_z):
         [ 0.          0.          0.          1.        ]]
     """
     return rot3d_yaw_pitch_roll(ang_z, ang_x, ang_y)
+
 
 @ti.func
 def eye(n: ti.template()):
@@ -836,9 +850,10 @@ __all__ = [
     "acos", "asin", "atan2", "ceil", "clamp", "cos", "cross", "degrees",
     "determinant", "distance", "dot", "e", "exp", "eye", "floor", "fract",
     "inf", "inverse", "isinf", "isnan", "ivec2", "ivec3", "ivec4", "length",
-    "log", "log2", "mat2", "mat3", "mat4", "max", "min", "mix", "mod", "translate",
-    "scale", "nan", "normalize", "pi", "pow", "radians", "reflect", "refract", "rot2", "rot3",
-    "rotate2d", "rotate3d", "rot3d_by_axis", "rot3d_yaw_pitch_roll", "rotation3d", "round", "sign", "sin", 
-    "smoothstep", "sqrt", "step", "tan", "tanh", "uvec2", "uvec3", "uvec4", "vdir", "vec2", "vec3",
-    "vec4"
+    "log", "log2", "mat2", "mat3", "mat4", "max", "min", "mix", "mod",
+    "translate", "scale", "nan", "normalize", "pi", "pow", "radians",
+    "reflect", "refract", "rot2", "rot3", "rotate2d", "rotate3d",
+    "rot3d_by_axis", "rot3d_yaw_pitch_roll", "rotation3d", "round", "sign",
+    "sin", "smoothstep", "sqrt", "step", "tan", "tanh", "uvec2", "uvec3",
+    "uvec4", "vdir", "vec2", "vec3", "vec4"
 ]

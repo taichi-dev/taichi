@@ -162,7 +162,9 @@ void UnaryOpExpression::type_check(CompileConfig *config) {
        type == UnaryOpType::log) &&
       !is_real(operand->ret_type) && !is_real_tensor(operand->ret_type)) {
     if (is_tensor_operand) {
-      ret_type = TypeFactory::create_tensor_type(operand->ret_type->cast<TensorType>()->get_shape(), config->default_fp);
+      ret_type = TypeFactory::create_tensor_type(
+          operand->ret_type->cast<TensorType>()->get_shape(),
+          config->default_fp);
     } else {
       ret_type = config->default_fp;
     }

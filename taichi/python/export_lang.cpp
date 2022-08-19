@@ -104,13 +104,14 @@ void export_lang(py::module &m) {
       .def(py::self == py::self)
       .def("__hash__", &DataType::hash)
       .def("to_string", &DataType::to_string)
-      .def("get_shape", [](DataType *dtype) -> std::optional<std::vector<int>> {
-        if (auto tensor_type = (*dtype)->cast<TensorType>()) {
-          return std::optional<std::vector<int>>(tensor_type->get_shape());
-        } else {
-          return std::nullopt;
-        }
-      })
+      .def("get_shape",
+           [](DataType *dtype) -> std::optional<std::vector<int>> {
+             if (auto tensor_type = (*dtype)->cast<TensorType>()) {
+               return std::optional<std::vector<int>>(tensor_type->get_shape());
+             } else {
+               return std::nullopt;
+             }
+           })
       .def("__str__", &DataType::to_string)
       .def(
           "get_ptr", [](DataType *dtype) -> Type * { return *dtype; },

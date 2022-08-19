@@ -1491,22 +1491,22 @@ def ti_any(a):
 def ti_all(a):
     return a.all()
 
+
 def _shape_of(expr):
     dt = expr.ptr.get_ret_type()
-    return dt.get_shape()
+    ret = dt.get_shape()
+    if ret is None:
+        raise TaichiCompilationError(f"Cannot get shape of type {dt}")
+    return ret
 
 @taichi_scope
 def _reduce(e, func):
     s = _shape_of(e)
-    assert s != None, "expr should have a shape, i.e., have a tensor type"
     acc = 0
-    from taichi.lang.misc import loop_config
     if impl.static(len(s) == 1):
-        loop_config(serialize=True)
         for i in range(s[0]):
             acc = func(acc, e[i])
     elif impl.static(len(s) == 2):
-        loop_config(serialize=True)
         for i in range(s[0]):
             for j in range(s[1]):
                 acc = func(acc, e[i, j])
@@ -1516,13 +1516,33 @@ def _reduce(e, func):
     return acc
 
 @taichi_scope
+def _bind(m, func):
+    s = _shape_of(m)
+    entries = []
+    from taichi.lang.matrix import make_matrix
+    if impl.static(len(s) == 1):
+        for i in range(s[0]):
+            entries.append(func(m[i]))
+    elif impl.static(len(s) == 2):
+        for i in range(s[0]):
+            entries.append([])
+            for j in range(s[1]):
+                entries[i].append(func(m[i, j]))
+    else:
+        raise TaichiCompilationError("mapping supports up to matrices")
+    return make_matrix(entries)
+
+
+@taichi_scope
 def sum(e):
     return _reduce(e, lambda x, y: x + y)
+
 
 @taichi_scope
 def norm(m, eps=0.0):
     r = impl.expr_init(m * m)
     return sqrt(sum(r) + eps)
+
 
 @taichi_scope
 def normalized(m):
@@ -1530,6 +1550,7 @@ def normalized(m):
     assert len(shape) == 1, "normalized only works for vectors"
     inv_norm = 1 / norm(m)
     return inv_norm * m
+
 
 @taichi_scope
 def dot(v1, v2):
@@ -1540,12 +1561,13 @@ def dot(v1, v2):
     assert s1 == s2, "lhs and rhs shape should match"
     return sum(impl.expr_init(v1 * v2))
 
+
 def _matrix_cross_3d(self, other):
     result = [
-            self[1] * other[2] - self[2] * other[1],
-            self[2] * other[0] - self[0] * other[2],
-            self[0] * other[1] - self[1] * other[0],
-        ]
+        self[1] * other[2] - self[2] * other[1],
+        self[2] * other[0] - self[0] * other[2],
+        self[0] * other[1] - self[1] * other[0],
+    ]
     if impl.current_cfg().real_matrix:
         from taichi.lang.matrix import make_matrix
         return make_matrix(result)
@@ -1553,8 +1575,10 @@ def _matrix_cross_3d(self, other):
         from taichi.lang.matrix import Vector
         return Vector(result)
 
+
 def _matrix_cross_2d(self, other):
     return self[0] * other[1] - self[1] * other[0]
+
 
 @taichi_scope
 def cross(v1, v2):
@@ -1564,11 +1588,12 @@ def cross(v1, v2):
     assert len(s2) == 1, "rhs should be a vector"
     if impl.static(s1[0] == 3 and s2[0] == 3):
         return _matrix_cross_3d(v1, v2)
-    
+
     if impl.static(s1[0] == 2 and s2[0] == 2):
         return _matrix_cross_2d(v1, v2)
-    
+
     raise TaichiCompilationError("cross operator only supports 2D/3D vectors")
+
 
 @taichi_scope
 def matmul(m1, m2):
@@ -1588,11 +1613,33 @@ def matmul(m1, m2):
     from taichi.lang.matrix import make_matrix
     return make_matrix(entries)
 
+@taichi_scope
+def transpose(m, in_place=False):
+    s = _shape_of(m)
+    if len(s) == 1:
+        return s
+
+    if in_place:
+        # memo = dict()
+        for i in range(s[0]):
+            for j in range(s[1]):
+                m[j, i] = m[i, j]
+        return m
+    else:
+        from taichi.lang.matrix import make_matrix
+        entries = [[0 for _ in range(s[1])]
+                      for _ in range(s[0])]
+        for i in range(s[0]):
+            for j in range(s[1]):
+                entries[j][i] = m[i, j]
+        return make_matrix(entries)
+
+
 __all__ = [
     "acos", "asin", "atan2", "atomic_and", "atomic_or", "atomic_xor",
     "atomic_max", "atomic_sub", "atomic_min", "atomic_add", "bit_cast",
     "bit_shr", "cast", "ceil", "cos", "exp", "floor", "log", "random",
     "raw_mod", "raw_div", "round", "rsqrt", "sin", "sqrt", "tan", "tanh",
     "max", "min", "select", "abs", "pow", "norm", "normalized", "sum", "dot",
-    "cross", "matmul"
+    "cross", "matmul", "transpose"
 ]

@@ -77,7 +77,7 @@ x.fill(0.0)
 
 
 @ti.kernel
-def init_b():
+def init_b(b: ti.types.ndarray()):
     for i in range(nrows):
         b[i] = 1.0 + i / nrows
 
@@ -87,16 +87,9 @@ ti.linalg.cu_solve(d_row_csr, d_col_csr, d_value_csr, nrows, ncols, nnz, b, x)
 
 @ti.kernel
 def print_x(x: ti.types.ndarray()):
-    for i in range(20):
+    for i in range(ncols - 10, ncols):
         print(x[i])
 
 
-# print("d_row_csr:")
-# print_x(d_row_csr)
-# ti.sync()
-# print("d_col_csr:")
-# print_x(d_col_csr)
-# ti.sync()
-# print("d_value_csr:")
-# print_x(d_value_csr)
-# ti.sync()
+init_b(b)
+print_x(x)

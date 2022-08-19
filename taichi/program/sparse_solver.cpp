@@ -129,7 +129,7 @@ void cu_solve(Program *prog,
   size_t drow_offsets = prog->get_ndarray_data_ptr_as_int(&row_offsets);
   size_t dcol_indices = prog->get_ndarray_data_ptr_as_int(&col_indices);
   size_t dvalues = prog->get_ndarray_data_ptr_as_int(&values);
-  // size_t db = prog->get_ndarray_data_ptr_as_int(&b);
+  size_t db = prog->get_ndarray_data_ptr_as_int(&b);
   size_t dx = prog->get_ndarray_data_ptr_as_int(&x);
 
   if (!CUSOLVERDriver::get_instance().is_loaded()) {
@@ -224,11 +224,8 @@ void cu_solve(Program *prog,
   for (int j = 0; j < nnz; j++)
     h_val_B[j] = h_val_A[h_mapBfromA[j]];
 
-  // step 3: b(j) = 1 + j/n
-  for (int row = 0; row < nrows; row++) {
-    h_b[row] = 1.0 + ((float)row) / ((float)nrows);
-  }
-
+  CUDADriver::get_instance().memcpy_device_to_host((void *)h_b, (void *)db,
+                                                   sizeof(float) * nrows);
   for (int row = 0; row < nrows; row++) {
     h_Qb[row] = h_b[h_Q[row]];
   }
@@ -245,9 +242,6 @@ void cu_solve(Program *prog,
   // step 5: Q*x = z
   for (int row = 0; row < nrows; row++)
     h_x[h_Q[row]] = h_z[row];
-
-  for (int col = ncols - 10; col < ncols; col++)
-    printf("x[%d] = %f\n", col, h_x[col]);
 
   CUDADriver::get_instance().memcpy_host_to_device((void *)dx, (void *)h_x,
                                                    sizeof(float) * ncols);

@@ -69,10 +69,17 @@ d_value_csr.from_numpy(A_csr.data)
 d_col_csr.from_numpy(A_csr.indices)
 d_row_csr.from_numpy(A_csr.indptr)
 
-b = ti.ndarray(shape=A_csr.shape[0], dtype=ti.f32)
+b = ti.ndarray(shape=nrows, dtype=ti.f32)
 b.fill(1.0)
 
-x = ti.ndarray(shape=A_csr.shape[1], dtype=ti.f32)
+x = ti.ndarray(shape=ncols, dtype=ti.f32)
 x.fill(0.0)
 
-ti.linalg.cu_solve(d_row_csr, d_col_csr, d_value_csr, b, x)
+
+@ti.kernel
+def init_b():
+    for i in range(nrows):
+        b[i] = 1.0 + i / nrows
+
+
+ti.linalg.cu_solve(d_row_csr, d_col_csr, d_value_csr, nrows, ncols, nnz, b, x)

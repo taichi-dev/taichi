@@ -438,6 +438,9 @@ typedef struct CUDA_EXTERNAL_SEMAPHORE_WAIT_PARAMS_st {
 struct cusparseContext;
 typedef struct cusparseContext *cusparseHandle_t;
 
+struct cusparseMatDescr;
+typedef struct cusparseMatDescr *cusparseMatDescr_t;
+
 struct cusparseDnVecDescr;
 struct cusparseSpMatDescr;
 typedef struct cusparseDnVecDescr *cusparseDnVecDescr_t;
@@ -523,12 +526,6 @@ typedef enum libraryPropertyType_t {
   PATCH_LEVEL
 } libraryPropertyType;
 
-typedef struct {
-  cusparseMatrixType_t MatrixType;
-  cusparseFillMode_t FillMode;
-  cusparseDiagType_t DiagType;
-  cusparseIndexBase_t IndexBase;
-} cusparseMatDescr_t;
 struct cusolverSpContext;
 typedef struct cusolverSpContext *cusolverSpHandle_t;
 #endif

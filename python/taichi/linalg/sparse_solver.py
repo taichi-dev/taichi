@@ -3,6 +3,7 @@ import taichi.lang
 from taichi._lib import core as _ti_core
 from taichi.lang.exception import TaichiRuntimeError
 from taichi.lang.field import Field
+from taichi.lang.impl import get_runtime
 from taichi.linalg import SparseMatrix
 from taichi.types.primitive_types import f32
 
@@ -97,7 +98,7 @@ class SparseSolver:
         return self.solver.info()
 
 
-def cu_solve(d_row_csr, d_col_csr, d_value_csr, b, x):
-    _ti_core.cu_solve(d_row_csr.arr, d_col_csr.arr, d_value_csr.arr, b.arr,
-                      x.arr)
+def cu_solve(d_row_csr, d_col_csr, d_value_csr, nrows, ncols, nnz, b, x):
+    _ti_core.cu_solve(get_runtime().prog, d_row_csr.arr, d_col_csr.arr,
+                      d_value_csr.arr, nrows, ncols, nnz, b.arr, x.arr)
     return x  # pylint: disable=R1710

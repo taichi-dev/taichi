@@ -598,7 +598,7 @@ def rotation2d(ang):
 @ti.func
 def rotation3d(ang_x, ang_y, ang_z):
     """ Creates a 3D 4 * 4 homogeneous rotation matrix from an euler angle(Y * X * Z).
-    
+
     Args:
         ang_x (float): angle in radians unit around X axis
         ang_y (float): angle in radians unit around Y axis
@@ -614,6 +614,7 @@ def rotation3d(ang_x, ang_y, ang_z):
         [ 0.          0.          0.          1.        ]]
     """
     return rot3d_yaw_pitch_roll(ang_z, ang_x, ang_y)
+
 
 @ti.func
 def eye(n: ti.template()):
@@ -765,9 +766,10 @@ __all__ = [
     "acos", "asin", "atan2", "ceil", "clamp", "cos", "cross", "degrees",
     "determinant", "distance", "dot", "e", "exp", "eye", "floor", "fract",
     "inf", "inverse", "isinf", "isnan", "ivec2", "ivec3", "ivec4", "length",
-    "log", "log2", "mat2", "mat3", "mat4", "max", "min", "mix", "mod", "translate",
-    "scale", "nan", "normalize", "pi", "pow", "radians", "reflect", "refract",
-    "rot3d_by_axis", "rot3d_yaw_pitch_roll", "rotation2d", "rotation3d", "round", "sign", "sin", 
-    "smoothstep", "sqrt", "step", "tan", "tanh", "uvec2", "uvec3", "uvec4", "vdir", "vec2", "vec3",
+    "log", "log2", "mat2", "mat3", "mat4", "max", "min", "mix", "mod",
+    "translate", "scale", "nan", "normalize", "pi", "pow", "radians",
+    "reflect", "refract", "rot3d_by_axis", "rot3d_yaw_pitch_roll",
+    "rotation2d", "rotation3d", "round", "sign", "sin", "smoothstep", "sqrt",
+    "step", "tan", "tanh", "uvec2", "uvec3", "uvec4", "vdir", "vec2", "vec3",
     "vec4"
 ]

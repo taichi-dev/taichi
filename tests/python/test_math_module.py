@@ -1,4 +1,5 @@
 import errno
+
 import pytest
 
 import taichi as ti
@@ -116,15 +117,17 @@ def test_scale():
     error += check_epsilon_equal(scale_mat, scale_ref, 0.00001)
     assert error == 0
 
+
 @test_utils.test()
 @ti.kernel
 def test_rotation2d():
     error = 0
     rotationTest = ti.math.rotation2d(ti.math.radians(30))
-    rotationRef  = ti.math.mat2([[0.866025, -0.500000], [0.500000, 0.866025]])
+    rotationRef = ti.math.mat2([[0.866025, -0.500000], [0.500000, 0.866025]])
     error += check_epsilon_equal(rotationRef, rotationTest, 0.00001)
     assert error == 0
-    
+
+
 @test_utils.test()
 @ti.kernel
 def test_rotation3d():

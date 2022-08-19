@@ -106,10 +106,10 @@ user_api[ti.math] = [
     'clog', 'cmul', 'cos', 'cpow', 'cross', 'csqrt', 'degrees', 'determinant',
     'distance', 'dot', 'e', 'exp', 'eye', 'floor', 'fract', 'inf', 'inverse',
     'isinf', 'isnan', 'ivec2', 'ivec3', 'ivec4', 'length', 'log', 'log2',
-    'mat2', 'mat3', 'mat4', 'max', 'min', 'mix', 'mod', 'translate', 'scale', 
-    'nan', 'normalize', 'pi', 'pow', 'radians', 'reflect', 'refract', 
-    "rot3d_by_axis", "rot3d_yaw_pitch_roll", 'rotation2d', "rotation3d", 
-    'round', 'sign', 'sin', 'smoothstep', 'sqrt', 'step', 'tan', 'tanh', 
+    'mat2', 'mat3', 'mat4', 'max', 'min', 'mix', 'mod', 'translate', 'scale',
+    'nan', 'normalize', 'pi', 'pow', 'radians', 'reflect', 'refract',
+    "rot3d_by_axis", "rot3d_yaw_pitch_roll", 'rotation2d', "rotation3d",
+    'round', 'sign', 'sin', 'smoothstep', 'sqrt', 'step', 'tan', 'tanh',
     'uvec2', 'uvec3', 'uvec4', 'vdir', 'vec2', 'vec3', 'vec4'
 ]
 user_api[ti.Matrix] = _get_expected_matrix_apis()

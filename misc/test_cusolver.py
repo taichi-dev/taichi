@@ -83,3 +83,20 @@ def init_b():
 
 
 ti.linalg.cu_solve(d_row_csr, d_col_csr, d_value_csr, nrows, ncols, nnz, b, x)
+
+
+@ti.kernel
+def print_x(x: ti.types.ndarray()):
+    for i in range(20):
+        print(x[i])
+
+
+# print("d_row_csr:")
+# print_x(d_row_csr)
+# ti.sync()
+# print("d_col_csr:")
+# print_x(d_col_csr)
+# ti.sync()
+# print("d_value_csr:")
+# print_x(d_value_csr)
+# ti.sync()

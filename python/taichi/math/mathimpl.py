@@ -616,7 +616,6 @@ def rotation3d(ang_x, ang_y, ang_z):
     return rot3d_yaw_pitch_roll(ang_z, ang_x, ang_y)
 
 
-
 @ti.func
 def eye(n: ti.template()):
     """Returns the nxn identity matrix.

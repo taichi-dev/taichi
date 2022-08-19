@@ -71,15 +71,15 @@ These structures have to be decomposed into 1D Taichi fields. For example, when 
 
 Follow these steps to install Taichi on a server without Internet access.
 
-1. From a computer with Internet access, pip download taichi, ensuring that this computer has the same operating system as the target server:
+1. From a computer with Internet access, pip download Taichi, ensuring that this computer has the same operating system as the target server:
 
 ```plaintext
 pip download taichi
 ```
 
-This command will download the wheel package for taichi together with all its dependencies.
+*This command downloads the wheel package of Taichi and all its dependencies.*
 
-2. Copy the downloaded *.whl packages to your local server and install each with the following command. Note that you should first install all the dependencies and leave taichi installation to the last.
+2. Copy the downloaded *.whl packages to your local server and install each with the following command. Note that you *must* complete all dependency installation before installing Taichi.
 
 ```
 python -m pip install xxxx.whl
@@ -111,16 +111,16 @@ def foo():
 foo()
 ```
 
-You will get output:
+You get the following output:
 
 ```
 A = [0.200000002980, 0.000000000000]
 B = [0.200000000000, 0.000000000000]
 ```
 
-You may notice the value of `A` is slightly different from `[0.2, 0]`. This is because, by default, your float literals will be converted to `ti.f32`, and `0.2` in `ti.f32` precision will become `0.200000002980`. If you expect `A` and `B` to have `ti.f64` precision, use `ti.f64(0.2)` to preserve more effective digits here so that `0.2` keeps its `ti.f64` type.
+You may notice the value of `A` is slightly different from `[0.2, 0]`. This is because, by default, your float literals are converted to `ti.f32`, and `0.2` in `ti.f32` precision becomes `0.200000002980`. If you expect `A` and `B` to have `ti.f64` precision, use `ti.f64(0.2)` to preserve more effective digits here so that `0.2` keeps its `ti.f64` type.
 
-Alternatively, if you can afford the cost of having all floating-point operations in `f64` precision, you can directly initialize Taichi with `ti.init(..., default_fp=ti.f64)`.
+Alternatively, if you can afford having all floating-point operations in `f64` precision, you can directly initialize Taichi with `ti.init(..., default_fp=ti.f64)`.
 
 ### Why does it always return an error when I pass a list from the Python scope to a Taichi kernel?
 

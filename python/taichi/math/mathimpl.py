@@ -467,10 +467,11 @@ def mod(x, y):
     """
     return x - y * ti.floor(x / y)
 
+
 @ti.func
 def translate(dx, dy, dz):
     """Constructs a translation Matrix with shape (4, 4).
-    
+
     Args:
         dx (float): delta x.
         dy (float): delta y.
@@ -480,7 +481,7 @@ def translate(dx, dy, dz):
         :class:`~taichi.math.mat4`: translation matrix.
 
     Example::
-    
+
         >>> import math
         >>> ti.Matrix.translate(1, 2, 3)
         [[ 1 0 0 1]
@@ -489,7 +490,8 @@ def translate(dx, dy, dz):
          [ 0 0 0 1]]
     """
     return mat4([[1., 0., 0., dx], [0., 1., 0., dy], [0., 0., 1., dz],
-                       [0., 0., 0., 1.]])
+                 [0., 0., 0., 1.]])
+
 
 @ti.func
 def scale(sx, sy, sz):
@@ -513,16 +515,17 @@ def scale(sx, sy, sz):
          [ 0 0 0 1]]
     """
     return mat4([[sx, 0., 0., 0.], [0., sy, 0., 0.], [0., 0., sz, 0.],
-                       [0., 0., 0., 1.]])
+                 [0., 0., 0., 1.]])
+
 
 @ti.func
 def rot3d_by_axis(ang, axis):
     """rotate the matrix by an angle with the vector as the rotation axis
-    
+
     Args:
         ang (float): angle in radians unit
         axis (vec3): rotation axis
-        
+
     Returns:
         :class:`~taichi.math.mat4`: rotation matrix
     """
@@ -531,15 +534,24 @@ def rot3d_by_axis(ang, axis):
 
     axis = normalize(axis)
     temp = (1 - c) * axis
-    return mat4([[ c + temp[0] * axis[0], temp[0] * axis[1] + s * axis[2], temp[0] * axis[2] - s * axis[1], 0.],
-                     [ temp[1] * axis[0] - s * axis[2], c + temp[1] * axis[1], temp[1] * axis[2] + s * axis[0], 0.],
-                     [ temp[2] * axis[0] + s * axis[1], temp[2] * axis[1] - s * axis[0], c + temp[2] * axis[2], 0.], 
-                     [0., 0., 0., 1.]])
+    return mat4([[
+        c + temp[0] * axis[0], temp[0] * axis[1] + s * axis[2],
+        temp[0] * axis[2] - s * axis[1], 0.
+    ],
+                 [
+                     temp[1] * axis[0] - s * axis[2], c + temp[1] * axis[1],
+                     temp[1] * axis[2] + s * axis[0], 0.
+                 ],
+                 [
+                     temp[2] * axis[0] + s * axis[1],
+                     temp[2] * axis[1] - s * axis[0], c + temp[2] * axis[2], 0.
+                 ], [0., 0., 0., 1.]])
+
 
 @ti.func
 def rot3d_yaw_pitch_roll(yaw, pitch, roll):
     """Creates a 3D 4 * 4 homogeneous rotation matrix from euler angles(Y * X * Z).
-    
+
     Args:
         yaw   (float): yaw angle in radians unit
         pitch (float): pitch angle in radians unit
@@ -554,10 +566,11 @@ def rot3d_yaw_pitch_roll(yaw, pitch, roll):
     cb = ti.cos(roll)
     sb = ti.sin(roll)
 
-    return mat4([[ch * cb + sh * sp * sb, sb * cp, -sh * cb + ch * sp * sb, 0.],
-                    [-ch * sb + sh * sp * cb, cb * cp, sb * sh + ch * sp * cb, 0.],
-                    [sh * cp, -sp, ch * cp, 0.], 
-                    [0., 0., 0., 1.]])
+    return mat4(
+        [[ch * cb + sh * sp * sb, sb * cp, -sh * cb + ch * sp * sb, 0.],
+         [-ch * sb + sh * sp * cb, cb * cp, sb * sh + ch * sp * cb, 0.],
+         [sh * cp, -sp, ch * cp, 0.], [0., 0., 0., 1.]])
+
 
 @ti.func
 def rotation2d(ang):

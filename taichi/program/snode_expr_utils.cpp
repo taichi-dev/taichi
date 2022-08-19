@@ -36,12 +36,12 @@ class GradInfoImpl final : public SNode::GradInfoProvider {
     return dual.snode();
   }
 
-  SNode *adjoint_visited_snode() const override {
-    auto &adjoint_visited = glb_var_->adjoint_visited;
-    if (adjoint_visited.expr == nullptr) {
+  SNode *adjoint_checkbit_snode() const override {
+    auto &adjoint_checkbit = glb_var_->adjoint_checkbit;
+    if (adjoint_checkbit.expr == nullptr) {
       return nullptr;
     }
-    return adjoint_visited.snode();
+    return adjoint_checkbit.snode();
   }
 
  private:

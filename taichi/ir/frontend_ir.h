@@ -481,7 +481,7 @@ class GlobalVariableExpression : public Expression {
   TypedConstant ambient_value;
   Expr adjoint;
   Expr dual;
-  Expr adjoint_visited;
+  Expr adjoint_checkbit;
 
   GlobalVariableExpression(DataType dt, const Identifier &ident)
       : ident(ident), dt(dt) {

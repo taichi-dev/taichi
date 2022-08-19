@@ -79,7 +79,7 @@ In the Taichi scope, the type of a variable is *statically typed* upon initializ
       c = ti.cast(b, ti.f32)  # 3.0
   ```
 
-- You can also use primitive types like `ti.f32`, `ti.i64` to convert a variable of scalar type to other types:
+- You can also use primitive types like `ti.f32`, `ti.i64` to convert a variable of scalar type to other scalar types:
 
   ```python
   @ti.kernel

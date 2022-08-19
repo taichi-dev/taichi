@@ -436,6 +436,12 @@ class Device {
     caps_[capability_id] = val;
   }
 
+  void clone_caps(Device &dest) const {
+    for (const auto [k, v] : caps_) {
+      dest.set_cap(k, v);
+    }
+  }
+
   void print_all_cap() const;
 
   struct AllocParams {

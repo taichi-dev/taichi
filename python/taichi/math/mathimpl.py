@@ -516,61 +516,6 @@ def scale(sx, sy, sz):
                        [0., 0., 0., 1.]])
 
 @ti.func
-def rotate2d(p, ang):
-    """Rotates a 2d vector by a given angle in counter-clockwise.
-
-    Args:
-        p (:class:`~taichi.math.vec2`): The 2d vector to rotate.
-        ang (float): Angle of rotation, in radians.
-
-    Returns:
-        :class:`~taichi.math.vec2`: The vector after rotation.
-
-    Example::
-    
-        >>> from taichi.math import *
-        >>> @ti.kernel
-        >>> def test():
-        >>>     v = vec2(1, 0)
-        >>>     print(rotate2d(v, radians(30)))
-        [0.866025, 0.500000]
-    """
-    ca, sa = ti.cos(ang), ti.sin(ang)
-    x, y = p
-    return vec2(x * ca - p.y * sa, x * sa + y * ca)
-
-
-@ti.func
-def rotate3d(p, axis, ang):
-    """Rotates a vector in 3d space, given an axis and angle of rotation.
-
-    The vector `axis` should be a unit vector.
-
-    See "https://en.wikipedia.org/wiki/Rodrigues%27_rotation_formula"
-
-    Args:
-        p (:class:`~taichi.math.vec3`): The 3d vector to rotate.
-        axis (:class:`~taichi.math.vec3`): Axis of rotation.
-        ang (float): Angle of rotation, in radians.
-
-    Example::
-
-        >>> from taichi.math import *
-        >>> @ti.kernel
-        >>> def test():
-        >>>     v = vec3(1, 0, 0)
-        >>>     axis = normalize(vec3(1, 1, 1))
-        >>>     print(rotate3d(v, axis, radians(30)))
-        [0.910684, 0.333333, -0.244017]
-
-    Returns:
-        :class:`~taichi.math.vec3`: The vector after rotation.
-    """
-    ca, sa = ti.cos(ang), ti.sin(ang)
-    return mix(dot(p, axis) * axis, p, ca) + cross(axis, p) * sa
-
-
-@ti.func
 def rot3d_by_axis(ang, axis):
     """rotate the matrix by an angle with the vector as the rotation axis
     
@@ -615,6 +560,29 @@ def rot3d_yaw_pitch_roll(yaw, pitch, roll):
                     [0., 0., 0., 1.]])
 
 @ti.func
+def rotation2d(ang):
+    """Returns the matrix representation of a 2d counter-clockwise rotation,
+    given the angle of rotation.
+
+    Args:
+        ang (float): Angle of rotation in radians.
+
+    Returns:
+        :class:`~taichi.math.mat2`: 2x2 rotation matrix.
+
+    Example::
+
+        >>> from taichi.math import *
+        >>> @ti.kernel
+        >>> def test():
+        >>>     M = rotation2d(radians(30))
+        [[0.866025, -0.500000], [0.500000, 0.866025]]
+    """
+    ca, sa = ti.cos(ang), ti.sin(ang)
+    return mat2([[ca, -sa], [sa, ca]])
+
+
+@ti.func
 def rotation3d(ang_x, ang_y, ang_z):
     """ Creates a 3D 4 * 4 homogeneous rotation matrix from an euler angle(Y * X * Z).
     
@@ -641,58 +609,6 @@ def eye(n: ti.template()):
     Alias for :func:`~taichi.Matrix.identity`.
     """
     return ti.Matrix.identity(float, n)
-
-
-@ti.func
-def rot2(ang):
-    """Returns the matrix representation of a 2d counter-clockwise rotation,
-    given the angle of rotation.
-
-    Args:
-        ang (float): Angle of rotation in radians.
-
-    Returns:
-        :class:`~taichi.math.mat2`: 2x2 rotation matrix.
-
-    Example::
-
-        >>> from taichi.math import *
-        >>> @ti.kernel
-        >>> def test():
-        >>>     M = rot2(radians(30))
-        [[0.866025, -0.500000], [0.500000, 0.866025]]
-    """
-    ca, sa = ti.cos(ang), ti.sin(ang)
-    return mat2([[ca, -sa], [sa, ca]])
-
-
-@ti.func
-def rot3(axis, ang):
-    """Returns the matrix representation of a 3d rotation,
-    given the axis and angle of rotation.
-
-    Args:
-        axis (:class:`~taichi.math.vec3`): Axis of rotation.
-        ang (float): Angle of rotation in radians.
-
-    Returns:
-        :class:`~taichi.math.mat3`: 3x3 rotation matrix.
-
-    Example::
-
-        >>> from taichi.math import *
-        >>> @ti.kernel
-        >>> def test():
-        >>>     M = rot3(normalize(vec3(1, 1, 1)), radians(30))
-        [[0.732051, -0.366025, 0.633975],
-         [0.633975, 0.732051, -0.366025],
-         [-0.366025, 0.633975, 0.732051]]
-    """
-    ca, sa = ti.cos(ang), ti.sin(ang)
-    x, y, z = axis
-    I = eye(3)
-    K = mat3([[0, -z, y], [z, 0, -x], [-y, x, 0]])
-    return I + sa * K + (1.0 - ca) * K @ K
 
 
 @ti.func
@@ -837,8 +753,8 @@ __all__ = [
     "determinant", "distance", "dot", "e", "exp", "eye", "floor", "fract",
     "inf", "inverse", "isinf", "isnan", "ivec2", "ivec3", "ivec4", "length",
     "log", "log2", "mat2", "mat3", "mat4", "max", "min", "mix", "mod", "translate",
-    "scale", "nan", "normalize", "pi", "pow", "radians", "reflect", "refract", "rot2", "rot3",
-    "rotate2d", "rotate3d", "rot3d_by_axis", "rot3d_yaw_pitch_roll", "rotation3d", "round", "sign", "sin", 
+    "scale", "nan", "normalize", "pi", "pow", "radians", "reflect", "refract",
+    "rot3d_by_axis", "rot3d_yaw_pitch_roll", "rotation2d", "rotation3d", "round", "sign", "sin", 
     "smoothstep", "sqrt", "step", "tan", "tanh", "uvec2", "uvec3", "uvec4", "vdir", "vec2", "vec3",
     "vec4"
 ]

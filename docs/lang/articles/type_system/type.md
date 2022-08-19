@@ -86,9 +86,9 @@ In the Taichi scope, the type of a variable is *statically typed* upon initializ
   def foo():
       a = 3.14
       x = int(a)    # 3
-      y = float(b)  # 3.0
-      x1 = ti.i32(x)  # 3
-      y1 = ti.f64(x)  # 3.14
+      y = float(a)  # 3.0
+      x1 = ti.i32(a)  # 3
+      y1 = ti.f64(a)  # 3.14
   ```
 
 ### Implicit type casting

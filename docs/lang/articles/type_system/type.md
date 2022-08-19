@@ -79,14 +79,16 @@ In the Taichi scope, the type of a variable is *statically typed* upon initializ
       c = ti.cast(b, ti.f32)  # 3.0
   ```
 
-- You can also use Python's builtin `int()` or `float()` to convert a value to the default integer type or to the default floating-point type:
+- You can also use primitive types like `ti.f32`, `ti.i64` to convert a variable of scalar type to other types:
 
   ```python
   @ti.kernel
   def foo():
       a = 3.14
-      b = int(a)    # 3
-      c = float(b)  # 3.0
+      x = int(a)    # 3
+      y = float(b)  # 3.0
+      x1 = ti.i32(x)  # 3
+      y1 = ti.f64(x)  # 3.14
   ```
 
 ### Implicit type casting

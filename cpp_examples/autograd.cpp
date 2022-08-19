@@ -64,7 +64,7 @@ void autograd() {
       SNode *dual_snode() const override {
         return snode;
       }
-      SNode *adjoint_visited_snode() const override {
+      SNode *adjoint_checkbit_snode() const override {
         return nullptr;
       }
     };
@@ -84,7 +84,7 @@ void autograd() {
       SNode *dual_snode() const override {
         return nullptr;
       }
-      SNode *adjoint_visited_snode() const override {
+      SNode *adjoint_checkbit_snode() const override {
         return nullptr;
       }
     };

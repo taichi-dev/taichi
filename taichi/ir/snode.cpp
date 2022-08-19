@@ -312,7 +312,7 @@ void SNode::allocate_grad_visited() {
         if (c->type == SNodeType::place && c->is_primal() && is_real(c->dt) &&
             c->has_adjoint()) {
           new_grad_visiteds.push_back(
-              snode_to_glb_var_exprs_->at(c.get())->adjoint_visited);
+              snode_to_glb_var_exprs_->at(c.get())->adjoint_checkbit);
         }
       });
 }
@@ -330,8 +330,8 @@ bool SNode::has_adjoint() const {
   return is_primal() && (grad_info->adjoint_snode() != nullptr);
 }
 
-bool SNode::has_adjoint_visited() const {
-  return is_primal() && (grad_info->adjoint_visited_snode() != nullptr);
+bool SNode::has_adjoint_checkbit() const {
+  return is_primal() && (grad_info->adjoint_checkbit_snode() != nullptr);
 }
 
 bool SNode::has_dual() const {
@@ -343,9 +343,9 @@ SNode *SNode::get_adjoint() const {
   return grad_info->adjoint_snode();
 }
 
-SNode *SNode::get_adjoint_visited() const {
+SNode *SNode::get_adjoint_checkbit() const {
   // TI_ASSERT(has_adjoint());
-  return grad_info->adjoint_visited_snode();
+  return grad_info->adjoint_checkbit_snode();
 }
 
 SNode *SNode::get_dual() const {

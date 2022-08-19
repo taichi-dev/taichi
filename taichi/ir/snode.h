@@ -96,7 +96,7 @@ class SNode {
     virtual SNodeGradType get_snode_grad_type() const = 0;
     virtual SNode *adjoint_snode() const = 0;
     virtual SNode *dual_snode() const = 0;
-    virtual SNode *adjoint_visited_snode() const = 0;
+    virtual SNode *adjoint_checkbit_snode() const = 0;
 
     template <typename T>
     T *cast() {
@@ -287,9 +287,9 @@ class SNode {
 
   SNode *get_adjoint() const;
 
-  bool has_adjoint_visited() const;
+  bool has_adjoint_checkbit() const;
 
-  SNode *get_adjoint_visited() const;
+  SNode *get_adjoint_checkbit() const;
 
   bool has_dual() const;
 

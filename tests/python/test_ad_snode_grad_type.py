@@ -22,4 +22,4 @@ def test_snode_grad_type_lazy():
     assert x.dual.snode.ptr.get_snode_grad_type() == SNodeGradType.DUAL
 
 
-#TODO: Add test for `adjoint_visited` after #5801 merged.
+#TODO: Add test for `adjoint_checkbit` after #5801 merged.

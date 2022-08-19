@@ -593,8 +593,8 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
             x_grad_visited.ptr = _ti_core.global_new(x_grad_visited.ptr,
                                                      cook_dtype(dtype))
             x_grad_visited.ptr.set_name(name + ".grad_visited")
-            x_grad_visited.ptr.set_grad_type(SNodeGradType.ADJOINT_VISITED)
-            x.ptr.set_adjoint_visited(x_grad_visited.ptr)
+            x_grad_visited.ptr.set_grad_type(SNodeGradType.ADJOINT_CHECKBIT)
+            x.ptr.set_adjoint_checkbit(x_grad_visited.ptr)
 
         # dual
         x_dual = Expr(get_runtime().prog.make_id_expr(""))

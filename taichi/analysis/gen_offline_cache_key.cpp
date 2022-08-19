@@ -157,7 +157,7 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     emit(expr->snode_grad_type);
     emit(expr->adjoint);
     emit(expr->dual);
-    emit(expr->adjoint_visited);
+    emit(expr->adjoint_checkbit);
   }
 
   void visit(IndexExpression *expr) override {

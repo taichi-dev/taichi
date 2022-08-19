@@ -102,7 +102,7 @@ void export_lang(py::module &m) {
       .value("PRIMAL", SNodeGradType::kPrimal)
       .value("ADJOINT", SNodeGradType::kAdjoint)
       .value("DUAL", SNodeGradType::kDual)
-      .value("ADJOINT_VISITED", SNodeGradType::kAdjointVisited)
+      .value("ADJOINT_CHECKBIT", SNodeGradType::kAdjointCheckbit)
       .export_values();
 
   // TODO(type): This should be removed
@@ -523,7 +523,7 @@ void export_lang(py::module &m) {
       .def("read_uint", &SNode::read_uint)
       .def("read_float", &SNode::read_float)
       .def("has_adjoint", &SNode::has_adjoint)
-      .def("has_adjoint_visited", &SNode::has_adjoint_visited)
+      .def("has_adjoint_checkbit", &SNode::has_adjoint_checkbit)
       .def("get_snode_grad_type", &SNode::get_snode_grad_type)
       .def("has_dual", &SNode::has_dual)
       .def("is_primal", &SNode::is_primal)
@@ -727,7 +727,7 @@ void export_lang(py::module &m) {
              expr->cast<GlobalVariableExpression>()->snode_grad_type = t;
            })
       .def("set_adjoint", &Expr::set_adjoint)
-      .def("set_adjoint_visited", &Expr::set_adjoint_visited)
+      .def("set_adjoint_checkbit", &Expr::set_adjoint_checkbit)
       .def("set_dual", &Expr::set_dual)
       .def("set_attribute", &Expr::set_attribute)
       .def(

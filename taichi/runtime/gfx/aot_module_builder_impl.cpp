@@ -103,10 +103,11 @@ class AotDataConverter {
 }  // namespace
 AotModuleBuilderImpl::AotModuleBuilderImpl(
     const std::vector<CompiledSNodeStructs> &compiled_structs,
-    Arch device_api_backend)
+    Arch device_api_backend,
+    std::unique_ptr<Device> &&target_device)
     : compiled_structs_(compiled_structs),
       device_api_backend_(device_api_backend) {
-  aot_target_device_ = std::make_unique<aot::TargetDevice>(device_api_backend_);
+  aot_target_device_ = target_device ? std::move(target_device) : std::make_unique<aot::TargetDevice>(device_api_backend_);
   if (!compiled_structs.empty()) {
     ti_aot_data_.root_buffer_size = compiled_structs[0].root_size;
   }

@@ -293,7 +293,7 @@ class PyTaichi:
         if get_runtime().prog.config.debug and get_runtime(
         ).prog.config.validate_autodiff:
             if not root.finalized:
-                root._allocate_grad_visited()
+                root._allocate_grad_checkbit()
 
         root.finalize(raise_warning=not is_first_call)
         global _root_fb
@@ -582,8 +582,8 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
             pytaichi.grad_vars.append(x_grad)
 
         if prog.config.debug and prog.config.validate_autodiff:
-            # adjoint flag
-            x_grad_visited = Expr(get_runtime().prog.make_id_expr(""))
+            # adjoint checkbit
+            x_grad_checkbit = Expr(get_runtime().prog.make_id_expr(""))
             dtype = u8
             if prog.config.arch in (_ti_core.opengl, _ti_core.vulkan):
                 dtype = i32

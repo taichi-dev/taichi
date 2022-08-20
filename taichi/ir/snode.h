@@ -336,7 +336,7 @@ class SNode {
 
   void lazy_dual();
 
-  void allocate_grad_visited();
+  void allocate_adjoint_checkbit();
 
   int64 read_int(const std::vector<int> &i);
   uint64 read_uint(const std::vector<int> &i);

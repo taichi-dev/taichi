@@ -305,13 +305,14 @@ void SNode::lazy_dual() {
       });
 }
 
-void SNode::allocate_grad_visited() {
+void SNode::allocate_adjoint_checkbit() {
   make_lazy_place(
       this, snode_to_glb_var_exprs_,
-      [this](std::unique_ptr<SNode> &c, std::vector<Expr> &new_grad_visiteds) {
+      [this](std::unique_ptr<SNode> &c,
+             std::vector<Expr> &new_adjoint_checkbits) {
         if (c->type == SNodeType::place && c->is_primal() && is_real(c->dt) &&
             c->has_adjoint()) {
-          new_grad_visiteds.push_back(
+          new_adjoint_checkbits.push_back(
               snode_to_glb_var_exprs_->at(c.get())->adjoint_checkbit);
         }
       });

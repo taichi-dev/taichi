@@ -1545,6 +1545,11 @@ def norm(m, eps=0.0):
 
 
 @taichi_scope
+def norm_sqr(m):
+    return sum(impl.expr_init(m * m))
+
+
+@taichi_scope
 def normalized(m):
     shape = _shape_of(m)
     assert len(shape) == 1, "normalized only works for vectors"
@@ -1634,6 +1639,197 @@ def transpose(m, in_place=False):
                 entries[j][i] = m[i, j]
         return make_matrix(entries)
 
+@taichi_scope
+def determinant(a):
+    """Returns the determinant of this matrix.
+
+    Note:
+        The matrix dimension should be less than or equal to 4.
+
+    Returns:
+        dtype: The determinant of this matrix.
+
+    Raises:
+        Exception: Determinants of matrices with sizes >= 5 are not supported.
+    """
+    shape = _shape_of(a)
+    if len(shape) != 2:
+        raise Exception("Determinant can only be applied to matrices")
+    n, m = shape
+    if n == 1 and m == 1:
+        return a[0, 0]
+    if n == 2 and m == 2:
+        return a[0, 0] * a[1, 1] - a[0, 1] * a[1, 0]
+    if n == 3 and m == 3:
+        return a[0, 0] * (a[1, 1] * a[2, 2] - a[2, 1] * a[1, 2]) - a[
+            1, 0] * (a[0, 1] * a[2, 2] - a[2, 1] * a[0, 2]) + a[
+                2, 0] * (a[0, 1] * a[1, 2] - a[1, 1] * a[0, 2])
+    if n == 4 and m == 4:
+        n = 4
+
+        def E(x, y):
+            return a[x % n, y % n]
+
+        det = impl.expr_init(0.0)
+        for i in range(4):
+            det = det + (-1.0)**i * (
+                a[i, 0] *
+                (E(i + 1, 1) *
+                    (E(i + 2, 2) * E(i + 3, 3) - E(i + 3, 2) * E(i + 2, 3)) -
+                    E(i + 2, 1) *
+                    (E(i + 1, 2) * E(i + 3, 3) - E(i + 3, 2) * E(i + 1, 3)) +
+                    E(i + 3, 1) *
+                    (E(i + 1, 2) * E(i + 2, 3) - E(i + 2, 2) * E(i + 1, 3))))
+        return det
+    raise Exception(
+        "Determinants of matrices with sizes >= 5 are not supported")
+
+@taichi_scope
+def inverse(m):
+    """Returns the inverse of this matrix.
+
+    Note:
+        The matrix dimension should be less than or equal to 4.
+
+    Returns:
+        :class:`~taichi.Matrix`: The inverse of a matrix.
+
+    Raises:
+        Exception: Inversions of matrices with sizes >= 5 are not supported.
+    """
+    shape = _shape_of(m)
+    if len(shape) == 1:
+        raise Exception("inverse can only be applied to matrices")
+    if shape[0] != shape[1]:
+        raise Exception("inverse can only be applied to square matrices")
+    n, _ = shape
+    from taichi.lang.matrix import make_matrix
+    if n == 1:
+        return make_matrix([1 / m[0, 0]])
+    if n == 2:
+        inv_determinant = impl.expr_init(1.0 / determinant(m))
+        return inv_determinant * make_matrix([[m[
+            1, 1], -m[0, 1]], [-m[1, 0], m[0, 0]]])
+    if n == 3:
+        n = 3
+        inv_determinant = impl.expr_init(1.0 / determinant(m))
+        entries = [[0] * n for _ in range(n)]
+
+        def E(x, y):
+            return m[x % n, y % n]
+
+        for i in range(n):
+            for j in range(n):
+                entries[j][i] = inv_determinant * (
+                    E(i + 1, j + 1) * E(i + 2, j + 2) -
+                    E(i + 2, j + 1) * E(i + 1, j + 2))
+        return make_matrix(entries)
+    if n == 4:
+        n = 4
+        inv_determinant = impl.expr_init(1.0 / determinant(m))
+        entries = [[0] * n for _ in range(n)]
+
+        def E(x, y):
+            return m[x % n, y % n]
+
+        for i in range(n):
+            for j in range(n):
+                entries[j][i] = inv_determinant * (-1)**(i + j) * ((
+                    E(i + 1, j + 1) *
+                    (E(i + 2, j + 2) * E(i + 3, j + 3) -
+                        E(i + 3, j + 2) * E(i + 2, j + 3)) - E(i + 2, j + 1) *
+                    (E(i + 1, j + 2) * E(i + 3, j + 3) -
+                        E(i + 3, j + 2) * E(i + 1, j + 3)) + E(i + 3, j + 1) *
+                    (E(i + 1, j + 2) * E(i + 2, j + 3) -
+                        E(i + 2, j + 2) * E(i + 1, j + 3))))
+        return make_matrix(entries)
+    raise Exception(
+        "Inversions of matrices with sizes >= 5 are not supported")
+
+def rows(rows):
+    """Constructs a matrix by concatenating a list of
+    vectors/lists row by row. Must be called in Taichi scope.
+
+    Args:
+        rows (List): A list of Vector (1-D Matrix) or a list of list.
+
+    Returns:
+        :class:`~taichi.Matrix`: A matrix.
+
+    Example::
+
+        >>> @ti.kernel
+        >>> def test():
+        >>>     v1 = ti.Vector([1, 2, 3])
+        >>>     v2 = ti.Vector([4, 5, 6])
+        >>>     m = ti.Matrix.rows([v1, v2])
+        >>>     print(m)
+        >>>
+        >>> test()
+        [[1, 2, 3], [4, 5, 6]]
+    """
+    from taichi.lang.matrix import make_matrix
+    if isinstance(rows[0], expr.Expr):
+        shape_cmp = _shape_of(rows[0])
+        for row in rows:
+            shape = _shape_of(row)
+            assert len(shape) == 1, "Inputs must be vectors, i.e. m == 1"
+            assert shape[0] == shape_cmp, "Input vectors must share the same shape"
+        # l-value copy:
+        return make_matrix([[row[i] for i in range(shape[0])] for row in rows])
+    if isinstance(rows[0], list):
+        for row in rows:
+            assert len(row) == len(
+                rows[0]), "Input lists share the same shape"
+        # l-value copy:
+        return make_matrix([[x for x in row] for row in rows])
+    raise Exception(
+        "Cols/rows must be a list of lists, or a list of vectors")
+
+def cols(cols):
+    """Constructs a Matrix instance by concatenating Vectors/lists column by column.
+
+    Args:
+        cols (List): A list of Vector (1-D Matrix) or a list of list.
+
+    Returns:
+        :class:`~taichi.Matrix`: A matrix.
+
+    Example::
+
+        >>> @ti.kernel
+        >>> def test():
+        >>>     v1 = ti.Vector([1, 2, 3])
+        >>>     v2 = ti.Vector([4, 5, 6])
+        >>>     m = ti.Matrix.cols([v1, v2])
+        >>>     print(m)
+        >>>
+        >>> test()
+        [[1, 4], [2, 5], [3, 6]]
+    """
+    return transpose(rows(cols))
+
+def trace(m):
+    """The sum of a matrix diagonal elements.
+
+    To call this method the matrix must be square-like.
+
+    Returns:
+        The sum of a matrix diagonal elements.
+
+    Example::
+
+        >>> m = ti.Matrix([[1, 2], [3, 4]])
+        >>> m.trace()
+        5
+    """
+    shape = _shape_of(m)
+    assert len(shape) == 2, "trace only works for matrices"
+    assert shape[0] == shape[1]
+    _sum = m[0, 0]
+    for i in range(1, shape[0]):
+        _sum = _sum + m[i, i]
+    return _sum
 
 __all__ = [
     "acos", "asin", "atan2", "atomic_and", "atomic_or", "atomic_xor",
@@ -1641,5 +1837,6 @@ __all__ = [
     "bit_shr", "cast", "ceil", "cos", "exp", "floor", "log", "random",
     "raw_mod", "raw_div", "round", "rsqrt", "sin", "sqrt", "tan", "tanh",
     "max", "min", "select", "abs", "pow", "norm", "normalized", "sum", "dot",
-    "cross", "matmul", "transpose"
+    "cross", "matmul", "transpose", "determinant", "inverse", "rows", "cols",
+    "norm_sqr", "trace"
 ]

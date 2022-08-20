@@ -330,32 +330,32 @@ Below we highlight some of the most widely used styles.
 - Mark the constructor `explicit` to prevent the compiler from doing any implicit conversion.
 - Avoid virtual function calls in the constructors or destructors ([explanation](https://wiki.sei.cmu.edu/confluence/display/cplusplus/OOP50-CPP.+Do+not+invoke+virtual+functions+from+constructors+or+destructors)).
 
-## Compilation warnings
+## Deal with compilation warnings
 
-Taichi implements warning-free code by turning on `-Werror` (which treats warnings as errors) by default. We highly recommend resolving a warning the moment when it is raised.
+Taichi implements warning-free code by turning on `-Werror` by default. This means that Taichi takes warnings as errors, and we highly recommend that you resolve a warning as soon as it occurs.
 
-On the other hand, real-world issues could be way more complicated than what the compiler expected. So, we prepare the following HOWTOs to help resolve some common problems. You are also more than welcome to file an issue or consult a reviewer in place for further discussions.
+In the following section, we provide several practical tips for handling some of the common scenarios that you may encounter during CI compilation.
 
-### How to deal with warnings from third-party header files
-There is little we can do about third-party warnings other than simply turning them off.
+### Deal with warnings that occur when compiling third-party header files
 
-To mute warnings from specific third-party header files, you can apply the `SYSTEM` option when including third-party directories into CMakeFiles. The following examples can be found in [cmake/TaichiCore.cmake](https://github.com/taichi-dev/taichi/blob/master/cmake/TaichiCore.cmake):
+There is little we can do to third-party warnings other than turning them off. To turn off or mute warnings from specific third-party header files, use the `SYSTEM` option when configuring `include_directories` in your CMake files. Then, the included header files are treated as system headers. See the following two examples taken from [cmake/TaichiCore.cmake](https://github.com/taichi-dev/taichi/blob/master/cmake/TaichiCore.cmake):
 ```
-# Treat files under "external/Vulkan-Headers/include" as system headers, and warnings from them are muted.
+# Treat files under "external/Vulkan-Headers/include" as system headers and mute warnings from them.
 include_directories(SYSTEM external/Vulkan-Headers/include)
 
 # Treat files under "external/VulkanMemoryAllocator/include" as system headers for target "${CORE_LIBRARY_NAME}"
 target_include_directories(${CORE_LIBRARY_NAME} SYSTEM PRIVATE external/VulkanMemoryAllocator/include)
 ```
 
-### How to deal with warnings when compiling third-party libraries or targets
-Ideally, third-party submodules should be built completely independent of your Taichi project except for the topological dependencies. Unfortunately, CMake variables from Taichi and its submodules could be mixed sometimes because of the design of the CMake system. Follow the two steps below to mute warnings from a third-party target:
+### Deal with warnings when compiling third-party libraries or targets
 
-1. Separate the submodule's `CMAKE_CXX_FLAGS` from that configured in Taichi.
-2. Remove the `-Wall` option from the submodule's `CMAKE_CXX_FLAGS`.
+Ideally, third-party libraries or targets ought to be built completely independent of your Taichi project. In practice, because of the design of the CMake system, CMake variables from the Taichi and third-party submodules are sometimes messed up. Therefore, we recommend that you disable warnings from a third-party library or target:
 
-### How to mute specific warning types across entire Taichi project
-You can find details about how to mute certain warning types on [Clang Compiler User Manual](https://clang.llvm.org/docs/UsersManual.html); it usually starts with `-Wno-`. Please explain what the warning is about and why we should ignore it in the comments.
+1. Separate the submodule's `CMAKE_CXX_FLAGS` from the same variable defined in Taichi.
+2. Remove the `-Wall` option from the submodule's `CMAKE_CXX_FLAGS` variables.
+
+### Mute specific warning types across the entire Taichi project
+You can find details about how to mute certain warning types from the [Clang Compiler User Manual](https://clang.llvm.org/docs/UsersManual.html); it usually starts with `-Wno-`. Please explain what the warning is about and why we should ignore it in the comments.
 
 The following examples can be found in [cmake/TaichiCXXFlags.cmake](https://github.com/taichi-dev/taichi/blob/master/cmake/TaichiCXXFlags.cmake):
 ```
@@ -368,10 +368,15 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-nullability-completeness ")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unneeded-internal-declaration ")
 ```
 
-### How to mute warnings for specific lines of code (NOT RECOMMENDED)
-In rare situations where the warnings cannot be fixed nor muted via regular attempts, one of the last things you can try is to decorate your code with the `#pragma clang diagnostic` macro. Beware that `#pragma`s are not part of the C++ standard and strongly depend on the compiler's implementation. That is to say, this solution is neither stable nor elegant.
+### Mute warnings from specific code blocks
 
-Wrap the lines of interest with the following two macros; then warnings are ignored for the code in between. You may also replace `-Wall` with a group of specific warning types for finer control:
+:::caution
+The approach presented here is *not* recommended and considered your last approach, because it is *not* reliable.
+:::
+
+In rare situations where you can neither fix nor mute the warnings from specific code blocks via conventional approaches, your last approach is to mute them by decorating your code block using the `#pragma clang diagnostic` macros. Beware that `#pragma`s are not defined in the C++ standard and that their implementations depend heavily on the compiler. That is to say, this solution is neither stable nor elegant.
+
+To ignore all warnings from a specific code block, wrap it up with the following two groups of macros. Further, you can even replace `-Wall` with a group of warning types for finer control. See the following example:
 
 ```
 #if defined(__clang__)

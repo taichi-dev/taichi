@@ -289,6 +289,12 @@ class PyTaichi:
             # invocation. Example case:
             # https://github.com/taichi-dev/taichi/blob/27bb1dc3227d9273a79fcb318fdb06fd053068f5/tests/python/test_ad_basics.py#L260-L266
             return
+
+        if get_runtime().prog.config.debug and get_runtime(
+        ).prog.config.validate_autodiff:
+            if not root.finalized:
+                root._allocate_grad_visited()
+
         root.finalize(raise_warning=not is_first_call)
         global _root_fb
         _root_fb = FieldsBuilder()
@@ -340,12 +346,6 @@ class PyTaichi:
                 '\n\n  x = ti.field(float, shape=(2, 3), needs_{gradient_type}=True)'
             )
 
-    @staticmethod
-    def _allocate_gradient_visited():
-        if root.finalized:
-            return
-        root._allocate_adjoint_checkbit()
-
     def _check_matrix_field_member_shape(self):
         for _field in self.matrix_fields:
             shapes = [
@@ -363,9 +363,6 @@ class PyTaichi:
             _field._calc_dynamic_index_stride()
 
     def materialize(self):
-        if get_runtime().prog.config.debug and get_runtime(
-        ).prog.config.validate_autodiff:
-            self._allocate_gradient_visited()
         self.materialize_root_fb(not self.materialized)
         self.materialized = True
 
@@ -584,9 +581,9 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
         if needs_grad:
             pytaichi.grad_vars.append(x_grad)
 
-        if prog.config.debug:
-            # adjoint checkbit
-            x_grad_checkbit = Expr(get_runtime().prog.make_id_expr(""))
+        if prog.config.debug and prog.config.validate_autodiff:
+            # adjoint flag
+            x_grad_visited = Expr(get_runtime().prog.make_id_expr(""))
             dtype = u8
             if prog.config.arch in (_ti_core.opengl, _ti_core.vulkan):
                 dtype = i32

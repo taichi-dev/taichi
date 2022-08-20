@@ -6,12 +6,13 @@ import taichi as ti
 from tests import test_utils
 
 
+@pytest.mark.parametrize('max_num_bits', [32, 64])
 @test_utils.test(require=ti.extension.quant)
-def test_quant_float_unsigned():
+def test_quant_float_unsigned(max_num_bits):
     qflt = ti.types.quant.float(exp=6, frac=13, signed=False)
     x = ti.field(dtype=qflt)
 
-    bitpack = ti.BitpackedFields(max_num_bits=32)
+    bitpack = ti.BitpackedFields(max_num_bits=max_num_bits)
     bitpack.place(x)
     ti.root.place(bitpack)
 

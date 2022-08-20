@@ -543,3 +543,31 @@ def test_archive():
         with zipfile.ZipFile(tcm_path, 'r') as z:
             assert z.read("__version__") == bytes(
                 '.'.join(str(x) for x in ti.__version__), 'utf-8')
+
+
+@test_utils.test(arch=[ti.opengl, ti.vulkan])
+def test_sequential_dispatch():
+    g_init_builder = ti.graph.GraphBuilder()
+    g_init_substep = g_init_builder.create_sequential()
+
+    ivec3 = ti.types.vector(3, ti.i32)
+
+    @ti.kernel
+    def init_data(test_vec: ivec3):
+        pass
+
+    sym_args = ti.graph.Arg(ti.graph.ArgKind.MATRIX, 'test_arg',
+                            ti.types.vector(3, ti.i32))
+
+    g_init_substep.dispatch(init_data, sym_args)
+    g_init_builder.append(g_init_substep)
+
+    g_init = g_init_builder.compile()
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # note ti.aot.Module(ti.opengl) is no-op according to its docstring.
+        m = ti.aot.Module(ti.lang.impl.current_cfg().arch)
+        m.add_graph("g_init", g_init)
+        m.save(tmpdir, '')
+        with open(os.path.join(tmpdir, 'metadata.json'), "r") as json_file:
+            json.load(json_file)

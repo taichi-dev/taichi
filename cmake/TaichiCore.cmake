@@ -293,8 +293,10 @@ add_subdirectory(external/SPIRV-Tools)
 add_subdirectory(taichi/codegen/spirv)
 add_subdirectory(taichi/runtime/gfx)
 
-target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE spirv_codegen)
-target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE gfx_runtime)
+if (TI_WITH_OPENGL OR TI_WITH_VULKAN OR TI_WITH_DX11)
+  target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE spirv_codegen)
+  target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE gfx_runtime)
+endif()
 
 # Vulkan Device API
 if (TI_WITH_VULKAN)

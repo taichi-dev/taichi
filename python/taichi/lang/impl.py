@@ -293,7 +293,7 @@ class PyTaichi:
         if get_runtime().prog.config.debug and get_runtime(
         ).prog.config.validate_autodiff:
             if not root.finalized:
-                root._allocate_grad_checkbit()
+                root._allocate_adjoint_checkbit()
 
         root.finalize(raise_warning=not is_first_call)
         global _root_fb

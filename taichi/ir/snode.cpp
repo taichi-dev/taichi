@@ -298,8 +298,7 @@ void SNode::lazy_dual() {
   make_lazy_place(
       this, snode_to_glb_var_exprs_,
       [this](std::unique_ptr<SNode> &c, std::vector<Expr> &new_duals) {
-        if (c->type == SNodeType::place && c->is_primal() && is_real(c->dt) &&
-            !c->has_dual()) {
+        if (c->type == SNodeType::place && is_real(c->dt) && !c->has_dual()) {
           new_duals.push_back(snode_to_glb_var_exprs_->at(c.get())->dual);
         }
       });
@@ -336,7 +335,7 @@ bool SNode::has_adjoint_checkbit() const {
 }
 
 bool SNode::has_dual() const {
-  return is_primal() && (grad_info->dual_snode() != nullptr);
+  return (grad_info->dual_snode() != nullptr);
 }
 
 SNode *SNode::get_adjoint() const {

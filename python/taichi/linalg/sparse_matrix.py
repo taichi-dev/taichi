@@ -6,7 +6,7 @@ from taichi.lang.field import Field
 from taichi.lang.impl import get_runtime
 from taichi.lang.matrix import Ndarray
 from taichi.lang.util import warning
-from taichi.types import annotations, f32
+from taichi.types import annotations, f32, i32
 
 
 class SparseMatrix:
@@ -197,6 +197,54 @@ class SparseMatrix:
             raise TaichiRuntimeError(
                 'Sparse matrix only supports building from [ti.ndarray, ti.Vector.ndarray, ti.Matrix.ndarray]'
             )
+
+    def build_csr_cusparse(self, data, indices, indptr):
+        """Build a csr format sparse matrix using cuSparse where the column indices
+            for row i are stored in ``indices[indptr[i]:indptr[i+1]]``
+            and their corresponding values are stored in ``data[indptr[i]:indptr[i+1]]``.
+
+        Args:
+            data (ti.ndarray): CSR format data array of the matrix.
+            indices (ti.ndarray): CSR format index array of the matrix.
+            indptr (ti.ndarray): CSR format index pointer array of the matrix.
+        """
+        if not isinstance(data, Ndarray) or not isinstance(
+                indices, Ndarray) or not isinstance(indptr, Ndarray):
+            raise TaichiRuntimeError(
+                'Sparse matrix only supports building from [ti.ndarray, ti.Vector.ndarray, ti.Matrix.ndarray].'
+            )
+        elif data.dtype != f32 or indices.dtype != i32 or indptr.dtype != i32:
+            raise TaichiRuntimeError(
+                'Sparse matrix only supports building from float32 data and int32 indices/indptr.'
+            )
+        else:
+            get_runtime().prog.make_sparse_matrix_from_ndarray_cusparse(
+                self.matrix, indptr.arr, indices.arr, data.arr)
+
+    def spmv(self, x, y):
+        """Sparse matrix-vector multiplication using cuSparse.
+
+        Args:
+            x (ti.ndarray): the vector to be multiplied.
+            y (ti.ndarray): the result of matrix-vector multiplication.
+
+        Example::
+            >>> x = ti.ndarray(shape=4, dtype=val_dt)
+            >>> y = ti.ndarray(shape=4, dtype=val_dt)
+            >>> A = ti.linalg.SparseMatrix(n=4, m=4, dtype=ti.f32)
+            >>> A.build_from_ndarray_cusparse(row_csr, col_csr, value_csr)
+            >>> A.spmv(x, y)
+        """
+        if not isinstance(x, Ndarray) or not isinstance(y, Ndarray):
+            raise TaichiRuntimeError(
+                'Sparse matrix only supports building from [ti.ndarray, ti.Vector.ndarray, ti.Matrix.ndarray]'
+            )
+        if self.m != x.shape[0]:
+            raise TaichiRuntimeError(
+                f"Dimension mismatch between sparse matrix ({self.n}, {self.m}) and vector ({x.shape})"
+            )
+
+        self.matrix.spmv(get_runtime().prog, x.arr, y.arr)
 
 
 class SparseMatrixBuilder:

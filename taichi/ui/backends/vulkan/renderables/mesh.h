@@ -29,6 +29,8 @@ class Mesh final : public Renderable {
  public:
   Mesh(AppContext *app_context, VertexAttributes vbo_attrs);
 
+  virtual void cleanup() override;
+
   void update_data(const MeshInfo &info, const Scene &scene);
 
   virtual void record_this_frame_commands(

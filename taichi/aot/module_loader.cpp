@@ -34,6 +34,10 @@ std::unique_ptr<Module> Module::load(Arch arch, std::any mod_params) {
 #ifdef TI_WITH_VULKAN
     return gfx::make_aot_module(mod_params, arch);
 #endif
+  } else if (arch == Arch::opengl) {
+#ifdef TI_WITH_OPENGL
+    return gfx::make_aot_module(mod_params, arch);
+#endif
   } else if (arch == Arch::dx11) {
 #ifdef TI_WITH_DX11
     return gfx::make_aot_module(mod_params, arch);

@@ -96,7 +96,7 @@ Window::~Window() {
 }
 
 std::pair<uint32_t, uint32_t> Window::get_window_shape() {
-  return {config_.width, config_.height};
+  return {renderer_->swap_chain().width(), renderer_->swap_chain().height()};
 }
 
 void Window::write_image(const std::string &filename) {

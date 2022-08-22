@@ -12,6 +12,10 @@ using namespace taichi::lang;
 Mesh::Mesh(AppContext *app_context, VertexAttributes vbo_attrs) {
   init_mesh(app_context, /*vertices_count=*/3, /*indices_count*/ 3, vbo_attrs);
 }
+void Mesh::cleanup() {
+  Renderable::cleanup();
+  destroy_mesh_storage_buffers();
+}
 
 void Mesh::update_ubo(const MeshInfo &info, const Scene &scene) {
   UniformBufferObject ubo;

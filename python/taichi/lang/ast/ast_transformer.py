@@ -596,11 +596,7 @@ class ASTTransformer(Builder):
                             ctx.func.arguments[i].annotation.check_matched(
                                 data.get_type())
                         elif isinstance(data, any_array.AnyArray):
-                            if not isinstance(data, any_array.AnyArray):
-                                raise TaichiSyntaxError(
-                                    f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a ndarray, but got {type(data)}."
-                                )
-
+                            # TODO(zhanlue): Implement check_matched for AnyArray.
                             if ctx.func.arguments[
                                     i].annotation.element_shape is not None and data.element_shape != ctx.func.arguments[
                                         i].annotation.element_shape:

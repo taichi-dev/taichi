@@ -198,17 +198,30 @@ void make_sparse_matrix_from_ndarray(Program *prog,
   }
 }
 
-void CuSparseMatrix::build_csr(void *csr_ptr,
-                               void *csr_indices_ptr,
-                               void *csr_values_ptr,
-                               int nnz) {
+void CuSparseMatrix::build_csr_from_coo(void *coo_row_ptr,
+                                        void *coo_col_ptr,
+                                        void *coo_values_ptr,
+                                        int nnz) {
 #if defined(TI_WITH_CUDA)
+  void *csr_row_offset_ptr = NULL;
+  CUDADriver::get_instance().malloc(&csr_row_offset_ptr,
+                                    sizeof(int) * (rows_ + 1));
+  cusparseHandle_t cusparse_handle;
+  CUSPARSEDriver::get_instance().cpCreate(&cusparse_handle);
+  CUSPARSEDriver::get_instance().cpCoo2Csr(
+      cusparse_handle, (void *)coo_row_ptr, nnz, rows_,
+      (void *)csr_row_offset_ptr, CUSPARSE_INDEX_BASE_ZERO);
+
   CUSPARSEDriver::get_instance().cpCreateCsr(
-      &matrix_, rows_, cols_, nnz, csr_ptr, csr_indices_ptr, csr_values_ptr,
-      CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I, CUSPARSE_INDEX_BASE_ZERO,
-      CUDA_R_32F);
+      &matrix_, rows_, cols_, nnz, csr_row_offset_ptr, coo_col_ptr,
+      coo_values_ptr, CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I,
+      CUSPARSE_INDEX_BASE_ZERO, CUDA_R_32F);
+  CUSPARSEDriver::get_instance().cpDestroy(cusparse_handle);
+  // TODO: not sure if this array should be deleted now.
+  CUDADriver::get_instance().mem_free(csr_row_offset_ptr);
 #endif
 }
+
 CuSparseMatrix::~CuSparseMatrix() {
 #if defined(TI_WITH_CUDA)
   CUSPARSEDriver::get_instance().cpDestroySpMat(matrix_);
@@ -227,11 +240,12 @@ void make_sparse_matrix_from_ndarray_cusparse(Program *prog,
       TI_ERROR("Failed to load cusparse library!");
     }
   }
-  size_t row_csr = prog->get_ndarray_data_ptr_as_int(&row_offsets);
-  size_t col_csr = prog->get_ndarray_data_ptr_as_int(&col_indices);
-  size_t values_csr = prog->get_ndarray_data_ptr_as_int(&values);
+  size_t row_coo = prog->get_ndarray_data_ptr_as_int(&row_offsets);
+  size_t col_coo = prog->get_ndarray_data_ptr_as_int(&col_indices);
+  size_t values_coo = prog->get_ndarray_data_ptr_as_int(&values);
   int nnz = values.get_nelement();
-  sm.build_csr((void *)row_csr, (void *)col_csr, (void *)values_csr, nnz);
+  sm.build_csr_from_coo((void *)row_coo, (void *)col_coo, (void *)values_coo,
+                        nnz);
 #endif
 }
 

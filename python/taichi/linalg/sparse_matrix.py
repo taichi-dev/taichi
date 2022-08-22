@@ -198,28 +198,29 @@ class SparseMatrix:
                 'Sparse matrix only supports building from [ti.ndarray, ti.Vector.ndarray, ti.Matrix.ndarray]'
             )
 
-    def build_csr_cusparse(self, data, indices, indptr):
-        """Build a csr format sparse matrix using cuSparse where the column indices
-            for row i are stored in ``indices[indptr[i]:indptr[i+1]]``
-            and their corresponding values are stored in ``data[indptr[i]:indptr[i+1]]``.
+    def build_coo(self, data, row_idx, col_idx):
+        """Build a CSR format sparse matrix from COO format inputs.
 
         Args:
-            data (ti.ndarray): CSR format data array of the matrix.
-            indices (ti.ndarray): CSR format index array of the matrix.
-            indptr (ti.ndarray): CSR format index pointer array of the matrix.
+            data (ti.ndarray): the entries of the matrix.
+            indices (ti.ndarray): the row indices of the matrix entries.
+            indptr (ti.ndarray): the column indices of the matrix entries.
+
+        Raises:
+            TaichiRuntimeError: If the inputs are not ``ti.ndarray`` or the datatypes of the ndarray are not correct.
         """
         if not isinstance(data, Ndarray) or not isinstance(
-                indices, Ndarray) or not isinstance(indptr, Ndarray):
+                row_idx, Ndarray) or not isinstance(col_idx, Ndarray):
             raise TaichiRuntimeError(
                 'Sparse matrix only supports building from [ti.ndarray, ti.Vector.ndarray, ti.Matrix.ndarray].'
             )
-        elif data.dtype != f32 or indices.dtype != i32 or indptr.dtype != i32:
+        elif data.dtype != f32 or row_idx.dtype != i32 or col_idx.dtype != i32:
             raise TaichiRuntimeError(
                 'Sparse matrix only supports building from float32 data and int32 indices/indptr.'
             )
         else:
             get_runtime().prog.make_sparse_matrix_from_ndarray_cusparse(
-                self.matrix, indptr.arr, indices.arr, data.arr)
+                self.matrix, col_idx.arr, row_idx.arr, data.arr)
 
     def spmv(self, x, y):
         """Sparse matrix-vector multiplication using cuSparse.

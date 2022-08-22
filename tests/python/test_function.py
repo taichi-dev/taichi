@@ -349,9 +349,10 @@ def test_func_ndarray_arg():
         test(x)
 
     arr = ti.ndarray(vec3, shape=(4))
+    arr[0] = [20, 20, 20]
     test_k(arr)
 
-    assert (arr[0] == [100, 100, 100])
+    assert (arr[0] == [20, 20, 20])
 
 
 @test_utils.test(arch=[ti.cpu, ti.gpu], debug=True)
@@ -365,8 +366,9 @@ def test_func_matrix_arg():
     @ti.kernel
     def test_k():
         x = ti.Matrix([3, 4, 5])
+        x[0] = 20
         test(x)
 
-        assert x[0] == 100
+        assert x[0] == 20
 
     test_k()

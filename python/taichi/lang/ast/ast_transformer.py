@@ -6,7 +6,8 @@ from collections import ChainMap
 from sys import version_info
 
 from taichi._lib import core as _ti_core
-from taichi.lang import any_array, expr, impl, kernel_arguments, matrix, mesh
+from taichi.lang import (_ndarray, any_array, expr, impl, kernel_arguments,
+                         matrix, mesh)
 from taichi.lang import ops as ti_ops
 from taichi.lang._ndrange import _Ndrange, ndrange
 from taichi.lang.ast.ast_transformer_utils import (Builder, LoopStatus,
@@ -589,33 +590,40 @@ class ASTTransformer(Builder):
                     # Ndarray arguments are passed by reference.
                     if isinstance(ctx.func.arguments[i].annotation,
                                   (ndarray_type.NdarrayType)):
-                        # Type Check
-                        if not isinstance(data, any_array.AnyArray):
-                            raise TaichiSyntaxError(
-                                f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a ndarray, but got {type(data)}."
-                            )
+                        if isinstance(data, _ndarray.ScalarNdarray) or \
+                           isinstance(data, matrix.VectorNdarray) or \
+                           isinstance(data, matrix.MatrixNdarray):
+                            ctx.func.arguments[i].annotation.check_matched(
+                                data.get_type())
+                        elif isinstance(data, any_array.AnyArray):
+                            if not isinstance(data, any_array.AnyArray):
+                                raise TaichiSyntaxError(
+                                    f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a ndarray, but got {type(data)}."
+                                )
 
-                        if ctx.func.arguments[
-                                i].annotation.element_shape is not None and data.element_shape != ctx.func.arguments[
-                                    i].annotation.element_shape:
-                            raise TaichiSyntaxError(
-                                f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a ndarray or matrix with element shape {ctx.func.arguments[i].annotation.element_shape}, but got {data.element_shape}."
-                            )
+                            if ctx.func.arguments[
+                                    i].annotation.element_shape is not None and data.element_shape != ctx.func.arguments[
+                                        i].annotation.element_shape:
+                                raise TaichiSyntaxError(
+                                    f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a ndarray or matrix with element shape {ctx.func.arguments[i].annotation.element_shape}, but got {data.element_shape}."
+                                )
 
-                        if ctx.func.arguments[
-                                i].annotation.layout is not None and data.layout != ctx.func.arguments[
-                                    i].annotation.layout:
+                            if ctx.func.arguments[
+                                    i].annotation.layout is not None and data.layout != ctx.func.arguments[
+                                        i].annotation.layout:
+                                raise TaichiSyntaxError(
+                                    f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a ndarray or matrix with layout {ctx.func.arguments[i].annotation.layout}, but got {data.layout}."
+                                )
+                        else:
                             raise TaichiSyntaxError(
-                                f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a ndarray or matrix with layout {ctx.func.arguments[i].annotation.layout}, but got {data.layout}."
+                                f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is not recognized."
                             )
-
                         ctx.create_variable(ctx.func.arguments[i].name, data)
                         continue
 
-                    # Matrix arguments are passed by reference.
+                    # Matrix arguments are passed by value.
                     if isinstance(ctx.func.arguments[i].annotation,
                                   (MatrixType)):
-                        # Type Check
                         if not isinstance(data, Matrix):
                             raise TaichiSyntaxError(
                                 f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix, but got {type(data)}."
@@ -630,8 +638,7 @@ class ASTTransformer(Builder):
                             raise TaichiSyntaxError(
                                 f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix with n {ctx.func.arguments[i].annotation.n}, but got {data.n}."
                             )
-
-                        ctx.create_variable(ctx.func.arguments[i].name, data)
+                        ctx.create_variable(arg.arg, impl.expr_init_func(data))
                         continue
 
                     # Create a copy for non-template arguments,

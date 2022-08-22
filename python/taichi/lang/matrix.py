@@ -898,10 +898,10 @@ class Matrix(TaichiOperations):
             >>> v.any()
             True
         """
-        ret = ops_mod.cmp_ne(self.entries[0], 0)
-        for i in range(1, len(self.entries)):
-            ret = ret + ops_mod.cmp_ne(self.entries[i], 0)
-        return -ops_mod.cmp_lt(ret, 0)
+        ret = False
+        for i in range(0, len(self.entries)):
+            ret = ret | ops_mod.cmp_ne(self.entries[i], 0)
+        return ops_mod.cmp_ne(ret, 0) & 1
 
     def all(self):
         """Test whether all element not equal zero.
@@ -915,10 +915,10 @@ class Matrix(TaichiOperations):
             >>> v.all()
             False
         """
-        ret = ops_mod.cmp_ne(self.entries[0], 0)
-        for i in range(1, len(self.entries)):
-            ret = ret + ops_mod.cmp_ne(self.entries[i], 0)
-        return -ops_mod.cmp_eq(ret, -len(self.entries))
+        ret = True
+        for i in range(0, len(self.entries)):
+            ret = ret & ops_mod.cmp_ne(self.entries[i], 0)
+        return ops_mod.cmp_ne(ret, 0) & 1
 
     @taichi_scope
     def fill(self, val):

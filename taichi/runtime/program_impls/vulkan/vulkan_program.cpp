@@ -3,6 +3,7 @@
 #include "taichi/analysis/offline_cache_util.h"
 #include "taichi/aot/graph_data.h"
 #include "taichi/runtime/gfx/aot_module_builder_impl.h"
+#include "taichi/runtime/gfx/offline_cache_manager.h"
 #include "taichi/runtime/gfx/snode_tree_manager.h"
 #include "taichi/runtime/gfx/aot_module_loader_impl.h"
 
@@ -96,10 +97,9 @@ FunctionType VulkanProgramImpl::compile(Kernel *kernel,
       snode_tree_mgr_->get_compiled_structs().size() == 1) {
     auto kernel_key = get_hashed_offline_cache_key(config, kernel);
     kernel->set_kernel_key_for_cache(kernel_key);
-    const auto &cached_module = get_cached_module();
-    aot::Kernel *cached_kernel = nullptr;
-    if (cached_module &&
-        (cached_kernel = cached_module->get_kernel(kernel_key))) {
+    const auto &cache_mgr = get_cache_manager();
+    TI_ASSERT(cache_mgr != nullptr);
+    if (auto *cached_kernel = cache_mgr->load_cached_kernel(kernel_key)) {
       TI_DEBUG("Create kernel '{}' from cache (key='{}')", kernel->get_name(),
                kernel_key);
       kernel->set_from_offline_cache();
@@ -107,15 +107,7 @@ FunctionType VulkanProgramImpl::compile(Kernel *kernel,
           [cached_kernel](RuntimeContext &ctx) { cached_kernel->launch(&ctx); };
     } else {  // Compile & Cache it
       TI_DEBUG("Cache kernel '{}' (key='{}')", kernel->get_name(), kernel_key);
-      auto *cache_builder = static_cast<gfx::AotModuleBuilderImpl *>(
-          get_caching_module_builder().get());
-      TI_ASSERT(cache_builder != nullptr);
-      cache_builder->add(kernel_key, kernel);
-      auto params_opt =
-          cache_builder->try_get_kernel_register_params(kernel_key);
-      TI_ASSERT(params_opt.has_value());
-      return register_params_to_executable(std::move(params_opt.value()),
-                                           vulkan_runtime_.get());
+      return cache_mgr->cache_kernel(kernel_key, kernel);
     }
   }
 
@@ -251,48 +243,27 @@ std::unique_ptr<aot::Kernel> VulkanProgramImpl::make_aot_kernel(
 
 void VulkanProgramImpl::dump_cache_data_to_disk() {
   if (offline_cache::enabled_wip_offline_cache(config->offline_cache)) {
-    auto path = offline_cache::get_cache_path_by_arch(
-        config->offline_cache_file_path, config->arch);
-    taichi::create_directories(path);
-    auto *cache_builder = static_cast<gfx::AotModuleBuilderImpl *>(
-        get_caching_module_builder().get());
-    cache_builder->mangle_aot_data();
-    cache_builder->merge_with_old_meta_data(path);
-    cache_builder->dump(path, "");
+    get_cache_manager()->dump_with_mergeing();
   }
 }
 
-const std::unique_ptr<AotModuleBuilder>
-    &VulkanProgramImpl::get_caching_module_builder() {
-  if (!caching_module_builder_) {
-    TI_ASSERT(vulkan_runtime_ && embedded_device_);
+const std::unique_ptr<gfx::OfflineCacheManager> &VulkanProgramImpl::get_cache_manager() {
+  if (!cache_manager_) {
+    TI_ASSERT(vulkan_runtime_ && snode_tree_mgr_ && embedded_device_);
     auto target_device = std::make_unique<aot::TargetDevice>(config->arch);
     embedded_device_->device()->clone_caps(*target_device);
-    caching_module_builder_ = std::make_unique<gfx::AotModuleBuilderImpl>(
-        snode_tree_mgr_->get_compiled_structs(), Arch::vulkan,
-        std::move(target_device));
+    cache_manager_ = std::make_unique<gfx::OfflineCacheManager>(
+                          config->offline_cache_file_path,
+                          config->arch,
+                          vulkan_runtime_.get(),
+                          std::move(target_device),
+                          snode_tree_mgr_->get_compiled_structs());
   }
-  return caching_module_builder_;
-}
-
-const std::unique_ptr<aot::Module> &VulkanProgramImpl::get_cached_module() {
-  if (!cached_module_) {
-    auto path = offline_cache::get_cache_path_by_arch(
-        config->offline_cache_file_path, config->arch);
-    if (taichi::path_exists(taichi::join_path(path, "metadata.tcb")) &&
-        taichi::path_exists(taichi::join_path(path, "graphs.tcb"))) {
-      gfx::AotModuleParams params;
-      params.module_path = path;
-      params.runtime = vulkan_runtime_.get();
-      cached_module_ = gfx::make_aot_module(params, config->arch);
-    }
-  }
-  return cached_module_;
+  return cache_manager_;
 }
 
 VulkanProgramImpl::~VulkanProgramImpl() {
-  caching_module_builder_.reset();
-  cached_module_.reset();
+  cache_manager_.reset();
   vulkan_runtime_.reset();
   embedded_device_.reset();
 }

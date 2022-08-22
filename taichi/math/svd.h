@@ -58,8 +58,9 @@ sifakis_svd_export(ASTBuilder *ast_builder,
   constexpr Tf Sine_Pi_Over_Eight = 0.3826834323650897f;
   constexpr Tf Cosine_Pi_Over_Eight = 0.9238795325112867f;
 
+  std::string tb = "";
   auto Var =
-      std::bind(&ASTBuilder::make_var, ast_builder, std::placeholders::_1);
+      std::bind(&ASTBuilder::make_var, ast_builder, std::placeholders::_1, tb);
 
   auto Sfour_gamma_squared = Var(Expr(Tf(0.0)));
   auto Ssine_pi_over_eight = Var(Expr(Tf(0.0)));

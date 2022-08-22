@@ -511,8 +511,11 @@ class IndexExpression : public Expression {
   Expr var;
   ExprGroup indices;
 
-  IndexExpression(const Expr &var, const ExprGroup &indices)
+  IndexExpression(const Expr &var,
+                  const ExprGroup &indices,
+                  std::string tb = "")
       : var(var), indices(indices) {
+    this->tb = tb;
   }
 
   void type_check(CompileConfig *config) override;
@@ -853,8 +856,10 @@ class ASTBuilder {
   Block *current_block();
   Stmt *get_last_stmt();
   void stop_gradient(SNode *);
-  void insert_assignment(Expr &lhs, const Expr &rhs);
-  Expr make_var(const Expr &x);
+  void insert_assignment(Expr &lhs,
+                         const Expr &rhs,
+                         const std::string &tb = "");
+  Expr make_var(const Expr &x, std::string tb);
   void insert_for(const Expr &s,
                   const Expr &e,
                   const std::function<void(Expr)> &func);
@@ -878,7 +883,8 @@ class ASTBuilder {
   Expr expr_alloca();
   Expr expr_alloca_local_tensor(const std::vector<int> &shape,
                                 const DataType &element_type,
-                                const ExprGroup &elements);
+                                const ExprGroup &elements,
+                                std::string tb);
   Expr expr_alloca_shared_array(const std::vector<int> &shape,
                                 const DataType &element_type);
   void expr_assign(const Expr &lhs, const Expr &rhs, std::string tb);

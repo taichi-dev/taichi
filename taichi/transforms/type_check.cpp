@@ -5,6 +5,7 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/frontend_ir.h"
+#include "taichi/transforms/utils.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -252,6 +253,8 @@ class TypeCheck : public IRVisitor {
     std::string msg =
         "Detected overflow for bit_shift_op with rhs = %d, exceeding limit of "
         "%d.";
+    msg = message_append_backtrace_info(msg, stmt);
+
     std::vector<Stmt *> args = {rhs, const_stmt.get()};
     auto assert_stmt =
         Stmt::make<AssertStmt>(cond_stmt.get(), msg, std::move(args));

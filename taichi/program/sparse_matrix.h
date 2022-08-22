@@ -63,13 +63,12 @@ class SparseMatrix {
     TI_NOT_IMPLEMENTED;
   };
 
-  virtual void build_csr(void *csr_ptr,
-                         void *csr_indices_ptr,
-                         void *csr_values_ptr,
-                         int nnz) {
+  virtual void build_csr_from_coo(void *coo_row_ptr,
+                                  void *coo_col_ptr,
+                                  void *coo_values_ptr,
+                                  int nnz) {
     TI_NOT_IMPLEMENTED;
-  };
-
+  }
   inline const int num_rows() const {
     return rows_;
   }
@@ -206,12 +205,17 @@ class CuSparseMatrix : public SparseMatrix {
   }
 
   virtual ~CuSparseMatrix();
-  void build_csr(void *csr_ptr,
-                 void *csr_indices_ptr,
-                 void *csr_values_ptr,
-                 int nnz) override;
-
+  void build_csr_from_coo(void *coo_row_ptr,
+                          void *coo_col_ptr,
+                          void *coo_values_ptr,
+                          int nnz) override;
   void spmv(Program *prog, const Ndarray &x, Ndarray &y);
+
+  const void *get_matrix() const override {
+    return &matrix_;
+  };
+
+  void print_info();
 
  private:
   cusparseSpMatDescr_t matrix_;

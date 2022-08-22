@@ -1,13 +1,17 @@
 #include "taichi/runtime/gfx/offline_cache_manager.h"
 #include "taichi/analysis/offline_cache_util.h"
 #include "taichi/codegen/spirv/snode_struct_compiler.h"
+#include "taichi/common/cleanup.h"
 #include "taichi/runtime/gfx/aot_module_loader_impl.h"
+#include "taichi/util/lock.h"
 
 namespace taichi {
 namespace lang {
 namespace gfx {
 
 namespace {
+
+constexpr char kMetadataFileLockName[] = "metadata.lock";
 
 FunctionType register_params_to_executable(
     gfx::GfxRuntime::RegisterParams &&params,
@@ -30,10 +34,18 @@ OfflineCacheManager::OfflineCacheManager(
 
   if (taichi::path_exists(taichi::join_path(path_, "metadata.tcb")) &&
       taichi::path_exists(taichi::join_path(path_, "graphs.tcb"))) {
-    gfx::AotModuleParams params;
-    params.module_path = path_;
-    params.runtime = runtime;
-    cached_module_ = gfx::make_aot_module(params, arch);
+    auto lock_path = taichi::join_path(path_, kMetadataFileLockName);
+    if (lock_with_file(lock_path)) {
+      auto _ = make_cleanup([&lock_path]() {
+        if (!unlock_with_file(lock_path)) {
+          TI_WARN("Unlock {} failed", lock_path);
+        }
+      });
+      gfx::AotModuleParams params;
+      params.module_path = path_;
+      params.runtime = runtime;
+      cached_module_ = gfx::make_aot_module(params, arch);
+    }
   }
 
   caching_module_builder_ = std::make_unique<gfx::AotModuleBuilderImpl>(compiled_structs, arch, std::move(target_device));
@@ -56,8 +68,17 @@ void OfflineCacheManager::dump_with_mergeing() const {
   taichi::create_directories(path_);
   auto *cache_builder = static_cast<gfx::AotModuleBuilderImpl *>(caching_module_builder_.get());
   cache_builder->mangle_aot_data();
-  cache_builder->merge_with_old_meta_data(path_);
-  cache_builder->dump(path_, "");
+
+  auto lock_path = taichi::join_path(path_, kMetadataFileLockName);
+  if (lock_with_file(lock_path)) {
+    auto _ = make_cleanup([&lock_path]() {
+      if (!unlock_with_file(lock_path)) {
+        TI_WARN("Unlock {} failed", lock_path);
+      }
+    });
+    cache_builder->merge_with_old_meta_data(path_);
+    cache_builder->dump(path_, "");
+  }
 }
 
 }  // namespace gfx

@@ -35,7 +35,8 @@ void TyLub::unify(int pos,
 }
 
 DataType TyLub::resolve(const std::map<Identifier, DataType> &solutions) const {
-  return promoted_type(lhs->resolve(solutions)->get_compute_type(), rhs->resolve(solutions)->get_compute_type());
+  return promoted_type(lhs->resolve(solutions)->get_compute_type(),
+                       rhs->resolve(solutions)->get_compute_type());
 }
 
 std::string TyLub::to_string() const {
@@ -48,7 +49,8 @@ void TyCompute::unify(int pos,
   TyMono(resolve(solutions)).unify(pos, dt, solutions);
 }
 
-DataType TyCompute::resolve(const std::map<Identifier, DataType> &solutions) const {
+DataType TyCompute::resolve(
+    const std::map<Identifier, DataType> &solutions) const {
   return exp->resolve(solutions)->get_compute_type();
 }
 
@@ -64,7 +66,8 @@ void TyMono::unify(int pos,
   }
 }
 
-DataType TyMono::resolve(const std::map<Identifier, DataType> &solutions) const {
+DataType TyMono::resolve(
+    const std::map<Identifier, DataType> &solutions) const {
   return monotype;
 }
 
@@ -73,19 +76,24 @@ std::string TyMono::to_string() const {
 }
 
 std::string TypeMismatch::to_string() const {
-  return "expected " + arg.to_string() + " for argument " + std::to_string(position) + ", but got " + param.to_string();
+  return "expected " + arg.to_string() + " for argument " +
+         std::to_string(position) + ", but got " + param.to_string();
 }
 
 std::string TyVarUnsolved::to_string() const {
-  return "cannot infer the type variable " + var.name() + ". this is not supposed to happen; please report this as a bug";
+  return "cannot infer the type variable " + var.name() +
+         ". this is not supposed to happen; please report this as a bug";
 }
 
 std::string TraitMismatch::to_string() const {
-  return "the argument type " + dt.to_string() + " is not " + trait->to_string();
+  return "the argument type " + dt.to_string() + " is not " +
+         trait->to_string();
 }
 
 std::string ArgLengthMismatch::to_string() const {
-  return std::to_string(arg) + " arguments were passed in but expected " + std::to_string(param) + ". this is not supposed to happen; please report this as a bug";
+  return std::to_string(arg) + " arguments were passed in but expected " +
+         std::to_string(param) +
+         ". this is not supposed to happen; please report this as a bug";
 }
 
 DataType Signature::type_check(std::vector<DataType> arguments) const {
@@ -96,10 +104,10 @@ DataType Signature::type_check(std::vector<DataType> arguments) const {
   for (int i = 0; i < parameters.size(); i++) {
     parameters[i]->unify(i, arguments[i], solutions);
   }
-  for (auto &c: constraints) {
+  for (auto &c : constraints) {
     auto dt = c.tyvar->resolve(solutions);
     if (!c.trait->validate(dt)) {
-        throw TraitMismatch(dt, c.trait);
+      throw TraitMismatch(dt, c.trait);
     }
   }
   return ret_type->resolve(solutions);
@@ -132,11 +140,21 @@ std::string DynamicTrait::to_string() const {
   return name;
 }
 
+StaticTraits::StaticTraits() {
+  real = new DynamicTrait("Real", is_real);
+  integral = new DynamicTrait("Integral", is_integral);
+  primitive = new DynamicTrait(
+      "Primitive", [](const DataType dt) { return dt->is<PrimitiveType>(); });
+  scalar = new DynamicTrait("Scalar", [](const DataType dt) {
+    return is_real(dt) || is_integral(dt);
+  });
+}
+
 std::shared_ptr<StaticTraits> StaticTraits::get() {
-  if (traits == nullptr) {
-    traits = std::make_shared<StaticTraits>();
+  if (traits_ == nullptr) {
+    traits_ = std::make_shared<StaticTraits>();
   }
-  return traits;
+  return traits_;
 }
 
 std::vector<TypeExpr> type_exprs_from_dts(std::vector<DataType> params) {
@@ -147,7 +165,8 @@ std::vector<TypeExpr> type_exprs_from_dts(std::vector<DataType> params) {
   return exprs;
 }
 
-std::vector<Stmt *> get_all_stmts(std::vector<Expr> args, Expression::FlattenContext *ctx) {
+std::vector<Stmt *> get_all_stmts(std::vector<Expr> args,
+                                  Expression::FlattenContext *ctx) {
   std::vector<Stmt *> stmts;
   for (auto arg : args) {
     arg->flatten(ctx);
@@ -158,23 +177,66 @@ std::vector<Stmt *> get_all_stmts(std::vector<Expr> args, Expression::FlattenCon
 
 class InternalCallOperation : public Operation {
   const std::string internal_call_name_;
+  const bool with_runtime_context_;
 
  public:
-  InternalCallOperation(std::string name,
-                        std::string internal_name,
+  InternalCallOperation(std::string internal_name,
                         std::vector<DataType> params,
-                        DataType result)
-      : Operation(name,
-                  Signature({}, {}, std::make_shared<TyMono>(result))),
-        internal_call_name_(internal_name) {
+                        DataType result,
+                        bool with_runtime_context)
+      : Operation(internal_name,
+                  Signature({},
+                            type_exprs_from_dts(params),
+                            std::make_shared<TyMono>(result))),
+        internal_call_name_(internal_name),
+        with_runtime_context_(with_runtime_context) {
   }
 
   Stmt *flatten(Expression::FlattenContext *ctx,
-                std::vector<Expr> args) const override {
-    return ctx->push_back<InternalFuncStmt>(internal_call_name_,
-                                            get_all_stmts(args, ctx));
+                std::vector<Expr> args,
+                DataType ret_type) const override {
+    return ctx->push_back<InternalFuncStmt>(
+        internal_call_name_, get_all_stmts(args, ctx), (Type *)ret_type,
+        with_runtime_context_);
   }
 };
 
+InternalOps::InternalOps() {
+  auto f32_ptr =
+      TypeFactory::get_instance().get_pointer_type(PrimitiveType::f32, false);
+#define COMPOSITE_EXTRACT(n)                         \
+  composite_extract_##n = new InternalCallOperation( \
+      "composite_extract_" #n, {f32_ptr}, PrimitiveType::f32, false)
+  COMPOSITE_EXTRACT(0);
+  COMPOSITE_EXTRACT(1);
+  COMPOSITE_EXTRACT(2);
+  COMPOSITE_EXTRACT(3);
+#undef COMPOSITE_EXTRACT
+
+#define INSERT_TRIPLET(dt)                                               \
+  insert_triplet_##dt =                                                  \
+      new InternalCallOperation("insert_triplet_" #dt,                   \
+                                {PrimitiveType::u64, PrimitiveType::i32, \
+                                 PrimitiveType::i32, PrimitiveType::dt}, \
+                                PrimitiveType::i32, true)
+  INSERT_TRIPLET(f32);
+  INSERT_TRIPLET(f64);
+#undef INSERT_TRIPLET
+
+#define SIMPLE_OP(name) \
+  name = new InternalCallOperation(#name, {}, PrimitiveType::i32, false)
+  SIMPLE_OP(block_barrier);
+  SIMPLE_OP(workgroupBarrier);
+  SIMPLE_OP(workgroupMemoryBarrier);
+  SIMPLE_OP(localInvocationId);
+  SIMPLE_OP(vkGlobalThreadIdx);
+  SIMPLE_OP(grid_memfence);
+  SIMPLE_OP(subgroupBarrier);
+  SIMPLE_OP(subgroupMemoryBarrier);
+#undef SIMPLE_OP
+
+#define UNARY_OP
 }
-}
+
+}  // namespace lang
+}  // namespace taichi

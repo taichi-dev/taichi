@@ -27,7 +27,7 @@ jobs:
     if: github.repository_owner == 'taichi-dev'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Save new version
         run: |
@@ -70,66 +70,49 @@ jobs:
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
     runs-on: [self-hosted, cuda, vulkan, cn, release]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: 'recursive'
+          fetch-depth: '0'
 
-      - name: Get sccache cache
-        uses: actions/cache@v2
-        with:
-          path: sccache_cache
-          key: sccache-linux-gpu-${{ github.sha }}
-          restore-keys: |
-            sccache-linux-gpu-
+      - name: Prepare Environment
+        run: |
+          . .github/workflows/scripts/common-utils.sh
+          prepare-build-cache
+          echo CI_DOCKER_RUN_EXTRA_ARGS="-v $(pwd):/home/dev/taichi" >> $GITHUB_ENV
 
       - name: Build
         run: |
-          mkdir -m777 shared
-          docker create --user dev --name taichi_build --gpus all -v /tmp/.X11-unix:/tmp/.X11-unix \
-            -e DISPLAY -e PY -e GPU_BUILD -e TAICHI_CMAKE_ARGS -e PROJECT_NAME \
+          . .github/workflows/scripts/common-utils.sh
+
+          ci-docker-run-gpu --name taichi-build \
             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
-            /home/dev/taichi/.github/workflows/scripts/unix_build.sh
-          tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner 1000 --group 1000 | docker cp - taichi_build:/home/dev/
-          docker start -a taichi_build
-          docker cp taichi_build:/home/dev/taichi/dist shared/dist
-          docker cp taichi_build:/home/dev/taichi/build shared/build
+            /home/dev/taichi/.github/workflows/scripts/unix-build.sh
         env:
           PY: ${{ matrix.conda_python }}
-          GPU_BUILD: ON
-          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           PROJECT_NAME: ${{ matrix.name }}
-          DISPLAY: ':1'
+          TAICHI_CMAKE_ARGS: >-
+            -DTI_WITH_OPENGL:BOOL=ON
+            -DTI_WITH_CC:BOOL=OFF
+            -DTI_WITH_VULKAN:BOOL=ON
+            -DTI_BUILD_TESTS:BOOL=ON
 
       - name: Archive Wheel Artifacts
         uses: actions/upload-artifact@v3
         with:
           name: dist
-          path: shared/dist/*.whl
+          path: dist/*.whl
           retention-days: 20
 
       - name: Test
         run: |
-          docker create --user dev --name taichi_test --gpus all -v /tmp/.X11-unix:/tmp/.X11-unix \
-            -e DISPLAY -e PY -e GPU_TEST \
-            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
-            /home/dev/unix_test.sh
-          docker cp .github/workflows/scripts/unix_test.sh taichi_test:/home/dev/unix_test.sh
-          docker cp .github/workflows/scripts/common-utils.sh taichi_test:/home/dev/common-utils.sh
-          docker cp ./requirements_test.txt taichi_test:/home/dev/requirements_test.txt
-          docker cp shared/dist/ taichi_test:/home/dev/
-          docker cp shared/build/ taichi_test:/home/dev/
-          docker cp pyproject.toml taichi_test:/home/dev/
-          docker cp tests/ taichi_test:/home/dev/
-          docker start -a taichi_test
+          . .github/workflows/scripts/common-utils.sh
+
+          ci-docker-run-gpu --name taichi-test \
+             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
+             /home/dev/taichi/.github/workflows/scripts/unix_test.sh
         env:
           PY: ${{ matrix.conda_python }}
-          GPU_TEST: ON
-          DISPLAY: ':1'
-
-      - name: clean docker container
-        if: always()
-        run: |
-          docker rm taichi_build taichi_test -f
 
   build_and_test_manylinux2014:
     name: Build and Upload (manylinux2014)
@@ -139,65 +122,51 @@ jobs:
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
     runs-on: [self-hosted, cuda, cn, release]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
-          submodules: "recursive"
+          submodules: 'recursive'
+          fetch-depth: '0'
 
-      - name: Get sccache cache
-        uses: actions/cache@v2
-        with:
-          path: sccache_cache
-          key: sccache-manylinux-${{ github.sha }}
-          restore-keys: |
-            sccache-manylinux-
+      - name: Prepare Environment
+        run: |
+          . .github/workflows/scripts/common-utils.sh
+          prepare-build-cache
+          echo CI_DOCKER_RUN_EXTRA_ARGS="-v $(pwd):/home/dev/taichi" >> $GITHUB_ENV
 
       - name: Build
         run: |
-          mkdir -m777 shared
-          docker create --user dev --name taichi_build --gpus all \
-            -e PY -e GPU_BUILD -e TAICHI_CMAKE_ARGS -e PROJECT_NAME \
-            registry.taichigraphics.com/taichidev-manylinux2014-cuda:v0.0.0 \
-            /home/dev/taichi/.github/workflows/scripts/unix_build.sh
-          tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner 1000 --group 1000 | docker cp - taichi_build:/home/dev/
-          docker start -a taichi_build
-          docker cp taichi_build:/home/dev/taichi/dist shared/dist
-          docker cp taichi_build:/home/dev/taichi/build shared/build
+          . .github/workflows/scripts/common-utils.sh
+
+          ci-docker-run-gpu --name taichi-test \
+             registry.taichigraphics.com/taichidev-manylinux2014-cuda:v0.0.0 \
+             /home/dev/taichi/.github/workflows/scripts/unix-build.sh
+
         env:
           PY: ${{ matrix.conda_python }}
-          GPU_BUILD: ON
-          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           PROJECT_NAME: ${{ matrix.name }}
+          TAICHI_CMAKE_ARGS: >-
+            -DTI_WITH_OPENGL:BOOL=OFF
+            -DTI_WITH_CC:BOOL=OFF
+            -DTI_WITH_VULKAN:BOOL=OFF
+            -DTI_BUILD_TESTS:BOOL=ON
 
       - name: Archive Wheel Artifacts
         uses: actions/upload-artifact@v3
         with:
           name: dist
-          path: shared/dist/*.whl
+          path: dist/*.whl
           retention-days: 20
 
       - name: Test
         run: |
-          docker create --user dev --name taichi_test --gpus all -e TI_WANTED_ARCHS \
-            -e PY -e GPU_TEST \
-            registry.taichigraphics.com/taichidev-manylinux2014-cuda:v0.0.0 \
-            /home/dev/unix_test.sh
-          docker cp .github/workflows/scripts/unix_test.sh taichi_test:/home/dev/unix_test.sh
-          docker cp .github/workflows/scripts/common-utils.sh taichi_test:/home/dev/common-utils.sh
-          docker cp ./requirements_test.txt taichi_test:/home/dev/requirements_test.txt
-          docker cp shared/dist/ taichi_test:/home/dev/
-          docker cp shared/build/ taichi_test:/home/dev/
-          docker cp pyproject.toml taichi_test:/home/dev/
-          docker cp tests/ taichi_test:/home/dev/
-          docker start -a taichi_test
+          . .github/workflows/scripts/common-utils.sh
+
+          ci-docker-run-gpu --name taichi-test \
+             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
+             /home/dev/taichi/.github/workflows/scripts/unix_test.sh
         env:
           PY: ${{ matrix.conda_python }}
-          GPU_TEST: ON
           TI_WANTED_ARCHS: "cuda,cpu"
-
-      - name: clean docker container
-        if: always()
-        run: |
-          docker rm taichi_build taichi_test -f
 
   build_and_test_mac:
     name: Build and Upload (macOS only)
@@ -209,17 +178,15 @@ jobs:
     env:
       PY: ${{ matrix.python }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: 'recursive'
+          fetch-depth: '0'
 
-      - name: Get sccache cache
-        uses: actions/cache@v2
-        with:
-          path: sccache_cache
-          key: sccache-mac-${{ github.sha }}
-          restore-keys: |
-            sccache-mac-
+      - name: Prepare Environment
+        run: |
+          . .github/workflows/scripts/common-utils.sh
+          prepare-build-cache
 
       - name: Download Pre-Built LLVM 10.0.0
         run: python misc/ci_download.py
@@ -230,14 +197,15 @@ jobs:
         run: |
           brew install molten-vk
           export PATH=$(pwd)/taichi-llvm/bin/:$PATH
-          export PATH=$(ls -d ~/mini*/envs/$PY/bin):$PATH
-          bash .github/workflows/scripts/unix_build.sh
-          brew uninstall molten-vk
-          echo PATH=$PATH >> $GITHUB_ENV
+          .github/workflows/scripts/unix-build.sh
         env:
-          TAICHI_CMAKE_ARGS: -DTI_WITH_VULKAN:BOOL=ON -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           PROJECT_NAME: ${{ matrix.name }}
           CXX: clang++
+          TAICHI_CMAKE_ARGS: >-
+            -DTI_WITH_VULKAN:BOOL=ON
+            -DTI_WITH_OPENGL:BOOL=OFF
+            -DTI_WITH_CC:BOOL=OFF
+            -DTI_BUILD_TESTS:BOOL=ON
 
       - name: Archive Wheel Artifacts
         uses: actions/upload-artifact@v3
@@ -263,32 +231,30 @@ jobs:
       run:
         shell: '/usr/bin/arch -arch arm64e /bin/bash --noprofile --norc -eo pipefail {0}'
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: 'recursive'
+          fetch-depth: '0'
 
-      - name: Get sccache cache
-        uses: actions/cache@v2
-        with:
-          path: sccache_cache
-          key: sccache-m1-${{ github.sha }}
-          restore-keys: |
-            sccache-m1-
+      - name: Prepare Environment
+        run: |
+          . .github/workflows/scripts/common-utils.sh
+          prepare-build-cache
 
       - name: Build
         run: |
           brew install molten-vk
-          # We hacked here because conda activate in CI won't update python PATH
-          # automatically. So we don't activate and use desired python version
-          # directly.
-          export PATH=/Users/github/miniforge3/envs/$PYTHON/bin:$PATH
-          bash .github/workflows/scripts/unix_build.sh
-          brew uninstall molten-vk
+          .github/workflows/scripts/unix-build.sh
         env:
-          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           PROJECT_NAME: ${{ matrix.name }}
-          PYTHON: ${{ matrix.python }}
+          PY: ${{ matrix.python }}
           CXX: clang++
+          TAICHI_CMAKE_ARGS: >-
+            -DTI_WITH_OPENGL:BOOL=OFF
+            -DTI_WITH_CUDA:BOOL=OFF
+            -DTI_WITH_CC:BOOL=OFF
+            -DTI_WITH_VULKAN:BOOL=ON
+            -DTI_BUILD_TESTS:BOOL=ON
 
       - name: Archive Wheel Artifacts
         uses: actions/upload-artifact@v3
@@ -299,11 +265,10 @@ jobs:
 
       - name: Test
         run: |
-          export PATH=/Users/github/miniforge3/envs/$PYTHON/bin:$PATH
           .github/workflows/scripts/unix_test.sh
         env:
           TI_WANTED_ARCHS: 'metal,vulkan,cpu'
-          PYTHON: ${{ matrix.python }}
+          PY: ${{ matrix.python }}
           GPU_TEST: ON
 
   build_and_test_macos_1014:
@@ -314,32 +279,32 @@ jobs:
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
     runs-on: [self-hosted, macos10.14]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: 'recursive'
+          fetch-depth: '0'
 
-      - name: Get sccache cache
-        uses: actions/cache@v2
-        with:
-          path: sccache_cache
-          key: sccache-1014-${{ github.sha }}
-          restore-keys: |
-            sccache-1014-
+      - name: Prepare Environment
+        run: |
+          . .github/workflows/scripts/common-utils.sh
+          prepare-build-cache
 
       - name: Build
         run: |
-          # We hacked here because conda activate in CI won't update python PATH
-          # automatically. So we don't activate and use desired python version
-          # directly.
-          export PATH=/Users/buildbot6/miniconda3/envs/$PYTHON/bin:$PATH
+          # TODO: should embed LLVM as submodule
           export LLVM_DIR=/Users/buildbot6/taichi-llvm-10.0.0-macos
           export PATH=$LLVM_DIR/bin:$PATH
-          bash .github/workflows/scripts/unix_build.sh
+          .github/workflows/scripts/unix-build.sh
         env:
-          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           PROJECT_NAME: ${{ matrix.name }}
-          PYTHON: ${{ matrix.python }}
+          PY: ${{ matrix.python }}
           CXX: clang++
+          TAICHI_CMAKE_ARGS: >-
+            -DTI_WITH_OPENGL:BOOL=OFF
+            -DTI_WITH_CUDA:BOOL=OFF
+            -DTI_WITH_CC:BOOL=OFF
+            -DTI_WITH_VULKAN:BOOL=OFF
+            -DTI_BUILD_TESTS:BOOL=ON
 
       - name: Archive Wheel Artifacts
         uses: actions/upload-artifact@v3
@@ -350,11 +315,10 @@ jobs:
 
       - name: Test
         run: |
-          export PATH=/Users/buildbot6/miniconda3/envs/$PYTHON/bin:$PATH
           .github/workflows/scripts/unix_test.sh
         env:
           TI_WANTED_ARCHS: 'cpu'
-          PYTHON: ${{ matrix.python }}
+          PY: ${{ matrix.python }}
 
   build_and_test_windows:
     name: Build and Upload (Windows only)
@@ -362,35 +326,24 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
-    runs-on: windows-latest
+    runs-on: [self-hosted, windows, cuda, OpenGL]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: 'recursive'
+          fetch-depth: '0'
 
       - uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python }}
 
-      - name: Add Visual Studio Shell to ENV
-        uses: egor-tensin/vs-shell@v2
-        with:
-          arch: x64
-
-      - name: Get sccache cache
-        uses: actions/cache@v2
-        with:
-          path: ccache_cache
-          key: ccache-win64-clang-${{ github.sha }}
-          restore-keys: |
-            ccache-win64-clang-
-
-      - name: Build Python Wheel
-        shell: powershell
+      - name: Build
+        shell: pwsh
+        if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
-          .\.github\workflows\scripts\win_build.ps1 -installVulkan -libsDir C:\
-          venv\Scripts\python -m pip install $(dir dist\*.whl)
+          .\.github\workflows\scripts\win_build.ps1 -llvmVer 10 -installVulkan -libsDir "$env:LocalAppData/buildbot"
         env:
+          PY: ${{ matrix.python }}
           PROJECT_NAME: ${{ matrix.name }}
 
       - name: Archive Wheel Artifacts
@@ -401,16 +354,12 @@ jobs:
           retention-days: 20
 
       - name: Test
-        shell: powershell
+        shell: pwsh
         run: |
-          $env:PATH = ";C:\taichi_llvm\bin;C:\taichi_clang\bin;" + $env:PATH
-          . venv\Scripts\activate.ps1
-          python -c "import taichi"
-          pip install torch
-          pip install -r requirements_test.txt
-          ti diagnose
-          python tests/run_tests.py -vr2 -t2
+          .\.github\workflows\scripts\win_test.ps1 -libsDir "$env:LocalAppData/buildbot"
         env:
+          PY: ${{ matrix.python }}
+          TI_WANTED_ARCHS: "cpu,cuda,opengl,vulkan"
           TI_SKIP_VERSION_CHECK: ON
 
   upload_to_pypi:
@@ -418,7 +367,7 @@ jobs:
     needs: [build_and_test_linux, build_and_test_manylinux2014, build_and_test_mac, build_and_test_m1, build_and_test_macos_1014, build_and_test_windows]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions/setup-python@v2
         with:
           python-version: 3.9
@@ -446,7 +395,7 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event.inputs.version }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions/setup-python@v2
         with:
           python-version: 3.9

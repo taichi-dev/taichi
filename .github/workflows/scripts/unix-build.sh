@@ -1,15 +1,15 @@
 #!/bin/bash
 
-# TODO: replace unix_build.sh
-# currently only used in android build job
 set -ex
 
 . $(dirname $0)/common-utils.sh
 
-IN_DOCKER=$(check_in_docker)
 [[ "$IN_DOCKER" == "true" ]] && cd taichi
 
+# TODO: Move llvm installation from container image to here
+
 build_taichi_wheel() {
+    python3 -m pip install -r requirements_dev.txt
     git fetch origin master --tags
     PROJECT_TAGS=""
     EXTRA_ARGS=""
@@ -27,8 +27,10 @@ build_taichi_wheel() {
     python3 misc/make_changelog.py --ver origin/master --repo_dir ./ --save
 
     python3 setup.py $PROJECT_TAGS bdist_wheel $EXTRA_ARGS
-    sccache -s
+    sccache -s || true
 }
+
+fix-build-cache-permission
 
 setup-sccache-local
 setup_python

@@ -56,7 +56,8 @@ class AotModuleImpl : public aot::Module {
     }
   }
 
-  std::unique_ptr<aot::CompiledGraph> get_graph(const std::string& name) override {
+  std::unique_ptr<aot::CompiledGraph> get_graph(
+      const std::string &name) override {
     auto it = graphs_.find(name);
     if (it == graphs_.end()) {
       TI_DEBUG("Cannot find graph {}", name);

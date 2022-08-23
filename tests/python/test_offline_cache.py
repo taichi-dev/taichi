@@ -3,6 +3,8 @@ import functools
 import math
 import os
 import shutil
+import os
+import shutil
 import threading
 from os import listdir, remove, rmdir, stat
 from os.path import join
@@ -41,7 +43,7 @@ def cache_files_size(path):
     return result
 
 
-def expected_num_cache_files(arch, num_offloads: List[int] = None) -> int:
+def get_expected_num_cache_files(num_offloads: List[int] = None) -> int:
     if not num_offloads:
         return 0
     result = sum(num_offloads)

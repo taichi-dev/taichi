@@ -50,3 +50,5 @@ T taichi_union_cast(G g) {
 enum class ExternalArrayLayout { kAOS, kSOA, kNull };
 
 enum class AutodiffMode { kForward, kReverse, kNone, kCheckAutodiffValid };
+
+enum class SNodeGradType { kPrimal, kAdjoint, kDual, kAdjointCheckbit };

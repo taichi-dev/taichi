@@ -163,10 +163,10 @@ class SNode:
         """
         self.ptr.lazy_dual()
 
-    def _allocate_grad_visited(self):
+    def _allocate_adjoint_checkbit(self):
         """Automatically place the adjoint flag fields following the layout of their primal fields for global data access rule checker
         """
-        self.ptr.allocate_grad_visited()
+        self.ptr.allocate_adjoint_checkbit()
 
     def parent(self, n=1):
         """Gets an ancestor of `self` in the SNode tree.

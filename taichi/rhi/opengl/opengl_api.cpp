@@ -25,6 +25,10 @@ int opengl_max_grid_dim = 1024;
 // without this global static boolean.
 static bool kUseGles = false;
 
+static void glfw_error_callback(int code, const char *description) {
+  TI_WARN("GLFW Error {}: {}", code, description);
+}
+
 bool initialize_opengl(bool use_gles, bool error_tolerance) {
   static std::optional<bool> supported;  // std::nullopt
 
@@ -44,6 +48,7 @@ bool initialize_opengl(bool use_gles, bool error_tolerance) {
   int opengl_version = 0;
 
   if (glfwInit()) {
+    glfwSetErrorCallback(glfw_error_callback);
     // Compute Shader requires OpenGL 4.3+ (or OpenGL ES 3.1+)
     if (use_gles) {
       glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);

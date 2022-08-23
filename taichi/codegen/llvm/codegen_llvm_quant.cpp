@@ -221,7 +221,7 @@ void TaskCodeGenLLVM::visit(BitStructStoreStmt *stmt) {
           create_call("max_i32", {exponent_bits, tlctx->get_constant(0)});
 
       // Compute the bit pointer of the exponent bits.
-      val = builder->CreateBitCast(exponent_bits, physical_type);
+      val = builder->CreateIntCast(exponent_bits, physical_type, false);
       val = builder->CreateShl(val, bit_struct->get_member_bit_offset(exp));
 
       if (bit_struct_val == nullptr) {
@@ -238,7 +238,7 @@ void TaskCodeGenLLVM::visit(BitStructStoreStmt *stmt) {
                               tlctx->get_constant(0));
       val = builder->CreateSelect(exp_non_zero, digit_bits,
                                   tlctx->get_constant(0));
-      val = builder->CreateBitCast(val, physical_type);
+      val = builder->CreateIntCast(val, physical_type, false);
       val = builder->CreateShl(val, bit_struct->get_member_bit_offset(ch_id));
     } else {
       val = quant_int_or_quant_fixed_to_bits(val, dtype, physical_type);

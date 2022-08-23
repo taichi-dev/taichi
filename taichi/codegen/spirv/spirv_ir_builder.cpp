@@ -1181,8 +1181,8 @@ void IRBuilder::store_variable(Value pointer, Value value) {
 
 void IRBuilder::register_value(std::string name, Value value) {
   auto it = value_name_tbl_.find(name);
-  if (it != value_name_tbl_.end()) {
-    TI_ERROR("{} is existed.", name);
+  if (it != value_name_tbl_.end() && it->second.flag != ValueKind::kConstant) {
+    TI_ERROR("{} already exists.", name);
   }
   this->debug(
       spv::OpName, value,

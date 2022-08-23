@@ -413,3 +413,38 @@ def test_texture():
     for i in range(res[0]):
         for j in range(res[1]):
             assert test_utils.allclose(pixels[i, j], [0.1, 0.1, 0.1, 1.])
+
+
+@test_utils.test(arch=supported_archs_cgraph)
+def test_ti_func_with_template_args():
+    MyStruct = ti.types.struct(
+        id=ti.i32,
+        val=ti.f32,
+        center=ti.types.vector(3, ti.f32),
+        color=ti.types.vector(4, ti.i32),
+    )
+
+    arr = ti.ndarray(ti.i32, shape=())
+
+    @ti.func
+    def test_func(x: ti.template()):
+        x.id = 0
+        x.val = 1.0
+        x.center = ti.Vector([0.0, 0.0, 0.0])
+        x.color = ti.Vector([1, 1, 0, 0])
+
+    @ti.kernel
+    def test_kernel(arr: ti.types.ndarray()):
+        x = MyStruct()
+        test_func(x)
+        arr[None] = x.color[1]
+
+    sym_arr = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
+                           'arr',
+                           ti.i32,
+                           field_dim=0)
+    g_builder = ti.graph.GraphBuilder()
+    g_builder.dispatch(test_kernel, sym_arr)
+    g = g_builder.compile()
+    g.run({'arr': arr})
+    assert arr.to_numpy() == 1

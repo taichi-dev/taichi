@@ -95,7 +95,20 @@ class CUDADriverFunction {
   std::mutex *driver_lock_{nullptr};
 };
 
-class CUDADriver {
+class CUDADriverBase {
+ public:
+  ~CUDADriverBase() = default;
+
+ protected:
+  std::unique_ptr<DynamicLoader> loader_;
+  CUDADriverBase();
+
+  bool load_lib(std::string lib_linux, std::string lib_windows);
+
+  bool disabled_by_env_{false};
+};
+
+class CUDADriver : protected CUDADriverBase {
  public:
 #define PER_CUDA_FUNCTION(name, symbol_name, ...) \
   CUDADriverFunction<__VA_ARGS__> name;
@@ -110,8 +123,6 @@ class CUDADriver {
 
   bool detected();
 
-  ~CUDADriver() = default;
-
   static CUDADriver &get_instance();
 
   static CUDADriver &get_instance_without_context();
@@ -119,12 +130,39 @@ class CUDADriver {
  private:
   CUDADriver();
 
-  std::unique_ptr<DynamicLoader> loader_;
-
   std::mutex lock_;
 
-  bool disabled_by_env_{false};
   bool cuda_version_valid_{false};
+};
+
+class CUSPARSEDriver : protected CUDADriverBase {
+ public:
+  static CUSPARSEDriver &get_instance();
+
+#define PER_CUSPARSE_FUNCTION(name, symbol_name, ...) \
+  CUDADriverFunction<__VA_ARGS__> name;
+#include "taichi/rhi/cuda/cusparse_functions.inc.h"
+#undef PER_CUSPARSE_FUNCTION
+
+  bool load_cusparse();
+
+  inline bool is_loaded() {
+    return cusparse_loaded_;
+  }
+
+ private:
+  CUSPARSEDriver();
+  std::mutex lock_;
+  bool cusparse_loaded_{false};
+};
+
+class CUSOLVERDriver : protected CUDADriverBase {
+ public:
+  // TODO: Add cusolver function APIs
+  static CUSOLVERDriver &get_instance();
+
+ private:
+  CUSOLVERDriver();
 };
 
 TLANG_NAMESPACE_END

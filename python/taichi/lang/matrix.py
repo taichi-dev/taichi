@@ -245,9 +245,7 @@ class _TiScopeMatrixImpl(_MatrixBaseImpl):
                           ndim=1)
 
         if self.any_array_access:
-            return self.any_array_access.subscript(
-                i, j,
-                impl.get_runtime().get_current_src_info())
+            return self.any_array_access.subscript(i, j)
         if self.local_tensor_proxy is not None:
             if len(indices) == 1:
                 return impl.make_index_expr(

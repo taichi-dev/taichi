@@ -100,7 +100,7 @@ class CheckOutOfBound : public BasicStmtVisitor {
       msg += "%d";
     }
     msg += ")";
-    msg = message_append_backtrace_info(msg, stmt);
+    msg += "\n" + stmt->tb;
 
     new_stmts.push_back<AssertStmt>(result, msg, args);
     modifier.insert_before(stmt, std::move(new_stmts));
@@ -120,7 +120,7 @@ class CheckOutOfBound : public BasicStmtVisitor {
             BinaryOpType::cmp_ge, stmt->rhs, compare_rhs.get());
         compare->ret_type = PrimitiveType::i32;
         std::string msg = "Negative exponent for integer pows are not allowed";
-        msg = message_append_backtrace_info(msg, stmt);
+        msg += "\n" + stmt->tb;
 
         auto assert_stmt = std::make_unique<AssertStmt>(compare.get(), msg,
                                                         std::vector<Stmt *>());

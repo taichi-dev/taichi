@@ -10,10 +10,5 @@ Stmt *generate_mod_x_div_y(VecStatement *stmts, Stmt *num, int x, int y) {
   return stmts->push_back<BinaryOpStmt>(BinaryOpType::div, mod_x, const_y);
 }
 
-std::string message_append_backtrace_info(const std::string &message,
-                                          Stmt *stmt) {
-  return message + "\n" + stmt->tb;
-}
-
 }  // namespace lang
 }  // namespace taichi

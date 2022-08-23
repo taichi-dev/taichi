@@ -1602,7 +1602,7 @@ class GloablDataAccessRuleChecker : public BasicStmtVisitor {
         "(kernel={}) Breaks the global data access rule. Snode {} is "
         "overwritten unexpectedly.",
         kernel_name_, dest->snodes[0]->get_node_type_name());
-    msg = message_append_backtrace_info(msg, stmt);
+    msg += "\n" + stmt->tb;
 
     stmt->insert_before_me(
         Stmt::make<AssertStmt>(check_equal, msg, std::vector<Stmt *>()));

@@ -54,16 +54,17 @@ OfflineCacheManager::OfflineCacheManager(
       compiled_structs, arch, std::move(target_device));
 }
 
-FunctionType OfflineCacheManager::load_or_compile(CompileConfig *config, Kernel *kernel) {
+FunctionType OfflineCacheManager::load_or_compile(CompileConfig *config,
+                                                  Kernel *kernel) {
   auto kernel_key = get_hashed_offline_cache_key(config, kernel);
   kernel->set_kernel_key_for_cache(kernel_key);
   if (auto *cached_kernel = this->load_cached_kernel(kernel_key)) {
     // Load from cache
-    TI_DEBUG("Create kernel '{}' from cache (key='{}')", kernel->get_name(), kernel_key);
+    TI_DEBUG("Create kernel '{}' from cache (key='{}')", kernel->get_name(),
+             kernel_key);
     kernel->set_from_offline_cache();
-    return [cached_kernel](RuntimeContext &ctx) {
-      cached_kernel->launch(&ctx);
-    };
+    return
+        [cached_kernel](RuntimeContext &ctx) { cached_kernel->launch(&ctx); };
   }
 
   // Compile & Cache it

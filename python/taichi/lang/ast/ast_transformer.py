@@ -490,7 +490,7 @@ class ASTTransformer(Builder):
 
         if (isinstance(node.func, ast.Attribute) and
             (func == Matrix or func == Vector)
-            ) and impl.current_cfg().real_matrix and in_taichi_scope():
+            ) and impl.current_cfg().real_matrix:
             node.ptr = matrix.make_matrix(*args, **keywords)
             return node.ptr
 

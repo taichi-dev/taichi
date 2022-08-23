@@ -99,18 +99,18 @@ def _gen_swizzles(cls):
 
 def make_matrix(arr, dt=None):
     if len(arr) == 0:
-        return impl.expr_init(
+        return impl.Expr(
             impl.expr_init_local_tensor([0], ti_python_core.DataType_unknown,
                                         impl.make_expr_group([])))
     is_matrix = isinstance(arr[0], Iterable)
     if dt is None:
         dt = _make_entries_initializer(is_matrix).infer_dt(arr)
     if not is_matrix:
-        return impl.expr_init(
+        return impl.Expr(
             impl.expr_init_local_tensor([len(arr)], dt,
                                         impl.make_expr_group(
                                             [expr.Expr(elt) for elt in arr])))
-    return impl.expr_init(
+    return impl.Expr(
         impl.expr_init_local_tensor([len(arr), len(arr[0])], dt,
                                     impl.make_expr_group([
                                         expr.Expr(elt) for row in arr

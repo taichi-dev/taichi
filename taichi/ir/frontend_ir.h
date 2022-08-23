@@ -902,9 +902,6 @@ class ASTBuilder {
                                  const ExprGroup &args,
                                  const ExprGroup &outputs);
   Expr expr_alloca();
-  Expr expr_alloca_local_matrix(const std::vector<int> &shape,
-                                const std::optional<DataType> &dt,
-                                const std::vector<Expr> &elements);
   Expr expr_alloca_local_tensor(const std::vector<int> &shape,
                                 const DataType &element_type,
                                 const ExprGroup &elements);

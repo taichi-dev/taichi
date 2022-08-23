@@ -15,7 +15,8 @@ from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.kernel_arguments import SparseMatrixProxy
 from taichi.lang.matrix import (Matrix, MatrixField, MatrixNdarray, MatrixType,
-                                _IntermediateMatrix, _MatrixFieldElement)
+                                _IntermediateMatrix, _MatrixFieldElement,
+                                make_matrix)
 from taichi.lang.mesh import (ConvType, MeshElementFieldProxy, MeshInstance,
                               MeshRelationAccessProxy,
                               MeshReorderedMatrixFieldProxy,
@@ -36,12 +37,6 @@ def expr_init_local_tensor(shape, element_type, elements):
 
 
 @taichi_scope
-def expr_init_matrix(shape, element_type, elements):
-    return get_runtime().prog.current_ast_builder().expr_alloca_matrix(
-        shape, element_type, elements)
-
-
-@taichi_scope
 def expr_init_shared_array(shape, element_type):
     return get_runtime().prog.current_ast_builder().expr_alloca_shared_array(
         shape, element_type)
@@ -55,7 +50,12 @@ def expr_init(rhs):
         return Matrix(*rhs.to_list(), ndim=rhs.ndim)
     if isinstance(rhs, Matrix):
         if current_cfg().real_matrix:
-            return rhs
+            if rhs.ndim == 1:
+                entries = [rhs(i) for i in range(rhs.n)]
+            else:
+                entries = [[rhs(i, j) for j in range(rhs.m)]
+                           for i in range(rhs.n)]
+            return make_matrix(entries)
         return Matrix(rhs.to_list(), ndim=rhs.ndim)
     if isinstance(rhs, SharedArray):
         return rhs

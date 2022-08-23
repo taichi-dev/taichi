@@ -215,3 +215,9 @@ def test_compare_ret_type():
             i -= 1
 
     foo()
+
+
+@test_utils.test()
+def test_python_scope_compare():
+    v = ti.math.vec3(0, 1, 2)
+    assert (v < 1)[0] == 1

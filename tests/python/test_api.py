@@ -108,9 +108,9 @@ user_api[ti.math] = [
     'isinf', 'isnan', 'ivec2', 'ivec3', 'ivec4', 'length', 'log', 'log2',
     'mat2', 'mat3', 'mat4', 'max', 'min', 'mix', 'mod', 'nan', 'normalize',
     'pi', 'pow', 'radians', 'reflect', 'refract', 'rot_by_axis',
-    'rot_yaw_pitch_roll', 'rotation2d', 'rotation3d', 'round', 'scale',
-    'sign', 'sin', 'smoothstep', 'sqrt', 'step', 'tan', 'tanh', 'translate',
-    'uvec2', 'uvec3', 'uvec4', 'vdir', 'vec2', 'vec3', 'vec4'
+    'rot_yaw_pitch_roll', 'rotation2d', 'rotation3d', 'round', 'scale', 'sign',
+    'sin', 'smoothstep', 'sqrt', 'step', 'tan', 'tanh', 'translate', 'uvec2',
+    'uvec3', 'uvec4', 'vdir', 'vec2', 'vec3', 'vec4'
 ]
 user_api[ti.Matrix] = _get_expected_matrix_apis()
 user_api[ti.MatrixField] = [

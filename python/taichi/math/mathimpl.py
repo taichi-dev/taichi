@@ -556,7 +556,7 @@ def rot_yaw_pitch_roll(yaw, pitch, roll):
         yaw   (float): yaw angle in radians unit
         pitch (float): pitch angle in radians unit
         roll  (float): roll angle in radians unit
-        
+
     Returns:
         :class:`~taichi.math.mat4`: rotation matrix
     """
@@ -769,8 +769,7 @@ __all__ = [
     "inf", "inverse", "isinf", "isnan", "ivec2", "ivec3", "ivec4", "length",
     "log", "log2", "mat2", "mat3", "mat4", "max", "min", "mix", "mod",
     "translate", "scale", "nan", "normalize", "pi", "pow", "radians",
-    "reflect", "refract", "rot_by_axis", "rot_yaw_pitch_roll",
-    "rotation2d", "rotation3d", "round", "sign", "sin", "smoothstep", "sqrt",
-    "step", "tan", "tanh", "uvec2", "uvec3", "uvec4", "vdir", "vec2", "vec3",
-    "vec4"
+    "reflect", "refract", "rot_by_axis", "rot_yaw_pitch_roll", "rotation2d",
+    "rotation3d", "round", "sign", "sin", "smoothstep", "sqrt", "step", "tan",
+    "tanh", "uvec2", "uvec3", "uvec4", "vdir", "vec2", "vec3", "vec4"
 ]

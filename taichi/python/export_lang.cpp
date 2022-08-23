@@ -532,7 +532,7 @@ void export_lang(py::module &m) {
           py::return_value_policy::reference)
       .def("lazy_grad", &SNode::lazy_grad)
       .def("lazy_dual", &SNode::lazy_dual)
-      .def("allocate_grad_visited", &SNode::allocate_grad_visited)
+      .def("allocate_adjoint_checkbit", &SNode::allocate_adjoint_checkbit)
       .def("read_int", &SNode::read_int)
       .def("read_uint", &SNode::read_uint)
       .def("read_float", &SNode::read_float)

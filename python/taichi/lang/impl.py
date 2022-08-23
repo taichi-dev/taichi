@@ -568,8 +568,8 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
 
     x_grad = None
     x_dual = None
-    # The x_grad_visited is used for global data access rule checker
-    x_grad_visited = None
+    # The x_grad_checkbit is used for global data access rule checker
+    x_grad_checkbit = None
     if _ti_core.is_real(dtype):
         # adjoint
         x_grad = Expr(get_runtime().prog.make_id_expr(""))
@@ -587,11 +587,11 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
             dtype = u8
             if prog.config.arch in (_ti_core.opengl, _ti_core.vulkan):
                 dtype = i32
-            x_grad_visited.ptr = _ti_core.global_new(x_grad_visited.ptr,
-                                                     cook_dtype(dtype))
-            x_grad_visited.ptr.set_name(name + ".grad_visited")
-            x_grad_visited.ptr.set_grad_type(SNodeGradType.ADJOINT_CHECKBIT)
-            x.ptr.set_adjoint_checkbit(x_grad_visited.ptr)
+            x_grad_checkbit.ptr = _ti_core.global_new(x_grad_checkbit.ptr,
+                                                      cook_dtype(dtype))
+            x_grad_checkbit.ptr.set_name(name + ".grad_checkbit")
+            x_grad_checkbit.ptr.set_grad_type(SNodeGradType.ADJOINT_CHECKBIT)
+            x.ptr.set_adjoint_checkbit(x_grad_checkbit.ptr)
 
         # dual
         x_dual = Expr(get_runtime().prog.make_id_expr(""))

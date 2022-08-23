@@ -435,6 +435,7 @@ void MatrixExpression::type_check(CompileConfig *config) {
   for (auto &arg : elements) {
     TI_ASSERT_TYPE_CHECKED(arg);
   }
+  ret_type = dt;
 }
 
 void MatrixExpression::flatten(FlattenContext *ctx) {

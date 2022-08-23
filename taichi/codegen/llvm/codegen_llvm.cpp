@@ -807,8 +807,14 @@ void TaskCodeGenLLVM::visit(PrintStmt *stmt) {
       auto value = llvm_val[arg_stmt];
       if (arg_stmt->ret_type->is<TensorType>()) {
         auto dtype = arg_stmt->ret_type->cast<TensorType>();
+        auto elem_type = dtype->get_element_type();
         for (int i = 0; i < dtype->get_num_elements(); ++i) {
-          args.push_back(builder->CreateExtractElement(value, i));
+          auto elem_value = builder->CreateExtractElement(value, i);
+          if (elem_type->is_primitive(PrimitiveTypeID::f32) ||
+              elem_type->is_primitive(PrimitiveTypeID::f16))
+            elem_value = builder->CreateFPExt(
+                elem_value, tlctx->get_data_type(PrimitiveType::f64));
+          args.push_back(elem_value);
         }
         formats += data_type_format(arg_stmt->ret_type);
       } else {

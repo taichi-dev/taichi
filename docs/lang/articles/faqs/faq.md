@@ -66,3 +66,93 @@ maintenance overheads.
 ### How do I program on less structured data structures (such as graphs and tetrahedral meshes) in Taichi?
 
 These structures have to be decomposed into 1D Taichi fields. For example, when representing a graph, you can allocate two fields, one for the vertices and the other for the edges. You can then traverse the elements using `for v in vertices` or `for v in range(n)`.
+
+### How to install Taichi on a server without Internet access?
+
+Follow these steps to install Taichi on a server without Internet access.
+
+1. From a computer with Internet access, pip download Taichi, ensuring that this computer has the same operating system as the target server:
+
+```plaintext
+pip download taichi
+```
+
+*This command downloads the wheel package of Taichi and all its dependencies.*
+
+2. Copy the downloaded *.whl packages to your local server and install each with the following command. Note that you *must* complete all dependency installation before installing Taichi.
+
+```
+python -m pip install xxxx.whl
+```
+
+### Can I integrate Taichi and Houdini?
+
+The answer is an unequivocal Yes! Our contributors managed to embed [taichi_elements](https://github.com/taichi-dev/taichi_elements), a multi-material continuum physics engine, into Houdini as an extension, combining Houdini's flexibility in preprocessing with Taichi's strength in high-performance computation.
+
+You can follow the instructions provided [here](https://github.com/taichi-dev/taichi_houdini).
+
+### How do I accurately initialize a vector or matrix with `f64` precision when my default floating-point precision (`default_fp`) is `f32`?
+
+To better understand the question, look at the program below:
+
+```python
+import taichi as ti
+
+ti.init()
+
+@ti.kernel
+def foo():
+    A = ti.Vector([0.2, 0.0], ti.f64)
+    print('A =', A)
+
+    B = ti.Vector([ti.f64(0.2), 0.0], ti.f64)
+    print('B =', B)
+
+foo()
+```
+
+You get the following output:
+
+```
+A = [0.200000002980, 0.000000000000]
+B = [0.200000000000, 0.000000000000]
+```
+
+You may notice the value of `A` is slightly different from `[0.2, 0]`. This is because, by default, your float literals are converted to `ti.f32`, and `0.2` in `ti.f32` precision becomes `0.200000002980`. If you expect `A` and `B` to have `ti.f64` precision, use `ti.f64(0.2)` to preserve more effective digits here so that `0.2` keeps its `ti.f64` type.
+
+Alternatively, if you can afford having all floating-point operations in `f64` precision, you can directly initialize Taichi with `ti.init(..., default_fp=ti.f64)`.
+
+### Why does it always return an error when I pass a list from the Python scope to a Taichi kernel?
+
+A Taichi kernel **cannot** take a Python list directly. You need to use NumPy arrays as a bridge.
+
+For example, the following code snippet does not work:
+
+```python
+import taichi as ti
+import numpy as np
+ti.init()
+x = ti.field(ti.i32, shape=3)
+array = [10, 20, 30]
+
+@ti.kernel
+def test(arr: list):
+    for i in range(3):
+        x[i] = arr[i]
+test(array)
+```
+
+You need to import NumPy:
+
+```python
+import taichi as ti
+import numpy as np
+ti.init(arch=ti.cpu)
+x = ti.field(ti.i32, shape=3)
+array = np.array([10, 20, 30])
+@ti.kernel
+def test(arr: ti.types.ndarray()):
+    for i in range(3):
+        x[i] = arr[i]
+test(array)
+```

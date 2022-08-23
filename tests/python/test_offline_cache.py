@@ -18,7 +18,9 @@ from tests import test_utils
 OFFLINE_CACHE_TEMP_DIR = mkdtemp()
 atexit.register(lambda: rmdir(OFFLINE_CACHE_TEMP_DIR))
 
-supported_archs_offline_cache = [ti.cpu, ti.cuda, ti.vulkan]
+supported_llvm_archs = {ti.cpu, ti.cuda}
+supported_gfx_archs = {ti.vulkan, ti.opengl}
+supported_archs_offline_cache = supported_llvm_archs | supported_gfx_archs
 supported_archs_offline_cache = [
     v for v in supported_archs_offline_cache
     if v in test_utils.expected_archs()
@@ -43,9 +45,9 @@ def expected_num_cache_files(arch, num_offloads: List[int] = None) -> int:
     if not num_offloads:
         return 0
     result = sum(num_offloads)
-    if arch in [ti.cpu, ti.cuda]:
+    if arch in supported_llvm_archs:
         result += 2  # metadata.{json, tcb}
-    elif arch in [ti.vulkan]:
+    elif arch in supported_gfx_archs:
         result += 3  # metadata.{json, tcb}, graphs.tcb
     return result
 
@@ -55,9 +57,9 @@ def tmp_offline_cache_file_path():
 
 
 def backend_specified_cache_path(arch):
-    if arch in [ti.cpu, ti.cuda]:
+    if arch in supported_llvm_archs:
         return join(tmp_offline_cache_file_path(), 'llvm')
-    elif arch in [ti.vulkan]:
+    elif arch in supported_gfx_archs:
         return join(tmp_offline_cache_file_path(), 'gfx')
     assert False
 
@@ -474,7 +476,7 @@ def test_offline_cache_with_changing_compile_config(curr_arch):
 
 # FIXME: Currently, the Vulkan offline cache doesn't support cache cleaning
 @pytest.mark.parametrize(
-    'curr_arch', list(set(supported_archs_offline_cache) - {ti.vulkan}))
+    'curr_arch', list(set(supported_archs_offline_cache) - supported_gfx_archs))
 @pytest.mark.parametrize('factor', [0.0, 0.25, 0.85, 1.0])
 @pytest.mark.parametrize('policy', ['never', 'version', 'lru', 'fifo'])
 @_test_offline_cache_dec

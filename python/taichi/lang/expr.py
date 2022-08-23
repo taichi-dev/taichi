@@ -4,6 +4,7 @@ from taichi.lang import impl
 from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.exception import TaichiTypeError
 from taichi.lang.util import is_taichi_class, to_numpy_type
+from taichi.types import primitive_types
 from taichi.types.primitive_types import integer_types, real_types
 
 
@@ -65,6 +66,10 @@ def _clamp_unsigned_to_range(npty, val):
 
 
 def make_constant_expr(val, dtype):
+    if isinstance(val, bool):
+        constant_dtype = primitive_types.i32
+        return Expr(_ti_core.make_const_expr_int(constant_dtype, val))
+
     if isinstance(val, (float, np.floating)):
         constant_dtype = impl.get_runtime(
         ).default_fp if dtype is None else dtype

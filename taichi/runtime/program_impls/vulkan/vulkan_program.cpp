@@ -80,15 +80,6 @@ FunctionType register_params_to_executable(
   };
 }
 
-FunctionType register_params_to_executable(
-    gfx::GfxRuntime::RegisterParams &&params,
-    gfx::GfxRuntime *runtime) {
-  auto handle = runtime->register_taichi_kernel(std::move(params));
-  return [runtime, handle](RuntimeContext &ctx) {
-    runtime->launch_kernel(handle, &ctx);
-  };
-}
-
 FunctionType compile_to_executable(Kernel *kernel,
                                    gfx::GfxRuntime *runtime,
                                    gfx::SNodeTreeManager *snode_tree_mgr) {

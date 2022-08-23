@@ -349,7 +349,6 @@ void ti_transition_texture(TiRuntime runtime,
   auto image = devtex2devalloc(*runtime2, texture);
   auto layout2 = (taichi::lang::ImageLayout)layout;
 
-  bool is_layout_valid;
   switch ((taichi::lang::ImageLayout)layout) {
 #define PER_IMAGE_LAYOUT(x) case taichi::lang::ImageLayout::x:
 #include "taichi/inc/image_layout.inc.h"

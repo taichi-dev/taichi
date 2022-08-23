@@ -17,6 +17,7 @@ class OfflineCacheManager {
                       GfxRuntime *runtime,
                       std::unique_ptr<aot::TargetDevice> &&target_device,
                       const std::vector<spirv::CompiledSNodeStructs> &compiled_structs);
+  FunctionType load_or_compile(CompileConfig *config, Kernel *kernel);
   aot::Kernel *load_cached_kernel(const std::string &key);
   FunctionType cache_kernel(const std::string &key, Kernel *kernel);
   void dump_with_mergeing() const;

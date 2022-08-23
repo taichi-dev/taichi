@@ -1,5 +1,6 @@
 #pragma once
 
+#include "taichi/runtime/gfx/offline_cache_manager.h"
 #include "taichi/runtime/gfx/runtime.h"
 #include "taichi/runtime/gfx/snode_tree_manager.h"
 #include "taichi/program/program_impl.h"
@@ -63,11 +64,15 @@ class OpenglProgramImpl : public ProgramImpl {
 
   std::unique_ptr<aot::Kernel> make_aot_kernel(Kernel &kernel) override;
 
+  const std::unique_ptr<gfx::OfflineCacheManager> &get_cache_manager();
+  void dump_cache_data_to_disk() override;
+
  private:
   std::shared_ptr<Device> device_{nullptr};
   std::unique_ptr<gfx::GfxRuntime> runtime_{nullptr};
   std::unique_ptr<gfx::SNodeTreeManager> snode_tree_mgr_{nullptr};
   std::vector<spirv::CompiledSNodeStructs> aot_compiled_snode_structs_;
+  std::unique_ptr<gfx::OfflineCacheManager> cache_manager_{nullptr};
 };
 
 }  // namespace lang

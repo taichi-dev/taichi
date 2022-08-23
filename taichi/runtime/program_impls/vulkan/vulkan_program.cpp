@@ -95,20 +95,7 @@ FunctionType VulkanProgramImpl::compile(Kernel *kernel,
   if (offline_cache::enabled_wip_offline_cache(config->offline_cache) &&
       !kernel->is_evaluator &&
       snode_tree_mgr_->get_compiled_structs().size() == 1) {
-    auto kernel_key = get_hashed_offline_cache_key(config, kernel);
-    kernel->set_kernel_key_for_cache(kernel_key);
-    const auto &cache_mgr = get_cache_manager();
-    TI_ASSERT(cache_mgr != nullptr);
-    if (auto *cached_kernel = cache_mgr->load_cached_kernel(kernel_key)) {
-      TI_DEBUG("Create kernel '{}' from cache (key='{}')", kernel->get_name(),
-               kernel_key);
-      kernel->set_from_offline_cache();
-      return
-          [cached_kernel](RuntimeContext &ctx) { cached_kernel->launch(&ctx); };
-    } else {  // Compile & Cache it
-      TI_DEBUG("Cache kernel '{}' (key='{}')", kernel->get_name(), kernel_key);
-      return cache_mgr->cache_kernel(kernel_key, kernel);
-    }
+    return get_cache_manager()->load_or_compile(config, kernel);
   }
 
   spirv::lower(kernel);

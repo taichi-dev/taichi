@@ -75,6 +75,7 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
     std::vector<llvm::Value *> values;
 
     std::string formats;
+    size_t num_contents = 0;
     for (auto const &content : stmt->contents) {
       if (std::holds_alternative<Stmt *>(content)) {
         auto arg_stmt = std::get<Stmt *>(content);
@@ -83,15 +84,34 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
 
         auto value_type = tlctx->get_data_type(arg_stmt->ret_type);
         auto value = llvm_val[arg_stmt];
-        if (arg_stmt->ret_type->is_primitive(PrimitiveTypeID::f32) ||
-            arg_stmt->ret_type->is_primitive(PrimitiveTypeID::f16)) {
-          value_type = tlctx->get_data_type(PrimitiveType::f64);
-          value = builder->CreateFPExt(value, value_type);
-        }
+        if (arg_stmt->ret_type->is<TensorType>()) {
+          auto dtype = arg_stmt->ret_type->cast<TensorType>();
+          num_elements += dtype->get_num_elements();
+          auto elem_type = dtype->get_element_type();
+          for (int i = 0; i < dtype->get_num_elements(); ++i) {
+            auto elem_value = builder->CreateExtractElement(value, i);
+            auto elem_value_type = tlctx->get_data_type(elem_type);
+            if (elem_type->is_primitive(PrimitiveTypeID::f32) ||
+                elem_type->is_primitive(PrimitiveTypeID::f16)) {
+              elem_value = builder->CreateFPExt(elem_value, tlctx->get_data_type(PrimitiveType::f64));
+              elem_value_type = tlctx->get_data_type(PrimitiveType::f64);
+            }
+            types.push_back(elem_value_type);
+            values.push_back(elem_value);
+          }
+        } else {
+          num_contents += 1;
+          if (arg_stmt->ret_type->is_primitive(PrimitiveTypeID::f32) ||
+              arg_stmt->ret_type->is_primitive(PrimitiveTypeID::f16)) {
+            value_type = tlctx->get_data_type(PrimitiveType::f64);
+            value = builder->CreateFPExt(value, value_type);
+          }
 
-        types.push_back(value_type);
-        values.push_back(value);
+          types.push_back(value_type);
+          values.push_back(value);
+        }
       } else {
+        num_contents += 1;
         auto arg_str = std::get<std::string>(content);
 
         auto value = builder->CreateGlobalStringPtr(arg_str, "content_string");
@@ -103,6 +123,8 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
         values.push_back(value);
         formats += "%s";
       }
+      TI_ASSERT_INFO(num_contents < 32,
+                   "CUDA `print()` doesn't support more than 32 entries");
     }
 
     llvm_val[stmt] = create_print(formats, types, values);

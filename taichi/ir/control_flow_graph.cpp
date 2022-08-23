@@ -272,7 +272,8 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access,
         }
       }
       if (regular) {
-        result = get_store_forwarding_data(alloca, i);
+        if (!stmt->ret_type->is<TensorType>() || contain_variable(reach_in, stmt))
+          result = get_store_forwarding_data(alloca, i);
       }
     } else if (auto global_load = stmt->cast<GlobalLoadStmt>()) {
       if (!after_lower_access && !autodiff_enabled) {

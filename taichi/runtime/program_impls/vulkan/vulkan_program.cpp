@@ -269,7 +269,8 @@ const std::unique_ptr<AotModuleBuilder>
     auto target_device = std::make_unique<aot::TargetDevice>(config->arch);
     embedded_device_->device()->clone_caps(*target_device);
     caching_module_builder_ = std::make_unique<gfx::AotModuleBuilderImpl>(
-        snode_tree_mgr_->get_compiled_structs(), Arch::vulkan, std::move(target_device));
+        snode_tree_mgr_->get_compiled_structs(), Arch::vulkan,
+        std::move(target_device));
   }
   return caching_module_builder_;
 }

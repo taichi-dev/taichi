@@ -40,7 +40,7 @@ std::unique_ptr<aot::Field> LlvmAotModule::make_new_field(
   return std::make_unique<llvm_aot::FieldImpl>(std::move(loaded));
 }
 
-std::unique_ptr<aot::CompiledGraph> LlvmAotModule::get_graph(std::string name) {
+std::unique_ptr<aot::CompiledGraph> LlvmAotModule::get_graph(const std::string& name) {
   auto it = graphs_.find(name);
   if (it == graphs_.end()) {
     TI_DEBUG("Cannot find graph {}", name);

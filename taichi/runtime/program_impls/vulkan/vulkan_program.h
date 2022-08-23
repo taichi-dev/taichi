@@ -1,4 +1,5 @@
 #pragma once
+#include "taichi/aot/module_loader.h"
 #include "taichi/codegen/spirv/spirv_codegen.h"
 #include "taichi/codegen/spirv/snode_struct_compiler.h"
 #include "taichi/codegen/spirv/kernel_utils.h"
@@ -91,6 +92,11 @@ class VulkanProgramImpl : public ProgramImpl {
 
   std::unique_ptr<aot::Kernel> make_aot_kernel(Kernel &kernel) override;
 
+  void dump_cache_data_to_disk() override;
+
+  const std::unique_ptr<AotModuleBuilder> &get_caching_module_builder();
+  const std::unique_ptr<aot::Module> &get_cached_module();
+
   ~VulkanProgramImpl();
 
  private:
@@ -98,6 +104,8 @@ class VulkanProgramImpl : public ProgramImpl {
   std::unique_ptr<gfx::GfxRuntime> vulkan_runtime_{nullptr};
   std::unique_ptr<gfx::SNodeTreeManager> snode_tree_mgr_{nullptr};
   std::vector<spirv::CompiledSNodeStructs> aot_compiled_snode_structs_;
+  std::unique_ptr<AotModuleBuilder> caching_module_builder_{nullptr};
+  std::unique_ptr<aot::Module> cached_module_{nullptr};
 };
 }  // namespace lang
 }  // namespace taichi

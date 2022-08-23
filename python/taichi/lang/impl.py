@@ -225,8 +225,9 @@ def make_stride_expr(_var, _indices, shape, stride):
 
 @taichi_scope
 def make_index_expr(_var, _indices):
-    return Expr(_ti_core.make_index_expr(_var, make_expr_group(*_indices)),
-                get_runtime().get_current_src_info())
+    return Expr(
+        _ti_core.make_index_expr(_var, make_expr_group(*_indices),
+                                 get_runtime().get_current_src_info()))
 
 
 class SrcInfoGuard:

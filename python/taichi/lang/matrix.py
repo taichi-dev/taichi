@@ -248,12 +248,8 @@ class _TiScopeMatrixImpl(_MatrixBaseImpl):
             return self.any_array_access.subscript(i, j)
         if self.local_tensor_proxy is not None:
             if len(indices) == 1:
-                return impl.make_index_expr(
-                    self.local_tensor_proxy, (i, ),
-                    impl.get_runtime().get_current_src_info())
-            return impl.make_index_expr(
-                self.local_tensor_proxy, (i, j),
-                impl.get_runtime().get_current_src_info())
+                return impl.make_index_expr(self.local_tensor_proxy, (i, ))
+            return impl.make_index_expr(self.local_tensor_proxy, (i, j))
         if impl.current_cfg(
         ).dynamic_index and is_global_mat and self.dynamic_index_stride:
             return impl.make_stride_expr(self.entries[0].ptr, (i, j),
@@ -326,8 +322,7 @@ def _make_entries_initializer(is_matrix: bool) -> _MatrixEntriesInitializer:
                     list([
                         impl.make_index_expr(
                             local_tensor_proxy,
-                            (expr.Expr(i, dtype=primitive_types.i32), ),
-                            impl.get_runtime().get_current_src_info())
+                            (expr.Expr(i, dtype=primitive_types.i32), ))
                     ]))
             return local_tensor_proxy, mat
 
@@ -357,8 +352,7 @@ def _make_entries_initializer(is_matrix: bool) -> _MatrixEntriesInitializer:
                         impl.make_index_expr(
                             local_tensor_proxy,
                             (expr.Expr(i, dtype=primitive_types.i32),
-                             expr.Expr(j, dtype=primitive_types.i32)),
-                            impl.get_runtime().get_current_src_info()))
+                             expr.Expr(j, dtype=primitive_types.i32))))
             return local_tensor_proxy, mat
 
         def _get_entry_to_infer(self, arr):

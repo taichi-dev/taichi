@@ -403,13 +403,13 @@ void export_lang(py::module &m) {
              return make_sparse_matrix_from_ndarray(program, sm, ndarray);
            })
       .def("make_sparse_matrix_from_ndarray_cusparse",
-           [](Program *program, CuSparseMatrix &sm, const Ndarray &row_csr,
-              const Ndarray &col_csr, const Ndarray &val_csr) {
+           [](Program *program, CuSparseMatrix &sm, const Ndarray &row_coo,
+              const Ndarray &col_coo, const Ndarray &val_coo) {
              TI_ERROR_IF(
                  !arch_is_cuda(program->config.arch),
                  "SparseMatrix based on GPU only supports CUDA for now.");
              return make_sparse_matrix_from_ndarray_cusparse(
-                 program, sm, row_csr, col_csr, val_csr);
+                 program, sm, row_coo, col_coo, val_coo);
            })
       .def("no_activate",
            [](Program *program, SNode *snode) {

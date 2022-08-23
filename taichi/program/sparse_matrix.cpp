@@ -229,7 +229,7 @@ CuSparseMatrix::~CuSparseMatrix() {
 }
 void make_sparse_matrix_from_ndarray_cusparse(Program *prog,
                                               SparseMatrix &sm,
-                                              const Ndarray &row_offsets,
+                                              const Ndarray &row_indices,
                                               const Ndarray &col_indices,
                                               const Ndarray &values) {
 #if defined(TI_WITH_CUDA)
@@ -240,7 +240,7 @@ void make_sparse_matrix_from_ndarray_cusparse(Program *prog,
       TI_ERROR("Failed to load cusparse library!");
     }
   }
-  size_t row_coo = prog->get_ndarray_data_ptr_as_int(&row_offsets);
+  size_t row_coo = prog->get_ndarray_data_ptr_as_int(&row_indices);
   size_t col_coo = prog->get_ndarray_data_ptr_as_int(&col_indices);
   size_t values_coo = prog->get_ndarray_data_ptr_as_int(&values);
   int nnz = values.get_nelement();

@@ -408,7 +408,7 @@ def test_gpu_sparse_matrix():
     A = ti.linalg.SparseMatrix(n=4, m=4, dtype=ti.f32)
 
     # Build the CSR matrix A with Taichi ndarray
-    A.build_coo(d_coo_val, d_coo_col, d_coo_row)
+    A.build_coo(d_coo_row, d_coo_col, d_coo_val)
 
     # Compute Y = A @ X
     A.spmv(X, Y)

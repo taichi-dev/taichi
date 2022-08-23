@@ -235,7 +235,7 @@ void make_sparse_matrix_from_ndarray(Program *prog,
                                      const Ndarray &ndarray);
 void make_sparse_matrix_from_ndarray_cusparse(Program *prog,
                                               SparseMatrix &sm,
-                                              const Ndarray &row_offsets,
+                                              const Ndarray &row_indices,
                                               const Ndarray &col_indices,
                                               const Ndarray &values);
 }  // namespace lang

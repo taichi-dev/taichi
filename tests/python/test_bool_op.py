@@ -68,7 +68,7 @@ def test_static_and():
     assert func() == 0
 
 
-@test_utils.test(debug=True, default_ip=ti.i64)
+@test_utils.test(require=ti.extension.data64, default_ip=ti.i64)
 def test_condition_type():
     @ti.kernel
     def func() -> int:
@@ -83,10 +83,10 @@ def test_condition_type():
     assert func() == 2
 
 
-@test_utils.test(debug=True, default_ip=ti.i64)
+@test_utils.test(require=ti.extension.data64, default_ip=ti.i64)
 def test_i32_bool():
     @ti.kernel
     def func() -> ti.i32:
         return True
 
-    func()
+    assert func() == 1

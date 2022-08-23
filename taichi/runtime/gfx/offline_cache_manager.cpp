@@ -25,11 +25,12 @@ FunctionType register_params_to_executable(
 }  // namespace
 
 OfflineCacheManager::OfflineCacheManager(
-                      const std::string &cache_path,
-                      Arch arch,
-                      GfxRuntime *runtime,
-                      std::unique_ptr<aot::TargetDevice> &&target_device,
-                      const std::vector<spirv::CompiledSNodeStructs> &compiled_structs) : runtime_(runtime) {
+    const std::string &cache_path,
+    Arch arch,
+    GfxRuntime *runtime,
+    std::unique_ptr<aot::TargetDevice> &&target_device,
+    const std::vector<spirv::CompiledSNodeStructs> &compiled_structs)
+    : runtime_(runtime) {
   path_ = offline_cache::get_cache_path_by_arch(cache_path, arch);
 
   if (taichi::path_exists(taichi::join_path(path_, "metadata.tcb")) &&
@@ -48,15 +49,18 @@ OfflineCacheManager::OfflineCacheManager(
     }
   }
 
-  caching_module_builder_ = std::make_unique<gfx::AotModuleBuilderImpl>(compiled_structs, arch, std::move(target_device));
+  caching_module_builder_ = std::make_unique<gfx::AotModuleBuilderImpl>(
+      compiled_structs, arch, std::move(target_device));
 }
 
 aot::Kernel *OfflineCacheManager::load_cached_kernel(const std::string &key) {
   return cached_module_ ? cached_module_->get_kernel(key) : nullptr;
 }
 
-FunctionType OfflineCacheManager::cache_kernel(const std::string &key, Kernel *kernel) {
-  auto *cache_builder = static_cast<gfx::AotModuleBuilderImpl *>(caching_module_builder_.get());
+FunctionType OfflineCacheManager::cache_kernel(const std::string &key,
+                                               Kernel *kernel) {
+  auto *cache_builder =
+      static_cast<gfx::AotModuleBuilderImpl *>(caching_module_builder_.get());
   TI_ASSERT(cache_builder != nullptr);
   cache_builder->add(key, kernel);
   auto params_opt = cache_builder->try_get_kernel_register_params(key);
@@ -66,7 +70,8 @@ FunctionType OfflineCacheManager::cache_kernel(const std::string &key, Kernel *k
 
 void OfflineCacheManager::dump_with_mergeing() const {
   taichi::create_directories(path_);
-  auto *cache_builder = static_cast<gfx::AotModuleBuilderImpl *>(caching_module_builder_.get());
+  auto *cache_builder =
+      static_cast<gfx::AotModuleBuilderImpl *>(caching_module_builder_.get());
   cache_builder->mangle_aot_data();
 
   auto lock_path = taichi::join_path(path_, kMetadataFileLockName);

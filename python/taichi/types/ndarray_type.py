@@ -57,8 +57,9 @@ class NdarrayType:
                 f"Invalid argument into ti.types.ndarray() - required layout={self.layout}, but {ndarray_type.layout} is provided"
             )
 
-        if self.field_dim is not None and self.field_dim != len(
-                ndarray_type.shape):
+        if self.field_dim is not None and \
+            ndarray_type.shape is not None and \
+            self.field_dim != len(ndarray_type.shape):
             raise ValueError(
                 f"Invalid argument into ti.types.ndarray() - required field_dim={self.field_dim}, but {ndarray_type.element_type} is provided"
             )

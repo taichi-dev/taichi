@@ -590,30 +590,15 @@ class ASTTransformer(Builder):
                     # Ndarray arguments are passed by reference.
                     if isinstance(ctx.func.arguments[i].annotation,
                                   (ndarray_type.NdarrayType)):
-                        if isinstance(data, _ndarray.ScalarNdarray) or \
-                           isinstance(data, matrix.VectorNdarray) or \
-                           isinstance(data, matrix.MatrixNdarray):
-                            ctx.func.arguments[i].annotation.check_matched(
-                                data.get_type())
-                        elif isinstance(data, any_array.AnyArray):
-                            # TODO(zhanlue): Implement check_matched for AnyArray.
-                            if ctx.func.arguments[
-                                    i].annotation.element_shape is not None and data.element_shape != ctx.func.arguments[
-                                        i].annotation.element_shape:
-                                raise TaichiSyntaxError(
-                                    f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a ndarray or matrix with element shape {ctx.func.arguments[i].annotation.element_shape}, but got {data.element_shape}."
-                                )
-
-                            if ctx.func.arguments[
-                                    i].annotation.layout is not None and data.layout != ctx.func.arguments[
-                                        i].annotation.layout:
-                                raise TaichiSyntaxError(
-                                    f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a ndarray or matrix with layout {ctx.func.arguments[i].annotation.layout}, but got {data.layout}."
-                                )
-                        else:
+                        if not isinstance(
+                                data,
+                            (_ndarray.ScalarNdarray, matrix.VectorNdarray,
+                             matrix.MatrixNdarray, any_array.AnyArray)):
                             raise TaichiSyntaxError(
                                 f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is not recognized."
                             )
+                        ctx.func.arguments[i].annotation.check_matched(
+                            data.get_type())
                         ctx.create_variable(ctx.func.arguments[i].name, data)
                         continue
 

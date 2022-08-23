@@ -228,7 +228,7 @@ TiTexture ti_allocate_texture(TiRuntime runtime,
   }
 
   switch ((taichi::lang::ImageDimension)allocate_info->dimension) {
-#define PER_IMAGE_DIMENSION(x) case x:
+#define PER_IMAGE_DIMENSION(x) case taichi::lang::ImageDimension::x:
 #include "taichi/inc/image_dimension.inc.h"
 #undef PER_IMAGE_DIMENSION
     break;
@@ -239,9 +239,9 @@ TiTexture ti_allocate_texture(TiRuntime runtime,
   }
   
   switch ((taichi::lang::BufferFormat)allocate_info->format) {
-#define PER_IMAGE_DIMENSION(x) case x:
+#define PER_BUFFER_FORMAT(x) case taichi::lang::BufferFormat::x:
 #include "taichi/inc/buffer_format.inc.h"
-#undef PER_IMAGE_DIMENSION
+#undef PER_BUFFER_FORMAT
     break;
   default:{
     ti_set_last_error(TI_ERROR_ARGUMENT_OUT_OF_RANGE, "allocate_info->format");
@@ -336,7 +336,7 @@ void ti_transition_texture(TiRuntime runtime,
 
   bool is_layout_valid;
   switch (layout) {
-#define PER_IMAGE_LAYOUT(x) case x:
+#define PER_IMAGE_LAYOUT(x) case taichi::lang::ImageLayout::x:
 #include "taichi/inc/image_layout.inc.h"
 #undef PER_IMAGE_LAYOUT
     break;

@@ -2,6 +2,7 @@
 
 #include "taichi/ir/type.h"
 #include "taichi/rhi/cuda/cuda_driver.h"
+#include "taichi/program/program.h"
 
 #include "sparse_matrix.h"
 
@@ -15,6 +16,10 @@ class SparseSolver {
   virtual void analyze_pattern(const SparseMatrix &sm) = 0;
   virtual void factorize(const SparseMatrix &sm) = 0;
   virtual Eigen::VectorXf solve(const Eigen::Ref<const Eigen::VectorXf> &b) = 0;
+  virtual void solve_cu(Program *prog,
+                        const SparseMatrix &sm,
+                        const Ndarray &b,
+                        Ndarray &x) = 0;
   virtual bool info() = 0;
 };
 
@@ -29,7 +34,33 @@ class EigenSparseSolver : public SparseSolver {
   void analyze_pattern(const SparseMatrix &sm) override;
   void factorize(const SparseMatrix &sm) override;
   Eigen::VectorXf solve(const Eigen::Ref<const Eigen::VectorXf> &b) override;
+  void solve_cu(Program *prog,
+                const SparseMatrix &sm,
+                const Ndarray &b,
+                Ndarray &x) override{};
   bool info() override;
+};
+
+class CuSparseSolver : public SparseSolver {
+ private:
+ public:
+  CuSparseSolver();
+  ~CuSparseSolver() override = default;
+  bool compute(const SparseMatrix &sm) override {
+    return false;
+  };
+  void analyze_pattern(const SparseMatrix &sm) override{};
+  void factorize(const SparseMatrix &sm) override{};
+  Eigen::VectorXf solve(const Eigen::Ref<const Eigen::VectorXf> &b) override {
+    return b;
+  };
+  void solve_cu(Program *prog,
+                const SparseMatrix &sm,
+                const Ndarray &b,
+                Ndarray &x) override;
+  bool info() override {
+    return false;
+  };
 };
 
 std::unique_ptr<SparseSolver> make_sparse_solver(DataType dt,

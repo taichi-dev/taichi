@@ -217,7 +217,7 @@ void CuSparseMatrix::build_csr_from_coo(void *coo_row_ptr,
       coo_values_ptr, CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I,
       CUSPARSE_INDEX_BASE_ZERO, CUDA_R_32F);
   CUSPARSEDriver::get_instance().cpDestroy(cusparse_handle);
-  CUDADriver::get_instance().mem_free(csr_row_offset_ptr);
+  // CUDADriver::get_instance().mem_free(csr_row_offset_ptr);
 #endif
 }
 
@@ -228,23 +228,16 @@ CuSparseMatrix::~CuSparseMatrix() {
 }
 void make_sparse_matrix_from_ndarray_cusparse(Program *prog,
                                               SparseMatrix &sm,
-                                              const Ndarray &row_offsets,
-                                              const Ndarray &col_indices,
-                                              const Ndarray &values) {
+                                              const Ndarray &row_coo,
+                                              const Ndarray &col_coo,
+                                              const Ndarray &val_coo) {
 #if defined(TI_WITH_CUDA)
-  std::string sdtype = taichi::lang::data_type_name(sm.get_data_type());
-  if (!CUSPARSEDriver::get_instance().is_loaded()) {
-    bool load_success = CUSPARSEDriver::get_instance().load_cusparse();
-    if (!load_success) {
-      TI_ERROR("Failed to load cusparse library!");
-    }
-  }
-  size_t row_csr = prog->get_ndarray_data_ptr_as_int(&row_offsets);
-  size_t col_csr = prog->get_ndarray_data_ptr_as_int(&col_indices);
-  size_t values_csr = prog->get_ndarray_data_ptr_as_int(&values);
-  int nnz = values.get_nelement();
-  sm.build_csr_from_coo((void *)row_csr, (void *)col_csr, (void *)values_csr,
-                        nnz);
+  size_t coo_row_ptr = prog->get_ndarray_data_ptr_as_int(&row_coo);
+  size_t coo_col_ptr = prog->get_ndarray_data_ptr_as_int(&col_coo);
+  size_t coo_val_ptr = prog->get_ndarray_data_ptr_as_int(&val_coo);
+  int nnz = val_coo.get_nelement();
+  sm.build_csr_from_coo((void *)coo_row_ptr, (void *)coo_col_ptr,
+                        (void *)coo_val_ptr, nnz);
 #endif
 }
 

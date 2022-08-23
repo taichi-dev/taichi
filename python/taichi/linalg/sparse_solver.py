@@ -4,6 +4,7 @@ from taichi._lib import core as _ti_core
 from taichi.lang.exception import TaichiRuntimeError
 from taichi.lang.field import Field
 from taichi.lang.impl import get_runtime
+# from taichi.lang.matrix import Ndarray
 from taichi.linalg import SparseMatrix
 from taichi.types.primitive_types import f32
 
@@ -88,6 +89,15 @@ class SparseSolver:
         raise TaichiRuntimeError(
             f"The parameter type: {type(b)} is not supported in linear solvers for now."
         )
+
+    def solve_cu(self, sparse_matrix, b, x):
+        self.solver.solve_cu(get_runtime().prog, sparse_matrix.matrix, b.arr,
+                             x.arr)
+        # if isinstance(sparse_matrix, SparseMatrix) and isinstance(b, Ndarray) and isinstance(x, Ndarray):
+        #     self.solver.solve_cu(sparse_matrix.matrix, b.arr, x.arr)
+        # raise TaichiRuntimeError(
+        #     f"The parameter type: {type(sparse_matrix)}, {type(b)} and {type(x)} is not supported in linear solvers for now."
+        # )
 
     def info(self):
         """Check if the linear systems are solved successfully.

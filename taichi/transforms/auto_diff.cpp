@@ -1569,11 +1569,11 @@ class GloablDataAccessRuleChecker : public BasicStmtVisitor {
     GlobalPtrStmt *src = stmt->src->as<GlobalPtrStmt>();
     TI_ASSERT(src->width() == 1);
     auto snodes = src->snodes;
-    if (!snodes[0]->has_adjoint_visited()) {
+    if (!snodes[0]->has_adjoint_checkbit()) {
       return;
     }
-    TI_ASSERT(snodes[0]->get_adjoint_visited() != nullptr);
-    snodes[0] = snodes[0]->get_adjoint_visited();
+    TI_ASSERT(snodes[0]->get_adjoint_checkbit() != nullptr);
+    snodes[0] = snodes[0]->get_adjoint_checkbit();
     auto gloabl_ptr =
         stmt->insert_after_me(Stmt::make<GlobalPtrStmt>(snodes, src->indices));
     auto one = gloabl_ptr->insert_after_me(
@@ -1584,11 +1584,11 @@ class GloablDataAccessRuleChecker : public BasicStmtVisitor {
   void visit_gloabl_store_stmt_and_atomic_add(Stmt *stmt, GlobalPtrStmt *dest) {
     TI_ASSERT(dest->width() == 1);
     auto snodes = dest->snodes;
-    if (!snodes[0]->has_adjoint_visited()) {
+    if (!snodes[0]->has_adjoint_checkbit()) {
       return;
     }
-    TI_ASSERT(snodes[0]->get_adjoint_visited() != nullptr);
-    snodes[0] = snodes[0]->get_adjoint_visited();
+    TI_ASSERT(snodes[0]->get_adjoint_checkbit() != nullptr);
+    snodes[0] = snodes[0]->get_adjoint_checkbit();
     auto global_ptr = stmt->insert_before_me(
         Stmt::make<GlobalPtrStmt>(snodes, dest->indices));
     auto global_load =

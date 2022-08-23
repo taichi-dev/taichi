@@ -476,12 +476,12 @@ class GlobalVariableExpression : public Expression {
   DataType dt;
   std::string name;
   SNode *snode{nullptr};
+  SNodeGradType snode_grad_type{SNodeGradType::kPrimal};
   bool has_ambient{false};
   TypedConstant ambient_value;
-  bool is_primal{true};
   Expr adjoint;
   Expr dual;
-  Expr adjoint_visited;
+  Expr adjoint_checkbit;
 
   GlobalVariableExpression(DataType dt, const Identifier &ident)
       : ident(ident), dt(dt) {

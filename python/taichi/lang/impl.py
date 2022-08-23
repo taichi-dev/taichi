@@ -8,7 +8,7 @@ from taichi._snode.fields_builder import FieldsBuilder
 from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang._ndrange import GroupedNDRange, _Ndrange
 from taichi.lang.any_array import AnyArray, AnyArrayAccess
-from taichi.lang.enums import Layout
+from taichi.lang.enums import Layout, SNodeGradType
 from taichi.lang.exception import (TaichiRuntimeError, TaichiSyntaxError,
                                    TaichiTypeError)
 from taichi.lang.expr import Expr, make_expr_group
@@ -293,7 +293,7 @@ class PyTaichi:
         if get_runtime().prog.config.debug and get_runtime(
         ).prog.config.validate_autodiff:
             if not root.finalized:
-                root._allocate_grad_visited()
+                root._allocate_adjoint_checkbit()
 
         root.finalize(raise_warning=not is_first_call)
         global _root_fb
@@ -563,41 +563,41 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
     x.declaration_tb = get_traceback(stacklevel=4)
     x.ptr = _ti_core.global_new(x.ptr, dtype)
     x.ptr.set_name(name)
-    x.ptr.set_is_primal(True)
+    x.ptr.set_grad_type(SNodeGradType.PRIMAL)
     pytaichi.global_vars.append(x)
 
     x_grad = None
     x_dual = None
-    # The x_grad_visited is used for global data access rule checker
-    x_grad_visited = None
+    # The x_grad_checkbit is used for global data access rule checker
+    x_grad_checkbit = None
     if _ti_core.is_real(dtype):
         # adjoint
         x_grad = Expr(get_runtime().prog.make_id_expr(""))
         x_grad.declaration_tb = get_traceback(stacklevel=4)
         x_grad.ptr = _ti_core.global_new(x_grad.ptr, dtype)
         x_grad.ptr.set_name(name + ".grad")
-        x_grad.ptr.set_is_primal(False)
+        x_grad.ptr.set_grad_type(SNodeGradType.ADJOINT)
         x.ptr.set_adjoint(x_grad.ptr)
         if needs_grad:
             pytaichi.grad_vars.append(x_grad)
 
         if prog.config.debug and prog.config.validate_autodiff:
-            # adjoint flag
-            x_grad_visited = Expr(get_runtime().prog.make_id_expr(""))
+            # adjoint checkbit
+            x_grad_checkbit = Expr(get_runtime().prog.make_id_expr(""))
             dtype = u8
             if prog.config.arch in (_ti_core.opengl, _ti_core.vulkan):
                 dtype = i32
-            x_grad_visited.ptr = _ti_core.global_new(x_grad_visited.ptr,
-                                                     cook_dtype(dtype))
-            x_grad_visited.ptr.set_name(name + ".grad_visited")
-            x_grad_visited.ptr.set_is_primal(False)
-            x.ptr.set_adjoint_visited(x_grad_visited.ptr)
+            x_grad_checkbit.ptr = _ti_core.global_new(x_grad_checkbit.ptr,
+                                                      cook_dtype(dtype))
+            x_grad_checkbit.ptr.set_name(name + ".grad_checkbit")
+            x_grad_checkbit.ptr.set_grad_type(SNodeGradType.ADJOINT_CHECKBIT)
+            x.ptr.set_adjoint_checkbit(x_grad_checkbit.ptr)
 
         # dual
         x_dual = Expr(get_runtime().prog.make_id_expr(""))
         x_dual.ptr = _ti_core.global_new(x_dual.ptr, dtype)
         x_dual.ptr.set_name(name + ".dual")
-        x_dual.ptr.set_is_primal(False)
+        x_dual.ptr.set_grad_type(SNodeGradType.DUAL)
         x.ptr.set_dual(x_dual.ptr)
         if needs_dual:
             pytaichi.dual_vars.append(x_dual)

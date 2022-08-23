@@ -98,6 +98,13 @@ void export_lang(py::module &m) {
       .value("REVERSE", AutodiffMode::kReverse)
       .export_values();
 
+  py::enum_<SNodeGradType>(m, "SNodeGradType", py::arithmetic())
+      .value("PRIMAL", SNodeGradType::kPrimal)
+      .value("ADJOINT", SNodeGradType::kAdjoint)
+      .value("DUAL", SNodeGradType::kDual)
+      .value("ADJOINT_CHECKBIT", SNodeGradType::kAdjointCheckbit)
+      .export_values();
+
   // TODO(type): This should be removed
   py::class_<DataType>(m, "DataType")
       .def(py::init<Type *>())
@@ -525,12 +532,13 @@ void export_lang(py::module &m) {
           py::return_value_policy::reference)
       .def("lazy_grad", &SNode::lazy_grad)
       .def("lazy_dual", &SNode::lazy_dual)
-      .def("allocate_grad_visited", &SNode::allocate_grad_visited)
+      .def("allocate_adjoint_checkbit", &SNode::allocate_adjoint_checkbit)
       .def("read_int", &SNode::read_int)
       .def("read_uint", &SNode::read_uint)
       .def("read_float", &SNode::read_float)
       .def("has_adjoint", &SNode::has_adjoint)
-      .def("has_adjoint_visited", &SNode::has_adjoint_visited)
+      .def("has_adjoint_checkbit", &SNode::has_adjoint_checkbit)
+      .def("get_snode_grad_type", &SNode::get_snode_grad_type)
       .def("has_dual", &SNode::has_dual)
       .def("is_primal", &SNode::is_primal)
       .def("is_place", &SNode::is_place)
@@ -720,19 +728,20 @@ void export_lang(py::module &m) {
            [](Expr *expr) { return expr->is<ExternalTensorExpression>(); })
       .def("is_primal",
            [](Expr *expr) {
-             return expr->cast<GlobalVariableExpression>()->is_primal;
+             return expr->cast<GlobalVariableExpression>()->snode_grad_type ==
+                    SNodeGradType::kPrimal;
            })
       .def("set_tb", &Expr::set_tb)
       .def("set_name",
            [&](Expr *expr, std::string na) {
              expr->cast<GlobalVariableExpression>()->name = na;
            })
-      .def("set_is_primal",
-           [&](Expr *expr, bool v) {
-             expr->cast<GlobalVariableExpression>()->is_primal = v;
+      .def("set_grad_type",
+           [&](Expr *expr, SNodeGradType t) {
+             expr->cast<GlobalVariableExpression>()->snode_grad_type = t;
            })
       .def("set_adjoint", &Expr::set_adjoint)
-      .def("set_adjoint_visited", &Expr::set_adjoint_visited)
+      .def("set_adjoint_checkbit", &Expr::set_adjoint_checkbit)
       .def("set_dual", &Expr::set_dual)
       .def("set_attribute", &Expr::set_attribute)
       .def(
@@ -952,10 +961,7 @@ void export_lang(py::module &m) {
   m.def("is_unsigned", is_unsigned);
 
   m.def("global_new", static_cast<Expr (*)(Expr, DataType)>(global_new));
-  m.def("set_global_grad", [&](const Expr &expr) {
-    TI_ASSERT(expr.is<GlobalVariableExpression>());
-    expr.cast<GlobalVariableExpression>()->is_primal = false;
-  });
+
   m.def("data_type_name", data_type_name);
 
   m.def("subscript", [](const Expr &expr, const ExprGroup &expr_group) {

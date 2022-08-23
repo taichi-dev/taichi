@@ -106,9 +106,3 @@ class SparseSolver:
             bool: True if the solving process succeeded, False otherwise.
         """
         return self.solver.info()
-
-
-def cu_solve(d_row_csr, d_col_csr, d_value_csr, nrows, ncols, nnz, b, x):
-    _ti_core.cu_solve(get_runtime().prog, d_row_csr.arr, d_col_csr.arr,
-                      d_value_csr.arr, nrows, ncols, nnz, b.arr, x.arr)
-    return x  # pylint: disable=R1710

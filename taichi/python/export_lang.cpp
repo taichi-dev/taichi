@@ -1199,8 +1199,6 @@ void export_lang(py::module &m) {
 
   m.def("make_sparse_solver", &make_sparse_solver);
   m.def("make_cusparse_solver", &make_cusparse_solver);
-  // TODO: Proof of concept
-  m.def("cu_solve", &cu_solve);
 
   // Mesh Class
   // Mesh related.

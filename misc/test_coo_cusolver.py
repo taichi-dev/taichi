@@ -24,24 +24,9 @@ nrows, ncols = A_raw_coo.shape
 nnz = A_raw_coo.nnz
 
 A_csr = A_raw_coo.tocsr()
-
-d_row_csr = ti.ndarray(shape=nrows + 1, dtype=ti.i32)
-d_col_csr = ti.ndarray(shape=nnz, dtype=ti.i32)
-d_value_csr = ti.ndarray(shape=nnz, dtype=ti.f32)
-d_row_csr.from_numpy(A_csr.indptr)
-d_col_csr.from_numpy(A_csr.indices)
-d_value_csr.from_numpy(A_csr.data)
-# solve Ax = b using csr format ndarrays
-print(">> solve Ax = b using cu_solve() ......... ")
 b = ti.ndarray(shape=nrows, dtype=ti.f32)
-x = ti.ndarray(shape=ncols, dtype=ti.f32)
 init_b(b, nrows)
-ti.linalg.cu_solve(d_row_csr, d_col_csr, d_value_csr, nrows, ncols, nnz, b, x)
-ti.sync()
-print(">> cusolve result:")
-print_x(x, ncols, 10)
 
-ti.sync()
 print(">> solve Ax = b using CuSparseSolver ......... ")
 A_coo = A_csr.tocoo()
 d_row_coo = ti.ndarray(shape=nnz, dtype=ti.i32)

@@ -71,15 +71,5 @@ std::unique_ptr<SparseSolver> make_cusparse_solver(
     DataType dt,
     const std::string &solver_type,
     const std::string &ordering);
-
-void cu_solve(Program *prog,
-              const Ndarray &row_offsets,
-              const Ndarray &col_indices,
-              const Ndarray &values,
-              int nrows,
-              int ncols,
-              int nnz,
-              const Ndarray &b,
-              Ndarray &x);
 }  // namespace lang
 }  // namespace taichi

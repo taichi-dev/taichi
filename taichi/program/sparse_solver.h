@@ -47,19 +47,23 @@ class CuSparseSolver : public SparseSolver {
   CuSparseSolver();
   ~CuSparseSolver() override = default;
   bool compute(const SparseMatrix &sm) override {
-    return false;
+    TI_NOT_IMPLEMENTED;
   };
-  void analyze_pattern(const SparseMatrix &sm) override{};
-  void factorize(const SparseMatrix &sm) override{};
+  void analyze_pattern(const SparseMatrix &sm) override {
+    TI_NOT_IMPLEMENTED;
+  };
+  void factorize(const SparseMatrix &sm) override {
+    TI_NOT_IMPLEMENTED;
+  };
   Eigen::VectorXf solve(const Eigen::Ref<const Eigen::VectorXf> &b) override {
-    return b;
+    TI_NOT_IMPLEMENTED;
   };
   void solve_cu(Program *prog,
                 const SparseMatrix &sm,
                 const Ndarray &b,
                 Ndarray &x) override;
   bool info() override {
-    return false;
+    TI_NOT_IMPLEMENTED;
   };
 };
 

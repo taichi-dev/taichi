@@ -124,7 +124,7 @@ void TaskCodeGenLLVM::visit(Block *stmt_list) {
 void TaskCodeGenLLVM::visit(AllocaStmt *stmt) {
   if (stmt->ret_type->is<TensorType>()) {
     auto tensor_type = stmt->ret_type->cast<TensorType>();
-    auto type = tlctx->get_data_type(tensor_type);
+    auto type = tlctx->get_data_type(tensor_type->get_element_type());
     auto array_size = tlctx->get_constant(tensor_type->get_num_elements());
     // Return type is [array_size x type]*.
     if (stmt->is_shared) {

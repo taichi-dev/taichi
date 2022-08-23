@@ -244,7 +244,7 @@ void CFGNode::reaching_definition_analysis(bool after_lower_access) {
     if (auto local_store = stmt->cast<LocalStoreStmt>()) {
       if (auto dest = local_store->dest->cast<PtrOffsetStmt>()) {
         if (auto data = get_store_forwarding_data(dest->origin, i)) {
-          data_source_ptrs = std::vector<Stmt *>(1, );
+          data_source_ptrs = std::vector<Stmt *>(1, data);
         } else {
           data_source_ptrs = std::vector<Stmt *>();
         }

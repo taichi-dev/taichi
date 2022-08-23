@@ -519,12 +519,12 @@ def scale(sx, sy, sz):
 
 
 @ti.func
-def rot3d_by_axis(ang, axis):
-    """rotate the matrix by an angle with the vector as the rotation axis
+def rot_by_axis(axis, ang):
+    """Returns the 4x4 matrix representation of a 3d rotation with given axis `axis` and angle `ang`.
 
     Args:
-        ang (float): angle in radians unit
         axis (vec3): rotation axis
+        ang (float): angle in radians unit
 
     Returns:
         :class:`~taichi.math.mat4`: rotation matrix
@@ -549,13 +549,14 @@ def rot3d_by_axis(ang, axis):
 
 
 @ti.func
-def rot3d_yaw_pitch_roll(yaw, pitch, roll):
-    """Creates a 3D 4 * 4 homogeneous rotation matrix from euler angles(Y * X * Z).
+def rot_yaw_pitch_roll(yaw, pitch, roll):
+    """Returns a 4x4 homogeneous rotation matrix representing the 3d rotation with Euler angles (rotate with Y axis first, X axis second, Z axis third).
 
     Args:
         yaw   (float): yaw angle in radians unit
         pitch (float): pitch angle in radians unit
         roll  (float): roll angle in radians unit
+        
     Returns:
         :class:`~taichi.math.mat4`: rotation matrix
     """
@@ -597,7 +598,7 @@ def rotation2d(ang):
 
 @ti.func
 def rotation3d(ang_x, ang_y, ang_z):
-    """ Creates a 3D 4 * 4 homogeneous rotation matrix from an euler angle(Y * X * Z).
+    """Returns a 4x4 homogeneous rotation matrix representing the 3d rotation with Euler angles (rotate with Y axis first, X axis second, Z axis third).
 
     Args:
         ang_x (float): angle in radians unit around X axis
@@ -613,7 +614,7 @@ def rotation3d(ang_x, ang_y, ang_z):
         [ 0.75103329 -0.49688014  0.4348093   0.        ]
         [ 0.          0.          0.          1.        ]]
     """
-    return rot3d_yaw_pitch_roll(ang_z, ang_x, ang_y)
+    return rot_yaw_pitch_roll(ang_z, ang_x, ang_y)
 
 
 @ti.func
@@ -768,7 +769,7 @@ __all__ = [
     "inf", "inverse", "isinf", "isnan", "ivec2", "ivec3", "ivec4", "length",
     "log", "log2", "mat2", "mat3", "mat4", "max", "min", "mix", "mod",
     "translate", "scale", "nan", "normalize", "pi", "pow", "radians",
-    "reflect", "refract", "rot3d_by_axis", "rot3d_yaw_pitch_roll",
+    "reflect", "refract", "rot_by_axis", "rot_yaw_pitch_roll",
     "rotation2d", "rotation3d", "round", "sign", "sin", "smoothstep", "sqrt",
     "step", "tan", "tanh", "uvec2", "uvec3", "uvec4", "vdir", "vec2", "vec3",
     "vec4"

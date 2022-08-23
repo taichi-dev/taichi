@@ -140,14 +140,14 @@ def test_rotation3d():
     axisY = ti.math.vec3(0.0, 1.0, 0.0)
     axisZ = ti.math.vec3(0.0, 0.0, 1.0)
 
-    rotationEuler = ti.math.rot3d_yaw_pitch_roll(first, second, third)
-    rotationInvertedY = ti.math.rot3d_by_axis(
-        third, axisZ) @ ti.math.rot3d_by_axis(
-            second, axisX) @ ti.math.rot3d_by_axis(-first, axisY)
+    rotationEuler = ti.math.rot_yaw_pitch_roll(first, second, third)
+    rotationInvertedY = ti.math.rot_by_axis(
+        axisZ, third) @ ti.math.rot_by_axis(
+            axisX, second) @ ti.math.rot_by_axis(axisY, -first)
     rotationDumb = ti.Matrix.zero(ti.f32, 4, 4)
-    rotationDumb = ti.math.rot3d_by_axis(first, axisY) @ rotationDumb
-    rotationDumb = ti.math.rot3d_by_axis(second, axisX) @ rotationDumb
-    rotationDumb = ti.math.rot3d_by_axis(third, axisZ) @ rotationDumb
+    rotationDumb = ti.math.rot_by_axis(axisY, first) @ rotationDumb
+    rotationDumb = ti.math.rot_by_axis(axisX, second) @ rotationDumb
+    rotationDumb = ti.math.rot_by_axis(axisZ, third) @ rotationDumb
     rotationTest = ti.math.rotation3d(second, third, first)
 
     dif0 = rotationEuler - rotationDumb

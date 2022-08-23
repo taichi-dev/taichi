@@ -86,7 +86,7 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
         auto value = llvm_val[arg_stmt];
         if (arg_stmt->ret_type->is<TensorType>()) {
           auto dtype = arg_stmt->ret_type->cast<TensorType>();
-          num_elements += dtype->get_num_elements();
+          num_contents += dtype->get_num_elements();
           auto elem_type = dtype->get_element_type();
           for (int i = 0; i < dtype->get_num_elements(); ++i) {
             auto elem_value = builder->CreateExtractElement(value, i);

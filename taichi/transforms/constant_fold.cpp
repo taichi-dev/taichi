@@ -230,6 +230,28 @@ class ConstantFold : public BasicStmtVisitor {
     modifier.erase(stmt);
   }
 
+  // TODO: Constant fold for Matrix indexing
+  // void visit(LocalLoadStmt *stmt) override {
+  //   auto src = stmt->src;
+  //   if (src.size() == 1) {
+  //     auto src_stmt = src.data.front().var;
+  //     if (auto ptr_offset = src_stmt->cast<PtrOffsetStmt>()) {
+  //       if (auto idx = ptr_offset->offset->cast<ConstStmt>()) {
+  //         TI_ASSERT(is_integral(idx->ret_type));
+  //         auto idx_val = idx->val.data[0].val_i32;
+  //         TI_TRACE("Got constant idx: {}", idx_val);
+  //         if (ptr_offset->origin->ret_type->is<TensorType>()) {
+  //           if (auto matrix = ptr_offset->origin->cast<MatrixInitStmt>()) {
+  //             TI_ASSERT_INFO(idx_val < matrix->values.size(), "Matrix indexing out-of-bound on value {}", stmt->name());
+  //             stmt->replace_usages_with(matrix->values[idx_val]);
+  //             modifier.erase(stmt);
+  //           }
+  //         }
+  //       }
+  //     }
+  //   }
+  // }
+
   static bool run(IRNode *node, Program *program) {
     ConstantFold folder(program);
     bool modified = false;

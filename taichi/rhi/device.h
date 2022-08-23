@@ -437,7 +437,7 @@ class Device {
   }
 
   void clone_caps(Device &dest) const {
-    for (const auto [k, v] : caps_) {
+    for (const auto &[k, v] : caps_) {
       dest.set_cap(k, v);
     }
   }

@@ -3,7 +3,7 @@
 #if defined(TI_PLATFORM_WINDOWS)
 #include <windowsx.h>
 #include "taichi/common/task.h"
-#include "taichi/gui/gui.h"
+#include "taichi/ui/gui/gui.h"
 #include <cctype>
 #include <map>
 

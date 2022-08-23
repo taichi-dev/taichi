@@ -1,7 +1,7 @@
 name: Publishing Release
 on:
   schedule:
-    - cron: '0 0 * * *'
+    - cron: '0 20 * * *'  # GMT 20 == GMT+8 04
   workflow_dispatch:
     # Manually trigger the release workflow, a version must be provided
     inputs:
@@ -87,7 +87,7 @@ jobs:
           mkdir -m777 shared
           docker create --user dev --name taichi_build --gpus all -v /tmp/.X11-unix:/tmp/.X11-unix \
             -e DISPLAY -e PY -e GPU_BUILD -e TAICHI_CMAKE_ARGS -e PROJECT_NAME \
-            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.0 \
+            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.2 \
             /home/dev/taichi/.github/workflows/scripts/unix_build.sh
           tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner 1000 --group 1000 | docker cp - taichi_build:/home/dev/
           docker start -a taichi_build
@@ -110,10 +110,11 @@ jobs:
       - name: Test
         run: |
           docker create --user dev --name taichi_test --gpus all -v /tmp/.X11-unix:/tmp/.X11-unix \
-            -e DISPLAY -e PY -e GPU_TEST registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.0 \
+            -e DISPLAY -e PY -e GPU_TEST \
+            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.2 \
             /home/dev/unix_test.sh
           docker cp .github/workflows/scripts/unix_test.sh taichi_test:/home/dev/unix_test.sh
-          docker cp .github/workflows/scripts/libcommon.sh taichi_test:/home/dev/libcommon.sh
+          docker cp .github/workflows/scripts/common-utils.sh taichi_test:/home/dev/common-utils.sh
           docker cp ./requirements_test.txt taichi_test:/home/dev/requirements_test.txt
           docker cp shared/dist/ taichi_test:/home/dev/
           docker cp shared/build/ taichi_test:/home/dev/
@@ -177,10 +178,11 @@ jobs:
       - name: Test
         run: |
           docker create --user dev --name taichi_test --gpus all -e TI_WANTED_ARCHS \
-            -e PY -e GPU_TEST registry.taichigraphics.com/taichidev-manylinux2014-cuda:v0.0.0 \
+            -e PY -e GPU_TEST \
+            registry.taichigraphics.com/taichidev-manylinux2014-cuda:v0.0.0 \
             /home/dev/unix_test.sh
           docker cp .github/workflows/scripts/unix_test.sh taichi_test:/home/dev/unix_test.sh
-          docker cp .github/workflows/scripts/libcommon.sh taichi_test:/home/dev/libcommon.sh
+          docker cp .github/workflows/scripts/common-utils.sh taichi_test:/home/dev/common-utils.sh
           docker cp ./requirements_test.txt taichi_test:/home/dev/requirements_test.txt
           docker cp shared/dist/ taichi_test:/home/dev/
           docker cp shared/build/ taichi_test:/home/dev/
@@ -248,6 +250,7 @@ jobs:
         run: .github/workflows/scripts/unix_test.sh
         env:
           TI_WANTED_ARCHS: 'cpu'
+          TI_SKIP_CPP_TESTS: Disabled because Vulkan is supported but not working on buildbot4
 
   build_and_test_m1:
     name: Build and Upload (Apple M1)

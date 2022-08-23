@@ -1713,6 +1713,9 @@ void TaskCodeGenLLVM::visit(PtrOffsetStmt *stmt) {
     // FIXME: get ptr_ty from taichi instead of llvm.
     llvm::Type *ptr_ty = nullptr;
     auto *val = llvm_val[stmt->origin];
+    // For SharedArray which is in address space 3.
+    if (auto *addr_cast = llvm::dyn_cast<llvm::AddrSpaceCastOperator>(val))
+      val = addr_cast->getOperand(0);
     if (auto *alloc = llvm::dyn_cast<llvm::AllocaInst>(val))
       ptr_ty = alloc->getAllocatedType();
     else if (auto *gv = llvm::dyn_cast<llvm::GlobalVariable>(val))
@@ -1823,10 +1826,14 @@ std::string TaskCodeGenLLVM::init_offloaded_task_function(OffloadedStmt *stmt,
     kernel_args.push_back(&arg);
   }
   kernel_args[0]->setName("context");
-
+#ifdef TI_LLVM_15
+  if (kernel_argument_by_val())
+    func->addParamAttr(
+        0, llvm::Attribute::getWithByValType(*llvm_context, context_ty));
+#else
   if (kernel_argument_by_val())
     func->addParamAttr(0, llvm::Attribute::ByVal);
-
+#endif
   // entry_block has all the allocas
   this->entry_block = llvm::BasicBlock::Create(*llvm_context, "entry", func);
   this->final_block = llvm::BasicBlock::Create(*llvm_context, "final", func);

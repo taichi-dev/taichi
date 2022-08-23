@@ -4,7 +4,7 @@ set -ex
 export TI_SKIP_VERSION_CHECK=ON
 export TI_CI=1
 
-. $(dirname $0)/libcommon.sh
+. $(dirname $0)/common-utils.sh
 
 
 function build-and-smoke-test-android-aot-demo {
@@ -15,6 +15,11 @@ function build-and-smoke-test-android-aot-demo {
     export TAICHI_REPO_DIR=$(pwd)/taichi
 
     git clone https://github.com/taichi-dev/taichi-aot-demo
+
+    # Normally we checkout the master's commit Id: https://github.com/taichi-dev/taichi-aot-demo/commit/master
+    # As for why we need this explicit commit Id here, refer to: https://docs.taichi-lang.org/docs/master/contributor_guide#handle-special-ci-failures
+    cd taichi-aot-demo && git checkout 82aaecb9224ac24baf4abfdb5e94f1c6edb464c3 && cd -
+
     APP_ROOT=taichi-aot-demo/implicit_fem
     ANDROID_APP_ROOT=$APP_ROOT/android
     JNI_PATH=$ANDROID_APP_ROOT/app/src/main/jniLibs/arm64-v8a/

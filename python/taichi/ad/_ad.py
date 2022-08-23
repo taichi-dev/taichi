@@ -6,6 +6,7 @@ gradient computation task.
 import warnings
 from functools import reduce
 
+import numpy as np
 from taichi.lang import impl
 from taichi.lang.field import ScalarField
 from taichi.lang.snode import SNode
@@ -282,6 +283,11 @@ class FwdMode:
         else:
             assert parameters_shape_flatten == len(self.seed)
 
+        # Clear gradients
+        if self.clear_gradients:
+            # TODO: the clear gradients should be controlled to clear adjoint/dual/adjoint_visited respectively
+            clear_all_gradients()
+
         # Set seed for each variable
         if len(self.seed) == 1:
             if len(self.param.shape) == 0:
@@ -291,13 +297,7 @@ class FwdMode:
                 # e.g., ti.root.dense(ti.i, 1).place(x.dual)
                 self.param.dual[0] = 1.0 * self.seed[0]
         else:
-            for idx, s in enumerate(self.seed):
-                self.param.dual[idx] = 1.0 * s
-
-        # Clear gradients
-        if self.clear_gradients:
-            for ls in self.loss:
-                ls.dual.fill(0)
+            self.param.dual.from_numpy(np.array(self.seed, dtype=np.float32))
 
         # Attach the context manager to the runtime
         self.runtime.fwd_mode_manager = self
@@ -326,8 +326,7 @@ class FwdMode:
                 # e.g., ti.root.dense(ti.i, 1).place(x.dual)
                 self.param.dual[0] = 0.0
         else:
-            for idx, s in enumerate(self.seed):
-                self.param.dual[idx] = 0.0
+            self.param.dual.fill(0)
 
 
 __all__ = [

@@ -31,6 +31,7 @@ static std::vector<std::uint8_t> get_offline_cache_key_of_compile_config(
   serializer(config->advanced_optimization);
   serializer(config->constant_folding);
   serializer(config->kernel_profiler);
+  serializer(config->kernel_profiler);
   serializer(config->fast_math);
   serializer(config->flatten_if);
   serializer(config->make_thread_local);
@@ -161,14 +162,16 @@ std::string get_hashed_offline_cache_key(CompileConfig *config,
     compile_config_key = get_offline_cache_key_of_compile_config(config);
   }
 
+  std::string autodiff_mode =
+      std::to_string(static_cast<std::size_t>(kernel->autodiff_mode));
   picosha2::hash256_one_by_one hasher;
   hasher.process(compile_config_key.begin(), compile_config_key.end());
   hasher.process(kernel_ast_string.begin(), kernel_ast_string.end());
+  hasher.process(autodiff_mode.begin(), autodiff_mode.end());
   hasher.finish();
 
   auto res = picosha2::get_hash_hex_string(hasher);
-  res.insert(res.begin(),
-             kernel->autodiff_mode != AutodiffMode::kNone ? 'g' : 'n');
+  res.insert(res.begin(), 'T');  // The key must start with a letter
   return res;
 }
 
@@ -176,6 +179,26 @@ namespace offline_cache {
 
 constexpr std::size_t offline_cache_key_length = 65;
 constexpr std::size_t min_mangled_name_length = offline_cache_key_length + 2;
+
+std::string get_cache_path_by_arch(const std::string &base_path, Arch arch) {
+  std::string subdir;
+  if (arch_uses_llvm(arch)) {
+    subdir = "llvm";
+  } else if (arch == Arch::vulkan) {
+    subdir = "gfx";
+  } else {
+    return base_path;
+  }
+  return taichi::join_path(base_path, subdir);
+}
+
+bool enabled_wip_offline_cache(bool enable_hint) {
+  // CompileConfig::offline_cache is a global option to enable offline cache on
+  // all backends To disable WIP offline cache by default & enable when
+  // developing/testing:
+  const char *enable_env = std::getenv("TI_WIP_OFFLINE_CACHE");
+  return enable_hint && enable_env && std::strncmp("1", enable_env, 1) == 0;
+}
 
 std::string mangle_name(const std::string &primal_name,
                         const std::string &key) {

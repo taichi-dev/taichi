@@ -15,6 +15,7 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/program/kernel.h"
 #include "taichi/runtime/llvm/llvm_context.h"
+#include "taichi/util/io.h"
 #include "taichi/util/lock.h"
 
 namespace taichi {
@@ -161,7 +162,7 @@ bool LlvmOfflineCacheFileReader::get_kernel_cache(
   bool verified_all = true;
   const auto &compiled_data_list = res.compiled_data_list;
   for (std::size_t i = 0; i < compiled_data_list.size(); ++i) {
-    const auto &data  = compiled_data_list[i];
+    const auto &data = compiled_data_list[i];
     const auto &tasks = data.tasks;
     bool verified = true;
     for (const auto &t : tasks) {
@@ -171,7 +172,8 @@ bool LlvmOfflineCacheFileReader::get_kernel_cache(
       }
     }
     if (!verified) {
-      for (const auto &f : get_possible_llvm_cache_filename_by_key(key + "." + std::to_string(i))) {
+      for (const auto &f : get_possible_llvm_cache_filename_by_key(
+               key + "." + std::to_string(i))) {
         taichi::remove(taichi::join_path(path_, f));
       }
     }
@@ -374,6 +376,9 @@ void LlvmOfflineCacheFileWriter::clean_cache(const std::string &path,
   {
     std::string lock_path = taichi::join_path(path, kMetadataFileLockName);
     if (!lock_with_file(lock_path)) {
+      if (!taichi::path_exists(path)) {
+        return;
+      }
       TI_WARN("Lock {} failed", lock_path);
       return;
     }

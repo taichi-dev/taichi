@@ -47,7 +47,7 @@ my_kernel()
 x_torch = x.to_torch()
 print(x_torch)  # torch.tensor([0, 2, 4, 6])
 
-x.from_numpy(torch.tensor([1, 7, 3, 5]))
+x.from_torch(torch.tensor([1, 7, 3, 5]))
 print(x[0])  # 1
 print(x[1])  # 7
 print(x[2])  # 3
@@ -66,7 +66,7 @@ my_kernel()
 x_paddle = x.to_paddle()
 print(x_paddle)  # paddle.Tensor([0, 2, 4, 6])
 
-x.from_numpy(paddle.to_tensor([1, 7, 3, 5]))
+x.from_paddle(paddle.to_tensor([1, 7, 3, 5]))
 print(x[0])  # 1
 print(x[1])  # 7
 print(x[2])  # 3
@@ -130,7 +130,7 @@ field.from_numpy(array)  # the input array must be of shape (256, 512, 3, 4)
 - For struct fields, the external array will be exported as **a dictionary of NumPy arrays, PyTorch tensors or Paddle Tensors** with keys being struct member names and values being struct member arrays. Nested structs will be exported as nested dictionaries:
 
 ```python
-field = ti.Struct.field({'a': ti.i32, 'b': ti.types.vector(float, 3)} shape=(256, 512))
+field = ti.Struct.field({'a': ti.i32, 'b': ti.types.vector(3, float)}, shape=(256, 512))
 field.shape # (256, 512)
 
 array_dict = field.to_numpy()

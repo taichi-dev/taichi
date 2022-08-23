@@ -4,7 +4,7 @@ set -ex
 export TI_SKIP_VERSION_CHECK=ON
 export TI_CI=1
 
-. $(dirname $0)/libcommon.sh
+. $(dirname $0)/common-utils.sh
 
 cd taichi
 

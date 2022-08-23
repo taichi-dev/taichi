@@ -10,12 +10,18 @@
 #include <vector>
 #include <cstdio>
 #include <cstdlib>
+#include <sys/stat.h>
 
 #if defined(TI_PLATFORM_WINDOWS)
 #include <filesystem>
 #endif
 
 TI_NAMESPACE_BEGIN
+
+inline bool path_exists(const std::string &dir) {
+  struct stat buffer;
+  return stat(dir.c_str(), &buffer) == 0;
+}
 
 // TODO: move to std::filesystem after it's nonexperimental on all platforms
 inline void create_directories(const std::string &dir) {

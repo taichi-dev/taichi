@@ -1,9 +1,7 @@
 import taichi as ti
 from tests import test_utils
 
-# TODO: recover the exclude after the spriv issue #5555 is fixed
-archs_excluded_fwd = [ti.cc, ti.opengl]
-archs_excluded_fwd_with_vulkan = [ti.cc, ti.opengl, ti.vulkan]
+archs_excluded_fwd = [ti.cc]
 
 
 @test_utils.test(exclude=archs_excluded_fwd)
@@ -357,7 +355,7 @@ def test_triple_for_loops_bls():
             assert f.dual[i, k] == 2 * M
 
 
-@test_utils.test(exclude=archs_excluded_fwd_with_vulkan)
+@test_utils.test(exclude=archs_excluded_fwd)
 def test_mixed_inner_loops():
     x = ti.field(dtype=ti.f32, shape=(), needs_dual=True)
     arr = ti.field(dtype=ti.f32, shape=(5))
@@ -430,7 +428,7 @@ def test_more_inner_loops_local_variable():
     assert loss.dual[None] == 36.0
 
 
-@test_utils.test(exclude=archs_excluded_fwd_with_vulkan)
+@test_utils.test(exclude=archs_excluded_fwd)
 def test_stacked_inner_loops_local_variable():
     x = ti.field(dtype=float, shape=(), needs_dual=True)
     arr = ti.field(dtype=float, shape=(2), needs_dual=True)
@@ -459,7 +457,7 @@ def test_stacked_inner_loops_local_variable():
     assert loss.dual[None] == 38.0
 
 
-@test_utils.test(exclude=archs_excluded_fwd_with_vulkan)
+@test_utils.test(exclude=archs_excluded_fwd)
 def test_stacked_mixed_ib_and_non_ib_inner_loops_local_variable():
     x = ti.field(dtype=float, shape=(), needs_dual=True)
     arr = ti.field(dtype=float, shape=(2), needs_dual=True)
@@ -490,23 +488,23 @@ def test_stacked_mixed_ib_and_non_ib_inner_loops_local_variable():
 
 
 @test_utils.test(exclude=archs_excluded_fwd)
-def test_large_for_loops_adaptive_stack_size():
+def test_large_for_loops():
     x = ti.field(dtype=float, shape=(), needs_dual=True)
     arr = ti.field(dtype=float, shape=(2), needs_dual=True)
     loss = ti.field(dtype=float, shape=(), needs_dual=True)
 
     @ti.kernel
-    def test_large_loop():
-        for i in range(5):
-            for j in range(2000):
-                for k in range(1000):
+    def large_for_loop():
+        for i in range(2000):
+            for j in range(100):
+                for k in range(5):
                     loss[None] += ti.sin(x[None]) + 1.0
 
     with ti.ad.FwdMode(loss=loss, param=x):
-        test_large_loop()
+        large_for_loop()
 
-    assert loss[None] == 1e7
-    assert loss.dual[None] == 1e7
+    assert loss[None] == 1e6
+    assert loss.dual[None] == 1e6
 
 
 @test_utils.test(exclude=archs_excluded_fwd)
@@ -556,7 +554,7 @@ def test_multiple_ib_multiple_outermost():
     assert y.dual[None] == 24.0
 
 
-@test_utils.test(exclude=archs_excluded_fwd_with_vulkan)
+@test_utils.test(exclude=archs_excluded_fwd)
 def test_multiple_ib_multiple_outermost_mixed():
     x = ti.field(float, (), needs_dual=True)
     y = ti.field(float, (), needs_dual=True)
@@ -584,7 +582,7 @@ def test_multiple_ib_multiple_outermost_mixed():
     assert y.dual[None] == 42.0
 
 
-@test_utils.test(exclude=archs_excluded_fwd_with_vulkan)
+@test_utils.test(exclude=archs_excluded_fwd)
 def test_multiple_ib_mixed():
     x = ti.field(float, (), needs_dual=True)
     y = ti.field(float, (), needs_dual=True)
@@ -662,7 +660,7 @@ def test_multiple_ib_deeper_non_scalar():
         assert y.dual[i] == i * 10.0
 
 
-@test_utils.test(exclude=archs_excluded_fwd_with_vulkan)
+@test_utils.test(exclude=archs_excluded_fwd)
 def test_multiple_ib_inner_mixed():
     x = ti.field(float, (), needs_dual=True)
     y = ti.field(float, (), needs_dual=True)

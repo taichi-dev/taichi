@@ -117,7 +117,7 @@ class TargetDevice : public Device {
   }
 
   void set_default_caps(Arch arch) {
-    if (arch == Arch::vulkan) {
+    if (arch == Arch::vulkan || arch == Arch::opengl) {
       set_cap(DeviceCapability::spirv_version, 0x10300);
     }
   }

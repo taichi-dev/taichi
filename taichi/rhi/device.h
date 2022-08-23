@@ -200,51 +200,14 @@ enum class PolygonMode : int {
 };
 
 enum class TI_DLL_EXPORT BufferFormat : uint32_t {
-  r8,
-  rg8,
-  rgba8,
-  rgba8srgb,
-  bgra8,
-  bgra8srgb,
-  r8u,
-  rg8u,
-  rgba8u,
-  r8i,
-  rg8i,
-  rgba8i,
-  r16,
-  rg16,
-  rgb16,
-  rgba16,
-  r16u,
-  rg16u,
-  rgb16u,
-  rgba16u,
-  r16i,
-  rg16i,
-  rgb16i,
-  rgba16i,
-  r16f,
-  rg16f,
-  rgb16f,
-  rgba16f,
-  r32u,
-  rg32u,
-  rgb32u,
-  rgba32u,
-  r32i,
-  rg32i,
-  rgb32i,
-  rgba32i,
-  r32f,
-  rg32f,
-  rgb32f,
-  rgba32f,
-  depth16,
-  depth24stencil8,
-  depth32f,
-  unknown
+#define PER_BUFFER_FORMAT(x) x,
+#include "taichi/inc/buffer_format.inc.h"
+#undef PER_BUFFER_FORMAT
 };
+
+std::pair<DataType, uint32_t> buffer_format2type_channels(BufferFormat format);
+BufferFormat type_channels2buffer_format(const DataType &type,
+                                         uint32_t num_channels);
 
 class Pipeline {
  public:
@@ -254,20 +217,16 @@ class Pipeline {
   virtual ResourceBinder *resource_binder() = 0;
 };
 
-enum class TI_DLL_EXPORT ImageDimension { d1D, d2D, d3D };
+enum class TI_DLL_EXPORT ImageDimension {
+#define PER_IMAGE_DIMENSION(x) x,
+#include "taichi/inc/image_dimension.inc.h"
+#undef PER_IMAGE_DIMENSION
+};
 
 enum class TI_DLL_EXPORT ImageLayout {
-  undefined,
-  shader_read,
-  shader_write,
-  shader_read_write,
-  color_attachment,
-  color_attachment_read,
-  depth_attachment,
-  depth_attachment_read,
-  transfer_dst,
-  transfer_src,
-  present_src
+#define PER_IMAGE_LAYOUT(x) x,
+#include "taichi/inc/image_layout.inc.h"
+#undef PER_IMAGE_LAYOUT
 };
 
 struct BufferImageCopyParams {
@@ -477,6 +436,12 @@ class Device {
     caps_[capability_id] = val;
   }
 
+  void clone_caps(Device &dest) const {
+    for (const auto [k, v] : caps_) {
+      dest.set_cap(k, v);
+    }
+  }
+
   void print_all_cap() const;
 
   struct AllocParams {
@@ -597,14 +562,30 @@ struct SurfaceConfig {
   uint32_t height{1};
 };
 
-struct TI_DLL_EXPORT ImageParams {
+enum class ImageAllocUsage : int {
+  None = 0,
+  Storage = 1,
+  Sampled = 2,
+  Attachment = 4,
+};
+inline ImageAllocUsage operator|(ImageAllocUsage a, ImageAllocUsage b) {
+  return static_cast<ImageAllocUsage>(static_cast<int>(a) |
+                                      static_cast<int>(b));
+}
+inline bool operator&(ImageAllocUsage a, ImageAllocUsage b) {
+  return static_cast<int>(a) & static_cast<int>(b);
+}
+
+struct ImageParams {
   ImageDimension dimension;
   BufferFormat format;
-  ImageLayout initial_layout;
+  ImageLayout initial_layout{ImageLayout::undefined};
   uint32_t x{1};
   uint32_t y{1};
   uint32_t z{1};
   bool export_sharing{false};
+  ImageAllocUsage usage{ImageAllocUsage::Storage | ImageAllocUsage::Sampled |
+                        ImageAllocUsage::Attachment};
 };
 
 struct BlendFunc {
@@ -642,6 +623,10 @@ class TI_DLL_EXPORT GraphicsDevice : public Device {
 
   virtual std::unique_ptr<Surface> create_surface(
       const SurfaceConfig &config) = 0;
+  // You are not expected to call this directly. If you want to use this image
+  // in a taichi kernel, you usually want to create the image via
+  // `GfxRuntime::create_image`. `GfxRuntime` is available in `ProgramImpl`
+  // of GPU backends.
   virtual DeviceAllocation create_image(const ImageParams &params) = 0;
   virtual void destroy_image(DeviceAllocation handle) = 0;
 

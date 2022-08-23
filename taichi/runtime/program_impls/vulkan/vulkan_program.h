@@ -1,4 +1,5 @@
 #pragma once
+#include "taichi/aot/module_loader.h"
 #include "taichi/codegen/spirv/spirv_codegen.h"
 #include "taichi/codegen/spirv/snode_struct_compiler.h"
 #include "taichi/codegen/spirv/kernel_utils.h"
@@ -8,6 +9,7 @@
 #include "taichi/rhi/vulkan/vulkan_loader.h"
 #include "taichi/runtime/gfx/runtime.h"
 #include "taichi/runtime/gfx/snode_tree_manager.h"
+#include "taichi/runtime/gfx/offline_cache_manager.h"
 #include "taichi/rhi/vulkan/vulkan_device.h"
 #include "vk_mem_alloc.h"
 
@@ -65,6 +67,7 @@ class VulkanProgramImpl : public ProgramImpl {
 
   DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
                                            uint64 *result_buffer) override;
+  DeviceAllocation allocate_texture(const ImageParams &params) override;
 
   Device *get_compute_device() override {
     if (embedded_device_) {
@@ -90,6 +93,10 @@ class VulkanProgramImpl : public ProgramImpl {
 
   std::unique_ptr<aot::Kernel> make_aot_kernel(Kernel &kernel) override;
 
+  void dump_cache_data_to_disk() override;
+
+  const std::unique_ptr<gfx::OfflineCacheManager> &get_cache_manager();
+
   ~VulkanProgramImpl();
 
  private:
@@ -97,6 +104,7 @@ class VulkanProgramImpl : public ProgramImpl {
   std::unique_ptr<gfx::GfxRuntime> vulkan_runtime_{nullptr};
   std::unique_ptr<gfx::SNodeTreeManager> snode_tree_mgr_{nullptr};
   std::vector<spirv::CompiledSNodeStructs> aot_compiled_snode_structs_;
+  std::unique_ptr<gfx::OfflineCacheManager> cache_manager_{nullptr};
 };
 }  // namespace lang
 }  // namespace taichi

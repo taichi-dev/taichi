@@ -10,6 +10,12 @@ endif()
 add_library(${TAICHI_C_API_NAME} SHARED ${C_API_SOURCE})
 target_link_libraries(${TAICHI_C_API_NAME} PRIVATE taichi_core)
 
+# [TODO] Remove the following two linkages after rewriting AOT Demos with Device APIS
+if(TI_WITH_GGUI)
+target_link_libraries(${TAICHI_C_API_NAME} PRIVATE taichi_ui_vulkan)
+target_link_libraries(${TAICHI_C_API_NAME} PRIVATE taichi_ui)
+endif()
+
 set(C_API_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")
 set_target_properties(${TAICHI_C_API_NAME} PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY ${C_API_OUTPUT_DIRECTORY}
@@ -43,7 +49,6 @@ install(TARGETS ${TAICHI_C_API_NAME} EXPORT ${TAICHI_C_API_NAME}Targets
     INCLUDES DESTINATION c_api/include
     )
 
-message( --------------------- ${CMAKE_INSTALL_LIBDIR})
 # Install the export set, which contains the meta data of the target
 install(EXPORT ${TAICHI_C_API_NAME}Targets
     FILE ${TAICHI_C_API_NAME}Targets.cmake

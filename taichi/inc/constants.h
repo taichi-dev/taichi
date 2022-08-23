@@ -5,10 +5,10 @@
 constexpr int taichi_max_num_indices = 8;
 // legacy: only used in cc and opengl backends
 constexpr int taichi_max_num_args = 8;
-// used in llvm backend: only the first 16 arguments can be types.ndarray
+// used in llvm backend: only the first 32 arguments can be types.ndarray
 // TODO: refine argument passing
 constexpr int taichi_max_num_args_total = 64;
-constexpr int taichi_max_num_args_extra = 16;
+constexpr int taichi_max_num_args_extra = 32;
 constexpr int taichi_max_num_snodes = 1024;
 constexpr int kMaxNumSnodeTreesLlvm = 512;
 constexpr int taichi_max_gpu_block_dim = 1024;

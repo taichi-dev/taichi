@@ -46,13 +46,13 @@ def expr_init(rhs):
     if rhs is None:
         return Expr(get_runtime().prog.current_ast_builder().expr_alloca())
     if isinstance(rhs, Matrix) and (hasattr(rhs, "_DIM")):
-        return type(rhs)(*rhs.to_list())
+        return Matrix(*rhs.to_list(), ndim=rhs.ndim)
     if isinstance(rhs, Matrix):
-        return Matrix(rhs.to_list())
+        return Matrix(rhs.to_list(), ndim=rhs.ndim)
     if isinstance(rhs, SharedArray):
         return rhs
     if isinstance(rhs, Struct):
-        return Struct(rhs.to_dict(include_methods=True))
+        return Struct(rhs.to_dict(include_methods=True, include_ndim=True))
     if isinstance(rhs, list):
         return [expr_init(e) for e in rhs]
     if isinstance(rhs, tuple):
@@ -86,7 +86,7 @@ def expr_init_func(
 def begin_frontend_struct_for(ast_builder, group, loop_range):
     if not isinstance(loop_range, (AnyArray, Field, SNode, _Root)):
         raise TypeError(
-            'Can only iterate through Taichi fields/snodes (via template) or dense arrays (via types.ndarray)'
+            f"Cannot loop over the object {type(loop_range)} in Taichi scope. Only Taichi fields (via template) or dense arrays (via types.ndarray) are supported."
         )
     if group.size() != len(loop_range.shape):
         raise IndexError(
@@ -196,10 +196,12 @@ def subscript(value, *_indices, skip_reordered=False, get_ref=False):
         n = value.element_shape[0]
         m = 1 if element_dim == 1 else value.element_shape[1]
         any_array_access = AnyArrayAccess(value, _indices)
-        ret = _IntermediateMatrix(n, m, [
-            any_array_access.subscript(i, j) for i in range(n)
-            for j in range(m)
-        ])
+        ret = _IntermediateMatrix(n,
+                                  m, [
+                                      any_array_access.subscript(i, j)
+                                      for i in range(n) for j in range(m)
+                                  ],
+                                  ndim=element_dim)
         ret.any_array_access = any_array_access
         return ret
     # Directly evaluate in Python for non-Taichi types
@@ -361,7 +363,8 @@ class PyTaichi:
             _field._calc_dynamic_index_stride()
 
     def materialize(self):
-        if get_runtime().prog.config.debug:
+        if get_runtime().prog.config.debug and get_runtime(
+        ).prog.config.validate_autodiff:
             self._allocate_gradient_visited()
         self.materialize_root_fb(not self.materialized)
         self.materialized = True

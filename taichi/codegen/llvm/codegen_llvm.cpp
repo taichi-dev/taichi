@@ -834,7 +834,8 @@ void TaskCodeGenLLVM::visit(PrintStmt *stmt) {
           auto elem_value = builder->CreateExtractElement(value, i);
           if (elem_type->is_primitive(PrimitiveTypeID::f32) ||
               elem_type->is_primitive(PrimitiveTypeID::f16))
-              elem_value = builder->CreateFPExt(elem_value, tlctx->get_data_type(PrimitiveType::f64));
+            elem_value = builder->CreateFPExt(
+                elem_value, tlctx->get_data_type(PrimitiveType::f64));
           args.push_back(elem_value);
         }
         formats += data_type_format(arg_stmt->ret_type);

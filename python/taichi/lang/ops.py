@@ -1499,6 +1499,7 @@ def _shape_of(expr):
         raise TaichiCompilationError(f"Cannot get shape of type {dt}")
     return ret
 
+
 @taichi_scope
 def _reduce(e, func):
     s = _shape_of(e)
@@ -1514,6 +1515,7 @@ def _reduce(e, func):
         raise TaichiCompilationError("reduction supports up to matrices")
 
     return acc
+
 
 @taichi_scope
 def _bind(m, func):
@@ -1618,6 +1620,7 @@ def matmul(m1, m2):
     from taichi.lang.matrix import make_matrix
     return make_matrix(entries)
 
+
 @taichi_scope
 def transpose(m, in_place=False):
     s = _shape_of(m)
@@ -1632,12 +1635,12 @@ def transpose(m, in_place=False):
         return m
     else:
         from taichi.lang.matrix import make_matrix
-        entries = [[0 for _ in range(s[0])]
-                      for _ in range(s[1])]
+        entries = [[0 for _ in range(s[0])] for _ in range(s[1])]
         for i in range(s[0]):
             for j in range(s[1]):
                 entries[j][i] = m[i, j]
         return make_matrix(entries)
+
 
 @taichi_scope
 def determinant(a):
@@ -1661,9 +1664,9 @@ def determinant(a):
     if n == 2 and m == 2:
         return a[0, 0] * a[1, 1] - a[0, 1] * a[1, 0]
     if n == 3 and m == 3:
-        return a[0, 0] * (a[1, 1] * a[2, 2] - a[2, 1] * a[1, 2]) - a[
-            1, 0] * (a[0, 1] * a[2, 2] - a[2, 1] * a[0, 2]) + a[
-                2, 0] * (a[0, 1] * a[1, 2] - a[1, 1] * a[0, 2])
+        return a[0, 0] * (a[1, 1] * a[2, 2] - a[2, 1] * a[1, 2]) - a[1, 0] * (
+            a[0, 1] * a[2, 2] - a[2, 1] * a[0, 2]) + a[2, 0] * (
+                a[0, 1] * a[1, 2] - a[1, 1] * a[0, 2])
     if n == 4 and m == 4:
         n = 4
 
@@ -1675,14 +1678,15 @@ def determinant(a):
             det = det + (-1.0)**i * (
                 a[i, 0] *
                 (E(i + 1, 1) *
-                    (E(i + 2, 2) * E(i + 3, 3) - E(i + 3, 2) * E(i + 2, 3)) -
-                    E(i + 2, 1) *
-                    (E(i + 1, 2) * E(i + 3, 3) - E(i + 3, 2) * E(i + 1, 3)) +
-                    E(i + 3, 1) *
-                    (E(i + 1, 2) * E(i + 2, 3) - E(i + 2, 2) * E(i + 1, 3))))
+                 (E(i + 2, 2) * E(i + 3, 3) - E(i + 3, 2) * E(i + 2, 3)) -
+                 E(i + 2, 1) *
+                 (E(i + 1, 2) * E(i + 3, 3) - E(i + 3, 2) * E(i + 1, 3)) +
+                 E(i + 3, 1) *
+                 (E(i + 1, 2) * E(i + 2, 3) - E(i + 2, 2) * E(i + 1, 3))))
         return det
     raise Exception(
         "Determinants of matrices with sizes >= 5 are not supported")
+
 
 @taichi_scope
 def inverse(m):
@@ -1708,8 +1712,8 @@ def inverse(m):
         return make_matrix([1 / m[0, 0]])
     if n == 2:
         inv_determinant = impl.expr_init(1.0 / determinant(m))
-        return inv_determinant * make_matrix([[m[
-            1, 1], -m[0, 1]], [-m[1, 0], m[0, 0]]])
+        return inv_determinant * make_matrix([[m[1, 1], -m[0, 1]],
+                                              [-m[1, 0], m[0, 0]]])
     if n == 3:
         n = 3
         inv_determinant = impl.expr_init(1.0 / determinant(m))
@@ -1734,17 +1738,17 @@ def inverse(m):
 
         for i in range(n):
             for j in range(n):
-                entries[j][i] = inv_determinant * (-1)**(i + j) * ((
-                    E(i + 1, j + 1) *
-                    (E(i + 2, j + 2) * E(i + 3, j + 3) -
-                        E(i + 3, j + 2) * E(i + 2, j + 3)) - E(i + 2, j + 1) *
-                    (E(i + 1, j + 2) * E(i + 3, j + 3) -
-                        E(i + 3, j + 2) * E(i + 1, j + 3)) + E(i + 3, j + 1) *
-                    (E(i + 1, j + 2) * E(i + 2, j + 3) -
-                        E(i + 2, j + 2) * E(i + 1, j + 3))))
+                entries[j][i] = inv_determinant * (-1)**(i + j) * (
+                    (E(i + 1, j + 1) *
+                     (E(i + 2, j + 2) * E(i + 3, j + 3) -
+                      E(i + 3, j + 2) * E(i + 2, j + 3)) - E(i + 2, j + 1) *
+                     (E(i + 1, j + 2) * E(i + 3, j + 3) -
+                      E(i + 3, j + 2) * E(i + 1, j + 3)) + E(i + 3, j + 1) *
+                     (E(i + 1, j + 2) * E(i + 2, j + 3) -
+                      E(i + 2, j + 2) * E(i + 1, j + 3))))
         return make_matrix(entries)
-    raise Exception(
-        "Inversions of matrices with sizes >= 5 are not supported")
+    raise Exception("Inversions of matrices with sizes >= 5 are not supported")
+
 
 def rows(rows):
     """Constructs a matrix by concatenating a list of
@@ -1779,12 +1783,11 @@ def rows(rows):
         return make_matrix([[row[i] for i in range(shape[0])] for row in rows])
     if isinstance(rows[0], list):
         for row in rows:
-            assert len(row) == len(
-                rows[0]), "Input lists share the same shape"
+            assert len(row) == len(rows[0]), "Input lists share the same shape"
         # l-value copy:
         return make_matrix([[x for x in row] for row in rows])
-    raise Exception(
-        "Cols/rows must be a list of lists, or a list of vectors")
+    raise Exception("Cols/rows must be a list of lists, or a list of vectors")
+
 
 def cols(cols):
     """Constructs a Matrix instance by concatenating Vectors/lists column by column.
@@ -1809,6 +1812,7 @@ def cols(cols):
     """
     return transpose(rows(cols))
 
+
 def trace(m):
     """The sum of a matrix diagonal elements.
 
@@ -1830,6 +1834,7 @@ def trace(m):
     for i in range(1, shape[0]):
         _sum = _sum + m[i, i]
     return _sum
+
 
 __all__ = [
     "acos", "asin", "atan2", "atomic_and", "atomic_or", "atomic_xor",

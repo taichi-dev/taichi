@@ -93,7 +93,8 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
             auto elem_value_type = tlctx->get_data_type(elem_type);
             if (elem_type->is_primitive(PrimitiveTypeID::f32) ||
                 elem_type->is_primitive(PrimitiveTypeID::f16)) {
-              elem_value = builder->CreateFPExt(elem_value, tlctx->get_data_type(PrimitiveType::f64));
+              elem_value = builder->CreateFPExt(
+                  elem_value, tlctx->get_data_type(PrimitiveType::f64));
               elem_value_type = tlctx->get_data_type(PrimitiveType::f64);
             }
             types.push_back(elem_value_type);
@@ -124,7 +125,7 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
         formats += "%s";
       }
       TI_ASSERT_INFO(num_contents < 32,
-                   "CUDA `print()` doesn't support more than 32 entries");
+                     "CUDA `print()` doesn't support more than 32 entries");
     }
 
     llvm_val[stmt] = create_print(formats, types, values);

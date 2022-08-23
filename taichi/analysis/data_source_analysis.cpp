@@ -11,7 +11,8 @@ std::vector<Stmt *> get_load_pointers(Stmt *load_stmt) {
   if (auto local_load = load_stmt->cast<LocalLoadStmt>()) {
     std::vector<Stmt *> result;
     for (auto &address : local_load->src.data) {
-      if (std::find(result.begin(), result.end(), address.var) == result.end()) {
+      if (std::find(result.begin(), result.end(), address.var) ==
+          result.end()) {
         result.push_back(address.var);
       }
     }

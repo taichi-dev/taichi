@@ -242,7 +242,8 @@ class ConstantFold : public BasicStmtVisitor {
   //         TI_TRACE("Got constant idx: {}", idx_val);
   //         if (ptr_offset->origin->ret_type->is<TensorType>()) {
   //           if (auto matrix = ptr_offset->origin->cast<MatrixInitStmt>()) {
-  //             TI_ASSERT_INFO(idx_val < matrix->values.size(), "Matrix indexing out-of-bound on value {}", stmt->name());
+  //             TI_ASSERT_INFO(idx_val < matrix->values.size(), "Matrix
+  //             indexing out-of-bound on value {}", stmt->name());
   //             stmt->replace_usages_with(matrix->values[idx_val]);
   //             modifier.erase(stmt);
   //           }

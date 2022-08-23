@@ -229,7 +229,7 @@ TiTexture ti_allocate_texture(TiRuntime runtime,
 
   switch ((taichi::lang::ImageDimension)allocate_info->dimension) {
 #define PER_IMAGE_DIMENSION(x) case x:
-#include "inc/image_dimension.inc.h"
+#include "taichi/inc/image_dimension.inc.h"
 #undef PER_IMAGE_DIMENSION
     break;
   default:{
@@ -240,7 +240,7 @@ TiTexture ti_allocate_texture(TiRuntime runtime,
   
   switch ((taichi::lang::BufferFormat)allocate_info->format) {
 #define PER_IMAGE_DIMENSION(x) case x:
-#include "inc/buffer_format.inc.h"
+#include "taichi/inc/buffer_format.inc.h"
 #undef PER_IMAGE_DIMENSION
     break;
   default:{
@@ -337,7 +337,7 @@ void ti_transition_texture(TiRuntime runtime,
   bool is_layout_valid;
   switch (layout) {
 #define PER_IMAGE_LAYOUT(x) case x:
-#include "inc/image_layout.inc.h"
+#include "taichi/inc/image_layout.inc.h"
 #undef PER_IMAGE_LAYOUT
     break;
   default: {
@@ -431,12 +431,6 @@ void ti_launch_kernel(TiRuntime runtime,
         std::unique_ptr<taichi::lang::DeviceAllocation> devalloc =
             std::make_unique<taichi::lang::DeviceAllocation>(
                 devmem2devalloc(runtime2, arg.value.ndarray.memory));
-        if (devalloc->alloc_id + 1 == 0) {
-          TI_WARN(
-              "ignored attempt to launch kernel with ndarray memory of null "
-              "handle");
-          return;
-        }
         const TiNdArray &ndarray = arg.value.ndarray;
 
         std::vector<int> shape(ndarray.shape.dims,
@@ -492,14 +486,9 @@ void ti_launch_compute_graph(TiRuntime runtime,
       }
       case TI_ARGUMENT_TYPE_NDARRAY: {
         TI_CAPI_ARGUMENT_NULL(args[i].argument.value.ndarray.memory);
+
         taichi::lang::DeviceAllocation devalloc =
             devmem2devalloc(runtime2, arg.argument.value.ndarray.memory);
-        if (devalloc.alloc_id + 1 == 0) {
-          TI_WARN(
-              "ignored attempt to launch kernel with ndarray memory of null "
-              "handle");
-          return;
-        }
         const TiNdArray &ndarray = arg.argument.value.ndarray;
 
         std::vector<int> shape(ndarray.shape.dims,

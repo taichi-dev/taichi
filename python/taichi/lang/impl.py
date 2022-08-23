@@ -568,7 +568,6 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
 
     x_grad = None
     x_dual = None
-    x_dual_dual = None
     # The x_grad_checkbit is used for global data access rule checker
     x_grad_checkbit = None
     if _ti_core.is_real(dtype):

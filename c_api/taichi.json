@@ -76,6 +76,22 @@
                     "is_dispatchable": false
                 },
                 {
+                    "name": "error",
+                    "type": "enumeration",
+                    "cases": {
+                        "incomplete": 1,
+                        "success": 0,
+                        "not_supported": -1,
+                        "path_not_found": -2,
+                        "name_not_found": -3,
+                        "invalid_argument": -4,
+                        "argument_null": -5,
+                        "argument_out_of_range": -6,
+                        "argument_not_found": -7,
+                        "invalid_interop": -8
+                    }
+                },
+                {
                     "name": "arch",
                     "type": "enumeration",
                     "inc_cases": "archs"
@@ -353,6 +369,39 @@
                         },
                         {
                             "type": "structure.argument"
+                        }
+                    ]
+                },
+                {
+                    "name": "get_last_error",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "name": "@return",
+                            "type": "enumeration.error"
+                        },
+                        {
+                            "name": "message_size",
+                            "type": "uint64_t"
+                        },
+                        {
+                            "name": "message",
+                            "type": "char",
+                            "count": "message_size",
+                            "by_mut": true
+                        }
+                    ]
+                },
+                {
+                    "name": "set_last_error",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "type": "enumeration.error"
+                        },
+                        {
+                            "name": "message",
+                            "type": "const char*"
                         }
                     ]
                 },

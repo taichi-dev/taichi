@@ -2,7 +2,7 @@ from taichi_json import (Alias, BitField, BuiltInType, Definition, EntryBase,
                          Enumeration, Field, Function, Handle, Module,
                          Structure, Union)
 
-#from os import system
+from os import system
 
 
 def get_type_name(x: EntryBase):
@@ -138,7 +138,7 @@ def generate_module_header(module):
     with open(path, "w") as f:
         f.write(print_module_header(module))
 
-    #system(f"clang-format {path} -i")
+    system(f"clang-format {path} -i")
 
 
 if __name__ == "__main__":
@@ -167,6 +167,8 @@ if __name__ == "__main__":
         BuiltInType("VkImageTiling", "VkImageTiling"),
         BuiltInType("VkImageLayout", "VkImageLayout"),
         BuiltInType("VkImageUsageFlags", "VkImageUsageFlags"),
+        BuiltInType("VkImageViewType", "VkImageViewType"),
+        BuiltInType("char", "char"),
     }
 
     for module in Module.load_all(builtin_tys):

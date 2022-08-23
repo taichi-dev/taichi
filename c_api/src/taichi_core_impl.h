@@ -44,6 +44,18 @@
     return TI_NULL_HANDLE; \
   }
 
+#define TI_CAPI_INVALID_INTEROP_ARCH(x, arch) \
+  if (x != taichi::Arch::arch) { \
+    ti_set_last_error(TI_ERROR_INVALID_INTEROP, "arch!=" #arch); \
+    return; \
+  }
+#define TI_CAPI_INVALID_INTEROP_ARCH_RV(x, arch) \
+  if (x != taichi::Arch::arch) { \
+    ti_set_last_error(TI_ERROR_INVALID_INTEROP, "arch!=" #arch); \
+    return TI_NULL_HANDLE; \
+  }
+
+
 class Runtime;
 class Context;
 class AotModule;

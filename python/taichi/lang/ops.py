@@ -1612,7 +1612,7 @@ def matmul(m1, m2):
         entries.append([])
         for j in range(s2[1]):
             acc = m1[i, 0] * m2[0, j]
-            for k in range(1, s1[0]):
+            for k in range(1, s1[1]):
                 acc = acc + m1[i, k] * m2[k, j]
             entries[i].append(acc)
     from taichi.lang.matrix import make_matrix
@@ -1632,8 +1632,8 @@ def transpose(m, in_place=False):
         return m
     else:
         from taichi.lang.matrix import make_matrix
-        entries = [[0 for _ in range(s[1])]
-                      for _ in range(s[0])]
+        entries = [[0 for _ in range(s[0])]
+                      for _ in range(s[1])]
         for i in range(s[0]):
             for j in range(s[1]):
                 entries[j][i] = m[i, j]
@@ -1774,7 +1774,7 @@ def rows(rows):
         for row in rows:
             shape = _shape_of(row)
             assert len(shape) == 1, "Inputs must be vectors, i.e. m == 1"
-            assert shape[0] == shape_cmp, "Input vectors must share the same shape"
+            assert shape == shape_cmp, "Input vectors must share the same shape"
         # l-value copy:
         return make_matrix([[row[i] for i in range(shape[0])] for row in rows])
     if isinstance(rows[0], list):

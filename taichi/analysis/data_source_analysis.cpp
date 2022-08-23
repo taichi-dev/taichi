@@ -13,11 +13,6 @@ std::vector<Stmt *> get_load_pointers(Stmt *load_stmt) {
     for (auto &address : local_load->src.data) {
       if (std::find(result.begin(), result.end(), address.var) == result.end()) {
         result.push_back(address.var);
-        if (address.var->is<MatrixInitStmt>()) {
-          for (auto &v : address.var->cast<MatrixInitStmt>()->values) {
-            result.push_back(v)
-          }
-        }
       }
     }
     return result;

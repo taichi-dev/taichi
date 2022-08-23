@@ -66,6 +66,24 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
                                llvm::Type::getInt8PtrTy(*llvm_context)));
   }
 
+  std::tuple<llvm::Value *, llvm::Type *> create_value_and_type(llvm::Value *value, DataType dt) {
+    auto value_type = tlctx->get_data_type(dt);
+    if (dt->is_primitive(PrimitiveTypeID::f32) ||
+        dt->is_primitive(PrimitiveTypeID::f16)) {
+      value_type = tlctx->get_data_type(PrimitiveType::f64);
+      value = builder->CreateFPExt(value, value_type);
+    }
+    if (dt->is_primitive(PrimitiveTypeID::i8)) {
+      value_type = tlctx->get_data_type(PrimitiveType::i16);
+      value = builder->CreateSExt(value, value_type);
+    }
+    if (dt->is_primitive(PrimitiveTypeID::u8)) {
+      value_type = tlctx->get_data_type(PrimitiveType::u16);
+      value = builder->CreateZExt(value, value_type);
+    }
+    return std::make_tuple(value, value_type);
+  }
+
   void visit(PrintStmt *stmt) override {
     TI_ASSERT_INFO(stmt->contents.size() < 32,
                    "CUDA `print()` doesn't support more than 32 entries");
@@ -74,31 +92,32 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
     std::vector<llvm::Value *> values;
 
     std::string formats;
+    size_t num_contents = 0;
     for (auto const &content : stmt->contents) {
       if (std::holds_alternative<Stmt *>(content)) {
         auto arg_stmt = std::get<Stmt *>(content);
 
         formats += data_type_format(arg_stmt->ret_type);
 
-        auto value_type = tlctx->get_data_type(arg_stmt->ret_type);
         auto value = llvm_val[arg_stmt];
-        if (arg_stmt->ret_type->is_primitive(PrimitiveTypeID::f32) ||
-            arg_stmt->ret_type->is_primitive(PrimitiveTypeID::f16)) {
-          value_type = tlctx->get_data_type(PrimitiveType::f64);
-          value = builder->CreateFPExt(value, value_type);
+        if (arg_stmt->ret_type->is<TensorType>()) {
+          auto dtype = arg_stmt->ret_type->cast<TensorType>();
+          num_contents += dtype->get_num_elements();
+          auto elem_type = dtype->get_element_type();
+          for (int i = 0; i < dtype->get_num_elements(); ++i) {
+            auto elem_value = builder->CreateExtractElement(value, i);
+            auto [casted_value, elem_value_type] = create_value_and_type(elem_value, elem_type);
+            types.push_back(elem_value_type);
+            values.push_back(casted_value);
+          }
+        } else {
+          num_contents++;
+          auto [val, dtype] = create_value_and_type(value, arg_stmt->ret_type);
+          types.push_back(dtype);
+          values.push_back(val);
         }
-        if (arg_stmt->ret_type->is_primitive(PrimitiveTypeID::i8)) {
-          value_type = tlctx->get_data_type(PrimitiveType::i16);
-          value = builder->CreateSExt(value, value_type);
-        }
-        if (arg_stmt->ret_type->is_primitive(PrimitiveTypeID::u8)) {
-          value_type = tlctx->get_data_type(PrimitiveType::u16);
-          value = builder->CreateZExt(value, value_type);
-        }
-
-        types.push_back(value_type);
-        values.push_back(value);
       } else {
+        num_contents += 1;
         auto arg_str = std::get<std::string>(content);
 
         auto value = builder->CreateGlobalStringPtr(arg_str, "content_string");
@@ -110,6 +129,8 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
         values.push_back(value);
         formats += "%s";
       }
+      TI_ASSERT_INFO(num_contents < 32,
+                   "CUDA `print()` doesn't support more than 32 entries");
     }
 
     llvm_val[stmt] = create_print(formats, types, values);

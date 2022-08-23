@@ -82,7 +82,7 @@
                         "incomplete": 1,
                         "success": 0,
                         "not_supported": -1,
-                        "path_not_found": -2,
+                        "corrupted_data": -2,
                         "name_not_found": -3,
                         "invalid_argument": -4,
                         "argument_null": -5,

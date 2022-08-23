@@ -17,7 +17,7 @@ namespace {
     case TI_ERROR_INCOMPLETE: return "incomplete";
     case TI_ERROR_SUCCESS: return "success";
     case TI_ERROR_NOT_SUPPORTED: return "not supported";
-    case TI_ERROR_PATH_NOT_FOUND: return "path not found";
+    case TI_ERROR_CORRUPTED_DATA: return "path not found";
     case TI_ERROR_NAME_NOT_FOUND: return "name not found";
     case TI_ERROR_INVALID_ARGUMENT: return "invalid argument";
     case TI_ERROR_ARGUMENT_NULL: return "argument null";
@@ -57,15 +57,18 @@ AotModule::AotModule(Runtime &runtime,
     : runtime_(&runtime), aot_module_(std::move(aot_module)) {
 }
 
-taichi::lang::aot::CompiledGraph &AotModule::get_cgraph(
+taichi::lang::aot::Kernel *AotModule::get_kernel(const std::string& name) {
+  return aot_module_->get_kernel(name);
+}
+taichi::lang::aot::CompiledGraph *AotModule::get_cgraph(
     const std::string &name) {
   auto it = loaded_cgraphs_.find(name);
   if (it == loaded_cgraphs_.end()) {
-    return *loaded_cgraphs_
+    return loaded_cgraphs_
                 .emplace(std::make_pair(name, aot_module_->get_graph(name)))
-                .first->second;
+                .first->second.get();
   } else {
-    return *it->second;
+    return it->second.get();
   }
 }
 taichi::lang::aot::Module &AotModule::get() {
@@ -224,6 +227,28 @@ TiTexture ti_allocate_texture(TiRuntime runtime,
     usage = usage | taichi::lang::ImageAllocUsage::Attachment;
   }
 
+  switch ((taichi::lang::ImageDimension)allocate_info->dimension) {
+#define PER_IMAGE_DIMENSION(x) case x:
+#include "inc/image_dimension.inc.h"
+#undef PER_IMAGE_DIMENSION
+    break;
+  default:{
+    ti_set_last_error(TI_ERROR_ARGUMENT_OUT_OF_RANGE, "allocate_info->dimension");
+    return TI_NULL_HANDLE;
+  }
+  }
+  
+  switch ((taichi::lang::BufferFormat)allocate_info->format) {
+#define PER_IMAGE_DIMENSION(x) case x:
+#include "inc/buffer_format.inc.h"
+#undef PER_IMAGE_DIMENSION
+    break;
+  default:{
+    ti_set_last_error(TI_ERROR_ARGUMENT_OUT_OF_RANGE, "allocate_info->format");
+    return TI_NULL_HANDLE;
+  }
+  }
+
   taichi::lang::ImageParams params{};
   params.x = allocate_info->extent.width;
   params.y = allocate_info->extent.height;
@@ -309,6 +334,18 @@ void ti_transition_texture(TiRuntime runtime,
   auto image = devtex2devalloc(*runtime2, texture);
   auto layout2 = (taichi::lang::ImageLayout)layout;
 
+  bool is_layout_valid;
+  switch (layout) {
+#define PER_IMAGE_LAYOUT(x) case x:
+#include "inc/image_layout.inc.h"
+#undef PER_IMAGE_LAYOUT
+    break;
+  default: {
+    ti_set_last_error(TI_ERROR_ARGUMENT_OUT_OF_RANGE, "layout");
+    return;
+  }
+  }
+
   runtime2->transition_image(image, layout2);
 }
 
@@ -316,7 +353,13 @@ TiAotModule ti_load_aot_module(TiRuntime runtime, const char *module_path) {
   TI_CAPI_ARGUMENT_NULL_RV(runtime);
   TI_CAPI_ARGUMENT_NULL_RV(module_path);
 
-  return ((Runtime *)runtime)->load_aot_module(module_path);
+  TiAotModule aot_module = ((Runtime *)runtime)->load_aot_module(module_path);
+
+  if (aot_module == TI_NULL_HANDLE) {
+    ti_set_last_error(TI_ERROR_CORRUPTED_DATA, module_path);
+    return TI_NULL_HANDLE;
+  }
+  return aot_module;
 }
 void ti_destroy_aot_module(TiAotModule aot_module) {
   TI_CAPI_ARGUMENT_NULL(aot_module);
@@ -327,8 +370,16 @@ void ti_destroy_aot_module(TiAotModule aot_module) {
 TiKernel ti_get_aot_module_kernel(TiAotModule aot_module, const char *name) {
   TI_CAPI_ARGUMENT_NULL_RV(aot_module);
   TI_CAPI_ARGUMENT_NULL_RV(name);
+  
+  taichi::lang::aot::Kernel *kernel =
+    ((AotModule *)aot_module)->get_kernel(name);
 
-  return (TiKernel)((AotModule *)aot_module)->get().get_kernel(name);
+  if (kernel == nullptr) {
+    ti_set_last_error(TI_ERROR_NAME_NOT_FOUND, name);
+    return TI_NULL_HANDLE;
+  }
+
+  return (TiKernel)kernel;
 }
 
 TiComputeGraph ti_get_aot_module_compute_graph(TiAotModule aot_module,
@@ -336,7 +387,15 @@ TiComputeGraph ti_get_aot_module_compute_graph(TiAotModule aot_module,
   TI_CAPI_ARGUMENT_NULL_RV(aot_module);
   TI_CAPI_ARGUMENT_NULL_RV(name);
 
-  return (TiComputeGraph)&((AotModule *)aot_module)->get_cgraph(name);
+  taichi::lang::aot::CompiledGraph *cgraph =
+    ((AotModule *)aot_module)->get_cgraph(name);
+ 
+  if (cgraph == nullptr) {
+    ti_set_last_error(TI_ERROR_NAME_NOT_FOUND, name);
+    return TI_NULL_HANDLE;
+  }
+
+  return (TiComputeGraph)cgraph;
 }
 
 void ti_launch_kernel(TiRuntime runtime,
@@ -389,7 +448,11 @@ void ti_launch_kernel(TiRuntime runtime,
         break;
       }
       default:
-        TI_ASSERT(false);
+      {
+        ti_set_last_error(TI_ERROR_ARGUMENT_OUT_OF_RANGE, ("args[" +
+          std::to_string(i) + "].type").c_str());
+        return;
+      }
     }
   }
   ((taichi::lang::aot::Kernel *)kernel)->launch(&runtime_context);
@@ -485,7 +548,12 @@ void ti_launch_compute_graph(TiRuntime runtime,
             prim_ty = &taichi::lang::PrimitiveType::gen;
             break;
           default:
-            TI_ERROR("unexpected data type");
+          {
+            ti_set_last_error(TI_ERROR_ARGUMENT_OUT_OF_RANGE, ("args[" +
+              std::to_string(i) +
+              "].argument.value.ndarray.elem_type").c_str());
+            return;
+          }
         }
 
         ndarrays.emplace_back(
@@ -495,7 +563,11 @@ void ti_launch_compute_graph(TiRuntime runtime,
         break;
       }
       default:
-        TI_ASSERT(false);
+      {
+        ti_set_last_error(TI_ERROR_ARGUMENT_OUT_OF_RANGE, ("args[" +
+          std::to_string(i) + "].argument.type").c_str());
+        return;
+      }
     }
   }
   ((taichi::lang::aot::CompiledGraph *)compute_graph)->run(arg_map);

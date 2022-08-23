@@ -113,7 +113,8 @@ class AotModule {
   AotModule(Runtime &runtime,
             std::unique_ptr<taichi::lang::aot::Module> aot_module);
 
-  taichi::lang::aot::CompiledGraph &get_cgraph(const std::string &name);
+  taichi::lang::aot::Kernel *get_kernel(const std::string &name);
+  taichi::lang::aot::CompiledGraph *get_cgraph(const std::string &name);
   taichi::lang::aot::Module &get();
   Runtime &runtime();
 };

@@ -2,6 +2,7 @@
 #include "taichi/analysis/offline_cache_util.h"
 #include "taichi/codegen/spirv/snode_struct_compiler.h"
 #include "taichi/common/cleanup.h"
+#include "taichi/program/kernel.h"
 #include "taichi/runtime/gfx/aot_module_loader_impl.h"
 #include "taichi/util/lock.h"
 
@@ -51,6 +52,23 @@ OfflineCacheManager::OfflineCacheManager(
 
   caching_module_builder_ = std::make_unique<gfx::AotModuleBuilderImpl>(
       compiled_structs, arch, std::move(target_device));
+}
+
+FunctionType OfflineCacheManager::load_or_compile(CompileConfig *config, Kernel *kernel) {
+  auto kernel_key = get_hashed_offline_cache_key(config, kernel);
+  kernel->set_kernel_key_for_cache(kernel_key);
+  if (auto *cached_kernel = this->load_cached_kernel(kernel_key)) {
+    // Load from cache
+    TI_DEBUG("Create kernel '{}' from cache (key='{}')", kernel->get_name(), kernel_key);
+    kernel->set_from_offline_cache();
+    return [cached_kernel](RuntimeContext &ctx) {
+      cached_kernel->launch(&ctx);
+    };
+  }
+
+  // Compile & Cache it
+  TI_DEBUG("Cache kernel '{}' (key='{}')", kernel->get_name(), kernel_key);
+  return this->cache_kernel(kernel_key, kernel);
 }
 
 aot::Kernel *OfflineCacheManager::load_cached_kernel(const std::string &key) {

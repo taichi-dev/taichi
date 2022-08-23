@@ -1,5 +1,7 @@
 #include "opengl_program.h"
 
+#include "taichi/analysis/offline_cache_util.h"
+#include "taichi/program/kernel.h"
 #include "taichi/rhi/opengl/opengl_api.h"
 #include "taichi/runtime/gfx/aot_module_builder_impl.h"
 #include "taichi/runtime/gfx/aot_module_loader_impl.h"
@@ -28,6 +30,11 @@ OpenglProgramImpl::OpenglProgramImpl(CompileConfig &config)
 
 FunctionType OpenglProgramImpl::compile(Kernel *kernel,
                                         OffloadedStmt *offloaded) {
+  if (offline_cache::enabled_wip_offline_cache(config->offline_cache) &&
+      !kernel->is_evaluator &&
+      snode_tree_mgr_->get_compiled_structs().size() == 1) {
+    return get_cache_manager()->load_or_compile(config, kernel);
+  }
   spirv::lower(kernel);
   return opengl::compile_to_executable(kernel, runtime_.get(),
                                        snode_tree_mgr_.get());
@@ -92,6 +99,26 @@ std::unique_ptr<aot::Kernel> OpenglProgramImpl::make_aot_kernel(
   gfx::GfxRuntime::RegisterParams kparams =
       gfx::run_codegen(&kernel, get_compute_device(), compiled_structs);
   return std::make_unique<gfx::KernelImpl>(runtime_.get(), std::move(kparams));
+}
+
+const std::unique_ptr<gfx::OfflineCacheManager> &OpenglProgramImpl::get_cache_manager() {
+  if (!cache_manager_) {
+    auto target_device = std::make_unique<aot::TargetDevice>(config->arch);
+    device_->clone_caps(*target_device);
+    cache_manager_ = std::make_unique<gfx::OfflineCacheManager>(
+                          config->offline_cache_file_path,
+                          config->arch,
+                          runtime_.get(),
+                          std::move(target_device),
+                          snode_tree_mgr_->get_compiled_structs());
+  }
+  return cache_manager_;
+}
+
+void OpenglProgramImpl::dump_cache_data_to_disk() {
+  if (offline_cache::enabled_wip_offline_cache(config->offline_cache)) {
+    get_cache_manager()->dump_with_mergeing();
+  }
 }
 
 }  // namespace lang

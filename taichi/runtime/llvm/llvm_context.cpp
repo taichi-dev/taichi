@@ -64,7 +64,7 @@ namespace lang {
 using namespace llvm;
 
 TaichiLLVMContext::TaichiLLVMContext(CompileConfig *config, Arch arch)
-    : arch_(arch) {
+    : config_(config), arch_(arch) {
   TI_TRACE("Creating Taichi llvm context for arch: {}", arch_name(arch));
   main_thread_id_ = std::this_thread::get_id();
   main_thread_data_ = get_this_thread_data();
@@ -143,6 +143,7 @@ llvm::Type *TaichiLLVMContext::get_data_type(DataType dt) {
   } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
     return llvm::Type::getHalfTy(*ctx);
   } else if (dt->is<TensorType>()) {
+    TI_ASSERT_INFO(config_->real_matrix, "Real matrix not enabled but got TensorType");
     auto vectorty = dt->as<TensorType>();
     auto dtype = this->get_data_type(vectorty->get_element_type());
     return llvm::VectorType::get(dtype, vectorty->get_num_elements(),

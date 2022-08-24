@@ -147,7 +147,8 @@ void TaskCodeGenLLVM::visit(AllocaStmt *stmt) {
           tlctx->get_data_type(tensor_type->get_element_type()), 0);
       llvm_val[stmt] = builder->CreatePointerCast(ptr, ptr_type);
     } else {
-      llvm_val[stmt] = create_entry_block_alloca(type, stmt->ret_type.is_pointer());
+      llvm_val[stmt] =
+          create_entry_block_alloca(type, stmt->ret_type.is_pointer());
     }
   } else {
     TI_ASSERT(stmt->width() == 1);

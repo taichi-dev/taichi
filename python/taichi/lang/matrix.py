@@ -1,4 +1,5 @@
 import numbers
+import warnings
 from collections.abc import Iterable
 
 import numpy as np
@@ -898,10 +899,10 @@ class Matrix(TaichiOperations):
             >>> v.any()
             True
         """
-        ret = ops_mod.cmp_ne(self.entries[0], 0)
-        for i in range(1, len(self.entries)):
-            ret = ret + ops_mod.cmp_ne(self.entries[i], 0)
-        return -ops_mod.cmp_lt(ret, 0)
+        ret = False
+        for entry in self.entries:
+            ret = ret | ops_mod.cmp_ne(entry, 0)
+        return ret & True
 
     def all(self):
         """Test whether all element not equal zero.
@@ -915,10 +916,10 @@ class Matrix(TaichiOperations):
             >>> v.all()
             False
         """
-        ret = ops_mod.cmp_ne(self.entries[0], 0)
-        for i in range(1, len(self.entries)):
-            ret = ret + ops_mod.cmp_ne(self.entries[i], 0)
-        return -ops_mod.cmp_eq(ret, -len(self.entries))
+        ret = True
+        for entry in self.entries:
+            ret = ret & ops_mod.cmp_ne(entry, 0)
+        return ret
 
     @taichi_scope
     def fill(self, val):
@@ -1090,6 +1091,9 @@ class Matrix(TaichiOperations):
             [[ 0.70710678 -0.70710678]
              [ 0.70710678  0.70710678]]
         """
+        warnings.warn(
+            "`ti.Matrix.rotation2d(alpha)` is renamed to `ti.Math.rotation2d(ang)`",
+            DeprecationWarning)
         return Matrix([[ops_mod.cos(alpha), -ops_mod.sin(alpha)],
                        [ops_mod.sin(alpha),
                         ops_mod.cos(alpha)]])
@@ -1957,17 +1961,20 @@ class MatrixNdarray(Ndarray):
         """
         self._ndarray_matrix_from_numpy(arr, self.layout, as_vector=0)
 
+    @python_scope
     def __deepcopy__(self, memo=None):
         ret_arr = MatrixNdarray(self.n, self.m, self.dtype, self.shape,
                                 self.layout)
         ret_arr.copy_from(self)
         return ret_arr
 
+    @python_scope
     def _fill_by_kernel(self, val):
         from taichi._kernels import \
             fill_ndarray_matrix  # pylint: disable=C0415
         fill_ndarray_matrix(self, val)
 
+    @python_scope
     def __repr__(self):
         return f'<{self.n}x{self.m} {self.layout} ti.Matrix.ndarray>'
 
@@ -2053,16 +2060,19 @@ class VectorNdarray(Ndarray):
         """
         self._ndarray_matrix_from_numpy(arr, self.layout, as_vector=1)
 
+    @python_scope
     def __deepcopy__(self, memo=None):
         ret_arr = VectorNdarray(self.n, self.dtype, self.shape, self.layout)
         ret_arr.copy_from(self)
         return ret_arr
 
+    @python_scope
     def _fill_by_kernel(self, val):
         from taichi._kernels import \
             fill_ndarray_matrix  # pylint: disable=C0415
         fill_ndarray_matrix(self, val)
 
+    @python_scope
     def __repr__(self):
         return f'<{self.n} {self.layout} ti.Vector.ndarray>'
 

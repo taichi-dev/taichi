@@ -43,7 +43,7 @@ def cache_files_size(path):
     return result
 
 
-def get_expected_num_cache_files(num_offloads: List[int] = None) -> int:
+def expected_num_cache_files(arch, num_offloads: List[int] = None) -> int:
     if not num_offloads:
         return 0
     result = sum(num_offloads)

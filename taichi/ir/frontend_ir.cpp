@@ -991,7 +991,10 @@ Expr ASTBuilder::expr_alloca_local_tensor(const std::vector<int> &shape,
                                           const DataType &element_type,
                                           const ExprGroup &elements) {
   if (this->use_real_matrix_) {
-    return make_local_matrix(shape, element_type, elements.exprs);
+    auto matrix_expr = make_local_matrix(shape, element_type, elements.exprs);
+    auto v = this->expr_alloca();
+    this->insert(std::make_unique<FrontendAssignStmt>(v, matrix_expr));
+    return v;
   }
   auto var = Expr(std::make_shared<IdExpression>(get_next_id()));
   this->insert(std::make_unique<FrontendAllocaStmt>(

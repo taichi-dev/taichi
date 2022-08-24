@@ -160,13 +160,11 @@ def subscript(value, *_indices, skip_reordered=False, get_ref=False):
                                               Expr(_indices[0]).ptr,
                                               ConvType.g2r))
         ])
-
         return subscript(value, *reordered_index, skip_reordered=True)
     if isinstance(value, SparseMatrixProxy):
         return value.subscript(*_indices)
     if isinstance(value, Field):
         _var = value._get_field_members()[0].ptr
-
         if _var.snode() is None:
             if _var.is_primal():
                 raise RuntimeError(

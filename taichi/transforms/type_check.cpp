@@ -254,7 +254,6 @@ class TypeCheck : public IRVisitor {
         "Detected overflow for bit_shift_op with rhs = %d, exceeding limit of "
         "%d.";
     msg += "\n" + stmt->tb;
-
     std::vector<Stmt *> args = {rhs, const_stmt.get()};
     auto assert_stmt =
         Stmt::make<AssertStmt>(cond_stmt.get(), msg, std::move(args));

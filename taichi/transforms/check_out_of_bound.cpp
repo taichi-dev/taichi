@@ -54,7 +54,6 @@ class CheckOutOfBound : public BasicStmtVisitor {
     std::string msg =
         fmt::format("(kernel={}) Accessing field ({}) of size (", kernel_name,
                     snode->get_node_type_name_hinted());
-
     std::string offset_msg = "offset (";
     std::vector<Stmt *> args;
     for (int i = 0; i < stmt->indices.size(); i++) {
@@ -121,7 +120,6 @@ class CheckOutOfBound : public BasicStmtVisitor {
         compare->ret_type = PrimitiveType::i32;
         std::string msg = "Negative exponent for integer pows are not allowed";
         msg += "\n" + stmt->tb;
-
         auto assert_stmt = std::make_unique<AssertStmt>(compare.get(), msg,
                                                         std::vector<Stmt *>());
         assert_stmt->accept(this);

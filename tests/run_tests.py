@@ -303,6 +303,7 @@ def test():
         args.timeout *= run_count
         tmp_cache_file_path = tempfile.mkdtemp()
         os.environ['TI_OFFLINE_CACHE'] = '1'
+        os.environ['TI_WIP_OFFLINE_CACHE'] = '1'
         os.environ['TI_OFFLINE_CACHE_FILE_PATH'] = tmp_cache_file_path
         if not os.environ.get('TI_OFFLINE_CACHE_CLEANING_POLICY'):
             os.environ['TI_OFFLINE_CACHE_CLEANING_POLICY'] = 'never'

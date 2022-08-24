@@ -5,7 +5,7 @@
 
 struct ErrorCache {
   TiError error{TI_ERROR_SUCCESS};
-  std::string mesage{};
+  std::string message{};
 };
 
 namespace {

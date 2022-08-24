@@ -128,8 +128,6 @@ void TaskCodeGenLLVM::visit(AllocaStmt *stmt) {
     auto array_size = tlctx->get_constant(tensor_type->get_num_elements());
     // Return type is [array_size x type]*.
     if (stmt->is_shared) {
-      size_t data_element_size = tlctx->get_type_size(
-          tlctx->get_data_type(tensor_type->get_element_type()));
       auto array_type = llvm::ArrayType::get(
           type, tensor_type->get_num_elements());
       auto base = new llvm::GlobalVariable(

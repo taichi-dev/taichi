@@ -1,4 +1,5 @@
 import numbers
+import warnings
 from collections.abc import Iterable
 
 import numpy as np
@@ -1090,6 +1091,9 @@ class Matrix(TaichiOperations):
             [[ 0.70710678 -0.70710678]
              [ 0.70710678  0.70710678]]
         """
+        warnings.warn(
+            "`ti.Matrix.rotation2d(alpha)` is renamed to `ti.Math.rotation2d(ang)`",
+            DeprecationWarning)
         return Matrix([[ops_mod.cos(alpha), -ops_mod.sin(alpha)],
                        [ops_mod.sin(alpha),
                         ops_mod.cos(alpha)]])

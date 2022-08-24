@@ -2,6 +2,7 @@ from taichi._lib import core as _ti_core
 from taichi.lang.enums import Layout
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.util import taichi_scope
+from taichi.types.ndarray_type import NdarrayTypeMetadata
 
 
 class AnyArray:
@@ -17,6 +18,12 @@ class AnyArray:
         self.ptr = ptr
         self.element_shape = element_shape
         self.layout = layout
+
+    def get_type(self):
+        return NdarrayTypeMetadata(
+            self.ptr.get_ret_type(),
+            None,  # AnyArray can take any shape
+            self.layout)
 
     @property
     @taichi_scope

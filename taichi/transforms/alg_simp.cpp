@@ -100,6 +100,11 @@ class AlgSimp : public BasicStmtVisitor {
 
   bool optimize_multiplication(BinaryOpStmt *stmt) {
     // return true iff the IR is modified
+    if (stmt->lhs->ret_type->is<TensorType>() ||
+        stmt->rhs->ret_type->is<TensorType>()) {
+      // TODO: support tensor type
+      return false;
+    }
     auto lhs = stmt->lhs->cast<ConstStmt>();
     auto rhs = stmt->rhs->cast<ConstStmt>();
     TI_ASSERT(stmt->op_type == BinaryOpType::mul);
@@ -151,6 +156,11 @@ class AlgSimp : public BasicStmtVisitor {
 
   bool optimize_division(BinaryOpStmt *stmt) {
     // return true iff the IR is modified
+    if (stmt->lhs->ret_type->is<TensorType>() ||
+        stmt->rhs->ret_type->is<TensorType>()) {
+      // TODO: support tensor type
+      return false;
+    }
     auto rhs = stmt->rhs->cast<ConstStmt>();
     TI_ASSERT(stmt->op_type == BinaryOpType::div ||
               stmt->op_type == BinaryOpType::floordiv);
@@ -164,11 +174,6 @@ class AlgSimp : public BasicStmtVisitor {
     if ((fast_math || is_integral(stmt->ret_type)) &&
         irpass::analysis::same_value(stmt->lhs, stmt->rhs)) {
       // fast_math or integral operands: a / a -> 1
-      if (stmt->lhs->ret_type->is<TensorType>() ||
-          stmt->rhs->ret_type->is<TensorType>()) {
-        // TODO: support tensor type
-        return false;
-      }
       replace_with_one(stmt);
       return true;
     }
@@ -218,6 +223,11 @@ class AlgSimp : public BasicStmtVisitor {
   }
 
   void visit(BinaryOpStmt *stmt) override {
+    if (stmt->lhs->ret_type->is<TensorType>() ||
+        stmt->rhs->ret_type->is<TensorType>()) {
+      // TODO: support tensor type
+      return;
+    }
     auto lhs = stmt->lhs->cast<ConstStmt>();
     auto rhs = stmt->rhs->cast<ConstStmt>();
     if (stmt->width() != 1) {
@@ -250,12 +260,7 @@ class AlgSimp : public BasicStmtVisitor {
                  (fast_math || is_integral(stmt->ret_type)) &&
                  irpass::analysis::same_value(stmt->lhs, stmt->rhs)) {
         // fast_math or integral operands: a -^ a -> 0
-        if (stmt->lhs->ret_type->is<TensorType>() &&
-            stmt->rhs->ret_type->is<TensorType>()) {
-          // TODO: support tensor type
-        } else {
-          replace_with_zero(stmt);
-        }
+        replace_with_zero(stmt);
       }
     } else if (rhs && stmt->op_type == BinaryOpType::pow) {
       float64 exponent = rhs->val[0].val_cast_to_float64();
@@ -265,10 +270,6 @@ class AlgSimp : public BasicStmtVisitor {
         modifier.erase(stmt);
       } else if (exponent == 0) {
         // a ** 0 -> 1
-        if (stmt->ret_type->is<TensorType>()) {
-          // TODO: support tensor type
-          return;
-        }
         replace_with_one(stmt);
       } else if (exponent == 0.5) {
         // a ** 0.5 -> sqrt(a)
@@ -344,11 +345,6 @@ class AlgSimp : public BasicStmtVisitor {
         modifier.erase(stmt);
       } else if (alg_is_zero(lhs) || alg_is_zero(rhs)) {
         // 0 & a -> 0, a & 0 -> 0
-        if (stmt->ret_type->is<TensorType>() ||
-            stmt->rhs->ret_type->is<TensorType>()) {
-          // TODO: support tensor type
-          return;
-        }
         replace_with_zero(stmt);
       } else if (irpass::analysis::same_value(stmt->lhs, stmt->rhs)) {
         // a & a -> a
@@ -363,11 +359,6 @@ class AlgSimp : public BasicStmtVisitor {
         // a << 0 -> a
         // 0 << a -> 0
         // 0 >> a -> 0
-        if (stmt->ret_type->is<TensorType>() ||
-            stmt->rhs->ret_type->is<TensorType>()) {
-          // TODO: support tensor type
-          return;
-        }
         TI_ASSERT(stmt->lhs->ret_type == stmt->ret_type);
         stmt->replace_usages_with(stmt->lhs);
         modifier.erase(stmt);

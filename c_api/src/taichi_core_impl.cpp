@@ -105,11 +105,11 @@ Runtime &Event::runtime() {
 TiError ti_get_last_error(uint64_t message_size, char *message) {
   // Emit message only if the output buffer is property provided.
   if (message_size > 0 && message != nullptr) {
-    size_t n = thread_error_cache.mesage.size();
+    size_t n = thread_error_cache.message.size();
     if (n >= message_size) {
       n = message_size - 1;  // -1 for the byte of `\0`.
     }
-    std::memcpy(message, thread_error_cache.mesage.data(), n);
+    std::memcpy(message, thread_error_cache.message.data(), n);
     message[n] = '\0';
   }
   return thread_error_cache.error;
@@ -120,14 +120,14 @@ void ti_set_last_error(TiError error, const char *message) {
   if (error < TI_ERROR_SUCCESS) {
     TI_WARN("C-API error: ({}) {}", describe_error(error), message);
     if (message != nullptr) {
-      thread_error_cache.mesage = message;
+      thread_error_cache.message = message;
     } else {
-      thread_error_cache.mesage.clear();
+      thread_error_cache.message.clear();
     }
     thread_error_cache.error = error;
   } else {
     thread_error_cache.error = TI_ERROR_SUCCESS;
-    thread_error_cache.mesage.clear();
+    thread_error_cache.message.clear();
   }
 }
 

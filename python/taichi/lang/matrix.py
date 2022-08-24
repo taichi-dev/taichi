@@ -1957,17 +1957,20 @@ class MatrixNdarray(Ndarray):
         """
         self._ndarray_matrix_from_numpy(arr, self.layout, as_vector=0)
 
+    @python_scope
     def __deepcopy__(self, memo=None):
         ret_arr = MatrixNdarray(self.n, self.m, self.dtype, self.shape,
                                 self.layout)
         ret_arr.copy_from(self)
         return ret_arr
 
+    @python_scope
     def _fill_by_kernel(self, val):
         from taichi._kernels import \
             fill_ndarray_matrix  # pylint: disable=C0415
         fill_ndarray_matrix(self, val)
 
+    @python_scope
     def __repr__(self):
         return f'<{self.n}x{self.m} {self.layout} ti.Matrix.ndarray>'
 
@@ -2053,16 +2056,19 @@ class VectorNdarray(Ndarray):
         """
         self._ndarray_matrix_from_numpy(arr, self.layout, as_vector=1)
 
+    @python_scope
     def __deepcopy__(self, memo=None):
         ret_arr = VectorNdarray(self.n, self.dtype, self.shape, self.layout)
         ret_arr.copy_from(self)
         return ret_arr
 
+    @python_scope
     def _fill_by_kernel(self, val):
         from taichi._kernels import \
             fill_ndarray_matrix  # pylint: disable=C0415
         fill_ndarray_matrix(self, val)
 
+    @python_scope
     def __repr__(self):
         return f'<{self.n} {self.layout} ti.Vector.ndarray>'
 

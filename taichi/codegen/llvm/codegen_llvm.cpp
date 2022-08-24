@@ -124,9 +124,8 @@ void TaskCodeGenLLVM::visit(Block *stmt_list) {
 void TaskCodeGenLLVM::visit(AllocaStmt *stmt) {
   if (stmt->ret_type->is<TensorType>()) {
     auto tensor_type = stmt->ret_type->cast<TensorType>();
-    auto type = tlctx->get_data_type(tensor_type->get_element_type());
-    auto array_size = tlctx->get_constant(tensor_type->get_num_elements());
-    // Return type is [array_size x type]*.
+    auto type = tlctx->get_data_type(tensor_type);
+    // Return type is vector<tensor_type>*.
     if (stmt->is_shared) {
       size_t data_element_size = tlctx->get_type_size(
           tlctx->get_data_type(tensor_type->get_element_type()));
@@ -148,7 +147,7 @@ void TaskCodeGenLLVM::visit(AllocaStmt *stmt) {
           tlctx->get_data_type(tensor_type->get_element_type()), 0);
       llvm_val[stmt] = builder->CreatePointerCast(ptr, ptr_type);
     } else {
-      llvm_val[stmt] = create_entry_block_alloca(type, 0, array_size);
+      llvm_val[stmt] = create_entry_block_alloca(type, stmt->ret_type.is_pointer());
     }
   } else {
     TI_ASSERT(stmt->width() == 1);

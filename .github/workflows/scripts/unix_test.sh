@@ -70,7 +70,7 @@ if [ -z "$GPU_TEST" ]; then
 	# Split per arch to avoid flaky test
         python3 tests/run_tests.py -vr2 -t4 -k "not torch and not paddle" -a cpu --with-offline-cache --rerun-with-offline-cache 1
         # Run metal and vulkan separately so that they don't use M1 chip simultaneously.
-        # python3 tests/run_tests.py -vr2 -t4 -k "not torch and not paddle" -a vulkan
+        python3 tests/run_tests.py -vr2 -t4 -k "not torch and not paddle" -a vulkan --with-offline-cache --rerun-with-offline-cache 1
         # python3 tests/run_tests.py -vr2 -t2 -k "not torch and not paddle" -a metal
         python3 tests/run_tests.py -vr2 -t1 -k "torch" -a "$TI_WANTED_ARCHS" --with-offline-cache --rerun-with-offline-cache 1
     else
@@ -89,7 +89,7 @@ else
         python3 tests/run_tests.py -vr2 -t8 -k "not torch and not paddle" -a cpu --with-offline-cache --rerun-with-offline-cache 1
     fi
     # if [[ $TI_WANTED_ARCHS == *"vulkan"* ]]; then
-    #     python3 tests/run_tests.py -vr2 -t8 -k "not torch and not paddle" -a vulkan
+        python3 tests/run_tests.py -vr2 -t8 -k "not torch and not paddle" -a vulkan --with-offline-cache --rerun-with-offline-cache 1
     # fi
     # if [[ $TI_WANTED_ARCHS == *"opengl"* ]]; then
     #     python3 tests/run_tests.py -vr2 -t4 -k "not torch and not paddle" -a opengl

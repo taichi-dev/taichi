@@ -222,7 +222,7 @@ inline std::vector<uint8_t> read_data_from_file(const std::string &fn) {
   std::vector<uint8_t> data;
   std::FILE *f = fopen(fn.c_str(), "rb");
   if (f == nullptr) {
-    TI_ERROR("Cannot open file: {}", fn);
+    TI_DEBUG("Cannot open file: {}", fn);
     return std::vector<uint8_t>();
   }
   if (ends_with(fn, ".zip")) {
@@ -288,11 +288,15 @@ class BinarySerializer : public Serializer {
   using Base::assets;
 
   template <bool writing_ = writing>
-  typename std::enable_if<!writing_, void>::type initialize(
+  typename std::enable_if<!writing_, bool>::type initialize(
       const std::string &fn) {
     data = read_data_from_file(fn);
+    if (data.size() == 0) {
+      return false;
+    }
     c_data = reinterpret_cast<uint8_t *>(&data[0]);
     head = sizeof(std::size_t);
+    return true;
   }
 
   void write_to_file(const std::string &fn) {
@@ -305,7 +309,7 @@ class BinarySerializer : public Serializer {
   }
 
   template <bool writing_ = writing>
-  typename std::enable_if<writing_, void>::type initialize(
+  typename std::enable_if<writing_, bool>::type initialize(
       std::size_t preserved_ = std::size_t(0),
       void *c_data = nullptr) {
     std::size_t n = 0;
@@ -322,6 +326,7 @@ class BinarySerializer : public Serializer {
       this->c_data = nullptr;
     }
     this->operator()("", n);
+    return true;
   }
 
   template <bool writing_ = writing>
@@ -874,12 +879,16 @@ operator<<(std::ostream &os, const T &t) {
   return os;
 }
 
+// Returns true if deserialization succeeded.
 template <typename T>
-void read_from_binary_file(T &t, const std::string &file_name) {
+bool read_from_binary_file(T &t, const std::string &file_name) {
   BinaryInputSerializer reader;
-  reader.initialize(file_name);
+  if (!reader.initialize(file_name)) {
+    return false;
+  }
   reader(t);
   reader.finalize();
+  return true;
 }
 
 template <typename T>

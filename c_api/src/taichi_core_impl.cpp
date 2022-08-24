@@ -3,6 +3,43 @@
 #include "taichi_llvm_impl.h"
 #include "taichi/program/ndarray.h"
 
+struct ErrorCache {
+  TiError error{TI_ERROR_SUCCESS};
+  std::string message{};
+};
+
+namespace {
+// Error is recorded on a per-thread basis.
+thread_local ErrorCache thread_error_cache;
+
+const char *describe_error(TiError error) {
+  switch (error) {
+    case TI_ERROR_INCOMPLETE:
+      return "incomplete";
+    case TI_ERROR_SUCCESS:
+      return "success";
+    case TI_ERROR_NOT_SUPPORTED:
+      return "not supported";
+    case TI_ERROR_CORRUPTED_DATA:
+      return "path not found";
+    case TI_ERROR_NAME_NOT_FOUND:
+      return "name not found";
+    case TI_ERROR_INVALID_ARGUMENT:
+      return "invalid argument";
+    case TI_ERROR_ARGUMENT_NULL:
+      return "argument null";
+    case TI_ERROR_ARGUMENT_OUT_OF_RANGE:
+      return "argument out of range";
+    case TI_ERROR_ARGUMENT_NOT_FOUND:
+      return "argument not found";
+    case TI_ERROR_INVALID_INTEROP:
+      return "invalid interop";
+    default:
+      return "unknown error";
+  }
+}
+}  // namespace
+
 Runtime::Runtime(taichi::Arch arch) : arch(arch) {
 }
 Runtime::~Runtime() {
@@ -31,15 +68,18 @@ AotModule::AotModule(Runtime &runtime,
     : runtime_(&runtime), aot_module_(std::move(aot_module)) {
 }
 
-taichi::lang::aot::CompiledGraph &AotModule::get_cgraph(
+taichi::lang::aot::Kernel *AotModule::get_kernel(const std::string &name) {
+  return aot_module_->get_kernel(name);
+}
+taichi::lang::aot::CompiledGraph *AotModule::get_cgraph(
     const std::string &name) {
   auto it = loaded_cgraphs_.find(name);
   if (it == loaded_cgraphs_.end()) {
-    return *loaded_cgraphs_
-                .emplace(std::make_pair(name, aot_module_->get_graph(name)))
-                .first->second;
+    return loaded_cgraphs_
+        .emplace(std::make_pair(name, aot_module_->get_graph(name)))
+        .first->second.get();
   } else {
-    return *it->second;
+    return it->second.get();
   }
 }
 taichi::lang::aot::Module &AotModule::get() {
@@ -61,6 +101,35 @@ Runtime &Event::runtime() {
 }
 
 // -----------------------------------------------------------------------------
+
+TiError ti_get_last_error(uint64_t message_size, char *message) {
+  // Emit message only if the output buffer is property provided.
+  if (message_size > 0 && message != nullptr) {
+    size_t n = thread_error_cache.message.size();
+    if (n >= message_size) {
+      n = message_size - 1;  // -1 for the byte of `\0`.
+    }
+    std::memcpy(message, thread_error_cache.message.data(), n);
+    message[n] = '\0';
+  }
+  return thread_error_cache.error;
+}
+// C-API errors MUST be set via this interface. No matter from internal or
+// external procedures.
+void ti_set_last_error(TiError error, const char *message) {
+  if (error < TI_ERROR_SUCCESS) {
+    TI_WARN("C-API error: ({}) {}", describe_error(error), message);
+    if (message != nullptr) {
+      thread_error_cache.message = message;
+    } else {
+      thread_error_cache.message.clear();
+    }
+    thread_error_cache.error = error;
+  } else {
+    thread_error_cache.error = TI_ERROR_SUCCESS;
+    thread_error_cache.message.clear();
+  }
+}
 
 TiRuntime ti_create_runtime(TiArch arch) {
   switch (arch) {
@@ -84,46 +153,41 @@ TiRuntime ti_create_runtime(TiArch arch) {
     }
 #endif  // TI_WITH_LLVM
     default: {
-      TI_WARN("ignored attempt to create runtime on unknown arch");
+      TI_CAPI_NOT_SUPPORTED(arch);
       return TI_NULL_HANDLE;
     }
   }
   return TI_NULL_HANDLE;
 }
 void ti_destroy_runtime(TiRuntime runtime) {
-  if (runtime == nullptr) {
-    TI_WARN("ignored attempt to destroy runtime of null handle");
-    return;
-  }
+  TI_CAPI_ARGUMENT_NULL(runtime);
   delete (Runtime *)runtime;
 }
 
 TiMemory ti_allocate_memory(TiRuntime runtime,
-                            const TiMemoryAllocateInfo *createInfo) {
-  if (runtime == nullptr) {
-    TI_WARN("ignored attempt to allocate memory on runtime of null handle");
-    return TI_NULL_HANDLE;
-  }
+                            const TiMemoryAllocateInfo *create_info) {
+  TI_CAPI_ARGUMENT_NULL_RV(runtime);
+  TI_CAPI_ARGUMENT_NULL_RV(create_info);
 
   taichi::lang::AllocUsage usage{};
-  if (createInfo->usage & TI_MEMORY_USAGE_STORAGE_BIT) {
+  if (create_info->usage & TI_MEMORY_USAGE_STORAGE_BIT) {
     usage = usage | taichi::lang::AllocUsage::Storage;
   }
-  if (createInfo->usage & TI_MEMORY_USAGE_UNIFORM_BIT) {
+  if (create_info->usage & TI_MEMORY_USAGE_UNIFORM_BIT) {
     usage = usage | taichi::lang::AllocUsage::Uniform;
   }
-  if (createInfo->usage & TI_MEMORY_USAGE_VERTEX_BIT) {
+  if (create_info->usage & TI_MEMORY_USAGE_VERTEX_BIT) {
     usage = usage | taichi::lang::AllocUsage::Vertex;
   }
-  if (createInfo->usage & TI_MEMORY_USAGE_INDEX_BIT) {
+  if (create_info->usage & TI_MEMORY_USAGE_INDEX_BIT) {
     usage = usage | taichi::lang::AllocUsage::Index;
   }
 
   taichi::lang::Device::AllocParams params{};
-  params.size = createInfo->size;
-  params.host_write = createInfo->host_write;
-  params.host_read = createInfo->host_read;
-  params.export_sharing = createInfo->export_sharing;
+  params.size = create_info->size;
+  params.host_write = create_info->host_write;
+  params.host_read = create_info->host_read;
+  params.export_sharing = create_info->export_sharing;
   params.usage = usage;
 
   TiMemory devmem = ((Runtime *)runtime)->allocate_memory(params);
@@ -131,50 +195,35 @@ TiMemory ti_allocate_memory(TiRuntime runtime,
 }
 
 void ti_free_memory(TiRuntime runtime, TiMemory devmem) {
-  if (runtime == nullptr) {
-    TI_WARN("ignored attempt to free memory on runtime of null handle");
-    return;
-  }
-  if (devmem == nullptr) {
-    TI_WARN("ignored attempt to free memory of null handle");
-    return;
-  }
+  TI_CAPI_ARGUMENT_NULL(runtime);
+  TI_CAPI_ARGUMENT_NULL(devmem);
 
   Runtime *runtime2 = (Runtime *)runtime;
   runtime2->free_memory(devmem);
 }
 
 void *ti_map_memory(TiRuntime runtime, TiMemory devmem) {
-  if (runtime == nullptr) {
-    TI_WARN("ignored attempt to map memory on runtime of null handle");
-    return nullptr;
-  }
-  if (devmem == nullptr) {
-    TI_WARN("ignored attempt to map memory of null handle");
-    return nullptr;
-  }
+  TI_CAPI_ARGUMENT_NULL_RV(runtime);
+  TI_CAPI_ARGUMENT_NULL_RV(devmem);
+
   Runtime *runtime2 = (Runtime *)runtime;
   return runtime2->get().map(devmem2devalloc(*runtime2, devmem));
 }
 void ti_unmap_memory(TiRuntime runtime, TiMemory devmem) {
-  if (runtime == nullptr) {
-    TI_WARN("ignored attempt to unmap memory on runtime of null handle");
-    return;
-  }
-  if (devmem == nullptr) {
-    TI_WARN("ignored attempt to unmap memory of null handle");
-    return;
-  }
+  TI_CAPI_ARGUMENT_NULL(runtime);
+  TI_CAPI_ARGUMENT_NULL(devmem);
+
   Runtime *runtime2 = (Runtime *)runtime;
   runtime2->get().unmap(devmem2devalloc(*runtime2, devmem));
 }
 
 TiTexture ti_allocate_texture(TiRuntime runtime,
                               const TiTextureAllocateInfo *allocate_info) {
-  TI_ERROR_IF(allocate_info->mip_level_count > 1,
-              "Multi mip-level is not supported yet");
-  TI_ERROR_IF(allocate_info->extent.array_layer_count > 1,
-              "Array texture is not supported yet");
+  TI_CAPI_ARGUMENT_NULL_RV(runtime);
+  TI_CAPI_ARGUMENT_NULL_RV(allocate_info);
+
+  TI_CAPI_NOT_SUPPORTED_IF_RV(allocate_info->mip_level_count > 1);
+  TI_CAPI_NOT_SUPPORTED_IF_RV(allocate_info->extent.array_layer_count > 1);
 
   taichi::lang::ImageAllocUsage usage{};
   if (allocate_info->usage & TI_TEXTURE_USAGE_STORAGE_BIT) {
@@ -185,6 +234,30 @@ TiTexture ti_allocate_texture(TiRuntime runtime,
   }
   if (allocate_info->usage & TI_TEXTURE_USAGE_ATTACHMENT_BIT) {
     usage = usage | taichi::lang::ImageAllocUsage::Attachment;
+  }
+
+  switch ((taichi::lang::ImageDimension)allocate_info->dimension) {
+#define PER_IMAGE_DIMENSION(x) case taichi::lang::ImageDimension::x:
+#include "taichi/inc/image_dimension.inc.h"
+#undef PER_IMAGE_DIMENSION
+    break;
+    default: {
+      ti_set_last_error(TI_ERROR_ARGUMENT_OUT_OF_RANGE,
+                        "allocate_info->dimension");
+      return TI_NULL_HANDLE;
+    }
+  }
+
+  switch ((taichi::lang::BufferFormat)allocate_info->format) {
+#define PER_BUFFER_FORMAT(x) case taichi::lang::BufferFormat::x:
+#include "taichi/inc/buffer_format.inc.h"
+#undef PER_BUFFER_FORMAT
+    break;
+    default: {
+      ti_set_last_error(TI_ERROR_ARGUMENT_OUT_OF_RANGE,
+                        "allocate_info->format");
+      return TI_NULL_HANDLE;
+    }
   }
 
   taichi::lang::ImageParams params{};
@@ -199,11 +272,16 @@ TiTexture ti_allocate_texture(TiRuntime runtime,
   TiTexture devtex = ((Runtime *)runtime)->allocate_texture(params);
   return devtex;
 }
-void ti_free_texture(TiRuntime runtime, TiTexture devtex) {
-  ((Runtime *)runtime)->free_texture(devtex);
+void ti_free_texture(TiRuntime runtime, TiTexture texture) {
+  TI_CAPI_ARGUMENT_NULL(runtime);
+  TI_CAPI_ARGUMENT_NULL(texture);
+
+  ((Runtime *)runtime)->free_texture(texture);
 }
 
 TiEvent ti_create_event(TiRuntime runtime) {
+  TI_CAPI_ARGUMENT_NULL_RV(runtime);
+
   Runtime *runtime2 = (Runtime *)runtime;
   std::unique_ptr<taichi::lang::DeviceEvent> event =
       runtime2->get().create_event();
@@ -211,10 +289,7 @@ TiEvent ti_create_event(TiRuntime runtime) {
   return (TiEvent)event2;
 }
 void ti_destroy_event(TiEvent event) {
-  if (event == nullptr) {
-    TI_WARN("ignored attempt to destroy event of null handle");
-    return;
-  }
+  TI_CAPI_ARGUMENT_NULL(event);
 
   delete (Event *)event;
 }
@@ -222,22 +297,13 @@ void ti_destroy_event(TiEvent event) {
 void ti_copy_memory_device_to_device(TiRuntime runtime,
                                      const TiMemorySlice *dst_memory,
                                      const TiMemorySlice *src_memory) {
-  if (runtime == nullptr) {
-    TI_WARN("ignored attempt to copy memory on runtime of null handle");
-    return;
-  }
-  if (dst_memory == nullptr || dst_memory->memory == nullptr) {
-    TI_WARN("ignored attempt to copy to dst memory of null handle");
-    return;
-  }
-  if (src_memory == nullptr || src_memory->memory == nullptr) {
-    TI_WARN("ignored attempt to copy from src memory of null handle");
-    return;
-  }
-  if (src_memory->size != dst_memory->size) {
-    TI_WARN("ignored attempt to copy memory of mismatched size");
-    return;
-  }
+  TI_CAPI_ARGUMENT_NULL(runtime);
+  TI_CAPI_ARGUMENT_NULL(dst_memory);
+  TI_CAPI_ARGUMENT_NULL(dst_memory->memory);
+  TI_CAPI_ARGUMENT_NULL(src_memory);
+  TI_CAPI_ARGUMENT_NULL(src_memory->memory);
+  TI_CAPI_INVALID_ARGUMENT(dst_memory->memory != src_memory->memory);
+
   Runtime *runtime2 = (Runtime *)runtime;
   auto dst = devmem2devalloc(*runtime2, dst_memory->memory)
                  .get_ptr(dst_memory->offset);
@@ -249,22 +315,20 @@ void ti_copy_memory_device_to_device(TiRuntime runtime,
 void ti_copy_texture_device_to_device(TiRuntime runtime,
                                       const TiTextureSlice *dst_texture,
                                       const TiTextureSlice *src_texture) {
-  if (dst_texture == nullptr || dst_texture->texture == nullptr) {
-    TI_WARN("ignored attempt to copy to dst texture of null handle");
-    return;
-  }
-  if (src_texture == nullptr || src_texture->texture == nullptr) {
-    TI_WARN("ignored attempt to copy from src texture of null handle");
-    return;
-  }
-  if (src_texture->extent.width != dst_texture->extent.width ||
-      src_texture->extent.height != dst_texture->extent.height ||
-      src_texture->extent.depth != dst_texture->extent.depth ||
-      src_texture->extent.array_layer_count !=
-          dst_texture->extent.array_layer_count) {
-    TI_WARN("ignored attempt to copy texture of mismatched extent");
-    return;
-  }
+  TI_CAPI_ARGUMENT_NULL(runtime);
+  TI_CAPI_ARGUMENT_NULL(dst_texture);
+  TI_CAPI_ARGUMENT_NULL(dst_texture->texture);
+  TI_CAPI_ARGUMENT_NULL(src_texture);
+  TI_CAPI_ARGUMENT_NULL(src_texture->texture);
+  TI_CAPI_INVALID_ARGUMENT(src_texture->extent.width !=
+                           dst_texture->extent.width);
+  TI_CAPI_INVALID_ARGUMENT(src_texture->extent.height !=
+                           dst_texture->extent.height);
+  TI_CAPI_INVALID_ARGUMENT(src_texture->extent.depth !=
+                           dst_texture->extent.depth);
+  TI_CAPI_INVALID_ARGUMENT(src_texture->extent.array_layer_count !=
+                           dst_texture->extent.array_layer_count);
+
   Runtime *runtime2 = (Runtime *)runtime;
   auto dst = devtex2devalloc(*runtime2, dst_texture->texture);
   auto src = devtex2devalloc(*runtime2, src_texture->texture);
@@ -278,73 +342,84 @@ void ti_copy_texture_device_to_device(TiRuntime runtime,
 void ti_transition_texture(TiRuntime runtime,
                            TiTexture texture,
                            TiTextureLayout layout) {
-  if (runtime == nullptr) {
-    TI_WARN("ignored attempt to transition memory on runtime of null handle");
-    return;
-  }
-  if (texture == nullptr) {
-    TI_WARN("ignored attempt to transition texture of null handle");
-    return;
-  }
+  TI_CAPI_ARGUMENT_NULL(runtime);
+  TI_CAPI_ARGUMENT_NULL(texture);
 
   Runtime *runtime2 = (Runtime *)runtime;
   auto image = devtex2devalloc(*runtime2, texture);
   auto layout2 = (taichi::lang::ImageLayout)layout;
 
+  switch ((taichi::lang::ImageLayout)layout) {
+#define PER_IMAGE_LAYOUT(x) case taichi::lang::ImageLayout::x:
+#include "taichi/inc/image_layout.inc.h"
+#undef PER_IMAGE_LAYOUT
+    break;
+    default: {
+      ti_set_last_error(TI_ERROR_ARGUMENT_OUT_OF_RANGE, "layout");
+      return;
+    }
+  }
+
   runtime2->transition_image(image, layout2);
 }
 
 TiAotModule ti_load_aot_module(TiRuntime runtime, const char *module_path) {
-  if (runtime == nullptr) {
-    TI_WARN("ignored attempt to load aot module on runtime of null handle");
+  TI_CAPI_ARGUMENT_NULL_RV(runtime);
+  TI_CAPI_ARGUMENT_NULL_RV(module_path);
+
+  TiAotModule aot_module = ((Runtime *)runtime)->load_aot_module(module_path);
+
+  if (aot_module == TI_NULL_HANDLE) {
+    ti_set_last_error(TI_ERROR_CORRUPTED_DATA, module_path);
     return TI_NULL_HANDLE;
   }
-  if (module_path == nullptr) {
-    TI_WARN("ignored attempt to load aot module with null path");
+  return aot_module;
+}
+void ti_destroy_aot_module(TiAotModule aot_module) {
+  TI_CAPI_ARGUMENT_NULL(aot_module);
+
+  delete (AotModule *)aot_module;
+}
+
+TiKernel ti_get_aot_module_kernel(TiAotModule aot_module, const char *name) {
+  TI_CAPI_ARGUMENT_NULL_RV(aot_module);
+  TI_CAPI_ARGUMENT_NULL_RV(name);
+
+  taichi::lang::aot::Kernel *kernel =
+      ((AotModule *)aot_module)->get_kernel(name);
+
+  if (kernel == nullptr) {
+    ti_set_last_error(TI_ERROR_NAME_NOT_FOUND, name);
     return TI_NULL_HANDLE;
   }
 
-  return ((Runtime *)runtime)->load_aot_module(module_path);
-}
-void ti_destroy_aot_module(TiAotModule mod) {
-  if (mod == nullptr) {
-    TI_WARN("ignored attempt to destroy aot module of null handle");
-    return;
-  }
-
-  delete (AotModule *)mod;
+  return (TiKernel)kernel;
 }
 
-TiKernel ti_get_aot_module_kernel(TiAotModule mod, const char *name) {
-  if (mod == nullptr) {
-    TI_WARN("ignored attempt to get kernel from aot module of null handle");
-    return TI_NULL_HANDLE;
-  }
-  return (TiKernel)((AotModule *)mod)->get().get_kernel(name);
-}
-
-TiComputeGraph ti_get_aot_module_compute_graph(TiAotModule mod,
+TiComputeGraph ti_get_aot_module_compute_graph(TiAotModule aot_module,
                                                const char *name) {
-  if (mod == nullptr) {
-    TI_WARN(
-        "ignored attempt to get compute graph from aot module of null handle");
+  TI_CAPI_ARGUMENT_NULL_RV(aot_module);
+  TI_CAPI_ARGUMENT_NULL_RV(name);
+
+  taichi::lang::aot::CompiledGraph *cgraph =
+      ((AotModule *)aot_module)->get_cgraph(name);
+
+  if (cgraph == nullptr) {
+    ti_set_last_error(TI_ERROR_NAME_NOT_FOUND, name);
     return TI_NULL_HANDLE;
   }
-  AotModule *aot_module = ((AotModule *)mod);
-  return (TiComputeGraph)&aot_module->get_cgraph(name);
+
+  return (TiComputeGraph)cgraph;
 }
 
 void ti_launch_kernel(TiRuntime runtime,
                       TiKernel kernel,
                       uint32_t arg_count,
                       const TiArgument *args) {
-  if (runtime == nullptr) {
-    TI_WARN("ignored attempt to launch kernel on runtime of null handle");
-    return;
-  }
-  if (kernel == nullptr) {
-    TI_WARN("ignored attempt to launch kernel of null handle");
-    return;
+  TI_CAPI_ARGUMENT_NULL(runtime);
+  TI_CAPI_ARGUMENT_NULL(kernel);
+  if (arg_count > 0) {
+    TI_CAPI_ARGUMENT_NULL(args);
   }
 
   Runtime &runtime2 = *((Runtime *)runtime);
@@ -363,17 +438,13 @@ void ti_launch_kernel(TiRuntime runtime,
         break;
       }
       case TI_ARGUMENT_TYPE_NDARRAY: {
+        TI_CAPI_ARGUMENT_NULL(args[i].value.ndarray.memory);
+
         // Don't allocate it on stack. `DeviceAllocation` is referred to by
         // `GfxRuntime::launch_kernel`.
         std::unique_ptr<taichi::lang::DeviceAllocation> devalloc =
             std::make_unique<taichi::lang::DeviceAllocation>(
                 devmem2devalloc(runtime2, arg.value.ndarray.memory));
-        if (devalloc->alloc_id + 1 == 0) {
-          TI_WARN(
-              "ignored attempt to launch kernel with ndarray memory of null "
-              "handle");
-          return;
-        }
         const TiNdArray &ndarray = arg.value.ndarray;
 
         std::vector<int> shape(ndarray.shape.dims,
@@ -384,8 +455,11 @@ void ti_launch_kernel(TiRuntime runtime,
         devallocs.emplace_back(std::move(devalloc));
         break;
       }
-      default:
-        TI_ASSERT(false);
+      default: {
+        ti_set_last_error(TI_ERROR_ARGUMENT_OUT_OF_RANGE,
+                          ("args[" + std::to_string(i) + "].type").c_str());
+        return;
+      }
     }
   }
   ((taichi::lang::aot::Kernel *)kernel)->launch(&runtime_context);
@@ -395,14 +469,10 @@ void ti_launch_compute_graph(TiRuntime runtime,
                              TiComputeGraph compute_graph,
                              uint32_t arg_count,
                              const TiNamedArgument *args) {
-  if (runtime == nullptr) {
-    TI_WARN(
-        "ignored attempt to launch compute graph on runtime of null handle");
-    return;
-  }
-  if (compute_graph == nullptr) {
-    TI_WARN("ignored attempt to launch compute graph of null handle");
-    return;
+  TI_CAPI_ARGUMENT_NULL(runtime);
+  TI_CAPI_ARGUMENT_NULL(compute_graph);
+  if (arg_count > 0) {
+    TI_CAPI_ARGUMENT_NULL(args);
   }
 
   Runtime &runtime2 = *((Runtime *)runtime);
@@ -411,6 +481,8 @@ void ti_launch_compute_graph(TiRuntime runtime,
   ndarrays.reserve(arg_count);
 
   for (uint32_t i = 0; i < arg_count; ++i) {
+    TI_CAPI_ARGUMENT_NULL(args[i].name);
+
     const auto &arg = args[i];
     switch (arg.argument.type) {
       case TI_ARGUMENT_TYPE_I32: {
@@ -426,14 +498,10 @@ void ti_launch_compute_graph(TiRuntime runtime,
         break;
       }
       case TI_ARGUMENT_TYPE_NDARRAY: {
+        TI_CAPI_ARGUMENT_NULL(args[i].argument.value.ndarray.memory);
+
         taichi::lang::DeviceAllocation devalloc =
             devmem2devalloc(runtime2, arg.argument.value.ndarray.memory);
-        if (devalloc.alloc_id + 1 == 0) {
-          TI_WARN(
-              "ignored attempt to launch kernel with ndarray memory of null "
-              "handle");
-          return;
-        }
         const TiNdArray &ndarray = arg.argument.value.ndarray;
 
         std::vector<int> shape(ndarray.shape.dims,
@@ -481,8 +549,13 @@ void ti_launch_compute_graph(TiRuntime runtime,
           case TI_DATA_TYPE_GEN:
             prim_ty = &taichi::lang::PrimitiveType::gen;
             break;
-          default:
-            TI_ERROR("unexpected data type");
+          default: {
+            ti_set_last_error(TI_ERROR_ARGUMENT_OUT_OF_RANGE,
+                              ("args[" + std::to_string(i) +
+                               "].argument.value.ndarray.elem_type")
+                                  .c_str());
+            return;
+          }
         }
 
         ndarrays.emplace_back(
@@ -491,38 +564,45 @@ void ti_launch_compute_graph(TiRuntime runtime,
             arg.name, taichi::lang::aot::IValue::create(ndarrays.back())));
         break;
       }
-      default:
-        TI_ASSERT(false);
+      default: {
+        ti_set_last_error(
+            TI_ERROR_ARGUMENT_OUT_OF_RANGE,
+            ("args[" + std::to_string(i) + "].argument.type").c_str());
+        return;
+      }
     }
   }
   ((taichi::lang::aot::CompiledGraph *)compute_graph)->run(arg_map);
 }
 
 void ti_signal_event(TiRuntime runtime, TiEvent event) {
+  TI_CAPI_ARGUMENT_NULL(runtime);
+  TI_CAPI_ARGUMENT_NULL(event);
+
   ((Runtime *)runtime)->signal_event(&((Event *)event)->get());
 }
 
 void ti_reset_event(TiRuntime runtime, TiEvent event) {
+  TI_CAPI_ARGUMENT_NULL(runtime);
+  TI_CAPI_ARGUMENT_NULL(event);
+
   ((Runtime *)runtime)->reset_event(&((Event *)event)->get());
 }
 
 void ti_wait_event(TiRuntime runtime, TiEvent event) {
+  TI_CAPI_ARGUMENT_NULL(runtime);
+  TI_CAPI_ARGUMENT_NULL(event);
+
   ((Runtime *)runtime)->wait_event(&((Event *)event)->get());
 }
 
 void ti_submit(TiRuntime runtime) {
-  if (runtime == nullptr) {
-    TI_WARN("ignored attempt to submit to runtime of null handle");
-    return;
-  }
+  TI_CAPI_ARGUMENT_NULL(runtime);
 
   ((Runtime *)runtime)->submit();
 }
 void ti_wait(TiRuntime runtime) {
-  if (runtime == nullptr) {
-    TI_WARN("ignored attempt to wait on runtime of null handle");
-    return;
-  }
+  TI_CAPI_ARGUMENT_NULL(runtime);
 
   ((Runtime *)runtime)->wait();
 }

@@ -1005,6 +1005,9 @@ Expr ASTBuilder::expr_alloca_local_tensor(const std::vector<int> &shape,
     auto matrix_expr = make_local_matrix(shape, element_type, elements.exprs);
     auto v = this->expr_alloca();
     this->expr_assign(v, matrix_expr, tb);
+    // type check for variable `v` since
+    // expr_assign couldn't propagate the info
+    v->ret_type = matrix_expr.cast<MatrixExpression>()->dt;
     return v;
   }
   auto var = Expr(std::make_shared<IdExpression>(get_next_id()));

@@ -281,9 +281,7 @@ std::unique_ptr<SparseSolver> make_cusparse_solver(
     DataType dt,
     const std::string &solver_type,
     const std::string &ordering) {
-#if defined(TI_WITH_CUDA)
   return std::make_unique<CuSparseSolver>();
-#endif
 }
 }  // namespace lang
 }  // namespace taichi

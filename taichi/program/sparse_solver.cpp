@@ -112,13 +112,6 @@ void CuSparseSolver::solve_cu(Program *prog,
       *A, &nrows, &ncols, &nnz, &drow_offsets, &dcol_indices, &dvalues,
       &csrRowOffsetsType, &csrColIndType, &idxBase, &valueType);
 
-  // printf("nrows: %zu, ncols: %zu, nnz: %zu\n", nrows, ncols, nnz);
-  // printf("drow_offsets: %p, dcol_indices: %p, dvalues: %p\n", drow_offsets,
-  //        dcol_indices, dvalues);
-  // printf(
-  //     "csrRowOffsetsType: %d, csrColIndType: %d, idxBase: %d, valueType:
-  //     %d\n", csrRowOffsetsType, csrColIndType, idxBase, valueType);
-
   size_t db = prog->get_ndarray_data_ptr_as_int(&b);
   size_t dx = prog->get_ndarray_data_ptr_as_int(&x);
 
@@ -154,13 +147,6 @@ void CuSparseSolver::solve_cu(Program *prog,
   CUDADriver::get_instance().memcpy_device_to_host(
       (void *)hcol_indices, dcol_indices, sizeof(int) * nnz);
 
-  // for (size_t i = 0; i < nrows+1; i++) {
-  //   printf("hrow_offsets[%zu]: %d\n", i, hrow_offsets[i]);
-  // }
-  // for (size_t i = 0; i < ncols; i++) {
-  //   printf("hcol_indices[%zu]: %d\n", i, hcol_indices[i]);
-  // }
-
   /* configure matrix descriptor*/
   cusparseMatDescr_t descrA = NULL;
   CUSPARSEDriver::get_instance().cpCreateMatDescr(&descrA);
@@ -173,7 +159,7 @@ void CuSparseSolver::solve_cu(Program *prog,
       handle, nrows, nnz, descrA, (void *)hrow_offsets,
       (void *)(hrow_offsets + 1), (void *)hcol_indices, &issym);
   if (!issym) {
-    printf("Error: A has no symmetric pattern, please use LU or QR \n");
+    TI_ERROR("A has no symmetric pattern, please use LU or QR!");
     return;
   }
 

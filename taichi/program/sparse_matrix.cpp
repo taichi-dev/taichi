@@ -217,6 +217,7 @@ void CuSparseMatrix::build_csr_from_coo(void *coo_row_ptr,
       coo_values_ptr, CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I,
       CUSPARSE_INDEX_BASE_ZERO, CUDA_R_32F);
   CUSPARSEDriver::get_instance().cpDestroy(cusparse_handle);
+  // TODO: free csr_row_offset_ptr
   // CUDADriver::get_instance().mem_free(csr_row_offset_ptr);
 #endif
 }

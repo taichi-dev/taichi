@@ -37,8 +37,6 @@ std::vector<Stmt *> get_load_pointers(Stmt *load_stmt) {
     return external_func->arg_stmts;
   } else if (auto ref = load_stmt->cast<ReferenceStmt>()) {
     return {ref->var};
-  } else if (auto matrix_init = load_stmt->cast<MatrixInitStmt>()) {
-    return matrix_init->values;
   } else if (auto ptr_offset = load_stmt->cast<PtrOffsetStmt>()) {
     return {ptr_offset->origin};
   } else {

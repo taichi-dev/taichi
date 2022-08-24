@@ -128,12 +128,11 @@ void TaskCodeGenLLVM::visit(AllocaStmt *stmt) {
     auto array_size = tlctx->get_constant(tensor_type->get_num_elements());
     // Return type is [array_size x type]*.
     if (stmt->is_shared) {
-      auto array_type = llvm::ArrayType::get(
-          type, tensor_type->get_num_elements());
+      auto array_type =
+          llvm::ArrayType::get(type, tensor_type->get_num_elements());
       auto base = new llvm::GlobalVariable(
           *module, array_type, false, llvm::GlobalValue::ExternalLinkage,
-          nullptr,
-          fmt::format("shared_array_{}", stmt->id), nullptr,
+          nullptr, fmt::format("shared_array_{}", stmt->id), nullptr,
           llvm::GlobalVariable::NotThreadLocal, 3 /*addrspace=shared*/);
       base->setAlignment(llvm::MaybeAlign(8));
       // FIXME: create GEP manually instead of using builder->CreateGEP for

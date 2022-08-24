@@ -348,11 +348,24 @@ def test_func_ndarray_arg():
     def test_k(x: ti.types.ndarray(field_dim=1)):
         test(x)
 
+    @ti.func
+    def test_error_func(a: ti.types.ndarray(field_dim=1, element_dim=1)):
+        a[0] = [100, 100, 100]
+
+    @ti.kernel
+    def test_error(x: ti.types.ndarray(field_dim=1)):
+        test_error_func(x)
+
     arr = ti.ndarray(vec3, shape=(4))
     arr[0] = [20, 20, 20]
     test_k(arr)
 
     assert (arr[0] == [20, 20, 20])
+
+    with pytest.raises(
+            ti.TaichiCompilationError,
+            match=r"Expect TensorType element for Ndarray with element_dim"):
+        test_error(arr)
 
 
 @test_utils.test(arch=[ti.cpu, ti.gpu], debug=True)
@@ -371,4 +384,14 @@ def test_func_matrix_arg():
 
         assert x[0] == 20
 
+    @ti.kernel
+    def test_error():
+        x = ti.Matrix([3, 4])
+        test(x)
+
     test_k()
+
+    with pytest.raises(
+            ti.TaichiSyntaxError,
+            match=r"is expected to be a Matrix with n 3, but got 2"):
+        test_error()

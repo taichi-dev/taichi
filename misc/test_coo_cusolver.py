@@ -37,7 +37,7 @@ d_col_coo.from_numpy(A_coo.col)
 d_val_coo.from_numpy(A_coo.data)
 
 A_ti = ti.linalg.SparseMatrix(n=nrows, m=ncols, dtype=ti.float32)
-A_ti.build_csr_cusparse(d_row_coo, d_col_coo, d_val_coo)
+A_ti.build_coo(d_row_coo, d_col_coo, d_val_coo)
 x_ti = ti.ndarray(shape=ncols, dtype=ti.float32)
 solver = ti.linalg.SparseSolver()
 solver.solve_cu(A_ti, b, x_ti)

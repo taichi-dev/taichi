@@ -59,8 +59,8 @@ void Expr::set_dual(const Expr &o) {
   this->cast<GlobalVariableExpression>()->dual.set(o);
 }
 
-void Expr::set_adjoint_visited(const Expr &o) {
-  this->cast<GlobalVariableExpression>()->adjoint_visited.set(o);
+void Expr::set_adjoint_checkbit(const Expr &o) {
+  this->cast<GlobalVariableExpression>()->adjoint_checkbit.set(o);
 }
 
 Expr::Expr(int16 x) : Expr() {

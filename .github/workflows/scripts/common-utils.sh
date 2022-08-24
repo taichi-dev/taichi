@@ -37,7 +37,7 @@ setup_sccache() {
 }
 
 setup_python() {
-    if [[ "$IN_DOCKER" == "true" ]]; then
+    if [[ "$(check_in_docker)" == "true" ]]; then
         source $HOME/miniconda/etc/profile.d/conda.sh
         conda activate "$PY"
     fi

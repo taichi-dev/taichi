@@ -420,7 +420,8 @@ void Kernel::init(Program &program,
 
 // static
 bool Kernel::supports_lowering(Arch arch) {
-  return arch_is_cpu(arch) || (arch == Arch::cuda) || (arch == Arch::metal);
+  return arch_is_cpu(arch) || (arch == Arch::cuda) || (arch == Arch::dx12) ||
+         (arch == Arch::metal);
 }
 
 void Kernel::offload_to_executable(IRNode *stmt) {

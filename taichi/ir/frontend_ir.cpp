@@ -483,6 +483,22 @@ void IndexExpression::type_check(CompileConfig *) {
   } else if (is_ndarray()) {  // ndarray
     ret_type = var.cast<ExternalTensorExpression>()->dt;
   } else if (is_tensor()) {  // local tensor
+    auto shape = var.get_ret_type()->as<TensorType>()->get_shape();
+    if (indices.size() != shape.size()) {
+      std::string shape_str = "[";
+      if (shape.size() > 0) {
+        shape_str += std::to_string(shape[0]);
+        for (int i = 1; i < shape.size(); i++) {
+          shape_str += ", " + std::to_string(shape[i]);
+        }
+      }
+      shape_str += "]";
+      TI_ERROR(
+          "Indexed matrix of shape {} has wrong number of indices. Expected {} "
+          "but got "
+          "{}.",
+          shape_str, shape.size(), indices.size());
+    }
     ret_type = var->ret_type->cast<TensorType>()->get_element_type();
   } else {
     throw TaichiTypeError(
@@ -1001,23 +1017,6 @@ Expr ASTBuilder::make_matrix_expr(const std::vector<int> &shape,
 
 Expr ASTBuilder::expr_indexed_matrix(const Expr &matrix,
                                      const ExprGroup &indices) {
-  TI_ASSERT(matrix.get_ret_type()->is<TensorType>());
-  auto shape = matrix.get_ret_type()->as<TensorType>()->get_shape();
-  if (indices.size() != shape.size()) {
-    std::string shape_str = "[";
-    if (shape.size() > 0) {
-      shape_str += std::to_string(shape[0]);
-      for (int i = 1; i < shape.size(); i++) {
-        shape_str += ", " + std::to_string(shape[i]);
-      }
-    }
-    shape_str += "]";
-    TI_ERROR(
-        "Indexed matrix of shape {} has wrong number of indices. Expected {} "
-        "but got "
-        "{}.",
-        shape_str, shape.size(), indices.size());
-  }
   return Expr(std::make_shared<IndexExpression>(matrix, indices));
 }
 

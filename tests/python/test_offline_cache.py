@@ -3,8 +3,6 @@ import functools
 import math
 import os
 import shutil
-import os
-import shutil
 import threading
 from os import listdir, remove, rmdir, stat
 from os.path import join
@@ -478,7 +476,8 @@ def test_offline_cache_with_changing_compile_config(curr_arch):
 
 # FIXME: Currently, the Vulkan offline cache doesn't support cache cleaning
 @pytest.mark.parametrize(
-    'curr_arch', list(set(supported_archs_offline_cache) - supported_gfx_archs))
+    'curr_arch',
+    list(set(supported_archs_offline_cache) - supported_gfx_archs))
 @pytest.mark.parametrize('factor', [0.0, 0.25, 0.85, 1.0])
 @pytest.mark.parametrize('policy', ['never', 'version', 'lru', 'fifo'])
 @_test_offline_cache_dec

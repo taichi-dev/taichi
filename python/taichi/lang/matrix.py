@@ -1500,7 +1500,10 @@ class _MatrixFieldElement(_IntermediateMatrix):
         super().__init__(
             field.n,
             field.m, [
-                expr.Expr(ti_python_core.subscript(e.ptr, indices))
+                expr.Expr(
+                    ti_python_core.subscript(
+                        e.ptr, indices,
+                        impl.get_runtime().get_current_src_info()))
                 for e in field._get_field_members()
             ],
             ndim=getattr(field, "ndim", 2))

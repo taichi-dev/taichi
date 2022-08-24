@@ -3,6 +3,7 @@
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/visitors.h"
+#include "taichi/transforms/utils.h"
 
 #include <typeinfo>
 #include <algorithm>
@@ -1601,6 +1602,8 @@ class GloablDataAccessRuleChecker : public BasicStmtVisitor {
         "(kernel={}) Breaks the global data access rule. Snode {} is "
         "overwritten unexpectedly.",
         kernel_name_, dest->snodes[0]->get_node_type_name());
+    msg += "\n" + stmt->tb;
+
     stmt->insert_before_me(
         Stmt::make<AssertStmt>(check_equal, msg, std::vector<Stmt *>()));
   }

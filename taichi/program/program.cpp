@@ -366,8 +366,10 @@ Kernel &Program::get_snode_writer(SNode *snode) {
     }
     auto expr = Expr(snode_to_glb_var_exprs_.at(snode))[indices];
     this->current_ast_builder()->insert_assignment(
-        expr, Expr::make<ArgLoadExpression>(snode->num_active_indices,
-                                            snode->dt->get_compute_type()));
+        expr,
+        Expr::make<ArgLoadExpression>(snode->num_active_indices,
+                                      snode->dt->get_compute_type()),
+        expr->tb);
   });
   ker.set_arch(get_accessor_arch());
   ker.name = kernel_name;

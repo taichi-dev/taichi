@@ -560,17 +560,10 @@ class TypeCheck : public IRVisitor {
                    stmt->ret_type->to_string());
     auto tensor_type = stmt->ret_type->as<TensorType>();
     auto element_dtype = tensor_type->get_element_type();
-    for (auto elt : stmt->values) {
-      element_dtype = promoted_type(element_dtype, elt->ret_type);
-    }
     for (int i = 0; i < stmt->values.size(); ++i) {
       if (element_dtype != stmt->values[i]->ret_type) {
         cast(stmt->values[i], element_dtype);
       }
-    }
-    if (element_dtype != tensor_type->get_element_type()) {
-      stmt->ret_type = TypeFactory::create_tensor_type(tensor_type->get_shape(),
-                                                       element_dtype);
     }
   }
 };

@@ -65,7 +65,7 @@ std::string tensor_type_format_helper(const std::vector<int> &shape,
     }
     if (i != shape[dim] - 1) {
       fmt += ", ";
-      if (dim == 0) {
+      if (dim == 0 && dim != shape.size() - 1) {
         fmt += "\n";
       }
     }

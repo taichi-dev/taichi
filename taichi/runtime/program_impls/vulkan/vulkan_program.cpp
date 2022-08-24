@@ -247,17 +247,15 @@ void VulkanProgramImpl::dump_cache_data_to_disk() {
   }
 }
 
-const std::unique_ptr<gfx::OfflineCacheManager> &VulkanProgramImpl::get_cache_manager() {
+const std::unique_ptr<gfx::OfflineCacheManager>
+    &VulkanProgramImpl::get_cache_manager() {
   if (!cache_manager_) {
     TI_ASSERT(vulkan_runtime_ && snode_tree_mgr_ && embedded_device_);
     auto target_device = std::make_unique<aot::TargetDevice>(config->arch);
     embedded_device_->device()->clone_caps(*target_device);
     cache_manager_ = std::make_unique<gfx::OfflineCacheManager>(
-                          config->offline_cache_file_path,
-                          config->arch,
-                          vulkan_runtime_.get(),
-                          std::move(target_device),
-                          snode_tree_mgr_->get_compiled_structs());
+        config->offline_cache_file_path, config->arch, vulkan_runtime_.get(),
+        std::move(target_device), snode_tree_mgr_->get_compiled_structs());
   }
   return cache_manager_;
 }

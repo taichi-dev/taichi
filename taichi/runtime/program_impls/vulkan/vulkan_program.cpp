@@ -265,7 +265,12 @@ void VulkanProgramImpl::dump_cache_data_to_disk() {
 const std::unique_ptr<AotModuleBuilder>
     &VulkanProgramImpl::get_caching_module_builder() {
   if (!caching_module_builder_) {
-    caching_module_builder_ = make_aot_module_builder();
+    TI_ASSERT(vulkan_runtime_ && embedded_device_);
+    auto target_device = std::make_unique<aot::TargetDevice>(config->arch);
+    embedded_device_->device()->clone_caps(*target_device);
+    caching_module_builder_ = std::make_unique<gfx::AotModuleBuilderImpl>(
+        snode_tree_mgr_->get_compiled_structs(), Arch::vulkan,
+        std::move(target_device));
   }
   return caching_module_builder_;
 }

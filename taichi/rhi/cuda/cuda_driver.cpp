@@ -120,7 +120,7 @@ CUSOLVERDriver &CUSOLVERDriver::get_instance() {
 }
 
 bool CUSOLVERDriver::load_cusolver() {
-  cusolver_loaded_ = load_lib("libcusolver.so", "cusolver.dll");
+  cusolver_loaded_ = load_lib("libcusolver.so", "cusolver64_11.dll");
   if (!cusolver_loaded_) {
     return false;
   }

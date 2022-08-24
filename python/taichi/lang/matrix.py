@@ -1895,13 +1895,15 @@ class MatrixNdarray(Ndarray):
         self.n = n
         self.m = m
         super().__init__()
+        # TODO(zhanlue): remove self.dtype and migrate its usages to element_type
         self.dtype = cook_dtype(dtype)
+
         self.layout = layout
         self.shape = tuple(shape)
         self.element_type = TensorType((self.n, self.m), self.dtype)
         # TODO: we should pass in element_type, shape, layout instead.
         self.arr = impl.get_runtime().prog.create_ndarray(
-            self.element_type.dtype, shape, self.element_type.shape, layout)
+            self.element_type, shape, layout)
 
     @property
     def element_shape(self):
@@ -1995,13 +1997,14 @@ class VectorNdarray(Ndarray):
     def __init__(self, n, dtype, shape, layout):
         self.n = n
         super().__init__()
+        # TODO(zhanlue): remove self.dtype and migrate its usages to element_type
         self.dtype = cook_dtype(dtype)
         self.layout = layout
         self.shape = tuple(shape)
         self.element_type = TensorType((n, ), self.dtype)
         # TODO: pass in element_type, shape, layout directly
         self.arr = impl.get_runtime().prog.create_ndarray(
-            self.element_type.dtype, shape, self.element_type.shape, layout)
+            self.element_type, shape, layout)
 
     @property
     def element_shape(self):

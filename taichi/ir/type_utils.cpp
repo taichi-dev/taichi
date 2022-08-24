@@ -19,6 +19,15 @@ std::string data_type_name(DataType t) {
     TI_NOT_IMPLEMENTED
 }
 
+std::vector<int> data_type_shape(DataType t) {
+  if (t->is<TensorType>()) {
+    auto tensor_type = t->cast<TensorType>();
+    return tensor_type->get_shape();
+  }
+
+  return {};
+}
+
 int data_type_size(DataType t) {
   // TODO:
   //  1. Ensure in the old code, pointer attributes of t are correct (by
@@ -32,6 +41,13 @@ int data_type_size(DataType t) {
     return 0;
   else if (t->is_primitive(PrimitiveTypeID::unknown))
     return -1;
+
+  if (t->is<TensorType>()) {
+    auto tensor_type = t->cast<TensorType>();
+    TI_ASSERT(tensor_type->get_element_type());
+    return tensor_type->get_num_elements() *
+           data_type_size(tensor_type->get_element_type());
+  }
 
 #define REGISTER_DATA_TYPE(i, j) \
   else if (t->is_primitive(PrimitiveTypeID::i)) return sizeof(j)

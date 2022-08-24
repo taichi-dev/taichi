@@ -25,7 +25,7 @@ void CompiledGraph::run(
       const aot::IValue &ival = found->second;
       if (ival.tag == aot::ArgKind::kNdarray) {
         Ndarray *arr = reinterpret_cast<Ndarray *>(ival.val);
-        TI_ERROR_IF(arr->element_shape != symbolic_arg.element_shape,
+        TI_ERROR_IF(arr->get_element_shape() != symbolic_arg.element_shape,
                     "Mismatched shape information for argument {}",
                     symbolic_arg.name);
         TI_ERROR_IF(arr->shape.size() != symbolic_arg.field_dim,

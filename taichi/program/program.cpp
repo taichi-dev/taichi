@@ -458,10 +458,8 @@ std::size_t Program::get_snode_num_dynamically_allocated(SNode *snode) {
 
 Ndarray *Program::create_ndarray(const DataType type,
                                  const std::vector<int> &shape,
-                                 const std::vector<int> &element_shape,
                                  ExternalArrayLayout layout) {
-  ndarrays_.emplace_back(
-      std::make_unique<Ndarray>(this, type, shape, element_shape, layout));
+  ndarrays_.emplace_back(std::make_unique<Ndarray>(this, type, shape, layout));
   return ndarrays_.back().get();
 }
 

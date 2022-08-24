@@ -447,12 +447,10 @@ void export_lang(py::module &m) {
           "create_ndarray",
           [&](Program *program, const DataType &dt,
               const std::vector<int> &shape,
-              const std::vector<int> &element_shape,
               ExternalArrayLayout layout) -> Ndarray * {
-            return program->create_ndarray(dt, shape, element_shape, layout);
+            return program->create_ndarray(dt, shape, layout);
           },
           py::arg("dt"), py::arg("shape"),
-          py::arg("element_shape") = py::tuple(),
           py::arg("layout") = ExternalArrayLayout::kNull,
           py::return_value_policy::reference)
       .def(
@@ -574,8 +572,8 @@ void export_lang(py::module &m) {
       .def("write_int", &Ndarray::write_int)
       .def("write_float", &Ndarray::write_float)
       .def("total_shape", &Ndarray::total_shape)
+      .def("element_shape", &Ndarray::get_element_shape)
       .def_readonly("dtype", &Ndarray::dtype)
-      .def_readonly("element_shape", &Ndarray::element_shape)
       .def_readonly("shape", &Ndarray::shape);
 
   py::class_<Texture>(m, "Texture")

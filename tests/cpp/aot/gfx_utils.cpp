@@ -33,13 +33,13 @@ void view_devalloc_as_ndarray(Device *device_) {
 
   std::vector<int> element_shape = {4};
   auto arr1 = Ndarray(devalloc_arr_, PrimitiveType::i32, {10}, element_shape);
-  EXPECT_TRUE(arr1.element_shape == element_shape);
+  EXPECT_TRUE(arr1.get_element_shape() == element_shape);
   EXPECT_EQ(arr1.total_shape()[0], 10);
   EXPECT_EQ(arr1.total_shape()[1], 4);
 
   auto arr2 = Ndarray(devalloc_arr_, PrimitiveType::i32, {10}, element_shape,
                       ExternalArrayLayout::kSOA);
-  EXPECT_TRUE(arr2.element_shape == element_shape);
+  EXPECT_TRUE(arr2.get_element_shape() == element_shape);
   EXPECT_EQ(arr2.total_shape()[0], 4);
   EXPECT_EQ(arr2.total_shape()[1], 10);
 

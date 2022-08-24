@@ -243,7 +243,7 @@ std::unique_ptr<aot::Kernel> VulkanProgramImpl::make_aot_kernel(
 
 void VulkanProgramImpl::dump_cache_data_to_disk() {
   if (offline_cache::enabled_wip_offline_cache(config->offline_cache)) {
-    get_cache_manager()->dump_with_mergeing();
+    get_cache_manager()->dump_with_merging();
   }
 }
 

@@ -3,7 +3,6 @@ from taichi.examples.patterns import taichi_logo
 import taichi as ti
 
 ti.init(arch=ti.vulkan)
-input()
 
 res = (512, 512)
 img = ti.Vector.field(4, dtype=float, shape=res)

@@ -437,8 +437,10 @@ class Matrix(TaichiOperations):
             raise TaichiTypeError(
                 "An Matrix/Vector can only be initialized with an array-like object"
             )
-        assert len(arr) > 0, "Cannot create empty matrix"
-        if isinstance(arr[0], Matrix):
+        if len(arr) == 0:
+            mat = []
+            self.ndim = 0
+        elif isinstance(arr[0], Matrix):
             raise Exception('cols/rows required when using list of vectors')
         else:
             is_matrix = isinstance(arr[0], Iterable)

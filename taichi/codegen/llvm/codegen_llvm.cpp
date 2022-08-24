@@ -124,8 +124,9 @@ void TaskCodeGenLLVM::visit(Block *stmt_list) {
 void TaskCodeGenLLVM::visit(AllocaStmt *stmt) {
   if (stmt->ret_type->is<TensorType>()) {
     auto tensor_type = stmt->ret_type->cast<TensorType>();
-    auto type = tlctx->get_data_type(tensor_type);
-    // Return type is vector<tensor_type>*.
+    auto type = kernel->program->config.real_matrix ? tlctx->get_data_type(tensor_type) : tlctx->get_data_type(tensor_type->get_element_type());
+    // Return type is vector<tensor_type>* if use real matrix.
+    // otherwise the return type is [type * array_size]*
     if (stmt->is_shared) {
       size_t data_element_size = tlctx->get_type_size(
           tlctx->get_data_type(tensor_type->get_element_type()));
@@ -147,7 +148,12 @@ void TaskCodeGenLLVM::visit(AllocaStmt *stmt) {
           tlctx->get_data_type(tensor_type->get_element_type()), 0);
       llvm_val[stmt] = builder->CreatePointerCast(ptr, ptr_type);
     } else {
-      llvm_val[stmt] = create_entry_block_alloca(type, stmt->ret_type.is_pointer());
+      if (kernel->program->config.real_matrix)
+        llvm_val[stmt] =
+            create_entry_block_alloca(type, stmt->ret_type.is_pointer());
+      else
+        llvm_val[stmt] =
+            create_entry_block_alloca(type, 0, tlctx->get_constant(tensor_type->get_num_elements()));
     }
   } else {
     TI_ASSERT(stmt->width() == 1);

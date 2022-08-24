@@ -68,6 +68,7 @@ bool EigenSparseSolver<EigenSolver, EigenMatrix>::info() {
 }
 
 CuSparseSolver::CuSparseSolver() {
+  #if defined(TI_WITH_CUDA)
   if (!CUSPARSEDriver::get_instance().is_loaded()) {
     bool load_success = CUSPARSEDriver::get_instance().load_cusparse();
     if (!load_success) {
@@ -80,6 +81,7 @@ CuSparseSolver::CuSparseSolver() {
       TI_ERROR("Failed to load cusolver library!");
     }
   }
+  #endif
 }
 
 void CuSparseSolver::solve_cu(Program *prog,

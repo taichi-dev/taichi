@@ -20,7 +20,7 @@ class OfflineCacheManager {
       const std::vector<spirv::CompiledSNodeStructs> &compiled_structs);
   aot::Kernel *load_cached_kernel(const std::string &key);
   FunctionType cache_kernel(const std::string &key, Kernel *kernel);
-  void dump_with_mergeing() const;
+  void dump_with_merging() const;
 
  private:
   std::string path_;

@@ -8,6 +8,7 @@ option(TI_WITH_OPENGL "Build with the OpenGL backend" ON)
 option(TI_WITH_CC "Build with the C backend" ON)
 option(TI_WITH_VULKAN "Build with the Vulkan backend" OFF)
 option(TI_WITH_DX11 "Build with the DX11 backend" OFF)
+option(TI_WITH_DX12 "Build with the DX12 backend" OFF)
 option(TI_WITH_GGUI "Build with GGUI" OFF)
 
 # Force symbols to be 'hidden' by default so nothing is exported from the Taichi
@@ -31,6 +32,7 @@ if(ANDROID)
     set(TI_WITH_OPENGL OFF)
     set(TI_WITH_CC OFF)
     set(TI_WITH_DX11 OFF)
+    set(TI_WITH_DX12 OFF)
 endif()
 
 if(UNIX AND NOT APPLE)
@@ -73,6 +75,7 @@ endif()
 if(NOT TI_WITH_LLVM)
     set(TI_WITH_CUDA OFF)
     set(TI_WITH_CUDA_TOOLKIT OFF)
+    set(TI_WITH_DX12 OFF)
 endif()
 
 file(GLOB TAICHI_CORE_SOURCE
@@ -97,6 +100,8 @@ endif()
 
 if (TI_LLVM_15)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_LLVM_15")
+else()
+    set(TI_WITH_DX12 OFF)
 endif()
 
 ## This version var is only used to locate slim_libdevice.10.bc
@@ -108,6 +113,10 @@ if (TI_WITH_CUDA)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_CUDA")
   file(GLOB TAICHI_CUDA_RUNTIME_SOURCE "taichi/runtime/cuda/runtime.cpp")
   list(APPEND TAICHI_CORE_SOURCE ${TAICHI_CUDA_RUNTIME_SOURCE})
+endif()
+
+if (TI_WITH_DX12)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_DX12")
 endif()
 
 ## TODO: Remove CC backend
@@ -217,6 +226,17 @@ if(TI_WITH_LLVM)
         target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE cuda_rhi)
     endif()
 
+    if (TI_WITH_DX12)
+        llvm_map_components_to_libnames(llvm_directx_libs DirectX)
+
+        add_subdirectory(taichi/rhi/dx12)
+        add_subdirectory(taichi/runtime/dx12)
+        add_subdirectory(taichi/codegen/dx12)
+
+        target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE dx12_codegen)
+        target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE dx12_runtime)
+    endif()
+
     add_subdirectory(taichi/rhi/llvm)
     add_subdirectory(taichi/codegen/llvm)
     add_subdirectory(taichi/runtime/llvm)
@@ -293,8 +313,10 @@ add_subdirectory(external/SPIRV-Tools)
 add_subdirectory(taichi/codegen/spirv)
 add_subdirectory(taichi/runtime/gfx)
 
-target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE spirv_codegen)
-target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE gfx_runtime)
+if (TI_WITH_OPENGL OR TI_WITH_VULKAN OR TI_WITH_DX11)
+  target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE spirv_codegen)
+  target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE gfx_runtime)
+endif()
 
 # Vulkan Device API
 if (TI_WITH_VULKAN)

@@ -7,11 +7,17 @@
 #include "taichi/codegen/llvm/struct_llvm.h"
 #include "taichi/runtime/llvm/aot_graph_data.h"
 #include "taichi/runtime/llvm/llvm_offline_cache.h"
+#include "taichi/analysis/offline_cache_util.h"
 #include "taichi/runtime/cpu/aot_module_builder_impl.h"
 
 #if defined(TI_WITH_CUDA)
 #include "taichi/runtime/cuda/aot_module_builder_impl.h"
 #include "taichi/codegen/cuda/codegen_cuda.h"
+#endif
+
+#if defined(TI_WITH_DX12)
+#include "taichi/runtime/dx12/aot_module_builder_impl.h"
+#include "taichi/codegen/dx12/codegen_dx12.h"
 #endif
 
 namespace taichi {
@@ -25,7 +31,8 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
   cache_data_ = std::make_unique<LlvmOfflineCache>();
   if (config_.offline_cache) {
     cache_reader_ =
-        LlvmOfflineCacheFileReader::make(config_.offline_cache_file_path);
+        LlvmOfflineCacheFileReader::make(offline_cache::get_cache_path_by_arch(
+            config_.offline_cache_file_path, config->arch));
   }
 }
 
@@ -55,7 +62,11 @@ std::unique_ptr<StructCompiler> LlvmProgramImpl::compile_snode_tree_types_impl(
         has_multiple_snode_trees, runtime_exec_->llvm_context_host_.get());
     struct_compiler = std::make_unique<StructCompilerLLVM>(
         host_arch(), this, std::move(host_module), tree->id());
-
+  } else if (config->arch == Arch::dx12) {
+    auto device_module = clone_struct_compiler_initial_context(
+        has_multiple_snode_trees, runtime_exec_->llvm_context_device_.get());
+    struct_compiler = std::make_unique<StructCompilerLLVM>(
+        Arch::dx12, this, std::move(device_module), tree->id());
   } else {
     TI_ASSERT(config->arch == Arch::cuda);
     auto device_module = clone_struct_compiler_initial_context(
@@ -96,6 +107,12 @@ std::unique_ptr<AotModuleBuilder> LlvmProgramImpl::make_aot_module_builder() {
 #if defined(TI_WITH_CUDA)
   if (config->arch == Arch::cuda) {
     return std::make_unique<cuda::AotModuleBuilderImpl>(this);
+  }
+#endif
+
+#if defined(TI_WITH_DX12)
+  if (config->arch == Arch::dx12) {
+    return std::make_unique<directx12::AotModuleBuilderImpl>(this);
   }
 #endif
 
@@ -167,8 +184,9 @@ void LlvmProgramImpl::dump_cache_data_to_disk() {
     auto policy = LlvmOfflineCacheFileWriter::string_to_clean_cache_policy(
         config->offline_cache_cleaning_policy);
     LlvmOfflineCacheFileWriter::clean_cache(
-        config->offline_cache_file_path, policy,
-        config->offline_cache_max_size_of_files,
+        offline_cache::get_cache_path_by_arch(config->offline_cache_file_path,
+                                              config->arch),
+        policy, config->offline_cache_max_size_of_files,
         config->offline_cache_cleaning_factor);
     if (!cache_data_->kernels.empty()) {
       LlvmOfflineCacheFileWriter writer{};
@@ -176,7 +194,9 @@ void LlvmProgramImpl::dump_cache_data_to_disk() {
 
       // Note: For offline-cache, new-metadata should be merged with
       // old-metadata
-      writer.dump(config->offline_cache_file_path, LlvmOfflineCache::LL, true);
+      writer.dump(offline_cache::get_cache_path_by_arch(
+                      config->offline_cache_file_path, config->arch),
+                  LlvmOfflineCache::LL, true);
     }
   }
 }

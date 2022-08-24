@@ -9,6 +9,51 @@
 #include "taichi/program/context.h"
 #undef TI_RUNTIME_HOST
 
+// Error reporting.
+#define TI_CAPI_NOT_SUPPORTED(x) ti_set_last_error(TI_ERROR_NOT_SUPPORTED, #x);
+#define TI_CAPI_NOT_SUPPORTED_IF(x)                \
+  if (x) {                                         \
+    ti_set_last_error(TI_ERROR_NOT_SUPPORTED, #x); \
+  }
+#define TI_CAPI_NOT_SUPPORTED_IF_RV(x)             \
+  if (x) {                                         \
+    ti_set_last_error(TI_ERROR_NOT_SUPPORTED, #x); \
+    return TI_NULL_HANDLE;                         \
+  }
+
+#define TI_CAPI_ARGUMENT_NULL(x)                   \
+  if (x == TI_NULL_HANDLE) {                       \
+    ti_set_last_error(TI_ERROR_ARGUMENT_NULL, #x); \
+    return;                                        \
+  }
+#define TI_CAPI_ARGUMENT_NULL_RV(x)                \
+  if (x == TI_NULL_HANDLE) {                       \
+    ti_set_last_error(TI_ERROR_ARGUMENT_NULL, #x); \
+    return TI_NULL_HANDLE;                         \
+  }
+
+#define TI_CAPI_INVALID_ARGUMENT(x)                   \
+  if (x == TI_NULL_HANDLE) {                          \
+    ti_set_last_error(TI_ERROR_INVALID_ARGUMENT, #x); \
+    return;                                           \
+  }
+#define TI_CAPI_INVALID_ARGUMENT_RV(x)                \
+  if (x == TI_NULL_HANDLE) {                          \
+    ti_set_last_error(TI_ERROR_INVALID_ARGUMENT, #x); \
+    return TI_NULL_HANDLE;                            \
+  }
+
+#define TI_CAPI_INVALID_INTEROP_ARCH(x, arch)                    \
+  if (x != taichi::Arch::arch) {                                 \
+    ti_set_last_error(TI_ERROR_INVALID_INTEROP, "arch!=" #arch); \
+    return;                                                      \
+  }
+#define TI_CAPI_INVALID_INTEROP_ARCH_RV(x, arch)                 \
+  if (x != taichi::Arch::arch) {                                 \
+    ti_set_last_error(TI_ERROR_INVALID_INTEROP, "arch!=" #arch); \
+    return TI_NULL_HANDLE;                                       \
+  }
+
 class Runtime;
 class Context;
 class AotModule;
@@ -78,7 +123,8 @@ class AotModule {
   AotModule(Runtime &runtime,
             std::unique_ptr<taichi::lang::aot::Module> aot_module);
 
-  taichi::lang::aot::CompiledGraph &get_cgraph(const std::string &name);
+  taichi::lang::aot::Kernel *get_kernel(const std::string &name);
+  taichi::lang::aot::CompiledGraph *get_cgraph(const std::string &name);
   taichi::lang::aot::Module &get();
   Runtime &runtime();
 };

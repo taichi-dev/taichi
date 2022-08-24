@@ -476,12 +476,12 @@ class GlobalVariableExpression : public Expression {
   DataType dt;
   std::string name;
   SNode *snode{nullptr};
+  SNodeGradType snode_grad_type{SNodeGradType::kPrimal};
   bool has_ambient{false};
   TypedConstant ambient_value;
-  bool is_primal{true};
   Expr adjoint;
   Expr dual;
-  Expr adjoint_visited;
+  Expr adjoint_checkbit;
 
   GlobalVariableExpression(DataType dt, const Identifier &ident)
       : ident(ident), dt(dt) {
@@ -534,8 +534,11 @@ class IndexExpression : public Expression {
   Expr var;
   ExprGroup indices;
 
-  IndexExpression(const Expr &var, const ExprGroup &indices)
+  IndexExpression(const Expr &var,
+                  const ExprGroup &indices,
+                  std::string tb = "")
       : var(var), indices(indices) {
+    this->tb = tb;
   }
 
   void type_check(CompileConfig *config) override;
@@ -878,8 +881,10 @@ class ASTBuilder {
   Block *current_block();
   Stmt *get_last_stmt();
   void stop_gradient(SNode *);
-  void insert_assignment(Expr &lhs, const Expr &rhs);
-  Expr make_var(const Expr &x);
+  void insert_assignment(Expr &lhs,
+                         const Expr &rhs,
+                         const std::string &tb = "");
+  Expr make_var(const Expr &x, std::string tb);
   void insert_for(const Expr &s,
                   const Expr &e,
                   const std::function<void(Expr)> &func);
@@ -903,7 +908,8 @@ class ASTBuilder {
   Expr expr_alloca();
   Expr expr_alloca_local_tensor(const std::vector<int> &shape,
                                 const DataType &element_type,
-                                const ExprGroup &elements);
+                                const ExprGroup &elements,
+                                std::string tb);
   Expr expr_alloca_shared_array(const std::vector<int> &shape,
                                 const DataType &element_type);
   void expr_assign(const Expr &lhs, const Expr &rhs, std::string tb);

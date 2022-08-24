@@ -1,7 +1,9 @@
 from taichi._lib import core as _ti_core
+from taichi.lang import impl
 from taichi.lang.enums import Layout
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.util import taichi_scope
+from taichi.types.ndarray_type import NdarrayTypeMetadata
 
 
 class AnyArray:
@@ -17,6 +19,12 @@ class AnyArray:
         self.ptr = ptr
         self.element_shape = element_shape
         self.layout = layout
+
+    def get_type(self):
+        return NdarrayTypeMetadata(
+            self.ptr.get_ret_type(),
+            None,  # AnyArray can take any shape
+            self.layout)
 
     @property
     @taichi_scope
@@ -67,8 +75,9 @@ class AnyArrayAccess:
             indices = indices_second + self.indices_first
         else:
             indices = self.indices_first + indices_second
-        return Expr(_ti_core.subscript(self.arr.ptr,
-                                       make_expr_group(*indices)))
+        return Expr(
+            _ti_core.subscript(self.arr.ptr, make_expr_group(*indices),
+                               impl.get_runtime().get_current_src_info()))
 
 
 __all__ = []

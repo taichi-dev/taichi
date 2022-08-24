@@ -6,7 +6,8 @@ from collections import ChainMap
 from sys import version_info
 
 from taichi._lib import core as _ti_core
-from taichi.lang import expr, impl, kernel_arguments, matrix, mesh
+from taichi.lang import (_ndarray, any_array, expr, impl, kernel_arguments,
+                         matrix, mesh)
 from taichi.lang import ops as ti_ops
 from taichi.lang._ndrange import _Ndrange, ndrange
 from taichi.lang.ast.ast_transformer_utils import (Builder, LoopStatus,
@@ -588,8 +589,45 @@ class ASTTransformer(Builder):
                     # Template arguments are passed by reference.
                     if isinstance(ctx.func.arguments[i].annotation,
                                   annotations.template):
+
                         ctx.create_variable(ctx.func.arguments[i].name, data)
                         continue
+
+                    # Ndarray arguments are passed by reference.
+                    if isinstance(ctx.func.arguments[i].annotation,
+                                  (ndarray_type.NdarrayType)):
+                        if not isinstance(
+                                data,
+                            (_ndarray.ScalarNdarray, matrix.VectorNdarray,
+                             matrix.MatrixNdarray, any_array.AnyArray)):
+                            raise TaichiSyntaxError(
+                                f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is not recognized."
+                            )
+                        ctx.func.arguments[i].annotation.check_matched(
+                            data.get_type())
+                        ctx.create_variable(ctx.func.arguments[i].name, data)
+                        continue
+
+                    # Matrix arguments are passed by value.
+                    if isinstance(ctx.func.arguments[i].annotation,
+                                  (MatrixType)):
+                        if not isinstance(data, Matrix):
+                            raise TaichiSyntaxError(
+                                f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix, but got {type(data)}."
+                            )
+
+                        if data.m != ctx.func.arguments[i].annotation.m:
+                            raise TaichiSyntaxError(
+                                f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix with m {ctx.func.arguments[i].annotation.m}, but got {data.m}."
+                            )
+
+                        if data.n != ctx.func.arguments[i].annotation.n:
+                            raise TaichiSyntaxError(
+                                f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix with n {ctx.func.arguments[i].annotation.n}, but got {data.n}."
+                            )
+                        ctx.create_variable(arg.arg, impl.expr_init_func(data))
+                        continue
+
                     # Create a copy for non-template arguments,
                     # so that they are passed by value.
                     ctx.create_variable(arg.arg, impl.expr_init_func(data))

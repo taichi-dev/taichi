@@ -94,6 +94,13 @@ TaichiLLVMContext::TaichiLLVMContext(CompileConfig *config, Arch arch)
     llvm::InitializeNativeTargetAsmPrinter();
     llvm::InitializeNativeTargetAsmParser();
 #endif
+  } else if (arch == Arch::dx12) {
+#if defined(TI_WITH_DX12)
+    LLVMInitializeDirectXTarget();
+    LLVMInitializeDirectXTargetMC();
+    LLVMInitializeDirectXTargetInfo();
+    LLVMInitializeDirectXAsmPrinter();
+#endif
   } else {
 #if defined(TI_WITH_CUDA)
     LLVMInitializeNVPTXTarget();

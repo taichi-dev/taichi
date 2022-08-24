@@ -41,6 +41,21 @@ typedef struct TiKernel_t *TiKernel;
 // handle.compute_graph
 typedef struct TiComputeGraph_t *TiComputeGraph;
 
+// enumeration.error
+typedef enum TiError {
+  TI_ERROR_INCOMPLETE = 1,
+  TI_ERROR_SUCCESS = 0,
+  TI_ERROR_NOT_SUPPORTED = -1,
+  TI_ERROR_CORRUPTED_DATA = -2,
+  TI_ERROR_NAME_NOT_FOUND = -3,
+  TI_ERROR_INVALID_ARGUMENT = -4,
+  TI_ERROR_ARGUMENT_NULL = -5,
+  TI_ERROR_ARGUMENT_OUT_OF_RANGE = -6,
+  TI_ERROR_ARGUMENT_NOT_FOUND = -7,
+  TI_ERROR_INVALID_INTEROP = -8,
+  TI_ERROR_MAX_ENUM = 0xffffffff,
+} TiError;
+
 // enumeration.arch
 typedef enum TiArch {
   TI_ARCH_X64 = 0,
@@ -261,6 +276,14 @@ typedef struct TiNamedArgument {
   const char *name;
   TiArgument argument;
 } TiNamedArgument;
+
+// function.get_last_error
+TI_DLL_EXPORT TiError TI_API_CALL ti_get_last_error(uint64_t message_size,
+                                                    char *message);
+
+// function.set_last_error
+TI_DLL_EXPORT void TI_API_CALL ti_set_last_error(TiError error,
+                                                 const char *message);
 
 // function.create_runtime
 TI_DLL_EXPORT TiRuntime TI_API_CALL ti_create_runtime(TiArch arch);

@@ -55,13 +55,16 @@ void autograd() {
       bool is_primal() const override {
         return true;
       }
+      SNodeGradType get_snode_grad_type() const override {
+        return SNodeGradType::kPrimal;
+      }
       SNode *adjoint_snode() const override {
         return snode;
       }
       SNode *dual_snode() const override {
         return snode;
       }
-      SNode *adjoint_visited_snode() const override {
+      SNode *adjoint_checkbit_snode() const override {
         return nullptr;
       }
     };
@@ -72,13 +75,16 @@ void autograd() {
       bool is_primal() const override {
         return false;
       }
+      SNodeGradType get_snode_grad_type() const override {
+        return SNodeGradType::kAdjoint;
+      }
       SNode *adjoint_snode() const override {
         return nullptr;
       }
       SNode *dual_snode() const override {
         return nullptr;
       }
-      SNode *adjoint_visited_snode() const override {
+      SNode *adjoint_checkbit_snode() const override {
         return nullptr;
       }
     };

@@ -3,6 +3,7 @@
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/visitors.h"
+#include "taichi/transforms/utils.h"
 
 #include <typeinfo>
 #include <algorithm>
@@ -14,12 +15,14 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
 
   void visit(LocalLoadStmt *stmt) override {
     for (auto &lane : stmt->src.data) {
-      touched_allocas_.insert(lane.var->as<AllocaStmt>());
+      TI_ASSERT(lane.var->is<AllocaStmt>() || lane.var->is<PtrOffsetStmt>());
+      touched_allocas_.insert(lane.var);
     }
   }
 
   void visit(LocalStoreStmt *stmt) override {
-    touched_allocas_.insert(stmt->dest->as<AllocaStmt>());
+    TI_ASSERT(stmt->dest->is<AllocaStmt>() || stmt->dest->is<PtrOffsetStmt>());
+    touched_allocas_.insert(stmt->dest);
   }
 
   void visit(AtomicOpStmt *stmt) override {
@@ -75,7 +78,7 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
   }
 
  private:
-  std::set<AllocaStmt *> touched_allocas_;
+  std::set<Stmt *> touched_allocas_;
   bool qualified_atomics_ = true;
   bool inner_most_loop_ = true;
   bool is_inside_loop_ = false;
@@ -578,6 +581,10 @@ class ADTransform : public IRVisitor {
     // do nothing.
   }
 
+  void visit(PtrOffsetStmt *stmt) override {
+    // do nothing.
+  }
+
   void visit(PrintStmt *print_stmt) override {
     // do nothing
   }
@@ -994,7 +1001,16 @@ class MakeAdjoint : public ADTransform {
           "Importing data from external array (such as numpy array) not "
           "supported in AutoDiff for now")
     }
-    GlobalPtrStmt *src = stmt->src->as<GlobalPtrStmt>();
+
+    GlobalPtrStmt *src = nullptr;
+    bool is_ptr_offset = false;
+    if (stmt->src->is<PtrOffsetStmt>()) {
+      is_ptr_offset = true;
+      src = stmt->src->as<PtrOffsetStmt>()->origin->as<GlobalPtrStmt>();
+    } else {
+      src = stmt->src->as<GlobalPtrStmt>();
+    }
+
     TI_ASSERT(src->width() == 1);
     auto snodes = src->snodes;
     if (!snodes[0]->has_adjoint()) {
@@ -1008,6 +1024,10 @@ class MakeAdjoint : public ADTransform {
     TI_ASSERT(snodes[0]->get_adjoint() != nullptr);
     snodes[0] = snodes[0]->get_adjoint();
     auto adj_ptr = insert<GlobalPtrStmt>(snodes, src->indices);
+    if (is_ptr_offset) {
+      adj_ptr = insert<PtrOffsetStmt>(adj_ptr,
+                                      stmt->src->as<PtrOffsetStmt>()->offset);
+    }
     insert<AtomicOpStmt>(AtomicOpType::add, adj_ptr, load(adjoint(stmt)));
   }
 
@@ -1018,7 +1038,16 @@ class MakeAdjoint : public ADTransform {
           "Exporting data to external array (such as numpy array) not "
           "supported in AutoDiff for now")
     }
-    GlobalPtrStmt *dest = stmt->dest->as<GlobalPtrStmt>();
+
+    GlobalPtrStmt *dest = nullptr;
+    bool is_ptr_offset = false;
+    if (stmt->dest->is<PtrOffsetStmt>()) {
+      is_ptr_offset = true;
+      dest = stmt->dest->as<PtrOffsetStmt>()->origin->as<GlobalPtrStmt>();
+    } else {
+      dest = stmt->dest->as<GlobalPtrStmt>();
+    }
+
     TI_ASSERT(dest->width() == 1);
     auto snodes = dest->snodes;
     if (!snodes[0]->has_adjoint()) {
@@ -1028,24 +1057,40 @@ class MakeAdjoint : public ADTransform {
     TI_ASSERT(snodes[0]->get_adjoint() != nullptr);
     snodes[0] = snodes[0]->get_adjoint();
     auto adjoint_ptr = insert<GlobalPtrStmt>(snodes, dest->indices);
-    auto load = insert<GlobalLoadStmt>(adjoint_ptr);
-    accumulate(stmt->val, load);
+    if (is_ptr_offset) {
+      adjoint_ptr = insert<PtrOffsetStmt>(
+          adjoint_ptr, stmt->dest->as<PtrOffsetStmt>()->offset);
+    }
+    accumulate(stmt->val, insert<GlobalLoadStmt>(adjoint_ptr));
     stmt->parent->erase(stmt);
   }
 
   void visit(AtomicOpStmt *stmt) override {
     // erase and replace with global load adjoint
-    GlobalPtrStmt *dest = stmt->dest->as<GlobalPtrStmt>();
+    GlobalPtrStmt *dest = nullptr;
+    bool is_ptr_offset = false;
+    if (stmt->dest->is<PtrOffsetStmt>()) {
+      is_ptr_offset = true;
+      dest = stmt->dest->as<PtrOffsetStmt>()->origin->as<GlobalPtrStmt>();
+    } else {
+      dest = stmt->dest->as<GlobalPtrStmt>();
+    }
+
     TI_ASSERT(dest->width() == 1);
     auto snodes = dest->snodes;
-    if (snodes[0]->has_adjoint()) {
-      TI_ASSERT(snodes[0]->get_adjoint() != nullptr);
-      snodes[0] = snodes[0]->get_adjoint();
-      auto adjoint_ptr = insert<GlobalPtrStmt>(snodes, dest->indices);
-      accumulate(stmt->val, insert<GlobalLoadStmt>(adjoint_ptr));
-    } else {
+    if (!snodes[0]->has_adjoint()) {
       // no gradient (likely integer types)
+      return;
     }
+
+    TI_ASSERT(snodes[0]->get_adjoint() != nullptr);
+    snodes[0] = snodes[0]->get_adjoint();
+    auto adjoint_ptr = insert<GlobalPtrStmt>(snodes, dest->indices);
+    if (is_ptr_offset) {
+      adjoint_ptr = insert<PtrOffsetStmt>(
+          adjoint_ptr, stmt->dest->as<PtrOffsetStmt>()->offset);
+    }
+    accumulate(stmt->val, insert<GlobalLoadStmt>(adjoint_ptr));
     stmt->parent->erase(stmt);
   }
 };
@@ -1288,7 +1333,14 @@ class MakeDual : public ADTransform {
 
   void visit(GlobalLoadStmt *stmt) override {
     // issue global store to dual
-    GlobalPtrStmt *src = stmt->src->as<GlobalPtrStmt>();
+    GlobalPtrStmt *src = nullptr;
+    bool is_ptr_offset = false;
+    if (stmt->src->is<PtrOffsetStmt>()) {
+      is_ptr_offset = true;
+      src = stmt->src->as<PtrOffsetStmt>()->origin->as<GlobalPtrStmt>();
+    } else {
+      src = stmt->src->as<GlobalPtrStmt>();
+    }
     TI_ASSERT(src->width() == 1);
     auto snodes = src->snodes;
     if (!snodes[0]->has_dual()) {
@@ -1302,11 +1354,22 @@ class MakeDual : public ADTransform {
     TI_ASSERT(snodes[0]->get_dual() != nullptr);
     snodes[0] = snodes[0]->get_dual();
     auto dual_ptr = insert<GlobalPtrStmt>(snodes, src->indices);
+    if (is_ptr_offset) {
+      dual_ptr = insert<PtrOffsetStmt>(dual_ptr,
+                                       stmt->src->as<PtrOffsetStmt>()->offset);
+    }
     accumulate(stmt, insert<GlobalLoadStmt>(dual_ptr));
   }
 
   void visit(GlobalStoreStmt *stmt) override {
-    GlobalPtrStmt *dest = stmt->dest->as<GlobalPtrStmt>();
+    GlobalPtrStmt *dest = nullptr;
+    bool is_ptr_offset = false;
+    if (stmt->dest->is<PtrOffsetStmt>()) {
+      is_ptr_offset = true;
+      dest = stmt->dest->as<PtrOffsetStmt>()->origin->as<GlobalPtrStmt>();
+    } else {
+      dest = stmt->dest->as<GlobalPtrStmt>();
+    }
     TI_ASSERT(dest->width() == 1);
     auto snodes = dest->snodes;
     if (!snodes[0]->has_dual()) {
@@ -1316,11 +1379,22 @@ class MakeDual : public ADTransform {
     TI_ASSERT(snodes[0]->get_dual() != nullptr);
     snodes[0] = snodes[0]->get_dual();
     auto dual_ptr = insert<GlobalPtrStmt>(snodes, dest->indices);
+    if (is_ptr_offset) {
+      dual_ptr = insert<PtrOffsetStmt>(dual_ptr,
+                                       stmt->dest->as<PtrOffsetStmt>()->offset);
+    }
     insert<AtomicOpStmt>(AtomicOpType::add, dual_ptr, load(dual(stmt->val)));
   }
 
   void visit(AtomicOpStmt *stmt) override {
-    GlobalPtrStmt *dest = stmt->dest->as<GlobalPtrStmt>();
+    GlobalPtrStmt *dest = nullptr;
+    bool is_ptr_offset = false;
+    if (stmt->dest->is<PtrOffsetStmt>()) {
+      is_ptr_offset = true;
+      dest = stmt->dest->as<PtrOffsetStmt>()->origin->as<GlobalPtrStmt>();
+    } else {
+      dest = stmt->dest->as<GlobalPtrStmt>();
+    }
     TI_ASSERT(dest->width() == 1);
     auto snodes = dest->snodes;
     if (!snodes[0]->has_dual()) {
@@ -1330,6 +1404,10 @@ class MakeDual : public ADTransform {
     TI_ASSERT(snodes[0]->get_dual() != nullptr);
     snodes[0] = snodes[0]->get_dual();
     auto dual_ptr = insert<GlobalPtrStmt>(snodes, dest->indices);
+    if (is_ptr_offset) {
+      dual_ptr = insert<PtrOffsetStmt>(dual_ptr,
+                                       stmt->dest->as<PtrOffsetStmt>()->offset);
+    }
     insert<AtomicOpStmt>(AtomicOpType::add, dual_ptr, load(dual(stmt->val)));
   }
 };
@@ -1492,11 +1570,11 @@ class GloablDataAccessRuleChecker : public BasicStmtVisitor {
     GlobalPtrStmt *src = stmt->src->as<GlobalPtrStmt>();
     TI_ASSERT(src->width() == 1);
     auto snodes = src->snodes;
-    if (!snodes[0]->has_adjoint_visited()) {
+    if (!snodes[0]->has_adjoint_checkbit()) {
       return;
     }
-    TI_ASSERT(snodes[0]->get_adjoint_visited() != nullptr);
-    snodes[0] = snodes[0]->get_adjoint_visited();
+    TI_ASSERT(snodes[0]->get_adjoint_checkbit() != nullptr);
+    snodes[0] = snodes[0]->get_adjoint_checkbit();
     auto gloabl_ptr =
         stmt->insert_after_me(Stmt::make<GlobalPtrStmt>(snodes, src->indices));
     auto one = gloabl_ptr->insert_after_me(
@@ -1507,11 +1585,11 @@ class GloablDataAccessRuleChecker : public BasicStmtVisitor {
   void visit_gloabl_store_stmt_and_atomic_add(Stmt *stmt, GlobalPtrStmt *dest) {
     TI_ASSERT(dest->width() == 1);
     auto snodes = dest->snodes;
-    if (!snodes[0]->has_adjoint_visited()) {
+    if (!snodes[0]->has_adjoint_checkbit()) {
       return;
     }
-    TI_ASSERT(snodes[0]->get_adjoint_visited() != nullptr);
-    snodes[0] = snodes[0]->get_adjoint_visited();
+    TI_ASSERT(snodes[0]->get_adjoint_checkbit() != nullptr);
+    snodes[0] = snodes[0]->get_adjoint_checkbit();
     auto global_ptr = stmt->insert_before_me(
         Stmt::make<GlobalPtrStmt>(snodes, dest->indices));
     auto global_load =
@@ -1524,6 +1602,8 @@ class GloablDataAccessRuleChecker : public BasicStmtVisitor {
         "(kernel={}) Breaks the global data access rule. Snode {} is "
         "overwritten unexpectedly.",
         kernel_name_, dest->snodes[0]->get_node_type_name());
+    msg += "\n" + stmt->tb;
+
     stmt->insert_before_me(
         Stmt::make<AssertStmt>(check_equal, msg, std::vector<Stmt *>()));
   }

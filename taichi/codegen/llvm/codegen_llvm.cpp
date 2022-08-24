@@ -801,6 +801,13 @@ void TaskCodeGenLLVM::visit(PrintStmt *stmt) {
   TI_ASSERT(stmt->width() == 1);
   std::vector<llvm::Value *> args;
   std::string formats;
+  auto value_for_printf = [this](llvm::Value *to_print, DataType dtype) {
+    if (dtype->is_primitive(PrimitiveTypeID::f32) ||
+        dtype->is_primitive(PrimitiveTypeID::f16))
+      return this->builder->CreateFPExt(
+          to_print, this->tlctx->get_data_type(PrimitiveType::f64));
+    return to_print;
+  };
   for (auto const &content : stmt->contents) {
     if (std::holds_alternative<Stmt *>(content)) {
       auto arg_stmt = std::get<Stmt *>(content);
@@ -810,19 +817,11 @@ void TaskCodeGenLLVM::visit(PrintStmt *stmt) {
         auto elem_type = dtype->get_element_type();
         for (int i = 0; i < dtype->get_num_elements(); ++i) {
           auto elem_value = builder->CreateExtractElement(value, i);
-          if (elem_type->is_primitive(PrimitiveTypeID::f32) ||
-              elem_type->is_primitive(PrimitiveTypeID::f16))
-            elem_value = builder->CreateFPExt(
-                elem_value, tlctx->get_data_type(PrimitiveType::f64));
-          args.push_back(elem_value);
+          args.push_back(value_for_printf(elem_value, elem_type));
         }
         formats += data_type_format(arg_stmt->ret_type);
       } else {
-        if (arg_stmt->ret_type->is_primitive(PrimitiveTypeID::f32) ||
-            arg_stmt->ret_type->is_primitive(PrimitiveTypeID::f16))
-          value = builder->CreateFPExt(
-              value, tlctx->get_data_type(PrimitiveType::f64));
-        args.push_back(value);
+        args.push_back(value_for_printf(value, arg_stmt->ret_type));
         formats += data_type_format(arg_stmt->ret_type);
       }
     } else {

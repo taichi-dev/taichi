@@ -122,7 +122,7 @@ void run_snode() {
     }
 
     kernel_ext = std::make_unique<Kernel>(program, builder.extract_ir(), "ext");
-    kernel_ext->insert_arg(get_data_type<int>(), true);
+    kernel_ext->insert_arr_arg(get_data_type<int>(), /*total_dim=*/1, {n});
   }
 
   auto ctx_init = kernel_init->make_launch_context();

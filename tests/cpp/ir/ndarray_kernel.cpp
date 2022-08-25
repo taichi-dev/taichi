@@ -22,7 +22,7 @@ std::unique_ptr<Kernel> setup_kernel1(Program *prog) {
   }
   auto block = builder1.extract_ir();
   auto ker1 = std::make_unique<Kernel>(*prog, std::move(block), "ker1");
-  ker1->insert_arg(get_data_type<int>(), /*is_array=*/true);
+  ker1->insert_arr_arg(get_data_type<int>(), /*total_dim=*/1, {1});
   return ker1;
 }
 
@@ -40,8 +40,8 @@ std::unique_ptr<Kernel> setup_kernel2(Program *prog) {
   }
   auto block2 = builder2.extract_ir();
   auto ker2 = std::make_unique<Kernel>(*prog, std::move(block2), "ker2");
-  ker2->insert_arg(get_data_type<int>(), /*is_array=*/true);
-  ker2->insert_arg(get_data_type<int>(), /*is_array=*/false);
+  ker2->insert_arr_arg(get_data_type<int>(), /*total_dim=*/1, {1});
+  ker2->insert_scalar_arg(get_data_type<int>());
   return ker2;
 }
 }  // namespace lang

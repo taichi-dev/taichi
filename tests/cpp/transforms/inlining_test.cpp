@@ -34,7 +34,7 @@ TEST_F(InliningTest, ArgLoadOfArgLoad) {
 
   auto *func = prog_->create_function(
       FunctionKey("test_func", /*func_id=*/0, /*instance_id=*/0));
-  func->insert_arg(get_data_type<int>(), /*is_array=*/false);
+  func->insert_scalar_arg(get_data_type<int>());
   func->insert_ret(get_data_type<int>());
   func->set_function_body(std::move(func_body));
 

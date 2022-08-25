@@ -132,7 +132,7 @@ def main():
         attractor_strength[None] = gui.is_pressed(gui.LMB) - gui.is_pressed(
             gui.RMB)
         for i in range(50):
-            with ti.ad.Tape(loss=U):
+            with ti.Tape(loss=U):
                 update_U()
             advance()
         paint_phi(gui)

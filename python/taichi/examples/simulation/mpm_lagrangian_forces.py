@@ -166,7 +166,7 @@ def main():
             grid_v.fill(0)
             # Note that we are now differentiating the total energy w.r.t. the particle position.
             # Recall that F = - \partial (total_energy) / \partial x
-            with ti.ad.Tape(total_energy):
+            with ti.Tape(total_energy):
                 # Do the forward computation of total energy and backward propagation for x.grad, which is later used in p2g
                 compute_total_energy()
                 # It's OK not to use the computed total_energy at all, since we only need x.grad

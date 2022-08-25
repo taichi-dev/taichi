@@ -49,9 +49,9 @@ class NdarrayType:
                 raise TypeError(
                     f"Expect TensorType element for Ndarray with element_dim: {self.element_dim} > 0"
                 )
-            if self.element_dim != len(ndarray_type.element_type.shape):
+            if self.element_dim != len(ndarray_type.element_type.get_shape()):
                 raise ValueError(
-                    f"Invalid argument into ti.types.ndarray() - required element_dim={self.element_dim}, but {len(ndarray_type.element_type.shape)} is provided"
+                    f"Invalid argument into ti.types.ndarray() - required element_dim={self.element_dim}, but {len(ndarray_type.element_type.get_shape())} is provided"
                 )
 
         if self.element_shape is not None and len(self.element_shape) > 0:
@@ -60,9 +60,9 @@ class NdarrayType:
                     f"Expect TensorType element for Ndarray with element_shape: {self.element_shape}"
                 )
 
-            if self.element_shape != ndarray_type.element_type.shape:
+            if self.element_shape != ndarray_type.element_type.get_shape():
                 raise ValueError(
-                    f"Invalid argument into ti.types.ndarray() - required element_shape={self.element_shape}, but {ndarray_type.element_type.shape} is provided"
+                    f"Invalid argument into ti.types.ndarray() - required element_shape={self.element_shape}, but {ndarray_type.element_type.get_shape()} is provided"
                 )
 
         if self.layout is not None and self.layout != ndarray_type.layout:

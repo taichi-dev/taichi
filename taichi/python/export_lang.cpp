@@ -573,6 +573,7 @@ void export_lang(py::module &m) {
       .def("write_float", &Ndarray::write_float)
       .def("total_shape", &Ndarray::total_shape)
       .def("element_shape", &Ndarray::get_element_shape)
+      .def("element_data_type", &Ndarray::get_element_data_type)
       .def_readonly("dtype", &Ndarray::dtype)
       .def_readonly("shape", &Ndarray::shape);
 

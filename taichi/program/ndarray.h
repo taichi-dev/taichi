@@ -49,6 +49,7 @@ class TI_DLL_EXPORT Ndarray {
   ExternalArrayLayout layout{ExternalArrayLayout::kNull};
 
   std::vector<int> get_element_shape() const;
+  DataType get_element_data_type() const;
   intptr_t get_data_ptr_as_int() const;
   intptr_t get_device_allocation_ptr_as_int() const;
   std::size_t get_element_size() const;

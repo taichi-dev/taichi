@@ -265,7 +265,8 @@ class ScalarNdarray(Ndarray):
 
 class NdarrayHostAccessor:
     def __init__(self, ndarray):
-        if _ti_core.is_real(ndarray.dtype):
+        dtype = ndarray.element_data_type()
+        if _ti_core.is_real(dtype):
 
             def getter(*key):
                 return ndarray.read_float(key)
@@ -273,7 +274,7 @@ class NdarrayHostAccessor:
             def setter(value, *key):
                 ndarray.write_float(key, value)
         else:
-            if _ti_core.is_signed(ndarray.dtype):
+            if _ti_core.is_signed(dtype):
 
                 def getter(*key):
                     return ndarray.read_int(key)

@@ -116,6 +116,13 @@ std::vector<int> Ndarray::get_element_shape() const {
   return data_type_shape(dtype);
 }
 
+DataType Ndarray::get_element_data_type() const {
+  if (dtype->is<TensorType>()) {
+    return dtype->cast<TensorType>()->get_element_type();
+  }
+  return dtype;
+}
+
 std::size_t Ndarray::get_element_size() const {
   return element_size_;
 }

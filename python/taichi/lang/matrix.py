@@ -2002,7 +2002,7 @@ class VectorNdarray(Ndarray):
 
         self.layout = layout
         self.shape = tuple(shape)
-        self.element_type = TensorType((n, ), dtype)
+        self.element_type = TensorType((n, ), self.dtype)
         self.arr = impl.get_runtime().prog.create_ndarray(
             cook_dtype(self.element_type.ptr), shape, layout)
 

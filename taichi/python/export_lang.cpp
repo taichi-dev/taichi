@@ -427,15 +427,19 @@ void export_lang(py::module &m) {
              TI_ASSERT(kernel);
              kernel->no_activate.push_back(snode);
            })
-      .def("decl_arg",
-           [&](Program *program, const DataType &dt, bool is_array) {
-             return program->current_callable->insert_arg(dt, is_array);
+      .def("decl_scalar_arg",
+           [&](Program *program, const DataType &dt) {
+             return program->current_callable->insert_scalar_arg(dt);
            })
       .def("decl_arr_arg",
            [&](Program *program, const DataType &dt, int total_dim,
                std::vector<int> shape) {
              return program->current_callable->insert_arr_arg(dt, total_dim,
                                                               shape);
+           })
+      .def("decl_texture_arg",
+           [&](Program *program, const DataType &dt) {
+             return program->current_callable->insert_texture_arg(dt);
            })
       .def("decl_ret",
            [&](Program *program, const DataType &dt) {

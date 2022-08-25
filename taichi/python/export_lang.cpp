@@ -112,6 +112,8 @@ void export_lang(py::module &m) {
       .def("__hash__", &DataType::hash)
       .def("to_string", &DataType::to_string)
       .def("__str__", &DataType::to_string)
+      .def("get_element_shape", &DataType::get_element_shape)
+      .def("get_element_type", &DataType::get_element_type)
       .def(
           "get_ptr", [](DataType *dtype) -> Type * { return *dtype; },
           py::return_value_policy::reference)
@@ -1091,10 +1093,7 @@ void export_lang(py::module &m) {
 
   // Type system
 
-  py::class_<Type>(m, "Type")
-      .def("to_string", &Type::to_string)
-      .def("get_element_shape", &Type::get_shape)
-      .def("get_element_type", &Type::get_element_type);
+  py::class_<Type>(m, "Type").def("to_string", &Type::to_string);
 
   // Note that it is important to specify py::return_value_policy::reference for
   // the factory methods, otherwise pybind11 will delete the Types owned by
@@ -1109,8 +1108,13 @@ void export_lang(py::module &m) {
       .def("get_quant_float_type", &TypeFactory::get_quant_float_type,
            py::arg("digits_type"), py::arg("exponent_type"),
            py::arg("compute_type"), py::return_value_policy::reference)
-      .def("get_tensor_type", &TypeFactory::get_tensor_type, py::arg("shape"),
-           py::arg("element_type"), py::return_value_policy::reference);
+      .def(
+          "get_tensor_type",
+          [&](TypeFactory *factory, std::vector<int> shape,
+              const DataType &element_type) {
+            return factory->create_tensor_type(shape, element_type);
+          },
+          py::return_value_policy::reference);
 
   m.def("get_type_factory_instance", TypeFactory::get_instance,
         py::return_value_policy::reference);
@@ -1125,11 +1129,6 @@ void export_lang(py::module &m) {
       .def("add_member", &BitStructTypeBuilder::add_member)
       .def("build", &BitStructTypeBuilder::build,
            py::return_value_policy::reference);
-
-  m.def("decl_tensor_type",
-        [&](std::vector<int> shape, const DataType &element_type) {
-          return TypeFactory::create_tensor_type(shape, element_type);
-        });
 
   py::class_<SNodeRegistry>(m, "SNodeRegistry")
       .def(py::init<>())

@@ -5,6 +5,8 @@
 
 TLANG_NAMESPACE_BEGIN
 
+class TensorType;
+
 enum class PrimitiveTypeID : int {
 #define PER_TYPE(x) x,
 #include "taichi/inc/data_type.inc.h"
@@ -41,14 +43,6 @@ class TI_DLL_EXPORT Type {
   int vector_width() const;
 
   bool is_primitive(PrimitiveTypeID type) const;
-
-  virtual std::vector<int> get_shape() const {
-    return {};
-  }
-
-  virtual Type *get_element_type() const {
-    return nullptr;
-  }
 
   virtual Type *get_compute_type() {
     TI_NOT_IMPLEMENTED;
@@ -109,6 +103,10 @@ class TI_DLL_EXPORT DataType {
 
   DataType ptr_removed() const;
 
+  std::vector<int> get_element_shape() const;
+
+  DataType get_element_type() const;
+
  private:
   Type *ptr_;
 };
@@ -168,7 +166,7 @@ class TensorType : public Type {
       : shape_(std::move(shape)), element_(element) {
   }
 
-  Type *get_element_type() const override {
+  Type *get_element_type() const {
     return element_;
   }
 
@@ -179,7 +177,7 @@ class TensorType : public Type {
     return num_elements;
   }
 
-  std::vector<int> get_shape() const override {
+  std::vector<int> get_shape() const {
     return shape_;
   }
 
@@ -347,7 +345,7 @@ class QuantArrayType : public Type {
     return physical_type_;
   }
 
-  Type *get_element_type() const override {
+  Type *get_element_type() const {
     return element_type_;
   }
 

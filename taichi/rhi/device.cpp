@@ -284,9 +284,11 @@ void Device::memcpy_via_host(DevicePtr dst,
 
 const std::string to_string(DeviceCapability c) {
 #define PER_DEVICE_CAPABILITY(name) \
-  case DeviceCapability::name : return #name; break;
+  case DeviceCapability::name:      \
+    return #name;                   \
+    break;
   switch (c) {
-    #include "taichi/inc/rhi_constants.inc.h"
+#include "taichi/inc/rhi_constants.inc.h"
     default:
       return "Unknown";
       break;

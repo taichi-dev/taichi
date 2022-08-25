@@ -41,4 +41,3 @@ target_include_directories(${EXAMPLES_NAME}
     ${PROJECT_SOURCE_DIR}/external/spdlog/include
     ${PROJECT_SOURCE_DIR}/external/eigen
   )
-

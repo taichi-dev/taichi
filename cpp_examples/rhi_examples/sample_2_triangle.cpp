@@ -1,12 +1,12 @@
 #include "common.h"
 
-std::vector<uint32_t> frag_spv = 
+std::vector<uint32_t> frag_spv =
 #include "shaders/2_triangle.frag.spv.h"
-;
+    ;
 
 std::vector<uint32_t> vert_spv =
 #include "shaders/2_triangle.vert.spv.h"
-;
+    ;
 
 struct Vertex {
   glm::vec2 pos;
@@ -26,7 +26,7 @@ class SampleApp : public App {
       src_desc[0].type = PipelineSourceType::spirv_binary;
       src_desc[0].stage = PipelineStageType::fragment;
 
-      src_desc[1].data = (void*)vert_spv.data();
+      src_desc[1].data = (void *)vert_spv.data();
       src_desc[1].size = vert_spv.size() * sizeof(uint32_t);
       src_desc[1].type = PipelineSourceType::spirv_binary;
       src_desc[1].stage = PipelineStageType::vertex;
@@ -48,7 +48,8 @@ class SampleApp : public App {
            .offset = offsetof(Vertex, color)}};
 
       // Create pipeline
-      pipeline = device->create_raster_pipeline(src_desc, raster_params, vertex_inputs, vertex_attrs);
+      pipeline = device->create_raster_pipeline(src_desc, raster_params,
+                                                vertex_inputs, vertex_attrs);
     }
 
     // Create the vertex buffer
@@ -70,7 +71,7 @@ class SampleApp : public App {
   std::vector<StreamSemaphore> render_loop(
       StreamSemaphore image_available_semaphore) override {
     auto cmdlist = device->get_graphics_stream()->new_command_list();
-    
+
     // Set-up our frame buffer attachment
     DeviceAllocation surface_image = surface->get_target_image();
     cmdlist->image_transition(surface_image, ImageLayout::undefined,
@@ -79,7 +80,8 @@ class SampleApp : public App {
     // Renderpass: render to surface image, clear color values
     bool clear = true;
     std::vector<float> clear_color = {0.1, 0.2, 0.3, 1.0};
-    cmdlist->begin_renderpass(0, 0, 1920, 1080, 1, &surface_image, &clear, &clear_color, nullptr, false);
+    cmdlist->begin_renderpass(0, 0, 1920, 1080, 1, &surface_image, &clear,
+                              &clear_color, nullptr, false);
 
     // Bind our triangle pipeline
     cmdlist->bind_pipeline(pipeline.get());

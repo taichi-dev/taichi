@@ -47,8 +47,8 @@ void BLSAnalyzer::record_access(Stmt *stmt, AccessFlag flag) {
   coeffs.resize(ptr->indices.size());
   const int num_indices = (int)ptr->indices.size();
   for (int i = 0; i < num_indices; i++) {
-    auto diff = irpass::analysis::value_diff_loop_index(ptr->indices[i],
-                                                        for_stmt_, i);
+    auto diff =
+        irpass::analysis::value_diff_loop_index(ptr->indices[i], for_stmt_, i);
     if (diff.related() && diff.coeff > 0) {
       offsets[i].low = diff.low;
       offsets[i].high = diff.high;
@@ -68,8 +68,7 @@ void BLSAnalyzer::record_access(Stmt *stmt, AccessFlag flag) {
         return;
       }
       for (int i = (index_bounds[dimension].low + offsets[dimension].low);
-           i < (index_bounds[dimension].high + offsets[dimension].high);
-           i++) {
+           i < (index_bounds[dimension].high + offsets[dimension].high); i++) {
         index[dimension] = i;
         visit(dimension + 1);
       }

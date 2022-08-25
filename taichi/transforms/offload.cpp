@@ -549,8 +549,8 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
         stmt_to_offloaded_[global_store_stmt] = offloaded;
       }
     } else {
-      LaneAttribute<TypedConstant> zeros(std::vector<TypedConstant>(
-          1, TypedConstant(stmt->ret_type)));
+      LaneAttribute<TypedConstant> zeros(
+          std::vector<TypedConstant>(1, TypedConstant(stmt->ret_type)));
       auto const_zeros = replacement.push_back<ConstStmt>(zeros);
       auto global_store_stmt =
           replacement.push_back<GlobalStoreStmt>(ptr, const_zeros);

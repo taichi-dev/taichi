@@ -110,6 +110,13 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
     }
   }
 
+  void visit(MatrixExpression *expr) override {
+    emit('[');
+    emit_vector(expr->elements);
+    emit(']');
+    emit(fmt::format(" (dt={})", expr->dt->to_string()));
+  }
+
   void visit(IndexExpression *expr) override {
     expr->var->accept(this);
     emit('[');

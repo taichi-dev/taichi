@@ -555,6 +555,19 @@ class TypeCheck : public IRVisitor {
     stmt->ret_type = stmt->var->ret_type;
     stmt->ret_type.set_is_pointer(true);
   }
+
+  void visit(MatrixInitStmt *stmt) override {
+    TI_ASSERT_INFO(stmt->ret_type->is<TensorType>(),
+                   "Matrix should have tensor type, got {}",
+                   stmt->ret_type->to_string());
+    auto tensor_type = stmt->ret_type->as<TensorType>();
+    auto element_dtype = tensor_type->get_element_type();
+    for (int i = 0; i < stmt->values.size(); ++i) {
+      if (element_dtype != stmt->values[i]->ret_type) {
+        cast(stmt->values[i], element_dtype);
+      }
+    }
+  }
 };
 
 namespace irpass {

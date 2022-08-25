@@ -213,6 +213,11 @@ class AlgSimp : public BasicStmtVisitor {
   }
 
   void visit(BinaryOpStmt *stmt) override {
+    if (stmt->lhs->ret_type->is<TensorType>() ||
+        stmt->rhs->ret_type->is<TensorType>()) {
+      // TODO: support tensor type
+      return;
+    }
     auto lhs = stmt->lhs->cast<ConstStmt>();
     auto rhs = stmt->rhs->cast<ConstStmt>();
     if (stmt->width() != 1) {

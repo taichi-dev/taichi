@@ -124,9 +124,11 @@ void TaskCodeGenLLVM::visit(Block *stmt_list) {
 void TaskCodeGenLLVM::visit(AllocaStmt *stmt) {
   if (stmt->ret_type->is<TensorType>()) {
     auto tensor_type = stmt->ret_type->cast<TensorType>();
-    auto type = tlctx->get_data_type(tensor_type->get_element_type());
-    auto array_size = tlctx->get_constant(tensor_type->get_num_elements());
-    // Return type is [array_size x type]*.
+    auto type = kernel->program->config.real_matrix
+                    ? tlctx->get_data_type(tensor_type)
+                    : tlctx->get_data_type(tensor_type->get_element_type());
+    // Return type is vector<tensor_type>* if use real matrix.
+    // otherwise the return type is [type * array_size]*
     if (stmt->is_shared) {
       size_t data_element_size = tlctx->get_type_size(
           tlctx->get_data_type(tensor_type->get_element_type()));
@@ -148,7 +150,12 @@ void TaskCodeGenLLVM::visit(AllocaStmt *stmt) {
           tlctx->get_data_type(tensor_type->get_element_type()), 0);
       llvm_val[stmt] = builder->CreatePointerCast(ptr, ptr_type);
     } else {
-      llvm_val[stmt] = create_entry_block_alloca(type, 0, array_size);
+      if (kernel->program->config.real_matrix)
+        llvm_val[stmt] =
+            create_entry_block_alloca(type, stmt->ret_type.is_pointer());
+      else
+        llvm_val[stmt] = create_entry_block_alloca(
+            type, 0, tlctx->get_constant(tensor_type->get_num_elements()));
     }
   } else {
     TI_ASSERT(stmt->width() == 1);
@@ -688,6 +695,13 @@ llvm::Type *TaskCodeGenLLVM::llvm_type(DataType dt) {
     return llvm::Type::getDoubleTy(*llvm_context);
   } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
     return llvm::Type::getHalfTy(*llvm_context);
+  } else if (dt->is<TensorType>()) {
+    TI_ASSERT_INFO(kernel->program->config.real_matrix,
+                   "Real matrix not enabled but got TensorType");
+    auto tensor_type = dt->cast<TensorType>();
+    auto element_type = llvm_type(tensor_type->get_element_type());
+    return llvm::VectorType::get(element_type, tensor_type->get_num_elements(),
+                                 /*scalable=*/false);
   } else {
     TI_NOT_IMPLEMENTED;
   }
@@ -796,16 +810,29 @@ void TaskCodeGenLLVM::visit(PrintStmt *stmt) {
   TI_ASSERT(stmt->width() == 1);
   std::vector<llvm::Value *> args;
   std::string formats;
+  auto value_for_printf = [this](llvm::Value *to_print, DataType dtype) {
+    if (dtype->is_primitive(PrimitiveTypeID::f32) ||
+        dtype->is_primitive(PrimitiveTypeID::f16))
+      return this->builder->CreateFPExt(
+          to_print, this->tlctx->get_data_type(PrimitiveType::f64));
+    return to_print;
+  };
   for (auto const &content : stmt->contents) {
     if (std::holds_alternative<Stmt *>(content)) {
       auto arg_stmt = std::get<Stmt *>(content);
       auto value = llvm_val[arg_stmt];
-      if (arg_stmt->ret_type->is_primitive(PrimitiveTypeID::f32) ||
-          arg_stmt->ret_type->is_primitive(PrimitiveTypeID::f16))
-        value = builder->CreateFPExt(value,
-                                     tlctx->get_data_type(PrimitiveType::f64));
-      args.push_back(value);
-      formats += data_type_format(arg_stmt->ret_type);
+      if (arg_stmt->ret_type->is<TensorType>()) {
+        auto dtype = arg_stmt->ret_type->cast<TensorType>();
+        auto elem_type = dtype->get_element_type();
+        for (int i = 0; i < dtype->get_num_elements(); ++i) {
+          auto elem_value = builder->CreateExtractElement(value, i);
+          args.push_back(value_for_printf(elem_value, elem_type));
+        }
+        formats += data_type_format(arg_stmt->ret_type);
+      } else {
+        args.push_back(value_for_printf(value, arg_stmt->ret_type));
+        formats += data_type_format(arg_stmt->ret_type);
+      }
     } else {
       auto arg_str = std::get<std::string>(content);
       auto value = builder->CreateGlobalStringPtr(arg_str, "content_string");
@@ -2513,6 +2540,16 @@ void TaskCodeGenLLVM::visit(ExternalFuncCallStmt *stmt) {
 
 void TaskCodeGenLLVM::visit(MeshPatchIndexStmt *stmt) {
   llvm_val[stmt] = get_arg(2);
+}
+
+void TaskCodeGenLLVM::visit(MatrixInitStmt *stmt) {
+  auto type = tlctx->get_data_type(stmt->ret_type->as<TensorType>());
+  llvm::Value *vec = llvm::UndefValue::get(type);
+  for (int i = 0; i < stmt->values.size(); ++i) {
+    auto *elem = llvm_val[stmt->values[i]];
+    vec = builder->CreateInsertElement(vec, elem, i);
+  }
+  llvm_val[stmt] = vec;
 }
 
 void TaskCodeGenLLVM::eliminate_unused_functions() {

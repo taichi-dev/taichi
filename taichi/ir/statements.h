@@ -1807,5 +1807,20 @@ class MeshPatchIndexStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * Initialization of a local matrix
+ */
+class MatrixInitStmt : public Stmt {
+ public:
+  std::vector<Stmt *> values;
+
+  MatrixInitStmt(const std::vector<Stmt *> &values) : values(values) {
+    TI_STMT_REG_FIELDS;
+  }
+
+  TI_STMT_DEF_FIELDS(ret_type, values);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
 }  // namespace lang
 }  // namespace taichi

@@ -200,6 +200,7 @@ void export_lang(py::module &m) {
       .def_readwrite("ndarray_use_cached_allocator",
                      &CompileConfig::ndarray_use_cached_allocator)
       .def_readwrite("use_mesh", &CompileConfig::use_mesh)
+      .def_readwrite("real_matrix", &CompileConfig::real_matrix)
       .def_readwrite("cc_compile_cmd", &CompileConfig::cc_compile_cmd)
       .def_readwrite("cc_link_cmd", &CompileConfig::cc_link_cmd)
       .def_readwrite("quant_opt_store_fusion",
@@ -290,6 +291,7 @@ void export_lang(py::module &m) {
       .def("insert_deactivate", &ASTBuilder::insert_snode_deactivate)
       .def("insert_activate", &ASTBuilder::insert_snode_activate)
       .def("insert_external_func_call", &ASTBuilder::insert_external_func_call)
+      .def("make_matrix_expr", &ASTBuilder::make_matrix_expr)
       .def("expr_alloca", &ASTBuilder::expr_alloca)
       .def("expr_alloca_local_tensor", &ASTBuilder::expr_alloca_local_tensor)
       .def("expr_alloca_shared_array", &ASTBuilder::expr_alloca_shared_array)

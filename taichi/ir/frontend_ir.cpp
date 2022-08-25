@@ -432,6 +432,26 @@ Stmt *make_tensor_access(Expression::FlattenContext *ctx,
   return ctx->push_back<PtrOffsetStmt>(var->stmt, offset_stmt);
 }
 
+void MatrixExpression::type_check(CompileConfig *config) {
+  // TODO: typecheck matrix
+  for (auto &arg : elements) {
+    TI_ASSERT_TYPE_CHECKED(arg);
+  }
+  ret_type = dt;
+}
+
+void MatrixExpression::flatten(FlattenContext *ctx) {
+  // TODO: implement flatten
+  TI_ASSERT(this->dt->is<TensorType>());
+  std::vector<Stmt *> values;
+  for (auto &elt : elements) {
+    flatten_rvalue(elt, ctx);
+    values.push_back(elt->stmt);
+  }
+  stmt = ctx->push_back<MatrixInitStmt>(values);
+  stmt->ret_type = this->dt;
+}
+
 bool IndexExpression::is_field() const {
   return var.is<GlobalVariableExpression>();
 }
@@ -968,6 +988,12 @@ Expr ASTBuilder::expr_alloca() {
       std::static_pointer_cast<IdExpression>(var.expr)->id,
       PrimitiveType::unknown));
   return var;
+}
+
+Expr ASTBuilder::make_matrix_expr(const std::vector<int> &shape,
+                                  const DataType &dt,
+                                  const std::vector<Expr> &elements) {
+  return Expr(std::make_shared<MatrixExpression>(elements, shape, dt));
 }
 
 Expr ASTBuilder::expr_alloca_local_tensor(const std::vector<int> &shape,

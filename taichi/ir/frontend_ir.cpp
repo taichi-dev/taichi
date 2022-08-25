@@ -990,9 +990,9 @@ Expr ASTBuilder::expr_alloca() {
   return var;
 }
 
-Expr ASTBuilder::make_local_matrix(const std::vector<int> &shape,
-                                   const DataType &dt,
-                                   const std::vector<Expr> &elements) {
+Expr ASTBuilder::make_matrix_expr(const std::vector<int> &shape,
+                                  const DataType &dt,
+                                  const std::vector<Expr> &elements) {
   return Expr(std::make_shared<MatrixExpression>(elements, shape, dt));
 }
 

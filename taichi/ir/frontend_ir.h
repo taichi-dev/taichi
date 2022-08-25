@@ -888,9 +888,9 @@ class ASTBuilder {
                   const std::function<void(Expr)> &func);
 
   Expr make_id_expr(const std::string &name);
-  Expr make_local_matrix(const std::vector<int> &shape,
-                         const DataType &dt,
-                         const std::vector<Expr> &elements);
+  Expr make_matrix_expr(const std::vector<int> &shape,
+                        const DataType &dt,
+                        const std::vector<Expr> &elements);
   Expr insert_thread_idx_expr();
   Expr insert_patch_idx_expr();
   void create_kernel_exprgroup_return(const ExprGroup &group);

@@ -147,7 +147,7 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
     // The UD-chain is inside this node.
     Stmt *result = irpass::analysis::get_store_data(
         block->statements[last_def_position].get());
-    if (!var->is<AllocaStmt>()) {
+    if (!var->is<AllocaStmt>() || var->ret_type->is<TensorType>()) {
       for (int i = last_def_position + 1; i < position; i++) {
         if (!irpass::analysis::same_value(
                 result,
@@ -241,6 +241,15 @@ void CFGNode::reaching_definition_analysis(bool after_lower_access) {
     // loop in reversed order
     auto stmt = block->statements[i].get();
     auto data_source_ptrs = irpass::analysis::get_store_destination(stmt);
+    if (auto local_store = stmt->cast<LocalStoreStmt>()) {
+      if (auto dest = local_store->dest->cast<PtrOffsetStmt>()) {
+        if (auto data = get_store_forwarding_data(dest->origin, i)) {
+          data_source_ptrs = std::vector<Stmt *>(1, data);
+        } else {
+          data_source_ptrs = std::vector<Stmt *>();
+        }
+      }
+    }
     for (auto data_source_ptr : data_source_ptrs) {
       // stmt provides a data source
       if (after_lower_access && !(data_source_ptr->is<AllocaStmt>())) {

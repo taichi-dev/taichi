@@ -11,16 +11,16 @@ namespace lang {
 
 constexpr size_t kBufferSizeEntireSize = size_t(-1);
 
-#define MAKE_ENUM_FLAGS(name)                \
-inline name operator|(name a, name b) {      \
-  return static_cast<name>(int(a) | int(b)); \
-  }                                          \
-inline name operator&(name a, name b) {      \
-  return static_cast<name>(int(a) & int(b)); \
-}                                            \
-inline bool operator&&(name a, name b) {     \
-  return (int(a) & int(b)) != 0;             \
-}
+#define MAKE_ENUM_FLAGS(name)                  \
+  inline name operator|(name a, name b) {      \
+    return static_cast<name>(int(a) | int(b)); \
+  }                                            \
+  inline name operator&(name a, name b) {      \
+    return static_cast<name>(int(a) & int(b)); \
+  }                                            \
+  inline bool operator&&(name a, name b) {     \
+    return (int(a) & int(b)) != 0;             \
+  }
 
 // For backend dependent code (e.g. codegen)
 // Or the backend runtime itself

@@ -2382,9 +2382,9 @@ void VulkanSurface::create_swap_chain() {
 #endif
 
   VkExtent2D extent = {uint32_t(width), uint32_t(height)};
-  extent.width = std::max(capabilities.minImageExtent.width,
-                          std::min(capabilities.maxImageExtent.width,
-                                   extent.width));
+  extent.width =
+      std::max(capabilities.minImageExtent.width,
+               std::min(capabilities.maxImageExtent.width, extent.width));
   extent.height =
       std::max(capabilities.minImageExtent.height,
                std::min(capabilities.maxImageExtent.height, extent.height));

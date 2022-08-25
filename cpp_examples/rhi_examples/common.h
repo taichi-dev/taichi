@@ -66,8 +66,8 @@ class App {
       evd_params.surface_creator = [&](VkInstance instance) -> VkSurfaceKHR {
         VkSurfaceKHR surface = VK_NULL_HANDLE;
 
-        if (glfwCreateWindowSurface(instance, glfw_window, nullptr,
-                                    &surface) != VK_SUCCESS) {
+        if (glfwCreateWindowSurface(instance, glfw_window, nullptr, &surface) !=
+            VK_SUCCESS) {
           throw std::runtime_error("failed to create window surface!");
         }
         return surface;
@@ -94,7 +94,8 @@ class App {
     glfwTerminate();
   }
 
-  virtual std::vector<StreamSemaphore> render_loop(StreamSemaphore image_available_semaphore) {
+  virtual std::vector<StreamSemaphore> render_loop(
+      StreamSemaphore image_available_semaphore) {
     return {};
   }
 
@@ -103,11 +104,11 @@ class App {
       auto image_available_semaphore = surface->acquire_next_image();
 
       glfwPollEvents();
-      
+
       surface->present_image(render_loop(image_available_semaphore));
     }
   }
-   
+
  public:
   // Owned
   GLFWwindow *glfw_window;

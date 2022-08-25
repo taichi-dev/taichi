@@ -1,3 +1,5 @@
+import errno
+
 import pytest
 
 import taichi as ti
@@ -22,6 +24,16 @@ def _test_inf_nan(dt):
         assert all(isnan(v) == [1, 1, 0, 0])
 
     make_tests()
+
+
+@ti.func
+def check_epsilon_equal(mat_cal, mat_ref, epsilon) -> int:
+    assert mat_cal.n == mat_ref.n and mat_cal.m == mat_ref.m
+    err = 0
+    for i in ti.static(range(mat_cal.n)):
+        for j in ti.static(range(mat_cal.m)):
+            err = ti.abs(mat_cal[i, j] - mat_ref[i, j]) > epsilon
+    return err
 
 
 @pytest.mark.parametrize('dt', [ti.f32, ti.f64])
@@ -79,3 +91,78 @@ def test_vector_types_f64():
         assert ray.id.x == N
 
     test()
+
+
+@test_utils.test()
+@ti.kernel
+def test_translate():
+    error = 0
+    translate_vec = ti.math.vec3(1., 2., 3.)
+    translate_mat = ti.math.translate(translate_vec[0], translate_vec[1],
+                                      translate_vec[2])
+    translate_ref = ti.math.mat4([[1., 0., 0., 1.], [0., 1., 0., 2.],
+                                  [0., 0., 1., 3.], [0., 0., 0., 1.]])
+    error += check_epsilon_equal(translate_mat, translate_ref, 0.00001)
+    assert error == 0
+
+
+@test_utils.test()
+@ti.kernel
+def test_scale():
+    error = 0
+    scale_vec = ti.math.vec3(1., 2., 3.)
+    scale_mat = ti.math.scale(scale_vec[0], scale_vec[1], scale_vec[2])
+    scale_ref = ti.math.mat4([[1., 0., 0., 0.], [0., 2., 0., 0.],
+                              [0., 0., 3., 0.], [0., 0., 0., 1.]])
+    error += check_epsilon_equal(scale_mat, scale_ref, 0.00001)
+    assert error == 0
+
+
+@test_utils.test()
+@ti.kernel
+def test_rotation2d():
+    error = 0
+    rotationTest = ti.math.rotation2d(ti.math.radians(30))
+    rotationRef = ti.math.mat2([[0.866025, -0.500000], [0.500000, 0.866025]])
+    error += check_epsilon_equal(rotationRef, rotationTest, 0.00001)
+    assert error == 0
+
+
+@test_utils.test()
+@ti.kernel
+def test_rotation3d():
+    error = 0
+
+    first = 1.046
+    second = 0.52
+    third = -0.785
+    axisX = ti.math.vec3(1.0, 0.0, 0.0)
+    axisY = ti.math.vec3(0.0, 1.0, 0.0)
+    axisZ = ti.math.vec3(0.0, 0.0, 1.0)
+
+    rotationEuler = ti.math.rot_yaw_pitch_roll(first, second, third)
+    rotationInvertedY = ti.math.rot_by_axis(
+        axisZ, third) @ ti.math.rot_by_axis(
+            axisX, second) @ ti.math.rot_by_axis(axisY, -first)
+    rotationDumb = ti.Matrix.zero(ti.f32, 4, 4)
+    rotationDumb = ti.math.rot_by_axis(axisY, first) @ rotationDumb
+    rotationDumb = ti.math.rot_by_axis(axisX, second) @ rotationDumb
+    rotationDumb = ti.math.rot_by_axis(axisZ, third) @ rotationDumb
+    rotationTest = ti.math.rotation3d(second, third, first)
+
+    dif0 = rotationEuler - rotationDumb
+    dif1 = rotationEuler - rotationInvertedY
+
+    difRef0 = ti.math.mat4([[0.05048351, -0.61339645, -0.78816002, 0.],
+                            [0.65833154, 0.61388511, -0.4355969, 0.],
+                            [0.75103329, -0.49688014, 0.4348093, 0.],
+                            [0., 0., 0., 1.]])
+    difRef1 = ti.math.mat4([[-0.60788802, 0., -1.22438441, 0.],
+                            [0.60837229, 0., -1.22340979, 0.],
+                            [1.50206658, 0., 0., 0.], [0., 0., 0., 0.]])
+
+    error += check_epsilon_equal(dif0, difRef0, 0.00001)
+    error += check_epsilon_equal(dif1, difRef1, 0.00001)
+    error += check_epsilon_equal(rotationEuler, rotationTest, 0.00001)
+
+    assert error == 0

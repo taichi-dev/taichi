@@ -27,7 +27,10 @@ class AotModuleImpl : public aot::Module {
       : runtime_(params.runtime), device_api_backend_(device_api_backend) {
     const std::string bin_path =
         fmt::format("{}/metadata.tcb", params.module_path);
-    read_from_binary_file(ti_aot_data_, bin_path);
+    if (!read_from_binary_file(ti_aot_data_, bin_path)) {
+      mark_corrupted();
+      return;
+    }
 
     for (int i = 0; i < ti_aot_data_.kernels.size(); ++i) {
       auto k = ti_aot_data_.kernels[i];
@@ -36,6 +39,10 @@ class AotModuleImpl : public aot::Module {
       for (int j = 0; j < k.tasks_attribs.size(); ++j) {
         std::vector<uint32_t> res =
             read_spv_file(params.module_path, k.tasks_attribs[j]);
+        if (res.size() == 0) {
+          mark_corrupted();
+          return;
+        }
         spirv_sources_codes.push_back(res);
       }
       ti_aot_data_.spirv_codes.push_back(spirv_sources_codes);
@@ -43,13 +50,22 @@ class AotModuleImpl : public aot::Module {
 
     const std::string graph_path =
         fmt::format("{}/graphs.tcb", params.module_path);
-    read_from_binary_file(graphs_, graph_path);
+    if (!read_from_binary_file(graphs_, graph_path)) {
+      mark_corrupted();
+      return;
+    }
   }
 
-  std::unique_ptr<aot::CompiledGraph> get_graph(std::string name) override {
-    TI_ERROR_IF(graphs_.count(name) == 0, "Cannot find graph {}", name);
+  std::unique_ptr<aot::CompiledGraph> get_graph(
+      const std::string &name) override {
+    auto it = graphs_.find(name);
+    if (it == graphs_.end()) {
+      TI_DEBUG("Cannot find graph {}", name);
+      return nullptr;
+    }
+
     std::vector<aot::CompiledDispatch> dispatches;
-    for (auto &dispatch : graphs_[name].dispatches) {
+    for (auto &dispatch : it->second.dispatches) {
       dispatches.push_back({dispatch.kernel_name, dispatch.symbolic_args,
                             get_kernel(dispatch.kernel_name)});
     }

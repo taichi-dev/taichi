@@ -17,13 +17,27 @@ def gen_cpp_kernel(kernel_fn, args):
     return kernel.compiled_kernels[key]
 
 
+def flatten_args(args):
+    unzipped_args = []
+    # Tuple for matrix args
+    # FIXME remove this when native Matrix type is ready
+    for arg in args:
+        if isinstance(arg, list):
+            for sublist in arg:
+                unzipped_args.extend(sublist)
+        else:
+            unzipped_args.append(arg)
+    return unzipped_args
+
+
 class Sequential:
     def __init__(self, seq):
         self.seq_ = seq
 
     def dispatch(self, kernel_fn, *args):
         kernel_cpp = gen_cpp_kernel(kernel_fn, args)
-        self.seq_.dispatch(kernel_cpp, args)
+        unzipped_args = flatten_args(args)
+        self.seq_.dispatch(kernel_cpp, unzipped_args)
 
 
 class GraphBuilder:
@@ -32,15 +46,7 @@ class GraphBuilder:
 
     def dispatch(self, kernel_fn, *args):
         kernel_cpp = gen_cpp_kernel(kernel_fn, args)
-        unzipped_args = []
-        # Tuple for matrix args
-        # FIXME remove this when native Matrix type is ready
-        for arg in args:
-            if isinstance(arg, list):
-                for sublist in arg:
-                    unzipped_args.extend(sublist)
-            else:
-                unzipped_args.append(arg)
+        unzipped_args = flatten_args(args)
         self._graph_builder.dispatch(kernel_cpp, unzipped_args)
 
     def create_sequential(self):
@@ -75,7 +81,10 @@ class Graph:
                     for b in range(v.m):
                         key = f"{k}_mat_arg_{mat_val_id}"
                         mat_val_id += 1
-                        flattened[key] = v[a, b]
+                        if getattr(v, "ndim", 2) == 2:
+                            flattened[key] = v[a, b]
+                        else:
+                            flattened[key] = v[a]
             elif isinstance(v, (int, float)):
                 flattened[k] = v
             else:

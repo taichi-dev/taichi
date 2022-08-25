@@ -3,6 +3,7 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/visitors.h"
 #include "taichi/transforms/check_out_of_bound.h"
+#include "taichi/transforms/utils.h"
 #include <set>
 
 TLANG_NAMESPACE_BEGIN
@@ -98,6 +99,7 @@ class CheckOutOfBound : public BasicStmtVisitor {
       msg += "%d";
     }
     msg += ")";
+    msg += "\n" + stmt->tb;
 
     new_stmts.push_back<AssertStmt>(result, msg, args);
     modifier.insert_before(stmt, std::move(new_stmts));
@@ -117,6 +119,7 @@ class CheckOutOfBound : public BasicStmtVisitor {
             BinaryOpType::cmp_ge, stmt->rhs, compare_rhs.get());
         compare->ret_type = PrimitiveType::i32;
         std::string msg = "Negative exponent for integer pows are not allowed";
+        msg += "\n" + stmt->tb;
         auto assert_stmt = std::make_unique<AssertStmt>(compare.get(), msg,
                                                         std::vector<Stmt *>());
         assert_stmt->accept(this);

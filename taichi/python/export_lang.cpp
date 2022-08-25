@@ -98,6 +98,13 @@ void export_lang(py::module &m) {
       .value("REVERSE", AutodiffMode::kReverse)
       .export_values();
 
+  py::enum_<SNodeGradType>(m, "SNodeGradType", py::arithmetic())
+      .value("PRIMAL", SNodeGradType::kPrimal)
+      .value("ADJOINT", SNodeGradType::kAdjoint)
+      .value("DUAL", SNodeGradType::kDual)
+      .value("ADJOINT_CHECKBIT", SNodeGradType::kAdjointCheckbit)
+      .export_values();
+
   // TODO(type): This should be removed
   py::class_<DataType>(m, "DataType")
       .def(py::init<Type *>())
@@ -380,22 +387,36 @@ void export_lang(py::module &m) {
            [](Program *program, int n, int m, uint64 max_num_entries,
               DataType dtype, const std::string &storage_format) {
              TI_ERROR_IF(!arch_is_cpu(program->config.arch),
-                         "SparseMatrix only supports CPU for now.");
+                         "SparseMatrix Builder only supports CPU for now.");
              return SparseMatrixBuilder(n, m, max_num_entries, dtype,
                                         storage_format);
            })
       .def("create_sparse_matrix",
            [](Program *program, int n, int m, DataType dtype,
               std::string storage_format) {
-             TI_ERROR_IF(!arch_is_cpu(program->config.arch),
-                         "SparseMatrix only supports CPU for now.");
-             return make_sparse_matrix(n, m, dtype, storage_format);
+             TI_ERROR_IF(!arch_is_cpu(program->config.arch) &&
+                             !arch_is_cuda(program->config.arch),
+                         "SparseMatrix only supports CPU and CUDA for now.");
+             if (arch_is_cpu(program->config.arch))
+               return make_sparse_matrix(n, m, dtype, storage_format);
+             else
+               return make_cu_sparse_matrix(n, m, dtype);
            })
       .def("make_sparse_matrix_from_ndarray",
            [](Program *program, SparseMatrix &sm, const Ndarray &ndarray) {
-             TI_ERROR_IF(!arch_is_cpu(program->config.arch),
-                         "SparseMatrix only supports CPU for now.");
+             TI_ERROR_IF(!arch_is_cpu(program->config.arch) &&
+                             !arch_is_cuda(program->config.arch),
+                         "SparseMatrix only supports CPU and CUDA for now.");
              return make_sparse_matrix_from_ndarray(program, sm, ndarray);
+           })
+      .def("make_sparse_matrix_from_ndarray_cusparse",
+           [](Program *program, CuSparseMatrix &sm, const Ndarray &row_coo,
+              const Ndarray &col_coo, const Ndarray &val_coo) {
+             TI_ERROR_IF(
+                 !arch_is_cuda(program->config.arch),
+                 "SparseMatrix based on GPU only supports CUDA for now.");
+             return make_sparse_matrix_from_ndarray_cusparse(
+                 program, sm, row_coo, col_coo, val_coo);
            })
       .def("no_activate",
            [](Program *program, SNode *snode) {
@@ -511,12 +532,13 @@ void export_lang(py::module &m) {
           py::return_value_policy::reference)
       .def("lazy_grad", &SNode::lazy_grad)
       .def("lazy_dual", &SNode::lazy_dual)
-      .def("allocate_grad_visited", &SNode::allocate_grad_visited)
+      .def("allocate_adjoint_checkbit", &SNode::allocate_adjoint_checkbit)
       .def("read_int", &SNode::read_int)
       .def("read_uint", &SNode::read_uint)
       .def("read_float", &SNode::read_float)
       .def("has_adjoint", &SNode::has_adjoint)
-      .def("has_adjoint_visited", &SNode::has_adjoint_visited)
+      .def("has_adjoint_checkbit", &SNode::has_adjoint_checkbit)
+      .def("get_snode_grad_type", &SNode::get_snode_grad_type)
       .def("has_dual", &SNode::has_dual)
       .def("is_primal", &SNode::is_primal)
       .def("is_place", &SNode::is_place)
@@ -706,19 +728,20 @@ void export_lang(py::module &m) {
            [](Expr *expr) { return expr->is<ExternalTensorExpression>(); })
       .def("is_primal",
            [](Expr *expr) {
-             return expr->cast<GlobalVariableExpression>()->is_primal;
+             return expr->cast<GlobalVariableExpression>()->snode_grad_type ==
+                    SNodeGradType::kPrimal;
            })
       .def("set_tb", &Expr::set_tb)
       .def("set_name",
            [&](Expr *expr, std::string na) {
              expr->cast<GlobalVariableExpression>()->name = na;
            })
-      .def("set_is_primal",
-           [&](Expr *expr, bool v) {
-             expr->cast<GlobalVariableExpression>()->is_primal = v;
+      .def("set_grad_type",
+           [&](Expr *expr, SNodeGradType t) {
+             expr->cast<GlobalVariableExpression>()->snode_grad_type = t;
            })
       .def("set_adjoint", &Expr::set_adjoint)
-      .def("set_adjoint_visited", &Expr::set_adjoint_visited)
+      .def("set_adjoint_checkbit", &Expr::set_adjoint_checkbit)
       .def("set_dual", &Expr::set_dual)
       .def("set_attribute", &Expr::set_attribute)
       .def(
@@ -938,18 +961,18 @@ void export_lang(py::module &m) {
   m.def("is_unsigned", is_unsigned);
 
   m.def("global_new", static_cast<Expr (*)(Expr, DataType)>(global_new));
-  m.def("set_global_grad", [&](const Expr &expr) {
-    TI_ASSERT(expr.is<GlobalVariableExpression>());
-    expr.cast<GlobalVariableExpression>()->is_primal = false;
-  });
+
   m.def("data_type_name", data_type_name);
 
-  m.def("subscript", [](const Expr &expr, const ExprGroup &expr_group) {
-    return expr[expr_group];
-  });
+  m.def("subscript",
+        [](const Expr &expr, const ExprGroup &expr_group, std::string tb) {
+          Expr idx_expr = expr[expr_group];
+          idx_expr.set_tb(tb);
+          return idx_expr;
+        });
 
-  m.def("make_index_expr",
-        Expr::make<IndexExpression, const Expr &, const ExprGroup &>);
+  m.def("make_index_expr", Expr::make<IndexExpression, const Expr &,
+                                      const ExprGroup &, std::string>);
 
   m.def("make_stride_expr",
         Expr::make<StrideExpression, const Expr &, const ExprGroup &,
@@ -1170,6 +1193,9 @@ void export_lang(py::module &m) {
   MAKE_SPARSE_MATRIX(32, RowMajor, f);
   MAKE_SPARSE_MATRIX(64, ColMajor, d);
   MAKE_SPARSE_MATRIX(64, RowMajor, d);
+
+  py::class_<CuSparseMatrix>(m, "CuSparseMatrix")
+      .def("spmv", &CuSparseMatrix::spmv);
 
   py::class_<SparseSolver>(m, "SparseSolver")
       .def("compute", &SparseSolver::compute)

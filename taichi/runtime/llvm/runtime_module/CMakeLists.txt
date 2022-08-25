@@ -14,6 +14,6 @@ function(COMPILE_LLVM_RUNTIME rtm_arch)
 endfunction()
 
 # Build llvm-runtime for host arch and cuda (if available)
-foreach(arch IN LISTS HOST_ARCH CUDA_ARCH)
+foreach(arch IN LISTS HOST_ARCH CUDA_ARCH DX12_ARCH)
   compile_llvm_runtime(${arch})
 endforeach()

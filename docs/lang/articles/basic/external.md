@@ -130,7 +130,7 @@ field.from_numpy(array)  # the input array must be of shape (256, 512, 3, 4)
 - For struct fields, the external array will be exported as **a dictionary of NumPy arrays, PyTorch tensors or Paddle Tensors** with keys being struct member names and values being struct member arrays. Nested structs will be exported as nested dictionaries:
 
 ```python
-field = ti.Struct.field({'a': ti.i32, 'b': ti.types.vector(float, 3)} shape=(256, 512))
+field = ti.Struct.field({'a': ti.i32, 'b': ti.types.vector(3, float)}, shape=(256, 512))
 field.shape # (256, 512)
 
 array_dict = field.to_numpy()

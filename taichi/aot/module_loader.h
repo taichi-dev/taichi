@@ -90,8 +90,13 @@ class TI_DLL_EXPORT Module {
   KernelTemplate *get_kernel_template(const std::string &name);
   Field *get_snode_tree(const std::string &name);
 
-  virtual std::unique_ptr<aot::CompiledGraph> get_graph(std::string name) {
+  virtual std::unique_ptr<aot::CompiledGraph> get_graph(
+      const std::string &name) {
     TI_NOT_IMPLEMENTED;
+  }
+
+  inline bool is_corrupted() const {
+    return is_corrupted_;
   }
 
  protected:
@@ -99,9 +104,13 @@ class TI_DLL_EXPORT Module {
   virtual std::unique_ptr<KernelTemplate> make_new_kernel_template(
       const std::string &name) = 0;
   virtual std::unique_ptr<Field> make_new_field(const std::string &name) = 0;
+  inline void mark_corrupted() {
+    is_corrupted_ = true;
+  }
   std::unordered_map<std::string, CompiledGraph> graphs_;
 
  private:
+  bool is_corrupted_{false};
   std::unordered_map<std::string, std::unique_ptr<Kernel>> loaded_kernels_;
   std::unordered_map<std::string, std::unique_ptr<KernelTemplate>>
       loaded_kernel_templates_;
@@ -117,7 +126,7 @@ class TargetDevice : public Device {
   }
 
   void set_default_caps(Arch arch) {
-    if (arch == Arch::vulkan) {
+    if (arch == Arch::vulkan || arch == Arch::opengl) {
       set_cap(DeviceCapability::spirv_version, 0x10300);
     }
   }

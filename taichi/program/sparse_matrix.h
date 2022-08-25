@@ -5,6 +5,7 @@
 #include "taichi/ir/type_utils.h"
 #include "taichi/program/ndarray.h"
 #include "taichi/program/program.h"
+#include "taichi/rhi/cuda/cuda_driver.h"
 
 #include "Eigen/Sparse"
 
@@ -58,8 +59,16 @@ class SparseMatrix {
   }
   virtual ~SparseMatrix() = default;
 
-  virtual void build_triplets(void *triplets_adr){};
+  virtual void build_triplets(void *triplets_adr) {
+    TI_NOT_IMPLEMENTED;
+  };
 
+  virtual void build_csr_from_coo(void *coo_row_ptr,
+                                  void *coo_col_ptr,
+                                  void *coo_values_ptr,
+                                  int nnz) {
+    TI_NOT_IMPLEMENTED;
+  }
   inline const int num_rows() const {
     return rows_;
   }
@@ -189,14 +198,45 @@ class EigenSparseMatrix : public SparseMatrix {
   EigenMatrix matrix_;
 };
 
+class CuSparseMatrix : public SparseMatrix {
+ public:
+  explicit CuSparseMatrix(int rows, int cols, DataType dt)
+      : SparseMatrix(rows, cols, dt) {
+  }
+
+  virtual ~CuSparseMatrix();
+  void build_csr_from_coo(void *coo_row_ptr,
+                          void *coo_col_ptr,
+                          void *coo_values_ptr,
+                          int nnz) override;
+  void spmv(Program *prog, const Ndarray &x, Ndarray &y);
+
+  const void *get_matrix() const override {
+    return &matrix_;
+  };
+
+  void print_info();
+
+ private:
+  cusparseSpMatDescr_t matrix_;
+};
+
 std::unique_ptr<SparseMatrix> make_sparse_matrix(
     int rows,
     int cols,
     DataType dt,
     const std::string &storage_format);
+std::unique_ptr<SparseMatrix> make_cu_sparse_matrix(int rows,
+                                                    int cols,
+                                                    DataType dt);
 
 void make_sparse_matrix_from_ndarray(Program *prog,
                                      SparseMatrix &sm,
                                      const Ndarray &ndarray);
+void make_sparse_matrix_from_ndarray_cusparse(Program *prog,
+                                              SparseMatrix &sm,
+                                              const Ndarray &row_indices,
+                                              const Ndarray &col_indices,
+                                              const Ndarray &values);
 }  // namespace lang
 }  // namespace taichi

@@ -18,6 +18,8 @@ Arch arch_from_name(const std::string &arch);
 
 bool arch_is_cpu(Arch arch);
 
+bool arch_is_cuda(Arch arch);
+
 bool arch_uses_llvm(Arch arch);
 
 bool arch_is_gpu(Arch arch);

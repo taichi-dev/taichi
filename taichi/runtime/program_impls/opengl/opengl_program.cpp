@@ -115,7 +115,7 @@ const std::unique_ptr<gfx::OfflineCacheManager>
 
 void OpenglProgramImpl::dump_cache_data_to_disk() {
   if (offline_cache::enabled_wip_offline_cache(config->offline_cache)) {
-    get_cache_manager()->dump_with_mergeing();
+    get_cache_manager()->dump_with_merging();
   }
 }
 

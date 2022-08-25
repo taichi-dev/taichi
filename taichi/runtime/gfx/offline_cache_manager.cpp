@@ -87,7 +87,7 @@ FunctionType OfflineCacheManager::cache_kernel(const std::string &key,
   return register_params_to_executable(std::move(*params_opt), runtime_);
 }
 
-void OfflineCacheManager::dump_with_mergeing() const {
+void OfflineCacheManager::dump_with_merging() const {
   taichi::create_directories(path_);
   auto *cache_builder =
       static_cast<gfx::AotModuleBuilderImpl *>(caching_module_builder_.get());

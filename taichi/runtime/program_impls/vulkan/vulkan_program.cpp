@@ -69,51 +69,9 @@ VulkanProgramImpl::VulkanProgramImpl(CompileConfig &config)
     : ProgramImpl(config) {
 }
 
-FunctionType register_params_to_executable(
-    gfx::GfxRuntime::RegisterParams &&params,
-    gfx::GfxRuntime *runtime) {
-  auto handle = runtime->register_taichi_kernel(std::move(params));
-  return [runtime, handle](RuntimeContext &ctx) {
-    runtime->launch_kernel(handle, &ctx);
-  };
-}
-
-FunctionType compile_to_executable(Kernel *kernel,
-                                   gfx::GfxRuntime *runtime,
-                                   gfx::SNodeTreeManager *snode_tree_mgr) {
-  return register_params_to_executable(
-      gfx::run_codegen(kernel, runtime->get_ti_device(),
-                       snode_tree_mgr->get_compiled_structs()),
-      runtime);
-}
-
 FunctionType VulkanProgramImpl::compile(Kernel *kernel,
                                         OffloadedStmt *offloaded) {
-  // The Vulkan offline cache depends on AOT, which only supports a single
-  // SNodeTree. Hacking aot::Module can resolve this problem, but we prefer to
-  // fix it after supporting multiple SNodeTrees in AOT.
-  if (offline_cache::enabled_wip_offline_cache(config->offline_cache) &&
-      !kernel->is_evaluator &&
-      snode_tree_mgr_->get_compiled_structs().size() == 1) {
-    auto kernel_key = get_hashed_offline_cache_key(config, kernel);
-    kernel->set_kernel_key_for_cache(kernel_key);
-    const auto &cache_mgr = get_cache_manager();
-    TI_ASSERT(cache_mgr != nullptr);
-    if (auto *cached_kernel = cache_mgr->load_cached_kernel(kernel_key)) {
-      TI_DEBUG("Create kernel '{}' from cache (key='{}')", kernel->get_name(),
-               kernel_key);
-      kernel->set_from_offline_cache();
-      return
-          [cached_kernel](RuntimeContext &ctx) { cached_kernel->launch(&ctx); };
-    } else {  // Compile & Cache it
-      TI_DEBUG("Cache kernel '{}' (key='{}')", kernel->get_name(), kernel_key);
-      return cache_mgr->cache_kernel(kernel_key, kernel);
-    }
-  }
-
-  spirv::lower(kernel);
-  return compile_to_executable(kernel, vulkan_runtime_.get(),
-                               snode_tree_mgr_.get());
+  return get_cache_manager()->load_or_compile(config, kernel);
 }
 
 static void glfw_error_callback(int code, const char *description) {
@@ -247,15 +205,21 @@ void VulkanProgramImpl::dump_cache_data_to_disk() {
   }
 }
 
-const std::unique_ptr<gfx::OfflineCacheManager>
+const std::unique_ptr<gfx::CacheManager>
     &VulkanProgramImpl::get_cache_manager() {
   if (!cache_manager_) {
     TI_ASSERT(vulkan_runtime_ && snode_tree_mgr_ && embedded_device_);
     auto target_device = std::make_unique<aot::TargetDevice>(config->arch);
     embedded_device_->device()->clone_caps(*target_device);
-    cache_manager_ = std::make_unique<gfx::OfflineCacheManager>(
-        config->offline_cache_file_path, config->arch, vulkan_runtime_.get(),
-        std::move(target_device), snode_tree_mgr_->get_compiled_structs());
+    using Mgr = gfx::CacheManager;
+    Mgr::Params params;
+    params.arch = config->arch;
+    params.mode = offline_cache::enabled_wip_offline_cache(config->offline_cache) ? Mgr::MemAndDiskCache : Mgr::MemCache;
+    params.cache_path = config->offline_cache_file_path;
+    params.runtime = vulkan_runtime_.get();
+    params.target_device = std::move(target_device);
+    params.compiled_structs = snode_tree_mgr_->get_compiled_structs();
+    cache_manager_ = std::make_unique<gfx::CacheManager>(std::move(params));
   }
   return cache_manager_;
 }

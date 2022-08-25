@@ -8,23 +8,35 @@ namespace taichi {
 namespace lang {
 namespace gfx {
 
-class OfflineCacheManager {
+class CacheManager {
  public:
+  enum Mode { NotCache, MemCache, MemAndDiskCache };
+
+  struct Params {
+    Arch arch;
+    Mode mode{MemCache};
+    std::string cache_path;
+    GfxRuntime *runtime{nullptr};
+    std::unique_ptr<aot::TargetDevice> target_device;
+    std::vector<spirv::CompiledSNodeStructs> compiled_structs;
+  };
+
   using CompiledKernelData = gfx::GfxRuntime::RegisterParams;
 
-  OfflineCacheManager(
-      const std::string &cache_path,
-      Arch arch,
-      GfxRuntime *runtime,
-      std::unique_ptr<aot::TargetDevice> &&target_device,
-      const std::vector<spirv::CompiledSNodeStructs> &compiled_structs);
-  aot::Kernel *load_cached_kernel(const std::string &key);
-  FunctionType cache_kernel(const std::string &key, Kernel *kernel);
+  CacheManager(Params &&init_params);
+
+  FunctionType load_or_compile(CompileConfig *config, Kernel *kernel);
   void dump_with_merging() const;
 
  private:
+  FunctionType load_cached_kernel(Kernel *kernel, const std::string &key);
+  FunctionType compile_and_cache_kernel(const std::string &key, Kernel *kernel);
+  std::string make_kernel_key(CompileConfig *config, Kernel *kernel) const;
+
+  Mode mode_{MemCache};
   std::string path_;
   GfxRuntime *runtime_{nullptr};
+  std::vector<spirv::CompiledSNodeStructs> compiled_structs_;
   std::unique_ptr<AotModuleBuilder> caching_module_builder_{nullptr};
   std::unique_ptr<aot::Module> cached_module_{nullptr};
 };

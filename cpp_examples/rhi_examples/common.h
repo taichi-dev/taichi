@@ -4,6 +4,7 @@
 #include "taichi/rhi/vulkan/vulkan_common.h"
 #include "taichi/rhi/vulkan/vulkan_device_creator.h"
 
+#define GLFW_INCLUDE_NONE
 #include "GLFW/glfw3.h"
 #include "glm/glm.hpp"
 

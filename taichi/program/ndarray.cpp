@@ -91,10 +91,11 @@ Ndarray::Ndarray(DeviceAllocation &devalloc,
                  const DataType type,
                  const std::vector<int> &shape,
                  const std::vector<int> &element_shape,
-                 ExternalArrayLayout layout) {
-  TI_ASSERT(type->is<PrimitiveType>());
-  auto tensor_type = TypeFactory::create_tensor_type(element_shape, type);
-  Ndarray(devalloc, tensor_type, shape, layout);
+                 ExternalArrayLayout layout)
+    : Ndarray(devalloc,
+              TypeFactory::create_tensor_type(element_shape, type),
+              shape,
+              layout) {
 }
 
 Ndarray::~Ndarray() {

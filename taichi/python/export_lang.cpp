@@ -1090,7 +1090,10 @@ void export_lang(py::module &m) {
 
   // Type system
 
-  py::class_<Type>(m, "Type").def("to_string", &Type::to_string);
+  py::class_<Type>(m, "Type")
+      .def("to_string", &Type::to_string)
+      .def("get_element_shape", &Type::get_shape)
+      .def("get_element_type", &Type::get_element_type);
 
   // Note that it is important to specify py::return_value_policy::reference for
   // the factory methods, otherwise pybind11 will delete the Types owned by
@@ -1104,7 +1107,9 @@ void export_lang(py::module &m) {
            py::return_value_policy::reference)
       .def("get_quant_float_type", &TypeFactory::get_quant_float_type,
            py::arg("digits_type"), py::arg("exponent_type"),
-           py::arg("compute_type"), py::return_value_policy::reference);
+           py::arg("compute_type"), py::return_value_policy::reference)
+      .def("get_tensor_type", &TypeFactory::get_tensor_type, py::arg("shape"),
+           py::arg("element_type"), py::return_value_policy::reference);
 
   m.def("get_type_factory_instance", TypeFactory::get_instance,
         py::return_value_policy::reference);

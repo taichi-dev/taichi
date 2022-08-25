@@ -42,6 +42,14 @@ class TI_DLL_EXPORT Type {
 
   bool is_primitive(PrimitiveTypeID type) const;
 
+  virtual std::vector<int> get_shape() const {
+    return {};
+  }
+
+  virtual Type *get_element_type() const {
+    return nullptr;
+  }
+
   virtual Type *get_compute_type() {
     TI_NOT_IMPLEMENTED;
   }
@@ -160,7 +168,7 @@ class TensorType : public Type {
       : shape_(std::move(shape)), element_(element) {
   }
 
-  Type *get_element_type() const {
+  Type *get_element_type() const override {
     return element_;
   }
 
@@ -171,7 +179,7 @@ class TensorType : public Type {
     return num_elements;
   }
 
-  std::vector<int> get_shape() const {
+  std::vector<int> get_shape() const override {
     return shape_;
   }
 
@@ -339,7 +347,7 @@ class QuantArrayType : public Type {
     return physical_type_;
   }
 
-  Type *get_element_type() const {
+  Type *get_element_type() const override {
     return element_type_;
   }
 

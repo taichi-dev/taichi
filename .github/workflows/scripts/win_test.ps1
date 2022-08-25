@@ -52,7 +52,7 @@ if ("$env:TI_WANTED_ARCHS".Contains("cpu")) {
   if (-not $?) { exit 1 }
 }
 if ("$env:TI_WANTED_ARCHS".Contains("opengl")) {
-  python tests/run_tests.py -vr2 -t4 -k "not torch and not paddle" -a opengl
+  python tests/run_tests.py -vr2 -t4 -k "not torch and not paddle" -a opengl --with-offline-cache --rerun-with-offline-cache 1
   if (-not $?) { exit 1 }
 }
 python tests/run_tests.py -vr2 -t1 -k "torch" -a "$env:TI_WANTED_ARCHS" --with-offline-cache --rerun-with-offline-cache 1

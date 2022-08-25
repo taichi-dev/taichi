@@ -88,12 +88,12 @@ else
     if [[ $TI_WANTED_ARCHS == *"cpu"* ]]; then
         python3 tests/run_tests.py -vr2 -t8 -k "not torch and not paddle" -a cpu --with-offline-cache --rerun-with-offline-cache 1
     fi
-    # if [[ $TI_WANTED_ARCHS == *"vulkan"* ]]; then
+    if [[ $TI_WANTED_ARCHS == *"vulkan"* ]]; then
         python3 tests/run_tests.py -vr2 -t8 -k "not torch and not paddle" -a vulkan --with-offline-cache --rerun-with-offline-cache 1
-    # fi
-    # if [[ $TI_WANTED_ARCHS == *"opengl"* ]]; then
-    #     python3 tests/run_tests.py -vr2 -t4 -k "not torch and not paddle" -a opengl
-    # fi
+    fi
+    if [[ $TI_WANTED_ARCHS == *"opengl"* ]]; then
+        python3 tests/run_tests.py -vr2 -t4 -k "not torch and not paddle" -a opengl --with-offline-cache --rerun-with-offline-cache 1
+    fi
     python3 tests/run_tests.py -vr2 -t1 -k "torch" -a "$TI_WANTED_ARCHS" --with-offline-cache --rerun-with-offline-cache 1
     # Paddle's paddle.fluid.core.Tensor._ptr() is only available on develop branch, and CUDA version on linux will get error `Illegal Instruction`
 fi

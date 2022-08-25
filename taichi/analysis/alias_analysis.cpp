@@ -91,9 +91,6 @@ AliasResult alias_analysis(Stmt *var1, Stmt *var2) {
                : AliasResult::uncertain;
   }
 
-  TI_ASSERT(var1->width() == 1);
-  TI_ASSERT(var2->width() == 1);
-
   if (var1->is<ExternalPtrStmt>() || var2->is<ExternalPtrStmt>()) {
     if (!var1->is<ExternalPtrStmt>() || !var2->is<ExternalPtrStmt>())
       return AliasResult::different;

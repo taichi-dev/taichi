@@ -494,10 +494,6 @@ class Stmt : public IRNode {
   Stmt();
   Stmt(const Stmt &stmt);
 
-  int width() const {
-    return ret_type->vector_width();
-  }
-
   virtual bool is_container_statement() const {
     return false;
   }
@@ -547,11 +543,6 @@ class Stmt : public IRNode {
   virtual void replace_operand_with(Stmt *old_stmt, Stmt *new_stmt);
 
   IRNode *get_parent() const override;
-
-  virtual void repeat(int factor) {
-    TI_ASSERT(factor == 1);
-    // ret_type.width *= factor;
-  }
 
   // returns the inserted stmt
   Stmt *insert_before_me(std::unique_ptr<Stmt> &&new_stmt);

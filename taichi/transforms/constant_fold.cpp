@@ -137,8 +137,6 @@ class ConstantFold : public BasicStmtVisitor {
     auto rhs = stmt->rhs->cast<ConstStmt>();
     if (!lhs || !rhs)
       return;
-    if (stmt->width() != 1)
-      return;
     auto dst_type = stmt->ret_type;
     TypedConstant new_constant(dst_type);
 
@@ -169,9 +167,6 @@ class ConstantFold : public BasicStmtVisitor {
     auto operand = stmt->operand->cast<ConstStmt>();
     if (!operand)
       return;
-    if (stmt->width() != 1) {
-      return;
-    }
     if (stmt->is_cast()) {
       bool cast_available = true;
       TypedConstant new_constant(stmt->ret_type);
@@ -210,8 +205,6 @@ class ConstantFold : public BasicStmtVisitor {
   void visit(BitExtractStmt *stmt) override {
     auto input = stmt->input->cast<ConstStmt>();
     if (!input)
-      return;
-    if (stmt->width() != 1)
       return;
     std::unique_ptr<Stmt> result_stmt;
     if (is_signed(input->val[0].dt)) {

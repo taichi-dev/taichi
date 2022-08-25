@@ -151,11 +151,6 @@ class AlgSimp : public BasicStmtVisitor {
 
   bool optimize_division(BinaryOpStmt *stmt) {
     // return true iff the IR is modified
-    if (stmt->lhs->ret_type->is<TensorType>() ||
-        stmt->rhs->ret_type->is<TensorType>()) {
-      // TODO: support tensor type
-      return false;
-    }
     auto rhs = stmt->rhs->cast<ConstStmt>();
     TI_ASSERT(stmt->op_type == BinaryOpType::div ||
               stmt->op_type == BinaryOpType::floordiv);

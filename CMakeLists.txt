@@ -200,6 +200,5 @@ endif()
 
 if (TI_BUILD_EXAMPLES)
   include(cmake/TaichiExamples.cmake)
+  add_subdirectory(cpp_examples/rhi_examples)
 endif()
-
-add_subdirectory(cpp_examples/rhi_examples)

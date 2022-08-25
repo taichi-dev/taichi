@@ -200,6 +200,7 @@ void export_lang(py::module &m) {
       .def_readwrite("ndarray_use_cached_allocator",
                      &CompileConfig::ndarray_use_cached_allocator)
       .def_readwrite("use_mesh", &CompileConfig::use_mesh)
+      .def_readwrite("real_matrix", &CompileConfig::real_matrix)
       .def_readwrite("cc_compile_cmd", &CompileConfig::cc_compile_cmd)
       .def_readwrite("cc_link_cmd", &CompileConfig::cc_link_cmd)
       .def_readwrite("quant_opt_store_fusion",
@@ -290,6 +291,7 @@ void export_lang(py::module &m) {
       .def("insert_deactivate", &ASTBuilder::insert_snode_deactivate)
       .def("insert_activate", &ASTBuilder::insert_snode_activate)
       .def("insert_external_func_call", &ASTBuilder::insert_external_func_call)
+      .def("make_matrix_expr", &ASTBuilder::make_matrix_expr)
       .def("expr_alloca", &ASTBuilder::expr_alloca)
       .def("expr_alloca_local_tensor", &ASTBuilder::expr_alloca_local_tensor)
       .def("expr_alloca_shared_array", &ASTBuilder::expr_alloca_shared_array)
@@ -425,15 +427,19 @@ void export_lang(py::module &m) {
              TI_ASSERT(kernel);
              kernel->no_activate.push_back(snode);
            })
-      .def("decl_arg",
-           [&](Program *program, const DataType &dt, bool is_array) {
-             return program->current_callable->insert_arg(dt, is_array);
+      .def("decl_scalar_arg",
+           [&](Program *program, const DataType &dt) {
+             return program->current_callable->insert_scalar_arg(dt);
            })
       .def("decl_arr_arg",
            [&](Program *program, const DataType &dt, int total_dim,
                std::vector<int> shape) {
              return program->current_callable->insert_arr_arg(dt, total_dim,
                                                               shape);
+           })
+      .def("decl_texture_arg",
+           [&](Program *program, const DataType &dt) {
+             return program->current_callable->insert_texture_arg(dt);
            })
       .def("decl_ret",
            [&](Program *program, const DataType &dt) {
@@ -964,12 +970,15 @@ void export_lang(py::module &m) {
 
   m.def("data_type_name", data_type_name);
 
-  m.def("subscript", [](const Expr &expr, const ExprGroup &expr_group) {
-    return expr[expr_group];
-  });
+  m.def("subscript",
+        [](const Expr &expr, const ExprGroup &expr_group, std::string tb) {
+          Expr idx_expr = expr[expr_group];
+          idx_expr.set_tb(tb);
+          return idx_expr;
+        });
 
-  m.def("make_index_expr",
-        Expr::make<IndexExpression, const Expr &, const ExprGroup &>);
+  m.def("make_index_expr", Expr::make<IndexExpression, const Expr &,
+                                      const ExprGroup &, std::string>);
 
   m.def("make_stride_expr",
         Expr::make<StrideExpression, const Expr &, const ExprGroup &,

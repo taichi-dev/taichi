@@ -794,6 +794,19 @@ class IRPrinter : public IRVisitor {
     print("{}{} = ref({})", stmt->type_hint(), stmt->name(), stmt->var->name());
   }
 
+  void visit(MatrixInitStmt *stmt) override {
+    std::string result = "";
+    result += fmt::format("{}{} = [", stmt->type_hint(), stmt->name());
+    for (int i = 0; i < stmt->values.size(); ++i) {
+      result += stmt->values[i]->name();
+      if (i != stmt->values.size() - 1) {
+        result += ", ";
+      }
+    }
+    result += "]";
+    print(result);
+  }
+
  private:
   std::string expr_to_string(Expr &expr) {
     return expr_to_string(expr.expr.get());

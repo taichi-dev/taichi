@@ -5,6 +5,7 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/frontend_ir.h"
+#include "taichi/transforms/utils.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -252,6 +253,7 @@ class TypeCheck : public IRVisitor {
     std::string msg =
         "Detected overflow for bit_shift_op with rhs = %d, exceeding limit of "
         "%d.";
+    msg += "\n" + stmt->tb;
     std::vector<Stmt *> args = {rhs, const_stmt.get()};
     auto assert_stmt =
         Stmt::make<AssertStmt>(cond_stmt.get(), msg, std::move(args));
@@ -552,6 +554,19 @@ class TypeCheck : public IRVisitor {
   void visit(ReferenceStmt *stmt) override {
     stmt->ret_type = stmt->var->ret_type;
     stmt->ret_type.set_is_pointer(true);
+  }
+
+  void visit(MatrixInitStmt *stmt) override {
+    TI_ASSERT_INFO(stmt->ret_type->is<TensorType>(),
+                   "Matrix should have tensor type, got {}",
+                   stmt->ret_type->to_string());
+    auto tensor_type = stmt->ret_type->as<TensorType>();
+    auto element_dtype = tensor_type->get_element_type();
+    for (int i = 0; i < stmt->values.size(); ++i) {
+      if (element_dtype != stmt->values[i]->ret_type) {
+        cast(stmt->values[i], element_dtype);
+      }
+    }
   }
 };
 

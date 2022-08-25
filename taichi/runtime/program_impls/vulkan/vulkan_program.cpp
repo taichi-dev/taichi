@@ -6,6 +6,7 @@
 #include "taichi/aot/graph_data.h"
 #include "taichi/runtime/gfx/aot_module_builder_impl.h"
 #include "taichi/runtime/gfx/offline_cache_manager.h"
+#include "taichi/runtime/gfx/offline_cache_manager.h"
 #include "taichi/runtime/gfx/snode_tree_manager.h"
 #include "taichi/runtime/gfx/aot_module_loader_impl.h"
 
@@ -232,7 +233,7 @@ std::unique_ptr<aot::Kernel> VulkanProgramImpl::make_aot_kernel(
 
 void VulkanProgramImpl::dump_cache_data_to_disk() {
   if (offline_cache::enabled_wip_offline_cache(config->offline_cache)) {
-    get_cache_manager()->dump_with_mergeing();
+    get_cache_manager()->dump_with_merging();
   }
 }
 

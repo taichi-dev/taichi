@@ -112,7 +112,7 @@ TEST(IRBuilder, ExternalPtr) {
   builder.create_global_store(a2ptr, a0plusa2);  // a[2] = a[0] + a[2]
   auto block = builder.extract_ir();
   auto ker = std::make_unique<Kernel>(*test_prog.prog(), std::move(block));
-  ker->insert_arg(get_data_type<int>(), /*is_array=*/true);
+  ker->insert_arr_arg(get_data_type<int>(), /*total_dim=*/1, {1});
   auto launch_ctx = ker->make_launch_context();
   launch_ctx.set_arg_external_array_with_shape(
       /*arg_id=*/0, (uint64)array.get(), size, {size});

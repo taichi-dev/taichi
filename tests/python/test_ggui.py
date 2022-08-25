@@ -12,6 +12,7 @@ from tests import test_utils
 
 REGENERATE_GROUNDTRUTH_IMAGES = False
 RENDER_REPEAT = 5
+# FIXME: enable ggui tests on ti.cpu backend. It's blocked by macos10.15
 supported_archs = [ti.vulkan, ti.cuda]
 
 

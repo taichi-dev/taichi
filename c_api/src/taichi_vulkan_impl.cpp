@@ -123,6 +123,9 @@ TiAotModule VulkanRuntime::load_aot_module(const char *module_path) {
   params.runtime = &get_gfx_runtime();
   std::unique_ptr<taichi::lang::aot::Module> aot_module =
       taichi::lang::aot::Module::load(arch, params);
+  if (aot_module->is_corrupted()) {
+    return TI_NULL_HANDLE;
+  }
   size_t root_size = aot_module->get_root_size();
   params.runtime->add_root_buffer(root_size);
   return (TiAotModule)(new AotModule(*this, std::move(aot_module)));
@@ -164,22 +167,31 @@ void VulkanRuntime::wait() {
 
 TiRuntime ti_create_vulkan_runtime_ext(uint32_t api_version,
                                        const char **instance_extensions,
-                                       uint32_t instance_extensions_count,
+                                       uint32_t instance_extension_count,
                                        const char **device_extensions,
-                                       uint32_t device_extensions_count) {
+                                       uint32_t device_extension_count) {
   if (api_version < VK_API_VERSION_1_0) {
-    TI_WARN("ignored attempt to create vulkan runtime of version <1.0");
+    ti_set_last_error(TI_ERROR_ARGUMENT_OUT_OF_RANGE, "api_version<1.0");
     return TI_NULL_HANDLE;
   }
+  if (instance_extension_count > 0) {
+    TI_CAPI_ARGUMENT_NULL_RV(instance_extensions);
+  }
+  if (device_extension_count > 0) {
+    TI_CAPI_ARGUMENT_NULL_RV(device_extensions);
+  }
+
   taichi::lang::vulkan::VulkanDeviceCreator::Params params;
   params.api_version = api_version;
   params.is_for_ui = false;
-  params.additional_instance_extensions.reserve(instance_extensions_count);
-  for (uint32_t i = 0; i < instance_extensions_count; ++i) {
+  params.additional_instance_extensions.reserve(instance_extension_count);
+  for (uint32_t i = 0; i < instance_extension_count; ++i) {
+    TI_CAPI_ARGUMENT_NULL_RV(instance_extensions[i]);
     params.additional_instance_extensions.push_back(instance_extensions[i]);
   }
-  params.additional_device_extensions.reserve(device_extensions_count);
-  for (uint32_t i = 0; i < device_extensions_count; ++i) {
+  params.additional_device_extensions.reserve(device_extension_count);
+  for (uint32_t i = 0; i < device_extension_count; ++i) {
+    TI_CAPI_ARGUMENT_NULL_RV(device_extensions[i]);
     params.additional_device_extensions.push_back(device_extensions[i]);
   }
   params.surface_creator = nullptr;
@@ -187,22 +199,11 @@ TiRuntime ti_create_vulkan_runtime_ext(uint32_t api_version,
 }
 TiRuntime ti_import_vulkan_runtime(
     const TiVulkanRuntimeInteropInfo *interop_info) {
-  if (interop_info->api_version < VK_API_VERSION_1_0) {
-    TI_WARN("ignored attempt to import vulkan runtime of version <1.0");
-    return TI_NULL_HANDLE;
-  }
-  if (interop_info->physical_device == nullptr) {
-    TI_WARN(
-        "ignored attempt to import vulkan runtime with vulkan physical device "
-        "of null handle");
-    return TI_NULL_HANDLE;
-  }
-  if (interop_info->device == nullptr) {
-    TI_WARN(
-        "ignored attempt to import vulkan runtime with vulkan device of null "
-        "handle");
-    return TI_NULL_HANDLE;
-  }
+  TI_CAPI_ARGUMENT_NULL_RV(interop_info);
+  TI_CAPI_ARGUMENT_NULL_RV(interop_info->instance);
+  TI_CAPI_ARGUMENT_NULL_RV(interop_info->physical_device);
+  TI_CAPI_ARGUMENT_NULL_RV(interop_info->device);
+
   taichi::lang::vulkan::VulkanDevice::Params params{};
   params.instance = interop_info->instance;
   params.physical_device = interop_info->physical_device;
@@ -217,12 +218,10 @@ TiRuntime ti_import_vulkan_runtime(
 }
 void ti_export_vulkan_runtime(TiRuntime runtime,
                               TiVulkanRuntimeInteropInfo *interop_info) {
-  if (runtime == nullptr) {
-    TI_WARN("ignored attempt to export vulkan runtime of null handle");
-    return;
-  }
+  TI_CAPI_ARGUMENT_NULL(runtime);
+  TI_CAPI_ARGUMENT_NULL(interop_info);
+
   Runtime *runtime2 = (Runtime *)runtime;
-  TI_ASSERT(runtime2->arch == taichi::Arch::vulkan);
   taichi::lang::vulkan::VulkanDevice &vk_device =
       static_cast<VulkanRuntime *>(runtime2)->get_vk();
   interop_info->api_version =
@@ -241,16 +240,12 @@ void ti_export_vulkan_runtime(TiRuntime runtime,
 TiMemory ti_import_vulkan_memory(
     TiRuntime runtime,
     const TiVulkanMemoryInteropInfo *interop_info) {
-  if (runtime == nullptr) {
-    TI_WARN(
-        "ignored attempt to import vulkan memory to runtime of null handle");
-    return TI_NULL_HANDLE;
-  }
+  TI_CAPI_ARGUMENT_NULL_RV(runtime);
+  TI_CAPI_ARGUMENT_NULL_RV(interop_info);
+  TI_CAPI_ARGUMENT_NULL_RV(interop_info->buffer);
+  TI_CAPI_INVALID_INTEROP_ARCH_RV(((Runtime *)runtime)->arch, vulkan);
+
   Runtime *runtime2 = (Runtime *)runtime;
-  if (runtime2->arch != taichi::Arch::vulkan) {
-    TI_WARN("ignored attempt to import vulkan memory to non-vulkan runtime");
-    return TI_NULL_HANDLE;
-  }
   taichi::lang::vulkan::VulkanDevice &vk_runtime =
       static_cast<VulkanRuntime *>(runtime2)->get_vk();
 
@@ -261,19 +256,15 @@ TiMemory ti_import_vulkan_memory(
   return devalloc2devmem(*runtime2, devalloc);
 }
 void ti_export_vulkan_memory(TiRuntime runtime,
-                             TiMemory devmem,
+                             TiMemory memory,
                              TiVulkanMemoryInteropInfo *interop_info) {
-  if (runtime == nullptr) {
-    TI_WARN(
-        "ignored attempt to export vulkan memory from runtime of null handle");
-    return;
-  }
-  if (devmem == nullptr) {
-    TI_WARN("ignored attempt to export vulkan memory of null handle");
-    return;
-  }
+  TI_CAPI_ARGUMENT_NULL(runtime);
+  TI_CAPI_ARGUMENT_NULL(memory);
+  TI_CAPI_ARGUMENT_NULL(interop_info);
+  TI_CAPI_INVALID_INTEROP_ARCH(((Runtime *)runtime)->arch, vulkan);
+
   VulkanRuntime *runtime2 = ((Runtime *)runtime)->as_vk();
-  taichi::lang::DeviceAllocation devalloc = devmem2devalloc(*runtime2, devmem);
+  taichi::lang::DeviceAllocation devalloc = devmem2devalloc(*runtime2, memory);
   vkapi::IVkBuffer buffer = runtime2->get_vk().get_vkbuffer(devalloc);
   interop_info->buffer = buffer.get()->buffer;
   interop_info->size = buffer.get()->size;
@@ -284,16 +275,12 @@ TiTexture ti_import_vulkan_texture(
     const TiVulkanTextureInteropInfo *interop_info,
     VkImageViewType view_type,
     VkImageLayout layout) {
-  if (runtime == nullptr) {
-    TI_WARN(
-        "ignored attempt to import vulkan texture from runtime of null handle");
-    return TI_NULL_HANDLE;
-  }
+  TI_CAPI_ARGUMENT_NULL_RV(runtime);
+  TI_CAPI_ARGUMENT_NULL_RV(interop_info);
+  TI_CAPI_ARGUMENT_NULL_RV(interop_info->image);
+  TI_CAPI_INVALID_INTEROP_ARCH_RV(((Runtime *)runtime)->arch, vulkan);
+
   Runtime *runtime2 = ((Runtime *)runtime)->as_vk();
-  if (runtime2->arch != taichi::Arch::vulkan) {
-    TI_WARN("ignored attempt to import vulkan texture to non-vulkan runtime");
-    return TI_NULL_HANDLE;
-  }
   taichi::lang::vulkan::VulkanDevice &vk_runtime =
       static_cast<VulkanRuntime *>(runtime2)->get_vk();
 
@@ -337,16 +324,13 @@ TiTexture ti_import_vulkan_texture(
 void ti_export_vulkan_texture(TiRuntime runtime,
                               TiTexture texture,
                               TiVulkanTextureInteropInfo *interop_info) {
-  if (runtime == nullptr) {
-    TI_WARN(
-        "ignored attempt to export vulkan texture from runtime of null handle");
-    return;
-  }
-  if (texture == nullptr) {
-    TI_WARN("ignored attempt to export vulkan texture of null handle");
-    return;
-  }
+  TI_CAPI_ARGUMENT_NULL(runtime);
+  TI_CAPI_ARGUMENT_NULL(texture);
+  TI_CAPI_ARGUMENT_NULL(interop_info);
+  TI_CAPI_INVALID_INTEROP_ARCH(((Runtime *)runtime)->arch, vulkan);
+
   VulkanRuntime *runtime2 = ((Runtime *)runtime)->as_vk();
+
   taichi::lang::DeviceAllocation devalloc = devtex2devalloc(*runtime2, texture);
   vkapi::IVkImage image =
       std::get<0>(runtime2->get_vk().get_vk_image(devalloc));
@@ -364,15 +348,12 @@ void ti_export_vulkan_texture(TiRuntime runtime,
 
 TiEvent ti_import_vulkan_event(TiRuntime runtime,
                                const TiVulkanEventInteropInfo *interop_info) {
-  if (runtime == nullptr) {
-    TI_WARN("ignored attempt to import vulkan event to runtime of null handle");
-    return TI_NULL_HANDLE;
-  }
+  TI_CAPI_ARGUMENT_NULL_RV(runtime);
+  TI_CAPI_ARGUMENT_NULL_RV(interop_info);
+  TI_CAPI_ARGUMENT_NULL_RV(interop_info->event);
+  TI_CAPI_INVALID_INTEROP_ARCH_RV(((Runtime *)runtime)->arch, vulkan);
+
   Runtime *runtime2 = (Runtime *)runtime;
-  if (runtime2->arch != taichi::Arch::vulkan) {
-    TI_WARN("ignored attempt to import vulkan memory to non-vulkan runtime");
-    return TI_NULL_HANDLE;
-  }
 
   vkapi::IVkEvent event = std::make_unique<vkapi::DeviceObjVkEvent>();
   event->device = runtime2->as_vk()->get_vk().vk_device();
@@ -387,15 +368,11 @@ TiEvent ti_import_vulkan_event(TiRuntime runtime,
 void ti_export_vulkan_event(TiRuntime runtime,
                             TiEvent event,
                             TiVulkanEventInteropInfo *interop_info) {
-  if (runtime == nullptr) {
-    TI_WARN(
-        "ignored attempt to export vulkan memory from runtime of null handle");
-    return;
-  }
-  if (event == nullptr) {
-    TI_WARN("ignored attempt to export vulkan memory of null handle");
-    return;
-  }
+  TI_CAPI_ARGUMENT_NULL(runtime);
+  TI_CAPI_ARGUMENT_NULL(event);
+  TI_CAPI_ARGUMENT_NULL(interop_info);
+  TI_CAPI_INVALID_INTEROP_ARCH(((Runtime *)runtime)->arch, vulkan);
+
   auto event2 =
       (taichi::lang::vulkan::VulkanDeviceEvent *)(&((Event *)event)->get());
   interop_info->event = event2->vkapi_ref->event;

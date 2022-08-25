@@ -98,6 +98,21 @@ def _gen_swizzles(cls):
     return cls
 
 
+def make_matrix(arr, dt=None):
+    assert len(arr) > 0, "Cannot create empty matrix"
+    is_matrix = isinstance(arr[0], Iterable)
+    if dt is None:
+        dt = _make_entries_initializer(is_matrix).infer_dt(arr)
+    if not is_matrix:
+        return impl.Expr(
+            impl.make_matrix_expr([len(arr)], dt,
+                                  [expr.Expr(elt).ptr for elt in arr]))
+    return impl.Expr(
+        impl.make_matrix_expr(
+            [len(arr), len(arr[0])], dt,
+            [expr.Expr(elt).ptr for row in arr for elt in row]))
+
+
 class _MatrixBaseImpl:
     def __init__(self, m, n, entries):
         self.m = m
@@ -1500,7 +1515,10 @@ class _MatrixFieldElement(_IntermediateMatrix):
         super().__init__(
             field.n,
             field.m, [
-                expr.Expr(ti_python_core.subscript(e.ptr, indices))
+                expr.Expr(
+                    ti_python_core.subscript(
+                        e.ptr, indices,
+                        impl.get_runtime().get_current_src_info()))
                 for e in field._get_field_members()
             ],
             ndim=getattr(field, "ndim", 2))

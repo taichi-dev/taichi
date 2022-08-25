@@ -47,11 +47,12 @@ class TI_DLL_EXPORT Callable {
   Callable();
   virtual ~Callable();
 
-  int insert_arg(const DataType &dt, bool is_array);
+  int insert_scalar_arg(const DataType &dt);
 
   int insert_arr_arg(const DataType &dt,
                      int total_dim,
                      std::vector<int> element_shape);
+  int insert_texture_arg(const DataType &dt);
 
   int insert_ret(const DataType &dt);
 

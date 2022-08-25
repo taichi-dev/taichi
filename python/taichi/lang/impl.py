@@ -39,7 +39,7 @@ def expr_init_local_tensor(shape, element_type, elements):
 
 @taichi_scope
 def make_matrix_expr(shape, element_type, elements):
-    return get_runtime().prog.current_ast_builder().make_local_matrix(
+    return get_runtime().prog.current_ast_builder().make_matrix_expr(
         shape, element_type, elements)
 
 

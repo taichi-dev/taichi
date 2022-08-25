@@ -100,11 +100,6 @@ class AlgSimp : public BasicStmtVisitor {
 
   bool optimize_multiplication(BinaryOpStmt *stmt) {
     // return true iff the IR is modified
-    if (stmt->lhs->ret_type->is<TensorType>() ||
-        stmt->rhs->ret_type->is<TensorType>()) {
-      // TODO: support tensor type
-      return false;
-    }
     auto lhs = stmt->lhs->cast<ConstStmt>();
     auto rhs = stmt->rhs->cast<ConstStmt>();
     TI_ASSERT(stmt->op_type == BinaryOpType::mul);

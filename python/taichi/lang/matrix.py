@@ -104,16 +104,11 @@ def make_matrix(arr, dt=None):
     if dt is None:
         dt = _make_entries_initializer(is_matrix).infer_dt(arr)
     if not is_matrix:
-        return impl.Expr(
-            impl.expr_init_local_tensor([len(arr)], dt,
-                                        impl.make_expr_group(
-                                            [expr.Expr(elt) for elt in arr])))
-    return impl.Expr(
-        impl.expr_init_local_tensor([len(arr), len(arr[0])], dt,
-                                    impl.make_expr_group([
-                                        expr.Expr(elt) for row in arr
-                                        for elt in row
-                                    ])))
+        return impl.make_local_matrix([len(arr)], dt,
+                                      [expr.Expr(elt).ptr for elt in arr])
+    return impl.make_local_matrix(
+        [len(arr), len(arr[0])], dt,
+        [expr.Expr(elt).ptr for row in arr for elt in row])
 
 
 class _MatrixBaseImpl:

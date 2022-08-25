@@ -87,10 +87,9 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
   }
 }
 
-FrontendContext::FrontendContext(Arch arch, bool real_matrix) {
+FrontendContext::FrontendContext(Arch arch) {
   root_node_ = std::make_unique<Block>();
-  current_builder_ =
-      std::make_unique<ASTBuilder>(root_node_.get(), arch, real_matrix);
+  current_builder_ = std::make_unique<ASTBuilder>(root_node_.get(), arch);
 }
 
 FrontendForStmt::FrontendForStmt(const Expr &loop_var,
@@ -991,9 +990,9 @@ Expr ASTBuilder::expr_alloca() {
   return var;
 }
 
-Expr make_local_matrix(const std::vector<int> &shape,
-                       const DataType &dt,
-                       const std::vector<Expr> &elements) {
+Expr ASTBuilder::make_local_matrix(const std::vector<int> &shape,
+                                   const DataType &dt,
+                                   const std::vector<Expr> &elements) {
   return Expr(std::make_shared<MatrixExpression>(elements, shape, dt));
 }
 
@@ -1001,15 +1000,6 @@ Expr ASTBuilder::expr_alloca_local_tensor(const std::vector<int> &shape,
                                           const DataType &element_type,
                                           const ExprGroup &elements,
                                           std::string tb) {
-  if (this->use_real_matrix_) {
-    auto matrix_expr = make_local_matrix(shape, element_type, elements.exprs);
-    auto v = this->expr_alloca();
-    this->expr_assign(v, matrix_expr, tb);
-    // type check for variable `v` since
-    // expr_assign couldn't propagate the info
-    v->ret_type = matrix_expr.cast<MatrixExpression>()->dt;
-    return v;
-  }
   auto var = Expr(std::make_shared<IdExpression>(get_next_id()));
   this->insert(std::make_unique<FrontendAllocaStmt>(
       std::static_pointer_cast<IdExpression>(var.expr)->id, shape,

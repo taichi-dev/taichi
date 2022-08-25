@@ -867,11 +867,9 @@ class ASTBuilder {
   Arch arch_;
   ForLoopDecoratorRecorder for_loop_dec_;
   int id_counter_{0};
-  bool use_real_matrix_{false};
 
  public:
-  ASTBuilder(Block *initial, Arch arch, bool real_matrix)
-      : arch_(arch), use_real_matrix_(real_matrix) {
+  ASTBuilder(Block *initial, Arch arch) : arch_(arch) {
     stack_.push_back(initial);
     loop_state_stack_.push_back(None);
   }
@@ -890,6 +888,9 @@ class ASTBuilder {
                   const std::function<void(Expr)> &func);
 
   Expr make_id_expr(const std::string &name);
+  Expr make_local_matrix(const std::vector<int> &shape,
+                         const DataType &dt,
+                         const std::vector<Expr> &elements);
   Expr insert_thread_idx_expr();
   Expr insert_patch_idx_expr();
   void create_kernel_exprgroup_return(const ExprGroup &group);
@@ -972,7 +973,7 @@ class FrontendContext {
   std::unique_ptr<Block> root_node_;
 
  public:
-  FrontendContext(Arch arch, bool real_matrix);
+  FrontendContext(Arch arch);
 
   ASTBuilder &builder() {
     return *current_builder_;

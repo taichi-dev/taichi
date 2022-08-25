@@ -16,22 +16,45 @@ class TI_DLL_EXPORT Callable {
   std::unique_ptr<FrontendContext> context{nullptr};
 
   struct Arg {
-    DataType dt;
     bool is_array{
         false};  // This is true for both ndarray and external array args.
-    std::size_t total_dim{0};             // total dim of array
-    std::vector<int> element_shape = {};  // shape of each element
+    std::size_t total_dim{0};  // total dim of array
 
     explicit Arg(const DataType &dt = PrimitiveType::unknown,
                  bool is_array = false,
                  std::size_t size_unused = 0,
                  int total_dim = 0,
-                 std::vector<int> element_shape = {})
-        : dt(dt),
-          is_array(is_array),
-          total_dim(total_dim),
-          element_shape(std::move(element_shape)) {
+                 std::vector<int> element_shape = {}) {
+      if (dt->is<PrimitiveType>() && element_shape.size() > 0) {
+        this->dt = taichi::lang::TypeFactory::get_instance().get_tensor_type(
+            element_shape, dt.operator->());
+
+      } else {
+        this->dt = dt;
+      }
+
+      this->is_array = is_array;
+      this->total_dim = total_dim;
     }
+
+    std::vector<int> get_element_shape() const {
+      return dt.get_element_shape();
+    }
+
+    DataType get_element_type() const {
+      return dt.get_element_type();
+    }
+
+    int get_element_size() const {
+      return data_type_size(dt);
+    }
+
+    DataType get_arg_dtype() const {
+      return dt;
+    }
+
+   private:
+    DataType dt;
   };
 
   struct Ret {

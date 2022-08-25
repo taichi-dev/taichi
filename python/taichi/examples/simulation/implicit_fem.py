@@ -14,10 +14,10 @@ parser.add_argument('--gui', choices=['auto', 'ggui', 'cpu'], default='auto')
 parser.add_argument('place_holder', nargs='*')
 args = parser.parse_args()
 
-ti.init(arch=ti.gpu, dynamic_index=True)
+ti.init(arch=ti.cuda, dynamic_index=True)
 
 if args.gui == 'auto':
-    if _ti_core.GGUI_AVAILABLE:
+    if _ti_core.GGUI_AVAILABLE and ti.lang.impl.current_cfg().arch == ti.cuda:
         args.gui = 'ggui'
     else:
         args.gui = 'cpu'
@@ -302,7 +302,7 @@ def main():
         frame_id = 0
         canvas = window.get_canvas()
         scene = ti.ui.Scene()
-        camera = ti.ui.make_camera()
+        camera = ti.ui.Camera()
         camera.position(2.0, 2.0, 3.95)
         camera.lookat(0.5, 0.5, 0.5)
         camera.fov(55)

@@ -30,6 +30,7 @@ sidebar_position: 3
   `ti debug your_script.py`.
 - To disable importing torch on start up: `export TI_ENABLE_TORCH=0`.
 - To disable importing paddle on start up: `export TI_ENABLE_PADDLE=0`.
+- To set a custom seed for the random number generator used by `ti.random()`: `ti.init(random_seed=seed)` where `seed` is an integer. For example `ti.init(random_seed=int(time.time()))`.
 
 ## Logging
 

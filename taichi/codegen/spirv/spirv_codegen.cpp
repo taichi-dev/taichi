@@ -2353,7 +2353,7 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
     do {
       last_size = optimized_spv.size();
       bool result = false;
-      TI_WARN_IF(
+      TI_ERROR_IF(
           (result = !spirv_opt_->Run(optimized_spv.data(), optimized_spv.size(),
                                      &optimized_spv, spirv_opt_options_)),
           "SPIRV optimization failed");

@@ -144,7 +144,7 @@ if ($env:VK_SDK_PATH) {
 
 # Chain up the cmake arguments.
 Write-Host "Will build Taichi ($BuildType) with the following CMake args:"
-$TaichiCMakeArgs = $env:TAICHI_CMAKE_ARGS
+$TaichiCMakeArgs = $env:TAICHI_CMAKE_ARGS ?? ""
 foreach ($Pair in $CMakeArgs.GetEnumerator()) {
     $Key = $Pair | Select-Object -ExpandProperty Key
     $Value = ($Pair | Select-Object -ExpandProperty Value) -replace "\\", "/"

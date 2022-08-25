@@ -167,6 +167,8 @@ if __name__ == "__main__":
         BuiltInType("VkImageTiling", "VkImageTiling"),
         BuiltInType("VkImageLayout", "VkImageLayout"),
         BuiltInType("VkImageUsageFlags", "VkImageUsageFlags"),
+        BuiltInType("VkImageViewType", "VkImageViewType"),
+        BuiltInType("char", "char"),
     }
 
     for module in Module.load_all(builtin_tys):

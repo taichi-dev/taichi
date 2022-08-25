@@ -66,3 +66,27 @@ def test_static_and():
         return ti.static(5 and 2 and 0)
 
     assert func() == 0
+
+
+@test_utils.test(require=ti.extension.data64, default_ip=ti.i64)
+def test_condition_type():
+    @ti.kernel
+    def func() -> int:
+        x = 0
+        result = 0
+        if x:
+            result = 1
+        else:
+            result = 2
+        return result
+
+    assert func() == 2
+
+
+@test_utils.test(require=ti.extension.data64, default_ip=ti.i64)
+def test_i32_bool():
+    @ti.kernel
+    def func() -> ti.i32:
+        return True
+
+    assert func() == 1

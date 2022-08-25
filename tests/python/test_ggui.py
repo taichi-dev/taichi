@@ -270,6 +270,35 @@ def test_set_image():
 
 
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
+@test_utils.test(arch=supported_archs)
+def test_set_image_flat_field():
+    window = ti.ui.Window('test', (640, 480), show_window=False)
+    canvas = window.get_canvas()
+
+    img = ti.field(ti.f32, (512, 512, 4))
+
+    @ti.kernel
+    def init_img():
+        for i, j in ti.ndrange(img.shape[0], img.shape[1]):
+            img[i, j, 0] = i / 512
+            img[i, j, 1] = j / 512
+            img[i, j, 2] = 0
+            img[i, j, 3] = 1.0
+
+    init_img()
+
+    def render():
+        canvas.set_image(img)
+
+    for _ in range(RENDER_REPEAT):
+        render()
+        write_temp_image(window)
+    render()
+    verify_image(window, 'test_set_image')
+    window.destroy()
+
+
+@pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=[ti.vulkan])
 def test_set_image_with_texture():
     window = ti.ui.Window('test', (640, 480), show_window=True)

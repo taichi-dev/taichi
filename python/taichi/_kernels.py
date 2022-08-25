@@ -164,9 +164,15 @@ def matrix_to_ext_arr(mat: template(), arr: ndarray_type.ndarray(),
         for p in static(range(mat.n)):
             for q in static(range(mat.m)):
                 if static(as_vector):
-                    arr[I, p] = mat[I][p]
+                    if static(getattr(mat, "ndim", 2) == 1):
+                        arr[I, p] = mat[I][p]
+                    else:
+                        arr[I, p] = mat[I][p, q]
                 else:
-                    arr[I, p, q] = mat[I][p, q]
+                    if static(getattr(mat, "ndim", 2) == 1):
+                        arr[I, p, q] = mat[I][p]
+                    else:
+                        arr[I, p, q] = mat[I][p, q]
 
 
 @kernel
@@ -175,10 +181,16 @@ def ext_arr_to_matrix(arr: ndarray_type.ndarray(), mat: template(),
     for I in grouped(mat):
         for p in static(range(mat.n)):
             for q in static(range(mat.m)):
-                if static(as_vector):
-                    mat[I][p] = arr[I, p]
+                if static(getattr(mat, "ndim", 2) == 1):
+                    if static(as_vector):
+                        mat[I][p] = arr[I, p]
+                    else:
+                        mat[I][p] = arr[I, p, q]
                 else:
-                    mat[I][p, q] = arr[I, p, q]
+                    if static(as_vector):
+                        mat[I][p, q] = arr[I, p]
+                    else:
+                        mat[I][p, q] = arr[I, p, q]
 
 
 # extract ndarray of raw vulkan memory layout to normal memory layout.
@@ -228,7 +240,10 @@ def fill_matrix(mat: template(), vals: template()):
     for I in grouped(mat):
         for p in static(range(mat.n)):
             for q in static(range(mat.m)):
-                mat[I][p, q] = vals[p][q]
+                if static(mat[I].ndim == 2):
+                    mat[I][p, q] = vals[p][q]
+                else:
+                    mat[I][p] = vals[p][q]
 
 
 @kernel
@@ -343,8 +358,7 @@ def warp_shfl_up_i32(val: template()):
 
 @kernel
 def scan_add_inclusive(arr_in: template(), in_beg: i32, in_end: i32,
-                       sum_smem: template(), single_block: template(),
-                       inclusive_add: template(), barrier: template()):
+                       single_block: template(), inclusive_add: template()):
     WARP_SZ = 32
     BLOCK_SZ = 64
     loop_config(block_dim=64)
@@ -356,25 +370,27 @@ def scan_add_inclusive(arr_in: template(), in_beg: i32, in_end: i32,
         lane_id = thread_id % WARP_SZ
         warp_id = thread_id // WARP_SZ
 
+        pad_shared = block.SharedArray((65, ), i32)
+
         val = inclusive_add(val)
-        barrier()
+        block.sync()
 
         # Put warp scan results to smem
         # TODO replace smem with real smem when available
         if thread_id % WARP_SZ == WARP_SZ - 1:
-            sum_smem[block_id, warp_id] = val
-        barrier()
+            pad_shared[warp_id] = val
+        block.sync()
 
         # Inter-warp scan, use the first thread in the first warp
         if warp_id == 0 and lane_id == 0:
             for k in range(1, BLOCK_SZ / WARP_SZ):
-                sum_smem[block_id, k] += sum_smem[block_id, k - 1]
-        barrier()
+                pad_shared[k] += pad_shared[k - 1]
+        block.sync()
 
         # Update data with warp sums
         warp_sum = 0
         if warp_id > 0:
-            warp_sum = sum_smem[block_id, warp_id - 1]
+            warp_sum = pad_shared[warp_id - 1]
         val += warp_sum
         arr_in[i] = val
 
@@ -423,14 +439,11 @@ def prefix_sum_inclusive_inplace(input_arr, length):
         raise RuntimeError("Only ti.i32 type is supported for prefix sum.")
 
     large_arr = field(i32, shape=start_pos)
-    smem = field(i32, shape=(int(GRID_SZ), 64))
 
     if current_cfg().arch == cuda:
         inclusive_add = warp_shfl_up_i32
-        barrier = block.sync
     elif current_cfg().arch == vulkan:
         inclusive_add = subgroup.inclusive_add
-        barrier = subgroup.barrier
     else:
         raise RuntimeError(
             f"{str(current_cfg().arch)} is not supported for prefix sum.")
@@ -441,10 +454,10 @@ def prefix_sum_inclusive_inplace(input_arr, length):
     for i in range(len(ele_nums) - 1):
         if i == len(ele_nums) - 2:
             scan_add_inclusive(large_arr, ele_nums_pos[i], ele_nums_pos[i + 1],
-                               smem, True, inclusive_add, barrier)
+                               True, inclusive_add)
         else:
             scan_add_inclusive(large_arr, ele_nums_pos[i], ele_nums_pos[i + 1],
-                               smem, False, inclusive_add, barrier)
+                               False, inclusive_add)
 
     for i in range(len(ele_nums) - 3, -1, -1):
         uniform_add(large_arr, ele_nums_pos[i], ele_nums_pos[i + 1])

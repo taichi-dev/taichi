@@ -54,7 +54,8 @@ class LlvmAotModule : public aot::Module {
     return initialized_snode_tree_ids.count(snode_tree_id);
   }
 
-  std::unique_ptr<aot::CompiledGraph> get_graph(std::string name) override;
+  std::unique_ptr<aot::CompiledGraph> get_graph(
+      const std::string &name) override;
 
  protected:
   virtual FunctionType convert_module_to_function(

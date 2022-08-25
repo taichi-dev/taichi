@@ -93,9 +93,10 @@ class SNode {
    public:
     virtual ~GradInfoProvider() = default;
     virtual bool is_primal() const = 0;
+    virtual SNodeGradType get_snode_grad_type() const = 0;
     virtual SNode *adjoint_snode() const = 0;
     virtual SNode *dual_snode() const = 0;
-    virtual SNode *adjoint_visited_snode() const = 0;
+    virtual SNode *adjoint_checkbit_snode() const = 0;
 
     template <typename T>
     T *cast() {
@@ -276,6 +277,8 @@ class SNode {
 
   bool is_primal() const;
 
+  SNodeGradType get_snode_grad_type() const;
+
   bool is_place() const;
 
   bool is_scalar() const;
@@ -284,9 +287,9 @@ class SNode {
 
   SNode *get_adjoint() const;
 
-  bool has_adjoint_visited() const;
+  bool has_adjoint_checkbit() const;
 
-  SNode *get_adjoint_visited() const;
+  SNode *get_adjoint_checkbit() const;
 
   bool has_dual() const;
 
@@ -333,7 +336,7 @@ class SNode {
 
   void lazy_dual();
 
-  void allocate_grad_visited();
+  void allocate_adjoint_checkbit();
 
   int64 read_int(const std::vector<int> &i);
   uint64 read_uint(const std::vector<int> &i);

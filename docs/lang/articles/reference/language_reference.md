@@ -71,8 +71,8 @@ A Python value only exists at compile time. After compile-time evaluation, all
 the remaining expressions will be evaluated to Taichi values at runtime.
 
 A Taichi value has a Taichi type, which is one of the following:
-- A primitive type, as described in [Type system](../type/type.md)
-- A compound type, as described in [Type system](../type/type.md)
+- A primitive type, as described in [Type system](../type_system/type.md)
+- A compound type, as described in [Type system](../type_system/type.md)
 - An ndarray type, as introduced in [Run a Taichi Program using Ndarray on
 Android](../deployment/ndarray_android.md)
 - A sparse matrix builder type, as introduced in [Sparse
@@ -114,7 +114,7 @@ Following the [Values and types](#values-and-types) section, if both operands
 of a binary operation are Python values, compile-time evaluation is triggered
 and a result Python value is produced. If only one operand is a Python value,
 it is first turned into a Taichi value with
-[default type](../type/type.md#default-primitive-types-for-integers-and-floating-point-numbers).
+[default type](../type_system/type.md#default-primitive-types-for-integers-and-floating-point-numbers).
 Now the only remaining case is that both operands are Taichi values.
 
 Binary operations can happen between Taichi values of either primitive type or
@@ -329,7 +329,7 @@ a_expr ::= m_expr | a_expr "+" m_expr | a_expr "-" m_expr
 ```
 
 See [common rules for binary operations](#common-rules-of-binary-operations),
-[implicit type casting in binary operations](../type/type.md#implicit-type-casting-in-binary-operations),
+[implicit type casting in binary operations](../type_system/type.md#implicit-type-casting-in-binary-operations),
 and [arithmetic operators](./operator.md#arithmetic-operators). Note that
 the `@` operator is for matrix multiplication and only operates on matrix type
 arguments.
@@ -340,7 +340,7 @@ shift_expr::= a_expr | shift_expr ( "<<" | ">>" ) a_expr
 ```
 
 See [common rules for binary operations](#common-rules-of-binary-operations),
-[implicit type casting in binary operations](../type/type.md#implicit-type-casting-in-binary-operations),
+[implicit type casting in binary operations](../type_system/type.md#implicit-type-casting-in-binary-operations),
 and [bitwise operators](./operator.md#bitwise-operators). Note that both operands
 are required to have integer types.
 
@@ -353,7 +353,7 @@ or_expr  ::= xor_expr | or_expr "|" xor_expr
 ```
 
 See [common rules for binary operations](#common-rules-of-binary-operations),
-[implicit type casting in binary operations](../type/type.md#implicit-type-casting-in-binary-operations),
+[implicit type casting in binary operations](../type_system/type.md#implicit-type-casting-in-binary-operations),
 and [bitwise operators](./operator.md#bitwise-operators). Note that both operands
 are required to have integer types.
 
@@ -369,7 +369,7 @@ Comparisons can be chained arbitrarily, e.g., `x < y <= z` is equivalent to `(x 
 #### Value comparisons
 
 See [common rules for binary operations](#common-rules-of-binary-operations),
-[implicit type casting in binary operations](../type/type.md#implicit-type-casting-in-binary-operations),
+[implicit type casting in binary operations](../type_system/type.md#implicit-type-casting-in-binary-operations),
 and [comparison operators](./operator.md#comparison-operators).
 
 #### Membership test operations
@@ -506,7 +506,7 @@ with the following points to notice:
 target is an identifier appearing for the first time, a variable is defined
 with that name and inferred type from the corresponding right-hand side
 expression. If the expression is evaluated to a Python value, it will be turned
-into a Taichi value with [default type](../type/type.md#default-primitive-types-for-integers-and-floating-point-numbers).
+into a Taichi value with [default type](../type_system/type.md#default-primitive-types-for-integers-and-floating-point-numbers).
 - If a target is an existing identifier, the corresponding right-hand side
 expression must be evaluated to a Taichi value with the type of the
 corresponding variable of that identifier. Otherwise, an implicit cast will

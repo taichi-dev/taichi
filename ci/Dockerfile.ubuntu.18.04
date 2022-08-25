@@ -13,6 +13,7 @@ RUN apt-get update && \
     apt-get install -y software-properties-common && add-apt-repository -y ppa:git-core/ppa && apt-get update && \
     apt-get install -y python3-pip \
                        libtinfo-dev \
+                       sudo \
                        clang-10 \
                        wget \
                        git \
@@ -43,7 +44,10 @@ RUN apt-get update && \
                        libglfw3 \
                        libglfw3-dev \
                        libjpeg-dev \
-                       libvulkan-dev
+                       libvulkan-dev \
+                       && \
+    printf "root ALL=(ALL:ALL) NOPASSWD: ALL\ndev ALL=(ALL:ALL) NOPASSWD: ALL\n" > /etc/sudoers && \
+    true
 
 # Install the latest version of CMAKE v3.20.5 from source
 WORKDIR /
@@ -97,6 +101,9 @@ RUN conda create -n py38 python=3.8 pytorch cudatoolkit=10.2 -c pytorch -y
 RUN conda create -n py39 python=3.9 pytorch cudatoolkit=10.2 -c pytorch -y
 # TODO add torch to 3.10 when supported
 RUN conda create -n py310 python=3.10 -y
+
+# Remove mesa EGL driver, which interferes with the propritary NVIDIA drivers
+RUN rm -f /usr/lib/x86_64-linux-gnu/libEGL_mesa*
 
 WORKDIR /home/dev
 ENV LANG="C.UTF-8"

@@ -22,29 +22,38 @@ class TI_DLL_EXPORT Ndarray {
   explicit Ndarray(Program *prog,
                    const DataType type,
                    const std::vector<int> &shape,
-                   const std::vector<int> &element_shape = {},
                    ExternalArrayLayout layout = ExternalArrayLayout::kNull);
 
   /* Constructs a Ndarray from an existing DeviceAllocation.
    * It doesn't handle the allocation and deallocation.
    * You can see a Ndarray as a view or interpretation of DeviceAllocation
-   * with specified element_shape & dtype & layout.
+   * with specified dtype & layout.
    */
   explicit Ndarray(DeviceAllocation &devalloc,
                    const DataType type,
                    const std::vector<int> &shape,
-                   const std::vector<int> &element_shape = {},
+                   ExternalArrayLayout layout = ExternalArrayLayout::kNull);
+
+  /* Constructs a Ndarray from an existing DeviceAllocation.
+   * This is an overloaded constructor for constructing Ndarray with TensorType
+   * elements "type" is expected to be PrimitiveType
+   */
+  explicit Ndarray(DeviceAllocation &devalloc,
+                   const DataType type,
+                   const std::vector<int> &shape,
+                   const std::vector<int> &element_shape,
                    ExternalArrayLayout layout = ExternalArrayLayout::kNull);
 
   DeviceAllocation ndarray_alloc_{kDeviceNullAllocation};
   DataType dtype;
-  std::vector<int> element_shape;
   // Invariant: Since ndarray indices are flattened for vector/matrix, this is
   // always true:
   //   num_active_indices = shape.size()
   std::vector<int> shape;
   ExternalArrayLayout layout{ExternalArrayLayout::kNull};
 
+  std::vector<int> get_element_shape() const;
+  DataType get_element_data_type() const;
   intptr_t get_data_ptr_as_int() const;
   intptr_t get_device_allocation_ptr_as_int() const;
   std::size_t get_element_size() const;

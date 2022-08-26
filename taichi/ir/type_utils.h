@@ -6,6 +6,8 @@
 namespace taichi {
 namespace lang {
 
+std::vector<int> data_type_shape(DataType t);
+
 TI_DLL_EXPORT std::string data_type_name(DataType t);
 
 TI_DLL_EXPORT int data_type_size(DataType t);

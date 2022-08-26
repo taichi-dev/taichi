@@ -27,28 +27,24 @@ size_t flatten_index(const std::vector<int> &shapes,
   }
 }
 }  // namespace
+
 Ndarray::Ndarray(Program *prog,
                  const DataType type,
                  const std::vector<int> &shape_,
-                 const std::vector<int> &element_shape_,
                  ExternalArrayLayout layout_)
     : dtype(type),
-      element_shape(element_shape_),
       shape(shape_),
       layout(layout_),
       nelement_(std::accumulate(std::begin(shape_),
                                 std::end(shape_),
                                 1,
                                 std::multiplies<>())),
-      element_size_(data_type_size(dtype) *
-                    std::accumulate(std::begin(element_shape),
-                                    std::end(element_shape),
-                                    1,
-                                    std::multiplies<>())),
+      element_size_(data_type_size(dtype)),
       prog_(prog) {
   // Now that we have two shapes which may be concatenated differently
   // depending on layout, total_shape_ comes handy.
   total_shape_ = shape;
+  auto element_shape = data_type_shape(dtype);
   if (layout == ExternalArrayLayout::kAOS) {
     total_shape_.insert(total_shape_.end(), element_shape.begin(),
                         element_shape.end());
@@ -64,23 +60,18 @@ Ndarray::Ndarray(Program *prog,
 Ndarray::Ndarray(DeviceAllocation &devalloc,
                  const DataType type,
                  const std::vector<int> &shape,
-                 const std::vector<int> &element_shape,
                  ExternalArrayLayout layout)
     : ndarray_alloc_(devalloc),
       dtype(type),
-      element_shape(element_shape),
       shape(shape),
       layout(layout),
       nelement_(std::accumulate(std::begin(shape),
                                 std::end(shape),
                                 1,
                                 std::multiplies<>())),
-      element_size_(data_type_size(dtype) *
-                    std::accumulate(std::begin(element_shape),
-                                    std::end(element_shape),
-                                    1,
-                                    std::multiplies<>())) {
+      element_size_(data_type_size(dtype)) {
   // When element_shape is specified but layout is not, default layout is AOS.
+  auto element_shape = data_type_shape(dtype);
   if (!element_shape.empty() && layout == ExternalArrayLayout::kNull) {
     layout = ExternalArrayLayout::kAOS;
   }
@@ -96,6 +87,18 @@ Ndarray::Ndarray(DeviceAllocation &devalloc,
   }
 }
 
+Ndarray::Ndarray(DeviceAllocation &devalloc,
+                 const DataType type,
+                 const std::vector<int> &shape,
+                 const std::vector<int> &element_shape,
+                 ExternalArrayLayout layout)
+    : Ndarray(devalloc,
+              TypeFactory::create_tensor_type(element_shape, type),
+              shape,
+              layout) {
+  TI_ASSERT(type->is<PrimitiveType>());
+}
+
 Ndarray::~Ndarray() {
   if (prog_) {
     // prog_->flush();
@@ -108,6 +111,17 @@ intptr_t Ndarray::get_device_allocation_ptr_as_int() const {
   // specified device. Note that torch-based ndarray's ptr is a raw ptr but
   // we'll get rid of it soon.
   return reinterpret_cast<intptr_t>(&ndarray_alloc_);
+}
+
+std::vector<int> Ndarray::get_element_shape() const {
+  return data_type_shape(dtype);
+}
+
+DataType Ndarray::get_element_data_type() const {
+  if (dtype->is<TensorType>()) {
+    return dtype->cast<TensorType>()->get_element_type();
+  }
+  return dtype;
 }
 
 std::size_t Ndarray::get_element_size() const {

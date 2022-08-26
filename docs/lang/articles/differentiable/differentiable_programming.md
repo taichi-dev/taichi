@@ -451,10 +451,10 @@ about Taichi differentiable programming.
 
 ## Forward-Mode Autodiff
 
-Automatic differentiation (Autodiff) has two modes, reverse mode and forward mode. 
+Automatic differentiation (Autodiff) has two modes, reverse mode and forward mode.
 
-- Reverse mode computes Vector-Jacobian Product (VJP), which means computing one *row* of the Jacobian matrix at a time. Therefore, reverse mode is more efficient for functions, which have more inputs than outputs. `ti.ad.Tape()` and `kernel.grad()` are for reverse-mode autodiff. 
-- Forward mode computes Jacobian-Vector Product (JVP), which means computing one *column* of the Jacobian matrix at a time. Therefore, forward mode is more efficient for functions, which have more outputs than inputs. As of v1.1.0, Taichi supports forward-mode autodiff. `ti.ad.FwdMode()` and ``ti.root.lazy_dual()` are for forward-mode autodiff. 
+- Reverse mode computes Vector-Jacobian Product (VJP), which means computing one *row* of the Jacobian matrix at a time. Therefore, reverse mode is more efficient for functions, which have more inputs than outputs. `ti.ad.Tape()` and `kernel.grad()` are for reverse-mode autodiff.
+- Forward mode computes Jacobian-Vector Product (JVP), which means computing one *column* of the Jacobian matrix at a time. Therefore, forward mode is more efficient for functions, which have more outputs than inputs. As of v1.1.0, Taichi supports forward-mode autodiff. `ti.ad.FwdMode()` and ``ti.root.lazy_dual()` are for forward-mode autodiff.
 
 ### Using `ti.ad.FwdMode()`
 
@@ -493,10 +493,10 @@ print('dy/dx =', y.dual[None], ' at x =', x[None])
 `ti.ad.FwdMode()` automatically clears the dual field of `loss`.
 :::
 
-`ti.ad.FwdMode()` supports multiple inputs and outputs: 
+`ti.ad.FwdMode()` supports multiple inputs and outputs:
 
 - `param` can be an N-D field.
-- `loss` can be an individual N-D field or a list of N-D fields. 
+- `loss` can be an individual N-D field or a list of N-D fields.
 - `seed` is the 'vector' in Jacobian-vector product, which controls the parameter that is computed derivative with respect to. `seed` is required if `param` is not a scalar field.
 
 The following code snippet shows another two cases with multiple inputs and outputs: With `seed=[1.0, 0.0] `or `seed=[0.0, 1.0]` , we can compute derivatives solely with respect to `x_0` or `x_1`.

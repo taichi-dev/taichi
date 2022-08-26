@@ -29,7 +29,7 @@ class DemoteOperations : public BasicStmtVisitor {
                       (1LL << (stmt->bit_end - stmt->bit_begin)) - 1)));
     auto ret = statements.push_back<BinaryOpStmt>(BinaryOpType::bit_and,
                                                   input_sar_begin, mask);
-
+    ret->ret_type = stmt->ret_type;
     stmt->replace_usages_with(ret);
     modifier.insert_before(stmt, std::move(statements));
     modifier.erase(stmt);

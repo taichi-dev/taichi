@@ -49,7 +49,7 @@ class TI_DLL_EXPORT Callable {
       return data_type_size(dt_);
     }
 
-    DataType get_arg_dtype() const {
+    DataType get_dtype() const {
       return dt_;
     }
 

@@ -5,6 +5,7 @@ from taichi.lang.enums import Layout
 from taichi.lang.util import cook_dtype, python_scope, to_numpy_type
 from taichi.types import primitive_types
 from taichi.types.ndarray_type import NdarrayTypeMetadata
+from taichi.types.utils import is_real
 
 
 class Ndarray:
@@ -266,7 +267,7 @@ class ScalarNdarray(Ndarray):
 class NdarrayHostAccessor:
     def __init__(self, ndarray):
         dtype = ndarray.element_data_type()
-        if _ti_core.is_real(dtype):
+        if is_real(dtype):
 
             def getter(*key):
                 return ndarray.read_float(key)

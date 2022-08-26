@@ -35,6 +35,17 @@ void CompiledGraph::run(
                     symbolic_arg.name, symbolic_arg.field_dim,
                     arr->shape.size());
 
+        // CGraph uses aot::Arg as symbolic argument, which represents
+        // TensorType via combination of element_shape and PrimitiveTypeID
+        // Therefore we only check for element_type for now.
+        //
+        // TODO(zhanlue): Replace all "element_shape + PrimitiveType" use cases
+        // with direct use of "TensorType",
+        //                In the end, "element_shape" should only appear inside
+        //                TensorType and nowhere else.
+        //
+        //                This refactor includes aot::Arg, kernel::Arg,
+        //                MetalDataType, and more...
         DataType symbolic_arg_primitive_dtype = symbolic_arg.dtype();
         if (symbolic_arg.dtype()->is<TensorType>()) {
           symbolic_arg_primitive_dtype =

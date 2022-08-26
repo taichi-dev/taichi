@@ -61,7 +61,7 @@ fixed_type_c = ti.types.quant.fixed(bits=6, signed=False, scale=1.0)  # `scale` 
 ```
 
 > Set either `scale` or `max_value`, and Taichi works out the other based on your setting. Do *not* set both.
-> `max_value` is a more commonly used parameter, because you may already know the range of the number to represent
+> `max_value` is a more commonly used parameter, because you may already know the range of the number to represent.
 
 ### Quantized floating-point numbers
 

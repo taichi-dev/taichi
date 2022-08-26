@@ -114,7 +114,7 @@ void Kernel::operator()(LaunchContextBuilder &ctx_builder) {
     compile();
   }
 
-  if (!this->from_offline_cache_) {
+  if (!from_cache_) {
     for (auto &offloaded : ir->as<Block>()->statements) {
       account_for_offloaded(offloaded->as<OffloadedStmt>());
     }

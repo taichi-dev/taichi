@@ -218,7 +218,7 @@ const std::unique_ptr<gfx::CacheManager>
     params.cache_path = config->offline_cache_file_path;
     params.runtime = vulkan_runtime_.get();
     params.target_device = std::move(target_device);
-    params.compiled_structs = snode_tree_mgr_->get_compiled_structs();
+    params.compiled_structs = &snode_tree_mgr_->get_compiled_structs();
     cache_manager_ = std::make_unique<gfx::CacheManager>(std::move(params));
   }
   return cache_manager_;

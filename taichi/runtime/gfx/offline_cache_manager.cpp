@@ -27,6 +27,7 @@ FunctionType register_params_to_executable(
 FunctionType compile_to_executable(Kernel *kernel,
                                    gfx::GfxRuntime *runtime,
                                    const std::vector<spirv::CompiledSNodeStructs> &compiled_structs) {
+  spirv::lower(kernel);
   return register_params_to_executable(
       gfx::run_codegen(kernel, runtime->get_ti_device(), compiled_structs), runtime);
 }
@@ -34,7 +35,7 @@ FunctionType compile_to_executable(Kernel *kernel,
 }  // namespace
 
 CacheManager::CacheManager(Params &&init_params)
-    : mode_(init_params.mode), runtime_(init_params.runtime), compiled_structs_(std::move(init_params.compiled_structs)) {
+    : mode_(init_params.mode), runtime_(init_params.runtime), compiled_structs_(*init_params.compiled_structs) {
   TI_ASSERT(init_params.runtime);
   TI_ASSERT(init_params.target_device);
 
@@ -104,6 +105,9 @@ FunctionType CacheManager::load_cached_kernel(Kernel *kernel, const std::string 
       static_cast<gfx::AotModuleBuilderImpl *>(caching_module_builder_.get());
   auto params_opt = cache_builder->try_get_kernel_register_params(key);
   if (params_opt.has_value()) {
+    TI_DEBUG("Create kernel '{}' from in-memory cache (key='{}')", kernel->get_name(), key);
+    kernel->mark_as_from_cache();
+    // TODO: Support multiple SNodeTrees in AOT.
     params_opt->num_snode_trees = compiled_structs_.size();
     return register_params_to_executable(std::move(*params_opt), runtime_);
   }
@@ -111,10 +115,12 @@ FunctionType CacheManager::load_cached_kernel(Kernel *kernel, const std::string 
   if (mode_ == MemAndDiskCache && cached_module_) {
     if (auto *aot_kernel = cached_module_->get_kernel(key)) {
       TI_DEBUG("Create kernel '{}' from cache (key='{}')", kernel->get_name(), key);
-      kernel->set_from_offline_cache();
-      return [aot_kernel](RuntimeContext &ctx) {
-        aot_kernel->launch(&ctx);
-      };
+      kernel->mark_as_from_cache();
+      auto *aot_kernel_impl = static_cast<gfx::KernelImpl*>(aot_kernel);
+      auto compiled = aot_kernel_impl->params();
+      // TODO: Support multiple SNodeTrees in AOT.
+      compiled.num_snode_trees = compiled_structs_.size();
+      return register_params_to_executable(std::move(compiled), runtime_);
     }
   }
   return nullptr;
@@ -129,6 +135,7 @@ FunctionType CacheManager::compile_and_cache_kernel(const std::string &key,
   cache_builder->add(key, kernel);
   auto params_opt = cache_builder->try_get_kernel_register_params(key);
   TI_ASSERT(params_opt.has_value());
+  // TODO: Support multiple SNodeTrees in AOT.
   params_opt->num_snode_trees = compiled_structs_.size();
   return register_params_to_executable(std::move(*params_opt), runtime_);
 }

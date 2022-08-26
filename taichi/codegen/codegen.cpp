@@ -74,7 +74,7 @@ bool KernelCodeGen::maybe_read_compilation_from_cache(
     return false;
   }
   data.swap(cache_data.compiled_data_list);
-  kernel->set_from_offline_cache();
+  kernel->mark_as_from_cache();
   return true;
 }
 

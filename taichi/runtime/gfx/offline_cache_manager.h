@@ -18,7 +18,7 @@ class CacheManager {
     std::string cache_path;
     GfxRuntime *runtime{nullptr};
     std::unique_ptr<aot::TargetDevice> target_device;
-    std::vector<spirv::CompiledSNodeStructs> compiled_structs;
+    const std::vector<spirv::CompiledSNodeStructs> *compiled_structs;
   };
 
   using CompiledKernelData = gfx::GfxRuntime::RegisterParams;
@@ -36,7 +36,7 @@ class CacheManager {
   Mode mode_{MemCache};
   std::string path_;
   GfxRuntime *runtime_{nullptr};
-  std::vector<spirv::CompiledSNodeStructs> compiled_structs_;
+  const std::vector<spirv::CompiledSNodeStructs> &compiled_structs_;
   std::unique_ptr<AotModuleBuilder> caching_module_builder_{nullptr};
   std::unique_ptr<aot::Module> cached_module_{nullptr};
 };

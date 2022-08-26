@@ -8,10 +8,7 @@ from tests import test_utils
 # Just making sure it does not crash
 # Metal doesn't support print() or 64-bit data
 # While OpenGL does support print, but not 64-bit data
-@pytest.mark.parametrize('dt', [
-    ti.i8, ti.u8, ti.i16, ti.u16, ti.i32, ti.u32, ti.i64, ti.u64, ti.f16,
-    ti.f32, ti.f64
-])
+@pytest.mark.parametrize('dt', ti.types.primitive_types.all_types)
 @test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_print(dt):
     @ti.kernel

@@ -27,7 +27,7 @@ Quantized integers in Taichi are represented in the [two's complement](https://e
 - To define a 10-bit signed integer type:
 
 ```python
-i10 = ti.types.quant.int(bits=10) # `signed` is set to `True` by default
+i10 = ti.types.quant.int(bits=10)  # `signed` is set to `True` by default
 ```
 
 - To define a 5-bit unsigned integer type:
@@ -40,7 +40,7 @@ u5 = ti.types.quant.int(bits=5, signed=False)
 
 The core idea of [fixed-point numbers](https://en.wikipedia.org/wiki/Fixed-point_arithmetic) is that, if a specific range is evenly divided into multiple scale units, then a real number within that range can be approximated and represented by multiplying the value of each scale unit by an integer number. Here's an example explaining what the *scale unit* here is: If you wish to represent a real number within [0, 100] in 10 binary bits, then each *scale unit* equals 100/2<sup>10</sup> &asymp; 0.098.
 
-Taichi allows you to define quantized fixed-point types of less than 64 bits and with an arbitrary scale unit:
+Taichi allows you to define quantized fixed-point types of less than 64 bits and with an arbitrary scale unit.
 
 - To define a 10-bit signed fixed-point type within the range [-20.0, 20.0]:
 
@@ -69,7 +69,7 @@ A [floating-point number](https://en.wikipedia.org/wiki/Floating-point_arithmeti
 
 ![image](../static/assets/floating-point_formats.png)
 
-Taichi allows you to define a *quantized floating-point number* with an arbitrary combination of exponent bits and fraction bits (the sign bit is made part of the fraction bits):
+Taichi allows you to define a *quantized floating-point number* with an arbitrary combination of exponent bits and fraction bits (the sign bit is made part of the fraction bits).
 
 - To define a 15-bit signed floating-point type with five exponent bits:
 
@@ -89,7 +89,7 @@ All the above-mentioned parameters specify how a quantized data type is stored i
 
 - The default compute type for quantized integers is `ti.i32`,
 - The default compute type for quantized fixed-point numbers is `ti.f32`,
-- The default compute type for floating-point numbers is `ti.f32`.
+- The default compute type for quantized floating-point numbers is `ti.f32`.
 
 To change the compute type of a quantized data type,  set the `compute` parameter when defining the quantized data type:
 

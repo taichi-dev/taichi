@@ -84,7 +84,11 @@ std::string tensor_type_format(DataType t) {
 }
 
 std::string data_type_format(DataType dt) {
-  if (dt->is_primitive(PrimitiveTypeID::i16)) {
+  if (dt->is_primitive(PrimitiveTypeID::i8)) {
+    return "%hhd";
+  } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
+    return "%hhu";
+  } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
     return "%hd";
   } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
     return "%hu";

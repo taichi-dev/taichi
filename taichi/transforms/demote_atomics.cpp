@@ -123,7 +123,6 @@ class DemoteAtomics : public BasicStmtVisitor {
       auto new_stmts = VecStatement();
       Stmt *load;
       if (is_local) {
-        TI_ASSERT(stmt->width() == 1);
         load = new_stmts.push_back<LocalLoadStmt>(LocalAddress(ptr, 0));
         auto bin = new_stmts.push_back<BinaryOpStmt>(bin_type, load, val);
         new_stmts.push_back<LocalStoreStmt>(ptr, bin);

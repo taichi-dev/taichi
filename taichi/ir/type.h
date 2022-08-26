@@ -5,6 +5,8 @@
 
 TLANG_NAMESPACE_BEGIN
 
+class TensorType;
+
 enum class PrimitiveTypeID : int {
 #define PER_TYPE(x) x,
 #include "taichi/inc/data_type.inc.h"
@@ -37,8 +39,6 @@ class TI_DLL_EXPORT Type {
                    typeid(T).name());
     return p;
   }
-
-  int vector_width() const;
 
   bool is_primitive(PrimitiveTypeID type) const;
 
@@ -100,6 +100,10 @@ class TI_DLL_EXPORT DataType {
   void set_is_pointer(bool ptr);
 
   DataType ptr_removed() const;
+
+  std::vector<int> get_shape() const;
+
+  DataType get_element_type() const;
 
  private:
   Type *ptr_;

@@ -25,7 +25,8 @@ void CompiledGraph::run(
       const aot::IValue &ival = found->second;
       if (ival.tag == aot::ArgKind::kNdarray) {
         Ndarray *arr = reinterpret_cast<Ndarray *>(ival.val);
-        TI_ERROR_IF(arr->element_shape != symbolic_arg.element_shape,
+
+        TI_ERROR_IF(arr->get_element_shape() != symbolic_arg.element_shape,
                     "Mismatched shape information for argument {}",
                     symbolic_arg.name);
         TI_ERROR_IF(arr->shape.size() != symbolic_arg.field_dim,
@@ -33,12 +34,35 @@ void CompiledGraph::run(
                     "field_dim={} but got an ndarray with field_dim={}",
                     symbolic_arg.name, symbolic_arg.field_dim,
                     arr->shape.size());
-        TI_ERROR_IF(arr->dtype != symbolic_arg.dtype(),
+
+        // CGraph uses aot::Arg as symbolic argument, which represents
+        // TensorType via combination of element_shape and PrimitiveTypeID
+        // Therefore we only check for element_type for now.
+        //
+        // TODO(zhanlue): Replace all "element_shape + PrimitiveType" use cases
+        // with direct use of "TensorType",
+        //                In the end, "element_shape" should only appear inside
+        //                TensorType and nowhere else.
+        //
+        //                This refactor includes aot::Arg, kernel::Arg,
+        //                MetalDataType, and more...
+        DataType symbolic_arg_primitive_dtype = symbolic_arg.dtype();
+        if (symbolic_arg.dtype()->is<TensorType>()) {
+          symbolic_arg_primitive_dtype =
+              symbolic_arg.dtype()->cast<TensorType>()->get_element_type();
+        }
+
+        DataType arr_primitive_dtype = arr->dtype;
+        if (arr->dtype->is<TensorType>()) {
+          arr_primitive_dtype =
+              arr->dtype->cast<TensorType>()->get_element_type();
+        }
+
+        TI_ERROR_IF(arr_primitive_dtype != symbolic_arg_primitive_dtype,
                     "Dispatch node is compiled for argument {} with "
                     "dtype={} but got an ndarray with dtype={}",
-                    symbolic_arg.name, symbolic_arg.dtype().to_string(),
-                    arr->dtype.to_string());
-
+                    symbolic_arg.name, symbolic_arg_primitive_dtype.to_string(),
+                    arr_primitive_dtype.to_string());
         ctx.set_arg_ndarray(i, arr->get_device_allocation_ptr_as_int(),
                             arr->shape);
       } else if (ival.tag == aot::ArgKind::kScalar) {

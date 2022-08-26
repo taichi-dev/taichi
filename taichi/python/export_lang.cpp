@@ -112,6 +112,8 @@ void export_lang(py::module &m) {
       .def("__hash__", &DataType::hash)
       .def("to_string", &DataType::to_string)
       .def("__str__", &DataType::to_string)
+      .def("get_shape", &DataType::get_shape)
+      .def("get_element_type", &DataType::get_element_type)
       .def(
           "get_ptr", [](DataType *dtype) -> Type * { return *dtype; },
           py::return_value_policy::reference)
@@ -453,12 +455,10 @@ void export_lang(py::module &m) {
           "create_ndarray",
           [&](Program *program, const DataType &dt,
               const std::vector<int> &shape,
-              const std::vector<int> &element_shape,
               ExternalArrayLayout layout) -> Ndarray * {
-            return program->create_ndarray(dt, shape, element_shape, layout);
+            return program->create_ndarray(dt, shape, layout);
           },
           py::arg("dt"), py::arg("shape"),
-          py::arg("element_shape") = py::tuple(),
           py::arg("layout") = ExternalArrayLayout::kNull,
           py::return_value_policy::reference)
       .def(
@@ -580,8 +580,9 @@ void export_lang(py::module &m) {
       .def("write_int", &Ndarray::write_int)
       .def("write_float", &Ndarray::write_float)
       .def("total_shape", &Ndarray::total_shape)
+      .def("element_shape", &Ndarray::get_element_shape)
+      .def("element_data_type", &Ndarray::get_element_data_type)
       .def_readonly("dtype", &Ndarray::dtype)
-      .def_readonly("element_shape", &Ndarray::element_shape)
       .def_readonly("shape", &Ndarray::shape);
 
   py::class_<Texture>(m, "Texture")
@@ -1115,7 +1116,14 @@ void export_lang(py::module &m) {
            py::return_value_policy::reference)
       .def("get_quant_float_type", &TypeFactory::get_quant_float_type,
            py::arg("digits_type"), py::arg("exponent_type"),
-           py::arg("compute_type"), py::return_value_policy::reference);
+           py::arg("compute_type"), py::return_value_policy::reference)
+      .def(
+          "get_tensor_type",
+          [&](TypeFactory *factory, std::vector<int> shape,
+              const DataType &element_type) {
+            return factory->create_tensor_type(shape, element_type);
+          },
+          py::return_value_policy::reference);
 
   m.def("get_type_factory_instance", TypeFactory::get_instance,
         py::return_value_policy::reference);
@@ -1130,11 +1138,6 @@ void export_lang(py::module &m) {
       .def("add_member", &BitStructTypeBuilder::add_member)
       .def("build", &BitStructTypeBuilder::build,
            py::return_value_policy::reference);
-
-  m.def("decl_tensor_type",
-        [&](std::vector<int> shape, const DataType &element_type) {
-          return TypeFactory::create_tensor_type(shape, element_type);
-        });
 
   py::class_<SNodeRegistry>(m, "SNodeRegistry")
       .def(py::init<>())

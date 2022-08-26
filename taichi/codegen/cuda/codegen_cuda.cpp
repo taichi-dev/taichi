@@ -67,7 +67,6 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
   }
 
   void visit(PrintStmt *stmt) override {
-    TI_ASSERT(stmt->width() == 1);
     TI_ASSERT_INFO(stmt->contents.size() < 32,
                    "CUDA `print()` doesn't support more than 32 entries");
 

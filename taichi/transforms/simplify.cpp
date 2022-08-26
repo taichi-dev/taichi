@@ -73,22 +73,9 @@ class BasicBlockSimplify : public IRVisitor {
     if (is_done(stmt))
       return;
     // is this stmt necessary?
-    {
-      bool same_source = true;
-      bool inc_index = true;
-      for (int l = 0; l < stmt->width(); l++) {
-        if (stmt->elements[l].stmt != stmt->elements[0].stmt)
-          same_source = false;
-        if (stmt->elements[l].index != l)
-          inc_index = false;
-      }
-      if (same_source && inc_index &&
-          stmt->width() == stmt->elements[0].stmt->width()) {
-        // useless shuffle.
-        stmt->replace_usages_with(stmt->elements[0].stmt);
-        modifier.erase(stmt);
-      }
-    }
+    // useless shuffle.
+    stmt->replace_usages_with(stmt->elements[0].stmt);
+    modifier.erase(stmt);
 
     set_done(stmt);
   }
@@ -381,7 +368,7 @@ class BasicBlockSimplify : public IRVisitor {
   }
 
   void visit(WhileControlStmt *stmt) override {
-    if (stmt->width() == 1 && stmt->mask) {
+    if (stmt->mask) {
       stmt->mask = nullptr;
       modifier.mark_as_modified();
       return;
@@ -449,9 +436,7 @@ class BasicBlockSimplify : public IRVisitor {
           if (clause[i]->is<LocalStoreStmt>()) {
             auto store = clause[i]->as<LocalStoreStmt>();
             auto lanes = LaneAttribute<LocalAddress>();
-            for (int l = 0; l < store->width(); l++) {
-              lanes.push_back(LocalAddress(store->dest, l));
-            }
+            lanes.push_back(LocalAddress(store->dest, 0));
             auto load = Stmt::make<LocalLoadStmt>(lanes);
             modifier.type_check(load.get(), config);
             auto select = Stmt::make<TernaryOpStmt>(
@@ -549,7 +534,7 @@ class BasicBlockSimplify : public IRVisitor {
   }
 
   void visit(WhileStmt *stmt) override {
-    if (stmt->width() == 1 && stmt->mask) {
+    if (stmt->mask) {
       stmt->mask = nullptr;
       modifier.mark_as_modified();
       return;

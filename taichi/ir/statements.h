@@ -757,11 +757,6 @@ class ConstStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
-  void repeat(int factor) override {
-    Stmt::repeat(factor);
-    val.repeat(factor);
-  }
-
   bool has_global_side_effect() const override {
     return false;
   }

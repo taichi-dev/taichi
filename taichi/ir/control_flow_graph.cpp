@@ -192,7 +192,6 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
     if (!irpass::analysis::same_value(result, data)) {
       // check the special case of alloca (initialized to 0)
       if (!(result->is<AllocaStmt>() && data->is<ConstStmt>() &&
-            data->width() == 1 &&
             data->as<ConstStmt>()->val[0].equal_value(0))) {
         return false;  // return nullptr
       }
@@ -272,17 +271,7 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access,
     auto stmt = block->statements[i].get();
     Stmt *result = nullptr;
     if (auto local_load = stmt->cast<LocalLoadStmt>()) {
-      bool regular = true;
-      auto alloca = local_load->src[0].var;
-      for (int l = 0; l < stmt->width(); l++) {
-        if (local_load->src[l].offset != l ||
-            local_load->src[l].var != alloca) {
-          regular = false;
-        }
-      }
-      if (regular) {
-        result = get_store_forwarding_data(alloca, i);
-      }
+      result = get_store_forwarding_data(local_load->src[0].var, i);
     } else if (auto global_load = stmt->cast<GlobalLoadStmt>()) {
       if (!after_lower_access && !autodiff_enabled) {
         result = get_store_forwarding_data(global_load->src, i);
@@ -293,7 +282,6 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access,
       if (result->is<AllocaStmt>()) {
         // special case of alloca (initialized to 0)
         auto zero = Stmt::make<ConstStmt>(TypedConstant(result->ret_type, 0));
-        zero->repeat(result->width());
         replace_with(i, std::move(zero), true);
       } else {
         stmt->replace_usages_with(result);

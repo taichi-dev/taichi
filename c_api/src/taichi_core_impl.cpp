@@ -558,8 +558,12 @@ void ti_launch_compute_graph(TiRuntime runtime,
           }
         }
 
-        ndarrays.emplace_back(
-            taichi::lang::Ndarray(devalloc, *prim_ty, shape, elem_shape));
+        taichi::lang::DataType dtype = *prim_ty;
+        if (elem_shape.size() > 0) {
+          dtype = taichi::lang::TypeFactory::get_instance().get_tensor_type(
+              elem_shape, dtype);
+        }
+        ndarrays.emplace_back(taichi::lang::Ndarray(devalloc, dtype, shape));
         arg_map.emplace(std::make_pair(
             arg.name, taichi::lang::aot::IValue::create(ndarrays.back())));
         break;

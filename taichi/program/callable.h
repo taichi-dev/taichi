@@ -26,8 +26,9 @@ class TI_DLL_EXPORT Callable {
                  int total_dim = 0,
                  std::vector<int> element_shape = {}) {
       if (dt->is<PrimitiveType>() && element_shape.size() > 0) {
-        this->dt_ = taichi::lang::TypeFactory::get_instance().get_tensor_type(
-            element_shape, dt.operator->());
+        this->dt_ =
+            taichi::lang::TypeFactory::get_instance().create_tensor_type(
+                element_shape, dt);
 
       } else {
         this->dt_ = dt;

@@ -29,8 +29,11 @@ class CacheManager {
   void dump_with_merging() const;
 
  private:
-  std::optional<CompiledKernelData> try_load_cached_kernel(Kernel *kernel, const std::string &key);
-  CompiledKernelData compile_and_cache_kernel(const std::string &key, Kernel *kernel);
+  std::optional<CompiledKernelData> try_load_cached_kernel(
+      Kernel *kernel,
+      const std::string &key);
+  CompiledKernelData compile_and_cache_kernel(const std::string &key,
+                                              Kernel *kernel);
   std::string make_kernel_key(CompileConfig *config, Kernel *kernel) const;
 
   Mode mode_{MemCache};

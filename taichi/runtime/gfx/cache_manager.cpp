@@ -19,11 +19,14 @@ using CompiledKernelData = gfx::GfxRuntime::RegisterParams;
 }  // namespace
 
 CacheManager::CacheManager(Params &&init_params)
-    : mode_(init_params.mode), runtime_(init_params.runtime), compiled_structs_(*init_params.compiled_structs) {
+    : mode_(init_params.mode),
+      runtime_(init_params.runtime),
+      compiled_structs_(*init_params.compiled_structs) {
   TI_ASSERT(init_params.runtime);
   TI_ASSERT(init_params.target_device);
 
-  path_ = offline_cache::get_cache_path_by_arch(init_params.cache_path, init_params.arch);
+  path_ = offline_cache::get_cache_path_by_arch(init_params.cache_path,
+                                                init_params.arch);
 
   if (taichi::path_exists(taichi::join_path(path_, "metadata.tcb")) &&
       taichi::path_exists(taichi::join_path(path_, "graphs.tcb"))) {
@@ -42,13 +45,16 @@ CacheManager::CacheManager(Params &&init_params)
   }
 
   caching_module_builder_ = std::make_unique<gfx::AotModuleBuilderImpl>(
-      compiled_structs_, init_params.arch, std::move(init_params.target_device));
+      compiled_structs_, init_params.arch,
+      std::move(init_params.target_device));
 }
 
-CompiledKernelData CacheManager::load_or_compile(CompileConfig *config, Kernel *kernel) {
+CompiledKernelData CacheManager::load_or_compile(CompileConfig *config,
+                                                 Kernel *kernel) {
   if (kernel->is_evaluator) {
     spirv::lower(kernel);
-    return gfx::run_codegen(kernel, runtime_->get_ti_device(), compiled_structs_);
+    return gfx::run_codegen(kernel, runtime_->get_ti_device(),
+                            compiled_structs_);
   }
   std::string kernel_key = make_kernel_key(config, kernel);
   if (mode_ > NotCache) {
@@ -79,7 +85,9 @@ void CacheManager::dump_with_merging() const {
   }
 }
 
-std::optional<CompiledKernelData> CacheManager::try_load_cached_kernel(Kernel *kernel, const std::string &key) {
+std::optional<CompiledKernelData> CacheManager::try_load_cached_kernel(
+    Kernel *kernel,
+    const std::string &key) {
   if (mode_ == NotCache) {
     return std::nullopt;
   }
@@ -88,7 +96,8 @@ std::optional<CompiledKernelData> CacheManager::try_load_cached_kernel(Kernel *k
       static_cast<gfx::AotModuleBuilderImpl *>(caching_module_builder_.get());
   auto params_opt = cache_builder->try_get_kernel_register_params(key);
   if (params_opt.has_value()) {
-    TI_DEBUG("Create kernel '{}' from in-memory cache (key='{}')", kernel->get_name(), key);
+    TI_DEBUG("Create kernel '{}' from in-memory cache (key='{}')",
+             kernel->get_name(), key);
     kernel->mark_as_from_cache();
     // TODO: Support multiple SNodeTrees in AOT.
     params_opt->num_snode_trees = compiled_structs_.size();
@@ -97,9 +106,10 @@ std::optional<CompiledKernelData> CacheManager::try_load_cached_kernel(Kernel *k
   // Find in disk-cache
   if (mode_ == MemAndDiskCache && cached_module_) {
     if (auto *aot_kernel = cached_module_->get_kernel(key)) {
-      TI_DEBUG("Create kernel '{}' from cache (key='{}')", kernel->get_name(), key);
+      TI_DEBUG("Create kernel '{}' from cache (key='{}')", kernel->get_name(),
+               key);
       kernel->mark_as_from_cache();
-      auto *aot_kernel_impl = static_cast<gfx::KernelImpl*>(aot_kernel);
+      auto *aot_kernel_impl = static_cast<gfx::KernelImpl *>(aot_kernel);
       auto compiled = aot_kernel_impl->params();
       // TODO: Support multiple SNodeTrees in AOT.
       compiled.num_snode_trees = compiled_structs_.size();
@@ -109,8 +119,11 @@ std::optional<CompiledKernelData> CacheManager::try_load_cached_kernel(Kernel *k
   return std::nullopt;
 }
 
-CompiledKernelData CacheManager::compile_and_cache_kernel(const std::string &key, Kernel *kernel) {
-  TI_DEBUG_IF(mode_ == MemAndDiskCache, "Cache kernel '{}' (key='{}')", kernel->get_name(), key);
+CompiledKernelData CacheManager::compile_and_cache_kernel(
+    const std::string &key,
+    Kernel *kernel) {
+  TI_DEBUG_IF(mode_ == MemAndDiskCache, "Cache kernel '{}' (key='{}')",
+              kernel->get_name(), key);
   auto *cache_builder =
       static_cast<gfx::AotModuleBuilderImpl *>(caching_module_builder_.get());
   TI_ASSERT(cache_builder != nullptr);
@@ -122,7 +135,8 @@ CompiledKernelData CacheManager::compile_and_cache_kernel(const std::string &key
   return *params_opt;
 }
 
-std::string CacheManager::make_kernel_key(CompileConfig *config, Kernel *kernel) const {
+std::string CacheManager::make_kernel_key(CompileConfig *config,
+                                          Kernel *kernel) const {
   if (mode_ < MemAndDiskCache) {
     return kernel->get_name();
   }

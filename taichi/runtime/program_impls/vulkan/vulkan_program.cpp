@@ -80,7 +80,9 @@ VulkanProgramImpl::VulkanProgramImpl(CompileConfig &config)
 
 FunctionType VulkanProgramImpl::compile(Kernel *kernel,
                                         OffloadedStmt *offloaded) {
-  return register_params_to_executable(get_cache_manager()->load_or_compile(config, kernel), vulkan_runtime_.get());
+  return register_params_to_executable(
+      get_cache_manager()->load_or_compile(config, kernel),
+      vulkan_runtime_.get());
 }
 
 static void glfw_error_callback(int code, const char *description) {
@@ -200,7 +202,8 @@ DeviceAllocation VulkanProgramImpl::allocate_texture(
 std::unique_ptr<aot::Kernel> VulkanProgramImpl::make_aot_kernel(
     Kernel &kernel) {
   auto params = get_cache_manager()->load_or_compile(config, &kernel);
-  return std::make_unique<gfx::KernelImpl>(vulkan_runtime_.get(), std::move(params));
+  return std::make_unique<gfx::KernelImpl>(vulkan_runtime_.get(),
+                                           std::move(params));
 }
 
 void VulkanProgramImpl::dump_cache_data_to_disk() {
@@ -218,7 +221,10 @@ const std::unique_ptr<gfx::CacheManager>
     using Mgr = gfx::CacheManager;
     Mgr::Params params;
     params.arch = config->arch;
-    params.mode = offline_cache::enabled_wip_offline_cache(config->offline_cache) ? Mgr::MemAndDiskCache : Mgr::MemCache;
+    params.mode =
+        offline_cache::enabled_wip_offline_cache(config->offline_cache)
+            ? Mgr::MemAndDiskCache
+            : Mgr::MemCache;
     params.cache_path = config->offline_cache_file_path;
     params.runtime = vulkan_runtime_.get();
     params.target_device = std::move(target_device);

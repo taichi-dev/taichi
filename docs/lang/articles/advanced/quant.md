@@ -2,81 +2,96 @@
 sidebar_position: 3
 ---
 
-# Using quantized data types
+# Use quantized data types
 
-High-resolution simulations can deliver great visual quality, but they are often
-limited by available memory, especially on GPUs. For the sake of saving memory,
-Taichi provides low-precision ("quantized") data types. You can define your own integers,
-fixed-point numbers or floating-point numbers with non-standard number of bits so
-that you can choose a proper setting with minimum memory for your applications.
-Taichi provides a suite of tailored domain-specific optimizations to ensure the
-runtime performance with quantized data types close to that with full-precision
-data types.
+High-resolution simulations can deliver great visual quality, but are often limited by the capacity of the onboard memory, GPU memory in particular. 
+
+To help reduce the memory footprint of your programs, Taichi provides quantized data types, aka low-precision data types. It allows you to define your own integers, fixed-point numbers, or floating-point numbers with arbitrary number of bits that work best with your limited memory capacity. At the same time, Taichi provides a suite of tailored optimizations to ensure that the runtime performance with quantized data types is comparable to the performance with full-precision data types.
 
 :::note
-Quantized data types are only supported on CPU and CUDA backends for now.
+For now, quantized data types are supported only on the CPU and CUDA backends.
 :::
 
 ## Quantized data types
 
+Taichi supports the following quantized data types:
+
+- Quantized integers
+- Quantized fixed-point numbers
+- Quantized floating-point numbers
+
 ### Quantized integers
 
-Modern computers represent integers using the [two's complement](https://en.wikipedia.org/wiki/Two%27s_complement)
-format. *Quantized integers* in Taichi adopt the same format, and can contain
-non-standard number of bits:
+Quantized integers in Taichi are represented in the [two's complement](https://en.wikipedia.org/wiki/Two's_complement) format but can contain arbitrary number of bits.
+
+- To define a 10-bit signed integer type:
 
 ```python
-i10 = ti.types.quant.int(bits=10)  # 10-bit signed (default) integer type
-u5 = ti.types.quant.int(bits=5, signed=False)  # 5-bit unsigned integer type
+i10 = ti.types.quant.int(bits=10) # `signed` is set to `True` by default
+```
+
+- To define a 5-bit unsigned integer type:  
+
+```python
+u5 = ti.types.quant.int(bits=5, signed=False)
 ```
 
 ### Quantized fixed-point numbers
 
-[Fixed-point numbers](https://en.wikipedia.org/wiki/Fixed-point_arithmetic) are
-an old way to represent real numbers. The internal representation of a fixed-point number is simply an integer, and
-its actual value equals to the integer multiplied by a predefined scaling
-factor. Based on the support for quantized integers, Taichi provides *quantized
-fixed-point numbers* as follows:
+The core idea of [fixed-point numbers](https://en.wikipedia.org/wiki/Fixed-point_arithmetic) is that, if a specific range is evenly divided into multiple scale units, then a real number within that range can be approximated and represented by multiplying the value of each scale unit by an integer number. Here's an example explaining what the *scale unit* here is: If you wish to represent a real number within [0, 100] in 10 binary bits, then each *scale unit* equals 100/2<sup>10</sup> &asymp; 0.098.
+
+Taichi allows you to define quantized fixed-point types of less than 64 bits and with an arbitrary scale unit:  
+
+- To define a 10-bit signed fixed-point type within the range [-20.0, 20.0]: 
 
 ```python
-fixed_type_a = ti.types.quant.fixed(bits=10, max_value=20.0)  # 10-bit signed (default) fixed-point type within [-20.0, 20.0]
-fixed_type_b = ti.types.quant.fixed(bits=5, signed=False, max_value=100.0)  # 5-bit unsigned fixed-point type within [0.0, 100.0]
-fixed_type_c = ti.types.quant.fixed(bits=6, signed=False, scale=1.0)  # 6-bit unsigned fixed-point type within [0, 64.0]
+fixed_type_a = ti.types.quant.fixed(bits=10, max_value=20.0)  # `signed` is set to `True` by default
 ```
 
-`scale` is the scaling factor mentioned above. Because fixed-point numbers are
-especially useful when you know the actual value is guaranteed to be within a
-range, Taichi allows you to simply set `max_value` and will calculate the
-scaling factor accordingly.
+- To define a 5-bit unsigned fixed-point type within the range [0.0, 100.0]: 
+
+```python
+fixed_type_b = ti.types.quant.fixed(bits=5, signed=False, max_value=100.0)
+```
+
+- To define a 6-bit unsigned fixed-point type within [0.0, 64.0]:
+
+```python
+fixed_type_c = ti.types.quant.fixed(bits=6, signed=False, scale=1.0)  # `scale` is a predefined scaling factor
+```
+
+> Set either `scale` or `max_value`, and Taichi works out the other based on your setting. Do *not* set both.
+> `max_value` is a more commonly used parameter, because you may already know the range of the number to represent
 
 ### Quantized floating-point numbers
 
-[Floating-point numbers](https://en.wikipedia.org/wiki/Floating-point_arithmetic)
-are the standard way to represent real numbers on modern computers. A
-floating-point number is composed of exponent bits, fraction bits, and a sign
-bit. There are various floating-point formats:
+A [floating-point number](https://en.wikipedia.org/wiki/Floating-point_arithmetic) comprises exponent bits, fraction bits, and a sign bit. There are various floating-point formats:
 
 ![image](../static/assets/floating-point_formats.png)
 
-In Taichi, you can define a *quantized floating-point number* with arbitrary
-combination of exponent bits and fraction bits (the sign bit is made part of
-fraction bits):
+Taichi allows you to define a *quantized floating-point number* with an arbitrary combination of exponent bits and fraction bits (the sign bit is made part of the fraction bits):
+
+- To define a 15-bit signed floating-point type with five exponent bits: 
 
 ```python
-float_type_a = ti.types.quant.float(exp=5, frac=10)  # 15-bit signed (default) floating-point type with 5 exponent bits
-float_type_b = ti.types.quant.float(exp=6, frac=9, signed=False)  # 15-bit unsigned floating-point type with 6 exponent bits
+float_type_a = ti.types.quant.float(exp=5, frac=10)  # `signed` is set to `True` by default
+```
+
+- To define a 15-bit unsigned floating-point type with six exponent bits: 
+
+```python
+float_type_b = ti.types.quant.float(exp=6, frac=9, signed=False) 
 ```
 
 ### Compute types
 
-All the parameters you've seen above are specifying the *storage type* of a
-quantized data type. However, most quantized data types have no native support
-on hardware, so an actual value of that quantized data type needs to convert to
-a primitive type ("*compute type*") when it is involved in computation.
+All the above-mentioned parameters specify how a quantized data type is stored in your computer. However, most quantized data types have no native support on hardware, so an actual value of that quantized data type needs to be converted to a primitive type ("*compute type*") during computation.
 
-The default compute type for quantized integers is `ti.i32`, while the default
-compute type for quantized fixed-point/floating-point numbers is `ti.f32`. You
-can change the compute type by specifying the `compute` parameter:
+- The default compute type for quantized integers is `ti.i32`, 
+- The default compute type for quantized fixed-point numbers is `ti.f32`,  
+- The default compute type for floating-point numbers is `ti.f32`. 
+
+To change the compute type of a quantized data type,  set the `compute` parameter when defining the quantized data type:
 
 ```python
 i21 = ti.types.quant.int(bits=21, compute=ti.i64)
@@ -85,9 +100,10 @@ bfloat16 = ti.types.quant.float(exp=8, frac=8, compute=ti.f32)
 
 ## Data containers for quantized data types
 
-Because the storage types are not primitive types, you may now wonder how
-quantized data types can work together with data containers that Taichi
-provides. In fact, some special constructs are introduced to eliminate the gap.
+Quantized data types are not primitive types and hence require the following constructs to work with Taichi's data containers. 
+
+- Bitpacked fields
+- Quant arrays
 
 ### Bitpacked fields
 
@@ -230,9 +246,9 @@ def assign_vectorized():
 assign_vectorized()
 ```
 
-## Advanced examples
+## Reference examples
 
-The following examples are picked from the
+The following examples are from the
 [QuanTaichi paper](https://yuanming.taichi.graphics/publication/2021-quantaichi/quantaichi.pdf),
 so you can dig into details there.
 

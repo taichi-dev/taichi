@@ -14,7 +14,7 @@ class TensorType(CompoundType):
         self.ptr = _type_factory.get_tensor_type(shape, dtype)
 
     def get_shape(self):
-        return tuple(self.ptr.get_element_shape())
+        return tuple(self.ptr.get_shape())
 
     def get_element_type(self):
         return self.ptr.get_element_type()

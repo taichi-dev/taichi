@@ -103,10 +103,6 @@ std::string TensorType::to_string() const {
   return s;
 }
 
-int Type::vector_width() const {
-  return 1;  // TODO: CPU vectorization
-}
-
 bool Type::is_primitive(PrimitiveTypeID type) const {
   if (auto p = cast<PrimitiveType>()) {
     return p->type == type;

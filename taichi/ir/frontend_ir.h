@@ -504,6 +504,29 @@ class GlobalVariableExpression : public Expression {
   TI_DEFINE_ACCEPT_FOR_EXPRESSION
 };
 
+/**
+ * Creating a local matrix;
+ * lowered from ti.Matrix with real_matrix=True
+ */
+class MatrixExpression : public Expression {
+ public:
+  std::vector<Expr> elements;
+  DataType dt;
+
+  MatrixExpression(const std::vector<Expr> &elements,
+                   std::vector<int> shape,
+                   DataType element_type)
+      : elements(elements) {
+    this->dt = DataType(TypeFactory::create_tensor_type(shape, element_type));
+  }
+
+  void type_check(CompileConfig *config) override;
+
+  void flatten(FlattenContext *ctx) override;
+
+  TI_DEFINE_ACCEPT_FOR_EXPRESSION
+};
+
 class IndexExpression : public Expression {
  public:
   // `var` is one of GlobalVariableExpression, ExternalTensorExpression,
@@ -511,8 +534,11 @@ class IndexExpression : public Expression {
   Expr var;
   ExprGroup indices;
 
-  IndexExpression(const Expr &var, const ExprGroup &indices)
+  IndexExpression(const Expr &var,
+                  const ExprGroup &indices,
+                  std::string tb = "")
       : var(var), indices(indices) {
+    this->tb = tb;
   }
 
   void type_check(CompileConfig *config) override;
@@ -853,13 +879,18 @@ class ASTBuilder {
   Block *current_block();
   Stmt *get_last_stmt();
   void stop_gradient(SNode *);
-  void insert_assignment(Expr &lhs, const Expr &rhs);
-  Expr make_var(const Expr &x);
+  void insert_assignment(Expr &lhs,
+                         const Expr &rhs,
+                         const std::string &tb = "");
+  Expr make_var(const Expr &x, std::string tb);
   void insert_for(const Expr &s,
                   const Expr &e,
                   const std::function<void(Expr)> &func);
 
   Expr make_id_expr(const std::string &name);
+  Expr make_matrix_expr(const std::vector<int> &shape,
+                        const DataType &dt,
+                        const std::vector<Expr> &elements);
   Expr insert_thread_idx_expr();
   Expr insert_patch_idx_expr();
   void create_kernel_exprgroup_return(const ExprGroup &group);
@@ -878,7 +909,8 @@ class ASTBuilder {
   Expr expr_alloca();
   Expr expr_alloca_local_tensor(const std::vector<int> &shape,
                                 const DataType &element_type,
-                                const ExprGroup &elements);
+                                const ExprGroup &elements,
+                                std::string tb);
   Expr expr_alloca_shared_array(const std::vector<int> &shape,
                                 const DataType &element_type);
   void expr_assign(const Expr &lhs, const Expr &rhs, std::string tb);

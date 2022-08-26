@@ -38,6 +38,7 @@ PER_STATEMENT(LoopUniqueStmt)
 PER_STATEMENT(AssertStmt)
 PER_STATEMENT(ExternalFuncCallStmt)
 PER_STATEMENT(ExternalTensorShapeAlongAxisStmt)
+PER_STATEMENT(MatrixInitStmt)
 
 // Locals with reverse-mode autodiff
 PER_STATEMENT(AdStackAllocaStmt)

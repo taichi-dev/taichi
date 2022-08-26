@@ -660,8 +660,10 @@ class MeshElementFieldProxy:
                 var = attr._get_field_members()[0].ptr
                 setattr(
                     self, key,
-                    impl.Expr(_ti_core.subscript(var,
-                                                 global_entry_expr_group)))
+                    impl.Expr(
+                        _ti_core.subscript(
+                            var, global_entry_expr_group,
+                            impl.get_runtime().get_current_src_info())))
 
         for element_type in self.mesh._type.elements:
             setattr(self, element_type_name(element_type),

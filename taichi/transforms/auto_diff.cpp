@@ -3,6 +3,7 @@
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/visitors.h"
+#include "taichi/transforms/utils.h"
 
 #include <typeinfo>
 #include <algorithm>
@@ -252,7 +253,6 @@ class PromoteSSA2LocalVar : public BasicStmtVisitor {
   void visit(Stmt *stmt) override {
     if (execute_once_)
       return;
-    TI_ASSERT(stmt->width() == 1);
     if (!(stmt->is<UnaryOpStmt>() || stmt->is<BinaryOpStmt>() ||
           stmt->is<TernaryOpStmt>() || stmt->is<BitExtractStmt>() ||
           stmt->is<GlobalLoadStmt>() || stmt->is<AllocaStmt>())) {
@@ -420,8 +420,6 @@ class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
   }
 
   void visit(AllocaStmt *alloc) override {
-    TI_ASSERT(alloc->width() == 1);
-
     bool is_stack_needed = AdStackAllocaJudger::run(alloc);
     if (is_stack_needed) {
       auto dtype = alloc->ret_type;
@@ -440,13 +438,11 @@ class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
   }
 
   void visit(LocalLoadStmt *stmt) override {
-    TI_ASSERT(stmt->width() == 1);
     if (stmt->src[0].var->is<AdStackAllocaStmt>())
       stmt->replace_with(Stmt::make<AdStackLoadTopStmt>(stmt->src[0].var));
   }
 
   void visit(LocalStoreStmt *stmt) override {
-    TI_ASSERT(stmt->width() == 1);
     if (stmt->dest->is<AdStackAllocaStmt>())
       stmt->replace_with(Stmt::make<AdStackPushStmt>(stmt->dest, stmt->val));
   }
@@ -718,7 +714,6 @@ class MakeAdjoint : public ADTransform {
     } else {
       TI_ASSERT(alloca_->is<AllocaStmt>());
       auto alloca = alloca_->as<AllocaStmt>();
-      TI_ASSERT(alloca->width() == 1);
       auto local_load = insert<LocalLoadStmt>(LocalAddress(alloca, 0));
       insert<LocalStoreStmt>(alloca, add(local_load, value));
     }
@@ -1010,7 +1005,6 @@ class MakeAdjoint : public ADTransform {
       src = stmt->src->as<GlobalPtrStmt>();
     }
 
-    TI_ASSERT(src->width() == 1);
     auto snodes = src->snodes;
     if (!snodes[0]->has_adjoint()) {
       // No adjoint SNode. Do nothing
@@ -1047,7 +1041,6 @@ class MakeAdjoint : public ADTransform {
       dest = stmt->dest->as<GlobalPtrStmt>();
     }
 
-    TI_ASSERT(dest->width() == 1);
     auto snodes = dest->snodes;
     if (!snodes[0]->has_adjoint()) {
       // no gradient (likely integer types)
@@ -1075,7 +1068,6 @@ class MakeAdjoint : public ADTransform {
       dest = stmt->dest->as<GlobalPtrStmt>();
     }
 
-    TI_ASSERT(dest->width() == 1);
     auto snodes = dest->snodes;
     if (!snodes[0]->has_adjoint()) {
       // no gradient (likely integer types)
@@ -1140,7 +1132,6 @@ class MakeDual : public ADTransform {
 
     TI_ASSERT(alloca_->is<AllocaStmt>());
     auto alloca = alloca_->as<AllocaStmt>();
-    TI_ASSERT(alloca->width() == 1);
     auto local_load = insert<LocalLoadStmt>(LocalAddress(alloca, 0));
     insert<LocalStoreStmt>(alloca, add(local_load, value));
   }
@@ -1340,7 +1331,6 @@ class MakeDual : public ADTransform {
     } else {
       src = stmt->src->as<GlobalPtrStmt>();
     }
-    TI_ASSERT(src->width() == 1);
     auto snodes = src->snodes;
     if (!snodes[0]->has_dual()) {
       // No dual SNode. Do nothing
@@ -1369,7 +1359,6 @@ class MakeDual : public ADTransform {
     } else {
       dest = stmt->dest->as<GlobalPtrStmt>();
     }
-    TI_ASSERT(dest->width() == 1);
     auto snodes = dest->snodes;
     if (!snodes[0]->has_dual()) {
       // no gradient (likely integer types)
@@ -1394,7 +1383,6 @@ class MakeDual : public ADTransform {
     } else {
       dest = stmt->dest->as<GlobalPtrStmt>();
     }
-    TI_ASSERT(dest->width() == 1);
     auto snodes = dest->snodes;
     if (!snodes[0]->has_dual()) {
       // no gradient (likely integer types)
@@ -1425,7 +1413,7 @@ class BackupSSA : public BasicStmtVisitor {
 
   Stmt *load(Stmt *stmt) {
     if (backup_alloca.find(stmt) == backup_alloca.end()) {
-      auto alloca = Stmt::make<AllocaStmt>(stmt->width(), stmt->ret_type);
+      auto alloca = Stmt::make<AllocaStmt>(1, stmt->ret_type);
       auto alloca_ptr = alloca.get();
       independent_block->insert(std::move(alloca), 0);
       auto local_store = Stmt::make<LocalStoreStmt>(alloca_ptr, stmt);
@@ -1473,7 +1461,6 @@ class BackupSSA : public BasicStmtVisitor {
           }
         } else {
           auto alloca = load(op);
-          TI_ASSERT(op->width() == 1);
           stmt->set_operand(i, stmt->insert_before_me(Stmt::make<LocalLoadStmt>(
                                    LocalAddress(alloca, 0))));
         }
@@ -1567,7 +1554,6 @@ class GloablDataAccessRuleChecker : public BasicStmtVisitor {
 
   void visit(GlobalLoadStmt *stmt) override {
     GlobalPtrStmt *src = stmt->src->as<GlobalPtrStmt>();
-    TI_ASSERT(src->width() == 1);
     auto snodes = src->snodes;
     if (!snodes[0]->has_adjoint_checkbit()) {
       return;
@@ -1582,7 +1568,6 @@ class GloablDataAccessRuleChecker : public BasicStmtVisitor {
   }
 
   void visit_gloabl_store_stmt_and_atomic_add(Stmt *stmt, GlobalPtrStmt *dest) {
-    TI_ASSERT(dest->width() == 1);
     auto snodes = dest->snodes;
     if (!snodes[0]->has_adjoint_checkbit()) {
       return;
@@ -1601,6 +1586,8 @@ class GloablDataAccessRuleChecker : public BasicStmtVisitor {
         "(kernel={}) Breaks the global data access rule. Snode {} is "
         "overwritten unexpectedly.",
         kernel_name_, dest->snodes[0]->get_node_type_name());
+    msg += "\n" + stmt->tb;
+
     stmt->insert_before_me(
         Stmt::make<AssertStmt>(check_equal, msg, std::vector<Stmt *>()));
   }

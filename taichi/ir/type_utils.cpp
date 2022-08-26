@@ -69,6 +69,36 @@ int data_type_size(DataType t) {
   }
 }
 
+std::string tensor_type_format_helper(const std::vector<int> &shape,
+                                      std::string format_str,
+                                      int dim) {
+  std::string fmt = "[";
+  for (int i = 0; i < shape[dim]; ++i) {
+    if (dim != shape.size() - 1) {
+      fmt += tensor_type_format_helper(shape, format_str, dim + 1);
+    } else {
+      fmt += format_str;
+    }
+    if (i != shape[dim] - 1) {
+      fmt += ", ";
+      if (dim == 0 && dim != shape.size() - 1) {
+        fmt += "\n";
+      }
+    }
+  }
+  fmt += "]";
+  return fmt;
+}
+
+std::string tensor_type_format(DataType t) {
+  TI_ASSERT(t->is<TensorType>());
+  auto tensor_type = t->as<TensorType>();
+  auto shape = tensor_type->get_shape();
+  auto element_type = tensor_type->get_element_type();
+  auto element_type_format = data_type_format(element_type);
+  return tensor_type_format_helper(shape, element_type_format, 0);
+}
+
 std::string data_type_format(DataType dt) {
   if (dt->is_primitive(PrimitiveTypeID::i16)) {
     return "%hd";
@@ -95,6 +125,8 @@ std::string data_type_format(DataType dt) {
     // TaskCodeGenLLVM::visit(PrintStmt *stmt) and
     // TaskCodeGenCUDA::visit(PrintStmt *stmt) for more details.
     return "%f";
+  } else if (dt->is<TensorType>()) {
+    return tensor_type_format(dt);
   } else {
     TI_NOT_IMPLEMENTED
   }

@@ -351,7 +351,7 @@ Kernel &Program::get_snode_reader(SNode *snode) {
   ker.name = kernel_name;
   ker.is_accessor = true;
   for (int i = 0; i < snode->num_active_indices; i++)
-    ker.insert_arg(PrimitiveType::i32, false);
+    ker.insert_scalar_arg(PrimitiveType::i32);
   ker.insert_ret(snode->dt);
   return ker;
 }
@@ -366,15 +366,17 @@ Kernel &Program::get_snode_writer(SNode *snode) {
     }
     auto expr = Expr(snode_to_glb_var_exprs_.at(snode))[indices];
     this->current_ast_builder()->insert_assignment(
-        expr, Expr::make<ArgLoadExpression>(snode->num_active_indices,
-                                            snode->dt->get_compute_type()));
+        expr,
+        Expr::make<ArgLoadExpression>(snode->num_active_indices,
+                                      snode->dt->get_compute_type()),
+        expr->tb);
   });
   ker.set_arch(get_accessor_arch());
   ker.name = kernel_name;
   ker.is_accessor = true;
   for (int i = 0; i < snode->num_active_indices; i++)
-    ker.insert_arg(PrimitiveType::i32, false);
-  ker.insert_arg(snode->dt, false);
+    ker.insert_scalar_arg(PrimitiveType::i32);
+  ker.insert_scalar_arg(snode->dt);
   return ker;
 }
 

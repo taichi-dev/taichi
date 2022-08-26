@@ -1085,13 +1085,11 @@ void export_lang(py::module &m) {
   });
 
 #if defined(TI_WITH_CUDA)
-    m.def("pop_cuda_context", []() {
-      CUDADriver::get_instance().context_pop_current(NULL);
-    });
+  m.def("pop_cuda_context",
+        []() { CUDADriver::get_instance().context_pop_current(NULL); });
 
-    m.def("push_cuda_context", []() {
-      CUDAContext::get_instance().make_current();
-    });
+  m.def("push_cuda_context",
+        []() { CUDAContext::get_instance().make_current(); });
 #endif
 
   // Type system

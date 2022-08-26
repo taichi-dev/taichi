@@ -112,7 +112,7 @@ void export_lang(py::module &m) {
       .def("__hash__", &DataType::hash)
       .def("to_string", &DataType::to_string)
       .def("__str__", &DataType::to_string)
-      .def("get_element_shape", &DataType::get_element_shape)
+      .def("get_shape", &DataType::get_shape)
       .def("get_element_type", &DataType::get_element_type)
       .def(
           "get_ptr", [](DataType *dtype) -> Type * { return *dtype; },

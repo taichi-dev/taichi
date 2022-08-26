@@ -103,7 +103,7 @@ class TI_DLL_EXPORT DataType {
 
   DataType ptr_removed() const;
 
-  std::vector<int> get_element_shape() const;
+  std::vector<int> get_shape() const;
 
   DataType get_element_type() const;
 

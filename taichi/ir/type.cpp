@@ -64,7 +64,7 @@ DataType DataType::ptr_removed() const {
   }
 }
 
-std::vector<int> DataType::get_element_shape() const {
+std::vector<int> DataType::get_shape() const {
   if (ptr_->is<TensorType>()) {
     return ptr_->as<TensorType>()->get_shape();
   }

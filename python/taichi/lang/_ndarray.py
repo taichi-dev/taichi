@@ -5,7 +5,7 @@ from taichi.lang.enums import Layout
 from taichi.lang.util import cook_dtype, python_scope, to_numpy_type
 from taichi.types import primitive_types
 from taichi.types.ndarray_type import NdarrayTypeMetadata
-from taichi.types.utils import is_real
+from taichi.types.utils import is_real, is_signed
 
 
 class Ndarray:
@@ -275,7 +275,7 @@ class NdarrayHostAccessor:
             def setter(value, *key):
                 ndarray.write_float(key, value)
         else:
-            if _ti_core.is_signed(dtype):
+            if is_signed(dtype):
 
                 def getter(*key):
                     return ndarray.read_int(key)

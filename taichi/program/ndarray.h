@@ -34,6 +34,10 @@ class TI_DLL_EXPORT Ndarray {
                    const std::vector<int> &shape,
                    ExternalArrayLayout layout = ExternalArrayLayout::kNull);
 
+  /* Constructs a Ndarray from an existing DeviceAllocation.
+   * This is an overloaded constructor for constructing Ndarray with TensorType
+   * elements "type" is expected to be PrimitiveType
+   */
   explicit Ndarray(DeviceAllocation &devalloc,
                    const DataType type,
                    const std::vector<int> &shape,

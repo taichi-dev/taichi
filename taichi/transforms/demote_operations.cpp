@@ -67,7 +67,7 @@ class DemoteOperations : public BasicStmtVisitor {
                                              cond12.get(), cond3.get());
         auto real_ret =
             Stmt::make<BinaryOpStmt>(BinaryOpType::add, ret.get(), cond.get());
-
+        real_ret->ret_type = stmt->ret_type;
         stmt->replace_usages_with(real_ret.get());
         modifier.insert_before(stmt, std::move(ret));
         modifier.insert_before(stmt, std::move(zero));
@@ -89,6 +89,7 @@ class DemoteOperations : public BasicStmtVisitor {
         //     return ti.floor(r)
         auto div = Stmt::make<BinaryOpStmt>(BinaryOpType::div, lhs, rhs);
         auto floor = Stmt::make<UnaryOpStmt>(UnaryOpType::floor, div.get());
+        floor->ret_type = stmt->ret_type;
         stmt->replace_usages_with(floor.get());
         modifier.insert_before(stmt, std::move(div));
         modifier.insert_before(stmt, std::move(floor));
@@ -112,6 +113,7 @@ class DemoteOperations : public BasicStmtVisitor {
       auto signed_cast =
           Stmt::make<UnaryOpStmt>(UnaryOpType::cast_bits, shift.get());
       signed_cast->as<UnaryOpStmt>()->cast_type = lhs->element_type();
+      signed_cast->ret_type = stmt->ret_type;
       stmt->replace_usages_with(signed_cast.get());
       modifier.insert_before(stmt, std::move(unsigned_cast));
       modifier.insert_before(stmt, std::move(shift));

@@ -1,4 +1,4 @@
-#include "taichi/runtime/gfx/offline_cache_manager.h"
+#include "taichi/runtime/gfx/cache_manager.h"
 #include "taichi/analysis/offline_cache_util.h"
 #include "taichi/codegen/spirv/snode_struct_compiler.h"
 #include "taichi/common/cleanup.h"

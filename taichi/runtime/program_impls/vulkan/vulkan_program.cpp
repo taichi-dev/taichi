@@ -3,7 +3,6 @@
 #include "taichi/analysis/offline_cache_util.h"
 #include "taichi/aot/graph_data.h"
 #include "taichi/runtime/gfx/aot_module_builder_impl.h"
-#include "taichi/runtime/gfx/offline_cache_manager.h"
 #include "taichi/runtime/gfx/snode_tree_manager.h"
 #include "taichi/runtime/gfx/aot_module_loader_impl.h"
 

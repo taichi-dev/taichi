@@ -26,11 +26,11 @@ class TI_DLL_EXPORT Callable {
                  int total_dim = 0,
                  std::vector<int> element_shape = {}) {
       if (dt->is<PrimitiveType>() && element_shape.size() > 0) {
-        this->dt = taichi::lang::TypeFactory::get_instance().get_tensor_type(
+        this->dt_ = taichi::lang::TypeFactory::get_instance().get_tensor_type(
             element_shape, dt.operator->());
 
       } else {
-        this->dt = dt;
+        this->dt_ = dt;
       }
 
       this->is_array = is_array;
@@ -38,23 +38,23 @@ class TI_DLL_EXPORT Callable {
     }
 
     std::vector<int> get_element_shape() const {
-      return dt.get_element_shape();
+      return dt_.get_element_shape();
     }
 
     DataType get_element_type() const {
-      return dt.get_element_type();
+      return dt_.get_element_type();
     }
 
     int get_element_size() const {
-      return data_type_size(dt);
+      return data_type_size(dt_);
     }
 
     DataType get_arg_dtype() const {
-      return dt;
+      return dt_;
     }
 
    private:
-    DataType dt;
+    DataType dt_;
   };
 
   struct Ret {

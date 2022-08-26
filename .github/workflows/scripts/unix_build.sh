@@ -23,7 +23,6 @@ build_taichi_wheel() {
     fi
     python3 misc/make_changelog.py --ver origin/master --repo_dir ./ --save
 
-    TAICHI_CMAKE_ARGS="${TAICHI_CMAKE_ARGS} -DTI_WITH_C_API=ON"
     exec env TAICHI_CMAKE_ARGS="${TAICHI_CMAKE_ARGS}" python3 setup.py $PROJECT_TAGS bdist_wheel $EXTRA_ARGS
     sccache -s
 }

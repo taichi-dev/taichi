@@ -974,28 +974,6 @@ class WhileStmt : public Stmt {
   TI_DEFINE_ACCEPT
 };
 
-// TODO: document for this
-class ElementShuffleStmt : public Stmt {
- public:
-  LaneAttribute<VectorElement> elements;
-  bool pointer;
-
-  explicit ElementShuffleStmt(const LaneAttribute<VectorElement> &elements,
-                              bool pointer = false)
-      : elements(elements), pointer(pointer) {
-    TI_ASSERT(elements.size() == 1);  // TODO: support vectorized cases
-    ret_type = elements[0].stmt->element_type();
-    TI_STMT_REG_FIELDS;
-  }
-
-  bool has_global_side_effect() const override {
-    return false;
-  }
-
-  TI_STMT_DEF_FIELDS(ret_type, elements, pointer);
-  TI_DEFINE_ACCEPT_AND_CLONE
-};
-
 // TODO: remove this (replace with input + ConstStmt(offset))
 class IntegerOffsetStmt : public Stmt {
  public:

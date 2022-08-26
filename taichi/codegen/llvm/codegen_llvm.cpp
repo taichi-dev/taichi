@@ -1508,24 +1508,6 @@ void TaskCodeGenLLVM::visit(GlobalLoadStmt *stmt) {
   create_global_load(stmt, false);
 }
 
-void TaskCodeGenLLVM::visit(ElementShuffleStmt *stmt){
-    TI_NOT_IMPLEMENTED
-    /*
-    auto init = stmt->elements.serialize(
-        [](const VectorElement &elem) {
-          return fmt::format("{}[{}]", elem.stmt->raw_name(), elem.index);
-        },
-        "{");
-    if (stmt->pointer) {
-      emit("{} * const {} [{}] {};", data_type_name(stmt->ret_type),
-           stmt->raw_name(), stmt->width(), init);
-    } else {
-      emit("const {} {} ({});", stmt->ret_data_type_name(), stmt->raw_name(),
-           init);
-    }
-    */
-}
-
 std::string TaskCodeGenLLVM::get_runtime_snode_name(SNode *snode) {
   if (snode->type == SNodeType::root) {
     return "Root";

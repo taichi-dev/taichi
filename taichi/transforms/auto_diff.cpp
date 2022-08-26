@@ -625,10 +625,6 @@ class ADTransform : public IRVisitor {
     return false;
   }
 
-  void visit(ElementShuffleStmt *stmt) override {
-    TI_NOT_IMPLEMENTED
-  }
-
   void visit(AssertStmt *stmt) override {
     // do nothing
   }

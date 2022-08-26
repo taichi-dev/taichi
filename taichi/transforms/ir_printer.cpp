@@ -463,13 +463,6 @@ class IRPrinter : public IRVisitor {
           stmt->dest->name(), stmt->val->name());
   }
 
-  void visit(ElementShuffleStmt *stmt) override {
-    print("{}{} = shuffle {}", stmt->type_hint(), stmt->name(),
-          stmt->elements.serialize([](const VectorElement &ve) {
-            return fmt::format("{}[{}]", ve.stmt->name(), ve.index);
-          }));
-  }
-
   void visit(RangeAssumptionStmt *stmt) override {
     print("{}{} = assume_in_range({}{:+d} <= {} < {}{:+d})", stmt->type_hint(),
           stmt->name(), stmt->base->name(), stmt->low, stmt->input->name(),

@@ -91,15 +91,16 @@ class LowerAccess : public IRVisitor {
     current_struct_for = nullptr;
   }
 
-  VecStatement lower_ptr(GlobalPtrStmt *ptr, bool activate,
+  VecStatement lower_ptr(GlobalPtrStmt *ptr,
+                         bool activate,
                          SNodeOpType snode_op = SNodeOpType::undefined) {
     VecStatement lowered;
     if (snode_op == SNodeOpType::is_active) {
       // For ti.is_active
       TI_ASSERT(!activate);
     }
-    PtrLowererImpl lowerer{ptr->snodes[0], ptr->indices, snode_op,
-                           ptr->is_bit_vectorized, &lowered, packed};
+    PtrLowererImpl lowerer{ptr->snodes[0],         ptr->indices, snode_op,
+                           ptr->is_bit_vectorized, &lowered,     packed};
     lowerer.set_pointer_needs_activation(activate);
     lowerer.set_lower_access(this);
     lowerer.run();

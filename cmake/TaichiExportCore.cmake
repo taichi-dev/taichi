@@ -10,6 +10,12 @@ set_target_properties(${TAICHI_EXPORT_CORE_NAME} PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build"
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")
 
+# [TODO] Remove the following two linkages after rewriting AOT Demos with Device APIS
+if(TI_WITH_GGUI)
+    target_link_libraries(${TAICHI_EXPORT_CORE_NAME} PRIVATE taichi_ui_vulkan)
+    target_link_libraries(${TAICHI_EXPORT_CORE_NAME} PRIVATE taichi_ui)
+endif()
+
 target_include_directories(${TAICHI_EXPORT_CORE_NAME}
     PUBLIC
         # Used when building the library:

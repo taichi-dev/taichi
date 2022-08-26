@@ -15,7 +15,8 @@ from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.kernel_arguments import SparseMatrixProxy
 from taichi.lang.matrix import (Matrix, MatrixField, MatrixNdarray, MatrixType,
-                                _IntermediateMatrix, _MatrixFieldElement)
+                                _IntermediateMatrix, _MatrixFieldElement,
+                                make_matrix)
 from taichi.lang.mesh import (ConvType, MeshElementFieldProxy, MeshInstance,
                               MeshRelationAccessProxy,
                               MeshReorderedMatrixFieldProxy,
@@ -32,6 +33,13 @@ from taichi.types.primitive_types import (all_types, f16, f32, f64, i32, i64,
 @taichi_scope
 def expr_init_local_tensor(shape, element_type, elements):
     return get_runtime().prog.current_ast_builder().expr_alloca_local_tensor(
+        shape, element_type, elements,
+        get_runtime().get_current_src_info())
+
+
+@taichi_scope
+def make_matrix_expr(shape, element_type, elements):
+    return get_runtime().prog.current_ast_builder().make_matrix_expr(
         shape, element_type, elements)
 
 
@@ -48,6 +56,13 @@ def expr_init(rhs):
     if isinstance(rhs, Matrix) and (hasattr(rhs, "_DIM")):
         return Matrix(*rhs.to_list(), ndim=rhs.ndim)
     if isinstance(rhs, Matrix):
+        if current_cfg().real_matrix:
+            if rhs.ndim == 1:
+                entries = [rhs(i) for i in range(rhs.n)]
+            else:
+                entries = [[rhs(i, j) for j in range(rhs.m)]
+                           for i in range(rhs.n)]
+            return make_matrix(entries)
         return Matrix(rhs.to_list(), ndim=rhs.ndim)
     if isinstance(rhs, SharedArray):
         return rhs
@@ -72,7 +87,8 @@ def expr_init(rhs):
     if hasattr(rhs, '_data_oriented'):
         return rhs
     return Expr(get_runtime().prog.current_ast_builder().expr_var(
-        Expr(rhs).ptr))
+        Expr(rhs).ptr,
+        get_runtime().get_current_src_info()))
 
 
 @taichi_scope
@@ -182,7 +198,9 @@ def subscript(value, *_indices, skip_reordered=False, get_ref=False):
             entries = {k: subscript(v, *_indices) for k, v in value._items}
             entries['__struct_methods'] = value.struct_methods
             return _IntermediateStruct(entries)
-        return Expr(_ti_core.subscript(_var, indices_expr_group))
+        return Expr(
+            _ti_core.subscript(_var, indices_expr_group,
+                               get_runtime().get_current_src_info()))
     if isinstance(value, AnyArray):
         # TODO: deprecate using get_attribute to get dim
         field_dim = int(value.ptr.get_attribute("dim"))
@@ -192,7 +210,9 @@ def subscript(value, *_indices, skip_reordered=False, get_ref=False):
                 f'Field with dim {field_dim - element_dim} accessed with indices of dim {index_dim}'
             )
         if element_dim == 0:
-            return Expr(_ti_core.subscript(value.ptr, indices_expr_group))
+            return Expr(
+                _ti_core.subscript(value.ptr, indices_expr_group,
+                                   get_runtime().get_current_src_info()))
         n = value.element_shape()[0]
         m = 1 if element_dim == 1 else value.element_shape()[1]
         any_array_access = AnyArrayAccess(value, _indices)
@@ -217,7 +237,9 @@ def make_stride_expr(_var, _indices, shape, stride):
 
 @taichi_scope
 def make_index_expr(_var, _indices):
-    return Expr(_ti_core.make_index_expr(_var, make_expr_group(*_indices)))
+    return Expr(
+        _ti_core.make_index_expr(_var, make_expr_group(*_indices),
+                                 get_runtime().get_current_src_info()))
 
 
 class SrcInfoGuard:

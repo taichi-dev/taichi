@@ -87,7 +87,6 @@ std::vector<std::pair<T *, AtomicOpType>> find_global_reduction_destinations(
           return false;  // Now we are sure the statement is not related to the
                          // destination
         });
-    TI_ASSERT(dest.first->width() == 1);
     if (related_global_mem_ops.empty() && dest_checker(dest.first)) {
       valid_reduction_values.push_back(dest);
     }

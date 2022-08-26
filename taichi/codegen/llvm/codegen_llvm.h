@@ -369,6 +369,8 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(ReferenceStmt *stmt) override;
 
+  void visit(MatrixInitStmt *stmt) override;
+
   llvm::Value *create_xlogue(std::unique_ptr<Block> &block);
 
   llvm::Value *create_mesh_xlogue(std::unique_ptr<Block> &block);

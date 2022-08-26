@@ -391,18 +391,13 @@ class IRPrinter : public IRVisitor {
     std::string s =
         fmt::format("{}{} = global ptr [", stmt->type_hint(), stmt->name());
 
-    for (int l = 0; l < stmt->width(); l++) {
-      std::string snode_name;
-      if (stmt->snodes[l]) {
-        snode_name = stmt->snodes[l]->get_node_type_name_hinted();
-      } else {
-        snode_name = "unknown";
-      }
-      s += snode_name;
-      if (l + 1 < stmt->width()) {
-        s += ", ";
-      }
+    std::string snode_name;
+    if (stmt->snodes[0]) {
+      snode_name = stmt->snodes[0]->get_node_type_name_hinted();
+    } else {
+      snode_name = "unknown";
     }
+    s += snode_name;
     s += "], index [";
     for (int i = 0; i < (int)stmt->indices.size(); i++) {
       s += fmt::format("{}", stmt->indices[i]->name());
@@ -792,6 +787,19 @@ class IRPrinter : public IRVisitor {
 
   void visit(ReferenceStmt *stmt) override {
     print("{}{} = ref({})", stmt->type_hint(), stmt->name(), stmt->var->name());
+  }
+
+  void visit(MatrixInitStmt *stmt) override {
+    std::string result = "";
+    result += fmt::format("{}{} = [", stmt->type_hint(), stmt->name());
+    for (int i = 0; i < stmt->values.size(); ++i) {
+      result += stmt->values[i]->name();
+      if (i != stmt->values.size() - 1) {
+        result += ", ";
+      }
+    }
+    result += "]";
+    print(result);
   }
 
  private:

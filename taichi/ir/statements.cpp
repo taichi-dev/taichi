@@ -208,11 +208,7 @@ bool LocalLoadStmt::same_source() const {
 }
 
 bool LocalLoadStmt::has_source(Stmt *alloca) const {
-  for (int i = 0; i < width(); i++) {
-    if (src[i].var == alloca)
-      return true;
-  }
-  return false;
+  return src[0].var == alloca;
 }
 
 IfStmt::IfStmt(Stmt *cond) : cond(cond) {

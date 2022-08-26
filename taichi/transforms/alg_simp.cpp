@@ -213,11 +213,13 @@ class AlgSimp : public BasicStmtVisitor {
   }
 
   void visit(BinaryOpStmt *stmt) override {
-    auto lhs = stmt->lhs->cast<ConstStmt>();
-    auto rhs = stmt->rhs->cast<ConstStmt>();
-    if (stmt->width() != 1) {
+    if (stmt->lhs->ret_type->is<TensorType>() ||
+        stmt->rhs->ret_type->is<TensorType>()) {
+      // TODO: support tensor type
       return;
     }
+    auto lhs = stmt->lhs->cast<ConstStmt>();
+    auto rhs = stmt->rhs->cast<ConstStmt>();
     if (stmt->op_type == BinaryOpType::mul) {
       optimize_multiplication(stmt);
     } else if (stmt->op_type == BinaryOpType::div ||
@@ -388,31 +390,31 @@ class AlgSimp : public BasicStmtVisitor {
   }
 
   static bool alg_is_zero(ConstStmt *stmt) {
-    if (!stmt || stmt->width() != 1)
+    if (!stmt)
       return false;
     return stmt->val[0].equal_value(0);
   }
 
   static bool alg_is_one(ConstStmt *stmt) {
-    if (!stmt || stmt->width() != 1)
+    if (!stmt)
       return false;
     return stmt->val[0].equal_value(1);
   }
 
   static bool alg_is_two(ConstStmt *stmt) {
-    if (!stmt || stmt->width() != 1)
+    if (!stmt)
       return false;
     return stmt->val[0].equal_value(2);
   }
 
   static bool alg_is_minus_one(ConstStmt *stmt) {
-    if (!stmt || stmt->width() != 1)
+    if (!stmt)
       return false;
     return stmt->val[0].equal_value(-1);
   }
 
   static bool alg_is_pot(ConstStmt *stmt) {
-    if (!stmt || stmt->width() != 1)
+    if (!stmt)
       return false;
     if (!is_integral(stmt->val[0].dt))
       return false;

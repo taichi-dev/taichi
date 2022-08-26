@@ -114,24 +114,20 @@ class LowerAccess : public IRVisitor {
                                 SNodeOpType snode_op = SNodeOpType::undefined) {
     VecStatement lowered;
     std::vector<Stmt *> lowered_pointers;
-    for (int i = 0; i < ptr->width(); i++) {
-      std::vector<Stmt *> indices;
-      for (int k = 0; k < (int)ptr->indices.size(); k++) {
-        auto extractor =
-            Stmt::make<ElementShuffleStmt>(VectorElement(ptr->indices[k], i));
-        indices.push_back(extractor.get());
-        lowered.push_back(std::move(extractor));
-      }
-      lower_scalar_ptr(ptr->snodes[i], indices, activate, snode_op,
-                       ptr->is_bit_vectorized, &lowered);
-      TI_ASSERT(lowered.size() > 0);
-      lowered_pointers.push_back(lowered.back().get());
+    std::vector<Stmt *> indices;
+    for (int k = 0; k < (int)ptr->indices.size(); k++) {
+      auto extractor =
+          Stmt::make<ElementShuffleStmt>(VectorElement(ptr->indices[k], 0));
+      indices.push_back(extractor.get());
+      lowered.push_back(std::move(extractor));
     }
+    lower_scalar_ptr(ptr->snodes[0], indices, activate, snode_op,
+                     ptr->is_bit_vectorized, &lowered);
+    TI_ASSERT(lowered.size() > 0);
+    lowered_pointers.push_back(lowered.back().get());
     // create shuffle
     LaneAttribute<VectorElement> lanes;
-    for (int i = 0; i < ptr->width(); i++) {
-      lanes.push_back(VectorElement(lowered_pointers[i], 0));
-    }
+    lanes.push_back(VectorElement(lowered_pointers[0], 0));
     auto merge = Stmt::make<ElementShuffleStmt>(lanes, true);
     if (ptr->is_bit_vectorized) {
       // if the global ptr is bit vectorized, we start from the place snode

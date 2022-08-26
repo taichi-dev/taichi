@@ -166,6 +166,14 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     emit(expr->indices.exprs);
   }
 
+  void visit(MatrixExpression *expr) override {
+    emit(ExprOpCode::MatrixExpression);
+    emit(expr->dt);
+    for (auto elt : expr->elements) {
+      emit(elt);
+    }
+  }
+
   void visit(StrideExpression *expr) override {
     emit(ExprOpCode::StrideExpression);
     emit(expr->var);

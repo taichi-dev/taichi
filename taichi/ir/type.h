@@ -38,8 +38,6 @@ class TI_DLL_EXPORT Type {
     return p;
   }
 
-  int vector_width() const;
-
   bool is_primitive(PrimitiveTypeID type) const;
 
   virtual Type *get_compute_type() {

@@ -158,7 +158,6 @@ void TaskCodeGenLLVM::visit(AllocaStmt *stmt) {
             type, 0, tlctx->get_constant(tensor_type->get_num_elements()));
     }
   } else {
-    TI_ASSERT(stmt->width() == 1);
     llvm_val[stmt] =
         create_entry_block_alloca(stmt->ret_type, stmt->ret_type.is_pointer());
     // initialize as zero if element is not a pointer
@@ -807,7 +806,6 @@ llvm::Value *TaskCodeGenLLVM::create_print(std::string tag,
 }
 
 void TaskCodeGenLLVM::visit(PrintStmt *stmt) {
-  TI_ASSERT(stmt->width() == 1);
   std::vector<llvm::Value *> args;
   std::string formats;
   auto value_for_printf = [this](llvm::Value *to_print, DataType dtype) {
@@ -849,7 +847,6 @@ void TaskCodeGenLLVM::visit(PrintStmt *stmt) {
 }
 
 void TaskCodeGenLLVM::visit(ConstStmt *stmt) {
-  TI_ASSERT(stmt->width() == 1);
   auto val = stmt->val[0];
   if (val.dt->is_primitive(PrimitiveTypeID::f32)) {
     llvm_val[stmt] =
@@ -1177,7 +1174,6 @@ void TaskCodeGenLLVM::visit(ReturnStmt *stmt) {
 }
 
 void TaskCodeGenLLVM::visit(LocalLoadStmt *stmt) {
-  TI_ASSERT(stmt->width() == 1);
 #ifdef TI_LLVM_15
   // FIXME: get ptr_ty from taichi instead of llvm.
   llvm::Type *ptr_ty = nullptr;
@@ -1421,23 +1417,19 @@ void TaskCodeGenLLVM::visit(AtomicOpStmt *stmt) {
   if (is_local) {
     TI_ERROR("Local atomics should have been demoted.");
   }
-  TI_ASSERT(stmt->width() == 1);
-  for (int l = 0; l < stmt->width(); l++) {
-    llvm::Value *old_value;
-
-    if (llvm::Value *result = optimized_reduction(stmt)) {
-      old_value = result;
-    } else if (llvm::Value *result = quant_type_atomic(stmt)) {
-      old_value = result;
-    } else if (llvm::Value *result = real_type_atomic(stmt)) {
-      old_value = result;
-    } else if (llvm::Value *result = integral_type_atomic(stmt)) {
-      old_value = result;
-    } else {
-      TI_NOT_IMPLEMENTED
-    }
-    llvm_val[stmt] = old_value;
+  llvm::Value *old_value;
+  if (llvm::Value *result = optimized_reduction(stmt)) {
+    old_value = result;
+  } else if (llvm::Value *result = quant_type_atomic(stmt)) {
+    old_value = result;
+  } else if (llvm::Value *result = real_type_atomic(stmt)) {
+    old_value = result;
+  } else if (llvm::Value *result = integral_type_atomic(stmt)) {
+    old_value = result;
+  } else {
+    TI_NOT_IMPLEMENTED
   }
+  llvm_val[stmt] = old_value;
 }
 
 void TaskCodeGenLLVM::visit(GlobalPtrStmt *stmt) {
@@ -1777,8 +1769,6 @@ void TaskCodeGenLLVM::visit(PtrOffsetStmt *stmt) {
 }
 
 void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
-  TI_ASSERT(stmt->width() == 1);
-
   auto argload = stmt->base_ptrs[0]->as<ArgLoadStmt>();
   auto arg_id = argload->arg_id;
   int num_indices = stmt->indices.size();
@@ -2331,7 +2321,6 @@ void TaskCodeGenLLVM::visit(GlobalTemporaryStmt *stmt) {
   auto buffer = call("get_temporary_pointer", runtime,
                      tlctx->get_constant((int64)stmt->offset));
 
-  TI_ASSERT(stmt->width() == 1 || stmt->ret_type->is<TensorType>());
   if (stmt->ret_type->is<TensorType>()) {
     auto ptr_type = llvm::PointerType::get(
         tlctx->get_data_type(
@@ -2347,7 +2336,6 @@ void TaskCodeGenLLVM::visit(GlobalTemporaryStmt *stmt) {
 
 void TaskCodeGenLLVM::visit(ThreadLocalPtrStmt *stmt) {
   auto base = get_tls_base_ptr();
-  TI_ASSERT(stmt->width() == 1);
   auto ptr = builder->CreateGEP(
 #ifdef TI_LLVM_15
       llvm::Type::getInt8Ty(*llvm_context),
@@ -2361,7 +2349,6 @@ void TaskCodeGenLLVM::visit(ThreadLocalPtrStmt *stmt) {
 void TaskCodeGenLLVM::visit(BlockLocalPtrStmt *stmt) {
   TI_ASSERT(bls_buffer);
   auto base = bls_buffer;
-  TI_ASSERT(stmt->width() == 1);
   auto ptr = builder->CreateGEP(
 #ifdef TI_LLVM_15
       base->getValueType(),
@@ -2393,7 +2380,6 @@ void TaskCodeGenLLVM::visit(InternalFuncStmt *stmt) {
 }
 
 void TaskCodeGenLLVM::visit(AdStackAllocaStmt *stmt) {
-  TI_ASSERT(stmt->width() == 1);
   TI_ASSERT_INFO(stmt->max_size > 0,
                  "Adaptive autodiff stack's size should have been determined.");
   auto type = llvm::ArrayType::get(llvm::Type::getInt8Ty(*llvm_context),
@@ -2512,13 +2498,11 @@ void TaskCodeGenLLVM::visit_call_shared_object(ExternalFuncCallStmt *stmt) {
   std::vector<llvm::Value *> arg_values;
 
   for (const auto &s : stmt->arg_stmts) {
-    TI_ASSERT(s->width() == 1);
     arg_types.push_back(tlctx->get_data_type(s->ret_type));
     arg_values.push_back(llvm_val[s]);
   }
 
   for (const auto &s : stmt->output_stmts) {
-    TI_ASSERT(s->width() == 1);
     auto t = tlctx->get_data_type(s->ret_type);
     auto ptr = llvm::PointerType::get(t, 0);
     arg_types.push_back(ptr);

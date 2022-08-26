@@ -113,7 +113,6 @@ class TaskCodeGenWASM : public TaskCodeGenLLVM {
   }
 
   void visit(PrintStmt *stmt) override {
-    TI_ASSERT(stmt->width() == 1);
     std::vector<llvm::Value *> args;
     for (auto const &content : stmt->contents) {
       if (std::holds_alternative<Stmt *>(content)) {

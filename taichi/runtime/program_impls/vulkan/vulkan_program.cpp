@@ -200,13 +200,8 @@ DeviceAllocation VulkanProgramImpl::allocate_texture(
 
 std::unique_ptr<aot::Kernel> VulkanProgramImpl::make_aot_kernel(
     Kernel &kernel) {
-  spirv::lower(&kernel);
-  std::vector<gfx::CompiledSNodeStructs> compiled_structs;
-  gfx::GfxRuntime::RegisterParams kparams =
-      gfx::run_codegen(&kernel, get_compute_device(), compiled_structs);
-
-  return std::make_unique<gfx::KernelImpl>(vulkan_runtime_.get(),
-                                           std::move(kparams));
+  auto params = get_cache_manager()->load_or_compile(config, &kernel);
+  return std::make_unique<gfx::KernelImpl>(vulkan_runtime_.get(), std::move(params));
 }
 
 void VulkanProgramImpl::dump_cache_data_to_disk() {

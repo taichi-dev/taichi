@@ -126,9 +126,12 @@ std::string CacheManager::make_kernel_key(CompileConfig *config, Kernel *kernel)
   if (mode_ < MemAndDiskCache) {
     return kernel->get_name();
   }
-  auto result = get_hashed_offline_cache_key(config, kernel);
-  kernel->set_kernel_key_for_cache(result);
-  return result;
+  auto key = kernel->get_cached_kernel_key();
+  if (key.empty()) {
+    key = get_hashed_offline_cache_key(config, kernel);
+    kernel->set_kernel_key_for_cache(key);
+  }
+  return key;
 }
 
 }  // namespace gfx

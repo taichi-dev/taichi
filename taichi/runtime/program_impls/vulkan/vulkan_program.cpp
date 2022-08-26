@@ -63,6 +63,16 @@ std::vector<std::string> get_required_device_extensions() {
 
   return extensions;
 }
+
+FunctionType register_params_to_executable(
+    gfx::GfxRuntime::RegisterParams &&params,
+    gfx::GfxRuntime *runtime) {
+  auto handle = runtime->register_taichi_kernel(std::move(params));
+  return [runtime, handle](RuntimeContext &ctx) {
+    runtime->launch_kernel(handle, &ctx);
+  };
+}
+
 }  // namespace
 
 VulkanProgramImpl::VulkanProgramImpl(CompileConfig &config)
@@ -71,7 +81,7 @@ VulkanProgramImpl::VulkanProgramImpl(CompileConfig &config)
 
 FunctionType VulkanProgramImpl::compile(Kernel *kernel,
                                         OffloadedStmt *offloaded) {
-  return get_cache_manager()->load_or_compile(config, kernel);
+  return register_params_to_executable(get_cache_manager()->load_or_compile(config, kernel), vulkan_runtime_.get());
 }
 
 static void glfw_error_callback(int code, const char *description) {

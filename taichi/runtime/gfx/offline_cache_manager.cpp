@@ -14,23 +14,7 @@ namespace gfx {
 namespace {
 
 constexpr char kMetadataFileLockName[] = "metadata.lock";
-
-FunctionType register_params_to_executable(
-    gfx::GfxRuntime::RegisterParams &&params,
-    gfx::GfxRuntime *runtime) {
-  auto handle = runtime->register_taichi_kernel(std::move(params));
-  return [runtime, handle](RuntimeContext &ctx) {
-    runtime->launch_kernel(handle, &ctx);
-  };
-}
-
-FunctionType compile_to_executable(Kernel *kernel,
-                                   gfx::GfxRuntime *runtime,
-                                   const std::vector<spirv::CompiledSNodeStructs> &compiled_structs) {
-  spirv::lower(kernel);
-  return register_params_to_executable(
-      gfx::run_codegen(kernel, runtime->get_ti_device(), compiled_structs), runtime);
-}
+using CompiledKernelData = gfx::GfxRuntime::RegisterParams;
 
 }  // namespace
 
@@ -61,18 +45,17 @@ CacheManager::CacheManager(Params &&init_params)
       compiled_structs_, init_params.arch, std::move(init_params.target_device));
 }
 
-FunctionType CacheManager::load_or_compile(CompileConfig *config,
-                                                  Kernel *kernel) {
+CompiledKernelData CacheManager::load_or_compile(CompileConfig *config, Kernel *kernel) {
   if (kernel->is_evaluator) {
-    return compile_to_executable(kernel, runtime_, compiled_structs_);
+    spirv::lower(kernel);
+    return gfx::run_codegen(kernel, runtime_->get_ti_device(), compiled_structs_);
   }
   std::string kernel_key = make_kernel_key(config, kernel);
   if (mode_ > NotCache) {
-    if (auto func = this->load_cached_kernel(kernel, kernel_key)) {
-      return func;
+    if (auto opt = this->try_load_cached_kernel(kernel, kernel_key)) {
+      return *opt;
     }
   }
-
   return this->compile_and_cache_kernel(kernel_key, kernel);
 }
 
@@ -96,9 +79,9 @@ void CacheManager::dump_with_merging() const {
   }
 }
 
-FunctionType CacheManager::load_cached_kernel(Kernel *kernel, const std::string &key) {
-  if (mode_ == NotCache || kernel->is_evaluator) {
-    return nullptr;
+std::optional<CompiledKernelData> CacheManager::try_load_cached_kernel(Kernel *kernel, const std::string &key) {
+  if (mode_ == NotCache) {
+    return std::nullopt;
   }
   // Find in memory-cache
   auto *cache_builder =
@@ -109,7 +92,7 @@ FunctionType CacheManager::load_cached_kernel(Kernel *kernel, const std::string 
     kernel->mark_as_from_cache();
     // TODO: Support multiple SNodeTrees in AOT.
     params_opt->num_snode_trees = compiled_structs_.size();
-    return register_params_to_executable(std::move(*params_opt), runtime_);
+    return params_opt;
   }
   // Find in disk-cache
   if (mode_ == MemAndDiskCache && cached_module_) {
@@ -120,14 +103,13 @@ FunctionType CacheManager::load_cached_kernel(Kernel *kernel, const std::string 
       auto compiled = aot_kernel_impl->params();
       // TODO: Support multiple SNodeTrees in AOT.
       compiled.num_snode_trees = compiled_structs_.size();
-      return register_params_to_executable(std::move(compiled), runtime_);
+      return compiled;
     }
   }
-  return nullptr;
+  return std::nullopt;
 }
 
-FunctionType CacheManager::compile_and_cache_kernel(const std::string &key,
-                                               Kernel *kernel) {
+CompiledKernelData CacheManager::compile_and_cache_kernel(const std::string &key, Kernel *kernel) {
   TI_DEBUG_IF(mode_ == MemAndDiskCache, "Cache kernel '{}' (key='{}')", kernel->get_name(), key);
   auto *cache_builder =
       static_cast<gfx::AotModuleBuilderImpl *>(caching_module_builder_.get());
@@ -137,7 +119,7 @@ FunctionType CacheManager::compile_and_cache_kernel(const std::string &key,
   TI_ASSERT(params_opt.has_value());
   // TODO: Support multiple SNodeTrees in AOT.
   params_opt->num_snode_trees = compiled_structs_.size();
-  return register_params_to_executable(std::move(*params_opt), runtime_);
+  return *params_opt;
 }
 
 std::string CacheManager::make_kernel_key(CompileConfig *config, Kernel *kernel) const {

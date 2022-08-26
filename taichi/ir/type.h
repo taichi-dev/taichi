@@ -384,9 +384,6 @@ class TypedConstant {
   }
 
   TypedConstant(DataType dt) : dt(dt) {
-    if (!dt->is<PrimitiveType>()) {
-      assert(false);
-    }
     TI_ASSERT_INFO(dt->is<PrimitiveType>(),
                    "TypedConstant can only be PrimitiveType, got {}",
                    dt->to_string());

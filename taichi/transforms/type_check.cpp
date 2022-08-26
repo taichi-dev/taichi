@@ -107,18 +107,6 @@ class TypeCheck : public IRVisitor {
     } else if (stmt->src.size() == 1) {
       auto lookup = stmt->src[0].var->ret_type;
       stmt->ret_type = lookup;
-    } else {
-      TI_ASSERT(stmt->src.size() > 1);
-      auto acc = stmt->src[0].var->ret_type;
-      for (int i = 1; i < stmt->src.size(); i++) {
-        acc = promoted_type(acc, stmt->src[i].var->ret_type);
-      }
-      if (stmt->ret_type != PrimitiveType::unknown) {
-        TI_ASSERT(stmt->ret_type->is<TensorType>());
-        acc = promoted_type(
-            acc, stmt->ret_type->as<TensorType>()->get_element_type());
-      }
-      stmt->ret_type = TypeFactory::create_tensor_type(stmt->shape, acc);
     }
   }
 

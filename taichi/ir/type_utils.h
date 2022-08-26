@@ -89,8 +89,6 @@ inline bool is_real(DataType dt) {
 }
 
 inline bool is_integral(DataType dt) {
-  if (dt->is<TensorType>())
-    return is_integral(dt->as<TensorType>()->get_element_type());
   return dt->is_primitive(PrimitiveTypeID::i8) ||
          dt->is_primitive(PrimitiveTypeID::i16) ||
          dt->is_primitive(PrimitiveTypeID::i32) ||
@@ -104,8 +102,6 @@ inline bool is_integral(DataType dt) {
 inline bool is_signed(DataType dt) {
   // Shall we return false if is_integral returns false?
   TI_ASSERT(is_integral(dt));
-  if (auto t = dt->cast<TensorType>())
-    return is_signed(t->get_element_type());
   if (auto t = dt->cast<QuantIntType>())
     return t->get_is_signed();
   return dt->is_primitive(PrimitiveTypeID::i8) ||

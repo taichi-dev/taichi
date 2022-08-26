@@ -112,11 +112,6 @@ class AlgSimp : public BasicStmtVisitor {
     if ((fast_math || is_integral(stmt->ret_type)) &&
         (alg_is_zero(lhs) || alg_is_zero(rhs))) {
       // fast_math or integral operands: 0 * a -> 0, a * 0 -> 0
-      if (stmt->ret_type->is<TensorType>() ||
-          stmt->rhs->ret_type->is<TensorType>()) {
-        // TODO: handle 0-tensor
-        return false;
-      }
       replace_with_zero(stmt);
       return true;
     }

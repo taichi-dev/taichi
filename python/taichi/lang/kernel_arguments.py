@@ -81,8 +81,7 @@ def decl_ndarray_arg(dtype, dim, element_shape, layout):
         element_dim = -element_dim
     return AnyArray(
         _ti_core.make_external_tensor_expr(dtype, dim, arg_id, element_dim,
-                                           element_shape), element_shape,
-        layout)
+                                           element_shape))
 
 
 def decl_texture_arg(num_dimensions):

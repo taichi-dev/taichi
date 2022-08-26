@@ -14,7 +14,7 @@ class AnyArray:
         element_shape (Tuple[Int]): () if scalar elements (default), (n) if vector elements, and (n, m) if matrix elements.
         layout (Layout): Memory layout.
     """
-    def __init__(self, ptr, element_shape, layout):
+    def __init__(self, ptr):
         assert ptr.is_external_var()
         self.ptr = ptr
 

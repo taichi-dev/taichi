@@ -913,7 +913,6 @@ class ASTBuilder {
                                 std::string tb);
   Expr expr_alloca_shared_array(const std::vector<int> &shape,
                                 const DataType &element_type);
-  Expr expr_indexed_matrix(const Expr &matrix, const ExprGroup &indices);
   void expr_assign(const Expr &lhs, const Expr &rhs, std::string tb);
   void create_assert_stmt(const Expr &cond,
                           const std::string &msg,

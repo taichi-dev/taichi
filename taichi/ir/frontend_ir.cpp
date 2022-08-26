@@ -1015,11 +1015,6 @@ Expr ASTBuilder::make_matrix_expr(const std::vector<int> &shape,
   return Expr(std::make_shared<MatrixExpression>(elements, shape, dt));
 }
 
-Expr ASTBuilder::expr_indexed_matrix(const Expr &matrix,
-                                     const ExprGroup &indices) {
-  return Expr(std::make_shared<IndexExpression>(matrix, indices));
-}
-
 Expr ASTBuilder::expr_alloca_local_tensor(const std::vector<int> &shape,
                                           const DataType &element_type,
                                           const ExprGroup &elements,

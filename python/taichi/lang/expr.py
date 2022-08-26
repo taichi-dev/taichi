@@ -43,10 +43,7 @@ class Expr(TaichiOperations):
         if not isinstance(indices, (list, tuple)):
             indices = (indices, )
 
-        indices = make_expr_group(*indices)
-        return Expr(
-            impl.get_runtime().prog.current_ast_builder().expr_indexed_matrix(
-                self.ptr, indices))
+        return impl.make_index_expr(self.ptr, indices)
 
     def __hash__(self):
         return self.ptr.get_raw_address()

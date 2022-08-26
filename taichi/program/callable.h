@@ -38,7 +38,7 @@ class TI_DLL_EXPORT Callable {
     }
 
     std::vector<int> get_element_shape() const {
-      return dt_.get_element_shape();
+      return dt_.get_shape();
     }
 
     DataType get_element_type() const {

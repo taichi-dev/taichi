@@ -312,8 +312,8 @@ def test_set_image_with_texture():
                                           channel_format=ti.f32,
                                           lod=0)):
         for i, j in ti.ndrange(512, 512):
-            img.store(ti.Vector([j, i]),
-                      ti.Vector([j, i, 0, 512], dt=ti.f32) / 512)
+            img.store(ti.Vector([i, j]),
+                      ti.Vector([i, j, 0, 512], dt=ti.f32) / 512)
 
     init_img(img)
 

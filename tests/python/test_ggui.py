@@ -265,7 +265,7 @@ def test_set_image():
         render()
         write_temp_image(window)
     render()
-    verify_image(window, 'test_set_image')
+    verify_image(window, 'test_set_image', 0.5)
     window.destroy()
 
 
@@ -294,7 +294,7 @@ def test_set_image_flat_field():
         render()
         write_temp_image(window)
     render()
-    verify_image(window, 'test_set_image')
+    verify_image(window, 'test_set_image', 0.5)
     window.destroy()
 
 
@@ -324,7 +324,7 @@ def test_set_image_with_texture():
         render()
         write_temp_image(window)
     render()
-    verify_image(window, 'test_set_image')
+    verify_image(window, 'test_set_image', 0.5)
     window.destroy()
 
 

@@ -2372,14 +2372,14 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
       std::vector<uint32_t> &spirv = success ? optimized_spv : task_res.spirv_code;
 
       std::string spirv_asm;
-      spirv_tools_->Disassemble(optimized_spv, &spirv_asm);
+      spirv_tools_->Disassemble(spirv, &spirv_asm);
       auto kernel_name = tp.ti_kernel_name;
       TI_WARN("SPIR-V Assembly dump for {} :\n{}\n\n", kernel_name, spirv_asm);
 
       std::ofstream fout(kernel_name + ".spv",
                          std::ios::binary | std::ios::out);
-      fout.write(reinterpret_cast<const char *>(optimized_spv.data()),
-                 optimized_spv.size() * sizeof(uint32_t));
+      fout.write(reinterpret_cast<const char *>(spirv.data()),
+                 spirv.size() * sizeof(uint32_t));
       fout.close();
     }
 #endif

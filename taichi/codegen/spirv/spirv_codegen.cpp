@@ -2348,6 +2348,8 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
 
     std::vector<uint32_t> optimized_spv(task_res.spirv_code);
 
+    constexpr bool debug_spirv = false;
+
     size_t last_size;
     bool success = true;
     do {
@@ -2367,8 +2369,7 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
              task_res.spirv_code.size(), optimized_spv.size());
 
     // Enable to dump SPIR-V assembly of kernels
-#if 0
-    {
+    if (debug_spirv) {
       std::vector<uint32_t> &spirv = success ? optimized_spv : task_res.spirv_code;
 
       std::string spirv_asm;
@@ -2382,7 +2383,6 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
                  spirv.size() * sizeof(uint32_t));
       fout.close();
     }
-#endif
 
     kernel_attribs.tasks_attribs.push_back(std::move(task_res.task_attribs));
     generated_spirv.push_back(std::move(optimized_spv));

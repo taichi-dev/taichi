@@ -2321,6 +2321,8 @@ VulkanSurface::VulkanSurface(VulkanDevice *device, const SurfaceConfig &config)
     // screenshot_image_ = device->create_image(params);
     swapchain_images_.push_back(device->create_image(params));
     swapchain_images_.push_back(device->create_image(params));
+    width_ = config.width;
+    height_ = config.height;
   }
 }
 
@@ -2391,6 +2393,9 @@ void VulkanSurface::create_swap_chain() {
   TI_INFO("Creating suface of {}x{}", width, height);
   VkImageUsageFlags usage =
       VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+
+  this->width_ = width;
+  this->height_ = height;
 
   VkSwapchainCreateInfoKHR createInfo;
   createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -2489,17 +2494,7 @@ void VulkanSurface::resize(uint32_t width, uint32_t height) {
 }
 
 std::pair<uint32_t, uint32_t> VulkanSurface::get_size() {
-  if (!config_.window_handle) {
-    return std::make_pair(config_.width, config_.height);
-  }
-  int width, height;
-#ifdef ANDROID
-  width = ANativeWindow_getWidth(window_);
-  height = ANativeWindow_getHeight(window_);
-#else
-  glfwGetFramebufferSize(window_, &width, &height);
-#endif
-  return std::make_pair(width, height);
+  return std::make_pair(width_, height_);
 }
 
 StreamSemaphore VulkanSurface::acquire_next_image() {

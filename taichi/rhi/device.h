@@ -355,7 +355,7 @@ class CommandList {
 
 struct PipelineSourceDesc {
   PipelineSourceType type;
-  void *data{nullptr};
+  const void *data{nullptr};
   size_t size{0};
   PipelineStageType stage{PipelineStageType::compute};
 };

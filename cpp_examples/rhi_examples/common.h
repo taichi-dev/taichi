@@ -2,6 +2,7 @@
 
 #include "taichi/rhi/vulkan/vulkan_device.h"
 #include "taichi/rhi/vulkan/vulkan_common.h"
+#include "taichi/rhi/vulkan/vulkan_loader.h"
 #include "taichi/rhi/vulkan/vulkan_device_creator.h"
 
 #define GLFW_INCLUDE_NONE
@@ -41,7 +42,13 @@ std::vector<std::string> get_required_device_extensions() {
 class App {
  public:
   App(int width, int height, const std::string &title) {
+    TI_INFO("Creating App '{}' of {}x{}", title, width, height);
+
+    TI_ASSERT(taichi::lang::vulkan::is_vulkan_api_available());
+
     if (glfwInit()) {
+      TI_INFO("Initialized GLFW");
+
       glfwSetErrorCallback(glfw_error_callback);
 
       glfwWindowHint(GLFW_VISIBLE, GLFW_TRUE);
@@ -49,11 +56,9 @@ class App {
       glfw_window =
           glfwCreateWindow(width, height, "Sample Window", nullptr, nullptr);
 
-      if (glfwVulkanSupported() != GLFW_TRUE) {
-        TI_WARN("GLFW reports no Vulkan support");
-      }
+      TI_INFO("Initialized GLFWWindow");
     } else {
-      throw std::runtime_error("failed to init GLFW");
+      TI_ERROR("failed to init GLFW");
     }
 
     {
@@ -69,14 +74,17 @@ class App {
 
         if (glfwCreateWindowSurface(instance, glfw_window, nullptr, &surface) !=
             VK_SUCCESS) {
-          throw std::runtime_error("failed to create window surface!");
+          TI_ERROR("failed to create window surface!");
         }
         return surface;
       };
+      evd_params.enable_validation_layer = true;
 
       device_creator =
           std::make_unique<vulkan::VulkanDeviceCreator>(evd_params);
       device = device_creator->device();
+
+      TI_INFO("Initialized VulkanDevice");
     }
 
     {

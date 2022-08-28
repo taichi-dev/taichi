@@ -80,7 +80,8 @@ class SampleApp : public App {
     // Renderpass: render to surface image, clear color values
     bool clear = true;
     std::vector<float> clear_color = {0.1, 0.2, 0.3, 1.0};
-    cmdlist->begin_renderpass(0, 0, 1920, 1080, 1, &surface_image, &clear,
+    const auto &[width, height] = surface->get_size();
+    cmdlist->begin_renderpass(0, 0, width, height, 1, &surface_image, &clear,
                               &clear_color, nullptr, false);
 
     // Bind our triangle pipeline

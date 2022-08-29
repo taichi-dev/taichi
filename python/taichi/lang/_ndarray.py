@@ -263,6 +263,7 @@ class ScalarNdarray(Ndarray):
     def __repr__(self):
         return '<ti.ndarray>'
 
+
 class NdarrayHostAccessor:
     def __init__(self, ndarray):
         dtype = ndarray.element_data_type()

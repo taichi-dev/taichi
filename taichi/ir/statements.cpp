@@ -125,41 +125,6 @@ LoopUniqueStmt::LoopUniqueStmt(Stmt *input, const std::vector<SNode *> &covers)
   TI_STMT_REG_FIELDS;
 }
 
-Stmt *LocalLoadStmt::previous_store_or_alloca_in_block() {
-  int position = parent->locate(this);
-  // TI_ASSERT(width() == 1);
-  // TI_ASSERT(this->ptr[0].offset == 0);
-  for (int i = position - 1; i >= 0; i--) {
-    if (parent->statements[i]->is<LocalStoreStmt>()) {
-      auto store = parent->statements[i]->as<LocalStoreStmt>();
-      // TI_ASSERT(store->width() == 1);
-      if (store->dest == this->src[0].var) {
-        // found
-        return store;
-      }
-    } else if (parent->statements[i]->is<AllocaStmt>()) {
-      auto alloca = parent->statements[i]->as<AllocaStmt>();
-      // TI_ASSERT(alloca->width() == 1);
-      if (alloca == this->src[0].var) {
-        return alloca;
-      }
-    }
-  }
-  return nullptr;
-}
-
-bool LocalLoadStmt::same_source() const {
-  for (int i = 1; i < (int)src.size(); i++) {
-    if (src[i].var != src[0].var)
-      return false;
-  }
-  return true;
-}
-
-bool LocalLoadStmt::has_source(Stmt *alloca) const {
-  return src[0].var == alloca;
-}
-
 IfStmt::IfStmt(Stmt *cond) : cond(cond) {
   TI_STMT_REG_FIELDS;
 }

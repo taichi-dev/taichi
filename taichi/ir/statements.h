@@ -593,16 +593,11 @@ class GlobalStoreStmt : public Stmt {
  */
 class LocalLoadStmt : public Stmt {
  public:
-  LaneAttribute<LocalAddress> src;
+  LocalAddress src;
 
-  explicit LocalLoadStmt(const LaneAttribute<LocalAddress> &src) : src(src) {
+  explicit LocalLoadStmt(const LocalAddress &src) : src(src) {
     TI_STMT_REG_FIELDS;
   }
-
-  bool same_source() const;
-  bool has_source(Stmt *alloca) const;
-
-  Stmt *previous_store_or_alloca_in_block();
 
   bool has_global_side_effect() const override {
     return false;

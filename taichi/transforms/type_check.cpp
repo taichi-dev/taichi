@@ -84,10 +84,9 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(LocalLoadStmt *stmt) override {
-    TI_ASSERT_INFO(stmt->src.size() == 1, "Vectorization has been disabled.");
-    TI_ASSERT(stmt->src[0].var->is<AllocaStmt>() ||
-              stmt->src[0].var->is<PtrOffsetStmt>());
-    if (auto ptr_offset_stmt = stmt->src[0].var->cast<PtrOffsetStmt>()) {
+    TI_ASSERT(stmt->src.var->is<AllocaStmt>() ||
+              stmt->src.var->is<PtrOffsetStmt>());
+    if (auto ptr_offset_stmt = stmt->src.var->cast<PtrOffsetStmt>()) {
       TI_ASSERT(ptr_offset_stmt->origin->is<AllocaStmt>() ||
                 ptr_offset_stmt->origin->is<GlobalTemporaryStmt>());
       if (auto alloca_stmt = ptr_offset_stmt->origin->cast<AllocaStmt>()) {
@@ -105,7 +104,7 @@ class TypeCheck : public IRVisitor {
         stmt->ret_type = lookup;
       }
     } else {
-      auto lookup = stmt->src[0].var->ret_type;
+      auto lookup = stmt->src.var->ret_type;
       stmt->ret_type = lookup;
     }
   }

@@ -565,7 +565,7 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
   // Replace local LD/ST with global LD/ST
   void visit(LocalLoadStmt *stmt) override {
     generic_visit(stmt);
-    auto ptr = stmt->src[0].var;
+    auto ptr = stmt->src.var;
     auto top_level_ptr = SquashPtrOffset::run(ptr);
     if (top_level_ptr->is<GlobalTemporaryStmt>()) {
       VecStatement replacement;

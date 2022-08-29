@@ -197,7 +197,7 @@ class BitLoopVectorize : public IRVisitor {
           }
         } else if (auto lhs = stmt->lhs->cast<LocalLoadStmt>()) {
           // case 1: lhs is a local load from a local adder structure
-          auto it = transformed_atomics.find(lhs->src[0].var);
+          auto it = transformed_atomics.find(lhs->src.var);
           if (it != transformed_atomics.end()) {
             int32 rhs_val = get_constant_value(stmt->rhs);
             // TODO: we limit 2 and 3 for now, the other case should be

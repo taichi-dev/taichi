@@ -1191,16 +1191,16 @@ void TaskCodeGenLLVM::visit(LocalLoadStmt *stmt) {
 #ifdef TI_LLVM_15
   // FIXME: get ptr_ty from taichi instead of llvm.
   llvm::Type *ptr_ty = nullptr;
-  auto *val = llvm_val[stmt->src[0].var];
+  auto *val = llvm_val[stmt->src.var];
   if (auto *alloc = llvm::dyn_cast<llvm::AllocaInst>(val))
     ptr_ty = alloc->getAllocatedType();
-  if (!ptr_ty && stmt->src[0].var->element_type().is_pointer()) {
-    ptr_ty = llvm_type(stmt->src[0].var->element_type().ptr_removed());
+  if (!ptr_ty && stmt->src.var->element_type().is_pointer()) {
+    ptr_ty = llvm_type(stmt->src.var->element_type().ptr_removed());
   }
   TI_ASSERT(ptr_ty);
-  llvm_val[stmt] = builder->CreateLoad(ptr_ty, llvm_val[stmt->src[0].var]);
+  llvm_val[stmt] = builder->CreateLoad(ptr_ty, llvm_val[stmt->src.var]);
 #else
-  llvm_val[stmt] = builder->CreateLoad(llvm_val[stmt->src[0].var]);
+  llvm_val[stmt] = builder->CreateLoad(llvm_val[stmt->src.var]);
 #endif
 }
 

@@ -234,22 +234,11 @@ class TaskCodegen : public IRVisitor {
   }
 
   void visit(LocalLoadStmt *stmt) override {
-    // TODO: optimize for partially vectorized load...
-    bool linear_index = true;
-    for (int i = 0; i < (int)stmt->src.size(); i++) {
-      if (stmt->src[i].offset != i) {
-        linear_index = false;
-      }
-    }
-    if (stmt->same_source() && linear_index) {
-      auto ptr = stmt->src[0].var;
-      spirv::Value ptr_val = ir_->query_value(ptr->raw_name());
-      spirv::Value val = ir_->load_variable(
-          ptr_val, ir_->get_primitive_type(stmt->element_type()));
-      ir_->register_value(stmt->raw_name(), val);
-    } else {
-      TI_NOT_IMPLEMENTED
-    }
+    auto ptr = stmt->src.var;
+    spirv::Value ptr_val = ir_->query_value(ptr->raw_name());
+    spirv::Value val = ir_->load_variable(
+        ptr_val, ir_->get_primitive_type(stmt->element_type()));
+    ir_->register_value(stmt->raw_name(), val);
   }
 
   void visit(LocalStoreStmt *stmt) override {

@@ -14,10 +14,8 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
 
   void visit(LocalLoadStmt *stmt) override {
-    for (auto &lane : stmt->src.data) {
-      TI_ASSERT(lane.var->is<AllocaStmt>() || lane.var->is<PtrOffsetStmt>());
-      touched_allocas_.insert(lane.var);
-    }
+    TI_ASSERT(stmt->src.var->is<AllocaStmt>() || stmt->src.var->is<PtrOffsetStmt>());
+    touched_allocas_.insert(stmt->src.var);
   }
 
   void visit(LocalStoreStmt *stmt) override {
@@ -322,7 +320,7 @@ class AdStackAllocaJudger : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
   // Find the usage of the stmt recursively along the LocalLoadStmt
   void visit(LocalLoadStmt *stmt) override {
-    if (stmt->has_source(target_alloca_)) {
+    if (stmt->src.var == target_alloca_) {
       local_loaded_ = true;
       target_alloca_ = stmt;
     }
@@ -435,8 +433,8 @@ class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
   }
 
   void visit(LocalLoadStmt *stmt) override {
-    if (stmt->src[0].var->is<AdStackAllocaStmt>())
-      stmt->replace_with(Stmt::make<AdStackLoadTopStmt>(stmt->src[0].var));
+    if (stmt->src.var->is<AdStackAllocaStmt>())
+      stmt->replace_with(Stmt::make<AdStackLoadTopStmt>(stmt->src.var));
   }
 
   void visit(LocalStoreStmt *stmt) override {
@@ -951,7 +949,7 @@ class MakeAdjoint : public ADTransform {
   void visit(LocalLoadStmt *stmt) override {
     // TI_ASSERT(!needs_grad(stmt->ret_type));
     if (is_real(stmt->ret_type))
-      accumulate(stmt->src.data[0].var, load(adjoint(stmt)));
+      accumulate(stmt->src.var, load(adjoint(stmt)));
   }
 
   // Equivalent to AdStackPushStmt when no stack is needed
@@ -1296,7 +1294,7 @@ class MakeDual : public ADTransform {
 
   void visit(LocalLoadStmt *stmt) override {
     // TI_ASSERT(!needs_grad(stmt->ret_type));
-    accumulate(stmt, dual(stmt->src.data[0].var));
+    accumulate(stmt, dual(stmt->src.var));
   }
 
   void visit(LocalStoreStmt *stmt) override {

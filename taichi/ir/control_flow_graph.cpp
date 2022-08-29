@@ -262,7 +262,7 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access,
     auto stmt = block->statements[i].get();
     Stmt *result = nullptr;
     if (auto local_load = stmt->cast<LocalLoadStmt>()) {
-      result = get_store_forwarding_data(local_load->src[0].var, i);
+      result = get_store_forwarding_data(local_load->src.var, i);
     } else if (auto global_load = stmt->cast<GlobalLoadStmt>()) {
       if (!after_lower_access && !autodiff_enabled) {
         result = get_store_forwarding_data(global_load->src, i);

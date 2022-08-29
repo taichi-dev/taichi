@@ -3,24 +3,18 @@ sidebar_position: 1
 slug: /
 ---
 
-# Getting Started
----
-sidebar_position: 1
-slug: /
----
 
 # Getting Started
 
-Taichi is a high-performance parallel programming language using Python as the frontend. The commom usage is, users write their computation-intensive tasks in python obeying a few extra rules imposed by Taichi and use two decorators `ti.func` and `ti.kernel` to tell Taichi to take over the functions that implement the task. Taichi's just-in-time compiler will compile these functions to machine code and all subsequent calls to them are executed on multi-CPU cores or GPU. In typical scenarios like physical simulations or real-time renderings, this will usually give a 50~100x speed up compared to native python!
+Taichi is a high-performance parallel programming language using Python as the frontend. The commom usage is, users write their computation-intensive tasks in python obeying a few extra rules imposed by Taichi and use the two decorators `ti.func` and `ti.kernel` to tell Taichi to take over the functions that implement the task. Taichi's just-in-time compiler will compile these functions to machine code and all subsequent calls to them are executed on multi-CPU cores or GPU. In typical scenarios like physical simulations or real-time renderings, this will usually give a 50~100x speed up compared to native python!
 
-Taichi also has a built-in ahead-of-time compiling module that allows users to export the code as shader files that can be called out of the python environment.
+Taichi also has a built-in ahead-of-time compiling module that allows users to export the code as shader files that can be called without the python environment.
 
-
-## Prerequisites
+## Requirements:
 
 1. Python: 3.7/3.8/3.9/3.10 (64-bit)
 2. OS: Windows (64-bit), OSX, Linux (64-bit)
-3. GPUS: Cuda, Vulkan, OpenGL, Metal 
+3. GPUS: Cuda, Vulkan, OpenGL, Metal, dx11
 
 
 ## Installation
@@ -41,12 +35,12 @@ ti gallery
 This will pop up a window like follows:
 
 <center>
-  
+
 ![image](https://github.com/taichi-dev/taichi_assets/blob/master/static/imgs/ti_gallery.png)
 
 </center>
 
-Click to choose and run the examples.
+Then click to choose and run the examples.
 
 You can also run the command `ti example` to see the full list of examples included in the released package.
 
@@ -63,6 +57,10 @@ ti.init(arch=ti.gpu)
 n = 320
 pixels = ti.field(dtype=float, shape=(n * 2, n))
 
+@ti.func
+def complex_mul(z, w):  # complex multiplicatwo of two 2d vectors
+    return tm.vec2(z.x * w.x - z.y * w.y, z.x * w.y + z.y * w.x)
+
 @ti.kernel
 def paint(t: float):
     for i, j in pixels:  # Parallelized over all pixels
@@ -70,21 +68,19 @@ def paint(t: float):
         z = tm.vec2(i / n - 1, j / n - 0.5) * 2
         iterations = 0
         while z.norm() < 20 and iterations < 50:
-            z = tm.cmul(z, z) + c  # cmul is the complex multiplicaiton of two vec2s 
+            z = complex_mul(z, z) + c 
             iterations += 1
         pixels[i, j] = 1 - iterations * 0.02
 
 gui = ti.GUI("Julia Set", res=(n * 2, n))
 
-i = 0
-while gui.running:
+for i in range(1000000):
     paint(i * 0.03)
     gui.set_image(pixels)
     gui.show()
-    i = i + 1
 ```
 
-You can run the above code by either save it to your disk or directly run `ti example fractal` in a terminal, this will give you an animation:
+You can run the above code by either save it to your disk or directly run `ti example fractal` in terminal, this will give you an animation:
 
 <center>
 
@@ -94,152 +90,61 @@ You can run the above code by either save it to your disk or directly run `ti ex
 
 Let's dive into this simple Taichi program.
 
-### import taichi as ti
++ The first two lines
 
-```python
-# Initialize Taichi and run it on CPU (default)
-# - `arch=ti.gpu`: Run Taichi on GPU and has Taichi automatically detect the suitable backend
-# - `arch=ti.cuda`: For the NVIDIA CUDA backend
-# - `arch=ti.metal`: [macOS] For the Apple Metal backend
-# - `arch=ti.opengl`: For the OpenGL backend
-# - `arch=ti.vulkan`: For the Vulkan backend
-# - `arch=ti.dx11`: For the DX11 backend
-ti.init(arch=ti.cpu)
-```
+  ```python
+  import taichi as ti
+  ti.init(arch=ti.gpu)
+  ```
 
-:::info
+  import taichi as a package and call the  `init` function to initialize some environment variables. The `init` function accepts several arguments to allow users to custom the runtime program, for now we only introduce the most important one, namely the `arch` . This argument will specify the *backend* that actually executes the compiled code. A backend can be either`ti.cpu` or  `ti.gpu`.  For `ti.gpu` Taichi will look for GPU architectures in the order `ti.cuda`, `ti.vulkan`, `ti.opengl/ti.metal`, `ti.dx11` and choose the first available one. If no GPU device is found Taichi will fall back to your cpu device. You can also directly specify the backend like `arch=ti.cuda`, Taichi will raise an error if this architecture is unavailable.
 
-- With `arch=ti.gpu`, Taichi first tries to run on CUDA. If CUDA is not supported on your machine, Taichi falls back on Metal, OpenGL, Vulkan, or DX11.
-- If no GPU backend (CUDA, Metal, OpenGL, Vulkan, or DX11) is supported, Taichi falls back to the CPU backend.
-:::
++ The next two lines
 
-:::note
+  ```python
+  n = 320
+  pixels = ti.field(dtype=float, shape=(n * 2, n))
+  ```
 
-When running on the CUDA backend on Windows or ARM devices (for example NVIDIA Jetson), Taichi allocates 1 GB GPU memory for field storage by default.
+  defines a field of shape (640, 320) of float type. `field `  is the most important and frequently used data structure in Taichi. You can think it as an analog of Numpy's `ndarray`  or Pytorch's `tensor`, but we emphasize here that Taichi's `field` is much more powerful and flexible than the other two counterparts: Taichi's field can be hierarchied in a tree-like manner, can store scalar, matrix, struct and quant types, can be sparsely or dynamically allocated, can easily switch between the row-major/column-major modes, and has built-in automatic differentiation support. You will meet these features in more advanced tutorials later. For now you can think `pixels` just as a dense 2D floating array.
 
-To override this behavior, do either of the following:
++ Between lines 9-22 we defined two functions. One decorated by `ti.func` and one decorated by `ti.kernel`. Such functions are called *taichi functions* and *kernels* respectively, they are not executed by Python's virtual machine but will be taken over by Taichi's just-in-time compiler and get executed on the GPU.
 
-- Initialize Taichi using `ti.init(arch=ti.cuda, device_memory_GB=3.4)` to allocate `3.4` GB GPU memory,
-- Initialize Taichi using `ti.init(arch=ti.cuda, device_memory_fraction=0.3)` to allocate `30%` of the GPU memory.
+​       The main differences between taichi functions and kernels are:
 
-On platforms other than Windows or ARM devices, Taichi relies on its on-demand memory allocator to allocate memory adaptively.
-:::
+            1. kernels are the entrances for Taichi to take over the subsequent task, kernels can be called anywhere in your program, but taichi functions can only be called by kernels or by other taichi funtions. In the above example, the taichi function `complex_mul` is called by the kernel `paint`.
+            1. The arguments and returns of a kernel function must all be type hinted, taichi functions do not have such restrictions. In the above example the argument `t` in the kernel `paint` is type hinted, but the arguments `z,w`in the taichi function `complex_mul` are not.
+            1. Nested kernels are *not supported*, nested functions are *supported*. Recursively calling taichi functions are *not supported for now*.
 
-### Fields
+​        :::tip
 
-Taichi is a *data*-oriented programming language where dense or spatially-sparse fields are the first-class citizens.
+​        For those who come from the world of CUDA, `ti.func` corresponds to `__device__` and `ti.kernel`            corresponds to `__global__`.
+​         :::
 
-In the code above, `pixels = ti.field(dtype=float, shape=(n * 2, n))` allocates a 2D dense field named `pixels` of size `(640, 320)` and element data type `float`.
++ The real magic happens in the line 15:
 
-### Functions and kernels
+  ```python
+  for i, j in pixels:
+  ```
 
-Computation resides in Taichi **kernels** and Taichi **functions**.
+  This is a `for` loop at the outermost scope in a Taichi kernel and this loop is *automatically parallelized*. In fact any for loop at the outermost scope in a kernel will be automatically parallelized. This is a very handy syntax sugar offered by Taichi. It allows users to parallel their task just in one plain and innocent for loop, without bothering any underlying hooks like thread allocating/recycling and memory management!
 
-Taichi **kernels** are defined with the decorator `@ti.kernel`. They can be called from Python to perform computation. Kernel arguments must be type-hinted (if any).
+  Note that the field `pixels` is treated as an iterator, `i,j` are the indices of the elements and are integers in the range `[0,2*n-1]` and `[0,n-1]`, respectively. They are listed in the row-majored order `[0, 0]`, `[0, 1]`,...,  `[0, n-1]`,`[1,n-1]`, ... `[2*n-1, n-1]`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
 
-Taichi **functions** are defined with the decorator `@ti.func`. They can *only* be called by Taichi kernels or other Taichi functions.
-
-See [syntax](../kernels/syntax.md) for more details about Taichi kernels and functions.
-
-The language used in Taichi kernels and functions looks exactly like Python, yet the Taichi frontend compiler converts it into a language
-that is **compiled, statically-typed, lexically-scoped, parallel and differentiable**.
-
-:::info
-
-*Taichi scope vs. Python scope*:
-
-Everything decorated with `@ti.kernel` and `@ti.func` is in the Taichi scope and hence will be compiled by the Taichi compiler.
-Everything else is in the Python scope. They are simply Python native code.
-:::
-
-:::caution
-
-- Taichi kernels must be called from the Python-scope.
-- Taichi functions must be called from the Taichi-scope.
-:::
-
-:::tip
-
-For those who come from the world of CUDA, `ti.func` corresponds to `__device__` while `ti.kernel` corresponds to `__global__`.
-:::
-
-:::note
-- Nested kernels are *not supported*.
-- Nested functions are *supported*.
-- Recursive functions are *not supported for now*.
-:::
-
-### Parallel for-loops
-
-For loops at the outermost scope in a Taichi kernel is *automatically parallelized*. For loops can have two forms:
-
-- _range-for loops_
-- _struct-for loops_.
-
-*Range-for loops* are no different from the Python for loops, except that they are parallelized when used at the outermost scope. Range-for loops can be nested.
+  Here we emphasize that *for loops not at the outermost scope will not be parallelized*, they are handled in serialized order:
 
 ```python {3,7,14-15}
 @ti.kernel
 def fill():
+    total = 0
     for i in range(10): # Parallelized
-        x[i] += i
-        s = 0
         for j in range(5): # Serialized in each parallel thread
-            s += j
-        y[i] = s
-
-@ti.kernel
-def fill_3d():
-    # Parallelized for all 3 <= i < 8, 1 <= j < 6, 0 <= k < 9
-    for i, j, k in ti.ndrange((3, 8), (1, 6), 9):
-        x[i, j, k] = i + j + k
+            total += i * j
+    if total > 10:
+        for k in range(5):  # not parallelized since not at the outermost scope
 ```
 
-:::note
 
-It is the loop *at the outermost scope* that gets parallelized, not the outermost loop.
-
-```python
-@ti.kernel
-def foo():
-    for i in range(10): # Parallelized :-)
-        ...
-
-@ti.kernel
-def bar(k: ti.i32):
-    if k > 42:
-        for i in range(10): # Serial :-(
-            ...
-```
-:::
-
-*Struct-for loops* are particularly useful when iterating over (sparse) field elements. In the `fractal.py` above, `for i, j in pixels` loops over all the pixel coordinates, i.e.,`(0, 0), (0, 1), (0, 2), ... , (0, 319), (1, 0), ..., (639, 319)`.
-
-:::note
-Struct-for is the key to [sparse computation](../basic/sparse.md) in Taichi, as it will only loop over active elements in a sparse field. In dense fields, all elements are active.
-:::
-
-:::caution WARNING
-
-Struct-for loops must live at the outer-most scope of kernels.
-It is the loop **at the outermost scope** that gets parallelized, not the outermost loop.
-
-```python
-x = [1, 2, 3]
-
-@ti.kernel
-def foo():
-    for i in x: # Parallelized :-)
-        ...
-
-@ti.kernel
-def bar(k: ti.i32):
-    # The outermost scope is a `if` statement
-    if k > 42:
-        for i in x: # Not allowed. Struct-fors must live in the outermost scope.
-            ...
-```
-:::
 
 :::caution WARNING
 
@@ -265,9 +170,7 @@ def foo():
 ```
 :::
 
-### GUI system
-
-Taichi provides a CPU-based [GUI system](../visualization/gui_system.md) for you to render your results on the screen.
++ Lines 18-23 displays the result in `pixels` to screen using Taichi's built-in [GUI system](../visualization/gui_system.md).
 
 ```python
 gui = ti.GUI("Julia Set", res=(n * 2, n))
@@ -278,9 +181,23 @@ for i in range(1000000):
     gui.show()
 ```
 
-## Still have issues?
+The line
 
-If you encounter any issue that is not covered here, feel free to report it by [opening an issue on GitHub](https://github.com/taichi-dev/taichi/issues/new?labels=potential+bug&template=bug_report.md) and including the details. We are always there to help!
+```python
+gui = ti.GUI("Julia Set", res=(n * 2, n))
+```
 
-See the [Installation Troubleshooting](../faqs/install.md) if you run into any issues when installing Taichi.
+sets the window title and the window resolution in pixels. Then in each round (we just render the animation 1000000 times) we compute the updated fractal pattern stored in `pixels`, call `gui.set_image` to set the window content as those in `pixels` , and call `gui.show()` to display the result to screen.
+
+
+
+# Summary
+
+Congratulations! After walking through the above short example you have learened the most significant features of Taichi:
+
+1. It compiles and runs your kernel functions on backends.
+2. Outermost for loops are automatically parallelized.
+3. The field data container and how to loop over it.
+
+These should be enough for you to get prepared for exploring more advanced features of Taichi.
 

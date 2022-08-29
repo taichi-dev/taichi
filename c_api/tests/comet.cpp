@@ -4,54 +4,33 @@
 #include "gtest/gtest.h"
 
 #include "c_api_test_utils.h"
-#include "taichi/taichi_core.h"
+#include "taichi/taichi.hpp"
 
 constexpr int img_h = 680;
 constexpr int img_w = 680;
 constexpr int img_c = 4;
 
 static void comet_run(TiArch arch, const std::string &folder_dir) {
-  TiRuntime runtime = ti_create_runtime(arch);
+  ti::Runtime runtime(arch);
 
   // Load Aot and Kernel
-  TiAotModule aot_mod = ti_load_aot_module(runtime, folder_dir.c_str());
+  ti::AotModule aot_mod = runtime.load_aot_module(folder_dir.c_str());
 
-  TiComputeGraph g_init = ti_get_aot_module_compute_graph(aot_mod, "init");
-  TiComputeGraph g_update = ti_get_aot_module_compute_graph(aot_mod, "update");
+  ti::ComputeGraph g_init = aot_mod.get_compute_graph("init");
+  ti::ComputeGraph g_update = aot_mod.get_compute_graph("update");
 
-  // k_img_to_ndarray(args)
-  TiMemoryAllocateInfo alloc_info;
-  alloc_info.size = img_h * img_w * img_c * sizeof(float);
-  alloc_info.host_write = false;
-  alloc_info.host_read = false;
-  alloc_info.export_sharing = false;
-  alloc_info.usage = TiMemoryUsageFlagBits::TI_MEMORY_USAGE_STORAGE_BIT;
+  ti::NdArray<float> arg_array =
+      runtime.allocate_ndarray<float>({img_h, img_w, img_c}, {});
 
-  TiMemory memory = ti_allocate_memory(runtime, &alloc_info);
-  TiNdArray arg_array = {
-      .memory = memory,
-      .shape = {.dim_count = 3, .dims = {img_h, img_w, img_c}},
-      .elem_shape = {.dim_count = 0, .dims = {0}},
-      .elem_type = TiDataType::TI_DATA_TYPE_F32};
+  g_init["arr"] = arg_array;
+  g_init.launch();
 
-  TiArgumentValue arg_value = {.ndarray = std::move(arg_array)};
-
-  TiArgument arr_arg = {.type = TiArgumentType::TI_ARGUMENT_TYPE_NDARRAY,
-                        .value = std::move(arg_value)};
-  TiNamedArgument arr_named_arg = {.name = "arr",
-                                   .argument = std::move(arr_arg)};
-  ;
-  TiNamedArgument args[1] = {std::move(arr_named_arg)};
-
-  ti_launch_compute_graph(runtime, g_init, 0, &args[0]);
-  ti_wait(runtime);
+  runtime.submit();
+  runtime.wait();
   for (int i = 0; i < 10000; i++) {
-    ti_launch_compute_graph(runtime, g_update, 1, &args[0]);
+    g_update["arg"] = arg_array;
     ti_wait(runtime);
   }
-
-  ti_destroy_aot_module(aot_mod);
-  ti_destroy_runtime(runtime);
 }
 
 TEST(CapiCometTest, Cuda) {

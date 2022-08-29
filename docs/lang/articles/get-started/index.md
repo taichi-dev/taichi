@@ -108,17 +108,20 @@ Let's dive into this simple Taichi program.
   defines a field of shape (640, 320) of float type. `field `  is the most important and frequently used data structure in Taichi. You can think it as an analog of Numpy's `ndarray`  or Pytorch's `tensor`, but we emphasize here that Taichi's `field` is much more powerful and flexible than the other two counterparts: Taichi's field can be hierarchied in a tree-like manner, can store scalar, matrix, struct and quant types, can be sparsely or dynamically allocated, can easily switch between the row-major/column-major modes, and has built-in automatic differentiation support. You will meet these features in more advanced tutorials later. For now you can think `pixels` just as a dense 2D floating array.
 
 + Between lines 9-22 we defined two functions. One decorated by `ti.func` and one decorated by `ti.kernel`. Such functions are called *taichi functions* and *kernels* respectively, they are not executed by Python's virtual machine but will be taken over by Taichi's just-in-time compiler and get executed on the GPU.
+    
+    The main differences between taichi functions and kernels are:
+    
+    1. kernels are the entrances for Taichi to take over the subsequent task, kernels can be called anywhere in your program, but taichi functions can only be called by kernels or by other taichi funtions. In the above example, the taichi function `complex_mul` is called by the kernel `paint`.
+    2. The arguments and returns of a kernel function must all be type hinted, taichi functions do not have such restrictions. In the above example the argument `t` in the kernel `paint` is type hinted, but the arguments `z,w`in the taichi function `complex_mul` are not.
+    3. Nested kernels are *not supported*, nested functions are *supported*. Recursively calling taichi functions are *not supported for now*.
+    
+    :::tip
+​    
+    For those who come from the world of CUDA, `ti.func` corresponds to `__device__` and `ti.kernel` corresponds to `__global__`.
 
-​       The main differences between taichi functions and kernels are:
-
-            1. kernels are the entrances for Taichi to take over the subsequent task, kernels can be called anywhere in your program, but taichi functions can only be called by kernels or by other taichi funtions. In the above example, the taichi function `complex_mul` is called by the kernel `paint`.
-            1. The arguments and returns of a kernel function must all be type hinted, taichi functions do not have such restrictions. In the above example the argument `t` in the kernel `paint` is type hinted, but the arguments `z,w`in the taichi function `complex_mul` are not.
-            1. Nested kernels are *not supported*, nested functions are *supported*. Recursively calling taichi functions are *not supported for now*.
-
-​        :::tip
-
-​        For those who come from the world of CUDA, `ti.func` corresponds to `__device__` and `ti.kernel`            corresponds to `__global__`.
-​         :::
+    For those who come from the world of
+    OpenGL, `ti.func` corresponds to the usual function in glsl and `ti.kernel` corresponds to `buffer`.
+    ​:::
 
 + The real magic happens in the line 15:
 
@@ -188,7 +191,7 @@ Let's dive into this simple Taichi program.
 
 
 
-# Summary
+## Summary
 
 Congratulations! After walking through the above short example you have learened the most significant features of Taichi:
 

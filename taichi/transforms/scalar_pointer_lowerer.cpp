@@ -37,7 +37,7 @@ void ScalarPointerLowerer::run() {
   // for a given SNode. It characterizes the relationship between a parent
   // and a child SNode: "parent.start = child.start + child.num_bits".
   //
-  // For example, if there are two 1D snode a and b,
+  // For example, if there are two 1D snodes a and b,
   // where a = ti.root.dense(ti.i, 2) and b = a.dense(ti.i, 8),
   // we have a.start = b.start + 3 for the i-th dimension.
   // When accessing b[15], then bits [0, 3) of 15 are for accessing b,

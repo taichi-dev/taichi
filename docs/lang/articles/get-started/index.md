@@ -35,7 +35,7 @@ This will pop up a window like follows:
 
 <center>
 
-![image](https://github.com/taichi-dev/taichi_assets/blob/master/static/imgs/ti_gallery.png)
+![image](https://github.com/taichi-dev/taichi_assets/blob/master/static/imgs/ti_gallery.png?raw=true)
 
 </center>
 

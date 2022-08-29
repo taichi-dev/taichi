@@ -554,10 +554,13 @@ class ADTransform : public IRVisitor {
 
  public:
   virtual Stmt *insert_grad_stmt(std::unique_ptr<Stmt> &&stmt) = 0;
+  std::set<Stmt *> new_inserted_statements;
 
   template <typename T, typename... Args>
   Stmt *insert(Args &&...args) {
-    return insert_grad_stmt(Stmt::make<T>(args...));
+    auto stmt = insert_grad_stmt(Stmt::make<T>(args...));
+    new_inserted_statements.insert(stmt);
+    return stmt;
   }
 
   void visit(AllocaStmt *alloca) override {
@@ -1084,6 +1087,9 @@ class MakeAdjoint : public ADTransform {
 
 // Forward mode autodiff
 class MakeDual : public ADTransform {
+ private:
+  std::set<Stmt *> statements_to_visit_;
+
  public:
   using ADTransform::visit;
   Stmt *current_stmt;
@@ -1091,15 +1097,38 @@ class MakeDual : public ADTransform {
   Block *alloca_block;
   std::map<Stmt *, Stmt *> dual_stmt;
 
-  MakeDual(Block *block) {
+  MakeDual(Block *block,
+           const std::set<Stmt *> &statements_to_visit,
+           const std::map<Stmt *, Stmt *> &dual_stmt_backup) {
     current_stmt = nullptr;
     alloca_block = block;
     current_block = block;
+    copy_backup_statements(statements_to_visit_, statements_to_visit, dual_stmt,
+                           dual_stmt_backup);
   }
 
-  static void run(Block *block) {
-    auto p = MakeDual(block);
+  static void copy_backup_statements(
+      std::set<Stmt *> &statements_to_visit_dst,
+      const std::set<Stmt *> &statements_to_visit_src,
+      std::map<Stmt *, Stmt *> &dual_stmt_dst,
+      const std::map<Stmt *, Stmt *> &dual_stmt_src) {
+    statements_to_visit_dst.clear();
+    for (auto const &item : statements_to_visit_src) {
+      statements_to_visit_dst.insert(item);
+    }
+    dual_stmt_dst.clear();
+    for (auto const &item : dual_stmt_src) {
+      dual_stmt_dst[item.first] = item.second;
+    }
+  }
+
+  static void run(Block *block,
+                  std::set<Stmt *> &statements_to_visit,
+                  std::map<Stmt *, Stmt *> &dual_stmt_backup) {
+    auto p = MakeDual(block, statements_to_visit, dual_stmt_backup);
     block->accept(&p);
+    copy_backup_statements(statements_to_visit, p.new_inserted_statements,
+                           dual_stmt_backup, p.dual_stmt);
   }
 
   Stmt *insert_grad_stmt(std::unique_ptr<Stmt> &&stmt) override {
@@ -1108,11 +1137,21 @@ class MakeDual : public ADTransform {
     return ptr;
   }
 
+  // The statements which are additional inserted in previous pass needs to be
+  // transformed at this pass.
+  bool needs_transform(Stmt *stmt) {
+    return statements_to_visit_.empty() || stmt->is<RangeForStmt>() ||
+           stmt->is<IfStmt>() || stmt->is<StructForStmt>() ||
+           (statements_to_visit_.find(stmt) != statements_to_visit_.end());
+  }
+
   void visit(Block *block) override {
     std::vector<Stmt *> statements;
     // always make a copy since the list can be modified.
     for (auto &stmt : block->statements) {
-      statements.push_back(stmt.get());
+      if (needs_transform(stmt.get())) {
+        statements.push_back(stmt.get());
+      }
     }
     for (auto stmt : statements) {
       current_stmt = stmt;
@@ -1145,6 +1184,9 @@ class MakeDual : public ADTransform {
       // maybe it's better to use the statement data type than the default type
       auto alloca = Stmt::make<AllocaStmt>(1, stmt->ret_type);
       dual_stmt[stmt] = alloca.get();
+
+      // Store the alloca of dual for next pass use
+      new_inserted_statements.insert(alloca.get());
 
       // TODO: check whether there are any edge cases for the alloca_block
       alloca_block->insert(std::move(alloca), 0);
@@ -1256,7 +1298,9 @@ class MakeDual : public ADTransform {
     if (if_stmt->true_statements) {
       std::vector<Stmt *> true_statements;
       for (auto &stmt : if_stmt->true_statements->statements) {
-        true_statements.push_back(stmt.get());
+        if (needs_transform(stmt.get())) {
+          true_statements.push_back(stmt.get());
+        }
       }
 
       for (auto stmt : true_statements) {
@@ -1267,7 +1311,9 @@ class MakeDual : public ADTransform {
     if (if_stmt->false_statements) {
       std::vector<Stmt *> false_statements;
       for (auto &stmt : if_stmt->false_statements->statements) {
-        false_statements.push_back(stmt.get());
+        if (needs_transform(stmt.get())) {
+          false_statements.push_back(stmt.get());
+        }
       }
 
       for (auto stmt : false_statements) {
@@ -1281,7 +1327,9 @@ class MakeDual : public ADTransform {
     std::vector<Stmt *> statements;
     // always make a copy since the list can be modified.
     for (auto &stmt : for_stmt->body->statements) {
-      statements.push_back(stmt.get());
+      if (needs_transform(stmt.get())) {
+        statements.push_back(stmt.get());
+      }
     }
     auto previous_alloca_block = alloca_block;
     alloca_block = for_stmt->body.get();
@@ -1293,8 +1341,10 @@ class MakeDual : public ADTransform {
   }
 
   void visit(StructForStmt *for_stmt) override {
+    auto previous_alloca_block = alloca_block;
     alloca_block = for_stmt->body.get();
     for_stmt->body->accept(this);
+    alloca_block = previous_alloca_block;
   }
 
   void visit(LocalLoadStmt *stmt) override {
@@ -1328,10 +1378,11 @@ class MakeDual : public ADTransform {
       src = stmt->src->as<GlobalPtrStmt>();
     }
     auto snodes = src->snodes;
-    if (!snodes[0]->has_dual()) {
-      // No dual SNode. Do nothing
-      return;
-    }
+    // if (!snodes[0]->has_dual()) {
+    //   // No dual SNode. Do nothing
+    //   return;
+    // }
+    TI_ASSERT(snodes[0]->has_dual());
     if (gradients_stopped(stmt, snodes[0])) {
       // gradients stopped, do nothing.
       return;
@@ -1356,10 +1407,11 @@ class MakeDual : public ADTransform {
       dest = stmt->dest->as<GlobalPtrStmt>();
     }
     auto snodes = dest->snodes;
-    if (!snodes[0]->has_dual()) {
-      // no gradient (likely integer types)
-      return;
-    }
+    // if (!snodes[0]->has_dual()) {
+    //   // no gradient (likely integer types)
+    //   return;
+    // }
+    TI_ASSERT(snodes[0]->has_dual());
     TI_ASSERT(snodes[0]->get_dual() != nullptr);
     snodes[0] = snodes[0]->get_dual();
     auto dual_ptr = insert<GlobalPtrStmt>(snodes, dest->indices);
@@ -1367,7 +1419,8 @@ class MakeDual : public ADTransform {
       dual_ptr = insert<PtrOffsetStmt>(dual_ptr,
                                        stmt->dest->as<PtrOffsetStmt>()->offset);
     }
-    insert<AtomicOpStmt>(AtomicOpType::add, dual_ptr, load(dual(stmt->val)));
+    // insert<AtomicOpStmt>(AtomicOpType::add, dual_ptr, load(dual(stmt->val)));
+    insert<GlobalStoreStmt>(dual_ptr, load(dual(stmt->val)));
   }
 
   void visit(AtomicOpStmt *stmt) override {
@@ -1380,10 +1433,11 @@ class MakeDual : public ADTransform {
       dest = stmt->dest->as<GlobalPtrStmt>();
     }
     auto snodes = dest->snodes;
-    if (!snodes[0]->has_dual()) {
-      // no gradient (likely integer types)
-      return;
-    }
+    // if (!snodes[0]->has_dual()) {
+    //   // no gradient (likely integer types)
+    //   return;
+    // }
+    TI_ASSERT(snodes[0]->has_dual());
     TI_ASSERT(snodes[0]->get_dual() != nullptr);
     snodes[0] = snodes[0]->get_dual();
     auto dual_ptr = insert<GlobalPtrStmt>(snodes, dest->indices);
@@ -1512,36 +1566,41 @@ void auto_diff(IRNode *root,
                AutodiffMode autodiff_mode,
                bool use_stack) {
   TI_AUTO_PROF;
-  if (autodiff_mode == AutodiffMode::kReverse) {
-    if (use_stack) {
-      auto IB = IdentifyIndependentBlocks::run(root);
-      ReverseOuterLoops::run(root, IB);
+  int order = 2;
+  std::set<Stmt *> statements_to_visited;
+  std::map<Stmt *, Stmt *> dual_stmt_backup;
+  for (int i = 0; i < order; i++) {
+    if (autodiff_mode == AutodiffMode::kReverse) {
+      if (use_stack) {
+        auto IB = IdentifyIndependentBlocks::run(root);
+        ReverseOuterLoops::run(root, IB);
 
-      for (auto ib : IB) {
-        PromoteSSA2LocalVar::run(ib);
-        ReplaceLocalVarWithStacks replace(config.ad_stack_size);
-        ib->accept(&replace);
+        for (auto ib : IB) {
+          PromoteSSA2LocalVar::run(ib);
+          ReplaceLocalVarWithStacks replace(config.ad_stack_size);
+          ib->accept(&replace);
+          type_check(root, config);
+          MakeAdjoint::run(ib);
+          type_check(root, config);
+          BackupSSA::run(ib);
+          irpass::analysis::verify(root);
+        }
+      } else {
+        auto IB = IdentifyIndependentBlocks::run(root);
+        ReverseOuterLoops::run(root, IB);
         type_check(root, config);
-        MakeAdjoint::run(ib);
-        type_check(root, config);
-        BackupSSA::run(ib);
-        irpass::analysis::verify(root);
+        for (auto ib : IB) {
+          MakeAdjoint::run(ib);
+        }
       }
-    } else {
-      auto IB = IdentifyIndependentBlocks::run(root);
-      ReverseOuterLoops::run(root, IB);
-      type_check(root, config);
-      for (auto ib : IB) {
-        MakeAdjoint::run(ib);
-      }
+    } else if (autodiff_mode == AutodiffMode::kForward) {
+      // Forward mode autodiff
+      Block *block = root->as<Block>();
+      MakeDual::run(block, statements_to_visited, dual_stmt_backup);
     }
-  } else if (autodiff_mode == AutodiffMode::kForward) {
-    // Forward mode autodiff
-    Block *block = root->as<Block>();
-    MakeDual::run(block);
+    type_check(root, config);
+    irpass::analysis::verify(root);
   }
-  type_check(root, config);
-  irpass::analysis::verify(root);
 }
 
 class GloablDataAccessRuleChecker : public BasicStmtVisitor {

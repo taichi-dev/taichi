@@ -592,6 +592,7 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
     x_dual = None
     # The x_grad_checkbit is used for global data access rule checker
     x_grad_checkbit = None
+    x_dual_dual = None
     if _ti_core.is_real(dtype):
         # adjoint
         x_grad = Expr(get_runtime().prog.make_id_expr(""))
@@ -621,6 +622,14 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
         x_dual.ptr.set_name(name + ".dual")
         x_dual.ptr.set_grad_type(SNodeGradType.DUAL)
         x.ptr.set_dual(x_dual.ptr)
+
+        # dual_dual
+        x_dual_dual = Expr(get_runtime().prog.make_id_expr(""))
+        x_dual_dual.ptr = _ti_core.global_new(x_dual_dual.ptr, dtype)
+        x_dual_dual.ptr.set_name(name + ".dual")
+        x_dual_dual.ptr.set_grad_type(SNodeGradType.DUAL)
+        x_dual.ptr.set_dual(x_dual_dual.ptr)
+
         if needs_dual:
             pytaichi.dual_vars.append(x_dual)
     elif needs_grad or needs_dual:
@@ -628,7 +637,7 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
             f'{dtype} is not supported for field with `needs_grad=True` or `needs_dual=True`.'
         )
 
-    return x, x_grad, x_dual
+    return x, x_grad, x_dual, x_dual_dual
 
 
 @python_scope
@@ -674,12 +683,13 @@ def field(dtype,
             >>> ti.root.dense(ti.j, shape=8).dense(ti.i, shape=16).place(x4)
 
     """
-    x, x_grad, x_dual = create_field_member(dtype, name, needs_grad,
-                                            needs_dual)
-    x, x_grad, x_dual = ScalarField(x), ScalarField(x_grad), ScalarField(
-        x_dual)
+    x, x_grad, x_dual, x_dual_dual = create_field_member(
+        dtype, name, needs_grad, needs_dual)
+    x, x_grad, x_dual, x_dual_dual = ScalarField(x), ScalarField(
+        x_grad), ScalarField(x_dual), ScalarField(x_dual_dual)
     x._set_grad(x_grad)
     x._set_dual(x_dual)
+    x_dual._set_dual(x_dual_dual)
 
     if shape is None:
         if offset is not None:

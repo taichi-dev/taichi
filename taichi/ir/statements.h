@@ -292,31 +292,28 @@ class AtomicOpStmt : public Stmt {
 };
 
 /**
- * An external pointer. |base_ptrs| should be ArgLoadStmts with
+ * An external pointer. |base_ptr| should be ArgLoadStmt with
  * |is_ptr| == true.
  */
 class ExternalPtrStmt : public Stmt {
  public:
-  LaneAttribute<Stmt *> base_ptrs;
+  Stmt *base_ptr;
   std::vector<Stmt *> indices;
   std::vector<int> element_shape;
   // AOS: element_dim < 0
   // SOA: element_dim > 0
   int element_dim;
 
-  ExternalPtrStmt(const LaneAttribute<Stmt *> &base_ptrs,
-                  const std::vector<Stmt *> &indices);
+  ExternalPtrStmt(Stmt *base_ptr, const std::vector<Stmt *> &indices);
 
-  ExternalPtrStmt(const LaneAttribute<Stmt *> &base_ptrs,
-                  const std::vector<Stmt *> &indices,
-                  const std::vector<int> &element_shape,
-                  int element_dim);
+  ExternalPtrStmt(Stmt *base_ptr, const std::vector<Stmt *> &indices,
+                  const std::vector<int> &element_shape, int element_dim);
 
   bool has_global_side_effect() const override {
     return false;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, base_ptrs, indices);
+  TI_STMT_DEF_FIELDS(ret_type, base_ptr, indices);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 

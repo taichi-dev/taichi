@@ -85,13 +85,11 @@ class DemoteAtomics : public BasicStmtVisitor {
           if (dest_ptr->indices.empty()) {
             demote = false;
           }
-          for (Stmt *base_stmt : dest_ptr->base_ptrs.data) {
-            ArgLoadStmt *arg_load_stmt = base_stmt->as<ArgLoadStmt>();
-            int arg_id = arg_load_stmt->arg_id;
-            if (loop_unique_arr_ptr_[arg_id] == nullptr) {
-              // Not loop unique
-              demote = false;
-            }
+          ArgLoadStmt *arg_load_stmt = dest_ptr->base_ptr->as<ArgLoadStmt>();
+          int arg_id = arg_load_stmt->arg_id;
+          if (loop_unique_arr_ptr_[arg_id] == nullptr) {
+            // Not loop unique
+            demote = false;
           }
           // TODO: Is BLS / Mem Access Opt a thing for any_arr?
         }

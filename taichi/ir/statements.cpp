@@ -32,24 +32,19 @@ bool UnaryOpStmt::same_operation(UnaryOpStmt *o) const {
   return false;
 }
 
-ExternalPtrStmt::ExternalPtrStmt(const LaneAttribute<Stmt *> &base_ptrs,
+ExternalPtrStmt::ExternalPtrStmt(Stmt *base_ptr,
                                  const std::vector<Stmt *> &indices)
-    : base_ptrs(base_ptrs), indices(indices) {
-  DataType dt = PrimitiveType::f32;
-  for (int i = 0; i < (int)base_ptrs.size(); i++) {
-    TI_ASSERT(base_ptrs[i] != nullptr);
-    TI_ASSERT(base_ptrs[i]->is<ArgLoadStmt>());
-  }
-  TI_ASSERT(base_ptrs.size() == 1);
-  element_type() = dt;
+    : base_ptr(base_ptr), indices(indices) {
+  TI_ASSERT(base_ptr != nullptr);
+  TI_ASSERT(base_ptr->is<ArgLoadStmt>());
   TI_STMT_REG_FIELDS;
 }
 
-ExternalPtrStmt::ExternalPtrStmt(const LaneAttribute<Stmt *> &base_ptrs,
+ExternalPtrStmt::ExternalPtrStmt(Stmt *base_ptr,
                                  const std::vector<Stmt *> &indices,
                                  const std::vector<int> &element_shape,
                                  int element_dim)
-    : ExternalPtrStmt(base_ptrs, indices) {
+    : ExternalPtrStmt(base_ptr, indices) {
   this->element_shape = element_shape;
   this->element_dim = element_dim;
 }

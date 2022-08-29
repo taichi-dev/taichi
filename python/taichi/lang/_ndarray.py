@@ -263,7 +263,6 @@ class ScalarNdarray(Ndarray):
     def __repr__(self):
         return '<ti.ndarray>'
 
-
 class NdarrayHostAccessor:
     def __init__(self, ndarray):
         dtype = ndarray.element_data_type()
@@ -307,11 +306,13 @@ class NdarrayHostAccess:
             self.indices = indices_first + indices_second
 
         def getter():
+            _ti_core.push_cuda_context()
             self.ndarr._initialize_host_accessor()
             return self.ndarr.host_accessor.getter(
                 *self.ndarr._pad_key(self.indices))
 
         def setter(value):
+            _ti_core.push_cuda_context()
             self.ndarr._initialize_host_accessor()
             self.ndarr.host_accessor.setter(value,
                                             *self.ndarr._pad_key(self.indices))

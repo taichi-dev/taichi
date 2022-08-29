@@ -423,9 +423,6 @@ def get_runtime():
 
 def reset():
     global pytaichi
-    prog = get_runtime().prog
-    if prog is not None and prog.config.arch == _ti_core.cuda:
-        _ti_core.push_cuda_context()
     old_kernels = pytaichi.kernels
     pytaichi.clear()
     pytaichi = PyTaichi(old_kernels)

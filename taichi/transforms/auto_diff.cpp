@@ -35,11 +35,8 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
     if (is_inside_loop_)
       return;
     TI_ASSERT(stmt->dest->is<GlobalPtrStmt>());
-    for (const auto &node : stmt->dest->cast<GlobalPtrStmt>()->snodes.data) {
-      if (node->has_adjoint()) {
-        qualified_atomics_ = false;
-        break;
-      }
+    if (stmt->dest->as<GlobalPtrStmt>()->snode->has_adjoint()) {
+      qualified_atomics_ = false;
     }
   }
 
@@ -1001,18 +998,18 @@ class MakeAdjoint : public ADTransform {
       src = stmt->src->as<GlobalPtrStmt>();
     }
 
-    auto snodes = src->snodes;
-    if (!snodes[0]->has_adjoint()) {
+    auto snode = src->snode;
+    if (!snode->has_adjoint()) {
       // No adjoint SNode. Do nothing
       return;
     }
-    if (gradients_stopped(stmt, snodes[0])) {
+    if (gradients_stopped(stmt, snode)) {
       // gradients stopped, do nothing.
       return;
     }
-    TI_ASSERT(snodes[0]->get_adjoint() != nullptr);
-    snodes[0] = snodes[0]->get_adjoint();
-    auto adj_ptr = insert<GlobalPtrStmt>(snodes, src->indices);
+    TI_ASSERT(snode->get_adjoint() != nullptr);
+    snode = snode->get_adjoint();
+    auto adj_ptr = insert<GlobalPtrStmt>(snode, src->indices);
     if (is_ptr_offset) {
       adj_ptr = insert<PtrOffsetStmt>(adj_ptr,
                                       stmt->src->as<PtrOffsetStmt>()->offset);
@@ -1037,14 +1034,14 @@ class MakeAdjoint : public ADTransform {
       dest = stmt->dest->as<GlobalPtrStmt>();
     }
 
-    auto snodes = dest->snodes;
-    if (!snodes[0]->has_adjoint()) {
+    auto snode = dest->snode;
+    if (!snode->has_adjoint()) {
       // no gradient (likely integer types)
       return;
     }
-    TI_ASSERT(snodes[0]->get_adjoint() != nullptr);
-    snodes[0] = snodes[0]->get_adjoint();
-    auto adjoint_ptr = insert<GlobalPtrStmt>(snodes, dest->indices);
+    TI_ASSERT(snode->get_adjoint() != nullptr);
+    snode = snode->get_adjoint();
+    auto adjoint_ptr = insert<GlobalPtrStmt>(snode, dest->indices);
     if (is_ptr_offset) {
       adjoint_ptr = insert<PtrOffsetStmt>(
           adjoint_ptr, stmt->dest->as<PtrOffsetStmt>()->offset);
@@ -1064,15 +1061,15 @@ class MakeAdjoint : public ADTransform {
       dest = stmt->dest->as<GlobalPtrStmt>();
     }
 
-    auto snodes = dest->snodes;
-    if (!snodes[0]->has_adjoint()) {
+    auto snode = dest->snode;
+    if (!snode->has_adjoint()) {
       // no gradient (likely integer types)
       return;
     }
 
-    TI_ASSERT(snodes[0]->get_adjoint() != nullptr);
-    snodes[0] = snodes[0]->get_adjoint();
-    auto adjoint_ptr = insert<GlobalPtrStmt>(snodes, dest->indices);
+    TI_ASSERT(snode->get_adjoint() != nullptr);
+    snode = snode->get_adjoint();
+    auto adjoint_ptr = insert<GlobalPtrStmt>(snode, dest->indices);
     if (is_ptr_offset) {
       adjoint_ptr = insert<PtrOffsetStmt>(
           adjoint_ptr, stmt->dest->as<PtrOffsetStmt>()->offset);
@@ -1327,18 +1324,18 @@ class MakeDual : public ADTransform {
     } else {
       src = stmt->src->as<GlobalPtrStmt>();
     }
-    auto snodes = src->snodes;
-    if (!snodes[0]->has_dual()) {
+    auto snode = src->snode;
+    if (!snode->has_dual()) {
       // No dual SNode. Do nothing
       return;
     }
-    if (gradients_stopped(stmt, snodes[0])) {
+    if (gradients_stopped(stmt, snode)) {
       // gradients stopped, do nothing.
       return;
     }
-    TI_ASSERT(snodes[0]->get_dual() != nullptr);
-    snodes[0] = snodes[0]->get_dual();
-    auto dual_ptr = insert<GlobalPtrStmt>(snodes, src->indices);
+    TI_ASSERT(snode->get_dual() != nullptr);
+    snode = snode->get_dual();
+    auto dual_ptr = insert<GlobalPtrStmt>(snode, src->indices);
     if (is_ptr_offset) {
       dual_ptr = insert<PtrOffsetStmt>(dual_ptr,
                                        stmt->src->as<PtrOffsetStmt>()->offset);
@@ -1355,14 +1352,14 @@ class MakeDual : public ADTransform {
     } else {
       dest = stmt->dest->as<GlobalPtrStmt>();
     }
-    auto snodes = dest->snodes;
-    if (!snodes[0]->has_dual()) {
+    auto snode = dest->snode;
+    if (!snode->has_dual()) {
       // no gradient (likely integer types)
       return;
     }
-    TI_ASSERT(snodes[0]->get_dual() != nullptr);
-    snodes[0] = snodes[0]->get_dual();
-    auto dual_ptr = insert<GlobalPtrStmt>(snodes, dest->indices);
+    TI_ASSERT(snode->get_dual() != nullptr);
+    snode = snode->get_dual();
+    auto dual_ptr = insert<GlobalPtrStmt>(snode, dest->indices);
     if (is_ptr_offset) {
       dual_ptr = insert<PtrOffsetStmt>(dual_ptr,
                                        stmt->dest->as<PtrOffsetStmt>()->offset);
@@ -1379,14 +1376,14 @@ class MakeDual : public ADTransform {
     } else {
       dest = stmt->dest->as<GlobalPtrStmt>();
     }
-    auto snodes = dest->snodes;
-    if (!snodes[0]->has_dual()) {
+    auto snode = dest->snode;
+    if (!snode->has_dual()) {
       // no gradient (likely integer types)
       return;
     }
-    TI_ASSERT(snodes[0]->get_dual() != nullptr);
-    snodes[0] = snodes[0]->get_dual();
-    auto dual_ptr = insert<GlobalPtrStmt>(snodes, dest->indices);
+    TI_ASSERT(snode->get_dual() != nullptr);
+    snode = snode->get_dual();
+    auto dual_ptr = insert<GlobalPtrStmt>(snode, dest->indices);
     if (is_ptr_offset) {
       dual_ptr = insert<PtrOffsetStmt>(dual_ptr,
                                        stmt->dest->as<PtrOffsetStmt>()->offset);
@@ -1550,28 +1547,28 @@ class GloablDataAccessRuleChecker : public BasicStmtVisitor {
 
   void visit(GlobalLoadStmt *stmt) override {
     GlobalPtrStmt *src = stmt->src->as<GlobalPtrStmt>();
-    auto snodes = src->snodes;
-    if (!snodes[0]->has_adjoint_checkbit()) {
+    auto snode = src->snode;
+    if (!snode->has_adjoint_checkbit()) {
       return;
     }
-    TI_ASSERT(snodes[0]->get_adjoint_checkbit() != nullptr);
-    snodes[0] = snodes[0]->get_adjoint_checkbit();
+    TI_ASSERT(snode->get_adjoint_checkbit() != nullptr);
+    snode = snode->get_adjoint_checkbit();
     auto gloabl_ptr =
-        stmt->insert_after_me(Stmt::make<GlobalPtrStmt>(snodes, src->indices));
+        stmt->insert_after_me(Stmt::make<GlobalPtrStmt>(snode, src->indices));
     auto one = gloabl_ptr->insert_after_me(
         Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(1)));
     one->insert_after_me(Stmt::make<GlobalStoreStmt>(gloabl_ptr, one));
   }
 
   void visit_gloabl_store_stmt_and_atomic_add(Stmt *stmt, GlobalPtrStmt *dest) {
-    auto snodes = dest->snodes;
-    if (!snodes[0]->has_adjoint_checkbit()) {
+    auto snode = dest->snode;
+    if (!snode->has_adjoint_checkbit()) {
       return;
     }
-    TI_ASSERT(snodes[0]->get_adjoint_checkbit() != nullptr);
-    snodes[0] = snodes[0]->get_adjoint_checkbit();
-    auto global_ptr = stmt->insert_before_me(
-        Stmt::make<GlobalPtrStmt>(snodes, dest->indices));
+    TI_ASSERT(snode->get_adjoint_checkbit() != nullptr);
+    snode = snode->get_adjoint_checkbit();
+    auto global_ptr =
+        stmt->insert_before_me(Stmt::make<GlobalPtrStmt>(snode, dest->indices));
     auto global_load =
         stmt->insert_before_me(Stmt::make<GlobalLoadStmt>(global_ptr));
     auto zero = stmt->insert_before_me(
@@ -1581,7 +1578,7 @@ class GloablDataAccessRuleChecker : public BasicStmtVisitor {
     std::string msg = fmt::format(
         "(kernel={}) Breaks the global data access rule. Snode {} is "
         "overwritten unexpectedly.",
-        kernel_name_, dest->snodes[0]->get_node_type_name());
+        kernel_name_, dest->snode->get_node_type_name());
     msg += "\n" + stmt->tb;
 
     stmt->insert_before_me(

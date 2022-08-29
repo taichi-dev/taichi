@@ -292,22 +292,21 @@ class AtomicOpStmt : public Stmt {
 };
 
 /**
- * An external pointer. |base_ptrs| should be ArgLoadStmts with
+ * An external pointer. |base_ptr| should be ArgLoadStmt with
  * |is_ptr| == true.
  */
 class ExternalPtrStmt : public Stmt {
  public:
-  LaneAttribute<Stmt *> base_ptrs;
+  Stmt *base_ptr;
   std::vector<Stmt *> indices;
   std::vector<int> element_shape;
   // AOS: element_dim < 0
   // SOA: element_dim > 0
   int element_dim;
 
-  ExternalPtrStmt(const LaneAttribute<Stmt *> &base_ptrs,
-                  const std::vector<Stmt *> &indices);
+  ExternalPtrStmt(Stmt *base_ptr, const std::vector<Stmt *> &indices);
 
-  ExternalPtrStmt(const LaneAttribute<Stmt *> &base_ptrs,
+  ExternalPtrStmt(Stmt *base_ptr,
                   const std::vector<Stmt *> &indices,
                   const std::vector<int> &element_shape,
                   int element_dim);
@@ -316,7 +315,7 @@ class ExternalPtrStmt : public Stmt {
     return false;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, base_ptrs, indices);
+  TI_STMT_DEF_FIELDS(ret_type, base_ptr, indices);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
@@ -330,18 +329,14 @@ class ExternalPtrStmt : public Stmt {
  */
 class GlobalPtrStmt : public Stmt {
  public:
-  LaneAttribute<SNode *> snodes;
+  SNode *snode;
   std::vector<Stmt *> indices;
   bool activate;
   bool is_bit_vectorized;  // for bit_loop_vectorize pass
 
-  GlobalPtrStmt(const LaneAttribute<SNode *> &snodes,
+  GlobalPtrStmt(SNode *snode,
                 const std::vector<Stmt *> &indices,
                 bool activate = true);
-
-  bool is_element_wise(const SNode *snode) const;
-
-  bool covers_snode(const SNode *snode) const;
 
   bool has_global_side_effect() const override {
     return activate;
@@ -351,7 +346,7 @@ class GlobalPtrStmt : public Stmt {
     return true;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, snodes, indices, activate, is_bit_vectorized);
+  TI_STMT_DEF_FIELDS(ret_type, snode, indices, activate, is_bit_vectorized);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
@@ -539,8 +534,6 @@ class LoopUniqueStmt : public Stmt {
   // use that to check if two LoopUniqueStmts are the same.
 
   LoopUniqueStmt(Stmt *input, const std::vector<SNode *> &covers);
-
-  bool covers_snode(const SNode *snode) const;
 
   bool has_global_side_effect() const override {
     return false;

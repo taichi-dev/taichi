@@ -392,8 +392,8 @@ class IRPrinter : public IRVisitor {
         fmt::format("{}{} = global ptr [", stmt->type_hint(), stmt->name());
 
     std::string snode_name;
-    if (stmt->snodes[0]) {
-      snode_name = stmt->snodes[0]->get_node_type_name_hinted();
+    if (stmt->snode) {
+      snode_name = stmt->snode->get_node_type_name_hinted();
     } else {
       snode_name = "unknown";
     }
@@ -528,14 +528,8 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(ExternalPtrStmt *stmt) override {
-    std::string s = "<";
-    for (int i = 0; i < (int)stmt->base_ptrs.size(); i++) {
-      s += fmt::format("{}", stmt->base_ptrs[i]->name());
-      if (i + 1 < (int)stmt->base_ptrs.size()) {
-        s += ", ";
-      }
-    }
-    s += ">, [";
+    std::string s = stmt->base_ptr->name();
+    s += ", [";
     for (int i = 0; i < (int)stmt->indices.size(); i++) {
       s += fmt::format("{}", stmt->indices[i]->name());
       if (i + 1 < (int)stmt->indices.size()) {

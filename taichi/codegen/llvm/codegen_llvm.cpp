@@ -1767,7 +1767,7 @@ void TaskCodeGenLLVM::visit(PtrOffsetStmt *stmt) {
 }
 
 void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
-  auto argload = stmt->base_ptrs[0]->as<ArgLoadStmt>();
+  auto argload = stmt->base_ptr->as<ArgLoadStmt>();
   auto arg_id = argload->arg_id;
   int num_indices = stmt->indices.size();
   std::vector<llvm::Value *> sizes(num_indices);
@@ -1787,7 +1787,7 @@ void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
 
   auto dt = stmt->ret_type.ptr_removed();
   auto base_ty = tlctx->get_data_type(dt);
-  auto base = builder->CreateBitCast(llvm_val[stmt->base_ptrs[0]],
+  auto base = builder->CreateBitCast(llvm_val[stmt->base_ptr],
                                      llvm::PointerType::get(base_ty, 0));
 
   auto linear_index = tlctx->get_constant(0);

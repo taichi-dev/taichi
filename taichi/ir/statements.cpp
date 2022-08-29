@@ -32,76 +32,33 @@ bool UnaryOpStmt::same_operation(UnaryOpStmt *o) const {
   return false;
 }
 
-ExternalPtrStmt::ExternalPtrStmt(const LaneAttribute<Stmt *> &base_ptrs,
+ExternalPtrStmt::ExternalPtrStmt(Stmt *base_ptr,
                                  const std::vector<Stmt *> &indices)
-    : base_ptrs(base_ptrs), indices(indices) {
-  DataType dt = PrimitiveType::f32;
-  for (int i = 0; i < (int)base_ptrs.size(); i++) {
-    TI_ASSERT(base_ptrs[i] != nullptr);
-    TI_ASSERT(base_ptrs[i]->is<ArgLoadStmt>());
-  }
-  TI_ASSERT(base_ptrs.size() == 1);
-  element_type() = dt;
+    : base_ptr(base_ptr), indices(indices) {
+  TI_ASSERT(base_ptr != nullptr);
+  TI_ASSERT(base_ptr->is<ArgLoadStmt>());
   TI_STMT_REG_FIELDS;
 }
 
-ExternalPtrStmt::ExternalPtrStmt(const LaneAttribute<Stmt *> &base_ptrs,
+ExternalPtrStmt::ExternalPtrStmt(Stmt *base_ptr,
                                  const std::vector<Stmt *> &indices,
                                  const std::vector<int> &element_shape,
                                  int element_dim)
-    : ExternalPtrStmt(base_ptrs, indices) {
+    : ExternalPtrStmt(base_ptr, indices) {
   this->element_shape = element_shape;
   this->element_dim = element_dim;
 }
 
-GlobalPtrStmt::GlobalPtrStmt(const LaneAttribute<SNode *> &snodes,
+GlobalPtrStmt::GlobalPtrStmt(SNode *snode,
                              const std::vector<Stmt *> &indices,
                              bool activate)
-    : snodes(snodes),
+    : snode(snode),
       indices(indices),
       activate(activate),
       is_bit_vectorized(false) {
-  for (int i = 0; i < (int)snodes.size(); i++) {
-    TI_ASSERT(snodes[i] != nullptr);
-    TI_ASSERT(snodes[0]->dt == snodes[i]->dt);
-  }
-  TI_ASSERT(snodes.size() == 1);
-  element_type() = snodes[0]->dt;
+  TI_ASSERT(snode != nullptr);
+  element_type() = snode->dt;
   TI_STMT_REG_FIELDS;
-}
-
-bool GlobalPtrStmt::is_element_wise(const SNode *snode) const {
-  if (snode == nullptr) {
-    // check every SNode when "snode" is nullptr
-    for (const auto &snode_i : snodes.data) {
-      if (!is_element_wise(snode_i)) {
-        return false;
-      }
-    }
-    return true;
-  }
-  // check if this statement is element-wise on a specific SNode, i.e., argument
-  // "snode"
-  for (int i = 0; i < (int)indices.size(); i++) {
-    if (auto loop_index_i = indices[i]->cast<LoopIndexStmt>();
-        !(loop_index_i && loop_index_i->loop->is<OffloadedStmt>() &&
-          loop_index_i->index == snode->physical_index_position[i])) {
-      return false;
-    }
-  }
-  return true;
-}
-
-bool GlobalPtrStmt::covers_snode(const SNode *snode) const {
-  // Check if the addresses of this statement all over the loop cover
-  // all active indices of the snode.
-  for (auto &index : indices) {
-    if (auto loop_unique = index->cast<LoopUniqueStmt>()) {
-      if (loop_unique->covers_snode(snode))
-        return true;
-    }
-  }
-  return is_element_wise(snode);
 }
 
 PtrOffsetStmt::PtrOffsetStmt(Stmt *origin_input, Stmt *offset_input) {
@@ -166,14 +123,6 @@ LoopUniqueStmt::LoopUniqueStmt(Stmt *input, const std::vector<SNode *> &covers)
       this->covers.insert(sn->id);
   }
   TI_STMT_REG_FIELDS;
-}
-
-bool LoopUniqueStmt::covers_snode(const SNode *snode) const {
-  if (snode->is_place()) {
-    return covers.count(snode->parent->id) > 0;
-  } else {
-    TI_NOT_IMPLEMENTED
-  }
 }
 
 Stmt *LocalLoadStmt::previous_store_or_alloca_in_block() {

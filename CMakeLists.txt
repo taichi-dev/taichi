@@ -124,6 +124,10 @@ if (TI_WITH_CUDA)
     set(CUDA_ARCH "cuda")
 endif()
 
+if (TI_WITH_DX12)
+    set(DX12_ARCH "dx12")
+endif()
+
 if (CLANG_EXECUTABLE)
   message("Clang executable ${CLANG_EXECUTABLE}")
 elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")

@@ -53,7 +53,7 @@ def decl_scalar_arg(dtype):
         is_ref = True
         dtype = dtype.tp
     dtype = cook_dtype(dtype)
-    arg_id = impl.get_runtime().prog.decl_arg(dtype, False)
+    arg_id = impl.get_runtime().prog.decl_scalar_arg(dtype)
     return Expr(_ti_core.make_arg_load_expr(arg_id, dtype, is_ref))
 
 
@@ -68,7 +68,7 @@ def decl_sparse_matrix(dtype):
     value_type = cook_dtype(dtype)
     ptr_type = cook_dtype(u64)
     # Treat the sparse matrix argument as a scalar since we only need to pass in the base pointer
-    arg_id = impl.get_runtime().prog.decl_arg(ptr_type, False)
+    arg_id = impl.get_runtime().prog.decl_scalar_arg(ptr_type)
     return SparseMatrixProxy(
         _ti_core.make_arg_load_expr(arg_id, ptr_type, False), value_type)
 
@@ -86,13 +86,15 @@ def decl_ndarray_arg(dtype, dim, element_shape, layout):
 
 
 def decl_texture_arg(num_dimensions):
-    arg_id = impl.get_runtime().prog.decl_arg(f32, True)
+    # FIXME: texture_arg doesn't have element_shape so better separate them
+    arg_id = impl.get_runtime().prog.decl_texture_arg(f32)
     return TextureSampler(
         _ti_core.make_texture_ptr_expr(arg_id, num_dimensions), num_dimensions)
 
 
 def decl_rw_texture_arg(num_dimensions, num_channels, channel_format, lod):
-    arg_id = impl.get_runtime().prog.decl_arg(f32, True)
+    # FIXME: texture_arg doesn't have element_shape so better separate them
+    arg_id = impl.get_runtime().prog.decl_texture_arg(f32)
     return RWTextureAccessor(
         _ti_core.make_rw_texture_ptr_expr(arg_id, num_dimensions, num_channels,
                                           channel_format, lod), num_dimensions)
@@ -100,7 +102,8 @@ def decl_rw_texture_arg(num_dimensions, num_channels, channel_format, lod):
 
 def decl_ret(dtype):
     if isinstance(dtype, MatrixType):
-        dtype = _ti_core.decl_tensor_type([dtype.n, dtype.m], dtype.dtype)
+        dtype = _ti_core.get_type_factory_instance().get_tensor_type(
+            [dtype.n, dtype.m], dtype.dtype)
     else:
         dtype = cook_dtype(dtype)
     return impl.get_runtime().prog.decl_ret(dtype)

@@ -311,7 +311,6 @@ class TI_DLL_EXPORT Program {
   Ndarray *create_ndarray(
       const DataType type,
       const std::vector<int> &shape,
-      const std::vector<int> &element_shape = {},
       ExternalArrayLayout layout = ExternalArrayLayout::kNull);
 
   Texture *create_texture(const DataType type,

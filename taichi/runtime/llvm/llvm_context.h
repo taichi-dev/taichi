@@ -33,6 +33,7 @@ class TaichiLLVMContext {
     std::unique_ptr<llvm::Module> struct_module{nullptr};
     ~ThreadLocalData();
   };
+  CompileConfig *config_;
 
  public:
   std::unique_ptr<JITSession> jit{nullptr};

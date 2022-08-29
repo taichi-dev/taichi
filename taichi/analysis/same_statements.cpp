@@ -137,7 +137,6 @@ class IRNodeComparator : public IRVisitor {
         // directly because that function does not support id_map.
 
         // TODO: Update this part if GlobalPtrStmt comes to have more fields
-        TI_ASSERT(stmt->width() == 1);
         if (stmt->as<GlobalPtrStmt>()->snodes[0]->id !=
             other->as<GlobalPtrStmt>()->snodes[0]->id) {
           same = false;

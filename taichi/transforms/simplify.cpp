@@ -6,6 +6,7 @@
 #include "taichi/transforms/simplify.h"
 #include "taichi/program/kernel.h"
 #include "taichi/program/program.h"
+#include "taichi/transforms/utils.h"
 #include <set>
 #include <unordered_set>
 #include <utility>
@@ -66,30 +67,6 @@ class BasicBlockSimplify : public IRVisitor {
       }
     }
     return ir_modified;
-  }
-
-  void visit(ElementShuffleStmt *stmt) override {
-    if (is_done(stmt))
-      return;
-    // is this stmt necessary?
-    {
-      bool same_source = true;
-      bool inc_index = true;
-      for (int l = 0; l < stmt->width(); l++) {
-        if (stmt->elements[l].stmt != stmt->elements[0].stmt)
-          same_source = false;
-        if (stmt->elements[l].index != l)
-          inc_index = false;
-      }
-      if (same_source && inc_index &&
-          stmt->width() == stmt->elements[0].stmt->width()) {
-        // useless shuffle.
-        stmt->replace_usages_with(stmt->elements[0].stmt);
-        modifier.erase(stmt);
-      }
-    }
-
-    set_done(stmt);
   }
 
   void visit(GlobalLoadStmt *stmt) override {
@@ -301,9 +278,9 @@ class BasicBlockSimplify : public IRVisitor {
       auto zero = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(0));
       auto check_sum =
           Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_ge, sum.get(), zero.get());
-      auto assert = Stmt::make<AssertStmt>(check_sum.get(),
-                                           "The indices provided are too big!",
-                                           std::vector<Stmt *>());
+      auto assert = Stmt::make<AssertStmt>(
+          check_sum.get(), "The indices provided are too big!\n" + stmt->tb,
+          std::vector<Stmt *>());
       // Because Taichi's assertion is checked only after the execution of the
       // kernel, when the linear index overflows and goes negative, we have to
       // replace that with 0 to make sure that the rest of the kernel can still
@@ -380,7 +357,7 @@ class BasicBlockSimplify : public IRVisitor {
   }
 
   void visit(WhileControlStmt *stmt) override {
-    if (stmt->width() == 1 && stmt->mask) {
+    if (stmt->mask) {
       stmt->mask = nullptr;
       modifier.mark_as_modified();
       return;
@@ -448,9 +425,7 @@ class BasicBlockSimplify : public IRVisitor {
           if (clause[i]->is<LocalStoreStmt>()) {
             auto store = clause[i]->as<LocalStoreStmt>();
             auto lanes = LaneAttribute<LocalAddress>();
-            for (int l = 0; l < store->width(); l++) {
-              lanes.push_back(LocalAddress(store->dest, l));
-            }
+            lanes.push_back(LocalAddress(store->dest, 0));
             auto load = Stmt::make<LocalLoadStmt>(lanes);
             modifier.type_check(load.get(), config);
             auto select = Stmt::make<TernaryOpStmt>(
@@ -548,7 +523,7 @@ class BasicBlockSimplify : public IRVisitor {
   }
 
   void visit(WhileStmt *stmt) override {
-    if (stmt->width() == 1 && stmt->mask) {
+    if (stmt->mask) {
       stmt->mask = nullptr;
       modifier.mark_as_modified();
       return;

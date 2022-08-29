@@ -5,6 +5,7 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/frontend_ir.h"
+#include "taichi/transforms/utils.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -12,7 +13,6 @@ static_assert(
     sizeof(real) == sizeof(float32),
     "Please build the taichi compiler with single precision (TI_USE_DOUBLE=0)");
 
-// "Type" here does not include vector width
 // Var lookup and Type inference
 class TypeCheck : public IRVisitor {
  private:
@@ -77,7 +77,6 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(AtomicOpStmt *stmt) override {
-    TI_ASSERT(stmt->width() == 1);
     // TODO(type): test_ad_for fails if we assume dest is a pointer type.
     stmt->ret_type = type_check_store(
         stmt, stmt->dest, stmt->val,
@@ -85,7 +84,6 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(LocalLoadStmt *stmt) override {
-    TI_ASSERT(stmt->width() == 1);
     TI_ASSERT_INFO(stmt->src.size() == 1, "Vectorization has been disabled.");
     TI_ASSERT(stmt->src[0].var->is<AllocaStmt>() ||
               stmt->src[0].var->is<PtrOffsetStmt>());
@@ -170,7 +168,6 @@ class TypeCheck : public IRVisitor {
         stmt->indices[i] =
             insert_type_cast_before(stmt, stmt->indices[i], PrimitiveType::i32);
       }
-      TI_ASSERT(stmt->indices[i]->width() == stmt->snodes.size());
     }
   }
 
@@ -252,6 +249,7 @@ class TypeCheck : public IRVisitor {
     std::string msg =
         "Detected overflow for bit_shift_op with rhs = %d, exceeding limit of "
         "%d.";
+    msg += "\n" + stmt->tb;
     std::vector<Stmt *> args = {rhs, const_stmt.get()};
     auto assert_stmt =
         Stmt::make<AssertStmt>(cond_stmt.get(), msg, std::move(args));
@@ -350,7 +348,6 @@ class TypeCheck : public IRVisitor {
       }
     }
     bool matching = true;
-    matching = matching && (stmt->lhs->width() == stmt->rhs->width());
     matching = matching && (stmt->lhs->ret_type != PrimitiveType::unknown);
     matching = matching && (stmt->rhs->ret_type != PrimitiveType::unknown);
     matching = matching && (stmt->lhs->ret_type == stmt->rhs->ret_type);
@@ -358,8 +355,7 @@ class TypeCheck : public IRVisitor {
       error();
     }
     if (is_comparison(stmt->op_type)) {
-      stmt->ret_type = TypeFactory::create_vector_or_scalar_type(
-          stmt->lhs->width(), PrimitiveType::i32);
+      stmt->ret_type = PrimitiveType::i32;
     } else {
       stmt->ret_type = stmt->lhs->ret_type;
     }
@@ -368,9 +364,7 @@ class TypeCheck : public IRVisitor {
   void visit(TernaryOpStmt *stmt) override {
     if (stmt->op_type == TernaryOpType::select) {
       auto ret_type = promoted_type(stmt->op2->ret_type, stmt->op3->ret_type);
-      TI_ASSERT(stmt->op1->ret_type->is_primitive(PrimitiveTypeID::i32))
-      TI_ASSERT(stmt->op1->width() == stmt->op2->width());
-      TI_ASSERT(stmt->op2->width() == stmt->op3->width());
+      TI_ASSERT(stmt->op1->ret_type->is_primitive(PrimitiveTypeID::i32));
       if (ret_type != stmt->op2->ret_type) {
         auto cast_stmt = insert_type_cast_before(stmt, stmt->op2, ret_type);
         stmt->op2 = cast_stmt;
@@ -379,16 +373,10 @@ class TypeCheck : public IRVisitor {
         auto cast_stmt = insert_type_cast_before(stmt, stmt->op3, ret_type);
         stmt->op3 = cast_stmt;
       }
-      stmt->ret_type = TypeFactory::create_vector_or_scalar_type(
-          stmt->op1->width(), ret_type);
+      stmt->ret_type = ret_type;
     } else {
       TI_NOT_IMPLEMENTED
     }
-  }
-
-  void visit(ElementShuffleStmt *stmt) override {
-    TI_ASSERT(stmt->elements.size() != 0);
-    stmt->element_type() = stmt->elements[0].stmt->element_type();
   }
 
   void visit(RangeAssumptionStmt *stmt) override {
@@ -412,13 +400,11 @@ class TypeCheck : public IRVisitor {
     // TODO: Maybe have a type_inference() pass, which takes in the args/rets
     // defined by the kernel. After that, type_check() pass will purely do
     // verification, without modifying any types.
-    TI_ASSERT(stmt->width() == 1);
     stmt->ret_type.set_is_pointer(stmt->is_ptr);
   }
 
   void visit(ReturnStmt *stmt) override {
     // TODO: Support stmt->ret_id?
-    TI_ASSERT(stmt->width() == 1);
   }
 
   void visit(ExternalPtrStmt *stmt) override {
@@ -476,7 +462,6 @@ class TypeCheck : public IRVisitor {
       stmt->ret_type = DataType(ptr_ret_type);
       return;
     }
-    TI_ASSERT(stmt->width() == 1);
     auto element_type = stmt->output_snode->dt;
     // For bit_struct SNodes, their component SNodes must have
     // is_bit_level=true
@@ -552,6 +537,19 @@ class TypeCheck : public IRVisitor {
   void visit(ReferenceStmt *stmt) override {
     stmt->ret_type = stmt->var->ret_type;
     stmt->ret_type.set_is_pointer(true);
+  }
+
+  void visit(MatrixInitStmt *stmt) override {
+    TI_ASSERT_INFO(stmt->ret_type->is<TensorType>(),
+                   "Matrix should have tensor type, got {}",
+                   stmt->ret_type->to_string());
+    auto tensor_type = stmt->ret_type->as<TensorType>();
+    auto element_dtype = tensor_type->get_element_type();
+    for (int i = 0; i < stmt->values.size(); ++i) {
+      if (element_dtype != stmt->values[i]->ret_type) {
+        cast(stmt->values[i], element_dtype);
+      }
+    }
   }
 };
 

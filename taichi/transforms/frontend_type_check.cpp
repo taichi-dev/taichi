@@ -7,9 +7,9 @@ namespace lang {
 
 class FrontendTypeCheck : public IRVisitor {
   void check_cond_type(const Expr &cond, std::string stmt_name) {
-    if (!cond->ret_type->is_primitive(PrimitiveTypeID::i32))
+    if (!cond->ret_type->is<PrimitiveType>() || !is_integral(cond->ret_type))
       throw TaichiTypeError(fmt::format(
-          "`{0}` conditions must be of type i32; found {1}. Consider using "
+          "`{0}` conditions must be an integer; found {1}. Consider using "
           "`{0} x != 0` instead of `{0} x` for float values.",
           stmt_name, cond->ret_type->to_string()));
   }
@@ -62,10 +62,6 @@ class FrontendTypeCheck : public IRVisitor {
   }
 
   void visit(FrontendPrintStmt *stmt) override {
-    // Noop
-  }
-
-  void visit(FrontendEvalStmt *stmt) override {
     // Noop
   }
 

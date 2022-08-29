@@ -67,7 +67,6 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
   }
 
   void visit(PrintStmt *stmt) override {
-    TI_ASSERT(stmt->width() == 1);
     TI_ASSERT_INFO(stmt->contents.size() < 32,
                    "CUDA `print()` doesn't support more than 32 entries");
 
@@ -87,6 +86,14 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
             arg_stmt->ret_type->is_primitive(PrimitiveTypeID::f16)) {
           value_type = tlctx->get_data_type(PrimitiveType::f64);
           value = builder->CreateFPExt(value, value_type);
+        }
+        if (arg_stmt->ret_type->is_primitive(PrimitiveTypeID::i8)) {
+          value_type = tlctx->get_data_type(PrimitiveType::i16);
+          value = builder->CreateSExt(value, value_type);
+        }
+        if (arg_stmt->ret_type->is_primitive(PrimitiveTypeID::u8)) {
+          value_type = tlctx->get_data_type(PrimitiveType::u16);
+          value = builder->CreateZExt(value, value_type);
         }
 
         types.push_back(value_type);

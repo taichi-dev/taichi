@@ -285,7 +285,7 @@ class FwdMode:
 
         # Clear gradients
         if self.clear_gradients:
-            # TODO: the clear gradients should be controlled to clear adjoint/dual/adjoint_visited respectively
+            # TODO: the clear gradients should be controlled to clear adjoint/dual/adjoint_checkbit respectively
             clear_all_gradients()
 
         # Set seed for each variable

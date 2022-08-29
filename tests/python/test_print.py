@@ -8,12 +8,12 @@ from tests import test_utils
 # Just making sure it does not crash
 # Metal doesn't support print() or 64-bit data
 # While OpenGL does support print, but not 64-bit data
-@pytest.mark.parametrize('dt', [ti.i32, ti.f32, ti.i64, ti.f64])
-@test_utils.test(exclude=[ti.metal, ti.opengl, ti.vulkan])
+@pytest.mark.parametrize('dt', ti.types.primitive_types.all_types)
+@test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_print(dt):
     @ti.kernel
     def func():
-        print(ti.cast(1234.5, dt))
+        print(ti.cast(123.4, dt))
 
     func()
     # Discussion: https://github.com/taichi-dev/taichi/issues/1063#issuecomment-636421904

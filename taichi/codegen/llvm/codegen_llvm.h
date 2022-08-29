@@ -280,8 +280,6 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(GlobalLoadStmt *stmt) override;
 
-  void visit(ElementShuffleStmt *stmt) override;
-
   void visit(GetRootStmt *stmt) override;
 
   void visit(BitExtractStmt *stmt) override;
@@ -368,6 +366,8 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   void visit(MeshPatchIndexStmt *stmt) override;
 
   void visit(ReferenceStmt *stmt) override;
+
+  void visit(MatrixInitStmt *stmt) override;
 
   llvm::Value *create_xlogue(std::unique_ptr<Block> &block);
 

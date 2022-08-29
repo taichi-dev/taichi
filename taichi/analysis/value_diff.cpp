@@ -80,16 +80,6 @@ class ValueDiffLoopIndex : public IRVisitor {
     }
   }
 
-  void visit(ElementShuffleStmt *stmt) override {
-    int old_lane = lane;
-    TI_ASSERT(stmt->width() == 1);
-    auto src = stmt->elements[lane].stmt;
-    lane = stmt->elements[lane].index;
-    src->accept(this);
-    results[stmt->instance_id] = results[src->instance_id];
-    lane = old_lane;
-  }
-
   void visit(ConstStmt *stmt) override {
     if (stmt->val[lane].dt->is_primitive(PrimitiveTypeID::i32)) {
       results[stmt->instance_id] = DiffRange(true, 0, stmt->val[lane].val_i32);
@@ -152,7 +142,6 @@ class FindDirectValueBaseAndOffset : public IRVisitor {
   }
 
   void visit(ConstStmt *stmt) override {
-    TI_ASSERT(stmt->width() == 1);
     if (stmt->val[0].dt->is_primitive(PrimitiveTypeID::i32)) {
       result = std::make_tuple(true, nullptr, stmt->val[0].val_i32);
     }
@@ -195,7 +184,6 @@ DiffRange value_diff_loop_index(Stmt *stmt, Stmt *loop, int index_id) {
       return DiffRange(true, 1, 0);
     }
   }
-  TI_ASSERT(stmt->width() == 1);
   auto diff = ValueDiffLoopIndex(stmt, 0, loop, index_id);
   return diff.run();
 }

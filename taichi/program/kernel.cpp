@@ -114,7 +114,7 @@ void Kernel::operator()(LaunchContextBuilder &ctx_builder) {
     compile();
   }
 
-  if (!this->from_offline_cache_) {
+  if (!from_cache_) {
     for (auto &offloaded : ir->as<Block>()->statements) {
       account_for_offloaded(offloaded->as<OffloadedStmt>());
     }
@@ -420,7 +420,8 @@ void Kernel::init(Program &program,
 
 // static
 bool Kernel::supports_lowering(Arch arch) {
-  return arch_is_cpu(arch) || (arch == Arch::cuda) || (arch == Arch::metal);
+  return arch_is_cpu(arch) || (arch == Arch::cuda) || (arch == Arch::dx12) ||
+         (arch == Arch::metal);
 }
 
 void Kernel::offload_to_executable(IRNode *stmt) {

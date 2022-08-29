@@ -124,34 +124,48 @@ void TaskCodeGenLLVM::visit(Block *stmt_list) {
 void TaskCodeGenLLVM::visit(AllocaStmt *stmt) {
   if (stmt->ret_type->is<TensorType>()) {
     auto tensor_type = stmt->ret_type->cast<TensorType>();
-    auto type = tlctx->get_data_type(tensor_type->get_element_type());
-    auto array_size = tlctx->get_constant(tensor_type->get_num_elements());
-    // Return type is [array_size x type]*.
+    auto type = kernel->program->config.real_matrix
+                    ? tlctx->get_data_type(tensor_type)
+                    : tlctx->get_data_type(tensor_type->get_element_type());
+    // Return type is vector<tensor_type>* if use real matrix.
+    // otherwise the return type is [type * array_size]*
     if (stmt->is_shared) {
-      size_t data_element_size = tlctx->get_type_size(
-          tlctx->get_data_type(tensor_type->get_element_type()));
-      auto type = llvm::ArrayType::get(
-          llvm::Type::getInt8Ty(*llvm_context),
-          data_element_size * tensor_type->get_num_elements());
+      auto array_type =
+          llvm::ArrayType::get(type, tensor_type->get_num_elements());
       auto base = new llvm::GlobalVariable(
-          *module, type, false, llvm::GlobalValue::ExternalLinkage, nullptr,
-          fmt::format("shared_array_{}", stmt->id), nullptr,
+          *module, array_type, false, llvm::GlobalValue::ExternalLinkage,
+          nullptr, fmt::format("shared_array_{}", stmt->id), nullptr,
           llvm::GlobalVariable::NotThreadLocal, 3 /*addrspace=shared*/);
       base->setAlignment(llvm::MaybeAlign(8));
-
-      auto ptr = builder->CreateGEP(
+      // FIXME: create GEP manually instead of using builder->CreateGEP for
+      // opaque ptr in llvm 15.
+      // If using builder->CreateGEP, it will just return base because all zero
+      // idx.
+      // When opaque ptr is enabled, the CreatePointerCast will only create
+      // address space case instead of bitcast and address space cast. The type
+      // which was kept in bitcast will be lost.
+      // The manually created GEP is usded to keep the type.
+      // Later when lower PtrOffsetStmt, the type should be element type instead
+      // of array_type.
+      // Once llvm type is converted from taichi ir directly when lower
+      // PtrOffsetStmt, we can switch back to builder->CreateGEP.
+      auto *gep = llvm::GetElementPtrInst::CreateInBounds(
 #ifdef TI_LLVM_15
-          base->getValueType(),
+          array_type,
 #endif
           base, {tlctx->get_constant(0), tlctx->get_constant(0)});
-      auto ptr_type = llvm::PointerType::get(
-          tlctx->get_data_type(tensor_type->get_element_type()), 0);
-      llvm_val[stmt] = builder->CreatePointerCast(ptr, ptr_type);
+      builder->Insert(gep);
+      auto ptr_type = llvm::PointerType::get(type, 0);
+      llvm_val[stmt] = builder->CreatePointerCast(gep, ptr_type);
     } else {
-      llvm_val[stmt] = create_entry_block_alloca(type, 0, array_size);
+      if (kernel->program->config.real_matrix)
+        llvm_val[stmt] =
+            create_entry_block_alloca(type, stmt->ret_type.is_pointer());
+      else
+        llvm_val[stmt] = create_entry_block_alloca(
+            type, 0, tlctx->get_constant(tensor_type->get_num_elements()));
     }
   } else {
-    TI_ASSERT(stmt->width() == 1);
     llvm_val[stmt] =
         create_entry_block_alloca(stmt->ret_type, stmt->ret_type.is_pointer());
     // initialize as zero if element is not a pointer
@@ -688,6 +702,13 @@ llvm::Type *TaskCodeGenLLVM::llvm_type(DataType dt) {
     return llvm::Type::getDoubleTy(*llvm_context);
   } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
     return llvm::Type::getHalfTy(*llvm_context);
+  } else if (dt->is<TensorType>()) {
+    TI_ASSERT_INFO(kernel->program->config.real_matrix,
+                   "Real matrix not enabled but got TensorType");
+    auto tensor_type = dt->cast<TensorType>();
+    auto element_type = llvm_type(tensor_type->get_element_type());
+    return llvm::VectorType::get(element_type, tensor_type->get_num_elements(),
+                                 /*scalable=*/false);
   } else {
     TI_NOT_IMPLEMENTED;
   }
@@ -793,19 +814,37 @@ llvm::Value *TaskCodeGenLLVM::create_print(std::string tag,
 }
 
 void TaskCodeGenLLVM::visit(PrintStmt *stmt) {
-  TI_ASSERT(stmt->width() == 1);
   std::vector<llvm::Value *> args;
   std::string formats;
+  auto value_for_printf = [this](llvm::Value *to_print, DataType dtype) {
+    if (dtype->is_primitive(PrimitiveTypeID::f32) ||
+        dtype->is_primitive(PrimitiveTypeID::f16))
+      return this->builder->CreateFPExt(
+          to_print, this->tlctx->get_data_type(PrimitiveType::f64));
+    if (dtype->is_primitive(PrimitiveTypeID::i8))
+      return builder->CreateSExt(to_print,
+                                 tlctx->get_data_type(PrimitiveType::i16));
+    if (dtype->is_primitive(PrimitiveTypeID::u8))
+      return builder->CreateZExt(to_print,
+                                 tlctx->get_data_type(PrimitiveType::u16));
+    return to_print;
+  };
   for (auto const &content : stmt->contents) {
     if (std::holds_alternative<Stmt *>(content)) {
       auto arg_stmt = std::get<Stmt *>(content);
       auto value = llvm_val[arg_stmt];
-      if (arg_stmt->ret_type->is_primitive(PrimitiveTypeID::f32) ||
-          arg_stmt->ret_type->is_primitive(PrimitiveTypeID::f16))
-        value = builder->CreateFPExt(value,
-                                     tlctx->get_data_type(PrimitiveType::f64));
-      args.push_back(value);
-      formats += data_type_format(arg_stmt->ret_type);
+      if (arg_stmt->ret_type->is<TensorType>()) {
+        auto dtype = arg_stmt->ret_type->cast<TensorType>();
+        auto elem_type = dtype->get_element_type();
+        for (int i = 0; i < dtype->get_num_elements(); ++i) {
+          auto elem_value = builder->CreateExtractElement(value, i);
+          args.push_back(value_for_printf(elem_value, elem_type));
+        }
+        formats += data_type_format(arg_stmt->ret_type);
+      } else {
+        args.push_back(value_for_printf(value, arg_stmt->ret_type));
+        formats += data_type_format(arg_stmt->ret_type);
+      }
     } else {
       auto arg_str = std::get<std::string>(content);
       auto value = builder->CreateGlobalStringPtr(arg_str, "content_string");
@@ -822,7 +861,6 @@ void TaskCodeGenLLVM::visit(PrintStmt *stmt) {
 }
 
 void TaskCodeGenLLVM::visit(ConstStmt *stmt) {
-  TI_ASSERT(stmt->width() == 1);
   auto val = stmt->val[0];
   if (val.dt->is_primitive(PrimitiveTypeID::f32)) {
     llvm_val[stmt] =
@@ -1150,7 +1188,6 @@ void TaskCodeGenLLVM::visit(ReturnStmt *stmt) {
 }
 
 void TaskCodeGenLLVM::visit(LocalLoadStmt *stmt) {
-  TI_ASSERT(stmt->width() == 1);
 #ifdef TI_LLVM_15
   // FIXME: get ptr_ty from taichi instead of llvm.
   llvm::Type *ptr_ty = nullptr;
@@ -1394,23 +1431,19 @@ void TaskCodeGenLLVM::visit(AtomicOpStmt *stmt) {
   if (is_local) {
     TI_ERROR("Local atomics should have been demoted.");
   }
-  TI_ASSERT(stmt->width() == 1);
-  for (int l = 0; l < stmt->width(); l++) {
-    llvm::Value *old_value;
-
-    if (llvm::Value *result = optimized_reduction(stmt)) {
-      old_value = result;
-    } else if (llvm::Value *result = quant_type_atomic(stmt)) {
-      old_value = result;
-    } else if (llvm::Value *result = real_type_atomic(stmt)) {
-      old_value = result;
-    } else if (llvm::Value *result = integral_type_atomic(stmt)) {
-      old_value = result;
-    } else {
-      TI_NOT_IMPLEMENTED
-    }
-    llvm_val[stmt] = old_value;
+  llvm::Value *old_value;
+  if (llvm::Value *result = optimized_reduction(stmt)) {
+    old_value = result;
+  } else if (llvm::Value *result = quant_type_atomic(stmt)) {
+    old_value = result;
+  } else if (llvm::Value *result = real_type_atomic(stmt)) {
+    old_value = result;
+  } else if (llvm::Value *result = integral_type_atomic(stmt)) {
+    old_value = result;
+  } else {
+    TI_NOT_IMPLEMENTED
   }
+  llvm_val[stmt] = old_value;
 }
 
 void TaskCodeGenLLVM::visit(GlobalPtrStmt *stmt) {
@@ -1487,24 +1520,6 @@ void TaskCodeGenLLVM::create_global_load(GlobalLoadStmt *stmt,
 
 void TaskCodeGenLLVM::visit(GlobalLoadStmt *stmt) {
   create_global_load(stmt, false);
-}
-
-void TaskCodeGenLLVM::visit(ElementShuffleStmt *stmt){
-    TI_NOT_IMPLEMENTED
-    /*
-    auto init = stmt->elements.serialize(
-        [](const VectorElement &elem) {
-          return fmt::format("{}[{}]", elem.stmt->raw_name(), elem.index);
-        },
-        "{");
-    if (stmt->pointer) {
-      emit("{} * const {} [{}] {};", data_type_name(stmt->ret_type),
-           stmt->raw_name(), stmt->width(), init);
-    } else {
-      emit("const {} {} ({});", stmt->ret_data_type_name(), stmt->raw_name(),
-           init);
-    }
-    */
 }
 
 std::string TaskCodeGenLLVM::get_runtime_snode_name(SNode *snode) {
@@ -1720,6 +1735,8 @@ void TaskCodeGenLLVM::visit(PtrOffsetStmt *stmt) {
       ptr_ty = alloc->getAllocatedType();
     else if (auto *gv = llvm::dyn_cast<llvm::GlobalVariable>(val))
       ptr_ty = gv->getValueType();
+    else if (auto *gep = llvm::dyn_cast<llvm::GEPOperator>(val))
+      ptr_ty = gep->getResultElementType();
     else if (stmt->origin->is<GlobalTemporaryStmt>()) {
       auto *tmpo_stmt = stmt->origin->cast<GlobalTemporaryStmt>();
       if (tmpo_stmt->ret_type->is<TensorType>()) {
@@ -1750,8 +1767,6 @@ void TaskCodeGenLLVM::visit(PtrOffsetStmt *stmt) {
 }
 
 void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
-  TI_ASSERT(stmt->width() == 1);
-
   auto argload = stmt->base_ptrs[0]->as<ArgLoadStmt>();
   auto arg_id = argload->arg_id;
   int num_indices = stmt->indices.size();
@@ -2304,7 +2319,6 @@ void TaskCodeGenLLVM::visit(GlobalTemporaryStmt *stmt) {
   auto buffer = call("get_temporary_pointer", runtime,
                      tlctx->get_constant((int64)stmt->offset));
 
-  TI_ASSERT(stmt->width() == 1 || stmt->ret_type->is<TensorType>());
   if (stmt->ret_type->is<TensorType>()) {
     auto ptr_type = llvm::PointerType::get(
         tlctx->get_data_type(
@@ -2320,7 +2334,6 @@ void TaskCodeGenLLVM::visit(GlobalTemporaryStmt *stmt) {
 
 void TaskCodeGenLLVM::visit(ThreadLocalPtrStmt *stmt) {
   auto base = get_tls_base_ptr();
-  TI_ASSERT(stmt->width() == 1);
   auto ptr = builder->CreateGEP(
 #ifdef TI_LLVM_15
       llvm::Type::getInt8Ty(*llvm_context),
@@ -2334,7 +2347,6 @@ void TaskCodeGenLLVM::visit(ThreadLocalPtrStmt *stmt) {
 void TaskCodeGenLLVM::visit(BlockLocalPtrStmt *stmt) {
   TI_ASSERT(bls_buffer);
   auto base = bls_buffer;
-  TI_ASSERT(stmt->width() == 1);
   auto ptr = builder->CreateGEP(
 #ifdef TI_LLVM_15
       base->getValueType(),
@@ -2366,7 +2378,6 @@ void TaskCodeGenLLVM::visit(InternalFuncStmt *stmt) {
 }
 
 void TaskCodeGenLLVM::visit(AdStackAllocaStmt *stmt) {
-  TI_ASSERT(stmt->width() == 1);
   TI_ASSERT_INFO(stmt->max_size > 0,
                  "Adaptive autodiff stack's size should have been determined.");
   auto type = llvm::ArrayType::get(llvm::Type::getInt8Ty(*llvm_context),
@@ -2485,13 +2496,11 @@ void TaskCodeGenLLVM::visit_call_shared_object(ExternalFuncCallStmt *stmt) {
   std::vector<llvm::Value *> arg_values;
 
   for (const auto &s : stmt->arg_stmts) {
-    TI_ASSERT(s->width() == 1);
     arg_types.push_back(tlctx->get_data_type(s->ret_type));
     arg_values.push_back(llvm_val[s]);
   }
 
   for (const auto &s : stmt->output_stmts) {
-    TI_ASSERT(s->width() == 1);
     auto t = tlctx->get_data_type(s->ret_type);
     auto ptr = llvm::PointerType::get(t, 0);
     arg_types.push_back(ptr);
@@ -2513,6 +2522,16 @@ void TaskCodeGenLLVM::visit(ExternalFuncCallStmt *stmt) {
 
 void TaskCodeGenLLVM::visit(MeshPatchIndexStmt *stmt) {
   llvm_val[stmt] = get_arg(2);
+}
+
+void TaskCodeGenLLVM::visit(MatrixInitStmt *stmt) {
+  auto type = tlctx->get_data_type(stmt->ret_type->as<TensorType>());
+  llvm::Value *vec = llvm::UndefValue::get(type);
+  for (int i = 0; i < stmt->values.size(); ++i) {
+    auto *elem = llvm_val[stmt->values[i]];
+    vec = builder->CreateInsertElement(vec, elem, i);
+  }
+  llvm_val[stmt] = vec;
 }
 
 void TaskCodeGenLLVM::eliminate_unused_functions() {

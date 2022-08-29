@@ -814,9 +814,11 @@ void TaskCodeGenLLVM::visit(PrintStmt *stmt) {
       return this->builder->CreateFPExt(
           to_print, this->tlctx->get_data_type(PrimitiveType::f64));
     if (dtype->is_primitive(PrimitiveTypeID::i8))
-      return builder->CreateSExt(to_print, tlctx->get_data_type(PrimitiveType::i16));
+      return builder->CreateSExt(to_print,
+                                 tlctx->get_data_type(PrimitiveType::i16));
     if (dtype->is_primitive(PrimitiveTypeID::u8))
-      return builder->CreateZExt(to_print, tlctx->get_data_type(PrimitiveType::u16));
+      return builder->CreateZExt(to_print,
+                                 tlctx->get_data_type(PrimitiveType::u16));
     return to_print;
   };
   for (auto const &content : stmt->contents) {

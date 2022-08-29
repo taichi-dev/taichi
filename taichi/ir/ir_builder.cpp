@@ -139,45 +139,39 @@ LoopIndexStmt *IRBuilder::get_loop_index(Stmt *loop, int index) {
 }
 
 ConstStmt *IRBuilder::get_int32(int32 value) {
-  return insert(
-      Stmt::make_typed<ConstStmt>(TypedConstant(
-          TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i32),
-          value)));
+  return insert(Stmt::make_typed<ConstStmt>(TypedConstant(
+      TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i32),
+      value)));
 }
 
 ConstStmt *IRBuilder::get_int64(int64 value) {
-  return insert(
-      Stmt::make_typed<ConstStmt>(TypedConstant(
-          TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i64),
-          value)));
+  return insert(Stmt::make_typed<ConstStmt>(TypedConstant(
+      TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i64),
+      value)));
 }
 
 ConstStmt *IRBuilder::get_uint32(uint32 value) {
-  return insert(
-      Stmt::make_typed<ConstStmt>(TypedConstant(
-          TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::u32),
-          value)));
+  return insert(Stmt::make_typed<ConstStmt>(TypedConstant(
+      TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::u32),
+      value)));
 }
 
 ConstStmt *IRBuilder::get_uint64(uint64 value) {
-  return insert(
-      Stmt::make_typed<ConstStmt>(TypedConstant(
-          TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::u64),
-          value)));
+  return insert(Stmt::make_typed<ConstStmt>(TypedConstant(
+      TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::u64),
+      value)));
 }
 
 ConstStmt *IRBuilder::get_float32(float32 value) {
-  return insert(
-      Stmt::make_typed<ConstStmt>(TypedConstant(
-          TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::f32),
-          value)));
+  return insert(Stmt::make_typed<ConstStmt>(TypedConstant(
+      TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::f32),
+      value)));
 }
 
 ConstStmt *IRBuilder::get_float64(float64 value) {
-  return insert(
-      Stmt::make_typed<ConstStmt>(TypedConstant(
-          TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::f64),
-          value)));
+  return insert(Stmt::make_typed<ConstStmt>(TypedConstant(
+      TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::f64),
+      value)));
 }
 
 RandStmt *IRBuilder::create_rand(DataType value_type) {

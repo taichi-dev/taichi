@@ -14,7 +14,8 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
 
   void visit(LocalLoadStmt *stmt) override {
-    TI_ASSERT(stmt->src.var->is<AllocaStmt>() || stmt->src.var->is<PtrOffsetStmt>());
+    TI_ASSERT(stmt->src.var->is<AllocaStmt>() ||
+              stmt->src.var->is<PtrOffsetStmt>());
     touched_allocas_.insert(stmt->src.var);
   }
 
@@ -1553,8 +1554,8 @@ class GloablDataAccessRuleChecker : public BasicStmtVisitor {
     snode = snode->get_adjoint_checkbit();
     auto gloabl_ptr =
         stmt->insert_after_me(Stmt::make<GlobalPtrStmt>(snode, src->indices));
-    auto one = gloabl_ptr->insert_after_me(
-        Stmt::make<ConstStmt>(TypedConstant(1)));
+    auto one =
+        gloabl_ptr->insert_after_me(Stmt::make<ConstStmt>(TypedConstant(1)));
     one->insert_after_me(Stmt::make<GlobalStoreStmt>(gloabl_ptr, one));
   }
 
@@ -1569,8 +1570,7 @@ class GloablDataAccessRuleChecker : public BasicStmtVisitor {
         stmt->insert_before_me(Stmt::make<GlobalPtrStmt>(snode, dest->indices));
     auto global_load =
         stmt->insert_before_me(Stmt::make<GlobalLoadStmt>(global_ptr));
-    auto zero = stmt->insert_before_me(
-        Stmt::make<ConstStmt>(TypedConstant(0)));
+    auto zero = stmt->insert_before_me(Stmt::make<ConstStmt>(TypedConstant(0)));
     auto check_equal = stmt->insert_before_me(
         Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_eq, global_load, zero));
     std::string msg = fmt::format(

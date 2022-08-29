@@ -183,7 +183,7 @@ DiffRange value_diff_loop_index(Stmt *stmt, Stmt *loop, int index_id) {
       return DiffRange(true, 1, 0);
     }
   }
-  auto diff = ValueDiffLoopIndex(stmt,  loop, index_id);
+  auto diff = ValueDiffLoopIndex(stmt, loop, index_id);
   return diff.run();
 }
 

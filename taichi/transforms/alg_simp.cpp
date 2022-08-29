@@ -22,8 +22,7 @@ class AlgSimp : public BasicStmtVisitor {
   }
 
   void replace_with_zero(Stmt *stmt) {
-    auto zero =
-        Stmt::make<ConstStmt>(TypedConstant(stmt->ret_type));
+    auto zero = Stmt::make<ConstStmt>(TypedConstant(stmt->ret_type));
     stmt->replace_usages_with(zero.get());
     modifier.insert_before(stmt, std::move(zero));
     modifier.erase(stmt);
@@ -122,8 +121,8 @@ class AlgSimp : public BasicStmtVisitor {
         std::swap(lhs, rhs);
       }
       int log2rhs = bit::log2int((uint64)rhs->val.val_as_int64());
-      auto new_rhs = Stmt::make<ConstStmt>(
-          TypedConstant(stmt->lhs->ret_type, log2rhs));
+      auto new_rhs =
+          Stmt::make<ConstStmt>(TypedConstant(stmt->lhs->ret_type, log2rhs));
       auto result = Stmt::make<BinaryOpStmt>(BinaryOpType::bit_shl, stmt->lhs,
                                              new_rhs.get());
       result->ret_type = stmt->ret_type;
@@ -173,14 +172,12 @@ class AlgSimp : public BasicStmtVisitor {
         TI_WARN("Potential division by 0\n{}", stmt->tb);
       } else {
         // a / const -> a * (1 / const)
-        auto reciprocal = Stmt::make_typed<ConstStmt>(
-            TypedConstant(rhs->ret_type));
+        auto reciprocal =
+            Stmt::make_typed<ConstStmt>(TypedConstant(rhs->ret_type));
         if (rhs->ret_type->is_primitive(PrimitiveTypeID::f64)) {
-          reciprocal->val.val_float64() =
-              (float64)1.0 / rhs->val.val_float64();
+          reciprocal->val.val_float64() = (float64)1.0 / rhs->val.val_float64();
         } else if (rhs->ret_type->is_primitive(PrimitiveTypeID::f32)) {
-          reciprocal->val.val_float32() =
-              (float32)1.0 / rhs->val.val_float32();
+          reciprocal->val.val_float32() = (float32)1.0 / rhs->val.val_float32();
         } else {
           TI_NOT_IMPLEMENTED
         }
@@ -198,8 +195,8 @@ class AlgSimp : public BasicStmtVisitor {
         alg_is_pot(rhs)) {
       // (unsigned)a / pot -> a >> log2(pot)
       int log2rhs = bit::log2int((uint64)rhs->val.val_as_int64());
-      auto new_rhs = Stmt::make<ConstStmt>(
-          TypedConstant(stmt->lhs->ret_type, log2rhs));
+      auto new_rhs =
+          Stmt::make<ConstStmt>(TypedConstant(stmt->lhs->ret_type, log2rhs));
       auto result = Stmt::make<BinaryOpStmt>(BinaryOpType::bit_sar, stmt->lhs,
                                              new_rhs.get());
       result->ret_type = stmt->ret_type;

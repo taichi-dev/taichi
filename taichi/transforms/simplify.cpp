@@ -196,9 +196,8 @@ class BasicBlockSimplify : public IRVisitor {
               modifier.insert_after(stmt, std::move(offset_stmt));
             } else {
               if (offset != 0) {
-                auto offset_const =
-                    Stmt::make<ConstStmt>(
-                        TypedConstant(PrimitiveType::i32, offset));
+                auto offset_const = Stmt::make<ConstStmt>(
+                    TypedConstant(PrimitiveType::i32, offset));
                 auto sum = Stmt::make<BinaryOpStmt>(
                     BinaryOpType::add, load_addr, offset_const.get());
                 stmt->input = sum.get();
@@ -259,8 +258,7 @@ class BasicBlockSimplify : public IRVisitor {
     auto sum = Stmt::make<ConstStmt>(TypedConstant(0));
     auto stride_product = 1;
     for (int i = (int)stmt->inputs.size() - 1; i >= 0; i--) {
-      auto stride_stmt =
-          Stmt::make<ConstStmt>(TypedConstant(stride_product));
+      auto stride_stmt = Stmt::make<ConstStmt>(TypedConstant(stride_product));
       auto mul = Stmt::make<BinaryOpStmt>(BinaryOpType::mul, stmt->inputs[i],
                                           stride_stmt.get());
       auto newsum =

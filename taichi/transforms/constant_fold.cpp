@@ -150,8 +150,7 @@ class ConstantFold : public BasicStmtVisitor {
     }
 
     if (jit_evaluate_binary_op(new_constant, stmt, lhs->val, rhs->val)) {
-      auto evaluated =
-          Stmt::make<ConstStmt>(TypedConstant(new_constant));
+      auto evaluated = Stmt::make<ConstStmt>(TypedConstant(new_constant));
       stmt->replace_usages_with(evaluated.get());
       modifier.insert_before(stmt, std::move(evaluated));
       modifier.erase(stmt);
@@ -183,8 +182,7 @@ class ConstantFold : public BasicStmtVisitor {
         }
       }
       if (cast_available) {
-        auto evaluated =
-            Stmt::make<ConstStmt>(TypedConstant(new_constant));
+        auto evaluated = Stmt::make<ConstStmt>(TypedConstant(new_constant));
         stmt->replace_usages_with(evaluated.get());
         modifier.insert_before(stmt, std::move(evaluated));
         modifier.erase(stmt);
@@ -194,8 +192,7 @@ class ConstantFold : public BasicStmtVisitor {
     auto dst_type = stmt->ret_type;
     TypedConstant new_constant(dst_type);
     if (jit_evaluate_unary_op(new_constant, stmt, operand->val)) {
-      auto evaluated =
-          Stmt::make<ConstStmt>(TypedConstant(new_constant));
+      auto evaluated = Stmt::make<ConstStmt>(TypedConstant(new_constant));
       stmt->replace_usages_with(evaluated.get());
       modifier.insert_before(stmt, std::move(evaluated));
       modifier.erase(stmt);
@@ -210,13 +207,11 @@ class ConstantFold : public BasicStmtVisitor {
     if (is_signed(input->val.dt)) {
       auto result = (input->val.val_int() >> stmt->bit_begin) &
                     ((1LL << (stmt->bit_end - stmt->bit_begin)) - 1);
-      result_stmt = Stmt::make<ConstStmt>(
-          TypedConstant(input->val.dt, result));
+      result_stmt = Stmt::make<ConstStmt>(TypedConstant(input->val.dt, result));
     } else {
       auto result = (input->val.val_uint() >> stmt->bit_begin) &
                     ((1LL << (stmt->bit_end - stmt->bit_begin)) - 1);
-      result_stmt = Stmt::make<ConstStmt>(
-          TypedConstant(input->val.dt, result));
+      result_stmt = Stmt::make<ConstStmt>(TypedConstant(input->val.dt, result));
     }
     stmt->replace_usages_with(result_stmt.get());
     modifier.insert_before(stmt, std::move(result_stmt));

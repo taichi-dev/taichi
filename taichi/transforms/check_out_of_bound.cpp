@@ -47,8 +47,7 @@ class CheckOutOfBound : public BasicStmtVisitor {
     bool has_offset = !(snode->index_offsets.empty());
     auto new_stmts = VecStatement();
     auto zero = new_stmts.push_back<ConstStmt>(TypedConstant(0));
-    Stmt *result =
-        new_stmts.push_back<ConstStmt>(TypedConstant(true));
+    Stmt *result = new_stmts.push_back<ConstStmt>(TypedConstant(true));
 
     std::string msg =
         fmt::format("(kernel={}) Accessing field ({}) of size (", kernel_name,
@@ -66,8 +65,8 @@ class CheckOutOfBound : public BasicStmtVisitor {
           BinaryOpType::cmp_ge, stmt->indices[i], lower_bound);
       int size_i = snode->shape_along_axis(i);
       int upper_bound_i = size_i;
-      auto upper_bound = new_stmts.push_back<ConstStmt>(
-          TypedConstant(upper_bound_i));
+      auto upper_bound =
+          new_stmts.push_back<ConstStmt>(TypedConstant(upper_bound_i));
       auto check_upper_bound = new_stmts.push_back<BinaryOpStmt>(
           BinaryOpType::cmp_lt, stmt->indices[i], upper_bound);
       auto check_i = new_stmts.push_back<BinaryOpStmt>(

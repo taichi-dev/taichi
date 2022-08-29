@@ -1567,8 +1567,8 @@ class GloablDataAccessRuleChecker : public BasicStmtVisitor {
     }
     TI_ASSERT(snode->get_adjoint_checkbit() != nullptr);
     snode = snode->get_adjoint_checkbit();
-    auto global_ptr = stmt->insert_before_me(
-        Stmt::make<GlobalPtrStmt>(snode, dest->indices));
+    auto global_ptr =
+        stmt->insert_before_me(Stmt::make<GlobalPtrStmt>(snode, dest->indices));
     auto global_load =
         stmt->insert_before_me(Stmt::make<GlobalLoadStmt>(global_ptr));
     auto zero = stmt->insert_before_me(

@@ -154,8 +154,7 @@ class TypeCheck : public IRVisitor {
         stmt->snode->parent->num_active_indices != stmt->indices.size()) {
       TI_ERROR("[{}] {} has {} indices. Indexed with {}.", stmt->name(),
                stmt->snode->parent->node_type_name,
-               stmt->snode->parent->num_active_indices,
-               stmt->indices.size());
+               stmt->snode->parent->num_active_indices, stmt->indices.size());
     }
     for (int i = 0; i < stmt->indices.size(); i++) {
       if (!is_integral(stmt->indices[i]->ret_type)) {

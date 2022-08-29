@@ -450,8 +450,7 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
             continue;
           } else if (!is_parallel_executed ||
                      (atomic->dest->is<GlobalPtrStmt>() &&
-                      atomic->dest->as<GlobalPtrStmt>()
-                          ->snode->is_scalar())) {
+                      atomic->dest->as<GlobalPtrStmt>()->snode->is_scalar())) {
             // If this node is parallel executed, we can't weaken a global
             // atomic operation to a global load.
             // TODO: we can weaken it if it's element-wise (i.e. never
@@ -695,8 +694,7 @@ void ControlFlowGraph::live_variable_analysis(
     }
     if (auto *gptr = stmt->cast<GlobalPtrStmt>();
         gptr && config_opt.has_value()) {
-      const bool res =
-          (config_opt->eliminable_snodes.count(gptr->snode) == 0);
+      const bool res = (config_opt->eliminable_snodes.count(gptr->snode) == 0);
       return res;
     }
     // A global pointer that may be loaded after this kernel.

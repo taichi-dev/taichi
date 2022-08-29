@@ -99,7 +99,9 @@ class LowerAccess : public IRVisitor {
       // For ti.is_active
       TI_ASSERT(!activate);
     }
-    PtrLowererImpl lowerer{ptr->snode, ptr->indices, snode_op, ptr->is_bit_vectorized, &lowered, packed};
+    PtrLowererImpl lowerer{ptr->snode, ptr->indices,
+                           snode_op,   ptr->is_bit_vectorized,
+                           &lowered,   packed};
     lowerer.set_pointer_needs_activation(activate);
     lowerer.set_lower_access(this);
     lowerer.run();

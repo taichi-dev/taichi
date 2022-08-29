@@ -195,7 +195,7 @@ class UniquelyAccessedSNodeSearcher : public BasicStmtVisitor {
         idx = idx->as<MeshIndexConversionStmt>()->idx;
       }
       if (idx->is<LoopIndexStmt>() &&
-        idx->as<LoopIndexStmt>()->is_mesh_index()) {  // from-end access
+          idx->as<LoopIndexStmt>()->is_mesh_index()) {  // from-end access
         if (rel_access_pointer_.find(snode) ==
             rel_access_pointer_.end()) {  // not accessed by neibhours yet
           accessed_pointer_[snode] = stmt;

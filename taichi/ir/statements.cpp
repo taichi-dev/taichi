@@ -52,7 +52,9 @@ ExternalPtrStmt::ExternalPtrStmt(Stmt *base_ptr,
 GlobalPtrStmt::GlobalPtrStmt(SNode *snode,
                              const std::vector<Stmt *> &indices,
                              bool activate)
-    : snode(snode), indices(indices), activate(activate),
+    : snode(snode),
+      indices(indices),
+      activate(activate),
       is_bit_vectorized(false) {
   TI_ASSERT(snode != nullptr);
   element_type() = snode->dt;

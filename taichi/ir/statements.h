@@ -306,8 +306,10 @@ class ExternalPtrStmt : public Stmt {
 
   ExternalPtrStmt(Stmt *base_ptr, const std::vector<Stmt *> &indices);
 
-  ExternalPtrStmt(Stmt *base_ptr, const std::vector<Stmt *> &indices,
-                  const std::vector<int> &element_shape, int element_dim);
+  ExternalPtrStmt(Stmt *base_ptr,
+                  const std::vector<Stmt *> &indices,
+                  const std::vector<int> &element_shape,
+                  int element_dim);
 
   bool has_global_side_effect() const override {
     return false;
@@ -332,7 +334,8 @@ class GlobalPtrStmt : public Stmt {
   bool activate;
   bool is_bit_vectorized;  // for bit_loop_vectorize pass
 
-  GlobalPtrStmt(SNode *snode, const std::vector<Stmt *> &indices,
+  GlobalPtrStmt(SNode *snode,
+                const std::vector<Stmt *> &indices,
                 bool activate = true);
 
   bool has_global_side_effect() const override {

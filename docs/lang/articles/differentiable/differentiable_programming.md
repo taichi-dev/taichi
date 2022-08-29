@@ -454,7 +454,7 @@ about Taichi differentiable programming.
 Automatic differentiation (Autodiff) has two modes, reverse mode and forward mode.
 
 - Reverse mode computes Vector-Jacobian Product (VJP), which means computing one *row* of the Jacobian matrix at a time. Therefore, reverse mode is more efficient for functions, which have more inputs than outputs. `ti.ad.Tape()` and `kernel.grad()` are for reverse-mode autodiff.
-- Forward mode computes Jacobian-Vector Product (JVP), which means computing one *column* of the Jacobian matrix at a time. Therefore, forward mode is more efficient for functions, which have more outputs than inputs. As of v1.1.0, Taichi supports forward-mode autodiff. `ti.ad.FwdMode()` and ``ti.root.lazy_dual()` are for forward-mode autodiff.
+- Forward mode computes Jacobian-Vector Product (JVP), which means computing one *column* of the Jacobian matrix at a time. Therefore, forward mode is more efficient for functions, which have more outputs than inputs. As of v1.1.0, Taichi supports forward-mode autodiff. `ti.ad.FwdMode()` and `ti.root.lazy_dual()` are for forward-mode autodiff.
 
 ### Using `ti.ad.FwdMode()`
 

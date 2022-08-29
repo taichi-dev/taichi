@@ -96,7 +96,7 @@ Let's dive into this simple Taichi program.
   ti.init(arch=ti.gpu)
   ```
 
-  import taichi as a package and call the  `init` function to initialize some environment variables. The `init` function accepts several arguments to allow users to custom the runtime program, for now we only introduce the most important one, namely the `arch` . This argument will specify the *backend* that actually executes the compiled code. A backend can be either`ti.cpu` or  `ti.gpu`.  For `ti.gpu` Taichi will look for GPU architectures in the order `ti.cuda`, `ti.vulkan`, `ti.opengl/ti.metal`, `ti.dx11` and choose the first available one. If no GPU device is found Taichi will fall back to your cpu device. You can also directly specify the backend like `arch=ti.cuda`, Taichi will raise an error if this architecture is unavailable.
+  import taichi as a package and call the  `init` function to initialize some environment variables. The `init` function accepts several arguments to allow users to custom the runtime program, for now we only introduce the most important one, namely the `arch` . This argument will specify the *backend* that actually executes the compiled code. A backend can be either `ti.cpu` or  `ti.gpu`. For `ti.gpu` Taichi will look for GPU architectures in the order `ti.cuda`, `ti.vulkan`, `ti.opengl/ti.metal`, `ti.dx11` and choose the first available one. If no GPU device is found Taichi will fall back to your cpu device. You can also directly specify the backend like `arch=ti.cuda`, Taichi will raise an error if this architecture is unavailable.
 
 + The next two lines
 

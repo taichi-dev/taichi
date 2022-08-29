@@ -20,6 +20,19 @@ class TI_DLL_EXPORT Callable {
         false};  // This is true for both ndarray and external array args.
     std::size_t total_dim{0};  // total dim of array
 
+    /* [arguments with TensorType]
+
+    Taichi used to represent TensorType with the combination of "PrimitiveType"
+    & "element_shape" and there are a bunch of interfaces designed like this (it
+    allows creating TensorType by passing in PrimitiveType + element_shape)
+
+    Here we removed the "element_shape" member in the underlying objects (class
+    Arg, class ExternalTensorExpression, ...), and forced them to use TensorType
+    in their "dtype" member.
+
+    However we kept the interfaces unchanged temporarily, so as to minimize
+    possible regressions.
+    */
     explicit Arg(const DataType &dt = PrimitiveType::unknown,
                  bool is_array = false,
                  std::size_t size_unused = 0,
@@ -29,7 +42,6 @@ class TI_DLL_EXPORT Callable {
         this->dt_ =
             taichi::lang::TypeFactory::get_instance().create_tensor_type(
                 element_shape, dt);
-
       } else {
         this->dt_ = dt;
       }

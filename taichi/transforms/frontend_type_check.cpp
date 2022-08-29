@@ -65,10 +65,6 @@ class FrontendTypeCheck : public IRVisitor {
     // Noop
   }
 
-  void visit(FrontendEvalStmt *stmt) override {
-    // Noop
-  }
-
   void visit(FrontendForStmt *stmt) override {
     stmt->body->accept(this);
   }

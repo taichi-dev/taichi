@@ -106,9 +106,9 @@ void make_thread_local_offload(OffloadedStmt *offload) {
           // We can only optimized reductions to global ptrs with form like
           // loss[None] (0-D fields) for now.
           // No TLS on quant types.
-          return (dest->snodes[0]->type == SNodeType::place) &&
+          return (dest->snode->type == SNodeType::place) &&
                  dest->indices.empty() &&
-                 dest->snodes[0]->dt->is<PrimitiveType>();
+                 dest->snode->dt->is<PrimitiveType>();
         });
     auto valid_global_tmps =
         find_global_reduction_destinations<GlobalTemporaryStmt>(

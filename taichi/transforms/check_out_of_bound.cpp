@@ -43,8 +43,7 @@ class CheckOutOfBound : public BasicStmtVisitor {
   void visit(GlobalPtrStmt *stmt) override {
     if (is_done(stmt))
       return;
-    TI_ASSERT(stmt->snodes.size() == 1);
-    auto snode = stmt->snodes[0];
+    auto snode = stmt->snode;
     bool has_offset = !(snode->index_offsets.empty());
     auto new_stmts = VecStatement();
     auto zero = new_stmts.push_back<ConstStmt>(LaneAttribute<TypedConstant>(0));

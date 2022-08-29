@@ -185,6 +185,7 @@ class UniquelyAccessedSNodeSearcher : public BasicStmtVisitor {
   }
 
   void visit(GlobalPtrStmt *stmt) override {
+    auto snode = stmt->snode;
     // mesh-for loop unique
     if (stmt->indices.size() == 1 &&
         stmt->indices[0]->is<MeshIndexConversionStmt>()) {
@@ -194,37 +195,31 @@ class UniquelyAccessedSNodeSearcher : public BasicStmtVisitor {
         idx = idx->as<MeshIndexConversionStmt>()->idx;
       }
       if (idx->is<LoopIndexStmt>() &&
-          idx->as<LoopIndexStmt>()->is_mesh_index()) {  // from-end access
-        for (auto &snode : stmt->snodes.data) {
-          if (rel_access_pointer_.find(snode) ==
-              rel_access_pointer_.end()) {  // not accessed by neibhours yet
-            accessed_pointer_[snode] = stmt;
-          } else {  // accessed by neibhours, so it's not unique
-            accessed_pointer_[snode] = nullptr;
-          }
+        idx->as<LoopIndexStmt>()->is_mesh_index()) {  // from-end access
+        if (rel_access_pointer_.find(snode) ==
+            rel_access_pointer_.end()) {  // not accessed by neibhours yet
+          accessed_pointer_[snode] = stmt;
+        } else {  // accessed by neibhours, so it's not unique
+          accessed_pointer_[snode] = nullptr;
         }
       } else {  // to-end access
-        for (auto &snode : stmt->snodes.data) {
-          rel_access_pointer_[snode] = stmt;
-          accessed_pointer_[snode] =
-              nullptr;  // from-end access should not be unique
-        }
+        rel_access_pointer_[snode] = stmt;
+        accessed_pointer_[snode] =
+            nullptr;  // from-end access should not be unique
       }
     }
     // Range-for / struct-for
-    for (auto &snode : stmt->snodes.data) {
-      auto accessed_ptr = accessed_pointer_.find(snode);
-      if (accessed_ptr == accessed_pointer_.end()) {
-        if (loop_unique_stmt_searcher_.is_ptr_indices_loop_unique(stmt)) {
-          accessed_pointer_[snode] = stmt;
-        } else {
-          accessed_pointer_[snode] = nullptr;  // not loop-unique
-        }
+    auto accessed_ptr = accessed_pointer_.find(snode);
+    if (accessed_ptr == accessed_pointer_.end()) {
+      if (loop_unique_stmt_searcher_.is_ptr_indices_loop_unique(stmt)) {
+        accessed_pointer_[snode] = stmt;
       } else {
-        if (!irpass::analysis::definitely_same_address(accessed_ptr->second,
-                                                       stmt)) {
-          accessed_ptr->second = nullptr;  // not uniquely accessed
-        }
+        accessed_pointer_[snode] = nullptr;  // not loop-unique
+      }
+    } else {
+      if (!irpass::analysis::definitely_same_address(accessed_ptr->second,
+                                                     stmt)) {
+        accessed_ptr->second = nullptr;  // not uniquely accessed
       }
     }
   }

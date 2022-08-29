@@ -99,8 +99,7 @@ class LowerAccess : public IRVisitor {
       // For ti.is_active
       TI_ASSERT(!activate);
     }
-    PtrLowererImpl lowerer{ptr->snodes[0],         ptr->indices, snode_op,
-                           ptr->is_bit_vectorized, &lowered,     packed};
+    PtrLowererImpl lowerer{ptr->snode, ptr->indices, snode_op, ptr->is_bit_vectorized, &lowered, packed};
     lowerer.set_pointer_needs_activation(activate);
     lowerer.set_lower_access(this);
     lowerer.run();
@@ -109,12 +108,12 @@ class LowerAccess : public IRVisitor {
     if (ptr->is_bit_vectorized) {
       // if the global ptr is bit vectorized, we start from the place snode
       // and find the parent quant array snode, use its physical type
-      auto parent_ret_type = ptr->snodes[0]->parent->physical_type;
+      auto parent_ret_type = ptr->snode->parent->physical_type;
       auto ptr_ret_type =
           TypeFactory::get_instance().get_pointer_type(parent_ret_type);
       lowered_ptr->ret_type = DataType(ptr_ret_type);
     } else {
-      lowered_ptr->ret_type = ptr->snodes[0]->dt;
+      lowered_ptr->ret_type = ptr->snode->dt;
     }
     return lowered;
   }

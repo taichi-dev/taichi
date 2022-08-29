@@ -327,18 +327,13 @@ class ExternalPtrStmt : public Stmt {
  */
 class GlobalPtrStmt : public Stmt {
  public:
-  LaneAttribute<SNode *> snodes;
+  SNode *snode;
   std::vector<Stmt *> indices;
   bool activate;
   bool is_bit_vectorized;  // for bit_loop_vectorize pass
 
-  GlobalPtrStmt(const LaneAttribute<SNode *> &snodes,
-                const std::vector<Stmt *> &indices,
+  GlobalPtrStmt(SNode *snode, const std::vector<Stmt *> &indices,
                 bool activate = true);
-
-  bool is_element_wise(const SNode *snode) const;
-
-  bool covers_snode(const SNode *snode) const;
 
   bool has_global_side_effect() const override {
     return activate;
@@ -348,7 +343,7 @@ class GlobalPtrStmt : public Stmt {
     return true;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, snodes, indices, activate, is_bit_vectorized);
+  TI_STMT_DEF_FIELDS(ret_type, snode, indices, activate, is_bit_vectorized);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
@@ -536,8 +531,6 @@ class LoopUniqueStmt : public Stmt {
   // use that to check if two LoopUniqueStmts are the same.
 
   LoopUniqueStmt(Stmt *input, const std::vector<SNode *> &covers);
-
-  bool covers_snode(const SNode *snode) const;
 
   bool has_global_side_effect() const override {
     return false;

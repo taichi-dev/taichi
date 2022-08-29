@@ -392,8 +392,8 @@ class IRPrinter : public IRVisitor {
         fmt::format("{}{} = global ptr [", stmt->type_hint(), stmt->name());
 
     std::string snode_name;
-    if (stmt->snodes[0]) {
-      snode_name = stmt->snodes[0]->get_node_type_name_hinted();
+    if (stmt->snode) {
+      snode_name = stmt->snode->get_node_type_name_hinted();
     } else {
       snode_name = "unknown";
     }

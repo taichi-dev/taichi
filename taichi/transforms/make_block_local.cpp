@@ -216,7 +216,7 @@ void make_block_local_offload(OffloadedStmt *offload,
       // TODO: no more abuse of gather_statements...
       irpass::analysis::gather_statements(offload->body.get(), [&](Stmt *stmt) {
         if (auto global_ptr = stmt->cast<GlobalPtrStmt>()) {
-          if (global_ptr->snodes[0] == snode) {
+          if (global_ptr->snode == snode) {
             global_ptrs.push_back(global_ptr);
           }
         }

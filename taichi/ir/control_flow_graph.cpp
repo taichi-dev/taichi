@@ -335,22 +335,14 @@ void CFGNode::gather_loaded_snodes(std::unordered_set<SNode *> &snodes) const {
       if (auto global_ptr = load_ptr->cast<GlobalPtrStmt>()) {
         // Avoid computing the UD-chain if every SNode in this global ptr
         // are already loaded because it can be time-consuming.
-        bool already_loaded = true;
-        for (auto &snode : global_ptr->snodes.data) {
-          if (snodes.count(snode) == 0) {
-            already_loaded = false;
-            break;
-          }
-        }
-        if (already_loaded) {
+        auto snode = global_ptr->snode;
+        if (snodes.count(snode) > 0) {
           continue;
         }
         if (reach_in.find(global_ptr) != reach_in.end() &&
             !contain_variable(killed_in_this_node, global_ptr)) {
           // The UD-chain contains the value before this offloaded task.
-          for (auto &snode : global_ptr->snodes.data) {
-            snodes.insert(snode);
-          }
+          snodes.insert(snode);
         }
       }
     }
@@ -459,8 +451,7 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
           } else if (!is_parallel_executed ||
                      (atomic->dest->is<GlobalPtrStmt>() &&
                       atomic->dest->as<GlobalPtrStmt>()
-                          ->snodes[0]
-                          ->is_scalar())) {
+                          ->snode->is_scalar())) {
             // If this node is parallel executed, we can't weaken a global
             // atomic operation to a global load.
             // TODO: we can weaken it if it's element-wise (i.e. never
@@ -704,9 +695,8 @@ void ControlFlowGraph::live_variable_analysis(
     }
     if (auto *gptr = stmt->cast<GlobalPtrStmt>();
         gptr && config_opt.has_value()) {
-      TI_ASSERT(gptr->snodes.size() == 1);
       const bool res =
-          (config_opt->eliminable_snodes.count(gptr->snodes[0]) == 0);
+          (config_opt->eliminable_snodes.count(gptr->snode) == 0);
       return res;
     }
     // A global pointer that may be loaded after this kernel.
@@ -874,9 +864,7 @@ std::unordered_set<SNode *> ControlFlowGraph::gather_loaded_snodes() {
   // Therefore we include the nodes[final_node]->reach_in in snodes.
   for (auto &stmt : nodes[final_node]->reach_in) {
     if (auto global_ptr = stmt->cast<GlobalPtrStmt>()) {
-      for (auto &snode : global_ptr->snodes.data) {
-        snodes.insert(snode);
-      }
+      snodes.insert(global_ptr->snode);
     }
   }
 

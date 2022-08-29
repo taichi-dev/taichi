@@ -61,7 +61,7 @@ class BitLoopVectorize : public IRVisitor {
             auto indices = ptr->indices;
             indices[1] = loop_stmt->body->statements[1].get();
             auto base_ptr =
-                std::make_unique<GlobalPtrStmt>(ptr->snodes, indices);
+                std::make_unique<GlobalPtrStmt>(ptr->snode, indices);
             base_ptr->ret_type = new_ret_type;
             base_ptr->is_bit_vectorized = true;
             // load x[i, j](base)
@@ -80,7 +80,7 @@ class BitLoopVectorize : public IRVisitor {
                 offset_index_opcode, indices[1], offset_constant.get());
             indices[1] = offset_index.get();
             auto offset_ptr =
-                std::make_unique<GlobalPtrStmt>(ptr->snodes, indices);
+                std::make_unique<GlobalPtrStmt>(ptr->snode, indices);
             offset_ptr->ret_type = new_ret_type;
             offset_ptr->is_bit_vectorized = true;
             auto load_offsetted =

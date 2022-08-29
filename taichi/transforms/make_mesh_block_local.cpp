@@ -100,7 +100,7 @@ void MakeMeshBlockLocal::replace_global_ptrs(SNode *snode) {
   std::vector<GlobalPtrStmt *> global_ptrs;
   irpass::analysis::gather_statements(offload_->body.get(), [&](Stmt *stmt) {
     if (auto global_ptr = stmt->cast<GlobalPtrStmt>()) {
-      if (global_ptr->snodes[0] == snode &&
+      if (global_ptr->snode == snode &&
           global_ptr->indices[0]->is<MeshIndexConversionStmt>()) {
         global_ptrs.push_back(global_ptr);
       }

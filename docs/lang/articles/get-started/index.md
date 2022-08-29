@@ -20,7 +20,7 @@ Taichi also has a built-in ahead-of-time compiling module that allows users to e
 
 1. Python: 3.7/3.8/3.9/3.10 (64-bit)
 2. OS: Windows (64-bit), OSX, Linux (64-bit)
-3. GPUS: Cuda, Vulkan, OpenGL, Metal 
+3. GPUS: Cuda, Vulkan, OpenGL, Metal
 
 
 ## Installation
@@ -41,7 +41,7 @@ ti gallery
 This will pop up a window like follows:
 
 <center>
-  
+
 ![image](https://github.com/taichi-dev/taichi_assets/blob/master/static/imgs/ti_gallery.png)
 
 </center>
@@ -70,7 +70,7 @@ def paint(t: float):
         z = tm.vec2(i / n - 1, j / n - 0.5) * 2
         iterations = 0
         while z.norm() < 20 and iterations < 50:
-            z = tm.cmul(z, z) + c  # cmul is the complex multiplicaiton of two vec2s 
+            z = tm.cmul(z, z) + c  # cmul is the complex multiplicaiton of two vec2s
             iterations += 1
         pixels[i, j] = 1 - iterations * 0.02
 
@@ -283,4 +283,3 @@ for i in range(1000000):
 If you encounter any issue that is not covered here, feel free to report it by [opening an issue on GitHub](https://github.com/taichi-dev/taichi/issues/new?labels=potential+bug&template=bug_report.md) and including the details. We are always there to help!
 
 See the [Installation Troubleshooting](../faqs/install.md) if you run into any issues when installing Taichi.
-

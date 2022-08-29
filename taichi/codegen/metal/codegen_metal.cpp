@@ -256,7 +256,7 @@ class KernelCodegenImpl : public IRVisitor {
   void visit(ConstStmt *const_stmt) override {
     emit("constexpr {} {} = {};",
          metal_data_type_name(const_stmt->element_type()),
-         const_stmt->raw_name(), const_stmt->val[0].stringify());
+         const_stmt->raw_name(), const_stmt->val.stringify());
   }
 
   void visit(LocalLoadStmt *stmt) override {

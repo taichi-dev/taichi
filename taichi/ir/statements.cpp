@@ -151,10 +151,6 @@ std::unique_ptr<Stmt> IfStmt::clone() const {
   return new_stmt;
 }
 
-std::unique_ptr<ConstStmt> ConstStmt::copy() {
-  return std::make_unique<ConstStmt>(val);
-}
-
 RangeForStmt::RangeForStmt(Stmt *begin,
                            Stmt *end,
                            std::unique_ptr<Block> &&body,
@@ -378,16 +374,10 @@ int LoopIndexStmt::max_num_bits() const {
     if (!range_for->begin->is<ConstStmt>() || !range_for->end->is<ConstStmt>())
       return -1;
     auto begin = range_for->begin->as<ConstStmt>();
-    for (int i = 0; i < (int)begin->val.size(); i++) {
-      if (begin->val[i].val_int() < 0)
-        return -1;
-    }
+    if (begin->val.val_int() < 0)
+      return -1;
     auto end = range_for->end->as<ConstStmt>();
-    int result = 0;
-    for (int i = 0; i < (int)end->val.size(); i++) {
-      result = std::max(result, (int)bit::ceil_log2int(end->val[i].val_int()));
-    }
-    return result;
+    return (int)bit::ceil_log2int(end->val.val_int());
   } else if (auto struct_for = loop->cast<StructForStmt>()) {
     return struct_for->snode->get_num_bits(index);
   } else if (auto offload = loop->cast<OffloadedStmt>()) {

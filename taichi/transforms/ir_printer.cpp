@@ -278,8 +278,7 @@ class IRPrinter : public IRVisitor {
 
   void visit(ConstStmt *const_stmt) override {
     print("{}{} = const {}", const_stmt->type_hint(), const_stmt->name(),
-          const_stmt->val.serialize(
-              [](const TypedConstant &t) { return t.stringify(); }, "["));
+          const_stmt->val.stringify());
   }
 
   void visit(WhileControlStmt *stmt) override {

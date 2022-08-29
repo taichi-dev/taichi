@@ -1554,7 +1554,7 @@ class GloablDataAccessRuleChecker : public BasicStmtVisitor {
     auto gloabl_ptr =
         stmt->insert_after_me(Stmt::make<GlobalPtrStmt>(snode, src->indices));
     auto one = gloabl_ptr->insert_after_me(
-        Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(1)));
+        Stmt::make<ConstStmt>(TypedConstant(1)));
     one->insert_after_me(Stmt::make<GlobalStoreStmt>(gloabl_ptr, one));
   }
 
@@ -1570,7 +1570,7 @@ class GloablDataAccessRuleChecker : public BasicStmtVisitor {
     auto global_load =
         stmt->insert_before_me(Stmt::make<GlobalLoadStmt>(global_ptr));
     auto zero = stmt->insert_before_me(
-        Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(0)));
+        Stmt::make<ConstStmt>(TypedConstant(0)));
     auto check_equal = stmt->insert_before_me(
         Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_eq, global_load, zero));
     std::string msg = fmt::format(

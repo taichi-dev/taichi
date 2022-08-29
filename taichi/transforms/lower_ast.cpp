@@ -218,8 +218,7 @@ class LowerAST : public IRVisitor {
         auto begin_minus_one = fctx.push_back<BinaryOpStmt>(
             BinaryOpType::sub, begin->stmt, const_one);
         fctx.push_back<LocalStoreStmt>(loop_var, begin_minus_one);
-        auto loop_var_addr = LaneAttribute<LocalAddress>(
-            LocalAddress(loop_var->as<AllocaStmt>(), 0));
+        auto loop_var_addr = LocalAddress(loop_var->as<AllocaStmt>(), 0);
         VecStatement load_and_compare;
         auto loop_var_load_stmt =
             load_and_compare.push_back<LocalLoadStmt>(loop_var_addr);

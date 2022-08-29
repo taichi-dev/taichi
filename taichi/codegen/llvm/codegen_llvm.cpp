@@ -861,7 +861,7 @@ void TaskCodeGenLLVM::visit(PrintStmt *stmt) {
 }
 
 void TaskCodeGenLLVM::visit(ConstStmt *stmt) {
-  auto val = stmt->val[0];
+  auto val = stmt->val;
   if (val.dt->is_primitive(PrimitiveTypeID::f32)) {
     llvm_val[stmt] =
         llvm::ConstantFP::get(*llvm_context, llvm::APFloat(val.val_float32()));

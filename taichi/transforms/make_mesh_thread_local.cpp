@@ -71,15 +71,13 @@ void make_mesh_thread_local_offload(OffloadedStmt *offload,
           const auto offset_snode = offset_.find(element_type);
           TI_ASSERT(offset_snode != offset_.end());
           auto offset_globalptr = offload->tls_prologue->insert(
-              std::make_unique<GlobalPtrStmt>(
-                  LaneAttribute<SNode *>{offset_snode->second},
+              std::make_unique<GlobalPtrStmt>(offset_snode->second,
                   std::vector<Stmt *>{patch_idx}),
               -1);
           auto offset_load = offload->tls_prologue->insert(
               std::make_unique<GlobalLoadStmt>(offset_globalptr), -1);
           auto offset_1_globalptr = offload->tls_prologue->insert(
-              std::make_unique<GlobalPtrStmt>(
-                  LaneAttribute<SNode *>{offset_snode->second},
+              std::make_unique<GlobalPtrStmt>(offset_snode->second,
                   std::vector<Stmt *>{patch_idx_1}),
               -1);
           auto offset_1_load = offload->tls_prologue->insert(

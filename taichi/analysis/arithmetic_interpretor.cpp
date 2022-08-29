@@ -59,8 +59,7 @@ class EvalVisitor : public IRVisitor {
   }
 
   void visit(ConstStmt *stmt) override {
-    TI_ASSERT(stmt->val.size() == 1);
-    context_.insert(stmt, stmt->val.data[0]);
+    context_.insert(stmt, stmt->val);
   }
 
   void visit(BinaryOpStmt *stmt) override {

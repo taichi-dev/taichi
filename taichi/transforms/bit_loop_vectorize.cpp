@@ -318,8 +318,8 @@ class BitLoopVectorize : public IRVisitor {
     }
     if (auto constant_stmt = stmt->cast<ConstStmt>();
         constant_stmt &&
-        constant_stmt->val[0].dt->is_primitive(PrimitiveTypeID::i32)) {
-      val = constant_stmt->val[0].val_i32;
+        constant_stmt->val.dt->is_primitive(PrimitiveTypeID::i32)) {
+      val = constant_stmt->val.val_i32;
     }
     return val;
   }

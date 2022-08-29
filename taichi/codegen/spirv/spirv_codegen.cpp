@@ -192,7 +192,7 @@ class TaskCodegen : public IRVisitor {
       }
     };
 
-    spirv::Value val = get_const(const_stmt->val[0]);
+    spirv::Value val = get_const(const_stmt->val);
     ir_->register_value(const_stmt->raw_name(), val);
   }
 

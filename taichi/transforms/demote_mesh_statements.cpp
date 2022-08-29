@@ -14,8 +14,7 @@ namespace irpass {
 
 auto get_load = [](SNode *snode, Stmt *idx, VecStatement &block) {
   const auto lane = std::vector<Stmt *>{idx};
-  Stmt *globalptr =
-      block.push_back<GlobalPtrStmt>(LaneAttribute<SNode *>{snode}, lane);
+  Stmt *globalptr = block.push_back<GlobalPtrStmt>(snode, lane);
   Stmt *load = block.push_back<GlobalLoadStmt>(globalptr);
   return load;
 };
@@ -78,7 +77,7 @@ void demote_mesh_statements_offload(OffloadedStmt *offload,
         mesh::relation_by_orders(from_order, to_order);
     if (from_order > to_order) {  // high-to-low relation
       if (stmt->is_size()) {
-        stmt->replace_with(Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>{
+        stmt->replace_with(Stmt::make<ConstStmt>(TypedConstant{
             from_type == mesh::MeshElementType::Cell &&
                     stmt->to_type == mesh::MeshElementType::Edge
                 ? /*Cell-Edge=*/6
@@ -86,7 +85,7 @@ void demote_mesh_statements_offload(OffloadedStmt *offload,
       } else {
         SNode *rel_value = stmt->mesh->relations.find(rel_type)->second.value;
         VecStatement block;
-        Stmt *to_size = block.push_back<ConstStmt>(LaneAttribute<TypedConstant>{
+        Stmt *to_size = block.push_back<ConstStmt>(TypedConstant{
             from_type == mesh::MeshElementType::Cell &&
                     stmt->to_type == mesh::MeshElementType::Edge
                 ? /*Cell-Edge=*/6
@@ -116,7 +115,7 @@ void demote_mesh_statements_offload(OffloadedStmt *offload,
                                                   index_offset, stmt->mesh_idx);
       Stmt *offset = get_load(rel_offset, index, block);
       if (stmt->is_size()) {
-        Stmt *one = block.push_back<ConstStmt>(LaneAttribute<TypedConstant>{1});
+        Stmt *one = block.push_back<ConstStmt>(TypedConstant{1});
         Stmt *index_1 =
             block.push_back<BinaryOpStmt>(BinaryOpType::add, index, one);
         Stmt *offset_1 = get_load(rel_offset, index_1, block);

@@ -206,7 +206,7 @@ class CCTransformer : public IRVisitor {
   void visit(ConstStmt *stmt) override {
     emit("{} = {};",
          define_var(cc_data_type_name(stmt->element_type()), stmt->raw_name()),
-         stmt->val[0].stringify());
+         stmt->val.stringify());
   }
 
   void visit(AllocaStmt *stmt) override {

@@ -4,124 +4,73 @@ slug: /
 ---
 
 # Getting Started
+---
+sidebar_position: 1
+slug: /
+---
 
-## Target audience
+# Getting Started
 
-End users who *only* wish to quickly set up Taichi for simulation or high-performance numerical computation.
+Taichi is a high-performance parallel programming language using Python as the frontend. The commom usage is, users write their computation-intensive tasks in python obeying a few extra rules imposed by Taichi and use two decorators `ti.func` and `ti.kernel` to tell Taichi to take over the functions that implement the task. Taichi's just-in-time compiler will compile these functions to machine code and all subsequent calls to them are executed on multi-CPU cores or GPU. In typical scenarios like physical simulations or real-time renderings, this will usually give a 50~100x speed up compared to native python!
 
-:::caution IMPORTANT
+Taichi also has a built-in ahead-of-time compiling module that allows users to export the code as shader files that can be called out of the python environment.
 
-For developers who are interested in the compiler, computer graphics, or high-performance computing, and would like to contribute new features or bug fixes to the [Taichi programming language](https://github.com/taichi-dev/taichi), see the [Developer installation](../contribution/dev_install.md) for more information on building Taichi from source.
-
-:::
 
 ## Prerequisites
 
-### Python
+1. Python: 3.7/3.8/3.9/3.10 (64-bit)
+2. OS: Windows (64-bit), OSX, Linux (64-bit)
+3. GPUS: Cuda, Vulkan, OpenGL, Metal 
 
-3.7/3.8/3.9/3.10 (64-bit)
-
-:::note
-
-Taichi recommends installing Python from [Miniforge](https://github.com/conda-forge/miniforge/#download) conda if you are on a MacBook with M1 chip.
-
-:::
-
-### Supported systems and backends
-
-The following table lists the supported operating systems and the backends that Taichi supports on these platforms:
-
-| **platform** |      **CPU**       |      **CUDA**      |     **OpenGL**     |     **Metal**      |    **Vulkan**      |    **DirectX 11**      |
-| :----------: | :----------------: | :----------------: | :----------------: | :----------------: | :----------------: | :----------------: |
-|   Windows    | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |        N/A         | :heavy_check_mark: | :heavy_check_mark: |
-|    Linux     | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |        N/A         | :heavy_check_mark: |        N/A         |
-|    macOS     | :heavy_check_mark: |        N/A         |        N/A         | :heavy_check_mark: | :heavy_check_mark: |        N/A         |
-
-- :heavy_check_mark:: supported;
-- N/A: not applicable
 
 ## Installation
 
-To get started with the Taichi Language, simply install it with `pip`:
+Taichi is available as a PyPI package:
 
-```shell
-python3 -m pip install taichi
+```bash
+pip install taichi
+```
+Taichi can also be built from the source, although we do not recommend this for first-time users except those who what to try the most up-to-date features. See our [eveloper's guide](../contribution/dev_install.md) for full details.
+
+To verify the installation is successful, in terminal run
+
+```bash
+ti gallery
 ```
 
-There are a few of extra requirements depend on which operating system you are using:
-
-````mdx-code-block
-
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
-
-<Tabs
-  defaultValue="arch-linux"
-  values={[
-    {label: 'Arch Linux', value: 'arch-linux'},
-    {label: 'Windows', value: 'windows'},
-  ]}>
-
-  <TabItem value="arch-linux">
-
-  On Arch Linux, you need to install `ncurses5-compat-libs` package from the Arch User Repository: `yaourt -S ncurses5-compat-libs`
-
-  </TabItem>
-  <TabItem value="windows">
-
-  On Windows, please install [Microsoft Visual C++ Redistributable](https://aka.ms/vs/16/release/vc_redist.x64.exe) if you haven't done so.
-
-  </TabItem>
-</Tabs>
-````
-
-See the [Installation Troubleshooting](../faqs/install.md) if you run into any issues when installing Taichi.
-
-A successful installation of Taichi should add a CLI (Command-Line Interface) to your system, which is helpful to perform several routine tasks quickly. To invoke the CLI, please run `ti` or `python3 -m taichi`.
-
-## Examples
-
-Taichi provides a set of bundled examples. You could run `ti example -h` to print the help message and get a list of available example names.
-
-For instance, to run the basic `fractal` example, try: `ti example fractal` from your shell. (`ti example fractal.py` should also work)
-
-You may print the source code of example by running `ti example -p fractal`, or `ti example -P fractal` for print with syntax highlight.
-
-You may also save the example to current work directory by running `ti example -s fractal`.
-
-## Hello, world!
-
-We introduce the Taichi programming language through a very basic _fractal_ example.
-
-Running the Taichi code below using either `python3 fractal.py` or `ti example fractal` will give you an animation of [Julia set](https://en.wikipedia.org/wiki/Julia_set):
+This will pop up a window like follows:
 
 <center>
-
-
-![image](https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/fractal.gif)
+  
+![image](https://github.com/taichi-dev/taichi_assets/blob/master/static/imgs/ti_gallery.png)
 
 </center>
 
+Click to choose and run the examples.
+
+You can also run the command `ti example` to see the full list of examples included in the released package.
+
+## Hello, world!
+
+We introduce the Taichi programming language through a very basic fractal example, the [Julia fractal](https://en.wikipedia.org/wiki/Julia_set):
+
 ```python title=fractal.py
 import taichi as ti
+import taichi.math as tm
 
 ti.init(arch=ti.gpu)
 
 n = 320
 pixels = ti.field(dtype=float, shape=(n * 2, n))
 
-@ti.func
-def complex_sqr(z):
-    return ti.Vector([z[0]**2 - z[1]**2, z[1] * z[0] * 2])
-
 @ti.kernel
 def paint(t: float):
     for i, j in pixels:  # Parallelized over all pixels
-        c = ti.Vector([-0.8, ti.cos(t) * 0.2])
-        z = ti.Vector([i / n - 1, j / n - 0.5]) * 2
+        c = tm.vec2(-0.8, tm.cos(t) * 0.2)
+        z = tm.vec2(i / n - 1, j / n - 0.5) * 2
         iterations = 0
         while z.norm() < 20 and iterations < 50:
-            z = complex_sqr(z) + c
+            z = tm.cmul(z, z) + c  # cmul is the complex multiplicaiton of two vec2s 
             iterations += 1
         pixels[i, j] = 1 - iterations * 0.02
 
@@ -135,15 +84,17 @@ while gui.running:
     i = i + 1
 ```
 
+You can run the above code by either save it to your disk or directly run `ti example fractal` in a terminal, this will give you an animation:
+
+<center>
+
+![image](https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/fractal.gif)
+
+</center>
+
 Let's dive into this simple Taichi program.
 
 ### import taichi as ti
-
-Taichi is a domain-specific language (DSL) embedded in Python.
-
-To make Taichi as easy-to-use as a Python package, we have done heavy engineering with this goal in mind - letting every Python programmer write Taichi programs with minimal learning effort.
-
-You can even use your favorite Python package management system, Python IDEs and other Python packages together with Taichi.
 
 ```python
 # Initialize Taichi and run it on CPU (default)
@@ -330,3 +281,6 @@ for i in range(1000000):
 ## Still have issues?
 
 If you encounter any issue that is not covered here, feel free to report it by [opening an issue on GitHub](https://github.com/taichi-dev/taichi/issues/new?labels=potential+bug&template=bug_report.md) and including the details. We are always there to help!
+
+See the [Installation Troubleshooting](../faqs/install.md) if you run into any issues when installing Taichi.
+

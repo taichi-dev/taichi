@@ -8,7 +8,6 @@ PER_STATEMENT(FrontendBreakStmt)
 PER_STATEMENT(FrontendContinueStmt)
 PER_STATEMENT(FrontendAllocaStmt)
 PER_STATEMENT(FrontendAssignStmt)
-PER_STATEMENT(FrontendEvalStmt)
 PER_STATEMENT(FrontendSNodeOpStmt)  // activate, deactivate, append, clear
 PER_STATEMENT(FrontendAssertStmt)
 PER_STATEMENT(FrontendFuncDefStmt)

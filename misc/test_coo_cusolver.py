@@ -1,6 +1,5 @@
-import urllib.request
-
-import scipy.io as sio
+import numpy as np
+from scipy.sparse import coo_matrix
 
 import taichi as ti
 
@@ -14,16 +13,21 @@ def init_b(b: ti.types.ndarray(), nrows: ti.i32):
 
 
 @ti.kernel
-def print_x(x: ti.types.ndarray(), ncols: ti.i32, length: ti.i32):
-    for i in range(ncols - length, ncols):
-        print(x[i])
+def print_x(x: ti.types.ndarray(), ncols: ti.i32):
+    for i in range(ncols):
+        print(x[i], end=' ')
+    print()
 
 
-print(">> downloading sparse matrix lap2D_5pt_n100.mtx...")
-url = 'https://raw.githubusercontent.com/NVIDIA/cuda-samples/master/Samples/4_CUDA_Libraries/cuSolverSp_LinearSolver/lap2D_5pt_n100.mtx'
-urllib.request.urlretrieve(url, 'misc/lap2D_5pt_n100.mtx')
-print(">> load sparse matrix........")
-A_raw_coo = sio.mmread('misc/lap2D_5pt_n100.mtx')
+"""
+Generate a positive definite matrix with a given number of rows and columns.
+Reference: https://stackoverflow.com/questions/619335/a-simple-algorithm-for-generating-positive-semidefinite-matrices
+"""
+matrixSize = 10
+A = np.random.rand(matrixSize, matrixSize)
+A_psd = np.dot(A, A.transpose())
+
+A_raw_coo = coo_matrix(A_psd)
 nrows, ncols = A_raw_coo.shape
 nnz = A_raw_coo.nnz
 
@@ -31,7 +35,7 @@ A_csr = A_raw_coo.tocsr()
 b = ti.ndarray(shape=nrows, dtype=ti.f32)
 init_b(b, nrows)
 
-print(">> solve Ax = b using CuSparseSolver ......... ")
+print(">> solve Ax = b using Cusolver ......... ")
 A_coo = A_csr.tocoo()
 d_row_coo = ti.ndarray(shape=nnz, dtype=ti.i32)
 d_col_coo = ti.ndarray(shape=nnz, dtype=ti.i32)
@@ -46,5 +50,14 @@ x_ti = ti.ndarray(shape=ncols, dtype=ti.float32)
 solver = ti.linalg.SparseSolver()
 solver.solve_cu(A_ti, b, x_ti)
 ti.sync()
-print(">> CuSparseSolver results:")
-print_x(x_ti, ncols, 10)
+print_x(x_ti, ncols)
+ti.sync()
+
+print(">> solve Ax = b using Numpy ......... ")
+b_np = b.to_numpy()
+x_np = np.linalg.solve(A_psd, b_np)
+print(x_np)
+
+print(
+    f"The solution is identical?: {np.allclose(x_ti.to_numpy(), x_np, atol=1e-1)}"
+)

@@ -483,7 +483,7 @@ jobs:
         include:
           - os: windows-2019
             llvmVer : '15'
-            archs: "cpu"
+            archs: "cuda"
           - os: windows-2019
             llvmVer : '10'
             archs: "cuda,opengl"

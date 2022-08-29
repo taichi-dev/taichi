@@ -1,4 +1,5 @@
-import numpy as np
+import urllib.request
+
 import scipy.io as sio
 
 import taichi as ti
@@ -18,6 +19,9 @@ def print_x(x: ti.types.ndarray(), ncols: ti.i32, length: ti.i32):
         print(x[i])
 
 
+print(">> downloading sparse matrix lap2D_5pt_n100.mtx...")
+url = 'https://raw.githubusercontent.com/NVIDIA/cuda-samples/master/Samples/4_CUDA_Libraries/cuSolverSp_LinearSolver/lap2D_5pt_n100.mtx'
+urllib.request.urlretrieve(url, 'misc/lap2D_5pt_n100.mtx')
 print(">> load sparse matrix........")
 A_raw_coo = sio.mmread('misc/lap2D_5pt_n100.mtx')
 nrows, ncols = A_raw_coo.shape

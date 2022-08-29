@@ -201,10 +201,15 @@ void CuSparseSolver::solve_cu(Program *prog,
   float tol = 1e-6;
   int reorder = 1;
   int singularity = 0; /* -1 if A is invertible under tol. */
+  // use Cholesky decomposition as defualt
   CUSOLVERDriver::get_instance().csSpScsrlsvcholHost(
       handle, nrows, nnz, descrA, (void *)h_val_B, (void *)hrow_offsets_B,
       (void *)hcol_indices_B, (void *)h_Qb, tol, reorder, (void *)h_z,
       &singularity);
+  if (!singularity) {
+    TI_ERROR("A is a sigular matrix!");
+    return;
+  }
 
   // step 5: Q*x = z
   for (int row = 0; row < nrows; row++)
@@ -220,10 +225,16 @@ void CuSparseSolver::solve_cu(Program *prog,
     free(hrow_offsets);
   if (hcol_indices != NULL)
     free(hcol_indices);
+  if (hrow_offsets_B != NULL)
+    free(hrow_offsets_B);
+  if (hcol_indices_B != NULL)
+    free(hcol_indices_B);
   if (h_Q != NULL)
     free(h_Q);
   if (h_mapBfromA != NULL)
     free(h_mapBfromA);
+  if (h_z != NULL)
+    free(h_z);
   if (h_b != NULL)
     free(h_b);
   if (h_Qb != NULL)
@@ -234,6 +245,8 @@ void CuSparseSolver::solve_cu(Program *prog,
     free(buffer_cpu);
   if (h_val_A != NULL)
     free(h_val_A);
+  if (h_val_B != NULL)
+    free(h_val_B);
 #endif
 }
 

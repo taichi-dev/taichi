@@ -69,17 +69,6 @@ class BasicBlockSimplify : public IRVisitor {
     return ir_modified;
   }
 
-  void visit(ElementShuffleStmt *stmt) override {
-    if (is_done(stmt))
-      return;
-    // is this stmt necessary?
-    // useless shuffle.
-    stmt->replace_usages_with(stmt->elements[0].stmt);
-    modifier.erase(stmt);
-
-    set_done(stmt);
-  }
-
   void visit(GlobalLoadStmt *stmt) override {
     if (is_done(stmt))
       return;

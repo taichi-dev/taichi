@@ -80,15 +80,6 @@ class ValueDiffLoopIndex : public IRVisitor {
     }
   }
 
-  void visit(ElementShuffleStmt *stmt) override {
-    int old_lane = lane;
-    auto src = stmt->elements[lane].stmt;
-    lane = stmt->elements[lane].index;
-    src->accept(this);
-    results[stmt->instance_id] = results[src->instance_id];
-    lane = old_lane;
-  }
-
   void visit(ConstStmt *stmt) override {
     if (stmt->val[lane].dt->is_primitive(PrimitiveTypeID::i32)) {
       results[stmt->instance_id] = DiffRange(true, 0, stmt->val[lane].val_i32);

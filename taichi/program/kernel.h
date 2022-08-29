@@ -123,8 +123,8 @@ class TI_DLL_EXPORT Kernel : public Callable {
     return task_counter_++;
   }
 
-  void set_from_offline_cache() {
-    this->from_offline_cache_ = true;
+  void mark_as_from_cache() {
+    from_cache_ = true;
   }
 
   [[nodiscard]] std::string get_name() const override;
@@ -165,7 +165,7 @@ class TI_DLL_EXPORT Kernel : public Callable {
   bool lowered_{false};
   std::atomic<uint64> task_counter_{0};
   std::string kernel_key_;
-  bool from_offline_cache_{false};
+  bool from_cache_{false};
 };
 
 TLANG_NAMESPACE_END

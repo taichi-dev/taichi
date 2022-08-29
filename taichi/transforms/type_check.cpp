@@ -379,11 +379,6 @@ class TypeCheck : public IRVisitor {
     }
   }
 
-  void visit(ElementShuffleStmt *stmt) override {
-    TI_ASSERT(stmt->elements.size() != 0);
-    stmt->element_type() = stmt->elements[0].stmt->element_type();
-  }
-
   void visit(RangeAssumptionStmt *stmt) override {
     stmt->ret_type = stmt->input->ret_type;
   }

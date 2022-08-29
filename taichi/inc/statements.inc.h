@@ -59,7 +59,6 @@ PER_STATEMENT(GetChStmt)
 // With per-lane attributes
 PER_STATEMENT(LocalLoadStmt)
 PER_STATEMENT(GlobalPtrStmt)
-PER_STATEMENT(ElementShuffleStmt)
 
 // Offloaded
 PER_STATEMENT(OffloadedStmt)

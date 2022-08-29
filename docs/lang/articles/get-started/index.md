@@ -14,12 +14,7 @@ Taichi also has a built-in ahead-of-time compiling module that allows users to e
 
 1. Python: 3.7/3.8/3.9/3.10 (64-bit)
 2. OS: Windows (64-bit), OSX, Linux (64-bit)
-<<<<<<< HEAD
 3. GPUS: Cuda, Vulkan, OpenGL, Metal, dx11
-=======
-3. GPUS: Cuda, Vulkan, OpenGL, Metal
->>>>>>> 6870bd295a1f3c96574a0c9234def1d93a4410ce
-
 
 ## Installation
 
@@ -133,65 +128,63 @@ Let's dive into this simple Taichi program.
 
   This is a `for` loop at the outermost scope in a Taichi kernel and this loop is *automatically parallelized*. In fact any for loop at the outermost scope in a kernel will be automatically parallelized. This is a very handy syntax sugar offered by Taichi. It allows users to parallel their task just in one plain and innocent for loop, without bothering any underlying hooks like thread allocating/recycling and memory management!
 
-  Note that the field `pixels` is treated as an iterator, `i,j` are the indices of the elements and are integers in the range `[0,2*n-1]` and `[0,n-1]`, respectively. They are listed in the row-majored order `[0, 0]`, `[0, 1]`,...,  `[0, n-1]`,`[1,n-1]`, ... `[2*n-1, n-1]`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
+  Note that the field `pixels` is treated as an iterator, `i,j` are the indices of the elements and are integers in the range `[0,2*n-1]` and `[0,n-1]`, respectively. They are listed in the row-majored order `[0, 0]`, `[0, 1]`,...,  `[0, n-1]`,`[1,n-1]`, ... `[2*n-1, n-1]`.
 
   Here we emphasize that *for loops not at the outermost scope will not be parallelized*, they are handled in serialized order:
 
-```python {3,7,14-15}
-@ti.kernel
-def fill():
-    total = 0
-    for i in range(10): # Parallelized
-        for j in range(5): # Serialized in each parallel thread
-            total += i * j
-    if total > 10:
-        for k in range(5):  # not parallelized since not at the outermost scope
-```
+    ```python {3,7,14-15}
+    @ti.kernel
+    def fill():
+        total = 0
+        for i in range(10): # Parallelized
+            for j in range(5): # Serialized in each parallel thread
+                total += i * j
+        if total > 10:
+            for k in range(5):  # not parallelized since not at the outermost scope
+    ```
 
+    :::caution WARNING
 
+    `break` is *not* supported in parallel loops:
 
-:::caution WARNING
-
-`break` is *not* supported in parallel loops:
-
-```python
-@ti.kernel
-def foo():
-    for i in x:
-        ...
-        break # Error!
-
-    for i in range(10):
-        ...
-        break # Error!
-
-@ti.kernel
-def foo():
-    for i in x:
-        for j in range(10):
+    ```python
+    @ti.kernel
+    def foo():
+        for i in x:
             ...
-            break # OK!
-```
-:::
+            break # Error!
+
+        for i in range(10):
+            ...
+            break # Error!
+
+    @ti.kernel
+    def foo():
+        for i in x:
+            for j in range(10):
+                ...
+                break # OK!
+    ```
+    :::
 
 + Lines 18-23 displays the result in `pixels` to screen using Taichi's built-in [GUI system](../visualization/gui_system.md).
 
-```python
-gui = ti.GUI("Julia Set", res=(n * 2, n))
+   ```python
+    gui = ti.GUI("Julia Set", res=(n * 2, n))
 
-for i in range(1000000):
-    paint(i * 0.03)
-    gui.set_image(pixels)
-    gui.show()
-```
+    for i in range(1000000):
+        paint(i * 0.03)
+        gui.set_image(pixels)
+        gui.show()
+    ```
 
-The line
+    The line
 
-```python
-gui = ti.GUI("Julia Set", res=(n * 2, n))
-```
+    ```python
+     gui = ti.GUI("Julia Set", res=(n * 2, n))
+    ```
 
-sets the window title and the window resolution in pixels. Then in each round (we just render the animation 1000000 times) we compute the updated fractal pattern stored in `pixels`, call `gui.set_image` to set the window content as those in `pixels` , and call `gui.show()` to display the result to screen.
+    sets the window title and the window resolution in pixels. Then in each round (we just render the animation 1000000 times) we compute the updated fractal pattern stored in `pixels`, call `gui.set_image` to set the window content as those in `pixels` , and call `gui.show()` to display the result to screen.
 
 
 
@@ -203,9 +196,4 @@ Congratulations! After walking through the above short example you have learened
 2. Outermost for loops are automatically parallelized.
 3. The field data container and how to loop over it.
 
-<<<<<<< HEAD
 These should be enough for you to get prepared for exploring more advanced features of Taichi.
-
-=======
-See the [Installation Troubleshooting](../faqs/install.md) if you run into any issues when installing Taichi.
->>>>>>> 6870bd295a1f3c96574a0c9234def1d93a4410ce

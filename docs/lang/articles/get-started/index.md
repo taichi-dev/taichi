@@ -14,7 +14,11 @@ Taichi also has a built-in ahead-of-time compiling module that allows users to e
 
 1. Python: 3.7/3.8/3.9/3.10 (64-bit)
 2. OS: Windows (64-bit), OSX, Linux (64-bit)
+<<<<<<< HEAD
 3. GPUS: Cuda, Vulkan, OpenGL, Metal, dx11
+=======
+3. GPUS: Cuda, Vulkan, OpenGL, Metal
+>>>>>>> 6870bd295a1f3c96574a0c9234def1d93a4410ce
 
 
 ## Installation
@@ -199,5 +203,9 @@ Congratulations! After walking through the above short example you have learened
 2. Outermost for loops are automatically parallelized.
 3. The field data container and how to loop over it.
 
+<<<<<<< HEAD
 These should be enough for you to get prepared for exploring more advanced features of Taichi.
 
+=======
+See the [Installation Troubleshooting](../faqs/install.md) if you run into any issues when installing Taichi.
+>>>>>>> 6870bd295a1f3c96574a0c9234def1d93a4410ce

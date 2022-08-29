@@ -13,7 +13,7 @@ from tests import test_utils
 def test_print(dt):
     @ti.kernel
     def func():
-        print(ti.cast(1234.5, dt))
+        print(ti.cast(123.4, dt))
 
     func()
     # Discussion: https://github.com/taichi-dev/taichi/issues/1063#issuecomment-636421904

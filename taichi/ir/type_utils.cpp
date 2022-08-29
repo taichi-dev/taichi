@@ -85,9 +85,11 @@ std::string tensor_type_format(DataType t) {
 
 std::string data_type_format(DataType dt) {
   if (dt->is_primitive(PrimitiveTypeID::i8)) {
-    return "%hhd";
+    // i8/u8 is converted to i16/u16 before printing, because CUDA doesn't
+    // support the "%hhd"/"%hhu" specifiers.
+    return "%hd";
   } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
-    return "%hhu";
+    return "%hu";
   } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
     return "%hd";
   } else if (dt->is_primitive(PrimitiveTypeID::u16)) {

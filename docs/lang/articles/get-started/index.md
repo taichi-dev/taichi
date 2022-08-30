@@ -98,7 +98,7 @@ import taichi as ti
 import taichi.math as tm
 ```
 
-import Taichi as a package as well as its `math` module. The `math` module contains some frequently used math functions and built-in vector/matrix types of small dimensions, such as `vec2` for 2D real vectors and `mat3` for 3x3 real matrices.
+import Taichi as a package as well as its `math` module. The `math` module contains some frequently used math functions and built-in vector and matrix types of small dimensions, such as `vec2` for 2D real vectors and `mat3` for 3x3 real matrices.
 
 The line
 

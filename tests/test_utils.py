@@ -124,6 +124,10 @@ __capi_aot_test_cases = {
         os.path.join('cpp', 'aot', 'python_scripts', 'mpm88_graph_aot.py'),
         "--arch=vulkan"
     ],
+    "CapiMpm88Test.Opengl": [
+        os.path.join('cpp', 'aot', 'python_scripts', 'mpm88_graph_aot.py'),
+        "--arch=opengl"
+    ],
     "CapiMpm88Test.Cuda": [
         os.path.join('cpp', 'aot', 'python_scripts', 'mpm88_graph_aot.py'),
         "--arch=cuda"
@@ -131,6 +135,10 @@ __capi_aot_test_cases = {
     "CapiSphTest.Vulkan": [
         os.path.join('cpp', 'aot', 'python_scripts', 'sph_aot.py'),
         "--arch=vulkan"
+    ],
+    "CapiSphTest.Opengl": [
+        os.path.join('cpp', 'aot', 'python_scripts', 'sph_aot.py'),
+        "--arch=opengl"
     ],
     "CapiSphTest.Cuda": [
         os.path.join('cpp', 'aot', 'python_scripts', 'sph_aot.py'),
@@ -171,6 +179,10 @@ __capi_aot_test_cases = {
     "CapiDryRun.VulkanAotModule": [
         os.path.join('cpp', 'aot', 'python_scripts', 'kernel_aot_test1.py'),
         "--arch=vulkan"
+    ],
+    "CapiDryRun.OpenglAotModule": [
+        os.path.join('cpp', 'aot', 'python_scripts', 'kernel_aot_test1.py'),
+        "--arch=opengl"
     ],
 }
 

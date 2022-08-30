@@ -1,4 +1,3 @@
-#include "taichi_core_impl.h"
 #include "taichi_vulkan_impl.h"
 #include "taichi/rhi/vulkan/vulkan_loader.h"
 #include "vulkan/vulkan.h"
@@ -9,7 +8,7 @@
 
 #ifdef TI_WITH_VULKAN
 
-VulkanRuntime::VulkanRuntime() : Runtime(taichi::Arch::vulkan) {
+VulkanRuntime::VulkanRuntime() : GfxRuntime(taichi::Arch::vulkan) {
 }
 taichi::lang::vulkan::VulkanDevice &VulkanRuntime::get_vk() {
   return static_cast<taichi::lang::vulkan::VulkanDevice &>(get());
@@ -115,52 +114,6 @@ TiTexture VulkanRuntime::allocate_texture(
 }
 void VulkanRuntime::free_texture(TiTexture texture) {
   get_vk().destroy_image(devtex2devalloc(*this, texture));
-}
-
-TiAotModule VulkanRuntime::load_aot_module(const char *module_path) {
-  taichi::lang::gfx::AotModuleParams params{};
-  params.module_path = module_path;
-  params.runtime = &get_gfx_runtime();
-  std::unique_ptr<taichi::lang::aot::Module> aot_module =
-      taichi::lang::aot::Module::load(arch, params);
-  if (aot_module->is_corrupted()) {
-    return TI_NULL_HANDLE;
-  }
-  size_t root_size = aot_module->get_root_size();
-  params.runtime->add_root_buffer(root_size);
-  return (TiAotModule)(new AotModule(*this, std::move(aot_module)));
-}
-void VulkanRuntime::buffer_copy(const taichi::lang::DevicePtr &dst,
-                                const taichi::lang::DevicePtr &src,
-                                size_t size) {
-  get_gfx_runtime().buffer_copy(dst, src, size);
-}
-void VulkanRuntime::copy_image(const taichi::lang::DeviceAllocation &dst,
-                               const taichi::lang::DeviceAllocation &src,
-                               const taichi::lang::ImageCopyParams &params) {
-  get_gfx_runtime().copy_image(dst, src, params);
-}
-void VulkanRuntime::transition_image(
-    const taichi::lang::DeviceAllocation &image,
-    taichi::lang::ImageLayout layout) {
-  get_gfx_runtime().transition_image(image, layout);
-}
-void VulkanRuntime::submit() {
-  get_gfx_runtime().flush();
-}
-void VulkanRuntime::signal_event(taichi::lang::DeviceEvent *event) {
-  get_gfx_runtime().signal_event(event);
-}
-void VulkanRuntime::reset_event(taichi::lang::DeviceEvent *event) {
-  get_gfx_runtime().reset_event(event);
-}
-void VulkanRuntime::wait_event(taichi::lang::DeviceEvent *event) {
-  get_gfx_runtime().wait_event(event);
-}
-void VulkanRuntime::wait() {
-  // (penguinliong) It's currently waiting for the entire runtime to stop.
-  // Should be simply waiting for its fence to finish.
-  get_gfx_runtime().synchronize();
 }
 
 // -----------------------------------------------------------------------------

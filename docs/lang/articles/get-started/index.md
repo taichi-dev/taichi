@@ -23,7 +23,7 @@ Taichi is available as a PyPI package:
 ```bash
 pip install taichi
 ```
-Taichi can also be built from the source, although we do not recommend this for first-time users except those who what to try the most up-to-date features. See our [eveloper's guide](../contribution/dev_install.md) for full details.
+Taichi can also be built from the source, although we do not recommend this for first-time users except those who what to try the most up-to-date features. See our [developer's guide](../contribution/dev_install.md) for full details.
 
 To verify the installation is successful, in terminal run
 
@@ -121,7 +121,7 @@ Let's dive into this simple Taichi program.
     For those who come from the world of CUDA, `ti.func` corresponds to `__device__` and `ti.kernel` corresponds to `__global__`.
 
     For those who come from the world of
-    OpenGL, `ti.func` corresponds to the usual function in glsl and `ti.kernel` corresponds to `buffer`.
+    OpenGL, `ti.func` corresponds to the usual function in glsl and `ti.kernel` corresponds to a `compute shader`.
     ​:::
 
 + The real magic happens in the line 15:

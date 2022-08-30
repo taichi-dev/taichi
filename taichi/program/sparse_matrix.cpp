@@ -307,6 +307,10 @@ void CuSparseMatrix::print_helper() const {
   cudaDataType value_type;
   CUSPARSEDriver::get_instance().cpCsrGet(matrix_, &rows, &cols, &nnz, (void**)&dR, (void**)&dC, (void**)&dV, 
                     &row_type, &column_type, &idx_base, &value_type);
+  
+  TI_INFO("rows: {}", rows);
+  TI_INFO("cols: {}", cols);
+  TI_INFO("nnz: {}", nnz);
 
   auto* hR = new int[rows+1];
   auto* hC = new int[nnz];
@@ -315,17 +319,22 @@ void CuSparseMatrix::print_helper() const {
   // auto hR = CUDADriver::get_instance().fetch<float>(dR);
 
   CUDADriver::get_instance().memcpy_device_to_host(
-        (void *)hR, (void *)dR, (rows+1) * sizeof(int32_t));
-  CUDADriver::get_instance().memcpy_device_to_host(
-        (void *)hC, (void *)dC, (nnz) * sizeof(int32_t));
-  CUDADriver::get_instance().memcpy_device_to_host(
         (void *)hV, (void *)dV, (nnz) * sizeof(float));
+  TI_INFO("here1!");
+  CUDADriver::get_instance().memcpy_device_to_host(
+        (void *)hC, (void *)dC, (nnz) * sizeof(int));
+  TI_INFO("here2!");
+  // std::cout << "dR: " << dR << std::endl;
+  // std::cout << "dC: " << dC << std::endl;
+  CUDADriver::get_instance().memcpy_device_to_host(
+        (void *)hR, (void *)dR, (1) * sizeof(int));
 
+  TI_INFO("here3!");
   
-  // std::cout << (row_type == CUSPARSE_INDEX_32I) << '\n';
-  // std::cout << (column_type == CUSPARSE_INDEX_32I) << '\n';
-  // std::cout << (value_type == CUDA_R_32F) << '\n';
-  // return;
+  std::cout << (row_type == CUSPARSE_INDEX_32I) << '\n';
+  std::cout << (column_type == CUSPARSE_INDEX_32I) << '\n';
+  std::cout << (value_type == CUDA_R_32F) << '\n';
+  return;
 
   csr_to_triplet<int, int, float>(rows, cols, hR, hC, hV);
   

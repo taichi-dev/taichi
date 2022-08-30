@@ -444,15 +444,16 @@ def init(arch=None,
     # user selected visible device
     cuda_device_id = os.environ.get("CUDA_VISIBLE_DEVICES")
     vulkan_device_id = os.environ.get("TI_VISIBLE_DEVICE")
-    
+
     if cuda_device_id and not vulkan_device_id:
         os.environ["TI_VISIBLE_DEVICE"] = cuda_device_id
     elif not cuda_device_id and vulkan_device_id:
         os.environ["CUDA_VISIBLE_DEVICES"] = vulkan_device_id
     elif cuda_device_id != vulkan_device_id:
-        message = "CUDA_VISIBLE_DEVICES[%s] not equal to TI_VISIBLE_DEVICE[%s]" % (cuda_device_id, vulkan_device_id)
+        message = "CUDA_VISIBLE_DEVICES[%s] not equal to TI_VISIBLE_DEVICE[%s]" % (
+            cuda_device_id, vulkan_device_id)
         warnings.warn(message)
-        
+
     vulkan_device_id = os.environ.get("TI_VISIBLE_DEVICE")
     if vulkan_device_id and (cfg.arch == vulkan or _ti_core.GGUI_AVAILABLE):
         _ti_core.set_vulkan_visible_device(vulkan_device_id)

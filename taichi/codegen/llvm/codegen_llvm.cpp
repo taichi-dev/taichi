@@ -1889,7 +1889,7 @@ std::tuple<llvm::Value *, llvm::Value *> TaskCodeGenLLVM::get_range_for_bounds(
   } else {
     auto begin_stmt = Stmt::make<GlobalTemporaryStmt>(
         stmt->begin_offset,
-        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32));
+        PrimitiveType::i32);
     begin_stmt->accept(this);
     begin = builder->CreateLoad(
 #ifdef TI_LLVM_15
@@ -1902,7 +1902,7 @@ std::tuple<llvm::Value *, llvm::Value *> TaskCodeGenLLVM::get_range_for_bounds(
   } else {
     auto end_stmt = Stmt::make<GlobalTemporaryStmt>(
         stmt->end_offset,
-        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32));
+        PrimitiveType::i32);
     end_stmt->accept(this);
     end = builder->CreateLoad(
 #ifdef TI_LLVM_15

@@ -131,17 +131,6 @@ PrimitiveType *TypeFactory::get_primitive_real_type(int bits) {
   return real_type->cast<PrimitiveType>();
 }
 
-DataType TypeFactory::create_vector_or_scalar_type(int width,
-                                                   DataType element,
-                                                   bool element_is_pointer) {
-  TI_ASSERT(width == 1);
-  if (element_is_pointer) {
-    return TypeFactory::get_instance().get_pointer_type(element);
-  } else {
-    return element;
-  }
-}
-
 DataType TypeFactory::create_tensor_type(std::vector<int> shape,
                                          DataType element) {
   return TypeFactory::get_instance().get_tensor_type(shape, element);

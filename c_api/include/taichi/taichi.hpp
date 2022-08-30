@@ -303,7 +303,7 @@ class ComputeGraph {
     }
 
     TiArgument *out;
-    if (it == arg_names_.end()) {
+    if (it != arg_names_.end()) {
       out = &args_.at(i).argument;
     } else {
       arg_names_.emplace_back(name);

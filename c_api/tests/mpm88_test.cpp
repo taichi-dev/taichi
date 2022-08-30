@@ -166,3 +166,16 @@ TEST(CapiMpm88Test, Vulkan) {
     impl->Step();
   }
 }
+
+TEST(CapiMpm88Test, Opengl) {
+  if (capi::utils::is_opengl_available()) {
+    const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
+
+    std::stringstream aot_mod_ss;
+    aot_mod_ss << folder_dir;
+
+    auto impl = std::make_unique<demo::MPM88DemoImpl>(aot_mod_ss.str().c_str(),
+                                                      TiArch::TI_ARCH_OPENGL);
+    impl->Step();
+  }
+}

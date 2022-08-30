@@ -23,11 +23,6 @@ class AllocaStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
-  AllocaStmt(int width, DataType type) : is_shared(false) {
-    ret_type = TypeFactory::create_vector_or_scalar_type(width, type);
-    TI_STMT_REG_FIELDS;
-  }
-
   AllocaStmt(const std::vector<int> &shape,
              DataType type,
              bool is_shared = false)

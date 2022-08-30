@@ -258,7 +258,7 @@ class PromoteSSA2LocalVar : public BasicStmtVisitor {
 
     if (stmt->is<AllocaStmt>()) {
       // Create a new alloc at the top of an ib to replace the old alloca
-      auto alloc = Stmt::make<AllocaStmt>(1, stmt->ret_type);
+      auto alloc = Stmt::make<AllocaStmt>(stmt->ret_type);
       auto alloc_ptr = alloc.get();
       TI_ASSERT(alloca_block_);
       alloca_block_->insert(std::move(alloc), 0);
@@ -276,7 +276,7 @@ class PromoteSSA2LocalVar : public BasicStmtVisitor {
       stmt->parent->erase(stmt);
     } else {
       // Create a alloc
-      auto alloc = Stmt::make<AllocaStmt>(1, stmt->ret_type);
+      auto alloc = Stmt::make<AllocaStmt>(stmt->ret_type);
       auto alloc_ptr = alloc.get();
       TI_ASSERT(alloca_block_);
       alloca_block_->insert(std::move(alloc), 0);
@@ -720,9 +720,9 @@ class MakeAdjoint : public ADTransform {
 
       // create the alloca
       // auto alloca =
-      //    Stmt::make<AllocaStmt>(1, get_current_program().config.gradient_dt);
+      //    Stmt::make<AllocaStmt>(get_current_program().config.gradient_dt);
       // maybe it's better to use the statement data type than the default type
-      auto alloca = Stmt::make<AllocaStmt>(1, stmt->ret_type);
+      auto alloca = Stmt::make<AllocaStmt>(stmt->ret_type);
       adjoint_stmt[stmt] = alloca.get();
 
       // We need to insert the alloca in the block of GlobalLoadStmt when the
@@ -1137,9 +1137,9 @@ class MakeDual : public ADTransform {
 
       // create the alloca
       // auto alloca =
-      //    Stmt::make<AllocaStmt>(1, get_current_program().config.gradient_dt);
+      //    Stmt::make<AllocaStmt>(get_current_program().config.gradient_dt);
       // maybe it's better to use the statement data type than the default type
-      auto alloca = Stmt::make<AllocaStmt>(1, stmt->ret_type);
+      auto alloca = Stmt::make<AllocaStmt>(stmt->ret_type);
       dual_stmt[stmt] = alloca.get();
 
       // TODO: check whether there are any edge cases for the alloca_block
@@ -1405,7 +1405,7 @@ class BackupSSA : public BasicStmtVisitor {
 
   Stmt *load(Stmt *stmt) {
     if (backup_alloca.find(stmt) == backup_alloca.end()) {
-      auto alloca = Stmt::make<AllocaStmt>(1, stmt->ret_type);
+      auto alloca = Stmt::make<AllocaStmt>(stmt->ret_type);
       auto alloca_ptr = alloca.get();
       independent_block->insert(std::move(alloca), 0);
       auto local_store = Stmt::make<LocalStoreStmt>(alloca_ptr, stmt);

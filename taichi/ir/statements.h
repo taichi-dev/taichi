@@ -593,16 +593,11 @@ class GlobalStoreStmt : public Stmt {
  */
 class LocalLoadStmt : public Stmt {
  public:
-  LaneAttribute<LocalAddress> src;
+  LocalAddress src;
 
-  explicit LocalLoadStmt(const LaneAttribute<LocalAddress> &src) : src(src) {
+  explicit LocalLoadStmt(const LocalAddress &src) : src(src) {
     TI_STMT_REG_FIELDS;
   }
-
-  bool same_source() const;
-  bool has_source(Stmt *alloca) const;
-
-  Stmt *previous_store_or_alloca_in_block();
 
   bool has_global_side_effect() const override {
     return false;
@@ -726,22 +721,16 @@ class PrintStmt : public Stmt {
  */
 class ConstStmt : public Stmt {
  public:
-  LaneAttribute<TypedConstant> val;
+  TypedConstant val;
 
-  explicit ConstStmt(const LaneAttribute<TypedConstant> &val) : val(val) {
-    TI_ASSERT(val.size() == 1);  // TODO: support vectorized case
-    ret_type = val[0].dt;
-    for (std::size_t i = 0; i < val.size(); i++) {
-      TI_ASSERT(val[0].dt == val[i].dt);
-    }
+  explicit ConstStmt(const TypedConstant &val) : val(val) {
+    ret_type = val.dt;
     TI_STMT_REG_FIELDS;
   }
 
   bool has_global_side_effect() const override {
     return false;
   }
-
-  std::unique_ptr<ConstStmt> copy();
 
   TI_STMT_DEF_FIELDS(ret_type, val);
   TI_DEFINE_ACCEPT_AND_CLONE

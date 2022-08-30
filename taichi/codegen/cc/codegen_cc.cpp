@@ -206,7 +206,7 @@ class CCTransformer : public IRVisitor {
   void visit(ConstStmt *stmt) override {
     emit("{} = {};",
          define_var(cc_data_type_name(stmt->element_type()), stmt->raw_name()),
-         stmt->val[0].stringify());
+         stmt->val.stringify());
   }
 
   void visit(AllocaStmt *stmt) override {
@@ -215,17 +215,9 @@ class CCTransformer : public IRVisitor {
   }
 
   void visit(LocalLoadStmt *stmt) override {
-    bool linear_index = true;
-    for (int i = 0; i < (int)stmt->src.size(); i++) {
-      if (stmt->src[i].offset != i) {
-        linear_index = false;
-      }
-    }
-    TI_ASSERT(stmt->same_source() && linear_index);
-
     auto var =
         define_var(cc_data_type_name(stmt->element_type()), stmt->raw_name());
-    emit("{} = {};", var, stmt->src[0].var->raw_name());
+    emit("{} = {};", var, stmt->src.var->raw_name());
   }
 
   void visit(LocalStoreStmt *stmt) override {

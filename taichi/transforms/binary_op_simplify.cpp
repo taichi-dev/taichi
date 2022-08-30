@@ -63,7 +63,7 @@ class BinaryOpSimp : public BasicStmtVisitor {
     if ((op1 == BinaryOpType::bit_shr || op1 == BinaryOpType::bit_sar) &&
         op2 == BinaryOpType::bit_shl &&
         irpass::analysis::same_value(const_lhs_rhs, const_rhs)) {
-      int64 mask = -((int64)1 << (uint64)const_rhs->val[0].val_as_int64());
+      int64 mask = -((int64)1 << (uint64)const_rhs->val.val_as_int64());
       auto mask_stmt =
           Stmt::make<ConstStmt>(TypedConstant(stmt->ret_type, mask));
       auto new_stmt = Stmt::make<BinaryOpStmt>(

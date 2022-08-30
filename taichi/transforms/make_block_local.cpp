@@ -260,13 +260,12 @@ void make_block_local_offload(OffloadedStmt *offload,
                 "index %d.",
                 kernel_name, i, bls_axis_size);
 
-            auto lower_bound =
-                bls.push_back<ConstStmt>(LaneAttribute<TypedConstant>(0));
+            auto lower_bound = bls.push_back<ConstStmt>(TypedConstant(0));
             auto check_lower_bound = bls.push_back<BinaryOpStmt>(
                 BinaryOpType::cmp_ge, inc, lower_bound);
 
-            auto upper_bound = bls.push_back<ConstStmt>(
-                LaneAttribute<TypedConstant>(bls_axis_size));
+            auto upper_bound =
+                bls.push_back<ConstStmt>(TypedConstant(bls_axis_size));
             auto check_upper_bound = bls.push_back<BinaryOpStmt>(
                 BinaryOpType::cmp_lt, inc, upper_bound);
 

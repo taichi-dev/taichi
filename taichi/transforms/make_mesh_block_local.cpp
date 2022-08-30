@@ -78,7 +78,7 @@ void MakeMeshBlockLocal::replace_conv_statements() {
   for (auto stmt : idx_conv_stmts) {
     VecStatement bls;
     Stmt *bls_element_offset_bytes = bls.push_back<ConstStmt>(
-        LaneAttribute<TypedConstant>{(int32)mapping_bls_offset_in_bytes_});
+        TypedConstant{(int32)mapping_bls_offset_in_bytes_});
     Stmt *idx_byte = bls.push_back<BinaryOpStmt>(
         BinaryOpType::mul, stmt->idx,
         bls.push_back<ConstStmt>(TypedConstant(mapping_dtype_size_)));
@@ -166,8 +166,8 @@ Stmt *MakeMeshBlockLocal::create_xlogue(
   if (config_.arch == Arch::x64) {
     block_dim_val = block_->push_back<ConstStmt>(TypedConstant(1));
   } else {
-    block_dim_val = block_->push_back<ConstStmt>(
-        LaneAttribute<TypedConstant>{offload_->block_dim});
+    block_dim_val =
+        block_->push_back<ConstStmt>(TypedConstant{offload_->block_dim});
   }
 
   std::unique_ptr<Block> body = std::make_unique<Block>();
@@ -198,7 +198,7 @@ Stmt *MakeMeshBlockLocal::create_cache_mapping(
     Stmt *end_val,
     std::function<Stmt *(Block * /*block*/, Stmt * /*idx_val*/)> global_val) {
   Stmt *bls_element_offset_bytes = block_->push_back<ConstStmt>(
-      LaneAttribute<TypedConstant>{(int32)mapping_bls_offset_in_bytes_});
+      TypedConstant{(int32)mapping_bls_offset_in_bytes_});
   return create_xlogue(start_val, end_val, [&](Block *body, Stmt *idx_val) {
     Stmt *idx_val_byte = body->push_back<BinaryOpStmt>(
         BinaryOpType::mul, idx_val,
@@ -251,7 +251,7 @@ void MakeMeshBlockLocal::fetch_attr_to_bls(Block *body,
       // Read access
       // Fetch from global to BLS
       Stmt *global_ptr = body->push_back<GlobalPtrStmt>(
-          LaneAttribute<SNode *>{snode}, std::vector<Stmt *>{mapping_val});
+          snode, std::vector<Stmt *>{mapping_val});
       value = body->push_back<GlobalLoadStmt>(global_ptr);
     } else {
       // Accumulation access
@@ -306,8 +306,8 @@ void MakeMeshBlockLocal::push_attr_to_global(Block *body,
         index, TypeFactory::create_vector_or_scalar_type(1, data_type, true));
     Stmt *bls_val = body->push_back<GlobalLoadStmt>(bls_ptr);
 
-    Stmt *global_ptr = body->push_back<GlobalPtrStmt>(
-        LaneAttribute<SNode *>{snode}, std::vector<Stmt *>{mapping_val});
+    Stmt *global_ptr =
+        body->push_back<GlobalPtrStmt>(snode, std::vector<Stmt *>{mapping_val});
     body->push_back<AtomicOpStmt>(AtomicOpType::add, global_ptr, bls_val);
   }
 }
@@ -367,8 +367,7 @@ void MakeMeshBlockLocal::fetch_mapping(
           Stmt *global_offset = body->push_back<BinaryOpStmt>(
               BinaryOpType::add, total_element_offset, idx_val);
           Stmt *global_ptr = body->push_back<GlobalPtrStmt>(
-              LaneAttribute<SNode *>{mapping_snode_},
-              std::vector<Stmt *>{global_offset});
+              mapping_snode_, std::vector<Stmt *>{global_offset});
           Stmt *global_load = body->push_back<GlobalLoadStmt>(global_ptr);
           attr_callback_handler(body, idx_val, global_load);
           return global_load;
@@ -388,8 +387,7 @@ void MakeMeshBlockLocal::fetch_mapping(
           Stmt *global_offset = body->push_back<BinaryOpStmt>(
               BinaryOpType::add, total_element_offset, idx_val);
           Stmt *global_ptr = body->push_back<GlobalPtrStmt>(
-              LaneAttribute<SNode *>{mapping_snode_},
-              std::vector<Stmt *>{global_offset});
+              mapping_snode_, std::vector<Stmt *>{global_offset});
           Stmt *global_load = body->push_back<GlobalLoadStmt>(global_ptr);
           attr_callback_handler(body, idx_val, global_load);
           return global_load;
@@ -564,9 +562,8 @@ MakeMeshBlockLocal::MakeMeshBlockLocal(OffloadedStmt *offload,
           offload->total_offset_local.find(element_type)->second;
       create_xlogue(
           thread_idx_stmt, total_element_num, [&](Block *body, Stmt *idx_val) {
-            Stmt *bls_element_offset_bytes =
-                body->push_back<ConstStmt>(LaneAttribute<TypedConstant>{
-                    (int32)mapping_bls_offset_in_bytes_});
+            Stmt *bls_element_offset_bytes = body->push_back<ConstStmt>(
+                TypedConstant{(int32)mapping_bls_offset_in_bytes_});
             Stmt *idx_byte = body->push_back<BinaryOpStmt>(
                 BinaryOpType::mul, idx_val,
                 body->push_back<ConstStmt>(TypedConstant(mapping_dtype_size_)));

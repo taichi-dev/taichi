@@ -34,17 +34,6 @@ std::string block_dim_info(int block_dim) {
          (block_dim == 0 ? "adaptive" : std::to_string(block_dim)) + " ";
 }
 
-std::string to_string(const LaneAttribute<LocalAddress> &ptr) {
-  std::string ret = " [";
-  for (int i = 0; i < (int)ptr.size(); i++) {
-    ret += fmt::format("{}[{}]", ptr[i].var->name(), ptr[i].offset);
-    if (i + 1 < (int)ptr.size())
-      ret += ", ";
-  }
-  ret += "]";
-  return ret;
-}
-
 class IRPrinter : public IRVisitor {
  private:
   ExpressionPrinter *expr_printer_{nullptr};
@@ -289,8 +278,7 @@ class IRPrinter : public IRVisitor {
 
   void visit(ConstStmt *const_stmt) override {
     print("{}{} = const {}", const_stmt->type_hint(), const_stmt->name(),
-          const_stmt->val.serialize(
-              [](const TypedConstant &t) { return t.stringify(); }, "["));
+          const_stmt->val.stringify());
   }
 
   void visit(WhileControlStmt *stmt) override {
@@ -445,7 +433,7 @@ class IRPrinter : public IRVisitor {
 
   void visit(LocalLoadStmt *stmt) override {
     print("{}{} = local load [{}]", stmt->type_hint(), stmt->name(),
-          to_string(stmt->src));
+          stmt->src.var->name());
   }
 
   void visit(LocalStoreStmt *stmt) override {

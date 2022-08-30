@@ -92,7 +92,7 @@ TEST(SameStatements, TestSameSnodeLookup) {
   auto block = std::make_unique<Block>();
 
   auto get_root = block->push_back<GetRootStmt>();
-  auto zero = block->push_back<ConstStmt>(LaneAttribute<TypedConstant>(0));
+  auto zero = block->push_back<ConstStmt>(TypedConstant(0));
   SNode root(0, SNodeType::root);
   auto &child = root.insert_children(SNodeType::dense);
   auto lookup1 =

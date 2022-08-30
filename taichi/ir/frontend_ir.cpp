@@ -370,8 +370,7 @@ void ExternalTensorExpression::flatten(FlattenContext *ctx) {
 
 void GlobalVariableExpression::flatten(FlattenContext *ctx) {
   TI_ASSERT(snode->num_active_indices == 0);
-  auto ptr = Stmt::make<GlobalPtrStmt>(LaneAttribute<SNode *>(snode),
-                                       std::vector<Stmt *>());
+  auto ptr = Stmt::make<GlobalPtrStmt>(snode, std::vector<Stmt *>());
   ptr->tb = tb;
   ctx->push_back(std::move(ptr));
 }

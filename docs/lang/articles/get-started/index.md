@@ -16,7 +16,7 @@ Taichi also has a built-in ahead-of-time (AOT) system that allows users to expor
 
 1. Python: 3.7/3.8/3.9/3.10 (64-bit)
 2. OS: Windows, OS X, and Linux (64-bit)
-3. GPUS: Cuda, Vulkan, OpenGL, Metal
+3. Supported GPU backends (optional): CUDA, Vulkan, OpenGL, Metal, DirectX 11
 
 ## Installation
 

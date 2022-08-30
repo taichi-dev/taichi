@@ -33,11 +33,8 @@ ti gallery
 
 This will pop up a window like follows:
 
-<center>
+<img style="margin:0px auto;display:block" width=480 src="https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/taichi-gallery.png"/>
 
-![image](https://github.com/taichi-dev/taichi_assets/blob/master/static/imgs/ti_gallery.png?raw=true)
-
-</center>
 
 Then click to choose and run the examples.
 

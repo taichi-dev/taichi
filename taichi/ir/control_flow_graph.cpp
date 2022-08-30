@@ -192,7 +192,7 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
     if (!irpass::analysis::same_value(result, data)) {
       // check the special case of alloca (initialized to 0)
       if (!(result->is<AllocaStmt>() && data->is<ConstStmt>() &&
-            data->as<ConstStmt>()->val[0].equal_value(0))) {
+            data->as<ConstStmt>()->val.equal_value(0))) {
         return false;  // return nullptr
       }
     }
@@ -271,7 +271,7 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access,
     auto stmt = block->statements[i].get();
     Stmt *result = nullptr;
     if (auto local_load = stmt->cast<LocalLoadStmt>()) {
-      result = get_store_forwarding_data(local_load->src[0].var, i);
+      result = get_store_forwarding_data(local_load->src, i);
     } else if (auto global_load = stmt->cast<GlobalLoadStmt>()) {
       if (!after_lower_access && !autodiff_enabled) {
         result = get_store_forwarding_data(global_load->src, i);
@@ -298,14 +298,7 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access,
       if (result && result->is<AllocaStmt>() && !autodiff_enabled) {
         // special case of alloca (initialized to 0)
         if (auto stored_data = local_store->val->cast<ConstStmt>()) {
-          bool all_zero = true;
-          for (auto &val : stored_data->val.data) {
-            if (!val.equal_value(0)) {
-              all_zero = false;
-              break;
-            }
-          }
-          if (all_zero) {
+          if (stored_data->val.equal_value(0)) {
             erase(i);  // This causes end_location--
             i--;       // to cancel i++ in the for loop
             modified = true;
@@ -344,22 +337,14 @@ void CFGNode::gather_loaded_snodes(std::unordered_set<SNode *> &snodes) const {
       if (auto global_ptr = load_ptr->cast<GlobalPtrStmt>()) {
         // Avoid computing the UD-chain if every SNode in this global ptr
         // are already loaded because it can be time-consuming.
-        bool already_loaded = true;
-        for (auto &snode : global_ptr->snodes.data) {
-          if (snodes.count(snode) == 0) {
-            already_loaded = false;
-            break;
-          }
-        }
-        if (already_loaded) {
+        auto snode = global_ptr->snode;
+        if (snodes.count(snode) > 0) {
           continue;
         }
         if (reach_in.find(global_ptr) != reach_in.end() &&
             !contain_variable(killed_in_this_node, global_ptr)) {
           // The UD-chain contains the value before this offloaded task.
-          for (auto &snode : global_ptr->snodes.data) {
-            snodes.insert(snode);
-          }
+          snodes.insert(snode);
         }
       }
     }
@@ -454,8 +439,7 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
           auto atomic = stmt->cast<AtomicOpStmt>();
           // Weaken the atomic operation to a load.
           if (atomic->dest->is<AllocaStmt>()) {
-            auto local_load =
-                Stmt::make<LocalLoadStmt>(LocalAddress(atomic->dest, 0));
+            auto local_load = Stmt::make<LocalLoadStmt>(atomic->dest);
             local_load->ret_type = atomic->ret_type;
             // Notice that we have a load here
             // (the return value of AtomicOpStmt).
@@ -467,9 +451,7 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
             continue;
           } else if (!is_parallel_executed ||
                      (atomic->dest->is<GlobalPtrStmt>() &&
-                      atomic->dest->as<GlobalPtrStmt>()
-                          ->snodes[0]
-                          ->is_scalar())) {
+                      atomic->dest->as<GlobalPtrStmt>()->snode->is_scalar())) {
             // If this node is parallel executed, we can't weaken a global
             // atomic operation to a global load.
             // TODO: we can weaken it if it's element-wise (i.e. never
@@ -714,9 +696,7 @@ void ControlFlowGraph::live_variable_analysis(
     }
     if (auto *gptr = stmt->cast<GlobalPtrStmt>();
         gptr && config_opt.has_value()) {
-      TI_ASSERT(gptr->snodes.size() == 1);
-      const bool res =
-          (config_opt->eliminable_snodes.count(gptr->snodes[0]) == 0);
+      const bool res = (config_opt->eliminable_snodes.count(gptr->snode) == 0);
       return res;
     }
     // A global pointer that may be loaded after this kernel.
@@ -884,9 +864,7 @@ std::unordered_set<SNode *> ControlFlowGraph::gather_loaded_snodes() {
   // Therefore we include the nodes[final_node]->reach_in in snodes.
   for (auto &stmt : nodes[final_node]->reach_in) {
     if (auto global_ptr = stmt->cast<GlobalPtrStmt>()) {
-      for (auto &snode : global_ptr->snodes.data) {
-        snodes.insert(snode);
-      }
+      snodes.insert(global_ptr->snode);
     }
   }
 

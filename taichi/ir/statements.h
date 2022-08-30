@@ -19,12 +19,7 @@ class Function;
 class AllocaStmt : public Stmt {
  public:
   AllocaStmt(DataType type) : is_shared(false) {
-    ret_type = TypeFactory::create_vector_or_scalar_type(1, type);
-    TI_STMT_REG_FIELDS;
-  }
-
-  AllocaStmt(int width, DataType type) : is_shared(false) {
-    ret_type = TypeFactory::create_vector_or_scalar_type(width, type);
+    ret_type = type;
     TI_STMT_REG_FIELDS;
   }
 
@@ -169,7 +164,7 @@ class ArgLoadStmt : public Stmt {
 
   ArgLoadStmt(int arg_id, const DataType &dt, bool is_ptr = false)
       : arg_id(arg_id) {
-    this->ret_type = TypeFactory::create_vector_or_scalar_type(1, dt);
+    this->ret_type = dt;
     this->is_ptr = is_ptr;
     TI_STMT_REG_FIELDS;
   }
@@ -292,22 +287,21 @@ class AtomicOpStmt : public Stmt {
 };
 
 /**
- * An external pointer. |base_ptrs| should be ArgLoadStmts with
+ * An external pointer. |base_ptr| should be ArgLoadStmt with
  * |is_ptr| == true.
  */
 class ExternalPtrStmt : public Stmt {
  public:
-  LaneAttribute<Stmt *> base_ptrs;
+  Stmt *base_ptr;
   std::vector<Stmt *> indices;
   std::vector<int> element_shape;
   // AOS: element_dim < 0
   // SOA: element_dim > 0
   int element_dim;
 
-  ExternalPtrStmt(const LaneAttribute<Stmt *> &base_ptrs,
-                  const std::vector<Stmt *> &indices);
+  ExternalPtrStmt(Stmt *base_ptr, const std::vector<Stmt *> &indices);
 
-  ExternalPtrStmt(const LaneAttribute<Stmt *> &base_ptrs,
+  ExternalPtrStmt(Stmt *base_ptr,
                   const std::vector<Stmt *> &indices,
                   const std::vector<int> &element_shape,
                   int element_dim);
@@ -316,7 +310,7 @@ class ExternalPtrStmt : public Stmt {
     return false;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, base_ptrs, indices);
+  TI_STMT_DEF_FIELDS(ret_type, base_ptr, indices);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
@@ -330,18 +324,14 @@ class ExternalPtrStmt : public Stmt {
  */
 class GlobalPtrStmt : public Stmt {
  public:
-  LaneAttribute<SNode *> snodes;
+  SNode *snode;
   std::vector<Stmt *> indices;
   bool activate;
   bool is_bit_vectorized;  // for bit_loop_vectorize pass
 
-  GlobalPtrStmt(const LaneAttribute<SNode *> &snodes,
+  GlobalPtrStmt(SNode *snode,
                 const std::vector<Stmt *> &indices,
                 bool activate = true);
-
-  bool is_element_wise(const SNode *snode) const;
-
-  bool covers_snode(const SNode *snode) const;
 
   bool has_global_side_effect() const override {
     return activate;
@@ -351,7 +341,7 @@ class GlobalPtrStmt : public Stmt {
     return true;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, snodes, indices, activate, is_bit_vectorized);
+  TI_STMT_DEF_FIELDS(ret_type, snode, indices, activate, is_bit_vectorized);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
@@ -545,8 +535,6 @@ class LoopUniqueStmt : public Stmt {
 
   LoopUniqueStmt(Stmt *input, const std::vector<SNode *> &covers);
 
-  bool covers_snode(const SNode *snode) const;
-
   bool has_global_side_effect() const override {
     return false;
   }
@@ -605,24 +593,11 @@ class GlobalStoreStmt : public Stmt {
  */
 class LocalLoadStmt : public Stmt {
  public:
-  LaneAttribute<LocalAddress> src;
-  std::vector<int> shape;
+  Stmt *src;
 
-  explicit LocalLoadStmt(const LaneAttribute<LocalAddress> &src)
-      : src(src), shape({static_cast<int>(src.data.size())}) {
+  explicit LocalLoadStmt(Stmt *src) : src(src) {
     TI_STMT_REG_FIELDS;
   }
-
-  LocalLoadStmt(const LaneAttribute<LocalAddress> &src,
-                const std::vector<int> &shape)
-      : src(src), shape(shape) {
-    TI_STMT_REG_FIELDS;
-  }
-
-  bool same_source() const;
-  bool has_source(Stmt *alloca) const;
-
-  Stmt *previous_store_or_alloca_in_block();
 
   bool has_global_side_effect() const override {
     return false;
@@ -746,22 +721,16 @@ class PrintStmt : public Stmt {
  */
 class ConstStmt : public Stmt {
  public:
-  LaneAttribute<TypedConstant> val;
+  TypedConstant val;
 
-  explicit ConstStmt(const LaneAttribute<TypedConstant> &val) : val(val) {
-    TI_ASSERT(val.size() == 1);  // TODO: support vectorized case
-    ret_type = val[0].dt;
-    for (std::size_t i = 0; i < val.size(); i++) {
-      TI_ASSERT(val[0].dt == val[i].dt);
-    }
+  explicit ConstStmt(const TypedConstant &val) : val(val) {
+    ret_type = val.dt;
     TI_STMT_REG_FIELDS;
   }
 
   bool has_global_side_effect() const override {
     return false;
   }
-
-  std::unique_ptr<ConstStmt> copy();
 
   TI_STMT_DEF_FIELDS(ret_type, val);
   TI_DEFINE_ACCEPT_AND_CLONE
@@ -985,28 +954,6 @@ class WhileStmt : public Stmt {
 
   TI_STMT_DEF_FIELDS(mask);
   TI_DEFINE_ACCEPT
-};
-
-// TODO: document for this
-class ElementShuffleStmt : public Stmt {
- public:
-  LaneAttribute<VectorElement> elements;
-  bool pointer;
-
-  explicit ElementShuffleStmt(const LaneAttribute<VectorElement> &elements,
-                              bool pointer = false)
-      : elements(elements), pointer(pointer) {
-    TI_ASSERT(elements.size() == 1);  // TODO: support vectorized cases
-    ret_type = elements[0].stmt->element_type();
-    TI_STMT_REG_FIELDS;
-  }
-
-  bool has_global_side_effect() const override {
-    return false;
-  }
-
-  TI_STMT_DEF_FIELDS(ret_type, elements, pointer);
-  TI_DEFINE_ACCEPT_AND_CLONE
 };
 
 // TODO: remove this (replace with input + ConstStmt(offset))
@@ -1447,8 +1394,7 @@ class InternalFuncStmt : public Stmt {
         args(args),
         with_runtime_context(with_runtime_context) {
     if (ret_type == nullptr) {
-      this->ret_type =
-          TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
+      this->ret_type = PrimitiveType::i32;
     } else {
       this->ret_type = ret_type;
     }

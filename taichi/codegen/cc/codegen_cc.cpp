@@ -152,7 +152,7 @@ class CCTransformer : public IRVisitor {
 
   void visit(ExternalPtrStmt *stmt) override {
     std::string offset = "0";
-    const auto *argload = stmt->base_ptrs[0]->as<ArgLoadStmt>();
+    const auto *argload = stmt->base_ptr->as<ArgLoadStmt>();
     const int arg_id = argload->arg_id;
     const auto element_shape = stmt->element_shape;
     const auto layout = stmt->element_dim < 0 ? ExternalArrayLayout::kAOS
@@ -177,7 +177,7 @@ class CCTransformer : public IRVisitor {
     auto var =
         define_var(cc_data_type_name(stmt->element_type().ptr_removed()) + " *",
                    stmt->raw_name());
-    emit("{} = {} + {};", var, stmt->base_ptrs[0]->raw_name(), offset);
+    emit("{} = {} + {};", var, stmt->base_ptr->raw_name(), offset);
   }
 
   void visit(ArgLoadStmt *stmt) override {
@@ -206,7 +206,7 @@ class CCTransformer : public IRVisitor {
   void visit(ConstStmt *stmt) override {
     emit("{} = {};",
          define_var(cc_data_type_name(stmt->element_type()), stmt->raw_name()),
-         stmt->val[0].stringify());
+         stmt->val.stringify());
   }
 
   void visit(AllocaStmt *stmt) override {
@@ -215,17 +215,9 @@ class CCTransformer : public IRVisitor {
   }
 
   void visit(LocalLoadStmt *stmt) override {
-    bool linear_index = true;
-    for (int i = 0; i < (int)stmt->src.size(); i++) {
-      if (stmt->src[i].offset != i) {
-        linear_index = false;
-      }
-    }
-    TI_ASSERT(stmt->same_source() && linear_index);
-
     auto var =
         define_var(cc_data_type_name(stmt->element_type()), stmt->raw_name());
-    emit("{} = {};", var, stmt->src[0].var->raw_name());
+    emit("{} = {};", var, stmt->src->raw_name());
   }
 
   void visit(LocalStoreStmt *stmt) override {

@@ -280,8 +280,6 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(GlobalLoadStmt *stmt) override;
 
-  void visit(ElementShuffleStmt *stmt) override;
-
   void visit(GetRootStmt *stmt) override;
 
   void visit(BitExtractStmt *stmt) override;

@@ -242,7 +242,7 @@ void BinaryOpExpression::flatten(FlattenContext *ctx) {
   if (binary_is_logical(type)) {
     auto result = ctx->push_back<AllocaStmt>(ret_type);
     ctx->push_back<LocalStoreStmt>(result, lhs->stmt);
-    auto cond = ctx->push_back<LocalLoadStmt>(LocalAddress(result, 0));
+    auto cond = ctx->push_back<LocalLoadStmt>(result);
     auto if_stmt = ctx->push_back<IfStmt>(cond);
 
     FlattenContext rctx;
@@ -262,7 +262,7 @@ void BinaryOpExpression::flatten(FlattenContext *ctx) {
     }
     if_stmt->set_false_statements(std::move(false_block));
 
-    auto ret = ctx->push_back<LocalLoadStmt>(LocalAddress(result, 0));
+    auto ret = ctx->push_back<LocalLoadStmt>(result);
     ret->tb = tb;
     stmt = ret;
     return;
@@ -300,7 +300,7 @@ void make_ifte(Expression::FlattenContext *ctx,
   false_block->set_statements(std::move(rctx.stmts));
   if_stmt->set_false_statements(std::move(false_block));
 
-  ctx->push_back<LocalLoadStmt>(LocalAddress(result, 0));
+  ctx->push_back<LocalLoadStmt>(result);
   return;
 }
 
@@ -370,8 +370,7 @@ void ExternalTensorExpression::flatten(FlattenContext *ctx) {
 
 void GlobalVariableExpression::flatten(FlattenContext *ctx) {
   TI_ASSERT(snode->num_active_indices == 0);
-  auto ptr = Stmt::make<GlobalPtrStmt>(LaneAttribute<SNode *>(snode),
-                                       std::vector<Stmt *>());
+  auto ptr = Stmt::make<GlobalPtrStmt>(snode, std::vector<Stmt *>());
   ptr->tb = tb;
   ctx->push_back(std::move(ptr));
 }
@@ -1173,7 +1172,7 @@ void flatten_global_load(Expr ptr, Expression::FlattenContext *ctx) {
 }
 
 void flatten_local_load(Expr ptr, Expression::FlattenContext *ctx) {
-  ctx->push_back<LocalLoadStmt>(LocalAddress(ptr->stmt, 0));
+  ctx->push_back<LocalLoadStmt>(ptr->stmt);
   ptr->stmt = ctx->back_stmt();
 }
 

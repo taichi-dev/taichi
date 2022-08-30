@@ -821,6 +821,12 @@ void TaskCodeGenLLVM::visit(PrintStmt *stmt) {
         dtype->is_primitive(PrimitiveTypeID::f16))
       return this->builder->CreateFPExt(
           to_print, this->tlctx->get_data_type(PrimitiveType::f64));
+    if (dtype->is_primitive(PrimitiveTypeID::i8))
+      return builder->CreateSExt(to_print,
+                                 tlctx->get_data_type(PrimitiveType::i16));
+    if (dtype->is_primitive(PrimitiveTypeID::u8))
+      return builder->CreateZExt(to_print,
+                                 tlctx->get_data_type(PrimitiveType::u16));
     return to_print;
   };
   for (auto const &content : stmt->contents) {
@@ -855,7 +861,7 @@ void TaskCodeGenLLVM::visit(PrintStmt *stmt) {
 }
 
 void TaskCodeGenLLVM::visit(ConstStmt *stmt) {
-  auto val = stmt->val[0];
+  auto val = stmt->val;
   if (val.dt->is_primitive(PrimitiveTypeID::f32)) {
     llvm_val[stmt] =
         llvm::ConstantFP::get(*llvm_context, llvm::APFloat(val.val_float32()));
@@ -1185,16 +1191,16 @@ void TaskCodeGenLLVM::visit(LocalLoadStmt *stmt) {
 #ifdef TI_LLVM_15
   // FIXME: get ptr_ty from taichi instead of llvm.
   llvm::Type *ptr_ty = nullptr;
-  auto *val = llvm_val[stmt->src[0].var];
+  auto *val = llvm_val[stmt->src];
   if (auto *alloc = llvm::dyn_cast<llvm::AllocaInst>(val))
     ptr_ty = alloc->getAllocatedType();
-  if (!ptr_ty && stmt->src[0].var->element_type().is_pointer()) {
-    ptr_ty = llvm_type(stmt->src[0].var->element_type().ptr_removed());
+  if (!ptr_ty && stmt->src->element_type().is_pointer()) {
+    ptr_ty = llvm_type(stmt->src->element_type().ptr_removed());
   }
   TI_ASSERT(ptr_ty);
-  llvm_val[stmt] = builder->CreateLoad(ptr_ty, llvm_val[stmt->src[0].var]);
+  llvm_val[stmt] = builder->CreateLoad(ptr_ty, llvm_val[stmt->src]);
 #else
-  llvm_val[stmt] = builder->CreateLoad(llvm_val[stmt->src[0].var]);
+  llvm_val[stmt] = builder->CreateLoad(llvm_val[stmt->src]);
 #endif
 }
 
@@ -1516,24 +1522,6 @@ void TaskCodeGenLLVM::visit(GlobalLoadStmt *stmt) {
   create_global_load(stmt, false);
 }
 
-void TaskCodeGenLLVM::visit(ElementShuffleStmt *stmt){
-    TI_NOT_IMPLEMENTED
-    /*
-    auto init = stmt->elements.serialize(
-        [](const VectorElement &elem) {
-          return fmt::format("{}[{}]", elem.stmt->raw_name(), elem.index);
-        },
-        "{");
-    if (stmt->pointer) {
-      emit("{} * const {} [{}] {};", data_type_name(stmt->ret_type),
-           stmt->raw_name(), stmt->width(), init);
-    } else {
-      emit("const {} {} ({});", stmt->ret_data_type_name(), stmt->raw_name(),
-           init);
-    }
-    */
-}
-
 std::string TaskCodeGenLLVM::get_runtime_snode_name(SNode *snode) {
   if (snode->type == SNodeType::root) {
     return "Root";
@@ -1801,7 +1789,7 @@ void TaskCodeGenLLVM::visit(PtrOffsetStmt *stmt) {
 }
 
 void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
-  auto argload = stmt->base_ptrs[0]->as<ArgLoadStmt>();
+  auto argload = stmt->base_ptr->as<ArgLoadStmt>();
   auto arg_id = argload->arg_id;
   int num_indices = stmt->indices.size();
   std::vector<llvm::Value *> sizes(num_indices);
@@ -1821,7 +1809,7 @@ void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
 
   auto dt = stmt->ret_type.ptr_removed();
   auto base_ty = tlctx->get_data_type(dt);
-  auto base = builder->CreateBitCast(llvm_val[stmt->base_ptrs[0]],
+  auto base = builder->CreateBitCast(llvm_val[stmt->base_ptr],
                                      llvm::PointerType::get(base_ty, 0));
 
   auto linear_index = tlctx->get_constant(0);
@@ -1921,9 +1909,8 @@ std::tuple<llvm::Value *, llvm::Value *> TaskCodeGenLLVM::get_range_for_bounds(
   if (stmt->const_begin) {
     begin = tlctx->get_constant(stmt->begin_value);
   } else {
-    auto begin_stmt = Stmt::make<GlobalTemporaryStmt>(
-        stmt->begin_offset,
-        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32));
+    auto begin_stmt =
+        Stmt::make<GlobalTemporaryStmt>(stmt->begin_offset, PrimitiveType::i32);
     begin_stmt->accept(this);
     begin = builder->CreateLoad(
 #ifdef TI_LLVM_15
@@ -1934,9 +1921,8 @@ std::tuple<llvm::Value *, llvm::Value *> TaskCodeGenLLVM::get_range_for_bounds(
   if (stmt->const_end) {
     end = tlctx->get_constant(stmt->end_value);
   } else {
-    auto end_stmt = Stmt::make<GlobalTemporaryStmt>(
-        stmt->end_offset,
-        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32));
+    auto end_stmt =
+        Stmt::make<GlobalTemporaryStmt>(stmt->end_offset, PrimitiveType::i32);
     end_stmt->accept(this);
     end = builder->CreateLoad(
 #ifdef TI_LLVM_15

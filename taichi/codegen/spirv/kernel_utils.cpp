@@ -59,13 +59,12 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel,
   // as well but let's leave that as a followup up PR.
   for (const auto &ka : kernel.args) {
     ArgAttributes aa;
-    TI_ASSERT(ka.dt->is<PrimitiveType>());
-    aa.dtype = ka.dt->cast<PrimitiveType>()->type;
-    const size_t dt_bytes = data_type_size(ka.dt);
+    aa.dtype = ka.get_element_type()->as<PrimitiveType>()->type;
+    const size_t dt_bytes = ka.get_element_size();
     aa.is_array = ka.is_array;
     if (aa.is_array) {
-      aa.field_dim = ka.total_dim - ka.element_shape.size();
-      aa.element_shape = ka.element_shape;
+      aa.field_dim = ka.total_dim - ka.get_element_shape().size();
+      aa.element_shape = ka.get_element_shape();
     }
     aa.stride = dt_bytes;
     aa.index = arg_attribs_vec_.size();

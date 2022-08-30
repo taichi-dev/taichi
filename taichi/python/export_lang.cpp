@@ -112,8 +112,8 @@ void export_lang(py::module &m) {
       .def("__hash__", &DataType::hash)
       .def("to_string", &DataType::to_string)
       .def("__str__", &DataType::to_string)
-      .def("get_shape", &DataType::get_shape)
-      .def("get_element_type", &DataType::get_element_type)
+      .def("shape", &DataType::get_shape)
+      .def("element_type", &DataType::get_element_type)
       .def(
           "get_ptr", [](DataType *dtype) -> Type * { return *dtype; },
           py::return_value_policy::reference)
@@ -984,6 +984,16 @@ void export_lang(py::module &m) {
   m.def("make_stride_expr",
         Expr::make<StrideExpression, const Expr &, const ExprGroup &,
                    const std::vector<int> &, int>);
+
+  m.def("get_external_tensor_element_dim", [](const Expr &expr) {
+    TI_ASSERT(expr.is<ExternalTensorExpression>());
+    return expr.cast<ExternalTensorExpression>()->element_dim;
+  });
+
+  m.def("get_external_tensor_element_shape", [](const Expr &expr) {
+    TI_ASSERT(expr.is<ExternalTensorExpression>());
+    return expr.cast<ExternalTensorExpression>()->element_shape;
+  });
 
   m.def("get_external_tensor_dim", [](const Expr &expr) {
     TI_ASSERT(expr.is<ExternalTensorExpression>());

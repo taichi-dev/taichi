@@ -155,7 +155,7 @@ void Kernel::LaunchContextBuilder::set_arg_float(int arg_id, float64 d) {
       {ActionArg("kernel_name", kernel_->name), ActionArg("arg_id", arg_id),
        ActionArg("val", d)});
 
-  auto dt = kernel_->args[arg_id].dt;
+  auto dt = kernel_->args[arg_id].get_dtype();
   if (dt->is_primitive(PrimitiveTypeID::f32)) {
     ctx_->set_arg(arg_id, (float32)d);
   } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
@@ -194,7 +194,7 @@ void Kernel::LaunchContextBuilder::set_arg_int(int arg_id, int64 d) {
       {ActionArg("kernel_name", kernel_->name), ActionArg("arg_id", arg_id),
        ActionArg("val", d)});
 
-  auto dt = kernel_->args[arg_id].dt;
+  auto dt = kernel_->args[arg_id].get_dtype();
   if (dt->is_primitive(PrimitiveTypeID::i32)) {
     ctx_->set_arg(arg_id, (int32)d);
   } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
@@ -397,7 +397,8 @@ void Kernel::init(Program &program,
 
   this->arch = program.config.arch;
 
-  if (autodiff_mode == AutodiffMode::kNone) {
+  if (autodiff_mode == AutodiffMode::kNone ||
+      autodiff_mode == AutodiffMode::kCheckAutodiffValid) {
     name = primal_name;
   } else if (autodiff_mode == AutodiffMode::kForward) {
     name = primal_name + "_forward_grad";

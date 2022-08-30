@@ -87,6 +87,14 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
           value_type = tlctx->get_data_type(PrimitiveType::f64);
           value = builder->CreateFPExt(value, value_type);
         }
+        if (arg_stmt->ret_type->is_primitive(PrimitiveTypeID::i8)) {
+          value_type = tlctx->get_data_type(PrimitiveType::i16);
+          value = builder->CreateSExt(value, value_type);
+        }
+        if (arg_stmt->ret_type->is_primitive(PrimitiveTypeID::u8)) {
+          value_type = tlctx->get_data_type(PrimitiveType::u16);
+          value = builder->CreateZExt(value, value_type);
+        }
 
         types.push_back(value_type);
         values.push_back(value);
@@ -684,14 +692,14 @@ std::unique_ptr<TaskCodeGenLLVM> KernelCodeGenCUDA::make_codegen_llvm(
 }
 #endif  // TI_WITH_LLVM
 
-LLVMCompiledData KernelCodeGenCUDA::modulegen(
+LLVMCompiledData KernelCodeGenCUDA::compile_task(
     std::unique_ptr<llvm::Module> &&module,
     OffloadedStmt *stmt) {
   TaskCodeGenCUDA gen(kernel, stmt);
   return gen.run_compilation();
 }
 
-FunctionType KernelCodeGenCUDA::codegen() {
+FunctionType KernelCodeGenCUDA::compile_to_function() {
   TI_AUTO_PROF
   // TODO: move the offline cache part to the base class
   auto *llvm_prog = get_llvm_program(prog);
@@ -729,7 +737,7 @@ FunctionType KernelCodeGenCUDA::codegen() {
       auto offload =
           irpass::analysis::clone(offloads[i].get(), offloads[i]->get_kernel());
       irpass::re_id(offload.get());
-      auto new_data = this->modulegen(nullptr, offload->as<OffloadedStmt>());
+      auto new_data = this->compile_task(nullptr, offload->as<OffloadedStmt>());
       data[i].tasks = std::move(new_data.tasks);
       data[i].module = std::move(new_data.module);
     };

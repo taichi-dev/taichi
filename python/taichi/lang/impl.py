@@ -204,7 +204,7 @@ def subscript(value, *_indices, skip_reordered=False, get_ref=False):
     if isinstance(value, AnyArray):
         # TODO: deprecate using get_attribute to get dim
         field_dim = int(value.ptr.get_attribute("dim"))
-        element_dim = len(value.element_shape)
+        element_dim = len(value.element_shape())
         if field_dim != index_dim + element_dim:
             raise IndexError(
                 f'Field with dim {field_dim - element_dim} accessed with indices of dim {index_dim}'
@@ -213,8 +213,8 @@ def subscript(value, *_indices, skip_reordered=False, get_ref=False):
             return Expr(
                 _ti_core.subscript(value.ptr, indices_expr_group,
                                    get_runtime().get_current_src_info()))
-        n = value.element_shape[0]
-        m = 1 if element_dim == 1 else value.element_shape[1]
+        n = value.element_shape()[0]
+        m = 1 if element_dim == 1 else value.element_shape()[1]
         any_array_access = AnyArrayAccess(value, _indices)
         ret = _IntermediateMatrix(n,
                                   m, [

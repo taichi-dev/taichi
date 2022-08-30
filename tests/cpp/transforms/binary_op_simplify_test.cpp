@@ -42,9 +42,9 @@ TEST_F(BinaryOpSimplifyTest, MultiplyPOT) {
   EXPECT_EQ(ir_block->statements[0].get(), x);
   EXPECT_TRUE(ir_block->statements[1]->is<ConstStmt>());
   auto *const_stmt = ir_block->statements[1]->as<ConstStmt>();
-  EXPECT_TRUE(is_integral(const_stmt->val[0].dt));
-  EXPECT_TRUE(is_signed(const_stmt->val[0].dt));
-  EXPECT_EQ(const_stmt->val[0].val_int(), 8);
+  EXPECT_TRUE(is_integral(const_stmt->val.dt));
+  EXPECT_TRUE(is_signed(const_stmt->val.dt));
+  EXPECT_EQ(const_stmt->val.val_int(), 8);
   EXPECT_TRUE(ir_block->statements[2]->is<BinaryOpStmt>());
   auto *bin_op = ir_block->statements[2]->as<BinaryOpStmt>();
   EXPECT_EQ(bin_op->op_type, BinaryOpType::bit_shl);
@@ -90,9 +90,9 @@ TEST_F(BinaryOpSimplifyTest, ModPOT) {
   EXPECT_EQ(ir_block->statements[0].get(), x);
   EXPECT_TRUE(ir_block->statements[1]->is<ConstStmt>());
   auto *const_stmt = ir_block->statements[1]->as<ConstStmt>();
-  EXPECT_TRUE(is_integral(const_stmt->val[0].dt));
-  EXPECT_TRUE(is_unsigned(const_stmt->val[0].dt));
-  EXPECT_EQ(const_stmt->val[0].val_uint(), 7);
+  EXPECT_TRUE(is_integral(const_stmt->val.dt));
+  EXPECT_TRUE(is_unsigned(const_stmt->val.dt));
+  EXPECT_EQ(const_stmt->val.val_uint(), 7);
   EXPECT_TRUE(ir_block->statements[2]->is<BinaryOpStmt>());
   auto *bin_op = ir_block->statements[2]->as<BinaryOpStmt>();
   EXPECT_EQ(bin_op->op_type, BinaryOpType::bit_and);

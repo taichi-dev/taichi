@@ -14,10 +14,8 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
 
   void visit(LocalLoadStmt *stmt) override {
-    for (auto &lane : stmt->src.data) {
-      TI_ASSERT(lane.var->is<AllocaStmt>() || lane.var->is<PtrOffsetStmt>());
-      touched_allocas_.insert(lane.var);
-    }
+    TI_ASSERT(stmt->src->is<AllocaStmt>() || stmt->src->is<PtrOffsetStmt>());
+    touched_allocas_.insert(stmt->src);
   }
 
   void visit(LocalStoreStmt *stmt) override {
@@ -35,11 +33,8 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
     if (is_inside_loop_)
       return;
     TI_ASSERT(stmt->dest->is<GlobalPtrStmt>());
-    for (const auto &node : stmt->dest->cast<GlobalPtrStmt>()->snodes.data) {
-      if (node->has_adjoint()) {
-        qualified_atomics_ = false;
-        break;
-      }
+    if (stmt->dest->as<GlobalPtrStmt>()->snode->has_adjoint()) {
+      qualified_atomics_ = false;
     }
   }
 
@@ -262,7 +257,7 @@ class PromoteSSA2LocalVar : public BasicStmtVisitor {
 
     if (stmt->is<AllocaStmt>()) {
       // Create a new alloc at the top of an ib to replace the old alloca
-      auto alloc = Stmt::make<AllocaStmt>(1, stmt->ret_type);
+      auto alloc = Stmt::make<AllocaStmt>(stmt->ret_type);
       auto alloc_ptr = alloc.get();
       TI_ASSERT(alloca_block_);
       alloca_block_->insert(std::move(alloc), 0);
@@ -280,12 +275,11 @@ class PromoteSSA2LocalVar : public BasicStmtVisitor {
       stmt->parent->erase(stmt);
     } else {
       // Create a alloc
-      auto alloc = Stmt::make<AllocaStmt>(1, stmt->ret_type);
+      auto alloc = Stmt::make<AllocaStmt>(stmt->ret_type);
       auto alloc_ptr = alloc.get();
       TI_ASSERT(alloca_block_);
       alloca_block_->insert(std::move(alloc), 0);
-      auto load = stmt->insert_after_me(
-          Stmt::make<LocalLoadStmt>(LocalAddress(alloc_ptr, 0)));
+      auto load = stmt->insert_after_me(Stmt::make<LocalLoadStmt>(alloc_ptr));
       irpass::replace_all_usages_with(stmt->parent, stmt, load);
       // Create the load first so that the operand of the store won't get
       // replaced
@@ -325,7 +319,7 @@ class AdStackAllocaJudger : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
   // Find the usage of the stmt recursively along the LocalLoadStmt
   void visit(LocalLoadStmt *stmt) override {
-    if (stmt->has_source(target_alloca_)) {
+    if (stmt->src == target_alloca_) {
       local_loaded_ = true;
       target_alloca_ = stmt;
     }
@@ -438,8 +432,8 @@ class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
   }
 
   void visit(LocalLoadStmt *stmt) override {
-    if (stmt->src[0].var->is<AdStackAllocaStmt>())
-      stmt->replace_with(Stmt::make<AdStackLoadTopStmt>(stmt->src[0].var));
+    if (stmt->src->is<AdStackAllocaStmt>())
+      stmt->replace_with(Stmt::make<AdStackLoadTopStmt>(stmt->src));
   }
 
   void visit(LocalStoreStmt *stmt) override {
@@ -607,7 +601,7 @@ class ADTransform : public IRVisitor {
   Stmt *load(Stmt *alloc) {
     TI_ASSERT(alloc != nullptr);
     if (alloc->is<AllocaStmt>()) {
-      return insert<LocalLoadStmt>(LocalAddress(alloc, 0));
+      return insert<LocalLoadStmt>(alloc);
     } else {
       // non alloca
       return alloc;
@@ -623,10 +617,6 @@ class ADTransform : public IRVisitor {
       }
     }
     return false;
-  }
-
-  void visit(ElementShuffleStmt *stmt) override {
-    TI_NOT_IMPLEMENTED
   }
 
   void visit(AssertStmt *stmt) override {
@@ -714,7 +704,7 @@ class MakeAdjoint : public ADTransform {
     } else {
       TI_ASSERT(alloca_->is<AllocaStmt>());
       auto alloca = alloca_->as<AllocaStmt>();
-      auto local_load = insert<LocalLoadStmt>(LocalAddress(alloca, 0));
+      auto local_load = insert<LocalLoadStmt>(alloca);
       insert<LocalStoreStmt>(alloca, add(local_load, value));
     }
   }
@@ -728,9 +718,9 @@ class MakeAdjoint : public ADTransform {
 
       // create the alloca
       // auto alloca =
-      //    Stmt::make<AllocaStmt>(1, get_current_program().config.gradient_dt);
+      //    Stmt::make<AllocaStmt>(get_current_program().config.gradient_dt);
       // maybe it's better to use the statement data type than the default type
-      auto alloca = Stmt::make<AllocaStmt>(1, stmt->ret_type);
+      auto alloca = Stmt::make<AllocaStmt>(stmt->ret_type);
       adjoint_stmt[stmt] = alloca.get();
 
       // We need to insert the alloca in the block of GlobalLoadStmt when the
@@ -958,7 +948,7 @@ class MakeAdjoint : public ADTransform {
   void visit(LocalLoadStmt *stmt) override {
     // TI_ASSERT(!needs_grad(stmt->ret_type));
     if (is_real(stmt->ret_type))
-      accumulate(stmt->src.data[0].var, load(adjoint(stmt)));
+      accumulate(stmt->src, load(adjoint(stmt)));
   }
 
   // Equivalent to AdStackPushStmt when no stack is needed
@@ -1005,18 +995,18 @@ class MakeAdjoint : public ADTransform {
       src = stmt->src->as<GlobalPtrStmt>();
     }
 
-    auto snodes = src->snodes;
-    if (!snodes[0]->has_adjoint()) {
+    auto snode = src->snode;
+    if (!snode->has_adjoint()) {
       // No adjoint SNode. Do nothing
       return;
     }
-    if (gradients_stopped(stmt, snodes[0])) {
+    if (gradients_stopped(stmt, snode)) {
       // gradients stopped, do nothing.
       return;
     }
-    TI_ASSERT(snodes[0]->get_adjoint() != nullptr);
-    snodes[0] = snodes[0]->get_adjoint();
-    auto adj_ptr = insert<GlobalPtrStmt>(snodes, src->indices);
+    TI_ASSERT(snode->get_adjoint() != nullptr);
+    snode = snode->get_adjoint();
+    auto adj_ptr = insert<GlobalPtrStmt>(snode, src->indices);
     if (is_ptr_offset) {
       adj_ptr = insert<PtrOffsetStmt>(adj_ptr,
                                       stmt->src->as<PtrOffsetStmt>()->offset);
@@ -1041,14 +1031,14 @@ class MakeAdjoint : public ADTransform {
       dest = stmt->dest->as<GlobalPtrStmt>();
     }
 
-    auto snodes = dest->snodes;
-    if (!snodes[0]->has_adjoint()) {
+    auto snode = dest->snode;
+    if (!snode->has_adjoint()) {
       // no gradient (likely integer types)
       return;
     }
-    TI_ASSERT(snodes[0]->get_adjoint() != nullptr);
-    snodes[0] = snodes[0]->get_adjoint();
-    auto adjoint_ptr = insert<GlobalPtrStmt>(snodes, dest->indices);
+    TI_ASSERT(snode->get_adjoint() != nullptr);
+    snode = snode->get_adjoint();
+    auto adjoint_ptr = insert<GlobalPtrStmt>(snode, dest->indices);
     if (is_ptr_offset) {
       adjoint_ptr = insert<PtrOffsetStmt>(
           adjoint_ptr, stmt->dest->as<PtrOffsetStmt>()->offset);
@@ -1068,15 +1058,15 @@ class MakeAdjoint : public ADTransform {
       dest = stmt->dest->as<GlobalPtrStmt>();
     }
 
-    auto snodes = dest->snodes;
-    if (!snodes[0]->has_adjoint()) {
+    auto snode = dest->snode;
+    if (!snode->has_adjoint()) {
       // no gradient (likely integer types)
       return;
     }
 
-    TI_ASSERT(snodes[0]->get_adjoint() != nullptr);
-    snodes[0] = snodes[0]->get_adjoint();
-    auto adjoint_ptr = insert<GlobalPtrStmt>(snodes, dest->indices);
+    TI_ASSERT(snode->get_adjoint() != nullptr);
+    snode = snode->get_adjoint();
+    auto adjoint_ptr = insert<GlobalPtrStmt>(snode, dest->indices);
     if (is_ptr_offset) {
       adjoint_ptr = insert<PtrOffsetStmt>(
           adjoint_ptr, stmt->dest->as<PtrOffsetStmt>()->offset);
@@ -1132,7 +1122,7 @@ class MakeDual : public ADTransform {
 
     TI_ASSERT(alloca_->is<AllocaStmt>());
     auto alloca = alloca_->as<AllocaStmt>();
-    auto local_load = insert<LocalLoadStmt>(LocalAddress(alloca, 0));
+    auto local_load = insert<LocalLoadStmt>(alloca);
     insert<LocalStoreStmt>(alloca, add(local_load, value));
   }
 
@@ -1145,9 +1135,9 @@ class MakeDual : public ADTransform {
 
       // create the alloca
       // auto alloca =
-      //    Stmt::make<AllocaStmt>(1, get_current_program().config.gradient_dt);
+      //    Stmt::make<AllocaStmt>(get_current_program().config.gradient_dt);
       // maybe it's better to use the statement data type than the default type
-      auto alloca = Stmt::make<AllocaStmt>(1, stmt->ret_type);
+      auto alloca = Stmt::make<AllocaStmt>(stmt->ret_type);
       dual_stmt[stmt] = alloca.get();
 
       // TODO: check whether there are any edge cases for the alloca_block
@@ -1303,7 +1293,7 @@ class MakeDual : public ADTransform {
 
   void visit(LocalLoadStmt *stmt) override {
     // TI_ASSERT(!needs_grad(stmt->ret_type));
-    accumulate(stmt, dual(stmt->src.data[0].var));
+    accumulate(stmt, dual(stmt->src));
   }
 
   void visit(LocalStoreStmt *stmt) override {
@@ -1331,18 +1321,18 @@ class MakeDual : public ADTransform {
     } else {
       src = stmt->src->as<GlobalPtrStmt>();
     }
-    auto snodes = src->snodes;
-    if (!snodes[0]->has_dual()) {
+    auto snode = src->snode;
+    if (!snode->has_dual()) {
       // No dual SNode. Do nothing
       return;
     }
-    if (gradients_stopped(stmt, snodes[0])) {
+    if (gradients_stopped(stmt, snode)) {
       // gradients stopped, do nothing.
       return;
     }
-    TI_ASSERT(snodes[0]->get_dual() != nullptr);
-    snodes[0] = snodes[0]->get_dual();
-    auto dual_ptr = insert<GlobalPtrStmt>(snodes, src->indices);
+    TI_ASSERT(snode->get_dual() != nullptr);
+    snode = snode->get_dual();
+    auto dual_ptr = insert<GlobalPtrStmt>(snode, src->indices);
     if (is_ptr_offset) {
       dual_ptr = insert<PtrOffsetStmt>(dual_ptr,
                                        stmt->src->as<PtrOffsetStmt>()->offset);
@@ -1359,14 +1349,14 @@ class MakeDual : public ADTransform {
     } else {
       dest = stmt->dest->as<GlobalPtrStmt>();
     }
-    auto snodes = dest->snodes;
-    if (!snodes[0]->has_dual()) {
+    auto snode = dest->snode;
+    if (!snode->has_dual()) {
       // no gradient (likely integer types)
       return;
     }
-    TI_ASSERT(snodes[0]->get_dual() != nullptr);
-    snodes[0] = snodes[0]->get_dual();
-    auto dual_ptr = insert<GlobalPtrStmt>(snodes, dest->indices);
+    TI_ASSERT(snode->get_dual() != nullptr);
+    snode = snode->get_dual();
+    auto dual_ptr = insert<GlobalPtrStmt>(snode, dest->indices);
     if (is_ptr_offset) {
       dual_ptr = insert<PtrOffsetStmt>(dual_ptr,
                                        stmt->dest->as<PtrOffsetStmt>()->offset);
@@ -1383,14 +1373,14 @@ class MakeDual : public ADTransform {
     } else {
       dest = stmt->dest->as<GlobalPtrStmt>();
     }
-    auto snodes = dest->snodes;
-    if (!snodes[0]->has_dual()) {
+    auto snode = dest->snode;
+    if (!snode->has_dual()) {
       // no gradient (likely integer types)
       return;
     }
-    TI_ASSERT(snodes[0]->get_dual() != nullptr);
-    snodes[0] = snodes[0]->get_dual();
-    auto dual_ptr = insert<GlobalPtrStmt>(snodes, dest->indices);
+    TI_ASSERT(snode->get_dual() != nullptr);
+    snode = snode->get_dual();
+    auto dual_ptr = insert<GlobalPtrStmt>(snode, dest->indices);
     if (is_ptr_offset) {
       dual_ptr = insert<PtrOffsetStmt>(dual_ptr,
                                        stmt->dest->as<PtrOffsetStmt>()->offset);
@@ -1413,7 +1403,7 @@ class BackupSSA : public BasicStmtVisitor {
 
   Stmt *load(Stmt *stmt) {
     if (backup_alloca.find(stmt) == backup_alloca.end()) {
-      auto alloca = Stmt::make<AllocaStmt>(1, stmt->ret_type);
+      auto alloca = Stmt::make<AllocaStmt>(stmt->ret_type);
       auto alloca_ptr = alloca.get();
       independent_block->insert(std::move(alloca), 0);
       auto local_store = Stmt::make<LocalStoreStmt>(alloca_ptr, stmt);
@@ -1461,8 +1451,8 @@ class BackupSSA : public BasicStmtVisitor {
           }
         } else {
           auto alloca = load(op);
-          stmt->set_operand(i, stmt->insert_before_me(Stmt::make<LocalLoadStmt>(
-                                   LocalAddress(alloca, 0))));
+          stmt->set_operand(
+              i, stmt->insert_before_me(Stmt::make<LocalLoadStmt>(alloca)));
         }
       }
     }
@@ -1554,38 +1544,37 @@ class GloablDataAccessRuleChecker : public BasicStmtVisitor {
 
   void visit(GlobalLoadStmt *stmt) override {
     GlobalPtrStmt *src = stmt->src->as<GlobalPtrStmt>();
-    auto snodes = src->snodes;
-    if (!snodes[0]->has_adjoint_checkbit()) {
+    auto snode = src->snode;
+    if (!snode->has_adjoint_checkbit()) {
       return;
     }
-    TI_ASSERT(snodes[0]->get_adjoint_checkbit() != nullptr);
-    snodes[0] = snodes[0]->get_adjoint_checkbit();
+    TI_ASSERT(snode->get_adjoint_checkbit() != nullptr);
+    snode = snode->get_adjoint_checkbit();
     auto gloabl_ptr =
-        stmt->insert_after_me(Stmt::make<GlobalPtrStmt>(snodes, src->indices));
-    auto one = gloabl_ptr->insert_after_me(
-        Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(1)));
+        stmt->insert_after_me(Stmt::make<GlobalPtrStmt>(snode, src->indices));
+    auto one =
+        gloabl_ptr->insert_after_me(Stmt::make<ConstStmt>(TypedConstant(1)));
     one->insert_after_me(Stmt::make<GlobalStoreStmt>(gloabl_ptr, one));
   }
 
   void visit_gloabl_store_stmt_and_atomic_add(Stmt *stmt, GlobalPtrStmt *dest) {
-    auto snodes = dest->snodes;
-    if (!snodes[0]->has_adjoint_checkbit()) {
+    auto snode = dest->snode;
+    if (!snode->has_adjoint_checkbit()) {
       return;
     }
-    TI_ASSERT(snodes[0]->get_adjoint_checkbit() != nullptr);
-    snodes[0] = snodes[0]->get_adjoint_checkbit();
-    auto global_ptr = stmt->insert_before_me(
-        Stmt::make<GlobalPtrStmt>(snodes, dest->indices));
+    TI_ASSERT(snode->get_adjoint_checkbit() != nullptr);
+    snode = snode->get_adjoint_checkbit();
+    auto global_ptr =
+        stmt->insert_before_me(Stmt::make<GlobalPtrStmt>(snode, dest->indices));
     auto global_load =
         stmt->insert_before_me(Stmt::make<GlobalLoadStmt>(global_ptr));
-    auto zero = stmt->insert_before_me(
-        Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(0)));
+    auto zero = stmt->insert_before_me(Stmt::make<ConstStmt>(TypedConstant(0)));
     auto check_equal = stmt->insert_before_me(
         Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_eq, global_load, zero));
     std::string msg = fmt::format(
         "(kernel={}) Breaks the global data access rule. Snode {} is "
         "overwritten unexpectedly.",
-        kernel_name_, dest->snodes[0]->get_node_type_name());
+        kernel_name_, dest->snode->get_node_type_name());
     msg += "\n" + stmt->tb;
 
     stmt->insert_before_me(

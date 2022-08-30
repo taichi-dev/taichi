@@ -185,6 +185,7 @@ class UniquelyAccessedSNodeSearcher : public BasicStmtVisitor {
   }
 
   void visit(GlobalPtrStmt *stmt) override {
+    auto snode = stmt->snode;
     // mesh-for loop unique
     if (stmt->indices.size() == 1 &&
         stmt->indices[0]->is<MeshIndexConversionStmt>()) {
@@ -195,36 +196,30 @@ class UniquelyAccessedSNodeSearcher : public BasicStmtVisitor {
       }
       if (idx->is<LoopIndexStmt>() &&
           idx->as<LoopIndexStmt>()->is_mesh_index()) {  // from-end access
-        for (auto &snode : stmt->snodes.data) {
-          if (rel_access_pointer_.find(snode) ==
-              rel_access_pointer_.end()) {  // not accessed by neibhours yet
-            accessed_pointer_[snode] = stmt;
-          } else {  // accessed by neibhours, so it's not unique
-            accessed_pointer_[snode] = nullptr;
-          }
+        if (rel_access_pointer_.find(snode) ==
+            rel_access_pointer_.end()) {  // not accessed by neibhours yet
+          accessed_pointer_[snode] = stmt;
+        } else {  // accessed by neibhours, so it's not unique
+          accessed_pointer_[snode] = nullptr;
         }
       } else {  // to-end access
-        for (auto &snode : stmt->snodes.data) {
-          rel_access_pointer_[snode] = stmt;
-          accessed_pointer_[snode] =
-              nullptr;  // from-end access should not be unique
-        }
+        rel_access_pointer_[snode] = stmt;
+        accessed_pointer_[snode] =
+            nullptr;  // from-end access should not be unique
       }
     }
     // Range-for / struct-for
-    for (auto &snode : stmt->snodes.data) {
-      auto accessed_ptr = accessed_pointer_.find(snode);
-      if (accessed_ptr == accessed_pointer_.end()) {
-        if (loop_unique_stmt_searcher_.is_ptr_indices_loop_unique(stmt)) {
-          accessed_pointer_[snode] = stmt;
-        } else {
-          accessed_pointer_[snode] = nullptr;  // not loop-unique
-        }
+    auto accessed_ptr = accessed_pointer_.find(snode);
+    if (accessed_ptr == accessed_pointer_.end()) {
+      if (loop_unique_stmt_searcher_.is_ptr_indices_loop_unique(stmt)) {
+        accessed_pointer_[snode] = stmt;
       } else {
-        if (!irpass::analysis::definitely_same_address(accessed_ptr->second,
-                                                       stmt)) {
-          accessed_ptr->second = nullptr;  // not uniquely accessed
-        }
+        accessed_pointer_[snode] = nullptr;  // not loop-unique
+      }
+    } else {
+      if (!irpass::analysis::definitely_same_address(accessed_ptr->second,
+                                                     stmt)) {
+        accessed_ptr->second = nullptr;  // not uniquely accessed
       }
     }
   }
@@ -233,50 +228,48 @@ class UniquelyAccessedSNodeSearcher : public BasicStmtVisitor {
     // A memory location of an ExternalPtrStmt depends on the indices
     // If the accessed indices are loop unique,
     // the accessed memory location is loop unique
-    for (auto base_ptr : stmt->base_ptrs.data) {
-      ArgLoadStmt *arg_load_stmt = base_ptr->as<ArgLoadStmt>();
-      int arg_id = arg_load_stmt->arg_id;
+    ArgLoadStmt *arg_load_stmt = stmt->base_ptr->as<ArgLoadStmt>();
+    int arg_id = arg_load_stmt->arg_id;
 
-      auto accessed_ptr = accessed_arr_pointer_.find(arg_id);
+    auto accessed_ptr = accessed_arr_pointer_.find(arg_id);
 
-      bool stmt_loop_unique =
-          loop_unique_stmt_searcher_.is_ptr_indices_loop_unique(stmt);
+    bool stmt_loop_unique =
+        loop_unique_stmt_searcher_.is_ptr_indices_loop_unique(stmt);
 
-      if (!stmt_loop_unique) {
-        accessed_arr_pointer_[arg_id] = nullptr;  // not loop-unique
+    if (!stmt_loop_unique) {
+      accessed_arr_pointer_[arg_id] = nullptr;  // not loop-unique
+    } else {
+      if (accessed_ptr == accessed_arr_pointer_.end()) {
+        // First time using arr @ arg_id
+        accessed_arr_pointer_[arg_id] = stmt;
       } else {
-        if (accessed_ptr == accessed_arr_pointer_.end()) {
-          // First time using arr @ arg_id
-          accessed_arr_pointer_[arg_id] = stmt;
-        } else {
-          /**
-           * We know stmt->base_ptr and the previously recorded pointers
-           * are loop-unique. We need to figure out whether their loop-unique
-           * indices are the same while ignoring the others.
-           * e.g. a[i, j, 1] and a[i, j, 2] are both uniquely accessed
-           *      a[i, j, 1] and a[j, i, 2] are not uniquely accessed
-           *      a[i, j + 1, 1] and a[i, j, 2] are not uniquely accessed
-           * This is a bit stricter than needed.
-           * e.g. a[i, j, i] and a[i, j, 0] are uniquely accessed
-           * However this is probably not common and improvements can be made
-           * in a future patch.
-           */
-          if (accessed_ptr->second) {
-            ExternalPtrStmt *other_ptr = accessed_ptr->second;
-            TI_ASSERT(stmt->indices.size() == other_ptr->indices.size());
-            for (int axis = 0; axis < stmt->indices.size(); axis++) {
-              Stmt *this_index = stmt->indices[axis];
-              Stmt *other_index = other_ptr->indices[axis];
-              // We only compare unique indices here.
-              // Since both pointers are loop-unique, all the unique indices
-              // need to be the same for both to be uniquely accessed
-              if (loop_unique_stmt_searcher_.is_partially_loop_unique(
-                      this_index)) {
-                if (!irpass::analysis::same_value(this_index, other_index)) {
-                  // Not equal -> not uniquely accessed
-                  accessed_arr_pointer_[arg_id] = nullptr;
-                  break;
-                }
+        /**
+         * We know stmt->base_ptr and the previously recorded pointers
+         * are loop-unique. We need to figure out whether their loop-unique
+         * indices are the same while ignoring the others.
+         * e.g. a[i, j, 1] and a[i, j, 2] are both uniquely accessed
+         *      a[i, j, 1] and a[j, i, 2] are not uniquely accessed
+         *      a[i, j + 1, 1] and a[i, j, 2] are not uniquely accessed
+         * This is a bit stricter than needed.
+         * e.g. a[i, j, i] and a[i, j, 0] are uniquely accessed
+         * However this is probably not common and improvements can be made
+         * in a future patch.
+         */
+        if (accessed_ptr->second) {
+          ExternalPtrStmt *other_ptr = accessed_ptr->second;
+          TI_ASSERT(stmt->indices.size() == other_ptr->indices.size());
+          for (int axis = 0; axis < stmt->indices.size(); axis++) {
+            Stmt *this_index = stmt->indices[axis];
+            Stmt *other_index = other_ptr->indices[axis];
+            // We only compare unique indices here.
+            // Since both pointers are loop-unique, all the unique indices
+            // need to be the same for both to be uniquely accessed
+            if (loop_unique_stmt_searcher_.is_partially_loop_unique(
+                    this_index)) {
+              if (!irpass::analysis::same_value(this_index, other_index)) {
+                // Not equal -> not uniquely accessed
+                accessed_arr_pointer_[arg_id] = nullptr;
+                break;
               }
             }
           }

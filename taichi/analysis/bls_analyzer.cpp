@@ -36,7 +36,7 @@ void BLSAnalyzer::record_access(Stmt *stmt, AccessFlag flag) {
   if (!stmt->is<GlobalPtrStmt>())
     return;  // local alloca
   auto ptr = stmt->as<GlobalPtrStmt>();
-  auto snode = ptr->snodes[0];
+  auto snode = ptr->snode;
   if (!pads_->has(snode)) {
     return;
   }

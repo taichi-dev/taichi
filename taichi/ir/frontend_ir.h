@@ -65,7 +65,7 @@ class FrontendAllocaStmt : public Stmt {
 
   FrontendAllocaStmt(const Identifier &lhs, DataType type)
       : ident(lhs), is_shared(false) {
-    ret_type = TypeFactory::create_vector_or_scalar_type(1, type);
+    ret_type = type;
   }
 
   FrontendAllocaStmt(const Identifier &lhs,

@@ -66,7 +66,7 @@ def paint(t: float):
         z = tm.vec2(i / n - 1, j / n - 0.5) * 2
         iterations = 0
         while z.norm() < 20 and iterations < 50:
-            z = complex_sqr(z, z) + c 
+            z = complex_sqr(z) + c 
             iterations += 1
         pixels[i, j] = 1 - iterations * 0.02
 
@@ -91,16 +91,26 @@ Let's dive into this simple Taichi program.
 
 ### import taichi
 
-The first three lines
+The first two lines
 
 ```python
 import taichi as ti
 import taichi.math as tm
+```
 
+import Taichi as a package as well as its `math` module. The `math` module contains some frequently used math functions and built-in vector types of small dimensions.
+
+The line
+
+```python
 ti.init(arch=ti.gpu)
 ```
 
-import Taichi as a package as well as its `math` module and call the  `init` function to initialize some environment variables. The `math` module contains some frequently used math functions and built-in vector types of small dimensions. The `init` function accepts several arguments to allow users to custom the runtime program, for now, we only introduce the most important one, namely the `arch` . This argument will specify the *backend* that actually executes the compiled code. A backend can be either `ti.cpu` or  `ti.gpu`. For `ti.gpu` Taichi will look for GPU architectures in the order `ti.cuda`, `ti.vulkan`, `ti.opengl/ti.metal`, `ti.dx11` and choose the first available one. If no GPU device is found, Taichi will fall back to your CPU device. You can also directly specify the backend like `arch=ti.cuda`, Taichi will raise an error if this architecture is unavailable.
+calls the `ti.init` function to initialize some environment variables. The `init` function accepts several arguments to allow users to custom the runtime program, for now, we only introduce the most important one, namely the `arch`. 
+
+The argument `arch` specifies the *backend* that actually executes the compiled code. A backend can be either `ti.cpu` or `ti.gpu`. For `ti.gpu` Taichi will look for GPU architectures in the order `ti.cuda`, `ti.vulkan`, `ti.opengl/ti.metal`, `ti.dx11` and choose the first available one. If no GPU device is found, Taichi will fall back to your CPU device. 
+
+You can also directly specify the backend like `arch=ti.cuda`, Taichi will raise an error if this architecture is unavailable.
 
 
 ### Define a field
@@ -112,7 +122,15 @@ n = 320
 pixels = ti.field(dtype=float, shape=(n * 2, n))
 ```
 
-defines a field of shape (640, 320) of float type. `field `  is the most important and frequently used data structure in Taichi. You can think of it as an analog of Numpy's `ndarray`  or Pytorch's `tensor`, but we emphasize here that Taichi's `field` is much more powerful and flexible than the other two counterparts: Taichi's field can be hierarchized in a tree-like manner, can store scalar, matrix, struct, and quant types, can be sparsely or dynamically allocated, can easily switch between the row-major/column-major modes, and has built-in automatic differentiation support. You will meet these features in more advanced tutorials later. For now, you can think of `pixels` just as a dense 2D floating array.
+defines a field of shape (640, 320) of float type. `field` is the most important and frequently used data structure in Taichi. You can think of it as an analog of Numpy's `ndarray` or Pytorch's `tensor`, but we emphasize here that Taichi's `field` is much more powerful and flexible than the other two counterparts:
+
+1. Taichi's field can be hierarchized in a tree-like manner.
+2. Field can store scalar, matrix, struct, and quant types.
+3. Field can be sparsely or dynamically allocated.
+4. Field can easily switch between the row-major/column-major modes.
+5. Field has built-in automatic differentiation support.
+
+You will meet these features in more advanced tutorials later. For now, you can think of `pixels` just as a dense 2D floating array.
 
 
 ### Kernels and functions
@@ -141,7 +159,9 @@ The real magic happens in line 15:
 for i, j in pixels:
 ```
 
-This is a `for` loop at the outermost scope in a Taichi kernel and this loop is *automatically paralleled*. In fact, any `for` loop at the outermost scope in a kernel will be automatically paralleled. This is a very handy syntax sugar offered by Taichi. It allows users to parallel their tasks just in one plain and innocent loop, without bothering any underlying hooks like thread allocating/recycling and memory management!
+This is a `for` loop at the outermost scope in a Taichi kernel and this loop is *automatically paralleled*.
+
+In fact, any `for` loop at the outermost scope in a kernel will be automatically paralleled. This is a very handy syntax sugar offered by Taichi. It allows users to parallel their tasks just in one plain and innocent loop, without bothering any underlying hooks like thread allocating/recycling and memory management!
 
 Note that the field `pixels` is treated as an iterator, `i,j` are the indices of the elements and are integers in the range `[0, 2*n-1]` and `[0, n-1]`, respectively. They are listed in the row-majored order `(0, 0)`, `(0, 1)`, ..., `(0, n-1)`, `(1, n-1)`, ..., `(2*n-1, n-1)`.
 
@@ -161,7 +181,7 @@ def fill():
 
 :::caution WARNING
 
-`break` is *not* supported in parallel loops:
+`break` statement is *not* supported in parallel loops, but fine in non-parallel loops:
 
 ```python
 @ti.kernel

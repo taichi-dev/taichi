@@ -12,7 +12,7 @@ Taichi users write their computation-intensive tasks in Python obeying a few ext
 
 Taichi also has a built-in ahead-of-time (AOT) system that allows users to export the code as binary/shader files. These files can then be invoked in C/C++, without the Python environment. See [AOT deployment](../deployment/ndarray_android.md) for more details.
 
-## Requirements:
+## Requirements
 
 1. Python: 3.7/3.8/3.9/3.10 (64-bit)
 2. OS: Windows, OS X, and Linux (64-bit)
@@ -56,7 +56,7 @@ n = 320
 pixels = ti.field(dtype=float, shape=(n * 2, n))
 
 @ti.func
-def complex_sqr(z):  # complex square of a 2d vector
+def complex_sqr(z):  # complex square of a 2D vector
     return tm.vec2(z[0] * z[0] - z[1] * z[1], 2 * z[0] * z[1])
 
 @ti.kernel
@@ -89,7 +89,7 @@ You can run the above code by either saving it to your disk or directly running 
 Let's dive into this simple Taichi program.
 
 
-### import taichi
+### Import Taichi
 
 The first two lines
 
@@ -98,7 +98,7 @@ import taichi as ti
 import taichi.math as tm
 ```
 
-import Taichi as a package as well as its `math` module. The `math` module contains some frequently used math functions and built-in vector types of small dimensions.
+import Taichi as a package as well as its `math` module. The `math` module contains some frequently used math functions and built-in vector/matrix types of small dimensions, such as `vec2` for 2D real vectors and `mat3` for 3x3 real matrices.
 
 The line
 
@@ -122,16 +122,9 @@ n = 320
 pixels = ti.field(dtype=float, shape=(n * 2, n))
 ```
 
-defines a field of shape (640, 320) of float type. `field` is the most important and frequently used data structure in Taichi. You can think of it as an analog of Numpy's `ndarray` or Pytorch's `tensor`, but we emphasize here that Taichi's `field` is a much more powerful and flexible data structure than the other two counterparts:
+define a field of shape (640, 320) of float type. `field` is the most important and frequently used data structure in Taichi. You can think of it as an analog of Numpy's `ndarray` or PyTorch's `tensor`, but we emphasize here that Taichi's `field` is a much more powerful and flexible data structure than the other two counterparts. For example, Taichi fields can be [spatially sparse](../basic/sparse.md), and can easily [switch between different data layouts](../basic/layout.md). 
 
-1. Taichi's field can be hierarchized in a tree-like manner.
-2. Field can store scalar, matrix, struct, and quant types.
-3. Field can be sparsely or dynamically allocated.
-4. Field can easily switch between the row-major/column-major modes.
-5. Field has built-in automatic differentiation support.
-
-You will meet these features in more advanced tutorials later. For now, you can think of `pixels` just as a dense 2D floating array.
-
+You will meet these features in more advanced tutorials later. You can now think of `pixels` as a dense 2D array.
 
 ### Kernels and functions
 
@@ -139,7 +132,7 @@ Between lines 9-22 we defined two functions. One decorated by `@ti.func` and one
     
 The main differences between Taichi functions and kernels are:
     
-1. kernels are the entrances for Taichi to take over the subsequent task. Kernels can be called anywhere in your program, but Taichi functions can only be called by kernels or by other Taichi functions. In the above example, the Taichi function `complex_sqr` is called by the kernel `paint`.
+1. Kernels are the entrances for Taichi to take over the subsequent task. Kernels can be called anywhere in your program, but Taichi functions can only be called by kernels or by other Taichi functions. In the above example, the Taichi function `complex_sqr` is called by the kernel `paint`.
 2. The arguments and returns of a kernel function must all be type hinted, Taichi functions do not have such restrictions. In the above example, the argument `t` in the kernel `paint` is type hinted, but the argument `z` in the Taichi function `complex_sqr` is not.
 3. Nested kernels are *not supported*, nested functions are *supported*. Recursively calling Taichi functions are *not supported for now*.
     
@@ -153,7 +146,7 @@ For those who come from the world of OpenGL, `ti.func` corresponds to the usual 
 
 ### Parallel for loop
 
-The real magic happens in line 15:
+The real magic happens at line 15:
 
 ```python
 for i, j in pixels:

@@ -8,7 +8,7 @@ slug: /
 
 Taichi is a high-performance parallel programming language using Python as the frontend. Taichi users write their computation-intensive tasks in Python obeying a few extra rules imposed by Taichi, and use the two decorators `ti.func` and `ti.kernel` to tell Taichi to take over the functions that implement the task. Taichi's just-in-time (JIT) compiler will compile these functions to machine code and all subsequent calls to them are executed on multi-CPU cores or GPUs. In typical compute-intense scenarios (such as numerical simulations), this will usually give a 50-100x speed up over native Python!
 
-Taichi also has a built-in ahead-of-time compiling module that allows users to export the code as shader files that can be called without the python environment.
+Taichi also has a built-in ahead-of-time (AOT) system that allows users to export the code as binary/shader files. These files can then be invoked in C/C++, without the Python environment.
 
 ## Requirements:
 

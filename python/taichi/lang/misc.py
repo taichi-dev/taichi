@@ -450,7 +450,8 @@ def init(arch=None,
     elif not cuda_device_id and vulkan_device_id:
         os.environ["CUDA_VISIBLE_DEVICES"] = vulkan_device_id
     elif cuda_device_id != vulkan_device_id:
-        message = "CUDA_VISIBLE_DEVICES[{0}] not equal to TI_VISIBLE_DEVICE[{1}]".format(cuda_device_id, vulkan_device_id)
+        message = "CUDA_VISIBLE_DEVICES[{0}] not equal to TI_VISIBLE_DEVICE[{1}]".format(
+            cuda_device_id, vulkan_device_id)
         warnings.warn(message)
 
     vulkan_device_id = os.environ.get("TI_VISIBLE_DEVICE")

@@ -692,14 +692,14 @@ std::unique_ptr<TaskCodeGenLLVM> KernelCodeGenCUDA::make_codegen_llvm(
 }
 #endif  // TI_WITH_LLVM
 
-LLVMCompiledData KernelCodeGenCUDA::modulegen(
+LLVMCompiledData KernelCodeGenCUDA::compile_task(
     std::unique_ptr<llvm::Module> &&module,
     OffloadedStmt *stmt) {
   TaskCodeGenCUDA gen(kernel, stmt);
   return gen.run_compilation();
 }
 
-FunctionType KernelCodeGenCUDA::codegen() {
+FunctionType KernelCodeGenCUDA::compile_to_function() {
   TI_AUTO_PROF
   // TODO: move the offline cache part to the base class
   auto *llvm_prog = get_llvm_program(prog);
@@ -737,7 +737,7 @@ FunctionType KernelCodeGenCUDA::codegen() {
       auto offload =
           irpass::analysis::clone(offloads[i].get(), offloads[i]->get_kernel());
       irpass::re_id(offload.get());
-      auto new_data = this->modulegen(nullptr, offload->as<OffloadedStmt>());
+      auto new_data = this->compile_task(nullptr, offload->as<OffloadedStmt>());
       data[i].tasks = std::move(new_data.tasks);
       data[i].module = std::move(new_data.module);
     };

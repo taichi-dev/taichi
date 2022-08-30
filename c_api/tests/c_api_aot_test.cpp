@@ -14,7 +14,7 @@ static void kernel_aot_test(TiArch arch) {
   TiMemoryAllocateInfo alloc_info;
   alloc_info.size = kArrLen * sizeof(int32_t);
   alloc_info.host_write = false;
-  alloc_info.host_read = false;
+  alloc_info.host_read = true;  // Enable for testing only
   alloc_info.export_sharing = false;
   alloc_info.usage = TiMemoryUsageFlagBits::TI_MEMORY_USAGE_STORAGE_BIT;
 
@@ -44,6 +44,7 @@ static void kernel_aot_test(TiArch arch) {
   TiArgument args[arg_count] = {std::move(arg0), std::move(arg1)};
 
   ti_launch_kernel(runtime, k_run, arg_count, &args[0]);
+  ti_wait(runtime);
 
   // Check Results
   auto *data = reinterpret_cast<int32_t *>(ti_map_memory(runtime, memory));
@@ -102,6 +103,7 @@ static void field_aot_test(TiArch arch) {
                    &args[0]);
   ti_launch_kernel(runtime, k_check_activate_pointer_fields, 0 /*arg_count*/,
                    &args[0]);
+  ti_wait(runtime);
 
   // Check Results
   capi::utils::check_runtime_error(runtime);
@@ -130,6 +132,20 @@ TEST(CapiAotTest, CpuKernel) {
 TEST(CapiAotTest, CudaKernel) {
   if (capi::utils::is_cuda_available()) {
     TiArch arch = TiArch::TI_ARCH_CUDA;
+    kernel_aot_test(arch);
+  }
+}
+
+TEST(CapiAotTest, VulkanKernel) {
+  if (capi::utils::is_vulkan_available()) {
+    TiArch arch = TiArch::TI_ARCH_VULKAN;
+    kernel_aot_test(arch);
+  }
+}
+
+TEST(CapiAotTest, OpenglKernel) {
+  if (capi::utils::is_opengl_available()) {
+    TiArch arch = TiArch::TI_ARCH_OPENGL;
     kernel_aot_test(arch);
   }
 }

@@ -470,7 +470,7 @@ bool IndexExpression::is_ndarray() const {
   return var.is<ExternalTensorExpression>();
 }
 
-bool IndexExpression::is_local_tensor() const {
+bool IndexExpression::is_tensor() const {
   return is_local() && var->ret_type->is<TensorType>();
 }
 
@@ -500,7 +500,7 @@ void IndexExpression::type_check(CompileConfig *) {
       // Access to a Tensor
       ret_type = var.cast<ExternalTensorExpression>()->dt;
     }
-  } else if (is_local_tensor()) {  // local tensor
+  } else if (is_tensor()) {  // local tensor
     ret_type = var->ret_type->cast<TensorType>()->get_element_type();
   } else {
     throw TaichiTypeError(
@@ -524,7 +524,7 @@ void IndexExpression::flatten(FlattenContext *ctx) {
     stmt = make_field_access(ctx, var, indices);
   } else if (is_ndarray()) {
     stmt = make_ndarray_access(ctx, var, indices);
-  } else if (is_local_tensor()) {
+  } else if (is_tensor()) {
     stmt = make_tensor_access(
         ctx, var, indices, var->ret_type->cast<TensorType>()->get_shape(), 1);
   } else {

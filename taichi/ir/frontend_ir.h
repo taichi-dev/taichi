@@ -571,7 +571,7 @@ class IndexExpression : public Expression {
  private:
   bool is_field() const;
   bool is_ndarray() const;
-  bool is_local_tensor() const;
+  bool is_tensor() const;
 };
 
 class StrideExpression : public Expression {

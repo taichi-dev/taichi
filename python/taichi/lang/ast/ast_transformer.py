@@ -1151,7 +1151,7 @@ class ASTTransformer(Builder):
                 build_stmts(ctx, node.orelse)
             return node
 
-        with ctx.non_static_if_guard():
+        with ctx.non_static_if_guard(node):
             impl.begin_frontend_if(ctx.ast_builder, node.test.ptr)
             ctx.ast_builder.begin_frontend_if_true()
             build_stmts(ctx, node.body)
@@ -1285,9 +1285,10 @@ class ASTTransformer(Builder):
             if nearest_non_static_if:
                 msg = ctx.get_pos_info(nearest_non_static_if.test)
                 msg += "\n" + ctx.get_pos_info(node)
-                msg += "\nThe test expression of the `If` statement is not a compile-time constant, " \
-                       "so the `break` statement may not function as expected."
-                warnings.warn(msg)
+                msg += "\nYou are trying to break in a static `for` loop, " \
+                       "but the `break` statement is inside a non-static `if`. " \
+                       "Therefore, the `break` statement may not function as expected. "
+                warnings.warn_explicit(msg, SyntaxWarning, "", 0)
             ctx.set_loop_status(LoopStatus.Break)
         else:
             ctx.ast_builder.insert_break_stmt()
@@ -1296,6 +1297,15 @@ class ASTTransformer(Builder):
     @staticmethod
     def build_Continue(ctx, node):
         if ctx.is_in_static_for():
+            nearest_non_static_if: ast.If = ctx.current_loop_scope(
+            ).nearest_non_static_if
+            if nearest_non_static_if:
+                msg = ctx.get_pos_info(nearest_non_static_if.test)
+                msg += "\n" + ctx.get_pos_info(node)
+                msg += "\nYou are trying to continue in a static `for` loop, " \
+                       "but the `continue` statement is inside a non-static `if`. " \
+                       "Therefore, the `continue` statement may not function as expected. "
+                warnings.warn_explicit(msg, SyntaxWarning, "", 0)
             ctx.set_loop_status(LoopStatus.Continue)
         else:
             ctx.ast_builder.insert_continue_stmt()

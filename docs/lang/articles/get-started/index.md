@@ -25,7 +25,7 @@ Taichi is available as a PyPI package:
 ```bash
 pip install taichi
 ```
-Taichi can also be built from the source, although we do not recommend this for first-time users except those who what to try the most up-to-date features. See our [developer's guide](../contribution/dev_install.md) for full details.
+You can also build Taichi from source: See our [developer's guide](../contribution/dev_install.md) for full details. We *do not* advise you to do so if you are a first-time user, unless you want to experience the most up-to-date features.
 
 To verify a successful installation, run the following command in the terminal:
 

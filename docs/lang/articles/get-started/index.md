@@ -6,7 +6,9 @@ slug: /
 
 # Getting Started
 
-Taichi is a high-performance parallel programming language using Python as the frontend. Taichi users write their computation-intensive tasks in Python obeying a few extra rules imposed by Taichi, and use the two decorators `ti.func` and `ti.kernel` to tell Taichi to take over the functions that implement the task. Taichi's just-in-time (JIT) compiler will compile these functions to machine code and all subsequent calls to them are executed on multi-CPU cores or GPUs. In typical compute-intense scenarios (such as numerical simulations), this will usually give a 50-100x speed up over native Python!
+Taichi is a high-performance parallel programming language embedded in Python. 
+
+Taichi users write their computation-intensive tasks in Python obeying a few extra rules imposed by Taichi, and use the two decorators `@ti.func` and `@ti.kernel` to ask Taichi to take over the functions that implement the task. Taichi's just-in-time (JIT) compiler will compile these functions to machine code and all subsequent calls to them are executed on multi-CPU cores or GPUs. In typical compute-intense scenarios (such as numerical simulations), this will usually lead to a 50-100x speed up over native Python!
 
 Taichi also has a built-in ahead-of-time (AOT) system that allows users to export the code as binary/shader files. These files can then be invoked in C/C++, without the Python environment.
 
@@ -98,7 +100,7 @@ import taichi.math as tm
 ti.init(arch=ti.gpu)
 ```
 
-import taichi as a package as well as its `math` module and call the  `init` function to initialize some environment variables. The `math` module contains some frequently used math functions and built-in vector types of small dimensions. The `init` function accepts several arguments to allow users to custom the runtime program, for now, we only introduce the most important one, namely the `arch` . This argument will specify the *backend* that actually executes the compiled code. A backend can be either `ti.cpu` or  `ti.gpu`. For `ti.gpu` Taichi will look for GPU architectures in the order `ti.cuda`, `ti.vulkan`, `ti.opengl/ti.metal`, `ti.dx11` and choose the first available one. If no GPU device is found, Taichi will fall back to your CPU device. You can also directly specify the backend like `arch=ti.cuda`, Taichi will raise an error if this architecture is unavailable.
+import Taichi as a package as well as its `math` module and call the  `init` function to initialize some environment variables. The `math` module contains some frequently used math functions and built-in vector types of small dimensions. The `init` function accepts several arguments to allow users to custom the runtime program, for now, we only introduce the most important one, namely the `arch` . This argument will specify the *backend* that actually executes the compiled code. A backend can be either `ti.cpu` or  `ti.gpu`. For `ti.gpu` Taichi will look for GPU architectures in the order `ti.cuda`, `ti.vulkan`, `ti.opengl/ti.metal`, `ti.dx11` and choose the first available one. If no GPU device is found, Taichi will fall back to your CPU device. You can also directly specify the backend like `arch=ti.cuda`, Taichi will raise an error if this architecture is unavailable.
 
 
 ### Define a field
@@ -115,13 +117,13 @@ defines a field of shape (640, 320) of float type. `field `  is the most importa
 
 ### Kernels and functions
 
-Between lines 9-22 we defined two functions. One decorated by `ti.func` and one decorated by `ti.kernel`. Such functions are called *taichi functions* and *kernels* respectively, they are not executed by Python's virtual machine but will be taken over by Taichi's JIT compiler and get executed on the GPU.
+Between lines 9-22 we defined two functions. One decorated by `ti.func` and one decorated by `ti.kernel`. Such functions are called *Taichi functions* and *kernels* respectively, they are not executed by Python's virtual machine but will be taken over by Taichi's JIT compiler and get executed on the GPU.
     
-The main differences between taichi functions and kernels are:
+The main differences between Taichi functions and kernels are:
     
-1. kernels are the entrances for Taichi to take over the subsequent task. Kernels can be called anywhere in your program, but taichi functions can only be called by kernels or by other taichi functions. In the above example, the taichi function `complex_mul` is called by the kernel `paint`.
-2. The arguments and returns of a kernel function must all be type hinted, taichi functions do not have such restrictions. In the above example, the argument `t` in the kernel `paint` is type hinted, but the arguments `z,w`in the taichi function `complex_mul` are not.
-3. Nested kernels are *not supported*, nested functions are *supported*. Recursively calling taichi functions are *not supported for now*.
+1. kernels are the entrances for Taichi to take over the subsequent task. Kernels can be called anywhere in your program, but Taichi functions can only be called by kernels or by other Taichi functions. In the above example, the Taichi function `complex_mul` is called by the kernel `paint`.
+2. The arguments and returns of a kernel function must all be type hinted, Taichi functions do not have such restrictions. In the above example, the argument `t` in the kernel `paint` is type hinted, but the arguments `z,w`in the Taichi function `complex_mul` are not.
+3. Nested kernels are *not supported*, nested functions are *supported*. Recursively calling Taichi functions are *not supported for now*.
     
 :::tip
 ​    

@@ -339,7 +339,9 @@ def test_continue_in_static_for_in_non_static_if():
             if x == 0.0:
                 continue
 
-    with pytest.raises(ti.TaichiSyntaxError, match="You are trying to `continue` a static `for` loop"):
+    with pytest.raises(
+            ti.TaichiSyntaxError,
+            match="You are trying to `continue` a static `for` loop"):
         test_static_loop()
 
 
@@ -352,5 +354,6 @@ def test_break_in_static_for_in_non_static_if():
             if x == 0.0:
                 break
 
-    with pytest.raises(ti.TaichiSyntaxError, match="You are trying to `break` a static `for` loop"):
+    with pytest.raises(ti.TaichiSyntaxError,
+                       match="You are trying to `break` a static `for` loop"):
         test_static_loop()

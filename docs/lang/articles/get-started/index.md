@@ -181,7 +181,7 @@ def fill():
 
 :::caution WARNING
 
-`break` statement is *not* supported in parallel loops, but fine in non-parallel loops:
+`break` statement is *not* supported in parallel loops:
 
 ```python
 @ti.kernel

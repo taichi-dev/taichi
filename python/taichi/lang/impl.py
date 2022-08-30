@@ -130,6 +130,9 @@ def subscript(value, *_indices, skip_reordered=False, get_ref=False):
     if isinstance(value, np.ndarray):
         return value.__getitem__(_indices)
 
+    if isinstance(value, Expr):
+        return make_index_expr(value.ptr, _indices)
+
     if isinstance(value, (tuple, list, dict)):
         assert len(_indices) == 1
         return value[_indices[0]]

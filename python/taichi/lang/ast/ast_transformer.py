@@ -1284,11 +1284,9 @@ class ASTTransformer(Builder):
             ).nearest_non_static_if
             if nearest_non_static_if:
                 msg = ctx.get_pos_info(nearest_non_static_if.test)
-                msg += "\n" + ctx.get_pos_info(node)
-                msg += "\nYou are trying to break in a static `for` loop, " \
-                       "but the `break` statement is inside a non-static `if`. " \
-                       "Therefore, the `break` statement may not function as expected. "
-                warnings.warn_explicit(msg, SyntaxWarning, "", 0)
+                msg += "You are trying to break in a static `for` loop, " \
+                       "but the `break` statement is inside a non-static `if`. "
+                raise TaichiSyntaxError(msg)
             ctx.set_loop_status(LoopStatus.Break)
         else:
             ctx.ast_builder.insert_break_stmt()
@@ -1301,11 +1299,9 @@ class ASTTransformer(Builder):
             ).nearest_non_static_if
             if nearest_non_static_if:
                 msg = ctx.get_pos_info(nearest_non_static_if.test)
-                msg += "\n" + ctx.get_pos_info(node)
-                msg += "\nYou are trying to continue in a static `for` loop, " \
-                       "but the `continue` statement is inside a non-static `if`. " \
-                       "Therefore, the `continue` statement may not function as expected. "
-                warnings.warn_explicit(msg, SyntaxWarning, "", 0)
+                msg += "You are trying to continue in a static `for` loop, " \
+                       "but the `continue` statement is inside a non-static `if`. "
+                raise TaichiSyntaxError(msg)
             ctx.set_loop_status(LoopStatus.Continue)
         else:
             ctx.ast_builder.insert_continue_stmt()

@@ -1,4 +1,5 @@
 #include "taichi_core_impl.h"
+#include "taichi_opengl_impl.h"
 #include "taichi_vulkan_impl.h"
 #include "taichi_llvm_impl.h"
 #include "taichi/program/ndarray.h"
@@ -138,6 +139,11 @@ TiRuntime ti_create_runtime(TiArch arch) {
       return (TiRuntime)(static_cast<Runtime *>(new VulkanRuntimeOwned));
     }
 #endif  // TI_WITH_VULKAN
+#ifdef TI_WITH_OPENGL
+    case TI_ARCH_OPENGL: {
+      return (TiRuntime)(static_cast<Runtime *>(new OpenglRuntime));
+    }
+#endif  // TI_WITH_OPENGL
 #ifdef TI_WITH_LLVM
     case TI_ARCH_X64: {
       return (TiRuntime)(static_cast<Runtime *>(

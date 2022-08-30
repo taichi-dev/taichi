@@ -37,6 +37,7 @@ target_include_directories(${TAICHI_C_API_NAME}
         ${CMAKE_CURRENT_SOURCE_DIR}/external/VulkanMemoryAllocator/include
         ${CMAKE_CURRENT_SOURCE_DIR}/external/SPIRV-Tools/include
         ${CMAKE_CURRENT_SOURCE_DIR}/external/volk
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/glad/include
     )
 
 # This helper provides us standard locations across Linux/Windows/MacOS

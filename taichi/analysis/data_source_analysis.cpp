@@ -9,7 +9,7 @@ namespace irpass::analysis {
 std::vector<Stmt *> get_load_pointers(Stmt *load_stmt) {
   // If load_stmt loads some variables or a stack, return the pointers of them.
   if (auto local_load = load_stmt->cast<LocalLoadStmt>()) {
-    return std::vector<Stmt *>(1, local_load->src.var);
+    return std::vector<Stmt *>(1, local_load->src);
   } else if (auto global_load = load_stmt->cast<GlobalLoadStmt>()) {
     return std::vector<Stmt *>(1, global_load->src);
   } else if (auto atomic = load_stmt->cast<AtomicOpStmt>()) {

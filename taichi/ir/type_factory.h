@@ -44,10 +44,6 @@ class TypeFactory {
                              Type *element_type,
                              int num_elements);
 
-  static DataType create_vector_or_scalar_type(int width,
-                                               DataType element,
-                                               bool element_is_pointer = false);
-
   static DataType create_tensor_type(std::vector<int> shape, DataType element);
 
  private:

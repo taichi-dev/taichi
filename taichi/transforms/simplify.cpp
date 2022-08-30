@@ -422,7 +422,7 @@ class BasicBlockSimplify : public IRVisitor {
           }
           if (clause[i]->is<LocalStoreStmt>()) {
             auto store = clause[i]->as<LocalStoreStmt>();
-            auto load = Stmt::make<LocalLoadStmt>(LocalAddress(store->dest, 0));
+            auto load = Stmt::make<LocalLoadStmt>(store->dest);
             modifier.type_check(load.get(), config);
             auto select = Stmt::make<TernaryOpStmt>(
                 TernaryOpType::select, if_stmt->cond,

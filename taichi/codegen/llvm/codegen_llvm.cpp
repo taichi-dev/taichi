@@ -1191,16 +1191,16 @@ void TaskCodeGenLLVM::visit(LocalLoadStmt *stmt) {
 #ifdef TI_LLVM_15
   // FIXME: get ptr_ty from taichi instead of llvm.
   llvm::Type *ptr_ty = nullptr;
-  auto *val = llvm_val[stmt->src.var];
+  auto *val = llvm_val[stmt->src];
   if (auto *alloc = llvm::dyn_cast<llvm::AllocaInst>(val))
     ptr_ty = alloc->getAllocatedType();
-  if (!ptr_ty && stmt->src.var->element_type().is_pointer()) {
-    ptr_ty = llvm_type(stmt->src.var->element_type().ptr_removed());
+  if (!ptr_ty && stmt->src->element_type().is_pointer()) {
+    ptr_ty = llvm_type(stmt->src->element_type().ptr_removed());
   }
   TI_ASSERT(ptr_ty);
-  llvm_val[stmt] = builder->CreateLoad(ptr_ty, llvm_val[stmt->src.var]);
+  llvm_val[stmt] = builder->CreateLoad(ptr_ty, llvm_val[stmt->src]);
 #else
-  llvm_val[stmt] = builder->CreateLoad(llvm_val[stmt->src.var]);
+  llvm_val[stmt] = builder->CreateLoad(llvm_val[stmt->src]);
 #endif
 }
 
@@ -1887,9 +1887,8 @@ std::tuple<llvm::Value *, llvm::Value *> TaskCodeGenLLVM::get_range_for_bounds(
   if (stmt->const_begin) {
     begin = tlctx->get_constant(stmt->begin_value);
   } else {
-    auto begin_stmt = Stmt::make<GlobalTemporaryStmt>(
-        stmt->begin_offset,
-        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32));
+    auto begin_stmt =
+        Stmt::make<GlobalTemporaryStmt>(stmt->begin_offset, PrimitiveType::i32);
     begin_stmt->accept(this);
     begin = builder->CreateLoad(
 #ifdef TI_LLVM_15
@@ -1900,9 +1899,8 @@ std::tuple<llvm::Value *, llvm::Value *> TaskCodeGenLLVM::get_range_for_bounds(
   if (stmt->const_end) {
     end = tlctx->get_constant(stmt->end_value);
   } else {
-    auto end_stmt = Stmt::make<GlobalTemporaryStmt>(
-        stmt->end_offset,
-        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32));
+    auto end_stmt =
+        Stmt::make<GlobalTemporaryStmt>(stmt->end_offset, PrimitiveType::i32);
     end_stmt->accept(this);
     end = builder->CreateLoad(
 #ifdef TI_LLVM_15

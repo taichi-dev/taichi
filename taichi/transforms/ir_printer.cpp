@@ -433,7 +433,7 @@ class IRPrinter : public IRVisitor {
 
   void visit(LocalLoadStmt *stmt) override {
     print("{}{} = local load [{}]", stmt->type_hint(), stmt->name(),
-          stmt->src.var->name());
+          stmt->src->name());
   }
 
   void visit(LocalStoreStmt *stmt) override {

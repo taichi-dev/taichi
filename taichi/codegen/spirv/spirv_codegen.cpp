@@ -234,7 +234,7 @@ class TaskCodegen : public IRVisitor {
   }
 
   void visit(LocalLoadStmt *stmt) override {
-    auto ptr = stmt->src.var;
+    auto ptr = stmt->src;
     spirv::Value ptr_val = ir_->query_value(ptr->raw_name());
     spirv::Value val = ir_->load_variable(
         ptr_val, ir_->get_primitive_type(stmt->element_type()));

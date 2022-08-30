@@ -405,7 +405,7 @@ AllocaStmt *IRBuilder::create_local_var(DataType dt) {
 }
 
 LocalLoadStmt *IRBuilder::create_local_load(AllocaStmt *ptr) {
-  return insert(Stmt::make_typed<LocalLoadStmt>(LocalAddress(ptr, 0)));
+  return insert(Stmt::make_typed<LocalLoadStmt>(ptr));
 }
 
 void IRBuilder::create_local_store(AllocaStmt *ptr, Stmt *data) {

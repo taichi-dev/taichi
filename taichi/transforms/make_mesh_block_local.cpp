@@ -86,7 +86,7 @@ void MakeMeshBlockLocal::replace_conv_statements() {
         BinaryOpType::add, bls_element_offset_bytes, idx_byte);
     Stmt *bls_ptr = bls.push_back<BlockLocalPtrStmt>(
         offset,
-        TypeFactory::create_vector_or_scalar_type(1, mapping_data_type_, true));
+        TypeFactory::get_instance().get_pointer_type(mapping_data_type_));
     [[maybe_unused]] Stmt *bls_load = bls.push_back<GlobalLoadStmt>(bls_ptr);
     stmt->replace_with(std::move(bls));
   }
@@ -120,7 +120,7 @@ void MakeMeshBlockLocal::replace_global_ptrs(SNode *snode) {
     Stmt *index =
         bls.push_back<BinaryOpStmt>(BinaryOpType::add, offset, local_idx_byte);
     [[maybe_unused]] Stmt *bls_ptr = bls.push_back<BlockLocalPtrStmt>(
-        index, TypeFactory::create_vector_or_scalar_type(1, data_type, true));
+        index, TypeFactory::get_instance().get_pointer_type(data_type));
     global_ptr->replace_with(std::move(bls));
   }
 
@@ -172,7 +172,7 @@ Stmt *MakeMeshBlockLocal::create_xlogue(
 
   std::unique_ptr<Block> body = std::make_unique<Block>();
   {
-    Stmt *idx_val = body->push_back<LocalLoadStmt>(LocalAddress{idx, 0});
+    Stmt *idx_val = body->push_back<LocalLoadStmt>(idx);
     Stmt *cond =
         body->push_back<BinaryOpStmt>(BinaryOpType::cmp_lt, idx_val, end_val);
     body->push_back<WhileControlStmt>(nullptr, cond);
@@ -183,7 +183,7 @@ Stmt *MakeMeshBlockLocal::create_xlogue(
         body->push_back<LocalStoreStmt>(idx, idx_val_);
   }
   block_->push_back<WhileStmt>(std::move(body));
-  Stmt *idx_val = block_->push_back<LocalLoadStmt>(LocalAddress{idx, 0});
+  Stmt *idx_val = block_->push_back<LocalLoadStmt>(idx);
   return idx_val;
 }
 
@@ -207,7 +207,7 @@ Stmt *MakeMeshBlockLocal::create_cache_mapping(
         BinaryOpType::add, bls_element_offset_bytes, idx_val_byte);
     Stmt *bls_ptr = body->push_back<BlockLocalPtrStmt>(
         offset,
-        TypeFactory::create_vector_or_scalar_type(1, mapping_data_type_, true));
+        TypeFactory::get_instance().get_pointer_type(mapping_data_type_));
     [[maybe_unused]] Stmt *bls_store =
         body->push_back<GlobalStoreStmt>(bls_ptr, global_val(body, idx_val));
   });
@@ -267,7 +267,7 @@ void MakeMeshBlockLocal::fetch_attr_to_bls(Block *body,
     Stmt *index =
         body->push_back<BinaryOpStmt>(BinaryOpType::add, offset, idx_val_byte);
     Stmt *bls_ptr = body->push_back<BlockLocalPtrStmt>(
-        index, TypeFactory::create_vector_or_scalar_type(1, data_type, true));
+        index, TypeFactory::get_instance().get_pointer_type(data_type));
     body->push_back<GlobalStoreStmt>(bls_ptr, value);
 
     // Step 3-2-1:
@@ -303,7 +303,7 @@ void MakeMeshBlockLocal::push_attr_to_global(Block *body,
     Stmt *index =
         body->push_back<BinaryOpStmt>(BinaryOpType::add, offset, idx_val_byte);
     Stmt *bls_ptr = body->push_back<BlockLocalPtrStmt>(
-        index, TypeFactory::create_vector_or_scalar_type(1, data_type, true));
+        index, TypeFactory::get_instance().get_pointer_type(data_type));
     Stmt *bls_val = body->push_back<GlobalLoadStmt>(bls_ptr);
 
     Stmt *global_ptr =
@@ -570,8 +570,8 @@ MakeMeshBlockLocal::MakeMeshBlockLocal(OffloadedStmt *offload,
             Stmt *offset = body->push_back<BinaryOpStmt>(
                 BinaryOpType::add, bls_element_offset_bytes, idx_byte);
             Stmt *bls_ptr = body->push_back<BlockLocalPtrStmt>(
-                offset, TypeFactory::create_vector_or_scalar_type(
-                            1, mapping_data_type_, true));
+                offset, TypeFactory::get_instance().get_pointer_type(
+                            mapping_data_type_));
             Stmt *global_val = body->push_back<GlobalLoadStmt>(bls_ptr);
             this->push_attr_to_global(body, idx_val, global_val);
           });

@@ -2,9 +2,26 @@ cmake_minimum_required(VERSION 3.0)
 
 set(TAICHI_C_API_NAME taichi_c_api)
 
-file(GLOB_RECURSE C_API_SOURCE "c_api/src/*.cpp")
-if(NOT TI_BUILD_TESTS)
-    list(REMOVE_ITEM C_API_SOURCE "c_api/src/c_api_test_utils.cpp")
+file(GLOB_RECURSE C_API_SOURCE "c_api/src/taichi_core_impl.cpp")
+
+if (TI_WITH_LLVM)
+  list(APPEND C_API_SOURCE "c_api/src/taichi_llvm_impl.cpp")
+endif()
+
+if (TI_WITH_OPENGL OR TI_WITH_VULKAN)
+  list(APPEND C_API_SOURCE "c_api/src/taichi_gfx_impl.cpp")
+endif()
+
+if (TI_WITH_OPENGL)
+  list(APPEND C_API_SOURCE "c_api/src/taichi_opengl_impl.cpp")
+endif()
+
+if (TI_WITH_VULKAN)
+  list(APPEND C_API_SOURCE "c_api/src/taichi_vulkan_impl.cpp")
+endif()
+
+if(TI_BUILD_TESTS)
+  list(APPEND C_API_SOURCE "c_api/src/c_api_test_utils.cpp")
 endif()
 
 add_library(${TAICHI_C_API_NAME} SHARED ${C_API_SOURCE})
@@ -38,6 +55,7 @@ target_include_directories(${TAICHI_C_API_NAME}
         ${CMAKE_CURRENT_SOURCE_DIR}/external/SPIRV-Tools/include
         ${CMAKE_CURRENT_SOURCE_DIR}/external/volk
         ${CMAKE_CURRENT_SOURCE_DIR}/external/glad/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/glfw/include
     )
 
 # This helper provides us standard locations across Linux/Windows/MacOS

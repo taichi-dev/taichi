@@ -496,6 +496,7 @@ class Event {
   Event &operator=(Event &&b) {
     event_ = detail::move_handle(b.event_);
     should_destroy_ = std::exchange(b.should_destroy_, false);
+    return *this;
   }
 
   void reset(TiEvent event_) {

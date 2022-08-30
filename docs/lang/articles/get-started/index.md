@@ -44,7 +44,7 @@ You can also run the command `ti example` to view the full list of selected Taic
 
 ## Hello, world!
 
-We introduce the Taichi programming language through a very basic fractal example, the [Julia fractal](https://en.wikipedia.org/wiki/Julia_set):
+We would like to familiarize you with the Taichi programming language through a basic fractal example, the [Julia fractal](https://en.wikipedia.org/wiki/Julia_set):
 
 ```python title=fractal.py
 import taichi as ti

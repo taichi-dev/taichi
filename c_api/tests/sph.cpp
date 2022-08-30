@@ -144,3 +144,14 @@ TEST(CapiSphTest, Vulkan) {
     run(TiArch::TI_ARCH_VULKAN, aot_mod_ss.str().c_str());
   }
 }
+
+TEST(CapiSphTest, Opengl) {
+  if (capi::utils::is_opengl_available()) {
+    const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
+
+    std::stringstream aot_mod_ss;
+    aot_mod_ss << folder_dir;
+
+    run(TiArch::TI_ARCH_OPENGL, aot_mod_ss.str().c_str());
+  }
+}

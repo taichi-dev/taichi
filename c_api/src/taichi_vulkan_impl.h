@@ -1,46 +1,26 @@
 #pragma once
 
-#ifdef TI_WITH_VULKAN
 #define VK_NO_PROTOTYPES
 #include "taichi/taichi_vulkan.h"
-#include "taichi/runtime/gfx/runtime.h"
 #include "taichi/rhi/vulkan/vulkan_device.h"
 #include "taichi/rhi/vulkan/vulkan_device_creator.h"
 
 #include "taichi_core_impl.h"
+#include "taichi_gfx_impl.h"
 
 class VulkanRuntime;
 class VulkanRuntimeImported;
 class VulkanRuntimeOwned;
 class VulkanContext;
 
-class VulkanRuntime : public Runtime {
+class VulkanRuntime : public GfxRuntime {
  public:
   VulkanRuntime();
 
   taichi::lang::vulkan::VulkanDevice &get_vk();
-  virtual taichi::lang::gfx::GfxRuntime &get_gfx_runtime() = 0;
-
   virtual TiTexture allocate_texture(
       const taichi::lang::ImageParams &params) override final;
   virtual void free_texture(TiTexture texture) override final;
-
-  virtual TiAotModule load_aot_module(const char *module_path) override final;
-  virtual void buffer_copy(const taichi::lang::DevicePtr &dst,
-                           const taichi::lang::DevicePtr &src,
-                           size_t size) override final;
-  virtual void copy_image(
-      const taichi::lang::DeviceAllocation &dst,
-      const taichi::lang::DeviceAllocation &src,
-      const taichi::lang::ImageCopyParams &params) override final;
-  virtual void transition_image(
-      const taichi::lang::DeviceAllocation &image,
-      taichi::lang::ImageLayout layout) override final;
-  virtual void signal_event(taichi::lang::DeviceEvent *event) override final;
-  virtual void reset_event(taichi::lang::DeviceEvent *event) override final;
-  virtual void wait_event(taichi::lang::DeviceEvent *event) override final;
-  virtual void submit() override final;
-  virtual void wait() override final;
 };
 class VulkanRuntimeImported : public VulkanRuntime {
   // A dirty workaround to ensure the device is fully initialized before
@@ -72,5 +52,3 @@ class VulkanRuntimeOwned : public VulkanRuntime {
   virtual taichi::lang::Device &get() override final;
   virtual taichi::lang::gfx::GfxRuntime &get_gfx_runtime() override final;
 };
-
-#endif  // TI_WITH_VULKAN

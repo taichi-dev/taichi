@@ -496,9 +496,5 @@ void DelayedIRModifier::mark_as_modified() {
   modified_ = true;
 }
 
-LocalAddress::LocalAddress(Stmt *var, int offset) : var(var), offset(offset) {
-  TI_ASSERT(var->is<AllocaStmt>() || var->is<PtrOffsetStmt>());
-}
-
 }  // namespace lang
 }  // namespace taichi

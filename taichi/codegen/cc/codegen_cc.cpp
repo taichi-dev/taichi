@@ -217,7 +217,7 @@ class CCTransformer : public IRVisitor {
   void visit(LocalLoadStmt *stmt) override {
     auto var =
         define_var(cc_data_type_name(stmt->element_type()), stmt->raw_name());
-    emit("{} = {};", var, stmt->src.var->raw_name());
+    emit("{} = {};", var, stmt->src->raw_name());
   }
 
   void visit(LocalStoreStmt *stmt) override {

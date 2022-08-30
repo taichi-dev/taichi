@@ -260,7 +260,7 @@ class KernelCodegenImpl : public IRVisitor {
   }
 
   void visit(LocalLoadStmt *stmt) override {
-    auto ptr = stmt->src.var;
+    auto ptr = stmt->src;
     emit("const {} {}({});", metal_data_type_name(stmt->element_type()),
          stmt->raw_name(), ptr->raw_name());
   }

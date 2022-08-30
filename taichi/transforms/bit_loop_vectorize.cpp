@@ -197,7 +197,7 @@ class BitLoopVectorize : public IRVisitor {
           }
         } else if (auto lhs = stmt->lhs->cast<LocalLoadStmt>()) {
           // case 1: lhs is a local load from a local adder structure
-          auto it = transformed_atomics.find(lhs->src.var);
+          auto it = transformed_atomics.find(lhs->src);
           if (it != transformed_atomics.end()) {
             int32 rhs_val = get_constant_value(stmt->rhs);
             // TODO: we limit 2 and 3 for now, the other case should be
@@ -207,9 +207,9 @@ class BitLoopVectorize : public IRVisitor {
             auto &buffer_vec = it->second;
             Stmt *a = buffer_vec[0], *b = buffer_vec[1], *c = buffer_vec[2];
             // load all three buffers
-            auto load_a = std::make_unique<LocalLoadStmt>(LocalAddress(a, 0));
-            auto load_b = std::make_unique<LocalLoadStmt>(LocalAddress(b, 0));
-            auto load_c = std::make_unique<LocalLoadStmt>(LocalAddress(c, 0));
+            auto load_a = std::make_unique<LocalLoadStmt>(a);
+            auto load_b = std::make_unique<LocalLoadStmt>(b);
+            auto load_c = std::make_unique<LocalLoadStmt>(c);
             // compute not_a first
             auto not_a = std::make_unique<UnaryOpStmt>(UnaryOpType::bit_not,
                                                        load_a.get());
@@ -283,12 +283,12 @@ class BitLoopVectorize : public IRVisitor {
     // bit To add *d* to the subarray, we do bit_xor and bit_and to compute the
     // sum and the carry
     Stmt *a = buffer_vec[0], *b = buffer_vec[1], *c = buffer_vec[2];
-    auto load_c = std::make_unique<LocalLoadStmt>(LocalAddress(c, 0));
+    auto load_c = std::make_unique<LocalLoadStmt>(c);
     auto carry_c = std::make_unique<BinaryOpStmt>(BinaryOpType::bit_and,
                                                   load_c.get(), stmt->val);
     auto sum_c =
         std::make_unique<AtomicOpStmt>(AtomicOpType::bit_xor, c, stmt->val);
-    auto load_b = std::make_unique<LocalLoadStmt>(LocalAddress(b, 0));
+    auto load_b = std::make_unique<LocalLoadStmt>(b);
     auto carry_b = std::make_unique<BinaryOpStmt>(BinaryOpType::bit_and,
                                                   load_b.get(), carry_c.get());
     auto sum_b =

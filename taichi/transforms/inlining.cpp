@@ -59,7 +59,7 @@ class Inliner : public BasicStmtVisitor {
                               std::move(inlined_ir->as<Block>()->statements));
       // Load the return value here
       modifier_.replace_with(
-          stmt, Stmt::make<LocalLoadStmt>(LocalAddress(return_address, 0)));
+          stmt, Stmt::make<LocalLoadStmt>(return_address));
     }
   }
 

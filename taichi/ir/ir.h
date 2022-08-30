@@ -573,25 +573,6 @@ class DelayedIRModifier {
   void mark_as_modified();
 };
 
-struct LocalAddress {
-  Stmt *var;
-  int offset;
-
-  LocalAddress(Stmt *var, int offset);
-};
-
-class VectorElement {
- public:
-  Stmt *stmt;
-  int index;
-
-  VectorElement() : stmt(nullptr), index(0) {
-  }
-
-  VectorElement(Stmt *stmt, int index) : stmt(stmt), index(index) {
-  }
-};
-
 template <typename T>
 inline void StmtFieldManager::operator()(const char *key, T &&value) {
   using decay_T = typename std::decay<T>::type;
@@ -612,14 +593,6 @@ inline void StmtFieldManager::operator()(const char *key, T &&value) {
     }
   } else if constexpr (std::is_same<decay_T, Stmt *>::value) {
     stmt_->register_operand(const_cast<Stmt *&>(value));
-  } else if constexpr (std::is_same<decay_T, LocalAddress>::value) {
-    stmt_->register_operand(const_cast<Stmt *&>(value.var));
-    stmt_->field_manager.fields.emplace_back(
-        std::make_unique<StmtFieldNumeric<int>>(value.offset));
-  } else if constexpr (std::is_same<decay_T, VectorElement>::value) {
-    stmt_->register_operand(const_cast<Stmt *&>(value.stmt));
-    stmt_->field_manager.fields.emplace_back(
-        std::make_unique<StmtFieldNumeric<int>>(value.index));
   } else if constexpr (std::is_same<decay_T, SNode *>::value) {
     stmt_->field_manager.fields.emplace_back(
         std::make_unique<StmtFieldSNode>(value));

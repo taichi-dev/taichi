@@ -262,7 +262,7 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access,
     auto stmt = block->statements[i].get();
     Stmt *result = nullptr;
     if (auto local_load = stmt->cast<LocalLoadStmt>()) {
-      result = get_store_forwarding_data(local_load->src.var, i);
+      result = get_store_forwarding_data(local_load->src, i);
     } else if (auto global_load = stmt->cast<GlobalLoadStmt>()) {
       if (!after_lower_access && !autodiff_enabled) {
         result = get_store_forwarding_data(global_load->src, i);
@@ -431,7 +431,7 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
           // Weaken the atomic operation to a load.
           if (atomic->dest->is<AllocaStmt>()) {
             auto local_load =
-                Stmt::make<LocalLoadStmt>(LocalAddress(atomic->dest, 0));
+                Stmt::make<LocalLoadStmt>(atomic->dest);
             local_load->ret_type = atomic->ret_type;
             // Notice that we have a load here
             // (the return value of AtomicOpStmt).

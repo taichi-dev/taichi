@@ -14,9 +14,9 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
 
   void visit(LocalLoadStmt *stmt) override {
-    TI_ASSERT(stmt->src.var->is<AllocaStmt>() ||
-              stmt->src.var->is<PtrOffsetStmt>());
-    touched_allocas_.insert(stmt->src.var);
+    TI_ASSERT(stmt->src->is<AllocaStmt>() ||
+              stmt->src->is<PtrOffsetStmt>());
+    touched_allocas_.insert(stmt->src);
   }
 
   void visit(LocalStoreStmt *stmt) override {
@@ -281,7 +281,7 @@ class PromoteSSA2LocalVar : public BasicStmtVisitor {
       TI_ASSERT(alloca_block_);
       alloca_block_->insert(std::move(alloc), 0);
       auto load = stmt->insert_after_me(
-          Stmt::make<LocalLoadStmt>(LocalAddress(alloc_ptr, 0)));
+          Stmt::make<LocalLoadStmt>(alloc_ptr));
       irpass::replace_all_usages_with(stmt->parent, stmt, load);
       // Create the load first so that the operand of the store won't get
       // replaced
@@ -321,7 +321,7 @@ class AdStackAllocaJudger : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
   // Find the usage of the stmt recursively along the LocalLoadStmt
   void visit(LocalLoadStmt *stmt) override {
-    if (stmt->src.var == target_alloca_) {
+    if (stmt->src == target_alloca_) {
       local_loaded_ = true;
       target_alloca_ = stmt;
     }
@@ -434,8 +434,8 @@ class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
   }
 
   void visit(LocalLoadStmt *stmt) override {
-    if (stmt->src.var->is<AdStackAllocaStmt>())
-      stmt->replace_with(Stmt::make<AdStackLoadTopStmt>(stmt->src.var));
+    if (stmt->src->is<AdStackAllocaStmt>())
+      stmt->replace_with(Stmt::make<AdStackLoadTopStmt>(stmt->src));
   }
 
   void visit(LocalStoreStmt *stmt) override {
@@ -603,7 +603,7 @@ class ADTransform : public IRVisitor {
   Stmt *load(Stmt *alloc) {
     TI_ASSERT(alloc != nullptr);
     if (alloc->is<AllocaStmt>()) {
-      return insert<LocalLoadStmt>(LocalAddress(alloc, 0));
+      return insert<LocalLoadStmt>(alloc);
     } else {
       // non alloca
       return alloc;
@@ -706,7 +706,7 @@ class MakeAdjoint : public ADTransform {
     } else {
       TI_ASSERT(alloca_->is<AllocaStmt>());
       auto alloca = alloca_->as<AllocaStmt>();
-      auto local_load = insert<LocalLoadStmt>(LocalAddress(alloca, 0));
+      auto local_load = insert<LocalLoadStmt>(alloca);
       insert<LocalStoreStmt>(alloca, add(local_load, value));
     }
   }
@@ -950,7 +950,7 @@ class MakeAdjoint : public ADTransform {
   void visit(LocalLoadStmt *stmt) override {
     // TI_ASSERT(!needs_grad(stmt->ret_type));
     if (is_real(stmt->ret_type))
-      accumulate(stmt->src.var, load(adjoint(stmt)));
+      accumulate(stmt->src, load(adjoint(stmt)));
   }
 
   // Equivalent to AdStackPushStmt when no stack is needed
@@ -1124,7 +1124,7 @@ class MakeDual : public ADTransform {
 
     TI_ASSERT(alloca_->is<AllocaStmt>());
     auto alloca = alloca_->as<AllocaStmt>();
-    auto local_load = insert<LocalLoadStmt>(LocalAddress(alloca, 0));
+    auto local_load = insert<LocalLoadStmt>(alloca);
     insert<LocalStoreStmt>(alloca, add(local_load, value));
   }
 
@@ -1295,7 +1295,7 @@ class MakeDual : public ADTransform {
 
   void visit(LocalLoadStmt *stmt) override {
     // TI_ASSERT(!needs_grad(stmt->ret_type));
-    accumulate(stmt, dual(stmt->src.var));
+    accumulate(stmt, dual(stmt->src));
   }
 
   void visit(LocalStoreStmt *stmt) override {
@@ -1454,7 +1454,7 @@ class BackupSSA : public BasicStmtVisitor {
         } else {
           auto alloca = load(op);
           stmt->set_operand(i, stmt->insert_before_me(Stmt::make<LocalLoadStmt>(
-                                   LocalAddress(alloca, 0))));
+                                   alloca)));
         }
       }
     }

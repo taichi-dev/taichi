@@ -172,7 +172,7 @@ Stmt *MakeMeshBlockLocal::create_xlogue(
 
   std::unique_ptr<Block> body = std::make_unique<Block>();
   {
-    Stmt *idx_val = body->push_back<LocalLoadStmt>(LocalAddress{idx, 0});
+    Stmt *idx_val = body->push_back<LocalLoadStmt>(idx);
     Stmt *cond =
         body->push_back<BinaryOpStmt>(BinaryOpType::cmp_lt, idx_val, end_val);
     body->push_back<WhileControlStmt>(nullptr, cond);
@@ -183,7 +183,7 @@ Stmt *MakeMeshBlockLocal::create_xlogue(
         body->push_back<LocalStoreStmt>(idx, idx_val_);
   }
   block_->push_back<WhileStmt>(std::move(body));
-  Stmt *idx_val = block_->push_back<LocalLoadStmt>(LocalAddress{idx, 0});
+  Stmt *idx_val = block_->push_back<LocalLoadStmt>(idx);
   return idx_val;
 }
 

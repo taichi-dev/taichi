@@ -593,9 +593,9 @@ class GlobalStoreStmt : public Stmt {
  */
 class LocalLoadStmt : public Stmt {
  public:
-  LocalAddress src;
+  Stmt *src;
 
-  explicit LocalLoadStmt(const LocalAddress &src) : src(src) {
+  explicit LocalLoadStmt(Stmt *src) : src(src) {
     TI_STMT_REG_FIELDS;
   }
 

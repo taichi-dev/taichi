@@ -699,3 +699,45 @@ def test_indexing_in_struct_field():
     with pytest.raises(TaichiCompilationError,
                        match=r'Expected 2 indices, got 1'):
         bar()
+
+
+@test_utils.test(arch=[ti.cuda, ti.cpu, ti.gpu], real_matrix=True)
+def test_local_matrix_read():
+
+    s = ti.field(ti.i32, shape=())
+
+    @ti.kernel
+    def get_index(i: ti.i32, j: ti.i32):
+        mat = ti.Matrix([[x * 3 + y for y in range(3)] for x in range(3)])
+        s[None] = mat[i, j]
+
+    for i in range(3):
+        for j in range(3):
+            get_index(i, j)
+            assert s[None] == i * 3 + j
+
+
+@test_utils.test(arch=[ti.cuda, ti.cpu, ti.gpu], real_matrix=True)
+def test_local_matrix_indexing_in_loop():
+    @ti.kernel
+    def test():
+        mat = ti.Matrix([[x * 3 + y for y in range(3)] for x in range(3)])
+        for i in range(3):
+            for j in range(3):
+                assert mat[i, j] == i * 3 + j
+
+    test()
+
+
+@test_utils.test(arch=[ti.cuda, ti.cpu, ti.gpu], real_matrix=True)
+def test_local_matrix_indexing_ops():
+    @ti.kernel
+    def basic_ops():
+        mat = ti.Matrix([[x * 3 + y for y in range(3)] for x in range(3)])
+        s = 0
+        for i in range(3):
+            for j in range(3):
+                s += mat[i, j]
+        assert s == 72
+
+    basic_ops()

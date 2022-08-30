@@ -16,7 +16,8 @@ void graph_aot_test(TiArch arch) {
   TiMemoryAllocateInfo alloc_info;
   alloc_info.size = kArrLen * sizeof(int32_t);
   alloc_info.host_write = false;
-  alloc_info.host_read = false;
+  alloc_info.host_read = (arch == TI_ARCH_OPENGL ||
+                          arch == TI_ARCH_VULKAN);  // Enable for testing only
   alloc_info.export_sharing = false;
   alloc_info.usage = TiMemoryUsageFlagBits::TI_MEMORY_USAGE_STORAGE_BIT;
 
@@ -64,6 +65,7 @@ void graph_aot_test(TiArch arch) {
   };
 
   ti_launch_compute_graph(runtime, run_graph, arg_count, &named_args[0]);
+  ti_wait(runtime);
 
   // Check Results
   auto *data = reinterpret_cast<int32_t *>(ti_map_memory(runtime, arr_memory));
@@ -85,6 +87,20 @@ TEST(CapiGraphTest, CpuGraph) {
 TEST(CapiGraphTest, CudaGraph) {
   if (capi::utils::is_cuda_available()) {
     TiArch arch = TiArch::TI_ARCH_CUDA;
+    graph_aot_test(arch);
+  }
+}
+
+TEST(CapiGraphTest, VulkanGraph) {
+  if (capi::utils::is_vulkan_available()) {
+    TiArch arch = TiArch::TI_ARCH_VULKAN;
+    graph_aot_test(arch);
+  }
+}
+
+TEST(CapiGraphTest, OpenglGraph) {
+  if (capi::utils::is_opengl_available()) {
+    TiArch arch = TiArch::TI_ARCH_OPENGL;
     graph_aot_test(arch);
   }
 }

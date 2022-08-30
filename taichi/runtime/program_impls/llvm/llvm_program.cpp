@@ -181,7 +181,7 @@ void LlvmProgramImpl::cache_field(int snode_tree_id,
 
 void LlvmProgramImpl::dump_cache_data_to_disk() {
   if (config->offline_cache) {
-    auto policy = LlvmOfflineCacheFileWriter::string_to_clean_cache_policy(
+    auto policy = offline_cache::string_to_clean_cache_policy(
         config->offline_cache_cleaning_policy);
     LlvmOfflineCacheFileWriter::clean_cache(
         offline_cache::get_cache_path_by_arch(config->offline_cache_file_path,

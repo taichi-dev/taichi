@@ -1,7 +1,7 @@
 import os
 import pathlib
-import tempfile
 import platform
+import tempfile
 
 import numpy as np
 import pytest
@@ -29,7 +29,8 @@ def write_temp_image(window):
         os.remove(f)
     except OSError:
         pass
-    
+
+
 def write_temp_image_array(img, file=None):
     if img.shape[0] % 2 != 0:
         img = img[:-1]
@@ -62,6 +63,7 @@ def verify_image(window, image_name, tolerance=0.1):
         mse = np.mean(diff * diff)
         assert mse <= tolerance  # the pixel values are 0~255
         os.remove(actual_name)
+
 
 def verify_image_array(image, image_name, tolerance=0.1):
     if image.shape[0] % 2 != 0:
@@ -418,6 +420,7 @@ def test_get_camera_view_and_projection_matrix():
     assert (abs(projection_matrix[2, 3] + 1.0000000) <= 1e-5)
     assert (abs(projection_matrix[3, 2] - 1.0001000e-1) <= 1e-5)
 
+
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)
 def test_fetching_color_attachment():
@@ -435,11 +438,11 @@ def test_fetching_color_attachment():
 
     def render():
         canvas.set_image(img)
-    
+
     for _ in range(RENDER_REPEAT):
         render()
         write_temp_image_array(window.get_image_buffer_as_numpy())
-        
+
     render()
     verify_image_array(window.get_image_buffer_as_numpy(), 'test_set_image')
     window.destroy()

@@ -122,7 +122,7 @@ n = 320
 pixels = ti.field(dtype=float, shape=(n * 2, n))
 ```
 
-defines a field of shape (640, 320) of float type. `field` is the most important and frequently used data structure in Taichi. You can think of it as an analog of Numpy's `ndarray` or Pytorch's `tensor`, but we emphasize here that Taichi's `field` is much more powerful and flexible than the other two counterparts:
+defines a field of shape (640, 320) of float type. `field` is the most important and frequently used data structure in Taichi. You can think of it as an analog of Numpy's `ndarray` or Pytorch's `tensor`, but we emphasize here that Taichi's `field` is a much more powerful and flexible data structure than the other two counterparts:
 
 1. Taichi's field can be hierarchized in a tree-like manner.
 2. Field can store scalar, matrix, struct, and quant types.
@@ -165,7 +165,7 @@ In fact, any `for` loop at the outermost scope in a kernel will be automatically
 
 Note that the field `pixels` is treated as an iterator, `i,j` are the indices of the elements and are integers in the range `[0, 2*n-1]` and `[0, n-1]`, respectively. They are listed in the row-majored order `(0, 0)`, `(0, 1)`, ..., `(0, n-1)`, `(1, n-1)`, ..., `(2*n-1, n-1)`.
 
-Here we emphasize that *for loops not at the outermost scope will not be paralleled*, they are handled in serialized order:
+Here we also emphasize that *for loops not at the outermost scope will not be paralleled*, they are handled in serialized order:
 
 ```python {3,7,14-15}
 @ti.kernel

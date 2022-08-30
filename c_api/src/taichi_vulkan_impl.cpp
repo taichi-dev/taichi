@@ -6,8 +6,6 @@
 #include "vulkan/vulkan_android.h"
 #endif
 
-#ifdef TI_WITH_VULKAN
-
 VulkanRuntime::VulkanRuntime() : GfxRuntime(taichi::Arch::vulkan) {
 }
 taichi::lang::vulkan::VulkanDevice &VulkanRuntime::get_vk() {
@@ -330,5 +328,3 @@ void ti_export_vulkan_event(TiRuntime runtime,
       (taichi::lang::vulkan::VulkanDeviceEvent *)(&((Event *)event)->get());
   interop_info->event = event2->vkapi_ref->event;
 }
-
-#endif  // TI_WITH_VULKAN

@@ -1,6 +1,5 @@
 #pragma once
 
-#ifdef TI_WITH_VULKAN
 #define VK_NO_PROTOTYPES
 #include "taichi/taichi_vulkan.h"
 #include "taichi/rhi/vulkan/vulkan_device.h"
@@ -53,5 +52,3 @@ class VulkanRuntimeOwned : public VulkanRuntime {
   virtual taichi::lang::Device &get() override final;
   virtual taichi::lang::gfx::GfxRuntime &get_gfx_runtime() override final;
 };
-
-#endif  // TI_WITH_VULKAN

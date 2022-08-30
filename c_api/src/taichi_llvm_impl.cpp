@@ -1,8 +1,6 @@
 #include "taichi_core_impl.h"
 #include "taichi_llvm_impl.h"
 
-#ifdef TI_WITH_LLVM
-
 #include "taichi/program/compile_config.h"
 #include "taichi/runtime/llvm/llvm_runtime_executor.h"
 #include "taichi/runtime/llvm/llvm_aot_module_loader.h"
@@ -129,5 +127,3 @@ void LlvmRuntime::wait() {
 }
 
 }  // namespace capi
-
-#endif  // TI_WITH_LLVM

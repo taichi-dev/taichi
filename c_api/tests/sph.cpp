@@ -92,7 +92,7 @@ TEST(CapiSphTest, Cuda) {
     std::stringstream aot_mod_ss;
     aot_mod_ss << folder_dir;
 
-    run(TiArch::TI_ARCH_CUDA, aot_mod_ss.str().c_str());
+    run(TiArch::TI_ARCH_CUDA, aot_mod_ss.str());
   }
 }
 
@@ -103,7 +103,7 @@ TEST(CapiSphTest, Vulkan) {
     std::stringstream aot_mod_ss;
     aot_mod_ss << folder_dir;
 
-    run(TiArch::TI_ARCH_VULKAN, aot_mod_ss.str().c_str());
+    run(TiArch::TI_ARCH_VULKAN, aot_mod_ss.str());
   }
 }
 
@@ -114,6 +114,6 @@ TEST(CapiSphTest, Opengl) {
     std::stringstream aot_mod_ss;
     aot_mod_ss << folder_dir;
 
-    run(TiArch::TI_ARCH_OPENGL, aot_mod_ss.str().c_str());
+    run(TiArch::TI_ARCH_OPENGL, aot_mod_ss.str());
   }
 }

@@ -23,8 +23,7 @@ TEST(CapiDryRun, Runtime) {
 
   if (capi::utils::is_opengl_available()) {
     TiArch arch = TiArch::TI_ARCH_OPENGL;
-    TiRuntime runtime = ti_create_runtime(arch);
-    ti_destroy_runtime(runtime);
+    ti::Runtime runtime(arch);
   }
 }
 
@@ -42,19 +41,15 @@ TEST(CapiDryRun, MemoryAllocation) {
     TiArch arch = TiArch::TI_ARCH_VULKAN;
     ti::Runtime runtime(arch);
     ti::Memory memory = runtime.allocate_memory(100);
-    ti::NdArray<uint8_t> ndarray =
-        runtime.allocate_ndarray<uint8_t>({100}, {1});
+    ti::NdArray<uint8_t> ndarray = runtime.allocate_ndarray<uint8_t>({100}, {});
   }
 
   if (capi::utils::is_opengl_available()) {
     // Opengl Runtime
     TiArch arch = TiArch::TI_ARCH_OPENGL;
-    TiRuntime runtime = ti_create_runtime(arch);
-
-    TiMemory memory = ti_allocate_memory(runtime, &alloc_info);
-    ti_free_memory(runtime, memory);
-
-    ti_destroy_runtime(runtime);
+    ti::Runtime runtime(arch);
+    ti::Memory memory = runtime.allocate_memory(100);
+    ti::NdArray<uint8_t> ndarray = runtime.allocate_ndarray<uint8_t>({100}, {});
   }
 
   if (capi::utils::is_cuda_available()) {
@@ -77,7 +72,7 @@ TEST(CapiDryRun, VulkanAotModule) {
       // Vulkan Runtime
       TiArch arch = TiArch::TI_ARCH_VULKAN;
       ti::Runtime runtime(arch);
-      ti::AotModule aot_mod = runtime.load_aot_module(aot_mod_ss.str().c_str());
+      ti::AotModule aot_mod = runtime.load_aot_module(aot_mod_ss.str());
     }
   }
 }
@@ -92,13 +87,9 @@ TEST(CapiDryRun, OpenglAotModule) {
     {
       // Vulkan Runtime
       TiArch arch = TiArch::TI_ARCH_OPENGL;
-      TiRuntime runtime = ti_create_runtime(arch);
+      ti::Runtime runtime(arch);
 
-      TiAotModule aot_mod =
-          ti_load_aot_module(runtime, aot_mod_ss.str().c_str());
-      ti_destroy_aot_module(aot_mod);
-
-      ti_destroy_runtime(runtime);
+      ti::AotModule aot_mod = runtime.load_aot_module(aot_mod_ss.str());
     }
   }
 }

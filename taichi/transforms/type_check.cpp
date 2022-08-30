@@ -144,20 +144,17 @@ class TypeCheck : public IRVisitor {
       return;
     }
     stmt->ret_type.set_is_pointer(true);
-    if (stmt->snodes) {
+    if (stmt->snode) {
       stmt->ret_type =
-          TypeFactory::get_instance().get_pointer_type(stmt->snodes[0]->dt);
+          TypeFactory::get_instance().get_pointer_type(stmt->snode->dt);
     } else
       TI_WARN("[{}] Type inference failed: snode is nullptr.\n{}", stmt->name(),
               stmt->tb);
-    for (int l = 0; l < stmt->snodes.size(); l++) {
-      if (stmt->snodes[l]->parent->num_active_indices != 0 &&
-          stmt->snodes[l]->parent->num_active_indices != stmt->indices.size()) {
-        TI_ERROR("[{}] {} has {} indices. Indexed with {}.", stmt->name(),
-                 stmt->snodes[l]->parent->node_type_name,
-                 stmt->snodes[l]->parent->num_active_indices,
-                 stmt->indices.size());
-      }
+    if (stmt->snode->parent->num_active_indices != 0 &&
+        stmt->snode->parent->num_active_indices != stmt->indices.size()) {
+      TI_ERROR("[{}] {} has {} indices. Indexed with {}.", stmt->name(),
+               stmt->snode->parent->node_type_name,
+               stmt->snode->parent->num_active_indices, stmt->indices.size());
     }
     for (int i = 0; i < stmt->indices.size(); i++) {
       if (!is_integral(stmt->indices[i]->ret_type)) {
@@ -409,8 +406,7 @@ class TypeCheck : public IRVisitor {
 
   void visit(ExternalPtrStmt *stmt) override {
     stmt->ret_type.set_is_pointer(true);
-    stmt->ret_type = TypeFactory::create_vector_or_scalar_type(
-        stmt->base_ptrs.size(), stmt->base_ptrs[0]->ret_type);
+    stmt->ret_type = stmt->base_ptr->ret_type;
     for (int i = 0; i < stmt->indices.size(); i++) {
       TI_ASSERT(is_integral(stmt->indices[i]->ret_type));
       if (stmt->indices[i]->ret_type != PrimitiveType::i32) {

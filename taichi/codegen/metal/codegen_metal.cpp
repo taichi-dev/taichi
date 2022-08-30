@@ -458,7 +458,7 @@ class KernelCodegenImpl : public IRVisitor {
     emit("{{");
     {
       ScopedIndent s(current_appender());
-      const auto *argload = stmt->base_ptrs[0]->as<ArgLoadStmt>();
+      const auto *argload = stmt->base_ptr->as<ArgLoadStmt>();
       const int arg_id = argload->arg_id;
       const int num_indices = stmt->indices.size();
       const auto &element_shape = stmt->element_shape;
@@ -492,7 +492,7 @@ class KernelCodegenImpl : public IRVisitor {
 
     const auto dt = metal_data_type_name(stmt->element_type());
     emit("device {} *{} = ({} + {});", dt, stmt->raw_name(),
-         stmt->base_ptrs[0]->raw_name(), linear_index_name);
+         stmt->base_ptr->raw_name(), linear_index_name);
   }
 
   void visit(GlobalTemporaryStmt *stmt) override {

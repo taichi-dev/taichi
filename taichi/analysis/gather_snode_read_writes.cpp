@@ -28,12 +28,10 @@ gather_snode_read_writes(IRNode *root) {
     }
     if (ptr) {
       if (auto *global_ptr = ptr->cast<GlobalPtrStmt>()) {
-        for (auto &snode : global_ptr->snodes.data) {
-          if (read)
-            accessed.first.emplace(snode);
-          if (write)
-            accessed.second.emplace(snode);
-        }
+        if (read)
+          accessed.first.emplace(global_ptr->snode);
+        if (write)
+          accessed.second.emplace(global_ptr->snode);
       }
     }
     return false;

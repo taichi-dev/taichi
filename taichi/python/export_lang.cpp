@@ -993,7 +993,6 @@ void export_lang(py::module &m) {
   m.def("get_external_tensor_element_shape", [](const Expr &expr) {
     TI_ASSERT(expr.is<ExternalTensorExpression>());
     auto external_tensor_expr = expr.cast<ExternalTensorExpression>();
-
     return external_tensor_expr->dt.get_shape();
   });
 

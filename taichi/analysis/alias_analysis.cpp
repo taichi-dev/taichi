@@ -96,9 +96,9 @@ AliasResult alias_analysis(Stmt *var1, Stmt *var2) {
       return AliasResult::different;
     auto ptr1 = var1->as<ExternalPtrStmt>();
     auto ptr2 = var2->as<ExternalPtrStmt>();
-    if (ptr1->base_ptrs[0] != ptr2->base_ptrs[0]) {
-      auto base1 = ptr1->base_ptrs[0]->as<ArgLoadStmt>();
-      auto base2 = ptr2->base_ptrs[0]->as<ArgLoadStmt>();
+    if (ptr1->base_ptr != ptr2->base_ptr) {
+      auto base1 = ptr1->base_ptr->as<ArgLoadStmt>();
+      auto base2 = ptr2->base_ptr->as<ArgLoadStmt>();
       if (base1->arg_id != base2->arg_id) {
         return AliasResult::different;
       }
@@ -120,7 +120,7 @@ AliasResult alias_analysis(Stmt *var1, Stmt *var2) {
   // SNode::id.
   auto get_snode_id = [](Stmt *s) {
     if (auto ptr = s->cast<GlobalPtrStmt>()) {
-      return ptr->snodes[0]->id;
+      return ptr->snode->id;
     } else if (auto get_child = s->cast<GetChStmt>()) {
       return get_child->output_snode->id;
     }
@@ -137,8 +137,8 @@ AliasResult alias_analysis(Stmt *var1, Stmt *var2) {
   if (var1->is<GlobalPtrStmt>() && var2->is<GlobalPtrStmt>()) {
     auto ptr1 = var1->as<GlobalPtrStmt>();
     auto ptr2 = var2->as<GlobalPtrStmt>();
-    auto snode = ptr1->snodes[0];
-    TI_ASSERT(snode == ptr2->snodes[0]);
+    auto snode = ptr1->snode;
+    TI_ASSERT(snode == ptr2->snode);
     TI_ASSERT(ptr1->indices.size() == ptr2->indices.size());
     bool uncertain = false;
     for (int i = 0; i < (int)ptr1->indices.size(); i++) {

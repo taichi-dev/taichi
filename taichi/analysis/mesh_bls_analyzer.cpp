@@ -35,7 +35,7 @@ void MeshBLSAnalyzer::record_access(Stmt *stmt, AccessFlag flag) {
   auto idx = conv->idx;
   if (conv_type == mesh::ConvType::g2r)
     return;
-  auto snode = ptr->snodes[0];
+  auto snode = ptr->snode;
   if (!caches_->has(snode)) {
     if (auto_mesh_local_ &&
         (flag == AccessFlag::accumulate ||

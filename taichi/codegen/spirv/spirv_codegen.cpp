@@ -588,7 +588,7 @@ class TaskCodegen : public IRVisitor {
     // Used mostly for transferring data between host (e.g. numpy array) and
     // device.
     spirv::Value linear_offset = ir_->int_immediate_number(ir_->i32_type(), 0);
-    const auto *argload = stmt->base_ptrs[0]->as<ArgLoadStmt>();
+    const auto *argload = stmt->base_ptr->as<ArgLoadStmt>();
     const int arg_id = argload->arg_id;
     {
       const int num_indices = stmt->indices.size();

@@ -107,9 +107,6 @@ def clear_all_gradients(gradient_type=SNodeGradType.ADJOINT):
             if not ch.is_place():
                 visit(SNode(ch))
             else:
-                # TODO: control to clear adjoint, dual, adjoint_flag
-                # if not ch.is_primal():
-                #     places.append(ch.get_expr())
                 if ch.get_snode_grad_type() == gradient_type:
                     places.append(ch.get_expr())
 

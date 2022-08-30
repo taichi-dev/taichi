@@ -442,6 +442,11 @@ def init(arch=None,
     print(f'[Taichi] Starting on arch={_ti_core.arch_name(cfg.arch)}')
 
     # user selected visible device
+    if os.environ.get("CUDA_VISIBLE_DEVICES") and not os.environ.get("TI_VISIBLE_DEVICE"):
+        os.environ["TI_VISIBLE_DEVICE"] = os.environ.get("CUDA_VISIBLE_DEVICES")
+    elif os.environ.get("TI_VISIBLE_DEVICE") and not os.environ.get("CUDA_VISIBLE_DEVICES"):
+        os.environ["CUDA_VISIBLE_DEVICES"] = os.environ.get("TI_VISIBLE_DEVICE")
+        
     visible_device = os.environ.get("TI_VISIBLE_DEVICE")
     if visible_device and (cfg.arch == vulkan or _ti_core.GGUI_AVAILABLE):
         _ti_core.set_vulkan_visible_device(visible_device)

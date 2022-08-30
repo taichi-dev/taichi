@@ -12,7 +12,7 @@ Taichi users write their computation-intensive tasks in Python obeying a few ext
 
 Taichi also has a built-in ahead-of-time (AOT) system that allows users to export the code as binary/shader files. These files can then be invoked in C/C++, without the Python environment. See [AOT deployment](../deployment/ndarray_android.md) for more details.
 
-## Requirements
+## Prerequisites
 
 1. Python: 3.7/3.8/3.9/3.10 (64-bit)
 2. OS: Windows, OS X, and Linux (64-bit)

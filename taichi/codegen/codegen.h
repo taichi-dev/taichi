@@ -27,13 +27,13 @@ class KernelCodeGen {
                                                Kernel *kernel,
                                                Stmt *stmt = nullptr);
 
-  virtual FunctionType codegen() = 0;
+  virtual FunctionType compile_to_function() = 0;
   virtual bool supports_offline_cache() const {
     return false;
   }
 
 #ifdef TI_WITH_LLVM
-  virtual LLVMCompiledData modulegen(
+  virtual LLVMCompiledData compile_task(
       std::unique_ptr<llvm::Module> &&module = nullptr,
       OffloadedStmt *stmt = nullptr) {
     TI_NOT_IMPLEMENTED

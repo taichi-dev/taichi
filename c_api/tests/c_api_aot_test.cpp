@@ -14,8 +14,7 @@ static void kernel_aot_test(TiArch arch) {
   TiMemoryAllocateInfo alloc_info;
   alloc_info.size = kArrLen * sizeof(int32_t);
   alloc_info.host_write = false;
-  alloc_info.host_read = (arch == TI_ARCH_OPENGL ||
-                          arch == TI_ARCH_VULKAN);  // Enable for testing only
+  alloc_info.host_read = true;  // Enable for testing only
   alloc_info.export_sharing = false;
   alloc_info.usage = TiMemoryUsageFlagBits::TI_MEMORY_USAGE_STORAGE_BIT;
 

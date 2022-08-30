@@ -33,7 +33,7 @@ To verify a successful installation, run the following command in the terminal:
 ti gallery
 ```
 
-If Taichi is successfully installed, a window like the following image would pop up: 
+If Taichi is successfully installed, a window like the following image would pop up:
 
 <img style="margin:0px auto;display:block" width=480 src="https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/taichi-gallery.png"/>
 

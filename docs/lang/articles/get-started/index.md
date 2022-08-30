@@ -78,7 +78,8 @@ for i in range(1000000):
     gui.show()
 ```
 
-You can run the above code by either saving it to your disk or directly running `ti example fractal` in the terminal, this will give you an animation:
+To run this program: Save the code above to your disk or execute the command `ti example fractal` directly in the terminal.
+You will see the following animation:
 
 <center>
 

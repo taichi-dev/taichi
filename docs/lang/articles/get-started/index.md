@@ -40,7 +40,7 @@ This will pop up a window like follows:
 
 Then click to choose and run the examples.
 
-You can also run the command `ti example` to see the full list of official examples.
+You can also run the command `ti example` to view the full list of selected Taichi demos.
 
 ## Hello, world!
 

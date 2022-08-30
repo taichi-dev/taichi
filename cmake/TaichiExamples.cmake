@@ -31,7 +31,7 @@ if (TI_WITH_METAL)
 endif()
 
 if (TI_WITH_VULKAN OR TI_WITH_OPENGL)
-  target_link_libraries(${TESTS_NAME} PRIVATE gfx_runtime)
+  target_link_libraries(${EXAMPLES_NAME} PRIVATE gfx_runtime)
 endif()
 
 if (TI_WITH_VULKAN)

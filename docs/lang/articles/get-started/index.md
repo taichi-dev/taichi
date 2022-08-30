@@ -6,7 +6,7 @@ slug: /
 
 # Getting Started
 
-Taichi is a high-performance parallel programming language embedded in Python. 
+Taichi is a high-performance parallel programming language embedded in Python.
 
 Taichi users write their computation-intensive tasks in Python obeying a few extra rules imposed by Taichi, and use the two decorators `@ti.func` and `@ti.kernel` to ask Taichi to take over the functions that implement the task. Taichi's just-in-time (JIT) compiler will compile these functions to machine code and all subsequent calls to them are executed on multi-CPU cores or GPUs. In typical compute-intense scenarios (such as numerical simulations), this will usually lead to a 50-100x speed up over native Python!
 
@@ -66,7 +66,7 @@ def paint(t: float):
         z = tm.vec2(i / n - 1, j / n - 0.5) * 2
         iterations = 0
         while z.norm() < 20 and iterations < 50:
-            z = complex_sqr(z) + c 
+            z = complex_sqr(z) + c
             iterations += 1
         pixels[i, j] = 1 - iterations * 0.02
 
@@ -106,9 +106,9 @@ The line
 ti.init(arch=ti.gpu)
 ```
 
-calls the `ti.init` function to initialize some environment variables. The `init` function accepts several arguments to allow users to custom the runtime program, for now, we only introduce the most important one, namely the `arch`. 
+calls the `ti.init` function to initialize some environment variables. The `init` function accepts several arguments to allow users to custom the runtime program, for now, we only introduce the most important one, namely the `arch`.
 
-The argument `arch` specifies the *backend* that actually executes the compiled code. A backend can be either `ti.cpu` or `ti.gpu`. For `ti.gpu` Taichi will look for GPU architectures in the order `ti.cuda`, `ti.vulkan`, `ti.opengl/ti.metal` and choose the first available one. If no GPU device is found, Taichi will fall back to your CPU device. 
+The argument `arch` specifies the *backend* that actually executes the compiled code. A backend can be either `ti.cpu` or `ti.gpu`. For `ti.gpu` Taichi will look for GPU architectures in the order `ti.cuda`, `ti.vulkan`, `ti.opengl/ti.metal` and choose the first available one. If no GPU device is found, Taichi will fall back to your CPU device.
 
 You can also directly specify the backend like `arch=ti.cuda`, Taichi will raise an error if this architecture is unavailable.
 
@@ -122,22 +122,22 @@ n = 320
 pixels = ti.field(dtype=float, shape=(n * 2, n))
 ```
 
-define a field of shape (640, 320) of float type. `field` is the most important and frequently used data structure in Taichi. You can think of it as an analog of Numpy's `ndarray` or PyTorch's `tensor`, but we emphasize here that Taichi's `field` is a much more powerful and flexible data structure than the other two counterparts. For example, Taichi fields can be [spatially sparse](../basic/sparse.md), and can easily [switch between different data layouts](../basic/layout.md). 
+define a field of shape (640, 320) of float type. `field` is the most important and frequently used data structure in Taichi. You can think of it as an analog of Numpy's `ndarray` or PyTorch's `tensor`, but we emphasize here that Taichi's `field` is a much more powerful and flexible data structure than the other two counterparts. For example, Taichi fields can be [spatially sparse](../basic/sparse.md), and can easily [switch between different data layouts](../basic/layout.md).
 
 You will meet these features in more advanced tutorials later. You can now think of `pixels` as a dense 2D array.
 
 ### Kernels and functions
 
 Between lines 9-22 we defined two functions. One decorated by `@ti.func` and one decorated by `@ti.kernel`. Such functions are called *Taichi functions* and *kernels* respectively. They are not executed by Python's interpreter but will be taken over by Taichi's JIT compiler and will execute rapidly on your parallel CPU cores or GPU.
-    
+
 The main differences between Taichi functions and kernels are:
-    
+
 1. Kernels are the entrances for Taichi to take over the subsequent task. Kernels can be called anywhere in your program, but Taichi functions can only be called by kernels or by other Taichi functions. In the above example, the Taichi function `complex_sqr` is called by the kernel `paint`.
 2. The arguments and returns of a kernel function must all be type hinted, Taichi functions do not have such restrictions. In the above example, the argument `t` in the kernel `paint` is type hinted, but the argument `z` in the Taichi function `complex_sqr` is not.
 3. Nested kernels are *not supported*, nested functions are *supported*. Recursively calling Taichi functions are *not supported for now*.
-    
+
 :::tip
-​    
+​
 For those who come from the world of CUDA, `ti.func` corresponds to `__device__` and `ti.kernel` corresponds to `__global__`.
 
 For those who come from the world of OpenGL, `ti.func` corresponds to the usual function in GLSL and `ti.kernel` corresponds to a `compute shader`.
@@ -167,7 +167,7 @@ def fill():
     for i in range(10): # Paralleled
         for j in range(5): # Serialized in each parallel thread
             total += i * j
-        
+
     if total > 10:
         for k in range(5):  # not paralleled since not at the outermost scope
 ```

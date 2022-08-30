@@ -117,7 +117,7 @@ defines a field of shape (640, 320) of float type. `field `  is the most importa
 
 ### Kernels and functions
 
-Between lines 9-22 we defined two functions. One decorated by `@ti.func` and one decorated by `@ti.kernel`. Such functions are called *Taichi functions* and *kernels* respectively. They are not executed by Python's virtual machine but will be taken over by Taichi's JIT compiler and get executed on the GPU.
+Between lines 9-22 we defined two functions. One decorated by `@ti.func` and one decorated by `@ti.kernel`. Such functions are called *Taichi functions* and *kernels* respectively. They are not executed by Python's interpreter but will be taken over by Taichi's JIT compiler and will execute rapidly on your parallel CPU cores or GPU.
     
 The main differences between Taichi functions and kernels are:
     
@@ -143,7 +143,7 @@ for i, j in pixels:
 
 This is a `for` loop at the outermost scope in a Taichi kernel and this loop is *automatically paralleled*. In fact, any `for` loop at the outermost scope in a kernel will be automatically paralleled. This is a very handy syntax sugar offered by Taichi. It allows users to parallel their tasks just in one plain and innocent loop, without bothering any underlying hooks like thread allocating/recycling and memory management!
 
-Note that the field `pixels` is treated as an iterator, `i,j` are the indices of the elements and are integers in the range `[0,2*n-1]` and `[0,n-1]`, respectively. They are listed in the row-majored order `[0, 0]`, `[0, 1]`,...,  `[0, n-1]`,`[1,n-1]`, ... `[2*n-1, n-1]`.
+Note that the field `pixels` is treated as an iterator, `i,j` are the indices of the elements and are integers in the range `[0, 2*n-1]` and `[0, n-1]`, respectively. They are listed in the row-majored order `(0, 0)`, `(0, 1)`, ..., `(0, n-1)`, `(1, n-1)`, ..., `(2*n-1, n-1)`.
 
 Here we emphasize that *for loops not at the outermost scope will not be paralleled*, they are handled in serialized order:
 

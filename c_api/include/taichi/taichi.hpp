@@ -190,7 +190,8 @@ class Texture {
 
   Texture() {
   }
-  Texture(const Texture &b)
+  Texture(const Texture& b) = delete;
+  Texture(Texture &&b)
       : runtime_(detail::move_handle(b.runtime_)),
         texture_(detail::move_handle(b.texture_)),
         should_destroy_(std::exchange(b.should_destroy_, false)) {
@@ -311,7 +312,7 @@ class ComputeGraph {
       out = &args_.back().argument;
     }
 
-    return ArgumetEntry(out);
+    return ArgumentEntry(out);
   };
   inline ArgumentEntry at(const std::string &name) {
     return at(name.c_str());
@@ -523,7 +524,7 @@ class Runtime {
   constexpr bool is_valid() const {
     return runtime_ != nullptr;
   }
-  inline void destroy() const {
+  inline void destroy() {
     if (should_destroy_) {
       ti_destroy_runtime(runtime_);
       runtime_ = TI_NULL_HANDLE;

@@ -20,9 +20,6 @@ static void taichi_sparse_test(TiArch arch) {
   ti::Kernel k_paint = aot_mod.get_kernel("paint");
   ti::Kernel k_check_img_value = aot_mod.get_kernel("check_img_value");
 
-  constexpr uint32_t arg_count = 1;
-  TiArgument args[arg_count];
-
   k_fill_img.launch();
   for (int i = 0; i < 100; i++) {
     float val = 0.05f * i;

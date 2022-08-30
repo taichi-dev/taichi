@@ -10,12 +10,12 @@ Taichi is a high-performance parallel programming language embedded in Python.
 
 Taichi users write their computation-intensive tasks in Python obeying a few extra rules imposed by Taichi, and use the two decorators `@ti.func` and `@ti.kernel` to ask Taichi to take over the functions that implement the task. Taichi's just-in-time (JIT) compiler will compile these functions to machine code and all subsequent calls to them are executed on multi-CPU cores or GPUs. In typical compute-intense scenarios (such as numerical simulations), this will usually lead to a 50-100x speed up over native Python!
 
-Taichi also has a built-in ahead-of-time (AOT) system that allows users to export the code as binary/shader files. These files can then be invoked in C/C++, without the Python environment.
+Taichi also has a built-in ahead-of-time (AOT) system that allows users to export the code as binary/shader files. These files can then be invoked in C/C++, without the Python environment. See [AOT deployment](../deployment/ndarray_android.md) for more details.
 
 ## Requirements:
 
 1. Python: 3.7/3.8/3.9/3.10 (64-bit)
-2. OS: Windows (64-bit), OSX, Linux (64-bit)
+2. OS: Windows, OS X, and Linux (64-bit)
 3. GPUS: Cuda, Vulkan, OpenGL, Metal, dx11
 
 ## Installation
@@ -40,7 +40,7 @@ This will pop up a window like follows:
 
 Then click to choose and run the examples.
 
-You can also run the command `ti example` to see the full list of examples included in the released package.
+You can also run the command `ti example` to see the full list of official examples.
 
 ## Hello, world!
 
@@ -56,8 +56,8 @@ n = 320
 pixels = ti.field(dtype=float, shape=(n * 2, n))
 
 @ti.func
-def complex_mul(z, w):  # complex multiplication of two 2d vectors
-    return tm.vec2(z.x * w.x - z.y * w.y, z.x * w.y + z.y * w.x)
+def complex_sqr(z):  # complex square of a 2d vector
+    return tm.vec2(z[0] * z[0] - z[1] * z[1], 2 * z[0] * z[1])
 
 @ti.kernel
 def paint(t: float):
@@ -66,7 +66,7 @@ def paint(t: float):
         z = tm.vec2(i / n - 1, j / n - 0.5) * 2
         iterations = 0
         while z.norm() < 20 and iterations < 50:
-            z = complex_mul(z, z) + c 
+            z = complex_sqr(z, z) + c 
             iterations += 1
         pixels[i, j] = 1 - iterations * 0.02
 
@@ -117,12 +117,12 @@ defines a field of shape (640, 320) of float type. `field `  is the most importa
 
 ### Kernels and functions
 
-Between lines 9-22 we defined two functions. One decorated by `ti.func` and one decorated by `ti.kernel`. Such functions are called *Taichi functions* and *kernels* respectively, they are not executed by Python's virtual machine but will be taken over by Taichi's JIT compiler and get executed on the GPU.
+Between lines 9-22 we defined two functions. One decorated by `@ti.func` and one decorated by `@ti.kernel`. Such functions are called *Taichi functions* and *kernels* respectively. They are not executed by Python's virtual machine but will be taken over by Taichi's JIT compiler and get executed on the GPU.
     
 The main differences between Taichi functions and kernels are:
     
-1. kernels are the entrances for Taichi to take over the subsequent task. Kernels can be called anywhere in your program, but Taichi functions can only be called by kernels or by other Taichi functions. In the above example, the Taichi function `complex_mul` is called by the kernel `paint`.
-2. The arguments and returns of a kernel function must all be type hinted, Taichi functions do not have such restrictions. In the above example, the argument `t` in the kernel `paint` is type hinted, but the arguments `z,w`in the Taichi function `complex_mul` are not.
+1. kernels are the entrances for Taichi to take over the subsequent task. Kernels can be called anywhere in your program, but Taichi functions can only be called by kernels or by other Taichi functions. In the above example, the Taichi function `complex_sqr` is called by the kernel `paint`.
+2. The arguments and returns of a kernel function must all be type hinted, Taichi functions do not have such restrictions. In the above example, the argument `t` in the kernel `paint` is type hinted, but the argument `z` in the Taichi function `complex_sqr` is not.
 3. Nested kernels are *not supported*, nested functions are *supported*. Recursively calling Taichi functions are *not supported for now*.
     
 :::tip

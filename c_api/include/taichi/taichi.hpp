@@ -190,7 +190,7 @@ class Texture {
 
   Texture() {
   }
-  Texture(const Texture& b) = delete;
+  Texture(const Texture &b) = delete;
   Texture(Texture &&b)
       : runtime_(detail::move_handle(b.runtime_)),
         texture_(detail::move_handle(b.texture_)),

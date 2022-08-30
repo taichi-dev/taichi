@@ -430,8 +430,7 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
           auto atomic = stmt->cast<AtomicOpStmt>();
           // Weaken the atomic operation to a load.
           if (atomic->dest->is<AllocaStmt>()) {
-            auto local_load =
-                Stmt::make<LocalLoadStmt>(atomic->dest);
+            auto local_load = Stmt::make<LocalLoadStmt>(atomic->dest);
             local_load->ret_type = atomic->ret_type;
             // Notice that we have a load here
             // (the return value of AtomicOpStmt).

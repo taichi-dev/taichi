@@ -85,7 +85,8 @@ void MakeMeshBlockLocal::replace_conv_statements() {
     Stmt *offset = bls.push_back<BinaryOpStmt>(
         BinaryOpType::add, bls_element_offset_bytes, idx_byte);
     Stmt *bls_ptr = bls.push_back<BlockLocalPtrStmt>(
-        offset, TypeFactory::get_instance().get_pointer_type(mapping_data_type_));
+        offset,
+        TypeFactory::get_instance().get_pointer_type(mapping_data_type_));
     [[maybe_unused]] Stmt *bls_load = bls.push_back<GlobalLoadStmt>(bls_ptr);
     stmt->replace_with(std::move(bls));
   }
@@ -205,7 +206,8 @@ Stmt *MakeMeshBlockLocal::create_cache_mapping(
     Stmt *offset = body->push_back<BinaryOpStmt>(
         BinaryOpType::add, bls_element_offset_bytes, idx_val_byte);
     Stmt *bls_ptr = body->push_back<BlockLocalPtrStmt>(
-        offset, TypeFactory::get_instance().get_pointer_type(mapping_data_type_));
+        offset,
+        TypeFactory::get_instance().get_pointer_type(mapping_data_type_));
     [[maybe_unused]] Stmt *bls_store =
         body->push_back<GlobalStoreStmt>(bls_ptr, global_val(body, idx_val));
   });
@@ -568,7 +570,8 @@ MakeMeshBlockLocal::MakeMeshBlockLocal(OffloadedStmt *offload,
             Stmt *offset = body->push_back<BinaryOpStmt>(
                 BinaryOpType::add, bls_element_offset_bytes, idx_byte);
             Stmt *bls_ptr = body->push_back<BlockLocalPtrStmt>(
-                offset, TypeFactory::get_instance().get_pointer_type(mapping_data_type_));
+                offset, TypeFactory::get_instance().get_pointer_type(
+                            mapping_data_type_));
             Stmt *global_val = body->push_back<GlobalLoadStmt>(bls_ptr);
             this->push_attr_to_global(body, idx_val, global_val);
           });

@@ -104,8 +104,7 @@ class IRVerifier : public BasicStmtVisitor {
 
   void visit(LocalLoadStmt *stmt) override {
     basic_verify(stmt);
-    TI_ASSERT(stmt->src->is<AllocaStmt>() ||
-              stmt->src->is<PtrOffsetStmt>());
+    TI_ASSERT(stmt->src->is<AllocaStmt>() || stmt->src->is<PtrOffsetStmt>());
   }
 
   void visit(LocalStoreStmt *stmt) override {

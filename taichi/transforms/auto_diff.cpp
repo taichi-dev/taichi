@@ -14,8 +14,7 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
 
   void visit(LocalLoadStmt *stmt) override {
-    TI_ASSERT(stmt->src->is<AllocaStmt>() ||
-              stmt->src->is<PtrOffsetStmt>());
+    TI_ASSERT(stmt->src->is<AllocaStmt>() || stmt->src->is<PtrOffsetStmt>());
     touched_allocas_.insert(stmt->src);
   }
 
@@ -280,8 +279,7 @@ class PromoteSSA2LocalVar : public BasicStmtVisitor {
       auto alloc_ptr = alloc.get();
       TI_ASSERT(alloca_block_);
       alloca_block_->insert(std::move(alloc), 0);
-      auto load = stmt->insert_after_me(
-          Stmt::make<LocalLoadStmt>(alloc_ptr));
+      auto load = stmt->insert_after_me(Stmt::make<LocalLoadStmt>(alloc_ptr));
       irpass::replace_all_usages_with(stmt->parent, stmt, load);
       // Create the load first so that the operand of the store won't get
       // replaced
@@ -1453,8 +1451,8 @@ class BackupSSA : public BasicStmtVisitor {
           }
         } else {
           auto alloca = load(op);
-          stmt->set_operand(i, stmt->insert_before_me(Stmt::make<LocalLoadStmt>(
-                                   alloca)));
+          stmt->set_operand(
+              i, stmt->insert_before_me(Stmt::make<LocalLoadStmt>(alloca)));
         }
       }
     }

@@ -155,7 +155,8 @@ void make_thread_local_offload(OffloadedStmt *offload) {
     {
       auto tls_ptr = offload->body->insert(
           Stmt::make<ThreadLocalPtrStmt>(
-              tls_offset, TypeFactory::get_instance().get_pointer_type(data_type)),
+              tls_offset,
+              TypeFactory::get_instance().get_pointer_type(data_type)),
           0);
       dest.first->replace_usages_with(tls_ptr);
     }

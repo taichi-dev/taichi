@@ -1887,9 +1887,8 @@ std::tuple<llvm::Value *, llvm::Value *> TaskCodeGenLLVM::get_range_for_bounds(
   if (stmt->const_begin) {
     begin = tlctx->get_constant(stmt->begin_value);
   } else {
-    auto begin_stmt = Stmt::make<GlobalTemporaryStmt>(
-        stmt->begin_offset,
-        PrimitiveType::i32);
+    auto begin_stmt =
+        Stmt::make<GlobalTemporaryStmt>(stmt->begin_offset, PrimitiveType::i32);
     begin_stmt->accept(this);
     begin = builder->CreateLoad(
 #ifdef TI_LLVM_15
@@ -1900,9 +1899,8 @@ std::tuple<llvm::Value *, llvm::Value *> TaskCodeGenLLVM::get_range_for_bounds(
   if (stmt->const_end) {
     end = tlctx->get_constant(stmt->end_value);
   } else {
-    auto end_stmt = Stmt::make<GlobalTemporaryStmt>(
-        stmt->end_offset,
-        PrimitiveType::i32);
+    auto end_stmt =
+        Stmt::make<GlobalTemporaryStmt>(stmt->end_offset, PrimitiveType::i32);
     end_stmt->accept(this);
     end = builder->CreateLoad(
 #ifdef TI_LLVM_15

@@ -84,8 +84,7 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(LocalLoadStmt *stmt) override {
-    TI_ASSERT(stmt->src->is<AllocaStmt>() ||
-              stmt->src->is<PtrOffsetStmt>());
+    TI_ASSERT(stmt->src->is<AllocaStmt>() || stmt->src->is<PtrOffsetStmt>());
     if (auto ptr_offset_stmt = stmt->src->cast<PtrOffsetStmt>()) {
       TI_ASSERT(ptr_offset_stmt->origin->is<AllocaStmt>() ||
                 ptr_offset_stmt->origin->is<GlobalTemporaryStmt>());
@@ -423,7 +422,8 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(GetRootStmt *stmt) override {
-    stmt->ret_type = TypeFactory::get_instance().get_pointer_type(PrimitiveType::gen);
+    stmt->ret_type =
+        TypeFactory::get_instance().get_pointer_type(PrimitiveType::gen);
   }
 
   void visit(SNodeLookupStmt *stmt) override {
@@ -435,7 +435,8 @@ class TypeCheck : public IRVisitor {
           TypeFactory::get_instance().get_pointer_type(element_type, true);
       stmt->ret_type = pointer_type;
     } else {
-      stmt->ret_type = TypeFactory::get_instance().get_pointer_type(PrimitiveType::gen);
+      stmt->ret_type =
+          TypeFactory::get_instance().get_pointer_type(PrimitiveType::gen);
     }
   }
 

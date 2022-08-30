@@ -27,7 +27,7 @@ pip install taichi
 ```
 Taichi can also be built from the source, although we do not recommend this for first-time users except those who what to try the most up-to-date features. See our [developer's guide](../contribution/dev_install.md) for full details.
 
-To verify the installation is successful, in the terminal run
+To verify a successful installation, run the following command in the terminal:
 
 ```bash
 ti gallery

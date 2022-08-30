@@ -1,7 +1,5 @@
 #include "taichi_opengl_impl.h"
 
-#ifdef TI_WITH_OPENGL
-
 OpenglRuntime::OpenglRuntime()
     : GfxRuntime(taichi::Arch::opengl),
       gfx_runtime_(taichi::lang::gfx::GfxRuntime::Params{
@@ -16,4 +14,3 @@ taichi::lang::Device &OpenglRuntime::get() {
 taichi::lang::gfx::GfxRuntime &OpenglRuntime::get_gfx_runtime() {
   return gfx_runtime_;
 }
-#endif

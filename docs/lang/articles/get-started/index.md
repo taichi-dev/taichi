@@ -133,7 +133,7 @@ For those who come from the world of OpenGL, `ti.func` corresponds to the usual 
 ​:::
 
 
-### Paralleled for loop
+### Parallel for loop
 
 The real magic happens in line 15:
 
@@ -209,4 +209,4 @@ Congratulations! After walking through the above short example, you have learned
 2. Outermost `for` loops are automatically paralleled.
 3. The field data container and how to loop over it.
 
-These should be enough for you to get prepared for exploring the more advanced features of Taichi.
+These should prepare you well for more advanced features of Taichi!

@@ -168,12 +168,12 @@ def foo():
         ...
         break # Error!
 
-    @ti.kernel
-    def foo():
-        for i in x:
-            for j in range(10):
-                ...
-                break # OK!
+@ti.kernel
+def foo():
+    for i in x:
+        for j in range(10):
+            ...
+            break # OK!
 ```
 :::
 

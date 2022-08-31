@@ -35,8 +35,11 @@ ti gallery
 
 If Taichi is successfully installed, a window like the following image would pop up:
 
-<img style="margin:0px auto;display:block" width=480 src="https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/taichi-gallery.png"/>
+<center>
 
+![image](https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/taichi-gallery.png)
+
+</center>
 
 Then click to choose and run the examples.
 
@@ -99,7 +102,7 @@ import taichi as ti
 import taichi.math as tm
 ```
 
-import Taichi as a package as well as its `math` module. The `math` module contains some frequently used math functions and built-in vector and matrix types of small dimensions, such as `vec2` for 2D real vectors and `mat3` for 3x3 real matrices.
+Import Taichi as a package as well as its `math` module. The `math` module contains some frequently used math functions and built-in vector and matrix types of small dimensions, such as `vec2` for 2D real vectors and `mat3` for 3x3 real matrices.
 
 The line
 

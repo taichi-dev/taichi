@@ -202,12 +202,11 @@ def subscript(value, *_indices, skip_reordered=False, get_ref=False):
             _ti_core.subscript(_var, indices_expr_group,
                                get_runtime().get_current_src_info()))
     if isinstance(value, AnyArray):
-        # TODO: deprecate using get_attribute to get dim
-        field_dim = int(value.ptr.get_attribute("dim"))
+        dim = _ti_core.get_external_tensor_dim(value.ptr)
         element_dim = len(value.element_shape())
-        if field_dim != index_dim + element_dim:
+        if dim != index_dim + element_dim:
             raise IndexError(
-                f'Field with dim {field_dim - element_dim} accessed with indices of dim {index_dim}'
+                f'Field with dim {dim - element_dim} accessed with indices of dim {index_dim}'
             )
         if element_dim == 0:
             return Expr(

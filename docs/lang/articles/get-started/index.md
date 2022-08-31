@@ -123,7 +123,7 @@ pixels = ti.field(dtype=float, shape=(n * 2, n))
 
 Here, we define a field whose shape is (640, 320) and whose elements are float-type data. `field` is the most important and frequently used data structure in Taichi. You can compare it to NumPy's `ndarray` or PyTorch's `tensor`. But we need to emphasize that Taichi's `field` is more powerful and flexible than the two counterparts. For example, a Taichi field can be [spatially sparse](../basic/sparse.md) and can easily [switch between different data layouts](../basic/layout.md).
 
-You will meet these features in more advanced tutorials later. You can now think of `pixels` as a dense 2D array.
+You will come across the advanced features of `field` in other scenario-based tutorials. For now, it would suffice for you to understand that the field `pixels` is a dense 2D array.
 
 ### Kernels and functions
 

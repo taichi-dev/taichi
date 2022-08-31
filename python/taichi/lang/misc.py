@@ -459,9 +459,6 @@ def init(arch=None,
 
     impl._root_fb = _snode.FieldsBuilder()
 
-    if get_runtime().prog.config.arch == cuda:
-        _ti_core.pop_cuda_context()
-
     if cfg.debug:
         impl.get_runtime()._register_signal_handlers()
 

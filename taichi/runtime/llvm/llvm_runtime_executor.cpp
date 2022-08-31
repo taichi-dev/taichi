@@ -612,6 +612,9 @@ void LlvmRuntimeExecutor::materialize_runtime(MemoryPool *memory_pool,
         "LLVMRuntime_set_profiler_stop", llvm_runtime_,
         (void *)&KernelProfilerBase::profiler_stop);
   }
+#if defined(TI_WITH_CUDA)
+  CUDADriver::get_instance().context_pop_current(nullptr);
+#endif
 }
 
 void LlvmRuntimeExecutor::destroy_snode_tree(SNodeTree *snode_tree) {

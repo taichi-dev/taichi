@@ -102,13 +102,11 @@ import taichi.math as tm
 
 These first two lines import Taichi as a package as well as its `math` module. The `math` module contains some frequently used math functions and built-in vector and matrix types of small dimensions, such as `vec2` for 2D real vectors and `mat3` for 3x3 real matrices.
 
-The line
-
 ```python
 ti.init(arch=ti.gpu)
 ```
 
-calls the `ti.init` function to initialize some environment variables. The `init` function accepts several arguments to allow users to custom the runtime program, for now, we only introduce the most important one, namely the `arch`.
+This line calls the `ti.init` function to initialize some environment variables. The `init` function accepts several arguments to allow users to custom the runtime program, for now, we only introduce the most important one, namely the `arch`.
 
 The argument `arch` specifies the *backend* that actually executes the compiled code. A backend can be either `ti.cpu` or `ti.gpu`. For `ti.gpu` Taichi will look for GPU architectures in the order `ti.cuda`, `ti.vulkan`, `ti.opengl/ti.metal` and choose the first available one. If no GPU device is found, Taichi will fall back to your CPU device.
 
@@ -220,8 +218,8 @@ sets the window title and the window resolution in pixels. Then in each round (w
 
 Congratulations! After walking through the above short example, you have learned the most significant features of Taichi:
 
-1. It compiles and runs your kernel functions on backends.
-2. Outermost `for` loops are automatically paralleled.
+1. Taichi compiles and runs Taichi functions and kernels on the designated backend.
+2. A `for` loop at the outermost scope in a kernel is automatically paralleled.
 3. The field data container and how to loop over it.
 
-These should prepare you well for more advanced features of Taichi!
+Now, you are well prepared to move on to the more advanced features of Taichi!

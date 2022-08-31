@@ -1,6 +1,6 @@
 #include "gtest/gtest.h"
 #include "c_api_test_utils.h"
-#include "taichi/taichi.hpp"
+#include "taichi/cpp/taichi.hpp"
 
 void graph_aot_test(TiArch arch) {
   uint32_t kArrLen = 100;

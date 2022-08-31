@@ -4,7 +4,7 @@
 #include "gtest/gtest.h"
 
 #include "c_api_test_utils.h"
-#include "taichi/taichi.hpp"
+#include "taichi/cpp/taichi.hpp"
 
 constexpr int img_h = 680;
 constexpr int img_w = 680;
@@ -29,7 +29,7 @@ static void comet_run(TiArch arch, const std::string &folder_dir) {
   runtime.wait();
   for (int i = 0; i < 10000; i++) {
     g_update["arg"] = arg_array;
-    ti_wait(runtime);
+    runtime.wait();
   }
 }
 

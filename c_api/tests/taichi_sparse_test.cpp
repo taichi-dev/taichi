@@ -1,6 +1,6 @@
 #include "gtest/gtest.h"
 #include "c_api_test_utils.h"
-#include "taichi/taichi.hpp"
+#include "taichi/cpp/taichi.hpp"
 
 static void taichi_sparse_test(TiArch arch) {
   const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");

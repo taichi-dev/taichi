@@ -4,7 +4,7 @@
 #include "gtest/gtest.h"
 
 #include "c_api_test_utils.h"
-#include "taichi/taichi.hpp"
+#include "taichi/cpp/taichi.hpp"
 
 namespace demo {
 
@@ -65,7 +65,7 @@ class MPM88DemoImpl {
     k_substep_g2p_[5] = pos_;
 
     k_init_particles_.launch();
-    ti_wait(runtime_);
+    runtime_.wait();
   }
 
   void Step() {
@@ -75,7 +75,7 @@ class MPM88DemoImpl {
       k_substep_update_grid_v_.launch();
       k_substep_g2p_.launch();
     }
-    ti_wait(runtime_);
+    runtime_.wait();
   }
 
  private:

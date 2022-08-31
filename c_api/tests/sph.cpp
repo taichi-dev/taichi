@@ -4,7 +4,7 @@
 #include "gtest/gtest.h"
 
 #include "c_api_test_utils.h"
-#include "taichi/taichi.hpp"
+#include "taichi/cpp/taichi.hpp"
 
 #define NR_PARTICLES 8000
 constexpr int SUBSTEPS = 5;
@@ -71,7 +71,7 @@ void run(TiArch arch, const std::string &folder_dir) {
   /* --------------------- */
   k_initialize.launch();
   k_initialize_particle.launch();
-  ti_wait(runtime);
+  runtime.wait();
 
   /* --------------------- */
   /* Execution & Rendering */
@@ -82,7 +82,7 @@ void run(TiArch arch, const std::string &folder_dir) {
     k_advance.launch();
     k_boundary_handle.launch();
   }
-  ti_wait(runtime);
+  runtime.wait();
 }
 
 TEST(CapiSphTest, Cuda) {

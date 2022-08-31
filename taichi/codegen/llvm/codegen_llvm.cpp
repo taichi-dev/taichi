@@ -2625,7 +2625,8 @@ LLVMCompiledData TaskCodeGenLLVM::run_compilation() {
   emit_to_module();
   eliminate_unused_functions();
 
-  return {std::move(this->offloaded_tasks), std::move(this->module)};
+  return {std::move(offloaded_tasks), std::move(module),
+          std::move(used_tree_ids), std::move(struct_for_tls_sizes)};
 }
 
 llvm::Value *TaskCodeGenLLVM::create_xlogue(std::unique_ptr<Block> &block) {
@@ -2701,7 +2702,8 @@ void TaskCodeGenLLVM::visit(FuncCallStmt *stmt) {
 }
 
 LLVMCompiledData LLVMCompiledData::clone() const {
-  return {tasks, llvm::CloneModule(*module)};
+  return {tasks, llvm::CloneModule(*module), used_tree_ids,
+          struct_for_tls_sizes};
 }
 
 TLANG_NAMESPACE_END

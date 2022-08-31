@@ -108,7 +108,7 @@ ti.init(arch=ti.gpu)
 
 This line calls the `ti.init` function to initialize some environment variables. The `init` function accepts several arguments to allow users to custom the runtime program, for now, we only introduce the most important one, namely the `arch`.
 
-The argument `arch` specifies the *backend* that actually executes the compiled code. A backend can be either `ti.cpu` or `ti.gpu`. For `ti.gpu` Taichi will look for GPU architectures in the order `ti.cuda`, `ti.vulkan`, `ti.opengl/ti.metal` and choose the first available one. If no GPU device is found, Taichi will fall back to your CPU device.
+The argument `arch` specifies the *backend* to execute the compiled code. A backend can be either `ti.cpu` or `ti.gpu`. When `ti.gpu` is designated, Taichi will opt for `ti.cuda`, `ti.vulkan`, or `ti.opengl/ti.metal` in descending order of preference. If no GPU architecture is available, Taichi will fall back to your CPU device.
 
 You can also directly specify the backend like `arch=ti.cuda`, Taichi will raise an error if this architecture is unavailable.
 

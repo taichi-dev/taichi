@@ -106,7 +106,7 @@ The first two lines serve to import Taichi and its `math` module. The `math` mod
 ti.init(arch=ti.gpu)
 ```
 
-This line calls the `ti.init` function to initialize some environment variables. The `init` function accepts several arguments to allow users to custom the runtime program, for now, we only introduce the most important one, namely the `arch`.
+This line calls the `ti.init` function to initialize some environment variables. The `init` function accepts several arguments to allow users to custom the runtime program. For now, we only introduce the most important one, namely the `arch`.
 
 The argument `arch` specifies the *backend* to execute the compiled code. A backend can be either `ti.cpu` or `ti.gpu`. When `ti.gpu` is designated, Taichi will opt for `ti.cuda`, `ti.vulkan`, or `ti.opengl/ti.metal` in descending order of preference. If no GPU architecture is available, Taichi will fall back to your CPU device.
 

@@ -1213,7 +1213,8 @@ void export_lang(py::module &m) {
   MAKE_SPARSE_MATRIX(64, ColMajor, d);
   MAKE_SPARSE_MATRIX(64, RowMajor, d);
 
-  py::class_<CuSparseMatrix>(m, "CuSparseMatrix")
+  py::class_<CuSparseMatrix, SparseMatrix>(m, "CuSparseMatrix")
+      .def(py::init<int, int, DataType>())
       .def("spmv", &CuSparseMatrix::spmv);
 
   py::class_<SparseSolver>(m, "SparseSolver")
@@ -1221,9 +1222,11 @@ void export_lang(py::module &m) {
       .def("analyze_pattern", &SparseSolver::analyze_pattern)
       .def("factorize", &SparseSolver::factorize)
       .def("solve", &SparseSolver::solve)
+      .def("solve_cu", &SparseSolver::solve_cu)
       .def("info", &SparseSolver::info);
 
   m.def("make_sparse_solver", &make_sparse_solver);
+  m.def("make_cusparse_solver", &make_cusparse_solver);
 
   // Mesh Class
   // Mesh related.

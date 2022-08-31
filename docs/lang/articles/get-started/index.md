@@ -132,7 +132,7 @@ Between Line 9 and Line 22, we define two functions, one decorated with `@ti.fun
 The main differences between Taichi functions and kernels:
 
 1. Kernels are the entry points where Taichi kicks in and takes over the task. Kernels can be called anywhere, anytime in your program, but Taichi functions can only be called from inside kernels or from inside other Taichi functions. In the example above, the Taichi function `complex_sqr` is called by the kernel `paint`.
-2. A kernel *must* take type-hinted arguments and returns type-hinted results; but Taichi functions do not require type hinting compulsorily. In the example above, the argument `t` in the kernel `paint` is type hinted, but the argument `z` in the Taichi function `complex_sqr` is not.
+2. A kernel *must* take type-hinted arguments and return type-hinted results; but Taichi functions do not require type hinting compulsorily. In the example above, the argument `t` in the kernel `paint` is type hinted, but the argument `z` in the Taichi function `complex_sqr` is not.
 3. Taichi *supports* nested functions but *does not support* nested kernels. Calling Taichi functions recursively is *not supported for now*.
 
 :::tip

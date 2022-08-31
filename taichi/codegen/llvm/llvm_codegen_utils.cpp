@@ -15,9 +15,12 @@ std::string type_name(llvm::Type *type) {
  * (a type is a renamed version of the other one) based on the
  * type name. Check recursively if the types are function types.
  *
- * The name of a type imported multiple times is added a suffix starting with a
- * "." following by a number. For example, "RuntimeContext" may be renamed to
- * names like "RuntimeContext.0" and "RuntimeContext.8".
+ * Types like `PhysicalCoordinates` occur in every struct module.
+ * When a struct module is copied into a LLVM context,
+ * types in the module which already exist in the context are renamed
+ * by adding a suffix starting with a "." following by a number.
+ * For example, "PhysicalCoordinates" may be renamed to
+ * names like "PhysicalCoordinates.0" and "PhysicalCoordinates.8".
  */
 bool is_same_type(llvm::Type *a, llvm::Type *b) {
   if (a == b) {
@@ -63,7 +66,7 @@ bool is_same_type(llvm::Type *a, llvm::Type *b) {
     len_same++;
   }
   if (len_same != a_name.size()) {
-    // a and b are both xxx.yyy, yyy are all numbers
+    // a is xxx.yyy, and b is xxx.zzz, yyy and zzz are numbers
     if (len_same == 0) {
       return false;
     }
@@ -85,7 +88,7 @@ bool is_same_type(llvm::Type *a, llvm::Type *b) {
       }
     }
   } else {
-    // a is xxx, and b is xxx.yyy, yyy are all numbers
+    // a is xxx, and b is xxx.yyy, yyy is a number
     TI_ASSERT(len_same != b_name.size());
     if (b_name[len_same] != '.') {
       return false;

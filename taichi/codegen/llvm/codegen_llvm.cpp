@@ -703,7 +703,8 @@ llvm::Type *TaskCodeGenLLVM::llvm_type(DataType dt) {
   } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
     return llvm::Type::getHalfTy(*llvm_context);
   } else if (dt->is<TensorType>()) {
-    TI_ASSERT_INFO(kernel->program->config.real_matrix,
+    TI_ASSERT_INFO(kernel->program->config.real_matrix ||
+                       kernel->program->config.dynamic_index,
                    "Real matrix not enabled but got TensorType");
     auto tensor_type = dt->cast<TensorType>();
     auto element_type = llvm_type(tensor_type->get_element_type());

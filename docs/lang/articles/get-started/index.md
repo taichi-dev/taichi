@@ -110,31 +110,30 @@ This line calls the `ti.init` function to initialize some environment variables.
 
 The argument `arch` specifies the *backend* to execute the compiled code. A backend can be either `ti.cpu` or `ti.gpu`. When `ti.gpu` is designated, Taichi will opt for `ti.cuda`, `ti.vulkan`, or `ti.opengl/ti.metal` in descending order of preference. If no GPU architecture is available, Taichi will fall back to your CPU device.
 
-You can also directly specify the backend like `arch=ti.cuda`, Taichi will raise an error if this architecture is unavailable.
-
+You can also directly specify the GPU backend by setting, for example, `arch=ti.cuda`. Taichi will raise an error if the target architecture is unavailable.
 
 ### Define a field
 
-The next two lines
+Let's move on to the next two lines.
 
 ```python
 n = 320
 pixels = ti.field(dtype=float, shape=(n * 2, n))
 ```
 
-define a field of shape (640, 320) of float type. `field` is the most important and frequently used data structure in Taichi. You can think of it as an analog of Numpy's `ndarray` or PyTorch's `tensor`, but we emphasize here that Taichi's `field` is a much more powerful and flexible data structure than the other two counterparts. For example, Taichi fields can be [spatially sparse](../basic/sparse.md), and can easily [switch between different data layouts](../basic/layout.md).
+Here, we define a field whose shape is (640, 320) and whose elements are float-type data. `field` is the most important and frequently used data structure in Taichi. You can compare it to NumPy's `ndarray` or PyTorch's `tensor`. But we need to emphasize that Taichi's `field` is more powerful and flexible than the two counterparts. For example, a Taichi field can be [spatially sparse](../basic/sparse.md) and can easily [switch between different data layouts](../basic/layout.md).
 
 You will meet these features in more advanced tutorials later. You can now think of `pixels` as a dense 2D array.
 
 ### Kernels and functions
 
-Between lines 9-22 we defined two functions. One decorated by `@ti.func` and one decorated by `@ti.kernel`. Such functions are called *Taichi functions* and *kernels* respectively. They are not executed by Python's interpreter but will be taken over by Taichi's JIT compiler and will execute rapidly on your parallel CPU cores or GPU.
+Between Line 9 and Line 22, we define two functions, one decorated with `@ti.func` and the other with `@ti.kernel`. They are called the *Taichi function* and *kernel*, respectively. Taichi functions and kernels are not executed by Python's interpreter; they are taken over by Taichi's JIT compiler and deployed to your parallel CPU cores or GPU.
 
 The main differences between Taichi functions and kernels are:
 
-1. Kernels are the entrances for Taichi to take over the subsequent task. Kernels can be called anywhere in your program, but Taichi functions can only be called by kernels or by other Taichi functions. In the above example, the Taichi function `complex_sqr` is called by the kernel `paint`.
-2. The arguments and returns of a kernel function must all be type hinted, Taichi functions do not have such restrictions. In the above example, the argument `t` in the kernel `paint` is type hinted, but the argument `z` in the Taichi function `complex_sqr` is not.
-3. Nested kernels are *not supported*, nested functions are *supported*. Recursively calling Taichi functions are *not supported for now*.
+1. Kernels are the entry points where Taichi kicks in and takes over the task. Kernels can be called anywhere, anytime in your program, but Taichi functions can only be called from inside kernels or from inside other Taichi functions. In the example above, the Taichi function `complex_sqr` is called by the kernel `paint`.
+2. A kernel *must* take type-hinted arguments and returns type-hinted results; but Taichi functions do not require type hinting compulsorily. In the example above, the argument `t` in the kernel `paint` is type hinted, but the argument `z` in the Taichi function `complex_sqr` is not.
+3. Taichi *supports* nested functions but *does not support* nested kernels. Calling Taichi functions recursively is *not supported for now*.
 
 :::tip
 ​
@@ -146,19 +145,19 @@ For those who come from the world of OpenGL, `ti.func` corresponds to the usual 
 
 ### Parallel for loop
 
-The real magic happens at line 15:
+The real magic happens at Line 15:
 
 ```python
 for i, j in pixels:
 ```
 
-This is a `for` loop at the outermost scope in a Taichi kernel and this loop is *automatically paralleled*.
+This is a `for` loop at the outermost scope in a Taichi kernel and thus is *automatically parallelized*.
 
-In fact, any `for` loop at the outermost scope in a kernel will be automatically paralleled. This is a very handy syntax sugar offered by Taichi. It allows users to parallel their tasks just in one plain and innocent loop, without bothering any underlying hooks like thread allocating/recycling and memory management!
+Taichi offers a handy syntax sugar: It parallelizes any `for` loop at the outermost scope in a kernel. This means that you can parallel your task using just one plain loop, without the need to know what is going on under the hood, be it thread allocation/recycling or memory management.
 
-Note that the field `pixels` is treated as an iterator, `i,j` are the indices of the elements and are integers in the range `[0, 2*n-1]` and `[0, n-1]`, respectively. They are listed in the row-majored order `(0, 0)`, `(0, 1)`, ..., `(0, n-1)`, `(1, n-1)`, ..., `(2*n-1, n-1)`.
+Note that the field `pixels` is treated as an iterator. As the indices of the field elements, `i` and `j` are integers falling in the ranges `[0, 2*n-1]` and `[0, n-1]`, respectively. They are arranged in the row-majored order, i.e., `(0, 0)`, `(0, 1)`, ..., `(0, n-1)`, `(1, n-1)`, ..., `(2*n-1, n-1)`.
 
-Here we also emphasize that *for loops not at the outermost scope will not be paralleled*, they are handled in serialized order:
+You should keep it in mind that the *for loops not at the outermost scope will not be parallelized*; they are handled serially:
 
 ```python {3,7,14-15}
 @ti.kernel
@@ -174,7 +173,7 @@ def fill():
 
 :::caution WARNING
 
-`break` statement is *not* supported in parallel loops:
+The `break` statement is *not* supported in parallelized loops:
 
 ```python
 @ti.kernel
@@ -205,13 +204,11 @@ for i in range(1000000):
     gui.show()
 ```
 
-The line
-
 ```python
 gui = ti.GUI("Julia Set", res=(n * 2, n))
 ```
 
-sets the window title and the window resolution in pixels. Then in each round (we just render the animation 1000000 times) we compute the updated fractal pattern stored in `pixels`, call `gui.set_image` to set the window content as those in `pixels`, and call `gui.show()` to display the result to the screen.
+This line sets the window title and the resolution. We plan to iterate over the `pixels` 1000000 times, and the fractal pattern stored in `pixels` is updated accordingly. Then, we call `gui.set_image` to set the window and call `gui.show()` to display the synchronized result on the screen.
 
 
 ### Summary

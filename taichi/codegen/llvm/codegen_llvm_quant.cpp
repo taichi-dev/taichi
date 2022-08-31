@@ -48,7 +48,8 @@ llvm::Value *TaskCodeGenLLVM::to_quant_fixed(llvm::Value *real,
   auto compute_type = qfxt->get_compute_type();
   auto s = builder->CreateFPCast(tlctx->get_constant(1.0 / qfxt->get_scale()),
                                  tlctx->get_data_type(compute_type));
-  auto input_real = builder->CreateFPCast(real, tlctx->get_data_type(compute_type));
+  auto input_real =
+      builder->CreateFPCast(real, tlctx->get_data_type(compute_type));
   auto scaled = builder->CreateFMul(input_real, s);
 
   // Add/minus the 0.5 offset for rounding
@@ -58,9 +59,11 @@ llvm::Value *TaskCodeGenLLVM::to_quant_fixed(llvm::Value *real,
 
   auto qit = qfxt->get_digits_type()->as<QuantIntType>();
   if (qit->get_is_signed()) {
-    return builder->CreateFPToSI(scaled, tlctx->get_data_type(qit->get_compute_type()));
+    return builder->CreateFPToSI(scaled,
+                                 tlctx->get_data_type(qit->get_compute_type()));
   } else {
-    return builder->CreateFPToUI(scaled, tlctx->get_data_type(qit->get_compute_type()));
+    return builder->CreateFPToUI(scaled,
+                                 tlctx->get_data_type(qit->get_compute_type()));
   }
 }
 
@@ -469,7 +472,8 @@ llvm::Value *TaskCodeGenLLVM::extract_quant_int(llvm::Value *physical_value,
   else
     step2 = builder->CreateLShr(step1, right);
 
-  return builder->CreateIntCast(step2, tlctx->get_data_type(qit->get_compute_type()),
+  return builder->CreateIntCast(step2,
+                                tlctx->get_data_type(qit->get_compute_type()),
                                 qit->get_is_signed());
 }
 

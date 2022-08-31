@@ -164,7 +164,7 @@ You should keep it in mind that the *for loops not at the outermost scope will n
 @ti.kernel
 def fill():
     total = 0
-    for i in range(10): # Paralleled
+    for i in range(10): # Parallelized
         for j in range(5): # Serialized in each parallel thread
             total += i * j
 

@@ -15,6 +15,7 @@ RENDER_REPEAT = 5
 # FIXME: enable ggui tests on ti.cpu backend. It's blocked by macos10.15
 supported_archs = [ti.vulkan, ti.cuda]
 
+
 def verify_image(image, image_name, tolerance=0.1):
     if REGENERATE_GROUNDTRUTH_IMAGES:
         ground_truth_name = f"tests/python/expected/{image_name}.png"
@@ -23,20 +24,20 @@ def verify_image(image, image_name, tolerance=0.1):
         ground_truth_name = str(
             pathlib.Path(__file__).parent) + f"/expected/{image_name}.png"
         ground_truth_np = ti.tools.imread(ground_truth_name)
-        
+
         with tempfile.NamedTemporaryFile(suffix='.png') as fp:
             actual_name = fp.name
             ti.tools.imwrite(image, actual_name)
             actual_np = ti.tools.imread(actual_name)
-            
+
             assert len(ground_truth_np.shape) == len(actual_np.shape)
             for i in range(len(ground_truth_np.shape)):
                 assert ground_truth_np.shape[i] == actual_np.shape[i]
-                    
+
             diff = ground_truth_np - actual_np
             mse = np.mean(diff * diff)
             assert mse <= tolerance  # the pixel values are 0~255
-            
+
 
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)
@@ -130,11 +131,12 @@ def test_geometry_2d():
     for _ in range(RENDER_REPEAT):
         render()
         window.get_image_buffer_as_numpy()
-        
+
     render()
     if (platform.system() == 'Darwin'):
         # FIXME: Use lower tolerance when macOS ggui supports wide lines
-        verify_image(window.get_image_buffer_as_numpy(), 'test_geometry_2d', 1.0)
+        verify_image(window.get_image_buffer_as_numpy(), 'test_geometry_2d',
+                     1.0)
     else:
         verify_image(window.get_image_buffer_as_numpy(), 'test_geometry_2d')
     window.destroy()

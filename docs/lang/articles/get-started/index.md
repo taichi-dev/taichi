@@ -153,7 +153,7 @@ for i, j in pixels:
 
 This is a `for` loop at the outermost scope in a Taichi kernel and thus is *automatically parallelized*.
 
-Taichi offers a handy syntax sugar: It parallelizes any `for` loop at the outermost scope in a kernel. This means that you can parallel your task using just one plain loop, without the need to know what is going on under the hood, be it thread allocation/recycling or memory management.
+Taichi offers a handy syntax sugar: It parallelizes any `for` loop at the outermost scope in a kernel. This means that you can parallelize your tasks using just one plain loop, without the need to know what is going on under the hood, be it thread allocation/recycling or memory management.
 
 Note that the field `pixels` is treated as an iterator. As the indices of the field elements, `i` and `j` are integers falling in the ranges `[0, 2*n-1]` and `[0, n-1]`, respectively. They are arranged in the row-majored order, i.e., `(0, 0)`, `(0, 1)`, ..., `(0, n-1)`, `(1, n-1)`, ..., `(2*n-1, n-1)`.
 

@@ -15,79 +15,28 @@ RENDER_REPEAT = 5
 # FIXME: enable ggui tests on ti.cpu backend. It's blocked by macos10.15
 supported_archs = [ti.vulkan, ti.cuda]
 
-
-def get_temp_png():
-    f, name = tempfile.mkstemp(suffix='.png')
-    os.close(f)
-    return name
-
-
-def write_temp_image(window):
-    f = get_temp_png()
-    window.save_image(f)
-    try:
-        os.remove(f)
-    except OSError:
-        pass
-
-
-def write_temp_image_array(img, file=None):
-    if img.shape[0] % 2 != 0:
-        img = img[:-1]
-    if img.shape[1] % 2 != 0:
-        img = img[:, :-1]
-    if not file:
-        file = get_temp_png()
-    ti.tools.imwrite(img, file)
-    try:
-        os.remove(file)
-    except OSError:
-        pass
-
-
-def verify_image(window, image_name, tolerance=0.1):
-    if REGENERATE_GROUNDTRUTH_IMAGES:
-        ground_truth_name = f"tests/python/expected/{image_name}.png"
-        window.save_image(ground_truth_name)
-    else:
-        ground_truth_name = str(
-            pathlib.Path(__file__).parent) + f"/expected/{image_name}.png"
-        actual_name = get_temp_png()
-        window.save_image(actual_name)
-        ground_truth_np = ti.tools.imread(ground_truth_name)
-        actual_np = ti.tools.imread(actual_name)
-        assert len(ground_truth_np.shape) == len(actual_np.shape)
-        for i in range(len(ground_truth_np.shape)):
-            assert ground_truth_np.shape[i] == actual_np.shape[i]
-        diff = ground_truth_np - actual_np
-        mse = np.mean(diff * diff)
-        assert mse <= tolerance  # the pixel values are 0~255
-        os.remove(actual_name)
-
-
-def verify_image_array(image, image_name, tolerance=0.1):
-    if image.shape[0] % 2 != 0:
-        image = image[:-1]
-    if image.shape[1] % 2 != 0:
-        image = image[:, :-1]
+def verify_image(image, image_name, tolerance=0.1):
     if REGENERATE_GROUNDTRUTH_IMAGES:
         ground_truth_name = f"tests/python/expected/{image_name}.png"
         ti.tools.imwrite(image, ground_truth_name)
     else:
         ground_truth_name = str(
             pathlib.Path(__file__).parent) + f"/expected/{image_name}.png"
-        actual_name = get_temp_png()
-        ti.tools.imwrite(image, actual_name)
         ground_truth_np = ti.tools.imread(ground_truth_name)
-        actual_np = ti.tools.imread(actual_name)
-        assert len(ground_truth_np.shape) == len(actual_np.shape)
-        for i in range(len(ground_truth_np.shape)):
-            assert ground_truth_np.shape[i] == actual_np.shape[i]
-        diff = ground_truth_np - actual_np
-        mse = np.mean(diff * diff)
-        assert mse <= tolerance  # the pixel values are 0~255
-        os.remove(actual_name)
-
+        
+        with tempfile.NamedTemporaryFile(suffix='.png') as fp:
+            actual_name = fp.name
+            ti.tools.imwrite(image, actual_name)
+            actual_np = ti.tools.imread(actual_name)
+            
+            assert len(ground_truth_np.shape) == len(actual_np.shape)
+            for i in range(len(ground_truth_np.shape)):
+                assert ground_truth_np.shape[i] == actual_np.shape[i]
+                    
+            diff = ground_truth_np - actual_np
+            mse = np.mean(diff * diff)
+            assert mse <= tolerance  # the pixel values are 0~255
+            
 
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)
@@ -180,13 +129,14 @@ def test_geometry_2d():
 
     for _ in range(RENDER_REPEAT):
         render()
-        write_temp_image(window)
+        window.get_image_buffer_as_numpy()
+        
     render()
     if (platform.system() == 'Darwin'):
         # FIXME: Use lower tolerance when macOS ggui supports wide lines
-        verify_image(window, 'test_geometry_2d', 1.0)
+        verify_image(window.get_image_buffer_as_numpy(), 'test_geometry_2d', 1.0)
     else:
-        verify_image(window, 'test_geometry_2d')
+        verify_image(window.get_image_buffer_as_numpy(), 'test_geometry_2d')
     window.destroy()
 
 
@@ -276,9 +226,9 @@ def test_geometry_3d():
 
     for _ in range(RENDER_REPEAT):
         render()
-        write_temp_image(window)
+        window.get_image_buffer_as_numpy()
     render()
-    verify_image(window, 'test_geometry_3d')
+    verify_image(window.get_image_buffer_as_numpy(), 'test_geometry_3d')
     window.destroy()
 
 
@@ -302,9 +252,9 @@ def test_set_image():
 
     for _ in range(RENDER_REPEAT):
         render()
-        write_temp_image(window)
+        window.get_image_buffer_as_numpy()
     render()
-    verify_image(window, 'test_set_image')
+    verify_image(window.get_image_buffer_as_numpy(), 'test_set_image')
     window.destroy()
 
 
@@ -331,16 +281,16 @@ def test_set_image_flat_field():
 
     for _ in range(RENDER_REPEAT):
         render()
-        write_temp_image(window)
+        window.get_image_buffer_as_numpy()
     render()
-    verify_image(window, 'test_set_image')
+    verify_image(window.get_image_buffer_as_numpy(), 'test_set_image')
     window.destroy()
 
 
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=[ti.vulkan])
 def test_set_image_with_texture():
-    window = ti.ui.Window('test', (640, 480), show_window=True)
+    window = ti.ui.Window('test', (640, 480), show_window=False)
     canvas = window.get_canvas()
 
     img = ti.Texture(ti.f32, 4, (512, 512))
@@ -361,9 +311,9 @@ def test_set_image_with_texture():
 
     for _ in range(3):
         render()
-        write_temp_image(window)
+        window.get_image_buffer_as_numpy()
     render()
-    verify_image(window, 'test_set_image')
+    verify_image(window.get_image_buffer_as_numpy(), 'test_set_image')
     window.destroy()
 
 
@@ -385,9 +335,9 @@ def test_imgui():
 
     for _ in range(RENDER_REPEAT):
         render()
-        write_temp_image(window)
+        window.get_image_buffer_as_numpy()
     render()
-    verify_image(window, 'test_imgui')
+    verify_image(window.get_image_buffer_as_numpy(), 'test_imgui')
     window.destroy()
 
 
@@ -441,8 +391,8 @@ def test_fetching_color_attachment():
 
     for _ in range(RENDER_REPEAT):
         render()
-        write_temp_image_array(window.get_image_buffer_as_numpy())
+        window.get_image_buffer_as_numpy()
 
     render()
-    verify_image_array(window.get_image_buffer_as_numpy(), 'test_set_image')
+    verify_image(window.get_image_buffer_as_numpy(), 'test_set_image')
     window.destroy()

@@ -9,14 +9,16 @@ sidebar_position: 3
 - To specify which kind of architecture (Arch) to use: `ti.init(arch=ti.cuda)`.
 - To specify the pre-allocated memory size for CUDA:
   `ti.init(device_memory_GB=0.5)`.
-- To specify which GPU to use for CUDA(the first one is suggested):
-  `export TI_VISIBLE_DEVICE=[gpuid]` or `export CUDA_VISIBLE_DEVICES=[gpuid]`.
+- To specify which GPU to use for CUDA:
+  `export CUDA_VISIBLE_DEVICES=[gpuid]`.
+- To specify which GPU to use for VULKAN:
+- `export TI_VISIBLE_DEVICE=[gpuid]`
 - To disable a backend (`CUDA`, `METAL`, `OPENGL`) on start up, e.g. CUDA:
   `export TI_ENABLE_CUDA=0`.
 
 :::note
 
-If you set the value of one of the `TI_VISIBLE_DEVICE` and `CUDA_VISIBLE_DEVICES`, then the other's value will be the same. It's not suggested that you set different value of `TI_VISIBLE_DEVICE` and `CUDA_VISIBLE_DEVICES` which will raise a warning message.
+Under the case that you may want to use cuda as taichi kernel backend, and vulkan as GGUI backend. If you have multiple GPU devices, then you should take care of if `CUDA_VISIBLE_DEVICES` is matched with `TI_VISIBLE_DEVICE`. In general, `CUDA_VISIBLE_DEVICES` and `TI_VISIBLE_DEVICE` should indicate the same uuid of a GPU device. Use `nvidia-smi -L` to quiery the details of your GPU devices.
 
 ## Compilation
 

@@ -8,6 +8,7 @@ from functools import reduce
 
 import numpy as np
 from taichi.lang import impl
+from taichi.lang.enums import SNodeGradType
 from taichi.lang.field import ScalarField
 from taichi.lang.snode import SNode
 
@@ -69,6 +70,8 @@ class Tape:
                 ' for all fields that are required by autodiff.')
         if self.clear_gradients:
             clear_all_gradients()
+        if self.validation:
+            clear_all_gradients(gradient_type=SNodeGradType.ADJOINT_CHECKBIT)
 
         from taichi._kernels import clear_loss  # pylint: disable=C0415
         clear_loss(self.loss)
@@ -92,7 +95,7 @@ class Tape:
         self.gradient_evaluated = True
 
 
-def clear_all_gradients():
+def clear_all_gradients(gradient_type=SNodeGradType.ADJOINT):
     """Sets the gradients of all fields to zero.
     """
     impl.get_runtime().materialize()
@@ -104,8 +107,7 @@ def clear_all_gradients():
             if not ch.is_place():
                 visit(SNode(ch))
             else:
-                # TODO: control to clear adjoint, dual, adjoint_flag
-                if not ch.is_primal():
+                if ch.get_snode_grad_type() == gradient_type:
                     places.append(ch.get_expr())
 
         places = tuple(places)
@@ -285,8 +287,7 @@ class FwdMode:
 
         # Clear gradients
         if self.clear_gradients:
-            # TODO: the clear gradients should be controlled to clear adjoint/dual/adjoint_checkbit respectively
-            clear_all_gradients()
+            clear_all_gradients(gradient_type=SNodeGradType.DUAL)
 
         # Set seed for each variable
         if len(self.seed) == 1:

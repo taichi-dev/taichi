@@ -362,7 +362,17 @@ void InternalFuncCallExpression::flatten(FlattenContext *ctx) {
 }
 
 void ExternalTensorExpression::flatten(FlattenContext *ctx) {
-  auto ptr = Stmt::make<ArgLoadStmt>(arg_id, dt, /*is_ptr=*/true);
+  // https://github.com/taichi-dev/taichi/issues/5819
+  // ArgLoadStmt keeps primitive types since all matrix-type gets
+  // scalarized at python-scope
+  //
+  // FIXME(zhanlue): ArgLoadStmt should use TensorType once real_matrix is
+  // turned-on by default.
+  //                 The scalarization should happen after
+  //                 irpass::lower_access()
+  auto prim_dt = dt.get_element_type();
+
+  auto ptr = Stmt::make<ArgLoadStmt>(arg_id, prim_dt, /*is_ptr=*/true);
   ptr->tb = tb;
   ctx->push_back(std::move(ptr));
   stmt = ctx->back_stmt();
@@ -405,7 +415,7 @@ Stmt *make_ndarray_access(Expression::FlattenContext *ctx,
   flatten_lvalue(var, ctx);
   auto expr = var.cast<ExternalTensorExpression>();
   return ctx->push_back(std::make_unique<ExternalPtrStmt>(
-      expr->stmt, index_stmts, expr->element_shape, expr->element_dim));
+      expr->stmt, index_stmts, expr->dt.get_shape(), expr->element_dim));
 }
 
 Stmt *make_tensor_access(Expression::FlattenContext *ctx,
@@ -463,15 +473,16 @@ bool IndexExpression::is_ndarray() const {
 }
 
 bool IndexExpression::is_tensor() const {
-  return var->ret_type->is<TensorType>();
+  return is_local() && var->ret_type->is<TensorType>();
 }
 
 bool IndexExpression::is_local() const {
-  return is_tensor();
+  return !is_global();
 }
 
 bool IndexExpression::is_global() const {
-  return !is_local();
+  // Only Ndarray and Field comes outside from a kernel
+  return is_field() || is_ndarray();
 }
 
 void IndexExpression::type_check(CompileConfig *) {
@@ -480,12 +491,23 @@ void IndexExpression::type_check(CompileConfig *) {
   if (is_field()) {  // field
     ret_type = var.cast<GlobalVariableExpression>()->dt->get_compute_type();
   } else if (is_ndarray()) {  // ndarray
-    ret_type = var.cast<ExternalTensorExpression>()->dt;
+    auto external_tensor_expr = var.cast<ExternalTensorExpression>();
+    int total_dim = external_tensor_expr->dim;
+    int index_dim = indices.exprs.size();
+
+    if (index_dim == total_dim) {
+      // Access all the way to a single element
+      ret_type = var.cast<ExternalTensorExpression>()->dt.get_element_type();
+    } else {
+      // Access to a Tensor
+      ret_type = var.cast<ExternalTensorExpression>()->dt;
+    }
   } else if (is_tensor()) {  // local tensor
     ret_type = var->ret_type->cast<TensorType>()->get_element_type();
   } else {
     throw TaichiTypeError(
-        "Invalid IndexExpression: the source is neither a field nor a tensor");
+        "Invalid IndexExpression: the source is not among field, ndarray or "
+        "local tensor");
   }
 
   for (int i = 0; i < indices.exprs.size(); i++) {
@@ -507,6 +529,10 @@ void IndexExpression::flatten(FlattenContext *ctx) {
   } else if (is_tensor()) {
     stmt = make_tensor_access(
         ctx, var, indices, var->ret_type->cast<TensorType>()->get_shape(), 1);
+  } else {
+    throw TaichiTypeError(
+        "Invalid IndexExpression: the source is not among field, ndarray or "
+        "local tensor");
   }
   stmt->tb = tb;
 }

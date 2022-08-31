@@ -120,38 +120,36 @@ TaichiLLVMContext::~TaichiLLVMContext() {
 
 llvm::Type *TaichiLLVMContext::get_data_type(DataType dt) {
   auto ctx = get_this_thread_context();
-  if (dt->is_primitive(PrimitiveTypeID::i32)) {
-    return llvm::Type::getInt32Ty(*ctx);
-  } else if (dt->is_primitive(PrimitiveTypeID::i8)) {
+  if (dt->is_primitive(PrimitiveTypeID::i8) ||
+      dt->is_primitive(PrimitiveTypeID::u8)) {
     return llvm::Type::getInt8Ty(*ctx);
-  } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
+  } else if (dt->is_primitive(PrimitiveTypeID::i16) ||
+             dt->is_primitive(PrimitiveTypeID::u16)) {
     return llvm::Type::getInt16Ty(*ctx);
-  } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
+  } else if (dt->is_primitive(PrimitiveTypeID::i32) ||
+             dt->is_primitive(PrimitiveTypeID::u32)) {
+    return llvm::Type::getInt32Ty(*ctx);
+  } else if (dt->is_primitive(PrimitiveTypeID::i64) ||
+             dt->is_primitive(PrimitiveTypeID::u64)) {
     return llvm::Type::getInt64Ty(*ctx);
+  } else if (dt->is_primitive(PrimitiveTypeID::u1)) {
+    return llvm::Type::getInt1Ty(*ctx);
   } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
     return llvm::Type::getFloatTy(*ctx);
   } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
     return llvm::Type::getDoubleTy(*ctx);
-  } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
-    return llvm::Type::getInt8Ty(*ctx);
-  } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
-    return llvm::Type::getInt16Ty(*ctx);
-  } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
-    return llvm::Type::getInt32Ty(*ctx);
-  } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
-    return llvm::Type::getInt64Ty(*ctx);
   } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
     return llvm::Type::getHalfTy(*ctx);
   } else if (dt->is<TensorType>()) {
     TI_ASSERT_INFO(config_->real_matrix || config_->dynamic_index,
                    "Real matrix not enabled but got TensorType");
-    auto vectorty = dt->as<TensorType>();
-    auto dtype = this->get_data_type(vectorty->get_element_type());
-    return llvm::VectorType::get(dtype, vectorty->get_num_elements(),
+    auto tensor_type = dt->cast<TensorType>();
+    auto element_type = get_data_type(tensor_type->get_element_type());
+    return llvm::VectorType::get(element_type, tensor_type->get_num_elements(),
                                  /*scalable=*/false);
   } else {
     TI_INFO(data_type_name(dt));
-    TI_NOT_IMPLEMENTED
+    TI_NOT_IMPLEMENTED;
   }
 }
 

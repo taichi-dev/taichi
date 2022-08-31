@@ -202,7 +202,7 @@ def subscript(value, *_indices, skip_reordered=False, get_ref=False):
             _ti_core.subscript(_var, indices_expr_group,
                                get_runtime().get_current_src_info()))
     if isinstance(value, AnyArray):
-        dim = int(_ti_core.get_external_tensor_dim(value.ptr))
+        dim = _ti_core.get_external_tensor_dim(value.ptr)
         element_dim = len(value.element_shape())
         if dim != index_dim + element_dim:
             raise IndexError(

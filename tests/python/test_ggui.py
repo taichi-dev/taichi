@@ -12,6 +12,7 @@ RENDER_REPEAT = 5
 # FIXME: enable ggui tests on ti.cpu backend. It's blocked by macos10.15
 supported_archs = [ti.vulkan, ti.cuda]
 
+
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)
 def test_geometry_2d():
@@ -100,7 +101,7 @@ def test_geometry_2d():
                      width=0.01,
                      per_vertex_color=lines_colors_1,
                      indices=lines_indices_1)
-    
+
     # Render in off-line mode to check if there are errors
     for _ in range(RENDER_REPEAT):
         render()
@@ -199,12 +200,12 @@ def test_geometry_3d():
                    two_sided=True)
 
         canvas.scene(scene)
-        
+
     # Render in off-line mode to check if there are errors
     for _ in range(RENDER_REPEAT):
         render()
         window.get_image_buffer_as_numpy()
-        
+
     render()
     verify_image(window.get_image_buffer_as_numpy(), 'test_geometry_3d')
     window.destroy()
@@ -232,7 +233,7 @@ def test_set_image():
     for _ in range(RENDER_REPEAT):
         render()
         window.get_image_buffer_as_numpy()
-        
+
     render()
     verify_image(window.get_image_buffer_as_numpy(), 'test_set_image')
     window.destroy()
@@ -263,7 +264,7 @@ def test_set_image_flat_field():
     for _ in range(RENDER_REPEAT):
         render()
         window.get_image_buffer_as_numpy()
-        
+
     render()
     verify_image(window.get_image_buffer_as_numpy(), 'test_set_image')
     window.destroy()
@@ -295,7 +296,7 @@ def test_set_image_with_texture():
     for _ in range(3):
         render()
         window.get_image_buffer_as_numpy()
-        
+
     render()
     verify_image(window.get_image_buffer_as_numpy(), 'test_set_image')
     window.destroy()
@@ -321,7 +322,7 @@ def test_imgui():
     for _ in range(RENDER_REPEAT):
         render()
         window.get_image_buffer_as_numpy()
-        
+
     render()
     verify_image(window.get_image_buffer_as_numpy(), 'test_imgui')
     window.destroy()

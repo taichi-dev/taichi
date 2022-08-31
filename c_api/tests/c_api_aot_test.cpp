@@ -21,6 +21,7 @@ static void kernel_aot_test(TiArch arch) {
   k_run[0] = arg0_val;
   k_run[1] = arg1_array;
   k_run.launch();
+  runtime.wait();
 
   // Check Results
   int32_t *data = reinterpret_cast<int32_t *>(arg1_array.map());
@@ -64,6 +65,7 @@ static void field_aot_test(TiArch arch) {
   k_check_deactivate_pointer_fields.launch();
   k_activate_pointer_fields.launch();
   k_check_activate_pointer_fields.launch();
+  runtime.wait();
 
   // Check Results
   capi::utils::check_runtime_error(runtime);

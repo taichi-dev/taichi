@@ -26,6 +26,7 @@ void graph_aot_test(TiArch arch) {
   run_graph["base2"] = base2_val;
   run_graph["arr"] = arr_array;
   run_graph.launch();
+  runtime.wait();
 
   // Check Results
   auto *data = reinterpret_cast<int32_t *>(arr_array.map());

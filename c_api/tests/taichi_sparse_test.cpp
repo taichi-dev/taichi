@@ -32,6 +32,7 @@ static void taichi_sparse_test(TiArch arch) {
 
   // Accuracy Check
   k_check_img_value.launch();
+  runtime.wait();
 
   // Check Results
   capi::utils::check_runtime_error(runtime);

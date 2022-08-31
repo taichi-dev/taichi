@@ -143,7 +143,7 @@ For those who come from the world of OpenGL, `ti.func` corresponds to the usual 
 ​:::
 
 
-### Parallel for loop
+### Parallel for loops
 
 The real magic happens at Line 15:
 

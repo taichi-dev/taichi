@@ -2,8 +2,11 @@ import copy
 import functools
 import itertools
 import os
+import numpy as np
+import pathlib
 from errno import EEXIST
 from tempfile import mkstemp
+from tempfile import NamedTemporaryFile
 
 import pytest
 from taichi._lib import core as _ti_core
@@ -200,6 +203,29 @@ For each AOT test, run_tests.py will first run the python program specified by "
 
 
 # Helper functions
+def verify_image(image, image_name, tolerance=0.1, regerate_groundtruth_images=False):
+    if regerate_groundtruth_images:
+        ground_truth_name = f"tests/python/expected/{image_name}.png"
+        ti.tools.imwrite(image, ground_truth_name)
+    else:
+        ground_truth_name = str(
+            pathlib.Path(__file__).parent) + f"/python/expected/{image_name}.png"
+        ground_truth_np = ti.tools.imread(ground_truth_name)
+        
+        with NamedTemporaryFile(suffix='.png') as fp:
+            actual_name = fp.name
+            ti.tools.imwrite(image, actual_name)
+            actual_np = ti.tools.imread(actual_name)
+            
+            assert len(ground_truth_np.shape) == len(actual_np.shape)
+            for i in range(len(ground_truth_np.shape)):
+                assert ground_truth_np.shape[i] == actual_np.shape[i]
+                    
+            diff = ground_truth_np - actual_np
+            mse = np.mean(diff * diff)
+            assert mse <= tolerance  # the pixel values are 0~255
+            
+
 def get_rel_eps():
     arch = ti.lang.impl.current_cfg().arch
     if arch == ti.opengl:

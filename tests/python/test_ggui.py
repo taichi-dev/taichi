@@ -1,7 +1,4 @@
-import os
-import pathlib
 import platform
-import tempfile
 
 import numpy as np
 import pytest
@@ -9,34 +6,11 @@ from taichi._lib import core as _ti_core
 
 import taichi as ti
 from tests import test_utils
+from tests.test_utils import verify_image
 
-REGENERATE_GROUNDTRUTH_IMAGES = False
 RENDER_REPEAT = 5
 # FIXME: enable ggui tests on ti.cpu backend. It's blocked by macos10.15
 supported_archs = [ti.vulkan, ti.cuda]
-
-def verify_image(image, image_name, tolerance=0.1):
-    if REGENERATE_GROUNDTRUTH_IMAGES:
-        ground_truth_name = f"tests/python/expected/{image_name}.png"
-        ti.tools.imwrite(image, ground_truth_name)
-    else:
-        ground_truth_name = str(
-            pathlib.Path(__file__).parent) + f"/expected/{image_name}.png"
-        ground_truth_np = ti.tools.imread(ground_truth_name)
-        
-        with tempfile.NamedTemporaryFile(suffix='.png') as fp:
-            actual_name = fp.name
-            ti.tools.imwrite(image, actual_name)
-            actual_np = ti.tools.imread(actual_name)
-            
-            assert len(ground_truth_np.shape) == len(actual_np.shape)
-            for i in range(len(ground_truth_np.shape)):
-                assert ground_truth_np.shape[i] == actual_np.shape[i]
-                    
-            diff = ground_truth_np - actual_np
-            mse = np.mean(diff * diff)
-            assert mse <= tolerance  # the pixel values are 0~255
-            
 
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)
@@ -126,7 +100,8 @@ def test_geometry_2d():
                      width=0.01,
                      per_vertex_color=lines_colors_1,
                      indices=lines_indices_1)
-
+    
+    # Render in off-line mode to check if there are errors
     for _ in range(RENDER_REPEAT):
         render()
         window.get_image_buffer_as_numpy()
@@ -223,10 +198,12 @@ def test_geometry_3d():
                    two_sided=True)
 
         canvas.scene(scene)
-
+        
+    # Render in off-line mode to check if there are errors
     for _ in range(RENDER_REPEAT):
         render()
         window.get_image_buffer_as_numpy()
+        
     render()
     verify_image(window.get_image_buffer_as_numpy(), 'test_geometry_3d')
     window.destroy()
@@ -250,9 +227,11 @@ def test_set_image():
     def render():
         canvas.set_image(img)
 
+    # Render in off-line mode to check if there are errors
     for _ in range(RENDER_REPEAT):
         render()
         window.get_image_buffer_as_numpy()
+        
     render()
     verify_image(window.get_image_buffer_as_numpy(), 'test_set_image')
     window.destroy()
@@ -279,9 +258,11 @@ def test_set_image_flat_field():
     def render():
         canvas.set_image(img)
 
+    # Render in off-line mode to check if there are errors
     for _ in range(RENDER_REPEAT):
         render()
         window.get_image_buffer_as_numpy()
+        
     render()
     verify_image(window.get_image_buffer_as_numpy(), 'test_set_image')
     window.destroy()
@@ -309,9 +290,11 @@ def test_set_image_with_texture():
     def render():
         canvas.set_image(img)
 
+    # Render in off-line mode to check if there are errors
     for _ in range(3):
         render()
         window.get_image_buffer_as_numpy()
+        
     render()
     verify_image(window.get_image_buffer_as_numpy(), 'test_set_image')
     window.destroy()
@@ -333,9 +316,11 @@ def test_imgui():
         with gui.sub_window("window 2", 0.1, 0.7, 0.8, 0.2) as w:
             w.color_edit_3('Heyy', (0, 0, 1))
 
+    # Render in off-line mode to check if there are errors
     for _ in range(RENDER_REPEAT):
         render()
         window.get_image_buffer_as_numpy()
+        
     render()
     verify_image(window.get_image_buffer_as_numpy(), 'test_imgui')
     window.destroy()
@@ -389,6 +374,7 @@ def test_fetching_color_attachment():
     def render():
         canvas.set_image(img)
 
+    # Render in off-line mode to check if there are errors
     for _ in range(RENDER_REPEAT):
         render()
         window.get_image_buffer_as_numpy()

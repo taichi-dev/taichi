@@ -95,14 +95,12 @@ Let's dive into this simple Taichi program.
 
 ### Import Taichi
 
-The first two lines
-
 ```python
 import taichi as ti
 import taichi.math as tm
 ```
 
-Import Taichi as a package as well as its `math` module. The `math` module contains some frequently used math functions and built-in vector and matrix types of small dimensions, such as `vec2` for 2D real vectors and `mat3` for 3x3 real matrices.
+These first two lines import Taichi as a package as well as its `math` module. The `math` module contains some frequently used math functions and built-in vector and matrix types of small dimensions, such as `vec2` for 2D real vectors and `mat3` for 3x3 real matrices.
 
 The line
 

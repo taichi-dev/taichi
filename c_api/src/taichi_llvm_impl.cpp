@@ -119,7 +119,8 @@ void LlvmRuntime::buffer_copy(const taichi::lang::DevicePtr &dst,
 }
 
 void LlvmRuntime::submit() {
-  TI_NOT_IMPLEMENTED;
+  // (penguinliong) Submit in LLVM backends is a nop atm.
+  // TI_NOT_IMPLEMENTED;
 }
 
 void LlvmRuntime::wait() {

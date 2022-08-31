@@ -216,7 +216,7 @@ This line sets the window title and the resolution. We plan to iterate over the 
 Congratulations! After walking through the above short example, you have learned the most significant features of Taichi:
 
 1. Taichi compiles and runs Taichi functions and kernels on the designated backend.
-2. A `for` loop at the outermost scope in a kernel is automatically paralleled.
+2. The `for` loop at the outermost scope in a kernel is automatically parallelized.
 3. The field data container and how to loop over it.
 
 Now, you are well prepared to move on to the more advanced features of Taichi!

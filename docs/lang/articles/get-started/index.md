@@ -208,7 +208,7 @@ for i in range(1000000):
 gui = ti.GUI("Julia Set", res=(n * 2, n))
 ```
 
-This line sets the window title and the resolution. We plan to iterate over the `pixels` 1000000 times, and the fractal pattern stored in `pixels` is updated accordingly. Then, we call `gui.set_image` to set the window and call `gui.show()` to display the synchronized result on the screen.
+This line sets the window title and the resolution. We plan to iterate over the `pixels` 1,000,000 times, and the fractal pattern stored in `pixels` is updated accordingly. Then, we call `gui.set_image` to set the window and call `gui.show()` to display the synchronized result on the screen.
 
 
 ### Summary

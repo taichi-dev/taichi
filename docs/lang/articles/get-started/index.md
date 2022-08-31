@@ -140,7 +140,8 @@ The main differences between Taichi functions and kernels:
 For those who come from the world of CUDA, `ti.func` corresponds to `__device__` and `ti.kernel` corresponds to `__global__`.
 
 For those who come from the world of OpenGL, `ti.func` corresponds to the usual function in GLSL and `ti.kernel` corresponds to a `compute shader`.
-​:::
+
+:::
 
 
 ### Parallel for loops

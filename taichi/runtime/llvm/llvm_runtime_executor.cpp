@@ -613,7 +613,7 @@ void LlvmRuntimeExecutor::materialize_runtime(MemoryPool *memory_pool,
         (void *)&KernelProfilerBase::profiler_stop);
   }
 #if defined(TI_WITH_CUDA)
-  if (config_.arch == Arch::CUDA) {
+  if (config_->arch == Arch::cuda) {
     CUDADriver::get_instance().context_pop_current(nullptr);
   }
 #endif

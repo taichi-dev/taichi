@@ -407,7 +407,7 @@ void TaskCodeGenLLVM::visit(UnaryOpStmt *stmt) {
       }
     } else if (!is_real(from) && !is_real(to)) {
       llvm_val[stmt] = builder->CreateIntCast(llvm_val[stmt->operand],
-                                              llvm_type(to), is_signed(from));
+                                              tlctx->get_data_type(to), is_signed(from));
     }
   } else if (stmt->op_type == UnaryOpType::cast_bits) {
     TI_ASSERT(data_type_size(stmt->ret_type) ==
@@ -621,7 +621,7 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
     } else {
       TI_NOT_IMPLEMENTED
     }
-    llvm_val[stmt] = builder->CreateSExt(cmp, llvm_type(PrimitiveType::i32));
+    llvm_val[stmt] = builder->CreateSExt(cmp, tlctx->get_data_type(PrimitiveType::i32));
   } else {
     // This branch contains atan2 and pow which use runtime.cpp function for
     // **real** type. We don't have f16 support there so promoting to f32 is
@@ -681,48 +681,10 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
   }
 }
 
-llvm::Type *TaskCodeGenLLVM::llvm_type(DataType dt) {
-  if (dt->is_primitive(PrimitiveTypeID::i8) ||
-      dt->is_primitive(PrimitiveTypeID::u8)) {
-    return llvm::Type::getInt8Ty(*llvm_context);
-  } else if (dt->is_primitive(PrimitiveTypeID::i16) ||
-             dt->is_primitive(PrimitiveTypeID::u16)) {
-    return llvm::Type::getInt16Ty(*llvm_context);
-  } else if (dt->is_primitive(PrimitiveTypeID::i32) ||
-             dt->is_primitive(PrimitiveTypeID::u32)) {
-    return llvm::Type::getInt32Ty(*llvm_context);
-  } else if (dt->is_primitive(PrimitiveTypeID::i64) ||
-             dt->is_primitive(PrimitiveTypeID::u64)) {
-    return llvm::Type::getInt64Ty(*llvm_context);
-  } else if (dt->is_primitive(PrimitiveTypeID::u1)) {
-    return llvm::Type::getInt1Ty(*llvm_context);
-  } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
-    return llvm::Type::getFloatTy(*llvm_context);
-  } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
-    return llvm::Type::getDoubleTy(*llvm_context);
-  } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
-    return llvm::Type::getHalfTy(*llvm_context);
-  } else if (dt->is<TensorType>()) {
-    TI_ASSERT_INFO(kernel->program->config.real_matrix,
-                   "Real matrix not enabled but got TensorType");
-    auto tensor_type = dt->cast<TensorType>();
-    auto element_type = llvm_type(tensor_type->get_element_type());
-    return llvm::VectorType::get(element_type, tensor_type->get_num_elements(),
-                                 /*scalable=*/false);
-  } else {
-    TI_NOT_IMPLEMENTED;
-  }
-  return nullptr;
-}
-
-llvm::Type *TaskCodeGenLLVM::llvm_ptr_type(DataType dt) {
-  return llvm::PointerType::get(llvm_type(dt), 0);
-}
-
 void TaskCodeGenLLVM::visit(TernaryOpStmt *stmt) {
   TI_ASSERT(stmt->op_type == TernaryOpType::select);
   llvm_val[stmt] = builder->CreateSelect(
-      builder->CreateTrunc(llvm_val[stmt->op1], llvm_type(PrimitiveType::u1)),
+      builder->CreateTrunc(llvm_val[stmt->op1], tlctx->get_data_type(PrimitiveType::u1)),
       llvm_val[stmt->op2], llvm_val[stmt->op3]);
 }
 
@@ -1030,7 +992,7 @@ void TaskCodeGenLLVM::create_naive_range_for(RangeForStmt *for_stmt) {
       BasicBlock::Create(*llvm_context, "for_loop_test", func);
 
 #ifdef TI_LLVM_15
-  auto loop_var_ty = llvm_type(PrimitiveType::i32);
+  auto loop_var_ty = tlctx->get_data_type(PrimitiveType::i32);
 #endif
 
   auto loop_var = create_entry_block_alloca(PrimitiveType::i32);
@@ -1195,7 +1157,7 @@ void TaskCodeGenLLVM::visit(LocalLoadStmt *stmt) {
   if (auto *alloc = llvm::dyn_cast<llvm::AllocaInst>(val))
     ptr_ty = alloc->getAllocatedType();
   if (!ptr_ty && stmt->src->element_type().is_pointer()) {
-    ptr_ty = llvm_type(stmt->src->element_type().ptr_removed());
+    ptr_ty = tlctx->get_data_type(stmt->src->element_type().ptr_removed());
   }
   TI_ASSERT(ptr_ty);
   llvm_val[stmt] = builder->CreateLoad(ptr_ty, llvm_val[stmt->src]);
@@ -1298,12 +1260,12 @@ llvm::Value *TaskCodeGenLLVM::quant_type_atomic(AtomicOpStmt *stmt) {
   if (auto qit = dst_type->cast<QuantIntType>()) {
     return atomic_add_quant_int(
         llvm_val[stmt->dest],
-        llvm_type(stmt->dest->as<GetChStmt>()->input_snode->physical_type), qit,
+        tlctx->get_data_type(stmt->dest->as<GetChStmt>()->input_snode->physical_type), qit,
         llvm_val[stmt->val], is_signed(stmt->val->ret_type));
   } else if (auto qfxt = dst_type->cast<QuantFixedType>()) {
     return atomic_add_quant_fixed(
         llvm_val[stmt->dest],
-        llvm_type(stmt->dest->as<GetChStmt>()->input_snode->physical_type),
+        tlctx->get_data_type(stmt->dest->as<GetChStmt>()->input_snode->physical_type),
         qfxt, llvm_val[stmt->val]);
   } else {
     return nullptr;
@@ -1464,10 +1426,10 @@ void TaskCodeGenLLVM::visit(GlobalStoreStmt *stmt) {
           pointee_type->to_string());
     }
     if (auto qit = pointee_type->cast<QuantIntType>()) {
-      store_quant_int(llvm_val[stmt->dest], llvm_type(snode->physical_type),
+      store_quant_int(llvm_val[stmt->dest], tlctx->get_data_type(snode->physical_type),
                       qit, llvm_val[stmt->val], true);
     } else if (auto qfxt = pointee_type->cast<QuantFixedType>()) {
-      store_quant_fixed(llvm_val[stmt->dest], llvm_type(snode->physical_type),
+      store_quant_fixed(llvm_val[stmt->dest], tlctx->get_data_type(snode->physical_type),
                         qfxt, llvm_val[stmt->val], true);
     } else {
       TI_NOT_IMPLEMENTED;
@@ -1489,7 +1451,7 @@ void TaskCodeGenLLVM::create_global_load(GlobalLoadStmt *stmt,
   if (ptr_type->is_bit_pointer()) {
     auto val_type = ptr_type->get_pointee_type();
     auto get_ch = stmt->src->as<GetChStmt>();
-    auto physical_type = llvm_type(get_ch->input_snode->physical_type);
+    auto physical_type = tlctx->get_data_type(get_ch->input_snode->physical_type);
     auto [byte_ptr, bit_offset] = load_bit_ptr(ptr);
     auto physical_value = should_cache_as_read_only
                               ? create_intrinsic_load(byte_ptr, physical_type)
@@ -1510,7 +1472,7 @@ void TaskCodeGenLLVM::create_global_load(GlobalLoadStmt *stmt,
   } else {
     // Byte pointer case.
     if (should_cache_as_read_only) {
-      llvm_val[stmt] = create_intrinsic_load(ptr, llvm_type(stmt->ret_type));
+      llvm_val[stmt] = create_intrinsic_load(ptr, tlctx->get_data_type(stmt->ret_type));
     } else {
       llvm_val[stmt] =
           builder->CreateLoad(tlctx->get_data_type(stmt->ret_type), ptr);
@@ -1892,7 +1854,7 @@ std::tuple<llvm::Value *, llvm::Value *> TaskCodeGenLLVM::get_range_for_bounds(
     begin_stmt->accept(this);
     begin = builder->CreateLoad(
 #ifdef TI_LLVM_15
-        llvm_type(PrimitiveType::i32),
+        tlctx->get_data_type(PrimitiveType::i32),
 #endif
         llvm_val[begin_stmt.get()]);
   }
@@ -1904,7 +1866,7 @@ std::tuple<llvm::Value *, llvm::Value *> TaskCodeGenLLVM::get_range_for_bounds(
     end_stmt->accept(this);
     end = builder->CreateLoad(
 #ifdef TI_LLVM_15
-        llvm_type(PrimitiveType::i32),
+        tlctx->get_data_type(PrimitiveType::i32),
 #endif
         llvm_val[end_stmt.get()]);
   }

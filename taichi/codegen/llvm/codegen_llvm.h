@@ -152,10 +152,6 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   static std::string get_runtime_snode_name(SNode *snode);
 
-  llvm::Type *llvm_type(DataType dt);
-
-  llvm::Type *llvm_ptr_type(DataType dt);
-
   void visit(Block *stmt_list) override;
 
   void visit(AllocaStmt *stmt) override;

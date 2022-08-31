@@ -47,8 +47,8 @@ llvm::Value *TaskCodeGenLLVM::to_quant_fixed(llvm::Value *real,
   // Compute int(real * (1.0 / scale) + 0.5)
   auto compute_type = qfxt->get_compute_type();
   auto s = builder->CreateFPCast(tlctx->get_constant(1.0 / qfxt->get_scale()),
-                                 llvm_type(compute_type));
-  auto input_real = builder->CreateFPCast(real, llvm_type(compute_type));
+                                 tlctx->get_data_type(compute_type));
+  auto input_real = builder->CreateFPCast(real, tlctx->get_data_type(compute_type));
   auto scaled = builder->CreateFMul(input_real, s);
 
   // Add/minus the 0.5 offset for rounding
@@ -58,9 +58,9 @@ llvm::Value *TaskCodeGenLLVM::to_quant_fixed(llvm::Value *real,
 
   auto qit = qfxt->get_digits_type()->as<QuantIntType>();
   if (qit->get_is_signed()) {
-    return builder->CreateFPToSI(scaled, llvm_type(qit->get_compute_type()));
+    return builder->CreateFPToSI(scaled, tlctx->get_data_type(qit->get_compute_type()));
   } else {
-    return builder->CreateFPToUI(scaled, llvm_type(qit->get_compute_type()));
+    return builder->CreateFPToUI(scaled, tlctx->get_data_type(qit->get_compute_type()));
   }
 }
 
@@ -143,7 +143,7 @@ llvm::Value *TaskCodeGenLLVM::quant_int_or_quant_fixed_to_bits(
 
 void TaskCodeGenLLVM::visit(BitStructStoreStmt *stmt) {
   auto bit_struct = stmt->get_bit_struct();
-  auto physical_type = llvm_type(bit_struct->get_physical_type());
+  auto physical_type = tlctx->get_data_type(bit_struct->get_physical_type());
 
   int num_non_exponent_children = 0;
   for (int i = 0; i < bit_struct->get_num_members(); i++) {
@@ -288,7 +288,7 @@ void TaskCodeGenLLVM::store_quant_floats_with_shared_exponents(
     BitStructStoreStmt *stmt) {
   // handle each exponent separately
   auto bit_struct = stmt->get_bit_struct();
-  auto physical_type = llvm_type(bit_struct->get_physical_type());
+  auto physical_type = tlctx->get_data_type(bit_struct->get_physical_type());
   auto physical_value = builder->CreateLoad(physical_type, llvm_val[stmt->ptr]);
   // fuse all stores into a masked store
   llvm::Value *masked_val = nullptr;
@@ -469,7 +469,7 @@ llvm::Value *TaskCodeGenLLVM::extract_quant_int(llvm::Value *physical_value,
   else
     step2 = builder->CreateLShr(step1, right);
 
-  return builder->CreateIntCast(step2, llvm_type(qit->get_compute_type()),
+  return builder->CreateIntCast(step2, tlctx->get_data_type(qit->get_compute_type()),
                                 qit->get_is_signed());
 }
 
@@ -479,12 +479,12 @@ llvm::Value *TaskCodeGenLLVM::reconstruct_quant_fixed(llvm::Value *digits,
   llvm::Value *cast = nullptr;
   auto compute_type = qfxt->get_compute_type()->as<PrimitiveType>();
   if (qfxt->get_is_signed()) {
-    cast = builder->CreateSIToFP(digits, llvm_type(compute_type));
+    cast = builder->CreateSIToFP(digits, tlctx->get_data_type(compute_type));
   } else {
-    cast = builder->CreateUIToFP(digits, llvm_type(compute_type));
+    cast = builder->CreateUIToFP(digits, tlctx->get_data_type(compute_type));
   }
   llvm::Value *s = tlctx->get_constant(qfxt->get_scale());
-  s = builder->CreateFPCast(s, llvm_type(compute_type));
+  s = builder->CreateFPCast(s, tlctx->get_data_type(compute_type));
   return builder->CreateFMul(cast, s);
 }
 

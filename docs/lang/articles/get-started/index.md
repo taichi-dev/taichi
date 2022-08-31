@@ -193,7 +193,7 @@ def foo():
 
 ### Display the result
 
-Lines 18-23 display the result in `pixels` to screen using Taichi's built-in [GUI system](../visualization/gui_system.md).
+Lines 18-23 render the result on your screen using Taichi's built-in [GUI system](../visualization/gui_system.md).
 
 ```python
 gui = ti.GUI("Julia Set", res=(n * 2, n))

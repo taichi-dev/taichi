@@ -307,15 +307,11 @@ class NdarrayHostAccess:
             self.indices = indices_first + indices_second
 
         def getter():
-            if impl.get_runtime().prog.config.arch == _ti_core.cuda:
-                _ti_core.push_cuda_context()
             self.ndarr._initialize_host_accessor()
             return self.ndarr.host_accessor.getter(
                 *self.ndarr._pad_key(self.indices))
 
         def setter(value):
-            if impl.get_runtime().prog.config.arch == _ti_core.cuda:
-                _ti_core.push_cuda_context()
             self.ndarr._initialize_host_accessor()
             self.ndarr.host_accessor.setter(value,
                                             *self.ndarr._pad_key(self.indices))

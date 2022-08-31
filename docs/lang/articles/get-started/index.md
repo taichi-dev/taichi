@@ -217,6 +217,6 @@ Congratulations! After walking through the above short example, you have learned
 
 1. Taichi compiles and runs Taichi functions and kernels on the designated backend.
 2. The `for` loop at the outermost scope in a kernel is automatically parallelized.
-3. The field data container and how to loop over it.
+3. Taichi provides a powerful and flexible data container `field`; you can use indices to loop over a `field`.
 
 Now, you are well prepared to move on to the more advanced features of Taichi!

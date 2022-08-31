@@ -169,7 +169,7 @@ def fill():
             total += i * j
 
     if total > 10:
-        for k in range(5):  # not paralleled since not at the outermost scope
+        for k in range(5):  # not parallelized since not at the outermost scope
 ```
 
 :::caution WARNING

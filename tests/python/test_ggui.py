@@ -105,11 +105,12 @@ def test_geometry_2d():
     for _ in range(RENDER_REPEAT):
         render()
         window.get_image_buffer_as_numpy()
-        
+
     render()
     if (platform.system() == 'Darwin'):
         # FIXME: Use lower tolerance when macOS ggui supports wide lines
-        verify_image(window.get_image_buffer_as_numpy(), 'test_geometry_2d', 1.0)
+        verify_image(window.get_image_buffer_as_numpy(), 'test_geometry_2d',
+                     1.0)
     else:
         verify_image(window.get_image_buffer_as_numpy(), 'test_geometry_2d')
     window.destroy()

@@ -41,7 +41,7 @@ std::vector<Stmt *> get_load_pointers(Stmt *load_stmt) {
 
 Stmt *get_store_data(Stmt *store_stmt) {
   // If store_stmt provides one data source, return the data.
-  if (store_stmt->is<AllocaStmt>() && !store_stmt->ret_type->is<TensorType>()) {
+  if (store_stmt->is<AllocaStmt>()) {
     // For convenience, return store_stmt instead of the const [0] it actually
     // stores.
     return store_stmt;

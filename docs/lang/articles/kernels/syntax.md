@@ -9,6 +9,8 @@ Taichi is embedded in Python, the code you have written for Taichi looks like va
 + Functions decorated with `@ti.kernel` are called Taichi kernels (called kernel(s) for short).
 + Functions decorated with `@ti.func` are called Taichi functions.
 
+Kernels are the entrance points for Taichi to take over the tasks, they must be directly called from Python code. Taichi functions are building blocks of kernels and can only be called by kernels or other Taichi functions.
+
 Let's see an example:
 
 ```python
@@ -48,13 +50,13 @@ Here by "out of the Taichi scope" we mean the scope that is not inside a kernel 
 
 :::tip IMPORTANT
 
-We give the following definition:
+We give the following definitions:
 
-1. The code inside a kernel or a Taichi function is in the Taichi scope. The code in the Taichi scope is compiled by Taichi's runtime and executed in parallel on CPU or GPU devices for high-performance computation.
+1. The code inside a kernel or a Taichi function is in the **Taichi scope**. The code in the Taichi scope is compiled by Taichi's runtime and executed in parallel on CPU or GPU devices for high-performance computation.
 
    Taichi scope corresponds to the device side in CUDA.
 
-2. Code outside of the Taichi scope is in the Python scope. The code in the Python scope is native Python and executed by Python's virtual machine, not by Taichi's runtime.
+2. Code outside of the Taichi scope is in the **Python scope**. The code in the Python scope is native Python and executed by Python's virtual machine, not by Taichi's runtime.
 
    Python scope corresponds to the host side in CUDA.
 

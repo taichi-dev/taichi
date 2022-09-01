@@ -366,9 +366,9 @@ void CFGNode::live_variable_analysis(bool after_lower_access) {
   for (int i = begin_location; i < end_location; i++) {
     auto stmt = block->statements[i].get();
     auto load_ptrs = irpass::analysis::get_load_pointers(stmt);
-    // if (auto ptr_offset = stmt->cast<PtrOffsetStmt>()) {
-    //   load_ptrs = std::vector<Stmt *>(1, ptr_offset->origin);
-    // }
+    if (auto ptr_offset = stmt->cast<PtrOffsetStmt>()) {
+      load_ptrs = std::vector<Stmt *>(1, ptr_offset->origin);
+    }
     for (auto &load_ptr : load_ptrs) {
       if (!after_lower_access ||
           (load_ptr->is<AllocaStmt>() || load_ptr->is<AdStackAllocaStmt>())) {

@@ -54,7 +54,7 @@ static std::vector<std::string> get_possible_llvm_cache_filename_by_key(
 
 namespace offline_cache {
 
-template<>
+template <>
 struct CacheCleanerUtils<LlvmOfflineCache> {
   using MetadataType = LlvmOfflineCache;
   using KernelMetaData = typename MetadataType::KernelMetadata;
@@ -65,12 +65,14 @@ struct CacheCleanerUtils<LlvmOfflineCache> {
   }
 
   // To save metadata as file
-  static bool save_metadata(const MetadataType &data, const std::string &filepath) {
+  static bool save_metadata(const MetadataType &data,
+                            const std::string &filepath) {
     write_to_binary_file(data, filepath);
     return true;
   }
 
-  static bool save_debugging_metadata(const MetadataType &data, const std::string &filepath) {
+  static bool save_debugging_metadata(const MetadataType &data,
+                                      const std::string &filepath) {
     TextSerializer ts;
     ts.serialize_to_json("cache", data);
     ts.write_to_file(get_llvm_cache_metadata_json_file_path(filepath));
@@ -83,11 +85,12 @@ struct CacheCleanerUtils<LlvmOfflineCache> {
   }
 
   // To get cache files name
-  static std::vector<std::string> get_cache_files(const KernelMetaData &kernel_meta) {
+  static std::vector<std::string> get_cache_files(
+      const KernelMetaData &kernel_meta) {
     std::vector<std::string> result;
     for (int i = 0; i < kernel_meta.compiled_data_list.size(); i++) {
       for (const auto &f : get_possible_llvm_cache_filename_by_key(
-                kernel_meta.kernel_key + "." + std::to_string(i))) {
+               kernel_meta.kernel_key + "." + std::to_string(i))) {
         result.push_back(f);
       }
     }

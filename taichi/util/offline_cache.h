@@ -43,9 +43,9 @@ inline CleanCachePolicy string_to_clean_cache_policy(const std::string &str) {
   return Never;
 }
 
-template<typename BackendSpecificMetadata>
+template <typename BackendSpecificMetadata>
 struct KernelMetadata {
-  using ExtendDataPtr = BackendSpecificMetadata*;
+  using ExtendDataPtr = BackendSpecificMetadata *;
 
   std::size_t size{0};          // byte
   std::time_t created_at{0};    // millsec
@@ -55,7 +55,7 @@ struct KernelMetadata {
   TI_IO_DEF(size, created_at, last_used_at);
 };
 
-template<typename BackendSpecificKernelMetadata>
+template <typename BackendSpecificKernelMetadata>
 struct Metadata {
   using KernelMetadata = struct KernelMetadata<BackendSpecificKernelMetadata>;
 
@@ -76,11 +76,13 @@ struct CacheCleanerUtils {
   }
 
   // To save metadata as file
-  static bool save_metadata(const MetadataType &data, const std::string &filepath) {
+  static bool save_metadata(const MetadataType &data,
+                            const std::string &filepath) {
     TI_NOT_IMPLEMENTED;
   }
 
-  static bool save_debugging_metadata(const MetadataType &data, const std::string &filepath) {
+  static bool save_debugging_metadata(const MetadataType &data,
+                                      const std::string &filepath) {
     TI_NOT_IMPLEMENTED;
   }
 
@@ -90,7 +92,8 @@ struct CacheCleanerUtils {
   }
 
   // To get cache files name
-  static std::vector<std::string> get_cache_files(const KernelMetaData &kernel_meta) {
+  static std::vector<std::string> get_cache_files(
+      const KernelMetaData &kernel_meta) {
     TI_NOT_IMPLEMENTED;
   }
 };
@@ -99,6 +102,7 @@ template <typename MetadataType>
 class CacheCleaner {
   using Utils = CacheCleanerUtils<MetadataType>;
   using KernelMetadata = typename MetadataType::KernelMetadata;
+
  public:
   struct Params {
     std::string path;
@@ -117,8 +121,10 @@ class CacheCleaner {
     TI_ASSERT(!config.metadata_lock_name.empty());
     const auto policy = config.policy;
     const auto &path = config.path;
-    const auto metadata_file = taichi::join_path(path, config.metadata_filename);
-    const auto debugging_metadata_file = taichi::join_path(path, config.debugging_metadata_filename);
+    const auto metadata_file =
+        taichi::join_path(path, config.metadata_filename);
+    const auto debugging_metadata_file =
+        taichi::join_path(path, config.debugging_metadata_filename);
 
     if (policy == (std::size_t)NotClean) {
       return;
@@ -133,7 +139,8 @@ class CacheCleaner {
 
     // 1. Remove/Update metadata files
     {
-      std::string lock_path = taichi::join_path(path, config.metadata_lock_name);
+      std::string lock_path =
+          taichi::join_path(path, config.metadata_lock_name);
       if (!lock_with_file(lock_path)) {
         TI_WARN("Lock {} failed", lock_path);
         return;
@@ -150,11 +157,12 @@ class CacheCleaner {
         return;
       }
 
-      if ((policy & CleanOldVersion) && !Utils::check_version(cache_data.version)) {
+      if ((policy & CleanOldVersion) &&
+          !Utils::check_version(cache_data.version)) {
         if (taichi::remove(metadata_file)) {
           taichi::remove(debugging_metadata_file);
           for (const auto &[k, v] : cache_data.kernels) {
-            for(const auto &f : Utils::get_cache_files(v)) {
+            for (const auto &f : Utils::get_cache_files(v)) {
               taichi::remove(taichi::join_path(path, f));
             }
           }
@@ -163,8 +171,8 @@ class CacheCleaner {
       }
 
       if (cache_data.size < config.max_size ||
-          static_cast<std::size_t>(config.cleaning_factor * cache_data.kernels.size()) ==
-              0) {
+          static_cast<std::size_t>(config.cleaning_factor *
+                                   cache_data.kernels.size()) == 0) {
         return;
       }
 
@@ -190,7 +198,7 @@ class CacheCleaner {
         PriQueue q(cmp);
         std::size_t cnt = config.cleaning_factor * cache_data.kernels.size();
         TI_ASSERT(cnt != 0);
-        for (const auto &e: cache_data.kernels) {
+        for (const auto &e : cache_data.kernels) {
           if (q.size() == cnt && cmp(&e, q.top())) {
             q.pop();
           }
@@ -202,7 +210,7 @@ class CacheCleaner {
         while (!q.empty()) {
           const auto *e = q.top();
           for (const auto &f : Utils::get_cache_files(e->second)) {
-              files_to_rm.push_back(f);
+            files_to_rm.push_back(f);
           }
           cache_data.size -= e->second.size;
           cache_data.kernels.erase(e->first);

@@ -92,7 +92,7 @@ struct LlvmOfflineCache {
     // other
   };
 
-  using KernelMetadata = KernelCacheData; // Required by CacheCleaner
+  using KernelMetadata = KernelCacheData;  // Required by CacheCleaner
 
   Version version{};
   std::size_t size{0};  // byte

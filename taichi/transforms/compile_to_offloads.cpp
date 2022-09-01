@@ -52,6 +52,9 @@ void compile_to_offloads(IRNode *ir,
     print("Lowered");
   }
 
+  irpass::scalarize(ir);
+  print("Scalarized");
+
   irpass::type_check(ir, config);
   print("Typechecked");
   irpass::analysis::verify(ir);
@@ -317,6 +320,10 @@ void compile_function(IRNode *ir,
     irpass::lower_ast(ir);
     print("Lowered");
   }
+
+  irpass::scalarize(ir);
+  print("Scalarized");
+
   irpass::lower_access(ir, config, {{}, true});
   print("Access lowered");
   irpass::analysis::verify(ir);

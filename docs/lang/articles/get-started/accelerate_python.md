@@ -1,8 +1,6 @@
-\---
-
+---
 sidebar_position: 2
-
-\---
+---
 
 Taichi is a domain-specific language *embedded* in Python. One of its key features is that Taichi can accelerate computation-intensive Python programs and help these programs [achieve comparable performance to C/C++ or even CUDA](https://docs.taichi-lang.org/blog/is-taichi-lang-comparable-to-or-even-faster-than-cuda). This makes Taichi much better positioned in the area of scientific computation.
 
@@ -42,6 +40,7 @@ print(count_primes(1000000))
 ```
 
 1. Save the code as **count_prime.py** and run the following command in your terminal:
+
    ```bash
    time python count_primes.py
    ```
@@ -53,13 +52,16 @@ print(count_primes(1000000))
    user        0m2.235s
    sys        0m0.000s
    ```
+   
 2.  Now, let's change the code a bit: import Taichi to your Python code and initialize it using the CPU backend:
+
    ```python
    import taichi as ti
    ti.init(arch=ti.cpu)
    ```
 
 3. Decorate `is_prime()` with `@ti.func` and `count_primes()` with `@ti.kernel`:
+
    > - Taichi's compiler compiles the Python code decorated with `@ti.kernel` onto different devices, such as CPU and GPU, for high-performance computation.
    > - See [Kernels & Functions](../kernels/syntax.md) for a detailed explanation of Taichi's core concepts: kernels and functions.
 
@@ -82,11 +84,15 @@ print(count_primes(1000000))
 
        return count
    ```
+   
 4. Rerun **count_primes.py**：
+
    ```bash
    time python count_primes.py
    ```
+   
    *The calculation speed is six times up (2.235/0.363).*
+   
    ```bash
    78498
 
@@ -94,13 +100,16 @@ print(count_primes(1000000))
    user        0m0.546s
    sys        0m0.179s
    ```
+   
 5.  Increase `N` tenfold to `10,000,000` and rerun **count_primes.py**:
    *The calculation time with Taichi is 0.8s vs. 55s with Python only. The calculation speed with Taichi is 70x up.*
 
 6. Change Taichi's backend from CPU to GPU and give it a rerun:
+
    ```python
    ti.init(arch=ti.gpu)
    ```
+   
    *The calculation time with Taichi is 0.45s vs. 55s with Python only. The calculation speed with Taichi is taken further to 120x up.*
 
 ## Dynamic programming: longest common subsequence
@@ -110,30 +119,41 @@ Dynamic programming (DP) is a well-known algorithm. The core philosophy behind i
 The example below follows the philosophy of DP to work out the length of the longest common subsequence (LCS) of two given sequences. For instance, the LCS of sequences a = [**0**, **1**, 0, 2, **4**, **3**, 1, **2**, 1] and b = [4, **0**, **1**, **4**, 5, **3**, 1, **2**],  is [0, 1, 4, 3, 1, 2], and the LCS' length is six. Let's get started:
 
 1. Import NumPy and Taichi to your Python program:
+
    ```python
    import taichi as ti
    import numpy as np
    ```
+   
 2. Initialize Taichi:
+
    ```python
    ti.init(arch=ti.cpu)
    ```
+   
 3. Create two 15,000-long NumPy arrays of random integers in the range of [0, 100] to compare:
+
    ```python
     N = 15000
     a_numpy = np.random.randint(0, 100, N, dtype=np.int32)
     b_numpy = np.random.randint(0, 100, N, dtype=np.int32)
    ```
+   
 4. Here we define an `N`&times;`N` [Taichi field](../basic/field.md) `f`, using its `[i, j]`-th element to represent the length of the LCS of sequence `a`'s first `i` elements and sequence `b`'s first `j` elements:
+
    ```python
    f = ti.field(dtype=ti.i32, shape=(N + 1, N + 1))
    ```
+   
 5. Now we turn the dynamic programming issue to the traversal of a field `f`, where `a` and `b` are the two sequences to compare:
+
    ```python
    f[i, j] = max(f[i - 1, j - 1] + (a[i - 1] == b[j - 1]),
               max(f[i - 1, j], f[i, j - 1]))
    ```
+   
 6. Define a kernel function `compute_lcs()`, which takes in two sequences and works out the length of their LCS.
+
    ```python
    @ti.kernel
    def compute_lcs(a: ti.types.ndarray(), b: ti.types.ndarray()) -> ti.i32:
@@ -147,10 +167,13 @@ The example below follows the philosophy of DP to work out the length of the lon
 
        return f[len_a, len_b]
    ```
+   
 > - NumPy arrays are stored as ndarray in Taichi.
 > - Ensure that you set `ti.loop_config(serialize=True)` to disable auto-parallelism in Taichi. The iterations *here* should not happen in parallelism because the computation of a loop iteration is dependent on its previous iterations.
+
 7. Print the result of `compute_lcs(a_numpy, b_numpy)`.
    *Now you get the following program:*
+   
    ```python
    import taichi as ti
    import numpy as np
@@ -186,11 +209,15 @@ The example below follows the philosophy of DP to work out the length of the lon
 
    print(compute_lcs(a_numpy, b_numpy))
    ```
+   
 8. Save the above code as **lcs.py** and run:
+
    ```bash
    time python lcs.py
    ```
+   
    *The system prints the length of the LCS, along with the execution time.*
+   
    ```bash
    2721
 

@@ -46,9 +46,9 @@ class TI_DLL_EXPORT VulkanLoader {
   VkDevice vulkan_device_{VK_NULL_HANDLE};
 };
 
-bool is_vulkan_api_available();
+TI_DLL_EXPORT bool is_vulkan_api_available();
 
-void set_vulkan_visible_device(std::string id);
+TI_DLL_EXPORT void set_vulkan_visible_device(std::string id);
 
 }  // namespace vulkan
 }  // namespace lang

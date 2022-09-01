@@ -26,12 +26,15 @@ class LlvmProgramImpl;
 class TaichiLLVMContext {
  private:
   struct ThreadLocalData {
-    llvm::LLVMContext *llvm_context{nullptr};
     std::unique_ptr<llvm::orc::ThreadSafeContext> thread_safe_llvm_context{
         nullptr};
+    llvm::LLVMContext *llvm_context{nullptr};
     std::unique_ptr<llvm::Module> runtime_module{nullptr};
-    std::unique_ptr<llvm::Module> struct_module{nullptr};
+    std::unordered_map<int, std::unique_ptr<llvm::Module>> struct_modules;
+    ThreadLocalData(std::unique_ptr<llvm::orc::ThreadSafeContext> ctx);
     ~ThreadLocalData();
+    std::unique_ptr<llvm::Module> struct_module{nullptr};  // TODO: To be
+                                                           // deleted
   };
   CompileConfig *config_;
 
@@ -78,7 +81,7 @@ class TaichiLLVMContext {
    */
   std::unique_ptr<llvm::Module> clone_runtime_module();
 
-  std::unique_ptr<llvm::Module> clone_module(const std::string &file);
+  std::unique_ptr<llvm::Module> module_from_file(const std::string &file);
 
   JITModule *add_module(std::unique_ptr<llvm::Module> module);
 
@@ -130,6 +133,16 @@ class TaichiLLVMContext {
       std::function<bool(const std::string &)> export_indicator);
 
   void mark_function_as_cuda_kernel(llvm::Function *func, int block_dim = 0);
+
+  void fetch_this_thread_struct_module();
+  llvm::Module *get_this_thread_runtime_module();
+  llvm::Function *get_runtime_function(const std::string &name);
+  llvm::Function *get_struct_function(const std::string &name, int tree_id);
+  llvm::Type *get_runtime_type(const std::string &name);
+
+  std::unique_ptr<llvm::Module> new_module(
+      std::string name,
+      llvm::LLVMContext *context = nullptr);
 
   void add_function_to_snode_tree(int id, std::string func);
 

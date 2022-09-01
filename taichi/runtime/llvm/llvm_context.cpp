@@ -305,16 +305,12 @@ void TaichiLLVMContext::init_runtime_jit_module() {
 
 std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
   TI_AUTO_PROF
-  TI_ASSERT(std::this_thread::get_id() == main_thread_id_);
-  auto data = get_this_thread_data();
-  if (!data->runtime_module) {
-    data->runtime_module = clone_module(get_runtime_fn(arch_));
-  }
+  auto *mod = get_this_thread_runtime_module();
 
   std::unique_ptr<llvm::Module> cloned;
   {
     TI_PROFILER("clone module");
-    cloned = llvm::CloneModule(*data->runtime_module);
+    cloned = llvm::CloneModule(*mod);
   }
 
   TI_ASSERT(cloned != nullptr);
@@ -322,7 +318,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
   return cloned;
 }
 
-std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_module(
+std::unique_ptr<llvm::Module> TaichiLLVMContext::module_from_file(
     const std::string &file) {
   auto ctx = get_this_thread_context();
   std::unique_ptr<llvm::Module> module = module_from_bitcode_file(
@@ -739,19 +735,16 @@ TaichiLLVMContext::ThreadLocalData *TaichiLLVMContext::get_this_thread_data() {
     std::stringstream ss;
     ss << tid;
     TI_TRACE("Creating thread local data for thread {}", ss.str());
-    per_thread_data_[tid] = std::make_unique<ThreadLocalData>();
+    per_thread_data_[tid] = std::make_unique<ThreadLocalData>(
+        std::make_unique<llvm::orc::ThreadSafeContext>(
+            std::make_unique<llvm::LLVMContext>()));
   }
   return per_thread_data_[tid].get();
 }
 
 llvm::LLVMContext *TaichiLLVMContext::get_this_thread_context() {
   ThreadLocalData *data = get_this_thread_data();
-  if (!data->llvm_context) {
-    auto ctx = std::make_unique<llvm::LLVMContext>();
-    data->llvm_context = ctx.get();
-    data->thread_safe_llvm_context =
-        std::make_unique<llvm::orc::ThreadSafeContext>(std::move(ctx));
-  }
+  TI_ASSERT(data->llvm_context)
   return data->llvm_context;
 }
 
@@ -850,13 +843,66 @@ void TaichiLLVMContext::add_function_to_snode_tree(int id, std::string func) {
   snode_tree_funcs_[id].push_back(func);
 }
 
-TaichiLLVMContext::ThreadLocalData::~ThreadLocalData() {
-  if (struct_module) {
-    TI_ASSERT(&struct_module->getContext() ==
-              thread_safe_llvm_context->getContext());
+void TaichiLLVMContext::fetch_this_thread_struct_module() {
+  ThreadLocalData *data = get_this_thread_data();
+  if (data->struct_modules.empty()) {
+    for (auto &[id, mod] : main_thread_data_->struct_modules) {
+      data->struct_modules[id] = clone_module_to_this_thread_context(mod.get());
+    }
   }
+}
+
+llvm::Function *TaichiLLVMContext::get_runtime_function(
+    const std::string &name) {
+  return get_this_thread_runtime_module()->getFunction(name);
+}
+
+llvm::Module *TaichiLLVMContext::get_this_thread_runtime_module() {
+  TI_AUTO_PROF;
+  auto data = get_this_thread_data();
+  if (!data->runtime_module) {
+    data->runtime_module = module_from_file(get_runtime_fn(arch_));
+  }
+  return data->runtime_module.get();
+}
+
+llvm::Function *TaichiLLVMContext::get_struct_function(const std::string &name,
+                                                       int tree_id) {
+  auto *data = get_this_thread_data();
+  return data->struct_modules[tree_id]->getFunction(name);
+}
+
+llvm::Type *TaichiLLVMContext::get_runtime_type(const std::string &name) {
+#ifdef TI_LLVM_15
+  auto ty = llvm::StructType::getTypeByName(
+      get_this_thread_runtime_module()->getContext(), ("struct." + name));
+#else
+  auto ty = get_this_thread_runtime_module()->getTypeByName("struct." + name);
+#endif
+  if (!ty) {
+    TI_ERROR("LLVMRuntime type {} not found.", name);
+  }
+  return ty;
+}
+std::unique_ptr<llvm::Module> TaichiLLVMContext::new_module(
+    std::string name,
+    llvm::LLVMContext *context) {
+  auto new_mod = std::make_unique<llvm::Module>(
+      name, context ? *context : *get_this_thread_context());
+  new_mod->setDataLayout(get_this_thread_runtime_module()->getDataLayout());
+  return new_mod;
+}
+
+TaichiLLVMContext::ThreadLocalData::ThreadLocalData(
+    std::unique_ptr<llvm::orc::ThreadSafeContext> ctx)
+    : thread_safe_llvm_context(std::move(ctx)),
+      llvm_context(thread_safe_llvm_context->getContext()) {
+}
+
+TaichiLLVMContext::ThreadLocalData::~ThreadLocalData() {
   runtime_module.reset();
   struct_module.reset();
+  struct_modules.clear();
   thread_safe_llvm_context.reset();
 }
 

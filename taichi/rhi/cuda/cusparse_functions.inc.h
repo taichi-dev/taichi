@@ -18,4 +18,13 @@ PER_CUSPARSE_FUNCTION(cpDestroyDnVec, cusparseDestroyDnVec, cusparseDnVecDescr_t
 PER_CUSPARSE_FUNCTION(cpSpMV_bufferSize, cusparseSpMV_bufferSize, cusparseHandle_t, cusparseOperation_t, const void*,cusparseSpMatDescr_t, cusparseDnVecDescr_t,const void*, cusparseDnVecDescr_t,cudaDataType, cusparseSpMVAlg_t, size_t*);
 PER_CUSPARSE_FUNCTION(cpSpMV, cusparseSpMV, cusparseHandle_t, cusparseOperation_t, const void*,cusparseSpMatDescr_t, cusparseDnVecDescr_t,const void*, cusparseDnVecDescr_t,cudaDataType, cusparseSpMVAlg_t, void*);
 
-PER_CUSPARSE_FUNCTION(cpCsrGet, cusparseCsrGet, cusparseSpMatDescr_t, int64_t* , int64_t*, int64_t*, void**, void** , void** , cusparseIndexType_t*, cusparseIndexType_t*, cusparseIndexBase_t*, cudaDataType*);
+
+// cusparse sparse matrix-matrix operation
+PER_CUSPARSE_FUNCTION(cpSetPointerMode, cusparseSetPointerMode, cusparseHandle_t, cusparsePointerMode_t);
+PER_CUSPARSE_FUNCTION(cpScsrgeam2_bufferSizeExt, cusparseScsrgeam2_bufferSizeExt, cusparseHandle_t  ,int,int,void*,const cusparseMatDescr_t ,int, void*, void*, void*,void*,const cusparseMatDescr_t ,int, void*,void*,void*,const cusparseMatDescr_t ,void*,void*,void*,void*);
+PER_CUSPARSE_FUNCTION(cpCsrGet, cusparseCsrGet, cusparseSpMatDescr_t ,size_t *,size_t *,size_t *,void**,void**,void**,cusparseIndexType_t* ,cusparseIndexType_t* ,cusparseIndexBase_t* ,cudaDataType*);
+PER_CUSPARSE_FUNCTION(cpCreateMatDescr, cusparseCreateMatDescr, cusparseMatDescr_t*);
+PER_CUSPARSE_FUNCTION(cpSetMatType, cusparseSetMatType, cusparseMatDescr_t, cusparseMatrixType_t);
+PER_CUSPARSE_FUNCTION(cpSetMatIndexBase, cusparseSetMatIndexBase, cusparseMatDescr_t, cusparseIndexBase_t);
+PER_CUSPARSE_FUNCTION(cpXcsrgeam2Nnz, cusparseXcsrgeam2Nnz, cusparseHandle_t,int,int,const cusparseMatDescr_t ,int,void*,void*,const cusparseMatDescr_t ,int,void*,void*,const cusparseMatDescr_t ,void*,void*,void*);
+PER_CUSPARSE_FUNCTION(cpScsrgeam2, cusparseScsrgeam2, cusparseHandle_t,int,int,void*,const cusparseMatDescr_t ,int, void*,void*,void*,void*,const cusparseMatDescr_t ,int,void*,void*,void*,const cusparseMatDescr_t ,void*,void*,void*,void*);

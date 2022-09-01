@@ -1149,6 +1149,11 @@ void export_lang(py::module &m) {
       .def("build", &BitStructTypeBuilder::build,
            py::return_value_policy::reference);
 
+  m.def("decl_tensor_type",
+        [&](std::vector<int> shape, const DataType &element_type) {
+          return TypeFactory::create_tensor_type(shape, element_type);
+        });
+
   py::class_<SNodeRegistry>(m, "SNodeRegistry")
       .def(py::init<>())
       .def("create_root", &SNodeRegistry::create_root,
@@ -1213,8 +1218,9 @@ void export_lang(py::module &m) {
   MAKE_SPARSE_MATRIX(64, ColMajor, d);
   MAKE_SPARSE_MATRIX(64, RowMajor, d);
 
-  py::class_<CuSparseMatrix>(m, "CuSparseMatrix")
+  py::class_<CuSparseMatrix, SparseMatrix>(m, "CuSparseMatrix")
       .def("spmv", &CuSparseMatrix::spmv)
+      .def(py::self + py::self)
       .def("to_string", &SparseMatrix::to_string);
 
   py::class_<SparseSolver>(m, "SparseSolver")

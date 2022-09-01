@@ -203,6 +203,23 @@ class CuSparseMatrix : public SparseMatrix {
   explicit CuSparseMatrix(int rows, int cols, DataType dt)
       : SparseMatrix(rows, cols, dt) {
   }
+  explicit CuSparseMatrix(cusparseSpMatDescr_t A,
+                          int rows,
+                          int cols,
+                          DataType dt)
+      : SparseMatrix(rows, cols, dt), matrix_(A) {
+  }
+  CuSparseMatrix(const CuSparseMatrix &sm)
+      : SparseMatrix(sm.rows_, sm.cols_, sm.dtype_), matrix_(sm.matrix_) {
+  }
+  friend CuSparseMatrix operator+(const CuSparseMatrix &lhs,
+                                  const CuSparseMatrix &rhs) {
+    return lhs.addition(rhs, 1.0, 1.0);
+  };
+
+  const CuSparseMatrix addition(const CuSparseMatrix &other,
+                                const float alpha,
+                                const float beta) const;
 
   virtual ~CuSparseMatrix();
   void build_csr_from_coo(void *coo_row_ptr,

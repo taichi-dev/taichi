@@ -2327,7 +2327,10 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
 
     std::vector<uint32_t> optimized_spv(task_res.spirv_code);
 
+    constexpr bool debug_spirv = false;
+
     size_t last_size;
+    bool success = true;
     do {
       last_size = optimized_spv.size();
       bool result = false;
@@ -2335,25 +2338,31 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
           (result = !spirv_opt_->Run(optimized_spv.data(), optimized_spv.size(),
                                      &optimized_spv, spirv_opt_options_)),
           "SPIRV optimization failed");
-      if (result)
+      if (result) {
+        success = false;
         break;
+      }
     } while (last_size != optimized_spv.size());
 
     TI_TRACE("SPIRV-Tools-opt: binary size, before={}, after={}",
              task_res.spirv_code.size(), optimized_spv.size());
 
     // Enable to dump SPIR-V assembly of kernels
-#if 0
-    std::string spirv_asm;
-    spirv_tools_->Disassemble(optimized_spv, &spirv_asm);
-    auto kernel_name = tp.ti_kernel_name;
-    TI_WARN("SPIR-V Assembly dump for {} :\n{}\n\n", kernel_name, spirv_asm);
+    if (debug_spirv) {
+      std::vector<uint32_t> &spirv =
+          success ? optimized_spv : task_res.spirv_code;
 
-    std::ofstream fout(kernel_name + ".spv", std::ios::binary | std::ios::out);
-    fout.write(reinterpret_cast<const char *>(optimized_spv.data()),
-               optimized_spv.size() * sizeof(uint32_t));
-    fout.close();
-#endif
+      std::string spirv_asm;
+      spirv_tools_->Disassemble(spirv, &spirv_asm);
+      auto kernel_name = tp.ti_kernel_name;
+      TI_WARN("SPIR-V Assembly dump for {} :\n{}\n\n", kernel_name, spirv_asm);
+
+      std::ofstream fout(kernel_name + ".spv",
+                         std::ios::binary | std::ios::out);
+      fout.write(reinterpret_cast<const char *>(spirv.data()),
+                 spirv.size() * sizeof(uint32_t));
+      fout.close();
+    }
 
     kernel_attribs.tasks_attribs.push_back(std::move(task_res.task_attribs));
     generated_spirv.push_back(std::move(optimized_spv));

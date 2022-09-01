@@ -210,10 +210,6 @@ void Dx11CommandList::draw(uint32_t num_verticies, uint32_t start_vertex) {
   TI_NOT_IMPLEMENTED;
 }
 
-void Dx11CommandList::clear_color(float r, float g, float b, float a) {
-  TI_NOT_IMPLEMENTED;
-}
-
 void Dx11CommandList::set_line_width(float width) {
   TI_NOT_IMPLEMENTED;
 }
@@ -691,9 +687,9 @@ DeviceAllocation Dx11Device::allocate_memory(const AllocParams &params) {
   tuple.size = params.size;
   // TODO: pick better default copy
   // FIXME: Fix index / vertex
-  if (params.usage & AllocUsage::Storage) {
+  if (params.usage && AllocUsage::Storage) {
     tuple.default_copy = 0;
-  } else if (params.usage & AllocUsage::Uniform) {
+  } else if (params.usage && AllocUsage::Uniform) {
     tuple.default_copy = 1;
   } else {
     tuple.default_copy = 2;

@@ -46,6 +46,14 @@ class TI_DLL_EXPORT Texture {
 
   ~Texture();
 
+  BufferFormat get_buffer_format() const {
+    return format_;
+  }
+
+  std::array<int, 3> get_size() const {
+    return {width_, height_, depth_};
+  }
+
  private:
   DeviceAllocation texture_alloc_{kDeviceNullAllocation};
   DataType dtype_;

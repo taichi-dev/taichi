@@ -10,7 +10,7 @@ In the following sections, we provide two examples to give you a sense as to how
 
 ## Count the primes
 
-Large-scale or nested for loops in Python always leads to poor runtime performance. The following code is a simple demo of counting the primes within a specified range and involves nested for loops (see [here](https://github.com/taichi-dev/faster-python-with-taichi/blob/main/count_primes.py) for the complete version). Simply by importing Taichi or switching to Taichi's GPU backends, you will see a significant boost to the overall performance:
+Large-scale or nested for loops in Python always leads to poor runtime performance. The following demo counts the primes within a specified range and involves nested for loops (see [here](https://github.com/taichi-dev/faster-python-with-taichi/blob/main/count_primes.py) for the complete version). Simply by importing Taichi or switching to Taichi's GPU backends, you will see a significant boost to the overall performance:
 
 ```python
 """Count the prime numbers in the range [1, n]
@@ -229,3 +229,7 @@ In [this repo](https://github.com/taichi-dev/faster-python-with-taichi/blob/main
 
 - With Python only, it takes 476s to work out the length of the LCS of two 15,000-long random sequences.
 - With Taichi, it only takes about 0.9s and sees an up to 500x speed up!
+
+:::note
+The actual execution time may vary depending on your machine, but we believe that the performance improvements you will see is comparable to ours.
+:::

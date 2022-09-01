@@ -44,7 +44,7 @@ def inv_square(x):
 print(inv_square(1.0))  # syntax error!
 ```
 
-Here by "out of the Taichi scope" we mean the function is not called by a kernel or another Taichi function.
+Here by "out of the Taichi scope" we mean the scope that is not inside a kernel nor a Taichi function.
 
 As you have seen, there are a few differences between kernels and Taichi functions. We now explain the roles these two kinds of functions play in a program and their differences in more detail.
 

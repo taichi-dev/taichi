@@ -232,7 +232,8 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
   return result;
 }
 
-void CFGNode::reaching_definition_analysis(bool after_lower_access) {
+void CFGNode::reaching_definition_analysis(bool after_lower_access,
+                                           bool real_matrix_enabled) {
   // Calculate |reach_gen| and |reach_kill|.
   reach_gen.clear();
   reach_kill.clear();
@@ -240,12 +241,14 @@ void CFGNode::reaching_definition_analysis(bool after_lower_access) {
     // loop in reversed order
     auto stmt = block->statements[i].get();
     auto data_source_ptrs = irpass::analysis::get_store_destination(stmt);
-    if (auto local_store = stmt->cast<LocalStoreStmt>()) {
-      if (auto dest = local_store->dest->cast<PtrOffsetStmt>()) {
-        if (auto data = get_store_forwarding_data(dest->origin, i)) {
-          data_source_ptrs = std::vector<Stmt *>(1, data);
-        } else {
-          data_source_ptrs = std::vector<Stmt *>();
+    if (real_matrix_enabled) {
+      if (auto local_store = stmt->cast<LocalStoreStmt>()) {
+        if (auto dest = local_store->dest->cast<PtrOffsetStmt>()) {
+          if (auto data = get_store_forwarding_data(dest->origin, i)) {
+            data_source_ptrs = std::vector<Stmt *>(1, data);
+          } else {
+            data_source_ptrs = std::vector<Stmt *>();
+          }
         }
       }
     }
@@ -602,7 +605,8 @@ void ControlFlowGraph::print_graph_structure() const {
   }
 }
 
-void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access) {
+void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access,
+                                                    bool real_matrix_enabled) {
   TI_AUTO_PROF;
   const int num_nodes = size();
   std::queue<CFGNode *> to_visit;
@@ -627,7 +631,7 @@ void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access) {
   }
   for (int i = 0; i < num_nodes; i++) {
     if (i != start_node) {
-      nodes[i]->reaching_definition_analysis(after_lower_access);
+      nodes[i]->reaching_definition_analysis(after_lower_access, real_matrix_enabled);
     }
     nodes[i]->reach_in.clear();
     nodes[i]->reach_out = nodes[i]->reach_gen;
@@ -824,9 +828,10 @@ bool ControlFlowGraph::unreachable_code_elimination() {
 }
 
 bool ControlFlowGraph::store_to_load_forwarding(bool after_lower_access,
-                                                bool autodiff_enabled) {
+                                                bool autodiff_enabled,
+                                                bool real_matrix_enabled) {
   TI_AUTO_PROF;
-  reaching_definition_analysis(after_lower_access);
+  reaching_definition_analysis(after_lower_access, real_matrix_enabled);
   const int num_nodes = size();
   bool modified = false;
   for (int i = 0; i < num_nodes; i++) {
@@ -853,7 +858,7 @@ bool ControlFlowGraph::dead_store_elimination(
 
 std::unordered_set<SNode *> ControlFlowGraph::gather_loaded_snodes() {
   TI_AUTO_PROF;
-  reaching_definition_analysis(/*after_lower_access=*/false);
+  reaching_definition_analysis(/*after_lower_access=*/false, /*real_matrix=*/false);
   const int num_nodes = size();
   std::unordered_set<SNode *> snodes;
 

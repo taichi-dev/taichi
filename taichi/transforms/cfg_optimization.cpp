@@ -11,6 +11,7 @@ bool cfg_optimization(
     IRNode *root,
     bool after_lower_access,
     bool autodiff_enabled,
+    bool real_matrix_enabled,
     const std::optional<ControlFlowGraph::LiveVarAnalysisConfig>
         &lva_config_opt) {
   TI_AUTO_PROF;
@@ -19,7 +20,7 @@ bool cfg_optimization(
   while (true) {
     bool modified = false;
     cfg->simplify_graph();
-    if (cfg->store_to_load_forwarding(after_lower_access, autodiff_enabled))
+    if (cfg->store_to_load_forwarding(after_lower_access, autodiff_enabled, real_matrix_enabled))
       modified = true;
     if (cfg->dead_store_elimination(after_lower_access, lva_config_opt))
       modified = true;

@@ -235,8 +235,8 @@ def test_set_image():
         window.get_image_buffer_as_numpy()
 
     render()
-    verify_image(window.get_image_buffer_as_numpy(), 'test_set_image')
 
+    verify_image(window.get_image_buffer_as_numpy(), 'test_set_image')
     window.destroy()
 
 
@@ -267,6 +267,7 @@ def test_set_image_flat_field():
         window.get_image_buffer_as_numpy()
 
     render()
+
     verify_image(window.get_image_buffer_as_numpy(), 'test_set_image')
     window.destroy()
 

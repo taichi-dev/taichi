@@ -54,8 +54,6 @@ class TI_DLL_EXPORT Renderer {
 
   void set_image(const SetImageInfo &info);
 
-  void set_image(taichi::lang::Texture *tex);
-
   void triangles(const TrianglesInfo &info);
 
   void circles(const CirclesInfo &info);

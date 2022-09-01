@@ -4,109 +4,121 @@ sidebar_position: 1
 
 # Kernels and functions
 
-Taichi is a domain-specific language embedded in Python. The meaning of "embedded in Python" is twofold:  The code you've written in Taichi is valid Python code but is compiled and executed in Taichi's runtime; the rest of your code is treated as native Python code and executed in Python's virtual machine.
+Taichi is embedded in Python, the code you have written for Taichi is also valid Python code, except they are compiled by Taichi's JIT compiler and executed on Taichi's backends, not by the Python interpreter. Hence we need a way to differentiate the code for Taichi from the code for Python. We use the two decorators `@ti.kernel` and `@ti.func` for this:
 
-To differentiate the code for Taichi from the code for Python, we use the two decorators `@ti.kernel` and `@ti.func`:
++ Functions decorated with `@ti.kernel` are called kernels.
++ Functions decorated with `@ti.func` are called Taichi functions.
 
-- Functions decorated with `@ti.kernel` are called kernels.
-- Functions decorated with `@ti.func` are called Taichi functions.
+Let's see an example:
 
-## Taichi scope vs. Python scope
+```python
+import taichi as ti
+ti.init(arch=ti.cpu)
 
-Taichi introduces the two terms "Taichi scope" and "Python scope" to make it easy to define the call range of a function or specify the effective range of a variable. So, before you proceed, familiarize yourself with these two terms.
+@ti.func
+def inv_square(x):
+    return 1.0 / (x * x)
 
-### Taichi scope
+@ti.kernel
+def partial_sum(n: int) -> float:  # sum 1/i**2 from 1 to n
+    total = 0.0
+    for i in range(1, n + 1):
+        total += inv_square(n)
+    return total
+```
 
-The code inside a kernel or a Taichi function is in the Taichi scope. The code in the Taichi scope is compiled by Taichi's runtime and executed in parallel on CPU or GPU devices for high-performance computation.
+In the above code, the function `inv_square` is decorated by `@ti.func`, hence it's a Taichi function; the function `partial_sum` is decorated by `@ti.kernel`, hence it's a kernel. The Taichi function `inv_square` is called by the kernel `partial_sum`.
 
-:::note
-Taichi scope corresponds to the *device side* in CUDA.
-:::
+You may have noticed that the argument and return in the kernel `partial_sum` are both type hinted, while those of the Taichi function `inv_square` are not. In native Python type hinting is a suggested but not mandatory feature, but in the Taichi language you *must add type hints for arguments and returns of a kernel*. When there are no arguments or no returns in a kernel, the corresponding type hinting can be omitted.
 
-### Python scope
+Another point worth a mentioning is, if you try to call `inv_square` out of the Taichi scope, Taichi will raise an error. For example:
 
-Code outside of the Taichi scope is in the Python scope. The code in the Python scope is native Python and executed by Python's virtual machine, *not* by Taichi's runtime.
+```python
+import taichi as ti
+ti.init(arch=ti.cpu)
 
-:::note
-Python scope corresponds to the *host side* in CUDA.
-:::
+@ti.func
+def inv_square(x):
+    return 1.0 / (x * x)
+
+print(inv_square(1.0))  # error!
+```
+
+Here by "out of the Taichi scope" we mean the function is not called by a kernel or another Taichi function.
+
+As you have seen, there are a few differences between kernels and Taichi functions. We now explain the roles these two kinds of functions play in a program and their differences in more detail.
+
 
 ## Kernel
 
-A kernel is the entry point from which Taichi's runtime takes control and the smallest unit for runtime execution. You can define multiple kernels in your program, and kernels are *independent* from each other. You call a kernel the same way you call a Python function, and you are allowed to switch back and forth between Taichi's runtime and Python's virtual machine.
+A kernel is the entry point from which Taichi's runtime takes control and the smallest unit for runtime execution. You can define multiple kernels in your program, and these kernels are *independent* from each other. You call a kernel the same way you call a Python function, and you are allowed to switch back and forth between Taichi's runtime and Python's virtual machine.
 
-Taichi's runtime compiles and executes kernels in the order you call them. It stores compiled kernels in the cache so that the next call to the same kernel does not need to be compiled again.
+For example you can call a kernel function from a Python function:
+
+```python
+def main():
+    print(partial_sum(100))
+    print(partial_sum(1000))
+
+main()
+```
+
+When there are more than one kernel in a program, Taichi will compile and execute them in the order they are called. The compiled kernels are stored in the cache so that subsequent calls won't invoke re-compilations.
 
 :::caution WARNING
+
 You must *not* call a kernel from inside another kernel or from inside a Taichi function. You can only call a kernel directly or from inside a native Python function. To put it differently, you can only call a kernel from the *Python scope*.
+
 :::
 
-:::note
-A kernel corresponds to the `__global__` function in CUDA.
-:::
 
 ### Arguments
 
-A kernel can take multiple arguments, supporting scalar, `ti.Matrix`, and `ti.Vector` as argument types. This makes it easier and more flexible to pass values from the Python scope to the Taichi scope.
 
-:::caution WARNING
-Arguments in scalar, `ti.Matrix`, or `ti.Vector` are passed by value, so changes to the arguments of a kernel do not affect the original variables in the caller function.
-:::
+A kernel can take multiple arguments, but unlike in native Python, you cannot pass an arbitrary Python object to a kernel. This is because Python objects can be highly dynamic and hold data and resources only known to the Python interpreter.
 
-Follow these rules when defining arguments:
+Taichi supports scalar, `ti.Matrix/ti.Vector` (In Taichi vectors are essentially matrices), `ti.types.ndarray()` and `ti.template()` as argument types. This allows you to pass data from the Python scope to the Taichi scope.
 
-- Type hint kernel arguments.
-- Ensure that the total number of elements in the kernel arguments does not exceed a certain upper limit (see below).
+Arguments in scalar, `ti.Matrix` are passed by value, so changes to these types of arguments in a kernel are performed on their local copies and do not affect the original ones. But arguments of type `ti.types.ndarray()` and `ti.template()` are passed by reference, modifying to the arguments will also affect the original values.
 
-#### Type hint kernel arguments
+In the following example, `x, y` are passed to `my_kernel` by values:
 
 ```python
 @ti.kernel
-def my_kernel(x: ti.i32, y: ti.f32):
+def my_kernel(x: int, y: float):
+    x += 1
+    y += 1.0
     print(x + y)
 
-my_kernel(24, 3.2)  # The system prints 27.2
+x = 1
+y = 1.0
+my_kernel(x, y)  # prints 4.0
+
+print(x, y)  # prints 1, 1.0
 ```
 
-#### Ensure that the total number of elements in the kernel arguments does not exceed a certain upper limit
-
-The upper limit for element numbers is backend-specific:
-
-- 64 on CPU, Vulkan, CUDA, OpenGL or Metal
-
-:::note
-- The number of elements in a scalar argument is always 1.
-- The number of the elements in a `ti.Matrix` or in a `ti.Vector` is the actual number of scalars inside of them.
-- The upper limit of array arguments (`ti.types.ndarray()`) is 32 and they must be the first 32 among all 64 arguments.
-:::
+You can also pass NumPy's `ndarray` as arguments to a kernel, as in the following example:
 
 ```python
-@ti.kernel
-def valid_scalar_argument(vx: ti.f32, vy: ti.f32):
-    v = ti.Vector([vx, vy])
-    ...
+import numpy as np
+import taichi as ti
+ti.init(arch=ti.cpu)
+
+x = np.array([1, 2, 3])
+y = np.array([4, 5, 6])
+
 
 @ti.kernel
-def valid_matrix_argument(u: ti.i32, v: ti.types.matrix(2, 2, ti.i32)):  # OK: has five elements in total
-    ...
+def my_kernel(x: ti.types.ndarray(), y: ti.types.ndarray()):
+    for i in x:
+        x[i] += y[i]
 
-@ti.kernel
-def error_too_many_arguments(u: ti.i32, v: ti.i64, w: ti.types.matrix(7, 9, ti.i64)):  # Error: has 65 elements in total
-    ...
+my_kernel(x, y)
+print(x)  # prints [5, 7, 9]
 ```
 
-<details>
+The array `x` is modified by `my_kernel` since it's passed to it by reference.
 
-<summary><font color="#006284">Advanced arguments</font></summary>
-
-*You can skip this part if you are just beginning.*
-
-A kernel can also take the following two types of advanced arguments:
-
-- Template arguments: Use `ti.template()` as their type hints. See [Template metaprogramming](../advanced/meta.md#template-metaprogramming).
-- External array arguments: Use `ti.types.ndarray()` as their type hints. See [Interacting with external arrays](../basic/external.md).
-
-</details>
 
 ### Return value
 
@@ -117,12 +129,15 @@ A kernel can have *at most* one return value, which can be a scalar, `ti.Matrix`
 - Ensure that you have *at most* one return statement in a kernel.
 - Ensure that the number of elements in the return value does not exceed 30.
 
-#### Type hint the return value of a kernel
+Let's see an exmaple:
 
 ```python
+vec2 = ti.math.vec2
+
 @ti.kernel
-def test(x: ti.f32) -> ti.f32: # The return value is type hinted
-    return 1.0
+def test(x: float, y: float) -> vec2: # return value must be type hinted
+    #return x, y  # compilation error! only one return value is allowed
+    return vec2(x, y)  # OK!
 ```
 
 In addition, the return value is automatically cast into the hinted type:
@@ -135,15 +150,6 @@ def my_kernel() -> ti.i32:  # int32
 print(my_kernel())  # 128, the return value is cast into ti.i32
 ```
 
-#### At most one return value in a kernel
-
-```python
-@ti.kernel
-def error_multiple_return() -> (ti.i32, ti.f32):
-    x = 1
-    y = 0.5
-    return x, y  # Compilation error: more than one return value
-```
 
 #### At most one return statement in a kernel
 
@@ -169,17 +175,6 @@ def test_sign(x: float) -> float:
     # One return statement works fine
 ```
 
-#### At most 30 elements in the return value
-
-```python
-N = 6
-matN = ti.types.matrix(N, N, ti.i32)
-
-@ti.kernel
-def test_kernel() -> matN:
-    return matN([[0] * N for _ in range(N)])
-    # Compilation error: The number of elements is 36 > 30
-```
 
 ### Global variables are compile-time constants
 
@@ -195,7 +190,6 @@ import taichi as ti
 ti.init()
 
 a = 1
-
 
 @ti.kernel
 def kernel_1():
@@ -215,18 +209,9 @@ kernel_2()  # 2
 
 ## Taichi function
 
-Taichi functions are the building blocks of a kernel.  All Taichi functions are force-inlined. Therefore, no runtime recursion is allowed.
+Taichi functions are the building blocks of a kernel. **You must call a Taichi function from inside a kernel or from inside another Taichi function**. All Taichi functions are force-inlined. Therefore, no runtime recursion is allowed.
 
-:::caution WARNING
-
-You must call a Taichi function from inside a kernel or from inside another Taichi function. In other words, you must call a Taichi function from within the Taichi scope, *not* from within the Python scope.
-:::
-
-:::note
-A Taichi function corresponds to the `__device__` function in CUDA.
-:::
-
-The following example shows the difference between a kernel and a Taichi function:
+Let's see an example:
 
 ```python
 # a normal python function
@@ -258,50 +243,11 @@ foo_kernel()
 
 ### Arguments
 
-A Taichi function can have multiple arguments, supporting scalar, `ti.Matrix`, and `ti.Vector` as argument types. Note that the restrictions applied to a kernel's arguments do not apply here:
+A Taichi function can have multiple arguments, supporting scalar, `ti.Matrix/ti.Vector`, `ti.types.ndarray()`, `ti.template()`, `ti.field` and `ti.Struct` as argument types. Note that the restrictions applied to a kernel's arguments do not apply here:
 
 - You are *not* required (but it is still recommended) to type hint arguments.
 - You can have *an unlimited* number of elements in the arguments.
 
-:::caution WARNING
-
-Arguments in scalar, `ti.Matrix`, or `ti.Vector` are passed by value, so changes to the arguments of a Taichi function do not affect the original variables in the caller function. See the following example:
-
-```python
-@ti.func
-def my_func(x):
-    x = x + 1  # Will not change the original value of x
-
-
-@ti.kernel
-def my_kernel():
-    x = 24
-    my_func(x)
-    print(x)  # 24
-```
-
-:::
-
-<details>
-
-<summary><font color="#006284">Advanced arguments</font></summary>
-
-*You can skip this part if you are just beginning.*
-
-A Taichi function can also take template arguments. Use `ti.template()` as their type hints. By using `ti.template()` as type hint, you force arguments to pass by reference. Here's an example:
-
-```python
-@ti.func
-def my_func(x: ti.template()): # x is forced to pass by reference
-    x = x + 1  # This line changes the original value of x
-
-@ti.kernel
-def my_kernel():
-    x = 24
-    my_func(x)
-    print(x)  #  will print 25
-```
-</details>
 
 ### Return values
 
@@ -309,35 +255,9 @@ The return values of a Taichi function can be scalar, `ti.Matrix`, `ti.Vector`, 
 
 - Unlike a kernel, a Taichi function can have multiple return values.
 - You do not need (but it is still recommended) to type hint the return values of a Taichi function.
-- There is no limit on the number of elements in the return values.
 
-However, you *cannot* have more than one `return` statement in a Taichi function.
+However, you still *cannot* have more than one `return` statement in a Taichi function.
 
-#### At most one return statement
-
-You can only have one return statement in a Taichi function.
-
-```python
-@ti.func
-def test_sign(x):
-    if x >= 0:
-        return 1.0
-    else:
-        return -1.0
-    # Error: multiple return statements
-```
-
-As a workaround, you can save the result in a local variable and return it at the end:
-
-```python
-@ti.func
-def test_sign(x):
-    sign = 1.0
-    if x < 0:
-        sign = -1.0
-    return sign
-    # One return statement works just fine
-```
 
 ###
 

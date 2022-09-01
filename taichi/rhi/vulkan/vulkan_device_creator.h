@@ -56,7 +56,6 @@ class TI_DLL_EXPORT VulkanDeviceCreator {
     // before creating the VkPhysicalDevice thus, we allow the user to pass in a
     // custom surface creator
     std::function<VkSurfaceKHR(VkInstance)> surface_creator;
-    bool enable_validation_layer{false};
   };
 
   explicit VulkanDeviceCreator(const Params &params);
@@ -68,10 +67,6 @@ class TI_DLL_EXPORT VulkanDeviceCreator {
 
   VulkanDevice *device() {
     return ti_device_.get();
-  }
-
-  VkSurfaceKHR get_surface() {
-    return surface_;
   }
 
  private:

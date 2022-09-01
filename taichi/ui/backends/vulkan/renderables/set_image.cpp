@@ -1,7 +1,6 @@
 #include "set_image.h"
 
 #include "taichi/program/program.h"
-#include "taichi/program/texture.h"
 #include "taichi/ui/utils/utils.h"
 
 using taichi::lang::Program;
@@ -21,8 +20,8 @@ int SetImage::get_correct_dimension(int dimension) {
   }
 }
 
-void SetImage::update_ubo(float x_factor, float y_factor, bool transpose) {
-  UniformBufferObject ubo = {x_factor, y_factor, int(transpose)};
+void SetImage::update_ubo(float x_factor, float y_factor) {
+  UniformBufferObject ubo = {x_factor, y_factor};
   void *mapped = app_context_->device().map(uniform_buffer_);
   memcpy(mapped, &ubo, sizeof(ubo));
   app_context_->device().unmap(uniform_buffer_);
@@ -32,7 +31,10 @@ void SetImage::update_data(const SetImageInfo &info) {
   // We might not have a current program if GGUI is used in external apps to
   // load AOT modules
   Program *prog = app_context_->prog();
-  StreamSemaphore sema = nullptr;
+  StreamSemaphore data_ready_sema{nullptr};
+  if (prog) {
+    data_ready_sema = prog->flush();
+  }
 
   const FieldInfo &img = info.img;
 
@@ -55,21 +57,18 @@ void SetImage::update_data(const SetImageInfo &info) {
   int new_width = get_correct_dimension(img.shape[0]);
   int new_height = get_correct_dimension(img.shape[1]);
 
-  BufferFormat fmt = BufferFormat::rgba8;
-  if (texture_dtype_ == taichi::lang::PrimitiveType::f32) {
-    fmt = BufferFormat::rgba32f;
-  }
-
-  if (new_width != width || new_height != height || fmt != format_) {
+  if (new_width != width || new_height != height) {
     destroy_texture();
     free_buffers();
-    init_set_image(app_context_, new_width, new_height, fmt);
+    init_set_image(app_context_, new_width, new_height);
   }
 
-  update_ubo(img.shape[0] / (float)new_width, img.shape[1] / (float)new_height,
-             true);
+  update_ubo(img.shape[0] / (float)new_width, img.shape[1] / (float)new_height);
 
   int pixels = width * height;
+
+  app_context_->device().image_transition(texture_, ImageLayout::undefined,
+                                          ImageLayout::transfer_dst);
 
   uint64_t img_size = pixels * data_type_size(texture_dtype_) * 4;
 
@@ -78,22 +77,12 @@ void SetImage::update_data(const SetImageInfo &info) {
   DevicePtr img_dev_ptr = info.img.dev_alloc.get_ptr();
   if (prog) {
     img_dev_ptr = get_device_ptr(prog, img.snode);
-    if (img_dev_ptr.device != &app_context_->device()) {
-      sema = prog->flush();
-    }
   }
-  bool use_enqueued_op =
-      prog && (img_dev_ptr.device == &app_context_->device());
 
   Device::MemcpyCapability memcpy_cap = Device::check_memcpy_capability(
       gpu_staging_buffer_.get_ptr(), img_dev_ptr, img_size);
   if (memcpy_cap == Device::MemcpyCapability::Direct) {
-    // If it's the same device, we do not use the staging buffer and directly
-    // copy from the src ptr to the image in the `copy_op`
-    if (!use_enqueued_op) {
-      Device::memcpy_direct(gpu_staging_buffer_.get_ptr(), img_dev_ptr,
-                            img_size);
-    }
+    Device::memcpy_direct(gpu_staging_buffer_.get_ptr(), img_dev_ptr, img_size);
   } else if (memcpy_cap == Device::MemcpyCapability::RequiresStagingBuffer) {
     Device::memcpy_via_staging(gpu_staging_buffer_.get_ptr(),
                                cpu_staging_buffer_.get_ptr(), img_dev_ptr,
@@ -107,95 +96,29 @@ void SetImage::update_data(const SetImageInfo &info) {
   copy_params.image_extent.x = height;
   copy_params.image_extent.y = width;
 
-  DevicePtr src_ptr =
-      use_enqueued_op ? img_dev_ptr : gpu_staging_buffer_.get_ptr(0);
+  auto stream = app_context_->device().get_graphics_stream();
+  auto cmd_list = stream->new_command_list();
+  cmd_list->image_transition(texture_, ImageLayout::undefined,
+                             ImageLayout::transfer_dst);
+  cmd_list->buffer_to_image(texture_, gpu_staging_buffer_.get_ptr(0),
+                            ImageLayout::transfer_dst, copy_params);
 
-  auto copy_op = [texture = this->texture_, src_ptr, copy_params](
-                     Device *device, CommandList *cmdlist) {
-    cmdlist->image_transition(texture, ImageLayout::undefined,
-                              ImageLayout::transfer_dst);
-    cmdlist->buffer_barrier(src_ptr);
-    cmdlist->buffer_to_image(texture, src_ptr, ImageLayout::transfer_dst,
-                             copy_params);
-    cmdlist->image_transition(texture, ImageLayout::transfer_dst,
-                              ImageLayout::shader_read);
-  };
-
-  if (use_enqueued_op) {
-    prog->enqueue_compute_op_lambda(copy_op, {});
+  cmd_list->image_transition(texture_, ImageLayout::transfer_dst,
+                             ImageLayout::shader_read);
+  if (data_ready_sema) {
+    stream->submit(cmd_list.get(), {data_ready_sema});
   } else {
-    auto stream = app_context_->device().get_graphics_stream();
-    auto cmd_list = stream->new_command_list();
-    copy_op(&app_context_->device(), cmd_list.get());
-    if (sema) {
-      stream->submit(cmd_list.get(), {sema});
-    } else {
-      stream->submit(cmd_list.get());
-    }
-  }
-}
-
-void SetImage::update_data(Texture *tex) {
-  Program *prog = app_context_->prog();
-
-  auto shape = tex->get_size();
-  auto fmt = tex->get_buffer_format();
-
-  TI_ASSERT_INFO(shape[2] == 1,
-                 "Must be a 2D image! Received image shape: {}x{}x{}", shape[0],
-                 shape[1], shape[2]);
-
-  // Reminder: y/x is flipped in Taichi. I would like to use the correct
-  // orientation, but we have existing code already using the previous
-  // convention
-  if (shape[1] != width || shape[0] != height || fmt != format_) {
-    destroy_texture();
-    free_buffers();
-    init_set_image(app_context_, shape[1], shape[0], fmt);
-  }
-
-  update_ubo(1.0f, 1.0f, false);
-
-  ImageCopyParams copy_params;
-  copy_params.width = shape[0];
-  copy_params.height = shape[1];
-  copy_params.depth = shape[2];
-
-  DeviceAllocation src_alloc = tex->get_device_allocation();
-  auto copy_op = [texture = this->texture_, src_alloc, copy_params](
-                     Device *device, CommandList *cmdlist) {
-    cmdlist->image_transition(texture, ImageLayout::undefined,
-                              ImageLayout::transfer_dst);
-    cmdlist->copy_image(texture, src_alloc, ImageLayout::transfer_dst,
-                        ImageLayout::transfer_src, copy_params);
-    cmdlist->image_transition(texture, ImageLayout::transfer_dst,
-                              ImageLayout::shader_read);
-  };
-
-  // In the current state if we called this direct image update data method, we
-  // gurantee to have a program.
-  // FIXME: However, if we don't have a Program, where does the layout come
-  // from?
-  if (prog) {
-    prog->enqueue_compute_op_lambda(
-        copy_op, {ComputeOpImageRef{src_alloc, ImageLayout::transfer_src,
-                                    ImageLayout::transfer_src}});
-  } else {
-    auto stream = app_context_->device().get_graphics_stream();
-    auto cmd_list = stream->new_command_list();
-    copy_op(&app_context_->device(), cmd_list.get());
     stream->submit(cmd_list.get());
   }
 }
 
 SetImage::SetImage(AppContext *app_context, VertexAttributes vbo_attrs) {
-  init_set_image(app_context, 1, 1, BufferFormat::rgba8);
+  init_set_image(app_context, 1, 1);
 }
 
 void SetImage::init_set_image(AppContext *app_context,
                               int img_width,
-                              int img_height,
-                              taichi::lang::BufferFormat format) {
+                              int img_height) {
   RenderableConfig config = {
       6,
       6,
@@ -215,9 +138,8 @@ void SetImage::init_set_image(AppContext *app_context,
 
   Renderable::init(config, app_context);
 
-  this->width = img_width;
-  this->height = img_height;
-  format_ = format;
+  width = img_width;
+  height = img_height;
 
   create_texture();
 
@@ -232,7 +154,10 @@ void SetImage::create_texture() {
 
   ImageParams params;
   params.dimension = ImageDimension::d2D;
-  params.format = format_;
+  params.format = BufferFormat::rgba8;
+  if (texture_dtype_ == taichi::lang::PrimitiveType::f32) {
+    params.format = BufferFormat::rgba32f;
+  }
   params.initial_layout = ImageLayout::shader_read;
   // these are flipped because taichi is y-major and vulkan is x-major
   params.x = height;

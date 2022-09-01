@@ -9,7 +9,7 @@
 #include "taichi/rhi/vulkan/vulkan_loader.h"
 #include "taichi/runtime/gfx/runtime.h"
 #include "taichi/runtime/gfx/snode_tree_manager.h"
-#include "taichi/runtime/gfx/cache_manager.h"
+#include "taichi/cache/gfx/cache_manager.h"
 #include "taichi/rhi/vulkan/vulkan_device.h"
 #include "vk_mem_alloc.h"
 
@@ -92,6 +92,10 @@ class VulkanProgramImpl : public ProgramImpl {
   }
 
   std::unique_ptr<aot::Kernel> make_aot_kernel(Kernel &kernel) override;
+
+  void enqueue_compute_op_lambda(
+      std::function<void(Device *device, CommandList *cmdlist)> op,
+      const std::vector<ComputeOpImageRef> &image_refs) override;
 
   void dump_cache_data_to_disk() override;
 

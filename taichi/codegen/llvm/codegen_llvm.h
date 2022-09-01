@@ -58,6 +58,8 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   llvm::BasicBlock *final_block;
   std::set<std::string> linked_modules;
   bool returned{false};
+  std::unordered_set<int> used_tree_ids;
+  std::unordered_set<int> struct_for_tls_sizes;
 
   std::unordered_map<const Stmt *, std::vector<llvm::Value *>> loop_vars_llvm;
 
@@ -151,10 +153,6 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   void create_naive_range_for(RangeForStmt *for_stmt);
 
   static std::string get_runtime_snode_name(SNode *snode);
-
-  llvm::Type *llvm_type(DataType dt);
-
-  llvm::Type *llvm_ptr_type(DataType dt);
 
   void visit(Block *stmt_list) override;
 

@@ -19,7 +19,6 @@ layout(binding = 0) uniform UBO {
   vec3 color;
   int use_per_vertex_color;
   int two_sided;
-  float has_attribute;
 }
 ubo;
 

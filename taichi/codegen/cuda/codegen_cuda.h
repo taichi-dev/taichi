@@ -17,15 +17,16 @@ class KernelCodeGenCUDA : public KernelCodeGen {
 #ifdef TI_WITH_LLVM
   static std::unique_ptr<TaskCodeGenLLVM> make_codegen_llvm(Kernel *kernel,
                                                             IRNode *ir);
-  LLVMCompiledData modulegen(std::unique_ptr<llvm::Module> &&module = nullptr,
-                             OffloadedStmt *stmt = nullptr) override;
+  LLVMCompiledData compile_task(
+      std::unique_ptr<llvm::Module> &&module = nullptr,
+      OffloadedStmt *stmt = nullptr) override;
 #endif  // TI_WITH_LLVM
 
   bool supports_offline_cache() const override {
     return true;
   }
 
-  FunctionType codegen() override;
+  FunctionType compile_to_function() override;
 };
 
 class CUDAModuleToFunctionConverter : public ModuleToFunctionConverter {

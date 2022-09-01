@@ -112,7 +112,6 @@ bool CUSPARSEDriver::load_cusparse() {
 }
 
 CUSOLVERDriver::CUSOLVERDriver() {
-  load_lib("libcusolver.so", "cusolver.dll");
 }
 
 CUSOLVERDriver &CUSOLVERDriver::get_instance() {
@@ -120,4 +119,17 @@ CUSOLVERDriver &CUSOLVERDriver::get_instance() {
   return *instance;
 }
 
+bool CUSOLVERDriver::load_cusolver() {
+  cusolver_loaded_ = load_lib("libcusolver.so", "cusolver64_11.dll");
+  if (!cusolver_loaded_) {
+    return false;
+  }
+#define PER_CUSOLVER_FUNCTION(name, symbol_name, ...) \
+  name.set(loader_->load_function(#symbol_name));     \
+  name.set_lock(&lock_);                              \
+  name.set_names(#name, #symbol_name);
+#include "taichi/rhi/cuda/cusolver_functions.inc.h"
+#undef PER_CUSOLVER_FUNCTION
+  return cusolver_loaded_;
+}
 TLANG_NAMESPACE_END

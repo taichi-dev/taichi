@@ -125,41 +125,6 @@ LoopUniqueStmt::LoopUniqueStmt(Stmt *input, const std::vector<SNode *> &covers)
   TI_STMT_REG_FIELDS;
 }
 
-Stmt *LocalLoadStmt::previous_store_or_alloca_in_block() {
-  int position = parent->locate(this);
-  // TI_ASSERT(width() == 1);
-  // TI_ASSERT(this->ptr[0].offset == 0);
-  for (int i = position - 1; i >= 0; i--) {
-    if (parent->statements[i]->is<LocalStoreStmt>()) {
-      auto store = parent->statements[i]->as<LocalStoreStmt>();
-      // TI_ASSERT(store->width() == 1);
-      if (store->dest == this->src[0].var) {
-        // found
-        return store;
-      }
-    } else if (parent->statements[i]->is<AllocaStmt>()) {
-      auto alloca = parent->statements[i]->as<AllocaStmt>();
-      // TI_ASSERT(alloca->width() == 1);
-      if (alloca == this->src[0].var) {
-        return alloca;
-      }
-    }
-  }
-  return nullptr;
-}
-
-bool LocalLoadStmt::same_source() const {
-  for (int i = 1; i < (int)src.size(); i++) {
-    if (src[i].var != src[0].var)
-      return false;
-  }
-  return true;
-}
-
-bool LocalLoadStmt::has_source(Stmt *alloca) const {
-  return src[0].var == alloca;
-}
-
 IfStmt::IfStmt(Stmt *cond) : cond(cond) {
   TI_STMT_REG_FIELDS;
 }
@@ -184,10 +149,6 @@ std::unique_ptr<Stmt> IfStmt::clone() const {
   if (false_statements)
     new_stmt->set_false_statements(false_statements->clone());
   return new_stmt;
-}
-
-std::unique_ptr<ConstStmt> ConstStmt::copy() {
-  return std::make_unique<ConstStmt>(val);
 }
 
 RangeForStmt::RangeForStmt(Stmt *begin,
@@ -413,16 +374,10 @@ int LoopIndexStmt::max_num_bits() const {
     if (!range_for->begin->is<ConstStmt>() || !range_for->end->is<ConstStmt>())
       return -1;
     auto begin = range_for->begin->as<ConstStmt>();
-    for (int i = 0; i < (int)begin->val.size(); i++) {
-      if (begin->val[i].val_int() < 0)
-        return -1;
-    }
+    if (begin->val.val_int() < 0)
+      return -1;
     auto end = range_for->end->as<ConstStmt>();
-    int result = 0;
-    for (int i = 0; i < (int)end->val.size(); i++) {
-      result = std::max(result, (int)bit::ceil_log2int(end->val[i].val_int()));
-    }
-    return result;
+    return (int)bit::ceil_log2int(end->val.val_int());
   } else if (auto struct_for = loop->cast<StructForStmt>()) {
     return struct_for->snode->get_num_bits(index);
   } else if (auto offload = loop->cast<OffloadedStmt>()) {

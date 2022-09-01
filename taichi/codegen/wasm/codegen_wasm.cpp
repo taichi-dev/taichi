@@ -241,7 +241,7 @@ class TaskCodeGenWASM : public TaskCodeGenLLVM {
   }
 };
 
-FunctionType KernelCodeGenWASM::codegen() {
+FunctionType KernelCodeGenWASM::compile_to_function() {
   TI_AUTO_PROF
   TaskCodeGenWASM gen(kernel, ir);
   auto res = gen.run_compilation();
@@ -254,7 +254,7 @@ FunctionType KernelCodeGenWASM::codegen() {
   };
 }
 
-LLVMCompiledData KernelCodeGenWASM::modulegen(
+LLVMCompiledData KernelCodeGenWASM::compile_task(
     std::unique_ptr<llvm::Module> &&module,
     OffloadedStmt *stmt) {
   bool init_flag = module == nullptr;
@@ -276,7 +276,7 @@ LLVMCompiledData KernelCodeGenWASM::modulegen(
 
   gen->tlctx->jit->global_optimize_module(gen->module.get());
 
-  return {name_list, std::move(gen->module)};
+  return {name_list, std::move(gen->module), {}, {}};
 }
 }  // namespace lang
 }  // namespace taichi

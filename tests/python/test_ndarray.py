@@ -174,15 +174,15 @@ def test_ndarray_compound_element():
     b = ti.ndarray(vec3, shape=(n, n))
     assert isinstance(b, ti.MatrixNdarray)
     assert b.shape == (n, n)
-    assert b.element_type.get_element_type() == ti.i32
-    assert b.element_type.get_shape() == (3, 1)
+    assert b.element_type.element_type() == ti.i32
+    assert b.element_type.shape() == (3, 1)
 
     matrix34 = ti.types.matrix(3, 4, float)
     c = ti.ndarray(matrix34, shape=(n, n + 1), layout=ti.Layout.SOA)
     assert isinstance(c, ti.MatrixNdarray)
     assert c.shape == (n, n + 1)
-    assert c.element_type.get_element_type() == ti.f32
-    assert c.element_type.get_shape() == (3, 4)
+    assert c.element_type.element_type() == ti.f32
+    assert c.element_type.shape() == (3, 4)
     assert c.layout == ti.Layout.SOA
 
 

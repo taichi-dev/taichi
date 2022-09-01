@@ -38,9 +38,7 @@ DeviceAllocation CudaDevice::allocate_memory_runtime(
     const LlvmRuntimeAllocParams &params) {
   AllocInfo info;
   info.size = taichi::iroundup(params.size, taichi_page_size);
-  if (params.host_read || params.host_write) {
-    TI_NOT_IMPLEMENTED
-  } else if (params.use_cached) {
+  if (params.use_cached) {
     if (caching_allocator_ == nullptr) {
       caching_allocator_ = std::make_unique<CudaCachingAllocator>(this);
     }

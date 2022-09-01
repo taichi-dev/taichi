@@ -62,25 +62,23 @@ void make_mesh_thread_local_offload(OffloadedStmt *offload,
         {
           auto offset_ptr =
               offload->tls_prologue->push_back<ThreadLocalPtrStmt>(
-                  offset_tls_offset, TypeFactory::create_vector_or_scalar_type(
-                                         1, data_type, true));
+                  offset_tls_offset,
+                  TypeFactory::get_instance().get_pointer_type(data_type));
           auto num_ptr = offload->tls_prologue->push_back<ThreadLocalPtrStmt>(
               num_tls_offset,
-              TypeFactory::create_vector_or_scalar_type(1, data_type, true));
+              TypeFactory::get_instance().get_pointer_type(data_type));
 
           const auto offset_snode = offset_.find(element_type);
           TI_ASSERT(offset_snode != offset_.end());
           auto offset_globalptr = offload->tls_prologue->insert(
-              std::make_unique<GlobalPtrStmt>(
-                  LaneAttribute<SNode *>{offset_snode->second},
-                  std::vector<Stmt *>{patch_idx}),
+              std::make_unique<GlobalPtrStmt>(offset_snode->second,
+                                              std::vector<Stmt *>{patch_idx}),
               -1);
           auto offset_load = offload->tls_prologue->insert(
               std::make_unique<GlobalLoadStmt>(offset_globalptr), -1);
           auto offset_1_globalptr = offload->tls_prologue->insert(
-              std::make_unique<GlobalPtrStmt>(
-                  LaneAttribute<SNode *>{offset_snode->second},
-                  std::vector<Stmt *>{patch_idx_1}),
+              std::make_unique<GlobalPtrStmt>(offset_snode->second,
+                                              std::vector<Stmt *>{patch_idx_1}),
               -1);
           auto offset_1_load = offload->tls_prologue->insert(
               std::make_unique<GlobalLoadStmt>(offset_1_globalptr), -1);
@@ -100,13 +98,13 @@ void make_mesh_thread_local_offload(OffloadedStmt *offload,
         {
           auto offset_ptr =
               offload->mesh_prologue->push_back<ThreadLocalPtrStmt>(
-                  offset_tls_offset, TypeFactory::create_vector_or_scalar_type(
-                                         1, data_type, true));
+                  offset_tls_offset,
+                  TypeFactory::get_instance().get_pointer_type(data_type));
           auto offset_val =
               offload->mesh_prologue->push_back<GlobalLoadStmt>(offset_ptr);
           auto num_ptr = offload->mesh_prologue->push_back<ThreadLocalPtrStmt>(
               num_tls_offset,
-              TypeFactory::create_vector_or_scalar_type(1, data_type, true));
+              TypeFactory::get_instance().get_pointer_type(data_type));
           auto num_val =
               offload->mesh_prologue->push_back<GlobalLoadStmt>(num_ptr);
 

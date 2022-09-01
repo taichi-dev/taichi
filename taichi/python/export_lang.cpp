@@ -112,8 +112,8 @@ void export_lang(py::module &m) {
       .def("__hash__", &DataType::hash)
       .def("to_string", &DataType::to_string)
       .def("__str__", &DataType::to_string)
-      .def("get_shape", &DataType::get_shape)
-      .def("get_element_type", &DataType::get_element_type)
+      .def("shape", &DataType::get_shape)
+      .def("element_type", &DataType::get_element_type)
       .def(
           "get_ptr", [](DataType *dtype) -> Type * { return *dtype; },
           py::return_value_policy::reference)
@@ -985,6 +985,17 @@ void export_lang(py::module &m) {
         Expr::make<StrideExpression, const Expr &, const ExprGroup &,
                    const std::vector<int> &, int>);
 
+  m.def("get_external_tensor_element_dim", [](const Expr &expr) {
+    TI_ASSERT(expr.is<ExternalTensorExpression>());
+    return expr.cast<ExternalTensorExpression>()->element_dim;
+  });
+
+  m.def("get_external_tensor_element_shape", [](const Expr &expr) {
+    TI_ASSERT(expr.is<ExternalTensorExpression>());
+    auto external_tensor_expr = expr.cast<ExternalTensorExpression>();
+    return external_tensor_expr->dt.get_shape();
+  });
+
   m.def("get_external_tensor_dim", [](const Expr &expr) {
     TI_ASSERT(expr.is<ExternalTensorExpression>());
     return expr.cast<ExternalTensorExpression>()->dim;
@@ -1203,7 +1214,8 @@ void export_lang(py::module &m) {
   MAKE_SPARSE_MATRIX(64, ColMajor, d);
   MAKE_SPARSE_MATRIX(64, RowMajor, d);
 
-  py::class_<CuSparseMatrix>(m, "CuSparseMatrix")
+  py::class_<CuSparseMatrix, SparseMatrix>(m, "CuSparseMatrix")
+      .def(py::init<int, int, DataType>())
       .def("spmv", &CuSparseMatrix::spmv);
 
   py::class_<SparseSolver>(m, "SparseSolver")
@@ -1211,9 +1223,11 @@ void export_lang(py::module &m) {
       .def("analyze_pattern", &SparseSolver::analyze_pattern)
       .def("factorize", &SparseSolver::factorize)
       .def("solve", &SparseSolver::solve)
+      .def("solve_cu", &SparseSolver::solve_cu)
       .def("info", &SparseSolver::info);
 
   m.def("make_sparse_solver", &make_sparse_solver);
+  m.def("make_cusparse_solver", &make_cusparse_solver);
 
   // Mesh Class
   // Mesh related.

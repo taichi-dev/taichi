@@ -541,5 +541,11 @@ void Program::prepare_runtime_context(RuntimeContext *ctx) {
   program_impl_->prepare_runtime_context(ctx);
 }
 
+void Program::enqueue_compute_op_lambda(
+    std::function<void(Device *device, CommandList *cmdlist)> op,
+    const std::vector<ComputeOpImageRef> &image_refs) {
+  program_impl_->enqueue_compute_op_lambda(op, image_refs);
+}
+
 }  // namespace lang
 }  // namespace taichi

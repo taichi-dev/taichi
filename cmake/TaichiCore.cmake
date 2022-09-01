@@ -311,6 +311,7 @@ set(SPIRV-Headers_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/SPIRV-Headers)
 
 add_subdirectory(external/SPIRV-Tools)
 add_subdirectory(taichi/codegen/spirv)
+add_subdirectory(taichi/cache/gfx)
 add_subdirectory(taichi/runtime/gfx)
 
 if (TI_WITH_OPENGL OR TI_WITH_VULKAN OR TI_WITH_DX11)

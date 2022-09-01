@@ -65,7 +65,7 @@ class FrontendAllocaStmt : public Stmt {
 
   FrontendAllocaStmt(const Identifier &lhs, DataType type)
       : ident(lhs), is_shared(false) {
-    ret_type = TypeFactory::create_vector_or_scalar_type(1, type);
+    ret_type = type;
   }
 
   FrontendAllocaStmt(const Identifier &lhs,
@@ -441,24 +441,28 @@ class ExternalTensorExpression : public Expression {
   int element_dim;  // 0: scalar; 1: vector (SOA); 2: matrix (SOA); -1: vector
                     // (AOS); -2: matrix (AOS)
 
-  // Fill element shape if compile-time specialization is desired.
-  std::vector<int> element_shape;
-
   ExternalTensorExpression(const DataType &dt,
                            int dim,
                            int arg_id,
-                           int element_dim)
-      : dt(dt), dim(dim), arg_id(arg_id), element_dim(element_dim) {
-    set_attribute("dim", std::to_string(dim));
+                           int element_dim) {
+    init(dt, dim, arg_id, element_dim);
   }
 
   ExternalTensorExpression(const DataType &dt,
                            int dim,
                            int arg_id,
                            int element_dim,
-                           const std::vector<int> &element_shape)
-      : ExternalTensorExpression(dt, dim, arg_id, element_dim) {
-    this->element_shape = element_shape;
+                           const std::vector<int> &element_shape) {
+    if (element_shape.size() == 0) {
+      init(dt, dim, arg_id, element_dim);
+    } else {
+      TI_ASSERT(dt->is<PrimitiveType>());
+
+      auto tensor_type =
+          taichi::lang::TypeFactory::get_instance().create_tensor_type(
+              element_shape, dt);
+      init(tensor_type, dim, arg_id, element_dim);
+    }
   }
 
   void type_check(CompileConfig *config) override {
@@ -467,6 +471,14 @@ class ExternalTensorExpression : public Expression {
   void flatten(FlattenContext *ctx) override;
 
   TI_DEFINE_ACCEPT_FOR_EXPRESSION
+
+ private:
+  void init(const DataType &dt, int dim, int arg_id, int element_dim) {
+    this->dt = dt;
+    this->dim = dim;
+    this->arg_id = arg_id;
+    this->element_dim = element_dim;
+  }
 };
 
 // TODO: Make this a non-expr

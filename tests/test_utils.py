@@ -126,6 +126,10 @@ __capi_aot_test_cases = {
         os.path.join('cpp', 'aot', 'python_scripts', 'mpm88_graph_aot.py'),
         "--arch=vulkan"
     ],
+    "CapiMpm88Test.Opengl": [
+        os.path.join('cpp', 'aot', 'python_scripts', 'mpm88_graph_aot.py'),
+        "--arch=opengl"
+    ],
     "CapiMpm88Test.Cuda": [
         os.path.join('cpp', 'aot', 'python_scripts', 'mpm88_graph_aot.py'),
         "--arch=cuda"
@@ -133,6 +137,10 @@ __capi_aot_test_cases = {
     "CapiSphTest.Vulkan": [
         os.path.join('cpp', 'aot', 'python_scripts', 'sph_aot.py'),
         "--arch=vulkan"
+    ],
+    "CapiSphTest.Opengl": [
+        os.path.join('cpp', 'aot', 'python_scripts', 'sph_aot.py'),
+        "--arch=opengl"
     ],
     "CapiSphTest.Cuda": [
         os.path.join('cpp', 'aot', 'python_scripts', 'sph_aot.py'),
@@ -162,6 +170,14 @@ __capi_aot_test_cases = {
         os.path.join('cpp', 'aot', 'python_scripts', 'graph_aot_test.py'),
         "--arch=cuda"
     ],
+    "CapiGraphTest.VulkanGraph": [
+        os.path.join('cpp', 'aot', 'python_scripts', 'graph_aot_test.py'),
+        "--arch=vulkan"
+    ],
+    "CapiGraphTest.OpenglGraph": [
+        os.path.join('cpp', 'aot', 'python_scripts', 'graph_aot_test.py'),
+        "--arch=opengl"
+    ],
     "CapiAotTest.CpuKernel": [
         os.path.join('cpp', 'aot', 'python_scripts', 'kernel_aot_test1.py'),
         "--arch=cpu"
@@ -170,9 +186,21 @@ __capi_aot_test_cases = {
         os.path.join('cpp', 'aot', 'python_scripts', 'kernel_aot_test1.py'),
         "--arch=cuda"
     ],
+    "CapiAotTest.VulkanKernel": [
+        os.path.join('cpp', 'aot', 'python_scripts', 'kernel_aot_test1.py'),
+        "--arch=vulkan"
+    ],
+    "CapiAotTest.OpenglKernel": [
+        os.path.join('cpp', 'aot', 'python_scripts', 'kernel_aot_test1.py'),
+        "--arch=opengl"
+    ],
     "CapiDryRun.VulkanAotModule": [
         os.path.join('cpp', 'aot', 'python_scripts', 'kernel_aot_test1.py'),
         "--arch=vulkan"
+    ],
+    "CapiDryRun.OpenglAotModule": [
+        os.path.join('cpp', 'aot', 'python_scripts', 'kernel_aot_test1.py'),
+        "--arch=opengl"
     ],
 }
 

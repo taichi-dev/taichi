@@ -256,24 +256,13 @@ class KernelCodegenImpl : public IRVisitor {
   void visit(ConstStmt *const_stmt) override {
     emit("constexpr {} {} = {};",
          metal_data_type_name(const_stmt->element_type()),
-         const_stmt->raw_name(), const_stmt->val[0].stringify());
+         const_stmt->raw_name(), const_stmt->val.stringify());
   }
 
   void visit(LocalLoadStmt *stmt) override {
-    // TODO: optimize for partially vectorized load...
-    bool linear_index = true;
-    for (int i = 0; i < (int)stmt->src.size(); i++) {
-      if (stmt->src[i].offset != i) {
-        linear_index = false;
-      }
-    }
-    if (stmt->same_source() && linear_index) {
-      auto ptr = stmt->src[0].var;
-      emit("const {} {}({});", metal_data_type_name(stmt->element_type()),
-           stmt->raw_name(), ptr->raw_name());
-    } else {
-      TI_NOT_IMPLEMENTED;
-    }
+    auto ptr = stmt->src;
+    emit("const {} {}({});", metal_data_type_name(stmt->element_type()),
+         stmt->raw_name(), ptr->raw_name());
   }
 
   void visit(LocalStoreStmt *stmt) override {
@@ -1486,11 +1475,10 @@ class KernelCodegenImpl : public IRVisitor {
 
   std::string inject_load_global_tmp(int offset,
                                      DataType dt = PrimitiveType::i32) {
-    const auto vt = TypeFactory::create_vector_or_scalar_type(1, dt);
-    auto gtmp = Stmt::make<GlobalTemporaryStmt>(offset, vt);
+    auto gtmp = Stmt::make<GlobalTemporaryStmt>(offset, dt);
     gtmp->accept(this);
     auto gload = Stmt::make<GlobalLoadStmt>(gtmp.get());
-    gload->ret_type = vt;
+    gload->ret_type = dt;
     gload->accept(this);
     return gload->raw_name();
   }

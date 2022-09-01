@@ -27,14 +27,14 @@ TEST_F(AlgebraicSimplicationTest, SimplifyAddZero) {
   auto kernel = std::make_unique<Kernel>(prog(), func, "fake_kernel");
   block->kernel = kernel.get();
 
-  auto global_load_addr = block->push_back<GlobalTemporaryStmt>(
-      0, TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32));
+  auto global_load_addr =
+      block->push_back<GlobalTemporaryStmt>(0, PrimitiveType::i32);
   auto global_load = block->push_back<GlobalLoadStmt>(global_load_addr);
   auto zero = block->push_back<ConstStmt>(TypedConstant(0));
   auto add =
       block->push_back<BinaryOpStmt>(BinaryOpType::add, global_load, zero);
-  auto global_store_addr = block->push_back<GlobalTemporaryStmt>(
-      4, TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32));
+  auto global_store_addr =
+      block->push_back<GlobalTemporaryStmt>(4, PrimitiveType::i32);
   block->push_back<GlobalStoreStmt>(global_store_addr, add);
 
   irpass::type_check(block.get(), CompileConfig());
@@ -54,8 +54,8 @@ TEST_F(AlgebraicSimplicationTest, SimplifyMultiplyOne) {
   auto kernel = std::make_unique<Kernel>(prog(), func, "fake_kernel");
   block->kernel = kernel.get();
 
-  auto global_load_addr = block->push_back<GlobalTemporaryStmt>(
-      0, TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::f32));
+  auto global_load_addr =
+      block->push_back<GlobalTemporaryStmt>(0, PrimitiveType::f32);
   auto global_load = block->push_back<GlobalLoadStmt>(global_load_addr);
   auto one = block->push_back<ConstStmt>(TypedConstant(1.0f));
   auto mul1 =
@@ -64,8 +64,8 @@ TEST_F(AlgebraicSimplicationTest, SimplifyMultiplyOne) {
   auto zero = block->push_back<ConstStmt>(TypedConstant(0.0f));
   auto div = block->push_back<BinaryOpStmt>(BinaryOpType::div, zero, one);
   auto sub = block->push_back<BinaryOpStmt>(BinaryOpType::sub, mul2, div);
-  auto global_store_addr = block->push_back<GlobalTemporaryStmt>(
-      4, TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::f32));
+  auto global_store_addr =
+      block->push_back<GlobalTemporaryStmt>(4, PrimitiveType::f32);
   [[maybe_unused]] auto global_store =
       block->push_back<GlobalStoreStmt>(global_store_addr, sub);
 
@@ -86,16 +86,16 @@ TEST_F(AlgebraicSimplicationTest, SimplifyMultiplyZeroFastMath) {
   auto kernel = std::make_unique<Kernel>(prog(), func, "fake_kernel");
   block->kernel = kernel.get();
 
-  auto global_load_addr = block->push_back<GlobalTemporaryStmt>(
-      0, TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32));
+  auto global_load_addr =
+      block->push_back<GlobalTemporaryStmt>(0, PrimitiveType::i32);
   auto global_load = block->push_back<GlobalLoadStmt>(global_load_addr);
   auto zero = block->push_back<ConstStmt>(TypedConstant(0));
   auto mul =
       block->push_back<BinaryOpStmt>(BinaryOpType::mul, global_load, zero);
   auto one = block->push_back<ConstStmt>(TypedConstant(1));
   auto add = block->push_back<BinaryOpStmt>(BinaryOpType::add, mul, one);
-  auto global_store_addr = block->push_back<GlobalTemporaryStmt>(
-      4, TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32));
+  auto global_store_addr =
+      block->push_back<GlobalTemporaryStmt>(4, PrimitiveType::i32);
   [[maybe_unused]] auto global_store =
       block->push_back<GlobalStoreStmt>(global_store_addr, add);
 
@@ -115,15 +115,15 @@ TEST_F(AlgebraicSimplicationTest, SimplifyMultiplyZeroFastMath) {
   block = std::make_unique<Block>();
   block->kernel = kernel.get();
 
-  global_load_addr = block->push_back<GlobalTemporaryStmt>(
-      8, TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::f32));
+  global_load_addr =
+      block->push_back<GlobalTemporaryStmt>(8, PrimitiveType::f32);
   global_load = block->push_back<GlobalLoadStmt>(global_load_addr);
   zero = block->push_back<ConstStmt>(TypedConstant(0));
   mul = block->push_back<BinaryOpStmt>(BinaryOpType::mul, global_load, zero);
   one = block->push_back<ConstStmt>(TypedConstant(1));
   add = block->push_back<BinaryOpStmt>(BinaryOpType::add, mul, one);
-  global_store_addr = block->push_back<GlobalTemporaryStmt>(
-      12, TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::f32));
+  global_store_addr =
+      block->push_back<GlobalTemporaryStmt>(12, PrimitiveType::f32);
   global_store = block->push_back<GlobalStoreStmt>(global_store_addr, add);
 
   irpass::type_check(block.get(), config_without_fast_math);  // insert 2 casts
@@ -150,14 +150,14 @@ TEST_F(AlgebraicSimplicationTest, SimplifyMultiplyZeroFastMath) {
 TEST_F(AlgebraicSimplicationTest, SimplifyAndMinusOne) {
   auto block = std::make_unique<Block>();
 
-  auto global_load_addr = block->push_back<GlobalTemporaryStmt>(
-      0, TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32));
+  auto global_load_addr =
+      block->push_back<GlobalTemporaryStmt>(0, PrimitiveType::i32);
   auto global_load = block->push_back<GlobalLoadStmt>(global_load_addr);
   auto minus_one = block->push_back<ConstStmt>(TypedConstant(-1));
   auto and_result = block->push_back<BinaryOpStmt>(BinaryOpType::bit_and,
                                                    minus_one, global_load);
-  auto global_store_addr = block->push_back<GlobalTemporaryStmt>(
-      4, TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32));
+  auto global_store_addr =
+      block->push_back<GlobalTemporaryStmt>(4, PrimitiveType::i32);
   block->push_back<GlobalStoreStmt>(global_store_addr, and_result);
 
   auto func = []() {};

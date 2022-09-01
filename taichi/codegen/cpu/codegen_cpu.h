@@ -23,12 +23,13 @@ class KernelCodeGenCPU : public KernelCodeGen {
   bool supports_offline_cache() const override {
     return true;
   }
-  LLVMCompiledData modulegen(std::unique_ptr<llvm::Module> &&module = nullptr,
-                             OffloadedStmt *stmt = nullptr) override;
+  LLVMCompiledData compile_task(
+      std::unique_ptr<llvm::Module> &&module = nullptr,
+      OffloadedStmt *stmt = nullptr) override;
 
 #endif  // TI_WITH_LLVM
 
-  FunctionType codegen() override;
+  FunctionType compile_to_function() override;
 };
 
 #ifdef TI_WITH_LLVM

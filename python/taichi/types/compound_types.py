@@ -13,11 +13,11 @@ class TensorType(CompoundType):
     def __init__(self, shape, dtype):
         self.ptr = _type_factory.get_tensor_type(shape, dtype)
 
-    def get_shape(self):
-        return tuple(self.ptr.get_shape())
+    def shape(self):
+        return tuple(self.ptr.shape())
 
-    def get_element_type(self):
-        return self.ptr.get_element_type()
+    def element_type(self):
+        return self.ptr.element_type()
 
 
 # TODO: maybe move MatrixType, StructType here to avoid the circular import?

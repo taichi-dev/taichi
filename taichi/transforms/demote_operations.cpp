@@ -20,13 +20,12 @@ class DemoteOperations : public BasicStmtVisitor {
     // def bit_extract(input, begin, end):
     //   return (input >> begin) & ((1 << (end - begin)) - 1)
     VecStatement statements;
-    auto begin = statements.push_back<ConstStmt>(LaneAttribute<TypedConstant>(
-        TypedConstant(stmt->input->ret_type, stmt->bit_begin)));
+    auto begin = statements.push_back<ConstStmt>(
+        TypedConstant(stmt->input->ret_type, stmt->bit_begin));
     auto input_sar_begin = statements.push_back<BinaryOpStmt>(
         BinaryOpType::bit_sar, stmt->input, begin);
-    auto mask = statements.push_back<ConstStmt>(LaneAttribute<TypedConstant>(
-        TypedConstant(stmt->input->ret_type,
-                      (1LL << (stmt->bit_end - stmt->bit_begin)) - 1)));
+    auto mask = statements.push_back<ConstStmt>(TypedConstant(
+        stmt->input->ret_type, (1LL << (stmt->bit_end - stmt->bit_begin)) - 1));
     auto ret = statements.push_back<BinaryOpStmt>(BinaryOpType::bit_and,
                                                   input_sar_begin, mask);
     ret->ret_type = stmt->ret_type;
@@ -48,7 +47,7 @@ class DemoteOperations : public BasicStmtVisitor {
         //         r = r - 1
         //     return r
         auto ret = Stmt::make<BinaryOpStmt>(BinaryOpType::div, lhs, rhs);
-        auto zero = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(0));
+        auto zero = Stmt::make<ConstStmt>(TypedConstant(0));
         auto lhs_ltz =
             Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_lt, lhs, zero.get());
         auto rhs_ltz =

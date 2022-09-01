@@ -56,7 +56,7 @@ TEST(StmtFieldManager, TestStmtFieldManager) {
 }
 
 TEST(StmtFieldManager, TestStmtFieldManagerWithVector) {
-  auto one = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(1));
+  auto one = Stmt::make<ConstStmt>(TypedConstant(1));
   auto a = Stmt::make<TestStmtVector>(std::vector<Stmt *>(),
                                       std::vector<Stmt *>(1, one.get()));
 

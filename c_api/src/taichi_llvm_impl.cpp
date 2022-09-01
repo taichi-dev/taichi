@@ -1,8 +1,6 @@
 #include "taichi_core_impl.h"
 #include "taichi_llvm_impl.h"
 
-#ifdef TI_WITH_LLVM
-
 #include "taichi/program/compile_config.h"
 #include "taichi/runtime/llvm/llvm_runtime_executor.h"
 #include "taichi/runtime/llvm/llvm_aot_module_loader.h"
@@ -64,11 +62,11 @@ TiMemory LlvmRuntime::allocate_memory(
 
 void LlvmRuntime::free_memory(TiMemory devmem) {
   taichi::lang::CompileConfig *config = executor_->get_config();
+  // For memory allocated through Device::allocate_memory_runtime(),
+  // the corresponding Device::free_memory() interface has not been
+  // implemented yet...
   if (taichi::arch_is_cpu(config->arch)) {
-    // For memory allocated through Device::allocate_memory_runtime(),
-    // the corresponding Device::free_memory() interface has not been
-    // implemented yet...
-    TI_NOT_IMPLEMENTED;
+    TI_CAPI_NOT_SUPPORTED_IF(taichi::arch_is_cpu(config->arch));
   }
 
   Runtime::free_memory(devmem);
@@ -121,7 +119,8 @@ void LlvmRuntime::buffer_copy(const taichi::lang::DevicePtr &dst,
 }
 
 void LlvmRuntime::submit() {
-  TI_NOT_IMPLEMENTED;
+  // (penguinliong) Submit in LLVM backends is a nop atm.
+  // TI_NOT_IMPLEMENTED;
 }
 
 void LlvmRuntime::wait() {
@@ -129,5 +128,3 @@ void LlvmRuntime::wait() {
 }
 
 }  // namespace capi
-
-#endif  // TI_WITH_LLVM

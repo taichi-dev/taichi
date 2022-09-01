@@ -224,7 +224,7 @@ def arr_vulkan_layout_to_field_normal_layout(vk_arr: ndarray_type.ndarray(),
 def clear_gradients(_vars: template()):
     for I in grouped(ScalarField(Expr(_vars[0]))):
         for s in static(_vars):
-            ScalarField(Expr(s))[I] = 0
+            ScalarField(Expr(s))[I] = ops.cast(0, dtype=s.get_dt())
 
 
 @kernel

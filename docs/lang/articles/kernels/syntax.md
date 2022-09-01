@@ -53,7 +53,7 @@ As you have seen, there are a few differences between kernels and Taichi functio
 
 A kernel is the entry point from which Taichi's runtime takes control and the smallest unit for runtime execution. You can define multiple kernels in your program, and these kernels are *independent* from each other. You call a kernel the same way you call a Python function, and you are allowed to switch back and forth between Taichi's runtime and Python's virtual machine.
 
-For example you can call a kernel function from a Python function:
+For example you can call our kernel function `partial_sum` in the above section from a Python function:
 
 ```python
 def main():

@@ -1100,14 +1100,6 @@ void export_lang(py::module &m) {
     }
   });
 
-#if defined(TI_WITH_CUDA)
-  m.def("pop_cuda_context",
-        []() { CUDADriver::get_instance().context_pop_current(NULL); });
-
-  m.def("push_cuda_context",
-        []() { CUDAContext::get_instance().make_current(); });
-#endif
-
   // Type system
 
   py::class_<Type>(m, "Type").def("to_string", &Type::to_string);

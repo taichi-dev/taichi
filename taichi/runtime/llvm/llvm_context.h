@@ -135,6 +135,9 @@ class TaichiLLVMContext {
 
   void delete_functions_of_snode_tree(int id);
 
+  void add_struct_for_func(llvm::Module *module, int tls_size);
+
+  static std::string get_struct_for_func_name(int tls_size);
  private:
   std::unique_ptr<llvm::Module> clone_module_to_context(
       llvm::Module *module,

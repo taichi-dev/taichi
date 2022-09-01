@@ -860,6 +860,73 @@ TaichiLLVMContext::ThreadLocalData::~ThreadLocalData() {
   thread_safe_llvm_context.reset();
 }
 
+void TaichiLLVMContext::add_struct_for_func(llvm::Module *module,
+                                            int tls_size) {
+  // Note that on CUDA local array allocation must have a compile-time
+  // constant size. Therefore, instead of passing in the tls_buffer_size
+  // argument, we directly clone the "parallel_struct_for" function and
+  // replace the "alignas(8) char tls_buffer[1]" statement with "alignas(8)
+  // char tls_buffer[tls_buffer_size]" at compile time.
+  auto func_name = get_struct_for_func_name(tls_size);
+  if (module->getFunction(func_name)) {
+    return;
+  }
+  auto struct_for_func = module->getFunction("parallel_struct_for");
+  auto &llvm_context = module->getContext();
+  auto value_map = llvm::ValueToValueMapTy();
+  auto patched_struct_for_func =
+      llvm::CloneFunction(struct_for_func, value_map);
+  patched_struct_for_func->setName(func_name);
+
+  int num_found_alloca = 0;
+  llvm::AllocaInst *alloca = nullptr;
+
+  auto char_type = llvm::Type::getInt8Ty(llvm_context);
+
+  // Find the "1" in "char tls_buffer[1]" and replace it with
+  // "tls_buffer_size"
+  for (auto &bb : *patched_struct_for_func) {
+    for (llvm::Instruction &inst : bb) {
+      auto now_alloca = llvm::dyn_cast<AllocaInst>(&inst);
+      if (!now_alloca ||
+#ifdef TI_LLVM_15
+          now_alloca->getAlign().value() != 8
+#else
+          now_alloca->getAlignment() != 8
+#endif
+      )
+        continue;
+      auto alloca_type = now_alloca->getAllocatedType();
+      // Allocated type should be array [1 x i8]
+      if (alloca_type->isArrayTy() && alloca_type->getArrayNumElements() == 1 &&
+          alloca_type->getArrayElementType() == char_type) {
+        alloca = now_alloca;
+        num_found_alloca++;
+      }
+    }
+  }
+  // There should be **exactly** one replacement.
+  TI_ASSERT(num_found_alloca == 1 && alloca);
+  auto new_type = llvm::ArrayType::get(char_type, tls_size);
+  {
+    llvm::IRBuilder<> builder(alloca);
+    auto *new_alloca = builder.CreateAlloca(new_type);
+    new_alloca->setAlignment(Align(8));
+    TI_ASSERT(alloca->hasOneUse());
+    auto *gep = llvm::cast<llvm::GetElementPtrInst>(alloca->user_back());
+    TI_ASSERT(gep->getPointerOperand() == alloca);
+    std::vector<Value *> indices(gep->idx_begin(), gep->idx_end());
+    builder.SetInsertPoint(gep);
+    auto *new_gep = builder.CreateInBoundsGEP(new_type, new_alloca, indices);
+    gep->replaceAllUsesWith(new_gep);
+    gep->eraseFromParent();
+    alloca->eraseFromParent();
+  }
+}
+std::string TaichiLLVMContext::get_struct_for_func_name(int tls_size) {
+  return "parallel_struct_for_" + std::to_string(tls_size);
+}
+
 TI_REGISTER_TASK(make_slim_libdevice);
 
 }  // namespace lang

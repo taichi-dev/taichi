@@ -92,7 +92,6 @@ def count_primes(n: int) -> int:
 ```bash
 time python count_primes.py
 ```
-
    *The calculation speed is six times up (2.235/0.363).*
 
 ```bash
@@ -216,7 +215,6 @@ print(compute_lcs(a_numpy, b_numpy))
 ```bash
 time python lcs.py
 ```
-
    *The system prints the length of the LCS, along with the execution time.*
 
 ```bash

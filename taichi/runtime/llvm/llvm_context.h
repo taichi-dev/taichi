@@ -33,7 +33,8 @@ class TaichiLLVMContext {
     std::unordered_map<int, std::unique_ptr<llvm::Module>> struct_modules;
     ThreadLocalData(std::unique_ptr<llvm::orc::ThreadSafeContext> ctx);
     ~ThreadLocalData();
-    std::unique_ptr<llvm::Module> struct_module{nullptr}; //TODO: To be deleted
+    std::unique_ptr<llvm::Module> struct_module{nullptr};  // TODO: To be
+                                                           // deleted
   };
   CompileConfig *config_;
 

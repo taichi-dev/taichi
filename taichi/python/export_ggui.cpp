@@ -290,10 +290,6 @@ struct PyCanvas {
     canvas->set_image({img});
   }
 
-  void set_image_texture(Texture *texture) {
-    canvas->set_image(texture);
-  }
-
   void scene(PyScene &scene) {
     canvas->scene(scene.scene);
   }
@@ -503,7 +499,6 @@ void export_ggui(py::module &m) {
   py::class_<PyCanvas>(m, "PyCanvas")
       .def("set_background_color", &PyCanvas::set_background_color)
       .def("set_image", &PyCanvas::set_image)
-      .def("set_image_texture", &PyCanvas::set_image_texture)
       .def("triangles", &PyCanvas::triangles)
       .def("lines", &PyCanvas::lines)
       .def("circles", &PyCanvas::circles)

@@ -45,29 +45,6 @@ inline CleanCachePolicy string_to_clean_cache_policy(const std::string &str) {
   return Never;
 }
 
-template <typename BackendSpecificMetadata>
-struct KernelMetadata {
-  using ExtendDataPtr = BackendSpecificMetadata *;
-
-  std::size_t size{0};          // byte
-  std::time_t created_at{0};    // millsec
-  std::time_t last_used_at{0};  // millsec
-  ExtendDataPtr extend_data{nullptr};
-
-  TI_IO_DEF(size, created_at, last_used_at);
-};
-
-template <typename BackendSpecificKernelMetadata>
-struct Metadata {
-  using KernelMetadata = struct KernelMetadata<BackendSpecificKernelMetadata>;
-
-  Version version{};
-  std::size_t size{0};  // byte
-  std::unordered_map<std::string, KernelMetadata> kernels;
-
-  TI_IO_DEF(version, size, kernels);
-};
-
 template <typename MetadataType>
 struct CacheCleanerUtils {
   using KernelMetaData = typename MetadataType::KernelMetadata;

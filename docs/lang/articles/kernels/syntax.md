@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Kernels and functions
 
-Taichi is embedded in Python, the code you have written for Taichi is also valid Python code, except they are compiled by Taichi's JIT compiler and executed on Taichi's backends, not by the Python interpreter. Hence we need a way to differentiate the code for Taichi from the code for Python. We use the two decorators `@ti.kernel` and `@ti.func` for this:
+Taichi is embedded in Python, the code you have written for Taichi is also valid Python code, hence we need a way to differentiate the code for Taichi from the code for Python. We use the two decorators `@ti.kernel` and `@ti.func` for this:
 
 + Functions decorated with `@ti.kernel` are called kernels.
 + Functions decorated with `@ti.func` are called Taichi functions.
@@ -27,9 +27,9 @@ def partial_sum(n: int) -> float:  # sum 1/i**2 from 1 to n
     return total
 ```
 
-In the above code, the function `inv_square` is decorated by `@ti.func`, hence it's a Taichi function; the function `partial_sum` is decorated by `@ti.kernel`, hence it's a kernel. The Taichi function `inv_square` is called by the kernel `partial_sum`.
+In the above code, the function `inv_square` is a Taichi function since it's decorated by `@ti.func`; the function `partial_sum` is a kernel since it's decorated by `@ti.kernel`. The Taichi function `inv_square` is called by the kernel `partial_sum`.
 
-You may have noticed that the argument and return in the kernel `partial_sum` are both type hinted, while those of the Taichi function `inv_square` are not. In native Python type hinting is a suggested but not mandatory feature, but in the Taichi language you *must add type hints for arguments and returns of a kernel*. When there are no arguments or no returns in a kernel, the corresponding type hinting can be omitted.
+You may have noticed that the argument and return in the kernel `partial_sum` are both type hinted, while those of the Taichi function `inv_square` are not. In native Python, type hinting is a suggested but not mandatory feature, but in the Taichi language you *must add type hints for arguments and returns of a kernel*. When there are no arguments or no returns in a kernel, the corresponding type hinting can be omitted.
 
 Another point worth a mentioning is, if you try to call `inv_square` out of the Taichi scope, Taichi will raise an error. For example:
 

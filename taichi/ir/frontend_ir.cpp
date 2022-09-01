@@ -475,7 +475,7 @@ bool IndexExpression::is_ndarray() const {
 }
 
 bool IndexExpression::is_tensor() const {
-  return is_local() && var->ret_type->is<TensorType>();
+  return var->ret_type->is<TensorType>();
 }
 
 bool IndexExpression::is_local() const {

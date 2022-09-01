@@ -455,9 +455,7 @@ def test_draw_lines():
         
     render()
     if (platform.system() == 'Darwin'):
-        # FIXME: Use lower tolerance when macOS ggui particle radius is the same with other platform
-        verify_image(window.get_image_buffer_as_numpy(), 'test_draw_lines',
-                     1.0)
+        verify_image(window.get_image_buffer_as_numpy(), 'test_draw_lines.mac')
     else:
         verify_image(window.get_image_buffer_as_numpy(), 'test_draw_lines')
     window.destroy()

@@ -735,8 +735,9 @@ TaichiLLVMContext::ThreadLocalData *TaichiLLVMContext::get_this_thread_data() {
     std::stringstream ss;
     ss << tid;
     TI_TRACE("Creating thread local data for thread {}", ss.str());
-    per_thread_data_[tid] = std::make_unique<ThreadLocalData>(std::make_unique<llvm::orc::ThreadSafeContext>(
-        std::make_unique<llvm::LLVMContext>()));
+    per_thread_data_[tid] = std::make_unique<ThreadLocalData>(
+        std::make_unique<llvm::orc::ThreadSafeContext>(
+            std::make_unique<llvm::LLVMContext>()));
   }
   return per_thread_data_[tid].get();
 }

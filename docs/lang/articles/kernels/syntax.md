@@ -86,15 +86,9 @@ In the following example, `x, y` are passed to `my_kernel` by values:
 ```python
 @ti.kernel
 def my_kernel(x: int, y: float):
-    x += 1
-    y += 1.0
     print(x + y)
 
-x = 1
-y = 1.0
-my_kernel(x, y)  # prints 4.0
-
-print(x, y)  # prints 1, 1.0
+my_kernel(1, 1.0)  # prints 4.0
 ```
 
 You can also pass NumPy's `ndarray` as arguments to a kernel, as in the following example:

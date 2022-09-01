@@ -631,7 +631,8 @@ void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access,
   }
   for (int i = 0; i < num_nodes; i++) {
     if (i != start_node) {
-      nodes[i]->reaching_definition_analysis(after_lower_access, real_matrix_enabled);
+      nodes[i]->reaching_definition_analysis(after_lower_access,
+                                             real_matrix_enabled);
     }
     nodes[i]->reach_in.clear();
     nodes[i]->reach_out = nodes[i]->reach_gen;
@@ -858,7 +859,8 @@ bool ControlFlowGraph::dead_store_elimination(
 
 std::unordered_set<SNode *> ControlFlowGraph::gather_loaded_snodes() {
   TI_AUTO_PROF;
-  reaching_definition_analysis(/*after_lower_access=*/false, /*real_matrix=*/false);
+  reaching_definition_analysis(/*after_lower_access=*/false,
+                               /*real_matrix=*/false);
   const int num_nodes = size();
   std::unordered_set<SNode *> snodes;
 

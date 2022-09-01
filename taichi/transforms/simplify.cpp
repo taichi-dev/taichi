@@ -636,8 +636,8 @@ void full_simplify(IRNode *root,
       // not modified.
       if (config.opt_level > 0 && (first_iteration || modified) &&
           config.cfg_optimization &&
-          cfg_optimization(root, args.after_lower_access,
-                           args.autodiff_enabled, config.real_matrix))
+          cfg_optimization(root, args.after_lower_access, args.autodiff_enabled,
+                           config.real_matrix))
         modified = true;
       first_iteration = false;
       if (!modified)

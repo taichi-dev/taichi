@@ -115,7 +115,7 @@ The array `x` is modified by `my_kernel` since it's passed by reference.
 
 :::note
 
-We skip discussing the usage of `ti.template()` as type hints, it's related to meta-programming and is a bit advanced topic for this stage, see [here](../advanced/meta.md#template-metaprogramming) for more infomation.
+We skip the discussion of `ti.template()` as type hints here, it's related to meta-programming and is a bit advanced topic for this stage, see [here](../advanced/meta.md#template-metaprogramming) for more infomation.
 
 :::
 

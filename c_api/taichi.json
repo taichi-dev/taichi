@@ -1198,6 +1198,274 @@
                     ]
                 }
             ]
+        },
+        {
+            "name": "taichi/taichi_ggui.h",
+            "required_modules": [
+                "taichi/taichi_core.h"
+            ],
+            "declarations": [
+                {
+                    "name": "window",
+                    "is_extension": true,
+                    "type": "handle",
+                    "is_dispatchable": true
+                },
+                {
+                    "name": "canvas",
+                    "is_extension": true,
+                    "type": "handle",
+                    "is_dispatchable": false
+                },
+                {
+                    "name": "orientation",
+                    "is_extension": true,
+                    "type": "enumeration",
+                    "cases":  {
+                        "portrait": 0,
+                        "landscape": 1
+                    }
+                },
+                {
+                    "name": "window_create_info",
+                    "is_extension": true,
+                    "type": "structure",
+                    "fields": [
+                        {
+                            "name": "title",
+                            "type": "const char*"
+                        },
+                        {
+                            "name": "width",
+                            "type": "uint32_t"
+                        },
+                        {
+                            "name": "height",
+                            "type": "uint32_t"
+                        },
+                        {
+                            "type": "enumeration.orientation"
+                        }
+                    ]
+                },
+                {
+                    "name": "window_state",
+                    "is_extension": true,
+                    "type": "structure",
+                    "fields": [
+                        {
+                            "name": "cursor_position",
+                            "type": "float",
+                            "count": "2"
+                        },
+                        {
+                            "name": "wheel_delta",
+                            "type": "float",
+                            "count": "2"
+                        },
+                        {
+                            "name": "pressed_keys",
+                            "type": "uint32_t",
+                            "count": "32"
+                        },
+                        {
+                            "name": "released_keys",
+                            "type": "uint32_t",
+                            "count": "32"
+                        },
+                        {
+                            "name": "down_keys",
+                            "type": "uint32_t",
+                            "count": "32"
+                        }
+                    ]
+                },
+                {
+                    "name": "matrix4x4",
+                    "is_extension": true,
+                    "type": "structure",
+                    "fields": [
+                        {
+                            "name": "components",
+                            "type": "float",
+                            "count": 16
+                        }
+                    ]
+                },
+                {
+                    "name": "polygon_mode",
+                    "is_extension": true,
+                    "type": "enumeration",
+                    "cases": {
+                        "triangles": 0,
+                        "wireframe": 1,
+                        "lines": 2,
+                        "points": 3
+                    }
+                },
+                {
+                    "name": "point_light",
+                    "is_extension": true,
+                    "type": "structure",
+                    "fields": [
+                        {
+                            "name": "color",
+                            "type": "float",
+                            "count": 3
+                        },
+                        {
+                            "name": "radius",
+                            "type": "float"
+                        }
+                    ]
+                },
+                {
+                    "name": "scene_light",
+                    "is_extension": true,
+                    "type": "structure",
+                    "fields": [
+                        {
+                            "name": "ambient_color",
+                            "type": "float",
+                            "count": 3
+                        },
+                        {
+                            "name": "point_light_count",
+                            "type": "uint32_t"
+                        },
+                        {
+                            "name": "point_lights",
+                            "type": "structure.point_light",
+                            "count": 3
+                        }
+                    ]
+                },
+                {
+                    "name": "scene_object",
+                    "is_extension": true,
+                    "type": "structure",
+                    "fields": [
+                        {
+                            "type": "enumeration.polygon_mode"
+                        },
+                        {
+                            "name": "indices",
+                            "type": "structure.nd_array"
+                        },
+                        {
+                            "name": "positions",
+                            "type": "structure.nd_array"
+                        },
+                        {
+                            "name": "texcoords",
+                            "type": "structure.nd_array"
+                        },
+                        {
+                            "name": "normals",
+                            "type": "structure.nd_array"
+                        }
+                    ]
+                },
+                {
+                    "name": "create_window",
+                    "is_extension": true,
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "name": "@return",
+                            "type": "handle.window"
+                        },
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "name": "create_info",
+                            "type": "structure.window_create_info"
+                        }
+                    ]
+                },
+                {
+                    "name": "destroy_window",
+                    "is_extension": true,
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "type": "handle.window"
+                        }
+                    ]
+                },
+                {
+                    "name": "get_window_state",
+                    "is_extension": true,
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "type": "handle.window"
+                        },
+                        {
+                            "type": "structure.window_state",
+                            "by_mut": true
+                        }
+                    ]
+                },
+                {
+                    "name": "begin_frame",
+                    "is_extension": true,
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "name": "@return",
+                            "type": "handle.canvas"
+                        },
+                        {
+                            "type": "handle.window"
+                        }
+                    ]
+                },
+                {
+                    "name": "end_frame",
+                    "is_extension": true,
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "name": "@return",
+                            "type": "handle.canvas"
+                        }
+                    ]
+                },
+                {
+                    "name": "draw_scene",
+                    "is_extension": true,
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "type": "handle.canvas"
+                        },
+                        {
+                            "name": "camera_matrix",
+                            "type": "structure.matrix4x4"
+                        },
+                        {
+                            "name": "scene_light_count",
+                            "type": "uint32_t"
+                        },
+                        {
+                            "name": "scene_light",
+                            "type": "structure.scene_light",
+                            "count": "scene_light_count"
+                        },
+                        {
+                            "name": "scene_object_count",
+                            "type": "uint32_t"
+                        },
+                        {
+                            "name": "scene_objects",
+                            "type": "structure.scene_object",
+                            "count": "scene_object_count"
+                        }
+                    ]
+                }
+            ]
         }
     ]
 }

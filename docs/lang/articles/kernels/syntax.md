@@ -16,11 +16,11 @@ import taichi as ti
 ti.init(arch=ti.cpu)
 
 @ti.func
-def inv_square(x):
+def inv_square(x):  # a Taichi function
     return 1.0 / (x * x)
 
 @ti.kernel
-def partial_sum(n: int) -> float:  # sum 1/i**2 from 1 to n
+def partial_sum(n: int) -> float:  # a kernel
     total = 0.0
     for i in range(1, n + 1):
         total += inv_square(n)

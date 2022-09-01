@@ -88,7 +88,7 @@ In the following example, `x, y` are passed to `my_kernel` by values:
 def my_kernel(x: int, y: float):
     print(x + y)
 
-my_kernel(1, 1.0)  # prints 4.0
+my_kernel(1, 1.0)  # prints 2.0
 ```
 
 You can also pass a NumPy's `ndarray` or a Pytorch's `tensor` as an argument to a kernel using `ti.types.ndarray()` as the type hint, Taichi knows its shape and data type and use these attributes. For example:

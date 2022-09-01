@@ -98,9 +98,8 @@ import numpy as np
 import taichi as ti
 ti.init(arch=ti.cpu)
 
-x = np.array([1, 2, 3])
-y = np.array([4, 5, 6])
-
+x = np.array([1, 2, 3], dtype=np.int32)
+y = np.array([4, 5, 6], dtype=np.int32)
 
 @ti.kernel
 def my_kernel(x: ti.types.ndarray(), y: ti.types.ndarray()):

@@ -6,7 +6,7 @@ sidebar_position: 1
 
 Taichi is embedded in Python, the code you have written for Taichi look like valid Python code, hence we need a way to differentiate the code for Taichi from the code for Python. We use the two decorators `@ti.kernel` and `@ti.func` for this:
 
-+ Functions decorated with `@ti.kernel` are called Taichi kernels (called kernel for short).
++ Functions decorated with `@ti.kernel` are called Taichi kernels (called kernel(s) for short).
 + Functions decorated with `@ti.func` are called Taichi functions.
 
 Let's see an example:

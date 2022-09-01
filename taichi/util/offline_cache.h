@@ -9,6 +9,7 @@
 
 #include "taichi/common/core.h"
 #include "taichi/util/io.h"
+#include "taichi/util/lock.h"
 
 namespace taichi {
 namespace lang {

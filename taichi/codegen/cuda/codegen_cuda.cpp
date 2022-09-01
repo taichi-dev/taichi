@@ -66,7 +66,9 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
                                llvm::Type::getInt8PtrTy(*llvm_context)));
   }
 
-  std::tuple<llvm::Value *, llvm::Type *> create_value_and_type(llvm::Value *value, DataType dt) {
+  std::tuple<llvm::Value *, llvm::Type *> create_value_and_type(
+      llvm::Value *value,
+      DataType dt) {
     auto value_type = tlctx->get_data_type(dt);
     if (dt->is_primitive(PrimitiveTypeID::f32) ||
         dt->is_primitive(PrimitiveTypeID::f16)) {
@@ -106,7 +108,8 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
           auto elem_type = dtype->get_element_type();
           for (int i = 0; i < dtype->get_num_elements(); ++i) {
             auto elem_value = builder->CreateExtractElement(value, i);
-            auto [casted_value, elem_value_type] = create_value_and_type(elem_value, elem_type);
+            auto [casted_value, elem_value_type] =
+                create_value_and_type(elem_value, elem_type);
             types.push_back(elem_value_type);
             values.push_back(casted_value);
           }
@@ -130,7 +133,7 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
         formats += "%s";
       }
       TI_ASSERT_INFO(num_contents < 32,
-                   "CUDA `print()` doesn't support more than 32 entries");
+                     "CUDA `print()` doesn't support more than 32 entries");
     }
 
     llvm_val[stmt] = create_print(formats, types, values);

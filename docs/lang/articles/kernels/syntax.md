@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Kernels and functions
 
-Taichi is embedded in Python, the code you have written for Taichi look like valid Python code, hence we need a way to differentiate the code for Taichi from the code for Python. We use the two decorators `@ti.kernel` and `@ti.func` for this:
+Taichi is embedded in Python, the code you have written for Taichi looks like valid Python code, hence we need a way to differentiate the code for Taichi from the code for Python. We use the two decorators `@ti.kernel` and `@ti.func` for this:
 
 + Functions decorated with `@ti.kernel` are called Taichi kernels (called kernel(s) for short).
 + Functions decorated with `@ti.func` are called Taichi functions.
@@ -29,7 +29,7 @@ def partial_sum(n: int) -> float:  # a kernel
 
 In the above code, the function `inv_square` is a Taichi function since it's decorated by `@ti.func`, while the function `partial_sum` is a kernel since it's decorated by `@ti.kernel`. The Taichi function `inv_square` is called by the kernel `partial_sum`.
 
-You may have noticed that the argument and return in the kernel `partial_sum` are both type hinted, while those in the Taichi function `inv_square` are not. In native Python, type hinting is a suggested but not mandatory syntax, but in the Taichi language *this is a mandatory syntax*: you must add type hints for arguments and returns of a kernel. When there are no arguments (or returns) in a kernel, the corresponding type hinting can be omitted.
+You may have noticed that the argument and return value in the **kernel** `partial_sum` are both type hinted, while those in the **Taichi function** `inv_square` are not. In native Python, type hinting is a suggested but not mandatory syntax, but in the Taichi language *this is a mandatory syntax*: you must add type hints for arguments and returned values of a kernel. When there are no arguments or `return` statement in a kernel, the corresponding type hinting can be omitted.
 
 Another point worth mentioning is, if you try to call `inv_square` out of the Taichi scope, Taichi will raise a syntax error. For example:
 
@@ -45,6 +45,20 @@ print(inv_square(1.0))  # syntax error!
 ```
 
 Here by "out of the Taichi scope" we mean the scope that is not inside a kernel or a Taichi function. We shall also use the term *Python scope* for short of this.
+
+:::tip IMPORTANT
+
+We give the following definition:
+
+1. The code inside a kernel or a Taichi function is in the Taichi scope. The code in the Taichi scope is compiled by Taichi's runtime and executed in parallel on CPU or GPU devices for high-performance computation.
+
+   Taichi scope corresponds to the device side in CUDA.
+
+2. Code outside of the Taichi scope is in the Python scope. The code in the Python scope is native Python and executed by Python's virtual machine, not by Taichi's runtime.
+
+   Python scope corresponds to the host side in CUDA.
+
+:::
 
 As you have seen, there are a few differences between kernels and Taichi functions. We now explain their differences and the roles they play in a program and in more detail.
 

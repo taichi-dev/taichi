@@ -237,7 +237,6 @@ def test_set_image():
     render()
     verify_image(window.get_image_buffer_as_numpy(), 'test_set_image')
 
-    
     window.destroy()
 
 

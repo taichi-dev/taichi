@@ -61,8 +61,7 @@ struct CacheCleanerUtils<LlvmOfflineCache> {
 
   // To load metadata from file
   static bool load_metadata(MetadataType &result, const std::string &filepath) {
-    auto ok = read_from_binary_file(result, filepath);
-    return ok;
+    return read_from_binary_file(result, filepath);
   }
 
   // To save metadata as file

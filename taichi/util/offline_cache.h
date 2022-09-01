@@ -31,16 +31,15 @@ enum CleanCachePolicy {
 };
 
 inline CleanCachePolicy string_to_clean_cache_policy(const std::string &str) {
-  if (str == "never")
+  if (str == "never") {
     return Never;
-  if (str == "version")
+  } else if (str == "version") {
     return OnlyOldVersion;
-  if (str == "lru")
+  } else if (str == "lru") {
     return LRU;
-  if (str == "fifo")
+  } else if (str == "fifo") {
     return FIFO;
-
-  TI_WARN("Invalid cache cleaning policy, options: 'never', 'version', 'lru' and 'fifo'");
+  }
   return Never;
 }
 
@@ -63,6 +62,8 @@ struct Metadata {
   Version version{};
   std::size_t size{0};  // byte
   std::unordered_map<std::string, KernelMetadata> kernels;
+
+  TI_IO_DEF(version, size, kernels);
 };
 
 template <typename MetadataType>

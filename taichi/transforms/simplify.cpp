@@ -140,7 +140,7 @@ class BasicBlockSimplify : public IRVisitor {
 
     // step 0: eliminate empty extraction
     if (stmt->bit_begin == stmt->bit_end) {
-      auto zero = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(0));
+      auto zero = Stmt::make<ConstStmt>(TypedConstant(0));
       stmt->replace_usages_with(zero.get());
       modifier.insert_after(stmt, std::move(zero));
       modifier.erase(stmt);
@@ -196,9 +196,8 @@ class BasicBlockSimplify : public IRVisitor {
               modifier.insert_after(stmt, std::move(offset_stmt));
             } else {
               if (offset != 0) {
-                auto offset_const =
-                    Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(
-                        TypedConstant(PrimitiveType::i32, offset)));
+                auto offset_const = Stmt::make<ConstStmt>(
+                    TypedConstant(PrimitiveType::i32, offset));
                 auto sum = Stmt::make<BinaryOpStmt>(
                     BinaryOpType::add, load_addr, offset_const.get());
                 stmt->input = sum.get();
@@ -256,11 +255,10 @@ class BasicBlockSimplify : public IRVisitor {
     }
 
     // Lower into a series of adds and muls.
-    auto sum = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(0));
+    auto sum = Stmt::make<ConstStmt>(TypedConstant(0));
     auto stride_product = 1;
     for (int i = (int)stmt->inputs.size() - 1; i >= 0; i--) {
-      auto stride_stmt =
-          Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(stride_product));
+      auto stride_stmt = Stmt::make<ConstStmt>(TypedConstant(stride_product));
       auto mul = Stmt::make<BinaryOpStmt>(BinaryOpType::mul, stmt->inputs[i],
                                           stride_stmt.get());
       auto newsum =
@@ -275,7 +273,7 @@ class BasicBlockSimplify : public IRVisitor {
     // Mode.
     bool debug = config.debug;
     if (debug) {
-      auto zero = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(0));
+      auto zero = Stmt::make<ConstStmt>(TypedConstant(0));
       auto check_sum =
           Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_ge, sum.get(), zero.get());
       auto assert = Stmt::make<AssertStmt>(
@@ -424,9 +422,7 @@ class BasicBlockSimplify : public IRVisitor {
           }
           if (clause[i]->is<LocalStoreStmt>()) {
             auto store = clause[i]->as<LocalStoreStmt>();
-            auto lanes = LaneAttribute<LocalAddress>();
-            lanes.push_back(LocalAddress(store->dest, 0));
-            auto load = Stmt::make<LocalLoadStmt>(lanes);
+            auto load = Stmt::make<LocalLoadStmt>(store->dest);
             modifier.type_check(load.get(), config);
             auto select = Stmt::make<TernaryOpStmt>(
                 TernaryOpType::select, if_stmt->cond,

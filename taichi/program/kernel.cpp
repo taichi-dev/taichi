@@ -397,7 +397,8 @@ void Kernel::init(Program &program,
 
   this->arch = program.config.arch;
 
-  if (autodiff_mode == AutodiffMode::kNone) {
+  if (autodiff_mode == AutodiffMode::kNone ||
+      autodiff_mode == AutodiffMode::kCheckAutodiffValid) {
     name = primal_name;
   } else if (autodiff_mode == AutodiffMode::kForward) {
     name = primal_name + "_forward_grad";

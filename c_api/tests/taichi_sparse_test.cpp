@@ -1,6 +1,6 @@
 #include "gtest/gtest.h"
 #include "c_api_test_utils.h"
-#include "taichi/taichi_core.h"
+#include "taichi/cpp/taichi.hpp"
 
 static void taichi_sparse_test(TiArch arch) {
   const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
@@ -8,42 +8,34 @@ static void taichi_sparse_test(TiArch arch) {
   std::stringstream aot_mod_ss;
   aot_mod_ss << folder_dir;
 
-  TiRuntime runtime = ti_create_runtime(arch);
+  ti::Runtime runtime(arch);
 
   // Load Aot and Kernel
-  TiAotModule aot_mod = ti_load_aot_module(runtime, aot_mod_ss.str().c_str());
+  ti::AotModule aot_mod = runtime.load_aot_module(aot_mod_ss.str());
 
-  TiKernel k_fill_img = ti_get_aot_module_kernel(aot_mod, "fill_img");
-  TiKernel k_block1_deactivate_all =
-      ti_get_aot_module_kernel(aot_mod, "block1_deactivate_all");
-  TiKernel k_activate = ti_get_aot_module_kernel(aot_mod, "activate");
-  TiKernel k_paint = ti_get_aot_module_kernel(aot_mod, "paint");
-  TiKernel k_check_img_value =
-      ti_get_aot_module_kernel(aot_mod, "check_img_value");
+  ti::Kernel k_fill_img = aot_mod.get_kernel("fill_img");
+  ti::Kernel k_block1_deactivate_all =
+      aot_mod.get_kernel("block1_deactivate_all");
+  ti::Kernel k_activate = aot_mod.get_kernel("activate");
+  ti::Kernel k_paint = aot_mod.get_kernel("paint");
+  ti::Kernel k_check_img_value = aot_mod.get_kernel("check_img_value");
 
-  constexpr uint32_t arg_count = 1;
-  TiArgument args[arg_count];
-
-  ti_launch_kernel(runtime, k_fill_img, 0, &args[0]);
+  k_fill_img.launch();
   for (int i = 0; i < 100; i++) {
     float val = 0.05f * i;
-    TiArgument base_arg = {.type = TiArgumentType::TI_ARGUMENT_TYPE_F32,
-                           .value = {.f32 = val}};
-    args[0] = std::move(base_arg);
 
-    ti_launch_kernel(runtime, k_block1_deactivate_all, 0, &args[0]);
-    ti_launch_kernel(runtime, k_activate, arg_count, &args[0]);
-    ti_launch_kernel(runtime, k_paint, 0, &args[0]);
+    k_block1_deactivate_all.launch();
+    k_activate[0] = val;
+    k_activate.launch();
+    k_paint.launch();
   }
 
   // Accuracy Check
-  ti_launch_kernel(runtime, k_check_img_value, 0, &args[0]);
+  k_check_img_value.launch();
+  runtime.wait();
 
   // Check Results
   capi::utils::check_runtime_error(runtime);
-
-  ti_destroy_aot_module(aot_mod);
-  ti_destroy_runtime(runtime);
 }
 
 TEST(CapiTaichiSparseTest, Cuda) {

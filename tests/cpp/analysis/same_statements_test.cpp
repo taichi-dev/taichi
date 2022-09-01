@@ -10,11 +10,11 @@ namespace lang {
 TEST(SameStatements, TestSameBlock) {
   auto block = std::make_unique<Block>();
 
-  auto global_load_addr = block->push_back<GlobalTemporaryStmt>(
-      0, TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32));
+  auto global_load_addr =
+      block->push_back<GlobalTemporaryStmt>(0, PrimitiveType::i32);
   auto global_load = block->push_back<GlobalLoadStmt>(global_load_addr);
-  auto global_store_addr = block->push_back<GlobalTemporaryStmt>(
-      4, TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32));
+  auto global_store_addr =
+      block->push_back<GlobalTemporaryStmt>(4, PrimitiveType::i32);
   auto one = block->push_back<ConstStmt>(TypedConstant(1));
   auto if_stmt = block->push_back<IfStmt>(one)->as<IfStmt>();
 
@@ -92,7 +92,7 @@ TEST(SameStatements, TestSameSnodeLookup) {
   auto block = std::make_unique<Block>();
 
   auto get_root = block->push_back<GetRootStmt>();
-  auto zero = block->push_back<ConstStmt>(LaneAttribute<TypedConstant>(0));
+  auto zero = block->push_back<ConstStmt>(TypedConstant(0));
   SNode root(0, SNodeType::root);
   auto &child = root.insert_children(SNodeType::dense);
   auto lookup1 =

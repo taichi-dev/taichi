@@ -39,7 +39,7 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
 FunctionType LlvmProgramImpl::compile(Kernel *kernel,
                                       OffloadedStmt *offloaded) {
   auto codegen = KernelCodeGen::create(kernel->arch, kernel, offloaded);
-  return codegen->codegen();
+  return codegen->compile_to_function();
 }
 
 std::unique_ptr<llvm::Module>
@@ -145,7 +145,8 @@ void LlvmProgramImpl::cache_kernel(
   kernel_cache.kernel_key = kernel_key;
   for (const auto &data : data_list) {
     kernel_cache.compiled_data_list.emplace_back(
-        data.tasks, llvm::CloneModule(*data.module));
+        data.tasks, llvm::CloneModule(*data.module), data.used_tree_ids,
+        data.struct_for_tls_sizes);
   }
   kernel_cache.args = std::move(args);
   kernel_cache.created_at = std::time(nullptr);

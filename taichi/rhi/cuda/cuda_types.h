@@ -434,11 +434,12 @@ typedef struct CUDA_EXTERNAL_SEMAPHORE_WAIT_PARAMS_st {
  */
 #define CUDA_ARRAY3D_COLOR_ATTACHMENT 0x20
 
-#endif
-
 // copy from cusparse.h
 struct cusparseContext;
 typedef struct cusparseContext *cusparseHandle_t;
+
+struct cusparseMatDescr;
+typedef struct cusparseMatDescr *cusparseMatDescr_t;
 
 struct cusparseDnVecDescr;
 struct cusparseSpMatDescr;
@@ -500,3 +501,31 @@ typedef enum {
   CUSPARSE_SPMV_CSR_ALG2 = 3,
   CUSPARSE_SPMV_COO_ALG2 = 4
 } cusparseSpMVAlg_t;
+
+typedef enum {
+  CUSPARSE_MATRIX_TYPE_GENERAL = 0,
+  CUSPARSE_MATRIX_TYPE_SYMMETRIC = 1,
+  CUSPARSE_MATRIX_TYPE_HERMITIAN = 2,
+  CUSPARSE_MATRIX_TYPE_TRIANGULAR = 3
+} cusparseMatrixType_t;
+
+typedef enum {
+  CUSPARSE_FILL_MODE_LOWER = 0,
+  CUSPARSE_FILL_MODE_UPPER = 1
+} cusparseFillMode_t;
+
+typedef enum {
+  CUSPARSE_DIAG_TYPE_NON_UNIT = 0,
+  CUSPARSE_DIAG_TYPE_UNIT = 1
+} cusparseDiagType_t;
+
+// copy from cusolver.h
+typedef enum libraryPropertyType_t {
+  MAJOR_VERSION,
+  MINOR_VERSION,
+  PATCH_LEVEL
+} libraryPropertyType;
+
+struct cusolverSpContext;
+typedef struct cusolverSpContext *cusolverSpHandle_t;
+#endif

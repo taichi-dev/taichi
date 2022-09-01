@@ -84,10 +84,8 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(LocalLoadStmt *stmt) override {
-    TI_ASSERT_INFO(stmt->src.size() == 1, "Vectorization has been disabled.");
-    TI_ASSERT(stmt->src[0].var->is<AllocaStmt>() ||
-              stmt->src[0].var->is<PtrOffsetStmt>());
-    if (auto ptr_offset_stmt = stmt->src[0].var->cast<PtrOffsetStmt>()) {
+    TI_ASSERT(stmt->src->is<AllocaStmt>() || stmt->src->is<PtrOffsetStmt>());
+    if (auto ptr_offset_stmt = stmt->src->cast<PtrOffsetStmt>()) {
       TI_ASSERT(ptr_offset_stmt->origin->is<AllocaStmt>() ||
                 ptr_offset_stmt->origin->is<GlobalTemporaryStmt>());
       if (auto alloca_stmt = ptr_offset_stmt->origin->cast<AllocaStmt>()) {
@@ -105,7 +103,7 @@ class TypeCheck : public IRVisitor {
         stmt->ret_type = lookup;
       }
     } else {
-      auto lookup = stmt->src[0].var->ret_type;
+      auto lookup = stmt->src->ret_type;
       stmt->ret_type = lookup;
     }
   }
@@ -126,17 +124,14 @@ class TypeCheck : public IRVisitor {
 
   void visit(SNodeOpStmt *stmt) override {
     if (stmt->op_type == SNodeOpType::get_addr) {
-      stmt->ret_type =
-          TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::u64);
+      stmt->ret_type = PrimitiveType::u64;
     } else {
-      stmt->ret_type =
-          TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
+      stmt->ret_type = PrimitiveType::i32;
     }
   }
 
   void visit(ExternalTensorShapeAlongAxisStmt *stmt) override {
-    stmt->ret_type =
-        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
+    stmt->ret_type = PrimitiveType::i32;
   }
 
   void visit(GlobalPtrStmt *stmt) override {
@@ -178,10 +173,8 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(RangeForStmt *stmt) override {
-    mark_as_if_const(stmt->begin, TypeFactory::create_vector_or_scalar_type(
-                                      1, PrimitiveType::i32));
-    mark_as_if_const(stmt->end, TypeFactory::create_vector_or_scalar_type(
-                                    1, PrimitiveType::i32));
+    mark_as_if_const(stmt->begin, PrimitiveType::i32);
+    mark_as_if_const(stmt->end, PrimitiveType::i32);
     stmt->body->accept(this);
   }
 
@@ -417,23 +410,20 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(LoopIndexStmt *stmt) override {
-    stmt->ret_type =
-        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
+    stmt->ret_type = PrimitiveType::i32;
   }
 
   void visit(LoopLinearIndexStmt *stmt) override {
-    stmt->ret_type =
-        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
+    stmt->ret_type = PrimitiveType::i32;
   }
 
   void visit(BlockCornerIndexStmt *stmt) override {
-    stmt->ret_type =
-        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
+    stmt->ret_type = PrimitiveType::i32;
   }
 
   void visit(GetRootStmt *stmt) override {
     stmt->ret_type =
-        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::gen, true);
+        TypeFactory::get_instance().get_pointer_type(PrimitiveType::gen);
   }
 
   void visit(SNodeLookupStmt *stmt) override {
@@ -445,8 +435,8 @@ class TypeCheck : public IRVisitor {
           TypeFactory::get_instance().get_pointer_type(element_type, true);
       stmt->ret_type = pointer_type;
     } else {
-      stmt->ret_type = TypeFactory::create_vector_or_scalar_type(
-          1, PrimitiveType::gen, true);
+      stmt->ret_type =
+          TypeFactory::get_instance().get_pointer_type(PrimitiveType::gen);
     }
   }
 
@@ -522,8 +512,7 @@ class TypeCheck : public IRVisitor {
 
   void visit(InternalFuncStmt *stmt) override {
     // TODO: support return type specification
-    stmt->ret_type =
-        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
+    stmt->ret_type = PrimitiveType::i32;
   }
 
   void visit(BitStructStoreStmt *stmt) override {

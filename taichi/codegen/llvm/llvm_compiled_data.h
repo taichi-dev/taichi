@@ -23,11 +23,18 @@ class OffloadedTask {
 struct LLVMCompiledData {
   std::vector<OffloadedTask> tasks;
   std::unique_ptr<llvm::Module> module{nullptr};
+  std::unordered_set<int> used_tree_ids;
+  std::unordered_set<int> struct_for_tls_sizes;
   LLVMCompiledData() = default;
   LLVMCompiledData(LLVMCompiledData &&) = default;
   LLVMCompiledData(std::vector<OffloadedTask> tasks,
-                   std::unique_ptr<llvm::Module> module)
-      : tasks(std::move(tasks)), module(std::move(module)) {
+                   std::unique_ptr<llvm::Module> module,
+                   std::unordered_set<int> used_tree_ids,
+                   std::unordered_set<int> struct_for_tls_sizes)
+      : tasks(std::move(tasks)),
+        module(std::move(module)),
+        used_tree_ids(std::move(used_tree_ids)),
+        struct_for_tls_sizes(std::move(struct_for_tls_sizes)) {
   }
   LLVMCompiledData clone() const;
   TI_IO_DEF(tasks);

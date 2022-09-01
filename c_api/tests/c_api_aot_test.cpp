@@ -1,6 +1,6 @@
 #include "gtest/gtest.h"
 #include "c_api_test_utils.h"
-#include "taichi/taichi_core.h"
+#include "taichi/cpp/taichi.hpp"
 
 static void kernel_aot_test(TiArch arch) {
   uint32_t kArrLen = 32;
@@ -11,50 +11,26 @@ static void kernel_aot_test(TiArch arch) {
   std::stringstream aot_mod_ss;
   aot_mod_ss << folder_dir;
 
-  TiMemoryAllocateInfo alloc_info;
-  alloc_info.size = kArrLen * sizeof(int32_t);
-  alloc_info.host_write = false;
-  alloc_info.host_read = false;
-  alloc_info.export_sharing = false;
-  alloc_info.usage = TiMemoryUsageFlagBits::TI_MEMORY_USAGE_STORAGE_BIT;
+  ti::Runtime runtime(arch);
 
-  TiRuntime runtime = ti_create_runtime(arch);
+  ti::NdArray<int32_t> arg1_array =
+      runtime.allocate_ndarray<int32_t>({kArrLen}, {1}, true);
+  ti::AotModule aot_mod = runtime.load_aot_module(aot_mod_ss.str().c_str());
+  ti::Kernel k_run = aot_mod.get_kernel("run");
 
-  // Load Aot and Kernel
-  TiAotModule aot_mod = ti_load_aot_module(runtime, aot_mod_ss.str().c_str());
-  TiKernel k_run = ti_get_aot_module_kernel(aot_mod, "run");
-
-  // Prepare Arguments
-  TiArgument arg0 = {.type = TiArgumentType::TI_ARGUMENT_TYPE_I32,
-                     .value = {.i32 = arg0_val}};
-
-  TiMemory memory = ti_allocate_memory(runtime, &alloc_info);
-  TiNdArray arg_array = {.memory = memory,
-                         .shape = {.dim_count = 1, .dims = {kArrLen}},
-                         .elem_shape = {.dim_count = 1, .dims = {1}},
-                         .elem_type = TiDataType::TI_DATA_TYPE_I32};
-
-  TiArgumentValue arg_value = {.ndarray = std::move(arg_array)};
-
-  TiArgument arg1 = {.type = TiArgumentType::TI_ARGUMENT_TYPE_NDARRAY,
-                     .value = std::move(arg_value)};
-
-  // Kernel Execution
-  constexpr uint32_t arg_count = 2;
-  TiArgument args[arg_count] = {std::move(arg0), std::move(arg1)};
-
-  ti_launch_kernel(runtime, k_run, arg_count, &args[0]);
+  k_run[0] = arg0_val;
+  k_run[1] = arg1_array;
+  k_run.launch();
+  runtime.wait();
 
   // Check Results
-  auto *data = reinterpret_cast<int32_t *>(ti_map_memory(runtime, memory));
+  int32_t *data = reinterpret_cast<int32_t *>(arg1_array.map());
 
   for (int i = 0; i < kArrLen; ++i) {
     EXPECT_EQ(data[i], i);
   }
 
-  ti_unmap_memory(runtime, memory);
-  ti_destroy_aot_module(aot_mod);
-  ti_destroy_runtime(runtime);
+  arg1_array.unmap();
 }
 
 static void field_aot_test(TiArch arch) {
@@ -65,49 +41,34 @@ static void field_aot_test(TiArch arch) {
   std::stringstream aot_mod_ss;
   aot_mod_ss << folder_dir;
 
-  TiRuntime runtime = ti_create_runtime(arch);
+  ti::Runtime runtime(arch);
+  ti::AotModule aot_mod = runtime.load_aot_module(aot_mod_ss.str().c_str());
 
-  // Load Aot and Kernel
-  TiAotModule aot_mod = ti_load_aot_module(runtime, aot_mod_ss.str().c_str());
+  ti::Kernel k_init_fields = aot_mod.get_kernel("init_fields");
+  ti::Kernel k_check_init_x = aot_mod.get_kernel("check_init_x");
+  ti::Kernel k_check_init_y = aot_mod.get_kernel("check_init_y");
+  ti::Kernel k_deactivate_pointer_fields =
+      aot_mod.get_kernel("deactivate_pointer_fields");
+  ti::Kernel k_activate_pointer_fields =
+      aot_mod.get_kernel("activate_pointer_fields");
+  ti::Kernel k_check_deactivate_pointer_fields =
+      aot_mod.get_kernel("check_deactivate_pointer_fields");
+  ti::Kernel k_check_activate_pointer_fields =
+      aot_mod.get_kernel("check_activate_pointer_fields");
 
-  TiKernel k_init_fields = ti_get_aot_module_kernel(aot_mod, "init_fields");
-  TiKernel k_check_init_x = ti_get_aot_module_kernel(aot_mod, "check_init_x");
-  TiKernel k_check_init_y = ti_get_aot_module_kernel(aot_mod, "check_init_y");
-  TiKernel k_deactivate_pointer_fields =
-      ti_get_aot_module_kernel(aot_mod, "deactivate_pointer_fields");
-  TiKernel k_activate_pointer_fields =
-      ti_get_aot_module_kernel(aot_mod, "activate_pointer_fields");
-  TiKernel k_check_deactivate_pointer_fields =
-      ti_get_aot_module_kernel(aot_mod, "check_deactivate_pointer_fields");
-  TiKernel k_check_activate_pointer_fields =
-      ti_get_aot_module_kernel(aot_mod, "check_activate_pointer_fields");
-
-  // Prepare Arguments
-  TiArgument base_arg = {.type = TiArgumentType::TI_ARGUMENT_TYPE_I32,
-                         .value = {.i32 = base_val}};
-
-  constexpr uint32_t arg_count = 1;
-  TiArgument args[arg_count] = {std::move(base_arg)};
-
-  // Kernel Execution
-  ti_launch_kernel(runtime, k_init_fields, arg_count, &args[0]);
-  ti_launch_kernel(runtime, k_check_init_x, arg_count, &args[0]);
-  ti_launch_kernel(runtime, k_check_init_y, 0 /*arg_count*/, &args[0]);
-
-  ti_launch_kernel(runtime, k_deactivate_pointer_fields, 0 /*arg_count*/,
-                   &args[0]);
-  ti_launch_kernel(runtime, k_check_deactivate_pointer_fields, 0 /*arg_count*/,
-                   &args[0]);
-  ti_launch_kernel(runtime, k_activate_pointer_fields, 0 /*arg_count*/,
-                   &args[0]);
-  ti_launch_kernel(runtime, k_check_activate_pointer_fields, 0 /*arg_count*/,
-                   &args[0]);
+  k_init_fields[0] = base_val;
+  k_init_fields.launch();
+  k_check_init_x[0] = base_val;
+  k_check_init_x.launch();
+  k_check_init_y.launch();
+  k_deactivate_pointer_fields.launch();
+  k_check_deactivate_pointer_fields.launch();
+  k_activate_pointer_fields.launch();
+  k_check_activate_pointer_fields.launch();
+  runtime.wait();
 
   // Check Results
   capi::utils::check_runtime_error(runtime);
-
-  ti_destroy_aot_module(aot_mod);
-  ti_destroy_runtime(runtime);
 }
 
 TEST(CapiAotTest, CpuField) {
@@ -130,6 +91,20 @@ TEST(CapiAotTest, CpuKernel) {
 TEST(CapiAotTest, CudaKernel) {
   if (capi::utils::is_cuda_available()) {
     TiArch arch = TiArch::TI_ARCH_CUDA;
+    kernel_aot_test(arch);
+  }
+}
+
+TEST(CapiAotTest, VulkanKernel) {
+  if (capi::utils::is_vulkan_available()) {
+    TiArch arch = TiArch::TI_ARCH_VULKAN;
+    kernel_aot_test(arch);
+  }
+}
+
+TEST(CapiAotTest, OpenglKernel) {
+  if (capi::utils::is_opengl_available()) {
+    TiArch arch = TiArch::TI_ARCH_OPENGL;
     kernel_aot_test(arch);
   }
 }

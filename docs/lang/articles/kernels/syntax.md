@@ -44,7 +44,7 @@ def inv_square(x):
 print(inv_square(1.0))  # syntax error!
 ```
 
-Here by "out of the Taichi scope" we mean the scope that is not inside a kernel nor a Taichi function.
+Here by "out of the Taichi scope" we mean the scope that is not inside a kernel or a Taichi function.
 
 As you have seen, there are a few differences between kernels and Taichi functions. We now explain the roles these two kinds of functions play in a program and their differences in more detail.
 
@@ -53,7 +53,7 @@ As you have seen, there are a few differences between kernels and Taichi functio
 
 A kernel is the entry point from which Taichi's runtime takes control and the smallest unit for runtime execution. You can define multiple kernels in your program, and these kernels are *independent* from each other. You call a kernel the same way you call a Python function, and you are allowed to switch back and forth between Taichi's runtime and Python's virtual machine.
 
-For example you can call our kernel function `partial_sum` in the above section from a Python function:
+For example you can call our kernel function `partial_sum` in the above section from inside a Python function:
 
 ```python
 def main():
@@ -77,7 +77,7 @@ You must *not* call a kernel from inside another kernel or from inside a Taichi 
 
 A kernel can take multiple arguments, but unlike in native Python, you cannot pass an arbitrary Python object to a kernel. This is because Python objects can be highly dynamic and hold data and resources only known to the Python interpreter.
 
-Kernels support scalar, `ti.Matrix/ti.Vector` (In Taichi vectors are essentially matrices), `ti.types.ndarray()` and `ti.template()` as argument types. This allows you to pass data from the Python scope to the Taichi scope.
+Kernel support scalar, `ti.Matrix/ti.Vector` (In Taichi vectors are essentially matrices), `ti.types.ndarray()` and `ti.template()` as argument types. This allows you to pass data from the Python scope to the Taichi scope.
 
 Arguments of type scalar or `ti.Matrix` are passed by value, while arguments of type `ti.types.ndarray()` and `ti.template()` are passed by reference, modifying to the arguments will also affect the original values.
 

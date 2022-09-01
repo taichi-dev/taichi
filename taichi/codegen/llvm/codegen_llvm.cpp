@@ -1850,31 +1850,33 @@ void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
       "getelementptr <10 x i32>* %1, 0, 1" is interpreted as "%1 + 16(aligned)"
 
     However, this does not fit with Taichi's Ndarray semantics. We will have to
-    do pointer arithmetic to manually calculate the offset.
-
-    TODO(zhanlue): swtich to GEP method if tensor_type is already aligned
+    do pointer arithmetics to manually calculate the offset.
   */
   DataType operand_dtype = argload->ret_type.ptr_removed();
   if (operand_dtype->is<TensorType>() and
       !operand_dtype->cast<TensorType>()->is_array()) {
     // Access PtrOffset via: base_ptr + offset * sizeof(element)
-    auto origin_address = builder->CreatePtrToInt(
-        llvm_val[stmt->base_ptr], llvm::Type::getInt64Ty(*llvm_context));
+    auto primitive_type = operand_dtype.get_element_type();
+    auto primitive_ptr = builder->CreateBitCast(
+        llvm_val[stmt->base_ptr],
+        llvm::PointerType::get(tlctx->get_data_type(primitive_type), 0));
+
     auto address_offset = builder->CreateSExt(
         linear_index, llvm::Type::getInt64Ty(*llvm_context));
 
-    TensorType *tensor_type = operand_dtype->cast<TensorType>();
-    int packed_tensor_size = data_type_size(tensor_type->get_element_type()) *
-                             tensor_type->get_num_elements();
-
-    auto offset_in_bytes = builder->CreateMul(
+    auto offset = builder->CreateMul(
         address_offset,
-        tlctx->get_constant(get_data_type<int64>(), packed_tensor_size));
+        tlctx->get_constant(
+            get_data_type<int64>(),
+            operand_dtype->cast<TensorType>()->get_num_elements()));
 
-    auto target_address = builder->CreateAdd(origin_address, offset_in_bytes);
-    auto dt = stmt->ret_type.ptr_removed();
-    llvm_val[stmt] = builder->CreateIntToPtr(
-        target_address, llvm::PointerType::get(tlctx->get_data_type(dt), 0));
+    auto ret_ptr = builder->CreateGEP(
+#ifdef TI_LLVM_15
+        tlctx->get_data_type(primitive_type),
+#endif
+        primitive_ptr, offset);
+    llvm_val[stmt] = builder->CreateBitCast(
+        ret_ptr, llvm::PointerType::get(tlctx->get_data_type(dt), 0));
 
   } else {
     auto base_ty = tlctx->get_data_type(dt);

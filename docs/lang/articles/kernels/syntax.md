@@ -91,7 +91,7 @@ def my_kernel(x: int, y: float):
 my_kernel(1, 1.0)  # prints 2.0
 ```
 
-You can also pass a NumPy's `ndarray` or a Pytorch's `tensor` as an argument to a kernel using `ti.types.ndarray()` as the type hint, Taichi knows its shape and data type and use these attributes. For example:
+You can also pass a NumPy's `ndarray` or a Pytorch's `tensor` as an argument to a kernel, using `ti.types.ndarray()` as the type hint, Taichi knows the shape and data type of such an array and you can access these attributes in a kernel. For example:
 
 ```python
 import numpy as np

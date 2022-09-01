@@ -8,6 +8,7 @@
 #include <unordered_map>
 
 #include "taichi/common/core.h"
+#include "taichi/common/cleanup.h"
 #include "taichi/util/io.h"
 #include "taichi/util/lock.h"
 

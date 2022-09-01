@@ -8,7 +8,6 @@
 #include "taichi/common/serialization.h"
 #include "taichi/runtime/llvm/launch_arg_info.h"
 #include "taichi/program/kernel.h"
-#include "taichi/util/io.h"
 #include "taichi/util/offline_cache.h"
 #include "taichi/codegen/llvm/llvm_compiled_data.h"
 

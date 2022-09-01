@@ -199,7 +199,6 @@ def kernel_1():
 def kernel_2():
     print(a)
 
-
 kernel_1()  # 1
 a = 2
 kernel_1()  # 1
@@ -217,23 +216,19 @@ Let's see an example:
 def foo_py():
     print("I'm a python function")
 
-
 @ti.func
 def foo_1():
     print("I'm a taichi function called by another taichi function")
-
 
 @ti.func
 def foo_2():
     print("I'm a taichi function called by a kernel")
     foo_1()
 
-
 @ti.kernel
 def foo_kernel():
     print("I'm a kernel calling a taichi function")
     foo_2()
-
 
 foo_py()
 #foo_func() # You cannot call a taichi function from within the python scope
@@ -268,9 +263,9 @@ However, you still *cannot* have more than one `return` statement in a Taichi fu
 | Type hint arguments                                   | Required                            | Recommended                                    |
 | Type hint return values                               | Required                            | Recommended                                    |
 | Return type                                           | Scalar/`ti.Vector`/`ti.Matrix`      | Scalar/`ti.Vector`/`ti.Matrix`/`ti.Struct`/... |
-| Maximum number of elements in arguments               | <ul><li>8 (for OpenGL)</li><li>64 (for others)</li></ul> | Unlimited                                      |
+| Maximum number of elements in arguments               | <ul><li>32 (for OpenGL)</li><li>64 (for others)</li></ul> | Unlimited                                      |
 | Maximum number of return values in a return statement | 1                                   | Unlimited                                      |
-| Maximum number of elements in return values           | 30                                  | Unlimited                                      |
+
 
 ## Key terms
 

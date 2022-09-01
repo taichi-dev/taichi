@@ -79,7 +79,7 @@ A kernel can take multiple arguments, but unlike in native Python, you cannot pa
 
 Kernel support scalar, `ti.Matrix/ti.Vector` (In Taichi vectors are essentially matrices), `ti.types.ndarray()` and `ti.template()` as argument types. This allows you to pass data from the Python scope to the Taichi scope.
 
-Arguments of type scalar or `ti.Matrix` are passed by value, while arguments of type `ti.types.ndarray()` and `ti.template()` are passed by reference, modifying to the arguments will also affect the original values.
+Arguments of type scalar or `ti.Matrix` are passed by value, while arguments of type `ti.types.ndarray()` or `ti.template()` are passed by reference, in the latter case modifying to the arguments will also affect the original values.
 
 In the following example, `x, y` are passed to `my_kernel` by values:
 

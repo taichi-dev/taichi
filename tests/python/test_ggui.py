@@ -388,6 +388,7 @@ def test_fetching_color_attachment():
     verify_image(window.get_image_buffer_as_numpy(), 'test_set_image')
     window.destroy()
 
+
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)
 def test_fetching_depth_attachment():
@@ -395,10 +396,10 @@ def test_fetching_depth_attachment():
     canvas = window.get_canvas()
     scene = ti.ui.Scene()
     camera = ti.ui.make_camera()
-    
+
     ball_center = ti.Vector.field(3, dtype=float, shape=(1, ))
     ball_center[0] = ti.math.vec3(0, 0, 0.5)
-    
+
     def render():
         camera.position(0.0, 0.0, 1)
         camera.lookat(0.0, 0.0, 0)
@@ -407,13 +408,11 @@ def test_fetching_depth_attachment():
         scene.ambient_light((0.5, 0.5, 0.5))
         scene.particles(ball_center, radius=0.05, color=(0.5, 0.42, 0.8))
         canvas.scene(scene)
-        
+
     render()
     if (platform.system() == 'Darwin'):
         # FIXME: Use lower tolerance when macOS ggui particle radius is the same with other platform
-        verify_image(window.get_depth_buffer_as_numpy(), 'test_depth',
-                     1.0)
+        verify_image(window.get_depth_buffer_as_numpy(), 'test_depth', 1.0)
     else:
         verify_image(window.get_depth_buffer_as_numpy(), 'test_depth')
     window.destroy()
-

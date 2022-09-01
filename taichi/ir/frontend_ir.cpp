@@ -207,7 +207,7 @@ void BinaryOpExpression::type_check(CompileConfig *config) {
     ret_type = PrimitiveType::i32;
     return;
   }
-  if (is_shift_op(type)) {
+  if (is_shift_op(type) || (type == BinaryOpType::pow && is_integral(rhs_type))) {
     ret_type = lhs_type;
     return;
   }

@@ -2,6 +2,8 @@
 sidebar_position: 2
 ---
 
+# Accelerate Python with Taichi
+
 Taichi is a domain-specific language *embedded* in Python. One of its key features is that Taichi can accelerate computation-intensive Python programs and help these programs [achieve comparable performance to C/C++ or even CUDA](https://docs.taichi-lang.org/blog/is-taichi-lang-comparable-to-or-even-faster-than-cuda). This makes Taichi much better positioned in the area of scientific computation.
 
 In the following sections, we provide two examples to give you a sense as to how much acceleration Taichi can bring to your Python programs.
@@ -42,15 +44,15 @@ print(count_primes(1000000))
 1. Save the code as **count_prime.py** and run the following command in your terminal:
 
    ```bash
-   time python count_primes.py
+time python count_primes.py
    ```
    *The count of prime numbers along with the execution time appears on the screen. It takes 2.235s to run this program.*
    ```bash
-   78498
+78498
 
-   real        0m2.235s
-   user        0m2.235s
-   sys        0m0.000s
+real        0m2.235s
+user        0m2.235s
+sys        0m0.000s
    ```
 
 2.  Now, let's change the code a bit: import Taichi to your Python code and initialize it using the CPU backend:

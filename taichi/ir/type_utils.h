@@ -76,6 +76,10 @@ inline PrimitiveTypeID get_primitive_data_type() {
   }
 }
 
+inline bool is_tensor(DataType dt) {
+  return dt->is<TensorType>();
+}
+
 inline bool is_quant(DataType dt) {
   return dt->is<QuantIntType>() || dt->is<QuantFixedType>() ||
          dt->is<QuantFloatType>();

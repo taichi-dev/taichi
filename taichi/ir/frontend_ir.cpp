@@ -370,8 +370,10 @@ void ExternalTensorExpression::flatten(FlattenContext *ctx) {
   // turned-on by default.
   //                 The scalarization should happen after
   //                 irpass::lower_access()
-  auto prim_dt = dt.get_element_type();
-
+  auto prim_dt = dt;
+  if (!get_compile_config()->real_matrix) {
+    prim_dt = dt.get_element_type();
+  }
   auto ptr = Stmt::make<ArgLoadStmt>(arg_id, prim_dt, /*is_ptr=*/true);
   ptr->tb = tb;
   ctx->push_back(std::move(ptr));
@@ -415,8 +417,11 @@ Stmt *make_ndarray_access(Expression::FlattenContext *ctx,
   }
   flatten_lvalue(var, ctx);
   auto expr = var.cast<ExternalTensorExpression>();
-  return ctx->push_back(std::make_unique<ExternalPtrStmt>(
-      expr->stmt, index_stmts, expr->dt.get_shape(), expr->element_dim));
+  auto external_ptr_stmt = std::make_unique<ExternalPtrStmt>(
+      expr->stmt, index_stmts, expr->dt.get_shape(), expr->element_dim);
+  external_ptr_stmt->ret_type = expr->dt;
+
+  return ctx->push_back(std::move(external_ptr_stmt));
 }
 
 Stmt *make_tensor_access(Expression::FlattenContext *ctx,
@@ -470,8 +475,8 @@ bool IndexExpression::is_ndarray() const {
   return var.is<ExternalTensorExpression>();
 }
 
-bool IndexExpression::is_local_tensor() const {
-  return is_local() && var->ret_type->is<TensorType>();
+bool IndexExpression::is_tensor() const {
+  return var->ret_type->is<TensorType>();
 }
 
 bool IndexExpression::is_local() const {
@@ -479,6 +484,16 @@ bool IndexExpression::is_local() const {
 }
 
 bool IndexExpression::is_global() const {
+  // Special case: Indexing into TensorType-element of
+  // ExternalPtrStmt/GlobalPtrStmt In this case, we should treat them as global
+  // ptrs
+  if (var.is<IndexExpression>()) {
+    if (var.cast<IndexExpression>()->is_field() ||
+        var.cast<IndexExpression>()->is_ndarray()) {
+      return true;
+    }
+  }
+
   // Only Ndarray and Field comes outside from a kernel
   return is_field() || is_ndarray();
 }
@@ -500,7 +515,7 @@ void IndexExpression::type_check(CompileConfig *) {
       // Access to a Tensor
       ret_type = var.cast<ExternalTensorExpression>()->dt;
     }
-  } else if (is_local_tensor()) {  // local tensor
+  } else if (is_tensor()) {  // local tensor
     ret_type = var->ret_type->cast<TensorType>()->get_element_type();
   } else {
     throw TaichiTypeError(
@@ -524,7 +539,7 @@ void IndexExpression::flatten(FlattenContext *ctx) {
     stmt = make_field_access(ctx, var, indices);
   } else if (is_ndarray()) {
     stmt = make_ndarray_access(ctx, var, indices);
-  } else if (is_local_tensor()) {
+  } else if (is_tensor()) {
     stmt = make_tensor_access(
         ctx, var, indices, var->ret_type->cast<TensorType>()->get_shape(), 1);
   } else {

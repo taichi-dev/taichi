@@ -77,6 +77,12 @@ PtrOffsetStmt::PtrOffsetStmt(Stmt *origin_input, Stmt *offset_input) {
     element_type().set_is_pointer(true);
   } else if (origin->is<GlobalPtrStmt>()) {
     element_type() = origin->cast<GlobalPtrStmt>()->ret_type;
+  } else if (origin->is<ExternalPtrStmt>()) {
+    TI_ASSERT(origin->cast<ExternalPtrStmt>()->ret_type->is<TensorType>());
+    auto tensor_type =
+        origin->cast<ExternalPtrStmt>()->ret_type->cast<TensorType>();
+    element_type() = tensor_type->get_element_type();
+    element_type().set_is_pointer(true);
   } else {
     TI_ERROR(
         "PtrOffsetStmt must be used for AllocaStmt / GlobalTemporaryStmt "

@@ -465,9 +465,6 @@ class ExternalTensorExpression : public Expression {
     }
   }
 
-  void type_check(CompileConfig *config) override {
-  }
-
   void flatten(FlattenContext *ctx) override;
 
   TI_DEFINE_ACCEPT_FOR_EXPRESSION
@@ -571,7 +568,7 @@ class IndexExpression : public Expression {
  private:
   bool is_field() const;
   bool is_ndarray() const;
-  bool is_local_tensor() const;
+  bool is_tensor() const;
 };
 
 class StrideExpression : public Expression {

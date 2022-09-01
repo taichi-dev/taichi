@@ -42,6 +42,7 @@ class Expression {
   virtual void type_check(CompileConfig *config) {
     // TODO: make it pure virtual after type_check for all expressions are
     // implemented
+    config_ = config;
   }
 
   virtual void accept(ExpressionVisitor *visitor) = 0;
@@ -62,6 +63,14 @@ class Expression {
   }
 
   std::string get_attribute(const std::string &key) const;
+
+  CompileConfig *get_compile_config() {
+    TI_ASSERT(config_ != nullptr);
+    return config_;
+  }
+
+ private:
+  CompileConfig *config_ = nullptr;
 };
 
 class ExprGroup {

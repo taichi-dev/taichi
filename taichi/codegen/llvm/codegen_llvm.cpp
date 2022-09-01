@@ -1723,7 +1723,7 @@ void TaskCodeGenLLVM::visit(GetChStmt *stmt) {
 }
 
 void TaskCodeGenLLVM::visit(PtrOffsetStmt *stmt) {
-  if (stmt->is_local_ptr()) {
+  if (stmt->offset_used_as_index()) {
 #ifdef TI_LLVM_15
     // FIXME: get ptr_ty from taichi instead of llvm.
     llvm::Type *ptr_ty = nullptr;
@@ -1737,28 +1737,53 @@ void TaskCodeGenLLVM::visit(PtrOffsetStmt *stmt) {
       ptr_ty = gv->getValueType();
     else if (auto *gep = llvm::dyn_cast<llvm::GEPOperator>(val))
       ptr_ty = gep->getResultElementType();
-    else if (stmt->origin->is<GlobalTemporaryStmt>()) {
-      auto *tmpo_stmt = stmt->origin->cast<GlobalTemporaryStmt>();
-      if (tmpo_stmt->ret_type->is<TensorType>()) {
+    else if (stmt->origin->is<GlobalTemporaryStmt>() ||
+             stmt->origin->is<ExternalPtrStmt>()) {
+      if (stmt->origin->ret_type->is<TensorType>()) {
         ptr_ty = tlctx->get_data_type(
-            tmpo_stmt->ret_type->cast<TensorType>()->get_element_type());
+            stmt->origin->ret_type->cast<TensorType>()->get_element_type());
       } else {
-        ptr_ty = tlctx->get_data_type(tmpo_stmt->ret_type.ptr_removed());
+        ptr_ty = tlctx->get_data_type(stmt->origin->ret_type.ptr_removed());
       }
     }
     TI_ASSERT(ptr_ty);
 
-    llvm_val[stmt] = builder->CreateGEP(ptr_ty, llvm_val[stmt->origin],
-                                        llvm_val[stmt->offset]);
+    if (stmt->tensor_type_represented_as_primitive_type_ptr()) {
+      llvm_val[stmt] = builder->CreateGEP(ptr_ty, llvm_val[stmt->origin],
+                                          llvm_val[stmt->offset]);
+    } else {
+      llvm_val[stmt] =
+          builder->CreateGEP(ptr_ty, llvm_val[stmt->origin],
+                             {tlctx->get_constant(0), llvm_val[stmt->offset]});
+    }
 #else
-    llvm_val[stmt] =
-        builder->CreateGEP(llvm_val[stmt->origin], llvm_val[stmt->offset]);
+    /*
+        You might have wondered why there's no leading "ConstIntType(0)" in the
+       indices, as you always see "indices = { ConstIntType(0),
+       llvm_val[offsets]...} for most of the GEPs.
+
+        This is because we used AllocaInst with "ArraySize" argument, which will
+       return a pointer to the "PrimitiveType" instead of a pointer to an array
+       of PrimitiveTypes.
+
+        https://llvm.org/doxygen/classllvm_1_1AllocaInst.html#ac68a7586b8be7de3c39531d9eca902e6
+    */
+    if (stmt->tensor_type_represented_as_primitive_type_ptr()) {
+      llvm_val[stmt] =
+          builder->CreateGEP(llvm_val[stmt->origin], llvm_val[stmt->offset]);
+    } else {
+      llvm_val[stmt] =
+          builder->CreateGEP(llvm_val[stmt->origin],
+                             {tlctx->get_constant(0), llvm_val[stmt->offset]});
+    }
 #endif
   } else {
+    // Access PtrOffset via: base_ptr + offset
     auto origin_address = builder->CreatePtrToInt(
         llvm_val[stmt->origin], llvm::Type::getInt64Ty(*llvm_context));
     auto address_offset = builder->CreateSExt(
         llvm_val[stmt->offset], llvm::Type::getInt64Ty(*llvm_context));
+
     auto target_address = builder->CreateAdd(origin_address, address_offset);
     auto dt = stmt->ret_type.ptr_removed();
     llvm_val[stmt] = builder->CreateIntToPtr(
@@ -1771,44 +1796,97 @@ void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
   auto arg_id = argload->arg_id;
   int num_indices = stmt->indices.size();
   std::vector<llvm::Value *> sizes(num_indices);
-  const auto &element_shape = stmt->element_shape;
+  auto dt = stmt->ret_type.ptr_removed();
+  int num_element_indices =
+      dt->is<TensorType>() ? 0 : stmt->element_shape.size();
   const auto layout = stmt->element_dim <= 0 ? ExternalArrayLayout::kAOS
                                              : ExternalArrayLayout::kSOA;
-  const size_t element_shape_index_offset =
-      (layout == ExternalArrayLayout::kAOS) ? num_indices - element_shape.size()
-                                            : 0;
 
-  for (int i = 0; i < num_indices - element_shape.size(); i++) {
+  /*
+    ExternalPtrStmt can be divided into "outter" and "inner" parts.
+
+    For example, "x" is an Ndarray with shape = (5, 5, 6), m=2, n=3.
+    Indexing to a single element of "x" is of form: x[i, j, k][m, n]
+
+    The "outter" part is x[i, j, k], and the "inner" part is [m, n].
+    Shape of the inner part is known at compile time, stored in its ret_type.
+    Shape of the outter part is determined at runtime, passed from the
+    "extra_args".
+
+    "num_indices - num_element_indices" gives how many "extra_args" to read from
+  */
+  int num_array_args = num_indices - num_element_indices;
+  const size_t element_shape_index_offset =
+      (layout == ExternalArrayLayout::kAOS) ? num_array_args : 0;
+
+  for (int i = 0; i < num_array_args; i++) {
     auto raw_arg = create_call(
         "RuntimeContext_get_extra_args",
         {get_context(), tlctx->get_constant(arg_id), tlctx->get_constant(i)});
     sizes[i] = raw_arg;
   }
 
-  auto dt = stmt->ret_type.ptr_removed();
-  auto base_ty = tlctx->get_data_type(dt);
-  auto base = builder->CreateBitCast(llvm_val[stmt->base_ptr],
-                                     llvm::PointerType::get(base_ty, 0));
-
   auto linear_index = tlctx->get_constant(0);
   size_t size_var_index = 0;
   for (int i = 0; i < num_indices; i++) {
     if (i >= element_shape_index_offset &&
-        i < element_shape_index_offset + element_shape.size()) {
-      llvm::Value *size_var =
-          tlctx->get_constant(element_shape[i - element_shape_index_offset]);
+        i < element_shape_index_offset + num_element_indices) {
+      // Indexing TensorType-elements
+      llvm::Value *size_var = tlctx->get_constant(
+          stmt->element_shape[i - element_shape_index_offset]);
       linear_index = builder->CreateMul(linear_index, size_var);
     } else {
+      // Indexing array dimensions
       linear_index = builder->CreateMul(linear_index, sizes[size_var_index++]);
     }
     linear_index = builder->CreateAdd(linear_index, llvm_val[stmt->indices[i]]);
   }
-  TI_ASSERT(size_var_index == num_indices - element_shape.size())
-  llvm_val[stmt] = builder->CreateGEP(
+  TI_ASSERT(size_var_index == num_indices - num_element_indices);
+
+  /*
+    llvm::GEP implicitly indicates alignment when used upon llvm::VectorType.
+    For example:
+
+      "getelementptr <10 x i32>* %1, 0, 1" is interpreted as "%1 + 16(aligned)"
+
+    However, this does not fit with Taichi's Ndarray semantics. We will have to
+    do pointer arithmetic to manually calculate the offset.
+
+    TODO(zhanlue): swtich to GEP method if tensor_type is already aligned
+  */
+  DataType operand_dtype = argload->ret_type.ptr_removed();
+  if (operand_dtype->is<TensorType>() and
+      !operand_dtype->cast<TensorType>()->is_array()) {
+    // Access PtrOffset via: base_ptr + offset * sizeof(element)
+    auto origin_address = builder->CreatePtrToInt(
+        llvm_val[stmt->base_ptr], llvm::Type::getInt64Ty(*llvm_context));
+    auto address_offset = builder->CreateSExt(
+        linear_index, llvm::Type::getInt64Ty(*llvm_context));
+
+    TensorType *tensor_type = operand_dtype->cast<TensorType>();
+    int packed_tensor_size = data_type_size(tensor_type->get_element_type()) *
+                             tensor_type->get_num_elements();
+
+    auto offset_in_bytes = builder->CreateMul(
+        address_offset,
+        tlctx->get_constant(get_data_type<int64>(), packed_tensor_size));
+
+    auto target_address = builder->CreateAdd(origin_address, offset_in_bytes);
+    auto dt = stmt->ret_type.ptr_removed();
+    llvm_val[stmt] = builder->CreateIntToPtr(
+        target_address, llvm::PointerType::get(tlctx->get_data_type(dt), 0));
+
+  } else {
+    auto base_ty = tlctx->get_data_type(dt);
+    auto base = builder->CreateBitCast(llvm_val[stmt->base_ptr],
+                                       llvm::PointerType::get(base_ty, 0));
+
+    llvm_val[stmt] = builder->CreateGEP(
 #ifdef TI_LLVM_15
-      base_ty,
+        base_ty,
 #endif
-      base, linear_index);
+        base, linear_index);
+  }
 }
 
 void TaskCodeGenLLVM::visit(ExternalTensorShapeAlongAxisStmt *stmt) {

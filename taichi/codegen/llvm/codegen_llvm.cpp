@@ -1536,6 +1536,31 @@ llvm::Value *TaskCodeGenLLVM::call(
   return call(builder.get(), prefix + "_" + method, func_arguments);
 }
 
+llvm::Function *TaskCodeGenLLVM::get_struct_function(const std::string &name,
+                                                     int tree_id) {
+  used_tree_ids.insert(tree_id);
+  auto f = tlctx->get_struct_function(name, tree_id);
+  if (!f) {
+    TI_ERROR("Struct function {} not found.", name);
+  }
+  f = llvm::cast<llvm::Function>(
+      module
+          ->getOrInsertFunction(name, f->getFunctionType(), f->getAttributes())
+          .getCallee());
+  return f;
+}
+
+template <typename... Args>
+llvm::Value *TaskCodeGenLLVM::call_struct_func(int tree_id,
+                                               const std::string &func_name,
+                                               Args &&...args) {
+  auto func = get_struct_function(func_name, tree_id);
+  auto arglist = std::vector<llvm::Value *>({args...});
+  check_func_call_signature(func->getFunctionType(), func->getName(), arglist,
+                            builder.get());
+  return builder->CreateCall(func, arglist);
+}
+
 void TaskCodeGenLLVM::visit(GetRootStmt *stmt) {
   if (stmt->root() == nullptr)
     llvm_val[stmt] = builder->CreateBitCast(

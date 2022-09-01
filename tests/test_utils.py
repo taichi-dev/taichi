@@ -217,7 +217,7 @@ def verify_image(image,
         # TODO:Fix this on Windows
         with NamedTemporaryFile(suffix='.png') as fp:
             actual_name = fp.name
-            
+
         ti.tools.imwrite(image, actual_name)
         actual_np = ti.tools.imread(actual_name)
 
@@ -228,9 +228,10 @@ def verify_image(image,
         diff = ground_truth_np - actual_np
         mse = np.mean(diff * diff)
         assert mse <= tolerance  # the pixel values are 0~255
-        
+
         if os.path.isfile(actual_name):
             os.remove(actual_name)
+
 
 def get_rel_eps():
     arch = ti.lang.impl.current_cfg().arch

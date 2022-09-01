@@ -114,7 +114,7 @@ print(count_primes(1000000))
 
 ## Dynamic programming: longest common subsequence
 
-Dynamic programming (DP) is a well-known algorithm. The core philosophy behind it is to sacrifice some storage space for less execution time and store intermediate results to avoid repetitive computation. In the following section, we will walk you through a complete implementation of DP, and demonstrate another area where Taichi can make a real 'acceleration'.
+The core philosophy behind dynamic programming is that it sacrifices some storage space for less execution time and stores intermediate results to avoid repetitive computation. In the following section, we will walk you through a complete implementation of DP, and demonstrate another area where Taichi can make a real 'acceleration'.
 
 The example below follows the philosophy of DP to work out the length of the longest common subsequence (LCS) of two given sequences. For instance, the LCS of sequences a = [**0**, **1**, 0, 2, **4**, **3**, 1, **2**, 1] and b = [4, **0**, **1**, **4**, 5, **3**, 1, **2**],  is [0, 1, 4, 3, 1, 2], and the LCS' length is six. Let's get started:
 

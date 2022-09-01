@@ -98,8 +98,8 @@ import numpy as np
 import taichi as ti
 ti.init(arch=ti.cpu)
 
-x = np.array([1, 2, 3], dtype=np.int32)
-y = np.array([4, 5, 6], dtype=np.int32)
+x = np.array([1, 2, 3])
+y = np.array([4, 5, 6])
 
 @ti.kernel
 def my_kernel(x: ti.types.ndarray(), y: ti.types.ndarray()):
@@ -110,7 +110,7 @@ my_kernel(x, y)
 print(x)  # prints [5, 7, 9]
 ```
 
-The array `x` is modified by `my_kernel` since it's passed by reference.
+You can see the array `x` is modified by `my_kernel` since it's passed by reference.
 
 :::note
 

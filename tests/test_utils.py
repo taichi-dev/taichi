@@ -214,19 +214,23 @@ def verify_image(image,
             __file__).parent) + f"/python/expected/{image_name}.png"
         ground_truth_np = ti.tools.imread(ground_truth_name)
 
+        # TODO:Fix this on Windows
         with NamedTemporaryFile(suffix='.png') as fp:
             actual_name = fp.name
-            ti.tools.imwrite(image, actual_name)
-            actual_np = ti.tools.imread(actual_name)
+            
+        ti.tools.imwrite(image, actual_name)
+        actual_np = ti.tools.imread(actual_name)
 
-            assert len(ground_truth_np.shape) == len(actual_np.shape)
-            for i in range(len(ground_truth_np.shape)):
-                assert ground_truth_np.shape[i] == actual_np.shape[i]
+        assert len(ground_truth_np.shape) == len(actual_np.shape)
+        for i in range(len(ground_truth_np.shape)):
+            assert ground_truth_np.shape[i] == actual_np.shape[i]
 
-            diff = ground_truth_np - actual_np
-            mse = np.mean(diff * diff)
-            assert mse <= tolerance  # the pixel values are 0~255
-
+        diff = ground_truth_np - actual_np
+        mse = np.mean(diff * diff)
+        assert mse <= tolerance  # the pixel values are 0~255
+        
+        if os.path.isfile(actual_name):
+            os.remove(actual_name)
 
 def get_rel_eps():
     arch = ti.lang.impl.current_cfg().arch

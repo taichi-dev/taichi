@@ -433,6 +433,7 @@ def test_draw_lines():
         verify_image(window.get_image_buffer_as_numpy(), 'test_draw_lines')
     window.destroy()
 
+
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)
 def test_draw_part_of_particles():

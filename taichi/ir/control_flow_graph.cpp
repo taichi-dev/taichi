@@ -267,7 +267,11 @@ void CFGNode::reaching_definition_analysis(bool after_lower_access,
 }
 
 bool CFGNode::store_to_load_forwarding(bool after_lower_access,
-                                       bool autodiff_enabled) {
+                                       bool autodiff_enabled,
+                                       bool real_matrix_enabled) {
+  if (real_matrix_enabled)
+    // Disable this for new matrices for now
+    return false;
   bool modified = false;
   for (int i = begin_location; i < end_location; i++) {
     // Store-to-load forwarding
@@ -842,8 +846,8 @@ bool ControlFlowGraph::store_to_load_forwarding(bool after_lower_access,
   const int num_nodes = size();
   bool modified = false;
   for (int i = 0; i < num_nodes; i++) {
-    if (nodes[i]->store_to_load_forwarding(after_lower_access,
-                                           autodiff_enabled))
+    if (nodes[i]->store_to_load_forwarding(after_lower_access, autodiff_enabled,
+                                           real_matrix_enabled))
       modified = true;
   }
   return modified;
@@ -858,7 +862,8 @@ bool ControlFlowGraph::dead_store_elimination(
   const int num_nodes = size();
   bool modified = false;
   for (int i = 0; i < num_nodes; i++) {
-    if (nodes[i]->dead_store_elimination(after_lower_access, real_matrix_enabled))
+    if (nodes[i]->dead_store_elimination(after_lower_access,
+                                         real_matrix_enabled))
       modified = true;
   }
   return modified;

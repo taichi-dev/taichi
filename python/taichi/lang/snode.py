@@ -371,7 +371,8 @@ def append(node, indices, val):
         val (:mod:`~taichi.types`): the data to be appended.
     """
     a = impl.expr_init(
-        _ti_core.expr_snode_append(node._snode.ptr, expr.make_expr_group(indices),
+        _ti_core.expr_snode_append(node._snode.ptr,
+                                   expr.make_expr_group(indices),
                                    expr.Expr(val).ptr))
     return a
 
@@ -428,7 +429,8 @@ def length(node, indices):
         int: the length of cell `node[indices]`.
     """
     return expr.Expr(
-        _ti_core.expr_snode_length(node._snode.ptr, expr.make_expr_group(indices)))
+        _ti_core.expr_snode_length(node._snode.ptr,
+                                   expr.make_expr_group(indices)))
 
 
 def get_addr(f, indices):
@@ -444,7 +446,8 @@ def get_addr(f, indices):
         ti.u64: The memory address of `f[indices]`.
     """
     return expr.Expr(
-        _ti_core.expr_snode_get_addr(f._snode.ptr, expr.make_expr_group(indices)))
+        _ti_core.expr_snode_get_addr(f._snode.ptr,
+                                     expr.make_expr_group(indices)))
 
 
 __all__ = [

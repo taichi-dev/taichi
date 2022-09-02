@@ -260,7 +260,7 @@ A Taichi function can have multiple arguments, supporting scalar, `ti.Matrix/ti.
 
 ### Return values
 
-The return values of a Taichi function can be scalar, `ti.Matrix`, `ti.Vector`, `ti.Struct`, and more. Note that:
+The return values of a Taichi function can be scalars, `ti.Matrix`, `ti.Vector`, `ti.Struct`, or others. Note that:
 
 - Unlike a kernel, a Taichi function can have multiple return values.
 - You do not need (but it is still recommended) to type hint the return values of a Taichi function.

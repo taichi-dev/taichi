@@ -445,7 +445,6 @@ class TypedConstant {
     } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
       val_u64 = value;
     } else {
-      assert(false);
       TI_NOT_IMPLEMENTED
     }
   }

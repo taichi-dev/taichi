@@ -104,7 +104,6 @@ std::vector<uint8_t> global_optimize_module(llvm::Module *module,
 
   module->setDataLayout(target_machine->createDataLayout());
 
-
   module_pass_manager.add(createTargetTransformInfoWrapperPass(
       target_machine->getTargetIRAnalysis()));
   function_pass_manager.add(createTargetTransformInfoWrapperPass(

@@ -27,4 +27,3 @@ extern const char *NumWorkGroupsCBName;
 }  // namespace directx12
 }  // namespace lang
 }  // namespace taichi
-

@@ -23,7 +23,7 @@ bool cfg_optimization(
     if (cfg->store_to_load_forwarding(after_lower_access, autodiff_enabled,
                                       real_matrix_enabled))
       modified = true;
-    if (cfg->dead_store_elimination(after_lower_access, lva_config_opt))
+    if (cfg->dead_store_elimination(after_lower_access, real_matrix_enabled, lva_config_opt))
       modified = true;
     if (modified)
       result_modified = true;

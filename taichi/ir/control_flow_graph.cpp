@@ -399,7 +399,8 @@ void CFGNode::live_variable_analysis(bool after_lower_access) {
   }
 }
 
-bool CFGNode::dead_store_elimination(bool after_lower_access) {
+bool CFGNode::dead_store_elimination(bool after_lower_access,
+                                     bool real_matrix_enabled) {
   bool modified = false;
   std::unordered_set<Stmt *> live_in_this_node;
   std::unordered_set<Stmt *> killed_in_this_node;
@@ -486,8 +487,10 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
       }
     }
     auto load_ptrs = irpass::analysis::get_load_pointers(stmt);
-    if (auto ptr_offset = stmt->cast<PtrOffsetStmt>()) {
-      load_ptrs = std::vector<Stmt *>(1, ptr_offset->origin);
+    if (real_matrix_enabled) {
+      if (auto ptr_offset = stmt->cast<PtrOffsetStmt>()) {
+        load_ptrs = std::vector<Stmt *>(1, ptr_offset->origin);
+      }
     }
     if (load_ptrs.size() == 1 && store_ptrs.empty() &&
         !stmt->is<PtrOffsetStmt>()) {
@@ -848,13 +851,14 @@ bool ControlFlowGraph::store_to_load_forwarding(bool after_lower_access,
 
 bool ControlFlowGraph::dead_store_elimination(
     bool after_lower_access,
+    bool real_matrix_enabled,
     const std::optional<LiveVarAnalysisConfig> &lva_config_opt) {
   TI_AUTO_PROF;
   live_variable_analysis(after_lower_access, lva_config_opt);
   const int num_nodes = size();
   bool modified = false;
   for (int i = 0; i < num_nodes; i++) {
-    if (nodes[i]->dead_store_elimination(after_lower_access))
+    if (nodes[i]->dead_store_elimination(after_lower_access, real_matrix_enabled))
       modified = true;
   }
   return modified;

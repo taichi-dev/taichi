@@ -78,7 +78,7 @@ def main():
 main()
 ```
 
-When there are more than one kernel in a program, Taichi will compile and execute them in the order they are called. The compiled kernels are stored in the cache so that subsequent calls won't invoke re-compilations.
+You can define multiple kernels in your program. They are mutually *independent* of each other and are compiled and executed in the same order as they are first called. The compiled kernels are stored in the cache to save the launch overhead for subsequent calls.
 
 :::caution WARNING
 

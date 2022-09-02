@@ -246,7 +246,7 @@ def foo_kernel():
     foo_2()
 
 foo_py()
-#foo_func() # You cannot call a taichi function from within the python scope
+#foo_func() # You cannot call a Taichi function from within the Python scope
 foo_kernel()
 ```
 

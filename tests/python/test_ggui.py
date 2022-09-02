@@ -926,5 +926,5 @@ def test_wireframe_mode():
         window.get_image_buffer_as_numpy()
         
     render()
-    verify_image(window.get_image_buffer_as_numpy(), 'test_wireframe_mode', regerate_groundtruth_images=True)
+    verify_image(window.get_image_buffer_as_numpy(), 'test_wireframe_mode')
     window.destroy()

@@ -1705,10 +1705,11 @@ void TaskCodeGenLLVM::visit(PtrOffsetStmt *stmt) {
       ptr_ty = alloc->getAllocatedType();
     else if (auto *gv = llvm::dyn_cast<llvm::GlobalVariable>(val))
       ptr_ty = gv->getValueType();
-    else if (auto *gep = llvm::dyn_cast<llvm::GEPOperator>(val))
+    else if (stmt->origin->is<ExternalPtrStmt>()) {
+      ptr_ty = tlctx->get_data_type(stmt->origin->ret_type.ptr_removed());
+    } else if (auto *gep = llvm::dyn_cast<llvm::GEPOperator>(val))
       ptr_ty = gep->getResultElementType();
-    else if (stmt->origin->is<GlobalTemporaryStmt>() ||
-             stmt->origin->is<ExternalPtrStmt>()) {
+    else if (stmt->origin->is<GlobalTemporaryStmt>()) {
       if (stmt->origin->ret_type->is<TensorType>()) {
         ptr_ty = tlctx->get_data_type(
             stmt->origin->ret_type->cast<TensorType>()->get_element_type());
@@ -1823,8 +1824,7 @@ void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
     do pointer arithmetics to manually calculate the offset.
   */
   DataType operand_dtype = argload->ret_type.ptr_removed();
-  if (operand_dtype->is<TensorType>() and
-      !operand_dtype->cast<TensorType>()->is_array()) {
+  if (operand_dtype->is<TensorType>()) {
     // Access PtrOffset via: base_ptr + offset * sizeof(element)
     auto primitive_type = operand_dtype.get_element_type();
     auto primitive_ptr = builder->CreateBitCast(

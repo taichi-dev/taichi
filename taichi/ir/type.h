@@ -185,14 +185,9 @@ class TensorType : public Type {
 
   std::string to_string() const override;
 
-  bool is_array() {
-    return is_array_;
-  }
-
  private:
   std::vector<int> shape_;
   Type *element_{nullptr};
-  bool is_array_ = false;
 };
 
 class QuantIntType : public Type {

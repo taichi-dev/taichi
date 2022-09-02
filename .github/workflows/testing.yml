@@ -484,7 +484,7 @@ jobs:
           - os: windows-2019
             llvmVer : '15'
             archs: "cuda"
-    runs-on: [self-hosted, windows, zhanlue]
+    runs-on: [self-hosted, windows, gpu]
     timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 180 }}
     steps:
       # See also https://github.com/taichi-dev/taichi/issues/4161

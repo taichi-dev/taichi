@@ -1823,8 +1823,7 @@ void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
     do pointer arithmetics to manually calculate the offset.
   */
   DataType operand_dtype = argload->ret_type.ptr_removed();
-  if (operand_dtype->is<TensorType>() and
-      !operand_dtype->cast<TensorType>()->is_array()) {
+  if (operand_dtype->is<TensorType>()) {
     // Access PtrOffset via: base_ptr + offset * sizeof(element)
     auto primitive_type = operand_dtype.get_element_type();
     auto primitive_ptr = builder->CreateBitCast(

@@ -68,7 +68,7 @@ We should not confuse kernels with Taichi functions. Though they belong to the T
 
 As the smallest execution unit in Taichi, a kernel is the entry point from which Taichi's runtime takes control. You call a kernel the same way you call a Python function and can switch back and forth between Taichi's runtime and Python's virtual machine.
 
-For example you can call our kernel function `partial_sum` in the above section from inside a Python function:
+For example, you can call the kernel `partial_sum()` as defined in the above section from inside a Python function:
 
 ```python
 def main():

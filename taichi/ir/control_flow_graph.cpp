@@ -147,7 +147,7 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
     // The UD-chain is inside this node.
     Stmt *result = irpass::analysis::get_store_data(
         block->statements[last_def_position].get());
-    if (!var->is<AllocaStmt>() || var->ret_type->is<TensorType>()) {
+    if (!var->is<AllocaStmt>()) {
       for (int i = last_def_position + 1; i < position; i++) {
         if (!irpass::analysis::same_value(
                 result,
@@ -232,8 +232,7 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
   return result;
 }
 
-void CFGNode::reaching_definition_analysis(bool after_lower_access,
-                                           bool real_matrix_enabled) {
+void CFGNode::reaching_definition_analysis(bool after_lower_access) {
   // Calculate |reach_gen| and |reach_kill|.
   reach_gen.clear();
   reach_kill.clear();
@@ -241,17 +240,6 @@ void CFGNode::reaching_definition_analysis(bool after_lower_access,
     // loop in reversed order
     auto stmt = block->statements[i].get();
     auto data_source_ptrs = irpass::analysis::get_store_destination(stmt);
-    if (real_matrix_enabled) {
-      if (auto local_store = stmt->cast<LocalStoreStmt>()) {
-        if (auto dest = local_store->dest->cast<PtrOffsetStmt>()) {
-          if (auto data = get_store_forwarding_data(dest->origin, i)) {
-            data_source_ptrs = std::vector<Stmt *>(1, data);
-          } else {
-            data_source_ptrs = std::vector<Stmt *>();
-          }
-        }
-      }
-    }
     for (auto data_source_ptr : data_source_ptrs) {
       // stmt provides a data source
       if (after_lower_access && !(data_source_ptr->is<AllocaStmt>())) {
@@ -267,11 +255,7 @@ void CFGNode::reaching_definition_analysis(bool after_lower_access,
 }
 
 bool CFGNode::store_to_load_forwarding(bool after_lower_access,
-                                       bool autodiff_enabled,
-                                       bool real_matrix_enabled) {
-  if (real_matrix_enabled)
-    // Disable this for new matrices for now
-    return false;
+                                       bool autodiff_enabled) {
   bool modified = false;
   for (int i = begin_location; i < end_location; i++) {
     // Store-to-load forwarding
@@ -370,9 +354,6 @@ void CFGNode::live_variable_analysis(bool after_lower_access) {
   for (int i = begin_location; i < end_location; i++) {
     auto stmt = block->statements[i].get();
     auto load_ptrs = irpass::analysis::get_load_pointers(stmt);
-    if (auto ptr_offset = stmt->cast<PtrOffsetStmt>()) {
-      load_ptrs = std::vector<Stmt *>(1, ptr_offset->origin);
-    }
     for (auto &load_ptr : load_ptrs) {
       if (!after_lower_access ||
           (load_ptr->is<AllocaStmt>() || load_ptr->is<AdStackAllocaStmt>())) {
@@ -403,8 +384,7 @@ void CFGNode::live_variable_analysis(bool after_lower_access) {
   }
 }
 
-bool CFGNode::dead_store_elimination(bool after_lower_access,
-                                     bool real_matrix_enabled) {
+bool CFGNode::dead_store_elimination(bool after_lower_access) {
   bool modified = false;
   std::unordered_set<Stmt *> live_in_this_node;
   std::unordered_set<Stmt *> killed_in_this_node;
@@ -491,13 +471,7 @@ bool CFGNode::dead_store_elimination(bool after_lower_access,
       }
     }
     auto load_ptrs = irpass::analysis::get_load_pointers(stmt);
-    if (real_matrix_enabled) {
-      if (auto ptr_offset = stmt->cast<PtrOffsetStmt>()) {
-        load_ptrs = std::vector<Stmt *>(1, ptr_offset->origin);
-      }
-    }
-    if (load_ptrs.size() == 1 && store_ptrs.empty() &&
-        !stmt->is<PtrOffsetStmt>()) {
+    if (load_ptrs.size() == 1 && store_ptrs.empty()) {
       // Identical load elimination
       auto load_ptr = load_ptrs.front();
       if (!after_lower_access ||
@@ -615,8 +589,7 @@ void ControlFlowGraph::print_graph_structure() const {
   }
 }
 
-void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access,
-                                                    bool real_matrix_enabled) {
+void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access) {
   TI_AUTO_PROF;
   const int num_nodes = size();
   std::queue<CFGNode *> to_visit;
@@ -641,8 +614,7 @@ void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access,
   }
   for (int i = 0; i < num_nodes; i++) {
     if (i != start_node) {
-      nodes[i]->reaching_definition_analysis(after_lower_access,
-                                             real_matrix_enabled);
+      nodes[i]->reaching_definition_analysis(after_lower_access);
     }
     nodes[i]->reach_in.clear();
     nodes[i]->reach_out = nodes[i]->reach_gen;
@@ -842,12 +814,14 @@ bool ControlFlowGraph::store_to_load_forwarding(bool after_lower_access,
                                                 bool autodiff_enabled,
                                                 bool real_matrix_enabled) {
   TI_AUTO_PROF;
-  reaching_definition_analysis(after_lower_access, real_matrix_enabled);
+  if (real_matrix_enabled)
+    return false;
+  reaching_definition_analysis(after_lower_access);
   const int num_nodes = size();
   bool modified = false;
   for (int i = 0; i < num_nodes; i++) {
-    if (nodes[i]->store_to_load_forwarding(after_lower_access, autodiff_enabled,
-                                           real_matrix_enabled))
+    if (nodes[i]->store_to_load_forwarding(after_lower_access,
+                                           autodiff_enabled))
       modified = true;
   }
   return modified;
@@ -858,12 +832,13 @@ bool ControlFlowGraph::dead_store_elimination(
     bool real_matrix_enabled,
     const std::optional<LiveVarAnalysisConfig> &lva_config_opt) {
   TI_AUTO_PROF;
+  if (real_matrix_enabled)
+    return false;
   live_variable_analysis(after_lower_access, lva_config_opt);
   const int num_nodes = size();
   bool modified = false;
   for (int i = 0; i < num_nodes; i++) {
-    if (nodes[i]->dead_store_elimination(after_lower_access,
-                                         real_matrix_enabled))
+    if (nodes[i]->dead_store_elimination(after_lower_access))
       modified = true;
   }
   return modified;
@@ -871,8 +846,7 @@ bool ControlFlowGraph::dead_store_elimination(
 
 std::unordered_set<SNode *> ControlFlowGraph::gather_loaded_snodes() {
   TI_AUTO_PROF;
-  reaching_definition_analysis(/*after_lower_access=*/false,
-                               /*real_matrix=*/false);
+  reaching_definition_analysis(/*after_lower_access=*/false);
   const int num_nodes = size();
   std::unordered_set<SNode *> snodes;
 

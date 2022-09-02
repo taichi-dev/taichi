@@ -39,7 +39,7 @@ std::vector<Stmt *> get_load_pointers(Stmt *load_stmt) {
 
 Stmt *get_store_data(Stmt *store_stmt) {
   // If store_stmt provides one data source, return the data.
-  if (store_stmt->is<AllocaStmt>()) {
+  if (store_stmt->is<AllocaStmt>() && !store_stmt->ret_type->is<TensorType>()) {
     // For convenience, return store_stmt instead of the const [0] it actually
     // stores.
     return store_stmt;
@@ -54,7 +54,7 @@ Stmt *get_store_data(Stmt *store_stmt) {
 
 std::vector<Stmt *> get_store_destination(Stmt *store_stmt) {
   // If store_stmt provides some data sources, return the pointers of the data.
-  if (store_stmt->is<AllocaStmt>()) {
+  if (store_stmt->is<AllocaStmt>() && !store_stmt->ret_type->is<TensorType>()) {
     // The statement itself provides a data source (const [0]).
     return std::vector<Stmt *>(1, store_stmt);
   } else if (auto local_store = store_stmt->cast<LocalStoreStmt>()) {

@@ -61,7 +61,7 @@ We give the following definitions:
 
 :::
 
-As you have seen, there are a few differences between kernels and Taichi functions. We now explain their differences and the roles they play in a program and in more detail.
+We should not confuse kernels with Taichi functions. Though they belong to the Taichi scope, the syntax rules applied to them are not exactly the same. We now dive into their usages and the roles they play in detail.
 
 
 ## Kernel

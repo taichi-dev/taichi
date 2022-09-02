@@ -129,7 +129,7 @@ print(x)  # prints [5, 7, 9]
 
 :::note
 
-We skip the discussion of `ti.template()` as type hints here, it's related to meta-programming and is a bit advanced topic for this stage, see [here](../advanced/meta.md#template-metaprogramming) for more infomation.
+We skip `ti.template()` here and leave it for a more advanced topic: Meta-programming. Refer to [Metaprogramming](../advanced/meta.md#template-metaprogramming) for more information.
 
 :::
 

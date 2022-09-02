@@ -71,7 +71,8 @@ class TaskCodeGenLLVMDX12 : public TaskCodeGenLLVM {
         "gpu_parallel_range_for",
         {get_arg(0), tlctx->get_constant(stmt->num_cpu_threads), begin, end,
          tlctx->get_constant(step), tlctx->get_constant(stmt->block_dim),
-         tls_prologue, body, epilogue, tlctx->get_constant(stmt->tls_size)});  }
+         tls_prologue, body, epilogue, tlctx->get_constant(stmt->tls_size)});
+  }
 
   void create_offload_mesh_for(OffloadedStmt *stmt) override {
     auto *tls_prologue = create_mesh_xlogue(stmt->tls_prologue);
@@ -151,7 +152,8 @@ class TaskCodeGenLLVMDX12 : public TaskCodeGenLLVM {
                 {get_arg(0), tlctx->get_constant(stmt->num_cpu_threads),
                  tlctx->get_constant(stmt->mesh->num_patches),
                  tlctx->get_constant(stmt->block_dim), tls_prologue, body,
-                 epilogue, tlctx->get_constant(stmt->tls_size)});  }
+                 epilogue, tlctx->get_constant(stmt->tls_size)});
+  }
 
   void create_bls_buffer(OffloadedStmt *stmt) {
     auto type = llvm::ArrayType::get(llvm::Type::getInt8Ty(*llvm_context),

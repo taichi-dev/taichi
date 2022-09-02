@@ -63,6 +63,12 @@ class Renderable {
   virtual void cleanup();
 
  protected:
+  struct Canvas2dUbo {
+    glm::vec4 color;
+    glm::vec4 wh_invwh;
+    float radius;
+  };
+
   RenderableConfig config_;
   AppContext *app_context_;
 

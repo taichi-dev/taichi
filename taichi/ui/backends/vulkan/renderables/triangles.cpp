@@ -27,11 +27,11 @@ void Triangles::init_triangles(AppContext *app_context,
       0,
       indices_count,
       0,
-      sizeof(UniformBufferObject),
+      sizeof(Canvas2dUbo),
       0,
       true,
-      app_context->config.package_path + "/shaders/Triangles_vk_vert.spv",
-      app_context->config.package_path + "/shaders/Triangles_vk_frag.spv",
+      app_context->config.package_path + "/shaders/Canvas2D_vk_vert.spv",
+      app_context->config.package_path + "/shaders/Canvas2D_vk_frag.spv",
       TopologyType::Triangles,
   };
 
@@ -44,7 +44,12 @@ Triangles::Triangles(AppContext *app_context, VertexAttributes vbo_attrs) {
 }
 
 void Triangles::update_ubo(glm::vec3 color, bool use_per_vertex_color) {
-  UniformBufferObject ubo{color, (int)use_per_vertex_color};
+  glm::vec4 color2(color, use_per_vertex_color ? 1 : 0);
+
+  Canvas2dUbo ubo{};
+  ubo.color = color2;
+  ubo.wh_invwh = app_context_->get_wh_invwh();
+  ubo.radius = 1.0f;
 
   void *mapped = app_context_->device().map(uniform_buffer_);
   memcpy(mapped, &ubo, sizeof(ubo));

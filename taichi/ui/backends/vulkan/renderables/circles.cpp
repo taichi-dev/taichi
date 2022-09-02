@@ -28,11 +28,11 @@ void Circles::init_circles(AppContext *app_context,
       0,
       1,
       0,
-      sizeof(UniformBufferObject),
+      sizeof(Canvas2dUbo),
       0,
       true,
-      app_context->config.package_path + "/shaders/Circles_vk_vert.spv",
-      app_context->config.package_path + "/shaders/Circles_vk_frag.spv",
+      app_context->config.package_path + "/shaders/Canvas2D_vk_vert.spv",
+      app_context->config.package_path + "/shaders/Canvas2D_vk_frag.spv",
       TopologyType::Points,
       PolygonMode::Fill,
       vbo_attrs,
@@ -49,8 +49,14 @@ Circles::Circles(AppContext *app_context, VertexAttributes vbo_attrs) {
 void Circles::update_ubo(glm::vec3 color,
                          bool use_per_vertex_color,
                          float radius) {
-  UniformBufferObject ubo{color, (int)use_per_vertex_color,
-                          radius * app_context_->config.height};
+  glm::vec4 color2(color, use_per_vertex_color ? 1 : 0);
+
+  glm::vec4 wh_invwh = app_context_->get_wh_invwh();
+
+  Canvas2dUbo ubo{};
+  ubo.color = color2;
+  ubo.wh_invwh = wh_invwh;
+  ubo.radius = radius * wh_invwh.y;
 
   void *mapped = app_context_->device().map(uniform_buffer_);
   memcpy(mapped, &ubo, sizeof(ubo));

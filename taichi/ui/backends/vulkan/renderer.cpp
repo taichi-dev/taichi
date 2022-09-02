@@ -163,6 +163,8 @@ void Renderer::draw_frame(Gui *gui) {
       &color_clear, &clear_colors, &depth_image,
       /*depth_clear=*/true);
 
+  app_context_.resize(swap_chain_.width(), swap_chain_.height());
+
   for (int i = 0; i < next_renderable_; ++i) {
     renderables_[i]->record_this_frame_commands(cmd_list.get());
   }

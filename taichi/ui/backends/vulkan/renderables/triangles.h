@@ -32,11 +32,6 @@ class Triangles final : public Renderable {
   void update_data(const TrianglesInfo &info);
 
  private:
-  struct UniformBufferObject {
-    alignas(16) glm::vec3 color;
-    int use_per_vertex_color;
-  };
-
   void init_triangles(AppContext *app_context,
                       int vertices_count,
                       int indices_count);

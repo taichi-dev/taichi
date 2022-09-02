@@ -37,11 +37,17 @@ class TI_DLL_EXPORT AppContext {
   const taichi::lang::vulkan::VulkanDevice &device() const;
   bool requires_export_sharing() const;
 
+  void resize(uint32_t width, uint32_t height);
+  glm::vec4 get_wh_invwh() const;
+
   AppConfig config;
 
  private:
   std::unique_ptr<taichi::lang::vulkan::VulkanDeviceCreator>
       embedded_vulkan_device_{nullptr};
+
+  // Width, height, width inverse, height inverse.
+  glm::vec4 wh_invwh{};
 
   // not owned
   taichi::lang::vulkan::VulkanDevice *vulkan_device_{nullptr};

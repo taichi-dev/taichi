@@ -31,12 +31,6 @@ class Circles final : public Renderable {
   void update_data(const CirclesInfo &info);
 
  private:
-  struct UniformBufferObject {
-    alignas(16) glm::vec3 color;
-    int use_per_vertex_color;
-    float radius;
-  };
-
   void init_circles(AppContext *app_context,
                     int vertices_count,
                     VertexAttributes vbo_attrs);

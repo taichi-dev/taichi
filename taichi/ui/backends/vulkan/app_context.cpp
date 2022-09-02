@@ -133,6 +133,16 @@ bool AppContext::requires_export_sharing() const {
   return config.ti_arch == Arch::cuda;
 }
 
+void AppContext::resize(uint32_t width, uint32_t height) {
+  wh_invwh.x = (float)width;
+  wh_invwh.y = (float)height;
+  wh_invwh.z = 1.0f / (float)width;
+  wh_invwh.w = 1.0f / (float)height;
+}
+glm::vec4 AppContext::get_wh_invwh() const {
+  return wh_invwh;
+}
+
 TaichiWindow *AppContext::taichi_window() const {
   return taichi_window_;
 }

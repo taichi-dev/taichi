@@ -35,11 +35,6 @@ class Lines final : public Renderable {
       taichi::lang::CommandList *command_list) override;
 
  private:
-  struct UniformBufferObject {
-    alignas(16) glm::vec3 color;
-    int use_per_vertex_color;
-  };
-
   void init_lines(AppContext *app_context,
                   int vertices_count,
                   int indices_count);

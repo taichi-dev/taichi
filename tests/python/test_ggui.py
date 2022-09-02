@@ -388,31 +388,41 @@ def test_fetching_color_attachment():
     verify_image(window.get_image_buffer_as_numpy(), 'test_set_image')
     window.destroy()
 
-
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)
-def test_fetching_depth_attachment():
-    window = ti.ui.Window("test", (512, 512), vsync=True, show_window=False)
+def test_draw_part_of_particles():    
+    N = 10
+    particles_pos = ti.Vector.field(3, dtype=ti.f32, shape = N)
+    points_pos = ti.Vector.field(3, dtype=ti.f32, shape = N)
+            
+    @ti.kernel
+    def init_points_pos(points : ti.template()):
+        for i in range(points.shape[0]):
+            points[i] = [i for j in ti.static(range(3))]
+
+    init_points_pos(particles_pos)
+    init_points_pos(points_pos)
+
+    window = ti.ui.Window("Test", (768, 768), show_window=False)
     canvas = window.get_canvas()
     scene = ti.ui.Scene()
     camera = ti.ui.make_camera()
-
-    ball_center = ti.Vector.field(3, dtype=float, shape=(1, ))
-    ball_center[0] = ti.math.vec3(0, 0, 0.5)
+    camera.position(0, 5, -10)
+    camera.lookat(3, 3, 1)
 
     def render():
-        camera.position(0.0, 0.0, 1)
-        camera.lookat(0.0, 0.0, 0)
         scene.set_camera(camera)
-        scene.point_light(pos=(0, 1, 2), color=(1, 1, 1))
-        scene.ambient_light((0.5, 0.5, 0.5))
-        scene.particles(ball_center, radius=0.05, color=(0.5, 0.42, 0.8))
+        scene.ambient_light((0.8, 0.8, 0.8))
+        scene.point_light(pos=(0.5, 1.5, 1.5), color=(1, 1, 1))
+        
+        scene.particles(particles_pos, color = (0.68, 0.26, 0.19), radius = 0.5,
+                        index_offset=2, index_count=6)
         canvas.scene(scene)
 
+    for _ in range(RENDER_REPEAT):
+        render()
+        window.get_image_buffer_as_numpy()
+        
     render()
-    if (platform.system() == 'Darwin'):
-        # FIXME: Use lower tolerance when macOS ggui particle radius is the same with other platform
-        verify_image(window.get_depth_buffer_as_numpy(), 'test_depth', 1.0)
-    else:
-        verify_image(window.get_depth_buffer_as_numpy(), 'test_depth')
+    verify_image(window.get_image_buffer_as_numpy(), 'test_draw_part_of_particles')
     window.destroy()

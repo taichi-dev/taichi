@@ -1,5 +1,5 @@
 #include "taichi/codegen/dx12/codegen_dx12.h"
-
+#include "taichi/codegen/dx12/dx12_llvm_passes.h"
 #include "taichi/rhi/dx12/dx12_api.h"
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
 #include "taichi/common/core.h"
@@ -228,7 +228,24 @@ class TaskCodeGenLLVMDX12 : public TaskCodeGenLLVM {
 
 static std::vector<uint8_t> generate_dxil_from_llvm(
     LLVMCompiledData &compiled_data,
-    taichi::lang::Kernel *kernel){TI_NOT_IMPLEMENTED}
+    taichi::lang::Kernel *kernel){
+  // generate dxil from llvm ir.
+  auto offloaded_local = compiled_data.tasks;
+  auto module = compiled_data.module.get();
+  for (auto &task : offloaded_local) {
+    llvm::Function *func = module->getFunction(task.name);
+    TI_ASSERT(func);
+    directx12::mark_function_as_cs_entry(func);
+    directx12::set_num_threads(
+        func, kernel->program->config.default_gpu_block_dim, 1, 1);
+    // FIXME: save task.block_dim like
+    // tlctx->mark_function_as_cuda_kernel(func, task.block_dim);
+  }
+  auto dx_container =
+      directx12::global_optimize_module(module, kernel->program->config);
+  // validate and sign dx container.
+  return directx12::validate_and_sign(dx_container);
+}
 
 KernelCodeGenDX12::CompileResult KernelCodeGenDX12::compile() {
   TI_AUTO_PROF;

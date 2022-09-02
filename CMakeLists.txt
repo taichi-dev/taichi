@@ -4,6 +4,8 @@
 
 cmake_minimum_required(VERSION 3.17)
 
+project(taichi)
+
 # Taichi does not set target architecture explicitly,
 # but rather rely on CMake to detect the host arch.
 #
@@ -13,12 +15,10 @@ cmake_minimum_required(VERSION 3.17)
 #
 # Therefore we force CMake to choose arm64 architecture on arm64 chips.
 if (APPLE)
-  if( ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "arm64" )
+  if( "${CMAKE_HOST_SYSTEM_PROCESSOR}" STREQUAL "arm64" )
     set(CMAKE_OSX_ARCHITECTURES ${CMAKE_HOST_SYSTEM_PROCESSOR})
   endif()
 endif()
-
-project(taichi)
 
 if (NOT DEFINED TI_VERSION_MAJOR)
     message(WARNING "It seems that you are running cmake manually, which may cause issues. Please use setup.py to build taichi from source, see https://docs.taichi-lang.org/docs/dev_install for more details.")

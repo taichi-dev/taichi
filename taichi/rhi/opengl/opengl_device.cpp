@@ -552,6 +552,7 @@ GLint GLDevice::get_devalloc_size(DeviceAllocation handle) {
   glGetBufferParameteriv(GL_ARRAY_BUFFER, GL_BUFFER_SIZE, &size);
   check_opengl_error("glGetBufferParameteriv");
   return size;
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 std::unique_ptr<Pipeline> GLDevice::create_pipeline(

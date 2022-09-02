@@ -81,7 +81,7 @@ When there are more than one kernel in a program, Taichi will compile and execut
 
 :::caution WARNING
 
-You must *not* call a kernel from inside another kernel or from inside a Taichi function. You can only call a kernel directly or from inside a native Python function.
+You must *not* call a kernel from inside another kernel or from inside a Taichi function. You can only call a kernel directly or from inside a native Python function. In other words, you can only call a kernel from inside the Python scope.
 
 :::
 

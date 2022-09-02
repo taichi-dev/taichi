@@ -676,6 +676,12 @@ void export_lang(py::module &m) {
             } else if (expected_dtype == PrimitiveType::u16) {
               args.insert(
                   {arg_name, aot::IValue::create(py::cast<uint16>(it.second))});
+            } else if (expected_dtype == PrimitiveType::u8) {
+              args.insert({arg_name,
+                           aot::IValue::create(py::cast<uint8_t>(it.second))});
+            } else if (expected_dtype == PrimitiveType::i8) {
+              args.insert(
+                  {arg_name, aot::IValue::create(py::cast<int8_t>(it.second))});
             } else {
               TI_NOT_IMPLEMENTED;
             }

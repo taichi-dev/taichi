@@ -858,7 +858,8 @@ bool ControlFlowGraph::dead_store_elimination(
   const int num_nodes = size();
   bool modified = false;
   for (int i = 0; i < num_nodes; i++) {
-    if (nodes[i]->dead_store_elimination(after_lower_access, real_matrix_enabled))
+    if (nodes[i]->dead_store_elimination(after_lower_access,
+                                         real_matrix_enabled))
       modified = true;
   }
   return modified;

@@ -18,7 +18,7 @@ sidebar_position: 3
 
 :::note
 
-Under the case that you may want to use cuda as taichi kernel backend, and vulkan as GGUI backend. If you have multiple GPU devices, then you should take care of if `CUDA_VISIBLE_DEVICES` is matched with `TI_VISIBLE_DEVICE`. In general, `CUDA_VISIBLE_DEVICES` and `TI_VISIBLE_DEVICE` should indicate the same uuid of a GPU device. Use `nvidia-smi -L` to quiery the details of your GPU devices.
+In case you want to use taichi cuda backend together with GGUI on a machine with multiple GPU cards, please make sure `CUDA_VISIBLE_DEVICES` matches `TI_VISIBLE_DEVICE` if any of them exists. In general, `CUDA_VISIBLE_DEVICES` and `TI_VISIBLE_DEVICE` should point to a GPU device with the same UUID. Use `nvidia-smi -L` to query the details of your GPU devices.
 
 ## Compilation
 

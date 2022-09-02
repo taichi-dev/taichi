@@ -915,9 +915,6 @@ def test_wireframe_mode():
     camera.fov(90)
 
     def render():
-        camera.track_user_inputs(window,
-                                 movement_speed=0.003,
-                                 hold_key=ti.ui.RMB)
         scene.set_camera(camera)
         scene.point_light(pos=(0.5, 1, 2), color=(1, 1, 1))
 

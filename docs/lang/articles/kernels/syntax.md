@@ -45,7 +45,7 @@ def inv_square(x):
 print(inv_square(1.0))  # Syntax error!
 ```
 
-Here by "out of the Taichi scope" we mean the scope that is not inside a kernel or a Taichi function. We shall also use the term *Python scope* for short of this.
+The Taichi function should have fallen in the Taichi scope, a concept as opposed to the "Python scope". 
 
 :::tip IMPORTANT
 

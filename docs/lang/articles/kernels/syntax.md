@@ -52,7 +52,7 @@ We give the following definitions:
 
 1. The code inside a kernel or a Taichi function is in the **Taichi scope**. The code in the Taichi scope is compiled by Taichi's runtime and executed in parallel on CPU or GPU devices for high-performance computation.
 
-   Taichi scope corresponds to the device side in CUDA.
+   The Taichi scope corresponds to the device side in CUDA.
 
 2. Code outside of the Taichi scope is in the **Python scope**. The code in the Python scope is native Python and executed by Python's virtual machine, not by Taichi's runtime.
 

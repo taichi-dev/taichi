@@ -56,7 +56,7 @@ We give the following definitions:
 
 2. Code outside of the Taichi scope is in the **Python scope**. The code in the Python scope is native Python and executed by Python's virtual machine, not by Taichi's runtime.
 
-   Python scope corresponds to the host side in CUDA.
+   The Python scope corresponds to the host side in CUDA.
 
 :::
 

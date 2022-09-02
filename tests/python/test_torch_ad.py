@@ -20,6 +20,7 @@ def test_torch_cuda_context():
     loss = x**2
     loss.backward()
 
+
 @pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
 @test_utils.test(exclude=ti.opengl)
 def test_torch_ad():

@@ -484,6 +484,9 @@ jobs:
           - os: windows-2019
             llvmVer : '15'
             archs: "cuda"
+          - os: windows-2019
+            llvmVer : '10'
+            archs: "cuda,opengl"
     runs-on: [self-hosted, windows, gpu]
     timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 180 }}
     steps:

@@ -149,7 +149,7 @@ Let's see an exmaple:
 vec2 = ti.math.vec2
 
 @ti.kernel
-def test(x: float, y: float) -> vec2: # return value must be type hinted
+def test(x: float, y: float) -> vec2: # Return value must be type hinted
     #return x, y  # compilation error! only one return value is allowed
     return vec2(x, y)  # OK!
 ```

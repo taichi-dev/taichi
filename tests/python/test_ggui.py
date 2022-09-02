@@ -392,7 +392,6 @@ def test_fetching_color_attachment():
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)
 def test_draw_lines():
-    ti.init(arch=ti.vulkan)
     N = 10
     particles_pos = ti.Vector.field(3, dtype=ti.f32, shape=N)
     points_pos = ti.Vector.field(3, dtype=ti.f32, shape=N)

@@ -735,7 +735,6 @@ def test_draw_mesh_instances():
     window.destroy()
 
 
-
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)
 def test_draw_part_of_mesh_instances():
@@ -751,7 +750,7 @@ def test_draw_part_of_mesh_instances():
     NInstanceRows = 10
     NInstanceCols = 10
     NInstance = NInstanceRows * NInstanceCols
-    instances_transforms = ti.Matrix.field(4, 4, ti.f32, shape = (NInstance,))
+    instances_transforms = ti.Matrix.field(4, 4, ti.f32, shape=(NInstance, ))
 
     @ti.kernel
     def init_transforms_of_instances():
@@ -761,7 +760,8 @@ def test_draw_part_of_mesh_instances():
                 index = i * NInstanceCols + j
                 instances_transforms[index] = identity
                 translate_matrix = ti.math.translate(1.2 * j, 0, -1.2 * i)
-                instances_transforms[index] = translate_matrix @ instances_transforms[index]
+                instances_transforms[
+                    index] = translate_matrix @ instances_transforms[index]
 
     @ti.kernel
     def init_pos():
@@ -826,13 +826,20 @@ def test_draw_part_of_mesh_instances():
         scene.set_camera(camera)
         scene.point_light(pos=(0.5, 1, 2), color=(1, 1, 1))
 
-        scene.mesh_instance(pos, tri, color=(39/255, 123/255, 192/255), two_sided=True, transforms=instances_transforms, instance_count=10, instance_offset=2)
+        scene.mesh_instance(pos,
+                            tri,
+                            color=(39 / 255, 123 / 255, 192 / 255),
+                            two_sided=True,
+                            transforms=instances_transforms,
+                            instance_count=10,
+                            instance_offset=2)
         canvas.scene(scene)
-    
+
     for _ in range(RENDER_REPEAT):
         render()
         window.get_image_buffer_as_numpy()
-        
+
     render()
-    verify_image(window.get_image_buffer_as_numpy(), 'test_draw_part_of_mesh_instances')
+    verify_image(window.get_image_buffer_as_numpy(),
+                 'test_draw_part_of_mesh_instances')
     window.destroy()

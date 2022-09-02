@@ -96,7 +96,7 @@ Kernel support scalar, `ti.Matrix/ti.Vector` (In Taichi vectors are essentially 
 
 Arguments of type scalar or `ti.Matrix` are passed by value, while arguments of type `ti.types.ndarray()` or `ti.template()` are passed by reference, in the latter case modifying to the arguments will also affect the original values.
 
-In the following example, `x, y` are passed to `my_kernel` by values:
+In the following example, the arguments `x` and `y` are passed to `my_kernel` by value:
 
 ```python
 @ti.kernel

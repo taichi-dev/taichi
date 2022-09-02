@@ -29,7 +29,7 @@ def partial_sum(n: int) -> float:  # a kernel
 
 In the code above, `inv_square()` is a Taichi function because it is decorated by `@ti.func`, while `partial_sum()` is a kernel because it is decorated by `@ti.kernel`. The Taichi function (former) is called by the kernel (latter).
 
-You may have noticed that the argument and return value in the **kernel** `partial_sum` are both type hinted, while those in the **Taichi function** `inv_square` are not. In native Python, type hinting is a suggested but not mandatory syntax, but in the Taichi language *this is a mandatory syntax*: you must add type hints for arguments and returned values of a kernel. When there are no arguments or `return` statement in a kernel, the corresponding type hinting can be omitted.
+You may have noticed that the argument and the return value in the **kernel** `partial_sum()` are both type-hinted, but those in the **Taichi function** `inv_square()` are not. Here comes an important difference between Python and Taichi. In native Python code, type hinting is recommended but not mandatory. But Taichi makes it *compulsory* that kernels must take type-hinted arguments and return type-hinted values. The only exception where you can leave out a type hint in a kernel is that the kernel does not have an argument or a `return` statement.
 
 Another point worth mentioning is, if you try to call `inv_square` out of the Taichi scope, Taichi will raise a syntax error. For example:
 

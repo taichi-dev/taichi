@@ -750,7 +750,6 @@ void export_lang(py::module &m) {
       .def("set_adjoint", &Expr::set_adjoint)
       .def("set_adjoint_checkbit", &Expr::set_adjoint_checkbit)
       .def("set_dual", &Expr::set_dual)
-      .def("set_attribute", &Expr::set_attribute)
       .def(
           "get_dt",
           [&](Expr *expr) -> const Type * {
@@ -763,7 +762,6 @@ void export_lang(py::module &m) {
            [](Expr *expr) {
              return expr->cast<GlobalVariableExpression>()->name;
            })
-      .def("get_attribute", &Expr::get_attribute)
       .def("get_raw_address", [](Expr *expr) { return (uint64)expr; })
       .def("get_underlying_ptr_address", [](Expr *e) {
         // The reason that there are both get_raw_address() and
@@ -783,22 +781,10 @@ void export_lang(py::module &m) {
 
   py::class_<Stmt>(m, "Stmt");
 
-  m.def("expr_get_addr", [](SNode *snode, const ExprGroup &indices) {
-    return Expr::make<SNodeOpExpression>(snode, SNodeOpType::get_addr, indices);
-  });
-
-  m.def("insert_append",
-        [](SNode *snode, const ExprGroup &indices, const Expr &val) {
-          return snode_append(snode, indices, val);
-        });
-
-  m.def("insert_is_active", [](SNode *snode, const ExprGroup &indices) {
-    return snode_is_active(snode, indices);
-  });
-
-  m.def("insert_len", [](SNode *snode, const ExprGroup &indices) {
-    return snode_length(snode, indices);
-  });
+  m.def("expr_snode_get_addr", &snode_get_addr);
+  m.def("expr_snode_append", &snode_append);
+  m.def("expr_snode_is_active", &snode_is_active);
+  m.def("expr_snode_length", &snode_length);
 
   m.def("insert_internal_func_call",
         [&](const std::string &func_name, const ExprGroup &args,

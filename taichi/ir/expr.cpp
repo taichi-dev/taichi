@@ -10,14 +10,6 @@ void Expr::set_tb(const std::string &tb) {
   expr->tb = tb;
 }
 
-void Expr::set_attribute(const std::string &key, const std::string &value) {
-  expr->set_attribute(key, value);
-}
-
-std::string Expr::get_attribute(const std::string &key) const {
-  return expr->get_attribute(key);
-}
-
 DataType Expr::get_ret_type() const {
   return expr->ret_type;
 }
@@ -96,10 +88,6 @@ Expr snode_append(SNode *snode, const ExprGroup &indices, const Expr &val) {
                                        val);
 }
 
-Expr snode_append(const Expr &expr, const ExprGroup &indices, const Expr &val) {
-  return snode_append(expr.snode(), indices, val);
-}
-
 Expr snode_is_active(SNode *snode, const ExprGroup &indices) {
   return Expr::make<SNodeOpExpression>(snode, SNodeOpType::is_active, indices);
 }
@@ -110,10 +98,6 @@ Expr snode_length(SNode *snode, const ExprGroup &indices) {
 
 Expr snode_get_addr(SNode *snode, const ExprGroup &indices) {
   return Expr::make<SNodeOpExpression>(snode, SNodeOpType::get_addr, indices);
-}
-
-Expr snode_length(const Expr &expr, const ExprGroup &indices) {
-  return snode_length(expr.snode(), indices);
 }
 
 Expr assume_range(const Expr &expr, const Expr &base, int low, int high) {

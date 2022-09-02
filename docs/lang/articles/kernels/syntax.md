@@ -7,7 +7,7 @@ sidebar_position: 1
 Embedded in Python, Taichi resembles Python in language syntax. To differentiate Taichi code from native Python code, we use the two decorators `@ti.kernel` and `@ti.func`:
 
 + Functions decorated with `@ti.kernel` are called Taichi kernels (or kernels for short). They serve as the entry points where Taichi begins to take over the tasks, and they *must* be called directly by Python code.
-+ Functions decorated with `@ti.func` are called Taichi functions.   Taichi functions are building blocks of kernels and can only be called by kernels or other Taichi functions.
++ Functions decorated with `@ti.func` are called Taichi functions. They serve as the building blocks of kernels and can *only* be called by kernels or other Taichi functions.
 
 Let's see an example:
 

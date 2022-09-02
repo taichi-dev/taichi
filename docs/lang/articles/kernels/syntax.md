@@ -125,7 +125,7 @@ my_kernel(x, y)
 print(x)  # prints [5, 7, 9]
 ```
 
-You can see the array `x` is modified by `my_kernel` since it's passed by reference.
+`x` is modified by `my_kernel()` because it is passed by reference.
 
 :::note
 

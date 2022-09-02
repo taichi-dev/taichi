@@ -486,6 +486,9 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
       }
     }
     auto load_ptrs = irpass::analysis::get_load_pointers(stmt);
+    if (auto ptr_offset = stmt->cast<PtrOffsetStmt>()) {
+      load_ptrs = std::vector<Stmt *>(1, ptr_offset->origin);
+    }
     if (load_ptrs.size() == 1 && store_ptrs.empty() &&
         !stmt->is<PtrOffsetStmt>()) {
       // Identical load elimination

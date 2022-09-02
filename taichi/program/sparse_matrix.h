@@ -215,7 +215,6 @@ class CuSparseMatrix : public SparseMatrix {
     return &matrix_;
   };
 
-  void print_info();
 
   void print_helper() const;
   

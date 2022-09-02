@@ -218,7 +218,7 @@ void CuSparseMatrix::build_csr_from_coo(void *coo_row_ptr,
       CUSPARSE_INDEX_BASE_ZERO, CUDA_R_32F);
   CUSPARSEDriver::get_instance().cpDestroy(cusparse_handle);
   // TODO: not sure if this array should be deleted now.
-  CUDADriver::get_instance().mem_free(csr_row_offset_ptr);
+  // CUDADriver::get_instance().mem_free(csr_row_offset_ptr);
 #endif
 }
 
@@ -308,33 +308,20 @@ void CuSparseMatrix::print_helper() const {
   CUSPARSEDriver::get_instance().cpCsrGet(matrix_, &rows, &cols, &nnz, (void**)&dR, (void**)&dC, (void**)&dV, 
                     &row_type, &column_type, &idx_base, &value_type);
   
-  TI_INFO("rows: {}", rows);
-  TI_INFO("cols: {}", cols);
-  TI_INFO("nnz: {}", nnz);
-
   auto* hR = new int[rows+1];
   auto* hC = new int[nnz];
   auto* hV = new float[nnz];
 
-  // auto hR = CUDADriver::get_instance().fetch<float>(dR);
-
   CUDADriver::get_instance().memcpy_device_to_host(
-        (void *)hV, (void *)dV, (nnz) * sizeof(float));
-  TI_INFO("here1!");
+        (void *)hR, (void *)dR, (rows+1) * sizeof(int));
   CUDADriver::get_instance().memcpy_device_to_host(
         (void *)hC, (void *)dC, (nnz) * sizeof(int));
-  TI_INFO("here2!");
-  // std::cout << "dR: " << dR << std::endl;
-  // std::cout << "dC: " << dC << std::endl;
   CUDADriver::get_instance().memcpy_device_to_host(
-        (void *)hR, (void *)dR, (1) * sizeof(int));
+        (void *)hV, (void *)dV, (nnz) * sizeof(float));
 
-  TI_INFO("here3!");
-  
-  std::cout << (row_type == CUSPARSE_INDEX_32I) << '\n';
-  std::cout << (column_type == CUSPARSE_INDEX_32I) << '\n';
-  std::cout << (value_type == CUDA_R_32F) << '\n';
-  return;
+  // std::cout << (row_type == CUSPARSE_INDEX_32I) << '\n';
+  // std::cout << (column_type == CUSPARSE_INDEX_32I) << '\n';
+  // std::cout << (value_type == CUDA_R_32F) << '\n';
 
   csr_to_triplet<int, int, float>(rows, cols, hR, hC, hV);
   

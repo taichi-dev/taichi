@@ -87,6 +87,8 @@ void KernelCodeGen::cache_module(const std::string &kernel_key,
 }
 
 std::vector<LLVMCompiledData> KernelCodeGen::compile_kernel_to_module() {
+  auto *llvm_prog = get_llvm_program(prog);
+  auto *tlctx = llvm_prog->get_llvm_context(kernel->arch);
   auto &config = prog->config;
   std::string kernel_key = get_hashed_offline_cache_key(&config, kernel);
   kernel->set_kernel_key_for_cache(kernel_key);
@@ -98,6 +100,7 @@ std::vector<LLVMCompiledData> KernelCodeGen::compile_kernel_to_module() {
       TI_DEBUG("Create kernel '{}' from cache (key='{}')", kernel->get_name(),
                kernel_key);
       cache_module(kernel_key, res);
+      TI_ASSERT(res.size() == 1);
       return res;
     }
   }
@@ -110,17 +113,17 @@ std::vector<LLVMCompiledData> KernelCodeGen::compile_kernel_to_module() {
   TI_ASSERT(block);
 
   auto &offloads = block->statements;
-  std::vector<LLVMCompiledData> data(offloads.size());
+  std::vector<std::unique_ptr<LLVMCompiledData>> data(offloads.size());
   using TaskFunc = int32 (*)(void *);
   std::vector<TaskFunc> task_funcs(offloads.size());
   for (int i = 0; i < offloads.size(); i++) {
     auto compile_func = [&, i] {
+      tlctx->fetch_this_thread_struct_module();
       auto offload =
           irpass::analysis::clone(offloads[i].get(), offloads[i]->get_kernel());
       irpass::re_id(offload.get());
       auto new_data = this->compile_task(nullptr, offload->as<OffloadedStmt>());
-      data[i].tasks = std::move(new_data.tasks);
-      data[i].module = std::move(new_data.module);
+      data[i] = std::make_unique<LLVMCompiledData>(std::move(new_data));
     };
     if (kernel->is_evaluator) {
       compile_func();
@@ -131,11 +134,15 @@ std::vector<LLVMCompiledData> KernelCodeGen::compile_kernel_to_module() {
   if (!kernel->is_evaluator) {
     worker.flush();
   }
+  auto linked = tlctx->link_compile_data(std::move(data));
+  std::vector<LLVMCompiledData> linked_data;
+  linked_data.push_back(std::move(*linked));
+
   if (!kernel->is_evaluator) {
     TI_DEBUG("Cache kernel '{}' (key='{}')", kernel->get_name(), kernel_key);
-    cache_module(kernel_key, data);
+    cache_module(kernel_key, linked_data);
   }
-  return data;
+  return linked_data;
 }
 
 ModuleToFunctionConverter::ModuleToFunctionConverter(

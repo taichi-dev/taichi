@@ -16,18 +16,19 @@ class Scalarize : public IRVisitor {
 
   template <typename T>
   void scalarize_store_stmt(T *stmt) {
-    if (stmt->dest->ret_type.ptr_removed()->is<TensorType>() &&
-        stmt->val->ret_type->is<TensorType>()) {
+    auto dest_dtype = stmt->dest->ret_type.ptr_removed();
+    auto val_dtype = stmt->val->ret_type;
+    if (dest_dtype->template is<TensorType>() &&
+        val_dtype->template is<TensorType>()) {
       // Needs scalarize
-      auto dest_tensor_type =
-          stmt->dest->ret_type.ptr_removed()->as<TensorType>();
-      auto val_tensor_type = stmt->val->ret_type->as<TensorType>();
+      auto dest_tensor_type = dest_dtype->template as<TensorType>();
+      auto val_tensor_type = val_dtype->template as<TensorType>();
       TI_ASSERT(dest_tensor_type->get_shape() == val_tensor_type->get_shape());
       TI_ASSERT(dest_tensor_type->get_element_type() ==
                 val_tensor_type->get_element_type());
 
-      TI_ASSERT(stmt->dest->is<MatrixInitStmt>());
-      auto matrix_init_stmt = stmt->dest->as<MatrixInitStmt>();
+      TI_ASSERT(stmt->dest->template is<MatrixInitStmt>());
+      auto matrix_init_stmt = stmt->dest->template as<MatrixInitStmt>();
 
       int num_elements = val_tensor_type->get_num_elements();
       for (size_t i = 0; i < num_elements; i++) {
@@ -35,9 +36,9 @@ class Scalarize : public IRVisitor {
             TypedConstant(stmt->val->ret_type.get_element_type(), i));
 
         auto ptr_offset_stmt =
-            std::make_unique<PtrOffsetStmt>(stmt->dest, const_stmt);
+            std::make_unique<PtrOffsetStmt>(stmt->dest, const_stmt.get());
         auto scalarized_stmt = std::make_unique<GlobalStoreStmt>(
-            ptr_offset_stmt, matrix_init_stmt->values[i]);
+            ptr_offset_stmt.get(), matrix_init_stmt->values[i]);
 
         stmt->insert_before_me(std::move(const_stmt));
         stmt->insert_before_me(std::move(ptr_offset_stmt));

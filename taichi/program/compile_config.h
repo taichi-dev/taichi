@@ -45,6 +45,7 @@ struct CompileConfig {
   bool ndarray_use_cached_allocator;
   bool use_mesh;
   bool real_matrix;
+  bool real_matrix_scalarize;
   DataType default_fp;
   DataType default_ip;
   DataType default_up;

@@ -195,7 +195,8 @@ void BinaryOpExpression::type_check(CompileConfig *config) {
                     binary_op_type_symbol(type), lhs->ret_type->to_string(),
                     rhs->ret_type->to_string()));
   };
-  if (!lhs_type->is<PrimitiveType>() || !rhs_type->is<PrimitiveType>())
+  if (!(lhs_type->is<PrimitiveType>() && rhs_type->is<PrimitiveType>()) &&
+      !(lhs_type->is<TensorType>() && rhs_type->is<TensorType>()))
     error();
   if (binary_is_bitwise(type) &&
       (!is_integral(lhs_type) || !is_integral(rhs_type)))

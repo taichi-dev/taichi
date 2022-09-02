@@ -811,11 +811,8 @@ bool ControlFlowGraph::unreachable_code_elimination() {
 }
 
 bool ControlFlowGraph::store_to_load_forwarding(bool after_lower_access,
-                                                bool autodiff_enabled,
-                                                bool real_matrix_enabled) {
+                                                bool autodiff_enabled) {
   TI_AUTO_PROF;
-  if (real_matrix_enabled)
-    return false;
   reaching_definition_analysis(after_lower_access);
   const int num_nodes = size();
   bool modified = false;
@@ -829,11 +826,8 @@ bool ControlFlowGraph::store_to_load_forwarding(bool after_lower_access,
 
 bool ControlFlowGraph::dead_store_elimination(
     bool after_lower_access,
-    bool real_matrix_enabled,
     const std::optional<LiveVarAnalysisConfig> &lva_config_opt) {
   TI_AUTO_PROF;
-  if (real_matrix_enabled)
-    return false;
   live_variable_analysis(after_lower_access, lva_config_opt);
   const int num_nodes = size();
   bool modified = false;

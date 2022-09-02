@@ -145,16 +145,13 @@ class ControlFlowGraph {
   /**
    * Perform store-to-load forwarding and identical store elimination.
    */
-  bool store_to_load_forwarding(bool after_lower_access,
-                                bool autodiff_enabled,
-                                bool store_to_load_forwarding);
+  bool store_to_load_forwarding(bool after_lower_access, bool autodiff_enabled);
 
   /**
    * Perform dead store elimination and identical load elimination.
    */
   bool dead_store_elimination(
       bool after_lower_access,
-      bool real_matrix_enabled,
       const std::optional<LiveVarAnalysisConfig> &lva_config_opt);
 
   /**

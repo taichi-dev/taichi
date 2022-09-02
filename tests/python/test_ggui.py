@@ -844,6 +844,7 @@ def test_draw_part_of_mesh_instances():
                  'test_draw_part_of_mesh_instances')
     window.destroy()
 
+
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)
 def test_wireframe_mode():
@@ -900,31 +901,37 @@ def test_wireframe_mode():
                 edge[edge_idx] = ti.Vector([pos_idx, pos_idx + N + 2])
             else:
                 edge[edge_idx] = ti.Vector([pos_idx + 1, pos_idx + N + 1])
-    
+
     init_pos()
     init_tri()
     init_edge()
 
-    window = ti.ui.Window("test", (1024, 1024), vsync=True,show_window=False)
+    window = ti.ui.Window("test", (1024, 1024), vsync=True, show_window=False)
     canvas = window.get_canvas()
     scene = ti.ui.Scene()
     camera = ti.ui.make_camera()
     camera.position(1.5, 1, -1)
-    camera.lookat(1, 0.5,0)
+    camera.lookat(1, 0.5, 0)
     camera.fov(90)
 
     def render():
-        camera.track_user_inputs(window, movement_speed=0.003, hold_key=ti.ui.RMB)
+        camera.track_user_inputs(window,
+                                 movement_speed=0.003,
+                                 hold_key=ti.ui.RMB)
         scene.set_camera(camera)
         scene.point_light(pos=(0.5, 1, 2), color=(1, 1, 1))
 
-        scene.mesh(pos, tri, color=(39/255, 123/255, 192/255), two_sided=True, show_wireframe=True)
+        scene.mesh(pos,
+                   tri,
+                   color=(39 / 255, 123 / 255, 192 / 255),
+                   two_sided=True,
+                   show_wireframe=True)
         canvas.scene(scene)
-    
+
     for _ in range(RENDER_REPEAT):
         render()
         window.get_image_buffer_as_numpy()
-        
+
     render()
     verify_image(window.get_image_buffer_as_numpy(), 'test_wireframe_mode')
     window.destroy()

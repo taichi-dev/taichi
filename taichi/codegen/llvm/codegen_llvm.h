@@ -147,6 +147,13 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
                     const std::string &method,
                     const std::vector<llvm::Value *> &arguments);
 
+  llvm::Function *get_struct_function(const std::string &name, int tree_id);
+
+  template <typename... Args>
+  llvm::Value *call_struct_func(int tree_id,
+                                const std::string &func_name,
+                                Args &&...args);
+
   void create_increment(llvm::Value *ptr, llvm::Value *value);
 
   // Direct translation

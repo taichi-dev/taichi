@@ -1,7 +1,4 @@
-import os
-import pathlib
 import platform
-import tempfile
 
 import numpy as np
 import pytest
@@ -9,46 +6,11 @@ from taichi._lib import core as _ti_core
 
 import taichi as ti
 from tests import test_utils
+from tests.test_utils import verify_image
 
-REGENERATE_GROUNDTRUTH_IMAGES = False
 RENDER_REPEAT = 5
 # FIXME: enable ggui tests on ti.cpu backend. It's blocked by macos10.15
 supported_archs = [ti.vulkan, ti.cuda]
-
-
-def get_temp_png():
-    f, name = tempfile.mkstemp(suffix='.png')
-    os.close(f)
-    return name
-
-
-def write_temp_image(window):
-    f = get_temp_png()
-    window.save_image(f)
-    try:
-        os.remove(f)
-    except OSError:
-        pass
-
-
-def verify_image(window, image_name, tolerance=0.1):
-    if REGENERATE_GROUNDTRUTH_IMAGES:
-        ground_truth_name = f"tests/python/expected/{image_name}.png"
-        window.save_image(ground_truth_name)
-    else:
-        ground_truth_name = str(
-            pathlib.Path(__file__).parent) + f"/expected/{image_name}.png"
-        actual_name = get_temp_png()
-        window.save_image(actual_name)
-        ground_truth_np = ti.tools.imread(ground_truth_name)
-        actual_np = ti.tools.imread(actual_name)
-        assert len(ground_truth_np.shape) == len(actual_np.shape)
-        for i in range(len(ground_truth_np.shape)):
-            assert ground_truth_np.shape[i] == actual_np.shape[i]
-        diff = ground_truth_np - actual_np
-        mse = np.mean(diff * diff)
-        assert mse <= tolerance  # the pixel values are 0~255
-        os.remove(actual_name)
 
 
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
@@ -140,15 +102,18 @@ def test_geometry_2d():
                      per_vertex_color=lines_colors_1,
                      indices=lines_indices_1)
 
+    # Render in off-line mode to check if there are errors
     for _ in range(RENDER_REPEAT):
         render()
-        write_temp_image(window)
+        window.get_image_buffer_as_numpy()
+
     render()
     if (platform.system() == 'Darwin'):
         # FIXME: Use lower tolerance when macOS ggui supports wide lines
-        verify_image(window, 'test_geometry_2d', 1.0)
+        verify_image(window.get_image_buffer_as_numpy(), 'test_geometry_2d',
+                     1.0)
     else:
-        verify_image(window, 'test_geometry_2d')
+        verify_image(window.get_image_buffer_as_numpy(), 'test_geometry_2d')
     window.destroy()
 
 
@@ -236,11 +201,13 @@ def test_geometry_3d():
 
         canvas.scene(scene)
 
+    # Render in off-line mode to check if there are errors
     for _ in range(RENDER_REPEAT):
         render()
-        write_temp_image(window)
+        window.get_image_buffer_as_numpy()
+
     render()
-    verify_image(window, 'test_geometry_3d')
+    verify_image(window.get_image_buffer_as_numpy(), 'test_geometry_3d')
     window.destroy()
 
 
@@ -262,11 +229,14 @@ def test_set_image():
     def render():
         canvas.set_image(img)
 
+    # Render in off-line mode to check if there are errors
     for _ in range(RENDER_REPEAT):
         render()
-        write_temp_image(window)
+        window.get_image_buffer_as_numpy()
+
     render()
-    verify_image(window, 'test_set_image')
+
+    verify_image(window.get_image_buffer_as_numpy(), 'test_set_image')
     window.destroy()
 
 
@@ -291,18 +261,21 @@ def test_set_image_flat_field():
     def render():
         canvas.set_image(img)
 
+    # Render in off-line mode to check if there are errors
     for _ in range(RENDER_REPEAT):
         render()
-        write_temp_image(window)
+        window.get_image_buffer_as_numpy()
+
     render()
-    verify_image(window, 'test_set_image')
+
+    verify_image(window.get_image_buffer_as_numpy(), 'test_set_image')
     window.destroy()
 
 
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=[ti.vulkan])
 def test_set_image_with_texture():
-    window = ti.ui.Window('test', (640, 480), show_window=True)
+    window = ti.ui.Window('test', (640, 480), show_window=False)
     canvas = window.get_canvas()
 
     img = ti.Texture(ti.f32, 4, (512, 512))
@@ -321,11 +294,14 @@ def test_set_image_with_texture():
     def render():
         canvas.set_image(img)
 
+    # Render in off-line mode to check if there are errors
     for _ in range(3):
         render()
-        write_temp_image(window)
+        window.get_image_buffer_as_numpy()
+
     render()
-    verify_image(window, 'test_set_image')
+
+    verify_image(window.get_image_buffer_as_numpy(), 'test_set_image')
     window.destroy()
 
 
@@ -345,11 +321,13 @@ def test_imgui():
         with gui.sub_window("window 2", 0.1, 0.7, 0.8, 0.2) as w:
             w.color_edit_3('Heyy', (0, 0, 1))
 
+    # Render in off-line mode to check if there are errors
     for _ in range(RENDER_REPEAT):
         render()
-        write_temp_image(window)
+        window.get_image_buffer_as_numpy()
+
     render()
-    verify_image(window, 'test_imgui')
+    verify_image(window.get_image_buffer_as_numpy(), 'test_imgui')
     window.destroy()
 
 
@@ -381,3 +359,31 @@ def test_get_camera_view_and_projection_matrix():
     assert (abs(projection_matrix[2, 2] - 1.0001000e-4) <= 1e-5)
     assert (abs(projection_matrix[2, 3] + 1.0000000) <= 1e-5)
     assert (abs(projection_matrix[3, 2] - 1.0001000e-1) <= 1e-5)
+
+
+@pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
+@test_utils.test(arch=supported_archs)
+def test_fetching_color_attachment():
+    window = ti.ui.Window('test', (640, 480), show_window=False)
+    canvas = window.get_canvas()
+
+    img = ti.Vector.field(4, ti.f32, (512, 512))
+
+    @ti.kernel
+    def init_img():
+        for i, j in img:
+            img[i, j] = ti.Vector([i, j, 0, 512], dt=ti.f32) / 512
+
+    init_img()
+
+    def render():
+        canvas.set_image(img)
+
+    # Render in off-line mode to check if there are errors
+    for _ in range(RENDER_REPEAT):
+        render()
+        window.get_image_buffer_as_numpy()
+
+    render()
+    verify_image(window.get_image_buffer_as_numpy(), 'test_set_image')
+    window.destroy()

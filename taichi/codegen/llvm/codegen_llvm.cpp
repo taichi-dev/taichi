@@ -1536,6 +1536,31 @@ llvm::Value *TaskCodeGenLLVM::call(
   return call(builder.get(), prefix + "_" + method, func_arguments);
 }
 
+llvm::Function *TaskCodeGenLLVM::get_struct_function(const std::string &name,
+                                                     int tree_id) {
+  used_tree_ids.insert(tree_id);
+  auto f = tlctx->get_struct_function(name, tree_id);
+  if (!f) {
+    TI_ERROR("Struct function {} not found.", name);
+  }
+  f = llvm::cast<llvm::Function>(
+      module
+          ->getOrInsertFunction(name, f->getFunctionType(), f->getAttributes())
+          .getCallee());
+  return f;
+}
+
+template <typename... Args>
+llvm::Value *TaskCodeGenLLVM::call_struct_func(int tree_id,
+                                               const std::string &func_name,
+                                               Args &&...args) {
+  auto func = get_struct_function(func_name, tree_id);
+  auto arglist = std::vector<llvm::Value *>({args...});
+  check_func_call_signature(func->getFunctionType(), func->getName(), arglist,
+                            builder.get());
+  return builder->CreateCall(func, arglist);
+}
+
 void TaskCodeGenLLVM::visit(GetRootStmt *stmt) {
   if (stmt->root() == nullptr)
     llvm_val[stmt] = builder->CreateBitCast(
@@ -2131,63 +2156,15 @@ void TaskCodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt,
   auto struct_for_func = get_runtime_function("parallel_struct_for");
 
   if (arch_is_gpu(current_arch())) {
-    // Note that on CUDA local array allocation must have a compile-time
-    // constant size. Therefore, instead of passing in the tls_buffer_size
-    // argument, we directly clone the "parallel_struct_for" function and
-    // replace the "alignas(8) char tls_buffer[1]" statement with "alignas(8)
-    // char tls_buffer[tls_buffer_size]" at compile time.
-
-    auto value_map = llvm::ValueToValueMapTy();
-    auto patched_struct_for_func =
-        llvm::CloneFunction(struct_for_func, value_map);
-
-    int num_found_alloca = 0;
-    llvm::AllocaInst *alloca = nullptr;
-
-    auto char_type = llvm::Type::getInt8Ty(*llvm_context);
-
-    // Find the "1" in "char tls_buffer[1]" and replace it with
-    // "tls_buffer_size"
-    for (auto &bb : *patched_struct_for_func) {
-      for (llvm::Instruction &inst : bb) {
-        auto now_alloca = llvm::dyn_cast<AllocaInst>(&inst);
-        if (!now_alloca ||
-#ifdef TI_LLVM_15
-            now_alloca->getAlign().value() != 8
-#else
-            now_alloca->getAlignment() != 8
-#endif
-        )
-          continue;
-        auto alloca_type = now_alloca->getAllocatedType();
-        // Allocated type should be array [1 x i8]
-        if (alloca_type->isArrayTy() &&
-            alloca_type->getArrayNumElements() == 1 &&
-            alloca_type->getArrayElementType() == char_type) {
-          alloca = now_alloca;
-          num_found_alloca++;
-        }
-      }
-    }
-    // There should be **exactly** one replacement.
-    TI_ASSERT(num_found_alloca == 1 && alloca);
-    auto new_type = llvm::ArrayType::get(char_type, stmt->tls_size);
-    {
-      llvm::IRBuilderBase::InsertPointGuard guard(*builder);
-      builder->SetInsertPoint(alloca);
-      auto *new_alloca = builder->CreateAlloca(new_type);
-      new_alloca->setAlignment(Align(8));
-      TI_ASSERT(alloca->hasOneUse());
-      auto *gep = llvm::cast<llvm::GetElementPtrInst>(alloca->user_back());
-      TI_ASSERT(gep->getPointerOperand() == alloca);
-      std::vector<Value *> indices(gep->idx_begin(), gep->idx_end());
-      builder->SetInsertPoint(gep);
-      auto *new_gep = builder->CreateInBoundsGEP(new_type, new_alloca, indices);
-      gep->replaceAllUsesWith(new_gep);
-      gep->eraseFromParent();
-      alloca->eraseFromParent();
-    }
-    struct_for_func = patched_struct_for_func;
+    tlctx->add_struct_for_func(module.get(), stmt->tls_size);
+    struct_for_func = llvm::cast<llvm::Function>(
+        module
+            ->getOrInsertFunction(
+                tlctx->get_struct_for_func_name(stmt->tls_size),
+                struct_for_func->getFunctionType(),
+                struct_for_func->getAttributes())
+            .getCallee());
+    struct_for_tls_sizes.insert(stmt->tls_size);
   }
   // Loop over nodes in the element list, in parallel
   create_call(

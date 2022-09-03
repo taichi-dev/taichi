@@ -418,10 +418,6 @@ void GLCommandList::draw(uint32_t num_verticies, uint32_t start_vertex) {
   TI_NOT_IMPLEMENTED;
 }
 
-void GLCommandList::clear_color(float r, float g, float b, float a) {
-  TI_NOT_IMPLEMENTED;
-}
-
 void GLCommandList::set_line_width(float width) {
   TI_NOT_IMPLEMENTED;
 }
@@ -510,9 +506,9 @@ GLDevice::~GLDevice() {
 DeviceAllocation GLDevice::allocate_memory(const AllocParams &params) {
   GLenum target_hint = GL_SHADER_STORAGE_BUFFER;
 
-  if (params.usage & AllocUsage::Storage) {
+  if (params.usage && AllocUsage::Storage) {
     target_hint = GL_SHADER_STORAGE_BUFFER;
-  } else if (params.usage & AllocUsage::Uniform) {
+  } else if (params.usage && AllocUsage::Uniform) {
     target_hint = GL_UNIFORM_BUFFER;
   } else if (params.host_write && params.host_read) {
     target_hint = GL_SHADER_STORAGE_BUFFER;

@@ -30,7 +30,6 @@ inline gfx::CacheManager::Metadata::KernelMetadata make_kernel_metadata(
   }
 
   gfx::CacheManager::Metadata::KernelMetadata res;
-  const auto &codes = compiled.task_spirv_source_codes;
   res.kernel_key = key;
   res.size = codes_size;
   res.created_at = std::time(nullptr);

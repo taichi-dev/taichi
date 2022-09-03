@@ -184,6 +184,7 @@ void CacheManager::dump_with_merging() const {
           if (iter != old_data.kernels.end()) { // Update
             iter->second.last_used_at = v.last_used_at;
           } else { // Add new
+            old_data.size += v.size;
             old_data.kernels[k] = std::move(v);
           }
         }

@@ -388,6 +388,7 @@ def test_fetching_color_attachment():
     verify_image(window.get_image_buffer_as_numpy(), 'test_set_image')
     window.destroy()
 
+
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)
 def test_fetching_depth_attachment():
@@ -407,11 +408,11 @@ def test_fetching_depth_attachment():
         scene.ambient_light((0.5, 0.5, 0.5))
         scene.particles(ball_center, radius=0.05, color=(0.5, 0.42, 0.8))
         canvas.scene(scene)
-    
+
     for _ in range(RENDER_REPEAT):
         render()
         window.get_image_buffer_as_numpy()
-        
+
     render()
     verify_image(window.get_depth_buffer_as_numpy(), 'test_depth')
     window.destroy()

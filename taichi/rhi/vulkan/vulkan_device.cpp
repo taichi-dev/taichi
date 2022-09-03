@@ -2403,12 +2403,12 @@ void VulkanSurface::create_swap_chain() {
   extent.height =
       std::max(capabilities.minImageExtent.height,
                std::min(capabilities.maxImageExtent.height, extent.height));
-  TI_INFO("Creating suface of {}x{}", width, height);
+  TI_INFO("Creating suface of {}x{}", extent.width, extent.height);
   VkImageUsageFlags usage =
       VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 
-  this->width_ = width;
-  this->height_ = height;
+  this->width_ = extent.width;
+  this->height_ = extent.height;
 
   VkSwapchainCreateInfoKHR createInfo;
   createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;

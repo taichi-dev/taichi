@@ -11,6 +11,7 @@ namespace gfx {
 
 class CacheManager {
   using CompiledKernelData = gfx::GfxRuntime::RegisterParams;
+
  public:
   using Metadata = offline_cache::Metadata;
   enum Mode { NotCache, MemCache, MemAndDiskCache };

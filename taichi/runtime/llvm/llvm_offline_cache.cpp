@@ -61,14 +61,17 @@ struct CacheCleanerUtils<LlvmOfflineCache> {
   using KernelMetaData = typename MetadataType::KernelMetadata;
 
   // To load metadata from file
-  static bool load_metadata(const CacheCleanerConfig &config, MetadataType &result) {
-    return read_from_binary_file(result, taichi::join_path(config.path, config.metadata_filename));
+  static bool load_metadata(const CacheCleanerConfig &config,
+                            MetadataType &result) {
+    return read_from_binary_file(
+        result, taichi::join_path(config.path, config.metadata_filename));
   }
 
   // To save metadata as file
   static bool save_metadata(const CacheCleanerConfig &config,
                             const MetadataType &data) {
-    write_to_binary_file(data, taichi::join_path(config.path, config.metadata_filename));
+    write_to_binary_file(
+        data, taichi::join_path(config.path, config.metadata_filename));
     return true;
   }
 
@@ -76,18 +79,21 @@ struct CacheCleanerUtils<LlvmOfflineCache> {
                                       const MetadataType &data) {
     TextSerializer ts;
     ts.serialize_to_json("cache", data);
-    ts.write_to_file(taichi::join_path(config.path, config.debugging_metadata_filename));
+    ts.write_to_file(
+        taichi::join_path(config.path, config.debugging_metadata_filename));
     return true;
   }
 
   // To check version
-  static bool check_version(const CacheCleanerConfig &config, const Version &version) {
+  static bool check_version(const CacheCleanerConfig &config,
+                            const Version &version) {
     return is_current_llvm_cache_version(version);
   }
 
   // To get cache files name
-  static std::vector<std::string> get_cache_files(const CacheCleanerConfig &config,
-                                                  const KernelMetaData &kernel_meta) {
+  static std::vector<std::string> get_cache_files(
+      const CacheCleanerConfig &config,
+      const KernelMetaData &kernel_meta) {
     std::vector<std::string> result;
     for (int i = 0; i < kernel_meta.compiled_data_list.size(); i++) {
       for (const auto &f : get_possible_llvm_cache_filename_by_key(

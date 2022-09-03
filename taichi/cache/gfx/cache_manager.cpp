@@ -21,12 +21,14 @@ constexpr char kGraphMetadataFilename[] = "graphs.tcb";
 constexpr char kOfflineCacheMetadataFilename[] = "offline_cache_metadata.tcb";
 using CompiledKernelData = gfx::GfxRuntime::RegisterParams;
 
-inline gfx::CacheManager::Metadata::KernelMetadata make_kernel_metadata(const std::string &key, const gfx::GfxRuntime::RegisterParams &compiled) {
+inline gfx::CacheManager::Metadata::KernelMetadata make_kernel_metadata(
+    const std::string &key,
+    const gfx::GfxRuntime::RegisterParams &compiled) {
   std::size_t codes_size = 0;
   for (const auto &e : compiled.task_spirv_source_codes) {
     codes_size += e.size() * sizeof(*e.data());
   }
-  
+
   gfx::CacheManager::Metadata::KernelMetadata res;
   const auto &codes = compiled.task_spirv_source_codes;
   res.kernel_key = key;
@@ -47,8 +49,10 @@ struct CacheCleanerUtils<gfx::CacheManager::Metadata> {
   using KernelMetaData = MetadataType::KernelMetadata;
 
   // To load metadata from file
-  static bool load_metadata(const CacheCleanerConfig &config, MetadataType &result) {
-    return read_from_binary_file(result, taichi::join_path(config.path, config.metadata_filename));
+  static bool load_metadata(const CacheCleanerConfig &config,
+                            MetadataType &result) {
+    return read_from_binary_file(
+        result, taichi::join_path(config.path, config.metadata_filename));
   }
 
   // To save metadata as file
@@ -56,7 +60,8 @@ struct CacheCleanerUtils<gfx::CacheManager::Metadata> {
                             const MetadataType &data) {
     // Update AOT metadata
     gfx::TaichiAotData old_aot_data, new_aot_data;
-    auto aot_metadata_path = taichi::join_path(config.path, kAotMetadataFilename);
+    auto aot_metadata_path =
+        taichi::join_path(config.path, kAotMetadataFilename);
     if (read_from_binary_file(old_aot_data, aot_metadata_path)) {
       const auto &kernels = data.kernels;
       for (auto &k : old_aot_data.kernels) {
@@ -66,7 +71,8 @@ struct CacheCleanerUtils<gfx::CacheManager::Metadata> {
       }
       write_to_binary_file(new_aot_data, aot_metadata_path);
     }
-    write_to_binary_file(data, taichi::join_path(config.path, config.metadata_filename));
+    write_to_binary_file(
+        data, taichi::join_path(config.path, config.metadata_filename));
     return true;
   }
 
@@ -77,15 +83,16 @@ struct CacheCleanerUtils<gfx::CacheManager::Metadata> {
   }
 
   // To check version
-  static bool check_version(const CacheCleanerConfig &config, const Version &version) {
-    return version[0] == TI_VERSION_MAJOR &&
-           version[1] == TI_VERSION_MINOR &&
+  static bool check_version(const CacheCleanerConfig &config,
+                            const Version &version) {
+    return version[0] == TI_VERSION_MAJOR && version[1] == TI_VERSION_MINOR &&
            version[2] == TI_VERSION_PATCH;
   }
 
   // To get cache files name
-  static std::vector<std::string> get_cache_files(const CacheCleanerConfig &config,
-                                                  const KernelMetaData &kernel_meta) {
+  static std::vector<std::string> get_cache_files(
+      const CacheCleanerConfig &config,
+      const KernelMetaData &kernel_meta) {
     std::vector<std::string> result;
     for (std::size_t i = 0; i < kernel_meta.num_files; ++i) {
       result.push_back(kernel_meta.kernel_key + std::to_string(i) + ".spv");
@@ -96,12 +103,13 @@ struct CacheCleanerUtils<gfx::CacheManager::Metadata> {
   // To remove other files except cache files and offline cache metadta files
   static void remove_other_files(const CacheCleanerConfig &config) {
     taichi::remove(taichi::join_path(config.path, kAotMetadataFilename));
-    taichi::remove(taichi::join_path(config.path, kDebuggingAotMetadataFilename));
+    taichi::remove(
+        taichi::join_path(config.path, kDebuggingAotMetadataFilename));
     taichi::remove(taichi::join_path(config.path, kGraphMetadataFilename));
   }
 };
 
-} // namespace offline_cache
+}  // namespace offline_cache
 
 namespace gfx {
 
@@ -177,13 +185,14 @@ void CacheManager::dump_with_merging() const {
 
       // Update offline_cache_metadata.tcb
       Metadata old_data;
-      const auto filename = taichi::join_path(path_, kOfflineCacheMetadataFilename);
+      const auto filename =
+          taichi::join_path(path_, kOfflineCacheMetadataFilename);
       if (read_from_binary_file(old_data, filename)) {
-        for (auto &[k, v]: offline_cache_metadata_.kernels) {
+        for (auto &[k, v] : offline_cache_metadata_.kernels) {
           auto iter = old_data.kernels.find(k);
-          if (iter != old_data.kernels.end()) { // Update
+          if (iter != old_data.kernels.end()) {  // Update
             iter->second.last_used_at = v.last_used_at;
-          } else { // Add new
+          } else {  // Add new
             old_data.size += v.size;
             old_data.kernels[k] = std::move(v);
           }
@@ -196,7 +205,9 @@ void CacheManager::dump_with_merging() const {
   }
 }
 
-void CacheManager::clean_offline_cache(offline_cache::CleanCachePolicy policy, int max_bytes, double cleaning_factor) const {
+void CacheManager::clean_offline_cache(offline_cache::CleanCachePolicy policy,
+                                       int max_bytes,
+                                       double cleaning_factor) const {
   if (mode_ == MemAndDiskCache) {
     using CacheCleaner = offline_cache::CacheCleaner<Metadata>;
     offline_cache::CacheCleanerConfig params;

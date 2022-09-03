@@ -80,7 +80,8 @@ struct CacheCleanerUtils {
   using KernelMetaData = typename MetadataType::KernelMetadata;
 
   // To load metadata from file
-  static bool load_metadata(const CacheCleanerConfig &config, MetadataType &result) {
+  static bool load_metadata(const CacheCleanerConfig &config,
+                            MetadataType &result) {
     TI_NOT_IMPLEMENTED;
   }
 
@@ -96,13 +97,15 @@ struct CacheCleanerUtils {
   }
 
   // To check version
-  static bool check_version(const CacheCleanerConfig &config, const Version &version) {
+  static bool check_version(const CacheCleanerConfig &config,
+                            const Version &version) {
     TI_NOT_IMPLEMENTED;
   }
 
   // To get cache files name
-  static std::vector<std::string> get_cache_files(const CacheCleanerConfig &config,
-                                                  const KernelMetaData &kernel_meta) {
+  static std::vector<std::string> get_cache_files(
+      const CacheCleanerConfig &config,
+      const KernelMetaData &kernel_meta) {
     TI_NOT_IMPLEMENTED;
   }
 

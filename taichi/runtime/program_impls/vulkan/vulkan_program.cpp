@@ -209,10 +209,10 @@ std::unique_ptr<aot::Kernel> VulkanProgramImpl::make_aot_kernel(
 
 void VulkanProgramImpl::dump_cache_data_to_disk() {
   const auto &mgr = get_cache_manager();
-  mgr->clean_offline_cache(
-    offline_cache::string_to_clean_cache_policy(config->offline_cache_cleaning_policy),
-    config->offline_cache_max_size_of_files,
-    config->offline_cache_cleaning_factor);
+  mgr->clean_offline_cache(offline_cache::string_to_clean_cache_policy(
+                               config->offline_cache_cleaning_policy),
+                           config->offline_cache_max_size_of_files,
+                           config->offline_cache_cleaning_factor);
   mgr->dump_with_merging();
 }
 

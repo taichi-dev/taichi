@@ -105,6 +105,11 @@ struct CacheCleanerUtils {
                                                   const KernelMetaData &kernel_meta) {
     TI_NOT_IMPLEMENTED;
   }
+
+  // To remove other files except cache files and offline cache metadta files
+  static void remove_other_files(const CacheCleanerConfig &config) {
+    TI_NOT_IMPLEMENTED;
+  }
 };
 
 template <typename MetadataType>
@@ -160,6 +165,7 @@ class CacheCleaner {
           !Utils::check_version(config, cache_data.version)) {
         if (taichi::remove(metadata_file)) {
           taichi::remove(debugging_metadata_file);
+          Utils::remove_other_files(config);
           for (const auto &[k, v] : cache_data.kernels) {
             for (const auto &f : Utils::get_cache_files(config, v)) {
               taichi::remove(taichi::join_path(path, f));
@@ -219,6 +225,7 @@ class CacheCleaner {
         if (cache_data.kernels.empty()) {  // Remove
           ok_rm_meta = taichi::remove(metadata_file);
           taichi::remove(debugging_metadata_file);
+          Utils::remove_other_files(config);
         } else {  // Update
           Utils::save_metadata(config, cache_data);
           ok_rm_meta = true;

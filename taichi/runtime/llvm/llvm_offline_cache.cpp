@@ -97,6 +97,11 @@ struct CacheCleanerUtils<LlvmOfflineCache> {
     }
     return result;
   }
+
+  // To remove other files except cache files and offline cache metadta files
+  static void remove_other_files(const CacheCleanerConfig &config) {
+    // Do nothing
+  }
 };
 
 }  // namespace offline_cache

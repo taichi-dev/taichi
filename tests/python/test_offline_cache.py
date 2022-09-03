@@ -494,10 +494,6 @@ def test_offline_cache_cleaning(curr_arch, factor, policy):
             sleep(1)  # make sure the kernels are not used in the same second
 
     kernel_count = len(simple_kernels_to_test)
-    rem_factor = 1 if policy in [
-        'never', 'version'
-    ] else (kernel_count - int(factor * kernel_count)) / kernel_count
-
     count_of_cache_file = cache_files_cnt(curr_arch)
 
     def added_files(arch):
@@ -521,13 +517,11 @@ def test_offline_cache_cleaning(curr_arch, factor, policy):
     ti.reset()
     rem = 0
     if policy in ['never', 'version']:
-        rem = sum([kern[3] for kern in simple_kernels_to_test])
+        rem = expected_num_cache_files(curr_arch, [kern[3] for kern in simple_kernels_to_test])
     else:
-        for i in range(
-                min(kernel_count - int(factor * kernel_count), kernel_count)):
-            rem += simple_kernels_to_test[kernel_count - i - 1][3]
-    if rem > 0:
-        rem += 2
+        lo = -min(kernel_count - int(factor * kernel_count), kernel_count)
+        lo = kernel_count if lo == 0 else lo
+        rem = expected_num_cache_files(curr_arch, [kern[3] for kern in simple_kernels_to_test[lo:]])
     assert added_files(curr_arch) == rem
 
 

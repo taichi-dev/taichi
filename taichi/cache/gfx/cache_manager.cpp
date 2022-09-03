@@ -16,6 +16,8 @@ namespace {
 
 constexpr char kMetadataFileLockName[] = "metadata.lock";
 constexpr char kAotMetadataFilename[] = "metadata.tcb";
+constexpr char kDebuggingAotMetadataFilename[] = "metadata.json";
+constexpr char kGraphMetadataFilename[] = "graphs.tcb";
 constexpr char kOfflineCacheMetadataFilename[] = "offline_cache_metadata.tcb";
 using CompiledKernelData = gfx::GfxRuntime::RegisterParams;
 
@@ -90,6 +92,13 @@ struct CacheCleanerUtils<gfx::CacheManager::Metadata> {
     }
     return result;
   }
+
+  // To remove other files except cache files and offline cache metadta files
+  static void remove_other_files(const CacheCleanerConfig &config) {
+    taichi::remove(taichi::join_path(config.path, kAotMetadataFilename));
+    taichi::remove(taichi::join_path(config.path, kDebuggingAotMetadataFilename));
+    taichi::remove(taichi::join_path(config.path, kGraphMetadataFilename));
+  }
 };
 
 } // namespace offline_cache
@@ -106,8 +115,8 @@ CacheManager::CacheManager(Params &&init_params)
   path_ = offline_cache::get_cache_path_by_arch(init_params.cache_path,
                                                 init_params.arch);
 
-  if (taichi::path_exists(taichi::join_path(path_, "metadata.tcb")) &&
-      taichi::path_exists(taichi::join_path(path_, "graphs.tcb"))) {
+  if (taichi::path_exists(taichi::join_path(path_, kAotMetadataFilename)) &&
+      taichi::path_exists(taichi::join_path(path_, kGraphMetadataFilename))) {
     auto lock_path = taichi::join_path(path_, kMetadataFileLockName);
     if (lock_with_file(lock_path)) {
       auto _ = make_cleanup([&lock_path]() {
@@ -148,7 +157,7 @@ CompiledKernelData CacheManager::load_or_compile(CompileConfig *config,
 }
 
 void CacheManager::dump_with_merging() const {
-  if (mode_ == MemAndDiskCache) {
+  if (mode_ == MemAndDiskCache && !offline_cache_metadata_.kernels.empty()) {
     taichi::create_directories(path_);
     auto *cache_builder =
         static_cast<gfx::AotModuleBuilderImpl *>(caching_module_builder_.get());

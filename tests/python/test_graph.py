@@ -327,7 +327,7 @@ def test_arg_int(dt):
     assert k.to_numpy()[0] == 1234
 
 
-@pytest.mark.parametrize('dt', [ti.i16, ti.u16])
+@pytest.mark.parametrize('dt', [ti.i16, ti.u16, ti.u8, ti.i8])
 @test_utils.test(arch=ti.vulkan)
 def test_arg_short(dt):
     @ti.kernel
@@ -345,8 +345,8 @@ def test_arg_short(dt):
     builder = ti.graph.GraphBuilder()
     builder.dispatch(foo, sym_A, sym_B)
     graph = builder.compile()
-    graph.run({"mat": 1234, 'b': k})
-    assert k.to_numpy()[0] == 1234
+    graph.run({"mat": 123, 'b': k})
+    assert k.to_numpy()[0] == 123
 
 
 @test_utils.test(arch=ti.vulkan)

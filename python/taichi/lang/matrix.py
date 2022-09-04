@@ -503,7 +503,10 @@ class Matrix(TaichiOperations):
 
     def _broadcast_copy(self, other):
         if isinstance(other, (list, tuple)):
-            other = type(self)(other)
+            if is_vector(self):
+                other = Vector(other, ndim=self.ndim)
+            else:
+                other = Matrix(other, ndim=self.ndim)
         if not isinstance(other, Matrix):
             if isinstance(self, Vector):
                 other = Vector([other for _ in range(self.n)])

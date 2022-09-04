@@ -113,6 +113,10 @@ def make_matrix(arr, dt=None):
             [expr.Expr(elt).ptr for row in arr for elt in row]))
 
 
+def is_vector(x):
+    return isinstance(x, Vector) or getattr(x, "ndim", None) == 1
+
+
 class _MatrixBaseImpl:
     def __init__(self, m, n, entries):
         self.m = m
@@ -441,7 +445,7 @@ class Matrix(TaichiOperations):
         elif isinstance(arr[0], Matrix):
             raise Exception('cols/rows required when using list of vectors')
         else:
-            is_matrix = isinstance(arr[0], Iterable)
+            is_matrix = isinstance(arr[0], Iterable) and not is_vector(self)
             initializer = _make_entries_initializer(is_matrix)
             self.ndim = 2 if is_matrix else 1
 
@@ -490,17 +494,20 @@ class Matrix(TaichiOperations):
 
     def _element_wise_binary(self, foo, other):
         other = self._broadcast_copy(other)
+        if is_vector(self):
+            return Vector([foo(self(i), other(i)) for i in range(self.n)],
+                          ndim=self.ndim)
         return Matrix([[foo(self(i, j), other(i, j)) for j in range(self.m)]
                        for i in range(self.n)],
                       ndim=self.ndim)
 
     def _broadcast_copy(self, other):
         if isinstance(other, (list, tuple)):
-            other = Matrix(other)
+            other = type(self)(other)
         if not isinstance(other, Matrix):
-            other = Matrix([[other for _ in range(self.m)]
-                            for _ in range(self.n)],
-                           ndim=self.ndim)
+            other = type(self)([[other for _ in range(self.m)]
+                                for _ in range(self.n)],
+                               ndim=self.ndim)
         assert self.m == other.m and self.n == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
         return other
 
@@ -665,6 +672,10 @@ class Matrix(TaichiOperations):
             >>> B
             [0.0, 1.0, 2.0]
         """
+        if is_vector(self):
+            # when using _IntermediateMatrix, we can only check `self.ndim`
+            return Vector(
+                [ops_mod.cast(self(i), dtype) for i in range(self.n)])
         return Matrix(
             [[ops_mod.cast(self(i, j), dtype) for j in range(self.m)]
              for i in range(self.n)],
@@ -1475,6 +1486,9 @@ class Vector(Matrix):
         if isinstance(shape, numbers.Number):
             shape = (shape, )
         return VectorNdarray(n, dtype, shape, layout)
+
+    def to_list(self):
+        return [self(i) for i in range(self.n)]
 
 
 class _IntermediateMatrix(Matrix):

@@ -505,7 +505,10 @@ class Matrix(TaichiOperations):
         if isinstance(other, (list, tuple)):
             other = type(self)(other)
         if not isinstance(other, Matrix):
-            other = type(self)([[other for _ in range(self.m)]
+            if isinstance(self, Vector):
+                other = Vector([other for _ in range(self.n)])
+            else:
+                other = Matrix([[other for _ in range(self.m)]
                                 for _ in range(self.n)],
                                ndim=self.ndim)
         assert self.m == other.m and self.n == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"

@@ -83,7 +83,7 @@ if [ -z "$GPU_TEST" ]; then
 else
     # Split per arch to increase parallelism for linux GPU tests
     if [[ $TI_WANTED_ARCHS == *"cuda"* ]]; then
-        python3 tests/run_tests.py -vr2 -t4 -k "not torch and not paddle" -a cuda
+        python3 tests/run_tests.py -vr2 -t6 -k "not torch and not paddle" -a cuda
     fi
     if [[ $TI_WANTED_ARCHS == *"cpu"* ]]; then
         python3 tests/run_tests.py -vr2 -t8 -k "not torch and not paddle" -a cpu

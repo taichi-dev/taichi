@@ -58,8 +58,6 @@ class AnyArray:
     def _loop_range(self):
         """Gets the corresponding taichi_python.Expr to serve as loop range.
 
-        This is not in use now because struct fors on AnyArrays are not supported yet.
-
         Returns:
             taichi_python.Expr: See above.
         """

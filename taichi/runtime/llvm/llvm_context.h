@@ -34,8 +34,6 @@ class TaichiLLVMContext {
     std::unordered_map<int, std::unique_ptr<llvm::Module>> struct_modules;
     ThreadLocalData(std::unique_ptr<llvm::orc::ThreadSafeContext> ctx);
     ~ThreadLocalData();
-    std::unique_ptr<llvm::Module> struct_module{nullptr};  // TODO: To be
-                                                           // deleted
   };
   CompileConfig *config_;
 
@@ -68,8 +66,7 @@ class TaichiLLVMContext {
    *
    * @param module Module containing the JIT compiled SNode structs.
    */
-  void add_struct_module(std::unique_ptr<llvm::Module> module,
-                         int tree_id);
+  void add_struct_module(std::unique_ptr<llvm::Module> module, int tree_id);
 
   /**
    * Clones the LLVM module compiled from llvm/runtime.cpp

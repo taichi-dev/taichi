@@ -281,7 +281,6 @@ LLVMCompiledData KernelCodeGenWASM::compile_task(
   return {name_list, std::move(gen->module), {}, {}};
 }
 
-
 std::vector<LLVMCompiledData> KernelCodeGenWASM::compile_kernel_to_module() {
   auto *tlctx = get_llvm_program(prog)->get_llvm_context(kernel->arch);
   if (!kernel->lowered()) {

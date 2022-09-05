@@ -520,7 +520,7 @@ void TaichiLLVMContext::link_module_with_cuda_libdevice(
 }
 
 void TaichiLLVMContext::add_struct_module(std::unique_ptr<Module> module,
-    int tree_id) {
+                                          int tree_id) {
   TI_AUTO_PROF;
   TI_ASSERT(std::this_thread::get_id() == main_thread_id_);
   auto this_thread_data = get_this_thread_data();
@@ -663,7 +663,8 @@ llvm::DataLayout TaichiLLVMContext::get_data_layout() {
   return jit->get_data_layout();
 }
 
-JITModule *TaichiLLVMContext::create_jit_module(std::unique_ptr<llvm::Module> module) {
+JITModule *TaichiLLVMContext::create_jit_module(
+    std::unique_ptr<llvm::Module> module) {
   return jit->add_module(std::move(module));
 }
 
@@ -884,7 +885,6 @@ TaichiLLVMContext::ThreadLocalData::ThreadLocalData(
 
 TaichiLLVMContext::ThreadLocalData::~ThreadLocalData() {
   runtime_module.reset();
-  struct_module.reset();
   struct_modules.clear();
   thread_safe_llvm_context.reset();
 }

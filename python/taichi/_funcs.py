@@ -90,10 +90,10 @@ def _matrix_outer_product(self, other):
 
     """
     impl.static(
-        impl.static_assert(self.m == 1,
+        impl.static_assert(self.m == 1 and isinstance(self, Vector),
                            "lhs for outer_product is not a vector"))
     impl.static(
-        impl.static_assert(other.m == 1,
+        impl.static_assert(other.m == 1 and isinstance(other, Vector),
                            "rhs for outer_product is not a vector"))
     return matrix.Matrix([[self[i] * other[j] for j in range(other.n)]
                           for i in range(self.n)])

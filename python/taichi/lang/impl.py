@@ -63,7 +63,8 @@ def expr_init(rhs):
                 entries = [[rhs(i, j) for j in range(rhs.m)]
                            for i in range(rhs.n)]
             return make_matrix(entries)
-        if isinstance(rhs, Vector):
+        if isinstance(rhs, Vector) or getattr(rhs, "ndim", None) == 1:
+            # _IntermediateMatrix may reach here
             return Vector(rhs.to_list(), ndim=rhs.ndim)
         return Matrix(rhs.to_list(), ndim=rhs.ndim)
     if isinstance(rhs, SharedArray):

@@ -658,6 +658,8 @@ class Matrix(TaichiOperations):
         This is similar to `numpy.ndarray`'s `flatten` and `ravel` methods,
         the difference is that this function always returns a new list.
         """
+        if is_vector(self):
+            return [self(i) for i in range(self.n)]
         return [[self(i, j) for j in range(self.m)] for i in range(self.n)]
 
     @taichi_scope
@@ -1493,9 +1495,6 @@ class Vector(Matrix):
             shape = (shape, )
         return VectorNdarray(n, dtype, shape, layout)
 
-    def to_list(self):
-        return [self(i) for i in range(self.n)]
-
 
 class _IntermediateMatrix(Matrix):
     """Intermediate matrix class for compiler internal use only.
@@ -1745,6 +1744,8 @@ class MatrixField(Field):
         self._initialize_host_accessors()
         key = self._pad_key(key)
         _host_access = self._host_access(key)
+        if self.ndim == 1:
+            return Vector([_host_access[i] for i in range(self.n)])
         return Matrix([[_host_access[i * self.m + j] for j in range(self.m)]
                        for i in range(self.n)],
                       ndim=self.ndim)

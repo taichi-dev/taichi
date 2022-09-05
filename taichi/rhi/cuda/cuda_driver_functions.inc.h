@@ -14,6 +14,7 @@ PER_CUDA_FUNCTION(device_get_attribute, cuDeviceGetAttribute, int *, uint32, voi
 PER_CUDA_FUNCTION(context_create, cuCtxCreate_v2, void*, int, void *);
 PER_CUDA_FUNCTION(context_set_current, cuCtxSetCurrent, void *);
 PER_CUDA_FUNCTION(context_get_current, cuCtxGetCurrent, void **);
+PER_CUDA_FUNCTION(context_pop_current, cuCtxPopCurrent, void **);
 
 // Stream management
 PER_CUDA_FUNCTION(stream_create, cuStreamCreate, void **, uint32);

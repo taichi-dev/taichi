@@ -505,7 +505,6 @@ class GlobalVariableExpression : public Expression {
 
   void set_snode(SNode *snode) {
     this->snode = snode;
-    set_attribute("dim", std::to_string(snode->num_active_indices));
   }
 
   void flatten(FlattenContext *ctx) override;

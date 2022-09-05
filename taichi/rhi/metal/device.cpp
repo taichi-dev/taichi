@@ -315,7 +315,7 @@ class DeviceImpl : public Device, public AllocToMTLBufferMapper {
     TI_ASSERT(src.type == PipelineSourceType::metal_src);
     TI_ASSERT(src.stage == PipelineStageType::compute);
     // FIXME: infer version/fast_math
-    std::string src_code{static_cast<char *>(src.data), src.size};
+    std::string src_code{static_cast<const char *>(src.data), src.size};
     auto kernel_lib = new_library_with_source(
         device_, src_code, /*fast_math=*/false, kMslVersionNone);
     TI_ASSERT(kernel_lib != nullptr);

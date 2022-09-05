@@ -43,6 +43,7 @@ DeviceAllocation CudaDevice::allocate_memory_runtime(
       caching_allocator_ = std::make_unique<CudaCachingAllocator>(this);
     }
     info.ptr = caching_allocator_->allocate(params);
+    auto context_guard = CUDAContext::get_instance().get_guard();
     CUDADriver::get_instance().memset((void *)info.ptr, 0, info.size);
   } else {
     info.ptr = allocate_llvm_runtime_memory_jit(params);
@@ -117,6 +118,7 @@ DeviceAllocation CudaDevice::import_memory(void *ptr, size_t size) {
 }
 
 uint64 CudaDevice::fetch_result_uint64(int i, uint64 *result_buffer) {
+  auto context_guard = CUDAContext::get_instance().get_guard();
   CUDADriver::get_instance().stream_synchronize(nullptr);
   uint64 ret;
   CUDADriver::get_instance().memcpy_device_to_host(&ret, result_buffer + i,

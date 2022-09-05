@@ -476,6 +476,7 @@ void LlvmRuntimeExecutor::fill_ndarray(const DeviceAllocation &alloc,
   auto ptr = get_ndarray_alloc_info_ptr(alloc);
   if (config_->arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
+    auto context_guard = CUDAContext::get_instance().get_guard();
     CUDADriver::get_instance().memsetd32((void *)ptr, data, size);
 #else
     TI_NOT_IMPLEMENTED

@@ -47,9 +47,7 @@ class JITModuleCUDA : public JITModule {
   }
 
   void *lookup_function(const std::string &name) override {
-    // TODO: figure out why using the guard leads to wrong tests results
-    // auto context_guard = CUDAContext::get_instance().get_guard();
-    CUDAContext::get_instance().make_current();
+    auto context_guard = CUDAContext::get_instance().get_guard();
     void *func = nullptr;
     auto t = Time::get_time();
     auto err = CUDADriver::get_instance().module_get_function.call_with_warning(

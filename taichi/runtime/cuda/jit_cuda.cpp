@@ -13,9 +13,7 @@ JITModule *JITSessionCUDA ::add_module(std::unique_ptr<llvm::Module> M,
                                      "module NVPTX");
     writer.write(ptx);
   }
-  // TODO: figure out why using the guard leads to wrong tests results
-  // auto context_guard = CUDAContext::get_instance().get_guard();
-  CUDAContext::get_instance().make_current();
+  auto context_guard = CUDAContext::get_instance().get_guard();
   // Create module for object
   void *cuda_module;
   TI_TRACE("PTX size: {:.2f}KB", ptx.size() / 1024.0);

@@ -588,12 +588,6 @@ class Kernel:
                 host_v = v.to(device='cpu', copy=True)
                 tmp = host_v
                 callbacks.append(get_call_back(v, host_v))
-        else:
-            # External tensor on cpu
-            if taichi_arch == _ti_core.Arch.cuda:
-                gpu_v = v.cuda()
-                tmp = gpu_v
-                callbacks.append(get_call_back(v, gpu_v))
         return tmp, callbacks
 
     def get_paddle_callbacks(self, v, has_pp):

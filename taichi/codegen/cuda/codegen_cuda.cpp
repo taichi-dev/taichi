@@ -735,7 +735,6 @@ FunctionType CUDAModuleToFunctionConverter::convert(
 
   return [cuda_modules, kernel_name, args, offloaded_tasks,
           executor = this->executor_](RuntimeContext &context) {
-    // CUDAContext::get_instance().make_current();
     std::vector<void *> arg_buffers(args.size(), nullptr);
     std::vector<void *> device_buffers(args.size(), nullptr);
 
@@ -794,6 +793,7 @@ FunctionType CUDAModuleToFunctionConverter::convert(
         }
       }
     }
+
     if (transferred) {
       auto context_guard = CUDAContext::get_instance().get_guard();
       CUDADriver::get_instance().stream_synchronize(nullptr);

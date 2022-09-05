@@ -1666,6 +1666,7 @@ class MatrixField(Field):
                           device=device)
         from taichi._kernels import matrix_to_ext_arr  # pylint: disable=C0415
         matrix_to_ext_arr(self, arr, as_vector)
+        print('before sync in python')
         runtime_ops.sync()
         return arr
 

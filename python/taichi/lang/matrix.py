@@ -1620,7 +1620,9 @@ class MatrixField(Field):
         elif isinstance(val,
                         (list, tuple)) and isinstance(val[0], numbers.Number):
             assert self.m == 1
-            val = tuple([(v, ) for v in val])
+            val = tuple(val)
+        elif is_vector(val) or self.ndim == 1:
+            val = tuple([(val(i), ) for i in range(self.n)])
         elif isinstance(val, Matrix):
             val_tuple = []
             for i in range(val.n):
@@ -1631,7 +1633,8 @@ class MatrixField(Field):
                 val_tuple.append(row)
             val = tuple(val_tuple)
         assert len(val) == self.n
-        assert len(val[0]) == self.m
+        if self.ndim != 1:
+            assert len(val[0]) == self.m
 
         if in_python_scope():
             from taichi._kernels import fill_matrix  # pylint: disable=C0415

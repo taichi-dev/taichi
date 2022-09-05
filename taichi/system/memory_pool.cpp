@@ -56,6 +56,7 @@ T MemoryPool::fetch(volatile void *ptr) {
   T ret;
   if (use_cuda_stream && arch_ == Arch::cuda) {
 #if TI_WITH_CUDA
+    auto context_guard = CUDAContext::get_instance().get_guard();
     CUDADriver::get_instance().stream_synchronize(cuda_stream);
     CUDADriver::get_instance().memcpy_device_to_host_async(
         &ret, (void *)ptr, sizeof(T), cuda_stream);
@@ -73,6 +74,7 @@ template <typename T>
 void MemoryPool::push(volatile T *dest, const T &val) {
   if (use_cuda_stream && arch_ == Arch::cuda) {
 #if TI_WITH_CUDA
+    auto context_guard = CUDAContext::get_instance().get_guard();
     CUDADriver::get_instance().memcpy_host_to_device_async(
         (void *)(dest), (void *)&val, sizeof(T), cuda_stream);
     CUDADriver::get_instance().stream_synchronize(cuda_stream);

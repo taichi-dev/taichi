@@ -735,7 +735,7 @@ FunctionType CUDAModuleToFunctionConverter::convert(
 
   return [cuda_modules, kernel_name, args, offloaded_tasks,
           executor = this->executor_](RuntimeContext &context) {
-    CUDAContext::get_instance().make_current();
+    // CUDAContext::get_instance().make_current();
     std::vector<void *> arg_buffers(args.size(), nullptr);
     std::vector<void *> device_buffers(args.size(), nullptr);
 
@@ -766,6 +766,7 @@ FunctionType CUDAModuleToFunctionConverter::convert(
             //   host.
             // See CUDA driver API `cuPointerGetAttribute` for more details.
             transferred = true;
+            auto context_guard = CUDAContext::get_instance().get_guard();
             CUDADriver::get_instance().malloc(&device_buffers[i], arr_sz);
             CUDADriver::get_instance().memcpy_host_to_device(
                 (void *)device_buffers[i], arg_buffers[i], arr_sz);
@@ -794,6 +795,7 @@ FunctionType CUDAModuleToFunctionConverter::convert(
       }
     }
     if (transferred) {
+      auto context_guard = CUDAContext::get_instance().get_guard();
       CUDADriver::get_instance().stream_synchronize(nullptr);
     }
 
@@ -808,6 +810,7 @@ FunctionType CUDAModuleToFunctionConverter::convert(
 
     // copy data back to host
     if (transferred) {
+      auto context_guard = CUDAContext::get_instance().get_guard();
       CUDADriver::get_instance().stream_synchronize(nullptr);
       for (int i = 0; i < (int)args.size(); i++) {
         if (device_buffers[i] != arg_buffers[i]) {

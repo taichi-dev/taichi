@@ -83,12 +83,16 @@ class CUDAContext {
       CUDADriver::get_instance().context_get_current(&old_ctx_);
       if (old_ctx_ != new_ctx_)
         new_ctx->make_current();
+      std::cout << "creating guard with " << old_ctx_ << " " << new_ctx_
+                << std::endl;
     }
 
     ~ContextGuard() {
       if (old_ctx_ != new_ctx_) {
         CUDADriver::get_instance().context_set_current(old_ctx_);
       }
+      std::cout << "destructing guard with " << old_ctx_ << " " << new_ctx_
+                << std::endl;
     }
   };
 

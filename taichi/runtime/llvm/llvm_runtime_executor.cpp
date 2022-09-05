@@ -176,7 +176,7 @@ void LlvmRuntimeExecutor::print_list_manager_info(void *list_manager,
 void LlvmRuntimeExecutor::synchronize() {
   if (config_->arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
-    CUDAContext::get_instance().make_current();
+    auto guard = CUDAContext::get_instance().get_guard();
     CUDADriver::get_instance().stream_synchronize(nullptr);
 #else
     TI_ERROR("No CUDA support");
@@ -191,7 +191,7 @@ uint64 LlvmRuntimeExecutor::fetch_result_uint64(int i, uint64 *result_buffer) {
   uint64 ret;
   if (config_->arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
-    CUDAContext::get_instance().make_current();
+    auto guard = CUDAContext::get_instance().get_guard();
     CUDADriver::get_instance().memcpy_device_to_host(&ret, result_buffer + i,
                                                      sizeof(uint64));
 #else
@@ -373,6 +373,7 @@ void LlvmRuntimeExecutor::initialize_llvm_runtime_snodes(
       result_buffer);
   if (config_->arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
+    auto guard = CUDAContext::get_instance().get_guard();
     CUDADriver::get_instance().memset(root_buffer, 0, rounded_size);
 #else
     TI_NOT_IMPLEMENTED
@@ -516,6 +517,7 @@ void LlvmRuntimeExecutor::materialize_runtime(MemoryPool *memory_pool,
   TaichiLLVMContext *tlctx = nullptr;
   if (config_->arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
+    auto context_guard = CUDAContext::get_instance().get_guard();
     CUDADriver::get_instance().malloc(
         (void **)result_buffer_ptr,
         sizeof(uint64) * taichi_result_buffer_entries);
@@ -614,9 +616,9 @@ void LlvmRuntimeExecutor::materialize_runtime(MemoryPool *memory_pool,
         (void *)&KernelProfilerBase::profiler_stop);
   }
 #if defined(TI_WITH_CUDA)
-  if (config_->arch == Arch::cuda) {
-    CUDADriver::get_instance().context_pop_current(nullptr);
-  }
+  // if (config_->arch == Arch::cuda) {
+  //   CUDADriver::get_instance().context_pop_current(nullptr);
+  // }
 #endif
 }
 

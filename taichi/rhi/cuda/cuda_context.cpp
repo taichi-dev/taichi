@@ -51,6 +51,11 @@ CUDAContext::CUDAContext()
   mcpu_ = fmt::format("sm_{}", compute_capability_);
 
   TI_TRACE("Emitting CUDA code for {}", mcpu_);
+
+  driver_.context_pop_current(nullptr);
+  void *curr_ctx_ = nullptr;
+  driver_.context_get_current(&curr_ctx_);
+  std::cout << "created " << curr_ctx_ << std::endl;
 }
 
 std::size_t CUDAContext::get_total_memory() {
@@ -121,6 +126,7 @@ void CUDAContext::launch(void *func,
     profiler_->stop(task_handle);
 
   if (debug_) {
+    auto guard = CUDAContext::get_instance().get_guard();
     driver_.stream_synchronize(nullptr);
   }
 }

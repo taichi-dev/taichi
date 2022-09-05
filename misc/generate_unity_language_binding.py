@@ -293,6 +293,7 @@ if __name__ == "__main__":
         BuiltInType("int64_t", "long"),
         BuiltInType("uint64_t", "ulong"),
         BuiltInType("float", "float"),
+        BuiltInType("char", "byte"),
         BuiltInType("const char*", "string"),
         BuiltInType("void*", "IntPtr"),
         BuiltInType("const void*", "IntPtr"),

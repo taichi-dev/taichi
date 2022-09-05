@@ -32,15 +32,15 @@
     return TI_NULL_HANDLE;                         \
   }
 
-#define TI_CAPI_INVALID_ARGUMENT(x)                   \
-  if (x == TI_NULL_HANDLE) {                          \
-    ti_set_last_error(TI_ERROR_INVALID_ARGUMENT, #x); \
-    return;                                           \
+#define TI_CAPI_INVALID_ARGUMENT(pred)                   \
+  if (pred) {                                            \
+    ti_set_last_error(TI_ERROR_INVALID_ARGUMENT, #pred); \
+    return;                                              \
   }
-#define TI_CAPI_INVALID_ARGUMENT_RV(x)                \
-  if (x == TI_NULL_HANDLE) {                          \
-    ti_set_last_error(TI_ERROR_INVALID_ARGUMENT, #x); \
-    return TI_NULL_HANDLE;                            \
+#define TI_CAPI_INVALID_ARGUMENT_RV(pred)                \
+  if (pred) {                                            \
+    ti_set_last_error(TI_ERROR_INVALID_ARGUMENT, #pred); \
+    return TI_NULL_HANDLE;                               \
   }
 
 #define TI_CAPI_INVALID_INTEROP_ARCH(x, arch)                    \
@@ -78,10 +78,10 @@ class Runtime {
       const taichi::lang::Device::AllocParams &params);
   virtual void free_memory(TiMemory devmem);
 
-  virtual TiTexture allocate_texture(const taichi::lang::ImageParams &params) {
+  virtual TiImage allocate_image(const taichi::lang::ImageParams &params) {
     TI_NOT_IMPLEMENTED
   }
-  virtual void free_texture(TiTexture texture) {
+  virtual void free_image(TiImage image) {
     TI_NOT_IMPLEMENTED
   }
 
@@ -168,16 +168,16 @@ struct devalloc_cast_t {
   return devalloc_cast_t<TiMemory>::devalloc2handle(runtime, devalloc);
 }
 
-[[maybe_unused]] taichi::lang::DeviceAllocation devtex2devalloc(
+[[maybe_unused]] taichi::lang::DeviceAllocation devimg2devalloc(
     Runtime &runtime,
-    TiTexture devtex) {
-  return devalloc_cast_t<TiTexture>::handle2devalloc(runtime, devtex);
+    TiImage devimg) {
+  return devalloc_cast_t<TiImage>::handle2devalloc(runtime, devimg);
 }
 
-[[maybe_unused]] TiTexture devalloc2devtex(
+[[maybe_unused]] TiImage devalloc2devimg(
     Runtime &runtime,
     const taichi::lang::DeviceAllocation &devalloc) {
-  return devalloc_cast_t<TiTexture>::devalloc2handle(runtime, devalloc);
+  return devalloc_cast_t<TiImage>::devalloc2handle(runtime, devalloc);
 }
 
 }  // namespace

@@ -1,4 +1,5 @@
 // C++ wrapper of Taichi C-API
+#include <cstring>
 #include <list>
 #include <vector>
 #include <string>
@@ -153,11 +154,32 @@ class NdArray {
     return *this;
   }
 
-  void *map() {
+  inline void *map() {
     return ti_map_memory(runtime_, ndarray_.memory);
   }
-  void unmap() {
+  inline void unmap() {
     return ti_unmap_memory(runtime_, ndarray_.memory);
+  }
+
+  inline void read(T *dst, size_t size) {
+    T *src = (T *)map();
+    if (src != nullptr) {
+      std::memcpy(dst, src, size);
+    }
+    unmap();
+  }
+  inline void read(std::vector<T> &dst) {
+    read(dst.data(), dst.size() * sizeof(T));
+  }
+  inline void write(const T *src, size_t size) {
+    T *dst = (T *)map();
+    if (dst != nullptr) {
+      std::memcpy(dst, src, size);
+    }
+    unmap();
+  }
+  inline void write(const std::vector<T> &src) {
+    write(src.data(), src.size() * sizeof(T));
   }
 
   constexpr TiMemory memory() const {
@@ -171,33 +193,89 @@ class NdArray {
   }
 };
 
-class Texture {
+class Image {
   TiRuntime runtime_{TI_NULL_HANDLE};
-  TiTexture texture_{TI_NULL_HANDLE};
+  TiImage image_{TI_NULL_HANDLE};
   bool should_destroy_{false};
 
  public:
   constexpr bool is_valid() const {
-    return texture_ != nullptr;
+    return image_ != nullptr;
   }
   inline void destroy() {
     if (should_destroy_) {
-      ti_free_texture(runtime_, texture_);
-      texture_ = TI_NULL_HANDLE;
+      ti_free_image(runtime_, image_);
+      image_ = TI_NULL_HANDLE;
       should_destroy_ = false;
     }
+  }
+
+  Image() {
+  }
+  Image(const Image &b) = delete;
+  Image(Image &&b)
+      : runtime_(detail::move_handle(b.runtime_)),
+        image_(detail::move_handle(b.image_)),
+        should_destroy_(std::exchange(b.should_destroy_, false)) {
+  }
+  Image(TiRuntime runtime, TiImage image, bool should_destroy)
+      : runtime_(runtime), image_(image), should_destroy_(should_destroy) {
+  }
+  ~Image() {
+    destroy();
+  }
+
+  Image &operator=(const Image &) = delete;
+  Image &operator=(Image &&b) {
+    destroy();
+    runtime_ = detail::move_handle(b.runtime_);
+    image_ = detail::move_handle(b.image_);
+    should_destroy_ = std::exchange(b.should_destroy_, false);
+    return *this;
+  }
+
+  TiImageSlice slice(TiImageOffset offset,
+                     TiImageExtent extent,
+                     uint32_t mip_level) const {
+    TiImageSlice slice{};
+    slice.image = image_;
+    slice.extent = extent;
+    slice.offset = offset;
+    slice.mip_level = mip_level;
+    return slice;
+  }
+
+  constexpr TiImage image() const {
+    return image_;
+  }
+  constexpr operator TiImage() const {
+    return image_;
+  }
+};
+
+class Texture {
+  Image image_{};
+  TiTexture texture_{};
+
+ public:
+  constexpr bool is_valid() const {
+    return image_.is_valid();
+  }
+  inline void destroy() {
+    image_.destroy();
   }
 
   Texture() {
   }
   Texture(const Texture &b) = delete;
   Texture(Texture &&b)
-      : runtime_(detail::move_handle(b.runtime_)),
-        texture_(detail::move_handle(b.texture_)),
-        should_destroy_(std::exchange(b.should_destroy_, false)) {
+      : image_(std::move(b.image_)), texture_(std::move(b.texture_)) {
   }
-  Texture(TiRuntime runtime, TiTexture texture, bool should_destroy)
-      : runtime_(runtime), texture_(texture), should_destroy_(should_destroy) {
+  Texture(Image &&image, const TiTexture &texture)
+      : image_(std::move(image)), texture_(texture) {
+    if (texture.image != image_) {
+      ti_set_last_error(TI_ERROR_INVALID_ARGUMENT, "texture.image != image");
+    }
   }
   ~Texture() {
     destroy();
@@ -206,9 +284,8 @@ class Texture {
   Texture &operator=(const Texture &) = delete;
   Texture &operator=(Texture &&b) {
     destroy();
-    runtime_ = detail::move_handle(b.runtime_);
-    texture_ = detail::move_handle(b.texture_);
-    should_destroy_ = std::exchange(b.should_destroy_, false);
+    image_ = std::move(b.image_);
+    texture_ = std::move(b.texture_);
     return *this;
   }
 
@@ -227,7 +304,8 @@ class ArgumentEntry {
  public:
   ArgumentEntry() = delete;
   ArgumentEntry(const ArgumentEntry &) = delete;
-  ArgumentEntry(ArgumentEntry &&) = delete;
+  ArgumentEntry(ArgumentEntry &&b) : arg_(b.arg_) {
+  }
   ArgumentEntry(TiArgument *arg) : arg_(arg) {
   }
 
@@ -250,7 +328,7 @@ class ArgumentEntry {
     arg_->value.ndarray = ndarray;
     return *this;
   }
-  inline ArgumentEntry &operator=(TiTexture texture) {
+  inline ArgumentEntry &operator=(const TiTexture &texture) {
     arg_->type = TI_ARGUMENT_TYPE_TEXTURE;
     arg_->value.texture = texture;
     return *this;
@@ -595,23 +673,34 @@ class Runtime {
     return NdArray<T>(runtime_, std::move(ndarray), true);
   }
 
-  Texture allocate_texture(const TiTextureAllocateInfo &allocate_info) {
-    TiTexture texture = ti_allocate_texture(runtime_, &allocate_info);
-    return Texture(runtime_, texture, true);
+  Image allocate_image(const TiImageAllocateInfo &allocate_info) {
+    TiImage image = ti_allocate_image(runtime_, &allocate_info);
+    return Image(runtime_, image, true);
   }
   Texture allocate_texture2d(uint32_t width,
                              uint32_t height,
-                             TiTextureFormat format) {
-    TiTextureAllocateInfo allocate_info{};
-    allocate_info.dimension = TI_TEXTURE_DIMENSION_2D;
-    allocate_info.extent.array_layer_count = 1;
-    allocate_info.extent.width = width;
-    allocate_info.extent.height = height;
-    allocate_info.extent.depth = 1;
+                             TiFormat format,
+                             TiSampler sampler) {
+    TiImageExtent extent{};
+    extent.width = width;
+    extent.height = height;
+    extent.depth = 1;
+    extent.array_layer_count = 1;
+
+    TiImageAllocateInfo allocate_info{};
+    allocate_info.dimension = TI_IMAGE_DIMENSION_2D;
+    allocate_info.extent = extent;
     allocate_info.mip_level_count = 1;
     allocate_info.format = format;
-    allocate_info.usage = TI_TEXTURE_USAGE_STORAGE_BIT;
-    return allocate_texture(allocate_info);
+    allocate_info.usage = TI_IMAGE_USAGE_STORAGE_BIT;
+
+    Image image = allocate_image(allocate_info);
+    TiTexture texture{};
+    texture.image = image;
+    texture.dimension = TI_IMAGE_DIMENSION_2D;
+    texture.format = format;
+    texture.sampler = sampler;
+    return Texture(std::move(image), texture);
   }
 
   AotModule load_aot_module(const char *path) {
@@ -626,12 +715,12 @@ class Runtime {
                                     const TiMemorySlice &src_memory) {
     ti_copy_memory_device_to_device(runtime_, &dst_memory, &src_memory);
   }
-  void copy_texture_device_to_device(const TiTextureSlice &dst_texture,
-                                     const TiTextureSlice &src_texture) {
-    ti_copy_texture_device_to_device(runtime_, &dst_texture, &src_texture);
+  void copy_image_device_to_device(const TiImageSlice &dst_texture,
+                                   const TiImageSlice &src_texture) {
+    ti_copy_image_device_to_device(runtime_, &dst_texture, &src_texture);
   }
-  void transition_texture(TiTexture texture, TiTextureLayout layout) {
-    ti_transition_texture(runtime_, texture, layout);
+  void transition_image(TiImage image, TiImageLayout layout) {
+    ti_transition_image(runtime_, image, layout);
   }
 
   void submit() {

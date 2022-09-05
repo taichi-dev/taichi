@@ -61,7 +61,12 @@
                     "is_dispatchable": false
                 },
                 {
-                    "name": "texture",
+                    "name": "image",
+                    "type": "handle",
+                    "is_dispatchable": false
+                },
+                {
+                    "name": "sampler",
                     "type": "handle",
                     "is_dispatchable": false
                 },
@@ -202,7 +207,7 @@
                     ]
                 },
                 {
-                    "name": "texture_usage",
+                    "name": "image_usage",
                     "type": "bit_field",
                     "bits": {
                         "storage": 0,
@@ -211,7 +216,7 @@
                     }
                 },
                 {
-                    "name": "texture_dimension",
+                    "name": "image_dimension",
                     "type": "enumeration",
                     "cases": {
                         "1d": 0,
@@ -223,17 +228,17 @@
                     }
                 },
                 {
-                    "name": "texture_layout",
+                    "name": "image_layout",
                     "type": "enumeration",
                     "inc_cases": "image_layout"
                 },
                 {
-                    "name": "texture_format",
+                    "name": "format",
                     "type": "enumeration",
                     "inc_cases": "buffer_format"
                 },
                 {
-                    "name": "texture_offset",
+                    "name": "image_offset",
                     "type": "structure",
                     "fields": [
                         {
@@ -255,7 +260,7 @@
                     ]
                 },
                 {
-                    "name": "texture_extent",
+                    "name": "image_extent",
                     "type": "structure",
                     "fields": [
                         {
@@ -277,16 +282,16 @@
                     ]
                 },
                 {
-                    "name": "texture_allocate_info",
+                    "name": "image_allocate_info",
                     "type": "structure",
                     "fields": [
                         {
                             "name": "dimension",
-                            "type": "enumeration.texture_dimension"
+                            "type": "enumeration.image_dimension"
                         },
                         {
                             "name": "extent",
-                            "type": "structure.texture_extent"
+                            "type": "structure.image_extent"
                         },
                         {
                             "name": "mip_level_count",
@@ -294,32 +299,89 @@
                         },
                         {
                             "name": "format",
-                            "type": "enumeration.texture_format"
+                            "type": "enumeration.format"
                         },
                         {
                             "name": "usage",
-                            "type": "bit_field.texture_usage"
+                            "type": "bit_field.image_usage"
                         }
                     ]
                 },
                 {
-                    "name": "texture_slice",
+                    "name": "image_slice",
                     "type": "structure",
                     "fields": [
                         {
-                            "type": "handle.texture"
+                            "type": "handle.image"
                         },
                         {
                             "name": "offset",
-                            "type": "structure.texture_offset"
+                            "type": "structure.image_offset"
                         },
                         {
                             "name": "extent",
-                            "type": "structure.texture_extent"
+                            "type": "structure.image_extent"
                         },
                         {
                             "name": "mip_level",
                             "type": "uint32_t"
+                        }
+                    ]
+                },
+                {
+                    "name": "filter",
+                    "type": "enumeration",
+                    "inc_cases": "filter"
+                },
+                {
+                    "name": "address_mode",
+                    "type": "enumeration",
+                    "inc_cases": "address_mode"
+                },
+                {
+                    "name": "sampler_create_info",
+                    "type": "structure",
+                    "fields": [
+                        {
+                            "name": "mag_filter",
+                            "type": "enumeration.filter"
+                        },
+                        {
+                            "name": "min_filter",
+                            "type": "enumeration.filter"
+                        },
+                        {
+                            "name": "address_mode",
+                            "type": "enumeration.address_mode"
+                        },
+                        {
+                            "name": "max_anisotropy",
+                            "type": "float"
+                        }
+                    ]
+                },
+                {
+                    "name": "texture",
+                    "type": "structure",
+                    "fields": [
+                        {
+                            "name": "image",
+                            "type": "handle.image"
+                        },
+                        {
+                            "type": "handle.sampler"
+                        },
+                        {
+                            "name": "dimension",
+                            "type": "enumeration.image_dimension"
+                        },
+                        {
+                            "name": "extent",
+                            "type": "structure.image_extent"
+                        },
+                        {
+                            "name": "format",
+                            "type": "enumeration.format"
                         }
                     ]
                 },
@@ -341,7 +403,7 @@
                         },
                         {
                             "name": "texture",
-                            "type": "handle.texture"
+                            "type": "structure.texture"
                         }
                     ]
                 },
@@ -486,32 +548,62 @@
                     ]
                 },
                 {
-                    "name": "allocate_texture",
+                    "name": "allocate_image",
                     "type": "function",
                     "parameters": [
                         {
                             "name": "@return",
-                            "type": "handle.texture"
+                            "type": "handle.image"
                         },
                         {
                             "type": "handle.runtime"
                         },
                         {
                             "name": "allocate_info",
-                            "type": "structure.texture_allocate_info",
+                            "type": "structure.image_allocate_info",
                             "by_ref": true
                         }
                     ]
                 },
                 {
-                    "name": "free_texture",
+                    "name": "free_image",
                     "type": "function",
                     "parameters": [
                         {
                             "type": "handle.runtime"
                         },
                         {
-                            "type": "handle.texture"
+                            "type": "handle.image"
+                        }
+                    ]
+                },
+                {
+                    "name": "create_sampler",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "name": "@return",
+                            "type": "handle.sampler"
+                        },
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "name": "create_info",
+                            "type": "structure.sampler_create_info",
+                            "by_ref": true
+                        }
+                    ]
+                },
+                {
+                    "name": "destroy_sampler",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "type": "handle.sampler"
                         }
                     ]
                 },
@@ -558,7 +650,7 @@
                     ]
                 },
                 {
-                    "name": "copy_texture_device_to_device",
+                    "name": "copy_image_device_to_device",
                     "type": "function",
                     "is_device_command": true,
                     "parameters": [
@@ -566,19 +658,19 @@
                             "type": "handle.runtime"
                         },
                         {
-                            "name": "dst_texture",
-                            "type": "structure.texture_slice",
+                            "name": "dst_image",
+                            "type": "structure.image_slice",
                             "by_ref": true
                         },
                         {
-                            "name": "src_texture",
-                            "type": "structure.texture_slice",
+                            "name": "src_image",
+                            "type": "structure.image_slice",
                             "by_ref": true
                         }
                     ]
                 },
                 {
-                    "name": "transition_texture",
+                    "name": "transition_image",
                     "type": "function",
                     "is_device_command": true,
                     "parameters": [
@@ -586,11 +678,11 @@
                             "type": "handle.runtime"
                         },
                         {
-                            "type": "handle.texture"
+                            "type": "handle.image"
                         },
                         {
                             "name": "layout",
-                            "type": "enumeration.texture_layout"
+                            "type": "enumeration.image_layout"
                         }
                     ]
                 },
@@ -821,7 +913,7 @@
                     ]
                 },
                 {
-                    "name": "vulkan_texture_interop_info",
+                    "name": "vulkan_image_interop_info",
                     "type": "structure",
                     "fields": [
                         {
@@ -968,19 +1060,19 @@
                     ]
                 },
                 {
-                    "name": "import_vulkan_texture",
+                    "name": "import_vulkan_image",
                     "type": "function",
                     "parameters": [
                         {
                             "name": "@return",
-                            "type": "handle.texture"
+                            "type": "handle.image"
                         },
                         {
                             "type": "handle.runtime"
                         },
                         {
                             "name": "interop_info",
-                            "type": "structure.vulkan_texture_interop_info",
+                            "type": "structure.vulkan_image_interop_info",
                             "by_ref": true
                         },
                         {
@@ -994,18 +1086,18 @@
                     ]
                 },
                 {
-                    "name": "export_vulkan_texture",
+                    "name": "export_vulkan_image",
                     "type": "function",
                     "parameters": [
                         {
                             "type": "handle.runtime"
                         },
                         {
-                            "type": "handle.texture"
+                            "type": "handle.image"
                         },
                         {
                             "name": "interop_info",
-                            "type": "structure.vulkan_texture_interop_info",
+                            "type": "structure.vulkan_image_interop_info",
                             "by_mut": true
                         }
                     ]

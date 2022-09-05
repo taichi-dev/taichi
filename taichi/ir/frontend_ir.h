@@ -928,8 +928,11 @@ class ASTBuilder {
                           const std::string &msg,
                           const std::vector<Expr> &args);
   void begin_frontend_range_for(const Expr &i, const Expr &s, const Expr &e);
-  void begin_frontend_struct_for_on_snode(const ExprGroup &loop_vars, SNode *snode);
-  void begin_frontend_struct_for_on_external_tensor(const ExprGroup &loop_vars, const Expr &external_tensor);
+  void begin_frontend_struct_for_on_snode(const ExprGroup &loop_vars,
+                                          SNode *snode);
+  void begin_frontend_struct_for_on_external_tensor(
+      const ExprGroup &loop_vars,
+      const Expr &external_tensor);
   void begin_frontend_mesh_for(const Expr &i,
                                const mesh::MeshPtr &mesh_ptr,
                                const mesh::MeshElementType &element_type);

@@ -78,7 +78,7 @@ void FrontendForStmt::init_config(Arch arch, const ForLoopConfig &config) {
   if (arch == Arch::cuda) {
     num_cpu_threads = 1;
     TI_ASSERT(block_dim <= taichi_max_gpu_block_dim);
-  } else { // cpu
+  } else {  // cpu
     if (config.num_cpu_threads == 0) {
       num_cpu_threads = std::thread::hardware_concurrency();
     } else {
@@ -1082,14 +1082,15 @@ void ASTBuilder::begin_frontend_struct_for_on_snode(const ExprGroup &loop_vars,
   this->create_scope(stmt->body, For);
 }
 
-void ASTBuilder::begin_frontend_struct_for_on_external_tensor(const ExprGroup &loop_vars,
-                                           const Expr &external_tensor) {
+void ASTBuilder::begin_frontend_struct_for_on_external_tensor(
+    const ExprGroup &loop_vars,
+    const Expr &external_tensor) {
   TI_WARN_IF(
       for_loop_dec_.config.strictly_serialized,
       "ti.loop_config(serialize=True) does not have effect on the struct for. "
       "The execution order is not guaranteed.");
-  auto stmt_unique = std::make_unique<FrontendForStmt>(loop_vars, external_tensor, arch_,
-                                                       for_loop_dec_.config);
+  auto stmt_unique = std::make_unique<FrontendForStmt>(
+      loop_vars, external_tensor, arch_, for_loop_dec_.config);
   for_loop_dec_.reset();
   auto stmt = stmt_unique.get();
   this->insert(std::move(stmt_unique));

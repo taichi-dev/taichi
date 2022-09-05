@@ -301,8 +301,10 @@ void export_lang(py::module &m) {
       .def("expr_assign", &ASTBuilder::expr_assign)
       .def("begin_frontend_range_for", &ASTBuilder::begin_frontend_range_for)
       .def("end_frontend_range_for", &ASTBuilder::pop_scope)
-      .def("begin_frontend_struct_for_on_snode", &ASTBuilder::begin_frontend_struct_for_on_snode)
-      .def("begin_frontend_struct_for_on_external_tensor", &ASTBuilder::begin_frontend_struct_for_on_external_tensor)
+      .def("begin_frontend_struct_for_on_snode",
+           &ASTBuilder::begin_frontend_struct_for_on_snode)
+      .def("begin_frontend_struct_for_on_external_tensor",
+           &ASTBuilder::begin_frontend_struct_for_on_external_tensor)
       .def("end_frontend_struct_for", &ASTBuilder::pop_scope)
       .def("begin_frontend_mesh_for", &ASTBuilder::begin_frontend_mesh_for)
       .def("end_frontend_mesh_for", &ASTBuilder::pop_scope)
@@ -484,10 +486,9 @@ void export_lang(py::module &m) {
              program->fill_ndarray_fast(ndarray,
                                         reinterpret_cast<int32_t &>(val));
            })
-      .def("fill_uint",
-           [](Program *program, Ndarray *ndarray, uint32_t val) {
-             program->fill_ndarray_fast(ndarray, val);
-           });
+      .def("fill_uint", [](Program *program, Ndarray *ndarray, uint32_t val) {
+        program->fill_ndarray_fast(ndarray, val);
+      });
 
   py::class_<AotModuleBuilder>(m, "AotModuleBuilder")
       .def("add_field", &AotModuleBuilder::add_field)

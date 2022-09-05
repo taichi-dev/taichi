@@ -544,10 +544,10 @@ def test_vector_dtype():
 def test_matrix_dtype():
     @ti.kernel
     def foo():
-        a = ti.Vector([[1, 2], [3, 4]], ti.f32)
+        a = ti.Matrix([[1, 2], [3, 4]], ti.f32)
         a /= 2
         assert all(abs(a - ((0.5, 1.), (1.5, 2.))) < 1e-6)
-        b = ti.Vector([[1.5, 2.5], [3.5, 4.5]], ti.i32)
+        b = ti.Matrix([[1.5, 2.5], [3.5, 4.5]], ti.i32)
         assert all(b == ((1, 2), (3, 4)))
 
     foo()

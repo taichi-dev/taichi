@@ -3,7 +3,7 @@ import math
 from taichi.lang import impl, matrix, ops
 from taichi.lang.impl import expr_init, get_runtime, grouped, static
 from taichi.lang.kernel_impl import func, pyfunc
-from taichi.lang.matrix import Matrix, Vector
+from taichi.lang.matrix import Matrix, Vector, is_vector
 from taichi.types import f32, f64
 from taichi.types.annotations import template
 
@@ -59,6 +59,9 @@ def _matrix_transpose(mat):
     Returns:
         Transpose of the input matrix.
     """
+    if static(is_vector(mat)):
+        # Convert to row vector
+        return matrix.Matrix([[mat(i) for i in range(mat.n)]])
     return matrix.Matrix([[mat(i, j) for i in range(mat.n)]
                           for j in range(mat.m)],
                          ndim=mat.ndim)

@@ -8,7 +8,8 @@ import taichi as ti
 @pytest.fixture(autouse=True)
 def wanted_arch(req_arch, req_options):
     if req_arch is not None:
-        if not {'device_memory_GB', 'device_memory_fraction'} & set(req_options):
+        if not {'device_memory_GB', 'device_memory_fraction'
+                } & set(req_options):
             # Lower GPU requirements
             req_options['device_memory_GB'] = 0.5
 

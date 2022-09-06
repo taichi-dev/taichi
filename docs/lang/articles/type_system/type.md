@@ -116,6 +116,8 @@ As a rule of thumb, implicit type casting is a major source of bugs. And Taichi 
 
 :::
 
+Implicit type casting can happen in binary operations or in assignments, as explained below.
+
 #### Implicit type casting in binary operations
 
 Taichi implements its own implicit type casting rules for binary operations, which are slightly different from [those for the C programming language](https://en.cppreference.com/w/c/language/conversion). In general we have three rules in descending order of priority:

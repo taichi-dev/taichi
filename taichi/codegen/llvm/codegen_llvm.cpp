@@ -1779,7 +1779,6 @@ void TaskCodeGenLLVM::visit(PtrOffsetStmt *stmt) {
         llvm_val[stmt->origin], llvm::Type::getInt64Ty(*llvm_context));
     auto address_offset = builder->CreateSExt(
         llvm_val[stmt->offset], llvm::Type::getInt64Ty(*llvm_context));
-
     auto target_address = builder->CreateAdd(origin_address, address_offset);
     auto dt = stmt->ret_type.ptr_removed();
     llvm_val[stmt] = builder->CreateIntToPtr(

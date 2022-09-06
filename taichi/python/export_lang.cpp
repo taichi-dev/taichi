@@ -735,11 +735,13 @@ void export_lang(py::module &m) {
 
   py::class_<Expr> expr(m, "Expr");
   expr.def("snode", &Expr::snode, py::return_value_policy::reference)
+      // TODO(zhanlue): Rename to "is_global_expr"
       .def("is_global_var",
            [](Expr *expr) { return expr->is<GlobalVariableExpression>(); })
+      // TODO(zhanlue): Rename to "is_external_expr"
       .def("is_external_var",
            [](Expr *expr) { return expr->is<ExternalTensorExpression>(); })
-      .def("is_index_var",
+      .def("is_index_expr",
            [](Expr *expr) { return expr->is<IndexExpression>(); })
       .def("is_primal",
            [](Expr *expr) {

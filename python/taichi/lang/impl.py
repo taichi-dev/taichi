@@ -229,8 +229,9 @@ def subscript(value, *_indices, skip_reordered=False, get_ref=False):
         # Index into TensorType
         # value: IndexExpression with ret_type = TensorType
         assert current_cfg().real_matrix is True
-        assert value.ptr.is_index_var()
         assert is_tensor(value.ptr.get_ret_type())
+
+        # TODO(zhanlue): Merge _ti_core.subscript and _ti_core.make_index_expr
         return Expr(
             _ti_core.subscript(value.ptr, indices_expr_group,
                                get_runtime().get_current_src_info()))

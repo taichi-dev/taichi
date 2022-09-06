@@ -180,7 +180,7 @@ Taichi allows you to use all types supplied in the `ti.types` module as scaffold
 
 ### Matrix and Vector types
 
-You can use the two funtions `ti.types.matrix()` and `ti.types.vector()` to create your own matrix and vector types:
+You can use the two functions `ti.types.matrix()` and `ti.types.vector()` to create your own matrix and vector types:
 
 ```python
 vec4d = ti.types.vector(4, ti.f64)  # 64-bit floating-point 4D vector type

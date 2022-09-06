@@ -733,9 +733,7 @@ void export_lang(py::module &m) {
 
   py::class_<Expr> expr(m, "Expr");
   expr.def("snode", &Expr::snode, py::return_value_policy::reference)
-      .def("is_global_var",
-           [](Expr *expr) { return expr->is<FieldExpression>(); })
-      .def("is_external_var",
+      .def("is_external_tensor_expr",
            [](Expr *expr) { return expr->is<ExternalTensorExpression>(); })
       .def("is_primal",
            [](Expr *expr) {

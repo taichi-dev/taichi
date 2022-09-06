@@ -177,7 +177,19 @@ Compound types are user-defined data types, which comprise multiple members. Sup
 
 Taichi allows you to use all types supplied in the `ti.types` module as scaffolds to customize *higher-level* compound types.
 
-Suppose you are using Taichi to represent a sphere. A sphere in the 3D space can be abstracted with its center and radius. In the following example, you call `ti.types.vector()` and `ti.types.struct()` to create compound types `vec3` and `sphere_type`. These two types are the *higher-level* compound types that fit better with your scenario. Once you have customized your compound types, you can use them as templates to create two instances of spheres (initialize two local variables `sphere1` and `sphere2`):
+
+### Matrix and Vector types
+
+You can use the two funtions `ti.types.matrix()` and `ti.types.vector()` to create your own matrix and vector types:
+
+```python
+vec4d = ti.types.vector(4, ti.f64)  # 64-bit floating-point 4D vector type
+mat4x3i = ti.types.matrix(4, 3, int)  # integer 4x3 matrix type
+```
+
+### Struct types and dataclass
+
+You can use the funtion `ti.types.struct()` to create a struct type, for example suppose you are using Taichi to represent a sphere. A sphere in the 3D space can be abstracted with its center and radius. In the following example, you call `ti.types.vector()` and `ti.types.struct()` to create compound types `vec3` and `sphere_type`. These two types are the *higher-level* compound types that fit better with your scenario. Once you have customized your compound types, you can use them as templates to create two instances of spheres (initialize two local variables `sphere1` and `sphere2`):
 
 ```python
 # Define a compound type vec3 to represent a sphere's center
@@ -188,6 +200,21 @@ sphere_type = ti.types.struct(center=vec3, radius=float)
 sphere1 = sphere_type(center=vec3([0, 0, 0]), radius=1.0)
 # Initialize sphere2, whose center is at [1,1,1] and whose radius is 1.0
 sphere2 = sphere_type(center=vec3([1, 1, 1]), radius=1.0)
+```
+
+Indeed, there is a better way to do so. We recommend you use the decorator `ti.dataclass` as a more intuitive way to define your custom struct types:
+
+```python
+@ti.dataclass
+class Sphere:
+    center: vec3
+    radius: float
+```
+
+The code above is equivalent to the line of code below:
+
+```python
+Sphere = ti.types.struct(center=vec3, radius=float)
 ```
 
 ### Initialization

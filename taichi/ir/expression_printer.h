@@ -100,7 +100,7 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
                      expr->element_dim, expr->dt->to_string()));
   }
 
-  void visit(GlobalVariableExpression *expr) override {
+  void visit(FieldExpression *expr) override {
     emit("#", expr->ident.name());
     if (expr->snode) {
       emit(

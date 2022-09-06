@@ -42,35 +42,24 @@ FunctionType LlvmProgramImpl::compile(Kernel *kernel,
   return codegen->compile_to_function();
 }
 
-std::unique_ptr<llvm::Module>
-LlvmProgramImpl::clone_struct_compiler_initial_context(
-    bool has_multiple_snode_trees,
-    TaichiLLVMContext *tlctx) {
-  if (has_multiple_snode_trees) {
-    return tlctx->clone_struct_module();
-  }
-  return tlctx->clone_runtime_module();
-}
-
 std::unique_ptr<StructCompiler> LlvmProgramImpl::compile_snode_tree_types_impl(
     SNodeTree *tree) {
   auto *const root = tree->root();
-  const bool has_multiple_snode_trees = (num_snode_trees_processed_ > 0);
   std::unique_ptr<StructCompiler> struct_compiler{nullptr};
   if (arch_is_cpu(config->arch)) {
-    auto host_module = clone_struct_compiler_initial_context(
-        has_multiple_snode_trees, runtime_exec_->llvm_context_host_.get());
+    auto host_module =
+        runtime_exec_->llvm_context_host_.get()->new_module("struct");
     struct_compiler = std::make_unique<StructCompilerLLVM>(
         host_arch(), this, std::move(host_module), tree->id());
   } else if (config->arch == Arch::dx12) {
-    auto device_module = clone_struct_compiler_initial_context(
-        has_multiple_snode_trees, runtime_exec_->llvm_context_device_.get());
+    auto device_module =
+        runtime_exec_->llvm_context_device_.get()->new_module("struct");
     struct_compiler = std::make_unique<StructCompilerLLVM>(
         Arch::dx12, this, std::move(device_module), tree->id());
   } else {
     TI_ASSERT(config->arch == Arch::cuda);
-    auto device_module = clone_struct_compiler_initial_context(
-        has_multiple_snode_trees, runtime_exec_->llvm_context_device_.get());
+    auto device_module =
+        runtime_exec_->llvm_context_device_.get()->new_module("struct");
     struct_compiler = std::make_unique<StructCompilerLLVM>(
         Arch::cuda, this, std::move(device_module), tree->id());
   }

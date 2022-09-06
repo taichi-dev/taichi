@@ -496,6 +496,9 @@ class VulkanSurface : public Surface {
 
   uint32_t image_index_{0};
 
+  uint32_t width_{0};
+  uint32_t height_{0};
+
   std::vector<DeviceAllocation> swapchain_images_;
 
   // DeviceAllocation screenshot_image_{kDeviceNullAllocation};

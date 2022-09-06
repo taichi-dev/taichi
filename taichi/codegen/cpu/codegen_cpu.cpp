@@ -235,16 +235,14 @@ FunctionType CPUModuleToFunctionConverter::convert(
     const std::string &kernel_name,
     const std::vector<LlvmLaunchArgInfo> &args,
     std::vector<LLVMCompiledData> &&data) const {
-  for (auto &datum : data) {
-    tlctx_->add_module(std::move(datum.module));
-  }
-
+  TI_AUTO_PROF;
+  auto jit_module = tlctx_->create_jit_module(std::move(data.back().module));
   using TaskFunc = int32 (*)(void *);
   std::vector<TaskFunc> task_funcs;
   task_funcs.reserve(data.size());
   for (auto &datum : data) {
     for (auto &task : datum.tasks) {
-      auto *func_ptr = tlctx_->lookup_function_pointer(task.name);
+      auto *func_ptr = jit_module->lookup_function(task.name);
       TI_ASSERT_INFO(func_ptr, "Offloaded datum function {} not found",
                      task.name);
       task_funcs.push_back((TaskFunc)(func_ptr));

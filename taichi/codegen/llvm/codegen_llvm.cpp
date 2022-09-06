@@ -318,11 +318,13 @@ void TaskCodeGenLLVM::emit_struct_meta_base(const std::string &name,
   // snodes, even if they have the same type.
   if (snode->parent)
     common.set("from_parent_element",
-               get_runtime_function(snode->get_ch_from_parent_func_name()));
+               get_struct_function(snode->get_ch_from_parent_func_name(),
+                                   snode->get_snode_tree_id()));
 
   if (snode->type != SNodeType::place)
     common.set("refine_coordinates",
-               get_runtime_function(snode->refine_coordinates_func_name()));
+               get_struct_function(snode->refine_coordinates_func_name(),
+                                   snode->get_snode_tree_id()));
 }
 
 TaskCodeGenLLVM::TaskCodeGenLLVM(Kernel *kernel,
@@ -332,7 +334,7 @@ TaskCodeGenLLVM::TaskCodeGenLLVM(Kernel *kernel,
     : LLVMModuleBuilder(
           module == nullptr ? get_llvm_program(kernel->program)
                                   ->get_llvm_context(kernel->arch)
-                                  ->clone_struct_module()
+                                  ->new_module("kernel")
                             : std::move(module),
           get_llvm_program(kernel->program)->get_llvm_context(kernel->arch)),
       kernel(kernel),
@@ -1706,10 +1708,11 @@ void TaskCodeGenLLVM::visit(GetChStmt *stmt) {
     auto offset = tlctx->get_constant(bit_offset);
     llvm_val[stmt] = create_bit_ptr(llvm_val[stmt->input_ptr], offset);
   } else {
-    auto ch = create_call(stmt->output_snode->get_ch_from_parent_func_name(),
-                          {builder->CreateBitCast(
-                              llvm_val[stmt->input_ptr],
-                              llvm::PointerType::getInt8PtrTy(*llvm_context))});
+    auto ch = call_struct_func(
+        stmt->output_snode->get_snode_tree_id(),
+        stmt->output_snode->get_ch_from_parent_func_name(),
+        builder->CreateBitCast(llvm_val[stmt->input_ptr],
+                               llvm::PointerType::getInt8PtrTy(*llvm_context)));
     llvm_val[stmt] = builder->CreateBitCast(
         ch, llvm::PointerType::get(StructCompilerLLVM::get_llvm_node_type(
                                        module.get(), stmt->output_snode),
@@ -2069,7 +2072,8 @@ void TaskCodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt,
         create_entry_block_alloca(physical_coordinate_ty);
 
     auto refine =
-        get_runtime_function(leaf_block->refine_coordinates_func_name());
+        get_struct_function(leaf_block->refine_coordinates_func_name(),
+                            leaf_block->get_snode_tree_id());
     // A block corner is the global coordinate/index of the lower-left corner
     // cell within that block, and is the same for all the cells within that
     // block.
@@ -2148,8 +2152,8 @@ void TaskCodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt,
     // needed to make final coordinates non-consecutive, since each thread will
     // process multiple coordinates via vectorization
     if (stmt->is_bit_vectorized) {
-      refine =
-          get_runtime_function(stmt->snode->refine_coordinates_func_name());
+      refine = get_struct_function(stmt->snode->refine_coordinates_func_name(),
+                                   stmt->snode->get_snode_tree_id());
       create_call(refine,
                   {new_coordinates, new_coordinates, tlctx->get_constant(0)});
     }
@@ -2236,7 +2240,6 @@ void TaskCodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt,
   auto struct_for_func = get_runtime_function("parallel_struct_for");
 
   if (arch_is_gpu(current_arch())) {
-    tlctx->add_struct_for_func(module.get(), stmt->tls_size);
     struct_for_func = llvm::cast<llvm::Function>(
         module
             ->getOrInsertFunction(

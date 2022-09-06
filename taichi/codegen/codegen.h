@@ -33,7 +33,7 @@ class KernelCodeGen {
   }
 
 #ifdef TI_WITH_LLVM
-  std::vector<LLVMCompiledData> compile_kernel_to_module();
+  virtual std::vector<LLVMCompiledData> compile_kernel_to_module();
 
   virtual LLVMCompiledData compile_task(
       std::unique_ptr<llvm::Module> &&module = nullptr,

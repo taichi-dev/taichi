@@ -35,7 +35,7 @@ Primitive types are scalar types and are the smallest units of building blocks f
 - `i32`: 32-bit signed integer
 - `f32` : 32-bit floating-point number.
 
-Not all primitive types are supported across all backends. Check out the following table for the supported types. Note that some backends may require extensions to support a specific primitive type.
+Not all primitive types are supported across all backends. Check out the following table for the supported types on various backends. Note that some backends may require extensions to support a specific primitive type.
 
 | Backend | `i8`               | `i16`              | `i32`              | `i64`              | `u8`                 | `u16`                | `u32`                | `u64`                | `f16`                | `f32`                | `f64`                |
 | ------- | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ |
@@ -54,7 +54,7 @@ When you call the `ti.init()` method to initialize the Taichi runtime, Taichi au
 - The default integer type in Taichi is `ti.i32`.
 - The default floating-point type in Taichi is `ti.f32`.
 
-You can customize these default primitive types by explicitly specifying the default types when initializing Taichi:
+You can customize these default primitive types by explicitly specifying them in the `init()` call:
 
 ```python
 ti.init(default_ip=ti.i64)  # Set the default integer type to ti.i64

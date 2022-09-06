@@ -187,15 +187,19 @@ vec4d = ti.types.vector(4, ti.f64)  # 64-bit floating-point 4D vector type
 mat4x3i = ti.types.matrix(4, 3, int)  # integer 4x3 matrix type
 ```
 
-Such types can be used to create the corresponding vector/matrix instances or as type notifiers in function arguments or struct members. For example:
+Such types can be used to create the corresponding vector/matrix instances or be used as type notifiers in function arguments and struct members. For example:
 
 
 ```python
 v = vec4d(1, 2, 3, 4)  # v = [1.0, 2.0 3.0 4.0]
 
 @ti.func
-def length(v: vec4d):
-    return v.norm()
+def length(w: vec4d):
+    return w.norm()
+
+@ti.kernel
+def test():
+    print(length(v))
 ```
 
 ### Struct types and dataclass

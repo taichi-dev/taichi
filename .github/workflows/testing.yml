@@ -111,6 +111,7 @@ jobs:
         shell: powershell
         if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
+          Get-Host
           Get-ExecutionPolicy -List
           echo $MyInvocation
           .\.github\workflows\scripts\win_build.ps1  -llvmVer ${{ matrix.llvmVer }} -installVulkan -install -libsDir C:\

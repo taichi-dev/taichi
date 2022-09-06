@@ -10,7 +10,9 @@ param (
 )
 
 Get-ExecutionPolicy -List
+Get-Host
 echo $MyInvocation
+curl -vv baidu.com
 
 $ErrorActionPreference = "Stop"
 

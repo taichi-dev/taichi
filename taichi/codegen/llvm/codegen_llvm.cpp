@@ -1731,24 +1731,27 @@ void TaskCodeGenLLVM::visit(PtrOffsetStmt *stmt) {
     // FIXME: get ptr_ty from taichi instead of llvm.
     llvm::Type *ptr_ty = nullptr;
     auto *val = llvm_val[stmt->origin];
+    auto *lhs = val;
+    auto fall_through =
+        stmt->origin->ret_type->is<TensorType>() && prog->config.real_matrix;
     // For SharedArray which is in address space 3.
     if (auto *addr_cast = llvm::dyn_cast<llvm::AddrSpaceCastOperator>(val))
       val = addr_cast->getOperand(0);
     if (auto *alloc = llvm::dyn_cast<llvm::AllocaInst>(val))
-      if (!stmt->origin->ret_type->is<TensorType>())
+      if (!fall_through)
         ptr_ty = alloc->getAllocatedType();
     if (!ptr_ty) {
       if (auto *gv = llvm::dyn_cast<llvm::GlobalVariable>(val))
-        if (!stmt->origin->ret_type->is<TensorType>())
+        if (!fall_through)
           ptr_ty = gv->getValueType();
       if (auto *gep = llvm::dyn_cast<llvm::GEPOperator>(val))
-        if (!stmt->origin->ret_type->is<TensorType>())
+        if (!fall_through)
           ptr_ty = gep->getResultElementType();
       if (stmt->origin->is<GlobalTemporaryStmt>()) {
         if (is_tensor_or_ptr(stmt->origin->ret_type)) {
           ptr_ty = tlctx->get_data_type(
               get_tensor_type(stmt->origin->ret_type)->get_element_type());
-          val = builder->CreateBitCast(val, llvm::PointerType::get(ptr_ty, 0));
+          lhs = builder->CreateBitCast(lhs, llvm::PointerType::get(ptr_ty, 0));
         } else {
           ptr_ty = tlctx->get_data_type(stmt->origin->ret_type.ptr_removed());
         }
@@ -1756,12 +1759,12 @@ void TaskCodeGenLLVM::visit(PtrOffsetStmt *stmt) {
         auto dtype =
             get_tensor_type(stmt->origin->ret_type)->get_element_type();
         ptr_ty = tlctx->get_data_type(dtype);
-        val = builder->CreateBitCast(val, llvm::PointerType::get(ptr_ty, 0));
+        lhs = builder->CreateBitCast(lhs, llvm::PointerType::get(ptr_ty, 0));
       }
     }
     TI_ASSERT(ptr_ty);
 
-    llvm_val[stmt] = builder->CreateGEP(ptr_ty, val, llvm_val[stmt->offset]);
+    llvm_val[stmt] = builder->CreateGEP(ptr_ty, lhs, llvm_val[stmt->offset]);
 #else
     if (is_tensor_or_ptr(stmt->origin->ret_type)) {
       auto stmt_dtype = get_tensor_type(stmt->origin->ret_type);
@@ -2299,17 +2302,9 @@ void TaskCodeGenLLVM::visit(GlobalTemporaryStmt *stmt) {
         0);
     llvm_val[stmt] = builder->CreatePointerCast(buffer, ptr_type);
   } else {
-    // if (prog->config.real_matrix &&
-    // stmt->ret_type.ptr_removed()->is<TensorType>()) {
-    //   auto tensor_type = stmt->ret_type.ptr_removed()->cast<TensorType>();
-    //   auto ptr_type = llvm::PointerType::get(
-    //     tlctx->get_data_type(tensor_type->get_element_type()), 0);
-    //   llvm_val[stmt] = builder->CreatePointerCast(buffer, ptr_type);
-    // } else {
     auto ptr_type = llvm::PointerType::get(
         tlctx->get_data_type(stmt->ret_type.ptr_removed()), 0);
     llvm_val[stmt] = builder->CreatePointerCast(buffer, ptr_type);
-    // }
   }
 }
 

@@ -15,7 +15,7 @@ class AnyArray:
         layout (Layout): Memory layout.
     """
     def __init__(self, ptr):
-        assert ptr.is_external_var()
+        assert ptr.is_external_tensor_expr()
         self.ptr = ptr
 
     def element_shape(self):

@@ -27,7 +27,7 @@ Expr bit_cast(const Expr &input, DataType dt) {
 }
 
 Expr Expr::operator[](const ExprGroup &indices) const {
-  TI_ASSERT(is<GlobalVariableExpression>() || is<ExternalTensorExpression>() ||
+  TI_ASSERT(is<FieldExpression>() || is<ExternalTensorExpression>() ||
             is<IdExpression>());
   return Expr::make<IndexExpression>(*this, indices);
 }
@@ -38,21 +38,21 @@ Expr &Expr::operator=(const Expr &o) {
 }
 
 SNode *Expr::snode() const {
-  TI_ASSERT_INFO(is<GlobalVariableExpression>(),
-                 "Cannot get snode of non-global variables.");
-  return cast<GlobalVariableExpression>()->snode;
+  TI_ASSERT_INFO(is<FieldExpression>(),
+                 "Cannot get snode of non-field expressions.");
+  return cast<FieldExpression>()->snode;
 }
 
 void Expr::set_adjoint(const Expr &o) {
-  this->cast<GlobalVariableExpression>()->adjoint.set(o);
+  this->cast<FieldExpression>()->adjoint.set(o);
 }
 
 void Expr::set_dual(const Expr &o) {
-  this->cast<GlobalVariableExpression>()->dual.set(o);
+  this->cast<FieldExpression>()->dual.set(o);
 }
 
 void Expr::set_adjoint_checkbit(const Expr &o) {
-  this->cast<GlobalVariableExpression>()->adjoint_checkbit.set(o);
+  this->cast<FieldExpression>()->adjoint_checkbit.set(o);
 }
 
 Expr::Expr(int16 x) : Expr() {
@@ -108,10 +108,10 @@ Expr loop_unique(const Expr &input, const std::vector<SNode *> &covers) {
   return Expr::make<LoopUniqueExpression>(input, covers);
 }
 
-Expr global_new(Expr id_expr, DataType dt) {
+Expr expr_field(Expr id_expr, DataType dt) {
   TI_ASSERT(id_expr.is<IdExpression>());
-  auto ret = Expr(std::make_shared<GlobalVariableExpression>(
-      dt, id_expr.cast<IdExpression>()->id));
+  auto ret = Expr(
+      std::make_shared<FieldExpression>(dt, id_expr.cast<IdExpression>()->id));
   return ret;
 }
 TLANG_NAMESPACE_END

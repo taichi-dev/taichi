@@ -6,7 +6,7 @@ sidebar_position: 1
 # Type system
 
 
-Taichi is a statically typed programming language, the type of a variable in the Taichi scope is determined at compile time. Once a variable is declared, you cannot bind its name to a value of a different type afterwards.
+Taichi is a statically typed programming language, the type of a variable in the Taichi scope is determined at compile time. Once a variable is declared, you cannot bind its name to a value of a different type afterward.
 
 Let's see a quick example:
 
@@ -14,13 +14,13 @@ Let's see a quick example:
 @ti.kernel
 def test():
     x = 1  # x is the integer 1
-    x = 3.14  # 3.14 is cated to 3 hene x is equal to 3
+    x = 3.14  # 3.14 is casted to 3 hence x is equal to 3
     x = ti.Vector([1, 1])  # Error!
 ```
 
-At Line 3 in the code above, Taichi will treat `x` as an integer since it's assigned by 1 upon its declaration. At Line 4 we assign the floating-point number 3.14 to `x`. This scalar will be automatically casted to the integer 3 to match the type of `x`, hence `x` is equal to 3 after this line. Line 5 will raise a syntax error where we try to assign a `ti.Vector` to `x`, since `ti.Vector` is of a completely different type and cannot be casted to integers.
+At Line 3 in the code above, Taichi will treat `x` as an integer since it's assigned by 1 upon its declaration. In Line 4 we assign the floating-point number 3.14 to `x`. This scalar will be automatically cast to integer 3 to match the type of `x`, hence `x` is equal to 3 after this line. Line 5 will raise a syntax error where we try to assign a `ti.Vector` to `x`, since `ti.Vector` is of a completely different type and cannot be cast into integers.
 
-We now give a brief summaray of the data types in Taichi, more detailed explanations will follow below.
+We now give a brief summary of the data types in Taichi. More detailed explanations will follow below.
 
 Taichi supports two categories of data types in the [Taichi scope](../kernels/syntax.md#taichi-scope): primitive types and compound types.
 
@@ -49,7 +49,7 @@ Not all primitive types are supported across all backends. Check out the followi
 
 ### Customize the default primitive types for integers and floating-point numbers
 
-When you call the `ti.init()` method to initialize the Taichi runtime, Taichi automatically sets the default types for integer and floating-point arithmetics:
+When you call the `ti.init()` method to initialize the Taichi runtime, Taichi automatically sets the default types for integer and floating-point arithmetic:
 
 - The default integer type in Taichi is `ti.i32`.
 - The default floating-point type in Taichi is `ti.f32`.
@@ -83,7 +83,7 @@ def func(a: ti.f64) -> ti.i64:
 
 ### Explicit type casting
 
-As we have mentioned at the beginning of this article, in the Taichi scope, the type of a variable is *statically typed* upon initialization. Taichi's compiler does type check at compile time, so you *cannot* change a variable's type once it is initialized. Still, from time to time, you may run into a situation where you have a certain type of data but it is not feasible for an assignment or calculation. Then, you need explicit type casting:
+As we have mentioned at the beginning of this article, in the Taichi scope, the type of a variable is *statically typed* upon initialization. Taichi's compiler does type check at compile time, so you *cannot* change a variable's type once it is initialized. Still, from time to time, you may run into a situation where you have a certain type of data but it is not feasible for an assignment or calculation. Then, you need explicit typecasting:
 
 - You can use `ti.cast()` to convert a value to the target type:
 
@@ -147,7 +147,7 @@ A few exceptions:
 - Logical operations return `i32`.
 - Comparison operations return `i32`.
 
-#### Implicit type casting in assignments
+#### Implicit typecasting in assignments
 
 When you assign a value to a variable of a different data type, Taichi implicitly casts the value into that type. Further, if the type of the variable is *not* the common type, a warning of precision loss occurs.
 
@@ -246,7 +246,7 @@ Just as you do with any other data type, you can call a compound type directly t
   my_ray3f = ti.types.struct(ro=my_vec3f, rd=my_vec3f, l=ti.f32)
   ```
 
-- In the following code snippet, you initialize five local variables using the created four compound types.
+- In the following code snippet, you initialize five local variables using the four created compound types.
 
   ```python
   ray1 = my_ray3f(0.0)            # ti.Struct(ro=[0.0, 0.0, 0.0], rd=[0.0, 0.0, 0.0], l=0.0)

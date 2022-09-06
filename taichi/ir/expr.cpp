@@ -27,8 +27,13 @@ Expr bit_cast(const Expr &input, DataType dt) {
 }
 
 Expr Expr::operator[](const ExprGroup &indices) const {
-  TI_ASSERT(is<FieldExpression>() || is<ExternalTensorExpression>() ||
-            is<IdExpression>());
+  if (is<IndexExpression>()) {
+    // Allow indexing IndexExpression with ret_type = TensorType
+    TI_ASSERT(is_tensor(expr->ret_type));
+  } else {
+    TI_ASSERT(is<FieldExpression>() || is<ExternalTensorExpression>() ||
+              is<IdExpression>());
+  }
   return Expr::make<IndexExpression>(*this, indices);
 }
 

@@ -28,6 +28,7 @@ from taichi.lang.util import (cook_dtype, get_traceback, is_taichi_class,
                               python_scope, taichi_scope, warning)
 from taichi.types.primitive_types import (all_types, f16, f32, f64, i32, i64,
                                           u8, u32, u64)
+from taichi.types.utils import is_tensor
 
 
 @taichi_scope
@@ -214,7 +215,7 @@ def subscript(value, *_indices, skip_reordered=False, get_ref=False):
             raise IndexError(
                 f'Field with dim {dim - element_dim} accessed with indices of dim {index_dim}'
             )
-        if element_dim == 0:
+        if element_dim == 0 or current_cfg().real_matrix:
             return Expr(
                 _ti_core.subscript(value.ptr, indices_expr_group,
                                    get_runtime().get_current_src_info()))
@@ -229,6 +230,17 @@ def subscript(value, *_indices, skip_reordered=False, get_ref=False):
                                   ndim=element_dim)
         ret.any_array_access = any_array_access
         return ret
+    if isinstance(value, Expr):
+        # Index into TensorType
+        # value: IndexExpression with ret_type = TensorType
+        assert current_cfg().real_matrix is True
+        assert is_tensor(value.ptr.get_ret_type())
+
+        # TODO(zhanlue): Merge _ti_core.subscript and _ti_core.make_index_expr
+        return Expr(
+            _ti_core.subscript(value.ptr, indices_expr_group,
+                               get_runtime().get_current_src_info()))
+
     # Directly evaluate in Python for non-Taichi types
     return value.__getitem__(*_indices)
 

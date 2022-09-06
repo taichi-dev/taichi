@@ -85,12 +85,12 @@ class InvokeRefineCoordinatesBuilder : public LLVMModuleBuilder {
     parent_coords.set("val", index0, parent_coords_first_component);
     auto *refine_fn_struct = tlctx->get_struct_function(
         snode->refine_coordinates_func_name(), snode->get_snode_tree_id());
-    auto *refine_fn =
+    auto *refine_fn = llvm::cast<llvm::Function>(
         module
             ->getOrInsertFunction(refine_fn_struct->getName(),
                                   refine_fn_struct->getFunctionType(),
                                   refine_fn_struct->getAttributes())
-            .getCallee();
+            .getCallee());
     used_snode_tree_ids.insert(snode->get_snode_tree_id());
     RuntimeObject child_coords{kLLVMPhysicalCoordinatesName, this,
                                builder.get()};

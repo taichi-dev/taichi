@@ -1199,8 +1199,7 @@ void flatten_rvalue(Expr ptr, Expression::FlattenContext *ctx) {
   } else if (ptr.is<StrideExpression>()) {
     flatten_global_load(ptr, ctx);
   } else if (ptr.is<FieldExpression>()) {
-    TI_ASSERT(ptr.cast<FieldExpression>()->snode->num_active_indices ==
-              0);
+    TI_ASSERT(ptr.cast<FieldExpression>()->snode->num_active_indices == 0);
     flatten_global_load(ptr[ExprGroup()], ctx);
   } else if (ptr.is<ArgLoadExpression>() &&
              ptr.cast<ArgLoadExpression>()->is_ptr) {

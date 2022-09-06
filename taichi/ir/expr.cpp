@@ -110,8 +110,8 @@ Expr loop_unique(const Expr &input, const std::vector<SNode *> &covers) {
 
 Expr expr_field(Expr id_expr, DataType dt) {
   TI_ASSERT(id_expr.is<IdExpression>());
-  auto ret = Expr(std::make_shared<FieldExpression>(
-      dt, id_expr.cast<IdExpression>()->id));
+  auto ret = Expr(
+      std::make_shared<FieldExpression>(dt, id_expr.cast<IdExpression>()->id));
   return ret;
 }
 TLANG_NAMESPACE_END

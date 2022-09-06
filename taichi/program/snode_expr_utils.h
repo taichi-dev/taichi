@@ -16,8 +16,7 @@ class SNode;
 class FieldExpression;
 
 using SNodeFieldMap =
-    std::unordered_map<const SNode *,
-                       std::shared_ptr<FieldExpression>>;
+    std::unordered_map<const SNode *, std::shared_ptr<FieldExpression>>;
 
 void place_child(Expr *expr_arg,
                  const std::vector<int> &offset,

@@ -498,8 +498,7 @@ class FieldExpression : public Expression {
   Expr dual;
   Expr adjoint_checkbit;
 
-  FieldExpression(DataType dt, const Identifier &ident)
-      : ident(ident), dt(dt) {
+  FieldExpression(DataType dt, const Identifier &ident) : ident(ident), dt(dt) {
   }
 
   void type_check(CompileConfig *config) override {

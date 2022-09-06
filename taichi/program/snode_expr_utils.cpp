@@ -62,8 +62,7 @@ void place_child(Expr *expr_arg,
   } else {
     TI_ASSERT(expr_arg->is<FieldExpression>());
     auto field = expr_arg->cast<FieldExpression>();
-    TI_ERROR_IF(field->snode != nullptr,
-                "This variable has been placed.");
+    TI_ERROR_IF(field->snode != nullptr, "This variable has been placed.");
     auto &child = parent->insert_children(SNodeType::place);
     field->set_snode(&child);
     if (field->name == "") {
@@ -75,8 +74,7 @@ void place_child(Expr *expr_arg,
       field->snode->has_ambient = true;
       field->snode->ambient_val = field->ambient_value;
     }
-    field->snode->grad_info =
-        std::make_unique<GradInfoImpl>(field.get());
+    field->snode->grad_info = std::make_unique<GradInfoImpl>(field.get());
     (*snode_to_exprs)[field->snode] = field;
     child.dt = field->dt;
     child.id_in_bit_struct = id_in_bit_struct;

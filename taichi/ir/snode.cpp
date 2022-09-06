@@ -204,9 +204,7 @@ Expr SNode::get_expr() const {
 
 SNode::SNode(SNodeFieldMap *snode_to_fields,
              SNodeRwAccessorsBank *snode_rw_accessors_bank)
-    : SNode(0,
-            SNodeType::undefined, snode_to_fields,
-            snode_rw_accessors_bank) {
+    : SNode(0, SNodeType::undefined, snode_to_fields, snode_rw_accessors_bank) {
 }
 
 SNode::SNode(int depth,
@@ -305,16 +303,15 @@ void SNode::lazy_dual() {
 }
 
 void SNode::allocate_adjoint_checkbit() {
-  make_lazy_place(
-      this, snode_to_fields_,
-      [this](std::unique_ptr<SNode> &c,
-             std::vector<Expr> &new_adjoint_checkbits) {
-        if (c->type == SNodeType::place && c->is_primal() && is_real(c->dt) &&
-            c->has_adjoint()) {
-          new_adjoint_checkbits.push_back(
-              snode_to_fields_->at(c.get())->adjoint_checkbit);
-        }
-      });
+  make_lazy_place(this, snode_to_fields_,
+                  [this](std::unique_ptr<SNode> &c,
+                         std::vector<Expr> &new_adjoint_checkbits) {
+                    if (c->type == SNodeType::place && c->is_primal() &&
+                        is_real(c->dt) && c->has_adjoint()) {
+                      new_adjoint_checkbits.push_back(
+                          snode_to_fields_->at(c.get())->adjoint_checkbit);
+                    }
+                  });
 }
 
 bool SNode::is_primal() const {

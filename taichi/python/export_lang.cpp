@@ -763,9 +763,7 @@ void export_lang(py::module &m) {
       .def("get_ret_type", &Expr::get_ret_type)
       .def("type_check", &Expr::type_check)
       .def("get_expr_name",
-           [](Expr *expr) {
-             return expr->cast<FieldExpression>()->name;
-           })
+           [](Expr *expr) { return expr->cast<FieldExpression>()->name; })
       .def("get_raw_address", [](Expr *expr) { return (uint64)expr; })
       .def("get_underlying_ptr_address", [](Expr *e) {
         // The reason that there are both get_raw_address() and

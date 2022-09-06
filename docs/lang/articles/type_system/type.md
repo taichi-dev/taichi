@@ -63,7 +63,7 @@ ti.init(default_fp=ti.f64)  # Set the default floating-point type to ti.f64
 
 ### Set alias
 
-Taichi supports using `int` as an alias for the default integer type and `float` as an alias for the default floating-point type. In the following example, you change the default primitive types to `i64` and `f64` when initializing Taichi, then you can use `int` to represent `i64` and `float` to represent `f64`.
+Taichi supports using `int` as an alias for the default integer type and `float` as an alias for the default floating-point type. In the following example, you change the default primitive types to `i64` and `f64` when initializing Taichi, then you can use `int` as an alias for `i64` and `float` as an alias for `f64`.
 
 ```python
 ti.init(default_ip=ti.i64, default_fp=ti.f64)

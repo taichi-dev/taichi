@@ -173,9 +173,9 @@ When you assign a value to a variable of a different data type, Taichi implicitl
 
 ## Compound types
 
-Compound types are user-defined data types, which comprise multiple members. Supported compound types include vectors, metrics, and structs.
+Compound types are user-defined data types, which comprise multiple members. Supported compound types include vectors, matrices, ndarrays, and structs.
 
-Taichi allows you to use all types supplied in the `ti.type` module as scaffolds to customize *higher-level* compound types.
+Taichi allows you to use all types supplied in the `ti.types` module as scaffolds to customize *higher-level* compound types.
 
 Suppose you are using Taichi to represent a sphere. A sphere in the 3D space can be abstracted with its center and radius. In the following example, you call `ti.types.vector()` and `ti.types.struct()` to create compound types `vec3` and `sphere_type`. These two types are the *higher-level* compound types that fit better with your scenario. Once you have customized your compound types, you can use them as templates to create two instances of spheres (initialize two local variables `sphere1` and `sphere2`):
 

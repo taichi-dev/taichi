@@ -719,25 +719,51 @@ def test_local_matrix_read():
 
 @test_utils.test(arch=[ti.cuda, ti.cpu], real_matrix=True)
 def test_local_matrix_indexing_in_loop():
+    s = ti.field(ti.i32, shape=(3, 3))
+
     @ti.kernel
     def test():
         mat = ti.Matrix([[x * 3 + y for y in range(3)] for x in range(3)])
         for i in range(3):
             for j in range(3):
-                assert mat[i, j] == i * 3 + j
+                s[i, j] = mat[i, j] + 1
 
     test()
+    for i in range(3):
+        for j in range(3):
+            assert s[i, j] == i * 3 + j + 1
 
 
 @test_utils.test(arch=[ti.cuda, ti.cpu], real_matrix=True)
 def test_local_matrix_indexing_ops():
     @ti.kernel
-    def basic_ops():
+    def element_write() -> ti.i32:
         mat = ti.Matrix([[x * 3 + y for y in range(3)] for x in range(3)])
         s = 0
         for i in range(3):
             for j in range(3):
+                mat[i, j] = 10
                 s += mat[i, j]
-        assert s == 72
+        return s
 
-    basic_ops()
+    f = ti.field(ti.i32, shape=(3, 3))
+
+    @ti.kernel
+    def assign_from_index():
+        mat = ti.Matrix([[x * 3 + y for y in range(3)] for x in range(3)])
+        result = ti.Matrix([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+        # TODO: fix parallelization
+        ti.loop_config(serialize=True)
+        for i in range(3):
+            for j in range(3):
+                result[i, j] = mat[j, i]
+        for i in range(3):
+            for j in range(3):
+                f[i, j] = result[i, j]
+
+    assert element_write() == 90
+    assign_from_index()
+    xs = [[x * 3 + y for y in range(3)] for x in range(3)]
+    for i in range(3):
+        for j in range(3):
+            assert f[i, j] == xs[j][i]

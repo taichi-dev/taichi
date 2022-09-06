@@ -510,10 +510,10 @@ class StructField(Field):
         return self._members[0]._snode
 
     def _loop_range(self):
-        """Gets representative field member for loop range info.
+        """Gets SNode of representative field member for loop range info.
 
         Returns:
-            taichi_python.Expr: Representative (first) field member.
+            taichi_python.SNode: SNode of representative (first) field member.
         """
         return self._members[0]._loop_range()
 

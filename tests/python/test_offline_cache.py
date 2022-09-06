@@ -42,7 +42,7 @@ def cache_files_size(path):
 def expected_num_cache_files(arch, num_offloads: List[int] = None) -> int:
     if not num_offloads:
         return 0
-    result = sum(num_offloads)
+    result = sum(num_offloads) if arch in [ti.vulkan] else len(num_offloads)
     if arch in [ti.cpu, ti.cuda]:
         result += 2  # metadata.{json, tcb}
     elif arch in [ti.vulkan]:
@@ -310,11 +310,13 @@ def test_multiple_ib_with_offline_cache(curr_arch):
     ti.init(arch=curr_arch,
             enable_fallback=False,
             **current_thread_ext_options())
-    assert added_files(curr_arch) == expected_num_cache_files(curr_arch, [8])
+    assert added_files(curr_arch) == expected_num_cache_files(
+        curr_arch, [1] * 8)
     helper()
 
     ti.reset()
-    assert added_files(curr_arch) == expected_num_cache_files(curr_arch, [8])
+    assert added_files(curr_arch) == expected_num_cache_files(
+        curr_arch, [1] * 8)
 
 
 @pytest.mark.parametrize('curr_arch', supported_archs_offline_cache)
@@ -392,11 +394,13 @@ def test_snode_reader_and_writer_with_offline_cache(curr_arch):
     ti.init(arch=curr_arch,
             enable_fallback=False,
             **current_thread_ext_options())
-    assert added_files(curr_arch) == expected_num_cache_files(curr_arch, [4])
+    assert added_files(curr_arch) == expected_num_cache_files(
+        curr_arch, [1] * 4)
     helper()
 
     ti.reset()
-    assert added_files(curr_arch) == expected_num_cache_files(curr_arch, [4])
+    assert added_files(curr_arch) == expected_num_cache_files(
+        curr_arch, [1] * 4)
 
 
 @pytest.mark.parametrize('curr_arch', supported_archs_offline_cache)
@@ -491,7 +495,9 @@ def test_offline_cache_cleaning(curr_arch, factor, policy):
         only_init(max_size)
         for kernel, args, get_res, num_offloads in simple_kernels_to_test:
             assert kernel(*args) == test_utils.approx(get_res(*args))
-            sleep(1)  # make sure the kernels are not used in the same second
+            if curr_arch in [ti.vulkan]:
+                sleep(
+                    1)  # make sure the kernels are not used in the same second
 
     kernel_count = len(simple_kernels_to_test)
     count_of_cache_file = cache_files_cnt(curr_arch)
@@ -515,16 +521,14 @@ def test_offline_cache_cleaning(curr_arch, factor, policy):
 
     only_init(size_of_cache_files)
     ti.reset()
-    rem = 0
+    rem = []
     if policy in ['never', 'version']:
-        rem = expected_num_cache_files(
-            curr_arch, [kern[3] for kern in simple_kernels_to_test])
+        rem = [kern[3] for kern in simple_kernels_to_test]
     else:
         lo = -min(kernel_count - int(factor * kernel_count), kernel_count)
         lo = kernel_count if lo == 0 else lo
-        rem = expected_num_cache_files(
-            curr_arch, [kern[3] for kern in simple_kernels_to_test[lo:]])
-    assert added_files(curr_arch) == rem
+        rem = [kern[3] for kern in simple_kernels_to_test[lo:]]
+    assert added_files(curr_arch) == expected_num_cache_files(curr_arch, rem)
 
 
 # FIXME: Change to `supported_archs_offline_cache` after fixing bugs of real-function on gpu

@@ -13,6 +13,7 @@
 #include "taichi/runtime/llvm/llvm_fwd.h"
 #include "taichi/ir/snode.h"
 #include "taichi/jit/jit_session.h"
+#include "taichi/codegen/llvm/llvm_compiled_data.h"
 
 namespace taichi {
 namespace lang {
@@ -33,8 +34,6 @@ class TaichiLLVMContext {
     std::unordered_map<int, std::unique_ptr<llvm::Module>> struct_modules;
     ThreadLocalData(std::unique_ptr<llvm::orc::ThreadSafeContext> ctx);
     ~ThreadLocalData();
-    std::unique_ptr<llvm::Module> struct_module{nullptr};  // TODO: To be
-                                                           // deleted
   };
   CompileConfig *config_;
 
@@ -42,6 +41,8 @@ class TaichiLLVMContext {
   std::unique_ptr<JITSession> jit{nullptr};
   // main_thread is defined to be the thread that runs the initializer
   JITModule *runtime_jit_module{nullptr};
+
+  std::unique_ptr<ThreadLocalData> linking_context_data{nullptr};
 
   TaichiLLVMContext(CompileConfig *config, Arch arch);
 
@@ -61,18 +62,11 @@ class TaichiLLVMContext {
   void init_runtime_jit_module();
 
   /**
-   * Clones the LLVM module containing the JIT compiled SNode structs.
-   *
-   * @return The cloned module.
-   */
-  std::unique_ptr<llvm::Module> clone_struct_module();
-
-  /**
    * Updates the LLVM module of the JIT compiled SNode structs.
    *
    * @param module Module containing the JIT compiled SNode structs.
    */
-  void set_struct_module(const std::unique_ptr<llvm::Module> &module);
+  void add_struct_module(std::unique_ptr<llvm::Module> module, int tree_id);
 
   /**
    * Clones the LLVM module compiled from llvm/runtime.cpp
@@ -83,7 +77,7 @@ class TaichiLLVMContext {
 
   std::unique_ptr<llvm::Module> module_from_file(const std::string &file);
 
-  JITModule *add_module(std::unique_ptr<llvm::Module> module);
+  JITModule *create_jit_module(std::unique_ptr<llvm::Module> module);
 
   virtual void *lookup_function_pointer(const std::string &name) {
     return jit->lookup(name);
@@ -100,8 +94,6 @@ class TaichiLLVMContext {
   }
 
   llvm::Type *get_data_type(DataType dt);
-
-  llvm::Module *get_this_thread_struct_module();
 
   template <typename T>
   llvm::Type *get_data_type() {
@@ -144,13 +136,14 @@ class TaichiLLVMContext {
       std::string name,
       llvm::LLVMContext *context = nullptr);
 
-  void add_function_to_snode_tree(int id, std::string func);
-
-  void delete_functions_of_snode_tree(int id);
+  void delete_snode_tree(int id);
 
   void add_struct_for_func(llvm::Module *module, int tls_size);
 
   static std::string get_struct_for_func_name(int tls_size);
+
+  std::unique_ptr<LLVMCompiledData> link_compiled_tasks(
+      std::vector<std::unique_ptr<LLVMCompiledData>> data_list);
 
  private:
   std::unique_ptr<llvm::Module> clone_module_to_context(

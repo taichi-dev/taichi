@@ -916,7 +916,8 @@ std::unique_ptr<LLVMCompiledData> TaichiLLVMContext::link_compiled_tasks(
         llvm::CloneModule(*linking_context_data->struct_modules[tree_id]),
         llvm::Linker::LinkOnlyNeeded | llvm::Linker::OverrideFromSrc);
   }
-  auto runtime_module = llvm::CloneModule(*linking_context_data->runtime_module);
+  auto runtime_module =
+      llvm::CloneModule(*linking_context_data->runtime_module);
   for (auto tls_size : tls_sizes) {
     add_struct_for_func(runtime_module.get(), tls_size);
   }

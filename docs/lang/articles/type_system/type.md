@@ -30,7 +30,7 @@ Taichi supports two categories of data types in the [Taichi scope](../kernels/sy
 
 ## Primitive types
 
-Primitive types are scalar types. Each primitive type is denoted with a character indicating its category followed by a number indicating its precision bits (number of bits for storing the data). The _category_ can be `i` (signed integers), `u` (unsigned integers), or `f` (floating-point numbers); the _precision bits_ can be `8`, `16`, `32`, or `64`. Following are the two most commonly-used types:
+Primitive types are scalar types and are units of building blocks for compound types. Each primitive type is denoted with a character indicating its category followed by a number indicating its precision bits (number of bits for storing the data). The _category_ can be `i` (signed integers), `u` (unsigned integers), or `f` (floating-point numbers); the _precision bits_ can be `8`, `16`, `32`, or `64`. Following are the two most commonly-used types:
 
 - `i32`: 32-bit signed integer
 - `f32` : 32-bit floating-point number.

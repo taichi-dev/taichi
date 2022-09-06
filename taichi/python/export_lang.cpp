@@ -301,7 +301,10 @@ void export_lang(py::module &m) {
       .def("expr_assign", &ASTBuilder::expr_assign)
       .def("begin_frontend_range_for", &ASTBuilder::begin_frontend_range_for)
       .def("end_frontend_range_for", &ASTBuilder::pop_scope)
-      .def("begin_frontend_struct_for", &ASTBuilder::begin_frontend_struct_for)
+      .def("begin_frontend_struct_for_on_snode",
+           &ASTBuilder::begin_frontend_struct_for_on_snode)
+      .def("begin_frontend_struct_for_on_external_tensor",
+           &ASTBuilder::begin_frontend_struct_for_on_external_tensor)
       .def("end_frontend_struct_for", &ASTBuilder::pop_scope)
       .def("begin_frontend_mesh_for", &ASTBuilder::begin_frontend_mesh_for)
       .def("end_frontend_mesh_for", &ASTBuilder::pop_scope)
@@ -483,13 +486,8 @@ void export_lang(py::module &m) {
              program->fill_ndarray_fast(ndarray,
                                         reinterpret_cast<int32_t &>(val));
            })
-      .def("fill_uint",
-           [](Program *program, Ndarray *ndarray, uint32_t val) {
-             program->fill_ndarray_fast(ndarray, val);
-           })
-      .def("global_var_expr_from_snode", [](Program *program, SNode *snode) {
-        return Expr::make<GlobalVariableExpression>(
-            snode, program->get_next_global_id());
+      .def("fill_uint", [](Program *program, Ndarray *ndarray, uint32_t val) {
+        program->fill_ndarray_fast(ndarray, val);
       });
 
   py::class_<AotModuleBuilder>(m, "AotModuleBuilder")
@@ -735,27 +733,23 @@ void export_lang(py::module &m) {
 
   py::class_<Expr> expr(m, "Expr");
   expr.def("snode", &Expr::snode, py::return_value_policy::reference)
-      // TODO(zhanlue): Rename to "is_global_expr"
-      .def("is_global_var",
-           [](Expr *expr) { return expr->is<GlobalVariableExpression>(); })
-      // TODO(zhanlue): Rename to "is_external_expr"
-      .def("is_external_var",
+      .def("is_external_tensor_expr",
            [](Expr *expr) { return expr->is<ExternalTensorExpression>(); })
       .def("is_index_expr",
            [](Expr *expr) { return expr->is<IndexExpression>(); })
       .def("is_primal",
            [](Expr *expr) {
-             return expr->cast<GlobalVariableExpression>()->snode_grad_type ==
+             return expr->cast<FieldExpression>()->snode_grad_type ==
                     SNodeGradType::kPrimal;
            })
       .def("set_tb", &Expr::set_tb)
       .def("set_name",
            [&](Expr *expr, std::string na) {
-             expr->cast<GlobalVariableExpression>()->name = na;
+             expr->cast<FieldExpression>()->name = na;
            })
       .def("set_grad_type",
            [&](Expr *expr, SNodeGradType t) {
-             expr->cast<GlobalVariableExpression>()->snode_grad_type = t;
+             expr->cast<FieldExpression>()->snode_grad_type = t;
            })
       .def("set_adjoint", &Expr::set_adjoint)
       .def("set_adjoint_checkbit", &Expr::set_adjoint_checkbit)
@@ -763,15 +757,13 @@ void export_lang(py::module &m) {
       .def(
           "get_dt",
           [&](Expr *expr) -> const Type * {
-            return expr->cast<GlobalVariableExpression>()->dt;
+            return expr->cast<FieldExpression>()->dt;
           },
           py::return_value_policy::reference)
       .def("get_ret_type", &Expr::get_ret_type)
       .def("type_check", &Expr::type_check)
       .def("get_expr_name",
-           [](Expr *expr) {
-             return expr->cast<GlobalVariableExpression>()->name;
-           })
+           [](Expr *expr) { return expr->cast<FieldExpression>()->name; })
       .def("get_raw_address", [](Expr *expr) { return (uint64)expr; })
       .def("get_underlying_ptr_address", [](Expr *e) {
         // The reason that there are both get_raw_address() and
@@ -843,6 +835,8 @@ void export_lang(py::module &m) {
   m.def("expr_assume_in_range", assume_range);
 
   m.def("expr_loop_unique", loop_unique);
+
+  m.def("expr_field", expr_field);
 
 #define DEFINE_EXPRESSION_OP(x) m.def("expr_" #x, expr_##x);
 
@@ -963,8 +957,6 @@ void export_lang(py::module &m) {
   m.def("is_real", is_real);
   m.def("is_unsigned", is_unsigned);
   m.def("is_tensor", is_tensor);
-
-  m.def("global_new", static_cast<Expr (*)(Expr, DataType)>(global_new));
 
   m.def("data_type_name", data_type_name);
 

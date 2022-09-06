@@ -545,6 +545,16 @@ void GLDevice::dealloc_memory(DeviceAllocation handle) {
   check_opengl_error("glDeleteBuffers");
 }
 
+GLint GLDevice::get_devalloc_size(DeviceAllocation handle) {
+  glBindBuffer(GL_ARRAY_BUFFER, handle.alloc_id);
+  check_opengl_error("glBindBuffer");
+  GLint size = 0;
+  glGetBufferParameteriv(GL_ARRAY_BUFFER, GL_BUFFER_SIZE, &size);
+  check_opengl_error("glGetBufferParameteriv");
+  return size;
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
 std::unique_ptr<Pipeline> GLDevice::create_pipeline(
     const PipelineSourceDesc &src,
     std::string name) {

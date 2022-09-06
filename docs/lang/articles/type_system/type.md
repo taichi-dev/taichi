@@ -24,13 +24,13 @@ We now give a brief summary of the data types in Taichi. More detailed explanati
 
 Taichi supports two categories of data types in the [Taichi scope](../kernels/syntax.md#taichi-scope): primitive types and compound types.
 
-- Primitive types: Various commonly-used numerical data types, such as `int32`, `uint8`, and `float64`.
+- Primitive types: Various commonly used numerical data types, such as `int32`, `uint8`, and `float64`.
 - Compound types: Array-like or struct-like data types  that comprise multiple members of primitive types, or other compound types, such as `matrix`, `struct` and `ndarray`.
 
 
 ## Primitive types
 
-Primitive types are scalar types and are the smallest units of building blocks for compound types. Each primitive type is denoted with a character indicating its category followed by a number indicating its precision bits (number of bits for storing the data). The _category_ can be `i` (signed integers), `u` (unsigned integers), or `f` (floating-point numbers); the _precision bits_ can be `8`, `16`, `32`, or `64`. Following are the two most commonly-used types:
+Primitive types are scalar types and are the smallest units of building blocks for compound types. Each primitive type is denoted with a character indicating its category followed by a number indicating its precision bits (number of bits for storing the data). The _category_ can be `i` (signed integers), `u` (unsigned integers), or `f` (floating-point numbers); the _precision bits_ can be `8`, `16`, `32`, or `64`. Following are the two most commonly used types:
 
 - `i32`: 32-bit signed integer
 - `f32` : 32-bit floating-point number.

@@ -144,9 +144,6 @@ A few exceptions:
 - bit-shift operations return lhs' (left hand side's) data type:
   - `u8 << i32 -> u8`
   - `i16 << i8 -> i16`
-- atan2 operations return `f64` if either side is `f64`, or `f32` otherwise.
-  - `i32 atan f32 -> f32`
-  - `i32 atan f64 -> f64`
 - Logical operations return `i32`.
 - Comparison operations return `i32`.
 

@@ -187,6 +187,17 @@ vec4d = ti.types.vector(4, ti.f64)  # 64-bit floating-point 4D vector type
 mat4x3i = ti.types.matrix(4, 3, int)  # integer 4x3 matrix type
 ```
 
+Such types can be used to create the corresponding vector/matrix instances or as type notifiers in function arguments or struct members. For example:
+
+
+```python
+v = vec4d(1, 2, 3, 4)  # v = [1.0, 2.0 3.0 4.0]
+
+@ti.func
+def length(v: vec4d):
+    return v.norm()
+```
+
 ### Struct types and dataclass
 
 You can use the funtion `ti.types.struct()` to create a struct type, for example suppose you are using Taichi to represent a sphere. A sphere in the 3D space can be abstracted with its center and radius. In the following example, you call `ti.types.vector()` and `ti.types.struct()` to create compound types `vec3` and `sphere_type`. These two types are the *higher-level* compound types that fit better with your scenario. Once you have customized your compound types, you can use them as templates to create two instances of spheres (initialize two local variables `sphere1` and `sphere2`):

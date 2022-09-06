@@ -588,7 +588,7 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
 
     x = Expr(prog.make_id_expr(""))
     x.declaration_tb = get_traceback(stacklevel=4)
-    x.ptr = _ti_core.global_new(x.ptr, dtype)
+    x.ptr = _ti_core.expr_field(x.ptr, dtype)
     x.ptr.set_name(name)
     x.ptr.set_grad_type(SNodeGradType.PRIMAL)
     pytaichi.global_vars.append(x)
@@ -601,7 +601,7 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
         # adjoint
         x_grad = Expr(get_runtime().prog.make_id_expr(""))
         x_grad.declaration_tb = get_traceback(stacklevel=4)
-        x_grad.ptr = _ti_core.global_new(x_grad.ptr, dtype)
+        x_grad.ptr = _ti_core.expr_field(x_grad.ptr, dtype)
         x_grad.ptr.set_name(name + ".grad")
         x_grad.ptr.set_grad_type(SNodeGradType.ADJOINT)
         x.ptr.set_adjoint(x_grad.ptr)
@@ -614,7 +614,7 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
             dtype = u8
             if prog.config.arch in (_ti_core.opengl, _ti_core.vulkan):
                 dtype = i32
-            x_grad_checkbit.ptr = _ti_core.global_new(x_grad_checkbit.ptr,
+            x_grad_checkbit.ptr = _ti_core.expr_field(x_grad_checkbit.ptr,
                                                       cook_dtype(dtype))
             x_grad_checkbit.ptr.set_name(name + ".grad_checkbit")
             x_grad_checkbit.ptr.set_grad_type(SNodeGradType.ADJOINT_CHECKBIT)
@@ -622,7 +622,7 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
 
         # dual
         x_dual = Expr(get_runtime().prog.make_id_expr(""))
-        x_dual.ptr = _ti_core.global_new(x_dual.ptr, dtype)
+        x_dual.ptr = _ti_core.expr_field(x_dual.ptr, dtype)
         x_dual.ptr.set_name(name + ".dual")
         x_dual.ptr.set_grad_type(SNodeGradType.DUAL)
         x.ptr.set_dual(x_dual.ptr)

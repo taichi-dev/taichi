@@ -13,20 +13,20 @@ namespace taichi {
 namespace lang {
 class Expr;
 class SNode;
-class GlobalVariableExpression;
+class FieldExpression;
 
-using SNodeGlobalVarExprMap =
+using SNodeFieldMap =
     std::unordered_map<const SNode *,
-                       std::shared_ptr<GlobalVariableExpression>>;
+                       std::shared_ptr<FieldExpression>>;
 
 void place_child(Expr *expr_arg,
                  const std::vector<int> &offset,
                  int id_in_bit_struct,
                  SNode *parent,
-                 SNodeGlobalVarExprMap *snode_to_exprs);
+                 SNodeFieldMap *snode_to_exprs);
 
 void make_lazy_place(SNode *snode,
-                     SNodeGlobalVarExprMap *snode_to_exprs,
+                     SNodeFieldMap *snode_to_fields,
                      const std::function<void(std::unique_ptr<SNode> &,
                                               std::vector<Expr> &)> &collect);
 

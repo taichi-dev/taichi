@@ -14,7 +14,7 @@ std::atomic<int> SNode::counter{0};
 SNode &SNode::insert_children(SNodeType t) {
   TI_ASSERT(t != SNodeType::root);
 
-  auto new_ch = std::make_unique<SNode>(depth + 1, t, snode_to_glb_var_exprs_,
+  auto new_ch = std::make_unique<SNode>(depth + 1, t, snode_to_fields_,
                                         snode_rw_accessors_bank_);
   new_ch->parent = this;
   new_ch->is_path_all_dense = (is_path_all_dense && !new_ch->need_activation());
@@ -199,24 +199,23 @@ void SNode::write_float(const std::vector<int> &i, float64 val) {
 }
 
 Expr SNode::get_expr() const {
-  return Expr(snode_to_glb_var_exprs_->at(this));
+  return Expr(snode_to_fields_->at(this));
 }
 
-SNode::SNode(SNodeGlobalVarExprMap *snode_to_glb_var_exprs,
+SNode::SNode(SNodeFieldMap *snode_to_fields,
              SNodeRwAccessorsBank *snode_rw_accessors_bank)
     : SNode(0,
-            SNodeType::undefined,
-            snode_to_glb_var_exprs,
+            SNodeType::undefined, snode_to_fields,
             snode_rw_accessors_bank) {
 }
 
 SNode::SNode(int depth,
              SNodeType t,
-             SNodeGlobalVarExprMap *snode_to_glb_var_exprs,
+             SNodeFieldMap *snode_to_fields,
              SNodeRwAccessorsBank *snode_rw_accessors_bank)
     : depth(depth),
       type(t),
-      snode_to_glb_var_exprs_(snode_to_glb_var_exprs),
+      snode_to_fields_(snode_to_fields),
       snode_rw_accessors_bank_(snode_rw_accessors_bank) {
   id = counter++;
   node_type_name = get_node_type_name();
@@ -285,35 +284,35 @@ bool SNode::need_activation() const {
 
 void SNode::lazy_grad() {
   make_lazy_place(
-      this, snode_to_glb_var_exprs_,
+      this, snode_to_fields_,
       [this](std::unique_ptr<SNode> &c, std::vector<Expr> &new_grads) {
         if (c->type == SNodeType::place && c->is_primal() && is_real(c->dt) &&
             !c->has_adjoint()) {
-          new_grads.push_back(snode_to_glb_var_exprs_->at(c.get())->adjoint);
+          new_grads.push_back(snode_to_fields_->at(c.get())->adjoint);
         }
       });
 }
 
 void SNode::lazy_dual() {
   make_lazy_place(
-      this, snode_to_glb_var_exprs_,
+      this, snode_to_fields_,
       [this](std::unique_ptr<SNode> &c, std::vector<Expr> &new_duals) {
         if (c->type == SNodeType::place && c->is_primal() && is_real(c->dt) &&
             !c->has_dual()) {
-          new_duals.push_back(snode_to_glb_var_exprs_->at(c.get())->dual);
+          new_duals.push_back(snode_to_fields_->at(c.get())->dual);
         }
       });
 }
 
 void SNode::allocate_adjoint_checkbit() {
   make_lazy_place(
-      this, snode_to_glb_var_exprs_,
+      this, snode_to_fields_,
       [this](std::unique_ptr<SNode> &c,
              std::vector<Expr> &new_adjoint_checkbits) {
         if (c->type == SNodeType::place && c->is_primal() && is_real(c->dt) &&
             c->has_adjoint()) {
           new_adjoint_checkbits.push_back(
-              snode_to_glb_var_exprs_->at(c.get())->adjoint_checkbit);
+              snode_to_fields_->at(c.get())->adjoint_checkbit);
         }
       });
 }

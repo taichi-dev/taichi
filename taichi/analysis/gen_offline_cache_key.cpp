@@ -147,8 +147,8 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     emit(expr->element_dim);
   }
 
-  void visit(GlobalVariableExpression *expr) override {
-    emit(ExprOpCode::GlobalVariableExpression);
+  void visit(FieldExpression *expr) override {
+    emit(ExprOpCode::FieldExpression);
     emit(expr->ident);
     emit(expr->dt);
     emit(expr->snode);

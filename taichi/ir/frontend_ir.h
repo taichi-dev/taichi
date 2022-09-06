@@ -468,14 +468,22 @@ class ExternalTensorExpression : public Expression {
     }
   }
 
-  void type_check(CompileConfig *config) override {
-  }
-
   void flatten(FlattenContext *ctx) override;
 
   TI_DEFINE_ACCEPT_FOR_EXPRESSION
 
+  CompileConfig *get_compile_config() {
+    TI_ASSERT(config_ != nullptr);
+    return config_;
+  }
+
+  void type_check(CompileConfig *config) override {
+    config_ = config;
+  }
+
  private:
+  CompileConfig *config_ = nullptr;
+
   void init(const DataType &dt, int dim, int arg_id, int element_dim) {
     this->dt = dt;
     this->dim = dim;

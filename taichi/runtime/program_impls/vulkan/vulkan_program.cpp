@@ -5,6 +5,7 @@
 #include "taichi/runtime/gfx/aot_module_builder_impl.h"
 #include "taichi/runtime/gfx/snode_tree_manager.h"
 #include "taichi/runtime/gfx/aot_module_loader_impl.h"
+#include "taichi/util/offline_cache.h"
 
 #if !defined(ANDROID)
 #include "GLFW/glfw3.h"
@@ -207,9 +208,12 @@ std::unique_ptr<aot::Kernel> VulkanProgramImpl::make_aot_kernel(
 }
 
 void VulkanProgramImpl::dump_cache_data_to_disk() {
-  if (offline_cache::enabled_wip_offline_cache(config->offline_cache)) {
-    get_cache_manager()->dump_with_merging();
-  }
+  const auto &mgr = get_cache_manager();
+  mgr->clean_offline_cache(offline_cache::string_to_clean_cache_policy(
+                               config->offline_cache_cleaning_policy),
+                           config->offline_cache_max_size_of_files,
+                           config->offline_cache_cleaning_factor);
+  mgr->dump_with_merging();
 }
 
 const std::unique_ptr<gfx::CacheManager>

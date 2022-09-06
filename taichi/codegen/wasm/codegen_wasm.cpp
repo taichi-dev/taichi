@@ -9,6 +9,7 @@
 #include "taichi/ir/statements.h"
 #include "taichi/util/statistics.h"
 #include "taichi/util/file_sequence_writer.h"
+#include "taichi/runtime/program_impls/llvm/llvm_program.h"
 
 namespace taichi {
 namespace lang {
@@ -243,10 +244,10 @@ class TaskCodeGenWASM : public TaskCodeGenLLVM {
 
 FunctionType KernelCodeGenWASM::compile_to_function() {
   TI_AUTO_PROF
-  TaskCodeGenWASM gen(kernel, ir);
-  auto res = gen.run_compilation();
-  gen.tlctx->add_module(std::move(res.module));
-  auto kernel_symbol = gen.tlctx->lookup_function_pointer(res.tasks[0].name);
+  auto linked = std::move(compile_kernel_to_module()[0]);
+  auto *tlctx = get_llvm_program(prog)->get_llvm_context(kernel->arch);
+  tlctx->create_jit_module(std::move(linked.module));
+  auto kernel_symbol = tlctx->lookup_function_pointer(linked.tasks[0].name);
   return [=](RuntimeContext &context) {
     TI_TRACE("Launching Taichi Kernel Function");
     auto func = (int32(*)(void *))kernel_symbol;
@@ -257,6 +258,7 @@ FunctionType KernelCodeGenWASM::compile_to_function() {
 LLVMCompiledData KernelCodeGenWASM::compile_task(
     std::unique_ptr<llvm::Module> &&module,
     OffloadedStmt *stmt) {
+  kernel->offload_to_executable(ir);
   bool init_flag = module == nullptr;
   std::vector<OffloadedTask> name_list;
   auto gen = std::make_unique<TaskCodeGenWASM>(kernel, ir, std::move(module));
@@ -278,5 +280,20 @@ LLVMCompiledData KernelCodeGenWASM::compile_task(
 
   return {name_list, std::move(gen->module), {}, {}};
 }
+
+std::vector<LLVMCompiledData> KernelCodeGenWASM::compile_kernel_to_module() {
+  auto *tlctx = get_llvm_program(prog)->get_llvm_context(kernel->arch);
+  if (!kernel->lowered()) {
+    kernel->lower(/*to_executable=*/false);
+  }
+  auto res = compile_task();
+  std::vector<std::unique_ptr<LLVMCompiledData>> data;
+  data.push_back(std::make_unique<LLVMCompiledData>(std::move(res)));
+  auto linked = tlctx->link_compiled_tasks(std::move(data));
+  std::vector<LLVMCompiledData> ret;
+  ret.push_back(std::move(*linked));
+  return ret;
+}
+
 }  // namespace lang
 }  // namespace taichi

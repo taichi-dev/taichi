@@ -735,6 +735,8 @@ void export_lang(py::module &m) {
   expr.def("snode", &Expr::snode, py::return_value_policy::reference)
       .def("is_external_tensor_expr",
            [](Expr *expr) { return expr->is<ExternalTensorExpression>(); })
+      .def("is_index_expr",
+           [](Expr *expr) { return expr->is<IndexExpression>(); })
       .def("is_primal",
            [](Expr *expr) {
              return expr->cast<FieldExpression>()->snode_grad_type ==
@@ -954,6 +956,7 @@ void export_lang(py::module &m) {
   m.def("is_signed", is_signed);
   m.def("is_real", is_real);
   m.def("is_unsigned", is_unsigned);
+  m.def("is_tensor", is_tensor);
 
   m.def("data_type_name", data_type_name);
 

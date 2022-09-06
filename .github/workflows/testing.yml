@@ -492,7 +492,7 @@ jobs:
     steps:
       # See also https://github.com/taichi-dev/taichi/issues/4161
       - name: Cleanup
-        shell: powershell
+        shell: pwsh
         run: |
           remove-item '${{ github.workspace }}\*' -recurse -force
 
@@ -518,7 +518,7 @@ jobs:
             ccache-win64-
 
       - name: Build
-        shell: powershell
+        shell: pwsh
         if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
           .\.github\workflows\scripts\win_build.ps1  -llvmVer ${{ matrix.llvmVer }} -installVulkan -install -libsDir C:\
@@ -527,7 +527,7 @@ jobs:
 
       - name: Test
         id: test
-        shell: powershell
+        shell: pwsh
         if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
           .\.github\workflows\scripts\win_test.ps1

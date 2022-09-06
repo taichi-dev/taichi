@@ -45,34 +45,72 @@ inline CleanCachePolicy string_to_clean_cache_policy(const std::string &str) {
   return Never;
 }
 
+struct KernelMetadata {
+  std::string kernel_key;
+  std::size_t size{0};          // byte
+  std::time_t created_at{0};    // sec
+  std::time_t last_used_at{0};  // sec
+  std::size_t num_files{0};
+
+  TI_IO_DEF(kernel_key, size, created_at, last_used_at, num_files);
+};
+
+struct Metadata {
+  using KernelMetadata = struct KernelMetadata;
+
+  Version version{};
+  std::size_t size{0};  // byte
+  std::unordered_map<std::string, KernelMetadata> kernels;
+
+  TI_IO_DEF(version, size, kernels);
+};
+
+struct CacheCleanerConfig {
+  std::string path;
+  CleanCachePolicy policy;
+  int max_size{0};
+  double cleaning_factor{0.f};
+  std::string metadata_filename;
+  std::string debugging_metadata_filename;
+  std::string metadata_lock_name;
+};
+
 template <typename MetadataType>
 struct CacheCleanerUtils {
   using KernelMetaData = typename MetadataType::KernelMetadata;
 
   // To load metadata from file
-  static bool load_metadata(MetadataType &result, const std::string &filepath) {
+  static bool load_metadata(const CacheCleanerConfig &config,
+                            MetadataType &result) {
     TI_NOT_IMPLEMENTED;
   }
 
   // To save metadata as file
-  static bool save_metadata(const MetadataType &data,
-                            const std::string &filepath) {
+  static bool save_metadata(const CacheCleanerConfig &config,
+                            const MetadataType &data) {
     TI_NOT_IMPLEMENTED;
   }
 
-  static bool save_debugging_metadata(const MetadataType &data,
-                                      const std::string &filepath) {
+  static bool save_debugging_metadata(const CacheCleanerConfig &config,
+                                      const MetadataType &data) {
     TI_NOT_IMPLEMENTED;
   }
 
   // To check version
-  static bool check_version(const Version &version) {
+  static bool check_version(const CacheCleanerConfig &config,
+                            const Version &version) {
     TI_NOT_IMPLEMENTED;
   }
 
   // To get cache files name
   static std::vector<std::string> get_cache_files(
+      const CacheCleanerConfig &config,
       const KernelMetaData &kernel_meta) {
+    TI_NOT_IMPLEMENTED;
+  }
+
+  // To remove other files except cache files and offline cache metadta files
+  static void remove_other_files(const CacheCleanerConfig &config) {
     TI_NOT_IMPLEMENTED;
   }
 };
@@ -83,17 +121,7 @@ class CacheCleaner {
   using KernelMetadata = typename MetadataType::KernelMetadata;
 
  public:
-  struct Params {
-    std::string path;
-    CleanCachePolicy policy;
-    int max_size{0};
-    double cleaning_factor{0.f};
-    std::string metadata_filename;
-    std::string debugging_metadata_filename;
-    std::string metadata_lock_name;
-  };
-
-  static void run(const Params &config) {
+  static void run(const CacheCleanerConfig &config) {
     TI_ASSERT(!config.path.empty());
     TI_ASSERT(config.max_size > 0);
     TI_ASSERT(!config.metadata_filename.empty());
@@ -132,16 +160,17 @@ class CacheCleaner {
       });
       TI_DEBUG("Start cleaning cache");
 
-      if (!Utils::load_metadata(cache_data, metadata_file)) {
+      if (!Utils::load_metadata(config, cache_data)) {
         return;
       }
 
       if ((policy & CleanOldVersion) &&
-          !Utils::check_version(cache_data.version)) {
+          !Utils::check_version(config, cache_data.version)) {
         if (taichi::remove(metadata_file)) {
           taichi::remove(debugging_metadata_file);
+          Utils::remove_other_files(config);
           for (const auto &[k, v] : cache_data.kernels) {
-            for (const auto &f : Utils::get_cache_files(v)) {
+            for (const auto &f : Utils::get_cache_files(config, v)) {
               taichi::remove(taichi::join_path(path, f));
             }
           }
@@ -188,7 +217,7 @@ class CacheCleaner {
         TI_ASSERT(q.size() <= cnt);
         while (!q.empty()) {
           const auto *e = q.top();
-          for (const auto &f : Utils::get_cache_files(e->second)) {
+          for (const auto &f : Utils::get_cache_files(config, e->second)) {
             files_to_rm.push_back(f);
           }
           cache_data.size -= e->second.size;
@@ -199,8 +228,9 @@ class CacheCleaner {
         if (cache_data.kernels.empty()) {  // Remove
           ok_rm_meta = taichi::remove(metadata_file);
           taichi::remove(debugging_metadata_file);
+          Utils::remove_other_files(config);
         } else {  // Update
-          Utils::save_metadata(cache_data, metadata_file);
+          Utils::save_metadata(config, cache_data);
           ok_rm_meta = true;
         }
       }
@@ -210,7 +240,7 @@ class CacheCleaner {
     if (ok_rm_meta) {
       if (!cache_data.kernels.empty()) {
         // For debugging (Not safe: without locking)
-        Utils::save_debugging_metadata(cache_data, debugging_metadata_file);
+        Utils::save_debugging_metadata(config, cache_data);
       }
       for (const auto &f : files_to_rm) {
         auto file_path = taichi::join_path(path, f);

@@ -15,7 +15,7 @@ class AnyArray:
         layout (Layout): Memory layout.
     """
     def __init__(self, ptr):
-        assert ptr.is_external_var()
+        assert ptr.is_external_expr()
         self.ptr = ptr
         self.ptr.type_check(impl.get_runtime().prog.config)
 

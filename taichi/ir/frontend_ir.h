@@ -485,7 +485,7 @@ class ExternalTensorExpression : public Expression {
 };
 
 // TODO: Make this a non-expr
-class GlobalVariableExpression : public Expression {
+class FieldExpression : public Expression {
  public:
   Identifier ident;
   DataType dt;
@@ -498,8 +498,7 @@ class GlobalVariableExpression : public Expression {
   Expr dual;
   Expr adjoint_checkbit;
 
-  GlobalVariableExpression(DataType dt, const Identifier &ident)
-      : ident(ident), dt(dt) {
+  FieldExpression(DataType dt, const Identifier &ident) : ident(ident), dt(dt) {
   }
 
   void type_check(CompileConfig *config) override {
@@ -539,7 +538,7 @@ class MatrixExpression : public Expression {
 
 class IndexExpression : public Expression {
  public:
-  // `var` is one of GlobalVariableExpression, ExternalTensorExpression,
+  // `var` is one of FieldExpression, ExternalTensorExpression,
   // IdExpression
   Expr var;
   ExprGroup indices;
@@ -574,7 +573,7 @@ class IndexExpression : public Expression {
 
 class StrideExpression : public Expression {
  public:
-  // `var` must be an IndexExpression on a GlobalVariableExpression
+  // `var` must be an IndexExpression on a FieldExpression
   // therefore the access is always global
   Expr var;
   ExprGroup indices;

@@ -10,7 +10,7 @@ namespace lang {
 SNode *SNodeRegistry::create_root(Program *prog) {
   TI_ASSERT(prog != nullptr);
   auto n = std::make_unique<SNode>(/*depth=*/0, SNodeType::root,
-                                   prog->get_snode_to_glb_var_exprs(),
+                                   prog->get_snode_to_fields(),
                                    &prog->get_snode_rw_accessors_bank());
   auto *res = n.get();
   snodes_.push_back(std::move(n));

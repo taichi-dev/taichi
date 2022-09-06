@@ -363,7 +363,7 @@ void ExternalTensorExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
-void GlobalVariableExpression::flatten(FlattenContext *ctx) {
+void FieldExpression::flatten(FlattenContext *ctx) {
   TI_ASSERT(snode->num_active_indices == 0);
   auto ptr = Stmt::make<GlobalPtrStmt>(snode, std::vector<Stmt *>());
   ptr->tb = tb;
@@ -374,7 +374,7 @@ Stmt *make_field_access(Expression::FlattenContext *ctx,
                         Expr var,
                         ExprGroup indices) {
   std::vector<Stmt *> index_stmts;
-  SNode *snode = var.cast<GlobalVariableExpression>()->snode;
+  SNode *snode = var.cast<FieldExpression>()->snode;
   std::vector<int> offsets = snode->index_offsets;
   for (int i = 0; i < (int)indices.size(); i++) {
     flatten_rvalue(indices.exprs[i], ctx);
@@ -447,7 +447,7 @@ void MatrixExpression::flatten(FlattenContext *ctx) {
 }
 
 bool IndexExpression::is_field() const {
-  return var.is<GlobalVariableExpression>();
+  return var.is<FieldExpression>();
 }
 
 bool IndexExpression::is_ndarray() const {
@@ -471,7 +471,7 @@ void IndexExpression::type_check(CompileConfig *) {
   // TODO: Change to type-based solution
   // Currently, dimension compatibility check happens in Python
   if (is_field()) {  // field
-    ret_type = var.cast<GlobalVariableExpression>()->dt->get_compute_type();
+    ret_type = var.cast<FieldExpression>()->dt->get_compute_type();
   } else if (is_ndarray()) {  // ndarray
     auto external_tensor_expr = var.cast<ExternalTensorExpression>();
     int total_dim = external_tensor_expr->dim;
@@ -522,7 +522,7 @@ void IndexExpression::flatten(FlattenContext *ctx) {
 void StrideExpression::type_check(CompileConfig *) {
   // This is an ugly hack for global tensors
   if (var.is<IndexExpression>() &&
-      var.cast<IndexExpression>()->var.is<GlobalVariableExpression>())
+      var.cast<IndexExpression>()->var.is<FieldExpression>())
     ret_type = var->ret_type;
   else
     throw TaichiTypeError(
@@ -1198,9 +1198,8 @@ void flatten_rvalue(Expr ptr, Expression::FlattenContext *ctx) {
     }
   } else if (ptr.is<StrideExpression>()) {
     flatten_global_load(ptr, ctx);
-  } else if (ptr.is<GlobalVariableExpression>()) {
-    TI_ASSERT(ptr.cast<GlobalVariableExpression>()->snode->num_active_indices ==
-              0);
+  } else if (ptr.is<FieldExpression>()) {
+    TI_ASSERT(ptr.cast<FieldExpression>()->snode->num_active_indices == 0);
     flatten_global_load(ptr[ExprGroup()], ctx);
   } else if (ptr.is<ArgLoadExpression>() &&
              ptr.cast<ArgLoadExpression>()->is_ptr) {

@@ -17,6 +17,7 @@
 #include "taichi/runtime/llvm/llvm_context.h"
 #include "taichi/util/io.h"
 #include "taichi/util/lock.h"
+#include "taichi/util/offline_cache.h"
 
 namespace taichi {
 namespace lang {
@@ -60,32 +61,38 @@ struct CacheCleanerUtils<LlvmOfflineCache> {
   using KernelMetaData = typename MetadataType::KernelMetadata;
 
   // To load metadata from file
-  static bool load_metadata(MetadataType &result, const std::string &filepath) {
-    return read_from_binary_file(result, filepath);
+  static bool load_metadata(const CacheCleanerConfig &config,
+                            MetadataType &result) {
+    return read_from_binary_file(
+        result, taichi::join_path(config.path, config.metadata_filename));
   }
 
   // To save metadata as file
-  static bool save_metadata(const MetadataType &data,
-                            const std::string &filepath) {
-    write_to_binary_file(data, filepath);
+  static bool save_metadata(const CacheCleanerConfig &config,
+                            const MetadataType &data) {
+    write_to_binary_file(
+        data, taichi::join_path(config.path, config.metadata_filename));
     return true;
   }
 
-  static bool save_debugging_metadata(const MetadataType &data,
-                                      const std::string &filepath) {
+  static bool save_debugging_metadata(const CacheCleanerConfig &config,
+                                      const MetadataType &data) {
     TextSerializer ts;
     ts.serialize_to_json("cache", data);
-    ts.write_to_file(get_llvm_cache_metadata_json_file_path(filepath));
+    ts.write_to_file(
+        taichi::join_path(config.path, config.debugging_metadata_filename));
     return true;
   }
 
   // To check version
-  static bool check_version(const Version &version) {
+  static bool check_version(const CacheCleanerConfig &config,
+                            const Version &version) {
     return is_current_llvm_cache_version(version);
   }
 
   // To get cache files name
   static std::vector<std::string> get_cache_files(
+      const CacheCleanerConfig &config,
       const KernelMetaData &kernel_meta) {
     std::vector<std::string> result;
     for (int i = 0; i < kernel_meta.compiled_data_list.size(); i++) {
@@ -95,6 +102,11 @@ struct CacheCleanerUtils<LlvmOfflineCache> {
       }
     }
     return result;
+  }
+
+  // To remove other files except cache files and offline cache metadta files
+  static void remove_other_files(const CacheCleanerConfig &config) {
+    // Do nothing
   }
 };
 
@@ -414,15 +426,15 @@ void LlvmOfflineCacheFileWriter::clean_cache(const std::string &path,
                                              int max_bytes,
                                              double cleaning_factor) {
   using CacheCleaner = offline_cache::CacheCleaner<LlvmOfflineCache>;
-  CacheCleaner::Params params;
-  params.path = path;
-  params.policy = policy;
-  params.cleaning_factor = cleaning_factor;
-  params.max_size = max_bytes;
-  params.metadata_filename = std::string(kMetadataFilename) + ".tcb";
-  params.debugging_metadata_filename = std::string(kMetadataFilename) + ".json";
-  params.metadata_lock_name = kMetadataFileLockName;
-  CacheCleaner::run(params);
+  offline_cache::CacheCleanerConfig config;
+  config.path = path;
+  config.policy = policy;
+  config.cleaning_factor = cleaning_factor;
+  config.max_size = max_bytes;
+  config.metadata_filename = std::string(kMetadataFilename) + ".tcb";
+  config.debugging_metadata_filename = std::string(kMetadataFilename) + ".json";
+  config.metadata_lock_name = kMetadataFileLockName;
+  CacheCleaner::run(config);
 }
 
 LlvmOfflineCache::KernelCacheData LlvmOfflineCache::KernelCacheData::clone()

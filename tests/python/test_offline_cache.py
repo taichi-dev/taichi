@@ -4,7 +4,7 @@ import math
 import os
 import shutil
 import threading
-from os import listdir, remove, rmdir, stat
+from os import listdir, rmdir, stat
 from os.path import join
 from tempfile import mkdtemp
 from time import sleep
@@ -26,7 +26,7 @@ supported_archs_offline_cache = [
 
 
 def is_offline_cache_file(filename):
-    suffixes = ('.ll', '.bc')
+    suffixes = ('.ll', '.bc', '.spv')
     return filename.endswith(suffixes)
 
 
@@ -46,7 +46,8 @@ def expected_num_cache_files(arch, num_offloads: List[int] = None) -> int:
     if arch in [ti.cpu, ti.cuda]:
         result += 2  # metadata.{json, tcb}
     elif arch in [ti.vulkan]:
-        result += 3  # metadata.{json, tcb}, graphs.tcb
+        # metadata.{json, tcb}, graphs.tcb, offline_cache_metadata.tcb
+        result += 4
     return result
 
 
@@ -472,9 +473,7 @@ def test_offline_cache_with_changing_compile_config(curr_arch):
         curr_arch, [2, 2])
 
 
-# FIXME: Currently, the Vulkan offline cache doesn't support cache cleaning
-@pytest.mark.parametrize(
-    'curr_arch', list(set(supported_archs_offline_cache) - {ti.vulkan}))
+@pytest.mark.parametrize('curr_arch', supported_archs_offline_cache)
 @pytest.mark.parametrize('factor', [0.0, 0.25, 0.85, 1.0])
 @pytest.mark.parametrize('policy', ['never', 'version', 'lru', 'fifo'])
 @_test_offline_cache_dec
@@ -495,10 +494,6 @@ def test_offline_cache_cleaning(curr_arch, factor, policy):
             sleep(1)  # make sure the kernels are not used in the same second
 
     kernel_count = len(simple_kernels_to_test)
-    rem_factor = 1 if policy in [
-        'never', 'version'
-    ] else (kernel_count - int(factor * kernel_count)) / kernel_count
-
     count_of_cache_file = cache_files_cnt(curr_arch)
 
     def added_files(arch):
@@ -522,13 +517,13 @@ def test_offline_cache_cleaning(curr_arch, factor, policy):
     ti.reset()
     rem = 0
     if policy in ['never', 'version']:
-        rem = sum([kern[3] for kern in simple_kernels_to_test])
+        rem = expected_num_cache_files(
+            curr_arch, [kern[3] for kern in simple_kernels_to_test])
     else:
-        for i in range(
-                min(kernel_count - int(factor * kernel_count), kernel_count)):
-            rem += simple_kernels_to_test[kernel_count - i - 1][3]
-    if rem > 0:
-        rem += 2
+        lo = -min(kernel_count - int(factor * kernel_count), kernel_count)
+        lo = kernel_count if lo == 0 else lo
+        rem = expected_num_cache_files(
+            curr_arch, [kern[3] for kern in simple_kernels_to_test[lo:]])
     assert added_files(curr_arch) == rem
 
 

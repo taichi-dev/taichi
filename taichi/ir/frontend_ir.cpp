@@ -424,9 +424,6 @@ Stmt *make_tensor_access(Expression::FlattenContext *ctx,
                          std::vector<int> shape,
                          int stride) {
   flatten_lvalue(var, ctx);
-  if (var->stmt->ret_type->is_primitive(PrimitiveTypeID::unknown)) {
-    var->stmt->ret_type = var->ret_type;
-  }
   Stmt *offset_stmt = ctx->push_back<ConstStmt>(TypedConstant(0));
   for (int i = 0; i < (int)indices.size(); ++i) {
     flatten_rvalue(indices[i], ctx);
@@ -453,7 +450,6 @@ void MatrixExpression::type_check(CompileConfig *config) {
 }
 
 void MatrixExpression::flatten(FlattenContext *ctx) {
-  // TODO: implement flatten
   TI_ASSERT(this->dt->is<TensorType>());
   std::vector<Stmt *> values;
   for (auto &elt : elements) {
@@ -605,6 +601,9 @@ void LoopUniqueExpression::flatten(FlattenContext *ctx) {
 
 void IdExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->current_block->lookup_var(id);
+  if (!ret_type->is_primitive(PrimitiveTypeID::unknown)) {
+    stmt->ret_type = ret_type;
+  }
 }
 
 void AtomicOpExpression::type_check(CompileConfig *) {
@@ -1037,7 +1036,9 @@ Expr ASTBuilder::expr_alloca() {
 Expr ASTBuilder::make_matrix_expr(const std::vector<int> &shape,
                                   const DataType &dt,
                                   const std::vector<Expr> &elements) {
-  return Expr(std::make_shared<MatrixExpression>(elements, shape, dt));
+  auto mat = Expr(std::make_shared<MatrixExpression>(elements, shape, dt));
+  mat->ret_type = dt;
+  return mat;
 }
 
 Expr ASTBuilder::expr_alloca_local_tensor(const std::vector<int> &shape,

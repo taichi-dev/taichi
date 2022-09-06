@@ -265,7 +265,7 @@ Just as you do with any other data type, you can call a compound type directly t
 
 ### Type casting
 
-For now, the only compound types in Taichi that support type casting are vectors and matrices, the casting is performed element-wise.
+For now, the only compound types in Taichi that support type casting are vectors and matrices, the casting is performed element-wise and a new vector/matrix is created:
 
 ```python
 @ti.kernel

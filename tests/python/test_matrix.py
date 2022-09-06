@@ -701,7 +701,7 @@ def test_indexing_in_struct_field():
         bar()
 
 
-@test_utils.test(arch=[ti.cuda, ti.cpu, ti.gpu], real_matrix=True)
+@test_utils.test(arch=[ti.cuda, ti.cpu], real_matrix=True)
 def test_local_matrix_read():
 
     s = ti.field(ti.i32, shape=())
@@ -717,7 +717,7 @@ def test_local_matrix_read():
             assert s[None] == i * 3 + j
 
 
-@test_utils.test(arch=[ti.cuda, ti.cpu, ti.gpu], real_matrix=True)
+@test_utils.test(arch=[ti.cuda, ti.cpu], real_matrix=True)
 def test_local_matrix_indexing_in_loop():
     @ti.kernel
     def test():
@@ -729,7 +729,7 @@ def test_local_matrix_indexing_in_loop():
     test()
 
 
-@test_utils.test(arch=[ti.cuda, ti.cpu, ti.gpu], real_matrix=True)
+@test_utils.test(arch=[ti.cuda, ti.cpu], real_matrix=True)
 def test_local_matrix_indexing_ops():
     @ti.kernel
     def basic_ops():

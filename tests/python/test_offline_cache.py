@@ -309,11 +309,13 @@ def test_multiple_ib_with_offline_cache(curr_arch):
     ti.init(arch=curr_arch,
             enable_fallback=False,
             **current_thread_ext_options())
-    assert added_files(curr_arch) == expected_num_cache_files(curr_arch, [1] * 8)
+    assert added_files(curr_arch) == expected_num_cache_files(
+        curr_arch, [1] * 8)
     helper()
 
     ti.reset()
-    assert added_files(curr_arch) == expected_num_cache_files(curr_arch, [1] * 8)
+    assert added_files(curr_arch) == expected_num_cache_files(
+        curr_arch, [1] * 8)
 
 
 @pytest.mark.parametrize('curr_arch', supported_archs_offline_cache)
@@ -391,11 +393,13 @@ def test_snode_reader_and_writer_with_offline_cache(curr_arch):
     ti.init(arch=curr_arch,
             enable_fallback=False,
             **current_thread_ext_options())
-    assert added_files(curr_arch) == expected_num_cache_files(curr_arch, [1] * 4)
+    assert added_files(curr_arch) == expected_num_cache_files(
+        curr_arch, [1] * 4)
     helper()
 
     ti.reset()
-    assert added_files(curr_arch) == expected_num_cache_files(curr_arch, [1] * 4)
+    assert added_files(curr_arch) == expected_num_cache_files(
+        curr_arch, [1] * 4)
 
 
 @pytest.mark.parametrize('curr_arch', supported_archs_offline_cache)
@@ -493,7 +497,8 @@ def test_offline_cache_cleaning(curr_arch, factor, policy):
         for kernel, args, get_res, num_offloads in simple_kernels_to_test:
             assert kernel(*args) == test_utils.approx(get_res(*args))
             if curr_arch in [ti.vulkan]:
-                sleep(1)  # make sure the kernels are not used in the same second
+                sleep(
+                    1)  # make sure the kernels are not used in the same second
 
     kernel_count = len(simple_kernels_to_test)
     rem_factor = 1 if policy in [

@@ -18,9 +18,9 @@ def test():
     x = ti.Vector([1, 1])  # Error!
 ```
 
-At Line 3 in the code above, Taichi will treat `x` as an integer since it's assigned by 1 upon its declaration. At Line 4 we assign the floating-point number 3.14 to `x`. This scalar will be automatically casted to the integer 3 to match the type of `x`, hence `x` is equal to 3 after this line. At Line 5 we try to assign a `ti.Vector` to `x`, which is a different type and cannot be casted to integers, for this Taichi will raise a syntax error.
+At Line 3 in the code above, Taichi will treat `x` as an integer since it's assigned by 1 upon its declaration. At Line 4 we assign the floating-point number 3.14 to `x`. This scalar will be automatically casted to the integer 3 to match the type of `x`, hence `x` is equal to 3 after this line. At Line 5 we try to assign a `ti.Vector` to `x`, which is of a different type and cannot be casted to integers, for this Taichi will raise a syntax error.
 
-We now give a brief summaray of the data types in Taichi and more detailed explanations will follow below.
+We now give a brief summaray of the data types in Taichi, more detailed explanations will follow below.
 
 Taichi supports two categories of data types in the [Taichi scope](../kernels/syntax.md#taichi-scope): primitive types and compound types.
 

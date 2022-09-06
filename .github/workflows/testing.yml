@@ -108,7 +108,7 @@ jobs:
           arch: x64
 
       - name: Build
-        shell: powershell
+        shell: pwsh
         if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
           Get-Host

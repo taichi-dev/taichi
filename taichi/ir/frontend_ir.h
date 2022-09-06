@@ -161,34 +161,30 @@ class FrontendPrintStmt : public Stmt {
 
 class FrontendForStmt : public Stmt {
  public:
+  SNode *snode{nullptr};
+  Expr external_tensor;
+  mesh::Mesh *mesh{nullptr};
+  mesh::MeshElementType element_type;
   Expr begin, end;
-  Expr global_var;
   std::unique_ptr<Block> body;
-  std::vector<Identifier> loop_var_id;
+  std::vector<Identifier> loop_var_ids;
   bool is_bit_vectorized;
   int num_cpu_threads;
   bool strictly_serialized;
   MemoryAccessOptions mem_access_opt;
   int block_dim;
 
-  bool mesh_for = false;
-  mesh::Mesh *mesh;
-  mesh::MeshElementType element_type;
-
-  bool is_ranged() const {
-    if (global_var.expr == nullptr && !mesh_for) {
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  FrontendForStmt(const ExprGroup &loop_var,
-                  const Expr &global_var,
+  FrontendForStmt(const ExprGroup &loop_vars,
+                  SNode *snode,
                   Arch arch,
                   const ForLoopConfig &config);
 
-  FrontendForStmt(const ExprGroup &loop_var,
+  FrontendForStmt(const ExprGroup &loop_vars,
+                  const Expr &external_tensor,
+                  Arch arch,
+                  const ForLoopConfig &config);
+
+  FrontendForStmt(const ExprGroup &loop_vars,
                   const mesh::MeshPtr &mesh,
                   const mesh::MeshElementType &element_type,
                   Arch arch,
@@ -205,6 +201,13 @@ class FrontendForStmt : public Stmt {
   }
 
   TI_DEFINE_ACCEPT
+
+ private:
+  void init_config(Arch arch, const ForLoopConfig &config);
+
+  void init_loop_vars(const ExprGroup &loop_vars);
+
+  void add_loop_var(const Expr &loop_var);
 };
 
 class FrontendFuncDefStmt : public Stmt {
@@ -499,16 +502,11 @@ class GlobalVariableExpression : public Expression {
       : ident(ident), dt(dt) {
   }
 
-  GlobalVariableExpression(SNode *snode, const Identifier &ident)
-      : ident(ident), dt(snode->dt), snode(snode) {
-  }
-
   void type_check(CompileConfig *config) override {
   }
 
   void set_snode(SNode *snode) {
     this->snode = snode;
-    set_attribute("dim", std::to_string(snode->num_active_indices));
   }
 
   void flatten(FlattenContext *ctx) override;
@@ -930,8 +928,11 @@ class ASTBuilder {
                           const std::string &msg,
                           const std::vector<Expr> &args);
   void begin_frontend_range_for(const Expr &i, const Expr &s, const Expr &e);
-  void begin_frontend_struct_for(const ExprGroup &loop_vars,
-                                 const Expr &global);
+  void begin_frontend_struct_for_on_snode(const ExprGroup &loop_vars,
+                                          SNode *snode);
+  void begin_frontend_struct_for_on_external_tensor(
+      const ExprGroup &loop_vars,
+      const Expr &external_tensor);
   void begin_frontend_mesh_for(const Expr &i,
                                const mesh::MeshPtr &mesh_ptr,
                                const mesh::MeshElementType &element_type);
@@ -985,13 +986,14 @@ class FrontendContext {
   std::unique_ptr<Block> root_node_;
 
  public:
-  FrontendContext(Arch arch);
+  FrontendContext(Arch arch) {
+    root_node_ = std::make_unique<Block>();
+    current_builder_ = std::make_unique<ASTBuilder>(root_node_.get(), arch);
+  }
 
   ASTBuilder &builder() {
     return *current_builder_;
   }
-
-  IRNode *root();
 
   std::unique_ptr<Block> get_root() {
     return std::move(root_node_);

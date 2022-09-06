@@ -323,21 +323,23 @@ class IRPrinter : public IRVisitor {
 
   void visit(FrontendForStmt *for_stmt) override {
     auto vars = make_list<Identifier>(
-        for_stmt->loop_var_id,
+        for_stmt->loop_var_ids,
         [](const Identifier &id) -> std::string { return id.name(); });
-    if (for_stmt->is_ranged()) {
-      print("{} : for {} in range({}, {}) {}{{", for_stmt->name(), vars,
-            expr_to_string(for_stmt->begin), expr_to_string(for_stmt->end),
+    if (for_stmt->snode) {
+      print("{} : for {} in {} {}{}{{", for_stmt->name(), vars,
+            for_stmt->snode->get_node_type_name_hinted(),
+            scratch_pad_info(for_stmt->mem_access_opt),
             block_dim_info(for_stmt->block_dim));
-    } else if (for_stmt->mesh_for) {
+    } else if (for_stmt->external_tensor) {
+      print("{} : for {} in {} {}{}{{", for_stmt->name(), vars,
+            expr_to_string(for_stmt->external_tensor),
+            scratch_pad_info(for_stmt->mem_access_opt),
+            block_dim_info(for_stmt->block_dim));
+    } else if (for_stmt->mesh) {
       print("{} : for {} in mesh {{", for_stmt->name(), vars);
     } else {
-      print("{} : for {} in {} {}{}{{", for_stmt->name(), vars,
-            for_stmt->global_var.is<GlobalVariableExpression>()
-                ? for_stmt->global_var.cast<GlobalVariableExpression>()
-                      ->snode->get_node_type_name_hinted()
-                : expr_to_string(for_stmt->global_var),
-            scratch_pad_info(for_stmt->mem_access_opt),
+      print("{} : for {} in range({}, {}) {}{{", for_stmt->name(), vars,
+            expr_to_string(for_stmt->begin), expr_to_string(for_stmt->end),
             block_dim_info(for_stmt->block_dim));
     }
     for_stmt->body->accept(this);

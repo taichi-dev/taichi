@@ -110,7 +110,12 @@ def begin_frontend_struct_for(ast_builder, group, loop_range):
             f'({group.size()} != {len(loop_range.shape)}). Maybe you wanted to '
             'use "for I in ti.grouped(x)" to group all indices into a single vector I?'
         )
-    ast_builder.begin_frontend_struct_for(group, loop_range._loop_range())
+    if isinstance(loop_range, AnyArray):
+        ast_builder.begin_frontend_struct_for_on_external_tensor(
+            group, loop_range._loop_range())
+    else:
+        ast_builder.begin_frontend_struct_for_on_snode(
+            group, loop_range._loop_range())
 
 
 def begin_frontend_if(ast_builder, cond):
@@ -179,7 +184,8 @@ def subscript(value, *_indices, skip_reordered=False, get_ref=False):
         return value.subscript(*_indices)
     if isinstance(value, Field):
         _var = value._get_field_members()[0].ptr
-        if _var.snode() is None:
+        snode = _var.snode()
+        if snode is None:
             if _var.is_primal():
                 raise RuntimeError(
                     f"{_var.get_expr_name()} has not been placed.")
@@ -187,7 +193,7 @@ def subscript(value, *_indices, skip_reordered=False, get_ref=False):
                 raise RuntimeError(
                     f"Gradient {_var.get_expr_name()} has not been placed, check whether `needs_grad=True`"
                 )
-        field_dim = int(_var.get_attribute("dim"))
+        field_dim = snode.num_active_indices()
         if field_dim != index_dim:
             raise IndexError(
                 f'Field with dim {field_dim} accessed with indices of dim {index_dim}'

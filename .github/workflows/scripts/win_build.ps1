@@ -9,6 +9,9 @@ param (
     [string]$llvmVer = "10"
 )
 
+Get-ExecutionPolicy -List
+echo $MyInvocation
+
 $ErrorActionPreference = "Stop"
 
 $RepoURL = 'https://github.com/taichi-dev/taichi'

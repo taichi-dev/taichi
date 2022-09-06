@@ -113,11 +113,11 @@ TaichiLLVMContext::TaichiLLVMContext(CompileConfig *config, Arch arch)
   }
   jit = JITSession::create(this, config, arch);
 
-  link_context_data = std::make_unique<ThreadLocalData>(
+  linking_context_data = std::make_unique<ThreadLocalData>(
       std::make_unique<llvm::orc::ThreadSafeContext>(
           std::make_unique<llvm::LLVMContext>()));
-  link_context_data->runtime_module = clone_module_to_context(
-      get_this_thread_runtime_module(), link_context_data->llvm_context);
+  linking_context_data->runtime_module = clone_module_to_context(
+      get_this_thread_runtime_module(), linking_context_data->llvm_context);
 
   TI_TRACE("Taichi llvm context created.");
 }
@@ -530,8 +530,8 @@ void TaichiLLVMContext::add_struct_module(std::unique_ptr<Module> module,
     TI_ERROR("module broken");
   }
 
-  link_context_data->struct_modules[tree_id] =
-      clone_module_to_context(module.get(), link_context_data->llvm_context);
+  linking_context_data->struct_modules[tree_id] =
+      clone_module_to_context(module.get(), linking_context_data->llvm_context);
 
   for (auto &[id, data] : per_thread_data_) {
     if (id == std::this_thread::get_id()) {
@@ -821,7 +821,7 @@ void TaichiLLVMContext::update_runtime_jit_module(
 }
 
 void TaichiLLVMContext::delete_snode_tree(int id) {
-  TI_ASSERT(link_context_data->struct_modules.erase(id));
+  TI_ASSERT(linking_context_data->struct_modules.erase(id));
   for (auto &[thread_id, data] : per_thread_data_) {
     TI_ASSERT(data->struct_modules.erase(id));
   }
@@ -889,13 +889,13 @@ TaichiLLVMContext::ThreadLocalData::~ThreadLocalData() {
   thread_safe_llvm_context.reset();
 }
 
-std::unique_ptr<LLVMCompiledData> TaichiLLVMContext::link_compile_data(
+std::unique_ptr<LLVMCompiledData> TaichiLLVMContext::link_compiled_tasks(
     std::vector<std::unique_ptr<LLVMCompiledData>> data_list) {
   auto linked = std::make_unique<LLVMCompiledData>();
   std::unordered_set<int> used_tree_ids;
   std::unordered_set<int> tls_sizes;
   std::unordered_set<std::string> offloaded_names;
-  auto mod = new_module("kernel", link_context_data->llvm_context);
+  auto mod = new_module("kernel", linking_context_data->llvm_context);
   llvm::Linker linker(*mod);
   for (auto &datum : data_list) {
     for (auto tree_id : datum->used_tree_ids) {
@@ -909,14 +909,14 @@ std::unique_ptr<LLVMCompiledData> TaichiLLVMContext::link_compile_data(
       linked->tasks.push_back(std::move(task));
     }
     linker.linkInModule(clone_module_to_context(
-        datum->module.get(), link_context_data->llvm_context));
+        datum->module.get(), linking_context_data->llvm_context));
   }
   for (auto tree_id : used_tree_ids) {
     linker.linkInModule(
-        llvm::CloneModule(*link_context_data->struct_modules[tree_id]),
+        llvm::CloneModule(*linking_context_data->struct_modules[tree_id]),
         llvm::Linker::LinkOnlyNeeded | llvm::Linker::OverrideFromSrc);
   }
-  auto runtime_module = llvm::CloneModule(*link_context_data->runtime_module);
+  auto runtime_module = llvm::CloneModule(*linking_context_data->runtime_module);
   for (auto tls_size : tls_sizes) {
     add_struct_for_func(runtime_module.get(), tls_size);
   }

@@ -134,7 +134,7 @@ std::vector<LLVMCompiledData> KernelCodeGen::compile_kernel_to_module() {
   if (!kernel->is_evaluator) {
     worker.flush();
   }
-  auto linked = tlctx->link_compile_data(std::move(data));
+  auto linked = tlctx->link_compiled_tasks(std::move(data));
   std::vector<LLVMCompiledData> linked_data;
   linked_data.push_back(std::move(*linked));
 

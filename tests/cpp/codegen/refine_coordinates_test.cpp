@@ -39,7 +39,7 @@ class InvokeRefineCoordinatesBuilder : public LLVMModuleBuilder {
     data.tasks.emplace_back(kFuncName);
     std::vector<std::unique_ptr<LLVMCompiledData>> data_list;
     data_list.push_back(std::make_unique<LLVMCompiledData>(std::move(data)));
-    auto linked_data = tlctx->link_compile_data(std::move(data_list));
+    auto linked_data = tlctx->link_compiled_tasks(std::move(data_list));
     auto *jit = tlctx->create_jit_module(std::move(linked_data->module));
     auto *fn = jit->lookup_function(kFuncName);
     return reinterpret_cast<FuncType>(fn);

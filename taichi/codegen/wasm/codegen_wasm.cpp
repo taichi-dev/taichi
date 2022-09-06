@@ -289,7 +289,7 @@ std::vector<LLVMCompiledData> KernelCodeGenWASM::compile_kernel_to_module() {
   auto res = compile_task();
   std::vector<std::unique_ptr<LLVMCompiledData>> data;
   data.push_back(std::make_unique<LLVMCompiledData>(std::move(res)));
-  auto linked = tlctx->link_compile_data(std::move(data));
+  auto linked = tlctx->link_compiled_tasks(std::move(data));
   std::vector<LLVMCompiledData> ret;
   ret.push_back(std::move(*linked));
   return ret;

@@ -42,7 +42,7 @@ class TaichiLLVMContext {
   // main_thread is defined to be the thread that runs the initializer
   JITModule *runtime_jit_module{nullptr};
 
-  std::unique_ptr<ThreadLocalData> link_context_data{nullptr};
+  std::unique_ptr<ThreadLocalData> linking_context_data{nullptr};
 
   TaichiLLVMContext(CompileConfig *config, Arch arch);
 
@@ -142,7 +142,7 @@ class TaichiLLVMContext {
 
   static std::string get_struct_for_func_name(int tls_size);
 
-  std::unique_ptr<LLVMCompiledData> link_compile_data(
+  std::unique_ptr<LLVMCompiledData> link_compiled_tasks(
       std::vector<std::unique_ptr<LLVMCompiledData>> data_list);
 
  private:

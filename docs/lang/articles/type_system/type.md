@@ -81,7 +81,7 @@ def func(a: ti.f64) -> ti.i64:
     ...
 ```
 
-### Explicit type casting
+### Explicit typecasting
 
 As we have mentioned at the beginning of this article, in the Taichi scope, the type of a variable is *statically typed* upon initialization. Taichi's compiler does type check at compile time, so you *cannot* change a variable's type once it is initialized. Still, from time to time, you may run into a situation where you have a certain type of data but it is not feasible for an assignment or calculation. Then, you need explicit typecasting:
 
@@ -107,20 +107,20 @@ As we have mentioned at the beginning of this article, in the Taichi scope, the 
       y1 = ti.f64(a)  # 3.14
   ```
 
-### Implicit type casting
+### Implicit typecasting
 
-Implicit type casting occurs when you *accidentally* put or assign a value in a place where a different data type is expected.
+Implicit typecasting occurs when you *accidentally* put or assign a value in a place where a different data type is expected.
 
 :::caution WARNING
-As a rule of thumb, implicit type casting is a major source of bugs. And Taichi does *not* recommend resorting to this mechanism.
+As a rule of thumb, implicit typecasting is a major source of bugs. And Taichi does *not* recommend resorting to this mechanism.
 
 :::
 
-Implicit type casting can happen in binary operations or in assignments, as explained below.
+Implicit typecasting can happen in binary operations or in assignments, as explained below.
 
-#### Implicit type casting in binary operations
+#### Implicit typecasting in binary operations
 
-Taichi implements its own implicit type casting rules for binary operations, which are slightly different from [those for the C programming language](https://en.cppreference.com/w/c/language/conversion). In general we have three rules in descending order of priority:
+Taichi implements its own implicit typecasting rules for binary operations, which are slightly different from [those for the C programming language](https://en.cppreference.com/w/c/language/conversion). In general we have three rules in descending order of priority:
 
 1. Integer + floating point -> floating point
    - `i32 + f32 -> f32`

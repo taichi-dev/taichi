@@ -39,11 +39,7 @@ struct LlvmOfflineCache {
 
     KernelCacheData clone() const;
 
-    TI_IO_DEF(kernel_key,
-              args, compiled_data,
-              size,
-              created_at,
-              last_used_at);
+    TI_IO_DEF(kernel_key, args, compiled_data, size, created_at, last_used_at);
   };
 
   struct FieldCacheData {
@@ -174,8 +170,7 @@ class LlvmOfflineCacheFileWriter {
  private:
   void merge_with(LlvmOfflineCache &&data);
 
-  void mangle_offloaded_task_name(
-      const std::string &kernel_key,
+  void mangle_offloaded_task_name(const std::string &kernel_key,
                                   LLVMCompiledData &compiled_data);
 
   LlvmOfflineCache data_;

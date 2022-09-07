@@ -37,9 +37,7 @@ class KernelCodeGen {
 
   virtual LLVMCompiledData compile_task(
       std::unique_ptr<llvm::Module> &&module = nullptr,
-      OffloadedStmt *stmt = nullptr) {
-    TI_NOT_IMPLEMENTED
-  }
+      OffloadedStmt *stmt = nullptr){TI_NOT_IMPLEMENTED}
 
   std::optional<LLVMCompiledData> maybe_read_compilation_from_cache(
       const std::string &kernel_key);

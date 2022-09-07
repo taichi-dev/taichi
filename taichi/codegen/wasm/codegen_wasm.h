@@ -24,7 +24,7 @@ class KernelCodeGenWASM : public KernelCodeGen {
       std::unique_ptr<llvm::Module> &&module = nullptr,
       OffloadedStmt *stmt = nullptr) override;  // AOT Module Gen
 
-  std::vector<LLVMCompiledData> compile_kernel_to_module() override;
+  LLVMCompiledData compile_kernel_to_module() override;
 #endif
 };
 

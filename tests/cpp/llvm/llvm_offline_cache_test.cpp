@@ -105,10 +105,8 @@ TEST_P(LlvmOfflineCacheTest, ReadWrite) {
     task.block_dim = kBlockDim;
     task.grid_dim = kGridDim;
     tasks.push_back(task);
-    LLVMCompiledData data;
-    data.tasks = tasks;
-    data.module = make_module(*llvm_ctx);
-    kcache.compiled_data_list.push_back(std::move(data));
+    kcache.compiled_data.tasks = tasks;
+    kcache.compiled_data.module = make_module(*llvm_ctx);
     kcache.args = arg_infos;
     writer.add_kernel_cache(kKernelName, std::move(kcache));
     writer.set_no_mangle();
@@ -122,14 +120,14 @@ TEST_P(LlvmOfflineCacheTest, ReadWrite) {
     const bool ok = reader->get_kernel_cache(kcache, kKernelName, *llvm_ctx);
     ASSERT_TRUE(ok);
     EXPECT_EQ(kcache.kernel_key, kKernelName);
-    EXPECT_EQ(kcache.compiled_data_list[0].tasks.size(), 1);
-    const auto &task0 = kcache.compiled_data_list[0].tasks.front();
+    EXPECT_EQ(kcache.compiled_data.tasks.size(), 1);
+    const auto &task0 = kcache.compiled_data.tasks.front();
     EXPECT_EQ(task0.name, kTaskName);
 
-    ASSERT_NE(kcache.compiled_data_list[0].module, nullptr);
-    kcache.compiled_data_list[0].module->dump();
+    ASSERT_NE(kcache.compiled_data.module, nullptr);
+    kcache.compiled_data.module->dump();
     auto jit_module = tlctx_->create_jit_module(
-        std::move(kcache.compiled_data_list[0].module));
+        std::move(kcache.compiled_data.module));
     using FuncType = int (*)(int, int);
     FuncType my_add = (FuncType)jit_module->lookup_function(kTaskName);
     const auto res = my_add(40, 2);

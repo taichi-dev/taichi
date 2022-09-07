@@ -188,7 +188,7 @@ while gui.running:
 
 :::caution WARNING
 
-Taichi does not support slicing on a Taichi field. You need to always use n integers as indices to access an elemetns, where n is the dimension of the field. For example, with the 2D scalar field `f_2d` above, you may want to try to use `f_2d[0]` to access its first row:
+Taichi does not support slicing on a Taichi field. You need to always use `n` integers as indices to access an element, where `n` is the dimension of the field. For example, with the 2D scalar field `f_2d` above, you may want to try to use `f_2d[0]` to access its first row:
 
 ```python
 f_2d[0] = [1, 2, 3, 4, 5, 6]  # Error!

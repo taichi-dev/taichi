@@ -156,7 +156,7 @@ def substep():
 ### Gravity
 
 ```python
-# Gravity is a force applied in the negative direction of the y axis, 
+# Gravity is a force applied in the negative direction of the y axis,
 # and so is set to [0, -9.8, 0]
 gravity = ti.Vector([0, -9.8, 0])
 
@@ -201,14 +201,14 @@ quad_size = 1.0 / n
 spring_Y = 3e4
 # Damping coefficient caused by
 # the relative movement of the two mass points
-# The assumption here is: 
+# The assumption here is:
 # A mass point can have at most 12 'influential` points
 dashpot_damping = 1e4
 
 # The cloth is modeled as a mass-spring grid. Assume that:
 # a mass point, whose relative index is [0, 0],
-# can be affected by at most 12 surrounding points 
-# 
+# can be affected by at most 12 surrounding points
+#
 # spring_offsets is such a list storing
 # the relative indices of these 'influential' points
 spring_offsets = []
@@ -221,7 +221,7 @@ for i in range(-1, 2):
 def substep():
 
     # Traverses the field x as a 1D array
-    # 
+    #
     # The `i` here refers to the *absolute* index
     # of an element in the field x
     #
@@ -249,13 +249,13 @@ def substep():
                 original_dist = quad_size * float(i - j).norm()
                 # Internal force of the spring
                 force += -spring_Y * d * (current_dist / original_dist - 1)
-                # Continues to apply the damping force 
-                # from the relative movement 
-                # of the two points 
+                # Continues to apply the damping force
+                # from the relative movement
+                # of the two points
                 force += -v_ij.dot(d) * d * dashpot_damping * quad_size
-        
+
         # Continues to add the velocity caused by the internal forces
-        # to the current velocity 
+        # to the current velocity
         v[i] += force * dt
 ```
 
@@ -269,8 +269,8 @@ drag_damping = 1
 
 @ti.kernel
 def substep():
- 
-    # Traverse the elements in field v 
+
+    # Traverse the elements in field v
     for i in ti.grouped(x):
         v[i] *= ti.exp(-drag_damping * dt)
 ```
@@ -287,8 +287,8 @@ drag_damping = 1
 
 @ti.kernel
 def substep():
- 
-    # Traverse the elements in field v 
+
+    # Traverse the elements in field v
     for i in ti.grouped(x):
 
         offset_to_center = x[i] - ball_center[0]

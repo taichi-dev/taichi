@@ -222,7 +222,7 @@ sphere1 = sphere_type(center=vec3([0, 0, 0]), radius=1.0)
 sphere2 = sphere_type(center=vec3([1, 1, 1]), radius=1.0)
 ```
 
-When a struct contains too many members, `ti.types.struct` may make your code look messy. Taichi offers a more intuitive way to define a struct: The decorator `@ti.dataclass` is a thin wrapper that allows you to customize the struct type in the form of a class. 
+When a struct contains too many members, `ti.types.struct` may make your code look messy. Taichi offers a more intuitive way to define a struct: The decorator `@ti.dataclass` is a thin wrapper that allows you to customize the struct type in the form of a class.
 
 ```python
 @ti.dataclass
@@ -245,7 +245,7 @@ As of v1.1.0, you are given more options to initialize a struct or a dataclass.
 
 - Pass positional arguments to a struct in the order they are defined.
 - Pass keyword arguments to a struct to set the corresponding struct members.
-- Unspecified struct members are automatically set to zero. 
+- Unspecified struct members are automatically set to zero.
 
 For example:
 

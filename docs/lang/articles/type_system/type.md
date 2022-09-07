@@ -173,7 +173,7 @@ When you assign a value to a variable of a different data type, Taichi implicitl
 
 ## Compound types
 
-Compound types are user-defined data types, which comprise multiple members. Supported compound types include vectors, matrices, ndarrays, and structs. The `ndarray` type will be discussed in another article [external arrays](../basic/external.md).
+Compound types are user-defined data types, which comprise multiple members. Supported compound types include vectors, matrices, ndarrays, and structs. The `ndarray` type will be discussed in another article [interacting with External Arrays](../basic/external.md).
 
 Taichi allows you to use all types supplied in the `ti.types` module as scaffolds to customize *higher-level* compound types.
 
@@ -267,9 +267,9 @@ As the release of v1.1.0, you are given more options to initialize a struct or a
 
   :::
 
-### Type casting
+### Typecasting
 
-For now, the only compound types in Taichi that support type casting are vectors and matrices, the casting is performed element-wise and a new vector/matrix is created:
+For now, the only compound types in Taichi that support typecasting are vectors and matrices, the casting is performed element-wise and a new vector/matrix is created:
 
 ```python
 @ti.kernel

@@ -244,7 +244,7 @@ As the release of v1.1.0, you are given more options to initialize a struct or a
       ro: vec3
       rd: vec3
       t: float
-  
+
   # use positional arguments to set struct members in order
   ray = Ray(vec3(0), vec3(1, 0, 0), 1.0)
   # ro is set to vec3(0) and t will be set to 0

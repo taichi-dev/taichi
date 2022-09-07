@@ -693,10 +693,13 @@ def field(dtype,
     """
     x, x_grad, x_dual = create_field_member(dtype, name, needs_grad,
                                             needs_dual)
-    x, x_grad, x_dual = ScalarField(x), ScalarField(x_grad), ScalarField(
-        x_dual)
-    x._set_grad(x_grad)
-    x._set_dual(x_dual)
+    x = ScalarField(x)
+    if x_grad:
+        x_grad = ScalarField(x_grad)
+        x._set_grad(x_grad)
+    if x_dual:
+        x_dual = ScalarField(x_dual)
+        x._set_dual(x_dual)
 
     if shape is None:
         if offset is not None:

@@ -34,7 +34,7 @@ ti.init(arch=ti.cpu)
     f[None] = 1.0
     ```
 
-    The memory layout will be like:
+    The layout will be like:
 
     ```
     ┌─────┐
@@ -54,7 +54,7 @@ ti.init(arch=ti.cpu)
         f[i] = i
     ```
 
-    The memory layout will be like:
+    The layout will be like:
 
     ```
     ┌───┬───┬───┬───┬───┬───┬───┬───┬───┐
@@ -72,7 +72,7 @@ ti.init(arch=ti.cpu)
     f = ti.field(int, shape=(3, 6))  # 2D field
     ```
 
-    The memory layout will be like:
+    The layout will be like:
     
     ```
                          f.shape[1]
@@ -108,7 +108,9 @@ Taichi only supports fields of dimensions <= 8.
 
 ### Access elements in a scalar field
 
-The initial value of elements in a scalar filed is zero. Always use explicit indexing to access elements in a scalar field.
+Once a field is declared, the initial value of its element will be filled with zeros, though we do not suggest you use this undefined behavier. 
+
+To access an element in a scalar field, you need to explicity use the indices of that element in the field.
 
 :::note
 When accessing a 0D field `x`, use `x[None] = 0`, *not* `x = 0`.

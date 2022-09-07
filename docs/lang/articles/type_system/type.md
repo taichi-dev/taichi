@@ -231,7 +231,7 @@ class Sphere:
     radius: float
 ```
 
-The code above is equivalent to the line of code below but looks much nicer:
+The code above is equivalent to the line of code below:
 
 ```python
 Sphere = ti.types.struct(center=vec3, radius=float)

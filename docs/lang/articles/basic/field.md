@@ -205,6 +205,20 @@ Both of these will raise the error "Slicing is not supported on ti.field".
 
 :::
 
+
+### Fill a scalar field with a given value
+
+You can call the `field.fill()` method to set all elements in a scalar field to a given value. For example:
+
+```python
+x = ti.field(int, shape=(5, 5))
+x.fill(1)  # all elements in x are set to 1
+
+@ti.kernel
+def test():
+    x.fill(-1)  # all elements in x are set to -1
+```
+
 ### Metadata
 
 Metadata provides the basic information of a scalar field. You can retrieve the data type and shape of a scalar field via its `shape` and `dtype` properties:

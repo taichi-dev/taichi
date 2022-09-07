@@ -190,7 +190,7 @@ You can use the two functions `ti.types.matrix()` and `ti.types.vector()` to cre
 
 ```python
 vec4d = ti.types.vector(4, ti.f64)  # a 64-bit floating-point 4D vector type
-mat4x3i = ti.types.matrix(4, 3, int)  # integer 4x3 matrix type
+mat4x3i = ti.types.matrix(4, 3, int)  # a 4x3 integer matrix type
 ```
 
 You can directly call the customized vector/matrix type to instantiate vectors/matrices or use them as type hints in function arguments and struct members. For example:

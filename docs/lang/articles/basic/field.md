@@ -374,10 +374,10 @@ The following code snippet declares a 1D field of particle information (position
 ```python
 # Declare a 1D struct field using the ti.Struct.field() method
 particle_field = ti.Struct.field({
-    "pos": ti.types.vector(3, ti.f32),
-    "vel": ti.types.vector(3, ti.f32),
-    "acc": ti.types.vector(3, ti.f32),
-    "mass": ti.f32,
+    "pos": ti.math.vec3,
+    "vel": ti.math.vec3,
+    "acc": ti.math.vec3),
+    "mass": float,
   }, shape=(n,))
 ```
 

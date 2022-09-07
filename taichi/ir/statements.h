@@ -355,25 +355,49 @@ class PtrOffsetStmt : public Stmt {
 
   PtrOffsetStmt(Stmt *, Stmt *);
 
-  bool is_local_ptr() const {
-    if (origin->is<AllocaStmt>() || origin->is<GlobalTemporaryStmt>()) {
-      auto is_tensor_type = origin->ret_type->is<PointerType>()
-                                ? origin->ret_type->cast<PointerType>()
-                                      ->get_pointee_type()
-                                      ->is<TensorType>()
-                                : origin->ret_type->is<TensorType>();
-      TI_ASSERT_INFO(is_tensor_type,
-                     "PtrOffsetStmt can only be used for Alloca (TensorType).");
+  /* TODO(zhanlue/yi) Stop using llvm::AllocaInst with "ArraySize" argument so
+     that Alloca can return ArrayType.
+
+      Currently, AllocaStmt and GlobalTemporaryStmt uses llvm::AllocaInst with
+     "ArraySize" argument, which returns a pointer to the first element of the
+     array, instead of the array itself.
+
+      We would like to refactor this behaviour because:
+      1. It drops the array type information.
+      2. Causes crash on AMDGPU backend in certain circumstances.
+
+      https://llvm.org/doxygen/classllvm_1_1AllocaInst.html#ac68a7586b8be7de3c39531d9eca902e6
+  */
+  bool tensor_type_represented_as_primitive_type_ptr() const {
+    if (origin->ret_type.ptr_removed()->is<TensorType>()) {
+      if (origin->is<AllocaStmt>() || origin->is<GlobalTemporaryStmt>()) {
+        return true;
+      }
     }
-    return origin->is<AllocaStmt>() || origin->is<GlobalTemporaryStmt>();
+    return false;
+  }
+
+  /* TODO(zhanlue/yi): Unify semantics of offset in PrtOffsetStmt
+
+    There is a hack in PtrOffsetStmt in terms of the semantics of "offset",
+    where "offset" can be interpreted as "number of bytes" or "index" in
+    different upper-level code paths
+
+    Here we created this offset_used_as_index() function to help indentify
+    "offset"'s semantic, but in the end we should unify these two semantics.
+  */
+  bool offset_used_as_index() const {
+    if (origin->is<AllocaStmt>() || origin->is<GlobalTemporaryStmt>() ||
+        origin->is<ExternalPtrStmt>()) {
+      TI_ASSERT_INFO(origin->ret_type.ptr_removed()->is<TensorType>(),
+                     "PtrOffsetStmt can only be used for TensorType.");
+      return true;
+    }
+    return false;
   }
 
   bool is_unlowered_global_ptr() const {
     return origin->is<GlobalPtrStmt>();
-  }
-
-  bool is_lowered_global_ptr() const {
-    return !is_local_ptr() && !is_unlowered_global_ptr();
   }
 
   bool has_global_side_effect() const override {
@@ -622,7 +646,7 @@ class LocalStoreStmt : public Stmt {
   LocalStoreStmt(Stmt *dest, Stmt *val) : dest(dest), val(val) {
     TI_ASSERT(dest->is<AllocaStmt>() ||
               (dest->is<PtrOffsetStmt>() &&
-               dest->cast<PtrOffsetStmt>()->is_local_ptr()));
+               dest->cast<PtrOffsetStmt>()->offset_used_as_index()));
     TI_STMT_REG_FIELDS;
   }
 

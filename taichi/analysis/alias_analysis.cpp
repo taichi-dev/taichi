@@ -20,7 +20,7 @@ AliasResult alias_analysis(Stmt *var1, Stmt *var2) {
     if (var->is<AllocaStmt>()) {
       return var;
     } else if (var->is<PtrOffsetStmt>() &&
-               var->cast<PtrOffsetStmt>()->is_local_ptr()) {
+               var->cast<PtrOffsetStmt>()->offset_used_as_index()) {
       return var->cast<PtrOffsetStmt>()->origin;
     } else {
       return (Stmt *)nullptr;

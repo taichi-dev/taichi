@@ -387,3 +387,585 @@ def test_fetching_color_attachment():
     render()
     verify_image(window.get_image_buffer_as_numpy(), 'test_set_image')
     window.destroy()
+
+
+@pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
+@test_utils.test(arch=supported_archs)
+def test_fetching_depth_attachment():
+    window = ti.ui.Window("test", (512, 512), vsync=True, show_window=False)
+    canvas = window.get_canvas()
+    scene = ti.ui.Scene()
+    camera = ti.ui.make_camera()
+
+    ball_center = ti.Vector.field(3, dtype=float, shape=(1, ))
+    ball_center[0] = ti.math.vec3(0, 0, 0.5)
+
+    def render():
+        camera.position(0.0, 0.0, 1)
+        camera.lookat(0.0, 0.0, 0)
+        scene.set_camera(camera)
+        scene.point_light(pos=(0, 1, 2), color=(1, 1, 1))
+        scene.ambient_light((0.5, 0.5, 0.5))
+        scene.particles(ball_center, radius=0.05, color=(0.5, 0.42, 0.8))
+        canvas.scene(scene)
+
+    for _ in range(RENDER_REPEAT):
+        render()
+        window.get_image_buffer_as_numpy()
+
+    render()
+    verify_image(window.get_depth_buffer_as_numpy(), 'test_depth')
+    window.destroy()
+
+
+@pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
+@test_utils.test(arch=supported_archs)
+def test_draw_lines():
+    N = 10
+    particles_pos = ti.Vector.field(3, dtype=ti.f32, shape=N)
+    points_pos = ti.Vector.field(3, dtype=ti.f32, shape=N)
+
+    @ti.kernel
+    def init_points_pos(points: ti.template()):
+        for i in range(points.shape[0]):
+            points[i] = [i for j in ti.static(range(3))]
+
+    init_points_pos(particles_pos)
+    init_points_pos(points_pos)
+
+    window = ti.ui.Window("Test for Drawing 3d-lines", (768, 768),
+                          show_window=False)
+    canvas = window.get_canvas()
+    scene = ti.ui.Scene()
+    camera = ti.ui.make_camera()
+    camera.position(0, 5, -10)
+    camera.lookat(3, 3, 1)
+
+    def render():
+        scene.set_camera(camera)
+        scene.ambient_light((0.8, 0.8, 0.8))
+        scene.point_light(pos=(0.5, 1.5, 1.5), color=(1, 1, 1))
+
+        scene.particles(particles_pos, color=(0.68, 0.26, 0.19), radius=0.5)
+        scene.lines(points_pos, color=(0.28, 0.68, 0.99), width=5.0)
+        canvas.scene(scene)
+
+    for _ in range(RENDER_REPEAT):
+        render()
+        window.get_image_buffer_as_numpy()
+
+    render()
+    if (platform.system() == 'Darwin'):
+        # TODO:Fix the bug that mac not support wide lines
+        verify_image(window.get_image_buffer_as_numpy(), 'test_draw_lines.mac')
+    else:
+        verify_image(window.get_image_buffer_as_numpy(), 'test_draw_lines')
+    window.destroy()
+
+
+@pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
+@test_utils.test(arch=supported_archs)
+def test_draw_part_of_particles():
+    N = 10
+    particles_pos = ti.Vector.field(3, dtype=ti.f32, shape=N)
+    points_pos = ti.Vector.field(3, dtype=ti.f32, shape=N)
+
+    @ti.kernel
+    def init_points_pos(points: ti.template()):
+        for i in range(points.shape[0]):
+            points[i] = [i for j in ti.static(range(3))]
+
+    init_points_pos(particles_pos)
+    init_points_pos(points_pos)
+
+    window = ti.ui.Window("Test", (768, 768), show_window=False)
+    canvas = window.get_canvas()
+    scene = ti.ui.Scene()
+    camera = ti.ui.make_camera()
+    camera.position(0, 5, -10)
+    camera.lookat(3, 3, 1)
+
+    def render():
+        scene.set_camera(camera)
+        scene.ambient_light((0.8, 0.8, 0.8))
+        scene.point_light(pos=(0.5, 1.5, 1.5), color=(1, 1, 1))
+
+        scene.particles(particles_pos,
+                        color=(0.68, 0.26, 0.19),
+                        radius=0.5,
+                        index_offset=2,
+                        index_count=6)
+        canvas.scene(scene)
+
+    for _ in range(RENDER_REPEAT):
+        render()
+        window.get_image_buffer_as_numpy()
+
+    render()
+    verify_image(window.get_image_buffer_as_numpy(),
+                 'test_draw_part_of_particles')
+    window.destroy()
+
+
+@pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
+@test_utils.test(arch=supported_archs)
+def test_draw_part_of_mesh():
+    N = 10
+    NV = (N + 1)**2
+    NT = 2 * N**2
+    NE = 2 * N * (N + 1) + N**2
+    pos = ti.Vector.field(3, ti.f32, shape=NV)
+    tri = ti.field(ti.i32, shape=3 * NT)
+    edge = ti.Vector.field(2, ti.i32, shape=NE)
+
+    @ti.kernel
+    def init_pos():
+        for i, j in ti.ndrange(N + 1, N + 1):
+            idx = i * (N + 1) + j
+            pos[idx] = ti.Vector([i / N, 1.0 - j / N, 0.5])
+
+    @ti.kernel
+    def init_tri():
+        for i, j in ti.ndrange(N, N):
+            tri_idx = 6 * (i * N + j)
+            pos_idx = i * (N + 1) + j
+            if (i + j) % 2 == 0:
+                tri[tri_idx + 0] = pos_idx
+                tri[tri_idx + 1] = pos_idx + N + 2
+                tri[tri_idx + 2] = pos_idx + 1
+                tri[tri_idx + 3] = pos_idx
+                tri[tri_idx + 4] = pos_idx + N + 1
+                tri[tri_idx + 5] = pos_idx + N + 2
+            else:
+                tri[tri_idx + 0] = pos_idx
+                tri[tri_idx + 1] = pos_idx + N + 1
+                tri[tri_idx + 2] = pos_idx + 1
+                tri[tri_idx + 3] = pos_idx + 1
+                tri[tri_idx + 4] = pos_idx + N + 1
+                tri[tri_idx + 5] = pos_idx + N + 2
+
+    @ti.kernel
+    def init_edge():
+        for i, j in ti.ndrange(N + 1, N):
+            edge_idx = i * N + j
+            pos_idx = i * (N + 1) + j
+            edge[edge_idx] = ti.Vector([pos_idx, pos_idx + 1])
+        start = N * (N + 1)
+        for i, j in ti.ndrange(N, N + 1):
+            edge_idx = start + j * N + i
+            pos_idx = i * (N + 1) + j
+            edge[edge_idx] = ti.Vector([pos_idx, pos_idx + N + 1])
+        start = 2 * N * (N + 1)
+        for i, j in ti.ndrange(N, N):
+            edge_idx = start + i * N + j
+            pos_idx = i * (N + 1) + j
+            if (i + j) % 2 == 0:
+                edge[edge_idx] = ti.Vector([pos_idx, pos_idx + N + 2])
+            else:
+                edge[edge_idx] = ti.Vector([pos_idx + 1, pos_idx + N + 1])
+
+    init_pos()
+    init_tri()
+    init_edge()
+
+    window = ti.ui.Window("test", (1024, 1024), vsync=True, show_window=False)
+    canvas = window.get_canvas()
+    scene = ti.ui.Scene()
+    camera = ti.ui.make_camera()
+    camera.position(1.5, 1, -1)
+    camera.lookat(1, 0.5, 0)
+    camera.fov(90)
+
+    def render():
+        scene.set_camera(camera)
+        scene.point_light(pos=(0.5, 1, 2), color=(1, 1, 1))
+
+        scene.mesh(pos,
+                   tri,
+                   color=(39 / 255, 123 / 255, 192 / 255),
+                   two_sided=True,
+                   index_count=2 * NT,
+                   index_offset=9)
+        canvas.scene(scene)
+
+    for _ in range(RENDER_REPEAT):
+        render()
+        window.get_image_buffer_as_numpy()
+
+    render()
+    verify_image(window.get_image_buffer_as_numpy(), 'test_draw_part_of_mesh')
+    window.destroy()
+
+
+@pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
+@test_utils.test(arch=supported_archs)
+def test_draw_part_of_lines():
+    N = 10
+    particles_pos = ti.Vector.field(3, dtype=ti.f32, shape=N)
+    points_pos = ti.Vector.field(3, dtype=ti.f32, shape=N)
+
+    @ti.kernel
+    def init_points_pos(points: ti.template()):
+        for i in range(points.shape[0]):
+            points[i] = [i for j in ti.static(range(3))]
+
+    init_points_pos(particles_pos)
+    init_points_pos(points_pos)
+
+    window = ti.ui.Window("Test", (768, 768), show_window=False)
+    canvas = window.get_canvas()
+    scene = ti.ui.Scene()
+    camera = ti.ui.make_camera()
+    camera.position(0, 5, -10)
+    camera.lookat(3, 3, 1)
+
+    def render():
+        scene.set_camera(camera)
+        scene.ambient_light((0.8, 0.8, 0.8))
+        scene.point_light(pos=(0.5, 1.5, 1.5), color=(1, 1, 1))
+
+        scene.particles(particles_pos, color=(0.68, 0.26, 0.19), radius=0.5)
+        scene.lines(points_pos,
+                    color=(0.28, 0.68, 0.99),
+                    width=5.0,
+                    vertex_count=6,
+                    vertex_offset=2)
+        canvas.scene(scene)
+
+    for _ in range(RENDER_REPEAT):
+        render()
+        window.get_image_buffer_as_numpy()
+
+    render()
+    if (platform.system() == 'Darwin'):
+        # TODO:Fix the bug that mac not support wide lines
+        verify_image(window.get_image_buffer_as_numpy(),
+                     'test_draw_part_of_lines.mac')
+    else:
+        verify_image(window.get_image_buffer_as_numpy(),
+                     'test_draw_part_of_lines')
+    window.destroy()
+
+
+@pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
+@test_utils.test(arch=supported_archs)
+def test_draw_mesh_instances():
+    N = 10
+    NV = (N + 1)**2
+    NT = 2 * N**2
+    NE = 2 * N * (N + 1) + N**2
+    pos = ti.Vector.field(3, ti.f32, shape=NV)
+    tri = ti.field(ti.i32, shape=3 * NT)
+    edge = ti.Vector.field(2, ti.i32, shape=NE)
+
+    # Instance Attribute Information
+    NInstanceRows = 100
+    NInstanceCols = 100
+    NInstance = NInstanceRows * NInstanceCols
+    instances_transforms = ti.Matrix.field(4, 4, ti.f32, shape=(NInstance, ))
+
+    @ti.kernel
+    def init_transforms_of_instances():
+        identity = ti.Matrix.identity(ti.f32, 4)
+        for i in range(NInstanceRows):
+            for j in range(NInstanceCols):
+                index = i * NInstanceCols + j
+                instances_transforms[index] = identity
+                translate_matrix = ti.math.translate(1.2 * j, 0, -1.2 * i)
+                instances_transforms[
+                    index] = translate_matrix @ instances_transforms[index]
+
+    @ti.kernel
+    def init_pos():
+        for i, j in ti.ndrange(N + 1, N + 1):
+            idx = i * (N + 1) + j
+            pos[idx] = ti.Vector([i / N, 1.0 - j / N, 0.5])
+
+    @ti.kernel
+    def init_tri():
+        for i, j in ti.ndrange(N, N):
+            tri_idx = 6 * (i * N + j)
+            pos_idx = i * (N + 1) + j
+            if (i + j) % 2 == 0:
+                tri[tri_idx + 0] = pos_idx
+                tri[tri_idx + 1] = pos_idx + N + 2
+                tri[tri_idx + 2] = pos_idx + 1
+                tri[tri_idx + 3] = pos_idx
+                tri[tri_idx + 4] = pos_idx + N + 1
+                tri[tri_idx + 5] = pos_idx + N + 2
+            else:
+                tri[tri_idx + 0] = pos_idx
+                tri[tri_idx + 1] = pos_idx + N + 1
+                tri[tri_idx + 2] = pos_idx + 1
+                tri[tri_idx + 3] = pos_idx + 1
+                tri[tri_idx + 4] = pos_idx + N + 1
+                tri[tri_idx + 5] = pos_idx + N + 2
+
+    @ti.kernel
+    def init_edge():
+        for i, j in ti.ndrange(N + 1, N):
+            edge_idx = i * N + j
+            pos_idx = i * (N + 1) + j
+            edge[edge_idx] = ti.Vector([pos_idx, pos_idx + 1])
+        start = N * (N + 1)
+        for i, j in ti.ndrange(N, N + 1):
+            edge_idx = start + j * N + i
+            pos_idx = i * (N + 1) + j
+            edge[edge_idx] = ti.Vector([pos_idx, pos_idx + N + 1])
+        start = 2 * N * (N + 1)
+        for i, j in ti.ndrange(N, N):
+            edge_idx = start + i * N + j
+            pos_idx = i * (N + 1) + j
+            if (i + j) % 2 == 0:
+                edge[edge_idx] = ti.Vector([pos_idx, pos_idx + N + 2])
+            else:
+                edge[edge_idx] = ti.Vector([pos_idx + 1, pos_idx + N + 1])
+
+    @ti.kernel
+    def update_transform(t: ti.f32):
+        for i in range(NInstance):
+            rotation_matrix = ti.math.rot_by_axis(ti.math.vec3(0, 1, 0),
+                                                  0.01 * ti.math.sin(t))
+            instances_transforms[i] = instances_transforms[i] @ rotation_matrix
+
+    init_transforms_of_instances()
+
+    init_pos()
+    init_tri()
+    init_edge()
+
+    window = ti.ui.Window("test", (1024, 1024), vsync=True, show_window=False)
+    canvas = window.get_canvas()
+    scene = ti.ui.Scene()
+    camera = ti.ui.make_camera()
+    camera.position(-1.82731234, 2.26492691, 2.27800684)
+    camera.lookat(-1.13230401, 2.11502124, 1.57480579)
+    camera.fov(90)
+
+    def render():
+        scene.set_camera(camera)
+        scene.point_light(pos=(0.5, 1, 2), color=(1, 1, 1))
+
+        scene.mesh_instance(pos,
+                            tri,
+                            color=(39 / 255, 123 / 255, 192 / 255),
+                            two_sided=True,
+                            transforms=instances_transforms)
+        canvas.scene(scene)
+
+    if (platform.system() == 'Windows'):
+        # FIXME:Fix the bug that drawing mesh instance report bugs on Windows
+        return
+
+    for i in range(30):
+        update_transform(30)
+        render()
+        window.get_image_buffer_as_numpy()
+
+    render()
+    verify_image(window.get_image_buffer_as_numpy(),
+                 'test_draw_mesh_instances')
+    window.destroy()
+
+
+@pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
+@test_utils.test(arch=supported_archs)
+def test_draw_part_of_mesh_instances():
+    N = 10
+    NV = (N + 1)**2
+    NT = 2 * N**2
+    NE = 2 * N * (N + 1) + N**2
+    pos = ti.Vector.field(3, ti.f32, shape=NV)
+    tri = ti.field(ti.i32, shape=3 * NT)
+    edge = ti.Vector.field(2, ti.i32, shape=NE)
+
+    # Instance Attribute Information
+    NInstanceRows = 10
+    NInstanceCols = 10
+    NInstance = NInstanceRows * NInstanceCols
+    instances_transforms = ti.Matrix.field(4, 4, ti.f32, shape=(NInstance, ))
+
+    @ti.kernel
+    def init_transforms_of_instances():
+        identity = ti.Matrix.identity(ti.f32, 4)
+        for i in range(NInstanceRows):
+            for j in range(NInstanceCols):
+                index = i * NInstanceCols + j
+                instances_transforms[index] = identity
+                translate_matrix = ti.math.translate(1.2 * j, 0, -1.2 * i)
+                instances_transforms[
+                    index] = translate_matrix @ instances_transforms[index]
+
+    @ti.kernel
+    def init_pos():
+        for i, j in ti.ndrange(N + 1, N + 1):
+            idx = i * (N + 1) + j
+            pos[idx] = ti.Vector([i / N, 1.0 - j / N, 0.5])
+
+    @ti.kernel
+    def init_tri():
+        for i, j in ti.ndrange(N, N):
+            tri_idx = 6 * (i * N + j)
+            pos_idx = i * (N + 1) + j
+            if (i + j) % 2 == 0:
+                tri[tri_idx + 0] = pos_idx
+                tri[tri_idx + 1] = pos_idx + N + 2
+                tri[tri_idx + 2] = pos_idx + 1
+                tri[tri_idx + 3] = pos_idx
+                tri[tri_idx + 4] = pos_idx + N + 1
+                tri[tri_idx + 5] = pos_idx + N + 2
+            else:
+                tri[tri_idx + 0] = pos_idx
+                tri[tri_idx + 1] = pos_idx + N + 1
+                tri[tri_idx + 2] = pos_idx + 1
+                tri[tri_idx + 3] = pos_idx + 1
+                tri[tri_idx + 4] = pos_idx + N + 1
+                tri[tri_idx + 5] = pos_idx + N + 2
+
+    @ti.kernel
+    def init_edge():
+        for i, j in ti.ndrange(N + 1, N):
+            edge_idx = i * N + j
+            pos_idx = i * (N + 1) + j
+            edge[edge_idx] = ti.Vector([pos_idx, pos_idx + 1])
+        start = N * (N + 1)
+        for i, j in ti.ndrange(N, N + 1):
+            edge_idx = start + j * N + i
+            pos_idx = i * (N + 1) + j
+            edge[edge_idx] = ti.Vector([pos_idx, pos_idx + N + 1])
+        start = 2 * N * (N + 1)
+        for i, j in ti.ndrange(N, N):
+            edge_idx = start + i * N + j
+            pos_idx = i * (N + 1) + j
+            if (i + j) % 2 == 0:
+                edge[edge_idx] = ti.Vector([pos_idx, pos_idx + N + 2])
+            else:
+                edge[edge_idx] = ti.Vector([pos_idx + 1, pos_idx + N + 1])
+
+    init_transforms_of_instances()
+    init_pos()
+    init_tri()
+    init_edge()
+
+    window = ti.ui.Window("test", (1024, 1024), vsync=True, show_window=False)
+    canvas = window.get_canvas()
+    scene = ti.ui.Scene()
+    camera = ti.ui.make_camera()
+    camera.position(-1.82731234, 2.26492691, 2.27800684)
+    camera.lookat(-1.13230401, 2.11502124, 1.57480579)
+    camera.fov(90)
+
+    def render():
+        scene.set_camera(camera)
+        scene.point_light(pos=(0.5, 1, 2), color=(1, 1, 1))
+
+        scene.mesh_instance(pos,
+                            tri,
+                            color=(39 / 255, 123 / 255, 192 / 255),
+                            two_sided=True,
+                            transforms=instances_transforms,
+                            instance_count=10,
+                            instance_offset=2)
+        canvas.scene(scene)
+
+    if (platform.system() == 'Windows'):
+        # FIXME:Fix the bug that drawing mesh instance report bugs on Windows
+        return
+
+    for _ in range(RENDER_REPEAT):
+        render()
+        window.get_image_buffer_as_numpy()
+
+    render()
+    verify_image(window.get_image_buffer_as_numpy(),
+                 'test_draw_part_of_mesh_instances')
+    window.destroy()
+
+
+@pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
+@test_utils.test(arch=supported_archs)
+def test_wireframe_mode():
+    N = 10
+    NV = (N + 1)**2
+    NT = 2 * N**2
+    NE = 2 * N * (N + 1) + N**2
+    pos = ti.Vector.field(3, ti.f32, shape=NV)
+    tri = ti.field(ti.i32, shape=3 * NT)
+    edge = ti.Vector.field(2, ti.i32, shape=NE)
+
+    @ti.kernel
+    def init_pos():
+        for i, j in ti.ndrange(N + 1, N + 1):
+            idx = i * (N + 1) + j
+            pos[idx] = ti.Vector([i / N, 1.0 - j / N, 0.5])
+
+    @ti.kernel
+    def init_tri():
+        for i, j in ti.ndrange(N, N):
+            tri_idx = 6 * (i * N + j)
+            pos_idx = i * (N + 1) + j
+            if (i + j) % 2 == 0:
+                tri[tri_idx + 0] = pos_idx
+                tri[tri_idx + 1] = pos_idx + N + 2
+                tri[tri_idx + 2] = pos_idx + 1
+                tri[tri_idx + 3] = pos_idx
+                tri[tri_idx + 4] = pos_idx + N + 1
+                tri[tri_idx + 5] = pos_idx + N + 2
+            else:
+                tri[tri_idx + 0] = pos_idx
+                tri[tri_idx + 1] = pos_idx + N + 1
+                tri[tri_idx + 2] = pos_idx + 1
+                tri[tri_idx + 3] = pos_idx + 1
+                tri[tri_idx + 4] = pos_idx + N + 1
+                tri[tri_idx + 5] = pos_idx + N + 2
+
+    @ti.kernel
+    def init_edge():
+        for i, j in ti.ndrange(N + 1, N):
+            edge_idx = i * N + j
+            pos_idx = i * (N + 1) + j
+            edge[edge_idx] = ti.Vector([pos_idx, pos_idx + 1])
+        start = N * (N + 1)
+        for i, j in ti.ndrange(N, N + 1):
+            edge_idx = start + j * N + i
+            pos_idx = i * (N + 1) + j
+            edge[edge_idx] = ti.Vector([pos_idx, pos_idx + N + 1])
+        start = 2 * N * (N + 1)
+        for i, j in ti.ndrange(N, N):
+            edge_idx = start + i * N + j
+            pos_idx = i * (N + 1) + j
+            if (i + j) % 2 == 0:
+                edge[edge_idx] = ti.Vector([pos_idx, pos_idx + N + 2])
+            else:
+                edge[edge_idx] = ti.Vector([pos_idx + 1, pos_idx + N + 1])
+
+    init_pos()
+    init_tri()
+    init_edge()
+
+    window = ti.ui.Window("test", (1024, 1024), vsync=True, show_window=False)
+    canvas = window.get_canvas()
+    scene = ti.ui.Scene()
+    camera = ti.ui.make_camera()
+    camera.position(1.5, 1, -1)
+    camera.lookat(1, 0.5, 0)
+    camera.fov(90)
+
+    def render():
+        scene.set_camera(camera)
+        scene.point_light(pos=(0.5, 1, 2), color=(1, 1, 1))
+
+        scene.mesh(pos,
+                   tri,
+                   color=(39 / 255, 123 / 255, 192 / 255),
+                   two_sided=True,
+                   show_wireframe=True)
+        canvas.scene(scene)
+
+    for _ in range(RENDER_REPEAT):
+        render()
+        window.get_image_buffer_as_numpy()
+
+    render()
+    verify_image(window.get_image_buffer_as_numpy(), 'test_wireframe_mode')
+    window.destroy()

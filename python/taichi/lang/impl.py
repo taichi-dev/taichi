@@ -28,6 +28,7 @@ from taichi.lang.util import (cook_dtype, get_traceback, is_taichi_class,
                               python_scope, taichi_scope, warning)
 from taichi.types.primitive_types import (all_types, f16, f32, f64, i32, i64,
                                           u8, u32, u64)
+from taichi.types.utils import is_tensor
 
 
 @taichi_scope
@@ -113,7 +114,12 @@ def begin_frontend_struct_for(ast_builder, group, loop_range):
             f'({group.size()} != {len(loop_range.shape)}). Maybe you wanted to '
             'use "for I in ti.grouped(x)" to group all indices into a single vector I?'
         )
-    ast_builder.begin_frontend_struct_for(group, loop_range._loop_range())
+    if isinstance(loop_range, AnyArray):
+        ast_builder.begin_frontend_struct_for_on_external_tensor(
+            group, loop_range._loop_range())
+    else:
+        ast_builder.begin_frontend_struct_for_on_snode(
+            group, loop_range._loop_range())
 
 
 def begin_frontend_if(ast_builder, cond):
@@ -185,7 +191,8 @@ def subscript(value, *_indices, skip_reordered=False, get_ref=False):
         return value.subscript(*_indices)
     if isinstance(value, Field):
         _var = value._get_field_members()[0].ptr
-        if _var.snode() is None:
+        snode = _var.snode()
+        if snode is None:
             if _var.is_primal():
                 raise RuntimeError(
                     f"{_var.get_expr_name()} has not been placed.")
@@ -193,7 +200,7 @@ def subscript(value, *_indices, skip_reordered=False, get_ref=False):
                 raise RuntimeError(
                     f"Gradient {_var.get_expr_name()} has not been placed, check whether `needs_grad=True`"
                 )
-        field_dim = int(_var.get_attribute("dim"))
+        field_dim = snode.num_active_indices()
         if field_dim != index_dim:
             raise IndexError(
                 f'Field with dim {field_dim} accessed with indices of dim {index_dim}'
@@ -214,7 +221,7 @@ def subscript(value, *_indices, skip_reordered=False, get_ref=False):
             raise IndexError(
                 f'Field with dim {dim - element_dim} accessed with indices of dim {index_dim}'
             )
-        if element_dim == 0:
+        if element_dim == 0 or current_cfg().real_matrix:
             return Expr(
                 _ti_core.subscript(value.ptr, indices_expr_group,
                                    get_runtime().get_current_src_info()))
@@ -229,6 +236,17 @@ def subscript(value, *_indices, skip_reordered=False, get_ref=False):
                                   ndim=element_dim)
         ret.any_array_access = any_array_access
         return ret
+    if isinstance(value, Expr):
+        # Index into TensorType
+        # value: IndexExpression with ret_type = TensorType
+        assert current_cfg().real_matrix is True
+        assert is_tensor(value.ptr.get_ret_type())
+
+        # TODO(zhanlue): Merge _ti_core.subscript and _ti_core.make_index_expr
+        return Expr(
+            _ti_core.subscript(value.ptr, indices_expr_group,
+                               get_runtime().get_current_src_info()))
+
     # Directly evaluate in Python for non-Taichi types
     return value.__getitem__(*_indices)
 
@@ -588,7 +606,7 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
 
     x = Expr(prog.make_id_expr(""))
     x.declaration_tb = get_traceback(stacklevel=4)
-    x.ptr = _ti_core.global_new(x.ptr, dtype)
+    x.ptr = _ti_core.expr_field(x.ptr, dtype)
     x.ptr.set_name(name)
     x.ptr.set_grad_type(SNodeGradType.PRIMAL)
     pytaichi.global_vars.append(x)
@@ -601,7 +619,7 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
         # adjoint
         x_grad = Expr(get_runtime().prog.make_id_expr(""))
         x_grad.declaration_tb = get_traceback(stacklevel=4)
-        x_grad.ptr = _ti_core.global_new(x_grad.ptr, dtype)
+        x_grad.ptr = _ti_core.expr_field(x_grad.ptr, dtype)
         x_grad.ptr.set_name(name + ".grad")
         x_grad.ptr.set_grad_type(SNodeGradType.ADJOINT)
         x.ptr.set_adjoint(x_grad.ptr)
@@ -614,7 +632,7 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
             dtype = u8
             if prog.config.arch in (_ti_core.opengl, _ti_core.vulkan):
                 dtype = i32
-            x_grad_checkbit.ptr = _ti_core.global_new(x_grad_checkbit.ptr,
+            x_grad_checkbit.ptr = _ti_core.expr_field(x_grad_checkbit.ptr,
                                                       cook_dtype(dtype))
             x_grad_checkbit.ptr.set_name(name + ".grad_checkbit")
             x_grad_checkbit.ptr.set_grad_type(SNodeGradType.ADJOINT_CHECKBIT)
@@ -622,7 +640,7 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
 
         # dual
         x_dual = Expr(get_runtime().prog.make_id_expr(""))
-        x_dual.ptr = _ti_core.global_new(x_dual.ptr, dtype)
+        x_dual.ptr = _ti_core.expr_field(x_dual.ptr, dtype)
         x_dual.ptr.set_name(name + ".dual")
         x_dual.ptr.set_grad_type(SNodeGradType.DUAL)
         x.ptr.set_dual(x_dual.ptr)

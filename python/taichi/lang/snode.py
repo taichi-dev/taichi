@@ -234,12 +234,12 @@ class SNode:
         return ret
 
     def _loop_range(self):
-        """Gets the taichi_python.Expr wrapping the taichi_python.GlobalVariableExpression corresponding to `self` to serve as loop range.
+        """Gets the taichi_python.SNode to serve as loop range.
 
         Returns:
-            taichi_python.Expr: See above.
+            taichi_python.SNode: See above.
         """
-        return impl.get_runtime().prog.global_var_expr_from_snode(self.ptr)
+        return self.ptr
 
     @property
     def _name(self):
@@ -371,8 +371,9 @@ def append(node, indices, val):
         val (:mod:`~taichi.types`): the data to be appended.
     """
     a = impl.expr_init(
-        _ti_core.insert_append(node._snode.ptr, expr.make_expr_group(indices),
-                               expr.Expr(val).ptr))
+        _ti_core.expr_snode_append(node._snode.ptr,
+                                   expr.make_expr_group(indices),
+                                   expr.Expr(val).ptr))
     return a
 
 
@@ -388,8 +389,8 @@ def is_active(node, indices):
         bool: the cell `node[indices]` is active or not.
     """
     return expr.Expr(
-        _ti_core.insert_is_active(node._snode.ptr,
-                                  expr.make_expr_group(indices)))
+        _ti_core.expr_snode_is_active(node._snode.ptr,
+                                      expr.make_expr_group(indices)))
 
 
 def activate(node, indices):
@@ -428,7 +429,8 @@ def length(node, indices):
         int: the length of cell `node[indices]`.
     """
     return expr.Expr(
-        _ti_core.insert_len(node._snode.ptr, expr.make_expr_group(indices)))
+        _ti_core.expr_snode_length(node._snode.ptr,
+                                   expr.make_expr_group(indices)))
 
 
 def get_addr(f, indices):
@@ -444,7 +446,8 @@ def get_addr(f, indices):
         ti.u64: The memory address of `f[indices]`.
     """
     return expr.Expr(
-        _ti_core.expr_get_addr(f._snode.ptr, expr.make_expr_group(indices)))
+        _ti_core.expr_snode_get_addr(f._snode.ptr,
+                                     expr.make_expr_group(indices)))
 
 
 __all__ = [

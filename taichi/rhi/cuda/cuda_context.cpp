@@ -33,7 +33,8 @@ CUDAContext::CUDAContext()
       &cc_minor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, device_);
 
   TI_TRACE("CUDA Device Compute Capability: {}.{}", cc_major, cc_minor);
-  driver_.context_create(&context_, 0, device_);
+  driver_.primary_context_retain(&context_, 0);
+  driver_.context_set_current(context_);
 
   const auto GB = std::pow(1024.0, 3.0);
   TI_TRACE("Total memory {:.2f} GB; free memory {:.2f} GB",

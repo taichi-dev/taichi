@@ -1202,7 +1202,7 @@ class Matrix(TaichiOperations):
         entries, entries_grad, entries_dual = MatrixField(
             entries, n, m, element_dim), MatrixField(entries_grad, n, m,
                                                      element_dim), MatrixField(
-                                                         entries_grad, n, m,
+                                                         entries_dual, n, m,
                                                          element_dim)
 
         entries._set_grad(entries_grad)

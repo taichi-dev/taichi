@@ -15,8 +15,9 @@ class AnyArray:
         layout (Layout): Memory layout.
     """
     def __init__(self, ptr):
-        assert ptr.is_external_var()
+        assert ptr.is_external_tensor_expr()
         self.ptr = ptr
+        self.ptr.type_check(impl.get_runtime().prog.config)
 
     def element_shape(self):
         return _ti_core.get_external_tensor_element_shape(self.ptr)
@@ -57,8 +58,6 @@ class AnyArray:
     @taichi_scope
     def _loop_range(self):
         """Gets the corresponding taichi_python.Expr to serve as loop range.
-
-        This is not in use now because struct fors on AnyArrays are not supported yet.
 
         Returns:
             taichi_python.Expr: See above.

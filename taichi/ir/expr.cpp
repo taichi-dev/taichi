@@ -10,14 +10,6 @@ void Expr::set_tb(const std::string &tb) {
   expr->tb = tb;
 }
 
-void Expr::set_attribute(const std::string &key, const std::string &value) {
-  expr->set_attribute(key, value);
-}
-
-std::string Expr::get_attribute(const std::string &key) const {
-  return expr->get_attribute(key);
-}
-
 DataType Expr::get_ret_type() const {
   return expr->ret_type;
 }
@@ -35,8 +27,13 @@ Expr bit_cast(const Expr &input, DataType dt) {
 }
 
 Expr Expr::operator[](const ExprGroup &indices) const {
-  TI_ASSERT(is<GlobalVariableExpression>() || is<ExternalTensorExpression>() ||
-            is<IdExpression>());
+  if (is<IndexExpression>()) {
+    // Allow indexing IndexExpression with ret_type = TensorType
+    TI_ASSERT(is_tensor(expr->ret_type));
+  } else {
+    TI_ASSERT(is<FieldExpression>() || is<ExternalTensorExpression>() ||
+              is<IdExpression>());
+  }
   return Expr::make<IndexExpression>(*this, indices);
 }
 
@@ -46,21 +43,21 @@ Expr &Expr::operator=(const Expr &o) {
 }
 
 SNode *Expr::snode() const {
-  TI_ASSERT_INFO(is<GlobalVariableExpression>(),
-                 "Cannot get snode of non-global variables.");
-  return cast<GlobalVariableExpression>()->snode;
+  TI_ASSERT_INFO(is<FieldExpression>(),
+                 "Cannot get snode of non-field expressions.");
+  return cast<FieldExpression>()->snode;
 }
 
 void Expr::set_adjoint(const Expr &o) {
-  this->cast<GlobalVariableExpression>()->adjoint.set(o);
+  this->cast<FieldExpression>()->adjoint.set(o);
 }
 
 void Expr::set_dual(const Expr &o) {
-  this->cast<GlobalVariableExpression>()->dual.set(o);
+  this->cast<FieldExpression>()->dual.set(o);
 }
 
 void Expr::set_adjoint_checkbit(const Expr &o) {
-  this->cast<GlobalVariableExpression>()->adjoint_checkbit.set(o);
+  this->cast<FieldExpression>()->adjoint_checkbit.set(o);
 }
 
 Expr::Expr(int16 x) : Expr() {
@@ -96,10 +93,6 @@ Expr snode_append(SNode *snode, const ExprGroup &indices, const Expr &val) {
                                        val);
 }
 
-Expr snode_append(const Expr &expr, const ExprGroup &indices, const Expr &val) {
-  return snode_append(expr.snode(), indices, val);
-}
-
 Expr snode_is_active(SNode *snode, const ExprGroup &indices) {
   return Expr::make<SNodeOpExpression>(snode, SNodeOpType::is_active, indices);
 }
@@ -112,10 +105,6 @@ Expr snode_get_addr(SNode *snode, const ExprGroup &indices) {
   return Expr::make<SNodeOpExpression>(snode, SNodeOpType::get_addr, indices);
 }
 
-Expr snode_length(const Expr &expr, const ExprGroup &indices) {
-  return snode_length(expr.snode(), indices);
-}
-
 Expr assume_range(const Expr &expr, const Expr &base, int low, int high) {
   return Expr::make<RangeAssumptionExpression>(expr, base, low, high);
 }
@@ -124,10 +113,10 @@ Expr loop_unique(const Expr &input, const std::vector<SNode *> &covers) {
   return Expr::make<LoopUniqueExpression>(input, covers);
 }
 
-Expr global_new(Expr id_expr, DataType dt) {
+Expr expr_field(Expr id_expr, DataType dt) {
   TI_ASSERT(id_expr.is<IdExpression>());
-  auto ret = Expr(std::make_shared<GlobalVariableExpression>(
-      dt, id_expr.cast<IdExpression>()->id));
+  auto ret = Expr(
+      std::make_shared<FieldExpression>(dt, id_expr.cast<IdExpression>()->id));
   return ret;
 }
 TLANG_NAMESPACE_END

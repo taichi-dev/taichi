@@ -739,25 +739,20 @@ FunctionType CUDAModuleToFunctionConverter::convert(
     const std::string &kernel_name,
     const std::vector<LlvmLaunchArgInfo> &args,
     std::vector<LLVMCompiledData> &&data) const {
+  auto &mod = data[0].module;
+  auto &tasks = data[0].tasks;
 #ifdef TI_WITH_CUDA
-  std::vector<JITModule *> cuda_modules;
-  std::vector<std::vector<OffloadedTask>> offloaded_tasks;
-  cuda_modules.reserve(data.size());
-  for (auto &datum : data) {
-    auto &mod = datum.module;
-    auto &tasks = datum.tasks;
-    for (const auto &task : tasks) {
-      llvm::Function *func = mod->getFunction(task.name);
-      TI_ASSERT(func);
-      tlctx_->mark_function_as_cuda_kernel(func, task.block_dim);
-    }
-    auto jit = tlctx_->jit.get();
-    cuda_modules.push_back(
-        jit->add_module(std::move(mod), executor_->get_config()->gpu_max_reg));
-    offloaded_tasks.push_back(std::move(tasks));
+  for (const auto &task : tasks) {
+    llvm::Function *func = mod->getFunction(task.name);
+    TI_ASSERT(func);
+    tlctx_->mark_function_as_cuda_kernel(func, task.block_dim);
   }
 
-  return [cuda_modules, kernel_name, args, offloaded_tasks,
+  auto jit = tlctx_->jit.get();
+  auto cuda_module =
+      jit->add_module(std::move(mod), executor_->get_config()->gpu_max_reg);
+
+  return [cuda_module, kernel_name, args, offloaded_tasks = tasks,
           executor = this->executor_](RuntimeContext &context) {
     CUDAContext::get_instance().make_current();
     std::vector<void *> arg_buffers(args.size(), nullptr);
@@ -821,13 +816,11 @@ FunctionType CUDAModuleToFunctionConverter::convert(
       CUDADriver::get_instance().stream_synchronize(nullptr);
     }
 
-    for (int i = 0; i < offloaded_tasks.size(); i++) {
-      for (auto &task : offloaded_tasks[i]) {
-        TI_TRACE("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
-                 task.block_dim);
-        cuda_modules[i]->launch(task.name, task.grid_dim, task.block_dim, 0,
-                                {&context});
-      }
+    for (auto task : offloaded_tasks) {
+      TI_TRACE("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
+               task.block_dim);
+      cuda_module->launch(task.name, task.grid_dim, task.block_dim, 0,
+                          {&context});
     }
 
     // copy data back to host

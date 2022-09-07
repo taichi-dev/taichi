@@ -402,7 +402,7 @@ class ComputeGraph {
     return at(name);
   }
 
-  void launch(size_t argument_count, const TiNamedArgument *arguments) {
+  void launch(uint32_t argument_count, const TiNamedArgument *arguments) {
     ti_launch_compute_graph(runtime_, compute_graph_, argument_count,
                             arguments);
   }
@@ -463,7 +463,7 @@ class Kernel {
     return at(i);
   }
 
-  void launch(size_t argument_count, const TiArgument *arguments) {
+  void launch(uint32_t argument_count, const TiArgument *arguments) {
     ti_launch_kernel(runtime_, kernel_, argument_count, arguments);
   }
   void launch() {

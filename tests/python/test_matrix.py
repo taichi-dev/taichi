@@ -767,3 +767,24 @@ def test_local_matrix_indexing_ops():
     for i in range(3):
         for j in range(3):
             assert f[i, j] == xs[j][i]
+
+
+@test_utils.test(arch=[ti.cuda, ti.cpu], real_matrix=True)
+def test_local_matrix_index_check():
+    @ti.kernel
+    def foo():
+        mat = ti.Matrix([[1, 2, 3], [4, 5, 6]])
+        print(mat[0])
+
+    with pytest.raises(TaichiCompilationError,
+                       match=r'Expected 2 indices, but got 1'):
+        foo()
+
+    @ti.kernel
+    def bar():
+        vec = ti.Vector([1, 2, 3, 4])
+        print(vec[0, 0])
+
+    with pytest.raises(TaichiCompilationError,
+                       match=r'Expected 1 indices, but got 2'):
+        bar()

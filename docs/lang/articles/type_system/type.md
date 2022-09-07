@@ -184,7 +184,7 @@ The `ndarray` type is discussed in another article [interacting with External Ar
 :::
 
 
-### Matrix and Vector types
+### Matrices and vectors
 
 You can use the two functions `ti.types.matrix()` and `ti.types.vector()` to create your own matrix and vector types:
 

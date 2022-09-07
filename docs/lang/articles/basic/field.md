@@ -24,7 +24,9 @@ import taichi as ti
 ti.init(arch=ti.cpu)
 ```
 
-+ Declare a 0D scalar field
++ Declare a 0D scalar field.
+
+    To declare a 0D scalar field, simply sets its shape to the empty tuple `()`.
 
     ```python
     # Declare a 0D scalar field whose data type is f32
@@ -32,34 +34,48 @@ ti.init(arch=ti.cpu)
     f[None] = 1.0
     ```
 
+    The memory layout will be like:
+
     ```
     ┌─────┐
-    │ 1.0 │  Use `None` to access.
+    │ 1.0 │
     └─────┴
     └─────┘
     f.shape = ()
     ```
 
-+ Declare a 1D scalar field
++ Declare a 1D scalar field.
 
-  ```python
-  f = ti.field(ti.i32, shape=9)          # 1D
-  for i in range(9):
-    f[i] = i
-  ```
+    To declare a 1D scalar field of length `n`, you can set its shape to `n` or `(n,)`:
 
-  ```
-  ┌───┬───┬───┬───┬───┬───┬───┬───┬───┐
-  │ 0 │ 1 │ 2 │ 3 │ 4 │ 5 │ 6 │ 7 │ 8 │
-  └───┴───┴───┴───┴───┴───┴───┴───┴───┘
+    ```python
+    f = ti.field(ti.i32, shape=9)          # 1D
+    for i in range(9):
+        f[i] = i
+    ```
 
-  └───────────────────────────────────┘
-            f.shape = (9,)
-  ```
+    The memory layout will be like:
+
+    ```
+    ┌───┬───┬───┬───┬───┬───┬───┬───┬───┐
+    │ 0 │ 1 │ 2 │ 3 │ 4 │ 5 │ 6 │ 7 │ 8 │
+    └───┴───┴───┴───┴───┴───┴───┴───┴───┘
+    └───────────────────────────────────┘
+              f.shape = (9,)
+    ```
+
++ Declare a 2D scalar field.
+
+    To declare a 2D scalar field, just specify the size of its first two dimensions. For example, the following code defines a 2D scalar field of size (640, 480):
+
+    ```python
+    f = ti.field(ti.u8,  shape=(640, 480))   # 2D
+    ```
+
+    The memory layout will be like:
 
 
-# Declare a 2D scalar field whose shape is (640, 480)
-f_2d = ti.field(ti.u8,  shape=(640, 480))   # 2D
+
 # Declare a 3D scalar field whose data type is f32
 f_3d = ti.field(ti.f32, shape=(32, 32, 32)) # 3D
 ```

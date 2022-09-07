@@ -1747,9 +1747,12 @@ void TaskCodeGenLLVM::visit(PtrOffsetStmt *stmt) {
     } else if (auto *gep = llvm::dyn_cast<llvm::GEPOperator>(val))
       ptr_ty = gep->getResultElementType();
     else if (stmt->origin->is<GlobalTemporaryStmt>()) {
-      if (stmt->origin->ret_type->is<TensorType>()) {
-        ptr_ty = tlctx->get_data_type(
-            stmt->origin->ret_type->cast<TensorType>()->get_element_type());
+      if (stmt->origin->ret_type.ptr_removed()->is<TensorType>()) {
+        ptr_ty = tlctx->get_data_type(stmt->origin->ret_type.ptr_removed()
+                                          ->cast<TensorType>()
+                                          ->get_element_type());
+        lhs =
+            builder->CreatePointerCast(lhs, llvm::PointerType::get(ptr_ty, 0));
       } else {
         ptr_ty = tlctx->get_data_type(stmt->origin->ret_type.ptr_removed());
       }
@@ -1757,8 +1760,7 @@ void TaskCodeGenLLVM::visit(PtrOffsetStmt *stmt) {
     TI_ASSERT(ptr_ty);
 
     if (stmt->tensor_type_represented_as_primitive_type_ptr()) {
-      llvm_val[stmt] = builder->CreateGEP(ptr_ty, llvm_val[stmt->origin],
-                                          llvm_val[stmt->offset]);
+      llvm_val[stmt] = builder->CreateGEP(ptr_ty, lhs, llvm_val[stmt->offset]);
     } else {
       llvm_val[stmt] =
           builder->CreateGEP(ptr_ty, llvm_val[stmt->origin],

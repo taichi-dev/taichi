@@ -30,18 +30,18 @@ ti.init(arch=ti.cpu)
 
     ```python
     # Declare a 0D scalar field whose data type is f32
-    f = ti.field(ti.f32, shape=())  # 0D field
-    f[None] = 1.0
+    f_0d = ti.field(ti.f32, shape=())  # 0D field
+    f_0d[None] = 1.0
     ```
 
     The layout will be like:
 
     ```
-    ┌─────┐
-    │ 1.0 │
-    └─────┴
-    └─────┘
-    f.shape = ()
+        ┌─────┐
+        │ 1.0 │
+        └─────┴
+        └─────┘
+    f_0d.shape = ()
     ```
 
 + Declare a 1D scalar field.
@@ -49,9 +49,9 @@ ti.init(arch=ti.cpu)
     To declare a 1D scalar field of length `n`, you can set its shape to `n` or `(n,)`:
 
     ```python
-    f = ti.field(ti.i32, shape=9)  # 1D field
+    f_1d = ti.field(ti.i32, shape=9)  # 1D field
     for i in range(9):
-        f[i] = i
+        f_1d[i] = i
     ```
 
     The layout will be like:
@@ -61,7 +61,7 @@ ti.init(arch=ti.cpu)
     │ 0 │ 1 │ 2 │ 3 │ 4 │ 5 │ 6 │ 7 │ 8 │
     └───┴───┴───┴───┴───┴───┴───┴───┴───┘
     └───────────────────────────────────┘
-              f.shape = (9,)
+            f_1d.shape = (9,)
     ```
 
 + Declare a 2D scalar field.
@@ -69,23 +69,23 @@ ti.init(arch=ti.cpu)
     To declare a 2D scalar field, just specify the size of its first two dimensions. For example, the following code defines a 2D scalar field of shape (3, 6):
 
     ```python
-    f = ti.field(int, shape=(3, 6))  # 2D field
+    f_2d = ti.field(int, shape=(3, 6))  # 2D field
     ```
 
     The layout will be like:
     
     ```
-                         f.shape[1]
-                            (=6)
-                  ┌───────────────────────┐
+                           f_2d.shape[1]
+                               (=6)
+                     ┌───────────────────────┐
 
-               ┌  ┌───┬───┬───┬───┬───┬───┐  ┐
-               │  │   │   │   │   │   │   │  │
-               │  ├───┼───┼───┼───┼───┼───┤  │
-    f.shape[0] │  │   │   │   │   │   │   │  │
-      (=3)     │  ├───┼───┼───┼───┼───┼───┤  │
-               │  │   │   │   │   │   │   │  │
-               └  └───┴───┴───┴───┴───┴───┘  ┘
+                  ┌  ┌───┬───┬───┬───┬───┬───┐  ┐
+                  │  │   │   │   │   │   │   │  │
+                  │  ├───┼───┼───┼───┼───┼───┤  │
+    f_2d.shape[0] │  │   │   │   │   │   │   │  │
+      (=3)        │  ├───┼───┼───┼───┼───┼───┤  │
+                  │  │   │   │   │   │   │   │  │
+                  └  └───┴───┴───┴───┴───┴───┘  ┘
     ```
 
 
@@ -94,7 +94,7 @@ ti.init(arch=ti.cpu)
   To declare a 3D scalar field, simply specify the size of the three dimensions.
 
   ```python
-  f = ti.field(ti.f32, shape=(32, 32, 32))  # 3D field
+  f_3d = ti.field(ti.f32, shape=(32, 32, 32))  # 3D field
   ```
 
 Scalar fields of higher dimensions can be similarily defined.

@@ -1721,14 +1721,6 @@ void TaskCodeGenLLVM::visit(GetChStmt *stmt) {
 }
 
 void TaskCodeGenLLVM::visit(PtrOffsetStmt *stmt) {
-  auto is_tensor_or_ptr = [](DataType dt) {
-    return dt->is<TensorType>() ||
-           (dt->is<PointerType>() &&
-            dt->cast<PointerType>()->get_pointee_type()->is<TensorType>());
-  };
-  auto get_tensor_type = [](DataType dt) -> TensorType * {
-    return dt.ptr_removed()->cast<TensorType>();
-  };
   if (stmt->offset_used_as_index()) {
 #ifdef TI_LLVM_15
     // FIXME: get ptr_ty from taichi instead of llvm.

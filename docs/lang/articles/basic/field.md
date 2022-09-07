@@ -226,7 +226,7 @@ For example, the following code snippet declares a 3D field of 2D vectors:
 
 ```python
 # Declare a 1x2x3 vector field, whose vector dimension is n=2
-f = ti.Vector.field(2, float, shape=(1, 2, 3))
+f = ti.Vector.field(n=2, dtype=float, shape=(1, 2, 3))
 ```
 
 The following code snippet declares a `300x300x300` vector field `volumetric_field`, whose vector dimension is 3:
@@ -249,12 +249,24 @@ Accessing a vector field is similar to accessing a multi-dimensional array: You 
 
   `volumetric_field[i, j, k][l]`
 
+- If the vectors in the field have dimension <=4, then you can also use vector swizzling indices `xyzw` or `rgba` to access the components of the vectors:
+
+  ```python
+  volumetric_field[i, j, k].x = 1  # equivalent to volumetric_field[i, j, k][0] = 1
+  volumetric_field[i, j, k].y = 2  # equivalent to volumetric_field[i, j, k][1] = 2
+  volumetric_field[i, j, k].z = 3  # equivalent to volumetric_field[i, j, k][2] = 3
+  volumetric_field[i, j, k].w = 4  # equivalent to volumetric_field[i, j, k][3] = 4
+  volumetric_field[i, j, k].xyz = 1, 2, 3  # assgin 1, 2, 3 to the first three components
+  volumetric_field[i, j, k].rgb = 1, 2, 3  # equivalent to the above
+  ```
+
+
 The following code snippet generates and prints a random vector field:
 
 ```python
 # n: vector dimension; w: width; h: height
-n,w,h = 3,128,64
-vec_field = ti.Vector.field(n, dtype=ti.f32, shape=(w,h))
+n, w, h = 3, 128, 64
+vec_field = ti.Vector.field(n, dtype=float, shape=(w,h))
 
 @ti.kernel
 def fill_vector():

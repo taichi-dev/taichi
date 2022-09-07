@@ -5,6 +5,7 @@ PER_DEVICE_CAPABILITY(vk_has_physical_features2)
 PER_DEVICE_CAPABILITY(vk_has_external_memory)
 PER_DEVICE_CAPABILITY(vk_has_surface)
 PER_DEVICE_CAPABILITY(vk_has_presentation)
+PER_DEVICE_CAPABILITY(vk_has_non_semantic_info)
 // SPIR-V Caps
 PER_DEVICE_CAPABILITY(spirv_version)
 PER_DEVICE_CAPABILITY(spirv_has_int8)

@@ -80,6 +80,9 @@ void IRBuilder::init_header() {
       .add("SPV_KHR_storage_buffer_storage_class")
       .commit(&header_);
 
+  // FIXME: guard this
+  ib_.begin(spv::OpExtension).add("SPV_KHR_non_semantic_info").commit(&header_);
+
   if (device_->get_cap(cap::spirv_has_variable_ptr)) {
     ib_.begin(spv::OpExtension)
         .add("SPV_KHR_variable_pointers")
@@ -135,6 +138,8 @@ std::vector<uint32_t> IRBuilder::finalize() {
 
 void IRBuilder::init_pre_defs() {
   ext_glsl450_ = ext_inst_import("GLSL.std.450");
+  debug_printf_ = ext_inst_import("NonSemantic.DebugPrintf");
+
   t_bool_ = declare_primitive_type(get_data_type<bool>());
   if (device_->get_cap(cap::spirv_has_int8)) {
     t_int8_ = declare_primitive_type(get_data_type<int8>());
@@ -205,6 +210,12 @@ void IRBuilder::init_pre_defs() {
   // pre-defined constants
   const_i32_zero_ = int_immediate_number(t_int32_, 0);
   const_i32_one_ = int_immediate_number(t_int32_, 1);
+}
+
+Value IRBuilder::make_string(std::string s) {
+  Value val = new_value(SType(), ValueKind::kNormal);
+  ib_.begin(spv::OpString).add_seq(val, s).commit(&debug_);
+  return val;
 }
 
 PhiValue IRBuilder::make_phi(const SType &out_type, uint32_t num_incoming) {

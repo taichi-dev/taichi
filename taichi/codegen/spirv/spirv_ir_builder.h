@@ -294,6 +294,8 @@ class IRBuilder {
                                double value,
                                bool cache = true);
 
+  Value make_string(std::string str);
+
   // Match zero type
   Value get_zero(const SType &stype) {
     TI_ASSERT(stype.flag == TypeKind::kPrimitive);
@@ -460,6 +462,17 @@ class IRBuilder {
     return val;
   }
 
+  // Create a debugPrintf call
+  template <typename... Args>
+  void call_debugprintf(Args &&...args) {
+    Value format_str = make_string("Hello %d");
+    Value val = new_value(t_void_, ValueKind::kNormal);
+    ib_.begin(spv::OpExtInst)
+        .add_seq(t_void_, val, debug_printf_, 1, format_str, const_i32_one_)
+        // .add_seq(std::forward<Args>(args)...)
+        .commit(&function_);
+  }
+
   // Local allocate, load, store methods
   Value alloca_variable(const SType &type);
   Value alloca_workgroup_array(const SType &type);
@@ -550,6 +563,9 @@ class IRBuilder {
 
   // glsl 450 extension
   Value ext_glsl450_;
+
+  // debugprint extension
+  Value debug_printf_;
 
   SType t_bool_;
   SType t_int8_;

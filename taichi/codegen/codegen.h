@@ -41,7 +41,7 @@ class KernelCodeGen {
     TI_NOT_IMPLEMENTED
   }
 
-  std::unique_ptr<LLVMCompiledData> maybe_read_compilation_from_cache(
+  std::optional<LLVMCompiledData> maybe_read_compilation_from_cache(
       const std::string &kernel_key);
   void cache_module(const std::string &kernel_key,
                     const LLVMCompiledData &data);

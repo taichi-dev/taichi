@@ -57,7 +57,7 @@ std::unique_ptr<KernelCodeGen> KernelCodeGen::create(Arch arch,
 }
 #ifdef TI_WITH_LLVM
 
-std::unique_ptr<LLVMCompiledData>
+std::optional<LLVMCompiledData>
 KernelCodeGen::maybe_read_compilation_from_cache(
     const std::string &kernel_key) {
   TI_AUTO_PROF;
@@ -65,7 +65,7 @@ KernelCodeGen::maybe_read_compilation_from_cache(
   auto *llvm_prog = get_llvm_program(prog);
   const auto &reader = llvm_prog->get_cache_reader();
   if (!reader) {
-    return nullptr;
+    return std::nullopt;
   }
 
   LlvmOfflineCache::KernelCacheData cache_data;
@@ -73,10 +73,10 @@ KernelCodeGen::maybe_read_compilation_from_cache(
   auto &llvm_ctx = *tlctx->get_this_thread_context();
 
   if (!reader->get_kernel_cache(cache_data, kernel_key, llvm_ctx)) {
-    return nullptr;
+    return std::nullopt;
   }
   kernel->mark_as_from_cache();
-  return std::make_unique<LLVMCompiledData>(std::move(cache_data.compiled_data));
+  return {std::move(cache_data.compiled_data)};
 }
 
 void KernelCodeGen::cache_module(const std::string &kernel_key,

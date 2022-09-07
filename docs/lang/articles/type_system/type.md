@@ -236,26 +236,7 @@ Sphere = ti.types.struct(center=vec3, radius=float)
 
 Just as you do with any other data type, you can call a compound type directly to create vector, matrix, or struct instances in Taichi.
 
-- In the following code snippet, four compound types `my_vec2i`, `my_vec3f`, `my_mat2f`, and `my_ray3f` are defined:
-
-  ```python
-  my_vec2i = ti.types.vector(2, ti.i32)
-  my_vec3f = ti.types.vector(3, float)
-  my_mat2f = ti.types.matrix(2, 2, float)
-  my_ray3f = ti.types.struct(ro=my_vec3f, rd=my_vec3f, l=ti.f32)
-  ```
-
-- In the following code snippet, you initialize five local variables using the four created compound types.
-
-  ```python
-  ray1 = my_ray3f(0.0)            # ti.Struct(ro=[0.0, 0.0, 0.0], rd=[0.0, 0.0, 0.0], l=0.0)
-  vec1 = my_vec3f(0.0)            # ti.Vector([0.0, 0.0, 0.0])
-  mat1 = my_mat2f(1.0)            # ti.Matrix([[1.0, 1.0], [1.0, 1.0]])
-  vec2 = my_vec3f(my_vec2i(0), 1) # ti.Vector([0.0, 0.0, 1.0]) performs implicit cast
-  ray2 = my_ray3f(ro=vec1, rd=vec2, l=1.0)
-  ```
-
-- As the release of v1.1.0, you are given more options to initialize a struct or a dataclass. The positional arguments are passed to the struct members in the order they are defined; the keyword arguments set the corresponding struct members. Unspecified struct members are automatically set to zero. For example:
+As the release of v1.1.0, you are given more options to initialize a struct or a dataclass. The positional arguments are passed to the struct members in the order they are defined; the keyword arguments set the corresponding struct members. Unspecified struct members are automatically set to zero. For example:
 
   ```python
   @ti.dataclass

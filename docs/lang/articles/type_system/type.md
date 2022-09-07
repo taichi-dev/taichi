@@ -25,7 +25,7 @@ We can briefly summarize the data types supported by Taichi as follows:
 Taichi supports two categories of data types in the [Taichi scope](../kernels/syntax.md#taichi-scope): primitive types and compound types.
 
 - Primitive types: Various commonly used numerical data types, such as `int32`, `uint8`, and `float64`.
-- Compound types: Array-like or struct-like data types  that comprise multiple members of primitive types, or other compound types, such as `matrix`, `struct` and `ndarray`.
+- Compound types: Array-like or struct-like data types, including `matrix`, `struct`, and `ndarray`, which comprise multiple members of primitive types or other compound types. 
 
 
 ## Primitive types

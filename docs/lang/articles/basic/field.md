@@ -90,7 +90,7 @@ To declare a scalar field, simply call `ti.field(dtype, shape)` where `dtype` is
                        (=32)
                    ┌───────────┐
 
-                ┌  ┌─────┬╌╌╌╌┬─────┐  ┐
+                ┌  ┌─────┬╌╌╌╌╌┬─────┐  ┐
                 │  │0,  0│    │0, 31│  │
                 │  ├─────┼╌╌╌╌╌┼─────┤  │
   f_3d.shape[0] │  ╎    ╎     ╎    ╎   │

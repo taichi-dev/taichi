@@ -103,7 +103,7 @@ To declare a scalar field, simply call `ti.field(dtype, shape)` where `dtype` is
     └───┴───┴───┴───┴───┴───┴───┴───┘
     └───────────────────────────────┘
             f_1d.shape[2] = 8
-  
+
   ```
 
 Scalar fields of higher dimensions can be similarily defined.

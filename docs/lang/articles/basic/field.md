@@ -187,7 +187,21 @@ while gui.running:
 ```
 
 :::caution WARNING
-Taichi does not support slicing on a Taichi field. For example, with the 2D scalar field `f_2d`, you can do `f_2d[1, 2]`, but *not* `f_2d[1]`.
+
+Taichi does not support slicing on a Taichi field. You need to always use n integers as indices to access an elemetns, where n is the dimension of the field. For example, with the 2D scalar field `f_2d` above, you may want to try to use `f_2d[0]` to access its first row:
+
+```python
+f_2d[0] = [1, 2, 3, 4, 5, 6]  # Error!
+```
+
+Or you may want to access a slice of the first row like:
+
+```python
+f_2d[0][3:] = [4, 5, 6]  # Error!
+```
+
+Both of these will raise the error "Slicing is not supported on ti.field".
+
 :::
 
 ### Metadata

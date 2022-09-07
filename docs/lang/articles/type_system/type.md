@@ -149,7 +149,7 @@ A few exceptions:
 
 #### Implicit typecasting in assignments
 
-When you assign a value to a variable of a different data type, Taichi implicitly casts the value into that type. Further, if the type of the variable is *not* the common type, a warning of precision loss occurs.
+When you assign a value to a variable of a different data type, Taichi implicitly casts the value into that type. Further, if the value is of a higher precision than the variable, a warning of precision loss will be printed.
 
 - Example 1: Variable `a` is initialized with type `float` and immediately reassigned `1`. The reassignment implicitly casts `1` from `int` to `float` without warning because the data type of `a` is the common type `float`:
 

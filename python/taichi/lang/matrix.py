@@ -1440,8 +1440,8 @@ class Matrix(TaichiOperations):
             :class:`~taichi.Matrix`: The outer product of the two Vectors.
         """
         from taichi._funcs import \
-            _matrix_outer_product  # pylint: disable=C0415
-        return _matrix_outer_product(self, other)
+            _vector_outer_product  # pylint: disable=C0415
+        return _vector_outer_product(self, other)
 
 
 class Vector(Matrix):

@@ -82,11 +82,11 @@ def _matrix_cross2d(self, other):
 
 
 @pyfunc
-def _matrix_outer_product(self, other):
-    """Perform the outer product with the input Vector (1-D Matrix).
+def _vector_outer_product(self, other):
+    """Perform the outer product with the input Vector.
 
     Args:
-        other (:class:`~taichi.lang.matrix.Matrix`): The input Vector (1-D Matrix) to perform the outer product.
+        other (:class:`~taichi.lang.matrix.Vector`): The input Vector to perform the outer product.
 
     Returns:
         :class:`~taichi.lang.matrix.Matrix`: The outer product result (Matrix) of the two Vectors.

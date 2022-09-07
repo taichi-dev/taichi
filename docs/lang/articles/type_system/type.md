@@ -147,7 +147,7 @@ A few exceptions:
 - Logical operations return `i32`.
 - Comparison operations return `i32`.
 
-#### Implicit typecasting in assignments
+#### Implicit type casting in assignments
 
 When you assign a value to a variable of a different data type, Taichi implicitly casts the value into that type. Further, if the value is of a higher precision than the variable, a warning of precision loss will be printed.
 

@@ -220,7 +220,7 @@ As the name suggests, vector fields are the fields whose elements are vectors. D
 
 ### Declaration
 
-Declaring a vector field with each element being an `N`-dimentional vector is very similar to the definition of a scalar field, except that you need to call the function `ti.Vector.field` instead of `ti.field`, and put `N` as the first positional argument, the remaining arguments are the same as in the definition of a scalar field.
+Declaring a vector field with each element being an `N`-dimentional vector is very similar to the definition of a scalar field, except that you need to call the function `ti.Vector.field` instead of `ti.field`, and put `N` as the first positional argument. The remaining arguments are all the same as in the definition of a scalar field.
 
 For example, the following code snippet declares a 3D field of 2D vectors:
 

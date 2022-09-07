@@ -24,9 +24,7 @@ import taichi as ti
 ti.init(arch=ti.cpu)
 ```
 
-+ Declare a 0D scalar field.
-
-    To declare a 0D scalar field, simply sets its shape to the empty tuple `()`.
++ To declare a 0D scalar field, simply sets its shape to the empty tuple `()`.
 
     ```python
     # Declare a 0D scalar field whose data type is f32
@@ -43,9 +41,7 @@ ti.init(arch=ti.cpu)
     f_0d.shape = ()
     ```
 
-+ Declare a 1D scalar field.
-
-    To declare a 1D scalar field of length `n`, you can set its shape to `n` or `(n,)`:
++ To declare a 1D scalar field of length `n`, you can set its shape to `n` or `(n,)`:
 
     ```python
     f_1d = ti.field(ti.i32, shape=9)  # 1D field
@@ -61,9 +57,7 @@ ti.init(arch=ti.cpu)
             f_1d.shape = (9,)
     ```
 
-+ Declare a 2D scalar field.
-
-    To declare a 2D scalar field, just specify the size of its first two dimensions. For example, the following code defines a 2D scalar field of shape (3, 6):
++ To declare a 2D scalar field, just specify the size of its first two dimensions. For example, the following code defines a 2D scalar field of shape (3, 6):
 
     ```python
     f_2d = ti.field(int, shape=(3, 6))  # 2D field
@@ -86,9 +80,7 @@ ti.init(arch=ti.cpu)
     ```
 
 
-+ Declare a 3D scalar field.
-
-  To declare a 3D scalar field, simply specify the size of the three dimensions.
++ To declare a 3D scalar field, simply specify the size of the three dimensions.
 
   ```python
   f_3d = ti.field(ti.f32, shape=(32, 32, 32))  # 3D field
@@ -212,11 +204,11 @@ You can call the `field.fill()` method to set all elements in a scalar field to 
 
 ```python
 x = ti.field(int, shape=(5, 5))
-x.fill(1)  # all elements in x are set to 1
+x.fill(1)  # set all elements in x to 1
 
 @ti.kernel
 def test():
-    x.fill(-1)  # all elements in x are set to -1
+    x.fill(-1)  # set all elements in x to -1
 ```
 
 ### Metadata

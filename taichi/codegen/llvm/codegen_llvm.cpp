@@ -1740,11 +1740,11 @@ void TaskCodeGenLLVM::visit(PtrOffsetStmt *stmt) {
       val = addr_cast->getOperand(0);
     if (auto *alloc = llvm::dyn_cast<llvm::AllocaInst>(val))
       if (stmt->origin->ret_type.ptr_removed()->is<TensorType>()) {
-        ptr_ty = stmt->origin->ret_type.ptr_removed()
+        ptr_ty = tlctx->get_data_type(stmt->origin->ret_type.ptr_removed()
                      ->cast<TensorType>()
-                     ->get_element_type();
+                     ->get_element_type());
         lhs = builder->CreatePointerCast(
-            lhs, llvm::PointerType::get(tlctx->get_data_type(ptr_ty), 0));
+            lhs, llvm::PointerType::get(ptr_ty, 0));
       } else {
         ptr_ty = alloc->getAllocatedType();
       }

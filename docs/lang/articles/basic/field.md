@@ -31,14 +31,13 @@ ti.init(arch=ti.cpu)
     ```python
     # Declare a 0D scalar field whose data type is f32
     f_0d = ti.field(ti.f32, shape=())  # 0D field
-    f_0d[None] = 1.0
     ```
 
-    The layout will be like:
+    The memory layout of the field `f_0d` will be like:
 
     ```
         ┌─────┐
-        │ 1.0 │
+        │     │
         └─────┴
         └─────┘
     f_0d.shape = ()
@@ -50,11 +49,9 @@ ti.init(arch=ti.cpu)
 
     ```python
     f_1d = ti.field(ti.i32, shape=9)  # 1D field
-    for i in range(9):
-        f_1d[i] = i
     ```
 
-    The layout will be like:
+    The memory layout of the field `f_1d` will be like:
 
     ```
     ┌───┬───┬───┬───┬───┬───┬───┬───┬───┐
@@ -72,7 +69,7 @@ ti.init(arch=ti.cpu)
     f_2d = ti.field(int, shape=(3, 6))  # 2D field
     ```
 
-    The layout will be like:
+    The memory layout of the field `f_2d` will be like:
 
     ```
                            f_2d.shape[1]
@@ -83,7 +80,7 @@ ti.init(arch=ti.cpu)
                   │  │   │   │   │   │   │   │  │
                   │  ├───┼───┼───┼───┼───┼───┤  │
     f_2d.shape[0] │  │   │   │   │   │   │   │  │
-      (=3)        │  ├───┼───┼───┼───┼───┼───┤  │
+        (=3)      │  ├───┼───┼───┼───┼───┼───┤  │
                   │  │   │   │   │   │   │   │  │
                   └  └───┴───┴───┴───┴───┴───┘  ┘
     ```
@@ -116,12 +113,53 @@ To access an element in a scalar field, you need to explicity use the indices of
 When accessing a 0D field `x`, use `x[None] = 0`, *not* `x = 0`.
 :::
 
+To access the element in a 0D field:
+
 ```python
 # For a 0D field, you are required to use the index None even though it has only one element
 f_0d[None] = 10.0
-f_1d[0] = 1
-f_2d[1, 2] = 255
-f_3d[3, 3, 3] = 2.0
+```
+
+The value in `f_0d` will be like:
+
+```
+    ┌──────┐
+    │ 10.0 │
+    └──────┴
+    └──────┘
+```
+
+To access the elements in a 1D field:
+
+```python
+for i in range(9):
+    f_1d[i] = i
+```
+
+The elements in `f_1d` will be like:
+
+```
+┌───┬───┬───┬───┬───┬───┬───┬───┬───┐
+│ 0 │ 1 │ 2 │ 3 │ 4 │ 5 │ 6 │ 7 │ 8 │
+└───┴───┴───┴───┴───┴───┴───┴───┴───┘
+```
+
+To access the elements in a 2D field:
+```python
+for i, j in f_2d:
+    f_2d[i, j] = i
+```
+
+The elements in `f_2d` will be like:
+
+```
+┌───┬───┬───┬───┬───┬───┐
+│ 0 │ 0 │ 0 │ 0 │ 0 │ 0 │
+├───┼───┼───┼───┼───┼───┤
+│ 1 │ 1 │ 1 │ 1 │ 1 │ 1 │
+├───┼───┼───┼───┼───┼───┤
+│ 2 │ 2 │ 2 │ 2 │ 2 │ 2 │
+└───┴───┴───┴───┴───┴───┘
 ```
 
 As mentioned above, you can use a 2D scalar field to represent a 2D grid of values. The following code snippet creates and displays a 640&times;480 image with randomly-generated gray scales:

@@ -66,7 +66,7 @@ ti.init(arch=ti.cpu)
 
 + Declare a 2D scalar field.
 
-    To declare a 2D scalar field, just specify the size of its first two dimensions. For example, the following code defines a 2D scalar field of shape (640, 480):
+    To declare a 2D scalar field, just specify the size of its first two dimensions. For example, the following code defines a 2D scalar field of shape (3, 6):
 
     ```python
     f = ti.field(int, shape=(3, 6))  # 2D field
@@ -89,9 +89,14 @@ ti.init(arch=ti.cpu)
     ```
 
 
-# Declare a 3D scalar field whose data type is f32
-f_3d = ti.field(ti.f32, shape=(32, 32, 32)) # 3D
-```
++ Declare a 3D scalar field.
+
+  To declare a 3D scalar field, you simply specify the size of the three dimensions. Scallar fields of higher dimensions are similiar.
+
+  ```python
+  f = ti.field(ti.f32, shape=(32, 32, 32))  # 3D field
+  ```
+
 
 ### Access elements in a scalar field
 

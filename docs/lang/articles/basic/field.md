@@ -75,9 +75,9 @@ ti.init(arch=ti.cpu)
     The memory layout will be like:
     
     ```
-                     Z.shape[1]
-                    (=6)
-                  ┌───────────┐
+                         Z.shape[1]
+                            (=6)
+                  ┌───────────────────────┐
 
                ┌  ┌───┬───┬───┬───┬───┬───┐  ┐
                │  │   │   │   │   │   │   │  │

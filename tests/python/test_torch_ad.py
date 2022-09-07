@@ -12,6 +12,16 @@ if has_pytorch():
 
 
 @pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
+@test_utils.test(arch=ti.cuda)
+def test_torch_cuda_context():
+    device = torch.device("cuda:0")
+    x = torch.tensor([2.], requires_grad=True, device=device)
+    assert torch._C._cuda_hasPrimaryContext(0)
+    loss = x**2
+    loss.backward()
+
+
+@pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
 @test_utils.test(exclude=ti.opengl)
 def test_torch_ad():
     n = 32

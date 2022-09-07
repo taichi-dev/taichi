@@ -4,6 +4,7 @@ add_library(dx12_codegen)
 target_sources(dx12_codegen
   PRIVATE
     codegen_dx12.cpp
+    dx12_global_optimize_module.cpp
   )
 
 target_include_directories(dx12_codegen

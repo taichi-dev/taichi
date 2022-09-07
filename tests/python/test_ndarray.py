@@ -432,6 +432,11 @@ def test_matrix_ndarray_taichi_scope(layout):
     _test_matrix_ndarray_taichi_scope(layout)
 
 
+@test_utils.test(arch=[ti.cpu, ti.cuda], real_matrix=True)
+def test_matrix_ndarray_taichi_scope_real_matrix():
+    _test_matrix_ndarray_taichi_scope(ti.AOS)
+
+
 def _test_matrix_ndarray_taichi_scope_struct_for(layout):
     @ti.kernel
     def func(a: ti.types.ndarray()):
@@ -454,6 +459,11 @@ def test_matrix_ndarray_taichi_scope_struct_for(layout):
     _test_matrix_ndarray_taichi_scope_struct_for(layout)
 
 
+@test_utils.test(arch=[ti.cpu, ti.cuda], real_matrix=True)
+def test_matrix_ndarray_taichi_scope_struct_for_real_matrix():
+    _test_matrix_ndarray_taichi_scope_struct_for(ti.AOS)
+
+
 @pytest.mark.parametrize('layout', layouts)
 @test_utils.test(arch=supported_archs_taichi_ndarray)
 def test_vector_ndarray_python_scope(layout):
@@ -468,9 +478,7 @@ def test_vector_ndarray_python_scope(layout):
     assert a[4][9] == 9
 
 
-@pytest.mark.parametrize('layout', layouts)
-@test_utils.test(arch=supported_archs_taichi_ndarray)
-def test_vector_ndarray_taichi_scope(layout):
+def _test_vector_ndarray_taichi_scope(layout):
     @ti.kernel
     def func(a: ti.types.ndarray()):
         for i in range(5):
@@ -486,9 +494,18 @@ def test_vector_ndarray_taichi_scope(layout):
     assert v[4][9] == 9
 
 
+@pytest.mark.parametrize('layout', layouts)
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_vector_ndarray_taichi_scope(layout):
+    _test_vector_ndarray_taichi_scope(layout)
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda], real_matrix=True)
+def test_vector_ndarray_taichi_scope_real_matrix():
+    _test_vector_ndarray_taichi_scope(ti.AOS)
+
+
 # number of compiled functions
-
-
 def _test_compiled_functions():
     @ti.kernel
     def func(a: ti.types.ndarray(element_dim=1)):
@@ -638,8 +655,7 @@ def test_different_shape():
     assert (y.to_numpy() == (np.ones(shape=(n2, n2)) * 3)).all()
 
 
-@test_utils.test(arch=supported_archs_taichi_ndarray)
-def test_ndarray_grouped():
+def _test_ndarray_grouped():
     @ti.kernel
     def func(a: ti.types.ndarray()):
         for i in ti.grouped(a):
@@ -660,6 +676,16 @@ def test_ndarray_grouped():
             for k in range(2):
                 for p in range(2):
                     assert a2[i, j][k, p] == k * k
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_ndarray_grouped():
+    _test_ndarray_grouped()
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda], real_matrix=True)
+def test_ndarray_grouped_real_matrix():
+    _test_ndarray_grouped()
 
 
 @test_utils.test(arch=supported_archs_taichi_ndarray)

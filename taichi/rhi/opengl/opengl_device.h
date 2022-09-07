@@ -245,6 +245,8 @@ class GLDevice : public GraphicsDevice {
   DeviceAllocation allocate_memory(const AllocParams &params) override;
   void dealloc_memory(DeviceAllocation handle) override;
 
+  GLint get_devalloc_size(DeviceAllocation handle);
+
   std::unique_ptr<Pipeline> create_pipeline(
       const PipelineSourceDesc &src,
       std::string name = "Pipeline") override;

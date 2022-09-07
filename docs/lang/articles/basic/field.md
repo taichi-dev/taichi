@@ -99,6 +99,12 @@ ti.init(arch=ti.cpu)
 
 Scalar fields of higher dimensions can be similarily defined.
 
+:::warning
+
+Taichi only supports fields of dimensions <= 8.
+
+:::
+
 
 ### Access elements in a scalar field
 

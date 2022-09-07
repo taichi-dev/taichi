@@ -69,23 +69,23 @@ ti.init(arch=ti.cpu)
     To declare a 2D scalar field, just specify the size of its first two dimensions. For example, the following code defines a 2D scalar field of shape (640, 480):
 
     ```python
-    f = ti.field(int, shape=(640, 480))  # 2D field
+    f = ti.field(int, shape=(3, 6))  # 2D field
     ```
 
     The memory layout will be like:
     
     ```
                      Z.shape[1]
-                       (=480)
+                    (=6)
                   ┌───────────┐
 
-               ┌  ┌───┬───┬───┐  ┐
-               │  │   │   │   │  │
-               │  ├───┼───┼───┤  │
+               ┌  ┌───┬───┬───┬───┬───┬───┐  ┐
+               │  │   │   │   │   │   │   │   │
+               │  ├───┼───┼───┼───┼───┼───┤  │
     Z.shape[0] │  │   │   │   │  │
-      (=640)   │  ├───┼───┼───┤  │
+      (=3)     │  ├───┼───┼───┼───┼───┼───┤  │
                │  │   │   │   │  │
-               └  └───┴───┴───┘  ┘
+               └  └───┴───┴───┴───┴───┴───┘  ┘
     ```
 
 

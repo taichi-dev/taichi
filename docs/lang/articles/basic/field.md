@@ -80,23 +80,30 @@ To declare a scalar field, simply call `ti.field(dtype, shape)` where `dtype` is
 + To declare a 3D scalar field, simply specify the size of the three dimensions.
 
   ```python
-  f_3d = ti.field(ti.f32, shape=(32, 32, 32))  # 3D field
+  f_3d = ti.field(ti.f32, shape=(32, 16, 8))  # 3D field
   ```
 
   You can think this 3D scalar field as a 2D field of size 32 x 32 with each element being an array of length 32:
 
   ```
-                   f_3d.shape[1]
-                       (=32)
-                   ┌───────────┐
+                     f_3d.shape[1]
+                         (=16)
+                   ┌─────────────────┐
 
                 ┌  ┌─────┬╌╌╌╌╌┬─────┐  ┐
-                │  │0,  0│     │0, 31│  │
+                │  │0,  0│     │0, 15│  │
                 │  ├─────┼╌╌╌╌╌┼─────┤  │
   f_3d.shape[0] │  ╎     ╎     ╎     ╎  │
       (=32)     │  ├─────┼╌╌╌╌╌┼─────┤  │
-                │  │31, 0│     │31,31│  │
+                │  │31, 0│     │31,15│  │
                 └  └─────┴╌╌╌╌╌┴─────┘  ┘
+
+    ┌───┬───┬───┬───┬───┬───┬───┬───┐
+    │ 0 │ 1 │ 2 │ 3 │ 4 │ 5 │ 6 │ 7 │
+    └───┴───┴───┴───┴───┴───┴───┴───┘
+    └───────────────────────────────┘
+            f_1d.shape[2] = 8
+  
   ```
 
 Scalar fields of higher dimensions can be similarily defined.

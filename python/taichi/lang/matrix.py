@@ -550,6 +550,9 @@ class Matrix(TaichiOperations):
                 for k in range(1, other.n):
                     acc = acc + self(i, k) * other(k, j)
                 entries[i].append(acc)
+        if (isinstance(other, Vector) or other.ndim == 1) and other.m == 1:
+            # TODO: remove `ndim` when #5783 is merged
+            return Vector(entries, ndim=1)
         return Matrix(entries)
 
     # host access & python scope operation

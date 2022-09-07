@@ -285,7 +285,7 @@ Accessing a vector field is similar to accessing a multi-dimensional array: You 
 
 - To access the velocity vector at a specific position of the volumetric field above:
 
-  `volumetric_field[i,j,k]`
+  `volumetric_field[i, j, k]`
 
 - To access the `l`-th component of the velocity vector:
 

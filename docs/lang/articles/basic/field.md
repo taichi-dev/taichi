@@ -252,7 +252,7 @@ For example, the following code snippet declares a 2D field of 2D vectors:
 
 ```python
 # Declare a 1x2x3 vector field, whose vector dimension is n=2
-f = ti.Vector.field(n=2, dtype=float, shape=(3, 4))
+f = ti.Vector.field(n=2, dtype=float, shape=(3, 3))
 ```
 
 The memory layout of `f` will be like:

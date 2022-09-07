@@ -403,9 +403,9 @@ def test_matrix_field_dynamic_index_stride():
     def check_stride():
         for i in range(128):
             assert ti.get_addr(y, i) - ti.get_addr(x,
-                                                   i) == v.dynamic_index_stride
+                                                   i) == v._get_dynamic_index_stride()
             assert ti.get_addr(z, i) - ti.get_addr(y,
-                                                   i) == v.dynamic_index_stride
+                                                   i) == v._get_dynamic_index_stride()
 
     check_stride()
 
@@ -431,7 +431,7 @@ def test_matrix_field_dynamic_index_different_path_length():
     ti.root.dense(ti.i, 2).dense(ti.i, 4).place(y)
 
     impl.get_runtime().materialize()
-    assert v.dynamic_index_stride is None
+    assert v._get_dynamic_index_stride() is None
 
 
 @test_utils.test(arch=[ti.cpu, ti.cuda])
@@ -444,7 +444,7 @@ def test_matrix_field_dynamic_index_not_pure_dense():
     ti.root.dense(ti.i, 2).dense(ti.i, 4).place(y)
 
     impl.get_runtime().materialize()
-    assert v.dynamic_index_stride is None
+    assert v._get_dynamic_index_stride() is None
 
 
 @test_utils.test(arch=[ti.cpu, ti.cuda])
@@ -459,7 +459,7 @@ def test_matrix_field_dynamic_index_different_cell_size_bytes():
     ti.root.dense(ti.i, 8).place(y)
 
     impl.get_runtime().materialize()
-    assert v.dynamic_index_stride is None
+    assert v._get_dynamic_index_stride() is None
 
 
 @test_utils.test(arch=[ti.cpu, ti.cuda])
@@ -475,7 +475,7 @@ def test_matrix_field_dynamic_index_different_offset_bytes_in_parent_cell():
     ti.root.dense(ti.i, 8).place(y, temp_b)
 
     impl.get_runtime().materialize()
-    assert v.dynamic_index_stride is None
+    assert v._get_dynamic_index_stride() is None
 
 
 @test_utils.test(arch=[ti.cpu, ti.cuda])
@@ -490,7 +490,7 @@ def test_matrix_field_dynamic_index_different_stride():
     ti.root.dense(ti.i, 8).place(x, y, temp, z)
 
     impl.get_runtime().materialize()
-    assert v.dynamic_index_stride is None
+    assert v._get_dynamic_index_stride() is None
 
 
 @test_utils.test(arch=[ti.cpu, ti.cuda], dynamic_index=True)

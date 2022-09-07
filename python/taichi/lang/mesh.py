@@ -67,7 +67,7 @@ class MeshReorderedMatrixFieldProxy(MatrixField):
         self.grad = field.grad
         self.n = field.n
         self.m = field.m
-        self.dynamic_index_stride = field.dynamic_index_stride
+        self.dynamic_index_stride = field._get_dynamic_index_stride()
 
         self.mesh_ptr = mesh_ptr
         self.element_type = element_type

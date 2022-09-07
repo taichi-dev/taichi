@@ -173,7 +173,7 @@ When you assign a value to a variable of a different data type, Taichi implicitl
 
 ## Compound types
 
-Compound types are user-defined data types, which comprise multiple members. Supported compound types include vectors, matrices, ndarrays, and structs.
+Compound types are user-defined data types, which comprise multiple members. Supported compound types include vectors, matrices, ndarrays, and structs. The `ndarray` type will be discussed in another article [external arrays](../basic/external.md).
 
 Taichi allows you to use all types supplied in the `ti.types` module as scaffolds to customize *higher-level* compound types.
 

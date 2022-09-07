@@ -20,7 +20,7 @@ def test():
 
 Line 3 indicates that `x` should be an integer since it is assigned by an integer value 1 upon its declaration. In Line 4, we re-assign a floating-point number 3.14 to `x`. This scalar will be automatically cast to integer 3 to match the type of `x`; hence, `x` takes the value 3 after this line. Line 5 will raise a syntax error when we try to assign a `ti.Vector` to `x` because `ti.Vector` is a different data type, which cannot be cast into an integer.
 
-We now give a brief summary of the data types in Taichi. More detailed explanations will follow below.
+We can briefly summarize the data types supported by Taichi as follows:
 
 Taichi supports two categories of data types in the [Taichi scope](../kernels/syntax.md#taichi-scope): primitive types and compound types.
 

@@ -49,7 +49,7 @@ Not all primitive types are supported across all backends. Check out the followi
 
 ### Customize the default primitive types for integers and floating-point numbers
 
-When you call the `ti.init()` method to initialize the Taichi runtime, Taichi automatically sets the default types for integer and floating-point arithmetic:
+When you call the `ti.init()` method to initialize the Taichi runtime, Taichi automatically applies the default primitive data types:
 
 - The default integer type in Taichi is `ti.i32`.
 - The default floating-point type in Taichi is `ti.f32`.

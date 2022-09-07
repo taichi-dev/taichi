@@ -439,15 +439,23 @@ particle_field = particle.field(shape=(n,))
 
 ### Access elements in a struct field
 
-You can access members of elements in a struct field either one by one or universally:
+There are two ways to access a member in a struct field, either by index-to-name, or by name-to-index.
+
++ By index-to-name, you first access the struct by its index in the field, and then access the member by its name in the struct:
 
 ```python
 # Set the position of the first particle in the field to origin [0.0, 0.0, 0.0]
 particle_field[0].pos = vec3(0) # pos is a 3D vector
+```
 
-# Set the second particle's pos[0] in the field to 1.0
-particle_field[1].pos[0] = 1.0 # pos[0] is the first member of pos
++ By name-to-index, as shown in the following code, you first acess the field which gathers all the members `mass` in the struct field, and then use the index to access a specific one:
 
-# Universally set the mass of all particles to 1.0
+```python
+particle_field.mass[0] = 1.0
+```
+
+Since `paticle_field.mass` is a field that consists of all the `mass` attributes of the structs in `paticle_field`, we can also call the `fill()` method to set them all at once:
+
+```python
 particle_field.mass.fill(1.0)
 ```

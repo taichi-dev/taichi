@@ -36,6 +36,8 @@ ti.init(arch=ti.cpu)
     ┌─────┐
     │ 1.0 │  Use `None` to access.
     └─────┴
+    └─────┘
+    f.shape = ()
     ```
 
 + Declare a 1D scalar field

@@ -20,7 +20,7 @@ A 0D (zero-dimensional) field contains *only* one element.
 
 ## Scalar fields
 
-Scalar fields refer to the fields that store scalars and are the most basic fields. A 0D scalar field is a single scalar.
+Scalar fields refer to the fields that store scalars and are the most basic fields. A 0D scalar field is a single scalar, a 1D scalar field is an 1D array of scalars, a 2D scalar field is a 2D array of scalars, etc.
 
 
 ### Declaration
@@ -31,7 +31,7 @@ ti.init(arch=ti.cpu)
 
 # Declare a 0D scalar field whose data type is f32
 f_0d = ti.field(ti.f32, shape=())           # 0D
-# Declare a 1D scalar field whose shape is (128)
+# Declare a 1D scalar field whose shape is (128,)
 f_1d = ti.field(ti.i32, shape=128)          # 1D
 # Declare a 2D scalar field whose shape is (640, 480)
 f_2d = ti.field(ti.u8,  shape=(640, 480))   # 2D
@@ -79,20 +79,16 @@ while gui.running:
     gui.show()
 ```
 
-:::tip
-With Taichi versions earlier than v0.8.0, you cannot allocate new fields after executing a kernel. Starting from v0.8.0, you can use the `FieldsBuilder` class to dynamically allocate or destruct fields. See the [Field (advanced)](../basic/layout.md) for more information.
-:::
-
 :::caution WARNING
 Taichi does not support slicing on a Taichi field. For example, with the 2D scalar field `f_2d`, you can do `f_2d[1, 2]`, but *not* `f_2d[1]`.
 :::
 
 ### Metadata
 
-Metadata provides the basic information of a scalar field. You can retrieve the data type and shape of a scalar field via its `shape` and `dtype` property:
+Metadata provides the basic information of a scalar field. You can retrieve the data type and shape of a scalar field via its `shape` and `dtype` properties:
 
 ```python
-f_1d.shape  # (128)
+f_1d.shape  # (128,)
 f_3d.dtype  # f32
 ```
 

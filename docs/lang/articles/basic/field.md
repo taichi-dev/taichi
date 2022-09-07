@@ -216,18 +216,17 @@ f_3d.dtype  # f32
 
 ## Vector fields
 
-As the name suggests, vector fields are the fields whose elements are vectors.
-
-- You can use a vector field to represent an RGB image. Then, each of its elements is an (r, g, b) triple.
-- You can use a vector field to represent a volumetric field. Then, each of its elements can be the velocity of the corresponding particle.
+As the name suggests, vector fields are the fields whose elements are vectors. Each vector may represent the (R, G, B) color of a pixel, or the position of a particle, depending on the actual meaning of the field in your scenario.
 
 ### Declaration
 
-The following code snippet declares a 3D field of 2D vectors:
+Declaring a vector field with each element being an `N`-dimentional vector is very similar to the definition of a scalar field, except that you need to call the function `ti.Vector.field` instead of `ti.field`, and put `N` as the first positional argument, the remaining arguments are the same as in the definition of a scalar field.
+
+For example, the following code snippet declares a 3D field of 2D vectors:
 
 ```python
 # Declare a 1x2x3 vector field, whose vector dimension is n=2
-f = ti.Vector(ti.f32, n=2).field(shape=(1,2,3))
+f = ti.Vector.field(2, float, shape=(1, 2, 3))
 ```
 
 The following code snippet declares a `300x300x300` vector field `volumetric_field`, whose vector dimension is 3:

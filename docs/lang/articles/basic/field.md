@@ -384,11 +384,11 @@ particle_field = ti.Struct.field({
 Alternatively, besides *directly* using `ti.Struct.field()`, you can first declare a compound type `particle` and then create a field of it:
 
 ```python
-# Declare a compound type vec3f to represent position, velocity, and acceleration.
-vec3f = ti.types.vector(3, ti.f32)
-# Declare a struct composed of three vectors and one f32 floating-point number
+# vec3 is a built-in vector type suppied in the `taichi.math` module
+vec3 = ti.math.vec3
+# Declare a struct composed of three vectors and one floating-point number
 particle = ti.types.struct(
-  pos=vec3f, vel=vec3f, acc=vec3f, mass=ti.f32,
+  pos=vec3, vel=vec3, acc=vec3, mass=float,
 )
 # Declare a 1D field of the struct particle using field()
 particle_field = particle.field(shape=(n,))
@@ -400,7 +400,7 @@ You can access members of elements in a struct field either one by one or univer
 
 ```python
 # Set the position of the first particle in the field to origin [0.0, 0.0, 0.0]
-particle_field[0].pos = ti.Vector([0.0, 0.0, 0.0]) # pos is a 3D vector
+particle_field[0].pos = vec3(0) # pos is a 3D vector
 
 # Set the second particle's pos[0] in the field to 1.0
 particle_field[1].pos[0] = 1.0 # pos[0] is the first member of pos

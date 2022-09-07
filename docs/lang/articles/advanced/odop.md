@@ -4,6 +4,8 @@ sidebar_position: 2
 
 # Objective Data-oriented Programming
 
+Object-oriented programming (OOP) is very useful for writing modular and reusable code.
+
 Taichi is a
 [data-oriented](https://en.wikipedia.org/wiki/Data-oriented_design)
 programming (DOP) language. However, simple DOP makes modularization

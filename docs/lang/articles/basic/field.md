@@ -86,17 +86,17 @@ To declare a scalar field, simply call `ti.field(dtype, shape)` where `dtype` is
   You can think this 3D scalar field as a 2D field of size 32 x 16 with each element being an array of length 8:
 
   ```
-                     f_3d.shape[1]
-                         (=16)
-                   ┌─────────────────┐
+                    f_3d.shape[1]
+                        (=16)
+                   ┌───────────────┐
 
-                ┌  ┌───┬╌╌╌╌╌╌┬───┐  ┐
+                ┌  ┌───┬╌╌╌╌╌╌╌┬───┐  ┐
                 │  │   │      │   │  │
-                │  ├───┼╌╌╌╌╌╌┼───┤  │
+                │  ├───┼╌╌╌╌╌╌╌┼───┤  │
   f_3d.shape[0] │  ╎   ╎      ╎   ╎  │
-      (=32)     │  ├───┼╌╌╌╌╌╌┼───┤  │
+      (=32)     │  ├───┼╌╌╌╌╌╌╌┼───┤  │
                 │  │   │      │   │  │
-                └  └───┴╌╌╌╌╌╌┴───┘  ┘
+                └  └───┴╌╌╌╌╌╌╌┴───┘  ┘
 
     ┌───┬───┬───┬───┬───┬───┬───┬───┐
     │   │  │   │   │   │   │   │   │

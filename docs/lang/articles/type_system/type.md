@@ -193,7 +193,7 @@ vec4d = ti.types.vector(4, ti.f64)  # a 64-bit floating-point 4D vector type
 mat4x3i = ti.types.matrix(4, 3, int)  # integer 4x3 matrix type
 ```
 
-Such types can be directly called to create the corresponding vector/matrix instances, and can also be used as type hints in function arguments and struct members. For example:
+You can directly call the customized vector/matrix type to instantiate vectors/matrices or use them as type hints in function arguments and struct members. For example:
 
 ```python
 v = vec4d(1, 2, 3, 4)  # Create a vector instance, here v = [1.0, 2.0 3.0 4.0]

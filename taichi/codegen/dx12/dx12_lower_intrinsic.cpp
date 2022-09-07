@@ -84,7 +84,8 @@ class TaichiIntrinsicLower : public ModulePass {
     Constant *block_dim = B.getInt32(group_size);
     patch_intrinsic_to_const("block_dim", block_dim, I32Ty);
     // Num work groups will be in a special CBuffer.
-    // TaichiRuntimeContextLower pass will place the CBuffer to special binding space.
+    // TaichiRuntimeContextLower pass will place the CBuffer to special binding
+    // space.
     Type *TyNumWorkGroups = FixedVectorType::get(I32Ty, 3);
     Constant *CBNumWorkGroups = createGlobalVariableForResource(
         M, NumWorkGroupsCBName, TyNumWorkGroups);

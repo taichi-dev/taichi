@@ -296,7 +296,7 @@ IVkPipelineCache create_pipeline_cache(VkDevice device,
   info.initialDataSize = initial_size;
   info.pInitialData = initial_data;
 
-  VkResult result = vkCreatePipelineCache(device, &info, nullptr, &obj->cache);
+  VkResult res = vkCreatePipelineCache(device, &info, nullptr, &obj->cache);
   BAIL_ON_VK_BAD_RESULT(res, "failed to create pipeline cache");
 
   return obj;

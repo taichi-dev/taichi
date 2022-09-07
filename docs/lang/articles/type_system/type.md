@@ -263,7 +263,7 @@ Just as you do with any other data type, you can call a compound type directly t
       ro: vec3
       rd: vec3
       t: float
-  
+
   # use positional arguments to set struct members in order
   ray = Ray(vec3(0), vec3(1, 0, 0), 1.0)
   # ro is set to vec3(0) and t will be set to 0

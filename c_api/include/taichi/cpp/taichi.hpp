@@ -698,6 +698,7 @@ class Runtime {
     TiTexture texture{};
     texture.image = image;
     texture.dimension = TI_IMAGE_DIMENSION_2D;
+    texture.extent = extent;
     texture.format = format;
     texture.sampler = sampler;
     return Texture(std::move(image), texture);

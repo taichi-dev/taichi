@@ -189,7 +189,7 @@ The `ndarray` type is discussed in another article [interacting with External Ar
 You can use the two functions `ti.types.matrix()` and `ti.types.vector()` to create your own matrix and vector types:
 
 ```python
-vec4d = ti.types.vector(4, ti.f64)  # 64-bit floating-point 4D vector type
+vec4d = ti.types.vector(4, ti.f64)  # a 64-bit floating-point 4D vector type
 mat4x3i = ti.types.matrix(4, 3, int)  # integer 4x3 matrix type
 ```
 

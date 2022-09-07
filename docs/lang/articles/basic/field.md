@@ -195,7 +195,7 @@ for x in f_2d[0]:  # Error!
     ...
 ```
 
-Or you may want to access a slice of the first row like:
+Or you may want to access a slice of the first row:
 
 ```python
 f_2d[0][3:] = [4, 5, 6]  # Error!
@@ -210,7 +210,7 @@ Both of these will raise the error "Slicing is not supported on ti.field".
 Metadata provides the basic information of a scalar field. You can retrieve the data type and shape of a scalar field via its `shape` and `dtype` properties:
 
 ```python
-f_1d.shape  # (128,)
+f_1d.shape  # (9,)
 f_3d.dtype  # f32
 ```
 

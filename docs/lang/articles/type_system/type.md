@@ -217,7 +217,7 @@ sphere1 = sphere_type(center=vec3([0, 0, 0]), radius=1.0)
 sphere2 = sphere_type(center=vec3([1, 1, 1]), radius=1.0)
 ```
 
-When there are a dozen of members in a struct, the above way of using `ti.types.struct` may make your code look messy, and there is a better way to do so. Indeed, we recommend you use the decorator `ti.dataclass` as a more intuitive way to define your custom struct types:
+When there are a dozen of members in a struct, the above way of using `ti.types.struct` may make your code look messy, and there is a better way to do so. Indeed, we recommend you use the decorator `@ti.dataclass` as a more intuitive way to define your custom struct types. The dataclass is merely a thin wrapper of struct:
 
 ```python
 @ti.dataclass
@@ -245,22 +245,9 @@ As the release of v1.1.0, you are given more options to initialize a struct or a
       rd: vec3
       t: float
 
-  # use positional arguments to set struct members in order
-  ray = Ray(vec3(0), vec3(1, 0, 0), 1.0)
-  # ro is set to vec3(0) and t will be set to 0
-  ray = Ray(vec3(0), rd=vec3(1, 0, 0))
-  # both ro and rd are set to vec3(0)
-  ray = Ray(t=1.0)
-  # ro is set to vec3(1), rd=vec3(0) and t=0.0
-  ray = Ray(1)
-  # all members are set to 0.
-  ray = Ray()
-  ```
+  # the above definition is equivalent to
+  #Ray = ti.types.struct(ro=vec3, rd=vec3, t=float)
 
-  These ways of initialization also work for struct, since dataclass is merely a thin wrapper of struct:
-
-  ```python
-  Ray = ti.types.struct(ro=vec3, rd=vec3, t=float)
   # use positional arguments to set struct members in order
   ray = Ray(vec3(0), vec3(1, 0, 0), 1.0)
   # ro is set to vec3(0) and t will be set to 0

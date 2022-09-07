@@ -257,6 +257,22 @@ As the release of v1.1.0, you are given more options to initialize a struct or a
   ray = Ray()
   ```
 
+  These ways of initialization also work for struct, since dataclass is merely a thin wrapper of struct:
+
+  ```python
+  Ray = ti.types.struct(ro=vec3, rd=vec3, t=float)
+  # use positional arguments to set struct members in order
+  ray = Ray(vec3(0), vec3(1, 0, 0), 1.0)
+  # ro is set to vec3(0) and t will be set to 0
+  ray = Ray(vec3(0), rd=vec3(1, 0, 0))
+  # both ro and rd are set to vec3(0)
+  ray = Ray(t=1.0)
+  # ro is set to vec3(1), rd=vec3(0) and t=0.0
+  ray = Ray(1)
+  # all members are set to 0.
+  ray = Ray()
+  ```
+
   :::note
 
   - In the definition of `vec2`, `my_vec3f()` performs an implicit cast operation when combining `my_vec2i(0)` with `1`.

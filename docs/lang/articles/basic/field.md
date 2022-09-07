@@ -6,12 +6,6 @@ sidebar_position: 1
 
 The term _field_ is borrowed from mathematics and physics. If you already know [scalar field](https://en.wikipedia.org/wiki/Scalar_field) (for example heat field), or vector field (for example [gravitational field](https://en.wikipedia.org/wiki/Gravitational_field)), then it is straightforward for you to understand fields in Taichi.
 
-<center>
-
-![A 2D vector field. Image credit to  3Blue1Brown@https://www.youtube.com/c/3blue1brown](https://github.com/taichi-dev/public_files/blob/master/taichi/field.jpg?raw=true)
-
-</center>
-
 Fields in Taichi are the _global_ data containers that can be accessed from both the Python scope and the Taichi scope. Just like an ndarray in NumPy or a tensor in PyTorch, a field in Taichi is defined as a multi-dimensional array of elements, and elements in a field can be a scalar, a vector, a matrix, or a struct.
 
 :::note

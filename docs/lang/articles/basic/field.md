@@ -8,7 +8,7 @@ The term _field_ is borrowed from mathematics and physics. If you already know [
 
 <center>
 
-![A scalar field such as temperature or pressure, where intensity of the field is represented by different hues of colors. Image credit to Wikipedia.](https://upload.wikimedia.org/wikipedia/commons/a/a8/Scalar_field.png)
+![A 2D vector field. Image credit to  3Blue1Brown@https://www.youtube.com/c/3blue1brown](https://github.com/taichi-dev/public_files/blob/master/taichi/field.jpg?raw=true)
 
 </center>
 

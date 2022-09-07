@@ -22,11 +22,40 @@ Scalar fields refer to the fields that store scalars and are the most basic fiel
 ```python
 import taichi as ti
 ti.init(arch=ti.cpu)
+```
 
-# Declare a 0D scalar field whose data type is f32
-f_0d = ti.field(ti.f32, shape=())           # 0D
-# Declare a 1D scalar field whose shape is (128,)
-f_1d = ti.field(ti.i32, shape=128)          # 1D
++ Declare a 0D scalar field
+
+    ```python
+    # Declare a 0D scalar field whose data type is f32
+    f = ti.field(ti.f32, shape=())           # 0D
+    f[None] = 1.0
+    ```
+
+    ```
+    ┌─────┐
+    │ 1.0 │  Use `None` to access.
+    └─────┴
+    ```
+
++ Declare a 1D scalar field
+
+  ```python
+  f = ti.field(ti.i32, shape=9)          # 1D
+  for i in range(9):
+    f[i] = i
+  ```
+
+  ```
+  ┌───┬───┬───┬───┬───┬───┬───┬───┬───┐
+  │ 0 │ 1 │ 2 │ 3 │ 4 │ 5 │ 6 │ 7 │ 8 │
+  └───┴───┴───┴───┴───┴───┴───┴───┴───┘
+
+  └───────────────────────────────────┘
+            f.shape = (9,)
+  ```
+
+
 # Declare a 2D scalar field whose shape is (640, 480)
 f_2d = ti.field(ti.u8,  shape=(640, 480))   # 2D
 # Declare a 3D scalar field whose data type is f32

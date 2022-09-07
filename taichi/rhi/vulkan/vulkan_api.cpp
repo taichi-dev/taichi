@@ -152,7 +152,8 @@ IVkDescriptorSetLayout create_descriptor_set_layout(
   IVkDescriptorSetLayout obj =
       std::make_shared<DeviceObjVkDescriptorSetLayout>();
   obj->device = device;
-  VkResult res = vkCreateDescriptorSetLayout(device, create_info, nullptr, &obj->layout);
+  VkResult res =
+      vkCreateDescriptorSetLayout(device, create_info, nullptr, &obj->layout);
   BAIL_ON_VK_BAD_RESULT(res, "failed to create descriptor set layout");
   return obj;
 }
@@ -162,7 +163,8 @@ IVkDescriptorPool create_descriptor_pool(
     VkDescriptorPoolCreateInfo *create_info) {
   IVkDescriptorPool obj = std::make_shared<DeviceObjVkDescriptorPool>();
   obj->device = device;
-  VkResult res = vkCreateDescriptorPool(device, create_info, nullptr, &obj->pool);
+  VkResult res =
+      vkCreateDescriptorPool(device, create_info, nullptr, &obj->pool);
   BAIL_ON_VK_BAD_RESULT(res, "failed to create descriptor pool");
   return obj;
 }
@@ -245,7 +247,8 @@ IVkRenderPass create_render_pass(VkDevice device,
                                  VkRenderPassCreateInfo *create_info) {
   IVkRenderPass obj = std::make_shared<DeviceObjVkRenderPass>();
   obj->device = device;
-  VkResult res = vkCreateRenderPass(device, create_info, nullptr, &obj->renderpass);
+  VkResult res =
+      vkCreateRenderPass(device, create_info, nullptr, &obj->renderpass);
   BAIL_ON_VK_BAD_RESULT(res, "failed to create render pass");
   return obj;
 }
@@ -324,8 +327,9 @@ IVkPipeline create_compute_pipeline(VkDevice device,
     info.basePipelineIndex = 0;
   }
 
-  VkResult res = vkCreateComputePipelines(device, cache ? cache->cache : VK_NULL_HANDLE, 1,
-                           &info, nullptr, &obj->pipeline);
+  VkResult res =
+      vkCreateComputePipelines(device, cache ? cache->cache : VK_NULL_HANDLE, 1,
+                               &info, nullptr, &obj->pipeline);
   BAIL_ON_VK_BAD_RESULT(res, "failed to create compute pipeline");
 
   return obj;
@@ -354,8 +358,9 @@ IVkPipeline create_graphics_pipeline(VkDevice device,
     create_info->basePipelineIndex = 0;
   }
 
-  VkResult res = vkCreateGraphicsPipelines(device, cache ? cache->cache : VK_NULL_HANDLE, 1,
-                            create_info, nullptr, &obj->pipeline);
+  VkResult res =
+      vkCreateGraphicsPipelines(device, cache ? cache->cache : VK_NULL_HANDLE,
+                                1, create_info, nullptr, &obj->pipeline);
   BAIL_ON_VK_BAD_RESULT(res, "failed to create graphics pipeline");
 
   return obj;
@@ -390,9 +395,9 @@ IVkPipeline create_raytracing_pipeline(
           taichi::lang::vulkan::VulkanLoader::instance().get_instance(),
           "vkCreateRayTracingPipelinesKHR"));
 
-  VkResult res = create_raytracing_pipeline_khr(device, deferredOperation,
-                                 cache ? cache->cache : VK_NULL_HANDLE, 1,
-                                 create_info, nullptr, &obj->pipeline);
+  VkResult res = create_raytracing_pipeline_khr(
+      device, deferredOperation, cache ? cache->cache : VK_NULL_HANDLE, 1,
+      create_info, nullptr, &obj->pipeline);
   BAIL_ON_VK_BAD_RESULT(res, "failed to create raytracing pipeline");
 
   return obj;
@@ -414,8 +419,8 @@ IVkImage create_image(VkDevice device,
   image->array_layers = image_info->arrayLayers;
   image->usage = alloc_info->usage;
 
-  VkResult res = vmaCreateImage(allocator, image_info, alloc_info, &image->image,
-                 &image->allocation, nullptr);
+  VkResult res = vmaCreateImage(allocator, image_info, alloc_info,
+                                &image->image, &image->allocation, nullptr);
   BAIL_ON_VK_BAD_RESULT(res, "failed to create image");
 
   return image;
@@ -489,7 +494,8 @@ IVkFramebuffer create_framebuffer(VkFramebufferCreateFlags flags,
   info.height = height;
   info.layers = layers;
 
-  VkResult res = vkCreateFramebuffer(renderpass->device, &info, nullptr, &obj->framebuffer);
+  VkResult res = vkCreateFramebuffer(renderpass->device, &info, nullptr,
+                                     &obj->framebuffer);
   BAIL_ON_VK_BAD_RESULT(res, "failed to create framebuffer");
 
   return obj;
@@ -505,8 +511,8 @@ IVkBuffer create_buffer(VkDevice device,
   buffer->size = buffer_info->size;
   buffer->usage = buffer_info->usage;
 
-  VkResult res = vmaCreateBuffer(allocator, buffer_info, alloc_info, &buffer->buffer,
-                  &buffer->allocation, nullptr);
+  VkResult res = vmaCreateBuffer(allocator, buffer_info, alloc_info,
+                                 &buffer->buffer, &buffer->allocation, nullptr);
   BAIL_ON_VK_BAD_RESULT(res, "failed to create buffer");
 
   return buffer;
@@ -546,7 +552,8 @@ IVkBufferView create_buffer_view(IVkBuffer buffer,
   info.offset = offset;
   info.range = range;
 
-  VkResult res = vkCreateBufferView(buffer->device, &info, nullptr, &view->view);
+  VkResult res =
+      vkCreateBufferView(buffer->device, &info, nullptr, &view->view);
   BAIL_ON_VK_BAD_RESULT(res, "failed to create buffer view");
 
   return view;
@@ -581,8 +588,8 @@ IVkAccelerationStructureKHR create_acceleration_structure(
           taichi::lang::vulkan::VulkanLoader::instance().get_instance(),
           "vkCreateAccelerationStructureKHR"));
 
-  VkResult res = create_acceleration_structure_khr(buffer->device, &info, nullptr,
-                                    &obj->accel);
+  VkResult res = create_acceleration_structure_khr(buffer->device, &info,
+                                                   nullptr, &obj->accel);
   BAIL_ON_VK_BAD_RESULT(res, "failed to create acceleration structure");
 
   return obj;

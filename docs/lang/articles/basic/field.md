@@ -248,11 +248,27 @@ As the name suggests, vector fields are the fields whose elements are vectors. D
 
 Declaring a vector field with each element being an `N`-dimentional vector is very similar to the definition of a scalar field, except that you need to call the function `ti.Vector.field` instead of `ti.field`, and put `N` as the first positional argument. The remaining arguments are all the same as in the definition of a scalar field.
 
-For example, the following code snippet declares a 3D field of 2D vectors:
+For example, the following code snippet declares a 2D field of 2D vectors:
 
 ```python
 # Declare a 1x2x3 vector field, whose vector dimension is n=2
-f = ti.Vector.field(n=2, dtype=float, shape=(1, 2, 3))
+f = ti.Vector.field(n=2, dtype=float, shape=(3, 4))
+```
+
+The memory layout of `f` will be like:
+
+```
+                     f.shape[1]
+                       (=3)
+               ┌────────────────────┐
+
+            ┌  ┌──────┬──────┬──────┐  ┐
+            │  │[0, 0]│[0, 1]│[0, 2]│  │
+            │  ├──────┼──────┼──────┤  │
+ f.shape[0] │  │[1, 0]│[1, 1]│[1, 2]│  │
+    (=3)    │  ├──────┼──────┼──────┤  │
+            │  │[2, 0]│[2, 1]│[2, 2]│  │
+            └  └──────┴──────┴──────┘  ┘
 ```
 
 The following code snippet declares a `300x300x300` vector field `volumetric_field`, whose vector dimension is 3:

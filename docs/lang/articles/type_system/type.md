@@ -241,7 +241,13 @@ Sphere = ti.types.struct(center=vec3, radius=float)
 
 Just as you do with any other data type, you can call a compound type directly to create vector, matrix, or struct instances in Taichi.
 
-As the release of v1.1.0, you are given more options to initialize a struct or a dataclass. The positional arguments are passed to the struct members in the order they are defined; the keyword arguments set the corresponding struct members. Unspecified struct members are automatically set to zero. For example:
+As of v1.1.0, you are given more options to initialize a struct or a dataclass.
+
+- Pass positional arguments to a struct in the order they are defined.
+- Pass keyword arguments to a struct to set the corresponding struct members.
+- Unspecified struct members are automatically set to zero. 
+
+For example:
 
   ```python
   @ti.dataclass

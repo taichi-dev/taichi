@@ -35,7 +35,7 @@ To declare a scalar field, simply call `ti.field(dtype, shape)` where `dtype` is
         │     │
         └─────┴
         └─────┘
-    f_0d.shape = ()
+     f_0d.shape=()
     ```
 
 + To declare a 1D scalar field of length `n`, you can set its shape to `n` or `(n,)`:
@@ -139,6 +139,7 @@ The value in `f_0d` will be like:
     │ 10.0 │
     └──────┴
     └──────┘
+  f_0d.shape=()
 ```
 
 To access the elements in a 1D field:

@@ -91,11 +91,13 @@ ti.init(arch=ti.cpu)
 
 + Declare a 3D scalar field.
 
-  To declare a 3D scalar field, you simply specify the size of the three dimensions. Scallar fields of higher dimensions are similiar.
+  To declare a 3D scalar field, simply specify the size of the three dimensions.
 
   ```python
   f = ti.field(ti.f32, shape=(32, 32, 32))  # 3D field
   ```
+
+Scalar fields of higher dimensions can be similarily defined.
 
 
 ### Access elements in a scalar field

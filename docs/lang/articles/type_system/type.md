@@ -222,7 +222,7 @@ sphere1 = sphere_type(center=vec3([0, 0, 0]), radius=1.0)
 sphere2 = sphere_type(center=vec3([1, 1, 1]), radius=1.0)
 ```
 
-When there are a dozen of members in a struct, the above way of using `ti.types.struct` may make your code look messy, and there is a better way to do so. Indeed, we recommend you use the decorator `@ti.dataclass` as a more intuitive way to define your custom struct types. The dataclass is merely a thin wrapper of struct:
+When there are a dozen of members in a struct, the above way of using `ti.types.struct` may make your code look messy, and there is a better way to do so. Indeed, we recommend you use the decorator `@ti.dataclass` as a more intuitive way to define your custom struct type in the form of a class. The dataclass is merely a thin wrapper of struct:
 
 ```python
 @ti.dataclass

@@ -54,7 +54,7 @@ When you call the `ti.init()` method to initialize the Taichi runtime, Taichi au
 - The default integer type in Taichi is `ti.i32`.
 - The default floating-point type in Taichi is `ti.f32`.
 
-You can customize these default primitive types by explicitly specifying them in the `init()` call:
+You can customize the default setting by explicitly specifying the primitive data type(s) you want to use in the `init()` call:
 
 ```python
 ti.init(default_ip=ti.i64)  # Set the default integer type to ti.i64

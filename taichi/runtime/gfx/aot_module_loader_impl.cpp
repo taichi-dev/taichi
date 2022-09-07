@@ -24,7 +24,9 @@ class FieldImpl : public aot::Field {
 class AotModuleImpl : public aot::Module {
  public:
   explicit AotModuleImpl(const AotModuleParams &params, Arch device_api_backend)
-      : module_path_(params.module_path), runtime_(params.runtime), device_api_backend_(device_api_backend) {
+      : module_path_(params.module_path),
+        runtime_(params.runtime),
+        device_api_backend_(device_api_backend) {
     const std::string bin_path =
         fmt::format("{}/metadata.tcb", params.module_path);
     if (!read_from_binary_file(ti_aot_data_, bin_path)) {
@@ -146,7 +148,8 @@ class AotModuleImpl : public aot::Module {
   }
 
   bool try_load_spv_code(std::size_t index) {
-    if (index >= ti_aot_data_.spirv_codes.size() || ti_aot_data_.spirv_codes[index].empty()) {
+    if (index >= ti_aot_data_.spirv_codes.size() ||
+        ti_aot_data_.spirv_codes[index].empty()) {
       ti_aot_data_.spirv_codes.resize(index + 1);
       auto &codes = ti_aot_data_.spirv_codes[index];
       const auto &k = ti_aot_data_.kernels[index];
@@ -163,7 +166,7 @@ class AotModuleImpl : public aot::Module {
   }
 
   static std::vector<uint32_t> read_spv_file(const std::string &output_dir,
-                                      const TaskAttributes &k) {
+                                             const TaskAttributes &k) {
     const std::string spv_path = fmt::format("{}/{}.spv", output_dir, k.name);
     std::vector<uint32_t> source_code;
     std::ifstream fs(spv_path, std::ios_base::binary | std::ios::ate);

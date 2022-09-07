@@ -1540,7 +1540,8 @@ class MatrixField(Field):
         self.n = n
         self.m = m
         self.ndim = ndim
-        self.ptr = ti_python_core.expr_matrix_field([var.ptr for var in self.vars], [n, m][:ndim])
+        self.ptr = ti_python_core.expr_matrix_field(
+            [var.ptr for var in self.vars], [n, m][:ndim])
 
     def get_scalar_field(self, *indices):
         """Creates a ScalarField using a specific field member.

@@ -120,7 +120,8 @@ Expr expr_field(Expr id_expr, DataType dt) {
   return ret;
 }
 
-Expr expr_matrix_field(const std::vector<Expr> &fields, const std::vector<int> &element_shape) {
+Expr expr_matrix_field(const std::vector<Expr> &fields,
+                       const std::vector<int> &element_shape) {
   return Expr::make<MatrixFieldExpression>(fields, element_shape);
 }
 

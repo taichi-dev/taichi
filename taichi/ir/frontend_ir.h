@@ -528,7 +528,9 @@ class MatrixFieldExpression : public Expression {
   bool dynamic_indexable{false};
   int dynamic_index_stride{0};
 
-  MatrixFieldExpression(const std::vector<Expr> &fields, const std::vector<int> &element_shape) : fields(fields), element_shape(element_shape) {
+  MatrixFieldExpression(const std::vector<Expr> &fields,
+                        const std::vector<int> &element_shape)
+      : fields(fields), element_shape(element_shape) {
   }
 
   void type_check(CompileConfig *config) override {

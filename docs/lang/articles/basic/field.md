@@ -255,7 +255,7 @@ Declaring a vector field where each element is an `N`-dimensional vector is simi
 For example, the following code snippet declares a 2D field of 2D vectors:
 
 ```python
-# Declare a 1x2x3 vector field, whose vector dimension is n=2
+# Declare a 3x3 vector field comprising 2D vectors
 f = ti.Vector.field(n=2, dtype=float, shape=(3, 3))
 ```
 

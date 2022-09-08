@@ -83,7 +83,7 @@ The simplest way to declare a scalar field is to call `ti.field(dtype, shape)`, 
   f_3d = ti.field(ti.f32, shape=(32, 16, 8))  # 3D field
   ```
 
-  You can think this 3D scalar field as a 2D field of size 32 x 16 with each element being an array of length 8:
+  You can think of this 3D scalar field as a 32&times;16 2D field whose elements are arrays of length 8:
 
   ```
                     f_3d.shape[1]

@@ -123,20 +123,15 @@ std::unique_ptr<aot::Kernel> LlvmProgramImpl::make_aot_kernel(Kernel &kernel) {
                                                 std::move(compiled_kernel));
 }
 
-void LlvmProgramImpl::cache_kernel(
-    const std::string &kernel_key,
-    const std::vector<LLVMCompiledData> &data_list,
-    std::vector<LlvmLaunchArgInfo> &&args) {
+void LlvmProgramImpl::cache_kernel(const std::string &kernel_key,
+                                   const LLVMCompiledData &data,
+                                   std::vector<LlvmLaunchArgInfo> &&args) {
   if (cache_data_->kernels.find(kernel_key) != cache_data_->kernels.end()) {
     return;
   }
   auto &kernel_cache = cache_data_->kernels[kernel_key];
   kernel_cache.kernel_key = kernel_key;
-  for (const auto &data : data_list) {
-    kernel_cache.compiled_data_list.emplace_back(
-        data.tasks, llvm::CloneModule(*data.module), data.used_tree_ids,
-        data.struct_for_tls_sizes);
-  }
+  kernel_cache.compiled_data = data.clone();
   kernel_cache.args = std::move(args);
   kernel_cache.created_at = std::time(nullptr);
   kernel_cache.last_used_at = std::time(nullptr);

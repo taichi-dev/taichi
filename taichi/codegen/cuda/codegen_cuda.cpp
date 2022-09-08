@@ -704,7 +704,7 @@ FunctionType KernelCodeGenCUDA::compile_to_function() {
   auto *llvm_prog = get_llvm_program(prog);
   auto *tlctx = llvm_prog->get_llvm_context(kernel->arch);
 
-  std::vector<LLVMCompiledData> data = compile_kernel_to_module();
+  LLVMCompiledData data = compile_kernel_to_module();
   CUDAModuleToFunctionConverter converter{tlctx,
                                           llvm_prog->get_runtime_executor()};
 
@@ -714,9 +714,9 @@ FunctionType KernelCodeGenCUDA::compile_to_function() {
 FunctionType CUDAModuleToFunctionConverter::convert(
     const std::string &kernel_name,
     const std::vector<LlvmLaunchArgInfo> &args,
-    std::vector<LLVMCompiledData> &&data) const {
-  auto &mod = data[0].module;
-  auto &tasks = data[0].tasks;
+    LLVMCompiledData data) const {
+  auto &mod = data.module;
+  auto &tasks = data.tasks;
 #ifdef TI_WITH_CUDA
   for (const auto &task : tasks) {
     llvm::Function *func = mod->getFunction(task.name);

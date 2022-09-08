@@ -244,7 +244,7 @@ class TaskCodeGenWASM : public TaskCodeGenLLVM {
 
 FunctionType KernelCodeGenWASM::compile_to_function() {
   TI_AUTO_PROF
-  auto linked = std::move(compile_kernel_to_module()[0]);
+  auto linked = compile_kernel_to_module();
   auto *tlctx = get_llvm_program(prog)->get_llvm_context(kernel->arch);
   tlctx->create_jit_module(std::move(linked.module));
   auto kernel_symbol = tlctx->lookup_function_pointer(linked.tasks[0].name);
@@ -281,7 +281,7 @@ LLVMCompiledData KernelCodeGenWASM::compile_task(
   return {name_list, std::move(gen->module), {}, {}};
 }
 
-std::vector<LLVMCompiledData> KernelCodeGenWASM::compile_kernel_to_module() {
+LLVMCompiledData KernelCodeGenWASM::compile_kernel_to_module() {
   auto *tlctx = get_llvm_program(prog)->get_llvm_context(kernel->arch);
   if (!kernel->lowered()) {
     kernel->lower(/*to_executable=*/false);
@@ -289,10 +289,7 @@ std::vector<LLVMCompiledData> KernelCodeGenWASM::compile_kernel_to_module() {
   auto res = compile_task();
   std::vector<std::unique_ptr<LLVMCompiledData>> data;
   data.push_back(std::make_unique<LLVMCompiledData>(std::move(res)));
-  auto linked = tlctx->link_compiled_tasks(std::move(data));
-  std::vector<LLVMCompiledData> ret;
-  ret.push_back(std::move(*linked));
-  return ret;
+  return tlctx->link_compiled_tasks(std::move(data));
 }
 
 }  // namespace lang

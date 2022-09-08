@@ -28,6 +28,7 @@ struct LLVMCompiledData {
   std::unordered_set<int> struct_for_tls_sizes;
   LLVMCompiledData() = default;
   LLVMCompiledData(LLVMCompiledData &&) = default;
+  LLVMCompiledData &operator=(LLVMCompiledData &&) = default;
   LLVMCompiledData(std::vector<OffloadedTask> tasks,
                    std::unique_ptr<llvm::Module> module,
                    std::unordered_set<int> used_tree_ids,

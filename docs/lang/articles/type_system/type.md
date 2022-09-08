@@ -84,7 +84,7 @@ def func(a: ti.f64) -> ti.i64:
     ...
 ```
 
-### Explicit typecasting
+### Explicit type casting
 
 As mentioned at the beginning of this article, the type of a variable in the Taichi scope is *statically typed* upon initialization. Taichi's compiler performs type checking at compile time, which means you *cannot* change a variable's type once it is initialized. However, from time to time, you may run into a situation where you need to switch to a different data type because the original one is not feasible for an assignment or calculation. In such cases, you need explicit type casting:
 
@@ -110,20 +110,20 @@ As mentioned at the beginning of this article, the type of a variable in the Tai
       w = ti.f64(a)  # 3.14
   ```
 
-### Implicit typecasting
+### Implicit type casting
 
 Implicit type casting occurs when you *accidentally* put or assign a value in a place where a different data type is expected.
 
 :::caution WARNING
-As a rule of thumb, implicit typecasting is a major source of bugs. And Taichi does *not* recommend resorting to this mechanism.
+As a rule of thumb, implicit type casting is a major source of bugs. And Taichi does *not* recommend resorting to this mechanism.
 
 :::
 
-Implicit typecasting can happen in binary operations or in assignments, as explained below.
+Implicit type casting can happen in binary operations or in assignments, as explained below.
 
-#### Implicit typecasting in binary operations
+#### Implicit type casting in binary operations
 
-Taichi implements its own implicit typecasting rules for binary operations, which are slightly different from [those for the C programming language](https://en.cppreference.com/w/c/language/conversion). In general we have three rules in descending order of priority:
+Taichi implements its own implicit type casting rules for binary operations, which are slightly different from [those for the C programming language](https://en.cppreference.com/w/c/language/conversion). In general we have three rules in descending order of priority:
 
 1. Integer + floating point -> floating point
    - `i32 + f32 -> f32`
@@ -295,7 +295,7 @@ For example:
 
   :::
 
-### Typecasting
+### Type casting
 
 For now, the only compound types that support type casting in Taichi are vectors and matrices. Type casting of vectors and matrices is element-wise and results in new vectors and matrices being created:
 

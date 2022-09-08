@@ -14,7 +14,7 @@ A 0D (zero-dimensional) field contains *only* one element.
 
 ## Scalar fields
 
-Scalar fields refer to the fields that store scalars and are the most basic fields. A 0D scalar field is a single scalar, a 1D scalar field is an 1D array of scalars, a 2D scalar field is a 2D array of scalars, etc.
+Scalar fields refer to the fields that store scalars and are the most basic fields. A 0D scalar field is a single scalar; a 1D scalar field is a 1D array of scalars; a 2D scalar field is a 2D array of scalars, and so on and so forth.
 
 
 ### Declaration

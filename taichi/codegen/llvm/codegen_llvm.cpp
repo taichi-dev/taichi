@@ -2737,8 +2737,7 @@ LLVMCompiledTask LLVMCompiledTask::clone() const {
           struct_for_tls_sizes};
 }
 
-LLVMCompiledKernel LLVMCompiledKernel::clone()
-    const {
+LLVMCompiledKernel LLVMCompiledKernel::clone() const {
   return {tasks, llvm::CloneModule(*module)};
 }
 

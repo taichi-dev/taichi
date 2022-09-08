@@ -49,9 +49,8 @@ struct LLVMCompiledKernel {
   LLVMCompiledKernel(LLVMCompiledKernel &&) = default;
   LLVMCompiledKernel &operator=(LLVMCompiledKernel &&) = default;
   LLVMCompiledKernel(std::vector<OffloadedTask> tasks,
-                   std::unique_ptr<llvm::Module> module)
-      : tasks(std::move(tasks)),
-        module(std::move(module)) {
+                     std::unique_ptr<llvm::Module> module)
+      : tasks(std::move(tasks)), module(std::move(module)) {
   }
   LLVMCompiledKernel clone() const;
   TI_IO_DEF(tasks);

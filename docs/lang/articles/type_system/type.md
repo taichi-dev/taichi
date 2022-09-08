@@ -291,8 +291,7 @@ For example:
 
   :::note
 
-  - In the definition of `vec2`, `my_vec3f()` performs an implicit cast operation when combining `my_vec2i(0)` with `1`.
-  - You can create vectors, matrices, and structs using GLSL-like broadcast syntax because their shapes are already known.
+  You can create vectors, matrices, and structs using GLSL-like broadcast syntax because their shapes are already known.
 
   :::
 

@@ -14,7 +14,7 @@ Let's see a quick example:
 @ti.kernel
 def test():
     x = 1  # x is the integer 1
-    x = 3.14  # 3.14 is cast to 3 hence x is equal to 3
+    x = 3.14  # 3.14 is casted to 3; hence, x takes the value 3
     x = ti.Vector([1, 1])  # Error!
 ```
 
@@ -175,7 +175,7 @@ When you assign a value to a variable of a different data type, Taichi implicitl
 
 ## Compound types
 
-Compound types are user-defined data types, which comprise multiple members. Supported compound types include vectors, matrices, ndarrays, and structs.
+Compound types are user-defined data types, which comprise multiple elements. Supported compound types include vectors, matrices, ndarrays, and structs.
 
 Taichi allows you to use all types supplied in the `ti.types` module as scaffolds to customize *higher-level* compound types.
 
@@ -195,7 +195,7 @@ vec4d = ti.types.vector(4, ti.f64)  # a 64-bit floating-point 4D vector type
 mat4x3i = ti.types.matrix(4, 3, int)  # a 4x3 integer matrix type
 ```
 
-You can directly call the customized vector/matrix type to instantiate vectors/matrices or use them as type hints in function arguments and struct members. For example:
+You can use the customized types to instantiate vectors and matrices or annotate the data types of function arguments and struct members. For example:
 
 ```python
 v = vec4d(1, 2, 3, 4)  # Create a vector instance, here v = [1.0 2.0 3.0 4.0]
@@ -225,7 +225,7 @@ v = ti.types.vector(3, float)  # equivalent to v = ti.types.matrix(3, 1, float)
 
 ### Struct types and dataclass
 
-You can use the function `ti.types.struct()` to create a struct type, and use this type as a template to create struct instances. For example, suppose you want to represent a sphere in Taichi. A 3D sphere can be abstracted with its center and radius. You can call `ti.types.vector()` and `ti.types.struct()` to create compound types `vec3` and `sphere_type`, respectively. These two types are the *higher-level* compound types that fit better with your scenario. Then, you can use them as templates to create two instances of spheres (initialize two local variables `sphere1` and `sphere2`):
+You can use the funtion `ti.types.struct()` to create a struct type. Try customizing compound types to represent a sphere in the 3D space, which can be abstracted with its center and radius. In the following example, you call `ti.types.vector()` and `ti.types.struct()` to create compound types `vec3` and `sphere_type`, respectively. These two types are the *higher-level* compound types that fit better with your scenario. Subsequently, you can use them as templates to create two instances of spheres (initialize two local variables `sphere1` and `sphere2`):
 
 ```python
 # Define a compound type vec3 to represent a sphere's center
@@ -238,7 +238,7 @@ sphere1 = sphere_type(center=vec3([0, 0, 0]), radius=1.0)
 sphere2 = sphere_type(center=vec3([1, 1, 1]), radius=1.0)
 ```
 
-When a struct contains too many members, `ti.types.struct` may make your code look messy. Taichi offers a more intuitive way to define a struct: The decorator `@ti.dataclass` is a thin wrapper that allows you to customize the struct type in the form of a class.
+When a struct contains many members, `ti.types.struct` may make your code look messy. Taichi offers a more intuitive way to define a struct: The decorator `@ti.dataclass` is a thin wrapper of the struct type:
 
 ```python
 @ti.dataclass
@@ -247,7 +247,7 @@ class Sphere:
     radius: float
 ```
 
-The code above is equivalent to the line of code below:
+The code above serves the same purpose as the line below does but provides better readability:
 
 ```python
 Sphere = ti.types.struct(center=vec3, radius=float)
@@ -296,7 +296,7 @@ For example:
 
 ### Typecasting
 
-For now, the only compound types in Taichi that support typecasting are vectors and matrices, the casting is performed element-wise and a new vector/matrix is created:
+For now, the only compound types that support type casting in Taichi are vectors and matrices. The type casting of vectors and matrices is element-wise and results in new vectors and matrices being created:
 
 ```python
 @ti.kernel

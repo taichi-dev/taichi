@@ -1,7 +1,7 @@
-from collections import defaultdict
+import glob
 import json
 import re
-import glob
+from collections import defaultdict
 
 
 class Name:

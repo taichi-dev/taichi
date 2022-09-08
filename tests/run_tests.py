@@ -77,12 +77,12 @@ def _test_cpp():
                                       __capi_aot_test_cases)
     _run_cpp_test(capi_test_filename, build_dir, exclude_tests_cmd)
 
-    # # Run AOT test cases
-    # exclude_tests_cmd = _test_cpp_aot(cpp_test_filename, build_dir,
-    #                                   __aot_test_cases)
+    # Run AOT test cases
+    exclude_tests_cmd = _test_cpp_aot(cpp_test_filename, build_dir,
+                                      __aot_test_cases)
 
-    # # Run rest of the cpp tests
-    # _run_cpp_test(cpp_test_filename, build_dir, exclude_tests_cmd)
+    # Run rest of the cpp tests
+    _run_cpp_test(cpp_test_filename, build_dir, exclude_tests_cmd)
 
 
 def _test_python(args):

@@ -16,6 +16,7 @@ class Field:
         vars (List[Expr]): Field members.
     """
     def __init__(self, _vars):
+        assert all(_vars)
         self.vars = _vars
         self.host_accessors = None
         self.grad = None

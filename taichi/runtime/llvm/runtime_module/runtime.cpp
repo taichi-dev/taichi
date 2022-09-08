@@ -221,12 +221,12 @@ DEFINE_UNARY_REAL_FUNC(sin)
 DEFINE_FAST_POW(i32)
 DEFINE_FAST_POW(i64)
 
-int abs_i32(int a) {
-  if (a > 0) {
-    return a;
-  } else {
-    return -a;
-  }
+i32 abs_i32(i32 a) {
+  return a >= 0 ? a : -a;
+}
+
+i64 abs_i64(i64 a) {
+  return a >= 0 ? a : -a;
 }
 
 i32 floordiv_i32(i32 a, i32 b) {

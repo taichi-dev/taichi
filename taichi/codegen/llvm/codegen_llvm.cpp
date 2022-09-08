@@ -209,6 +209,8 @@ void TaskCodeGenLLVM::emit_extra_unary(UnaryOpStmt *stmt) {
       llvm_val[stmt] = create_call(#x "_f64", input);                   \
     } else if (input_taichi_type->is_primitive(PrimitiveTypeID::i32)) { \
       llvm_val[stmt] = create_call(#x "_i32", input);                   \
+    } else if (input_taichi_type->is_primitive(PrimitiveTypeID::i64)) { \
+      llvm_val[stmt] = create_call(#x "_i64", input);                   \
     } else {                                                            \
       TI_NOT_IMPLEMENTED                                                \
     }                                                                   \
@@ -1782,7 +1784,6 @@ void TaskCodeGenLLVM::visit(PtrOffsetStmt *stmt) {
         llvm_val[stmt->origin], llvm::Type::getInt64Ty(*llvm_context));
     auto address_offset = builder->CreateSExt(
         llvm_val[stmt->offset], llvm::Type::getInt64Ty(*llvm_context));
-
     auto target_address = builder->CreateAdd(origin_address, address_offset);
     auto dt = stmt->ret_type.ptr_removed();
     llvm_val[stmt] = builder->CreateIntToPtr(

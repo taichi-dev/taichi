@@ -297,7 +297,7 @@ For example:
 
 ### Typecasting
 
-For now, the only compound types that support type casting in Taichi are vectors and matrices. The type casting of vectors and matrices is element-wise and results in new vectors and matrices being created:
+For now, the only compound types that support type casting in Taichi are vectors and matrices. Type casting of vectors and matrices is element-wise and results in new vectors and matrices being created:
 
 ```python
 @ti.kernel

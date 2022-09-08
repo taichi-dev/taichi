@@ -21,7 +21,7 @@ Scalar fields refer to the fields that store scalars and are the most basic fiel
 
 The simplest way to declare a scalar field is to call `ti.field(dtype, shape)`, where `dtype` is a primitive data type as explained in [type system](../type_system/type.md) and `shape` is a tuple of integers.
 
-+ To declare a 0D scalar field, simply sets its shape to the empty tuple `()`.
++ To declare a 0D scalar field, set its shape to the empty tuple `()`.
 
     ```python
     # Declare a 0D scalar field whose data type is f32

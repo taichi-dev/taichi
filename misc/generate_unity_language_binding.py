@@ -165,7 +165,22 @@ def get_declr(x: EntryBase):
         c_function_param_perm = []
         function_param_perm = []
         for param in x.params:
-            if isinstance(param.type,
+            if isinstance(param.type, BuiltInType) and (param.type.id == "char") and (param.count is not None):
+                if param.by_mut:
+                    c_function_param_perm += [[
+                        f"  [MarshalAs(UnmanagedType.LPArray)] [In, Out] byte[] {param.name}"
+                    ]]
+                    function_param_perm += [[
+                        f"  byte[] {param.name}"
+                    ]]
+                else:
+                    c_function_param_perm += [[
+                        f"  [MarshalAs(UnmanagedType.LPArray)] byte[] {param.name}"
+                    ]]
+                    function_param_perm += [[
+                        f"  byte[] {param.name}"
+                    ]]
+            elif isinstance(param.type,
                           BuiltInType) and (param.type.id == "const void*"
                                             or param.type.id == "void*"):
                 perm = [

@@ -146,8 +146,7 @@ ModuleToFunctionConverter::ModuleToFunctionConverter(
     : tlctx_(tlctx), executor_(executor) {
 }
 
-FunctionType ModuleToFunctionConverter::convert(
-    const Kernel *kernel,
+FunctionType ModuleToFunctionConverter::convert(const Kernel *kernel,
                                                 LLVMCompiledData data) const {
   return convert(kernel->name, infer_launch_args(kernel), std::move(data));
 }

@@ -95,8 +95,8 @@ struct CacheCleanerUtils<LlvmOfflineCache> {
       const CacheCleanerConfig &config,
       const KernelMetaData &kernel_meta) {
     std::vector<std::string> result;
-    for (const auto &f : get_possible_llvm_cache_filename_by_key(
-             kernel_meta.kernel_key)) {
+    for (const auto &f :
+         get_possible_llvm_cache_filename_by_key(kernel_meta.kernel_key)) {
       result.push_back(f);
     }
     return result;
@@ -196,8 +196,7 @@ bool LlvmOfflineCacheFileReader::get_kernel_cache(
   auto &kernel_data = itr->second;
   auto &data = kernel_data.compiled_data;
   if (!data.module) {
-    std::string filename_prefix =
-        taichi::join_path(path_, key);
+    std::string filename_prefix = taichi::join_path(path_, key);
     data.module = load_module(filename_prefix, key, llvm_ctx);
     if (!data.module) {
       data_.kernels.erase(itr);
@@ -223,8 +222,7 @@ bool LlvmOfflineCacheFileReader::get_kernel_cache(
     }
   }
   if (!verified) {
-    for (const auto &f : get_possible_llvm_cache_filename_by_key(
-             key)) {
+    for (const auto &f : get_possible_llvm_cache_filename_by_key(key)) {
       taichi::remove(taichi::join_path(path_, f));
     }
   }
@@ -287,10 +285,9 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
       if (format & Format::LL) {
         std::string filename = filename_prefix + ".ll";
         if (try_lock_with_file(filename)) {  // Not exists
-          size +=
-              write_llvm_module(filename, [mod](llvm::raw_os_ostream &os) {
-                mod->print(os, /*AAW=*/nullptr);
-              });
+          size += write_llvm_module(filename, [mod](llvm::raw_os_ostream &os) {
+            mod->print(os, /*AAW=*/nullptr);
+          });
         } else {
           TI_DEBUG("Cache file {} exists", filename);
         }
@@ -298,10 +295,9 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
       if (format & Format::BC) {
         std::string filename = filename_prefix + ".bc";
         if (try_lock_with_file(filename)) {  // Not exists
-          size +=
-              write_llvm_module(filename, [mod](llvm::raw_os_ostream &os) {
-                llvm::WriteBitcodeToFile(*mod, os);
-              });
+          size += write_llvm_module(filename, [mod](llvm::raw_os_ostream &os) {
+            llvm::WriteBitcodeToFile(*mod, os);
+          });
         } else {
           TI_DEBUG("Cache file {} exists", filename);
         }

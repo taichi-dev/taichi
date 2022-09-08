@@ -209,6 +209,8 @@ void TaskCodeGenLLVM::emit_extra_unary(UnaryOpStmt *stmt) {
       llvm_val[stmt] = create_call(#x "_f64", input);                   \
     } else if (input_taichi_type->is_primitive(PrimitiveTypeID::i32)) { \
       llvm_val[stmt] = create_call(#x "_i32", input);                   \
+    } else if (input_taichi_type->is_primitive(PrimitiveTypeID::i64)) { \
+      llvm_val[stmt] = create_call(#x "_i64", input);                   \
     } else {                                                            \
       TI_NOT_IMPLEMENTED                                                \
     }                                                                   \

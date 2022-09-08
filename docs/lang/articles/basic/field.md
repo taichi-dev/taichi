@@ -119,7 +119,7 @@ Taichi only supports fields of dimensions <= 8.
 
 Once a field is declared, Taichi automatically assigns an initial value of zero to its elements. But we do not recommend using this undefined behavior.
 
-To access an element in a scalar field, you need to explicity use the indices of that element in the field.
+To access an element in a scalar field, you need to explicitly use the index of the element.
 
 :::note
 When accessing a 0D field `x`, use `x[None] = 0`, *not* `x = 0`.

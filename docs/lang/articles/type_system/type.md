@@ -195,7 +195,7 @@ vec4d = ti.types.vector(4, ti.f64)  # a 64-bit floating-point 4D vector type
 mat4x3i = ti.types.matrix(4, 3, int)  # a 4x3 integer matrix type
 ```
 
-You can use the customized types to instantiate vectors and matrices or annotate the data types of function arguments and struct members. For example:
+You can use these customized types to instantiate vectors and matrices or annotate the data types of function arguments and struct members. For example:
 
 ```python
 v = vec4d(1, 2, 3, 4)  # Create a vector instance, here v = [1.0 2.0 3.0 4.0]
@@ -213,17 +213,16 @@ In practice, `ti.types.matrix` only would suffice your need for vector/matrix cu
 
 In fact, calling the function `ti.types.vector()` produces a matrix type of a single column:
 
+```
+v = ti.types.vector(3, float)  # equivalent to v = ti.types.matrix(3, 1, float)
+```
+
 Similarly, `ti.Vector()` simply converts the input into a matrix of a single column:
 
 ```python
 v = ti.Vector([1, 1, 1]) # equivalent to v = ti.Matrix([[1], [1], [1]])
 ```
 
-Similarily, the type returned by the function call `ti.types.vector()` is nothing more than a matrix type except it always has only one column:
-
-```
-v = ti.types.vector(3, float)  # equivalent to v = ti.types.matrix(3, 1, float)
-```
 
 ### Struct types and dataclass
 

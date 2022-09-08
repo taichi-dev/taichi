@@ -220,7 +220,7 @@ v = ti.types.vector(3, float)  # equivalent to v = ti.types.matrix(3, 1, float)
 Similarly, `ti.Vector()` simply converts the input into a matrix of a single column:
 
 ```python
-v = ti.Vector([1, 1, 1]) # equivalent to v = ti.Matrix([[1], [1], [1]])
+v = ti.Vector([1, 1, 1])  # equivalent to v = ti.Matrix([[1], [1], [1]])
 ```
 
 

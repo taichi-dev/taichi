@@ -209,7 +209,9 @@ def test():
     print(length(v))
 ```
 
-### Relationship between `ti.Matrix/ti.Vector` and `ti.types.matrix/ti.types.vector`
+In practice, `ti.types.matrix` only would suffice your need for vector/matrix customization because Taichi treats vectors as a special kind of matrices, i.e., matrices with one column.
+
+In fact, calling the function `ti.types.vector()` produces a matrix type of a single column:
 
 Similarly, `ti.Vector()` simply converts the input into a matrix of a single column:
 

@@ -99,12 +99,12 @@
                 {
                     "name": "arch",
                     "type": "enumeration",
-                    "inc_cases": "archs"
+                    "inc_cases": "PER_ARCH"
                 },
                 {
                     "name": "data_type",
                     "type": "enumeration",
-                    "inc_cases": "data_type"
+                    "inc_cases": "PER_TYPE"
                 },
                 {
                     "name": "argument_type",
@@ -230,12 +230,12 @@
                 {
                     "name": "image_layout",
                     "type": "enumeration",
-                    "inc_cases": "image_layout"
+                    "inc_cases": "PER_IMAGE_LAYOUT"
                 },
                 {
                     "name": "format",
                     "type": "enumeration",
-                    "inc_cases": "buffer_format"
+                    "inc_cases": "PER_BUFFER_FORMAT"
                 },
                 {
                     "name": "image_offset",
@@ -331,12 +331,12 @@
                 {
                     "name": "filter",
                     "type": "enumeration",
-                    "inc_cases": "filter"
+                    "inc_cases": "PER_FILTER"
                 },
                 {
                     "name": "address_mode",
                     "type": "enumeration",
-                    "inc_cases": "address_mode"
+                    "inc_cases": "PER_ADDRESS_MODE"
                 },
                 {
                     "name": "sampler_create_info",

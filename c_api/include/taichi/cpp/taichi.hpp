@@ -692,7 +692,8 @@ class Runtime {
     allocate_info.extent = extent;
     allocate_info.mip_level_count = 1;
     allocate_info.format = format;
-    allocate_info.usage = TI_IMAGE_USAGE_STORAGE_BIT;
+    allocate_info.usage =
+        TI_IMAGE_USAGE_STORAGE_BIT | TI_IMAGE_USAGE_SAMPLED_BIT;
 
     Image image = allocate_image(allocate_info);
     TiTexture texture{};

@@ -120,7 +120,7 @@ typedef struct TiMemoryAllocateInfo {
   TiBool host_write;
   TiBool host_read;
   TiBool export_sharing;
-  TiMemoryUsageFlagBits usage;
+  TiMemoryUsageFlags usage;
 } TiMemoryAllocateInfo;
 
 // structure.memory_slice
@@ -250,7 +250,7 @@ typedef struct TiImageAllocateInfo {
   TiImageExtent extent;
   uint32_t mip_level_count;
   TiFormat format;
-  TiImageUsageFlagBits usage;
+  TiImageUsageFlags usage;
 } TiImageAllocateInfo;
 
 // structure.image_slice

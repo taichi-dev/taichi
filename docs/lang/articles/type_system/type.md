@@ -105,8 +105,8 @@ As mentioned at the beginning of this article, the type of a variable in the Tai
       a = 3.14
       x = int(a)    # 3
       y = float(a)  # 3.14
-      x1 = ti.i32(a)  # 3
-      y1 = ti.f64(a)  # 3.14
+      z = ti.i32(a)  # 3
+      w = ti.f64(a)  # 3.14
   ```
 
 ### Implicit typecasting

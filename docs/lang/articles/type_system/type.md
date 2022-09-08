@@ -274,7 +274,7 @@ For example:
       rd: vec3
       t: float
 
-  # the above definition is equivalent to
+  # the definition above is equivalent to
   #Ray = ti.types.struct(ro=vec3, rd=vec3, t=float)
 
   # use positional arguments to set struct members in order

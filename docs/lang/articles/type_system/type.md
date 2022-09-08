@@ -112,7 +112,7 @@ As mentioned at the beginning of this article, the type of a variable in the Tai
 
 ### Implicit typecasting
 
-Implicit typecasting occurs when you *accidentally* put or assign a value in a place where a different data type is expected.
+Implicit type casting occurs when you *accidentally* put or assign a value in a place where a different data type is expected.
 
 :::caution WARNING
 As a rule of thumb, implicit typecasting is a major source of bugs. And Taichi does *not* recommend resorting to this mechanism.
@@ -215,7 +215,7 @@ In practice, `ti.types.matrix` only would suffice your need for vector/matrix cu
 In fact, calling the function `ti.types.vector()` produces a matrix type of a single column:
 
 ```
-v = ti.types.vector(3, float)  # equivalent to v = ti.types.matrix(3, 1, float)
+vec3 = ti.types.vector(3, float)  # equivalent to vec3 = ti.types.matrix(3, 1, float)
 ```
 
 Similarly, `ti.Vector()` simply converts the input into a matrix of a single column:

@@ -125,55 +125,57 @@ To access an element in a scalar field, you need to explicity use the indices of
 When accessing a 0D field `x`, use `x[None] = 0`, *not* `x = 0`.
 :::
 
-To access the element in a 0D field:
++ To access the element in a 0D field, you are required to use the index `None` even though it has only one element:
 
-```python
-# For a 0D field, you are required to use the index None even though it has only one element
-f_0d[None] = 10.0
-```
+    ```python
+    f_0d[None] = 10.0
+    ```
 
-The value in `f_0d` will be like:
+    The value in `f_0d` will be like:
 
-```
-    ┌──────┐
-    │ 10.0 │
-    └──────┘
-    └──────┘
-  f_0d.shape=()
-```
+    ```
+        ┌──────┐
+        │ 10.0 │
+        └──────┘
+        └──────┘
+      f_0d.shape=()
+    ```
 
-To access the elements in a 1D field:
++ To access an element in a 1D field, you are required to use its index `i`, with `i` being an integer in the range `[0, f_1d.shape[0])`:
 
-```python
-for i in range(9):
-    f_1d[i] = i
-```
+    ```python
+    for i in range(9):
+        f_1d[i] = i
+    ```
 
-The elements in `f_1d` will be like:
+    The elements in `f_1d` will be like:
 
-```
-┌───┬───┬───┬───┬───┬───┬───┬───┬───┐
-│ 0 │ 1 │ 2 │ 3 │ 4 │ 5 │ 6 │ 7 │ 8 │
-└───┴───┴───┴───┴───┴───┴───┴───┴───┘
-```
+    ```
+    ┌───┬───┬───┬───┬───┬───┬───┬───┬───┐
+    │ 0 │ 1 │ 2 │ 3 │ 4 │ 5 │ 6 │ 7 │ 8 │
+    └───┴───┴───┴───┴───┴───┴───┴───┴───┘
+    ```
 
-To access the elements in a 2D field:
-```python
-for i, j in f_2d:
-    f_2d[i, j] = i
-```
++ To access an element in a 2D field, you are required to use its index `(i, j)`, which is a pair of integers with `i` in the range `[0, f_2d.shape[0] - 1)` and `j` in the range `[0, f_2d.shape[1] - 1)`:
 
-The elements in `f_2d` will be like:
+    ```python
+    for i, j in f_2d:
+        f_2d[i, j] = i
+    ```
 
-```
-┌───┬───┬───┬───┬───┬───┐
-│ 0 │ 0 │ 0 │ 0 │ 0 │ 0 │
-├───┼───┼───┼───┼───┼───┤
-│ 1 │ 1 │ 1 │ 1 │ 1 │ 1 │
-├───┼───┼───┼───┼───┼───┤
-│ 2 │ 2 │ 2 │ 2 │ 2 │ 2 │
-└───┴───┴───┴───┴───┴───┘
-```
+    The elements in `f_2d` will be like:
+
+    ```
+    ┌───┬───┬───┬───┬───┬───┐
+    │ 0 │ 0 │ 0 │ 0 │ 0 │ 0 │
+    ├───┼───┼───┼───┼───┼───┤
+    │ 1 │ 1 │ 1 │ 1 │ 1 │ 1 │
+    ├───┼───┼───┼───┼───┼───┤
+    │ 2 │ 2 │ 2 │ 2 │ 2 │ 2 │
+    └───┴───┴───┴───┴───┴───┘
+    ```
+    
++ similarily, an element in a n-dimensional field is indexed by a n-tuple of integers, and you will need n integers `(i, j, k, ...)` to access it.
 
 As mentioned above, you can use a 2D scalar field to represent a 2D grid of values. The following code snippet creates and displays a 640&times;480 image with randomly-generated gray scales:
 

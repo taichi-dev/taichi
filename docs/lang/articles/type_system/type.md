@@ -196,7 +196,7 @@ mat4x3i = ti.types.matrix(4, 3, int)  # a 4x3 integer matrix type
 You can directly call the customized vector/matrix type to instantiate vectors/matrices or use them as type hints in function arguments and struct members. For example:
 
 ```python
-v = vec4d(1, 2, 3, 4)  # Create a vector instance, here v = [1.0, 2.0 3.0 4.0]
+v = vec4d(1, 2, 3, 4)  # Create a vector instance, here v = [1.0 2.0 3.0 4.0]
 
 @ti.func
 def length(w: vec4d):  # vec4d as type hint

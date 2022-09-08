@@ -211,7 +211,7 @@ def test():
 
 ### Relationship between `ti.Matrix/ti.Vector` and `ti.types.matrix/ti.types.vector`
 
-In Taichi vectors are all matrices, except that they have only one column (hence are column vectors). The function call `ti.Vector()` simply converts the input into a matrix of a single column:
+Similarly, `ti.Vector()` simply converts the input into a matrix of a single column:
 
 ```python
 v = ti.Vector([1, 1, 1]) # equivalent to v = ti.Matrix([[1], [1], [1]])

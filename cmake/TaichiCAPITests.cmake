@@ -23,6 +23,8 @@ target_include_directories(${C_API_TESTS_NAME}
     ${PROJECT_SOURCE_DIR}
     ${PROJECT_SOURCE_DIR}/c_api/include
     ${PROJECT_SOURCE_DIR}/c_api/src
+    ${PROJECT_SOURCE_DIR}/external/Vulkan-Headers/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/external/glad/include
   )
 
 add_test(NAME ${C_API_TESTS_NAME} COMMAND ${C_API_TESTS_NAME})

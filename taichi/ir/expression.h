@@ -56,12 +56,6 @@ class Expression {
 
   virtual ~Expression() {
   }
-
-  void set_attribute(const std::string &key, const std::string &value) {
-    attributes[key] = value;
-  }
-
-  std::string get_attribute(const std::string &key) const;
 };
 
 class ExprGroup {

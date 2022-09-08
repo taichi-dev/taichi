@@ -22,10 +22,11 @@ class KernelCodeGenDX12 : public KernelCodeGen {
   };
   CompileResult compile();
 #ifdef TI_WITH_LLVM
-  LLVMCompiledData modulegen(std::unique_ptr<llvm::Module> &&module = nullptr,
-                             OffloadedStmt *stmt = nullptr) override;
+  LLVMCompiledData compile_task(
+      std::unique_ptr<llvm::Module> &&module = nullptr,
+      OffloadedStmt *stmt = nullptr) override;
 #endif
-  FunctionType codegen() override;
+  FunctionType compile_to_function() override;
 };
 
 TLANG_NAMESPACE_END

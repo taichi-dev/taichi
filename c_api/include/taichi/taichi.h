@@ -8,3 +8,7 @@
 #define VK_NO_PROTOTYPES 1
 #include "taichi/taichi_vulkan.h"
 #endif  // TI_WITH_VULKAN
+
+#if TI_WITH_OPENGL
+#include "taichi/taichi_opengl.h"
+#endif

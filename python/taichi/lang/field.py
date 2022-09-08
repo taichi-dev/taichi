@@ -6,17 +6,17 @@ from taichi.lang.util import (in_python_scope, python_scope, to_numpy_type,
 
 
 class Field:
-    """Taichi field with SNode implementation.
+    """Taichi field class.
 
     A field is constructed by a list of field members.
     For example, a scalar field has 1 field member, while a 3x3 matrix field has 9 field members.
-    A field member is a Python Expr wrapping a C++ GlobalVariableExpression.
-    A C++ GlobalVariableExpression wraps the corresponding SNode.
+    A field member is a Python Expr wrapping a C++ FieldExpression.
 
     Args:
         vars (List[Expr]): Field members.
     """
     def __init__(self, _vars):
+        assert all(_vars)
         self.vars = _vars
         self.host_accessors = None
         self.grad = None
@@ -87,12 +87,12 @@ class Field:
         return self.vars
 
     def _loop_range(self):
-        """Gets representative field member for loop range info.
+        """Gets SNode of representative field member for loop range info.
 
         Returns:
-            taichi_python.Expr: Representative (first) field member.
+            taichi_python.SNode: SNode of representative (first) field member.
         """
-        return self.vars[0].ptr
+        return self.vars[0].ptr.snode()
 
     def _set_grad(self, grad):
         """Sets corresponding grad field (reverse mode).

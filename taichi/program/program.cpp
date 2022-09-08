@@ -344,7 +344,7 @@ Kernel &Program::get_snode_reader(SNode *snode) {
       indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
     }
     auto ret = Stmt::make<FrontendReturnStmt>(
-        ExprGroup(Expr(snode_to_glb_var_exprs_.at(snode))[indices]));
+        ExprGroup(Expr(snode_to_fields_.at(snode))[indices]));
     this->current_ast_builder()->insert(std::move(ret));
   });
   ker.set_arch(get_accessor_arch());
@@ -364,7 +364,7 @@ Kernel &Program::get_snode_writer(SNode *snode) {
     for (int i = 0; i < snode->num_active_indices; i++) {
       indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
     }
-    auto expr = Expr(snode_to_glb_var_exprs_.at(snode))[indices];
+    auto expr = Expr(snode_to_fields_.at(snode))[indices];
     this->current_ast_builder()->insert_assignment(
         expr,
         Expr::make<ArgLoadExpression>(snode->num_active_indices,

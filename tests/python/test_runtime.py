@@ -41,7 +41,7 @@ def patch_os_environ_helper(custom_environ: dict, excludes: dict):
         environ[key] = custom_environ[key]
     try:
         cached_environ = os.environ
-        os.environ = custom_environ
+        os.environ = environ
         yield os.environ
     finally:
         os.environ = cached_environ

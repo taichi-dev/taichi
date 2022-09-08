@@ -45,7 +45,7 @@ class CPUModuleToFunctionConverter : public ModuleToFunctionConverter {
 
   FunctionType convert(const std::string &kernel_name,
                        const std::vector<LlvmLaunchArgInfo> &args,
-                       std::vector<LLVMCompiledData> &&data) const override;
+                       LLVMCompiledData data) const override;
 };
 
 #endif

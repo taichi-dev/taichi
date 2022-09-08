@@ -133,7 +133,7 @@ global_op_reduction = CuptiMetric(
 
 # Hardware Utilization Metrics
 sm_throughput = CuptiMetric(
-    name='sm__throughput.avg.pct_of_peak_sustained_elapsed',
+    name='smsp__cycles_active.avg.pct_of_peak_sustained_elapsed',
     header=' core.uti ',
     val_format=' {:6.2f} % ')
 

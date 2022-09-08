@@ -292,7 +292,7 @@ void StructCompilerLLVM::run(SNode &root) {
   auto node_type = get_llvm_node_type(module.get(), &root);
   root_size = tlctx_->get_type_size(node_type);
 
-  tlctx_->set_struct_module(module);
+  tlctx_->add_struct_module(std::move(module), root.get_snode_tree_id());
 }
 
 llvm::Type *StructCompilerLLVM::get_stub(llvm::Module *module,
@@ -336,7 +336,6 @@ llvm::Type *StructCompilerLLVM::get_llvm_element_type(llvm::Module *module,
 
 llvm::Function *StructCompilerLLVM::create_function(llvm::FunctionType *ft,
                                                     std::string func_name) {
-  tlctx_->add_function_to_snode_tree(snode_tree_id_, func_name);
   return llvm::Function::Create(ft, llvm::Function::ExternalLinkage, func_name,
                                 *module);
 }

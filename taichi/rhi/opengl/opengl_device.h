@@ -121,7 +121,6 @@ class GLCommandList : public CommandList {
                         bool depth_clear) override;
   void end_renderpass() override;
   void draw(uint32_t num_verticies, uint32_t start_vertex = 0) override;
-  void clear_color(float r, float g, float b, float a) override;
   void set_line_width(float width) override;
   void draw_indexed(uint32_t num_indicies,
                     uint32_t start_vertex = 0,
@@ -245,6 +244,8 @@ class GLDevice : public GraphicsDevice {
 
   DeviceAllocation allocate_memory(const AllocParams &params) override;
   void dealloc_memory(DeviceAllocation handle) override;
+
+  GLint get_devalloc_size(DeviceAllocation handle);
 
   std::unique_ptr<Pipeline> create_pipeline(
       const PipelineSourceDesc &src,

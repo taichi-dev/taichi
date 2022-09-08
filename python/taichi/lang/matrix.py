@@ -1181,14 +1181,13 @@ class Matrix(TaichiOperations):
                                              needs_dual=needs_dual))
         entries, entries_grad, entries_dual = zip(*entries)
 
-        entries, entries_grad, entries_dual = MatrixField(
-            entries, n, m, element_dim), MatrixField(entries_grad, n, m,
-                                                     element_dim), MatrixField(
-                                                         entries_grad, n, m,
-                                                         element_dim)
-
-        entries._set_grad(entries_grad)
-        entries._set_dual(entries_dual)
+        entries = MatrixField(entries, n, m, element_dim)
+        if all(entries_grad):
+            entries_grad = MatrixField(entries_grad, n, m, element_dim)
+            entries._set_grad(entries_grad)
+        if all(entries_dual):
+            entries_dual = MatrixField(entries_dual, n, m, element_dim)
+            entries._set_dual(entries_dual)
 
         impl.get_runtime().matrix_fields.append(entries)
 

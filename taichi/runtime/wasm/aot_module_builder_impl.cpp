@@ -4,6 +4,7 @@
 #include <fstream>
 
 #include "taichi/util/file_sequence_writer.h"
+#include "llvm/Linker/Linker.h"
 
 namespace taichi {
 namespace lang {
@@ -36,11 +37,13 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir,
 void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
                                            Kernel *kernel) {
   auto module_info =
-      KernelCodeGenWASM(kernel, nullptr).compile_task(std::move(module_));
-  module_ = std::move(module_info.module);
-
-  for (auto &task : module_info.tasks)
-    name_list_.push_back(task.name);
+      KernelCodeGenWASM(kernel, nullptr).compile_kernel_to_module();
+  if (module_) {
+    llvm::Linker::linkModules(*module_, std::move(module_info.module),
+                              llvm::Linker::OverrideFromSrc);
+  } else {
+    module_ = std::move(module_info.module);
+  }
 }
 
 void AotModuleBuilderImpl::add_field_per_backend(const std::string &identifier,

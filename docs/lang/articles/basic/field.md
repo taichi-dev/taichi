@@ -175,7 +175,7 @@ When accessing a 0D field `x`, use `x[None] = 0`, *not* `x = 0`.
     └───┴───┴───┴───┴───┴───┘
     ```
     
-+ Similarily, an element in a n-dimensional field is indexed by a n-tuple of integers, and you will need n integers `(i, j, k, ...)` to access it.
++ Similarily, an element in an `n`-dimensional field is indexed by a `n`-tuple of integers, and you will need `n` integers `(i, j, k, ...)` to access it.
 
 As mentioned above, you can use a 2D scalar field to represent a 2D grid of values. The following code snippet creates and displays a 640&times;480 image with randomly-generated gray scales:
 

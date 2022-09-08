@@ -14,7 +14,7 @@ Let's see a quick example:
 @ti.kernel
 def test():
     x = 1  # x is the integer 1
-    x = 3.14  # 3.14 is casted to 3; hence, x takes the value 3
+    x = 3.14  # 3.14 is cast to 3 since x is an integer, so x takes the value 3
     x = ti.Vector([1, 1])  # Error!
 ```
 

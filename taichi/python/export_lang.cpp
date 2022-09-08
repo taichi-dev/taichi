@@ -967,9 +967,6 @@ void export_lang(py::module &m) {
           return idx_expr;
         });
 
-  m.def("make_index_expr", Expr::make<IndexExpression, const Expr &,
-                                      const ExprGroup &, std::string>);
-
   m.def("make_stride_expr",
         Expr::make<StrideExpression, const Expr &, const ExprGroup &,
                    const std::vector<int> &, int>);

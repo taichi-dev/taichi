@@ -217,7 +217,7 @@ Or you may want to access a slice of the first row:
 f_2d[0][3:] = [4, 5, 6]  # Error!
 ```
 
-Both of these will raise the error "Slicing is not supported on ti.field".
+Either way, you will see the error raised: "Slicing is not supported on ti.field".
 
 :::
 

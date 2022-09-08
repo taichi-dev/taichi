@@ -427,7 +427,7 @@ particle_field = ti.Struct.field({
   }, shape=(n,))
 ```
 
-Alternatively, besides *directly* using `ti.Struct.field()`, you can first declare a compound type `particle` and then create a field of it:
+Alternatively, instead of *directly* using `ti.Struct.field()`, you can first declare a compound type `particle` and then create a field of it:
 
 ```python
 # vec3 is a built-in vector type suppied in the `taichi.math` module

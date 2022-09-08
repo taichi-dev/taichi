@@ -62,7 +62,7 @@ ti.init(default_ip=ti.i64)  # Set the default integer type to ti.i64
 ti.init(default_fp=ti.f64)  # Set the default floating-point type to ti.f64
 ```
 
-It should be noted that the numeric literals in the Taichi scope also have default integer/floating-point types. For example, if the default floating-point type is `ti.f32`, then a numeric literal `3.14159265358979` in the Taichi scope will be cast into a 32-bit floating-point number, hence a precision of about seven decimal digits.
+It should be noted that the numeric literals in the Taichi scope also have default integer/floating-point types. For example, if the default floating-point type is `ti.f32`, then a numeric literal `3.14159265358979` in the Taichi scope will be cast into a 32-bit floating-point number, hence only accurate up to about seven decimal places.
 
 ### Use `int` and `float` as aliases for default primitive types
 

@@ -38,7 +38,7 @@ The simplest way to declare a scalar field is to call `ti.field(dtype, shape)`, 
      f_0d.shape=()
     ```
 
-+ To declare a 1D scalar field of length `n`, you can set its shape to `n` or `(n,)`:
++ To declare a 1D scalar field of length `n`, set its shape to `n` or `(n,)`:
 
     ```python
     f_1d = ti.field(ti.i32, shape=9)  # 1D field

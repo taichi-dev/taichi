@@ -52,7 +52,7 @@ This section generalizes and simplifies the models involved in the cloth simulat
 
 #### Cloth: a mass-spring system
 
-In this program, the falling cloth is modeled as a mass-spring system. More specifically, we represent the piece of cloth as a n &times; n grid of mass points, where adjacent points are linked by springs. The following image provided by [Matthew Fisher](https://graphics.stanford.edu/~mdfisher/contact.html) illustrates this structure, where the red vertices are the mass points and the white edges of the grids are the springs.
+In this program, the falling cloth is modeled as a mass-spring system. More specifically, we represent the piece of cloth as an n &times; n grid of mass points, where adjacent points are linked by springs. The following image provided by [Matthew Fisher](https://graphics.stanford.edu/~mdfisher/contact.html) illustrates this structure, where the red vertices are the mass points and the white edges of the grids are the springs.
 
 ![mass-spring](https://user-images.githubusercontent.com/106292061/188807241-6a5d0e2b-7e4a-4b9f-8853-76b9794bdb7b.png)
 

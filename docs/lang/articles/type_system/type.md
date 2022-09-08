@@ -255,6 +255,9 @@ The code above serves the same purpose as the line below does but provides bette
 Sphere = ti.types.struct(center=vec3, radius=float)
 ```
 
+Another advantage of using `@ti.dataclass` over `ti.types.struct` is that you can define member functions in a dataclass and call them in the Taichi scope, make them very handy for OOP programming. See the article [objective data-oriented programming](../advanced/odop.md) for more detail.
+
+
 ### Initialization
 
 Just as you do with any other data type, you can call a compound type directly to create vector, matrix, or struct instances in Taichi.

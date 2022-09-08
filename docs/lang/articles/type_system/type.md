@@ -209,6 +209,20 @@ def test():
     print(length(v))
 ```
 
+### Relationship between `ti.Matrix/ti.Vector` and `ti.types.matrix/ti.types.vector`
+
+In Taichi vectors are all matrices, except that they have only one column (hence are column vectors). The function call `ti.Vector()` simply converts the input into a matrix of a single column:
+
+```python
+v = ti.Vector([1, 1, 1]) # equivalent to v = ti.Matrix([[1], [1], [1]])
+```
+
+Similarily, the type returned by the function call `ti.types.vector()` is nothing more than a matrix type except it always has only one column:
+
+```
+v = ti.types.vector(3, float)  # equivalent to v = ti.types.matrix(3, 1, float)
+```
+
 ### Struct types and dataclass
 
 You can use the function `ti.types.struct()` to create a struct type, and use this type as a template to create struct instances. For example, suppose you want to represent a sphere in Taichi. A 3D sphere can be abstracted with its center and radius. You can call `ti.types.vector()` and `ti.types.struct()` to create compound types `vec3` and `sphere_type`, respectively. These two types are the *higher-level* compound types that fit better with your scenario. Then, you can use them as templates to create two instances of spheres (initialize two local variables `sphere1` and `sphere2`):

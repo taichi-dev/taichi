@@ -164,7 +164,7 @@ When you assign a value to a variable of a different data type, Taichi implicitl
       print(a)  # 1.0
   ```
 
-- Example 2: Variable `a` is initialized with type `int` and immediately reassigned `3.14`. The reassignment implicitly casts `3.14` from `float` to `int` with a warning because the type of `a` is `int` and has a low precision than `float`:
+- Example 2: Variable `a` is initialized with type `int` and immediately reassigned `3.14`. The reassignment implicitly casts `3.14` from `float` to `int` with a warning because the type of `a` is `int` and has a lower precision than `float`:
 
   ```python
   @ti.kernel

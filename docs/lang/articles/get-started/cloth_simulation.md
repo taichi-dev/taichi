@@ -116,7 +116,7 @@ def initialize_mass_points():
     # Field x stores the mass points' positions
     for i, j in x:
         # The piece of cloth is 0.6 (y-axis) above the original point
-        # 
+        #
         # By taking away 0.5 from each mass point's [x,z] coordinate value
         # you move the cloth right above the original point
         x[i, j] = [
@@ -124,7 +124,7 @@ def initialize_mass_points():
             j * quad_size - 0.5 + random_offset[1]
         ]
         # The initial velocity of each mass point is set to 0
-        v[i, j] = [0, 0, 0] 
+        v[i, j] = [0, 0, 0]
 ```
 
 #### Data structures for ball

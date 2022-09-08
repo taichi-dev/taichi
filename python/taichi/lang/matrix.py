@@ -467,7 +467,7 @@ class Matrix(TaichiOperations):
 
         if ndim is not None:
             # override ndim after reading data from mat
-            assert ndim in (1, 2)
+            assert ndim in (0, 1, 2)
             self.ndim = ndim
 
         if self.n * self.m > 32 and not suppress_warning:
@@ -1535,7 +1535,7 @@ class MatrixField(Field):
     """
     def __init__(self, _vars, n, m, ndim=2):
         assert len(_vars) == n * m
-        assert ndim in (1, 2)
+        assert ndim in (0, 1, 2)
         super().__init__(_vars)
         self.n = n
         self.m = m

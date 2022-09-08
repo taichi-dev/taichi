@@ -44,7 +44,6 @@ Before using Taichi in your Python program, you need to import Taichi to your na
 This section does the following:
 
 - Generalizes and simplifies the models involved in the cloth simulation.
-
 - Represents the falling cloth and the ball with the [data containers](../basic/field.md) provided by Taichi.
 
 ### Model simplification
@@ -187,7 +186,7 @@ As the image below shows, we make the following assumptions:
 The internal forces here broadly refer to the internal force caused by the elastic deformation of springs and the damping caused by the relative movement of two points.
 :::
 
-<img width="499" alt="1 (1)" src="https://user-images.githubusercontent.com/106292061/188809645-43ee235f-02d4-4302-8a77-e8c66cfae6a7.png">
+![spring system](https://user-images.githubusercontent.com/106292061/188809645-43ee235f-02d4-4302-8a77-e8c66cfae6a7.png)
 
 The code below does the following:
 

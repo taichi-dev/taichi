@@ -1728,13 +1728,12 @@ void VulkanStream::command_sync() {
       continue;
     }
 
-    uint64_t t[2];
-
     double duration_us = 0.0;
 
 // Workaround for MacOS 10.15 with x86_64 arch:
 // https://github.com/taichi-dev/taichi/issues/5888
 #if defined(__APPLE__) && defined(__x86_64__)
+    uint64_t t[2];
     vkGetQueryPoolResults(device_.vk_device(), cmdbuf.query_pool->query_pool, 0,
                           2, sizeof(uint64_t) * 2, &t, sizeof(uint64_t),
                           VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);

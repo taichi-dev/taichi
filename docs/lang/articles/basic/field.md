@@ -295,7 +295,7 @@ Accessing a vector field is similar to accessing a multi-dimensional array: You 
 
   `volumetric_field[i, j, k][l]`
 
-- If the vectors in the field have dimension <=4, then you can also use vector swizzling indices `xyzw` or `rgba` to access the components of the vectors:
+- Alternatively, you can use swizzling with the indices `xyzw` or `rgba` to access the components of a vector, provided that the vector has no more than four dimensions:
 
   ```python
   volumetric_field[i, j, k].x = 1  # equivalent to volumetric_field[i, j, k][0] = 1

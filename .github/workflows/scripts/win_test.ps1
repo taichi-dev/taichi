@@ -3,7 +3,6 @@ $ErrorActionPreference = "Stop"
 $env:PYTHONUNBUFFERED = 1
 $env:TI_CI = 1
 $env:TI_OFFLINE_CACHE_FILE_PATH = Join-Path -Path $pwd -ChildPath ".cache\taichi"
-ls $env:TI_OFFLINE_CACHE_FILE_PATH
 
 . venv\Scripts\activate.ps1
 python -c "import taichi"

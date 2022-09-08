@@ -2647,7 +2647,7 @@ void TaskCodeGenLLVM::emit_to_module() {
   ir->accept(this);
 }
 
-LLVMCompiledData TaskCodeGenLLVM::run_compilation() {
+LLVMCompiledTask TaskCodeGenLLVM::run_compilation() {
   // Final lowering
 
   auto config = kernel->program->config;
@@ -2732,9 +2732,14 @@ void TaskCodeGenLLVM::visit(FuncCallStmt *stmt) {
   }
 }
 
-LLVMCompiledData LLVMCompiledData::clone() const {
+LLVMCompiledTask LLVMCompiledTask::clone() const {
   return {tasks, llvm::CloneModule(*module), used_tree_ids,
           struct_for_tls_sizes};
+}
+
+LLVMCompiledKernel LLVMCompiledKernel::clone()
+    const {
+  return {tasks, llvm::CloneModule(*module)};
 }
 
 TLANG_NAMESPACE_END

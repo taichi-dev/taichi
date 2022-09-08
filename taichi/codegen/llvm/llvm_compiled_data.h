@@ -21,15 +21,15 @@ class OffloadedTask {
   TI_IO_DEF(name, block_dim, grid_dim);
 };
 
-struct LLVMCompiledData {
+struct LLVMCompiledTask {
   std::vector<OffloadedTask> tasks;
   std::unique_ptr<llvm::Module> module{nullptr};
   std::unordered_set<int> used_tree_ids;
   std::unordered_set<int> struct_for_tls_sizes;
-  LLVMCompiledData() = default;
-  LLVMCompiledData(LLVMCompiledData &&) = default;
-  LLVMCompiledData &operator=(LLVMCompiledData &&) = default;
-  LLVMCompiledData(std::vector<OffloadedTask> tasks,
+  LLVMCompiledTask() = default;
+  LLVMCompiledTask(LLVMCompiledTask &&) = default;
+  LLVMCompiledTask &operator=(LLVMCompiledTask &&) = default;
+  LLVMCompiledTask(std::vector<OffloadedTask> tasks,
                    std::unique_ptr<llvm::Module> module,
                    std::unordered_set<int> used_tree_ids,
                    std::unordered_set<int> struct_for_tls_sizes)
@@ -38,7 +38,22 @@ struct LLVMCompiledData {
         used_tree_ids(std::move(used_tree_ids)),
         struct_for_tls_sizes(std::move(struct_for_tls_sizes)) {
   }
-  LLVMCompiledData clone() const;
+  LLVMCompiledTask clone() const;
+  TI_IO_DEF(tasks);
+};
+
+struct LLVMCompiledKernel {
+  std::vector<OffloadedTask> tasks;
+  std::unique_ptr<llvm::Module> module{nullptr};
+  LLVMCompiledKernel() = default;
+  LLVMCompiledKernel(LLVMCompiledKernel &&) = default;
+  LLVMCompiledKernel &operator=(LLVMCompiledKernel &&) = default;
+  LLVMCompiledKernel(std::vector<OffloadedTask> tasks,
+                   std::unique_ptr<llvm::Module> module)
+      : tasks(std::move(tasks)),
+        module(std::move(module)) {
+  }
+  LLVMCompiledKernel clone() const;
   TI_IO_DEF(tasks);
 };
 

@@ -694,7 +694,7 @@ std::unique_ptr<TaskCodeGenLLVM> KernelCodeGenCUDA::make_codegen_llvm(
 }
 #endif  // TI_WITH_LLVM
 
-LLVMCompiledData KernelCodeGenCUDA::compile_task(
+LLVMCompiledTask KernelCodeGenCUDA::compile_task(
     std::unique_ptr<llvm::Module> &&module,
     OffloadedStmt *stmt) {
   TaskCodeGenCUDA gen(kernel, stmt);
@@ -706,17 +706,16 @@ FunctionType KernelCodeGenCUDA::compile_to_function() {
   auto *llvm_prog = get_llvm_program(prog);
   auto *tlctx = llvm_prog->get_llvm_context(kernel->arch);
 
-  LLVMCompiledData data = compile_kernel_to_module();
   CUDAModuleToFunctionConverter converter{tlctx,
                                           llvm_prog->get_runtime_executor()};
 
-  return converter.convert(this->kernel, std::move(data));
+  return converter.convert(this->kernel, compile_kernel_to_module());
 }
 
 FunctionType CUDAModuleToFunctionConverter::convert(
     const std::string &kernel_name,
     const std::vector<LlvmLaunchArgInfo> &args,
-    LLVMCompiledData data) const {
+    LLVMCompiledKernel data) const {
   auto &mod = data.module;
   auto &tasks = data.tasks;
 #ifdef TI_WITH_CUDA

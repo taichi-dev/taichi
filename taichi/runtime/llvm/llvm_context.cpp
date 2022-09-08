@@ -889,9 +889,9 @@ TaichiLLVMContext::ThreadLocalData::~ThreadLocalData() {
   thread_safe_llvm_context.reset();
 }
 
-LLVMCompiledData TaichiLLVMContext::link_compiled_tasks(
-    std::vector<std::unique_ptr<LLVMCompiledData>> data_list) {
-  LLVMCompiledData linked;
+LLVMCompiledKernel TaichiLLVMContext::link_compiled_tasks(
+    std::vector<std::unique_ptr<LLVMCompiledTask>> data_list) {
+  LLVMCompiledKernel linked;
   std::unordered_set<int> used_tree_ids;
   std::unordered_set<int> tls_sizes;
   std::unordered_set<std::string> offloaded_names;

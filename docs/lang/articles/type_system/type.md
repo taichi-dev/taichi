@@ -6,7 +6,7 @@ sidebar_position: 1
 # Type system
 
 
-Taichi is a statically typed programming language. The type of a variable in the Taichi scope is determined at compile time. Once a variable is declared, you cannot bind its name to a value of a different type afterward.
+Taichi is a statically typed programming language. The type of a variable in the Taichi scope is determined at compile time. After a variable is declared, you cannot assign to it a value of a different type.
 
 Let's see a quick example:
 

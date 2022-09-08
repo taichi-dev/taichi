@@ -65,6 +65,10 @@ static inline Ti_f64 Ti_rsqrt(Ti_f64 x) {
   return 1 / sqrt(x);
 }
 
+static inline Ti_i64 Ti_llabs(Ti_i64 x) {
+  return x >= 0 ? x : -x;
+}
+
 ) "\n" STR(
 
 static inline Ti_i32 Ti_rand_i32(void) {

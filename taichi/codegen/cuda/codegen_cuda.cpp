@@ -148,6 +148,8 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
         llvm_val[stmt] = create_call("__nv_fabs", input);
       } else if (input_taichi_type->is_primitive(PrimitiveTypeID::i32)) {
         llvm_val[stmt] = create_call("__nv_abs", input);
+      } else if (input_taichi_type->is_primitive(PrimitiveTypeID::i64)) {
+        llvm_val[stmt] = create_call("__nv_llabs", input);
       } else {
         TI_NOT_IMPLEMENTED
       }

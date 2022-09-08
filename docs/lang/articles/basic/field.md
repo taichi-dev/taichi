@@ -302,7 +302,7 @@ Accessing a vector field is similar to accessing a multi-dimensional array: You 
   volumetric_field[i, j, k].y = 2  # equivalent to volumetric_field[i, j, k][1] = 2
   volumetric_field[i, j, k].z = 3  # equivalent to volumetric_field[i, j, k][2] = 3
   volumetric_field[i, j, k].w = 4  # equivalent to volumetric_field[i, j, k][3] = 4
-  volumetric_field[i, j, k].xyz = 1, 2, 3  # assgin 1, 2, 3 to the first three components
+  volumetric_field[i, j, k].xyz = 1, 2, 3  # assign 1, 2, 3 to the first three components
   volumetric_field[i, j, k].rgb = 1, 2, 3  # equivalent to the above
   ```
 

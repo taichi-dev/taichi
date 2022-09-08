@@ -246,7 +246,7 @@ f_3d.dtype  # f32
 
 ## Vector fields
 
-As the name suggests, vector fields are the fields whose elements are vectors. Depending on the actual meaning of the field in your scenario, each vector may represent the (R, G, B) triple of a pixel, the position of a particle, or the gravitational field in space.
+As the name suggests, vector fields are the fields whose elements are vectors. What a vector represents depends on the scenario of your program. For example, a vector may stand for the (R, G, B) triple of a pixel, the position of a particle, or the gravitational field in space.
 
 ### Declaration
 

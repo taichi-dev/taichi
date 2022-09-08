@@ -451,7 +451,7 @@ You can access a member of an element in a struct field in either of the followi
 particle_field[0].pos = vec3(0) # pos is a 3D vector
 ```
 
-+ By the name-to-index way, as shown in the code below, you first access the field which gathers all the `mass` members in the struct field, and then use the index to access a specific one:
+The name-first approach, in contrast, first creates the sub-field that gathers all the `mass` members in the struct field and then uses the index to access a specific one:
 
 ```python
 particle_field.mass[0] = 1.0  # Set the mass of the first particle in the field to 1.0

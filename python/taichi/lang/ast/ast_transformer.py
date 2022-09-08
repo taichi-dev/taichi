@@ -536,7 +536,9 @@ class ASTTransformer(Builder):
                 kernel_arguments.decl_ret(ctx.func.return_type)
 
             for i, arg in enumerate(args.args):
-                ctx.kernel_args.append(arg.arg)
+                if not isinstance(ctx.func.arguments[i].annotation,
+                                  primitive_types.RefType):
+                    ctx.kernel_args.append(arg.arg)
                 if isinstance(ctx.func.arguments[i].annotation,
                               annotations.template):
                     ctx.create_variable(arg.arg, ctx.global_vars[arg.arg])
@@ -737,7 +739,8 @@ class ASTTransformer(Builder):
     def build_AugAssign(ctx, node):
         build_stmt(ctx, node.target)
         build_stmt(ctx, node.value)
-        if isinstance(node.target, ast.Name) and node.target.id in ctx.kernel_args:
+        if isinstance(node.target,
+                      ast.Name) and node.target.id in ctx.kernel_args:
             raise TaichiSyntaxError(
                 f"Kernel argument \"{node.target.id}\" is immutable in the kernel. "
                 f"If you want to change its value, please create a new variable."

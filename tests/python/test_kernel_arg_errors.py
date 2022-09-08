@@ -24,7 +24,9 @@ def test_argument_redefinition():
     def foo(a: ti.i32):
         a = 1
 
-    with pytest.raises(ti.TaichiSyntaxError, match="Kernel argument \"a\" is immutable in the kernel") as e:
+    with pytest.raises(
+            ti.TaichiSyntaxError,
+            match="Kernel argument \"a\" is immutable in the kernel") as e:
         foo(5)
 
 
@@ -34,7 +36,9 @@ def test_argument_augassign():
     def foo(a: ti.i32):
         a += 1
 
-    with pytest.raises(ti.TaichiSyntaxError, match="Kernel argument \"a\" is immutable in the kernel") as e:
+    with pytest.raises(
+            ti.TaichiSyntaxError,
+            match="Kernel argument \"a\" is immutable in the kernel") as e:
         foo(5)
 
 
@@ -44,5 +48,7 @@ def test_argument_annassign():
     def foo(a: ti.i32):
         a: ti.i32 = 1
 
-    with pytest.raises(ti.TaichiSyntaxError, match="Kernel argument \"a\" is immutable in the kernel") as e:
+    with pytest.raises(
+            ti.TaichiSyntaxError,
+            match="Kernel argument \"a\" is immutable in the kernel") as e:
         foo(5)

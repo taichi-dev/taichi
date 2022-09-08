@@ -986,16 +986,6 @@ def test_raise():
 
 
 @test_utils.test()
-def test_scalar_argument():
-    @ti.kernel
-    def add(a: ti.f32, b: ti.f32) -> ti.f32:
-        a = a + b
-        return a
-
-    assert add(1.0, 2.0) == test_utils.approx(3.0)
-
-
-@test_utils.test()
 def test_default_template_args_on_func():
     @ti.func
     def bar(a: ti.template() = 123):

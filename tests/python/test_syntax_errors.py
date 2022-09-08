@@ -282,9 +282,7 @@ def test_redefining_template_args():
 
     with pytest.raises(
             ti.TaichiSyntaxError,
-            match=
-            "Kernel argument \"a\" is immutable in the kernel"
-    ):
+            match="Kernel argument \"a\" is immutable in the kernel"):
         foo(1)
 
 

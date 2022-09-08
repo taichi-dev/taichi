@@ -444,7 +444,7 @@ particle_field = particle.field(shape=(n,))
 
 You can access a member of an element in a struct field in either of the following ways: "index-first"  or "name-first".
 
-+ By the index-to-name way, you first access the struct by its index in the field, and then access the member by its name in the struct:
++ The index-first approach locates a certain element with its index before specifying the name of the target member:
 
 ```python
 # Set the position of the first particle in the field to origin [0.0, 0.0, 0.0]

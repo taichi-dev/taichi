@@ -118,6 +118,59 @@ class Scalarize : public IRVisitor {
     }
   }
 
+  /*
+
+    Before:
+      TensorType<4 x i32> val = LoadStmt(TensorType<4 x i32>* src)
+
+    After:
+      i32* addr0 = PtrOffsetStmt(TensorType<4 x i32>* src, 0)
+      i32* addr1 = PtrOffsetStmt(TensorType<4 x i32>* src, 1)
+      i32* addr2 = PtrOffsetStmt(TensorType<4 x i32>* src, 2)
+      i32* addr3 = PtrOffsetStmt(TensorType<4 x i32>* src, 3)
+
+      i32 val0 = LoadStmt(addr0)
+      i32 val1 = LoadStmt(addr1)
+      i32 val2 = LoadStmt(addr2)
+      i32 val3 = LoadStmt(addr3)
+
+      tmp = MatrixInitStmt(val0, val1, val2, val3)
+
+      stmt->replace_all_usages_with(tmp)
+  */
+  template <typename T>
+  void scalarize_load_stmt(T *stmt) {
+    auto src_dtype = stmt->src->ret_type.ptr_removed();
+    if (src_dtype->template is<TensorType>()) {
+      // Needs scalarize
+      auto src_tensor_type = src_dtype->template as<TensorType>();
+
+      std::vector<Stmt *> matrix_init_values;
+      int num_elements = src_tensor_type->get_num_elements();
+      for (size_t i = 0; i < num_elements; i++) {
+        auto const_stmt = std::make_unique<ConstStmt>(
+            TypedConstant(stmt->val->ret_type.get_element_type(), i));
+
+        auto ptr_offset_stmt =
+            std::make_unique<PtrOffsetStmt>(stmt->dest, const_stmt.get());
+        auto scalarized_stmt = std::make_unique<T>(ptr_offset_stmt.get());
+
+        matrix_init_values.push_back(scalarized_stmt.get());
+
+        stmt->insert_before_me(std::move(const_stmt));
+        stmt->insert_before_me(std::move(ptr_offset_stmt));
+        stmt->insert_before_me(std::move(scalarized_stmt));
+      }
+
+      auto matrix_init_stmt =
+          std::make_unique<MatrixInitStmt>(matrix_init_values);
+      stmt->replace_all_usages_with(matrix_init_stmt.get());
+      stmt->insert_before_me(std::move(matrix_init_stmt));
+
+      stmt->parent->erase(stmt);
+    }
+  }
+
   void visit(Block *stmt_list) override {
     for (auto &stmt : stmt_list->statements) {
       stmt->accept(this);
@@ -158,6 +211,12 @@ class Scalarize : public IRVisitor {
 
   void visit(LocalStoreStmt *stmt) override {
     scalarize_store_stmt<LocalStoreStmt>(stmt);
+  }
+
+  void visit(GlobalLoadStmt *stmt) override {
+  }
+
+  void visit(LocalLoadStmt *stmt) override {
   }
 
   std::unordered_set<Stmt *> matrix_init_to_remove_;

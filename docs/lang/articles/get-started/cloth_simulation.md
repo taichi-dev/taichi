@@ -35,7 +35,7 @@ import taichi as ti
 ti.init(arch=ti.cpu)
 ```
 
-    We choose `ti.cpu` here despite the fact that running Taichi on a GPU backend can be much faster. This is mainly because we need to make sure that you can run our source code without any editing or additional configurations to your platform. Please note:
+We choose `ti.cpu` here despite the fact that running Taichi on a GPU backend can be much faster. This is mainly because we need to make sure that you can run our source code without any editing or additional configurations to your platform. Please note:
     - If you choose a GPU backend, for example `ti.cuda`, ensure that you have installed it on your system; otherwise, Taichi will raise an error.
     - The [GGUI](../visualization/ggui.md) we use for 3D rendering only supports CUDA and Vulkan, and x86 for now. If you choose a different backend, consider switching the GGUI system we provide in the source code.
 

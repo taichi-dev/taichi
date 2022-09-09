@@ -115,7 +115,7 @@ def test_constant_matrices():
         m += ti.Matrix([[3, 4], [5, t]])
         print(m @ v)
         print(r.x, r.y, r.z, r.w)
-        s = w.transpose() @ m
+        s = w @ m
         print(s)
         print(m)
 

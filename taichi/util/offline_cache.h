@@ -56,7 +56,7 @@ struct KernelMetadata {
 };
 
 struct Metadata {
-  using KernelMetadata = struct KernelMetadata;
+  using KernelMetadata = KernelMetadata;
 
   Version version{};
   std::size_t size{0};  // byte

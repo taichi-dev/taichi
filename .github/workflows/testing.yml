@@ -484,10 +484,12 @@ jobs:
           - os: windows-2019
             llvmVer : '15'
             archs: "cuda"
+            runsOn: [self-hosted, windows, cuda]
           - os: windows-2019
             llvmVer : '10'
             archs: "cuda,opengl"
-    runs-on: [self-hosted, windows, gpu]
+            runsOn: [self-hosted, windows, cuda, OpenGL]
+    runs-on: ${{ matrix.runsOn }}
     timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 180 }}
     steps:
       # See also https://github.com/taichi-dev/taichi/issues/4161

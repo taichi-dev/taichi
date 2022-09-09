@@ -549,21 +549,20 @@ class Matrix(TaichiOperations):
             # left multiplication
             assert self.n == other.m, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
             return other.transpose() @ self
-        else:
-            # right multiplication
-            assert self.m == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
-            entries = []
-            for i in range(self.n):
-                entries.append([])
-                for j in range(other.m):
-                    acc = self(i, 0) * other(0, j)
-                    for k in range(1, other.n):
-                        acc = acc + self(i, k) * other(k, j)
-                    entries[i].append(acc)
-            if is_vector(other) and other.m == 1:
-                # TODO: remove `ndim` when #5783 is merged
-                return Vector(entries, ndim=1)
-            return Matrix(entries)
+        # right multiplication
+        assert self.m == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
+        entries = []
+        for i in range(self.n):
+            entries.append([])
+            for j in range(other.m):
+                acc = self(i, 0) * other(0, j)
+                for k in range(1, other.n):
+                    acc = acc + self(i, k) * other(k, j)
+                entries[i].append(acc)
+        if is_vector(other) and other.m == 1:
+            # TODO: remove `ndim` when #5783 is merged
+            return Vector(entries, ndim=1)
+        return Matrix(entries)
 
     # host access & python scope operation
     def __len__(self):

@@ -219,7 +219,7 @@ jobs:
             python: 3.7
             with_cc: OFF
             with_cpp_tests: ON
-            wanted_archs: 'cpu'
+            wanted_archs: 'cpu,vulkan'
     runs-on:
     - self-hosted
     - ${{ matrix.os }}

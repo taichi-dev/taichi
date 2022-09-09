@@ -1737,7 +1737,7 @@ void VulkanStream::command_sync() {
     vkGetQueryPoolResults(device_.vk_device(), cmdbuf.query_pool->query_pool, 0,
                           2, sizeof(uint64_t) * 2, &t, sizeof(uint64_t),
                           VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
-    double duration_us = (t[1] - t[0]) * props.limits.timestampPeriod / 1000.0;
+    duration_us = (t[1] - t[0]) * props.limits.timestampPeriod / 1000.0;
 #endif
 
     device_time_elapsed_us_ += duration_us;

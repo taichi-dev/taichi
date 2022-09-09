@@ -149,10 +149,10 @@ class Scalarize : public IRVisitor {
       int num_elements = src_tensor_type->get_num_elements();
       for (size_t i = 0; i < num_elements; i++) {
         auto const_stmt = std::make_unique<ConstStmt>(
-            TypedConstant(stmt->val->ret_type.get_element_type(), i));
+            TypedConstant(stmt->src->ret_type.get_element_type(), i));
 
         auto ptr_offset_stmt =
-            std::make_unique<PtrOffsetStmt>(stmt->dest, const_stmt.get());
+            std::make_unique<PtrOffsetStmt>(stmt->src, const_stmt.get());
         auto scalarized_stmt = std::make_unique<T>(ptr_offset_stmt.get());
 
         matrix_init_values.push_back(scalarized_stmt.get());
@@ -164,7 +164,7 @@ class Scalarize : public IRVisitor {
 
       auto matrix_init_stmt =
           std::make_unique<MatrixInitStmt>(matrix_init_values);
-      stmt->replace_all_usages_with(matrix_init_stmt.get());
+      stmt->replace_usages_with(matrix_init_stmt.get());
       stmt->insert_before_me(std::move(matrix_init_stmt));
 
       stmt->parent->erase(stmt);

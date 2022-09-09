@@ -214,9 +214,11 @@ class Scalarize : public IRVisitor {
   }
 
   void visit(GlobalLoadStmt *stmt) override {
+    scalarize_load_stmt<GlobalLoadStmt>(stmt);
   }
 
   void visit(LocalLoadStmt *stmt) override {
+    scalarize_load_stmt<LocalLoadStmt>(stmt);
   }
 
   std::unordered_set<Stmt *> matrix_init_to_remove_;

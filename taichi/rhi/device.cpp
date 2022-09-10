@@ -244,12 +244,12 @@ void Device::memcpy_direct(DevicePtr dst, DevicePtr src, uint64_t size) {
     dst.device->memcpy_internal(dst, src, size);
     return;
   }
-#if TI_WITH_VULKAN
+#if TI_WITH_VULKAN && TI_WITH_LLVM
   // cross-device copy directly
   else if (dynamic_cast<vulkan::VulkanDevice *>(dst.device) &&
-          dynamic_cast<cpu::CpuDevice *>(src.device)){
-        memcpy_cpu_to_vulkan(dst, src, size);
-        return;
+           dynamic_cast<cpu::CpuDevice *>(src.device)) {
+    memcpy_cpu_to_vulkan(dst, src, size);
+    return;
   }
 #endif
 #if TI_WITH_VULKAN && TI_WITH_CUDA
@@ -258,7 +258,7 @@ void Device::memcpy_direct(DevicePtr dst, DevicePtr src, uint64_t size) {
     memcpy_cuda_to_vulkan(dst, src, size);
     return;
   } else if (dynamic_cast<cuda::CudaDevice *>(dst.device) &&
-            dynamic_cast<vulkan::VulkanDevice *>(src.device)) {
+             dynamic_cast<vulkan::VulkanDevice *>(src.device)) {
     memcpy_vulkan_to_cuda(dst, src, size);
     return;
   }

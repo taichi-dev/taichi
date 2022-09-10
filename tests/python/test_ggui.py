@@ -753,10 +753,6 @@ def test_draw_mesh_instances():
                             transforms=instances_transforms)
         canvas.scene(scene)
 
-    if (platform.system() == 'Windows'):
-        # FIXME:Fix the bug that drawing mesh instance report bugs on Windows
-        return
-
     for i in range(30):
         update_transform(30)
         render()
@@ -867,10 +863,6 @@ def test_draw_part_of_mesh_instances():
                             instance_count=10,
                             instance_offset=2)
         canvas.scene(scene)
-
-    if (platform.system() == 'Windows'):
-        # FIXME:Fix the bug that drawing mesh instance report bugs on Windows
-        return
 
     for _ in range(RENDER_REPEAT):
         render()

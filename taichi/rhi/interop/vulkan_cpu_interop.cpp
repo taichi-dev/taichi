@@ -15,9 +15,9 @@ namespace lang {
 using namespace taichi::lang::vulkan;
 using namespace taichi::lang::cpu;
 
-void memcpy_cpu_to_vulkan(DevicePtr dst,
-                          DevicePtr src,
-                          uint64_t size) {
+void memcpy_cpu_to_vulkan(DevicePtr dst, DevicePtr src, uint64_t size) {
+  // Note that `dst` must point to host-visible memory, if `dst` point to
+  // device-local memory, please choose to use `memcpy_via_staging`.
   VulkanDevice *vk_dev = dynamic_cast<VulkanDevice *>(dst.device);
   CpuDevice *cpu_dev = dynamic_cast<CpuDevice *>(src.device);
 
@@ -56,9 +56,7 @@ void memcpy_cpu_to_vulkan_via_staging(DevicePtr dst,
 }
 
 #else
-void memcpy_cpu_to_vulkan(DevicePtr dst,
-                          DevicePtr src,
-                          uint64_t size) {
+void memcpy_cpu_to_vulkan(DevicePtr dst, DevicePtr src, uint64_t size) {
   TI_NOT_IMPLEMENTED;
 }
 void memcpy_cpu_to_vulkan_via_staging(DevicePtr dst,

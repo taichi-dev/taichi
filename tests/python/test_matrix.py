@@ -180,7 +180,7 @@ def test_matrix_non_constant_index_numpy():
     assert m[4][0, 1] == 1
 
     @ti.kernel
-    def func2(b: ti.types.ndarray(element_dim=1, layout=ti.Layout.SOA)):
+    def func2(b: ti.types.ndarray(element_dim=1)):
         for i in range(5):
             for j in range(4):
                 b[i][j * j] = j * j

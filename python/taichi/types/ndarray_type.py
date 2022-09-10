@@ -1,31 +1,30 @@
+from taichi.lang.enums import Layout
 from taichi.types.compound_types import TensorType
 
 
 class NdarrayTypeMetadata:
-    def __init__(self, element_type, shape=None, layout=None):
+    def __init__(self, element_type, shape=None):
         self.element_type = element_type
         self.shape = shape
-        self.layout = layout
+        self.layout = Layout.AOS
 
 
 class NdarrayType:
     """Type annotation for arbitrary arrays, including external arrays (numpy ndarrays and torch tensors) and Taichi ndarrays.
 
-    For external arrays, we can treat it as a Taichi field with Vector or Matrix elements by specifying element dim and layout.
-    For Taichi vector/matrix ndarrays, we will automatically identify element dim and layout. If they are explicitly specified, we will check compatibility between the actual arguments and the annotation.
+    For external arrays, we can treat it as a Taichi field with Vector or Matrix elements by specifying element dim.
+    For Taichi vector/matrix ndarrays, we will automatically identify element dim. If they are explicitly specified, we will check compatibility between the actual arguments and the annotation.
 
     Args:
         element_dim (Union[Int, NoneType], optional): None if not specified (will be treated as 0 for external arrays), 0 if scalar elements, 1 if vector elements, and 2 if matrix elements.
         element_shape (Union[Tuple[Int], NoneType]): None if not specified, shapes of each element. For example, element_shape must be 1d for vector and 2d tuple for matrix. This argument is ignored for external arrays for now.
         field_dim (Union[Int, NoneType]): None if not specified, number of field dimensions. This argument is ignored for external arrays for now.
-        layout (Union[Layout, NoneType], optional): None if not specified (will be treated as Layout.AOS for external arrays), Layout.AOS or Layout.SOA.
     """
     def __init__(self,
                  dtype=None,
                  element_dim=None,
                  element_shape=None,
-                 field_dim=None,
-                 layout=None):
+                 field_dim=None):
         if element_dim is not None and (element_dim < 0 or element_dim > 2):
             raise ValueError(
                 "Only scalars, vectors, and matrices are allowed as elements of ti.types.ndarray()"
@@ -41,7 +40,7 @@ class NdarrayType:
             element_shape) if element_shape is not None else element_dim
 
         self.field_dim = field_dim
-        self.layout = layout
+        self.layout = Layout.AOS
 
     def check_matched(self, ndarray_type: NdarrayTypeMetadata):
         if self.element_dim is not None and self.element_dim > 0:
@@ -64,11 +63,6 @@ class NdarrayType:
                 raise ValueError(
                     f"Invalid argument into ti.types.ndarray() - required element_shape={self.element_shape}, but {ndarray_type.element_type.shape()} is provided"
                 )
-
-        if self.layout is not None and self.layout != ndarray_type.layout:
-            raise ValueError(
-                f"Invalid argument into ti.types.ndarray() - required layout={self.layout}, but {ndarray_type.layout} is provided"
-            )
 
         if self.field_dim is not None and \
             ndarray_type.shape is not None and \

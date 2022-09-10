@@ -1258,7 +1258,7 @@ class Matrix(TaichiOperations):
 
     @classmethod
     @python_scope
-    def ndarray(cls, n, m, dtype, shape, layout=Layout.AOS):
+    def ndarray(cls, n, m, dtype, shape):
         """Defines a Taichi ndarray with matrix elements.
         This function must be called in Python scope, and after `ti.init` is called.
 
@@ -1267,7 +1267,6 @@ class Matrix(TaichiOperations):
             m (int): Number of columns of the matrix.
             dtype (DataType): Data type of each value.
             shape (Union[int, tuple[int]]): Shape of the ndarray.
-            layout (Layout, optional): Memory layout, AOS by default.
 
         Example::
 
@@ -1278,7 +1277,7 @@ class Matrix(TaichiOperations):
         """
         if isinstance(shape, numbers.Number):
             shape = (shape, )
-        return MatrixNdarray(n, m, dtype, shape, layout)
+        return MatrixNdarray(n, m, dtype, shape)
 
     @staticmethod
     def rows(rows):
@@ -1457,7 +1456,7 @@ class Vector(Matrix):
 
     @classmethod
     @python_scope
-    def ndarray(cls, n, dtype, shape, layout=Layout.AOS):
+    def ndarray(cls, n, dtype, shape):
         """Defines a Taichi ndarray with vector elements.
 
         Args:
@@ -1473,7 +1472,7 @@ class Vector(Matrix):
         """
         if isinstance(shape, numbers.Number):
             shape = (shape, )
-        return VectorNdarray(n, dtype, shape, layout)
+        return VectorNdarray(n, dtype, shape)
 
 
 class _IntermediateMatrix(Matrix):
@@ -1902,25 +1901,24 @@ class MatrixNdarray(Ndarray):
         m (int): Number of columns of the matrix.
         dtype (DataType): Data type of each value.
         shape (Union[int, tuple[int]]): Shape of the ndarray.
-        layout (Layout): Memory layout.
 
     Example::
 
-        >>> arr = ti.MatrixNdarray(2, 2, ti.f32, shape=(3, 3), layout=Layout.SOA)
+        >>> arr = ti.MatrixNdarray(2, 2, ti.f32, shape=(3, 3))
     """
-    def __init__(self, n, m, dtype, shape, layout):
+    def __init__(self, n, m, dtype, shape):
         self.n = n
         self.m = m
         super().__init__()
         # TODO(zhanlue): remove self.dtype and migrate its usages to element_type
         self.dtype = cook_dtype(dtype)
 
-        self.layout = layout
+        self.layout = Layout.AOS
         self.shape = tuple(shape)
         self.element_type = TensorType((self.n, self.m), dtype)
         # TODO: we should pass in element_type, shape, layout instead.
         self.arr = impl.get_runtime().prog.create_ndarray(
-            cook_dtype(self.element_type.ptr), shape, layout)
+            cook_dtype(self.element_type.ptr), shape, Layout.AOS)
 
     @property
     def element_shape(self):
@@ -1928,7 +1926,7 @@ class MatrixNdarray(Ndarray):
 
         Example::
 
-            >>> arr = ti.MatrixNdarray(2, 2, ti.f32, shape=(3, 3), layout=Layout.SOA)
+            >>> arr = ti.MatrixNdarray(2, 2, ti.f32, shape=(3, 3))
             >>> arr.element_shape
             (2, 2)
         """
@@ -1958,7 +1956,7 @@ class MatrixNdarray(Ndarray):
 
         Example::
 
-            >>> arr = ti.MatrixNdarray(2, 2, ti.f32, shape=(2, 1), layout=Layout.SOA)
+            >>> arr = ti.MatrixNdarray(2, 2, ti.f32, shape=(2, 1))
             >>> arr.to_numpy()
             [[[[0. 0.]
                [0. 0.]]]
@@ -1966,7 +1964,7 @@ class MatrixNdarray(Ndarray):
              [[[0. 0.]
                [0. 0.]]]]
         """
-        return self._ndarray_matrix_to_numpy(self.layout, as_vector=0)
+        return self._ndarray_matrix_to_numpy(as_vector=0)
 
     @python_scope
     def from_numpy(self, arr):
@@ -1978,12 +1976,11 @@ class MatrixNdarray(Ndarray):
             >>> arr = np.ones((2, 1, 2, 2))
             >>> m.from_numpy(arr)
         """
-        self._ndarray_matrix_from_numpy(arr, self.layout, as_vector=0)
+        self._ndarray_matrix_from_numpy(arr, as_vector=0)
 
     @python_scope
     def __deepcopy__(self, memo=None):
-        ret_arr = MatrixNdarray(self.n, self.m, self.dtype, self.shape,
-                                self.layout)
+        ret_arr = MatrixNdarray(self.n, self.m, self.dtype, self.shape)
         ret_arr.copy_from(self)
         return ret_arr
 
@@ -1995,7 +1992,7 @@ class MatrixNdarray(Ndarray):
 
     @python_scope
     def __repr__(self):
-        return f'<{self.n}x{self.m} {self.layout} ti.Matrix.ndarray>'
+        return f'<{self.n}x{self.m} {Layout.AOS} ti.Matrix.ndarray>'
 
 
 class VectorNdarray(Ndarray):
@@ -2009,19 +2006,19 @@ class VectorNdarray(Ndarray):
 
     Example::
 
-        >>> a = ti.VectorNdarray(3, ti.f32, (3, 3), layout=Layout.SOA)
+        >>> a = ti.VectorNdarray(3, ti.f32, (3, 3))
     """
-    def __init__(self, n, dtype, shape, layout):
+    def __init__(self, n, dtype, shape):
         self.n = n
         super().__init__()
         # TODO(zhanlue): remove self.dtype and migrate its usages to element_type
         self.dtype = cook_dtype(dtype)
 
-        self.layout = layout
+        self.layout = Layout.AOS
         self.shape = tuple(shape)
         self.element_type = TensorType((n, ), self.dtype)
         self.arr = impl.get_runtime().prog.create_ndarray(
-            cook_dtype(self.element_type.ptr), shape, layout)
+            cook_dtype(self.element_type.ptr), shape, Layout.AOS)
 
     @property
     def element_shape(self):
@@ -2029,7 +2026,7 @@ class VectorNdarray(Ndarray):
 
         Example::
 
-            >>> a = ti.VectorNdarray(3, ti.f32, (3, 3), layout=Layout.SOA)
+            >>> a = ti.VectorNdarray(3, ti.f32, (3, 3))
             >>> a.element_shape
             (3,)
         """
@@ -2055,7 +2052,7 @@ class VectorNdarray(Ndarray):
 
         Example::
 
-            >>> a = ti.VectorNdarray(3, ti.f32, (2, 2), layout=Layout.SOA)
+            >>> a = ti.VectorNdarray(3, ti.f32, (2, 2))
             >>> a.to_numpy()
             array([[[0., 0., 0.],
                     [0., 0., 0.]],
@@ -2063,7 +2060,7 @@ class VectorNdarray(Ndarray):
                    [[0., 0., 0.],
                     [0., 0., 0.]]], dtype=float32)
         """
-        return self._ndarray_matrix_to_numpy(self.layout, as_vector=1)
+        return self._ndarray_matrix_to_numpy(as_vector=1)
 
     @python_scope
     def from_numpy(self, arr):
@@ -2078,11 +2075,11 @@ class VectorNdarray(Ndarray):
             >>> b = np.ones((2, 2, 3), dtype=np.float32)
             >>> a.from_numpy(b)
         """
-        self._ndarray_matrix_from_numpy(arr, self.layout, as_vector=1)
+        self._ndarray_matrix_from_numpy(arr, as_vector=1)
 
     @python_scope
     def __deepcopy__(self, memo=None):
-        ret_arr = VectorNdarray(self.n, self.dtype, self.shape, self.layout)
+        ret_arr = VectorNdarray(self.n, self.dtype, self.shape)
         ret_arr.copy_from(self)
         return ret_arr
 
@@ -2094,7 +2091,7 @@ class VectorNdarray(Ndarray):
 
     @python_scope
     def __repr__(self):
-        return f'<{self.n} {self.layout} ti.Vector.ndarray>'
+        return f'<{self.n} {Layout.AOS} ti.Vector.ndarray>'
 
 
 __all__ = ["Matrix", "Vector", "MatrixField", "MatrixNdarray", "VectorNdarray"]

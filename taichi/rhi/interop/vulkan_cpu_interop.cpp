@@ -15,6 +15,23 @@ namespace lang {
 using namespace taichi::lang::vulkan;
 using namespace taichi::lang::cpu;
 
+void memcpy_cpu_to_vulkan(DevicePtr dst,
+                          DevicePtr src,
+                          uint64_t size) {
+  VulkanDevice *vk_dev = dynamic_cast<VulkanDevice *>(dst.device);
+  CpuDevice *cpu_dev = dynamic_cast<CpuDevice *>(src.device);
+
+  DeviceAllocation src_alloc(src);
+
+  CpuDevice::AllocInfo src_alloc_info = cpu_dev->get_alloc_info(src_alloc);
+
+  unsigned char *dst_ptr = (unsigned char *)(vk_dev->map_range(dst, size));
+  unsigned char *src_ptr = (unsigned char *)src_alloc_info.ptr + src.offset;
+
+  memcpy(dst_ptr, src_ptr, size);
+  vk_dev->unmap(dst);
+}
+
 void memcpy_cpu_to_vulkan_via_staging(DevicePtr dst,
                                       DevicePtr staging,
                                       DevicePtr src,
@@ -39,6 +56,11 @@ void memcpy_cpu_to_vulkan_via_staging(DevicePtr dst,
 }
 
 #else
+void memcpy_cpu_to_vulkan(DevicePtr dst,
+                          DevicePtr src,
+                          uint64_t size) {
+  TI_NOT_IMPLEMENTED;
+}
 void memcpy_cpu_to_vulkan_via_staging(DevicePtr dst,
                                       DevicePtr stagin,
                                       DevicePtr src,

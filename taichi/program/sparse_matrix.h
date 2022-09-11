@@ -1,11 +1,11 @@
 #pragma once
 
-#include "taichi/rhi/cuda/cuda_driver.h"
 #include "taichi/common/core.h"
 #include "taichi/inc/constants.h"
 #include "taichi/ir/type_utils.h"
 #include "taichi/program/ndarray.h"
 #include "taichi/program/program.h"
+#include "taichi/rhi/cuda/cuda_driver.h"
 
 #include "Eigen/Sparse"
 
@@ -63,13 +63,12 @@ class SparseMatrix {
     TI_NOT_IMPLEMENTED;
   };
 
-  virtual void build_csr(void *csr_ptr,
-                         void *csr_indices_ptr,
-                         void *csr_values_ptr,
-                         int nnz) {
+  virtual void build_csr_from_coo(void *coo_row_ptr,
+                                  void *coo_col_ptr,
+                                  void *coo_values_ptr,
+                                  int nnz) {
     TI_NOT_IMPLEMENTED;
-  };
-
+  }
   inline const int num_rows() const {
     return rows_;
   }
@@ -203,15 +202,28 @@ class CuSparseMatrix : public SparseMatrix {
  public:
   explicit CuSparseMatrix(int rows, int cols, DataType dt)
       : SparseMatrix(rows, cols, dt) {
+#if defined(TI_WITH_CUDA)
+    if (!CUSPARSEDriver::get_instance().is_loaded()) {
+      bool load_success = CUSPARSEDriver::get_instance().load_cusparse();
+      if (!load_success) {
+        TI_ERROR("Failed to load cusparse library!");
+      }
+    }
+#endif
   }
 
   virtual ~CuSparseMatrix();
-  void build_csr(void *csr_ptr,
-                 void *csr_indices_ptr,
-                 void *csr_values_ptr,
-                 int nnz) override;
-
+  void build_csr_from_coo(void *coo_row_ptr,
+                          void *coo_col_ptr,
+                          void *coo_values_ptr,
+                          int nnz) override;
   void spmv(Program *prog, const Ndarray &x, Ndarray &y);
+
+  const void *get_matrix() const override {
+    return &matrix_;
+  };
+
+  void print_info();
 
  private:
   cusparseSpMatDescr_t matrix_;
@@ -231,7 +243,7 @@ void make_sparse_matrix_from_ndarray(Program *prog,
                                      const Ndarray &ndarray);
 void make_sparse_matrix_from_ndarray_cusparse(Program *prog,
                                               SparseMatrix &sm,
-                                              const Ndarray &row_offsets,
+                                              const Ndarray &row_indices,
                                               const Ndarray &col_indices,
                                               const Ndarray &values);
 }  // namespace lang

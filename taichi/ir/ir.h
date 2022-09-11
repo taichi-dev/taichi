@@ -258,125 +258,6 @@ class IRNode {
   TI_DEFINE_ACCEPT                 \
   TI_DEFINE_CLONE
 
-template <typename T>
-struct LaneAttribute {
-  std::vector<T> data;
-
-  LaneAttribute() {
-  }
-
-  LaneAttribute(const std::vector<T> &data) : data(data) {
-  }
-
-  LaneAttribute(const T &t) : data(1, t) {
-  }
-
-  void resize(int s) {
-    data.resize(s);
-  }
-
-  void reserve(int s) {
-    data.reserve(s);
-  }
-
-  void push_back(const T &t) {
-    data.push_back(t);
-  }
-
-  std::size_t size() const {
-    return data.size();
-  }
-
-  T &operator[](int i) {
-    TI_ASSERT(0 <= i && i < (int)data.size());
-    return data[i];
-  }
-
-  const T &operator[](int i) const {
-    TI_ASSERT(0 <= i && i < (int)data.size());
-    return data[i];
-  }
-
-  LaneAttribute slice(int begin, int end) {
-    return LaneAttribute(
-        std::vector<T>(data.begin() + begin, data.begin() + end));
-  }
-
-  // for initializing single lane
-  LaneAttribute &operator=(const T &t) {
-    TI_ASSERT(data.size() == 1);
-    data[0] = t;
-    return *this;
-  }
-
-  void repeat(int factor) {
-    std::vector<T> new_data;
-    for (int i = 0; i < factor; i++) {
-      for (int j = 0; j < (int)data.size(); j++) {
-        new_data.push_back(data[j]);
-      }
-    }
-    data = new_data;
-  }
-
-  std::string serialize(std::function<std::string(const T &t)> func,
-                        std::string bracket = "") {
-    std::string ret = bracket;
-    for (int i = 0; i < (int)data.size(); i++) {
-      ret += func(data[i]);
-      if (i + 1 < (int)data.size()) {
-        ret += ", ";
-      }
-    }
-    if (bracket == "<") {
-      ret += ">";
-    } else if (bracket == "{") {
-      ret += "}";
-    } else if (bracket == "[") {
-      ret += "]";
-    } else if (bracket == "(") {
-      ret += ")";
-    } else if (bracket != "") {
-      TI_P(bracket);
-      TI_NOT_IMPLEMENTED
-    }
-    return ret;
-  }
-
-  std::string serialize(std::string bracket = "") {
-    std::string ret = bracket;
-    for (int i = 0; i < (int)data.size(); i++) {
-      ret += fmt::format("{}", data[i]);
-      if (i + 1 < (int)data.size()) {
-        ret += ", ";
-      }
-    }
-    if (bracket == "<") {
-      ret += ">";
-    } else if (bracket == "{") {
-      ret += "}";
-    } else if (bracket == "(") {
-      ret += ")";
-    } else if (bracket != "") {
-      TI_P(bracket);
-      TI_NOT_IMPLEMENTED
-    }
-    return ret;
-  }
-
-  operator T() const {
-    TI_ASSERT(data.size() == 1);
-    return data[0];
-  }
-
-  LaneAttribute &operator+=(const LaneAttribute &o) {
-    for (int i = 0; i < (int)o.size(); i++) {
-      push_back(o[i]);
-    }
-    return *this;
-  }
-};
-
 class StmtField {
  public:
   StmtField() = default;
@@ -494,10 +375,6 @@ class Stmt : public IRNode {
   Stmt();
   Stmt(const Stmt &stmt);
 
-  int width() const {
-    return ret_type->vector_width();
-  }
-
   virtual bool is_container_statement() const {
     return false;
   }
@@ -547,11 +424,6 @@ class Stmt : public IRNode {
   virtual void replace_operand_with(Stmt *old_stmt, Stmt *new_stmt);
 
   IRNode *get_parent() const override;
-
-  virtual void repeat(int factor) {
-    TI_ASSERT(factor == 1);
-    // ret_type.width *= factor;
-  }
 
   // returns the inserted stmt
   Stmt *insert_before_me(std::unique_ptr<Stmt> &&new_stmt);
@@ -701,30 +573,10 @@ class DelayedIRModifier {
   void mark_as_modified();
 };
 
-struct LocalAddress {
-  Stmt *var;
-  int offset;
-
-  LocalAddress(Stmt *var, int offset);
-};
-
-class VectorElement {
- public:
-  Stmt *stmt;
-  int index;
-
-  VectorElement() : stmt(nullptr), index(0) {
-  }
-
-  VectorElement(Stmt *stmt, int index) : stmt(stmt), index(index) {
-  }
-};
-
 template <typename T>
 inline void StmtFieldManager::operator()(const char *key, T &&value) {
   using decay_T = typename std::decay<T>::type;
-  if constexpr (is_specialization<decay_T, std::vector>::value ||
-                is_specialization<decay_T, LaneAttribute>::value) {
+  if constexpr (is_specialization<decay_T, std::vector>::value) {
     stmt_->field_manager.fields.emplace_back(
         std::make_unique<StmtFieldNumeric<std::size_t>>(value.size()));
     for (int i = 0; i < (int)value.size(); i++) {
@@ -741,14 +593,6 @@ inline void StmtFieldManager::operator()(const char *key, T &&value) {
     }
   } else if constexpr (std::is_same<decay_T, Stmt *>::value) {
     stmt_->register_operand(const_cast<Stmt *&>(value));
-  } else if constexpr (std::is_same<decay_T, LocalAddress>::value) {
-    stmt_->register_operand(const_cast<Stmt *&>(value.var));
-    stmt_->field_manager.fields.emplace_back(
-        std::make_unique<StmtFieldNumeric<int>>(value.offset));
-  } else if constexpr (std::is_same<decay_T, VectorElement>::value) {
-    stmt_->register_operand(const_cast<Stmt *&>(value.stmt));
-    stmt_->field_manager.fields.emplace_back(
-        std::make_unique<StmtFieldNumeric<int>>(value.index));
   } else if constexpr (std::is_same<decay_T, SNode *>::value) {
     stmt_->field_manager.fields.emplace_back(
         std::make_unique<StmtFieldSNode>(value));

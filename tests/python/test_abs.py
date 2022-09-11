@@ -68,3 +68,13 @@ def test_abs_fwd():
     for i in range(N):
         assert x[i] == abs(y[i])
         assert x.dual[i] == sgn(y[i])
+
+
+@test_utils.test(require=ti.extension.data64)
+def test_abs_i64():
+    @ti.kernel
+    def foo(x: ti.i64) -> ti.i64:
+        return abs(x)
+
+    for x in [-2**40, 0, 2**40]:
+        assert foo(x) == abs(x)

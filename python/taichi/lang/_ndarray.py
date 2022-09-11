@@ -5,6 +5,7 @@ from taichi.lang.enums import Layout
 from taichi.lang.util import cook_dtype, python_scope, to_numpy_type
 from taichi.types import primitive_types
 from taichi.types.ndarray_type import NdarrayTypeMetadata
+from taichi.types.utils import is_real, is_signed
 
 
 class Ndarray:
@@ -75,6 +76,7 @@ class Ndarray:
         else:
             self._fill_by_kernel(val)
 
+    @python_scope
     def _ndarray_to_numpy(self):
         """Converts ndarray to a numpy array.
 
@@ -88,6 +90,7 @@ class Ndarray:
         impl.get_runtime().sync()
         return arr
 
+    @python_scope
     def _ndarray_matrix_to_numpy(self, layout, as_vector):
         """Converts matrix ndarray to a numpy array.
 
@@ -103,6 +106,7 @@ class Ndarray:
         impl.get_runtime().sync()
         return arr
 
+    @python_scope
     def _ndarray_from_numpy(self, arr):
         """Loads all values from a numpy array.
 
@@ -122,6 +126,7 @@ class Ndarray:
         ext_arr_to_ndarray(arr, self)
         impl.get_runtime().sync()
 
+    @python_scope
     def _ndarray_matrix_from_numpy(self, arr, layout, as_vector):
         """Loads all values from a numpy array.
 
@@ -192,6 +197,7 @@ class Ndarray:
         """
         raise NotImplementedError()
 
+    @python_scope
     def _pad_key(self, key):
         if key is None:
             key = ()
@@ -200,6 +206,7 @@ class Ndarray:
         assert len(key) == len(self.arr.total_shape())
         return key
 
+    @python_scope
     def _initialize_host_accessor(self):
         if self.host_accessor:
             return
@@ -259,7 +266,8 @@ class ScalarNdarray(Ndarray):
 
 class NdarrayHostAccessor:
     def __init__(self, ndarray):
-        if _ti_core.is_real(ndarray.dtype):
+        dtype = ndarray.element_data_type()
+        if is_real(dtype):
 
             def getter(*key):
                 return ndarray.read_float(key)
@@ -267,7 +275,7 @@ class NdarrayHostAccessor:
             def setter(value, *key):
                 ndarray.write_float(key, value)
         else:
-            if _ti_core.is_signed(ndarray.dtype):
+            if is_signed(dtype):
 
                 def getter(*key):
                     return ndarray.read_int(key)

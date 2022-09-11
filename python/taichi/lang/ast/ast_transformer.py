@@ -6,7 +6,8 @@ from collections import ChainMap
 from sys import version_info
 
 from taichi._lib import core as _ti_core
-from taichi.lang import expr, impl, kernel_arguments, matrix, mesh
+from taichi.lang import (_ndarray, any_array, expr, impl, kernel_arguments,
+                         matrix, mesh)
 from taichi.lang import ops as ti_ops
 from taichi.lang._ndrange import _Ndrange, ndrange
 from taichi.lang.ast.ast_transformer_utils import (Builder, LoopStatus,
@@ -14,7 +15,7 @@ from taichi.lang.ast.ast_transformer_utils import (Builder, LoopStatus,
 from taichi.lang.ast.symbol_resolver import ASTResolver
 from taichi.lang.exception import TaichiSyntaxError, TaichiTypeError
 from taichi.lang.field import Field
-from taichi.lang.matrix import (Matrix, MatrixType, _PyScopeMatrixImpl,
+from taichi.lang.matrix import (Matrix, MatrixType, Vector, _PyScopeMatrixImpl,
                                 _TiScopeMatrixImpl)
 from taichi.lang.snode import append
 from taichi.lang.util import in_taichi_scope, is_taichi_class, to_taichi_type
@@ -488,6 +489,12 @@ class ASTTransformer(Builder):
             node.ptr = impl.ti_format(*args, **keywords)
             return node.ptr
 
+        if (isinstance(node.func, ast.Attribute) and
+            (func == Matrix
+             or func == Vector)) and impl.current_cfg().real_matrix:
+            node.ptr = matrix.make_matrix(*args, **keywords)
+            return node.ptr
+
         if ASTTransformer.build_call_if_is_builtin(ctx, node, args, keywords):
             return node.ptr
 
@@ -582,8 +589,45 @@ class ASTTransformer(Builder):
                     # Template arguments are passed by reference.
                     if isinstance(ctx.func.arguments[i].annotation,
                                   annotations.template):
+
                         ctx.create_variable(ctx.func.arguments[i].name, data)
                         continue
+
+                    # Ndarray arguments are passed by reference.
+                    if isinstance(ctx.func.arguments[i].annotation,
+                                  (ndarray_type.NdarrayType)):
+                        if not isinstance(
+                                data,
+                            (_ndarray.ScalarNdarray, matrix.VectorNdarray,
+                             matrix.MatrixNdarray, any_array.AnyArray)):
+                            raise TaichiSyntaxError(
+                                f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is not recognized."
+                            )
+                        ctx.func.arguments[i].annotation.check_matched(
+                            data.get_type())
+                        ctx.create_variable(ctx.func.arguments[i].name, data)
+                        continue
+
+                    # Matrix arguments are passed by value.
+                    if isinstance(ctx.func.arguments[i].annotation,
+                                  (MatrixType)):
+                        if not isinstance(data, Matrix):
+                            raise TaichiSyntaxError(
+                                f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix, but got {type(data)}."
+                            )
+
+                        if data.m != ctx.func.arguments[i].annotation.m:
+                            raise TaichiSyntaxError(
+                                f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix with m {ctx.func.arguments[i].annotation.m}, but got {data.m}."
+                            )
+
+                        if data.n != ctx.func.arguments[i].annotation.n:
+                            raise TaichiSyntaxError(
+                                f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix with n {ctx.func.arguments[i].annotation.n}, but got {data.n}."
+                            )
+                        ctx.create_variable(arg.arg, impl.expr_init_func(data))
+                        continue
+
                     # Create a copy for non-template arguments,
                     # so that they are passed by value.
                     ctx.create_variable(arg.arg, impl.expr_init_func(data))
@@ -1151,7 +1195,7 @@ class ASTTransformer(Builder):
                 build_stmts(ctx, node.orelse)
             return node
 
-        with ctx.non_static_control_flow_guard():
+        with ctx.non_static_if_guard(node):
             impl.begin_frontend_if(ctx.ast_builder, node.test.ptr)
             ctx.ast_builder.begin_frontend_if_true()
             build_stmts(ctx, node.body)
@@ -1280,6 +1324,13 @@ class ASTTransformer(Builder):
     @staticmethod
     def build_Break(ctx, node):
         if ctx.is_in_static_for():
+            nearest_non_static_if: ast.If = ctx.current_loop_scope(
+            ).nearest_non_static_if
+            if nearest_non_static_if:
+                msg = ctx.get_pos_info(nearest_non_static_if.test)
+                msg += "You are trying to `break` a static `for` loop, " \
+                       "but the `break` statement is inside a non-static `if`. "
+                raise TaichiSyntaxError(msg)
             ctx.set_loop_status(LoopStatus.Break)
         else:
             ctx.ast_builder.insert_break_stmt()
@@ -1288,6 +1339,13 @@ class ASTTransformer(Builder):
     @staticmethod
     def build_Continue(ctx, node):
         if ctx.is_in_static_for():
+            nearest_non_static_if: ast.If = ctx.current_loop_scope(
+            ).nearest_non_static_if
+            if nearest_non_static_if:
+                msg = ctx.get_pos_info(nearest_non_static_if.test)
+                msg += "You are trying to `continue` a static `for` loop, " \
+                       "but the `continue` statement is inside a non-static `if`. "
+                raise TaichiSyntaxError(msg)
             ctx.set_loop_status(LoopStatus.Continue)
         else:
             ctx.ast_builder.insert_continue_stmt()

@@ -55,13 +55,16 @@ void autograd() {
       bool is_primal() const override {
         return true;
       }
+      SNodeGradType get_snode_grad_type() const override {
+        return SNodeGradType::kPrimal;
+      }
       SNode *adjoint_snode() const override {
         return snode;
       }
       SNode *dual_snode() const override {
         return snode;
       }
-      SNode *adjoint_visited_snode() const override {
+      SNode *adjoint_checkbit_snode() const override {
         return nullptr;
       }
     };
@@ -72,13 +75,16 @@ void autograd() {
       bool is_primal() const override {
         return false;
       }
+      SNodeGradType get_snode_grad_type() const override {
+        return SNodeGradType::kAdjoint;
+      }
       SNode *adjoint_snode() const override {
         return nullptr;
       }
       SNode *dual_snode() const override {
         return nullptr;
       }
-      SNode *adjoint_visited_snode() const override {
+      SNode *adjoint_checkbit_snode() const override {
         return nullptr;
       }
     };
@@ -170,9 +176,9 @@ void autograd() {
     }
 
     kernel_ext = std::make_unique<Kernel>(program, builder.extract_ir(), "ext");
-    kernel_ext->insert_arg(get_data_type<int>(), true);
-    kernel_ext->insert_arg(get_data_type<int>(), true);
-    kernel_ext->insert_arg(get_data_type<int>(), true);
+    kernel_ext->insert_arr_arg(get_data_type<int>(), /*total_dim=*/1, {n});
+    kernel_ext->insert_arr_arg(get_data_type<int>(), /*total_dim=*/1, {n});
+    kernel_ext->insert_arr_arg(get_data_type<int>(), /*total_dim=*/1, {n});
   }
 
   auto ctx_init = kernel_init->make_launch_context();

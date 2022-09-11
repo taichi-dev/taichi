@@ -65,7 +65,7 @@ class FrontendAllocaStmt : public Stmt {
 
   FrontendAllocaStmt(const Identifier &lhs, DataType type)
       : ident(lhs), is_shared(false) {
-    ret_type = TypeFactory::create_vector_or_scalar_type(1, type);
+    ret_type = type;
   }
 
   FrontendAllocaStmt(const Identifier &lhs,
@@ -161,34 +161,30 @@ class FrontendPrintStmt : public Stmt {
 
 class FrontendForStmt : public Stmt {
  public:
+  SNode *snode{nullptr};
+  Expr external_tensor;
+  mesh::Mesh *mesh{nullptr};
+  mesh::MeshElementType element_type;
   Expr begin, end;
-  Expr global_var;
   std::unique_ptr<Block> body;
-  std::vector<Identifier> loop_var_id;
+  std::vector<Identifier> loop_var_ids;
   bool is_bit_vectorized;
   int num_cpu_threads;
   bool strictly_serialized;
   MemoryAccessOptions mem_access_opt;
   int block_dim;
 
-  bool mesh_for = false;
-  mesh::Mesh *mesh;
-  mesh::MeshElementType element_type;
-
-  bool is_ranged() const {
-    if (global_var.expr == nullptr && !mesh_for) {
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  FrontendForStmt(const ExprGroup &loop_var,
-                  const Expr &global_var,
+  FrontendForStmt(const ExprGroup &loop_vars,
+                  SNode *snode,
                   Arch arch,
                   const ForLoopConfig &config);
 
-  FrontendForStmt(const ExprGroup &loop_var,
+  FrontendForStmt(const ExprGroup &loop_vars,
+                  const Expr &external_tensor,
+                  Arch arch,
+                  const ForLoopConfig &config);
+
+  FrontendForStmt(const ExprGroup &loop_vars,
                   const mesh::MeshPtr &mesh,
                   const mesh::MeshElementType &element_type,
                   Arch arch,
@@ -205,6 +201,13 @@ class FrontendForStmt : public Stmt {
   }
 
   TI_DEFINE_ACCEPT
+
+ private:
+  void init_config(Arch arch, const ForLoopConfig &config);
+
+  void init_loop_vars(const ExprGroup &loop_vars);
+
+  void add_loop_var(const Expr &loop_var);
 };
 
 class FrontendFuncDefStmt : public Stmt {
@@ -441,54 +444,69 @@ class ExternalTensorExpression : public Expression {
   int element_dim;  // 0: scalar; 1: vector (SOA); 2: matrix (SOA); -1: vector
                     // (AOS); -2: matrix (AOS)
 
-  // Fill element shape if compile-time specialization is desired.
-  std::vector<int> element_shape;
-
   ExternalTensorExpression(const DataType &dt,
                            int dim,
                            int arg_id,
-                           int element_dim)
-      : dt(dt), dim(dim), arg_id(arg_id), element_dim(element_dim) {
-    set_attribute("dim", std::to_string(dim));
+                           int element_dim) {
+    init(dt, dim, arg_id, element_dim);
   }
 
   ExternalTensorExpression(const DataType &dt,
                            int dim,
                            int arg_id,
                            int element_dim,
-                           const std::vector<int> &element_shape)
-      : ExternalTensorExpression(dt, dim, arg_id, element_dim) {
-    this->element_shape = element_shape;
-  }
+                           const std::vector<int> &element_shape) {
+    if (element_shape.size() == 0) {
+      init(dt, dim, arg_id, element_dim);
+    } else {
+      TI_ASSERT(dt->is<PrimitiveType>());
 
-  void type_check(CompileConfig *config) override {
+      auto tensor_type =
+          taichi::lang::TypeFactory::get_instance().create_tensor_type(
+              element_shape, dt);
+      init(tensor_type, dim, arg_id, element_dim);
+    }
   }
 
   void flatten(FlattenContext *ctx) override;
 
   TI_DEFINE_ACCEPT_FOR_EXPRESSION
+
+  CompileConfig *get_compile_config() {
+    TI_ASSERT(config_ != nullptr);
+    return config_;
+  }
+
+  void type_check(CompileConfig *config) override {
+    config_ = config;
+  }
+
+ private:
+  CompileConfig *config_ = nullptr;
+
+  void init(const DataType &dt, int dim, int arg_id, int element_dim) {
+    this->dt = dt;
+    this->dim = dim;
+    this->arg_id = arg_id;
+    this->element_dim = element_dim;
+  }
 };
 
 // TODO: Make this a non-expr
-class GlobalVariableExpression : public Expression {
+class FieldExpression : public Expression {
  public:
   Identifier ident;
   DataType dt;
   std::string name;
   SNode *snode{nullptr};
+  SNodeGradType snode_grad_type{SNodeGradType::kPrimal};
   bool has_ambient{false};
   TypedConstant ambient_value;
-  bool is_primal{true};
   Expr adjoint;
   Expr dual;
-  Expr adjoint_visited;
+  Expr adjoint_checkbit;
 
-  GlobalVariableExpression(DataType dt, const Identifier &ident)
-      : ident(ident), dt(dt) {
-  }
-
-  GlobalVariableExpression(SNode *snode, const Identifier &ident)
-      : ident(ident), dt(snode->dt), snode(snode) {
+  FieldExpression(DataType dt, const Identifier &ident) : ident(ident), dt(dt) {
   }
 
   void type_check(CompileConfig *config) override {
@@ -496,8 +514,30 @@ class GlobalVariableExpression : public Expression {
 
   void set_snode(SNode *snode) {
     this->snode = snode;
-    set_attribute("dim", std::to_string(snode->num_active_indices));
   }
+
+  void flatten(FlattenContext *ctx) override;
+
+  TI_DEFINE_ACCEPT_FOR_EXPRESSION
+};
+
+/**
+ * Creating a local matrix;
+ * lowered from ti.Matrix with real_matrix=True
+ */
+class MatrixExpression : public Expression {
+ public:
+  std::vector<Expr> elements;
+  DataType dt;
+
+  MatrixExpression(const std::vector<Expr> &elements,
+                   std::vector<int> shape,
+                   DataType element_type)
+      : elements(elements) {
+    this->dt = DataType(TypeFactory::create_tensor_type(shape, element_type));
+  }
+
+  void type_check(CompileConfig *config) override;
 
   void flatten(FlattenContext *ctx) override;
 
@@ -506,13 +546,16 @@ class GlobalVariableExpression : public Expression {
 
 class IndexExpression : public Expression {
  public:
-  // `var` is one of GlobalVariableExpression, ExternalTensorExpression,
+  // `var` is one of FieldExpression, ExternalTensorExpression,
   // IdExpression
   Expr var;
   ExprGroup indices;
 
-  IndexExpression(const Expr &var, const ExprGroup &indices)
+  IndexExpression(const Expr &var,
+                  const ExprGroup &indices,
+                  std::string tb = "")
       : var(var), indices(indices) {
+    this->tb = tb;
   }
 
   void type_check(CompileConfig *config) override;
@@ -538,7 +581,7 @@ class IndexExpression : public Expression {
 
 class StrideExpression : public Expression {
  public:
-  // `var` must be an IndexExpression on a GlobalVariableExpression
+  // `var` must be an IndexExpression on a FieldExpression
   // therefore the access is always global
   Expr var;
   ExprGroup indices;
@@ -853,13 +896,18 @@ class ASTBuilder {
   Block *current_block();
   Stmt *get_last_stmt();
   void stop_gradient(SNode *);
-  void insert_assignment(Expr &lhs, const Expr &rhs);
-  Expr make_var(const Expr &x);
+  void insert_assignment(Expr &lhs,
+                         const Expr &rhs,
+                         const std::string &tb = "");
+  Expr make_var(const Expr &x, std::string tb);
   void insert_for(const Expr &s,
                   const Expr &e,
                   const std::function<void(Expr)> &func);
 
   Expr make_id_expr(const std::string &name);
+  Expr make_matrix_expr(const std::vector<int> &shape,
+                        const DataType &dt,
+                        const std::vector<Expr> &elements);
   Expr insert_thread_idx_expr();
   Expr insert_patch_idx_expr();
   void create_kernel_exprgroup_return(const ExprGroup &group);
@@ -878,7 +926,8 @@ class ASTBuilder {
   Expr expr_alloca();
   Expr expr_alloca_local_tensor(const std::vector<int> &shape,
                                 const DataType &element_type,
-                                const ExprGroup &elements);
+                                const ExprGroup &elements,
+                                std::string tb);
   Expr expr_alloca_shared_array(const std::vector<int> &shape,
                                 const DataType &element_type);
   void expr_assign(const Expr &lhs, const Expr &rhs, std::string tb);
@@ -886,8 +935,11 @@ class ASTBuilder {
                           const std::string &msg,
                           const std::vector<Expr> &args);
   void begin_frontend_range_for(const Expr &i, const Expr &s, const Expr &e);
-  void begin_frontend_struct_for(const ExprGroup &loop_vars,
-                                 const Expr &global);
+  void begin_frontend_struct_for_on_snode(const ExprGroup &loop_vars,
+                                          SNode *snode);
+  void begin_frontend_struct_for_on_external_tensor(
+      const ExprGroup &loop_vars,
+      const Expr &external_tensor);
   void begin_frontend_mesh_for(const Expr &i,
                                const mesh::MeshPtr &mesh_ptr,
                                const mesh::MeshElementType &element_type);
@@ -941,13 +993,14 @@ class FrontendContext {
   std::unique_ptr<Block> root_node_;
 
  public:
-  FrontendContext(Arch arch);
+  FrontendContext(Arch arch) {
+    root_node_ = std::make_unique<Block>();
+    current_builder_ = std::make_unique<ASTBuilder>(root_node_.get(), arch);
+  }
 
   ASTBuilder &builder() {
     return *current_builder_;
   }
-
-  IRNode *root();
 
   std::unique_ptr<Block> get_root() {
     return std::move(root_node_);

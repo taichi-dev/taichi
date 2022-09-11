@@ -571,3 +571,27 @@ def test_sequential_dispatch():
         m.save(tmpdir, '')
         with open(os.path.join(tmpdir, 'metadata.json'), "r") as json_file:
             json.load(json_file)
+
+
+@test_utils.test(arch=[ti.vulkan])
+def test_vulkan_cgraph_short():
+    a = ti.ndarray(ti.u8, shape=(16))
+    c = 2
+
+    @ti.kernel
+    def test(a: ti.types.ndarray(), c: ti.u8):
+        for i in a:
+            a[i] = i + c
+
+    sym_a = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'a', ti.u8, field_dim=1)
+    sym_c = ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'c', ti.u8)
+    g_init = ti.graph.GraphBuilder()
+    g_init.dispatch(test, sym_a, sym_c)
+    g = g_init.compile()
+
+    g.run({'a': a, 'c': c})
+
+    m = ti.aot.Module(ti.lang.impl.current_cfg().arch)
+    m.add_graph('g_init', g)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        m.save(tmpdir, '')

@@ -20,16 +20,15 @@ class DemoteOperations : public BasicStmtVisitor {
     // def bit_extract(input, begin, end):
     //   return (input >> begin) & ((1 << (end - begin)) - 1)
     VecStatement statements;
-    auto begin = statements.push_back<ConstStmt>(LaneAttribute<TypedConstant>(
-        TypedConstant(stmt->input->ret_type, stmt->bit_begin)));
+    auto begin = statements.push_back<ConstStmt>(
+        TypedConstant(stmt->input->ret_type, stmt->bit_begin));
     auto input_sar_begin = statements.push_back<BinaryOpStmt>(
         BinaryOpType::bit_sar, stmt->input, begin);
-    auto mask = statements.push_back<ConstStmt>(LaneAttribute<TypedConstant>(
-        TypedConstant(stmt->input->ret_type,
-                      (1LL << (stmt->bit_end - stmt->bit_begin)) - 1)));
+    auto mask = statements.push_back<ConstStmt>(TypedConstant(
+        stmt->input->ret_type, (1LL << (stmt->bit_end - stmt->bit_begin)) - 1));
     auto ret = statements.push_back<BinaryOpStmt>(BinaryOpType::bit_and,
                                                   input_sar_begin, mask);
-
+    ret->ret_type = stmt->ret_type;
     stmt->replace_usages_with(ret);
     modifier.insert_before(stmt, std::move(statements));
     modifier.erase(stmt);
@@ -48,7 +47,7 @@ class DemoteOperations : public BasicStmtVisitor {
         //         r = r - 1
         //     return r
         auto ret = Stmt::make<BinaryOpStmt>(BinaryOpType::div, lhs, rhs);
-        auto zero = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(0));
+        auto zero = Stmt::make<ConstStmt>(TypedConstant(0));
         auto lhs_ltz =
             Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_lt, lhs, zero.get());
         auto rhs_ltz =
@@ -67,7 +66,7 @@ class DemoteOperations : public BasicStmtVisitor {
                                              cond12.get(), cond3.get());
         auto real_ret =
             Stmt::make<BinaryOpStmt>(BinaryOpType::add, ret.get(), cond.get());
-
+        real_ret->ret_type = stmt->ret_type;
         stmt->replace_usages_with(real_ret.get());
         modifier.insert_before(stmt, std::move(ret));
         modifier.insert_before(stmt, std::move(zero));
@@ -89,6 +88,7 @@ class DemoteOperations : public BasicStmtVisitor {
         //     return ti.floor(r)
         auto div = Stmt::make<BinaryOpStmt>(BinaryOpType::div, lhs, rhs);
         auto floor = Stmt::make<UnaryOpStmt>(UnaryOpType::floor, div.get());
+        floor->ret_type = stmt->ret_type;
         stmt->replace_usages_with(floor.get());
         modifier.insert_before(stmt, std::move(div));
         modifier.insert_before(stmt, std::move(floor));
@@ -112,6 +112,7 @@ class DemoteOperations : public BasicStmtVisitor {
       auto signed_cast =
           Stmt::make<UnaryOpStmt>(UnaryOpType::cast_bits, shift.get());
       signed_cast->as<UnaryOpStmt>()->cast_type = lhs->element_type();
+      signed_cast->ret_type = stmt->ret_type;
       stmt->replace_usages_with(signed_cast.get());
       modifier.insert_before(stmt, std::move(unsigned_cast));
       modifier.insert_before(stmt, std::move(shift));

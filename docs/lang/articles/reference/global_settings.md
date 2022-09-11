@@ -11,8 +11,14 @@ sidebar_position: 3
   `ti.init(device_memory_GB=0.5)`.
 - To specify which GPU to use for CUDA:
   `export CUDA_VISIBLE_DEVICES=[gpuid]`.
+- To specify which GPU to use for VULKAN:
+- `export TI_VISIBLE_DEVICE=[gpuid]`
 - To disable a backend (`CUDA`, `METAL`, `OPENGL`) on start up, e.g. CUDA:
   `export TI_ENABLE_CUDA=0`.
+
+:::note
+
+In case you want to use taichi cuda backend together with GGUI on a machine with multiple GPU cards, please make sure `CUDA_VISIBLE_DEVICES` matches `TI_VISIBLE_DEVICE` if any of them exists. In general, `CUDA_VISIBLE_DEVICES` and `TI_VISIBLE_DEVICE` should point to a GPU device with the same UUID. Use `nvidia-smi -L` to query the details of your GPU devices.
 
 ## Compilation
 
@@ -20,7 +26,7 @@ sidebar_position: 3
   errors: `ti.init(advanced_optimization=False)`.
 - Disable fast math to prevent possible undefined math behavior:
   `ti.init(fast_math=False)`.
-- To print intermediate IR generated: `ti.init(print_ir=True)`.
+- To print intermediate IR generated: `ti.init(print_ir=True)`. Note that compiled kernels are [cached by default](https://docs.taichi-lang.org/docs/performance#offline-cache). To force compilation and IR emission, use `ti.init(print_ir=True, offline_cache=False)`.
 
 ## Runtime
 

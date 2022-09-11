@@ -6,6 +6,8 @@
 namespace taichi {
 namespace lang {
 
+std::vector<int> data_type_shape(DataType t);
+
 TI_DLL_EXPORT std::string data_type_name(DataType t);
 
 TI_DLL_EXPORT int data_type_size(DataType t);
@@ -72,6 +74,10 @@ inline PrimitiveTypeID get_primitive_data_type() {
   } else {
     TI_NOT_IMPLEMENTED;
   }
+}
+
+inline bool is_tensor(DataType dt) {
+  return dt->is<TensorType>();
 }
 
 inline bool is_quant(DataType dt) {

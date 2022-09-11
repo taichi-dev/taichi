@@ -5,6 +5,7 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/frontend_ir.h"
+#include "taichi/transforms/utils.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -12,7 +13,6 @@ static_assert(
     sizeof(real) == sizeof(float32),
     "Please build the taichi compiler with single precision (TI_USE_DOUBLE=0)");
 
-// "Type" here does not include vector width
 // Var lookup and Type inference
 class TypeCheck : public IRVisitor {
  private:
@@ -77,7 +77,6 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(AtomicOpStmt *stmt) override {
-    TI_ASSERT(stmt->width() == 1);
     // TODO(type): test_ad_for fails if we assume dest is a pointer type.
     stmt->ret_type = type_check_store(
         stmt, stmt->dest, stmt->val,
@@ -85,11 +84,8 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(LocalLoadStmt *stmt) override {
-    TI_ASSERT(stmt->width() == 1);
-    TI_ASSERT_INFO(stmt->src.size() == 1, "Vectorization has been disabled.");
-    TI_ASSERT(stmt->src[0].var->is<AllocaStmt>() ||
-              stmt->src[0].var->is<PtrOffsetStmt>());
-    if (auto ptr_offset_stmt = stmt->src[0].var->cast<PtrOffsetStmt>()) {
+    TI_ASSERT(stmt->src->is<AllocaStmt>() || stmt->src->is<PtrOffsetStmt>());
+    if (auto ptr_offset_stmt = stmt->src->cast<PtrOffsetStmt>()) {
       TI_ASSERT(ptr_offset_stmt->origin->is<AllocaStmt>() ||
                 ptr_offset_stmt->origin->is<GlobalTemporaryStmt>());
       if (auto alloca_stmt = ptr_offset_stmt->origin->cast<AllocaStmt>()) {
@@ -107,7 +103,7 @@ class TypeCheck : public IRVisitor {
         stmt->ret_type = lookup;
       }
     } else {
-      auto lookup = stmt->src[0].var->ret_type;
+      auto lookup = stmt->src->ret_type;
       stmt->ret_type = lookup;
     }
   }
@@ -128,17 +124,14 @@ class TypeCheck : public IRVisitor {
 
   void visit(SNodeOpStmt *stmt) override {
     if (stmt->op_type == SNodeOpType::get_addr) {
-      stmt->ret_type =
-          TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::u64);
+      stmt->ret_type = PrimitiveType::u64;
     } else {
-      stmt->ret_type =
-          TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
+      stmt->ret_type = PrimitiveType::i32;
     }
   }
 
   void visit(ExternalTensorShapeAlongAxisStmt *stmt) override {
-    stmt->ret_type =
-        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
+    stmt->ret_type = PrimitiveType::i32;
   }
 
   void visit(GlobalPtrStmt *stmt) override {
@@ -146,20 +139,17 @@ class TypeCheck : public IRVisitor {
       return;
     }
     stmt->ret_type.set_is_pointer(true);
-    if (stmt->snodes) {
+    if (stmt->snode) {
       stmt->ret_type =
-          TypeFactory::get_instance().get_pointer_type(stmt->snodes[0]->dt);
+          TypeFactory::get_instance().get_pointer_type(stmt->snode->dt);
     } else
       TI_WARN("[{}] Type inference failed: snode is nullptr.\n{}", stmt->name(),
               stmt->tb);
-    for (int l = 0; l < stmt->snodes.size(); l++) {
-      if (stmt->snodes[l]->parent->num_active_indices != 0 &&
-          stmt->snodes[l]->parent->num_active_indices != stmt->indices.size()) {
-        TI_ERROR("[{}] {} has {} indices. Indexed with {}.", stmt->name(),
-                 stmt->snodes[l]->parent->node_type_name,
-                 stmt->snodes[l]->parent->num_active_indices,
-                 stmt->indices.size());
-      }
+    if (stmt->snode->parent->num_active_indices != 0 &&
+        stmt->snode->parent->num_active_indices != stmt->indices.size()) {
+      TI_ERROR("[{}] {} has {} indices. Indexed with {}.", stmt->name(),
+               stmt->snode->parent->node_type_name,
+               stmt->snode->parent->num_active_indices, stmt->indices.size());
     }
     for (int i = 0; i < stmt->indices.size(); i++) {
       if (!is_integral(stmt->indices[i]->ret_type)) {
@@ -170,7 +160,6 @@ class TypeCheck : public IRVisitor {
         stmt->indices[i] =
             insert_type_cast_before(stmt, stmt->indices[i], PrimitiveType::i32);
       }
-      TI_ASSERT(stmt->indices[i]->width() == stmt->snodes.size());
     }
   }
 
@@ -184,10 +173,8 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(RangeForStmt *stmt) override {
-    mark_as_if_const(stmt->begin, TypeFactory::create_vector_or_scalar_type(
-                                      1, PrimitiveType::i32));
-    mark_as_if_const(stmt->end, TypeFactory::create_vector_or_scalar_type(
-                                    1, PrimitiveType::i32));
+    mark_as_if_const(stmt->begin, PrimitiveType::i32);
+    mark_as_if_const(stmt->end, PrimitiveType::i32);
     stmt->body->accept(this);
   }
 
@@ -252,6 +239,7 @@ class TypeCheck : public IRVisitor {
     std::string msg =
         "Detected overflow for bit_shift_op with rhs = %d, exceeding limit of "
         "%d.";
+    msg += "\n" + stmt->tb;
     std::vector<Stmt *> args = {rhs, const_stmt.get()};
     auto assert_stmt =
         Stmt::make<AssertStmt>(cond_stmt.get(), msg, std::move(args));
@@ -350,7 +338,6 @@ class TypeCheck : public IRVisitor {
       }
     }
     bool matching = true;
-    matching = matching && (stmt->lhs->width() == stmt->rhs->width());
     matching = matching && (stmt->lhs->ret_type != PrimitiveType::unknown);
     matching = matching && (stmt->rhs->ret_type != PrimitiveType::unknown);
     matching = matching && (stmt->lhs->ret_type == stmt->rhs->ret_type);
@@ -358,8 +345,7 @@ class TypeCheck : public IRVisitor {
       error();
     }
     if (is_comparison(stmt->op_type)) {
-      stmt->ret_type = TypeFactory::create_vector_or_scalar_type(
-          stmt->lhs->width(), PrimitiveType::i32);
+      stmt->ret_type = PrimitiveType::i32;
     } else {
       stmt->ret_type = stmt->lhs->ret_type;
     }
@@ -368,9 +354,7 @@ class TypeCheck : public IRVisitor {
   void visit(TernaryOpStmt *stmt) override {
     if (stmt->op_type == TernaryOpType::select) {
       auto ret_type = promoted_type(stmt->op2->ret_type, stmt->op3->ret_type);
-      TI_ASSERT(stmt->op1->ret_type->is_primitive(PrimitiveTypeID::i32))
-      TI_ASSERT(stmt->op1->width() == stmt->op2->width());
-      TI_ASSERT(stmt->op2->width() == stmt->op3->width());
+      TI_ASSERT(stmt->op1->ret_type->is_primitive(PrimitiveTypeID::i32));
       if (ret_type != stmt->op2->ret_type) {
         auto cast_stmt = insert_type_cast_before(stmt, stmt->op2, ret_type);
         stmt->op2 = cast_stmt;
@@ -379,16 +363,10 @@ class TypeCheck : public IRVisitor {
         auto cast_stmt = insert_type_cast_before(stmt, stmt->op3, ret_type);
         stmt->op3 = cast_stmt;
       }
-      stmt->ret_type = TypeFactory::create_vector_or_scalar_type(
-          stmt->op1->width(), ret_type);
+      stmt->ret_type = ret_type;
     } else {
       TI_NOT_IMPLEMENTED
     }
-  }
-
-  void visit(ElementShuffleStmt *stmt) override {
-    TI_ASSERT(stmt->elements.size() != 0);
-    stmt->element_type() = stmt->elements[0].stmt->element_type();
   }
 
   void visit(RangeAssumptionStmt *stmt) override {
@@ -412,19 +390,16 @@ class TypeCheck : public IRVisitor {
     // TODO: Maybe have a type_inference() pass, which takes in the args/rets
     // defined by the kernel. After that, type_check() pass will purely do
     // verification, without modifying any types.
-    TI_ASSERT(stmt->width() == 1);
     stmt->ret_type.set_is_pointer(stmt->is_ptr);
   }
 
   void visit(ReturnStmt *stmt) override {
     // TODO: Support stmt->ret_id?
-    TI_ASSERT(stmt->width() == 1);
   }
 
   void visit(ExternalPtrStmt *stmt) override {
     stmt->ret_type.set_is_pointer(true);
-    stmt->ret_type = TypeFactory::create_vector_or_scalar_type(
-        stmt->base_ptrs.size(), stmt->base_ptrs[0]->ret_type);
+    stmt->ret_type = stmt->base_ptr->ret_type;
     for (int i = 0; i < stmt->indices.size(); i++) {
       TI_ASSERT(is_integral(stmt->indices[i]->ret_type));
       if (stmt->indices[i]->ret_type != PrimitiveType::i32) {
@@ -435,23 +410,20 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(LoopIndexStmt *stmt) override {
-    stmt->ret_type =
-        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
+    stmt->ret_type = PrimitiveType::i32;
   }
 
   void visit(LoopLinearIndexStmt *stmt) override {
-    stmt->ret_type =
-        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
+    stmt->ret_type = PrimitiveType::i32;
   }
 
   void visit(BlockCornerIndexStmt *stmt) override {
-    stmt->ret_type =
-        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
+    stmt->ret_type = PrimitiveType::i32;
   }
 
   void visit(GetRootStmt *stmt) override {
     stmt->ret_type =
-        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::gen, true);
+        TypeFactory::get_instance().get_pointer_type(PrimitiveType::gen);
   }
 
   void visit(SNodeLookupStmt *stmt) override {
@@ -463,8 +435,8 @@ class TypeCheck : public IRVisitor {
           TypeFactory::get_instance().get_pointer_type(element_type, true);
       stmt->ret_type = pointer_type;
     } else {
-      stmt->ret_type = TypeFactory::create_vector_or_scalar_type(
-          1, PrimitiveType::gen, true);
+      stmt->ret_type =
+          TypeFactory::get_instance().get_pointer_type(PrimitiveType::gen);
     }
   }
 
@@ -476,7 +448,6 @@ class TypeCheck : public IRVisitor {
       stmt->ret_type = DataType(ptr_ret_type);
       return;
     }
-    TI_ASSERT(stmt->width() == 1);
     auto element_type = stmt->output_snode->dt;
     // For bit_struct SNodes, their component SNodes must have
     // is_bit_level=true
@@ -541,8 +512,7 @@ class TypeCheck : public IRVisitor {
 
   void visit(InternalFuncStmt *stmt) override {
     // TODO: support return type specification
-    stmt->ret_type =
-        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
+    stmt->ret_type = PrimitiveType::i32;
   }
 
   void visit(BitStructStoreStmt *stmt) override {
@@ -552,6 +522,19 @@ class TypeCheck : public IRVisitor {
   void visit(ReferenceStmt *stmt) override {
     stmt->ret_type = stmt->var->ret_type;
     stmt->ret_type.set_is_pointer(true);
+  }
+
+  void visit(MatrixInitStmt *stmt) override {
+    TI_ASSERT_INFO(stmt->ret_type->is<TensorType>(),
+                   "Matrix should have tensor type, got {}",
+                   stmt->ret_type->to_string());
+    auto tensor_type = stmt->ret_type->as<TensorType>();
+    auto element_dtype = tensor_type->get_element_type();
+    for (int i = 0; i < stmt->values.size(); ++i) {
+      if (element_dtype != stmt->values[i]->ret_type) {
+        cast(stmt->values[i], element_dtype);
+      }
+    }
   }
 };
 

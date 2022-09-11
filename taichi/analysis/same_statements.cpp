@@ -136,10 +136,8 @@ class IRNodeComparator : public IRVisitor {
         // And we cannot use irpass::analysis::definitely_same_address()
         // directly because that function does not support id_map.
 
-        // TODO: Update this part if GlobalPtrStmt comes to have more fields
-        TI_ASSERT(stmt->width() == 1);
-        if (stmt->as<GlobalPtrStmt>()->snodes[0]->id !=
-            other->as<GlobalPtrStmt>()->snodes[0]->id) {
+        if (stmt->as<GlobalPtrStmt>()->snode->id !=
+            other->as<GlobalPtrStmt>()->snode->id) {
           same = false;
           return;
         }

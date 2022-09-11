@@ -917,7 +917,7 @@ def cmp_lt(a, b):
         Union[:class:`~taichi.lang.expr.Expr`, bool]: True if LHS is strictly smaller than RHS, False otherwise
 
     """
-    return _binary_operation(_ti_core.expr_cmp_lt, lambda a, b: -int(a < b), a,
+    return _binary_operation(_ti_core.expr_cmp_lt, lambda a, b: int(a < b), a,
                              b)
 
 
@@ -933,8 +933,8 @@ def cmp_le(a, b):
         Union[:class:`~taichi.lang.expr.Expr`, bool]: True if LHS is smaller than or equal to RHS, False otherwise
 
     """
-    return _binary_operation(_ti_core.expr_cmp_le, lambda a, b: -int(a <= b),
-                             a, b)
+    return _binary_operation(_ti_core.expr_cmp_le, lambda a, b: int(a <= b), a,
+                             b)
 
 
 @binary
@@ -949,7 +949,7 @@ def cmp_gt(a, b):
         Union[:class:`~taichi.lang.expr.Expr`, bool]: True if LHS is strictly larger than RHS, False otherwise
 
     """
-    return _binary_operation(_ti_core.expr_cmp_gt, lambda a, b: -int(a > b), a,
+    return _binary_operation(_ti_core.expr_cmp_gt, lambda a, b: int(a > b), a,
                              b)
 
 
@@ -965,8 +965,8 @@ def cmp_ge(a, b):
         bool: True if LHS is greater than or equal to RHS, False otherwise
 
     """
-    return _binary_operation(_ti_core.expr_cmp_ge, lambda a, b: -int(a >= b),
-                             a, b)
+    return _binary_operation(_ti_core.expr_cmp_ge, lambda a, b: int(a >= b), a,
+                             b)
 
 
 @binary
@@ -981,8 +981,8 @@ def cmp_eq(a, b):
         Union[:class:`~taichi.lang.expr.Expr`, bool]: True if LHS is equal to RHS, False otherwise.
 
     """
-    return _binary_operation(_ti_core.expr_cmp_eq, lambda a, b: -int(a == b),
-                             a, b)
+    return _binary_operation(_ti_core.expr_cmp_eq, lambda a, b: int(a == b), a,
+                             b)
 
 
 @binary
@@ -997,8 +997,8 @@ def cmp_ne(a, b):
         Union[:class:`~taichi.lang.expr.Expr`, bool]: True if LHS is not equal to RHS, False otherwise
 
     """
-    return _binary_operation(_ti_core.expr_cmp_ne, lambda a, b: -int(a != b),
-                             a, b)
+    return _binary_operation(_ti_core.expr_cmp_ne, lambda a, b: int(a != b), a,
+                             b)
 
 
 @binary

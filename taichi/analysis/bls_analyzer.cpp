@@ -36,58 +36,53 @@ void BLSAnalyzer::record_access(Stmt *stmt, AccessFlag flag) {
   if (!stmt->is<GlobalPtrStmt>())
     return;  // local alloca
   auto ptr = stmt->as<GlobalPtrStmt>();
-  for (int l = 0; l < stmt->width(); l++) {
-    auto snode = ptr->snodes[l];
-    if (!pads_->has(snode)) {
-      continue;
+  auto snode = ptr->snode;
+  if (!pads_->has(snode)) {
+    return;
+  }
+  bool matching_indices = true;
+  std::vector<IndexRange> offsets;
+  std::vector<int> coeffs;
+  offsets.resize(ptr->indices.size());
+  coeffs.resize(ptr->indices.size());
+  const int num_indices = (int)ptr->indices.size();
+  for (int i = 0; i < num_indices; i++) {
+    auto diff =
+        irpass::analysis::value_diff_loop_index(ptr->indices[i], for_stmt_, i);
+    if (diff.related() && diff.coeff > 0) {
+      offsets[i].low = diff.low;
+      offsets[i].high = diff.high;
+      coeffs[i] = diff.coeff;
+    } else {
+      matching_indices = false;
+      analysis_ok_ = false;
     }
-    bool matching_indices = true;
-    std::vector<IndexRange> offsets;
-    std::vector<int> coeffs;
-    offsets.resize(ptr->indices.size());
-    coeffs.resize(ptr->indices.size());
-    const int num_indices = (int)ptr->indices.size();
-    for (int i = 0; i < num_indices; i++) {
-      auto diff = irpass::analysis::value_diff_loop_index(ptr->indices[i],
-                                                          for_stmt_, i);
-      if (diff.related() && diff.coeff > 0) {
-        offsets[i].low = diff.low;
-        offsets[i].high = diff.high;
-        coeffs[i] = diff.coeff;
-      } else {
-        matching_indices = false;
-        analysis_ok_ = false;
+  }
+  if (matching_indices) {
+    auto *block = snode->parent;
+    const auto &index_bounds = block_indices_[block];
+    std::vector<int> index(num_indices, 0);
+    std::function<void(int)> visit = [&](int dimension) {
+      if (dimension == num_indices) {
+        pads_->access(snode, coeffs, index, flag);
+        return;
       }
-    }
-    if (matching_indices) {
-      auto *block = snode->parent;
-      const auto &index_bounds = block_indices_[block];
-      std::vector<int> index(num_indices, 0);
-      std::function<void(int)> visit = [&](int dimension) {
-        if (dimension == num_indices) {
-          pads_->access(snode, coeffs, index, flag);
-          return;
-        }
-        for (int i = (index_bounds[dimension].low + offsets[dimension].low);
-             i < (index_bounds[dimension].high + offsets[dimension].high);
-             i++) {
-          index[dimension] = i;
-          visit(dimension + 1);
-        }
-      };
-      visit(0);
-    }
+      for (int i = (index_bounds[dimension].low + offsets[dimension].low);
+           i < (index_bounds[dimension].high + offsets[dimension].high); i++) {
+        index[dimension] = i;
+        visit(dimension + 1);
+      }
+    };
+    visit(0);
   }
 }
 
 // Do not eliminate global data access
 void BLSAnalyzer::visit(GlobalLoadStmt *stmt) {
-  TI_ASSERT(stmt->width() == 1);  // TODO: support vectorization
   record_access(stmt->src, AccessFlag::read);
 }
 
 void BLSAnalyzer::visit(GlobalStoreStmt *stmt) {
-  TI_ASSERT(stmt->width() == 1);  // TODO: support vectorization
   record_access(stmt->dest, AccessFlag::write);
 }
 

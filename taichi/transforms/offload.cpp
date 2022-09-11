@@ -102,7 +102,7 @@ class Offloader {
         }
         if (auto val = s->begin->cast<ConstStmt>()) {
           offloaded->const_begin = true;
-          offloaded->begin_value = val->val[0].val_int32();
+          offloaded->begin_value = val->val.val_int32();
         } else {
           offloaded_ranges.begin_stmts.insert(
               std::make_pair(offloaded.get(), s->begin));
@@ -110,7 +110,7 @@ class Offloader {
 
         if (auto val = s->end->cast<ConstStmt>()) {
           offloaded->const_end = true;
-          offloaded->end_value = val->val[0].val_int32();
+          offloaded->end_value = val->val.val_int32();
         } else {
           if ((arch == Arch::opengl || arch == Arch::vulkan) &&
               demotable_axis_load(s->end)) {
@@ -335,7 +335,6 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
   }
 
   std::size_t allocate_global(DataType type) {
-    TI_ASSERT(type->vector_width() == 1 || type->is<TensorType>());
     auto ret = global_offset_;
     if (type->is<TensorType>()) {
       auto tensor_type = type->cast<TensorType>();
@@ -532,14 +531,12 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
     auto offloaded = stmt_to_offloaded_[stmt];
     stmt_to_offloaded_[ptr] = offloaded;
     if (auto tensor_type = stmt->ret_type->cast<TensorType>()) {
-      LaneAttribute<TypedConstant> zero(std::vector<TypedConstant>(
-          1, TypedConstant(tensor_type->get_element_type())));
+      TypedConstant zero(tensor_type->get_element_type());
       auto const_zero_stmt = replacement.push_back<ConstStmt>(zero);
       stmt_to_offloaded_[const_zero_stmt] = offloaded;
       for (int i = 0; i < tensor_type->get_num_elements(); ++i) {
-        LaneAttribute<TypedConstant> offset(std::vector<TypedConstant>(
-            1, TypedConstant(i *
-                             data_type_size(tensor_type->get_element_type()))));
+        TypedConstant offset(i *
+                             data_type_size(tensor_type->get_element_type()));
         auto const_offset_stmt = replacement.push_back<ConstStmt>(offset);
         auto ptr_offset_stmt =
             replacement.push_back<PtrOffsetStmt>(ptr, const_offset_stmt);
@@ -550,11 +547,10 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
         stmt_to_offloaded_[global_store_stmt] = offloaded;
       }
     } else {
-      LaneAttribute<TypedConstant> zeros(std::vector<TypedConstant>(
-          stmt->width(), TypedConstant(stmt->ret_type)));
-      auto const_zeros = replacement.push_back<ConstStmt>(zeros);
+      TypedConstant zero(stmt->ret_type);
+      auto const_zero_stmt = replacement.push_back<ConstStmt>(zero);
       auto global_store_stmt =
-          replacement.push_back<GlobalStoreStmt>(ptr, const_zeros);
+          replacement.push_back<GlobalStoreStmt>(ptr, const_zero_stmt);
       stmt_to_offloaded_[global_store_stmt] = offloaded;
     }
 
@@ -566,8 +562,7 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
   // Replace local LD/ST with global LD/ST
   void visit(LocalLoadStmt *stmt) override {
     generic_visit(stmt);
-    TI_ASSERT(stmt->width() == 1)
-    auto ptr = stmt->src[0].var;
+    auto ptr = stmt->src;
     auto top_level_ptr = SquashPtrOffset::run(ptr);
     if (top_level_ptr->is<GlobalTemporaryStmt>()) {
       VecStatement replacement;
@@ -653,7 +648,6 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
   }
 
   void visit(Stmt *stmt) override {
-    TI_ASSERT(stmt->width() == 1)
     generic_visit(stmt);
   }
 

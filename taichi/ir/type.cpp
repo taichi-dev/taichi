@@ -64,6 +64,22 @@ DataType DataType::ptr_removed() const {
   }
 }
 
+std::vector<int> DataType::get_shape() const {
+  if (ptr_->is<TensorType>()) {
+    return ptr_->as<TensorType>()->get_shape();
+  }
+
+  return {};
+}
+
+DataType DataType::get_element_type() const {
+  if (ptr_->is<TensorType>()) {
+    return ptr_->as<TensorType>()->get_element_type();
+  }
+
+  return *this;
+}
+
 std::string PrimitiveType::to_string() const {
   return data_type_name(DataType(const_cast<PrimitiveType *>(this)));
 }
@@ -85,10 +101,6 @@ std::string TensorType::to_string() const {
   }
   s += fmt::format(") {}]", element_->to_string());
   return s;
-}
-
-int Type::vector_width() const {
-  return 1;  // TODO: CPU vectorization
 }
 
 bool Type::is_primitive(PrimitiveTypeID type) const {

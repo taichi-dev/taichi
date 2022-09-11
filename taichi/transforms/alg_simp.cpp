@@ -22,15 +22,14 @@ class AlgSimp : public BasicStmtVisitor {
   }
 
   void replace_with_zero(Stmt *stmt) {
-    auto zero =
-        Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(stmt->ret_type));
+    auto zero = Stmt::make<ConstStmt>(TypedConstant(stmt->ret_type));
     stmt->replace_usages_with(zero.get());
     modifier.insert_before(stmt, std::move(zero));
     modifier.erase(stmt);
   }
 
   void replace_with_one(Stmt *stmt) {
-    auto one = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(1));
+    auto one = Stmt::make<ConstStmt>(TypedConstant(1));
     auto one_raw = one.get();
     modifier.insert_before(stmt, std::move(one));
     cast_to_result_type(one_raw, stmt);
@@ -121,9 +120,9 @@ class AlgSimp : public BasicStmtVisitor {
         std::swap(stmt->lhs, stmt->rhs);
         std::swap(lhs, rhs);
       }
-      int log2rhs = bit::log2int((uint64)rhs->val[0].val_as_int64());
-      auto new_rhs = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(
-          TypedConstant(stmt->lhs->ret_type, log2rhs)));
+      int log2rhs = bit::log2int((uint64)rhs->val.val_as_int64());
+      auto new_rhs =
+          Stmt::make<ConstStmt>(TypedConstant(stmt->lhs->ret_type, log2rhs));
       auto result = Stmt::make<BinaryOpStmt>(BinaryOpType::bit_shl, stmt->lhs,
                                              new_rhs.get());
       result->ret_type = stmt->ret_type;
@@ -173,14 +172,12 @@ class AlgSimp : public BasicStmtVisitor {
         TI_WARN("Potential division by 0\n{}", stmt->tb);
       } else {
         // a / const -> a * (1 / const)
-        auto reciprocal = Stmt::make_typed<ConstStmt>(
-            LaneAttribute<TypedConstant>(rhs->ret_type));
+        auto reciprocal =
+            Stmt::make_typed<ConstStmt>(TypedConstant(rhs->ret_type));
         if (rhs->ret_type->is_primitive(PrimitiveTypeID::f64)) {
-          reciprocal->val[0].val_float64() =
-              (float64)1.0 / rhs->val[0].val_float64();
+          reciprocal->val.val_float64() = (float64)1.0 / rhs->val.val_float64();
         } else if (rhs->ret_type->is_primitive(PrimitiveTypeID::f32)) {
-          reciprocal->val[0].val_float32() =
-              (float32)1.0 / rhs->val[0].val_float32();
+          reciprocal->val.val_float32() = (float32)1.0 / rhs->val.val_float32();
         } else {
           TI_NOT_IMPLEMENTED
         }
@@ -197,9 +194,9 @@ class AlgSimp : public BasicStmtVisitor {
     if (is_integral(stmt->lhs->ret_type) && is_unsigned(stmt->lhs->ret_type) &&
         alg_is_pot(rhs)) {
       // (unsigned)a / pot -> a >> log2(pot)
-      int log2rhs = bit::log2int((uint64)rhs->val[0].val_as_int64());
-      auto new_rhs = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(
-          TypedConstant(stmt->lhs->ret_type, log2rhs)));
+      int log2rhs = bit::log2int((uint64)rhs->val.val_as_int64());
+      auto new_rhs =
+          Stmt::make<ConstStmt>(TypedConstant(stmt->lhs->ret_type, log2rhs));
       auto result = Stmt::make<BinaryOpStmt>(BinaryOpType::bit_sar, stmt->lhs,
                                              new_rhs.get());
       result->ret_type = stmt->ret_type;
@@ -213,11 +210,13 @@ class AlgSimp : public BasicStmtVisitor {
   }
 
   void visit(BinaryOpStmt *stmt) override {
-    auto lhs = stmt->lhs->cast<ConstStmt>();
-    auto rhs = stmt->rhs->cast<ConstStmt>();
-    if (stmt->width() != 1) {
+    if (stmt->lhs->ret_type->is<TensorType>() ||
+        stmt->rhs->ret_type->is<TensorType>()) {
+      // TODO: support tensor type
       return;
     }
+    auto lhs = stmt->lhs->cast<ConstStmt>();
+    auto rhs = stmt->rhs->cast<ConstStmt>();
     if (stmt->op_type == BinaryOpType::mul) {
       optimize_multiplication(stmt);
     } else if (stmt->op_type == BinaryOpType::div ||
@@ -248,7 +247,7 @@ class AlgSimp : public BasicStmtVisitor {
         replace_with_zero(stmt);
       }
     } else if (rhs && stmt->op_type == BinaryOpType::pow) {
-      float64 exponent = rhs->val[0].val_cast_to_float64();
+      float64 exponent = rhs->val.val_cast_to_float64();
       if (exponent == 1) {
         // a ** 1 -> a
         stmt->replace_usages_with(stmt->lhs);
@@ -303,7 +302,7 @@ class AlgSimp : public BasicStmtVisitor {
         if (is_integral(stmt->lhs->ret_type)) {
           TI_ERROR("negative exponent in integer pow is not allowed.");
         }
-        auto one = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(1));
+        auto one = Stmt::make<ConstStmt>(TypedConstant(1));
         auto one_raw = one.get();
         modifier.insert_before(stmt, std::move(one));
         cast_to_result_type(one_raw, stmt);
@@ -388,38 +387,38 @@ class AlgSimp : public BasicStmtVisitor {
   }
 
   static bool alg_is_zero(ConstStmt *stmt) {
-    if (!stmt || stmt->width() != 1)
+    if (!stmt)
       return false;
-    return stmt->val[0].equal_value(0);
+    return stmt->val.equal_value(0);
   }
 
   static bool alg_is_one(ConstStmt *stmt) {
-    if (!stmt || stmt->width() != 1)
+    if (!stmt)
       return false;
-    return stmt->val[0].equal_value(1);
+    return stmt->val.equal_value(1);
   }
 
   static bool alg_is_two(ConstStmt *stmt) {
-    if (!stmt || stmt->width() != 1)
+    if (!stmt)
       return false;
-    return stmt->val[0].equal_value(2);
+    return stmt->val.equal_value(2);
   }
 
   static bool alg_is_minus_one(ConstStmt *stmt) {
-    if (!stmt || stmt->width() != 1)
+    if (!stmt)
       return false;
-    return stmt->val[0].equal_value(-1);
+    return stmt->val.equal_value(-1);
   }
 
   static bool alg_is_pot(ConstStmt *stmt) {
-    if (!stmt || stmt->width() != 1)
+    if (!stmt)
       return false;
-    if (!is_integral(stmt->val[0].dt))
+    if (!is_integral(stmt->val.dt))
       return false;
-    if (is_signed(stmt->val[0].dt)) {
-      return bit::is_power_of_two(stmt->val[0].val_int());
+    if (is_signed(stmt->val.dt)) {
+      return bit::is_power_of_two(stmt->val.val_int());
     } else {
-      return bit::is_power_of_two(stmt->val[0].val_uint());
+      return bit::is_power_of_two(stmt->val.val_uint());
     }
   }
 

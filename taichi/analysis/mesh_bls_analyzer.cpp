@@ -35,38 +35,34 @@ void MeshBLSAnalyzer::record_access(Stmt *stmt, AccessFlag flag) {
   auto idx = conv->idx;
   if (conv_type == mesh::ConvType::g2r)
     return;
-  for (int l = 0; l < stmt->width(); l++) {
-    auto snode = ptr->snodes[l];
-    if (!caches_->has(snode)) {
-      if (auto_mesh_local_ &&
-          (flag == AccessFlag::accumulate ||
-           (flag == AccessFlag::read && config_.arch == Arch::cuda)) &&
-          (!idx->is<LoopIndexStmt>() ||
-           !idx->as<LoopIndexStmt>()->is_mesh_index())) {
-        caches_->insert(snode);
-      } else {
-        continue;
-      }
-    }
-    if (idx->is<MeshRelationAccessStmt>()) {
-      if (!caches_->access(snode, element_type, conv_type, flag,
-                           idx->as<MeshRelationAccessStmt>()->neighbor_idx)) {
-        analysis_ok_ = false;
-        break;
-      }
+  auto snode = ptr->snode;
+  if (!caches_->has(snode)) {
+    if (auto_mesh_local_ &&
+        (flag == AccessFlag::accumulate ||
+         (flag == AccessFlag::read && config_.arch == Arch::cuda)) &&
+        (!idx->is<LoopIndexStmt>() ||
+         !idx->as<LoopIndexStmt>()->is_mesh_index())) {
+      caches_->insert(snode);
     } else {
-      // No optimization for front-end attribute access
+      return;
     }
+  }
+  if (idx->is<MeshRelationAccessStmt>()) {
+    if (!caches_->access(snode, element_type, conv_type, flag,
+                         idx->as<MeshRelationAccessStmt>()->neighbor_idx)) {
+      analysis_ok_ = false;
+      return;
+    }
+  } else {
+    // No optimization for front-end attribute access
   }
 }
 
 void MeshBLSAnalyzer::visit(GlobalLoadStmt *stmt) {
-  TI_ASSERT(stmt->width() == 1);  // TODO: support vectorization
   record_access(stmt->src, AccessFlag::read);
 }
 
 void MeshBLSAnalyzer::visit(GlobalStoreStmt *stmt) {
-  TI_ASSERT(stmt->width() == 1);  // TODO: support vectorization
   record_access(stmt->dest, AccessFlag::write);
 }
 

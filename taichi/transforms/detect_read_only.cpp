@@ -38,7 +38,7 @@ class ExternalPtrAccessVisitor : public BasicStmtVisitor {
       return;
 
     ExternalPtrStmt *src = stmt->src->cast<ExternalPtrStmt>();
-    ArgLoadStmt *arg = src->base_ptrs.data[0]->cast<ArgLoadStmt>();
+    ArgLoadStmt *arg = src->base_ptr->cast<ArgLoadStmt>();
     if (map_.find(arg->arg_id) != map_.end()) {
       map_[arg->arg_id] = map_[arg->arg_id] | ExternalPtrAccess::READ;
     } else {
@@ -51,7 +51,7 @@ class ExternalPtrAccessVisitor : public BasicStmtVisitor {
       return;
 
     ExternalPtrStmt *dst = stmt->dest->cast<ExternalPtrStmt>();
-    ArgLoadStmt *arg = dst->base_ptrs.data[0]->cast<ArgLoadStmt>();
+    ArgLoadStmt *arg = dst->base_ptr->cast<ArgLoadStmt>();
     if (map_.find(arg->arg_id) != map_.end()) {
       map_[arg->arg_id] = map_[arg->arg_id] | ExternalPtrAccess::WRITE;
     } else {
@@ -65,7 +65,7 @@ class ExternalPtrAccessVisitor : public BasicStmtVisitor {
 
     // Atomics modifies existing state (therefore both read & write)
     ExternalPtrStmt *dst = stmt->dest->cast<ExternalPtrStmt>();
-    ArgLoadStmt *arg = dst->base_ptrs.data[0]->cast<ArgLoadStmt>();
+    ArgLoadStmt *arg = dst->base_ptr->cast<ArgLoadStmt>();
     map_[arg->arg_id] = ExternalPtrAccess::WRITE | ExternalPtrAccess::READ;
   }
 };

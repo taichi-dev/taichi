@@ -80,7 +80,7 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
   arg_attribs_vec_.reserve(kernel.args.size());
   for (const auto &ka : kernel.args) {
     ArgAttributes ma;
-    ma.dt = to_metal_type(ka.dt);
+    ma.dt = to_metal_type(ka.get_element_type());
     const size_t dt_bytes = metal_data_type_bytes(ma.dt);
     if (dt_bytes > 4) {
       // Metal doesn't support 64bit data buffers.

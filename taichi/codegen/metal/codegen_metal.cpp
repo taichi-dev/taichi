@@ -254,28 +254,15 @@ class KernelCodegenImpl : public IRVisitor {
   }
 
   void visit(ConstStmt *const_stmt) override {
-    TI_ASSERT(const_stmt->width() == 1);
     emit("constexpr {} {} = {};",
          metal_data_type_name(const_stmt->element_type()),
-         const_stmt->raw_name(), const_stmt->val[0].stringify());
+         const_stmt->raw_name(), const_stmt->val.stringify());
   }
 
   void visit(LocalLoadStmt *stmt) override {
-    // TODO: optimize for partially vectorized load...
-    bool linear_index = true;
-    for (int i = 0; i < (int)stmt->src.size(); i++) {
-      if (stmt->src[i].offset != i) {
-        linear_index = false;
-      }
-    }
-    if (stmt->same_source() && linear_index &&
-        stmt->width() == stmt->src[0].var->width()) {
-      auto ptr = stmt->src[0].var;
-      emit("const {} {}({});", metal_data_type_name(stmt->element_type()),
-           stmt->raw_name(), ptr->raw_name());
-    } else {
-      TI_NOT_IMPLEMENTED;
-    }
+    auto ptr = stmt->src;
+    emit("const {} {}({});", metal_data_type_name(stmt->element_type()),
+         stmt->raw_name(), ptr->raw_name());
   }
 
   void visit(LocalStoreStmt *stmt) override {
@@ -413,8 +400,6 @@ class KernelCodegenImpl : public IRVisitor {
   }
 
   void visit(GlobalStoreStmt *stmt) override {
-    TI_ASSERT(stmt->width() == 1);
-
     if (!is_ret_type_bit_pointer(stmt->dest)) {
       emit(R"(*{} = {};)", stmt->dest->raw_name(), stmt->val->raw_name());
       return;
@@ -423,7 +408,6 @@ class KernelCodegenImpl : public IRVisitor {
   }
 
   void visit(GlobalLoadStmt *stmt) override {
-    TI_ASSERT(stmt->width() == 1);
     std::string rhs_expr;
     if (!is_ret_type_bit_pointer(stmt->src)) {
       rhs_expr = fmt::format("*{}", stmt->src->raw_name());
@@ -457,14 +441,13 @@ class KernelCodegenImpl : public IRVisitor {
   void visit(ExternalPtrStmt *stmt) override {
     // Used mostly for transferring data between host (e.g. numpy array) and
     // Metal.
-    TI_ASSERT(stmt->width() == 1);
     const auto linear_index_name =
         fmt::format("{}_linear_index_", stmt->raw_name());
     emit("int {} = 0;", linear_index_name);
     emit("{{");
     {
       ScopedIndent s(current_appender());
-      const auto *argload = stmt->base_ptrs[0]->as<ArgLoadStmt>();
+      const auto *argload = stmt->base_ptr->as<ArgLoadStmt>();
       const int arg_id = argload->arg_id;
       const int num_indices = stmt->indices.size();
       const auto &element_shape = stmt->element_shape;
@@ -498,18 +481,16 @@ class KernelCodegenImpl : public IRVisitor {
 
     const auto dt = metal_data_type_name(stmt->element_type());
     emit("device {} *{} = ({} + {});", dt, stmt->raw_name(),
-         stmt->base_ptrs[0]->raw_name(), linear_index_name);
+         stmt->base_ptr->raw_name(), linear_index_name);
   }
 
   void visit(GlobalTemporaryStmt *stmt) override {
-    TI_ASSERT(stmt->width() == 1);
     const auto dt = metal_data_type_name(stmt->element_type().ptr_removed());
     emit("device {}* {} = reinterpret_cast<device {}*>({} + {});", dt,
          stmt->raw_name(), dt, kGlobalTmpsBufferName, stmt->offset);
   }
 
   void visit(ThreadLocalPtrStmt *stmt) override {
-    TI_ASSERT(stmt->width() == 1);
     emit("thread auto* {} = reinterpret_cast<thread {}*>({} + {});",
          stmt->raw_name(),
          metal_data_type_name(stmt->element_type().ptr_removed()),
@@ -611,7 +592,6 @@ class KernelCodegenImpl : public IRVisitor {
   }
 
   void visit(AtomicOpStmt *stmt) override {
-    TI_ASSERT(stmt->width() == 1);
     const auto op_type = stmt->op_type;
     std::string op_name;
     bool handle_float = false;
@@ -691,7 +671,6 @@ class KernelCodegenImpl : public IRVisitor {
   }
 
   void visit(RangeForStmt *for_stmt) override {
-    TI_ASSERT(for_stmt->width() == 1);
     auto loop_var_name = for_stmt->raw_name();
     if (!for_stmt->reversed) {
       emit("for (int {}_ = {}; {}_ < {}; {}_ = {}_ + {}) {{", loop_var_name,
@@ -864,7 +843,6 @@ class KernelCodegenImpl : public IRVisitor {
   }
 
   void visit(AdStackAllocaStmt *stmt) override {
-    TI_ASSERT(stmt->width() == 1);
     TI_ASSERT_INFO(
         stmt->max_size > 0,
         "Adaptive autodiff stack's size should have been determined.");
@@ -1497,11 +1475,10 @@ class KernelCodegenImpl : public IRVisitor {
 
   std::string inject_load_global_tmp(int offset,
                                      DataType dt = PrimitiveType::i32) {
-    const auto vt = TypeFactory::create_vector_or_scalar_type(1, dt);
-    auto gtmp = Stmt::make<GlobalTemporaryStmt>(offset, vt);
+    auto gtmp = Stmt::make<GlobalTemporaryStmt>(offset, dt);
     gtmp->accept(this);
     auto gload = Stmt::make<GlobalLoadStmt>(gtmp.get());
-    gload->ret_type = vt;
+    gload->ret_type = dt;
     gload->accept(this);
     return gload->raw_name();
   }

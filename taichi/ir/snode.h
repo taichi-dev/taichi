@@ -93,9 +93,10 @@ class SNode {
    public:
     virtual ~GradInfoProvider() = default;
     virtual bool is_primal() const = 0;
+    virtual SNodeGradType get_snode_grad_type() const = 0;
     virtual SNode *adjoint_snode() const = 0;
     virtual SNode *dual_snode() const = 0;
-    virtual SNode *adjoint_visited_snode() const = 0;
+    virtual SNode *adjoint_checkbit_snode() const = 0;
 
     template <typename T>
     T *cast() {
@@ -144,12 +145,12 @@ class SNode {
   // Whether the path from root to |this| contains only `dense` SNodes.
   bool is_path_all_dense{true};
 
-  SNode(SNodeGlobalVarExprMap *snode_to_glb_var_exprs = nullptr,
+  SNode(SNodeFieldMap *snode_to_fields = nullptr,
         SNodeRwAccessorsBank *snode_rw_accessors_bank = nullptr);
 
   SNode(int depth,
         SNodeType t,
-        SNodeGlobalVarExprMap *snode_to_glb_var_exprs = nullptr,
+        SNodeFieldMap *snode_to_fields = nullptr,
         SNodeRwAccessorsBank *snode_rw_accessors_bank = nullptr);
 
   SNode(const SNode &);
@@ -276,6 +277,8 @@ class SNode {
 
   bool is_primal() const;
 
+  SNodeGradType get_snode_grad_type() const;
+
   bool is_place() const;
 
   bool is_scalar() const;
@@ -284,9 +287,9 @@ class SNode {
 
   SNode *get_adjoint() const;
 
-  bool has_adjoint_visited() const;
+  bool has_adjoint_checkbit() const;
 
-  SNode *get_adjoint_visited() const;
+  SNode *get_adjoint_checkbit() const;
 
   bool has_dual() const;
 
@@ -326,14 +329,14 @@ class SNode {
   int shape_along_axis(int i) const;
 
   void place(Expr &expr, const std::vector<int> &offset, int id_in_bit_struct) {
-    place_child(&expr, offset, id_in_bit_struct, this, snode_to_glb_var_exprs_);
+    place_child(&expr, offset, id_in_bit_struct, this, snode_to_fields_);
   }
 
   void lazy_grad();
 
   void lazy_dual();
 
-  void allocate_grad_visited();
+  void allocate_adjoint_checkbit();
 
   int64 read_int(const std::vector<int> &i);
   uint64 read_uint(const std::vector<int> &i);
@@ -357,7 +360,7 @@ class SNode {
 
  private:
   int snode_tree_id_{0};
-  SNodeGlobalVarExprMap *snode_to_glb_var_exprs_{nullptr};
+  SNodeFieldMap *snode_to_fields_{nullptr};
   SNodeRwAccessorsBank *snode_rw_accessors_bank_{nullptr};
 };
 

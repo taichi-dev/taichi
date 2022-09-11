@@ -203,7 +203,7 @@ void make_block_local_offload(OffloadedStmt *offload,
             }
             auto bls_ptr = element_block->push_back<BlockLocalPtrStmt>(
                 bls_element_offset_bytes,
-                TypeFactory::create_vector_or_scalar_type(1, data_type, true));
+                TypeFactory::get_instance().get_pointer_type(data_type));
             element_block->push_back<GlobalStoreStmt>(bls_ptr, value);
           });
     }
@@ -216,8 +216,7 @@ void make_block_local_offload(OffloadedStmt *offload,
       // TODO: no more abuse of gather_statements...
       irpass::analysis::gather_statements(offload->body.get(), [&](Stmt *stmt) {
         if (auto global_ptr = stmt->cast<GlobalPtrStmt>()) {
-          TI_ASSERT(global_ptr->width() == 1);
-          if (global_ptr->snodes[0] == snode) {
+          if (global_ptr->snode == snode) {
             global_ptrs.push_back(global_ptr);
           }
         }
@@ -261,13 +260,12 @@ void make_block_local_offload(OffloadedStmt *offload,
                 "index %d.",
                 kernel_name, i, bls_axis_size);
 
-            auto lower_bound =
-                bls.push_back<ConstStmt>(LaneAttribute<TypedConstant>(0));
+            auto lower_bound = bls.push_back<ConstStmt>(TypedConstant(0));
             auto check_lower_bound = bls.push_back<BinaryOpStmt>(
                 BinaryOpType::cmp_ge, inc, lower_bound);
 
-            auto upper_bound = bls.push_back<ConstStmt>(
-                LaneAttribute<TypedConstant>(bls_axis_size));
+            auto upper_bound =
+                bls.push_back<ConstStmt>(TypedConstant(bls_axis_size));
             auto check_upper_bound = bls.push_back<BinaryOpStmt>(
                 BinaryOpType::cmp_lt, inc, upper_bound);
 
@@ -302,7 +300,7 @@ void make_block_local_offload(OffloadedStmt *offload,
 
         bls.push_back<BlockLocalPtrStmt>(
             bls_element_offset,
-            TypeFactory::create_vector_or_scalar_type(1, data_type, true));
+            TypeFactory::get_instance().get_pointer_type(data_type));
         global_ptr->replace_with(std::move(bls));
       }
     }
@@ -317,7 +315,7 @@ void make_block_local_offload(OffloadedStmt *offload,
             // Store/accumulate from BLS to global
             auto bls_ptr = element_block->push_back<BlockLocalPtrStmt>(
                 bls_element_offset_bytes,
-                TypeFactory::create_vector_or_scalar_type(1, data_type, true));
+                TypeFactory::get_instance().get_pointer_type(data_type));
             auto bls_val = element_block->push_back<GlobalLoadStmt>(bls_ptr);
 
             auto global_pointer =

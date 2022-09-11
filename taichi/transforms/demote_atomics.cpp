@@ -46,21 +46,18 @@ class DemoteAtomics : public BasicStmtVisitor {
         if (stmt->dest->is<GlobalPtrStmt>()) {
           demote = true;
           auto dest = stmt->dest->as<GlobalPtrStmt>();
-          for (auto snode : dest->snodes.data) {
-            if (loop_unique_ptr_[snode] == nullptr ||
-                loop_unique_ptr_[snode]->indices.empty()) {
-              // not uniquely accessed
-              demote = false;
-              break;
-            }
-            if (current_offloaded->mem_access_opt.has_flag(
-                    snode, SNodeAccessFlag::block_local) ||
-                current_offloaded->mem_access_opt.has_flag(
-                    snode, SNodeAccessFlag::mesh_local)) {
-              // BLS does not support write access yet so we keep atomic_adds.
-              demote = false;
-              break;
-            }
+          auto snode = dest->snode;
+          if (loop_unique_ptr_[snode] == nullptr ||
+              loop_unique_ptr_[snode]->indices.empty()) {
+            // not uniquely accessed
+            demote = false;
+          }
+          if (current_offloaded->mem_access_opt.has_flag(
+                  snode, SNodeAccessFlag::block_local) ||
+              current_offloaded->mem_access_opt.has_flag(
+                  snode, SNodeAccessFlag::mesh_local)) {
+            // BLS does not support write access yet so we keep atomic_adds.
+            demote = false;
           }
           // demote from-end atomics
           if (current_offloaded->task_type == OffloadedTaskType::mesh_for) {
@@ -73,8 +70,8 @@ class DemoteAtomics : public BasicStmtVisitor {
               }
               if (idx->is<LoopIndexStmt>() &&
                   idx->as<LoopIndexStmt>()->is_mesh_index() &&
-                  loop_unique_ptr_[stmt->dest->as<GlobalPtrStmt>()
-                                       ->snodes.data[0]] != nullptr) {
+                  loop_unique_ptr_[stmt->dest->as<GlobalPtrStmt>()->snode] !=
+                      nullptr) {
                 demote = true;
               }
             }
@@ -85,13 +82,11 @@ class DemoteAtomics : public BasicStmtVisitor {
           if (dest_ptr->indices.empty()) {
             demote = false;
           }
-          for (Stmt *base_stmt : dest_ptr->base_ptrs.data) {
-            ArgLoadStmt *arg_load_stmt = base_stmt->as<ArgLoadStmt>();
-            int arg_id = arg_load_stmt->arg_id;
-            if (loop_unique_arr_ptr_[arg_id] == nullptr) {
-              // Not loop unique
-              demote = false;
-            }
+          ArgLoadStmt *arg_load_stmt = dest_ptr->base_ptr->as<ArgLoadStmt>();
+          int arg_id = arg_load_stmt->arg_id;
+          if (loop_unique_arr_ptr_[arg_id] == nullptr) {
+            // Not loop unique
+            demote = false;
           }
           // TODO: Is BLS / Mem Access Opt a thing for any_arr?
         }
@@ -123,8 +118,7 @@ class DemoteAtomics : public BasicStmtVisitor {
       auto new_stmts = VecStatement();
       Stmt *load;
       if (is_local) {
-        TI_ASSERT(stmt->width() == 1);
-        load = new_stmts.push_back<LocalLoadStmt>(LocalAddress(ptr, 0));
+        load = new_stmts.push_back<LocalLoadStmt>(ptr);
         auto bin = new_stmts.push_back<BinaryOpStmt>(bin_type, load, val);
         new_stmts.push_back<LocalStoreStmt>(ptr, bin);
       } else {

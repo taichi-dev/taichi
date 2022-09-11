@@ -161,8 +161,21 @@ class CUSOLVERDriver : protected CUDADriverBase {
   // TODO: Add cusolver function APIs
   static CUSOLVERDriver &get_instance();
 
+#define PER_CUSOLVER_FUNCTION(name, symbol_name, ...) \
+  CUDADriverFunction<__VA_ARGS__> name;
+#include "taichi/rhi/cuda/cusolver_functions.inc.h"
+#undef PER_CUSOLVER_FUNCTION
+
+  bool load_cusolver();
+
+  inline bool is_loaded() {
+    return cusolver_loaded_;
+  }
+
  private:
   CUSOLVERDriver();
+  std::mutex lock_;
+  bool cusolver_loaded_{false};
 };
 
 TLANG_NAMESPACE_END

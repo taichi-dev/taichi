@@ -133,30 +133,28 @@ class WeakenAccess : public BasicStmtVisitor {
           current_struct_for_;
       if (is_struct_for) {
         bool same_as_loop_snode = true;
-        for (auto snode : stmt->snodes.data) {
-          SNode *loop_snode = nullptr;
-          if (current_struct_for_) {
-            loop_snode = current_struct_for_->snode;
-          } else {
-            loop_snode = current_offload_->snode;
-          }
-          TI_ASSERT(loop_snode);
-          if (!share_sparsity(snode, loop_snode)) {
-            same_as_loop_snode = false;
-          }
-          if (stmt->indices.size() == loop_snode->num_active_indices)
-            for (int i = 0; i < loop_snode->num_active_indices; i++) {
-              auto ind = stmt->indices[i];
-              // TODO: vectorized cases?
-              if (auto loop_var = ind->cast<LoopIndexStmt>()) {
-                if (loop_var->index != i) {
-                  same_as_loop_snode = false;
-                }
-              } else {
+        SNode *loop_snode = nullptr;
+        if (current_struct_for_) {
+          loop_snode = current_struct_for_->snode;
+        } else {
+          loop_snode = current_offload_->snode;
+        }
+        TI_ASSERT(loop_snode);
+        if (!share_sparsity(stmt->snode, loop_snode)) {
+          same_as_loop_snode = false;
+        }
+        if (stmt->indices.size() == loop_snode->num_active_indices)
+          for (int i = 0; i < loop_snode->num_active_indices; i++) {
+            auto ind = stmt->indices[i];
+            // TODO: vectorized cases?
+            if (auto loop_var = ind->cast<LoopIndexStmt>()) {
+              if (loop_var->index != i) {
                 same_as_loop_snode = false;
               }
+            } else {
+              same_as_loop_snode = false;
             }
-        }
+          }
         if (same_as_loop_snode)
           stmt->activate = false;
       }

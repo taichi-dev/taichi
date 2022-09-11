@@ -32,7 +32,7 @@ TEST(FrontendTypeInference, Id) {
   Callable::CurrentCallableGuard _(kernel->program, kernel.get());
   auto const_i32 = value<int32>(-(1 << 20));
   const_i32->type_check(nullptr);
-  auto id_i32 = prog->current_ast_builder()->make_var(const_i32);
+  auto id_i32 = prog->current_ast_builder()->make_var(const_i32, const_i32->tb);
   EXPECT_EQ(id_i32->ret_type, PrimitiveType::i32);
 }
 
@@ -80,11 +80,9 @@ TEST(FrontendTypeInference, TernaryOp) {
   EXPECT_EQ(ternary_f32->ret_type, PrimitiveType::f32);
 }
 
-TEST(FrontendTypeInference, GlobalPtr_GlobalVariable) {
-  auto snode = std::make_unique<SNode>(0, SNodeType::root);
-  snode->dt = PrimitiveType::u8;
+TEST(FrontendTypeInference, GlobalPtr_Field) {
   auto global_var =
-      Expr::make<GlobalVariableExpression>(snode.get(), Identifier(0));
+      Expr::make<FieldExpression>(PrimitiveType::u8, Identifier(0));
   auto index = value<int32>(2);
   index->type_check(nullptr);
   auto global_ptr = global_var[ExprGroup(index)];

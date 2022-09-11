@@ -1,4 +1,8 @@
+from taichi._lib.utils import ti_python_core as _ti_python_core
+
 import taichi
+
+_type_factory = _ti_python_core.get_type_factory_instance()
 
 
 class CompoundType:
@@ -7,8 +11,13 @@ class CompoundType:
 
 class TensorType(CompoundType):
     def __init__(self, shape, dtype):
-        self.dtype = dtype
-        self.shape = shape
+        self.ptr = _type_factory.get_tensor_type(shape, dtype)
+
+    def shape(self):
+        return tuple(self.ptr.shape())
+
+    def element_type(self):
+        return self.ptr.element_type()
 
 
 # TODO: maybe move MatrixType, StructType here to avoid the circular import?

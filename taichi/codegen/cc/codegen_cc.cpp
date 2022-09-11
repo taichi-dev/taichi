@@ -125,19 +125,16 @@ class CCTransformer : public IRVisitor {
   }
 
   void visit(GlobalLoadStmt *stmt) override {
-    TI_ASSERT(stmt->width() == 1);
     emit("{} = *{};",
          define_var(cc_data_type_name(stmt->element_type()), stmt->raw_name()),
          stmt->src->raw_name());
   }
 
   void visit(GlobalStoreStmt *stmt) override {
-    TI_ASSERT(stmt->width() == 1);
     emit("*{} = {};", stmt->dest->raw_name(), stmt->val->raw_name());
   }
 
   void visit(GlobalTemporaryStmt *stmt) override {
-    TI_ASSERT(stmt->width() == 1);
     auto ptr_type =
         cc_data_type_name(stmt->element_type().ptr_removed()) + " *";
     auto var = define_var(ptr_type, stmt->raw_name());
@@ -154,9 +151,8 @@ class CCTransformer : public IRVisitor {
   }
 
   void visit(ExternalPtrStmt *stmt) override {
-    TI_ASSERT(stmt->width() == 1);
     std::string offset = "0";
-    const auto *argload = stmt->base_ptrs[0]->as<ArgLoadStmt>();
+    const auto *argload = stmt->base_ptr->as<ArgLoadStmt>();
     const int arg_id = argload->arg_id;
     const auto element_shape = stmt->element_shape;
     const auto layout = stmt->element_dim < 0 ? ExternalArrayLayout::kAOS
@@ -181,7 +177,7 @@ class CCTransformer : public IRVisitor {
     auto var =
         define_var(cc_data_type_name(stmt->element_type().ptr_removed()) + " *",
                    stmt->raw_name());
-    emit("{} = {} + {};", var, stmt->base_ptrs[0]->raw_name(), offset);
+    emit("{} = {} + {};", var, stmt->base_ptr->raw_name(), offset);
   }
 
   void visit(ArgLoadStmt *stmt) override {
@@ -208,10 +204,9 @@ class CCTransformer : public IRVisitor {
   }
 
   void visit(ConstStmt *stmt) override {
-    TI_ASSERT(stmt->width() == 1);
     emit("{} = {};",
          define_var(cc_data_type_name(stmt->element_type()), stmt->raw_name()),
-         stmt->val[0].stringify());
+         stmt->val.stringify());
   }
 
   void visit(AllocaStmt *stmt) override {
@@ -220,18 +215,9 @@ class CCTransformer : public IRVisitor {
   }
 
   void visit(LocalLoadStmt *stmt) override {
-    bool linear_index = true;
-    for (int i = 0; i < (int)stmt->src.size(); i++) {
-      if (stmt->src[i].offset != i) {
-        linear_index = false;
-      }
-    }
-    TI_ASSERT(stmt->same_source() && linear_index &&
-              stmt->width() == stmt->src[0].var->width());
-
     auto var =
         define_var(cc_data_type_name(stmt->element_type()), stmt->raw_name());
-    emit("{} = {};", var, stmt->src[0].var->raw_name());
+    emit("{} = {};", var, stmt->src->raw_name());
   }
 
   void visit(LocalStoreStmt *stmt) override {
@@ -334,7 +320,6 @@ class CCTransformer : public IRVisitor {
   }
 
   void visit(BinaryOpStmt *bin) override {
-    TI_ASSERT(bin->width() == 1);
     const auto dt_name = cc_data_type_name(bin->element_type());
     const auto lhs_name = bin->lhs->raw_name();
     const auto rhs_name = bin->rhs->raw_name();
@@ -371,7 +356,6 @@ class CCTransformer : public IRVisitor {
   }
 
   void visit(UnaryOpStmt *stmt) override {
-    TI_ASSERT(stmt->width() == 1);
     const auto dt_name = cc_data_type_name(stmt->element_type());
     const auto operand_name = stmt->operand->raw_name();
     const auto dest_name = stmt->raw_name();
@@ -505,7 +489,6 @@ class CCTransformer : public IRVisitor {
   }
 
   void visit(RangeForStmt *stmt) override {
-    TI_ASSERT(stmt->width() == 1);
     auto var = define_var("Ti_i32", stmt->raw_name());
     if (!stmt->reversed) {
       emit("for ({} = {}; {} < {}; {} += {}) {{", var, stmt->begin->raw_name(),
@@ -552,7 +535,6 @@ class CCTransformer : public IRVisitor {
   }
 
   void visit(AdStackAllocaStmt *stmt) override {
-    TI_ASSERT(stmt->width() == 1);
     TI_ASSERT_INFO(
         stmt->max_size > 0,
         "Adaptive autodiff stack's size should have been determined.");

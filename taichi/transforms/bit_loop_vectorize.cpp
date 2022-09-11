@@ -61,7 +61,7 @@ class BitLoopVectorize : public IRVisitor {
             auto indices = ptr->indices;
             indices[1] = loop_stmt->body->statements[1].get();
             auto base_ptr =
-                std::make_unique<GlobalPtrStmt>(ptr->snodes, indices);
+                std::make_unique<GlobalPtrStmt>(ptr->snode, indices);
             base_ptr->ret_type = new_ret_type;
             base_ptr->is_bit_vectorized = true;
             // load x[i, j](base)
@@ -80,7 +80,7 @@ class BitLoopVectorize : public IRVisitor {
                 offset_index_opcode, indices[1], offset_constant.get());
             indices[1] = offset_index.get();
             auto offset_ptr =
-                std::make_unique<GlobalPtrStmt>(ptr->snodes, indices);
+                std::make_unique<GlobalPtrStmt>(ptr->snode, indices);
             offset_ptr->ret_type = new_ret_type;
             offset_ptr->is_bit_vectorized = true;
             auto load_offsetted =
@@ -197,7 +197,7 @@ class BitLoopVectorize : public IRVisitor {
           }
         } else if (auto lhs = stmt->lhs->cast<LocalLoadStmt>()) {
           // case 1: lhs is a local load from a local adder structure
-          auto it = transformed_atomics.find(lhs->src[0].var);
+          auto it = transformed_atomics.find(lhs->src);
           if (it != transformed_atomics.end()) {
             int32 rhs_val = get_constant_value(stmt->rhs);
             // TODO: we limit 2 and 3 for now, the other case should be
@@ -207,9 +207,9 @@ class BitLoopVectorize : public IRVisitor {
             auto &buffer_vec = it->second;
             Stmt *a = buffer_vec[0], *b = buffer_vec[1], *c = buffer_vec[2];
             // load all three buffers
-            auto load_a = std::make_unique<LocalLoadStmt>(LocalAddress(a, 0));
-            auto load_b = std::make_unique<LocalLoadStmt>(LocalAddress(b, 0));
-            auto load_c = std::make_unique<LocalLoadStmt>(LocalAddress(c, 0));
+            auto load_a = std::make_unique<LocalLoadStmt>(a);
+            auto load_b = std::make_unique<LocalLoadStmt>(b);
+            auto load_c = std::make_unique<LocalLoadStmt>(c);
             // compute not_a first
             auto not_a = std::make_unique<UnaryOpStmt>(UnaryOpType::bit_not,
                                                        load_a.get());
@@ -283,12 +283,12 @@ class BitLoopVectorize : public IRVisitor {
     // bit To add *d* to the subarray, we do bit_xor and bit_and to compute the
     // sum and the carry
     Stmt *a = buffer_vec[0], *b = buffer_vec[1], *c = buffer_vec[2];
-    auto load_c = std::make_unique<LocalLoadStmt>(LocalAddress(c, 0));
+    auto load_c = std::make_unique<LocalLoadStmt>(c);
     auto carry_c = std::make_unique<BinaryOpStmt>(BinaryOpType::bit_and,
                                                   load_c.get(), stmt->val);
     auto sum_c =
         std::make_unique<AtomicOpStmt>(AtomicOpType::bit_xor, c, stmt->val);
-    auto load_b = std::make_unique<LocalLoadStmt>(LocalAddress(b, 0));
+    auto load_b = std::make_unique<LocalLoadStmt>(b);
     auto carry_b = std::make_unique<BinaryOpStmt>(BinaryOpType::bit_and,
                                                   load_b.get(), carry_c.get());
     auto sum_b =
@@ -318,8 +318,8 @@ class BitLoopVectorize : public IRVisitor {
     }
     if (auto constant_stmt = stmt->cast<ConstStmt>();
         constant_stmt &&
-        constant_stmt->val[0].dt->is_primitive(PrimitiveTypeID::i32)) {
-      val = constant_stmt->val[0].val_i32;
+        constant_stmt->val.dt->is_primitive(PrimitiveTypeID::i32)) {
+      val = constant_stmt->val.val_i32;
     }
     return val;
   }

@@ -100,7 +100,7 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
                      expr->element_dim, expr->dt->to_string()));
   }
 
-  void visit(GlobalVariableExpression *expr) override {
+  void visit(FieldExpression *expr) override {
     emit("#", expr->ident.name());
     if (expr->snode) {
       emit(
@@ -108,6 +108,13 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
     } else {
       emit(fmt::format(" (dt={})", expr->dt->to_string()));
     }
+  }
+
+  void visit(MatrixExpression *expr) override {
+    emit('[');
+    emit_vector(expr->elements);
+    emit(']');
+    emit(fmt::format(" (dt={})", expr->dt->to_string()));
   }
 
   void visit(IndexExpression *expr) override {

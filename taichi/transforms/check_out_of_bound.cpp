@@ -3,6 +3,7 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/visitors.h"
 #include "taichi/transforms/check_out_of_bound.h"
+#include "taichi/transforms/utils.h"
 #include <set>
 
 TLANG_NAMESPACE_BEGIN
@@ -42,13 +43,11 @@ class CheckOutOfBound : public BasicStmtVisitor {
   void visit(GlobalPtrStmt *stmt) override {
     if (is_done(stmt))
       return;
-    TI_ASSERT(stmt->snodes.size() == 1);
-    auto snode = stmt->snodes[0];
+    auto snode = stmt->snode;
     bool has_offset = !(snode->index_offsets.empty());
     auto new_stmts = VecStatement();
-    auto zero = new_stmts.push_back<ConstStmt>(LaneAttribute<TypedConstant>(0));
-    Stmt *result =
-        new_stmts.push_back<ConstStmt>(LaneAttribute<TypedConstant>(true));
+    auto zero = new_stmts.push_back<ConstStmt>(TypedConstant(0));
+    Stmt *result = new_stmts.push_back<ConstStmt>(TypedConstant(true));
 
     std::string msg =
         fmt::format("(kernel={}) Accessing field ({}) of size (", kernel_name,
@@ -66,8 +65,8 @@ class CheckOutOfBound : public BasicStmtVisitor {
           BinaryOpType::cmp_ge, stmt->indices[i], lower_bound);
       int size_i = snode->shape_along_axis(i);
       int upper_bound_i = size_i;
-      auto upper_bound = new_stmts.push_back<ConstStmt>(
-          LaneAttribute<TypedConstant>(upper_bound_i));
+      auto upper_bound =
+          new_stmts.push_back<ConstStmt>(TypedConstant(upper_bound_i));
       auto check_upper_bound = new_stmts.push_back<BinaryOpStmt>(
           BinaryOpType::cmp_lt, stmt->indices[i], upper_bound);
       auto check_i = new_stmts.push_back<BinaryOpStmt>(
@@ -83,8 +82,7 @@ class CheckOutOfBound : public BasicStmtVisitor {
 
       auto input_index = stmt->indices[i];
       if (offset_i != 0) {
-        auto offset = new_stmts.push_back<ConstStmt>(
-            LaneAttribute<TypedConstant>(offset_i));
+        auto offset = new_stmts.push_back<ConstStmt>(TypedConstant(offset_i));
         input_index = new_stmts.push_back<BinaryOpStmt>(BinaryOpType::add,
                                                         input_index, offset);
       }
@@ -98,6 +96,7 @@ class CheckOutOfBound : public BasicStmtVisitor {
       msg += "%d";
     }
     msg += ")";
+    msg += "\n" + stmt->tb;
 
     new_stmts.push_back<AssertStmt>(result, msg, args);
     modifier.insert_before(stmt, std::move(new_stmts));
@@ -117,6 +116,7 @@ class CheckOutOfBound : public BasicStmtVisitor {
             BinaryOpType::cmp_ge, stmt->rhs, compare_rhs.get());
         compare->ret_type = PrimitiveType::i32;
         std::string msg = "Negative exponent for integer pows are not allowed";
+        msg += "\n" + stmt->tb;
         auto assert_stmt = std::make_unique<AssertStmt>(compare.get(), msg,
                                                         std::vector<Stmt *>());
         assert_stmt->accept(this);

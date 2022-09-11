@@ -15,27 +15,29 @@ std::string type_name(llvm::Type *type) {
  * (a type is a renamed version of the other one) based on the
  * type name. Check recursively if the types are function types.
  *
- * The name of a type imported multiple times is added a suffix starting with a
- * "." following by a number. For example, "RuntimeContext" may be renamed to
- * names like "RuntimeContext.0" and "RuntimeContext.8".
+ * Types like `PhysicalCoordinates` occur in every struct module.
+ * When a struct module is copied into a LLVM context,
+ * types in the module which already exist in the context are renamed
+ * by adding a suffix starting with a "." following by a number.
+ * For example, "PhysicalCoordinates" may be renamed to
+ * names like "PhysicalCoordinates.0" and "PhysicalCoordinates.8".
  */
-bool is_same_type(llvm::Type *required, llvm::Type *provided) {
-  if (required == provided) {
+bool is_same_type(llvm::Type *a, llvm::Type *b) {
+  if (a == b) {
     return true;
   }
-  if (required->isPointerTy() != provided->isPointerTy()) {
+  if (a->isPointerTy() != b->isPointerTy()) {
     return false;
   }
-  if (required->isPointerTy()) {
-    required = required->getPointerElementType();
-    provided = provided->getPointerElementType();
+  if (a->isPointerTy()) {
+    return is_same_type(a->getPointerElementType(), b->getPointerElementType());
   }
-  if (required->isFunctionTy() != provided->isFunctionTy()) {
+  if (a->isFunctionTy() != b->isFunctionTy()) {
     return false;
   }
-  if (required->isFunctionTy()) {
-    auto req_func = llvm::dyn_cast<llvm::FunctionType>(required);
-    auto prov_func = llvm::dyn_cast<llvm::FunctionType>(provided);
+  if (a->isFunctionTy()) {
+    auto req_func = llvm::cast<llvm::FunctionType>(a);
+    auto prov_func = llvm::cast<llvm::FunctionType>(b);
     if (!is_same_type(req_func->getReturnType(), prov_func->getReturnType())) {
       return false;
     }
@@ -50,10 +52,54 @@ bool is_same_type(llvm::Type *required, llvm::Type *provided) {
     }
     return true;
   }
-  auto req_name = type_name(required);
-  auto prov_name = type_name(provided);
-  int min_len = std::min(req_name.size(), prov_name.size());
-  return req_name.substr(0, min_len) == prov_name.substr(0, min_len);
+
+  auto a_name = type_name(a);
+  auto b_name = type_name(b);
+  if (a_name.size() > b_name.size()) {
+    std::swap(a_name, b_name);
+  }
+  int len_same = 0;
+  while (len_same < a_name.size()) {
+    if (a_name[len_same] != b_name[len_same]) {
+      break;
+    }
+    len_same++;
+  }
+  if (len_same != a_name.size()) {
+    // a is xxx.yyy, and b is xxx.zzz, yyy and zzz are numbers
+    if (len_same == 0) {
+      return false;
+    }
+    int dot_pos = len_same - 1;
+    while (dot_pos && a_name[dot_pos] != '.') {
+      dot_pos--;
+    }
+    if (!dot_pos) {
+      return false;
+    }
+    for (int i = dot_pos + 1; i < a_name.size(); i++) {
+      if (!std::isdigit(a_name[i])) {
+        return false;
+      }
+    }
+    for (int i = dot_pos + 1; i < b_name.size(); i++) {
+      if (!std::isdigit(b_name[i])) {
+        return false;
+      }
+    }
+  } else {
+    // a is xxx, and b is xxx.yyy, yyy is a number
+    TI_ASSERT(len_same != b_name.size());
+    if (b_name[len_same] != '.') {
+      return false;
+    }
+    for (int i = len_same + 1; i < b_name.size(); i++) {
+      if (!std::isdigit(b_name[i])) {
+        return false;
+      }
+    }
+  }
+  return true;
 }
 
 void check_func_call_signature(llvm::FunctionType *func_type,

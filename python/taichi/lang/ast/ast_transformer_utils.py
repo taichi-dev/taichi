@@ -4,6 +4,7 @@ import traceback
 from enum import Enum
 from sys import version_info
 from textwrap import TextWrapper
+from typing import List
 
 from taichi.lang import impl
 from taichi.lang.exception import (TaichiCompilationError, TaichiNameError,
@@ -68,7 +69,7 @@ class NonStaticControlFlowStatus:
 
 
 class NonStaticControlFlowGuard:
-    def __init__(self, status):
+    def __init__(self, status: NonStaticControlFlowStatus):
         self.status = status
 
     def __enter__(self):
@@ -89,6 +90,7 @@ class LoopScopeAttribute:
     def __init__(self, is_static):
         self.is_static = is_static
         self.status = LoopStatus.Normal
+        self.nearest_non_static_if = None
 
 
 class LoopScopeGuard:
@@ -105,6 +107,25 @@ class LoopScopeGuard:
         self.scopes.pop()
         if self.non_static_guard:
             self.non_static_guard.__exit__(exc_type, exc_val, exc_tb)
+
+
+class NonStaticIfGuard:
+    def __init__(self, if_node: ast.If, loop_attribute: LoopScopeAttribute,
+                 non_static_status: NonStaticControlFlowStatus):
+        self.loop_attribute = loop_attribute
+        self.if_node = if_node
+        self.non_static_guard = NonStaticControlFlowGuard(non_static_status)
+
+    def __enter__(self):
+        if self.loop_attribute:
+            self.old_non_static_if = self.loop_attribute.nearest_non_static_if
+            self.loop_attribute.nearest_non_static_if = self.if_node
+        self.non_static_guard.__enter__()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.loop_attribute:
+            self.loop_attribute.nearest_non_static_if = self.old_non_static_if
+        self.non_static_guard.__exit__(exc_type, exc_val, exc_tb)
 
 
 class ReturnStatus(Enum):
@@ -128,7 +149,7 @@ class ASTTransformerContext:
                  is_real_function=False):
         self.func = func
         self.local_scopes = []
-        self.loop_scopes = []
+        self.loop_scopes: List[LoopScopeAttribute] = []
         self.excluded_parameters = excluded_parameters
         self.is_kernel = is_kernel
         self.arg_features = arg_features
@@ -163,6 +184,12 @@ class ASTTransformerContext:
             return LoopScopeGuard(self.loop_scopes)
         return LoopScopeGuard(self.loop_scopes,
                               self.non_static_control_flow_guard())
+
+    def non_static_if_guard(self, if_node: ast.If):
+        return NonStaticIfGuard(
+            if_node,
+            self.current_loop_scope() if self.loop_scopes else None,
+            self.non_static_control_flow_status)
 
     def non_static_control_flow_guard(self):
         return NonStaticControlFlowGuard(self.non_static_control_flow_status)

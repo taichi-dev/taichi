@@ -233,8 +233,8 @@ class TI_DLL_EXPORT Program {
   // Returns zero if the SNode is statically allocated
   std::size_t get_snode_num_dynamically_allocated(SNode *snode);
 
-  inline SNodeGlobalVarExprMap *get_snode_to_glb_var_exprs() {
-    return &snode_to_glb_var_exprs_;
+  inline SNodeFieldMap *get_snode_to_fields() {
+    return &snode_to_fields_;
   }
 
   inline SNodeRwAccessorsBank &get_snode_rw_accessors_bank() {
@@ -311,7 +311,6 @@ class TI_DLL_EXPORT Program {
   Ndarray *create_ndarray(
       const DataType type,
       const std::vector<int> &shape,
-      const std::vector<int> &element_shape = {},
       ExternalArrayLayout layout = ExternalArrayLayout::kNull);
 
   Texture *create_texture(const DataType type,
@@ -360,7 +359,7 @@ class TI_DLL_EXPORT Program {
   int global_id_counter_{0};
 
   // SNode information that requires using Program.
-  SNodeGlobalVarExprMap snode_to_glb_var_exprs_;
+  SNodeFieldMap snode_to_fields_;
   SNodeRwAccessorsBank snode_rw_accessors_bank_;
 
   std::vector<std::unique_ptr<SNodeTree>> snode_trees_;

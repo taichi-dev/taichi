@@ -151,8 +151,6 @@ class TaskCodegen : public IRVisitor {
   }
 
   void visit(ConstStmt *const_stmt) override {
-    TI_ASSERT(const_stmt->width() == 1);
-
     auto get_const = [&](const TypedConstant &const_val) {
       auto dt = const_val.dt.ptr_removed();
       spirv::SType stype = ir_->get_primitive_type(dt);
@@ -194,7 +192,7 @@ class TaskCodegen : public IRVisitor {
       }
     };
 
-    spirv::Value val = get_const(const_stmt->val[0]);
+    spirv::Value val = get_const(const_stmt->val);
     ir_->register_value(const_stmt->raw_name(), val);
   }
 
@@ -236,23 +234,11 @@ class TaskCodegen : public IRVisitor {
   }
 
   void visit(LocalLoadStmt *stmt) override {
-    // TODO: optimize for partially vectorized load...
-    bool linear_index = true;
-    for (int i = 0; i < (int)stmt->src.size(); i++) {
-      if (stmt->src[i].offset != i) {
-        linear_index = false;
-      }
-    }
-    if (stmt->same_source() && linear_index &&
-        stmt->width() == stmt->src[0].var->width()) {
-      auto ptr = stmt->src[0].var;
-      spirv::Value ptr_val = ir_->query_value(ptr->raw_name());
-      spirv::Value val = ir_->load_variable(
-          ptr_val, ir_->get_primitive_type(stmt->element_type()));
-      ir_->register_value(stmt->raw_name(), val);
-    } else {
-      TI_NOT_IMPLEMENTED
-    }
+    auto ptr = stmt->src;
+    spirv::Value ptr_val = ir_->query_value(ptr->raw_name());
+    spirv::Value val = ir_->load_variable(
+        ptr_val, ir_->get_primitive_type(stmt->element_type()));
+    ir_->register_value(stmt->raw_name(), val);
   }
 
   void visit(LocalStoreStmt *stmt) override {
@@ -510,15 +496,12 @@ class TaskCodegen : public IRVisitor {
   }
 
   void visit(GlobalStoreStmt *stmt) override {
-    TI_ASSERT(stmt->width() == 1);
-
     spirv::Value val = ir_->query_value(stmt->val->raw_name());
 
     store_buffer(stmt->dest, val);
   }
 
   void visit(GlobalLoadStmt *stmt) override {
-    TI_ASSERT(stmt->width() == 1);
     auto dt = stmt->element_type();
 
     auto val = load_buffer(stmt->src, dt);
@@ -565,7 +548,6 @@ class TaskCodegen : public IRVisitor {
   }
 
   void visit(GlobalTemporaryStmt *stmt) override {
-    TI_ASSERT(stmt->width() == 1);
     spirv::Value val = ir_->int_immediate_number(ir_->i32_type(), stmt->offset,
                                                  false);  // Named Constant
     ir_->register_value(stmt->raw_name(), val);
@@ -594,9 +576,8 @@ class TaskCodegen : public IRVisitor {
   void visit(ExternalPtrStmt *stmt) override {
     // Used mostly for transferring data between host (e.g. numpy array) and
     // device.
-    TI_ASSERT(stmt->width() == 1);
     spirv::Value linear_offset = ir_->int_immediate_number(ir_->i32_type(), 0);
-    const auto *argload = stmt->base_ptrs[0]->as<ArgLoadStmt>();
+    const auto *argload = stmt->base_ptr->as<ArgLoadStmt>();
     const int arg_id = argload->arg_id;
     {
       const int num_indices = stmt->indices.size();
@@ -1225,7 +1206,6 @@ class TaskCodegen : public IRVisitor {
   }
 
   void visit(AtomicOpStmt *stmt) override {
-    TI_ASSERT(stmt->width() == 1);
     const auto dt = stmt->dest->element_type().ptr_removed();
 
     spirv::Value data = ir_->query_value(stmt->val->raw_name());
@@ -1437,7 +1417,6 @@ class TaskCodegen : public IRVisitor {
   }
 
   void visit(RangeForStmt *for_stmt) override {
-    TI_ASSERT(for_stmt->width() == 1);
     auto loop_var_name = for_stmt->raw_name();
     // Must get init label after making value(to make sure they are correct)
     spirv::Label init_label = ir_->current_label();

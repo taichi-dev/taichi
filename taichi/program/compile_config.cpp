@@ -48,6 +48,7 @@ CompileConfig::CompileConfig() {
   detect_read_only = true;
   ndarray_use_cached_allocator = true;
   use_mesh = false;
+  real_matrix = false;
 
   saturating_grid_dim = 0;
   max_block_dim = 0;
@@ -59,7 +60,6 @@ CompileConfig::CompileConfig() {
   print_kernel_llvm_ir = false;
   print_kernel_nvptx = false;
   print_kernel_llvm_ir_optimized = false;
-  num_compile_threads = 2;
 
   // CUDA backend options:
   device_memory_GB = 1;  // by default, preallocate 1 GB GPU memory

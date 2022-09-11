@@ -170,7 +170,7 @@ jobs:
         env:
           PY: ${{ matrix.python }}
           PROJECT_NAME: taichi
-          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }} -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }} -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON -DTI_WITH_C_API=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
       - name: Test
         id: test
@@ -262,7 +262,7 @@ jobs:
           .github/workflows/scripts/unix_build.sh
           brew uninstall molten-vk
         env:
-          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }} -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }} -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }} -DTI_WITH_VULKAN:BOOL=ON -DTI_WITH_C_API=ON -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }} -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           CXX: clang++
 
       # [DEBUG] Copy this step around to enable debugging inside Github Action instances.
@@ -420,7 +420,7 @@ jobs:
           PY: py38
           GPU_BUILD: ON
           PROJECT_NAME: taichi
-          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_WITH_C_API=ON -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
       - name: Test
         id: test
@@ -478,12 +478,23 @@ jobs:
   build_and_test_windows:
     name: Build and Test Windows
     needs: check_files
-    runs-on: [self-hosted, windows, gpu]
+    strategy:
+      matrix:
+        include:
+          - os: windows-2019
+            llvmVer : '15'
+            archs: "cuda"
+            runsOn: [self-hosted, windows, cuda]
+          - os: windows-2019
+            llvmVer : '10'
+            archs: "cuda,opengl"
+            runsOn: [self-hosted, windows, cuda, OpenGL]
+    runs-on: ${{ matrix.runsOn }}
     timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 180 }}
     steps:
       # See also https://github.com/taichi-dev/taichi/issues/4161
       - name: Cleanup
-        shell: powershell
+        shell: pwsh
         run: |
           remove-item '${{ github.workspace }}\*' -recurse -force
 
@@ -509,21 +520,21 @@ jobs:
             ccache-win64-
 
       - name: Build
-        shell: powershell
+        shell: pwsh
         if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
-          .\.github\workflows\scripts\win_build.ps1 -installVulkan -install -libsDir C:\
+          .\.github\workflows\scripts\win_build.ps1  -llvmVer ${{ matrix.llvmVer }} -installVulkan -install -libsDir C:\
         env:
-          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_DX11:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON
+          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_DX11:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_WITH_C_API=ON -DTI_BUILD_TESTS:BOOL=ON
 
       - name: Test
         id: test
-        shell: powershell
+        shell: pwsh
         if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
           .\.github\workflows\scripts\win_test.ps1
         env:
-          TI_WANTED_ARCHS: cuda,opengl
+          TI_WANTED_ARCHS: ${{ matrix.archs }}
           TI_SKIP_VERSION_CHECK: ON
           TI_CI: 1
           PYTHON: '3.7'
@@ -574,7 +585,7 @@ jobs:
           brew install molten-vk
           .github/workflows/scripts/unix_build.sh
         env:
-          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_WITH_C_API=ON -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           PY: ${{ matrix.python }}
           CXX: clang++
 
@@ -667,6 +678,7 @@ jobs:
             -DTI_WITH_OPENGL:BOOL=ON
             -DTI_WITH_CC:BOOL=OFF
             -DTI_WITH_VULKAN:BOOL=ON
+            -DTI_WITH_C_API=ON
             -DCMAKE_C_COMPILER_LAUNCHER=sccache
             -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 

@@ -1,3 +1,6 @@
+from taichi.types.compound_types import TensorType
+
+
 class NdarrayTypeMetadata:
     def __init__(self, element_type, shape=None, layout=None):
         self.element_type = element_type
@@ -41,24 +44,35 @@ class NdarrayType:
         self.layout = layout
 
     def check_matched(self, ndarray_type: NdarrayTypeMetadata):
-        if self.element_dim is not None and self.element_dim != len(
-                ndarray_type.element_type.shape):
-            raise ValueError(
-                f"Invalid argument into ti.types.ndarray() - required element_dim={self.element_dim}, but {len(ndarray_type.element_type.shape)} is provided"
-            )
+        if self.element_dim is not None and self.element_dim > 0:
+            if not isinstance(ndarray_type.element_type, TensorType):
+                raise TypeError(
+                    f"Expect TensorType element for Ndarray with element_dim: {self.element_dim} > 0"
+                )
+            if self.element_dim != len(ndarray_type.element_type.shape()):
+                raise ValueError(
+                    f"Invalid argument into ti.types.ndarray() - required element_dim={self.element_dim}, but {len(ndarray_type.element_type.shape())} is provided"
+                )
 
-        if self.element_shape is not None and self.element_shape != ndarray_type.element_type.shape:
-            raise ValueError(
-                f"Invalid argument into ti.types.ndarray() - required element_shape={self.element_shape}, but {ndarray_type.element_type.shape} is provided"
-            )
+        if self.element_shape is not None and len(self.element_shape) > 0:
+            if not isinstance(ndarray_type.element_type, TensorType):
+                raise TypeError(
+                    f"Expect TensorType element for Ndarray with element_shape: {self.element_shape}"
+                )
+
+            if self.element_shape != ndarray_type.element_type.shape():
+                raise ValueError(
+                    f"Invalid argument into ti.types.ndarray() - required element_shape={self.element_shape}, but {ndarray_type.element_type.shape()} is provided"
+                )
 
         if self.layout is not None and self.layout != ndarray_type.layout:
             raise ValueError(
                 f"Invalid argument into ti.types.ndarray() - required layout={self.layout}, but {ndarray_type.layout} is provided"
             )
 
-        if self.field_dim is not None and self.field_dim != len(
-                ndarray_type.shape):
+        if self.field_dim is not None and \
+            ndarray_type.shape is not None and \
+            self.field_dim != len(ndarray_type.shape):
             raise ValueError(
                 f"Invalid argument into ti.types.ndarray() - required field_dim={self.field_dim}, but {ndarray_type.element_type} is provided"
             )

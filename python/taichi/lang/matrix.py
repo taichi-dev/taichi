@@ -1,4 +1,5 @@
 import numbers
+import warnings
 from collections.abc import Iterable
 
 import numpy as np
@@ -95,6 +96,21 @@ def _gen_swizzles(cls):
             prop_key, prop = gen_property(pat, key_group)
             setattr(cls, prop_key, prop)
     return cls
+
+
+def make_matrix(arr, dt=None):
+    assert len(arr) > 0, "Cannot create empty matrix"
+    is_matrix = isinstance(arr[0], Iterable)
+    if dt is None:
+        dt = _make_entries_initializer(is_matrix).infer_dt(arr)
+    if not is_matrix:
+        return impl.Expr(
+            impl.make_matrix_expr([len(arr)], dt,
+                                  [expr.Expr(elt).ptr for elt in arr]))
+    return impl.Expr(
+        impl.make_matrix_expr(
+            [len(arr), len(arr[0])], dt,
+            [expr.Expr(elt).ptr for row in arr for elt in row]))
 
 
 class _MatrixBaseImpl:
@@ -898,10 +914,10 @@ class Matrix(TaichiOperations):
             >>> v.any()
             True
         """
-        ret = ops_mod.cmp_ne(self.entries[0], 0)
-        for i in range(1, len(self.entries)):
-            ret = ret + ops_mod.cmp_ne(self.entries[i], 0)
-        return -ops_mod.cmp_lt(ret, 0)
+        ret = False
+        for entry in self.entries:
+            ret = ret | ops_mod.cmp_ne(entry, 0)
+        return ret & True
 
     def all(self):
         """Test whether all element not equal zero.
@@ -915,10 +931,10 @@ class Matrix(TaichiOperations):
             >>> v.all()
             False
         """
-        ret = ops_mod.cmp_ne(self.entries[0], 0)
-        for i in range(1, len(self.entries)):
-            ret = ret + ops_mod.cmp_ne(self.entries[i], 0)
-        return -ops_mod.cmp_eq(ret, -len(self.entries))
+        ret = True
+        for entry in self.entries:
+            ret = ret & ops_mod.cmp_ne(entry, 0)
+        return ret
 
     @taichi_scope
     def fill(self, val):
@@ -1090,6 +1106,9 @@ class Matrix(TaichiOperations):
             [[ 0.70710678 -0.70710678]
              [ 0.70710678  0.70710678]]
         """
+        warnings.warn(
+            "`ti.Matrix.rotation2d(alpha)` is renamed to `ti.Math.rotation2d(ang)`",
+            DeprecationWarning)
         return Matrix([[ops_mod.cos(alpha), -ops_mod.sin(alpha)],
                        [ops_mod.sin(alpha),
                         ops_mod.cos(alpha)]])
@@ -1162,14 +1181,13 @@ class Matrix(TaichiOperations):
                                              needs_dual=needs_dual))
         entries, entries_grad, entries_dual = zip(*entries)
 
-        entries, entries_grad, entries_dual = MatrixField(
-            entries, n, m, element_dim), MatrixField(entries_grad, n, m,
-                                                     element_dim), MatrixField(
-                                                         entries_grad, n, m,
-                                                         element_dim)
-
-        entries._set_grad(entries_grad)
-        entries._set_dual(entries_dual)
+        entries = MatrixField(entries, n, m, element_dim)
+        if all(entries_grad):
+            entries_grad = MatrixField(entries_grad, n, m, element_dim)
+            entries._set_grad(entries_grad)
+        if all(entries_dual):
+            entries_dual = MatrixField(entries_dual, n, m, element_dim)
+            entries._set_dual(entries_dual)
 
         impl.get_runtime().matrix_fields.append(entries)
 
@@ -1496,7 +1514,10 @@ class _MatrixFieldElement(_IntermediateMatrix):
         super().__init__(
             field.n,
             field.m, [
-                expr.Expr(ti_python_core.subscript(e.ptr, indices))
+                expr.Expr(
+                    ti_python_core.subscript(
+                        e.ptr, indices,
+                        impl.get_runtime().get_current_src_info()))
                 for e in field._get_field_members()
             ],
             ndim=getattr(field, "ndim", 2))
@@ -1891,13 +1912,15 @@ class MatrixNdarray(Ndarray):
         self.n = n
         self.m = m
         super().__init__()
+        # TODO(zhanlue): remove self.dtype and migrate its usages to element_type
         self.dtype = cook_dtype(dtype)
+
         self.layout = layout
         self.shape = tuple(shape)
-        self.element_type = TensorType((self.n, self.m), self.dtype)
+        self.element_type = TensorType((self.n, self.m), dtype)
         # TODO: we should pass in element_type, shape, layout instead.
         self.arr = impl.get_runtime().prog.create_ndarray(
-            self.element_type.dtype, shape, self.element_type.shape, layout)
+            cook_dtype(self.element_type.ptr), shape, layout)
 
     @property
     def element_shape(self):
@@ -1909,7 +1932,7 @@ class MatrixNdarray(Ndarray):
             >>> arr.element_shape
             (2, 2)
         """
-        return tuple(self.arr.element_shape)
+        return tuple(self.arr.element_shape())
 
     @python_scope
     def __setitem__(self, key, value):
@@ -1957,17 +1980,20 @@ class MatrixNdarray(Ndarray):
         """
         self._ndarray_matrix_from_numpy(arr, self.layout, as_vector=0)
 
+    @python_scope
     def __deepcopy__(self, memo=None):
         ret_arr = MatrixNdarray(self.n, self.m, self.dtype, self.shape,
                                 self.layout)
         ret_arr.copy_from(self)
         return ret_arr
 
+    @python_scope
     def _fill_by_kernel(self, val):
         from taichi._kernels import \
             fill_ndarray_matrix  # pylint: disable=C0415
         fill_ndarray_matrix(self, val)
 
+    @python_scope
     def __repr__(self):
         return f'<{self.n}x{self.m} {self.layout} ti.Matrix.ndarray>'
 
@@ -1988,13 +2014,14 @@ class VectorNdarray(Ndarray):
     def __init__(self, n, dtype, shape, layout):
         self.n = n
         super().__init__()
+        # TODO(zhanlue): remove self.dtype and migrate its usages to element_type
         self.dtype = cook_dtype(dtype)
+
         self.layout = layout
         self.shape = tuple(shape)
         self.element_type = TensorType((n, ), self.dtype)
-        # TODO: pass in element_type, shape, layout directly
         self.arr = impl.get_runtime().prog.create_ndarray(
-            self.element_type.dtype, shape, self.element_type.shape, layout)
+            cook_dtype(self.element_type.ptr), shape, layout)
 
     @property
     def element_shape(self):
@@ -2006,7 +2033,7 @@ class VectorNdarray(Ndarray):
             >>> a.element_shape
             (3,)
         """
-        return tuple(self.arr.element_shape)
+        return tuple(self.arr.element_shape())
 
     @python_scope
     def __setitem__(self, key, value):
@@ -2053,16 +2080,19 @@ class VectorNdarray(Ndarray):
         """
         self._ndarray_matrix_from_numpy(arr, self.layout, as_vector=1)
 
+    @python_scope
     def __deepcopy__(self, memo=None):
         ret_arr = VectorNdarray(self.n, self.dtype, self.shape, self.layout)
         ret_arr.copy_from(self)
         return ret_arr
 
+    @python_scope
     def _fill_by_kernel(self, val):
         from taichi._kernels import \
             fill_ndarray_matrix  # pylint: disable=C0415
         fill_ndarray_matrix(self, val)
 
+    @python_scope
     def __repr__(self):
         return f'<{self.n} {self.layout} ti.Vector.ndarray>'
 

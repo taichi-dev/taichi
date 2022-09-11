@@ -304,10 +304,17 @@ class Func:
                         f'Taichi function `{self.func.__name__}` parameter `{arg_name}` must be type annotated'
                     )
             else:
-                if not id(annotation
-                          ) in primitive_types.type_ids and not isinstance(
-                              annotation, template) and not isinstance(
-                                  annotation, primitive_types.RefType):
+                if isinstance(annotation, ndarray_type.NdarrayType):
+                    pass
+                elif isinstance(annotation, MatrixType):
+                    pass
+                elif id(annotation) in primitive_types.type_ids:
+                    pass
+                elif isinstance(annotation, template):
+                    pass
+                elif isinstance(annotation, primitive_types.RefType):
+                    pass
+                else:
                     raise TaichiSyntaxError(
                         f'Invalid type annotation (argument {i}) of Taichi function: {annotation}'
                     )
@@ -566,13 +573,6 @@ class Kernel:
             )
         tmp = v
         taichi_arch = self.runtime.prog.config.arch
-        # Ndarray means its memory is allocated on the specified taichi arch.
-        # Since torch only supports CPU & CUDA, torch-base ndarray only supports
-        # taichi cpu/cuda backend as well.
-        # Note I put x64/arm64/cuda here to be more specific.
-        assert not is_ndarray or taichi_arch in (
-            _ti_core.Arch.cuda, _ti_core.Arch.x64, _ti_core.Arch.arm64
-        ), "Torch-based ndarray is only supported on taichi x64/arm64/cuda backend."
 
         if str(v.device).startswith('cuda'):
             # External tensor on cuda
@@ -581,12 +581,6 @@ class Kernel:
                 host_v = v.to(device='cpu', copy=True)
                 tmp = host_v
                 callbacks.append(get_call_back(v, host_v))
-        else:
-            # External tensor on cpu
-            if taichi_arch == _ti_core.Arch.cuda:
-                gpu_v = v.cuda()
-                tmp = gpu_v
-                callbacks.append(get_call_back(v, gpu_v))
         return tmp, callbacks
 
     def get_paddle_callbacks(self, v, has_pp):

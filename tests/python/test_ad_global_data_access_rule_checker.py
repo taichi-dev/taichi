@@ -5,7 +5,7 @@ from tests import test_utils
 
 
 @test_utils.test(debug=True, validate_autodiff=True, exclude=[ti.cc])
-def test_adjoint_visited_needs_grad():
+def test_adjoint_checkbit_needs_grad():
     x = ti.field(float, shape=(), needs_grad=True)
 
     @ti.kernel
@@ -15,11 +15,11 @@ def test_adjoint_visited_needs_grad():
     with ti.ad.Tape(loss=x, validation=True):
         test()
 
-    assert x.snode.ptr.has_adjoint_visited()
+    assert x.snode.ptr.has_adjoint_checkbit()
 
 
 @test_utils.test(debug=True, validate_autodiff=True, exclude=[ti.cc])
-def test_adjoint_visited_lazy_grad():
+def test_adjoint_checkbit_lazy_grad():
     x = ti.field(float, shape=())
     ti.root.lazy_grad()
 
@@ -30,11 +30,11 @@ def test_adjoint_visited_lazy_grad():
     with ti.ad.Tape(loss=x, validation=True):
         test()
 
-    assert x.snode.ptr.has_adjoint_visited()
+    assert x.snode.ptr.has_adjoint_checkbit()
 
 
 @test_utils.test(debug=True, validate_autodiff=True, exclude=[ti.cc])
-def test_adjoint_visited_place_grad():
+def test_adjoint_checkbit_place_grad():
     x = ti.field(float)
     y = ti.field(float)
     ti.root.place(x, x.grad, y)
@@ -46,12 +46,12 @@ def test_adjoint_visited_place_grad():
     with ti.ad.Tape(loss=x, validation=True):
         test()
 
-    assert x.snode.ptr.has_adjoint_visited()
-    assert not y.snode.ptr.has_adjoint_visited()
+    assert x.snode.ptr.has_adjoint_checkbit()
+    assert not y.snode.ptr.has_adjoint_checkbit()
 
 
 @test_utils.test(debug=False, validate_autodiff=True)
-def test_adjoint_visited_needs_grad():
+def test_adjoint_checkbit_needs_grad():
     x = ti.field(float, shape=(), needs_grad=True)
 
     @ti.kernel

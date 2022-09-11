@@ -9,6 +9,7 @@
 #include "taichi/ir/statements.h"
 #include "taichi/util/statistics.h"
 #include "taichi/util/file_sequence_writer.h"
+#include "taichi/runtime/program_impls/llvm/llvm_program.h"
 
 namespace taichi {
 namespace lang {
@@ -113,7 +114,6 @@ class TaskCodeGenWASM : public TaskCodeGenLLVM {
   }
 
   void visit(PrintStmt *stmt) override {
-    TI_ASSERT(stmt->width() == 1);
     std::vector<llvm::Value *> args;
     for (auto const &content : stmt->contents) {
       if (std::holds_alternative<Stmt *>(content)) {
@@ -242,12 +242,12 @@ class TaskCodeGenWASM : public TaskCodeGenLLVM {
   }
 };
 
-FunctionType KernelCodeGenWASM::codegen() {
+FunctionType KernelCodeGenWASM::compile_to_function() {
   TI_AUTO_PROF
-  TaskCodeGenWASM gen(kernel, ir);
-  auto res = gen.run_compilation();
-  gen.tlctx->add_module(std::move(res.module));
-  auto kernel_symbol = gen.tlctx->lookup_function_pointer(res.tasks[0].name);
+  auto linked = compile_kernel_to_module();
+  auto *tlctx = get_llvm_program(prog)->get_llvm_context(kernel->arch);
+  tlctx->create_jit_module(std::move(linked.module));
+  auto kernel_symbol = tlctx->lookup_function_pointer(linked.tasks[0].name);
   return [=](RuntimeContext &context) {
     TI_TRACE("Launching Taichi Kernel Function");
     auto func = (int32(*)(void *))kernel_symbol;
@@ -255,9 +255,10 @@ FunctionType KernelCodeGenWASM::codegen() {
   };
 }
 
-LLVMCompiledData KernelCodeGenWASM::modulegen(
+LLVMCompiledData KernelCodeGenWASM::compile_task(
     std::unique_ptr<llvm::Module> &&module,
     OffloadedStmt *stmt) {
+  kernel->offload_to_executable(ir);
   bool init_flag = module == nullptr;
   std::vector<OffloadedTask> name_list;
   auto gen = std::make_unique<TaskCodeGenWASM>(kernel, ir, std::move(module));
@@ -277,7 +278,19 @@ LLVMCompiledData KernelCodeGenWASM::modulegen(
 
   gen->tlctx->jit->global_optimize_module(gen->module.get());
 
-  return {name_list, std::move(gen->module)};
+  return {name_list, std::move(gen->module), {}, {}};
 }
+
+LLVMCompiledData KernelCodeGenWASM::compile_kernel_to_module() {
+  auto *tlctx = get_llvm_program(prog)->get_llvm_context(kernel->arch);
+  if (!kernel->lowered()) {
+    kernel->lower(/*to_executable=*/false);
+  }
+  auto res = compile_task();
+  std::vector<std::unique_ptr<LLVMCompiledData>> data;
+  data.push_back(std::make_unique<LLVMCompiledData>(std::move(res)));
+  return tlctx->link_compiled_tasks(std::move(data));
+}
+
 }  // namespace lang
 }  // namespace taichi

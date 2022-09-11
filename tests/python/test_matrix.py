@@ -187,10 +187,10 @@ def test_matrix_non_constant_index_numpy():
 
     v = np.empty((10, 5), dtype=np.int32)
     func2(v)
-    assert v[0][1] == 0
+    assert v[0][0] == 0
     assert v[1][1] == 1
-    assert v[4][1] == 4
-    assert v[9][1] == 9
+    assert v[2][4] == 4
+    assert v[3][9] == 9
 
 
 @test_utils.test(require=ti.extension.dynamic_index,

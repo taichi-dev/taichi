@@ -185,7 +185,7 @@ def test_matrix_non_constant_index_numpy():
             for j in range(4):
                 b[i][j * j] = j * j
 
-    v = np.empty((10, 5), dtype=np.int32)
+    v = np.empty((5, 10), dtype=np.int32)
     func2(v)
     assert v[0][0] == 0
     assert v[1][1] == 1

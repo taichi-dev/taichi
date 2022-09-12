@@ -63,26 +63,30 @@ def _test_cpp_aot(test_filename, build_dir, test_info):
 
 def _test_cpp():
     curr_dir = os.path.dirname(os.path.abspath(__file__))
-    if platform.system() == "Windows":
-        cpp_test_filename = 'taichi_cpp_tests.exe'
-        capi_test_filename = 'taichi_c_api_tests.exe'
-        build_dir = os.path.join(curr_dir, '../bin')
+    cpp_test_filename = 'taichi_cpp_tests.exe'
+    capi_test_filename = 'taichi_c_api_tests.exe'
+    build_dir = os.path.join(curr_dir, '../build')
+
+    capi_tests_exe_path = os.path.join(build_dir, capi_test_filename)
+    cpp_tests_exe_path = os.path.join(build_dir, cpp_test_filename)
+
+    if os.path.exists(capi_tests_exe_path):
+        # Run C-API test cases
+        exclude_tests_cmd = _test_cpp_aot(capi_test_filename, build_dir,
+                                        __capi_aot_test_cases)
+        # Run rest of the C-API tests
+        _run_cpp_test(capi_test_filename, build_dir, exclude_tests_cmd)
     else:
-        cpp_test_filename = 'taichi_cpp_tests'
-        capi_test_filename = 'taichi_c_api_tests'
-        build_dir = os.path.join(curr_dir, '../build')
+        print(f'Not found {capi_tests_exe_path}, skipping...')
 
-    # Run C-API test cases
-    exclude_tests_cmd = _test_cpp_aot(capi_test_filename, build_dir,
-                                      __capi_aot_test_cases)
-    _run_cpp_test(capi_test_filename, build_dir, exclude_tests_cmd)
-
-    # Run AOT test cases
-    exclude_tests_cmd = _test_cpp_aot(cpp_test_filename, build_dir,
-                                      __aot_test_cases)
-
-    # Run rest of the cpp tests
-    _run_cpp_test(cpp_test_filename, build_dir, exclude_tests_cmd)
+    if os.path.exists(cpp_tests_exe_path):
+        # Run AOT test cases
+        exclude_tests_cmd = _test_cpp_aot(cpp_test_filename, build_dir,
+                                        __aot_test_cases)
+        # Run rest of the cpp tests
+        _run_cpp_test(cpp_test_filename, build_dir, exclude_tests_cmd)
+    else:
+        print(f'Not found {cpp_tests_exe_path}, skipping...')
 
 
 def _test_python(args):

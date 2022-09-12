@@ -40,8 +40,8 @@ endif()
 
 add_executable(${TESTS_NAME} ${TAICHI_TESTS_SOURCE})
 if (WIN32)
-    # Output the executable to bin/ instead of build/Debug/...
-    set(TESTS_OUTPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/bin")
+    # Output the executable to build/ instead of build/Debug/...
+    set(TESTS_OUTPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/build")
     set_target_properties(${TESTS_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${TESTS_OUTPUT_DIR})
     set_target_properties(${TESTS_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG ${TESTS_OUTPUT_DIR})
     set_target_properties(${TESTS_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELEASE ${TESTS_OUTPUT_DIR})

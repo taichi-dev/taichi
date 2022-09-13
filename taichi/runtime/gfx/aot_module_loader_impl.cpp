@@ -107,7 +107,7 @@ class AotModuleImpl : public aot::Module {
       // AOT, only use the name of the function which should be the first part
       // of the struct
       if (ti_aot_data_.kernels[i].name.rfind(name, 0) == 0) {
-        if (!try_load_spv_code(i)) {
+        if (!try_load_spv_kernel(i)) {
           return false;
         }
         kernel.kernel_attribs = ti_aot_data_.kernels[i];

@@ -147,7 +147,7 @@ class AotModuleImpl : public aot::Module {
     return std::make_unique<FieldImpl>(runtime_, field);
   }
 
-  bool try_load_spv_code(std::size_t index) {
+  bool try_load_spv_kernel(std::size_t index) {
     if (index >= ti_aot_data_.spirv_codes.size() ||
         ti_aot_data_.spirv_codes[index].empty()) {
       ti_aot_data_.spirv_codes.resize(index + 1);

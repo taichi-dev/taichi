@@ -63,9 +63,12 @@ def _test_cpp_aot(test_filename, build_dir, test_info):
 
 def _test_cpp():
     curr_dir = os.path.dirname(os.path.abspath(__file__))
-    cpp_test_filename = 'taichi_cpp_tests.exe'
-    capi_test_filename = 'taichi_c_api_tests.exe'
     build_dir = os.path.join(curr_dir, '../build')
+    cpp_test_filename = 'taichi_cpp_tests'
+    capi_test_filename = 'taichi_c_api_tests'
+    if platform.system() == "Windows":
+        cpp_test_filename += ".exe"
+        capi_test_filename += ".exe"
 
     capi_tests_exe_path = os.path.join(build_dir, capi_test_filename)
     cpp_tests_exe_path = os.path.join(build_dir, cpp_test_filename)

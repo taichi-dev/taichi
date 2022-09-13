@@ -51,7 +51,7 @@ class LlvmProgramImpl : public ProgramImpl {
   void materialize_snode_tree(SNodeTree *tree, uint64 *result_buffer) override;
 
   void cache_kernel(const std::string &kernel_key,
-                    const LLVMCompiledData &data,
+                    const LLVMCompiledKernel &data,
                     std::vector<LlvmLaunchArgInfo> &&args);
   ;
 

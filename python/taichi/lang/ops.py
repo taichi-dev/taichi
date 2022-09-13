@@ -729,8 +729,8 @@ def mod(x1, x2):
 
 
 @binary
-def pow(base, exp):  # pylint: disable=W0622
-    """First array elements raised to second array elements :math:`{base}^{exp}`, element-wise.
+def pow(base, exponent):  # pylint: disable=W0622
+    """First array elements raised to second array elements :math:`{base}^{exponent}`, element-wise.
 
     The result type of two scalar operands is determined as follows:
     - If the exponent is an integral value, then the result type takes the type of the base.
@@ -748,11 +748,11 @@ def pow(base, exp):  # pylint: disable=W0622
     Args:
         base (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
             The bases.
-        exp (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+        exponent (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
             The exponents.
 
     Returns:
-        `base` raised to `exp`. This is a scalar if both `base` and `exp` are scalars.
+        `base` raised to `exponent`. This is a scalar if both `base` and `exponent` are scalars.
 
     Example::
 
@@ -766,7 +766,7 @@ def pow(base, exp):  # pylint: disable=W0622
         >>> test()
         [-0.125000, 0.125000]
     """
-    return _binary_operation(_ti_core.expr_pow, _bt_ops_mod.pow, base, exp)
+    return _binary_operation(_ti_core.expr_pow, _bt_ops_mod.pow, base, exponent)
 
 
 @binary

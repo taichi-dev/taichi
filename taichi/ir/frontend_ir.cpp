@@ -1026,7 +1026,6 @@ Expr ASTBuilder::make_matrix_expr(const std::vector<int> &shape,
                                   const DataType &dt,
                                   const std::vector<Expr> &elements) {
   auto mat = Expr(std::make_shared<MatrixExpression>(elements, shape, dt));
-  mat->ret_type = dt;
   return mat;
 }
 

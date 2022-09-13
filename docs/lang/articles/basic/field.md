@@ -44,7 +44,7 @@ The simplest way to declare a scalar field is to call `ti.field(dtype, shape)`, 
     f_1d = ti.field(ti.i32, shape=9)  # 1D field
     ```
 
-    An illustration of `f_1d` shown is below:
+    An illustration of `f_1d` is shown below:
 
     ```
     ┌───┬───┬───┬───┬───┬───┬───┬───┬───┐

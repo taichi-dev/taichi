@@ -54,7 +54,7 @@ The simplest way to declare a scalar field is to call `ti.field(dtype, shape)`, 
             f_1d.shape = (9,)
     ```
 
-+ To declare a 2D scalar field, set the size of its first two dimensions, i.e. the number of rows and columns, respectively. For example, the following code defines a 2D scalar field of shape (3, 6), which has 3 rows and 6 columns:
++ To declare a 2D scalar field, set the sizes of its first two dimensions, i.e., the number of rows and columns, respectively. For example, the following code defines a 2D scalar field of shape (3, 6), which has 3 rows and 6 columns:
 
     ```python
     f_2d = ti.field(int, shape=(3, 6))  # 2D field

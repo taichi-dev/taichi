@@ -76,7 +76,7 @@ def _test_cpp():
     if os.path.exists(capi_tests_exe_path):
         # Run C-API test cases
         exclude_tests_cmd = _test_cpp_aot(capi_test_filename, build_dir,
-                                        __capi_aot_test_cases)
+                                          __capi_aot_test_cases)
         # Run rest of the C-API tests
         _run_cpp_test(capi_test_filename, build_dir, exclude_tests_cmd)
     else:
@@ -85,7 +85,7 @@ def _test_cpp():
     if os.path.exists(cpp_tests_exe_path):
         # Run AOT test cases
         exclude_tests_cmd = _test_cpp_aot(cpp_test_filename, build_dir,
-                                        __aot_test_cases)
+                                          __aot_test_cases)
         # Run rest of the cpp tests
         _run_cpp_test(cpp_test_filename, build_dir, exclude_tests_cmd)
     else:

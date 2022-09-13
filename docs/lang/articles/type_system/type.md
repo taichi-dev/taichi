@@ -217,3 +217,4 @@ def foo():
     # If you are using ti.i32 as default_ip, this is equivalent to:
     v = ti.cast(u, ti.i32)  # ti.Vector([2, 4])
 ```
+

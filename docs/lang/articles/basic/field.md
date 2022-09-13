@@ -60,7 +60,7 @@ The simplest way to declare a scalar field is to call `ti.field(dtype, shape)`, 
     f_2d = ti.field(int, shape=(3, 6))  # 2D field
     ```
 
-    The memory layout of the field `f_2d` will be like:
+    An illustration of f_2d is below:
 
     ```
                            f_2d.shape[1]

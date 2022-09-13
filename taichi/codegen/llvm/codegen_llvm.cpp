@@ -662,10 +662,6 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
           llvm_val[stmt] = create_call("pow_f32", {lhs, rhs});
         } else if (ret_type->is_primitive(PrimitiveTypeID::f64)) {
           llvm_val[stmt] = create_call("pow_f64", {lhs, rhs});
-        } else if (ret_type->is_primitive(PrimitiveTypeID::i32)) {
-          llvm_val[stmt] = create_call("pow_i32", {lhs, rhs});
-        } else if (ret_type->is_primitive(PrimitiveTypeID::i64)) {
-          llvm_val[stmt] = create_call("pow_i64", {lhs, rhs});
         } else {
           TI_P(data_type_name(ret_type));
           TI_NOT_IMPLEMENTED

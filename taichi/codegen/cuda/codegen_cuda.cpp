@@ -667,10 +667,6 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
         llvm_val[stmt] = create_call("__nv_powf", {lhs, rhs});
       } else if (ret_type->is_primitive(PrimitiveTypeID::f64)) {
         llvm_val[stmt] = create_call("__nv_pow", {lhs, rhs});
-      } else if (ret_type->is_primitive(PrimitiveTypeID::i32)) {
-        llvm_val[stmt] = create_call("pow_i32", {lhs, rhs});
-      } else if (ret_type->is_primitive(PrimitiveTypeID::i64)) {
-        llvm_val[stmt] = create_call("pow_i64", {lhs, rhs});
       } else {
         TI_P(data_type_name(ret_type));
         TI_NOT_IMPLEMENTED

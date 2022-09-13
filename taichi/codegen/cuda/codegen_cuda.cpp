@@ -663,6 +663,8 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
         TI_NOT_IMPLEMENTED
       }
     } else {
+      // Note that ret_type here cannot be integral because pow with an
+      // integral exponent has been demoted in the demote_operations pass
       if (ret_type->is_primitive(PrimitiveTypeID::f32)) {
         llvm_val[stmt] = create_call("__nv_powf", {lhs, rhs});
       } else if (ret_type->is_primitive(PrimitiveTypeID::f64)) {

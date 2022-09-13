@@ -766,7 +766,8 @@ def pow(base, exponent):  # pylint: disable=W0622
         >>> test()
         [-0.125000, 0.125000]
     """
-    return _binary_operation(_ti_core.expr_pow, _bt_ops_mod.pow, base, exponent)
+    return _binary_operation(_ti_core.expr_pow, _bt_ops_mod.pow, base,
+                             exponent)
 
 
 @binary

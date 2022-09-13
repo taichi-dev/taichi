@@ -56,7 +56,7 @@ struct KernelMetadata {
 };
 
 struct Metadata {
-  using KernelMetadata = KernelMetadata;
+  using KernelMetadata = taichi::lang::offline_cache::KernelMetadata;
 
   Version version{};
   std::size_t size{0};  // byte

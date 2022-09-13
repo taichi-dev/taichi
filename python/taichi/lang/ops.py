@@ -759,13 +759,13 @@ def pow(x, a):  # pylint: disable=W0622
 
         >>> @ti.kernel
         >>> def test():
-        >>>     x = ti.Matrix([-2.0, 0.0, 2.0])
-        >>>     y = -2.2
+        >>>     x = ti.Matrix([-2.0, 2.0])
+        >>>     y = -3
         >>>     z = ti.pow(x, y)
         >>>     print(z)
         >>>
         >>> test()
-        [-nan, inf, 0.217638]
+        [-0.125000, 0.125000]
     """
     return _binary_operation(_ti_core.expr_pow, _bt_ops_mod.pow, x, a)
 

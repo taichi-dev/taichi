@@ -119,7 +119,8 @@ class DemoteOperations : public BasicStmtVisitor {
       modifier.insert_before(stmt, std::move(shift));
       modifier.insert_before(stmt, std::move(signed_cast));
       modifier.erase(stmt);
-    } else if (stmt->op_type == BinaryOpType::pow && is_integral(rhs->element_type())) {
+    } else if (stmt->op_type == BinaryOpType::pow &&
+               is_integral(rhs->element_type())) {
       // @ti.func
       // def pow(lhs, rhs):
       //     a = lhs
@@ -148,7 +149,8 @@ class DemoteOperations : public BasicStmtVisitor {
         auto loop_guard = builder.get_loop_guard(loop);
         auto current_a = builder.create_local_load(a);
         auto current_b = builder.create_local_load(b);
-        auto if_stmt = builder.create_if(builder.create_cmp_le(current_b, zero_rhs));
+        auto if_stmt =
+            builder.create_if(builder.create_cmp_le(current_b, zero_rhs));
         {
           auto _ = builder.get_if_guard(if_stmt, true);
           builder.create_break();

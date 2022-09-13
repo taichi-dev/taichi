@@ -276,7 +276,8 @@ class TypeCheck : public IRVisitor {
     if (stmt->lhs->ret_type->is_primitive(PrimitiveTypeID::unknown) &&
         stmt->rhs->ret_type->is_primitive(PrimitiveTypeID::unknown))
       error();
-    if (stmt->op_type == BinaryOpType::pow && is_integral(stmt->rhs->ret_type)) {
+    if (stmt->op_type == BinaryOpType::pow &&
+        is_integral(stmt->rhs->ret_type)) {
       stmt->ret_type = stmt->lhs->ret_type;
       return;
     }

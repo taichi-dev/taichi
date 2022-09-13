@@ -412,7 +412,7 @@ particle_field = particle.field(shape=(n,))
 
 ### Access elements in a struct field
 
-You can access a member of an element in a struct field in either of the following ways: "index-first"  or "name-first".
+You can access a member of an element in a struct field in either of the following ways: "index-first" or "name-first".
 
 + The index-first approach locates a certain element with its index before specifying the name of the target member:
 

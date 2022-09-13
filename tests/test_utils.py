@@ -174,6 +174,10 @@ __capi_aot_test_cases = {
         os.path.join('cpp', 'aot', 'python_scripts', 'graph_aot_test.py'),
         "--arch=vulkan"
     ],
+    "CapiGraphTest.VulkanTextureGraph": [
+        os.path.join('cpp', 'aot', 'python_scripts', 'texture_aot_test.py'),
+        "--arch=vulkan"
+    ],
     "CapiGraphTest.OpenglGraph": [
         os.path.join('cpp', 'aot', 'python_scripts', 'graph_aot_test.py'),
         "--arch=opengl"

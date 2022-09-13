@@ -28,7 +28,7 @@ The simplest way to declare a scalar field is to call `ti.field(dtype, shape)`, 
     f_0d = ti.field(ti.f32, shape=())  # 0D field
     ```
 
-    The memory layout of the field `f_0d` will be like:
+    An illustration of `f_0d` is shown below:
 
     ```
         ┌─────┐
@@ -44,7 +44,7 @@ The simplest way to declare a scalar field is to call `ti.field(dtype, shape)`, 
     f_1d = ti.field(ti.i32, shape=9)  # 1D field
     ```
 
-    The memory layout of the field `f_1d` will be like:
+    An illustration of `f_1d` shown is below:
 
     ```
     ┌───┬───┬───┬───┬───┬───┬───┬───┬───┐
@@ -60,7 +60,7 @@ The simplest way to declare a scalar field is to call `ti.field(dtype, shape)`, 
     f_2d = ti.field(int, shape=(3, 6))  # 2D field
     ```
 
-    An illustration of f_2d is below:
+    An illustration of `f_2d` is shown below:
 
     ```
                            f_2d.shape[1]
@@ -75,36 +75,6 @@ The simplest way to declare a scalar field is to call `ti.field(dtype, shape)`, 
                   │  │   │   │   │   │   │   │  │
                   └  └───┴───┴───┴───┴───┴───┘  ┘
     ```
-
-
-+ To declare a 3D scalar field, set the dimensions of the three axes:
-
-  ```python
-  f_3d = ti.field(ti.f32, shape=(32, 16, 8))  # 3D field
-  ```
-
-  You can think of this 3D scalar field as a 32&times;16 2D field whose elements are arrays of length 8:
-
-  ```
-                    f_3d.shape[1]
-                        (=16)
-                   ┌───────────────┐
-
-                ┌  ┌───┬╌╌╌╌╌╌╌┬───┐  ┐
-                │  │ * │       │   │  │
-                │  ├───┼╌╌╌╌╌╌╌┼───┤  │
-  f_3d.shape[0] │  ╎   ╎       ╎   ╎  │
-      (=32)     │  ├───┼╌╌╌╌╌╌╌┼───┤  │
-                │  │   │       │   │  │
-                └  └───┴╌╌╌╌╌╌╌┴───┘  ┘
-
-      ┌───┬───┬───┬───┬───┬───┬───┬───┐
-  * = │   │   │   │   │   │   │   │   │
-      └───┴───┴───┴───┴───┴───┴───┴───┘
-      └───────────────────────────────┘
-             f_1d.shape[2] = 8
-
-  ```
 
 Scalar fields of higher dimensions can be similarily defined.
 
@@ -303,7 +273,7 @@ Accessing a vector field is similar to accessing a multi-dimensional array: You 
   volumetric_field[i, j, k].z = 3  # equivalent to volumetric_field[i, j, k][2] = 3
   volumetric_field[i, j, k].w = 4  # equivalent to volumetric_field[i, j, k][3] = 4
   volumetric_field[i, j, k].xyz = 1, 2, 3  # assign 1, 2, 3 to the first three components
-  volumetric_field[i, j, k].rgb = 1, 2, 3  # ibid.
+  volumetric_field[i, j, k].rgb = 1, 2, 3  # equivalent to the above
   ```
 
 

@@ -148,7 +148,7 @@ llvm::Type *TaichiLLVMContext::get_data_type(DataType dt) {
   } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
     return llvm::Type::getHalfTy(*ctx);
   } else if (dt->is<TensorType>()) {
-    TI_ASSERT_INFO(config_->real_matrix,
+    TI_ASSERT_INFO(config_->real_matrix || config_->dynamic_index,
                    "Real matrix not enabled but got TensorType");
     auto tensor_type = dt->cast<TensorType>();
     auto element_type = get_data_type(tensor_type->get_element_type());

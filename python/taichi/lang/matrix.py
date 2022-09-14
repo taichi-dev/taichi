@@ -113,6 +113,10 @@ def make_matrix(arr, dt=None):
             [expr.Expr(elt).ptr for row in arr for elt in row]))
 
 
+def is_vector(x):
+    return isinstance(x, Vector) or getattr(x, "ndim", None) == 1
+
+
 class _MatrixBaseImpl:
     def __init__(self, m, n, entries):
         self.m = m
@@ -257,8 +261,7 @@ class _TiScopeMatrixImpl(_MatrixBaseImpl):
                               is_ref=get_ref)
             return Matrix([[self._subscript(is_global_mat, a, b) for b in j]
                            for a in i],
-                          is_ref=get_ref,
-                          ndim=1)
+                          is_ref=get_ref)
 
         if self.any_array_access:
             return self.any_array_access.subscript(i, j)
@@ -441,7 +444,7 @@ class Matrix(TaichiOperations):
         elif isinstance(arr[0], Matrix):
             raise Exception('cols/rows required when using list of vectors')
         else:
-            is_matrix = isinstance(arr[0], Iterable)
+            is_matrix = isinstance(arr[0], Iterable) and not is_vector(self)
             initializer = _make_entries_initializer(is_matrix)
             self.ndim = 2 if is_matrix else 1
 
@@ -490,17 +493,26 @@ class Matrix(TaichiOperations):
 
     def _element_wise_binary(self, foo, other):
         other = self._broadcast_copy(other)
+        if is_vector(self):
+            return Vector([foo(self(i), other(i)) for i in range(self.n)],
+                          ndim=self.ndim)
         return Matrix([[foo(self(i, j), other(i, j)) for j in range(self.m)]
                        for i in range(self.n)],
                       ndim=self.ndim)
 
     def _broadcast_copy(self, other):
         if isinstance(other, (list, tuple)):
-            other = Matrix(other)
+            if is_vector(self):
+                other = Vector(other, ndim=self.ndim)
+            else:
+                other = Matrix(other, ndim=self.ndim)
         if not isinstance(other, Matrix):
-            other = Matrix([[other for _ in range(self.m)]
-                            for _ in range(self.n)],
-                           ndim=self.ndim)
+            if isinstance(self, Vector):
+                other = Vector([other for _ in range(self.n)])
+            else:
+                other = Matrix([[other for _ in range(self.m)]
+                                for _ in range(self.n)],
+                               ndim=self.ndim)
         assert self.m == other.m and self.n == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
         return other
 
@@ -645,6 +657,8 @@ class Matrix(TaichiOperations):
         This is similar to `numpy.ndarray`'s `flatten` and `ravel` methods,
         the difference is that this function always returns a new list.
         """
+        if is_vector(self):
+            return [self(i) for i in range(self.n)]
         return [[self(i, j) for j in range(self.m)] for i in range(self.n)]
 
     @taichi_scope
@@ -665,6 +679,10 @@ class Matrix(TaichiOperations):
             >>> B
             [0.0, 1.0, 2.0]
         """
+        if is_vector(self):
+            # when using _IntermediateMatrix, we can only check `self.ndim`
+            return Vector(
+                [ops_mod.cast(self(i), dtype) for i in range(self.n)])
         return Matrix(
             [[ops_mod.cast(self(i, j), dtype) for j in range(self.m)]
              for i in range(self.n)],
@@ -1421,8 +1439,8 @@ class Matrix(TaichiOperations):
             :class:`~taichi.Matrix`: The outer product of the two Vectors.
         """
         from taichi._funcs import \
-            _matrix_outer_product  # pylint: disable=C0415
-        return _matrix_outer_product(self, other)
+            _vector_outer_product  # pylint: disable=C0415
+        return _vector_outer_product(self, other)
 
 
 class Vector(Matrix):
@@ -1600,7 +1618,9 @@ class MatrixField(Field):
         elif isinstance(val,
                         (list, tuple)) and isinstance(val[0], numbers.Number):
             assert self.m == 1
-            val = tuple([(v, ) for v in val])
+            val = tuple(val)
+        elif is_vector(val) or self.ndim == 1:
+            val = tuple([(val(i), ) for i in range(self.n)])
         elif isinstance(val, Matrix):
             val_tuple = []
             for i in range(val.n):
@@ -1611,7 +1631,8 @@ class MatrixField(Field):
                 val_tuple.append(row)
             val = tuple(val_tuple)
         assert len(val) == self.n
-        assert len(val[0]) == self.m
+        if self.ndim != 1:
+            assert len(val[0]) == self.m
 
         if in_python_scope():
             from taichi._kernels import fill_matrix  # pylint: disable=C0415
@@ -1724,6 +1745,8 @@ class MatrixField(Field):
         self._initialize_host_accessors()
         key = self._pad_key(key)
         _host_access = self._host_access(key)
+        if self.ndim == 1:
+            return Vector([_host_access[i] for i in range(self.n)])
         return Matrix([[_host_access[i * self.m + j] for j in range(self.m)]
                        for i in range(self.n)],
                       ndim=self.ndim)

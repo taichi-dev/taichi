@@ -670,10 +670,13 @@ class ASTTransformer(Builder):
                         ti_ops.cast(expr.Expr(node.value.ptr),
                                     ctx.func.return_type).ptr))
             elif isinstance(ctx.func.return_type, MatrixType):
+                item_iter = iter(node.value.ptr.to_list())\
+                            if isinstance(node.value.ptr, Vector) or node.value.ptr.ndim == 1\
+                            else itertools.chain.from_iterable(node.value.ptr.to_list())
                 ctx.ast_builder.create_kernel_exprgroup_return(
                     expr.make_expr_group([
-                        ti_ops.cast(exp, ctx.func.return_type.dtype) for exp in
-                        itertools.chain.from_iterable(node.value.ptr.to_list())
+                        ti_ops.cast(exp, ctx.func.return_type.dtype)
+                        for exp in item_iter
                     ]))
             else:
                 raise TaichiSyntaxError(

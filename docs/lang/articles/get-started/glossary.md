@@ -38,7 +38,7 @@ A kernel is a function decorated with `@ti.kernel`. A kernel serves as the entry
 
 ## Megakernel
 
-A megakernel is a Taichi kernel that can deal with a large amount of computation to achieve high arithmetic intensity. 
+A megakernel is a Taichi kernel that can deal with a large amount of computation to achieve high arithmetic intensity.
 
 ## Metadata
 

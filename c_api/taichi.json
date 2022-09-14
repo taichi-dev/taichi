@@ -93,7 +93,8 @@
                         "argument_null": -5,
                         "argument_out_of_range": -6,
                         "argument_not_found": -7,
-                        "invalid_interop": -8
+                        "invalid_interop": -8,
+                        "invalid_state": -9
                     }
                 },
                 {

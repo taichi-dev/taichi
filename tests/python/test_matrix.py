@@ -718,6 +718,7 @@ def test_matrix_vector_multiplication():
 
     foo()
 
+
 @test_utils.test(arch=[ti.cuda, ti.cpu], real_matrix=True)
 def test_local_matrix_read():
 

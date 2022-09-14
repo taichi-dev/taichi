@@ -380,10 +380,6 @@ def _make_entries_initializer(is_matrix: bool) -> _MatrixEntriesInitializer:
     return _MatImpl() if is_matrix else _VecImpl()
 
 
-def is_vector(x):
-    return isinstance(x, Vector) or getattr(x, "ndim", None) == 1
-
-
 @_gen_swizzles
 class Matrix(TaichiOperations):
     """The matrix class.

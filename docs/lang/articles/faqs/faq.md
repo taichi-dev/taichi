@@ -167,3 +167,104 @@ def test(arr: ti.types.ndarray()):
         x[i] = arr[i]
 test(array)
 ```
+
+### Does the Taichi's GUI system support color mapping when rendering simulation results?
+
+Taichi's GUI system can display colors when the field it accepts is a 3D vector field where each vector represents the RGB values of a pixel.
+
+To enable color mapping, convert `ti.field` into a NumPy array and call Matplotlib's colormap (`cm`), as shown in the following example:
+
+```python
+gui = ti.GUI(f'Re = {un * lx / mu:4.0f} V_mag', (nx+1, ny+1)）
+step = 0
+while gui.running: # Main loop
+    print(f'>>> step : {step:<6d}, time : {step*dt:<6.3f} sec')
+    substep()
+    if step % 10 = 1:
+        V_np = V_mag.to_numpy()
+        V_img = cm.jet(V_np)
+        gui.set_image(V_img) # Plot the velocity magnitude contour
+        gui.show()
+    step += 1
+```
+
+### Why does inheritance fail? I created a parent class and a child class, both decorated with `@ti.data_oriented`, and placed fields under `@ti.kernel`.
+
+The problem does not lie with inheritance. All Taichi fields must be allocated/placed in the Python scope. In other words, you need to define a field before calling `@ti.kernel`.
+
+For example, the following code snippet cannot run properly:
+
+```python
+@ti.data_oriented
+class MyClass1():
+
+    def __init__(self):
+        self.testfield = ti.Vector.field(3, dtype=ti.f32)
+
+    @ti.kernel
+    def init_field(self):
+        ti.root.dense(ti.i, 10).place(self.testfield)
+```
+
+Instead, refrain from involving `@ti.kernel` when declaring a field via `ti.root().place()`:
+
+```python
+@ti.data_oriented
+class TriangleRasterizer:
+    def __init__(self, n):
+        self.n = n
+        self.A = ti.Vector.field(2, dtype=ti.f32)
+        self.B = ti.Vector.field(2, dtype=ti.f32)
+        self.C = ti.Vector.field(2, dtype=ti.f32)
+        self.c0 = ti.Vector.field(3, dtype=ti.f32)
+        self.c1 = ti.Vector.field(3, dtype=ti.f32)
+        self.c2 = ti.Vector.field(3, dtype=ti.f32)
+
+        self.vertices = ti.root.dense(ti.i, n).place(self.A, self.B, self.C)
+        self.colors = ti.root.dense(ti.i, n).place(self.c0, self.c1, self.c2)
+
+        # Tile-based culling
+        self.block_num_triangles = ti.field(dtype=ti.i32,
+                                            shape=(width // tile_size,
+                                                   height // tile_size))
+        self.block_indicies = ti.field(dtype=ti.i32,
+                                       shape=(width // tile_size,
+                                              height // tile_size, n))
+```
+
+### How can I write data in Taichi fields to files? `write()` does not work.
+
+You cannot save data in Taichi fields directly, but there is a workaround. Taichi allows interaction with external arrays. Use `to_numpy` to convert a Taichi field to a NumPy array, as explained in [this section](https://docs.taichi-lang.org/docs/master/external). Then write the Numpy array to files via `numpy.savetxt`.
+
+A simple example:
+
+```python
+import taichi as ti
+import numpy as np
+
+ti.init(arch=ti.cpu)
+
+x = ti.field(dtype=ti.f32, shape= 10)
+y = ti.Vector.field(n=2, dtype=ti.i32, shape=10)
+
+@ti.kernel
+def init():
+    for i in x:
+        x[i] = i * 0.5 + 1.0
+    for i in y:
+        y[i] = ti.Vector([i,i])
+
+init()
+np.savetxt('x.txt', x.to_numpy())
+np.savetxt('y.txt', y.to_numpy())
+```
+
+And data in fields `x` and `y` can be found in files **x.txt** and **y.txt**, respectively.
+
+### Why an image obtained using `field.to_numpy()` is rotated when displayed using `matplotlib`'s `plt.imshow()`?
+
+Taichi fields adopt a different coordinate system from NumPy's arrays for storing images. In a Taichi field, [0,0] denotes the pixel at the lower left corner of the image; the first axis extends to the right of the image; the second axis extends to the top.
+
+This is different from the usual convention taken by popular third-party libs like `matplotlib` or `opencv`, where [0, 0] denotes the pixel at the top left corner, the first axis extends down to the bottom of the image, and the second axis  extends to the right.
+
+Therefore, to display a NumPy array using `matplotlb`'s `imshow()`, you must rotate it 90 degrees clockwise.

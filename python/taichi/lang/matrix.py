@@ -447,6 +447,11 @@ class Matrix(TaichiOperations):
             is_matrix = isinstance(arr[0], Iterable) and not is_vector(self)
             initializer = _make_entries_initializer(is_matrix)
             self.ndim = 2 if is_matrix else 1
+            if not is_matrix and isinstance(arr[0], Iterable):
+                flattened = []
+                for row in arr:
+                    flattened += row
+                arr = flattened
 
             if in_python_scope() or is_ref:
                 mat = initializer.pyscope_or_ref(arr)
@@ -568,8 +573,7 @@ class Matrix(TaichiOperations):
                     acc = acc + self(i, k) * other(k, j)
                 entries[i].append(acc)
         if is_vector(other) and other.m == 1:
-            # TODO: remove `ndim` when #5783 is merged
-            return Vector(entries, ndim=1)
+            return Vector(entries)
         return Matrix(entries)
 
     # host access & python scope operation

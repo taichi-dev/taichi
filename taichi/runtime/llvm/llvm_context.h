@@ -142,8 +142,8 @@ class TaichiLLVMContext {
 
   static std::string get_struct_for_func_name(int tls_size);
 
-  LLVMCompiledData link_compiled_tasks(
-      std::vector<std::unique_ptr<LLVMCompiledData>> data_list);
+  LLVMCompiledKernel link_compiled_tasks(
+      std::vector<std::unique_ptr<LLVMCompiledTask>> data_list);
 
  private:
   std::unique_ptr<llvm::Module> clone_module_to_context(

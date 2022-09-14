@@ -348,6 +348,7 @@ def init(arch=None,
     current_dir = os.getcwd()
 
     cfg = impl.default_cfg()
+    cfg.offline_cache = True  # Enable offline cache in frontend instead of C++ side
     # Check if installed version meets the requirements.
     if require_version is not None:
         check_require_version(require_version)

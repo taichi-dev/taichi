@@ -846,35 +846,6 @@ class TaskCodegen : public IRVisitor {
     BINARY_OP_TO_SPIRV_LOGICAL(cmp_ne, ne)
 #undef BINARY_OP_TO_SPIRV_LOGICAL
 
-#define INT_OR_FLOAT_BINARY_OP_TO_SPIRV_FLOAT_FUNC(op, instruction,            \
-                                                   instruction_id, max_bits)   \
-  else if (op_type == BinaryOpType::op) {                                      \
-    const uint32_t instruction = instruction_id;                               \
-    if (is_real(bin->element_type()) || is_integral(bin->element_type())) {    \
-      if (data_type_bits(bin->element_type()) > max_bits) {                    \
-        TI_ERROR(                                                              \
-            "[glsl450] the operand type of instruction {}({}) must <= {}bits", \
-            #instruction, instruction_id, max_bits);                           \
-      }                                                                        \
-      if (is_integral(bin->element_type())) {                                  \
-        bin_value = ir_->cast(                                                 \
-            dst_type,                                                          \
-            ir_->add(ir_->call_glsl450(ir_->f32_type(), instruction,           \
-                                       ir_->cast(ir_->f32_type(), lhs_value),  \
-                                       ir_->cast(ir_->f32_type(), rhs_value)), \
-                     ir_->float_immediate_number(ir_->f32_type(), 0.5f)));     \
-      } else {                                                                 \
-        bin_value =                                                            \
-            ir_->call_glsl450(dst_type, instruction, lhs_value, rhs_value);    \
-      }                                                                        \
-    } else {                                                                   \
-      TI_NOT_IMPLEMENTED                                                       \
-    }                                                                          \
-  }
-
-    INT_OR_FLOAT_BINARY_OP_TO_SPIRV_FLOAT_FUNC(pow, Pow, 26, 32)
-#undef INT_OR_FLOAT_BINARY_OP_TO_SPIRV_FLOAT_FUNC
-
 #define FLOAT_BINARY_OP_TO_SPIRV_FLOAT_FUNC(op, instruction, instruction_id,   \
                                             max_bits)                          \
   else if (op_type == BinaryOpType::op) {                                      \
@@ -893,6 +864,7 @@ class TaskCodegen : public IRVisitor {
   }
 
     FLOAT_BINARY_OP_TO_SPIRV_FLOAT_FUNC(atan2, Atan2, 25, 32)
+    FLOAT_BINARY_OP_TO_SPIRV_FLOAT_FUNC(pow, Pow, 26, 32)
 #undef FLOAT_BINARY_OP_TO_SPIRV_FLOAT_FUNC
 
 #define BINARY_OP_TO_SPIRV_FUNC(op, S_inst, S_inst_id, U_inst, U_inst_id,      \

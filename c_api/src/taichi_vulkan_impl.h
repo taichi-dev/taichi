@@ -18,9 +18,9 @@ class VulkanRuntime : public GfxRuntime {
   VulkanRuntime();
 
   taichi::lang::vulkan::VulkanDevice &get_vk();
-  virtual TiTexture allocate_texture(
+  virtual TiImage allocate_image(
       const taichi::lang::ImageParams &params) override final;
-  virtual void free_texture(TiTexture texture) override final;
+  virtual void free_image(TiImage image) override final;
 };
 class VulkanRuntimeImported : public VulkanRuntime {
   // A dirty workaround to ensure the device is fully initialized before

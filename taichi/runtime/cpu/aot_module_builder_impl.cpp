@@ -9,7 +9,7 @@ namespace taichi {
 namespace lang {
 namespace cpu {
 
-LLVMCompiledData AotModuleBuilderImpl::compile_kernel(Kernel *kernel) {
+LLVMCompiledKernel AotModuleBuilderImpl::compile_kernel(Kernel *kernel) {
   auto cgen = KernelCodeGenCPU(kernel);
   return cgen.compile_kernel_to_module();
 }

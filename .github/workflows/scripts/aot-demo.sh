@@ -48,7 +48,7 @@ function prepare-unity-build-env {
     cd taichi
 
     # Dependencies
-    git clone --reference-if-able /var/lib/git-cache https://github.com/taichi-dev/Taichi-UnityExample
+    git clone --reference-if-able /var/lib/git-cache -b upgrade-modules1 https://github.com/taichi-dev/Taichi-UnityExample
 
     python misc/generate_unity_language_binding.py
     cp c_api/unity/*.cs Taichi-UnityExample/Assets/Taichi/Generated

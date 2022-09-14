@@ -5,58 +5,6 @@
 #include "taichi/system/profiler.h"
 
 TLANG_NAMESPACE_BEGIN
-class MatrixInitRemoval : public IRVisitor {
- public:
-  MatrixInitRemoval(IRNode *node, std::unordered_set<Stmt *> &&remove_list) {
-    allow_undefined_visitor = true;
-    invoke_default_visitor = false;
-    remove_list_ = std::move(remove_list);
-    node->accept(this);
-  }
-
-  void visit(Block *stmt_list) override {
-    for (auto &stmt : stmt_list->statements) {
-      stmt->accept(this);
-    }
-  }
-
-  void visit(IfStmt *if_stmt) override {
-    if (if_stmt->true_statements)
-      if_stmt->true_statements->accept(this);
-    if (if_stmt->false_statements) {
-      if_stmt->false_statements->accept(this);
-    }
-  }
-
-  void visit(WhileStmt *stmt) override {
-    stmt->body->accept(this);
-  }
-
-  void visit(RangeForStmt *for_stmt) override {
-    for_stmt->body->accept(this);
-  }
-
-  void visit(StructForStmt *for_stmt) override {
-    for_stmt->body->accept(this);
-  }
-
-  void visit(MeshForStmt *for_stmt) override {
-    for_stmt->body->accept(this);
-  }
-
-  void visit(OffloadedStmt *stmt) override {
-    stmt->all_blocks_accept(this);
-  }
-
-  void visit(MatrixInitStmt *stmt) override {
-    if (remove_list_.count(stmt)) {
-      stmt->parent->erase(stmt);
-    }
-  }
-
- private:
-  std::unordered_set<Stmt *> remove_list_;
-};
 
 class Scalarize : public IRVisitor {
  public:
@@ -101,7 +49,7 @@ class Scalarize : public IRVisitor {
       auto matrix_init_stmt = stmt->val->template as<MatrixInitStmt>();
 
       int num_elements = val_tensor_type->get_num_elements();
-      for (size_t i = 0; i < num_elements; i++) {
+      for (int i = 0; i < num_elements; i++) {
         auto const_stmt = std::make_unique<ConstStmt>(
             TypedConstant(stmt->val->ret_type.get_element_type(), i));
 
@@ -159,8 +107,6 @@ class Scalarize : public IRVisitor {
   void visit(LocalStoreStmt *stmt) override {
     scalarize_store_stmt<LocalStoreStmt>(stmt);
   }
-
-  std::unordered_set<Stmt *> matrix_init_to_remove_;
 };
 
 namespace irpass {
@@ -169,12 +115,10 @@ void scalarize(IRNode *root) {
   TI_AUTO_PROF;
   Scalarize scalarize_pass(root);
 
-  /*
+  /* TODO(zhanlue): Remove redundant MatrixInitStmt
     Scalarize pass will generate temporary MatrixInitStmts, which are only used
     as rvalues. Remove these MatrixInitStmts since it's no longer needed.
   */
-  MatrixInitRemoval matrix_init_removal_pass(
-      root, std::move(scalarize_pass.matrix_init_to_remove_));
 }
 
 }  // namespace irpass

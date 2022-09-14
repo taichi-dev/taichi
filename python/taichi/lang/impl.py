@@ -15,8 +15,8 @@ from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.kernel_arguments import SparseMatrixProxy
 from taichi.lang.matrix import (Matrix, MatrixField, MatrixNdarray, MatrixType,
-                                _IntermediateMatrix, _MatrixFieldElement,
-                                make_matrix)
+                                Vector, _IntermediateMatrix,
+                                _MatrixFieldElement, make_matrix)
 from taichi.lang.mesh import (ConvType, MeshElementFieldProxy, MeshInstance,
                               MeshRelationAccessProxy,
                               MeshReorderedMatrixFieldProxy,
@@ -64,6 +64,9 @@ def expr_init(rhs):
                 entries = [[rhs(i, j) for j in range(rhs.m)]
                            for i in range(rhs.n)]
             return make_matrix(entries)
+        if isinstance(rhs, Vector) or getattr(rhs, "ndim", None) == 1:
+            # _IntermediateMatrix may reach here
+            return Vector(rhs.to_list(), ndim=rhs.ndim)
         return Matrix(rhs.to_list(), ndim=rhs.ndim)
     if isinstance(rhs, SharedArray):
         return rhs
@@ -255,8 +258,8 @@ def make_stride_expr(_var, _indices, shape, stride):
 @taichi_scope
 def make_index_expr(_var, _indices):
     return Expr(
-        _ti_core.make_index_expr(_var, make_expr_group(*_indices),
-                                 get_runtime().get_current_src_info()))
+        _ti_core.subscript(_var, make_expr_group(*_indices),
+                           get_runtime().get_current_src_info()))
 
 
 class SrcInfoGuard:

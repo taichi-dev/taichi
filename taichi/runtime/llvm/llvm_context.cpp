@@ -148,7 +148,7 @@ llvm::Type *TaichiLLVMContext::get_data_type(DataType dt) {
   } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
     return llvm::Type::getHalfTy(*ctx);
   } else if (dt->is<TensorType>()) {
-    TI_ASSERT_INFO(config_->real_matrix,
+    TI_ASSERT_INFO(config_->real_matrix || config_->dynamic_index,
                    "Real matrix not enabled but got TensorType");
     auto tensor_type = dt->cast<TensorType>();
     auto element_type = get_data_type(tensor_type->get_element_type());
@@ -889,9 +889,9 @@ TaichiLLVMContext::ThreadLocalData::~ThreadLocalData() {
   thread_safe_llvm_context.reset();
 }
 
-std::unique_ptr<LLVMCompiledData> TaichiLLVMContext::link_compiled_tasks(
-    std::vector<std::unique_ptr<LLVMCompiledData>> data_list) {
-  auto linked = std::make_unique<LLVMCompiledData>();
+LLVMCompiledKernel TaichiLLVMContext::link_compiled_tasks(
+    std::vector<std::unique_ptr<LLVMCompiledTask>> data_list) {
+  LLVMCompiledKernel linked;
   std::unordered_set<int> used_tree_ids;
   std::unordered_set<int> tls_sizes;
   std::unordered_set<std::string> offloaded_names;
@@ -906,7 +906,7 @@ std::unique_ptr<LLVMCompiledData> TaichiLLVMContext::link_compiled_tasks(
     }
     for (auto &task : datum->tasks) {
       offloaded_names.insert(task.name);
-      linked->tasks.push_back(std::move(task));
+      linked.tasks.push_back(std::move(task));
     }
     linker.linkInModule(clone_module_to_context(
         datum->module.get(), linking_context_data->llvm_context));
@@ -927,7 +927,7 @@ std::unique_ptr<LLVMCompiledData> TaichiLLVMContext::link_compiled_tasks(
   eliminate_unused_functions(mod.get(), [&](std::string func_name) -> bool {
     return offloaded_names.count(func_name);
   });
-  linked->module = std::move(mod);
+  linked.module = std::move(mod);
   return linked;
 }
 

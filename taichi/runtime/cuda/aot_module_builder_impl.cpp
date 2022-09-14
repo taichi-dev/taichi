@@ -9,9 +9,9 @@ namespace taichi {
 namespace lang {
 namespace cuda {
 
-LLVMCompiledData AotModuleBuilderImpl::compile_kernel(Kernel *kernel) {
+LLVMCompiledKernel AotModuleBuilderImpl::compile_kernel(Kernel *kernel) {
   auto cgen = KernelCodeGenCUDA(kernel);
-  return std::move(cgen.compile_kernel_to_module()[0]);
+  return cgen.compile_kernel_to_module();
 }
 
 }  // namespace cuda

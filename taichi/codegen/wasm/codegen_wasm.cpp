@@ -215,7 +215,7 @@ class TaskCodeGenWASM : public TaskCodeGenLLVM {
     TI_ASSERT(!llvm::verifyFunction(*func, &llvm::errs()));
   }
 
-  LLVMCompiledData run_compilation() override {
+  LLVMCompiledTask run_compilation() override {
     // lower kernel
     if (!kernel->lowered()) {
       kernel->lower();
@@ -235,7 +235,7 @@ class TaskCodeGenWASM : public TaskCodeGenLLVM {
           }
           return func_name == offloaded_task_name;
         });
-    LLVMCompiledData res;
+    LLVMCompiledTask res;
     res.tasks.emplace_back(offloaded_task_name);
     res.module = std::move(this->module);
     return res;
@@ -244,7 +244,7 @@ class TaskCodeGenWASM : public TaskCodeGenLLVM {
 
 FunctionType KernelCodeGenWASM::compile_to_function() {
   TI_AUTO_PROF
-  auto linked = std::move(compile_kernel_to_module()[0]);
+  auto linked = compile_kernel_to_module();
   auto *tlctx = get_llvm_program(prog)->get_llvm_context(kernel->arch);
   tlctx->create_jit_module(std::move(linked.module));
   auto kernel_symbol = tlctx->lookup_function_pointer(linked.tasks[0].name);
@@ -255,7 +255,7 @@ FunctionType KernelCodeGenWASM::compile_to_function() {
   };
 }
 
-LLVMCompiledData KernelCodeGenWASM::compile_task(
+LLVMCompiledTask KernelCodeGenWASM::compile_task(
     std::unique_ptr<llvm::Module> &&module,
     OffloadedStmt *stmt) {
   kernel->offload_to_executable(ir);
@@ -281,18 +281,15 @@ LLVMCompiledData KernelCodeGenWASM::compile_task(
   return {name_list, std::move(gen->module), {}, {}};
 }
 
-std::vector<LLVMCompiledData> KernelCodeGenWASM::compile_kernel_to_module() {
+LLVMCompiledKernel KernelCodeGenWASM::compile_kernel_to_module() {
   auto *tlctx = get_llvm_program(prog)->get_llvm_context(kernel->arch);
   if (!kernel->lowered()) {
     kernel->lower(/*to_executable=*/false);
   }
   auto res = compile_task();
-  std::vector<std::unique_ptr<LLVMCompiledData>> data;
-  data.push_back(std::make_unique<LLVMCompiledData>(std::move(res)));
-  auto linked = tlctx->link_compiled_tasks(std::move(data));
-  std::vector<LLVMCompiledData> ret;
-  ret.push_back(std::move(*linked));
-  return ret;
+  std::vector<std::unique_ptr<LLVMCompiledTask>> data;
+  data.push_back(std::make_unique<LLVMCompiledTask>(std::move(res)));
+  return tlctx->link_compiled_tasks(std::move(data));
 }
 
 }  // namespace lang

@@ -25,7 +25,7 @@ class AotModuleImpl : public LlvmAotModule {
 
     CUDAModuleToFunctionConverter converter{tlctx, executor_};
     return converter.convert(name, loaded.args,
-                             std::move(loaded.compiled_data_list));
+                             std::move(loaded.compiled_data));
   }
 
   std::unique_ptr<aot::KernelTemplate> make_new_kernel_template(

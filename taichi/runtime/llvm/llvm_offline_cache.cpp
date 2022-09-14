@@ -95,11 +95,9 @@ struct CacheCleanerUtils<LlvmOfflineCache> {
       const CacheCleanerConfig &config,
       const KernelMetaData &kernel_meta) {
     std::vector<std::string> result;
-    for (int i = 0; i < kernel_meta.compiled_data_list.size(); i++) {
-      for (const auto &f : get_possible_llvm_cache_filename_by_key(
-               kernel_meta.kernel_key + "." + std::to_string(i))) {
-        result.push_back(f);
-      }
+    for (const auto &f :
+         get_possible_llvm_cache_filename_by_key(kernel_meta.kernel_key)) {
+      result.push_back(f);
     }
     return result;
   }
@@ -196,21 +194,16 @@ bool LlvmOfflineCacheFileReader::get_kernel_cache(
   }
 
   auto &kernel_data = itr->second;
-  for (int i = 0; i < kernel_data.compiled_data_list.size(); i++) {
-    auto &data = kernel_data.compiled_data_list[i];
+  auto &data = kernel_data.compiled_data;
+  if (!data.module) {
+    std::string filename_prefix = taichi::join_path(path_, key);
+    data.module = load_module(filename_prefix, key, llvm_ctx);
     if (!data.module) {
-      std::string filename_prefix =
-          taichi::join_path(path_, key + "." + std::to_string(i));
-      data.module = load_module(filename_prefix, key, llvm_ctx);
-      if (!data.module) {
-        data_.kernels.erase(itr);
-        return false;  // Must return
-      }
+      data_.kernels.erase(itr);
+      return false;  // Must return
     }
-    res.compiled_data_list.emplace_back(
-        data.tasks, llvm::CloneModule(*data.module), data.used_tree_ids,
-        data.struct_for_tls_sizes);
   }
+  res.compiled_data = data.clone();
 
   kernel_data.last_used_at = std::time(nullptr);
 
@@ -220,27 +213,21 @@ bool LlvmOfflineCacheFileReader::get_kernel_cache(
   res.args = kernel_data.args;
 
   // Verify the `res: LlvmOfflineCache::KernelCacheData`
-  bool verified_all = true;
-  const auto &compiled_data_list = res.compiled_data_list;
-  for (std::size_t i = 0; i < compiled_data_list.size(); ++i) {
-    const auto &data = compiled_data_list[i];
-    const auto &tasks = data.tasks;
-    bool verified = true;
-    for (const auto &t : tasks) {
-      if (data.module->getFunction(t.name) == nullptr) {
-        verified = false;
-        verified_all = false;
-      }
+  const auto &compiled_data = res.compiled_data;
+  const auto &tasks = compiled_data.tasks;
+  bool verified = true;
+  for (const auto &t : tasks) {
+    if (compiled_data.module->getFunction(t.name) == nullptr) {
+      verified = false;
     }
-    if (!verified) {
-      for (const auto &f : get_possible_llvm_cache_filename_by_key(
-               key + "." + std::to_string(i))) {
-        taichi::remove(taichi::join_path(path_, f));
-      }
+  }
+  if (!verified) {
+    for (const auto &f : get_possible_llvm_cache_filename_by_key(key)) {
+      taichi::remove(taichi::join_path(path_, f));
     }
   }
 
-  return verified_all;
+  return verified;
 }
 
 std::unique_ptr<llvm::Module> LlvmOfflineCacheFileReader::load_module(
@@ -291,33 +278,28 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
     std::size_t size = 0;  // bytes
     std::string filename_prefix = taichi::join_path(path, k);
     {
-      mangle_offloaded_task_name(k, v.compiled_data_list);
-      for (int i = 0; i < v.compiled_data_list.size(); i++) {
-        auto &data = v.compiled_data_list[i];
-        auto *mod = data.module.get();
-        TI_ASSERT(mod != nullptr);
-        std::string suffix = "." + std::to_string(i);
-        if (format & Format::LL) {
-          std::string filename = filename_prefix + suffix + ".ll";
-          if (try_lock_with_file(filename)) {  // Not exists
-            size +=
-                write_llvm_module(filename, [mod](llvm::raw_os_ostream &os) {
-                  mod->print(os, /*AAW=*/nullptr);
-                });
-          } else {
-            TI_DEBUG("Cache file {} exists", filename);
-          }
+      mangle_offloaded_task_name(k, v.compiled_data);
+      auto &data = v.compiled_data;
+      auto *mod = data.module.get();
+      TI_ASSERT(mod != nullptr);
+      if (format & Format::LL) {
+        std::string filename = filename_prefix + ".ll";
+        if (try_lock_with_file(filename)) {  // Not exists
+          size += write_llvm_module(filename, [mod](llvm::raw_os_ostream &os) {
+            mod->print(os, /*AAW=*/nullptr);
+          });
+        } else {
+          TI_DEBUG("Cache file {} exists", filename);
         }
-        if (format & Format::BC) {
-          std::string filename = filename_prefix + suffix + ".bc";
-          if (try_lock_with_file(filename)) {  // Not exists
-            size +=
-                write_llvm_module(filename, [mod](llvm::raw_os_ostream &os) {
-                  llvm::WriteBitcodeToFile(*mod, os);
-                });
-          } else {
-            TI_DEBUG("Cache file {} exists", filename);
-          }
+      }
+      if (format & Format::BC) {
+        std::string filename = filename_prefix + ".bc";
+        if (try_lock_with_file(filename)) {  // Not exists
+          size += write_llvm_module(filename, [mod](llvm::raw_os_ostream &os) {
+            llvm::WriteBitcodeToFile(*mod, os);
+          });
+        } else {
+          TI_DEBUG("Cache file {} exists", filename);
         }
       }
     }
@@ -402,21 +384,19 @@ void LlvmOfflineCacheFileWriter::merge_with(LlvmOfflineCache &&data) {
 
 void LlvmOfflineCacheFileWriter::mangle_offloaded_task_name(
     const std::string &kernel_key,
-    std::vector<LLVMCompiledData> &compiled_data_list) {
+    LLVMCompiledKernel &compiled_data) {
   if (!mangled_) {
-    for (auto &e : compiled_data_list) {
-      for (auto &offload : e.tasks) {
-        std::string mangled_name =
-            offline_cache::mangle_name(offload.name, kernel_key);
-        TI_DEBUG(
-            "Mangle offloaded-task from internal name '{}' to offline cache "
-            "key '{}'",
-            offload.name, mangled_name);
-        auto func = e.module->getFunction(offload.name);
-        TI_ASSERT(func != nullptr);
-        func->setName(mangled_name);
-        offload.name = mangled_name;
-      }
+    for (auto &offload : compiled_data.tasks) {
+      std::string mangled_name =
+          offline_cache::mangle_name(offload.name, kernel_key);
+      TI_DEBUG(
+          "Mangle offloaded-task from internal name '{}' to offline cache "
+          "key '{}'",
+          offload.name, mangled_name);
+      auto func = compiled_data.module->getFunction(offload.name);
+      TI_ASSERT(func != nullptr);
+      func->setName(mangled_name);
+      offload.name = mangled_name;
     }
   }
 }
@@ -439,11 +419,7 @@ void LlvmOfflineCacheFileWriter::clean_cache(const std::string &path,
 
 LlvmOfflineCache::KernelCacheData LlvmOfflineCache::KernelCacheData::clone()
     const {
-  std::vector<LLVMCompiledData> new_data_list;
-  for (const auto &data : compiled_data_list) {
-    new_data_list.push_back(data.clone());
-  }
-  return {kernel_key, args, std::move(new_data_list)};
+  return {kernel_key, args, compiled_data.clone()};
 }
 }  // namespace lang
 }  // namespace taichi

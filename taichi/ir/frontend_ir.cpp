@@ -192,7 +192,8 @@ void BinaryOpExpression::type_check(CompileConfig *config) {
     ret_type = PrimitiveType::i32;
     return;
   }
-  if (is_shift_op(type)) {
+  if (is_shift_op(type) ||
+      (type == BinaryOpType::pow && is_integral(rhs_type))) {
     ret_type = lhs_type;
     return;
   }
@@ -440,7 +441,6 @@ void MatrixExpression::type_check(CompileConfig *config) {
 }
 
 void MatrixExpression::flatten(FlattenContext *ctx) {
-  // TODO: implement flatten
   TI_ASSERT(this->dt->is<TensorType>());
   std::vector<Stmt *> values;
   for (auto &elt : elements) {
@@ -500,6 +500,11 @@ void IndexExpression::type_check(CompileConfig *) {
       ret_type = var.cast<ExternalTensorExpression>()->dt;
     }
   } else if (is_tensor()) {  // local tensor
+    auto shape = var->ret_type->as<TensorType>()->get_shape();
+    if (indices.size() != shape.size()) {
+      TI_ERROR("Expected {} indices, but got {}.", shape.size(),
+               indices.size());
+    }
     ret_type = var->ret_type->cast<TensorType>()->get_element_type();
   } else {
     throw TaichiTypeError(
@@ -586,6 +591,9 @@ void LoopUniqueExpression::flatten(FlattenContext *ctx) {
 
 void IdExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->current_block->lookup_var(id);
+  if (!ret_type->is_primitive(PrimitiveTypeID::unknown)) {
+    stmt->ret_type = ret_type;
+  }
 }
 
 void AtomicOpExpression::type_check(CompileConfig *) {
@@ -1018,7 +1026,8 @@ Expr ASTBuilder::expr_alloca() {
 Expr ASTBuilder::make_matrix_expr(const std::vector<int> &shape,
                                   const DataType &dt,
                                   const std::vector<Expr> &elements) {
-  return Expr(std::make_shared<MatrixExpression>(elements, shape, dt));
+  auto mat = Expr(std::make_shared<MatrixExpression>(elements, shape, dt));
+  return mat;
 }
 
 Expr ASTBuilder::expr_alloca_local_tensor(const std::vector<int> &shape,

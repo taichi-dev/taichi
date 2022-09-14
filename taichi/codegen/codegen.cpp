@@ -57,15 +57,15 @@ std::unique_ptr<KernelCodeGen> KernelCodeGen::create(Arch arch,
 }
 #ifdef TI_WITH_LLVM
 
-bool KernelCodeGen::maybe_read_compilation_from_cache(
-    const std::string &kernel_key,
-    std::vector<LLVMCompiledData> &data) {
+std::optional<LLVMCompiledKernel>
+KernelCodeGen::maybe_read_compilation_from_cache(
+    const std::string &kernel_key) {
   TI_AUTO_PROF;
   const auto &config = prog->config;
   auto *llvm_prog = get_llvm_program(prog);
   const auto &reader = llvm_prog->get_cache_reader();
   if (!reader) {
-    return false;
+    return std::nullopt;
   }
 
   LlvmOfflineCache::KernelCacheData cache_data;
@@ -73,20 +73,19 @@ bool KernelCodeGen::maybe_read_compilation_from_cache(
   auto &llvm_ctx = *tlctx->get_this_thread_context();
 
   if (!reader->get_kernel_cache(cache_data, kernel_key, llvm_ctx)) {
-    return false;
+    return std::nullopt;
   }
-  data.swap(cache_data.compiled_data_list);
   kernel->mark_as_from_cache();
-  return true;
+  return {std::move(cache_data.compiled_data)};
 }
 
-void KernelCodeGen::cache_module(const std::string &kernel_key,
-                                 const std::vector<LLVMCompiledData> &data) {
+void KernelCodeGen::cache_kernel(const std::string &kernel_key,
+                                 const LLVMCompiledKernel &data) {
   get_llvm_program(prog)->cache_kernel(kernel_key, data,
                                        infer_launch_args(kernel));
 }
 
-std::vector<LLVMCompiledData> KernelCodeGen::compile_kernel_to_module() {
+LLVMCompiledKernel KernelCodeGen::compile_kernel_to_module() {
   auto *llvm_prog = get_llvm_program(prog);
   auto *tlctx = llvm_prog->get_llvm_context(kernel->arch);
   auto &config = prog->config;
@@ -94,14 +93,12 @@ std::vector<LLVMCompiledData> KernelCodeGen::compile_kernel_to_module() {
   kernel->set_kernel_key_for_cache(kernel_key);
   if (config.offline_cache && this->supports_offline_cache() &&
       !kernel->is_evaluator) {
-    std::vector<LLVMCompiledData> res;
-    const bool ok = maybe_read_compilation_from_cache(kernel_key, res);
-    if (ok) {
+    auto res = maybe_read_compilation_from_cache(kernel_key);
+    if (res) {
       TI_DEBUG("Create kernel '{}' from cache (key='{}')", kernel->get_name(),
                kernel_key);
-      cache_module(kernel_key, res);
-      TI_ASSERT(res.size() == 1);
-      return res;
+      cache_kernel(kernel_key, *res);
+      return std::move(*res);
     }
   }
   if (!kernel->lowered()) {
@@ -113,7 +110,7 @@ std::vector<LLVMCompiledData> KernelCodeGen::compile_kernel_to_module() {
   TI_ASSERT(block);
 
   auto &offloads = block->statements;
-  std::vector<std::unique_ptr<LLVMCompiledData>> data(offloads.size());
+  std::vector<std::unique_ptr<LLVMCompiledTask>> data(offloads.size());
   using TaskFunc = int32 (*)(void *);
   std::vector<TaskFunc> task_funcs(offloads.size());
   for (int i = 0; i < offloads.size(); i++) {
@@ -123,7 +120,7 @@ std::vector<LLVMCompiledData> KernelCodeGen::compile_kernel_to_module() {
           irpass::analysis::clone(offloads[i].get(), offloads[i]->get_kernel());
       irpass::re_id(offload.get());
       auto new_data = this->compile_task(nullptr, offload->as<OffloadedStmt>());
-      data[i] = std::make_unique<LLVMCompiledData>(std::move(new_data));
+      data[i] = std::make_unique<LLVMCompiledTask>(std::move(new_data));
     };
     if (kernel->is_evaluator) {
       compile_func();
@@ -135,14 +132,12 @@ std::vector<LLVMCompiledData> KernelCodeGen::compile_kernel_to_module() {
     worker.flush();
   }
   auto linked = tlctx->link_compiled_tasks(std::move(data));
-  std::vector<LLVMCompiledData> linked_data;
-  linked_data.push_back(std::move(*linked));
 
   if (!kernel->is_evaluator) {
     TI_DEBUG("Cache kernel '{}' (key='{}')", kernel->get_name(), kernel_key);
-    cache_module(kernel_key, linked_data);
+    cache_kernel(kernel_key, linked);
   }
-  return linked_data;
+  return linked;
 }
 
 ModuleToFunctionConverter::ModuleToFunctionConverter(
@@ -151,9 +146,8 @@ ModuleToFunctionConverter::ModuleToFunctionConverter(
     : tlctx_(tlctx), executor_(executor) {
 }
 
-FunctionType ModuleToFunctionConverter::convert(
-    const Kernel *kernel,
-    std::vector<LLVMCompiledData> &&data) const {
+FunctionType ModuleToFunctionConverter::convert(const Kernel *kernel,
+                                                LLVMCompiledKernel data) const {
   return convert(kernel->name, infer_launch_args(kernel), std::move(data));
 }
 

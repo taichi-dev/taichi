@@ -61,6 +61,18 @@ TEST(CapiDryRun, MemoryAllocation) {
   }
 }
 
+TEST(CapiDryRun, ImageAllocation) {
+  if (capi::utils::is_vulkan_available()) {
+    {
+      // Vulkan Runtime
+      TiArch arch = TiArch::TI_ARCH_VULKAN;
+      ti::Runtime runtime(arch);
+      ti::Texture texture =
+          runtime.allocate_texture2d(4, 4, TI_FORMAT_RGBA8, TI_NULL_HANDLE);
+    }
+  }
+}
+
 TEST(CapiDryRun, VulkanAotModule) {
   if (capi::utils::is_vulkan_available()) {
     const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");

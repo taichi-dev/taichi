@@ -18,24 +18,24 @@ Before using Taichi in your Python program, you need to import Taichi to your na
 
 1. Import Taichi:
 
-    ```python
-    import taichi as ti
-    ```
+```python
+import taichi as ti
+```
 
 2. Initialize Taichi:
 
-    ```python
-    # Choose any of the following backend when initializing Taichi
-    # - ti.cpu
-    # - ti.gpu
-    # - ti.cuda
-    # - ti.vulkan
-    # - ti.metal
-    # - ti.opengl
-    ti.init(arch=ti.cpu)
-    ```
+```python
+# Choose any of the following backend when initializing Taichi
+# - ti.cpu
+# - ti.gpu
+# - ti.cuda
+# - ti.vulkan
+# - ti.metal
+# - ti.opengl
+ti.init(arch=ti.cpu)
+```
 
-    We choose `ti.cpu` here despite the fact that running Taichi on a GPU backend can be much faster. This is mainly because we need to make sure that you can run our source code without any editing or additional configurations to your platform. Please note:
+We choose `ti.cpu` here despite the fact that running Taichi on a GPU backend can be much faster. This is mainly because we need to make sure that you can run our source code without any editing or additional configurations to your platform. Please note:
     - If you choose a GPU backend, for example `ti.cuda`, ensure that you have installed it on your system; otherwise, Taichi will raise an error.
     - The [GGUI](../visualization/ggui.md) we use for 3D rendering only supports CUDA and Vulkan, and x86 for now. If you choose a different backend, consider switching the GGUI system we provide in the source code.
 
@@ -44,7 +44,6 @@ Before using Taichi in your Python program, you need to import Taichi to your na
 This section does the following:
 
 - Generalizes and simplifies the models involved in the cloth simulation.
-
 - Represents the falling cloth and the ball with the [data containers](../basic/field.md) provided by Taichi.
 
 ### Model simplification
@@ -53,7 +52,7 @@ This section generalizes and simplifies the models involved in the cloth simulat
 
 #### Cloth: a mass-spring system
 
-In this program, the falling cloth is modeled as a mass-spring system. More specifically, we represent the piece of cloth as a n &times; n grid of mass points, where adjacent points are linked by springs. The following image provided by [Matthew Fisher](https://graphics.stanford.edu/~mdfisher/contact.html) illustrates this structure, where the red vertices are the mass points and the white edges of the grids are the springs.
+In this program, the falling cloth is modeled as a mass-spring system. More specifically, we represent the piece of cloth as an n &times; n grid of mass points, where adjacent points are linked by springs. The following image provided by [Matthew Fisher](https://graphics.stanford.edu/~mdfisher/contact.html) illustrates this structure, where the red vertices are the mass points and the white edges of the grids are the springs.
 
 ![mass-spring](https://user-images.githubusercontent.com/106292061/188807241-6a5d0e2b-7e4a-4b9f-8853-76b9794bdb7b.png)
 
@@ -88,45 +87,45 @@ Having initialized Taichi, you can declare the data structures that represent th
 
 1. Declare two arrays `x` and `v` for storing the mass points' positions and velocities. In Taichi, such arrays are called [fields](../basic/field.md).
 
-    ```python
-    n = 128
-    # x is an n x n field consisting of 3D floating-point vectors
-    # representing the mass points' positions
-    x = ti.Vector.field(3, dtype=float, shape=(n, n))
-    # v is an n x n field consisting of 3D floating-point vectors
-    # representing the mass points' velocities
-    v = ti.Vector.field(3, dtype=float, shape=(n, n))
-    ```
+```python
+n = 128
+# x is an n x n field consisting of 3D floating-point vectors
+# representing the mass points' positions
+x = ti.Vector.field(3, dtype=float, shape=(n, n))
+# v is an n x n field consisting of 3D floating-point vectors
+# representing the mass points' velocities
+v = ti.Vector.field(3, dtype=float, shape=(n, n))
+```
 
 2. Initialize the defined fields `x` and `v`:
 
-    ```python
-    # The n x n grid is normalized
-    # The distance between two x- or z-axis adjacent points
-    # is 1.0 / n
-    quad_size = 1.0 / n
+```python
+# The n x n grid is normalized
+# The distance between two x- or z-axis adjacent points
+# is 1.0 / n
+quad_size = 1.0 / n
 
-    # The @ti.kernel decorator instructs Taichi to
-    # automatically parallelize all top-level for loops
-    # inside initialize_mass_points()
-    @ti.kernel
-    def initialize_mass_points():
-        # A random offset to apply to each mass point
-        random_offset = ti.Vector([ti.random() - 0.5, ti.random() - 0.5]) * 0.1
+# The @ti.kernel decorator instructs Taichi to
+# automatically parallelize all top-level for loops
+# inside initialize_mass_points()
+@ti.kernel
+def initialize_mass_points():
+    # A random offset to apply to each mass point
+    random_offset = ti.Vector([ti.random() - 0.5, ti.random() - 0.5]) * 0.1
 
-        # Field x stores the mass points' positions
-        for i, j in x:
-            # The piece of cloth is 0.6 (y-axis) above the original point
-            #
-            # By taking away 0.5 from each mass point's [x,z] coordinate value
-            # you move the cloth right above the original point
-            x[i, j] = [
-                i * quad_size - 0.5 + random_offset[0], 0.6,
-                j * quad_size - 0.5 + random_offset[1]
-            ]
-            # The initial velocity of each mass point is set to 0
-            v[i, j] = [0, 0, 0]
-    ```
+    # Field x stores the mass points' positions
+    for i, j in x:
+        # The piece of cloth is 0.6 (y-axis) above the original point
+        #
+        # By taking away 0.5 from each mass point's [x,z] coordinate value
+        # you move the cloth right above the original point
+        x[i, j] = [
+            i * quad_size - 0.5 + random_offset[0], 0.6,
+            j * quad_size - 0.5 + random_offset[1]
+        ]
+        # The initial velocity of each mass point is set to 0
+        v[i, j] = [0, 0, 0]
+```
 
 #### Data structures for ball
 
@@ -187,7 +186,7 @@ As the image below shows, we make the following assumptions:
 The internal forces here broadly refer to the internal force caused by the elastic deformation of springs and the damping caused by the relative movement of two points.
 :::
 
-<img width="499" alt="1 (1)" src="https://user-images.githubusercontent.com/106292061/188809645-43ee235f-02d4-4302-8a77-e8c66cfae6a7.png">
+![spring system](https://user-images.githubusercontent.com/106292061/188809645-43ee235f-02d4-4302-8a77-e8c66cfae6a7.png)
 
 The code below does the following:
 

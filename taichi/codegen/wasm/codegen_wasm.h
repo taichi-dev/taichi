@@ -20,11 +20,11 @@ class KernelCodeGenWASM : public KernelCodeGen {
   FunctionType compile_to_function() override;
 
 #ifdef TI_WITH_LLVM
-  LLVMCompiledData compile_task(
+  LLVMCompiledTask compile_task(
       std::unique_ptr<llvm::Module> &&module = nullptr,
       OffloadedStmt *stmt = nullptr) override;  // AOT Module Gen
 
-  std::vector<LLVMCompiledData> compile_kernel_to_module() override;
+  LLVMCompiledKernel compile_kernel_to_module() override;
 #endif
 };
 

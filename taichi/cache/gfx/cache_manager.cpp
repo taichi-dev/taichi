@@ -134,6 +134,7 @@ CacheManager::CacheManager(Params &&init_params)
       gfx::AotModuleParams params;
       params.module_path = path_;
       params.runtime = runtime_;
+      params.enable_lazy_loading = true;
       cached_module_ = gfx::make_aot_module(params, init_params.arch);
     }
   }

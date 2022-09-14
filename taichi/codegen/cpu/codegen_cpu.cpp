@@ -234,19 +234,17 @@ std::unique_ptr<TaskCodeGenLLVM> KernelCodeGenCPU::make_codegen_llvm(
 FunctionType CPUModuleToFunctionConverter::convert(
     const std::string &kernel_name,
     const std::vector<LlvmLaunchArgInfo> &args,
-    std::vector<LLVMCompiledData> &&data) const {
+    LLVMCompiledKernel data) const {
   TI_AUTO_PROF;
-  auto jit_module = tlctx_->create_jit_module(std::move(data.back().module));
+  auto jit_module = tlctx_->create_jit_module(std::move(data.module));
   using TaskFunc = int32 (*)(void *);
   std::vector<TaskFunc> task_funcs;
-  task_funcs.reserve(data.size());
-  for (auto &datum : data) {
-    for (auto &task : datum.tasks) {
-      auto *func_ptr = jit_module->lookup_function(task.name);
-      TI_ASSERT_INFO(func_ptr, "Offloaded datum function {} not found",
-                     task.name);
-      task_funcs.push_back((TaskFunc)(func_ptr));
-    }
+  task_funcs.reserve(data.tasks.size());
+  for (auto &task : data.tasks) {
+    auto *func_ptr = jit_module->lookup_function(task.name);
+    TI_ASSERT_INFO(func_ptr, "Offloaded datum function {} not found",
+                   task.name);
+    task_funcs.push_back((TaskFunc)(func_ptr));
   }
   // Do NOT capture `this`...
   return [executor = this->executor_, args, kernel_name,
@@ -273,7 +271,7 @@ FunctionType CPUModuleToFunctionConverter::convert(
   };
 }
 
-LLVMCompiledData KernelCodeGenCPU::compile_task(
+LLVMCompiledTask KernelCodeGenCPU::compile_task(
     std::unique_ptr<llvm::Module> &&module,
     OffloadedStmt *stmt) {
   TaskCodeGenCPU gen(kernel, stmt);
@@ -286,10 +284,8 @@ FunctionType KernelCodeGenCPU::compile_to_function() {
   auto *llvm_prog = get_llvm_program(prog);
   auto *tlctx = llvm_prog->get_llvm_context(kernel->arch);
 
-  std::vector<LLVMCompiledData> data = compile_kernel_to_module();
-
   CPUModuleToFunctionConverter converter(
       tlctx, get_llvm_program(prog)->get_runtime_executor());
-  return converter.convert(kernel, std::move(data));
+  return converter.convert(kernel, compile_kernel_to_module());
 }
 TLANG_NAMESPACE_END

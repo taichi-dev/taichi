@@ -227,7 +227,7 @@ void ti_free_memory(TiRuntime runtime, TiMemory devmem) {
 }
 
 void *ti_map_memory(TiRuntime runtime, TiMemory devmem) {
-  void* out = nullptr;
+  void *out = nullptr;
   TI_CAPI_TRY_CATCH_BEGIN();
   TI_CAPI_ARGUMENT_NULL_RV(runtime);
   TI_CAPI_ARGUMENT_NULL_RV(devmem);

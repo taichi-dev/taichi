@@ -3,8 +3,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif // __cplusplus
-
+#endif  // __cplusplus
 
 // alias.bool
 typedef uint32_t TiBool;
@@ -22,28 +21,28 @@ typedef uint32_t TiFlags;
 #define TI_NULL_HANDLE 0
 
 // handle.runtime
-typedef struct TiRuntime_t* TiRuntime;
+typedef struct TiRuntime_t *TiRuntime;
 
 // handle.aot_module
-typedef struct TiAotModule_t* TiAotModule;
+typedef struct TiAotModule_t *TiAotModule;
 
 // handle.event
-typedef struct TiEvent_t* TiEvent;
+typedef struct TiEvent_t *TiEvent;
 
 // handle.memory
-typedef struct TiMemory_t* TiMemory;
+typedef struct TiMemory_t *TiMemory;
 
 // handle.image
-typedef struct TiImage_t* TiImage;
+typedef struct TiImage_t *TiImage;
 
 // handle.sampler
-typedef struct TiSampler_t* TiSampler;
+typedef struct TiSampler_t *TiSampler;
 
 // handle.kernel
-typedef struct TiKernel_t* TiKernel;
+typedef struct TiKernel_t *TiKernel;
 
 // handle.compute_graph
-typedef struct TiComputeGraph_t* TiComputeGraph;
+typedef struct TiComputeGraph_t *TiComputeGraph;
 
 // enumeration.error
 typedef enum TiError {
@@ -311,178 +310,123 @@ typedef struct TiArgument {
 
 // structure.named_argument
 typedef struct TiNamedArgument {
-  const char* name;
+  const char *name;
   TiArgument argument;
 } TiNamedArgument;
 
 // function.get_last_error
-TI_DLL_EXPORT TiError TI_API_CALL ti_get_last_error(
-  uint64_t message_size,
-   char* message
-);
+TI_DLL_EXPORT TiError TI_API_CALL ti_get_last_error(uint64_t message_size,
+                                                    char *message);
 
 // function.set_last_error
-TI_DLL_EXPORT void TI_API_CALL ti_set_last_error(
-  TiError error,
-  const char* message
-);
+TI_DLL_EXPORT void TI_API_CALL ti_set_last_error(TiError error,
+                                                 const char *message);
 
 // function.create_runtime
-TI_DLL_EXPORT TiRuntime TI_API_CALL ti_create_runtime(
-  TiArch arch
-);
+TI_DLL_EXPORT TiRuntime TI_API_CALL ti_create_runtime(TiArch arch);
 
 // function.destroy_runtime
-TI_DLL_EXPORT void TI_API_CALL ti_destroy_runtime(
-  TiRuntime runtime
-);
+TI_DLL_EXPORT void TI_API_CALL ti_destroy_runtime(TiRuntime runtime);
 
 // function.allocate_memory
-TI_DLL_EXPORT TiMemory TI_API_CALL ti_allocate_memory(
-  TiRuntime runtime,
-  const TiMemoryAllocateInfo* allocate_info
-);
+TI_DLL_EXPORT TiMemory TI_API_CALL
+ti_allocate_memory(TiRuntime runtime,
+                   const TiMemoryAllocateInfo *allocate_info);
 
 // function.free_memory
-TI_DLL_EXPORT void TI_API_CALL ti_free_memory(
-  TiRuntime runtime,
-  TiMemory memory
-);
+TI_DLL_EXPORT void TI_API_CALL ti_free_memory(TiRuntime runtime,
+                                              TiMemory memory);
 
 // function.map_memory
-TI_DLL_EXPORT void* TI_API_CALL ti_map_memory(
-  TiRuntime runtime,
-  TiMemory memory
-);
+TI_DLL_EXPORT void *TI_API_CALL ti_map_memory(TiRuntime runtime,
+                                              TiMemory memory);
 
 // function.unmap_memory
-TI_DLL_EXPORT void TI_API_CALL ti_unmap_memory(
-  TiRuntime runtime,
-  TiMemory memory
-);
+TI_DLL_EXPORT void TI_API_CALL ti_unmap_memory(TiRuntime runtime,
+                                               TiMemory memory);
 
 // function.allocate_image
-TI_DLL_EXPORT TiImage TI_API_CALL ti_allocate_image(
-  TiRuntime runtime,
-  const TiImageAllocateInfo* allocate_info
-);
+TI_DLL_EXPORT TiImage TI_API_CALL
+ti_allocate_image(TiRuntime runtime, const TiImageAllocateInfo *allocate_info);
 
 // function.free_image
-TI_DLL_EXPORT void TI_API_CALL ti_free_image(
-  TiRuntime runtime,
-  TiImage image
-);
+TI_DLL_EXPORT void TI_API_CALL ti_free_image(TiRuntime runtime, TiImage image);
 
 // function.create_sampler
-TI_DLL_EXPORT TiSampler TI_API_CALL ti_create_sampler(
-  TiRuntime runtime,
-  const TiSamplerCreateInfo* create_info
-);
+TI_DLL_EXPORT TiSampler TI_API_CALL
+ti_create_sampler(TiRuntime runtime, const TiSamplerCreateInfo *create_info);
 
 // function.destroy_sampler
-TI_DLL_EXPORT void TI_API_CALL ti_destroy_sampler(
-  TiRuntime runtime,
-  TiSampler sampler
-);
+TI_DLL_EXPORT void TI_API_CALL ti_destroy_sampler(TiRuntime runtime,
+                                                  TiSampler sampler);
 
 // function.create_event
-TI_DLL_EXPORT TiEvent TI_API_CALL ti_create_event(
-  TiRuntime runtime
-);
+TI_DLL_EXPORT TiEvent TI_API_CALL ti_create_event(TiRuntime runtime);
 
 // function.destroy_event
-TI_DLL_EXPORT void TI_API_CALL ti_destroy_event(
-  TiEvent event
-);
+TI_DLL_EXPORT void TI_API_CALL ti_destroy_event(TiEvent event);
 
 // function.copy_memory_device_to_device
-TI_DLL_EXPORT void TI_API_CALL ti_copy_memory_device_to_device(
-  TiRuntime runtime,
-  const TiMemorySlice* dst_memory,
-  const TiMemorySlice* src_memory
-);
+TI_DLL_EXPORT void TI_API_CALL
+ti_copy_memory_device_to_device(TiRuntime runtime,
+                                const TiMemorySlice *dst_memory,
+                                const TiMemorySlice *src_memory);
 
 // function.copy_image_device_to_device
-TI_DLL_EXPORT void TI_API_CALL ti_copy_image_device_to_device(
-  TiRuntime runtime,
-  const TiImageSlice* dst_image,
-  const TiImageSlice* src_image
-);
+TI_DLL_EXPORT void TI_API_CALL
+ti_copy_image_device_to_device(TiRuntime runtime,
+                               const TiImageSlice *dst_image,
+                               const TiImageSlice *src_image);
 
 // function.transition_image
-TI_DLL_EXPORT void TI_API_CALL ti_transition_image(
-  TiRuntime runtime,
-  TiImage image,
-  TiImageLayout layout
-);
+TI_DLL_EXPORT void TI_API_CALL ti_transition_image(TiRuntime runtime,
+                                                   TiImage image,
+                                                   TiImageLayout layout);
 
 // function.launch_kernel
-TI_DLL_EXPORT void TI_API_CALL ti_launch_kernel(
-  TiRuntime runtime,
-  TiKernel kernel,
-  uint32_t arg_count,
-  const TiArgument* args
-);
+TI_DLL_EXPORT void TI_API_CALL ti_launch_kernel(TiRuntime runtime,
+                                                TiKernel kernel,
+                                                uint32_t arg_count,
+                                                const TiArgument *args);
 
 // function.launch_compute_graph
-TI_DLL_EXPORT void TI_API_CALL ti_launch_compute_graph(
-  TiRuntime runtime,
-  TiComputeGraph compute_graph,
-  uint32_t arg_count,
-  const TiNamedArgument* args
-);
+TI_DLL_EXPORT void TI_API_CALL
+ti_launch_compute_graph(TiRuntime runtime,
+                        TiComputeGraph compute_graph,
+                        uint32_t arg_count,
+                        const TiNamedArgument *args);
 
 // function.signal_event
-TI_DLL_EXPORT void TI_API_CALL ti_signal_event(
-  TiRuntime runtime,
-  TiEvent event
-);
+TI_DLL_EXPORT void TI_API_CALL ti_signal_event(TiRuntime runtime,
+                                               TiEvent event);
 
 // function.reset_event
-TI_DLL_EXPORT void TI_API_CALL ti_reset_event(
-  TiRuntime runtime,
-  TiEvent event
-);
+TI_DLL_EXPORT void TI_API_CALL ti_reset_event(TiRuntime runtime, TiEvent event);
 
 // function.wait_event
-TI_DLL_EXPORT void TI_API_CALL ti_wait_event(
-  TiRuntime runtime,
-  TiEvent event
-);
+TI_DLL_EXPORT void TI_API_CALL ti_wait_event(TiRuntime runtime, TiEvent event);
 
 // function.submit
-TI_DLL_EXPORT void TI_API_CALL ti_submit(
-  TiRuntime runtime
-);
+TI_DLL_EXPORT void TI_API_CALL ti_submit(TiRuntime runtime);
 
 // function.wait
-TI_DLL_EXPORT void TI_API_CALL ti_wait(
-  TiRuntime runtime
-);
+TI_DLL_EXPORT void TI_API_CALL ti_wait(TiRuntime runtime);
 
 // function.load_aot_module
-TI_DLL_EXPORT TiAotModule TI_API_CALL ti_load_aot_module(
-  TiRuntime runtime,
-  const char* module_path
-);
+TI_DLL_EXPORT TiAotModule TI_API_CALL
+ti_load_aot_module(TiRuntime runtime, const char *module_path);
 
 // function.destroy_aot_module
-TI_DLL_EXPORT void TI_API_CALL ti_destroy_aot_module(
-  TiAotModule aot_module
-);
+TI_DLL_EXPORT void TI_API_CALL ti_destroy_aot_module(TiAotModule aot_module);
 
 // function.get_aot_module_kernel
-TI_DLL_EXPORT TiKernel TI_API_CALL ti_get_aot_module_kernel(
-  TiAotModule aot_module,
-  const char* name
-);
+TI_DLL_EXPORT TiKernel TI_API_CALL
+ti_get_aot_module_kernel(TiAotModule aot_module, const char *name);
 
 // function.get_aot_module_compute_graph
-TI_DLL_EXPORT TiComputeGraph TI_API_CALL ti_get_aot_module_compute_graph(
-  TiAotModule aot_module,
-  const char* name
-);
+TI_DLL_EXPORT TiComputeGraph TI_API_CALL
+ti_get_aot_module_compute_graph(TiAotModule aot_module, const char *name);
 
 #ifdef __cplusplus
-} // extern "C"
-#endif // __cplusplus
+}  // extern "C"
+#endif  // __cplusplus

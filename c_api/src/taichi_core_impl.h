@@ -55,14 +55,16 @@
     return TI_NULL_HANDLE;                                       \
   }
 
-#define TI_CAPI_TRY_CATCH_BEGIN() \
-  try {
-#define TI_CAPI_TRY_CATCH_END() \
-  } catch (const std::exception& e) { \
-    ti_set_last_error(TI_ERROR_INVALID_STATE, e.what());\
-  } catch (const std::string& e) { \
-    ti_set_last_error(TI_ERROR_INVALID_STATE, e.c_str()); \
-  } catch (...) { \
+#define TI_CAPI_TRY_CATCH_BEGIN() try {
+#define TI_CAPI_TRY_CATCH_END()                                 \
+  }                                                             \
+  catch (const std::exception &e) {                             \
+    ti_set_last_error(TI_ERROR_INVALID_STATE, e.what());        \
+  }                                                             \
+  catch (const std::string &e) {                                \
+    ti_set_last_error(TI_ERROR_INVALID_STATE, e.c_str());       \
+  }                                                             \
+  catch (...) {                                                 \
     ti_set_last_error(TI_ERROR_INVALID_STATE, "c++ exception"); \
   }
 

@@ -147,25 +147,30 @@ TiRuntime ti_create_runtime(TiArch arch) {
 #ifdef TI_WITH_VULKAN
     case TI_ARCH_VULKAN: {
       out = (TiRuntime)(static_cast<Runtime *>(new VulkanRuntimeOwned));
+      break;
     }
 #endif  // TI_WITH_VULKAN
 #ifdef TI_WITH_OPENGL
     case TI_ARCH_OPENGL: {
       out = (TiRuntime)(static_cast<Runtime *>(new OpenglRuntime));
+      break;
     }
 #endif  // TI_WITH_OPENGL
 #ifdef TI_WITH_LLVM
     case TI_ARCH_X64: {
       out = (TiRuntime)(static_cast<Runtime *>(
           new capi::LlvmRuntime(taichi::Arch::x64)));
+      break;
     }
     case TI_ARCH_ARM64: {
       out = (TiRuntime)(static_cast<Runtime *>(
           new capi::LlvmRuntime(taichi::Arch::arm64)));
+      break;
     }
     case TI_ARCH_CUDA: {
       out = (TiRuntime)(static_cast<Runtime *>(
           new capi::LlvmRuntime(taichi::Arch::cuda)));
+      break;
     }
 #endif  // TI_WITH_LLVM
     default: {

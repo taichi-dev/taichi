@@ -57,7 +57,7 @@ Likewise for Paddle, you need to specify the device by `paddle.CPUPlace()` or `p
 
 ## External array shapes
 
-As mentioned before, when importing/exporing data between `ti.Vector.field/ti.Matrix` and NumPy arrays, you need to make sure the shape of the field matches the corresponding array. The matching rule is summarized below:
+As mentioned before, when importing/exporing data between a `ti.Vector.field/ti.Matrix` and a NumPy array, you need to make sure the shape of the field matches the corresponding array. The matching rule is summarized below:
 
 - For scalar fields, **the shape of NumPy array, PyTorch tensor or Paddle Tensor equals the shape of the Taichi field**
 
@@ -71,7 +71,7 @@ array.shape  # (256, 512)
 field.from_numpy(array)  # the input array must be of shape (256, 512)
 ```
 
-- For vector fields, if the vector is `n`-D, then **the shape of NumPy array, PyTorch tensor or Paddle Tensor should be** `(*field_shape, vector_n)`:
+- For vector fields, if the vector is `n`-D, then **the shape of NumPy array, PyTorch tensor or Paddle Tensor should be** `(*field_shape, n)`:
 
 ```python
 field = ti.Vector.field(3, ti.i32, shape=(256, 512))
@@ -84,7 +84,7 @@ array.shape  # (256, 512, 3)
 field.from_numpy(array)  # the input array must be of shape (256, 512, 3)
 ```
 
-- For matrix fields, if the matrix is `n`-by-`m` (`n x m`), then **the shape of NumPy array, PyTorch tensor or Paddle Tensor should be** `(*field_shape, matrix_n, matrix_m)`:
+- For matrix fields, if the matrix is `n`-by-`m` (`n x m`), then **the shape of NumPy array, PyTorch tensor or Paddle Tensor should be** `(*field_shape, n, m)`:
 
 ```python
 field = ti.Matrix.field(3, 4, ti.i32, shape=(256, 512))

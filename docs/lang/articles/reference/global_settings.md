@@ -34,7 +34,7 @@ Below is the complete list of configurations:
 |Set random seed | Runtime    | `random_seed=seed`    |     | `seed` is an integer |
 | Customize logging level    | Logging    |  `log_level=ti.TRACE`   | `export TI_LOG_LEVEL=trace`    | Equivalent to `ti.set_logging_level(ti.TRACE)`    |
 | Eliminate verbose outputs    | Logging    | `verbose=False`    |     |     |
-|trigger GDB when Taichi crashes    |  Develop   | `gdb_trigger=True`     |       |       |
+|Trigger GDB when Taichi crashes    |  Develop   | `gdb_trigger=True`     |       |       |
 |Cache compiled runtime bitcode in **dev mode** |  Develop   |      |   `export TI_CACHE_RUNTIME_BITCODE=1`    |   To save start up time      |
 | Specify how many threads to run test    |  Develop   |      |   `export TI_TEST_THREADS=4`    |  Equivalent to  `python tests/run_tests.py -t4`   |
 

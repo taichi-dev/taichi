@@ -13,7 +13,7 @@ There are two ways to import a NumPy array `arr` to the Taichi scope:
 
 1. Create a field `f` whose shape and dtype match the shape and dtype of `arr`, and call the method `f.from_numpy(arr)` to copy the data in `arr` into `f`. This is often used when your array is visited frequently from elsewhere in the Taichi scope in your program (e.g. sample a texture).
 
-2. Pass `arr` as an argument to a kernel or a Taichi function using `ti.types.ndarray()` as the type hint. This argument will be passed by reference and won't invoke a copy of `arr`, and modificaitions on this argument inside the kernel will also take affect on the original array `arr`. This is often used when you have a kernel that serves a special purpose of processing arrays (e.g. soring or filtering).
+2. Pass `arr` as an argument to a kernel or a Taichi function using `ti.types.ndarray()` as the type hint. The argument is passed by reference without creating a copy of `arr`, and thus any modifications of this argument inside the kernel or Taichi function will also change the original array `arr`. This approach is preferred when the kernel or Taichi function that takes in the argument needs to manipulate the original array (for storage or filtering, for example).
 
 We now explain them in more details.
 

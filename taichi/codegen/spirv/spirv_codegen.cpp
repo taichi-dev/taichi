@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include <variant>
 
 #include "taichi/program/program.h"
 #include "taichi/program/kernel.h"
@@ -146,8 +147,28 @@ class TaskCodegen : public IRVisitor {
     }
   }
 
-  void visit(PrintStmt *print_stmt) override {
-    ir_->call_debugprintf();
+  void visit(PrintStmt *stmt) override {
+    if (!device_->get_cap(DeviceCapability::spirv_has_non_semantic_info)) {
+      return;
+    }
+
+    std::string formats;
+    std::vector<Value> vals;
+
+    for (auto const &content : stmt->contents) {
+      if (std::holds_alternative<Stmt *>(content)) {
+        auto arg_stmt = std::get<Stmt *>(content);
+        TI_ASSERT(!arg_stmt->ret_type->is<TensorType>());
+
+        auto value = ir_->query_value(arg_stmt->raw_name());
+        vals.push_back(value);
+        formats += data_type_format(arg_stmt->ret_type);
+      } else {
+        auto arg_str = std::get<std::string>(content);
+        formats += arg_str;
+      }
+    }
+    ir_->call_debugprintf(formats, vals);
   }
 
   void visit(ConstStmt *const_stmt) override {

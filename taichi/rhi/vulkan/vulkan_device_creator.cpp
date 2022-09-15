@@ -55,7 +55,7 @@ vk_debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
     // Message format is "BLABLA | MessageID=xxxxx | <DEBUG_PRINT_MSG>"
     std::string msg(p_callback_data->pMessage);
     auto const pos = msg.find_last_of("|");
-    std::cout << msg.substr(pos + 2) << std::endl;
+    std::cout << msg.substr(pos + 2);
   }
   return VK_FALSE;
 }
@@ -266,8 +266,10 @@ void VulkanDeviceCreator::create_instance(bool manual_create) {
   create_info.pApplicationInfo = &app_info;
 
   if (params_.enable_validation_layer) {
-    TI_ASSERT_INFO(check_validation_layer_support(),
-                   "validation layers requested but not available");
+    if (!check_validation_layer_support()) {
+      TI_WARN("validation layers requested but not available, turning off...");
+      params_.enable_validation_layer = false;
+    }
   }
 
   VkDebugUtilsMessengerCreateInfoEXT debug_create_info{};
@@ -539,7 +541,7 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
     } else if (name == VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME) {
       enabled_extensions.push_back(ext.extensionName);
     } else if (name == VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME) {
-      std::cout << "enabled" << std::endl;
+      ti_device_->set_cap(DeviceCapability::spirv_has_non_semantic_info, true);
       enabled_extensions.push_back(ext.extensionName);
     } else if (std::find(params_.additional_device_extensions.begin(),
                          params_.additional_device_extensions.end(),

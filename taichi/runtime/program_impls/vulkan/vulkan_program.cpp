@@ -130,6 +130,11 @@ void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
     int32_t patch = std::atoll(config->vk_api_version.c_str() + idot2 + 1);
     evd_params.api_version = VK_MAKE_API_VERSION(0, major, minor, patch);
   }
+
+  if (config->debug) {
+    TI_WARN("Enabling vulkan validation layer in debug mode");
+    evd_params.enable_validation_layer = true;
+  }
 #if !defined(ANDROID)
   if (glfw_window) {
     // then we should be able to create a device with graphics abilities

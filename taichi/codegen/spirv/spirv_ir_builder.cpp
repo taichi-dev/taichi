@@ -80,8 +80,11 @@ void IRBuilder::init_header() {
       .add("SPV_KHR_storage_buffer_storage_class")
       .commit(&header_);
 
-  // FIXME: guard this
-  ib_.begin(spv::OpExtension).add("SPV_KHR_non_semantic_info").commit(&header_);
+  if (device_->get_cap(cap::spirv_has_non_semantic_info)) {
+    ib_.begin(spv::OpExtension)
+        .add("SPV_KHR_non_semantic_info")
+        .commit(&header_);
+  }
 
   if (device_->get_cap(cap::spirv_has_variable_ptr)) {
     ib_.begin(spv::OpExtension)
@@ -128,6 +131,7 @@ std::vector<uint32_t> IRBuilder::finalize() {
   data.insert(data.end(), header_.begin(), header_.end());
   data.insert(data.end(), entry_.begin(), entry_.end());
   data.insert(data.end(), exec_mode_.begin(), exec_mode_.end());
+  data.insert(data.end(), strings_.begin(), strings_.end());
   data.insert(data.end(), debug_.begin(), debug_.end());
   data.insert(data.end(), decorate_.begin(), decorate_.end());
   data.insert(data.end(), global_.begin(), global_.end());
@@ -138,7 +142,9 @@ std::vector<uint32_t> IRBuilder::finalize() {
 
 void IRBuilder::init_pre_defs() {
   ext_glsl450_ = ext_inst_import("GLSL.std.450");
-  debug_printf_ = ext_inst_import("NonSemantic.DebugPrintf");
+  if (device_->get_cap(cap::spirv_has_non_semantic_info)) {
+    debug_printf_ = ext_inst_import("NonSemantic.DebugPrintf");
+  }
 
   t_bool_ = declare_primitive_type(get_data_type<bool>());
   if (device_->get_cap(cap::spirv_has_int8)) {
@@ -214,7 +220,7 @@ void IRBuilder::init_pre_defs() {
 
 Value IRBuilder::make_string(std::string s) {
   Value val = new_value(SType(), ValueKind::kNormal);
-  ib_.begin(spv::OpString).add_seq(val, s).commit(&debug_);
+  ib_.begin(spv::OpString).add_seq(val, s).commit(&strings_);
   return val;
 }
 

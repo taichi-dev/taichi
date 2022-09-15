@@ -463,14 +463,15 @@ class IRBuilder {
   }
 
   // Create a debugPrintf call
-  template <typename... Args>
-  void call_debugprintf(Args &&...args) {
-    Value format_str = make_string("Hello %d");
+  void call_debugprintf(std::string formats, const std::vector<Value> &args) {
+    Value format_str = make_string(formats);
     Value val = new_value(t_void_, ValueKind::kNormal);
     ib_.begin(spv::OpExtInst)
-        .add_seq(t_void_, val, debug_printf_, 1, format_str, const_i32_one_)
-        // .add_seq(std::forward<Args>(args)...)
-        .commit(&function_);
+        .add_seq(t_void_, val, debug_printf_, 1, format_str);
+    for (const auto &arg : args) {
+      ib_.add(arg);
+    }
+    ib_.commit(&function_);
   }
 
   // Local allocate, load, store methods
@@ -618,6 +619,9 @@ class IRBuilder {
   std::vector<uint32_t> entry_;
   // Header segment
   std::vector<uint32_t> exec_mode_;
+  // OpString segment
+  std::vector<uint32_t> strings_;
+  // TODO: Rename this to names_ in a followup PR
   // Debug segment
   std::vector<uint32_t> debug_;
   // Annotation segment

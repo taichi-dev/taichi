@@ -11,7 +11,7 @@ We will use NumPy arrays as an example to illustrate the procedure since this is
 
 There are two ways to import a NumPy array `arr` to the Taichi scope:
 
-1. Create a field `f` whose shape and dtype match the shape and dtype of `arr`, and call the method `f.from_numpy(arr)` to copy the data in `arr` into `f`. This is often used when your array is visited frequently from elsewhere in your program (e.g. sample a texture).
+1. Create a field `f` whose shape and dtype match the shape and dtype of `arr`, and call the method `f.from_numpy(arr)` to copy the data in `arr` into `f`. This is often used when your array is visited frequently from elsewhere in the Taichi scope in your program (e.g. sample a texture).
 
 2. Pass `arr` as an argument to a kernel or a Taichi function using `ti.types.ndarray()` as the type hint. This argument will be passed by reference and won't invoke a copy of `arr`, and modificaitions on this argument inside the kernel will also take affect on the original array `arr`. This is often used when you have a kernel that serves a special purpose of processing arrays (e.g. soring or filtering).
 
@@ -30,7 +30,8 @@ print(x)
 # [3 4 5]
 # [6 7 8]]
 ```
-For vector and matrix fields the matching rule of their shapes with NumPy arrays is a bit subtle and will be discussed in a later section.
+
+In the above exmaple, the scalar field `x` and the array `a` both have shape `(3, 3)`. For vector and matrix fields the matching rule of their shapes with NumPy arrays is a bit subtle and will be discussed in a later section.
 
 The field should also have the same dtype with the array, otherwise an implicit type casting will be performed, see [type system](../type_system/type.md).
 

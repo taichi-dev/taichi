@@ -115,7 +115,7 @@ class CheckOutOfBound : public BasicStmtVisitor {
         auto compare = std::make_unique<BinaryOpStmt>(
             BinaryOpType::cmp_ge, stmt->rhs, compare_rhs.get());
         compare->ret_type = PrimitiveType::i32;
-        std::string msg = "Negative exponent for integer pows are not allowed";
+        std::string msg = "Negative exponent in pow(int, int) is not allowed.";
         msg += "\n" + stmt->tb;
         auto assert_stmt = std::make_unique<AssertStmt>(compare.get(), msg,
                                                         std::vector<Stmt *>());

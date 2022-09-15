@@ -276,6 +276,11 @@ class TypeCheck : public IRVisitor {
     if (stmt->lhs->ret_type->is_primitive(PrimitiveTypeID::unknown) &&
         stmt->rhs->ret_type->is_primitive(PrimitiveTypeID::unknown))
       error();
+    if (stmt->op_type == BinaryOpType::pow &&
+        is_integral(stmt->rhs->ret_type)) {
+      stmt->ret_type = stmt->lhs->ret_type;
+      return;
+    }
 
     // lower truediv into div
 
@@ -506,7 +511,12 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(GlobalTemporaryStmt *stmt) override {
-    if (!stmt->ret_type->is<TensorType>())
+    /**
+     * We need to convert TensorType to pointer when
+     * real_matrix is enabled because one can store value
+     * in a loop to a tensor defined outside the loop
+     */
+    if (!stmt->ret_type->is<TensorType>() || config_.real_matrix)
       stmt->ret_type.set_is_pointer(true);
   }
 

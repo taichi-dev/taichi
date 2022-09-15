@@ -180,17 +180,17 @@ def test_matrix_non_constant_index_numpy():
     assert m[4][0, 1] == 1
 
     @ti.kernel
-    def func2(b: ti.types.ndarray(element_dim=1, layout=ti.Layout.SOA)):
+    def func2(b: ti.types.ndarray(element_dim=1)):
         for i in range(5):
             for j in range(4):
                 b[i][j * j] = j * j
 
-    v = np.empty((10, 5), dtype=np.int32)
+    v = np.empty((5, 10), dtype=np.int32)
     func2(v)
-    assert v[0][1] == 0
+    assert v[0][0] == 0
     assert v[1][1] == 1
-    assert v[4][1] == 4
-    assert v[9][1] == 9
+    assert v[2][4] == 4
+    assert v[3][9] == 9
 
 
 @test_utils.test(require=ti.extension.dynamic_index,
@@ -544,10 +544,10 @@ def test_vector_dtype():
 def test_matrix_dtype():
     @ti.kernel
     def foo():
-        a = ti.Vector([[1, 2], [3, 4]], ti.f32)
+        a = ti.Matrix([[1, 2], [3, 4]], ti.f32)
         a /= 2
         assert all(abs(a - ((0.5, 1.), (1.5, 2.))) < 1e-6)
-        b = ti.Vector([[1.5, 2.5], [3.5, 4.5]], ti.i32)
+        b = ti.Matrix([[1.5, 2.5], [3.5, 4.5]], ti.i32)
         assert all(b == ((1, 2), (3, 4)))
 
     foo()
@@ -698,4 +698,93 @@ def test_indexing_in_struct_field():
 
     with pytest.raises(TaichiCompilationError,
                        match=r'Expected 2 indices, got 1'):
+        bar()
+
+
+@test_utils.test(arch=[ti.cuda, ti.cpu], real_matrix=True)
+def test_local_matrix_read():
+
+    s = ti.field(ti.i32, shape=())
+
+    @ti.kernel
+    def get_index(i: ti.i32, j: ti.i32):
+        mat = ti.Matrix([[x * 3 + y for y in range(3)] for x in range(3)])
+        s[None] = mat[i, j]
+
+    for i in range(3):
+        for j in range(3):
+            get_index(i, j)
+            assert s[None] == i * 3 + j
+
+
+@test_utils.test(arch=[ti.cuda, ti.cpu], real_matrix=True)
+def test_local_matrix_indexing_in_loop():
+    s = ti.field(ti.i32, shape=(3, 3))
+
+    @ti.kernel
+    def test():
+        mat = ti.Matrix([[x * 3 + y for y in range(3)] for x in range(3)])
+        for i in range(3):
+            for j in range(3):
+                s[i, j] = mat[i, j] + 1
+
+    test()
+    for i in range(3):
+        for j in range(3):
+            assert s[i, j] == i * 3 + j + 1
+
+
+@test_utils.test(arch=[ti.cuda, ti.cpu], real_matrix=True)
+def test_local_matrix_indexing_ops():
+    @ti.kernel
+    def element_write() -> ti.i32:
+        mat = ti.Matrix([[x * 3 + y for y in range(3)] for x in range(3)])
+        s = 0
+        for i in range(3):
+            for j in range(3):
+                mat[i, j] = 10
+                s += mat[i, j]
+        return s
+
+    f = ti.field(ti.i32, shape=(3, 3))
+
+    @ti.kernel
+    def assign_from_index():
+        mat = ti.Matrix([[x * 3 + y for y in range(3)] for x in range(3)])
+        result = ti.Matrix([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+        # TODO: fix parallelization
+        ti.loop_config(serialize=True)
+        for i in range(3):
+            for j in range(3):
+                result[i, j] = mat[j, i]
+        for i in range(3):
+            for j in range(3):
+                f[i, j] = result[i, j]
+
+    assert element_write() == 90
+    assign_from_index()
+    xs = [[x * 3 + y for y in range(3)] for x in range(3)]
+    for i in range(3):
+        for j in range(3):
+            assert f[i, j] == xs[j][i]
+
+
+@test_utils.test(arch=[ti.cuda, ti.cpu], real_matrix=True)
+def test_local_matrix_index_check():
+    @ti.kernel
+    def foo():
+        mat = ti.Matrix([[1, 2, 3], [4, 5, 6]])
+        print(mat[0])
+
+    with pytest.raises(TaichiCompilationError,
+                       match=r'Expected 2 indices, but got 1'):
+        foo()
+
+    @ti.kernel
+    def bar():
+        vec = ti.Vector([1, 2, 3, 4])
+        print(vec[0, 0])
+
+    with pytest.raises(TaichiCompilationError,
+                       match=r'Expected 1 indices, but got 2'):
         bar()

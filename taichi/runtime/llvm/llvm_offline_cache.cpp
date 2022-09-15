@@ -384,7 +384,7 @@ void LlvmOfflineCacheFileWriter::merge_with(LlvmOfflineCache &&data) {
 
 void LlvmOfflineCacheFileWriter::mangle_offloaded_task_name(
     const std::string &kernel_key,
-    LLVMCompiledData &compiled_data) {
+    LLVMCompiledKernel &compiled_data) {
   if (!mangled_) {
     for (auto &offload : compiled_data.tasks) {
       std::string mangled_name =

@@ -25,7 +25,7 @@ struct LlvmOfflineCache {
   struct KernelCacheData {
     std::string kernel_key;
     std::vector<LlvmLaunchArgInfo> args;
-    LLVMCompiledData compiled_data;
+    LLVMCompiledKernel compiled_data;
 
     // For cache cleaning
     std::size_t size{0};          // byte
@@ -171,7 +171,7 @@ class LlvmOfflineCacheFileWriter {
   void merge_with(LlvmOfflineCache &&data);
 
   void mangle_offloaded_task_name(const std::string &kernel_key,
-                                  LLVMCompiledData &compiled_data);
+                                  LLVMCompiledKernel &compiled_data);
 
   LlvmOfflineCache data_;
   bool mangled_{false};

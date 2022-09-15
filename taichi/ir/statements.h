@@ -369,7 +369,7 @@ class PtrOffsetStmt : public Stmt {
       https://llvm.org/doxygen/classllvm_1_1AllocaInst.html#ac68a7586b8be7de3c39531d9eca902e6
   */
   bool tensor_type_represented_as_primitive_type_ptr() const {
-    if (origin->ret_type->is<TensorType>()) {
+    if (origin->ret_type.ptr_removed()->is<TensorType>()) {
       if (origin->is<AllocaStmt>() || origin->is<GlobalTemporaryStmt>()) {
         return true;
       }

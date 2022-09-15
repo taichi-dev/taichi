@@ -39,10 +39,7 @@ class Expression {
     stmt = nullptr;
   }
 
-  virtual void type_check(CompileConfig *config) {
-    // TODO: make it pure virtual after type_check for all expressions are
-    // implemented
-  }
+  virtual void type_check(CompileConfig *config) = 0;
 
   virtual void accept(ExpressionVisitor *visitor) = 0;
 

@@ -227,7 +227,7 @@ class TaskCodeGenLLVMDX12 : public TaskCodeGenLLVM {
 #ifdef TI_WITH_LLVM
 
 static std::vector<uint8_t> generate_dxil_from_llvm(
-    LLVMCompiledData &compiled_data,
+    LLVMCompiledTask &compiled_data,
     taichi::lang::Kernel *kernel) {
   // generate dxil from llvm ir.
   auto offloaded_local = compiled_data.tasks;
@@ -286,7 +286,7 @@ KernelCodeGenDX12::CompileResult KernelCodeGenDX12::compile() {
   return Result;
 }
 
-LLVMCompiledData KernelCodeGenDX12::compile_task(
+LLVMCompiledTask KernelCodeGenDX12::compile_task(
     std::unique_ptr<llvm::Module> &&module,
     OffloadedStmt *stmt) {
   TaskCodeGenLLVMDX12 gen(kernel, stmt);

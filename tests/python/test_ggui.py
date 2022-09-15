@@ -390,7 +390,7 @@ def test_fetching_color_attachment():
 
 
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
-@test_utils.test(arch=supported_archs)
+@test_utils.test(arch=supported_archs, exclude=[(ti.vulkan, "Darwin")])
 def test_fetching_depth_attachment():
     window = ti.ui.Window("test", (512, 512), vsync=True, show_window=False)
     canvas = window.get_canvas()
@@ -419,7 +419,7 @@ def test_fetching_depth_attachment():
 
 
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
-@test_utils.test(arch=supported_archs)
+@test_utils.test(arch=supported_archs, exclude=[(ti.vulkan, "Darwin")])
 def test_draw_lines():
     N = 10
     particles_pos = ti.Vector.field(3, dtype=ti.f32, shape=N)
@@ -464,7 +464,7 @@ def test_draw_lines():
 
 
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
-@test_utils.test(arch=supported_archs)
+@test_utils.test(arch=supported_archs, exclude=[(ti.vulkan, "Darwin")])
 def test_draw_part_of_particles():
     N = 10
     particles_pos = ti.Vector.field(3, dtype=ti.f32, shape=N)
@@ -598,7 +598,7 @@ def test_draw_part_of_mesh():
 
 
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
-@test_utils.test(arch=supported_archs)
+@test_utils.test(arch=supported_archs, exclude=[(ti.vulkan, "Darwin")])
 def test_draw_part_of_lines():
     N = 10
     particles_pos = ti.Vector.field(3, dtype=ti.f32, shape=N)

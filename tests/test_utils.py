@@ -3,6 +3,7 @@ import functools
 import itertools
 import os
 import pathlib
+import platform
 from errno import EEXIST
 from tempfile import NamedTemporaryFile, mkstemp
 
@@ -398,22 +399,51 @@ def test(arch=None, exclude=None, require=None, **options):
 .. function:: ti.test(arch=[], exclude=[], require=[], **options)
 
     :parameter arch: backends to include
-    :parameter exclude: backends to exclude
+    :parameter exclude: backends and platforms to exclude
     :parameter require: extensions required
     :parameter options: other options to be passed into ``ti.init``
 
     """
+    def exclude_arch_platform(arch, system, exclude):
+        # Preprocess exclude
+        if exclude is None:
+            exclude = []
+        if not isinstance(exclude, (list, tuple)):
+            exclude = [exclude]
+
+        for pair in exclude:
+            exclude_arch = None
+            exclude_sys = None
+            if isinstance(pair, (list, tuple)):
+                if len(pair) == 1:
+                    # exclude = [(vulkan), ...]
+                    exclude_arch = pair[0]
+                else:
+                    # exclude = [(vulkan, Darwin), ...]
+                    assert len(pair) == 2
+                    exclude_arch = pair[0]
+                    exclude_sys = pair[1]
+            else:
+                # exclude = [vulkan, cpu, ...]
+                exclude_arch = pair
+
+            assert (exclude_arch is not None) or (exclude_sys is not None)
+            if exclude_arch and exclude_sys:
+                if exclude_arch == arch and exclude_sys == system:
+                    return True
+            elif exclude_arch and exclude_arch == arch:
+                return True
+            elif exclude_sys and exclude_sys == system:
+                return True
+
+        return False
 
     if arch is None:
         arch = []
-    if exclude is None:
-        exclude = []
     if require is None:
         require = []
     if not isinstance(arch, (list, tuple)):
         arch = [arch]
-    if not isinstance(exclude, (list, tuple)):
-        exclude = [exclude]
     if not isinstance(require, (list, tuple)):
         require = [require]
     archs_expected = expected_archs()
@@ -430,7 +460,11 @@ def test(arch=None, exclude=None, require=None, **options):
         # List of (arch, options) to parametrize the test function
         parameters = []
         for req_arch, *req_params in itertools.product(*arch_params_sets):
-            if (req_arch not in arch) or (req_arch in exclude):
+            if req_arch not in arch:
+                continue
+
+            curr_system = platform.system()
+            if exclude_arch_platform(req_arch, curr_system, exclude):
                 continue
 
             if not all(

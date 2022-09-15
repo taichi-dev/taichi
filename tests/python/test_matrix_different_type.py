@@ -1,4 +1,5 @@
 import pytest
+
 import taichi as ti
 from tests import test_utils
 
@@ -51,5 +52,8 @@ def test_invalid():
     qit = ti.types.quant.int(bits=10, signed=True)
     qfxt = ti.types.quant.fixed(bits=10, signed=True, scale=0.1)
     type_list = [qit, qfxt]
-    with pytest.raises(RuntimeError, match='Member fields of a matrix field must have the same compute type'):
+    with pytest.raises(
+            RuntimeError,
+            match=
+            'Member fields of a matrix field must have the same compute type'):
         a = ti.Vector.field(len(type_list), dtype=type_list)

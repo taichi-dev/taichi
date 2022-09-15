@@ -534,10 +534,13 @@ class MatrixFieldExpression : public Expression {
     for (auto &field : fields) {
       TI_ASSERT(field.is<FieldExpression>());
     }
-    auto compute_type = fields[0].cast<FieldExpression>()->dt->get_compute_type();
+    auto compute_type =
+        fields[0].cast<FieldExpression>()->dt->get_compute_type();
     for (auto &field : fields) {
-      if (field.cast<FieldExpression>()->dt->get_compute_type() != compute_type) {
-        throw TaichiRuntimeError("Member fields of a matrix field must have the same compute type");
+      if (field.cast<FieldExpression>()->dt->get_compute_type() !=
+          compute_type) {
+        throw TaichiRuntimeError(
+            "Member fields of a matrix field must have the same compute type");
       }
     }
   }

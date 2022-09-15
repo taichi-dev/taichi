@@ -19,7 +19,7 @@ These two ways should suit in different cases. If your array will be visited fre
 
 We now explain them in more details.
 
-## Import and export data from NumPy arrays to Taichi fields
+## Import and export data between NumPy arrays and Taichi fields
 
 To import data from a NumPy array to a Taichi field, you need to make sure the field and the array have the same shape:
 
@@ -43,7 +43,7 @@ arr = x.to_numpy()
 #       [6, 7, 8]], dtype=int32)
 ```
 
-## Import and export data from PyTorch/Paddle tensors to Taichi fields
+## Import and export data between PyTorch/Paddle tensors and Taichi fields
 
 To import data from a PyTorch tensor, simply replace the `from_numpy()` call to `from_torch()`. But note when calling `to_torch()` to export data to a PyTorch tensor, you need also specify the PyTorch device using the `device` argument:
 

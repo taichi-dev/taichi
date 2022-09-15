@@ -25,36 +25,17 @@ In summary, when calling `ti.init()`, Taichi will execute the following steps to
 | Disable advanced optimizations    |  Compilation   |  `ti.init(advanced_optimization=False)`   |     | This is for saing compile time and possible errors    |
 | Disable fast math    |  Compilation   | `ti.init(fast_math=False)`   |     |  For preventing possible undefined math behavior   |
 | print generated intermediate IR    |  Compilation   | `ti.init(print_ir=True)`    |     | Compiled kernels are [cached by default](https://docs.taichi-lang.org/docs/performance#offline-cache). To force compilation and IR emission, use `ti.init(print_ir=True, offline_cache=False)`    |
-| start program in debug mode    | Runtime    |  `ti.init(debug=True)`   |     | An equivalent way is to call your script via `ti debug your_script.py`  |
+| start program in debug mode    | Runtime    |  `ti.init(debug=True)`   | `export TI_DEBUG=1`    | An equivalent way is to call your script via `ti debug your_script.py`  |
 | disable importing torch on start up    | Runtime    |     |  `export TI_ENABLE_TORCH=0`   |     |
 | disable importing paddle on start up    | Runtime    |     |   `export TI_ENABLE_PADDLE=0`  |     |
 |set random seed for the random number generator | Runtime    | `ti.init(random_seed=seed)`    |     |   `ti.init(random_seed=int(time.time()))`  |
-| Customize logging level    | Logging    |  `ti.init(log_level=ti.TRACE)`   |     | Equivalent to `ti.set_logging_level(ti.TRACE)`    |
+| Customize logging level    | Logging    |  `ti.init(log_level=ti.TRACE)`   | `export TI_LOG_LEVEL=trace`    | Equivalent to `ti.set_logging_level(ti.TRACE)`    |
 | Eliminate verbose outputs    | Logging    | `ti.init(verbose=False)`    |     |     |
 |trigger GDB when Taichi crashes    |  Develop   | `ti.init(gdb_trigger=True)`     |       |       |
 |Cache compiled runtime bitcode in **dev mode** to save start up time  |  Develop   |      |   `export TI_CACHE_RUNTIME_BITCODE=1`    |       |
 | specify how many threads to run test    |  Develop   |      |   `export TI_TEST_THREADS=4`    |  Equivalent to  `python tests/run_tests.py -t4`   |
 
 
-
-## Specifying `ti.init` arguments from environment variables
-
-Arguments for `ti.init` may also be specified from environment
-variables. For example:
-
-- `ti.init(arch=ti.cuda)` is equivalent to `export TI_ARCH=cuda`.
-- `ti.init(log_level=ti.TRACE)` is equivalent to
-  `export TI_LOG_LEVEL=trace`.
-- `ti.init(debug=True)` is equivalent to `export TI_DEBUG=1`.
-
-If both `ti.init` argument and the corresponding environment variable
-are specified, then the one in the environment variable will
-**override** the one in the argument, e.g.:
-
-- if `ti.init(arch=ti.cuda)` and `export TI_ARCH=opengl` are specified
-  at the same time, then Taichi will choose `ti.opengl` as backend.
-- if `ti.init(debug=True)` and `export TI_DEBUG=0` are specified at
-  the same time, then Taichi will disable debug mode.
 
 :::note
 

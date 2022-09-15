@@ -5,7 +5,7 @@ sidebar_position: 3
 # Global Settings
 
 
-The call `ti.init()` is required in every Taichi program. It allows you to customize your Taichi runtime program, and it accepts a few arguments that each argument will control one specific behavier of the program. We have introduced this function in our very first article ["getting started"](../get-started/index.md) but what given in there was only a coarse sketch. In this article we will show its full functionalities.
+The call `ti.init()` is required in every Taichi program. It allows you to customize your Taichi runtime program, and it accepts a few arguments that each argument will control one specific behavior of the program. We have introduced this function in our very first article ["getting started"](../get-started/index.md), but what given there was only a coarse sketch. In this article we will show its full functionalities.
 
 
 ## Backends

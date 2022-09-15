@@ -28,10 +28,10 @@ In summary, when calling `ti.init()`, Taichi will execute the following steps to
 | start program in debug mode    | Runtime    |  `debug=True`   | `export TI_DEBUG=1`    | An equivalent way is to call your script via `ti debug your_script.py`  |
 | disable importing torch on start up    | Runtime    |     |  `export TI_ENABLE_TORCH=0`   |     |
 | disable importing paddle on start up    | Runtime    |     |   `export TI_ENABLE_PADDLE=0`  |     |
-|set random seed | Runtime    | `ti.init(random_seed=seed)`    |     |   `ti.init(random_seed=int(time.time()))`  |
-| Customize logging level    | Logging    |  `ti.init(log_level=ti.TRACE)`   | `export TI_LOG_LEVEL=trace`    | Equivalent to `ti.set_logging_level(ti.TRACE)`    |
-| Eliminate verbose outputs    | Logging    | `ti.init(verbose=False)`    |     |     |
-|trigger GDB when Taichi crashes    |  Develop   | `ti.init(gdb_trigger=True)`     |       |       |
+|set random seed | Runtime    | `random_seed=seed`    |     |   `ti.init(random_seed=int(time.time()))`  |
+| Customize logging level    | Logging    |  `log_level=ti.TRACE`   | `export TI_LOG_LEVEL=trace`    | Equivalent to `ti.set_logging_level(ti.TRACE)`    |
+| Eliminate verbose outputs    | Logging    | `verbose=False`    |     |     |
+|trigger GDB when Taichi crashes    |  Develop   | `gdb_trigger=True`     |       |       |
 |Cache compiled runtime bitcode in **dev mode** to save start up time  |  Develop   |      |   `export TI_CACHE_RUNTIME_BITCODE=1`    |       |
 | specify how many threads to run test    |  Develop   |      |   `export TI_TEST_THREADS=4`    |  Equivalent to  `python tests/run_tests.py -t4`   |
 

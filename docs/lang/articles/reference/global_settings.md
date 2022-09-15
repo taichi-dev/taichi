@@ -18,8 +18,8 @@ Below is the complete list of configurations:
 
 
 |    |     |     |     |     |
-|:---:|:---:|:---:|:---:|:---:|
-| Behavior &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&nbsp; | Category    | `ti.init()` argument  | Environment variable    | Note |
+|:----------:|:---:|:---:|:---:|:---:|
+| Behavior | Category | `ti.init()` argument  | Environment variable    | Note |
 |choose a backend |  Backends   |  `arch=xxx`   | `export TI_ARCH=xxx`    |  e.g. `export TI_ARCH=cuda`   |
 | disable a backend on start up   |  Backends  |     |  `export TI_ENABLE_xxx=0`   |  e.g.  `export TI_ENABLE_opengl=0`  |
 |  Choose CUDA device |   Backends   |     | `export CUDA_VISIBLE_DEVICES=[gpuid]`   |   |

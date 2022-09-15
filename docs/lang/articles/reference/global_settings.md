@@ -16,16 +16,16 @@ In summary, when calling `ti.init()`, Taichi will execute the following steps to
 
 |     |     |     |     |     |
 |:---:|:---:|:---:|:---:|:---:|
-| Behavior    | Category    | init argument  | Environment variable    | Note |
-|choose a backend |  Backends   |  `ti.init(arch=xxx)`   | `export TI_ARCH=xxx`    |  e.g. `export TI_ARCH=cuda`   |
+| Behavior    | Category    | `ti.init()` argument  | Environment variable    | Note |
+|choose a backend |  Backends   |  `arch=xxx`   | `export TI_ARCH=xxx`    |  e.g. `export TI_ARCH=cuda`   |
 | disable a backend on start up   |  Backends  |     |  `export TI_ENABLE_xxx=0`   |  e.g.  `export TI_ENABLE_opengl=0`  |
 |  Choose CUDA device |   Backends   |     | `export CUDA_VISIBLE_DEVICES=[gpuid]`   |  In case you want to use the CUDA backend together with GGUI on a machine with multiple GPU cards, please make sure `CUDA_VISIBLE_DEVICES` matches `TI_VISIBLE_DEVICE` if any of them exists. In general, `CUDA_VISIBLE_DEVICES` and `TI_VISIBLE_DEVICE` should point to a GPU device with the same UUID. Use `nvidia-smi -L` to query the details of your GPU devices |
 | Choose Vulkan device   |   Backends   |     |   `export TI_VISIBLE_DEVICE=[gpuid]`  |     |
-| specify pre-allocated CUDA memory size | Backends     |  `ti.init(device_memory_GB=0.5)`   |     |     |
-| Disable advanced optimizations    |  Compilation   |  `ti.init(advanced_optimization=False)`   |     | This is for saing compile time and possible errors    |
-| Disable fast math    |  Compilation   | `ti.init(fast_math=False)`   |     |  For preventing possible undefined math behavior   |
-| print generated intermediate IR    |  Compilation   | `ti.init(print_ir=True)`    |     | Compiled kernels are [cached by default](https://docs.taichi-lang.org/docs/performance#offline-cache). To force compilation and IR emission, use `ti.init(print_ir=True, offline_cache=False)`    |
-| start program in debug mode    | Runtime    |  `ti.init(debug=True)`   | `export TI_DEBUG=1`    | An equivalent way is to call your script via `ti debug your_script.py`  |
+| specify pre-allocated CUDA memory size | Backends     |  `device_memory_GB=0.5`   |     |     |
+| Disable advanced optimizations    |  Compilation   |  `advanced_optimization=False`   |     | This is for saing compile time and possible errors    |
+| Disable fast math    |  Compilation   | `fast_math=False`   |     |  For preventing possible undefined math behavior   |
+| print generated intermediate IR    |  Compilation   | `print_ir=True`    |     | Compiled kernels are [cached by default](https://docs.taichi-lang.org/docs/performance#offline-cache). To force compilation and IR emission, use `ti.init(print_ir=True, offline_cache=False)`    |
+| start program in debug mode    | Runtime    |  `debug=True`   | `export TI_DEBUG=1`    | An equivalent way is to call your script via `ti debug your_script.py`  |
 | disable importing torch on start up    | Runtime    |     |  `export TI_ENABLE_TORCH=0`   |     |
 | disable importing paddle on start up    | Runtime    |     |   `export TI_ENABLE_PADDLE=0`  |     |
 |set random seed | Runtime    | `ti.init(random_seed=seed)`    |     |   `ti.init(random_seed=int(time.time()))`  |

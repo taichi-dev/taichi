@@ -180,17 +180,17 @@ def test_matrix_non_constant_index_numpy():
     assert m[4][0, 1] == 1
 
     @ti.kernel
-    def func2(b: ti.types.ndarray(element_dim=1, layout=ti.Layout.SOA)):
+    def func2(b: ti.types.ndarray(element_dim=1)):
         for i in range(5):
             for j in range(4):
                 b[i][j * j] = j * j
 
-    v = np.empty((10, 5), dtype=np.int32)
+    v = np.empty((5, 10), dtype=np.int32)
     func2(v)
-    assert v[0][1] == 0
+    assert v[0][0] == 0
     assert v[1][1] == 1
-    assert v[4][1] == 4
-    assert v[9][1] == 9
+    assert v[2][4] == 4
+    assert v[3][9] == 9
 
 
 @test_utils.test(require=ti.extension.dynamic_index,

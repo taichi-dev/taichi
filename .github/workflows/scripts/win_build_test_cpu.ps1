@@ -66,6 +66,7 @@ if (!$llvmVer.CompareTo("10")) {
 } else {
     $env:TAICHI_CMAKE_ARGS += " -DLLVM_AS_EXECUTABLE=C:\\taichi_llvm_15\\bin\\llvm-as.exe -DTI_WITH_VULKAN:BOOL=OFF"
     $env:TAICHI_CMAKE_ARGS += " -DTI_LLVM_15:BOOL=ON"
+    $env:TAICHI_CMAKE_ARGS += " -DTI_WITH_DX12:BOOL=ON"
 }
 
 

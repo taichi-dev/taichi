@@ -110,6 +110,17 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
     }
   }
 
+  void visit(MatrixFieldExpression *expr) override {
+    emit('[');
+    emit_vector(expr->fields);
+    emit("] (");
+    emit_vector(expr->element_shape);
+    if (expr->dynamic_index_stride) {
+      emit(", dynamic_index_stride = ", expr->dynamic_index_stride);
+    }
+    emit(')');
+  }
+
   void visit(MatrixExpression *expr) override {
     emit('[');
     emit_vector(expr->elements);

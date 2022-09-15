@@ -60,7 +60,7 @@ Likewise for Paddle, you need to specify the device by `paddle.CPUPlace()` or `p
 
 As mentioned before, when importing/exporing data between a `ti.field/ti.Vector.field/ti.Matrix` and a NumPy array, you need to make sure the shape of the field matches the corresponding array. The matching rule is summarized below:
 
-- For scalar fields, **the shape of NumPy array, PyTorch tensor or Paddle Tensor equals the shape of the Taichi field**
+- When importing data to or exporting data from a scalar field, ensure that **the shape of the corresponding NumPy array, PyTorch tensor, or Paddle tensor equals the shape of the scalar field**
 
     ```python
     field = ti.field(int, shape=(256, 512))

@@ -124,7 +124,7 @@ std::unique_ptr<aot::Kernel> LlvmProgramImpl::make_aot_kernel(Kernel &kernel) {
 }
 
 void LlvmProgramImpl::cache_kernel(const std::string &kernel_key,
-                                   const LLVMCompiledData &data,
+                                   const LLVMCompiledKernel &data,
                                    std::vector<LlvmLaunchArgInfo> &&args) {
   if (cache_data_->kernels.find(kernel_key) != cache_data_->kernels.end()) {
     return;

@@ -234,7 +234,7 @@ std::unique_ptr<TaskCodeGenLLVM> KernelCodeGenCPU::make_codegen_llvm(
 FunctionType CPUModuleToFunctionConverter::convert(
     const std::string &kernel_name,
     const std::vector<LlvmLaunchArgInfo> &args,
-    LLVMCompiledData data) const {
+    LLVMCompiledKernel data) const {
   TI_AUTO_PROF;
   auto jit_module = tlctx_->create_jit_module(std::move(data.module));
   using TaskFunc = int32 (*)(void *);
@@ -271,7 +271,7 @@ FunctionType CPUModuleToFunctionConverter::convert(
   };
 }
 
-LLVMCompiledData KernelCodeGenCPU::compile_task(
+LLVMCompiledTask KernelCodeGenCPU::compile_task(
     std::unique_ptr<llvm::Module> &&module,
     OffloadedStmt *stmt) {
   TaskCodeGenCPU gen(kernel, stmt);
@@ -284,10 +284,8 @@ FunctionType KernelCodeGenCPU::compile_to_function() {
   auto *llvm_prog = get_llvm_program(prog);
   auto *tlctx = llvm_prog->get_llvm_context(kernel->arch);
 
-  LLVMCompiledData data = compile_kernel_to_module();
-
   CPUModuleToFunctionConverter converter(
       tlctx, get_llvm_program(prog)->get_runtime_executor());
-  return converter.convert(kernel, std::move(data));
+  return converter.convert(kernel, compile_kernel_to_module());
 }
 TLANG_NAMESPACE_END

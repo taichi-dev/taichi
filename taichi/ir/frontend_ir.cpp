@@ -12,6 +12,10 @@ TLANG_NAMESPACE_BEGIN
                  "[{}] was not type-checked",           \
                  ExpressionHumanFriendlyPrinter::expr_to_string(x))
 
+static bool is_primitive_or_tensor_type(DataType &type) {
+  return type->is<PrimitiveType>() || type->is<TensorType>();
+}
+
 FrontendSNodeOpStmt::FrontendSNodeOpStmt(SNodeOpType op_type,
                                          SNode *snode,
                                          const ExprGroup &indices,
@@ -180,8 +184,17 @@ void BinaryOpExpression::type_check(CompileConfig *config) {
                     binary_op_type_symbol(type), lhs->ret_type->to_string(),
                     rhs->ret_type->to_string()));
   };
-  if (!lhs_type->is<PrimitiveType>() || !rhs_type->is<PrimitiveType>())
+
+  if (!is_primitive_or_tensor_type(lhs_type) ||
+      !is_primitive_or_tensor_type(rhs_type)) {
     error();
+  }
+
+  if ((lhs_type->is<PrimitiveType>() && rhs_type->is<TensorType>()) ||
+      (lhs_type->is<TensorType>() && rhs_type->is<PrimitiveType>())) {
+    TI_NOT_IMPLEMENTED;
+  }
+
   if (binary_is_bitwise(type) &&
       (!is_integral(lhs_type) || !is_integral(rhs_type)))
     error();
@@ -441,7 +454,6 @@ void MatrixExpression::type_check(CompileConfig *config) {
 }
 
 void MatrixExpression::flatten(FlattenContext *ctx) {
-  // TODO: implement flatten
   TI_ASSERT(this->dt->is<TensorType>());
   std::vector<Stmt *> values;
   for (auto &elt : elements) {
@@ -501,6 +513,11 @@ void IndexExpression::type_check(CompileConfig *) {
       ret_type = var.cast<ExternalTensorExpression>()->dt;
     }
   } else if (is_tensor()) {  // local tensor
+    auto shape = var->ret_type->as<TensorType>()->get_shape();
+    if (indices.size() != shape.size()) {
+      TI_ERROR("Expected {} indices, but got {}.", shape.size(),
+               indices.size());
+    }
     ret_type = var->ret_type->cast<TensorType>()->get_element_type();
   } else {
     throw TaichiTypeError(
@@ -587,6 +604,9 @@ void LoopUniqueExpression::flatten(FlattenContext *ctx) {
 
 void IdExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->current_block->lookup_var(id);
+  if (!ret_type->is_primitive(PrimitiveTypeID::unknown)) {
+    stmt->ret_type = ret_type;
+  }
 }
 
 void AtomicOpExpression::type_check(CompileConfig *) {
@@ -1019,7 +1039,8 @@ Expr ASTBuilder::expr_alloca() {
 Expr ASTBuilder::make_matrix_expr(const std::vector<int> &shape,
                                   const DataType &dt,
                                   const std::vector<Expr> &elements) {
-  return Expr(std::make_shared<MatrixExpression>(elements, shape, dt));
+  auto mat = Expr(std::make_shared<MatrixExpression>(elements, shape, dt));
+  return mat;
 }
 
 Expr ASTBuilder::expr_alloca_local_tensor(const std::vector<int> &shape,

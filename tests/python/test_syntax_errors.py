@@ -282,9 +282,7 @@ def test_redefining_template_args():
 
     with pytest.raises(
             ti.TaichiSyntaxError,
-            match=
-            "Variable 'a' cannot be assigned. Maybe it is not a Taichi object?"
-    ):
+            match="Kernel argument \"a\" is immutable in the kernel"):
         foo(1)
 
 

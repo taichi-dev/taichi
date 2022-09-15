@@ -52,6 +52,11 @@ void compile_to_offloads(IRNode *ir,
     print("Lowered");
   }
 
+  if (config.real_matrix && config.real_matrix_scalarize) {
+    irpass::scalarize(ir);
+    print("Scalarized");
+  }
+
   irpass::type_check(ir, config);
   print("Typechecked");
   irpass::analysis::verify(ir);
@@ -133,7 +138,8 @@ void compile_to_offloads(IRNode *ir,
   // TODO: This pass may be redundant as cfg_optimization() is already called
   //  in full_simplify().
   if (config.opt_level > 0 && config.cfg_optimization) {
-    irpass::cfg_optimization(ir, false, /*autodiff_enabled*/ false);
+    irpass::cfg_optimization(ir, false, /*autodiff_enabled*/ false,
+                             config.real_matrix);
     print("Optimized by CFG");
     irpass::analysis::verify(ir);
   }
@@ -316,6 +322,12 @@ void compile_function(IRNode *ir,
     irpass::lower_ast(ir);
     print("Lowered");
   }
+
+  if (config.real_matrix && config.real_matrix_scalarize) {
+    irpass::scalarize(ir);
+    print("Scalarized");
+  }
+
   irpass::lower_access(ir, config, {{}, true});
   print("Access lowered");
   irpass::analysis::verify(ir);

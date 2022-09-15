@@ -65,8 +65,10 @@ PtrOffsetStmt::PtrOffsetStmt(Stmt *origin_input, Stmt *offset_input) {
   origin = origin_input;
   offset = offset_input;
   if (origin->is<AllocaStmt>()) {
-    TI_ASSERT(origin->cast<AllocaStmt>()->ret_type->is<TensorType>());
-    auto tensor_type = origin->cast<AllocaStmt>()->ret_type->cast<TensorType>();
+    TI_ASSERT(
+        origin->cast<AllocaStmt>()->ret_type.ptr_removed()->is<TensorType>());
+    auto tensor_type =
+        origin->cast<AllocaStmt>()->ret_type.ptr_removed()->cast<TensorType>();
     element_type() = tensor_type->get_element_type();
     element_type().set_is_pointer(true);
   } else if (origin->is<GlobalTemporaryStmt>()) {
@@ -78,9 +80,12 @@ PtrOffsetStmt::PtrOffsetStmt(Stmt *origin_input, Stmt *offset_input) {
   } else if (origin->is<GlobalPtrStmt>()) {
     element_type() = origin->cast<GlobalPtrStmt>()->ret_type;
   } else if (origin->is<ExternalPtrStmt>()) {
-    TI_ASSERT(origin->cast<ExternalPtrStmt>()->ret_type->is<TensorType>());
-    auto tensor_type =
-        origin->cast<ExternalPtrStmt>()->ret_type->cast<TensorType>();
+    TI_ASSERT(origin->cast<ExternalPtrStmt>()
+                  ->ret_type.ptr_removed()
+                  ->is<TensorType>());
+    auto tensor_type = origin->cast<ExternalPtrStmt>()
+                           ->ret_type.ptr_removed()
+                           ->cast<TensorType>();
     element_type() = tensor_type->get_element_type();
     element_type().set_is_pointer(true);
   } else {

@@ -906,8 +906,7 @@ def test_ndarray():
     m = 7
 
     @ti.kernel
-    def run(x: ti.types.ndarray(element_dim=2, layout=ti.Layout.AOS),
-            y: ti.types.ndarray()):
+    def run(x: ti.types.ndarray(element_dim=2), y: ti.types.ndarray()):
         for i in ti.static(range(n)):
             for j in ti.static(range(m)):
                 x[i, j][0, 0] += i + j + y[i, j]
@@ -983,16 +982,6 @@ def test_raise():
             ti.polar_decompose(m, ti.f32)
 
         foo()
-
-
-@test_utils.test()
-def test_scalar_argument():
-    @ti.kernel
-    def add(a: ti.f32, b: ti.f32) -> ti.f32:
-        a = a + b
-        return a
-
-    assert add(1.0, 2.0) == test_utils.approx(3.0)
 
 
 @test_utils.test()

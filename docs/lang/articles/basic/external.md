@@ -5,7 +5,7 @@ sidebar_position: 5
 # Interacting with External Arrays
 
 
-This article will show you how to transfer data from external arrays to the Taichi scope and vice versa. Here external arrays refer to NumPy arrays, PyTorch tensors or Paddle Tensors, for now these are the only supported arrays.
+This article will show you how to transfer data from external arrays to the Taichi scope and vice versa. Here external arrays refer to NumPy arrays, PyTorch tensors, and Paddle tensors. For now, these are all the external arrays supported by Taichi.
 
 We will use NumPy arrays as an example to illustrate the procedure since this is the most common usage. The cases for PyTorch tentors and Paddle tensors are very similar.
 

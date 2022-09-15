@@ -166,7 +166,7 @@ test()
 print(a)
 ```
 
-Note that elements in an external array must be indexed using a single square bracket. This contrasts with a Taichi vector or matrix field where field and matrix indices are indexed separately:
+Note that the elements in an external array must be indexed using a single square bracket. This contrasts with a Taichi vector or matrix field where field members and elements are indexed separately:
 
 ```python
 x = ti.Vector.field(3, float, shape=(5, 5))

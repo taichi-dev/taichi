@@ -6,12 +6,10 @@ class CacheLoopInvariantGlobalVars : public LoopInvariantDetector {
  public:
   using LoopInvariantDetector::visit;
 
-  enum class CacheStatus {
-    ReadOnly = 0,
-    ReadWrite = 1
-  };
+  enum class CacheStatus { ReadOnly = 0, ReadWrite = 1 };
 
-  std::unordered_map<Stmt *, std::pair<AllocaStmt *, CacheStatus>> cached_allocas;
+  std::unordered_map<Stmt *, std::pair<AllocaStmt *, CacheStatus>>
+      cached_allocas;
 
   DelayedIRModifier modifier;
 
@@ -21,25 +19,31 @@ class CacheLoopInvariantGlobalVars : public LoopInvariantDetector {
 
   void add_writeback(AllocaStmt *alloca_stmt, Stmt *stmt, Stmt *parent_stmt) {
     auto final_value = std::make_unique<LocalLoadStmt>(alloca_stmt);
-    auto global_store = std::make_unique<GlobalStoreStmt>(stmt, final_value.get());
+    auto global_store =
+        std::make_unique<GlobalStoreStmt>(stmt, final_value.get());
     modifier.insert_after(parent_stmt, std::move(global_store));
     modifier.insert_after(parent_stmt, std::move(final_value));
   }
 
-  AllocaStmt *cache_global_to_local(Stmt *stmt, Stmt *parent_stmt, CacheStatus status) {
+  AllocaStmt *cache_global_to_local(Stmt *stmt,
+                                    Stmt *parent_stmt,
+                                    CacheStatus status) {
     if (auto &[cached, cached_status] = cached_allocas[stmt]; cached) {
-      if (cached_status == CacheStatus::ReadOnly && status == CacheStatus::ReadWrite) {
+      if (cached_status == CacheStatus::ReadOnly &&
+          status == CacheStatus::ReadWrite) {
         add_writeback(cached, stmt, parent_stmt);
         cached_status = CacheStatus::ReadWrite;
       }
       return cached;
     }
 
-    auto alloca_unique = std::make_unique<AllocaStmt>(stmt->ret_type.ptr_removed());
+    auto alloca_unique =
+        std::make_unique<AllocaStmt>(stmt->ret_type.ptr_removed());
     auto alloca_stmt = alloca_unique.get();
     cached_allocas[stmt] = {alloca_stmt, status};
     auto new_global_load = std::make_unique<GlobalLoadStmt>(stmt);
-    auto local_store = std::make_unique<LocalStoreStmt>(alloca_stmt, new_global_load.get());
+    auto local_store =
+        std::make_unique<LocalStoreStmt>(alloca_stmt, new_global_load.get());
     modifier.insert_before(parent_stmt, std::move(new_global_load));
     modifier.insert_before(parent_stmt, std::move(alloca_unique));
     modifier.insert_before(parent_stmt, std::move(local_store));
@@ -52,7 +56,8 @@ class CacheLoopInvariantGlobalVars : public LoopInvariantDetector {
 
   void visit(GlobalLoadStmt *stmt) override {
     if (is_loop_invariant(stmt->src, stmt->parent)) {
-      auto alloca_stmt = cache_global_to_local(stmt->src, stmt->parent->parent_stmt, CacheStatus::ReadOnly);
+      auto alloca_stmt = cache_global_to_local(
+          stmt->src, stmt->parent->parent_stmt, CacheStatus::ReadOnly);
       auto local_load = std::make_unique<LocalLoadStmt>(alloca_stmt);
       stmt->replace_usages_with(local_load.get());
       modifier.insert_before(stmt, std::move(local_load));
@@ -62,8 +67,10 @@ class CacheLoopInvariantGlobalVars : public LoopInvariantDetector {
 
   void visit(GlobalStoreStmt *stmt) override {
     if (is_loop_invariant(stmt->dest, stmt->parent)) {
-      auto alloca_stmt = cache_global_to_local(stmt->dest, stmt->parent->parent_stmt, CacheStatus::ReadWrite);
-      auto local_store = std::make_unique<LocalStoreStmt>(alloca_stmt, stmt->val);
+      auto alloca_stmt = cache_global_to_local(
+          stmt->dest, stmt->parent->parent_stmt, CacheStatus::ReadWrite);
+      auto local_store =
+          std::make_unique<LocalStoreStmt>(alloca_stmt, stmt->val);
       stmt->replace_usages_with(local_store.get());
       modifier.insert_before(stmt, std::move(local_store));
       modifier.erase(stmt);
@@ -87,7 +94,8 @@ class CacheLoopInvariantGlobalVars : public LoopInvariantDetector {
 };
 
 namespace irpass {
-bool cache_loop_invariant_global_vars(IRNode *root, const CompileConfig &config) {
+bool cache_loop_invariant_global_vars(IRNode *root,
+                                      const CompileConfig &config) {
   TI_AUTO_PROF;
   return CacheLoopInvariantGlobalVars::run(root, config);
 }

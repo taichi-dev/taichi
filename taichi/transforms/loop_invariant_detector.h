@@ -16,8 +16,7 @@ class LoopInvariantDetector : public BasicStmtVisitor {
 
   const CompileConfig &config;
 
-  explicit LoopInvariantDetector(const CompileConfig &config)
-      : config(config) {
+  explicit LoopInvariantDetector(const CompileConfig &config) : config(config) {
     allow_undefined_visitor = true;
   }
 
@@ -49,9 +48,9 @@ class LoopInvariantDetector : public BasicStmtVisitor {
           operand_parent = operand_parent->parent->parent_stmt;
           if (!operand_parent)
             break;
-          // If the one of the current_scope of the operand is the top loop scope
-          // Then it will not be visible if we move it outside the top loop
-          // scope
+          // If the one of the current_scope of the operand is the top loop
+          // scope Then it will not be visible if we move it outside the top
+          // loop scope
           if (operand_parent == loop_blocks.top()->parent_stmt) {
             is_invariant = false;
             break;
@@ -118,7 +117,6 @@ class LoopInvariantDetector : public BasicStmtVisitor {
     if (stmt->tls_epilogue)
       stmt->tls_epilogue->accept(this);
   }
-
 };
 
 TLANG_NAMESPACE_END

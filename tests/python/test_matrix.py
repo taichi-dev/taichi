@@ -115,7 +115,7 @@ def test_constant_matrices():
         m += ti.Matrix([[3, 4], [5, t]])
         print(m @ v)
         print(r.x, r.y, r.z, r.w)
-        s = w.transpose() @ m
+        s = w @ m
         print(s)
         print(m)
 
@@ -699,6 +699,24 @@ def test_indexing_in_struct_field():
     with pytest.raises(TaichiCompilationError,
                        match=r'Expected 2 indices, got 1'):
         bar()
+
+
+@test_utils.test(arch=get_host_arch_list(), debug=True)
+def test_matrix_vector_multiplication():
+    mat = ti.math.mat3(1)
+    vec = ti.math.vec3(3)
+    r = mat @ vec
+    for i in range(3):
+        assert r[i] == 9
+
+    @ti.kernel
+    def foo():
+        mat = ti.math.mat3(1)
+        vec = ti.math.vec3(3)
+        r = mat @ vec
+        assert r[0] == r[1] == r[2] == 9
+
+    foo()
 
 
 @test_utils.test(arch=[ti.cuda, ti.cpu], real_matrix=True)

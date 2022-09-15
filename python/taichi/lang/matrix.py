@@ -447,6 +447,11 @@ class Matrix(TaichiOperations):
             is_matrix = isinstance(arr[0], Iterable) and not is_vector(self)
             initializer = _make_entries_initializer(is_matrix)
             self.ndim = 2 if is_matrix else 1
+            if not is_matrix and isinstance(arr[0], Iterable):
+                flattened = []
+                for row in arr:
+                    flattened += row
+                arr = flattened
 
             if in_python_scope() or is_ref:
                 mat = initializer.pyscope_or_ref(arr)
@@ -553,6 +558,11 @@ class Matrix(TaichiOperations):
 
         """
         assert isinstance(other, Matrix), "rhs of `@` is not a matrix / vector"
+        if is_vector(self) and not is_vector(other):
+            # left multiplication
+            assert self.n == other.m, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
+            return other.transpose() @ self
+        # right multiplication
         assert self.m == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
         entries = []
         for i in range(self.n):
@@ -562,6 +572,8 @@ class Matrix(TaichiOperations):
                 for k in range(1, other.n):
                     acc = acc + self(i, k) * other(k, j)
                 entries[i].append(acc)
+        if is_vector(other) and other.m == 1:
+            return Vector(entries)
         return Matrix(entries)
 
     # host access & python scope operation

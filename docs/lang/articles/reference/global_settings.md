@@ -15,7 +15,7 @@ In summary, when calling `ti.init()`, Taichi will execute the following steps to
 
 ## Customize backends
 
-- To specify which kind of architecture (Arch) to use: `ti.init(arch=ti.cuda)`.
+- To specify which architecture (Arch) to use: `ti.init(arch=ti.cuda)`.
 - To specify the pre-allocated memory size for CUDA:
   `ti.init(device_memory_GB=0.5)`.
 - To specify which GPU to use for CUDA: `export CUDA_VISIBLE_DEVICES=[gpuid]`.
@@ -24,7 +24,7 @@ In summary, when calling `ti.init()`, Taichi will execute the following steps to
 
 :::note
 
-In case you want to use taichi cuda backend together with GGUI on a machine with multiple GPU cards, please make sure `CUDA_VISIBLE_DEVICES` matches `TI_VISIBLE_DEVICE` if any of them exists. In general, `CUDA_VISIBLE_DEVICES` and `TI_VISIBLE_DEVICE` should point to a GPU device with the same UUID. Use `nvidia-smi -L` to query the details of your GPU devices.
+In case you want to use the CUDA backend together with GGUI on a machine with multiple GPU cards, please make sure `CUDA_VISIBLE_DEVICES` matches `TI_VISIBLE_DEVICE` if any of them exists. In general, `CUDA_VISIBLE_DEVICES` and `TI_VISIBLE_DEVICE` should point to a GPU device with the same UUID. Use `nvidia-smi -L` to query the details of your GPU devices.
 
 ## Compilation
 

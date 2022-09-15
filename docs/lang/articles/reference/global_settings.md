@@ -19,9 +19,9 @@ Below is the complete list of configurations:
 
 |    |     |     |     |     |
 |:---:|:---:|:---:|:---:|:---:|
-|  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Behavior &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Category | `ti.init()` argument  | Environment variable    | Note |
-|choose a backend |  Backends   |  `arch=xxx`   | `export TI_ARCH=xxx`    |  e.g. `export TI_ARCH=cuda`   |
-| disable a backend on start up   |  Backends  |     |  `export TI_ENABLE_xxx=0`   |  e.g.  `export TI_ENABLE_opengl=0`  |
+| Behavior | Category | `ti.init()` argument  | Environment variable    | Note |
+|Choose a backend |  Backends   |  `arch=xxx`   | `export TI_ARCH=xxx`    |  e.g. `export TI_ARCH=cuda`   |
+| Disable a backend on start up   |  Backends  |     |  `export TI_ENABLE_xxx=0`   |  e.g.  `export TI_ENABLE_opengl=0`  |
 |  Choose CUDA device |   Backends   |     | `export CUDA_VISIBLE_DEVICES=[gpuid]`   |   |
 | Choose Vulkan device   |   Backends   |     |   `export TI_VISIBLE_DEVICE=[gpuid]`  |     |
 | Specify pre-allocated CUDA memory size | Backends     |  `device_memory_GB=0.5`   |     |     |

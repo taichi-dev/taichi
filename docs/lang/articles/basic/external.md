@@ -63,13 +63,29 @@ As mentioned before, when importing/exporing data between a `ti.field/ti.Vector.
 - For scalar fields, **the shape of NumPy array, PyTorch tensor or Paddle Tensor equals the shape of the Taichi field**
 
     ```python
-    field = ti.field(ti.i32, shape=(256, 512))
+    field = ti.field(int, shape=(256, 512))
     field.shape  # (256, 512)
 
     array = field.to_numpy()
     array.shape  # (256, 512)
 
     field.from_numpy(array)  # the input array must be of shape (256, 512)
+    ```
+
+    An illustration is shown below:
+
+    ```
+                                   field.shape[1]=array.shape[1]
+                                               (=512)
+                                      ┌───────────────────────┐
+
+                                   ┌  ┌───┬───┬───┬───┬───┬───┐  ┐
+                                   │  │   │   │   │   │   │   │  │
+                                   │  ├───┼───┼───┼───┼───┼───┤  │
+    field.shape[0]=array.shape[0]  │  │   │   │   │   │   │   │  │
+             (=256)                │  ├───┼───┼───┼───┼───┼───┤  │
+                                   │  │   │   │   │   │   │   │  │
+                                   └  └───┴───┴───┴───┴───┴───┘  ┘
     ```
 
 - For vector fields, if the vector is `n`-dimensional, then **the shape of NumPy array, PyTorch tensor or Paddle Tensor should be** `(*field_shape, n)`:
@@ -128,7 +144,7 @@ a = np.zeros((5, 5))
 def test(a: ti.types.ndarray()):
     for i in range(a.shape[0]):
         for j in range(a.shape[1]):
-            a[i, j] += i + j
+            a[i, j] = i + j
 
 test()
 print(a)

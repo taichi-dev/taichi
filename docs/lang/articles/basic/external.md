@@ -19,7 +19,7 @@ We now explain them in more details.
 
 ## Import and export data between NumPy arrays and Taichi fields
 
-To import data from a NumPy array to a Taichi field, firstly make sure the field and the array have the same shape:
+To import data from a NumPy array to a Taichi field, first make sure that the field and the array have the same shape:
 
 ```python
 x = ti.field(float, shape=(3, 3))

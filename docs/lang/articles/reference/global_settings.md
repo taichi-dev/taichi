@@ -9,7 +9,7 @@ The call `ti.init()` is indispensable in every Taichi program. It allows you to 
 
 In summary, when calling `ti.init()`, Taichi will execute the following steps to initialize a specific configuration:
 
-1. Read the arugment passed to it for that configuration.
+1. Read the arugment for that configuration that passed to it.
 2. If that argument is missing, then Taichi will try to find if the corresponing environment variable is set.
 3. If neither 1 or 2, Taichi will use a default configuration.
 

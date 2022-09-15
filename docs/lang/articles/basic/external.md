@@ -31,7 +31,7 @@ print(x)
 # [6 7 8]]
 ```
 
-In the above exmaple, the scalar field `x` and the array `a` both have shape `(3, 3)`. For vector and matrix fields the shape matching rule with NumPy arrays is a bit subtle and will be discussed in a later section.
+In the above exmaple, the scalar field `x` and the array `a` both have shape `(3, 3)`. You are not allowed to perform such a copy if their shapes don't match. For vector and matrix fields the shape matching rule with NumPy arrays is a bit subtle and will be discussed in a later section.
 
 The field should also have the same dtype with the array, otherwise an implicit type casting will be performed, see [type system](../type_system/type.md).
 

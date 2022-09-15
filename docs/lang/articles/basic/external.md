@@ -58,7 +58,7 @@ Likewise for Paddle, you need to specify the device by `paddle.CPUPlace()` or `p
 
 ## External array shapes
 
-As mentioned before, when importing/exporing data between a `ti.Vector.field/ti.Matrix` and a NumPy array, you need to make sure the shape of the field matches the corresponding array. The matching rule is summarized below:
+When importing/exporing data between a `ti.Vector.field/ti.Matrix` and a NumPy array, you need to make sure the shape of the field matches the corresponding array. The matching rule is summarized below:
 
 - For scalar fields, **the shape of NumPy array, PyTorch tensor or Paddle Tensor equals the shape of the Taichi field**
 

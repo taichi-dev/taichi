@@ -88,7 +88,7 @@ As mentioned before, when importing/exporing data between a `ti.field/ti.Vector.
                                    └  └───┴───┴───┴───┴───┴───┘  ┘
     ```
 
-- For vector fields, if the vector is `n`-dimensional, then **the shape of NumPy array, PyTorch tensor or Paddle Tensor should be** `(*field_shape, n)`:
+- When importing data to or exporting data from an `n`-dimensional vector field, ensure that **the shape of the corresponding NumPy array, PyTorch tensor, or Paddle Tensor is set to** `(*field_shape, n)`:
 
     ```python
     field = ti.Vector.field(3, int, shape=(256, 512))

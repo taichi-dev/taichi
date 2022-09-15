@@ -5,8 +5,13 @@ sidebar_position: 3
 # Global Settings
 
 
-The call `ti.init()` is required in every Taichi program. It allows you to customize your Taichi runtime program, and it accepts a few arguments that each argument will control one specific behavior of the program. We have introduced this function in our very first article ["getting started"](../get-started/index.md), but what given there was only a coarse sketch. In this article we will show its full functionalities.
+The call `ti.init()` is required in every Taichi program. It allows you to customize your Taichi runtime by passing arguments to it or setting the corresponding environment variables. Each argument or environment variable will control one specific behavior of the Taichi runtime. We have introduced this function in our very first article ["getting started"](../get-started/index.md), but what given there was only a coarse sketch. In this article we will show its full functionalities.
 
+In summary, when calling `ti.init()`, Taichi will execute the following steps to initialize a specific configuration:
+
+1. Read the arugment passed to it for that configuration.
+2. If that argument is missing, then Taichi will try to find if the corresponing environment variable is set.
+3. If neither 1 or 2, Taichi will use a default configuration.
 
 ## Customize backends
 

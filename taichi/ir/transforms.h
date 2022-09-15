@@ -47,6 +47,7 @@ bool whole_kernel_cse(IRNode *root);
 bool extract_constant(IRNode *root, const CompileConfig &config);
 bool unreachable_code_elimination(IRNode *root);
 bool loop_invariant_code_motion(IRNode *root, const CompileConfig &config);
+bool cache_loop_invariant_global_vars(IRNode *root, const CompileConfig &config);
 void full_simplify(IRNode *root,
                    const CompileConfig &config,
                    const FullSimplifyPass::Args &args);

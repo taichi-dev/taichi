@@ -22,20 +22,14 @@ In summary, when calling `ti.init()`, Taichi will execute the following steps to
 |  Choose GPU device for CUDA  |   Backends   |     | `export CUDA_VISIBLE_DEVICES=[gpuid]`   |     |
 | Choose GPU device for VULKAN    |   Backends   |     |   `export TI_VISIBLE_DEVICE=[gpuid]`  |     |
 | specify pre-allocated CUDA memory size | Backends     |  `ti.init(device_memory_GB=0.5)`   |     |     |
-
-
+| Disable advanced optimizations    |  Compilation   |  `ti.init(advanced_optimization=False)`   |     | This is for saing compile time and possible errors    |
+| Disable fast math    |  Compilation   | `ti.init(fast_math=False)`   |     |  For preventing possible undefined math behavior   |
+| print generated intermediate IR    |  Compilation   | `ti.init(print_ir=True)`    |     | Compiled kernels are [cached by default](https://docs.taichi-lang.org/docs/performance#offline-cache). To force compilation and IR emission, use `ti.init(print_ir=True, offline_cache=False)`    |
 
 :::note
 
 In case you want to use the CUDA backend together with GGUI on a machine with multiple GPU cards, please make sure `CUDA_VISIBLE_DEVICES` matches `TI_VISIBLE_DEVICE` if any of them exists. In general, `CUDA_VISIBLE_DEVICES` and `TI_VISIBLE_DEVICE` should point to a GPU device with the same UUID. Use `nvidia-smi -L` to query the details of your GPU devices.
 
-## Compilation
-
-- Disable advanced optimization to save compile time & possible
-  errors: `ti.init(advanced_optimization=False)`.
-- Disable fast math to prevent possible undefined math behavior:
-  `ti.init(fast_math=False)`.
-- To print intermediate IR generated: `ti.init(print_ir=True)`. Note that compiled kernels are [cached by default](https://docs.taichi-lang.org/docs/performance#offline-cache). To force compilation and IR emission, use `ti.init(print_ir=True, offline_cache=False)`.
 
 ## Runtime
 

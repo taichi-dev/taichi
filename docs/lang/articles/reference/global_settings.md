@@ -16,8 +16,8 @@ In summary, when calling `ti.init()`, Taichi will execute the following steps to
 
 Below is the complete list of configurations:
 
-
-| <div style="width:400px"></div>    |     |     |     |     |
+<div style="width:400px">
+|    |     |     |     |     |
 |:---:|:---:|:---:|:---:|:---:|
 | Behavior | Category    | `ti.init()` argument  | Environment variable    | Note |
 |choose a backend |  Backends   |  `arch=xxx`   | `export TI_ARCH=xxx`    |  e.g. `export TI_ARCH=cuda`   |
@@ -37,7 +37,7 @@ Below is the complete list of configurations:
 |trigger GDB when Taichi crashes    |  Develop   | `gdb_trigger=True`     |       |       |
 |Cache compiled runtime bitcode in **dev mode** |  Develop   |      |   `export TI_CACHE_RUNTIME_BITCODE=1`    |   To save start up time      |
 | Specify how many threads to run test    |  Develop   |      |   `export TI_TEST_THREADS=4`    |  Equivalent to  `python tests/run_tests.py -t4`   |
-
+</div>
 
 
 :::note

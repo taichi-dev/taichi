@@ -32,7 +32,7 @@ In summary, when calling `ti.init()`, Taichi will execute the following steps to
 | Customize logging level    | Logging    |  `ti.init(log_level=ti.TRACE)`   | `export TI_LOG_LEVEL=trace`    | Equivalent to `ti.set_logging_level(ti.TRACE)`    |
 | Eliminate verbose outputs    | Logging    | `ti.init(verbose=False)`    |     |     |
 |trigger GDB when Taichi crashes    |  Develop   | `ti.init(gdb_trigger=True)`     |       |       |
-|Cache compiled runtime bytecode in **dev mode** to save start up time  |  Develop   |      |   `export TI_CACHE_RUNTIME_BITCODE=1`    |       |
+|Cache compiled runtime bitcode in **dev mode** to save start up time  |  Develop   |      |   `export TI_CACHE_RUNTIME_BITCODE=1`    |       |
 | specify how many threads to run test    |  Develop   |      |   `export TI_TEST_THREADS=4`    |  Equivalent to  `python tests/run_tests.py -t4`   |
 
 

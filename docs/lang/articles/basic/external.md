@@ -9,7 +9,7 @@ This article will show you how to transfer data from external arrays to the Taic
 
 We will use NumPy arrays as an example to illustrate the procedure since this is the most common usage. The cases for PyTorch tentors and Paddle tensors are very similar.
 
-There are two ways to import a NnumPy array `arr` to the Taichi scope:
+There are two ways to import a NumPy array `arr` to the Taichi scope:
 
 1. Create a field `f` and call the method `f.from_numpy(arr)` to copy the data in `arr` into `f`.
 

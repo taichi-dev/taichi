@@ -17,8 +17,8 @@ In summary, when calling `ti.init()`, Taichi will execute the following steps to
 |     |     |     |     |     |
 |:---:|:---:|:---:|:---:|:---:|
 | Behavior    | Category    | init argument  | Environment variable    | Note |
-|which architecture (Arch) to use |  Backends   |  arch=xxx   | `export TI_ARCH=xxx`    |  e.g. `export TI_ARCH=cuda`   |
-| disable a backend (`CUDA`, `METAL`, `OPENGL`) on start up   |     |  `export TI_ENABLE_xxx=0`   |     |  e.g.  `export TI_ENABLE_opengl=0`  |
+|choose a backend |  Backends   |  arch=xxx   | `export TI_ARCH=xxx`    |  e.g. `export TI_ARCH=cuda`   |
+| disable a backend on start up   |  Backends  |     |  `export TI_ENABLE_xxx=0`   |  e.g.  `export TI_ENABLE_opengl=0`  |
 
 
 ## Backends

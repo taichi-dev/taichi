@@ -32,7 +32,7 @@ print(x)
 # [3 4 5]
 # [6 7 8]]
 ```
-
+The field should also have the same dtype with the array, otherwise an implicit type casting will be performed, see [type system](../type_system/type.md).
 
 To export the data in `x` to a NumPy array, simply call its `to_numpy()` method:
 

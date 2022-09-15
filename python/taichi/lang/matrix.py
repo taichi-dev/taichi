@@ -1538,7 +1538,7 @@ class _MatrixFieldElement(_IntermediateMatrix):
                 for e in field._get_field_members()
             ],
             ndim=getattr(field, "ndim", 2))
-        self._impl.dynamic_index_stride = field.dynamic_index_stride
+        self._impl.dynamic_index_stride = field._get_dynamic_index_stride()
 
 
 class MatrixField(Field):
@@ -1557,7 +1557,8 @@ class MatrixField(Field):
         self.n = n
         self.m = m
         self.ndim = ndim
-        self.dynamic_index_stride = None
+        self.ptr = ti_python_core.expr_matrix_field(
+            [var.ptr for var in self.vars], [n, m][:ndim])
 
     def get_scalar_field(self, *indices):
         """Creates a ScalarField using a specific field member.
@@ -1573,12 +1574,17 @@ class MatrixField(Field):
         j = 0 if len(indices) == 1 else indices[1]
         return ScalarField(self.vars[i * self.m + j])
 
+    def _get_dynamic_index_stride(self):
+        if self.ptr.get_dynamic_indexable():
+            return self.ptr.get_dynamic_index_stride()
+        return None
+
     def _calc_dynamic_index_stride(self):
         # Algorithm: https://github.com/taichi-dev/taichi/issues/3810
         paths = [ScalarField(var).snode._path_from_root() for var in self.vars]
         num_members = len(paths)
         if num_members == 1:
-            self.dynamic_index_stride = 0
+            self.ptr.set_dynamic_index_stride(0)
             return
         length = len(paths[0])
         if any(
@@ -1602,7 +1608,7 @@ class MatrixField(Field):
             if stride != paths[i][depth_below_lca]._offset_bytes_in_parent_cell \
                     - paths[i - 1][depth_below_lca]._offset_bytes_in_parent_cell:
                 return
-        self.dynamic_index_stride = stride
+        self.ptr.set_dynamic_index_stride(stride)
 
     def fill(self, val):
         """Fills this matrix field with specified values.

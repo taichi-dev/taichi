@@ -145,4 +145,8 @@ Expr assume_range(const Expr &expr, const Expr &base, int low, int high);
 Expr loop_unique(const Expr &input, const std::vector<SNode *> &covers);
 
 Expr expr_field(Expr id_expr, DataType dt);
+
+Expr expr_matrix_field(const std::vector<Expr> &fields,
+                       const std::vector<int> &element_shape);
+
 TLANG_NAMESPACE_END

@@ -19,8 +19,7 @@ In summary, when calling `ti.init()`, Taichi will execute the following steps to
 | Behavior    | Category    | init argument  | Environment variable    | Note |
 |choose a backend |  Backends   |  `ti.init(arch=xxx)`   | `export TI_ARCH=xxx`    |  e.g. `export TI_ARCH=cuda`   |
 | disable a backend on start up   |  Backends  |     |  `export TI_ENABLE_xxx=0`   |  e.g.  `export TI_ENABLE_opengl=0`  |
-|  Choose GPU device for CUDA  |   Backends   |     | `export CUDA_VISIBLE_DEVICES=[gpuid]`   |  In case you want to use the CUDA backend together with GGUI on a machine with multiple GPU cards, please make sure `CUDA_VISIBLE_DEVICES` matches `TI_VISIBLE_DEVICE` if any of them exists. In general, `CUDA_VISIBLE_DEVICES` and `TI_VISIBLE_DEVICE` should point to a GPU device with the same UUID. Use `nvidia-smi -L` to query the details of your GPU devices.
-  |
+|  Choose GPU device for CUDA  |   Backends   |     | `export CUDA_VISIBLE_DEVICES=[gpuid]`   |  In case you want to use the CUDA backend together with GGUI on a machine with multiple GPU cards, please make sure `CUDA_VISIBLE_DEVICES` matches `TI_VISIBLE_DEVICE` if any of them exists. In general, `CUDA_VISIBLE_DEVICES` and `TI_VISIBLE_DEVICE` should point to a GPU device with the same UUID. Use `nvidia-smi -L` to query the details of your GPU devices |
 | Choose GPU device for VULKAN    |   Backends   |     |   `export TI_VISIBLE_DEVICE=[gpuid]`  |     |
 | specify pre-allocated CUDA memory size | Backends     |  `ti.init(device_memory_GB=0.5)`   |     |     |
 | Disable advanced optimizations    |  Compilation   |  `ti.init(advanced_optimization=False)`   |     | This is for saing compile time and possible errors    |

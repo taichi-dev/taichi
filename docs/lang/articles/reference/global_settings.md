@@ -14,6 +14,9 @@ In summary, when calling `ti.init()`, Taichi will execute the following steps to
 3. If neither 1 or 2, Taichi will use a default configuration. In this case Taichi will use `arch=ti.cpu` as the default backend.
 
 
+Below is the complete list of configurations:
+
+
 |     |     |     |     |     |
 |:---:|:---:|:---:|:---:|:---:|
 | Behavior    | Category    | `ti.init()` argument  | Environment variable    | Note |

@@ -62,56 +62,56 @@ As mentioned before, when importing/exporing data between a `ti.field/ti.Vector.
 
 - For scalar fields, **the shape of NumPy array, PyTorch tensor or Paddle Tensor equals the shape of the Taichi field**
 
-```python
-field = ti.field(ti.i32, shape=(256, 512))
-field.shape  # (256, 512)
+    ```python
+    field = ti.field(ti.i32, shape=(256, 512))
+    field.shape  # (256, 512)
 
-array = field.to_numpy()
-array.shape  # (256, 512)
+    array = field.to_numpy()
+    array.shape  # (256, 512)
 
-field.from_numpy(array)  # the input array must be of shape (256, 512)
-```
+    field.from_numpy(array)  # the input array must be of shape (256, 512)
+    ```
 
 - For vector fields, if the vector is `n`-dimensional, then **the shape of NumPy array, PyTorch tensor or Paddle Tensor should be** `(*field_shape, n)`:
 
-```python
-field = ti.Vector.field(3, ti.i32, shape=(256, 512))
-field.shape  # (256, 512)
-field.n      # 3
+    ```python
+    field = ti.Vector.field(3, ti.i32, shape=(256, 512))
+    field.shape  # (256, 512)
+    field.n      # 3
 
-array = field.to_numpy()
-array.shape  # (256, 512, 3)
+    array = field.to_numpy()
+    array.shape  # (256, 512, 3)
 
-field.from_numpy(array)  # the input array must be of shape (256, 512, 3)
-```
+    field.from_numpy(array)  # the input array must be of shape (256, 512, 3)
+    ```
 
 - For matrix fields, if the matrix is `n`-by-`m` (`n x m`), then **the shape of NumPy array, PyTorch tensor or Paddle Tensor should be** `(*field_shape, n, m)`:
 
-```python
-field = ti.Matrix.field(3, 4, ti.i32, shape=(256, 512))
-field.shape  # (256, 512)
-field.n      # 3
-field.m      # 4
+    ```python
+    field = ti.Matrix.field(3, 4, ti.i32, shape=(256, 512))
+    field.shape  # (256, 512)
+    field.n      # 3
+    field.m      # 4
 
-array = field.to_numpy()
-array.shape  # (256, 512, 3, 4)
+    array = field.to_numpy()
+    array.shape  # (256, 512, 3, 4)
 
-field.from_numpy(array)  # the input array must be of shape (256, 512, 3, 4)
-```
+    field.from_numpy(array)  # the input array must be of shape (256, 512, 3, 4)
+    ```
 
 - For struct fields, the external array will be exported as **a dictionary of NumPy arrays, PyTorch tensors or Paddle Tensors** with keys being struct member names and values being struct member arrays. Nested structs will be exported as nested dictionaries:
 
-```python
-field = ti.Struct.field({'a': ti.i32, 'b': ti.types.vector(3, float)}, shape=(256, 512))
-field.shape # (256, 512)
+    ```python
+    field = ti.Struct.field({'a': ti.i32, 'b': ti.types.vector(3, float)}, shape=(256, 512))
+    field.shape # (256, 512)
 
-array_dict = field.to_numpy()
-array_dict.keys() # dict_keys(['a', 'b'])
-array_dict['a'].shape # (256, 512)
-array_dict['b'].shape # (256, 512, 3)
+    array_dict = field.to_numpy()
+    array_dict.keys() # dict_keys(['a', 'b'])
+    array_dict['a'].shape # (256, 512)
+    array_dict['b'].shape # (256, 512, 3)
 
-field.from_numpy(array_dict) # the input array must have the same keys as the field
-```
+    field.from_numpy(array_dict) # the input array must have the same keys as the field
+    ```
 
 ## Using external arrays as Taichi kernel arguments
 

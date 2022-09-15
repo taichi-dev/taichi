@@ -1110,7 +1110,7 @@ class ASTTransformer(Builder):
             loop_var = expr.Expr(ctx.ast_builder.make_id_expr(''))
             ctx.create_variable(loop_name, loop_var)
             begin = expr.Expr(0)
-            end = node.iter.ptr.size
+            end = ti_ops.cast(node.iter.ptr.size, primitive_types.i32)
             ctx.ast_builder.begin_frontend_range_for(loop_var.ptr, begin.ptr,
                                                      end.ptr)
             entry_expr = _ti_core.get_relation_access(

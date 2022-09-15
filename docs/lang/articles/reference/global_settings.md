@@ -13,6 +13,12 @@ In summary, when calling `ti.init()`, Taichi will execute the following steps to
 2. If that argument is missing, then Taichi will try to find if the corresponing environment variable is set. In this case if `export TI_ARCH=cuda` is set then it will also use CUDA as the backend.
 3. If neither 1 or 2, Taichi will use a default configuration. In this case Taichi will use `arch=ti.cpu` as the default backend.
 
+
+|     |     |     |     |     |
+|:---:|:---:|:---:|:---:|:---:|
+| Behavior    | Category    | init argument  | Environment variable    | Note |
+|     |     |     |     |     |
+
 ## Backends
 
 - To specify which architecture (Arch) to use: `ti.init(arch=ti.cuda)`.

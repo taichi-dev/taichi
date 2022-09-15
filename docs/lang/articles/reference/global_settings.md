@@ -19,16 +19,11 @@ In summary, when calling `ti.init()`, Taichi will execute the following steps to
 | Behavior    | Category    | init argument  | Environment variable    | Note |
 |choose a backend |  Backends   |  arch=xxx   | `export TI_ARCH=xxx`    |  e.g. `export TI_ARCH=cuda`   |
 | disable a backend on start up   |  Backends  |     |  `export TI_ENABLE_xxx=0`   |  e.g.  `export TI_ENABLE_opengl=0`  |
+|  Choose GPU device for CUDA  |   Backends   |     | `export CUDA_VISIBLE_DEVICES=[gpuid]`   |     |
+| Choose GPU device for VULKAN    |   Backends   |     |   `export TI_VISIBLE_DEVICE=[gpuid]`  |     |
+| specify pre-allocated CUDA memory size | Backends     |     | `ti.init(device_memory_GB=0.5)`    |     |
 
 
-## Backends
-
-- To specify which architecture (Arch) to use: `ti.init(arch=ti.cuda)`.
-- To specify the pre-allocated memory size for CUDA:
-  `ti.init(device_memory_GB=0.5)`.
-- To specify which GPU to use for CUDA: `export CUDA_VISIBLE_DEVICES=[gpuid]`.
-- To specify which GPU to use for VULKAN: `export TI_VISIBLE_DEVICE=[gpuid]`.
-- To disable a backend (`CUDA`, `METAL`, `OPENGL`) on start up, e.g. CUDA: `export TI_ENABLE_CUDA=0`.
 
 :::note
 

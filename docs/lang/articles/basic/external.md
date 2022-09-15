@@ -91,7 +91,7 @@ As mentioned before, when importing/exporing data between a `ti.field/ti.Vector.
 - For vector fields, if the vector is `n`-dimensional, then **the shape of NumPy array, PyTorch tensor or Paddle Tensor should be** `(*field_shape, n)`:
 
     ```python
-    field = ti.Vector.field(3, ti.i32, shape=(256, 512))
+    field = ti.Vector.field(3, int, shape=(256, 512))
     field.shape  # (256, 512)
     field.n      # 3
 
@@ -99,6 +99,22 @@ As mentioned before, when importing/exporing data between a `ti.field/ti.Vector.
     array.shape  # (256, 512, 3)
 
     field.from_numpy(array)  # the input array must be of shape (256, 512, 3)
+    ```
+
+    An illustration is shown below:
+
+    ```
+                                field.shape[1]=array.shape[1]
+                                            (=512)
+                                     ┌────────────────────┐
+
+                                  ┌  ┌──────┬──────┬──────┐  ┐
+                                  │  │[*, *]│[*, *]│[*, *]│  │
+                                  │  ├──────┼──────┼──────┤  │
+    field.shape[0]=array.shape[0] │  │[*, *]│[*, *]│[*, *]│  │     [*,  *]
+             (=256)               │  ├──────┼──────┼──────┤  │     └─────┘
+                                  │  │[*, *]│[*, *]│[*, *]│  │   n=array.shape[2]=3
+                                  └  └──────┴──────┴──────┘  ┘
     ```
 
 - For matrix fields, if the matrix is `n`-by-`m` (`n x m`), then **the shape of NumPy array, PyTorch tensor or Paddle Tensor should be** `(*field_shape, n, m)`:

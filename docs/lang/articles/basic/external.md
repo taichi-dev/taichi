@@ -9,11 +9,11 @@ This article will show you how to transfer data from external arrays to the Taic
 
 We will use NumPy arrays as an example to illustrate the procedure since this is the most common usage. The cases for PyTorch tentors and Paddle tensors are very similar.
 
-There are two ways to import a `numpy.ndarray` to the Taichi scope:
+There are two ways to import a NnumPy array `arr` to the Taichi scope:
 
-1. Create a field `f` and call the method `f.from_numpy(arr)` to copy the data in the array `arr` into `f`.
+1. Create a field `f` and call the method `f.from_numpy(arr)` to copy the data in `arr` into `f`.
 
-2. Pass the array as an argument to a kernel or a Taichi function using `ti.type.ndarray()` as the type hint. This argument will be passed by reference and won't invoke a copy, and modificaitions inside Taichi scope will also take affect on the original array. For example:
+2. Pass `arr` as an argument to a kernel or a Taichi function using `ti.type.ndarray()` as the type hint. This argument will be passed by reference and won't invoke a copy, and modificaitions inside Taichi scope will also take affect on the original array. For example:
 
 
 These two ways should suit in different cases. If your array will be visited frequently from elsewhere in your program (e.g. sample a texture), it's best to use 1; or if you have a kernel that serves a special purpose of processing arrays (e.g. soring or filtering), it's best to use 2.

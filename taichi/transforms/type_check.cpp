@@ -277,20 +277,30 @@ class TypeCheck : public IRVisitor {
         stmt->rhs->ret_type->is_primitive(PrimitiveTypeID::unknown))
       error();
     if (stmt->op_type == BinaryOpType::pow &&
-        is_integral(stmt->rhs->ret_type)) {
+        (is_integral(stmt->rhs->ret_type) ||
+         is_integral(stmt->rhs->ret_type))) {
       stmt->ret_type = stmt->lhs->ret_type;
       return;
     }
+
+    auto make_dt = [stmt](DataType dt) {
+      if (auto tensor_ty = stmt->lhs->ret_type->cast<TensorType>()) {
+        return TypeFactory::create_tensor_type(tensor_ty->get_shape(), dt);
+      } else {
+        return dt;
+      }
+    };
 
     // lower truediv into div
 
     if (stmt->op_type == BinaryOpType::truediv) {
       auto default_fp = config_.default_fp;
-      if (!is_real(stmt->lhs->ret_type)) {
-        cast(stmt->lhs, default_fp);
+      if (!is_real(stmt->lhs->ret_type) ||
+          !is_real_tensor(stmt->lhs->ret_type)) {
+        cast(stmt->lhs, make_dt(default_fp));
       }
       if (!is_real(stmt->rhs->ret_type)) {
-        cast(stmt->rhs, default_fp);
+        cast(stmt->rhs, make_dt(default_fp));
       }
       stmt->op_type = BinaryOpType::div;
     }
@@ -300,13 +310,13 @@ class TypeCheck : public IRVisitor {
     if (stmt->op_type == BinaryOpType::atan2) {
       if (stmt->rhs->ret_type == PrimitiveType::f64 ||
           stmt->lhs->ret_type == PrimitiveType::f64) {
-        stmt->ret_type = PrimitiveType::f64;
-        cast(stmt->rhs, PrimitiveType::f64);
-        cast(stmt->lhs, PrimitiveType::f64);
+        stmt->ret_type = make_dt(PrimitiveType::f64);
+        cast(stmt->rhs, make_dt(PrimitiveType::f64));
+        cast(stmt->lhs, make_dt(PrimitiveType::f64));
       } else {
-        stmt->ret_type = PrimitiveType::f32;
-        cast(stmt->rhs, PrimitiveType::f32);
-        cast(stmt->lhs, PrimitiveType::f32);
+        stmt->ret_type = make_dt(PrimitiveType::f32);
+        cast(stmt->rhs, make_dt(PrimitiveType::f32));
+        cast(stmt->lhs, make_dt(PrimitiveType::f32));
       }
     }
 
@@ -350,7 +360,7 @@ class TypeCheck : public IRVisitor {
       error();
     }
     if (is_comparison(stmt->op_type)) {
-      stmt->ret_type = PrimitiveType::i32;
+      stmt->ret_type = make_dt(PrimitiveType::i32);
     } else {
       stmt->ret_type = stmt->lhs->ret_type;
     }

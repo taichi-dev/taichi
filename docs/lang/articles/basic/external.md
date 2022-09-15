@@ -120,7 +120,7 @@ import numpy as np
 ti.init()
 
 a = np.zeros((5, 5))
-    
+
 @ti.kernel
 def test(a: ti.types.ndarray()):
     for i in range(a.shape[0]):

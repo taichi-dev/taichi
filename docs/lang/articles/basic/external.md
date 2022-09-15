@@ -72,7 +72,7 @@ array.shape  # (256, 512)
 field.from_numpy(array)  # the input array must be of shape (256, 512)
 ```
 
-- For vector fields, if the vector is `n`-D, then **the shape of NumPy array, PyTorch tensor or Paddle Tensor should be** `(*field_shape, n)`:
+- For vector fields, if the vector is `n`-dimensional, then **the shape of NumPy array, PyTorch tensor or Paddle Tensor should be** `(*field_shape, n)`:
 
 ```python
 field = ti.Vector.field(3, ti.i32, shape=(256, 512))

@@ -26,7 +26,7 @@ In summary, when calling `ti.init()`, Taichi will execute the following steps to
 
 In case you want to use the CUDA backend together with GGUI on a machine with multiple GPU cards, please make sure `CUDA_VISIBLE_DEVICES` matches `TI_VISIBLE_DEVICE` if any of them exists. In general, `CUDA_VISIBLE_DEVICES` and `TI_VISIBLE_DEVICE` should point to a GPU device with the same UUID. Use `nvidia-smi -L` to query the details of your GPU devices.
 
-## Compilation
+## Customize compilation options
 
 - Disable advanced optimization to save compile time & possible
   errors: `ti.init(advanced_optimization=False)`.

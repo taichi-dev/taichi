@@ -117,7 +117,7 @@ As mentioned before, when importing/exporing data between a `ti.field/ti.Vector.
                                   └  └─────────┴─────────┴─────────┘  ┘
     ```
 
-- For matrix fields, if the matrix is `n`-by-`m` (`n x m`), then **the shape of NumPy array, PyTorch tensor or Paddle Tensor should be** `(*field_shape, n, m)`:
+- When importing data to or exporting data from an `n`-by-`m` (`n x m`) matrix field,  ensure that **the shape of the corresponding NumPy array, PyTorch tensor, or Paddle Tensor is set to** `(*field_shape, n, m)`:
 
     ```python
     field = ti.Matrix.field(3, 4, ti.i32, shape=(256, 512))

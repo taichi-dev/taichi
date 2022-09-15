@@ -119,4 +119,10 @@ Expr expr_field(Expr id_expr, DataType dt) {
       std::make_shared<FieldExpression>(dt, id_expr.cast<IdExpression>()->id));
   return ret;
 }
+
+Expr expr_matrix_field(const std::vector<Expr> &fields,
+                       const std::vector<int> &element_shape) {
+  return Expr::make<MatrixFieldExpression>(fields, element_shape);
+}
+
 TLANG_NAMESPACE_END

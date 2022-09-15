@@ -160,6 +160,13 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     emit(expr->adjoint_checkbit);
   }
 
+  void visit(MatrixFieldExpression *expr) override {
+    emit(ExprOpCode::MatrixFieldExpression);
+    emit(expr->fields);
+    emit(expr->element_shape);
+    emit(expr->dynamic_index_stride);
+  }
+
   void visit(IndexExpression *expr) override {
     emit(ExprOpCode::IndexExpression);
     emit(expr->var);

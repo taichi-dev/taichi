@@ -33,16 +33,16 @@ class KernelCodeGen {
   }
 
 #ifdef TI_WITH_LLVM
-  virtual LLVMCompiledData compile_kernel_to_module();
+  virtual LLVMCompiledKernel compile_kernel_to_module();
 
-  virtual LLVMCompiledData compile_task(
+  virtual LLVMCompiledTask compile_task(
       std::unique_ptr<llvm::Module> &&module = nullptr,
       OffloadedStmt *stmt = nullptr){TI_NOT_IMPLEMENTED}
 
-  std::optional<LLVMCompiledData> maybe_read_compilation_from_cache(
+  std::optional<LLVMCompiledKernel> maybe_read_compilation_from_cache(
       const std::string &kernel_key);
-  void cache_module(const std::string &kernel_key,
-                    const LLVMCompiledData &data);
+  void cache_kernel(const std::string &kernel_key,
+                    const LLVMCompiledKernel &data);
 #endif
 };
 
@@ -57,10 +57,10 @@ class ModuleToFunctionConverter {
 
   virtual FunctionType convert(const std::string &kernel_name,
                                const std::vector<LlvmLaunchArgInfo> &args,
-                               LLVMCompiledData data) const = 0;
+                               LLVMCompiledKernel data) const = 0;
 
   virtual FunctionType convert(const Kernel *kernel,
-                               LLVMCompiledData data) const;
+                               LLVMCompiledKernel data) const;
 
  protected:
   TaichiLLVMContext *tlctx_{nullptr};

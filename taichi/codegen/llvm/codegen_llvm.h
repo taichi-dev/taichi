@@ -115,9 +115,9 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
    *
    * After this call, `module` and `tasks` will be moved.
    *
-   * @return LLVMCompiledData
+   * @return LLVMCompiledTask
    */
-  virtual LLVMCompiledData run_compilation();
+  virtual LLVMCompiledTask run_compilation();
   // For debugging only
   virtual llvm::Value *create_print(std::string tag,
                                     DataType dt,

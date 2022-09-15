@@ -17,7 +17,7 @@ class KernelCodeGenCUDA : public KernelCodeGen {
 #ifdef TI_WITH_LLVM
   static std::unique_ptr<TaskCodeGenLLVM> make_codegen_llvm(Kernel *kernel,
                                                             IRNode *ir);
-  LLVMCompiledData compile_task(
+  LLVMCompiledTask compile_task(
       std::unique_ptr<llvm::Module> &&module = nullptr,
       OffloadedStmt *stmt = nullptr) override;
 #endif  // TI_WITH_LLVM
@@ -39,7 +39,7 @@ class CUDAModuleToFunctionConverter : public ModuleToFunctionConverter {
 
   FunctionType convert(const std::string &kernel_name,
                        const std::vector<LlvmLaunchArgInfo> &args,
-                       LLVMCompiledData data) const override;
+                       LLVMCompiledKernel data) const override;
 };
 
 TLANG_NAMESPACE_END

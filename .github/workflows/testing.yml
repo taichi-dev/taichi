@@ -405,7 +405,7 @@ jobs:
             --gpus 'all,"capabilities=graphics,utility,display,video,compute"' \
             -v /tmp/.X11-unix:/tmp/.X11-unix \
             -e PY -e GPU_BUILD -e PROJECT_NAME -e TAICHI_CMAKE_ARGS -e DISPLAY \
-            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.3 \
+            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
             /home/dev/taichi/.github/workflows/scripts/unix_build.sh
           # A tarball is needed because sccache needs some permissions that only the file owner has.
           # 1000 is the uid and gid of user "dev" in the container.
@@ -444,7 +444,7 @@ jobs:
             -e TI_LITE_TEST \
             -e TI_TEST_OFFLINE_CACHE \
             -e DISPLAY -e PY -e GPU_TEST -e TI_WANTED_ARCHS -e TI_RUN_RELEASE_TESTS \
-             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.3 \
+             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
              /home/dev/unix_test.sh
           docker cp .github/workflows/scripts/unix_test.sh taichi_test:/home/dev/unix_test.sh
           docker cp .github/workflows/scripts/common-utils.sh taichi_test:/home/dev/common-utils.sh
@@ -671,7 +671,7 @@ jobs:
           docker run --user dev --name taichi_build_host \
             $DOCKER_RUN_ARGS \
             -v $TAICHI_WHEEL_DIR:/home/dev/taichi/dist \
-            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.3 \
+            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
             /home/dev/taichi/.github/workflows/scripts/unix-build-v2.sh
         env:
           TAICHI_CMAKE_ARGS: >-

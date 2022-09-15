@@ -729,37 +729,45 @@ def mod(x1, x2):
 
 
 @binary
-def pow(x, a):  # pylint: disable=W0622
-    """First array elements raised to powers from second array :math:`x^a`, element-wise.
+def pow(base, exponent):  # pylint: disable=W0622
+    """First array elements raised to second array elements :math:`{base}^{exponent}`, element-wise.
 
-    Negative values raised to a non-integral value will return `nan`.
-    A zero value raised to a negative value will return `inf`.
-    If debug mode or optimization passes are on, an exception will be raised
-    when an integral value is raised to a negative value; otherwise 1 will be returned.
+    The result type of two scalar operands is determined as follows:
+    - If the exponent is an integral value, then the result type takes the type of the base.
+    - Otherwise, the result type follows
+      [Implicit type casting in binary operations](https://docs.taichi-lang.org/docs/type#implicit-type-casting-in-binary-operations).
+
+    With the above rules, an integral value raised to a negative integral value cannot have a
+    feasible type. Therefore, an exception will be raised if debug mode or optimization passes
+    are on; otherwise 1 will be returned.
+
+    In the following situations, the result is undefined:
+    - A negative value raised to a non-integral value.
+    - A zero value raised to a non-positive value.
 
     Args:
-        x (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+        base (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
             The bases.
-        a (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+        exponent (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
             The exponents.
 
     Returns:
-        The bases in `x1` raised to the exponents in `x2`. This is a scalar if both \
-            `x1` and `x2` are scalars.
+        `base` raised to `exponent`. This is a scalar if both `base` and `exponent` are scalars.
 
     Example::
 
         >>> @ti.kernel
         >>> def test():
-        >>>     x = ti.Matrix([-2.0, 0.0, 2.0])
-        >>>     y = -2.2
+        >>>     x = ti.Matrix([-2.0, 2.0])
+        >>>     y = -3
         >>>     z = ti.pow(x, y)
         >>>     print(z)
         >>>
         >>> test()
-        [-nan, inf, 0.217638]
+        [-0.125000, 0.125000]
     """
-    return _binary_operation(_ti_core.expr_pow, _bt_ops_mod.pow, x, a)
+    return _binary_operation(_ti_core.expr_pow, _bt_ops_mod.pow, base,
+                             exponent)
 
 
 @binary

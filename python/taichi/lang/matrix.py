@@ -117,6 +117,10 @@ def is_vector(x):
     return isinstance(x, Vector) or getattr(x, "ndim", None) == 1
 
 
+def is_col_vector(x):
+    return is_vector(x) and getattr(x, "m", None) == 1
+
+
 class _MatrixBaseImpl:
     def __init__(self, m, n, entries):
         self.m = m
@@ -498,7 +502,7 @@ class Matrix(TaichiOperations):
 
     def _element_wise_binary(self, foo, other):
         other = self._broadcast_copy(other)
-        if is_vector(self):
+        if is_col_vector(self):
             return Vector([foo(self(i), other(i)) for i in range(self.n)],
                           ndim=self.ndim)
         return Matrix([[foo(self(i, j), other(i, j)) for j in range(self.m)]
@@ -507,7 +511,7 @@ class Matrix(TaichiOperations):
 
     def _broadcast_copy(self, other):
         if isinstance(other, (list, tuple)):
-            if is_vector(self):
+            if is_col_vector(self):
                 other = Vector(other, ndim=self.ndim)
             else:
                 other = Matrix(other, ndim=self.ndim)
@@ -558,9 +562,9 @@ class Matrix(TaichiOperations):
 
         """
         assert isinstance(other, Matrix), "rhs of `@` is not a matrix / vector"
-        if is_vector(self) and not is_vector(other):
+        if (is_col_vector(self)) and not is_vector(other):
             # left multiplication
-            assert self.n == other.m, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
+            assert self.n == other.m, f"Dimension mismatch between (left multiplication) shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
             return other.transpose() @ self
         # right multiplication
         assert self.m == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
@@ -572,7 +576,7 @@ class Matrix(TaichiOperations):
                 for k in range(1, other.n):
                     acc = acc + self(i, k) * other(k, j)
                 entries[i].append(acc)
-        if is_vector(other) and other.m == 1:
+        if is_col_vector(other):
             return Vector(entries)
         return Matrix(entries)
 
@@ -669,7 +673,7 @@ class Matrix(TaichiOperations):
         This is similar to `numpy.ndarray`'s `flatten` and `ravel` methods,
         the difference is that this function always returns a new list.
         """
-        if is_vector(self) and self.m == 1:
+        if is_col_vector(self):
             return [self(i) for i in range(self.n)]
         return [[self(i, j) for j in range(self.m)] for i in range(self.n)]
 
@@ -691,7 +695,7 @@ class Matrix(TaichiOperations):
             >>> B
             [0.0, 1.0, 2.0]
         """
-        if is_vector(self):
+        if is_col_vector(self):
             # when using _IntermediateMatrix, we can only check `self.ndim`
             return Vector(
                 [ops_mod.cast(self(i), dtype) for i in range(self.n)])
@@ -1636,8 +1640,8 @@ class MatrixField(Field):
                         (list, tuple)) and isinstance(val[0], numbers.Number):
             assert self.m == 1
             val = tuple(val)
-        elif is_vector(val) or self.ndim == 1:
-            val = tuple([(val(i), ) for i in range(self.n)])
+        elif is_vector(val):
+            val = tuple([(val(i), ) for i in range(self.n * self.m)])
         elif isinstance(val, Matrix):
             val_tuple = []
             for i in range(val.n):

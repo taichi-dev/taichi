@@ -104,9 +104,9 @@ As mentioned before, when importing/exporing data between a `ti.field/ti.Vector.
     An illustration is shown below:
 
     ```
-                                field.shape[1]=array.shape[1]
-                                            (=512)
-                                     ┌────────────────────┐
+                                     field.shape[1]=array.shape[1]
+                                                (=512)
+                                     ┌─────────────────────────────┐
 
                                   ┌  ┌─────────┬─────────┬─────────┐  ┐
                                   │  │[*, *, *]│[*, *, *]│[*, *, *]│  │

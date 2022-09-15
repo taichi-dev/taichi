@@ -45,8 +45,17 @@ vk_debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
                   VkDebugUtilsMessageTypeFlagsEXT message_type,
                   const VkDebugUtilsMessengerCallbackDataEXT *p_callback_data,
                   void *p_user_data) {
-  if (message_severity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT) {
-    TI_WARN("validation layer: {}", p_callback_data->pMessage);
+  if (message_severity > VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT) {
+    TI_WARN("validation layer: {}, {}", message_type,
+            p_callback_data->pMessage);
+  }
+  if (message_type == VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT &&
+      message_severity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT &&
+      strstr(p_callback_data->pMessage, "DEBUG-PRINTF") != NULL) {
+    // Message format is "BLABLA | MessageID=xxxxx | <DEBUG_PRINT_MSG>"
+    std::string msg(p_callback_data->pMessage);
+    auto const pos = msg.find_last_of("|");
+    std::cout << msg.substr(pos + 2) << std::endl;
   }
   return VK_FALSE;
 }
@@ -272,6 +281,19 @@ void VulkanDeviceCreator::create_instance(bool manual_create) {
   } else {
     create_info.enabledLayerCount = 0;
     create_info.pNext = nullptr;
+  }
+
+  // Response to `DebugPrintf`.
+  VkValidationFeaturesEXT vf = {};
+  if (params_.enable_validation_layer) {
+    std::array<VkValidationFeatureEnableEXT, 1> vfes = {
+        VK_VALIDATION_FEATURE_ENABLE_DEBUG_PRINTF_EXT};
+
+    vf.sType = VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT;
+    vf.pNext = create_info.pNext;
+    vf.enabledValidationFeatureCount = vfes.size();
+    vf.pEnabledValidationFeatures = vfes.data();
+    create_info.pNext = &vf;
   }
 
   std::unordered_set<std::string> extensions;

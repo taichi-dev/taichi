@@ -534,6 +534,7 @@ class MatrixFieldExpression : public Expression {
     for (auto &field : fields) {
       TI_ASSERT(field.is<FieldExpression>());
     }
+    TI_ASSERT(!fields.empty());
     auto compute_type =
         fields[0].cast<FieldExpression>()->dt->get_compute_type();
     for (auto &field : fields) {

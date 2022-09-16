@@ -8,10 +8,14 @@ TLANG_NAMESPACE_BEGIN
 
 class Scalarize : public IRVisitor {
  public:
+  DelayedIRModifier modifier_;
+
   Scalarize(IRNode *node) {
     allow_undefined_visitor = true;
     invoke_default_visitor = false;
     node->accept(this);
+
+    modifier_.modify_ir();
   }
 
   /*
@@ -58,11 +62,11 @@ class Scalarize : public IRVisitor {
         auto scalarized_stmt = std::make_unique<T>(ptr_offset_stmt.get(),
                                                    matrix_init_stmt->values[i]);
 
-        stmt->insert_before_me(std::move(const_stmt));
-        stmt->insert_before_me(std::move(ptr_offset_stmt));
-        stmt->insert_before_me(std::move(scalarized_stmt));
+        modifier_.insert_before(stmt, std::move(const_stmt));
+        modifier_.insert_before(stmt, std::move(ptr_offset_stmt));
+        modifier_.insert_before(stmt, std::move(scalarized_stmt));
       }
-      stmt->parent->erase(stmt);
+      modifier_.erase(stmt);
     }
   }
 
@@ -95,6 +99,7 @@ class Scalarize : public IRVisitor {
 
       std::vector<Stmt *> matrix_init_values;
       int num_elements = src_tensor_type->get_num_elements();
+
       for (size_t i = 0; i < num_elements; i++) {
         auto const_stmt = std::make_unique<ConstStmt>(
             TypedConstant(src_tensor_type->get_element_type(), i));
@@ -105,17 +110,20 @@ class Scalarize : public IRVisitor {
 
         matrix_init_values.push_back(scalarized_stmt.get());
 
-        stmt->insert_before_me(std::move(const_stmt));
-        stmt->insert_before_me(std::move(ptr_offset_stmt));
-        stmt->insert_before_me(std::move(scalarized_stmt));
+        modifier_.insert_before(stmt, std::move(const_stmt));
+        modifier_.insert_before(stmt, std::move(ptr_offset_stmt));
+        modifier_.insert_before(stmt, std::move(scalarized_stmt));
       }
 
       auto matrix_init_stmt =
           std::make_unique<MatrixInitStmt>(matrix_init_values);
-      stmt->replace_usages_with(matrix_init_stmt.get());
-      stmt->insert_before_me(std::move(matrix_init_stmt));
 
-      stmt->parent->erase(stmt);
+      matrix_init_stmt->ret_type = src_dtype;
+
+      stmt->replace_usages_with(matrix_init_stmt.get());
+      modifier_.insert_before(stmt, std::move(matrix_init_stmt));
+
+      modifier_.erase(stmt);
     }
   }
 

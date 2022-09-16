@@ -158,13 +158,43 @@ a = np.zeros((5, 5))
 
 @ti.kernel
 def test(a: ti.types.ndarray()):
-    for i in range(a.shape[0]):
+    for i in range(a.shape[0]):  # parallel for loop!
         for j in range(a.shape[1]):
             a[i, j] = i + j
 
 test()
 print(a)
 ```
+
+The example above may be a bit simple and did not show the full advantange of using `ti.types.ndarray()`, we now give a more illustrative example:
+
+Assume we have two 2D arrays `a`, `b` of the same shape and dtype, for each cell `(i, j)` in `a`, we want to calculate the difference between the value of this cell with the average of its four neighboring cells, and store the result in the corresponding cell in `b`. This is called the *discrete Laplace operator* and can be denoted as
+
+```
+b[i, j] = a[i, j] - (a[i-1, j] + a[i, j-1] + a[i+1, j] + a[i, j+1]) / 4
+```
+
+Such an operation is usually very slow even if you are using NumPy's vectorization tricks, for example you probably have seen something like this:
+
+```python
+b[1:-1, 1:-1] += (               a[ :-2, 1:-1] +
+                  a[1:-1, :-2]                 + a[1:-1, 2:] +
+                                 a[2:  , 1:-1])
+```
+
+But we can do this in Taichi just in one parallel `for` loop:
+
+```python
+@ti.kernel
+def test(a: ti.types.ndarray(), b: ti.types.ndarray()):  # assume a, b have the same shape
+    H, W = a.shape[0], a.shape[1]
+    for i, j in ti.ndrange(H, W):  # one parallel for loop!
+        if 0 < i < H - 1 and 0 < j < W - 1:
+            b[i, j] = a[i, j] - (a[i-1, j] + a[i, j-1] + a[i+1, j] + a[i, j+1]) / 4
+```
+
+
+
 
 Note that the elements in an external array must be indexed using a single square bracket. This contrasts with a Taichi vector or matrix field where field members and elements are indexed separately:
 

@@ -17,7 +17,7 @@ There are two ways to import a NumPy array `arr` to the Taichi scope:
 
 We now explain them in more details.
 
-## Import and export data between NumPy arrays and Taichi fields
+## Data transfer between NumPy arrays and Taichi fields
 
 To import data from a NumPy array to a Taichi field, first make sure that the field and the array have the same shape:
 

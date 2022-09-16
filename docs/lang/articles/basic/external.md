@@ -182,7 +182,7 @@ b[1:-1, 1:-1] += (               a[ :-2, 1:-1] +
                                  a[2:  , 1:-1])
 ```
 
-But we can do this in Taichi just in one parallel `for` loop:
+But Taichi allows us to meet the same purpose in one parallel `for` loop only:
 
 ```python
 @ti.kernel

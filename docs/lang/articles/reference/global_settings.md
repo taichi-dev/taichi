@@ -56,10 +56,12 @@ Below are some most frequently used configurations you can set with the `ti.init
         Set the number of threads in a block on GPU.
 
     default_fp: [ti.f32, ti.f64]
-        Set the default precision for floating-point numbers in the Taichi scope.
+        Set the default precision for floating-point numbers in the Taichi scope, e.g.
+        `ti.init(default_fp=ti.f32)`.
 
-    default_io: [ti.i32, ti.i64]
-        Set the default precision for integers in the Taichi scope.
+    default_ip: [ti.i32, ti.i64]
+        Set the default precision for integers in the Taichi scope, e.g.
+        `ti.init(default_ip=ti.i64)`.
 
     dynamic_index: bool
         Enable/disable vector/matrix indexing using variables.

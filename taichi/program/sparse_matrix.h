@@ -221,6 +221,13 @@ class CuSparseMatrix : public SparseMatrix {
                                   const CuSparseMatrix &rhs) {
     return lhs.addition(rhs, 1.0, -1.0);
   };
+  friend CuSparseMatrix operator*(const CuSparseMatrix &sm, float scale) {
+    return sm.addition(sm, scale, 0.0);
+  }
+  friend CuSparseMatrix operator*(float scale, const CuSparseMatrix &sm) {
+    return sm.addition(sm, scale, 0.0);
+  }
+
 
   const CuSparseMatrix addition(const CuSparseMatrix &other,
                                 const float alpha,

@@ -58,12 +58,39 @@ ti.root.dense(ti.ij, (3, 4)).place(x)
 x = ti.field(ti.f32, shape=(3, 4))
 ```
 
-You can also nest two 1D `dense` statements to describe the same 2D array.
+You can also nest two 1D `dense` statements to describe a 2D array of the same shape.
 
 ```python {1-2}
 x = ti.field(ti.f32)
 ti.root.dense(ti.i, 3).dense(ti.j, 4).place(x)
+# has the same shape with
+x = ti.field(ti.f32, shape=(3,4))
 ```
+
+:::note
+
+The above 2D array built with nested `dense` statements is **NOT** equivalent to the 2D array built with `ti.field`. 
+Although those statements both result in a 2D array of the same shape, they have
+different layers of `SNodeTree`. Namely,
+```ptyhon
+x = ti.field(ti.f32)
+ti.root.dense(ti.i, 3).dense(ti.j, 4).place(x) 
+```
+has two layers of `SNodeTree` below the root, while
+```
+x = ti.field(ti.f32)
+ti.root.dense(ti.ij, (3, 4)).place(x)
+# or equivalently
+x = ti.field(ti.f32, shape=(3,4))
+```
+only has one layer of `SNodeTree` below the root. See the sketch below:
+
+<img width="683" alt="Screen Shot 2022-09-16 at 10 38 39" src="https://user-images.githubusercontent.com/2747993/190545525-305563dc-d09e-4af2-b99b-166d5c4398d0.png">
+
+The difference here is subtle for users since the two arrays are both row-major, but minor performance difference might apply
+because the overhead of calculating `SNodeTree` index is different for the two.
+
+:::
 
 In a nutshell, the `ti.root.X` statement progressively binds a shape to the corresponding axis.
 By nesting multiple statements, we can construct a field with higher dimensions.

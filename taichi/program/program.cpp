@@ -55,7 +55,8 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   // For performance considerations and correctness of QuantFloatType
   // operations, we force floating-point operations to flush to zero on all
   // backends (including CPUs).
-#if defined(TI_ARCH_x64) && !(defined(__arm64__) || defined(__aarch64__))
+#if !(defined(__arm64__) || defined(__aarch64__))
+#if defined(TI_ARCH_x64)
   _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
 #else
   // Enforce flush to zero on arm64 CPUs
@@ -69,6 +70,7 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
                        : "ri"(fpcr | (1 << 24)));  // Bit 24 is FZ
   __asm__ __volatile__("");
 #endif
+#endif // !(defined(__arm64__) || defined(__aarch64__))
   config = default_compile_config;
   config.arch = desired_arch;
   // TODO: allow users to run in debug mode without out-of-bound checks

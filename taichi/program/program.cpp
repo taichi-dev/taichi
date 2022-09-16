@@ -40,7 +40,7 @@
 #include "taichi/rhi/dx/dx_api.h"
 #endif
 
-#if defined(TI_ARCH_x64)
+#if defined(TI_ARCH_x64) && !(defined(__arm64__) || defined(__aarch64__))
 // For _MM_SET_FLUSH_ZERO_MODE
 #include <xmmintrin.h>
 #endif
@@ -55,7 +55,7 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   // For performance considerations and correctness of QuantFloatType
   // operations, we force floating-point operations to flush to zero on all
   // backends (including CPUs).
-#if defined(TI_ARCH_x64)
+#if defined(TI_ARCH_x64) && !(defined(__arm64__) || defined(__aarch64__))
   _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
 #else
   // Enforce flush to zero on arm64 CPUs

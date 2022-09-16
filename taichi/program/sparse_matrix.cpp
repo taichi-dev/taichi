@@ -260,10 +260,7 @@ const CuSparseMatrix CuSparseMatrix::addition(const CuSparseMatrix &other,
   cusparseIndexType_t csrRowOffsetsType_A, csrColIndType_A;
   cusparseIndexBase_t idxBase_A;
   cudaDataType valueType_A;
-  // if(matrix_ == NULL)
-    // printf("matrix_ is NULL\n");
   TI_ASSERT(matrix_ != NULL);
-
 
   CUSPARSEDriver::get_instance().cpCsrGet(
       matrix_, &nrows_A, &ncols_A, &nnz_A, &drow_offsets_A, &dcol_indices_A,
@@ -322,12 +319,6 @@ const CuSparseMatrix CuSparseMatrix::addition(const CuSparseMatrix &other,
   if (BufferSizeInBytes > 0)
     CUDADriver::get_instance().malloc((void**)(&buffer), BufferSizeInBytes);
     
-  // printf("BufferSizeInBytes: %zu\n", BufferSizeInBytes);
-
-  // TI_INFO("drow_offsets_C: {}", drow_offsets_C);
-  // TI_INFO("drow_offsets_C: {}", drow_offsets_C);
-  // TI_INFO("nnzTotalDevHostPtr: {}", nnzTotalDevHostPtr);
-  // TI_INFO("buffer: {}", buffer);
   // Determine drow_offsets_C and the total number of nonzero elements.
   CUSPARSEDriver::get_instance().cpXcsrgeam2Nnz(
       cusparse_handle, nrows_A, ncols_A, 

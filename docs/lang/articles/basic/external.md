@@ -168,7 +168,7 @@ print(a)
 
 This is an entry-level example to show you how to call `ti.types.ndarray()`. We now illustrate a more advanced usage of this method.
 
-Assume that `a` and `b` are both 2D arrays of the same shape and dtype. For each cell `(i, j)` in `a`, we want to calculate the difference between its value and the average of its four neighboring cells while storing the result in the corresponding cell in `b`. In this case, cells on the boundary, i.e., cells with fewer than four neighbors, are ruled out from consideration. This operation is usually denoted as the *discrete Laplace operator*:
+Assume that `a` and `b` are both 2D arrays of the same shape and dtype. For each cell `(i, j)` in `a`, we want to calculate the difference between its value and the average of its four neighboring cells while storing the result in the corresponding cell in `b`. In this case, cells on the boundary, i.e., cells with fewer than four neighbors, are ruled out for simplicity. This operation is usually denoted as the *discrete Laplace operator*:
 
 ```
 b[i, j] = a[i, j] - (a[i-1, j] + a[i, j-1] + a[i+1, j] + a[i, j+1]) / 4

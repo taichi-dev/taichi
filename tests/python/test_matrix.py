@@ -808,6 +808,17 @@ def test_local_matrix_index_check():
         bar()
 
 
+@test_utils.test()
+def test_vector_vector_t():
+    @ti.kernel
+    def foo() -> ti.types.matrix(2, 2, ti.f32):
+        a = ti.Vector([1.0, 2.0])
+        b = ti.Vector([1.0, 2.0])
+        return a @ b.transpose()
+
+    assert foo() == [[1.0, 2.0], [2.0, 4.0]]
+
+
 @test_utils.test(arch=[ti.cuda, ti.cpu],
                  real_matrix=True,
                  real_matrix_scalarize=True)

@@ -782,9 +782,13 @@ VulkanCommandList::VulkanCommandList(VulkanDevice *ti_device,
   info.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 
   vkBeginCommandBuffer(buffer->buffer, &info);
+
+// Workaround for MacOS: https://github.com/taichi-dev/taichi/issues/5888
+#if !defined(__APPLE__)
   vkCmdResetQueryPool(buffer->buffer, query_pool_->query_pool, 0, 2);
   vkCmdWriteTimestamp(buffer->buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
                       query_pool_->query_pool, 0);
+#endif
 }
 
 VulkanCommandList::~VulkanCommandList() {
@@ -1304,8 +1308,11 @@ vkapi::IVkRenderPass VulkanCommandList::current_renderpass() {
 
 vkapi::IVkCommandBuffer VulkanCommandList::finalize() {
   if (!finalized_) {
+// Workaround for MacOS: https://github.com/taichi-dev/taichi/issues/5888
+#if !defined(__APPLE__)
     vkCmdWriteTimestamp(buffer_->buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
                         query_pool_->query_pool, 1);
+#endif
     vkEndCommandBuffer(buffer_->buffer);
     finalized_ = true;
   }
@@ -1719,11 +1726,17 @@ void VulkanStream::command_sync() {
       continue;
     }
 
+    double duration_us = 0.0;
+
+// Workaround for MacOS: https://github.com/taichi-dev/taichi/issues/5888
+#if !defined(__APPLE__)
     uint64_t t[2];
     vkGetQueryPoolResults(device_.vk_device(), cmdbuf.query_pool->query_pool, 0,
                           2, sizeof(uint64_t) * 2, &t, sizeof(uint64_t),
                           VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
-    double duration_us = (t[1] - t[0]) * props.limits.timestampPeriod / 1000.0;
+    duration_us = (t[1] - t[0]) * props.limits.timestampPeriod / 1000.0;
+#endif
+
     device_time_elapsed_us_ += duration_us;
   }
 

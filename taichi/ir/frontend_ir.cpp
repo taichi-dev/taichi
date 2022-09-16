@@ -139,22 +139,42 @@ void RandExpression::flatten(FlattenContext *ctx) {
 
 void UnaryOpExpression::type_check(CompileConfig *config) {
   TI_ASSERT_TYPE_CHECKED(operand);
-  if (!operand->ret_type->is<PrimitiveType>())
-    throw TaichiTypeError(
-        fmt::format("unsupported operand type(s) for '{}': '{}'",
-                    unary_op_type_name(type), operand->ret_type->to_string()));
+
+  TI_ASSERT(config != nullptr);
+
+  auto operand_primitive_type = operand->ret_type.get_element_type();
+  auto ret_primitive_type = ret_type;
+
+  if (config->real_matrix) {
+    TI_ASSERT(operand_primitive_type->is<PrimitiveType>());
+
+  } else if (!operand->ret_type->is<PrimitiveType>()) {
+    throw TaichiTypeError(fmt::format(
+        "unsupported operand type(s) for '{}': '{}'", unary_op_type_name(type),
+        operand_primitive_type->to_string()));
+  }
+
   if ((type == UnaryOpType::round || type == UnaryOpType::floor ||
        type == UnaryOpType::ceil || is_trigonometric(type)) &&
-      !is_real(operand->ret_type))
-    throw TaichiTypeError(
-        fmt::format("'{}' takes real inputs only, however '{}' is provided",
-                    unary_op_type_name(type), operand->ret_type->to_string()));
+      !is_real(operand_primitive_type))
+    throw TaichiTypeError(fmt::format(
+        "'{}' takes real inputs only, however '{}' is provided",
+        unary_op_type_name(type), operand_primitive_type->to_string()));
+
   if ((type == UnaryOpType::sqrt || type == UnaryOpType::exp ||
        type == UnaryOpType::log) &&
-      !is_real(operand->ret_type)) {
-    ret_type = config->default_fp;
+      !is_real(operand_primitive_type)) {
+    ret_primitive_type = config->default_fp;
   } else {
-    ret_type = is_cast() ? cast_type : operand->ret_type;
+    ret_primitive_type = is_cast() ? cast_type : operand_primitive_type;
+  }
+
+  if (operand->ret_type->is<TensorType>()) {
+    ret_type = taichi::lang::TypeFactory::get_instance().get_tensor_type(
+        operand->ret_type.get_shape(), ret_primitive_type);
+  } else {
+    TI_ASSERT(operand->ret_type->is<PrimitiveType>());
+    ret_type = ret_primitive_type;
   }
 }
 

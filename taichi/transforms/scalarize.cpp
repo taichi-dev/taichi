@@ -119,6 +119,56 @@ class Scalarize : public IRVisitor {
     }
   }
 
+  /*
+
+    Before:
+      TensorType<4 x i32> val = UnaryStmt(TensorType<4 x i32> operand)
+
+      * Note that "operand" should have already been scalarized to
+    MatrixInitStmt
+
+    After:
+      i32 calc_val0 = UnaryStmt(operand->cast<MatrixInitStmt>()->val[0])
+      i32 calc_val1 = UnaryStmt(operand->cast<MatrixInitStmt>()->val[1])
+      i32 calc_val2 = UnaryStmt(operand->cast<MatrixInitStmt>()->val[2])
+      i32 calc_val3 = UnaryStmt(operand->cast<MatrixInitStmt>()->val[3])
+
+      tmp = MatrixInitStmt(calc_val0, calc_val1,
+                           calc_val2, calc_val3)
+
+      stmt->replace_all_usages_with(tmp)
+  */
+  void visit(UnaryOpStmt *stmt) override {
+    auto operand_dtype = stmt->operand->ret_type;
+    if (operand_dtype->is<TensorType>()) {
+      // Needs scalarize
+      auto operand_tensor_type = operand_dtype->as<TensorType>();
+
+      TI_ASSERT(stmt->operand->is<MatrixInitStmt>());
+      auto operand_matrix_init_stmt = stmt->operand->cast<MatrixInitStmt>();
+
+      TI_ASSERT(operand_matrix_init_stmt->values.size() ==
+                operand_tensor_type->get_num_elements());
+
+      std::vector<Stmt *> matrix_init_values;
+      int num_elements = operand_tensor_type->get_num_elements();
+      for (size_t i = 0; i < num_elements; i++) {
+        auto unary_stmt = std::make_unique<UnaryOpStmt>(
+            stmt->op_type, operand_matrix_init_stmt->values[i]);
+        matrix_init_values.push_back(unary_stmt.get());
+
+        stmt->insert_before_me(std::move(unary_stmt));
+      }
+
+      auto matrix_init_stmt =
+          std::make_unique<MatrixInitStmt>(matrix_init_values);
+      stmt->replace_usages_with(matrix_init_stmt.get());
+      stmt->insert_before_me(std::move(matrix_init_stmt));
+
+      stmt->parent->erase(stmt);
+    }
+  }
+
   void visit(Block *stmt_list) override {
     for (auto &stmt : stmt_list->statements) {
       stmt->accept(this);
@@ -174,6 +224,9 @@ namespace irpass {
 
 void scalarize(IRNode *root) {
   TI_AUTO_PROF;
+
+  std::cout << 1111111 << std::endl;
+
   Scalarize scalarize_pass(root);
 
   /* TODO(zhanlue): Remove redundant MatrixInitStmt

@@ -331,6 +331,15 @@ class TI_DLL_EXPORT Program {
 
   void prepare_runtime_context(RuntimeContext *ctx);
 
+  /** Enqueue a custom compute op to the current program execution flow.
+   *
+   *  @params op The lambda that is invoked to construct the custom compute Op
+   *  @params image_refs The image resource references used in this compute Op
+   */
+  void enqueue_compute_op_lambda(
+      std::function<void(Device *device, CommandList *cmdlist)> op,
+      const std::vector<ComputeOpImageRef> &image_refs);
+
   /**
    * TODO(zhanlue): Remove this interface
    *

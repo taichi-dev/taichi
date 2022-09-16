@@ -19,7 +19,7 @@ Below are some most frequently used configurations:
 ```
 arch
     Specify which architecture (Arch) to use
-    
+
 device_memory_GB
     Specify the pre-allocated memory size for CUDA
 ```

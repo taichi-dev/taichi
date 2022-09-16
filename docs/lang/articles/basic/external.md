@@ -168,7 +168,7 @@ print(a)
 
 This is an entry-level example to show you how to call `ti.types.ndarray()`. We now illustrate a more advanced usage of this method.
 
-Assume that `a` and `b` are both 2D arrays of the same shape and dtype. For each cell `(i, j)` in `a`, we want to calculate the difference between its value and the average of its four neighboring cells while storing the result in the corresponding cell in `b`. This operation can be denoted as the *discrete Laplace operator*:
+Assume that `a` and `b` are both 2D arrays of the same shape and dtype. For each cell `(i, j)` in `a`, we want to calculate the difference between its value and the average of its four neighboring cells while storing the result in the corresponding cell in `b` (we omit the cells that are located on the boundary, i.e. those cells with fewer than four neighbors). This operation is usually denoted as the *discrete Laplace operator*:
 
 ```
 b[i, j] = a[i, j] - (a[i-1, j] + a[i, j-1] + a[i+1, j] + a[i, j+1]) / 4
@@ -193,8 +193,7 @@ def test(a: ti.types.ndarray(), b: ti.types.ndarray()):  # assume a, b have the 
             b[i, j] = a[i, j] - (a[i-1, j] + a[i, j-1] + a[i+1, j] + a[i, j+1]) / 4
 ```
 
-
-
+This code is more readable than the NumPy version above, and runs way faster even on the CPU backend.
 
 Note that the elements in an external array must be indexed using a single square bracket. This contrasts with a Taichi vector or matrix field where field members and elements are indexed separately:
 

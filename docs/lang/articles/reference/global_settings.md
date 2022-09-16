@@ -57,7 +57,7 @@ Below are some most frequently used configurations you can set with the `ti.init
 
     default_io: [ti.i32, ti.i64]
         Set the default precision for integers in the Taichi scope.
-        
+
     kernel_profiler: bool
         Turn on/off kernel perfomance profiling.
 

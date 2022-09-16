@@ -22,10 +22,12 @@ Below are some most frequently used configurations you can set with the `ti.init
 [Backend Options]
 
     arch: [ti.cpu, ti.gpu, ti.cuda, ti.vulkan, ...]
-        Specify which architecture (Arch) to use.
+        Specify which architecture to use.
+        The corresponding environment variable is `TI_ARCH`.
 
     device_memory_GB: float
         Specify the pre-allocated memory size for CUDA.
+        For example `ti.init(device_memory_GB=0.5)` will allocate 0.5GB memory size.
 
 [Compilation Options]
 
@@ -44,7 +46,8 @@ Below are some most frequently used configurations you can set with the `ti.init
         Set the number of threads used by the CPU thread pool.
 
     debug: bool
-        Run program in debug mode.
+        Run program in debug mode. Equivalently you can run your code via `ti debug your_script.py`.
+        The corresponding environment variable is `TI_DEBUG`.
 
     default_cpu_block_dim: int
         Set the number of threads in a block on CPU.
@@ -74,20 +77,21 @@ Below are some most frequently used configurations you can set with the `ti.init
         Enable/disable the packed memory layout. See https://docs.taichi-lang.org/docs/layout.
 
     random_seed: int
-        Set a custom seed for the random number generator.
+        Set a custom seed for the random number generator. e.g. `ti.init(random_seed=1)`.
 
 [Logging Options]
 
     log_level: [ti.INFO, ti.TRACE, ti.WARN, ti.ERROR, ti.CRITICAL, ti.DEBUG]
-        Set the logging level.
+        Set the logging level. e.g. `ti.init(log_level=ti.TRACE)`.
+        The corresponding environment variable is `TI_LOG_LEVEL`.
 
     verbose: bool
-        Eliminate verbose outputs.
+        Eliminate verbose outputs. e.g. `ti.init(verbose=False)`.
 
 [Develop Options]
 
     gdb_trigger: bool
-        To trigger GDB when Taichi crashes.
+        To trigger GDB when Taichi crashes. e.g. `ti.init(gdb_trigger=True)`.
 ```
 
 
@@ -101,25 +105,59 @@ Below are some environment variables that you can set to customize your Taichi p
     CUDA_VISIBLE_DEVICES
         Specify which GPU to use for CUDA: `export CUDA_VISIBLE_DEVICES=[gpuid]`.
 
+    TI_ARCH
+        Specify which architecture to run the program, e.g. `export TI_ARCH=cuda`.
+
     TI_ENABLE_[CUDA/OPENGL/...]
         Disable a backend on start up, e.g. CUDA: `export TI_ENABLE_CUDA=0`.
 
     TI_VISIBLE_DEVICE
         Specify which GPU to use for VULKAN: `export TI_VISIBLE_DEVICES=[gpuid]`.
+        
+        
+[Runtime Options]
+
+    TI_DEBUG
+        Turn on/off the debug mode. e.g. `export TI_DEBUG=1`.
+
+    TI_ENABLE_TORCH
+        Enable/disable importing torch on start up, e.g. `export TI_ENABLE_TORCH=0` to disable. The default is 1.
+    
+    TI_ENABLE_PADDLE
+        Enable/disable importing paddle on start u, e.g. `export TI_ENABLE_PADDLE=0` to disable. The default is 1.
+        
+
+[Develop Options]
+ 
+    TI_CACHE_RUNTIME_BITCODE
+        Enable/disable caching compiled runtime bitcode in dev mode to save start up time, e.g. `export TI_CACHE_RUNTIME_BITCODE=1` to enable.
+        
+    TI_TEST_THREADS
+        Specify how many threads to run test, e.g. `export TI_TEST_THREADS=4`.
+        Equivlently you can run `python tests/run_tests.py -t4`.
+        
+[Logging Options]
+
+    TI_LOG_LEVEL
+        Set the logging level, e.g. `export TI_LOG_LEVEL=trace`.
 ```
 
-**advanced_optimization**
 
-This argument enables/disables advanced optimization to save compile time & possible errors. e.g. set  `ti.init(advanced_optimization=False)` to disable.
+:::note
 
-**arch**
+If `ti.init` is called twice, then the configuration in first invocation
+will be completely discarded, e.g.:
 
-This argument specifies which architecture to use, for example to use CUDA as the backend, set `ti.init(arch=ti.cuda)`. The corresponding environment variable is `export TI_ARCH=cuda`.
+```python {1,3}
+ti.init(debug=True)
+print(ti.cfg.debug)  # True
+ti.init()
+print(ti.cfg.debug)  # False
+```
 
-**device_memory_GB**
+:::
 
-This argument specifies the pre-allocated memory size for CUDA, for example `ti.init(device_memory_GB=0.5)` will allocate 0.5GB memory size.
+:::note
 
-**fast_math**
-
-This argument enables/disables fast math mode in compilation to prevent possible undefined math behavior, for exmaple call `ti.init(fast_math=False)` to disable.
+In case you want to use taichi cuda backend together with GGUI on a machine with multiple GPU cards, please make sure `CUDA_VISIBLE_DEVICES` matches `TI_VISIBLE_DEVICE` if any of them exists. In general, `CUDA_VISIBLE_DEVICES` and `TI_VISIBLE_DEVICE` should point to a GPU device with the same UUID. Use `nvidia-smi -L` to query the details of your GPU devices.
+:::

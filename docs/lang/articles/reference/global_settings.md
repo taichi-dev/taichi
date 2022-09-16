@@ -23,6 +23,7 @@ Below are some most frequently used configurations you can set with the `ti.init
 
     arch: [ti.cpu, ti.gpu, ti.cuda, ti.vulkan, ...]
         Specify which architecture to use.
+        See https://docs.taichi-lang.org/docs/#supported-systems-and-backends for all supported backends.
         The corresponding environment variable is `TI_ARCH`.
 
     device_memory_GB: float

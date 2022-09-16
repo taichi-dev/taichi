@@ -108,4 +108,11 @@ Below are some environment variables that you can set to customize your Taichi p
         Specify which GPU to use for VULKAN: `export TI_VISIBLE_DEVICES=[gpuid]`.
 ```
 
-+ `arch`: This argument specifies which architecture to use, for example to use CUDA as the backend, set `ti.init(arch=ti.cuda)`. The corresponding environment variable is `export TI_ARCH=cuda`.
+**advanced_optimization**
+
+This argument enables/disables advanced optimization to save compile time & possible errors. e.g. set  `ti.init(advanced_optimization=False)` to disable.
+
+**arch**
+
+This argument specifies which architecture to use, for example to use CUDA as the backend, set `ti.init(arch=ti.cuda)`. The corresponding environment variable is `export TI_ARCH=cuda`.
+

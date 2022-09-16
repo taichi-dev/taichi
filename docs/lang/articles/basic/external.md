@@ -174,7 +174,7 @@ Assume we have two 2D arrays `a`, `b` of the same shape and dtype, for each cell
 b[i, j] = a[i, j] - (a[i-1, j] + a[i, j-1] + a[i+1, j] + a[i, j+1]) / 4
 ```
 
-Such an operation is usually very slow even if you are using NumPy's vectorization tricks, for example you probably have seen something like this:
+Such an operation is usually very slow even with NumPy's vectorization, as the following code snippet shows:
 
 ```python
 b[1:-1, 1:-1] += (               a[ :-2, 1:-1] +

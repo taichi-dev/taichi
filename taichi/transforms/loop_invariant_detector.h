@@ -20,6 +20,37 @@ class LoopInvariantDetector : public BasicStmtVisitor {
     allow_undefined_visitor = true;
   }
 
+  bool is_operand_loop_invariant(Stmt *operand, Block *current_scope) {
+    if (operand->parent == current_scope) {
+      // This statement has an operand that is in the current scope,
+      // so it can not be moved out of the scope.
+      return false;
+    }
+    if (current_scope != loop_blocks.top()) {
+      // If we enable moving code from a nested if block, we need to check
+      // visibility. Example:
+      // for i in range(10):
+      //   a = x[0]
+      //   if b:
+      //     c = a + 1
+      // Since we are moving statements outside the cloest for scope,
+      // We need to check the scope of the operand
+      Stmt *operand_parent = operand;
+      while (operand_parent->parent) {
+        operand_parent = operand_parent->parent->parent_stmt;
+        if (!operand_parent)
+          break;
+        // If the one of the current_scope of the operand is the top loop
+        // scope Then it will not be visible if we move it outside the top
+        // loop scope
+        if (operand_parent == loop_blocks.top()->parent_stmt) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
   bool is_loop_invariant(Stmt *stmt, Block *current_scope) {
     if (loop_blocks.size() <= 1 || (!config.move_loop_invariant_outside_if &&
                                     current_scope != loop_blocks.top()))
@@ -28,37 +59,7 @@ class LoopInvariantDetector : public BasicStmtVisitor {
     bool is_invariant = true;
 
     for (Stmt *operand : stmt->get_operands()) {
-      if (operand->parent == current_scope) {
-        // This statement has an operand that is in the current scope,
-        // so it can not be moved out of the scope.
-        is_invariant = false;
-        break;
-      }
-      if (current_scope != loop_blocks.top()) {
-        // If we enable moving code from a nested if block, we need to check
-        // visibility. Example:
-        // for i in range(10):
-        //   a = x[0]
-        //   if b:
-        //     c = a + 1
-        // Since we are moving statements outside the cloest for scope,
-        // We need to check the scope of the operand
-        Stmt *operand_parent = operand;
-        while (operand_parent->parent) {
-          operand_parent = operand_parent->parent->parent_stmt;
-          if (!operand_parent)
-            break;
-          // If the one of the current_scope of the operand is the top loop
-          // scope Then it will not be visible if we move it outside the top
-          // loop scope
-          if (operand_parent == loop_blocks.top()->parent_stmt) {
-            is_invariant = false;
-            break;
-          }
-        }
-        if (!is_invariant)
-          break;
-      }
+      is_invariant &= is_operand_loop_invariant(operand, current_scope);
     }
 
     return is_invariant;

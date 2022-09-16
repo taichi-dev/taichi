@@ -28,7 +28,7 @@ This will create the *exact* same type as using `ti.types.struct()`:
 ```python
 Sphere = ti.types.struct(center=vec3, radius=ti.f32)
 ```
-Using the `@ti.dataclass` decorator will convert the annotated fields in the Python class to members in the resulting struct type.  In both of the above examples you would create a field of the struct the same way.
+The `@ti.dataclass` decorator converts the annotated members in the Python class to members in the resulting struct type. In both of the above examples, you end up with the same struct field.
 
 ```python
 sphere_field = Sphere.field(shape=(n,))

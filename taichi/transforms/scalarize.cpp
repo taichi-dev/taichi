@@ -55,7 +55,7 @@ class Scalarize : public IRVisitor {
       int num_elements = val_tensor_type->get_num_elements();
       for (int i = 0; i < num_elements; i++) {
         auto const_stmt = std::make_unique<ConstStmt>(
-            TypedConstant(stmt->val->ret_type.get_element_type(), i));
+            TypedConstant(get_data_type<int32>(), i));
 
         auto ptr_offset_stmt =
             std::make_unique<PtrOffsetStmt>(stmt->dest, const_stmt.get());
@@ -102,7 +102,7 @@ class Scalarize : public IRVisitor {
 
       for (size_t i = 0; i < num_elements; i++) {
         auto const_stmt = std::make_unique<ConstStmt>(
-            TypedConstant(src_tensor_type->get_element_type(), i));
+            TypedConstant(get_data_type<int32>(), i));
 
         auto ptr_offset_stmt =
             std::make_unique<PtrOffsetStmt>(stmt->src, const_stmt.get());

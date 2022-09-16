@@ -17,30 +17,51 @@ In summary, when calling `ti.init()`, Taichi will execute the following steps to
 Below are some most frequently used configurations:
 
 ```
+[Backend Options]
+
+    arch: [ti.cpu, ti.gpu, ti.cuda, ti.vulkan, ...]
+        Specify which architecture (Arch) to use.
+        
+    device_memory_GB: float
+        Specify the pre-allocated memory size for CUDA.
+
+[Compilation Options]
+
     advanced_optimization: bool
         Enable/disable advanced optimization to save compile time & possible errors.
 
-[Backend Option]
-    arch: [ti.cpu, ti.gpu, ti.cuda, ti.vulkan, ...]
-        Specify which architecture (Arch) to use.
+    fast_math: bool
+        Enable/disable fast math to prevent possible undefined math behavior.
+ 
+    print_ir: bool
+        Turn on/off printing intermediate IR generated.
 
-debug: bool
-    Run program in debug mode.
+[Runtime Options]
 
-device_memory_GB: float
-    Specify the pre-allocated memory size for CUDA.
+    debug: bool
+        Run program in debug mode.
+        
+    default_fp: [ti.f32, ti.f64]
+        Set the default precision for floating-point numbers in the Taichi scope.
+        
+    default_io: [ti.i32, ti.i64]
+        Set the default precision for integers in the Taichi scope.
 
-fast_math: bool
-    Enable/disable fast math to prevent possible undefined math behavior.
+    random_seed: int
+        Set a custom seed for the random number generator.
 
-log_level:
-    Set the logging level.
+[Logging Options]
 
-print_ir: bool
-    Turn on/off printing intermediate IR generated.
+    log_level: [ti.INFO, ti.TRACE, ti.WARN, ti.ERROR, ti.CRITICAL, ti.DEBUG]
+        Set the logging level.
 
-random_seed: int
-    Set a custom seed for the random number generator.
+    verbose: bool
+        Eliminate verbose outputs.
+
+[Develop Options]
+    
+    gdb_trigger: bool
+        To trigger GDB when Taichi crashes.
 ```
 
 

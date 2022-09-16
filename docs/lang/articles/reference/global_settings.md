@@ -109,4 +109,3 @@ Below are some environment variables that you can set to customize your Taichi p
 ```
 
 + `arch`: This argument specifies which architecture to use, for example to use CUDA as the backend, set `ti.init(arch=ti.cuda)`. The corresponding environment variable is `export TI_ARCH=cuda`.
-

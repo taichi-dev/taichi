@@ -45,6 +45,9 @@ Below are some most frequently used configurations you can set with the `ti.init
 
     debug: bool
         Run program in debug mode.
+        
+    default_cpu_block_dim: int
+        Set the number of threads in a block on CPU.
 
     default_fp: [ti.f32, ti.f64]
         Set the default precision for floating-point numbers in the Taichi scope.
@@ -54,7 +57,10 @@ Below are some most frequently used configurations you can set with the `ti.init
 
     offline_cache: bool
         Enable/disable offline cache of the compiled kernels.
-
+        
+    offline_cache_file_path: str
+        Directory holding the offline cached files.
+        
     packed: bool
         Enable/disable the packed memory layout. See https://docs.taichi-lang.org/docs/layout.
 

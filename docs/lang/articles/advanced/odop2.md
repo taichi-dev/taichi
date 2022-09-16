@@ -23,7 +23,7 @@ class Sphere:
     center: vec3
     radius: ti.f32
 ```
-This will create the *exact* same type as doing:
+This will create the *exact* same type as using `ti.types.struct()`:
 
 ```python
 Sphere = ti.types.struct(center=vec3, radius=ti.f32)

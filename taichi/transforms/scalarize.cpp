@@ -237,7 +237,6 @@ namespace irpass {
 
 void scalarize(IRNode *root) {
   TI_AUTO_PROF;
-
   Scalarize scalarize_pass(root);
 
   /* TODO(zhanlue): Remove redundant MatrixInitStmt

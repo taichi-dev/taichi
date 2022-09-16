@@ -3,6 +3,7 @@
 #include "taichi/ir/frontend_ir.h"
 #include "taichi/program/program.h"
 #include "taichi/ir/expression_ops.h"
+#include "taichi/program/compile_config.h"
 
 namespace taichi {
 namespace lang {
@@ -52,13 +53,16 @@ TEST(FrontendTypeInference, UnaryOp) {
   auto prog = std::make_unique<Program>(Arch::x64);
   prog->config.default_fp = PrimitiveType::f64;
   auto const_i16 = value<int16>(-(1 << 10));
-  const_i16->type_check(nullptr);
+
+  CompileConfig dummy_config;
+
+  const_i16->type_check(&dummy_config);
   EXPECT_EQ(const_i16->ret_type, PrimitiveType::i16);
   auto cast_i8 = cast(const_i16, PrimitiveType::i8);
-  cast_i8->type_check(nullptr);
+  cast_i8->type_check(&dummy_config);
   EXPECT_EQ(cast_i8->ret_type, PrimitiveType::i8);
   auto bit_not_i16 = ~const_i16;
-  bit_not_i16->type_check(nullptr);
+  bit_not_i16->type_check(&dummy_config);
   EXPECT_EQ(bit_not_i16->ret_type, PrimitiveType::i16);
   auto log_f64 = expr_log(const_i16);
   log_f64->type_check(&prog->config);
@@ -66,17 +70,19 @@ TEST(FrontendTypeInference, UnaryOp) {
 }
 
 TEST(FrontendTypeInference, TernaryOp) {
+  CompileConfig dummy_config;
+
   auto const_i32 = value<int32>(-(1 << 10));
-  const_i32->type_check(nullptr);
+  const_i32->type_check(&dummy_config);
   EXPECT_EQ(const_i32->ret_type, PrimitiveType::i32);
   auto cast_i8 = cast(const_i32, PrimitiveType::i8);
-  cast_i8->type_check(nullptr);
+  cast_i8->type_check(&dummy_config);
   EXPECT_EQ(cast_i8->ret_type, PrimitiveType::i8);
   auto const_f32 = value<float32>(5.0);
-  const_f32->type_check(nullptr);
+  const_f32->type_check(&dummy_config);
   EXPECT_EQ(const_f32->ret_type, PrimitiveType::f32);
   auto ternary_f32 = expr_select(const_i32, cast_i8, const_f32);
-  ternary_f32->type_check(nullptr);
+  ternary_f32->type_check(&dummy_config);
   EXPECT_EQ(ternary_f32->ret_type, PrimitiveType::f32);
 }
 

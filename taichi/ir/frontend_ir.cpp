@@ -141,6 +141,11 @@ void UnaryOpExpression::type_check(CompileConfig *config) {
   TI_ASSERT_TYPE_CHECKED(operand);
 
   TI_ASSERT(config != nullptr);
+  /*
+    Dtype inference for both TensorType and PrimitiveType follow are essentially
+    the same. Therefore we extract the primitive type to perform the type
+    inference, and then reconstruct the TensorType once neccessary.
+  */
 
   auto operand_primitive_type = operand->ret_type.get_element_type();
   auto ret_primitive_type = ret_type;

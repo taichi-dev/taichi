@@ -69,7 +69,7 @@ get_area() # 201.062...
 ```
 
 ### Notes
-- Inheritance of Taichi dataclasses is not implemented.
+- Inheritance of Taichi dataclasses is not supported.
 - While functions attached to a struct with the `@ti.dataclass` decorator is convenient and encouraged, it is actually possible to associate a function to structs with the older method of defining structs.  As mentioned above, the two methods for defining a struct type are identical in their output.  To do this, use the `__struct_methods` argument with the `ti.types.struct` call:
 
 ```python

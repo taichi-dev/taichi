@@ -147,7 +147,8 @@ Below are some environment variables that you can set to customize your Taichi p
     TI_TEST_THREADS
         Specify how many threads to run test, e.g. `export TI_TEST_THREADS=4`.
         Equivlently you can run `python tests/run_tests.py -t4`.
-        
+
+
 [Logging Options]
 
     TI_LOG_LEVEL

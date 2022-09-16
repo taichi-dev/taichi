@@ -855,3 +855,25 @@ def test_load_store_scalarize():
 
     assert (x[3] == [[1, 2], [3, 4]])
     assert (x[4] == [[2, 3], [4, 5]])
+
+
+@test_utils.test(arch=[ti.cuda, ti.cpu],
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_unary_op_scalarize():
+    @ti.kernel
+    def func(a: ti.types.ndarray()):
+        a[0] = [[0, 1], [2, 3]]
+        a[1] = [[3, 4], [5, 6]]
+        a[2] = -a[0]
+        a[3] = ti.exp(a[1])
+        a[4] = ti.sqrt(a[3])
+
+    x = ti.Matrix.ndarray(2, 2, ti.f32, shape=5)
+    func(x)
+
+    assert (x[0] == [[0., 1.], [2., 3.]])
+    assert (x[1] == [[3., 4.], [5., 6.]])
+    assert (x[2] == [[-0., -1.], [-2., -3.]])
+    assert (x[3] == [[20.08553696, 54.59814835], [148.41316223, 403.42880249]])
+    assert (x[4] == [[4.48168898, 7.38905621], [12.18249416, 20.08553696]])

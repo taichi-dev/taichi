@@ -45,9 +45,12 @@ class Scalarize : public IRVisitor {
       // Needs scalarize
       auto dest_tensor_type = dest_dtype->template as<TensorType>();
       auto val_tensor_type = val_dtype->template as<TensorType>();
+
       TI_ASSERT(dest_tensor_type->get_shape() == val_tensor_type->get_shape());
-      TI_ASSERT(dest_tensor_type->get_element_type() ==
-                val_tensor_type->get_element_type());
+      // For sqrt/exp/log with int-type operand, we automatically set the
+      // ret_type to float32. In that case the dtype of dest and val may be
+      // different, and we rely on the following type_promotion() and
+      // load_store_forwarding() to handle this situation.
 
       TI_ASSERT(stmt->val->template is<MatrixInitStmt>());
       auto matrix_init_stmt = stmt->val->template as<MatrixInitStmt>();
@@ -55,7 +58,7 @@ class Scalarize : public IRVisitor {
       int num_elements = val_tensor_type->get_num_elements();
       for (int i = 0; i < num_elements; i++) {
         auto const_stmt = std::make_unique<ConstStmt>(
-            TypedConstant(stmt->val->ret_type.get_element_type(), i));
+            TypedConstant(get_data_type<int32>(), i));
 
         auto ptr_offset_stmt =
             std::make_unique<PtrOffsetStmt>(stmt->dest, const_stmt.get());
@@ -102,7 +105,7 @@ class Scalarize : public IRVisitor {
 
       for (size_t i = 0; i < num_elements; i++) {
         auto const_stmt = std::make_unique<ConstStmt>(
-            TypedConstant(src_tensor_type->get_element_type(), i));
+            TypedConstant(get_data_type<int32>(), i));
 
         auto ptr_offset_stmt =
             std::make_unique<PtrOffsetStmt>(stmt->src, const_stmt.get());
@@ -165,15 +168,17 @@ class Scalarize : public IRVisitor {
             stmt->op_type, operand_matrix_init_stmt->values[i]);
         matrix_init_values.push_back(unary_stmt.get());
 
-        stmt->insert_before_me(std::move(unary_stmt));
+        modifier_.insert_before(stmt, std::move(unary_stmt));
       }
 
       auto matrix_init_stmt =
           std::make_unique<MatrixInitStmt>(matrix_init_values);
-      stmt->replace_usages_with(matrix_init_stmt.get());
-      stmt->insert_before_me(std::move(matrix_init_stmt));
+      matrix_init_stmt->ret_type = operand_dtype;
 
-      stmt->parent->erase(stmt);
+      stmt->replace_usages_with(matrix_init_stmt.get());
+      modifier_.insert_before(stmt, std::move(matrix_init_stmt));
+
+      modifier_.erase(stmt);
     }
   }
 
@@ -232,8 +237,6 @@ namespace irpass {
 
 void scalarize(IRNode *root) {
   TI_AUTO_PROF;
-
-  std::cout << 1111111 << std::endl;
 
   Scalarize scalarize_pass(root);
 

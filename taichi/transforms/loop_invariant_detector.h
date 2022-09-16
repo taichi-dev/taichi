@@ -20,7 +20,7 @@ class LoopInvariantDetector : public BasicStmtVisitor {
     allow_undefined_visitor = true;
   }
 
-  bool is_operand_loop_invariant(Stmt *operand, Block *current_scope) {
+  bool is_operand_loop_invariant_impl(Stmt *operand, Block *current_scope) {
     if (operand->parent == current_scope) {
       // This statement has an operand that is in the current scope,
       // so it can not be moved out of the scope.
@@ -51,6 +51,13 @@ class LoopInvariantDetector : public BasicStmtVisitor {
     return true;
   }
 
+  bool is_operand_loop_invariant(Stmt *operand, Block *current_scope) {
+    if (loop_blocks.size() <= 1 || (!config.move_loop_invariant_outside_if &&
+                                    current_scope != loop_blocks.top()))
+      return false;
+    return is_operand_loop_invariant_impl(operand, current_scope);
+  }
+
   bool is_loop_invariant(Stmt *stmt, Block *current_scope) {
     if (loop_blocks.size() <= 1 || (!config.move_loop_invariant_outside_if &&
                                     current_scope != loop_blocks.top()))
@@ -59,7 +66,7 @@ class LoopInvariantDetector : public BasicStmtVisitor {
     bool is_invariant = true;
 
     for (Stmt *operand : stmt->get_operands()) {
-      is_invariant &= is_operand_loop_invariant(operand, current_scope);
+      is_invariant &= is_operand_loop_invariant_impl(operand, current_scope);
     }
 
     return is_invariant;

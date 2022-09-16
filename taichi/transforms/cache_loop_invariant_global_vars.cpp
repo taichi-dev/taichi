@@ -72,7 +72,7 @@ class CacheLoopInvariantGlobalVars : public LoopInvariantDetector {
   }
 
   void visit(GlobalLoadStmt *stmt) override {
-    if (is_operand_loop_invariant(stmt->src, stmt->parent)) {
+    if (is_operand_loop_invariant_impl(stmt->src, stmt->parent)) {
       auto alloca_stmt = cache_global_to_local(
           stmt->src, CacheStatus::Read);
       auto local_load = std::make_unique<LocalLoadStmt>(alloca_stmt);
@@ -83,7 +83,7 @@ class CacheLoopInvariantGlobalVars : public LoopInvariantDetector {
   }
 
   void visit(GlobalStoreStmt *stmt) override {
-    if (is_operand_loop_invariant(stmt->dest, stmt->parent)) {
+    if (is_operand_loop_invariant_impl(stmt->dest, stmt->parent)) {
       auto alloca_stmt = cache_global_to_local(
           stmt->dest, CacheStatus::Write);
       auto local_store =

@@ -23,14 +23,23 @@ advanced_optimization: bool
 arch: ti.cpu/ti.gpu/ti.cuda/...
     Specify which architecture (Arch) to use.
 
+debug: bool
+    Run program in debug mode.
+
 device_memory_GB: float
     Specify the pre-allocated memory size for CUDA.
 
 fast_math: bool
     Enable/disable fast math to prevent possible undefined math behavior.
 
+log_level:
+    Set the logging level.
+
 print_ir: bool
     Turn on/off printing intermediate IR generated.
+    
+random_seed: int
+    Set a custom seed for the random number generator.
 ```
 
 

@@ -16,7 +16,7 @@ In summary, when calling `ti.init()`, Taichi will execute the following steps to
 
 Below are some most frequently used configurations you can set with the `ti.init()` call:
 
-**Arguments for `ti.init()`**
+## Customize via `ti.init()`
 
 ```
 [Backend Options]
@@ -59,7 +59,7 @@ Below are some most frequently used configurations you can set with the `ti.init
         Set the default precision for integers in the Taichi scope.
 
     dynamic_index: bool
-        Enable/disable vector/matrix indexing with integer variables.
+        Enable/disable vector/matrix indexing using variables.
 
     kernel_profiler: bool
         Turn on/off kernel performance profiling.
@@ -91,15 +91,21 @@ Below are some most frequently used configurations you can set with the `ti.init
 ```
 
 
-## Backends
+## Customize via environment variables
 
+```
+[Backend Options]
+    
+    CUDA_VISIBLE_DEVICES
+        Specify which GPU to use for CUDA: `export CUDA_VISIBLE_DEVICES=[gpuid]`.
 
-- To specify which GPU to use for CUDA:
-  `export CUDA_VISIBLE_DEVICES=[gpuid]`.
-- To specify which GPU to use for VULKAN:
-- `export TI_VISIBLE_DEVICE=[gpuid]`
-- To disable a backend (`CUDA`, `METAL`, `OPENGL`) on start up, e.g. CUDA:
-  `export TI_ENABLE_CUDA=0`.
+    TI_ENABLE_[CUDA/OPENGL/...]
+        Disable a backend on start up, e.g. CUDA: `export TI_ENABLE_CUDA=0`.
+            
+    TI_VISIBLE_DEVICE
+        Specify which GPU to use for VULKAN: `export TI_VISIBLE_DEVICES=[gpuid]`.
+```
+
 
 :::note
 

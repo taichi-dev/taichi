@@ -166,7 +166,7 @@ test()
 print(a)
 ```
 
-The example above may be a bit simple and did not show the full advantange of using `ti.types.ndarray()`, we now give a more illustrative example:
+This is an entry-level example to show you how to call `ti.types.ndarray()`. We now illustrate a more advanced usage of this method. 
 
 Assume we have two 2D arrays `a`, `b` of the same shape and dtype, for each cell `(i, j)` in `a`, we want to calculate the difference between the value of this cell with the average of its four neighboring cells, and store the result in the corresponding cell in `b`. This is called the *discrete Laplace operator* and can be denoted as
 

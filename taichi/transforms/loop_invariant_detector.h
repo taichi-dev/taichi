@@ -64,12 +64,16 @@ class LoopInvariantDetector : public BasicStmtVisitor {
     return is_invariant;
   }
 
+  Stmt *current_loop_stmt() {
+    return loop_blocks.top()->parent_stmt;
+  }
+
   void visit(Block *stmt_list) override {
     for (auto &stmt : stmt_list->statements)
       stmt->accept(this);
   }
 
-  void visit_loop(Block *body) {
+  virtual void visit_loop(Block *body) {
     loop_blocks.push(body);
 
     body->accept(this);

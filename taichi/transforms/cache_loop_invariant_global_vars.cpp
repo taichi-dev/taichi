@@ -6,10 +6,10 @@ class CacheLoopInvariantGlobalVars : public LoopInvariantDetector {
  public:
   using LoopInvariantDetector::visit;
 
-  enum class CacheStatus { ReadOnly = 0, ReadWrite = 1 };
+  enum class CacheStatus { Read = 1, Write = 2, ReadWrite = 3 };
 
-  std::unordered_map<Stmt *, std::pair<AllocaStmt *, CacheStatus>>
-      cached_allocas;
+  typedef std::unordered_map<Stmt *, std::pair<AllocaStmt *, CacheStatus>> CacheMap;
+  std::stack<CacheMap> cached_maps;
 
   DelayedIRModifier modifier;
 
@@ -17,21 +17,39 @@ class CacheLoopInvariantGlobalVars : public LoopInvariantDetector {
       : LoopInvariantDetector(config) {
   }
 
-  void add_writeback(AllocaStmt *alloca_stmt, Stmt *stmt, Stmt *parent_stmt) {
-    auto final_value = std::make_unique<LocalLoadStmt>(alloca_stmt);
-    auto global_store =
-        std::make_unique<GlobalStoreStmt>(stmt, final_value.get());
-    modifier.insert_after(parent_stmt, std::move(global_store));
-    modifier.insert_after(parent_stmt, std::move(final_value));
+  void visit_loop(Block *body) override {
+    cached_maps.emplace();
+    LoopInvariantDetector::visit_loop(body);
+    cached_maps.pop();
   }
 
+  void add_writeback(AllocaStmt *alloca_stmt, Stmt *global_var) {
+    auto final_value = std::make_unique<LocalLoadStmt>(alloca_stmt);
+    auto global_store =
+        std::make_unique<GlobalStoreStmt>(global_var, final_value.get());
+    modifier.insert_after(current_loop_stmt(), std::move(global_store));
+    modifier.insert_after(current_loop_stmt(), std::move(final_value));
+  }
+
+  void set_init_value(AllocaStmt *alloca_stmt, Stmt *global_var) {
+    auto new_global_load = std::make_unique<GlobalLoadStmt>(global_var);
+    auto local_store =
+        std::make_unique<LocalStoreStmt>(alloca_stmt, new_global_load.get());
+    modifier.insert_before(current_loop_stmt(), std::move(new_global_load));
+    modifier.insert_before(current_loop_stmt(), std::move(local_store));
+  }
+
+  /*
+   *
+   */
   AllocaStmt *cache_global_to_local(Stmt *stmt,
-                                    Stmt *parent_stmt,
                                     CacheStatus status) {
-    if (auto &[cached, cached_status] = cached_allocas[stmt]; cached) {
-      if (cached_status == CacheStatus::ReadOnly &&
-          status == CacheStatus::ReadWrite) {
-        add_writeback(cached, stmt, parent_stmt);
+    if (auto &[cached, cached_status] = cached_maps.top()[stmt]; cached) {
+      // The global variable has already been cached.
+      if (cached_status == CacheStatus::Read &&
+          status == CacheStatus::Write) {
+        // If the
+        add_writeback(cached, stmt);
         cached_status = CacheStatus::ReadWrite;
       }
       return cached;
@@ -40,16 +58,15 @@ class CacheLoopInvariantGlobalVars : public LoopInvariantDetector {
     auto alloca_unique =
         std::make_unique<AllocaStmt>(stmt->ret_type.ptr_removed());
     auto alloca_stmt = alloca_unique.get();
-    cached_allocas[stmt] = {alloca_stmt, status};
-    auto new_global_load = std::make_unique<GlobalLoadStmt>(stmt);
-    auto local_store =
-        std::make_unique<LocalStoreStmt>(alloca_stmt, new_global_load.get());
-    modifier.insert_before(parent_stmt, std::move(new_global_load));
-    modifier.insert_before(parent_stmt, std::move(alloca_unique));
-    modifier.insert_before(parent_stmt, std::move(local_store));
+    modifier.insert_before(loop_blocks.top()->parent_stmt, std::move(alloca_unique));
+    cached_maps.top()[stmt] = {alloca_stmt, status};
 
-    if (status == CacheStatus::ReadWrite) {
-      add_writeback(alloca_stmt, stmt, parent_stmt);
+    if (status == CacheStatus::Read) {
+      set_init_value(alloca_stmt, stmt);
+    }
+
+    if (status == CacheStatus::Write) {
+      add_writeback(alloca_stmt, stmt);
     }
     return alloca_stmt;
   }
@@ -57,7 +74,7 @@ class CacheLoopInvariantGlobalVars : public LoopInvariantDetector {
   void visit(GlobalLoadStmt *stmt) override {
     if (is_loop_invariant(stmt->src, stmt->parent)) {
       auto alloca_stmt = cache_global_to_local(
-          stmt->src, stmt->parent->parent_stmt, CacheStatus::ReadOnly);
+          stmt->src, CacheStatus::Read);
       auto local_load = std::make_unique<LocalLoadStmt>(alloca_stmt);
       stmt->replace_usages_with(local_load.get());
       modifier.insert_before(stmt, std::move(local_load));
@@ -68,7 +85,7 @@ class CacheLoopInvariantGlobalVars : public LoopInvariantDetector {
   void visit(GlobalStoreStmt *stmt) override {
     if (is_loop_invariant(stmt->dest, stmt->parent)) {
       auto alloca_stmt = cache_global_to_local(
-          stmt->dest, stmt->parent->parent_stmt, CacheStatus::ReadWrite);
+          stmt->dest, CacheStatus::Write);
       auto local_store =
           std::make_unique<LocalStoreStmt>(alloca_stmt, stmt->val);
       stmt->replace_usages_with(local_store.get());

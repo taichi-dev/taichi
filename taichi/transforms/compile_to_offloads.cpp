@@ -246,6 +246,8 @@ void offload_to_executable(IRNode *ir,
   irpass::analysis::verify(ir);
 
   if (lower_global_access) {
+    irpass::cache_loop_invariant_global_vars(ir, config);
+    print("Cache loop-invariant global vars");
     irpass::full_simplify(ir, config,
                           {false, /*autodiff_enabled*/ false, kernel->program});
     print("Simplified before lower access");

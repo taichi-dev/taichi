@@ -17,7 +17,7 @@ class LoopInvariantCodeMotion : public LoopInvariantDetector {
       auto replacement = stmt->clone();
       stmt->replace_usages_with(replacement.get());
 
-      modifier.insert_before(stmt->parent->parent_stmt, std::move(replacement));
+      modifier.insert_before(current_loop_stmt(), std::move(replacement));
       modifier.erase(stmt);
     }
   }
@@ -27,7 +27,7 @@ class LoopInvariantCodeMotion : public LoopInvariantDetector {
       auto replacement = stmt->clone();
       stmt->replace_usages_with(replacement.get());
 
-      modifier.insert_before(stmt->parent->parent_stmt, std::move(replacement));
+      modifier.insert_before(current_loop_stmt(), std::move(replacement));
       modifier.erase(stmt);
     }
   }
@@ -37,7 +37,7 @@ class LoopInvariantCodeMotion : public LoopInvariantDetector {
       auto replacement = stmt->clone();
       stmt->replace_usages_with(replacement.get());
 
-      modifier.insert_before(stmt->parent->parent_stmt, std::move(replacement));
+      modifier.insert_before(current_loop_stmt(), std::move(replacement));
       modifier.erase(stmt);
     }
   }

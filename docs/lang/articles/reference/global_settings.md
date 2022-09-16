@@ -17,11 +17,12 @@ In summary, when calling `ti.init()`, Taichi will execute the following steps to
 Below are some most frequently used configurations:
 
 ```
-advanced_optimization: bool
-    Enable/disable advanced optimization to save compile time & possible errors.
+    advanced_optimization: bool
+        Enable/disable advanced optimization to save compile time & possible errors.
 
-arch: ti.cpu/ti.gpu/ti.cuda/...
-    Specify which architecture (Arch) to use.
+[Backend Option]
+    arch: [ti.cpu, ti.gpu, ti.cuda, ti.vulkan, ...]
+        Specify which architecture (Arch) to use.
 
 debug: bool
     Run program in debug mode.

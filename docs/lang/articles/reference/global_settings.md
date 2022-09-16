@@ -150,7 +150,7 @@ Below are some environment variables that you can set to customize your Taichi p
 
 ## Backends
 
-- To specify which architecture to use: `ti.init(arch=ti.cuda)`. See [here](https://docs.taichi-lang.org/docs/#supported-systems-and-backends for all supported backends). The corresponding environment variable is `TI_ARCH`.
+- To specify which architecture to use: `ti.init(arch=ti.cuda)`. See [here](https://docs.taichi-lang.org/docs/#supported-systems-and-backends) for all supported backends. The corresponding environment variable is `TI_ARCH`.
 - To specify the pre-allocated memory size for CUDA, e.g. `ti.init(device_memory_GB=0.5)` will allocate 0.5GB memory size.
 - To specify which GPU to use for CUDA: `export CUDA_VISIBLE_DEVICES=[gpuid]`.
 - To specify which GPU to use for VULKAN: `export TI_VISIBLE_DEVICE=[gpuid]`.

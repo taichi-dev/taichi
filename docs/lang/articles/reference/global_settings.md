@@ -14,7 +14,7 @@ In summary, when calling `ti.init()`, Taichi will execute the following steps to
 3. If neither 1 or 2, Taichi will use a default configuration. In this case if neither the argument `arch` is specified nor the environment variable `TI_ARCH` is found, Taichi will use `arch=ti.cpu` as the default backend.
 
 
-Below are some most frequently used configurations:
+Below are some most frequently used configurations you can set with the `ti.init()` call:
 
 **Arguments for `ti.init()`**
 

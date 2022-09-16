@@ -29,6 +29,7 @@ Below are some most frequently used configurations you can set with the `ti.init
         Specify the pre-allocated memory size for CUDA.
         For example `ti.init(device_memory_GB=0.5)` will allocate 0.5GB memory size.
 
+
 [Compilation Options]
 
     advanced_optimization: bool
@@ -40,13 +41,15 @@ Below are some most frequently used configurations you can set with the `ti.init
     print_ir: bool
         Turn on/off printing intermediate IR generated.
 
+
 [Runtime Options]
 
     cpu_max_num_threads: int
         Set the number of threads used by the CPU thread pool.
 
     debug: bool
-        Run program in debug mode. Equivalently you can run your code via `ti debug your_script.py`.
+        Run program in debug mode.
+        Equivalently you can run your code via `ti debug your_script.py`.
         The corresponding environment variable is `TI_DEBUG`.
 
     default_cpu_block_dim: int
@@ -56,12 +59,12 @@ Below are some most frequently used configurations you can set with the `ti.init
         Set the number of threads in a block on GPU.
 
     default_fp: [ti.f32, ti.f64]
-        Set the default precision for floating-point numbers in the Taichi scope, e.g.
-        `ti.init(default_fp=ti.f32)`.
+        Set the default precision for floating-point numbers in the Taichi scope,
+        e.g. `ti.init(default_fp=ti.f32)`.
 
     default_ip: [ti.i32, ti.i64]
-        Set the default precision for integers in the Taichi scope, e.g.
-        `ti.init(default_ip=ti.i64)`.
+        Set the default precision for integers in the Taichi scope,
+        e.g. `ti.init(default_ip=ti.i64)`.
 
     dynamic_index: bool
         Enable/disable vector/matrix indexing using variables.
@@ -81,6 +84,7 @@ Below are some most frequently used configurations you can set with the `ti.init
     random_seed: int
         Set a custom seed for the random number generator. e.g. `ti.init(random_seed=1)`.
 
+
 [Logging Options]
 
     log_level: [ti.INFO, ti.TRACE, ti.WARN, ti.ERROR, ti.CRITICAL, ti.DEBUG]
@@ -89,6 +93,7 @@ Below are some most frequently used configurations you can set with the `ti.init
 
     verbose: bool
         Eliminate verbose outputs. e.g. `ti.init(verbose=False)`.
+
 
 [Develop Options]
 
@@ -115,32 +120,34 @@ Below are some environment variables that you can set to customize your Taichi p
 
     TI_VISIBLE_DEVICE
         Specify which GPU to use for VULKAN: `export TI_VISIBLE_DEVICES=[gpuid]`.
-
-
+        
+        
 [Runtime Options]
 
     TI_DEBUG
         Turn on/off the debug mode. e.g. `export TI_DEBUG=1`.
 
     TI_ENABLE_TORCH
-        Enable/disable importing torch on start up, e.g. `export TI_ENABLE_TORCH=0` to disable.
+        Enable/disable importing torch on start up,
+        e.g. `export TI_ENABLE_TORCH=0` to disable.
         The default is 1.
-
+    
     TI_ENABLE_PADDLE
-        Enable/disable importing paddle on start u, e.g. `export TI_ENABLE_PADDLE=0` to disable.
+        Enable/disable importing paddle on start up,
+        e.g. `export TI_ENABLE_PADDLE=0` to disable.
         The default is 1.
-
+        
 
 [Develop Options]
-
+ 
     TI_CACHE_RUNTIME_BITCODE
-        Enable/disable caching compiled runtime bitcode in dev mode to save start up time, e.g.
-        `export TI_CACHE_RUNTIME_BITCODE=1` to enable.
-
+        Enable/disable caching compiled runtime bitcode in dev mode to save start up time,
+        e.g. `export TI_CACHE_RUNTIME_BITCODE=1` to enable.
+        
     TI_TEST_THREADS
         Specify how many threads to run test, e.g. `export TI_TEST_THREADS=4`.
         Equivlently you can run `python tests/run_tests.py -t4`.
-
+        
 [Logging Options]
 
     TI_LOG_LEVEL

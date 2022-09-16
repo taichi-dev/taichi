@@ -115,3 +115,11 @@ This argument enables/disables advanced optimization to save compile time & poss
 **arch**
 
 This argument specifies which architecture to use, for example to use CUDA as the backend, set `ti.init(arch=ti.cuda)`. The corresponding environment variable is `export TI_ARCH=cuda`.
+
+**device_memory_GB**
+
+This argument specifies the pre-allocated memory size for CUDA, for example `ti.init(device_memory_GB=0.5)` will allocate 0.5GB memory size.
+
+**fast_math**
+
+This argument enables/disables fast math mode in compilation to prevent possible undefined math behavior, for exmaple call `ti.init(fast_math=False)` to disable.

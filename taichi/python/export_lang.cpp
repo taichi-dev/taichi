@@ -1221,6 +1221,7 @@ void export_lang(py::module &m) {
   py::class_<CuSparseMatrix, SparseMatrix>(m, "CuSparseMatrix")
       .def("spmv", &CuSparseMatrix::spmv)
       .def(py::self + py::self)
+      .def(py::self - py::self)
       .def("to_string", &SparseMatrix::to_string);
 
   py::class_<SparseSolver>(m, "SparseSolver")

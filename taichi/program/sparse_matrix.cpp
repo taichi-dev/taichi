@@ -260,10 +260,10 @@ const CuSparseMatrix CuSparseMatrix::addition(const CuSparseMatrix &other,
   cusparseIndexType_t csrRowOffsetsType_A, csrColIndType_A;
   cusparseIndexBase_t idxBase_A;
   cudaDataType valueType_A;
-  if(matrix_ == NULL)
-    printf("matrix_ is NULL\n");
+  // if(matrix_ == NULL)
+    // printf("matrix_ is NULL\n");
+  TI_ASSERT(matrix_ != NULL);
 
-  printf("We can go away now\n");
 
   CUSPARSEDriver::get_instance().cpCsrGet(
       matrix_, &nrows_A, &ncols_A, &nnz_A, &drow_offsets_A, &dcol_indices_A,
@@ -281,7 +281,9 @@ const CuSparseMatrix CuSparseMatrix::addition(const CuSparseMatrix &other,
       &idxBase_B, &valueType_B);
 
   // Create sparse matrix: C
-  void *drow_offsets_C = NULL, *dcol_indices_C = NULL, *dvalues_C = NULL;
+  int *drow_offsets_C = NULL;
+  int *dcol_indices_C = NULL;
+  float *dvalues_C = NULL;
   cusparseMatDescr_t descrA = NULL, descrB = NULL, descrC = NULL;
   CUSPARSEDriver::get_instance().cpCreateMatDescr(&descrA);
   CUSPARSEDriver::get_instance().cpCreateMatDescr(&descrB);
@@ -303,21 +305,30 @@ const CuSparseMatrix CuSparseMatrix::addition(const CuSparseMatrix &other,
   int *nnzTotalDevHostPtr = &nnzC;
   CUSPARSEDriver::get_instance().cpSetPointerMode(cusparse_handle,
                                                   CUSPARSE_POINTER_MODE_HOST);
-  int *csrRowPtrC = NULL;
-  CUDADriver::get_instance().malloc((void**)(&csrRowPtrC), sizeof(int) *
-  (nrows_A + 1));
+  CUDADriver::get_instance().malloc((void**)(&drow_offsets_C), sizeof(int) * (nrows_A + 1));
   // Prepare buffer
   CUSPARSEDriver::get_instance().cpScsrgeam2_bufferSizeExt(
-      cusparse_handle, nrows_A, ncols_A, (void*)(&alpha), descrA, nnz_A,
-      dvalues_A, drow_offsets_A, dcol_indices_A, (void*)&beta, descrB, nnz_B,
-      dvalues_B, drow_offsets_B, dcol_indices_B, descrC, dvalues_C,
-      drow_offsets_C, dcol_indices_C, &BufferSizeInBytes);
+      cusparse_handle, nrows_A, ncols_A,
+      (void*)(&alpha), 
+      descrA, nnz_A,
+      dvalues_A, drow_offsets_A, dcol_indices_A, 
+      (void*)&beta, 
+      descrB, nnz_B,
+      dvalues_B, drow_offsets_B, dcol_indices_B, 
+      descrC, 
+      dvalues_C, drow_offsets_C, dcol_indices_C, 
+      &BufferSizeInBytes);
 
   if (BufferSizeInBytes > 0)
     CUDADriver::get_instance().malloc((void**)(&buffer), BufferSizeInBytes);
     
-  printf("BufferSizeInBytes: %zu\n", BufferSizeInBytes);
-  // Determine csrRowPtrC and the total number of nonzero elements.
+  // printf("BufferSizeInBytes: %zu\n", BufferSizeInBytes);
+
+  // TI_INFO("drow_offsets_C: {}", drow_offsets_C);
+  // TI_INFO("drow_offsets_C: {}", drow_offsets_C);
+  // TI_INFO("nnzTotalDevHostPtr: {}", nnzTotalDevHostPtr);
+  // TI_INFO("buffer: {}", buffer);
+  // Determine drow_offsets_C and the total number of nonzero elements.
   CUSPARSEDriver::get_instance().cpXcsrgeam2Nnz(
       cusparse_handle, nrows_A, ncols_A, 
       descrA, nnz_A, drow_offsets_A, dcol_indices_A, 
@@ -329,27 +340,32 @@ const CuSparseMatrix CuSparseMatrix::addition(const CuSparseMatrix &other,
     nnzC = *nnzTotalDevHostPtr;
   } else {
     CUDADriver::get_instance().memcpy_device_to_host(
-        (void *)(&nnzC), (void *)(csrRowPtrC + nrows_A), sizeof(int));
+        (void *)(&nnzC), (void *)(drow_offsets_C + nrows_A), sizeof(int));
     CUDADriver::get_instance().memcpy_device_to_host(
-        (void *)(&baseC), (void *)(csrRowPtrC), sizeof(int));
+        (void *)(&baseC), (void *)(drow_offsets_C), sizeof(int));
     nnzC -= baseC;
   }
 
-  CUDADriver::get_instance().malloc((void **)&dcol_indices_C, sizeof(int) *
-  nnzC); CUDADriver::get_instance().malloc((void **)&dvalues_C, sizeof(float)
-  * nnzC);
+  CUDADriver::get_instance().malloc((void **)&dcol_indices_C, sizeof(int) *nnzC); 
+  CUDADriver::get_instance().malloc((void **)&dvalues_C, sizeof(float) * nnzC);
 
-  // Matrix addition C = alpha * A + beta * B
   CUSPARSEDriver::get_instance().cpScsrgeam2(
-      cusparse_handle, nrows_A, ncols_A, (void*)(&alpha), descrA, nnz_A,
-      dvalues_A, drow_offsets_A, dcol_indices_A, (void*)(&beta), descrB,
-      nnz_B, dvalues_B, drow_offsets_B, dcol_indices_B, descrC, dvalues_C,
-      drow_offsets_C, dcol_indices_C, buffer);
+      cusparse_handle, nrows_A, ncols_A, 
+      (void*)(&alpha), 
+      descrA, nnz_A,
+      dvalues_A, drow_offsets_A, dcol_indices_A, 
+      (void*)(&beta), 
+      descrB,
+      nnz_B, 
+      dvalues_B, drow_offsets_B, dcol_indices_B, 
+      descrC, 
+      dvalues_C, drow_offsets_C, dcol_indices_C, buffer);
 
   cusparseSpMatDescr_t matrix_C;
   CUSPARSEDriver::get_instance().cpCreateCsr(
-      &matrix_C, rows_, cols_, nnzC, drow_offsets_C, dcol_indices_C,
-      dvalues_C, CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I,
+      &matrix_C, rows_, cols_, nnzC,
+      drow_offsets_C, dcol_indices_C, dvalues_C,
+      CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I,
       CUSPARSE_INDEX_BASE_ZERO, CUDA_R_32F);
 
   CUSPARSEDriver::get_instance().cpDestroy(cusparse_handle);
@@ -393,6 +409,8 @@ void CuSparseMatrix::spmv(Program *prog, const Ndarray &x, Ndarray &y) {
 
 const std::string CuSparseMatrix::to_string() const {
   std::ostringstream ostr;
+  print_helper();
+  return ostr.str();
 #if defined(TI_WITH_CUDA)
   size_t nrows_A = 0, ncols_A = 0, nnz_A = 0;
   void *drow_offsets_A = NULL, *dcol_indices_A = NULL, *dvalues_A = NULL;

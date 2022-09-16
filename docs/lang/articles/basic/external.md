@@ -46,7 +46,7 @@ arr = x.to_numpy()
 
 ## Data transfer between PyTorch/Paddle tensors and Taichi fields
 
-To import data from a PyTorch tensor, simply replace the `from_numpy()` call by `from_torch()`, and replace `to_numpy()` by `to_torch()` to export data to a PyTorch tensor. But note `to_torch()` requires one more argument here: you need also specify the PyTorch device using the `device` argument:
+Data transfer between a PyTorch tensor and a Taichi field is similar to the NumPy case above: Replace the `from_numpy()` call with `from_torch()` for data import, and replace `to_numpy()` with `to_torch()` for data export. But note that `to_torch()` requires one more argument `device` for specifying the PyTorch device:
 
 ```python
 tensor = x.to_torch(device="cuda:0")

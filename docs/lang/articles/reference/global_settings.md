@@ -37,7 +37,7 @@ log_level:
 
 print_ir: bool
     Turn on/off printing intermediate IR generated.
-    
+
 random_seed: int
     Set a custom seed for the random number generator.
 ```

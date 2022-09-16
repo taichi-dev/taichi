@@ -262,7 +262,6 @@ void offload_to_executable(IRNode *ir,
   irpass::full_simplify(
       ir, config,
       {lower_global_access, /*autodiff_enabled*/ false, kernel->program});
-
   print("Simplified IV");
 
   if (determine_ad_stack_size) {

@@ -16,7 +16,7 @@ from taichi.lang.field import Field, ScalarField
 from taichi.lang.kernel_arguments import SparseMatrixProxy
 from taichi.lang.matrix import (Matrix, MatrixField, MatrixNdarray, MatrixType,
                                 Vector, _IntermediateMatrix,
-                                _MatrixFieldElement, make_matrix)
+                                _MatrixFieldElement)
 from taichi.lang.mesh import (ConvType, MeshElementFieldProxy, MeshInstance,
                               MeshRelationAccessProxy,
                               MeshReorderedMatrixFieldProxy,
@@ -74,8 +74,6 @@ def expr_init(rhs):
     if isinstance(rhs, Struct):
         return Struct(rhs.to_dict(include_methods=True, include_ndim=True))
     if isinstance(rhs, list):
-        if current_cfg().real_matrix:
-            return make_matrix(rhs)
         return [expr_init(e) for e in rhs]
     if isinstance(rhs, tuple):
         return tuple(expr_init(e) for e in rhs)

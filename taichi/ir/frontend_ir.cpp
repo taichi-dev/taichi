@@ -204,6 +204,7 @@ void BinaryOpExpression::type_check(CompileConfig *config) {
                     binary_op_type_symbol(type), lhs->ret_type->to_string(),
                     rhs->ret_type->to_string()));
   };
+
   if (!is_primitive_or_tensor_type(lhs_type) ||
       !is_primitive_or_tensor_type(rhs_type)) {
     error();

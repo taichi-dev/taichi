@@ -382,9 +382,11 @@ void TaskCodeGenLLVM::create_fp_trunc(
     UnaryOpStmt *stmt,
     std::function<llvm::Value *(llvm::Value *, llvm::Type *)> trunc_fn,
     llvm::Type *to_ty,
-    bool is_tensor) {
+    bool is_tensor,
+    bool trunc_self) {
   if (!is_tensor) {
-    llvm_val[stmt] = trunc_fn(llvm_val[stmt->operand], to_ty);
+    llvm_val[stmt] =
+        trunc_fn(trunc_self ? llvm_val[stmt] : llvm_val[stmt->operand], to_ty);
   } else {
     auto from_ty = stmt->operand->ret_type->cast<TensorType>();
     TI_ASSERT_INFO(from_ty,
@@ -395,7 +397,8 @@ void TaskCodeGenLLVM::create_fp_trunc(
     // This assumes cast does not change the number of
     // elements in a tensor value (should be legit)
     for (int i = 0; i < from_ty->get_num_elements(); ++i) {
-      auto elem = builder->CreateExtractElement(llvm_val[stmt->operand], i);
+      auto elem = builder->CreateExtractElement(
+          trunc_self ? llvm_val[stmt] : llvm_val[stmt->operand], i);
       auto trunc_value = trunc_fn(elem, to_ty);
       vec = builder->CreateInsertElement(vec, trunc_value, i);
     }
@@ -414,8 +417,7 @@ void TaskCodeGenLLVM::visit(UnaryOpStmt *stmt) {
         builder->CreateIntrinsic(llvm::Intrinsic::x, {input_type}, {input}); \
   }
   if (stmt->op_type == UnaryOpType::cast_value) {
-    // Suppress warning
-    llvm::CastInst::CastOps cast_op __attribute__((unused));
+    llvm::CastInst::CastOps cast_op;
     auto from = stmt->operand->ret_type;
     auto to = stmt->cast_type;
     TI_ASSERT_INFO(
@@ -426,7 +428,6 @@ void TaskCodeGenLLVM::visit(UnaryOpStmt *stmt) {
       llvm_val[stmt] = llvm_val[stmt->operand];
     } else if (is_real(from) != is_real(to) ||
                is_real_tensor(from) != is_real_tensor(to)) {
-      llvm::CastInst::CastOps cast_op;
       if ((is_real(from) || is_real_tensor(from)) &&
           (is_integral(to) || is_integral_tensor(to))) {
         cast_op = (is_signed_tensor(to) || is_signed(to))
@@ -463,7 +464,7 @@ void TaskCodeGenLLVM::visit(UnaryOpStmt *stmt) {
           return this->builder->CreateFPTrunc(value, type);
         };
         create_fp_trunc(stmt, trunc_func, llvm::Type::getHalfTy(*llvm_context),
-                        cast_type->is<TensorType>());
+                        cast_type->is<TensorType>(), /*trunc_self=*/true);
       }
     } else if ((is_real(from) || is_real_tensor(from)) &&
                (is_real(to) || is_real_tensor(to))) {

@@ -111,7 +111,8 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
       UnaryOpStmt *stmt,
       std::function<llvm::Value *(llvm::Value *, llvm::Type *)> trunc_fn,
       llvm::Type *to_ty,
-      bool is_tensor);
+      bool is_tensor,
+      bool trunc_self = false);
 
   std::unique_ptr<RuntimeObject> emit_struct_meta_object(SNode *snode);
 

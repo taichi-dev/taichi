@@ -121,10 +121,12 @@ Below are some environment variables that you can set to customize your Taichi p
         Turn on/off the debug mode. e.g. `export TI_DEBUG=1`.
 
     TI_ENABLE_TORCH
-        Enable/disable importing torch on start up, e.g. `export TI_ENABLE_TORCH=0` to disable. The default is 1.
+        Enable/disable importing torch on start up, e.g. `export TI_ENABLE_TORCH=0` to disable.
+        The default is 1.
     
     TI_ENABLE_PADDLE
-        Enable/disable importing paddle on start u, e.g. `export TI_ENABLE_PADDLE=0` to disable. The default is 1.
+        Enable/disable importing paddle on start u, e.g. `export TI_ENABLE_PADDLE=0` to disable.
+        The default is 1.
         
 
 [Develop Options]

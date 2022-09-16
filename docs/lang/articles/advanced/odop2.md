@@ -9,7 +9,7 @@ sidebar_position: 3
 
 Taichi provides custom [struct types](../type_system/type.md#compound-types) for developers to associate pieces of data together. However, it is often convenient to have:
   1. A Python representation of the struct type which is more object oriented.
-  2. Functions associated with a struct type. (C++ style structs)
+  2. Functions associated with a struct type (C++-style structs).
 
 
 To achieve these two points, developers can use the `@ti.dataclass` decorator on a Python class.  This is heavily inspired by the Python [dataclass](https://docs.python.org/3/library/dataclasses.html) feature, which uses class fields with annotations to create data types.

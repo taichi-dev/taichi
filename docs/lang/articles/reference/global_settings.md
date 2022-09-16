@@ -48,7 +48,7 @@ Below are some most frequently used configurations you can set with the `ti.init
 
     default_cpu_block_dim: int
         Set the number of threads in a block on CPU.
-        
+
     default_gpu_block_dim: int
         Set the number of threads in a block on GPU.
 

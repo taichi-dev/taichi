@@ -17,11 +17,13 @@ In summary, when calling `ti.init()`, Taichi will execute the following steps to
 Below are some most frequently used configurations:
 
 ```
+Arguments for ti.init()
+
 [Backend Options]
 
     arch: [ti.cpu, ti.gpu, ti.cuda, ti.vulkan, ...]
         Specify which architecture (Arch) to use.
-
+        
     device_memory_GB: float
         Specify the pre-allocated memory size for CUDA.
 
@@ -32,30 +34,30 @@ Below are some most frequently used configurations:
 
     fast_math: bool
         Enable/disable fast math to prevent possible undefined math behavior.
-
+ 
     print_ir: bool
         Turn on/off printing intermediate IR generated.
 
 [Runtime Options]
 
     cpu_max_num_threads: int
-        Sets the number of threads used by the CPU thread pool.
+        Set the number of threads used by the CPU thread pool.
 
     debug: bool
         Run program in debug mode.
-
+        
     default_fp: [ti.f32, ti.f64]
         Set the default precision for floating-point numbers in the Taichi scope.
-
+        
     default_io: [ti.i32, ti.i64]
         Set the default precision for integers in the Taichi scope.
-
+    
     offline_cache: bool
         Enable/disable offline cache of the compiled kernels.
-
+    
     packed: bool
         Enable/disable the packed memory layout. See https://docs.taichi-lang.org/docs/layout.
-
+    
     random_seed: int
         Set a custom seed for the random number generator.
 
@@ -68,7 +70,7 @@ Below are some most frequently used configurations:
         Eliminate verbose outputs.
 
 [Develop Options]
-
+    
     gdb_trigger: bool
         To trigger GDB when Taichi crashes.
 ```

@@ -87,7 +87,7 @@ only has one layer of `SNodeTree` below the root. See the sketch below:
 
 <img width="683" alt="Screen Shot 2022-09-16 at 10 38 39" src="https://user-images.githubusercontent.com/2747993/190545525-305563dc-d09e-4af2-b99b-166d5c4398d0.png">
 
-The difference here is subtle for users since the two arrays are both row-major, but minor performance difference might apply
+The difference here is subtle for users because the two arrays are both row-major, but minor performance difference might apply
 because the overhead of calculating `SNodeTree` index is different for the two.
 
 :::

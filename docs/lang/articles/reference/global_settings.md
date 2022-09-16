@@ -28,7 +28,7 @@ device_memory_GB: float
 
 fast_math: bool
     Enable/disable fast math to prevent possible undefined math behavior.
-    
+
 print_ir: bool
     Turn on/off printing intermediate IR generated.
 ```

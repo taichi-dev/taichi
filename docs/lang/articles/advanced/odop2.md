@@ -53,7 +53,7 @@ class Sphere:
         return self.radius == 0.0
 ```
 
-Functions associated with structs follow the same [scope rules](../kernels/syntax.md#taichi-scope-vs-python-scope) as normal functions, in that they can be in Taichi or Python scope.  Each instance of the `Sphere` struct type now will have the above functions added to them.  The functions can be called such as:
+Functions associated with structs follow the same scope rules as other functions. In other words, they can be placed in either the Taichi scope or the Python scope. Each instance of the `Sphere` struct type now have the above functions attached to them. The functions can be called in the following way:
 
 ```python
 a_python_struct = Sphere(center=vec3(0.0), radius=1.0)

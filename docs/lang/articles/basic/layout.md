@@ -72,7 +72,7 @@ x = ti.field(ti.f32, shape=(3,4))
 The above 2D array built with nested `dense` statements is **NOT** equivalent to the 2D array built with `ti.field`.
 Although those statements both result in a 2D array of the same shape, they have
 different layers of `SNodeTree`. Namely,
-```ptyhon
+```python
 x = ti.field(ti.f32)
 ti.root.dense(ti.i, 3).dense(ti.j, 4).place(x)
 ```

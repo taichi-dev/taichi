@@ -115,8 +115,8 @@ Below are some environment variables that you can set to customize your Taichi p
 
     TI_VISIBLE_DEVICE
         Specify which GPU to use for VULKAN: `export TI_VISIBLE_DEVICES=[gpuid]`.
-        
-        
+
+
 [Runtime Options]
 
     TI_DEBUG
@@ -125,22 +125,22 @@ Below are some environment variables that you can set to customize your Taichi p
     TI_ENABLE_TORCH
         Enable/disable importing torch on start up, e.g. `export TI_ENABLE_TORCH=0` to disable.
         The default is 1.
-    
+
     TI_ENABLE_PADDLE
         Enable/disable importing paddle on start u, e.g. `export TI_ENABLE_PADDLE=0` to disable.
         The default is 1.
-        
+
 
 [Develop Options]
- 
+
     TI_CACHE_RUNTIME_BITCODE
         Enable/disable caching compiled runtime bitcode in dev mode to save start up time, e.g.
         `export TI_CACHE_RUNTIME_BITCODE=1` to enable.
-        
+
     TI_TEST_THREADS
         Specify how many threads to run test, e.g. `export TI_TEST_THREADS=4`.
         Equivlently you can run `python tests/run_tests.py -t4`.
-        
+
 [Logging Options]
 
     TI_LOG_LEVEL

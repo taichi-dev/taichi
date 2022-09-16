@@ -31,7 +31,7 @@ Below are some most frequently used configurations, grouped by categories:
 
 ## Compilation
 
-|    |     |     |
+| Behavior | Option  | Note |
 |:---:|:---:|:---|
 | Disable advanced optimizations |`advanced_optimization=False`| This is for saving compile time and possible errors|
 | Disable fast math |`fast_math=False`   |For preventing possible undefined math behavior   |
@@ -39,7 +39,8 @@ Below are some most frequently used configurations, grouped by categories:
 
 ## Runtime
 
-|    |     |     |
+
+| Behavior | Option  | Note |
 |:---:|:---:|:---|
 | Start program in debug mode    | `debug=True` or `export TI_DEBUG=1` | An equivalent way is to call your script via `ti debug your_script.py`  |
 | Disable importing torch on start up    |`export TI_ENABLE_TORCH=0`   |     |
@@ -49,12 +50,14 @@ Below are some most frequently used configurations, grouped by categories:
 
 ## Logging
 
+| Behavior | Option  | Note |
+|:---:|:---:|:---|
 | Customize logging level    |`log_level=ti.TRACE` or `export TI_LOG_LEVEL=trace`| Equivalent to `ti.set_logging_level(ti.TRACE)` |
 | Eliminate verbose outputs    | `verbose=False`|     |
 
 ## Develop
 
-|    |     |     |
+| Behavior | Option  | Note |
 |:---:|:---:|:---|
 |Trigger GDB when Taichi crashes  | `gdb_trigger=True` |       |
 |Cache compiled runtime bitcode in **dev mode** |   `export TI_CACHE_RUNTIME_BITCODE=1`    |   To save start up time |

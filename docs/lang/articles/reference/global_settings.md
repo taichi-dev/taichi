@@ -21,7 +21,7 @@ Below are some most frequently used configurations, grouped by categories:
 
 
 |    |     |     |
-|:---:|:---:|:---:
+|:---:|:---:|:---|
 | Behavior | Option  | Note |
 | Choose a backend | `arch=ti.cpu/gpu/cuda/...` or  `export TI_ARCH=cuda/opengl/...`| e.g. `export TI_ARCH=cuda`|
 | Disable a backend on start up| `export TI_ENABLE_cuda/opengl/...=0`   |  e.g.  `export TI_ENABLE_opengl=0`  |
@@ -31,19 +31,34 @@ Below are some most frequently used configurations, grouped by categories:
 
 ## Compilation
 
+|    |     |     |
+|:---:|:---:|:---|
 | Disable advanced optimizations |`advanced_optimization=False`| This is for saving compile time and possible errors|
-| Disable fast math    |`fast_math=False`   |For preventing possible undefined math behavior   |
-| Print generated intermediate IR    |`print_ir=True`| Compiled kernels are [cached by default](https://docs.taichi-lang.org/docs/performance#offline-cache). To force compilation and IR emission, use `ti.init(print_ir=True, offline_cache=False)`    |
+| Disable fast math |`fast_math=False`   |For preventing possible undefined math behavior   |
+| Print generated intermediate IR |`print_ir=True`| Compiled kernels are [cached by default](https://docs.taichi-lang.org/docs/performance#offline-cache). To force compilation and IR emission, use `ti.init(print_ir=True, offline_cache=False)`|
 
-| Start program in debug mode    | Runtime    |  `debug=True`   | `export TI_DEBUG=1`    | An equivalent way is to call your script via `ti debug your_script.py`  |
-| Disable importing torch on start up    | Runtime    |     |  `export TI_ENABLE_TORCH=0`   |     |
-| Disable importing paddle on start up    | Runtime    |     |   `export TI_ENABLE_PADDLE=0`  |     |
-|Set random seed | Runtime    | `random_seed=seed`    |     | `seed` is an integer |
-| Customize logging level    | Logging    |  `log_level=ti.TRACE`   | `export TI_LOG_LEVEL=trace`    | Equivalent to `ti.set_logging_level(ti.TRACE)`    |
-| Eliminate verbose outputs    | Logging    | `verbose=False`    |     |     |
-|Trigger GDB when Taichi crashes    |  Develop   | `gdb_trigger=True`     |       |       |
-|Cache compiled runtime bitcode in **dev mode** |  Develop   |      |   `export TI_CACHE_RUNTIME_BITCODE=1`    |   To save start up time      |
-| Specify how many threads to run test    |  Develop   |      |   `export TI_TEST_THREADS=4`    |  Equivalent to  `python tests/run_tests.py -t4`   |
+## Runtime
+
+|    |     |     |
+|:---:|:---:|:---|
+| Start program in debug mode    | `debug=True` or `export TI_DEBUG=1` | An equivalent way is to call your script via `ti debug your_script.py`  |
+| Disable importing torch on start up    |`export TI_ENABLE_TORCH=0`   |     |
+| Disable importing paddle on start up   |`export TI_ENABLE_PADDLE=0`  |     |
+|Set random seed | Runtime    | `random_seed=seed`| `seed` is an integer |
+
+
+## Logging
+
+| Customize logging level    |`log_level=ti.TRACE` or `export TI_LOG_LEVEL=trace`| Equivalent to `ti.set_logging_level(ti.TRACE)` |
+| Eliminate verbose outputs    | `verbose=False`|     |
+
+## Develop
+
+|    |     |     |
+|:---:|:---:|:---|
+|Trigger GDB when Taichi crashes  | `gdb_trigger=True` |       |
+|Cache compiled runtime bitcode in **dev mode** |   `export TI_CACHE_RUNTIME_BITCODE=1`    |   To save start up time |
+| Specify how many threads to run test |   `export TI_TEST_THREADS=4`    |  Equivalent to  `python tests/run_tests.py -t4` |
 
 
 :::note

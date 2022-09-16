@@ -132,7 +132,8 @@ Below are some environment variables that you can set to customize your Taichi p
 [Develop Options]
  
     TI_CACHE_RUNTIME_BITCODE
-        Enable/disable caching compiled runtime bitcode in dev mode to save start up time, e.g. `export TI_CACHE_RUNTIME_BITCODE=1` to enable.
+        Enable/disable caching compiled runtime bitcode in dev mode to save start up time, e.g.
+        `export TI_CACHE_RUNTIME_BITCODE=1` to enable.
         
     TI_TEST_THREADS
         Specify how many threads to run test, e.g. `export TI_TEST_THREADS=4`.

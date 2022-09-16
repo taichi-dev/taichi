@@ -107,4 +107,3 @@ Below are some environment variables that you can set to customize your Taichi p
     TI_VISIBLE_DEVICE
         Specify which GPU to use for VULKAN: `export TI_VISIBLE_DEVICES=[gpuid]`.
 ```
-

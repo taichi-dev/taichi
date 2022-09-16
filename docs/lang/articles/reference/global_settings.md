@@ -17,17 +17,20 @@ In summary, when calling `ti.init()`, Taichi will execute the following steps to
 Below are some most frequently used configurations:
 
 ```
-advanced_optimization
-    Enable/disable advanced optimization to save compile time & possible errors:
+advanced_optimization: bool
+    Enable/disable advanced optimization to save compile time & possible errors.
 
-arch
-    Specify which architecture (Arch) to use
+arch: ti.cpu/ti.gpu/ti.cuda/...
+    Specify which architecture (Arch) to use.
 
-device_memory_GB
-    Specify the pre-allocated memory size for CUDA
+device_memory_GB: float
+    Specify the pre-allocated memory size for CUDA.
 
-fast_math
-    Enable/disable fast math to prevent possible undefined math behavior
+fast_math: bool
+    Enable/disable fast math to prevent possible undefined math behavior.
+    
+print_ir: bool
+    Turn on/off printing intermediate IR generated.
 ```
 
 
@@ -47,9 +50,6 @@ In case you want to use taichi cuda backend together with GGUI on a machine with
 
 ## Compilation
 
--  `ti.init(advanced_optimization=False)`.
-- Disable fast math to prevent possible undefined math behavior:
-  `ti.init(fast_math=False)`.
 - To print intermediate IR generated: `ti.init(print_ir=True)`. Note that compiled kernels are [cached by default](https://docs.taichi-lang.org/docs/performance#offline-cache). To force compilation and IR emission, use `ti.init(print_ir=True, offline_cache=False)`.
 
 ## Runtime

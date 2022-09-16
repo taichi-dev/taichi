@@ -69,12 +69,12 @@ x = ti.field(ti.f32, shape=(3,4))
 
 :::note
 
-The above 2D array built with nested `dense` statements is **NOT** equivalent to the 2D array built with `ti.field`. 
+The above 2D array built with nested `dense` statements is **NOT** equivalent to the 2D array built with `ti.field`.
 Although those statements both result in a 2D array of the same shape, they have
 different layers of `SNodeTree`. Namely,
 ```ptyhon
 x = ti.field(ti.f32)
-ti.root.dense(ti.i, 3).dense(ti.j, 4).place(x) 
+ti.root.dense(ti.i, 3).dense(ti.j, 4).place(x)
 ```
 has two layers of `SNodeTree` below the root, while
 ```

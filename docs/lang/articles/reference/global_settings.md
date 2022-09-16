@@ -9,9 +9,9 @@ The call `ti.init()` is indispensable in every Taichi program. It allows you to 
 
 In summary, when calling `ti.init()`, Taichi will execute the following steps to initialize a specific configuration: (we use the `arch` argument to illustrate this)
 
-1. Firstly Taichi will try to find if the corresponing environment variable is set. In this case if `export TI_ARCH=cuda` is set then it will use CUDA as the backend and omit the argument `arch` passed to `ti.init()`.
-2. If the environment variable is not set then Taichi will read the arugment for that configuration that passed to `ti.init()`. In this case if Taichi reads `ti.init(arch=cuda) then it will choose CUDA as the backend.
-3. If neither 1 or 2, Taichi will use a default configuration. In this case Taichi will use `arch=ti.cpu` as the default backend.
+1. Firstly Taichi will read the argument for that configuration that is passed to `ti.init()`. In this case if Taichi finds `ti.init(arch=cuda)` then it will choose CUDA as the backend and omit the environment variable.
+2. If the argument is not found then Taichi will check if the corresponding environment variable is set. In this case if `arch` is not specified but `export TI_ARCH=cuda` is set then Taichi will use CUDA as the backend.
+3. If neither 1 or 2, Taichi will use a default configuration. In this case if neither the argument `arch` is specified nor the environment variable `TI_ARCH` is found, Taichi will use `arch=ti.cpu` as the default backend.
 
 
 Below are some most frequently used configurations:

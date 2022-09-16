@@ -817,3 +817,41 @@ def test_vector_vector_t():
         return a @ b.transpose()
 
     assert foo() == [[1.0, 2.0], [2.0, 4.0]]
+
+
+@test_utils.test(arch=[ti.cuda, ti.cpu],
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_store_scalarize():
+    @ti.kernel
+    def func(a: ti.types.ndarray()):
+        for i in range(5):
+            a[i] = [[i, i + 1], [i + 2, i + 3]]
+
+    x = ti.Matrix.ndarray(2, 2, ti.i32, shape=5)
+    func(x)
+
+    assert (x[0] == [[0, 1], [2, 3]])
+    assert (x[1] == [[1, 2], [3, 4]])
+    assert (x[2] == [[2, 3], [4, 5]])
+    assert (x[3] == [[3, 4], [5, 6]])
+    assert (x[4] == [[4, 5], [6, 7]])
+
+
+@test_utils.test(arch=[ti.cuda, ti.cpu],
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_load_store_scalarize():
+    @ti.kernel
+    def func(a: ti.types.ndarray()):
+        for i in range(3):
+            a[i] = [[i, i + 1], [i + 2, i + 3]]
+
+        a[3] = a[1]
+        a[4] = a[2]
+
+    x = ti.Matrix.ndarray(2, 2, ti.i32, shape=5)
+    func(x)
+
+    assert (x[3] == [[1, 2], [3, 4]])
+    assert (x[4] == [[2, 3], [4, 5]])

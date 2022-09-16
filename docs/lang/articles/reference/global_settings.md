@@ -16,7 +16,7 @@ In summary, when calling `ti.init()`, Taichi will execute the following steps to
 
 Below are some most frequently used configurations you can set with the `ti.init()` call:
 
-**Customize via `ti.init()`**
+**Customize via arguments of `ti.init()`**
 
 ```
 [Backend Options]

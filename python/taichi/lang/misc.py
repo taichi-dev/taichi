@@ -347,8 +347,6 @@ def init(arch=None,
     # changed by the Vulkan backend initialization on OS X.
     current_dir = os.getcwd()
 
-    cfg = impl.default_cfg()
-    cfg.offline_cache = True  # Enable offline cache in frontend instead of C++ side
     # Check if installed version meets the requirements.
     if require_version is not None:
         check_require_version(require_version)
@@ -364,6 +362,9 @@ def init(arch=None,
     default_ip = _deepcopy(default_ip)
     kwargs = _deepcopy(kwargs)
     reset()
+
+    cfg = impl.default_cfg()
+    cfg.offline_cache = True  # Enable offline cache in frontend instead of C++ side
 
     spec_cfg = _SpecialConfig()
     env_comp = _EnvironmentConfigurator(kwargs, cfg)

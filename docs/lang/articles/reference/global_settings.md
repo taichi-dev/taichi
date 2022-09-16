@@ -89,6 +89,7 @@ Below are some most frequently used configurations you can set with the `ti.init
 
     log_level: [ti.INFO, ti.TRACE, ti.WARN, ti.ERROR, ti.CRITICAL, ti.DEBUG]
         Set the logging level. e.g. `ti.init(log_level=ti.TRACE)`.
+        Equivalently you can call `ti.set_logging_level(ti.TRACE)`.
         The corresponding environment variable is `TI_LOG_LEVEL`.
 
     verbose: bool

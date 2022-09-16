@@ -15,5 +15,4 @@ layout(binding = 1) uniform UBO {
 void main() {
   vec2 coord = frag_texcoord * vec2(ubo.x_factor,ubo.y_factor);
   out_color = texture(texSampler, ubo.is_transposed != 0 ? coord.yx : coord);
-  // out_color = vec4(frag_texcoord.xy,0,1);
 }

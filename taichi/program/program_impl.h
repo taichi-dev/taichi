@@ -140,6 +140,7 @@ class ProgramImpl {
   virtual void enqueue_compute_op_lambda(
       std::function<void(Device *device, CommandList *cmdlist)> op,
       const std::vector<ComputeOpImageRef> &image_refs) {
+    TI_NOT_IMPLEMENTED;
   }
 
   virtual void print_memory_profiler_info(

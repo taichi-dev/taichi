@@ -20,9 +20,9 @@ Below are some most frequently used configurations, grouped by categories:
 ## Backends
 
 
-|    |     |     |
-|:---:|:---:|:---|
+
 | Behavior | Option  | Note |
+|:---:|:---:|:---|
 | Choose a backend | `arch=ti.cpu/gpu/cuda/...` or  `export TI_ARCH=cuda/opengl/...`| e.g. `export TI_ARCH=cuda`|
 | Disable a backend on start up| `export TI_ENABLE_cuda/opengl/...=0`   |  e.g.  `export TI_ENABLE_opengl=0`  |
 |  Choose CUDA device | `export CUDA_VISIBLE_DEVICES=[gpuid]`   |   |

@@ -25,7 +25,7 @@ arch
 
 device_memory_GB
     Specify the pre-allocated memory size for CUDA
-    
+
 fast_math
     Enable/disable fast math to prevent possible undefined math behavior
 ```

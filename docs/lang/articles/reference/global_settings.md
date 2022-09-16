@@ -115,4 +115,3 @@ This argument enables/disables advanced optimization to save compile time & poss
 **arch**
 
 This argument specifies which architecture to use, for example to use CUDA as the backend, set `ti.init(arch=ti.cuda)`. The corresponding environment variable is `export TI_ARCH=cuda`.
-

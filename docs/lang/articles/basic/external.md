@@ -33,7 +33,7 @@ print(x)
 
 In the example above, the scalar field `x` and the array `a` have the same shape `(3, 3)`. This operation would fail if their shapes did not match. For vector and matrix fields, their shape matching with NumPy arrays is slightly different, which will be discussed in a later section.
 
-The field should also have the same dtype with the array, otherwise an implicit type casting will be performed, see [type system](../type_system/type.md).
+The field should also have the same dtype with the array; otherwise, an implicit type casting would occur - see [type system](../type_system/type.md).
 
 To export the data in `x` to a NumPy array, simply call its `to_numpy()` method:
 

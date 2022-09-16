@@ -2,6 +2,7 @@
 #include "taichi_opengl_impl.h"
 #include "taichi_vulkan_impl.h"
 #include "taichi_llvm_impl.h"
+#include "taichi_metal_impl.h"
 #include "taichi/program/ndarray.h"
 
 struct ErrorCache {
@@ -173,6 +174,12 @@ TiRuntime ti_create_runtime(TiArch arch) {
       break;
     }
 #endif  // TI_WITH_LLVM
+#ifdef TI_WITH_METAL
+    case TI_ARCH_METAL: {
+      out = (TiRuntime)(static_cast<Runtime*>(new MetalRuntimeOwned));
+      break;
+    }
+#endif // TI_WITH_METAL
     default: {
       TI_CAPI_NOT_SUPPORTED(arch);
       return TI_NULL_HANDLE;

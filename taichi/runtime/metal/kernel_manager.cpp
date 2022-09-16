@@ -652,11 +652,7 @@ class KernelManager::Impl {
     create_new_command_buffer();
 
     {
-      ComputeDeviceParams rhi_params;
-      rhi_params.device = device_.get();
-      rhi_params.mem_pool = mem_pool_;
-      rhi_params.only_for_dev_allocation = false;
-      auto make_res = make_compute_device(rhi_params);
+      auto make_res = device();
       rhi_device_ = std::move(make_res.device);
       TI_ASSERT(rhi_device_ != nullptr);
       devalloc_mapper_ = make_res.mapper;
@@ -849,6 +845,14 @@ class KernelManager::Impl {
   DeviceAllocation allocate_memory(const Device::AllocParams &params) {
     auto res = rhi_device_->allocate_memory(params);
     return res;
+  }
+
+  MakeDeviceResult device() {
+    ComputeDeviceParams rhi_params;
+    rhi_params.device = device_.get();
+    rhi_params.mem_pool = mem_pool_;
+    rhi_params.only_for_dev_allocation = false;
+    return make_compute_device(rhi_params);
   }
 
  private:
@@ -1386,6 +1390,10 @@ std::size_t KernelManager::get_snode_num_dynamically_allocated(SNode *snode) {
 DeviceAllocation KernelManager::allocate_memory(
     const Device::AllocParams &params) {
   return impl_->allocate_memory(params);
+}
+
+MakeDeviceResult KernelManager::device() {
+  return impl_->device();
 }
 
 }  // namespace metal

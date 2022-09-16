@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "taichi/rhi/device.h"
+#include "taichi/rhi/metal/device.h"
 #include "taichi/runtime/metal/kernel_utils.h"
 #include "taichi/codegen/metal/struct_metal.h"
 #include "taichi/util/lang_util.h"
@@ -74,6 +75,8 @@ class KernelManager {
   // FIXME(k-ye): This is a temporary workaround since Metal has not switched to
   // Unified Device API yet.
   DeviceAllocation allocate_memory(const Device::AllocParams &params);
+
+  MakeDeviceResult device();
 
  private:
   // Use Pimpl so that we can expose this interface without conditionally

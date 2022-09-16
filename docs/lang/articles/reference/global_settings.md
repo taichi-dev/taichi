@@ -16,7 +16,7 @@ In summary, when calling `ti.init()`, Taichi will execute the following steps to
 
 Below are some most frequently used configurations you can set with the `ti.init()` call:
 
-## Customize via `ti.init()`
+**Customize via `ti.init()`**
 
 ```
 [Backend Options]
@@ -91,9 +91,9 @@ Below are some most frequently used configurations you can set with the `ti.init
 ```
 
 
-## Customize via environment variables
+**Customize via environment variables**
 
-Below are some environment variables that you can set to customize your Taichi program:
+Below are some environment variables that you can set to customize your Taichi program, they overlap but are not in one-to-one correspondence with the `ti.init()` arguments listed above:
 
 ```
 [Backend Options]
@@ -107,3 +107,6 @@ Below are some environment variables that you can set to customize your Taichi p
     TI_VISIBLE_DEVICE
         Specify which GPU to use for VULKAN: `export TI_VISIBLE_DEVICES=[gpuid]`.
 ```
+
++ `arch`: This argument specifies which architecture to use, for example to use CUDA as the backend, set `ti.init(arch=ti.cuda)`. The corresponding environment variable is `export TI_ARCH=cuda`.
+

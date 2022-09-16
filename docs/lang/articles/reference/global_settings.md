@@ -95,13 +95,13 @@ Below are some most frequently used configurations you can set with the `ti.init
 
 ```
 [Backend Options]
-    
+
     CUDA_VISIBLE_DEVICES
         Specify which GPU to use for CUDA: `export CUDA_VISIBLE_DEVICES=[gpuid]`.
 
     TI_ENABLE_[CUDA/OPENGL/...]
         Disable a backend on start up, e.g. CUDA: `export TI_ENABLE_CUDA=0`.
-            
+
     TI_VISIBLE_DEVICE
         Specify which GPU to use for VULKAN: `export TI_VISIBLE_DEVICES=[gpuid]`.
 ```

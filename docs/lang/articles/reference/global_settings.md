@@ -23,12 +23,9 @@ Below are some most frequently used configurations you can set with the `ti.init
 
     arch: [ti.cpu, ti.gpu, ti.cuda, ti.vulkan, ...]
         Specify which architecture to use.
-        See https://docs.taichi-lang.org/docs/#supported-systems-and-backends for all supported backends.
-        The corresponding environment variable is `TI_ARCH`.
 
     device_memory_GB: float
         Specify the pre-allocated memory size for CUDA.
-        For example `ti.init(device_memory_GB=0.5)` will allocate 0.5GB memory size.
 
 
 [Compilation Options]
@@ -50,8 +47,6 @@ Below are some most frequently used configurations you can set with the `ti.init
 
     debug: bool
         Run program in debug mode.
-        Equivalently you can run your code via `ti debug your_script.py`.
-        The corresponding environment variable is `TI_DEBUG`.
 
     default_cpu_block_dim: int
         Set the number of threads in a block on CPU.
@@ -60,15 +55,13 @@ Below are some most frequently used configurations you can set with the `ti.init
         Set the number of threads in a block on GPU.
 
     default_fp: [ti.f32, ti.f64]
-        Set the default precision for floating-point numbers in the Taichi scope,
-        e.g. `ti.init(default_fp=ti.f32)`.
+        Set the default precision for floating-point numbers in the Taichi scope.
 
     default_ip: [ti.i32, ti.i64]
-        Set the default precision for integers in the Taichi scope,
-        e.g. `ti.init(default_ip=ti.i64)`.
+        Set the default precision for integers in the Taichi scope.
 
     dynamic_index: bool
-        Enable/disable vector/matrix indexing using variables.
+        Enable/disable using variables as index to access vector/matrix elements in the Taichi scope.
 
     kernel_profiler: bool
         Turn on/off kernel performance profiling.
@@ -80,18 +73,16 @@ Below are some most frequently used configurations you can set with the `ti.init
         Directory holding the offline cached files.
 
     packed: bool
-        Enable/disable the packed memory layout. See https://docs.taichi-lang.org/docs/layout.
+        Enable/disable the packed memory layout.
 
     random_seed: int
-        Set a custom seed for the random number generator. e.g. `ti.init(random_seed=1)`.
+        Set a custom seed for the random number generator.
 
 
 [Logging Options]
 
     log_level: [ti.INFO, ti.TRACE, ti.WARN, ti.ERROR, ti.CRITICAL, ti.DEBUG]
-        Set the logging level. e.g. `ti.init(log_level=ti.TRACE)`.
-        Equivalently you can call `ti.set_logging_level(ti.TRACE)`.
-        The corresponding environment variable is `TI_LOG_LEVEL`.
+        Set the logging level.
 
     verbose: bool
         Eliminate verbose outputs. e.g. `ti.init(verbose=False)`.
@@ -157,6 +148,53 @@ Below are some environment variables that you can set to customize your Taichi p
         Set the logging level, e.g. `export TI_LOG_LEVEL=trace`.
 ```
 
+## Backends
+
+- To specify which architecture to use: `ti.init(arch=ti.cuda)`. See [here](https://docs.taichi-lang.org/docs/#supported-systems-and-backends for all supported backends). The corresponding environment variable is `TI_ARCH`.
+- To specify the pre-allocated memory size for CUDA, e.g. `ti.init(device_memory_GB=0.5)` will allocate 0.5GB memory size.
+- To specify which GPU to use for CUDA: `export CUDA_VISIBLE_DEVICES=[gpuid]`.
+- To specify which GPU to use for VULKAN: `export TI_VISIBLE_DEVICE=[gpuid]`.
+- To disable a backend (`CUDA`, `METAL`, `OPENGL`) on start up, e.g. CUDA: `export TI_ENABLE_CUDA=0`.
+
+:::note
+
+In case you want to use taichi cuda backend together with GGUI on a machine with multiple GPU cards, please make sure `CUDA_VISIBLE_DEVICES` matches `TI_VISIBLE_DEVICE` if any of them exists. In general, `CUDA_VISIBLE_DEVICES` and `TI_VISIBLE_DEVICE` should point to a GPU device with the same UUID. Use `nvidia-smi -L` to query the details of your GPU devices.
+
+:::
+
+## Compilation
+
+- Disable advanced optimization to save compile time & possible errors: `ti.init(advanced_optimization=False)`.
+- Disable fast math to prevent possible undefined math behavior: `ti.init(fast_math=False)`.
+- To print intermediate IR generated: `ti.init(print_ir=True)`. Note that compiled kernels are [cached by default](https://docs.taichi-lang.org/docs/performance#offline-cache). To force compilation and IR emission, use `ti.init(print_ir=True, offline_cache=False)`.
+
+
+## Runtime
+
+- Restart the entire Taichi system (destroy all fields and kernels): `ti.reset()`.
+- To start program in debug mode: `ti.init(debug=True)`. Equivalently you can run your code via `ti debug your_script.py`. The corresponding environment variable is `TI_DEBUG`.
+- To disable importing torch on start up: `export TI_ENABLE_TORCH=0`.
+- To disable importing paddle on start up: `export TI_ENABLE_PADDLE=0`.
+- To set a custom seed for the random number generator used by `ti.random()`: `ti.init(random_seed=seed)` where `seed` is an integer. For example `ti.init(random_seed=int(time.time()))`.
+- Set the default precision for floating-point numbers of Taichi runtime to `ti.f64`: `ti.init(default_fp=ti.i64)`.
+- Set the default precision for floating-point numbers of Taichi runtime to `ti.i32`: `ti.init(default_ip=ti.i32)`.
+- Enable the packed mode for memory layout: `ti.init(packed=True)`. See https://docs.taichi-lang.org/docs/layout.
+- Disable the offline cache of compiled kernels: `ti.init(offline_cache=False)`. See [Packed mode](https://docs.taichi-lang.org/docs/layout#packed-mode).
+- Enable using variables as index to access vector/matrix elements in the Taichi scope: `ti.init(dynamic_index=True)`.
+- Turn on kernel profiling: `ti.init(kernel_profiler=True)`. See https://docs.taichi-lang.org/docs/profiler.
+
+
+## Logging
+
+- Set the logging level, e.g. TRACE: `ti.init(log_level=ti.TRACE)`. Equivalently you can call `ti.set_logging_level(ti.TRACE)`. The corresponding environment variable is `TI_LOG_LEVEL`.
+- Eliminate verbose outputs: `ti.init(verbose=False)`.
+
+## Develop
+
+- To trigger GDB when Taichi crashes: `ti.init(gdb_trigger=True)`.
+- Cache compiled runtime bitcode in **dev mode** to save start up time: `export TI_CACHE_RUNTIME_BITCODE=1`.
+- To specify how many threads to run test: `export TI_TEST_THREADS=4` or `python tests/run_tests.py -t4`.
+
 
 :::note
 
@@ -169,12 +207,5 @@ print(ti.cfg.debug)  # True
 ti.init()
 print(ti.cfg.debug)  # False
 ```
-
-:::
-
-
-:::note
-
-In case you want to use taichi cuda backend together with GGUI on a machine with multiple GPU cards, please make sure `CUDA_VISIBLE_DEVICES` matches `TI_VISIBLE_DEVICE` if any of them exists. In general, `CUDA_VISIBLE_DEVICES` and `TI_VISIBLE_DEVICE` should point to a GPU device with the same UUID. Use `nvidia-smi -L` to query the details of your GPU devices.
 
 :::

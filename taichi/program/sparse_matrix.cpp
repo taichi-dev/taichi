@@ -369,6 +369,7 @@ const CuSparseMatrix CuSparseMatrix::matmul(const CuSparseMatrix &other) const {
   return gemm(other, 1.0f, 1.0f);
 }
 
+// Reference: https://github.com/NVIDIA/CUDALibrarySamples/tree/master/cuSPARSE/spgemm
 const CuSparseMatrix CuSparseMatrix::gemm(const CuSparseMatrix &other,
                                           const float alpha,
                                           const float beta) const {
@@ -428,14 +429,14 @@ const CuSparseMatrix CuSparseMatrix::gemm(const CuSparseMatrix &other,
   CUSPARSEDriver::get_instance().cpGetSize(mat_C, &nrows_C, &cols_C, &nnz_C);
 
   // 8. allocate matric C
-  int *dC_csrOffsets, *dC_columns;
+  int *d_csr_row_ptr_C, *d_csr_col_ind_C;
   float* d_values_C;
-  CUDADriver::get_instance().malloc((void**)&dC_csrOffsets, (nrows_A+1) * sizeof(int));
-  CUDADriver::get_instance().malloc((void**)&dC_columns, nnz_C * sizeof(int));
+  CUDADriver::get_instance().malloc((void**)&d_csr_row_ptr_C, (nrows_A+1) * sizeof(int));
+  CUDADriver::get_instance().malloc((void**)&d_csr_col_ind_C, nnz_C * sizeof(int));
   CUDADriver::get_instance().malloc((void**)&d_values_C, nnz_C * sizeof(float));
 
   // 9. update matrix C with new pointers
-  CUSPARSEDriver::get_instance().cpCsrSetPointers(mat_C, dC_csrOffsets, dC_columns, d_values_C);
+  CUSPARSEDriver::get_instance().cpCsrSetPointers(mat_C, d_csr_row_ptr_C, d_csr_col_ind_C, d_values_C);
 
   // 10. copy the final products of C.
   CUSPARSEDriver::get_instance().cpSpGEMM_copy(handle, op_A, op_B,

@@ -61,6 +61,7 @@ struct Metadata {
   std::size_t size{0};  // byte
   std::unordered_map<std::string, KernelMetadata> kernels;
 
+  // NOTE: The "version" must be the first field to be serialized
   TI_IO_DEF(version, size, kernels);
 };
 

@@ -100,6 +100,7 @@ struct LlvmOfflineCache {
   std::unordered_map<std::string, KernelCacheData>
       kernels;  // key = kernel_name
 
+  // NOTE: The "version" must be the first field to be serialized
   TI_IO_DEF(version, size, fields, kernels);
 };
 

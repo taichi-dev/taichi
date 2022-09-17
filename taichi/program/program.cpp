@@ -43,7 +43,7 @@
 #if defined(_M_X64) || defined(__x86_64)
 // For _MM_SET_FLUSH_ZERO_MODE
 #include <xmmintrin.h>
-#endif // defined(_M_X64) || defined(__x86_64)
+#endif  // defined(_M_X64) || defined(__x86_64)
 
 namespace taichi {
 namespace lang {
@@ -57,7 +57,7 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   // backends (including CPUs).
 #if defined(_M_X64) || defined(__x86_64)
   _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
-#endif // defined(_M_X64) || defined(__x86_64)
+#endif  // defined(_M_X64) || defined(__x86_64)
 #if defined(__arm64__) || defined(__aarch64__)
   // Enforce flush to zero on arm64 CPUs
   // https://developer.arm.com/documentation/100403/0201/register-descriptions/advanced-simd-and-floating-point-registers/aarch64-register-descriptions/fpcr--floating-point-control-register?lang=en
@@ -69,7 +69,7 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
                        :
                        : "ri"(fpcr | (1 << 24)));  // Bit 24 is FZ
   __asm__ __volatile__("");
-#endif // defined(__arm64__) || defined(__aarch64__)
+#endif  // defined(__arm64__) || defined(__aarch64__)
   config = default_compile_config;
   config.arch = desired_arch;
   // TODO: allow users to run in debug mode without out-of-bound checks

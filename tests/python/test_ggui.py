@@ -301,7 +301,7 @@ def test_set_image_with_texture():
 
     render()
 
-    verify_image(window.get_image_buffer_as_numpy(), 'test_set_image')
+    verify_image(window.get_image_buffer_as_numpy(), 'test_set_image', 0.3)
     window.destroy()
 
 

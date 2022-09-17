@@ -2318,8 +2318,7 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
              task_res.spirv_code.size(), optimized_spv.size());
 
     // Enable to dump SPIR-V assembly of kernels
-#if 0
-    {
+    if constexpr (false) {
       std::vector<uint32_t> &spirv = success ? optimized_spv : task_res.spirv_code;
 
       std::string spirv_asm;
@@ -2329,11 +2328,10 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
 
       std::ofstream fout(kernel_name + ".spv",
                          std::ios::binary | std::ios::out);
-      fout.write(reinterpret_cast<const char *>(optimized_spv.data()),
-                 optimized_spv.size() * sizeof(uint32_t));
+      fout.write(reinterpret_cast<const char *>(spirv.data()),
+                 spirv.size() * sizeof(uint32_t));
       fout.close();
     }
-#endif
 
     kernel_attribs.tasks_attribs.push_back(std::move(task_res.task_attribs));
     generated_spirv.push_back(std::move(optimized_spv));

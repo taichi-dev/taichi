@@ -75,7 +75,7 @@ inline bool traverse_directory(const std::string &dir, Visitor v) {
   if (!directory) {
     return false;
   }
-  while (f = ::readdir(directory)) {
+  while ((f = ::readdir(directory))) {
     struct stat *stat_buf = nullptr;
     auto fullpath = join_path(dir, f->d_name);
     auto ret = ::stat(fullpath.c_str(), stat_buf);

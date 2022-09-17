@@ -886,9 +886,12 @@ operator<<(std::ostream &os, const T &t) {
 
 // Returns true if deserialization succeeded.
 template <typename T>
-bool read_from_binary(T &t, const void *bin, std::size_t len, bool match_all = true) {
+bool read_from_binary(T &t,
+                      const void *bin,
+                      std::size_t len,
+                      bool match_all = true) {
   BinaryInputSerializer reader;
-  reader.initialize(const_cast<void*>(bin));
+  reader.initialize(const_cast<void *>(bin));
   if (len != reader.retrieve_length()) {
     return false;
   }

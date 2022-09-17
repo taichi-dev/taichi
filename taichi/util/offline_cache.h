@@ -73,13 +73,17 @@ enum class LoadMetadataError {
 };
 
 template <typename MetadataType>
-inline LoadMetadataError load_metadata_with_checking(MetadataType &result, const std::string &filepath) {
+inline LoadMetadataError load_metadata_with_checking(
+    MetadataType &result,
+    const std::string &filepath) {
   if (!taichi::path_exists(filepath)) {
     TI_DEBUG("Offline cache metadata file {} not found", filepath);
     return LoadMetadataError::kFileNotFound;
   }
 
-  static_assert(std::is_same_v<std::remove_reference_t<decltype(result.version)>, Version>);
+  static_assert(
+      std::is_same_v<std::remove_reference_t<decltype(result.version)>,
+                     Version>);
   constexpr auto sizeof_version = sizeof(result.version);
   const std::vector<uint8> bytes = read_data_from_file(filepath);
   if (bytes.size() < sizeof_version) {
@@ -90,14 +94,16 @@ inline LoadMetadataError load_metadata_with_checking(MetadataType &result, const
   if (!read_from_binary(ver, bytes.data(), bytes.size(), false)) {
     return LoadMetadataError::kCorrupted;
   }
-  if (ver[0] != TI_VERSION_MAJOR || ver[1] != TI_VERSION_MINOR || ver[2] != TI_VERSION_PATCH) {
-    TI_DEBUG("The offline cache metadata file {} is old (version={}.{}.{})", filepath, ver[0], ver[1], ver[2]);
+  if (ver[0] != TI_VERSION_MAJOR || ver[1] != TI_VERSION_MINOR ||
+      ver[2] != TI_VERSION_PATCH) {
+    TI_DEBUG("The offline cache metadata file {} is old (version={}.{}.{})",
+             filepath, ver[0], ver[1], ver[2]);
     return LoadMetadataError::kVersionNotMatched;
   }
 
-  return !read_from_binary(result, bytes.data(), bytes.size()) ? 
-      LoadMetadataError::kCorrupted : 
-      LoadMetadataError::kNoError;
+  return !read_from_binary(result, bytes.data(), bytes.size())
+             ? LoadMetadataError::kCorrupted
+             : LoadMetadataError::kNoError;
 }
 
 struct CacheCleanerConfig {
@@ -138,7 +144,8 @@ struct CacheCleanerUtils {
   }
 
   // To check if a file is cache file
-  static bool is_valid_cache_file(const CacheCleanerConfig &config, const std::string &name) {
+  static bool is_valid_cache_file(const CacheCleanerConfig &config,
+                                  const std::string &name) {
     TI_NOT_IMPLEMENTED;
   }
 };
@@ -192,14 +199,16 @@ class CacheCleaner {
       Error error = load_metadata_with_checking(cache_data, metadata_file);
       if (error == Error::kFileNotFound) {
         return;
-      } else if (error == Error::kCorrupted || error == Error::kVersionNotMatched) {
-        if (policy & CleanOldVersion) { // Remove cache files and metadata files
+      } else if (error == Error::kCorrupted ||
+                 error == Error::kVersionNotMatched) {
+        if (policy &
+            CleanOldVersion) {  // Remove cache files and metadata files
           TI_DEBUG("Removing all cache files");
           if (taichi::remove(metadata_file)) {
             taichi::remove(debugging_metadata_file);
             Utils::remove_other_files(config);
-            bool success = taichi::traverse_directory(config.path,
-                [&config](const std::string &name, bool is_dir) {
+            bool success = taichi::traverse_directory(
+                config.path, [&config](const std::string &name, bool is_dir) {
                   if (!is_dir && Utils::is_valid_cache_file(config, name)) {
                     taichi::remove(taichi::join_path(config.path, name));
                   }

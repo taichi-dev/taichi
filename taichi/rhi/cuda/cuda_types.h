@@ -518,12 +518,21 @@ typedef enum {
 } cusparsePointerMode_t;
 
 typedef enum {
+    CUSPARSE_ACTION_SYMBOLIC = 0,
+    CUSPARSE_ACTION_NUMERIC  = 1
+} cusparseAction_t;
+
+typedef enum {
   CUSPARSE_MATRIX_TYPE_GENERAL = 0,
   CUSPARSE_MATRIX_TYPE_SYMMETRIC = 1,
   CUSPARSE_MATRIX_TYPE_HERMITIAN = 2,
   CUSPARSE_MATRIX_TYPE_TRIANGULAR = 3
 } cusparseMatrixType_t;
 
+typedef enum {
+    CUSPARSE_CSR2CSC_ALG1 = 1, // faster than V2 (in general), deterministc
+    CUSPARSE_CSR2CSC_ALG2 = 2  // low memory requirement, non-deterministc
+} cusparseCsr2CscAlg_t;
 
 
 #endif

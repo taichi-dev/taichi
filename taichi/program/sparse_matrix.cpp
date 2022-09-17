@@ -445,8 +445,56 @@ const CuSparseMatrix CuSparseMatrix::gemm(const CuSparseMatrix &other,
 
   CUDADriver::get_instance().mem_free(d_buffer1);
   CUDADriver::get_instance().mem_free(d_buffer2);
+  CUSPARSEDriver::get_instance().cpDestroy(handle);
   
   return CuSparseMatrix(mat_C, nrows_A, ncols_B, PrimitiveType::f32);
+#endif
+}
+
+// Reference https://stackoverflow.com/questions/57368010/how-to-transpose-a-sparse-matrix-in-cusparse
+CuSparseMatrix CuSparseMatrix::transpose() const {
+#if defined(TI_WITH_CUDA)
+  cusparseHandle_t handle;
+  CUSPARSEDriver::get_instance().cpCreate(&handle);
+  size_t nrows_A, ncols_A, nnz;
+  void* d_csr_val = NULL, *d_csr_val_AT = NULL;
+  int* d_csr_row_ptr = NULL, *d_csr_col_ind = NULL;
+  int* d_csr_row_ptr_AT = NULL, *d_csr_col_ptr_AT = NULL;
+  cusparseIndexType_t csr_row_otr_type, csr_col_otr_type;
+  cusparseIndexBase_t idx_base_type;
+  cudaDataType value_type;
+  size_t buffer_size;
+
+  CUSPARSEDriver::get_instance().cpCsrGet(matrix_, &nrows_A, &ncols_A, &nnz,
+                                 (void**)&d_csr_row_ptr, (void**)&d_csr_col_ind, (void**)&d_csr_val,
+                                 &csr_row_otr_type, &csr_col_otr_type, &idx_base_type, &value_type);
+
+  CUSPARSEDriver::get_instance().cpCsr2cscEx2_bufferSize(handle, nrows_A, ncols_A, nnz,
+                                  (void*)&d_csr_val, (int*)&d_csr_row_ptr, (int*)&d_csr_col_ind,
+                                  (void*)&d_csr_val_AT, (int*)&d_csr_row_ptr_AT, (int*)&d_csr_col_ptr_AT,
+                                  CUDA_R_32F, CUSPARSE_ACTION_NUMERIC, CUSPARSE_INDEX_BASE_ZERO, 
+                                  CUSPARSE_CSR2CSC_ALG1, &buffer_size);
+  void* buffer = NULL;
+  CUDADriver::get_instance().malloc((void**)&buffer, buffer_size);
+
+  CUDADriver::get_instance().malloc((void**)&d_csr_val_AT, nnz*sizeof(float));
+  CUDADriver::get_instance().malloc((void**)&d_csr_row_ptr_AT, (ncols_A+1)*sizeof(int));
+  CUDADriver::get_instance().malloc((void**)&d_csr_col_ptr_AT, nnz*sizeof(int));
+
+  CUSPARSEDriver::get_instance().cpCsr2cscEx2(handle, nrows_A, ncols_A, nnz,
+                                  d_csr_val, d_csr_row_ptr, d_csr_col_ind,
+                                  d_csr_val_AT, d_csr_row_ptr_AT, d_csr_col_ptr_AT,
+                                  CUDA_R_32F, CUSPARSE_ACTION_NUMERIC,
+                                  CUSPARSE_INDEX_BASE_ZERO, CUSPARSE_CSR2CSC_ALG1, buffer);
+
+  cusparseSpMatDescr_t mat_c;
+  CUSPARSEDriver::get_instance().cpCreateCsr(&mat_c, ncols_A, nrows_A, nnz, 
+                                           (void*)d_csr_row_ptr_AT, (void*)d_csr_col_ptr_AT, (void*)d_csr_val_AT, 
+                                            CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I,
+                                            CUSPARSE_INDEX_BASE_ZERO, CUDA_R_32F);
+  CUDADriver::get_instance().mem_free(buffer);
+  CUSPARSEDriver::get_instance().cpDestroy(handle);
+  return CuSparseMatrix(mat_c, ncols_A, nrows_A, PrimitiveType::f32);
 #endif
 }
 
@@ -561,13 +609,14 @@ void csr_to_triplet(int64_t n_rows, int n_cols, T* row, T1* col, T2* value) {
 void CuSparseMatrix::print_helper() const {
 #if defined(TI_WITH_CUDA)
   size_t rows, cols, nnz;
-  float* dR, *dC, *dV;
+  float* dR;
+  int *dC, *dV;
   cusparseIndexType_t row_type, column_type;
   cusparseIndexBase_t idx_base;
   cudaDataType value_type;
   CUSPARSEDriver::get_instance().cpCsrGet(matrix_, &rows, &cols, &nnz, (void**)&dR, (void**)&dC, (void**)&dV, 
                     &row_type, &column_type, &idx_base, &value_type);
-  
+
   auto* hR = new int[rows+1];
   auto* hC = new int[nnz];
   auto* hV = new float[nnz];
@@ -579,9 +628,6 @@ void CuSparseMatrix::print_helper() const {
   CUDADriver::get_instance().memcpy_device_to_host(
         (void *)hV, (void *)dV, (nnz) * sizeof(float));
 
-  // std::cout << (row_type == CUSPARSE_INDEX_32I) << '\n';
-  // std::cout << (column_type == CUSPARSE_INDEX_32I) << '\n';
-  // std::cout << (value_type == CUDA_R_32F) << '\n';
 
   csr_to_triplet<int, int, float>(rows, cols, hR, hC, hV);
   

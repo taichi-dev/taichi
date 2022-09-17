@@ -236,6 +236,7 @@ class CuSparseMatrix : public SparseMatrix {
   const CuSparseMatrix gemm(const CuSparseMatrix &other,
                                   const float alpha,
                                   const float beta) const;
+  CuSparseMatrix transpose() const; 
 
   virtual ~CuSparseMatrix();
   void build_csr_from_coo(void *coo_row_ptr,

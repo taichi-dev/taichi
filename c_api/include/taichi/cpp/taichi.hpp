@@ -1,4 +1,5 @@
 // C++ wrapper of Taichi C-API
+#pragma once
 #include <cstring>
 #include <list>
 #include <vector>

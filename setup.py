@@ -133,7 +133,7 @@ def get_cmake_args():
     if sys.platform != 'win32':
         os.environ['SKBUILD_BUILD_OPTIONS'] = f'-j{num_threads}'
     if sys.platform == "darwin":
-        if platform.architecture() == "arm64":
+        if platform.machine() == "arm64":
             cmake_args += ["-DCMAKE_OSX_ARCHITECTURES=arm64"]
         else:
             cmake_args += ["-DCMAKE_OSX_ARCHITECTURES=x86_64"]

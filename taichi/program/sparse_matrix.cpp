@@ -360,8 +360,92 @@ const CuSparseMatrix CuSparseMatrix::addition(const CuSparseMatrix &other,
       CUSPARSE_INDEX_BASE_ZERO, CUDA_R_32F);
 
   CUSPARSEDriver::get_instance().cpDestroy(cusparse_handle);
+  CUDADriver::get_instance().mem_free(buffer);
   return CuSparseMatrix(matrix_C, rows_, cols_, PrimitiveType::f32);
-  // return CuSparseMatrix(0, 0, PrimitiveType::f32);
+#endif
+}
+
+const CuSparseMatrix CuSparseMatrix::matmul(const CuSparseMatrix &other) const {
+  return gemm(other, 1.0f, 1.0f);
+}
+
+const CuSparseMatrix CuSparseMatrix::gemm(const CuSparseMatrix &other,
+                                          const float alpha,
+                                          const float beta) const {
+#if defined(TI_WITH_CUDA)
+  cusparseHandle_t handle;
+  CUSPARSEDriver::get_instance().cpCreate(&handle);
+  cusparseOperation_t op_A = CUSPARSE_OPERATION_NON_TRANSPOSE;
+  cusparseOperation_t op_B = CUSPARSE_OPERATION_NON_TRANSPOSE;
+
+  size_t nrows_A = rows_;
+  size_t ncols_B = other.cols_;
+  auto mat_A = matrix_;
+  auto mat_B = other.matrix_;
+
+  // 1. create resulting matrix `C`
+  cusparseSpMatDescr_t mat_C;
+  CUSPARSEDriver::get_instance().cpCreateCsr(&mat_C, nrows_A, ncols_B, 0,
+                                              NULL, NULL, NULL,
+                                              CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I,
+                                              CUSPARSE_INDEX_BASE_ZERO, CUDA_R_32F);
+
+  // 2. create gemm descr 
+  cusparseSpGEMMDescr_t spgemm_desc;
+  CUSPARSEDriver::get_instance().cpSpCreateSpGEMM(&spgemm_desc);
+
+  // 3. ask buffer_size1 bytes for external memory
+  void * d_buffer1;
+  size_t buffer_size1 = 0;
+  CUSPARSEDriver::get_instance().cpSpGEMM_workEstimation(handle, op_A, op_B,
+                                &alpha, this->matrix_, other.matrix_, &beta, mat_C,
+                                CUDA_R_32F, CUSPARSE_SPGEMM_DEFAULT,
+                                spgemm_desc, &buffer_size1, NULL);
+  CUDADriver::get_instance().malloc((void**)& d_buffer1, buffer_size1);
+  // 4. inspect the matrices A and B to understand the memory requirement for the next step
+  CUSPARSEDriver::get_instance().cpSpGEMM_workEstimation(handle, op_A, op_B,
+                                    &alpha, this->matrix_, other.matrix_, &beta, mat_C,
+                                    CUDA_R_32F, CUSPARSE_SPGEMM_DEFAULT,
+                                    spgemm_desc, &buffer_size1, d_buffer1);
+
+  // 5. ask buffer_size2 bytes for external memory
+  size_t buffer_size2 = 0;
+  CUSPARSEDriver::get_instance().cpSpGEMM_compute(handle, op_A, op_B,
+                                &alpha, mat_A, mat_B, &beta, mat_C,
+                                CUDA_R_32F, CUSPARSE_SPGEMM_DEFAULT,
+                                spgemm_desc, &buffer_size2, NULL);
+  void *d_buffer2;
+  CUDADriver::get_instance().malloc((void**)& d_buffer2, buffer_size2);
+
+  // 6. compute the intermediate product of A * B
+  CUSPARSEDriver::get_instance().cpSpGEMM_compute(handle, op_A, op_B,
+                                &alpha, mat_A, mat_B, &beta, mat_C,
+                                CUDA_R_32F, CUSPARSE_SPGEMM_DEFAULT,
+                                spgemm_desc, &buffer_size2, d_buffer2);
+
+  // 7. get info of matrix C 
+  size_t nrows_C, cols_C, nnz_C;
+  CUSPARSEDriver::get_instance().cpGetSize(mat_C, &nrows_C, &cols_C, &nnz_C);
+
+  // 8. allocate matric C
+  int *dC_csrOffsets, *dC_columns;
+  float* d_values_C;
+  CUDADriver::get_instance().malloc((void**)&dC_csrOffsets, (nrows_A+1) * sizeof(int));
+  CUDADriver::get_instance().malloc((void**)&dC_columns, nnz_C * sizeof(int));
+  CUDADriver::get_instance().malloc((void**)&d_values_C, nnz_C * sizeof(float));
+
+  // 9. update matrix C with new pointers
+  CUSPARSEDriver::get_instance().cpCsrSetPointers(mat_C, dC_csrOffsets, dC_columns, d_values_C);
+
+  // 10. copy the final products of C.
+  CUSPARSEDriver::get_instance().cpSpGEMM_copy(handle, op_A, op_B,
+                                &alpha, mat_A, mat_B, &beta, mat_C,
+                                CUDA_R_32F, CUSPARSE_SPGEMM_DEFAULT, spgemm_desc);
+
+  CUDADriver::get_instance().mem_free(d_buffer1);
+  CUDADriver::get_instance().mem_free(d_buffer2);
+  
+  return CuSparseMatrix(mat_C, nrows_A, ncols_B, PrimitiveType::f32);
 #endif
 }
 

@@ -445,6 +445,10 @@ struct cusparseDnVecDescr;
 struct cusparseSpMatDescr;
 typedef struct cusparseDnVecDescr *cusparseDnVecDescr_t;
 typedef struct cusparseSpMatDescr *cusparseSpMatDescr_t;
+
+struct cusparseSpGEMMDescr;
+typedef struct cusparseSpGEMMDescr* cusparseSpGEMMDescr_t;
+
 typedef enum {
   CUSPARSE_INDEX_16U = 1,  ///< 16-bit unsigned integer for matrix/vector
                            ///< indices
@@ -503,6 +507,12 @@ typedef enum {
 } cusparseSpMVAlg_t;
 
 typedef enum {
+    CUSPARSE_SPGEMM_DEFAULT                 = 0,
+    CUSPARSE_SPGEMM_CSR_ALG_DETERMINITIC    = 1,
+    CUSPARSE_SPGEMM_CSR_ALG_NONDETERMINITIC = 2
+} cusparseSpGEMMAlg_t;
+
+typedef enum {
   CUSPARSE_POINTER_MODE_HOST = 0,
   CUSPARSE_POINTER_MODE_DEVICE = 1
 } cusparsePointerMode_t;
@@ -513,5 +523,7 @@ typedef enum {
   CUSPARSE_MATRIX_TYPE_HERMITIAN = 2,
   CUSPARSE_MATRIX_TYPE_TRIANGULAR = 3
 } cusparseMatrixType_t;
+
+
 
 #endif

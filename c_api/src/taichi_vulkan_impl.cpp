@@ -18,7 +18,8 @@ VulkanRuntimeImported::Workaround::Workaround(
     : vk_device{} {
   // FIXME: This part is copied from `vulkan_runtime_creator.cpp` which should
   // be refactorized I guess.
-  if (!taichi::lang::vulkan::VulkanLoader::instance().init(params.get_proc_addr)) {
+  if (!taichi::lang::vulkan::VulkanLoader::instance().init(
+          params.get_proc_addr)) {
     throw std::runtime_error("Error loading vulkan");
   }
   taichi::lang::vulkan::VulkanLoader::instance().load_instance(params.instance);

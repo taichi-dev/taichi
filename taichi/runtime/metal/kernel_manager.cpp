@@ -1341,6 +1341,11 @@ class KernelManager::Impl {
     TI_ERROR("Metal not supported on the current OS");
     return kDeviceNullAllocation;
   }
+
+  MakeDeviceResult device() {
+    TI_ERROR("Metal not supported on the current OS");
+    return kDeviceNullAllocation;
+  }
 };
 
 #endif  // TI_PLATFORM_OSX

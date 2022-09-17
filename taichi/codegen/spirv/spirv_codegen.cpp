@@ -2319,7 +2319,8 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
 
     // Enable to dump SPIR-V assembly of kernels
     if constexpr (false) {
-      std::vector<uint32_t> &spirv = success ? optimized_spv : task_res.spirv_code;
+      std::vector<uint32_t> &spirv =
+          success ? optimized_spv : task_res.spirv_code;
 
       std::string spirv_asm;
       spirv_tools_->Disassemble(optimized_spv, &spirv_asm);

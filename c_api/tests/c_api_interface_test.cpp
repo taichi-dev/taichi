@@ -25,6 +25,11 @@ TEST(CapiDryRun, Runtime) {
     TiArch arch = TiArch::TI_ARCH_OPENGL;
     ti::Runtime runtime(arch);
   }
+
+  if (capi::utils::is_metal_available()) {
+    TiArch arch = TiArch::TI_ARCH_METAL;
+    ti::Runtime runtime(arch);
+  }
 }
 
 TEST(CapiDryRun, MemoryAllocation) {

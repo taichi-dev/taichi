@@ -33,6 +33,14 @@ bool is_cuda_available() {
   return taichi::is_cuda_api_available();
 }
 
+bool is_metal_available() {
+#if defined(TI_WITH_METAL) && defined(__APPLE__)
+  return true;
+#else
+  return false;
+#endif
+}
+
 void check_runtime_error(TiRuntime runtime) {
 #ifdef TI_WITH_LLVM
   auto *llvm_runtime = dynamic_cast<capi::LlvmRuntime *>((Runtime *)runtime);

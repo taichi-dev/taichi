@@ -13,6 +13,12 @@ PER_CUSPARSE_FUNCTION(cpCreateMatDescr, cusparseCreateMatDescr, cusparseMatDescr
 PER_CUSPARSE_FUNCTION(cpSetMatType, cusparseSetMatType, cusparseMatDescr_t, cusparseMatrixType_t);
 PER_CUSPARSE_FUNCTION(cpSetMatIndexBase, cusparseSetMatIndexBase, cusparseMatDescr_t, cusparseIndexBase_t);
 PER_CUSPARSE_FUNCTION(cpDestroySpMat, cusparseDestroySpMat, cusparseSpMatDescr_t);
+PER_CUSPARSE_FUNCTION(cpCreateSpVec, cusparseCreateSpVec, cusparseSpVecDescr_t* ,int ,int,void*,void*,cusparseIndexType_t,cusparseIndexBase_t,cudaDataType);
+PER_CUSPARSE_FUNCTION(cpDestroySpVec, cusparseDestroySpVec, cusparseSpVecDescr_t);
+PER_CUSPARSE_FUNCTION(cpCreateIdentityPermutation, cusparseCreateIdentityPermutation, cusparseHandle_t, int, void*);
+PER_CUSPARSE_FUNCTION(cpXcoosort_bufferSizeExt, cusparseXcoosort_bufferSizeExt, cusparseHandle_t,int ,int,int, void* ,void* ,void*);
+PER_CUSPARSE_FUNCTION(cpXcoosortByRow, cusparseXcoosortByRow, cusparseHandle_t,int,int,int,void* ,void* ,void* ,void*);
+PER_CUSPARSE_FUNCTION(cpGather, cusparseGather, cusparseHandle_t, cusparseDnVecDescr_t, cusparseSpVecDescr_t);
 
 // cusparse dense vector description
 PER_CUSPARSE_FUNCTION(cpCreateDnVec, cusparseCreateDnVec, cusparseDnVecDescr_t*, int, void*, cudaDataType);

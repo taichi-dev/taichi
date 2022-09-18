@@ -80,7 +80,8 @@ class TaskCodeGenLLVMDX12 : public TaskCodeGenLLVM {
       auto i32_ty = llvm::Type::getInt32Ty(*llvm_context);
       auto loop_index = create_entry_block_alloca(i32_ty);
       llvm::Value *thread_idx =
-          builder->CreateIntrinsic(llvm::Intrinsic::dx_thread_id_in_group, {i32_ty}, {builder->getInt32(0)});
+          builder->CreateIntrinsic(llvm::Intrinsic::dx_thread_id_in_group,
+                                   {i32_ty}, {builder->getInt32(0)});
       // FIXME: use correct block dim.
       llvm::Value *block_dim =
           builder->getInt32(64); /*builder->CreateIntrinsic(

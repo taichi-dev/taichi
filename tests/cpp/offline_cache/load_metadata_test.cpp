@@ -4,7 +4,7 @@
 
 #ifdef TI_WITH_LLVM
 #include "taichi/runtime/llvm/llvm_offline_cache.h"
-#endif // TI_WITH_LLVM
+#endif  // TI_WITH_LLVM
 
 namespace taichi {
 namespace lang {
@@ -21,7 +21,7 @@ inline void gen_old_version(oc::Version &ver) {
 }
 
 template <typename MetadataType>
-MetadataType gen_metadata(const oc::Version & ver) {
+MetadataType gen_metadata(const oc::Version &ver) {
   MetadataType result;
   result.size = 1024;
   std::copy(std::begin(ver), std::end(ver), std::begin(result.version));
@@ -56,7 +56,8 @@ void load_metadata_test() {
   write_to_binary_file(gen_old_metadata<MetadataType>(), old_file);
   // Generate corrupted metadata file
   write_to_binary_file(gen_correct_metadata<MetadataType>(), corrupted_file);
-  std::ofstream(corrupted_file, std::ios::app | std::ios::binary) << "I-AM-BAD-BYTES" << std::flush;
+  std::ofstream(corrupted_file, std::ios::app | std::ios::binary)
+      << "I-AM-BAD-BYTES" << std::flush;
 
   using Error = oc::LoadMetadataError;
   Error error = Error::kNoError;
@@ -103,7 +104,7 @@ void load_metadata_test() {
 TEST(OfflineCache, LoadMetadata) {
 #ifdef TI_WITH_LLVM
   load_metadata_test<LlvmOfflineCache>();
-#endif // TI_WITH_LLVM
+#endif  // TI_WITH_LLVM
   load_metadata_test<oc::Metadata>();
 }
 

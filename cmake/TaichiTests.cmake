@@ -20,7 +20,8 @@ file(GLOB_RECURSE TAICHI_TESTS_SOURCE
         "tests/cpp/llvm/*.cpp"
         "tests/cpp/program/*.cpp"
         "tests/cpp/struct/*.cpp"
-        "tests/cpp/transforms/*.cpp")
+        "tests/cpp/transforms/*.cpp"
+        "tests/cpp/offline_cache/*.cpp")
 
 if (TI_WITH_OPENGL OR TI_WITH_VULKAN)
     file(GLOB TAICHI_TESTS_GFX_UTILS_SOURCE

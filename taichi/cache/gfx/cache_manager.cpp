@@ -96,8 +96,7 @@ struct CacheCleanerUtils<gfx::CacheManager::Metadata> {
   // To check if a file is cache file
   static bool is_valid_cache_file(const CacheCleanerConfig &config,
                                   const std::string &name) {
-    std::string postfix = filename_postfix(name);
-    return postfix == "spv";
+    return filename_extension(name) == "spv";
   }
 };
 

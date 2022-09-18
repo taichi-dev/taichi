@@ -88,7 +88,7 @@ inline bool traverse_directory(const std::string &dir, Visitor v) {
 #endif
 }
 
-inline std::string filename_postfix(const std::string &filename) {
+inline std::string filename_extension(const std::string &filename) {
   std::string postfix;
   auto pos = filename.find_last_of('.');
   if (pos != std::string::npos) {

@@ -81,16 +81,11 @@ inline LoadMetadataError load_metadata_with_checking(
     return LoadMetadataError::kFileNotFound;
   }
 
-  static_assert(
-      std::is_same_v<std::remove_reference_t<decltype(result.version)>,
-                     Version>);
-  constexpr auto sizeof_version = sizeof(result.version);
+  using VerType = std::remove_reference_t<decltype(result.version)>;
+  static_assert(std::is_same_v<VerType, Version>);
   const std::vector<uint8> bytes = read_data_from_file(filepath);
-  if (bytes.size() < sizeof_version) {
-    return LoadMetadataError::kCorrupted;
-  }
 
-  Version ver{};
+  VerType ver{};
   if (!read_from_binary(ver, bytes.data(), bytes.size(), false)) {
     return LoadMetadataError::kCorrupted;
   }

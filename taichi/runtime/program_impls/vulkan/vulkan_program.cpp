@@ -212,6 +212,12 @@ std::unique_ptr<aot::Kernel> VulkanProgramImpl::make_aot_kernel(
                                            std::move(params));
 }
 
+void VulkanProgramImpl::enqueue_compute_op_lambda(
+    std::function<void(Device *device, CommandList *cmdlist)> op,
+    const std::vector<ComputeOpImageRef> &image_refs) {
+  vulkan_runtime_->enqueue_compute_op_lambda(op, image_refs);
+}
+
 void VulkanProgramImpl::dump_cache_data_to_disk() {
   const auto &mgr = get_cache_manager();
   mgr->clean_offline_cache(offline_cache::string_to_clean_cache_policy(

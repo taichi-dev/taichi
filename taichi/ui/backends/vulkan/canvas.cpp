@@ -18,6 +18,10 @@ void Canvas::set_image(const SetImageInfo &info) {
   renderer_->set_image(info);
 }
 
+void Canvas::set_image(Texture *tex) {
+  renderer_->set_image(tex);
+}
+
 void Canvas::triangles(const TrianglesInfo &info) {
   renderer_->triangles(info);
 }

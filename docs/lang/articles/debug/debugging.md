@@ -173,7 +173,7 @@ f = ti.field(dtype=ti.i32, shape=(32, 32))
 @ti.kernel
 def test() -> ti.i32:
     return f[0, 73]
-    
+
 print(test())
 ```
 

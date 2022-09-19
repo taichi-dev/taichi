@@ -220,7 +220,7 @@ uint64 Time::get_cycles() {
 #else
 
 uint64 Time::get_cycles() {
-#if defined(TI_ARCH_x64)
+#if defined(TI_ARCH_x64) && !(defined(__arm64__) || defined(__aarch64__))
   unsigned int lo, hi;
   __asm__ __volatile__("rdtsc" : "=a"(lo), "=d"(hi));
   return ((uint64)hi << 32) | lo;

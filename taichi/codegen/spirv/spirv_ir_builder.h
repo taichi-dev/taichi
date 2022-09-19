@@ -209,9 +209,11 @@ class IRBuilder {
   }
 
   template <typename... Args>
-  void debug(spv::Op op, Args &&...args) {
-    ib_.begin(op).add_seq(std::forward<Args>(args)...).commit(&debug_);
+  void debug_name(spv::Op op, Args &&...args) {
+    ib_.begin(op).add_seq(std::forward<Args>(args)...).commit(&names_);
   }
+
+  Value debug_string(std::string str);
 
   template <typename... Args>
   void execution_mode(Value func, Args &&...args) {
@@ -293,8 +295,6 @@ class IRBuilder {
   Value float_immediate_number(const SType &dtype,
                                double value,
                                bool cache = true);
-
-  Value make_string(std::string str);
 
   // Match zero type
   Value get_zero(const SType &stype) {
@@ -464,7 +464,7 @@ class IRBuilder {
 
   // Create a debugPrintf call
   void call_debugprintf(std::string formats, const std::vector<Value> &args) {
-    Value format_str = make_string(formats);
+    Value format_str = debug_string(formats);
     Value val = new_value(t_void_, ValueKind::kNormal);
     ib_.begin(spv::OpExtInst)
         .add_seq(t_void_, val, debug_printf_, 1, format_str);
@@ -619,11 +619,18 @@ class IRBuilder {
   std::vector<uint32_t> entry_;
   // Header segment
   std::vector<uint32_t> exec_mode_;
+  // Debug segment
+  //   According to SPIR-V spec, the following debug instructions must be
+  //   grouped in the order:
+  //   - All OpString, OpSourceExtension, OpSource, and OpSourceContinued,
+  //   without forward references.
+  //   - All OpName and all OpMemberName.
+  //   - All OpModuleProcessed instructions.
+
   // OpString segment
   std::vector<uint32_t> strings_;
-  // TODO: Rename this to names_ in a followup PR
-  // Debug segment
-  std::vector<uint32_t> debug_;
+  // OpName segment
+  std::vector<uint32_t> names_;
   // Annotation segment
   std::vector<uint32_t> decorate_;
   // Global segment: types, variables, types

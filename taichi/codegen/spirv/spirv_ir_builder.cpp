@@ -132,7 +132,7 @@ std::vector<uint32_t> IRBuilder::finalize() {
   data.insert(data.end(), entry_.begin(), entry_.end());
   data.insert(data.end(), exec_mode_.begin(), exec_mode_.end());
   data.insert(data.end(), strings_.begin(), strings_.end());
-  data.insert(data.end(), debug_.begin(), debug_.end());
+  data.insert(data.end(), names_.begin(), names_.end());
   data.insert(data.end(), decorate_.begin(), decorate_.end());
   data.insert(data.end(), global_.begin(), global_.end());
   data.insert(data.end(), func_header_.begin(), func_header_.end());
@@ -218,7 +218,7 @@ void IRBuilder::init_pre_defs() {
   const_i32_one_ = int_immediate_number(t_int32_, 1);
 }
 
-Value IRBuilder::make_string(std::string s) {
+Value IRBuilder::debug_string(std::string s) {
   Value val = new_value(SType(), ValueKind::kNormal);
   ib_.begin(spv::OpString).add_seq(val, s).commit(&strings_);
   return val;
@@ -592,7 +592,7 @@ SType IRBuilder::create_struct_type(
   for (auto &[type, name, offset] : components) {
     this->decorate(spv::OpMemberDecorate, struct_type, i, spv::DecorationOffset,
                    offset);
-    this->debug(spv::OpMemberName, struct_type, i, name);
+    this->debug_name(spv::OpMemberName, struct_type, i, name);
     i++;
   }
 
@@ -612,7 +612,7 @@ Value IRBuilder::buffer_struct_argument(const SType &struct_type,
     storage_class = spv::StorageClassStorageBuffer;
   }
 
-  this->debug(spv::OpName, struct_type, name + "_t");
+  this->debug_name(spv::OpName, struct_type, name + "_t");
 
   if (device_->get_cap(cap::spirv_version) < 0x10300) {
     // NOTE: BufferBlock was deprecated in SPIRV 1.3
@@ -625,14 +625,14 @@ Value IRBuilder::buffer_struct_argument(const SType &struct_type,
 
   SType ptr_type = get_pointer_type(struct_type, storage_class);
 
-  this->debug(spv::OpName, ptr_type, name + "_ptr");
+  this->debug_name(spv::OpName, ptr_type, name + "_ptr");
 
   Value val = new_value(ptr_type, ValueKind::kStructArrayPtr);
   ib_.begin(spv::OpVariable)
       .add_seq(ptr_type, val, storage_class)
       .commit(&global_);
 
-  this->debug(spv::OpName, val, name);
+  this->debug_name(spv::OpName, val, name);
 
   this->decorate(spv::OpDecorate, val, spv::DecorationDescriptorSet,
                  descriptor_set);
@@ -648,20 +648,20 @@ Value IRBuilder::uniform_struct_argument(const SType &struct_type,
   // use StorageClassStorageBuffer instead.
   spv::StorageClass storage_class = spv::StorageClassUniform;
 
-  this->debug(spv::OpName, struct_type, name + "_t");
+  this->debug_name(spv::OpName, struct_type, name + "_t");
 
   this->decorate(spv::OpDecorate, struct_type, spv::DecorationBlock);
 
   SType ptr_type = get_pointer_type(struct_type, storage_class);
 
-  this->debug(spv::OpName, ptr_type, name + "_ptr");
+  this->debug_name(spv::OpName, ptr_type, name + "_ptr");
 
   Value val = new_value(ptr_type, ValueKind::kStructArrayPtr);
   ib_.begin(spv::OpVariable)
       .add_seq(ptr_type, val, storage_class)
       .commit(&global_);
 
-  this->debug(spv::OpName, val, name);
+  this->debug_name(spv::OpName, val, name);
 
   this->decorate(spv::OpDecorate, val, spv::DecorationDescriptorSet,
                  descriptor_set);
@@ -686,18 +686,18 @@ Value IRBuilder::buffer_argument(const SType &value_type,
 
   auto typed_name = name + "_" + value_type.dt.to_string();
 
-  this->debug(spv::OpName, sarr_type, typed_name + "_struct_array");
+  this->debug_name(spv::OpName, sarr_type, typed_name + "_struct_array");
 
   SType ptr_type = get_pointer_type(sarr_type, storage_class);
 
-  this->debug(spv::OpName, sarr_type, typed_name + "_ptr");
+  this->debug_name(spv::OpName, sarr_type, typed_name + "_ptr");
 
   Value val = new_value(ptr_type, ValueKind::kStructArrayPtr);
   ib_.begin(spv::OpVariable)
       .add_seq(ptr_type, val, storage_class)
       .commit(&global_);
 
-  this->debug(spv::OpName, val, typed_name);
+  this->debug_name(spv::OpName, val, typed_name);
 
   this->decorate(spv::OpDecorate, val, spv::DecorationDescriptorSet,
                  descriptor_set);
@@ -744,7 +744,7 @@ Value IRBuilder::texture_argument(int num_channels,
                  descriptor_set);
   this->decorate(spv::OpDecorate, val, spv::DecorationBinding, binding);
 
-  this->debug(spv::OpName, val, "tex");
+  this->debug_name(spv::OpName, val, "tex");
 
   this->global_values.push_back(val);
 
@@ -769,7 +769,7 @@ Value IRBuilder::storage_image_argument(int num_channels,
                  descriptor_set);
   this->decorate(spv::OpDecorate, val, spv::DecorationBinding, binding);
 
-  this->debug(spv::OpName, val, "tex");
+  this->debug_name(spv::OpName, val, "tex");
 
   this->global_values.push_back(val);
 
@@ -1201,7 +1201,7 @@ void IRBuilder::register_value(std::string name, Value value) {
   if (it != value_name_tbl_.end() && it->second.flag != ValueKind::kConstant) {
     TI_ERROR("{} already exists.", name);
   }
-  this->debug(
+  this->debug_name(
       spv::OpName, value,
       fmt::format("{}_{}", name, value.stype.dt.to_string()));  // Debug info
   value_name_tbl_[name] = value;
@@ -1439,13 +1439,13 @@ void IRBuilder::init_random_function(Value global_tmp_) {
   ib_.begin(spv::OpVariable)
       .add_seq(local_type, rand_w_, spv::StorageClassPrivate)
       .commit(&global_);
-  debug(spv::OpName, rand_x_, "_rand_x");
-  debug(spv::OpName, rand_y_, "_rand_y");
-  debug(spv::OpName, rand_z_, "_rand_z");
-  debug(spv::OpName, rand_w_, "_rand_w");
+  debug_name(spv::OpName, rand_x_, "_rand_x");
+  debug_name(spv::OpName, rand_y_, "_rand_y");
+  debug_name(spv::OpName, rand_z_, "_rand_z");
+  debug_name(spv::OpName, rand_w_, "_rand_w");
   SType gtmp_type = get_pointer_type(t_uint32_, spv::StorageClassStorageBuffer);
   Value rand_gtmp_ = new_value(gtmp_type, ValueKind::kVariablePtr);
-  debug(spv::OpName, rand_gtmp_, "rand_gtmp");
+  debug_name(spv::OpName, rand_gtmp_, "rand_gtmp");
 
   auto load_var = [&](Value pointer, const SType &res_type) {
     TI_ASSERT(pointer.flag == ValueKind::kVariablePtr ||

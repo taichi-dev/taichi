@@ -22,7 +22,7 @@ class KernelCodeGenDX12 : public KernelCodeGen {
   };
   CompileResult compile();
 #ifdef TI_WITH_LLVM
-  LLVMCompiledData compile_task(
+  LLVMCompiledTask compile_task(
       std::unique_ptr<llvm::Module> &&module = nullptr,
       OffloadedStmt *stmt = nullptr) override;
 #endif

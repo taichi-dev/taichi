@@ -379,9 +379,9 @@ def test_sparse_matrix_nonsymmetric_multiplication(dtype, storage_format):
 
 @test_utils.test(arch=ti.cuda)
 def test_gpu_sparse_matrix():
-    h_coo_row = np.asarray([0, 0, 0, 1, 2, 2, 2, 3, 3], dtype=np.int32)
-    h_coo_col = np.asarray([0, 2, 3, 1, 0, 2, 3, 1, 3], dtype=np.int32)
-    h_coo_val = np.asarray([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0],
+    h_coo_row = np.asarray([1, 0, 0, 0, 2, 2, 2, 3, 3], dtype=np.int32)
+    h_coo_col = np.asarray([1, 0, 2, 3, 0, 2, 3, 1, 3], dtype=np.int32)
+    h_coo_val = np.asarray([4.0, 1.0, 2.0, 3.0, 5.0, 6.0, 7.0, 8.0, 9.0],
                            dtype=np.float32)
     h_X = np.asarray([1.0, 2.0, 3.0, 4.0], dtype=np.float32)
     h_Y = np.asarray([19.0, 8.0, 51.0, 52.0], dtype=np.float32)

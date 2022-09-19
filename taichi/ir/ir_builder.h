@@ -136,6 +136,11 @@ class IRBuilder {
   ConstStmt *get_float32(float32 value);
   ConstStmt *get_float64(float64 value);
 
+  template <typename T>
+  ConstStmt *get_constant(DataType dt, const T &value) {
+    return insert(Stmt::make_typed<ConstStmt>(TypedConstant(dt, value)));
+  }
+
   RandStmt *create_rand(DataType value_type);
 
   // Load kernel arguments.

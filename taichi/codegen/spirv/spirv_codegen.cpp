@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include <variant>
 
 #include "taichi/program/program.h"
 #include "taichi/program/kernel.h"
@@ -104,7 +105,7 @@ class TaskCodegen : public IRVisitor {
   Result run() {
     ir_->init_header();
     kernel_function_ = ir_->new_function();  // void main();
-    ir_->debug(spv::OpName, kernel_function_, "main");
+    ir_->debug_name(spv::OpName, kernel_function_, "main");
 
     compile_args_struct();
     compile_ret_struct();
@@ -146,8 +147,28 @@ class TaskCodegen : public IRVisitor {
     }
   }
 
-  void visit(PrintStmt *print_stmt) override {
-    TI_WARN("Printing is not yet supported in Vulkan");
+  void visit(PrintStmt *stmt) override {
+    if (!device_->get_cap(DeviceCapability::spirv_has_non_semantic_info)) {
+      return;
+    }
+
+    std::string formats;
+    std::vector<Value> vals;
+
+    for (auto const &content : stmt->contents) {
+      if (std::holds_alternative<Stmt *>(content)) {
+        auto arg_stmt = std::get<Stmt *>(content);
+        TI_ASSERT(!arg_stmt->ret_type->is<TensorType>());
+
+        auto value = ir_->query_value(arg_stmt->raw_name());
+        vals.push_back(value);
+        formats += data_type_format(arg_stmt->ret_type);
+      } else {
+        auto arg_str = std::get<std::string>(content);
+        formats += arg_str;
+      }
+    }
+    ir_->call_debugprintf(formats, vals);
   }
 
   void visit(ConstStmt *const_stmt) override {
@@ -846,35 +867,6 @@ class TaskCodegen : public IRVisitor {
     BINARY_OP_TO_SPIRV_LOGICAL(cmp_ne, ne)
 #undef BINARY_OP_TO_SPIRV_LOGICAL
 
-#define INT_OR_FLOAT_BINARY_OP_TO_SPIRV_FLOAT_FUNC(op, instruction,            \
-                                                   instruction_id, max_bits)   \
-  else if (op_type == BinaryOpType::op) {                                      \
-    const uint32_t instruction = instruction_id;                               \
-    if (is_real(bin->element_type()) || is_integral(bin->element_type())) {    \
-      if (data_type_bits(bin->element_type()) > max_bits) {                    \
-        TI_ERROR(                                                              \
-            "[glsl450] the operand type of instruction {}({}) must <= {}bits", \
-            #instruction, instruction_id, max_bits);                           \
-      }                                                                        \
-      if (is_integral(bin->element_type())) {                                  \
-        bin_value = ir_->cast(                                                 \
-            dst_type,                                                          \
-            ir_->add(ir_->call_glsl450(ir_->f32_type(), instruction,           \
-                                       ir_->cast(ir_->f32_type(), lhs_value),  \
-                                       ir_->cast(ir_->f32_type(), rhs_value)), \
-                     ir_->float_immediate_number(ir_->f32_type(), 0.5f)));     \
-      } else {                                                                 \
-        bin_value =                                                            \
-            ir_->call_glsl450(dst_type, instruction, lhs_value, rhs_value);    \
-      }                                                                        \
-    } else {                                                                   \
-      TI_NOT_IMPLEMENTED                                                       \
-    }                                                                          \
-  }
-
-    INT_OR_FLOAT_BINARY_OP_TO_SPIRV_FLOAT_FUNC(pow, Pow, 26, 32)
-#undef INT_OR_FLOAT_BINARY_OP_TO_SPIRV_FLOAT_FUNC
-
 #define FLOAT_BINARY_OP_TO_SPIRV_FLOAT_FUNC(op, instruction, instruction_id,   \
                                             max_bits)                          \
   else if (op_type == BinaryOpType::op) {                                      \
@@ -893,6 +885,7 @@ class TaskCodegen : public IRVisitor {
   }
 
     FLOAT_BINARY_OP_TO_SPIRV_FLOAT_FUNC(atan2, Atan2, 25, 32)
+    FLOAT_BINARY_OP_TO_SPIRV_FLOAT_FUNC(pow, Pow, 26, 32)
 #undef FLOAT_BINARY_OP_TO_SPIRV_FLOAT_FUNC
 
 #define BINARY_OP_TO_SPIRV_FUNC(op, S_inst, S_inst_id, U_inst, U_inst_id,      \
@@ -1677,15 +1670,15 @@ class TaskCodegen : public IRVisitor {
       task_attribs_.advisory_total_num_threads = kMaxNumThreadsGridStrideLoop;
     }
     task_attribs_.advisory_num_threads_per_group = stmt->block_dim;
-    ir_->debug(spv::OpName, begin_expr_value, "begin_expr_value");
-    ir_->debug(spv::OpName, total_elems, total_elems_name);
+    ir_->debug_name(spv::OpName, begin_expr_value, "begin_expr_value");
+    ir_->debug_name(spv::OpName, total_elems, total_elems_name);
 
     spirv::Value begin_ =
         ir_->add(ir_->cast(ir_->i32_type(), ir_->get_global_invocation_id(0)),
                  begin_expr_value);
-    ir_->debug(spv::OpName, begin_, "begin_");
+    ir_->debug_name(spv::OpName, begin_, "begin_");
     spirv::Value end_ = ir_->add(total_elems, begin_expr_value);
-    ir_->debug(spv::OpName, end_, "end_");
+    ir_->debug_name(spv::OpName, end_, "end_");
     const std::string total_invocs_name = "total_invocs";
     // For now, |total_invocs_name| is equal to |total_elems|. Once we support
     // dynamic range, they will be different.
@@ -1707,7 +1700,7 @@ class TaskCodegen : public IRVisitor {
         false);
         */
 
-    ir_->debug(spv::OpName, total_invocs, total_invocs_name);
+    ir_->debug_name(spv::OpName, total_invocs, total_invocs_name);
 
     // Must get init label after making value(to make sure they are correct)
     spirv::Label init_label = ir_->current_label();
@@ -2328,6 +2321,7 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
     std::vector<uint32_t> optimized_spv(task_res.spirv_code);
 
     size_t last_size;
+    bool success = true;
     do {
       last_size = optimized_spv.size();
       bool result = false;
@@ -2335,25 +2329,31 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
           (result = !spirv_opt_->Run(optimized_spv.data(), optimized_spv.size(),
                                      &optimized_spv, spirv_opt_options_)),
           "SPIRV optimization failed");
-      if (result)
+      if (result) {
+        success = false;
         break;
+      }
     } while (last_size != optimized_spv.size());
 
     TI_TRACE("SPIRV-Tools-opt: binary size, before={}, after={}",
              task_res.spirv_code.size(), optimized_spv.size());
 
     // Enable to dump SPIR-V assembly of kernels
-#if 0
-    std::string spirv_asm;
-    spirv_tools_->Disassemble(optimized_spv, &spirv_asm);
-    auto kernel_name = tp.ti_kernel_name;
-    TI_WARN("SPIR-V Assembly dump for {} :\n{}\n\n", kernel_name, spirv_asm);
+    if constexpr (false) {
+      std::vector<uint32_t> &spirv =
+          success ? optimized_spv : task_res.spirv_code;
 
-    std::ofstream fout(kernel_name + ".spv", std::ios::binary | std::ios::out);
-    fout.write(reinterpret_cast<const char *>(optimized_spv.data()),
-               optimized_spv.size() * sizeof(uint32_t));
-    fout.close();
-#endif
+      std::string spirv_asm;
+      spirv_tools_->Disassemble(optimized_spv, &spirv_asm);
+      auto kernel_name = tp.ti_kernel_name;
+      TI_WARN("SPIR-V Assembly dump for {} :\n{}\n\n", kernel_name, spirv_asm);
+
+      std::ofstream fout(kernel_name + ".spv",
+                         std::ios::binary | std::ios::out);
+      fout.write(reinterpret_cast<const char *>(spirv.data()),
+                 spirv.size() * sizeof(uint32_t));
+      fout.close();
+    }
 
     kernel_attribs.tasks_attribs.push_back(std::move(task_res.task_attribs));
     generated_spirv.push_back(std::move(optimized_spv));

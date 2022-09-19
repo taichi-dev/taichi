@@ -418,6 +418,11 @@ class Device {
       dest.set_cap(k, v);
     }
   }
+  void clone_caps(std::map<DeviceCapability, uint32_t> &dest) const {
+    for (const auto &[k, v] : caps_) {
+      dest[k] = v;
+    }
+  }
 
   void print_all_cap() const;
 

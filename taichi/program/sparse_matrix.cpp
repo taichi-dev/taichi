@@ -203,11 +203,40 @@ void CuSparseMatrix::build_csr_from_coo(void *coo_row_ptr,
                                         void *coo_values_ptr,
                                         int nnz) {
 #if defined(TI_WITH_CUDA)
+  // Step 1: Sort coo first
+  cusparseHandle_t cusparse_handle = NULL;
+  CUSPARSEDriver::get_instance().cpCreate(&cusparse_handle);
+  cusparseSpVecDescr_t vec_permutation;
+  cusparseDnVecDescr_t vec_values;
+  void *d_permutation = NULL, *d_values_sorted = NULL;
+  CUDADriver::get_instance().malloc(&d_permutation, nnz * sizeof(int));
+  CUDADriver::get_instance().malloc(&d_values_sorted, nnz * sizeof(float));
+  CUSPARSEDriver::get_instance().cpCreateSpVec(
+      &vec_permutation, nnz, nnz, d_permutation, d_values_sorted,
+      CUSPARSE_INDEX_32I, CUSPARSE_INDEX_BASE_ZERO, CUDA_R_32F);
+  CUSPARSEDriver::get_instance().cpCreateDnVec(&vec_values, nnz, coo_values_ptr,
+                                               CUDA_R_32F);
+  size_t bufferSize = 0;
+  CUSPARSEDriver::get_instance().cpXcoosort_bufferSizeExt(
+      cusparse_handle, rows_, cols_, nnz, coo_row_ptr, coo_col_ptr,
+      &bufferSize);
+  void *dbuffer = NULL;
+  if (bufferSize > 0)
+    CUDADriver::get_instance().malloc(&dbuffer, bufferSize);
+  // Setup permutation vector to identity
+  CUSPARSEDriver::get_instance().cpCreateIdentityPermutation(
+      cusparse_handle, nnz, d_permutation);
+  CUSPARSEDriver::get_instance().cpXcoosortByRow(cusparse_handle, rows_, cols_,
+                                                 nnz, coo_row_ptr, coo_col_ptr,
+                                                 d_permutation, dbuffer);
+  CUSPARSEDriver::get_instance().cpGather(cusparse_handle, vec_values,
+                                          vec_permutation);
+  CUDADriver::get_instance().memcpy_device_to_device(
+      coo_values_ptr, d_values_sorted, nnz * sizeof(float));
+  // Step 2: coo to csr
   void *csr_row_offset_ptr = NULL;
   CUDADriver::get_instance().malloc(&csr_row_offset_ptr,
                                     sizeof(int) * (rows_ + 1));
-  cusparseHandle_t cusparse_handle;
-  CUSPARSEDriver::get_instance().cpCreate(&cusparse_handle);
   CUSPARSEDriver::get_instance().cpCoo2Csr(
       cusparse_handle, (void *)coo_row_ptr, nnz, rows_,
       (void *)csr_row_offset_ptr, CUSPARSE_INDEX_BASE_ZERO);
@@ -216,9 +245,14 @@ void CuSparseMatrix::build_csr_from_coo(void *coo_row_ptr,
       &matrix_, rows_, cols_, nnz, csr_row_offset_ptr, coo_col_ptr,
       coo_values_ptr, CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I,
       CUSPARSE_INDEX_BASE_ZERO, CUDA_R_32F);
+  CUSPARSEDriver::get_instance().cpDestroySpVec(vec_permutation);
+  CUSPARSEDriver::get_instance().cpDestroyDnVec(vec_values);
   CUSPARSEDriver::get_instance().cpDestroy(cusparse_handle);
   // TODO: free csr_row_offset_ptr
   // CUDADriver::get_instance().mem_free(csr_row_offset_ptr);
+  CUDADriver::get_instance().mem_free(d_values_sorted);
+  CUDADriver::get_instance().mem_free(d_permutation);
+  CUDADriver::get_instance().mem_free(dbuffer);
 #endif
 }
 

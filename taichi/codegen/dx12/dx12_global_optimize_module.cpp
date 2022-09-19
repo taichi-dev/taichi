@@ -8,6 +8,7 @@
 #include "taichi/util/file_sequence_writer.h"
 #include "taichi/runtime/llvm/llvm_context.h"
 
+#include "dx12_llvm_passes.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/Twine.h"
 #include "llvm/IR/Function.h"
@@ -38,6 +39,8 @@ namespace taichi {
 namespace lang {
 namespace directx12 {
 
+const char *NumWorkGroupsCBName = "num_work_groups.cbuf";
+
 const llvm::StringRef ShaderAttrKindStr = "hlsl.shader";
 
 void mark_function_as_cs_entry(::llvm::Function *F) {
@@ -51,6 +54,16 @@ void set_num_threads(llvm::Function *F, unsigned x, unsigned y, unsigned z) {
   const llvm::StringRef NumThreadsAttrKindStr = "hlsl.numthreads";
   std::string Str = llvm::formatv("{0},{1},{2}", x, y, z);
   F->addFnAttr(NumThreadsAttrKindStr, Str);
+}
+
+GlobalVariable *createGlobalVariableForResource(Module &M,
+                                                const char *Name,
+                                                llvm::Type *Ty) {
+  auto *GV = new GlobalVariable(M, Ty, /*isConstant*/ false,
+                                GlobalValue::LinkageTypes::ExternalLinkage,
+                                /*Initializer*/ nullptr, Name);
+  GV->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::None);
+  return GV;
 }
 
 std::vector<uint8_t> global_optimize_module(llvm::Module *module,
@@ -104,6 +117,9 @@ std::vector<uint8_t> global_optimize_module(llvm::Module *module,
 
   module->setDataLayout(target_machine->createDataLayout());
 
+  // Lower taichi intrinsic first.
+  module_pass_manager.add(createTaichiIntrinsicLowerPass(&config));
+
   module_pass_manager.add(createTargetTransformInfoWrapperPass(
       target_machine->getTargetIRAnalysis()));
   function_pass_manager.add(createTargetTransformInfoWrapperPass(
@@ -119,6 +135,9 @@ std::vector<uint8_t> global_optimize_module(llvm::Module *module,
 
   b.populateFunctionPassManager(function_pass_manager);
   b.populateModulePassManager(module_pass_manager);
+  // Add passes after inline.
+  module_pass_manager.add(createTaichiRuntimeContextLowerPass());
+
   llvm::SmallString<256> str;
   llvm::raw_svector_ostream OS(str);
   // Write DXIL container to OS.

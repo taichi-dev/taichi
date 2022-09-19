@@ -6,7 +6,7 @@ sidebar_position: 2
 
 Taichi is a [data-oriented](https://en.wikipedia.org/wiki/Data-oriented_design) programming (DOP) language. However, simple DOP makes modularization hard. To allow modularized code, Taichi borrows some concepts from object-oriented programming (OOP). For convenience, let's call the hybrid scheme **objective data-oriented programming** (ODOP).
 
-The ODOP scheme allows you to organize data and methods into a class, and call the methods to manipulate the data in the Taichi scope . Taichi offers two different types of classes that serve this purpose, they are distinguished by the two decorators `@ti.data_oriented` and `@ti.dataclass`:
+The ODOP scheme allows you to organize data and methods into a class and call the methods to manipulate the data in the Taichi scope. Taichi offers two different types of classes that serve this purpose, and they are distinguished by the two decorators `@ti.data_oriented` and `@ti.dataclass`, respectively:
 
 1. `@ti.data_oriented`: You should use this class when some data is actively updated in the Python scope (for example current time, user input events), and you want to invoke kernels as its methods to immediately follow such updates. This class can only be instantiated in the Python scope and can have native Python objects as members. In this article we will discuss this type of class in full detail.
 

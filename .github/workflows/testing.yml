@@ -257,10 +257,10 @@ jobs:
           if [[ "${{needs.check_files.outputs.run_job}}" == "false" ]]; then
             exit 0
           fi
-          brew install molten-vk
+          brew install molten-vk vulkan-loader
           mkdir -p sccache_cache
           .github/workflows/scripts/unix_build.sh
-          brew uninstall molten-vk
+          brew uninstall molten-vk vulkan-loader
         env:
           TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }} -DTI_WITH_VULKAN:BOOL=ON -DTI_WITH_C_API=ON -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }} -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           CXX: clang++
@@ -582,7 +582,7 @@ jobs:
             exit 0
           fi
           export PATH=/Users/github/miniforge3/envs/$PY/bin:$PATH
-          brew install molten-vk
+          brew install molten-vk vulkan-loader
           .github/workflows/scripts/unix_build.sh
         env:
           TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_WITH_C_API=ON -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache

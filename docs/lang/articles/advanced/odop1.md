@@ -10,7 +10,7 @@ The ODOP scheme allows you to organize data and methods into a class and call th
 
 1. `@ti.data_oriented`: It should be used when your data is actively updated in the Python scope (such as current time and user input events) and tracked in Taichi kernels. This type of class can have native Python objects as members and must be instantiated in the Python scope. This article will discuss this type of class in full detail.
 
-2. `@ti.dataclass`: A class decorated by `@ti.dataclass` is a wrapper over `ti.types.struct` but offers more flexibility than `ti.types.struct`: You can define Taichi functions as its methods and invoke these methods in the Taichi scope. We will discuss this type of class in the next article.
+2. `@ti.dataclass`: It is a wrapper over `ti.types.struct` but offers more flexibility: You can define Taichi functions as its methods and invoke these methods in the Taichi scope. We will discuss this type of class in the next article.
 
 
 ## Data-oriented classes

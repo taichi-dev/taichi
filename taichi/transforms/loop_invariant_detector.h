@@ -52,8 +52,7 @@ class LoopInvariantDetector : public BasicStmtVisitor {
   }
 
   bool is_operand_loop_invariant(Stmt *operand, Block *current_scope) {
-    if (loop_blocks.size() <= 1 || (!config.move_loop_invariant_outside_if &&
-                                    current_scope != loop_blocks.top()))
+    if (loop_blocks.size() <= 1)
       return false;
     return is_operand_loop_invariant_impl(operand, current_scope);
   }
@@ -117,6 +116,7 @@ class LoopInvariantDetector : public BasicStmtVisitor {
 
     if (stmt->body) {
       if (stmt->task_type == OffloadedStmt::TaskType::range_for ||
+          stmt->task_type == OffloadedTaskType::mesh_for ||
           stmt->task_type == OffloadedStmt::TaskType::struct_for)
         visit_loop(stmt->body.get());
       else

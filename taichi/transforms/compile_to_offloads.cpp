@@ -186,7 +186,8 @@ void offload_to_executable(IRNode *ir,
   irpass::demote_atomics(ir, config);
   print("Atomics demoted I");
   irpass::analysis::verify(ir);
-
+  irpass::cache_loop_invariant_global_vars(ir, config);
+  print("Cache loop-invariant global vars");
   if (config.demote_dense_struct_fors) {
     irpass::demote_dense_struct_fors(ir, config.packed);
     irpass::type_check(ir, config);
@@ -246,8 +247,6 @@ void offload_to_executable(IRNode *ir,
   irpass::analysis::verify(ir);
 
   if (lower_global_access) {
-    irpass::cache_loop_invariant_global_vars(ir, config);
-    print("Cache loop-invariant global vars");
     irpass::full_simplify(ir, config,
                           {false, /*autodiff_enabled*/ false, kernel->program});
     print("Simplified before lower access");

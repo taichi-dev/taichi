@@ -5,7 +5,7 @@ import taichi as ti
 from tests import test_utils
 
 
-@test_utils.test(print_ir=True)
+@test_utils.test()
 def test_fibonacci():
     @ti.kernel
     def ti_fibonacci(n: ti.i32) -> ti.i32:

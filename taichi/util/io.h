@@ -14,6 +14,11 @@
 
 #if defined(TI_PLATFORM_WINDOWS)
 #include <filesystem>
+#else  // POSIX
+#include <unistd.h>
+#include <dirent.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #endif
 
 TI_NAMESPACE_BEGIN
@@ -49,6 +54,47 @@ inline std::string join_path(First &&path, Path &&...others) {
 
 inline bool remove(const std::string &path) {
   return std::remove(path.c_str()) == 0;
+}
+
+template <typename Visitor>  // void(const std::string &name, bool is_dir)
+inline bool traverse_directory(const std::string &dir, Visitor v) {
+#if defined(TI_PLATFORM_WINDOWS)
+  namespace fs = std::filesystem;
+  std::error_code ec{};
+  auto iter = fs::directory_iterator(dir, ec);
+  if (ec) {
+    return false;
+  }
+  for (auto &f : iter) {
+    v(f.path().filename().string(), f.is_directory());
+  }
+  return true;
+#else  // POSIX
+  struct dirent *f = nullptr;
+  DIR *directory = ::opendir(dir.c_str());
+  if (!directory) {
+    return false;
+  }
+  while ((f = ::readdir(directory))) {
+    struct stat *stat_buf = nullptr;
+    auto fullpath = join_path(dir, f->d_name);
+    auto ret = ::stat(fullpath.c_str(), stat_buf);
+    TI_ASSERT(ret == 0);
+    v(f->d_name, S_ISDIR(stat_buf->st_mode));
+  }
+  auto ret = ::closedir(directory);
+  TI_ASSERT(ret == 0);
+  return true;
+#endif
+}
+
+inline std::string filename_extension(const std::string &filename) {
+  std::string postfix;
+  auto pos = filename.find_last_of('.');
+  if (pos != std::string::npos) {
+    postfix = filename.substr(pos + 1);
+  }
+  return postfix;
 }
 
 template <typename T>

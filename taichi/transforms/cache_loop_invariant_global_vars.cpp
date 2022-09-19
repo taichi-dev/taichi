@@ -14,6 +14,8 @@ class CacheLoopInvariantGlobalVars : public LoopInvariantDetector {
 
   DelayedIRModifier modifier;
   std::unordered_map<const SNode *, GlobalPtrStmt *> loop_unique_ptr_;
+  std::unordered_map<int, ExternalPtrStmt *> loop_unique_arr_ptr_;
+
   OffloadedStmt *current_offloaded;
 
   explicit CacheLoopInvariantGlobalVars(const CompileConfig &config)
@@ -27,6 +29,7 @@ class CacheLoopInvariantGlobalVars : public LoopInvariantDetector {
       auto uniquely_accessed_pointers =
           irpass::analysis::gather_uniquely_accessed_pointers(stmt);
       loop_unique_ptr_ = std::move(uniquely_accessed_pointers.first);
+      loop_unique_arr_ptr_ = std::move(uniquely_accessed_pointers.second);
     }
     current_offloaded = stmt;
     // We don't need to visit TLS/BLS prologues/epilogues.
@@ -60,6 +63,19 @@ class CacheLoopInvariantGlobalVars : public LoopInvariantDetector {
         return false;
       }
       return true;
+    } else if (stmt->is<ExternalPtrStmt>()) {
+      ExternalPtrStmt *dest_ptr = stmt->as<ExternalPtrStmt>();
+      if (dest_ptr->indices.empty()) {
+        return false;
+      }
+      ArgLoadStmt *arg_load_stmt = dest_ptr->base_ptr->as<ArgLoadStmt>();
+      int arg_id = arg_load_stmt->arg_id;
+      if (loop_unique_arr_ptr_[arg_id] == nullptr) {
+        // Not loop unique
+        return false;
+      }
+      return true;
+      // TODO: Is BLS / Mem Access Opt a thing for any_arr?
     }
     return false;
   }

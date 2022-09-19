@@ -28,6 +28,7 @@ PER_DEVICE_CAPABILITY(spirv_has_subgroup_basic)
 PER_DEVICE_CAPABILITY(spirv_has_subgroup_vote)
 PER_DEVICE_CAPABILITY(spirv_has_subgroup_arithmetic)
 PER_DEVICE_CAPABILITY(spirv_has_subgroup_ballot)
+PER_DEVICE_CAPABILITY(spirv_has_non_semantic_info)
 // Graphics Caps
 PER_DEVICE_CAPABILITY(wide_lines)
 #endif

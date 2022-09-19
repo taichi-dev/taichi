@@ -294,6 +294,8 @@ class IRBuilder {
                                double value,
                                bool cache = true);
 
+  Value make_string(std::string str);
+
   // Match zero type
   Value get_zero(const SType &stype) {
     TI_ASSERT(stype.flag == TypeKind::kPrimitive);
@@ -460,6 +462,18 @@ class IRBuilder {
     return val;
   }
 
+  // Create a debugPrintf call
+  void call_debugprintf(std::string formats, const std::vector<Value> &args) {
+    Value format_str = make_string(formats);
+    Value val = new_value(t_void_, ValueKind::kNormal);
+    ib_.begin(spv::OpExtInst)
+        .add_seq(t_void_, val, debug_printf_, 1, format_str);
+    for (const auto &arg : args) {
+      ib_.add(arg);
+    }
+    ib_.commit(&function_);
+  }
+
   // Local allocate, load, store methods
   Value alloca_variable(const SType &type);
   Value alloca_workgroup_array(const SType &type);
@@ -551,6 +565,9 @@ class IRBuilder {
   // glsl 450 extension
   Value ext_glsl450_;
 
+  // debugprint extension
+  Value debug_printf_;
+
   SType t_bool_;
   SType t_int8_;
   SType t_int16_;
@@ -602,6 +619,9 @@ class IRBuilder {
   std::vector<uint32_t> entry_;
   // Header segment
   std::vector<uint32_t> exec_mode_;
+  // OpString segment
+  std::vector<uint32_t> strings_;
+  // TODO: Rename this to names_ in a followup PR
   // Debug segment
   std::vector<uint32_t> debug_;
   // Annotation segment

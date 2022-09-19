@@ -76,11 +76,11 @@ inline bool traverse_directory(const std::string &dir, Visitor v) {
     return false;
   }
   while ((f = ::readdir(directory))) {
-    struct stat *stat_buf = nullptr;
     auto fullpath = join_path(dir, f->d_name);
-    auto ret = ::stat(fullpath.c_str(), stat_buf);
+    struct stat stat_buf;
+    auto ret = ::stat(fullpath.c_str(), &stat_buf);
     TI_ASSERT(ret == 0);
-    v(f->d_name, S_ISDIR(stat_buf->st_mode));
+    v(f->d_name, S_ISDIR(stat_buf.st_mode));
   }
   auto ret = ::closedir(directory);
   TI_ASSERT(ret == 0);

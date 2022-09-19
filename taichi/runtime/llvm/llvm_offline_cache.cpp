@@ -117,6 +117,11 @@ bool LlvmOfflineCacheFileReader::load_meta_data(
   using Error = offline_cache::LoadMetadataError;
   const auto tcb_path = get_llvm_cache_metadata_file_path(cache_file_path);
 
+  if (!taichi::path_exists(tcb_path)) {
+    TI_DEBUG("File {} not found", tcb_path);
+    return false;
+  }
+
   if (!with_lock) {
     return Error::kNoError == load_metadata_with_checking(data, tcb_path);
   }

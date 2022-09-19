@@ -28,8 +28,7 @@ OpenglProgramImpl::OpenglProgramImpl(CompileConfig &config)
 FunctionType OpenglProgramImpl::compile(Kernel *kernel,
                                         OffloadedStmt *offloaded) {
   return register_params_to_executable(
-      get_cache_manager()->load_or_compile(config, kernel),
-      runtime_.get());
+      get_cache_manager()->load_or_compile(config, kernel), runtime_.get());
 }
 
 void OpenglProgramImpl::materialize_runtime(MemoryPool *memory_pool,
@@ -87,8 +86,7 @@ DeviceAllocation OpenglProgramImpl::allocate_texture(
 std::unique_ptr<aot::Kernel> OpenglProgramImpl::make_aot_kernel(
     Kernel &kernel) {
   auto params = get_cache_manager()->load_or_compile(config, &kernel);
-  return std::make_unique<gfx::KernelImpl>(runtime_.get(),
-                                           std::move(params));
+  return std::make_unique<gfx::KernelImpl>(runtime_.get(), std::move(params));
 }
 
 void OpenglProgramImpl::dump_cache_data_to_disk() {

@@ -268,3 +268,38 @@ Taichi fields adopt a different coordinate system from NumPy's arrays for storin
 This is different from the usual convention taken by popular third-party libs like `matplotlib` or `opencv`, where [0, 0] denotes the pixel at the top left corner, the first axis extends down to the bottom of the image, and the second axis  extends to the right.
 
 Therefore, to display a NumPy array using `matplotlb`'s `imshow()`, you must rotate it 90 degrees clockwise.
+
+### How does Taichi compare with Python packages designed for data science or machine learning?
+
+Popular packages designed for data science or machine learning include NumPy, JAX, PyTorch, and TensorFlow. A major difference between them and Taichi lies in the granularity of math operations.
+
+A common feature shared by the other packages is that they treat a single data array as the smallest unit of operations. Take PyTorch as an example. PyTorch processes a tensor as a whole and thus prefers such operations as the addition/subtraction/multiplication/division of tensors and matrix multiplication. The operators are parallelized internally, but the implementation process is invisible to users. As a result, users have to combine operators in various ways if they want to manipulate elements in tensors.
+
+Unlike them, Taichi makes element-level operations transparent and directly manipulates each iteration of the loops. This is why Taichi outperforms the other packages in scientific computing. In this sense, it compares more to C++ and CUDA.
+
+### How does Taichi compare with Cython?
+
+Cython is a superset of the Python language for quickly generating C/C++ extensions. It is a frequently-used tool to improve Python code performance thanks to its support for C data types and static typing. In fact, many modules in the official NumPy and SciPy code are written and compiled in Cython.
+
+On the flip side, the mixture of Python and C values compromises Cython's readability. In addition, though Cython supports parallel computing to a certain degree (via multi-threading), it cannot offload computation to GPU backends.
+
+Compared with Cython, Taichi is more friendly to Non-C users because it can achieve significant performance improvement with pure valid Python code. Supporting a wide range of backends, Taichi is subject to much fewer limits when performing parallel programming. In addition, unlike Cython, Taichi does not require the OpenMP API or an extra parallelism module to accelerate your program. Just specify a backend and wrap the loop with the decorator `@ti.kernel`; then, you can leave the job to Taichi.
+
+### How does Taichi compare with Numba?
+
+As its name indicates, Numba is tailored for NumPy. Numba is recommended if your functions involve vectorization of NumPy arrays. Compared with Numba, Taichi enjoys the following advantages:
+
+- Taichi supports multiple data types, including   `struct`, `dataclass`, `quant`, and `sparse`, and allows you to adjust memory layout flexibly. This feature is especially helpful when a program handles massive amounts of data. However, Numba only performs best when dealing with dense NumPy arrays.
+- Taichi can run on different GPU backends, making large-scale parallel programming (such as particle simulation or rendering) much more efficient. But it would be hard even to imagine writing a renderer in Numba.
+
+### How does Taichi compare with ctypes?
+
+ctypes allows you to call C/C++ compiled code from Python and run C++/CUDA programs in Python through a C-compatible API. It is a convenient option to access a vast collection of libraries in Python while achieving some improvement in performance. However, ctypes elevates the usage barrier: To write a satisfactory program, you need to command C, Python, CMake, CUDA, and even more languages. Moreover, ctypes may not fit in well with some performance-critical scenarios where you try to call large C libraries in Python, given the runtime overhead it incurs.
+
+In contrast, it is much more reassuring to keep everything in Python. Taichi accelerates the performance of native Python code through automatic parallelization without involving the libraries out of the Python ecosystem. It also enables offline cache, which drastically reduces the launch overhead of Taichi kernels after the first call.
+
+### How does Taichi compare with PyPy?
+
+Similar to Taichi, PyPy also accelerates Python code via just-in-time (JIT) compilation. PyPy is attractive because users can keep Python scripts as they are without even moderate modification. On the other hand, its strict conformity with Python rules leaves limited room for optimization.
+
+If you expect a greater leap in performance, Taichi can achieve the end. But you need to familiarize yourself with Taichi's syntax and assumptions, which differ from Python's slightly.

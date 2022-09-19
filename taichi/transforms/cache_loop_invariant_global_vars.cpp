@@ -155,14 +155,14 @@ class CacheLoopInvariantGlobalVars : public LoopInvariantDetector {
   }
 
   void visit(GlobalLoadStmt *stmt) override {
-    if (is_offload_unique(stmt->src) && is_operand_loop_invariant_impl(stmt->src, stmt->parent)) {
+    if (is_offload_unique(stmt->src) && is_operand_loop_invariant(stmt->src, stmt->parent)) {
       cache_global_to_local(stmt,
           stmt->src, CacheStatus::Read);
     }
   }
 
   void visit(GlobalStoreStmt *stmt) override {
-    if (is_offload_unique(stmt->dest) && is_operand_loop_invariant_impl(stmt->dest, stmt->parent)) {
+    if (is_offload_unique(stmt->dest) && is_operand_loop_invariant(stmt->dest, stmt->parent)) {
       cache_global_to_local(stmt,
           stmt->dest, CacheStatus::Write);
 

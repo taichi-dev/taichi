@@ -138,7 +138,7 @@ def exclude_paths(manifest_files):
     return [
         f for f in manifest_files
         if f.endswith(('.so', 'pyd',
-                       '.bc')) or os.path.basename(f) == 'libMoltenVK.dylib'
+                       '.bc')) or os.path.basename(f) == 'libMoltenVK.dylib' or os.path.basename(f) == 'libvulkan.dylib'
     ]
 
 

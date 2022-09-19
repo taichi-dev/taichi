@@ -52,6 +52,26 @@ class LoopInvariantCodeMotion : public LoopInvariantDetector {
     }
   }
 
+  void visit(ExternalPtrStmt *stmt) override {
+    if (is_loop_invariant(stmt, stmt->parent)) {
+      auto replacement = stmt->clone();
+      stmt->replace_usages_with(replacement.get());
+
+      modifier.insert_before(current_loop_stmt(), std::move(replacement));
+      modifier.erase(stmt);
+    }
+  }
+
+  void visit(ArgLoadStmt *stmt) override {
+    if (is_loop_invariant(stmt, stmt->parent)) {
+      auto replacement = stmt->clone();
+      stmt->replace_usages_with(replacement.get());
+
+      modifier.insert_before(current_loop_stmt(), std::move(replacement));
+      modifier.erase(stmt);
+    }
+  }
+
   static bool run(IRNode *node, const CompileConfig &config) {
     bool modified = false;
 

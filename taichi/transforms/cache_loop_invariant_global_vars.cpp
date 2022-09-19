@@ -174,7 +174,6 @@ class CacheLoopInvariantGlobalVars : public LoopInvariantDetector {
 
     while (true) {
       CacheLoopInvariantGlobalVars eliminator(config);
-      irpass::print(node);
       node->accept(&eliminator);
       if (eliminator.modifier.modify_ir())
         modified = true;

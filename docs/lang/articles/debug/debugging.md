@@ -7,13 +7,13 @@ sidebar_position: 1
 Debugging a parallel program is not easy, so Taichi provides built-in
 utilities that could hopefully help you debug your Taichi program.
 
-## Runtime `print` in Taichi-scope
+## Runtime `print` in Taichi scope
 
 ```python
 print(arg1, ..., sep='', end='\n')
 ```
 
-Debug your program with `print()` in Taichi-scope. For example:
+Debug your program with `print()` in the Taichi scope. For example:
 
 ```python {1}
 @ti.kernel
@@ -52,21 +52,16 @@ def inside_taichi_scope():
     #=> ray.ori = [0.0, 0.0, 0.0], ray.dir = [0.0, 0.0, 1.0], ray.len = 1.0
 ```
 
-For now, Taichi-scope `print` supports string, scalar, vector, and
-matrix expressions as arguments. `print` in Taichi-scope may be a little
-different from `print` in Python-scope. Please see the details below.
+For now, `print`, when placed in the Taichi scope, can take string, scalar, vector, and matrix expressions as arguments. It behaves differently depending on the scope where it is called, as detailed below.
 
-:::note
-`print` in Taichi-scope is currently supported on the CPU, CUDA, OpenGL, and Metal backends.
-:::
+### Applicable backends
 
-:::caution
-For the **CPU and CUDA backends**, `print` will not work in Graphical
-Python Shells including IDLE and Jupyter notebook. This is because these
-backends print the outputs to the console instead of the GUI. Use the
-**OpenGL or Metal backend** if you wish to use `print` in IDLE /
+`print` in the Taichi scope is currently supported on the CPU, CUDA, OpenGL, and Metal backends.
+
+Note that `print` does not work in Graphical
+Python Shells, including IDLE and Jupyter Notebook, when the program is running on **CPU or CUDA**. This is because these
+backends print the outputs to the console instead of GUI. Choose the **OpenGL or Metal backend** if you wish to use `print` in IDLE /
 Jupyter.
-:::
 
 :::caution
 
@@ -88,23 +83,22 @@ ti.sync()
 print('after sync')
 ```
 
-results in:
+The code snippet above results in:
 
-```
+```plaintext
 before kernel
 after kernel
 inside kernel
 after sync
 ```
 
-Note that host access or program end will also implicitly invoke
+Besides, the host access or program termination implicitly invokes
 `ti.sync()`.
 :::
 
-:::note
-Note that `print` in Taichi-scope can only receive **comma-separated
-parameters**. Neither f-string nor formatted string should be used. For
-example:
+### Comma-separated strings only
+
+Strings passed to `print` in the Taichi scope *must* be seperated by comma(s). Neither f-strings nor formatted strings can be recognized. For example:
 
 ```python {9-11}
 import taichi as ti
@@ -116,13 +110,11 @@ a = ti.field(ti.f32, 4)
 def foo():
     a[0] = 1.0
     print('a[0] = ', a[0]) # right
-    print(f'a[0] = {a[0]}') # wrong, f-string is not supported
-    print("a[0] = %f" % a[0]) # wrong, formatted string is not supported
+    print(f'a[0] = {a[0]}') # wrong: f-strings are not supported
+    print("a[0] = %f" % a[0]) # wrong: formatted strings are not supported
 
 foo()
 ```
-
-:::
 
 ## Compile-time `ti.static_print`
 
@@ -167,6 +159,25 @@ ti.init(arch=ti.cpu, cpu_max_num_threads=1)
 
 If your program works well in serial but not in parallel, check
 parallelization-related issues such as data races.
+
+## Out-of-bound array access
+
+The array access violation issue is common, but a program would usually proceed without raising a warning, only to end up with a wrong result. Even if a segmentation fault were triggered, it would be hard to debug.
+
+Taichi makes out-of-bound array accesses readily detectable with an auto-debugging mode. You can activate the mode by setting `debug=True` when initiating Taichi. For example:
+
+```python
+import taichi as ti
+ti.init(arch=ti.cpu, debug=True)
+f = ti.field(dtype=ti.i32, shape=(32, 32))
+@ti.kernel
+def test() -> ti.i32:
+    return f[0, 73]
+    
+print(test())
+```
+
+It would bring about a `TaichiAssertionError` indicating that you are trying to access a field with improper indices.
 
 ## Runtime `assert` in Taichi-scope
 

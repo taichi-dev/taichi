@@ -105,7 +105,7 @@ class TaskCodegen : public IRVisitor {
   Result run() {
     ir_->init_header();
     kernel_function_ = ir_->new_function();  // void main();
-    ir_->debug(spv::OpName, kernel_function_, "main");
+    ir_->debug_name(spv::OpName, kernel_function_, "main");
 
     compile_args_struct();
     compile_ret_struct();
@@ -1670,15 +1670,15 @@ class TaskCodegen : public IRVisitor {
       task_attribs_.advisory_total_num_threads = kMaxNumThreadsGridStrideLoop;
     }
     task_attribs_.advisory_num_threads_per_group = stmt->block_dim;
-    ir_->debug(spv::OpName, begin_expr_value, "begin_expr_value");
-    ir_->debug(spv::OpName, total_elems, total_elems_name);
+    ir_->debug_name(spv::OpName, begin_expr_value, "begin_expr_value");
+    ir_->debug_name(spv::OpName, total_elems, total_elems_name);
 
     spirv::Value begin_ =
         ir_->add(ir_->cast(ir_->i32_type(), ir_->get_global_invocation_id(0)),
                  begin_expr_value);
-    ir_->debug(spv::OpName, begin_, "begin_");
+    ir_->debug_name(spv::OpName, begin_, "begin_");
     spirv::Value end_ = ir_->add(total_elems, begin_expr_value);
-    ir_->debug(spv::OpName, end_, "end_");
+    ir_->debug_name(spv::OpName, end_, "end_");
     const std::string total_invocs_name = "total_invocs";
     // For now, |total_invocs_name| is equal to |total_elems|. Once we support
     // dynamic range, they will be different.
@@ -1700,7 +1700,7 @@ class TaskCodegen : public IRVisitor {
         false);
         */
 
-    ir_->debug(spv::OpName, total_invocs, total_invocs_name);
+    ir_->debug_name(spv::OpName, total_invocs, total_invocs_name);
 
     // Must get init label after making value(to make sure they are correct)
     spirv::Label init_label = ir_->current_label();

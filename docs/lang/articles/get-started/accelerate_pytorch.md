@@ -94,10 +94,10 @@ As the following table shows, the PyTorch kernel takes 30.392 ms[1] to complete 
 
 `torch_pad()` launches 58 CUDA kernels, whilst Taichi compiles all computation into one CUDA kernel. The fewer the CUDA kernels, the less GPU launch overhead is incurred. Moreover, the Taichi kernel manages to save a lot more redundant memory operations than the PyTorch kernel. The GPU launch overhead and the redundant memory operations are the potential source for optimization and acceleration.
 
-| Kernel function | Average time (ms) | CUDA kernels launched (number) |
-| --------------- | ----------------- | ------------------------------ |
-| `torch_pad()`   | 30.392            | 58                             |
-| `ti_pad()`      | 0.267             | 1                              |
+| Kernel function  | Average time (ms)  | CUDA kernels launched (number)  |
+| :--------------- | :----------------- | :------------------------------ |
+| `torch_pad()`    | 30.392             | 58                              |
+| `ti_pad()`       | 0.267              | 1                               |
 
 > - GPU: RTX3090
 > - PyTorch version: v1.12.1; Taichi version: v1.1.0

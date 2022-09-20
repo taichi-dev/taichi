@@ -47,10 +47,6 @@ class Scalarize : public IRVisitor {
       auto val_tensor_type = val_dtype->template as<TensorType>();
 
       TI_ASSERT(dest_tensor_type->get_shape() == val_tensor_type->get_shape());
-      // For sqrt/exp/log with int-type operand, we automatically set the
-      // ret_type to float32. In that case the dtype of dest and val may be
-      // different, and we rely on the following type_promotion() and
-      // load_store_forwarding() to handle this situation.
 
       TI_ASSERT(stmt->val->template is<MatrixInitStmt>());
       auto matrix_init_stmt = stmt->val->template as<MatrixInitStmt>();

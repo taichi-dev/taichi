@@ -292,11 +292,9 @@ For example:
   ray = Ray()
   ```
 
-  :::note
-
-  You can create vectors, matrices, and structs using GLSL-like broadcast syntax because their shapes are already known.
-
-  :::
+:::note
+You can create vectors, matrices, and structs using GLSL-like broadcast syntax because their shapes are already known.
+:::
 
 ### Type casting
 

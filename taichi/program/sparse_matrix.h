@@ -14,28 +14,6 @@ namespace lang {
 
 class SparseMatrix;
 
-class TestCuSpDestroy {
-public:
-  TestCuSpDestroy() {
-    std::cout << "Create TestCuSpDestroy c="<< c++ << std::endl;
-    if (c == 1) {
-      name = "first";
-    }
-  }
-  TestCuSpDestroy(const TestCuSpDestroy& other) {
-    std::cout << "Copy Construct TestCuSpDestroy c="<< c++ << std::endl;
-    if (c == 2) {
-      name = "second";
-    }
-  }
-  ~TestCuSpDestroy() {
-    // TI_INFO("Destroy TestCuSpDestroy!");
-    std::cout << "Destroy TestCuSpDestroy "<< name << std::endl;
-  }
-  static int c;
-  std::string name;
-};
-
 class SparseMatrixBuilder {
  public:
   SparseMatrixBuilder(int rows,
@@ -240,7 +218,6 @@ class CuSparseMatrix : public SparseMatrix {
                           int cols,
                           DataType dt)
       : SparseMatrix(rows, cols, dt), matrix_(A) {
-        TI_INFO("Create matrix");
   }
   CuSparseMatrix(const CuSparseMatrix &sm)
       : SparseMatrix(sm.rows_, sm.cols_, sm.dtype_), matrix_(sm.matrix_) {
@@ -272,16 +249,13 @@ class CuSparseMatrix : public SparseMatrix {
                                 const float alpha,
                                 const float beta) const;
 
-  const CuSparseMatrix matmul(const CuSparseMatrix &other) const;
+  std::unique_ptr<SparseMatrix> matmul(const CuSparseMatrix &other) const;
 
-  const CuSparseMatrix gemm(const CuSparseMatrix &other,
-                            const float alpha,
-                            const float beta) const;
+  std::unique_ptr<SparseMatrix> gemm(const CuSparseMatrix &other,
+                                  const float alpha,
+                                  const float beta) const;
 
   std::unique_ptr<SparseMatrix> transpose() const; 
-  std::unique_ptr<TestCuSpDestroy> test_destroy() {
-    return std::make_unique<TestCuSpDestroy>();
-  }
 
   void build_csr_from_coo(void *coo_row_ptr,
                           void *coo_col_ptr,

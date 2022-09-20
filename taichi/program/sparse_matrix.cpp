@@ -59,7 +59,7 @@ void print_triplet_from_csr(int64_t n_rows,
 
 namespace taichi {
 namespace lang {
-int TestCuSpDestroy::c = 0;
+
 SparseMatrixBuilder::SparseMatrixBuilder(int rows,
                                          int cols,
                                          int max_num_triplets,
@@ -289,8 +289,6 @@ void CuSparseMatrix::build_csr_from_coo(void *coo_row_ptr,
 
 CuSparseMatrix::~CuSparseMatrix() {
 #if defined(TI_WITH_CUDA)
-  TI_INFO("destroy matrix_");
-  std::cout << matrix_ << std::endl;
   CUSPARSEDriver::get_instance().cpDestroySpMat(matrix_);
 #endif
 }
@@ -419,13 +417,12 @@ std::unique_ptr<SparseMatrix> CuSparseMatrix::addition(const CuSparseMatrix &oth
 #endif
 }
 
-const CuSparseMatrix CuSparseMatrix::matmul(const CuSparseMatrix &other) const {
+std::unique_ptr<SparseMatrix> CuSparseMatrix::matmul(const CuSparseMatrix &other) const {
   return gemm(other, 1.0f, 1.0f);
 }
 
-// Reference:
-// https://github.com/NVIDIA/CUDALibrarySamples/tree/master/cuSPARSE/spgemm
-const CuSparseMatrix CuSparseMatrix::gemm(const CuSparseMatrix &other,
+// Reference: https://github.com/NVIDIA/CUDALibrarySamples/tree/master/cuSPARSE/spgemm
+std::unique_ptr<SparseMatrix> CuSparseMatrix::gemm(const CuSparseMatrix &other,
                                           const float alpha,
                                           const float beta) const {
 #if defined(TI_WITH_CUDA)
@@ -502,8 +499,8 @@ const CuSparseMatrix CuSparseMatrix::gemm(const CuSparseMatrix &other,
   CUDADriver::get_instance().mem_free(d_buffer1);
   CUDADriver::get_instance().mem_free(d_buffer2);
   CUSPARSEDriver::get_instance().cpDestroy(handle);
-
-  return CuSparseMatrix(mat_C, nrows_A, ncols_B, PrimitiveType::f32);
+  
+  return make_cu_sparse_matrix(mat_C, nrows_A, ncols_B, PrimitiveType::f32);
 #endif
 }
 
@@ -560,11 +557,7 @@ std::unique_ptr<SparseMatrix> CuSparseMatrix::transpose() const {
       CUSPARSE_INDEX_32I, CUSPARSE_INDEX_BASE_ZERO, CUDA_R_32F);
   CUDADriver::get_instance().mem_free(buffer);
   CUSPARSEDriver::get_instance().cpDestroy(handle);
-  // auto AT = CuSparseMatrix(mat_AT, ncols_A, nrows_A, PrimitiveType::f32);
-  // return make_cu_sparse_matrix(AT);
-  return std::unique_ptr<SparseMatrix>(
-      std::make_unique<CuSparseMatrix>(mat_AT, ncols_A, nrows_A, PrimitiveType::f32)
-  );
+  return make_cu_sparse_matrix(mat_AT, ncols_A, nrows_A, PrimitiveType::f32);
 #endif
 }
 

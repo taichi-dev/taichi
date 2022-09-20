@@ -49,27 +49,35 @@ B = ti.linalg.SparseMatrix(n=rows, m=cols, dtype=ti.f32)
 A.build_coo(row_coo_A, col_coo_A, value_coo_A)
 B.build_coo(row_coo_B, col_coo_B, value_coo_B)
 
-# C = ti.linalg.SparseMatrix(n=rows, m=cols, dtype=ti.f32)
+
 print('>>>> A:')
 print(A)
 print('>>>> B:')
 print(B)
 
-# A.test_destory()
-
 print('>>>> C = A + B:')
 C = A + B
 print(C)
-# print(A)
-# print('>>>> C - A:')
-# D = C - A
-# print(D)
-# print('>>>> A * 2.5:')
-# E = A * 2.5
-# print(E)
+print('>>>> verify:')
+S3 = S1 + S2
+print(S3.A)
+print('>>>> C - A:')
+D = C - A
+print(D)
+print('>>>> verify:')
+print((S3 - S1).A)
+print('>>>> A * 2.5:')
+E = A * 2.5
+print(E)
+print('>>>> verify:')
+print((2.5*S1).A)
 print('>>>> A.T:')
-G = A.transpose()
+F = A.transpose()
+print(F)
+print('>>>> verify:')
+print(S1.T.A)
+print('>>>> A @ B.T:')
+G = A @ B.transpose()
 print(G)
-# print('>>> A @ B.T:')
-# F = A @ B
-# print(F)
+print('>>>> verify:')
+print((S1@S2.T).A)

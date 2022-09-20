@@ -1228,8 +1228,8 @@ void export_lang(py::module &m) {
       .def("spmv", &CuSparseMatrix::spmv)
       .def(py::self + py::self)
       .def(py::self - py::self)
-      .def(py::self *float32())
-      .def(float32()*py::self)
+      .def(py::self * float32())
+      .def(float32() * py::self)
       .def("matmul", &CuSparseMatrix::matmul)
       .def("transpose", &CuSparseMatrix::transpose)
       .def("to_string", &SparseMatrix::to_string);

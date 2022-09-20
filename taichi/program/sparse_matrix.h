@@ -220,7 +220,7 @@ class CuSparseMatrix : public SparseMatrix {
   CuSparseMatrix(const CuSparseMatrix &sm)
       : SparseMatrix(sm.rows_, sm.cols_, sm.dtype_), matrix_(sm.matrix_) {
   }
-  
+
   virtual ~CuSparseMatrix();
 
   friend CuSparseMatrix operator+(const CuSparseMatrix &lhs,
@@ -233,7 +233,7 @@ class CuSparseMatrix : public SparseMatrix {
     return lhs.addition(rhs, 1.0, -1.0);
   };
 
-  // TODO: Override *= 
+  // TODO: Override *=
   friend CuSparseMatrix operator*(const CuSparseMatrix &sm, float scale) {
     return sm.addition(sm, scale, 0.0);
   }
@@ -249,10 +249,10 @@ class CuSparseMatrix : public SparseMatrix {
   const CuSparseMatrix matmul(const CuSparseMatrix &other) const;
 
   const CuSparseMatrix gemm(const CuSparseMatrix &other,
-                                  const float alpha,
-                                  const float beta) const;
+                            const float alpha,
+                            const float beta) const;
 
-  CuSparseMatrix transpose() const; 
+  CuSparseMatrix transpose() const;
 
   void build_csr_from_coo(void *coo_row_ptr,
                           void *coo_col_ptr,

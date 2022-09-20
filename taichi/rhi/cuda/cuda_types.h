@@ -449,7 +449,7 @@ typedef struct cusparseDnVecDescr *cusparseDnVecDescr_t;
 typedef struct cusparseSpMatDescr *cusparseSpMatDescr_t;
 
 struct cusparseSpGEMMDescr;
-typedef struct cusparseSpGEMMDescr* cusparseSpGEMMDescr_t;
+typedef struct cusparseSpGEMMDescr *cusparseSpGEMMDescr_t;
 
 typedef enum {
   CUSPARSE_INDEX_16U = 1,  ///< 16-bit unsigned integer for matrix/vector
@@ -509,9 +509,9 @@ typedef enum {
 } cusparseSpMVAlg_t;
 
 typedef enum {
-    CUSPARSE_SPGEMM_DEFAULT                 = 0,
-    CUSPARSE_SPGEMM_CSR_ALG_DETERMINITIC    = 1,
-    CUSPARSE_SPGEMM_CSR_ALG_NONDETERMINITIC = 2
+  CUSPARSE_SPGEMM_DEFAULT = 0,
+  CUSPARSE_SPGEMM_CSR_ALG_DETERMINITIC = 1,
+  CUSPARSE_SPGEMM_CSR_ALG_NONDETERMINITIC = 2
 } cusparseSpGEMMAlg_t;
 
 typedef enum {
@@ -520,13 +520,13 @@ typedef enum {
 } cusparsePointerMode_t;
 
 typedef enum {
-    CUSPARSE_ACTION_SYMBOLIC = 0,
-    CUSPARSE_ACTION_NUMERIC  = 1
+  CUSPARSE_ACTION_SYMBOLIC = 0,
+  CUSPARSE_ACTION_NUMERIC = 1
 } cusparseAction_t;
 
 typedef enum {
-    CUSPARSE_CSR2CSC_ALG1 = 1, // faster than V2 (in general), deterministc
-    CUSPARSE_CSR2CSC_ALG2 = 2  // low memory requirement, non-deterministc
+  CUSPARSE_CSR2CSC_ALG1 = 1,  // faster than V2 (in general), deterministc
+  CUSPARSE_CSR2CSC_ALG2 = 2   // low memory requirement, non-deterministc
 } cusparseCsr2CscAlg_t;
 
 typedef enum {

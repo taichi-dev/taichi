@@ -1,27 +1,30 @@
-import taichi as ti
 import numpy as np
 import scipy
-from scipy.sparse import random
-from scipy import stats
 from numpy.random import default_rng
+from scipy import stats
+from scipy.sparse import random
+
+import taichi as ti
 
 ti.init(arch=ti.cuda)
 
 idx_dt = ti.i32
 val_dt = ti.f32
 
-seed = 2 
+seed = 2
 np.random.seed(seed)
 
 rng = default_rng(seed)
 rvs = stats.poisson(3, loc=1).rvs
 N = 5
 np_dtype = np.float32
-rows = N 
+rows = N
 cols = N - 1
 
-S1 = random(rows, cols, density=0.5, random_state=rng, data_rvs=rvs).astype(np_dtype)
-S2 = random(rows, cols, density=0.5, random_state=rng, data_rvs=rvs).astype(np_dtype)
+S1 = random(rows, cols, density=0.5, random_state=rng,
+            data_rvs=rvs).astype(np_dtype)
+S2 = random(rows, cols, density=0.5, random_state=rng,
+            data_rvs=rvs).astype(np_dtype)
 nnz_A = len(S1.data)
 nnz_B = len(S2.data)
 

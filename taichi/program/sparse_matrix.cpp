@@ -59,7 +59,7 @@ void print_triplet_from_csr(int64_t n_rows,
 
 namespace taichi {
 namespace lang {
-
+int TestCuSpDestroy::c = 0;
 SparseMatrixBuilder::SparseMatrixBuilder(int rows,
                                          int cols,
                                          int max_num_triplets,
@@ -191,6 +191,14 @@ std::unique_ptr<SparseMatrix> make_cu_sparse_matrix(int rows,
       std::make_unique<CuSparseMatrix>(rows, cols, dt));
 }
 
+std::unique_ptr<SparseMatrix> make_cu_sparse_matrix(cusparseSpMatDescr_t mat,
+                                                    int rows,
+                                                    int cols,
+                                                    DataType dt) {
+  return std::unique_ptr<SparseMatrix>(
+      std::make_unique<CuSparseMatrix>(mat, rows, cols, dt));
+}
+
 template <typename T>
 void build_ndarray_template(SparseMatrix &sm,
                             intptr_t data_ptr,
@@ -275,12 +283,15 @@ void CuSparseMatrix::build_csr_from_coo(void *coo_row_ptr,
   CUDADriver::get_instance().mem_free(d_values_sorted);
   CUDADriver::get_instance().mem_free(d_permutation);
   CUDADriver::get_instance().mem_free(dbuffer);
+
 #endif
 }
 
 CuSparseMatrix::~CuSparseMatrix() {
 #if defined(TI_WITH_CUDA)
-  // CUSPARSEDriver::get_instance().cpDestroySpMat(matrix_);
+  TI_INFO("destroy matrix_");
+  std::cout << matrix_ << std::endl;
+  CUSPARSEDriver::get_instance().cpDestroySpMat(matrix_);
 #endif
 }
 void make_sparse_matrix_from_ndarray_cusparse(Program *prog,
@@ -299,7 +310,7 @@ void make_sparse_matrix_from_ndarray_cusparse(Program *prog,
 }
 
 // Reference::https://docs.nvidia.com/cuda/cusparse/index.html#csrgeam2
-const CuSparseMatrix CuSparseMatrix::addition(const CuSparseMatrix &other,
+std::unique_ptr<SparseMatrix> CuSparseMatrix::addition(const CuSparseMatrix &other,
                                               const float alpha,
                                               const float beta) const {
 #if defined(TI_WITH_CUDA)
@@ -404,7 +415,7 @@ const CuSparseMatrix CuSparseMatrix::addition(const CuSparseMatrix &other,
 
   CUSPARSEDriver::get_instance().cpDestroy(cusparse_handle);
   CUDADriver::get_instance().mem_free(buffer);
-  return CuSparseMatrix(matrix_C, rows_, cols_, PrimitiveType::f32);
+  return make_cu_sparse_matrix(matrix_C, rows_, cols_, PrimitiveType::f32);
 #endif
 }
 
@@ -498,9 +509,8 @@ const CuSparseMatrix CuSparseMatrix::gemm(const CuSparseMatrix &other,
 
 // Convert CSR to CSC format using routine `Csr2cscEx2`
 // to implement transpose.
-// Reference
-// https://stackoverflow.com/questions/57368010/how-to-transpose-a-sparse-matrix-in-cusparse
-CuSparseMatrix CuSparseMatrix::transpose() const {
+// Reference https://stackoverflow.com/questions/57368010/how-to-transpose-a-sparse-matrix-in-cusparse
+std::unique_ptr<SparseMatrix> CuSparseMatrix::transpose() const {
 #if defined(TI_WITH_CUDA)
   cusparseHandle_t handle;
   CUSPARSEDriver::get_instance().cpCreate(&handle);
@@ -550,7 +560,11 @@ CuSparseMatrix CuSparseMatrix::transpose() const {
       CUSPARSE_INDEX_32I, CUSPARSE_INDEX_BASE_ZERO, CUDA_R_32F);
   CUDADriver::get_instance().mem_free(buffer);
   CUSPARSEDriver::get_instance().cpDestroy(handle);
-  return CuSparseMatrix(mat_AT, ncols_A, nrows_A, PrimitiveType::f32);
+  // auto AT = CuSparseMatrix(mat_AT, ncols_A, nrows_A, PrimitiveType::f32);
+  // return make_cu_sparse_matrix(AT);
+  return std::unique_ptr<SparseMatrix>(
+      std::make_unique<CuSparseMatrix>(mat_AT, ncols_A, nrows_A, PrimitiveType::f32)
+  );
 #endif
 }
 

@@ -14,6 +14,28 @@ namespace lang {
 
 class SparseMatrix;
 
+class TestCuSpDestroy {
+public:
+  TestCuSpDestroy() {
+    std::cout << "Create TestCuSpDestroy c="<< c++ << std::endl;
+    if (c == 1) {
+      name = "first";
+    }
+  }
+  TestCuSpDestroy(const TestCuSpDestroy& other) {
+    std::cout << "Copy Construct TestCuSpDestroy c="<< c++ << std::endl;
+    if (c == 2) {
+      name = "second";
+    }
+  }
+  ~TestCuSpDestroy() {
+    // TI_INFO("Destroy TestCuSpDestroy!");
+    std::cout << "Destroy TestCuSpDestroy "<< name << std::endl;
+  }
+  static int c;
+  std::string name;
+};
+
 class SparseMatrixBuilder {
  public:
   SparseMatrixBuilder(int rows,
@@ -125,7 +147,9 @@ class EigenSparseMatrix : public SparseMatrix {
       : SparseMatrix(em.rows(), em.cols()), matrix_(em) {
   }
 
-  ~EigenSparseMatrix() override = default;
+  ~EigenSparseMatrix() {
+    TI_INFO("Destroy eigen sparse matrix.");
+  };
   void build_triplets(void *triplets_adr) override;
   const std::string to_string() const override;
 
@@ -216,6 +240,7 @@ class CuSparseMatrix : public SparseMatrix {
                           int cols,
                           DataType dt)
       : SparseMatrix(rows, cols, dt), matrix_(A) {
+        TI_INFO("Create matrix");
   }
   CuSparseMatrix(const CuSparseMatrix &sm)
       : SparseMatrix(sm.rows_, sm.cols_, sm.dtype_), matrix_(sm.matrix_) {
@@ -223,26 +248,27 @@ class CuSparseMatrix : public SparseMatrix {
 
   virtual ~CuSparseMatrix();
 
-  friend CuSparseMatrix operator+(const CuSparseMatrix &lhs,
+  friend std::unique_ptr<SparseMatrix> operator+(const CuSparseMatrix &lhs,
                                   const CuSparseMatrix &rhs) {
-    return lhs.addition(rhs, 1.0, 1.0);
+    auto m = lhs.addition(rhs, 1.0, 1.0);
+    return m;
   };
 
-  friend CuSparseMatrix operator-(const CuSparseMatrix &lhs,
+  friend std::unique_ptr<SparseMatrix> operator-(const CuSparseMatrix &lhs,
                                   const CuSparseMatrix &rhs) {
     return lhs.addition(rhs, 1.0, -1.0);
   };
 
-  // TODO: Override *=
-  friend CuSparseMatrix operator*(const CuSparseMatrix &sm, float scale) {
+  // TODO: Overload *= 
+  friend std::unique_ptr<SparseMatrix> operator*(const CuSparseMatrix &sm, float scale) {
     return sm.addition(sm, scale, 0.0);
   }
 
-  friend CuSparseMatrix operator*(float scale, const CuSparseMatrix &sm) {
+  friend std::unique_ptr<SparseMatrix> operator*(float scale, const CuSparseMatrix &sm) {
     return sm.addition(sm, scale, 0.0);
   }
 
-  const CuSparseMatrix addition(const CuSparseMatrix &other,
+  std::unique_ptr<SparseMatrix> addition(const CuSparseMatrix &other,
                                 const float alpha,
                                 const float beta) const;
 
@@ -252,7 +278,10 @@ class CuSparseMatrix : public SparseMatrix {
                             const float alpha,
                             const float beta) const;
 
-  CuSparseMatrix transpose() const;
+  std::unique_ptr<SparseMatrix> transpose() const; 
+  std::unique_ptr<TestCuSpDestroy> test_destroy() {
+    return std::make_unique<TestCuSpDestroy>();
+  }
 
   void build_csr_from_coo(void *coo_row_ptr,
                           void *coo_col_ptr,
@@ -277,6 +306,10 @@ std::unique_ptr<SparseMatrix> make_sparse_matrix(
     DataType dt,
     const std::string &storage_format);
 std::unique_ptr<SparseMatrix> make_cu_sparse_matrix(int rows,
+                                                    int cols,
+                                                    DataType dt);
+std::unique_ptr<SparseMatrix> make_cu_sparse_matrix(cusparseSpMatDescr_t mat,
+                                                    int rows,
                                                     int cols,
                                                     DataType dt);
 

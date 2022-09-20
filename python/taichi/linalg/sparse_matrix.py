@@ -30,6 +30,7 @@ class SparseMatrix:
             self.m = m if m else n
             self.matrix = get_runtime().prog.create_sparse_matrix(
                 n, m, dtype, storage_format)
+            print(type(self.matrix))
         else:
             self.n = sm.num_rows()
             self.m = sm.num_cols()
@@ -115,6 +116,11 @@ class SparseMatrix:
         """
         sm = self.matrix.transpose()
         return SparseMatrix(sm=sm)
+    
+    def test_destory(self):
+        print('begin test_destroy')
+        t = self.matrix.test_destory()
+        print('end test_destroy')
 
     def __matmul__(self, other):
         """Matrix multiplication.
@@ -126,7 +132,10 @@ class SparseMatrix:
         """
         if isinstance(other, SparseMatrix):
             assert self.m == other.n, f"Dimension mismatch between sparse matrices ({self.n}, {self.m}) and ({other.n}, {other.m})"
+            print("here!")
             sm = self.matrix.matmul(other.matrix)
+            print("here2!")
+            print(sm.to_string())
             return SparseMatrix(sm=sm)
         if isinstance(other, Field):
             assert self.m == other.shape[
@@ -284,6 +293,7 @@ class SparseMatrixBuilder:
     def build(self, dtype=f32, _format='CSR'):
         """Create a sparse matrix using the triplets"""
         sm = self.ptr.build()
+        print(type(sm))
         return SparseMatrix(sm=sm)
 
 

@@ -1223,8 +1223,12 @@ void export_lang(py::module &m) {
   MAKE_SPARSE_MATRIX(64, ColMajor, d);
   MAKE_SPARSE_MATRIX(64, RowMajor, d);
 
+  py::class_<TestCuSpDestroy>(m, "TestCuSpDestroy")
+    .def(py::init<>());
+
   py::class_<CuSparseMatrix, SparseMatrix>(m, "CuSparseMatrix")
       .def(py::init<int, int, DataType>())
+      .def(py::init<const CuSparseMatrix&>())
       .def("spmv", &CuSparseMatrix::spmv)
       .def(py::self + py::self)
       .def(py::self - py::self)
@@ -1232,7 +1236,8 @@ void export_lang(py::module &m) {
       .def(float32() * py::self)
       .def("matmul", &CuSparseMatrix::matmul)
       .def("transpose", &CuSparseMatrix::transpose)
-      .def("to_string", &SparseMatrix::to_string);
+      .def("test_destory", &CuSparseMatrix::test_destroy)
+      .def("to_string", &CuSparseMatrix::to_string);
 
   py::class_<SparseSolver>(m, "SparseSolver")
       .def("compute", &SparseSolver::compute)

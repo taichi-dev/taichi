@@ -83,10 +83,9 @@ foo()
 
 ## Compile-time `ti.static_print`
 
-Sometimes it is useful to print Python-scope objects and constants like
-data types or SNodes in Taichi-scope. So, similar to `ti.static`, Taichi
-provides `ti.static_print` to print compile-time constants, which is similar
-to Python-scope `print`:
+It can be useful to print Python objects and their properties like
+data types or SNodes in the Taichi scope. Based on `ti.static` (see [Metaprogramming](../advanced/meta.md)), Taichi
+provides `ti.static_print` to print compile-time constants in the Taichi scope:
 
 ```python
 x = ti.field(ti.f32, (2, 3))
@@ -106,24 +105,21 @@ def inside_taichi_scope():
         # will only print once
 ```
 
-Unlike `print`, `ti.static_print` will only print the expression once at
-compile-time, and therefore it has no runtime cost.
+`ti.static_print` behaves similarly with `print` in the Python scope. The difference is that unlike `print`, `ti.static_print` only prints the expression once at compile time, thus incurring no runtime cost.
 
 ## Serial execution
 
-The automatic parallelization feature of Taichi may lead to
-non-deterministic behaviors. For debugging purposes, it may be useful to
-serialize program execution to get repeatable results and to diagnose
-data races. When running your Taichi program on CPUs, you can initialize
-Taichi to use a single thread with `cpu_max_num_threads=1`, so that the
-whole program becomes serial and deterministic. For example,
+Taichi's automatic parallelism mechanism may lead to
+non-deterministic behaviors. For debugging purposes, serializing program execution may be useful to get repeatable results and diagnose data races.
 
-```
+If you intend to run your program on CPUs, you can seralize the program by designating a single thread with `cpu_max_num_threads=1` when initiating Taichi, so that the whole program becomes deterministic. For example,
+
+```python
 ti.init(arch=ti.cpu, cpu_max_num_threads=1)
 ```
 
-If your program works well in serial but not in parallel, check
-parallelization-related issues such as data races.
+If your program works well in serial but fails in parallel, check
+parallelization-related issues, such as data races.
 
 ## Out-of-bound array access
 
@@ -144,18 +140,15 @@ print(test())
 
 The code snippet above would raise a `TaichiAssertionError` indicating that you are trying to access a field with improper indices.
 
-## Runtime `assert` in Taichi-scope
+## Runtime `assert` in Taichi scope
 
-Programmers may use `assert` statements in Taichi-scope. When the
-assertion condition fails, a `TaichiAssertionError` will be raised to indicate
-the error.
+You can use `assert` statements in the Taichi scope to verify the assertion conditions. If an assertion fails, the program will halt and throw a `TaichiAssertionError`.
 
 :::note
 `assert` is currently supported on the CPU, CUDA, and Metal backends.
 :::
 
-For performance reasons, `assert` only works when `debug` mode
-is on. For example:
+Make sure you activate the `debug` mode before using `assert` statements in the Taichi scope. For example:
 
 ```python
 ti.init(arch=ti.cpu, debug=True)
@@ -169,8 +162,7 @@ def do_sqrt_all():
         x[i] = ti.sqrt(x)
 ```
 
-When you are done with debugging, simply set `debug=False`. Now `assert`
-will be ignored and there will be no runtime overhead.
+When you are done with debugging, set `debug=False`, and then the program will ignore the subsequent `assert` statements and avoid additional runtime overhead.
 
 ## Compile-time `ti.static_assert`
 
@@ -179,10 +171,7 @@ ti.static_assert(cond, msg=None)
 ```
 
 Like `ti.static_print`, Taichi also provides a static version of `assert`:
-`ti.static_assert`. It can be useful to make assertions on data types,
-dimensionality, and shapes. It works whether `debug=True` is specified
-or not. When an assertion fails, it will raise an `AssertionError`, just
-like a Python-scope `assert`.
+`ti.static_assert`, which comes handy to assert data types, dimensionality, and shapes. It works regardless whether `debug=True` is enabled or not. A false statement triggers an `AssertionError`, just as `assert` in the Python scope does.
 
 For example:
 
@@ -195,9 +184,9 @@ def copy(dst: ti.template(), src: ti.template()):
     return x % 2 == 1
 ```
 
-## Pretty Taichi-scope traceback
+## More concise traceback in Taichi scope
 
-Taichi reports traceback messages when encountered errors in **Taichi-scope**. For example:
+Taichi reports a traceback when an error occurs in the **Taichi scope**. For example:
 
 ```python
 import taichi as ti
@@ -222,7 +211,7 @@ def func0():
 func0()
 ```
 
-The above snippet would trigger a long and scaring `AssertionError`:
+The above snippet would trigger an `AssertionError`, with a lenthy and overwhelming traceback message:
 
 ```
 Traceback (most recent call last):
@@ -276,10 +265,10 @@ AssertionError:
 
 ...
 ```
-The error message can be verbose and scary. However, many stack frames reveal
-Taichi compiler implementation details, which are too noisy for debugging.
-In current version, you could choose to suppress the level of traceback messages by setting `sys.tracebacklimit`,
-which makes the stack traceback from Taichi-scope more intuitive:
+
+It takes time to read through the message. In addition, many stack frames reveal implementation details, which are irrelevant to debugging.
+
+To relieve your burden, Taichi allows you to access a more concise and intuitive version of traceback messages: `sys.tracebacklimit`:
 
 ```python {2}
 import taichi as ti
@@ -288,7 +277,7 @@ sys.tracebacklimit=0
 ...
 ```
 
-which makes the result look like:
+You will get the following information:
 
 ```python
 AssertionError
@@ -303,7 +292,7 @@ AssertionError:
 ...
 ```
 
-Moreover, when filing an issue, please always unset the `sys.tracebacklimit` value and paste full traceback messages.
+However, always unset `sys.tracebacklimit` and submit the full traceback messages when filing an issue with us.
 
 ## Debugging Tips
 

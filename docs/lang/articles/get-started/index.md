@@ -14,9 +14,9 @@ Taichi's built-in ahead-of-time (AOT) system also allows you to export your code
 
 ## Prerequisites
 
-1. Python: 3.7/3.8/3.9/3.10 (64-bit)
-2. OS: Windows, OS X, and Linux (64-bit)
-3. Supported GPU backends (optional): CUDA, Vulkan, OpenGL, Metal, and DirectX 11
+- Python: 3.7/3.8/3.9/3.10 (64-bit)
+- OS: Windows, OS X, and Linux (64-bit)
+- Supported GPU backends (optional): CUDA, Vulkan, OpenGL, Metal, and DirectX 11
 
 ## Installation
 

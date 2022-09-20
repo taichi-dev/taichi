@@ -7,9 +7,17 @@ class CacheLoopInvariantGlobalVars : public LoopInvariantDetector {
  public:
   using LoopInvariantDetector::visit;
 
-  enum class CacheStatus { None = 0, Read = 1, Write = 2, ReadWrite = 3, HasAtomic = 4 };
+  enum class CacheStatus {
+    None = 0,
+    Read = 1,
+    Write = 2,
+    ReadWrite = 3,
+    HasAtomic = 4
+  };
 
-  typedef std::unordered_map<Stmt *, std::pair<CacheStatus, std::vector<Stmt *>>> CacheMap;
+  typedef std::unordered_map<Stmt *,
+                             std::pair<CacheStatus, std::vector<Stmt *>>>
+      CacheMap;
   std::stack<CacheMap> cached_maps;
 
   DelayedIRModifier modifier;
@@ -108,8 +116,7 @@ class CacheLoopInvariantGlobalVars : public LoopInvariantDetector {
           stmt->replace_usages_with(local_load.get());
           modifier.insert_before(stmt, std::move(local_load));
           modifier.erase(stmt);
-        }
-        else if (auto *global_store = stmt->cast<GlobalStoreStmt>()) {
+        } else if (auto *global_store = stmt->cast<GlobalStoreStmt>()) {
           auto local_store =
               std::make_unique<LocalStoreStmt>(alloca_stmt, global_store->val);
           stmt->replace_usages_with(local_store.get());
@@ -140,12 +147,11 @@ class CacheLoopInvariantGlobalVars : public LoopInvariantDetector {
     modifier.insert_before(current_loop_stmt(), std::move(local_store));
   }
 
-  void cache_global_to_local(Stmt *stmt, Stmt *dest,
-                                    CacheStatus status) {
-    if (auto &[cached_status, vec] = cached_maps.top()[dest]; cached_status != CacheStatus::None) {
+  void cache_global_to_local(Stmt *stmt, Stmt *dest, CacheStatus status) {
+    if (auto &[cached_status, vec] = cached_maps.top()[dest];
+        cached_status != CacheStatus::None) {
       // The global variable has already been cached.
-      if (cached_status == CacheStatus::Read &&
-          status == CacheStatus::Write) {
+      if (cached_status == CacheStatus::Read && status == CacheStatus::Write) {
         cached_status = CacheStatus::ReadWrite;
       }
       vec.push_back(stmt);
@@ -155,17 +161,16 @@ class CacheLoopInvariantGlobalVars : public LoopInvariantDetector {
   }
 
   void visit(GlobalLoadStmt *stmt) override {
-    if (is_offload_unique(stmt->src) && is_operand_loop_invariant(stmt->src, stmt->parent)) {
-      cache_global_to_local(stmt,
-          stmt->src, CacheStatus::Read);
+    if (is_offload_unique(stmt->src) &&
+        is_operand_loop_invariant(stmt->src, stmt->parent)) {
+      cache_global_to_local(stmt, stmt->src, CacheStatus::Read);
     }
   }
 
   void visit(GlobalStoreStmt *stmt) override {
-    if (is_offload_unique(stmt->dest) && is_operand_loop_invariant(stmt->dest, stmt->parent)) {
-      cache_global_to_local(stmt,
-          stmt->dest, CacheStatus::Write);
-
+    if (is_offload_unique(stmt->dest) &&
+        is_operand_loop_invariant(stmt->dest, stmt->parent)) {
+      cache_global_to_local(stmt, stmt->dest, CacheStatus::Write);
     }
   }
 

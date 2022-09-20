@@ -386,12 +386,8 @@ void FieldExpression::flatten(FlattenContext *ctx) {
   ctx->push_back(std::move(ptr));
 }
 
-Stmt *make_field_access(Expression::FlattenContext *ctx,
-                        Expr var,
-                        ExprGroup indices) {
+std::vector<Stmt *> make_index_stmts(Expression::FlattenContext *ctx, const ExprGroup &indices, const std::vector<int> &offsets) {
   std::vector<Stmt *> index_stmts;
-  SNode *snode = var.cast<FieldExpression>()->snode;
-  std::vector<int> offsets = snode->index_offsets;
   for (int i = 0; i < (int)indices.size(); i++) {
     flatten_rvalue(indices.exprs[i], ctx);
     Stmt *ind = indices.exprs[i]->stmt;
@@ -401,7 +397,21 @@ Stmt *make_field_access(Expression::FlattenContext *ctx,
     }
     index_stmts.push_back(ind);
   }
-  return ctx->push_back(std::make_unique<GlobalPtrStmt>(snode, index_stmts));
+  return index_stmts;
+}
+
+Stmt *make_field_access(Expression::FlattenContext *ctx,
+                        Expr var,
+                        ExprGroup indices) {
+  SNode *snode = var.cast<FieldExpression>()->snode;
+  return ctx->push_back(std::make_unique<GlobalPtrStmt>(snode, make_index_stmts(ctx, indices, snode->index_offsets)));
+}
+
+Stmt *make_matrix_field_access(Expression::FlattenContext *ctx,
+                               Expr var,
+                               ExprGroup indices) {
+  SNode *snode = var.cast<MatrixFieldExpression>()->fields[0].cast<FieldExpression>()->snode;
+  return ctx->push_back(std::make_unique<GlobalPtrStmt>(snode, make_index_stmts(ctx, indices, snode->index_offsets)));
 }
 
 Stmt *make_ndarray_access(Expression::FlattenContext *ctx,
@@ -468,6 +478,10 @@ bool IndexExpression::is_field() const {
   return var.is<FieldExpression>();
 }
 
+bool IndexExpression::is_matrix_field() const {
+  return var.is<MatrixFieldExpression>();
+}
+
 bool IndexExpression::is_ndarray() const {
   return var.is<ExternalTensorExpression>();
 }
@@ -481,18 +495,15 @@ bool IndexExpression::is_local() const {
 }
 
 bool IndexExpression::is_global() const {
-  // Special case: Indexing into TensorType-element of
-  // ExternalPtrStmt/GlobalPtrStmt In this case, we should treat them as global
-  // ptrs
+  // Special case: Indexing into TensorType-element of ExternalPtrStmt
+  // or GlobalPtrStmt should be treated as global ptrs
   if (var.is<IndexExpression>()) {
-    if (var.cast<IndexExpression>()->is_field() ||
-        var.cast<IndexExpression>()->is_ndarray()) {
-      return true;
-    }
+    TI_ASSERT(var.cast<IndexExpression>()->is_matrix_field() || var.cast<IndexExpression>()->is_ndarray());
+    return true;
   }
 
   // Only Ndarray and Field comes outside from a kernel
-  return is_field() || is_ndarray();
+  return is_field() || is_matrix_field() || is_ndarray();
 }
 
 void IndexExpression::type_check(CompileConfig *) {
@@ -500,6 +511,9 @@ void IndexExpression::type_check(CompileConfig *) {
   // Currently, dimension compatibility check happens in Python
   if (is_field()) {  // field
     ret_type = var.cast<FieldExpression>()->dt->get_compute_type();
+  } else if (is_matrix_field()) {
+    auto matrix_field_expr = var.cast<MatrixFieldExpression>();
+    ret_type = TypeFactory::create_tensor_type(matrix_field_expr->element_shape, matrix_field_expr->fields[0].cast<FieldExpression>()->dt->get_compute_type());
   } else if (is_ndarray()) {  // ndarray
     auto external_tensor_expr = var.cast<ExternalTensorExpression>();
     int total_dim = external_tensor_expr->dim;
@@ -539,6 +553,8 @@ void IndexExpression::type_check(CompileConfig *) {
 void IndexExpression::flatten(FlattenContext *ctx) {
   if (is_field()) {
     stmt = make_field_access(ctx, var, indices);
+  } else if (is_matrix_field()) {
+    stmt = make_matrix_field_access(ctx, var, indices);
   } else if (is_ndarray()) {
     stmt = make_ndarray_access(ctx, var, indices);
   } else if (is_tensor()) {

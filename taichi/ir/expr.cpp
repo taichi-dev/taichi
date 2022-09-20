@@ -31,8 +31,8 @@ Expr Expr::operator[](const ExprGroup &indices) const {
     // Allow indexing IndexExpression with ret_type = TensorType
     TI_ASSERT(is_tensor(expr->ret_type));
   } else {
-    TI_ASSERT(is<FieldExpression>() || is<ExternalTensorExpression>() ||
-              is<IdExpression>());
+    TI_ASSERT(is<FieldExpression>() || is<MatrixFieldExpression>() ||
+              is<ExternalTensorExpression>() || is<IdExpression>());
   }
   return Expr::make<IndexExpression>(*this, indices);
 }

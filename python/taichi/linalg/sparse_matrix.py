@@ -115,7 +115,7 @@ class SparseMatrix:
         """
         sm = self.matrix.transpose()
         return SparseMatrix(sm=sm)
-    
+
     def __matmul__(self, other):
         """Matrix multiplication.
 

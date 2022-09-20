@@ -1223,10 +1223,9 @@ void export_lang(py::module &m) {
   MAKE_SPARSE_MATRIX(64, ColMajor, d);
   MAKE_SPARSE_MATRIX(64, RowMajor, d);
 
-
   py::class_<CuSparseMatrix, SparseMatrix>(m, "CuSparseMatrix")
       .def(py::init<int, int, DataType>())
-      .def(py::init<const CuSparseMatrix&>())
+      .def(py::init<const CuSparseMatrix &>())
       .def("spmv", &CuSparseMatrix::spmv)
       .def(py::self + py::self)
       .def(py::self - py::self)

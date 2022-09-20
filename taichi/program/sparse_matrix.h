@@ -226,36 +226,38 @@ class CuSparseMatrix : public SparseMatrix {
   virtual ~CuSparseMatrix();
 
   friend std::unique_ptr<SparseMatrix> operator+(const CuSparseMatrix &lhs,
-                                  const CuSparseMatrix &rhs) {
+                                                 const CuSparseMatrix &rhs) {
     auto m = lhs.addition(rhs, 1.0, 1.0);
     return m;
   };
 
   friend std::unique_ptr<SparseMatrix> operator-(const CuSparseMatrix &lhs,
-                                  const CuSparseMatrix &rhs) {
+                                                 const CuSparseMatrix &rhs) {
     return lhs.addition(rhs, 1.0, -1.0);
   };
 
-  // TODO: Overload *= 
-  friend std::unique_ptr<SparseMatrix> operator*(const CuSparseMatrix &sm, float scale) {
+  // TODO: Overload *=
+  friend std::unique_ptr<SparseMatrix> operator*(const CuSparseMatrix &sm,
+                                                 float scale) {
     return sm.addition(sm, scale, 0.0);
   }
 
-  friend std::unique_ptr<SparseMatrix> operator*(float scale, const CuSparseMatrix &sm) {
+  friend std::unique_ptr<SparseMatrix> operator*(float scale,
+                                                 const CuSparseMatrix &sm) {
     return sm.addition(sm, scale, 0.0);
   }
 
   std::unique_ptr<SparseMatrix> addition(const CuSparseMatrix &other,
-                                const float alpha,
-                                const float beta) const;
+                                         const float alpha,
+                                         const float beta) const;
 
   std::unique_ptr<SparseMatrix> matmul(const CuSparseMatrix &other) const;
 
   std::unique_ptr<SparseMatrix> gemm(const CuSparseMatrix &other,
-                                  const float alpha,
-                                  const float beta) const;
+                                     const float alpha,
+                                     const float beta) const;
 
-  std::unique_ptr<SparseMatrix> transpose() const; 
+  std::unique_ptr<SparseMatrix> transpose() const;
 
   void build_csr_from_coo(void *coo_row_ptr,
                           void *coo_col_ptr,

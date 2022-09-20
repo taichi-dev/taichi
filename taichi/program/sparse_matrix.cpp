@@ -308,9 +308,10 @@ void make_sparse_matrix_from_ndarray_cusparse(Program *prog,
 }
 
 // Reference::https://docs.nvidia.com/cuda/cusparse/index.html#csrgeam2
-std::unique_ptr<SparseMatrix> CuSparseMatrix::addition(const CuSparseMatrix &other,
-                                              const float alpha,
-                                              const float beta) const {
+std::unique_ptr<SparseMatrix> CuSparseMatrix::addition(
+    const CuSparseMatrix &other,
+    const float alpha,
+    const float beta) const {
 #if defined(TI_WITH_CUDA)
   // Get information of this matrix: A
   size_t nrows_A = 0, ncols_A = 0, nnz_A = 0;
@@ -417,14 +418,16 @@ std::unique_ptr<SparseMatrix> CuSparseMatrix::addition(const CuSparseMatrix &oth
 #endif
 }
 
-std::unique_ptr<SparseMatrix> CuSparseMatrix::matmul(const CuSparseMatrix &other) const {
+std::unique_ptr<SparseMatrix> CuSparseMatrix::matmul(
+    const CuSparseMatrix &other) const {
   return gemm(other, 1.0f, 1.0f);
 }
 
-// Reference: https://github.com/NVIDIA/CUDALibrarySamples/tree/master/cuSPARSE/spgemm
+// Reference:
+// https://github.com/NVIDIA/CUDALibrarySamples/tree/master/cuSPARSE/spgemm
 std::unique_ptr<SparseMatrix> CuSparseMatrix::gemm(const CuSparseMatrix &other,
-                                          const float alpha,
-                                          const float beta) const {
+                                                   const float alpha,
+                                                   const float beta) const {
 #if defined(TI_WITH_CUDA)
   cusparseHandle_t handle;
   CUSPARSEDriver::get_instance().cpCreate(&handle);
@@ -499,14 +502,15 @@ std::unique_ptr<SparseMatrix> CuSparseMatrix::gemm(const CuSparseMatrix &other,
   CUDADriver::get_instance().mem_free(d_buffer1);
   CUDADriver::get_instance().mem_free(d_buffer2);
   CUSPARSEDriver::get_instance().cpDestroy(handle);
-  
+
   return make_cu_sparse_matrix(mat_C, nrows_A, ncols_B, PrimitiveType::f32);
 #endif
 }
 
 // Convert CSR to CSC format using routine `Csr2cscEx2`
 // to implement transpose.
-// Reference https://stackoverflow.com/questions/57368010/how-to-transpose-a-sparse-matrix-in-cusparse
+// Reference
+// https://stackoverflow.com/questions/57368010/how-to-transpose-a-sparse-matrix-in-cusparse
 std::unique_ptr<SparseMatrix> CuSparseMatrix::transpose() const {
 #if defined(TI_WITH_CUDA)
   cusparseHandle_t handle;

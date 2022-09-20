@@ -378,8 +378,8 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(MatrixOfGlobalPtrStmt *stmt) override {
-    std::string s =
-        fmt::format("{}{} = matrix of global ptr [", stmt->type_hint(), stmt->name());
+    std::string s = fmt::format("{}{} = matrix of global ptr [",
+                                stmt->type_hint(), stmt->name());
 
     for (int i = 0; i < (int)stmt->snodes.size(); i++) {
       s += fmt::format("{}", stmt->snodes[i]->get_node_type_name_hinted());

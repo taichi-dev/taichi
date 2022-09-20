@@ -67,7 +67,10 @@ MatrixOfGlobalPtrStmt::MatrixOfGlobalPtrStmt(const std::vector<SNode *> &snodes,
                                              int dynamic_index_stride,
                                              DataType dt,
                                              bool activate)
-    : snodes(snodes), indices(indices), dynamic_indexable(dynamic_indexable), dynamic_index_stride(dynamic_index_stride) {
+    : snodes(snodes),
+      indices(indices),
+      dynamic_indexable(dynamic_indexable),
+      dynamic_index_stride(dynamic_index_stride) {
   ret_type = dt;
   TI_STMT_REG_FIELDS;
 }
@@ -75,7 +78,8 @@ MatrixOfGlobalPtrStmt::MatrixOfGlobalPtrStmt(const std::vector<SNode *> &snodes,
 PtrOffsetStmt::PtrOffsetStmt(Stmt *origin_input, Stmt *offset_input) {
   origin = origin_input;
   offset = offset_input;
-  if (origin->is<AllocaStmt>() || origin->is<GlobalTemporaryStmt>() || origin->is<ExternalPtrStmt>() || origin->is<MatrixOfGlobalPtrStmt>()) {
+  if (origin->is<AllocaStmt>() || origin->is<GlobalTemporaryStmt>() ||
+      origin->is<ExternalPtrStmt>() || origin->is<MatrixOfGlobalPtrStmt>()) {
     auto tensor_type = origin->ret_type.ptr_removed()->cast<TensorType>();
     TI_ASSERT(tensor_type != nullptr);
     element_type() = tensor_type->get_element_type();
@@ -85,7 +89,8 @@ PtrOffsetStmt::PtrOffsetStmt(Stmt *origin_input, Stmt *offset_input) {
   } else {
     TI_ERROR(
         "PtrOffsetStmt must be used for AllocaStmt / GlobalTemporaryStmt "
-        "(locally) or GlobalPtrStmt / MatrixOfGlobalPtrStmt / ExternalPtrStmt (globally).")
+        "(locally) or GlobalPtrStmt / MatrixOfGlobalPtrStmt / ExternalPtrStmt "
+        "(globally).")
   }
   TI_STMT_REG_FIELDS;
 }

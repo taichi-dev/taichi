@@ -16,7 +16,8 @@ class LowerMatrixPtr : public BasicStmtVisitor {
       TI_ASSERT(stmt->offset->is<ConstStmt>());
       auto origin = stmt->origin->as<MatrixOfGlobalPtrStmt>();
       auto offset = stmt->offset->as<ConstStmt>();
-      auto lowered = std::make_unique<GlobalPtrStmt>(origin->snodes[offset->val.val_int()], origin->indices);
+      auto lowered = std::make_unique<GlobalPtrStmt>(
+          origin->snodes[offset->val.val_int()], origin->indices);
       stmt->replace_usages_with(lowered.get());
       modifier.insert_before(stmt, std::move(lowered));
       modifier.erase(stmt);

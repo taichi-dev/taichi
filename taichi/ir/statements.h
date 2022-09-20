@@ -376,7 +376,13 @@ class MatrixOfGlobalPtrStmt : public Stmt {
     return true;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, snodes, indices, ptr_base, dynamic_indexable, dynamic_index_stride, activate);
+  TI_STMT_DEF_FIELDS(ret_type,
+                     snodes,
+                     indices,
+                     ptr_base,
+                     dynamic_indexable,
+                     dynamic_index_stride,
+                     activate);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 

@@ -386,7 +386,9 @@ void FieldExpression::flatten(FlattenContext *ctx) {
   ctx->push_back(std::move(ptr));
 }
 
-std::vector<Stmt *> make_index_stmts(Expression::FlattenContext *ctx, const ExprGroup &indices, const std::vector<int> &offsets) {
+std::vector<Stmt *> make_index_stmts(Expression::FlattenContext *ctx,
+                                     const ExprGroup &indices,
+                                     const std::vector<int> &offsets) {
   std::vector<Stmt *> index_stmts;
   for (int i = 0; i < (int)indices.size(); i++) {
     flatten_rvalue(indices.exprs[i], ctx);
@@ -404,7 +406,8 @@ Stmt *make_field_access(Expression::FlattenContext *ctx,
                         Expr var,
                         ExprGroup indices) {
   SNode *snode = var.cast<FieldExpression>()->snode;
-  return ctx->push_back(std::make_unique<GlobalPtrStmt>(snode, make_index_stmts(ctx, indices, snode->index_offsets)));
+  return ctx->push_back(std::make_unique<GlobalPtrStmt>(
+      snode, make_index_stmts(ctx, indices, snode->index_offsets)));
 }
 
 Stmt *make_matrix_field_access(Expression::FlattenContext *ctx,
@@ -416,7 +419,10 @@ Stmt *make_matrix_field_access(Expression::FlattenContext *ctx,
   for (auto &field : matrix_field->fields) {
     snodes.push_back(field.cast<FieldExpression>()->snode);
   }
-  return ctx->push_back(std::make_unique<MatrixOfGlobalPtrStmt>(snodes, make_index_stmts(ctx, indices, snodes[0]->index_offsets), matrix_field->dynamic_indexable, matrix_field->dynamic_index_stride, ret_type));
+  return ctx->push_back(std::make_unique<MatrixOfGlobalPtrStmt>(
+      snodes, make_index_stmts(ctx, indices, snodes[0]->index_offsets),
+      matrix_field->dynamic_indexable, matrix_field->dynamic_index_stride,
+      ret_type));
 }
 
 Stmt *make_ndarray_access(Expression::FlattenContext *ctx,
@@ -463,7 +469,8 @@ Stmt *make_tensor_access(Expression::FlattenContext *ctx,
   } else {
     int offset = 0;
     for (int i = 0; i < (int)indices.size(); ++i) {
-      offset = offset * shape[i] + indices[i].cast<ConstExpression>()->val.val_int();
+      offset =
+          offset * shape[i] + indices[i].cast<ConstExpression>()->val.val_int();
     }
     offset_stmt = ctx->push_back<ConstStmt>(TypedConstant(offset));
   }
@@ -518,7 +525,8 @@ bool IndexExpression::is_global() const {
   // Special case: Indexing into TensorType-element of ExternalPtrStmt
   // or GlobalPtrStmt should be treated as global ptrs
   if (var.is<IndexExpression>()) {
-    TI_ASSERT(var.cast<IndexExpression>()->is_matrix_field() || var.cast<IndexExpression>()->is_ndarray());
+    TI_ASSERT(var.cast<IndexExpression>()->is_matrix_field() ||
+              var.cast<IndexExpression>()->is_ndarray());
     return true;
   }
 
@@ -533,7 +541,10 @@ void IndexExpression::type_check(CompileConfig *) {
     ret_type = var.cast<FieldExpression>()->dt->get_compute_type();
   } else if (is_matrix_field()) {
     auto matrix_field_expr = var.cast<MatrixFieldExpression>();
-    ret_type = TypeFactory::create_tensor_type(matrix_field_expr->element_shape, matrix_field_expr->fields[0].cast<FieldExpression>()->dt->get_compute_type());
+    ret_type = TypeFactory::create_tensor_type(matrix_field_expr->element_shape,
+                                               matrix_field_expr->fields[0]
+                                                   .cast<FieldExpression>()
+                                                   ->dt->get_compute_type());
   } else if (is_ndarray()) {  // ndarray
     auto external_tensor_expr = var.cast<ExternalTensorExpression>();
     int total_dim = external_tensor_expr->dim;

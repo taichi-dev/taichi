@@ -33,7 +33,7 @@ class LoopInvariantCodeMotion : public LoopInvariantDetector {
   }
 
   void visit(GlobalPtrStmt *stmt) override {
-    if (is_loop_invariant(stmt, stmt->parent)) {
+    if (config.cache_loop_invariant_global_vars && is_loop_invariant(stmt, stmt->parent)) {
       auto replacement = stmt->clone();
       stmt->replace_usages_with(replacement.get());
 
@@ -43,7 +43,7 @@ class LoopInvariantCodeMotion : public LoopInvariantDetector {
   }
 
   void visit(ExternalPtrStmt *stmt) override {
-    if (is_loop_invariant(stmt, stmt->parent)) {
+    if (config.cache_loop_invariant_global_vars && is_loop_invariant(stmt, stmt->parent)) {
       auto replacement = stmt->clone();
       stmt->replace_usages_with(replacement.get());
 
@@ -53,7 +53,7 @@ class LoopInvariantCodeMotion : public LoopInvariantDetector {
   }
 
   void visit(ArgLoadStmt *stmt) override {
-    if (is_loop_invariant(stmt, stmt->parent)) {
+    if (config.cache_loop_invariant_global_vars && is_loop_invariant(stmt, stmt->parent)) {
       auto replacement = stmt->clone();
       stmt->replace_usages_with(replacement.get());
 

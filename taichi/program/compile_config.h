@@ -28,6 +28,7 @@ struct CompileConfig {
   bool lower_access;
   bool simplify_after_lower_access;
   bool move_loop_invariant_outside_if;
+  bool cache_loop_invariant_global_vars{false};
   bool demote_dense_struct_fors;
   bool advanced_optimization;
   bool constant_folding;

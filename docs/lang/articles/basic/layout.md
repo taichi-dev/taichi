@@ -76,7 +76,7 @@ different layers of `SNodeTree`. Namely,
 x = ti.field(ti.f32)
 ti.root.dense(ti.i, 3).dense(ti.j, 4).place(x)
 ```
-has two layers of `SNodeTree` below the root, while
+has two `SNodeTree` layers below the root;
 ```python
 x = ti.field(ti.f32)
 ti.root.dense(ti.ij, (3, 4)).place(x)

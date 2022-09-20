@@ -348,9 +348,9 @@ class GlobalPtrStmt : public Stmt {
 /**
  * An "abstract" pointer for an element of a MatrixField, which logically
  * contains a matrix of GlobalPtrStmts. Upon construction, only snodes, indices,
- * dynamic_indexable, and dynamic_index_stride are initialized. After the
- * lower_matrix_ptr pass, this stmt will either be eliminated (constant index)
- * or have ptr_base initialized (dynamic index or whole-matrix access).
+ * dynamic_indexable, dynamic_index_stride and activate are initialized. After
+ * the lower_matrix_ptr pass, this stmt will either be eliminated (constant
+ * index) or have ptr_base initialized (dynamic index or whole-matrix access).
  */
 class MatrixOfGlobalPtrStmt : public Stmt {
  public:

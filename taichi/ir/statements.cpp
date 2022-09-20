@@ -70,7 +70,8 @@ MatrixOfGlobalPtrStmt::MatrixOfGlobalPtrStmt(const std::vector<SNode *> &snodes,
     : snodes(snodes),
       indices(indices),
       dynamic_indexable(dynamic_indexable),
-      dynamic_index_stride(dynamic_index_stride) {
+      dynamic_index_stride(dynamic_index_stride),
+      activate(activate) {
   ret_type = dt;
   TI_STMT_REG_FIELDS;
 }

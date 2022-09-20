@@ -105,7 +105,9 @@ def inside_taichi_scope():
 
 ## Serial execution
 
-Taichi's automatic parallelization mechanism may lead to non-deterministic behaviors. For debugging purposes, serializing program execution may be useful to get repeatable results and diagnose data races.
+Taichi's automatic parallelization mechanism may lead to non-deterministic behaviors. For debugging purposes, serializing program execution may be useful to get repeatable results and diagnose data races. You can serialize either an entire Taichi program or a specific for loop.
+
+### Serialize entire Taichi program
 
 If you choose CPU as the backend, you can serialize the program with `cpu_max_num_threads=1` when initiating Taichi, so that the whole program runs on a single thread and becomes deterministic. For example:
 
@@ -114,6 +116,37 @@ ti.init(arch=ti.cpu, cpu_max_num_threads=1)
 ```
 
 If your program works well in serial but fails in parallel, check parallelization-related issues, such as data races.
+
+### Serialize the for loop at the outermost scope
+
+By default, Taichi automatically parallelizes the for loop at the outermost scope. But some scenarios require serial exeution. In this case, you can prevent automatic parallelization with `ti.loop_config(serialize=True)`:
+
+```python
+import taichi as ti
+
+ti.init(arch=ti.cpu)
+n = 1024
+val = ti.field(dtype=ti.i32, shape=n)
+
+val.fill(1)
+
+@ti.kernel
+def prefix_sum():
+    ti.loop_config(serialize=True) # serialize the for loop
+    for i in range(1, n):
+        val[i] += val[i - 1]
+
+prefix_sum()
+print(val)
+```
+
+:::note
+
+1. `ti.loop_config(serialize=True)` decorates the outermost for loop that immediately follows it.
+2. `ti.loop_config` works only for the *range-for* loop at the outermost scope.
+3. Inner for loops are serialized by default.
+
+:::
 
 ## Out-of-bound array access
 
@@ -133,6 +166,12 @@ print(test())
 ```
 
 The code snippet above would raise a `TaichiAssertionError` indicating that you are trying to access a field with improper indices.
+
+:::note
+Automatic bound checks are supported on the CPU and CUDA beckends only.
+
+After `debug=Ture` is turned on, your program performance may worsen.
+:::
 
 ## Runtime `assert` in Taichi scope
 

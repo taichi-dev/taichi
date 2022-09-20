@@ -564,6 +564,7 @@ class VulkanStream : public Stream {
 class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
  public:
   struct Params {
+    PFN_vkGetInstanceProcAddr get_proc_addr{nullptr};
     VkInstance instance;
     VkPhysicalDevice physical_device;
     VkDevice device;

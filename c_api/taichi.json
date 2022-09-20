@@ -862,6 +862,10 @@
                     "type": "structure",
                     "fields": [
                         {
+                            "name": "get_instance_proc_addr",
+                            "type": "PFN_vkGetInstanceProcAddr"
+                        },
+                        {
                             "name": "api_version",
                             "type": "uint32_t"
                         },

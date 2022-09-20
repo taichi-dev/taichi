@@ -12,6 +12,10 @@ TLANG_NAMESPACE_BEGIN
                  "[{}] was not type-checked",           \
                  ExpressionHumanFriendlyPrinter::expr_to_string(x))
 
+static bool is_primitive_or_tensor_type(DataType &type) {
+  return type->is<PrimitiveType>() || type->is<TensorType>();
+}
+
 FrontendSNodeOpStmt::FrontendSNodeOpStmt(SNodeOpType op_type,
                                          SNode *snode,
                                          const ExprGroup &indices,
@@ -32,64 +36,32 @@ FrontendAssignStmt::FrontendAssignStmt(const Expr &lhs, const Expr &rhs)
   }
 }
 
-IRNode *FrontendContext::root() {
-  return static_cast<IRNode *>(root_node_.get());
-}
-
-FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
-                                 const Expr &global_var,
+FrontendForStmt::FrontendForStmt(const ExprGroup &loop_vars,
+                                 SNode *snode,
                                  Arch arch,
                                  const ForLoopConfig &config)
-    : global_var(global_var),
-      is_bit_vectorized(config.is_bit_vectorized),
-      num_cpu_threads(config.num_cpu_threads),
-      strictly_serialized(config.strictly_serialized),
-      mem_access_opt(config.mem_access_opt),
-      block_dim(config.block_dim) {
-  if (arch == Arch::cuda) {
-    this->num_cpu_threads = 1;
-    TI_ASSERT(this->block_dim <= taichi_max_gpu_block_dim);
-  } else {
-    // cpu
-    if (this->num_cpu_threads == 0)
-      this->num_cpu_threads = std::thread::hardware_concurrency();
-  }
-  loop_var_id.reserve(loop_var.size());
-  for (int i = 0; i < (int)loop_var.size(); i++) {
-    loop_var_id.push_back(loop_var[i].cast<IdExpression>()->id);
-    loop_var[i].expr->ret_type = PrimitiveType::i32;
-  }
+    : snode(snode) {
+  init_config(arch, config);
+  init_loop_vars(loop_vars);
 }
 
-FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
+FrontendForStmt::FrontendForStmt(const ExprGroup &loop_vars,
+                                 const Expr &external_tensor,
+                                 Arch arch,
+                                 const ForLoopConfig &config)
+    : external_tensor(external_tensor) {
+  init_config(arch, config);
+  init_loop_vars(loop_vars);
+}
+
+FrontendForStmt::FrontendForStmt(const ExprGroup &loop_vars,
                                  const mesh::MeshPtr &mesh,
                                  const mesh::MeshElementType &element_type,
                                  Arch arch,
                                  const ForLoopConfig &config)
-    : is_bit_vectorized(config.is_bit_vectorized),
-      num_cpu_threads(config.num_cpu_threads),
-      mem_access_opt(config.mem_access_opt),
-      block_dim(config.block_dim),
-      mesh_for(true),
-      mesh(mesh.ptr.get()),
-      element_type(element_type) {
-  if (arch == Arch::cuda) {
-    this->num_cpu_threads = 1;
-    TI_ASSERT(this->block_dim <= taichi_max_gpu_block_dim);
-  } else {
-    // cpu
-    if (this->num_cpu_threads == 0)
-      this->num_cpu_threads = std::thread::hardware_concurrency();
-  }
-  loop_var_id.reserve(loop_var.size());
-  for (int i = 0; i < (int)loop_var.size(); i++) {
-    loop_var_id.push_back(loop_var[i].cast<IdExpression>()->id);
-  }
-}
-
-FrontendContext::FrontendContext(Arch arch) {
-  root_node_ = std::make_unique<Block>();
-  current_builder_ = std::make_unique<ASTBuilder>(root_node_.get(), arch);
+    : mesh(mesh.ptr.get()), element_type(element_type) {
+  init_config(arch, config);
+  init_loop_vars(loop_vars);
 }
 
 FrontendForStmt::FrontendForStmt(const Expr &loop_var,
@@ -97,20 +69,37 @@ FrontendForStmt::FrontendForStmt(const Expr &loop_var,
                                  const Expr &end,
                                  Arch arch,
                                  const ForLoopConfig &config)
-    : begin(begin),
-      end(end),
-      is_bit_vectorized(config.is_bit_vectorized),
-      num_cpu_threads(config.num_cpu_threads),
-      strictly_serialized(config.strictly_serialized),
-      mem_access_opt(config.mem_access_opt),
-      block_dim(config.block_dim) {
+    : begin(begin), end(end) {
+  init_config(arch, config);
+  add_loop_var(loop_var);
+}
+
+void FrontendForStmt::init_config(Arch arch, const ForLoopConfig &config) {
+  is_bit_vectorized = config.is_bit_vectorized;
+  strictly_serialized = config.strictly_serialized;
+  mem_access_opt = config.mem_access_opt;
+  block_dim = config.block_dim;
   if (arch == Arch::cuda) {
-    this->num_cpu_threads = 1;
-  } else {
-    if (this->num_cpu_threads == 0)
-      this->num_cpu_threads = std::thread::hardware_concurrency();
+    num_cpu_threads = 1;
+    TI_ASSERT(block_dim <= taichi_max_gpu_block_dim);
+  } else {  // cpu
+    if (config.num_cpu_threads == 0) {
+      num_cpu_threads = std::thread::hardware_concurrency();
+    } else {
+      num_cpu_threads = config.num_cpu_threads;
+    }
   }
-  loop_var_id.push_back(loop_var.cast<IdExpression>()->id);
+}
+
+void FrontendForStmt::init_loop_vars(const ExprGroup &loop_vars) {
+  loop_var_ids.reserve(loop_vars.size());
+  for (int i = 0; i < (int)loop_vars.size(); i++) {
+    add_loop_var(loop_vars[i]);
+  }
+}
+
+void FrontendForStmt::add_loop_var(const Expr &loop_var) {
+  loop_var_ids.push_back(loop_var.cast<IdExpression>()->id);
   loop_var.expr->ret_type = PrimitiveType::i32;
 }
 
@@ -195,8 +184,17 @@ void BinaryOpExpression::type_check(CompileConfig *config) {
                     binary_op_type_symbol(type), lhs->ret_type->to_string(),
                     rhs->ret_type->to_string()));
   };
-  if (!lhs_type->is<PrimitiveType>() || !rhs_type->is<PrimitiveType>())
+
+  if (!is_primitive_or_tensor_type(lhs_type) ||
+      !is_primitive_or_tensor_type(rhs_type)) {
     error();
+  }
+
+  if ((lhs_type->is<PrimitiveType>() && rhs_type->is<TensorType>()) ||
+      (lhs_type->is<TensorType>() && rhs_type->is<PrimitiveType>())) {
+    TI_NOT_IMPLEMENTED;
+  }
+
   if (binary_is_bitwise(type) &&
       (!is_integral(lhs_type) || !is_integral(rhs_type)))
     error();
@@ -207,7 +205,8 @@ void BinaryOpExpression::type_check(CompileConfig *config) {
     ret_type = PrimitiveType::i32;
     return;
   }
-  if (is_shift_op(type)) {
+  if (is_shift_op(type) ||
+      (type == BinaryOpType::pow && is_integral(rhs_type))) {
     ret_type = lhs_type;
     return;
   }
@@ -242,7 +241,7 @@ void BinaryOpExpression::flatten(FlattenContext *ctx) {
   if (binary_is_logical(type)) {
     auto result = ctx->push_back<AllocaStmt>(ret_type);
     ctx->push_back<LocalStoreStmt>(result, lhs->stmt);
-    auto cond = ctx->push_back<LocalLoadStmt>(LocalAddress(result, 0));
+    auto cond = ctx->push_back<LocalLoadStmt>(result);
     auto if_stmt = ctx->push_back<IfStmt>(cond);
 
     FlattenContext rctx;
@@ -262,7 +261,7 @@ void BinaryOpExpression::flatten(FlattenContext *ctx) {
     }
     if_stmt->set_false_statements(std::move(false_block));
 
-    auto ret = ctx->push_back<LocalLoadStmt>(LocalAddress(result, 0));
+    auto ret = ctx->push_back<LocalLoadStmt>(result);
     ret->tb = tb;
     stmt = ret;
     return;
@@ -300,7 +299,7 @@ void make_ifte(Expression::FlattenContext *ctx,
   false_block->set_statements(std::move(rctx.stmts));
   if_stmt->set_false_statements(std::move(false_block));
 
-  ctx->push_back<LocalLoadStmt>(LocalAddress(result, 0));
+  ctx->push_back<LocalLoadStmt>(result);
   return;
 }
 
@@ -362,16 +361,27 @@ void InternalFuncCallExpression::flatten(FlattenContext *ctx) {
 }
 
 void ExternalTensorExpression::flatten(FlattenContext *ctx) {
-  auto ptr = Stmt::make<ArgLoadStmt>(arg_id, dt, /*is_ptr=*/true);
+  // https://github.com/taichi-dev/taichi/issues/5819
+  // ArgLoadStmt keeps primitive types since all matrix-type gets
+  // scalarized at python-scope
+  //
+  // FIXME(zhanlue): ArgLoadStmt should use TensorType once real_matrix is
+  // turned-on by default.
+  //                 The scalarization should happen after
+  //                 irpass::lower_access()
+  auto prim_dt = dt;
+  if (!get_compile_config()->real_matrix) {
+    prim_dt = dt.get_element_type();
+  }
+  auto ptr = Stmt::make<ArgLoadStmt>(arg_id, prim_dt, /*is_ptr=*/true);
   ptr->tb = tb;
   ctx->push_back(std::move(ptr));
   stmt = ctx->back_stmt();
 }
 
-void GlobalVariableExpression::flatten(FlattenContext *ctx) {
+void FieldExpression::flatten(FlattenContext *ctx) {
   TI_ASSERT(snode->num_active_indices == 0);
-  auto ptr = Stmt::make<GlobalPtrStmt>(LaneAttribute<SNode *>(snode),
-                                       std::vector<Stmt *>());
+  auto ptr = Stmt::make<GlobalPtrStmt>(snode, std::vector<Stmt *>());
   ptr->tb = tb;
   ctx->push_back(std::move(ptr));
 }
@@ -380,7 +390,7 @@ Stmt *make_field_access(Expression::FlattenContext *ctx,
                         Expr var,
                         ExprGroup indices) {
   std::vector<Stmt *> index_stmts;
-  SNode *snode = var.cast<GlobalVariableExpression>()->snode;
+  SNode *snode = var.cast<FieldExpression>()->snode;
   std::vector<int> offsets = snode->index_offsets;
   for (int i = 0; i < (int)indices.size(); i++) {
     flatten_rvalue(indices.exprs[i], ctx);
@@ -405,8 +415,11 @@ Stmt *make_ndarray_access(Expression::FlattenContext *ctx,
   }
   flatten_lvalue(var, ctx);
   auto expr = var.cast<ExternalTensorExpression>();
-  return ctx->push_back(std::make_unique<ExternalPtrStmt>(
-      expr->stmt, index_stmts, expr->element_shape, expr->element_dim));
+  auto external_ptr_stmt = std::make_unique<ExternalPtrStmt>(
+      expr->stmt, index_stmts, expr->dt.get_shape(), expr->element_dim);
+  external_ptr_stmt->ret_type = expr->dt;
+
+  return ctx->push_back(std::move(external_ptr_stmt));
 }
 
 Stmt *make_tensor_access(Expression::FlattenContext *ctx,
@@ -441,7 +454,6 @@ void MatrixExpression::type_check(CompileConfig *config) {
 }
 
 void MatrixExpression::flatten(FlattenContext *ctx) {
-  // TODO: implement flatten
   TI_ASSERT(this->dt->is<TensorType>());
   std::vector<Stmt *> values;
   for (auto &elt : elements) {
@@ -453,7 +465,7 @@ void MatrixExpression::flatten(FlattenContext *ctx) {
 }
 
 bool IndexExpression::is_field() const {
-  return var.is<GlobalVariableExpression>();
+  return var.is<FieldExpression>();
 }
 
 bool IndexExpression::is_ndarray() const {
@@ -465,25 +477,52 @@ bool IndexExpression::is_tensor() const {
 }
 
 bool IndexExpression::is_local() const {
-  return is_tensor();
+  return !is_global();
 }
 
 bool IndexExpression::is_global() const {
-  return !is_local();
+  // Special case: Indexing into TensorType-element of
+  // ExternalPtrStmt/GlobalPtrStmt In this case, we should treat them as global
+  // ptrs
+  if (var.is<IndexExpression>()) {
+    if (var.cast<IndexExpression>()->is_field() ||
+        var.cast<IndexExpression>()->is_ndarray()) {
+      return true;
+    }
+  }
+
+  // Only Ndarray and Field comes outside from a kernel
+  return is_field() || is_ndarray();
 }
 
 void IndexExpression::type_check(CompileConfig *) {
   // TODO: Change to type-based solution
   // Currently, dimension compatibility check happens in Python
   if (is_field()) {  // field
-    ret_type = var.cast<GlobalVariableExpression>()->dt->get_compute_type();
+    ret_type = var.cast<FieldExpression>()->dt->get_compute_type();
   } else if (is_ndarray()) {  // ndarray
-    ret_type = var.cast<ExternalTensorExpression>()->dt;
+    auto external_tensor_expr = var.cast<ExternalTensorExpression>();
+    int total_dim = external_tensor_expr->dim;
+    int index_dim = indices.exprs.size();
+
+    if (index_dim == total_dim) {
+      // Access all the way to a single element
+      ret_type = var.cast<ExternalTensorExpression>()->dt.get_element_type();
+    } else {
+      // Access to a Tensor
+      ret_type = var.cast<ExternalTensorExpression>()->dt;
+    }
   } else if (is_tensor()) {  // local tensor
+    auto shape = var->ret_type->as<TensorType>()->get_shape();
+    if (indices.size() != shape.size()) {
+      TI_ERROR("Expected {} indices, but got {}.", shape.size(),
+               indices.size());
+    }
     ret_type = var->ret_type->cast<TensorType>()->get_element_type();
   } else {
     throw TaichiTypeError(
-        "Invalid IndexExpression: the source is neither a field nor a tensor");
+        "Invalid IndexExpression: the source is not among field, ndarray or "
+        "local tensor");
   }
 
   for (int i = 0; i < indices.exprs.size(); i++) {
@@ -505,6 +544,10 @@ void IndexExpression::flatten(FlattenContext *ctx) {
   } else if (is_tensor()) {
     stmt = make_tensor_access(
         ctx, var, indices, var->ret_type->cast<TensorType>()->get_shape(), 1);
+  } else {
+    throw TaichiTypeError(
+        "Invalid IndexExpression: the source is not among field, ndarray or "
+        "local tensor");
   }
   stmt->tb = tb;
 }
@@ -512,7 +555,7 @@ void IndexExpression::flatten(FlattenContext *ctx) {
 void StrideExpression::type_check(CompileConfig *) {
   // This is an ugly hack for global tensors
   if (var.is<IndexExpression>() &&
-      var.cast<IndexExpression>()->var.is<GlobalVariableExpression>())
+      var.cast<IndexExpression>()->var.is<FieldExpression>())
     ret_type = var->ret_type;
   else
     throw TaichiTypeError(
@@ -561,6 +604,9 @@ void LoopUniqueExpression::flatten(FlattenContext *ctx) {
 
 void IdExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->current_block->lookup_var(id);
+  if (!ret_type->is_primitive(PrimitiveTypeID::unknown)) {
+    stmt->ret_type = ret_type;
+  }
 }
 
 void AtomicOpExpression::type_check(CompileConfig *) {
@@ -931,7 +977,7 @@ Expr ASTBuilder::insert_patch_idx_expr() {
     }
   }
   TI_ERROR_IF(!(loop && loop->is<FrontendForStmt>() &&
-                loop->as<FrontendForStmt>()->mesh_for),
+                loop->as<FrontendForStmt>()->mesh),
               "ti.mesh_patch_idx() is only valid within mesh-for loops.");
   return Expr::make<MeshPatchIndexExpression>();
 }
@@ -993,7 +1039,8 @@ Expr ASTBuilder::expr_alloca() {
 Expr ASTBuilder::make_matrix_expr(const std::vector<int> &shape,
                                   const DataType &dt,
                                   const std::vector<Expr> &elements) {
-  return Expr(std::make_shared<MatrixExpression>(elements, shape, dt));
+  auto mat = Expr(std::make_shared<MatrixExpression>(elements, shape, dt));
+  return mat;
 }
 
 Expr ASTBuilder::expr_alloca_local_tensor(const std::vector<int> &shape,
@@ -1058,14 +1105,29 @@ void ASTBuilder::begin_frontend_range_for(const Expr &i,
   for_loop_dec_.reset();
 }
 
-void ASTBuilder::begin_frontend_struct_for(const ExprGroup &loop_vars,
-                                           const Expr &global) {
+void ASTBuilder::begin_frontend_struct_for_on_snode(const ExprGroup &loop_vars,
+                                                    SNode *snode) {
   TI_WARN_IF(
       for_loop_dec_.config.strictly_serialized,
       "ti.loop_config(serialize=True) does not have effect on the struct for. "
       "The execution order is not guaranteed.");
-  auto stmt_unique = std::make_unique<FrontendForStmt>(loop_vars, global, arch_,
+  auto stmt_unique = std::make_unique<FrontendForStmt>(loop_vars, snode, arch_,
                                                        for_loop_dec_.config);
+  for_loop_dec_.reset();
+  auto stmt = stmt_unique.get();
+  this->insert(std::move(stmt_unique));
+  this->create_scope(stmt->body, For);
+}
+
+void ASTBuilder::begin_frontend_struct_for_on_external_tensor(
+    const ExprGroup &loop_vars,
+    const Expr &external_tensor) {
+  TI_WARN_IF(
+      for_loop_dec_.config.strictly_serialized,
+      "ti.loop_config(serialize=True) does not have effect on the struct for. "
+      "The execution order is not guaranteed.");
+  auto stmt_unique = std::make_unique<FrontendForStmt>(
+      loop_vars, external_tensor, arch_, for_loop_dec_.config);
   for_loop_dec_.reset();
   auto stmt = stmt_unique.get();
   this->insert(std::move(stmt_unique));
@@ -1154,7 +1216,7 @@ void flatten_global_load(Expr ptr, Expression::FlattenContext *ctx) {
 }
 
 void flatten_local_load(Expr ptr, Expression::FlattenContext *ctx) {
-  ctx->push_back<LocalLoadStmt>(LocalAddress(ptr->stmt, 0));
+  ctx->push_back<LocalLoadStmt>(ptr->stmt);
   ptr->stmt = ctx->back_stmt();
 }
 
@@ -1173,9 +1235,8 @@ void flatten_rvalue(Expr ptr, Expression::FlattenContext *ctx) {
     }
   } else if (ptr.is<StrideExpression>()) {
     flatten_global_load(ptr, ctx);
-  } else if (ptr.is<GlobalVariableExpression>()) {
-    TI_ASSERT(ptr.cast<GlobalVariableExpression>()->snode->num_active_indices ==
-              0);
+  } else if (ptr.is<FieldExpression>()) {
+    TI_ASSERT(ptr.cast<FieldExpression>()->snode->num_active_indices == 0);
     flatten_global_load(ptr[ExprGroup()], ctx);
   } else if (ptr.is<ArgLoadExpression>() &&
              ptr.cast<ArgLoadExpression>()->is_ptr) {

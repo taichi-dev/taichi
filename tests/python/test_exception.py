@@ -23,11 +23,11 @@ def test_exception_multiline():
 
     if version_info < (3, 8):
         msg = f"""
-On line {frameinfo.lineno + 5} of file "{frameinfo.filename}", in foo:
+File "{frameinfo.filename}", line {frameinfo.lineno + 5}, in foo:
             aaaa(111,"""
     else:
         msg = f"""
-On line {frameinfo.lineno + 5} of file "{frameinfo.filename}", in foo:
+File "{frameinfo.filename}", line {frameinfo.lineno + 5}, in foo:
             aaaa(111,
             ^^^^"""
     print(e.value.args[0])
@@ -56,21 +56,21 @@ def test_exception_from_func():
     file = frameinfo.filename
     if version_info < (3, 8):
         msg = f"""
-On line {lineno + 13} of file "{file}", in foo:
+File "{file}", line {lineno + 13}, in foo:
             bar()
-On line {lineno + 9} of file "{file}", in bar:
+File "{file}", line {lineno + 9}, in bar:
             baz()
-On line {lineno + 5} of file "{file}", in baz:
+File "{file}", line {lineno + 5}, in baz:
             t()"""
     else:
         msg = f"""
-On line {lineno + 13} of file "{file}", in foo:
+File "{file}", line {lineno + 13}, in foo:
             bar()
             ^^^^^
-On line {lineno + 9} of file "{file}", in bar:
+File "{file}", line {lineno + 9}, in bar:
             baz()
             ^^^^^
-On line {lineno + 5} of file "{file}", in baz:
+File "{file}", line {lineno + 5}, in baz:
             t()
             ^"""
     print(e.value.args[0])
@@ -91,11 +91,11 @@ def test_tab():
     file = frameinfo.filename
     if version_info < (3, 8):
         msg = f"""
-On line {lineno + 5} of file "{file}", in foo:
+File "{file}", line {lineno + 5}, in foo:
             a(11,   22, 3)"""
     else:
         msg = f"""
-On line {lineno + 5} of file "{file}", in foo:
+File "{file}", line {lineno + 5}, in foo:
             a(11,   22, 3)
             ^"""
     print(e.value.args[0])
@@ -116,12 +116,12 @@ def test_super_long_line():
     file = frameinfo.filename
     if version_info < (3, 8):
         msg = f"""
-On line {lineno + 5} of file "{file}", in foo:
+File "{file}", line {lineno + 5}, in foo:
             aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa(111)
 """
     else:
         msg = f"""
-On line {lineno + 5} of file "{file}", in foo:
+File "{file}", line {lineno + 5}, in foo:
             aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbaaaaaa
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
@@ -149,7 +149,7 @@ def test_exception_in_node_with_body():
     lineno = frameinfo.lineno
     file = frameinfo.filename
     msg = f"""
-On line {lineno + 3} of file "{file}", in foo:
+File "{file}", line {lineno + 3}, in foo:
         for i in range(1, 2, 3):
         ^^^^^^^^^^^^^^^^^^^^^^^^
 Range should have 1 or 2 arguments, found 3"""

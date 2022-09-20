@@ -31,9 +31,10 @@ enum class StmtOpCode : std::uint8_t {
 };
 
 enum class ForLoopType : std::uint8_t {
-  RangeFor,
-  StructFor,
+  StructForOnSNode,
+  StructForOnExternalTensor,
   MeshFor,
+  RangeFor
 };
 
 enum class ExternalFuncType : std::uint8_t {
@@ -144,11 +145,10 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     emit(expr->dim);
     emit(expr->arg_id);
     emit(expr->element_dim);
-    emit(expr->element_shape);
   }
 
-  void visit(GlobalVariableExpression *expr) override {
-    emit(ExprOpCode::GlobalVariableExpression);
+  void visit(FieldExpression *expr) override {
+    emit(ExprOpCode::FieldExpression);
     emit(expr->ident);
     emit(expr->dt);
     emit(expr->snode);
@@ -158,6 +158,13 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     emit(expr->adjoint);
     emit(expr->dual);
     emit(expr->adjoint_checkbit);
+  }
+
+  void visit(MatrixFieldExpression *expr) override {
+    emit(ExprOpCode::MatrixFieldExpression);
+    emit(expr->fields);
+    emit(expr->element_shape);
+    emit(expr->dynamic_index_stride);
   }
 
   void visit(IndexExpression *expr) override {
@@ -358,20 +365,22 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
 
   void visit(FrontendForStmt *stmt) override {
     emit(StmtOpCode::FrontendForStmt);
-    if (stmt->is_ranged()) {
-      emit(ForLoopType::RangeFor);
-      emit(stmt->loop_var_id);
-      emit(stmt->begin);
-      emit(stmt->end);
-    } else if (stmt->mesh_for) {
+    if (stmt->snode) {
+      emit(ForLoopType::StructForOnSNode);
+      emit(stmt->snode);
+    } else if (stmt->external_tensor) {
+      emit(ForLoopType::StructForOnExternalTensor);
+      emit(stmt->external_tensor);
+    } else if (stmt->mesh) {
       emit(ForLoopType::MeshFor);
       emit(stmt->element_type);
       emit(stmt->mesh);
     } else {
-      emit(ForLoopType::StructFor);
-      emit(stmt->loop_var_id);
-      emit(stmt->global_var);
+      emit(ForLoopType::RangeFor);
+      emit(stmt->begin);
+      emit(stmt->end);
     }
+    emit(stmt->loop_var_ids);
     emit(stmt->is_bit_vectorized);
     emit(stmt->num_cpu_threads);
     emit(stmt->strictly_serialized);

@@ -17,12 +17,14 @@ class KernelCodeGenWASM : public KernelCodeGen {
       : KernelCodeGen(kernel, ir) {
   }
 
-  FunctionType codegen() override;
+  FunctionType compile_to_function() override;
 
 #ifdef TI_WITH_LLVM
-  LLVMCompiledData modulegen(
+  LLVMCompiledTask compile_task(
       std::unique_ptr<llvm::Module> &&module = nullptr,
       OffloadedStmt *stmt = nullptr) override;  // AOT Module Gen
+
+  LLVMCompiledKernel compile_kernel_to_module() override;
 #endif
 };
 

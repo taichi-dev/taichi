@@ -6,12 +6,24 @@
 #include "taichi/rhi/vulkan/vulkan_loader.h"
 #endif
 
+#ifdef TI_WITH_OPENGL
+#include "taichi/rhi/opengl/opengl_api.h"
+#endif
+
 namespace capi {
 namespace utils {
 
 bool is_vulkan_available() {
 #ifdef TI_WITH_VULKAN
   return taichi::lang::vulkan::is_vulkan_api_available();
+#else
+  return false;
+#endif
+}
+
+bool is_opengl_available() {
+#ifdef TI_WITH_OPENGL
+  return taichi::lang::opengl::is_opengl_api_available();
 #else
   return false;
 #endif

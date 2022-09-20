@@ -1,4 +1,3 @@
-#include "taichi_core_impl.h"
 #include "taichi_vulkan_impl.h"
 #include "taichi/rhi/vulkan/vulkan_loader.h"
 #include "vulkan/vulkan.h"
@@ -7,9 +6,7 @@
 #include "vulkan/vulkan_android.h"
 #endif
 
-#ifdef TI_WITH_VULKAN
-
-VulkanRuntime::VulkanRuntime() : Runtime(taichi::Arch::vulkan) {
+VulkanRuntime::VulkanRuntime() : GfxRuntime(taichi::Arch::vulkan) {
 }
 taichi::lang::vulkan::VulkanDevice &VulkanRuntime::get_vk() {
   return static_cast<taichi::lang::vulkan::VulkanDevice &>(get());
@@ -108,59 +105,13 @@ taichi::lang::gfx::GfxRuntime &VulkanRuntimeOwned::get_gfx_runtime() {
   return gfx_runtime_;
 }
 
-TiTexture VulkanRuntime::allocate_texture(
-    const taichi::lang::ImageParams &params) {
-  taichi::lang::DeviceAllocation devalloc = get_vk().create_image(params);
-  return devalloc2devtex(*this, devalloc);
+TiImage VulkanRuntime::allocate_image(const taichi::lang::ImageParams &params) {
+  taichi::lang::DeviceAllocation devalloc =
+      get_gfx_runtime().create_image(params);
+  return devalloc2devimg(*this, devalloc);
 }
-void VulkanRuntime::free_texture(TiTexture texture) {
-  get_vk().destroy_image(devtex2devalloc(*this, texture));
-}
-
-TiAotModule VulkanRuntime::load_aot_module(const char *module_path) {
-  taichi::lang::gfx::AotModuleParams params{};
-  params.module_path = module_path;
-  params.runtime = &get_gfx_runtime();
-  std::unique_ptr<taichi::lang::aot::Module> aot_module =
-      taichi::lang::aot::Module::load(arch, params);
-  if (aot_module->is_corrupted()) {
-    return TI_NULL_HANDLE;
-  }
-  size_t root_size = aot_module->get_root_size();
-  params.runtime->add_root_buffer(root_size);
-  return (TiAotModule)(new AotModule(*this, std::move(aot_module)));
-}
-void VulkanRuntime::buffer_copy(const taichi::lang::DevicePtr &dst,
-                                const taichi::lang::DevicePtr &src,
-                                size_t size) {
-  get_gfx_runtime().buffer_copy(dst, src, size);
-}
-void VulkanRuntime::copy_image(const taichi::lang::DeviceAllocation &dst,
-                               const taichi::lang::DeviceAllocation &src,
-                               const taichi::lang::ImageCopyParams &params) {
-  get_gfx_runtime().copy_image(dst, src, params);
-}
-void VulkanRuntime::transition_image(
-    const taichi::lang::DeviceAllocation &image,
-    taichi::lang::ImageLayout layout) {
-  get_gfx_runtime().transition_image(image, layout);
-}
-void VulkanRuntime::submit() {
-  get_gfx_runtime().flush();
-}
-void VulkanRuntime::signal_event(taichi::lang::DeviceEvent *event) {
-  get_gfx_runtime().signal_event(event);
-}
-void VulkanRuntime::reset_event(taichi::lang::DeviceEvent *event) {
-  get_gfx_runtime().reset_event(event);
-}
-void VulkanRuntime::wait_event(taichi::lang::DeviceEvent *event) {
-  get_gfx_runtime().wait_event(event);
-}
-void VulkanRuntime::wait() {
-  // (penguinliong) It's currently waiting for the entire runtime to stop.
-  // Should be simply waiting for its fence to finish.
-  get_gfx_runtime().synchronize();
+void VulkanRuntime::free_image(TiImage image) {
+  get_vk().destroy_image(devimg2devalloc(*this, image));
 }
 
 // -----------------------------------------------------------------------------
@@ -170,6 +121,8 @@ TiRuntime ti_create_vulkan_runtime_ext(uint32_t api_version,
                                        uint32_t instance_extension_count,
                                        const char **device_extensions,
                                        uint32_t device_extension_count) {
+  TiRuntime out = TI_NULL_HANDLE;
+  TI_CAPI_TRY_CATCH_BEGIN();
   if (api_version < VK_API_VERSION_1_0) {
     ti_set_last_error(TI_ERROR_ARGUMENT_OUT_OF_RANGE, "api_version<1.0");
     return TI_NULL_HANDLE;
@@ -195,10 +148,14 @@ TiRuntime ti_create_vulkan_runtime_ext(uint32_t api_version,
     params.additional_device_extensions.push_back(device_extensions[i]);
   }
   params.surface_creator = nullptr;
-  return (TiRuntime) static_cast<Runtime *>(new VulkanRuntimeOwned(params));
+  out = (TiRuntime) static_cast<Runtime *>(new VulkanRuntimeOwned(params));
+  TI_CAPI_TRY_CATCH_END();
+  return out;
 }
 TiRuntime ti_import_vulkan_runtime(
     const TiVulkanRuntimeInteropInfo *interop_info) {
+  TiRuntime out = TI_NULL_HANDLE;
+  TI_CAPI_TRY_CATCH_BEGIN();
   TI_CAPI_ARGUMENT_NULL_RV(interop_info);
   TI_CAPI_ARGUMENT_NULL_RV(interop_info->instance);
   TI_CAPI_ARGUMENT_NULL_RV(interop_info->physical_device);
@@ -213,11 +170,14 @@ TiRuntime ti_import_vulkan_runtime(
   params.graphics_queue = interop_info->graphics_queue;
   params.graphics_queue_family_index =
       interop_info->graphics_queue_family_index;
-  return (TiRuntime) static_cast<Runtime *>(
+  out = (TiRuntime) static_cast<Runtime *>(
       new VulkanRuntimeImported(interop_info->api_version, params));
+  TI_CAPI_TRY_CATCH_END();
+  return out;
 }
 void ti_export_vulkan_runtime(TiRuntime runtime,
                               TiVulkanRuntimeInteropInfo *interop_info) {
+  TI_CAPI_TRY_CATCH_BEGIN();
   TI_CAPI_ARGUMENT_NULL(runtime);
   TI_CAPI_ARGUMENT_NULL(interop_info);
 
@@ -235,11 +195,14 @@ void ti_export_vulkan_runtime(TiRuntime runtime,
   interop_info->graphics_queue = vk_device.graphics_queue();
   interop_info->graphics_queue_family_index =
       vk_device.graphics_queue_family_index();
+  TI_CAPI_TRY_CATCH_END();
 }
 
 TiMemory ti_import_vulkan_memory(
     TiRuntime runtime,
     const TiVulkanMemoryInteropInfo *interop_info) {
+  TiMemory out = TI_NULL_HANDLE;
+  TI_CAPI_TRY_CATCH_BEGIN();
   TI_CAPI_ARGUMENT_NULL_RV(runtime);
   TI_CAPI_ARGUMENT_NULL_RV(interop_info);
   TI_CAPI_ARGUMENT_NULL_RV(interop_info->buffer);
@@ -253,7 +216,9 @@ TiMemory ti_import_vulkan_memory(
       vkapi::create_buffer(vk_runtime.vk_device(), interop_info->buffer,
                            interop_info->size, interop_info->usage);
   taichi::lang::DeviceAllocation devalloc = vk_runtime.import_vkbuffer(buffer);
-  return devalloc2devmem(*runtime2, devalloc);
+  out = devalloc2devmem(*runtime2, devalloc);
+  TI_CAPI_TRY_CATCH_END();
+  return out;
 }
 void ti_export_vulkan_memory(TiRuntime runtime,
                              TiMemory memory,
@@ -270,11 +235,12 @@ void ti_export_vulkan_memory(TiRuntime runtime,
   interop_info->size = buffer.get()->size;
   interop_info->usage = buffer.get()->usage;
 }
-TiTexture ti_import_vulkan_texture(
-    TiRuntime runtime,
-    const TiVulkanTextureInteropInfo *interop_info,
-    VkImageViewType view_type,
-    VkImageLayout layout) {
+TiImage ti_import_vulkan_image(TiRuntime runtime,
+                               const TiVulkanImageInteropInfo *interop_info,
+                               VkImageViewType view_type,
+                               VkImageLayout layout) {
+  TiImage out = TI_NULL_HANDLE;
+  TI_CAPI_TRY_CATCH_BEGIN();
   TI_CAPI_ARGUMENT_NULL_RV(runtime);
   TI_CAPI_ARGUMENT_NULL_RV(interop_info);
   TI_CAPI_ARGUMENT_NULL_RV(interop_info->image);
@@ -318,36 +284,42 @@ TiTexture ti_import_vulkan_texture(
 
   taichi::lang::DeviceAllocation image2 =
       vk_runtime.import_vk_image(image, image_view, layout);
-  return devalloc2devtex(*runtime2, image2);
+  out = devalloc2devimg(*runtime2, image2);
+  TI_CAPI_TRY_CATCH_END();
+  return out;
 }
 
-void ti_export_vulkan_texture(TiRuntime runtime,
-                              TiTexture texture,
-                              TiVulkanTextureInteropInfo *interop_info) {
+void ti_export_vulkan_image(TiRuntime runtime,
+                            TiImage image,
+                            TiVulkanImageInteropInfo *interop_info) {
+  TI_CAPI_TRY_CATCH_BEGIN();
   TI_CAPI_ARGUMENT_NULL(runtime);
-  TI_CAPI_ARGUMENT_NULL(texture);
+  TI_CAPI_ARGUMENT_NULL(image);
   TI_CAPI_ARGUMENT_NULL(interop_info);
   TI_CAPI_INVALID_INTEROP_ARCH(((Runtime *)runtime)->arch, vulkan);
 
   VulkanRuntime *runtime2 = ((Runtime *)runtime)->as_vk();
 
-  taichi::lang::DeviceAllocation devalloc = devtex2devalloc(*runtime2, texture);
-  vkapi::IVkImage image =
+  taichi::lang::DeviceAllocation devalloc = devimg2devalloc(*runtime2, image);
+  vkapi::IVkImage image2 =
       std::get<0>(runtime2->get_vk().get_vk_image(devalloc));
-  interop_info->image = image->image;
-  interop_info->image_type = image->type;
-  interop_info->extent.width = image->width;
-  interop_info->extent.height = image->height;
-  interop_info->extent.depth = image->depth;
-  interop_info->mip_level_count = image->mip_levels;
-  interop_info->array_layer_count = image->array_layers;
+  interop_info->image = image2->image;
+  interop_info->image_type = image2->type;
+  interop_info->extent.width = image2->width;
+  interop_info->extent.height = image2->height;
+  interop_info->extent.depth = image2->depth;
+  interop_info->mip_level_count = image2->mip_levels;
+  interop_info->array_layer_count = image2->array_layers;
   interop_info->sample_count = VK_SAMPLE_COUNT_1_BIT;
   interop_info->tiling = VK_IMAGE_TILING_OPTIMAL;
-  interop_info->usage = image->usage;
+  interop_info->usage = image2->usage;
+  TI_CAPI_TRY_CATCH_END();
 }
 
 TiEvent ti_import_vulkan_event(TiRuntime runtime,
                                const TiVulkanEventInteropInfo *interop_info) {
+  TiEvent out = TI_NULL_HANDLE;
+  TI_CAPI_TRY_CATCH_BEGIN();
   TI_CAPI_ARGUMENT_NULL_RV(runtime);
   TI_CAPI_ARGUMENT_NULL_RV(interop_info);
   TI_CAPI_ARGUMENT_NULL_RV(interop_info->event);
@@ -363,11 +335,14 @@ TiEvent ti_import_vulkan_event(TiRuntime runtime,
   std::unique_ptr<taichi::lang::DeviceEvent> event2(
       new taichi::lang::vulkan::VulkanDeviceEvent(std::move(event)));
 
-  return (TiEvent) new Event(*runtime2, std::move(event2));
+  out = (TiEvent) new Event(*runtime2, std::move(event2));
+  TI_CAPI_TRY_CATCH_END();
+  return out;
 }
 void ti_export_vulkan_event(TiRuntime runtime,
                             TiEvent event,
                             TiVulkanEventInteropInfo *interop_info) {
+  TI_CAPI_TRY_CATCH_BEGIN();
   TI_CAPI_ARGUMENT_NULL(runtime);
   TI_CAPI_ARGUMENT_NULL(event);
   TI_CAPI_ARGUMENT_NULL(interop_info);
@@ -376,6 +351,5 @@ void ti_export_vulkan_event(TiRuntime runtime,
   auto event2 =
       (taichi::lang::vulkan::VulkanDeviceEvent *)(&((Event *)event)->get());
   interop_info->event = event2->vkapi_ref->event;
+  TI_CAPI_TRY_CATCH_END();
 }
-
-#endif  // TI_WITH_VULKAN

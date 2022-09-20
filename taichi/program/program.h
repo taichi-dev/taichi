@@ -233,8 +233,8 @@ class TI_DLL_EXPORT Program {
   // Returns zero if the SNode is statically allocated
   std::size_t get_snode_num_dynamically_allocated(SNode *snode);
 
-  inline SNodeGlobalVarExprMap *get_snode_to_glb_var_exprs() {
-    return &snode_to_glb_var_exprs_;
+  inline SNodeFieldMap *get_snode_to_fields() {
+    return &snode_to_fields_;
   }
 
   inline SNodeRwAccessorsBank &get_snode_rw_accessors_bank() {
@@ -331,6 +331,15 @@ class TI_DLL_EXPORT Program {
 
   void prepare_runtime_context(RuntimeContext *ctx);
 
+  /** Enqueue a custom compute op to the current program execution flow.
+   *
+   *  @params op The lambda that is invoked to construct the custom compute Op
+   *  @params image_refs The image resource references used in this compute Op
+   */
+  void enqueue_compute_op_lambda(
+      std::function<void(Device *device, CommandList *cmdlist)> op,
+      const std::vector<ComputeOpImageRef> &image_refs);
+
   /**
    * TODO(zhanlue): Remove this interface
    *
@@ -359,7 +368,7 @@ class TI_DLL_EXPORT Program {
   int global_id_counter_{0};
 
   // SNode information that requires using Program.
-  SNodeGlobalVarExprMap snode_to_glb_var_exprs_;
+  SNodeFieldMap snode_to_fields_;
   SNodeRwAccessorsBank snode_rw_accessors_bank_;
 
   std::vector<std::unique_ptr<SNodeTree>> snode_trees_;

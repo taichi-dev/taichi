@@ -202,6 +202,14 @@ class CuSparseMatrix : public SparseMatrix {
  public:
   explicit CuSparseMatrix(int rows, int cols, DataType dt)
       : SparseMatrix(rows, cols, dt) {
+#if defined(TI_WITH_CUDA)
+    if (!CUSPARSEDriver::get_instance().is_loaded()) {
+      bool load_success = CUSPARSEDriver::get_instance().load_cusparse();
+      if (!load_success) {
+        TI_ERROR("Failed to load cusparse library!");
+      }
+    }
+#endif
   }
   explicit CuSparseMatrix(cusparseSpMatDescr_t A,
                           int rows,

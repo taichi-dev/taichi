@@ -77,8 +77,8 @@ def test_python_scope_matmul():
     ti.init()
     a = np.array([[1, 2], [3, 4]])
     b = np.array([[5, 6], [7, 8]])
-    x = ti.Vector(a)
-    y = ti.Vector(b)
+    x = ti.Matrix(a)
+    y = ti.Matrix(b)
 
     result = (x @ y).to_numpy()
     expected = a @ b

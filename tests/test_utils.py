@@ -1,10 +1,14 @@
 import copy
 import functools
 import itertools
+import json
 import os
+import pathlib
+import platform
 from errno import EEXIST
-from tempfile import mkstemp
+from tempfile import NamedTemporaryFile, mkstemp
 
+import numpy as np
 import pytest
 from taichi._lib import core as _ti_core
 from taichi.lang import cc, cpu, cuda, dx11, gpu, metal, opengl, vulkan
@@ -12,167 +16,34 @@ from taichi.lang.misc import is_arch_supported
 
 import taichi as ti
 
-__aot_test_cases = {
-    "LlvmAotTest.CpuKernel": [
-        os.path.join('cpp', 'aot', 'python_scripts', 'kernel_aot_test1.py'),
-        "--arch=cpu"
-    ],
-    "LlvmAotTest.CudaKernel": [
-        os.path.join('cpp', 'aot', 'python_scripts', 'kernel_aot_test1.py'),
-        "--arch=cuda"
-    ],
-    "LlvmAotTest.CpuField": [
-        os.path.join('cpp', 'aot', 'python_scripts', 'field_aot_test.py'),
-        "--arch=cpu"
-    ],
-    "LlvmAotTest.CudaField": [
-        os.path.join('cpp', 'aot', 'python_scripts', 'field_aot_test.py'),
-        "--arch=cuda"
-    ],
-    "LlvmAotTest.CpuDynamic": [
-        os.path.join('cpp', 'aot', 'python_scripts', 'dynamic_aot_test.py'),
-        "--arch=cpu"
-    ],
-    "LlvmAotTest.CudaDynamic": [
-        os.path.join('cpp', 'aot', 'python_scripts', 'dynamic_aot_test.py'),
-        "--arch=cuda"
-    ],
-    "LlvmAotTest.CpuBitmasked": [
-        os.path.join('cpp', 'aot', 'python_scripts', 'bitmasked_aot_test.py'),
-        "--arch=cpu"
-    ],
-    "LlvmAotTest.CudaBitmasked": [
-        os.path.join('cpp', 'aot', 'python_scripts', 'bitmasked_aot_test.py'),
-        "--arch=cuda"
-    ],
-    "LlvmCGraph.RunGraphCpu": [
-        os.path.join('cpp', 'aot', 'python_scripts', 'graph_aot_test.py'),
-        "--arch=cpu"
-    ],
-    "LlvmCGraph.RunGraphCuda": [
-        os.path.join('cpp', 'aot', 'python_scripts', 'graph_aot_test.py'),
-        "--arch=cuda"
-    ],
-    "LlvmCGraph.CpuField": [
-        os.path.join('cpp', 'aot', 'python_scripts', 'field_aot_test.py'),
-        "--arch=cpu --cgraph"
-    ],
-    "LlvmCGraph.CudaField": [
-        os.path.join('cpp', 'aot', 'python_scripts', 'field_aot_test.py'),
-        "--arch=cuda --cgraph"
-    ],
-    "LlvmCGraph.Mpm88Cpu": [
-        os.path.join('cpp', 'aot', 'python_scripts', 'mpm88_graph_aot.py'),
-        "--arch=cpu --cgraph"
-    ],
-    "LlvmCGraph.Mpm88Cuda": [
-        os.path.join('cpp', 'aot', 'python_scripts', 'mpm88_graph_aot.py'),
-        "--arch=cuda --cgraph"
-    ],
-    "CGraphAotTest.VulkanMpm88": [
-        os.path.join('cpp', 'aot', 'python_scripts', 'mpm88_graph_aot.py'),
-        "--arch=vulkan --cgraph"
-    ],
-    "CGraphAotTest.OpenglMpm88": [
-        os.path.join('cpp', 'aot', 'python_scripts', 'mpm88_graph_aot.py'),
-        "--arch=opengl --cgraph"
-    ],
-    "GfxAotTest.VulkanDenseField": [
-        os.path.join('cpp', 'aot', 'python_scripts',
-                     'dense_field_aot_test.py'), "--arch=vulkan"
-    ],
-    "GfxAotTest.OpenglDenseField": [
-        os.path.join('cpp', 'aot', 'python_scripts',
-                     'dense_field_aot_test.py'), "--arch=opengl"
-    ],
-    "GfxAotTest.VulkanKernelTest1": [
-        os.path.join('cpp', 'aot', 'python_scripts', 'kernel_aot_test1.py'),
-        "--arch=vulkan"
-    ],
-    "GfxAotTest.OpenglKernelTest1": [
-        os.path.join('cpp', 'aot', 'python_scripts', 'kernel_aot_test1.py'),
-        "--arch=opengl"
-    ],
-    "GfxAotTest.VulkanKernelTest2": [
-        os.path.join('cpp', 'aot', 'python_scripts', 'kernel_aot_test2.py'),
-        "--arch=vulkan"
-    ],
-    "GfxAotTest.OpenglKernelTest2": [
-        os.path.join('cpp', 'aot', 'python_scripts', 'kernel_aot_test2.py'),
-        "--arch=opengl"
-    ],
-    "CGraphAotTest.VulkanRunCGraph1": [
-        os.path.join('cpp', 'aot', 'python_scripts', 'graph_aot_test.py'),
-        "--arch=vulkan"
-    ],
-    "CGraphAotTest.VulkanRunCGraph2": [
-        os.path.join('cpp', 'aot', 'python_scripts', 'kernel_aot_test2.py'),
-        "--arch=vulkan --cgraph"
-    ],
-    "CGraphAotTest.OpenglRunCGraph1": [
-        os.path.join('cpp', 'aot', 'python_scripts', 'graph_aot_test.py'),
-        "--arch=opengl"
-    ],
-    "CGraphAotTest.OpenglRunCGraph2": [
-        os.path.join('cpp', 'aot', 'python_scripts', 'kernel_aot_test2.py'),
-        "--arch=opengl --cgraph"
-    ],
-}
 
-__capi_aot_test_cases = {
-    "CapiMpm88Test.Vulkan": [
-        os.path.join('cpp', 'aot', 'python_scripts', 'mpm88_graph_aot.py'),
-        "--arch=vulkan"
-    ],
-    "CapiMpm88Test.Cuda": [
-        os.path.join('cpp', 'aot', 'python_scripts', 'mpm88_graph_aot.py'),
-        "--arch=cuda"
-    ],
-    "CapiSphTest.Vulkan": [
-        os.path.join('cpp', 'aot', 'python_scripts', 'sph_aot.py'),
-        "--arch=vulkan"
-    ],
-    "CapiSphTest.Cuda": [
-        os.path.join('cpp', 'aot', 'python_scripts', 'sph_aot.py'),
-        "--arch=cuda"
-    ],
-    "CapiCometTest.Cuda": [
-        os.path.join('cpp', 'aot', 'python_scripts', 'comet_aot.py'),
-        "--arch=cuda"
-    ],
-    "CapiTaichiSparseTest.Cuda": [
-        os.path.join('cpp', 'aot', 'python_scripts', 'taichi_sparse_test.py'),
-        ""
-    ],
-    "CapiAotTest.CpuField": [
-        os.path.join('cpp', 'aot', 'python_scripts', 'field_aot_test.py'),
-        "--arch=cpu"
-    ],
-    "CapiAotTest.CudaField": [
-        os.path.join('cpp', 'aot', 'python_scripts', 'field_aot_test.py'),
-        "--arch=cuda"
-    ],
-    "CapiGraphTest.CpuGraph": [
-        os.path.join('cpp', 'aot', 'python_scripts', 'graph_aot_test.py'),
-        "--arch=cpu"
-    ],
-    "CapiGraphTest.CudaGraph": [
-        os.path.join('cpp', 'aot', 'python_scripts', 'graph_aot_test.py'),
-        "--arch=cuda"
-    ],
-    "CapiAotTest.CpuKernel": [
-        os.path.join('cpp', 'aot', 'python_scripts', 'kernel_aot_test1.py'),
-        "--arch=cpu"
-    ],
-    "CapiAotTest.CudaKernel": [
-        os.path.join('cpp', 'aot', 'python_scripts', 'kernel_aot_test1.py'),
-        "--arch=cuda"
-    ],
-    "CapiDryRun.VulkanAotModule": [
-        os.path.join('cpp', 'aot', 'python_scripts', 'kernel_aot_test1.py'),
-        "--arch=vulkan"
-    ],
-}
+def parse_test_configs():
+    curr_dir = os.path.dirname(os.path.abspath(__file__))
+    test_config_path = os.path.join(curr_dir, "test_config.json")
+    with open(test_config_path, "r") as f:
+        test_config = json.loads(f.read())
+
+    assert ("aot_test_cases" in test_config.keys())
+    assert ("capi_aot_test_cases" in test_config.keys())
+
+    for cpp_test_name, value in test_config["aot_test_cases"].items():
+        test_paths = value[0]
+        test_args = value[1]
+        test_config["aot_test_cases"][cpp_test_name] = [
+            os.path.join(*test_paths), test_args
+        ]
+
+    for cpp_test_name, value in test_config["capi_aot_test_cases"].items():
+        test_paths = value[0]
+        test_args = value[1]
+        test_config["capi_aot_test_cases"][cpp_test_name] = [
+            os.path.join(*test_paths), test_args
+        ]
+
+    return test_config["aot_test_cases"], test_config["capi_aot_test_cases"]
+
+
+__aot_test_cases, __capi_aot_test_cases = parse_test_configs()
 
 
 def print_aot_test_guide():
@@ -183,14 +54,14 @@ An AOT test is usually composed of:
 1. A python script that compiles the Kernels and serialize into file.
 2. A C++ test that loads the file then perform execution.
 
-AOT test writer will have to configure your test case for "__aot_test_cases",
+AOT test writer will have to configure your test case for "__aot_test_cases" in "test_config.json",
 the format of which follows:
 
-        "cpp_test_name" : ["python_program_path", "--arguments"]
+        "cpp_test_name" : [["python_program_path"], "--arguments"]
 
 For example:
 
-        "LlvmProgramTest.FullPipeline": ["cpp/aot/llvm/kernel_aot_test1.py", "--arch=cpu"]
+        "LlvmProgramTest.FullPipeline": [["cpp", "aot", "llvm", "kernel_aot_test1.py"], "--arch=cpu"]
 
 The temporary directory where serialized cache file stays will be generated by run_tests.py. Both python program and C++ tests receives this directory path via environment variable "TAICHI_AOT_FOLDER_PATH".
 
@@ -200,6 +71,37 @@ For each AOT test, run_tests.py will first run the python program specified by "
 
 
 # Helper functions
+def verify_image(image,
+                 image_name,
+                 tolerance=0.1,
+                 regerate_groundtruth_images=False):
+    if regerate_groundtruth_images:
+        ground_truth_name = f"tests/python/expected/{image_name}.png"
+        ti.tools.imwrite(image, ground_truth_name)
+    else:
+        ground_truth_name = str(pathlib.Path(
+            __file__).parent) + f"/python/expected/{image_name}.png"
+        ground_truth_np = ti.tools.imread(ground_truth_name)
+
+        # TODO:Fix this on Windows
+        with NamedTemporaryFile(suffix='.png') as fp:
+            actual_name = fp.name
+
+        ti.tools.imwrite(image, actual_name)
+        actual_np = ti.tools.imread(actual_name)
+
+        assert len(ground_truth_np.shape) == len(actual_np.shape)
+        for i in range(len(ground_truth_np.shape)):
+            assert ground_truth_np.shape[i] == actual_np.shape[i]
+
+        diff = ground_truth_np - actual_np
+        mse = np.mean(diff * diff)
+        assert mse <= tolerance  # the pixel values are 0~255
+
+        if os.path.isfile(actual_name):
+            os.remove(actual_name)
+
+
 def get_rel_eps():
     arch = ti.lang.impl.current_cfg().arch
     if arch == ti.opengl:
@@ -337,22 +239,51 @@ def test(arch=None, exclude=None, require=None, **options):
 .. function:: ti.test(arch=[], exclude=[], require=[], **options)
 
     :parameter arch: backends to include
-    :parameter exclude: backends to exclude
+    :parameter exclude: backends and platforms to exclude
     :parameter require: extensions required
     :parameter options: other options to be passed into ``ti.init``
 
     """
+    def exclude_arch_platform(arch, system, exclude):
+        # Preprocess exclude
+        if exclude is None:
+            exclude = []
+        if not isinstance(exclude, (list, tuple)):
+            exclude = [exclude]
+
+        for pair in exclude:
+            exclude_arch = None
+            exclude_sys = None
+            if isinstance(pair, (list, tuple)):
+                if len(pair) == 1:
+                    # exclude = [(vulkan), ...]
+                    exclude_arch = pair[0]
+                else:
+                    # exclude = [(vulkan, Darwin), ...]
+                    assert len(pair) == 2
+                    exclude_arch = pair[0]
+                    exclude_sys = pair[1]
+            else:
+                # exclude = [vulkan, cpu, ...]
+                exclude_arch = pair
+
+            assert (exclude_arch is not None) or (exclude_sys is not None)
+            if exclude_arch and exclude_sys:
+                if exclude_arch == arch and exclude_sys == system:
+                    return True
+            elif exclude_arch and exclude_arch == arch:
+                return True
+            elif exclude_sys and exclude_sys == system:
+                return True
+
+        return False
 
     if arch is None:
         arch = []
-    if exclude is None:
-        exclude = []
     if require is None:
         require = []
     if not isinstance(arch, (list, tuple)):
         arch = [arch]
-    if not isinstance(exclude, (list, tuple)):
-        exclude = [exclude]
     if not isinstance(require, (list, tuple)):
         require = [require]
     archs_expected = expected_archs()
@@ -369,7 +300,11 @@ def test(arch=None, exclude=None, require=None, **options):
         # List of (arch, options) to parametrize the test function
         parameters = []
         for req_arch, *req_params in itertools.product(*arch_params_sets):
-            if (req_arch not in arch) or (req_arch in exclude):
+            if req_arch not in arch:
+                continue
+
+            curr_system = platform.system()
+            if exclude_arch_platform(req_arch, curr_system, exclude):
                 continue
 
             if not all(

@@ -8,15 +8,15 @@ from taichi._snode.fields_builder import FieldsBuilder
 from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang._ndrange import GroupedNDRange, _Ndrange
 from taichi.lang.any_array import AnyArray, AnyArrayAccess
-from taichi.lang.enums import Layout, SNodeGradType
+from taichi.lang.enums import SNodeGradType
 from taichi.lang.exception import (TaichiRuntimeError, TaichiSyntaxError,
                                    TaichiTypeError)
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.kernel_arguments import SparseMatrixProxy
 from taichi.lang.matrix import (Matrix, MatrixField, MatrixNdarray, MatrixType,
-                                _IntermediateMatrix, _MatrixFieldElement,
-                                make_matrix)
+                                Vector, _IntermediateMatrix,
+                                _MatrixFieldElement)
 from taichi.lang.mesh import (ConvType, MeshElementFieldProxy, MeshInstance,
                               MeshRelationAccessProxy,
                               MeshReorderedMatrixFieldProxy,
@@ -28,6 +28,7 @@ from taichi.lang.util import (cook_dtype, get_traceback, is_taichi_class,
                               python_scope, taichi_scope, warning)
 from taichi.types.primitive_types import (all_types, f16, f32, f64, i32, i64,
                                           u8, u32, u64)
+from taichi.types.utils import is_tensor
 
 
 @taichi_scope
@@ -63,6 +64,10 @@ def expr_init(rhs):
                 entries = [[rhs(i, j) for j in range(rhs.m)]
                            for i in range(rhs.n)]
             return make_matrix(entries)
+        if (isinstance(rhs, Vector)
+                or getattr(rhs, "ndim", None) == 1) and rhs.m == 1:
+            # _IntermediateMatrix may reach here
+            return Vector(rhs.to_list(), ndim=rhs.ndim)
         return Matrix(rhs.to_list(), ndim=rhs.ndim)
     if isinstance(rhs, SharedArray):
         return rhs
@@ -110,7 +115,12 @@ def begin_frontend_struct_for(ast_builder, group, loop_range):
             f'({group.size()} != {len(loop_range.shape)}). Maybe you wanted to '
             'use "for I in ti.grouped(x)" to group all indices into a single vector I?'
         )
-    ast_builder.begin_frontend_struct_for(group, loop_range._loop_range())
+    if isinstance(loop_range, AnyArray):
+        ast_builder.begin_frontend_struct_for_on_external_tensor(
+            group, loop_range._loop_range())
+    else:
+        ast_builder.begin_frontend_struct_for_on_snode(
+            group, loop_range._loop_range())
 
 
 def begin_frontend_if(ast_builder, cond):
@@ -179,7 +189,8 @@ def subscript(value, *_indices, skip_reordered=False, get_ref=False):
         return value.subscript(*_indices)
     if isinstance(value, Field):
         _var = value._get_field_members()[0].ptr
-        if _var.snode() is None:
+        snode = _var.snode()
+        if snode is None:
             if _var.is_primal():
                 raise RuntimeError(
                     f"{_var.get_expr_name()} has not been placed.")
@@ -187,7 +198,7 @@ def subscript(value, *_indices, skip_reordered=False, get_ref=False):
                 raise RuntimeError(
                     f"Gradient {_var.get_expr_name()} has not been placed, check whether `needs_grad=True`"
                 )
-        field_dim = int(_var.get_attribute("dim"))
+        field_dim = snode.num_active_indices()
         if field_dim != index_dim:
             raise IndexError(
                 f'Field with dim {field_dim} accessed with indices of dim {index_dim}'
@@ -202,14 +213,13 @@ def subscript(value, *_indices, skip_reordered=False, get_ref=False):
             _ti_core.subscript(_var, indices_expr_group,
                                get_runtime().get_current_src_info()))
     if isinstance(value, AnyArray):
-        # TODO: deprecate using get_attribute to get dim
-        field_dim = int(value.ptr.get_attribute("dim"))
+        dim = _ti_core.get_external_tensor_dim(value.ptr)
         element_dim = len(value.element_shape())
-        if field_dim != index_dim + element_dim:
+        if dim != index_dim + element_dim:
             raise IndexError(
-                f'Field with dim {field_dim - element_dim} accessed with indices of dim {index_dim}'
+                f'Field with dim {dim - element_dim} accessed with indices of dim {index_dim}'
             )
-        if element_dim == 0:
+        if element_dim == 0 or current_cfg().real_matrix:
             return Expr(
                 _ti_core.subscript(value.ptr, indices_expr_group,
                                    get_runtime().get_current_src_info()))
@@ -224,6 +234,16 @@ def subscript(value, *_indices, skip_reordered=False, get_ref=False):
                                   ndim=element_dim)
         ret.any_array_access = any_array_access
         return ret
+    if isinstance(value, Expr):
+        # Index into TensorType
+        # value: IndexExpression with ret_type = TensorType
+        assert current_cfg().real_matrix is True
+        assert is_tensor(value.ptr.get_ret_type())
+
+        return Expr(
+            _ti_core.subscript(value.ptr, indices_expr_group,
+                               get_runtime().get_current_src_info()))
+
     # Directly evaluate in Python for non-Taichi types
     return value.__getitem__(*_indices)
 
@@ -238,8 +258,8 @@ def make_stride_expr(_var, _indices, shape, stride):
 @taichi_scope
 def make_index_expr(_var, _indices):
     return Expr(
-        _ti_core.make_index_expr(_var, make_expr_group(*_indices),
-                                 get_runtime().get_current_src_info()))
+        _ti_core.subscript(_var, make_expr_group(*_indices),
+                           get_runtime().get_current_src_info()))
 
 
 class SrcInfoGuard:
@@ -583,7 +603,7 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
 
     x = Expr(prog.make_id_expr(""))
     x.declaration_tb = get_traceback(stacklevel=4)
-    x.ptr = _ti_core.global_new(x.ptr, dtype)
+    x.ptr = _ti_core.expr_field(x.ptr, dtype)
     x.ptr.set_name(name)
     x.ptr.set_grad_type(SNodeGradType.PRIMAL)
     pytaichi.global_vars.append(x)
@@ -596,7 +616,7 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
         # adjoint
         x_grad = Expr(get_runtime().prog.make_id_expr(""))
         x_grad.declaration_tb = get_traceback(stacklevel=4)
-        x_grad.ptr = _ti_core.global_new(x_grad.ptr, dtype)
+        x_grad.ptr = _ti_core.expr_field(x_grad.ptr, dtype)
         x_grad.ptr.set_name(name + ".grad")
         x_grad.ptr.set_grad_type(SNodeGradType.ADJOINT)
         x.ptr.set_adjoint(x_grad.ptr)
@@ -609,7 +629,7 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
             dtype = u8
             if prog.config.arch in (_ti_core.opengl, _ti_core.vulkan):
                 dtype = i32
-            x_grad_checkbit.ptr = _ti_core.global_new(x_grad_checkbit.ptr,
+            x_grad_checkbit.ptr = _ti_core.expr_field(x_grad_checkbit.ptr,
                                                       cook_dtype(dtype))
             x_grad_checkbit.ptr.set_name(name + ".grad_checkbit")
             x_grad_checkbit.ptr.set_grad_type(SNodeGradType.ADJOINT_CHECKBIT)
@@ -617,7 +637,7 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
 
         # dual
         x_dual = Expr(get_runtime().prog.make_id_expr(""))
-        x_dual.ptr = _ti_core.global_new(x_dual.ptr, dtype)
+        x_dual.ptr = _ti_core.expr_field(x_dual.ptr, dtype)
         x_dual.ptr.set_name(name + ".dual")
         x_dual.ptr.set_grad_type(SNodeGradType.DUAL)
         x.ptr.set_dual(x_dual.ptr)
@@ -676,10 +696,13 @@ def field(dtype,
     """
     x, x_grad, x_dual = create_field_member(dtype, name, needs_grad,
                                             needs_dual)
-    x, x_grad, x_dual = ScalarField(x), ScalarField(x_grad), ScalarField(
-        x_dual)
-    x._set_grad(x_grad)
-    x._set_dual(x_dual)
+    x = ScalarField(x)
+    if x_grad:
+        x_grad = ScalarField(x_grad)
+        x._set_grad(x_grad)
+    if x_dual:
+        x_dual = ScalarField(x_dual)
+        x._set_dual(x_dual)
 
     if shape is None:
         if offset is not None:
@@ -726,13 +749,12 @@ def field(dtype,
 
 
 @python_scope
-def ndarray(dtype, shape, layout=Layout.NULL):
+def ndarray(dtype, shape):
     """Defines a Taichi ndarray with scalar elements.
 
     Args:
         dtype (Union[DataType, MatrixType]): Data type of each element. This can be either a scalar type like ti.f32 or a compound type like ti.types.vector(3, ti.i32).
         shape (Union[int, tuple[int]]): Shape of the ndarray.
-        layout (Layout, optional): Layout of ndarray, only applicable when element is non-scalar type. Default is Layout.AOS.
 
     Example:
         The code below shows how a Taichi ndarray with scalar elements can be declared and defined::
@@ -741,16 +763,14 @@ def ndarray(dtype, shape, layout=Layout.NULL):
             >>> vec3 = ti.types.vector(3, ti.i32)
             >>> y = ti.ndarray(vec3, shape=(10, 2))  # ndarray of shape (10, 2), each element is a vector of 3 ti.i32 scalars.
             >>> matrix_ty = ti.types.matrix(3, 4, float)
-            >>> z = ti.ndarray(matrix_ty, shape=(4, 5), layout=ti.Layout.SOA)  # ndarray of shape (4, 5), each element is a matrix of (3, 4) ti.float scalars.
+            >>> z = ti.ndarray(matrix_ty, shape=(4, 5))  # ndarray of shape (4, 5), each element is a matrix of (3, 4) ti.float scalars.
     """
     if isinstance(shape, numbers.Number):
         shape = (shape, )
     if dtype in all_types:
-        assert layout == Layout.NULL
         return ScalarNdarray(dtype, shape)
     if isinstance(dtype, MatrixType):
-        layout = Layout.AOS if layout == Layout.NULL else layout
-        return MatrixNdarray(dtype.n, dtype.m, dtype.dtype, shape, layout)
+        return MatrixNdarray(dtype.n, dtype.m, dtype.dtype, shape)
 
     raise TaichiRuntimeError(
         f'{dtype} is not supported as ndarray element type')

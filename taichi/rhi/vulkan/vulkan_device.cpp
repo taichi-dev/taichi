@@ -782,9 +782,13 @@ VulkanCommandList::VulkanCommandList(VulkanDevice *ti_device,
   info.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 
   vkBeginCommandBuffer(buffer->buffer, &info);
+
+// Workaround for MacOS: https://github.com/taichi-dev/taichi/issues/5888
+#if !defined(__APPLE__)
   vkCmdResetQueryPool(buffer->buffer, query_pool_->query_pool, 0, 2);
   vkCmdWriteTimestamp(buffer->buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
                       query_pool_->query_pool, 0);
+#endif
 }
 
 VulkanCommandList::~VulkanCommandList() {
@@ -867,8 +871,8 @@ void VulkanCommandList::bind_resources(ResourceBinder *ti_binder) {
 
   if (current_pipeline_->is_graphics()) {
     auto [idx_ptr, type] = binder->get_index_buffer();
-    auto index_buffer = ti_device_->get_vkbuffer(idx_ptr);
     if (idx_ptr.device) {
+      auto index_buffer = ti_device_->get_vkbuffer(idx_ptr);
       vkCmdBindIndexBuffer(buffer_->buffer, index_buffer->buffer,
                            idx_ptr.offset, type);
       buffer_->refs.push_back(index_buffer);
@@ -1304,8 +1308,11 @@ vkapi::IVkRenderPass VulkanCommandList::current_renderpass() {
 
 vkapi::IVkCommandBuffer VulkanCommandList::finalize() {
   if (!finalized_) {
+// Workaround for MacOS: https://github.com/taichi-dev/taichi/issues/5888
+#if !defined(__APPLE__)
     vkCmdWriteTimestamp(buffer_->buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
                         query_pool_->query_pool, 1);
+#endif
     vkEndCommandBuffer(buffer_->buffer);
     finalized_ = true;
   }
@@ -1407,16 +1414,16 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
   // FIXME: How to express this in a backend-neutral way?
   buffer_info.usage =
       VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-  if (params.usage & AllocUsage::Storage) {
+  if (params.usage && AllocUsage::Storage) {
     buffer_info.usage |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
   }
-  if (params.usage & AllocUsage::Uniform) {
+  if (params.usage && AllocUsage::Uniform) {
     buffer_info.usage |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
   }
-  if (params.usage & AllocUsage::Vertex) {
+  if (params.usage && AllocUsage::Vertex) {
     buffer_info.usage |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
   }
-  if (params.usage & AllocUsage::Index) {
+  if (params.usage && AllocUsage::Index) {
     buffer_info.usage |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
   }
 
@@ -1719,11 +1726,17 @@ void VulkanStream::command_sync() {
       continue;
     }
 
+    double duration_us = 0.0;
+
+// Workaround for MacOS: https://github.com/taichi-dev/taichi/issues/5888
+#if !defined(__APPLE__)
     uint64_t t[2];
     vkGetQueryPoolResults(device_.vk_device(), cmdbuf.query_pool->query_pool, 0,
                           2, sizeof(uint64_t) * 2, &t, sizeof(uint64_t),
                           VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
-    double duration_us = (t[1] - t[0]) * props.limits.timestampPeriod / 1000.0;
+    duration_us = (t[1] - t[0]) * props.limits.timestampPeriod / 1000.0;
+#endif
+
     device_time_elapsed_us_ += duration_us;
   }
 
@@ -2284,24 +2297,28 @@ VulkanSurface::VulkanSurface(VulkanDevice *device, const SurfaceConfig &config)
   window_ = (GLFWwindow *)config.window_handle;
 #endif
   if (window_) {
+    if (config.native_surface_handle) {
+      surface_ = (VkSurfaceKHR)config.native_surface_handle;
+    } else {
 #ifdef ANDROID
-    VkAndroidSurfaceCreateInfoKHR createInfo{
-        .sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR,
-        .pNext = nullptr,
-        .flags = 0,
-        .window = window_};
+      VkAndroidSurfaceCreateInfoKHR createInfo{
+          .sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR,
+          .pNext = nullptr,
+          .flags = 0,
+          .window = window_};
 
-    vkCreateAndroidSurfaceKHR(device->vk_instance(), &createInfo, nullptr,
-                              &surface_);
+      vkCreateAndroidSurfaceKHR(device->vk_instance(), &createInfo, nullptr,
+                                &surface_);
 #else
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    VkResult err = glfwCreateWindowSurface(device->vk_instance(), window_, NULL,
-                                           &surface_);
-    if (err) {
-      TI_ERROR("Failed to create window surface ({})", err);
-      return;
-    }
+      glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+      VkResult err = glfwCreateWindowSurface(device->vk_instance(), window_,
+                                             NULL, &surface_);
+      if (err) {
+        TI_ERROR("Failed to create window surface ({})", err);
+        return;
+      }
 #endif
+    }
 
     create_swap_chain();
 
@@ -2317,6 +2334,8 @@ VulkanSurface::VulkanSurface(VulkanDevice *device, const SurfaceConfig &config)
     // screenshot_image_ = device->create_image(params);
     swapchain_images_.push_back(device->create_image(params));
     swapchain_images_.push_back(device->create_image(params));
+    width_ = config.width;
+    height_ = config.height;
   }
 }
 
@@ -2378,8 +2397,18 @@ void VulkanSurface::create_swap_chain() {
 #endif
 
   VkExtent2D extent = {uint32_t(width), uint32_t(height)};
+  extent.width =
+      std::max(capabilities.minImageExtent.width,
+               std::min(capabilities.maxImageExtent.width, extent.width));
+  extent.height =
+      std::max(capabilities.minImageExtent.height,
+               std::min(capabilities.maxImageExtent.height, extent.height));
+  TI_INFO("Creating suface of {}x{}", extent.width, extent.height);
   VkImageUsageFlags usage =
       VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+
+  this->width_ = extent.width;
+  this->height_ = extent.height;
 
   VkSwapchainCreateInfoKHR createInfo;
   createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -2478,17 +2507,7 @@ void VulkanSurface::resize(uint32_t width, uint32_t height) {
 }
 
 std::pair<uint32_t, uint32_t> VulkanSurface::get_size() {
-  if (!config_.window_handle) {
-    return std::make_pair(config_.width, config_.height);
-  }
-  int width, height;
-#ifdef ANDROID
-  width = ANativeWindow_getWidth(window_);
-  height = ANativeWindow_getHeight(window_);
-#else
-  glfwGetFramebufferSize(window_, &width, &height);
-#endif
-  return std::make_pair(width, height);
+  return std::make_pair(width_, height_);
 }
 
 StreamSemaphore VulkanSurface::acquire_next_image() {

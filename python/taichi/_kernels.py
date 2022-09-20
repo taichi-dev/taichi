@@ -1,3 +1,5 @@
+from typing import Iterable
+
 from taichi._lib.utils import get_os_name
 from taichi.lang import ops
 from taichi.lang._ndrange import ndrange
@@ -224,7 +226,7 @@ def arr_vulkan_layout_to_field_normal_layout(vk_arr: ndarray_type.ndarray(),
 def clear_gradients(_vars: template()):
     for I in grouped(ScalarField(Expr(_vars[0]))):
         for s in static(_vars):
-            ScalarField(Expr(s))[I] = 0
+            ScalarField(Expr(s))[I] = ops.cast(0, dtype=s.get_dt())
 
 
 @kernel
@@ -241,9 +243,15 @@ def fill_matrix(mat: template(), vals: template()):
         for p in static(range(mat.n)):
             for q in static(range(mat.m)):
                 if static(mat[I].ndim == 2):
-                    mat[I][p, q] = vals[p][q]
+                    if static(isinstance(vals[p], Iterable)):
+                        mat[I][p, q] = vals[p][q]
+                    else:
+                        mat[I][p, q] = vals[p]
                 else:
-                    mat[I][p] = vals[p][q]
+                    if static(isinstance(vals[p], Iterable)):
+                        mat[I][p] = vals[p][q]
+                    else:
+                        mat[I][p] = vals[p]
 
 
 @kernel

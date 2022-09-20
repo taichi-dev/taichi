@@ -11,8 +11,8 @@ file(GLOB_RECURSE TAICHI_EXAMPLES_SOURCE
 
 add_executable(${EXAMPLES_NAME} ${TAICHI_EXAMPLES_SOURCE})
 if (WIN32)
-    # Output the executable to bin/ instead of build/Debug/...
-    set(EXAMPLES_OUTPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/bin")
+    # Output the executable to build/ instead of build/Debug/...
+    set(EXAMPLES_OUTPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/build")
     set_target_properties(${EXAMPLES_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${EXAMPLES_OUTPUT_DIR})
     set_target_properties(${EXAMPLES_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG ${EXAMPLES_OUTPUT_DIR})
     set_target_properties(${EXAMPLES_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELEASE ${EXAMPLES_OUTPUT_DIR})
@@ -30,8 +30,16 @@ if (TI_WITH_METAL)
   )
 endif()
 
+if (TI_WITH_VULKAN OR TI_WITH_OPENGL)
+  target_link_libraries(${EXAMPLES_NAME} PRIVATE gfx_runtime)
+endif()
+
 if (TI_WITH_VULKAN)
   target_link_libraries(${EXAMPLES_NAME} PRIVATE vulkan_rhi)
+endif()
+
+if (TI_WITH_OPENGL)
+  target_link_libraries(${EXAMPLES_NAME} PRIVATE opengl_rhi)
 endif()
 
 # TODO 4832: be specific on the header dependencies here, e.g., ir

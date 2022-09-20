@@ -355,24 +355,21 @@ class TaichiCallableTemplateMapper:
                 return arg.dtype, len(arg.shape), (), Layout.AOS
             if isinstance(arg, taichi.lang.matrix.VectorNdarray):
                 anno.check_matched(arg.get_type())
-                return arg.dtype, len(arg.shape) + 1, (arg.n, ), arg.layout
+                return arg.dtype, len(arg.shape) + 1, (arg.n, ), Layout.AOS
             if isinstance(arg, taichi.lang.matrix.MatrixNdarray):
                 anno.check_matched(arg.get_type())
                 return arg.dtype, len(arg.shape) + 2, (arg.n,
-                                                       arg.m), arg.layout
+                                                       arg.m), Layout.AOS
             # external arrays
             element_dim = 0 if anno.element_dim is None else anno.element_dim
-            layout = Layout.AOS if anno.layout is None else anno.layout
             shape = tuple(arg.shape)
             if len(shape) < element_dim:
                 raise ValueError(
                     f"Invalid argument into ti.types.ndarray() - required element_dim={element_dim}, "
                     f"but the argument has only {len(shape)} dimensions")
-            element_shape = (
-            ) if element_dim == 0 else shape[:
-                                             element_dim] if layout == Layout.SOA else shape[
-                                                 -element_dim:]
-            return to_taichi_type(arg.dtype), len(shape), element_shape, layout
+            element_shape = () if element_dim == 0 else shape[-element_dim:]
+            return to_taichi_type(
+                arg.dtype), len(shape), element_shape, Layout.AOS
         if isinstance(anno, sparse_matrix_builder):
             return arg.dtype
         # Use '#' as a placeholder because other kinds of arguments are not involved in template instantiation
@@ -573,13 +570,6 @@ class Kernel:
             )
         tmp = v
         taichi_arch = self.runtime.prog.config.arch
-        # Ndarray means its memory is allocated on the specified taichi arch.
-        # Since torch only supports CPU & CUDA, torch-base ndarray only supports
-        # taichi cpu/cuda backend as well.
-        # Note I put x64/arm64/cuda here to be more specific.
-        assert not is_ndarray or taichi_arch in (
-            _ti_core.Arch.cuda, _ti_core.Arch.x64, _ti_core.Arch.arm64
-        ), "Torch-based ndarray is only supported on taichi x64/arm64/cuda backend."
 
         if str(v.device).startswith('cuda'):
             # External tensor on cuda
@@ -588,12 +578,6 @@ class Kernel:
                 host_v = v.to(device='cpu', copy=True)
                 tmp = host_v
                 callbacks.append(get_call_back(v, host_v))
-        else:
-            # External tensor on cpu
-            if taichi_arch == _ti_core.Arch.cuda:
-                gpu_v = v.cuda()
-                tmp = gpu_v
-                callbacks.append(get_call_back(v, gpu_v))
         return tmp, callbacks
 
     def get_paddle_callbacks(self, v, has_pp):

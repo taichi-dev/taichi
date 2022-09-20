@@ -187,15 +187,103 @@ class LowerAST : public IRVisitor {
 
   void visit(FrontendForStmt *stmt) override {
     auto fctx = make_flatten_ctx();
-    if (stmt->is_ranged()) {
-      TI_ASSERT(stmt->loop_var_id.size() == 1);
+    if (stmt->snode) {
+      auto snode = stmt->snode;
+      std::vector<int> offsets;
+      if (snode->type == SNodeType::place) {
+        /* Note:
+         * for i in x:
+         *   x[i] = 0
+         *
+         * has the same effect as
+         *
+         * for i in x.parent():
+         *   x[i] = 0
+         *
+         * (unless x has index offsets)*/
+        offsets = snode->index_offsets;
+        snode = snode->parent;
+      }
+
+      // Climb up one more level if inside bit_struct.
+      // Note that when looping over bit_structs, we generate
+      // struct for on their parent node instead of itself for
+      // higher performance.
+      if (snode->type == SNodeType::bit_struct)
+        snode = snode->parent;
+
+      auto &&new_for = std::make_unique<StructForStmt>(
+          snode, std::move(stmt->body), stmt->is_bit_vectorized,
+          stmt->num_cpu_threads, stmt->block_dim);
+      new_for->index_offsets = offsets;
+      VecStatement new_statements;
+      for (int i = 0; i < (int)stmt->loop_var_ids.size(); i++) {
+        Stmt *loop_index = new_statements.push_back<LoopIndexStmt>(
+            new_for.get(), snode->physical_index_position[i]);
+        if ((int)offsets.size() > i && offsets[i] != 0) {
+          auto offset_const =
+              new_statements.push_back<ConstStmt>(TypedConstant(offsets[i]));
+          auto result = new_statements.push_back<BinaryOpStmt>(
+              BinaryOpType::add, loop_index, offset_const);
+          loop_index = result;
+        }
+        new_for->body->local_var_to_stmt[stmt->loop_var_ids[i]] = loop_index;
+      }
+      new_for->body->insert(std::move(new_statements), 0);
+      new_for->mem_access_opt = stmt->mem_access_opt;
+      fctx.push_back(std::move(new_for));
+    } else if (stmt->external_tensor) {
+      auto tensor = stmt->external_tensor.cast<ExternalTensorExpression>();
+      std::vector<Stmt *> shape;
+      for (int i = 0; i < tensor->dim - abs(tensor->element_dim); i++) {
+        shape.push_back(fctx.push_back<ExternalTensorShapeAlongAxisStmt>(
+            i, tensor->arg_id));
+      }
+      Stmt *begin = fctx.push_back<ConstStmt>(TypedConstant(0));
+      Stmt *end = fctx.push_back<ConstStmt>(TypedConstant(1));
+      for (int i = 0; i < (int)shape.size(); i++) {
+        end = fctx.push_back<BinaryOpStmt>(BinaryOpType::mul, end, shape[i]);
+      }
+      // TODO: add a note explaining why shape might be empty.
+      auto &&new_for = std::make_unique<RangeForStmt>(
+          begin, end, std::move(stmt->body), stmt->is_bit_vectorized,
+          stmt->num_cpu_threads, stmt->block_dim, stmt->strictly_serialized,
+          /*range_hint=*/fmt::format("arg {}", tensor->arg_id));
+      VecStatement new_statements;
+      Stmt *loop_index =
+          new_statements.push_back<LoopIndexStmt>(new_for.get(), 0);
+      for (int i = (int)shape.size() - 1; i >= 0; i--) {
+        Stmt *loop_var = new_statements.push_back<BinaryOpStmt>(
+            BinaryOpType::mod, loop_index, shape[i]);
+        new_for->body->local_var_to_stmt[stmt->loop_var_ids[i]] = loop_var;
+        std::vector<uint32_t> decoration = {
+            uint32_t(DecorationStmt::Decoration::kLoopUnique), uint32_t(i)};
+        new_statements.push_back<DecorationStmt>(loop_var, decoration);
+        loop_index = new_statements.push_back<BinaryOpStmt>(
+            BinaryOpType::div, loop_index, shape[i]);
+      }
+      new_for->body->insert(std::move(new_statements), 0);
+      fctx.push_back(std::move(new_for));
+    } else if (stmt->mesh) {
+      auto &&new_for = std::make_unique<MeshForStmt>(
+          stmt->mesh, stmt->element_type, std::move(stmt->body),
+          stmt->is_bit_vectorized, stmt->num_cpu_threads, stmt->block_dim);
+      new_for->body->insert(std::make_unique<LoopIndexStmt>(new_for.get(), 0),
+                            0);
+      new_for->body->local_var_to_stmt[stmt->loop_var_ids[0]] =
+          new_for->body->statements[0].get();
+      new_for->mem_access_opt = stmt->mem_access_opt;
+      new_for->fields_registered = true;
+      fctx.push_back(std::move(new_for));
+    } else {
+      TI_ASSERT(stmt->loop_var_ids.size() == 1);
       auto begin = stmt->begin;
       auto end = stmt->end;
       flatten_rvalue(begin, &fctx);
       flatten_rvalue(end, &fctx);
       bool is_good_range_for = detected_fors_with_break_.find(stmt) ==
                                detected_fors_with_break_.end();
-      // #578: a good range for is a range for that doesn't contains a break
+      // #578: a good range for is a range for that doesn't contain a break
       // statement
       if (is_good_range_for) {
         auto &&new_for = std::make_unique<RangeForStmt>(
@@ -204,7 +292,7 @@ class LowerAST : public IRVisitor {
             stmt->strictly_serialized);
         new_for->body->insert(std::make_unique<LoopIndexStmt>(new_for.get(), 0),
                               0);
-        new_for->body->local_var_to_stmt[stmt->loop_var_id[0]] =
+        new_for->body->local_var_to_stmt[stmt->loop_var_ids[0]] =
             new_for->body->statements[0].get();
         fctx.push_back(std::move(new_for));
       } else {
@@ -213,13 +301,12 @@ class LowerAST : public IRVisitor {
         // body; }
         fctx.push_back<AllocaStmt>(PrimitiveType::i32);
         auto loop_var = fctx.back_stmt();
-        stmt->parent->local_var_to_stmt[stmt->loop_var_id[0]] = loop_var;
+        stmt->parent->local_var_to_stmt[stmt->loop_var_ids[0]] = loop_var;
         auto const_one = fctx.push_back<ConstStmt>(TypedConstant((int32)1));
         auto begin_minus_one = fctx.push_back<BinaryOpStmt>(
             BinaryOpType::sub, begin->stmt, const_one);
         fctx.push_back<LocalStoreStmt>(loop_var, begin_minus_one);
-        auto loop_var_addr = LaneAttribute<LocalAddress>(
-            LocalAddress(loop_var->as<AllocaStmt>(), 0));
+        auto loop_var_addr = loop_var->as<AllocaStmt>();
         VecStatement load_and_compare;
         auto loop_var_load_stmt =
             load_and_compare.push_back<LocalLoadStmt>(loop_var_addr);
@@ -253,94 +340,6 @@ class LowerAST : public IRVisitor {
             std::make_unique<LocalStoreStmt>(new_while->mask, const_stmt_ptr));
         fctx.push_back(std::move(new_while));
       }
-    } else if (stmt->mesh_for) {
-      auto &&new_for = std::make_unique<MeshForStmt>(
-          stmt->mesh, stmt->element_type, std::move(stmt->body),
-          stmt->is_bit_vectorized, stmt->num_cpu_threads, stmt->block_dim);
-      new_for->body->insert(std::make_unique<LoopIndexStmt>(new_for.get(), 0),
-                            0);
-      new_for->body->local_var_to_stmt[stmt->loop_var_id[0]] =
-          new_for->body->statements[0].get();
-      new_for->mem_access_opt = stmt->mem_access_opt;
-      new_for->fields_registered = true;
-      fctx.push_back(std::move(new_for));
-    } else if (stmt->global_var.is<GlobalVariableExpression>()) {
-      auto snode = stmt->global_var.cast<GlobalVariableExpression>()->snode;
-      std::vector<int> offsets;
-      if (snode->type == SNodeType::place) {
-        /* Note:
-         * for i in x:
-         *   x[i] = 0
-         *
-         * has the same effect as
-         *
-         * for i in x.parent():
-         *   x[i] = 0
-         *
-         * (unless x has index offsets)*/
-        offsets = snode->index_offsets;
-        snode = snode->parent;
-      }
-
-      // Climb up one more level if inside bit_struct.
-      // Note that when looping over bit_structs, we generate
-      // struct for on their parent node instead of itself for
-      // higher performance.
-      if (snode->type == SNodeType::bit_struct)
-        snode = snode->parent;
-
-      auto &&new_for = std::make_unique<StructForStmt>(
-          snode, std::move(stmt->body), stmt->is_bit_vectorized,
-          stmt->num_cpu_threads, stmt->block_dim);
-      new_for->index_offsets = offsets;
-      VecStatement new_statements;
-      for (int i = 0; i < (int)stmt->loop_var_id.size(); i++) {
-        Stmt *loop_index = new_statements.push_back<LoopIndexStmt>(
-            new_for.get(), snode->physical_index_position[i]);
-        if ((int)offsets.size() > i && offsets[i] != 0) {
-          auto offset_const =
-              new_statements.push_back<ConstStmt>(TypedConstant(offsets[i]));
-          auto result = new_statements.push_back<BinaryOpStmt>(
-              BinaryOpType::add, loop_index, offset_const);
-          loop_index = result;
-        }
-        new_for->body->local_var_to_stmt[stmt->loop_var_id[i]] = loop_index;
-      }
-      new_for->body->insert(std::move(new_statements), 0);
-      new_for->mem_access_opt = stmt->mem_access_opt;
-      fctx.push_back(std::move(new_for));
-    } else {
-      auto tensor = stmt->global_var.cast<ExternalTensorExpression>();
-      std::vector<Stmt *> shape;
-      for (int i = 0; i < tensor->dim - abs(tensor->element_dim); i++) {
-        shape.push_back(fctx.push_back<ExternalTensorShapeAlongAxisStmt>(
-            i, tensor->arg_id));
-      }
-      Stmt *begin = fctx.push_back<ConstStmt>(TypedConstant(0));
-      Stmt *end = fctx.push_back<ConstStmt>(TypedConstant(1));
-      for (int i = 0; i < (int)shape.size(); i++) {
-        end = fctx.push_back<BinaryOpStmt>(BinaryOpType::mul, end, shape[i]);
-      }
-      // TODO: add a note explaining why shape might be empty.
-      auto &&new_for = std::make_unique<RangeForStmt>(
-          begin, end, std::move(stmt->body), stmt->is_bit_vectorized,
-          stmt->num_cpu_threads, stmt->block_dim, stmt->strictly_serialized,
-          /*range_hint=*/fmt::format("arg {}", tensor->arg_id));
-      VecStatement new_statements;
-      Stmt *loop_index =
-          new_statements.push_back<LoopIndexStmt>(new_for.get(), 0);
-      for (int i = (int)shape.size() - 1; i >= 0; i--) {
-        Stmt *loop_var = new_statements.push_back<BinaryOpStmt>(
-            BinaryOpType::mod, loop_index, shape[i]);
-        new_for->body->local_var_to_stmt[stmt->loop_var_id[i]] = loop_var;
-        std::vector<uint32_t> decoration = {
-            uint32_t(DecorationStmt::Decoration::kLoopUnique), uint32_t(i)};
-        new_statements.push_back<DecorationStmt>(loop_var, decoration);
-        loop_index = new_statements.push_back<BinaryOpStmt>(
-            BinaryOpType::div, loop_index, shape[i]);
-      }
-      new_for->body->insert(std::move(new_statements), 0);
-      fctx.push_back(std::move(new_for));
     }
     auto pfor = fctx.stmts.back().get();
     stmt->parent->replace_with(stmt, std::move(fctx.stmts));

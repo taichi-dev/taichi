@@ -103,13 +103,10 @@ if (TI_BUILD_TESTS)
 endif()
 
 option(TI_BUILD_EXAMPLES "Build the CPP examples" ON)
+option(TI_BUILD_RHI_EXAMPLES "Build the Unified Device API examples" OFF)
 
 if(NOT TI_WITH_LLVM OR NOT TI_WITH_METAL)
     set(TI_BUILD_EXAMPLES OFF)
-endif()
-
-if (TI_BUILD_EXAMPLES)
-  include(cmake/TaichiExamples.cmake)
 endif()
 
 message("C++ Flags: ${CMAKE_CXX_FLAGS}")
@@ -200,4 +197,25 @@ if (TI_WITH_C_API)
   if (TI_BUILD_TESTS)
     include(cmake/TaichiCAPITests.cmake)
   endif()
+endif()
+
+if (TI_BUILD_EXAMPLES)
+  include(cmake/TaichiExamples.cmake)
+endif()
+
+if (TI_BUILD_RHI_EXAMPLES)
+  add_subdirectory(cpp_examples/rhi_examples)
+endif()
+
+
+option(TI_WITH_GRAPHVIZ "generate dependency graphs between targets" OFF)
+if (TI_WITH_GRAPHVIZ)
+  set(GRAPHVIZ_GRAPH_NAME "ti_targets")
+  add_custom_target(graphviz ALL
+      COMMAND cp ${CMAKE_SOURCE_DIR}/cmake/CMakeGraphVizOptions.cmake .
+      COMMAND ${CMAKE_COMMAND} "--graphviz=${GRAPHVIZ_GRAPH_NAME}.dot" .
+      COMMAND dot -Tpng ${GRAPHVIZ_GRAPH_NAME}.dot -o ${GRAPHVIZ_GRAPH_NAME}.png
+      COMMAND cp ti_targets.png ${CMAKE_SOURCE_DIR}/build
+      WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+  )
 endif()

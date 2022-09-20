@@ -205,28 +205,12 @@ DEFINE_UNARY_REAL_FUNC(asin)
 DEFINE_UNARY_REAL_FUNC(cos)
 DEFINE_UNARY_REAL_FUNC(sin)
 
-#define DEFINE_FAST_POW(T) \
-  T pow_##T(T x, T n) {    \
-    T ans = 1;             \
-    T tmp = x;             \
-    while (n > 0) {        \
-      if (n & 1)           \
-        ans *= tmp;        \
-      tmp *= tmp;          \
-      n >>= 1;             \
-    }                      \
-    return ans;            \
-  }
+i32 abs_i32(i32 a) {
+  return a >= 0 ? a : -a;
+}
 
-DEFINE_FAST_POW(i32)
-DEFINE_FAST_POW(i64)
-
-int abs_i32(int a) {
-  if (a > 0) {
-    return a;
-  } else {
-    return -a;
-  }
+i64 abs_i64(i64 a) {
+  return a >= 0 ? a : -a;
 }
 
 i32 floordiv_i32(i32 a, i32 b) {

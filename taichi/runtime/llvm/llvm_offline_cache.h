@@ -8,7 +8,7 @@
 #include "taichi/common/serialization.h"
 #include "taichi/runtime/llvm/launch_arg_info.h"
 #include "taichi/program/kernel.h"
-#include "taichi/util/io.h"
+#include "taichi/util/offline_cache.h"
 #include "taichi/codegen/llvm/llvm_compiled_data.h"
 
 namespace taichi {
@@ -25,7 +25,7 @@ struct LlvmOfflineCache {
   struct KernelCacheData {
     std::string kernel_key;
     std::vector<LlvmLaunchArgInfo> args;
-    std::vector<LLVMCompiledData> compiled_data_list;
+    LLVMCompiledKernel compiled_data;
 
     // For cache cleaning
     std::size_t size{0};          // byte
@@ -39,12 +39,7 @@ struct LlvmOfflineCache {
 
     KernelCacheData clone() const;
 
-    TI_IO_DEF(kernel_key,
-              args,
-              compiled_data_list,
-              size,
-              created_at,
-              last_used_at);
+    TI_IO_DEF(kernel_key, args, compiled_data, size, created_at, last_used_at);
   };
 
   struct FieldCacheData {
@@ -91,6 +86,8 @@ struct LlvmOfflineCache {
     // other
   };
 
+  using KernelMetadata = KernelCacheData;  // Required by CacheCleaner
+
   Version version{};
   std::size_t size{0};  // byte
 
@@ -103,6 +100,7 @@ struct LlvmOfflineCache {
   std::unordered_map<std::string, KernelCacheData>
       kernels;  // key = kernel_name
 
+  // NOTE: The "version" must be the first field to be serialized
   TI_IO_DEF(version, size, fields, kernels);
 };
 
@@ -140,20 +138,8 @@ class LlvmOfflineCacheFileReader {
 };
 
 class LlvmOfflineCacheFileWriter {
-  enum CleanCacheFlags {
-    NotClean = 0b000,
-    CleanOldVersion = 0b001,
-    CleanOldUsed = 0b010,
-    CleanOldCreated = 0b100
-  };
-
  public:
-  enum CleanCachePolicy {
-    Never = NotClean,
-    OnlyOldVersion = CleanOldVersion,
-    LRU = CleanOldVersion | CleanOldUsed,
-    FIFO = CleanOldVersion | CleanOldCreated
-  };
+  using CleanCachePolicy = offline_cache::CleanCachePolicy;
 
   void set_data(LlvmOfflineCache &&data) {
     this->mangled_ = false;
@@ -182,14 +168,11 @@ class LlvmOfflineCacheFileWriter {
                           int max_bytes,
                           double cleaning_factor);
 
-  static CleanCachePolicy string_to_clean_cache_policy(const std::string &str);
-
  private:
   void merge_with(LlvmOfflineCache &&data);
 
-  void mangle_offloaded_task_name(
-      const std::string &kernel_key,
-      std::vector<LLVMCompiledData> &compiled_data_list);
+  void mangle_offloaded_task_name(const std::string &kernel_key,
+                                  LLVMCompiledKernel &compiled_data);
 
   LlvmOfflineCache data_;
   bool mangled_{false};

@@ -311,11 +311,17 @@ set(SPIRV-Headers_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/SPIRV-Headers)
 
 add_subdirectory(external/SPIRV-Tools)
 add_subdirectory(taichi/codegen/spirv)
+add_subdirectory(taichi/cache/gfx)
 add_subdirectory(taichi/runtime/gfx)
 
 if (TI_WITH_OPENGL OR TI_WITH_VULKAN OR TI_WITH_DX11)
   target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE spirv_codegen)
   target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE gfx_runtime)
+endif()
+
+if (TI_WITH_OPENGL OR TI_WITH_DX11)
+  set(SPIRV_CROSS_CLI false)
+  add_subdirectory(${PROJECT_SOURCE_DIR}/external/SPIRV-Cross ${PROJECT_BINARY_DIR}/external/SPIRV-Cross)
 endif()
 
 # Vulkan Device API

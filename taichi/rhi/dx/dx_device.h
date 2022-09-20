@@ -139,7 +139,6 @@ class Dx11CommandList : public CommandList {
                         bool depth_clear) override;
   void end_renderpass() override;
   void draw(uint32_t num_verticies, uint32_t start_vertex = 0) override;
-  void clear_color(float r, float g, float b, float a) override;
   void set_line_width(float width) override;
   void draw_indexed(uint32_t num_indicies,
                     uint32_t start_vertex = 0,

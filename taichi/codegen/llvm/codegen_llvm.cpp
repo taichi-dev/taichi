@@ -209,6 +209,8 @@ void TaskCodeGenLLVM::emit_extra_unary(UnaryOpStmt *stmt) {
       llvm_val[stmt] = create_call(#x "_f64", input);                   \
     } else if (input_taichi_type->is_primitive(PrimitiveTypeID::i32)) { \
       llvm_val[stmt] = create_call(#x "_i32", input);                   \
+    } else if (input_taichi_type->is_primitive(PrimitiveTypeID::i64)) { \
+      llvm_val[stmt] = create_call(#x "_i64", input);                   \
     } else {                                                            \
       TI_NOT_IMPLEMENTED                                                \
     }                                                                   \
@@ -318,11 +320,13 @@ void TaskCodeGenLLVM::emit_struct_meta_base(const std::string &name,
   // snodes, even if they have the same type.
   if (snode->parent)
     common.set("from_parent_element",
-               get_runtime_function(snode->get_ch_from_parent_func_name()));
+               get_struct_function(snode->get_ch_from_parent_func_name(),
+                                   snode->get_snode_tree_id()));
 
   if (snode->type != SNodeType::place)
     common.set("refine_coordinates",
-               get_runtime_function(snode->refine_coordinates_func_name()));
+               get_struct_function(snode->refine_coordinates_func_name(),
+                                   snode->get_snode_tree_id()));
 }
 
 TaskCodeGenLLVM::TaskCodeGenLLVM(Kernel *kernel,
@@ -332,7 +336,7 @@ TaskCodeGenLLVM::TaskCodeGenLLVM(Kernel *kernel,
     : LLVMModuleBuilder(
           module == nullptr ? get_llvm_program(kernel->program)
                                   ->get_llvm_context(kernel->arch)
-                                  ->clone_struct_module()
+                                  ->new_module("kernel")
                             : std::move(module),
           get_llvm_program(kernel->program)->get_llvm_context(kernel->arch)),
       kernel(kernel),
@@ -406,8 +410,8 @@ void TaskCodeGenLLVM::visit(UnaryOpStmt *stmt) {
         }
       }
     } else if (!is_real(from) && !is_real(to)) {
-      llvm_val[stmt] = builder->CreateIntCast(llvm_val[stmt->operand],
-                                              llvm_type(to), is_signed(from));
+      llvm_val[stmt] = builder->CreateIntCast(
+          llvm_val[stmt->operand], tlctx->get_data_type(to), is_signed(from));
     }
   } else if (stmt->op_type == UnaryOpType::cast_bits) {
     TI_ASSERT(data_type_size(stmt->ret_type) ==
@@ -621,7 +625,8 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
     } else {
       TI_NOT_IMPLEMENTED
     }
-    llvm_val[stmt] = builder->CreateSExt(cmp, llvm_type(PrimitiveType::i32));
+    llvm_val[stmt] =
+        builder->CreateSExt(cmp, tlctx->get_data_type(PrimitiveType::i32));
   } else {
     // This branch contains atan2 and pow which use runtime.cpp function for
     // **real** type. We don't have f16 support there so promoting to f32 is
@@ -653,14 +658,12 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
       }
     } else if (op == BinaryOpType::pow) {
       if (arch_is_cpu(current_arch())) {
+        // Note that ret_type here cannot be integral because pow with an
+        // integral exponent has been demoted in the demote_operations pass
         if (ret_type->is_primitive(PrimitiveTypeID::f32)) {
           llvm_val[stmt] = create_call("pow_f32", {lhs, rhs});
         } else if (ret_type->is_primitive(PrimitiveTypeID::f64)) {
           llvm_val[stmt] = create_call("pow_f64", {lhs, rhs});
-        } else if (ret_type->is_primitive(PrimitiveTypeID::i32)) {
-          llvm_val[stmt] = create_call("pow_i32", {lhs, rhs});
-        } else if (ret_type->is_primitive(PrimitiveTypeID::i64)) {
-          llvm_val[stmt] = create_call("pow_i64", {lhs, rhs});
         } else {
           TI_P(data_type_name(ret_type));
           TI_NOT_IMPLEMENTED
@@ -681,48 +684,11 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
   }
 }
 
-llvm::Type *TaskCodeGenLLVM::llvm_type(DataType dt) {
-  if (dt->is_primitive(PrimitiveTypeID::i8) ||
-      dt->is_primitive(PrimitiveTypeID::u8)) {
-    return llvm::Type::getInt8Ty(*llvm_context);
-  } else if (dt->is_primitive(PrimitiveTypeID::i16) ||
-             dt->is_primitive(PrimitiveTypeID::u16)) {
-    return llvm::Type::getInt16Ty(*llvm_context);
-  } else if (dt->is_primitive(PrimitiveTypeID::i32) ||
-             dt->is_primitive(PrimitiveTypeID::u32)) {
-    return llvm::Type::getInt32Ty(*llvm_context);
-  } else if (dt->is_primitive(PrimitiveTypeID::i64) ||
-             dt->is_primitive(PrimitiveTypeID::u64)) {
-    return llvm::Type::getInt64Ty(*llvm_context);
-  } else if (dt->is_primitive(PrimitiveTypeID::u1)) {
-    return llvm::Type::getInt1Ty(*llvm_context);
-  } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
-    return llvm::Type::getFloatTy(*llvm_context);
-  } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
-    return llvm::Type::getDoubleTy(*llvm_context);
-  } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
-    return llvm::Type::getHalfTy(*llvm_context);
-  } else if (dt->is<TensorType>()) {
-    TI_ASSERT_INFO(kernel->program->config.real_matrix,
-                   "Real matrix not enabled but got TensorType");
-    auto tensor_type = dt->cast<TensorType>();
-    auto element_type = llvm_type(tensor_type->get_element_type());
-    return llvm::VectorType::get(element_type, tensor_type->get_num_elements(),
-                                 /*scalable=*/false);
-  } else {
-    TI_NOT_IMPLEMENTED;
-  }
-  return nullptr;
-}
-
-llvm::Type *TaskCodeGenLLVM::llvm_ptr_type(DataType dt) {
-  return llvm::PointerType::get(llvm_type(dt), 0);
-}
-
 void TaskCodeGenLLVM::visit(TernaryOpStmt *stmt) {
   TI_ASSERT(stmt->op_type == TernaryOpType::select);
   llvm_val[stmt] = builder->CreateSelect(
-      builder->CreateTrunc(llvm_val[stmt->op1], llvm_type(PrimitiveType::u1)),
+      builder->CreateTrunc(llvm_val[stmt->op1],
+                           tlctx->get_data_type(PrimitiveType::u1)),
       llvm_val[stmt->op2], llvm_val[stmt->op3]);
 }
 
@@ -861,7 +827,7 @@ void TaskCodeGenLLVM::visit(PrintStmt *stmt) {
 }
 
 void TaskCodeGenLLVM::visit(ConstStmt *stmt) {
-  auto val = stmt->val[0];
+  auto val = stmt->val;
   if (val.dt->is_primitive(PrimitiveTypeID::f32)) {
     llvm_val[stmt] =
         llvm::ConstantFP::get(*llvm_context, llvm::APFloat(val.val_float32()));
@@ -1030,7 +996,7 @@ void TaskCodeGenLLVM::create_naive_range_for(RangeForStmt *for_stmt) {
       BasicBlock::Create(*llvm_context, "for_loop_test", func);
 
 #ifdef TI_LLVM_15
-  auto loop_var_ty = llvm_type(PrimitiveType::i32);
+  auto loop_var_ty = tlctx->get_data_type(PrimitiveType::i32);
 #endif
 
   auto loop_var = create_entry_block_alloca(PrimitiveType::i32);
@@ -1191,16 +1157,16 @@ void TaskCodeGenLLVM::visit(LocalLoadStmt *stmt) {
 #ifdef TI_LLVM_15
   // FIXME: get ptr_ty from taichi instead of llvm.
   llvm::Type *ptr_ty = nullptr;
-  auto *val = llvm_val[stmt->src[0].var];
+  auto *val = llvm_val[stmt->src];
   if (auto *alloc = llvm::dyn_cast<llvm::AllocaInst>(val))
     ptr_ty = alloc->getAllocatedType();
-  if (!ptr_ty && stmt->src[0].var->element_type().is_pointer()) {
-    ptr_ty = llvm_type(stmt->src[0].var->element_type().ptr_removed());
+  if (!ptr_ty && stmt->src->element_type().is_pointer()) {
+    ptr_ty = tlctx->get_data_type(stmt->src->element_type().ptr_removed());
   }
   TI_ASSERT(ptr_ty);
-  llvm_val[stmt] = builder->CreateLoad(ptr_ty, llvm_val[stmt->src[0].var]);
+  llvm_val[stmt] = builder->CreateLoad(ptr_ty, llvm_val[stmt->src]);
 #else
-  llvm_val[stmt] = builder->CreateLoad(llvm_val[stmt->src[0].var]);
+  llvm_val[stmt] = builder->CreateLoad(llvm_val[stmt->src]);
 #endif
 }
 
@@ -1298,12 +1264,14 @@ llvm::Value *TaskCodeGenLLVM::quant_type_atomic(AtomicOpStmt *stmt) {
   if (auto qit = dst_type->cast<QuantIntType>()) {
     return atomic_add_quant_int(
         llvm_val[stmt->dest],
-        llvm_type(stmt->dest->as<GetChStmt>()->input_snode->physical_type), qit,
-        llvm_val[stmt->val], is_signed(stmt->val->ret_type));
+        tlctx->get_data_type(
+            stmt->dest->as<GetChStmt>()->input_snode->physical_type),
+        qit, llvm_val[stmt->val], is_signed(stmt->val->ret_type));
   } else if (auto qfxt = dst_type->cast<QuantFixedType>()) {
     return atomic_add_quant_fixed(
         llvm_val[stmt->dest],
-        llvm_type(stmt->dest->as<GetChStmt>()->input_snode->physical_type),
+        tlctx->get_data_type(
+            stmt->dest->as<GetChStmt>()->input_snode->physical_type),
         qfxt, llvm_val[stmt->val]);
   } else {
     return nullptr;
@@ -1464,11 +1432,13 @@ void TaskCodeGenLLVM::visit(GlobalStoreStmt *stmt) {
           pointee_type->to_string());
     }
     if (auto qit = pointee_type->cast<QuantIntType>()) {
-      store_quant_int(llvm_val[stmt->dest], llvm_type(snode->physical_type),
-                      qit, llvm_val[stmt->val], true);
+      store_quant_int(llvm_val[stmt->dest],
+                      tlctx->get_data_type(snode->physical_type), qit,
+                      llvm_val[stmt->val], true);
     } else if (auto qfxt = pointee_type->cast<QuantFixedType>()) {
-      store_quant_fixed(llvm_val[stmt->dest], llvm_type(snode->physical_type),
-                        qfxt, llvm_val[stmt->val], true);
+      store_quant_fixed(llvm_val[stmt->dest],
+                        tlctx->get_data_type(snode->physical_type), qfxt,
+                        llvm_val[stmt->val], true);
     } else {
       TI_NOT_IMPLEMENTED;
     }
@@ -1489,7 +1459,8 @@ void TaskCodeGenLLVM::create_global_load(GlobalLoadStmt *stmt,
   if (ptr_type->is_bit_pointer()) {
     auto val_type = ptr_type->get_pointee_type();
     auto get_ch = stmt->src->as<GetChStmt>();
-    auto physical_type = llvm_type(get_ch->input_snode->physical_type);
+    auto physical_type =
+        tlctx->get_data_type(get_ch->input_snode->physical_type);
     auto [byte_ptr, bit_offset] = load_bit_ptr(ptr);
     auto physical_value = should_cache_as_read_only
                               ? create_intrinsic_load(byte_ptr, physical_type)
@@ -1510,7 +1481,8 @@ void TaskCodeGenLLVM::create_global_load(GlobalLoadStmt *stmt,
   } else {
     // Byte pointer case.
     if (should_cache_as_read_only) {
-      llvm_val[stmt] = create_intrinsic_load(ptr, llvm_type(stmt->ret_type));
+      llvm_val[stmt] =
+          create_intrinsic_load(ptr, tlctx->get_data_type(stmt->ret_type));
     } else {
       llvm_val[stmt] =
           builder->CreateLoad(tlctx->get_data_type(stmt->ret_type), ptr);
@@ -1564,6 +1536,31 @@ llvm::Value *TaskCodeGenLLVM::call(
                         arguments.end());
 
   return call(builder.get(), prefix + "_" + method, func_arguments);
+}
+
+llvm::Function *TaskCodeGenLLVM::get_struct_function(const std::string &name,
+                                                     int tree_id) {
+  used_tree_ids.insert(tree_id);
+  auto f = tlctx->get_struct_function(name, tree_id);
+  if (!f) {
+    TI_ERROR("Struct function {} not found.", name);
+  }
+  f = llvm::cast<llvm::Function>(
+      module
+          ->getOrInsertFunction(name, f->getFunctionType(), f->getAttributes())
+          .getCallee());
+  return f;
+}
+
+template <typename... Args>
+llvm::Value *TaskCodeGenLLVM::call_struct_func(int tree_id,
+                                               const std::string &func_name,
+                                               Args &&...args) {
+  auto func = get_struct_function(func_name, tree_id);
+  auto arglist = std::vector<llvm::Value *>({args...});
+  check_func_call_signature(func->getFunctionType(), func->getName(), arglist,
+                            builder.get());
+  return builder->CreateCall(func, arglist);
 }
 
 void TaskCodeGenLLVM::visit(GetRootStmt *stmt) {
@@ -1711,10 +1708,11 @@ void TaskCodeGenLLVM::visit(GetChStmt *stmt) {
     auto offset = tlctx->get_constant(bit_offset);
     llvm_val[stmt] = create_bit_ptr(llvm_val[stmt->input_ptr], offset);
   } else {
-    auto ch = create_call(stmt->output_snode->get_ch_from_parent_func_name(),
-                          {builder->CreateBitCast(
-                              llvm_val[stmt->input_ptr],
-                              llvm::PointerType::getInt8PtrTy(*llvm_context))});
+    auto ch = call_struct_func(
+        stmt->output_snode->get_snode_tree_id(),
+        stmt->output_snode->get_ch_from_parent_func_name(),
+        builder->CreateBitCast(llvm_val[stmt->input_ptr],
+                               llvm::PointerType::getInt8PtrTy(*llvm_context)));
     llvm_val[stmt] = builder->CreateBitCast(
         ch, llvm::PointerType::get(StructCompilerLLVM::get_llvm_node_type(
                                        module.get(), stmt->output_snode),
@@ -1723,38 +1721,80 @@ void TaskCodeGenLLVM::visit(GetChStmt *stmt) {
 }
 
 void TaskCodeGenLLVM::visit(PtrOffsetStmt *stmt) {
-  if (stmt->is_local_ptr()) {
+  if (stmt->offset_used_as_index()) {
 #ifdef TI_LLVM_15
     // FIXME: get ptr_ty from taichi instead of llvm.
     llvm::Type *ptr_ty = nullptr;
     auto *val = llvm_val[stmt->origin];
+    auto *lhs = val;
     // For SharedArray which is in address space 3.
     if (auto *addr_cast = llvm::dyn_cast<llvm::AddrSpaceCastOperator>(val))
       val = addr_cast->getOperand(0);
     if (auto *alloc = llvm::dyn_cast<llvm::AllocaInst>(val))
-      ptr_ty = alloc->getAllocatedType();
+      if (stmt->origin->ret_type.ptr_removed()->is<TensorType>()) {
+        ptr_ty = tlctx->get_data_type(stmt->origin->ret_type.ptr_removed()
+                                          ->cast<TensorType>()
+                                          ->get_element_type());
+        lhs =
+            builder->CreatePointerCast(lhs, llvm::PointerType::get(ptr_ty, 0));
+      } else {
+        ptr_ty = alloc->getAllocatedType();
+      }
     else if (auto *gv = llvm::dyn_cast<llvm::GlobalVariable>(val))
       ptr_ty = gv->getValueType();
-    else if (auto *gep = llvm::dyn_cast<llvm::GEPOperator>(val))
+    else if (stmt->origin->is<ExternalPtrStmt>()) {
+      ptr_ty = tlctx->get_data_type(stmt->origin->ret_type.ptr_removed());
+    } else if (auto *gep = llvm::dyn_cast<llvm::GEPOperator>(val))
       ptr_ty = gep->getResultElementType();
     else if (stmt->origin->is<GlobalTemporaryStmt>()) {
-      auto *tmpo_stmt = stmt->origin->cast<GlobalTemporaryStmt>();
-      if (tmpo_stmt->ret_type->is<TensorType>()) {
-        ptr_ty = tlctx->get_data_type(
-            tmpo_stmt->ret_type->cast<TensorType>()->get_element_type());
+      if (stmt->origin->ret_type.ptr_removed()->is<TensorType>()) {
+        ptr_ty = tlctx->get_data_type(stmt->origin->ret_type.ptr_removed()
+                                          ->cast<TensorType>()
+                                          ->get_element_type());
+        lhs =
+            builder->CreatePointerCast(lhs, llvm::PointerType::get(ptr_ty, 0));
       } else {
-        ptr_ty = tlctx->get_data_type(tmpo_stmt->ret_type.ptr_removed());
+        ptr_ty = tlctx->get_data_type(stmt->origin->ret_type.ptr_removed());
       }
     }
     TI_ASSERT(ptr_ty);
 
-    llvm_val[stmt] = builder->CreateGEP(ptr_ty, llvm_val[stmt->origin],
-                                        llvm_val[stmt->offset]);
+    if (stmt->tensor_type_represented_as_primitive_type_ptr()) {
+      llvm_val[stmt] = builder->CreateGEP(ptr_ty, lhs, llvm_val[stmt->offset]);
+    } else {
+      llvm_val[stmt] =
+          builder->CreateGEP(ptr_ty, llvm_val[stmt->origin],
+                             {tlctx->get_constant(0), llvm_val[stmt->offset]});
+    }
 #else
-    llvm_val[stmt] =
-        builder->CreateGEP(llvm_val[stmt->origin], llvm_val[stmt->offset]);
+    /*
+        You might have wondered why there's no leading "ConstIntType(0)" in the
+       indices, as you always see "indices = { ConstIntType(0),
+       llvm_val[offsets]...} for most of the GEPs.
+
+        This is because we used AllocaInst with "ArraySize" argument, which will
+       return a pointer to the "PrimitiveType" instead of a pointer to an array
+       of PrimitiveTypes.
+
+        https://llvm.org/doxygen/classllvm_1_1AllocaInst.html#ac68a7586b8be7de3c39531d9eca902e6
+    */
+    if (stmt->tensor_type_represented_as_primitive_type_ptr()) {
+      auto element_type = stmt->origin->ret_type.ptr_removed()
+                              ->as<TensorType>()
+                              ->get_element_type();
+      auto element_ptr =
+          llvm::PointerType::get(tlctx->get_data_type(element_type), 0);
+      auto val =
+          builder->CreatePointerCast(llvm_val[stmt->origin], element_ptr);
+      llvm_val[stmt] = builder->CreateGEP(val, llvm_val[stmt->offset]);
+    } else {
+      llvm_val[stmt] =
+          builder->CreateGEP(llvm_val[stmt->origin],
+                             {tlctx->get_constant(0), llvm_val[stmt->offset]});
+    }
 #endif
   } else {
+    // Access PtrOffset via: base_ptr + offset
     auto origin_address = builder->CreatePtrToInt(
         llvm_val[stmt->origin], llvm::Type::getInt64Ty(*llvm_context));
     auto address_offset = builder->CreateSExt(
@@ -1771,44 +1811,98 @@ void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
   auto arg_id = argload->arg_id;
   int num_indices = stmt->indices.size();
   std::vector<llvm::Value *> sizes(num_indices);
-  const auto &element_shape = stmt->element_shape;
+  auto dt = stmt->ret_type.ptr_removed();
+  int num_element_indices =
+      dt->is<TensorType>() ? 0 : stmt->element_shape.size();
   const auto layout = stmt->element_dim <= 0 ? ExternalArrayLayout::kAOS
                                              : ExternalArrayLayout::kSOA;
-  const size_t element_shape_index_offset =
-      (layout == ExternalArrayLayout::kAOS) ? num_indices - element_shape.size()
-                                            : 0;
 
-  for (int i = 0; i < num_indices - element_shape.size(); i++) {
+  /*
+    ExternalPtrStmt can be divided into "outter" and "inner" parts.
+
+    For example, "x" is an Ndarray with shape = (5, 5, 6), m=2, n=3.
+    Indexing to a single element of "x" is of form: x[i, j, k][m, n]
+
+    The "outter" part is x[i, j, k], and the "inner" part is [m, n].
+    Shape of the inner part is known at compile time, stored in its ret_type.
+    Shape of the outter part is determined at runtime, passed from the
+    "extra_args".
+
+    "num_indices - num_element_indices" gives how many "extra_args" to read from
+  */
+  int num_array_args = num_indices - num_element_indices;
+  const size_t element_shape_index_offset =
+      (layout == ExternalArrayLayout::kAOS) ? num_array_args : 0;
+
+  for (int i = 0; i < num_array_args; i++) {
     auto raw_arg = create_call(
         "RuntimeContext_get_extra_args",
         {get_context(), tlctx->get_constant(arg_id), tlctx->get_constant(i)});
     sizes[i] = raw_arg;
   }
 
-  auto dt = stmt->ret_type.ptr_removed();
-  auto base_ty = tlctx->get_data_type(dt);
-  auto base = builder->CreateBitCast(llvm_val[stmt->base_ptr],
-                                     llvm::PointerType::get(base_ty, 0));
-
   auto linear_index = tlctx->get_constant(0);
   size_t size_var_index = 0;
   for (int i = 0; i < num_indices; i++) {
     if (i >= element_shape_index_offset &&
-        i < element_shape_index_offset + element_shape.size()) {
-      llvm::Value *size_var =
-          tlctx->get_constant(element_shape[i - element_shape_index_offset]);
+        i < element_shape_index_offset + num_element_indices) {
+      // Indexing TensorType-elements
+      llvm::Value *size_var = tlctx->get_constant(
+          stmt->element_shape[i - element_shape_index_offset]);
       linear_index = builder->CreateMul(linear_index, size_var);
     } else {
+      // Indexing array dimensions
       linear_index = builder->CreateMul(linear_index, sizes[size_var_index++]);
     }
     linear_index = builder->CreateAdd(linear_index, llvm_val[stmt->indices[i]]);
   }
-  TI_ASSERT(size_var_index == num_indices - element_shape.size())
-  llvm_val[stmt] = builder->CreateGEP(
+  TI_ASSERT(size_var_index == num_indices - num_element_indices);
+
+  /*
+    llvm::GEP implicitly indicates alignment when used upon llvm::VectorType.
+    For example:
+
+      "getelementptr <10 x i32>* %1, 0, 1" is interpreted as "%1 + 16(aligned)"
+
+    However, this does not fit with Taichi's Ndarray semantics. We will have to
+    do pointer arithmetics to manually calculate the offset.
+  */
+  DataType operand_dtype = argload->ret_type.ptr_removed();
+  if (operand_dtype->is<TensorType>()) {
+    // Access PtrOffset via: base_ptr + offset * sizeof(element)
+    auto primitive_type = operand_dtype.get_element_type();
+    auto primitive_ptr = builder->CreateBitCast(
+        llvm_val[stmt->base_ptr],
+        llvm::PointerType::get(tlctx->get_data_type(primitive_type), 0));
+
+    auto address_offset = builder->CreateSExt(
+        linear_index, llvm::Type::getInt64Ty(*llvm_context));
+
+    auto offset = builder->CreateMul(
+        address_offset,
+        tlctx->get_constant(
+            get_data_type<int64>(),
+            operand_dtype->cast<TensorType>()->get_num_elements()));
+
+    auto ret_ptr = builder->CreateGEP(
 #ifdef TI_LLVM_15
-      base_ty,
+        tlctx->get_data_type(primitive_type),
 #endif
-      base, linear_index);
+        primitive_ptr, offset);
+    llvm_val[stmt] = builder->CreateBitCast(
+        ret_ptr, llvm::PointerType::get(tlctx->get_data_type(dt), 0));
+
+  } else {
+    auto base_ty = tlctx->get_data_type(dt);
+    auto base = builder->CreateBitCast(llvm_val[stmt->base_ptr],
+                                       llvm::PointerType::get(base_ty, 0));
+
+    llvm_val[stmt] = builder->CreateGEP(
+#ifdef TI_LLVM_15
+        base_ty,
+#endif
+        base, linear_index);
+  }
 }
 
 void TaskCodeGenLLVM::visit(ExternalTensorShapeAlongAxisStmt *stmt) {
@@ -1887,26 +1981,24 @@ std::tuple<llvm::Value *, llvm::Value *> TaskCodeGenLLVM::get_range_for_bounds(
   if (stmt->const_begin) {
     begin = tlctx->get_constant(stmt->begin_value);
   } else {
-    auto begin_stmt = Stmt::make<GlobalTemporaryStmt>(
-        stmt->begin_offset,
-        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32));
+    auto begin_stmt =
+        Stmt::make<GlobalTemporaryStmt>(stmt->begin_offset, PrimitiveType::i32);
     begin_stmt->accept(this);
     begin = builder->CreateLoad(
 #ifdef TI_LLVM_15
-        llvm_type(PrimitiveType::i32),
+        tlctx->get_data_type(PrimitiveType::i32),
 #endif
         llvm_val[begin_stmt.get()]);
   }
   if (stmt->const_end) {
     end = tlctx->get_constant(stmt->end_value);
   } else {
-    auto end_stmt = Stmt::make<GlobalTemporaryStmt>(
-        stmt->end_offset,
-        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32));
+    auto end_stmt =
+        Stmt::make<GlobalTemporaryStmt>(stmt->end_offset, PrimitiveType::i32);
     end_stmt->accept(this);
     end = builder->CreateLoad(
 #ifdef TI_LLVM_15
-        llvm_type(PrimitiveType::i32),
+        tlctx->get_data_type(PrimitiveType::i32),
 #endif
         llvm_val[end_stmt.get()]);
   }
@@ -1996,7 +2088,8 @@ void TaskCodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt,
         create_entry_block_alloca(physical_coordinate_ty);
 
     auto refine =
-        get_runtime_function(leaf_block->refine_coordinates_func_name());
+        get_struct_function(leaf_block->refine_coordinates_func_name(),
+                            leaf_block->get_snode_tree_id());
     // A block corner is the global coordinate/index of the lower-left corner
     // cell within that block, and is the same for all the cells within that
     // block.
@@ -2075,8 +2168,8 @@ void TaskCodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt,
     // needed to make final coordinates non-consecutive, since each thread will
     // process multiple coordinates via vectorization
     if (stmt->is_bit_vectorized) {
-      refine =
-          get_runtime_function(stmt->snode->refine_coordinates_func_name());
+      refine = get_struct_function(stmt->snode->refine_coordinates_func_name(),
+                                   stmt->snode->get_snode_tree_id());
       create_call(refine,
                   {new_coordinates, new_coordinates, tlctx->get_constant(0)});
     }
@@ -2163,63 +2256,14 @@ void TaskCodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt,
   auto struct_for_func = get_runtime_function("parallel_struct_for");
 
   if (arch_is_gpu(current_arch())) {
-    // Note that on CUDA local array allocation must have a compile-time
-    // constant size. Therefore, instead of passing in the tls_buffer_size
-    // argument, we directly clone the "parallel_struct_for" function and
-    // replace the "alignas(8) char tls_buffer[1]" statement with "alignas(8)
-    // char tls_buffer[tls_buffer_size]" at compile time.
-
-    auto value_map = llvm::ValueToValueMapTy();
-    auto patched_struct_for_func =
-        llvm::CloneFunction(struct_for_func, value_map);
-
-    int num_found_alloca = 0;
-    llvm::AllocaInst *alloca = nullptr;
-
-    auto char_type = llvm::Type::getInt8Ty(*llvm_context);
-
-    // Find the "1" in "char tls_buffer[1]" and replace it with
-    // "tls_buffer_size"
-    for (auto &bb : *patched_struct_for_func) {
-      for (llvm::Instruction &inst : bb) {
-        auto now_alloca = llvm::dyn_cast<AllocaInst>(&inst);
-        if (!now_alloca ||
-#ifdef TI_LLVM_15
-            now_alloca->getAlign().value() != 8
-#else
-            now_alloca->getAlignment() != 8
-#endif
-        )
-          continue;
-        auto alloca_type = now_alloca->getAllocatedType();
-        // Allocated type should be array [1 x i8]
-        if (alloca_type->isArrayTy() &&
-            alloca_type->getArrayNumElements() == 1 &&
-            alloca_type->getArrayElementType() == char_type) {
-          alloca = now_alloca;
-          num_found_alloca++;
-        }
-      }
-    }
-    // There should be **exactly** one replacement.
-    TI_ASSERT(num_found_alloca == 1 && alloca);
-    auto new_type = llvm::ArrayType::get(char_type, stmt->tls_size);
-    {
-      llvm::IRBuilderBase::InsertPointGuard guard(*builder);
-      builder->SetInsertPoint(alloca);
-      auto *new_alloca = builder->CreateAlloca(new_type);
-      new_alloca->setAlignment(Align(8));
-      TI_ASSERT(alloca->hasOneUse());
-      auto *gep = llvm::cast<llvm::GetElementPtrInst>(alloca->user_back());
-      TI_ASSERT(gep->getPointerOperand() == alloca);
-      std::vector<Value *> indices(gep->idx_begin(), gep->idx_end());
-      builder->SetInsertPoint(gep);
-      auto *new_gep = builder->CreateInBoundsGEP(new_type, new_alloca, indices);
-      gep->replaceAllUsesWith(new_gep);
-      gep->eraseFromParent();
-      alloca->eraseFromParent();
-    }
-    struct_for_func = patched_struct_for_func;
+    struct_for_func = llvm::cast<llvm::Function>(
+        module
+            ->getOrInsertFunction(
+                tlctx->get_struct_for_func_name(stmt->tls_size),
+                struct_for_func->getFunctionType(),
+                struct_for_func->getAttributes())
+            .getCallee());
+    struct_for_tls_sizes.insert(stmt->tls_size);
   }
   // Loop over nodes in the element list, in parallel
   create_call(
@@ -2319,7 +2363,7 @@ void TaskCodeGenLLVM::visit(GlobalTemporaryStmt *stmt) {
   auto buffer = call("get_temporary_pointer", runtime,
                      tlctx->get_constant((int64)stmt->offset));
 
-  if (stmt->ret_type->is<TensorType>()) {
+  if (stmt->ret_type->is<TensorType>() && !prog->config.real_matrix) {
     auto ptr_type = llvm::PointerType::get(
         tlctx->get_data_type(
             stmt->ret_type->cast<TensorType>()->get_element_type()),
@@ -2618,7 +2662,7 @@ void TaskCodeGenLLVM::emit_to_module() {
   ir->accept(this);
 }
 
-LLVMCompiledData TaskCodeGenLLVM::run_compilation() {
+LLVMCompiledTask TaskCodeGenLLVM::run_compilation() {
   // Final lowering
 
   auto config = kernel->program->config;
@@ -2627,7 +2671,8 @@ LLVMCompiledData TaskCodeGenLLVM::run_compilation() {
   emit_to_module();
   eliminate_unused_functions();
 
-  return {std::move(this->offloaded_tasks), std::move(this->module)};
+  return {std::move(offloaded_tasks), std::move(module),
+          std::move(used_tree_ids), std::move(struct_for_tls_sizes)};
 }
 
 llvm::Value *TaskCodeGenLLVM::create_xlogue(std::unique_ptr<Block> &block) {
@@ -2702,7 +2747,12 @@ void TaskCodeGenLLVM::visit(FuncCallStmt *stmt) {
   }
 }
 
-LLVMCompiledData LLVMCompiledData::clone() const {
+LLVMCompiledTask LLVMCompiledTask::clone() const {
+  return {tasks, llvm::CloneModule(*module), used_tree_ids,
+          struct_for_tls_sizes};
+}
+
+LLVMCompiledKernel LLVMCompiledKernel::clone() const {
   return {tasks, llvm::CloneModule(*module)};
 }
 

@@ -51,7 +51,7 @@ class LlvmProgramImpl : public ProgramImpl {
   void materialize_snode_tree(SNodeTree *tree, uint64 *result_buffer) override;
 
   void cache_kernel(const std::string &kernel_key,
-                    const std::vector<LLVMCompiledData> &data_list,
+                    const LLVMCompiledKernel &data,
                     std::vector<LlvmLaunchArgInfo> &&args);
   ;
 
@@ -66,10 +66,6 @@ class LlvmProgramImpl : public ProgramImpl {
   }
 
  private:
-  std::unique_ptr<llvm::Module> clone_struct_compiler_initial_context(
-      bool has_multiple_snode_trees,
-      TaichiLLVMContext *tlctx);
-
   std::unique_ptr<StructCompiler> compile_snode_tree_types_impl(
       SNodeTree *tree);
 

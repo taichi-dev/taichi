@@ -66,6 +66,26 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
                                llvm::Type::getInt8PtrTy(*llvm_context)));
   }
 
+  std::tuple<llvm::Value *, llvm::Type *> create_value_and_type(
+      llvm::Value *value,
+      DataType dt) {
+    auto value_type = tlctx->get_data_type(dt);
+    if (dt->is_primitive(PrimitiveTypeID::f32) ||
+        dt->is_primitive(PrimitiveTypeID::f16)) {
+      value_type = tlctx->get_data_type(PrimitiveType::f64);
+      value = builder->CreateFPExt(value, value_type);
+    }
+    if (dt->is_primitive(PrimitiveTypeID::i8)) {
+      value_type = tlctx->get_data_type(PrimitiveType::i16);
+      value = builder->CreateSExt(value, value_type);
+    }
+    if (dt->is_primitive(PrimitiveTypeID::u8)) {
+      value_type = tlctx->get_data_type(PrimitiveType::u16);
+      value = builder->CreateZExt(value, value_type);
+    }
+    return std::make_tuple(value, value_type);
+  }
+
   void visit(PrintStmt *stmt) override {
     TI_ASSERT_INFO(stmt->contents.size() < 32,
                    "CUDA `print()` doesn't support more than 32 entries");
@@ -74,31 +94,33 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
     std::vector<llvm::Value *> values;
 
     std::string formats;
+    size_t num_contents = 0;
     for (auto const &content : stmt->contents) {
       if (std::holds_alternative<Stmt *>(content)) {
         auto arg_stmt = std::get<Stmt *>(content);
 
         formats += data_type_format(arg_stmt->ret_type);
 
-        auto value_type = tlctx->get_data_type(arg_stmt->ret_type);
         auto value = llvm_val[arg_stmt];
-        if (arg_stmt->ret_type->is_primitive(PrimitiveTypeID::f32) ||
-            arg_stmt->ret_type->is_primitive(PrimitiveTypeID::f16)) {
-          value_type = tlctx->get_data_type(PrimitiveType::f64);
-          value = builder->CreateFPExt(value, value_type);
+        if (arg_stmt->ret_type->is<TensorType>()) {
+          auto dtype = arg_stmt->ret_type->cast<TensorType>();
+          num_contents += dtype->get_num_elements();
+          auto elem_type = dtype->get_element_type();
+          for (int i = 0; i < dtype->get_num_elements(); ++i) {
+            auto elem_value = builder->CreateExtractElement(value, i);
+            auto [casted_value, elem_value_type] =
+                create_value_and_type(elem_value, elem_type);
+            types.push_back(elem_value_type);
+            values.push_back(casted_value);
+          }
+        } else {
+          num_contents++;
+          auto [val, dtype] = create_value_and_type(value, arg_stmt->ret_type);
+          types.push_back(dtype);
+          values.push_back(val);
         }
-        if (arg_stmt->ret_type->is_primitive(PrimitiveTypeID::i8)) {
-          value_type = tlctx->get_data_type(PrimitiveType::i16);
-          value = builder->CreateSExt(value, value_type);
-        }
-        if (arg_stmt->ret_type->is_primitive(PrimitiveTypeID::u8)) {
-          value_type = tlctx->get_data_type(PrimitiveType::u16);
-          value = builder->CreateZExt(value, value_type);
-        }
-
-        types.push_back(value_type);
-        values.push_back(value);
       } else {
+        num_contents += 1;
         auto arg_str = std::get<std::string>(content);
 
         auto value = builder->CreateGlobalStringPtr(arg_str, "content_string");
@@ -110,6 +132,8 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
         values.push_back(value);
         formats += "%s";
       }
+      TI_ASSERT_INFO(num_contents < 32,
+                     "CUDA `print()` doesn't support more than 32 entries");
     }
 
     llvm_val[stmt] = create_print(formats, types, values);
@@ -148,6 +172,8 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
         llvm_val[stmt] = create_call("__nv_fabs", input);
       } else if (input_taichi_type->is_primitive(PrimitiveTypeID::i32)) {
         llvm_val[stmt] = create_call("__nv_abs", input);
+      } else if (input_taichi_type->is_primitive(PrimitiveTypeID::i64)) {
+        llvm_val[stmt] = create_call("__nv_llabs", input);
       } else {
         TI_NOT_IMPLEMENTED
       }
@@ -661,14 +687,12 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
         TI_NOT_IMPLEMENTED
       }
     } else {
+      // Note that ret_type here cannot be integral because pow with an
+      // integral exponent has been demoted in the demote_operations pass
       if (ret_type->is_primitive(PrimitiveTypeID::f32)) {
         llvm_val[stmt] = create_call("__nv_powf", {lhs, rhs});
       } else if (ret_type->is_primitive(PrimitiveTypeID::f64)) {
         llvm_val[stmt] = create_call("__nv_pow", {lhs, rhs});
-      } else if (ret_type->is_primitive(PrimitiveTypeID::i32)) {
-        llvm_val[stmt] = create_call("pow_i32", {lhs, rhs});
-      } else if (ret_type->is_primitive(PrimitiveTypeID::i64)) {
-        llvm_val[stmt] = create_call("pow_i64", {lhs, rhs});
       } else {
         TI_P(data_type_name(ret_type));
         TI_NOT_IMPLEMENTED
@@ -692,99 +716,42 @@ std::unique_ptr<TaskCodeGenLLVM> KernelCodeGenCUDA::make_codegen_llvm(
 }
 #endif  // TI_WITH_LLVM
 
-LLVMCompiledData KernelCodeGenCUDA::modulegen(
+LLVMCompiledTask KernelCodeGenCUDA::compile_task(
     std::unique_ptr<llvm::Module> &&module,
     OffloadedStmt *stmt) {
   TaskCodeGenCUDA gen(kernel, stmt);
   return gen.run_compilation();
 }
 
-FunctionType KernelCodeGenCUDA::codegen() {
+FunctionType KernelCodeGenCUDA::compile_to_function() {
   TI_AUTO_PROF
-  // TODO: move the offline cache part to the base class
   auto *llvm_prog = get_llvm_program(prog);
   auto *tlctx = llvm_prog->get_llvm_context(kernel->arch);
-  auto &config = prog->config;
-  std::string kernel_key = get_hashed_offline_cache_key(&config, kernel);
-  kernel->set_kernel_key_for_cache(kernel_key);
-  if (config.offline_cache && this->supports_offline_cache() &&
-      !kernel->is_evaluator) {
-    std::vector<LLVMCompiledData> res;
-    const bool ok = maybe_read_compilation_from_cache(kernel_key, res);
-    if (ok) {
-      TI_DEBUG("Create kernel '{}' from cache (key='{}')", kernel->get_name(),
-               kernel_key);
-      cache_module(kernel_key, res);
-      CUDAModuleToFunctionConverter converter(
-          tlctx, get_llvm_program(prog)->get_runtime_executor());
-      return converter.convert(kernel, std::move(res));
-    }
-  }
-  if (!kernel->lowered()) {
-    kernel->lower(/*to_executable=*/false);
-  }
-
-  auto block = dynamic_cast<Block *>(kernel->ir.get());
-  auto &worker = get_llvm_program(kernel->program)->compilation_workers;
-  TI_ASSERT(block);
-
-  auto &offloads = block->statements;
-  std::vector<LLVMCompiledData> data(offloads.size());
-  using TaskFunc = int32 (*)(void *);
-  std::vector<TaskFunc> task_funcs(offloads.size());
-  for (int i = 0; i < offloads.size(); i++) {
-    auto compile_func = [&, i] {
-      auto offload =
-          irpass::analysis::clone(offloads[i].get(), offloads[i]->get_kernel());
-      irpass::re_id(offload.get());
-      auto new_data = this->modulegen(nullptr, offload->as<OffloadedStmt>());
-      data[i].tasks = std::move(new_data.tasks);
-      data[i].module = std::move(new_data.module);
-    };
-    if (kernel->is_evaluator) {
-      compile_func();
-    } else {
-      worker.enqueue(compile_func);
-    }
-  }
-  if (!kernel->is_evaluator) {
-    worker.flush();
-  }
-
-  if (!kernel->is_evaluator) {
-    TI_DEBUG("Cache kernel '{}' (key='{}')", kernel->get_name(), kernel_key);
-    cache_module(kernel_key, data);
-  }
 
   CUDAModuleToFunctionConverter converter{tlctx,
                                           llvm_prog->get_runtime_executor()};
 
-  return converter.convert(this->kernel, std::move(data));
+  return converter.convert(this->kernel, compile_kernel_to_module());
 }
 
 FunctionType CUDAModuleToFunctionConverter::convert(
     const std::string &kernel_name,
     const std::vector<LlvmLaunchArgInfo> &args,
-    std::vector<LLVMCompiledData> &&data) const {
+    LLVMCompiledKernel data) const {
+  auto &mod = data.module;
+  auto &tasks = data.tasks;
 #ifdef TI_WITH_CUDA
-  std::vector<JITModule *> cuda_modules;
-  std::vector<std::vector<OffloadedTask>> offloaded_tasks;
-  cuda_modules.reserve(data.size());
-  for (auto &datum : data) {
-    auto &mod = datum.module;
-    auto &tasks = datum.tasks;
-    for (const auto &task : tasks) {
-      llvm::Function *func = mod->getFunction(task.name);
-      TI_ASSERT(func);
-      tlctx_->mark_function_as_cuda_kernel(func, task.block_dim);
-    }
-    auto jit = tlctx_->jit.get();
-    cuda_modules.push_back(
-        jit->add_module(std::move(mod), executor_->get_config()->gpu_max_reg));
-    offloaded_tasks.push_back(std::move(tasks));
+  for (const auto &task : tasks) {
+    llvm::Function *func = mod->getFunction(task.name);
+    TI_ASSERT(func);
+    tlctx_->mark_function_as_cuda_kernel(func, task.block_dim);
   }
 
-  return [cuda_modules, kernel_name, args, offloaded_tasks,
+  auto jit = tlctx_->jit.get();
+  auto cuda_module =
+      jit->add_module(std::move(mod), executor_->get_config()->gpu_max_reg);
+
+  return [cuda_module, kernel_name, args, offloaded_tasks = tasks,
           executor = this->executor_](RuntimeContext &context) {
     CUDAContext::get_instance().make_current();
     std::vector<void *> arg_buffers(args.size(), nullptr);
@@ -848,13 +815,11 @@ FunctionType CUDAModuleToFunctionConverter::convert(
       CUDADriver::get_instance().stream_synchronize(nullptr);
     }
 
-    for (int i = 0; i < offloaded_tasks.size(); i++) {
-      for (auto &task : offloaded_tasks[i]) {
-        TI_TRACE("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
-                 task.block_dim);
-        cuda_modules[i]->launch(task.name, task.grid_dim, task.block_dim, 0,
-                                {&context});
-      }
+    for (auto task : offloaded_tasks) {
+      TI_TRACE("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
+               task.block_dim);
+      cuda_module->launch(task.name, task.grid_dim, task.block_dim, 0,
+                          {&context});
     }
 
     // copy data back to host

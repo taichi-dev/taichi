@@ -11,6 +11,7 @@
 #include "taichi/program/compile_config.h"
 #include "taichi/struct/snode_tree.h"
 #include "taichi/program/snode_expr_utils.h"
+#include "taichi/program/program_impl.h"
 
 namespace taichi {
 namespace lang {
@@ -123,6 +124,10 @@ class TI_DLL_EXPORT GfxRuntime {
   DeviceAllocation *get_root_buffer(int id) const;
 
   size_t get_root_buffer_size(int id) const;
+
+  void enqueue_compute_op_lambda(
+      std::function<void(Device *device, CommandList *cmdlist)> op,
+      const std::vector<ComputeOpImageRef> &image_refs);
 
  private:
   friend class taichi::lang::gfx::SNodeTreeManager;

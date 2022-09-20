@@ -17,9 +17,6 @@ namespace vulkan {
 
 namespace {
 
-// FIXME: NDEBUG is broken, so just manually enable this if necessary.
-constexpr bool kEnableValidationLayers = false;
-
 const std::vector<const char *> kValidationLayers = {
     "VK_LAYER_KHRONOS_validation",
 };
@@ -49,7 +46,16 @@ vk_debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
                   const VkDebugUtilsMessengerCallbackDataEXT *p_callback_data,
                   void *p_user_data) {
   if (message_severity > VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT) {
-    TI_WARN("validation layer: {}", p_callback_data->pMessage);
+    TI_WARN("validation layer: {}, {}", message_type,
+            p_callback_data->pMessage);
+  }
+  if (message_type == VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT &&
+      message_severity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT &&
+      strstr(p_callback_data->pMessage, "DEBUG-PRINTF") != NULL) {
+    // Message format is "BLABLA | MessageID=xxxxx | <DEBUG_PRINT_MSG>"
+    std::string msg(p_callback_data->pMessage);
+    auto const pos = msg.find_last_of("|");
+    std::cout << msg.substr(pos + 2);
   }
   return VK_FALSE;
 }
@@ -59,6 +65,7 @@ void populate_debug_messenger_create_info(
   *create_info = {};
   create_info->sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
   create_info->messageSeverity =
+      VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
       VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
       VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
       VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
@@ -94,9 +101,9 @@ void destroy_debug_utils_messenger_ext(
   }
 }
 
-std::vector<const char *> get_required_extensions() {
+std::vector<const char *> get_required_extensions(bool enable_validation) {
   std::vector<const char *> extensions;
-  if constexpr (kEnableValidationLayers) {
+  if (enable_validation) {
     extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
   }
   return extensions;
@@ -237,7 +244,7 @@ VulkanDeviceCreator::~VulkanDeviceCreator() {
   if (surface_ != VK_NULL_HANDLE) {
     vkDestroySurfaceKHR(instance_, surface_, kNoVkAllocCallbacks);
   }
-  if constexpr (kEnableValidationLayers) {
+  if (params_.enable_validation_layer) {
     destroy_debug_utils_messenger_ext(instance_, debug_messenger_,
                                       kNoVkAllocCallbacks);
   }
@@ -258,14 +265,16 @@ void VulkanDeviceCreator::create_instance(bool manual_create) {
   create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
   create_info.pApplicationInfo = &app_info;
 
-  if constexpr (kEnableValidationLayers) {
-    TI_ASSERT_INFO(check_validation_layer_support(),
-                   "validation layers requested but not available");
+  if (params_.enable_validation_layer) {
+    if (!check_validation_layer_support()) {
+      TI_WARN("validation layers requested but not available, turning off...");
+      params_.enable_validation_layer = false;
+    }
   }
 
   VkDebugUtilsMessengerCreateInfoEXT debug_create_info{};
 
-  if constexpr (kEnableValidationLayers) {
+  if (params_.enable_validation_layer) {
     create_info.enabledLayerCount = (uint32_t)kValidationLayers.size();
     create_info.ppEnabledLayerNames = kValidationLayers.data();
 
@@ -276,8 +285,21 @@ void VulkanDeviceCreator::create_instance(bool manual_create) {
     create_info.pNext = nullptr;
   }
 
+  // Response to `DebugPrintf`.
+  VkValidationFeaturesEXT vf = {};
+  if (params_.enable_validation_layer) {
+    std::array<VkValidationFeatureEnableEXT, 1> vfes = {
+        VK_VALIDATION_FEATURE_ENABLE_DEBUG_PRINTF_EXT};
+
+    vf.sType = VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT;
+    vf.pNext = create_info.pNext;
+    vf.enabledValidationFeatureCount = vfes.size();
+    vf.pEnabledValidationFeatures = vfes.data();
+    create_info.pNext = &vf;
+  }
+
   std::unordered_set<std::string> extensions;
-  for (auto ext : get_required_extensions()) {
+  for (auto ext : get_required_extensions(params_.enable_validation_layer)) {
     extensions.insert(std::string(ext));
   }
   for (auto ext : params_.additional_instance_extensions) {
@@ -285,10 +307,9 @@ void VulkanDeviceCreator::create_instance(bool manual_create) {
   }
 
   uint32_t num_instance_extensions = 0;
-  if (!manual_create) {
-    vkEnumerateInstanceExtensionProperties(nullptr, &num_instance_extensions,
-                                           nullptr);
-  }
+  // FIXME: (penguinliong) This was NOT called when `manual_create` is true.
+  vkEnumerateInstanceExtensionProperties(nullptr, &num_instance_extensions,
+                                         nullptr);
   std::vector<VkExtensionProperties> supported_extensions(
       num_instance_extensions);
   vkEnumerateInstanceExtensionProperties(nullptr, &num_instance_extensions,
@@ -340,7 +361,7 @@ void VulkanDeviceCreator::create_instance(bool manual_create) {
 }
 
 void VulkanDeviceCreator::setup_debug_messenger() {
-  if constexpr (!kEnableValidationLayers) {
+  if (!params_.enable_validation_layer) {
     return;
   }
   VkDebugUtilsMessengerCreateInfoEXT create_info{};
@@ -464,10 +485,9 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
   std::vector<const char *> enabled_extensions;
 
   uint32_t extension_count = 0;
-  if (!manual_create) {
-    vkEnumerateDeviceExtensionProperties(physical_device_, nullptr,
-                                         &extension_count, nullptr);
-  }
+  // FIXME: (penguinliong) This was NOT called when `manual_create` is true.
+  vkEnumerateDeviceExtensionProperties(physical_device_, nullptr,
+                                       &extension_count, nullptr);
   std::vector<VkExtensionProperties> extension_properties(extension_count);
   vkEnumerateDeviceExtensionProperties(
       physical_device_, nullptr, &extension_count, extension_properties.data());
@@ -519,6 +539,9 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
     } else if (name == VK_KHR_BIND_MEMORY_2_EXTENSION_NAME) {
       enabled_extensions.push_back(ext.extensionName);
     } else if (name == VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME) {
+      enabled_extensions.push_back(ext.extensionName);
+    } else if (name == VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME) {
+      ti_device_->set_cap(DeviceCapability::spirv_has_non_semantic_info, true);
       enabled_extensions.push_back(ext.extensionName);
     } else if (std::find(params_.additional_device_extensions.begin(),
                          params_.additional_device_extensions.end(),
@@ -722,7 +745,7 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
     // TODO: add atomic min/max feature
   }
 
-  if constexpr (kEnableValidationLayers) {
+  if (params_.enable_validation_layer) {
     create_info.enabledLayerCount = (uint32_t)kValidationLayers.size();
     create_info.ppEnabledLayerNames = kValidationLayers.data();
   } else {

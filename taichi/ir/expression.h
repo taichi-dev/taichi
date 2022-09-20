@@ -39,10 +39,7 @@ class Expression {
     stmt = nullptr;
   }
 
-  virtual void type_check(CompileConfig *config) {
-    // TODO: make it pure virtual after type_check for all expressions are
-    // implemented
-  }
+  virtual void type_check(CompileConfig *config) = 0;
 
   virtual void accept(ExpressionVisitor *visitor) = 0;
 
@@ -56,12 +53,6 @@ class Expression {
 
   virtual ~Expression() {
   }
-
-  void set_attribute(const std::string &key, const std::string &value) {
-    attributes[key] = value;
-  }
-
-  std::string get_attribute(const std::string &key) const;
 };
 
 class ExprGroup {

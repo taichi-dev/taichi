@@ -5,6 +5,7 @@
 #include "taichi/runtime/gfx/aot_module_builder_impl.h"
 #include "taichi/runtime/gfx/snode_tree_manager.h"
 #include "taichi/runtime/gfx/aot_module_loader_impl.h"
+#include "taichi/util/offline_cache.h"
 
 #if !defined(ANDROID)
 #include "GLFW/glfw3.h"
@@ -129,6 +130,11 @@ void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
     int32_t patch = std::atoll(config->vk_api_version.c_str() + idot2 + 1);
     evd_params.api_version = VK_MAKE_API_VERSION(0, major, minor, patch);
   }
+
+  if (config->debug) {
+    TI_WARN("Enabling vulkan validation layer in debug mode");
+    evd_params.enable_validation_layer = true;
+  }
 #if !defined(ANDROID)
   if (glfw_window) {
     // then we should be able to create a device with graphics abilities
@@ -206,10 +212,19 @@ std::unique_ptr<aot::Kernel> VulkanProgramImpl::make_aot_kernel(
                                            std::move(params));
 }
 
+void VulkanProgramImpl::enqueue_compute_op_lambda(
+    std::function<void(Device *device, CommandList *cmdlist)> op,
+    const std::vector<ComputeOpImageRef> &image_refs) {
+  vulkan_runtime_->enqueue_compute_op_lambda(op, image_refs);
+}
+
 void VulkanProgramImpl::dump_cache_data_to_disk() {
-  if (offline_cache::enabled_wip_offline_cache(config->offline_cache)) {
-    get_cache_manager()->dump_with_merging();
-  }
+  const auto &mgr = get_cache_manager();
+  mgr->clean_offline_cache(offline_cache::string_to_clean_cache_policy(
+                               config->offline_cache_cleaning_policy),
+                           config->offline_cache_max_size_of_files,
+                           config->offline_cache_cleaning_factor);
+  mgr->dump_with_merging();
 }
 
 const std::unique_ptr<gfx::CacheManager>

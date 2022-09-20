@@ -145,12 +145,12 @@ class SNode {
   // Whether the path from root to |this| contains only `dense` SNodes.
   bool is_path_all_dense{true};
 
-  SNode(SNodeGlobalVarExprMap *snode_to_glb_var_exprs = nullptr,
+  SNode(SNodeFieldMap *snode_to_fields = nullptr,
         SNodeRwAccessorsBank *snode_rw_accessors_bank = nullptr);
 
   SNode(int depth,
         SNodeType t,
-        SNodeGlobalVarExprMap *snode_to_glb_var_exprs = nullptr,
+        SNodeFieldMap *snode_to_fields = nullptr,
         SNodeRwAccessorsBank *snode_rw_accessors_bank = nullptr);
 
   SNode(const SNode &);
@@ -329,7 +329,7 @@ class SNode {
   int shape_along_axis(int i) const;
 
   void place(Expr &expr, const std::vector<int> &offset, int id_in_bit_struct) {
-    place_child(&expr, offset, id_in_bit_struct, this, snode_to_glb_var_exprs_);
+    place_child(&expr, offset, id_in_bit_struct, this, snode_to_fields_);
   }
 
   void lazy_grad();
@@ -360,7 +360,7 @@ class SNode {
 
  private:
   int snode_tree_id_{0};
-  SNodeGlobalVarExprMap *snode_to_glb_var_exprs_{nullptr};
+  SNodeFieldMap *snode_to_fields_{nullptr};
   SNodeRwAccessorsBank *snode_rw_accessors_bank_{nullptr};
 };
 

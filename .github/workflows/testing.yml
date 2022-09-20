@@ -219,7 +219,7 @@ jobs:
             python: 3.7
             with_cc: OFF
             with_cpp_tests: ON
-            wanted_archs: 'cpu'
+            wanted_archs: 'cpu,vulkan'
     runs-on:
     - self-hosted
     - ${{ matrix.os }}
@@ -405,7 +405,7 @@ jobs:
             --gpus 'all,"capabilities=graphics,utility,display,video,compute"' \
             -v /tmp/.X11-unix:/tmp/.X11-unix \
             -e PY -e GPU_BUILD -e PROJECT_NAME -e TAICHI_CMAKE_ARGS -e DISPLAY \
-            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.3 \
+            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
             /home/dev/taichi/.github/workflows/scripts/unix_build.sh
           # A tarball is needed because sccache needs some permissions that only the file owner has.
           # 1000 is the uid and gid of user "dev" in the container.
@@ -420,7 +420,7 @@ jobs:
           PY: py38
           GPU_BUILD: ON
           PROJECT_NAME: taichi
-          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_WITH_C_API=ON -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
       - name: Test
         id: test
@@ -444,7 +444,7 @@ jobs:
             -e TI_LITE_TEST \
             -e TI_TEST_OFFLINE_CACHE \
             -e DISPLAY -e PY -e GPU_TEST -e TI_WANTED_ARCHS -e TI_RUN_RELEASE_TESTS \
-             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.3 \
+             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
              /home/dev/unix_test.sh
           docker cp .github/workflows/scripts/unix_test.sh taichi_test:/home/dev/unix_test.sh
           docker cp .github/workflows/scripts/common-utils.sh taichi_test:/home/dev/common-utils.sh
@@ -484,15 +484,17 @@ jobs:
           - os: windows-2019
             llvmVer : '15'
             archs: "cuda"
+            runsOn: [self-hosted, windows, cuda]
           - os: windows-2019
             llvmVer : '10'
             archs: "cuda,opengl"
-    runs-on: [self-hosted, windows, gpu]
+            runsOn: [self-hosted, windows, cuda, OpenGL]
+    runs-on: ${{ matrix.runsOn }}
     timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 180 }}
     steps:
       # See also https://github.com/taichi-dev/taichi/issues/4161
       - name: Cleanup
-        shell: powershell
+        shell: pwsh
         run: |
           remove-item '${{ github.workspace }}\*' -recurse -force
 
@@ -518,16 +520,16 @@ jobs:
             ccache-win64-
 
       - name: Build
-        shell: powershell
+        shell: pwsh
         if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
           .\.github\workflows\scripts\win_build.ps1  -llvmVer ${{ matrix.llvmVer }} -installVulkan -install -libsDir C:\
         env:
-          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_DX11:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON
+          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_DX11:BOOL=ON -DTI_WITH_CC:BOOL=OFF -DTI_WITH_C_API=ON -DTI_BUILD_TESTS:BOOL=ON
 
       - name: Test
         id: test
-        shell: powershell
+        shell: pwsh
         if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
           .\.github\workflows\scripts\win_test.ps1
@@ -583,7 +585,7 @@ jobs:
           brew install molten-vk
           .github/workflows/scripts/unix_build.sh
         env:
-          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+          TAICHI_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_CC:BOOL=OFF -DTI_WITH_VULKAN:BOOL=ON -DTI_WITH_C_API=ON -DTI_BUILD_TESTS:BOOL=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           PY: ${{ matrix.python }}
           CXX: clang++
 
@@ -669,7 +671,7 @@ jobs:
           docker run --user dev --name taichi_build_host \
             $DOCKER_RUN_ARGS \
             -v $TAICHI_WHEEL_DIR:/home/dev/taichi/dist \
-            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.3 \
+            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
             /home/dev/taichi/.github/workflows/scripts/unix-build-v2.sh
         env:
           TAICHI_CMAKE_ARGS: >-

@@ -441,8 +441,10 @@ typedef struct cusparseContext *cusparseHandle_t;
 struct cusparseMatDescr;
 typedef struct cusparseMatDescr *cusparseMatDescr_t;
 
+struct cusparseSpVecDescr;
 struct cusparseDnVecDescr;
 struct cusparseSpMatDescr;
+typedef struct cusparseSpVecDescr *cusparseSpVecDescr_t;
 typedef struct cusparseDnVecDescr *cusparseDnVecDescr_t;
 typedef struct cusparseSpMatDescr *cusparseSpMatDescr_t;
 
@@ -523,6 +525,11 @@ typedef enum {
 } cusparseAction_t;
 
 typedef enum {
+    CUSPARSE_CSR2CSC_ALG1 = 1, // faster than V2 (in general), deterministc
+    CUSPARSE_CSR2CSC_ALG2 = 2  // low memory requirement, non-deterministc
+} cusparseCsr2CscAlg_t;
+
+typedef enum {
   CUSPARSE_MATRIX_TYPE_GENERAL = 0,
   CUSPARSE_MATRIX_TYPE_SYMMETRIC = 1,
   CUSPARSE_MATRIX_TYPE_HERMITIAN = 2,
@@ -530,9 +537,22 @@ typedef enum {
 } cusparseMatrixType_t;
 
 typedef enum {
-    CUSPARSE_CSR2CSC_ALG1 = 1, // faster than V2 (in general), deterministc
-    CUSPARSE_CSR2CSC_ALG2 = 2  // low memory requirement, non-deterministc
-} cusparseCsr2CscAlg_t;
+  CUSPARSE_FILL_MODE_LOWER = 0,
+  CUSPARSE_FILL_MODE_UPPER = 1
+} cusparseFillMode_t;
 
+typedef enum {
+  CUSPARSE_DIAG_TYPE_NON_UNIT = 0,
+  CUSPARSE_DIAG_TYPE_UNIT = 1
+} cusparseDiagType_t;
 
+// copy from cusolver.h
+typedef enum libraryPropertyType_t {
+  MAJOR_VERSION,
+  MINOR_VERSION,
+  PATCH_LEVEL
+} libraryPropertyType;
+
+struct cusolverSpContext;
+typedef struct cusolverSpContext *cusolverSpHandle_t;
 #endif

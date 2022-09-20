@@ -19,12 +19,7 @@ class Function;
 class AllocaStmt : public Stmt {
  public:
   AllocaStmt(DataType type) : is_shared(false) {
-    ret_type = TypeFactory::create_vector_or_scalar_type(1, type);
-    TI_STMT_REG_FIELDS;
-  }
-
-  AllocaStmt(int width, DataType type) : is_shared(false) {
-    ret_type = TypeFactory::create_vector_or_scalar_type(width, type);
+    ret_type = type;
     TI_STMT_REG_FIELDS;
   }
 
@@ -169,7 +164,7 @@ class ArgLoadStmt : public Stmt {
 
   ArgLoadStmt(int arg_id, const DataType &dt, bool is_ptr = false)
       : arg_id(arg_id) {
-    this->ret_type = TypeFactory::create_vector_or_scalar_type(1, dt);
+    this->ret_type = dt;
     this->is_ptr = is_ptr;
     TI_STMT_REG_FIELDS;
   }
@@ -360,20 +355,49 @@ class PtrOffsetStmt : public Stmt {
 
   PtrOffsetStmt(Stmt *, Stmt *);
 
-  bool is_local_ptr() const {
-    if (origin->is<AllocaStmt>() || origin->is<GlobalTemporaryStmt>()) {
-      TI_ASSERT_INFO(origin->ret_type->is<TensorType>(),
-                     "PtrOffsetStmt can only be used for Alloca (TensorType).");
+  /* TODO(zhanlue/yi) Stop using llvm::AllocaInst with "ArraySize" argument so
+     that Alloca can return ArrayType.
+
+      Currently, AllocaStmt and GlobalTemporaryStmt uses llvm::AllocaInst with
+     "ArraySize" argument, which returns a pointer to the first element of the
+     array, instead of the array itself.
+
+      We would like to refactor this behaviour because:
+      1. It drops the array type information.
+      2. Causes crash on AMDGPU backend in certain circumstances.
+
+      https://llvm.org/doxygen/classllvm_1_1AllocaInst.html#ac68a7586b8be7de3c39531d9eca902e6
+  */
+  bool tensor_type_represented_as_primitive_type_ptr() const {
+    if (origin->ret_type.ptr_removed()->is<TensorType>()) {
+      if (origin->is<AllocaStmt>() || origin->is<GlobalTemporaryStmt>()) {
+        return true;
+      }
     }
-    return origin->is<AllocaStmt>() || origin->is<GlobalTemporaryStmt>();
+    return false;
+  }
+
+  /* TODO(zhanlue/yi): Unify semantics of offset in PrtOffsetStmt
+
+    There is a hack in PtrOffsetStmt in terms of the semantics of "offset",
+    where "offset" can be interpreted as "number of bytes" or "index" in
+    different upper-level code paths
+
+    Here we created this offset_used_as_index() function to help indentify
+    "offset"'s semantic, but in the end we should unify these two semantics.
+  */
+  bool offset_used_as_index() const {
+    if (origin->is<AllocaStmt>() || origin->is<GlobalTemporaryStmt>() ||
+        origin->is<ExternalPtrStmt>()) {
+      TI_ASSERT_INFO(origin->ret_type.ptr_removed()->is<TensorType>(),
+                     "PtrOffsetStmt can only be used for TensorType.");
+      return true;
+    }
+    return false;
   }
 
   bool is_unlowered_global_ptr() const {
     return origin->is<GlobalPtrStmt>();
-  }
-
-  bool is_lowered_global_ptr() const {
-    return !is_local_ptr() && !is_unlowered_global_ptr();
   }
 
   bool has_global_side_effect() const override {
@@ -593,16 +617,11 @@ class GlobalStoreStmt : public Stmt {
  */
 class LocalLoadStmt : public Stmt {
  public:
-  LaneAttribute<LocalAddress> src;
+  Stmt *src;
 
-  explicit LocalLoadStmt(const LaneAttribute<LocalAddress> &src) : src(src) {
+  explicit LocalLoadStmt(Stmt *src) : src(src) {
     TI_STMT_REG_FIELDS;
   }
-
-  bool same_source() const;
-  bool has_source(Stmt *alloca) const;
-
-  Stmt *previous_store_or_alloca_in_block();
 
   bool has_global_side_effect() const override {
     return false;
@@ -627,7 +646,7 @@ class LocalStoreStmt : public Stmt {
   LocalStoreStmt(Stmt *dest, Stmt *val) : dest(dest), val(val) {
     TI_ASSERT(dest->is<AllocaStmt>() ||
               (dest->is<PtrOffsetStmt>() &&
-               dest->cast<PtrOffsetStmt>()->is_local_ptr()));
+               dest->cast<PtrOffsetStmt>()->offset_used_as_index()));
     TI_STMT_REG_FIELDS;
   }
 
@@ -726,22 +745,16 @@ class PrintStmt : public Stmt {
  */
 class ConstStmt : public Stmt {
  public:
-  LaneAttribute<TypedConstant> val;
+  TypedConstant val;
 
-  explicit ConstStmt(const LaneAttribute<TypedConstant> &val) : val(val) {
-    TI_ASSERT(val.size() == 1);  // TODO: support vectorized case
-    ret_type = val[0].dt;
-    for (std::size_t i = 0; i < val.size(); i++) {
-      TI_ASSERT(val[0].dt == val[i].dt);
-    }
+  explicit ConstStmt(const TypedConstant &val) : val(val) {
+    ret_type = val.dt;
     TI_STMT_REG_FIELDS;
   }
 
   bool has_global_side_effect() const override {
     return false;
   }
-
-  std::unique_ptr<ConstStmt> copy();
 
   TI_STMT_DEF_FIELDS(ret_type, val);
   TI_DEFINE_ACCEPT_AND_CLONE
@@ -1405,8 +1418,7 @@ class InternalFuncStmt : public Stmt {
         args(args),
         with_runtime_context(with_runtime_context) {
     if (ret_type == nullptr) {
-      this->ret_type =
-          TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
+      this->ret_type = PrimitiveType::i32;
     } else {
       this->ret_type = ret_type;
     }

@@ -58,6 +58,8 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   llvm::BasicBlock *final_block;
   std::set<std::string> linked_modules;
   bool returned{false};
+  std::unordered_set<int> used_tree_ids;
+  std::unordered_set<int> struct_for_tls_sizes;
 
   std::unordered_map<const Stmt *, std::vector<llvm::Value *>> loop_vars_llvm;
 
@@ -113,9 +115,9 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
    *
    * After this call, `module` and `tasks` will be moved.
    *
-   * @return LLVMCompiledData
+   * @return LLVMCompiledTask
    */
-  virtual LLVMCompiledData run_compilation();
+  virtual LLVMCompiledTask run_compilation();
   // For debugging only
   virtual llvm::Value *create_print(std::string tag,
                                     DataType dt,
@@ -145,16 +147,19 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
                     const std::string &method,
                     const std::vector<llvm::Value *> &arguments);
 
+  llvm::Function *get_struct_function(const std::string &name, int tree_id);
+
+  template <typename... Args>
+  llvm::Value *call_struct_func(int tree_id,
+                                const std::string &func_name,
+                                Args &&...args);
+
   void create_increment(llvm::Value *ptr, llvm::Value *value);
 
   // Direct translation
   void create_naive_range_for(RangeForStmt *for_stmt);
 
   static std::string get_runtime_snode_name(SNode *snode);
-
-  llvm::Type *llvm_type(DataType dt);
-
-  llvm::Type *llvm_ptr_type(DataType dt);
 
   void visit(Block *stmt_list) override;
 

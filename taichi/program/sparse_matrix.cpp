@@ -203,11 +203,40 @@ void CuSparseMatrix::build_csr_from_coo(void *coo_row_ptr,
                                         void *coo_values_ptr,
                                         int nnz) {
 #if defined(TI_WITH_CUDA)
+  // Step 1: Sort coo first
+  cusparseHandle_t cusparse_handle = NULL;
+  CUSPARSEDriver::get_instance().cpCreate(&cusparse_handle);
+  cusparseSpVecDescr_t vec_permutation;
+  cusparseDnVecDescr_t vec_values;
+  void *d_permutation = NULL, *d_values_sorted = NULL;
+  CUDADriver::get_instance().malloc(&d_permutation, nnz * sizeof(int));
+  CUDADriver::get_instance().malloc(&d_values_sorted, nnz * sizeof(float));
+  CUSPARSEDriver::get_instance().cpCreateSpVec(
+      &vec_permutation, nnz, nnz, d_permutation, d_values_sorted,
+      CUSPARSE_INDEX_32I, CUSPARSE_INDEX_BASE_ZERO, CUDA_R_32F);
+  CUSPARSEDriver::get_instance().cpCreateDnVec(&vec_values, nnz, coo_values_ptr,
+                                               CUDA_R_32F);
+  size_t bufferSize = 0;
+  CUSPARSEDriver::get_instance().cpXcoosort_bufferSizeExt(
+      cusparse_handle, rows_, cols_, nnz, coo_row_ptr, coo_col_ptr,
+      &bufferSize);
+  void *dbuffer = NULL;
+  if (bufferSize > 0)
+    CUDADriver::get_instance().malloc(&dbuffer, bufferSize);
+  // Setup permutation vector to identity
+  CUSPARSEDriver::get_instance().cpCreateIdentityPermutation(
+      cusparse_handle, nnz, d_permutation);
+  CUSPARSEDriver::get_instance().cpXcoosortByRow(cusparse_handle, rows_, cols_,
+                                                 nnz, coo_row_ptr, coo_col_ptr,
+                                                 d_permutation, dbuffer);
+  CUSPARSEDriver::get_instance().cpGather(cusparse_handle, vec_values,
+                                          vec_permutation);
+  CUDADriver::get_instance().memcpy_device_to_device(
+      coo_values_ptr, d_values_sorted, nnz * sizeof(float));
+  // Step 2: coo to csr
   void *csr_row_offset_ptr = NULL;
   CUDADriver::get_instance().malloc(&csr_row_offset_ptr,
                                     sizeof(int) * (rows_ + 1));
-  cusparseHandle_t cusparse_handle;
-  CUSPARSEDriver::get_instance().cpCreate(&cusparse_handle);
   CUSPARSEDriver::get_instance().cpCoo2Csr(
       cusparse_handle, (void *)coo_row_ptr, nnz, rows_,
       (void *)csr_row_offset_ptr, CUSPARSE_INDEX_BASE_ZERO);
@@ -216,9 +245,14 @@ void CuSparseMatrix::build_csr_from_coo(void *coo_row_ptr,
       &matrix_, rows_, cols_, nnz, csr_row_offset_ptr, coo_col_ptr,
       coo_values_ptr, CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I,
       CUSPARSE_INDEX_BASE_ZERO, CUDA_R_32F);
+  CUSPARSEDriver::get_instance().cpDestroySpVec(vec_permutation);
+  CUSPARSEDriver::get_instance().cpDestroyDnVec(vec_values);
   CUSPARSEDriver::get_instance().cpDestroy(cusparse_handle);
-  // TODO: not sure if this array should be deleted now.
+  // TODO: free csr_row_offset_ptr
   // CUDADriver::get_instance().mem_free(csr_row_offset_ptr);
+  CUDADriver::get_instance().mem_free(d_values_sorted);
+  CUDADriver::get_instance().mem_free(d_permutation);
+  CUDADriver::get_instance().mem_free(dbuffer);
 #endif
 }
 
@@ -229,23 +263,16 @@ CuSparseMatrix::~CuSparseMatrix() {
 }
 void make_sparse_matrix_from_ndarray_cusparse(Program *prog,
                                               SparseMatrix &sm,
-                                              const Ndarray &row_indices,
-                                              const Ndarray &col_indices,
-                                              const Ndarray &values) {
+                                              const Ndarray &row_coo,
+                                              const Ndarray &col_coo,
+                                              const Ndarray &val_coo) {
 #if defined(TI_WITH_CUDA)
-  std::string sdtype = taichi::lang::data_type_name(sm.get_data_type());
-  if (!CUSPARSEDriver::get_instance().is_loaded()) {
-    bool load_success = CUSPARSEDriver::get_instance().load_cusparse();
-    if (!load_success) {
-      TI_ERROR("Failed to load cusparse library!");
-    }
-  }
-  size_t row_coo = prog->get_ndarray_data_ptr_as_int(&row_indices);
-  size_t col_coo = prog->get_ndarray_data_ptr_as_int(&col_indices);
-  size_t values_coo = prog->get_ndarray_data_ptr_as_int(&values);
-  int nnz = values.get_nelement();
-  sm.build_csr_from_coo((void *)row_coo, (void *)col_coo, (void *)values_coo,
-                        nnz);
+  size_t coo_row_ptr = prog->get_ndarray_data_ptr_as_int(&row_coo);
+  size_t coo_col_ptr = prog->get_ndarray_data_ptr_as_int(&col_coo);
+  size_t coo_val_ptr = prog->get_ndarray_data_ptr_as_int(&val_coo);
+  int nnz = val_coo.get_nelement();
+  sm.build_csr_from_coo((void *)coo_row_ptr, (void *)coo_col_ptr,
+                        (void *)coo_val_ptr, nnz);
 #endif
 }
 

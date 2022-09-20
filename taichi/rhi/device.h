@@ -11,42 +11,26 @@ namespace lang {
 
 constexpr size_t kBufferSizeEntireSize = size_t(-1);
 
+#define MAKE_ENUM_FLAGS(name)                  \
+  inline name operator|(name a, name b) {      \
+    return static_cast<name>(int(a) | int(b)); \
+  }                                            \
+  inline name operator&(name a, name b) {      \
+    return static_cast<name>(int(a) & int(b)); \
+  }                                            \
+  inline bool operator&&(name a, name b) {     \
+    return (int(a) & int(b)) != 0;             \
+  }
+
 // For backend dependent code (e.g. codegen)
 // Or the backend runtime itself
 // Capabilities are per-device
 enum class DeviceCapability : uint32_t {
-  // Vulkan Caps
-  vk_api_version,
-  vk_has_physical_features2,
-  vk_has_external_memory,
-  vk_has_surface,
-  vk_has_presentation,
-  // SPIR-V Caps
-  spirv_version,
-  spirv_has_int8,
-  spirv_has_int16,
-  spirv_has_int64,
-  spirv_has_float16,
-  spirv_has_float64,
-  spirv_has_atomic_i64,
-  spirv_has_atomic_float16,  // load, store, exchange
-  spirv_has_atomic_float16_add,
-  spirv_has_atomic_float16_minmax,
-  spirv_has_atomic_float,  // load, store, exchange
-  spirv_has_atomic_float_add,
-  spirv_has_atomic_float_minmax,
-  spirv_has_atomic_float64,  // load, store, exchange
-  spirv_has_atomic_float64_add,
-  spirv_has_atomic_float64_minmax,
-  spirv_has_variable_ptr,
-  spirv_has_physical_storage_buffer,
-  spirv_has_subgroup_basic,
-  spirv_has_subgroup_vote,
-  spirv_has_subgroup_arithmetic,
-  spirv_has_subgroup_ballot,
-  // Graphics Caps,
-  wide_lines
+#define PER_DEVICE_CAPABILITY(name) name,
+#include "taichi/inc/rhi_constants.inc.h"
+#undef PER_DEVICE_CAPABILITY
 };
+const std::string to_string(DeviceCapability c);
 
 enum class BlendOp : uint32_t { add, subtract, reverse_subtract, min, max };
 
@@ -201,7 +185,7 @@ enum class PolygonMode : int {
 
 enum class TI_DLL_EXPORT BufferFormat : uint32_t {
 #define PER_BUFFER_FORMAT(x) x,
-#include "taichi/inc/buffer_format.inc.h"
+#include "taichi/inc/rhi_constants.inc.h"
 #undef PER_BUFFER_FORMAT
 };
 
@@ -219,13 +203,13 @@ class Pipeline {
 
 enum class TI_DLL_EXPORT ImageDimension {
 #define PER_IMAGE_DIMENSION(x) x,
-#include "taichi/inc/image_dimension.inc.h"
+#include "taichi/inc/rhi_constants.inc.h"
 #undef PER_IMAGE_DIMENSION
 };
 
 enum class TI_DLL_EXPORT ImageLayout {
 #define PER_IMAGE_LAYOUT(x) x,
-#include "taichi/inc/image_layout.inc.h"
+#include "taichi/inc/rhi_constants.inc.h"
 #undef PER_IMAGE_LAYOUT
 };
 
@@ -312,9 +296,6 @@ class CommandList {
                              uint32_t start_instance = 0) {
     TI_NOT_IMPLEMENTED
   }
-  virtual void clear_color(float r, float g, float b, float a) {
-    TI_NOT_IMPLEMENTED
-  }
   virtual void set_line_width(float width) {
     TI_NOT_IMPLEMENTED
   }
@@ -374,7 +355,7 @@ class CommandList {
 
 struct PipelineSourceDesc {
   PipelineSourceType type;
-  void *data{nullptr};
+  const void *data{nullptr};
   size_t size{0};
   PipelineStageType stage{PipelineStageType::compute};
 };
@@ -387,12 +368,8 @@ enum class AllocUsage : int {
   Vertex = 4,
   Index = 8,
 };
-inline AllocUsage operator|(AllocUsage a, AllocUsage b) {
-  return static_cast<AllocUsage>(static_cast<int>(a) | static_cast<int>(b));
-}
-inline bool operator&(AllocUsage a, AllocUsage b) {
-  return static_cast<int>(a) & static_cast<int>(b);
-}
+
+MAKE_ENUM_FLAGS(AllocUsage)
 
 class StreamSemaphoreObject {
  public:
@@ -439,6 +416,11 @@ class Device {
   void clone_caps(Device &dest) const {
     for (const auto &[k, v] : caps_) {
       dest.set_cap(k, v);
+    }
+  }
+  void clone_caps(std::map<DeviceCapability, uint32_t> &dest) const {
+    for (const auto &[k, v] : caps_) {
+      dest[k] = v;
     }
   }
 
@@ -560,6 +542,7 @@ struct SurfaceConfig {
   void *window_handle{nullptr};
   uint32_t width{1};
   uint32_t height{1};
+  void *native_surface_handle{nullptr};
 };
 
 enum class ImageAllocUsage : int {

@@ -1,4 +1,5 @@
 #include "taichi/ir/ir.h"
+#include "taichi/ir/ir_builder.h"
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/visitors.h"
@@ -20,13 +21,12 @@ class DemoteOperations : public BasicStmtVisitor {
     // def bit_extract(input, begin, end):
     //   return (input >> begin) & ((1 << (end - begin)) - 1)
     VecStatement statements;
-    auto begin = statements.push_back<ConstStmt>(LaneAttribute<TypedConstant>(
-        TypedConstant(stmt->input->ret_type, stmt->bit_begin)));
+    auto begin = statements.push_back<ConstStmt>(
+        TypedConstant(stmt->input->ret_type, stmt->bit_begin));
     auto input_sar_begin = statements.push_back<BinaryOpStmt>(
         BinaryOpType::bit_sar, stmt->input, begin);
-    auto mask = statements.push_back<ConstStmt>(LaneAttribute<TypedConstant>(
-        TypedConstant(stmt->input->ret_type,
-                      (1LL << (stmt->bit_end - stmt->bit_begin)) - 1)));
+    auto mask = statements.push_back<ConstStmt>(TypedConstant(
+        stmt->input->ret_type, (1LL << (stmt->bit_end - stmt->bit_begin)) - 1));
     auto ret = statements.push_back<BinaryOpStmt>(BinaryOpType::bit_and,
                                                   input_sar_begin, mask);
     ret->ret_type = stmt->ret_type;
@@ -48,7 +48,7 @@ class DemoteOperations : public BasicStmtVisitor {
         //         r = r - 1
         //     return r
         auto ret = Stmt::make<BinaryOpStmt>(BinaryOpType::div, lhs, rhs);
-        auto zero = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(0));
+        auto zero = Stmt::make<ConstStmt>(TypedConstant(0));
         auto lhs_ltz =
             Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_lt, lhs, zero.get());
         auto rhs_ltz =
@@ -118,6 +118,68 @@ class DemoteOperations : public BasicStmtVisitor {
       modifier.insert_before(stmt, std::move(unsigned_cast));
       modifier.insert_before(stmt, std::move(shift));
       modifier.insert_before(stmt, std::move(signed_cast));
+      modifier.erase(stmt);
+    } else if (stmt->op_type == BinaryOpType::pow &&
+               is_integral(rhs->element_type())) {
+      // @ti.func
+      // def pow(lhs, rhs):
+      //     a = lhs
+      //     b = abs(rhs)
+      //     result = 1
+      //     while b > 0:
+      //         if b & 1:
+      //             result *= a
+      //         a *= a
+      //         b >>= 1
+      //     if rhs < 0:              # for real lhs
+      //         result = 1 / result  # for real lhs
+      //     return result
+      IRBuilder builder;
+      auto one_lhs = builder.get_constant(lhs->element_type(), 1);
+      auto one_rhs = builder.get_constant(rhs->element_type(), 1);
+      auto zero_rhs = builder.get_constant(rhs->element_type(), 0);
+      auto a = builder.create_local_var(lhs->element_type());
+      builder.create_local_store(a, lhs);
+      auto b = builder.create_local_var(rhs->element_type());
+      builder.create_local_store(b, builder.create_abs(rhs));
+      auto result = builder.create_local_var(lhs->element_type());
+      builder.create_local_store(result, one_lhs);
+      auto loop = builder.create_while_true();
+      {
+        auto loop_guard = builder.get_loop_guard(loop);
+        auto current_a = builder.create_local_load(a);
+        auto current_b = builder.create_local_load(b);
+        auto if_stmt =
+            builder.create_if(builder.create_cmp_le(current_b, zero_rhs));
+        {
+          auto _ = builder.get_if_guard(if_stmt, true);
+          builder.create_break();
+        }
+        auto bit_and = builder.create_and(current_b, one_rhs);
+        if_stmt = builder.create_if(builder.create_cmp_ne(bit_and, zero_rhs));
+        {
+          auto _ = builder.get_if_guard(if_stmt, true);
+          auto current_result = builder.create_local_load(result);
+          auto new_result = builder.create_mul(current_result, current_a);
+          builder.create_local_store(result, new_result);
+        }
+        auto new_a = builder.create_mul(current_a, current_a);
+        builder.create_local_store(a, new_a);
+        auto new_b = builder.create_sar(current_b, one_rhs);
+        builder.create_local_store(b, new_b);
+      }
+      if (is_real(lhs->element_type())) {
+        auto if_stmt = builder.create_if(builder.create_cmp_le(rhs, zero_rhs));
+        {
+          auto _ = builder.get_if_guard(if_stmt, true);
+          auto current_result = builder.create_local_load(result);
+          auto new_result = builder.create_div(one_lhs, current_result);
+          builder.create_local_store(result, new_result);
+        }
+      }
+      auto final_result = builder.create_local_load(result);
+      stmt->replace_usages_with(final_result);
+      modifier.insert_before(stmt, std::move(builder.extract_ir()->statements));
       modifier.erase(stmt);
     }
   }

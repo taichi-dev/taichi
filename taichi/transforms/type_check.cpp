@@ -278,7 +278,7 @@ class TypeCheck : public IRVisitor {
       error();
     if (stmt->op_type == BinaryOpType::pow &&
         (is_integral(stmt->rhs->ret_type) ||
-         is_integral(stmt->rhs->ret_type))) {
+         is_integral_tensor(stmt->rhs->ret_type))) {
       stmt->ret_type = stmt->lhs->ret_type;
       return;
     }

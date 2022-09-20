@@ -109,7 +109,7 @@ def inside_taichi_scope():
 
 ## Serial execution
 
-Taichi's automatic parallelism mechanism may lead to
+Taichi's automatic parallelization mechanism may lead to
 non-deterministic behaviors. For debugging purposes, serializing program execution may be useful to get repeatable results and diagnose data races.
 
 If you intend to run your program on CPUs, you can seralize the program by designating a single thread with `cpu_max_num_threads=1` when initiating Taichi, so that the whole program becomes deterministic. For example,
@@ -294,25 +294,19 @@ AssertionError:
 
 However, always unset `sys.tracebacklimit` and submit the full traceback messages when filing an issue with us.
 
-## Debugging Tips
+## Debugging tips
 
-Debugging a Taichi program can be hard even with the above built-in tools.
-Here we showcase some common bugs that one may encounter in a
+The above built-in tools cannot guarantee a smooth debugging experience, though. Here, we conclude some common bugs that one may encounter in a
 Taichi program.
 
 ### Static type system
 
-Python code in Taichi-scope is translated into a statically typed
-language for high performance. This means code in Taichi-scope can have
-a different behavior compared with that in Python-scope, especially when
-it comes to types.
+Taichi translates Python code into a statically typed
+language for high performance. Therefore, code in the Taichi scope may behave differently from native Python code, especially when it comes to variable types.
 
-The type of a variable is **determined at its initialization and
-never changes later**.
+In the Taichi scope, the type of a variable is **determined upon initialization and never changes later**.
 
-Although Taichi's static type system provides better performance, it
-may lead to bugs if programmers use the wrong types. For
-example:
+Although Taichi's static typing system provides better performance, it may make your program more error-prone if you fail to specify the correct types. For example:
 
 ```python
 @ti.kernel
@@ -325,15 +319,14 @@ def buggy():
 buggy()
 ```
 
-The code above shows a common bug due to misuse of Taichi's static type system.
-The Taichi compiler should show a warning like:
+The code above results in an unexpected result due to a misuse of Taichi's static typing system. The Taichi compiler should show a warning:
 
 ```
 [W 06/27/20 21:43:51.853] [type_check.cpp:visit@66] [$19] Atomic add (float32 to int32) may lose precision.
 ```
 
-This means that Taichi cannot store a `float32` result precisely to
-`int32`. The solution is to initialize `ret` as a float-point value:
+This means that Taichi cannot convert a `float32` result to
+`int32` without precision loss. The solution is to initialize `ret` as a floating-point value:
 
 ```python
 @ti.kernel
@@ -348,13 +341,9 @@ not_buggy()
 
 ### Advanced Optimization
 
-By default, Taichi runs a handful of advanced IR optimizations to make your
-Taichi kernels as performant as possible. Unfortunately, advanced
-optimization may occasionally lead to compilation errors, such as the following:
+Taichi runs a handful of advanced IR optimizations by default to make your Taichi kernels as performant as possible. However, advanced optimizations may occasionally lead to compilation errors, such as the following:
 
 `RuntimeError: [verify.cpp:basic_verify@40] stmt 8 cannot have operand 7.`
 
-You can turn off the advanced optimizations with
-`ti.init(advanced_optimization=False)` and see if it makes a difference. If
-the issue persists, please feel free to report this bug on
-[GitHub](https://github.com/taichi-dev/taichi/issues/new?labels=potential+bug&template=bug_report.md).
+You can turn off the advanced optimizations by setting
+`ti.init(advanced_optimization=False)` and see if it makes a difference. If the issue persists, please feel free to report it on [GitHub](https://github.com/taichi-dev/taichi/issues/new?labels=potential+bug&template=bug_report.md).

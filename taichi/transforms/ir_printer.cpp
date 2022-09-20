@@ -377,6 +377,30 @@ class IRPrinter : public IRVisitor {
     print("}}");
   }
 
+  void visit(MatrixOfGlobalPtrStmt *stmt) override {
+    std::string s =
+        fmt::format("{}{} = matrix of global ptr [", stmt->type_hint(), stmt->name());
+
+    for (int i = 0; i < (int)stmt->snodes.size(); i++) {
+      s += fmt::format("{}", stmt->snodes[i]->get_node_type_name_hinted());
+      if (i + 1 < (int)stmt->snodes.size()) {
+        s += ", ";
+      }
+    }
+    s += "], index [";
+    for (int i = 0; i < (int)stmt->indices.size(); i++) {
+      s += fmt::format("{}", stmt->indices[i]->name());
+      if (i + 1 < (int)stmt->indices.size()) {
+        s += ", ";
+      }
+    }
+    s += "]";
+
+    s += " activate=" + std::string(stmt->activate ? "true" : "false");
+
+    print_raw(s);
+  }
+
   void visit(GlobalPtrStmt *stmt) override {
     std::string s =
         fmt::format("{}{} = global ptr [", stmt->type_hint(), stmt->name());

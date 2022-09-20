@@ -4,8 +4,7 @@ sidebar_position: 1
 
 # Debugging
 
-Debugging a parallel program is not easy, so Taichi provides built-in
-utilities that could hopefully help you debug your Taichi program.
+Debugging a parallel program can be tricky. Taichi provides built-in utilities to help you debug your Taichi program more easily.
 
 ## Runtime `print` in Taichi scope
 
@@ -56,45 +55,11 @@ For now, `print`, when placed in the Taichi scope, can take string, scalar, vect
 
 ### Applicable backends
 
-`print` in the Taichi scope is currently supported on the CPU, CUDA, OpenGL, and Metal backends.
+`print` in the Taichi scope is currently supported on the CPU, CUDA, and Vulkan backends only.
 
 Note that `print` does not work in Graphical
 Python Shells, including IDLE and Jupyter Notebook, when the program is running on **CPU or CUDA**. This is because these
-backends print the outputs to the console instead of GUI. Choose the **OpenGL or Metal backend** if you wish to use `print` in IDLE /
-Jupyter.
-
-:::caution
-
-For the **CUDA backend**, the printed result will not show up until
-`ti.sync()` is called:
-
-```python
-import taichi as ti
-ti.init(arch=ti.cuda)
-
-@ti.kernel
-def kern():
-    print('inside kernel')
-
-print('before kernel')
-kern()
-print('after kernel')
-ti.sync()
-print('after sync')
-```
-
-The code snippet above results in:
-
-```plaintext
-before kernel
-after kernel
-inside kernel
-after sync
-```
-
-Besides, the host access or program termination implicitly invokes
-`ti.sync()`.
-:::
+backends print the outputs to the console instead of GUI.
 
 ### Comma-separated strings only
 
@@ -177,7 +142,7 @@ def test() -> ti.i32:
 print(test())
 ```
 
-It would bring about a `TaichiAssertionError` indicating that you are trying to access a field with improper indices.
+The code snippet above would raise a `TaichiAssertionError` indicating that you are trying to access a field with improper indices.
 
 ## Runtime `assert` in Taichi-scope
 

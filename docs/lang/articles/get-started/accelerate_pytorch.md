@@ -119,12 +119,12 @@ The function of the depth wise convolution operator:
 
 The following subsections take the Baseline implementations as an example to show you how to implement a depthwise convolution operator with Python, PyTorch, CUDA, and Taichi, and how they compare to each other. With Taichi, you can accelerate your ML model development with ease and get rid of the tedious low-level parallel programming.
 
-| Implementation | Readability | Performance                               |
-| -------------- | ----------- | ----------------------------------------- |
-| Python         | Excellent   | The slowest                               |
-| PyTorch        | Poor        | Slow                                      |
-| CUDA           | Poor        | Fast                                      |
-| Taichi         | Excellent   | Comparable to that of CUDA or even better |
+|  Implementation |  Readability |  Performance                               |
+| :-------------- | :----------- | :----------------------------------------- |
+| Python          | Excellent    | The slowest                                |
+| PyTorch         | Poor         | Slow                                       |
+| CUDA            | Poor         | Fast                                       |
+| Taichi          | Excellent    | Comparable to that of CUDA or even better  |
 
 ### Implement a depthwise convolution operator with Python
 

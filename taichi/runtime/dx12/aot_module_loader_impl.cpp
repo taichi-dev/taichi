@@ -44,7 +44,8 @@ class AotModuleImpl : public aot::Module {
     // read_from_binary_file(graphs_, graph_path);
   }
 
-  std::unique_ptr<aot::CompiledGraph> get_graph(const std::string &name) override {
+  std::unique_ptr<aot::CompiledGraph> get_graph(
+      const std::string &name) override {
     TI_ERROR_IF(graphs_.count(name) == 0, "Cannot find graph {}", name);
     std::vector<aot::CompiledDispatch> dispatches;
     for (auto &dispatch : graphs_[name].dispatches) {

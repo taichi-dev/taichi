@@ -83,7 +83,7 @@ ti.root.dense(ti.ij, (3, 4)).place(x)
 # or equivalently
 x = ti.field(ti.f32, shape=(3,4))
 ```
-only has one layer of `SNodeTree` below the root. See the sketch below:
+has only one `SNodeTree` layer below the root. See the sketch below:
 
 ![2D data-layout sketch](https://user-images.githubusercontent.com/2747993/190545525-305563dc-d09e-4af2-b99b-166d5c4398d0.png)
 

@@ -58,12 +58,12 @@ For now, `print`, when placed in the Taichi scope, can take string, scalar, vect
 `print` in the Taichi scope is currently supported on the CPU, CUDA, and Vulkan backends only.
 
 Note that `print` does not work in Graphical
-Python Shells, including IDLE and Jupyter Notebook, when the program is running on **CPU or CUDA**. This is because these
+Python Shells, including IDLE and Jupyter Notebook. This is because these
 backends print the outputs to the console instead of GUI.
 
 ### Comma-separated strings only
 
-Strings passed to `print` in the Taichi scope *must* be seperated by comma(s). Neither f-strings nor formatted strings can be recognized. For example:
+Strings passed to `print` in the Taichi scope *must* be comma-separated strings. Neither f-strings nor formatted strings can be recognized. For example:
 
 ```python {9-11}
 import taichi as ti

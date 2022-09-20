@@ -119,7 +119,7 @@ def advance():
 
 
 def substep():
-    with ti.ad.Tape(loss=U):
+    with ti.Tape(loss=U):
         # Kernel invocations in this scope will later contribute to partial derivatives of
         # U with respect to input variables such as x.
         compute_U(

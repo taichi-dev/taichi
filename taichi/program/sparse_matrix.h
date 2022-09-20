@@ -220,6 +220,9 @@ class CuSparseMatrix : public SparseMatrix {
   CuSparseMatrix(const CuSparseMatrix &sm)
       : SparseMatrix(sm.rows_, sm.cols_, sm.dtype_), matrix_(sm.matrix_) {
   }
+  
+  virtual ~CuSparseMatrix();
+
   friend CuSparseMatrix operator+(const CuSparseMatrix &lhs,
                                   const CuSparseMatrix &rhs) {
     return lhs.addition(rhs, 1.0, 1.0);
@@ -229,37 +232,39 @@ class CuSparseMatrix : public SparseMatrix {
                                   const CuSparseMatrix &rhs) {
     return lhs.addition(rhs, 1.0, -1.0);
   };
+
+  // TODO: Override *= 
   friend CuSparseMatrix operator*(const CuSparseMatrix &sm, float scale) {
     return sm.addition(sm, scale, 0.0);
   }
+
   friend CuSparseMatrix operator*(float scale, const CuSparseMatrix &sm) {
     return sm.addition(sm, scale, 0.0);
   }
 
-
   const CuSparseMatrix addition(const CuSparseMatrix &other,
                                 const float alpha,
                                 const float beta) const;
+
   const CuSparseMatrix matmul(const CuSparseMatrix &other) const;
+
   const CuSparseMatrix gemm(const CuSparseMatrix &other,
                                   const float alpha,
                                   const float beta) const;
+
   CuSparseMatrix transpose() const; 
 
-  virtual ~CuSparseMatrix();
   void build_csr_from_coo(void *coo_row_ptr,
                           void *coo_col_ptr,
                           void *coo_values_ptr,
                           int nnz) override;
+
   void spmv(Program *prog, const Ndarray &x, Ndarray &y);
 
   const void *get_matrix() const override {
     return &matrix_;
   };
 
-
-  void print_helper() const;
-  
   const std::string to_string() const override;
 
  private:

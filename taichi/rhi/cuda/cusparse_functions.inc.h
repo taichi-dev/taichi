@@ -19,6 +19,8 @@ PER_CUSPARSE_FUNCTION(cpCreateIdentityPermutation, cusparseCreateIdentityPermuta
 PER_CUSPARSE_FUNCTION(cpXcoosort_bufferSizeExt, cusparseXcoosort_bufferSizeExt, cusparseHandle_t,int ,int,int, void* ,void* ,void*);
 PER_CUSPARSE_FUNCTION(cpXcoosortByRow, cusparseXcoosortByRow, cusparseHandle_t,int,int,int,void* ,void* ,void* ,void*);
 PER_CUSPARSE_FUNCTION(cpGather, cusparseGather, cusparseHandle_t, cusparseDnVecDescr_t, cusparseSpVecDescr_t);
+PER_CUSPARSE_FUNCTION(cpSetPointerMode, cusparseSetPointerMode, cusparseHandle_t, cusparsePointerMode_t);
+PER_CUSPARSE_FUNCTION(cpCsrSetPointers, cusparseCsrSetPointers, cusparseSpMatDescr_t,void*, void*, void*);
 
 // cusparse dense vector description
 PER_CUSPARSE_FUNCTION(cpCreateDnVec, cusparseCreateDnVec, cusparseDnVecDescr_t*, int, void*, cudaDataType);
@@ -30,7 +32,6 @@ PER_CUSPARSE_FUNCTION(cpSpMV, cusparseSpMV, cusparseHandle_t, cusparseOperation_
 
 
 // cusparse sparse matrix-matrix operation
-PER_CUSPARSE_FUNCTION(cpSetPointerMode, cusparseSetPointerMode, cusparseHandle_t, cusparsePointerMode_t);
 PER_CUSPARSE_FUNCTION(cpScsrgeam2_bufferSizeExt, cusparseScsrgeam2_bufferSizeExt, cusparseHandle_t  ,int,int,void*,const cusparseMatDescr_t ,int, void*, void*, void*,void*,const cusparseMatDescr_t ,int, void*,void*,void*,const cusparseMatDescr_t ,void*,void*,void*,void*);
 PER_CUSPARSE_FUNCTION(cpGetSize, cusparseSpMatGetSize, cusparseSpMatDescr_t, size_t* , size_t* , size_t*);
 PER_CUSPARSE_FUNCTION(cpXcsrgeam2Nnz, cusparseXcsrgeam2Nnz, cusparseHandle_t,int,int,const cusparseMatDescr_t ,int,void*,void*,const cusparseMatDescr_t ,int,void*,void*,const cusparseMatDescr_t ,void*,void*,void*);
@@ -39,7 +40,6 @@ PER_CUSPARSE_FUNCTION(cpSpGEMM_workEstimation, cusparseSpGEMM_workEstimation, cu
 PER_CUSPARSE_FUNCTION(cpSpGEMM_compute, cusparseSpGEMM_compute, cusparseHandle_t,cusparseOperation_t,cusparseOperation_t,const void*,cusparseSpMatDescr_t,cusparseSpMatDescr_t,const void*,cusparseSpMatDescr_t,cudaDataType,cusparseSpGEMMAlg_t,cusparseSpGEMMDescr_t,size_t*,void*);
 PER_CUSPARSE_FUNCTION(cpSpGEMM_copy, cusparseSpGEMM_copy, cusparseHandle_t,cusparseOperation_t,cusparseOperation_t,const void*,cusparseSpMatDescr_t,cusparseSpMatDescr_t,const void*,cusparseSpMatDescr_t,cudaDataType,cusparseSpGEMMAlg_t,cusparseSpGEMMDescr_t);
 PER_CUSPARSE_FUNCTION(cpSpCreateSpGEMM, cusparseSpGEMM_createDescr, cusparseSpGEMMDescr_t* );
-PER_CUSPARSE_FUNCTION(cpCsrSetPointers, cusparseCsrSetPointers, cusparseSpMatDescr_t,void*, void*, void*);
 
 // cusparse sparse matrix convertions
 PER_CUSPARSE_FUNCTION(cpCsr2cscEx2_bufferSize, cusparseCsr2cscEx2_bufferSize, cusparseHandle_t, int, int, int, const void*, const int*, const int*, void*, int*, int*, cudaDataType, cusparseAction_t, cusparseIndexBase_t, cusparseCsr2CscAlg_t, size_t*);

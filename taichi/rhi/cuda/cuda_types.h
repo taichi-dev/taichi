@@ -441,8 +441,10 @@ typedef struct cusparseContext *cusparseHandle_t;
 struct cusparseMatDescr;
 typedef struct cusparseMatDescr *cusparseMatDescr_t;
 
+struct cusparseSpVecDescr;
 struct cusparseDnVecDescr;
 struct cusparseSpMatDescr;
+typedef struct cusparseSpVecDescr *cusparseSpVecDescr_t;
 typedef struct cusparseDnVecDescr *cusparseDnVecDescr_t;
 typedef struct cusparseSpMatDescr *cusparseSpMatDescr_t;
 typedef enum {

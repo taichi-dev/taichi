@@ -13,6 +13,15 @@
 namespace taichi {
 namespace lang {
 
+// Represents an image resource reference for a compute/render Op
+struct ComputeOpImageRef {
+  DeviceAllocation image;
+  // The requested initial layout of the image, when Op is invoked
+  ImageLayout initial_layout;
+  // The final layout the image will be in once Op finishes
+  ImageLayout final_layout;
+};
+
 struct RuntimeContext;
 
 class ProgramImpl {
@@ -126,6 +135,12 @@ class ProgramImpl {
 
   // TODO: Move to Runtime Object
   virtual void prepare_runtime_context(RuntimeContext *ctx) {
+  }
+
+  virtual void enqueue_compute_op_lambda(
+      std::function<void(Device *device, CommandList *cmdlist)> op,
+      const std::vector<ComputeOpImageRef> &image_refs) {
+    TI_NOT_IMPLEMENTED;
   }
 
   virtual void print_memory_profiler_info(

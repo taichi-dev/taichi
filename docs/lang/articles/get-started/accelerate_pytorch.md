@@ -17,7 +17,7 @@ This section uses padding as an example to show you how Taichi can complement Py
 
 Padding is a commonly-used data preprocessing technique in machine learning. For example, padding can prevent convolution operations from changing the size of the input image. However, no PyTorch operators are designed specifically for padding in a specific customized pattern. Previously, you have two options to work around this:
 
--  Using Python or PyTorch to iterate over matrix elements.
+- Using Python or PyTorch to iterate over matrix elements.
 - Writing a C++/CUDA operator and connecting it to PyTorch via Python's custom operator extension.
 
 The former has very poor efficiency and could become a drain of the neural network training performance; the latter requires large amount of domain-specific knowledge about the underlying hardware architectures and it could take a long while to get started.
@@ -204,7 +204,7 @@ The following diagram shows that Taichi always shows a performance that is compa
 
 ## Recap
 
-PyTorch is efficient in handling a large proportion of computation tasks in machine learning . Still, there are niches and needs that it falls short of addressing, such as native support for many operators and unsatisfactory runtime performance.
+PyTorch is efficient in handling a large proportion of computation tasks in machine learning. Still, there are niches and needs that it falls short of addressing, such as native support for many operators and unsatisfactory runtime performance.
 
 As a high-performance programming language embedded in Python, Taichi features:
 

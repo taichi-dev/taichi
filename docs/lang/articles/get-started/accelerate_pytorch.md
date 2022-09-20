@@ -128,7 +128,7 @@ The following subsections take the Baseline implementations as an example to sho
 
 ### Implement a depthwise convolution operator with Python
 
-The Python reference code is straightforward and easy to understand, but it runs so slow that the result can hardly make itself into the diagram above.
+The Python reference code is straightforward and easy to understand, but it runs so slow that the result can hardly make itself into the diagram below.
 
 ```python
 def run_formula_very_slow(w, k, B, C, T, eps):

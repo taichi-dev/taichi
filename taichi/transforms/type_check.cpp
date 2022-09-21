@@ -201,11 +201,11 @@ class TypeCheck : public IRVisitor {
       if (stmt->op_type == UnaryOpType::sqrt ||
           stmt->op_type == UnaryOpType::exp ||
           stmt->op_type == UnaryOpType::log) {
-        DataType target_dtype = primitive_dtype;
+        DataType target_dtype = config_.default_fp;
         if (stmt->operand->ret_type->is<TensorType>()) {
           target_dtype = TypeFactory::get_instance().create_tensor_type(
               stmt->operand->ret_type->as<TensorType>()->get_shape(),
-              config_.default_fp);
+              target_dtype);
         }
 
         cast(stmt->operand, target_dtype);

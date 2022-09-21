@@ -323,11 +323,6 @@ void compile_function(IRNode *ir,
     print("Lowered");
   }
 
-  if (config.real_matrix && config.real_matrix_scalarize) {
-    irpass::scalarize(ir);
-    print("Scalarized");
-  }
-
   irpass::lower_access(ir, config, {{}, true});
   print("Access lowered");
   irpass::analysis::verify(ir);

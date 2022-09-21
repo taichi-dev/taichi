@@ -25,7 +25,7 @@ S1 = random(rows, cols, density=0.5, random_state=rng,
             data_rvs=rvs).astype(np_dtype)
 S2 = random(rows, cols, density=0.5, random_state=rng,
             data_rvs=rvs).astype(np_dtype)
-# S2 = S2.T
+
 nnz_A = len(S1.data)
 nnz_B = len(S2.data)
 

@@ -284,7 +284,6 @@ class SparseMatrixBuilder:
     def build(self, dtype=f32, _format='CSR'):
         """Create a sparse matrix using the triplets"""
         sm = self.ptr.build()
-        print(type(sm))
         return SparseMatrix(sm=sm)
 
 

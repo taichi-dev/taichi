@@ -125,9 +125,8 @@ class EigenSparseMatrix : public SparseMatrix {
       : SparseMatrix(em.rows(), em.cols()), matrix_(em) {
   }
 
-  ~EigenSparseMatrix() {
-    TI_INFO("Destroy eigen sparse matrix.");
-  };
+  ~EigenSparseMatrix() override = default;
+
   void build_triplets(void *triplets_adr) override;
   const std::string to_string() const override;
 
@@ -225,6 +224,7 @@ class CuSparseMatrix : public SparseMatrix {
 
   virtual ~CuSparseMatrix();
 
+  // TODO: Overload +=, -= and *=
   friend std::unique_ptr<SparseMatrix> operator+(const CuSparseMatrix &lhs,
                                                  const CuSparseMatrix &rhs) {
     auto m = lhs.addition(rhs, 1.0, 1.0);
@@ -236,7 +236,6 @@ class CuSparseMatrix : public SparseMatrix {
     return lhs.addition(rhs, 1.0, -1.0);
   };
 
-  // TODO: Overload *=
   friend std::unique_ptr<SparseMatrix> operator*(const CuSparseMatrix &sm,
                                                  float scale) {
     return sm.addition(sm, scale, 0.0);

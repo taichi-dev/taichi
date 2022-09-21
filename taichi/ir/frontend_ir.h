@@ -516,8 +516,6 @@ class FieldExpression : public Expression {
     this->snode = snode;
   }
 
-  void flatten(FlattenContext *ctx) override;
-
   TI_DEFINE_ACCEPT_FOR_EXPRESSION
 };
 

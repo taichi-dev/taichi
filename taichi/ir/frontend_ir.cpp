@@ -379,13 +379,6 @@ void ExternalTensorExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
-void FieldExpression::flatten(FlattenContext *ctx) {
-  TI_ASSERT(snode->num_active_indices == 0);
-  auto ptr = Stmt::make<GlobalPtrStmt>(snode, std::vector<Stmt *>());
-  ptr->tb = tb;
-  ctx->push_back(std::move(ptr));
-}
-
 std::vector<Stmt *> make_index_stmts(Expression::FlattenContext *ctx,
                                      const ExprGroup &indices,
                                      const std::vector<int> &offsets) {
@@ -403,25 +396,23 @@ std::vector<Stmt *> make_index_stmts(Expression::FlattenContext *ctx,
 }
 
 Stmt *make_field_access(Expression::FlattenContext *ctx,
-                        Expr var,
+                        const FieldExpression &field,
                         ExprGroup indices) {
-  SNode *snode = var.cast<FieldExpression>()->snode;
   return ctx->push_back(std::make_unique<GlobalPtrStmt>(
-      snode, make_index_stmts(ctx, indices, snode->index_offsets)));
+      field.snode, make_index_stmts(ctx, indices, field.snode->index_offsets)));
 }
 
 Stmt *make_matrix_field_access(Expression::FlattenContext *ctx,
-                               Expr var,
+                               const MatrixFieldExpression &matrix_field,
                                ExprGroup indices,
                                DataType ret_type) {
-  auto matrix_field = var.cast<MatrixFieldExpression>();
   std::vector<SNode *> snodes;
-  for (auto &field : matrix_field->fields) {
+  for (auto &field : matrix_field.fields) {
     snodes.push_back(field.cast<FieldExpression>()->snode);
   }
   return ctx->push_back(std::make_unique<MatrixOfGlobalPtrStmt>(
       snodes, make_index_stmts(ctx, indices, snodes[0]->index_offsets),
-      matrix_field->dynamic_indexable, matrix_field->dynamic_index_stride,
+      matrix_field.dynamic_indexable, matrix_field.dynamic_index_stride,
       ret_type));
 }
 
@@ -583,9 +574,9 @@ void IndexExpression::type_check(CompileConfig *) {
 
 void IndexExpression::flatten(FlattenContext *ctx) {
   if (is_field()) {
-    stmt = make_field_access(ctx, var, indices);
+    stmt = make_field_access(ctx, *var.cast<FieldExpression>(), indices);
   } else if (is_matrix_field()) {
-    stmt = make_matrix_field_access(ctx, var, indices, ret_type);
+    stmt = make_matrix_field_access(ctx, *var.cast<MatrixFieldExpression>(), indices, ret_type);
   } else if (is_ndarray()) {
     stmt = make_ndarray_access(ctx, var, indices);
   } else if (is_tensor()) {

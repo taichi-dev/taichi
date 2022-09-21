@@ -412,6 +412,9 @@ std::unique_ptr<SparseMatrix> CuSparseMatrix::addition(
       CUDA_R_32F);
 
   CUSPARSEDriver::get_instance().cpDestroy(cusparse_handle);
+  CUSPARSEDriver::get_instance().cpDestroyMatDescr(descrA);
+  CUSPARSEDriver::get_instance().cpDestroyMatDescr(descrB);
+  CUSPARSEDriver::get_instance().cpDestroyMatDescr(descrC);
   CUDADriver::get_instance().mem_free(buffer);
   return make_cu_sparse_matrix(matrix_C, rows_, cols_, PrimitiveType::f32);
 #else
@@ -454,7 +457,7 @@ std::unique_ptr<SparseMatrix> CuSparseMatrix::gemm(const CuSparseMatrix &other,
 
   // 2. create gemm descr
   cusparseSpGEMMDescr_t spgemm_desc;
-  CUSPARSEDriver::get_instance().cpSpCreateSpGEMM(&spgemm_desc);
+  CUSPARSEDriver::get_instance().cpCreateSpGEMM(&spgemm_desc);
 
   // 3. ask buffer_size1 bytes for external memory
   void *d_buffer1;
@@ -509,6 +512,7 @@ std::unique_ptr<SparseMatrix> CuSparseMatrix::gemm(const CuSparseMatrix &other,
   CUDADriver::get_instance().mem_free(d_buffer1);
   CUDADriver::get_instance().mem_free(d_buffer2);
   CUSPARSEDriver::get_instance().cpDestroy(handle);
+  CUSPARSEDriver::get_instance().cpDestroySpGEMM(spgemm_desc);
 
   return make_cu_sparse_matrix(mat_C, nrows_A, ncols_B, PrimitiveType::f32);
 #else

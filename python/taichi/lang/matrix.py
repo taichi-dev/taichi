@@ -502,6 +502,9 @@ class Matrix(TaichiOperations):
 
     def _element_wise_binary(self, foo, other):
         other = self._broadcast_copy(other)
+        if impl.current_cfg().real_matrix:
+            return foo(self, other)
+
         if is_col_vector(self):
             return Vector([foo(self(i), other(i)) for i in range(self.n)],
                           ndim=self.ndim)

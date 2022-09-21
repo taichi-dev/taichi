@@ -65,7 +65,7 @@ bool is_same_type(llvm::Type *a, llvm::Type *b) {
     }
     len_same++;
   }
-  if (len_same == a_name.size())  {
+  if (len_same == a_name.size()) {
     TI_ASSERT(len_same != b_name.size());
     if (b_name[len_same] == '.') {
       // a is xxx, and b is xxx.yyy, yyy is a number

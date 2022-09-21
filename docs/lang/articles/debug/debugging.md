@@ -198,7 +198,7 @@ x = ti.field(ti.f32, 128)
 def do_sqrt_all():
     for i in x:
         assert x[i] >= 0
-        x[i] = ti.sqrt(x)
+        x[i] = ti.sqrt(x[i])
 ```
 
 When you are done with debugging, set `debug=False`, and then the program will ignore the subsequent `assert` statements and avoid additional runtime overhead.

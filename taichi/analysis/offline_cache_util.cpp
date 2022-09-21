@@ -185,7 +185,7 @@ std::string get_cache_path_by_arch(const std::string &base_path, Arch arch) {
   std::string subdir;
   if (arch_uses_llvm(arch)) {
     subdir = "llvm";
-  } else if (arch == Arch::vulkan || arch == Arch::opengl) {
+  } else if (arch == Arch::vulkan || arch == Arch::opengl || arch == Arch::dx11) {
     subdir = "gfx";
   } else {
     return base_path;

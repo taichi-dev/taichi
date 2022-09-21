@@ -31,6 +31,8 @@ PER_DEVICE_CAPABILITY(spirv_has_subgroup_ballot)
 PER_DEVICE_CAPABILITY(spirv_has_non_semantic_info)
 // Graphics Caps
 PER_DEVICE_CAPABILITY(wide_lines)
+// Device api backend (arch)
+PER_DEVICE_CAPABILITY(device_api_backend)
 #endif
 
 #ifdef PER_BUFFER_FORMAT

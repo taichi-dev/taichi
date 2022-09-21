@@ -19,7 +19,7 @@ OFFLINE_CACHE_TEMP_DIR = mkdtemp()
 atexit.register(lambda: rmdir(OFFLINE_CACHE_TEMP_DIR))
 
 supported_llvm_archs = {ti.cpu, ti.cuda}
-supported_gfx_archs = {ti.opengl, ti.vulkan}
+supported_gfx_archs = {ti.opengl, ti.vulkan, ti.dx11}
 supported_archs_offline_cache = supported_llvm_archs | supported_gfx_archs
 supported_archs_offline_cache = [
     v for v in supported_archs_offline_cache

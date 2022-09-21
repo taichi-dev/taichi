@@ -122,6 +122,7 @@ class TargetDevice : public Device {
  public:
   TargetDevice(Arch arch) {
     // TODO: make this configurable
+    set_cap(DeviceCapability::device_api_backend, static_cast<uint32>(arch));
     set_default_caps(arch);
   }
 

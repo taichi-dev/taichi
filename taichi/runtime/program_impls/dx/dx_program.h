@@ -2,6 +2,7 @@
 
 #ifdef TI_WITH_DX11
 
+#include "taichi/cache/gfx/cache_manager.h"
 #include "taichi/runtime/gfx/runtime.h"
 #include "taichi/runtime/gfx/snode_tree_manager.h"
 #include "taichi/program/program_impl.h"
@@ -64,11 +65,16 @@ class Dx11ProgramImpl : public ProgramImpl {
 
   std::unique_ptr<aot::Kernel> make_aot_kernel(Kernel &kernel) override;
 
+  void dump_cache_data_to_disk() override;
+
+  const std::unique_ptr<gfx::CacheManager> &get_cache_manager();
+
  private:
   std::shared_ptr<Device> device_{nullptr};
   std::unique_ptr<gfx::GfxRuntime> runtime_{nullptr};
   std::unique_ptr<gfx::SNodeTreeManager> snode_tree_mgr_{nullptr};
   std::vector<spirv::CompiledSNodeStructs> aot_compiled_snode_structs_;
+  std::unique_ptr<gfx::CacheManager> cache_manager_{nullptr};
 };
 
 }  // namespace lang

@@ -219,7 +219,6 @@ def copy(dst: ti.template(), src: ti.template()):
     ti.static_assert(dst.shape == src.shape, "copy() needs src and dst fields to be same shape")
     for I in ti.grouped(src):
         dst[I] = src[I]
-    return x % 2 == 1
 ```
 
 ## More concise traceback in Taichi scope

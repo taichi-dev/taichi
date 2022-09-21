@@ -583,11 +583,37 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
           builder->CreateMul(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
     }
   } else if (op == BinaryOpType::floordiv) {
-    if (is_integral_tensor(ret_type) || is_integral(ret_type))
-      llvm_val[stmt] =
-          create_call(fmt::format("floordiv_{}", data_type_name(ret_type)),
-                      {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-    else {
+    if (is_integral_tensor(ret_type) || is_integral(ret_type)) {
+      if (is_integral(ret_type))
+        llvm_val[stmt] =
+            create_call(fmt::format("floordiv_{}", data_type_name(ret_type)),
+                        {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
+      else {
+        auto lhs_ty = stmt->lhs->ret_type->as<TensorType>();
+        auto rhs_ty = stmt->rhs->ret_type->as<TensorType>();
+        auto elt_count_l = lhs_ty->get_num_elements();
+        auto elt_count_r = rhs_ty->get_num_elements();
+        TI_ASSERT_INFO(elt_count_l == elt_count_r,
+                       "Number of element mismatched: {} v.s. {}", elt_count_l,
+                       elt_count_r);
+        llvm::Value *result =
+            llvm::UndefValue::get(tlctx->get_data_type(ret_type));
+        auto compute_type = ret_type->cast<TensorType>()->get_element_type();
+        for (int i = 0; i < elt_count_l; ++i) {
+          auto lhs_oprand =
+              builder->CreateExtractElement(llvm_val[stmt->lhs], i);
+          auto rhs_oprand =
+              builder->CreateExtractElement(llvm_val[stmt->rhs], i);
+          result = builder->CreateInsertElement(
+              result,
+              create_call(
+                  fmt::format("floordiv_{}", data_type_name(compute_type)),
+                  {lhs_oprand, rhs_oprand}),
+              i);
+        }
+        llvm_val[stmt] = result;
+      }
+    } else {
       auto div = builder->CreateFDiv(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
       llvm_val[stmt] = builder->CreateIntrinsic(
           llvm::Intrinsic::floor, {tlctx->get_data_type(ret_type)}, {div});

@@ -175,6 +175,9 @@ void UnaryOpExpression::flatten(FlattenContext *ctx) {
 
 Expr to_broadcast_tensor(const Expr &elt, const DataType &dt) {
   TI_ASSERT(dt->is<TensorType>());
+  if (elt->ret_type == dt) {
+    return elt;
+  }
   auto tensor_type = dt->as<TensorType>();
   auto elt_type = tensor_type->get_element_type();
   TI_ASSERT_INFO(elt_type->is<PrimitiveType>(),
@@ -186,14 +189,14 @@ Expr to_broadcast_tensor(const Expr &elt, const DataType &dt) {
 }
 
 std::tuple<Expr, Expr> unify_binop_operands(const Expr &e1, const Expr &e2) {
-  if ((!e1->ret_type->is<TensorType>() && !e2->ret_type->is<TensorType>()) ||
-      (e1->ret_type->is<TensorType>() && e2->ret_type->is<TensorType>())) {
+  if (e1->ret_type->is<PrimitiveType>() && e2->ret_type->is<TensorType>()) {
+    return std::tuple(to_broadcast_tensor(e1, e2->ret_type), e2);
+  } else if (e1->ret_type->is<TensorType>() &&
+             e2->ret_type->is<PrimitiveType>()) {
+    return std::tuple(e1, to_broadcast_tensor(e2, e1->ret_type));
+  } else {
     return std::tuple(e1, e2);
   }
-  if (!e1->ret_type->is<TensorType>()) {
-    return std::tuple(to_broadcast_tensor(e1, e2->ret_type), e2);
-  }
-  return std::tuple(e1, to_broadcast_tensor(e2, e1->ret_type));
 }
 
 void BinaryOpExpression::type_check(CompileConfig *config) {

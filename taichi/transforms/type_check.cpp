@@ -299,7 +299,8 @@ class TypeCheck : public IRVisitor {
           !is_real_tensor(stmt->lhs->ret_type)) {
         cast(stmt->lhs, make_dt(default_fp));
       }
-      if (!is_real(stmt->rhs->ret_type)) {
+      if (!is_real(stmt->rhs->ret_type) ||
+          !is_real_tensor(stmt->rhs->ret_type)) {
         cast(stmt->rhs, make_dt(default_fp));
       }
       stmt->op_type = BinaryOpType::div;

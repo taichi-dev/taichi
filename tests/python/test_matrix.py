@@ -861,6 +861,7 @@ def test_elementwise_ops():
 
     test()
 
+
 @test_utils.test()
 def test_vector_vector_t():
     @ti.kernel

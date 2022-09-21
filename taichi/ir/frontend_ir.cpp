@@ -576,7 +576,8 @@ void IndexExpression::flatten(FlattenContext *ctx) {
   if (is_field()) {
     stmt = make_field_access(ctx, *var.cast<FieldExpression>(), indices);
   } else if (is_matrix_field()) {
-    stmt = make_matrix_field_access(ctx, *var.cast<MatrixFieldExpression>(), indices, ret_type);
+    stmt = make_matrix_field_access(ctx, *var.cast<MatrixFieldExpression>(),
+                                    indices, ret_type);
   } else if (is_ndarray()) {
     stmt = make_ndarray_access(ctx, var, indices);
   } else if (is_tensor()) {

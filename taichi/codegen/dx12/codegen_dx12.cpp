@@ -221,12 +221,13 @@ static std::vector<uint8_t> generate_dxil_from_llvm(
     TI_ASSERT(func);
     directx12::mark_function_as_cs_entry(func);
     directx12::set_num_threads(
-        func, kernel->program->this_thread_config().default_gpu_block_dim, 1, 1);
+        func, kernel->program->this_thread_config().default_gpu_block_dim, 1,
+        1);
     // FIXME: save task.block_dim like
     // tlctx->mark_function_as_cuda_kernel(func, task.block_dim);
   }
-  auto dx_container =
-      directx12::global_optimize_module(module, kernel->program->this_thread_config());
+  auto dx_container = directx12::global_optimize_module(
+      module, kernel->program->this_thread_config());
   // validate and sign dx container.
   return directx12::validate_and_sign(dx_container);
 }

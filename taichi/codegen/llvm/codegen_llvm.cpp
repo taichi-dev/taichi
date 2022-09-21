@@ -2363,7 +2363,7 @@ void TaskCodeGenLLVM::visit(GlobalTemporaryStmt *stmt) {
   auto buffer = call("get_temporary_pointer", runtime,
                      tlctx->get_constant((int64)stmt->offset));
 
-  if (stmt->ret_type->is<TensorType>() && !prog->config.real_matrix) {
+  if (stmt->ret_type->is<TensorType>() && !prog->this_thread_config().real_matrix) {
     auto ptr_type = llvm::PointerType::get(
         tlctx->get_data_type(
             stmt->ret_type->cast<TensorType>()->get_element_type()),

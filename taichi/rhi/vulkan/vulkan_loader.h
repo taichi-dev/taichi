@@ -25,7 +25,7 @@ class TI_DLL_EXPORT VulkanLoader {
 
   void load_instance(VkInstance instance_);
   void load_device(VkDevice device_);
-  bool init();
+  bool init(PFN_vkGetInstanceProcAddr get_proc_addr = nullptr);
   PFN_vkVoidFunction load_function(const char *name);
   VkInstance get_instance() {
     return vulkan_instance_;

@@ -57,6 +57,9 @@ void compile_to_offloads(IRNode *ir,
     print("Scalarized");
   }
 
+  irpass::lower_matrix_ptr(ir);
+  print("Matrix ptr lowered");
+
   irpass::type_check(ir, config);
   print("Typechecked");
   irpass::analysis::verify(ir);
@@ -321,11 +324,6 @@ void compile_function(IRNode *ir,
     irpass::frontend_type_check(ir);
     irpass::lower_ast(ir);
     print("Lowered");
-  }
-
-  if (config.real_matrix && config.real_matrix_scalarize) {
-    irpass::scalarize(ir);
-    print("Scalarized");
   }
 
   irpass::lower_access(ir, config, {{}, true});

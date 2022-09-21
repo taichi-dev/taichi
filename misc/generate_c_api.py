@@ -169,6 +169,7 @@ if __name__ == "__main__":
         BuiltInType("VkImageLayout", "VkImageLayout"),
         BuiltInType("VkImageUsageFlags", "VkImageUsageFlags"),
         BuiltInType("VkImageViewType", "VkImageViewType"),
+        BuiltInType("PFN_vkGetInstanceProcAddr", "PFN_vkGetInstanceProcAddr"),
         BuiltInType("char", "char"),
     }
 

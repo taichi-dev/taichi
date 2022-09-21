@@ -15,8 +15,9 @@ from taichi.lang.ast.ast_transformer_utils import (Builder, LoopStatus,
 from taichi.lang.ast.symbol_resolver import ASTResolver
 from taichi.lang.exception import TaichiSyntaxError, TaichiTypeError
 from taichi.lang.field import Field
+from taichi.lang.impl import current_cfg
 from taichi.lang.matrix import (Matrix, MatrixType, Vector, _PyScopeMatrixImpl,
-                                _TiScopeMatrixImpl)
+                                _TiScopeMatrixImpl, make_matrix)
 from taichi.lang.snode import append
 from taichi.lang.util import in_taichi_scope, is_taichi_class, to_taichi_type
 from taichi.types import (annotations, ndarray_type, primitive_types,
@@ -114,6 +115,12 @@ class ASTTransformer(Builder):
     @staticmethod
     def build_assign_slice(ctx, node_target, values, is_static_assign):
         target = ASTTransformer.build_Subscript(ctx, node_target, get_ref=True)
+        if current_cfg().real_matrix:
+            if isinstance(node_target.value.ptr,
+                          any_array.AnyArray) and isinstance(
+                              values, (list, tuple)):
+                values = make_matrix(values)
+
         if isinstance(node_target.value.ptr, Matrix):
             if isinstance(node_target.value.ptr._impl, _TiScopeMatrixImpl):
                 target._assign(values)

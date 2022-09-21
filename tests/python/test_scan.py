@@ -2,7 +2,7 @@ import taichi as ti
 from tests import test_utils
 
 
-@test_utils.test(arch=[ti.cuda, ti.vulkan])
+@test_utils.test(arch=[ti.cuda, ti.vulkan], exclude=[(ti.vulkan, "Darwin")])
 def test_scan():
     def test_scan_for_dtype(dtype, N):
         arr = ti.field(dtype, N)

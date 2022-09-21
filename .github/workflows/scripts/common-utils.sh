@@ -1,48 +1,17 @@
 #!/bin/bash
 
-check_in_docker() {
-    # This is a temporary solution to detect in a docker, but it should work
-    if [[ $(whoami) == "dev" ]]; then
-        echo "true"
-    else
-        echo "false"
-    fi
-}
-
-setup_sccache() {
-    export SCCACHE_DIR=$(pwd)/sccache_cache
-    export SCCACHE_CACHE_SIZE="128M"
-    export SCCACHE_LOG=error
-    export SCCACHE_ERROR_LOG=$(pwd)/sccache_error.log
-    mkdir -p "$SCCACHE_DIR"
-    echo "sccache dir: $SCCACHE_DIR"
-    ls -la "$SCCACHE_DIR"
-
-    if [[ $OSTYPE == "linux-"* ]]; then
-        wget https://github.com/mozilla/sccache/releases/download/v0.2.15/sccache-v0.2.15-x86_64-unknown-linux-musl.tar.gz
-        tar -xzf sccache-v0.2.15-x86_64-unknown-linux-musl.tar.gz
-        chmod +x sccache-v0.2.15-x86_64-unknown-linux-musl/sccache
-        export PATH=$(pwd)/sccache-v0.2.15-x86_64-unknown-linux-musl:$PATH
-    elif [[ $(uname -m) == "arm64" ]]; then
-        wget https://github.com/mozilla/sccache/releases/download/v0.2.15/sccache-v0.2.15-aarch64-apple-darwin.tar.gz
-        tar -xzf sccache-v0.2.15-aarch64-apple-darwin.tar.gz
-        chmod +x sccache-v0.2.15-aarch64-apple-darwin/sccache
-        export PATH=$(pwd)/sccache-v0.2.15-aarch64-apple-darwin:$PATH
-    else
-        wget https://github.com/mozilla/sccache/releases/download/v0.2.15/sccache-v0.2.15-x86_64-apple-darwin.tar.gz
-        tar -xzf sccache-v0.2.15-x86_64-apple-darwin.tar.gz
-        chmod +x sccache-v0.2.15-x86_64-apple-darwin/sccache
-        export PATH=$(pwd)/sccache-v0.2.15-x86_64-apple-darwin:$PATH
-    fi
-}
+set -x
 
 setup_python() {
-    if [[ "$(check_in_docker)" == "true" ]]; then
-        source $HOME/miniconda/etc/profile.d/conda.sh
-        conda activate "$PY"
-    fi
+    for conda in miniconda miniconda3 miniforge3; do
+        if [[ -d $HOME/$conda ]]; then
+            source $HOME/$conda/bin/activate
+            conda activate "$PY"
+            break
+        fi
+    done
+    python3 -m pip install -U pip
     python3 -m pip uninstall taichi taichi-nightly -y
-    python3 -m pip install -r requirements_dev.txt
 }
 
 function setup-sccache-local {
@@ -79,6 +48,110 @@ function setup-sccache-local {
 
     export PATH=$SCCACHE_ROOT/bin:$PATH
     export TAICHI_CMAKE_ARGS="$TAICHI_CMAKE_ARGS -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache"
+}
+
+function clear-taichi-offline-cache {
+    rm -rf ~/build-cache/dot-cache/taichi  # Clear taichi offline cache
+    rm -rf ~/.cache/taichi  # Clear taichi offline cache
+}
+
+function prepare-build-cache {
+    export CACHE_HOME=${1:-$HOME/build-cache}
+    mkdir -p $CACHE_HOME/{dot-cache/pip,dot-gradle,git-cache,sccache/{bin,cache}}
+    chmod 0777 $CACHE_HOME/ $CACHE_HOME/* || true
+    pushd $CACHE_HOME/git-cache
+    if [ ! -d objects ]; then git init --bare; fi
+    popd
+
+    clear-taichi-offline-cache
+
+    if [ ! -z $GITHUB_ENV ]; then
+        # for bare metal run
+        export SCCACHE_ROOT=$CACHE_HOME/sccache
+        export GIT_ALTERNATE_OBJECT_DIRECTORIES=$CACHE_HOME/git-cache/objects
+        echo SCCACHE_ROOT=$SCCACHE_ROOT >> $GITHUB_ENV
+        echo GIT_ALTERNATE_OBJECT_DIRECTORIES=$GIT_ALTERNATE_OBJECT_DIRECTORIES >> $GITHUB_ENV
+        echo CACHE_HOME=$CACHE_HOME >> $GITHUB_ENV
+    else
+        # container run
+        true
+    fi
+}
+
+function fix-build-cache-permission {
+    if [ "$(uname -s)" = "Linux" ]; then
+        sudo -n chown -R $(id -u):$(id -g) $CACHE_HOME || true
+    fi
+}
+
+function ci-docker-run {
+    ARGS="$@"
+    SHOULD_RM="--rm"
+    while [[ $# > 0 ]]; do
+        case $1 in
+            -n | --name)
+                shift
+                CONTAINER_NAME="$1"
+                SHOULD_RM=""
+                break
+                ;;
+        esac
+        shift
+    done
+
+    if [ ! -z $CONTAINER_NAME ]; then
+        docker rm -f $CONTAINER_NAME
+    fi
+
+    TI_ENVS=""
+    for i in $(env | grep ^TI_); do
+        TI_ENVS="$TI_ENVS -e $i"
+    done
+
+    CACHE_HOME=${CACHE_HOME:-$HOME/build-cache}
+
+    docker run \
+        -i \
+        $SHOULD_RM \
+        --user dev \
+        -e PY \
+        -e PROJECT_NAME \
+        -e TAICHI_CMAKE_ARGS \
+        -e IN_DOCKER=true \
+        -e TI_CI=1 \
+        $TI_ENVS \
+        -e SCCACHE_ROOT=/var/lib/sccache \
+        -e CACHE_HOME=/var/lib/cache-home \
+        -e GIT_ALTERNATE_OBJECT_DIRECTORIES=/var/lib/git-cache/objects \
+        -v $(readlink -f $CACHE_HOME):/var/lib/cache-home \
+        -v $(readlink -f $CACHE_HOME/sccache):/var/lib/sccache \
+        -v $(readlink -f $CACHE_HOME/git-cache):/var/lib/git-cache \
+        -v $(readlink -f $CACHE_HOME/dot-cache):/home/dev/.cache \
+        -v $(readlink -f $CACHE_HOME/dot-gradle):/home/dev/.gradle \
+        $CI_DOCKER_RUN_EXTRA_ARGS \
+        $ARGS
+}
+
+function ci-docker-run-gpu {
+    for i in {0..9}; do
+        if xset -display ":$i" -q >/dev/null 2>&1; then
+            break
+        fi
+    done
+
+    if [ $? -ne 0 ]; then
+        echo "No display!"
+        exit 1
+    fi
+
+    ci-docker-run \
+        --runtime=nvidia \
+        --gpus 'all,"capabilities=graphics,utility,display,video,compute"' \
+        -e DISPLAY=:$i \
+        -e GPU_BUILD=ON \
+        -e GPU_TEST=ON \
+        -v /tmp/.X11-unix:/tmp/.X11-unix \
+        $@
 }
 
 function setup-android-ndk-env {

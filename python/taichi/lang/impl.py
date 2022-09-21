@@ -16,7 +16,7 @@ from taichi.lang.field import Field, ScalarField
 from taichi.lang.kernel_arguments import SparseMatrixProxy
 from taichi.lang.matrix import (Matrix, MatrixField, MatrixNdarray, MatrixType,
                                 Vector, _IntermediateMatrix,
-                                _MatrixFieldElement, make_matrix)
+                                _MatrixFieldElement)
 from taichi.lang.mesh import (ConvType, MeshElementFieldProxy, MeshInstance,
                               MeshRelationAccessProxy,
                               MeshReorderedMatrixFieldProxy,
@@ -64,7 +64,8 @@ def expr_init(rhs):
                 entries = [[rhs(i, j) for j in range(rhs.m)]
                            for i in range(rhs.n)]
             return make_matrix(entries)
-        if isinstance(rhs, Vector) or getattr(rhs, "ndim", None) == 1:
+        if (isinstance(rhs, Vector)
+                or getattr(rhs, "ndim", None) == 1) and rhs.m == 1:
             # _IntermediateMatrix may reach here
             return Vector(rhs.to_list(), ndim=rhs.ndim)
         return Matrix(rhs.to_list(), ndim=rhs.ndim)
@@ -203,6 +204,10 @@ def subscript(value, *_indices, skip_reordered=False, get_ref=False):
                 f'Field with dim {field_dim} accessed with indices of dim {index_dim}'
             )
         if isinstance(value, MatrixField):
+            if current_cfg().real_matrix:
+                return Expr(
+                    _ti_core.subscript(value.ptr, indices_expr_group,
+                                       get_runtime().get_current_src_info()))
             return _MatrixFieldElement(value, indices_expr_group)
         if isinstance(value, StructField):
             entries = {k: subscript(v, *_indices) for k, v in value._items}

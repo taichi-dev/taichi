@@ -47,13 +47,6 @@ struct CacheCleanerUtils<gfx::CacheManager::Metadata> {
   using MetadataType = gfx::CacheManager::Metadata;
   using KernelMetaData = MetadataType::KernelMetadata;
 
-  // To load metadata from file
-  static bool load_metadata(const CacheCleanerConfig &config,
-                            MetadataType &result) {
-    return read_from_binary_file(
-        result, taichi::join_path(config.path, config.metadata_filename));
-  }
-
   // To save metadata as file
   static bool save_metadata(const CacheCleanerConfig &config,
                             const MetadataType &data) {
@@ -81,13 +74,6 @@ struct CacheCleanerUtils<gfx::CacheManager::Metadata> {
     return true;
   }
 
-  // To check version
-  static bool check_version(const CacheCleanerConfig &config,
-                            const Version &version) {
-    return version[0] == TI_VERSION_MAJOR && version[1] == TI_VERSION_MINOR &&
-           version[2] == TI_VERSION_PATCH;
-  }
-
   // To get cache files name
   static std::vector<std::string> get_cache_files(
       const CacheCleanerConfig &config,
@@ -105,6 +91,12 @@ struct CacheCleanerUtils<gfx::CacheManager::Metadata> {
     taichi::remove(
         taichi::join_path(config.path, kDebuggingAotMetadataFilename));
     taichi::remove(taichi::join_path(config.path, kGraphMetadataFilename));
+  }
+
+  // To check if a file is cache file
+  static bool is_valid_cache_file(const CacheCleanerConfig &config,
+                                  const std::string &name) {
+    return filename_extension(name) == "spv";
   }
 };
 
@@ -184,10 +176,12 @@ void CacheManager::dump_with_merging() const {
       cache_builder->dump(path_, "");
 
       // Update offline_cache_metadata.tcb
+      using offline_cache::load_metadata_with_checking;
+      using Error = offline_cache::LoadMetadataError;
       Metadata old_data;
       const auto filename =
           taichi::join_path(path_, kOfflineCacheMetadataFilename);
-      if (read_from_binary_file(old_data, filename)) {
+      if (load_metadata_with_checking(old_data, filename) == Error::kNoError) {
         for (auto &[k, v] : offline_cache_metadata_.kernels) {
           auto iter = old_data.kernels.find(k);
           if (iter != old_data.kernels.end()) {  // Update

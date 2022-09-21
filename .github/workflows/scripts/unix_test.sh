@@ -7,15 +7,13 @@ export PYTHONUNBUFFERED=1
 
 export TI_SKIP_VERSION_CHECK=ON
 export TI_CI=1
-export TI_IN_DOCKER=$(check_in_docker)
 export LD_LIBRARY_PATH=$PWD/build/:$LD_LIBRARY_PATH
 export TI_OFFLINE_CACHE_FILE_PATH=$PWD/.cache/taichi
 
+setup_python
 
-if [[ "$TI_IN_DOCKER" == "true" ]]; then
-    source $HOME/miniconda/etc/profile.d/conda.sh
-    conda activate "$PY"
-fi
+[[ "$IN_DOCKER" == "true" ]] && cd taichi
+
 python3 -m pip install dist/*.whl
 if [ -z "$GPU_TEST" ]; then
     python3 -m pip install -r requirements_test.txt

@@ -301,7 +301,7 @@ def test_set_image_with_texture():
 
     render()
 
-    verify_image(window.get_image_buffer_as_numpy(), 'test_set_image')
+    verify_image(window.get_image_buffer_as_numpy(), 'test_set_image', 0.3)
     window.destroy()
 
 
@@ -390,7 +390,7 @@ def test_fetching_color_attachment():
 
 
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
-@test_utils.test(arch=supported_archs)
+@test_utils.test(arch=supported_archs, exclude=[(ti.vulkan, "Darwin")])
 def test_fetching_depth_attachment():
     window = ti.ui.Window("test", (512, 512), vsync=True, show_window=False)
     canvas = window.get_canvas()
@@ -419,7 +419,7 @@ def test_fetching_depth_attachment():
 
 
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
-@test_utils.test(arch=supported_archs)
+@test_utils.test(arch=supported_archs, exclude=[(ti.vulkan, "Darwin")])
 def test_draw_lines():
     N = 10
     particles_pos = ti.Vector.field(3, dtype=ti.f32, shape=N)
@@ -464,7 +464,7 @@ def test_draw_lines():
 
 
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
-@test_utils.test(arch=supported_archs)
+@test_utils.test(arch=supported_archs, exclude=[(ti.vulkan, "Darwin")])
 def test_draw_part_of_particles():
     N = 10
     particles_pos = ti.Vector.field(3, dtype=ti.f32, shape=N)
@@ -598,7 +598,7 @@ def test_draw_part_of_mesh():
 
 
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
-@test_utils.test(arch=supported_archs)
+@test_utils.test(arch=supported_archs, exclude=[(ti.vulkan, "Darwin")])
 def test_draw_part_of_lines():
     N = 10
     particles_pos = ti.Vector.field(3, dtype=ti.f32, shape=N)
@@ -753,10 +753,6 @@ def test_draw_mesh_instances():
                             transforms=instances_transforms)
         canvas.scene(scene)
 
-    if (platform.system() == 'Windows'):
-        # FIXME:Fix the bug that drawing mesh instance report bugs on Windows
-        return
-
     for i in range(30):
         update_transform(30)
         render()
@@ -867,10 +863,6 @@ def test_draw_part_of_mesh_instances():
                             instance_count=10,
                             instance_offset=2)
         canvas.scene(scene)
-
-    if (platform.system() == 'Windows'):
-        # FIXME:Fix the bug that drawing mesh instance report bugs on Windows
-        return
 
     for _ in range(RENDER_REPEAT):
         render()

@@ -25,6 +25,17 @@ test_vector_arrays = [
 ]
 
 
+def check_matrix(mat):
+    if isinstance(mat, ti.lang.matrix.Vector):
+        assert all(mat == 1)
+    elif isinstance(mat, ti.lang.matrix.Matrix):
+        for i in range(mat.m):
+            for j in range(mat.n):
+                assert (mat[i, j] == 1)
+    else:
+        assert False
+
+
 @test_utils.test(arch=get_host_arch_list())
 def test_python_scope_vector_operations():
     for ops in vector_operation_types:
@@ -831,11 +842,11 @@ def test_store_scalarize():
     x = ti.Matrix.ndarray(2, 2, ti.i32, shape=5)
     func(x)
 
-    assert (x[0] == [[0, 1], [2, 3]])
-    assert (x[1] == [[1, 2], [3, 4]])
-    assert (x[2] == [[2, 3], [4, 5]])
-    assert (x[3] == [[3, 4], [5, 6]])
-    assert (x[4] == [[4, 5], [6, 7]])
+    check_matrix(x[0] == [[0, 1], [2, 3]])
+    check_matrix(x[1] == [[1, 2], [3, 4]])
+    check_matrix(x[2] == [[2, 3], [4, 5]])
+    check_matrix(x[3] == [[3, 4], [5, 6]])
+    check_matrix(x[4] == [[4, 5], [6, 7]])
 
 
 @test_utils.test(arch=[ti.cuda, ti.cpu],
@@ -853,8 +864,8 @@ def test_load_store_scalarize():
     x = ti.Matrix.ndarray(2, 2, ti.i32, shape=5)
     func(x)
 
-    assert (x[3] == [[1, 2], [3, 4]])
-    assert (x[4] == [[2, 3], [4, 5]])
+    check_matrix(x[3] == [[1, 2], [3, 4]])
+    check_matrix(x[4] == [[2, 3], [4, 5]])
 
 
 @test_utils.test(arch=[ti.cuda, ti.cpu],
@@ -872,11 +883,13 @@ def test_unary_op_scalarize():
     x = ti.Matrix.ndarray(2, 2, ti.f32, shape=5)
     func(x)
 
-    assert (x[0] == [[0., 1.], [2., 3.]])
-    assert (x[1] == [[3., 4.], [5., 6.]])
-    assert (x[2] == [[-0., -1.], [-2., -3.]])
-    assert (x[3] == [[20.08553696, 54.59814835], [148.41316223, 403.42880249]])
-    assert (x[4] == [[4.48168898, 7.38905621], [12.18249416, 20.08553696]])
+    check_matrix(x[0] == [[0., 1.], [2., 3.]])
+    check_matrix(x[1] == [[3., 4.], [5., 6.]])
+    check_matrix(x[2] == [[-0., -1.], [-2., -3.]])
+    check_matrix(x[3] < [[20.086, 54.60], [148.42, 403.43]])
+    check_matrix(x[3] > [[20.085, 54.59], [148.41, 403.42]])
+    check_matrix(x[4] < [[4.49, 7.39], [12.19, 20.09]])
+    check_matrix(x[4] > [[4.48, 7.38], [12.18, 20.08]])
 
 
 @test_utils.test(arch=[ti.cuda, ti.cpu],
@@ -894,6 +907,6 @@ def test_binary_op_scalarize():
     x = ti.Matrix.ndarray(2, 2, ti.f32, shape=5)
     func(x)
 
-    assert (x[2] == [[0., 2.], [4., 6.]])
-    assert (x[3] == [[9., 16.], [25., 36.]])
-    assert (x[4] == [[9., 16.], [25., 36.]])
+    check_matrix(x[2] == [[0., 2.], [4., 6.]])
+    check_matrix(x[3] == [[9., 16.], [25., 36.]])
+    check_matrix(x[4] == [[9., 16.], [25., 36.]])

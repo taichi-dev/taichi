@@ -198,6 +198,61 @@ void UnaryOpExpression::flatten(FlattenContext *ctx) {
   ctx->push_back(std::move(unary));
 }
 
+static DataType binary_op_primitive_type_check(BinaryOpType type,
+                                               CompileConfig *config,
+                                               DataType lhs_primitive_type,
+                                               DataType rhs_primitive_type) {
+  auto ret_primitive_type = PrimitiveType::unknown;
+
+  auto error = [&]() {
+    throw TaichiTypeError(fmt::format(
+        "unsupported operand type(s) for '{}': '{}' and '{}'",
+        binary_op_type_symbol(type), lhs_primitive_type->to_string(),
+        rhs_primitive_type->to_string()));
+  };
+
+  if (binary_is_bitwise(type) &&
+      (!is_integral(lhs_primitive_type) || !is_integral(rhs_primitive_type)))
+    error();
+  if (binary_is_logical(type) && (lhs_primitive_type != PrimitiveType::i32 ||
+                                  rhs_primitive_type != PrimitiveType::i32))
+    error();
+  if (is_comparison(type) || binary_is_logical(type)) {
+    return PrimitiveType::i32;
+  }
+  if (is_shift_op(type) ||
+      (type == BinaryOpType::pow && is_integral(rhs_primitive_type))) {
+    return lhs_primitive_type;
+  }
+
+  // Some backends such as vulkan doesn't support fp64
+  // Try not promoting to fp64 unless necessary
+  if (type == BinaryOpType::atan2) {
+    if (lhs_primitive_type == PrimitiveType::f64 ||
+        rhs_primitive_type == PrimitiveType::f64) {
+      ret_primitive_type = PrimitiveType::f64;
+    } else {
+      ret_primitive_type = PrimitiveType::f32;
+    }
+    return ret_primitive_type;
+  }
+
+  if (type == BinaryOpType::truediv) {
+    auto default_fp = config->default_fp;
+    if (!is_real(lhs_primitive_type)) {
+      lhs_primitive_type = default_fp;
+    }
+    if (!is_real(rhs_primitive_type)) {
+      rhs_primitive_type = default_fp;
+    }
+  }
+  ret_primitive_type = promoted_type(lhs_primitive_type, rhs_primitive_type);
+
+  TI_ASSERT(ret_primitive_type != PrimitiveType::unknown);
+
+  return ret_primitive_type;
+}
+
 void BinaryOpExpression::type_check(CompileConfig *config) {
   TI_ASSERT_TYPE_CHECKED(lhs);
   TI_ASSERT_TYPE_CHECKED(rhs);
@@ -228,54 +283,13 @@ void BinaryOpExpression::type_check(CompileConfig *config) {
   */
   auto lhs_primitive_type = lhs->ret_type.get_element_type();
   auto rhs_primitive_type = rhs->ret_type.get_element_type();
-  auto ret_primitive_type = ret_type;
 
-  if (binary_is_bitwise(type) &&
-      (!is_integral(lhs_primitive_type) || !is_integral(rhs_primitive_type)))
-    error();
-  if (binary_is_logical(type) && (lhs_primitive_type != PrimitiveType::i32 ||
-                                  rhs_primitive_type != PrimitiveType::i32))
-    error();
-  if (is_comparison(type) || binary_is_logical(type)) {
-    ret_primitive_type = PrimitiveType::i32;
-    return;
-  }
-  if (is_shift_op(type) ||
-      (type == BinaryOpType::pow && is_integral(rhs_primitive_type))) {
-    ret_primitive_type = lhs_primitive_type;
-    return;
-  }
-
-  // Some backends such as vulkan doesn't support fp64
-  // Try not promoting to fp64 unless necessary
-  if (type == BinaryOpType::atan2) {
-    if (lhs_primitive_type == PrimitiveType::f64 ||
-        rhs_primitive_type == PrimitiveType::f64) {
-      ret_primitive_type = PrimitiveType::f64;
-    } else {
-      ret_primitive_type = PrimitiveType::f32;
-    }
-    return;
-  }
-
-  if (type == BinaryOpType::truediv) {
-    auto default_fp = config->default_fp;
-    if (!is_real(lhs_primitive_type)) {
-      lhs_primitive_type = default_fp;
-    }
-    if (!is_real(rhs_primitive_type)) {
-      rhs_primitive_type = default_fp;
-    }
-  }
-  ret_primitive_type = promoted_type(lhs_primitive_type, rhs_primitive_type);
+  ret_type = binary_op_primitive_type_check(type, config, lhs_primitive_type,
+                                            rhs_primitive_type);
 
   if (rhs_type->is<TensorType>() && lhs_type->is<TensorType>()) {
     ret_type = taichi::lang::TypeFactory::get_instance().get_tensor_type(
-        rhs_type.get_shape(), ret_primitive_type);
-  } else if (rhs_type->is<PrimitiveType>() && lhs_type->is<PrimitiveType>()) {
-    ret_type = ret_primitive_type;
-  } else {
-    TI_NOT_IMPLEMENTED;
+        rhs_type.get_shape(), ret_type);
   }
 }
 
@@ -309,12 +323,14 @@ void BinaryOpExpression::flatten(FlattenContext *ctx) {
     auto ret = ctx->push_back<LocalLoadStmt>(result);
     ret->tb = tb;
     stmt = ret;
+    stmt->ret_type = ret_type;
     return;
   }
   flatten_rvalue(rhs, ctx);
   ctx->push_back(std::make_unique<BinaryOpStmt>(type, lhs->stmt, rhs->stmt));
   ctx->stmts.back()->tb = tb;
   stmt = ctx->back_stmt();
+  stmt->ret_type = ret_type;
 }
 
 void make_ifte(Expression::FlattenContext *ctx,

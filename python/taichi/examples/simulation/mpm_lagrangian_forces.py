@@ -2,7 +2,7 @@ import numpy as np
 
 import taichi as ti
 
-ti.init(arch=ti.gpu)
+ti.init(arch=ti.gpu, offline_cache=False)
 
 dim = 2
 quality = 1  # Use a larger integral number for higher quality

@@ -94,7 +94,8 @@ class TI_DLL_EXPORT Program {
  public:
   using Kernel = taichi::lang::Kernel;
   Callable *current_callable{nullptr};
-  CompileConfig config;
+  std::unordered_map<std::thread::id, CompileConfig> configs;
+  std::thread::id main_thread_id_;
   bool sync{false};  // device/host synchronized?
 
   uint64 *result_buffer{nullptr};  // Note result_buffer is used by all backends
@@ -118,6 +119,14 @@ class TI_DLL_EXPORT Program {
   explicit Program(Arch arch);
 
   ~Program();
+
+  CompileConfig &this_thread_config() {
+    auto thread_id = std::this_thread::get_id();
+    if (!configs.count(thread_id)) {
+      configs[thread_id] = configs[main_thread_id_];
+    }
+    return configs[thread_id];
+  }
 
   struct KernelProfilerQueryResult {
     int counter{0};
@@ -342,7 +351,7 @@ class TI_DLL_EXPORT Program {
    * Please limit its use to LLVM backend only
    */
   ProgramImpl *get_program_impl() {
-    TI_ASSERT(arch_uses_llvm(config.arch));
+    TI_ASSERT(arch_uses_llvm(this_thread_config().arch));
     return program_impl_.get();
   }
 

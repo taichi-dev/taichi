@@ -206,7 +206,7 @@ class TaskCodeGenWASM : public TaskCodeGenLLVM {
     builder->SetInsertPoint(entry_block);
     builder->CreateBr(func_body_bb);
 
-    if (prog->config.print_kernel_llvm_ir) {
+    if (prog->this_thread_config().print_kernel_llvm_ir) {
       static FileSequenceWriter writer(
           "taichi_kernel_generic_llvm_ir_{:04d}.ll",
           "unoptimized LLVM IR (generic)");

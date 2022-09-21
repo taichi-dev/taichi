@@ -22,7 +22,7 @@ class SparseSolver:
         solver_type_list = ["LLT", "LDLT", "LU"]
         solver_ordering = ['AMD', 'COLAMD']
         if solver_type in solver_type_list and ordering in solver_ordering:
-            taichi_arch = taichi.lang.impl.get_runtime().prog.config.arch
+            taichi_arch = taichi.lang.impl.get_runtime().prog.config().arch
             assert taichi_arch == _ti_core.Arch.x64 or taichi_arch == _ti_core.Arch.arm64 or taichi_arch == _ti_core.Arch.cuda, "SparseSolver only supports CPU and CUDA for now."
             if taichi_arch == _ti_core.Arch.cuda:
                 self.solver = _ti_core.make_cusparse_solver(

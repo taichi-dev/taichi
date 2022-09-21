@@ -17,7 +17,7 @@ class AnyArray:
     def __init__(self, ptr):
         assert ptr.is_external_tensor_expr()
         self.ptr = ptr
-        self.ptr.type_check(impl.get_runtime().prog.config)
+        self.ptr.type_check(impl.get_runtime().prog.config())
 
     def element_shape(self):
         return _ti_core.get_external_tensor_element_shape(self.ptr)

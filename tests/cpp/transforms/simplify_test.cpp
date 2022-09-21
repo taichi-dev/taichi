@@ -37,8 +37,9 @@ TEST(Simplify, SimplifyLinearizedWithTrivialInputs) {
   irpass::type_check(block.get(), kernel->program->this_thread_config());
   EXPECT_EQ(block->size(), 7);
 
-  irpass::simplify(block.get(),
-                   kernel->program->this_thread_config());  // should lower linearized
+  irpass::simplify(
+      block.get(),
+      kernel->program->this_thread_config());  // should lower linearized
   // EXPECT_EQ(block->size(), 11);  // not required to check size here
 
   irpass::constant_fold(block.get(), kernel->program->this_thread_config(),

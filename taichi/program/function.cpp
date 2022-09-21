@@ -12,7 +12,8 @@ Function::Function(Program *program, const FunctionKey &func_key)
 }
 
 void Function::set_function_body(const std::function<void()> &func) {
-  context = std::make_unique<FrontendContext>(program->this_thread_config().arch);
+  context =
+      std::make_unique<FrontendContext>(program->this_thread_config().arch);
   ir = context->get_root();
   {
     // Note: this is not a mutex

@@ -8,7 +8,7 @@ Debugging a parallel program can be tricky. To help you debug your Taichi progra
 
 - `print` in the Taichi scope, which checks the value of a variable,
 - serialization of your program or a specified parallel for loop,
-- `debug=TRUE`, which detects out-of-bound array accesses,
+- the debug mode activated by `ti.init(debug=TRUE)`, which can detect out-of-bound array accesses,
 - static or non-static `assert`, which verifies an assertion condition at compile time or runtime respectively,
 - `sys.tracebacklimit`, which produces a more concise traceback
 

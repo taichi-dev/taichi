@@ -332,8 +332,8 @@ class PyTaichi:
             # https://github.com/taichi-dev/taichi/blob/27bb1dc3227d9273a79fcb318fdb06fd053068f5/tests/python/test_ad_basics.py#L260-L266
             return
 
-        if get_runtime().prog.config().debug and get_runtime(
-        ).prog.config().validate_autodiff:
+        if get_runtime().prog.config().debug and get_runtime().prog.config(
+        ).validate_autodiff:
             if not root.finalized:
                 root._allocate_adjoint_checkbit()
 

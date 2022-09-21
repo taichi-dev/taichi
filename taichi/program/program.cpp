@@ -186,7 +186,8 @@ void Program::materialize_runtime() {
 }
 
 void Program::destroy_snode_tree(SNodeTree *snode_tree) {
-  TI_ASSERT(arch_uses_llvm(this_thread_config().arch) || this_thread_config().arch == Arch::vulkan ||
+  TI_ASSERT(arch_uses_llvm(this_thread_config().arch) ||
+            this_thread_config().arch == Arch::vulkan ||
             this_thread_config().arch == Arch::dx11);
   program_impl_->destroy_snode_tree(snode_tree);
   free_snode_tree_ids_.push(snode_tree->id());
@@ -221,8 +222,10 @@ void Program::check_runtime_error() {
 
 void Program::synchronize() {
   // Normal mode shouldn't be affected by `sync` flag.
-  if (arch_uses_llvm(this_thread_config().arch) || this_thread_config().arch == Arch::metal ||
-      this_thread_config().arch == Arch::vulkan || this_thread_config().arch == Arch::opengl) {
+  if (arch_uses_llvm(this_thread_config().arch) ||
+      this_thread_config().arch == Arch::metal ||
+      this_thread_config().arch == Arch::vulkan ||
+      this_thread_config().arch == Arch::opengl) {
     program_impl_->synchronize();
   }
 }
@@ -455,8 +458,10 @@ void Program::print_memory_profiler_info() {
 }
 
 std::size_t Program::get_snode_num_dynamically_allocated(SNode *snode) {
-  TI_ASSERT(arch_uses_llvm(this_thread_config().arch) || this_thread_config().arch == Arch::metal ||
-            this_thread_config().arch == Arch::vulkan || this_thread_config().arch == Arch::opengl);
+  TI_ASSERT(arch_uses_llvm(this_thread_config().arch) ||
+            this_thread_config().arch == Arch::metal ||
+            this_thread_config().arch == Arch::vulkan ||
+            this_thread_config().arch == Arch::opengl);
   return program_impl_->get_snode_num_dynamically_allocated(snode,
                                                             result_buffer);
 }
@@ -489,7 +494,8 @@ Texture *Program::create_texture(const DataType type,
 
 intptr_t Program::get_ndarray_data_ptr_as_int(const Ndarray *ndarray) {
   uint64_t *data_ptr{nullptr};
-  if (arch_is_cpu(this_thread_config().arch) || this_thread_config().arch == Arch::cuda) {
+  if (arch_is_cpu(this_thread_config().arch) ||
+      this_thread_config().arch == Arch::cuda) {
     // For the LLVM backends, device allocation is a physical pointer.
     data_ptr =
         program_impl_->get_ndarray_alloc_info_ptr(ndarray->ndarray_alloc_);
@@ -522,8 +528,10 @@ std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(Arch arch) {
     TI_NOT_IMPLEMENTED
 #endif
   }
-  if (arch_uses_llvm(this_thread_config().arch) || this_thread_config().arch == Arch::metal ||
-      this_thread_config().arch == Arch::vulkan || this_thread_config().arch == Arch::opengl) {
+  if (arch_uses_llvm(this_thread_config().arch) ||
+      this_thread_config().arch == Arch::metal ||
+      this_thread_config().arch == Arch::vulkan ||
+      this_thread_config().arch == Arch::opengl) {
     return program_impl_->make_aot_module_builder();
   }
   return nullptr;

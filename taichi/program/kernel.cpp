@@ -124,8 +124,9 @@ void Kernel::operator()(LaunchContextBuilder &ctx_builder) {
 
   program->sync = (program->sync && arch_is_cpu(arch));
   // Note that Kernel::arch may be different from program.config.arch
-  if (program->this_thread_config().debug && (arch_is_cpu(program->this_thread_config().arch) ||
-                                program->this_thread_config().arch == Arch::cuda)) {
+  if (program->this_thread_config().debug &&
+      (arch_is_cpu(program->this_thread_config().arch) ||
+       program->this_thread_config().arch == Arch::cuda)) {
     program->check_runtime_error();
   }
 }
@@ -391,7 +392,8 @@ void Kernel::init(Program &program,
   is_accessor = false;
   is_evaluator = false;
   compiled_ = nullptr;
-  context = std::make_unique<FrontendContext>(program.this_thread_config().arch);
+  context =
+      std::make_unique<FrontendContext>(program.this_thread_config().arch);
   ir = context->get_root();
   ir_is_ast_ = true;
 

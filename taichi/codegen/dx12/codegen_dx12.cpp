@@ -160,7 +160,8 @@ class TaskCodeGenLLVMDX12 : public TaskCodeGenLLVM {
       create_bls_buffer(stmt);
     using Type = OffloadedStmt::TaskType;
     auto offloaded_task_name = init_offloaded_task_function(stmt);
-    if (prog->this_thread_config().kernel_profiler && arch_is_cpu(prog->this_thread_config().arch)) {
+    if (prog->this_thread_config().kernel_profiler &&
+        arch_is_cpu(prog->this_thread_config().arch)) {
       call(
           builder.get(), "LLVMRuntime_profiler_start",
           {get_runtime(), builder->CreateGlobalStringPtr(offloaded_task_name)});
@@ -182,7 +183,8 @@ class TaskCodeGenLLVMDX12 : public TaskCodeGenLLVM {
     } else {
       TI_NOT_IMPLEMENTED
     }
-    if (prog->this_thread_config().kernel_profiler && arch_is_cpu(prog->this_thread_config().arch)) {
+    if (prog->this_thread_config().kernel_profiler &&
+        arch_is_cpu(prog->this_thread_config().arch)) {
       llvm::IRBuilderBase::InsertPointGuard guard(*builder);
       builder->SetInsertPoint(final_block);
       call(builder.get(), "LLVMRuntime_profiler_stop", {get_runtime()});

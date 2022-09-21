@@ -831,11 +831,11 @@ def test_store_scalarize():
     x = ti.Matrix.ndarray(2, 2, ti.i32, shape=5)
     func(x)
 
-    assert (x[0] == [[0, 1], [2, 3]])
-    assert (x[1] == [[1, 2], [3, 4]])
-    assert (x[2] == [[2, 3], [4, 5]])
-    assert (x[3] == [[3, 4], [5, 6]])
-    assert (x[4] == [[4, 5], [6, 7]])
+    assert (x[0] == [[0, 1], [2, 3]]).all()
+    assert (x[1] == [[1, 2], [3, 4]]).all()
+    assert (x[2] == [[2, 3], [4, 5]]).all()
+    assert (x[3] == [[3, 4], [5, 6]]).all()
+    assert (x[4] == [[4, 5], [6, 7]]).all()
 
 
 @test_utils.test(arch=[ti.cuda, ti.cpu],
@@ -853,8 +853,8 @@ def test_load_store_scalarize():
     x = ti.Matrix.ndarray(2, 2, ti.i32, shape=5)
     func(x)
 
-    assert (x[3] == [[1, 2], [3, 4]])
-    assert (x[4] == [[2, 3], [4, 5]])
+    assert (x[3] == [[1, 2], [3, 4]]).all()
+    assert (x[4] == [[2, 3], [4, 5]]).all()
 
 
 @test_utils.test(arch=[ti.cuda, ti.cpu],
@@ -872,8 +872,10 @@ def test_unary_op_scalarize():
     x = ti.Matrix.ndarray(2, 2, ti.f32, shape=5)
     func(x)
 
-    assert (x[0] == [[0., 1.], [2., 3.]])
-    assert (x[1] == [[3., 4.], [5., 6.]])
-    assert (x[2] == [[-0., -1.], [-2., -3.]])
-    assert (x[3] == [[20.08553696, 54.59814835], [148.41316223, 403.42880249]])
-    assert (x[4] == [[4.48168898, 7.38905621], [12.18249416, 20.08553696]])
+    assert (x[0] == [[0., 1.], [2., 3.]]).all()
+    assert (x[1] == [[3., 4.], [5., 6.]]).all()
+    assert (x[2] == [[-0., -1.], [-2., -3.]]).all()
+    assert (x[3] < [[20.086, 54.60], [148.42, 403.43]]).all()
+    assert (x[3] > [[20.085, 54.59], [148.41, 403.42]]).all()
+    assert (x[4] < [[4.49, 7.39], [12.19, 20.09]]).all()
+    assert (x[4] > [[4.48, 7.38], [12.18, 20.08]]).all()

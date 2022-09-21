@@ -4,7 +4,13 @@ sidebar_position: 1
 
 # Debugging
 
-Debugging a parallel program can be tricky. Taichi provides built-in utilities to help you debug your Taichi program more easily.
+Debugging a parallel program can be tricky. To help you debug your Taichi program more easily, Taichi provides a few built-in utilities, including:
+
+- `print` in the Taichi scope, which checks the value of a variable,
+- serialization of your program or a specified parallel for loop,
+- `debug=TRUE`, which detects out-of-bound array accesses,
+- static or non-static `assert`, which verifies an assertion condition at compile time or runtime respectively,
+- `sys.tracebacklimit`, which produces a more concise traceback
 
 ## Runtime `print` in Taichi scope
 

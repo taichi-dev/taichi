@@ -248,8 +248,7 @@ def test_matrix_non_constant_index():
     func4(10)
 
 
-@test_utils.test(arch=ti.cpu)
-def test_matrix_constant_index():
+def _test_matrix_constant_index():
     m = ti.Matrix.field(2, 2, ti.i32, 5)
 
     @ti.kernel
@@ -261,6 +260,16 @@ def test_matrix_constant_index():
     func()
 
     assert np.allclose(m.to_numpy(), np.ones((5, 2, 2), np.int32) * 12)
+
+
+@test_utils.test()
+def test_matrix_constant_index():
+    _test_matrix_constant_index()
+
+
+@test_utils.test(real_matrix=True)
+def test_matrix_constant_index_real_matrix():
+    _test_matrix_constant_index()
 
 
 @test_utils.test(arch=ti.cpu)

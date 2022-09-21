@@ -1528,7 +1528,8 @@ void IRBuilder::init_random_function(Value global_tmp_) {
 
 // use atomic increment for DX API to avoid error X3694
 #ifdef TI_WITH_DX11
-  if (device_->get_cap(DeviceCapability::device_api_backend) == static_cast<uint32>(Arch::dx11)) {
+  if (device_->get_cap(DeviceCapability::device_api_backend) ==
+      static_cast<uint32>(Arch::dx11)) {
     use_atomic_increment = true;
   }
 #endif

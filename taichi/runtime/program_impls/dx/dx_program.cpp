@@ -94,8 +94,7 @@ void Dx11ProgramImpl::dump_cache_data_to_disk() {
   mgr->dump_with_merging();
 }
 
-const std::unique_ptr<gfx::CacheManager>
-    &Dx11ProgramImpl::get_cache_manager() {
+const std::unique_ptr<gfx::CacheManager> &Dx11ProgramImpl::get_cache_manager() {
   if (!cache_manager_) {
     TI_ASSERT(runtime_ && snode_tree_mgr_ && device_);
     auto target_device = std::make_unique<aot::TargetDevice>(config->arch);

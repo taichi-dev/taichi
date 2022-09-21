@@ -289,7 +289,7 @@ Compared with Cython, Taichi is more friendly to Non-C users because it can achi
 
 As its name indicates, Numba is tailored for NumPy. Numba is recommended if your functions involve vectorization of NumPy arrays. Compared with Numba, Taichi enjoys the following advantages:
 
-- Taichi supports multiple data types, including   `struct`, `dataclass`, `quant`, and `sparse`, and allows you to adjust memory layout flexibly. This feature is especially helpful when a program handles massive amounts of data. However, Numba only performs best when dealing with dense NumPy arrays.
+- Taichi provides advanced features, including quantized data types, dataclasses and sparse data structures, and allows you to adjust memory layout flexibly. These features are especially helpful when a program handles massive amounts of data. However, Numba only performs best when dealing with dense NumPy arrays.
 - Taichi can run on different GPU backends, making large-scale parallel programming (such as particle simulation or rendering) much more efficient. But it would be hard even to imagine writing a renderer in Numba.
 
 ### How does Taichi compare with ctypes?

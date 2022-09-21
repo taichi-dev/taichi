@@ -210,7 +210,7 @@ Expr to_broadcast_tensor(const Expr &elt, const DataType &dt) {
                  elt_type->to_string());
   std::vector<Expr> broadcast_values(tensor_type->get_num_elements(), elt);
   return Expr::make<MatrixExpression>(broadcast_values,
-                                      tensor_type->get_shape(), elt_type);
+                                      tensor_type->get_shape(), elt->ret_type);
 }
 
 std::tuple<Expr, Expr> unify_binop_operands(const Expr &e1, const Expr &e2) {

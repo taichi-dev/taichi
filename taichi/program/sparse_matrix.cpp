@@ -414,12 +414,20 @@ std::unique_ptr<SparseMatrix> CuSparseMatrix::addition(
   CUSPARSEDriver::get_instance().cpDestroy(cusparse_handle);
   CUDADriver::get_instance().mem_free(buffer);
   return make_cu_sparse_matrix(matrix_C, rows_, cols_, PrimitiveType::f32);
+#else
+  TI_NOT_IMPLEMENTED;
+  return std::unique_ptr<SparseMatrix>();
 #endif
 }
 
 std::unique_ptr<SparseMatrix> CuSparseMatrix::matmul(
     const CuSparseMatrix &other) const {
+#if defined(TI_WITH_CUDA)      
   return gemm(other, 1.0f, 1.0f);
+#else
+  TI_NOT_IMPLEMENTED;
+  return std::unique_ptr<SparseMatrix>();
+#endif
 }
 
 // Reference:
@@ -503,6 +511,9 @@ std::unique_ptr<SparseMatrix> CuSparseMatrix::gemm(const CuSparseMatrix &other,
   CUSPARSEDriver::get_instance().cpDestroy(handle);
 
   return make_cu_sparse_matrix(mat_C, nrows_A, ncols_B, PrimitiveType::f32);
+#else
+  TI_NOT_IMPLEMENTED;
+  return std::unique_ptr<SparseMatrix>();
 #endif
 }
 
@@ -561,6 +572,9 @@ std::unique_ptr<SparseMatrix> CuSparseMatrix::transpose() const {
   CUDADriver::get_instance().mem_free(buffer);
   CUSPARSEDriver::get_instance().cpDestroy(handle);
   return make_cu_sparse_matrix(mat_AT, ncols_A, nrows_A, PrimitiveType::f32);
+#else
+  TI_NOT_IMPLEMENTED;
+  return std::unique_ptr<SparseMatrix>();
 #endif
 }
 

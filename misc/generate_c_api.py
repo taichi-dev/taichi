@@ -12,7 +12,7 @@ def get_type_name(x: EntryBase):
     elif ty in [Alias, Handle, Enumeration, Structure, Union]:
         return x.name.upper_camel_case
     elif ty in [BitField]:
-        return x.name.extend('flag_bits').upper_camel_case
+        return x.name.extend('flags').upper_camel_case
     else:
         raise RuntimeError(f"'{x.id}' is not a type")
 
@@ -58,13 +58,14 @@ def get_declr(x: EntryBase):
         return '\n'.join(out)
 
     elif ty is BitField:
-        out = ["typedef enum " + get_type_name(x) + " {"]
+        bit_type_name = x.name.extend('flag_bits').upper_camel_case
+        out = ["typedef enum " + bit_type_name + " {"]
         for name, value in x.bits.items():
             out += [
                 f"  {name.extend('bit').screaming_snake_case} = 1 << {value},"
             ]
-        out += ["} " + get_type_name(x) + ";"]
-        out += [f"typedef TiFlags {x.name.extend('flags').upper_camel_case};"]
+        out += ["} " + bit_type_name + ";"]
+        out += [f"typedef TiFlags {get_type_name(x)};"]
         return '\n'.join(out)
 
     elif ty is Structure:
@@ -168,6 +169,7 @@ if __name__ == "__main__":
         BuiltInType("VkImageLayout", "VkImageLayout"),
         BuiltInType("VkImageUsageFlags", "VkImageUsageFlags"),
         BuiltInType("VkImageViewType", "VkImageViewType"),
+        BuiltInType("PFN_vkGetInstanceProcAddr", "PFN_vkGetInstanceProcAddr"),
         BuiltInType("char", "char"),
     }
 

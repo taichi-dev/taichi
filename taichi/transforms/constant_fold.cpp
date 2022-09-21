@@ -144,7 +144,7 @@ class ConstantFold : public BasicStmtVisitor {
       if (is_integral(rhs->ret_type)) {
         auto rhs_val = rhs->val.val_int();
         if (rhs_val < 0 && is_integral(stmt->ret_type)) {
-          TI_ERROR("negative exponent in integer pow is not allowed.");
+          TI_ERROR("Negative exponent in pow(int, int) is not allowed.");
         }
       }
     }

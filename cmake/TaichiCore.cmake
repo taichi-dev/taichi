@@ -319,6 +319,11 @@ if (TI_WITH_OPENGL OR TI_WITH_VULKAN OR TI_WITH_DX11)
   target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE gfx_runtime)
 endif()
 
+if (TI_WITH_OPENGL OR TI_WITH_DX11)
+  set(SPIRV_CROSS_CLI false)
+  add_subdirectory(${PROJECT_SOURCE_DIR}/external/SPIRV-Cross ${PROJECT_BINARY_DIR}/external/SPIRV-Cross)
+endif()
+
 # Vulkan Device API
 if (TI_WITH_VULKAN)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_VULKAN")

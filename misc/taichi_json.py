@@ -1,5 +1,7 @@
+import glob
 import json
 import re
+from collections import defaultdict
 
 
 class Name:
@@ -71,15 +73,20 @@ class DeclarationRegistry:
         DeclarationRegistry.current = declr_reg
 
 
-def load_inc_enums(name, inc_file_name):
-    path = "taichi/inc/" + inc_file_name + ".inc.h"
-    cases = {}
-    with open(path) as f:
-        for line in f.readlines():
-            m = re.match(r"\w+\((\w+)\).*", line)
-            if m:
-                case_name = name.extend(m[1])
-                cases[case_name] = len(cases)
+def load_inc_enums(name):
+    paths = glob.glob("taichi/inc/*.inc.h")
+    cases = defaultdict(dict)
+    for path in paths:
+        with open(path) as f:
+            for line in f.readlines():
+                m = re.match(r"(\w+)\((\w+)\).*", line)
+                if m:
+                    key = m[1]
+                    try:
+                        case_name = name.extend(m[2])
+                    except AssertionError:
+                        continue
+                    cases[key][case_name] = len(cases[key])
     return cases
 
 
@@ -143,7 +150,7 @@ class Enumeration(EntryBase):
     def __init__(self, j):
         super().__init__(j, "enumeration")
         if "inc_cases" in j:
-            self.cases = load_inc_enums(self.name, j["inc_cases"])
+            self.cases = load_inc_enums(self.name)[j["inc_cases"]]
         else:
             self.cases = dict((self.name.extend(name), value)
                               for name, value in j["cases"].items())
@@ -153,7 +160,7 @@ class BitField(EntryBase):
     def __init__(self, j):
         super().__init__(j, "bit_field")
         if "inc_cases" in j:
-            self.bits = load_inc_enums(self.name, j["inc_bits"])
+            self.bits = load_inc_enums(self.name)[j["inc_bits"]]
         else:
             self.bits = dict((self.name.extend(name), value)
                              for name, value in j["bits"].items())

@@ -8,15 +8,15 @@ from taichi._snode.fields_builder import FieldsBuilder
 from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang._ndrange import GroupedNDRange, _Ndrange
 from taichi.lang.any_array import AnyArray, AnyArrayAccess
-from taichi.lang.enums import Layout, SNodeGradType
+from taichi.lang.enums import SNodeGradType
 from taichi.lang.exception import (TaichiRuntimeError, TaichiSyntaxError,
                                    TaichiTypeError)
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.kernel_arguments import SparseMatrixProxy
 from taichi.lang.matrix import (Matrix, MatrixField, MatrixNdarray, MatrixType,
-                                _IntermediateMatrix, _MatrixFieldElement,
-                                make_matrix)
+                                Vector, _IntermediateMatrix,
+                                _MatrixFieldElement)
 from taichi.lang.mesh import (ConvType, MeshElementFieldProxy, MeshInstance,
                               MeshRelationAccessProxy,
                               MeshReorderedMatrixFieldProxy,
@@ -64,6 +64,10 @@ def expr_init(rhs):
                 entries = [[rhs(i, j) for j in range(rhs.m)]
                            for i in range(rhs.n)]
             return make_matrix(entries)
+        if (isinstance(rhs, Vector)
+                or getattr(rhs, "ndim", None) == 1) and rhs.m == 1:
+            # _IntermediateMatrix may reach here
+            return Vector(rhs.to_list(), ndim=rhs.ndim)
         return Matrix(rhs.to_list(), ndim=rhs.ndim)
     if isinstance(rhs, SharedArray):
         return rhs
@@ -236,7 +240,6 @@ def subscript(value, *_indices, skip_reordered=False, get_ref=False):
         assert current_cfg().real_matrix is True
         assert is_tensor(value.ptr.get_ret_type())
 
-        # TODO(zhanlue): Merge _ti_core.subscript and _ti_core.make_index_expr
         return Expr(
             _ti_core.subscript(value.ptr, indices_expr_group,
                                get_runtime().get_current_src_info()))
@@ -746,13 +749,12 @@ def field(dtype,
 
 
 @python_scope
-def ndarray(dtype, shape, layout=Layout.NULL):
+def ndarray(dtype, shape):
     """Defines a Taichi ndarray with scalar elements.
 
     Args:
         dtype (Union[DataType, MatrixType]): Data type of each element. This can be either a scalar type like ti.f32 or a compound type like ti.types.vector(3, ti.i32).
         shape (Union[int, tuple[int]]): Shape of the ndarray.
-        layout (Layout, optional): Layout of ndarray, only applicable when element is non-scalar type. Default is Layout.AOS.
 
     Example:
         The code below shows how a Taichi ndarray with scalar elements can be declared and defined::
@@ -761,16 +763,14 @@ def ndarray(dtype, shape, layout=Layout.NULL):
             >>> vec3 = ti.types.vector(3, ti.i32)
             >>> y = ti.ndarray(vec3, shape=(10, 2))  # ndarray of shape (10, 2), each element is a vector of 3 ti.i32 scalars.
             >>> matrix_ty = ti.types.matrix(3, 4, float)
-            >>> z = ti.ndarray(matrix_ty, shape=(4, 5), layout=ti.Layout.SOA)  # ndarray of shape (4, 5), each element is a matrix of (3, 4) ti.float scalars.
+            >>> z = ti.ndarray(matrix_ty, shape=(4, 5))  # ndarray of shape (4, 5), each element is a matrix of (3, 4) ti.float scalars.
     """
     if isinstance(shape, numbers.Number):
         shape = (shape, )
     if dtype in all_types:
-        assert layout == Layout.NULL
         return ScalarNdarray(dtype, shape)
     if isinstance(dtype, MatrixType):
-        layout = Layout.AOS if layout == Layout.NULL else layout
-        return MatrixNdarray(dtype.n, dtype.m, dtype.dtype, shape, layout)
+        return MatrixNdarray(dtype.n, dtype.m, dtype.dtype, shape)
 
     raise TaichiRuntimeError(
         f'{dtype} is not supported as ndarray element type')

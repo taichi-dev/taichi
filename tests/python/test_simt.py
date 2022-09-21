@@ -434,7 +434,7 @@ def _test_subgroup_reduce(op, group_op, np_op, size, initial_value, dtype):
 # i.e. any device other than a subgroup size of 1 should have one non active group
 
 
-@test_utils.test(arch=ti.vulkan)
+@test_utils.test(arch=ti.vulkan, exclude=[(ti.vulkan, "Darwin")])
 def test_subgroup_reduction_add_i32():
     _test_subgroup_reduce(ti.atomic_add, subgroup.reduce_add, np.sum, 2677, 0,
                           ti.i32)
@@ -451,7 +451,7 @@ def test_subgroup_reduction_add_f32():
 #     _test_subgroup_reduce(ti.atomic_add, subgroup.reduce_mul, np.prod, 8, 1, ti.f32)
 
 
-@test_utils.test(arch=ti.vulkan)
+@test_utils.test(arch=ti.vulkan, exclude=[(ti.vulkan, "Darwin")])
 def test_subgroup_reduction_max_i32():
     _test_subgroup_reduce(ti.atomic_max, subgroup.reduce_max, np.max, 2677, 0,
                           ti.i32)

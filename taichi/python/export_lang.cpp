@@ -203,6 +203,8 @@ void export_lang(py::module &m) {
                      &CompileConfig::ndarray_use_cached_allocator)
       .def_readwrite("use_mesh", &CompileConfig::use_mesh)
       .def_readwrite("real_matrix", &CompileConfig::real_matrix)
+      .def_readwrite("real_matrix_scalarize",
+                     &CompileConfig::real_matrix_scalarize)
       .def_readwrite("cc_compile_cmd", &CompileConfig::cc_compile_cmd)
       .def_readwrite("cc_link_cmd", &CompileConfig::cc_link_cmd)
       .def_readwrite("quant_opt_store_fusion",
@@ -754,6 +756,20 @@ void export_lang(py::module &m) {
       .def("set_adjoint", &Expr::set_adjoint)
       .def("set_adjoint_checkbit", &Expr::set_adjoint_checkbit)
       .def("set_dual", &Expr::set_dual)
+      .def("set_dynamic_index_stride",
+           [&](Expr *expr, int dynamic_index_stride) {
+             auto matrix_field = expr->cast<MatrixFieldExpression>();
+             matrix_field->dynamic_indexable = true;
+             matrix_field->dynamic_index_stride = dynamic_index_stride;
+           })
+      .def("get_dynamic_indexable",
+           [&](Expr *expr) -> bool {
+             return expr->cast<MatrixFieldExpression>()->dynamic_indexable;
+           })
+      .def("get_dynamic_index_stride",
+           [&](Expr *expr) -> int {
+             return expr->cast<MatrixFieldExpression>()->dynamic_index_stride;
+           })
       .def(
           "get_dt",
           [&](Expr *expr) -> const Type * {
@@ -837,6 +853,8 @@ void export_lang(py::module &m) {
   m.def("expr_loop_unique", loop_unique);
 
   m.def("expr_field", expr_field);
+
+  m.def("expr_matrix_field", expr_matrix_field);
 
 #define DEFINE_EXPRESSION_OP(x) m.def("expr_" #x, expr_##x);
 

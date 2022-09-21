@@ -22,7 +22,4 @@ target_include_directories(${OPENGL_RHI}
   )
 
 target_link_libraries(opengl_rhi PRIVATE glfw)
-
-set(SPIRV_CROSS_CLI false)
-add_subdirectory(${PROJECT_SOURCE_DIR}/external/SPIRV-Cross ${PROJECT_BINARY_DIR}/external/SPIRV-Cross)
 target_link_libraries(opengl_rhi PRIVATE spirv-cross-glsl spirv-cross-core)

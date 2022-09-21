@@ -12,6 +12,10 @@ TLANG_NAMESPACE_BEGIN
                  "[{}] was not type-checked",           \
                  ExpressionHumanFriendlyPrinter::expr_to_string(x))
 
+static bool is_primitive_or_tensor_type(DataType &type) {
+  return type->is<PrimitiveType>() || type->is<TensorType>();
+}
+
 FrontendSNodeOpStmt::FrontendSNodeOpStmt(SNodeOpType op_type,
                                          SNode *snode,
                                          const ExprGroup &indices,
@@ -135,22 +139,47 @@ void RandExpression::flatten(FlattenContext *ctx) {
 
 void UnaryOpExpression::type_check(CompileConfig *config) {
   TI_ASSERT_TYPE_CHECKED(operand);
-  if (!operand->ret_type->is<PrimitiveType>())
-    throw TaichiTypeError(
-        fmt::format("unsupported operand type(s) for '{}': '{}'",
-                    unary_op_type_name(type), operand->ret_type->to_string()));
+
+  TI_ASSERT(config != nullptr);
+  /*
+    Dtype inference for both TensorType and PrimitiveType follow are essentially
+    the same. Therefore we extract the primitive type to perform the type
+    inference, and then reconstruct the TensorType once neccessary.
+  */
+
+  auto operand_primitive_type = operand->ret_type.get_element_type();
+  auto ret_primitive_type = ret_type;
+
+  if (config->real_matrix) {
+    TI_ASSERT(operand_primitive_type->is<PrimitiveType>());
+
+  } else if (!operand->ret_type->is<PrimitiveType>()) {
+    throw TaichiTypeError(fmt::format(
+        "unsupported operand type(s) for '{}': '{}'", unary_op_type_name(type),
+        operand_primitive_type->to_string()));
+  }
+
   if ((type == UnaryOpType::round || type == UnaryOpType::floor ||
        type == UnaryOpType::ceil || is_trigonometric(type)) &&
-      !is_real(operand->ret_type))
-    throw TaichiTypeError(
-        fmt::format("'{}' takes real inputs only, however '{}' is provided",
-                    unary_op_type_name(type), operand->ret_type->to_string()));
+      !is_real(operand_primitive_type))
+    throw TaichiTypeError(fmt::format(
+        "'{}' takes real inputs only, however '{}' is provided",
+        unary_op_type_name(type), operand_primitive_type->to_string()));
+
   if ((type == UnaryOpType::sqrt || type == UnaryOpType::exp ||
        type == UnaryOpType::log) &&
-      !is_real(operand->ret_type)) {
-    ret_type = config->default_fp;
+      !is_real(operand_primitive_type)) {
+    ret_primitive_type = config->default_fp;
   } else {
-    ret_type = is_cast() ? cast_type : operand->ret_type;
+    ret_primitive_type = is_cast() ? cast_type : operand_primitive_type;
+  }
+
+  if (operand->ret_type->is<TensorType>()) {
+    ret_type = taichi::lang::TypeFactory::get_instance().get_tensor_type(
+        operand->ret_type.get_shape(), ret_primitive_type);
+  } else {
+    TI_ASSERT(operand->ret_type->is<PrimitiveType>());
+    ret_type = ret_primitive_type;
   }
 }
 
@@ -180,8 +209,17 @@ void BinaryOpExpression::type_check(CompileConfig *config) {
                     binary_op_type_symbol(type), lhs->ret_type->to_string(),
                     rhs->ret_type->to_string()));
   };
-  if (!lhs_type->is<PrimitiveType>() || !rhs_type->is<PrimitiveType>())
+
+  if (!is_primitive_or_tensor_type(lhs_type) ||
+      !is_primitive_or_tensor_type(rhs_type)) {
     error();
+  }
+
+  if ((lhs_type->is<PrimitiveType>() && rhs_type->is<TensorType>()) ||
+      (lhs_type->is<TensorType>() && rhs_type->is<PrimitiveType>())) {
+    TI_NOT_IMPLEMENTED;
+  }
+
   if (binary_is_bitwise(type) &&
       (!is_integral(lhs_type) || !is_integral(rhs_type)))
     error();
@@ -192,7 +230,8 @@ void BinaryOpExpression::type_check(CompileConfig *config) {
     ret_type = PrimitiveType::i32;
     return;
   }
-  if (is_shift_op(type)) {
+  if (is_shift_op(type) ||
+      (type == BinaryOpType::pow && is_integral(rhs_type))) {
     ret_type = lhs_type;
     return;
   }
@@ -440,7 +479,6 @@ void MatrixExpression::type_check(CompileConfig *config) {
 }
 
 void MatrixExpression::flatten(FlattenContext *ctx) {
-  // TODO: implement flatten
   TI_ASSERT(this->dt->is<TensorType>());
   std::vector<Stmt *> values;
   for (auto &elt : elements) {
@@ -500,6 +538,11 @@ void IndexExpression::type_check(CompileConfig *) {
       ret_type = var.cast<ExternalTensorExpression>()->dt;
     }
   } else if (is_tensor()) {  // local tensor
+    auto shape = var->ret_type->as<TensorType>()->get_shape();
+    if (indices.size() != shape.size()) {
+      TI_ERROR("Expected {} indices, but got {}.", shape.size(),
+               indices.size());
+    }
     ret_type = var->ret_type->cast<TensorType>()->get_element_type();
   } else {
     throw TaichiTypeError(
@@ -586,6 +629,9 @@ void LoopUniqueExpression::flatten(FlattenContext *ctx) {
 
 void IdExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->current_block->lookup_var(id);
+  if (!ret_type->is_primitive(PrimitiveTypeID::unknown)) {
+    stmt->ret_type = ret_type;
+  }
 }
 
 void AtomicOpExpression::type_check(CompileConfig *) {
@@ -1018,7 +1064,8 @@ Expr ASTBuilder::expr_alloca() {
 Expr ASTBuilder::make_matrix_expr(const std::vector<int> &shape,
                                   const DataType &dt,
                                   const std::vector<Expr> &elements) {
-  return Expr(std::make_shared<MatrixExpression>(elements, shape, dt));
+  auto mat = Expr(std::make_shared<MatrixExpression>(elements, shape, dt));
+  return mat;
 }
 
 Expr ASTBuilder::expr_alloca_local_tensor(const std::vector<int> &shape,

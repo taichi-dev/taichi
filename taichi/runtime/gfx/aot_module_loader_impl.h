@@ -19,6 +19,13 @@ namespace gfx {
 struct TI_DLL_EXPORT AotModuleParams {
   std::string module_path;
   GfxRuntime *runtime{nullptr};
+  bool enable_lazy_loading{false};
+
+  AotModuleParams() = default;
+
+  AotModuleParams(const std::string &path, GfxRuntime *rt)
+      : module_path(path), runtime(rt) {
+  }
 };
 
 TI_DLL_EXPORT std::unique_ptr<aot::Module> make_aot_module(

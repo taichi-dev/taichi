@@ -45,6 +45,7 @@ struct CompileConfig {
   bool ndarray_use_cached_allocator;
   bool use_mesh;
   bool real_matrix;
+  bool real_matrix_scalarize;
   DataType default_fp;
   DataType default_ip;
   DataType default_up;
@@ -96,7 +97,7 @@ struct CompileConfig {
   int auto_mesh_local_default_occupacy{4};
 
   // Offline cache options
-  bool offline_cache{true};
+  bool offline_cache{false};
   std::string offline_cache_file_path{get_repo_dir() + "ticache"};
   std::string offline_cache_cleaning_policy{
       "lru"};  // "never"|"version"|"lru"|"fifo"

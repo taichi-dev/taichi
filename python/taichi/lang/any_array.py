@@ -33,8 +33,8 @@ class AnyArray:
     def get_type(self):
         return NdarrayTypeMetadata(
             self.ptr.get_ret_type(),
-            None,  # AnyArray can take any shape
-            self.layout())
+            None  # AnyArray can take any shape
+        )
 
     @property
     @taichi_scope

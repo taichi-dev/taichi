@@ -88,9 +88,15 @@ bool VulkanLoader::check_vulkan_device() {
   return found_device_with_compute;
 }
 
-bool VulkanLoader::init() {
+bool VulkanLoader::init(PFN_vkGetInstanceProcAddr get_proc_addr) {
   std::call_once(init_flag_, [&]() {
     if (initialized) {
+      return;
+    }
+    // (penguinliong) So that MoltenVK instances can be imported.
+    if (get_proc_addr != nullptr) {
+      volkInitializeCustom(get_proc_addr);
+      initialized = check_vulkan_device();
       return;
     }
 #if defined(__APPLE__)

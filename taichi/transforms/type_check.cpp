@@ -195,12 +195,21 @@ class TypeCheck : public IRVisitor {
     if (stmt->is_cast()) {
       stmt->ret_type = stmt->cast_type;
     }
-    if (!is_real(stmt->operand->ret_type)) {
+
+    DataType primitive_dtype = stmt->operand->ret_type.get_element_type();
+    if (!is_real(primitive_dtype)) {
       if (stmt->op_type == UnaryOpType::sqrt ||
           stmt->op_type == UnaryOpType::exp ||
           stmt->op_type == UnaryOpType::log) {
-        cast(stmt->operand, config_.default_fp);
-        stmt->ret_type = config_.default_fp;
+        DataType target_dtype = config_.default_fp;
+        if (stmt->operand->ret_type->is<TensorType>()) {
+          target_dtype = TypeFactory::get_instance().create_tensor_type(
+              stmt->operand->ret_type->as<TensorType>()->get_shape(),
+              target_dtype);
+        }
+
+        cast(stmt->operand, target_dtype);
+        stmt->ret_type = target_dtype;
       }
     }
   }
@@ -276,6 +285,11 @@ class TypeCheck : public IRVisitor {
     if (stmt->lhs->ret_type->is_primitive(PrimitiveTypeID::unknown) &&
         stmt->rhs->ret_type->is_primitive(PrimitiveTypeID::unknown))
       error();
+    if (stmt->op_type == BinaryOpType::pow &&
+        is_integral(stmt->rhs->ret_type)) {
+      stmt->ret_type = stmt->lhs->ret_type;
+      return;
+    }
 
     // lower truediv into div
 
@@ -506,7 +520,12 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(GlobalTemporaryStmt *stmt) override {
-    if (!stmt->ret_type->is<TensorType>())
+    /**
+     * We need to convert TensorType to pointer when
+     * real_matrix is enabled because one can store value
+     * in a loop to a tensor defined outside the loop
+     */
+    if (!stmt->ret_type->is<TensorType>() || config_.real_matrix)
       stmt->ret_type.set_is_pointer(true);
   }
 

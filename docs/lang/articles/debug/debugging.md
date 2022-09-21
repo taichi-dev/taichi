@@ -293,7 +293,7 @@ Traceback (most recent call last):
     build_stmt(ctx, node.value)
   File "/Users/lanhaidong/taichi/taichi/python/taichi/lang/ast/ast_transformer_utils.py", line 32, in __call__
     raise TaichiCompilationError(msg)
-taichi.lang.exception.TaichiCompilationError: On line 10 of file "misc/demo_traceback.py":
+taichi.lang.exception.TaichiCompilationError: File "misc/demo_traceback.py", line 10:
     ti.static_assert(1 + 1 == 3)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError:
@@ -319,7 +319,7 @@ AssertionError
 
 During handling of the above exception, another exception occurred:
 
-taichi.lang.exception.TaichiCompilationError: On line 10 of file "misc/demo_traceback.py":
+taichi.lang.exception.TaichiCompilationError: File "misc/demo_traceback.py", line 10:
     ti.static_assert(1 + 1 == 3)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError:

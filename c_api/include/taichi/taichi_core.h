@@ -32,8 +32,11 @@ typedef struct TiEvent_t *TiEvent;
 // handle.memory
 typedef struct TiMemory_t *TiMemory;
 
-// handle.texture
-typedef struct TiTexture_t *TiTexture;
+// handle.image
+typedef struct TiImage_t *TiImage;
+
+// handle.sampler
+typedef struct TiSampler_t *TiSampler;
 
 // handle.kernel
 typedef struct TiKernel_t *TiKernel;
@@ -53,6 +56,7 @@ typedef enum TiError {
   TI_ERROR_ARGUMENT_OUT_OF_RANGE = -6,
   TI_ERROR_ARGUMENT_NOT_FOUND = -7,
   TI_ERROR_INVALID_INTEROP = -8,
+  TI_ERROR_INVALID_STATE = -9,
   TI_ERROR_MAX_ENUM = 0xffffffff,
 } TiError;
 
@@ -67,9 +71,10 @@ typedef enum TiArch {
   TI_ARCH_METAL = 6,
   TI_ARCH_OPENGL = 7,
   TI_ARCH_DX11 = 8,
-  TI_ARCH_OPENCL = 9,
-  TI_ARCH_AMDGPU = 10,
-  TI_ARCH_VULKAN = 11,
+  TI_ARCH_DX12 = 9,
+  TI_ARCH_OPENCL = 10,
+  TI_ARCH_AMDGPU = 11,
+  TI_ARCH_VULKAN = 12,
   TI_ARCH_MAX_ENUM = 0xffffffff,
 } TiArch;
 
@@ -116,7 +121,7 @@ typedef struct TiMemoryAllocateInfo {
   TiBool host_write;
   TiBool host_read;
   TiBool export_sharing;
-  TiMemoryUsageFlagBits usage;
+  TiMemoryUsageFlags usage;
 } TiMemoryAllocateInfo;
 
 // structure.memory_slice
@@ -140,122 +145,154 @@ typedef struct TiNdArray {
   TiDataType elem_type;
 } TiNdArray;
 
-// bit_field.texture_usage
-typedef enum TiTextureUsageFlagBits {
-  TI_TEXTURE_USAGE_STORAGE_BIT = 1 << 0,
-  TI_TEXTURE_USAGE_SAMPLED_BIT = 1 << 1,
-  TI_TEXTURE_USAGE_ATTACHMENT_BIT = 1 << 2,
-} TiTextureUsageFlagBits;
-typedef TiFlags TiTextureUsageFlags;
+// bit_field.image_usage
+typedef enum TiImageUsageFlagBits {
+  TI_IMAGE_USAGE_STORAGE_BIT = 1 << 0,
+  TI_IMAGE_USAGE_SAMPLED_BIT = 1 << 1,
+  TI_IMAGE_USAGE_ATTACHMENT_BIT = 1 << 2,
+} TiImageUsageFlagBits;
+typedef TiFlags TiImageUsageFlags;
 
-// enumeration.texture_dimension
-typedef enum TiTextureDimension {
-  TI_TEXTURE_DIMENSION_1D = 0,
-  TI_TEXTURE_DIMENSION_2D = 1,
-  TI_TEXTURE_DIMENSION_3D = 2,
-  TI_TEXTURE_DIMENSION_1D_ARRAY = 3,
-  TI_TEXTURE_DIMENSION_2D_ARRAY = 4,
-  TI_TEXTURE_DIMENSION_CUBE = 5,
-  TI_TEXTURE_DIMENSION_MAX_ENUM = 0xffffffff,
-} TiTextureDimension;
+// enumeration.image_dimension
+typedef enum TiImageDimension {
+  TI_IMAGE_DIMENSION_1D = 0,
+  TI_IMAGE_DIMENSION_2D = 1,
+  TI_IMAGE_DIMENSION_3D = 2,
+  TI_IMAGE_DIMENSION_1D_ARRAY = 3,
+  TI_IMAGE_DIMENSION_2D_ARRAY = 4,
+  TI_IMAGE_DIMENSION_CUBE = 5,
+  TI_IMAGE_DIMENSION_MAX_ENUM = 0xffffffff,
+} TiImageDimension;
 
-// enumeration.texture_layout
-typedef enum TiTextureLayout {
-  TI_TEXTURE_LAYOUT_UNDEFINED = 0,
-  TI_TEXTURE_LAYOUT_SHADER_READ = 1,
-  TI_TEXTURE_LAYOUT_SHADER_WRITE = 2,
-  TI_TEXTURE_LAYOUT_SHADER_READ_WRITE = 3,
-  TI_TEXTURE_LAYOUT_COLOR_ATTACHMENT = 4,
-  TI_TEXTURE_LAYOUT_COLOR_ATTACHMENT_READ = 5,
-  TI_TEXTURE_LAYOUT_DEPTH_ATTACHMENT = 6,
-  TI_TEXTURE_LAYOUT_DEPTH_ATTACHMENT_READ = 7,
-  TI_TEXTURE_LAYOUT_TRANSFER_DST = 8,
-  TI_TEXTURE_LAYOUT_TRANSFER_SRC = 9,
-  TI_TEXTURE_LAYOUT_PRESENT_SRC = 10,
-  TI_TEXTURE_LAYOUT_MAX_ENUM = 0xffffffff,
-} TiTextureLayout;
+// enumeration.image_layout
+typedef enum TiImageLayout {
+  TI_IMAGE_LAYOUT_UNDEFINED = 0,
+  TI_IMAGE_LAYOUT_SHADER_READ = 1,
+  TI_IMAGE_LAYOUT_SHADER_WRITE = 2,
+  TI_IMAGE_LAYOUT_SHADER_READ_WRITE = 3,
+  TI_IMAGE_LAYOUT_COLOR_ATTACHMENT = 4,
+  TI_IMAGE_LAYOUT_COLOR_ATTACHMENT_READ = 5,
+  TI_IMAGE_LAYOUT_DEPTH_ATTACHMENT = 6,
+  TI_IMAGE_LAYOUT_DEPTH_ATTACHMENT_READ = 7,
+  TI_IMAGE_LAYOUT_TRANSFER_DST = 8,
+  TI_IMAGE_LAYOUT_TRANSFER_SRC = 9,
+  TI_IMAGE_LAYOUT_PRESENT_SRC = 10,
+  TI_IMAGE_LAYOUT_MAX_ENUM = 0xffffffff,
+} TiImageLayout;
 
-// enumeration.texture_format
-typedef enum TiTextureFormat {
-  TI_TEXTURE_FORMAT_UNKNOWN = 0,
-  TI_TEXTURE_FORMAT_R8 = 1,
-  TI_TEXTURE_FORMAT_RG8 = 2,
-  TI_TEXTURE_FORMAT_RGBA8 = 3,
-  TI_TEXTURE_FORMAT_RGBA8SRGB = 4,
-  TI_TEXTURE_FORMAT_BGRA8 = 5,
-  TI_TEXTURE_FORMAT_BGRA8SRGB = 6,
-  TI_TEXTURE_FORMAT_R8U = 7,
-  TI_TEXTURE_FORMAT_RG8U = 8,
-  TI_TEXTURE_FORMAT_RGBA8U = 9,
-  TI_TEXTURE_FORMAT_R8I = 10,
-  TI_TEXTURE_FORMAT_RG8I = 11,
-  TI_TEXTURE_FORMAT_RGBA8I = 12,
-  TI_TEXTURE_FORMAT_R16 = 13,
-  TI_TEXTURE_FORMAT_RG16 = 14,
-  TI_TEXTURE_FORMAT_RGB16 = 15,
-  TI_TEXTURE_FORMAT_RGBA16 = 16,
-  TI_TEXTURE_FORMAT_R16U = 17,
-  TI_TEXTURE_FORMAT_RG16U = 18,
-  TI_TEXTURE_FORMAT_RGB16U = 19,
-  TI_TEXTURE_FORMAT_RGBA16U = 20,
-  TI_TEXTURE_FORMAT_R16I = 21,
-  TI_TEXTURE_FORMAT_RG16I = 22,
-  TI_TEXTURE_FORMAT_RGB16I = 23,
-  TI_TEXTURE_FORMAT_RGBA16I = 24,
-  TI_TEXTURE_FORMAT_R16F = 25,
-  TI_TEXTURE_FORMAT_RG16F = 26,
-  TI_TEXTURE_FORMAT_RGB16F = 27,
-  TI_TEXTURE_FORMAT_RGBA16F = 28,
-  TI_TEXTURE_FORMAT_R32U = 29,
-  TI_TEXTURE_FORMAT_RG32U = 30,
-  TI_TEXTURE_FORMAT_RGB32U = 31,
-  TI_TEXTURE_FORMAT_RGBA32U = 32,
-  TI_TEXTURE_FORMAT_R32I = 33,
-  TI_TEXTURE_FORMAT_RG32I = 34,
-  TI_TEXTURE_FORMAT_RGB32I = 35,
-  TI_TEXTURE_FORMAT_RGBA32I = 36,
-  TI_TEXTURE_FORMAT_R32F = 37,
-  TI_TEXTURE_FORMAT_RG32F = 38,
-  TI_TEXTURE_FORMAT_RGB32F = 39,
-  TI_TEXTURE_FORMAT_RGBA32F = 40,
-  TI_TEXTURE_FORMAT_DEPTH16 = 41,
-  TI_TEXTURE_FORMAT_DEPTH24STENCIL8 = 42,
-  TI_TEXTURE_FORMAT_DEPTH32F = 43,
-  TI_TEXTURE_FORMAT_MAX_ENUM = 0xffffffff,
-} TiTextureFormat;
+// enumeration.format
+typedef enum TiFormat {
+  TI_FORMAT_UNKNOWN = 0,
+  TI_FORMAT_R8 = 1,
+  TI_FORMAT_RG8 = 2,
+  TI_FORMAT_RGBA8 = 3,
+  TI_FORMAT_RGBA8SRGB = 4,
+  TI_FORMAT_BGRA8 = 5,
+  TI_FORMAT_BGRA8SRGB = 6,
+  TI_FORMAT_R8U = 7,
+  TI_FORMAT_RG8U = 8,
+  TI_FORMAT_RGBA8U = 9,
+  TI_FORMAT_R8I = 10,
+  TI_FORMAT_RG8I = 11,
+  TI_FORMAT_RGBA8I = 12,
+  TI_FORMAT_R16 = 13,
+  TI_FORMAT_RG16 = 14,
+  TI_FORMAT_RGB16 = 15,
+  TI_FORMAT_RGBA16 = 16,
+  TI_FORMAT_R16U = 17,
+  TI_FORMAT_RG16U = 18,
+  TI_FORMAT_RGB16U = 19,
+  TI_FORMAT_RGBA16U = 20,
+  TI_FORMAT_R16I = 21,
+  TI_FORMAT_RG16I = 22,
+  TI_FORMAT_RGB16I = 23,
+  TI_FORMAT_RGBA16I = 24,
+  TI_FORMAT_R16F = 25,
+  TI_FORMAT_RG16F = 26,
+  TI_FORMAT_RGB16F = 27,
+  TI_FORMAT_RGBA16F = 28,
+  TI_FORMAT_R32U = 29,
+  TI_FORMAT_RG32U = 30,
+  TI_FORMAT_RGB32U = 31,
+  TI_FORMAT_RGBA32U = 32,
+  TI_FORMAT_R32I = 33,
+  TI_FORMAT_RG32I = 34,
+  TI_FORMAT_RGB32I = 35,
+  TI_FORMAT_RGBA32I = 36,
+  TI_FORMAT_R32F = 37,
+  TI_FORMAT_RG32F = 38,
+  TI_FORMAT_RGB32F = 39,
+  TI_FORMAT_RGBA32F = 40,
+  TI_FORMAT_DEPTH16 = 41,
+  TI_FORMAT_DEPTH24STENCIL8 = 42,
+  TI_FORMAT_DEPTH32F = 43,
+  TI_FORMAT_MAX_ENUM = 0xffffffff,
+} TiFormat;
 
-// structure.texture_offset
-typedef struct TiTextureOffset {
+// structure.image_offset
+typedef struct TiImageOffset {
   uint32_t x;
   uint32_t y;
   uint32_t z;
   uint32_t array_layer_offset;
-} TiTextureOffset;
+} TiImageOffset;
 
-// structure.texture_extent
-typedef struct TiTextureExtent {
+// structure.image_extent
+typedef struct TiImageExtent {
   uint32_t width;
   uint32_t height;
   uint32_t depth;
   uint32_t array_layer_count;
-} TiTextureExtent;
+} TiImageExtent;
 
-// structure.texture_allocate_info
-typedef struct TiTextureAllocateInfo {
-  TiTextureDimension dimension;
-  TiTextureExtent extent;
+// structure.image_allocate_info
+typedef struct TiImageAllocateInfo {
+  TiImageDimension dimension;
+  TiImageExtent extent;
   uint32_t mip_level_count;
-  TiTextureFormat format;
-  TiTextureUsageFlagBits usage;
-} TiTextureAllocateInfo;
+  TiFormat format;
+  TiImageUsageFlags usage;
+} TiImageAllocateInfo;
 
-// structure.texture_slice
-typedef struct TiTextureSlice {
-  TiTexture texture;
-  TiTextureOffset offset;
-  TiTextureExtent extent;
+// structure.image_slice
+typedef struct TiImageSlice {
+  TiImage image;
+  TiImageOffset offset;
+  TiImageExtent extent;
   uint32_t mip_level;
-} TiTextureSlice;
+} TiImageSlice;
+
+// enumeration.filter
+typedef enum TiFilter {
+  TI_FILTER_NEAREST = 0,
+  TI_FILTER_LINEAR = 1,
+  TI_FILTER_MAX_ENUM = 0xffffffff,
+} TiFilter;
+
+// enumeration.address_mode
+typedef enum TiAddressMode {
+  TI_ADDRESS_MODE_REPEAT = 0,
+  TI_ADDRESS_MODE_MIRRORED_REPEAT = 1,
+  TI_ADDRESS_MODE_CLAMP_TO_EDGE = 2,
+  TI_ADDRESS_MODE_MAX_ENUM = 0xffffffff,
+} TiAddressMode;
+
+// structure.sampler_create_info
+typedef struct TiSamplerCreateInfo {
+  TiFilter mag_filter;
+  TiFilter min_filter;
+  TiAddressMode address_mode;
+  float max_anisotropy;
+} TiSamplerCreateInfo;
+
+// structure.texture
+typedef struct TiTexture {
+  TiImage image;
+  TiSampler sampler;
+  TiImageDimension dimension;
+  TiImageExtent extent;
+  TiFormat format;
+} TiTexture;
 
 // union.argument_value
 typedef union TiArgumentValue {
@@ -308,14 +345,20 @@ TI_DLL_EXPORT void *TI_API_CALL ti_map_memory(TiRuntime runtime,
 TI_DLL_EXPORT void TI_API_CALL ti_unmap_memory(TiRuntime runtime,
                                                TiMemory memory);
 
-// function.allocate_texture
-TI_DLL_EXPORT TiTexture TI_API_CALL
-ti_allocate_texture(TiRuntime runtime,
-                    const TiTextureAllocateInfo *allocate_info);
+// function.allocate_image
+TI_DLL_EXPORT TiImage TI_API_CALL
+ti_allocate_image(TiRuntime runtime, const TiImageAllocateInfo *allocate_info);
 
-// function.free_texture
-TI_DLL_EXPORT void TI_API_CALL ti_free_texture(TiRuntime runtime,
-                                               TiTexture texture);
+// function.free_image
+TI_DLL_EXPORT void TI_API_CALL ti_free_image(TiRuntime runtime, TiImage image);
+
+// function.create_sampler
+TI_DLL_EXPORT TiSampler TI_API_CALL
+ti_create_sampler(TiRuntime runtime, const TiSamplerCreateInfo *create_info);
+
+// function.destroy_sampler
+TI_DLL_EXPORT void TI_API_CALL ti_destroy_sampler(TiRuntime runtime,
+                                                  TiSampler sampler);
 
 // function.create_event
 TI_DLL_EXPORT TiEvent TI_API_CALL ti_create_event(TiRuntime runtime);
@@ -329,16 +372,16 @@ ti_copy_memory_device_to_device(TiRuntime runtime,
                                 const TiMemorySlice *dst_memory,
                                 const TiMemorySlice *src_memory);
 
-// function.copy_texture_device_to_device
+// function.copy_image_device_to_device
 TI_DLL_EXPORT void TI_API_CALL
-ti_copy_texture_device_to_device(TiRuntime runtime,
-                                 const TiTextureSlice *dst_texture,
-                                 const TiTextureSlice *src_texture);
+ti_copy_image_device_to_device(TiRuntime runtime,
+                               const TiImageSlice *dst_image,
+                               const TiImageSlice *src_image);
 
-// function.transition_texture
-TI_DLL_EXPORT void TI_API_CALL ti_transition_texture(TiRuntime runtime,
-                                                     TiTexture texture,
-                                                     TiTextureLayout layout);
+// function.transition_image
+TI_DLL_EXPORT void TI_API_CALL ti_transition_image(TiRuntime runtime,
+                                                   TiImage image,
+                                                   TiImageLayout layout);
 
 // function.launch_kernel
 TI_DLL_EXPORT void TI_API_CALL ti_launch_kernel(TiRuntime runtime,

@@ -521,6 +521,37 @@ class FieldExpression : public Expression {
   TI_DEFINE_ACCEPT_FOR_EXPRESSION
 };
 
+class MatrixFieldExpression : public Expression {
+ public:
+  std::vector<Expr> fields;
+  std::vector<int> element_shape;
+  bool dynamic_indexable{false};
+  int dynamic_index_stride{0};
+
+  MatrixFieldExpression(const std::vector<Expr> &fields,
+                        const std::vector<int> &element_shape)
+      : fields(fields), element_shape(element_shape) {
+    for (auto &field : fields) {
+      TI_ASSERT(field.is<FieldExpression>());
+    }
+    TI_ASSERT(!fields.empty());
+    auto compute_type =
+        fields[0].cast<FieldExpression>()->dt->get_compute_type();
+    for (auto &field : fields) {
+      if (field.cast<FieldExpression>()->dt->get_compute_type() !=
+          compute_type) {
+        throw TaichiRuntimeError(
+            "Member fields of a matrix field must have the same compute type");
+      }
+    }
+  }
+
+  void type_check(CompileConfig *config) override {
+  }
+
+  TI_DEFINE_ACCEPT_FOR_EXPRESSION
+};
+
 /**
  * Creating a local matrix;
  * lowered from ti.Matrix with real_matrix=True

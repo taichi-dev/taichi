@@ -301,7 +301,7 @@ def test_set_image_with_texture():
 
     render()
 
-    verify_image(window.get_image_buffer_as_numpy(), 'test_set_image')
+    verify_image(window.get_image_buffer_as_numpy(), 'test_set_image', 0.3)
     window.destroy()
 
 
@@ -390,12 +390,12 @@ def test_fetching_color_attachment():
 
 
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
-@test_utils.test(arch=supported_archs)
+@test_utils.test(arch=supported_archs, exclude=[(ti.vulkan, "Darwin")])
 def test_fetching_depth_attachment():
     window = ti.ui.Window("test", (512, 512), vsync=True, show_window=False)
     canvas = window.get_canvas()
     scene = ti.ui.Scene()
-    camera = ti.ui.make_camera()
+    camera = ti.ui.Camera()
 
     ball_center = ti.Vector.field(3, dtype=float, shape=(1, ))
     ball_center[0] = ti.math.vec3(0, 0, 0.5)
@@ -419,7 +419,7 @@ def test_fetching_depth_attachment():
 
 
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
-@test_utils.test(arch=supported_archs)
+@test_utils.test(arch=supported_archs, exclude=[(ti.vulkan, "Darwin")])
 def test_draw_lines():
     N = 10
     particles_pos = ti.Vector.field(3, dtype=ti.f32, shape=N)
@@ -437,7 +437,7 @@ def test_draw_lines():
                           show_window=False)
     canvas = window.get_canvas()
     scene = ti.ui.Scene()
-    camera = ti.ui.make_camera()
+    camera = ti.ui.Camera()
     camera.position(0, 5, -10)
     camera.lookat(3, 3, 1)
 
@@ -464,7 +464,7 @@ def test_draw_lines():
 
 
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
-@test_utils.test(arch=supported_archs)
+@test_utils.test(arch=supported_archs, exclude=[(ti.vulkan, "Darwin")])
 def test_draw_part_of_particles():
     N = 10
     particles_pos = ti.Vector.field(3, dtype=ti.f32, shape=N)
@@ -481,7 +481,7 @@ def test_draw_part_of_particles():
     window = ti.ui.Window("Test", (768, 768), show_window=False)
     canvas = window.get_canvas()
     scene = ti.ui.Scene()
-    camera = ti.ui.make_camera()
+    camera = ti.ui.Camera()
     camera.position(0, 5, -10)
     camera.lookat(3, 3, 1)
 
@@ -571,7 +571,7 @@ def test_draw_part_of_mesh():
     window = ti.ui.Window("test", (1024, 1024), vsync=True, show_window=False)
     canvas = window.get_canvas()
     scene = ti.ui.Scene()
-    camera = ti.ui.make_camera()
+    camera = ti.ui.Camera()
     camera.position(1.5, 1, -1)
     camera.lookat(1, 0.5, 0)
     camera.fov(90)
@@ -598,7 +598,7 @@ def test_draw_part_of_mesh():
 
 
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
-@test_utils.test(arch=supported_archs)
+@test_utils.test(arch=supported_archs, exclude=[(ti.vulkan, "Darwin")])
 def test_draw_part_of_lines():
     N = 10
     particles_pos = ti.Vector.field(3, dtype=ti.f32, shape=N)
@@ -615,7 +615,7 @@ def test_draw_part_of_lines():
     window = ti.ui.Window("Test", (768, 768), show_window=False)
     canvas = window.get_canvas()
     scene = ti.ui.Scene()
-    camera = ti.ui.make_camera()
+    camera = ti.ui.Camera()
     camera.position(0, 5, -10)
     camera.lookat(3, 3, 1)
 
@@ -737,7 +737,7 @@ def test_draw_mesh_instances():
     window = ti.ui.Window("test", (1024, 1024), vsync=True, show_window=False)
     canvas = window.get_canvas()
     scene = ti.ui.Scene()
-    camera = ti.ui.make_camera()
+    camera = ti.ui.Camera()
     camera.position(-1.82731234, 2.26492691, 2.27800684)
     camera.lookat(-1.13230401, 2.11502124, 1.57480579)
     camera.fov(90)
@@ -752,10 +752,6 @@ def test_draw_mesh_instances():
                             two_sided=True,
                             transforms=instances_transforms)
         canvas.scene(scene)
-
-    if (platform.system() == 'Windows'):
-        # FIXME:Fix the bug that drawing mesh instance report bugs on Windows
-        return
 
     for i in range(30):
         update_transform(30)
@@ -850,7 +846,7 @@ def test_draw_part_of_mesh_instances():
     window = ti.ui.Window("test", (1024, 1024), vsync=True, show_window=False)
     canvas = window.get_canvas()
     scene = ti.ui.Scene()
-    camera = ti.ui.make_camera()
+    camera = ti.ui.Camera()
     camera.position(-1.82731234, 2.26492691, 2.27800684)
     camera.lookat(-1.13230401, 2.11502124, 1.57480579)
     camera.fov(90)
@@ -867,10 +863,6 @@ def test_draw_part_of_mesh_instances():
                             instance_count=10,
                             instance_offset=2)
         canvas.scene(scene)
-
-    if (platform.system() == 'Windows'):
-        # FIXME:Fix the bug that drawing mesh instance report bugs on Windows
-        return
 
     for _ in range(RENDER_REPEAT):
         render()
@@ -946,7 +938,7 @@ def test_wireframe_mode():
     window = ti.ui.Window("test", (1024, 1024), vsync=True, show_window=False)
     canvas = window.get_canvas()
     scene = ti.ui.Scene()
-    camera = ti.ui.make_camera()
+    camera = ti.ui.Camera()
     camera.position(1.5, 1, -1)
     camera.lookat(1, 0.5, 0)
     camera.fov(90)

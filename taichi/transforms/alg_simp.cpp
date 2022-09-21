@@ -300,7 +300,7 @@ class AlgSimp : public BasicStmtVisitor {
                  exponent >= -max_weaken_exponent) {
         // a ** -n -> 1 / a ** n
         if (is_integral(stmt->lhs->ret_type)) {
-          TI_ERROR("negative exponent in integer pow is not allowed.");
+          TI_ERROR("Negative exponent in pow(int, int) is not allowed.");
         }
         auto one = Stmt::make<ConstStmt>(TypedConstant(1));
         auto one_raw = one.get();

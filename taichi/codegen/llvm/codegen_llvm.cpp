@@ -688,8 +688,24 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
     BINARYOP_MAX(u64)
     BINARYOP_MAX(i64)
     else {
-      TI_P(data_type_name(ret_type));
-      TI_NOT_IMPLEMENTED
+      if (auto tensor_ty = ret_type->cast<TensorType>()) {
+        auto elt_ty = tensor_ty->get_element_type();
+        TI_ASSERT(elt_ty->is_primitive(PrimitiveTypeID::u16) ||
+                  elt_ty->is_primitive(PrimitiveTypeID::i16) ||
+                  elt_ty->is_primitive(PrimitiveTypeID::u32) ||
+                  elt_ty->is_primitive(PrimitiveTypeID::i32) ||
+                  elt_ty->is_primitive(PrimitiveTypeID::u64) ||
+                  elt_ty->is_primitive(PrimitiveTypeID::i64));
+        auto dtype_name = data_type_name(elt_ty);
+        auto binary_max = [this, &dtype_name](llvm::Value *lhs,
+                                              llvm::Value *rhs) {
+          return create_call("max_" + dtype_name, {lhs, rhs});
+        };
+        create_elementwise_binary(stmt, binary_max);
+      } else {
+        TI_P(data_type_name(ret_type));
+        TI_NOT_IMPLEMENTED
+      }
     }
   } else if (op == BinaryOpType::min) {
 #define BINARYOP_MIN(x)                                                     \
@@ -709,8 +725,24 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
     BINARYOP_MIN(u64)
     BINARYOP_MIN(i64)
     else {
-      TI_P(data_type_name(ret_type));
-      TI_NOT_IMPLEMENTED
+      if (auto tensor_ty = ret_type->cast<TensorType>()) {
+        auto elt_ty = tensor_ty->get_element_type();
+        TI_ASSERT(elt_ty->is_primitive(PrimitiveTypeID::u16) ||
+                  elt_ty->is_primitive(PrimitiveTypeID::i16) ||
+                  elt_ty->is_primitive(PrimitiveTypeID::u32) ||
+                  elt_ty->is_primitive(PrimitiveTypeID::i32) ||
+                  elt_ty->is_primitive(PrimitiveTypeID::u64) ||
+                  elt_ty->is_primitive(PrimitiveTypeID::i64));
+        auto dtype_name = data_type_name(elt_ty);
+        auto binary_min = [this, &dtype_name](llvm::Value *lhs,
+                                              llvm::Value *rhs) {
+          return create_call("min_" + dtype_name, {lhs, rhs});
+        };
+        create_elementwise_binary(stmt, binary_min);
+      } else {
+        TI_P(data_type_name(ret_type));
+        TI_NOT_IMPLEMENTED
+      }
     }
   } else if (is_comparison(op)) {
     llvm::Value *cmp = nullptr;

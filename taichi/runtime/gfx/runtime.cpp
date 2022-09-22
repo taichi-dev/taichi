@@ -578,8 +578,7 @@ DeviceAllocation GfxRuntime::create_image(const ImageParams &params) {
   return image;
 }
 
-void GfxRuntime::track_image(DeviceAllocation image,
-                                    ImageLayout layout) {
+void GfxRuntime::track_image(DeviceAllocation image, ImageLayout layout) {
   last_image_layouts_[image.alloc_id] = layout;
 }
 void GfxRuntime::untrack_image(DeviceAllocation image) {

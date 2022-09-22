@@ -35,7 +35,7 @@ In the example above, the scalar field `x` and the array `a` have the same shape
 
 The field should also have the same dtype as the array; otherwise, an implicit type casting would occur - see [type system](../type_system/type.md).
 
-Conversely, to export the data in `x` to a NumPy array, simply call the `to_numpy()` method:
+Conversely, to export the data in `x` to a NumPy array, call the `to_numpy()` method:
 
 ```python
 arr = x.to_numpy()
@@ -88,7 +88,7 @@ As mentioned before, when transferring data between a `ti.field/ti.Vector.field/
                                    └  └───┴───┴───┴───┴───┴───┘  ┘
     ```
 
-- When importing data to or exporting data from an `n`-dimensional vector field, ensure that **the shape of the corresponding NumPy array, PyTorch tensor, or Paddle Tensor is set to** `(*field_shape, n)`:
+- When importing data to or exporting data from an `n`-dimensional vector field, ensure that **the shape of the corresponding NumPy array, PyTorch tensor, or Paddle tensor is set to** `(*field_shape, n)`:
 
     ```python
     field = ti.Vector.field(3, int, shape=(256, 512))
@@ -131,7 +131,7 @@ As mentioned before, when transferring data between a `ti.field/ti.Vector.field/
     field.from_numpy(array)  # the input array must be of shape (256, 512, 3, 4)
     ```
 
-- When importing data to a struct field, export the data of the corresponding external array as **a dictionary of NumPy arrays, PyTorch tensors, or Paddle Tensors** with keys being struct member names and values being struct member arrays. Nested structs will be exported as nested dictionaries:
+- When importing data to a struct field, export the data of the corresponding external array as **a dictionary of NumPy arrays, PyTorch tensors, or Paddle tensors** with keys being struct member names and values being struct member arrays. Nested structs are exported as nested dictionaries:
 
     ```python
     field = ti.Struct.field({'a': ti.i32, 'b': ti.types.vector(3, float)}, shape=(256, 512))
@@ -147,7 +147,7 @@ As mentioned before, when transferring data between a `ti.field/ti.Vector.field/
 
 ## Using external arrays as Taichi kernel arguments
 
-You can use type hint `ti.types.ndarray()` to pass external arrays as kernel arguments. For example:
+Use type hint `ti.types.ndarray()` to pass external arrays as kernel arguments. For example:
 
 ```python {10}
 import taichi as ti
@@ -158,7 +158,7 @@ a = np.zeros((5, 5))
 
 @ti.kernel
 def test(a: ti.types.ndarray()):
-    for i in range(a.shape[0]):  # parallel for loop!
+    for i in range(a.shape[0]):  # a parallel for loop
         for j in range(a.shape[1]):
             a[i, j] = i + j
 
@@ -168,7 +168,7 @@ print(a)
 
 This is an entry-level example to show you how to call `ti.types.ndarray()`. We now illustrate a more advanced usage of this method.
 
-Assume that `a` and `b` are both 2D arrays of the same shape and dtype. For each cell `(i, j)` in `a`, we want to calculate the difference between its value and the average of its four neighboring cells while storing the result in the corresponding cell in `b`. In this case, cells on the boundary, i.e., cells with fewer than four neighbors, are ruled out for simplicity. This operation is usually denoted as the *discrete Laplace operator*:
+Assume that `a` and `b` are both 2D arrays of the same shape and dtype. For each cell `(i, j)` in `a`, we want to calculate the difference between its value and the average of its four neighboring cells while storing the result in the corresponding cell in `b`. In this case, cells on the boundary, which are cells with fewer than four neighbors, are ruled out for simplicity. This operation is usually denoted as the *discrete Laplace operator*:
 
 ```
 b[i, j] = a[i, j] - (a[i-1, j] + a[i, j-1] + a[i+1, j] + a[i, j+1]) / 4
@@ -182,18 +182,18 @@ b[1:-1, 1:-1] += (               a[ :-2, 1:-1] +
                                  a[2:  , 1:-1])
 ```
 
-But Taichi allows us to meet the same purpose in one parallel `for` loop only:
+But Taichi can meet the same purpose in one parallel `for` loop only:
 
 ```python
 @ti.kernel
 def test(a: ti.types.ndarray(), b: ti.types.ndarray()):  # assume a, b have the same shape
     H, W = a.shape[0], a.shape[1]
-    for i, j in ti.ndrange(H, W):  # one parallel for loop!
+    for i, j in ti.ndrange(H, W):  # one parallel for loop
         if 0 < i < H - 1 and 0 < j < W - 1:
             b[i, j] = a[i, j] - (a[i-1, j] + a[i, j-1] + a[i+1, j] + a[i, j+1]) / 4
 ```
 
-This code is more readable than the NumPy version above, and runs way faster even on the CPU backend.
+This code snippet is more readable than the NumPy version above and runs way faster even on the CPU backend.
 
 Note that the elements in an external array must be indexed using a single square bracket. This contrasts with a Taichi vector or matrix field where field members and elements are indexed separately:
 
@@ -210,7 +210,7 @@ def copy_vector(x: ti.template(), y: ti.types.ndarray()):
             # y[i, j][k] = x[i, j][k] incorrect
 ```
 
-Also, external arrays in a Taichi kernel are indexed using its **physical memory layout**. For PyTorch users, this implies that the PyTorch tensor [needs to be made contiguous](https://pytorch.org/docs/stable/generated/torch.Tensor.contiguous.html) before being passed into a Taichi kernel:
+In addition, external arrays in a Taichi kernel are indexed using their **physical memory layout**. For PyTorch users, this means that a PyTorch tensor [needs to be made contiguous](https://pytorch.org/docs/stable/generated/torch.Tensor.contiguous.html) before being passed into a Taichi kernel:
 
 ```python
 x = ti.field(dtype=int, shape=(3, 3))

@@ -57,6 +57,9 @@ void compile_to_offloads(IRNode *ir,
     print("Scalarized");
   }
 
+  irpass::lower_matrix_ptr(ir);
+  print("Matrix ptr lowered");
+
   irpass::type_check(ir, config);
   print("Typechecked");
   irpass::analysis::verify(ir);

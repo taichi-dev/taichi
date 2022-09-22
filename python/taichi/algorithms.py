@@ -38,7 +38,6 @@ def parallel_sort(keys, values=None):
 @data_oriented
 class PrefixSumExecutor:
     def __init__(self, length):
-        self.large_arr = None
         self.sorting_length = length
 
         BLOCK_SZ = 64

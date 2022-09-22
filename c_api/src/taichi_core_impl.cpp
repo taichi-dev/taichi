@@ -425,7 +425,7 @@ void ti_track_image_ext(TiRuntime runtime,
     }
   }
 
-  runtime2->track_image_layout(image2, layout2);
+  runtime2->track_image(image2, layout2);
   TI_CAPI_TRY_CATCH_END();
 }
 void ti_transition_image(TiRuntime runtime,

@@ -19,7 +19,7 @@ def test_scan():
         # Performing an inclusive in-place's parallel prefix sum,
         # only one exectutor is needed for a specified sorting length.
         executor = ti.algorithms.PrefixSumExecutor(N)
-        
+
         executor.run(arr)
 
         cur_sum = 0

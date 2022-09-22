@@ -4,10 +4,10 @@ from tests import test_utils
 
 @test_utils.test(arch=[ti.cuda, ti.vulkan], exclude=[(ti.vulkan, "Darwin")])
 def test_scan():
-    
+
     # A global prefix sum wrapper, only need to be initialized once.
     executor = ti.algorithms.PrefixSumExecutor()
-    
+
     def test_scan_for_dtype(dtype, N):
         arr = ti.field(dtype, N)
         arr_aux = ti.field(dtype, N)

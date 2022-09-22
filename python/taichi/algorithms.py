@@ -59,7 +59,6 @@ class PrefixSumExecutor:
         self.large_arr = field(i32, shape=start_pos)
 
     def run(self, input_arr):
-
         length = self.sorting_length
         ele_nums = self.ele_nums
         ele_nums_pos = self.ele_nums_pos

@@ -31,7 +31,7 @@ Below are some most frequently used configurations you can set with the `ti.init
 [Compilation Options]
 
     advanced_optimization: bool
-        Enable/disable advanced optimization to save compile time & possible errors.
+        Enable/disable advanced optimization to save compile time and reduce possible errors.
 
     fast_math: bool
         Enable/disable fast math to prevent possible undefined math behavior.

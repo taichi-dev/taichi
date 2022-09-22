@@ -112,7 +112,9 @@ TiImage VulkanRuntime::allocate_image(const taichi::lang::ImageParams &params) {
   return devalloc2devimg(*this, devalloc);
 }
 void VulkanRuntime::free_image(TiImage image) {
-  get_vk().destroy_image(devimg2devalloc(*this, image));
+  taichi::lang::DeviceAllocation devimg = devimg2devalloc(*this, image);
+  get_vk().destroy_image(devimg);
+  get_gfx_runtime().untrack_image_layout(devimg);
 }
 
 // -----------------------------------------------------------------------------
@@ -286,6 +288,9 @@ TiImage ti_import_vulkan_image(TiRuntime runtime,
 
   taichi::lang::DeviceAllocation image2 =
       vk_runtime.import_vk_image(image, image_view, layout);
+
+  static_cast<VulkanRuntime *>(runtime2)->track_image_layout(image2);
+
   out = devalloc2devimg(*runtime2, image2);
   TI_CAPI_TRY_CATCH_END();
   return out;

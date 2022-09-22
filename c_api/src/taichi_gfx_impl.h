@@ -25,4 +25,6 @@ class GfxRuntime : public Runtime {
   virtual void wait_event(taichi::lang::DeviceEvent *event) override final;
   virtual void submit() override final;
   virtual void wait() override final;
+
+  void set_image_layout() override final;
 };

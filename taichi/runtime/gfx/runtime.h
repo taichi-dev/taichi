@@ -107,6 +107,8 @@ class TI_DLL_EXPORT GfxRuntime {
                   const ImageCopyParams &params);
 
   DeviceAllocation create_image(const ImageParams &params);
+  void track_image_layout(DeviceAllocation image);
+  void untrack_image_layout(DeviceAllocation image);
   void transition_image(DeviceAllocation image, ImageLayout layout);
 
   void signal_event(DeviceEvent *event);

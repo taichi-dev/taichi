@@ -66,10 +66,10 @@ user_api[ti] = [
     'StructField', 'TRACE', 'TaichiAssertionError', 'TaichiCompilationError',
     'TaichiNameError', 'TaichiRuntimeError', 'TaichiRuntimeTypeError',
     'TaichiSyntaxError', 'TaichiTypeError', 'TetMesh', 'Texture', 'TriMesh',
-    'Vector', 'VectorNdarray', 'WARN', 'abs', 'acos', 'activate', 'ad', 'algorithms', 'aot',
-    'append', 'arm64', 'asin', 'assume_in_range', 'atan2', 'atomic_add',
-    'atomic_and', 'atomic_max', 'atomic_min', 'atomic_or', 'atomic_sub',
-    'atomic_xor', 'axes', 'bit_cast', 'bit_shr', 'block_local',
+    'Vector', 'VectorNdarray', 'WARN', 'abs', 'acos', 'activate', 'ad',
+    'algorithms', 'aot', 'append', 'arm64', 'asin', 'assume_in_range', 'atan2',
+    'atomic_add', 'atomic_and', 'atomic_max', 'atomic_min', 'atomic_or',
+    'atomic_sub', 'atomic_xor', 'axes', 'bit_cast', 'bit_shr', 'block_local',
     'cache_read_only', 'cast', 'cc', 'ceil', 'cos', 'cpu', 'cuda',
     'data_oriented', 'dataclass', 'deactivate', 'deactivate_all_snodes',
     'dx11', 'eig', 'exp', 'experimental', 'extension', 'f16', 'f32', 'f64',
@@ -93,10 +93,7 @@ user_api[ti.ad] = [
     'FwdMode', 'Tape', 'clear_all_gradients', 'grad_for', 'grad_replaced',
     'no_grad'
 ]
-user_api[ti.algorithms] = [
-    'PrefixSumExecutor',
-    'parallel_sort'
-]
+user_api[ti.algorithms] = ['PrefixSumExecutor', 'parallel_sort']
 user_api[ti.Field] = [
     'copy_from', 'dtype', 'fill', 'from_numpy', 'from_paddle', 'from_torch',
     'parent', 'shape', 'snode', 'to_numpy', 'to_paddle', 'to_torch'

@@ -490,9 +490,12 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
     if (is_real(stmt->ret_type)) {
       llvm_val[stmt] =
           builder->CreateFDiv(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
-    } else {
+    } else if (is_signed(stmt->ret_type)) {
       llvm_val[stmt] =
           builder->CreateSDiv(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
+    } else {
+      llvm_val[stmt] =
+          builder->CreateUDiv(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
     }
   } else if (op == BinaryOpType::mod) {
     llvm_val[stmt] =

@@ -476,16 +476,6 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
       llvm_val[stmt] =
           builder->CreateMul(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
     }
-  } else if (op == BinaryOpType::floordiv) {
-    if (is_integral(ret_type))
-      llvm_val[stmt] =
-          create_call(fmt::format("floordiv_{}", data_type_name(ret_type)),
-                      {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-    else {
-      auto div = builder->CreateFDiv(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
-      llvm_val[stmt] = builder->CreateIntrinsic(
-          llvm::Intrinsic::floor, {tlctx->get_data_type(ret_type)}, {div});
-    }
   } else if (op == BinaryOpType::div) {
     if (is_real(stmt->ret_type)) {
       llvm_val[stmt] =

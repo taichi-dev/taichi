@@ -187,7 +187,7 @@ In case you want to use taichi cuda backend together with GGUI on a machine with
 ## Logging
 
 - To set the logging level: For example, set `ti.init(log_level=ti.TRACE)` or  `ti.set_logging_level(ti.TRACE)` to choose TRACE. The environment variable `TI_LOG_LEVEL` serves the same purpose.
-- Eliminate verbose outputs: `ti.init(verbose=False)`.
+- To eliminate verbose outputs: `ti.init(verbose=False)`.
 
 ## Develop
 

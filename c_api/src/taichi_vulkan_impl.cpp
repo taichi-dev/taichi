@@ -289,7 +289,8 @@ TiImage ti_import_vulkan_image(TiRuntime runtime,
   taichi::lang::DeviceAllocation image2 =
       vk_runtime.import_vk_image(image, image_view, layout);
 
-  static_cast<VulkanRuntime *>(runtime2)->track_image_layout(image2);
+  taichi::lang::ImageLayout layout2 = (taichi::lang::ImageLayout)layout;
+  static_cast<VulkanRuntime *>(runtime2)->track_image_layout(image2, layout2);
 
   out = devalloc2devimg(*runtime2, image2);
   TI_CAPI_TRY_CATCH_END();

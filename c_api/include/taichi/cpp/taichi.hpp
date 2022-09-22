@@ -291,6 +291,9 @@ class Texture {
     return *this;
   }
 
+  constexpr TiImage image() const {
+    return texture_.image;
+  }
   constexpr TiTexture texture() const {
     return texture_;
   }

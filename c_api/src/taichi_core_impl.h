@@ -107,7 +107,8 @@ class Runtime {
                           const taichi::lang::ImageCopyParams &params) {
     TI_NOT_IMPLEMENTED
   }
-  virtual void track_image_layout(const taichi::lang::DeviceAllocation& image) {
+  virtual void track_image_layout(const taichi::lang::DeviceAllocation& image,
+                                  taichi::lang::ImageLayout layout) {
     TI_NOT_IMPLEMENTED
   }
   virtual void untrack_image_layout(const taichi::lang::DeviceAllocation& image) {

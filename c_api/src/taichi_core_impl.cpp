@@ -403,7 +403,32 @@ void ti_copy_texture_device_to_device(TiRuntime runtime,
   runtime2->copy_image(dst, src, params);
   TI_CAPI_TRY_CATCH_END();
 }
-void ti_transition_texture(TiRuntime runtime,
+void ti_track_image_ext(TiRuntime runtime,
+                        TiImage image,
+                        TiImageLayout layout) {
+  TI_CAPI_TRY_CATCH_BEGIN();
+  TI_CAPI_ARGUMENT_NULL(runtime);
+  TI_CAPI_ARGUMENT_NULL(image);
+
+  Runtime *runtime2 = (Runtime *)runtime;
+  auto image2 = devimg2devalloc(*runtime2, image);
+  auto layout2 = (taichi::lang::ImageLayout)layout;
+
+  switch ((taichi::lang::ImageLayout)layout) {
+#define PER_IMAGE_LAYOUT(x) case taichi::lang::ImageLayout::x:
+#include "taichi/inc/rhi_constants.inc.h"
+#undef PER_IMAGE_LAYOUT
+    break;
+    default: {
+      ti_set_last_error(TI_ERROR_ARGUMENT_OUT_OF_RANGE, "layout");
+      return;
+    }
+  }
+
+  runtime2->track_image_layout(image2, layout2);
+  TI_CAPI_TRY_CATCH_END();
+}
+void ti_transition_image(TiRuntime runtime,
                            TiImage texture,
                            TiImageLayout layout) {
   TI_CAPI_TRY_CATCH_BEGIN();

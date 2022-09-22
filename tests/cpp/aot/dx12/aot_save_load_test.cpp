@@ -99,7 +99,10 @@ using namespace lang;
   aot_builder->add_field("place", place, true, place->dt, {n}, 1, 1);
   aot_builder->add("init", kernel_init.get());
   aot_builder->add("ret", kernel_ret.get());
-  aot_builder->dump(".", "");
+  const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
+  std::stringstream ss;
+  ss << folder_dir;
+  aot_builder->dump(ss.str(), "");
 }
 
 #ifdef TI_WITH_DX12
@@ -112,8 +115,11 @@ TEST(AotSaveLoad, DX12) {
   aot_save();
 
   // Run AOT module loader
+  const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
+  std::stringstream ss;
+  ss << folder_dir;
   directx12::AotModuleParams mod_params;
-  mod_params.module_path = ".";
+  mod_params.module_path = ss.str();
 
   std::unique_ptr<aot::Module> module =
       aot::Module::load(Arch::dx12, mod_params);

@@ -39,7 +39,7 @@ class PrefixSumExecutor:
     """Parallel Prefix Sum (Scan) Helper
 
     Use this helper to perform an inclusive in-place's parallel prefix sum.
-    
+
     References:
         https://developer.download.nvidia.com/compute/cuda/1.1-Beta/x86_website/projects/scan/doc/scan.pdf
         https://github.com/NVIDIA/cuda-samples/blob/master/Samples/2_Concepts_and_Techniques/shfl_scan/shfl_scan.cu

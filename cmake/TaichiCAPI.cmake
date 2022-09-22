@@ -33,6 +33,14 @@ target_link_libraries(${TAICHI_C_API_NAME} PRIVATE taichi_ui_vulkan)
 target_link_libraries(${TAICHI_C_API_NAME} PRIVATE taichi_ui)
 endif()
 
+# Only export symbols declared under c_api/include/taichi/ for libtaichi_c_api.so
+if(LINUX)
+    target_link_options(${TAICHI_C_API_NAME} PUBLIC -Wl,--exclude-libs,ALL)
+elseif(APPLE)
+    # Unfortunately, ld on MacOS does not support --exclude-libs and we have to manually specify the exported symbols
+    target_link_options(${TAICHI_C_API_NAME} PUBLIC -Wl,-exported_symbols_list,${CMAKE_CURRENT_SOURCE_DIR}/c_api/export_symbols_mac.lds)
+endif()
+
 set(C_API_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")
 set_target_properties(${TAICHI_C_API_NAME} PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY ${C_API_OUTPUT_DIRECTORY}

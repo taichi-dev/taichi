@@ -115,11 +115,8 @@ class ASTTransformer(Builder):
     @staticmethod
     def build_assign_slice(ctx, node_target, values, is_static_assign):
         target = ASTTransformer.build_Subscript(ctx, node_target, get_ref=True)
-        if current_cfg().real_matrix:
-            if isinstance(node_target.value.ptr,
-                          any_array.AnyArray) and isinstance(
-                              values, (list, tuple)):
-                values = make_matrix(values)
+        if current_cfg().real_matrix and isinstance(values, (list, tuple)):
+            values = make_matrix(values)
 
         if isinstance(node_target.value.ptr, Matrix):
             if isinstance(node_target.value.ptr._impl, _TiScopeMatrixImpl):

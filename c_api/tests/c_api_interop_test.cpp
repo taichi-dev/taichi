@@ -1,8 +1,12 @@
+#ifdef TI_WITH_VULKAN
+#define TI_WITH_VULKAN 1
+#endif // TI_WITH_VULKAN
+
 #include "gtest/gtest.h"
 #include "c_api_test_utils.h"
 #include "taichi/cpp/taichi.hpp"
-#define TI_WITH_VULKAN 1
-#include "taichi/taichi_vulkan.h"
+
+#if TI_WITH_VULKAN
 
 static void texture_interop_test(TiArch arch) {
   const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
@@ -32,3 +36,5 @@ TEST(CapiAotTest, VulkanTextureInterop) {
     texture_interop_test(arch);
   }
 }
+
+#endif // TI_WITH_VULKAN

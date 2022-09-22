@@ -5,11 +5,10 @@ from taichi.lang import ops
 from taichi.lang._ndrange import ndrange
 from taichi.lang.expr import Expr
 from taichi.lang.field import ScalarField
-from taichi.lang.impl import current_cfg, field, grouped, static, static_assert
+from taichi.lang.impl import grouped, static, static_assert
 from taichi.lang.kernel_impl import func, kernel
-from taichi.lang.misc import cuda, loop_config, vulkan
-from taichi.lang.runtime_ops import sync
-from taichi.lang.simt import block, subgroup, warp
+from taichi.lang.misc import loop_config
+from taichi.lang.simt import block, warp
 from taichi.lang.snode import deactivate
 from taichi.types import ndarray_type, texture_type, vector
 from taichi.types.annotations import template

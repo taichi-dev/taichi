@@ -222,10 +222,10 @@ class ConstantFold : public BasicStmtVisitor {
     ConstantFold folder(program);
     bool modified = false;
 
-    auto program_compile_config_org = program->config;
-    program->config.advanced_optimization = false;
-    program->config.constant_folding = false;
-    program->config.external_optimization_level = 0;
+    auto program_compile_config_org = program->this_thread_config();
+    program->this_thread_config().advanced_optimization = false;
+    program->this_thread_config().constant_folding = false;
+    program->this_thread_config().external_optimization_level = 0;
 
     while (true) {
       node->accept(&folder);
@@ -236,7 +236,7 @@ class ConstantFold : public BasicStmtVisitor {
       }
     }
 
-    program->config = program_compile_config_org;
+    program->this_thread_config() = program_compile_config_org;
 
     return modified;
   }

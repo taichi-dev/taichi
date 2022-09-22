@@ -33,7 +33,7 @@ class Canvas:
                 the image to be shown.
         """
         is_texture = isinstance(img, Texture)
-        prog_is_vk = impl.pytaichi.prog.config.arch == _ti_core.Arch.vulkan
+        prog_is_vk = impl.pytaichi.prog.config().arch == _ti_core.Arch.vulkan
         # FIXME: Remove this hack. Maybe add a query function for whether the texture can be presented
         if is_texture and prog_is_vk:
             self.canvas.set_image_texture(img.tex)

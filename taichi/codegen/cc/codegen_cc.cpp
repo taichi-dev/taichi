@@ -46,7 +46,7 @@ class CCTransformer : public IRVisitor {
 
   void lower_ast() {
     auto ir = kernel_->ir.get();
-    auto config = kernel_->program->config;
+    auto config = kernel_->program->this_thread_config();
     config.demote_dense_struct_fors = true;
     irpass::compile_to_executable(ir, config, kernel_,
                                   /*autodiff_mode=*/kernel_->autodiff_mode,

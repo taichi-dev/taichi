@@ -70,7 +70,7 @@ The simplest way to declare a scalar field is to call `ti.field(dtype, shape)`, 
                          f_2d.shape[1]
                              (=6)
                    ┌───────────────────────┐
-  
+
                 ┌  ┌───┬───┬───┬───┬───┬───┐  ┐
                 │  │   │   │   │   │   │   │  │
                 │  ├───┼───┼───┼───┼───┼───┤  │
@@ -180,7 +180,7 @@ while gui.running:
 
 :::caution WARNING
 
-Taichi does not support slicing on a Taichi field. Neither of the following usage is correct: 
+Taichi does not support slicing on a Taichi field. Neither of the following usage is correct:
 
 ```python
 for x in f_2d[0]:  # Error! You tried to access its first row，but it's not supported

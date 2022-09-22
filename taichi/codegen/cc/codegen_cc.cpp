@@ -333,16 +333,6 @@ class CCTransformer : public IRVisitor {
         emit("{} = -({} {} {});", var, lhs_name, binop, rhs_name);
       } else if (bin->op_type == BinaryOpType::truediv) {
         emit("{} = ({}) {} / {};", var, dt_name, lhs_name, rhs_name);
-      } else if (bin->op_type == BinaryOpType::floordiv) {
-        auto lhs_dt_name = data_type_name(bin->lhs->element_type());
-        if (is_integral(bin->lhs->element_type()) &&
-            is_integral(bin->rhs->element_type())) {
-          emit("{} = Ti_floordiv_{}({}, {});", var, lhs_dt_name, lhs_name,
-               rhs_name);
-        } else {
-          emit("{} = Ti_floordiv_{}({}, {});", var, lhs_dt_name, lhs_name,
-               rhs_name);
-        }
       } else {
         emit("{} = {} {} {};", var, lhs_name, binop, rhs_name);
       }

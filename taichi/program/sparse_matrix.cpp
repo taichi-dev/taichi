@@ -318,7 +318,7 @@ std::unique_ptr<SparseMatrix> CuSparseMatrix::addition(
   cusparseIndexType_t csrRowOffsetsType_A, csrColIndType_A;
   cusparseIndexBase_t idxBase_A;
   cudaDataType valueType_A;
-  TI_ASSERT(matrix_ != NULL);
+  TI_ASSERT(matrix_ != nullptr);
 
   CUSPARSEDriver::get_instance().cpCsrGet(
       matrix_, &nrows_A, &ncols_A, &nnz_A, &drow_offsets_A, &dcol_indices_A,

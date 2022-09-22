@@ -314,7 +314,8 @@ std::unique_ptr<SparseMatrix> CuSparseMatrix::addition(
 #if defined(TI_WITH_CUDA)
   // Get information of this matrix: A
   size_t nrows_A = 0, ncols_A = 0, nnz_A = 0;
-  void *drow_offsets_A = nullptr, *dcol_indices_A = nullptr, *dvalues_A = nullptr;
+  void *drow_offsets_A = nullptr, *dcol_indices_A = nullptr,
+       *dvalues_A = nullptr;
   cusparseIndexType_t csrRowOffsetsType_A, csrColIndType_A;
   cusparseIndexBase_t idxBase_A;
   cudaDataType valueType_A;
@@ -326,7 +327,8 @@ std::unique_ptr<SparseMatrix> CuSparseMatrix::addition(
       &valueType_A);
   // Get information of other matrix: B
   size_t nrows_B = 0, ncols_B = 0, nnz_B = 0;
-  void *drow_offsets_B = nullptr, *dcol_indices_B = nullptr, *dvalues_B = nullptr;
+  void *drow_offsets_B = nullptr, *dcol_indices_B = nullptr,
+       *dvalues_B = nullptr;
   cusparseIndexType_t csrRowOffsetsType_B, csrColIndType_B;
   cusparseIndexBase_t idxBase_B;
   cudaDataType valueType_B;
@@ -452,8 +454,9 @@ std::unique_ptr<SparseMatrix> CuSparseMatrix::gemm(const CuSparseMatrix &other,
   // 1. create resulting matrix `C`
   cusparseSpMatDescr_t mat_C;
   CUSPARSEDriver::get_instance().cpCreateCsr(
-      &mat_C, nrows_A, ncols_B, 0, nullptr, nullptr, nullptr, CUSPARSE_INDEX_32I,
-      CUSPARSE_INDEX_32I, CUSPARSE_INDEX_BASE_ZERO, CUDA_R_32F);
+      &mat_C, nrows_A, ncols_B, 0, nullptr, nullptr, nullptr,
+      CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I, CUSPARSE_INDEX_BASE_ZERO,
+      CUDA_R_32F);
 
   // 2. create gemm descr
   cusparseSpGEMMDescr_t spgemm_desc;

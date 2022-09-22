@@ -255,7 +255,7 @@ The code above serves the same purpose as the line below does but provides bette
 Sphere = ti.types.struct(center=vec3, radius=float)
 ```
 
-Another advantage of using `@ti.dataclass` over `ti.types.struct` is that you can define member functions in a dataclass and call them in the Taichi scope, making object-oriented programming (OOP) possible. See the article [objective data-oriented programming](../advanced/odop2.md) for more details.
+Another advantage of using `@ti.dataclass` over `ti.types.struct` is that you can define member functions in a dataclass and call them in the Taichi scope, making object-oriented programming (OOP) possible. See the [objective data-oriented programming](../advanced/odop.md) for more information.
 
 
 ### Initialization

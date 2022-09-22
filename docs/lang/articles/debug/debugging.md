@@ -104,7 +104,7 @@ def inside_taichi_scope():
     for i in range(4):
         ti.static_print(i.dtype)
         # => DataType.int32
-        # will only print once
+        # Only print once
 ```
 
 `ti.static_print` behaves similarly with `print` in the Python scope. The difference is that unlike `print`, `ti.static_print` only prints the expression once at compile time, thus incurring no runtime cost.
@@ -113,7 +113,7 @@ def inside_taichi_scope():
 
 Taichi's automatic parallelization mechanism may lead to non-deterministic behaviors. For debugging purposes, serializing program execution may be useful to get repeatable results and diagnose data races. You can serialize either an entire Taichi program or a specific for loop.
 
-### Serialize entire Taichi program
+### Serialize an entire Taichi program
 
 If you choose CPU as the backend, you can serialize the program with `cpu_max_num_threads=1` when initiating Taichi, so that the whole program runs on a single thread and becomes deterministic. For example:
 
@@ -123,7 +123,7 @@ ti.init(arch=ti.cpu, cpu_max_num_threads=1)
 
 If your program works well in serial but fails in parallel, check parallelization-related issues, such as data races.
 
-### Serialize the for loop at the outermost scope
+### Serialize a specified parallel for loop
 
 By default, Taichi automatically parallelizes the for loop at the outermost scope. But some scenarios require serial exeution. In this case, you can prevent automatic parallelization with `ti.loop_config(serialize=True)`:
 
@@ -138,7 +138,7 @@ val.fill(1)
 
 @ti.kernel
 def prefix_sum():
-    ti.loop_config(serialize=True) # serialize the for loop
+    ti.loop_config(serialize=True) # Serialize the for loop
     for i in range(1, n):
         val[i] += val[i - 1]
 
@@ -158,7 +158,7 @@ print(val)
 
 The array access violation issue is common, but a program would usually proceed without raising a warning, only to end up with a wrong result. Even if a segmentation fault were triggered, it would be hard to debug.
 
-Taichi makes out-of-bound array accesses readily detectable with an auto-debugging mode. You can activate the mode by setting `debug=True` when initiating Taichi. For example:
+Taichi makes out-of-bound array accesses readily detectable with an auto-debugging mode. Activate the mode by setting `debug=True` when initiating Taichi:
 
 ```python
 import taichi as ti
@@ -171,7 +171,7 @@ def test() -> ti.i32:
 print(test())
 ```
 
-The code snippet above would raise a `TaichiAssertionError` indicating that you are trying to access a field with improper indices.
+The code snippet above raises a `TaichiAssertionError` indicating that you are trying to access a field with improper indices.
 
 :::note
 Automatic bound checks are supported on the CPU and CUDA beckends only.
@@ -181,7 +181,7 @@ After `debug=Ture` is turned on, your program performance may worsen.
 
 ## Runtime `assert` in Taichi scope
 
-You can use `assert` statements in the Taichi scope to verify the assertion conditions. If an assertion fails, the program will halt and throw a `TaichiAssertionError`.
+You can use `assert` statements in the Taichi scope to verify the assertion conditions. If an assertion fails, the program halts and throws a `TaichiAssertionError`.
 
 :::note
 `assert` is currently supported on the CPU, CUDA, and Metal backends.
@@ -201,7 +201,7 @@ def do_sqrt_all():
         x[i] = ti.sqrt(x[i])
 ```
 
-When you are done with debugging, set `debug=False`, and then the program will ignore the subsequent `assert` statements and avoid additional runtime overhead.
+When you are done with debugging, set `debug=False`, and then the program ignores the subsequent `assert` statements and avoid additional runtime overhead.
 
 ## Compile-time `ti.static_assert`
 
@@ -248,7 +248,7 @@ def func0():
 func0()
 ```
 
-The above snippet would trigger an `AssertionError`, with a lenthy and overwhelming traceback message:
+The above snippet triggers an `AssertionError`, with a lengthy and overwhelming traceback message:
 
 ```
 Traceback (most recent call last):

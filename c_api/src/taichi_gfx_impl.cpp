@@ -26,11 +26,11 @@ void GfxRuntime::copy_image(const taichi::lang::DeviceAllocation &dst,
                             const taichi::lang::ImageCopyParams &params) {
   get_gfx_runtime().copy_image(dst, src, params);
 }
-void GfxRuntime::track_image_layout(const taichi::lang::DeviceAllocation &image,
+void GfxRuntime::track_image(const taichi::lang::DeviceAllocation &image,
                                     TiImageLayout layout) {
   get_gfx_runtime().track_image_layout(image, layout);
 }
-void GfxRuntime::untrack_image_layout(
+void GfxRuntime::untrack_image(
     const taichi::lang::DeviceAllocation &image) {
   get_gfx_runtime().untrack_image_layout(image);
 }

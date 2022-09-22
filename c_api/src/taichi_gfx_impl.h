@@ -17,6 +17,9 @@ class GfxRuntime : public Runtime {
       const taichi::lang::DeviceAllocation &dst,
       const taichi::lang::DeviceAllocation &src,
       const taichi::lang::ImageCopyParams &params) override final;
+  virtual void track_image(const taichi::lang::DeviceAllocation &image,
+      taichi::lang::ImageLayout layout) override final;
+  virtual void untrack_image(const taichi::lang::DeviceAllocation &image) override final;
   virtual void transition_image(
       const taichi::lang::DeviceAllocation &image,
       taichi::lang::ImageLayout layout) override final;
@@ -25,6 +28,4 @@ class GfxRuntime : public Runtime {
   virtual void wait_event(taichi::lang::DeviceEvent *event) override final;
   virtual void submit() override final;
   virtual void wait() override final;
-
-  void set_image_layout() override final;
 };

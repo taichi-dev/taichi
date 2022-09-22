@@ -8,11 +8,13 @@ from taichi.lang.simt import subgroup
 from taichi.types.primitive_types import i32
 
 
-# Odd-even merge sort
-# References:
-# https://developer.nvidia.com/gpugems/gpugems2/part-vi-simulation-and-numerical-algorithms/chapter-46-improved-gpu-sorting
-# https://en.wikipedia.org/wiki/Batcher_odd%E2%80%93even_mergesort
 def parallel_sort(keys, values=None):
+    """Odd-even merge sort
+
+    References:
+        https://developer.nvidia.com/gpugems/gpugems2/part-vi-simulation-and-numerical-algorithms/chapter-46-improved-gpu-sorting
+        https://en.wikipedia.org/wiki/Batcher_odd%E2%80%93even_mergesort
+    """
     N = keys.shape[0]
 
     num_stages = 0
@@ -32,11 +34,16 @@ def parallel_sort(keys, values=None):
     print(num_stages)
 
 
-# Inclusive In-Place's Parallel Prefix Sum (Scan)
-# Ref[0]: https://developer.download.nvidia.com/compute/cuda/1.1-Beta/x86_website/projects/scan/doc/scan.pdf
-# Ref[1]: https://github.com/NVIDIA/cuda-samples/blob/master/Samples/2_Concepts_and_Techniques/shfl_scan/shfl_scan.cu
 @data_oriented
 class PrefixSumExecutor:
+    """Parallel Prefix Sum (Scan) Helper
+
+    Use this helper to perform an inclusive in-place's parallel prefix sum.
+    
+    References:
+        https://developer.download.nvidia.com/compute/cuda/1.1-Beta/x86_website/projects/scan/doc/scan.pdf
+        https://github.com/NVIDIA/cuda-samples/blob/master/Samples/2_Concepts_and_Techniques/shfl_scan/shfl_scan.cu
+    """
     def __init__(self, length):
         self.large_arr = None
         self.sorting_length = length

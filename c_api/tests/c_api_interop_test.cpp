@@ -15,11 +15,13 @@ static void texture_interop_test(TiArch arch) {
 
   ti::Runtime runtime(arch);
 
-  ti::Texture tex_0 = runtime.allocate_texture2d(128, 128, TI_FORMAT_R32F, TI_NULL_HANDLE);
+  ti::Texture tex_0 =
+      runtime.allocate_texture2d(128, 128, TI_FORMAT_R32F, TI_NULL_HANDLE);
 
-  TiVulkanImageInteropInfo viii {};
+  TiVulkanImageInteropInfo viii{};
   ti_export_vulkan_image(runtime, tex_0.image(), &viii);
-  ti_import_vulkan_image(runtime, &viii, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_LAYOUT_UNDEFINED);
+  ti_import_vulkan_image(runtime, &viii, VK_IMAGE_VIEW_TYPE_2D,
+                         VK_IMAGE_LAYOUT_UNDEFINED);
 
   ti_track_image_ext(runtime, tex_0.image(), TI_IMAGE_LAYOUT_SHADER_READ_WRITE);
   runtime.wait();

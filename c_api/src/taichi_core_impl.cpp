@@ -429,8 +429,8 @@ void ti_track_image_ext(TiRuntime runtime,
   TI_CAPI_TRY_CATCH_END();
 }
 void ti_transition_image(TiRuntime runtime,
-                           TiImage texture,
-                           TiImageLayout layout) {
+                         TiImage texture,
+                         TiImageLayout layout) {
   TI_CAPI_TRY_CATCH_BEGIN();
   TI_CAPI_ARGUMENT_NULL(runtime);
   TI_CAPI_ARGUMENT_NULL(texture);

@@ -45,7 +45,6 @@ class PrefixSumExecutor:
         https://github.com/NVIDIA/cuda-samples/blob/master/Samples/2_Concepts_and_Techniques/shfl_scan/shfl_scan.cu
     """
     def __init__(self, length):
-        self.large_arr = None
         self.sorting_length = length
 
         BLOCK_SZ = 64
@@ -67,7 +66,6 @@ class PrefixSumExecutor:
         self.large_arr = field(i32, shape=start_pos)
 
     def run(self, input_arr):
-
         length = self.sorting_length
         ele_nums = self.ele_nums
         ele_nums_pos = self.ele_nums_pos

@@ -127,7 +127,6 @@ Below are some environment variables that you can set to customize your Taichi p
 
     TI_ENABLE_PADDLE
         Enable/disable importing paddle on start up,
-        e.g. `export TI_ENABLE_PADDLE=0` to disable.
         The default is 1.
 
 

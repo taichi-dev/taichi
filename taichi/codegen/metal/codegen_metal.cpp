@@ -549,16 +549,6 @@ class KernelCodegenImpl : public IRVisitor {
     const auto rhs_name = bin->rhs->raw_name();
     const auto bin_name = bin->raw_name();
     const auto op_type = bin->op_type;
-    if (op_type == BinaryOpType::floordiv) {
-      if (is_integral(bin->ret_type)) {
-        emit("const {} {} = ifloordiv({}, {});", dt_name, bin_name, lhs_name,
-             rhs_name);
-      } else {
-        emit("const {} {} = floor({} / {});", dt_name, bin_name, lhs_name,
-             rhs_name);
-      }
-      return;
-    }
     const auto binop = metal_binary_op_type_symbol(op_type);
     if (is_metal_binary_op_infix(op_type)) {
       if (is_comparison(op_type)) {

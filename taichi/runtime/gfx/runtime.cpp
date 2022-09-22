@@ -732,7 +732,7 @@ GfxRuntime::RegisterParams run_codegen(
   params.compiled_structs = compiled_structs;
   params.device = device;
   params.enable_spv_opt =
-      kernel->program->config.external_optimization_level > 0;
+      kernel->program->this_thread_config().external_optimization_level > 0;
   spirv::KernelCodegen codegen(params);
   GfxRuntime::RegisterParams res;
   codegen.run(res.kernel_attribs, res.task_spirv_source_codes);

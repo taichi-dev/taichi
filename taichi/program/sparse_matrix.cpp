@@ -234,11 +234,11 @@ void CuSparseMatrix::build_csr_from_coo(void *coo_row_ptr,
                                         int nnz) {
 #if defined(TI_WITH_CUDA)
   // Step 1: Sort coo first
-  cusparseHandle_t cusparse_handle = NULL;
+  cusparseHandle_t cusparse_handle = nullptr;
   CUSPARSEDriver::get_instance().cpCreate(&cusparse_handle);
   cusparseSpVecDescr_t vec_permutation;
   cusparseDnVecDescr_t vec_values;
-  void *d_permutation = NULL, *d_values_sorted = NULL;
+  void *d_permutation = nullptr, *d_values_sorted = nullptr;
   CUDADriver::get_instance().malloc(&d_permutation, nnz * sizeof(int));
   CUDADriver::get_instance().malloc(&d_values_sorted, nnz * sizeof(float));
   CUSPARSEDriver::get_instance().cpCreateSpVec(
@@ -250,7 +250,7 @@ void CuSparseMatrix::build_csr_from_coo(void *coo_row_ptr,
   CUSPARSEDriver::get_instance().cpXcoosort_bufferSizeExt(
       cusparse_handle, rows_, cols_, nnz, coo_row_ptr, coo_col_ptr,
       &bufferSize);
-  void *dbuffer = NULL;
+  void *dbuffer = nullptr;
   if (bufferSize > 0)
     CUDADriver::get_instance().malloc(&dbuffer, bufferSize);
   // Setup permutation vector to identity
@@ -264,7 +264,7 @@ void CuSparseMatrix::build_csr_from_coo(void *coo_row_ptr,
   CUDADriver::get_instance().memcpy_device_to_device(
       coo_values_ptr, d_values_sorted, nnz * sizeof(float));
   // Step 2: coo to csr
-  void *csr_row_offset_ptr = NULL;
+  void *csr_row_offset_ptr = nullptr;
   CUDADriver::get_instance().malloc(&csr_row_offset_ptr,
                                     sizeof(int) * (rows_ + 1));
   CUSPARSEDriver::get_instance().cpCoo2Csr(
@@ -314,7 +314,7 @@ std::unique_ptr<SparseMatrix> CuSparseMatrix::addition(
 #if defined(TI_WITH_CUDA)
   // Get information of this matrix: A
   size_t nrows_A = 0, ncols_A = 0, nnz_A = 0;
-  void *drow_offsets_A = NULL, *dcol_indices_A = NULL, *dvalues_A = NULL;
+  void *drow_offsets_A = nullptr, *dcol_indices_A = nullptr, *dvalues_A = nullptr;
   cusparseIndexType_t csrRowOffsetsType_A, csrColIndType_A;
   cusparseIndexBase_t idxBase_A;
   cudaDataType valueType_A;
@@ -326,7 +326,7 @@ std::unique_ptr<SparseMatrix> CuSparseMatrix::addition(
       &valueType_A);
   // Get information of other matrix: B
   size_t nrows_B = 0, ncols_B = 0, nnz_B = 0;
-  void *drow_offsets_B = NULL, *dcol_indices_B = NULL, *dvalues_B = NULL;
+  void *drow_offsets_B = nullptr, *dcol_indices_B = nullptr, *dvalues_B = nullptr;
   cusparseIndexType_t csrRowOffsetsType_B, csrColIndType_B;
   cusparseIndexBase_t idxBase_B;
   cudaDataType valueType_B;
@@ -336,10 +336,10 @@ std::unique_ptr<SparseMatrix> CuSparseMatrix::addition(
       &idxBase_B, &valueType_B);
 
   // Create sparse matrix: C
-  int *drow_offsets_C = NULL;
-  int *dcol_indices_C = NULL;
-  float *dvalues_C = NULL;
-  cusparseMatDescr_t descrA = NULL, descrB = NULL, descrC = NULL;
+  int *drow_offsets_C = nullptr;
+  int *dcol_indices_C = nullptr;
+  float *dvalues_C = nullptr;
+  cusparseMatDescr_t descrA = nullptr, descrB = nullptr, descrC = nullptr;
   CUSPARSEDriver::get_instance().cpCreateMatDescr(&descrA);
   CUSPARSEDriver::get_instance().cpCreateMatDescr(&descrB);
   CUSPARSEDriver::get_instance().cpCreateMatDescr(&descrC);
@@ -361,7 +361,7 @@ std::unique_ptr<SparseMatrix> CuSparseMatrix::addition(
   CUSPARSEDriver::get_instance().cpCreate(&cusparse_handle);
   // alpha, nnzTotalDevHostPtr points to host memory
   size_t BufferSizeInBytes;
-  char *buffer = NULL;
+  char *buffer = nullptr;
   int nnzC;
   int *nnzTotalDevHostPtr = &nnzC;
   CUSPARSEDriver::get_instance().cpSetPointerMode(cusparse_handle,
@@ -385,7 +385,7 @@ std::unique_ptr<SparseMatrix> CuSparseMatrix::addition(
       drow_offsets_C, nnzTotalDevHostPtr, buffer);
 
   int baseC;
-  if (NULL != nnzTotalDevHostPtr) {
+  if (nullptr != nnzTotalDevHostPtr) {
     nnzC = *nnzTotalDevHostPtr;
   } else {
     CUDADriver::get_instance().memcpy_device_to_host(
@@ -452,7 +452,7 @@ std::unique_ptr<SparseMatrix> CuSparseMatrix::gemm(const CuSparseMatrix &other,
   // 1. create resulting matrix `C`
   cusparseSpMatDescr_t mat_C;
   CUSPARSEDriver::get_instance().cpCreateCsr(
-      &mat_C, nrows_A, ncols_B, 0, NULL, NULL, NULL, CUSPARSE_INDEX_32I,
+      &mat_C, nrows_A, ncols_B, 0, nullptr, nullptr, nullptr, CUSPARSE_INDEX_32I,
       CUSPARSE_INDEX_32I, CUSPARSE_INDEX_BASE_ZERO, CUDA_R_32F);
 
   // 2. create gemm descr
@@ -464,7 +464,7 @@ std::unique_ptr<SparseMatrix> CuSparseMatrix::gemm(const CuSparseMatrix &other,
   size_t buffer_size1 = 0;
   CUSPARSEDriver::get_instance().cpSpGEMM_workEstimation(
       handle, op_A, op_B, &alpha, this->matrix_, other.matrix_, &beta, mat_C,
-      CUDA_R_32F, CUSPARSE_SPGEMM_DEFAULT, spgemm_desc, &buffer_size1, NULL);
+      CUDA_R_32F, CUSPARSE_SPGEMM_DEFAULT, spgemm_desc, &buffer_size1, nullptr);
   CUDADriver::get_instance().malloc((void **)&d_buffer1, buffer_size1);
   // 4. inspect the matrices A and B to understand the memory requirement for
   // the next step
@@ -477,7 +477,7 @@ std::unique_ptr<SparseMatrix> CuSparseMatrix::gemm(const CuSparseMatrix &other,
   size_t buffer_size2 = 0;
   CUSPARSEDriver::get_instance().cpSpGEMM_compute(
       handle, op_A, op_B, &alpha, mat_A, mat_B, &beta, mat_C, CUDA_R_32F,
-      CUSPARSE_SPGEMM_DEFAULT, spgemm_desc, &buffer_size2, NULL);
+      CUSPARSE_SPGEMM_DEFAULT, spgemm_desc, &buffer_size2, nullptr);
   void *d_buffer2;
   CUDADriver::get_instance().malloc((void **)&d_buffer2, buffer_size2);
 
@@ -530,9 +530,9 @@ std::unique_ptr<SparseMatrix> CuSparseMatrix::transpose() const {
   cusparseHandle_t handle;
   CUSPARSEDriver::get_instance().cpCreate(&handle);
   size_t nrows_A, ncols_A, nnz;
-  void *d_csr_val = NULL, *d_csr_val_AT = NULL;
-  int *d_csr_row_ptr = NULL, *d_csr_col_ind = NULL;
-  int *d_csr_row_ptr_AT = NULL, *d_csr_col_ptr_AT = NULL;
+  void *d_csr_val = nullptr, *d_csr_val_AT = nullptr;
+  int *d_csr_row_ptr = nullptr, *d_csr_col_ind = nullptr;
+  int *d_csr_row_ptr_AT = nullptr, *d_csr_col_ptr_AT = nullptr;
   cusparseIndexType_t csr_row_otr_type, csr_col_otr_type;
   cusparseIndexBase_t idx_base_type;
   cudaDataType value_type;
@@ -550,7 +550,7 @@ std::unique_ptr<SparseMatrix> CuSparseMatrix::transpose() const {
       (int *)&d_csr_col_ind, (void *)&d_csr_val_AT, (int *)&d_csr_row_ptr_AT,
       (int *)&d_csr_col_ptr_AT, CUDA_R_32F, CUSPARSE_ACTION_NUMERIC,
       CUSPARSE_INDEX_BASE_ZERO, CUSPARSE_CSR2CSC_ALG1, &buffer_size);
-  void *buffer = NULL;
+  void *buffer = nullptr;
   CUDADriver::get_instance().malloc((void **)&buffer, buffer_size);
 
   CUDADriver::get_instance().malloc((void **)&d_csr_val_AT,
@@ -601,7 +601,7 @@ void CuSparseMatrix::spmv(Program *prog, const Ndarray &x, Ndarray &y) {
       cusparse_handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, matrix_, vecX,
       &beta, vecY, CUDA_R_32F, CUSPARSE_SPMV_CSR_ALG1, &bufferSize);
 
-  void *dBuffer = NULL;
+  void *dBuffer = nullptr;
   if (bufferSize > 0)
     CUDADriver::get_instance().malloc(&dBuffer, bufferSize);
   CUSPARSEDriver::get_instance().cpSpMV(

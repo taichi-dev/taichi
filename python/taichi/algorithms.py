@@ -31,38 +31,41 @@ def parallel_sort(keys, values=None):
     print(num_stages)
 
 
-# Parallel Prefix Sum (Scan)
+# Inclusive In-Place's Parallel Prefix Sum (Scan)
 # Ref[0]: https://developer.download.nvidia.com/compute/cuda/1.1-Beta/x86_website/projects/scan/doc/scan.pdf
 # Ref[1]: https://github.com/NVIDIA/cuda-samples/blob/master/Samples/2_Concepts_and_Techniques/shfl_scan/shfl_scan.cu
 @data_oriented
 class PrefixSumExecutor:
-    def __init__(self):
+    def __init__(self, length):
         self.large_arr = None
-        self.sorting_length = -1
+        self.sorting_length = length
 
-    def prefix_sum_inclusive_inplace(self, input_arr, length):
         BLOCK_SZ = 64
         GRID_SZ = int((length + BLOCK_SZ - 1) / BLOCK_SZ)
 
         # Buffer position and length
         # This is a single buffer implementation for ease of aot usage
         ele_num = length
-        ele_nums = [ele_num]
+        self.ele_nums = [ele_num]
         start_pos = 0
-        ele_nums_pos = [start_pos]
+        self.ele_nums_pos = [start_pos]
 
         while ele_num > 1:
             ele_num = int((ele_num + BLOCK_SZ - 1) / BLOCK_SZ)
-            ele_nums.append(ele_num)
+            self.ele_nums.append(ele_num)
             start_pos += BLOCK_SZ * ele_num
-            ele_nums_pos.append(start_pos)
+            self.ele_nums_pos.append(start_pos)
+
+        self.large_arr = field(i32, shape=start_pos)
+
+    def run(self, input_arr):
+
+        length = self.sorting_length
+        ele_nums = self.ele_nums
+        ele_nums_pos = self.ele_nums_pos
 
         if input_arr.dtype != i32:
             raise RuntimeError("Only ti.i32 type is supported for prefix sum.")
-
-        if self.large_arr is None or self.sorting_length != length:
-            self.large_arr = field(i32, shape=start_pos)
-            self.sorting_length = length
 
         if current_cfg().arch == cuda:
             inclusive_add = warp_shfl_up_i32

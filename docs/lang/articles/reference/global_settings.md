@@ -193,7 +193,7 @@ In case you want to use taichi cuda backend together with GGUI on a machine with
 
 - To trigger GDB when Taichi crashes: `ti.init(gdb_trigger=True)`.
 - To cache compiled runtime bitcode in **dev mode** to save startup time: `export TI_CACHE_RUNTIME_BITCODE=1`.
-- To specify how many threads to run test: `export TI_TEST_THREADS=4` or `python tests/run_tests.py -t4`.
+- To allocate four threads to run a test: `export TI_TEST_THREADS=4` or `python tests/run_tests.py -t4`.
 
 
 :::note

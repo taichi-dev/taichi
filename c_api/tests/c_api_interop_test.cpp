@@ -5,9 +5,6 @@
 #include "taichi/taichi_vulkan.h"
 
 static void texture_interop_test(TiArch arch) {
-  uint32_t kArrLen = 32;
-  int arg0_val = 0;
-
   const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
 
   std::stringstream aot_mod_ss;

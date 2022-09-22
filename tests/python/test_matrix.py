@@ -822,7 +822,6 @@ def test_elementwise_ops():
     @ti.kernel
     def test():
         # TODO: fix parallelization
-        eps = 1e-8
         x = ti.Matrix([[1, 2], [3, 4]])
         # Unify rhs
         t1 = x + 10

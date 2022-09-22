@@ -554,6 +554,27 @@ void TaskCodeGenLLVM::visit(UnaryOpStmt *stmt) {
 #undef UNARY_INTRINSIC
 }
 
+void TaskCodeGenLLVM::create_elementwise_binary(
+    BinaryOpStmt *stmt,
+    std::function<llvm::Value *(llvm::Value *lhs, llvm::Value *rhs)> f) {
+  TI_ASSERT(stmt->lhs->ret_type->is<TensorType>());
+  TI_ASSERT(stmt->rhs->ret_type->is<TensorType>());
+  auto lhs_ty = stmt->lhs->ret_type->cast<TensorType>();
+  auto rhs_ty = stmt->rhs->ret_type->cast<TensorType>();
+  TI_ASSERT(lhs_ty->get_num_elements() == rhs_ty->get_num_elements());
+  auto lhs_vec = llvm_val[stmt->lhs];
+  auto rhs_vec = llvm_val[stmt->rhs];
+  auto elt_type_name = data_type_name(lhs_ty->get_element_type());
+  llvm::Value *result =
+      llvm::UndefValue::get(tlctx->get_data_type(stmt->ret_type));
+  for (int i = 0; i < lhs_ty->get_num_elements(); ++i) {
+    auto lhs = builder->CreateExtractElement(lhs_vec, i);
+    auto rhs = builder->CreateExtractElement(rhs_vec, i);
+    result = builder->CreateInsertElement(result, f(lhs, rhs), i);
+  }
+  llvm_val[stmt] = result;
+}
+
 void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
   auto op = stmt->op_type;
   auto ret_type = stmt->ret_type;

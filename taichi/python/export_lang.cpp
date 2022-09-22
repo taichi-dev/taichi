@@ -777,6 +777,16 @@ void export_lang(py::module &m) {
           },
           py::return_value_policy::reference)
       .def("get_ret_type", &Expr::get_ret_type)
+      .def("is_tensor",
+           [](Expr *expr) { return expr->expr->ret_type->is<TensorType>(); })
+      .def("get_shape",
+           [](Expr *expr) -> std::optional<std::vector<int>> {
+             if (expr->expr->ret_type->is<TensorType>()) {
+               return std::optional<std::vector<int>>(
+                   expr->expr->ret_type->cast<TensorType>()->get_shape());
+             }
+             return std::nullopt;
+           })
       .def("type_check", &Expr::type_check)
       .def("get_expr_name",
            [](Expr *expr) { return expr->cast<FieldExpression>()->name; })

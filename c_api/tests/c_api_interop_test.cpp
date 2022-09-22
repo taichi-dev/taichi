@@ -1,7 +1,7 @@
 #ifdef TI_WITH_VULKAN
 #undef TI_WITH_VULKAN
 #define TI_WITH_VULKAN 1
-#endif // TI_WITH_VULKAN
+#endif  // TI_WITH_VULKAN
 
 #include "gtest/gtest.h"
 #include "c_api_test_utils.h"
@@ -38,4 +38,4 @@ TEST(CapiAotTest, VulkanTextureInterop) {
   }
 }
 
-#endif // TI_WITH_VULKAN
+#endif  // TI_WITH_VULKAN

@@ -94,6 +94,10 @@ class TI_DLL_EXPORT Program {
  public:
   using Kernel = taichi::lang::Kernel;
   Callable *current_callable{nullptr};
+  // We let every thread has its own config because the constant folding pass
+  // wants to change the CompileConfig so that it can compile the evaluator,
+  // but we don't want it to change the global config. We will refactor it
+  // later when we make Taichi thread-safe.
   std::unordered_map<std::thread::id, CompileConfig> configs;
   std::thread::id main_thread_id_;
   bool sync{false};  // device/host synchronized?

@@ -1,11 +1,12 @@
-from taichi.types.primitive_types import i32
+from taichi._kernels import (blit_from_field_to_field, scan_add_inclusive,
+                             sort_stage, uniform_add, warp_shfl_up_i32)
 from taichi.lang.impl import current_cfg, field
 from taichi.lang.kernel_impl import data_oriented
+from taichi.lang.misc import cuda, vulkan
 from taichi.lang.runtime_ops import sync
 from taichi.lang.simt import subgroup
-from taichi.lang.misc import cuda, vulkan
-from taichi._kernels import sort_stage
-from taichi._kernels import warp_shfl_up_i32, blit_from_field_to_field, scan_add_inclusive, uniform_add
+from taichi.types.primitive_types import i32
+
 
 # Odd-even merge sort
 # References:
@@ -80,11 +81,11 @@ class PrefixSumExecutor:
         # Kogge-Stone construction
         for i in range(len(ele_nums) - 1):
             if i == len(ele_nums) - 2:
-                scan_add_inclusive(self.large_arr, ele_nums_pos[i], ele_nums_pos[i + 1],
-                                True, inclusive_add)
+                scan_add_inclusive(self.large_arr, ele_nums_pos[i],
+                                   ele_nums_pos[i + 1], True, inclusive_add)
             else:
-                scan_add_inclusive(self.large_arr, ele_nums_pos[i], ele_nums_pos[i + 1],
-                                False, inclusive_add)
+                scan_add_inclusive(self.large_arr, ele_nums_pos[i],
+                                   ele_nums_pos[i + 1], False, inclusive_add)
 
         for i in range(len(ele_nums) - 3, -1, -1):
             uniform_add(self.large_arr, ele_nums_pos[i], ele_nums_pos[i + 1])

@@ -113,4 +113,4 @@ if ($install) {
     Info("Build finished")
 }
 
-ccache -s -v
+#ccache -s -v

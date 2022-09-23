@@ -19,8 +19,8 @@ Taichi C-API has bridged the following backends:
 |Metal|GPU (macOS, iOS)|N/A|
 |OpenGL|GPU|N/A|
 
-The backends with tier-1 support are being developed and tested more intensively. And most new features will be available on Vulkan first, because it has the most outstanding cross-platform compatibility among all the tier-1 backends. 
-For the backends with tier-2 support, you should expect a delay in the fixes to the minor issues. 
+The backends with tier-1 support are being developed and tested more intensively. And most new features will be available on Vulkan first, because it has the most outstanding cross-platform compatibility among all the tier-1 backends.
+For the backends with tier-2 support, you should expect a delay in the fixes to the minor issues.
 
 For convenience, in the following text (and other C-API documentations), the term **host** refers to the user of the C-API; the term **device** refers to the logical (conceptual) compute device that Taichi Runtime offloads its compute tasks to. A *device* might not be an actual discrete processor away from the CPU and the *host* MAY NOT be able to access the memory allocated on the *device*.
 
@@ -406,7 +406,7 @@ Destroys a loaded AOT module and releases all related resources.
 
 `function.get_aot_module_kernel`
 
-Retrieves a pre-compiled Taichi kernel from the AOT module. 
+Retrieves a pre-compiled Taichi kernel from the AOT module.
 Returns `definition.null_handle` if the module does not have a kernel of the specified name.
 
 `function.get_aot_module_compute_graph`

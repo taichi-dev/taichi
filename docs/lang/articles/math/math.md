@@ -77,6 +77,20 @@ v = vec3(1, 2, 3)
 m = mat2(v, 4)  # [[1., 2.], [3, 4.]]
 ```
 
+:::note
+
+Vector types created by `ti.types.vector()` also support vector swizzling, you can use `xyzw`, `rgba`, `stpq` to access the first four elements:
+
+
+```python
+v = ti.math.vec4(1, 2, 3, 4)
+u = v.xyz  # vec3(1, 2, 3)
+u = v.xxx  # vec3(1, 1, 1)
+u = v.wzyx  # vec4(4, 3, 2, 1)
+u = v.rraa  # vec4(1, 1, 2, 2) 
+```
+
+:::
 
 ## GLSL-standard functions
 

@@ -8,7 +8,6 @@ Taichi implements its own `math` module to support usual mathematical functions 
 3. Some GLSL-standard functions.
 4. Complex number arithmetic of 2D vectors.
 
-Details will follow below.
 
 
 ## Mathematical functions

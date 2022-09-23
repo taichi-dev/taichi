@@ -1,7 +1,7 @@
 #include "taichi/transforms/loop_invariant_detector.h"
 #include "taichi/ir/analysis.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 class CacheLoopInvariantGlobalVars : public LoopInvariantDetector {
  public:
@@ -14,8 +14,7 @@ class CacheLoopInvariantGlobalVars : public LoopInvariantDetector {
     ReadWrite = 3,
   };
 
-  typedef std::unordered_map<Stmt *,
-                             std::pair<CacheStatus, std::vector<Stmt *>>>
+  typedef std::unordered_map<Stmt *, std::pair<CacheStatus, AllocaStmt *>>
       CacheMap;
   std::stack<CacheMap> cached_maps;
 
@@ -89,41 +88,7 @@ class CacheLoopInvariantGlobalVars : public LoopInvariantDetector {
 
   void visit_loop(Block *body) override {
     cached_maps.emplace();
-
-    loop_blocks.push(body);
-
-    body->accept(this);
-
-    for (auto &[dest, status_vec] : cached_maps.top()) {
-      auto &[status, vec] = status_vec;
-      auto alloca_unique =
-          std::make_unique<AllocaStmt>(dest->ret_type.ptr_removed());
-      auto alloca_stmt = alloca_unique.get();
-      modifier.insert_before(body->parent_stmt, std::move(alloca_unique));
-      if (int(status) & int(CacheStatus::Read)) {
-        set_init_value(alloca_stmt, dest);
-      }
-      if (int(status) & int(CacheStatus::Write)) {
-        add_writeback(alloca_stmt, dest);
-      }
-      for (auto *stmt : vec) {
-        if (stmt->is<GlobalLoadStmt>()) {
-          auto local_load = std::make_unique<LocalLoadStmt>(alloca_stmt);
-          stmt->replace_usages_with(local_load.get());
-          modifier.insert_before(stmt, std::move(local_load));
-          modifier.erase(stmt);
-        } else if (auto *global_store = stmt->cast<GlobalStoreStmt>()) {
-          auto local_store =
-              std::make_unique<LocalStoreStmt>(alloca_stmt, global_store->val);
-          stmt->replace_usages_with(local_store.get());
-          modifier.insert_before(stmt, std::move(local_store));
-          modifier.erase(stmt);
-        } else {
-          TI_UNREACHABLE
-        }
-      }
-    }
-    loop_blocks.pop();
+    LoopInvariantDetector::visit_loop(body);
     cached_maps.pop();
   }
 
@@ -143,30 +108,49 @@ class CacheLoopInvariantGlobalVars : public LoopInvariantDetector {
     modifier.insert_before(current_loop_stmt(), std::move(local_store));
   }
 
-  void cache_global_to_local(Stmt *stmt, Stmt *dest, CacheStatus status) {
-    if (auto &[cached_status, vec] = cached_maps.top()[dest];
+  AllocaStmt *cache_global_to_local(Stmt *dest, CacheStatus status) {
+    if (auto &[cached_status, alloca_stmt] = cached_maps.top()[dest];
         cached_status != CacheStatus::None) {
       // The global variable has already been cached.
       if (cached_status == CacheStatus::Read && status == CacheStatus::Write) {
+        add_writeback(alloca_stmt, dest);
         cached_status = CacheStatus::ReadWrite;
       }
-      vec.push_back(stmt);
-      return;
+      return alloca_stmt;
     }
-    cached_maps.top()[dest] = {status, {stmt}};
+    auto alloca_unique =
+        std::make_unique<AllocaStmt>(dest->ret_type.ptr_removed());
+    auto alloca_stmt = alloca_unique.get();
+    modifier.insert_before(current_loop_stmt(), std::move(alloca_unique));
+    if (status == CacheStatus::Read) {
+      set_init_value(alloca_stmt, dest);
+    } else if (status == CacheStatus::Write) {
+      add_writeback(alloca_stmt, dest);
+    }
+    cached_maps.top()[dest] = {status, alloca_stmt};
+    return alloca_stmt;
   }
 
   void visit(GlobalLoadStmt *stmt) override {
     if (is_offload_unique(stmt->src) &&
         is_operand_loop_invariant(stmt->src, stmt->parent)) {
-      cache_global_to_local(stmt, stmt->src, CacheStatus::Read);
+      auto alloca_stmt = cache_global_to_local(stmt->src, CacheStatus::Read);
+      auto local_load = std::make_unique<LocalLoadStmt>(alloca_stmt);
+      stmt->replace_usages_with(local_load.get());
+      modifier.insert_before(stmt, std::move(local_load));
+      modifier.erase(stmt);
     }
   }
 
   void visit(GlobalStoreStmt *stmt) override {
     if (is_offload_unique(stmt->dest) &&
         is_operand_loop_invariant(stmt->dest, stmt->parent)) {
-      cache_global_to_local(stmt, stmt->dest, CacheStatus::Write);
+      auto alloca_stmt = cache_global_to_local(stmt->dest, CacheStatus::Write);
+      auto local_store =
+          std::make_unique<LocalStoreStmt>(alloca_stmt, stmt->val);
+      stmt->replace_usages_with(local_store.get());
+      modifier.insert_before(stmt, std::move(local_store));
+      modifier.erase(stmt);
     }
   }
 
@@ -193,5 +177,4 @@ bool cache_loop_invariant_global_vars(IRNode *root,
   return CacheLoopInvariantGlobalVars::run(root, config);
 }
 }  // namespace irpass
-
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

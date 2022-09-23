@@ -6,7 +6,7 @@
 
 #include <stack>
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 class LoopInvariantDetector : public BasicStmtVisitor {
  public:
@@ -33,7 +33,7 @@ class LoopInvariantDetector : public BasicStmtVisitor {
       //   a = x[0]
       //   if b:
       //     c = a + 1
-      // Since we are moving statements outside the cloest for scope,
+      // Since we are moving statements outside the closest for scope,
       // We need to check the scope of the operand
       Stmt *operand_parent = operand;
       while (operand_parent->parent) {
@@ -131,4 +131,4 @@ class LoopInvariantDetector : public BasicStmtVisitor {
   }
 };
 
-TLANG_NAMESPACE_END
+} // namespace taichi::lang

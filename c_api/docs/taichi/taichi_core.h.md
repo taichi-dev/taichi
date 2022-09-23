@@ -55,7 +55,7 @@ mai.usage = TI_MEMORY_USAGE_STORAGE_BIT;
 TiMemory memory = ti_allocate_memory(runtime, &mai);
 ```
 
-You MAY free allocated memory explicitly; but memory allocations will be automatically freed when the related `handle.runtime` is destroyed.
+Allocated memory is automatically freed when the related `handle.runtime` is destroyed. You can also manually free the allocated memory. 
 
 ```cpp
 ti_free_memory(runtime, memory);

@@ -49,7 +49,7 @@ Differences between Taichi's math module and Python's built-in math module:
 
 1. Functions in Taichi's math module should be called in the Taichi scope.
 2. Functions in Taichi's math module also accept vectors/matrices as arguments.
-3. The precision of a function in Taichi's math module depends on the value of `default_fp` in the `ti.init()` call and the backend.
+3. The precision of a function in Taichi's math module depends on the value of `default_fp` specified in the `ti.init()` call and the backend.
 
 :::
 

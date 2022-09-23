@@ -45,7 +45,7 @@ ti_destroy_runtime(runtime);
 
 ### Allocate and Free Memory
 
-Allocate a piece of memory that is only visible to the device. On GPU backends, it usually means that the memory is located in the graphics memory (GRAM).
+Allocate a piece of memory that is visible only to the device. On the GPU backends, it usually means that the memory is located in the graphics memory (GRAM).
 
 ```cpp
 TiMemoryAllocateInfo mai {};

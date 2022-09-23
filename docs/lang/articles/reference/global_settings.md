@@ -58,7 +58,7 @@ Below are some most frequently used configurations you can set with the `ti.init
         Set the default precision of floating-point numbers in the Taichi scope.
 
     default_ip: [ti.i32, ti.i64]
-        Set the default precision for integers in the Taichi scope.
+        Set the default precision of integers in the Taichi scope.
 
     dynamic_index: bool
         Enable/disable the use of variables as indices to access vector/matrix elements in the Taichi scope.

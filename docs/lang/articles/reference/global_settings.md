@@ -172,7 +172,7 @@ If you want to use CUDA and Taichi's GGUI system at the same time on a machine w
 - To start a program in debug mode: `ti.init(debug=True)`. Alternatively, you can set the environment variable `TI_DEBUG` or run your code via `ti debug your_script.py`.
 - To disable the import of torch upon startup: `export TI_ENABLE_TORCH=0`.
 - To disable the import of paddle upon startup: `export TI_ENABLE_PADDLE=0`.
-- To set a custom seed for the random number generator used by `ti.random()`: `ti.init(random_seed=seed)` where `seed` is an integer. For example `ti.init(random_seed=int(time.time()))`.
+- To set a custom seed for the random number generator used by `ti.random()`: `ti.init(random_seed=seed)`. `seed` should be an integer. An example: `ti.init(random_seed=int(time.time()))`.
 - To set the default precision of floating-point numbers of Taichi runtime to `ti.f64`: `ti.init(default_fp=ti.i64)`.
 - Set the default precision for floating-point numbers of Taichi runtime to `ti.i32`: `ti.init(default_ip=ti.i32)`.
 - To enable the packed mode for memory layout: `ti.init(packed=True)`. See the [document on data layout](https://docs.taichi-lang.org/docs/layout).

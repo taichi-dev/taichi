@@ -171,7 +171,7 @@ def test() -> ti.i32:
 print(test())
 ```
 
-The code snippet above raises a `TaichiAssertionError` indicating that you are trying to access a field with improper indices.
+The code snippet above raises a `TaichiAssertionError`, indicating that you are trying to access a field with improper indices.
 
 :::note
 Automatic bound checks are supported on the CPU and CUDA beckends only.

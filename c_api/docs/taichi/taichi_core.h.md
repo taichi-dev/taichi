@@ -399,7 +399,7 @@ Load a precompiled AOT module from the filesystem. `definition.null_handle` is r
 
 `function.destroy_aot_module`
 
-Destroy a loaded AOT module and release all related resources.
+Destroys a loaded AOT module and releases all related resources.
 
 `function.get_aot_module_kernel`
 

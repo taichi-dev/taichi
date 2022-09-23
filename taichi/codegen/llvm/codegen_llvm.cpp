@@ -429,8 +429,11 @@ void TaskCodeGenLLVM::visit(UnaryOpStmt *stmt) {
       if (!cast_type->is<TensorType>()) {
         llvm_val[stmt] = cast_func(input, tlctx->get_data_type(cast_type));
       } else {
-        create_elementwise_cast(stmt, tlctx->get_data_type(cast_type),
-                                cast_func);
+        create_elementwise_cast(
+            stmt,
+            tlctx->get_data_type(
+                cast_type->cast<TensorType>()->get_element_type()),
+            cast_func);
       }
 
       if (use_f16) {
@@ -460,8 +463,11 @@ void TaskCodeGenLLVM::visit(UnaryOpStmt *stmt) {
           llvm_val[stmt] =
               cast_func(input, tlctx->get_data_type(stmt->cast_type));
         } else {
-          create_elementwise_cast(stmt, tlctx->get_data_type(stmt->cast_type),
-                                  cast_func);
+          create_elementwise_cast(
+              stmt,
+              tlctx->get_data_type(
+                  stmt->cast_type->cast<TensorType>()->get_element_type()),
+              cast_func);
         }
       } else {
         if (to->is_primitive(PrimitiveTypeID::f16) ||
@@ -497,8 +503,11 @@ void TaskCodeGenLLVM::visit(UnaryOpStmt *stmt) {
           if (!stmt->cast_type->is<TensorType>()) {
             llvm_val[stmt] = trunc_fn(input, tlctx->get_data_type(cast_type));
           } else {
-            create_elementwise_cast(stmt, tlctx->get_data_type(cast_type),
-                                    trunc_fn);
+            create_elementwise_cast(
+                stmt,
+                tlctx->get_data_type(
+                    cast_type->cast<TensorType>()->get_element_type()),
+                trunc_fn);
           }
         }
       }

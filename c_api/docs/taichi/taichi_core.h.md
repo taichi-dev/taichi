@@ -398,7 +398,8 @@ Waits until all previously invoked device commands are executed.
 
 `function.load_aot_module`
 
-Load a precompiled AOT module from the filesystem. `definition.null_handle` is returned if the runtime failed to load the AOT module from the given path.
+Loads a pre-compiled AOT module from the file system. 
+Returns `definition.null_handle` if the runtime fails to load the AOT module from the specified path.
 
 `function.destroy_aot_module`
 

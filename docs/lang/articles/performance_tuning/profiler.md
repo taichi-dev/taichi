@@ -44,7 +44,7 @@ ti.profiler.print_scoped_profiler_info()
 
 `KernelProfiler` retrieves the kernel profiling records from the backend, counts them in the Python scope, and prints the results to the console.
 
-1. To enable this profiler, set `kernel_profiler=True` when calling `ti.init()`. 
+1. To enable this profiler, set `kernel_profiler=True` when calling `ti.init()`.
 2. To display the profiling results, call `ti.profiler.print_kernel_profiler_info()`. There are two modes of printing:
     - In `'count'` mode (default), the profiling records under the same kernel name are counted as one profiling result.
     - In `'trace'` mode, the profiler shows you a list of kernels launched on hardware during the profiling period.

@@ -14,7 +14,7 @@ Generally, when you call `ti.init()`, Taichi executes the following steps to ini
 3. If no customized setting is found, Taichi uses a default configuration. In this case, if neither the argument `arch` is specified nor an environment variable `TI_ARCH` is found, Taichi adopts the default backend `arch=ti.cpu`.
 
 
-Below are some most frequently used configurations you can set with the `ti.init()` call:
+Following are some frequently used configurations that the `ti.init()` method call supports:
 
 **Customize `ti.init()` via arguments**
 

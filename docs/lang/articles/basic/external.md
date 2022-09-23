@@ -194,7 +194,7 @@ def test(a: ti.types.ndarray(), b: ti.types.ndarray()):  # assume a, b have the 
 
 This code snippet is more readable than the NumPy version above and runs way faster even on the CPU backend.
 
-Note that the elements in an external array must be indexed using a single square bracket. This contrasts with a Taichi vector or matrix field where field members and elements are indexed separately:
+Note that the elements in an external array must be indexed using a single square bracket. This contrasts with a Taichi vector field or matrix field where field members and elements are indexed separately:
 
 ```python
 x = ti.Vector.field(3, float, shape=(5, 5))

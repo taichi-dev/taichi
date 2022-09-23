@@ -8,9 +8,9 @@ Taichi provides the following built-in utilities to facilitate parallel programm
 
 - `print` in the Taichi scope checks the value of a variable.
 - Serialization of your program or a specific parallel for loop.
-- Activated with `ti.init(debug=True)`, debug mode detects out-of-bound array accesses,
+- Activated with `ti.init(debug=True)`, debug mode detects out-of-bound array accesses.
 - static or non-static `assert` verifies an assertion condition at compile time or runtime respectively.
-- `sys.tracebacklimit`, which produces a more concise traceback
+- `sys.tracebacklimit` produces a conciser traceback.
 
 ## Runtime `print` in Taichi scope
 
@@ -87,7 +87,7 @@ foo()
 
 ## Compile-time `ti.static_print`
 
-It can be useful to print Python objects and their properties like data types or SNodes in the Taichi scope. Based on `ti.static` (see [Metaprogramming](../advanced/meta.md)), Taichi provides `ti.static_print` to print compile-time constants in the Taichi scope:
+It can be useful to print Python objects and their properties like data types or SNodes in the Taichi scope. Similar to `ti.static`, which makes the compiler evaluate an argument at compile time (see the [Metaprogramming](../advanced/meta.md) for more information), `ti.static_print` prints compile-time constants in the Taichi scope:
 
 ```python
 x = ti.field(ti.f32, (2, 3))

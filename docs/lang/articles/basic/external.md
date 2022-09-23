@@ -34,7 +34,7 @@ In the example above, the scalar field `x` and the array `a` have the same shape
 
 The field should also have the same dtype as the array; otherwise, an implicit type casting would occur - see [type system](../type_system/type.md).
 
-Conversely, to export the data in `x` to a NumPy array, call the `to_numpy()` method:
+Conversely, to export the data in `x` to a NumPy array, call `to_numpy()`:
 
 ```python
 arr = x.to_numpy()

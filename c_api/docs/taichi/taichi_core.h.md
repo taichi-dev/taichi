@@ -120,7 +120,7 @@ You can destroy an unused AOT module if you have done with it; but please ensure
 ti_destroy_aot_module(aot_module);
 ```
 
-### Launch Kernels and Compute Graphs
+### Launch kernels and compute graphs
 
 You can extract kernels and compute graphs from an AOT module. Kernel and compute graphs are a part of the module, so you don't have to destroy them.
 

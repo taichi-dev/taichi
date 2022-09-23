@@ -77,7 +77,7 @@ v = vec3(1, 2, 3)
 m = mat2(v, 4)  # [[1., 2.], [3, 4.]]
 ```
 
-Another important feature of vector types created by `ti.types.vector()` is that they support **vector swizzling** as like GLSL vectors, this means you can use `xyzw`, `rgba`, `stpq` to access their first four elements:
+Another important feature of vector types created by `ti.types.vector()` is that they support **vector swizzling** as like GLSL vectors, this means you can use `xyzw`, `rgba`, `stpq` to access their elements with indices less or equal to four:
 
 
 ```python
@@ -87,8 +87,6 @@ u = v.xxx  # vec3(1, 1, 1)
 u = v.wzyx  # vec4(4, 3, 2, 1)
 u = v.rraa  # vec4(1, 1, 2, 2) 
 ```
-
-:::
 
 ## GLSL-standard functions
 

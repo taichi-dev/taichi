@@ -6,7 +6,7 @@ sidebar_position: 1
 
 ## Overview
 
-High-performance numerical computation is one of the key features of Taichi. To better measure the performance of Taichi programs, Taichi provides profiling tools that collect both hardware and Taichi-related information. They play an important role in the quantitative analysis of program performance, bottleneck identification, and optimization. They can also be used as debugging tools for developers.
+To facilitate code debugging and code optimization, Taichi provides a set of profiling tools, which collect hardware and Taichi-related information to quantify program performance and analyze where bottleneck occurs.
 
 Currently, Taichi provides two profilers:
 

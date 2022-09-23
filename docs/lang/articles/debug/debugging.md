@@ -221,7 +221,7 @@ def copy(dst: ti.template(), src: ti.template()):
         dst[I] = src[I]
 ```
 
-## More concise traceback in Taichi scope
+## Conciser tracebacks in Taichi scope
 
 Taichi reports a traceback when an error occurs in the **Taichi scope**. For example:
 
@@ -305,7 +305,7 @@ AssertionError:
 
 It takes time to read through the message. In addition, many stack frames reveal implementation details, which are irrelevant to debugging.
 
-Taichi allows you to access a more concise and intuitive version of traceback messages via `sys.tracebacklimit`:
+Taichi allows you to access a conciser and more intuitive version of traceback messages via `sys.tracebacklimit`:
 
 ```python {2}
 import taichi as ti

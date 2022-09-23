@@ -110,7 +110,7 @@ u = v.rraa  # vec4(1, 1, 2, 2)
         print(v.xyz)
     ```
     Unlike `ti.Vector`, whose input data must be a 1D array, vector types created by `ti.types.vector()` have more flexible ways to initialize, as explained above.
-+ `ti.math.vec3` is created by `vec3 = ti.types.vector(3, float)`.
++ `ti.math.vec3` is simply created by `vec3 = ti.types.vector(3, float)`.
 
 
 ## GLSL-standard functions

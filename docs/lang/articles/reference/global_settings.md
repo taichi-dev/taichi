@@ -61,7 +61,7 @@ Below are some most frequently used configurations you can set with the `ti.init
         Set the default precision for integers in the Taichi scope.
 
     dynamic_index: bool
-        Enable/disable using variables as index to access vector/matrix elements in the Taichi scope.
+        Enable/disable the use of variables as indices to access vector/matrix elements in the Taichi scope.
 
     kernel_profiler: bool
         Turn on/off kernel performance profiling.

@@ -176,7 +176,7 @@ If you want to use CUDA and Taichi's GGUI system at the same time on a machine w
 - To set the default precision of floating-point numbers of Taichi runtime to `ti.f64`: `ti.init(default_fp=ti.i64)`.
 - To set the default precision of floating-point numbers of Taichi runtime to `ti.i32`: `ti.init(default_ip=ti.i32)`.
 - To enable the packed mode for memory layout: `ti.init(packed=True)`. See the [document on data layout](https://docs.taichi-lang.org/docs/layout).
-- Disable the offline cache of compiled kernels: `ti.init(offline_cache=False)`. See [Packed mode](https://docs.taichi-lang.org/docs/layout#packed-mode).
+- To disable the offline cache of compiled kernels: `ti.init(offline_cache=False)`. See details of the [packed mode](https://docs.taichi-lang.org/docs/layout#packed-mode).
 - To enable the use of variables as indices to access vector/matrix elements in the Taichi scope: `ti.init(dynamic_index=True)`.
 - To turn on kernel profiling: `ti.init(kernel_profiler=True)`. Learn more about [Taichi's profiler](https://docs.taichi-lang.org/docs/profiler).
 

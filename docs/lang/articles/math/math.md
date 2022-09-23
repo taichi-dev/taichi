@@ -61,7 +61,7 @@ Indeed, these vector/matrix types are created using the two template functions `
 vec2 = ti.types.vector(2, float)
 ```
 
-The number of precision bits of these matrix types will be determined by `default_fp` and `default_ip` in your `ti.init()` call. For example if `ti.init(default_fp=ti.f64)` is called, then the types `vec2/vec3/vec4` and `mat2/mat3/mat4` will all have 64-bit floating-point precision.
+The number of precision bits of these matrix types will be determined by `default_fp` and `default_ip` in your `ti.init()` call. For example, if `ti.init(default_fp=ti.f64)` is called, then the types `vec2/vec3/vec4` and `mat2/mat3/mat4` will all have 64-bit floating-point precision.
 
 These types can be used to instantiate vectors and matrices or annotate the data types of function arguments and struct members. See [type system](../type_system/type.md) for more detail. Here we emphasize that they have very flexible initialization routines:
 
@@ -81,9 +81,10 @@ m = mat2(v, 4)  # [[1., 2.], [3, 4.]]
 ## GLSL-standard functions
 
 
-Taichi's math module also supports a few [GLSL standard functions](https://registry.khronos.org/OpenGL-Refpages/gl4/index.php), they are implemented in the same way that follows the GLSL standard. For example:
+Taichi's math module also supports a few [GLSL standard functions](https://registry.khronos.org/OpenGL-Refpages/gl4/index.php), they are implemented in the way that follows the GLSL standard. For example:
 
 ```python
+import taichi as ti
 import taichi.math as tm
 
 @ti.kernel

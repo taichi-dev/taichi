@@ -102,21 +102,15 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
                              llvm::Value *node_meta,
                              SNode *snode);
 
-  void create_value_cast(
-      UnaryOpStmt *stmt,
-      std::function<llvm::Value *(llvm::Value *, llvm::Type *)> cast_fn,
-      DataType to_ty);
-
-  void create_fp_trunc(
-      UnaryOpStmt *stmt,
-      std::function<llvm::Value *(llvm::Value *, llvm::Type *)> trunc_fn,
-      llvm::Type *to_ty,
-      bool is_tensor,
-      bool trunc_self = false);
-
   void create_elementwise_binary(
       BinaryOpStmt *stmt,
       std::function<llvm::Value *(llvm::Value *lhs, llvm::Value *rhs)> f);
+
+  void create_elementwise_cast(
+      UnaryOpStmt *stmt,
+      llvm::Type *to_ty,
+      std::function<llvm::Value *(llvm::Value *, llvm::Type *)> f,
+      bool on_self = false);
 
   std::unique_ptr<RuntimeObject> emit_struct_meta_object(SNode *snode);
 

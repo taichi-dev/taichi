@@ -355,55 +355,24 @@ TaskCodeGenLLVM::TaskCodeGenLLVM(Kernel *kernel,
 void TaskCodeGenLLVM::visit(DecorationStmt *stmt) {
 }
 
-void TaskCodeGenLLVM::create_value_cast(
+void TaskCodeGenLLVM::create_elementwise_cast(
     UnaryOpStmt *stmt,
-    std::function<llvm::Value *(llvm::Value *, llvm::Type *)> cast_fn,
-    DataType to_ty) {
-  if (!to_ty->is<TensorType>()) {
-    llvm_val[stmt] =
-        cast_fn(llvm_val[stmt->operand], tlctx->get_data_type(to_ty));
-  } else {
-    auto from_ty = stmt->operand->ret_type->cast<TensorType>();
-    TI_ASSERT_INFO(from_ty, "Cannot cast non-tensor type {} to {}",
-                   from_ty->to_string(), to_ty->to_string());
-    auto tensor_type = to_ty->cast<TensorType>();
-    llvm::Value *vec = llvm::UndefValue::get(tlctx->get_data_type(tensor_type));
-    for (int i = 0; i < tensor_type->get_num_elements(); ++i) {
-      auto elem = builder->CreateExtractElement(llvm_val[stmt->operand], i);
-      auto cast_input =
-          cast_fn(elem, tlctx->get_data_type(tensor_type->get_element_type()));
-      vec = builder->CreateInsertElement(vec, cast_input, i);
-    }
-    llvm_val[stmt] = vec;
-  }
-}
-
-void TaskCodeGenLLVM::create_fp_trunc(
-    UnaryOpStmt *stmt,
-    std::function<llvm::Value *(llvm::Value *, llvm::Type *)> trunc_fn,
     llvm::Type *to_ty,
-    bool is_tensor,
-    bool trunc_self) {
-  if (!is_tensor) {
-    llvm_val[stmt] =
-        trunc_fn(trunc_self ? llvm_val[stmt] : llvm_val[stmt->operand], to_ty);
-  } else {
-    auto from_ty = stmt->operand->ret_type->cast<TensorType>();
-    TI_ASSERT_INFO(from_ty,
-                   "Cannot truncate non-tensor type {} to a tensor type",
-                   from_ty->to_string());
-    llvm::Value *vec = llvm::UndefValue::get(llvm::VectorType::get(
-        to_ty, from_ty->get_num_elements(), /*scalable=*/false));
-    // This assumes cast does not change the number of
-    // elements in a tensor value (should be legit)
-    for (int i = 0; i < from_ty->get_num_elements(); ++i) {
-      auto elem = builder->CreateExtractElement(
-          trunc_self ? llvm_val[stmt] : llvm_val[stmt->operand], i);
-      auto trunc_value = trunc_fn(elem, to_ty);
-      vec = builder->CreateInsertElement(vec, trunc_value, i);
-    }
-    llvm_val[stmt] = vec;
+    std::function<llvm::Value *(llvm::Value *, llvm::Type *)> func,
+    bool on_self) {
+  auto from_ty = stmt->operand->ret_type->cast<TensorType>();
+  TI_ASSERT_INFO(from_ty,
+                 "Cannot perform elementwise ops on non-tensor type {}",
+                 from_ty->to_string());
+  llvm::Value *vec = llvm::UndefValue::get(llvm::VectorType::get(
+      to_ty, from_ty->get_num_elements(), /*scalable=*/false));
+  for (int i = 0; i < from_ty->get_num_elements(); ++i) {
+    auto elem = builder->CreateExtractElement(
+        on_self ? llvm_val[stmt] : llvm_val[stmt->operand], i);
+    auto cast_value = func(elem, to_ty);
+    vec = builder->CreateInsertElement(vec, cast_value, i);
   }
+  llvm_val[stmt] = vec;
 }
 
 void TaskCodeGenLLVM::visit(UnaryOpStmt *stmt) {
@@ -457,14 +426,23 @@ void TaskCodeGenLLVM::visit(UnaryOpStmt *stmt) {
       auto cast_func = [this, cast_op](llvm::Value *value, llvm::Type *type) {
         return this->builder->CreateCast(cast_op, value, type);
       };
-      create_value_cast(stmt, cast_func, cast_type);
+      if (!cast_type->is<TensorType>()) {
+        llvm_val[stmt] = cast_func(input, tlctx->get_data_type(cast_type));
+      } else {
+        create_elementwise_cast(stmt, tlctx->get_data_type(cast_type),
+                                cast_func);
+      }
 
       if (use_f16) {
         auto trunc_func = [this](llvm::Value *value, llvm::Type *type) {
           return this->builder->CreateFPTrunc(value, type);
         };
-        create_fp_trunc(stmt, trunc_func, llvm::Type::getHalfTy(*llvm_context),
-                        cast_type->is<TensorType>(), /*trunc_self=*/true);
+        auto to_ty = llvm::Type::getHalfTy(*llvm_context);
+        if (!cast_type->is<TensorType>()) {
+          llvm_val[stmt] = trunc_func(llvm_val[stmt], to_ty);
+        } else {
+          create_elementwise_cast(stmt, to_ty, trunc_func, /*trunc_self=*/true);
+        }
       }
     } else if (is_real(from.get_element_type()) &&
                is_real(to.get_element_type())) {
@@ -478,7 +456,13 @@ void TaskCodeGenLLVM::visit(UnaryOpStmt *stmt) {
         auto cast_func = [this](llvm::Value *value, llvm::Type *type) {
           return this->builder->CreateFPExt(value, type);
         };
-        create_value_cast(stmt, cast_func, stmt->cast_type);
+        if (!stmt->cast_type->is<TensorType>()) {
+          llvm_val[stmt] =
+              cast_func(input, tlctx->get_data_type(stmt->cast_type));
+        } else {
+          create_elementwise_cast(stmt, tlctx->get_data_type(stmt->cast_type),
+                                  cast_func);
+        }
       } else {
         if (to->is_primitive(PrimitiveTypeID::f16) ||
             (to->is<TensorType>() &&
@@ -510,8 +494,12 @@ void TaskCodeGenLLVM::visit(UnaryOpStmt *stmt) {
               stmt->cast_type->is<TensorType>()
                   ? stmt->cast_type->cast<TensorType>()->get_element_type()
                   : stmt->cast_type.operator->();
-          create_fp_trunc(stmt, trunc_fn, tlctx->get_data_type(cast_type),
-                          stmt->cast_type->is<TensorType>());
+          if (!stmt->cast_type->is<TensorType>()) {
+            llvm_val[stmt] = trunc_fn(input, tlctx->get_data_type(cast_type));
+          } else {
+            create_elementwise_cast(stmt, tlctx->get_data_type(cast_type),
+                                    trunc_fn);
+          }
         }
       }
     } else if (!is_real(from.get_element_type()) &&

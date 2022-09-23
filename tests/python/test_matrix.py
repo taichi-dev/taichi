@@ -866,7 +866,7 @@ def test_elementwise_ops():
         for i in range(2):
             for j in range(2):
                 assert factors[i, j] == 2
-        
+
         y1 = ti.Matrix([[1, 2], [3, 4]], dt=ti.f32)
         z1 = y1 * 2
         factors1 = z1 // y1

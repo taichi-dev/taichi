@@ -342,7 +342,7 @@ Taichi translates Python code into a statically typed language for high performa
 
 In the Taichi scope, the type of a variable is **determined upon initialization and never changes later**.
 
-Although Taichi's static typing system provides better performance, it may make your program more error-prone if you fail to specify the correct types. For example:
+Although Taichi's static typing system delivers a better performance, it may lead to unexpected results if you fail to specify the correct types. For example:
 
 ```python
 @ti.kernel

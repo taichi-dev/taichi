@@ -178,7 +178,7 @@ In case you want to use taichi cuda backend together with GGUI on a machine with
 - Enable the packed mode for memory layout: `ti.init(packed=True)`. See https://docs.taichi-lang.org/docs/layout.
 - Disable the offline cache of compiled kernels: `ti.init(offline_cache=False)`. See [Packed mode](https://docs.taichi-lang.org/docs/layout#packed-mode).
 - Enable using variables as index to access vector/matrix elements in the Taichi scope: `ti.init(dynamic_index=True)`.
-- Turn on kernel profiling: `ti.init(kernel_profiler=True)`. See https://docs.taichi-lang.org/docs/profiler.
+- To turn on kernel profiling: `ti.init(kernel_profiler=True)`. Learn more about [Taichi's profiler](https://docs.taichi-lang.org/docs/profiler).
 
 
 ## Logging

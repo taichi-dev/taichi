@@ -1,23 +1,13 @@
 ---
-sidebar_position: 2
+sidebar_position: 3
 ---
 
-# Objective Data-oriented Programming I
+# Data-oriented Class
 
-Taichi is a [data-oriented](https://en.wikipedia.org/wiki/Data-oriented_design) programming (DOP) language. However, simple DOP makes modularization hard. To allow modularized code, Taichi borrows some concepts from object-oriented programming (OOP). For convenience, let's call the hybrid scheme **objective data-oriented programming** (ODOP).
+To define a Taichi kernel as a Python class member function:
 
-The ODOP scheme allows you to organize data and methods into a class and call the methods to manipulate the data in the Taichi scope. Taichi offers two different types of classes that serve this purpose, and they are distinguished by the two decorators `@ti.data_oriented` and `@ti.dataclass`, respectively:
-
-1. `@ti.data_oriented`: It should be used when your data is actively updated in the Python scope (such as current time and user input events) and tracked in Taichi kernels. This type of class can have native Python objects as members and must be instantiated in the Python scope. This article will discuss this type of class in full detail.
-
-2. `@ti.dataclass`: It is a wrapper over `ti.types.struct` but offers more flexibility: You can define Taichi functions as its methods and invoke these methods in the Taichi scope. We will discuss this type of class in the next article.
-
-
-## Data-oriented classes
-
-### Introduction
-
-If you need to define a **Taichi kernel** as a Python class member function, please decorate the class with a `@ti.data_oriented` decorator. You can then define `ti.kernel`s and `ti.func`s in your *data-oriented* Python class.
+1. Decorate the class with a `@ti.data_oriented` decorator.
+2. Define `ti.kernel`s and `ti.func`s in your data-oriented Python class.
 
 :::note
 The first argument of the function should be the class instance ("`self`"), unless you are defining a `@staticmethod`.
@@ -62,7 +52,7 @@ class MyClass:
 
 
 a = MyClass()
-# a.call_inc() cannot be called, since a.temp has not been allocated at this point
+# a.call_inc() cannot be called, because a.temp has not been allocated at this point
 a.allocate_temp(4)
 a.call_inc()
 a.call_inc()
@@ -109,9 +99,9 @@ print(a.y)  # [ 5. 13. 21. 29.]
 ```
 
 
-### Inheritance of data-oriented classes
+## Inheritance of data-oriented classes
 
-The *data-oriented* property will be automatically carried beyond the Python class inheriting. This means the **Taichi Kernel** could be called while any of the ancestor classes are decorated by the `@ti.data_oriented` decorator.
+The data-oriented property is automatically carried along with the Python class inheriting. This means that you can call a Taichi Kernel if any of its ancestor classes is decorated with `@ti.data_oriented`.
 
 An example:
 ```python
@@ -161,18 +151,18 @@ print(b.count())  # 1
 c = BaseClass()
 # c.add(3)
 # print(c.count())
-# The two lines above will trigger a kernel define error, since class c is not decorated by @ti.data_oriented
+# The two lines above trigger a kernel define error, because class c is not decorated with @ti.data_oriented
 ```
 
-### Python built-in decorators
+## Python built-in decorators
 
-Common decorators that are pre-built in Python, `@staticmethod`[^1] and `@classmethod`[^2], could decorate to a **Taichi kernel** in *data-oriented* classes.
+Common decorators that are pre-built in Python, `@staticmethod`[^1] and `@classmethod`[^2], can decorate a Taichi kernel in data-oriented classes.
 
 [^1]: [Python built-in functions - staticmethod](https://docs.python.org/3/library/functions.html#staticmethod)
 [^2]: [Python built-in functions - classmethod](https://docs.python.org/3/library/functions.html#classmethod)
 
 
-`staticmethod` example :
+`staticmethod` example:
 
 ```python {16}
 import taichi as ti

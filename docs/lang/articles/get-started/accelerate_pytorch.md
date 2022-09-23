@@ -109,7 +109,7 @@ Researchers in machine learning usually spend a lot of time designing model arch
 
 [This repo](https://github.com/BlinkDL/RWKV-CUDA) introduces an example of customizing an ML operator in CUDA. The author developed an RWKV language model using sort of a one-dimensional depthwise convolution custom operator. The model does not involve much computation but still runs slow because PyTorch does not have native support for it.  So, the author customized the operator in CUDA using a set of optimization techniques, such as loop fusion and Shared Memory, and achieved a performance 20x better than he did with PyTorch.
 
-Referring to the CUDA code[3], we customized a Taichi depthwise convolution operator[4] in the RWKV model using the same optimization techniques.
+Referring to the CUDA code[^3], we customized a Taichi depthwise convolution operator[^4] in the RWKV model using the same optimization techniques.
 
 The function of the depth wise convolution operator:
 
@@ -217,7 +217,7 @@ All these features set Taichi apart as a convenient tool for ML operator customi
 
 ## Reference
 
-- 1 [Pure PyTorch padding](https://github.com/ailzhang/blog_code/blob/master/tile/demo_torch.py)
-- 2 [Padding PyTorch tensor in Taichi kernel](https://github.com/ailzhang/blog_code/blob/master/tile/demo_taichi.py)
-- 3 [RWKV-CUDA](https://github.com/BlinkDL/RWKV-CUDA/tree/main/depthwise_conv1d)
-- 4 [RWKV-Taichi](https://github.com/ailzhang/blog_code/tree/master/rwkv)
+[^1] [Pure PyTorch padding](https://github.com/ailzhang/blog_code/blob/master/tile/demo_torch.py)
+[^2] [Padding PyTorch tensor in Taichi kernel](https://github.com/ailzhang/blog_code/blob/master/tile/demo_taichi.py)
+[^3] [RWKV-CUDA](https://github.com/BlinkDL/RWKV-CUDA/tree/main/depthwise_conv1d)
+[^4] [RWKV-Taichi ](https://github.com/ailzhang/blog_code/tree/master/rwkv)

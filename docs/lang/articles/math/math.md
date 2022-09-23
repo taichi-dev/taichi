@@ -1,4 +1,4 @@
-# The math module
+# Math Module
 
 
 Taichi provides a built-in `math` module that supports frequently used mathematical functions and utility functions, including:

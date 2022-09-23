@@ -379,7 +379,7 @@ Set an event primitive to a signaled state, so the queues waiting upon the event
 
 `function.reset_event`
 
-Set a signaled event primitive back to an unsignaled state.
+Sets a signaled event primitive back to an unsignaled state.
 
 `function.wait_event`
 

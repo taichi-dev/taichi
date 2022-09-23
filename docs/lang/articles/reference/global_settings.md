@@ -70,7 +70,7 @@ Below are some most frequently used configurations you can set with the `ti.init
         Enable/disable offline cache of the compiled kernels.
 
     offline_cache_file_path: str
-        Directory holding the offline cached files.
+        Set a directory for holding the offline cached files.
 
     packed: bool
         Enable/disable the packed memory layout.

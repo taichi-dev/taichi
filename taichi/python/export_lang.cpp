@@ -41,7 +41,7 @@ bool test_threading();
 
 TI_NAMESPACE_END
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 Expr expr_index(const Expr &expr, const Expr &index) {
   return expr[index];
@@ -49,7 +49,7 @@ Expr expr_index(const Expr &expr, const Expr &index) {
 
 std::string libdevice_path();
 
-TLANG_NAMESPACE_END
+} // namespace taichi::lang
 
 TI_NAMESPACE_BEGIN
 void export_lang(py::module &m) {

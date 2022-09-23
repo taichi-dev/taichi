@@ -2,7 +2,7 @@
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/statements.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 namespace irpass::analysis {
 
@@ -168,4 +168,4 @@ bool maybe_same_address(Stmt *var1, Stmt *var2) {
 
 }  // namespace irpass::analysis
 
-TLANG_NAMESPACE_END
+} // namespace taichi::lang

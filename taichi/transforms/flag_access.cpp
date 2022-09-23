@@ -4,7 +4,7 @@
 #include "taichi/ir/visitors.h"
 #include "taichi/system/profiler.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 // Flag accesses to be either weak (non-activating) or strong (activating)
 class FlagAccess : public IRVisitor {
@@ -176,4 +176,4 @@ void flag_access(IRNode *root) {
 
 }  // namespace irpass
 
-TLANG_NAMESPACE_END
+} // namespace taichi::lang

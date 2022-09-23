@@ -6,7 +6,7 @@
 #include "taichi/program/program.h"
 #include "taichi/util/bit.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 // Algebraic Simplification and Strength Reduction
 class AlgSimp : public BasicStmtVisitor {
@@ -445,4 +445,4 @@ bool alg_simp(IRNode *root, const CompileConfig &config) {
 
 }  // namespace irpass
 
-TLANG_NAMESPACE_END
+} // namespace taichi::lang

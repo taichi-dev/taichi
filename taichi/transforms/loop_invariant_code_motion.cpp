@@ -1,6 +1,6 @@
 #include "taichi/transforms/loop_invariant_detector.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 class LoopInvariantCodeMotion : public LoopInvariantDetector {
  public:
@@ -88,4 +88,4 @@ bool loop_invariant_code_motion(IRNode *root, const CompileConfig &config) {
 }
 }  // namespace irpass
 
-TLANG_NAMESPACE_END
+} // namespace taichi::lang

@@ -4,7 +4,7 @@
 #include "taichi/ir/ir.h"
 #include "taichi/program/program.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 void Expr::set_tb(const std::string &tb) {
   expr->tb = tb;
@@ -120,4 +120,4 @@ Expr expr_matrix_field(const std::vector<Expr> &fields,
   return Expr::make<MatrixFieldExpression>(fields, element_shape);
 }
 
-TLANG_NAMESPACE_END
+} // namespace taichi::lang

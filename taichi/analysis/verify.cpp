@@ -8,7 +8,7 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/system/profiler.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 class IRVerifier : public BasicStmtVisitor {
  private:
@@ -150,4 +150,4 @@ void verify(IRNode *root) {
 }
 }  // namespace irpass::analysis
 
-TLANG_NAMESPACE_END
+} // namespace taichi::lang

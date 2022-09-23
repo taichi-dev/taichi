@@ -10,7 +10,7 @@
 #include "taichi/ir/type_utils.h"
 #include "taichi/ir/type_factory.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 real get_cpu_frequency();
 
@@ -65,7 +65,7 @@ std::string runtime_lib_dir();
 
 bool command_exist(const std::string &command);
 
-TLANG_NAMESPACE_END
+} // namespace taichi::lang
 
 TI_NAMESPACE_BEGIN
 void initialize_benchmark();

@@ -15,7 +15,7 @@
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
 #endif
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 class Function;
 
@@ -442,4 +442,4 @@ void Kernel::offload_to_executable(IRNode *stmt) {
       is_extension_supported(config.arch, Extension::bls) &&
           config.make_block_local);
 }
-TLANG_NAMESPACE_END
+} // namespace taichi::lang

@@ -4,7 +4,7 @@
 #include "taichi/ir/visitors.h"
 #include "taichi/system/profiler.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 class Scalarize : public IRVisitor {
  public:
@@ -243,4 +243,4 @@ void scalarize(IRNode *root) {
 
 }  // namespace irpass
 
-TLANG_NAMESPACE_END
+} // namespace taichi::lang

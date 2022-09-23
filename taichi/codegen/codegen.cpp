@@ -17,7 +17,7 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/analysis/offline_cache_util.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 KernelCodeGen::KernelCodeGen(Kernel *kernel, IRNode *ir)
     : prog(kernel->program), kernel(kernel), ir(ir) {
@@ -152,4 +152,4 @@ FunctionType ModuleToFunctionConverter::convert(const Kernel *kernel,
 }
 
 #endif
-TLANG_NAMESPACE_END
+} // namespace taichi::lang

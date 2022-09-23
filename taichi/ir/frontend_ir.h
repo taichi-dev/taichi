@@ -11,7 +11,7 @@
 #include "taichi/program/function.h"
 #include "taichi/ir/mesh.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 struct ForLoopConfig {
   bool is_bit_vectorized{false};
@@ -1041,4 +1041,4 @@ void flatten_lvalue(Expr expr, Expression::FlattenContext *ctx);
 
 void flatten_rvalue(Expr expr, Expression::FlattenContext *ctx);
 
-TLANG_NAMESPACE_END
+} // namespace taichi::lang

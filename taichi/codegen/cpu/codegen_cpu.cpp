@@ -11,7 +11,7 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/analysis/offline_cache_util.h"
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 namespace {
 
@@ -290,4 +290,4 @@ FunctionType KernelCodeGenCPU::compile_to_function() {
       tlctx, get_llvm_program(prog)->get_runtime_executor());
   return converter.convert(kernel, compile_kernel_to_module());
 }
-TLANG_NAMESPACE_END
+} // namespace taichi::lang

@@ -2,7 +2,7 @@
 
 #include "taichi/ir/type_utils.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 TypeFactory &TypeFactory::get_instance() {
   static TypeFactory *type_factory = new TypeFactory;
@@ -188,4 +188,4 @@ DataType promoted_type(DataType x, DataType y) {
     return y;
 }
 
-TLANG_NAMESPACE_END
+} // namespace taichi::lang

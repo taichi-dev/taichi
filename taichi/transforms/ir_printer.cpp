@@ -8,7 +8,7 @@
 #include "taichi/ir/frontend_ir.h"
 #include "taichi/util/str.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 namespace {
 
@@ -836,4 +836,4 @@ void print(IRNode *root, std::string *output) {
 
 }  // namespace irpass
 
-TLANG_NAMESPACE_END
+} // namespace taichi::lang

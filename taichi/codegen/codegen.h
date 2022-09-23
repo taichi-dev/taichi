@@ -10,7 +10,7 @@
 #include "taichi/runtime/llvm/launch_arg_info.h"
 #include "taichi/codegen/llvm/llvm_codegen_utils.h"
 #endif
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 class KernelCodeGen {
  protected:
@@ -68,4 +68,4 @@ class ModuleToFunctionConverter {
 };
 
 #endif
-TLANG_NAMESPACE_END
+} // namespace taichi::lang

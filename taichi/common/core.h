@@ -108,14 +108,6 @@ static_assert(__cplusplus >= 201402L, "C++14 required.");
 #define TI_NAMESPACE_BEGIN namespace taichi {
 #define TI_NAMESPACE_END }
 
-#define TLANG_NAMESPACE_BEGIN \
-  namespace taichi {          \
-  namespace lang {
-
-#define TLANG_NAMESPACE_END \
-  }                         \
-  }
-
 void taichi_raise_assertion_failure_in_python(const char *msg);
 
 TI_NAMESPACE_BEGIN

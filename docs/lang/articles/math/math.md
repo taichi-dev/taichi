@@ -30,7 +30,7 @@ def test():
     ...
 ```
 
-These function also accept vectors and matrices as arguments, and they apply to them element-wise:
+These functions also accept vectors and matrices as arguments, and they apply to them element-wise:
 
 ```python
 @ti.kernel
@@ -55,13 +55,13 @@ Taichi's math module supplies a few small vector and matrix types:
 4. `mat2/mat3/mat4` for 2D/3D/4D floating-point square matrix types.
 
 
-Indeed, these vector/matrix types are created using the two template functions `ti.types.vector()` and `ti.types.matrix()`. For example the `vec2` type is defined via
+Indeed, these vector/matrix types are created using the two template functions `ti.types.vector()` and `ti.types.matrix()`. For example the `vec2` type is defined in the following way:
 
 ```python
 vec2 = ti.types.vector(2, float)
 ```
 
-Hence the precision bits of these matrix types will be determined by `default_fp` and `default_ip` in your `ti.init()` call. For example if `ti.init(default_fp=ti.f64)` is called, then the types `vec2/vec3/vec4` and `mat2/mat3/mat4` will all have 64-bit floating-point precision.
+The number of precision bits of these matrix types will be determined by `default_fp` and `default_ip` in your `ti.init()` call. For example if `ti.init(default_fp=ti.f64)` is called, then the types `vec2/vec3/vec4` and `mat2/mat3/mat4` will all have 64-bit floating-point precision.
 
 These types can be used to instantiate vectors and matrices or annotate the data types of function arguments and struct members. See [type system](../type_system/type.md) for more detail. Here we emphasize that they have very flexible initialization routines:
 

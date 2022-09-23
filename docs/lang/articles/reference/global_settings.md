@@ -169,7 +169,7 @@ If you want to use CUDA and Taichi's GGUI system at the same time on a machine w
 ## Runtime
 
 - To restart the entire Taichi system (and erase all fields and kernels): `ti.reset()`.
-- To start program in debug mode: `ti.init(debug=True)`. Equivalently you can run your code via `ti debug your_script.py`. The corresponding environment variable is `TI_DEBUG`.
+- To start a program in debug mode: `ti.init(debug=True)`. Alternatively, you can set the environment variable `TI_DEBUG` or run your code via `ti debug your_script.py`.
 - To disable importing torch on start up: `export TI_ENABLE_TORCH=0`.
 - To disable importing paddle on start up: `export TI_ENABLE_PADDLE=0`.
 - To set a custom seed for the random number generator used by `ti.random()`: `ti.init(random_seed=seed)` where `seed` is an integer. For example `ti.init(random_seed=int(time.time()))`.

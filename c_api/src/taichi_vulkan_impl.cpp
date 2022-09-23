@@ -313,6 +313,7 @@ void ti_export_vulkan_image(TiRuntime runtime,
       std::get<0>(runtime2->get_vk().get_vk_image(devalloc));
   interop_info->image = image2->image;
   interop_info->image_type = image2->type;
+  interop_info->format = image2->format;
   interop_info->extent.width = image2->width;
   interop_info->extent.height = image2->height;
   interop_info->extent.depth = image2->depth;

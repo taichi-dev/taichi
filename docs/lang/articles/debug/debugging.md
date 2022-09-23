@@ -121,7 +121,7 @@ If you choose CPU as the backend, you can serialize the program with `cpu_max_nu
 ti.init(arch=ti.cpu, cpu_max_num_threads=1)
 ```
 
-If your program works well in serial but fails in parallel, check parallelization-related issues, such as data races.
+If your program works well in serial but fails in parallel, check if there are parallelization-related issues, such as data races.
 
 ### Serialize a specified parallel for loop
 

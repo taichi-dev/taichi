@@ -16,9 +16,9 @@
 #include <vector>
 #include <memory>
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 class DynamicLoader;
-TI_NAMESPACE_END
+} // namespace taichi
 
 namespace taichi::lang {
 

@@ -36,10 +36,10 @@
 #include "taichi/rhi/cuda/cuda_context.h"
 #endif
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 bool test_threading();
 
-TI_NAMESPACE_END
+} // namespace taichi
 
 namespace taichi::lang {
 
@@ -51,7 +51,7 @@ std::string libdevice_path();
 
 } // namespace taichi::lang
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 void export_lang(py::module &m) {
   using namespace taichi::lang;
   using namespace std::placeholders;
@@ -1360,4 +1360,4 @@ void export_lang(py::module &m) {
   });
 }
 
-TI_NAMESPACE_END
+} // namespace taichi

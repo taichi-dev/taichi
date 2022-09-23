@@ -67,7 +67,7 @@ bool command_exist(const std::string &command);
 
 } // namespace taichi::lang
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 void initialize_benchmark();
 
 template <typename T, typename... Args, typename FP = T (*)(Args...)>
@@ -84,4 +84,4 @@ template <typename T>
 using function_pointer_type =
     decltype(function_pointer_helper(std::declval<T>()));
 
-TI_NAMESPACE_END
+} // namespace taichi

@@ -105,12 +105,10 @@ static_assert(__cplusplus >= 201402L, "C++14 required.");
 
 #define TI_STATIC_ASSERT(x) static_assert((x), #x)
 
-#define TI_NAMESPACE_BEGIN namespace taichi {
-#define TI_NAMESPACE_END }
 
 void taichi_raise_assertion_failure_in_python(const char *msg);
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 //******************************************************************************
 //                                 System State
@@ -203,7 +201,7 @@ float64 constexpr operator"" _fd(unsigned long long v) {
   return float64(v);
 }
 
-TI_NAMESPACE_END
+} // namespace taichi
 //******************************************************************************
 //                           Meta-programming
 //******************************************************************************
@@ -212,7 +210,7 @@ TI_NAMESPACE_END
 
 #include "taichi/common/logging.h"
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 namespace zip {
 
@@ -268,7 +266,7 @@ inline bool starts_with(std::string const &str, std::string const &ending) {
     return std::equal(ending.begin(), ending.end(), str.begin());
 }
 
-TI_NAMESPACE_END
+} // namespace taichi
 
 //******************************************************************************
 //                               Serialization
@@ -280,7 +278,7 @@ TI_NAMESPACE_END
 //                                   Misc.
 //******************************************************************************
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 extern int __trash__;
 template <typename T>
@@ -334,4 +332,4 @@ class PID {
   static int get_parent_pid();
 };
 
-TI_NAMESPACE_END
+} // namespace taichi

@@ -8,21 +8,21 @@ Taichi Core exposes all necessary interfaces for offloading the AOT modules to T
 
 ## Availability
 
-Taichi C-API has bridged the following backends:
+Taichi C-API intends to support the following backends:
 
 |Backend|Offload Target|Maintenance Tier|
 |-|-|-|
 |Vulkan|GPU|Tier 1|
 |CUDA (LLVM)|GPU (NVIDIA)|Tier 1|
 |CPU (LLVM)|CPU|Tier 1|
+|OpenGL|GPU|Tier 2|
 |DirectX 11|GPU (Windows)|N/A|
 |Metal|GPU (macOS, iOS)|N/A|
-|OpenGL|GPU|N/A|
 
 The backends with tier-1 support are being developed and tested more intensively. And most new features will be available on Vulkan first, because it has the most outstanding cross-platform compatibility among all the tier-1 backends.
 For the backends with tier-2 support, you should expect a delay in the fixes to the minor issues.
 
-For convenience, in the following text (and other C-API documentations), the term **host** refers to the user of the C-API; the term **device** refers to the logical (conceptual) compute device that Taichi Runtime offloads its compute tasks to. A *device* might not be an actual discrete processor away from the CPU and the *host* MAY NOT be able to access the memory allocated on the *device*.
+For convenience, in the following text and other C-API documents, the term *host* refers to the user of the C-API; the term *device* refers to the logical (conceptual) compute device, to which Taichi's runtime offloads its compute tasks. A *device* may not be a physical discrete processor other than the CPU and the *host* may *not* be able to access the memory allocated on the *device*.
 
 Unless explicitly explained, **device**, **backend**, **offload targer** and **GPU** are used interchangeably; **host**, **user code**, **user procedure** and **CPU** are used interchangeably too.
 
@@ -32,7 +32,7 @@ In this section we give an brief introduction about what you might want to do wi
 
 ### Create and destroy a Runtime Instance
 
-To work with Taichi, you first create an runtime instance. You SHOULD only create a single runtime per thread. Currently we don't officially claim that multiple runtime instances can coexist in a process, please feel free to [report issues](https://github.com/taichi-dev/taichi/issues) if you encountered any problem with such usage.
+You *must* create a runtime instance before working with Taichi, and *only* one runtime per thread. Currently we do not officially claim that multiple runtime instances can coexist in a process, but please feel free to [file an issue with us](https://github.com/taichi-dev/taichi/issues) if you run into any problem with runtime instance coexistence.
 
 ```cpp
 TiRuntime runtime = ti_create_runtime(TI_ARCH_VULKAN);
@@ -232,7 +232,7 @@ A Taichi kernel that can be launched on device for execution.
 
 `handle.compute_graph`
 
-A collection of Taichi kernels (a compute graph) to be launched on device in predefined order.
+A collection of Taichi kernels (a compute graph) to launch on device in a predefined order.
 
 `enumeration.arch`
 

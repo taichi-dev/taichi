@@ -49,7 +49,7 @@ ti.profiler.print_scoped_profiler_info()
     - In `'count'` mode (default), the profiling records under the same kernel name are counted as one profiling result.
     - In `'trace'` mode, the profiler shows you a list of kernels that were launched on hardware during the profiling period.
     This mode provides more detailed performance information and runtime hardware metrics for each kernel.
-3. To clear records in this profiler, call `ti.profiler.clear_kernel_profiler_info()`.
+3. To clear the records in this profiler, call `ti.profiler.clear_kernel_profiler_info()`.
 
 For example:
 

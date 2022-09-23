@@ -72,7 +72,7 @@ vec2 = ti.types.vector(2, float)
 
 The number of precision bits of such a type is determined by `default_fp` or `default_ip` in the `ti.init()` method call. For example, if `ti.init(default_fp=ti.f64)` is called, then `vec2/vec3/vec4` and `mat2/mat3/mat4` will all have 64-bit floating-point precision in the Taichi scope.
 
-These types can be used to instantiate vectors and matrices or annotate the data types of function arguments and struct members. See [type system](../type_system/type.md) for more detail. Here we emphasize that they have very flexible initialization routines:
+These types can be used to instantiate vectors and matrices or annotate the data types of function arguments and struct members. See [type system](../type_system/type.md) for more information. Here we emphasize that they have very flexible initialization routines:
 
 ```python
 mat2 = ti.math.mat2

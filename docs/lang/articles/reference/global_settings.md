@@ -155,7 +155,7 @@ Below are some environment variables that you can set to customize your Taichi p
 
 :::note
 
-In case you want to use taichi cuda backend together with GGUI on a machine with multiple GPU cards, please make sure `CUDA_VISIBLE_DEVICES` matches `TI_VISIBLE_DEVICE` if any of them exists. In general, `CUDA_VISIBLE_DEVICES` and `TI_VISIBLE_DEVICE` should point to a GPU device with the same UUID. Use `nvidia-smi -L` to query the details of your GPU devices.
+If you want to use CUDA and Taichi's GGUI system at the same time on a machine with multiple GPU cards, ensure that `CUDA_VISIBLE_DEVICES` matches `TI_VISIBLE_DEVICE`. In principle, `CUDA_VISIBLE_DEVICES` and `TI_VISIBLE_DEVICE` should point to a GPU device with the same UUID. Use `nvidia-smi -L` to retrieve the details of your GPU devices.
 
 :::
 

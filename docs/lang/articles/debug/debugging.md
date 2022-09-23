@@ -57,7 +57,7 @@ def inside_taichi_scope():
     #=> ray.ori = [0.0, 0.0, 0.0], ray.dir = [0.0, 0.0, 1.0], ray.len = 1.0
 ```
 
-For now, `print`, when placed in the Taichi scope, can take string literal, scalar, vector, and matrix expressions as arguments. It behaves differently depending on the scope where it is called, as detailed below.
+Behaviors of `print` vary depending on the scope where it is called. When called from within the Taichi scope, `print` can take string literal, scalar, vector, and matrix expressions as arguments.
 
 ### Applicable backends
 

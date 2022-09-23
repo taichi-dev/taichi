@@ -124,7 +124,7 @@ void TaskCodeGenLLVM::visit(Block *stmt_list) {
 void TaskCodeGenLLVM::visit(AllocaStmt *stmt) {
   if (stmt->ret_type->is<TensorType>()) {
     auto tensor_type = stmt->ret_type->cast<TensorType>();
-    auto type = kernel->program->config.real_matrix
+    auto type = kernel->program->this_thread_config().real_matrix
                     ? tlctx->get_data_type(tensor_type)
                     : tlctx->get_data_type(tensor_type->get_element_type());
     // Return type is vector<tensor_type>* if use real matrix.
@@ -158,7 +158,7 @@ void TaskCodeGenLLVM::visit(AllocaStmt *stmt) {
       auto ptr_type = llvm::PointerType::get(type, 0);
       llvm_val[stmt] = builder->CreatePointerCast(gep, ptr_type);
     } else {
-      if (kernel->program->config.real_matrix)
+      if (kernel->program->this_thread_config().real_matrix)
         llvm_val[stmt] =
             create_entry_block_alloca(type, stmt->ret_type.is_pointer());
       else
@@ -475,16 +475,6 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
     } else {
       llvm_val[stmt] =
           builder->CreateMul(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
-    }
-  } else if (op == BinaryOpType::floordiv) {
-    if (is_integral(ret_type))
-      llvm_val[stmt] =
-          create_call(fmt::format("floordiv_{}", data_type_name(ret_type)),
-                      {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-    else {
-      auto div = builder->CreateFDiv(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
-      llvm_val[stmt] = builder->CreateIntrinsic(
-          llvm::Intrinsic::floor, {tlctx->get_data_type(ret_type)}, {div});
     }
   } else if (op == BinaryOpType::div) {
     if (is_real(stmt->ret_type)) {
@@ -1969,7 +1959,7 @@ void TaskCodeGenLLVM::finalize_offloaded_task_function() {
   builder->SetInsertPoint(entry_block);
   builder->CreateBr(func_body_bb);
 
-  if (prog->config.print_kernel_llvm_ir) {
+  if (prog->this_thread_config().print_kernel_llvm_ir) {
     static FileSequenceWriter writer("taichi_kernel_generic_llvm_ir_{:04d}.ll",
                                      "unoptimized LLVM IR (generic)");
     writer.write(module.get());
@@ -2186,7 +2176,7 @@ void TaskCodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt,
     auto exec_cond = tlctx->get_constant(true);
     auto coord_object = RuntimeObject(kLLVMPhysicalCoordinatesName, this,
                                       builder.get(), new_coordinates);
-    if (!prog->config.packed) {
+    if (!prog->this_thread_config().packed) {
       for (int i = 0; i < leaf_block->num_active_indices; i++) {
         auto j = leaf_block->physical_index_position[i];
         if (!bit::is_power_of_two(
@@ -2366,7 +2356,8 @@ void TaskCodeGenLLVM::visit(GlobalTemporaryStmt *stmt) {
   auto buffer = call("get_temporary_pointer", runtime,
                      tlctx->get_constant((int64)stmt->offset));
 
-  if (stmt->ret_type->is<TensorType>() && !prog->config.real_matrix) {
+  if (stmt->ret_type->is<TensorType>() &&
+      !prog->this_thread_config().real_matrix) {
     auto ptr_type = llvm::PointerType::get(
         tlctx->get_data_type(
             stmt->ret_type->cast<TensorType>()->get_element_type()),
@@ -2668,7 +2659,7 @@ void TaskCodeGenLLVM::emit_to_module() {
 LLVMCompiledTask TaskCodeGenLLVM::run_compilation() {
   // Final lowering
 
-  auto config = kernel->program->config;
+  auto config = kernel->program->this_thread_config();
   kernel->offload_to_executable(ir);
 
   emit_to_module();

@@ -47,6 +47,23 @@ class DemoteOperations : public BasicStmtVisitor {
         //     if (a < 0) != (b < 0) and a and b * r != a:
         //         r = r - 1
         //     return r
+        //
+        // simply `a * b < 0` may leads to overflow (#969)
+        //
+        // Formal Anti-Regression Verification (FARV):
+        //
+        // old = a * b < 0
+        // new = (a < 0) != (b < 0) && a
+        //
+        //  a  b old new
+        //  -  -  f = f (f&t)
+        //  -  +  t = t (t&t)
+        //  0  -  f = f (t&f)
+        //  0  +  f = f (f&f)
+        //  +  -  t = t (t&t)
+        //  +  +  f = f (f&t)
+        //
+        // the situation of `b = 0` is ignored since we get FPE anyway.
         auto ret = Stmt::make<BinaryOpStmt>(BinaryOpType::div, lhs, rhs);
         auto zero = Stmt::make<ConstStmt>(TypedConstant(0));
         auto lhs_ltz =

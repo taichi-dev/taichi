@@ -131,30 +131,6 @@ void locked_task(void *lock, const T &func);
 template <typename T, typename G>
 void locked_task(void *lock, const T &func, const G &test);
 
-template <typename T>
-T ifloordiv(T a, T b) {
-  auto r = a / b;
-  // simply `a * b < 0` may leads to overflow (#969)
-  //
-  // Formal Anti-Regression Verification (FARV):
-  //
-  // old = a * b < 0
-  // new = (a < 0) != (b < 0) && a
-  //
-  //  a  b old new
-  //  -  -  f = f (f&t)
-  //  -  +  t = t (t&t)
-  //  0  -  f = f (t&f)
-  //  0  +  f = f (f&f)
-  //  +  -  t = t (t&t)
-  //  +  +  f = f (f&t)
-  //
-  // the situation of `b = 0` is ignored since we get FPE anyway.
-  //
-  r -= T((a < 0) != (b < 0) && a && b * r != a);
-  return r;
-}
-
 struct LLVMRuntime;
 template <typename... Args>
 void taichi_printf(LLVMRuntime *runtime, const char *format, Args &&...args);
@@ -211,14 +187,6 @@ i32 abs_i32(i32 a) {
 
 i64 abs_i64(i64 a) {
   return a >= 0 ? a : -a;
-}
-
-i32 floordiv_i32(i32 a, i32 b) {
-  return ifloordiv(a, b);
-}
-
-i64 floordiv_i64(i64 a, i64 b) {
-  return ifloordiv(a, b);
 }
 
 u16 min_u16(u16 a, u16 b) {

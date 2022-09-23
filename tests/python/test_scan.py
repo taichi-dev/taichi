@@ -15,7 +15,12 @@ def test_scan():
                 arr_aux[i] = arr[i]
 
         fill()
-        ti._kernels.prefix_sum_inclusive_inplace(arr, N)
+
+        # Performing an inclusive in-place's parallel prefix sum,
+        # only one exectutor is needed for a specified sorting length.
+        executor = ti.algorithms.PrefixSumExecutor(N)
+
+        executor.run(arr)
 
         cur_sum = 0
         for i in range(N):

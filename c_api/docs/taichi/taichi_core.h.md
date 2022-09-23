@@ -375,7 +375,7 @@ Launches a Taichi compute graph with provided named arguments. The named argumen
 
 `function.signal_event`
 
-Set an event primitive to a signaled state, so the queues waiting upon the event can go on execution. If the event has been signaled before, the event MUST be reset with `function.reset_event`; otherwise it is an undefined behavior.
+Sets an event primitive to a signaled state so that the queues waiting for it can go on execution. If the event has been signaled, you *must* call `function.reset_event` to reset it; otherwise, an undefined behavior would occur.
 
 `function.reset_event`
 

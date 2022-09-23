@@ -24,9 +24,10 @@ TLANG_NAMESPACE_BEGIN
  * we first compile each task independently into an LLVM module using function
  * `compile_task`. Then, we link the LLVM modules of the offloaded tasks,
  * the runtime module and the struct modules of the SNode trees which are used
- * in the kernel all together into a single LLVM module using `tlctx->link_compiled_tasks`.
- * The LLVM module and the names of the entry functions of the offloaded tasks in
- * the module are stored in the returned LLVMCompiledKernel.
+ * in the kernel all together into a single LLVM module using
+ * `tlctx->link_compiled_tasks`. The LLVM module and the names of the entry
+ * functions of the offloaded tasks in the module are stored in the returned
+ * LLVMCompiledKernel.
  *
  * Function `compile_task` uses `TaskCodeGen` of the respective backend to
  * compile the IR of a offloaded task to an LLVM module. It also generates some

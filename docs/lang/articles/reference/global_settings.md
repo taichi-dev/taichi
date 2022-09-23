@@ -161,7 +161,7 @@ If you want to use CUDA and Taichi's GGUI system at the same time on a machine w
 
 ## Compilation
 
-- Disable advanced optimization to save compile time & possible errors: `ti.init(advanced_optimization=False)`.
+- To disable advanced optimization to save compile time and reduce possible errors: `ti.init(advanced_optimization=False)`.
 - To disable fast math to prevent possible undefined math behavior: `ti.init(fast_math=False)`.
 - To print intermediate IR generated: `ti.init(print_ir=True)`. Note that compiled kernels are [cached by default](https://docs.taichi-lang.org/docs/performance#offline-cache). To force compilation and IR emission, use `ti.init(print_ir=True, offline_cache=False)`.
 

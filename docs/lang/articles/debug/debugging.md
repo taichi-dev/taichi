@@ -61,7 +61,7 @@ Behaviors of `print` vary depending on the scope where it is called. When called
 
 ### Applicable backends
 
-`print` in the Taichi scope is currently supported on the CPU, CUDA, and Vulkan backends only.
+`print` in the Taichi scope is supported on the CPU, CUDA, and Vulkan backends only.
 
 Note that `print` does not work in Graphical Python Shells, including IDLE and Jupyter Notebook. This is because these backends print the outputs to the console instead of GUI.
 

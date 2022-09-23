@@ -330,7 +330,7 @@ Multi-dimensional size of an ND-array. Dimension sizes after `structure.nd_shape
 Multi-dimentional array of dense primitive data.
 
 - `structure.nd_array.memory`: Memory bound to the ND-array.
-- `structure.nd_array.shape`: Shape of the ND-array. 
+- `structure.nd_array.shape`: Shape of the ND-array.
 - `structure.nd_array.elem_shape`: Shape of the ND-array elements. It *must not* be empty for vector or matrix ND-arrays.
 - `structure.nd_array.elem_type`: Primitive data type of the ND-array elements.
 

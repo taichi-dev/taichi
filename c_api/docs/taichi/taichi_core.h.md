@@ -391,7 +391,7 @@ Submit all commands to the logical device for execution. Ensure that any previou
 
 `function.wait`
 
-Wait until all previously invoked device command has finished execution.
+Waits until all previously invoked device commands are executed.
 
 `function.load_aot_module`
 

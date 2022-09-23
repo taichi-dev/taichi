@@ -858,6 +858,23 @@ def test_elementwise_ops():
             for j in range(2):
                 assert t6[i, j] == 1 + (x[i, j] // 2)
 
+        # test floordiv
+        y = ti.Matrix([[1, 2], [3, 4]], dt=ti.i32)
+        z = y * 2
+        factors = z // y
+        ti.loop_config(serialize=True)
+        for i in range(2):
+            for j in range(2):
+                assert factors[i, j] == 2
+        
+        y1 = ti.Matrix([[1, 2], [3, 4]], dt=ti.f32)
+        z1 = y1 * 2
+        factors1 = z1 // y1
+        ti.loop_config(serialize=True)
+        for i in range(2):
+            for j in range(2):
+                assert factors1[i, j] == 2
+
     test()
 
 

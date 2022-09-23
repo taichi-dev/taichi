@@ -96,7 +96,7 @@ bool VulkanLoader::init(PFN_vkGetInstanceProcAddr get_proc_addr) {
     // (penguinliong) So that MoltenVK instances can be imported.
     if (get_proc_addr != nullptr) {
       volkInitializeCustom(get_proc_addr);
-      initialized = check_vulkan_device();
+      initialized = true;
       return;
     }
 #if defined(__APPLE__)

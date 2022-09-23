@@ -569,7 +569,7 @@ class Kernel:
                 "Non contiguous tensors are not supported, please call tensor.contiguous() before passing it into taichi kernel."
             )
         tmp = v
-        taichi_arch = self.runtime.prog.config.arch
+        taichi_arch = self.runtime.prog.config().arch
 
         if str(v.device).startswith('cuda'):
             # External tensor on cuda
@@ -593,7 +593,7 @@ class Kernel:
         assert isinstance(v, paddle.Tensor)
 
         tmp = v.value().get_tensor()
-        taichi_arch = self.runtime.prog.config.arch
+        taichi_arch = self.runtime.prog.config().arch
 
         if v.place.is_gpu_place():
             # External tensor on cuda

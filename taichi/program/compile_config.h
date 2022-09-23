@@ -113,4 +113,4 @@ struct CompileConfig {
 
 extern TI_DLL_EXPORT CompileConfig default_compile_config;
 
-} //namespace taichi::lang
+}  // namespace taichi::lang

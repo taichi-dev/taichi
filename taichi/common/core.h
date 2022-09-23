@@ -105,7 +105,6 @@ static_assert(__cplusplus >= 201402L, "C++14 required.");
 
 #define TI_STATIC_ASSERT(x) static_assert((x), #x)
 
-
 void taichi_raise_assertion_failure_in_python(const char *msg);
 
 namespace taichi {

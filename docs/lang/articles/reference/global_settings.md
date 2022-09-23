@@ -123,7 +123,7 @@ Below are some environment variables that you can set to customize your Taichi p
     TI_ENABLE_TORCH
         Enable/disable the import of torch upon startup. For example, `export TI_ENABLE_TORCH=0` prohibits the use of torch.  
         e.g. `export TI_ENABLE_TORCH=0` to disable.
-        The default is 1.
+        The default value is 1.
 
     TI_ENABLE_PADDLE
         Enable/disable importing paddle on start up,

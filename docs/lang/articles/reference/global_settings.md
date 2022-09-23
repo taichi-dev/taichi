@@ -151,7 +151,7 @@ Below are some environment variables that you can set to customize your Taichi p
 - To specify the pre-allocated memory size for CUDA: For example, `ti.init(device_memory_GB=0.5)` allocates 0.5 GB size of memory.
 - To specify which GPU to use for CUDA: `export CUDA_VISIBLE_DEVICES=[gpuid]`.
 - To specify which GPU to use for VULKAN: `export TI_VISIBLE_DEVICE=[gpuid]`.
-- To disable a backend (`CUDA`, `METAL`, `OPENGL`) on start up, e.g. CUDA: `export TI_ENABLE_CUDA=0`.
+- To disable a backend (`CUDA`, `METAL`, `OPENGL`) upon startup: For example, `export TI_ENABLE_CUDA=0` disables CUDA.
 
 :::note
 

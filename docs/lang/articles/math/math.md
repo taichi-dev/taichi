@@ -89,7 +89,7 @@ u = vec4([1, 2], [3, 4])
 u = vec4(v, 4.0)
 ```
 
-Another important feature of vector types created by `ti.types.vector()` is that they support **vector swizzling** like GLSL vectors, this means you can use `xyzw`, `rgba`, `stpq` to access their elements with indices less or equal to four:
+Another important feature of vector types created by `ti.types.vector()` is that they support **vector swizzling** just as GLSL vectors do. This means you can use `xyzw`, `rgba`, `stpq` to access their elements with indices &le; four:
 
 
 ```python

@@ -166,6 +166,8 @@ void export_lang(py::module &m) {
       .def_readwrite("lower_access", &CompileConfig::lower_access)
       .def_readwrite("move_loop_invariant_outside_if",
                      &CompileConfig::move_loop_invariant_outside_if)
+      .def_readwrite("cache_loop_invariant_global_vars",
+                     &CompileConfig::cache_loop_invariant_global_vars)
       .def_readwrite("default_cpu_block_dim",
                      &CompileConfig::default_cpu_block_dim)
       .def_readwrite("cpu_block_dim_adaptive",

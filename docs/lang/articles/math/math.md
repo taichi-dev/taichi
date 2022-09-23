@@ -87,7 +87,7 @@ v = ti.math.vec4(1, 2, 3, 4)
 u = v.xyz  # vec3(1, 2, 3)
 u = v.xxx  # vec3(1, 1, 1)
 u = v.wzyx  # vec4(4, 3, 2, 1)
-u = v.rraa  # vec4(1, 1, 2, 2) 
+u = v.rraa  # vec4(1, 1, 2, 2)
 ```
 
 :::

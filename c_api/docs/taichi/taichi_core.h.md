@@ -364,7 +364,7 @@ Destroys an event primitive.
 
 `function.copy_memory_device_to_device`
 
-Copy the content of a contiguous subsection of on-device memory to another. The two subsections MUST NOT overlap.
+Copies the data in a contiguous subsection of the on-device memory to another subsection. Note that the two subsections *must not* overlap.
 
 `function.launch_kernel`
 

@@ -59,4 +59,4 @@ void taichi::lang::UnifiedAllocator::memset(unsigned char val) {
   std::memset(data, val, size_);
 }
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

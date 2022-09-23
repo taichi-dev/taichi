@@ -333,4 +333,4 @@ class InterfaceHolder {
     return alias;                                 \
   }
 
-} // namespace taichi
+}  // namespace taichi

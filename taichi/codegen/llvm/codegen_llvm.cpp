@@ -2750,6 +2750,6 @@ LLVMCompiledKernel LLVMCompiledKernel::clone() const {
   return {tasks, llvm::CloneModule(*module)};
 }
 
-} // namespace taichi::lang
+}  // namespace taichi::lang
 
 #endif  // #ifdef TI_WITH_LLVM

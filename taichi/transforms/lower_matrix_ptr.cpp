@@ -57,4 +57,4 @@ void lower_matrix_ptr(IRNode *root) {
 
 }  // namespace irpass
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

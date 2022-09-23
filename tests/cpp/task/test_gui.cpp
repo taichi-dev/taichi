@@ -47,4 +47,4 @@ auto test_gui = []() {
 
 TI_REGISTER_TASK(test_gui);
 
-} // namespace taichi
+}  // namespace taichi

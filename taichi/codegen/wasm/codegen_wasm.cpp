@@ -11,8 +11,7 @@
 #include "taichi/util/file_sequence_writer.h"
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 namespace {
 constexpr std::array<const char *, 5> kPreloadedFuncNames = {
@@ -292,5 +291,4 @@ LLVMCompiledKernel KernelCodeGenWASM::compile_kernel_to_module() {
   return tlctx->link_compiled_tasks(std::move(data));
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

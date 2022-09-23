@@ -568,4 +568,4 @@ void type_check(IRNode *root, const CompileConfig &config) {
 
 }  // namespace irpass
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

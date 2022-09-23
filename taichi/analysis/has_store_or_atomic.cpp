@@ -54,4 +54,4 @@ bool has_store_or_atomic(IRNode *root, const std::vector<Stmt *> &vars) {
 }
 }  // namespace irpass::analysis
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

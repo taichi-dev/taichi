@@ -88,4 +88,4 @@ bool loop_invariant_code_motion(IRNode *root, const CompileConfig &config) {
 }
 }  // namespace irpass
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

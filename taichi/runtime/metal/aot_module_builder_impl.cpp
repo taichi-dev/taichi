@@ -4,8 +4,7 @@
 
 #include "taichi/codegen/metal/codegen_metal.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace metal {
 
 AotModuleBuilderImpl::AotModuleBuilderImpl(
@@ -104,5 +103,4 @@ void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier,
 }
 
 }  // namespace metal
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

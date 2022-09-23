@@ -99,4 +99,4 @@ auto test_exception_handling_auto = []() {
 TI_REGISTER_TASK(test_exception_handling);
 TI_REGISTER_TASK(test_exception_handling_auto);
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

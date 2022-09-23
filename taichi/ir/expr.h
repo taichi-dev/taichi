@@ -149,4 +149,4 @@ Expr expr_field(Expr id_expr, DataType dt);
 Expr expr_matrix_field(const std::vector<Expr> &fields,
                        const std::vector<int> &element_shape);
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

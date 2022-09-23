@@ -33,4 +33,4 @@ class DynamicLoader {
   void *dll_ = nullptr;
 };
 
-} // namespace taichi
+}  // namespace taichi

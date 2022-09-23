@@ -216,4 +216,4 @@ void optimize_bit_struct_stores(IRNode *root,
 
 }  // namespace irpass
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

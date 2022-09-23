@@ -62,4 +62,4 @@ class ParallelExecutor {
   // callback to be executed?
   std::condition_variable flush_cv_;
 };
-} // namespace taichi::lang
+}  // namespace taichi::lang

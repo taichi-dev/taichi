@@ -132,4 +132,4 @@ void Canvas::triangle_single(real x0,
   triangle(a, b, c, color);
 }
 
-} // namespace taichi
+}  // namespace taichi

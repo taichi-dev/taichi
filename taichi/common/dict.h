@@ -354,4 +354,4 @@ inline bool Dict::get<bool>(std::string key) const {
 
 using Config = Dict;
 
-} // namespace taichi
+}  // namespace taichi

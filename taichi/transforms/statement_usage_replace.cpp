@@ -93,4 +93,4 @@ void replace_all_usages_with(IRNode *root, Stmt *old_stmt, Stmt *new_stmt) {
 
 }  // namespace irpass
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

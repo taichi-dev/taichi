@@ -11,8 +11,7 @@
 #include "taichi/rhi/vulkan/vulkan_device.h"
 #include "taichi/common/logging.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace vulkan {
 
 namespace {
@@ -776,5 +775,4 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
 }
 
 }  // namespace vulkan
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

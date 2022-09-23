@@ -152,4 +152,4 @@ FunctionType ModuleToFunctionConverter::convert(const Kernel *kernel,
 }
 
 #endif
-} // namespace taichi::lang
+}  // namespace taichi::lang

@@ -6,8 +6,7 @@
 #include "taichi/rhi/vulkan/vulkan_common.h"
 #include "taichi/system/dynamic_loader.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace vulkan {
 
 class TI_DLL_EXPORT VulkanLoader {
@@ -51,5 +50,4 @@ TI_DLL_EXPORT bool is_vulkan_api_available();
 TI_DLL_EXPORT void set_vulkan_visible_device(std::string id);
 
 }  // namespace vulkan
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

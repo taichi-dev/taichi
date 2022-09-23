@@ -258,4 +258,4 @@ class ScratchPads {
   }
 };
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

@@ -35,4 +35,4 @@ void export_visual(py::module &m);
 
 void export_ggui(py::module &m);
 
-} // namespace taichi
+}  // namespace taichi

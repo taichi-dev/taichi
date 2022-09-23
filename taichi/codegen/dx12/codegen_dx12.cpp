@@ -283,4 +283,4 @@ FunctionType KernelCodeGenDX12::compile_to_function() {
   // FIXME: implement compile_to_function.
   return [](RuntimeContext &ctx) {};
 }
-} // namespace taichi::lang
+}  // namespace taichi::lang

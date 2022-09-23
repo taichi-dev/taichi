@@ -385,4 +385,4 @@ void gather_uniquely_accessed_bit_structs(IRNode *root, AnalysisManager *amgr) {
 }
 }  // namespace irpass::analysis
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

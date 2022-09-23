@@ -330,6 +330,6 @@ GUI::~GUI() {
   }
 }
 
-} // namespace taichi
+}  // namespace taichi
 
 #endif

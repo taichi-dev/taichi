@@ -42,4 +42,4 @@ class CUDAModuleToFunctionConverter : public ModuleToFunctionConverter {
                        LLVMCompiledKernel data) const override;
 };
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

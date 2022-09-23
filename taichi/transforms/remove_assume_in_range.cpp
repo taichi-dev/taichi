@@ -40,4 +40,4 @@ bool remove_range_assumption(IRNode *root) {
 
 }  // namespace irpass
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

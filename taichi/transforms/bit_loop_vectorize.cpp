@@ -335,4 +335,4 @@ void bit_loop_vectorize(IRNode *root) {
 
 }  // namespace irpass
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

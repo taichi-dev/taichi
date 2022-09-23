@@ -65,7 +65,7 @@ std::string runtime_lib_dir();
 
 bool command_exist(const std::string &command);
 
-} // namespace taichi::lang
+}  // namespace taichi::lang
 
 namespace taichi {
 void initialize_benchmark();
@@ -84,4 +84,4 @@ template <typename T>
 using function_pointer_type =
     decltype(function_pointer_helper(std::declval<T>()));
 
-} // namespace taichi
+}  // namespace taichi

@@ -90,4 +90,4 @@ class JITModule {
   }
 };
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

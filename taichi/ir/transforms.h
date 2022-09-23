@@ -196,4 +196,4 @@ void compile_function(IRNode *ir,
                       bool start_from_ast);
 }  // namespace irpass
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

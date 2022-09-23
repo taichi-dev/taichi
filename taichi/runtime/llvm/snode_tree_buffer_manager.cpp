@@ -79,4 +79,4 @@ void SNodeTreeBufferManager::destroy(SNodeTree *snode_tree) {
   TI_DEBUG("SNode tree {} destroyed.", snode_tree_id);
 }
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

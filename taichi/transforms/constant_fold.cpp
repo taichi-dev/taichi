@@ -266,4 +266,4 @@ bool constant_fold(IRNode *root,
 
 }  // namespace irpass
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

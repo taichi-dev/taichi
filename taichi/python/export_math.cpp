@@ -161,4 +161,4 @@ void export_math(py::module &m) {
   VectorRegistration<Vector4i>::run(m);
 }
 
-} // namespace taichi
+}  // namespace taichi

@@ -5,8 +5,7 @@
 #include "taichi/runtime/gfx/aot_module_builder_impl.h"
 #include "taichi/runtime/gfx/aot_module_loader_impl.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 namespace {
 
@@ -120,5 +119,4 @@ const std::unique_ptr<gfx::CacheManager>
   return cache_manager_;
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

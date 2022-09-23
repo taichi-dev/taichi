@@ -369,4 +369,4 @@ void EventToolkit::update_timeline(
 }
 #endif
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

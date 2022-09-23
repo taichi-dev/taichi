@@ -17,8 +17,7 @@
 
 #include "spirv_reflect.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace vulkan {
 
 const std::unordered_map<BufferFormat, VkFormat> buffer_format_ti_2_vk = {
@@ -2670,5 +2669,4 @@ VulkanStream::~VulkanStream() {
 }
 
 }  // namespace vulkan
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

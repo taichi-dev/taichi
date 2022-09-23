@@ -193,4 +193,4 @@ void demote_dense_struct_fors(IRNode *root, bool packed) {
 
 }  // namespace irpass
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

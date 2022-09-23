@@ -53,4 +53,4 @@ void ActionRecorder::record(const std::string &content,
   ofs_.flush();
 }
 
-} // namespace taichi
+}  // namespace taichi

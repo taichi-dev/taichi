@@ -69,4 +69,4 @@ void demote_no_access_mesh_fors(IRNode *root) {
 
 }  // namespace irpass
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

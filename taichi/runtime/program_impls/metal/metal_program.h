@@ -13,8 +13,7 @@
 #include "taichi/codegen/metal/struct_metal.h"
 #include "taichi/program/program_impl.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class MetalProgramImpl : public ProgramImpl {
  public:
@@ -56,5 +55,4 @@ class MetalProgramImpl : public ProgramImpl {
   std::unique_ptr<metal::KernelManager> metal_kernel_mgr_{nullptr};
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

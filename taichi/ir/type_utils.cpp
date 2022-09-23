@@ -1,7 +1,6 @@
 #include "taichi/ir/type_utils.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 std::string data_type_name(DataType t) {
   if (!t->is<PrimitiveType>()) {
@@ -138,5 +137,4 @@ std::string data_type_format(DataType dt) {
   }
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

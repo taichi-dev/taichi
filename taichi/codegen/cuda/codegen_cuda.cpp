@@ -841,4 +841,4 @@ FunctionType CUDAModuleToFunctionConverter::convert(
 #endif  // TI_WITH_CUDA
 }
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

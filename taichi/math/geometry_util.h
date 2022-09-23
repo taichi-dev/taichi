@@ -85,4 +85,4 @@ inline std::vector<Vector2> points_inside_sphere(std::vector<float> x_range,
   return ret;
 }
 
-} // namespace taichi
+}  // namespace taichi

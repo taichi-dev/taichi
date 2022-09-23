@@ -3,8 +3,7 @@
 #include "taichi/aot/graph_data.h"
 #include "taichi/aot/module_loader.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace llvm_aot {
 
 class KernelImpl : public aot::Kernel {
@@ -47,5 +46,4 @@ class FieldImpl : public aot::Field {
 };
 
 }  // namespace llvm_aot
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

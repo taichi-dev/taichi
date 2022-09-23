@@ -31,4 +31,4 @@ class CCRuntime {
 };
 
 }  // namespace cccp
-} // namespace taichi::lang
+}  // namespace taichi::lang

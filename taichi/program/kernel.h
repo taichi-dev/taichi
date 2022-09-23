@@ -168,4 +168,4 @@ class TI_DLL_EXPORT Kernel : public Callable {
   bool from_cache_{false};
 };
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

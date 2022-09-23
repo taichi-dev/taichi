@@ -59,4 +59,4 @@ class ThreadPool {
   ~ThreadPool();
 };
 
-} // namespace taichi
+}  // namespace taichi

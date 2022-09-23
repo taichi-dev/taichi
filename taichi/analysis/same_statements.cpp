@@ -333,4 +333,4 @@ bool same_value(Stmt *stmt1,
 }
 }  // namespace irpass::analysis
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

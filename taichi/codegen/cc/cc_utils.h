@@ -82,4 +82,4 @@ inline int execute(std::string fmt, Args &&...args) {
 }
 
 }  // namespace cccp
-} // namespace taichi::lang
+}  // namespace taichi::lang

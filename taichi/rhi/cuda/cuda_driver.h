@@ -178,4 +178,4 @@ class CUSOLVERDriver : protected CUDADriverBase {
   bool cusolver_loaded_{false};
 };
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

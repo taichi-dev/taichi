@@ -106,4 +106,4 @@ std::unordered_set<Stmt *> constexpr_prop(
 }
 }  // namespace irpass::analysis
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

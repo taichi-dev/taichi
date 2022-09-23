@@ -3,8 +3,7 @@
 #include "taichi/ir/type.h"
 #include "taichi/ir/type_factory.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 std::vector<int> data_type_shape(DataType t);
 
@@ -270,5 +269,4 @@ class BitStructTypeBuilder {
   int current_shared_exponent_{-1};
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

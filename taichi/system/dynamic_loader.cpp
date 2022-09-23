@@ -52,4 +52,4 @@ bool DynamicLoader::loaded() const {
   return dll_ != nullptr;
 }
 
-} // namespace taichi
+}  // namespace taichi

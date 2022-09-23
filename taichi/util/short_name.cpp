@@ -20,4 +20,4 @@ std::string make_short_name_by_id(int id) {
   std::reverse(res.begin(), res.end());
   return res;
 }
-} // namespace taichi
+}  // namespace taichi

@@ -201,7 +201,7 @@ float64 constexpr operator"" _fd(unsigned long long v) {
   return float64(v);
 }
 
-} // namespace taichi
+}  // namespace taichi
 //******************************************************************************
 //                           Meta-programming
 //******************************************************************************
@@ -266,7 +266,7 @@ inline bool starts_with(std::string const &str, std::string const &ending) {
     return std::equal(ending.begin(), ending.end(), str.begin());
 }
 
-} // namespace taichi
+}  // namespace taichi
 
 //******************************************************************************
 //                               Serialization
@@ -332,4 +332,4 @@ class PID {
   static int get_parent_pid();
 };
 
-} // namespace taichi
+}  // namespace taichi

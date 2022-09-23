@@ -195,4 +195,4 @@ bool demote_atomics(IRNode *root, const CompileConfig &config) {
 
 }  // namespace irpass
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

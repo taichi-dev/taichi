@@ -12,4 +12,4 @@ std::string offloaded_task_type_name(OffloadedTaskType tt) {
     TI_NOT_IMPLEMENTED
 }
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

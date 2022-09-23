@@ -213,4 +213,4 @@ void write_pgm(Array2D<real> img, const std::string &fn) {
   }
 }
 
-} // namespace taichi
+}  // namespace taichi

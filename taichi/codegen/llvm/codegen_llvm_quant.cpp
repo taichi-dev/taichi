@@ -591,6 +591,6 @@ llvm::Value *TaskCodeGenLLVM::reconstruct_quant_float(
   }
 }
 
-} // namespace taichi::lang
+}  // namespace taichi::lang
 
 #endif  // #ifdef TI_WITH_LLVM

@@ -176,4 +176,4 @@ void flag_access(IRNode *root) {
 
 }  // namespace irpass
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

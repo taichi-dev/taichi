@@ -160,4 +160,4 @@ bool check_out_of_bound(IRNode *root,
 
 }  // namespace irpass
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

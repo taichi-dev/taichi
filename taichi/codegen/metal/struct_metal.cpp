@@ -14,8 +14,7 @@
 #include "taichi/math/arithmetic.h"
 #include "taichi/util/line_appender.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace metal {
 namespace {
 namespace shaders {
@@ -430,5 +429,4 @@ CompiledRuntimeModule compile_runtime_module() {
 }
 
 }  // namespace metal
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

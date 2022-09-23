@@ -116,4 +116,4 @@ class MemoryTest2 : public Task {
 TI_IMPLEMENTATION(Task, MemoryTest, "mem_test");
 TI_IMPLEMENTATION(Task, MemoryTest2, "mem_test2");
 
-} // namespace taichi
+}  // namespace taichi

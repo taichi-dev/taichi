@@ -14,4 +14,4 @@ inline bool is_supported_sparse_type(SNodeType t) {
 
 }  // namespace metal
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

@@ -5,8 +5,7 @@
 
 #include "taichi/ir/snode.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace metal {
 
 struct SNodeDescriptor {
@@ -93,5 +92,4 @@ struct CompiledRuntimeModule {
 CompiledRuntimeModule compile_runtime_module();
 
 }  // namespace metal
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

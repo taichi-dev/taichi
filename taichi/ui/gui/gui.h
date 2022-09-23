@@ -945,4 +945,4 @@ class TI_DLL_EXPORT GUI : public GUIBase {
   ~GUI();
 };
 
-} // namespace taichi
+}  // namespace taichi

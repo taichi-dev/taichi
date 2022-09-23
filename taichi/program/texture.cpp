@@ -4,8 +4,7 @@
 #include "taichi/rhi/device.h"
 #include "taichi/ir/snode.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 Texture::Texture(Program *prog,
                  BufferFormat format,
@@ -134,5 +133,4 @@ Texture::~Texture() {
   }
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

@@ -794,4 +794,4 @@ inline void print(const Array2D<T> &arr) {
   arr.print("");
 }
 
-} // namespace taichi
+}  // namespace taichi

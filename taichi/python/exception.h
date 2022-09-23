@@ -25,4 +25,4 @@ class ExceptionForPython : public std::exception {
 
 void raise_assertion_failure_in_python(const std::string &msg);
 
-} // namespace taichi
+}  // namespace taichi

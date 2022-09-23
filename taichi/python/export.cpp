@@ -23,4 +23,4 @@ PYBIND11_MODULE(taichi_python, m) {
   export_ggui(m);
 }
 
-} // namespace taichi
+}  // namespace taichi

@@ -77,4 +77,4 @@ std::vector<Stmt *> get_store_destination(Stmt *store_stmt) {
 
 }  // namespace irpass::analysis
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

@@ -18,4 +18,4 @@ const EnvConfig &EnvConfig::instance() {
 
 }  // namespace metal
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

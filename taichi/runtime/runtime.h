@@ -52,4 +52,4 @@ void Runtime::register_impl(Arch arch) {
   factories[arch] = [] { return std::make_unique<RuntimeT>(); };
 }
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

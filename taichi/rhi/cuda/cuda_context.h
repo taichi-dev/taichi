@@ -103,4 +103,4 @@ class CUDAContext {
   static CUDAContext &get_instance();
 };
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

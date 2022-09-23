@@ -50,4 +50,4 @@ class CPUModuleToFunctionConverter : public ModuleToFunctionConverter {
 
 #endif
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

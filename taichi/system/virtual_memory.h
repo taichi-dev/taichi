@@ -59,4 +59,4 @@ uint64 get_memory_usage(int pid = -1);
 #define TI_MEMORY_USAGE(name) \
   TI_DEBUG("Memory Usage [{}] = {:.2f} GB", name, get_memory_usage_gb());
 
-} // namespace taichi
+}  // namespace taichi

@@ -232,4 +232,4 @@ uint64 Time::get_cycles() {
 
 #endif
 
-} // namespace taichi
+}  // namespace taichi

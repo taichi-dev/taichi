@@ -359,4 +359,4 @@ void compile_function(IRNode *ir,
 
 }  // namespace irpass
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

@@ -8,8 +8,7 @@
 #include "GLFW/glfw3.h"
 #endif
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace vulkan {
 
 VulkanLoader::VulkanLoader() {
@@ -142,5 +141,4 @@ void set_vulkan_visible_device(std::string id) {
 }
 
 }  // namespace vulkan
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

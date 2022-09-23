@@ -60,4 +60,4 @@ std::string format_error_message(const std::string &error_message_template,
   return error_message_formatted;
 }
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

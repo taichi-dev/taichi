@@ -79,4 +79,4 @@ gather_mesh_thread_local(OffloadedStmt *offload, const CompileConfig &config) {
 
 }  // namespace irpass::analysis
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

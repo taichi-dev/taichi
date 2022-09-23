@@ -75,4 +75,4 @@ task_invoke(const T &func, const std::vector<std::string> &params) {
   };                                                                       \
   TI_IMPLEMENTATION(Task, Task_##task, #task)
 
-} // namespace taichi
+}  // namespace taichi

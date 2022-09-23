@@ -7,8 +7,7 @@
 #include "taichi/program/context.h"
 #undef TI_RUNTIME_HOST
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace spirv {
 
 // static
@@ -127,5 +126,4 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel,
 }
 
 }  // namespace spirv
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

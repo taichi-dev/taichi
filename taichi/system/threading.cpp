@@ -136,4 +136,4 @@ ThreadPool::~ThreadPool() {
     th.join();
 }
 
-} // namespace taichi
+}  // namespace taichi

@@ -8,8 +8,7 @@
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 std::string snode_access_flag_name(SNodeAccessFlag type) {
   if (type == SNodeAccessFlag::block_local) {
@@ -496,5 +495,4 @@ void DelayedIRModifier::mark_as_modified() {
   modified_ = true;
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

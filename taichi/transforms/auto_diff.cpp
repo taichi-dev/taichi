@@ -1612,4 +1612,4 @@ void differentiation_validation_check(IRNode *root,
 
 }  // namespace irpass
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

@@ -290,4 +290,4 @@ FunctionType KernelCodeGenCPU::compile_to_function() {
       tlctx, get_llvm_program(prog)->get_runtime_executor());
   return converter.convert(kernel, compile_kernel_to_module());
 }
-} // namespace taichi::lang
+}  // namespace taichi::lang

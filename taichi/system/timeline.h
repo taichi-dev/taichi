@@ -88,4 +88,4 @@ class Timelines {
 
 #define TI_AUTO_TIMELINE TI_TIMELINE(__FUNCTION__)
 
-} // namespace taichi
+}  // namespace taichi

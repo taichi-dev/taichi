@@ -41,4 +41,4 @@ void re_id(IRNode *root) {
 }
 }  // namespace irpass
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

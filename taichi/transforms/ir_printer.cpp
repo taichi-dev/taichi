@@ -836,4 +836,4 @@ void print(IRNode *root, std::string *output) {
 
 }  // namespace irpass
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

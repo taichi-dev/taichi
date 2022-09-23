@@ -16,8 +16,7 @@
 
 #include <stdexcept>
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace vulkan {
 
 #define BAIL_ON_VK_BAD_RESULT(result, msg)               \
@@ -30,5 +29,4 @@ namespace vulkan {
 inline constexpr VkAllocationCallbacks *kNoVkAllocCallbacks = nullptr;
 
 }  // namespace vulkan
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

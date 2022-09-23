@@ -110,4 +110,4 @@ std::unique_ptr<JITSession> create_llvm_jit_session_cuda(
     CompileConfig *config,
     Arch arch);
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

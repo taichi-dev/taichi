@@ -121,4 +121,4 @@ std::pair<bool, Stmt *> last_store_or_atomic(IRNode *root, Stmt *var) {
 }
 }  // namespace irpass::analysis
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

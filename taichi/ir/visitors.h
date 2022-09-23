@@ -32,4 +32,4 @@ class BasicStmtVisitor : public IRVisitor {
   void visit(FrontendIfStmt *stmt) override;
 };
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

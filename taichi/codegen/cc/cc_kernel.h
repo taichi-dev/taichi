@@ -41,4 +41,4 @@ class CCKernel {
 };
 
 }  // namespace cccp
-} // namespace taichi::lang
+}  // namespace taichi::lang

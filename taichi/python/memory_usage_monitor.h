@@ -21,4 +21,4 @@ void start_memory_monitoring(std::string output_fn,
                              int pid = -1,
                              real interval = 1);
 
-} // namespace taichi
+}  // namespace taichi

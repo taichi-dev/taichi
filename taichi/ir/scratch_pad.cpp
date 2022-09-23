@@ -19,4 +19,4 @@ std::string ScratchPad::global_to_linearized_local(
   return ret;
 }
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

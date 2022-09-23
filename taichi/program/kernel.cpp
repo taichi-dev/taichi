@@ -442,4 +442,4 @@ void Kernel::offload_to_executable(IRNode *stmt) {
       is_extension_supported(config.arch, Extension::bls) &&
           config.make_block_local);
 }
-} // namespace taichi::lang
+}  // namespace taichi::lang

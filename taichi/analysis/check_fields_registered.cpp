@@ -33,4 +33,4 @@ void check_fields_registered(IRNode *root) {
 }
 }  // namespace irpass::analysis
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

@@ -40,4 +40,4 @@ gather_snode_read_writes(IRNode *root) {
 }
 }  // namespace irpass::analysis
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

@@ -47,4 +47,4 @@ std::unique_ptr<CCLayout> CCLayoutGen::compile() {
 }
 
 }  // namespace cccp
-} // namespace taichi::lang
+}  // namespace taichi::lang

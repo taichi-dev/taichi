@@ -27,4 +27,4 @@ class ArrayND;
 template <typename T, int dim>
 using TArray = ArrayND<dim, T>;
 
-} // namespace taichi
+}  // namespace taichi

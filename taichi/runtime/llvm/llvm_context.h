@@ -15,8 +15,7 @@
 #include "taichi/jit/jit_session.h"
 #include "taichi/codegen/llvm/llvm_compiled_data.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class JITSessionCPU;
 class LlvmProgramImpl;
@@ -205,5 +204,4 @@ std::unique_ptr<llvm::Module> module_from_bitcode_file(
     const std::string &bitcode_path,
     llvm::LLVMContext *ctx);
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

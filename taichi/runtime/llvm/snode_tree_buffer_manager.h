@@ -35,4 +35,4 @@ class SNodeTreeBufferManager {
   std::size_t sizes_[kMaxNumSnodeTreesLlvm];
 };
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

@@ -412,4 +412,4 @@ BitStructType *BitStructStoreStmt::get_bit_struct() const {
   return ptr->as<SNodeLookupStmt>()->snode->dt->as<BitStructType>();
 }
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

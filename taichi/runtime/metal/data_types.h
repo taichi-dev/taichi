@@ -46,4 +46,4 @@ inline bool is_metal_binary_op_infix(BinaryOpType type) {
 
 }  // namespace metal
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

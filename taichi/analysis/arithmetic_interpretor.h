@@ -7,8 +7,7 @@
 #include "taichi/ir/statements.h"
 #include "taichi/ir/type.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 /**
  * Interprets a sequence of CHI IR statements within a block (acts like a
@@ -96,5 +95,4 @@ class ArithmeticInterpretor {
                                         const EvalContext &init_ctx) const;
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

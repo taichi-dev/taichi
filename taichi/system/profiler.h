@@ -56,4 +56,4 @@ class Profiling {
 
 #define TI_AUTO_PROF TI_PROFILER(__FUNCTION__)
 
-} // namespace taichi
+}  // namespace taichi

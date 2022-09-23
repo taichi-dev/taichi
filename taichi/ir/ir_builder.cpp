@@ -484,4 +484,4 @@ MeshPatchIndexStmt *IRBuilder::get_patch_index() {
   return insert(Stmt::make_typed<MeshPatchIndexStmt>());
 }
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

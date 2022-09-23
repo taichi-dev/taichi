@@ -116,4 +116,4 @@ void export_visual(py::module &m) {
   });
 }
 
-} // namespace taichi
+}  // namespace taichi

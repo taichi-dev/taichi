@@ -1,7 +1,6 @@
 #include "taichi/program/function_key.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 FunctionKey::FunctionKey(const std::string &func_name,
                          int func_id,
@@ -18,5 +17,4 @@ std::string FunctionKey::get_full_name() const {
          std::to_string(instance_id);
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

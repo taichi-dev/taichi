@@ -1,7 +1,6 @@
 #include "llvm_codegen_utils.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 std::string type_name(llvm::Type *type) {
   std::string type_name_str;
@@ -145,5 +144,4 @@ void check_func_call_signature(llvm::FunctionType *func_type,
   }
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

@@ -39,7 +39,7 @@
 namespace taichi {
 bool test_threading();
 
-} // namespace taichi
+}  // namespace taichi
 
 namespace taichi::lang {
 
@@ -49,7 +49,7 @@ Expr expr_index(const Expr &expr, const Expr &index) {
 
 std::string libdevice_path();
 
-} // namespace taichi::lang
+}  // namespace taichi::lang
 
 namespace taichi {
 void export_lang(py::module &m) {
@@ -1360,4 +1360,4 @@ void export_lang(py::module &m) {
   });
 }
 
-} // namespace taichi
+}  // namespace taichi

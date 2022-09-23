@@ -932,5 +932,5 @@ static_assert(
     "");
 
 #ifdef TI_INCLUDED
-} // namespace taichi
+}  // namespace taichi
 #endif

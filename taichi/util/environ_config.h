@@ -15,4 +15,4 @@ static inline int get_environ_config(const std::string &name,
   return std::stoi(res);
 }
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

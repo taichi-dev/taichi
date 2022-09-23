@@ -49,4 +49,4 @@ std::unique_ptr<std::unordered_set<AtomicOpStmt *>> gather_used_atomics(
 }
 }  // namespace irpass::analysis
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

@@ -11,4 +11,4 @@ std::unique_ptr<Runtime> Runtime::create(Arch arch) {
   }
 }
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

@@ -1,7 +1,6 @@
 #include "taichi/rhi/cuda/cuda_device.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 namespace cuda {
 
@@ -124,5 +123,4 @@ uint64 CudaDevice::fetch_result_uint64(int i, uint64 *result_buffer) {
   return ret;
 }
 }  // namespace cuda
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

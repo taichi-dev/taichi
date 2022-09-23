@@ -45,4 +45,4 @@ class Demangling : public Task {
 
 TI_IMPLEMENTATION(Task, Demangling, "demangle")
 
-} // namespace taichi
+}  // namespace taichi

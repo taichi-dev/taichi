@@ -168,4 +168,4 @@ bool maybe_same_address(Stmt *var1, Stmt *var2) {
 
 }  // namespace irpass::analysis
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

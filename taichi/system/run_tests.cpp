@@ -17,4 +17,4 @@ class RunTests : public Task {
 
 TI_IMPLEMENTATION(Task, RunTests, "test");
 
-} // namespace taichi
+}  // namespace taichi

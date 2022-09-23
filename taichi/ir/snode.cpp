@@ -361,4 +361,4 @@ int SNode::get_snode_tree_id() const {
   return snode_tree_id_;
 }
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

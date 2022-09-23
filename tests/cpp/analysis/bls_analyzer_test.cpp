@@ -10,8 +10,7 @@
 #include "taichi/struct/struct.h"
 #include "tests/cpp/struct/fake_struct_compiler.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace {
 
 constexpr int kBlockSize = 8;
@@ -144,5 +143,4 @@ TEST_F(BLSAnalyzerTest, Shl) {
 }
 
 }  // namespace
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

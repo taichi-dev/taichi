@@ -27,4 +27,4 @@ class EnvConfig {
 
 }  // namespace metal
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

@@ -30,4 +30,4 @@ void Statistics::clear() {
   counters_.clear();
 }
 
-} // namespace taichi
+}  // namespace taichi

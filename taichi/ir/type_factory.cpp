@@ -188,4 +188,4 @@ DataType promoted_type(DataType x, DataType y) {
     return y;
 }
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

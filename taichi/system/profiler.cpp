@@ -278,4 +278,4 @@ void Profiling::clear_profile_info() {
   }
 }
 
-} // namespace taichi
+}  // namespace taichi

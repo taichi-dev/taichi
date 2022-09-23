@@ -116,4 +116,4 @@ void ParallelExecutor::worker_loop() {
     }
   }
 }
-} // namespace taichi::lang
+}  // namespace taichi::lang

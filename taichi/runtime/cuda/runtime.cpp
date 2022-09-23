@@ -37,4 +37,4 @@ static class RuntimeCUDAInjector {
   }
 } injector;
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

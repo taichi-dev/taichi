@@ -41,4 +41,4 @@ std::unique_ptr<JITSession> JITSession::create(TaichiLLVMContext *tlctx,
   return nullptr;
 }
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

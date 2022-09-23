@@ -418,4 +418,4 @@ float64 TypedConstant::val_cast_to_float64() const {
   }
 }
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

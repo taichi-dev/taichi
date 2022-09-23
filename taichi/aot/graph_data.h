@@ -11,8 +11,7 @@
 template <typename T, typename G>
 T taichi_union_cast_with_different_sizes(G g);
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 class AotModuleBuilder;
 class Ndarray;
 class Texture;
@@ -165,5 +164,4 @@ struct TI_DLL_EXPORT CompiledGraph {
 };
 
 }  // namespace aot
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

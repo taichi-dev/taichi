@@ -367,4 +367,4 @@ void print_traceback() {
       "https://docs.taichi-lang.org/docs/install\n");
 }
 
-} // namespace taichi
+}  // namespace taichi

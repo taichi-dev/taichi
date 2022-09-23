@@ -60,4 +60,4 @@ class UnifiedAllocator {
   Device *device_{nullptr};
 };
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

@@ -4,8 +4,7 @@
 #include "taichi/inc/constants.h"
 
 #if defined(TI_RUNTIME_HOST)
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 #endif
 
 struct LLVMRuntime;
@@ -118,6 +117,5 @@ struct RuntimeContext {
 };
 
 #if defined(TI_RUNTIME_HOST)
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang
 #endif

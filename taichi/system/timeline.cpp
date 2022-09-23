@@ -122,4 +122,4 @@ void Timelines::set_enabled(bool enabled) {
   enabled_ = enabled;
 }
 
-} // namespace taichi
+}  // namespace taichi

@@ -56,6 +56,6 @@ struct CCContext {
 
 };  // namespace cccp
 
-} // namespace taichi::lang
+}  // namespace taichi::lang
 
 #endif  // _CC_INSIDE_KERNEL

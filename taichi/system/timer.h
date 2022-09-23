@@ -105,4 +105,4 @@ class TI_DLL_EXPORT Time {
   };
 };
 
-} // namespace taichi
+}  // namespace taichi

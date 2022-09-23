@@ -5,8 +5,7 @@
 #include "taichi/runtime/llvm/llvm_aot_module_builder.h"
 #include "taichi/aot/module_data.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace directx12 {
 
 struct ModuleDataDX12 : public aot::ModuleData {
@@ -42,5 +41,4 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
 };
 
 }  // namespace directx12
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

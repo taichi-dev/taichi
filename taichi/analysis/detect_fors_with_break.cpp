@@ -50,4 +50,4 @@ std::unordered_set<Stmt *> detect_fors_with_break(IRNode *root) {
 }
 }  // namespace irpass::analysis
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

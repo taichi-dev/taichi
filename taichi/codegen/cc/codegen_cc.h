@@ -28,4 +28,4 @@ class CCKernelGen {
 FunctionType compile_kernel(Kernel *kernel);
 
 }  // namespace cccp
-} // namespace taichi::lang
+}  // namespace taichi::lang

@@ -150,4 +150,4 @@ void verify(IRNode *root) {
 }
 }  // namespace irpass::analysis
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

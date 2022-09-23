@@ -95,4 +95,4 @@ class EventToolkit {
   }
 };
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

@@ -4,8 +4,7 @@
 #include "taichi/runtime/llvm/llvm_offline_cache.h"
 #include "taichi/runtime/llvm/llvm_aot_module_builder.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace cuda {
 
 class AotModuleBuilderImpl : public LlvmAotModuleBuilder {
@@ -19,5 +18,4 @@ class AotModuleBuilderImpl : public LlvmAotModuleBuilder {
 };
 
 }  // namespace cuda
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

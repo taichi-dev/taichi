@@ -18,7 +18,7 @@
 
 namespace taichi {
 class DynamicLoader;
-} // namespace taichi
+}  // namespace taichi
 
 namespace taichi::lang {
 
@@ -88,4 +88,4 @@ class CCProgramImpl : public ProgramImpl {
   uint64 *result_buffer_{nullptr};
   bool need_relink_{true};
 };
-} // namespace taichi::lang
+}  // namespace taichi::lang

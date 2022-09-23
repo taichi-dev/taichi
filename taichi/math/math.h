@@ -39,4 +39,4 @@ TI_FORCE_INLINE
 
 }  // namespace math
 
-} // namespace taichi
+}  // namespace taichi

@@ -74,4 +74,4 @@ class ScopedIndent {
   LineAppender &la_;
 };
 
-} // namespace taichi
+}  // namespace taichi

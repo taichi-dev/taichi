@@ -132,4 +132,4 @@ bool CUSOLVERDriver::load_cusolver() {
 #undef PER_CUSOLVER_FUNCTION
   return cusolver_loaded_;
 }
-} // namespace taichi::lang
+}  // namespace taichi::lang

@@ -605,4 +605,4 @@ std::unique_ptr<CCKernel> CCKernelGen::compile() {
 }
 
 }  // namespace cccp
-} // namespace taichi::lang
+}  // namespace taichi::lang

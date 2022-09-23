@@ -17,4 +17,4 @@ class RegionND;
 template <int dim, typename T>
 class ArrayND;
 
-} // namespace taichi
+}  // namespace taichi

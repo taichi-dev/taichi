@@ -37,4 +37,4 @@ std::vector<Stmt *> gather_statements(IRNode *root,
 }
 }  // namespace irpass::analysis
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

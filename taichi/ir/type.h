@@ -479,4 +479,4 @@ class TypedConstant {
   float64 val_cast_to_float64() const;
 };
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

@@ -61,4 +61,4 @@ class Benchmark : public Unit {
 
 TI_INTERFACE(Benchmark)
 
-} // namespace taichi
+}  // namespace taichi

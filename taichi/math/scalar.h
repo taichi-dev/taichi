@@ -170,4 +170,4 @@ inline int64 get_largest_pot(int64 a) noexcept {
   return a - (a >> 1);
 }
 
-} // namespace taichi
+}  // namespace taichi

@@ -139,4 +139,4 @@ std::unique_ptr<IRNode> clone(IRNode *root, Kernel *kernel) {
 }
 }  // namespace irpass::analysis
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

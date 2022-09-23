@@ -4,8 +4,7 @@
 #include "taichi/ir/transforms.h"
 #include "tests/cpp/program/test_program.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 // Basic tests within a basic block
 
@@ -54,5 +53,4 @@ TEST(Simplify, SimplifyLinearizedWithTrivialInputs) {
   }
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

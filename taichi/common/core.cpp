@@ -105,4 +105,4 @@ int PID::get_parent_pid() {
 #endif
 }
 
-} // namespace taichi
+}  // namespace taichi

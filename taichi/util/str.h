@@ -15,4 +15,4 @@ std::string c_quoted(std::string const &str);
 std::string format_error_message(const std::string &error_message_template,
                                  const std::function<uint64(int)> &fetcher);
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

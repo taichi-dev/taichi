@@ -1308,4 +1308,4 @@ void flatten_rvalue(Expr ptr, Expression::FlattenContext *ctx) {
   }
 }
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

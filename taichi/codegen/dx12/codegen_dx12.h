@@ -29,4 +29,4 @@ class KernelCodeGenDX12 : public KernelCodeGen {
   FunctionType compile_to_function() override;
 };
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

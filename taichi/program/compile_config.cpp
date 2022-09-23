@@ -71,4 +71,4 @@ CompileConfig::CompileConfig() {
   cc_link_cmd = "gcc -shared -fPIC -o '{}' '{}'";
 }
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

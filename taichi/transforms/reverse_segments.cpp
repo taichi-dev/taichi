@@ -82,4 +82,4 @@ void reverse_segments(IRNode *root) {
 
 }  // namespace irpass
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

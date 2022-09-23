@@ -135,4 +135,4 @@ std::string metal_unary_op_type_symbol(UnaryOpType type) {
 }
 
 }  // namespace metal
-} // namespace taichi::lang
+}  // namespace taichi::lang

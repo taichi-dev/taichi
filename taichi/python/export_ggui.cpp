@@ -600,7 +600,7 @@ void export_ggui(py::module &m) {
   ui::export_ggui(m);
 }
 
-} // namespace taichi
+}  // namespace taichi
 
 #else
 
@@ -610,6 +610,6 @@ void export_ggui(py::module &m) {
   m.attr("GGUI_AVAILABLE") = py::bool_(false);
 }
 
-} // namespace taichi
+}  // namespace taichi
 
 #endif

@@ -68,4 +68,4 @@ void BasicStmtVisitor::visit(FrontendIfStmt *stmt) {
     stmt->false_statements->accept(this);
 }
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

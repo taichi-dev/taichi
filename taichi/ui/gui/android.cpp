@@ -27,6 +27,6 @@ void GUI::set_title(std::string title) {
 GUI::~GUI() {
 }
 
-} // namespace taichi
+}  // namespace taichi
 
 #endif

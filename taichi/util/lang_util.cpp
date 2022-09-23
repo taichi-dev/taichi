@@ -119,4 +119,4 @@ void initialize_benchmark() {
 #endif
 }
 
-} // namespace taichi
+}  // namespace taichi

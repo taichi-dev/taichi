@@ -97,7 +97,7 @@ def example():
 
 :::note
 
-Texture support in Taichi is included in the `ti.types.texture_types` module.
+Texture support in Taichi is supplied by the `ti.types.texture_types` module.
 
 :::
 

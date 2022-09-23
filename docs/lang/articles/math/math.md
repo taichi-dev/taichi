@@ -97,7 +97,7 @@ u = v.rraa  # vec4(1, 1, 2, 2)
     def test(v: ti.math.vec3):
         print(v.xyz)
     ```
-    
+
     Unlike `ti.Vector`, whose input data must be a 1d array as inputs, vector types created by `ti.types.vector()` have more flexible initialization routines.
 
 

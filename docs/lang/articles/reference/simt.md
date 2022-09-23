@@ -30,7 +30,7 @@ similar to the [usage in CUDA kernels](https://developer.nvidia.com/blog/using-c
 See [Taichi's API reference](https://docs.taichi-lang.org/api/taichi/lang/simt/warp/#module-taichi.lang.simt.warp)
 for more information on each function.
 
-Here is an example to perform data exchange within a warp in Taichi:
+Here is an example of performing data exchange within a warp in Taichi:
 
 
 ```python

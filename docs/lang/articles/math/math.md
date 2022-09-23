@@ -36,11 +36,11 @@ These function also accept vectors and matrices as arguments, and they apply to 
 @ti.kernel
 def test():
     a = ti.Vector([1.0, 2.0, 3.0])
-    x = tm.sin(a)
-    y = tm.floor(a)
-    z = tm.degrees(a)
+    x = tm.sin(a)  # [0.841471, 0.909297, 0.141120]
+    y = tm.floor(a)  #  [1.000000, 2.000000, 3.000000]
+    z = tm.degrees(a)  #  [57.295780, 114.591560, 171.887344]
     b = ti.Vector([2.0, 3.0, 4.0])
-    w = tm.atan2(b, a)
+    w = tm.atan2(b, a)  # [1.107149, 0.982794, 0.927295]
     ...
 ```
 

@@ -169,7 +169,7 @@ In case you want to use taichi cuda backend together with GGUI on a machine with
 
 ## Runtime
 
-- Restart the entire Taichi system (destroy all fields and kernels): `ti.reset()`.
+- To restart the entire Taichi system (and erase all fields and kernels): `ti.reset()`.
 - To start program in debug mode: `ti.init(debug=True)`. Equivalently you can run your code via `ti debug your_script.py`. The corresponding environment variable is `TI_DEBUG`.
 - To disable importing torch on start up: `export TI_ENABLE_TORCH=0`.
 - To disable importing paddle on start up: `export TI_ENABLE_PADDLE=0`.

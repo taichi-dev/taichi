@@ -74,7 +74,7 @@ for i in range(100):
 ti.profiler.print_kernel_profiler_info()  # Default mode: 'count'
 ```
 
-The profiler produces the following output:
+The profiler outputs the following:
 
 ```
 =========================================================================

@@ -131,4 +131,4 @@ class LoopInvariantDetector : public BasicStmtVisitor {
   }
 };
 
-} // namespace taichi::lang
+}  // namespace taichi::lang

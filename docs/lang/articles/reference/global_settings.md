@@ -174,7 +174,7 @@ If you want to use CUDA and Taichi's GGUI system at the same time on a machine w
 - To disable the import of paddle upon startup: `export TI_ENABLE_PADDLE=0`.
 - To set a custom seed for the random number generator used by `ti.random()`: `ti.init(random_seed=seed)`. `seed` should be an integer. An example: `ti.init(random_seed=int(time.time()))`.
 - To set the default precision of floating-point numbers of Taichi runtime to `ti.f64`: `ti.init(default_fp=ti.i64)`.
-- Set the default precision for floating-point numbers of Taichi runtime to `ti.i32`: `ti.init(default_ip=ti.i32)`.
+- To set the default precision of floating-point numbers of Taichi runtime to `ti.i32`: `ti.init(default_ip=ti.i32)`.
 - To enable the packed mode for memory layout: `ti.init(packed=True)`. See the [document on data layout](https://docs.taichi-lang.org/docs/layout).
 - Disable the offline cache of compiled kernels: `ti.init(offline_cache=False)`. See [Packed mode](https://docs.taichi-lang.org/docs/layout#packed-mode).
 - Enable using variables as index to access vector/matrix elements in the Taichi scope: `ti.init(dynamic_index=True)`.

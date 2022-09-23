@@ -403,7 +403,8 @@ Destroys a loaded AOT module and releases all related resources.
 
 `function.get_aot_module_kernel`
 
-Get a precompiled Taichi kernel from the AOT module. `definition.null_handle` is returned if the module does not have a kernel of the specified name.
+Retrieves a pre-compiled Taichi kernel from the AOT module. 
+Returns `definition.null_handle` if the module does not have a kernel of the specified name.
 
 `function.get_aot_module_compute_graph`
 

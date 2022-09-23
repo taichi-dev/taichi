@@ -54,13 +54,80 @@ Taichi's math module supplies a few small vector and matrix types:
 3. `uvec2/uvec3/uvec4` for 2D/3D/4D unsigned integer vector types.
 4. `mat2/mat3/mat4` for 2D/3D/4D floating-point square matrix types.
 
-The precision bits of these matrix types will be determined by the settings for `default_fp` and `default_ip` in your `ti.init()` call.
+
+Indeed, these vector/matrix types are created using the two template functions `ti.types.vector()` and `ti.types.matrix()`, for example the `vec2` type is defined via
+
+```python
+vec2 = ti.types.vector(2, float)
+```
+
+Hence the precision bits of these matrix types will be determined by the settings for `default_fp` and `default_ip` in your `ti.init()` call. For example if `default_fp` is set to `ti.f64`, then `vec2/vec3/vec4` and `mat2/mat3/mat4` will all have 64-bit floating-point precision.
+
+These types can be used to instantiate vectors and matrices or annotate the data types of function arguments and struct members. See [type system](../type_system/type.md) for more detail. Here we emphasize that they have very flexible initialization routines:
+
+```python
+mat2 = ti.math.mat2
+vec3 = ti.math.mat3
+
+m = mat2(1)  # [[1., 1.], [1., 1.]]
+m = mat2(1, 2, 3, 4)  # [[1., 2.], [3, 4.]]
+m = mat2([1, 2], [3, 4])  # [[1., 2.], [3, 4.]]
+m = mat2([1, 2, 3, 4])  # [[1., 2.], [3, 4.]]
+v = vec3(1, 2, 3)
+m = mat2(v, 4)  # [[1., 2.], [3, 4.]]
+```
 
 
-These types can be used to instantiate vectors and matrices or annotate the data types of function arguments and struct members. See [type system](../type_system/type.md) for more detail.
+## GLSL-standard functions
 
-Indeed, these vector/matrix types are created using the two template functions `ti.types.vector()` and `ti.types.matrix()`, for example
+
+Taichi's math module also supports a few [GLSL standard functions](https://registry.khronos.org/OpenGL-Refpages/gl4/index.php), they are implemented in the same way that follows the GLSL standard. For example:
+
+```python
+import taichi.math as tm
+
+@ti.kernel
+def example():
+    v = tm.vec3(0., 1., 2.)
+    w = tm.smoothstep(0.0, 1.0, v)
+    w = tm.clamp(w, 0.2, 0.8)
+    w = tm.reflect(v, tm.normalize(tm.vec3(1)))
+```
+
+:::note
+
+Texture support in Taichi is included in the `ti.types.texture_types` module.
+
+:::
+
+
+## Complex number arithmetic
+
+Taichi's module also supports basic complex arithmetic in the form of 2D vectors.
+
+You can use a 2D vector of type `ti.math.vec2` to represent a complex number, the addtion/subtraction of complex numbers are just addtion/subtraction of 2D vectors, and multiplication and division can be performed by calling the two functions `cmul` and `cdiv`:
+
+```python
+import taichi as ti
+import taichi.math as tm
+ti.init()
+
+@ti.kernel
+def test():
+    x = tm.vec2(1, 1)  # complex number 1+1j
+    y = tm.vec2(0, 1j)  # complex number 1j
+    z = tm.cmul(x, y)  # vec2(-1, 1) = -1+1j
+    w = tm.cdiv(x, y)  #  vec2(2, 0) = 2+0j
+```
+
+You can also compute the power, logarithm and exponetial of a complex number:
 
 ```python
 
+@ti.kernel
+def test():
+    x = tm.vec2(1, 1)
+    y = tm.cpow(x, 2)
+    z = tm.clog(x)
+    w = tm.cexp(x)
 ```

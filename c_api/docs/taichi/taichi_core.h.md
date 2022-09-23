@@ -371,7 +371,7 @@ Launch a Taichi kernel with provided arguments. The arguments MUST have the same
 
 `function.launch_compute_graph`
 
-Launch a Taichi compute graph with provided named arguments. The named arguments MUST have the same count, names and types as in the source code.
+Launches a Taichi compute graph with provided named arguments. The named arguments *must* have the same count, names, and types as in the source code.
 
 `function.signal_event`
 

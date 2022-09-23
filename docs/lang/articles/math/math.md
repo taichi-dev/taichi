@@ -87,6 +87,20 @@ u = v.wzyx  # vec4(4, 3, 2, 1)
 u = v.rraa  # vec4(1, 1, 2, 2)
 ```
 
+### Relationship between `ti.Vector`, `ti.types.vector` and `ti.math.vec3`
+
++ `ti.Vector` is a function that accepts a 1D array and returns a matrix instance that has only one column. For example, `ti.Vector([1, 2, 3, 4, 5])`.
++ `ti.types.vector` is a function that accepts an integer and a primitive type, and returns a vector type. For example: `vec5f = ti.types.vector(5, float)`. `vec5f` can be used to instantiate 5D vectors or annotate data types in function arguments and struct members.
++ `ti.math.vec3` is created by `vec3 = ti.types.vector(3, float)`, hence it can be used to instantiate 3D vectors like `v = vec3(1, 2, 3)`, or annotate function arguments and return value like
+    ```python
+    @ti.kernel
+    def test(v: ti.math.vec3):
+        print(v.xyz)
+    ```
+    
+    Unlike `ti.Vector`, whose input data must be a 1d array as inputs, vector types created by `ti.types.vector()` have more flexible initialization routines.
+
+
 ## GLSL-standard functions
 
 

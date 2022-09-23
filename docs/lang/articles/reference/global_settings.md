@@ -85,7 +85,7 @@ Below are some most frequently used configurations you can set with the `ti.init
         Set the logging level.
 
     verbose: bool
-        Eliminate verbose outputs. e.g. `ti.init(verbose=False)`.
+        Turn on/off verbose outputs. For example, set `ti.init(verbose=False)` to eliminate verbose outputs.
 
 
 [Develop Options]

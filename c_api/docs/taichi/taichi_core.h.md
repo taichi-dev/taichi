@@ -19,7 +19,8 @@ Taichi C-API has bridged the following backends:
 |Metal|GPU (macOS, iOS)|N/A|
 |OpenGL|GPU|N/A|
 
-The backends with tier 1 support are the most intensively developed and tested ones. In contrast, you would expect a delay in fixes against minor issues on tier 2 backends. The backends currently unsupported might become supported. Among all the tier 1 backends, Vulkan has the most outstanding cross-platform compatibility, so most of the new features will be first available on Vulkan.
+The backends with tier-1 support are being developed and tested more intensively. And most new features will be available on Vulkan first, because it has the most outstanding cross-platform compatibility among all the tier-1 backends. 
+For the backends with tier-2 support, you should expect a delay in the fixes to the minor issues. 
 
 For convenience, in the following text (and other C-API documentations), the term **host** refers to the user of the C-API; the term **device** refers to the logical (conceptual) compute device that Taichi Runtime offloads its compute tasks to. A *device* might not be an actual discrete processor away from the CPU and the *host* MAY NOT be able to access the memory allocated on the *device*.
 

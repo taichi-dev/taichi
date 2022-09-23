@@ -63,11 +63,13 @@ Behaviors of `print` vary depending on the scope where it is called. When called
 
 `print` in the Taichi scope is supported on the CPU, CUDA, and Vulkan backends only.
 
-Note that `print` does not work in Graphical Python Shells, including IDLE and Jupyter Notebook. This is because these backends print the outputs to the console instead of GUI.
+:::note
+`print` does not work in Graphical Python Shells, such as IDLE and Jupyter Notebook. This is because these backends print outputs to the console, not to the GUI.
+:::
 
 ### Comma-separated strings only
 
-Strings passed to `print` in the Taichi scope *must* be comma-separated strings. Neither f-strings nor formatted strings can be recognized. For example:
+Strings passed to `print` in the Taichi scope *must* be comma-separated. Neither f-strings nor formatted strings can be recognized. For example:
 
 ```python {9-11}
 import taichi as ti
@@ -107,11 +109,11 @@ def inside_taichi_scope():
         # Only print once
 ```
 
-`ti.static_print` behaves similarly with `print` in the Python scope. The difference is that unlike `print`, `ti.static_print` only prints the expression once at compile time, thus incurring no runtime cost.
+`ti.static_print` behaves similarly to `print` in the Python scope. The difference is that, unlike `print`, `ti.static_print` prints the expression only once at compile time, thus incurring no runtime cost.
 
 ## Serial execution
 
-Taichi's automatic parallelization mechanism may lead to non-deterministic behaviors. For debugging purposes, serializing program execution may be useful to get repeatable results and diagnose data races. You can serialize either an entire Taichi program or a specific for loop.
+Taichi's automatic parallelization mechanism may lead to non-deterministic behaviors. For debugging purposes, serializing program execution may be useful for getting repeatable results or diagnosing data races. You can serialize either the entire Taichi program or a specific for loop.
 
 ### Serialize an entire Taichi program
 
@@ -156,9 +158,9 @@ print(val)
 
 ## Out-of-bound array access
 
-The array access violation issue is common, but a program would usually proceed without raising a warning, only to end up with a wrong result. Even if a segmentation fault were triggered, it would be hard to debug.
+The array access violation issue is common, but a program would usually proceed without raising a warning and end up with a wrong result. Even if a segmentation fault is triggered, it is hard to debug.
 
-Taichi makes out-of-bound array accesses readily detectable with an auto-debugging mode. Activate the mode by setting `debug=True` when initiating Taichi:
+Taichi makes out-of-bound array accesses readily detectable in auto-debugging mode. Set `debug=True` when initiating Taichi to activate this mode:
 
 ```python
 import taichi as ti
@@ -176,7 +178,7 @@ The code snippet above raises a `TaichiAssertionError`, indicating that you are 
 :::note
 Automatic bound checks are supported on the CPU and CUDA beckends only.
 
-After `debug=Ture` is turned on, your program performance may worsen.
+Your program performance may worsen if you set `debug=True`. 
 :::
 
 ## Runtime `assert` in Taichi scope
@@ -209,7 +211,7 @@ When you are done with debugging, set `debug=False`, and then the program ignore
 ti.static_assert(cond, msg=None)
 ```
 
-Like `ti.static_print`, Taichi also provides a static version of `assert`: `ti.static_assert`, which comes handy to assert data types, dimensionality, and shapes. It works regardless of whether `debug=True` is enabled or not. A false statement triggers an `AssertionError`, just as `assert` in the Python scope does.
+Like `ti.static_print`, Taichi also provides a static version of `assert`: `ti.static_assert`, which is useful to make assertions on data types, dimensionality, and shapes. It works regardless of whether `debug=True` is set or not. A false statement of `ti.static_assert` triggers an `AssertionError`, just as a false `assert` statement in the Python scope does.
 
 For example:
 
@@ -340,7 +342,7 @@ Taichi program.
 
 Taichi translates Python code into a statically typed language for high performance. Therefore, code in the Taichi scope may behave differently from native Python code, especially when it comes to variable types.
 
-In the Taichi scope, the type of a variable is **determined upon initialization and never changes later**.
+In the Taichi scope, the type of a variable is *determined upon initialization and never changes afterwards*.
 
 Although Taichi's static typing system delivers a better performance, it may lead to unexpected results if you fail to specify the correct types. For example:
 
@@ -361,7 +363,7 @@ The code above leads to an unexpected result due to a misuse of Taichi's static 
 [W 06/27/20 21:43:51.853] [type_check.cpp:visit@66] [$19] Atomic add (float32 to int32) may lose precision.
 ```
 
-This means that Taichi cannot convert a `float32` result to `int32` without precision loss. The solution is to initialize `ret` as a floating-point value:
+This means that a precision loss occurs when Taichi converts a `float32` result to `int32`. The solution is to initialize `ret` as a floating-point value:
 
 ```python
 @ti.kernel
@@ -376,8 +378,8 @@ not_buggy()
 
 ### Advanced Optimization
 
-Taichi runs a handful of advanced IR optimizations by default to make your Taichi kernels as performant as possible. However, advanced optimizations may occasionally lead to compilation errors, such as:
+By default, Taichi runs a number of advanced IR optimizations to maximize the performance of your Taichi kernels. However, advanced optimizations may occasionally lead to compilation errors, such as:
 
 `RuntimeError: [verify.cpp:basic_verify@40] stmt 8 cannot have operand 7.`
 
-You can turn off the advanced optimizations by setting `ti.init(advanced_optimization=False)` and see if it makes a difference. If the issue persists, feel free to report it on [GitHub](https://github.com/taichi-dev/taichi/issues/new?labels=potential+bug&template=bug_report.md).
+You can use the `ti.init(advanced_optimization=False)` setting to turn off advanced optimizations and see if it makes a difference. If this issue persists, feel free to report it on [GitHub](https://github.com/taichi-dev/taichi/issues/new?labels=potential+bug&template=bug_report.md).

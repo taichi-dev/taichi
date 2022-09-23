@@ -142,7 +142,7 @@ Below are some environment variables that you can set to customize your Taichi p
 [Logging Options]
 
     TI_LOG_LEVEL
-        Set the logging level, e.g. `export TI_LOG_LEVEL=trace`.
+        Set the logging level, such as `export TI_LOG_LEVEL=trace`.
 ```
 
 ## Backends

@@ -182,7 +182,7 @@ ti_submit(runtime);
 ti_wait(runtime);
 ```
 
-**WARNING** This part is subject to change. We're gonna introduce multi-queue in the future.
+**WARNING** This part is subject to change. We will introduce multi-queue in the future.
 
 ## API Reference
 

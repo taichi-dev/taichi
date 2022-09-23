@@ -67,6 +67,7 @@ These types can be used to instantiate vectors and matrices or annotate the data
 ```python
 mat2 = ti.math.mat2
 vec3 = ti.math.mat3
+vec4 = ti.math.vec4
 
 m = mat2(1)  # [[1., 1.], [1., 1.]]
 m = mat2(1, 2, 3, 4)  # [[1., 2.], [3, 4.]]
@@ -74,6 +75,8 @@ m = mat2([1, 2], [3, 4])  # [[1., 2.], [3, 4.]]
 m = mat2([1, 2, 3, 4])  # [[1., 2.], [3, 4.]]
 v = vec3(1, 2, 3)
 m = mat2(v, 4)  # [[1., 2.], [3, 4.]]
+u = vec4([1, 2], [3, 4])
+u = vec4(v, 4.0)
 ```
 
 Another important feature of vector types created by `ti.types.vector()` is that they support **vector swizzling** like GLSL vectors, this means you can use `xyzw`, `rgba`, `stpq` to access their elements with indices less or equal to four:
@@ -90,15 +93,14 @@ u = v.rraa  # vec4(1, 1, 2, 2)
 ### Relationship between `ti.Vector`, `ti.types.vector` and `ti.math.vec3`
 
 + `ti.Vector` is a function that accepts a 1D array and returns a matrix instance that has only one column. For example, `ti.Vector([1, 2, 3, 4, 5])`.
-+ `ti.types.vector` is a function that accepts an integer and a primitive type, and returns a vector type. For example: `vec5f = ti.types.vector(5, float)`. `vec5f` can be used to instantiate 5D vectors or annotate data types in function arguments and struct members.
-+ `ti.math.vec3` is created by `vec3 = ti.types.vector(3, float)`, hence it can be used to instantiate 3D vectors like `v = vec3(1, 2, 3)`, or annotate function arguments and return value like
++ `ti.types.vector` is a function that accepts an integer and a primitive type, and returns a vector type. For example: `vec5f = ti.types.vector(5, float)`. `vec5f` can be used to instantiate 5D vectors or annotate data types in function arguments and struct members. For example:
     ```python
     @ti.kernel
-    def test(v: ti.math.vec3):
+    def test(v: vec5f):
         print(v.xyz)
     ```
-
-    Unlike `ti.Vector`, whose input data must be a 1d array as inputs, vector types created by `ti.types.vector()` have more flexible initialization routines.
+    Unlike `ti.Vector`, whose input data must be a 1d array as inputs, vector types created by `ti.types.vector()` have more flexible initialization routines, as we have already explained above.
++ `ti.math.vec3` is created by `vec3 = ti.types.vector(3, float)`.
 
 
 ## GLSL-standard functions

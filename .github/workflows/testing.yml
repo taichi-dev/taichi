@@ -189,6 +189,10 @@ jobs:
           path: dist/*
           retention-days: 7
 
+      - name: Fix Cache Permissions
+        run: |
+          sudo -n chmod -R 0777 /tmp/build-cache || true
+
   build_and_test_cpu_mac:
     name: Build and Test macos (CPU)
     needs: check_files
@@ -283,7 +287,8 @@ jobs:
         uses: actions/cache@v3
         if: needs.check_files.outputs.run_job == 'true'
         with:
-          path: ${{ env.LocalAppData }}/build-cache
+          # env.LocalAppData is not usable according to actions/cache README
+          path: ~/AppData/Local/build-cache
           key: build-cache-win64-cpu-${{ github.sha }}
           restore-keys: |
             build-cache-win64-cpu-

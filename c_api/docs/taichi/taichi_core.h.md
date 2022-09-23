@@ -44,7 +44,7 @@ When your program reaches the end, you SHOULD destroy the runtime instance. Plea
 ti_destroy_runtime(runtime);
 ```
 
-### Allocate and Free Memory
+### Allocate and free memory
 
 Allocate a piece of memory that is visible only to the device. On the GPU backends, it usually means that the memory is located in the graphics memory (GRAM).
 

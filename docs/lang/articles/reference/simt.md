@@ -27,7 +27,7 @@ similar to the [usage in CUDA kernels](https://developer.nvidia.com/blog/using-c
 |`ti.simt.warp.active_mask`  | `__activemask`    |
 |`ti.simt.warp.sync`         | `__syncwarp`      |
 
-Please refer to our [API docs](https://docs.taichi.graphics/api/taichi/lang/simt/warp/#module-taichi.lang.simt.warp)
+See [Taichi's API reference](https://docs.taichi-lang.org/api/taichi/lang/simt/warp/#module-taichi.lang.simt.warp)
 for more information on each function.
 
 Here is an example to perform data exchange within a warp in Taichi:

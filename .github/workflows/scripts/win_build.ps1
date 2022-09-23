@@ -20,7 +20,7 @@ if (-not (Test-Path $libsDir)) {
 
 $RepoURL = 'https://github.com/taichi-dev/taichi'
 
-SetupCCacheLocal "$libsDir/ccache"
+# SetupCCacheLocal "$libsDir/ccache"
 
 if ($clone) {
     Info("Clone the repository")

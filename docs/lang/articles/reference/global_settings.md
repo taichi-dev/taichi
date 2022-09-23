@@ -7,7 +7,7 @@ sidebar_position: 3
 
 The call `ti.init()` is indispensable in every Taichi program. Taichi allows you to customize your Taichi runtime by passing arguments to `ti.init()` or setting environment variables. Each argument or environment variable controls one specific behavior of the Taichi runtime. For example, the argument `arch` specifies the backend, and the argument `debug` decides whether to run the program in debug mode. The document [Hello, World!](../get-started/index.md) gives a brief introduction to this function, and this document provides more details.
 
-Generally, when calling `ti.init()`, Taichi executes the following steps to initialize a specific configuration. We use the `arch` argument as an example:
+Generally, when you call `ti.init()`, Taichi executes the following steps to initialize a specific configuration. We use the `arch` argument as an example:
 
 1. Firstly, Taichi looks for the argument that is passed to `ti.init()`. In this case, after Taichi reads `ti.init(arch=cuda)`, it chooses CUDA as the backend and omits the environment variable.
 2. If no argument is found, Taichi checks the corresponding environment variable. In this case, if `arch` is not specified but replaced by the environment variable `export TI_ARCH=cuda`, Taichi still chooses CUDA as the backend.

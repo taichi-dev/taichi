@@ -344,7 +344,7 @@ Allocate a contiguous on-device memory with provided parameters.
 
 `function.free_memory`
 
-Free a memory allocation.
+Frees a memory allocation.
 
 `function.map_memory`
 

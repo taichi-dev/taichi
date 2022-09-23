@@ -109,7 +109,7 @@ Below are some environment variables that you can set to customize your Taichi p
         Specify which architecture to run the program. For example, `export TI_ARCH=cuda` designates CUDA as the backend.
 
     TI_ENABLE_[CUDA/OPENGL/...]
-        Disable a backend on start up, e.g. CUDA: `export TI_ENABLE_CUDA=0`.
+        Disable a backend upon startup. For example, set `export TI_ENABLE_CUDA=0` to disable the CUDA backend.
 
     TI_VISIBLE_DEVICE
         Specify which GPU to use for VULKAN: `export TI_VISIBLE_DEVICES=[gpuid]`.

@@ -3,7 +3,7 @@
 
 Taichi implements its own `math` module to support usual mathematical functions plus a few utility functions that are frequently used in computer graphics and simulations. They include:
 
-1. Mathematical functions analogous to those in Python's built-in `math` module.
+1. Commonly-used mathematical functions analogous to those in Python's built-in `math` module.
 2. Small vector and matrix types analogous to those in the [OpenGL shading language](https://www.khronos.org/opengl/wiki/OpenGL_Shading_Language)(GLSL), for example `vec2/vec3/vec4` and `mat2/mat3/mat4`.
 3. Functions analogous to those built-in functions in GLSL.
 4. Complex number arithmetic of 2D vectors.

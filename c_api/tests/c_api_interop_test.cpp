@@ -10,15 +10,10 @@
 #if TI_WITH_VULKAN
 
 static void texture_interop_test(TiArch arch) {
-  const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
-
-  std::stringstream aot_mod_ss;
-  aot_mod_ss << folder_dir;
-
   ti::Runtime runtime(arch);
 
   ti::Texture tex_0 =
-      runtime.allocate_texture2d(128, 128, TI_FORMAT_R32F, TI_NULL_HANDLE);
+      runtime.allocate_texture2d(128, 128, TI_FORMAT_RGBA8, TI_NULL_HANDLE);
 
   TiVulkanImageInteropInfo viii{};
   ti_export_vulkan_image(runtime, tex_0.image(), &viii);

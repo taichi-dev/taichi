@@ -45,7 +45,7 @@ def test():
 
 :::note
 
-Differences between Taichi's math module and Python's built-in math module
+Differences between Taichi's math module and Python's built-in math module:
 
 1. Functions in Taichi's math module should be called in the Taichi scope.
 2. Functions in Taichi's math module also accept vectors/matrices as arguments.

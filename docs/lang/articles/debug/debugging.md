@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Debugging
 
-Taichi provides the following built-in utilities to facilitate parallel programming debugging:
+Taichi provides the following mechanisms to facilitate parallel programming debugging:
 
 - `print` in the Taichi scope checks the value of a variable.
 - Serialization of your program or a specific parallel for loop.

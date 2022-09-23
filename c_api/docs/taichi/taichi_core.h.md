@@ -352,7 +352,7 @@ Maps an on-device memory to a host-addressible space. You *must* ensure that the
 
 `function.unmap_memory`
 
-Unmap an on-device memory and make any host-side changes about the memory visible to the device. The user MUST ensure there is no further access to the previously mapped host-addressible space.
+Unmaps an on-device memory and makes any host-side changes about the memory visible to the device. You *must* ensure that there is no further access to the previously mapped host-addressible space.
 
 `function.create_event`
 

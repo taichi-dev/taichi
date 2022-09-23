@@ -125,7 +125,7 @@ If your program works well in serial but fails in parallel, check parallelizatio
 
 ### Serialize a specified parallel for loop
 
-By default, Taichi automatically parallelizes the for loop at the outermost scope. But some scenarios require serial exeution. In this case, you can prevent automatic parallelization with `ti.loop_config(serialize=True)`:
+By default, Taichi automatically parallelizes the for loops at the outermost scope in a Taichi kernel. But some scenarios require serial exeution. In this case, you can prevent automatic parallelization with `ti.loop_config(serialize=True)`:
 
 ```python
 import taichi as ti
@@ -148,9 +148,9 @@ print(val)
 
 :::note
 
-1. `ti.loop_config(serialize=True)` decorates the outermost for loop that immediately follows it.
-2. `ti.loop_config` works only for the *range-for* loop at the outermost scope.
-3. Inner for loops are serialized by default.
+- `ti.loop_config(serialize=True)` decorates the outermost for loop that immediately follows it.
+- `ti.loop_config` works only for the *range-for* loop at the outermost scope.
+- Inner for loops are serialized by default.
 
 :::
 
@@ -187,7 +187,7 @@ You can use `assert` statements in the Taichi scope to verify the assertion cond
 `assert` is currently supported on the CPU, CUDA, and Metal backends.
 :::
 
-Make sure you activate the `debug` mode before using `assert` statements in the Taichi scope:
+Ensure that you activate `debug` mode before using `assert` statements in the Taichi scope:
 
 ```python
 ti.init(arch=ti.cpu, debug=True)
@@ -209,7 +209,7 @@ When you are done with debugging, set `debug=False`, and then the program ignore
 ti.static_assert(cond, msg=None)
 ```
 
-Like `ti.static_print`, Taichi also provides a static version of `assert`: `ti.static_assert`, which comes handy to assert data types, dimensionality, and shapes. It works regardless whether `debug=True` is enabled or not. A false statement triggers an `AssertionError`, just as `assert` in the Python scope does.
+Like `ti.static_print`, Taichi also provides a static version of `assert`: `ti.static_assert`, which comes handy to assert data types, dimensionality, and shapes. It works regardless of whether `debug=True` is enabled or not. A false statement triggers an `AssertionError`, just as `assert` in the Python scope does.
 
 For example:
 
@@ -248,7 +248,7 @@ def func0():
 func0()
 ```
 
-The above snippet triggers an `AssertionError`, with a lengthy and overwhelming traceback message:
+The above snippet triggers an `AssertionError`, with a lengthy traceback message:
 
 ```
 Traceback (most recent call last):
@@ -305,7 +305,7 @@ AssertionError:
 
 It takes time to read through the message. In addition, many stack frames reveal implementation details, which are irrelevant to debugging.
 
-To relieve your burden, Taichi allows you to access a more concise and intuitive version of traceback messages via `sys.tracebacklimit`:
+Taichi allows you to access a more concise and intuitive version of traceback messages via `sys.tracebacklimit`:
 
 ```python {2}
 import taichi as ti
@@ -314,7 +314,7 @@ sys.tracebacklimit=0
 ...
 ```
 
-You will get the following information:
+The traceback contains the following information only:
 
 ```python
 AssertionError
@@ -355,7 +355,7 @@ def buggy():
 buggy()
 ```
 
-The code above results in an unexpected result due to a misuse of Taichi's static typing system. The Taichi compiler should show a warning:
+The code above leads to an unexpected result due to a misuse of Taichi's static typing system. The Taichi compiler should show a warning:
 
 ```
 [W 06/27/20 21:43:51.853] [type_check.cpp:visit@66] [$19] Atomic add (float32 to int32) may lose precision.
@@ -376,8 +376,8 @@ not_buggy()
 
 ### Advanced Optimization
 
-Taichi runs a handful of advanced IR optimizations by default to make your Taichi kernels as performant as possible. However, advanced optimizations may occasionally lead to compilation errors, such as the following:
+Taichi runs a handful of advanced IR optimizations by default to make your Taichi kernels as performant as possible. However, advanced optimizations may occasionally lead to compilation errors, such as:
 
 `RuntimeError: [verify.cpp:basic_verify@40] stmt 8 cannot have operand 7.`
 
-You can turn off the advanced optimizations by setting `ti.init(advanced_optimization=False)` and see if it makes a difference. If the issue persists, please feel free to report it on [GitHub](https://github.com/taichi-dev/taichi/issues/new?labels=potential+bug&template=bug_report.md).
+You can turn off the advanced optimizations by setting `ti.init(advanced_optimization=False)` and see if it makes a difference. If the issue persists, feel free to report it on [GitHub](https://github.com/taichi-dev/taichi/issues/new?labels=potential+bug&template=bug_report.md).

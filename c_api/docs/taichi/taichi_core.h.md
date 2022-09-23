@@ -359,7 +359,7 @@ Create an event primitive.
 
 `function.destroy_event`
 
-Destroy an event primitive.
+Destroys an event primitive.
 
 `function.copy_memory_device_to_device`
 

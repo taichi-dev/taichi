@@ -543,7 +543,8 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
       enabled_extensions.push_back(ext.extensionName);
     } else if (name == VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME) {
       enabled_extensions.push_back(ext.extensionName);
-    } else if (name == VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME) {
+    } else if (name == VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME &&
+               params_.enable_validation_layer) {
       // VK_KHR_shader_non_semantic_info isn't supported on molten-vk.
       // Tracking issue: https://github.com/KhronosGroup/MoltenVK/issues/1214
       ti_device_->set_cap(DeviceCapability::spirv_has_non_semantic_info, true);

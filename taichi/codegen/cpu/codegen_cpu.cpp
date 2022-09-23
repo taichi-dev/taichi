@@ -57,7 +57,7 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
     auto [begin, end] = get_range_for_bounds(stmt);
 
     // adaptive block_dim
-    if (prog->config.cpu_block_dim_adaptive) {
+    if (prog->this_thread_config().cpu_block_dim_adaptive) {
       int num_items = (stmt->end_value - stmt->begin_value) / std::abs(step);
       int num_threads = stmt->num_cpu_threads;
       int items_per_thread = std::max(1, num_items / (num_threads * 32));
@@ -177,7 +177,8 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
       create_bls_buffer(stmt);
     using Type = OffloadedStmt::TaskType;
     auto offloaded_task_name = init_offloaded_task_function(stmt);
-    if (prog->config.kernel_profiler && arch_is_cpu(prog->config.arch)) {
+    if (prog->this_thread_config().kernel_profiler &&
+        arch_is_cpu(prog->this_thread_config().arch)) {
       call(
           builder.get(), "LLVMRuntime_profiler_start",
           {get_runtime(), builder->CreateGlobalStringPtr(offloaded_task_name)});
@@ -199,7 +200,8 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
     } else {
       TI_NOT_IMPLEMENTED
     }
-    if (prog->config.kernel_profiler && arch_is_cpu(prog->config.arch)) {
+    if (prog->this_thread_config().kernel_profiler &&
+        arch_is_cpu(prog->this_thread_config().arch)) {
       llvm::IRBuilderBase::InsertPointGuard guard(*builder);
       builder->SetInsertPoint(final_block);
       call(builder.get(), "LLVMRuntime_profiler_stop", {get_runtime()});

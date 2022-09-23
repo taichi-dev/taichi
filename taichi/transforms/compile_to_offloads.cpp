@@ -341,6 +341,9 @@ void compile_function(IRNode *ir,
   irpass::type_check(ir, config);
   print("Typechecked");
 
+  irpass::demote_operations(ir, config);
+  print("Operations demoted");
+
   irpass::full_simplify(
       ir, config, {false, autodiff_mode != AutodiffMode::kNone, func->program});
   print("Simplified");

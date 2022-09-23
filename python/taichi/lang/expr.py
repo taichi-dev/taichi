@@ -39,7 +39,7 @@ class Expr(TaichiOperations):
             assert False
         if self.tb:
             self.ptr.set_tb(self.tb)
-        self.ptr.type_check(impl.get_runtime().prog.config)
+        self.ptr.type_check(impl.get_runtime().prog.config())
 
     def __getitem__(self, indices):
         if not isinstance(indices, Iterable):

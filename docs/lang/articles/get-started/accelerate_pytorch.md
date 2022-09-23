@@ -217,7 +217,7 @@ All these features set Taichi apart as a convenient tool for ML operator customi
 
 ## Reference
 
-- [1] [Pure PyTorch padding](https://github.com/ailzhang/blog_code/blob/master/tile/demo_torch.py)
-- [2] [Padding PyTorch tensor in Taichi kernel](https://github.com/ailzhang/blog_code/blob/master/tile/demo_taichi.py)
-- [3] [RWKV-CUDA](https://github.com/BlinkDL/RWKV-CUDA/tree/main/depthwise_conv1d)
-- [4] [RWKV-Taichi ](https://github.com/ailzhang/blog_code/tree/master/rwkv)
+- 1 [Pure PyTorch padding](https://github.com/ailzhang/blog_code/blob/master/tile/demo_torch.py)
+- 2 [Padding PyTorch tensor in Taichi kernel](https://github.com/ailzhang/blog_code/blob/master/tile/demo_taichi.py)
+- 3 [RWKV-CUDA](https://github.com/BlinkDL/RWKV-CUDA/tree/main/depthwise_conv1d)
+- 4 [RWKV-Taichi](https://github.com/ailzhang/blog_code/tree/master/rwkv)

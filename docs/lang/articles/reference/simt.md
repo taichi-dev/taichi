@@ -4,7 +4,7 @@ sidebar_position: 5
 
 # SIMT Intrinsics
 
-For CUDA backend, Taichi now supports warp-level and block-level intrinsics that
+For the CUDA backend, Taichi supports warp-level and block-level intrinsics, which
 are needed for writing high-performance SIMT kernels. You can use them in Taichi
 similar to the [usage in CUDA kernels](https://developer.nvidia.com/blog/using-cuda-warp-level-primitives/). Currently, the following functions are supported:
 

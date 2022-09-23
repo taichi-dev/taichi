@@ -841,7 +841,6 @@ class TaskCodegen : public IRVisitor {
     BINARY_OP_TO_SPIRV_BITWISE(bit_or, OpBitwiseOr)
     BINARY_OP_TO_SPIRV_BITWISE(bit_xor, OpBitwiseXor)
     BINARY_OP_TO_SPIRV_BITWISE(bit_shl, OpShiftLeftLogical)
-    BINARY_OP_TO_SPIRV_BITWISE(bit_shr, OpShiftRightLogical)
     // NOTE: `OpShiftRightArithmetic` will treat the first bit as sign bit even
     // it's the unsigned type
     else if (op_type == BinaryOpType::bit_sar) {

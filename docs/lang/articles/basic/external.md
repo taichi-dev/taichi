@@ -52,7 +52,7 @@ tensor = x.to_torch(device="cuda:0")
 print(tensor.device) # device(type='cuda', index=0)
 ```
 
-Likewise for Paddle, you need to specify the device using `paddle.CPUPlace()` or `paddle.CUDAPlace(n)` where `n` is an optional ID set to 0 by default.
+For Paddle, you need to specify the device by calling `paddle.CPUPlace()` or `paddle.CUDAPlace(n)`, where `n` is an optional ID set to 0 by default.
 
 
 ## External array shapes

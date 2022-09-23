@@ -137,7 +137,7 @@ Texture support in Taichi is implemented in the `ti.types.texture_types` module.
 :::
 
 
-## Complex number arithmetic
+## Complex number operations
 
 Taichi's math module also supports basic complex arithmetic in the form of 2D vectors.
 

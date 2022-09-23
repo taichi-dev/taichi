@@ -97,7 +97,7 @@ As mentioned before, when transferring data between a `ti.field/ti.Vector.field/
     array = field.to_numpy()
     array.shape  # (256, 512, 3)
 
-    field.from_numpy(array)  # the input array must be of shape (256, 512, 3)
+    field.from_numpy(array)  # the input array must in the shape (256, 512, 3)
     ```
 
     An illustration is shown below:

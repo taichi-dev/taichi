@@ -49,9 +49,9 @@ Taichi's math module supplies a few small vector and matrix types:
 
 
 1. `vec2/vec3/vec4` for 2D/3D/4D floating-point vector types.
-- `ivec2/ivec3/ivec4` for 2D/3D/4D integer vector types.
+2. `ivec2/ivec3/ivec4` for 2D/3D/4D integer vector types.
 3. `uvec2/uvec3/uvec4` for 2D/3D/4D unsigned integer vector types.
-- `mat2/mat3/mat4` for 2D/3D/4D floating-point square matrix types.
+4. `mat2/mat3/mat4` for 2D/3D/4D floating-point square matrix types.
 
 
 These vector/matrix types are created with two template functions `ti.types.vector()` and `ti.types.matrix()`. For example, `vec2` is defined in the following way:

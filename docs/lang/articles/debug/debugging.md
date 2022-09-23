@@ -355,7 +355,7 @@ def buggy():
 buggy()
 ```
 
-The code above leads to an unexpected result due to a misuse of Taichi's static typing system. The Taichi compiler should show a warning:
+The code above leads to an unexpected result due to a misuse of Taichi's static typing system. The Taichi compiler shows a warning:
 
 ```
 [W 06/27/20 21:43:51.853] [type_check.cpp:visit@66] [$19] Atomic add (float32 to int32) may lose precision.

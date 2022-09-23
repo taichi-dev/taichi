@@ -195,12 +195,21 @@ class TypeCheck : public IRVisitor {
     if (stmt->is_cast()) {
       stmt->ret_type = stmt->cast_type;
     }
-    if (!is_real(stmt->operand->ret_type)) {
+
+    DataType primitive_dtype = stmt->operand->ret_type.get_element_type();
+    if (!is_real(primitive_dtype)) {
       if (stmt->op_type == UnaryOpType::sqrt ||
           stmt->op_type == UnaryOpType::exp ||
           stmt->op_type == UnaryOpType::log) {
-        cast(stmt->operand, config_.default_fp);
-        stmt->ret_type = config_.default_fp;
+        DataType target_dtype = config_.default_fp;
+        if (stmt->operand->ret_type->is<TensorType>()) {
+          target_dtype = TypeFactory::get_instance().create_tensor_type(
+              stmt->operand->ret_type->as<TensorType>()->get_shape(),
+              target_dtype);
+        }
+
+        cast(stmt->operand, target_dtype);
+        stmt->ret_type = target_dtype;
       }
     }
   }

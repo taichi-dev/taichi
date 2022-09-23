@@ -773,7 +773,11 @@ VulkanCommandList::VulkanCommandList(VulkanDevice *ti_device,
     : ti_device_(ti_device),
       stream_(stream),
       device_(ti_device->vk_device()),
+#if !defined(__APPLE__)
       query_pool_(vkapi::create_query_pool(ti_device->vk_device())),
+#else
+      query_pool_(),
+#endif
       buffer_(buffer) {
   VkCommandBufferBeginInfo info{};
   info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;

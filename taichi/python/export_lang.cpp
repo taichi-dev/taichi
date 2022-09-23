@@ -166,6 +166,8 @@ void export_lang(py::module &m) {
       .def_readwrite("lower_access", &CompileConfig::lower_access)
       .def_readwrite("move_loop_invariant_outside_if",
                      &CompileConfig::move_loop_invariant_outside_if)
+      .def_readwrite("cache_loop_invariant_global_vars",
+                     &CompileConfig::cache_loop_invariant_global_vars)
       .def_readwrite("default_cpu_block_dim",
                      &CompileConfig::default_cpu_block_dim)
       .def_readwrite("cpu_block_dim_adaptive",
@@ -328,7 +330,8 @@ void export_lang(py::module &m) {
 
   py::class_<Program>(m, "Program")
       .def(py::init<>())
-      .def_readonly("config", &Program::config)
+      .def("config", &Program::this_thread_config,
+           py::return_value_policy::reference)
       .def("sync_kernel_profiler",
            [](Program *program) { program->profiler->sync(); })
       .def("update_kernel_profiler",
@@ -395,7 +398,7 @@ void export_lang(py::module &m) {
       .def("create_sparse_matrix_builder",
            [](Program *program, int n, int m, uint64 max_num_entries,
               DataType dtype, const std::string &storage_format) {
-             TI_ERROR_IF(!arch_is_cpu(program->config.arch),
+             TI_ERROR_IF(!arch_is_cpu(program->this_thread_config().arch),
                          "SparseMatrix Builder only supports CPU for now.");
              return SparseMatrixBuilder(n, m, max_num_entries, dtype,
                                         storage_format);
@@ -403,18 +406,18 @@ void export_lang(py::module &m) {
       .def("create_sparse_matrix",
            [](Program *program, int n, int m, DataType dtype,
               std::string storage_format) {
-             TI_ERROR_IF(!arch_is_cpu(program->config.arch) &&
-                             !arch_is_cuda(program->config.arch),
+             TI_ERROR_IF(!arch_is_cpu(program->this_thread_config().arch) &&
+                             !arch_is_cuda(program->this_thread_config().arch),
                          "SparseMatrix only supports CPU and CUDA for now.");
-             if (arch_is_cpu(program->config.arch))
+             if (arch_is_cpu(program->this_thread_config().arch))
                return make_sparse_matrix(n, m, dtype, storage_format);
              else
                return make_cu_sparse_matrix(n, m, dtype);
            })
       .def("make_sparse_matrix_from_ndarray",
            [](Program *program, SparseMatrix &sm, const Ndarray &ndarray) {
-             TI_ERROR_IF(!arch_is_cpu(program->config.arch) &&
-                             !arch_is_cuda(program->config.arch),
+             TI_ERROR_IF(!arch_is_cpu(program->this_thread_config().arch) &&
+                             !arch_is_cuda(program->this_thread_config().arch),
                          "SparseMatrix only supports CPU and CUDA for now.");
              return make_sparse_matrix_from_ndarray(program, sm, ndarray);
            })
@@ -422,7 +425,7 @@ void export_lang(py::module &m) {
            [](Program *program, CuSparseMatrix &sm, const Ndarray &row_coo,
               const Ndarray &col_coo, const Ndarray &val_coo) {
              TI_ERROR_IF(
-                 !arch_is_cuda(program->config.arch),
+                 !arch_is_cuda(program->this_thread_config().arch),
                  "SparseMatrix based on GPU only supports CUDA for now.");
              return make_sparse_matrix_from_ndarray_cusparse(
                  program, sm, row_coo, col_coo, val_coo);
@@ -1220,7 +1223,15 @@ void export_lang(py::module &m) {
 
   py::class_<CuSparseMatrix, SparseMatrix>(m, "CuSparseMatrix")
       .def(py::init<int, int, DataType>())
-      .def("spmv", &CuSparseMatrix::spmv);
+      .def(py::init<const CuSparseMatrix &>())
+      .def("spmv", &CuSparseMatrix::spmv)
+      .def(py::self + py::self)
+      .def(py::self - py::self)
+      .def(py::self * float32())
+      .def(float32() * py::self)
+      .def("matmul", &CuSparseMatrix::matmul)
+      .def("transpose", &CuSparseMatrix::transpose)
+      .def("to_string", &CuSparseMatrix::to_string);
 
   py::class_<SparseSolver>(m, "SparseSolver")
       .def("compute", &SparseSolver::compute)

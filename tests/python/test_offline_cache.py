@@ -18,7 +18,9 @@ from tests import test_utils
 OFFLINE_CACHE_TEMP_DIR = mkdtemp()
 atexit.register(lambda: rmdir(OFFLINE_CACHE_TEMP_DIR))
 
-supported_archs_offline_cache = [ti.cpu, ti.cuda, ti.vulkan]
+supported_llvm_archs = {ti.cpu, ti.cuda}
+supported_gfx_archs = {ti.opengl, ti.vulkan}
+supported_archs_offline_cache = supported_llvm_archs | supported_gfx_archs
 supported_archs_offline_cache = [
     v for v in supported_archs_offline_cache
     if v in test_utils.expected_archs()
@@ -40,12 +42,19 @@ def cache_files_size(path):
 
 
 def expected_num_cache_files(arch, num_offloads: List[int] = None) -> int:
+    assert arch in supported_archs_offline_cache
     if not num_offloads:
         return 0
-    result = sum(num_offloads) if arch in [ti.vulkan] else len(num_offloads)
-    if arch in [ti.cpu, ti.cuda]:
+    result = 0
+    # code files
+    if arch in supported_llvm_archs:
+        result += len(num_offloads)
+    elif arch in supported_gfx_archs:
+        result += sum(num_offloads)
+    # metadata files
+    if arch in supported_llvm_archs:
         result += 2  # metadata.{json, tcb}
-    elif arch in [ti.vulkan]:
+    elif arch in supported_gfx_archs:
         # metadata.{json, tcb}, graphs.tcb, offline_cache_metadata.tcb
         result += 4
     return result
@@ -56,9 +65,9 @@ def tmp_offline_cache_file_path():
 
 
 def backend_specified_cache_path(arch):
-    if arch in [ti.cpu, ti.cuda]:
+    if arch in supported_llvm_archs:
         return join(tmp_offline_cache_file_path(), 'llvm')
-    elif arch in [ti.vulkan]:
+    elif arch in supported_gfx_archs:
         return join(tmp_offline_cache_file_path(), 'gfx')
     assert False
 

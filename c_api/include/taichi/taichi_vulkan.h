@@ -8,6 +8,7 @@ extern "C" {
 
 // structure.vulkan_runtime_interop_info
 typedef struct TiVulkanRuntimeInteropInfo {
+  PFN_vkGetInstanceProcAddr get_instance_proc_addr;
   uint32_t api_version;
   VkInstance instance;
   VkPhysicalDevice physical_device;

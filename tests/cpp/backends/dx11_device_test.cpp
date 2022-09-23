@@ -147,7 +147,7 @@ TEST(Dx11ProgramTest, MaterializeRuntimeTest) {
   auto *lhs = builder.get_int32(42);
 
   auto block = builder.extract_ir();
-  test_prog.prog()->config.arch = Arch::dx11;
+  test_prog.prog()->this_thread_config().arch = Arch::dx11;
   auto ker = std::make_unique<Kernel>(*test_prog.prog(), std::move(block));
   program->compile(ker.get(), nullptr);
 }

@@ -57,6 +57,9 @@ void compile_to_offloads(IRNode *ir,
     print("Scalarized");
   }
 
+  irpass::lower_matrix_ptr(ir);
+  print("Matrix ptr lowered");
+
   irpass::type_check(ir, config);
   print("Typechecked");
   irpass::analysis::verify(ir);
@@ -183,6 +186,10 @@ void offload_to_executable(IRNode *ir,
   irpass::demote_atomics(ir, config);
   print("Atomics demoted I");
   irpass::analysis::verify(ir);
+  if (config.cache_loop_invariant_global_vars) {
+    irpass::cache_loop_invariant_global_vars(ir, config);
+    print("Cache loop-invariant global vars");
+  }
 
   if (config.demote_dense_struct_fors) {
     irpass::demote_dense_struct_fors(ir, config.packed);
@@ -243,6 +250,9 @@ void offload_to_executable(IRNode *ir,
   irpass::analysis::verify(ir);
 
   if (lower_global_access) {
+    irpass::full_simplify(ir, config,
+                          {false, /*autodiff_enabled*/ false, kernel->program});
+    print("Simplified before lower access");
     irpass::lower_access(ir, config, {kernel->no_activate, true});
     print("Access lowered");
     irpass::analysis::verify(ir);
@@ -323,11 +333,6 @@ void compile_function(IRNode *ir,
     print("Lowered");
   }
 
-  if (config.real_matrix && config.real_matrix_scalarize) {
-    irpass::scalarize(ir);
-    print("Scalarized");
-  }
-
   irpass::lower_access(ir, config, {{}, true});
   print("Access lowered");
   irpass::analysis::verify(ir);
@@ -342,6 +347,9 @@ void compile_function(IRNode *ir,
 
   irpass::type_check(ir, config);
   print("Typechecked");
+
+  irpass::demote_operations(ir, config);
+  print("Operations demoted");
 
   irpass::full_simplify(
       ir, config, {false, autodiff_mode != AutodiffMode::kNone, func->program});

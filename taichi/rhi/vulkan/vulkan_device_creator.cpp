@@ -267,7 +267,10 @@ void VulkanDeviceCreator::create_instance(bool manual_create) {
 
   if (params_.enable_validation_layer) {
     if (!check_validation_layer_support()) {
-      TI_WARN("validation layers requested but not available, turning off...");
+      TI_WARN(
+          "Validation layers requested but not available, turning off... "
+          "Please make sure Vulkan SDK from https://vulkan.lunarg.com/sdk/home "
+          "is installed.");
       params_.enable_validation_layer = false;
     }
   }
@@ -540,7 +543,10 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
       enabled_extensions.push_back(ext.extensionName);
     } else if (name == VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME) {
       enabled_extensions.push_back(ext.extensionName);
-    } else if (name == VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME) {
+    } else if (name == VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME &&
+               params_.enable_validation_layer) {
+      // VK_KHR_shader_non_semantic_info isn't supported on molten-vk.
+      // Tracking issue: https://github.com/KhronosGroup/MoltenVK/issues/1214
       ti_device_->set_cap(DeviceCapability::spirv_has_non_semantic_info, true);
       enabled_extensions.push_back(ext.extensionName);
     } else if (std::find(params_.additional_device_extensions.begin(),

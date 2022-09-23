@@ -518,7 +518,7 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
       init_offloaded_task_function(stmt, "gather_list");
       call("gc_parallel_0", get_context(), snode_id);
       finalize_offloaded_task_function();
-      current_task->grid_dim = prog->config.saturating_grid_dim;
+      current_task->grid_dim = prog->this_thread_config().saturating_grid_dim;
       current_task->block_dim = 64;
       offloaded_tasks.push_back(*current_task);
       current_task = nullptr;
@@ -536,7 +536,7 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
       init_offloaded_task_function(stmt, "zero_fill");
       call("gc_parallel_2", get_context(), snode_id);
       finalize_offloaded_task_function();
-      current_task->grid_dim = prog->config.saturating_grid_dim;
+      current_task->grid_dim = prog->this_thread_config().saturating_grid_dim;
       current_task->block_dim = 64;
       offloaded_tasks.push_back(*current_task);
       current_task = nullptr;

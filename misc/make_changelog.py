@@ -35,8 +35,8 @@ def main(ver=None, repo_dir='.'):
     # everything after this commit should be listed in the changelog.
 
     base_commit = find_latest_tag_commit(g.tags)
-    commits_in_base_tag = list(g.iter_commits(base_commit, max_count=200))
-    commits = list(g.iter_commits(ver, max_count=200))
+    commits_in_base_tag = list(g.iter_commits(base_commit, max_count=500))
+    commits = list(g.iter_commits(ver, max_count=500))
     begin, end = -1, 0
 
     def format(c):

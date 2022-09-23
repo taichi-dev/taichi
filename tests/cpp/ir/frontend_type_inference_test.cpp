@@ -3,6 +3,7 @@
 #include "taichi/ir/frontend_ir.h"
 #include "taichi/program/program.h"
 #include "taichi/ir/expression_ops.h"
+#include "taichi/program/compile_config.h"
 
 namespace taichi {
 namespace lang {
@@ -38,30 +39,32 @@ TEST(FrontendTypeInference, Id) {
 
 TEST(FrontendTypeInference, BinaryOp) {
   auto prog = std::make_unique<Program>(Arch::x64);
-  prog->config.default_fp = PrimitiveType::f64;
+  prog->this_thread_config().default_fp = PrimitiveType::f64;
   auto const_i32 = value<int32>(-(1 << 20));
   const_i32->type_check(nullptr);
   auto const_f32 = value<float32>(5.0);
   const_f32->type_check(nullptr);
   auto truediv_f64 = expr_truediv(const_i32, const_f32);
-  truediv_f64->type_check(&prog->config);
+  truediv_f64->type_check(&prog->this_thread_config());
   EXPECT_EQ(truediv_f64->ret_type, PrimitiveType::f64);
 }
 
 TEST(FrontendTypeInference, UnaryOp) {
   auto prog = std::make_unique<Program>(Arch::x64);
-  prog->config.default_fp = PrimitiveType::f64;
+  prog->this_thread_config().default_fp = PrimitiveType::f64;
   auto const_i16 = value<int16>(-(1 << 10));
+
+  CompileConfig dummy_config;
   const_i16->type_check(nullptr);
   EXPECT_EQ(const_i16->ret_type, PrimitiveType::i16);
   auto cast_i8 = cast(const_i16, PrimitiveType::i8);
-  cast_i8->type_check(nullptr);
+  cast_i8->type_check(&dummy_config);
   EXPECT_EQ(cast_i8->ret_type, PrimitiveType::i8);
   auto bit_not_i16 = ~const_i16;
-  bit_not_i16->type_check(nullptr);
+  bit_not_i16->type_check(&dummy_config);
   EXPECT_EQ(bit_not_i16->ret_type, PrimitiveType::i16);
   auto log_f64 = expr_log(const_i16);
-  log_f64->type_check(&prog->config);
+  log_f64->type_check(&prog->this_thread_config());
   EXPECT_EQ(log_f64->ret_type, PrimitiveType::f64);
 }
 
@@ -70,8 +73,11 @@ TEST(FrontendTypeInference, TernaryOp) {
   const_i32->type_check(nullptr);
   EXPECT_EQ(const_i32->ret_type, PrimitiveType::i32);
   auto cast_i8 = cast(const_i32, PrimitiveType::i8);
-  cast_i8->type_check(nullptr);
+
+  CompileConfig dummy_config;
+  cast_i8->type_check(&dummy_config);
   EXPECT_EQ(cast_i8->ret_type, PrimitiveType::i8);
+
   auto const_f32 = value<float32>(5.0);
   const_f32->type_check(nullptr);
   EXPECT_EQ(const_f32->ret_type, PrimitiveType::f32);

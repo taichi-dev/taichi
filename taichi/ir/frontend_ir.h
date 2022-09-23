@@ -516,8 +516,6 @@ class FieldExpression : public Expression {
     this->snode = snode;
   }
 
-  void flatten(FlattenContext *ctx) override;
-
   TI_DEFINE_ACCEPT_FOR_EXPRESSION
 };
 
@@ -577,8 +575,8 @@ class MatrixExpression : public Expression {
 
 class IndexExpression : public Expression {
  public:
-  // `var` is one of FieldExpression, ExternalTensorExpression,
-  // IdExpression
+  // `var` is one of FieldExpression, MatrixFieldExpression,
+  // ExternalTensorExpression, IdExpression
   Expr var;
   ExprGroup indices;
 
@@ -606,6 +604,7 @@ class IndexExpression : public Expression {
 
  private:
   bool is_field() const;
+  bool is_matrix_field() const;
   bool is_ndarray() const;
   bool is_tensor() const;
 };

@@ -204,6 +204,10 @@ def subscript(value, *_indices, skip_reordered=False, get_ref=False):
                 f'Field with dim {field_dim} accessed with indices of dim {index_dim}'
             )
         if isinstance(value, MatrixField):
+            if current_cfg().real_matrix:
+                return Expr(
+                    _ti_core.subscript(value.ptr, indices_expr_group,
+                                       get_runtime().get_current_src_info()))
             return _MatrixFieldElement(value, indices_expr_group)
         if isinstance(value, StructField):
             entries = {k: subscript(v, *_indices) for k, v in value._items}
@@ -332,8 +336,8 @@ class PyTaichi:
             # https://github.com/taichi-dev/taichi/blob/27bb1dc3227d9273a79fcb318fdb06fd053068f5/tests/python/test_ad_basics.py#L260-L266
             return
 
-        if get_runtime().prog.config.debug and get_runtime(
-        ).prog.config.validate_autodiff:
+        if get_runtime().prog.config().debug and get_runtime().prog.config(
+        ).validate_autodiff:
             if not root.finalized:
                 root._allocate_adjoint_checkbit()
 
@@ -623,11 +627,11 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
         if needs_grad:
             pytaichi.grad_vars.append(x_grad)
 
-        if prog.config.debug and prog.config.validate_autodiff:
+        if prog.config().debug and prog.config().validate_autodiff:
             # adjoint checkbit
             x_grad_checkbit = Expr(get_runtime().prog.make_id_expr(""))
             dtype = u8
-            if prog.config.arch in (_ti_core.opengl, _ti_core.vulkan):
+            if prog.config().arch in (_ti_core.opengl, _ti_core.vulkan):
                 dtype = i32
             x_grad_checkbit.ptr = _ti_core.expr_field(x_grad_checkbit.ptr,
                                                       cook_dtype(dtype))
@@ -1056,7 +1060,7 @@ def stop_grad(x):
 
 
 def current_cfg():
-    return get_runtime().prog.config
+    return get_runtime().prog.config()
 
 
 def default_cfg():

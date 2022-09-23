@@ -355,7 +355,7 @@ Unmap an on-device memory and make any host-side changes about the memory visibl
 
 `function.create_event`
 
-Create an event primitive.
+Creates an event primitive.
 
 `function.destroy_event`
 

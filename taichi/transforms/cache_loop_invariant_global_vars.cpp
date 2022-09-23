@@ -12,7 +12,6 @@ class CacheLoopInvariantGlobalVars : public LoopInvariantDetector {
     Read = 1,
     Write = 2,
     ReadWrite = 3,
-    HasAtomic = 4
   };
 
   typedef std::unordered_map<Stmt *,
@@ -97,9 +96,6 @@ class CacheLoopInvariantGlobalVars : public LoopInvariantDetector {
 
     for (auto &[dest, status_vec] : cached_maps.top()) {
       auto &[status, vec] = status_vec;
-      if (status == CacheStatus::HasAtomic) {
-        continue;
-      }
       auto alloca_unique =
           std::make_unique<AllocaStmt>(dest->ret_type.ptr_removed());
       auto alloca_stmt = alloca_unique.get();

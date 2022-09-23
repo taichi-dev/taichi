@@ -16,7 +16,7 @@ using namespace lang;
 [[maybe_unused]] static void aot_save() {
   auto program = Program(Arch::dx12);
 
-  program.config.advanced_optimization = false;
+  program.this_thread_config().advanced_optimization = false;
 
   int n = 10;
 

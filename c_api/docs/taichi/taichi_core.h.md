@@ -38,7 +38,9 @@ To work with Taichi, you first create an runtime instance. You SHOULD only creat
 TiRuntime runtime = ti_create_runtime(TI_ARCH_VULKAN);
 ```
 
-When your program reaches the end, you SHOULD destroy the runtime instance. Please ensure any other related resources have been destroyed before the `handle.runtime` itself.
+When your program runs to the end, ensure that:
+- You destroy the runtime instance,
+- All related resources are destroyed before the `handle.runtime` itself.
 
 ```cpp
 ti_destroy_runtime(runtime);

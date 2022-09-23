@@ -178,7 +178,7 @@ The code snippet above raises a `TaichiAssertionError`, indicating that you are 
 :::note
 Automatic bound checks are supported on the CPU and CUDA beckends only.
 
-Your program performance may worsen if you set `debug=True`. 
+Your program performance may worsen if you set `debug=True`.
 :::
 
 ## Runtime `assert` in Taichi scope

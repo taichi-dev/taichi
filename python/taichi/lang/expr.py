@@ -1,5 +1,3 @@
-from typing import Iterable
-
 import numpy as np
 from taichi._lib import core as _ti_core
 from taichi.lang import impl
@@ -40,11 +38,6 @@ class Expr(TaichiOperations):
         if self.tb:
             self.ptr.set_tb(self.tb)
         self.ptr.type_check(impl.get_runtime().prog.config())
-
-    def __getitem__(self, indices):
-        if not isinstance(indices, Iterable):
-            indices = (indices, )
-        return impl.subscript(self, *indices)
 
     def is_tensor(self):
         return self.ptr.is_tensor()

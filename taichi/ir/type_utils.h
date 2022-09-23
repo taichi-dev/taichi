@@ -185,19 +185,6 @@ inline TypedConstant get_min_value(DataType dt) {
   }
 }
 
-#define DEFINE_TENSOR_CHECK(func_name)                   \
-  inline bool func_name##_tensor(DataType dt) {          \
-    if (auto tensor_type = dt->cast<TensorType>()) {     \
-      return func_name(tensor_type->get_element_type()); \
-    }                                                    \
-    return false;                                        \
-  }
-
-DEFINE_TENSOR_CHECK(is_quant);
-DEFINE_TENSOR_CHECK(is_real);
-DEFINE_TENSOR_CHECK(is_integral);
-DEFINE_TENSOR_CHECK(is_signed);
-
 class BitStructTypeBuilder {
  public:
   explicit BitStructTypeBuilder(int max_num_bits) {

@@ -277,9 +277,8 @@ void BinaryOpExpression::type_check(CompileConfig *config) {
     }
   };
 
-  if (binary_is_bitwise(type) &&
-      (!is_integral(lhs_type) || !is_integral(rhs_type)) &&
-      (!is_integral_tensor(lhs_type) || !is_integral_tensor(rhs_type)))
+  if (binary_is_bitwise(type) && (!is_integral(lhs_type.get_element_type()) ||
+                                  !is_integral(rhs_type.get_element_type())))
     error();
   if (binary_is_logical(type) &&
       (lhs_type != PrimitiveType::i32 || rhs_type != PrimitiveType::i32) &&
@@ -311,10 +310,10 @@ void BinaryOpExpression::type_check(CompileConfig *config) {
 
   if (type == BinaryOpType::truediv) {
     auto default_fp = config->default_fp;
-    if (!is_real(lhs_type) || !is_real_tensor(lhs_type)) {
+    if (!is_real(lhs_type.get_element_type())) {
       lhs_type = make_dt(default_fp);
     }
-    if (!is_real(rhs_type) || !is_real_tensor(rhs_type)) {
+    if (!is_real(rhs_type.get_element_type())) {
       rhs_type = make_dt(default_fp);
     }
   }

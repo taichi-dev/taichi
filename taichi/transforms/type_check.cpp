@@ -286,8 +286,7 @@ class TypeCheck : public IRVisitor {
         stmt->rhs->ret_type->is_primitive(PrimitiveTypeID::unknown))
       error();
     if (stmt->op_type == BinaryOpType::pow &&
-        (is_integral(stmt->rhs->ret_type) ||
-         is_integral_tensor(stmt->rhs->ret_type))) {
+        (is_integral(stmt->rhs->ret_type.get_element_type()))) {
       stmt->ret_type = stmt->lhs->ret_type;
       return;
     }
@@ -304,12 +303,10 @@ class TypeCheck : public IRVisitor {
 
     if (stmt->op_type == BinaryOpType::truediv) {
       auto default_fp = config_.default_fp;
-      if (!is_real(stmt->lhs->ret_type) ||
-          !is_real_tensor(stmt->lhs->ret_type)) {
+      if (!is_real(stmt->lhs->ret_type.get_element_type())) {
         cast(stmt->lhs, make_dt(default_fp));
       }
-      if (!is_real(stmt->rhs->ret_type) ||
-          !is_real_tensor(stmt->rhs->ret_type)) {
+      if (!is_real(stmt->rhs->ret_type.get_element_type())) {
         cast(stmt->rhs, make_dt(default_fp));
       }
       stmt->op_type = BinaryOpType::div;

@@ -127,8 +127,8 @@ class DemoteOperations : public BasicStmtVisitor {
         modifier.erase(stmt);
       } else if (lhs->ret_type->is<TensorType>() &&
                  rhs->ret_type->is<TensorType>()) {
-        bool use_integral = is_integral_tensor(lhs->ret_type) &&
-                            is_integral_tensor(rhs->ret_type);
+        bool use_integral = is_integral(lhs->ret_type.get_element_type()) &&
+                            is_integral(rhs->ret_type.get_element_type());
         std::vector<Stmt *> ret_stmts;
         auto lhs_tensor_ty = lhs->ret_type->cast<TensorType>();
         auto rhs_tensor_ty = rhs->ret_type->cast<TensorType>();

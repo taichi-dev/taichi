@@ -226,6 +226,14 @@ A synchronization primitive to manage on-device execution flows in multiple queu
 
 A contiguous allocation of on-device memory.
 
+`handle.image`
+
+A contiguous allocation of on-device image.
+
+`handle.sampler`
+
+An image sampler. `definition.null_handle` represents a default image sampler provided by the runtime implementation. The filter modes, address modes of default samplers depends on backend implementation.
+
 `handle.kernel`
 
 A Taichi kernel that can be launched on device for execution.
@@ -233,6 +241,22 @@ A Taichi kernel that can be launched on device for execution.
 `handle.compute_graph`
 
 A collection of Taichi kernels (a compute graph) to launch on device in a predefined order.
+
+`enumeration.error`
+
+Errors reported by the Taichi C-API.
+
+- `enumeration.error.incomplete`: The output data is truncated because the user-provided buffer is too small.
+- `enumeration.error.success`: The Taichi C-API invocation finished gracefully.
+- `enumeration.error.not_supported`: The invoked API, or the combination of parameters is not supported by the Taichi C-API.
+- `enumeration.error.corrupted_data`: Provided data is corrupted.
+- `enumeration.error.name_not_found`: Provided name does not refer to any existing item.
+- `enumeration.error.invalid_argument`: One or more function arguments violate constraints specified in C-API documents; or kernel arguments mismatch the kernel argument list defined in the AOT module.
+- `enumeration.error.argument_null`: One or more by-reference (pointer) function arguments point to null.
+- `enumeration.error.argument_out_of_range`: One or more function arguments are out of its acceptable range; or enumeration arguments have undefined value.
+- `enumeration.error.argument_not_found`: One or more kernel arguments are missing.
+- `enumeration.error.invalid_interop`: The intended interoperation is not possible on the current arch. For example, attempts to export a Vulkan object from a CUDA runtime is not allowed.
+- `enumeration.error.invalid_state`: The Taichi C-API enters an unrecoverable invalid state. Related Taichi objects are potentially corrupted. The users *should* release the contaminated resources for stability. Please feel free to file an issue if you encountered this error in a normal routine.
 
 `enumeration.arch`
 
@@ -271,7 +295,7 @@ Types of kernel and compute graph argument.
 
 Usages of a memory allocation.
 
-- `bit_field.memory_usage.storage`: The memory can be read/write accessed by any shader, you usually only need to set this flag.
+- `bit_field.memory_usage.storage`: The memory can be read/write accessed by any kernel. In most of the cases, the users only need to set this flag.
 - `bit_field.memory_usage.uniform`: The memory can be used as a uniform buffer in graphics pipelines.
 - `bit_field.memory_usage.vertex`: The memory can be used as a vertex buffer in graphics pipelines.
 - `bit_field.memory_usage.index`: The memory can be used as a index buffer in graphics pipelines.
@@ -306,8 +330,8 @@ Multi-dimensional size of an ND-array. Dimension sizes after `structure.nd_shape
 Multi-dimentional array of dense primitive data.
 
 - `structure.nd_array.memory`: Memory bound to the ND-array.
-- `structure.nd_array.shape`: Shape of the ND-array.
-- `structure.nd_array.elem_shape`: Shape of the ND-array elements. You usually need to set this if it's a vector or matrix ND-array.
+- `structure.nd_array.shape`: Shape of the ND-array. 
+- `structure.nd_array.elem_shape`: Shape of the ND-array elements. It *must not* be empty for vector or matrix ND-arrays.
 - `structure.nd_array.elem_type`: Primitive data type of the ND-array elements.
 
 `union.argument_value`

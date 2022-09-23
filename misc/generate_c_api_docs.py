@@ -188,6 +188,17 @@ if __name__ == "__main__":
         BuiltInType("VkBuffer", "VkBuffer"),
         BuiltInType("VkBufferUsageFlags", "VkBufferUsageFlags"),
         BuiltInType("VkEvent", "VkEvent"),
+        BuiltInType("VkImage", "VkImage"),
+        BuiltInType("VkImageType", "VkImageType"),
+        BuiltInType("VkFormat", "VkFormat"),
+        BuiltInType("VkExtent3D", "VkExtent3D"),
+        BuiltInType("VkSampleCountFlagBits", "VkSampleCountFlagBits"),
+        BuiltInType("VkImageTiling", "VkImageTiling"),
+        BuiltInType("VkImageLayout", "VkImageLayout"),
+        BuiltInType("VkImageUsageFlags", "VkImageUsageFlags"),
+        BuiltInType("VkImageViewType", "VkImageViewType"),
+        BuiltInType("PFN_vkGetInstanceProcAddr", "PFN_vkGetInstanceProcAddr"),
+        BuiltInType("char", "char"),
     }
 
     for module in Module.load_all(builtin_tys):

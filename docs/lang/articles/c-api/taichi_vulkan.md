@@ -13,6 +13,7 @@ Taichi's Vulkan API gives you further control over Vulkan version and extension 
 ```c
 // structure.vulkan_runtime_interop_info
 typedef struct TiVulkanRuntimeInteropInfo {
+  PFN_vkGetInstanceProcAddr get_instance_proc_addr;
   uint32_t api_version;
   VkInstance instance;
   VkPhysicalDevice physical_device;
@@ -55,6 +56,23 @@ Necessary detail to share a same piece of Vulkan buffer between Taichi and user 
 - `size`: Size of the piece of memory in bytes.
 - `size`: Vulkan buffer usage. You usually want the `VK_BUFFER_USAGE_STORAGE_BUFFER_BIT` set.
 
+---
+### Structure `TiVulkanImageInteropInfo`
+
+```c
+// structure.vulkan_image_interop_info
+typedef struct TiVulkanImageInteropInfo {
+  VkImage image;
+  VkImageType image_type;
+  VkFormat format;
+  VkExtent3D extent;
+  uint32_t mip_level_count;
+  uint32_t array_layer_count;
+  VkSampleCountFlagBits sample_count;
+  VkImageTiling tiling;
+  VkImageUsageFlags usage;
+} TiVulkanImageInteropInfo;
+```
 ---
 ### Structure `TiVulkanEventInteropInfo`
 
@@ -137,6 +155,29 @@ TI_DLL_EXPORT void TI_API_CALL ti_export_vulkan_memory(
 
 Export a Vulkan buffer from external user applications to Taichi.
 
+---
+### Function `ti_import_vulkan_image`
+
+```c
+// function.import_vulkan_image
+TI_DLL_EXPORT TiImage TI_API_CALL ti_import_vulkan_image(
+  TiRuntime runtime,
+  const TiVulkanImageInteropInfo* interop_info,
+  VkImageViewType view_type,
+  VkImageLayout layout
+);
+```
+---
+### Function `ti_export_vulkan_image`
+
+```c
+// function.export_vulkan_image
+TI_DLL_EXPORT void TI_API_CALL ti_export_vulkan_image(
+  TiRuntime runtime,
+  TiImage image,
+  TiVulkanImageInteropInfo* interop_info
+);
+```
 ---
 ### Function `ti_import_vulkan_event`
 

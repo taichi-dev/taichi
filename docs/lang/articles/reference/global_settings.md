@@ -95,7 +95,7 @@ Below are some most frequently used configurations you can set with the `ti.init
 ```
 
 
-**Customize via environment variables**
+**Customize `ti.init()` via environment variables**
 
 Below are some environment variables that you can set to customize your Taichi program, they overlap but are not in one-to-one correspondence with the `ti.init()` arguments listed above:
 

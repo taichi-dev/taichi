@@ -5,7 +5,7 @@ sidebar_position: 3
 # Global Settings
 
 
-The call `ti.init()` is indispensable in every Taichi program. It allows you to customize your Taichi runtime by passing arguments to it or setting environment variables. Each argument or environment variable controls one specific behavior of the Taichi runtime. For example, the argument `arch` specifies the backend, and the argument `debug` decides whether to run the program in debug mode. The document [Hello, World!](../get-started/index.md) gives a brief introduction to this function, and this document provides more details.
+The call `ti.init()` is indispensable in every Taichi program. Taichi allows you to customize your Taichi runtime by passing arguments to `ti.init()` or setting environment variables. Each argument or environment variable controls one specific behavior of the Taichi runtime. For example, the argument `arch` specifies the backend, and the argument `debug` decides whether to run the program in debug mode. The document [Hello, World!](../get-started/index.md) gives a brief introduction to this function, and this document provides more details.
 
 Generally, when calling `ti.init()`, Taichi executes the following steps to initialize a specific configuration. We use the `arch` argument as an example:
 

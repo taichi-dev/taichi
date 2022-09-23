@@ -93,7 +93,10 @@ class Memory {
         should_destroy_(std::exchange(b.should_destroy_, false)) {
   }
   Memory(TiRuntime runtime, TiMemory memory, size_t size, bool should_destroy)
-      : runtime_(runtime), memory_(memory), size_(size), should_destroy_(should_destroy) {
+      : runtime_(runtime),
+        memory_(memory),
+        size_(size),
+        should_destroy_(should_destroy) {
   }
   ~Memory() {
     destroy();
@@ -109,7 +112,7 @@ class Memory {
     return *this;
   }
 
-  void* map() const {
+  void *map() const {
     return ti_map_memory(runtime_, memory_);
   }
   void unmap() const {
@@ -159,10 +162,9 @@ class NdArray {
   }
   NdArray(const NdArray<T> &) = delete;
   NdArray(NdArray<T> &&b)
-      : memory_(std::move(b.memory_)),
-        ndarray_(std::exchange(b.ndarray_, {})) {
+      : memory_(std::move(b.memory_)), ndarray_(std::exchange(b.ndarray_, {})) {
   }
-  NdArray(Memory&& memory, const TiNdArray &ndarray)
+  NdArray(Memory &&memory, const TiNdArray &ndarray)
       : memory_(std::move(memory)), ndarray_(ndarray) {
     if (ndarray.memory != memory_) {
       ti_set_last_error(TI_ERROR_INVALID_ARGUMENT, "ndarray.memory != memory");
@@ -193,10 +195,11 @@ class NdArray {
   inline void read(std::vector<T> &dst) const {
     read(dst.data(), dst.size() * sizeof(T));
   }
-  template<typename U>
+  template <typename U>
   inline void read(std::vector<U> &dst) const {
-    static_assert(sizeof(U) % sizeof(T) == 0, "sizeof(U) must be a multiple of sizeof(T)");
-    read((T*)dst.data(), dst.size() * sizeof(U));
+    static_assert(sizeof(U) % sizeof(T) == 0,
+                  "sizeof(U) must be a multiple of sizeof(T)");
+    read((T *)dst.data(), dst.size() * sizeof(U));
   }
   inline void write(const T *src, size_t size) const {
     memory_.write(src, size);
@@ -204,25 +207,26 @@ class NdArray {
   inline void write(const std::vector<T> &src) const {
     write(src.data(), src.size() * sizeof(T));
   }
-  template<typename U>
+  template <typename U>
   inline void write(const std::vector<U> &src) const {
-    static_assert(sizeof(U) % sizeof(T) == 0, "sizeof(U) must be a multiple of sizeof(T)");
-    write((const T*)src.data(), src.size() * sizeof(U));
+    static_assert(sizeof(U) % sizeof(T) == 0,
+                  "sizeof(U) must be a multiple of sizeof(T)");
+    write((const T *)src.data(), src.size() * sizeof(U));
   }
 
   constexpr TiDataType elem_type() const {
     return ndarray_.elem_type;
   }
-  constexpr const TiNdShape& shape() const {
+  constexpr const TiNdShape &shape() const {
     return ndarray_.shape;
   }
-  constexpr const TiNdShape& elem_shape() const {
+  constexpr const TiNdShape &elem_shape() const {
     return ndarray_.elem_shape;
   }
-  constexpr const Memory& memory() const {
+  constexpr const Memory &memory() const {
     return memory_;
   }
-  constexpr const TiNdArray& ndarray() const {
+  constexpr const TiNdArray &ndarray() const {
     return ndarray_;
   }
   constexpr operator TiNdArray() const {
@@ -326,7 +330,7 @@ class Texture {
     return *this;
   }
 
-  constexpr const Image& image() const {
+  constexpr const Image &image() const {
     return image_;
   }
   constexpr TiTexture texture() const {
@@ -661,8 +665,7 @@ class Runtime {
         should_destroy_(std::exchange(b.should_destroy_, false)) {
   }
   Runtime(TiArch arch)
-      : arch_(arch),
-        runtime_(ti_create_runtime(arch)), should_destroy_(true) {
+      : arch_(arch), runtime_(ti_create_runtime(arch)), should_destroy_(true) {
   }
   Runtime(TiArch arch, TiRuntime runtime, bool should_destroy)
       : arch_(arch), runtime_(runtime), should_destroy_(should_destroy) {

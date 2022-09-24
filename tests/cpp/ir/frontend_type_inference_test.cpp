@@ -182,4 +182,35 @@ TEST(FrontendTypeInference, InternalFuncCall) {
   EXPECT_EQ(internal_func_call->ret_type, PrimitiveType::i32);
 }
 
+TEST(FrontendTypeInference, TensorTypeUnification) {
+  // lhs mat, rhs const
+  auto element = Expr::make<ConstExpression, int32>(1);
+  std::vector<Expr> elements = {element, element};
+  std::vector<int> shape = {2, 1};
+  auto mat = Expr::make<MatrixExpression>(elements, shape, PrimitiveType::i32);
+  mat->type_check(nullptr);
+  auto const_val = Expr::make<ConstExpression, int32>(2);
+  const_val->type_check(nullptr);
+  auto expr = Expr::make<BinaryOpExpression>(BinaryOpType::add, mat, const_val);
+  expr->type_check(nullptr);
+  auto binaryop_expr = expr.cast<BinaryOpExpression>();
+  EXPECT_TRUE(binaryop_expr->rhs->ret_type->is<TensorType>());
+  auto rhs_type = binaryop_expr->rhs->ret_type->cast<TensorType>();
+  auto ret_type = binaryop_expr->ret_type;
+  auto expected_shape = std::vector<int>({2, 1});
+  EXPECT_TRUE(ret_type->is<TensorType>() &&
+              ret_type->cast<TensorType>()->get_shape() == expected_shape);
+  EXPECT_TRUE(rhs_type->get_shape() == expected_shape);
+
+  // lhs const, rhs mat
+  expr = Expr::make<BinaryOpExpression>(BinaryOpType::div, const_val, mat);
+  expr->type_check(nullptr);
+  binaryop_expr = expr.cast<BinaryOpExpression>();
+  EXPECT_TRUE(binaryop_expr->rhs->ret_type->is<TensorType>());
+  auto lhs_type = binaryop_expr->lhs->ret_type->cast<TensorType>();
+  ret_type = binaryop_expr->ret_type;
+  EXPECT_TRUE(ret_type->is<TensorType>() &&
+              ret_type->cast<TensorType>()->get_shape() == expected_shape);
+  EXPECT_TRUE(lhs_type->get_shape() == expected_shape);
+}
 }  // namespace taichi::lang

@@ -16,6 +16,51 @@ class DemoteOperations : public BasicStmtVisitor {
   DemoteOperations() : BasicStmtVisitor() {
   }
 
+  std::unique_ptr<Stmt> demote_ifloordiv(BinaryOpStmt *stmt,
+                                         Stmt *lhs,
+                                         Stmt *rhs) {
+    auto ret = Stmt::make<BinaryOpStmt>(BinaryOpType::div, lhs, rhs);
+    auto zero = Stmt::make<ConstStmt>(TypedConstant(0));
+    auto lhs_ltz =
+        Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_lt, lhs, zero.get());
+    auto rhs_ltz =
+        Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_lt, rhs, zero.get());
+    auto rhs_mul_ret =
+        Stmt::make<BinaryOpStmt>(BinaryOpType::mul, rhs, ret.get());
+    auto cond1 = Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_ne, lhs_ltz.get(),
+                                          rhs_ltz.get());
+    auto cond2 =
+        Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_ne, lhs, zero.get());
+    auto cond3 =
+        Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_ne, rhs_mul_ret.get(), lhs);
+    auto cond12 = Stmt::make<BinaryOpStmt>(BinaryOpType::bit_and, cond1.get(),
+                                           cond2.get());
+    auto cond = Stmt::make<BinaryOpStmt>(BinaryOpType::bit_and, cond12.get(),
+                                         cond3.get());
+    auto real_ret =
+        Stmt::make<BinaryOpStmt>(BinaryOpType::add, ret.get(), cond.get());
+    modifier.insert_before(stmt, std::move(ret));
+    modifier.insert_before(stmt, std::move(zero));
+    modifier.insert_before(stmt, std::move(lhs_ltz));
+    modifier.insert_before(stmt, std::move(rhs_ltz));
+    modifier.insert_before(stmt, std::move(rhs_mul_ret));
+    modifier.insert_before(stmt, std::move(cond1));
+    modifier.insert_before(stmt, std::move(cond2));
+    modifier.insert_before(stmt, std::move(cond3));
+    modifier.insert_before(stmt, std::move(cond12));
+    modifier.insert_before(stmt, std::move(cond));
+    return real_ret;
+  }
+
+  std::unique_ptr<Stmt> demote_ffloor(BinaryOpStmt *stmt,
+                                      Stmt *lhs,
+                                      Stmt *rhs) {
+    auto div = Stmt::make<BinaryOpStmt>(BinaryOpType::div, lhs, rhs);
+    auto floor = Stmt::make<UnaryOpStmt>(UnaryOpType::floor, div.get());
+    modifier.insert_before(stmt, std::move(div));
+    return floor;
+  }
+
   void visit(BitExtractStmt *stmt) override {
     // @ti.func
     // def bit_extract(input, begin, end):
@@ -64,38 +109,9 @@ class DemoteOperations : public BasicStmtVisitor {
         //  +  +  f = f (f&t)
         //
         // the situation of `b = 0` is ignored since we get FPE anyway.
-        auto ret = Stmt::make<BinaryOpStmt>(BinaryOpType::div, lhs, rhs);
-        auto zero = Stmt::make<ConstStmt>(TypedConstant(0));
-        auto lhs_ltz =
-            Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_lt, lhs, zero.get());
-        auto rhs_ltz =
-            Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_lt, rhs, zero.get());
-        auto rhs_mul_ret =
-            Stmt::make<BinaryOpStmt>(BinaryOpType::mul, rhs, ret.get());
-        auto cond1 = Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_ne,
-                                              lhs_ltz.get(), rhs_ltz.get());
-        auto cond2 =
-            Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_ne, lhs, zero.get());
-        auto cond3 = Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_ne,
-                                              rhs_mul_ret.get(), lhs);
-        auto cond12 = Stmt::make<BinaryOpStmt>(BinaryOpType::bit_and,
-                                               cond1.get(), cond2.get());
-        auto cond = Stmt::make<BinaryOpStmt>(BinaryOpType::bit_and,
-                                             cond12.get(), cond3.get());
-        auto real_ret =
-            Stmt::make<BinaryOpStmt>(BinaryOpType::add, ret.get(), cond.get());
+        auto real_ret = demote_ifloordiv(stmt, lhs, rhs);
         real_ret->ret_type = stmt->ret_type;
         stmt->replace_usages_with(real_ret.get());
-        modifier.insert_before(stmt, std::move(ret));
-        modifier.insert_before(stmt, std::move(zero));
-        modifier.insert_before(stmt, std::move(lhs_ltz));
-        modifier.insert_before(stmt, std::move(rhs_ltz));
-        modifier.insert_before(stmt, std::move(rhs_mul_ret));
-        modifier.insert_before(stmt, std::move(cond1));
-        modifier.insert_before(stmt, std::move(cond2));
-        modifier.insert_before(stmt, std::move(cond3));
-        modifier.insert_before(stmt, std::move(cond12));
-        modifier.insert_before(stmt, std::move(cond));
         modifier.insert_before(stmt, std::move(real_ret));
         modifier.erase(stmt);
 
@@ -104,12 +120,52 @@ class DemoteOperations : public BasicStmtVisitor {
         // def ffloordiv(a, b):
         //     r = ti.raw_div(a, b)
         //     return ti.floor(r)
-        auto div = Stmt::make<BinaryOpStmt>(BinaryOpType::div, lhs, rhs);
-        auto floor = Stmt::make<UnaryOpStmt>(UnaryOpType::floor, div.get());
+        auto floor = demote_ffloor(stmt, lhs, rhs);
         floor->ret_type = stmt->ret_type;
         stmt->replace_usages_with(floor.get());
-        modifier.insert_before(stmt, std::move(div));
         modifier.insert_before(stmt, std::move(floor));
+        modifier.erase(stmt);
+      } else if (lhs->ret_type->is<TensorType>() &&
+                 rhs->ret_type->is<TensorType>()) {
+        bool use_integral = is_integral(lhs->ret_type.get_element_type()) &&
+                            is_integral(rhs->ret_type.get_element_type());
+        std::vector<Stmt *> ret_stmts;
+        auto lhs_tensor_ty = lhs->ret_type->cast<TensorType>();
+        auto rhs_tensor_ty = rhs->ret_type->cast<TensorType>();
+        auto lhs_alloca = Stmt::make<AllocaStmt>(lhs_tensor_ty);
+        auto rhs_alloca = Stmt::make<AllocaStmt>(rhs_tensor_ty);
+        auto lhs_store =
+            Stmt::make<LocalStoreStmt>(lhs_alloca.get(), stmt->lhs);
+        auto rhs_store =
+            Stmt::make<LocalStoreStmt>(rhs_alloca.get(), stmt->rhs);
+        auto lhs_ptr = lhs_alloca.get();
+        auto rhs_ptr = rhs_alloca.get();
+        modifier.insert_before(stmt, std::move(lhs_alloca));
+        modifier.insert_before(stmt, std::move(rhs_alloca));
+        modifier.insert_before(stmt, std::move(lhs_store));
+        modifier.insert_before(stmt, std::move(rhs_store));
+        for (int i = 0; i < lhs_tensor_ty->get_num_elements(); i++) {
+          auto idx = Stmt::make<ConstStmt>(TypedConstant(i));
+          auto lhs_i = Stmt::make<PtrOffsetStmt>(lhs_ptr, idx.get());
+          auto rhs_i = Stmt::make<PtrOffsetStmt>(rhs_ptr, idx.get());
+          auto lhs_load = Stmt::make<LocalLoadStmt>(lhs_i.get());
+          auto rhs_load = Stmt::make<LocalLoadStmt>(rhs_i.get());
+          auto cur_lhs = lhs_load.get();
+          auto cur_rhs = rhs_load.get();
+          modifier.insert_before(stmt, std::move(idx));
+          modifier.insert_before(stmt, std::move(lhs_i));
+          modifier.insert_before(stmt, std::move(rhs_i));
+          modifier.insert_before(stmt, std::move(lhs_load));
+          modifier.insert_before(stmt, std::move(rhs_load));
+          auto ret_i = use_integral ? demote_ifloordiv(stmt, cur_lhs, cur_rhs)
+                                    : demote_ffloor(stmt, cur_lhs, cur_rhs);
+          ret_stmts.push_back(ret_i.get());
+          modifier.insert_before(stmt, std::move(ret_i));
+        }
+        auto new_matrix = Stmt::make<MatrixInitStmt>(ret_stmts);
+        new_matrix->ret_type = stmt->ret_type;
+        stmt->replace_usages_with(new_matrix.get());
+        modifier.insert_before(stmt, std::move(new_matrix));
         modifier.erase(stmt);
       }
     } else if (stmt->op_type == BinaryOpType::bit_shr &&

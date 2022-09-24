@@ -49,9 +49,8 @@ class CuSparseSolver : public SparseSolver {
   bool compute(const SparseMatrix &sm) override {
     TI_NOT_IMPLEMENTED;
   };
-  void analyze_pattern(const SparseMatrix &sm) override {
-    TI_NOT_IMPLEMENTED;
-  };
+  void analyze_pattern(const SparseMatrix &sm) override;
+
   void factorize(const SparseMatrix &sm) override {
     TI_NOT_IMPLEMENTED;
   };

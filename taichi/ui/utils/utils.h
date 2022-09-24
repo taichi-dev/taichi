@@ -95,7 +95,7 @@ inline GLFWwindow *create_glfw_window_(const std::string &name,
   // Reset the window hints to default
   glfwDefaultWindowHints();
 
-  glfwSetWindowPos(window, window_pos_x, window_pos_y); 
+  glfwSetWindowPos(window, window_pos_x, window_pos_y);
 
   glfwShowWindow(window);
   // Invalid for Vulkan

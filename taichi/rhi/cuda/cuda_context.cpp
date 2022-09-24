@@ -9,7 +9,7 @@
 #include "taichi/system/threading.h"
 #include "taichi/rhi/cuda/cuda_driver.h"
 #include "taichi/rhi/cuda/cuda_profiler.h"
-#include "taichi/analysis/offline_cache_util.h"
+#include "taichi/util/offline_cache.h"
 
 TLANG_NAMESPACE_BEGIN
 

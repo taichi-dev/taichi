@@ -299,7 +299,7 @@ Usages of a memory allocation. Taichi requires kernel argument memories to be al
 - `bit_field.memory_usage.storage`: The memory can be read/write accessed by any kernel.
 - `bit_field.memory_usage.uniform`: The memory can be used as a uniform buffer in graphics pipelines.
 - `bit_field.memory_usage.vertex`: The memory can be used as a vertex buffer in graphics pipelines.
-- `bit_field.memory_usage.index`: The memory can be used as a index buffer in graphics pipelines.
+- `bit_field.memory_usage.index`: The memory can be used as an index buffer in graphics pipelines.
 
 `structure.memory_allocate_info`
 

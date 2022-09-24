@@ -90,7 +90,7 @@ To read data back to the host, `host_read` *must* be set to true.
 ```cpp
 TiMemoryAllocateInfo mai {};
 mai.size = 1024; // Size in bytes.
-mai.host_write = true;
+mai.host_read = true;
 mai.usage = TI_MEMORY_USAGE_STORAGE_BIT;
 TiMemory read_back_memory = ti_allocate_memory(runtime, &mai);
 
@@ -340,7 +340,7 @@ typedef enum TiError {
 } TiError;
 ```
 
-Errors reported by the Taichi C-API.
+Errors reported by the Taichi C-API. Enumerants greater than or equal to zero are success states.
 
 - `TI_ERROR_INCOMPLETE`: The output data is truncated because the user-provided buffer is too small.
 - `TI_ERROR_SUCCESS`: The Taichi C-API invocation finished gracefully.
@@ -410,9 +410,9 @@ typedef enum TiDataType {
 
 Elementary (primitive) data types. There might be vendor-specific constraints on the available data types so it's recommended to use 32-bit data types if multi-platform distribution is desired.
 
-- `TI_DATA_TYPE_F16`: 16-bit IEEE 754 floating-point number.
-- `TI_DATA_TYPE_F32`: 32-bit IEEE 754 floating-point number.
-- `TI_DATA_TYPE_F64`: 64-bit IEEE 754 floating-point number.
+- `TI_DATA_TYPE_F16`: 16-bit IEEE 754 half-precision floating-point number.
+- `TI_DATA_TYPE_F32`: 32-bit IEEE 754 single-precision floating-point number.
+- `TI_DATA_TYPE_F64`: 64-bit IEEE 754 double-precision floating-point number.
 - `TI_DATA_TYPE_I8`: 8-bit one's complement signed integer.
 - `TI_DATA_TYPE_I16`: 16-bit one's complement signed integer.
 - `TI_DATA_TYPE_I32`: 32-bit one's complement signed integer.
@@ -438,9 +438,10 @@ typedef enum TiArgumentType {
 
 Types of kernel and compute graph argument.
 
-- `TI_ARGUMENT_TYPE_I32`: Signed 32-bit integer.
-- `TI_ARGUMENT_TYPE_F32`: Signed 32-bit floating-point number.
+- `TI_ARGUMENT_TYPE_I32`: 32-bit one's complement signed integer.
+- `TI_ARGUMENT_TYPE_F32`: 32-bit IEEE 754 single-precision floating-point number.
 - `TI_ARGUMENT_TYPE_NDARRAY`: ND-array wrapped around a [`TiMemory`](#handle-timemory).
+- `TI_ARGUMENT_TYPE_TEXTURE`: Texture wrapped around a [`TiImage`](#handle-tiimage).
 
 ---
 ### BitField `TiMemoryUsageFlags`
@@ -456,12 +457,12 @@ typedef enum TiMemoryUsageFlagBits {
 typedef TiFlags TiMemoryUsageFlags;
 ```
 
-Usages of a memory allocation.
+Usages of a memory allocation. Taichi requires kernel argument memories to be allocated with `TI_MEMORY_USAGE_STORAGE_BIT`.
 
-- `TI_MEMORY_USAGE_STORAGE_BIT`: The memory can be read/write accessed by any kernel. In most cases, the users only need to set this flag.
+- `TI_MEMORY_USAGE_STORAGE_BIT`: The memory can be read/write accessed by any kernel.
 - `TI_MEMORY_USAGE_UNIFORM_BIT`: The memory can be used as a uniform buffer in graphics pipelines.
 - `TI_MEMORY_USAGE_VERTEX_BIT`: The memory can be used as a vertex buffer in graphics pipelines.
-- `TI_MEMORY_USAGE_INDEX_BIT`: The memory can be used as a index buffer in graphics pipelines.
+- `TI_MEMORY_USAGE_INDEX_BIT`: The memory can be used as an index buffer in graphics pipelines.
 
 ---
 ### Structure `TiMemoryAllocateInfo`
@@ -552,10 +553,10 @@ typedef enum TiImageUsageFlagBits {
 typedef TiFlags TiImageUsageFlags;
 ```
 
-Usages of an image allocation.
+Usages of an image allocation. Taichi requires kernel argument images to be allocated with `TI_IMAGE_USAGE_STORAGE_BIT` and `TI_IMAGE_USAGE_SAMPLED_BIT`.
 
-- `TI_IMAGE_USAGE_STORAGE_BIT`: The image can be read/write accessed by any kernel. In most cases, the users only need to set this flag and `TI_IMAGE_USAGE_SAMPLED_BIT`.
-- `TI_IMAGE_USAGE_SAMPLED_BIT`: The image can be read-only accessed by any kernel. In most cases, the users only need to set this flag and `TI_IMAGE_USAGE_STORAGE_BIT`.
+- `TI_IMAGE_USAGE_STORAGE_BIT`: The image can be read/write accessed by any kernel.
+- `TI_IMAGE_USAGE_SAMPLED_BIT`: The image can be read-only accessed by any kernel.
 - `TI_IMAGE_USAGE_ATTACHMENT_BIT`: The image can be used as a color or depth-stencil attachment depending on its format.
 
 ---
@@ -604,7 +605,7 @@ typedef enum TiImageLayout {
 } TiImageLayout;
 ```
 
-- `enumeration.image_layout.`: Undefined layout. An image in this layout does not contain any semantical information.
+- `TI_IMAGE_LAYOUT_UNDEFINED`: Undefined layout. An image in this layout does not contain any semantical information.
 - `TI_IMAGE_LAYOUT_SHADER_READ`: Optimal layout for read-only access, including sampling.
 - `TI_IMAGE_LAYOUT_SHADER_WRITE`: Optimal layout for write-only access.
 - `TI_IMAGE_LAYOUT_SHADER_READ_WRITE`: Optimal layout for read/write access.
@@ -807,7 +808,7 @@ Image data bound to a sampler.
 - `image`: Image bound to the texture.
 - `sampler`: The bound sampler that controls the sampling behavior of `image`.
 - `dimension`: Image Dimension.
-- `extent`: Extent of image.
+- `extent`: Image extent.
 - `format`: Image texel format.
 
 ---
@@ -826,8 +827,9 @@ typedef union TiArgumentValue {
 A scalar or structured argument value.
 
 - `i32`: Value of a 32-bit one's complement signed integer.
-- `f32`: Value of a 32-bit IEEE 754 floating-poing number.
+- `f32`: Value of a 32-bit IEEE 754 single-precision floating-poing number.
 - `ndarray`: An ND-array to be bound.
+- `texture`: A texture to be bound.
 
 ---
 ### Structure `TiArgument`

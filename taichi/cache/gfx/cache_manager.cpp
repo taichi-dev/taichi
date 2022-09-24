@@ -112,15 +112,16 @@ CacheManager::CacheManager(Params &&init_params)
 
   path_ = offline_cache::get_cache_path_by_arch(init_params.cache_path,
                                                 init_params.arch);
-  { // Load cached module with checking
+  {  // Load cached module with checking
     using Error = offline_cache::LoadMetadataError;
     using offline_cache::load_metadata_with_checking;
     Metadata tmp;
     auto filepath = taichi::join_path(path_, kOfflineCacheMetadataFilename);
     if (load_metadata_with_checking(tmp, filepath) == Error::kNoError) {
       auto lock_path = taichi::join_path(path_, kMetadataFileLockName);
-      auto exists = taichi::path_exists(taichi::join_path(path_, kAotMetadataFilename)) &&
-                          taichi::path_exists(taichi::join_path(path_, kGraphMetadataFilename));
+      auto exists =
+          taichi::path_exists(taichi::join_path(path_, kAotMetadataFilename)) &&
+          taichi::path_exists(taichi::join_path(path_, kGraphMetadataFilename));
       if (exists && lock_with_file(lock_path)) {
         auto _ = make_cleanup([&lock_path]() {
           if (!unlock_with_file(lock_path)) {

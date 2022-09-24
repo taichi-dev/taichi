@@ -6,8 +6,7 @@
 #include <stdint.h>
 #include <map>
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace cuda {
 
 class CudaCachingAllocator {
@@ -23,5 +22,4 @@ class CudaCachingAllocator {
 };
 
 }  // namespace cuda
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

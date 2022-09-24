@@ -10,7 +10,7 @@
 #include "taichi/ir/type_utils.h"
 #include "taichi/ir/type_factory.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 real get_cpu_frequency();
 
@@ -65,9 +65,9 @@ std::string runtime_lib_dir();
 
 bool command_exist(const std::string &command);
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 void initialize_benchmark();
 
 template <typename T, typename... Args, typename FP = T (*)(Args...)>
@@ -84,4 +84,4 @@ template <typename T>
 using function_pointer_type =
     decltype(function_pointer_helper(std::declval<T>()));
 
-TI_NAMESPACE_END
+}  // namespace taichi

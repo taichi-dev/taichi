@@ -1,6 +1,6 @@
 #include "taichi/runtime/metal/data_types.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 namespace metal {
 
 MetalDataType to_metal_type(DataType dt) {
@@ -135,4 +135,4 @@ std::string metal_unary_op_type_symbol(UnaryOpType type) {
 }
 
 }  // namespace metal
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

@@ -14,7 +14,7 @@
 #include "taichi/codegen/llvm/struct_llvm.h"
 #include "taichi/util/file_sequence_writer.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 // TODO: sort function definitions to match declaration order in header
 
@@ -2906,6 +2906,6 @@ LLVMCompiledKernel LLVMCompiledKernel::clone() const {
   return {tasks, llvm::CloneModule(*module)};
 }
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang
 
 #endif  // #ifdef TI_WITH_LLVM

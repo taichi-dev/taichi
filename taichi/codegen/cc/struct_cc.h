@@ -4,7 +4,7 @@
 #include "taichi/util/line_appender.h"
 #include "taichi/ir/snode.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 class CCProgramImpl;
 namespace cccp {
 
@@ -36,4 +36,4 @@ class CCLayoutGen {
 };
 
 }  // namespace cccp
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

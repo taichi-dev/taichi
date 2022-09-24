@@ -9,8 +9,7 @@
 #include "taichi/codegen/spirv/snode_struct_compiler.h"
 #include "taichi/codegen/spirv/kernel_utils.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace gfx {
 
 class AotModuleBuilderImpl : public AotModuleBuilder {
@@ -57,5 +56,4 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
 };
 
 }  // namespace gfx
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

@@ -14,8 +14,7 @@
 #include "taichi/math/arithmetic.h"
 #include "taichi/util/line_appender.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace metal {
 namespace {
 
@@ -1711,5 +1710,4 @@ FunctionType compile_to_metal_executable(
 }
 
 }  // namespace metal
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

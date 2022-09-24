@@ -5,8 +5,7 @@
 #include "taichi/runtime/gfx/runtime.h"
 #include "taichi/util/offline_cache.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace gfx {
 
 class CacheManager {
@@ -51,5 +50,4 @@ class CacheManager {
 };
 
 }  // namespace gfx
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

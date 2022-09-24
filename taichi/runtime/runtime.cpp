@@ -1,6 +1,6 @@
 #include "taichi/runtime/runtime.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 std::unique_ptr<Runtime> Runtime::create(Arch arch) {
   auto &factories = get_factories();
@@ -11,4 +11,4 @@ std::unique_ptr<Runtime> Runtime::create(Arch arch) {
   }
 }
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

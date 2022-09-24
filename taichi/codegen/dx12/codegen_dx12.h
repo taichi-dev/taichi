@@ -8,7 +8,7 @@
 #include "taichi/codegen/llvm/codegen_llvm.h"
 #include "taichi/aot/module_data.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 class KernelCodeGenDX12 : public KernelCodeGen {
  public:
@@ -29,4 +29,4 @@ class KernelCodeGenDX12 : public KernelCodeGen {
   FunctionType compile_to_function() override;
 };
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

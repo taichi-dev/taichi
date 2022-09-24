@@ -11,7 +11,7 @@
 #include "taichi/transforms/constant_fold.h"
 #include "taichi/program/program.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 class ConstantFold : public BasicStmtVisitor {
  public:
@@ -266,4 +266,4 @@ bool constant_fold(IRNode *root,
 
 }  // namespace irpass
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

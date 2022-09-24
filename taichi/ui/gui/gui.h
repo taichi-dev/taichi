@@ -27,7 +27,7 @@
 #include <objc/objc.h>
 #endif
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 TI_FORCE_INLINE Vector4 color_from_hex(uint32 c) {
   return Vector4(c / 65536, c / 256 % 256, c % 256, 255) * (1 / 255.0_f);
@@ -945,4 +945,4 @@ class TI_DLL_EXPORT GUI : public GUIBase {
   ~GUI();
 };
 
-TI_NAMESPACE_END
+}  // namespace taichi

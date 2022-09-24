@@ -9,7 +9,7 @@
 #include <cxxabi.h>
 #endif
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 // From https://en.wikipedia.org/wiki/Name_mangling
 
@@ -45,4 +45,4 @@ class Demangling : public Task {
 
 TI_IMPLEMENTATION(Task, Demangling, "demangle")
 
-TI_NAMESPACE_END
+}  // namespace taichi

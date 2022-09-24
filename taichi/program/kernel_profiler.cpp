@@ -5,7 +5,7 @@
 #include "taichi/rhi/cuda/cuda_profiler.h"
 #include "taichi/system/timeline.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 void KernelProfileStatisticalResult::insert_record(double t) {
   if (counter == 0) {
@@ -130,4 +130,4 @@ std::unique_ptr<KernelProfilerBase> make_profiler(Arch arch, bool enable) {
   }
 }
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

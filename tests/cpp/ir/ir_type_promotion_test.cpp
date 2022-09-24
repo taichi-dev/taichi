@@ -5,8 +5,7 @@
 #include "taichi/ir/transforms.h"
 #include "tests/cpp/program/test_program.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 TEST(IRTypePromotionTest, ShiftOp) {
   IRBuilder builder;
@@ -57,6 +56,4 @@ TEST(IRPromotionTest, TensorType) {
               ret_type->cast<TensorType>()->get_element_type()->is_primitive(
                   PrimitiveTypeID::f32));
 }
-
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

@@ -1,9 +1,7 @@
 #include "taichi/ir/pass.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 const PassID Pass::id = "undefined";
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

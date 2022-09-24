@@ -28,8 +28,7 @@ namespace fs = std::experimental::filesystem;
 #include "taichi/program/compile_config.h"
 #include "taichi/program/program.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace {
 
 constexpr char kKernelName[] = "foo";
@@ -148,8 +147,7 @@ INSTANTIATE_TEST_SUITE_P(Format,
                          testing::Values(Format::LL, Format::BC));
 
 }  // namespace
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang
 
 #endif  // #if defined(TI_PLATFORM_LINUX) || defined(TI_PLATFORM_WINDOWS)
 #endif  // #ifdef TI_WITH_LLVM

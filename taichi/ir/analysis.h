@@ -10,8 +10,7 @@
 #include <unordered_set>
 #include <unordered_map>
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class DiffRange {
  private:
@@ -211,5 +210,4 @@ std::unique_ptr<MeshBLSCaches> initialize_mesh_local_attribute(
 
 }  // namespace analysis
 }  // namespace irpass
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

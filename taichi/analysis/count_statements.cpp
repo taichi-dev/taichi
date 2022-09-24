@@ -2,7 +2,7 @@
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/visitors.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 // Count all statements (including containers)
 class StmtCounter : public BasicStmtVisitor {
@@ -41,4 +41,4 @@ int count_statements(IRNode *root) {
 }
 }  // namespace irpass::analysis
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

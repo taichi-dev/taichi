@@ -1,7 +1,7 @@
 #include "snode_tree_buffer_manager.h"
 #include "taichi/runtime/llvm/llvm_runtime_executor.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 SNodeTreeBufferManager::SNodeTreeBufferManager(
     LlvmRuntimeExecutor *runtime_exec)
@@ -79,4 +79,4 @@ void SNodeTreeBufferManager::destroy(SNodeTree *snode_tree) {
   TI_DEBUG("SNode tree {} destroyed.", snode_tree_id);
 }
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

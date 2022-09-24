@@ -16,11 +16,11 @@
 #include <vector>
 #include <memory>
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 class DynamicLoader;
-TI_NAMESPACE_END
+}  // namespace taichi
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 using namespace taichi::lang::cccp;
 using CCFuncEntryType = void(cccp::CCContext *);
@@ -88,4 +88,4 @@ class CCProgramImpl : public ProgramImpl {
   uint64 *result_buffer_{nullptr};
   bool need_relink_{true};
 };
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

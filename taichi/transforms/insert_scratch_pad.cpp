@@ -6,7 +6,7 @@
 #include "taichi/ir/scratch_pad.h"
 #include "taichi/system/profiler.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 // TODO: rename scratch_pad to block_local_cache? Need to get rid of the
 // scratch_pad term
@@ -33,4 +33,4 @@ std::unique_ptr<ScratchPads> initialize_scratch_pad(OffloadedStmt *offload) {
 
 }  // namespace irpass
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

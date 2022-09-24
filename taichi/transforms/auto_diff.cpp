@@ -8,7 +8,7 @@
 #include <typeinfo>
 #include <algorithm>
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 class IndependentBlocksJudger : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
@@ -1612,4 +1612,4 @@ void differentiation_validation_check(IRNode *root,
 
 }  // namespace irpass
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

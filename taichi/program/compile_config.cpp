@@ -2,7 +2,7 @@
 
 #include <thread>
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 CompileConfig::CompileConfig() {
   arch = host_arch();
@@ -71,4 +71,4 @@ CompileConfig::CompileConfig() {
   cc_link_cmd = "gcc -shared -fPIC -o '{}' '{}'";
 }
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

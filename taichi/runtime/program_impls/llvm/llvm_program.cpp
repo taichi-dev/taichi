@@ -20,8 +20,7 @@
 #include "taichi/codegen/dx12/codegen_dx12.h"
 #endif
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
                                  KernelProfilerBase *profiler)
@@ -193,5 +192,4 @@ LlvmProgramImpl *get_llvm_program(Program *prog) {
   return llvm_prog;
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

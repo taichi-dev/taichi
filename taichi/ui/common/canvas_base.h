@@ -5,13 +5,11 @@
 #include "taichi/ui/common/renderable_info.h"
 #include "taichi/ui/utils/utils.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class Texture;
 
-}
-}  // namespace taichi
+}  // namespace taichi::lang
 
 TI_UI_NAMESPACE_BEGIN
 

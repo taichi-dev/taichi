@@ -1,7 +1,6 @@
 #include "taichi/rhi/llvm/llvm_device.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 uint64_t *LlvmDevice::allocate_llvm_runtime_memory_jit(
     const LlvmRuntimeAllocParams &params) {
@@ -12,5 +11,4 @@ uint64_t *LlvmDevice::allocate_llvm_runtime_memory_jit(
       taichi_result_buffer_runtime_query_id, params.result_buffer));
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

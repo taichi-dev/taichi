@@ -10,7 +10,7 @@
 
 #include "taichi/common/interface.h"
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 class Task : public Unit {
  public:
@@ -75,4 +75,4 @@ task_invoke(const T &func, const std::vector<std::string> &params) {
   };                                                                       \
   TI_IMPLEMENTATION(Task, Task_##task, #task)
 
-TI_NAMESPACE_END
+}  // namespace taichi

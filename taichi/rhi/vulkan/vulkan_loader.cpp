@@ -8,8 +8,7 @@
 #include "GLFW/glfw3.h"
 #endif
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace vulkan {
 
 VulkanLoader::VulkanLoader() {
@@ -96,7 +95,7 @@ bool VulkanLoader::init(PFN_vkGetInstanceProcAddr get_proc_addr) {
     // (penguinliong) So that MoltenVK instances can be imported.
     if (get_proc_addr != nullptr) {
       volkInitializeCustom(get_proc_addr);
-      initialized = check_vulkan_device();
+      initialized = true;
       return;
     }
 #if defined(__APPLE__)
@@ -142,5 +141,4 @@ void set_vulkan_visible_device(std::string id) {
 }
 
 }  // namespace vulkan
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

@@ -26,8 +26,7 @@ struct key_hash {
 };
 }  // namespace
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 #define GET_EM(sm) \
   const EigenMatrix *mat = (const EigenMatrix *)(sm.get_matrix());
@@ -284,5 +283,4 @@ std::unique_ptr<SparseSolver> make_cusparse_solver(
     const std::string &ordering) {
   return std::make_unique<CuSparseSolver>();
 }
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

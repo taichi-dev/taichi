@@ -1,7 +1,6 @@
 #include "taichi/rhi/cpu/cpu_device.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 namespace cpu {
 
@@ -91,5 +90,4 @@ uint64 CpuDevice::fetch_result_uint64(int i, uint64 *result_buffer) {
 }
 
 }  // namespace cpu
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

@@ -73,8 +73,7 @@
 
 #endif
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 DEFINE_EXPRESSION_FUNC_UNARY(sqrt)
 DEFINE_EXPRESSION_FUNC_UNARY(round)
@@ -126,8 +125,7 @@ DEFINE_EXPRESSION_FUNC_BINARY(bit_shr)
 DEFINE_EXPRESSION_FUNC_TERNARY(select)
 DEFINE_EXPRESSION_FUNC_TERNARY(ifte)
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang
 
 #undef DEFINE_EXPRESSION_OP_UNARY
 #undef DEFINE_EXPRESSION_OP_BINARY

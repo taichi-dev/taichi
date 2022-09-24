@@ -5,7 +5,7 @@
 #include "taichi/program/program.h"
 #include "taichi/common/exceptions.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 #define TI_ASSERT_TYPE_CHECKED(x)                       \
   TI_ASSERT_INFO(x->ret_type != PrimitiveType::unknown, \
@@ -1369,4 +1369,4 @@ void flatten_rvalue(Expr ptr, Expression::FlattenContext *ctx) {
   }
 }
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

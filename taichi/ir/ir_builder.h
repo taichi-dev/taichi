@@ -3,7 +3,7 @@
 #include "taichi/ir/ir.h"
 #include "taichi/ir/mesh.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 class Function;
 
@@ -289,4 +289,4 @@ class IRBuilder {
   InsertPoint insert_point_;
 };
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

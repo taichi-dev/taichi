@@ -5,7 +5,7 @@
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/statements.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 namespace irpass::analysis {
 
@@ -62,4 +62,4 @@ void gather_meshfor_relation_types(IRNode *node) {
 
 }  // namespace irpass::analysis
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

@@ -8,8 +8,7 @@
 #include "taichi/rhi/vulkan/vulkan_loader.h"
 #endif
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 TEST(IRBuilder, Basic) {
   IRBuilder builder;
@@ -154,5 +153,4 @@ TEST(IRBuilder, Ndarray) {
   EXPECT_EQ(array.read_int({1}), 3);
   EXPECT_EQ(array.read_int({2}), 42);
 }
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

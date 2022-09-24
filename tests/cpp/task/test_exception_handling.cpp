@@ -2,7 +2,7 @@
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 // Simulate the AST transforms on the Google Colab Ubuntu kernels to see why it
 // crashes
@@ -99,4 +99,4 @@ auto test_exception_handling_auto = []() {
 TI_REGISTER_TASK(test_exception_handling);
 TI_REGISTER_TASK(test_exception_handling_auto);
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

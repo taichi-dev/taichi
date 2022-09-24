@@ -13,7 +13,7 @@
 #include "taichi/rhi/cpu/cpu_device.h"
 #include <string>
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 UnifiedAllocator::UnifiedAllocator(std::size_t size, Arch arch, Device *device)
     : size_(size), arch_(arch), device_(device) {
@@ -59,4 +59,4 @@ void taichi::lang::UnifiedAllocator::memset(unsigned char val) {
   std::memset(data, val, size_);
 }
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

@@ -8,8 +8,7 @@
 #include "taichi/runtime/metal/aot_utils.h"
 #include "taichi/codegen/metal/struct_metal.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace metal {
 
 class AotModuleBuilderImpl : public AotModuleBuilder {
@@ -50,5 +49,4 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
 };
 
 }  // namespace metal
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

@@ -4,8 +4,7 @@
 
 #include "taichi/runtime/metal/kernel_utils.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace metal {
 
 /**
@@ -21,5 +20,4 @@ struct TaichiAotData {
 };
 
 }  // namespace metal
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

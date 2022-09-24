@@ -7,7 +7,7 @@
 #include <cstdlib>
 #include <iomanip>
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 namespace cccp {
 
 inline std::string cc_data_type_name(DataType dt) {
@@ -82,4 +82,4 @@ inline int execute(std::string fmt, Args &&...args) {
 }
 
 }  // namespace cccp
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

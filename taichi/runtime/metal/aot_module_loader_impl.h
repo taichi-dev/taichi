@@ -6,8 +6,7 @@
 
 #include "taichi/aot/module_loader.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace metal {
 
 class KernelManager;
@@ -19,5 +18,4 @@ struct AotModuleParams {
 
 std::unique_ptr<aot::Module> make_aot_module(std::any mod_params);
 }  // namespace metal
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

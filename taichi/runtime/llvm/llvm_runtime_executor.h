@@ -20,8 +20,7 @@
 #include "taichi/program/context.h"
 #undef TI_RUNTIME_HOST
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 namespace cuda {
 class CudaDevice;
@@ -162,7 +161,6 @@ class LlvmRuntimeExecutor {
   friend SNodeTreeBufferManager;
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang
 
 #endif  // TI_WITH_LLVM

@@ -8,7 +8,7 @@
 #include <deque>
 #include <set>
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 class DemoteAtomics : public BasicStmtVisitor {
  private:
@@ -195,4 +195,4 @@ bool demote_atomics(IRNode *root, const CompileConfig &config) {
 
 }  // namespace irpass
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

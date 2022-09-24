@@ -12,8 +12,7 @@
 #include "taichi/program/context.h"
 #undef TI_RUNTIME_HOST
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 TEST(LlvmAotTest, CpuKernel) {
   CompileConfig cfg;
@@ -102,5 +101,4 @@ TEST(LlvmAotTest, CudaKernel) {
   }
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

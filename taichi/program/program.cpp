@@ -45,8 +45,7 @@
 #include <xmmintrin.h>
 #endif  // defined(_M_X64) || defined(__x86_64)
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 std::atomic<int> Program::num_instances_;
 
 Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
@@ -558,5 +557,4 @@ void Program::enqueue_compute_op_lambda(
   program_impl_->enqueue_compute_op_lambda(op, image_refs);
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

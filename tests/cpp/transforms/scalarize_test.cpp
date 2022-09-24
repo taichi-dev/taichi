@@ -4,8 +4,7 @@
 #include "taichi/ir/transforms.h"
 #include "tests/cpp/program/test_program.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 // Basic tests within a basic block
 template <typename T>
@@ -141,5 +140,4 @@ TEST(Scalarize, ScalarizeLoad) {
   test_load_scalarize<LocalLoadStmt>();
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

@@ -8,7 +8,7 @@
 #include <cmath>
 #include "taichi/common/core.h"
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 using std::abs;
 using std::acos;
@@ -170,4 +170,4 @@ inline int64 get_largest_pot(int64 a) noexcept {
   return a - (a >> 1);
 }
 
-TI_NAMESPACE_END
+}  // namespace taichi

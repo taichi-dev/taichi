@@ -15,8 +15,7 @@
 #include <string>
 #include <vector>
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace vulkan {
 
 class VulkanEnvSettings {
@@ -101,5 +100,4 @@ inline WindowsSecurityAttributes::~WindowsSecurityAttributes() {
 #endif  //_WIN64
 
 }  // namespace vulkan
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

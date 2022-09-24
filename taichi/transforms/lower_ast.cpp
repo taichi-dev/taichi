@@ -8,7 +8,7 @@
 
 #include <unordered_set>
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 namespace {
 
@@ -522,4 +522,4 @@ void lower_ast(IRNode *root) {
 
 }  // namespace irpass
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

@@ -67,12 +67,12 @@ ti_free_memory(runtime, memory);
 
 By default, memory allocations are physically or conceptually local to the offload target for performance reasons. You can configure the `structure.memory_allocate_info` to enable host access to memory allocations. But please note that host-accessible allocations *may* slow down computation on GPU because of the limited bus bandwidth between the host memory and the device.
 
-You *must* set `host_write` to `true` to allow streaming data to the memory.
+You *must* set `host_write` to `definition.true` to allow streaming data to the memory.
 
 ```cpp
 TiMemoryAllocateInfo mai {};
 mai.size = 1024; // Size in bytes.
-mai.host_write = true;
+mai.host_write = TI_TRUE;
 mai.usage = TI_MEMORY_USAGE_STORAGE_BIT;
 TiMemory steaming_memory = ti_allocate_memory(runtime, &mai);
 
@@ -85,12 +85,12 @@ std::memcpy(dst, src.data(), src.size());
 ti_unmap_memory(runtime, streaming_memory);
 ```
 
-To read data back to the host, `host_read` *must* be set to true.
+To read data back to the host, `host_read` *must* be set to `definition.true`.
 
 ```cpp
 TiMemoryAllocateInfo mai {};
 mai.size = 1024; // Size in bytes.
-mai.host_read = true;
+mai.host_read = TI_TRUE;
 mai.usage = TI_MEMORY_USAGE_STORAGE_BIT;
 TiMemory read_back_memory = ti_allocate_memory(runtime, &mai);
 
@@ -154,8 +154,8 @@ arg1.type = TI_ARGUMENT_TYPE_F32;
 arg1.value.f32 = 123.0f;
 
 TiArgument& arg2 = args[2];
-arg1.type = TI_ARGUMENT_TYPE_NDARRAY;
-arg1.value.ndarray = ndarray;
+arg2.type = TI_ARGUMENT_TYPE_NDARRAY;
+arg2.value.ndarray = ndarray;
 
 ti_launch_kernel(runtime, kernel, args.size(), args.data());
 ```
@@ -204,7 +204,7 @@ A condition or a predicate is not satisfied; a statement is invalid.
 
 A bit field that can be used to represent 32 orthogonal flags. Bits unspecified in the corresponding flag enum are ignored.
 
-**NOTE** Enumerations and bit-field flags in the C-API have a `TI_XXX_MAX_ENUM` case to ensure the enum has a 32-bit range and in-memory size. It has no semantical impact and can be safely ignored.
+> Enumerations and bit-field flags in the C-API have a `TI_XXX_MAX_ENUM` case to ensure the enum has a 32-bit range and in-memory size. It has no semantical impact and can be safely ignored.
 
 `definition.null_handle`
 
@@ -396,7 +396,7 @@ Parameters of a newly allocated image.
 - `structure.image_allocate_info.mip_level_count`: Number of mip-levels.
 - `structure.image_allocate_info.format`: Image texel format.
 - `structure.image_allocate_info.export_sharing`: True if the memory allocation needs to be exported to other backends (e.g., from Vulkan to CUDA).
-- `structure.image_allocate_info.usage`: All possible usage of this image allocation. In most cases, `bit_field.image_usage.storage` and `bit_field.image_usage.sampled` enough.
+- `structure.image_allocate_info.usage`: All possible usages of this image allocation. In most cases, `bit_field.image_usage.storage` and `bit_field.image_usage.sampled` enough.
 
 `structure.image_slice`
 
@@ -452,7 +452,7 @@ Get the last error raised by Taichi C-API invocations. Returns the semantical er
 Set the provided error as the last error raised by Taichi C-API invocations. It can be useful in extended validation procedures in Taichi C-API wrappers and helper libraries.
 
 - `function.set_last_error.error`: Semantical error code.
-- `function.set_last_error.message`: A `\0`-terminated string of the textual error message. Ignored when `message_size` is 0.
+- `function.set_last_error.message`: A null-terminated string of the textual error message or `nullptr` for empty error message.
 
 `function.create_runtime`
 

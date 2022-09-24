@@ -355,12 +355,13 @@ struct PyWindow {
   PyWindow(Program *prog,
            std::string name,
            py::tuple res,
+           py::tuple pos,
            bool vsync,
            bool show_window,
            std::string package_path,
            Arch ti_arch,
            bool is_packed_mode) {
-    AppConfig config = {name,    res[0].cast<int>(), res[1].cast<int>(),
+    AppConfig config = {name,    res[0].cast<int>(), res[1].cast<int>(), pos[0].cast<int>(), pos[1].cast<int>(),
                         vsync,   show_window,        package_path,
                         ti_arch, is_packed_mode};
     // todo: support other ggui backends
@@ -480,7 +481,7 @@ void export_ggui(py::module &m) {
   m.attr("GGUI_AVAILABLE") = py::bool_(true);
 
   py::class_<PyWindow>(m, "PyWindow")
-      .def(py::init<Program *, std::string, py::tuple, bool, bool, std::string,
+      .def(py::init<Program *, std::string, py::tuple, py::tuple, bool, bool, std::string,
                     Arch, bool>())
       .def("get_canvas", &PyWindow::get_canvas)
       .def("show", &PyWindow::show)

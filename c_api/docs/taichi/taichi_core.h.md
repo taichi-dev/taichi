@@ -24,11 +24,11 @@ For the backends with tier-2 support, you should expect a delay in the fixes to 
 
 For convenience, in the following text and other C-API documents, the term *host* refers to the user of the C-API; the term *device* refers to the logical (conceptual) compute device, to which Taichi's runtime offloads its compute tasks. A *device* may not be a physical discrete processor other than the CPU and the *host* may *not* be able to access the memory allocated on the *device*.
 
-Unless explicitly explained, **device**, **backend**, **offload targer** and **GPU** are used interchangeably; **host**, **user code**, **user procedure** and **CPU** are used interchangeably too.
+Unless otherwise specified, **device**, **backend**, **offload targer**, and **GPU** are interchangeable; **host**, **user code**, **user procedure**, and **CPU** are interchangeable.
 
 ## How to...
 
-In this section we give an brief introduction about what you might want to do with the Taichi C-API.
+The following section provides a brief introduction to the Taichi C-API.
 
 ### Create and destroy a Runtime Instance
 
@@ -65,7 +65,7 @@ ti_free_memory(runtime, memory);
 
 ### Allocate Host-Accessible Memory
 
-By default, memory allocations are physically or conceptually local to the offload target for performance reasons. You can configure the allocate info to enable host access to memory allocations. But please note that host-accessible allocations MAY slow down computation on GPU because of the limited bus bandwidth between the host memory and the device.
+By default, memory allocations are physically or conceptually local to the offload target for performance reasons. You can configure the `structure.memory_allocate_info` to enable host access to memory allocations. But please note that host-accessible allocations *may* slow down computation on GPU because of the limited bus bandwidth between the host memory and the device.
 
 You *must* set `host_write` to `true` to allow streaming data to the memory.
 
@@ -85,7 +85,7 @@ std::memcpy(dst, src.data(), src.size());
 ti_unmap_memory(runtime, streaming_memory);
 ```
 
-To read data back to the host, `host_read` MUST be set true.
+To read data back to the host, `host_read` *must* be set true.
 
 ```cpp
 TiMemoryAllocateInfo mai {};
@@ -104,9 +104,9 @@ ti_unmap_memory(runtime, read_back_memory);
 ti_free_memory(runtime, read_back_memory);
 ```
 
-**NOTE** `host_read` and `host_write` can be set true simultaneously.
+> You can set `host_read` and `host_write` at the same time.
 
-### Load and destroy a Taichi AOT Module
+### Load and destroy a Taichi AOT module
 
 You can load a Taichi AOT module from the filesystem.
 
@@ -394,7 +394,7 @@ Copies the data in a contiguous subsection of the on-device memory to another su
 
 `function.launch_kernel`
 
-Launch a Taichi kernel with provided arguments. The arguments MUST have the same count and types in the same order as in the source code.
+Launches a Taichi kernel with the provided arguments. The arguments MUST have the same count and types in the same order as in the source code.
 
 `function.launch_compute_graph`
 
@@ -410,15 +410,15 @@ Sets a signaled event primitive back to an unsignaled state.
 
 `function.wait_event`
 
-Wait on an event primitive until it transitions to a signaled state. The user MUST signal the awaited event; otherwise it is an undefined behavior.
+Waits until an event primitive transitions to a signaled state. The awaited event *must* be signaled by an external procedure or an previous invocation to `function.reset_event`; otherwise, an undefined behavior would occur.
 
 `function.submit`
 
-Submit all commands to the logical device for execution. Ensure that any previous device command has been offloaded to the logical computing device.
+Submits all previously invoked device commands to the offload device for execution.
 
 `function.wait`
 
-Waits until all previously invoked device commands are executed.
+Waits until all previously invoked device commands are executed. Any invoked command that has not been submitted is submitted first.
 
 `function.load_aot_module`
 
@@ -436,4 +436,5 @@ Returns `definition.null_handle` if the module does not have a kernel of the spe
 
 `function.get_aot_module_compute_graph`
 
-Get a precompiled compute graph from the AOt module. `definition.null_handle` is returned if the module does not have a kernel of the specified name.
+Retrieves a pre-compiled compute graph from the AOT module. 
+Returns `definition.null_handle` if the module does not have a compute graph of the specified name.

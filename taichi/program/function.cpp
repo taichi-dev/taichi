@@ -3,8 +3,7 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/analysis/offline_cache_util.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 Function::Function(Program *program, const FunctionKey &func_key)
     : func_key(func_key) {
@@ -43,5 +42,4 @@ std::string Function::get_name() const {
   return func_key.get_full_name();
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

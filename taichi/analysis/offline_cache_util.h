@@ -4,8 +4,7 @@
 
 #include "taichi/rhi/arch.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 struct CompileConfig;
 class Program;
@@ -28,5 +27,4 @@ bool try_demangle_name(const std::string &mangled_name,
 
 }  // namespace offline_cache
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

@@ -7,8 +7,7 @@
 #include "taichi/program/context.h"
 #undef TI_RUNTIME_HOST
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 namespace metal {
 
@@ -164,5 +163,4 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
 
 }  // namespace metal
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

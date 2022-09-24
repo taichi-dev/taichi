@@ -5,8 +5,7 @@
 #include "gtest/gtest.h"
 #include "taichi/common/core.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace {
 
 class BinIoPair {
@@ -146,5 +145,4 @@ TEST(Serialization, MoveOnly) {
 }
 
 }  // namespace
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

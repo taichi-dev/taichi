@@ -4,8 +4,7 @@
 #include "taichi/ir/analysis.h"
 #include "taichi/transforms/make_mesh_thread_local.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 const PassID MakeMeshThreadLocal::id = "MakeMeshThreadLocal";
 
@@ -161,5 +160,4 @@ void make_mesh_thread_local(IRNode *root,
 }
 
 }  // namespace irpass
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

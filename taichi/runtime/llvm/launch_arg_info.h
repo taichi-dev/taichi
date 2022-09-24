@@ -5,8 +5,7 @@
 #include "taichi/common/core.h"
 #include "taichi/common/serialization.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 // TODO: It would be better if this can be unified with Callable::Arg. However,
 // Callable::Arg is not easily serializable.
@@ -25,5 +24,4 @@ class Kernel;
 
 std::vector<LlvmLaunchArgInfo> infer_launch_args(const Kernel *kernel);
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

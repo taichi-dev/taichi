@@ -7,7 +7,7 @@
 
 #include "array_2d.h"
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 template <int dim>
 class IndexND;
 
@@ -17,4 +17,4 @@ class RegionND;
 template <int dim, typename T>
 class ArrayND;
 
-TI_NAMESPACE_END
+}  // namespace taichi

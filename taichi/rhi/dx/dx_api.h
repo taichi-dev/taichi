@@ -9,8 +9,7 @@
 #include <d3d11.h>
 #endif
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace directx11 {
 
 bool is_dx_api_available();
@@ -18,5 +17,4 @@ bool is_dx_api_available();
 std::shared_ptr<Device> make_dx11_device();
 
 }  // namespace directx11
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

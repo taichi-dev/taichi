@@ -12,7 +12,7 @@
 #include <nvperf_target.h>
 #endif
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 // Make sure these metrics can be captured in one pass (no kernel replay)
 // Metrics for calculating the kernel elapsed time are collected by default.
@@ -1130,4 +1130,4 @@ bool CuptiToolkit::update_record(
 }
 #endif
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

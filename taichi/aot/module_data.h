@@ -7,8 +7,7 @@
 #include "taichi/common/core.h"
 #include "taichi/common/serialization.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace aot {
 
 struct CompiledFieldData {
@@ -135,5 +134,4 @@ struct ModuleData {
 };
 
 }  // namespace aot
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

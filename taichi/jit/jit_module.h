@@ -7,7 +7,7 @@
 #include "taichi/util/lang_util.h"
 #include "taichi/program/kernel_profiler.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 // A architecture-specific JIT module that initializes with an **LLVM** module
 // and allows the user to call its functions
@@ -90,4 +90,4 @@ class JITModule {
   }
 };
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

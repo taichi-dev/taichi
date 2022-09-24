@@ -4,8 +4,7 @@
 
 #include "taichi/common/core.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 enum class UnaryOpType : int {
 #define PER_UNARY_OP(x) x,
@@ -94,5 +93,4 @@ enum class TextureOpType : int {
 
 std::string texture_op_type_name(TextureOpType type);
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

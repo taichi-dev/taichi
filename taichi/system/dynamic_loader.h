@@ -7,7 +7,7 @@
 
 #include "taichi/common/core.h"
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 class DynamicLoader {
  private:
@@ -33,4 +33,4 @@ class DynamicLoader {
   void *dll_ = nullptr;
 };
 
-TI_NAMESPACE_END
+}  // namespace taichi

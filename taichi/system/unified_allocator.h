@@ -10,7 +10,7 @@ namespace taichi {
 class VirtualMemoryAllocator;
 }
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 // This class can only have one instance
 class UnifiedAllocator {
@@ -60,4 +60,4 @@ class UnifiedAllocator {
   Device *device_{nullptr};
 };
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

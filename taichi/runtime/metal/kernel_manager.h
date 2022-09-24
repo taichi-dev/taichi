@@ -13,8 +13,7 @@
 #include "taichi/program/kernel_profiler.h"
 #include "taichi/system/memory_pool.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class Kernel;
 struct RuntimeContext;
@@ -83,5 +82,4 @@ class KernelManager {
 };
 
 }  // namespace metal
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

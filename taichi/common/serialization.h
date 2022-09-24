@@ -20,10 +20,8 @@
 #include <vector>
 
 #ifdef TI_INCLUDED
-TI_NAMESPACE_BEGIN
+namespace taichi {
 #else
-#define TI_NAMESPACE_BEGIN
-#define TI_NAMESPACE_END
 #define TI_TRACE
 #define TI_CRITICAL
 #define TI_ASSERT assert
@@ -933,4 +931,6 @@ static_assert(
         std::vector<std::unique_ptr<int>> &>(),
     "");
 
-TI_NAMESPACE_END
+#ifdef TI_INCLUDED
+}  // namespace taichi
+#endif

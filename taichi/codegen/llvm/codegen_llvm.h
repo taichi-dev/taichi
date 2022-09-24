@@ -12,8 +12,7 @@
 #include "taichi/codegen/llvm/llvm_compiled_data.h"
 #include "taichi/program/program.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class TaskCodeGenLLVM;
 
@@ -396,7 +395,6 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   ~TaskCodeGenLLVM() override = default;
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang
 
 #endif  // #ifdef TI_WITH_LLVM

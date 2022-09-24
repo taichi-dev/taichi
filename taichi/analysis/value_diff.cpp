@@ -5,8 +5,7 @@
 #include "taichi/ir/statements.h"
 #include "taichi/ir/visitors.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 DiffRange operator+(const DiffRange &a, const DiffRange &b) {
   return DiffRange(a.related() && b.related(), a.coeff + b.coeff, a.low + b.low,
@@ -202,5 +201,4 @@ DiffPtrResult value_diff_ptr_index(Stmt *val1, Stmt *val2) {
 
 }  // namespace analysis
 }  // namespace irpass
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

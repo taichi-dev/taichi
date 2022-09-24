@@ -5,7 +5,7 @@
 #include "taichi/ir/visitors.h"
 #include "taichi/program/program.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 // Demote Operations into pieces for backends to deal easier
 class DemoteOperations : public BasicStmtVisitor {
@@ -229,4 +229,4 @@ bool demote_operations(IRNode *root, const CompileConfig &config) {
 
 }  // namespace irpass
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

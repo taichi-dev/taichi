@@ -3,8 +3,7 @@
 #include "taichi/rhi/arch.h"
 #include "taichi/util/lang_util.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 struct CompileConfig {
   Arch arch;
@@ -114,4 +113,4 @@ struct CompileConfig {
 
 extern TI_DLL_EXPORT CompileConfig default_compile_config;
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

@@ -32,11 +32,9 @@
 #include "renderables/lines.h"
 #include "renderables/scene_lines.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 class Program;
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang
 
 TI_UI_NAMESPACE_BEGIN
 

@@ -9,7 +9,7 @@
 #include <unordered_map>
 #include <utility>
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 namespace irpass {
 namespace {
@@ -789,4 +789,4 @@ void offload(IRNode *root, const CompileConfig &config) {
 
 }  // namespace irpass
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

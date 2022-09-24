@@ -5,7 +5,7 @@
 #include "taichi/ir/visitors.h"
 #include "taichi/transforms/utils.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 namespace {
 
@@ -69,4 +69,4 @@ void demote_no_access_mesh_fors(IRNode *root) {
 
 }  // namespace irpass
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

@@ -4,7 +4,7 @@
 
 #include <mutex>
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 class TypeFactory {
  public:
@@ -83,4 +83,4 @@ class TypeFactory {
 
 DataType promoted_type(DataType a, DataType b);
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

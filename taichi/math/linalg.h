@@ -13,7 +13,7 @@
 #include "taichi/common/core.h"
 #include "scalar.h"
 #include "array_fwd.h"
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 // Instruction Set Extension
 
@@ -1448,4 +1448,4 @@ template <int N, typename T, InstSetExt ISE>
 struct is_MatrixND<MatrixND<N, T, ISE>> : public std::true_type {};
 }  // namespace type
 
-TI_NAMESPACE_END
+}  // namespace taichi

@@ -19,7 +19,7 @@
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/transforms.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 using namespace llvm;
 
@@ -841,4 +841,4 @@ FunctionType CUDAModuleToFunctionConverter::convert(
 #endif  // TI_WITH_CUDA
 }
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

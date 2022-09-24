@@ -594,22 +594,22 @@ void export_ggui(py::module &m) {
 
 TI_UI_NAMESPACE_END
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 void export_ggui(py::module &m) {
   ui::export_ggui(m);
 }
 
-TI_NAMESPACE_END
+}  // namespace taichi
 
 #else
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 void export_ggui(py::module &m) {
   m.attr("GGUI_AVAILABLE") = py::bool_(false);
 }
 
-TI_NAMESPACE_END
+}  // namespace taichi
 
 #endif

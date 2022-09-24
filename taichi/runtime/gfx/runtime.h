@@ -13,8 +13,7 @@
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/program/program_impl.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace gfx {
 
 using namespace taichi::lang::spirv;
@@ -164,5 +163,4 @@ GfxRuntime::RegisterParams run_codegen(
     const std::vector<CompiledSNodeStructs> &compiled_structs);
 
 }  // namespace gfx
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

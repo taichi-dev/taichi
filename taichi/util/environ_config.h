@@ -5,7 +5,7 @@
 #include <string>
 #include <cstdlib>
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 static inline int get_environ_config(const std::string &name,
                                      int default_value = 0) {
@@ -15,4 +15,4 @@ static inline int get_environ_config(const std::string &name,
   return std::stoi(res);
 }
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

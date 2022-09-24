@@ -5,8 +5,7 @@
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
 #include "taichi/runtime/llvm/aot_graph_data.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 void LlvmAotModuleBuilder::dump(const std::string &output_dir,
                                 const std::string &filename) const {
@@ -74,5 +73,4 @@ void LlvmAotModuleBuilder::add_compiled_kernel(aot::Kernel *kernel) {
   }
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

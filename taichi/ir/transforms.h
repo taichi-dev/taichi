@@ -18,7 +18,7 @@
 #include "taichi/transforms/simplify.h"
 #include "taichi/common/trait.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 class ScratchPads;
 
@@ -196,4 +196,4 @@ void compile_function(IRNode *ir,
                       bool start_from_ast);
 }  // namespace irpass
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

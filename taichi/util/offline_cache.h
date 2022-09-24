@@ -13,8 +13,7 @@
 #include "taichi/util/io.h"
 #include "taichi/util/lock.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace offline_cache {
 
 using Version = std::uint16_t[3];  // {MAJOR, MINOR, PATCH}
@@ -287,5 +286,4 @@ class CacheCleaner {
 };
 
 }  // namespace offline_cache
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

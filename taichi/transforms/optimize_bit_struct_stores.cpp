@@ -192,7 +192,7 @@ class DemoteAtomicBitStructStores : public BasicStmtVisitor {
 
 }  // namespace
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 namespace irpass {
 void optimize_bit_struct_stores(IRNode *root,
@@ -216,4 +216,4 @@ void optimize_bit_struct_stores(IRNode *root,
 
 }  // namespace irpass
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

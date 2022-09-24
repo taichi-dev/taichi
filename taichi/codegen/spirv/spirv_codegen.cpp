@@ -17,8 +17,7 @@
 #include <spirv-tools/libspirv.hpp>
 #include <spirv-tools/optimizer.hpp>
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace spirv {
 namespace {
 
@@ -2365,5 +2364,4 @@ void lower(Kernel *kernel) {
 }
 
 }  // namespace spirv
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

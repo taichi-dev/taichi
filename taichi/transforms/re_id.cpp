@@ -2,7 +2,7 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/visitors.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 // This pass manipulates the id of statements so that they are successive values
 // starting from 0
@@ -41,4 +41,4 @@ void re_id(IRNode *root) {
 }
 }  // namespace irpass
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

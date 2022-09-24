@@ -58,8 +58,7 @@
 #include "taichi/rhi/cuda/cuda_context.h"
 #endif
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 using namespace llvm;
 
@@ -1000,5 +999,4 @@ std::string TaichiLLVMContext::get_struct_for_func_name(int tls_size) {
 
 TI_REGISTER_TASK(make_slim_libdevice);
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

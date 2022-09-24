@@ -3,8 +3,7 @@
 #include "taichi/system/profiler.h"
 #include "taichi/ir/analysis.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 BLSAnalyzer::BLSAnalyzer(OffloadedStmt *for_stmt, ScratchPads *pads)
     : for_stmt_(for_stmt), pads_(pads) {
@@ -106,5 +105,4 @@ bool BLSAnalyzer::run() {
   return analysis_ok_;
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

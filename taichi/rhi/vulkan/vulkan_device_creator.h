@@ -14,8 +14,7 @@
 #include <string>
 #include <functional>
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace vulkan {
 
 class VulkanDevice;
@@ -99,5 +98,4 @@ class TI_DLL_EXPORT VulkanDeviceCreator {
 };
 
 }  // namespace vulkan
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

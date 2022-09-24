@@ -13,8 +13,7 @@
 #include "taichi/runtime/metal/kernel_utils.h"
 #include "taichi/codegen/metal/struct_metal.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace metal {
 
 CompiledKernelData run_codegen(
@@ -35,5 +34,4 @@ FunctionType compile_to_metal_executable(
     OffloadedStmt *offloaded = nullptr);
 
 }  // namespace metal
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

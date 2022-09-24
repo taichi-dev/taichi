@@ -9,8 +9,7 @@
 #include "taichi/util/lock.h"
 #include "taichi/util/offline_cache.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 namespace {
 
@@ -286,5 +285,4 @@ std::string CacheManager::make_kernel_key(CompileConfig *config,
 }
 
 }  // namespace gfx
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

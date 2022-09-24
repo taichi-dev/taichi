@@ -1,6 +1,6 @@
 #include "taichi/common/core.h"
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 /*
    base64.cpp and base64.h
 
@@ -129,4 +129,4 @@ inline std::string base64_decode(std::string const &encoded_string) {
   return ret;
 }
 
-TI_NAMESPACE_END
+}  // namespace taichi

@@ -8,7 +8,7 @@
 #include "taichi/program/function.h"
 #include "taichi/program/kernel.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 namespace irpass {
 namespace {
@@ -359,4 +359,4 @@ void compile_function(IRNode *ir,
 
 }  // namespace irpass
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

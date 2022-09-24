@@ -18,7 +18,7 @@
 #include <unistd.h>
 #endif
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 std::string python_package_dir;
 
@@ -105,4 +105,4 @@ int PID::get_parent_pid() {
 #endif
 }
 
-TI_NAMESPACE_END
+}  // namespace taichi

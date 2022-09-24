@@ -5,8 +5,7 @@
 #include "taichi/program/kernel.h"
 #include "taichi/ir/snode.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class Program;
 
@@ -56,5 +55,4 @@ class SNodeRwAccessorsBank {
   std::unordered_map<const SNode *, RwKernels> snode_to_kernels_;
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

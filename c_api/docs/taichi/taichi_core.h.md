@@ -63,7 +63,7 @@ Allocated memory is automatically freed when the related `handle.runtime` is des
 ti_free_memory(runtime, memory);
 ```
 
-### Allocate Host-Accessible Memory
+### Allocate host-accessible memory
 
 By default, memory allocations are physically or conceptually local to the offload target for performance reasons. You can configure the `structure.memory_allocate_info` to enable host access to memory allocations. But please note that host-accessible allocations *may* slow down computation on GPU because of the limited bus bandwidth between the host memory and the device.
 
@@ -330,7 +330,7 @@ Multi-dimensional size of an ND-array. Dimension sizes after `structure.nd_shape
 Multi-dimentional array of dense primitive data.
 
 - `structure.nd_array.memory`: Memory bound to the ND-array.
-- `structure.nd_array.shape`: Shape of the ND-array. 
+- `structure.nd_array.shape`: Shape of the ND-array.
 - `structure.nd_array.elem_shape`: Shape of the ND-array elements. It *must not* be empty for vector or matrix ND-arrays.
 - `structure.nd_array.elem_type`: Primitive data type of the ND-array elements.
 

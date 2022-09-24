@@ -115,7 +115,7 @@ TI_DLL_EXPORT TiRuntime TI_API_CALL ti_create_vulkan_runtime_ext(
 );
 ```
 
-Create a Vulkan Taichi runtime with user-controlled capability settings.
+Creates a Vulkan Taichi runtime with user-controlled capability settings.
 
 ---
 ### Function `ti_import_vulkan_runtime`
@@ -127,7 +127,7 @@ TI_DLL_EXPORT TiRuntime TI_API_CALL ti_import_vulkan_runtime(
 );
 ```
 
-Import the Vulkan runtime owned by Taichi to external procedures.
+Imports the Vulkan runtime owned by Taichi to external procedures.
 
 ---
 ### Function `ti_export_vulkan_runtime`
@@ -140,7 +140,7 @@ TI_DLL_EXPORT void TI_API_CALL ti_export_vulkan_runtime(
 );
 ```
 
-Export a Vulkan runtime from external procedures to Taichi.
+Exports a Vulkan runtime from external procedures to Taichi.
 
 ---
 ### Function `ti_import_vulkan_memory`
@@ -153,7 +153,7 @@ TI_DLL_EXPORT TiMemory TI_API_CALL ti_import_vulkan_memory(
 );
 ```
 
-Import the Vulkan buffer owned by Taichi to external procedures.
+Imports the Vulkan buffer owned by Taichi to external procedures.
 
 ---
 ### Function `ti_export_vulkan_memory`
@@ -167,7 +167,7 @@ TI_DLL_EXPORT void TI_API_CALL ti_export_vulkan_memory(
 );
 ```
 
-Export a Vulkan buffer from external procedures to Taichi.
+Exports a Vulkan buffer from external procedures to Taichi.
 
 ---
 ### Function `ti_import_vulkan_image`
@@ -182,7 +182,7 @@ TI_DLL_EXPORT TiImage TI_API_CALL ti_import_vulkan_image(
 );
 ```
 
-Import the Vulkan image owned by Taichi to external procedures.
+Imports the Vulkan image owned by Taichi to external procedures.
 
 ---
 ### Function `ti_export_vulkan_image`
@@ -196,7 +196,7 @@ TI_DLL_EXPORT void TI_API_CALL ti_export_vulkan_image(
 );
 ```
 
-Export a Vulkan image from external procedures to Taichi.
+Exports a Vulkan image from external procedures to Taichi.
 
 ---
 ### Function `ti_import_vulkan_event`
@@ -209,7 +209,7 @@ TI_DLL_EXPORT TiEvent TI_API_CALL ti_import_vulkan_event(
 );
 ```
 
-Import the Vulkan event owned by Taichi to external procedures.
+Imports the Vulkan event owned by Taichi to external procedures.
 
 ---
 ### Function `ti_export_vulkan_event`
@@ -223,4 +223,4 @@ TI_DLL_EXPORT void TI_API_CALL ti_export_vulkan_event(
 );
 ```
 
-Export a Vulkan event from external procedures to Taichi.
+Exports a Vulkan event from external procedures to Taichi.

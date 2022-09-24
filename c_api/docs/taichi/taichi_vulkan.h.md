@@ -54,36 +54,36 @@ Necessary detail to share the same Vulkan event synchronization primitive betwee
 
 `function.create_vulkan_runtime`
 
-Create a Vulkan Taichi runtime with user-controlled capability settings.
+Creates a Vulkan Taichi runtime with user-controlled capability settings.
 
 `function.import_vulkan_runtime`
 
-Import the Vulkan runtime owned by Taichi to external procedures.
+Imports the Vulkan runtime owned by Taichi to external procedures.
 
 `function.export_vulkan_runtime`
 
-Export a Vulkan runtime from external procedures to Taichi.
+Exports a Vulkan runtime from external procedures to Taichi.
 
 `function.import_vulkan_memory`
 
-Import the Vulkan buffer owned by Taichi to external procedures.
+Imports the Vulkan buffer owned by Taichi to external procedures.
 
 `function.export_vulkan_memory`
 
-Export a Vulkan buffer from external procedures to Taichi.
+Exports a Vulkan buffer from external procedures to Taichi.
 
 `function.import_vulkan_image`
 
-Import the Vulkan image owned by Taichi to external procedures.
+Imports the Vulkan image owned by Taichi to external procedures.
 
 `function.export_vulkan_image`
 
-Export a Vulkan image from external procedures to Taichi.
+Exports a Vulkan image from external procedures to Taichi.
 
 `function.import_vulkan_event`
 
-Import the Vulkan event owned by Taichi to external procedures.
+Imports the Vulkan event owned by Taichi to external procedures.
 
 `function.export_vulkan_event`
 
-Export a Vulkan event from external procedures to Taichi.
+Exports a Vulkan event from external procedures to Taichi.

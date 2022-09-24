@@ -393,7 +393,6 @@ Parameters of a newly allocated image.
 - `structure.image_allocate_info.extent`: Image extent.
 - `structure.image_allocate_info.mip_level_count`: Number of mip-levels.
 - `structure.image_allocate_info.format`: Image texel format.
-- `structure.image_allocate_info.host_read`: True if the host needs to read from the allocated memory.
 - `structure.image_allocate_info.export_sharing`: True if the memory allocation needs to be exported to other backends (e.g., from Vulkan to CUDA).
 - `structure.image_allocate_info.usage`: All possible usage of this image allocation. In most cases, `bit_field.image_usage.storage` and `bit_field.image_usage.sampled` enough.
 
@@ -410,11 +409,11 @@ A subsection of a memory allocation. The sum of `structure.image_slice.offset` a
 
 Image data bound to a sampler.
 
-- `structure.nd_array.image`: Image bound to the texture.
-- `structure.nd_array.sampler`: The bound sampler that controls the sampling behavior of `structure.nd_array.image`.
-- `structure.nd_array.dimension`: Image Dimension.
-- `structure.nd_array.extent`: Extent of image.
-- `structure.nd_array.format`: Image texel format.
+- `structure.texture.image`: Image bound to the texture.
+- `structure.texture.sampler`: The bound sampler that controls the sampling behavior of `structure.texture.image`.
+- `structure.texture.dimension`: Image Dimension.
+- `structure.texture.extent`: Extent of image.
+- `structure.texture.format`: Image texel format.
 
 `union.argument_value`
 
@@ -437,6 +436,20 @@ A named argument value to feed compute graphs.
 
 - `structure.named_argument.name`: Name of the argument.
 - `structure.named_argument.argument`: Argument body.
+
+`function.get_last_error`
+
+Get the last error raised by Taichi C-API invocations. Returns the semantical error code.
+
+- `function.get_last_error.message_size`: Size of textual error message in `function.get_last_error.message`
+- `function.get_last_error.message`: Text buffer for the textual error message. Ignored when `message_size` is 0.
+
+`function.set_last_error`
+
+Set the provided error as the last error raised by Taichi C-API invocations. It can be useful in extended validation procedures in Taichi C-API wrappers and helper libraries.
+
+- `function.set_last_error.error`: Semantical error code.
+- `function.set_last_error.message`: A `\0`-terminated string of the textual error message. Ignored when `message_size` is 0.
 
 `function.create_runtime`
 
@@ -464,7 +477,7 @@ Unmaps a device memory and makes any host-side changes about the memory visible 
 
 `function.allocate_image`
 
-Allocate a device image with provided parameters.
+Allocates a device image with provided parameters.
 
 `function.free_image`
 
@@ -492,7 +505,7 @@ Tracks the device image with the provided image layout. Because Taichi tracks im
 
 `function.transition_image`
 
-Transition the image to the provided image layout. Because Taichi tracks image layouts internally, it is *only* useful to enforce an image layout for external procedures to use.
+Transitions the image to the provided image layout. Because Taichi tracks image layouts internally, it is *only* useful to enforce an image layout for external procedures to use.
 
 `function.launch_kernel`
 

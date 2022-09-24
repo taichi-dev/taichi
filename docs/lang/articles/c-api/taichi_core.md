@@ -730,7 +730,6 @@ Parameters of a newly allocated image.
 - `extent`: Image extent.
 - `mip_level_count`: Number of mip-levels.
 - `format`: Image texel format.
-- `structure.image_allocate_info.host_read`: True if the host needs to read from the allocated memory.
 - `export_sharing`: True if the memory allocation needs to be exported to other backends (e.g., from Vulkan to CUDA).
 - `usage`: All possible usage of this image allocation. In most cases, `TI_IMAGE_USAGE_STORAGE_BIT` and `TI_IMAGE_USAGE_SAMPLED_BIT` enough.
 
@@ -805,11 +804,11 @@ typedef struct TiTexture {
 
 Image data bound to a sampler.
 
-- `structure.nd_array.image`: Image bound to the texture.
-- `structure.nd_array.sampler`: The bound sampler that controls the sampling behavior of `structure.nd_array.image`.
-- `structure.nd_array.dimension`: Image Dimension.
-- `structure.nd_array.extent`: Extent of image.
-- `structure.nd_array.format`: Image texel format.
+- `image`: Image bound to the texture.
+- `sampler`: The bound sampler that controls the sampling behavior of `image`.
+- `dimension`: Image Dimension.
+- `extent`: Extent of image.
+- `format`: Image texel format.
 
 ---
 ### Union `TiArgumentValue`
@@ -872,6 +871,12 @@ TI_DLL_EXPORT TiError TI_API_CALL ti_get_last_error(
   char* message
 );
 ```
+
+Get the last error raised by Taichi C-API invocations. Returns the semantical error code.
+
+- `message_size`: Size of textual error message in `message`
+- `message`: Text buffer for the textual error message. Ignored when `message_size` is 0.
+
 ---
 ### Function `ti_set_last_error`
 
@@ -882,6 +887,12 @@ TI_DLL_EXPORT void TI_API_CALL ti_set_last_error(
   const char* message
 );
 ```
+
+Set the provided error as the last error raised by Taichi C-API invocations. It can be useful in extended validation procedures in Taichi C-API wrappers and helper libraries.
+
+- `error`: Semantical error code.
+- `message`: A `\0`-terminated string of the textual error message. Ignored when `message_size` is 0.
+
 ---
 ### Function `ti_create_runtime`
 
@@ -969,7 +980,7 @@ TI_DLL_EXPORT TiImage TI_API_CALL ti_allocate_image(
 );
 ```
 
-Allocate a device image with provided parameters.
+Allocates a device image with provided parameters.
 
 ---
 ### Function `ti_free_image`
@@ -1082,7 +1093,7 @@ TI_DLL_EXPORT void TI_API_CALL ti_transition_image(
 );
 ```
 
-Transition the image to the provided image layout. Because Taichi tracks image layouts internally, it is *only* useful to enforce an image layout for external procedures to use.
+Transitions the image to the provided image layout. Because Taichi tracks image layouts internally, it is *only* useful to enforce an image layout for external procedures to use.
 
 ---
 ### Function `ti_launch_kernel` (Device Command)

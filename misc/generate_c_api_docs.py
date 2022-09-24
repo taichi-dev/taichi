@@ -41,6 +41,11 @@ def get_human_readable_field_name(x: EntryBase, field_name: str):
             if str(field.name) == field_name:
                 out = str(field.name)
                 break
+    elif isinstance(x, Function):
+        for field in x.params:
+            if str(field.name) == field_name:
+                out = str(field.name)
+                break
     return out
 
 

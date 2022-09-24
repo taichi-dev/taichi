@@ -63,7 +63,7 @@ Allocated memory is automatically freed when the related `handle.runtime` is des
 ti_free_memory(runtime, memory);
 ```
 
-### Allocate Host-Accessible Memory
+### Allocate host-accessible memory
 
 By default, memory allocations are physically or conceptually local to the offload target for performance reasons. You can configure the allocate info to enable host access to memory allocations. But please note that host-accessible allocations MAY slow down computation on GPU because of the limited bus bandwidth between the host memory and the device.
 

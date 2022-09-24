@@ -4,8 +4,7 @@
 #include "taichi/codegen/metal/codegen_metal.h"
 #include "taichi/codegen/metal/struct_metal.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace {
 
 std::unordered_set<const SNode *> find_all_dense_snodes(
@@ -123,5 +122,4 @@ DeviceAllocation MetalProgramImpl::allocate_memory_ndarray(
   return metal_kernel_mgr_->allocate_memory(params);
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

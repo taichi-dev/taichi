@@ -31,8 +31,7 @@
 #include "taichi/program/program.h"
 #endif  // TI_PLATFORM_OSX
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace metal {
 
 #ifdef TI_PLATFORM_OSX
@@ -1389,5 +1388,4 @@ DeviceAllocation KernelManager::allocate_memory(
 }
 
 }  // namespace metal
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

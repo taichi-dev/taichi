@@ -6,7 +6,7 @@
 
 #include <algorithm>
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 namespace irpass {
 
@@ -92,4 +92,4 @@ std::unordered_map<int, ExternalPtrAccess> detect_external_ptr_access_in_task(
 
 }  // namespace irpass
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

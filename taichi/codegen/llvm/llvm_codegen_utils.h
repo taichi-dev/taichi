@@ -36,8 +36,7 @@
 
 #include "taichi/runtime/llvm/llvm_context.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 inline constexpr char kLLVMPhysicalCoordinatesName[] = "PhysicalCoordinates";
 
@@ -187,5 +186,4 @@ class RuntimeObject {
   }
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

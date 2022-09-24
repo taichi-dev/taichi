@@ -11,8 +11,7 @@
 
 #include <vector>
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 static std::vector<std::uint8_t> get_offline_cache_key_of_compile_config(
     CompileConfig *config) {
@@ -176,5 +175,4 @@ std::string get_hashed_offline_cache_key(CompileConfig *config,
   return res;
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

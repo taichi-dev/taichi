@@ -9,8 +9,7 @@
 
 #include "Eigen/Sparse"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class SparseMatrix;
 
@@ -296,5 +295,4 @@ void make_sparse_matrix_from_ndarray_cusparse(Program *prog,
                                               const Ndarray &row_indices,
                                               const Ndarray &col_indices,
                                               const Ndarray &values);
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

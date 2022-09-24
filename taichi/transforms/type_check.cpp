@@ -7,7 +7,7 @@
 #include "taichi/ir/frontend_ir.h"
 #include "taichi/transforms/utils.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 static_assert(
     sizeof(real) == sizeof(float32),
@@ -568,4 +568,4 @@ void type_check(IRNode *root, const CompileConfig &config) {
 
 }  // namespace irpass
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

@@ -1,8 +1,7 @@
 #include "taichi/codegen/spirv/spirv_ir_builder.h"
 #include "taichi/rhi/dx/dx_device.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 namespace spirv {
 
@@ -1556,5 +1555,4 @@ void IRBuilder::init_random_function(Value global_tmp_) {
 }
 
 }  // namespace spirv
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

@@ -2,7 +2,7 @@
 #include "taichi/codegen/llvm/codegen_llvm.h"
 #include "taichi/ir/statements.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 namespace {
 
@@ -591,6 +591,6 @@ llvm::Value *TaskCodeGenLLVM::reconstruct_quant_float(
   }
 }
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang
 
 #endif  // #ifdef TI_WITH_LLVM

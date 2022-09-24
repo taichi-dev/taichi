@@ -7,8 +7,7 @@
 #include "taichi/ir/statements.h"
 #include "taichi/system/profiler.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 CFGNode::CFGNode(Block *block,
                  int begin_location,
@@ -1026,5 +1025,4 @@ void ControlFlowGraph::determine_ad_stack_size(int default_ad_stack_size) {
   }
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

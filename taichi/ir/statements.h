@@ -8,8 +8,7 @@
 
 #include <optional>
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class Function;
 
@@ -1841,5 +1840,4 @@ class MatrixInitStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

@@ -7,7 +7,7 @@
 #include "taichi/codegen/codegen.h"
 #include "taichi/codegen/llvm/codegen_llvm.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 class KernelCodeGenCPU : public KernelCodeGen {
  public:
@@ -50,4 +50,4 @@ class CPUModuleToFunctionConverter : public ModuleToFunctionConverter {
 
 #endif
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

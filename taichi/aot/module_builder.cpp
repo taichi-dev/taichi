@@ -1,8 +1,7 @@
 #include "taichi/aot/module_builder.h"
 #include "taichi/program/kernel.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 void AotModuleBuilder::add(const std::string &identifier, Kernel *kernel) {
   add_per_backend(identifier, kernel);
@@ -62,5 +61,4 @@ void AotModuleBuilder::add_graph(const std::string &name,
   }
   graphs_[name] = graph;
 }
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

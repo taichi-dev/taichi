@@ -10,8 +10,7 @@
 #include <memory>
 #include <thread>
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 // A memory pool that runs on the host
 
@@ -55,5 +54,4 @@ class TI_DLL_EXPORT MemoryPool {
   Device *device_;
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

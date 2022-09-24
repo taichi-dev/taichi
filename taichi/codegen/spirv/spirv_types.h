@@ -3,8 +3,7 @@
 #include "lib_tiny_ir.h"
 #include "taichi/ir/type.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace spirv {
 
 class STD140LayoutContext : public tinyir::LayoutContext {};
@@ -241,5 +240,4 @@ std::unordered_map<const tinyir::Node *, uint32_t> ir_translate_to_spirv(
     IRBuilder *spir_builder);
 
 }  // namespace spirv
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

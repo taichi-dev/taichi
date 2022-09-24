@@ -4,8 +4,7 @@
 
 #include <numeric>
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace aot {
 
 void CompiledGraph::run(
@@ -81,5 +80,4 @@ void CompiledGraph::run(
   }
 }
 }  // namespace aot
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

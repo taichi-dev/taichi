@@ -4,7 +4,7 @@
 #include <unordered_set>
 #include <functional>
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 namespace {
 
@@ -106,4 +106,4 @@ std::unordered_set<Stmt *> constexpr_prop(
 }
 }  // namespace irpass::analysis
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

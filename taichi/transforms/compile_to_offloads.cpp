@@ -8,7 +8,7 @@
 #include "taichi/program/function.h"
 #include "taichi/program/kernel.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 namespace irpass {
 namespace {
@@ -186,6 +186,10 @@ void offload_to_executable(IRNode *ir,
   irpass::demote_atomics(ir, config);
   print("Atomics demoted I");
   irpass::analysis::verify(ir);
+  if (config.cache_loop_invariant_global_vars) {
+    irpass::cache_loop_invariant_global_vars(ir, config);
+    print("Cache loop-invariant global vars");
+  }
 
   if (config.demote_dense_struct_fors) {
     irpass::demote_dense_struct_fors(ir, config.packed);
@@ -246,6 +250,9 @@ void offload_to_executable(IRNode *ir,
   irpass::analysis::verify(ir);
 
   if (lower_global_access) {
+    irpass::full_simplify(ir, config,
+                          {false, /*autodiff_enabled*/ false, kernel->program});
+    print("Simplified before lower access");
     irpass::lower_access(ir, config, {kernel->no_activate, true});
     print("Access lowered");
     irpass::analysis::verify(ir);
@@ -352,4 +359,4 @@ void compile_function(IRNode *ir,
 
 }  // namespace irpass
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

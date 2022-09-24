@@ -8,8 +8,7 @@
 #include "taichi/ir/type.h"
 #include "taichi/program/snode_expr_utils.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 class Program;
 class SNodeRwAccessorsBank;
 
@@ -364,5 +363,4 @@ class SNode {
   SNodeRwAccessorsBank *snode_rw_accessors_bank_{nullptr};
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

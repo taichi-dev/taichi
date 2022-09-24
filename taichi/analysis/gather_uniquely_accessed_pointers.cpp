@@ -5,7 +5,7 @@
 #include "taichi/ir/visitors.h"
 #include <algorithm>
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 class LoopUniqueStmtSearcher : public BasicStmtVisitor {
  private:
@@ -385,4 +385,4 @@ void gather_uniquely_accessed_bit_structs(IRNode *root, AnalysisManager *amgr) {
 }
 }  // namespace irpass::analysis
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

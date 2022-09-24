@@ -9,8 +9,7 @@
 #include "taichi/struct/struct.h"
 #include "tests/cpp/struct/fake_struct_compiler.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace {
 
 class MakeBlockLocalTest : public ::testing::Test {
@@ -192,5 +191,4 @@ TEST_F(MakeBlockLocalTest, Basic) {
 }
 
 }  // namespace
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

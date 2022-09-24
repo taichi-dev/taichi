@@ -8,8 +8,7 @@
 #include "taichi/rhi/llvm/llvm_device.h"
 #include "taichi/system/virtual_memory.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace cpu {
 
 class CpuResourceBinder : public ResourceBinder {
@@ -131,6 +130,4 @@ class CpuDevice : public LlvmDevice {
 
 }  // namespace cpu
 
-}  // namespace lang
-
-}  // namespace taichi
+}  // namespace taichi::lang

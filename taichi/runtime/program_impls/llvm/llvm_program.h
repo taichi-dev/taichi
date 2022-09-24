@@ -17,8 +17,7 @@ namespace llvm {
 class Module;
 }  // namespace llvm
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class StructCompiler;
 class Program;
@@ -299,5 +298,4 @@ class LlvmProgramImpl : public ProgramImpl {
 
 LlvmProgramImpl *get_llvm_program(Program *prog);
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

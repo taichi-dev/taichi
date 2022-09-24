@@ -1,7 +1,6 @@
 #include "program_impl.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 ProgramImpl::ProgramImpl(CompileConfig &config_) : config(&config_) {
 }
@@ -11,5 +10,4 @@ void ProgramImpl::compile_snode_tree_types(SNodeTree *tree) {
   TI_NOT_IMPLEMENTED;
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

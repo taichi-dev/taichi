@@ -3,7 +3,7 @@
 #include "taichi/ir/type_factory.h"
 #include "taichi/ir/type_utils.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 // Note: these primitive types should never be freed. They are supposed to live
 // together with the process. This is a temporary solution. Later we should
@@ -418,4 +418,4 @@ float64 TypedConstant::val_cast_to_float64() const {
   }
 }
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

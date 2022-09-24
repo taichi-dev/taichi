@@ -1,8 +1,7 @@
 #pragma once
 #include "taichi/runtime/gfx/runtime.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace gfx {
 class KernelImpl : public aot::Kernel {
  public:
@@ -25,5 +24,4 @@ class KernelImpl : public aot::Kernel {
   const GfxRuntime::RegisterParams params_;
 };
 }  // namespace gfx
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

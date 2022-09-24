@@ -5,7 +5,7 @@
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/statements.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 using MeshElementTypeSet = std::unordered_set<mesh::MeshElementType>;
 
@@ -79,4 +79,4 @@ gather_mesh_thread_local(OffloadedStmt *offload, const CompileConfig &config) {
 
 }  // namespace irpass::analysis
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

@@ -1,21 +1,20 @@
 ---
-sidebar_position: 3
+sidebar_position: 4
 ---
 
-# Objective Data-oriented Programming II
-
-
-## Taichi dataclasses
+# Taichi Dataclass
 
 Taichi provides custom [struct types](../type_system/type.md#compound-types) for developers to assemble pieces of data together. However, it would be more convenient to have:
-  1. A Python representation of the struct type which is more object oriented.
-  2. Functions associated with a struct type (C++-style structs).
+
+- A Python representation of the struct type which is more object oriented.
+- Functions associated with a struct type (C++-style structs).
 
 
 To achieve the ends, Taichi enabled the `@ti.dataclass` decorator on a Python class. This is inspired by Python's [dataclass](https://docs.python.org/3/library/dataclasses.html) feature, which uses class fields with annotations to create data types.
 
-### Creating a struct from a Python class
-Here is an example of how we could define a Taichi struct type under a Python class:
+## Create a struct from a Python class
+
+The following is an example of defining a Taichi struct type under a Python class:
 
 ```python
 @ti.dataclass
@@ -23,7 +22,7 @@ class Sphere:
     center: vec3
     radius: ti.f32
 ```
-This will create the *exact* same type as using `ti.types.struct()`:
+This creates the *exact* same type as using `ti.types.struct()`:
 
 ```python
 Sphere = ti.types.struct(center=vec3, radius=ti.f32)
@@ -34,7 +33,7 @@ The `@ti.dataclass` decorator converts the annotated members in the Python class
 sphere_field = Sphere.field(shape=(n,))
 ```
 
-### Associating functions with the struct type
+## Associate functions with the struct type
 Python classes can have functions attached to them, and so can Taichi struct types. Building from the above example, one can embed functions in the struct as follows:
 
 ```python
@@ -68,7 +67,8 @@ def get_area() -> ti.f32:
 get_area() # 201.062...
 ```
 
-### Notes
+## Notes
+
 - Inheritance of Taichi dataclasses is not supported.
 - While it is convenient and recommended to associate functions with a struct defined via `@ti.dataclass`, `ti.types.struct` can serve the same purpose with the help of the `__struct_methods` argument. As mentioned above, the two methods of defining a struct type produce identical output.
 

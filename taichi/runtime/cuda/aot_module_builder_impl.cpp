@@ -5,8 +5,7 @@
 #include "taichi/codegen/cuda/codegen_cuda.h"
 #include "taichi/runtime/llvm/launch_arg_info.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace cuda {
 
 LLVMCompiledKernel AotModuleBuilderImpl::compile_kernel(Kernel *kernel) {
@@ -15,5 +14,4 @@ LLVMCompiledKernel AotModuleBuilderImpl::compile_kernel(Kernel *kernel) {
 }
 
 }  // namespace cuda
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

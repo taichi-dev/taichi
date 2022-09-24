@@ -147,7 +147,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd,
   return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 void GUI::process_event() {
   MSG msg;
@@ -330,6 +330,6 @@ GUI::~GUI() {
   }
 }
 
-TI_NAMESPACE_END
+}  // namespace taichi
 
 #endif

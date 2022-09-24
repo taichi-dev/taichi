@@ -4,7 +4,7 @@
 #include "taichi/ir/visitors.h"
 #include "taichi/system/profiler.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 // Unconditionally eliminate ContinueStmt's at **ends** of loops
 class UselessContinueEliminator : public IRVisitor {
@@ -156,4 +156,4 @@ bool unreachable_code_elimination(IRNode *root) {
 }
 }  // namespace irpass
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

@@ -8,7 +8,7 @@
 #include "taichi/platform/windows/windows.h"
 #endif
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 // Cross-platform virtual memory allocator
 class VirtualMemoryAllocator {
@@ -59,4 +59,4 @@ uint64 get_memory_usage(int pid = -1);
 #define TI_MEMORY_USAGE(name) \
   TI_DEBUG("Memory Usage [{}] = {:.2f} GB", name, get_memory_usage_gb());
 
-TI_NAMESPACE_END
+}  // namespace taichi

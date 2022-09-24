@@ -2,7 +2,7 @@
 #include "taichi/ir/statements.h"
 #include "taichi/common/logging.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 namespace {
 
@@ -484,4 +484,4 @@ MeshPatchIndexStmt *IRBuilder::get_patch_index() {
   return insert(Stmt::make_typed<MeshPatchIndexStmt>());
 }
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

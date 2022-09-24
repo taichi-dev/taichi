@@ -4,8 +4,7 @@
 #include "taichi/runtime/llvm/llvm_offline_cache.h"
 #include "taichi/codegen/llvm/codegen_llvm.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class LlvmAotModuleBuilder : public AotModuleBuilder {
  public:
@@ -38,5 +37,4 @@ class LlvmAotModuleBuilder : public AotModuleBuilder {
   LlvmProgramImpl *prog_ = nullptr;
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

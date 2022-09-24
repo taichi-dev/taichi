@@ -1,8 +1,7 @@
 #include "taichi/runtime/llvm/llvm_aot_module_loader.h"
 #include "taichi/runtime/llvm/aot_graph_data.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 LlvmOfflineCache::KernelCacheData LlvmAotModule::load_kernel_from_cache(
     const std::string &name) {
@@ -80,5 +79,4 @@ void allocate_aot_snode_tree_type(aot::Module *aot_module,
   }
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

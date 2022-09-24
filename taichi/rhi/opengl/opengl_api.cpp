@@ -7,8 +7,7 @@
 #include "GLFW/glfw3.h"
 #include "taichi/rhi/opengl/opengl_device.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace opengl {
 
 #define PER_OPENGL_EXTENSION(x) bool opengl_extension_##x;
@@ -218,5 +217,4 @@ std::shared_ptr<Device> make_opengl_device() {
 }
 
 }  // namespace opengl
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

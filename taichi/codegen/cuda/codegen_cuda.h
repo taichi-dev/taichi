@@ -5,7 +5,7 @@
 #include "taichi/codegen/codegen.h"
 #include "taichi/codegen/llvm/codegen_llvm.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 class KernelCodeGenCUDA : public KernelCodeGen {
  public:
@@ -42,4 +42,4 @@ class CUDAModuleToFunctionConverter : public ModuleToFunctionConverter {
                        LLVMCompiledKernel data) const override;
 };
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

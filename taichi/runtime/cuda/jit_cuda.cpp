@@ -1,7 +1,7 @@
 #include "taichi/runtime/cuda/jit_cuda.h"
 #include "taichi/runtime/llvm/llvm_context.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 #if defined(TI_WITH_CUDA)
 
@@ -258,4 +258,4 @@ std::unique_ptr<JITSession> create_llvm_jit_session_cuda(
 }
 #endif
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

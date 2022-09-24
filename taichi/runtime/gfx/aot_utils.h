@@ -6,8 +6,7 @@
 #include "taichi/codegen/spirv/kernel_utils.h"
 #include "taichi/aot/module_loader.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace gfx {
 
 /**
@@ -25,5 +24,4 @@ struct TaichiAotData {
 };
 
 }  // namespace gfx
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

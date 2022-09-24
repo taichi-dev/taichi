@@ -2,7 +2,7 @@
 #include "taichi/ir/statements.h"
 #include "taichi/util/bit.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 UnaryOpStmt::UnaryOpStmt(UnaryOpType op_type, Stmt *operand)
     : op_type(op_type), operand(operand) {
@@ -412,4 +412,4 @@ BitStructType *BitStructStoreStmt::get_bit_struct() const {
   return ptr->as<SNodeLookupStmt>()->snode->dt->as<BitStructType>();
 }
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

@@ -4,8 +4,7 @@
 
 #include "taichi/rhi/arch.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 struct CompileConfig;
 class Program;
@@ -17,5 +16,4 @@ std::string get_hashed_offline_cache_key_of_snode(SNode *snode);
 std::string get_hashed_offline_cache_key(CompileConfig *config, Kernel *kernel);
 void gen_offline_cache_key(Program *prog, IRNode *ast, std::ostream *os);
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

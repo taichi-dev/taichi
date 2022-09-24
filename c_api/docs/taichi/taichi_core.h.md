@@ -266,6 +266,7 @@ Types of backend archs.
 - `enumeration.arch.arm64`: Arm64 native CPU backend.
 - `enumeration.arch.cuda`: NVIDIA CUDA GPU backend.
 - `enumeration.arch.vulkan`: Vulkan GPU backend.
+- `enumeration.arch.opengl`: OpenGL GPU backend.
 
 `enumeration.data_type`
 

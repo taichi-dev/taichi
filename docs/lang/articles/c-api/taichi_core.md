@@ -383,6 +383,7 @@ Types of backend archs.
 - `TI_ARCH_ARM64`: Arm64 native CPU backend.
 - `TI_ARCH_CUDA`: NVIDIA CUDA GPU backend.
 - `TI_ARCH_VULKAN`: Vulkan GPU backend.
+- `TI_ARCH_OPENGL`: OpenGL GPU backend.
 
 ---
 ### Enumeration `TiDataType`

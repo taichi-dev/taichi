@@ -33,3 +33,19 @@ A_ti.build_coo(d_row_coo, d_col_coo, d_val_coo)
 
 solver = ti.linalg.SparseSolver()
 solver.analyze_pattern(A_ti)
+solver.factorize(A_ti)
+
+b = ti.ndarray(shape=nrows, dtype=ti.f32)
+b.fill(1.0)
+
+x = ti.ndarray(shape=ncols, dtype=ti.f32)
+solver.solve_rf(A_ti, b, x)
+
+
+@ti.kernel
+def print_ndarray(x: ti.types.ndarray()):
+    for i in range(10):
+        print(x[i])
+
+
+print_ndarray(x)

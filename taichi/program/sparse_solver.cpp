@@ -67,92 +67,6 @@ bool EigenSparseSolver<EigenSolver, EigenMatrix>::info() {
   return solver_.info() == Eigen::Success;
 }
 
-void CuSparseSolver::analyze_pattern(const SparseMatrix &sm) {
-#if defined(TI_WITH_CUDA)
-  // Retrive the info of the sparse matrix
-  const cusparseSpMatDescr_t *A =
-      (const cusparseSpMatDescr_t *)(sm.get_matrix());
-  size_t rowsA = 0, colsA = 0, nnzA = 0;
-  void *d_csrRowPtrA = NULL, *d_csrColIndA = NULL, *d_csrValA = NULL;
-  cusparseIndexType_t csrRowOffsetsType, csrColIndType;
-  cusparseIndexBase_t idxBase;
-  cudaDataType valueType;
-  CUSPARSEDriver::get_instance().cpCsrGet(
-      *A, &rowsA, &colsA, &nnzA, &d_csrRowPtrA, &d_csrColIndA, &d_csrValA,
-      &csrRowOffsetsType, &csrColIndType, &idxBase, &valueType);
-
-  cusolverSpHandle_t cusolverSpH =
-      NULL;  // reordering, permutation and 1st LU factorization
-  cusparseHandle_t cusparseH = NULL;  // residual evaluation
-  cusparseMatDescr_t descrA = NULL;   // A is a base-0 general matrix
-  CUSOLVERDriver::get_instance().csSpCreate(&cusolverSpH);
-  CUSPARSEDriver::get_instance().cpCreate(&cusparseH);
-  CUSPARSEDriver::get_instance().cpCreateMatDescr(&descrA);
-  CUSPARSEDriver::get_instance().cpSetMatType(descrA,
-                                              CUSPARSE_MATRIX_TYPE_GENERAL);
-  CUSPARSEDriver::get_instance().cpSetMatIndexBase(descrA,
-                                                   CUSPARSE_INDEX_BASE_ZERO);
-
-  csrcholInfo_t d_info =
-      NULL;  // opaque info structure for LU with parital pivoting
-  // step 2: create opaque info structure
-  CUSOLVERDriver::get_instance().csSpCreateCsrcholInfo(&d_info);
-
-  // step 3: analyze chol(A) to know structure of L
-  CUSOLVERDriver::get_instance().csSpXcsrcholAnalysis(
-      cusolverSpH, rowsA, nnzA, descrA, d_csrRowPtrA, d_csrColIndA, d_info);
-
-  size_t size_internal = 0;
-  size_t size_chol = 0;  // size of working space for csrlu
-  // step 4: workspace for chol(A)
-  CUSOLVERDriver::get_instance().csSpScsrcholBufferInfo(
-      cusolverSpH, rowsA, nnzA, descrA, d_csrValA, d_csrRowPtrA, d_csrColIndA,
-      d_info, &size_internal, &size_chol);
-
-  void *buffer_gpu = NULL;  // working space for Cholesky
-  if (size_chol > 0)
-    CUDADriver::get_instance().malloc(&buffer_gpu, sizeof(char) * size_chol);
-
-  // step 5: compute A = L*L^T
-  CUSOLVERDriver::get_instance().csSpScsrcholFactor(
-      cusolverSpH, rowsA, nnzA, descrA, d_csrValA, d_csrRowPtrA, d_csrColIndA,
-      d_info, buffer_gpu);
-  // step 6: check if the matrix is singular
-  const double tol = 1.e-14;
-  int singularity = 0;
-  CUSOLVERDriver::get_instance().csSpScsrcholZeroPivot(cusolverSpH, d_info, tol,
-                                                       &singularity);
-  printf("singularity = %d\n", singularity);
-  TI_ASSERT(singularity == -1);
-  // step 7: solve A*x = b
-  float *h_b = (float *)malloc(sizeof(float) * rowsA);
-  for (int i = 0; i < rowsA; i++)
-    h_b[i] = 1.0;
-
-  void *d_x = NULL, *d_b = NULL;
-  CUDADriver::get_instance().malloc(&d_x, colsA * sizeof(float));
-  CUDADriver::get_instance().malloc(&d_b, rowsA * sizeof(float));
-  CUDADriver::get_instance().memcpy_host_to_device(d_b, h_b,
-                                                   rowsA * sizeof(float));
-  CUSOLVERDriver::get_instance().csSpScsrcholSolve(cusolverSpH, rowsA, d_b, d_x,
-                                                   d_info, buffer_gpu);
-
-  float *h_x = NULL;
-  h_x = (float *)malloc(sizeof(float) * colsA);
-  CUDADriver::get_instance().memcpy_device_to_host((void *)h_x, d_x,
-                                                   sizeof(float) * colsA);
-  for (int i = 0; i < 10; i++)
-    printf("%f ", h_x[i]);
-  printf("%n");
-
-  CUDADriver::get_instance().mem_free(buffer_gpu);
-  CUDADriver::get_instance().mem_free(d_x);
-  CUDADriver::get_instance().mem_free(d_b);
-#else
-  TI_NOT_IMPLEMENTED
-#endif
-}
-
 CuSparseSolver::CuSparseSolver() {
 #if defined(TI_WITH_CUDA)
   if (!CUSPARSEDriver::get_instance().is_loaded()) {
@@ -167,6 +81,80 @@ CuSparseSolver::CuSparseSolver() {
       TI_ERROR("Failed to load cusolver library!");
     }
   }
+#endif
+}
+
+void CuSparseSolver::analyze_pattern(const SparseMatrix &sm) {
+#if defined(TI_WITH_CUDA)
+  // Retrive the info of the sparse matrix
+  const cusparseSpMatDescr_t *A =
+      (const cusparseSpMatDescr_t *)(sm.get_matrix());
+  size_t rowsA = 0, colsA = 0, nnzA = 0;
+  void *d_csrRowPtrA = NULL, *d_csrColIndA = NULL, *d_csrValA = NULL;
+  cusparseIndexType_t csrRowOffsetsType, csrColIndType;
+  cusparseIndexBase_t idxBase;
+  cudaDataType valueType;
+  CUSPARSEDriver::get_instance().cpCsrGet(
+      *A, &rowsA, &colsA, &nnzA, &d_csrRowPtrA, &d_csrColIndA, &d_csrValA,
+      &csrRowOffsetsType, &csrColIndType, &idxBase, &valueType);
+
+  CUSOLVERDriver::get_instance().csSpCreate(&cusolverSpH);
+  CUSPARSEDriver::get_instance().cpCreate(&cusparseH);
+  CUSPARSEDriver::get_instance().cpCreateMatDescr(&descrA);
+  CUSPARSEDriver::get_instance().cpSetMatType(descrA,
+                                              CUSPARSE_MATRIX_TYPE_GENERAL);
+  CUSPARSEDriver::get_instance().cpSetMatIndexBase(descrA,
+                                                   CUSPARSE_INDEX_BASE_ZERO);
+
+  // step 2: create opaque info structure
+  CUSOLVERDriver::get_instance().csSpCreateCsrcholInfo(&d_info);
+
+  // step 3: analyze chol(A) to know structure of L
+  CUSOLVERDriver::get_instance().csSpXcsrcholAnalysis(
+      cusolverSpH, rowsA, nnzA, descrA, d_csrRowPtrA, d_csrColIndA, d_info);
+
+#else
+  TI_NOT_IMPLEMENTED
+#endif
+}
+
+void CuSparseSolver::factorize(const SparseMatrix &sm) {
+#if defined(TI_WITH_CUDA)
+  // Retrive the info of the sparse matrix
+  const cusparseSpMatDescr_t *A =
+      (const cusparseSpMatDescr_t *)(sm.get_matrix());
+  size_t rowsA = 0, colsA = 0, nnzA = 0;
+  void *d_csrRowPtrA = NULL, *d_csrColIndA = NULL, *d_csrValA = NULL;
+  cusparseIndexType_t csrRowOffsetsType, csrColIndType;
+  cusparseIndexBase_t idxBase;
+  cudaDataType valueType;
+  CUSPARSEDriver::get_instance().cpCsrGet(
+      *A, &rowsA, &colsA, &nnzA, &d_csrRowPtrA, &d_csrColIndA, &d_csrValA,
+      &csrRowOffsetsType, &csrColIndType, &idxBase, &valueType);
+
+  size_t size_internal = 0;
+  size_t size_chol = 0;  // size of working space for csrlu
+  // step 4: workspace for chol(A)
+  CUSOLVERDriver::get_instance().csSpScsrcholBufferInfo(
+      cusolverSpH, rowsA, nnzA, descrA, d_csrValA, d_csrRowPtrA, d_csrColIndA,
+      d_info, &size_internal, &size_chol);
+
+  if (size_chol > 0)
+    CUDADriver::get_instance().malloc(&buffer_gpu, sizeof(char) * size_chol);
+
+  // step 5: compute A = L*L^T
+  CUSOLVERDriver::get_instance().csSpScsrcholFactor(
+      cusolverSpH, rowsA, nnzA, descrA, d_csrValA, d_csrRowPtrA, d_csrColIndA,
+      d_info, buffer_gpu);
+  // step 6: check if the matrix is singular
+  const double tol = 1.e-14;
+  int singularity = 0;
+  CUSOLVERDriver::get_instance().csSpScsrcholZeroPivot(cusolverSpH, d_info, tol,
+                                                       &singularity);
+  printf("singularity = %d\n", singularity);
+  TI_ASSERT(singularity == -1);
+#else
+  TI_NOT_IMPLEMENTED
 #endif
 }
 
@@ -333,6 +321,38 @@ void CuSparseSolver::solve_cu(Program *prog,
     free(h_val_A);
   if (h_val_B != NULL)
     free(h_val_B);
+#endif
+}
+
+void CuSparseSolver::solve_rf(Program *prog,
+                              const SparseMatrix &sm,
+                              const Ndarray &b,
+                              Ndarray &x) {
+#if defined(TI_WITH_CUDA)
+  // Retrive the info of the sparse matrix
+  const cusparseSpMatDescr_t *A =
+      (const cusparseSpMatDescr_t *)(sm.get_matrix());
+  size_t rowsA = 0, colsA = 0, nnzA = 0;
+  void *d_csrRowPtrA = NULL, *d_csrColIndA = NULL, *d_csrValA = NULL;
+  cusparseIndexType_t csrRowOffsetsType, csrColIndType;
+  cusparseIndexBase_t idxBase;
+  cudaDataType valueType;
+  CUSPARSEDriver::get_instance().cpCsrGet(
+      *A, &rowsA, &colsA, &nnzA, &d_csrRowPtrA, &d_csrColIndA, &d_csrValA,
+      &csrRowOffsetsType, &csrColIndType, &idxBase, &valueType);
+  // step 7: solve A*x = b
+  size_t d_b = prog->get_ndarray_data_ptr_as_int(&b);
+  size_t d_x = prog->get_ndarray_data_ptr_as_int(&x);
+  CUSOLVERDriver::get_instance().csSpScsrcholSolve(
+      cusolverSpH, rowsA, (void *)d_b, (void *)d_x, d_info, buffer_gpu);
+
+  // TODO: free allocated memory and handles
+  // CUDADriver::get_instance().mem_free(buffer_gpu);
+  // CUSOLVERDriver::get_instance().csSpDestory(cusolverSpH);
+  // CUSPARSEDriver::get_instance().cpDestroy(cusparseH);
+  // CUSPARSEDriver::get_instance().cpDestroyMatDescr(descrA);
+#else
+  TI_NOT_IMPLEMENTED
 #endif
 }
 

@@ -16,6 +16,10 @@ class SparseSolver {
   virtual void analyze_pattern(const SparseMatrix &sm) = 0;
   virtual void factorize(const SparseMatrix &sm) = 0;
   virtual Eigen::VectorXf solve(const Eigen::Ref<const Eigen::VectorXf> &b) = 0;
+  virtual void solve_rf(Program *prog,
+                        const SparseMatrix &sm,
+                        const Ndarray &b,
+                        Ndarray &x) = 0;
   virtual void solve_cu(Program *prog,
                         const SparseMatrix &sm,
                         const Ndarray &b,
@@ -37,12 +41,27 @@ class EigenSparseSolver : public SparseSolver {
   void solve_cu(Program *prog,
                 const SparseMatrix &sm,
                 const Ndarray &b,
-                Ndarray &x) override{};
+                Ndarray &x) override {
+    TI_NOT_IMPLEMENTED;
+  };
+  void solve_rf(Program *prog,
+                const SparseMatrix &sm,
+                const Ndarray &b,
+                Ndarray &x) override {
+    TI_NOT_IMPLEMENTED;
+  };
+
   bool info() override;
 };
 
 class CuSparseSolver : public SparseSolver {
  private:
+  csrcholInfo_t d_info{nullptr};
+  cusolverSpHandle_t cusolverSpH{nullptr};
+  cusparseHandle_t cusparseH{nullptr};
+  cusparseMatDescr_t descrA{nullptr};
+  void *buffer_gpu{nullptr};
+
  public:
   CuSparseSolver();
   ~CuSparseSolver() override = default;
@@ -51,13 +70,15 @@ class CuSparseSolver : public SparseSolver {
   };
   void analyze_pattern(const SparseMatrix &sm) override;
 
-  void factorize(const SparseMatrix &sm) override {
-    TI_NOT_IMPLEMENTED;
-  };
+  void factorize(const SparseMatrix &sm) override;
   Eigen::VectorXf solve(const Eigen::Ref<const Eigen::VectorXf> &b) override {
     TI_NOT_IMPLEMENTED;
   };
   void solve_cu(Program *prog,
+                const SparseMatrix &sm,
+                const Ndarray &b,
+                Ndarray &x) override;
+  void solve_rf(Program *prog,
                 const SparseMatrix &sm,
                 const Ndarray &b,
                 Ndarray &x) override;

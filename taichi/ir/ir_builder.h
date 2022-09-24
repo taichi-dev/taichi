@@ -216,6 +216,9 @@ class IRBuilder {
                                Stmt *true_result,
                                Stmt *false_result);
 
+  // Matrix Initialization
+  MatrixInitStmt *create_matrix_init(std::vector<Stmt *> elements);
+
   // Print values and strings. Arguments can be Stmt* or std::string.
   template <typename... Args>
   PrintStmt *create_print(Args &&...args) {

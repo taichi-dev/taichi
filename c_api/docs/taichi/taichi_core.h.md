@@ -90,7 +90,7 @@ To read data back to the host, `host_read` *must* be set to true.
 ```cpp
 TiMemoryAllocateInfo mai {};
 mai.size = 1024; // Size in bytes.
-mai.host_write = true;
+mai.host_read = true;
 mai.usage = TI_MEMORY_USAGE_STORAGE_BIT;
 TiMemory read_back_memory = ti_allocate_memory(runtime, &mai);
 
@@ -244,7 +244,7 @@ A collection of Taichi kernels (a compute graph) to launch on the offload target
 
 `enumeration.error`
 
-Errors reported by the Taichi C-API.
+Errors reported by the Taichi C-API. Enumerants greater than or equal to zero are success states.
 
 - `enumeration.error.incomplete`: The output data is truncated because the user-provided buffer is too small.
 - `enumeration.error.success`: The Taichi C-API invocation finished gracefully.
@@ -271,9 +271,9 @@ Types of backend archs.
 
 Elementary (primitive) data types. There might be vendor-specific constraints on the available data types so it's recommended to use 32-bit data types if multi-platform distribution is desired.
 
-- `enumeration.data_type.f16`: 16-bit IEEE 754 floating-point number.
-- `enumeration.data_type.f32`: 32-bit IEEE 754 floating-point number.
-- `enumeration.data_type.f64`: 64-bit IEEE 754 floating-point number.
+- `enumeration.data_type.f16`: 16-bit IEEE 754 half-precision floating-point number.
+- `enumeration.data_type.f32`: 32-bit IEEE 754 single-precision floating-point number.
+- `enumeration.data_type.f64`: 64-bit IEEE 754 double-precision floating-point number.
 - `enumeration.data_type.i8`: 8-bit one's complement signed integer.
 - `enumeration.data_type.i16`: 16-bit one's complement signed integer.
 - `enumeration.data_type.i32`: 32-bit one's complement signed integer.
@@ -287,15 +287,16 @@ Elementary (primitive) data types. There might be vendor-specific constraints on
 
 Types of kernel and compute graph argument.
 
-- `enumeration.argument_type.i32`: Signed 32-bit integer.
-- `enumeration.argument_type.f32`: Signed 32-bit floating-point number.
+- `enumeration.argument_type.i32`: 32-bit one's complement signed integer.
+- `enumeration.argument_type.f32`: 32-bit IEEE 754 single-precision floating-point number.
 - `enumeration.argument_type.ndarray`: ND-array wrapped around a `handle.memory`.
+- `enumeration.argument_type.texture`: Texture wrapped around a `handle.image`.
 
 `bit_field.memory_usage`
 
-Usages of a memory allocation.
+Usages of a memory allocation. Taichi requires kernel argument memories to be allocated with `bit_field.memory_usage.storage`.
 
-- `bit_field.memory_usage.storage`: The memory can be read/write accessed by any kernel. In most cases, the users only need to set this flag.
+- `bit_field.memory_usage.storage`: The memory can be read/write accessed by any kernel.
 - `bit_field.memory_usage.uniform`: The memory can be used as a uniform buffer in graphics pipelines.
 - `bit_field.memory_usage.vertex`: The memory can be used as a vertex buffer in graphics pipelines.
 - `bit_field.memory_usage.index`: The memory can be used as a index buffer in graphics pipelines.
@@ -336,10 +337,10 @@ Multi-dimensional array of dense primitive data.
 
 `bit_field.image_usage`
 
-Usages of an image allocation.
+Usages of an image allocation. Taichi requires kernel argument images to be allocated with `bit_field.image_usage.storage` and `bit_field.image_usage.sampled`.
 
-- `bit_field.image_usage.storage`: The image can be read/write accessed by any kernel. In most cases, the users only need to set this flag and `bit_field.image_usage.sampled`.
-- `bit_field.image_usage.sampled`: The image can be read-only accessed by any kernel. In most cases, the users only need to set this flag and `bit_field.image_usage.storage`.
+- `bit_field.image_usage.storage`: The image can be read/write accessed by any kernel.
+- `bit_field.image_usage.sampled`: The image can be read-only accessed by any kernel.
 - `bit_field.image_usage.attachment`: The image can be used as a color or depth-stencil attachment depending on its format.
 
 `enumeration.image_dimension`
@@ -355,7 +356,7 @@ Dimensions of an image allocation.
 
 `enumeration.image_layout`
 
-- `enumeration.image_layout.`: Undefined layout. An image in this layout does not contain any semantical information.
+- `enumeration.image_layout.undefined`: Undefined layout. An image in this layout does not contain any semantical information.
 - `enumeration.image_layout.shader_read`: Optimal layout for read-only access, including sampling.
 - `enumeration.image_layout.shader_write`: Optimal layout for write-only access.
 - `enumeration.image_layout.shader_read_write`: Optimal layout for read/write access.
@@ -412,7 +413,7 @@ Image data bound to a sampler.
 - `structure.texture.image`: Image bound to the texture.
 - `structure.texture.sampler`: The bound sampler that controls the sampling behavior of `structure.texture.image`.
 - `structure.texture.dimension`: Image Dimension.
-- `structure.texture.extent`: Extent of image.
+- `structure.texture.extent`: Image extent.
 - `structure.texture.format`: Image texel format.
 
 `union.argument_value`
@@ -420,8 +421,9 @@ Image data bound to a sampler.
 A scalar or structured argument value.
 
 - `union.argument_value.i32`: Value of a 32-bit one's complement signed integer.
-- `union.argument_value.f32`: Value of a 32-bit IEEE 754 floating-poing number.
+- `union.argument_value.f32`: Value of a 32-bit IEEE 754 single-precision floating-poing number.
 - `union.argument_value.ndarray`: An ND-array to be bound.
+- `union.argument_value.texture`: A texture to be bound.
 
 `structure.argument`
 

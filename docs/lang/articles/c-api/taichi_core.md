@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Core Functionality
 
-Taichi Core exposes all necessary interfaces for offloading the AOT modules to Taichi. The following are a list of features that are available regardless of your backend. The corresponding APIs are still under development and subject to change.
+Taichi Core exposes all necessary interfaces for offloading the AOT modules to Taichi. The following is a list of features that are available regardless of your backend. The corresponding APIs are still under development and subject to change.
 
 ## Availability
 
@@ -19,20 +19,20 @@ Taichi C-API intends to support the following backends:
 |DirectX 11|GPU (Windows)|N/A|
 |Metal|GPU (macOS, iOS)|N/A|
 
-The backends with tier-1 support are being developed and tested more intensively. And most new features will be available on Vulkan first, because it has the most outstanding cross-platform compatibility among all the tier-1 backends.
-For the backends with tier-2 support, you should expect a delay in the fixes to the minor issues.
+The backends with tier-1 support are being developed and tested more intensively. And most new features will be available on Vulkan first because it has the most outstanding cross-platform compatibility among all the tier-1 backends.
+For the backends with tier-2 support, you should expect a delay in the fixes to minor issues.
 
 For convenience, in the following text and other C-API documents, the term *host* refers to the user of the C-API; the term *device* refers to the logical (conceptual) compute device, to which Taichi's runtime offloads its compute tasks. A *device* may not be a physical discrete processor other than the CPU and the *host* may *not* be able to access the memory allocated on the *device*.
 
-Unless explicitly explained, **device**, **backend**, **offload targer** and **GPU** are used interchangeably; **host**, **user code**, **user procedure** and **CPU** are used interchangeably too.
+Unless otherwise specified, **device**, **backend**, **offload target**, and **GPU** are interchangeable; **host**, **user code**, **user procedure**, and **CPU** are interchangeable.
 
 ## How to...
 
-In this section we give an brief introduction about what you might want to do with the Taichi C-API.
+The following section provides a brief introduction to the Taichi C-API.
 
 ### Create and destroy a Runtime Instance
 
-You *must* create a runtime instance before working with Taichi, and *only* one runtime per thread. Currently we do not officially claim that multiple runtime instances can coexist in a process, but please feel free to [file an issue with us](https://github.com/taichi-dev/taichi/issues) if you run into any problem with runtime instance coexistence.
+You *must* create a runtime instance before working with Taichi, and *only* one runtime per thread. Currently, we do not officially claim that multiple runtime instances can coexist in a process, but please feel free to [file an issue with us](https://github.com/taichi-dev/taichi/issues) if you run into any problem with runtime instance coexistence.
 
 ```cpp
 TiRuntime runtime = ti_create_runtime(TI_ARCH_VULKAN);
@@ -63,9 +63,9 @@ Allocated memory is automatically freed when the related [`TiRuntime`](#handle-t
 ti_free_memory(runtime, memory);
 ```
 
-### Allocate Host-Accessible Memory
+### Allocate host-accessible memory
 
-By default, memory allocations are physically or conceptually local to the offload target for performance reasons. You can configure the allocate info to enable host access to memory allocations. But please note that host-accessible allocations MAY slow down computation on GPU because of the limited bus bandwidth between the host memory and the device.
+By default, memory allocations are physically or conceptually local to the offload target for performance reasons. You can configure the [`TiMemoryAllocateInfo`](#structure-timemoryallocateinfo) to enable host access to memory allocations. But please note that host-accessible allocations *may* slow down computation on GPU because of the limited bus bandwidth between the host memory and the device.
 
 You *must* set `host_write` to `true` to allow streaming data to the memory.
 
@@ -85,7 +85,7 @@ std::memcpy(dst, src.data(), src.size());
 ti_unmap_memory(runtime, streaming_memory);
 ```
 
-To read data back to the host, `host_read` MUST be set true.
+To read data back to the host, `host_read` *must* be set to true.
 
 ```cpp
 TiMemoryAllocateInfo mai {};
@@ -104,9 +104,9 @@ ti_unmap_memory(runtime, read_back_memory);
 ti_free_memory(runtime, read_back_memory);
 ```
 
-**NOTE** `host_read` and `host_write` can be set true simultaneously.
+> You can set `host_read` and `host_write` at the same time.
 
-### Load and destroy a Taichi AOT Module
+### Load and destroy a Taichi AOT module
 
 You can load a Taichi AOT module from the filesystem.
 
@@ -227,7 +227,7 @@ typedef uint32_t TiFlags;
 
 A bit field that can be used to represent 32 orthogonal flags. Bits unspecified in the corresponding flag enum are ignored.
 
-**NOTE** Enumerations and bit-field flags in the C-API have a `TI_XXX_MAX_ENUM` case to ensure the enum to have a 32-bit range and in-memory size. It has no semantical impact and can be safely ignored.
+**NOTE** Enumerations and bit-field flags in the C-API have a `TI_XXX_MAX_ENUM` case to ensure the enum has a 32-bit range and in-memory size. It has no semantical impact and can be safely ignored.
 
 ---
 ### Definition `TI_NULL_HANDLE`
@@ -247,7 +247,7 @@ A sentinal invalid handle that will never be produced from a valid call to Taich
 typedef struct TiRuntime_t* TiRuntime;
 ```
 
-Taichi runtime represents an instance of a logical backend and its internal dynamic state. The user is responsible to synchronize any use of [`TiRuntime`](#handle-tiruntime). The user MUST NOT manipulate multiple [`TiRuntime`](#handle-tiruntime)s in a same thread.
+Taichi runtime represents an instance of a logical backend and its internal dynamic state. The user is responsible to synchronize any use of [`TiRuntime`](#handle-tiruntime). The user MUST NOT manipulate multiple [`TiRuntime`](#handle-tiruntime)s in the same thread.
 
 ---
 ### Handle `TiAotModule`
@@ -267,7 +267,7 @@ An ahead-of-time (AOT) compiled Taichi module, which contains a collection of ke
 typedef struct TiEvent_t* TiEvent;
 ```
 
-A synchronization primitive to manage on-device execution flows in multiple queues.
+A synchronization primitive to manage device execution flows in multiple queues.
 
 ---
 ### Handle `TiMemory`
@@ -277,7 +277,7 @@ A synchronization primitive to manage on-device execution flows in multiple queu
 typedef struct TiMemory_t* TiMemory;
 ```
 
-A contiguous allocation of on-device memory.
+A contiguous allocation of device memory.
 
 ---
 ### Handle `TiImage`
@@ -287,7 +287,7 @@ A contiguous allocation of on-device memory.
 typedef struct TiImage_t* TiImage;
 ```
 
-A contiguous allocation of on-device image.
+A contiguous allocation of device image.
 
 ---
 ### Handle `TiSampler`
@@ -297,7 +297,7 @@ A contiguous allocation of on-device image.
 typedef struct TiSampler_t* TiSampler;
 ```
 
-An image sampler. [`TI_NULL_HANDLE`](#definition-ti_null_handle) represents a default image sampler provided by the runtime implementation. The filter modes, address modes of default samplers depends on backend implementation.
+An image sampler. [`TI_NULL_HANDLE`](#definition-ti_null_handle) represents a default image sampler provided by the runtime implementation. The filter modes and address modes of default samplers depend on backend implementation.
 
 ---
 ### Handle `TiKernel`
@@ -307,7 +307,7 @@ An image sampler. [`TI_NULL_HANDLE`](#definition-ti_null_handle) represents a de
 typedef struct TiKernel_t* TiKernel;
 ```
 
-A Taichi kernel that can be launched on device for execution.
+A Taichi kernel that can be launched on the offload target for execution.
 
 ---
 ### Handle `TiComputeGraph`
@@ -317,7 +317,7 @@ A Taichi kernel that can be launched on device for execution.
 typedef struct TiComputeGraph_t* TiComputeGraph;
 ```
 
-A collection of Taichi kernels (a compute graph) to launch on device in a predefined order.
+A collection of Taichi kernels (a compute graph) to launch on the offload target in a predefined order.
 
 ---
 ### Enumeration `TiError`
@@ -347,11 +347,11 @@ Errors reported by the Taichi C-API.
 - `TI_ERROR_NOT_SUPPORTED`: The invoked API, or the combination of parameters is not supported by the Taichi C-API.
 - `TI_ERROR_CORRUPTED_DATA`: Provided data is corrupted.
 - `TI_ERROR_NAME_NOT_FOUND`: Provided name does not refer to any existing item.
-- `TI_ERROR_INVALID_ARGUMENT`: One or more function arguments violate constraints specified in C-API documents; or kernel arguments mismatch the kernel argument list defined in the AOT module.
+- `TI_ERROR_INVALID_ARGUMENT`: One or more function arguments violate constraints specified in C-API documents, or kernel arguments mismatch the kernel argument list defined in the AOT module.
 - `TI_ERROR_ARGUMENT_NULL`: One or more by-reference (pointer) function arguments point to null.
 - `TI_ERROR_ARGUMENT_OUT_OF_RANGE`: One or more function arguments are out of its acceptable range; or enumeration arguments have undefined value.
 - `TI_ERROR_ARGUMENT_NOT_FOUND`: One or more kernel arguments are missing.
-- `TI_ERROR_INVALID_INTEROP`: The intended interoperation is not possible on the current arch. For example, attempts to export a Vulkan object from a CUDA runtime is not allowed.
+- `TI_ERROR_INVALID_INTEROP`: The intended interoperation is not possible on the current arch. For example, attempts to export a Vulkan object from a CUDA runtime are not allowed.
 - `TI_ERROR_INVALID_STATE`: The Taichi C-API enters an unrecoverable invalid state. Related Taichi objects are potentially corrupted. The users *should* release the contaminated resources for stability. Please feel free to file an issue if you encountered this error in a normal routine.
 
 ---
@@ -458,7 +458,7 @@ typedef TiFlags TiMemoryUsageFlags;
 
 Usages of a memory allocation.
 
-- `TI_MEMORY_USAGE_STORAGE_BIT`: The memory can be read/write accessed by any kernel. In most of the cases, the users only need to set this flag.
+- `TI_MEMORY_USAGE_STORAGE_BIT`: The memory can be read/write accessed by any kernel. In most cases, the users only need to set this flag.
 - `TI_MEMORY_USAGE_UNIFORM_BIT`: The memory can be used as a uniform buffer in graphics pipelines.
 - `TI_MEMORY_USAGE_VERTEX_BIT`: The memory can be used as a vertex buffer in graphics pipelines.
 - `TI_MEMORY_USAGE_INDEX_BIT`: The memory can be used as a index buffer in graphics pipelines.
@@ -483,7 +483,7 @@ Parameters of a newly allocated memory.
 - `host_write`: True if the host needs to write to the allocated memory.
 - `host_read`: True if the host needs to read from the allocated memory.
 - `export_sharing`: True if the memory allocation needs to be exported to other backends (e.g., from Vulkan to CUDA).
-- `usage`: All possible usage of this memory allocation. In most of the cases, `TI_MEMORY_USAGE_STORAGE_BIT` is enough.
+- `usage`: All possible usage of this memory allocation. In most cases, `TI_MEMORY_USAGE_STORAGE_BIT` is enough.
 
 ---
 ### Structure `TiMemorySlice`
@@ -532,7 +532,7 @@ typedef struct TiNdArray {
 } TiNdArray;
 ```
 
-Multi-dimentional array of dense primitive data.
+Multi-dimensional array of dense primitive data.
 
 - `memory`: Memory bound to the ND-array.
 - `shape`: Shape of the ND-array.
@@ -551,6 +551,13 @@ typedef enum TiImageUsageFlagBits {
 } TiImageUsageFlagBits;
 typedef TiFlags TiImageUsageFlags;
 ```
+
+Usages of an image allocation.
+
+- `TI_IMAGE_USAGE_STORAGE_BIT`: The image can be read/write accessed by any kernel. In most cases, the users only need to set this flag and `TI_IMAGE_USAGE_SAMPLED_BIT`.
+- `TI_IMAGE_USAGE_SAMPLED_BIT`: The image can be read-only accessed by any kernel. In most cases, the users only need to set this flag and `TI_IMAGE_USAGE_STORAGE_BIT`.
+- `TI_IMAGE_USAGE_ATTACHMENT_BIT`: The image can be used as a color or depth-stencil attachment depending on its format.
+
 ---
 ### Enumeration `TiImageDimension`
 
@@ -566,6 +573,16 @@ typedef enum TiImageDimension {
   TI_IMAGE_DIMENSION_MAX_ENUM = 0xffffffff,
 } TiImageDimension;
 ```
+
+Dimensions of an image allocation.
+
+- `TI_IMAGE_DIMENSION_1D`: The image is 1-dimensional.
+- `TI_IMAGE_DIMENSION_2D`: The image is 2-dimensional.
+- `TI_IMAGE_DIMENSION_3D`: The image is 3-dimensional.
+- `TI_IMAGE_DIMENSION_1D_ARRAY`: The image is 1-dimensional and it has one or more layers.
+- `TI_IMAGE_DIMENSION_2D_ARRAY`: The image is 2-dimensional and it has one or more layers.
+- `TI_IMAGE_DIMENSION_CUBE`: The image is 2-dimensional and it has 6 layers for the faces towards +X, -X, +Y, -Y, +Z, -Z in sequence.
+
 ---
 ### Enumeration `TiImageLayout`
 
@@ -586,6 +603,19 @@ typedef enum TiImageLayout {
   TI_IMAGE_LAYOUT_MAX_ENUM = 0xffffffff,
 } TiImageLayout;
 ```
+
+- `enumeration.image_layout.`: Undefined layout. An image in this layout does not contain any semantical information.
+- `TI_IMAGE_LAYOUT_SHADER_READ`: Optimal layout for read-only access, including sampling.
+- `TI_IMAGE_LAYOUT_SHADER_WRITE`: Optimal layout for write-only access.
+- `TI_IMAGE_LAYOUT_SHADER_READ_WRITE`: Optimal layout for read/write access.
+- `TI_IMAGE_LAYOUT_COLOR_ATTACHMENT`: Optimal layout as a color attachment.
+- `TI_IMAGE_LAYOUT_COLOR_ATTACHMENT_READ`: Optimal layout as an input color attachment.
+- `TI_IMAGE_LAYOUT_DEPTH_ATTACHMENT`: Optimal layout as a depth attachment.
+- `TI_IMAGE_LAYOUT_DEPTH_ATTACHMENT_READ`: Optimal layout as an input depth attachment.
+- `TI_IMAGE_LAYOUT_TRANSFER_DST`: Optimal layout as a data copy destination.
+- `TI_IMAGE_LAYOUT_TRANSFER_SRC`: Optimal layout as a data copy source.
+- `TI_IMAGE_LAYOUT_PRESENT_SRC`:  Optimal layout as a presentation source.
+
 ---
 ### Enumeration `TiFormat`
 
@@ -651,6 +681,14 @@ typedef struct TiImageOffset {
   uint32_t array_layer_offset;
 } TiImageOffset;
 ```
+
+Offsets of an image in X, Y, Z, and array layers.
+
+- `x`: Image offset in the X direction.
+- `y`: Image offset in the Y direction. *Must* be 0 if the image has a dimension of `TI_IMAGE_DIMENSION_1D` or `TI_IMAGE_DIMENSION_1D_ARRAY`.
+- `z`: Image offset in the Z direction. *Must* be 0 if the image has a dimension of `TI_IMAGE_DIMENSION_1D`, `TI_IMAGE_DIMENSION_2D`, `TI_IMAGE_DIMENSION_1D_ARRAY`, `TI_IMAGE_DIMENSION_2D_ARRAY` or `TI_IMAGE_DIMENSION_CUBE_ARRAY`.
+- `array_layer_offset`: Image offset in array layers. *Must* be 0 if the image has a dimension of `TI_IMAGE_DIMENSION_1D`, `TI_IMAGE_DIMENSION_2D` or `TI_IMAGE_DIMENSION_3D`.
+
 ---
 ### Structure `TiImageExtent`
 
@@ -663,6 +701,14 @@ typedef struct TiImageExtent {
   uint32_t array_layer_count;
 } TiImageExtent;
 ```
+
+Extents of an image in X, Y, Z, and array layers.
+
+- `width`: Image extent in the X direction.
+- `height`: Image extent in the Y direction. *Must* be 1 if the image has a dimension of `TI_IMAGE_DIMENSION_1D` or `TI_IMAGE_DIMENSION_1D_ARRAY`.
+- `depth`: Image extent in the Z direction. *Must* be 1 if the image has a dimension of `TI_IMAGE_DIMENSION_1D`, `TI_IMAGE_DIMENSION_2D`, `TI_IMAGE_DIMENSION_1D_ARRAY`, `TI_IMAGE_DIMENSION_2D_ARRAY` or `TI_IMAGE_DIMENSION_CUBE_ARRAY`.
+- `array_layer_count`: Image extent in array layers. *Must* be 1 if the image has a dimension of `TI_IMAGE_DIMENSION_1D`, `TI_IMAGE_DIMENSION_2D` or `TI_IMAGE_DIMENSION_3D`. *Must* be 6 if the image has a dimension of `TI_IMAGE_DIMENSION_CUBE_ARRAY`.
+
 ---
 ### Structure `TiImageAllocateInfo`
 
@@ -673,9 +719,21 @@ typedef struct TiImageAllocateInfo {
   TiImageExtent extent;
   uint32_t mip_level_count;
   TiFormat format;
+  TiBool export_sharing;
   TiImageUsageFlags usage;
 } TiImageAllocateInfo;
 ```
+
+Parameters of a newly allocated image.
+
+- `dimension`: Image dimension.
+- `extent`: Image extent.
+- `mip_level_count`: Number of mip-levels.
+- `format`: Image texel format.
+- `structure.image_allocate_info.host_read`: True if the host needs to read from the allocated memory.
+- `export_sharing`: True if the memory allocation needs to be exported to other backends (e.g., from Vulkan to CUDA).
+- `usage`: All possible usage of this image allocation. In most cases, `TI_IMAGE_USAGE_STORAGE_BIT` and `TI_IMAGE_USAGE_SAMPLED_BIT` enough.
+
 ---
 ### Structure `TiImageSlice`
 
@@ -688,6 +746,14 @@ typedef struct TiImageSlice {
   uint32_t mip_level;
 } TiImageSlice;
 ```
+
+A subsection of a memory allocation. The sum of `offset` and `extent` in each dimension cannot exceed the size of `image`.
+
+- `image`: The subsectioned image allocation.
+- `offset`: Offset from the beginning of the allocation in each dimension.
+- `extent`: Size of the subsection in each dimension.
+- `mip_level`: The subsectioned mip-level.
+
 ---
 ### Enumeration `TiFilter`
 
@@ -736,6 +802,15 @@ typedef struct TiTexture {
   TiFormat format;
 } TiTexture;
 ```
+
+Image data bound to a sampler.
+
+- `structure.nd_array.image`: Image bound to the texture.
+- `structure.nd_array.sampler`: The bound sampler that controls the sampling behavior of `structure.nd_array.image`.
+- `structure.nd_array.dimension`: Image Dimension.
+- `structure.nd_array.extent`: Extent of image.
+- `structure.nd_array.format`: Image texel format.
+
 ---
 ### Union `TiArgumentValue`
 
@@ -782,7 +857,7 @@ typedef struct TiNamedArgument {
 } TiNamedArgument;
 ```
 
-An named argument value to feed compute graphcs.
+A named argument value to feed compute graphs.
 
 - `name`: Name of the argument.
 - `argument`: Argument body.
@@ -817,7 +892,7 @@ TI_DLL_EXPORT TiRuntime TI_API_CALL ti_create_runtime(
 );
 ```
 
-Create a Taichi Runtime with the specified [`TiArch`](#enumeration-tiarch).
+Creates a Taichi Runtime with the specified [`TiArch`](#enumeration-tiarch).
 
 ---
 ### Function `ti_destroy_runtime`
@@ -829,7 +904,7 @@ TI_DLL_EXPORT void TI_API_CALL ti_destroy_runtime(
 );
 ```
 
-Destroy a Taichi Runtime.
+Destroys a Taichi Runtime.
 
 ---
 ### Function `ti_allocate_memory`
@@ -842,7 +917,7 @@ TI_DLL_EXPORT TiMemory TI_API_CALL ti_allocate_memory(
 );
 ```
 
-Allocate a contiguous on-device memory with provided parameters.
+Allocates a contiguous device memory with provided parameters.
 
 ---
 ### Function `ti_free_memory`
@@ -868,7 +943,7 @@ TI_DLL_EXPORT void* TI_API_CALL ti_map_memory(
 );
 ```
 
-Maps an on-device memory to a host-addressible space. You *must* ensure that the device is not being used by any device command before the mapping.
+Maps a device memory to a host-addressable space. You *must* ensure that the device is not being used by any device command before the mapping.
 
 ---
 ### Function `ti_unmap_memory`
@@ -881,7 +956,7 @@ TI_DLL_EXPORT void TI_API_CALL ti_unmap_memory(
 );
 ```
 
-Unmaps an on-device memory and makes any host-side changes about the memory visible to the device. You *must* ensure that there is no further access to the previously mapped host-addressible space.
+Unmaps a device memory and makes any host-side changes about the memory visible to the device. You *must* ensure that there is no further access to the previously mapped host-addressable space.
 
 ---
 ### Function `ti_allocate_image`
@@ -893,6 +968,9 @@ TI_DLL_EXPORT TiImage TI_API_CALL ti_allocate_image(
   const TiImageAllocateInfo* allocate_info
 );
 ```
+
+Allocate a device image with provided parameters.
+
 ---
 ### Function `ti_free_image`
 
@@ -903,6 +981,9 @@ TI_DLL_EXPORT void TI_API_CALL ti_free_image(
   TiImage image
 );
 ```
+
+Frees an image allocation.
+
 ---
 ### Function `ti_create_sampler`
 
@@ -959,7 +1040,7 @@ TI_DLL_EXPORT void TI_API_CALL ti_copy_memory_device_to_device(
 );
 ```
 
-Copies the data in a contiguous subsection of the on-device memory to another subsection. Note that the two subsections *must not* overlap.
+Copies the data in a contiguous subsection of the device memory to another subsection. The two subsections *must not* overlap.
 
 ---
 ### Function `ti_copy_image_device_to_device` (Device Command)
@@ -972,6 +1053,9 @@ TI_DLL_EXPORT void TI_API_CALL ti_copy_image_device_to_device(
   const TiImageSlice* src_image
 );
 ```
+
+Copies the image data in a contiguous subsection of the device image to another subsection. The two subsections *must not* overlap.
+
 ---
 ### Function `ti_track_image_ext`
 
@@ -983,6 +1067,9 @@ TI_DLL_EXPORT void TI_API_CALL ti_track_image_ext(
   TiImageLayout layout
 );
 ```
+
+Tracks the device image with the provided image layout. Because Taichi tracks image layouts internally, it is *only* useful to inform Taichi that the image is transitioned to a new layout by external procedures.
+
 ---
 ### Function `ti_transition_image` (Device Command)
 
@@ -994,6 +1081,9 @@ TI_DLL_EXPORT void TI_API_CALL ti_transition_image(
   TiImageLayout layout
 );
 ```
+
+Transition the image to the provided image layout. Because Taichi tracks image layouts internally, it is *only* useful to enforce an image layout for external procedures to use.
+
 ---
 ### Function `ti_launch_kernel` (Device Command)
 
@@ -1007,7 +1097,7 @@ TI_DLL_EXPORT void TI_API_CALL ti_launch_kernel(
 );
 ```
 
-Launch a Taichi kernel with provided arguments. The arguments MUST have the same count and types in the same order as in the source code.
+Launches a Taichi kernel with the provided arguments. The arguments MUST have the same count and types in the same order as in the source code.
 
 ---
 ### Function `ti_launch_compute_graph` (Device Command)
@@ -1061,7 +1151,7 @@ TI_DLL_EXPORT void TI_API_CALL ti_wait_event(
 );
 ```
 
-Wait on an event primitive until it transitions to a signaled state. The user MUST signal the awaited event; otherwise it is an undefined behavior.
+Waits until an event primitive transitions to a signaled state. The awaited event *must* be signaled by an external procedure or a previous invocation to [`ti_reset_event`](#function-ti_reset_event-device-command); otherwise, an undefined behavior would occur.
 
 ---
 ### Function `ti_submit`
@@ -1073,7 +1163,7 @@ TI_DLL_EXPORT void TI_API_CALL ti_submit(
 );
 ```
 
-Submit all commands to the logical device for execution. Ensure that any previous device command has been offloaded to the logical computing device.
+Submits all previously invoked device commands to the offload device for execution.
 
 ---
 ### Function `ti_wait`
@@ -1085,7 +1175,7 @@ TI_DLL_EXPORT void TI_API_CALL ti_wait(
 );
 ```
 
-Waits until all previously invoked device commands are executed.
+Waits until all previously invoked device commands are executed. Any invoked command that has not been submitted is submitted first.
 
 ---
 ### Function `ti_load_aot_module`
@@ -1138,4 +1228,5 @@ TI_DLL_EXPORT TiComputeGraph TI_API_CALL ti_get_aot_module_compute_graph(
 );
 ```
 
-Get a precompiled compute graph from the AOt module. [`TI_NULL_HANDLE`](#definition-ti_null_handle) is returned if the module does not have a kernel of the specified name.
+Retrieves a pre-compiled compute graph from the AOT module.
+Returns [`TI_NULL_HANDLE`](#definition-ti_null_handle) if the module does not have a compute graph of the specified name.

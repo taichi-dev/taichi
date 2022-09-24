@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Core Functionality
 
-Taichi Core exposes all necessary interfaces for offloading the AOT modules to Taichi. The following are a list of features that are available regardless of your backend. The corresponding APIs are still under development and subject to change.
+Taichi Core exposes all necessary interfaces for offloading the AOT modules to Taichi. The following is a list of features that are available regardless of your backend. The corresponding APIs are still under development and subject to change.
 
 ## Availability
 
@@ -19,12 +19,12 @@ Taichi C-API intends to support the following backends:
 |DirectX 11|GPU (Windows)|N/A|
 |Metal|GPU (macOS, iOS)|N/A|
 
-The backends with tier-1 support are being developed and tested more intensively. And most new features will be available on Vulkan first, because it has the most outstanding cross-platform compatibility among all the tier-1 backends.
-For the backends with tier-2 support, you should expect a delay in the fixes to the minor issues.
+The backends with tier-1 support are being developed and tested more intensively. And most new features will be available on Vulkan first because it has the most outstanding cross-platform compatibility among all the tier-1 backends.
+For the backends with tier-2 support, you should expect a delay in the fixes to minor issues.
 
 For convenience, in the following text and other C-API documents, the term *host* refers to the user of the C-API; the term *device* refers to the logical (conceptual) compute device, to which Taichi's runtime offloads its compute tasks. A *device* may not be a physical discrete processor other than the CPU and the *host* may *not* be able to access the memory allocated on the *device*.
 
-Unless otherwise specified, **device**, **backend**, **offload targer**, and **GPU** are interchangeable; **host**, **user code**, **user procedure**, and **CPU** are interchangeable.
+Unless otherwise specified, **device**, **backend**, **offload target**, and **GPU** are interchangeable; **host**, **user code**, **user procedure**, and **CPU** are interchangeable.
 
 ## How to...
 
@@ -32,7 +32,7 @@ The following section provides a brief introduction to the Taichi C-API.
 
 ### Create and destroy a Runtime Instance
 
-You *must* create a runtime instance before working with Taichi, and *only* one runtime per thread. Currently we do not officially claim that multiple runtime instances can coexist in a process, but please feel free to [file an issue with us](https://github.com/taichi-dev/taichi/issues) if you run into any problem with runtime instance coexistence.
+You *must* create a runtime instance before working with Taichi, and *only* one runtime per thread. Currently, we do not officially claim that multiple runtime instances can coexist in a process, but please feel free to [file an issue with us](https://github.com/taichi-dev/taichi/issues) if you run into any problem with runtime instance coexistence.
 
 ```cpp
 TiRuntime runtime = ti_create_runtime(TI_ARCH_VULKAN);
@@ -85,7 +85,7 @@ std::memcpy(dst, src.data(), src.size());
 ti_unmap_memory(runtime, streaming_memory);
 ```
 
-To read data back to the host, `host_read` *must* be set true.
+To read data back to the host, `host_read` *must* be set to true.
 
 ```cpp
 TiMemoryAllocateInfo mai {};
@@ -204,7 +204,7 @@ A condition or a predicate is not satisfied; a statement is invalid.
 
 A bit field that can be used to represent 32 orthogonal flags. Bits unspecified in the corresponding flag enum are ignored.
 
-**NOTE** Enumerations and bit-field flags in the C-API have a `TI_XXX_MAX_ENUM` case to ensure the enum to have a 32-bit range and in-memory size. It has no semantical impact and can be safely ignored.
+**NOTE** Enumerations and bit-field flags in the C-API have a `TI_XXX_MAX_ENUM` case to ensure the enum has a 32-bit range and in-memory size. It has no semantical impact and can be safely ignored.
 
 `definition.null_handle`
 
@@ -212,7 +212,7 @@ A sentinal invalid handle that will never be produced from a valid call to Taich
 
 `handle.runtime`
 
-Taichi runtime represents an instance of a logical backend and its internal dynamic state. The user is responsible to synchronize any use of `handle.runtime`. The user MUST NOT manipulate multiple `handle.runtime`s in a same thread.
+Taichi runtime represents an instance of a logical backend and its internal dynamic state. The user is responsible to synchronize any use of `handle.runtime`. The user MUST NOT manipulate multiple `handle.runtime`s in the same thread.
 
 `handle.aot_module`
 
@@ -220,27 +220,27 @@ An ahead-of-time (AOT) compiled Taichi module, which contains a collection of ke
 
 `handle.event`
 
-A synchronization primitive to manage on-device execution flows in multiple queues.
+A synchronization primitive to manage device execution flows in multiple queues.
 
 `handle.memory`
 
-A contiguous allocation of on-device memory.
+A contiguous allocation of device memory.
 
 `handle.image`
 
-A contiguous allocation of on-device image.
+A contiguous allocation of device image.
 
 `handle.sampler`
 
-An image sampler. `definition.null_handle` represents a default image sampler provided by the runtime implementation. The filter modes, address modes of default samplers depends on backend implementation.
+An image sampler. `definition.null_handle` represents a default image sampler provided by the runtime implementation. The filter modes and address modes of default samplers depend on backend implementation.
 
 `handle.kernel`
 
-A Taichi kernel that can be launched on device for execution.
+A Taichi kernel that can be launched on the offload target for execution.
 
 `handle.compute_graph`
 
-A collection of Taichi kernels (a compute graph) to launch on device in a predefined order.
+A collection of Taichi kernels (a compute graph) to launch on the offload target in a predefined order.
 
 `enumeration.error`
 
@@ -251,11 +251,11 @@ Errors reported by the Taichi C-API.
 - `enumeration.error.not_supported`: The invoked API, or the combination of parameters is not supported by the Taichi C-API.
 - `enumeration.error.corrupted_data`: Provided data is corrupted.
 - `enumeration.error.name_not_found`: Provided name does not refer to any existing item.
-- `enumeration.error.invalid_argument`: One or more function arguments violate constraints specified in C-API documents; or kernel arguments mismatch the kernel argument list defined in the AOT module.
+- `enumeration.error.invalid_argument`: One or more function arguments violate constraints specified in C-API documents, or kernel arguments mismatch the kernel argument list defined in the AOT module.
 - `enumeration.error.argument_null`: One or more by-reference (pointer) function arguments point to null.
 - `enumeration.error.argument_out_of_range`: One or more function arguments are out of its acceptable range; or enumeration arguments have undefined value.
 - `enumeration.error.argument_not_found`: One or more kernel arguments are missing.
-- `enumeration.error.invalid_interop`: The intended interoperation is not possible on the current arch. For example, attempts to export a Vulkan object from a CUDA runtime is not allowed.
+- `enumeration.error.invalid_interop`: The intended interoperation is not possible on the current arch. For example, attempts to export a Vulkan object from a CUDA runtime are not allowed.
 - `enumeration.error.invalid_state`: The Taichi C-API enters an unrecoverable invalid state. Related Taichi objects are potentially corrupted. The users *should* release the contaminated resources for stability. Please feel free to file an issue if you encountered this error in a normal routine.
 
 `enumeration.arch`
@@ -295,7 +295,7 @@ Types of kernel and compute graph argument.
 
 Usages of a memory allocation.
 
-- `bit_field.memory_usage.storage`: The memory can be read/write accessed by any kernel. In most of the cases, the users only need to set this flag.
+- `bit_field.memory_usage.storage`: The memory can be read/write accessed by any kernel. In most cases, the users only need to set this flag.
 - `bit_field.memory_usage.uniform`: The memory can be used as a uniform buffer in graphics pipelines.
 - `bit_field.memory_usage.vertex`: The memory can be used as a vertex buffer in graphics pipelines.
 - `bit_field.memory_usage.index`: The memory can be used as a index buffer in graphics pipelines.
@@ -308,7 +308,7 @@ Parameters of a newly allocated memory.
 - `structure.memory_allocate_info.host_write`: True if the host needs to write to the allocated memory.
 - `structure.memory_allocate_info.host_read`: True if the host needs to read from the allocated memory.
 - `structure.memory_allocate_info.export_sharing`: True if the memory allocation needs to be exported to other backends (e.g., from Vulkan to CUDA).
-- `structure.memory_allocate_info.usage`: All possible usage of this memory allocation. In most of the cases, `bit_field.memory_usage.storage` is enough.
+- `structure.memory_allocate_info.usage`: All possible usage of this memory allocation. In most cases, `bit_field.memory_usage.storage` is enough.
 
 `structure.memory_slice`
 
@@ -327,12 +327,94 @@ Multi-dimensional size of an ND-array. Dimension sizes after `structure.nd_shape
 
 `structure.nd_array`
 
-Multi-dimentional array of dense primitive data.
+Multi-dimensional array of dense primitive data.
 
 - `structure.nd_array.memory`: Memory bound to the ND-array.
 - `structure.nd_array.shape`: Shape of the ND-array.
 - `structure.nd_array.elem_shape`: Shape of the ND-array elements. It *must not* be empty for vector or matrix ND-arrays.
 - `structure.nd_array.elem_type`: Primitive data type of the ND-array elements.
+
+`bit_field.image_usage`
+
+Usages of an image allocation.
+
+- `bit_field.image_usage.storage`: The image can be read/write accessed by any kernel. In most cases, the users only need to set this flag and `bit_field.image_usage.sampled`.
+- `bit_field.image_usage.sampled`: The image can be read-only accessed by any kernel. In most cases, the users only need to set this flag and `bit_field.image_usage.storage`.
+- `bit_field.image_usage.attachment`: The image can be used as a color or depth-stencil attachment depending on its format.
+
+`enumeration.image_dimension`
+
+Dimensions of an image allocation.
+
+- `enumeration.image_dimension.1d`: The image is 1-dimensional.
+- `enumeration.image_dimension.2d`: The image is 2-dimensional.
+- `enumeration.image_dimension.3d`: The image is 3-dimensional.
+- `enumeration.image_dimension.1d_array`: The image is 1-dimensional and it has one or more layers.
+- `enumeration.image_dimension.2d_array`: The image is 2-dimensional and it has one or more layers.
+- `enumeration.image_dimension.cube`: The image is 2-dimensional and it has 6 layers for the faces towards +X, -X, +Y, -Y, +Z, -Z in sequence.
+
+`enumeration.image_layout`
+
+- `enumeration.image_layout.`: Undefined layout. An image in this layout does not contain any semantical information.
+- `enumeration.image_layout.shader_read`: Optimal layout for read-only access, including sampling.
+- `enumeration.image_layout.shader_write`: Optimal layout for write-only access.
+- `enumeration.image_layout.shader_read_write`: Optimal layout for read/write access.
+- `enumeration.image_layout.color_attachment`: Optimal layout as a color attachment.
+- `enumeration.image_layout.color_attachment_read`: Optimal layout as an input color attachment.
+- `enumeration.image_layout.depth_attachment`: Optimal layout as a depth attachment.
+- `enumeration.image_layout.depth_attachment_read`: Optimal layout as an input depth attachment.
+- `enumeration.image_layout.transfer_dst`: Optimal layout as a data copy destination.
+- `enumeration.image_layout.transfer_src`: Optimal layout as a data copy source.
+- `enumeration.image_layout.present_src`:  Optimal layout as a presentation source.
+
+`structure.image_offset`
+
+Offsets of an image in X, Y, Z, and array layers.
+
+- `structure.image_offset.x`: Image offset in the X direction.
+- `structure.image_offset.y`: Image offset in the Y direction. *Must* be 0 if the image has a dimension of `enumeration.image_dimension.1d` or `enumeration.image_dimension.1d_array`.
+- `structure.image_offset.z`: Image offset in the Z direction. *Must* be 0 if the image has a dimension of `enumeration.image_dimension.1d`, `enumeration.image_dimension.2d`, `enumeration.image_dimension.1d_array`, `enumeration.image_dimension.2d_array` or `enumeration.image_dimension.cube_array`.
+- `structure.image_offset.array_layer_offset`: Image offset in array layers. *Must* be 0 if the image has a dimension of `enumeration.image_dimension.1d`, `enumeration.image_dimension.2d` or `enumeration.image_dimension.3d`.
+
+`structure.image_extent`
+
+Extents of an image in X, Y, Z, and array layers.
+
+- `structure.image_extent.width`: Image extent in the X direction.
+- `structure.image_extent.height`: Image extent in the Y direction. *Must* be 1 if the image has a dimension of `enumeration.image_dimension.1d` or `enumeration.image_dimension.1d_array`.
+- `structure.image_extent.depth`: Image extent in the Z direction. *Must* be 1 if the image has a dimension of `enumeration.image_dimension.1d`, `enumeration.image_dimension.2d`, `enumeration.image_dimension.1d_array`, `enumeration.image_dimension.2d_array` or `enumeration.image_dimension.cube_array`.
+- `structure.image_extent.array_layer_count`: Image extent in array layers. *Must* be 1 if the image has a dimension of `enumeration.image_dimension.1d`, `enumeration.image_dimension.2d` or `enumeration.image_dimension.3d`. *Must* be 6 if the image has a dimension of `enumeration.image_dimension.cube_array`.
+
+`structure.image_allocate_info`
+
+Parameters of a newly allocated image.
+
+- `structure.image_allocate_info.dimension`: Image dimension.
+- `structure.image_allocate_info.extent`: Image extent.
+- `structure.image_allocate_info.mip_level_count`: Number of mip-levels.
+- `structure.image_allocate_info.format`: Image texel format.
+- `structure.image_allocate_info.host_read`: True if the host needs to read from the allocated memory.
+- `structure.image_allocate_info.export_sharing`: True if the memory allocation needs to be exported to other backends (e.g., from Vulkan to CUDA).
+- `structure.image_allocate_info.usage`: All possible usage of this image allocation. In most cases, `bit_field.image_usage.storage` and `bit_field.image_usage.sampled` enough.
+
+`structure.image_slice`
+
+A subsection of a memory allocation. The sum of `structure.image_slice.offset` and `structure.image_slice.extent` in each dimension cannot exceed the size of `structure.image_slice.image`.
+
+- `structure.image_slice.image`: The subsectioned image allocation.
+- `structure.image_slice.offset`: Offset from the beginning of the allocation in each dimension.
+- `structure.image_slice.extent`: Size of the subsection in each dimension.
+- `structure.image_slice.mip_level`: The subsectioned mip-level.
+
+`structure.texture`
+
+Image data bound to a sampler.
+
+- `structure.nd_array.image`: Image bound to the texture.
+- `structure.nd_array.sampler`: The bound sampler that controls the sampling behavior of `structure.nd_array.image`.
+- `structure.nd_array.dimension`: Image Dimension.
+- `structure.nd_array.extent`: Extent of image.
+- `structure.nd_array.format`: Image texel format.
 
 `union.argument_value`
 
@@ -351,22 +433,22 @@ An argument value to feed kernels.
 
 `structure.named_argument`
 
-An named argument value to feed compute graphcs.
+A named argument value to feed compute graphs.
 
 - `structure.named_argument.name`: Name of the argument.
 - `structure.named_argument.argument`: Argument body.
 
 `function.create_runtime`
 
-Create a Taichi Runtime with the specified `enumeration.arch`.
+Creates a Taichi Runtime with the specified `enumeration.arch`.
 
 `function.destroy_runtime`
 
-Destroy a Taichi Runtime.
+Destroys a Taichi Runtime.
 
 `function.allocate_memory`
 
-Allocate a contiguous on-device memory with provided parameters.
+Allocates a contiguous device memory with provided parameters.
 
 `function.free_memory`
 
@@ -374,11 +456,19 @@ Frees a memory allocation.
 
 `function.map_memory`
 
-Maps an on-device memory to a host-addressible space. You *must* ensure that the device is not being used by any device command before the mapping.
+Maps a device memory to a host-addressable space. You *must* ensure that the device is not being used by any device command before the mapping.
 
 `function.unmap_memory`
 
-Unmaps an on-device memory and makes any host-side changes about the memory visible to the device. You *must* ensure that there is no further access to the previously mapped host-addressible space.
+Unmaps a device memory and makes any host-side changes about the memory visible to the device. You *must* ensure that there is no further access to the previously mapped host-addressable space.
+
+`function.allocate_image`
+
+Allocate a device image with provided parameters.
+
+`function.free_image`
+
+Frees an image allocation.
 
 `function.create_event`
 
@@ -390,7 +480,19 @@ Destroys an event primitive.
 
 `function.copy_memory_device_to_device`
 
-Copies the data in a contiguous subsection of the on-device memory to another subsection. Note that the two subsections *must not* overlap.
+Copies the data in a contiguous subsection of the device memory to another subsection. The two subsections *must not* overlap.
+
+`function.copy_image_device_to_device`
+
+Copies the image data in a contiguous subsection of the device image to another subsection. The two subsections *must not* overlap.
+
+`function.track_image`
+
+Tracks the device image with the provided image layout. Because Taichi tracks image layouts internally, it is *only* useful to inform Taichi that the image is transitioned to a new layout by external procedures.
+
+`function.transition_image`
+
+Transition the image to the provided image layout. Because Taichi tracks image layouts internally, it is *only* useful to enforce an image layout for external procedures to use.
 
 `function.launch_kernel`
 
@@ -410,7 +512,7 @@ Sets a signaled event primitive back to an unsignaled state.
 
 `function.wait_event`
 
-Waits until an event primitive transitions to a signaled state. The awaited event *must* be signaled by an external procedure or an previous invocation to `function.reset_event`; otherwise, an undefined behavior would occur.
+Waits until an event primitive transitions to a signaled state. The awaited event *must* be signaled by an external procedure or a previous invocation to `function.reset_event`; otherwise, an undefined behavior would occur.
 
 `function.submit`
 
@@ -436,5 +538,5 @@ Returns `definition.null_handle` if the module does not have a kernel of the spe
 
 `function.get_aot_module_compute_graph`
 
-Retrieves a pre-compiled compute graph from the AOT module. 
+Retrieves a pre-compiled compute graph from the AOT module.
 Returns `definition.null_handle` if the module does not have a compute graph of the specified name.

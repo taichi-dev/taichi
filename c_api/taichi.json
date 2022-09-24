@@ -303,6 +303,10 @@
                             "type": "enumeration.format"
                         },
                         {
+                            "name": "export_sharing",
+                            "type": "alias.bool"
+                        },
+                        {
                             "name": "usage",
                             "type": "bit_field.image_usage"
                         }

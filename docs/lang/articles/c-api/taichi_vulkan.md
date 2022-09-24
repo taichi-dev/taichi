@@ -4,7 +4,7 @@ sidebar_positions: 2
 
 # Vulkan Backend Features
 
-Taichi's Vulkan API gives you further control over Vulkan version and extension requirements and allows you to interop with external Vulkan applications with shared resources.
+Taichi's Vulkan API gives you further control over the Vulkan version and extension requirements and allows you to interop with external Vulkan applications with shared resources.
 
 ## API Reference
 
@@ -25,9 +25,10 @@ typedef struct TiVulkanRuntimeInteropInfo {
 } TiVulkanRuntimeInteropInfo;
 ```
 
-Necessary detail to share a same Vulkan runtime between Taichi and user applications.
+Necessary detail to share the same Vulkan runtime between Taichi and external procedures.
 
-- `api_version`: Targeted Vulkan API version.
+- `get_instance_proc_addr`: Pointer to Vulkan loader function `vkGetInstanceProcAddr`.
+- `api_version`: Target Vulkan API version.
 - `instance`: Vulkan instance handle.
 - `physical_device`: Vulkan physical device handle.
 - `device`: Vulkan logical device handle.
@@ -50,11 +51,11 @@ typedef struct TiVulkanMemoryInteropInfo {
 } TiVulkanMemoryInteropInfo;
 ```
 
-Necessary detail to share a same piece of Vulkan buffer between Taichi and user applications.
+Necessary detail to share the same piece of Vulkan buffer between Taichi and external procedures.
 
 - `buffer`: Vulkan buffer.
 - `size`: Size of the piece of memory in bytes.
-- `size`: Vulkan buffer usage. You usually want the `VK_BUFFER_USAGE_STORAGE_BUFFER_BIT` set.
+- `usage`: Vulkan buffer usage. In most of the cases, Taichi requires the `VK_BUFFER_USAGE_STORAGE_BUFFER_BIT`.
 
 ---
 ### Structure `TiVulkanImageInteropInfo`
@@ -73,6 +74,19 @@ typedef struct TiVulkanImageInteropInfo {
   VkImageUsageFlags usage;
 } TiVulkanImageInteropInfo;
 ```
+
+Necessary detail to share the same piece of Vulkan image between Taichi and external procedures.
+
+- `image`: Vulkan image.
+- `image_type`: Vulkan image allocation type.
+- `format`: Pixel format.
+- `extent`: Image extent.
+- `mip_level_count`: Number of mip-levels of the image.
+- `array_layer_count`: Number of array layers.
+- `sample_count`: Number of samples per pixel.
+- `tiling`: Image tiling.
+- `usage`: Vulkan image usage. In most cases, Taichi requires the `VK_IMAGE_USAGE_STORAGE_BIT` and the `VK_IMAGE_USAGE_SAMPLED_BIT`.
+
 ---
 ### Structure `TiVulkanEventInteropInfo`
 
@@ -83,7 +97,7 @@ typedef struct TiVulkanEventInteropInfo {
 } TiVulkanEventInteropInfo;
 ```
 
-Necessary detail to share a same Vulkan event synchronization primitive between Taichi and user application.
+Necessary detail to share the same Vulkan event synchronization primitive between Taichi and the user application.
 
 - `event`: Vulkan event handle.
 
@@ -101,7 +115,7 @@ TI_DLL_EXPORT TiRuntime TI_API_CALL ti_create_vulkan_runtime_ext(
 );
 ```
 
-Create a Vulkan Taichi runtime with user controlled capability settings.
+Create a Vulkan Taichi runtime with user-controlled capability settings.
 
 ---
 ### Function `ti_import_vulkan_runtime`
@@ -113,7 +127,7 @@ TI_DLL_EXPORT TiRuntime TI_API_CALL ti_import_vulkan_runtime(
 );
 ```
 
-Import the Vulkan runtime owned by Taichi to external user applications.
+Import the Vulkan runtime owned by Taichi to external procedures.
 
 ---
 ### Function `ti_export_vulkan_runtime`
@@ -126,7 +140,7 @@ TI_DLL_EXPORT void TI_API_CALL ti_export_vulkan_runtime(
 );
 ```
 
-Export a Vulkan runtime from external user applications to Taichi.
+Export a Vulkan runtime from external procedures to Taichi.
 
 ---
 ### Function `ti_import_vulkan_memory`
@@ -139,7 +153,7 @@ TI_DLL_EXPORT TiMemory TI_API_CALL ti_import_vulkan_memory(
 );
 ```
 
-Import the Vulkan buffer owned by Taichi to external user applications.
+Import the Vulkan buffer owned by Taichi to external procedures.
 
 ---
 ### Function `ti_export_vulkan_memory`
@@ -153,7 +167,7 @@ TI_DLL_EXPORT void TI_API_CALL ti_export_vulkan_memory(
 );
 ```
 
-Export a Vulkan buffer from external user applications to Taichi.
+Export a Vulkan buffer from external procedures to Taichi.
 
 ---
 ### Function `ti_import_vulkan_image`
@@ -167,6 +181,9 @@ TI_DLL_EXPORT TiImage TI_API_CALL ti_import_vulkan_image(
   VkImageLayout layout
 );
 ```
+
+Import the Vulkan image owned by Taichi to external procedures.
+
 ---
 ### Function `ti_export_vulkan_image`
 
@@ -178,6 +195,9 @@ TI_DLL_EXPORT void TI_API_CALL ti_export_vulkan_image(
   TiVulkanImageInteropInfo* interop_info
 );
 ```
+
+Export a Vulkan image from external procedures to Taichi.
+
 ---
 ### Function `ti_import_vulkan_event`
 
@@ -189,7 +209,7 @@ TI_DLL_EXPORT TiEvent TI_API_CALL ti_import_vulkan_event(
 );
 ```
 
-Import the Vulkan event owned by Taichi to external user applications.
+Import the Vulkan event owned by Taichi to external procedures.
 
 ---
 ### Function `ti_export_vulkan_event`
@@ -203,4 +223,4 @@ TI_DLL_EXPORT void TI_API_CALL ti_export_vulkan_event(
 );
 ```
 
-Export a Vulkan event from external user applications to Taichi.
+Export a Vulkan event from external procedures to Taichi.

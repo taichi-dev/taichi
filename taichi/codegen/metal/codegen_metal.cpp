@@ -187,14 +187,12 @@ class KernelCodegenImpl : public IRVisitor {
                     Kernel *kernel,
                     const CompiledRuntimeModule *compiled_runtime_module,
                     const std::vector<CompiledStructs> &compiled_snode_trees,
-                    PrintStringTable *print_strtab,
                     const Config &config,
                     OffloadedStmt *offloaded)
       : mtl_kernel_prefix_(taichi_kernel_name),
         kernel_(kernel),
         compiled_runtime_module_(compiled_runtime_module),
         compiled_snode_trees_(compiled_snode_trees),
-        print_strtab_(print_strtab),
         cgen_config_(config),
         offloaded_(offloaded),
         ctx_attribs_(*kernel_) {
@@ -216,11 +214,13 @@ class KernelCodegenImpl : public IRVisitor {
   }
 
   CompiledKernelData run() {
+    CompiledKernelData res;
+    print_strtab_ = &res.print_str_table;
+
     emit_headers();
     generate_structs();
     generate_kernels();
 
-    CompiledKernelData res;
     res.kernel_name = mtl_kernel_prefix_;
     res.kernel_attribs = std::move(ti_kernel_attribs_);
     res.ctx_attribs = std::move(ctx_attribs_);
@@ -1654,7 +1654,7 @@ class KernelCodegenImpl : public IRVisitor {
   };
   std::unordered_map<int, RootInfo> snode_to_roots_;
   std::unordered_map<int, const GetRootStmt *> root_id_to_stmts_;
-  PrintStringTable *const print_strtab_;
+  PrintStringTable * print_strtab_{nullptr};
   const Config &cgen_config_;
   OffloadedStmt *const offloaded_;
 
@@ -1675,7 +1675,6 @@ CompiledKernelData run_codegen(
     const CompiledRuntimeModule *compiled_runtime_module,
     const std::vector<CompiledStructs> &compiled_snode_trees,
     Kernel *kernel,
-    PrintStringTable *strtab,
     OffloadedStmt *offloaded) {
   const auto id = Program::get_kernel_id();
   const auto taichi_kernel_name(
@@ -1685,7 +1684,7 @@ CompiledKernelData run_codegen(
   cgen_config.allow_simdgroup = EnvConfig::instance().is_simdgroup_enabled();
 
   KernelCodegenImpl codegen(taichi_kernel_name, kernel, compiled_runtime_module,
-                            compiled_snode_trees, strtab, cgen_config,
+                            compiled_snode_trees, cgen_config,
                             offloaded);
 
   return codegen.run();
@@ -1698,11 +1697,8 @@ FunctionType compile_to_metal_executable(
     const std::vector<CompiledStructs> &compiled_snode_trees,
     OffloadedStmt *offloaded) {
   const auto compiled_res =
-      run_codegen(compiled_runtime_module, compiled_snode_trees, kernel,
-                  kernel_mgr->print_strtable(), offloaded);
-  kernel_mgr->register_taichi_kernel(
-      compiled_res.kernel_name, compiled_res.source_code,
-      compiled_res.kernel_attribs, compiled_res.ctx_attribs, kernel);
+      run_codegen(compiled_runtime_module, compiled_snode_trees, kernel, offloaded);
+  kernel_mgr->register_taichi_kernel(compiled_res);
   return [kernel_mgr,
           kernel_name = compiled_res.kernel_name](RuntimeContext &ctx) {
     kernel_mgr->launch_taichi_kernel(kernel_name, &ctx);

@@ -44,7 +44,6 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
   const CompiledRuntimeModule *compiled_runtime_module_;
   const std::vector<CompiledStructs> &compiled_snode_trees_;
   const std::unordered_set<const SNode *> fields_;
-  PrintStringTable strtab_;
   TaichiAotData ti_aot_data_;
 };
 

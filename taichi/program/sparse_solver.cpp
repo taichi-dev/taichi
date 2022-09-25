@@ -97,10 +97,10 @@ void CuSparseSolver::analyze_pattern(const SparseMatrix &sm) {
 
   CUSOLVERDriver::get_instance().csSpCreate(&cusolver_handle_);
   CUSPARSEDriver::get_instance().cpCreate(&cusparse_handel_);
-  CUSPARSEDriver::get_instance().cpCreateMatDescr(&descr_A_);
-  CUSPARSEDriver::get_instance().cpSetMatType(descr_A_,
+  CUSPARSEDriver::get_instance().cpCreateMatDescr(&descr_);
+  CUSPARSEDriver::get_instance().cpSetMatType(descr_,
                                               CUSPARSE_MATRIX_TYPE_GENERAL);
-  CUSPARSEDriver::get_instance().cpSetMatIndexBase(descr_A_,
+  CUSPARSEDriver::get_instance().cpSetMatIndexBase(descr_,
                                                    CUSPARSE_INDEX_BASE_ZERO);
 
   // step 1: create opaque info structure
@@ -108,8 +108,7 @@ void CuSparseSolver::analyze_pattern(const SparseMatrix &sm) {
 
   // step 2: analyze chol(A) to know structure of L
   CUSOLVERDriver::get_instance().csSpXcsrcholAnalysis(
-      cusolver_handle_, rowsA, nnzA, descr_A_, d_csrRowPtrA, d_csrColIndA,
-      info_);
+      cusolver_handle_, rowsA, nnzA, descr_, d_csrRowPtrA, d_csrColIndA, info_);
 
 #else
   TI_NOT_IMPLEMENTED
@@ -131,7 +130,7 @@ void CuSparseSolver::factorize(const SparseMatrix &sm) {
   size_t size_chol = 0;  // size of working space for csrlu
   // step 1: workspace for chol(A)
   CUSOLVERDriver::get_instance().csSpScsrcholBufferInfo(
-      cusolver_handle_, rowsA, nnzA, descr_A_, d_csrValA, d_csrRowPtrA,
+      cusolver_handle_, rowsA, nnzA, descr_, d_csrValA, d_csrRowPtrA,
       d_csrColIndA, info_, &size_internal, &size_chol);
 
   if (size_chol > 0)
@@ -139,7 +138,7 @@ void CuSparseSolver::factorize(const SparseMatrix &sm) {
 
   // step 2: compute A = L*L^T
   CUSOLVERDriver::get_instance().csSpScsrcholFactor(
-      cusolver_handle_, rowsA, nnzA, descr_A_, d_csrValA, d_csrRowPtrA,
+      cusolver_handle_, rowsA, nnzA, descr_, d_csrValA, d_csrRowPtrA,
       d_csrColIndA, info_, gpu_buffer_);
   // step 3: check if the matrix is singular
   const double tol = 1.e-14;

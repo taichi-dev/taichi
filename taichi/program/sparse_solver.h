@@ -59,7 +59,7 @@ class CuSparseSolver : public SparseSolver {
   csrcholInfo_t info_{nullptr};
   cusolverSpHandle_t cusolver_handle_{nullptr};
   cusparseHandle_t cusparse_handel_{nullptr};
-  cusparseMatDescr_t descr_A_{nullptr};
+  cusparseMatDescr_t descr_{nullptr};
   void *gpu_buffer_{nullptr};
 
  public:

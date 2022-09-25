@@ -1,6 +1,5 @@
 import numpy as np
 import pytest
-from scipy.sparse import coo_matrix
 
 import taichi as ti
 from tests import test_utils
@@ -63,6 +62,8 @@ def test_sparse_LLT_solver(dtype, solver_type, ordering):
 
 @test_utils.test(arch=ti.cuda)
 def test_gpu_sparse_solver():
+    from scipy.sparse import coo_matrix
+
     @ti.kernel
     def init_b(b: ti.types.ndarray(), nrows: ti.i32):
         for i in range(nrows):

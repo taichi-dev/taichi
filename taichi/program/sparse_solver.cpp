@@ -83,7 +83,8 @@ CuSparseSolver::CuSparseSolver() {
   }
 #endif
 }
-
+// Reference:
+// https://github.com/NVIDIA/cuda-samples/blob/master/Samples/4_CUDA_Libraries/cuSolverSp_LowlevelCholesky/cuSolverSp_LowlevelCholesky.cpp
 void CuSparseSolver::analyze_pattern(const SparseMatrix &sm) {
 #if defined(TI_WITH_CUDA)
   // Retrive the info of the sparse matrix
@@ -102,10 +103,10 @@ void CuSparseSolver::analyze_pattern(const SparseMatrix &sm) {
   CUSPARSEDriver::get_instance().cpSetMatIndexBase(descr_A_,
                                                    CUSPARSE_INDEX_BASE_ZERO);
 
-  // step 2: create opaque info structure
+  // step 1: create opaque info structure
   CUSOLVERDriver::get_instance().csSpCreateCsrcholInfo(&info_);
 
-  // step 3: analyze chol(A) to know structure of L
+  // step 2: analyze chol(A) to know structure of L
   CUSOLVERDriver::get_instance().csSpXcsrcholAnalysis(
       cusolver_handle_, rowsA, nnzA, descr_A_, d_csrRowPtrA, d_csrColIndA,
       info_);
@@ -128,7 +129,7 @@ void CuSparseSolver::factorize(const SparseMatrix &sm) {
 
   size_t size_internal = 0;
   size_t size_chol = 0;  // size of working space for csrlu
-  // step 4: workspace for chol(A)
+  // step 1: workspace for chol(A)
   CUSOLVERDriver::get_instance().csSpScsrcholBufferInfo(
       cusolver_handle_, rowsA, nnzA, descr_A_, d_csrValA, d_csrRowPtrA,
       d_csrColIndA, info_, &size_internal, &size_chol);
@@ -136,16 +137,15 @@ void CuSparseSolver::factorize(const SparseMatrix &sm) {
   if (size_chol > 0)
     CUDADriver::get_instance().malloc(&gpu_buffer_, sizeof(char) * size_chol);
 
-  // step 5: compute A = L*L^T
+  // step 2: compute A = L*L^T
   CUSOLVERDriver::get_instance().csSpScsrcholFactor(
       cusolver_handle_, rowsA, nnzA, descr_A_, d_csrValA, d_csrRowPtrA,
       d_csrColIndA, info_, gpu_buffer_);
-  // step 6: check if the matrix is singular
+  // step 3: check if the matrix is singular
   const double tol = 1.e-14;
   int singularity = 0;
   CUSOLVERDriver::get_instance().csSpScsrcholZeroPivot(cusolver_handle_, info_,
                                                        tol, &singularity);
-  printf("singularity = %d\n", singularity);
   TI_ASSERT(singularity == -1);
 #else
   TI_NOT_IMPLEMENTED
@@ -326,7 +326,6 @@ void CuSparseSolver::solve_rf(Program *prog,
   SparseMatrix *sm_no_cv = const_cast<SparseMatrix *>(&sm);
   CuSparseMatrix *A = dynamic_cast<CuSparseMatrix *>(sm_no_cv);
   size_t rowsA = A->num_rows();
-  // step 7: solve A*x = b
   size_t d_b = prog->get_ndarray_data_ptr_as_int(&b);
   size_t d_x = prog->get_ndarray_data_ptr_as_int(&x);
   CUSOLVERDriver::get_instance().csSpScsrcholSolve(

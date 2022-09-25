@@ -67,7 +67,7 @@ ti_free_memory(runtime, memory);
 
 By default, memory allocations are physically or conceptually local to the offload target for performance reasons. You can configure the `structure.memory_allocate_info` to enable host access to memory allocations. But please note that host-accessible allocations *may* slow down computation on GPU because of the limited bus bandwidth between the host memory and the device.
 
-You *must* set `host_write` to `definition.true` to allow streaming data to the memory.
+You *must* set `host_write` to `definition.true` to allow zero-copy data streaming to the memory.
 
 ```cpp
 TiMemoryAllocateInfo mai {};

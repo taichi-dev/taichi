@@ -247,7 +247,7 @@ A sentinal invalid handle that will never be produced from a valid call to Taich
 typedef struct TiRuntime_t* TiRuntime;
 ```
 
-Taichi runtime represents an instance of a logical backend and its internal dynamic state. The user is responsible to synchronize any use of [`TiRuntime`](#handle-tiruntime). The user MUST NOT manipulate multiple [`TiRuntime`](#handle-tiruntime)s in the same thread.
+Taichi runtime represents an instance of a logical backend and its internal dynamic state. The user is responsible to synchronize any use of [`TiRuntime`](#handle-tiruntime). The user *must not* manipulate multiple [`TiRuntime`](#handle-tiruntime)s in the same thread.
 
 ---
 ### Handle `TiAotModule`
@@ -1111,7 +1111,7 @@ TI_DLL_EXPORT void TI_API_CALL ti_launch_kernel(
 );
 ```
 
-Launches a Taichi kernel with the provided arguments. The arguments MUST have the same count and types in the same order as in the source code.
+Launches a Taichi kernel with the provided arguments. The arguments *must* have the same count and types in the same order as in the source code.
 
 ---
 ### Function `ti_launch_compute_graph` (Device Command)

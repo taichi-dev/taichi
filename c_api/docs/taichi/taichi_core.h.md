@@ -212,7 +212,7 @@ A sentinal invalid handle that will never be produced from a valid call to Taich
 
 `handle.runtime`
 
-Taichi runtime represents an instance of a logical backend and its internal dynamic state. The user is responsible to synchronize any use of `handle.runtime`. The user MUST NOT manipulate multiple `handle.runtime`s in the same thread.
+Taichi runtime represents an instance of a logical backend and its internal dynamic state. The user is responsible to synchronize any use of `handle.runtime`. The user *must not* manipulate multiple `handle.runtime`s in the same thread.
 
 `handle.aot_module`
 
@@ -512,7 +512,7 @@ Transitions the image to the provided image layout. Because Taichi tracks image 
 
 `function.launch_kernel`
 
-Launches a Taichi kernel with the provided arguments. The arguments MUST have the same count and types in the same order as in the source code.
+Launches a Taichi kernel with the provided arguments. The arguments *must* have the same count and types in the same order as in the source code.
 
 `function.launch_compute_graph`
 

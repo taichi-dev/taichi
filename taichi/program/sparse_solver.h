@@ -56,11 +56,11 @@ class EigenSparseSolver : public SparseSolver {
 
 class CuSparseSolver : public SparseSolver {
  private:
-  csrcholInfo_t d_info{nullptr};
-  cusolverSpHandle_t cusolverSpH{nullptr};
-  cusparseHandle_t cusparseH{nullptr};
-  cusparseMatDescr_t descrA{nullptr};
-  void *buffer_gpu{nullptr};
+  csrcholInfo_t info_{nullptr};
+  cusolverSpHandle_t cusolver_handle_{nullptr};
+  cusparseHandle_t cusparse_handel_{nullptr};
+  cusparseMatDescr_t descr_A_{nullptr};
+  void *gpu_buffer_{nullptr};
 
  public:
   CuSparseSolver();

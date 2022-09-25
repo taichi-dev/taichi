@@ -283,6 +283,10 @@ void CuSparseMatrix::build_csr_from_coo(void *coo_row_ptr,
   CUDADriver::get_instance().mem_free(d_values_sorted);
   CUDADriver::get_instance().mem_free(d_permutation);
   CUDADriver::get_instance().mem_free(dbuffer);
+  csr_row_ptr_ = csr_row_offset_ptr;
+  csr_col_ind_ = coo_col_ptr;
+  csr_val_ = coo_values_ptr;
+  nnz_ = nnz;
 #endif
 }
 

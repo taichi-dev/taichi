@@ -87,16 +87,12 @@ CuSparseSolver::CuSparseSolver() {
 void CuSparseSolver::analyze_pattern(const SparseMatrix &sm) {
 #if defined(TI_WITH_CUDA)
   // Retrive the info of the sparse matrix
-  const cusparseSpMatDescr_t *A =
-      (const cusparseSpMatDescr_t *)(sm.get_matrix());
-  size_t rowsA = 0, colsA = 0, nnzA = 0;
-  void *d_csrRowPtrA = NULL, *d_csrColIndA = NULL, *d_csrValA = NULL;
-  cusparseIndexType_t csrRowOffsetsType, csrColIndType;
-  cusparseIndexBase_t idxBase;
-  cudaDataType valueType;
-  CUSPARSEDriver::get_instance().cpCsrGet(
-      *A, &rowsA, &colsA, &nnzA, &d_csrRowPtrA, &d_csrColIndA, &d_csrValA,
-      &csrRowOffsetsType, &csrColIndType, &idxBase, &valueType);
+  SparseMatrix *sm_no_cv = const_cast<SparseMatrix *>(&sm);
+  CuSparseMatrix *A = dynamic_cast<CuSparseMatrix *>(sm_no_cv);
+  size_t rowsA = A->num_rows();
+  size_t nnzA = A->get_nnz();
+  void *d_csrRowPtrA = A->get_row_ptr();
+  void *d_csrColIndA = A->get_col_ind();
 
   CUSOLVERDriver::get_instance().csSpCreate(&cusolver_handle_);
   CUSPARSEDriver::get_instance().cpCreate(&cusparse_handel_);
@@ -122,16 +118,13 @@ void CuSparseSolver::analyze_pattern(const SparseMatrix &sm) {
 void CuSparseSolver::factorize(const SparseMatrix &sm) {
 #if defined(TI_WITH_CUDA)
   // Retrive the info of the sparse matrix
-  const cusparseSpMatDescr_t *A =
-      (const cusparseSpMatDescr_t *)(sm.get_matrix());
-  size_t rowsA = 0, colsA = 0, nnzA = 0;
-  void *d_csrRowPtrA = NULL, *d_csrColIndA = NULL, *d_csrValA = NULL;
-  cusparseIndexType_t csrRowOffsetsType, csrColIndType;
-  cusparseIndexBase_t idxBase;
-  cudaDataType valueType;
-  CUSPARSEDriver::get_instance().cpCsrGet(
-      *A, &rowsA, &colsA, &nnzA, &d_csrRowPtrA, &d_csrColIndA, &d_csrValA,
-      &csrRowOffsetsType, &csrColIndType, &idxBase, &valueType);
+  SparseMatrix *sm_no_cv = const_cast<SparseMatrix *>(&sm);
+  CuSparseMatrix *A = dynamic_cast<CuSparseMatrix *>(sm_no_cv);
+  size_t rowsA = A->num_rows();
+  size_t nnzA = A->get_nnz();
+  void *d_csrRowPtrA = A->get_row_ptr();
+  void *d_csrColIndA = A->get_col_ind();
+  void *d_csrValA = A->get_val_ptr();
 
   size_t size_internal = 0;
   size_t size_chol = 0;  // size of working space for csrlu
@@ -176,16 +169,15 @@ void CuSparseSolver::solve_cu(Program *prog,
   printf("Cusolver version: %d.%d.%d\n", major_version, minor_version,
          patch_level);
 
-  const cusparseSpMatDescr_t *A =
-      (const cusparseSpMatDescr_t *)(sm.get_matrix());
-  size_t nrows = 0, ncols = 0, nnz = 0;
-  void *drow_offsets = NULL, *dcol_indices = NULL, *dvalues = NULL;
-  cusparseIndexType_t csrRowOffsetsType, csrColIndType;
-  cusparseIndexBase_t idxBase;
-  cudaDataType valueType;
-  CUSPARSEDriver::get_instance().cpCsrGet(
-      *A, &nrows, &ncols, &nnz, &drow_offsets, &dcol_indices, &dvalues,
-      &csrRowOffsetsType, &csrColIndType, &idxBase, &valueType);
+  // Retrive the info of the sparse matrix
+  SparseMatrix *sm_no_cv = const_cast<SparseMatrix *>(&sm);
+  CuSparseMatrix *A = dynamic_cast<CuSparseMatrix *>(sm_no_cv);
+  size_t nrows = A->num_rows();
+  size_t ncols = A->num_cols();
+  size_t nnz = A->get_nnz();
+  void *drow_offsets = A->get_row_ptr();
+  void *dcol_indices = A->get_col_ind();
+  void *dvalues = A->get_val_ptr();
 
   size_t db = prog->get_ndarray_data_ptr_as_int(&b);
   size_t dx = prog->get_ndarray_data_ptr_as_int(&x);
@@ -331,16 +323,9 @@ void CuSparseSolver::solve_rf(Program *prog,
                               Ndarray &x) {
 #if defined(TI_WITH_CUDA)
   // Retrive the info of the sparse matrix
-  const cusparseSpMatDescr_t *A =
-      (const cusparseSpMatDescr_t *)(sm.get_matrix());
-  size_t rowsA = 0, colsA = 0, nnzA = 0;
-  void *d_csrRowPtrA = NULL, *d_csrColIndA = NULL, *d_csrValA = NULL;
-  cusparseIndexType_t csrRowOffsetsType, csrColIndType;
-  cusparseIndexBase_t idxBase;
-  cudaDataType valueType;
-  CUSPARSEDriver::get_instance().cpCsrGet(
-      *A, &rowsA, &colsA, &nnzA, &d_csrRowPtrA, &d_csrColIndA, &d_csrValA,
-      &csrRowOffsetsType, &csrColIndType, &idxBase, &valueType);
+  SparseMatrix *sm_no_cv = const_cast<SparseMatrix *>(&sm);
+  CuSparseMatrix *A = dynamic_cast<CuSparseMatrix *>(sm_no_cv);
+  size_t rowsA = A->num_rows();
   // step 7: solve A*x = b
   size_t d_b = prog->get_ndarray_data_ptr_as_int(&b);
   size_t d_x = prog->get_ndarray_data_ptr_as_int(&x);

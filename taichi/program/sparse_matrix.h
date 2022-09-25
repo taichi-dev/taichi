@@ -271,8 +271,25 @@ class CuSparseMatrix : public SparseMatrix {
 
   const std::string to_string() const override;
 
+  void *get_row_ptr() const {
+    return csr_row_ptr_;
+  }
+  void *get_col_ind() const {
+    return csr_col_ind_;
+  }
+  void *get_val_ptr() const {
+    return csr_val_;
+  }
+  int get_nnz() const {
+    return nnz_;
+  }
+
  private:
   cusparseSpMatDescr_t matrix_;
+  void *csr_row_ptr_{nullptr};
+  void *csr_col_ind_{nullptr};
+  void *csr_val_{nullptr};
+  int nnz_{0};
 };
 
 std::unique_ptr<SparseMatrix> make_sparse_matrix(

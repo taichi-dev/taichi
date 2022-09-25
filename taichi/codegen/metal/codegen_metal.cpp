@@ -1654,7 +1654,7 @@ class KernelCodegenImpl : public IRVisitor {
   };
   std::unordered_map<int, RootInfo> snode_to_roots_;
   std::unordered_map<int, const GetRootStmt *> root_id_to_stmts_;
-  PrintStringTable * print_strtab_{nullptr};
+  PrintStringTable *print_strtab_{nullptr};
   const Config &cgen_config_;
   OffloadedStmt *const offloaded_;
 
@@ -1684,8 +1684,7 @@ CompiledKernelData run_codegen(
   cgen_config.allow_simdgroup = EnvConfig::instance().is_simdgroup_enabled();
 
   KernelCodegenImpl codegen(taichi_kernel_name, kernel, compiled_runtime_module,
-                            compiled_snode_trees, cgen_config,
-                            offloaded);
+                            compiled_snode_trees, cgen_config, offloaded);
 
   return codegen.run();
 }
@@ -1696,8 +1695,8 @@ FunctionType compile_to_metal_executable(
     const CompiledRuntimeModule *compiled_runtime_module,
     const std::vector<CompiledStructs> &compiled_snode_trees,
     OffloadedStmt *offloaded) {
-  const auto compiled_res =
-      run_codegen(compiled_runtime_module, compiled_snode_trees, kernel, offloaded);
+  const auto compiled_res = run_codegen(
+      compiled_runtime_module, compiled_snode_trees, kernel, offloaded);
   kernel_mgr->register_taichi_kernel(compiled_res);
   return [kernel_mgr,
           kernel_name = compiled_res.kernel_name](RuntimeContext &ctx) {

@@ -30,6 +30,7 @@ class PrintStringTable {
   const std::string &get(int i) const;
 
   TI_IO_DEF(strs_);
+
  private:
   std::vector<std::string> strs_;
 };

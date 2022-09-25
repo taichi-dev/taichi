@@ -734,8 +734,8 @@ class KernelManager::Impl {
       // If users have enabled |print_kernel_llvm_ir|, it probably means that
       // they want to see the compiled code on the given arch. Maybe rename this
       // flag, or add another flag (e.g. |print_kernel_source_code|)?
-      TI_INFO("Metal source code for kernel <{}>\n{}", compiled_kernel.kernel_name,
-              compiled_kernel.source_code);
+      TI_INFO("Metal source code for kernel <{}>\n{}",
+              compiled_kernel.kernel_name, compiled_kernel.source_code);
     }
     CompiledTaichiKernel::Params params;
     params.mtl_source_code = compiled_kernel.source_code;

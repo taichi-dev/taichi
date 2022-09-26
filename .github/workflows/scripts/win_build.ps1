@@ -20,7 +20,7 @@ if (-not (Test-Path $libsDir)) {
 
 $RepoURL = 'https://github.com/taichi-dev/taichi'
 
-# SetupCCacheLocal "$libsDir/ccache"
+SetupCCacheLocal "$libsDir/ccache"
 
 if ($clone) {
     Info("Clone the repository")
@@ -58,15 +58,14 @@ if ($llvmVer -eq "10") {
 	$env:TAICHI_CMAKE_ARGS += " -DCLANG_EXECUTABLE=$($libsDir -replace "\\", "\\")\\taichi_clang\\bin\\clang++.exe"
 	$env:TAICHI_CMAKE_ARGS += " -DLLVM_AS_EXECUTABLE=$($libsDir -replace "\\", "\\")\\taichi_llvm\\bin\\llvm-as.exe"
 } elseif ($llvmVer -eq "15") {
-    DownloadDep LLVM-15 llvm-15.zip taichi_llvm_15_test `
+    DownloadDep LLVM-15 llvm-15.zip taichi_llvm_15 `
         https://github.com/python3kgae/taichi_assets/releases/download/llvm15_vs2019_clang/taichi-llvm-15.0.0-msvc2019.zip
     DownloadDep Clang-15 clang-15.zip taichi_clang_15 `
 		https://github.com/python3kgae/taichi_assets/releases/download/llvm15_vs2022_clang/clang-15.0.0-win.zip
-    $env:LLVM_DIR = "$libsDir\taichi_llvm_15_test"
+    $env:LLVM_DIR = "$libsDir\taichi_llvm_15"
 	$env:TAICHI_CMAKE_ARGS += " -DCLANG_EXECUTABLE=$($libsDir -replace "\\", "\\")\\taichi_clang_15\\bin\\clang++.exe"
-	$env:TAICHI_CMAKE_ARGS += " -DLLVM_AS_EXECUTABLE=$($libsDir -replace "\\", "\\")\\taichi_llvm_15_test\\bin\\llvm-as.exe"
+	$env:TAICHI_CMAKE_ARGS += " -DLLVM_AS_EXECUTABLE=$($libsDir -replace "\\", "\\")\\taichi_llvm_15\\bin\\llvm-as.exe"
     $env:TAICHI_CMAKE_ARGS += " -DTI_LLVM_15:BOOL=ON"
-    $env:TAICHI_CMAKE_ARGS += " -DTI_WITH_DX12:BOOL=ON"
 } else {
     throw "Unsupported LLVM version"
 }
@@ -113,4 +112,4 @@ if ($install) {
     Info("Build finished")
 }
 
-#ccache -s -v
+ccache -s -v

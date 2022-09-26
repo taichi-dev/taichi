@@ -44,15 +44,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#define TI_UI_NAMESPACE_BEGIN \
-  namespace taichi {          \
-  namespace ui {
-
-#define TI_UI_NAMESPACE_END \
-  }                         \
-  }
-
-TI_UI_NAMESPACE_BEGIN
+namespace taichi::ui {
 
 #if !defined(ANDROID)
 inline void initGLFW() {
@@ -233,4 +225,4 @@ inline std::vector<char> read_file(const std::string &filename) {
   return buffer;
 }
 
-TI_UI_NAMESPACE_END
+}  // namespace taichi::ui

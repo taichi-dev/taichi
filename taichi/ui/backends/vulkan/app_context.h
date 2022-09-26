@@ -13,7 +13,7 @@ namespace taichi::lang {
 class Program;
 }  // namespace taichi::lang
 
-TI_UI_NAMESPACE_BEGIN
+namespace taichi::ui {
 
 #ifdef ANDROID
 using TaichiWindow = ANativeWindow;
@@ -51,4 +51,4 @@ class TI_DLL_EXPORT AppContext {
 
 }  // namespace vulkan
 
-TI_UI_NAMESPACE_END
+}  // namespace taichi::ui

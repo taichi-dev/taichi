@@ -2,7 +2,7 @@
 
 #include <taichi/rhi/device.h>
 
-TI_UI_NAMESPACE_BEGIN
+namespace taichi::ui {
 namespace vulkan {
 
 class TI_DLL_EXPORT SwapChain {
@@ -41,4 +41,4 @@ class TI_DLL_EXPORT SwapChain {
 
 }  // namespace vulkan
 
-TI_UI_NAMESPACE_END
+}  // namespace taichi::ui

@@ -1344,7 +1344,7 @@ class KernelManager::Impl {
 
   MakeDeviceResult device() {
     TI_ERROR("Metal not supported on the current OS");
-    return MakeDeviceResult {};
+    return MakeDeviceResult{};
   }
 };
 

@@ -350,12 +350,14 @@ void BinaryOpExpression::flatten(FlattenContext *ctx) {
     auto ret = ctx->push_back<LocalLoadStmt>(result);
     ret->tb = tb;
     stmt = ret;
+    stmt->ret_type = ret_type;
     return;
   }
   flatten_rvalue(rhs, ctx);
   ctx->push_back(std::make_unique<BinaryOpStmt>(type, lhs->stmt, rhs->stmt));
   ctx->stmts.back()->tb = tb;
   stmt = ctx->back_stmt();
+  stmt->ret_type = ret_type;
 }
 
 void make_ifte(Expression::FlattenContext *ctx,

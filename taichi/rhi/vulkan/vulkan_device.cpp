@@ -1856,6 +1856,7 @@ DeviceAllocation VulkanDevice::import_vk_image(vkapi::IVkImage image,
   alloc_int.external = true;
   alloc_int.image = image;
   alloc_int.view = view;
+  alloc_int.view_lods.emplace_back(view);
 
   DeviceAllocation alloc;
   alloc.device = this;

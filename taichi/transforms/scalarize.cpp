@@ -204,46 +204,26 @@ class Scalarize : public IRVisitor {
     auto lhs_dtype = stmt->lhs->ret_type;
     auto rhs_dtype = stmt->rhs->ret_type;
 
-    if (lhs_dtype->is<TensorType>() || rhs_dtype->is<TensorType>()) {
-      int lhs_num_elements = 1;
-      int rhs_num_elements = 1;
-      if (lhs_dtype->is<TensorType>()) {
-        auto lhs_tensor_type = lhs_dtype->as<TensorType>();
-        lhs_num_elements = lhs_tensor_type->get_num_elements();
-      }
-      if (rhs_dtype->is<TensorType>()) {
-        auto rhs_tensor_type = rhs_dtype->as<TensorType>();
-        rhs_num_elements = rhs_tensor_type->get_num_elements();
-      }
+    // BinaryOpExpression::type_check() should have taken care of the
+    // broadcasting and neccessary conversions. So we simply add an assertion
+    // here to make sure that the operands are of the same shape and dtype
+    TI_ASSERT(lhs_dtype == rhs_dtype);
 
-      if (lhs_num_elements > 1 && rhs_num_elements > 1)
-        TI_ASSERT(lhs_num_elements == rhs_num_elements);
+    if (lhs_dtype->is<TensorType>() && rhs_dtype->is<TensorType>()) {
+      // Scalarization for LoadStmt should have already replaced both operands
+      // to MatrixInitStmt
+      TI_ASSERT(stmt->lhs->is<MatrixInitStmt>());
+      TI_ASSERT(stmt->rhs->is<MatrixInitStmt>());
 
-      size_t num_elements = std::max(lhs_num_elements, rhs_num_elements);
+      auto lhs_matrix_init_stmt = stmt->lhs->cast<MatrixInitStmt>();
+      std::vector<Stmt *> lhs_vals = lhs_matrix_init_stmt->values;
 
-      std::vector<Stmt *> lhs_vals(num_elements);
-      std::vector<Stmt *> rhs_vals(num_elements);
+      auto rhs_matrix_init_stmt = stmt->rhs->cast<MatrixInitStmt>();
+      std::vector<Stmt *> rhs_vals = rhs_matrix_init_stmt->values;
 
-      if (lhs_dtype->is<TensorType>()) {
-        TI_ASSERT(stmt->lhs->is<MatrixInitStmt>());
-        auto lhs_matrix_init_stmt = stmt->lhs->cast<MatrixInitStmt>();
-        lhs_vals = lhs_matrix_init_stmt->values;
-      } else {
-        for (size_t i = 0; i < num_elements; i++) {
-          lhs_vals[i] = stmt->lhs;
-        }
-      }
+      TI_ASSERT(rhs_vals.size() == lhs_vals.size());
 
-      if (rhs_dtype->is<TensorType>()) {
-        TI_ASSERT(stmt->rhs->is<MatrixInitStmt>());
-        auto rhs_matrix_init_stmt = stmt->rhs->cast<MatrixInitStmt>();
-        rhs_vals = rhs_matrix_init_stmt->values;
-      } else {
-        for (size_t i = 0; i < num_elements; i++) {
-          rhs_vals[i] = stmt->rhs;
-        }
-      }
-
+      size_t num_elements = lhs_vals.size();
       std::vector<Stmt *> matrix_init_values;
       for (size_t i = 0; i < num_elements; i++) {
         auto binary_stmt = std::make_unique<BinaryOpStmt>(

@@ -14,9 +14,9 @@ from taichi.lang.exception import (TaichiCompilationError, TaichiSyntaxError,
                                    TaichiTypeError)
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
 from taichi.lang.swizzle_generator import SwizzleGenerator
-from taichi.lang.util import (cook_dtype, in_python_scope, in_taichi_scope,
-                              python_scope, taichi_scope, to_numpy_type,
-                              to_paddle_type, to_pytorch_type, warning)
+from taichi.lang.util import (cook_dtype, in_python_scope, python_scope,
+                              taichi_scope, to_numpy_type, to_paddle_type,
+                              to_pytorch_type, warning)
 from taichi.types import primitive_types
 from taichi.types.compound_types import CompoundType, TensorType
 
@@ -502,8 +502,6 @@ class Matrix(TaichiOperations):
 
     def _element_wise_binary(self, foo, other):
         other = self._broadcast_copy(other)
-        if in_taichi_scope() and impl.current_cfg().real_matrix:
-            return foo(self, other)
         if is_col_vector(self):
             return Vector([foo(self(i), other(i)) for i in range(self.n)],
                           ndim=self.ndim)

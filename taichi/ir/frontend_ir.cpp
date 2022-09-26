@@ -229,7 +229,6 @@ void BinaryOpExpression::type_check(CompileConfig *config) {
   TI_ASSERT_TYPE_CHECKED(rhs);
   auto lhs_type = lhs->ret_type;
   auto rhs_type = rhs->ret_type;
-
   auto error = [&]() {
     throw TaichiTypeError(
         fmt::format("unsupported operand type(s) for '{}': '{}' and '{}'",
@@ -318,6 +317,7 @@ void BinaryOpExpression::type_check(CompileConfig *config) {
       rhs_type = make_dt(default_fp);
     }
   }
+  ret_type = promoted_type(lhs_type, rhs_type);
 }
 
 void BinaryOpExpression::flatten(FlattenContext *ctx) {

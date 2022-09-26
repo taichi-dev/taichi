@@ -976,8 +976,8 @@ def test_unary_op_scalarize():
                  real_matrix=True,
                  real_matrix_scalarize=True)
 def test_binary_op_scalarize():
-    @ti.kernel
-    def func(a: ti.types.ndarray()):
+    @ti.func
+    def func(a: ti.template()):
         a[0] = [[0., 1.], [2., 3.]]
         a[1] = [[3., 4.], [5., 6.]]
         a[2] = a[0] + a[0]

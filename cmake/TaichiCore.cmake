@@ -117,6 +117,8 @@ endif()
 
 if (TI_WITH_DX12)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_DX12")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -gcodeview")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -gcodeview")
 endif()
 
 ## TODO: Remove CC backend

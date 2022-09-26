@@ -435,6 +435,7 @@ jobs:
           TAICHI_CMAKE_ARGS: >-
             -DTI_WITH_OPENGL:BOOL=ON
             -DTI_WITH_DX11:BOOL=ON
+            -DTI_WITH_DX12:BOOL=ON
             -DTI_WITH_CC:BOOL=OFF
             -DTI_BUILD_TESTS:BOOL=ON
             -DTI_WITH_C_API=ON

@@ -20,6 +20,10 @@ if (TI_WITH_VULKAN)
   list(APPEND C_API_SOURCE "c_api/src/taichi_vulkan_impl.cpp")
 endif()
 
+if (TI_WITH_METAL)
+  list(APPEND C_API_SOURCE "c_api/src/taichi_metal_impl.cpp")
+endif()
+
 if(TI_BUILD_TESTS)
   list(APPEND C_API_SOURCE "c_api/src/c_api_test_utils.cpp")
 endif()

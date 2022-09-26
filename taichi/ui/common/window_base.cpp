@@ -9,7 +9,8 @@ TI_UI_NAMESPACE_BEGIN
 WindowBase ::WindowBase(AppConfig config) : config_(config) {
   if (config_.show_window) {
     glfw_window_ = create_glfw_window_(config_.name, config_.width,
-                                       config_.height, config_.window_pos_x, config_.window_pos_y, config_.vsync);
+                                       config_.height, config_.window_pos_x,
+                                       config_.window_pos_y, config_.vsync);
     glfwSetWindowUserPointer(glfw_window_, this);
     set_callbacks();
     last_record_time_ = glfwGetTime();

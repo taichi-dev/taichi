@@ -174,8 +174,8 @@ class DemoteOperations : public BasicStmtVisitor {
                is_signed(lhs->element_type())) {
       // @ti.func
       // def bit_shr(a, b):
-      //     signed_a = ti.cast(a, ti.uXX)
-      //     shifted = ti.bit_sar(signed_a, b)
+      //     unsigned_a = ti.cast(a, ti.uXX)
+      //     shifted = ti.bit_sar(unsigned_a, b)
       //     ret = ti.cast(shifted, ti.iXX)
       //     return ret
       auto unsigned_cast = Stmt::make<UnaryOpStmt>(UnaryOpType::cast_bits, lhs);

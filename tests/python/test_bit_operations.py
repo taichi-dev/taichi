@@ -13,8 +13,14 @@ def test_bit_shl():
     def shl(a: ti.i32, b: ti.i32) -> ti.i32:
         return a << b
 
+    @ti.kernel
+    def shl_assign(a: ti.i32, b: ti.i32) -> ti.i32:
+        c = a
+        c <<= b
+        return c
+
     for i in range(8):
-        assert shl(3, i) == 3 * 2**i
+        assert shl(3, i) == shl_assign(3, i) == 3 * 2**i
 
 
 @test_utils.test()
@@ -23,14 +29,21 @@ def test_bit_sar():
     def sar(a: ti.i32, b: ti.i32) -> ti.i32:
         return a >> b
 
+    @ti.kernel
+    def sar_assign(a: ti.i32, b: ti.i32) -> ti.i32:
+        c = a
+        c >>= b
+        return c
+
     n = 8
     test_num = 2**n
     neg_test_num = -test_num
     for i in range(n):
-        assert sar(test_num, i) == 2**(n - i)
+        assert sar(test_num, i) == sar_assign(test_num, i) == 2**(n - i)
     # for negative number
     for i in range(n):
-        assert sar(neg_test_num, i) == -2**(n - i)
+        assert sar(neg_test_num, i) == sar_assign(neg_test_num,
+                                                  i) == -2**(n - i)
 
 
 @test_utils.test()

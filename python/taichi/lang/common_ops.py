@@ -242,7 +242,7 @@ class TaichiOperations:
     def __irshift__(self, other):
         if in_python_scope():
             return NotImplemented
-        self._assign(ops.bit_shr(self, other))
+        self._assign(ops.bit_sar(self, other))
         return self
 
     def __ipow__(self, other):

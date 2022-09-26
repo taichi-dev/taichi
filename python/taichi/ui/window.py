@@ -29,9 +29,9 @@ class Window:
     def __init__(self,
                  name,
                  res,
-                 pos=(100, 100),
                  vsync=False,
-                 show_window=True):
+                 show_window=True,
+                 pos=(100, 100)):
         check_ggui_availability()
         package_path = str(pathlib.Path(__file__).parent.parent)
         ti_arch = default_cfg().arch

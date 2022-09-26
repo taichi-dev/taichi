@@ -363,7 +363,7 @@ template<typename T>
 T debug_add(RuntimeContext *ctx, T a, T b, const char *tb) {
   T c;
   if (__builtin_add_overflow(a, b, &c)) {
-    taichi_printf(ctx->runtime, "Addition overflow detected on %s\n", tb);
+    taichi_printf(ctx->runtime, "Addition overflow detected in %s\n", tb);
   }
   return c;
 }
@@ -372,7 +372,7 @@ template<typename T>
 T debug_sub(RuntimeContext *ctx, T a, T b, const char *tb) {
   T c;
   if (__builtin_sub_overflow(a, b, &c)) {
-    taichi_printf(ctx->runtime, "Subtraction overflow detected on %s\n", tb);
+    taichi_printf(ctx->runtime, "Subtraction overflow detected in %s\n", tb);
   }
   return c;
 }
@@ -381,7 +381,7 @@ template<typename T>
 T debug_mul(RuntimeContext *ctx, T a, T b, const char *tb) {
   T c;
   if (__builtin_mul_overflow(a, b, &c)) {
-    taichi_printf(ctx->runtime, "Multiplication overflow detected on %s\n", tb);
+    taichi_printf(ctx->runtime, "Multiplication overflow detected in %s\n", tb);
   }
   return c;
 }

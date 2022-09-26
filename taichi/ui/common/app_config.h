@@ -11,6 +11,8 @@ struct AppConfig {
   std::string name;
   int width{0};
   int height{0};
+  int window_pos_x{0};
+  int window_pos_y{0};
   bool vsync{false};
   bool show_window{true};
   std::string package_path;

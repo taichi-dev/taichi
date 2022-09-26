@@ -25,8 +25,9 @@ It is recommended that you familiarize yourself with GGUI through the examples i
 `ti.ui.Window(name, res)` creates a window.
 
 ```python
-window = ti.ui.Window('Window Title', (640, 360))
+window = ti.ui.Window('Window Title', res = (640, 360), pos = (150, 150))
 ```
+The argument `res` means resulotion(width and height) of the window, `pos` means the position of the window which origins from the left-top of your main screen.
 
 The following three types of objects can be displayed on a `ti.ui.Window`:
 

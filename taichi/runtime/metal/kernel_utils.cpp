@@ -22,7 +22,7 @@ int PrintStringTable::put(const std::string &str) {
   return i;
 }
 
-const std::string &PrintStringTable::get(int i) {
+const std::string &PrintStringTable::get(int i) const {
   return strs_[i];
 }
 

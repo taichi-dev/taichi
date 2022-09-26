@@ -386,6 +386,15 @@ T debug_mul(RuntimeContext *ctx, T a, T b, const char *tb) {
   return c;
 }
 
+template<typename T>
+T debug_shl(RuntimeContext *ctx, T a, i32 b, const char *tb) {
+  T c = a << b;
+  if (c >> b != a) {
+    taichi_printf(ctx->runtime, "Shift left overflow detected in %s\n", tb);
+  }
+  return c;
+}
+
 extern "C" {
 
 #define DEFINE_DEBUG_BIN_OP_TY(op, ty) \
@@ -406,6 +415,7 @@ ty debug_##op##_##ty(RuntimeContext *ctx, ty a, ty b, const char *tb) { \
 DEFINE_DEBUG_BIN_OP(add)
 DEFINE_DEBUG_BIN_OP(sub)
 DEFINE_DEBUG_BIN_OP(mul)
+DEFINE_DEBUG_BIN_OP(shl)
 
 }
 

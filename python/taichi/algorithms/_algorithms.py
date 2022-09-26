@@ -31,7 +31,6 @@ def parallel_sort(keys, values=None):
             sync()
             k = int(k / 2)
         p = int(p * 2)
-    print(num_stages)
 
 
 @data_oriented

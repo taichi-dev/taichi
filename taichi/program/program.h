@@ -53,7 +53,8 @@ struct JITEvaluatorId {
 
   bool operator==(const JITEvaluatorId &o) const {
     return thread_id == o.thread_id && op == o.op && ret == o.ret &&
-           lhs == o.lhs && rhs == o.rhs && is_binary == o.is_binary && tb == o.tb;
+           lhs == o.lhs && rhs == o.rhs && is_binary == o.is_binary &&
+           tb == o.tb;
   }
 };
 

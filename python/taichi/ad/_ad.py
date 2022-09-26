@@ -7,6 +7,7 @@ import warnings
 from copy import deepcopy
 from functools import reduce
 
+import matplotlib.pyplot as plt
 import numpy as np
 import taichi.types.primitive_types as types
 from taichi.lang import impl
@@ -17,6 +18,7 @@ from taichi.lang.expr import Expr
 from taichi.lang.field import ScalarField
 from taichi.lang.kernel_impl import kernel
 from taichi.lang.snode import SNode
+from taichi.types import ndarray, template
 
 from taichi import _snode
 
@@ -28,7 +30,8 @@ class Tape:
                  validation=False,
                  grad_check=None,
                  watch=None,
-                 eps_range=10.**np.arange(-5, 5).astype(np.float64)):
+                 eps_range=2.**np.arange(-3, -30, -1).astype(np.float64),
+                 show_gui=False):
         """A context manager for reverse mode autodiff :class:`~taichi.ad.Tape`. The
         context manager would catching all of the callings of functions that
         decorated by :func:`~taichi.lang.kernel_impl.kernel` or
@@ -109,78 +112,98 @@ class Tape:
         assert self.entered, "Before evaluating gradients tape must be entered."
         assert not self.gradient_evaluated, "Gradients of grad can be evaluated only once."
         for func, args in reversed(self.calls):
-            func.grad(*args)
+            if hasattr(func, 'grad'):
+                func.grad(*args)
         self.gradient_evaluated = True
-
-        # compute numerical gradient
         if self.grad_check:
-            assert self.loss.dtype == types.f64, "Only f64 is supported for grad_check."
+            self.check_grad()
 
-            for x in self.grad_check:
-                if x is self.loss:
-                    continue
+    def check_grad(self):
+        assert self.loss.dtype == types.f64, "Only f64 is supported for grad_check."
 
-                check_pass = False
+        @kernel
+        def x_pos(x: template(), tangent_np: ndarray(), eps: types.f64):
+            for I in impl.grouped(x):
+                x[I] += eps * tangent_np[I]
 
-                tangent = impl.field(dtype=types.f64, shape=x.shape)
-                tangent_np = np.array(np.random.randn(*x.shape)).astype(
+        @kernel
+        def x_neg(x: template(), tangent_np: ndarray(), eps: types.f64):
+            for I in impl.grouped(x):
+                x[I] -= eps * tangent_np[I]
+
+        check_pass_list = [None] * len(self.grad_check)
+
+        plt.figure()
+
+        for i, x in enumerate(self.grad_check):
+            if x is self.loss:
+                check_pass_list[i] = True
+                continue
+
+            check_pass = False
+
+            re_range = []
+            for eps in self.eps_range:
+                tangent_np = np.array(np.random.rand(*x.shape)).astype(
                     np.float64)
-                tangent.from_numpy(tangent_np)
 
-                re_range = []
-                for eps in self.eps_range:
+                self.reset(mode="restore")
+                x_pos(x, tangent_np, eps)
+                for func, args in self.calls:
+                    func(*args)
+                loss_pos = self.loss.to_numpy()
 
-                    @kernel
-                    def x_pos():
-                        for I in impl.grouped(x):
-                            x[I] += eps * tangent[I]
+                self.reset(mode="restore")
+                x_neg(x, tangent_np, eps)
+                for func, args in self.calls:
+                    func(*args)
+                loss_neg = self.loss.to_numpy()
 
-                    @kernel
-                    def x_neg():
-                        for I in impl.grouped(x):
-                            x[I] -= eps * tangent[I]
+                ip_numerical = (loss_pos - loss_neg) * 0.5 / eps
+                x_grad_np = x.grad.to_numpy()
+                extra_dim = x_grad_np.ndim - tangent_np.ndim
+                if extra_dim == 1:
+                    tangent_np = np.expand_dims(tangent_np, axis=-1)
+                if extra_dim == 2:
+                    tangent_np = np.expand_dims(tangent_np, axis=-1)
 
-                    self.reset(mode="restore")
-                    x_pos()
-                    for func, args in self.calls:
-                        func(*args)
-                    loss_pos = self.loss.to_numpy(dtype=np.float64)
+                ip_autodiff = np.sum(x_grad_np * tangent_np)
+                err = abs(ip_autodiff - ip_numerical)
+                # print("autodiff:", ip_autodiff)
+                # print("numerical:", ip_numerical)
+                if ip_numerical != 0:
+                    re = err / abs(ip_autodiff)
+                else:
+                    re = err / (abs(ip_autodiff) + 1e-20)
+                re_range.append(re)
 
-                    self.reset(mode="restore")
-                    x_neg()
-                    for func, args in self.calls:
-                        func(*args)
-                    loss_neg = self.loss.to_numpy(dtype=np.float64)
+                if err * 100 < abs(ip_autodiff):
+                    check_pass = True
+                    break
 
-                    ip_numerical = (loss_pos - loss_neg) * 0.5 / eps
-                    x_grad_np = x.grad.to_numpy(dtype=np.float64)
-                    extra_dim = x_grad_np.ndim - tangent_np.ndim
-                    if extra_dim == 1:
-                        tangent_np = np.expand_dims(tangent_np, axis=-1)
-                    if extra_dim == 2:
-                        tangent_np = np.expand_dims(tangent_np, axis=-1)
-
-                    err = abs(np.sum(x_grad_np * tangent_np) - ip_numerical)
-                    if err * 100 < abs(ip_numerical):
-                        check_pass = True
-                        break
-                    else:
-                        re_range.append(err / abs(ip_numerical))
+            check_pass_list[i] = check_pass
+            plt.loglog(np.array(self.eps_range[:len(re_range)]),
+                       np.array(re_range),
+                       "-*",
+                       label="variable " + str(i))
 
             if not check_pass:
-                # plt.figure()
-                # plt.loglog(np.array(self.eps_range), np.array(re_range), "-*")
-                # plt.show()
-                assert close(np.corrcoef(self.eps_range, re_range)[1, 0],
-                             1.), "grad check fail"
+                print(i, "relative error:", min(re_range))
+            else:
+                print(i, "grad check pass")
 
-            #print grad check pass
-            print("grad check pass")
+        if all(check_pass_list):
+            print("all grad check pass")
+        else:
+            plt.xlabel("finite difference step size")
+            plt.ylabel("relative error")
+            plt.title("Grad check Error Convergence")
+            plt.legend()
+            plt.show()
 
-            # self.loss.from_numpy(self.loss_backup)
-            self.reset(mode="restore")
-            for func, args in self.calls:
-                func(*args)
+        self.reset(mode="restore")
+        for func, args in self.calls:
+            func(*args)
 
     def reset(self, mode):
         assert mode == "save" or mode == "restore"
@@ -196,21 +219,21 @@ class Tape:
                 if not ch.is_place():
                     visit(SNode(ch))
                 else:
-                    if ch.has_adjoint():
-                        if mode == "save":
-                            self.backup_variables.append(
-                                ScalarField(Expr(
-                                    ch.get_expr())).to_numpy(dtype=np.float64))
-                        else:
-                            ScalarField(Expr(ch.get_expr())).from_numpy(
-                                backup_variables.pop(0))
+                    if not ch.is_primal():
+                        continue
+                    if mode == "save":
+                        self.backup_variables.append(
+                            ScalarField(Expr(ch.get_expr())).to_numpy())
+                    else:
+                        ScalarField(Expr(ch.get_expr())).from_numpy(
+                            backup_variables.pop(0))
 
         for root_fb in _snode.FieldsBuilder._finalized_roots():
             visit(root_fb)
 
 
-def close(a, b):
-    return abs(a - b) * 100 < abs(a)
+def close(a, b, re):
+    return abs(a - b) < abs(a) * re
 
 
 def clear_all_gradients(gradient_type=SNodeGradType.ADJOINT):

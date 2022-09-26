@@ -580,6 +580,9 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
     if (is_real(stmt->ret_type.get_element_type())) {
       llvm_val[stmt] =
           builder->CreateFAdd(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
+    } else if (prog->this_thread_config().debug &&
+               is_integral(stmt->ret_type)) {
+      llvm_val[stmt] = call("debug_add_" + stmt->ret_type->to_string(), get_arg(0), llvm_val[stmt->lhs], llvm_val[stmt->rhs], builder->CreateGlobalStringPtr(stmt->tb));
     } else {
       llvm_val[stmt] =
           builder->CreateAdd(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
@@ -588,6 +591,9 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
     if (is_real(stmt->ret_type.get_element_type())) {
       llvm_val[stmt] =
           builder->CreateFSub(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
+    } else if (prog->this_thread_config().debug &&
+               is_integral(stmt->ret_type)) {
+      llvm_val[stmt] = call("debug_sub_" + stmt->ret_type->to_string(), get_arg(0), llvm_val[stmt->lhs], llvm_val[stmt->rhs], builder->CreateGlobalStringPtr(stmt->tb));
     } else {
       llvm_val[stmt] =
           builder->CreateSub(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
@@ -596,6 +602,9 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
     if (is_real(stmt->ret_type.get_element_type())) {
       llvm_val[stmt] =
           builder->CreateFMul(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
+    } else if (prog->this_thread_config().debug &&
+               is_integral(stmt->ret_type)) {
+      llvm_val[stmt] = call("debug_mul_" + stmt->ret_type->to_string(), get_arg(0), llvm_val[stmt->lhs], llvm_val[stmt->rhs], builder->CreateGlobalStringPtr(stmt->tb));
     } else {
       llvm_val[stmt] =
           builder->CreateMul(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);

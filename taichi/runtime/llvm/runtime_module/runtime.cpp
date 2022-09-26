@@ -359,6 +359,56 @@ void ___stubs___() {
 }
 }
 
+template<typename T>
+T debug_add(RuntimeContext *ctx, T a, T b, const char *tb) {
+  T c;
+  if (__builtin_add_overflow(a, b, &c)) {
+    taichi_printf(ctx->runtime, "Addition overflow detected on %s\n", tb);
+  }
+  return c;
+}
+
+template<typename T>
+T debug_sub(RuntimeContext *ctx, T a, T b, const char *tb) {
+  T c;
+  if (__builtin_sub_overflow(a, b, &c)) {
+    taichi_printf(ctx->runtime, "Subtraction overflow detected on %s\n", tb);
+  }
+  return c;
+}
+
+template<typename T>
+T debug_mul(RuntimeContext *ctx, T a, T b, const char *tb) {
+  T c;
+  if (__builtin_mul_overflow(a, b, &c)) {
+    taichi_printf(ctx->runtime, "Multiplication overflow detected on %s\n", tb);
+  }
+  return c;
+}
+
+extern "C" {
+
+#define DEFINE_DEBUG_BIN_OP_TY(op, ty) \
+ty debug_##op##_##ty(RuntimeContext *ctx, ty a, ty b, const char *tb) { \
+  return debug_##op(ctx, a, b, tb); \
+}
+
+#define DEFINE_DEBUG_BIN_OP(op) \
+  DEFINE_DEBUG_BIN_OP_TY(op, i8) \
+  DEFINE_DEBUG_BIN_OP_TY(op, u8) \
+  DEFINE_DEBUG_BIN_OP_TY(op, i16) \
+  DEFINE_DEBUG_BIN_OP_TY(op, u16) \
+  DEFINE_DEBUG_BIN_OP_TY(op, i32) \
+  DEFINE_DEBUG_BIN_OP_TY(op, u32) \
+  DEFINE_DEBUG_BIN_OP_TY(op, i64) \
+  DEFINE_DEBUG_BIN_OP_TY(op, u64)
+
+DEFINE_DEBUG_BIN_OP(add)
+DEFINE_DEBUG_BIN_OP(sub)
+DEFINE_DEBUG_BIN_OP(mul)
+
+}
+
 bool is_power_of_two(uint32 x) {
   return x != 0 && (x & (x - 1)) == 0;
 }

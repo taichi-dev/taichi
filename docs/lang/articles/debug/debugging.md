@@ -117,7 +117,7 @@ Taichi's automatic parallelization mechanism may lead to non-deterministic behav
 
 ### Serialize an entire Taichi program
 
-If you choose CPU as the backend, you can serialize the program with `cpu_max_num_threads=1` when initiating Taichi, so that the whole program runs on a single thread and becomes deterministic. For example:
+If you choose your backend as CPU, you can set cpu_max_num_thread=1 when initializing Taichi to serialize the program. Then the program runs on a single thread and its behavior becomes deterministic. For example:
 
 ```python
 ti.init(arch=ti.cpu, cpu_max_num_threads=1)

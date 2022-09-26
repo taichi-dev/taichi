@@ -14,7 +14,7 @@
 #include "taichi/codegen/llvm/struct_llvm.h"
 #include "taichi/util/file_sequence_writer.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 // TODO: sort function definitions to match declaration order in header
 
@@ -355,6 +355,26 @@ TaskCodeGenLLVM::TaskCodeGenLLVM(Kernel *kernel,
 void TaskCodeGenLLVM::visit(DecorationStmt *stmt) {
 }
 
+void TaskCodeGenLLVM::create_elementwise_cast(
+    UnaryOpStmt *stmt,
+    llvm::Type *to_ty,
+    std::function<llvm::Value *(llvm::Value *, llvm::Type *)> func,
+    bool on_self) {
+  auto from_ty = stmt->operand->ret_type->cast<TensorType>();
+  TI_ASSERT_INFO(from_ty,
+                 "Cannot perform elementwise ops on non-tensor type {}",
+                 from_ty->to_string());
+  llvm::Value *vec = llvm::UndefValue::get(llvm::VectorType::get(
+      to_ty, from_ty->get_num_elements(), /*scalable=*/false));
+  for (int i = 0; i < from_ty->get_num_elements(); ++i) {
+    auto elem = builder->CreateExtractElement(
+        on_self ? llvm_val[stmt] : llvm_val[stmt->operand], i);
+    auto cast_value = func(elem, to_ty);
+    vec = builder->CreateInsertElement(vec, cast_value, i);
+  }
+  llvm_val[stmt] = vec;
+}
+
 void TaskCodeGenLLVM::visit(UnaryOpStmt *stmt) {
   auto input = llvm_val[stmt->operand];
   auto input_type = input->getType();
@@ -369,47 +389,130 @@ void TaskCodeGenLLVM::visit(UnaryOpStmt *stmt) {
     llvm::CastInst::CastOps cast_op;
     auto from = stmt->operand->ret_type;
     auto to = stmt->cast_type;
+    TI_ASSERT_INFO(
+        from->is<TensorType>() == to->is<TensorType>(),
+        "Cannot cast between tensor type and non-tensor type: {} v.s. {}",
+        from->to_string(), to->to_string());
     if (from == to) {
       llvm_val[stmt] = llvm_val[stmt->operand];
-    } else if (is_real(from) != is_real(to)) {
-      if (is_real(from) && is_integral(to)) {
-        cast_op = is_signed(to) ? llvm::Instruction::CastOps::FPToSI
-                                : llvm::Instruction::CastOps::FPToUI;
-      } else if (is_integral(from) && is_real(to)) {
-        cast_op = is_signed(from) ? llvm::Instruction::CastOps::SIToFP
-                                  : llvm::Instruction::CastOps::UIToFP;
+    } else if (is_real(from.get_element_type()) !=
+               is_real(to.get_element_type())) {
+      if (is_real(from.get_element_type()) &&
+          (is_integral(to.get_element_type()))) {
+        cast_op = (is_signed(to.get_element_type()))
+                      ? llvm::Instruction::CastOps::FPToSI
+                      : llvm::Instruction::CastOps::FPToUI;
+      } else if (is_integral(from.get_element_type()) &&
+                 is_real(to.get_element_type())) {
+        cast_op = (is_signed(from.get_element_type()))
+                      ? llvm::Instruction::CastOps::SIToFP
+                      : llvm::Instruction::CastOps::UIToFP;
       } else {
         TI_P(data_type_name(from));
         TI_P(data_type_name(to));
         TI_NOT_IMPLEMENTED;
       }
-      auto cast_type = to->is_primitive(PrimitiveTypeID::f16)
-                           ? PrimitiveType::f32
-                           : stmt->cast_type;
+      bool use_f16 = to->is_primitive(PrimitiveTypeID::f16) ||
+                     (to->is<TensorType>() &&
+                      to->cast<TensorType>()->get_element_type()->is_primitive(
+                          PrimitiveTypeID::f16));
+      auto cast_type = use_f16 ? (to->is<TensorType>()
+                                      ? TypeFactory::create_tensor_type(
+                                            to->cast<TensorType>()->get_shape(),
+                                            PrimitiveType::f32)
+                                      : PrimitiveType::f32)
+                               : stmt->cast_type;
 
-      llvm_val[stmt] = builder->CreateCast(cast_op, llvm_val[stmt->operand],
-                                           tlctx->get_data_type(cast_type));
-
-      if (to->is_primitive(PrimitiveTypeID::f16)) {
-        llvm_val[stmt] = builder->CreateFPTrunc(
-            llvm_val[stmt], llvm::Type::getHalfTy(*llvm_context));
-      }
-    } else if (is_real(from) && is_real(to)) {
-      if (data_type_size(from) < data_type_size(to)) {
-        llvm_val[stmt] = builder->CreateFPExt(
-            llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
+      auto cast_func = [this, cast_op](llvm::Value *value, llvm::Type *type) {
+        return this->builder->CreateCast(cast_op, value, type);
+      };
+      if (!cast_type->is<TensorType>()) {
+        llvm_val[stmt] = cast_func(input, tlctx->get_data_type(cast_type));
       } else {
-        if (to->is_primitive(PrimitiveTypeID::f16)) {
-          llvm_val[stmt] = builder->CreateFPTrunc(
-              builder->CreateFPTrunc(llvm_val[stmt->operand],
-                                     llvm::Type::getFloatTy(*llvm_context)),
-              llvm::Type::getHalfTy(*llvm_context));
+        create_elementwise_cast(
+            stmt,
+            tlctx->get_data_type(
+                cast_type->cast<TensorType>()->get_element_type()),
+            cast_func);
+      }
+
+      if (use_f16) {
+        auto trunc_func = [this](llvm::Value *value, llvm::Type *type) {
+          return this->builder->CreateFPTrunc(value, type);
+        };
+        auto to_ty = llvm::Type::getHalfTy(*llvm_context);
+        if (!cast_type->is<TensorType>()) {
+          llvm_val[stmt] = trunc_func(llvm_val[stmt], to_ty);
         } else {
-          llvm_val[stmt] = builder->CreateFPTrunc(
-              llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
+          create_elementwise_cast(stmt, to_ty, trunc_func, /*trunc_self=*/true);
         }
       }
-    } else if (!is_real(from) && !is_real(to)) {
+    } else if (is_real(from.get_element_type()) &&
+               is_real(to.get_element_type())) {
+      auto t1 = from->is<TensorType>()
+                    ? from->cast<TensorType>()->get_element_type()
+                    : from.operator->();
+      auto t2 = to->is<TensorType>()
+                    ? to->cast<TensorType>()->get_element_type()
+                    : to.operator->();
+      if (data_type_size(t1) < data_type_size(t2)) {
+        auto cast_func = [this](llvm::Value *value, llvm::Type *type) {
+          return this->builder->CreateFPExt(value, type);
+        };
+        if (!stmt->cast_type->is<TensorType>()) {
+          llvm_val[stmt] =
+              cast_func(input, tlctx->get_data_type(stmt->cast_type));
+        } else {
+          create_elementwise_cast(
+              stmt,
+              tlctx->get_data_type(
+                  stmt->cast_type->cast<TensorType>()->get_element_type()),
+              cast_func);
+        }
+      } else {
+        if (to->is_primitive(PrimitiveTypeID::f16) ||
+            (to->is<TensorType>() &&
+             to->cast<TensorType>()->get_element_type()->is_primitive(
+                 PrimitiveTypeID::f16))) {
+          if (!to->is<TensorType>()) {
+            llvm_val[stmt] = builder->CreateFPTrunc(
+                builder->CreateFPTrunc(llvm_val[stmt->operand],
+                                       llvm::Type::getFloatTy(*llvm_context)),
+                llvm::Type::getHalfTy(*llvm_context));
+          } else {
+            auto tensor_type = to->cast<TensorType>();
+            llvm::Value *vec = llvm::UndefValue::get(tlctx->get_data_type(to));
+            for (int i = 0; i < tensor_type->get_num_elements(); ++i) {
+              auto elem = builder->CreateExtractElement(vec, i);
+              auto double_trunced = builder->CreateFPTrunc(
+                  builder->CreateFPTrunc(elem,
+                                         llvm::Type::getFloatTy(*llvm_context)),
+                  llvm::Type::getHalfTy(*llvm_context));
+              vec = builder->CreateInsertElement(vec, double_trunced, i);
+            }
+            llvm_val[stmt] = vec;
+          }
+        } else {
+          auto trunc_fn = [this](llvm::Value *value, llvm::Type *type) {
+            return this->builder->CreateFPTrunc(value, type);
+          };
+          auto cast_type =
+              stmt->cast_type->is<TensorType>()
+                  ? stmt->cast_type->cast<TensorType>()->get_element_type()
+                  : stmt->cast_type.operator->();
+          if (!stmt->cast_type->is<TensorType>()) {
+            llvm_val[stmt] = trunc_fn(input, tlctx->get_data_type(cast_type));
+          } else {
+            create_elementwise_cast(
+                stmt,
+                tlctx->get_data_type(
+                    cast_type->cast<TensorType>()->get_element_type()),
+                trunc_fn);
+          }
+        }
+      }
+    } else if (!is_real(from.get_element_type()) &&
+               !is_real(to.get_element_type())) {
       llvm_val[stmt] = builder->CreateIntCast(
           llvm_val[stmt->operand], tlctx->get_data_type(to), is_signed(from));
     }
@@ -448,12 +551,33 @@ void TaskCodeGenLLVM::visit(UnaryOpStmt *stmt) {
 #undef UNARY_INTRINSIC
 }
 
+void TaskCodeGenLLVM::create_elementwise_binary(
+    BinaryOpStmt *stmt,
+    std::function<llvm::Value *(llvm::Value *lhs, llvm::Value *rhs)> f) {
+  TI_ASSERT(stmt->lhs->ret_type->is<TensorType>());
+  TI_ASSERT(stmt->rhs->ret_type->is<TensorType>());
+  auto lhs_ty = stmt->lhs->ret_type->cast<TensorType>();
+  auto rhs_ty = stmt->rhs->ret_type->cast<TensorType>();
+  TI_ASSERT(lhs_ty->get_num_elements() == rhs_ty->get_num_elements());
+  auto lhs_vec = llvm_val[stmt->lhs];
+  auto rhs_vec = llvm_val[stmt->rhs];
+  auto elt_type_name = data_type_name(lhs_ty->get_element_type());
+  llvm::Value *result =
+      llvm::UndefValue::get(tlctx->get_data_type(stmt->ret_type));
+  for (int i = 0; i < lhs_ty->get_num_elements(); ++i) {
+    auto lhs = builder->CreateExtractElement(lhs_vec, i);
+    auto rhs = builder->CreateExtractElement(rhs_vec, i);
+    result = builder->CreateInsertElement(result, f(lhs, rhs), i);
+  }
+  llvm_val[stmt] = result;
+}
+
 void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
   auto op = stmt->op_type;
   auto ret_type = stmt->ret_type;
 
   if (op == BinaryOpType::add) {
-    if (is_real(stmt->ret_type)) {
+    if (is_real(stmt->ret_type.get_element_type())) {
       llvm_val[stmt] =
           builder->CreateFAdd(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
     } else {
@@ -461,7 +585,7 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
           builder->CreateAdd(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
     }
   } else if (op == BinaryOpType::sub) {
-    if (is_real(stmt->ret_type)) {
+    if (is_real(stmt->ret_type.get_element_type())) {
       llvm_val[stmt] =
           builder->CreateFSub(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
     } else {
@@ -469,7 +593,7 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
           builder->CreateSub(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
     }
   } else if (op == BinaryOpType::mul) {
-    if (is_real(stmt->ret_type)) {
+    if (is_real(stmt->ret_type.get_element_type())) {
       llvm_val[stmt] =
           builder->CreateFMul(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
     } else {
@@ -477,7 +601,7 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
           builder->CreateMul(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
     }
   } else if (op == BinaryOpType::div) {
-    if (is_real(stmt->ret_type)) {
+    if (is_real(stmt->ret_type.get_element_type())) {
       llvm_val[stmt] =
           builder->CreateFDiv(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
     } else if (is_signed(stmt->ret_type)) {
@@ -517,7 +641,7 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
         create_call("max_" #x, {llvm_val[stmt->lhs], llvm_val[stmt->rhs]}); \
   }
 
-    if (is_real(ret_type)) {
+    if (is_real(ret_type.get_element_type())) {
       llvm_val[stmt] =
           builder->CreateMaxNum(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
     }
@@ -528,8 +652,24 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
     BINARYOP_MAX(u64)
     BINARYOP_MAX(i64)
     else {
-      TI_P(data_type_name(ret_type));
-      TI_NOT_IMPLEMENTED
+      if (auto tensor_ty = ret_type->cast<TensorType>()) {
+        auto elt_ty = tensor_ty->get_element_type();
+        TI_ASSERT(elt_ty->is_primitive(PrimitiveTypeID::u16) ||
+                  elt_ty->is_primitive(PrimitiveTypeID::i16) ||
+                  elt_ty->is_primitive(PrimitiveTypeID::u32) ||
+                  elt_ty->is_primitive(PrimitiveTypeID::i32) ||
+                  elt_ty->is_primitive(PrimitiveTypeID::u64) ||
+                  elt_ty->is_primitive(PrimitiveTypeID::i64));
+        auto dtype_name = data_type_name(elt_ty);
+        auto binary_max = [this, &dtype_name](llvm::Value *lhs,
+                                              llvm::Value *rhs) {
+          return create_call("max_" + dtype_name, {lhs, rhs});
+        };
+        create_elementwise_binary(stmt, binary_max);
+      } else {
+        TI_P(data_type_name(ret_type));
+        TI_NOT_IMPLEMENTED
+      }
     }
   } else if (op == BinaryOpType::min) {
 #define BINARYOP_MIN(x)                                                     \
@@ -538,7 +678,7 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
         create_call("min_" #x, {llvm_val[stmt->lhs], llvm_val[stmt->rhs]}); \
   }
 
-    if (is_real(ret_type)) {
+    if (is_real(ret_type.get_element_type())) {
       llvm_val[stmt] =
           builder->CreateMinNum(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
     }
@@ -549,23 +689,39 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
     BINARYOP_MIN(u64)
     BINARYOP_MIN(i64)
     else {
-      TI_P(data_type_name(ret_type));
-      TI_NOT_IMPLEMENTED
+      if (auto tensor_ty = ret_type->cast<TensorType>()) {
+        auto elt_ty = tensor_ty->get_element_type();
+        TI_ASSERT(elt_ty->is_primitive(PrimitiveTypeID::u16) ||
+                  elt_ty->is_primitive(PrimitiveTypeID::i16) ||
+                  elt_ty->is_primitive(PrimitiveTypeID::u32) ||
+                  elt_ty->is_primitive(PrimitiveTypeID::i32) ||
+                  elt_ty->is_primitive(PrimitiveTypeID::u64) ||
+                  elt_ty->is_primitive(PrimitiveTypeID::i64));
+        auto dtype_name = data_type_name(elt_ty);
+        auto binary_min = [this, &dtype_name](llvm::Value *lhs,
+                                              llvm::Value *rhs) {
+          return create_call("min_" + dtype_name, {lhs, rhs});
+        };
+        create_elementwise_binary(stmt, binary_min);
+      } else {
+        TI_P(data_type_name(ret_type));
+        TI_NOT_IMPLEMENTED
+      }
     }
   } else if (is_comparison(op)) {
     llvm::Value *cmp = nullptr;
     auto input_type = stmt->lhs->ret_type;
     if (op == BinaryOpType::cmp_eq) {
-      if (is_real(input_type)) {
+      if (is_real(input_type.get_element_type())) {
         cmp = builder->CreateFCmpOEQ(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
       } else {
         cmp = builder->CreateICmpEQ(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
       }
     } else if (op == BinaryOpType::cmp_le) {
-      if (is_real(input_type)) {
+      if (is_real(input_type.get_element_type())) {
         cmp = builder->CreateFCmpOLE(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
       } else {
-        if (is_signed(input_type)) {
+        if (is_signed(input_type.get_element_type())) {
           cmp =
               builder->CreateICmpSLE(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
         } else {
@@ -574,10 +730,10 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
         }
       }
     } else if (op == BinaryOpType::cmp_ge) {
-      if (is_real(input_type)) {
+      if (is_real(input_type.get_element_type())) {
         cmp = builder->CreateFCmpOGE(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
       } else {
-        if (is_signed(input_type)) {
+        if (is_signed(input_type.get_element_type())) {
           cmp =
               builder->CreateICmpSGE(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
         } else {
@@ -586,10 +742,10 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
         }
       }
     } else if (op == BinaryOpType::cmp_lt) {
-      if (is_real(input_type)) {
+      if (is_real(input_type.get_element_type())) {
         cmp = builder->CreateFCmpOLT(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
       } else {
-        if (is_signed(input_type)) {
+        if (is_signed(input_type.get_element_type())) {
           cmp =
               builder->CreateICmpSLT(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
         } else {
@@ -598,10 +754,10 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
         }
       }
     } else if (op == BinaryOpType::cmp_gt) {
-      if (is_real(input_type)) {
+      if (is_real(input_type.get_element_type())) {
         cmp = builder->CreateFCmpOGT(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
       } else {
-        if (is_signed(input_type)) {
+        if (is_signed(input_type.get_element_type())) {
           cmp =
               builder->CreateICmpSGT(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
         } else {
@@ -610,7 +766,7 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
         }
       }
     } else if (op == BinaryOpType::cmp_ne) {
-      if (is_real(input_type)) {
+      if (is_real(input_type.get_element_type())) {
         cmp = builder->CreateFCmpONE(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
       } else {
         cmp = builder->CreateICmpNE(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
@@ -2750,6 +2906,6 @@ LLVMCompiledKernel LLVMCompiledKernel::clone() const {
   return {tasks, llvm::CloneModule(*module)};
 }
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang
 
 #endif  // #ifdef TI_WITH_LLVM

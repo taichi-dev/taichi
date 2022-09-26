@@ -3,8 +3,7 @@
 #include "taichi/ir/statements.h"
 #include "taichi/program/function.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 struct CFGFuncKey {
   FunctionKey func_key{"", -1, -1};
@@ -16,8 +15,7 @@ struct CFGFuncKey {
   }
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang
 
 namespace std {
 template <>
@@ -29,8 +27,7 @@ struct hash<taichi::lang::CFGFuncKey> {
 };
 }  // namespace std
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 /**
  * Build a control-flow graph. The resulting graph is guaranteed to have an
@@ -460,5 +457,4 @@ std::unique_ptr<ControlFlowGraph> build_cfg(IRNode *root) {
 }
 }  // namespace irpass::analysis
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

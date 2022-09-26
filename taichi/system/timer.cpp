@@ -11,7 +11,7 @@
 
 #endif
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 using namespace std;
 
@@ -232,4 +232,4 @@ uint64 Time::get_cycles() {
 
 #endif
 
-TI_NAMESPACE_END
+}  // namespace taichi

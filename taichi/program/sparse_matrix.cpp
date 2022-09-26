@@ -57,8 +57,7 @@ void print_triplet_from_csr(int64_t n_rows,
 
 }  // namespace
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 SparseMatrixBuilder::SparseMatrixBuilder(int rows,
                                          int cols,
@@ -651,5 +650,4 @@ const std::string CuSparseMatrix::to_string() const {
   return ostr.str();
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

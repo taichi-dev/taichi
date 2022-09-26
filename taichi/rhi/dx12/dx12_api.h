@@ -6,8 +6,7 @@
 
 #endif
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace directx12 {
 
 bool is_dx12_api_available();
@@ -18,5 +17,4 @@ std::vector<uint8_t> validate_and_sign(
     std::vector<uint8_t> &input_dxil_container);
 
 }  // namespace directx12
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

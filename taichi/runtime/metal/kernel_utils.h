@@ -16,8 +16,7 @@
 // compiled to more than one Metal compute kernels. Concretely, each offloaded
 // task in the Taichi kernel maps to a Metal kernel.
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class Kernel;
 class SNode;
@@ -322,5 +321,4 @@ struct BufferMetaData {
 };
 
 }  // namespace metal
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

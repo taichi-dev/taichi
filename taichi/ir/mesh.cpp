@@ -1,7 +1,6 @@
 #include "taichi/ir/mesh.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace mesh {
 
 std::string element_type_name(MeshElementType type) {
@@ -57,5 +56,4 @@ MeshRelationType inverse_relation(MeshRelationType rel) {
 }
 
 }  // namespace mesh
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

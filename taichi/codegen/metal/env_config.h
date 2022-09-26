@@ -2,7 +2,7 @@
 
 #include "taichi/util/lang_util.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 namespace metal {
 
 // Metal specific config inferred from the environment.
@@ -27,4 +27,4 @@ class EnvConfig {
 
 }  // namespace metal
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

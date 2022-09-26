@@ -3,8 +3,7 @@
 #include "taichi/runtime/metal/aot_utils.h"
 #include "taichi/runtime/metal/kernel_manager.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace metal {
 namespace {
 
@@ -107,5 +106,4 @@ std::unique_ptr<aot::Module> make_aot_module(std::any mod_params) {
 }
 
 }  // namespace metal
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

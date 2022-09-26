@@ -7,8 +7,7 @@
 #include "taichi/struct/struct.h"
 #include "taichi/util/file_sequence_writer.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 StructCompilerLLVM::StructCompilerLLVM(Arch arch,
                                        const CompileConfig *config,
@@ -340,5 +339,4 @@ llvm::Function *StructCompilerLLVM::create_function(llvm::FunctionType *ft,
                                 *module);
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

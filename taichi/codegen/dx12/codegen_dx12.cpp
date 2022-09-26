@@ -14,7 +14,7 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/analysis/offline_cache_util.h"
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 namespace {
 
@@ -283,4 +283,4 @@ FunctionType KernelCodeGenDX12::compile_to_function() {
   // FIXME: implement compile_to_function.
   return [](RuntimeContext &ctx) {};
 }
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

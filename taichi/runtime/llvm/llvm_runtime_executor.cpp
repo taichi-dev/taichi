@@ -11,8 +11,7 @@
 #include "taichi/rhi/cuda/cuda_context.h"
 #endif
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace {
 void assert_failed_host(const char *msg) {
   TI_ERROR("Assertion failure: {}", msg);
@@ -629,5 +628,4 @@ void LlvmRuntimeExecutor::prepare_runtime_context(RuntimeContext *ctx) {
   ctx->runtime = get_llvm_runtime();
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

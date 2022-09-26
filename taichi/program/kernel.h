@@ -9,7 +9,7 @@
 #include "taichi/program/texture.h"
 #include "taichi/aot/graph_data.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 class Program;
 
@@ -168,4 +168,4 @@ class TI_DLL_EXPORT Kernel : public Callable {
   bool from_cache_{false};
 };
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

@@ -1,8 +1,7 @@
 #include "taichi/program/callable.h"
 #include "taichi/program/program.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 Callable::Callable() = default;
 
@@ -43,5 +42,4 @@ Callable::CurrentCallableGuard::~CurrentCallableGuard() {
   program_->current_callable = old_callable_;
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

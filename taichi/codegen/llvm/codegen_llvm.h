@@ -12,8 +12,7 @@
 #include "taichi/codegen/llvm/llvm_compiled_data.h"
 #include "taichi/program/program.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class TaskCodeGenLLVM;
 
@@ -101,6 +100,16 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   void emit_struct_meta_base(const std::string &name,
                              llvm::Value *node_meta,
                              SNode *snode);
+
+  void create_elementwise_binary(
+      BinaryOpStmt *stmt,
+      std::function<llvm::Value *(llvm::Value *lhs, llvm::Value *rhs)> f);
+
+  void create_elementwise_cast(
+      UnaryOpStmt *stmt,
+      llvm::Type *to_ty,
+      std::function<llvm::Value *(llvm::Value *, llvm::Type *)> f,
+      bool on_self = false);
 
   std::unique_ptr<RuntimeObject> emit_struct_meta_object(SNode *snode);
 
@@ -396,7 +405,6 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   ~TaskCodeGenLLVM() override = default;
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang
 
 #endif  // #ifdef TI_WITH_LLVM

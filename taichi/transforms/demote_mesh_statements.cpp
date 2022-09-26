@@ -5,8 +5,7 @@
 #include "taichi/transforms/demote_mesh_statements.h"
 #include "taichi/ir/visitors.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 const PassID DemoteMeshStatements::id = "DemoteMeshStatements";
 
@@ -153,5 +152,4 @@ void demote_mesh_statements(IRNode *root,
 }
 
 }  // namespace irpass
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

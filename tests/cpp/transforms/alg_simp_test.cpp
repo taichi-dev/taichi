@@ -4,8 +4,7 @@
 #include "taichi/ir/transforms.h"
 #include "tests/cpp/program/test_program.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class AlgebraicSimplicationTest : public ::testing::Test {
  protected:
@@ -173,5 +172,4 @@ TEST_F(AlgebraicSimplicationTest, SimplifyAndMinusOne) {
   EXPECT_TRUE((*block)[0]->is<GlobalTemporaryStmt>());
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

@@ -10,7 +10,7 @@
 #include "array.h"
 #include "linalg.h"
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 namespace math {
 template <typename T>
@@ -39,4 +39,4 @@ TI_FORCE_INLINE
 
 }  // namespace math
 
-TI_NAMESPACE_END
+}  // namespace taichi

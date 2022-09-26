@@ -3,8 +3,7 @@
 #include "taichi/runtime/gfx/aot_module_loader_impl.h"
 #include "taichi/runtime/metal/aot_module_loader_impl.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace aot {
 namespace {
 
@@ -84,5 +83,4 @@ Field *Module::get_snode_tree(const std::string &name) {
 }
 
 }  // namespace aot
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

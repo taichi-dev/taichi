@@ -9,9 +9,9 @@
 #include "taichi/system/threading.h"
 #include "taichi/rhi/cuda/cuda_driver.h"
 #include "taichi/rhi/cuda/cuda_profiler.h"
-#include "taichi/analysis/offline_cache_util.h"
+#include "taichi/util/offline_cache.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 CUDAContext::CUDAContext()
     : profiler_(nullptr), driver_(CUDADriver::get_instance_without_context()) {
@@ -141,4 +141,4 @@ CUDAContext &CUDAContext::get_instance() {
   return *context;
 }
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

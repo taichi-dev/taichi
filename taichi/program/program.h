@@ -30,8 +30,7 @@
 #include "taichi/program/sparse_matrix.h"
 #include "taichi/ir/mesh.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 struct JITEvaluatorId {
   std::thread::id thread_id;
@@ -57,8 +56,7 @@ struct JITEvaluatorId {
   }
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang
 
 namespace std {
 template <>
@@ -72,8 +70,7 @@ struct hash<taichi::lang::JITEvaluatorId> {
 };
 }  // namespace std
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class StructCompiler;
 
@@ -400,5 +397,4 @@ class TI_DLL_EXPORT Program {
   std::vector<std::unique_ptr<Texture>> textures_;
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

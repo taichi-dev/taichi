@@ -9,8 +9,7 @@
 #include "taichi/system/memory_pool.h"
 #include "tests/cpp/program/test_program.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace directx11 {
 
 TEST(Dx11DeviceCreationTest, CreateDeviceAndAllocateMemory) {
@@ -153,7 +152,6 @@ TEST(Dx11ProgramTest, MaterializeRuntimeTest) {
 }
 
 }  // namespace directx11
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang
 
 #endif

@@ -11,7 +11,7 @@
 
 #define C90_COMPAT 0
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 namespace cccp {  // Codegen for C Compiler Processor
 
 namespace {
@@ -605,4 +605,4 @@ std::unique_ptr<CCKernel> CCKernelGen::compile() {
 }
 
 }  // namespace cccp
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

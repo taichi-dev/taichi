@@ -6,8 +6,7 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/program/program.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class ExtractConstantTest : public ::testing::Test {
  protected:
@@ -59,5 +58,4 @@ TEST_F(ExtractConstantTest, ExtractConstant) {
   EXPECT_EQ(ir_block->size(), 4);
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

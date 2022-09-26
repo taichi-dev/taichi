@@ -6,8 +6,7 @@
 #include "taichi/runtime/llvm/launch_arg_info.h"
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace directx12 {
 
 AotModuleBuilderImpl::AotModuleBuilderImpl(LlvmProgramImpl *prog) : prog(prog) {
@@ -47,5 +46,4 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir,
 }
 
 }  // namespace directx12
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

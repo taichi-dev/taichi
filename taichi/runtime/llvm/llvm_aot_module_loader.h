@@ -3,8 +3,7 @@
 #include "taichi/aot/module_loader.h"
 #include "taichi/runtime/llvm/llvm_runtime_executor.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 /* TODO(zhanlue) refactor this interface once SNodeTreeType is available
    The "aot::Field" created by "make_new_field()" is a SNodeTree in essense.
@@ -82,5 +81,4 @@ class LlvmAotModule : public aot::Module {
   std::unordered_set<int> initialized_snode_tree_ids;
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

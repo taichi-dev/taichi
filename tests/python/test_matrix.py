@@ -817,6 +817,67 @@ def test_local_matrix_index_check():
         bar()
 
 
+@test_utils.test(arch=[ti.cuda, ti.cpu], real_matrix=True, debug=True)
+def test_elementwise_ops():
+    @ti.kernel
+    def test():
+        # TODO: fix parallelization
+        x = ti.Matrix([[1, 2], [3, 4]])
+        # Unify rhs
+        t1 = x + 10
+        ti.loop_config(serialize=True)
+        for i in range(2):
+            for j in range(2):
+                assert t1[i, j] == x[i, j] + 10
+        t2 = x * 2
+        ti.loop_config(serialize=True)
+        for i in range(2):
+            for j in range(2):
+                assert t2[i, j] == x[i, j] * 2
+        # elementwise-add
+        t3 = t1 + t2
+        ti.loop_config(serialize=True)
+        for i in range(2):
+            for j in range(2):
+                assert t3[i, j] == t1[i, j] + t2[i, j]
+        # Unify lhs
+        t4 = 1 / t1
+        # these should be *exactly* equals
+        ti.loop_config(serialize=True)
+        for i in range(2):
+            for j in range(2):
+                assert t4[i, j] == 1 / t1[i, j]
+        t5 = 1 << x
+        ti.loop_config(serialize=True)
+        for i in range(2):
+            for j in range(2):
+                assert t5[i, j] == 1 << x[i, j]
+        t6 = 1 + (x // 2)
+        ti.loop_config(serialize=True)
+        for i in range(2):
+            for j in range(2):
+                assert t6[i, j] == 1 + (x[i, j] // 2)
+
+        # test floordiv
+        y = ti.Matrix([[1, 2], [3, 4]], dt=ti.i32)
+        z = y * 2
+        factors = z // y
+        ti.loop_config(serialize=True)
+        for i in range(2):
+            for j in range(2):
+                assert factors[i, j] == 2
+
+        y1 = ti.Matrix([[1, 2], [3, 4]], dt=ti.f32)
+        z1 = y1 * 2
+        factors1 = z1 // y1
+        ti.loop_config(serialize=True)
+        for i in range(2):
+            for j in range(2):
+                assert factors1[i, j] == 2
+
+    test()
+
+
 @test_utils.test()
 def test_vector_vector_t():
     @ti.kernel

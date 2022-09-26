@@ -4,7 +4,7 @@
 #include "taichi/ir/visitors.h"
 #include "taichi/program/compile_config.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 class ExtractConstant : public BasicStmtVisitor {
  private:
@@ -61,4 +61,4 @@ bool extract_constant(IRNode *root, const CompileConfig &config) {
 }
 }  // namespace irpass
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

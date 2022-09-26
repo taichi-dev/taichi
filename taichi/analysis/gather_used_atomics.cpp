@@ -4,7 +4,7 @@
 #include "taichi/ir/visitors.h"
 #include <unordered_set>
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 class UsedAtomicsSearcher : public BasicStmtVisitor {
  private:
@@ -49,4 +49,4 @@ std::unique_ptr<std::unordered_set<AtomicOpStmt *>> gather_used_atomics(
 }
 }  // namespace irpass::analysis
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

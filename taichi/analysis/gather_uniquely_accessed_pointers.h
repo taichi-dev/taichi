@@ -2,8 +2,7 @@
 
 #include "taichi/ir/pass.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class GatherUniquelyAccessedBitStructsPass : public Pass {
  public:
@@ -16,5 +15,4 @@ class GatherUniquelyAccessedBitStructsPass : public Pass {
   };
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

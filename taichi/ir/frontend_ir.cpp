@@ -5,7 +5,7 @@
 #include "taichi/program/program.h"
 #include "taichi/common/exceptions.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 #define TI_ASSERT_TYPE_CHECKED(x)                       \
   TI_ASSERT_INFO(x->ret_type != PrimitiveType::unknown, \
@@ -198,6 +198,32 @@ void UnaryOpExpression::flatten(FlattenContext *ctx) {
   ctx->push_back(std::move(unary));
 }
 
+Expr to_broadcast_tensor(const Expr &elt, const DataType &dt) {
+  TI_ASSERT(dt->is<TensorType>());
+  if (elt->ret_type == dt) {
+    return elt;
+  }
+  auto tensor_type = dt->as<TensorType>();
+  auto elt_type = tensor_type->get_element_type();
+  TI_ASSERT_INFO(elt_type->is<PrimitiveType>(),
+                 "Only primitive types are supported in Tensors, got {}",
+                 elt_type->to_string());
+  std::vector<Expr> broadcast_values(tensor_type->get_num_elements(), elt);
+  return Expr::make<MatrixExpression>(broadcast_values,
+                                      tensor_type->get_shape(), elt->ret_type);
+}
+
+std::tuple<Expr, Expr> unify_binop_operands(const Expr &e1, const Expr &e2) {
+  if (e1->ret_type->is<PrimitiveType>() && e2->ret_type->is<TensorType>()) {
+    return std::tuple(to_broadcast_tensor(e1, e2->ret_type), e2);
+  } else if (e1->ret_type->is<TensorType>() &&
+             e2->ret_type->is<PrimitiveType>()) {
+    return std::tuple(e1, to_broadcast_tensor(e2, e1->ret_type));
+  } else {
+    return std::tuple(e1, e2);
+  }
+}
+
 void BinaryOpExpression::type_check(CompileConfig *config) {
   TI_ASSERT_TYPE_CHECKED(lhs);
   TI_ASSERT_TYPE_CHECKED(rhs);
@@ -217,17 +243,52 @@ void BinaryOpExpression::type_check(CompileConfig *config) {
 
   if ((lhs_type->is<PrimitiveType>() && rhs_type->is<TensorType>()) ||
       (lhs_type->is<TensorType>() && rhs_type->is<PrimitiveType>())) {
-    TI_NOT_IMPLEMENTED;
+    // convert Tensor/Scalar | Scalar/Tensor operations to broadcasting
+    auto [unified_l, unified_r] = unify_binop_operands(lhs, rhs);
+    lhs = unified_l;
+    rhs = unified_r;
+    if (lhs->ret_type == PrimitiveType::unknown)
+      lhs.type_check(config);
+    if (rhs->ret_type == PrimitiveType::unknown)
+      rhs.type_check(config);
+    TI_ASSERT(lhs->ret_type->is<TensorType>());
+    TI_ASSERT(rhs->ret_type->is<TensorType>());
+    lhs_type = lhs->ret_type;
+    rhs_type = rhs->ret_type;
   }
 
-  if (binary_is_bitwise(type) &&
-      (!is_integral(lhs_type) || !is_integral(rhs_type)))
+  bool is_tensor_op = false;
+
+  if (lhs_type->is<TensorType>()) {
+    is_tensor_op = true;
+    auto rhs_tensor_type = rhs_type->cast<TensorType>();
+    if (rhs_tensor_type->get_shape() !=
+        lhs_type->cast<TensorType>()->get_shape())
+      // current assume element-wise binary op
+      error();
+  }
+
+  auto make_dt = [&is_tensor_op, this](DataType dt) {
+    if (is_tensor_op) {
+      return TypeFactory::create_tensor_type(
+          this->lhs->ret_type->cast<TensorType>()->get_shape(), dt);
+    } else {
+      return dt;
+    }
+  };
+
+  if (binary_is_bitwise(type) && (!is_integral(lhs_type.get_element_type()) ||
+                                  !is_integral(rhs_type.get_element_type())))
     error();
   if (binary_is_logical(type) &&
-      (lhs_type != PrimitiveType::i32 || rhs_type != PrimitiveType::i32))
+      (lhs_type != PrimitiveType::i32 || rhs_type != PrimitiveType::i32) &&
+      (!is_tensor_op || (lhs_type->cast<TensorType>()->get_element_type() !=
+                             PrimitiveType::i32 ||
+                         rhs_type->cast<TensorType>()->get_element_type() !=
+                             PrimitiveType::i32)))
     error();
   if (is_comparison(type) || binary_is_logical(type)) {
-    ret_type = PrimitiveType::i32;
+    ret_type = make_dt(PrimitiveType::i32);
     return;
   }
   if (is_shift_op(type) ||
@@ -240,20 +301,20 @@ void BinaryOpExpression::type_check(CompileConfig *config) {
   // Try not promoting to fp64 unless necessary
   if (type == BinaryOpType::atan2) {
     if (lhs_type == PrimitiveType::f64 || rhs_type == PrimitiveType::f64) {
-      ret_type = PrimitiveType::f64;
+      ret_type = make_dt(PrimitiveType::f64);
     } else {
-      ret_type = PrimitiveType::f32;
+      ret_type = make_dt(PrimitiveType::f32);
     }
     return;
   }
 
   if (type == BinaryOpType::truediv) {
     auto default_fp = config->default_fp;
-    if (!is_real(lhs_type)) {
-      lhs_type = default_fp;
+    if (!is_real(lhs_type.get_element_type())) {
+      lhs_type = make_dt(default_fp);
     }
-    if (!is_real(rhs_type)) {
-      rhs_type = default_fp;
+    if (!is_real(rhs_type.get_element_type())) {
+      rhs_type = make_dt(default_fp);
     }
   }
   ret_type = promoted_type(lhs_type, rhs_type);
@@ -1308,4 +1369,4 @@ void flatten_rvalue(Expr ptr, Expression::FlattenContext *ctx) {
   }
 }
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

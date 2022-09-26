@@ -35,7 +35,7 @@
 #include "taichi/program/context.h"
 #undef TI_RUNTIME_HOST
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 #if defined(TI_WITH_CUDA)
 class JITModuleCUDA : public JITModule {
@@ -110,4 +110,4 @@ std::unique_ptr<JITSession> create_llvm_jit_session_cuda(
     CompileConfig *config,
     Arch arch);
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

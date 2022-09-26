@@ -10,8 +10,7 @@
 #include "taichi/rhi/device.h"
 #include "taichi/ir/statements.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace spirv {
 
 template <bool stop, std::size_t I, typename F>
@@ -641,5 +640,4 @@ class IRBuilder {
   std::vector<uint32_t> function_;
 };
 }  // namespace spirv
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

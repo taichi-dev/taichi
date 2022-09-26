@@ -4,7 +4,7 @@
 #include "llvm/IR/DataLayout.h"
 #endif
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 #ifdef TI_WITH_LLVM
 std::unique_ptr<JITSession> create_llvm_jit_session_cpu(
@@ -41,4 +41,4 @@ std::unique_ptr<JITSession> JITSession::create(TaichiLLVMContext *tlctx,
   return nullptr;
 }
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

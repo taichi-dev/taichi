@@ -3,7 +3,7 @@
 #include "taichi/ir/statements.h"
 #include "taichi/ir/visitors.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 // Find the **last** store, or return invalid if there is an AtomicOpStmt
 // after the last store.
@@ -121,4 +121,4 @@ std::pair<bool, Stmt *> last_store_or_atomic(IRNode *root, Stmt *var) {
 }
 }  // namespace irpass::analysis
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

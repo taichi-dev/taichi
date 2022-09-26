@@ -13,8 +13,7 @@
 
 using namespace taichi::lang::vulkan;
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 namespace {
 std::vector<std::string> get_required_instance_extensions() {
@@ -255,5 +254,4 @@ VulkanProgramImpl::~VulkanProgramImpl() {
   embedded_device_.reset();
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

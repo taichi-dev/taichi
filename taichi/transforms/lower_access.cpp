@@ -11,8 +11,7 @@
 #include <deque>
 #include <set>
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace {
 
 class LowerAccess;
@@ -297,5 +296,4 @@ bool lower_access(IRNode *root,
 }
 
 }  // namespace irpass
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

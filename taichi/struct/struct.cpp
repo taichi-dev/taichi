@@ -2,8 +2,7 @@
 
 #include "struct.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 void StructCompiler::collect_snodes(SNode &snode) {
   snodes.push_back(&snode);
@@ -13,5 +12,4 @@ void StructCompiler::collect_snodes(SNode &snode) {
   }
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

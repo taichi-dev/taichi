@@ -1,5 +1,5 @@
 #include "taichi_metal_impl.h"
-#include "runtime/metal/kernel_manager.h"
+#include "taichi/runtime/metal/kernel_manager.h"
 
 MetalRuntime::MetalRuntime() : GfxRuntime(taichi::Arch::metal) {
 }

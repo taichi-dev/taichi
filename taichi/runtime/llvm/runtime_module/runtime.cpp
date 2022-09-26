@@ -359,6 +359,7 @@ void ___stubs___() {
 }
 }
 
+#if defined(__clang__) || defined(__GNUC__)
 template<typename T>
 T debug_add(RuntimeContext *ctx, T a, T b, const char *tb) {
   T c;
@@ -418,6 +419,7 @@ DEFINE_DEBUG_BIN_OP(mul)
 DEFINE_DEBUG_BIN_OP(shl)
 
 }
+#endif
 
 bool is_power_of_two(uint32 x) {
   return x != 0 && (x & (x - 1)) == 0;

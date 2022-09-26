@@ -635,9 +635,10 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
   } else if (op == BinaryOpType::bit_shl) {
     if (prog->this_thread_config().debug && is_integral(stmt->ret_type)) {
       llvm_val[stmt] = call("debug_shl_" + stmt->ret_type->to_string(), get_arg(0), llvm_val[stmt->lhs], llvm_val[stmt->rhs], builder->CreateGlobalStringPtr(stmt->tb));
+    } else {
+      llvm_val[stmt] =
+          builder->CreateShl(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
     }
-    llvm_val[stmt] =
-        builder->CreateShl(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
   } else if (op == BinaryOpType::bit_sar) {
     if (is_signed(stmt->lhs->element_type())) {
       llvm_val[stmt] =

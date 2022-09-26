@@ -1,6 +1,6 @@
 #include "taichi/ui/gui/gui.h"
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 Vector2 Canvas::Line::vertices[128];
 
@@ -132,4 +132,4 @@ void Canvas::triangle_single(real x0,
   triangle(a, b, c, color);
 }
 
-TI_NAMESPACE_END
+}  // namespace taichi

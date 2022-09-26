@@ -16,8 +16,7 @@
 #include "taichi/program/context.h"
 #undef TI_RUNTIME_HOST
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace gfx {
 
 namespace {
@@ -573,10 +572,17 @@ DeviceAllocation GfxRuntime::create_image(const ImageParams &params) {
   TI_ERROR_IF(gfx_device == nullptr,
               "Image can only be created on a graphics device");
   DeviceAllocation image = gfx_device->create_image(params);
-  last_image_layouts_[image.alloc_id] = params.initial_layout;
+  track_image(image, ImageLayout::undefined);
+  last_image_layouts_.at(image.alloc_id) = params.initial_layout;
   return image;
 }
 
+void GfxRuntime::track_image(DeviceAllocation image, ImageLayout layout) {
+  last_image_layouts_[image.alloc_id] = layout;
+}
+void GfxRuntime::untrack_image(DeviceAllocation image) {
+  last_image_layouts_.erase(image.alloc_id);
+}
 void GfxRuntime::transition_image(DeviceAllocation image, ImageLayout layout) {
   ImageLayout &last_layout = last_image_layouts_.at(image.alloc_id);
   ensure_current_cmdlist();
@@ -732,7 +738,7 @@ GfxRuntime::RegisterParams run_codegen(
   params.compiled_structs = compiled_structs;
   params.device = device;
   params.enable_spv_opt =
-      kernel->program->config.external_optimization_level > 0;
+      kernel->program->this_thread_config().external_optimization_level > 0;
   spirv::KernelCodegen codegen(params);
   GfxRuntime::RegisterParams res;
   codegen.run(res.kernel_attribs, res.task_spirv_source_codes);
@@ -741,5 +747,4 @@ GfxRuntime::RegisterParams run_codegen(
 }
 
 }  // namespace gfx
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

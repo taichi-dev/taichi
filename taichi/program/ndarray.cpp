@@ -8,8 +8,7 @@
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
 #endif
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 namespace {
 
@@ -204,5 +203,4 @@ void Ndarray::write_float(const std::vector<int> &i, float64 val) {
   write<float>(i, val);
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

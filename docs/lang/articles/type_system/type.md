@@ -14,20 +14,18 @@ Let's see a quick example:
 @ti.kernel
 def test():
     x = 1  # x is the integer 1
-    x = 3.14  # 3.14 is cast to 3 since x is an integer, so x takes the value 3
+    x = 3.14  # 3.14 is cast to 3 because x is an integer, so x takes the value 3
     x = ti.Vector([1, 1])  # Error!
 ```
 
-Line 3 indicates that `x` should be an integer since it is assigned by an integer value 1 upon its declaration. In Line 4, we re-assign a floating-point number 3.14 to `x`. This scalar will be automatically cast to integer 3 to match the type of `x`; hence, `x` takes the value 3 after this line. Line 5 will raise a syntax error when we try to assign a `ti.Vector` to `x` because `ti.Vector` is a different data type, which cannot be cast into an integer.
+Line 3 indicates that `x` should be an integer because it is assigned by an integer value 1 the same time it is declared. In Line 4, we re-assign a floating-point number 3.14 to `x`. This scalar is automatically cast to integer 3 to match the type of `x`. Hence, `x` takes the value 3 after this line. Line 5 will raise a syntax error when we try to assign a `ti.Vector` to `x` because `ti.Vector` is a different data type, which cannot be cast into an integer.
 
-We can briefly summarize the data types supported by Taichi as follows:
+We can briefly summarize the data types that Taichi supports as follows:
 
 Taichi supports two categories of data types in the [Taichi scope](../kernels/syntax.md#taichi-scope): primitive types and compound types.
 
-- Primitive types: Various commonly used numerical data types, such as `ti.i32` (`int32`), `ti.u8` (`uint8`), and `ti.f64` (`float64`).
+- Primitive types: Various commonly-used numerical data types, such as `ti.i32` (`int32`), `ti.u8` (`uint8`), and `ti.f64` (`float64`).
 - Compound types: Array-like or struct-like data types, including `ti.types.matrix`, `ti.types.struct`, and `ti.types.ndarray`, which comprise multiple members of primitive types or other compound types.
-
-More details will be provided in the following sections.
 
 ## Primitive types
 
@@ -36,7 +34,7 @@ Primitive types refer to scalars, which are the smallest building blocks of comp
 - `i32`: 32-bit signed integer
 - `f32` : 32-bit floating-point number.
 
-Not all primitive types are supported across all backends. Check out the following table for the supported types on various backends. Note that some backends may require extensions to support a specific primitive type.
+Not all backends support Taichi's primitive types. See the following table for how a primitive type is supported by various backends. Note that some backends may require extensions to support a specific primitive type.
 
 | Backend | `i8`               | `i16`              | `i32`              | `i64`              | `u8`                 | `u16`                | `u32`                | `u64`                | `f16`                | `f32`                | `f64`                |
 | ------- | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ |
@@ -50,12 +48,12 @@ Not all primitive types are supported across all backends. Check out the followi
 
 ### Customize the default primitive types for integers and floating-point numbers
 
-When you call the `ti.init()` method to initialize the Taichi runtime, Taichi automatically applies the default primitive data types:
+When you call `ti.init()` to initialize the Taichi runtime, Taichi automatically applies the default primitive data types:
 
 - The default integer type in Taichi is `ti.i32`.
 - The default floating-point type in Taichi is `ti.f32`.
 
-You can customize the default setting by explicitly specifying the primitive data type(s) you want to use in the `init()` call:
+You can customize the default setting by explicitly specifying the primitive data type(s) that you want to use in the `init()` call:
 
 ```python
 ti.init(default_ip=ti.i64)  # Set the default integer type to ti.i64
@@ -112,11 +110,10 @@ As mentioned at the beginning of this article, the type of a variable in the Tai
 
 ### Implicit type casting
 
-Implicit type casting occurs when you *accidentally* put or assign a value in a place where a different data type is expected.
+Implicit type casting happens when you *accidentally* put or assign a value in a place where a different data type is expected.
 
 :::caution WARNING
 As a rule of thumb, implicit type casting is a major source of bugs. And Taichi does *not* recommend resorting to this mechanism.
-
 :::
 
 Implicit type casting can happen in binary operations or in assignments, as explained below.
@@ -212,10 +209,10 @@ def test():
 
 In practice, `ti.types.matrix` only would suffice your need for vector/matrix customization because Taichi treats vectors as a special kind of matrices, i.e., matrices with one column.
 
-In fact, calling the function `ti.types.vector()` produces a matrix type of a single column:
+In fact, calling `ti.types.vector()` produces a matrix type of a single column:
 
 ```
-vec3 = ti.types.vector(3, float)  # equivalent to vec3 = ti.types.matrix(3, 1, float)
+vec3 = ti.types.vector(3, float)  # Equivalent to vec3 = ti.types.matrix(3, 1, float)
 ```
 
 Similarly, `ti.Vector()` simply converts the input into a matrix of a single column:
@@ -255,7 +252,7 @@ The code above serves the same purpose as the line below does but provides bette
 Sphere = ti.types.struct(center=vec3, radius=float)
 ```
 
-Another advantage of using `@ti.dataclass` over `ti.types.struct` is that you can define member functions in a dataclass and call them in the Taichi scope, making object-oriented programming (OOP) possible. See the article [objective data-oriented programming](../advanced/odop2.md) for more details.
+Another advantage of using `@ti.dataclass` over `ti.types.struct` is that you can define member functions in a dataclass and call them in the Taichi scope, making object-oriented programming (OOP) possible. See the [objective data-oriented programming](../advanced/odop.md) for more information.
 
 
 ### Initialization

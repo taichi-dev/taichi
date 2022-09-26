@@ -12,7 +12,7 @@
 #include <functional>
 #include <thread>
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 using RangeForTaskFunc = void(void *, int thread_id, int i);
 using ParallelFor = void(int n, int num_threads, void *, RangeForTaskFunc func);
@@ -59,4 +59,4 @@ class ThreadPool {
   ~ThreadPool();
 };
 
-TI_NAMESPACE_END
+}  // namespace taichi

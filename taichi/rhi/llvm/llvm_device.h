@@ -2,8 +2,7 @@
 
 #include "taichi/rhi/device.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class LlvmDevice : public Device {
  public:
@@ -23,5 +22,4 @@ class LlvmDevice : public Device {
       const LlvmRuntimeAllocParams &params);
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

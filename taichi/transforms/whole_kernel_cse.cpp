@@ -7,7 +7,7 @@
 
 #include <typeindex>
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 // A helper class to maintain WholeKernelCSE::visited
 class MarkUndone : public BasicStmtVisitor {
@@ -219,4 +219,4 @@ bool whole_kernel_cse(IRNode *root) {
 }
 }  // namespace irpass
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

@@ -6,8 +6,7 @@
 
 #include "sparse_matrix.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class SparseSolver {
  public:
@@ -75,5 +74,4 @@ std::unique_ptr<SparseSolver> make_cusparse_solver(
     DataType dt,
     const std::string &solver_type,
     const std::string &ordering);
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

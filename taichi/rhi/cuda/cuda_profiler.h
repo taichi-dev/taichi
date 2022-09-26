@@ -9,7 +9,7 @@
 #include <string>
 #include <stdint.h>
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 enum class ProfilingToolkit : int {
   undef,
@@ -95,4 +95,4 @@ class EventToolkit {
   }
 };
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

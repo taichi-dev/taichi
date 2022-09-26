@@ -9,7 +9,7 @@
 
 #include <exception>
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 class ExceptionForPython : public std::exception {
  private:
@@ -25,4 +25,4 @@ class ExceptionForPython : public std::exception {
 
 void raise_assertion_failure_in_python(const std::string &msg);
 
-TI_NAMESPACE_END
+}  // namespace taichi

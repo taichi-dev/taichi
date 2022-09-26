@@ -1,8 +1,7 @@
 #include "spirv_types.h"
 #include "spirv_ir_builder.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace spirv {
 
 size_t StructType::memory_size(tinyir::LayoutContext &ctx) const {
@@ -473,5 +472,4 @@ std::unordered_map<const tinyir::Node *, uint32_t> ir_translate_to_spirv(
 }
 
 }  // namespace spirv
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

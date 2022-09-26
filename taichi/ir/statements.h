@@ -8,8 +8,7 @@
 
 #include <optional>
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class Function;
 
@@ -342,6 +341,47 @@ class GlobalPtrStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(ret_type, snode, indices, activate, is_bit_vectorized);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
+/**
+ * An "abstract" pointer for an element of a MatrixField, which logically
+ * contains a matrix of GlobalPtrStmts. Upon construction, only snodes, indices,
+ * dynamic_indexable, dynamic_index_stride and activate are initialized. After
+ * the lower_matrix_ptr pass, this stmt will either be eliminated (constant
+ * index) or have ptr_base initialized (dynamic index or whole-matrix access).
+ */
+class MatrixOfGlobalPtrStmt : public Stmt {
+ public:
+  std::vector<SNode *> snodes;
+  std::vector<Stmt *> indices;
+  Stmt *ptr_base{nullptr};
+  bool dynamic_indexable{false};
+  int dynamic_index_stride{0};
+  bool activate{true};
+
+  MatrixOfGlobalPtrStmt(const std::vector<SNode *> &snodes,
+                        const std::vector<Stmt *> &indices,
+                        bool dynamic_indexable,
+                        int dynamic_index_stride,
+                        DataType dt,
+                        bool activate = true);
+
+  bool has_global_side_effect() const override {
+    return activate;
+  }
+
+  bool common_statement_eliminable() const override {
+    return true;
+  }
+
+  TI_STMT_DEF_FIELDS(ret_type,
+                     snodes,
+                     indices,
+                     ptr_base,
+                     dynamic_indexable,
+                     dynamic_index_stride,
+                     activate);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
@@ -1800,5 +1840,4 @@ class MatrixInitStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

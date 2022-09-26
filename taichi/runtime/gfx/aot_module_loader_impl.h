@@ -12,8 +12,7 @@
 #include "taichi/aot/module_builder.h"
 #include "taichi/aot/module_loader.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace gfx {
 
 struct TI_DLL_EXPORT AotModuleParams {
@@ -33,5 +32,4 @@ TI_DLL_EXPORT std::unique_ptr<aot::Module> make_aot_module(
     Arch device_api_backend);
 
 }  // namespace gfx
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

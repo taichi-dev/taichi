@@ -8,8 +8,7 @@
 #include "taichi/rhi/cuda/cuda_context.h"
 #include "taichi/rhi/llvm/llvm_device.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace cuda {
 
 class CudaResourceBinder : public ResourceBinder {
@@ -142,6 +141,4 @@ class CudaDevice : public LlvmDevice {
 
 }  // namespace cuda
 
-}  // namespace lang
-
-}  // namespace taichi
+}  // namespace taichi::lang

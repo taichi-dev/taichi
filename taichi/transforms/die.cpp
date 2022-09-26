@@ -8,7 +8,7 @@
 
 #include <unordered_set>
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 // Dead Instruction Elimination
 class DIE : public IRVisitor {
@@ -127,4 +127,4 @@ bool die(IRNode *root) {
 
 }  // namespace irpass
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

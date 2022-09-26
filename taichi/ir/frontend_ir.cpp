@@ -5,7 +5,7 @@
 #include "taichi/program/program.h"
 #include "taichi/common/exceptions.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 #define TI_ASSERT_TYPE_CHECKED(x)                       \
   TI_ASSERT_INFO(x->ret_type != PrimitiveType::unknown, \
@@ -198,59 +198,30 @@ void UnaryOpExpression::flatten(FlattenContext *ctx) {
   ctx->push_back(std::move(unary));
 }
 
-static DataType binary_op_primitive_type_check(BinaryOpType type,
-                                               CompileConfig *config,
-                                               DataType lhs_primitive_type,
-                                               DataType rhs_primitive_type) {
-  auto ret_primitive_type = PrimitiveType::unknown;
-
-  auto error = [&]() {
-    throw TaichiTypeError(fmt::format(
-        "unsupported operand type(s) for '{}': '{}' and '{}'",
-        binary_op_type_symbol(type), lhs_primitive_type->to_string(),
-        rhs_primitive_type->to_string()));
-  };
-
-  if (binary_is_bitwise(type) &&
-      (!is_integral(lhs_primitive_type) || !is_integral(rhs_primitive_type)))
-    error();
-  if (binary_is_logical(type) && (lhs_primitive_type != PrimitiveType::i32 ||
-                                  rhs_primitive_type != PrimitiveType::i32))
-    error();
-  if (is_comparison(type) || binary_is_logical(type)) {
-    return PrimitiveType::i32;
+Expr to_broadcast_tensor(const Expr &elt, const DataType &dt) {
+  TI_ASSERT(dt->is<TensorType>());
+  if (elt->ret_type == dt) {
+    return elt;
   }
-  if (is_shift_op(type) ||
-      (type == BinaryOpType::pow && is_integral(rhs_primitive_type))) {
-    return lhs_primitive_type;
+  auto tensor_type = dt->as<TensorType>();
+  auto elt_type = tensor_type->get_element_type();
+  TI_ASSERT_INFO(elt_type->is<PrimitiveType>(),
+                 "Only primitive types are supported in Tensors, got {}",
+                 elt_type->to_string());
+  std::vector<Expr> broadcast_values(tensor_type->get_num_elements(), elt);
+  return Expr::make<MatrixExpression>(broadcast_values,
+                                      tensor_type->get_shape(), elt->ret_type);
+}
+
+std::tuple<Expr, Expr> unify_binop_operands(const Expr &e1, const Expr &e2) {
+  if (e1->ret_type->is<PrimitiveType>() && e2->ret_type->is<TensorType>()) {
+    return std::tuple(to_broadcast_tensor(e1, e2->ret_type), e2);
+  } else if (e1->ret_type->is<TensorType>() &&
+             e2->ret_type->is<PrimitiveType>()) {
+    return std::tuple(e1, to_broadcast_tensor(e2, e1->ret_type));
+  } else {
+    return std::tuple(e1, e2);
   }
-
-  // Some backends such as vulkan doesn't support fp64
-  // Try not promoting to fp64 unless necessary
-  if (type == BinaryOpType::atan2) {
-    if (lhs_primitive_type == PrimitiveType::f64 ||
-        rhs_primitive_type == PrimitiveType::f64) {
-      ret_primitive_type = PrimitiveType::f64;
-    } else {
-      ret_primitive_type = PrimitiveType::f32;
-    }
-    return ret_primitive_type;
-  }
-
-  if (type == BinaryOpType::truediv) {
-    auto default_fp = config->default_fp;
-    if (!is_real(lhs_primitive_type)) {
-      lhs_primitive_type = default_fp;
-    }
-    if (!is_real(rhs_primitive_type)) {
-      rhs_primitive_type = default_fp;
-    }
-  }
-  ret_primitive_type = promoted_type(lhs_primitive_type, rhs_primitive_type);
-
-  TI_ASSERT(ret_primitive_type != PrimitiveType::unknown);
-
-  return ret_primitive_type;
 }
 
 void BinaryOpExpression::type_check(CompileConfig *config) {
@@ -273,23 +244,79 @@ void BinaryOpExpression::type_check(CompileConfig *config) {
 
   if ((lhs_type->is<PrimitiveType>() && rhs_type->is<TensorType>()) ||
       (lhs_type->is<TensorType>() && rhs_type->is<PrimitiveType>())) {
-    TI_NOT_IMPLEMENTED;
+    // convert Tensor/Scalar | Scalar/Tensor operations to broadcasting
+    auto [unified_l, unified_r] = unify_binop_operands(lhs, rhs);
+    lhs = unified_l;
+    rhs = unified_r;
+    if (lhs->ret_type == PrimitiveType::unknown)
+      lhs.type_check(config);
+    if (rhs->ret_type == PrimitiveType::unknown)
+      rhs.type_check(config);
+    TI_ASSERT(lhs->ret_type->is<TensorType>());
+    TI_ASSERT(rhs->ret_type->is<TensorType>());
+    lhs_type = lhs->ret_type;
+    rhs_type = rhs->ret_type;
   }
 
-  /*
-    Dtype inference for both TensorType and PrimitiveType follow are essentially
-    the same. Therefore we extract the primitive type to perform the type
-    inference, and then reconstruct the TensorType once neccessary.
-  */
-  auto lhs_primitive_type = lhs->ret_type.get_element_type();
-  auto rhs_primitive_type = rhs->ret_type.get_element_type();
+  bool is_tensor_op = false;
 
-  ret_type = binary_op_primitive_type_check(type, config, lhs_primitive_type,
-                                            rhs_primitive_type);
+  if (lhs_type->is<TensorType>()) {
+    is_tensor_op = true;
+    auto rhs_tensor_type = rhs_type->cast<TensorType>();
+    if (rhs_tensor_type->get_shape() !=
+        lhs_type->cast<TensorType>()->get_shape())
+      // current assume element-wise binary op
+      error();
+  }
 
-  if (rhs_type->is<TensorType>() && lhs_type->is<TensorType>()) {
-    ret_type = taichi::lang::TypeFactory::get_instance().get_tensor_type(
-        rhs_type.get_shape(), ret_type);
+  auto make_dt = [&is_tensor_op, this](DataType dt) {
+    if (is_tensor_op) {
+      return TypeFactory::create_tensor_type(
+          this->lhs->ret_type->cast<TensorType>()->get_shape(), dt);
+    } else {
+      return dt;
+    }
+  };
+
+  if (binary_is_bitwise(type) && (!is_integral(lhs_type.get_element_type()) ||
+                                  !is_integral(rhs_type.get_element_type())))
+    error();
+  if (binary_is_logical(type) &&
+      (lhs_type != PrimitiveType::i32 || rhs_type != PrimitiveType::i32) &&
+      (!is_tensor_op || (lhs_type->cast<TensorType>()->get_element_type() !=
+                             PrimitiveType::i32 ||
+                         rhs_type->cast<TensorType>()->get_element_type() !=
+                             PrimitiveType::i32)))
+    error();
+  if (is_comparison(type) || binary_is_logical(type)) {
+    ret_type = make_dt(PrimitiveType::i32);
+    return;
+  }
+  if (is_shift_op(type) ||
+      (type == BinaryOpType::pow && is_integral(rhs_type))) {
+    ret_type = lhs_type;
+    return;
+  }
+
+  // Some backends such as vulkan doesn't support fp64
+  // Try not promoting to fp64 unless necessary
+  if (type == BinaryOpType::atan2) {
+    if (lhs_type == PrimitiveType::f64 || rhs_type == PrimitiveType::f64) {
+      ret_type = make_dt(PrimitiveType::f64);
+    } else {
+      ret_type = make_dt(PrimitiveType::f32);
+    }
+    return;
+  }
+
+  if (type == BinaryOpType::truediv) {
+    auto default_fp = config->default_fp;
+    if (!is_real(lhs_type.get_element_type())) {
+      lhs_type = make_dt(default_fp);
+    }
+    if (!is_real(rhs_type.get_element_type())) {
+      rhs_type = make_dt(default_fp);
+    }
   }
 }
 
@@ -440,19 +467,10 @@ void ExternalTensorExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
-void FieldExpression::flatten(FlattenContext *ctx) {
-  TI_ASSERT(snode->num_active_indices == 0);
-  auto ptr = Stmt::make<GlobalPtrStmt>(snode, std::vector<Stmt *>());
-  ptr->tb = tb;
-  ctx->push_back(std::move(ptr));
-}
-
-Stmt *make_field_access(Expression::FlattenContext *ctx,
-                        Expr var,
-                        ExprGroup indices) {
+std::vector<Stmt *> make_index_stmts(Expression::FlattenContext *ctx,
+                                     const ExprGroup &indices,
+                                     const std::vector<int> &offsets) {
   std::vector<Stmt *> index_stmts;
-  SNode *snode = var.cast<FieldExpression>()->snode;
-  std::vector<int> offsets = snode->index_offsets;
   for (int i = 0; i < (int)indices.size(); i++) {
     flatten_rvalue(indices.exprs[i], ctx);
     Stmt *ind = indices.exprs[i]->stmt;
@@ -462,7 +480,28 @@ Stmt *make_field_access(Expression::FlattenContext *ctx,
     }
     index_stmts.push_back(ind);
   }
-  return ctx->push_back(std::make_unique<GlobalPtrStmt>(snode, index_stmts));
+  return index_stmts;
+}
+
+Stmt *make_field_access(Expression::FlattenContext *ctx,
+                        const FieldExpression &field,
+                        ExprGroup indices) {
+  return ctx->push_back(std::make_unique<GlobalPtrStmt>(
+      field.snode, make_index_stmts(ctx, indices, field.snode->index_offsets)));
+}
+
+Stmt *make_matrix_field_access(Expression::FlattenContext *ctx,
+                               const MatrixFieldExpression &matrix_field,
+                               ExprGroup indices,
+                               DataType ret_type) {
+  std::vector<SNode *> snodes;
+  for (auto &field : matrix_field.fields) {
+    snodes.push_back(field.cast<FieldExpression>()->snode);
+  }
+  return ctx->push_back(std::make_unique<MatrixOfGlobalPtrStmt>(
+      snodes, make_index_stmts(ctx, indices, snodes[0]->index_offsets),
+      matrix_field.dynamic_indexable, matrix_field.dynamic_index_stride,
+      ret_type));
 }
 
 Stmt *make_ndarray_access(Expression::FlattenContext *ctx,
@@ -489,14 +528,30 @@ Stmt *make_tensor_access(Expression::FlattenContext *ctx,
                          std::vector<int> shape,
                          int stride) {
   flatten_lvalue(var, ctx);
-  Stmt *offset_stmt = ctx->push_back<ConstStmt>(TypedConstant(0));
+  bool needs_dynamic_index = false;
   for (int i = 0; i < (int)indices.size(); ++i) {
-    flatten_rvalue(indices[i], ctx);
-    Stmt *shape_stmt = ctx->push_back<ConstStmt>(TypedConstant(shape[i]));
-    Stmt *mul_stmt = ctx->push_back<BinaryOpStmt>(BinaryOpType::mul,
-                                                  offset_stmt, shape_stmt);
-    offset_stmt = ctx->push_back<BinaryOpStmt>(BinaryOpType::add, mul_stmt,
-                                               indices[i]->stmt);
+    if (!indices[i].is<ConstExpression>()) {
+      needs_dynamic_index = true;
+    }
+  }
+  Stmt *offset_stmt = nullptr;
+  if (needs_dynamic_index) {
+    offset_stmt = ctx->push_back<ConstStmt>(TypedConstant(0));
+    for (int i = 0; i < (int)indices.size(); ++i) {
+      flatten_rvalue(indices[i], ctx);
+      Stmt *shape_stmt = ctx->push_back<ConstStmt>(TypedConstant(shape[i]));
+      Stmt *mul_stmt = ctx->push_back<BinaryOpStmt>(BinaryOpType::mul,
+                                                    offset_stmt, shape_stmt);
+      offset_stmt = ctx->push_back<BinaryOpStmt>(BinaryOpType::add, mul_stmt,
+                                                 indices[i]->stmt);
+    }
+  } else {
+    int offset = 0;
+    for (int i = 0; i < (int)indices.size(); ++i) {
+      offset =
+          offset * shape[i] + indices[i].cast<ConstExpression>()->val.val_int();
+    }
+    offset_stmt = ctx->push_back<ConstStmt>(TypedConstant(offset));
   }
   if (stride != 1) {
     Stmt *stride_stmt = ctx->push_back<ConstStmt>(TypedConstant(stride));
@@ -529,6 +584,10 @@ bool IndexExpression::is_field() const {
   return var.is<FieldExpression>();
 }
 
+bool IndexExpression::is_matrix_field() const {
+  return var.is<MatrixFieldExpression>();
+}
+
 bool IndexExpression::is_ndarray() const {
   return var.is<ExternalTensorExpression>();
 }
@@ -542,18 +601,16 @@ bool IndexExpression::is_local() const {
 }
 
 bool IndexExpression::is_global() const {
-  // Special case: Indexing into TensorType-element of
-  // ExternalPtrStmt/GlobalPtrStmt In this case, we should treat them as global
-  // ptrs
+  // Special case: Indexing into TensorType-element of ExternalPtrStmt
+  // or GlobalPtrStmt should be treated as global ptrs
   if (var.is<IndexExpression>()) {
-    if (var.cast<IndexExpression>()->is_field() ||
-        var.cast<IndexExpression>()->is_ndarray()) {
-      return true;
-    }
+    TI_ASSERT(var.cast<IndexExpression>()->is_matrix_field() ||
+              var.cast<IndexExpression>()->is_ndarray());
+    return true;
   }
 
   // Only Ndarray and Field comes outside from a kernel
-  return is_field() || is_ndarray();
+  return is_field() || is_matrix_field() || is_ndarray();
 }
 
 void IndexExpression::type_check(CompileConfig *) {
@@ -561,6 +618,12 @@ void IndexExpression::type_check(CompileConfig *) {
   // Currently, dimension compatibility check happens in Python
   if (is_field()) {  // field
     ret_type = var.cast<FieldExpression>()->dt->get_compute_type();
+  } else if (is_matrix_field()) {
+    auto matrix_field_expr = var.cast<MatrixFieldExpression>();
+    ret_type = TypeFactory::create_tensor_type(matrix_field_expr->element_shape,
+                                               matrix_field_expr->fields[0]
+                                                   .cast<FieldExpression>()
+                                                   ->dt->get_compute_type());
   } else if (is_ndarray()) {  // ndarray
     auto external_tensor_expr = var.cast<ExternalTensorExpression>();
     int total_dim = external_tensor_expr->dim;
@@ -599,7 +662,10 @@ void IndexExpression::type_check(CompileConfig *) {
 
 void IndexExpression::flatten(FlattenContext *ctx) {
   if (is_field()) {
-    stmt = make_field_access(ctx, var, indices);
+    stmt = make_field_access(ctx, *var.cast<FieldExpression>(), indices);
+  } else if (is_matrix_field()) {
+    stmt = make_matrix_field_access(ctx, *var.cast<MatrixFieldExpression>(),
+                                    indices, ret_type);
   } else if (is_ndarray()) {
     stmt = make_ndarray_access(ctx, var, indices);
   } else if (is_tensor()) {
@@ -1305,4 +1371,4 @@ void flatten_rvalue(Expr ptr, Expression::FlattenContext *ctx) {
   }
 }
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

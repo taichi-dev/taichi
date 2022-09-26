@@ -3,8 +3,7 @@
 #include "taichi/rhi/arch.h"
 #include "taichi/util/lang_util.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 struct CompileConfig {
   Arch arch;
@@ -28,6 +27,7 @@ struct CompileConfig {
   bool lower_access;
   bool simplify_after_lower_access;
   bool move_loop_invariant_outside_if;
+  bool cache_loop_invariant_global_vars{true};
   bool demote_dense_struct_fors;
   bool advanced_optimization;
   bool constant_folding;
@@ -105,7 +105,7 @@ struct CompileConfig {
                                       1024};   // bytes, default: 100MB
   double offline_cache_cleaning_factor{0.25};  // [0.f, 1.f]
 
-  int num_compile_threads{0};
+  int num_compile_threads{4};
   std::string vk_api_version;
 
   CompileConfig();
@@ -113,4 +113,4 @@ struct CompileConfig {
 
 extern TI_DLL_EXPORT CompileConfig default_compile_config;
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

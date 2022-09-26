@@ -6,8 +6,7 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/program/program.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class DetermineAdStackSizeTest
     : public ::testing::TestWithParam<std::tuple<int, int>> {
@@ -184,5 +183,4 @@ TEST_F(DetermineAdStackSizeTest, EmptyNodes) {
   EXPECT_EQ(stack->max_size, 2);
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

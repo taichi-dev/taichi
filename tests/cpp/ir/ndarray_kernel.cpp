@@ -1,7 +1,6 @@
 #include "tests/cpp/ir/ndarray_kernel.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 std::unique_ptr<Kernel> setup_kernel1(Program *prog) {
   IRBuilder builder1;
@@ -44,5 +43,4 @@ std::unique_ptr<Kernel> setup_kernel2(Program *prog) {
   ker2->insert_scalar_arg(get_data_type<int>());
   return ker2;
 }
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

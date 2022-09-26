@@ -3,7 +3,7 @@
 #include "taichi/util/lang_util.h"
 #include <set>
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 class Kernel;
 
@@ -41,4 +41,4 @@ class CCKernel {
 };
 
 }  // namespace cccp
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

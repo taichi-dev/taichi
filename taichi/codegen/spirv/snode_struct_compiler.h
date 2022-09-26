@@ -7,8 +7,7 @@
 
 #include "spirv_types.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace spirv {
 
 struct SNodeDescriptor {
@@ -60,5 +59,4 @@ struct CompiledSNodeStructs {
 CompiledSNodeStructs compile_snode_structs(SNode &root);
 
 }  // namespace spirv
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

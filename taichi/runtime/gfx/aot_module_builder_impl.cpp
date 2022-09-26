@@ -7,8 +7,7 @@
 #include "taichi/codegen/spirv/spirv_codegen.h"
 #include "taichi/runtime/gfx/aot_graph_data.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace gfx {
 
 namespace {
@@ -256,5 +255,4 @@ void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier,
 }
 
 }  // namespace gfx
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

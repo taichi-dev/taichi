@@ -6,8 +6,7 @@
 #include "taichi/runtime/llvm/llvm_offline_cache.h"
 #endif  // TI_WITH_LLVM
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 namespace {
 
@@ -108,5 +107,4 @@ TEST(OfflineCache, LoadMetadata) {
   load_metadata_test<oc::Metadata>();
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

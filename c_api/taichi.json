@@ -671,6 +671,23 @@
                     ]
                 },
                 {
+                    "name": "track_image",
+                    "type": "function",
+                    "is_extension": true,
+                    "parameters": [
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "type": "handle.image"
+                        },
+                        {
+                            "name": "layout",
+                            "type": "enumeration.image_layout"
+                        }
+                    ]
+                },
+                {
                     "name": "transition_image",
                     "type": "function",
                     "is_device_command": true,

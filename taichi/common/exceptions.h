@@ -1,7 +1,6 @@
 #pragma once
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class IRModified {};
 
@@ -32,5 +31,4 @@ class TaichiAssertionError : public TaichiExceptionImpl {
   using TaichiExceptionImpl::TaichiExceptionImpl;
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

@@ -8,7 +8,7 @@
 #include "taichi/system/threading.h"
 #include "taichi/system/timer.h"
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 namespace py = pybind11;
 using namespace py::literals;
@@ -116,4 +116,4 @@ class MemoryTest2 : public Task {
 TI_IMPLEMENTATION(Task, MemoryTest, "mem_test");
 TI_IMPLEMENTATION(Task, MemoryTest2, "mem_test2");
 
-TI_NAMESPACE_END
+}  // namespace taichi

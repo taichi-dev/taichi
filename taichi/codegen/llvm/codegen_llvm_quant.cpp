@@ -2,7 +2,7 @@
 #include "taichi/codegen/llvm/codegen_llvm.h"
 #include "taichi/ir/statements.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 namespace {
 
@@ -101,7 +101,7 @@ void TaskCodeGenLLVM::store_masked(llvm::Value *ptr,
     return;
   }
   uint64 full_mask = (~(uint64)0) >> (64 - ty->getIntegerBitWidth());
-  if ((!atomic || prog->config.quant_opt_atomic_demotion) &&
+  if ((!atomic || prog->this_thread_config().quant_opt_atomic_demotion) &&
       ((mask & full_mask) == full_mask)) {
     builder->CreateStore(value, ptr);
     return;
@@ -155,7 +155,7 @@ void TaskCodeGenLLVM::visit(BitStructStoreStmt *stmt) {
     }
   }
   bool store_all_components = false;
-  if (prog->config.quant_opt_atomic_demotion &&
+  if (prog->this_thread_config().quant_opt_atomic_demotion &&
       stmt->ch_ids.size() == num_non_exponent_children) {
     stmt->is_atomic = false;
     store_all_components = true;
@@ -591,6 +591,6 @@ llvm::Value *TaskCodeGenLLVM::reconstruct_quant_float(
   }
 }
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang
 
 #endif  // #ifdef TI_WITH_LLVM

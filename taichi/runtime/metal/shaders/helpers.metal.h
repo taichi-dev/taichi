@@ -31,13 +31,6 @@ STR(
       return *reinterpret_cast<thread const T *>(&g);
     }
 
-    inline int ifloordiv(int lhs, int rhs) {
-      const int intm = (lhs / rhs);
-      return (((lhs < 0) != (rhs < 0) && lhs && (rhs * intm != lhs))
-                  ? (intm - 1)
-                  : intm);
-    }
-
     float fatomic_fetch_add(device float *dest, const float operand) {
       // A huge hack! Metal does not support atomic floating point numbers
       // natively.

@@ -1,7 +1,6 @@
 #include "taichi/rhi/dx12/dx12_api.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace directx12 {
 
 bool is_dx12_api_available() {
@@ -24,5 +23,4 @@ std::vector<uint8_t> validate_and_sign(
 }
 
 }  // namespace directx12
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

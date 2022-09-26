@@ -36,12 +36,13 @@
 
 #include "taichi/runtime/llvm/llvm_context.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 inline constexpr char kLLVMPhysicalCoordinatesName[] = "PhysicalCoordinates";
 
 std::string type_name(llvm::Type *type);
+
+bool is_same_type(llvm::Type *a, llvm::Type *b);
 
 void check_func_call_signature(llvm::FunctionType *func_type,
                                llvm::StringRef func_name,
@@ -185,5 +186,4 @@ class RuntimeObject {
   }
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

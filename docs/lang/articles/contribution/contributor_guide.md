@@ -313,7 +313,6 @@ Below we highlight some of the most widely used styles.
 - Constant names should use the camel case, with a prefix `k`, for example, `constexpr int kTaichiMaxNumArgs = 64;`.
 - Macros should start with `TI_`, for example, `TI_NOT_IMPLEMENTED`.
   - In general, avoid using macros as much as possible.
-  - Avoid using `TI_NAMESPACE_BEGIN/END` in the new code.
 
 ### Rule of thumbs
 

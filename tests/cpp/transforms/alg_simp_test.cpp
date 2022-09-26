@@ -4,8 +4,7 @@
 #include "taichi/ir/transforms.h"
 #include "tests/cpp/program/test_program.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class AlgebraicSimplicationTest : public ::testing::Test {
  protected:
@@ -101,7 +100,7 @@ TEST_F(AlgebraicSimplicationTest, SimplifyMultiplyZeroFastMath) {
 
   CompileConfig config_without_fast_math;
   config_without_fast_math.fast_math = false;
-  kernel->program->config = config_without_fast_math;
+  kernel->program->this_thread_config() = config_without_fast_math;
 
   irpass::type_check(block.get(), config_without_fast_math);
   EXPECT_EQ(block->size(), 8);
@@ -138,7 +137,7 @@ TEST_F(AlgebraicSimplicationTest, SimplifyMultiplyZeroFastMath) {
 
   CompileConfig config_with_fast_math;
   config_with_fast_math.fast_math = true;
-  kernel->program->config = config_with_fast_math;
+  kernel->program->this_thread_config() = config_with_fast_math;
 
   irpass::alg_simp(block.get(),
                    config_with_fast_math);  // should eliminate mul, add
@@ -173,5 +172,4 @@ TEST_F(AlgebraicSimplicationTest, SimplifyAndMinusOne) {
   EXPECT_TRUE((*block)[0]->is<GlobalTemporaryStmt>());
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

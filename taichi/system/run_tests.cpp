@@ -7,7 +7,7 @@
 #include "taichi/common/task.h"
 #include "taichi/util/testing.h"
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 class RunTests : public Task {
   std::string run(const std::vector<std::string> &parameters) override {
@@ -17,4 +17,4 @@ class RunTests : public Task {
 
 TI_IMPLEMENTATION(Task, RunTests, "test");
 
-TI_NAMESPACE_END
+}  // namespace taichi

@@ -1,7 +1,6 @@
 #include "taichi/struct/struct.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class FakeStructCompiler : public StructCompiler {
  public:
@@ -15,5 +14,4 @@ class FakeStructCompiler : public StructCompiler {
   }
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

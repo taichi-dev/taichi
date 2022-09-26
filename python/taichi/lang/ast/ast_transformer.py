@@ -115,11 +115,8 @@ class ASTTransformer(Builder):
     @staticmethod
     def build_assign_slice(ctx, node_target, values, is_static_assign):
         target = ASTTransformer.build_Subscript(ctx, node_target, get_ref=True)
-        if current_cfg().real_matrix:
-            if isinstance(node_target.value.ptr,
-                          any_array.AnyArray) and isinstance(
-                              values, (list, tuple)):
-                values = make_matrix(values)
+        if current_cfg().real_matrix and isinstance(values, (list, tuple)):
+            values = make_matrix(values)
 
         if isinstance(node_target.value.ptr, Matrix):
             if isinstance(node_target.value.ptr._impl, _TiScopeMatrixImpl):
@@ -1123,7 +1120,7 @@ class ASTTransformer(Builder):
             entry_expr = _ti_core.get_relation_access(
                 ctx.mesh.mesh_ptr, node.iter.ptr.from_index.ptr,
                 node.iter.ptr.to_element_type, loop_var.ptr)
-            entry_expr.type_check(impl.get_runtime().prog.config)
+            entry_expr.type_check(impl.get_runtime().prog.config())
             mesh_idx = mesh.MeshElementFieldProxy(
                 ctx.mesh, node.iter.ptr.to_element_type, entry_expr)
             ctx.create_variable(target, mesh_idx)

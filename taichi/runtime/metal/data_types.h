@@ -4,7 +4,7 @@
 
 #include "taichi/util/lang_util.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 namespace metal {
 
 enum class MetalDataType : int {
@@ -46,4 +46,4 @@ inline bool is_metal_binary_op_infix(BinaryOpType type) {
 
 }  // namespace metal
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

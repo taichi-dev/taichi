@@ -14,7 +14,7 @@
 #include "array_fwd.h"
 #include "linalg.h"
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 template <>
 class IndexND<2> {
@@ -794,4 +794,4 @@ inline void print(const Array2D<T> &arr) {
   arr.print("");
 }
 
-TI_NAMESPACE_END
+}  // namespace taichi

@@ -1,6 +1,6 @@
 #include "statistics.h"
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 Statistics stat;
 
@@ -30,4 +30,4 @@ void Statistics::clear() {
   counters_.clear();
 }
 
-TI_NAMESPACE_END
+}  // namespace taichi

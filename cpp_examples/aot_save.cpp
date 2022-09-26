@@ -7,7 +7,7 @@ void aot_save() {
   using namespace lang;
   auto program = Program(Arch::vulkan);
 
-  program.config.advanced_optimization = false;
+  program.this_thread_config().advanced_optimization = false;
 
   int n = 10;
 

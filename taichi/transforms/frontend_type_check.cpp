@@ -2,8 +2,7 @@
 #include "taichi/ir/frontend_ir.h"
 #include "taichi/ir/statements.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class FrontendTypeCheck : public IRVisitor {
   void check_cond_type(const Expr &cond, std::string stmt_name) {
@@ -102,6 +101,4 @@ void frontend_type_check(IRNode *root) {
 
 }  // namespace irpass
 
-}  // namespace lang
-
-}  // namespace taichi
+}  // namespace taichi::lang

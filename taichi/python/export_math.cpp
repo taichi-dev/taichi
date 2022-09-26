@@ -6,7 +6,7 @@
 #include "taichi/python/export.h"
 #include "taichi/common/dict.h"
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 template <typename T>
 constexpr std::string get_type_short_name();
@@ -161,4 +161,4 @@ void export_math(py::module &m) {
   VectorRegistration<Vector4i>::run(m);
 }
 
-TI_NAMESPACE_END
+}  // namespace taichi

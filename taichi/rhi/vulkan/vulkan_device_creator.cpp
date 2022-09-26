@@ -11,8 +11,7 @@
 #include "taichi/rhi/vulkan/vulkan_device.h"
 #include "taichi/common/logging.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace vulkan {
 
 namespace {
@@ -543,7 +542,8 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
       enabled_extensions.push_back(ext.extensionName);
     } else if (name == VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME) {
       enabled_extensions.push_back(ext.extensionName);
-    } else if (name == VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME) {
+    } else if (name == VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME &&
+               params_.enable_validation_layer) {
       // VK_KHR_shader_non_semantic_info isn't supported on molten-vk.
       // Tracking issue: https://github.com/KhronosGroup/MoltenVK/issues/1214
       ti_device_->set_cap(DeviceCapability::spirv_has_non_semantic_info, true);
@@ -775,5 +775,4 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
 }
 
 }  // namespace vulkan
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

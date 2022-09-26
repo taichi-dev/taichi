@@ -10,7 +10,7 @@
 #include <memory>
 #include <regex>
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 struct KernelProfileTracedRecord {
   // kernel attributes
@@ -105,4 +105,4 @@ class KernelProfilerBase {
 
 std::unique_ptr<KernelProfilerBase> make_profiler(Arch arch, bool enable);
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

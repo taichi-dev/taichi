@@ -9,8 +9,7 @@
 #include "taichi/system/memory_pool.h"
 #include "tests/cpp/program/test_program.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace directx11 {
 
 TEST(Dx11DeviceCreationTest, CreateDeviceAndAllocateMemory) {
@@ -147,13 +146,12 @@ TEST(Dx11ProgramTest, MaterializeRuntimeTest) {
   auto *lhs = builder.get_int32(42);
 
   auto block = builder.extract_ir();
-  test_prog.prog()->config.arch = Arch::dx11;
+  test_prog.prog()->this_thread_config().arch = Arch::dx11;
   auto ker = std::make_unique<Kernel>(*test_prog.prog(), std::move(block));
   program->compile(ker.get(), nullptr);
 }
 
 }  // namespace directx11
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang
 
 #endif

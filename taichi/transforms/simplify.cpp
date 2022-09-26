@@ -11,7 +11,7 @@
 #include <unordered_set>
 #include <utility>
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 // Common subexpression elimination, store forwarding, useless local store
 // elimination; Simplify if statements into conditional stores.
@@ -655,4 +655,4 @@ void full_simplify(IRNode *root,
 
 }  // namespace irpass
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

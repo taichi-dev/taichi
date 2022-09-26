@@ -63,6 +63,10 @@ if (TI_WITH_OPENGL)
   target_link_libraries(${TESTS_NAME} PRIVATE opengl_rhi)
 endif()
 
+if (TI_WITH_METAL)
+  target_link_libraries(${TESTS_NAME} PRIVATE metal_rhi)
+endif()
+
 target_include_directories(${TESTS_NAME}
   PRIVATE
     ${PROJECT_SOURCE_DIR}

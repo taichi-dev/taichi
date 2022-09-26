@@ -5,7 +5,7 @@
 
 #include <string_view>
 
-TI_UI_NAMESPACE_BEGIN
+namespace taichi::ui {
 
 namespace vulkan {
 
@@ -143,4 +143,4 @@ lang::Program *AppContext::prog() const {
 
 }  // namespace vulkan
 
-TI_UI_NAMESPACE_END
+}  // namespace taichi::ui

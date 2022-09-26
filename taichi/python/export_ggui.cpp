@@ -25,7 +25,7 @@ namespace py = pybind11;
 #include "taichi/program/ndarray.h"
 #include <memory>
 
-TI_UI_NAMESPACE_BEGIN
+namespace taichi::ui {
 
 using namespace taichi::lang;
 
@@ -592,7 +592,7 @@ void export_ggui(py::module &m) {
       .export_values();
 }
 
-TI_UI_NAMESPACE_END
+}  // namespace taichi::ui
 
 namespace taichi {
 

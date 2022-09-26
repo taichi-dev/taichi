@@ -5,7 +5,7 @@
 using namespace taichi::lang::vulkan;
 using namespace taichi::lang;
 
-TI_UI_NAMESPACE_BEGIN
+namespace taichi::ui {
 
 namespace vulkan {
 
@@ -232,4 +232,4 @@ bool Gui::is_empty() {
 
 }  // namespace vulkan
 
-TI_UI_NAMESPACE_END
+}  // namespace taichi::ui

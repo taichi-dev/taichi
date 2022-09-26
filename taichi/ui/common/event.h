@@ -1,7 +1,7 @@
 #pragma once
 #include "taichi/ui/utils/utils.h"
 
-TI_UI_NAMESPACE_BEGIN
+namespace taichi::ui {
 
 enum class EventType : int { Any = 0, Press = 1, Release = 2 };
 
@@ -11,4 +11,4 @@ struct Event {
   DEFINE_PROPERTY(std::string, key);
 };
 
-TI_UI_NAMESPACE_END
+}  // namespace taichi::ui

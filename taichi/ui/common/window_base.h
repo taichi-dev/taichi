@@ -16,7 +16,7 @@
 #include "taichi/ui/common/app_config.h"
 #include "taichi/program/ndarray.h"
 
-TI_UI_NAMESPACE_BEGIN
+namespace taichi::ui {
 
 class WindowBase {
  public:
@@ -85,4 +85,4 @@ class WindowBase {
                                     int modifier);
 };
 
-TI_UI_NAMESPACE_END
+}  // namespace taichi::ui

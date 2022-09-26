@@ -3,7 +3,7 @@
 #include "taichi/ui/backends/vulkan/swap_chain.h"
 #include "taichi/util/image_io.h"
 
-TI_UI_NAMESPACE_BEGIN
+namespace taichi::ui {
 
 namespace vulkan {
 
@@ -156,4 +156,4 @@ void SwapChain::write_image(const std::string &filename) {
 
 }  // namespace vulkan
 
-TI_UI_NAMESPACE_END
+}  // namespace taichi::ui

@@ -63,36 +63,26 @@ if [ -z "$TI_SKIP_CPP_TESTS" ]; then
     python3 tests/run_tests.py --cpp
 fi
 
-if [ -z "$GPU_TEST" ]; then
-    if [[ $PLATFORM == *"m1"* ]]; then
-	# Split per arch to avoid flaky test
-        python3 tests/run_tests.py -vr2 -t4 -k "not torch and not paddle" -a cpu
-        # Run metal and vulkan separately so that they don't use M1 chip simultaneously.
-        python3 tests/run_tests.py -vr2 -t4 -k "not torch and not paddle" -a vulkan
-        python3 tests/run_tests.py -vr2 -t2 -k "not torch and not paddle" -a metal
-        python3 tests/run_tests.py -vr2 -t1 -k "torch" -a "$TI_WANTED_ARCHS"
-    else
-        # Fail fast, give priority to the error-prone tests
-        if [[ $OSTYPE == "linux-"* ]]; then
-            python3 tests/run_tests.py -vr2 -t1 -k "paddle" -a "$TI_WANTED_ARCHS"
-        fi
-        python3 tests/run_tests.py -vr2 -t4 -k "not paddle" -a "$TI_WANTED_ARCHS"
-    fi
+if [[ $PLATFORM == *"m1"* ]]; then
+    # Split per arch to avoid flaky test
+    python3 tests/run_tests.py -vr2 -t4 -k "not torch and not paddle" -a cpu
+    # Run metal and vulkan separately so that they don't use M1 chip simultaneously.
+    python3 tests/run_tests.py -vr2 -t4 -k "not torch and not paddle" -a vulkan
+    python3 tests/run_tests.py -vr2 -t2 -k "not torch and not paddle" -a metal
+    python3 tests/run_tests.py -vr2 -t1 -k "torch" -a "$TI_WANTED_ARCHS"
 else
+    # Fail fast, give priority to the error-prone tests
+    if [[ -z "$GPU_TEST" && $OSTYPE == "linux-"* ]]; then
+        python3 tests/run_tests.py -vr2 -t1 -k "paddle" -a "$TI_WANTED_ARCHS"
+    fi
+
     # Split per arch to increase parallelism for linux GPU tests
-    if [[ $TI_WANTED_ARCHS == *"cuda"* ]]; then
-        # FIXME: suddenly tests exibit OOM on nvidia driver 470 + RTX2060 cards, lower parallelism by 1 (4->3)
-        python3 tests/run_tests.py -vr2 -t3 -k "not torch and not paddle" -a cuda
-    fi
-    if [[ $TI_WANTED_ARCHS == *"cpu"* ]]; then
-        python3 tests/run_tests.py -vr2 -t8 -k "not torch and not paddle" -a cpu
-    fi
-    if [[ $TI_WANTED_ARCHS == *"vulkan"* ]]; then
-        python3 tests/run_tests.py -vr2 -t8 -k "not torch and not paddle" -a vulkan
-    fi
-    if [[ $TI_WANTED_ARCHS == *"opengl"* ]]; then
-        python3 tests/run_tests.py -vr2 -t4 -k "not torch and not paddle" -a opengl
-    fi
+    # FIXME: suddenly tests exibit OOM on nvidia driver 470 + RTX2060 cards, lower parallelism by 1 (4->3)
+    [[ $TI_WANTED_ARCHS == *"cuda"* ]]   && python3 tests/run_tests.py -vr2 -t3        -k "not torch and not paddle" -a cuda
+    [[ $TI_WANTED_ARCHS == *"cpu"* ]]    && python3 tests/run_tests.py -vr2 -t$(nproc) -k "not torch and not paddle" -a cpu
+    [[ $TI_WANTED_ARCHS == *"vulkan"* ]] && python3 tests/run_tests.py -vr2 -t8        -k "not torch and not paddle" -a vulkan
+    [[ $TI_WANTED_ARCHS == *"opengl"* ]] && python3 tests/run_tests.py -vr2 -t4        -k "not torch and not paddle" -a opengl
+
     python3 tests/run_tests.py -vr2 -t1 -k "torch" -a "$TI_WANTED_ARCHS"
     # Paddle's paddle.fluid.core.Tensor._ptr() is only available on develop branch, and CUDA version on linux will get error `Illegal Instruction`
 fi

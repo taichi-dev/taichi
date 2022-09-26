@@ -111,11 +111,11 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-latest
+          - os: Ubuntu-CPU-16core
             python: py39
             with_cc: ON
             wanted_archs: 'cpu,cc'
-          - os: ubuntu-latest
+          - os: Ubuntu-CPU-16core
             python: py310
             with_cc: ON
             wanted_archs: 'cpu,cc'
@@ -271,7 +271,7 @@ jobs:
           - os: windows-2019
             llvmVer : '10'
     timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 180 }}
-    runs-on: windows-2019
+    runs-on: Windows-CPU-16core
     permissions:
       packages: read
       contents: read

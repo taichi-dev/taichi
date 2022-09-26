@@ -25,6 +25,7 @@ class Window:
         res (tuple[int]): resolution (width, height) of the window, in pixels.
         vsync (bool): whether or not vertical sync should be enabled.
         show_window (bool): where or not display the window after initialization.
+        pos (tuple[int]): position (left to right, up to bottom) of the window which origins from the left-top of your main screen, in pixels.
     """
     def __init__(self,
                  name,

@@ -13,7 +13,7 @@
 TLANG_NAMESPACE_BEGIN
 
 /*
- * Structure of CodeGen of LLVM backend:
+ [Note] Codegen of LLVM-based backends
  * KernelCodeGen is the base class of the codegen of all backends using LLVM.
  * Function `compile_to_function` first compiles the IR of a kernel
  * into a LLVM module using `compile_kernel_to_module`, and then constructs a

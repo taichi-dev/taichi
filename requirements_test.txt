@@ -8,3 +8,4 @@ autograd
 requests==2.26
 matplotlib
 cffi
+scipy

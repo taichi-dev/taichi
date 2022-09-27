@@ -1,5 +1,5 @@
 # Authored by Luhuai Jiao
-# This is a 1D simulation of "two-stream instability" in Plasma Physicis. 
+# This is a 1D simulation of "two-stream instability" in Plasma Physicis.
 # Some settings of grids and particles are from "Introduction to Computational Plasma Physics"(《计算等离子体物理导论》，谢华生著)
 
 import taichi as ti
@@ -11,8 +11,8 @@ dt = 0.1  # time step
 substepping = 8
 ng = 32  # number of grids
 np = 16384  # numer of particles
-vb = 1.0  # beam-velocity, one is vb, the other is -vb 
-vt = 0.3  # thermal velocity 
+vb = 1.0  # beam-velocity, one is vb, the other is -vb
+vt = 0.3  # thermal velocity
 wp = 1  # Plasma frequence
 qm = -1  # charge-mass ratio
 q = wp * wp / (qm * np / L)  # charge of a particle
@@ -24,7 +24,7 @@ v = ti.Vector.field(1, ti.f32, np)  # velocity
 rho = ti.Vector.field(1, ti.f32, ng)  # charge density
 e = ti.Vector.field(1, ti.f32, ng)  # electric fields
 # to show x-vx on the screen
-v_x_pos1 = ti.Vector.field(2, ti.f32, int(np / 2))  
+v_x_pos1 = ti.Vector.field(2, ti.f32, int(np / 2))
 v_x_pos2 = ti.Vector.field(2, ti.f32, int(np / 2))
 
 
@@ -61,7 +61,8 @@ def substep():
     for p in v:  #G2P
         base = (x[p] * inv_dx - 0.5).cast(int)
         fx = x[p] * inv_dx - 0.5 - base.cast(float)
-        a = (e[base] * (1.0 - fx) + e[base + 1] * fx) * qm  # compute electric force
+        a = (e[base] *
+             (1.0 - fx) + e[base + 1] * fx) * qm  # compute electric force
         v[p] += a * dt
 
 
@@ -78,7 +79,7 @@ def vx_pos():  # to show x-vx on the screen
 
 def main():
     initialize()
-    gui = ti.GUI("Shortest PIC", (800,800))
+    gui = ti.GUI("Shortest PIC", (800, 800))
     while not gui.get_event(ti.GUI.ESCAPE, ti.GUI.EXIT):
         for s in range(substepping):
             substep()

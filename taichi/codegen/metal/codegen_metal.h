@@ -20,7 +20,6 @@ CompiledKernelData run_codegen(
     const CompiledRuntimeModule *compiled_runtime_module,
     const std::vector<CompiledStructs> &compiled_snode_trees,
     Kernel *kernel,
-    PrintStringTable *print_strtab,
     OffloadedStmt *offloaded);
 
 // If |offloaded| is nullptr, this compiles the AST in |kernel|. Otherwise it

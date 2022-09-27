@@ -1,7 +1,7 @@
 #pragma once
 #include "taichi/ui/common/scene_base.h"
 
-TI_UI_NAMESPACE_BEGIN
+namespace taichi::ui {
 
 namespace vulkan {
 
@@ -34,4 +34,4 @@ class Scene final : public SceneBase {
 
 }  // namespace vulkan
 
-TI_UI_NAMESPACE_END
+}  // namespace taichi::ui

@@ -4,7 +4,7 @@
 #include "taichi/program/field_info.h"
 #include "taichi/ui/utils/utils.h"
 
-TI_UI_NAMESPACE_BEGIN
+namespace taichi::ui {
 
 struct RenderableInfo {
   FieldInfo vbo;
@@ -19,4 +19,4 @@ struct RenderableInfo {
   taichi::lang::PolygonMode display_mode{taichi::lang::PolygonMode::Fill};
 };
 
-TI_UI_NAMESPACE_END
+}  // namespace taichi::ui

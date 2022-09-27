@@ -116,7 +116,6 @@ class Scalarize : public IRVisitor {
 
       auto matrix_init_stmt =
           std::make_unique<MatrixInitStmt>(matrix_init_values);
-
       matrix_init_stmt->ret_type = src_dtype;
 
       stmt->replace_usages_with(matrix_init_stmt.get());
@@ -170,6 +169,73 @@ class Scalarize : public IRVisitor {
       auto matrix_init_stmt =
           std::make_unique<MatrixInitStmt>(matrix_init_values);
       matrix_init_stmt->ret_type = operand_dtype;
+
+      stmt->replace_usages_with(matrix_init_stmt.get());
+      modifier_.insert_before(stmt, std::move(matrix_init_stmt));
+
+      modifier_.erase(stmt);
+    }
+  }
+
+  /*
+    Before:
+      TensorType<4 x i32> val = BinaryStmt(TensorType<4 x i32> lhs,
+                                           TensorType<4 x i32> rhs)
+
+      * Note that "lhs" and "rhs" should have already been scalarized to
+    MatrixInitStmt
+
+    After:
+      i32 calc_val0 = BinaryStmt(lhs->cast<MatrixInitStmt>()->val[0],
+                                 rhs->cast<MatrixInitStmt>()->val[0])
+      i32 calc_val1 = BinaryStmt(lhs->cast<MatrixInitStmt>()->val[1],
+                                 rhs->cast<MatrixInitStmt>()->val[1])
+      i32 calc_val2 = BinaryStmt(lhs->cast<MatrixInitStmt>()->val[2],
+                                 rhs->cast<MatrixInitStmt>()->val[2])
+      i32 calc_val3 = BinaryStmt(lhs->cast<MatrixInitStmt>()->val[3],
+                                 rhs->cast<MatrixInitStmt>()->val[3])
+
+      tmp = MatrixInitStmt(calc_val0, calc_val1,
+                           calc_val2, calc_val3)
+
+      stmt->replace_all_usages_with(tmp)
+  */
+  void visit(BinaryOpStmt *stmt) override {
+    auto lhs_dtype = stmt->lhs->ret_type;
+    auto rhs_dtype = stmt->rhs->ret_type;
+
+    // BinaryOpExpression::type_check() should have taken care of the
+    // broadcasting and neccessary conversions. So we simply add an assertion
+    // here to make sure that the operands are of the same shape and dtype
+    TI_ASSERT(lhs_dtype == rhs_dtype);
+
+    if (lhs_dtype->is<TensorType>() && rhs_dtype->is<TensorType>()) {
+      // Scalarization for LoadStmt should have already replaced both operands
+      // to MatrixInitStmt
+      TI_ASSERT(stmt->lhs->is<MatrixInitStmt>());
+      TI_ASSERT(stmt->rhs->is<MatrixInitStmt>());
+
+      auto lhs_matrix_init_stmt = stmt->lhs->cast<MatrixInitStmt>();
+      std::vector<Stmt *> lhs_vals = lhs_matrix_init_stmt->values;
+
+      auto rhs_matrix_init_stmt = stmt->rhs->cast<MatrixInitStmt>();
+      std::vector<Stmt *> rhs_vals = rhs_matrix_init_stmt->values;
+
+      TI_ASSERT(rhs_vals.size() == lhs_vals.size());
+
+      size_t num_elements = lhs_vals.size();
+      std::vector<Stmt *> matrix_init_values;
+      for (size_t i = 0; i < num_elements; i++) {
+        auto binary_stmt = std::make_unique<BinaryOpStmt>(
+            stmt->op_type, lhs_vals[i], rhs_vals[i]);
+        matrix_init_values.push_back(binary_stmt.get());
+
+        modifier_.insert_before(stmt, std::move(binary_stmt));
+      }
+
+      auto matrix_init_stmt =
+          std::make_unique<MatrixInitStmt>(matrix_init_values);
+      matrix_init_stmt->ret_type = stmt->ret_type;
 
       stmt->replace_usages_with(matrix_init_stmt.get());
       modifier_.insert_before(stmt, std::move(matrix_init_stmt));

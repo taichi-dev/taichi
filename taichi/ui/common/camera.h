@@ -2,7 +2,7 @@
 
 #include "taichi/ui/utils/utils.h"
 
-TI_UI_NAMESPACE_BEGIN
+namespace taichi::ui {
 
 enum class ProjectionMode : int { Perspective = 0, Orthogonal = 1 };
 
@@ -35,4 +35,4 @@ struct Camera {
   }
 };
 
-TI_UI_NAMESPACE_END
+}  // namespace taichi::ui

@@ -7,14 +7,11 @@ import warnings
 from copy import deepcopy
 from functools import reduce
 
-import matplotlib.pyplot as plt
 import numpy as np
 import taichi.types.primitive_types as types
 from taichi.lang import impl
-
 from taichi.lang.enums import SNodeGradType
 from taichi.lang.expr import Expr
-
 from taichi.lang.field import ScalarField
 from taichi.lang.kernel_impl import kernel
 from taichi.lang.snode import SNode
@@ -131,8 +128,6 @@ class Tape:
             for I in impl.grouped(x):
                 x[I] -= eps * tangent_np[I]
 
-        plt.figure()
-
         for i, x in enumerate(self.grad_check):
             if x is self.loss:
                 self.result[i] = True
@@ -180,10 +175,6 @@ class Tape:
                     break
 
             self.result[i] = check_pass
-            plt.loglog(np.array(self.eps_range[:len(re_range)]),
-                       np.array(re_range),
-                       "-*",
-                       label="variable " + str(i))
 
             if not check_pass:
                 print(i, "relative error:", min(re_range))
@@ -192,12 +183,6 @@ class Tape:
 
         if all(self.result):
             print("all grad check pass")
-        else:
-            plt.xlabel("finite difference step size")
-            plt.ylabel("relative error")
-            plt.title("Grad check Error Convergence")
-            plt.legend()
-            plt.show()
 
         self.reset(mode="restore")
         for func, args in self.calls:

@@ -82,7 +82,7 @@ You can define multiple kernels in your program. They are mutually *independent*
 
 :::caution WARNING
 
-You can only call a kernel directly or from inside a native Python function. You must *not* call a kernel from inside another kernel or from inside a Taichi function. In other words, you can only call a kernel from inside the Python scope.
+You can only call a kernel directly or from inside a native Python function. You must *not* call a kernel from inside another kernel or from inside a Taichi function. To put it differently, you can only call a kernel from inside the Python scope.
 
 :::
 

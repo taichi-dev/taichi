@@ -64,7 +64,7 @@ The simplest way to declare a scalar field is to call `ti.field(dtype, shape)`, 
       # Basially f1 and f2 are interchangeable
       f1 = ti.field(int, shape=())
       f2 = ti.field(int, shape=1)
-      
+
       f1[None] = 1  # Use None to access a 0D field
       f2[0] = 1  # Use 0 to access a 1D field of length 1
       ```

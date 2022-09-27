@@ -395,28 +395,6 @@ class PtrOffsetStmt : public Stmt {
 
   PtrOffsetStmt(Stmt *, Stmt *);
 
-  /* TODO(zhanlue/yi) Stop using llvm::AllocaInst with "ArraySize" argument so
-     that Alloca can return ArrayType.
-
-      Currently, AllocaStmt and GlobalTemporaryStmt uses llvm::AllocaInst with
-     "ArraySize" argument, which returns a pointer to the first element of the
-     array, instead of the array itself.
-
-      We would like to refactor this behaviour because:
-      1. It drops the array type information.
-      2. Causes crash on AMDGPU backend in certain circumstances.
-
-      https://llvm.org/doxygen/classllvm_1_1AllocaInst.html#ac68a7586b8be7de3c39531d9eca902e6
-  */
-  bool tensor_type_represented_as_primitive_type_ptr() const {
-    if (origin->ret_type.ptr_removed()->is<TensorType>()) {
-      if (origin->is<AllocaStmt>() || origin->is<GlobalTemporaryStmt>()) {
-        return true;
-      }
-    }
-    return false;
-  }
-
   /* TODO(zhanlue/yi): Unify semantics of offset in PrtOffsetStmt
 
     There is a hack in PtrOffsetStmt in terms of the semantics of "offset",

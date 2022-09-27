@@ -31,7 +31,7 @@ class Tape:
                  grad_check=None,
                  watch=None,
                  eps_range=2.**np.arange(-3, -30, -1).astype(np.float64),
-                 show_gui=False):
+                 test_mode=False):
         """A context manager for reverse mode autodiff :class:`~taichi.ad.Tape`. The
         context manager would catching all of the callings of functions that
         decorated by :func:`~taichi.lang.kernel_impl.kernel` or
@@ -75,6 +75,7 @@ class Tape:
             self.watch = watch
             self.eps_range = eps_range
             self.reset(mode="save")
+            self.test_mode = test_mode
 
     def __enter__(self):
         assert not self.entered, "Tape can be entered only once."
@@ -186,6 +187,9 @@ class Tape:
                        np.array(re_range),
                        "-*",
                        label="variable " + str(i))
+
+            if self.test_mode:
+                assert check_pass is True
 
             if not check_pass:
                 print(i, "relative error:", min(re_range))

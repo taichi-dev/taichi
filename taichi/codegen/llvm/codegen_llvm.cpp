@@ -127,8 +127,8 @@ void TaskCodeGenLLVM::visit(AllocaStmt *stmt) {
     auto type = tlctx->get_data_type(tensor_type);
     if (stmt->is_shared) {
       auto base = new llvm::GlobalVariable(
-          *module, type, false, llvm::GlobalValue::ExternalLinkage,
-          nullptr, fmt::format("shared_array_{}", stmt->id), nullptr,
+          *module, type, false, llvm::GlobalValue::ExternalLinkage, nullptr,
+          fmt::format("shared_array_{}", stmt->id), nullptr,
           llvm::GlobalVariable::NotThreadLocal, 3 /*addrspace=shared*/);
       base->setAlignment(llvm::MaybeAlign(8));
       auto ptr_type = llvm::PointerType::get(type, 0);
@@ -1843,7 +1843,9 @@ void TaskCodeGenLLVM::visit(GetChStmt *stmt) {
 void TaskCodeGenLLVM::visit(PtrOffsetStmt *stmt) {
   if (stmt->offset_used_as_index()) {
     auto type = tlctx->get_data_type(stmt->origin->ret_type.ptr_removed());
-    llvm_val[stmt] = builder->CreateGEP(type, llvm_val[stmt->origin], {tlctx->get_constant(0), llvm_val[stmt->offset]});
+    llvm_val[stmt] =
+        builder->CreateGEP(type, llvm_val[stmt->origin],
+                           {tlctx->get_constant(0), llvm_val[stmt->offset]});
   } else {
     // Access PtrOffset via: base_ptr + offset
     auto origin_address = builder->CreatePtrToInt(

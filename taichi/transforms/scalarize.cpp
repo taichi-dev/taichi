@@ -30,14 +30,14 @@ class Scalarize : public IRVisitor {
       StoreStmt(TensorType<4 x i32>* alloca_dest_stmt, TensorType<4 x i32> val)
 
     After:
-      StoreStmt(i32* scalarized_local_tensor_map_[stmt][0], i32
-    val->cast<MatrixInitStmt>()->val[0]) StoreStmt(i32*
-    scalarized_local_tensor_map_[stmt][1], i32
-    val->cast<MatrixInitStmt>()->val[1]) StoreStmt(i32*
-    scalarized_local_tensor_map_[stmt][2], i32
-    val->cast<MatrixInitStmt>()->val[2]) StoreStmt(i32*
-    scalarized_local_tensor_map_[stmt][3], i32
-    val->cast<MatrixInitStmt>()->val[3])
+      StoreStmt(i32* scalarized_local_tensor_map_[stmt][0],
+                i32 val->cast<MatrixInitStmt>()->val[0])
+      StoreStmt(i32* scalarized_local_tensor_map_[stmt][1],
+                i32 val->cast<MatrixInitStmt>()->val[1])
+      StoreStmt(i32* scalarized_local_tensor_map_[stmt][2],
+                i32 val->cast<MatrixInitStmt>()->val[2])
+      StoreStmt(i32* scalarized_local_tensor_map_[stmt][3],
+                i32 val->cast<MatrixInitStmt>()->val[3])
 
     [General Case]
     Before:
@@ -225,9 +225,11 @@ class Scalarize : public IRVisitor {
 
       std::vector<Stmt *> matrix_init_values;
       int num_elements = operand_tensor_type->get_num_elements();
+      auto primitive_type = operand_tensor_type->get_element_type();
       for (size_t i = 0; i < num_elements; i++) {
         auto unary_stmt = std::make_unique<UnaryOpStmt>(
             stmt->op_type, operand_matrix_init_stmt->values[i]);
+        unary_stmt->ret_type = primitive_type;
         matrix_init_values.push_back(unary_stmt.get());
 
         modifier_.insert_before(stmt, std::move(unary_stmt));
@@ -347,8 +349,8 @@ class Scalarize : public IRVisitor {
 
   /*
     Accessing scalar values are always more efficient than accessing elements
-    from a vector, resulting in less number of instructions and some slight
-    performance gain.
+    from a vector - the former generates less instructions, leading to better
+    performance in both compilation and runtime.
 
     Although we can do nothing about "global" tensors like tensors from
     ArgLoadStmt or GlobalPtrStmt, we can still optimize "local" tensors like

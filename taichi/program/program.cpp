@@ -227,6 +227,7 @@ void Program::synchronize() {
       this_thread_config().arch == Arch::opengl) {
     program_impl_->synchronize();
   }
+  fflush(stdout);
 }
 
 StreamSemaphore Program::flush() {

@@ -2,6 +2,12 @@ import pytest
 
 import taichi as ti
 from tests import test_utils
+import os
+
+
+if os.name == 'nt':
+    pytest.skip("Skipping on windows because fflush issues, "
+                "see https://github.com/taichi-dev/taichi/issues/6179", allow_module_level=True)
 
 
 @test_utils.test(arch=[ti.cpu, ti.cuda])

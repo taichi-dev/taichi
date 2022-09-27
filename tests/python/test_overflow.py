@@ -1,6 +1,7 @@
+from time import sleep
+
 import pytest
 
-from time import sleep
 import taichi as ti
 from tests import test_utils
 

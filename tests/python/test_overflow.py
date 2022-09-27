@@ -1,5 +1,6 @@
 import pytest
 
+from time import sleep
 import taichi as ti
 from tests import test_utils
 
@@ -16,6 +17,7 @@ def test_no_debug(capfd):
 
     foo()
     ti.sync()
+    sleep(0.1)
     captured = capfd.readouterr().out
     assert "Addition overflow detected" not in captured
     assert "return a + b" not in captured
@@ -46,6 +48,7 @@ def test_add_overflow(capfd, ty, num):
 
     foo()
     ti.sync()
+    sleep(0.1)
     captured = capfd.readouterr().out
     assert "Addition overflow detected" in captured
     assert "return a + b" in captured
@@ -64,6 +67,7 @@ def test_add_no_overflow(capfd, ty, num):
 
     foo()
     ti.sync()
+    sleep(0.1)
     captured = capfd.readouterr().out
     assert "Addition overflow detected" not in captured
     assert "return a + b" not in captured
@@ -90,6 +94,7 @@ def test_sub_overflow_i(capfd, ty, num):
 
     foo()
     ti.sync()
+    sleep(0.1)
     captured = capfd.readouterr().out
     assert "Subtraction overflow detected" in captured
     assert "return a - b" in captured
@@ -108,6 +113,7 @@ def test_sub_no_overflow_i(capfd, ty, num):
 
     foo()
     ti.sync()
+    sleep(0.1)
     captured = capfd.readouterr().out
     assert "Subtraction overflow detected" not in captured
     assert "return a - b" not in captured
@@ -126,6 +132,7 @@ def test_sub_overflow_u(capfd, ty):
 
     foo()
     ti.sync()
+    sleep(0.1)
     captured = capfd.readouterr().out
     assert "Subtraction overflow detected" in captured
     assert "return a - b" in captured
@@ -144,6 +151,7 @@ def test_sub_no_overflow_u(capfd, ty):
 
     foo()
     ti.sync()
+    sleep(0.1)
     captured = capfd.readouterr().out
     assert "Subtraction overflow detected" not in captured
     assert "return a - b" not in captured
@@ -174,6 +182,7 @@ def test_mul_overflow(capfd, ty, num1, num2):
 
     foo()
     ti.sync()
+    sleep(0.1)
     captured = capfd.readouterr().out
     assert "Multiplication overflow detected" in captured
     assert "return a * b" in captured
@@ -192,6 +201,7 @@ def test_mul_no_overflow(capfd, ty, num1, num2):
 
     foo()
     ti.sync()
+    sleep(0.1)
     captured = capfd.readouterr().out
     assert "Multiplication overflow detected" not in captured
     assert "return a * b" not in captured
@@ -222,6 +232,7 @@ def test_shl_overflow(capfd, ty, num):
 
     foo()
     ti.sync()
+    sleep(0.1)
     captured = capfd.readouterr().out
     assert "Shift left overflow detected" in captured
     assert "return a << b" in captured
@@ -240,6 +251,7 @@ def test_shl_no_overflow(capfd, ty, num):
 
     foo()
     ti.sync()
+    sleep(0.1)
     captured = capfd.readouterr().out
     assert "Shift left overflow detected" not in captured
     assert "return a << b" not in captured

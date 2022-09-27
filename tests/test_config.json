@@ -8,6 +8,10 @@
         ["cpp", "aot", "python_scripts", "kernel_aot_test1.py"],
         "--arch=cuda"
     ],
+    "LlvmAotTest.DX12Kernel": [
+        ["cpp", "aot", "python_scripts", "kernel_aot_test1.py"],
+        "--arch=dx12"
+    ],
     "LlvmAotTest.CpuField": [
         ["cpp", "aot", "python_scripts", "field_aot_test.py"],
         "--arch=cpu"

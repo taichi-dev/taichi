@@ -273,6 +273,10 @@ class Scalarize : public IRVisitor {
     auto lhs_dtype = stmt->lhs->ret_type;
     auto rhs_dtype = stmt->rhs->ret_type;
 
+    if (lhs_dtype->is<PrimitiveType>() && rhs_dtype->is<PrimitiveType>()) {
+      return;
+    }
+
     // BinaryOpExpression::type_check() should have taken care of the
     // broadcasting and neccessary conversions. So we simply add an assertion
     // here to make sure that the operands are of the same shape and dtype
@@ -390,6 +394,41 @@ class Scalarize : public IRVisitor {
       }
 
       modifier_.erase(stmt);
+    }
+  }
+
+  /*
+    Before:
+      PtrOffsetStmt(TensorType<4 x i32>* alloca_stmt, int offset)
+
+    After:
+      scalarized_alloca_stmt = scalarized_local_tensor_map_[alloca_stmt][offset]
+      stmt->replace_all_usages_with(scalarized_alloca_stmt)
+  */
+  void visit(PtrOffsetStmt *stmt) override {
+    if (stmt->origin->is<AllocaStmt>()) {
+      auto alloca_stmt = stmt->origin->cast<AllocaStmt>();
+      auto tensor_type =
+          alloca_stmt->ret_type.ptr_removed()->cast<TensorType>();
+      if (tensor_type) {
+        int num_elements = tensor_type->get_num_elements();
+        TI_ASSERT(scalarized_local_tensor_map_.count(alloca_stmt));
+
+        const auto &scalarized_alloca_stmts =
+            scalarized_local_tensor_map_[alloca_stmt];
+        TI_ASSERT(scalarized_alloca_stmts.size() == num_elements);
+
+        // TODO(zhanlue): loose this contraint once dynamic indexing is properly
+        // handled
+        TI_ASSERT(stmt->offset->is<ConstStmt>());
+        int offset = stmt->offset->cast<ConstStmt>()->val.val_int32();
+
+        TI_ASSERT(offset < scalarized_alloca_stmts.size());
+        auto alloca_stmt = scalarized_alloca_stmts[offset];
+
+        stmt->replace_usages_with(alloca_stmt);
+        modifier_.erase(stmt);
+      }
     }
   }
 

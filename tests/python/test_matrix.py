@@ -878,6 +878,37 @@ def test_elementwise_ops():
     test()
 
 
+@test_utils.test(arch=[ti.cuda, ti.cpu],
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_local_matrix_scalarize():
+    @ti.kernel
+    def func():
+        x = ti.Matrix([[1, 2], [3, 4]], ti.f32)
+
+        # Store
+        x[0, 0] = 100.
+
+        # Load + Store
+        x[0, 1] = x[0, 0]
+
+        # Binary
+        x[1, 0] = x[0, 1] + x[0, 1]
+
+        # Unary
+        x[1, 1] = ti.sqrt(x[1, 0])
+
+        # TODO: test for dynamic indexing
+
+        assert (x[0, 0] == 100.)
+        assert (x[0, 1] == 200.)
+        assert (x[1, 0] == 200.)
+        assert (x[1, 1] < 14.14214)
+        assert (x[1, 1] > 14.14213)
+
+    func()
+
+
 @test_utils.test()
 def test_vector_vector_t():
     @ti.kernel

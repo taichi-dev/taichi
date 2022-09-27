@@ -92,7 +92,7 @@ You can only call a kernel directly or from inside a native Python function. You
 
 A kernel can take multiple arguments. However, you *cannot* pass any arbitrary Python object to a kernel because Python objects can be highly dynamic and may hold data unrecognized by Taichi's compiler.
 
-The argument types accepted by kernels are scalars, `ti.Matrix/ti.Vector` (vectors are essentially matrices), `ti.types.ndarray()` and `ti.template()`. These types are defined in the `ti.types` module (see [type system](../type_system/type.md) for more information). You can easily pass data from the Python scope to the Taichi scope.
+The argument types accepted by kernels are scalars, `ti.Matrix/ti.Vector` (vectors are essentially matrices), `ti.types.ndarray()` and `ti.template()`. These types are defined in the `ti.types` module (see the [Type System](../type_system/type.md) for more information). You can easily pass data from the Python scope to the Taichi scope.
 
 It should be noted that scalars and `ti.Matrix` are passed by value, while `ti.types.ndarray()` and `ti.template()` are passed by reference. In the latter case, any modification to the arguments in the called function also affects the original values.
 

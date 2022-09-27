@@ -26,7 +26,7 @@ For convenience, in the following text and other C-API documents, the term *host
 
 Unless otherwise specified, **device**, **backend**, **offload target**, and **GPU** are interchangeable; **host**, **user code**, **user procedure**, and **CPU** are interchangeable.
 
-## How to...
+## HowTo
 
 The following section provides a brief introduction to the Taichi C-API.
 
@@ -116,7 +116,7 @@ TiAotModule aot_module = ti_load_aot_module(runtime, "/path/to/aot/module");
 
 `/path/to/aot/module` should point to the directory that contains a `metadata.tcb`.
 
-You can destroy an unused AOT module if you have done with it; but please ensure there is no kernel or compute graph related to it pending to [`ti_submit`](#function-ti_submit).
+You can destroy an unused AOT module, but please ensure that there is no kernel or compute graph related to it pending to [`ti_submit`](#function-ti_submit).
 
 ```cpp
 ti_destroy_aot_module(aot_module);

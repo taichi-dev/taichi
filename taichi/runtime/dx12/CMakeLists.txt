@@ -4,6 +4,7 @@ add_library(dx12_runtime)
 target_sources(dx12_runtime
   PRIVATE
     aot_module_builder_impl.cpp
+    aot_module_loader_impl.cpp
   )
 
 target_include_directories(dx12_runtime

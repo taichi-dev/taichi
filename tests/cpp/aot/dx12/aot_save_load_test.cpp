@@ -9,11 +9,13 @@
 #include "taichi/program/graph_builder.h"
 #include "taichi/runtime/dx12/aot_module_loader_impl.h"
 #include "taichi/rhi/dx12/dx12_api.h"
+#include <filesystem>
 
 using namespace taichi;
 using namespace lang;
+namespace fs = std::filesystem;
 
-[[maybe_unused]] static void aot_save() {
+[[maybe_unused]] static void aot_save(std::string &tmp_path) {
   auto program = Program(Arch::dx12);
 
   program.this_thread_config().advanced_optimization = false;
@@ -99,10 +101,7 @@ using namespace lang;
   aot_builder->add_field("place", place, true, place->dt, {n}, 1, 1);
   aot_builder->add("init", kernel_init.get());
   aot_builder->add("ret", kernel_ret.get());
-  const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
-  std::stringstream ss;
-  ss << folder_dir;
-  aot_builder->dump(ss.str(), "");
+  aot_builder->dump(tmp_path, "");
 }
 
 #ifdef TI_WITH_DX12
@@ -112,14 +111,16 @@ TEST(AotSaveLoad, DX12) {
     return;
   }
 
-  aot_save();
+  fs::current_path(fs::temp_directory_path());
+  fs::create_directory("dx12_aot");
+  fs::permissions("dx12_aot", fs::perms::others_all, fs::perm_options::remove);
+
+  std::string tmp_path = fs::temp_directory_path().append("dx12_aot").string();
+  aot_save(tmp_path);
 
   // Run AOT module loader
-  const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
-  std::stringstream ss;
-  ss << folder_dir;
   directx12::AotModuleParams mod_params;
-  mod_params.module_path = ss.str();
+  mod_params.module_path = tmp_path;
 
   std::unique_ptr<aot::Module> module =
       aot::Module::load(Arch::dx12, mod_params);
@@ -139,6 +140,8 @@ TEST(AotSaveLoad, DX12) {
   EXPECT_FALSE(ret2_kernel);
 
   // FIXME: test run kernels and check the result.
+
+  fs::remove_all("dx12_aot");
 }
 
 #endif

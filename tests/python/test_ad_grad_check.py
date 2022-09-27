@@ -31,8 +31,14 @@ def test_grad_check():
     def compute_y2():
         y2[None] += x2[0, 0][0] + x2[1, 0][1] + x2[1, 1][2]
 
-    with ti.ad.Tape(y1, grad_check=[x1], test_mode=True):
-        compute_y1()
+    t1 = ti.ad.Tape(y1, grad_check=[x1])
+    t1.__enter__()
+    compute_y1()
+    t1.__exit__(None, None, None)
+    assert all(t1.result) is True
 
-    with ti.ad.Tape(y2, grad_check=[x2], test_mode=True):
-        compute_y2()
+    t2 = ti.ad.Tape(y2, grad_check=[x2])
+    t2.__enter__()
+    compute_y2()
+    t2.__exit__(None, None, None)
+    assert all(t2.result) is True

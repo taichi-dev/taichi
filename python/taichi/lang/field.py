@@ -382,7 +382,7 @@ class SNodeHostAccessor:
                 ).target_tape.grad_check and not impl.get_runtime(
                 ).grad_replaced:
                     for x in impl.get_runtime().target_tape.grad_check:
-                        assert snode != x.snode.ptr, "You can not write to input field."
+                        assert snode != x.snode.ptr, "Overwritten is prohibitive when doing grad check."
                     impl.get_runtime().target_tape.insert(
                         snode.write_float, (key, value))
         else:
@@ -404,7 +404,7 @@ class SNodeHostAccessor:
                 ).target_tape.grad_check and not impl.get_runtime(
                 ).grad_replaced:
                     for x in impl.get_runtime().target_tape.grad_check:
-                        assert snode != x.snode.ptr, "You can not write to input field."
+                        assert snode != x.snode.ptr, "Overwritten is prohibitive when doing grad check."
                     impl.get_runtime().target_tape.insert(
                         snode.write_int, (key, value))
 

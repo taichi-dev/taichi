@@ -25,9 +25,7 @@ class Tape:
                  loss=None,
                  clear_gradients=True,
                  validation=False,
-                 grad_check=None,
-                 watch=None,
-                 eps_range=2.**np.arange(-3, -30, -1).astype(np.float64)):
+                 grad_check=None):
         """A context manager for reverse mode autodiff :class:`~taichi.ad.Tape`. The
         context manager would catching all of the callings of functions that
         decorated by :func:`~taichi.lang.kernel_impl.kernel` or
@@ -68,8 +66,7 @@ class Tape:
         self.loss = loss
         self.grad_check = grad_check
         if self.grad_check:
-            self.watch = watch
-            self.eps_range = eps_range
+            self.eps_range = 2.**np.arange(-3, -30, -1).astype(np.float64)
             self.result = [None] * len(self.grad_check)
             self.reset(mode="save")
 
@@ -102,7 +99,6 @@ class Tape:
             self.grad()
 
     def insert(self, func, args):
-        # print("insert!")
         self.calls.append((func, args))
 
     def grad(self):
@@ -162,8 +158,6 @@ class Tape:
 
                 ip_autodiff = np.sum(x_grad_np * tangent_np)
                 err = abs(ip_autodiff - ip_numerical)
-                # print("autodiff:", ip_autodiff)
-                # print("numerical:", ip_numerical)
                 if ip_numerical != 0:
                     re = err / abs(ip_autodiff)
                 else:
@@ -177,7 +171,7 @@ class Tape:
             self.result[i] = check_pass
 
             if not check_pass:
-                print(i, "relative error:", min(re_range))
+                print(i, "relative error:", re_range)
             else:
                 print(i, "grad check pass")
 

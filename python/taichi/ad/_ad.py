@@ -30,8 +30,7 @@ class Tape:
                  validation=False,
                  grad_check=None,
                  watch=None,
-                 eps_range=2.**np.arange(-3, -30, -1).astype(np.float64),
-                 test_mode=False):
+                 eps_range=2.**np.arange(-3, -30, -1).astype(np.float64)):
         """A context manager for reverse mode autodiff :class:`~taichi.ad.Tape`. The
         context manager would catching all of the callings of functions that
         decorated by :func:`~taichi.lang.kernel_impl.kernel` or
@@ -74,8 +73,8 @@ class Tape:
         if self.grad_check:
             self.watch = watch
             self.eps_range = eps_range
+            self.result = [None] * len(self.grad_check)
             self.reset(mode="save")
-            self.test_mode = test_mode
 
     def __enter__(self):
         assert not self.entered, "Tape can be entered only once."
@@ -132,13 +131,11 @@ class Tape:
             for I in impl.grouped(x):
                 x[I] -= eps * tangent_np[I]
 
-        check_pass_list = [None] * len(self.grad_check)
-
         plt.figure()
 
         for i, x in enumerate(self.grad_check):
             if x is self.loss:
-                check_pass_list[i] = True
+                self.result[i] = True
                 continue
 
             check_pass = False
@@ -182,21 +179,18 @@ class Tape:
                     check_pass = True
                     break
 
-            check_pass_list[i] = check_pass
+            self.result[i] = check_pass
             plt.loglog(np.array(self.eps_range[:len(re_range)]),
                        np.array(re_range),
                        "-*",
                        label="variable " + str(i))
-
-            if self.test_mode:
-                assert check_pass is True
 
             if not check_pass:
                 print(i, "relative error:", min(re_range))
             else:
                 print(i, "grad check pass")
 
-        if all(check_pass_list):
+        if all(self.result):
             print("all grad check pass")
         else:
             plt.xlabel("finite difference step size")

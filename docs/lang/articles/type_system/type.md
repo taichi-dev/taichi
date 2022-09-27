@@ -18,7 +18,7 @@ def test():
 
 Line 3 indicates that `x` should be an integer because it is assigned by an integer value 1 the same time it is declared. In Line 4, we re-assign a floating-point number 3.14 to `x`. This scalar is automatically cast to integer 3 to match the type of `x`. Hence, `x` takes the value 3 after this line. Line 5 will raise a syntax error when we try to assign a `ti.Vector` to `x` because `ti.Vector` is a different data type, which cannot be cast into an integer.
 
-All Data types that Taichi supports are defined in the `ti.types` module, they can be classified into  two categories: primitive types and compound types.
+The `ti.types` module defines all the data types that Taichi supports, and classifies them into two categories: primitive types and compound types.
 
 - Primitive types: Various commonly-used numerical data types, such as `ti.i32` (`int32`), `ti.u8` (`uint8`), and `ti.f64` (`float64`).
 - Compound types: Array-like or struct-like data types, including `ti.types.matrix`, `ti.types.struct`, and `ti.types.ndarray`, which comprise multiple members of primitive types or other compound types.

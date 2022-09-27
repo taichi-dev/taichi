@@ -201,6 +201,7 @@ class Function(EntryBase):
         super().__init__(j, "function")
         self.return_value_type = None
         self.params = []
+        self.is_device_command = False
 
         if "parameters" in j:
             for x in j["parameters"]:
@@ -209,6 +210,8 @@ class Function(EntryBase):
                     self.return_value_type = field.type
                 else:
                     self.params += [field]
+        if "is_device_command" in j:
+            self.is_device_command = True
 
 
 class Module:

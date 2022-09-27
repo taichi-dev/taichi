@@ -38,7 +38,6 @@ struct JITEvaluatorId {
   // thread cannot be used in another. Hence the thread_id member.
   int op;
   DataType ret, lhs, rhs;
-  std::string tb;
   bool is_binary;
 
   UnaryOpType unary_op() const {
@@ -53,8 +52,7 @@ struct JITEvaluatorId {
 
   bool operator==(const JITEvaluatorId &o) const {
     return thread_id == o.thread_id && op == o.op && ret == o.ret &&
-           lhs == o.lhs && rhs == o.rhs && is_binary == o.is_binary &&
-           tb == o.tb;
+           lhs == o.lhs && rhs == o.rhs && is_binary == o.is_binary;
   }
 };
 

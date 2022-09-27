@@ -42,7 +42,6 @@ class ConstantFold : public BasicStmtVisitor {
       if (id.is_binary) {
         oper = Stmt::make<BinaryOpStmt>(id.binary_op(), lhstmt.get(),
                                         rhstmt.get());
-        oper->set_tb(id.tb);
       } else {
         oper = Stmt::make<UnaryOpStmt>(id.unary_op(), lhstmt.get());
         if (unary_op_is_cast(id.unary_op())) {
@@ -98,7 +97,6 @@ class ConstantFold : public BasicStmtVisitor {
                       ret.dt,
                       lhs.dt,
                       rhs.dt,
-                      program->this_thread_config().debug ? stmt->tb : "",
                       true};
     auto *ker = get_jit_evaluator_kernel(id);
     auto launch_ctx = ker->make_launch_context();
@@ -122,7 +120,6 @@ class ConstantFold : public BasicStmtVisitor {
                       ret.dt,
                       operand.dt,
                       stmt->cast_type,
-                      "",
                       false};
     auto *ker = get_jit_evaluator_kernel(id);
     auto launch_ctx = ker->make_launch_context();

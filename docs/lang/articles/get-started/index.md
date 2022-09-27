@@ -25,7 +25,6 @@ Taichi is available as a PyPI package:
 ```bash
 pip install taichi
 ```
-You can also build Taichi from source: See our [developer's guide](../contribution/dev_install.md) for full details. We *do not* advise you to do so if you are a first-time user, unless you want to experience the most up-to-date features.
 
 To verify a successful installation, run the following command in your terminal:
 
@@ -156,7 +155,7 @@ This is a `for` loop at the outermost scope in a Taichi kernel and thus is *auto
 
 Taichi offers a handy syntax sugar: It parallelizes any `for` loop at the outermost scope in a kernel. This means that you can parallelize your tasks using just one plain loop, without the need to know what is going on under the hood, be it thread allocation/recycling or memory management.
 
-Note that the field `pixels` is treated as an iterator. As the indices of the field elements, `i` and `j` are integers falling in the ranges `[0, 2*n-1]` and `[0, n-1]`, respectively. They are arranged in the row-majored order, i.e., `(0, 0)`, `(0, 1)`, ..., `(0, n-1)`, `(1, n-1)`, ..., `(2*n-1, n-1)`.
+Note that the field `pixels` is treated as an iterator. As the indices of the field elements, `i` and `j` are integers falling in the ranges `[0, 2*n-1]` and `[0, n-1]`, respectively. The pair `(i, j)` loops over the set `(0, 0)`, `(0, 1)`, ..., `(0, n-1)`, `(1, n-1)`, ..., `(2*n-1, n-1)`.
 
 Keep in mind that the *for loops not at the outermost scope will not be parallelized*; they are handled serially:
 

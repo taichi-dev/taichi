@@ -72,7 +72,7 @@ user_api[ti] = [
     'atomic_sub', 'atomic_xor', 'axes', 'bit_cast', 'bit_shr', 'block_local',
     'cache_read_only', 'cast', 'cc', 'ceil', 'cos', 'cpu', 'cuda',
     'data_oriented', 'dataclass', 'deactivate', 'deactivate_all_snodes',
-    'dx11', 'eig', 'exp', 'experimental', 'extension', 'f16', 'f32', 'f64',
+    'dx11', 'dx12', 'eig', 'exp', 'experimental', 'extension', 'f16', 'f32', 'f64',
     'field', 'float16', 'float32', 'float64', 'floor', 'func', 'get_addr',
     'get_compute_stream_device_time_elapsed_us', 'global_thread_idx', 'gpu',
     'graph', 'grouped', 'hex_to_rgb', 'i', 'i16', 'i32', 'i64', 'i8', 'ij',

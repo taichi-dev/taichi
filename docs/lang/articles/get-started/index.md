@@ -116,7 +116,7 @@ n = 320
 pixels = ti.field(dtype=float, shape=(n * 2, n))
 ```
 
-The code snippet defines a field whose shape is (640, 320) and whose elements are floating-point data. 
+The code snippet defines a field whose shape is (640, 320) and whose elements are floating-point data.
 
 `field` is the most important and frequently used data structure in Taichi. You can compare it to NumPy's `ndarray` or PyTorch's `tensor`. But Taichi's `field` is more powerful and flexible than the two counterparts. For example, a Taichi field can be [spatially sparse](../basic/sparse.md) and can easily [switch between different data layouts](../basic/layout.md).
 
@@ -195,7 +195,7 @@ def foo():
 Lines 18~23 render the result on your screen using Taichi's built-in [GUI system](../visualization/gui_system.md):
 
 ```python
-gui = ti.GUI("Julia Set", res=(n * 2, n)) 
+gui = ti.GUI("Julia Set", res=(n * 2, n))
 # Sets the window title and the resolution
 
 for i in range(1000000):

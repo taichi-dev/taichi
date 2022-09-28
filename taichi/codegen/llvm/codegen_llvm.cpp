@@ -153,9 +153,8 @@ void TaskCodeGenLLVM::visit(RandStmt *stmt) {
     llvm_val[stmt] =
         builder->CreateFPTrunc(val_f32, llvm::Type::getHalfTy(*llvm_context));
   } else {
-    llvm_val[stmt] =
-        call(fmt::format("rand_{}", data_type_name(stmt->ret_type)),
-                    get_context());
+    llvm_val[stmt] = call(
+        fmt::format("rand_{}", data_type_name(stmt->ret_type)), get_context());
   }
 }
 
@@ -175,13 +174,13 @@ void TaskCodeGenLLVM::emit_extra_unary(UnaryOpStmt *stmt) {
 #define UNARY_STD(x)                                                    \
   else if (op == UnaryOpType::x) {                                      \
     if (input_taichi_type->is_primitive(PrimitiveTypeID::f32)) {        \
-      llvm_val[stmt] = call(#x "_f32", input);                   \
+      llvm_val[stmt] = call(#x "_f32", input);                          \
     } else if (input_taichi_type->is_primitive(PrimitiveTypeID::f64)) { \
-      llvm_val[stmt] = call(#x "_f64", input);                   \
+      llvm_val[stmt] = call(#x "_f64", input);                          \
     } else if (input_taichi_type->is_primitive(PrimitiveTypeID::i32)) { \
-      llvm_val[stmt] = call(#x "_i32", input);                   \
+      llvm_val[stmt] = call(#x "_i32", input);                          \
     } else if (input_taichi_type->is_primitive(PrimitiveTypeID::i64)) { \
-      llvm_val[stmt] = call(#x "_i64", input);                   \
+      llvm_val[stmt] = call(#x "_i64", input);                          \
     } else {                                                            \
       TI_NOT_IMPLEMENTED                                                \
     }                                                                   \
@@ -642,9 +641,9 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
           builder->CreateLShr(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
     }
   } else if (op == BinaryOpType::max) {
-#define BINARYOP_MAX(x)                                                     \
-  else if (ret_type->is_primitive(PrimitiveTypeID::x)) {                    \
-    llvm_val[stmt] =                                                        \
+#define BINARYOP_MAX(x)                                            \
+  else if (ret_type->is_primitive(PrimitiveTypeID::x)) {           \
+    llvm_val[stmt] =                                               \
         call("max_" #x, llvm_val[stmt->lhs], llvm_val[stmt->rhs]); \
   }
 
@@ -679,9 +678,9 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
       }
     }
   } else if (op == BinaryOpType::min) {
-#define BINARYOP_MIN(x)                                                     \
-  else if (ret_type->is_primitive(PrimitiveTypeID::x)) {                    \
-    llvm_val[stmt] =                                                        \
+#define BINARYOP_MIN(x)                                            \
+  else if (ret_type->is_primitive(PrimitiveTypeID::x)) {           \
+    llvm_val[stmt] =                                               \
         call("min_" #x, llvm_val[stmt->lhs], llvm_val[stmt->rhs]); \
   }
 
@@ -899,7 +898,8 @@ llvm::Value *TaskCodeGenLLVM::create_print(std::string tag,
   args.push_back(value);
 
   auto func_type_func = get_runtime_function("get_func_type_host_printf");
-  return call(runtime_printf, func_type_func->getFunctionType(), std::move(args));
+  return call(runtime_printf, func_type_func->getFunctionType(),
+              std::move(args));
 }
 
 llvm::Value *TaskCodeGenLLVM::create_print(std::string tag,
@@ -1275,9 +1275,8 @@ void TaskCodeGenLLVM::visit(ReturnStmt *stmt) {
     TI_ASSERT(stmt->values.size() <= taichi_max_num_ret_value);
     int idx{0};
     for (auto &value : stmt->values) {
-      call(
-          "RuntimeContext_store_result",
-          get_context(), bitcast_to_u64(llvm_val[value], value->ret_type),
+      call("RuntimeContext_store_result", get_context(),
+           bitcast_to_u64(llvm_val[value], value->ret_type),
            tlctx->get_constant<int32>(idx++));
     }
   }
@@ -1522,8 +1521,8 @@ llvm::Value *TaskCodeGenLLVM::real_type_atomic(AtomicOpStmt *stmt) {
   atomics[PrimitiveTypeID::f64][AtomicOpType::max] = "atomic_max_f64";
   TI_ASSERT(atomics.find(prim_type) != atomics.end());
   TI_ASSERT(atomics.at(prim_type).find(op) != atomics.at(prim_type).end());
-  return call(atomics.at(prim_type).at(op),
-                     llvm_val[stmt->dest], llvm_val[stmt->val]);
+  return call(atomics.at(prim_type).at(op), llvm_val[stmt->dest],
+              llvm_val[stmt->val]);
 }
 
 void TaskCodeGenLLVM::visit(AtomicOpStmt *stmt) {
@@ -1900,9 +1899,8 @@ void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
       (layout == ExternalArrayLayout::kAOS) ? num_array_args : 0;
 
   for (int i = 0; i < num_array_args; i++) {
-    auto raw_arg = call(
-        "RuntimeContext_get_extra_args",
-        get_context(), tlctx->get_constant(arg_id), tlctx->get_constant(i));
+    auto raw_arg = call("RuntimeContext_get_extra_args", get_context(),
+                        tlctx->get_constant(arg_id), tlctx->get_constant(i));
     sizes[i] = raw_arg;
   }
 
@@ -1973,9 +1971,8 @@ void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
 void TaskCodeGenLLVM::visit(ExternalTensorShapeAlongAxisStmt *stmt) {
   const auto arg_id = stmt->arg_id;
   const auto axis = stmt->axis;
-  llvm_val[stmt] = call(
-      "RuntimeContext_get_extra_args",
-      get_context(), tlctx->get_constant(arg_id), tlctx->get_constant(axis));
+  llvm_val[stmt] = call("RuntimeContext_get_extra_args", get_context(),
+                        tlctx->get_constant(arg_id), tlctx->get_constant(axis));
 }
 
 std::string TaskCodeGenLLVM::init_offloaded_task_function(OffloadedStmt *stmt,
@@ -2159,7 +2156,7 @@ void TaskCodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt,
     // cell within that block, and is the same for all the cells within that
     // block.
     call(refine, parent_coordinates, block_corner_coordinates,
-                         tlctx->get_constant(0));
+         tlctx->get_constant(0));
 
     if (stmt->tls_prologue) {
       stmt->tls_prologue->accept(this);
@@ -2223,11 +2220,11 @@ void TaskCodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt,
     auto new_coordinates = create_entry_block_alloca(physical_coordinate_ty);
 
     call(refine, parent_coordinates, new_coordinates,
-                         builder->CreateLoad(
+         builder->CreateLoad(
 #ifdef TI_LLVM_15
-                             loop_index_ty,
+             loop_index_ty,
 #endif
-                             loop_index));
+             loop_index));
 
     // For a bit-vectorized loop over a quant array, one more refine step is
     // needed to make final coordinates non-consecutive, since each thread will
@@ -2235,8 +2232,7 @@ void TaskCodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt,
     if (stmt->is_bit_vectorized) {
       refine = get_struct_function(stmt->snode->refine_coordinates_func_name(),
                                    stmt->snode->get_snode_tree_id());
-      call(refine,
-                  new_coordinates, new_coordinates, tlctx->get_constant(0));
+      call(refine, new_coordinates, new_coordinates, tlctx->get_constant(0));
     }
 
     current_coordinates = new_coordinates;
@@ -2331,9 +2327,7 @@ void TaskCodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt,
     struct_for_tls_sizes.insert(stmt->tls_size);
   }
   // Loop over nodes in the element list, in parallel
-  call(
-      struct_for_func,
-      get_context(), tlctx->get_constant(leaf_block->id),
+  call(struct_for_func, get_context(), tlctx->get_constant(leaf_block->id),
        tlctx->get_constant(list_element_size), tlctx->get_constant(num_splits),
        body, tlctx->get_constant(stmt->tls_size),
        tlctx->get_constant(stmt->num_cpu_threads));
@@ -2698,8 +2692,8 @@ llvm::Type *TaskCodeGenLLVM::get_mesh_xlogue_function_type() {
 }
 
 llvm::Value *TaskCodeGenLLVM::get_root(int snode_tree_id) {
-  return call("LLVMRuntime_get_roots",
-                     get_runtime(), tlctx->get_constant(snode_tree_id));
+  return call("LLVMRuntime_get_roots", get_runtime(),
+              tlctx->get_constant(snode_tree_id));
 }
 
 llvm::Value *TaskCodeGenLLVM::get_runtime() {

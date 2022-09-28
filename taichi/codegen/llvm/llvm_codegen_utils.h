@@ -112,22 +112,19 @@ class LLVMModuleBuilder {
     return builder->CreateCall(func_ty, func, std::move(args));
   }
 
-  llvm::Value *call(
-      llvm::Value *func,
-      llvm::FunctionType *func_ty,
-      std::vector<llvm::Value *> args) {
+  llvm::Value *call(llvm::Value *func,
+                    llvm::FunctionType *func_ty,
+                    std::vector<llvm::Value *> args) {
     return call(builder.get(), func, func_ty, std::move(args));
   }
 
   llvm::Value *call(llvm::IRBuilder<> *builder,
-      llvm::Function *func,
-      std::vector<llvm::Value *> args) {
+                    llvm::Function *func,
+                    std::vector<llvm::Value *> args) {
     return call(builder, func, func->getFunctionType(), std::move(args));
   }
 
-  llvm::Value *call(
-      llvm::Function *func,
-      std::vector<llvm::Value *> args) {
+  llvm::Value *call(llvm::Function *func, std::vector<llvm::Value *> args) {
     return call(builder.get(), func, std::move(args));
   }
 
@@ -143,16 +140,15 @@ class LLVMModuleBuilder {
     return call(builder.get(), func_name, std::move(args));
   }
 
-  template<typename... Args>
+  template <typename... Args>
   llvm::Value *call(llvm::IRBuilder<> *builder,
                     llvm::Function *func,
                     Args *...args) {
     return call(builder, func, {args...});
   }
 
-  template<typename... Args>
-  llvm::Value *call(llvm::Function *func,
-                    Args &&...args) {
+  template <typename... Args>
+  llvm::Value *call(llvm::Function *func, Args &&...args) {
     return call(builder.get(), func, std::forward<Args>(args)...);
   }
 

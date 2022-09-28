@@ -21,11 +21,10 @@ llvm::Value *TaskCodeGenLLVM::atomic_add_quant_int(llvm::Value *ptr,
                                                    llvm::Value *value,
                                                    bool value_is_signed) {
   auto [byte_ptr, bit_offset] = load_bit_ptr(ptr);
-  return call(
-      fmt::format("atomic_add_partial_bits_b{}",
-                  physical_type->getIntegerBitWidth()),
-      byte_ptr, bit_offset, tlctx->get_constant(qit->get_num_bits()),
-       builder->CreateIntCast(value, physical_type, value_is_signed));
+  return call(fmt::format("atomic_add_partial_bits_b{}",
+                          physical_type->getIntegerBitWidth()),
+              byte_ptr, bit_offset, tlctx->get_constant(qit->get_num_bits()),
+              builder->CreateIntCast(value, physical_type, value_is_signed));
 }
 
 llvm::Value *TaskCodeGenLLVM::atomic_add_quant_fixed(llvm::Value *ptr,
@@ -37,9 +36,9 @@ llvm::Value *TaskCodeGenLLVM::atomic_add_quant_fixed(llvm::Value *ptr,
   auto val_store = to_quant_fixed(value, qfxt);
   val_store = builder->CreateSExt(val_store, physical_type);
   return call(fmt::format("atomic_add_partial_bits_b{}",
-                                 physical_type->getIntegerBitWidth()),
-                     byte_ptr, bit_offset,
-                      tlctx->get_constant(qit->get_num_bits()), val_store);
+                          physical_type->getIntegerBitWidth()),
+              byte_ptr, bit_offset, tlctx->get_constant(qit->get_num_bits()),
+              val_store);
 }
 
 llvm::Value *TaskCodeGenLLVM::to_quant_fixed(llvm::Value *real,
@@ -53,9 +52,9 @@ llvm::Value *TaskCodeGenLLVM::to_quant_fixed(llvm::Value *real,
   auto scaled = builder->CreateFMul(input_real, s);
 
   // Add/minus the 0.5 offset for rounding
-  scaled = call(
-      fmt::format("rounding_prepare_f{}", data_type_bits(compute_type)),
-      scaled);
+  scaled =
+      call(fmt::format("rounding_prepare_f{}", data_type_bits(compute_type)),
+           scaled);
 
   auto qit = qfxt->get_digits_type()->as<QuantIntType>();
   if (qit->get_is_signed()) {
@@ -76,9 +75,9 @@ void TaskCodeGenLLVM::store_quant_int(llvm::Value *ptr,
   // TODO(type): CUDA only supports atomicCAS on 32- and 64-bit integers.
   // Try to support 8/16-bit physical types.
   call(fmt::format("{}set_partial_bits_b{}", atomic ? "atomic_" : "",
-                          physical_type->getIntegerBitWidth()),
-              byte_ptr, bit_offset, tlctx->get_constant(qit->get_num_bits()),
-               builder->CreateIntCast(value, physical_type, false));
+                   physical_type->getIntegerBitWidth()),
+       byte_ptr, bit_offset, tlctx->get_constant(qit->get_num_bits()),
+       builder->CreateIntCast(value, physical_type, false));
 }
 
 void TaskCodeGenLLVM::store_quant_fixed(llvm::Value *ptr,
@@ -107,9 +106,9 @@ void TaskCodeGenLLVM::store_masked(llvm::Value *ptr,
     return;
   }
   call(fmt::format("{}set_mask_b{}", atomic ? "atomic_" : "",
-                          ty->getIntegerBitWidth()),
-              ptr, tlctx->get_constant(mask),
-               builder->CreateIntCast(value, ty, false));
+                   ty->getIntegerBitWidth()),
+       ptr, tlctx->get_constant(mask),
+       builder->CreateIntCast(value, ty, false));
 }
 
 llvm::Value *TaskCodeGenLLVM::get_exponent_offset(llvm::Value *exponent,
@@ -220,8 +219,7 @@ void TaskCodeGenLLVM::visit(BitStructStoreStmt *stmt) {
 
       auto exponent_offset = get_exponent_offset(exponent_bits, qflt);
       exponent_bits = builder->CreateSub(exponent_bits, exponent_offset);
-      exponent_bits =
-          call("max_i32", exponent_bits, tlctx->get_constant(0));
+      exponent_bits = call("max_i32", exponent_bits, tlctx->get_constant(0));
 
       // Compute the bit pointer of the exponent bits.
       val = builder->CreateIntCast(exponent_bits, physical_type, false);
@@ -360,8 +358,7 @@ void TaskCodeGenLLVM::store_quant_floats_with_shared_exponents(
       digits = builder->CreateAdd(
           digits, tlctx->get_constant(1 << (right_shift_bits - 1)));
       // do not allow overflowing
-      digits =
-          call("min_u32", digits, tlctx->get_constant((1u << 24) - 1));
+      digits = call("min_u32", digits, tlctx->get_constant((1u << 24) - 1));
 
       // Compress f32 digits to qflt digits.
       // Note that we need to keep the leading 1 bit so 24 instead of 23 in the

@@ -156,11 +156,11 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
 #define UNARY_STD(x)                                                    \
   else if (op == UnaryOpType::x) {                                      \
     if (input_taichi_type->is_primitive(PrimitiveTypeID::f32)) {        \
-      llvm_val[stmt] = call("__nv_" #x "f", input);              \
+      llvm_val[stmt] = call("__nv_" #x "f", input);                     \
     } else if (input_taichi_type->is_primitive(PrimitiveTypeID::f64)) { \
-      llvm_val[stmt] = call("__nv_" #x, input);                  \
+      llvm_val[stmt] = call("__nv_" #x, input);                         \
     } else if (input_taichi_type->is_primitive(PrimitiveTypeID::i32)) { \
-      llvm_val[stmt] = call(#x, input);                          \
+      llvm_val[stmt] = call(#x, input);                                 \
     } else {                                                            \
       TI_NOT_IMPLEMENTED                                                \
     }                                                                   \
@@ -247,8 +247,8 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
     }
     TI_ASSERT(fast_reductions.at(prim_type).find(op) !=
               fast_reductions.at(prim_type).end());
-    return call(fast_reductions.at(prim_type).at(op),
-                       llvm_val[stmt->dest], llvm_val[stmt->val]);
+    return call(fast_reductions.at(prim_type).at(op), llvm_val[stmt->dest],
+                llvm_val[stmt->val]);
   }
 
   // LLVM15 already support f16 atomic in
@@ -425,9 +425,8 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
     auto epilogue = create_xlogue(stmt->tls_epilogue);
 
     auto [begin, end] = get_range_for_bounds(stmt);
-    call("gpu_parallel_range_for",
-                get_arg(0), begin, end, tls_prologue, body, epilogue,
-                 tlctx->get_constant(stmt->tls_size));
+    call("gpu_parallel_range_for", get_arg(0), begin, end, tls_prologue, body,
+         epilogue, tlctx->get_constant(stmt->tls_size));
   }
 
   void create_offload_mesh_for(OffloadedStmt *stmt) override {
@@ -506,10 +505,9 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
 
     auto tls_epilogue = create_mesh_xlogue(stmt->tls_epilogue);
 
-    call(
-        "gpu_parallel_mesh_for",
-        get_arg(0), tlctx->get_constant(stmt->mesh->num_patches), tls_prologue,
-         body, tls_epilogue, tlctx->get_constant(stmt->tls_size));
+    call("gpu_parallel_mesh_for", get_arg(0),
+         tlctx->get_constant(stmt->mesh->num_patches), tls_prologue, body,
+         tls_epilogue, tlctx->get_constant(stmt->tls_size));
   }
 
   void emit_cuda_gc(OffloadedStmt *stmt) {
@@ -648,9 +646,9 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
   void visit(ExternalTensorShapeAlongAxisStmt *stmt) override {
     const auto arg_id = stmt->arg_id;
     const auto axis = stmt->axis;
-    llvm_val[stmt] = call("RuntimeContext_get_extra_args",
-                                 get_context(), tlctx->get_constant(arg_id),
-                                  tlctx->get_constant(axis));
+    llvm_val[stmt] =
+        call("RuntimeContext_get_extra_args", get_context(),
+             tlctx->get_constant(arg_id), tlctx->get_constant(axis));
   }
 
   void visit(BinaryOpStmt *stmt) override {

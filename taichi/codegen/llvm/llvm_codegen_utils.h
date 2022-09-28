@@ -109,7 +109,7 @@ class LLVMModuleBuilder {
                     llvm::FunctionType *func_ty,
                     std::vector<llvm::Value *> args) {
     check_func_call_signature(func_ty, func->getName(), args, builder);
-    return builder->CreateCall(func_ty, func, args);
+    return builder->CreateCall(func_ty, func, std::move(args));
   }
 
   llvm::Value *call(

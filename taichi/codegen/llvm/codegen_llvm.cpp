@@ -1350,7 +1350,7 @@ void TaskCodeGenLLVM::visit(AssertStmt *stmt) {
 #endif
       arguments, {tlctx->get_constant(0), tlctx->get_constant(0)}));
 
-  llvm_val[stmt] = call("taichi_assert_format", args);
+  llvm_val[stmt] = call("taichi_assert_format", std::move(args));
 }
 
 void TaskCodeGenLLVM::visit(SNodeOpStmt *stmt) {
@@ -1667,7 +1667,7 @@ llvm::Value *TaskCodeGenLLVM::call(
   func_arguments.insert(func_arguments.end(), arguments.begin(),
                         arguments.end());
 
-  return call(prefix + "_" + method, func_arguments);
+  return call(prefix + "_" + method, std::move(func_arguments));
 }
 
 llvm::Function *TaskCodeGenLLVM::get_struct_function(const std::string &name,
@@ -2475,7 +2475,7 @@ void TaskCodeGenLLVM::visit(InternalFuncStmt *stmt) {
   for (auto s : stmt->args) {
     args.push_back(llvm_val[s]);
   }
-  llvm_val[stmt] = call(stmt->func_name, args);
+  llvm_val[stmt] = call(stmt->func_name, std::move(args));
 }
 
 void TaskCodeGenLLVM::visit(AdStackAllocaStmt *stmt) {

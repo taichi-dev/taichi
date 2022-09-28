@@ -37,7 +37,7 @@ The simplest way to declare a scalar field is to call `ti.field(dtype, shape)`, 
   ```
       ┌─────┐
       │     │
-      └─────┴
+      └─────┘
       └─────┘
    f_0d.shape=()
   ```
@@ -58,7 +58,18 @@ The simplest way to declare a scalar field is to call `ti.field(dtype, shape)`, 
           f_1d.shape = (9,)
   ```
 
-- To declare a 2D scalar field, set its two dimensions respectively, i.e., the numbers of rows and columns. For example, the following code snippet defines a 2D scalar field of shape (3, 6) (of 3 rows and 6 columns):
+    There is little difference between a 0D field and a 1D field of length 1 except for the indexing rules. You *must* use `None` as the index to access a 0D field and `0` as the index to access a 1D field of length 1:
+
+    ```python
+    # Basially f1 and f2 are interchangeable
+    f1 = ti.field(int, shape=())
+    f2 = ti.field(int, shape=1)
+
+    f1[None] = 1  # Use None to access a 0D field
+    f2[0] = 1  # Use 0 to access a 1D field of length 1
+    ```
+
+- When declaring a 2D scalar field, you need to set its two dimensions (numbers of rows and columns) respectively. For example, the following code snippet defines a 2D scalar field in the shape (3, 6) (three rows and six columns):
 
   ```python
   f_2d = ti.field(int, shape=(3, 6))  # 2D field

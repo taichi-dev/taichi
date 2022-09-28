@@ -112,7 +112,7 @@ TEST(LlvmAotTest, DX12Kernel) {
   aot_params.module_path = aot_mod_ss.str();
   // FIXME: add executor.
   aot_params.executor_ = nullptr;
-  auto mod = directx12::make_aot_module(aot_params);
+  auto mod = directx12::make_aot_module(aot_params, Arch::dx12);
   auto *k_run = mod->get_kernel("run");
   EXPECT_TRUE(k_run);
   // FIXME: launch the kernel and check result.

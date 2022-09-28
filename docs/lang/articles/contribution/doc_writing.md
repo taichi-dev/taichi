@@ -64,11 +64,10 @@ def paint(t: float):
 
 To link to another section within the same article, you would use `[Return to ## 1. Code blocks](#1-code-blocks)`: [Return to ## 1. Code blocks](#1-code-blocks).
 
-We follow the best practices suggested by [Docusaurus](https://docusaurus.io/docs/docs-markdown-features#referencing-other-documents) to cross-reference other documents, so to link to sections in other articles, please use the following relative-path based syntax, which
+We follow the best practices suggested by [Docusaurus](https://docusaurus.io/docs/markdown-features/links) to cross-reference other documents, so to link to sections in other articles, please use the following relative-path based syntax, which
 is docs-versioning and IDE/GitHub friendly:
 
 - `Return to [Contribution guidelines](./contributor_guide.md)`: Return to [Contribution guidelines](./contributor_guide.md)
-- `Return to [Getting Started](../get-started/index.md#fields)`: Return to [Getting Started](../get-started/index.md#fields)
 
 ## Centered text blocks
 

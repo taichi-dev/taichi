@@ -147,7 +147,7 @@ Below are some environment variables that you can set to customize your Taichi p
 
 ## Backends
 
-- To specify which architecture to use: `ti.init(arch=ti.cuda)`. See [here](https://docs.taichi-lang.org/docs/#supported-systems-and-backends) for all supported backends. This argument is equivalent to the environment variable `TI_ARCH`.
+- To specify which architecture to use: `ti.init(arch=ti.cuda)`. This argument is equivalent to the environment variable `TI_ARCH`.
 - To specify the pre-allocated memory size for CUDA: For example, `ti.init(device_memory_GB=0.5)` allocates 0.5 GB size of memory.
 - To specify which GPU to use for CUDA: `export CUDA_VISIBLE_DEVICES=[gpuid]`.
 - To specify which GPU to use for VULKAN: `export TI_VISIBLE_DEVICE=[gpuid]`.
@@ -163,7 +163,7 @@ If you want to use CUDA and Taichi's GGUI system at the same time on a machine w
 
 - To disable advanced optimization to save compile time and reduce possible errors: `ti.init(advanced_optimization=False)`.
 - To disable fast math to prevent possible undefined math behavior: `ti.init(fast_math=False)`.
-- To print intermediate IR generated: `ti.init(print_ir=True)`. Note that compiled kernels are [cached by default](https://docs.taichi-lang.org/docs/performance#offline-cache). To force compilation and IR emission, use `ti.init(print_ir=True, offline_cache=False)`.
+- To print intermediate IR generated: `ti.init(print_ir=True)`. Note that compiled kernels are [cached by default](../performance_tuning/performance.md#offline-cache). To force compilation and IR emission, use `ti.init(print_ir=True, offline_cache=False)`.
 
 
 ## Runtime
@@ -175,10 +175,10 @@ If you want to use CUDA and Taichi's GGUI system at the same time on a machine w
 - To set a custom seed for the random number generator used by `ti.random()`: `ti.init(random_seed=seed)`. `seed` should be an integer. An example: `ti.init(random_seed=int(time.time()))`.
 - To set the default precision of floating-point numbers of Taichi runtime to `ti.f64`: `ti.init(default_fp=ti.i64)`.
 - To set the default precision of floating-point numbers of Taichi runtime to `ti.i32`: `ti.init(default_ip=ti.i32)`.
-- To enable the packed mode for memory layout: `ti.init(packed=True)`. See the [document on data layout](https://docs.taichi-lang.org/docs/layout).
-- To disable the offline cache of compiled kernels: `ti.init(offline_cache=False)`. See details of the [offline cache](https://docs.taichi-lang.org/docs/performance#offline-cache).
+- To enable the packed mode for memory layout: `ti.init(packed=True)`. See the [Packed mode](../basic/layout.md#packed-mode) for more information.
+- To disable the offline cache of compiled kernels: `ti.init(offline_cache=False)`. See the [Offline cache](../performance_tuning/performance.md#offline-cache) for more information.
 - To enable the use of variables as indices to access vector/matrix elements in the Taichi scope: `ti.init(dynamic_index=True)`.
-- To turn on kernel profiling: `ti.init(kernel_profiler=True)`. Learn more about [Taichi's profiler](https://docs.taichi-lang.org/docs/profiler).
+- To turn on kernel profiling: `ti.init(kernel_profiler=True)`. See the [Profiler](../performance_tuning/profiler.md#kernelprofiler) for more information.
 
 
 ## Logging

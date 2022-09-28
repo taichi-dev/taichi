@@ -5,6 +5,7 @@
 #include "taichi/system/memory_pool.h"
 #include "taichi/runtime/cpu/aot_module_loader_impl.h"
 #include "taichi/runtime/cuda/aot_module_loader_impl.h"
+#include "taichi/runtime/dx12/aot_module_loader_impl.h"
 #include "taichi/rhi/cuda/cuda_driver.h"
 #include "taichi/platform/cuda/detect_cuda.h"
 
@@ -111,7 +112,7 @@ TEST(LlvmAotTest, DX12Kernel) {
   aot_params.module_path = aot_mod_ss.str();
   // FIXME: add executor.
   aot_params.executor_ = nullptr;
-  auto mod = cpu::make_aot_module(aot_params);
+  auto mod = directx12::make_aot_module(aot_params);
   auto *k_run = mod->get_kernel("run");
   EXPECT_TRUE(k_run);
   // FIXME: launch the kernel and check result.

@@ -147,12 +147,16 @@ llvm::Type *TaichiLLVMContext::get_data_type(DataType dt) {
   } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
     return llvm::Type::getHalfTy(*ctx);
   } else if (dt->is<TensorType>()) {
-    TI_ASSERT_INFO(config_->real_matrix || config_->dynamic_index,
-                   "Real matrix not enabled but got TensorType");
     auto tensor_type = dt->cast<TensorType>();
     auto element_type = get_data_type(tensor_type->get_element_type());
-    return llvm::VectorType::get(element_type, tensor_type->get_num_elements(),
-                                 /*scalable=*/false);
+    auto num_elements = tensor_type->get_num_elements();
+    // Return type is <element_type * num_elements> if real matrix is used,
+    // otherwise [element_type * num_elements].
+    if (config_->real_matrix) {
+      return llvm::VectorType::get(element_type, num_elements,
+                                   /*scalable=*/false);
+    }
+    return llvm::ArrayType::get(element_type, num_elements);
   } else {
     TI_INFO(data_type_name(dt));
     TI_NOT_IMPLEMENTED;

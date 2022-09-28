@@ -22,11 +22,18 @@ class LowerMatrixPtr : public BasicStmtVisitor {
         modifier.insert_before(stmt, std::move(lowered));
         modifier.erase(stmt);
       } else {
-        TI_ASSERT_INFO(origin->dynamic_indexable, "Element of the MatrixField is not dynamic indexable.\n{}", stmt->tb);
-        auto stride = std::make_unique<ConstStmt>(TypedConstant(origin->dynamic_index_stride));
-        auto offset = std::make_unique<BinaryOpStmt>(BinaryOpType::mul, stmt->offset, stride.get());
-        auto ptr_base = std::make_unique<GlobalPtrStmt>(origin->snodes[0], origin->indices);
-        auto lowered = std::make_unique<MatrixPtrStmt>(ptr_base.get(), offset.get());
+        TI_ASSERT_INFO(
+            origin->dynamic_indexable,
+            "Element of the MatrixField is not dynamic indexable.\n{}",
+            stmt->tb);
+        auto stride = std::make_unique<ConstStmt>(
+            TypedConstant(origin->dynamic_index_stride));
+        auto offset = std::make_unique<BinaryOpStmt>(
+            BinaryOpType::mul, stmt->offset, stride.get());
+        auto ptr_base =
+            std::make_unique<GlobalPtrStmt>(origin->snodes[0], origin->indices);
+        auto lowered =
+            std::make_unique<MatrixPtrStmt>(ptr_base.get(), offset.get());
         stmt->replace_usages_with(lowered.get());
         modifier.insert_before(stmt, std::move(stride));
         modifier.insert_before(stmt, std::move(offset));

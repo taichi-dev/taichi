@@ -11,7 +11,7 @@ class LowerMatrixPtr : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
   DelayedIRModifier modifier;
 
-  void visit(PtrOffsetStmt *stmt) override {
+  void visit(MatrixPtrStmt *stmt) override {
     if (stmt->origin->is<MatrixOfGlobalPtrStmt>()) {
       TI_ASSERT(stmt->offset->is<ConstStmt>());
       auto origin = stmt->origin->as<MatrixOfGlobalPtrStmt>();

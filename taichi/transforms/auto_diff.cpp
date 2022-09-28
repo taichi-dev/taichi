@@ -14,12 +14,12 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
 
   void visit(LocalLoadStmt *stmt) override {
-    TI_ASSERT(stmt->src->is<AllocaStmt>() || stmt->src->is<PtrOffsetStmt>());
+    TI_ASSERT(stmt->src->is<AllocaStmt>() || stmt->src->is<MatrixPtrStmt>());
     touched_allocas_.insert(stmt->src);
   }
 
   void visit(LocalStoreStmt *stmt) override {
-    TI_ASSERT(stmt->dest->is<AllocaStmt>() || stmt->dest->is<PtrOffsetStmt>());
+    TI_ASSERT(stmt->dest->is<AllocaStmt>() || stmt->dest->is<MatrixPtrStmt>());
     touched_allocas_.insert(stmt->dest);
   }
 
@@ -570,7 +570,7 @@ class ADTransform : public IRVisitor {
     // do nothing.
   }
 
-  void visit(PtrOffsetStmt *stmt) override {
+  void visit(MatrixPtrStmt *stmt) override {
     // do nothing.
   }
 
@@ -988,9 +988,9 @@ class MakeAdjoint : public ADTransform {
 
     GlobalPtrStmt *src = nullptr;
     bool is_ptr_offset = false;
-    if (stmt->src->is<PtrOffsetStmt>()) {
+    if (stmt->src->is<MatrixPtrStmt>()) {
       is_ptr_offset = true;
-      src = stmt->src->as<PtrOffsetStmt>()->origin->as<GlobalPtrStmt>();
+      src = stmt->src->as<MatrixPtrStmt>()->origin->as<GlobalPtrStmt>();
     } else {
       src = stmt->src->as<GlobalPtrStmt>();
     }
@@ -1008,8 +1008,8 @@ class MakeAdjoint : public ADTransform {
     snode = snode->get_adjoint();
     auto adj_ptr = insert<GlobalPtrStmt>(snode, src->indices);
     if (is_ptr_offset) {
-      adj_ptr = insert<PtrOffsetStmt>(adj_ptr,
-                                      stmt->src->as<PtrOffsetStmt>()->offset);
+      adj_ptr = insert<MatrixPtrStmt>(adj_ptr,
+                                      stmt->src->as<MatrixPtrStmt>()->offset);
     }
     insert<AtomicOpStmt>(AtomicOpType::add, adj_ptr, load(adjoint(stmt)));
   }
@@ -1024,9 +1024,9 @@ class MakeAdjoint : public ADTransform {
 
     GlobalPtrStmt *dest = nullptr;
     bool is_ptr_offset = false;
-    if (stmt->dest->is<PtrOffsetStmt>()) {
+    if (stmt->dest->is<MatrixPtrStmt>()) {
       is_ptr_offset = true;
-      dest = stmt->dest->as<PtrOffsetStmt>()->origin->as<GlobalPtrStmt>();
+      dest = stmt->dest->as<MatrixPtrStmt>()->origin->as<GlobalPtrStmt>();
     } else {
       dest = stmt->dest->as<GlobalPtrStmt>();
     }
@@ -1040,8 +1040,8 @@ class MakeAdjoint : public ADTransform {
     snode = snode->get_adjoint();
     auto adjoint_ptr = insert<GlobalPtrStmt>(snode, dest->indices);
     if (is_ptr_offset) {
-      adjoint_ptr = insert<PtrOffsetStmt>(
-          adjoint_ptr, stmt->dest->as<PtrOffsetStmt>()->offset);
+      adjoint_ptr = insert<MatrixPtrStmt>(
+          adjoint_ptr, stmt->dest->as<MatrixPtrStmt>()->offset);
     }
     accumulate(stmt->val, insert<GlobalLoadStmt>(adjoint_ptr));
     stmt->parent->erase(stmt);
@@ -1051,9 +1051,9 @@ class MakeAdjoint : public ADTransform {
     // erase and replace with global load adjoint
     GlobalPtrStmt *dest = nullptr;
     bool is_ptr_offset = false;
-    if (stmt->dest->is<PtrOffsetStmt>()) {
+    if (stmt->dest->is<MatrixPtrStmt>()) {
       is_ptr_offset = true;
-      dest = stmt->dest->as<PtrOffsetStmt>()->origin->as<GlobalPtrStmt>();
+      dest = stmt->dest->as<MatrixPtrStmt>()->origin->as<GlobalPtrStmt>();
     } else {
       dest = stmt->dest->as<GlobalPtrStmt>();
     }
@@ -1068,8 +1068,8 @@ class MakeAdjoint : public ADTransform {
     snode = snode->get_adjoint();
     auto adjoint_ptr = insert<GlobalPtrStmt>(snode, dest->indices);
     if (is_ptr_offset) {
-      adjoint_ptr = insert<PtrOffsetStmt>(
-          adjoint_ptr, stmt->dest->as<PtrOffsetStmt>()->offset);
+      adjoint_ptr = insert<MatrixPtrStmt>(
+          adjoint_ptr, stmt->dest->as<MatrixPtrStmt>()->offset);
     }
     accumulate(stmt->val, insert<GlobalLoadStmt>(adjoint_ptr));
     stmt->parent->erase(stmt);
@@ -1315,9 +1315,9 @@ class MakeDual : public ADTransform {
     // issue global store to dual
     GlobalPtrStmt *src = nullptr;
     bool is_ptr_offset = false;
-    if (stmt->src->is<PtrOffsetStmt>()) {
+    if (stmt->src->is<MatrixPtrStmt>()) {
       is_ptr_offset = true;
-      src = stmt->src->as<PtrOffsetStmt>()->origin->as<GlobalPtrStmt>();
+      src = stmt->src->as<MatrixPtrStmt>()->origin->as<GlobalPtrStmt>();
     } else {
       src = stmt->src->as<GlobalPtrStmt>();
     }
@@ -1334,8 +1334,8 @@ class MakeDual : public ADTransform {
     snode = snode->get_dual();
     auto dual_ptr = insert<GlobalPtrStmt>(snode, src->indices);
     if (is_ptr_offset) {
-      dual_ptr = insert<PtrOffsetStmt>(dual_ptr,
-                                       stmt->src->as<PtrOffsetStmt>()->offset);
+      dual_ptr = insert<MatrixPtrStmt>(dual_ptr,
+                                       stmt->src->as<MatrixPtrStmt>()->offset);
     }
     accumulate(stmt, insert<GlobalLoadStmt>(dual_ptr));
   }
@@ -1343,9 +1343,9 @@ class MakeDual : public ADTransform {
   void visit(GlobalStoreStmt *stmt) override {
     GlobalPtrStmt *dest = nullptr;
     bool is_ptr_offset = false;
-    if (stmt->dest->is<PtrOffsetStmt>()) {
+    if (stmt->dest->is<MatrixPtrStmt>()) {
       is_ptr_offset = true;
-      dest = stmt->dest->as<PtrOffsetStmt>()->origin->as<GlobalPtrStmt>();
+      dest = stmt->dest->as<MatrixPtrStmt>()->origin->as<GlobalPtrStmt>();
     } else {
       dest = stmt->dest->as<GlobalPtrStmt>();
     }
@@ -1358,8 +1358,8 @@ class MakeDual : public ADTransform {
     snode = snode->get_dual();
     auto dual_ptr = insert<GlobalPtrStmt>(snode, dest->indices);
     if (is_ptr_offset) {
-      dual_ptr = insert<PtrOffsetStmt>(dual_ptr,
-                                       stmt->dest->as<PtrOffsetStmt>()->offset);
+      dual_ptr = insert<MatrixPtrStmt>(dual_ptr,
+                                       stmt->dest->as<MatrixPtrStmt>()->offset);
     }
     insert<AtomicOpStmt>(AtomicOpType::add, dual_ptr, load(dual(stmt->val)));
   }
@@ -1367,9 +1367,9 @@ class MakeDual : public ADTransform {
   void visit(AtomicOpStmt *stmt) override {
     GlobalPtrStmt *dest = nullptr;
     bool is_ptr_offset = false;
-    if (stmt->dest->is<PtrOffsetStmt>()) {
+    if (stmt->dest->is<MatrixPtrStmt>()) {
       is_ptr_offset = true;
-      dest = stmt->dest->as<PtrOffsetStmt>()->origin->as<GlobalPtrStmt>();
+      dest = stmt->dest->as<MatrixPtrStmt>()->origin->as<GlobalPtrStmt>();
     } else {
       dest = stmt->dest->as<GlobalPtrStmt>();
     }
@@ -1382,8 +1382,8 @@ class MakeDual : public ADTransform {
     snode = snode->get_dual();
     auto dual_ptr = insert<GlobalPtrStmt>(snode, dest->indices);
     if (is_ptr_offset) {
-      dual_ptr = insert<PtrOffsetStmt>(dual_ptr,
-                                       stmt->dest->as<PtrOffsetStmt>()->offset);
+      dual_ptr = insert<MatrixPtrStmt>(dual_ptr,
+                                       stmt->dest->as<MatrixPtrStmt>()->offset);
     }
     insert<AtomicOpStmt>(AtomicOpType::add, dual_ptr, load(dual(stmt->val)));
   }

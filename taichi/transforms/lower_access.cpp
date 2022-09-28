@@ -129,7 +129,7 @@ class LowerAccess : public IRVisitor {
   }
 
   // TODO: this seems to be redundant
-  void visit(PtrOffsetStmt *stmt) override {
+  void visit(MatrixPtrStmt *stmt) override {
     if (!stmt->is_unlowered_global_ptr())
       return;
     auto ptr = stmt->origin->as<GlobalPtrStmt>();

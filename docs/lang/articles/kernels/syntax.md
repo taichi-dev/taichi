@@ -6,8 +6,8 @@ sidebar_position: 1
 
 Embedded in Python, Taichi resembles Python in language syntax. To differentiate Taichi code from native Python code, we use the two decorators `@ti.kernel` and `@ti.func`:
 
-+ Functions decorated with `@ti.kernel` are called Taichi kernels (or kernels for short). They serve as the entry points where Taichi begins to take over the tasks, and they *must* be called directly by Python code.
-+ Functions decorated with `@ti.func` are called Taichi functions. They serve as the building blocks of kernels and can *only* be called by kernels or other Taichi functions.
++ Functions decorated with `@ti.kernel` are called Taichi kernels (or kernels for short). They serve as the entry points where Taichi begins to take over the tasks, and they *must* be called directly by Python code. Usually the users prepare their work in native Python (for example, read data from the disk and preprocess them) and then call kernels to invoke Taichi to take over the actual computation-intensive job.
++ Functions decorated with `@ti.func` are called Taichi functions. They are the building blocks of kernels and can *only* be called by a kernels or another Taichi function. Just as you do with normal Python functions, you can split your tasks into multiple Taichi functions to make your code more readable and reuse them in different kernels.
 
 Let's see an example:
 
@@ -82,7 +82,7 @@ You can define multiple kernels in your program. They are mutually *independent*
 
 :::caution WARNING
 
-You must *not* call a kernel from inside another kernel or from inside a Taichi function. You can only call a kernel directly or from inside a native Python function. In other words, you can only call a kernel from inside the Python scope.
+You can only call a kernel directly or from inside a native Python function. You must *not* call a kernel from inside another kernel or from inside a Taichi function. To put it differently, you can only call a kernel from inside the Python scope.
 
 :::
 
@@ -92,7 +92,7 @@ You must *not* call a kernel from inside another kernel or from inside a Taichi 
 
 A kernel can take multiple arguments. However, you *cannot* pass any arbitrary Python object to a kernel because Python objects can be highly dynamic and may hold data unrecognized by Taichi's compiler.
 
-The argument types accepted by kernels are scalars, `ti.Matrix/ti.Vector` (In Taichi, vectors are essentially matrices), `ti.types.ndarray()` and `ti.template()`. You can easily pass data from the Python scope to the Taichi scope.
+The argument types accepted by kernels are scalars, `ti.Matrix/ti.Vector` (vectors are essentially matrices), `ti.types.ndarray()` and `ti.template()`. These types are defined in the `ti.types` module (see the [Type System](../type_system/type.md) for more information). You can easily pass data from the Python scope to the Taichi scope.
 
 It should be noted that scalars and `ti.Matrix` are passed by value, while `ti.types.ndarray()` and `ti.template()` are passed by reference. In the latter case, any modification to the arguments in the called function also affects the original values.
 

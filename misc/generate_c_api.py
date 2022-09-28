@@ -22,11 +22,11 @@ def get_field(x: Field):
     is_dyn_array = x.count and not isinstance(x.count, int)
 
     is_ptr = x.by_ref or x.by_mut or is_dyn_array
-    const_q = "const" if not x.by_mut else ""
+    const_q = "const " if not x.by_mut else ""
     type_name = get_type_name(x.type)
 
     if is_ptr:
-        return f"{const_q} {type_name}* {x.name}"
+        return f"{const_q}{type_name}* {x.name}"
     elif x.count:
         return f"{type_name} {x.name}[{x.count}]"
     else:
@@ -96,6 +96,27 @@ def get_declr(x: EntryBase):
 
     else:
         raise RuntimeError(f"'{x.id}' doesn't need declaration")
+
+
+def get_human_readable_name(x: EntryBase):
+    ty = type(x)
+    if ty is BuiltInType:
+        return ""
+
+    elif ty is Alias:
+        return f"{get_type_name(x)}"
+
+    elif ty is Definition:
+        return f"{x.name.screaming_snake_case}"
+
+    elif isinstance(x, (Handle, Enumeration, BitField, Structure, Union)):
+        return f"{get_type_name(x)}"
+
+    elif ty is Function:
+        return f"{x.name.snake_case}"
+
+    else:
+        raise RuntimeError(f"'{x.id}' doesn't have a human readable name")
 
 
 def print_module_header(module):

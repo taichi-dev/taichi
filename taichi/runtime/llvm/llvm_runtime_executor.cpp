@@ -180,6 +180,7 @@ void LlvmRuntimeExecutor::synchronize() {
     TI_ERROR("No CUDA support");
 #endif
   }
+  fflush(stdout);
 }
 
 uint64 LlvmRuntimeExecutor::fetch_result_uint64(int i, uint64 *result_buffer) {

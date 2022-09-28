@@ -4,11 +4,16 @@
 
 void run_snode();
 void autograd();
-void aot_save();
+void aot_save(taichi::Arch arch);
 
 int main() {
   run_snode();
   autograd();
-  aot_save();
+#ifdef TI_WITH_VULKAN
+  aot_save(taichi::Arch::vulkan);
+#endif
+#ifdef TI_WITH_DX12
+  aot_save(taichi::Arch::dx12);
+#endif
   return 0;
 }

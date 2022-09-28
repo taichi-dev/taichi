@@ -242,7 +242,7 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(GlobalPtrStmt *stmt) override;
 
-  void visit(PtrOffsetStmt *stmt) override;
+  void visit(MatrixPtrStmt *stmt) override;
 
   void store_quant_int(llvm::Value *ptr,
                        llvm::Type *physical_type,

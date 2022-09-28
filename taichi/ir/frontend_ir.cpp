@@ -558,7 +558,7 @@ Stmt *make_tensor_access(Expression::FlattenContext *ctx,
     offset_stmt = ctx->push_back<BinaryOpStmt>(BinaryOpType::mul, offset_stmt,
                                                stride_stmt);
   }
-  return ctx->push_back<PtrOffsetStmt>(var->stmt, offset_stmt);
+  return ctx->push_back<MatrixPtrStmt>(var->stmt, offset_stmt);
 }
 
 void MatrixExpression::type_check(CompileConfig *config) {

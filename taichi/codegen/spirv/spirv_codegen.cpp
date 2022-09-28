@@ -241,7 +241,7 @@ class TaskCodegen : public IRVisitor {
     }
   }
 
-  void visit(PtrOffsetStmt *stmt) override {
+  void visit(MatrixPtrStmt *stmt) override {
     spirv::SType data_type =
         ir_->get_primitive_type(stmt->element_type().ptr_removed());
     spirv::SType ptr_type =

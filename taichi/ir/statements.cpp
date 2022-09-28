@@ -76,7 +76,7 @@ MatrixOfGlobalPtrStmt::MatrixOfGlobalPtrStmt(const std::vector<SNode *> &snodes,
   TI_STMT_REG_FIELDS;
 }
 
-PtrOffsetStmt::PtrOffsetStmt(Stmt *origin_input, Stmt *offset_input) {
+MatrixPtrStmt::MatrixPtrStmt(Stmt *origin_input, Stmt *offset_input) {
   origin = origin_input;
   offset = offset_input;
   if (origin->is<AllocaStmt>() || origin->is<GlobalTemporaryStmt>() ||
@@ -89,7 +89,7 @@ PtrOffsetStmt::PtrOffsetStmt(Stmt *origin_input, Stmt *offset_input) {
     element_type() = origin->cast<GlobalPtrStmt>()->ret_type;
   } else {
     TI_ERROR(
-        "PtrOffsetStmt must be used for AllocaStmt / GlobalTemporaryStmt "
+        "MatrixPtrStmt must be used for AllocaStmt / GlobalTemporaryStmt "
         "(locally) or GlobalPtrStmt / MatrixOfGlobalPtrStmt / ExternalPtrStmt "
         "(globally).")
   }

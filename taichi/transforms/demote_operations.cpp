@@ -146,8 +146,8 @@ class DemoteOperations : public BasicStmtVisitor {
         modifier.insert_before(stmt, std::move(rhs_store));
         for (int i = 0; i < lhs_tensor_ty->get_num_elements(); i++) {
           auto idx = Stmt::make<ConstStmt>(TypedConstant(i));
-          auto lhs_i = Stmt::make<PtrOffsetStmt>(lhs_ptr, idx.get());
-          auto rhs_i = Stmt::make<PtrOffsetStmt>(rhs_ptr, idx.get());
+          auto lhs_i = Stmt::make<MatrixPtrStmt>(lhs_ptr, idx.get());
+          auto rhs_i = Stmt::make<MatrixPtrStmt>(rhs_ptr, idx.get());
           auto lhs_load = Stmt::make<LocalLoadStmt>(lhs_i.get());
           auto rhs_load = Stmt::make<LocalLoadStmt>(rhs_i.get());
           auto cur_lhs = lhs_load.get();

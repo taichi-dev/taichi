@@ -84,8 +84,8 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(LocalLoadStmt *stmt) override {
-    TI_ASSERT(stmt->src->is<AllocaStmt>() || stmt->src->is<PtrOffsetStmt>());
-    if (auto ptr_offset_stmt = stmt->src->cast<PtrOffsetStmt>()) {
+    TI_ASSERT(stmt->src->is<AllocaStmt>() || stmt->src->is<MatrixPtrStmt>());
+    if (auto ptr_offset_stmt = stmt->src->cast<MatrixPtrStmt>()) {
       TI_ASSERT(ptr_offset_stmt->origin->is<AllocaStmt>() ||
                 ptr_offset_stmt->origin->is<GlobalTemporaryStmt>());
       if (auto alloca_stmt = ptr_offset_stmt->origin->cast<AllocaStmt>()) {
@@ -163,7 +163,7 @@ class TypeCheck : public IRVisitor {
     }
   }
 
-  void visit(PtrOffsetStmt *stmt) override {
+  void visit(MatrixPtrStmt *stmt) override {
     TI_ASSERT(stmt->offset->ret_type->is_primitive(PrimitiveTypeID::i32));
     stmt->ret_type.set_is_pointer(true);
   }

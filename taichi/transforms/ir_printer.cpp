@@ -426,7 +426,7 @@ class IRPrinter : public IRVisitor {
     print_raw(s);
   }
 
-  void visit(PtrOffsetStmt *stmt) override {
+  void visit(MatrixPtrStmt *stmt) override {
     std::string s =
         fmt::format("{}{} = shift ptr [{} + {}]", stmt->type_hint(),
                     stmt->name(), stmt->origin->name(), stmt->offset->name());

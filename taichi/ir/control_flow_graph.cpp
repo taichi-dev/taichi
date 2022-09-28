@@ -599,12 +599,12 @@ void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access) {
   for (int i = 0; i < num_nodes; i++) {
     for (int j = nodes[i]->begin_location; j < nodes[i]->end_location; j++) {
       auto stmt = nodes[i]->block->statements[j].get();
-      if ((stmt->is<PtrOffsetStmt>() &&
-           stmt->as<PtrOffsetStmt>()->origin->is<AllocaStmt>()) ||
+      if ((stmt->is<MatrixPtrStmt>() &&
+           stmt->as<MatrixPtrStmt>()->origin->is<AllocaStmt>()) ||
           (!after_lower_access &&
            (stmt->is<GlobalPtrStmt>() || stmt->is<ExternalPtrStmt>() ||
             stmt->is<BlockLocalPtrStmt>() || stmt->is<ThreadLocalPtrStmt>() ||
-            stmt->is<GlobalTemporaryStmt>() || stmt->is<PtrOffsetStmt>()))) {
+            stmt->is<GlobalTemporaryStmt>() || stmt->is<MatrixPtrStmt>()))) {
         // TODO: unify them
         // A global pointer that may contain some data before this kernel.
         nodes[start_node]->reach_gen.insert(stmt);
@@ -679,8 +679,8 @@ void ControlFlowGraph::live_variable_analysis(
     if (stmt->is<AllocaStmt>() || stmt->is<AdStackAllocaStmt>()) {
       return false;
     }
-    if (stmt->is<PtrOffsetStmt>() &&
-        stmt->cast<PtrOffsetStmt>()->origin->is<AllocaStmt>()) {
+    if (stmt->is<MatrixPtrStmt>() &&
+        stmt->cast<MatrixPtrStmt>()->origin->is<AllocaStmt>()) {
       return false;
     }
     if (auto *gptr = stmt->cast<GlobalPtrStmt>();

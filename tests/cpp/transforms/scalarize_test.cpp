@@ -55,23 +55,23 @@ void test_store_scalarize() {
 
   EXPECT_EQ(block->size(), 2 /*const*/ + 1 /*argload*/ + 1 /*external_ptr*/ +
                                1 /*matrix_init*/ + 4 /*const*/ +
-                               4 /*ptroffset*/ + 4 /*store*/);
+                               4 /*matrix_ptr*/ + 4 /*store*/);
 
   // Check for scalarized statements
   EXPECT_EQ(block->statements[5]->is<ConstStmt>(), true);
-  EXPECT_EQ(block->statements[6]->is<PtrOffsetStmt>(), true);
+  EXPECT_EQ(block->statements[6]->is<MatrixPtrStmt>(), true);
   EXPECT_EQ(block->statements[7]->is<T>(), true);
 
   EXPECT_EQ(block->statements[8]->is<ConstStmt>(), true);
-  EXPECT_EQ(block->statements[9]->is<PtrOffsetStmt>(), true);
+  EXPECT_EQ(block->statements[9]->is<MatrixPtrStmt>(), true);
   EXPECT_EQ(block->statements[10]->is<T>(), true);
 
   EXPECT_EQ(block->statements[11]->is<ConstStmt>(), true);
-  EXPECT_EQ(block->statements[12]->is<PtrOffsetStmt>(), true);
+  EXPECT_EQ(block->statements[12]->is<MatrixPtrStmt>(), true);
   EXPECT_EQ(block->statements[13]->is<T>(), true);
 
   EXPECT_EQ(block->statements[14]->is<ConstStmt>(), true);
-  EXPECT_EQ(block->statements[15]->is<PtrOffsetStmt>(), true);
+  EXPECT_EQ(block->statements[15]->is<MatrixPtrStmt>(), true);
   EXPECT_EQ(block->statements[16]->is<T>(), true);
 }
 
@@ -107,24 +107,24 @@ void test_load_scalarize() {
   irpass::scalarize(block.get());
 
   EXPECT_EQ(block->size(), 1 /*argload*/ + 1 /*external_ptr*/ + 4 /*const*/ +
-                               4 /*ptroffset*/ + 4 /*load*/ +
+                               4 /*matrix_ptr*/ + 4 /*load*/ +
                                1 /*matrix_init*/);
 
   // Check for scalarized statements
   EXPECT_EQ(block->statements[2]->is<ConstStmt>(), true);
-  EXPECT_EQ(block->statements[3]->is<PtrOffsetStmt>(), true);
+  EXPECT_EQ(block->statements[3]->is<MatrixPtrStmt>(), true);
   EXPECT_EQ(block->statements[4]->is<T>(), true);
 
   EXPECT_EQ(block->statements[5]->is<ConstStmt>(), true);
-  EXPECT_EQ(block->statements[6]->is<PtrOffsetStmt>(), true);
+  EXPECT_EQ(block->statements[6]->is<MatrixPtrStmt>(), true);
   EXPECT_EQ(block->statements[7]->is<T>(), true);
 
   EXPECT_EQ(block->statements[8]->is<ConstStmt>(), true);
-  EXPECT_EQ(block->statements[9]->is<PtrOffsetStmt>(), true);
+  EXPECT_EQ(block->statements[9]->is<MatrixPtrStmt>(), true);
   EXPECT_EQ(block->statements[10]->is<T>(), true);
 
   EXPECT_EQ(block->statements[11]->is<ConstStmt>(), true);
-  EXPECT_EQ(block->statements[12]->is<PtrOffsetStmt>(), true);
+  EXPECT_EQ(block->statements[12]->is<MatrixPtrStmt>(), true);
   EXPECT_EQ(block->statements[13]->is<T>(), true);
 
   EXPECT_EQ(block->statements[14]->is<MatrixInitStmt>(), true);

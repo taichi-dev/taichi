@@ -1876,7 +1876,7 @@ void TaskCodeGenLLVM::visit(GetChStmt *stmt) {
   }
 }
 
-void TaskCodeGenLLVM::visit(PtrOffsetStmt *stmt) {
+void TaskCodeGenLLVM::visit(MatrixPtrStmt *stmt) {
   if (stmt->offset_used_as_index()) {
     auto type = tlctx->get_data_type(stmt->origin->ret_type.ptr_removed());
     llvm_val[stmt] =

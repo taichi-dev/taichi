@@ -58,9 +58,9 @@ class FlagAccess : public IRVisitor {
     if (stmt->dest->is<GlobalPtrStmt>()) {
       stmt->dest->as<GlobalPtrStmt>()->activate = true;
     }
-    if (stmt->dest->is<PtrOffsetStmt>()) {
-      if (stmt->dest->as<PtrOffsetStmt>()->is_unlowered_global_ptr()) {
-        stmt->dest->as<PtrOffsetStmt>()->origin->as<GlobalPtrStmt>()->activate =
+    if (stmt->dest->is<MatrixPtrStmt>()) {
+      if (stmt->dest->as<MatrixPtrStmt>()->is_unlowered_global_ptr()) {
+        stmt->dest->as<MatrixPtrStmt>()->origin->as<GlobalPtrStmt>()->activate =
             true;
       }
     }

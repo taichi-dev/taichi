@@ -26,10 +26,10 @@ class Scalarize : public IRVisitor {
       StoreStmt(TensorType<4 x i32>* dest, TensorType<4 x i32> val)
 
     After:
-      addr0 = PtrOffsetStmt(TensorType<4 x i32>* dest, 0)
-      addr1 = PtrOffsetStmt(TensorType<4 x i32>* dest, 1)
-      addr2 = PtrOffsetStmt(TensorType<4 x i32>* dest, 2)
-      addr2 = PtrOffsetStmt(TensorType<4 x i32>* dest, 3)
+      addr0 = MatrixPtrStmt(TensorType<4 x i32>* dest, 0)
+      addr1 = MatrixPtrStmt(TensorType<4 x i32>* dest, 1)
+      addr2 = MatrixPtrStmt(TensorType<4 x i32>* dest, 2)
+      addr2 = MatrixPtrStmt(TensorType<4 x i32>* dest, 3)
 
       StoreStmt(i32* addr0, i32 val->cast<MatrixInitStmt>()->val[0])
       StoreStmt(i32* addr1, i32 val->cast<MatrixInitStmt>()->val[1])
@@ -57,7 +57,7 @@ class Scalarize : public IRVisitor {
             TypedConstant(get_data_type<int32>(), i));
 
         auto ptr_offset_stmt =
-            std::make_unique<PtrOffsetStmt>(stmt->dest, const_stmt.get());
+            std::make_unique<MatrixPtrStmt>(stmt->dest, const_stmt.get());
         auto scalarized_stmt = std::make_unique<T>(ptr_offset_stmt.get(),
                                                    matrix_init_stmt->values[i]);
 
@@ -75,10 +75,10 @@ class Scalarize : public IRVisitor {
       TensorType<4 x i32> val = LoadStmt(TensorType<4 x i32>* src)
 
     After:
-      i32* addr0 = PtrOffsetStmt(TensorType<4 x i32>* src, 0)
-      i32* addr1 = PtrOffsetStmt(TensorType<4 x i32>* src, 1)
-      i32* addr2 = PtrOffsetStmt(TensorType<4 x i32>* src, 2)
-      i32* addr3 = PtrOffsetStmt(TensorType<4 x i32>* src, 3)
+      i32* addr0 = MatrixPtrStmt(TensorType<4 x i32>* src, 0)
+      i32* addr1 = MatrixPtrStmt(TensorType<4 x i32>* src, 1)
+      i32* addr2 = MatrixPtrStmt(TensorType<4 x i32>* src, 2)
+      i32* addr3 = MatrixPtrStmt(TensorType<4 x i32>* src, 3)
 
       i32 val0 = LoadStmt(addr0)
       i32 val1 = LoadStmt(addr1)
@@ -104,7 +104,7 @@ class Scalarize : public IRVisitor {
             TypedConstant(get_data_type<int32>(), i));
 
         auto ptr_offset_stmt =
-            std::make_unique<PtrOffsetStmt>(stmt->src, const_stmt.get());
+            std::make_unique<MatrixPtrStmt>(stmt->src, const_stmt.get());
         auto scalarized_stmt = std::make_unique<T>(ptr_offset_stmt.get());
 
         matrix_init_values.push_back(scalarized_stmt.get());

@@ -36,6 +36,7 @@ void test_load_scalarize() {
   block->push_back<T>(src_stmt);
 
   irpass::scalarize(block.get());
+  irpass::die(block.get());
 
   EXPECT_EQ(block->size(), 1 /*argload*/ + 1 /*external_ptr*/ + 4 /*const*/ +
                                4 /*matrix_ptr*/ + 4 /*load*/ +
@@ -101,6 +102,7 @@ TEST(Scalarize, ScalarizeGlobalStore) {
   block->push_back<GlobalStoreStmt>(dest_stmt, matrix_init_stmt);
 
   irpass::scalarize(block.get());
+  irpass::die(block.get());
 
   EXPECT_EQ(block->size(), 2 /*const*/ + 1 /*argload*/ + 1 /*external_ptr*/ +
                                1 /*matrix_init*/ + 4 /*const*/ +
@@ -159,6 +161,7 @@ TEST(Scalarize, ScalarizeLocalStore) {
   block->push_back<LocalStoreStmt>(dest_stmt, matrix_init_stmt);
 
   irpass::scalarize(block.get());
+  irpass::die(block.get());
 
   EXPECT_EQ(block->size(),
             2 /*const*/ + 1 /*matrix_init*/ + 4 /*alloca*/ + 4 /*store*/);
@@ -205,6 +208,7 @@ TEST(Scalarize, ScalarizeLoadAlloca) {
   block->push_back<LocalLoadStmt>(src_stmt);
 
   irpass::scalarize(block.get());
+  irpass::die(block.get());
 
   EXPECT_EQ(block->size(), 4 /*alloca*/ + 4 /*load*/ + 1 /*matrix_init*/);
 

@@ -66,11 +66,10 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
       stmt->block_dim = std::min(1024, std::max(512, items_per_thread));
     }
 
-    create_call(
-        "cpu_parallel_range_for",
-        {get_arg(0), tlctx->get_constant(stmt->num_cpu_threads), begin, end,
+    call("cpu_parallel_range_for", get_arg(0),
+         tlctx->get_constant(stmt->num_cpu_threads), begin, end,
          tlctx->get_constant(step), tlctx->get_constant(stmt->block_dim),
-         tls_prologue, body, epilogue, tlctx->get_constant(stmt->tls_size)});
+         tls_prologue, body, epilogue, tlctx->get_constant(stmt->tls_size));
   }
 
   void create_offload_mesh_for(OffloadedStmt *stmt) override {
@@ -147,11 +146,11 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
 
     llvm::Value *epilogue = create_mesh_xlogue(stmt->tls_epilogue);
 
-    create_call("cpu_parallel_mesh_for",
-                {get_arg(0), tlctx->get_constant(stmt->num_cpu_threads),
-                 tlctx->get_constant(stmt->mesh->num_patches),
-                 tlctx->get_constant(stmt->block_dim), tls_prologue, body,
-                 epilogue, tlctx->get_constant(stmt->tls_size)});
+    call("cpu_parallel_mesh_for", get_arg(0),
+         tlctx->get_constant(stmt->num_cpu_threads),
+         tlctx->get_constant(stmt->mesh->num_patches),
+         tlctx->get_constant(stmt->block_dim), tls_prologue, body, epilogue,
+         tlctx->get_constant(stmt->tls_size));
   }
 
   void create_bls_buffer(OffloadedStmt *stmt) {
@@ -179,9 +178,8 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
     auto offloaded_task_name = init_offloaded_task_function(stmt);
     if (prog->this_thread_config().kernel_profiler &&
         arch_is_cpu(prog->this_thread_config().arch)) {
-      call(
-          builder.get(), "LLVMRuntime_profiler_start",
-          {get_runtime(), builder->CreateGlobalStringPtr(offloaded_task_name)});
+      call("LLVMRuntime_profiler_start", get_runtime(),
+           builder->CreateGlobalStringPtr(offloaded_task_name));
     }
     if (stmt->task_type == Type::serial) {
       stmt->body->accept(this);
@@ -204,7 +202,7 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
         arch_is_cpu(prog->this_thread_config().arch)) {
       llvm::IRBuilderBase::InsertPointGuard guard(*builder);
       builder->SetInsertPoint(final_block);
-      call(builder.get(), "LLVMRuntime_profiler_stop", {get_runtime()});
+      call("LLVMRuntime_profiler_stop", get_runtime());
     }
     finalize_offloaded_task_function();
     offloaded_tasks.push_back(*current_task);

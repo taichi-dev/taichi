@@ -8,7 +8,7 @@ sidebar_position: 1
 Taichi provides a built-in `math` module that supports frequently used mathematical functions and utility functions, including:
 
 + Commonly-used mathematical functions that are analogous to those in Python's built-in `math` module.
-+ Small vector and matrix types that are analogous to those in the [OpenGL shading language](https://www.khronos.org/opengl/wiki/OpenGL_Shading_Language)(GLSL).
++ Small vector and matrix types that are analogous to those in the [OpenGL shading language](https://www.khronos.org/opengl/wiki/OpenGL_Shading_Language) (GLSL).
 + Some GLSL-standard functions.
 + Complex number operations of 2D vectors.
 
@@ -16,7 +16,9 @@ Taichi provides a built-in `math` module that supports frequently used mathemati
 
 ## Mathematical functions
 
-Taichi's `math` module has a large overlap with Python's built-in `math` module. You need to call the functions in the Taichi scope. For example:
+Taichi's `math` module has a large overlap with Python's built-in `math` module.
+
+You should call the functions supported by Taichi's `math` module from within the Taichi scope. For example:
 
 ```python
 import taichi as ti
@@ -33,7 +35,7 @@ def test():
     ...
 ```
 
-These functions also accept vectors and matrices as arguments, and they apply to them element-wise:
+These functions also accept vectors and matrices as arguments and conduct element-wise operations:
 
 ```python
 @ti.kernel
@@ -49,17 +51,17 @@ def test():
 
 :::note
 
-Difference between Taichi's math module and Python's built-in math module:
+Differences between Taichi's math module and Python's built-in math module:
 
-- Functions in Taichi's math module must be called from within the Taichi scope.
-- Functions in Taichi's math module also accept vectors/matrices as arguments.
-- The precision of a function in Taichi's math module depends on the value of `default_fp` and backend specified in the `ti.init()` method call.
++ Functions in Taichi's math module *must* be called from within the Taichi scope.
++ Functions in Taichi's math module also accept vectors and matrices as arguments.
++ The precision of a function in Taichi's math module depends on the value of `default_fp` and the backend specified in the `ti.init()` method call.
 
 :::
 
 ## Small vector and matrix types
 
-Taichi's math module supplies a few small vector and matrix types:
+Taichi's math module provides a few small vector and matrix types:
 
 
 + `vec2/vec3/vec4` for 2D/3D/4D floating-point vector types.
@@ -67,16 +69,15 @@ Taichi's math module supplies a few small vector and matrix types:
 + `uvec2/uvec3/uvec4` for 2D/3D/4D unsigned integer vector types.
 + `mat2/mat3/mat4` for 2D/3D/4D floating-point square matrix types.
 
-
-These vector/matrix types are created with the two template functions `ti.types.vector()` and `ti.types.matrix()`. For example, `vec2` is defined in the following way:
+To create one of the vector/matrix types above, use the template `ti.types.vector()` or `ti.types.matrix()`. For example, `vec2` is defined in the following way:
 
 ```python
 vec2 = ti.types.vector(2, float)
 ```
 
-The number of precision bits of such a type is determined by `default_fp` or `default_ip` in the `ti.init()` method call. For example, if `ti.init(default_fp=ti.f64)` is called, then `vec2/vec3/vec4` and `mat2/mat3/mat4` will all have 64-bit floating-point precision in the Taichi scope.
+The number of precision bits of such a type is determined by `default_fp` or `default_ip` in the `ti.init()` method call. For example, if `ti.init(default_fp=ti.f64)` is called, the vector/matrix types defined in the Taichi scope all have 64-bit floating-point precision.
 
-These types can be used to instantiate vectors and matrices or annotate the data types of function arguments and struct members. See [type system](../type_system/type.md) for more information. Here we emphasize that they have very flexible initialization routines:
+You can use these types to instantiate vectors/matrices or annotate the data types of function arguments and struct members. See the [Type System](../type_system/type.md) for more information. Note that flexible initialization rules apply:
 
 ```python
 mat2 = ti.math.mat2
@@ -93,7 +94,7 @@ u = vec4([1, 2], [3, 4])
 u = vec4(v, 4.0)
 ```
 
-Another important feature of vector types created by `ti.types.vector()` is that they support **vector swizzling** just as GLSL vectors do. This means you can use `xyzw`, `rgba`, `stpq` to access their elements with indices &le; four:
+Similar to GLSL vectors, the vector types created by `ti.types.vector()` also support **vector swizzling**. This means you can use `xyzw`, `rgba`, or `stpq` to access their elements with no more than four indices:
 
 
 ```python
@@ -104,17 +105,18 @@ u = v.wzyx  # vec4(4, 3, 2, 1)
 u = v.rraa  # vec4(1, 1, 2, 2)
 ```
 
-### Relationship between `ti.Vector`, `ti.types.vector` and `ti.math.vec3`
+### Differentiate `ti.Vector`, `ti.types.vector` and `ti.math.vec3`
 
 + `ti.Vector` is a function that accepts a 1D array and returns a matrix instance that has only one column. For example, `ti.Vector([1, 2, 3, 4, 5])`.
-+ `ti.types.vector` is a function that accepts an integer and a primitive type, and returns a vector type. For example: `vec5f = ti.types.vector(5, float)`. `vec5f` can then be used to instantiate 5D vectors or annotate data types in function arguments and struct members:
++ `ti.types.vector` is a function that accepts an integer and a primitive type and returns a vector type. For example: `vec5f = ti.types.vector(5, float)`. `vec5f` can then be used to instantiate 5D vectors or annotate data types of function arguments and struct members:
+
     ```python
     @ti.kernel
     def test(v: vec5f):
         print(v.xyz)
     ```
-    Unlike `ti.Vector`, whose input data must be a 1D array, vector types created by `ti.types.vector()` have more flexible ways to initialize, as explained above.
-+ `ti.math.vec3` is simply created by `vec3 = ti.types.vector(3, float)`.
+    Unlike `ti.Vector`, whose input data must be a 1D array, `ti.types.vector()` creates vector types that allow more flexible initiation rules, as explained above.
++ `ti.math.vec3` is created by `vec3 = ti.types.vector(3, float)`.
 
 
 ## GLSL-standard functions

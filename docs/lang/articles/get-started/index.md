@@ -89,7 +89,7 @@ This line calls `ti.init()` to customize your Taichi runtime depending on the ar
 
 The argument `arch` specifies the *backend* that executes the compiled code. A backend can be either `ti.cpu` or `ti.gpu`. When `ti.gpu` is designated, Taichi opts for `ti.cuda`, `ti.vulkan`, or `ti.opengl/ti.metal` in descending order of preference. If no GPU architecture is available, Taichi falls back to your CPU device.
 
-You can also directly specify which GPU backend to use. For example, set `arch=ti.cuda` to run your program on CUDA. Taichi raises an error if the target architecture is unavailable. See the [Global Settings] for more information on `ti.init()`.
+You can also directly specify which GPU backend to use. For example, set `arch=ti.cuda` to run your program on CUDA. Taichi raises an error if the target architecture is unavailable. See the [Global Settings](../reference/global_settings.md) for more information on `ti.init()`.
 
 ### Define a field
 

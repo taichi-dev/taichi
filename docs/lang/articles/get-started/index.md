@@ -207,7 +207,7 @@ The Julia fractal is one of the representative demos Taichi provides. Run the fo
 ti gallery
 ```
 
-This window pops up:
+This window appears:
 
 <center>
 

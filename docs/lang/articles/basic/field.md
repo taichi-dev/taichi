@@ -288,7 +288,7 @@ volumetric_field[i, j, k].x = 1  # Equivalent to volumetric_field[i, j, k][0] = 
 volumetric_field[i, j, k].y = 2  # Equivalent to volumetric_field[i, j, k][1] = 2
 volumetric_field[i, j, k].z = 3  # Equivalent to volumetric_field[i, j, k][2] = 3
 volumetric_field[i, j, k].w = 4  # Equivalent to volumetric_field[i, j, k][3] = 4
-volumetric_field[i, j, k].xyz = 1, 2, 3  # Assign 1, 2, 3 to the first three components
+volumetric_field[i, j, k].xyz = 1, 2, 3  # Assigns 1, 2, 3 to the first three components
 volumetric_field[i, j, k].rgb = 1, 2, 3  # Equivalent to the above
   ```
 
@@ -432,7 +432,7 @@ You can access a member of an element in a struct field in either of the followi
 + The index-first approach locates a certain element with its index before specifying the name of the target member:
 
 ```python
-# Sets the position component of the first particle in the field to [0.0, 0.0, 0.0]
+# Sets the position of the first particle in the field to [0.0, 0.0, 0.0]
 particle_field[0].pos = vec3(0) # particle_field is a 1D struct field, pos is a 3D vector
 ```
 

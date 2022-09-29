@@ -79,7 +79,7 @@ import taichi as ti
 import taichi.math as tm
 ```
 
-The first two lines import Taichi and its `math` module. The `math` module contains some frequently used math functions and built-in vectors and matrices of small dimensions, such as `vec2` for 2D real vectors and `mat3` for 3 x 3 real matrices. See the [Math Module](../math/math.md) for more information.
+The first two lines import Taichi and its `math` module. The `math` module contains some frequently used math functions and built-in vectors and matrices of small dimensions, such as `vec2` for 2D real vectors and `mat3` for 3 x 3 real matrices. See the [Math Module](../math/math_module.md) for more information.
 
 ```python
 ti.init(arch=ti.gpu)

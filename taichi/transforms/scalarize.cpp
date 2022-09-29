@@ -57,16 +57,16 @@ class Scalarize : public BasicStmtVisitor {
         auto const_stmt = std::make_unique<ConstStmt>(
             TypedConstant(get_data_type<int32>(), i));
 
-        auto ptr_offset_stmt =
+        auto matrix_ptr_stmt =
             std::make_unique<MatrixPtrStmt>(stmt->dest, const_stmt.get());
-        ptr_offset_stmt->ret_type = primitive_type;
-        ptr_offset_stmt->ret_type.set_is_pointer(true);
+        matrix_ptr_stmt->ret_type = primitive_type;
+        matrix_ptr_stmt->ret_type.set_is_pointer(true);
 
-        auto scalarized_stmt = std::make_unique<T>(ptr_offset_stmt.get(),
+        auto scalarized_stmt = std::make_unique<T>(matrix_ptr_stmt.get(),
                                                    matrix_init_stmt->values[i]);
 
         modifier_.insert_before(stmt, std::move(const_stmt));
-        modifier_.insert_before(stmt, std::move(ptr_offset_stmt));
+        modifier_.insert_before(stmt, std::move(matrix_ptr_stmt));
         modifier_.insert_before(stmt, std::move(scalarized_stmt));
       }
 
@@ -107,18 +107,18 @@ class Scalarize : public BasicStmtVisitor {
         auto const_stmt = std::make_unique<ConstStmt>(
             TypedConstant(get_data_type<int32>(), i));
 
-        auto ptr_offset_stmt =
+        auto matrix_ptr_stmt =
             std::make_unique<MatrixPtrStmt>(stmt->src, const_stmt.get());
-        ptr_offset_stmt->ret_type = primitive_type;
-        ptr_offset_stmt->ret_type.set_is_pointer(true);
+        matrix_ptr_stmt->ret_type = primitive_type;
+        matrix_ptr_stmt->ret_type.set_is_pointer(true);
 
-        auto scalarized_stmt = std::make_unique<T>(ptr_offset_stmt.get());
+        auto scalarized_stmt = std::make_unique<T>(matrix_ptr_stmt.get());
         scalarized_stmt->ret_type = primitive_type;
 
         matrix_init_values.push_back(scalarized_stmt.get());
 
         modifier_.insert_before(stmt, std::move(const_stmt));
-        modifier_.insert_before(stmt, std::move(ptr_offset_stmt));
+        modifier_.insert_before(stmt, std::move(matrix_ptr_stmt));
         modifier_.insert_before(stmt, std::move(scalarized_stmt));
       }
 

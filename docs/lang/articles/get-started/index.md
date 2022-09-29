@@ -220,7 +220,7 @@ To access the full list of Taichi examples, run `ti example` instead. Other usef
 - `ti example -p fractal`/`ti example -P fractal` prints the source code of the fractal example.
 - `ti example -s fractal` saves the example to your current work directory.
 
-You are now ready to move on and start writing your own Taichi programs. See the following documents for more information about how to use Taichi in some of its typical application scenarios:  
+You are now ready to move on and start writing your own Taichi programs. See the following documents for more information about how to use Taichi in some of its typical application scenarios:
 - [Accelerate Python with Taichi](./accelerate_python.md)
 - [Conduct Physical Simulation](./cloth_simulation.md)
 - [Accelerate PyTorch with Taichi](./accelerate_pytorch.md).

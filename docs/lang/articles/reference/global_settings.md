@@ -161,7 +161,7 @@ If you want to use CUDA and Taichi's GGUI system at the same time on a machine w
 ## Compilation
 
 - To disable advanced optimization: `ti.init(advanced_optimization=False)`, which helps save compile time and reduce possible errors.
-- To disable fast math: `ti.init(fast_math=False)`, which helps prevent possible undefined math behavior
+- To disable fast math: `ti.init(fast_math=False)`, which helps prevent possible undefined math behavior.
 - To print the intermediate IR generated: `ti.init(print_ir=True)`. Note that compiled kernels are [cached by default](../performance_tuning/performance.md#offline-cache). To force compilation and IR emission, use `ti.init(print_ir=True, offline_cache=False)`.
 
 
@@ -194,7 +194,7 @@ If you want to use CUDA and Taichi's GGUI system at the same time on a machine w
 
 :::note
 
-If `ti.init` is called twice, the configuration in the first call is discarded. for example:
+If `ti.init` is called twice, the configuration in the first call is discarded. For example:
 
 ```python {1,3}
 ti.init(debug=True)

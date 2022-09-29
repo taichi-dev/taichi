@@ -5,7 +5,7 @@ sidebar_position: 1
 
 # Hello, World!
 
-Taichi is a domain-specific language that is embedded in Python and designed for high-performance, parallel computing.
+Taichi is a domain-specific language embedded in Python and designed specifically for high-performance, parallel computing.
 
 When writing compute-intensive tasks in Python, you can take advantage of Taichi's high performance by obeying a few extra rules. Generally, Taichi provides two decorators `@ti.func` and `@ti.kernel`, which signal Taichi to take over the implementation of the tasks. Its just-in-time (JIT) compiler compiles the decorated functions to machine code, and all subsequent calls to the functions are executed on multi-CPU cores or GPUs. In a typical compute-intensive scenario, such as a numerical simulation, Taichi can accelerate performance by 50x~100x compared with native Python code.
 
@@ -14,7 +14,7 @@ Taichi also has a built-in ahead-of-time (AOT) system for exporting your code in
 ## Prerequisites
 
 - Python: 3.7/3.8/3.9/3.10 (64-bit)
-- OS: Windows, OS X, or Linux (64-bit)
+- OS: Windows, OS X, and Linux (64-bit)
 
 ## Installation
 
@@ -62,7 +62,7 @@ for i in range(1000000):
 
 Save the code above to your disk and run the program.
 
-You get the following animation:
+*You get the following animation:*
 
 <center>
 
@@ -102,9 +102,9 @@ pixels = ti.field(dtype=float, shape=(n * 2, n))
 
 The code snippet defines a field whose shape is (640, 320) and whose elements are floating-point data.
 
-`field` is the most important and frequently used data structure in Taichi. You can compare it to NumPy's `ndarray` or PyTorch's `tensor`. But Taichi's `field` is more versatile and flexible than the two counterparts. For example, a Taichi field can be [spatially sparse](../basic/sparse.md) and can easily [switch between different data layouts](../basic/layout.md).
+*field* is the most important and frequently used data structure in Taichi. You can compare it to NumPy's `ndarray` or PyTorch's `tensor`. But Taichi's field is more flexible than the two counterparts. For example, a Taichi field can be [spatially sparse](../basic/sparse.md) and can easily [switch between different data layouts](../basic/layout.md).
 
-You will come across the advanced features of `field` in other scenario-based tutorials. For now, it suffices for you to understand that the field `pixels` is a dense 2D array.
+We will introduce more advanced features of field in other scenario-based tutorials. For now, it suffices to know that the field `pixels` is a dense 2D array.
 
 ### Kernels and functions
 
@@ -114,7 +114,7 @@ The main differences between Taichi functions and kernels:
 
 - Kernels are the entry points where Taichi kicks in and takes over the task. A kernel can be called anywhere, anytime in your program, while a Taichi function can only be called from inside a kernel or from inside another Taichi function. In the example above, the Taichi function `complex_sqr` is called by the kernel `paint`.
 - A kernel *must* take type-hinted arguments and return type-hinted results. But Taichi functions do not require type hinting compulsorily. In the example above, the argument `t` in the kernel `paint` is type hinted, but the argument `z` in the Taichi function `complex_sqr` is not.
-- Taichi *supports* nested functions but *does not support* nested kernels. Calling Taichi functions recursively is *not supported for now*.
+- Taichi *supports* nested functions but *does not support* nested kernels. Calling Taichi functions recursively is *not supported*.
 
 :::tip
 ​
@@ -152,7 +152,7 @@ def fill():
         for k in range(5):  # Not parallelized: not at the outermost scope
 ```
 
-You can also serialize a parallel for loop at the outermost scope via `ti.loop_config(serialize=True)`. See the [Serialize a specified parallel for loop](../debug/debugging.md#serialize-a-specified-parallel-for-loop) for more information.
+You can also serialize a parallel for loop at the outermost scope via `ti.loop_config(serialize=True)`. See [Serialize a specified parallel for loop](../debug/debugging.md#serialize-a-specified-parallel-for-loop) for more information.
 
 :::caution WARNING
 
@@ -177,7 +177,7 @@ def foo():
 
 ### Display the result
 
-Lines 18~23 render the result on your screen using Taichi's built-in [GUI system](../visualization/gui_system.md):
+Lines 18~23 render the result on your screen using Taichi's built-in [GUI System](../visualization/gui_system.md):
 
 ```python
 gui = ti.GUI("Julia Set", res=(n * 2, n))
@@ -195,9 +195,9 @@ The program iterates over `pixels` 1,000,000 times, and the fractal pattern stor
 
 Congratulations! After walking through the short example above, you have learned the most significant features of Taichi:
 
-- Taichi compiles and runs Taichi functions and kernels on the designated backend.
-- The `for` loop at the outermost scope in a kernel is automatically parallelized.
-- Taichi provides a versatile and flexible data container `field`; you can use indices to loop over a `field`.
+- Taichi compiles and runs Taichi functions and kernels on the specified backend.
+- The for loop at the outermost scope in a kernel is automatically parallelized.
+- Taichi provides a flexible data container field, and you can use indices to loop over a field.
 
 ## Taichi examples
 
@@ -220,4 +220,7 @@ To access the full list of Taichi examples, run `ti example` instead. Other usef
 - `ti example -p fractal`/`ti example -P fractal` prints the source code of the fractal example.
 - `ti example -s fractal` saves the example to your current work directory.
 
-You are now well prepared to move on to the more advanced features of Taichi and start writing your own Taichi program. This section also includes three detailed tutorials for real-life scenarios where Taichi can play a role. See [Accelerate Python](../get-started/accelerate_python.md), [Conduct cloth simulation](../get-started/cloth_simulation.md), and [Accelerate PyTorch](../get-started/accelerate_pytorch.md) for more information.
+You are now ready to move on and start writing your own Taichi programs. See the following documents for more information about how to use Taichi in some of its typical application scenarios:  
+- [Accelerate Python with Taichi](./accelerate_python.md)
+- [Conduct Physical Simulation](./cloth_simulation.md)
+- [Accelerate PyTorch with Taichi](./accelerate_pytorch.md).

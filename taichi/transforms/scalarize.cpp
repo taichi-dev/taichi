@@ -382,11 +382,6 @@ void scalarize(IRNode *root) {
   TI_AUTO_PROF;
   Scalarize scalarize_pass(root);
   ScalarizePointers scalarize_pointers_pass(root);
-
-  /* TODO(zhanlue): Remove redundant MatrixInitStmt
-    Scalarize pass will generate temporary MatrixInitStmts, which are only used
-    as rvalues. Remove these MatrixInitStmts since it's no longer needed.
-  */
 }
 
 }  // namespace irpass

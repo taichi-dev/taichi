@@ -1814,6 +1814,10 @@ class MatrixInitStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
+  bool has_global_side_effect() const override {
+    return false;
+  }
+
   TI_STMT_DEF_FIELDS(ret_type, values);
   TI_DEFINE_ACCEPT_AND_CLONE
 };

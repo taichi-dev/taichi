@@ -179,7 +179,7 @@ def test() -> ti.i32:
 print(test())
 ```
 
-The code snippet above raises a `TaichiAssertionError`, because we are trying to access element of indices `[0, 73]` in the field `f`, while the second dimension of `f` is only 32. 
+The code snippet above raises a `TaichiAssertionError`, because we are trying to access element of indices `[0, 73]` in the field `f`, while the second dimension of `f` is only 32.
 
 :::note
 Automatic bound checks are supported on the CPU and CUDA beckends only.

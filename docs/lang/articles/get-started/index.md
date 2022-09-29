@@ -85,11 +85,11 @@ The first two lines import Taichi and its `math` module. The `math` module conta
 ti.init(arch=ti.gpu)
 ```
 
-This line calls `ti.init()` to initialize environment variables. This function accepts several arguments to allow you to customize your runtime program. For now, we only introduce the most important argument, namely, `arch`.
+This line calls `ti.init()` to customize your Taichi runtime depending on the arguments passed into it. For now, we only introduce the most important argument, namely, `arch`.
 
 The argument `arch` specifies the *backend* that executes the compiled code. A backend can be either `ti.cpu` or `ti.gpu`. When `ti.gpu` is designated, Taichi opts for `ti.cuda`, `ti.vulkan`, or `ti.opengl/ti.metal` in descending order of preference. If no GPU architecture is available, Taichi falls back to your CPU device.
 
-You can also directly specify which GPU backend to use. For example, set `arch=ti.cuda` to run your program on CUDA. Taichi raises an error if the target architecture is unavailable.
+You can also directly specify which GPU backend to use. For example, set `arch=ti.cuda` to run your program on CUDA. Taichi raises an error if the target architecture is unavailable. See the [Global Settings] for more information on `ti.init()`.
 
 ### Define a field
 

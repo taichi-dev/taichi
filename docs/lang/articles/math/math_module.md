@@ -12,13 +12,9 @@ Taichi provides a built-in `math` module that supports frequently used mathemati
 + Some GLSL-standard functions.
 + Complex number operations of 2D vectors.
 
-
-
 ## Mathematical functions
 
-Taichi's `math` module has a large overlap with Python's built-in `math` module.
-
-You should call the functions supported by Taichi's `math` module from within the Taichi scope. For example:
+You should call the mathematical functions supported by Taichi's `math` module from within the Taichi scope. For example:
 
 ```python
 import taichi as ti
@@ -51,7 +47,7 @@ def test():
 
 :::note
 
-Differences between Taichi's math module and Python's built-in math module:
+Taichi's math module has a large overlap with Python's built-in math module. But you should follow a few extra fules when using Taichi's math module:
 
 + Functions in Taichi's math module *must* be called from within the Taichi scope.
 + Functions in Taichi's math module also accept vectors and matrices as arguments.
@@ -75,7 +71,7 @@ To create one of the vector/matrix types above, use the template `ti.types.vecto
 vec2 = ti.types.vector(2, float)
 ```
 
-The number of precision bits of such a type is determined by `default_fp` or `default_ip` in the `ti.init()` method call. For example, if `ti.init(default_fp=ti.f64)` is called, the vector/matrix types defined in the Taichi scope all have 64-bit floating-point precision.
+The number of precision bits of such a type is determined by `default_fp` or `default_ip` in the `ti.init()` method call. For example, if `ti.init(default_fp=ti.f64)` is called, then `vec2/vec3/vec4` and `mat2/mat3/mat4` defined in the Taichi scope all have 64-bit floating-point precision.
 
 You can use these types to instantiate vectors/matrices or annotate the data types of function arguments and struct members. See the [Type System](../type_system/type.md) for more information. Note that flexible initialization rules apply:
 
@@ -122,7 +118,7 @@ u = v.rraa  # vec4(1, 1, 2, 2)
 ## GLSL-standard functions
 
 
-Taichi's math module also supports a few [GLSL standard functions](https://registry.khronos.org/OpenGL-Refpages/gl4/index.php). These functions follow the GLSL standard, except that they accept arbitrary vectors and matrices as arguments and operate on them element-wise. For example:
+Taichi's math module also supports a few [GLSL standard functions](https://registry.khronos.org/OpenGL-Refpages/gl4/index.php). These functions follow the GLSL standard, except that they accept arbitrary vectors and matrices as arguments and perform element-wise operations. For example:
 
 ```python
 import taichi as ti
@@ -145,9 +141,9 @@ Texture support in Taichi is implemented in the `ti.types.texture_types` module.
 
 ## Complex number operations
 
-Taichi's math module also supports basic complex arithmetic in the form of 2D vectors.
+Taichi's math module also supports basic complex number operations via 2D vectors.
 
-You can use a 2D vector of type `ti.math.vec2` to represent a complex number, the addtion/subtraction of complex numbers are just addtion/subtraction of 2D vectors, and multiplication and division can be performed by calling `ti.math.cmul` and `ti.math.cdiv`:
+You can use a 2D vector of type `ti.math.vec2` to represent a complex number. In this way, the addition and subtraction of complex numbers are equivalent to the addtion and subtraction of 2D vectors, and the multiplication and division of complex numbers can be performed by calling `ti.math.cmul` and `ti.math.cdiv`:
 
 ```python
 import taichi as ti
@@ -162,7 +158,7 @@ def test():
     w = tm.cdiv(x, y)  #  vec2(2, 0) = 2+0j
 ```
 
-You can also compute the power, logarithm and exponetial of a complex number:
+You can also compute the power, logarithm and exponential of a complex number:
 
 ```python
 

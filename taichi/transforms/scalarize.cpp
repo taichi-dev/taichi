@@ -288,8 +288,6 @@ class ScalarizePointers : public BasicStmtVisitor {
   std::unordered_map<Stmt *, std::vector<Stmt *>> scalarized_local_tensor_map_;
 
   ScalarizePointers(IRNode *node) {
-    allow_undefined_visitor = true;
-    invoke_default_visitor = false;
     node->accept(this);
 
     modifier_.modify_ir();

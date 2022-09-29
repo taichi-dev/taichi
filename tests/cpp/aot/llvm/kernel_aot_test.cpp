@@ -104,14 +104,13 @@ TEST(LlvmAotTest, CudaKernel) {
 
 #ifdef TI_WITH_DX12
 TEST(LlvmAotTest, DX12Kernel) {
-  cpu::AotModuleParams aot_params;
+  directx12::AotModuleParams aot_params;
   const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
 
   std::stringstream aot_mod_ss;
   aot_mod_ss << folder_dir;
   aot_params.module_path = aot_mod_ss.str();
   // FIXME: add executor.
-  aot_params.executor_ = nullptr;
   auto mod = directx12::make_aot_module(aot_params, Arch::dx12);
   auto *k_run = mod->get_kernel("run");
   EXPECT_TRUE(k_run);

@@ -100,6 +100,9 @@ def _test_cpp(test_keys=None):
         _run_cpp_test(cpp_test_filename, build_dir,
                       f"--gtest_filter={test_keys}")
 
+        _run_cpp_test(capi_test_filename, build_dir,
+                      f"--gtest_filter={test_keys}")
+
         return
 
     # Regular C++ tests

@@ -6,40 +6,7 @@
 
 namespace taichi::lang {
 
-class BasicVisitor : public IRVisitor {
- public:
-  void visit(Block *stmt_list) override {
-    for (auto &stmt : stmt_list->statements) {
-      stmt->accept(this);
-    }
-  }
-
-  void visit(IfStmt *if_stmt) override {
-    if (if_stmt->true_statements)
-      if_stmt->true_statements->accept(this);
-    if (if_stmt->false_statements) {
-      if_stmt->false_statements->accept(this);
-    }
-  }
-
-  void visit(WhileStmt *stmt) override {
-    stmt->body->accept(this);
-  }
-
-  void visit(RangeForStmt *for_stmt) override {
-    for_stmt->body->accept(this);
-  }
-
-  void visit(StructForStmt *for_stmt) override {
-    for_stmt->body->accept(this);
-  }
-
-  void visit(MeshForStmt *for_stmt) override {
-    for_stmt->body->accept(this);
-  }
-};
-
-class Scalarize : public BasicVisitor {
+class Scalarize : public BasicStmtVisitor {
  public:
   DelayedIRModifier modifier_;
 
@@ -85,13 +52,16 @@ class Scalarize : public BasicVisitor {
       auto matrix_init_stmt = stmt->val->template as<MatrixInitStmt>();
 
       int num_elements = val_tensor_type->get_num_elements();
-
+      auto primitive_type = dest_tensor_type->get_element_type();
       for (int i = 0; i < num_elements; i++) {
         auto const_stmt = std::make_unique<ConstStmt>(
             TypedConstant(get_data_type<int32>(), i));
 
         auto ptr_offset_stmt =
             std::make_unique<MatrixPtrStmt>(stmt->dest, const_stmt.get());
+        ptr_offset_stmt->ret_type = primitive_type;
+        ptr_offset_stmt->ret_type.set_is_pointer(true);
+
         auto scalarized_stmt = std::make_unique<T>(ptr_offset_stmt.get(),
                                                    matrix_init_stmt->values[i]);
 
@@ -132,13 +102,18 @@ class Scalarize : public BasicVisitor {
       std::vector<Stmt *> matrix_init_values;
       int num_elements = src_tensor_type->get_num_elements();
 
+      auto primitive_type = src_tensor_type->get_element_type();
       for (size_t i = 0; i < num_elements; i++) {
         auto const_stmt = std::make_unique<ConstStmt>(
             TypedConstant(get_data_type<int32>(), i));
 
         auto ptr_offset_stmt =
             std::make_unique<MatrixPtrStmt>(stmt->src, const_stmt.get());
+        ptr_offset_stmt->ret_type = primitive_type;
+        ptr_offset_stmt->ret_type.set_is_pointer(true);
+
         auto scalarized_stmt = std::make_unique<T>(ptr_offset_stmt.get());
+        scalarized_stmt->ret_type = primitive_type;
 
         matrix_init_values.push_back(scalarized_stmt.get());
 
@@ -263,11 +238,13 @@ class Scalarize : public BasicVisitor {
       TI_ASSERT(rhs_vals.size() == lhs_vals.size());
 
       size_t num_elements = lhs_vals.size();
+      auto primitive_type = stmt->ret_type.get_element_type();
       std::vector<Stmt *> matrix_init_values;
       for (size_t i = 0; i < num_elements; i++) {
         auto binary_stmt = std::make_unique<BinaryOpStmt>(
             stmt->op_type, lhs_vals[i], rhs_vals[i]);
         matrix_init_values.push_back(binary_stmt.get());
+        binary_stmt->ret_type = primitive_type;
 
         modifier_.insert_before(stmt, std::move(binary_stmt));
       }
@@ -300,10 +277,10 @@ class Scalarize : public BasicVisitor {
   }
 
  private:
-  using BasicVisitor::visit;
+  using BasicStmtVisitor::visit;
 };
 
-class ScalarizePointers : public BasicVisitor {
+class ScalarizePointers : public BasicStmtVisitor {
  public:
   DelayedIRModifier modifier_;
 
@@ -400,7 +377,7 @@ class ScalarizePointers : public BasicVisitor {
   }
 
  private:
-  using BasicVisitor::visit;
+  using BasicStmtVisitor::visit;
 };
 
 namespace irpass {

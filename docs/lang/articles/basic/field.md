@@ -1,15 +1,16 @@
 ---
 sidebar_position: 1
+
 ---
 
 # Fields
 
 The term _field_ is borrowed from mathematics and physics. If you already know [scalar field](https://en.wikipedia.org/wiki/Scalar_field) (for example heat field), or vector field (for example [gravitational field](https://en.wikipedia.org/wiki/Gravitational_field)), then it is easy for you to understand fields in Taichi.
 
-Fields in Taichi are the _global_ data containers that can be accessed from both the Python scope and the Taichi scope. Just like an ndarray in NumPy or a tensor in PyTorch, a field in Taichi is defined as a multi-dimensional array of elements, and elements in a field can be a scalar, a vector, a matrix, or a struct.
+Fields in Taichi are the _global_ data containers, which can be accessed from both the Python scope and the Taichi scope. Just like an ndarray in NumPy or a tensor in PyTorch, a field in Taichi is defined as a multi-dimensional array of elements, and elements in a field can be a scalar, a vector, a matrix, or a struct.
 
 :::note
-A 0D (zero-dimensional) field contains *only* one element.
+A 0D (zero-dimensional) field contains *only one* element.
 :::
 
 ## Scalar fields
@@ -23,12 +24,12 @@ Scalar fields refer to the fields that store scalars and are the most basic fiel
 
 ### Declaration
 
-The simplest way to declare a scalar field is to call `ti.field(dtype, shape)`, where `dtype` is a primitive data type as explained in [type system](../type_system/type.md) and `shape` is a tuple of integers.
+The simplest way to declare a scalar field is to call `ti.field(dtype, shape)`, where `dtype` is a primitive data type as explained in the [Type System](../type_system/type.md) and `shape` is a tuple of integers.
 
-- To declare a 0D scalar field, set its shape to the empty tuple `()`:
+- When declaring a 0D scalar field, you need to set its shape to the empty tuple `()`:
 
   ```python
-  # Declare a 0D scalar field whose data type is f32
+  # Declares a 0D scalar field whose data type is f32
   f_0d = ti.field(ti.f32, shape=())  # 0D field
   ```
 
@@ -42,10 +43,10 @@ The simplest way to declare a scalar field is to call `ti.field(dtype, shape)`, 
    f_0d.shape=()
   ```
 
-- To declare a 1D scalar field of length `n`, set its shape to `n` or `(n,)`:
+- When declaring a 1D scalar field of length `n`, set its shape to `n` or `(n,)`:
 
   ```python
-  f_1d = ti.field(ti.i32, shape=9)  # 1D field
+  f_1d = ti.field(ti.i32, shape=9)  # A 1D field of length 9
   ```
 
   An illustration of `f_1d`:
@@ -58,13 +59,13 @@ The simplest way to declare a scalar field is to call `ti.field(dtype, shape)`, 
           f_1d.shape = (9,)
   ```
 
-    There is little difference between a 0D field and a 1D field of length 1 except for the indexing rules. You *must* use `None` as the index to access a 0D field and `0` as the index to access a 1D field of length 1:
+  There is little difference between a 0D field and a 1D field of length 1 except for their indexing rules. You *must* use `None` as the index to access a 0D field and `0` as the index to access a 1D field of length 1:
 
     ```python
-    # Basially f1 and f2 are interchangeable
+    # f1 and f2 are basically interchangeable
     f1 = ti.field(int, shape=())
     f2 = ti.field(int, shape=1)
-
+  
     f1[None] = 1  # Use None to access a 0D field
     f2[0] = 1  # Use 0 to access a 1D field of length 1
     ```
@@ -72,16 +73,16 @@ The simplest way to declare a scalar field is to call `ti.field(dtype, shape)`, 
 - When declaring a 2D scalar field, you need to set its two dimensions (numbers of rows and columns) respectively. For example, the following code snippet defines a 2D scalar field in the shape (3, 6) (three rows and six columns):
 
   ```python
-  f_2d = ti.field(int, shape=(3, 6))  # 2D field
+  f_2d = ti.field(int, shape=(3, 6))  # A 2D field in the shape (3, 6)
   ```
 
-  An illustration of `f_2d` is shown below:
+  An illustration of `f_2d`:
 
   ```
                          f_2d.shape[1]
                              (=6)
                    ┌───────────────────────┐
-
+  
                 ┌  ┌───┬───┬───┬───┬───┬───┐  ┐
                 │  │   │   │   │   │   │   │  │
                 │  ├───┼───┼───┼───┼───┼───┤  │
@@ -93,7 +94,7 @@ The simplest way to declare a scalar field is to call `ti.field(dtype, shape)`, 
 
 Scalar fields of higher dimensions can be similarily defined.
 
-:::caution WARNING
+:::caution WARNING 
 
 Taichi only supports fields of dimensions &le; 8.
 
@@ -116,7 +117,7 @@ When accessing a 0D field `x`, use `x[None] = 0`, *not* `x = 0`.
   f_0d[None] = 10.0
   ```
 
-  The layout of `f_0d` is like:
+  The layout of `f_0d`:
 
   ```
       ┌──────┐
@@ -133,7 +134,7 @@ When accessing a 0D field `x`, use `x[None] = 0`, *not* `x = 0`.
       f_1d[i] = i
   ```
 
-  The layout of `f_1d` is like:
+  The layout of `f_1d`:
 
   ```
   ┌───┬───┬───┬───┬───┬───┬───┬───┬───┐
@@ -151,7 +152,7 @@ When accessing a 0D field `x`, use `x[None] = 0`, *not* `x = 0`.
       f_2d[i, j] = i
   ```
 
-  The layout of `f_2d` is like:
+  The layout of `f_2d`:
 
   ```
   ┌───┬───┬───┬───┬───┬───┐
@@ -172,18 +173,18 @@ import taichi as ti
 ti.init(arch=ti.cpu)
 
 width, height = 640,480
-# Create a 640x480 scalar field, each of its elements representing a pixel value (f32)
+# Creates a 640x480 scalar field, each of its elements representing a pixel value (f32)
 gray_scale_image = ti.field(dtype=ti.f32, shape=(width, height))
 
 @ti.kernel
 def fill_image():
-  	# Fill the image with random gray
+  	# Fills the image with random gray
     for i,j in gray_scale_image:
         gray_scale_image[i,j] = ti.random()
 
 fill_image()
-# Create a GUI of same size as the gray-scale image
-gui = ti.GUI('gray-scale image with random values', (width, height))
+# Creates a GUI of the size of the gray-scale image
+gui = ti.GUI('gray-scale image of random values', (width, height))
 while gui.running:
     gui.set_image(gray_scale_image)
     gui.show()
@@ -191,18 +192,17 @@ while gui.running:
 
 :::caution WARNING
 
-Taichi does not support slicing on a Taichi field. Neither of the following usage is correct:
+Taichi fields do not support slicing. Neither of the following usage is correct:
 
 ```python
-for x in f_2d[0]:  # Error! You tried to access its first row，but it's not supported
-    ...
+for x in f_2d[0]:  # Error! You tried to access its first row，but it is not supported
 ```
 
 ```python
-f_2d[0][3:] = [4, 5, 6]  # Error! You tried to access a slice of the first row, but it's not supported
+f_2d[0][3:] = [4, 5, 6]  # Error! You tried to access a slice of the first row, but it is not supported
 ```
 
-*Either way, an error message 'Slicing is not supported on ti.field' occurs.*
+*Either way, the system throws an error message 'Slicing is not supported on ti.field'.*
 :::
 
 
@@ -212,11 +212,11 @@ To set all elements in a scalar field to a given value, call `field.fill()`:
 
 ```python
 x = ti.field(int, shape=(5, 5))
-x.fill(1)  # Set all elements in x to 1
+x.fill(1)  # Sets all elements in x to 1
 
 @ti.kernel
 def test():
-    x.fill(-1)  # Set all elements in x to -1
+    x.fill(-1)  # Sets all elements in x to -1
 ```
 
 ### Metadata
@@ -234,16 +234,16 @@ As the name suggests, vector fields are the fields whose elements are vectors. W
 
 ### Declaration
 
-Declaring a vector field where each element is an `N`-dimensional vector is similar to the way you declare a scalar field, except that you need to call the function `ti.Vector.field` instead of `ti.field` and specify `N` as the first positional argument.
+Declaring a vector field where each element is an `N`-dimensional vector is similar to declaring a scalar field, except that you need to call `ti.Vector.field` instead of `ti.field` and specify `N` as the first positional argument.
 
 For example, the following code snippet declares a 2D field of 2D vectors:
 
 ```python
-# Declare a 3x3 vector field comprising 2D vectors
+# Declares a 3x3 vector field comprising 2D vectors
 f = ti.Vector.field(n=2, dtype=float, shape=(3, 3))
 ```
 
-The layout of `f` is like:
+The layout of `f`:
 
 ```
                      f.shape[1]
@@ -263,7 +263,7 @@ The following code snippet declares a `300x300x300` vector field `volumetric_fie
 
 ```python
 box_size = (300, 300, 300)  # A 300x300x300 grid in a 3D space
-# Declare a 300x300x300 vector field, whose vector dimension is n=3
+# Declares a 300x300x300 vector field, whose vector dimension is n=3
 volumetric_field = ti.Vector.field(n=3, dtype=ti.f32, shape=box_size)
 ```
 
@@ -279,17 +279,20 @@ Accessing a vector field is similar to accessing a multi-dimensional array: You 
 
   `volumetric_field[i, j, k][l]`
 
-- Alternatively, you can use swizzling with the indices `xyzw` or `rgba` to access the components of a vector, provided that the dimension of the vector is no more than four:
+:::note
+
+Alternatively, you can use swizzling with the indices `xyzw` or `rgba` to access the components of a vector, provided that the dimension of the vector is no more than four:
 
   ```python
-  volumetric_field[i, j, k].x = 1  # equivalent to volumetric_field[i, j, k][0] = 1
-  volumetric_field[i, j, k].y = 2  # equivalent to volumetric_field[i, j, k][1] = 2
-  volumetric_field[i, j, k].z = 3  # equivalent to volumetric_field[i, j, k][2] = 3
-  volumetric_field[i, j, k].w = 4  # equivalent to volumetric_field[i, j, k][3] = 4
-  volumetric_field[i, j, k].xyz = 1, 2, 3  # assign 1, 2, 3 to the first three components
-  volumetric_field[i, j, k].rgb = 1, 2, 3  # equivalent to the above
+volumetric_field[i, j, k].x = 1  # Equivalent to volumetric_field[i, j, k][0] = 1
+volumetric_field[i, j, k].y = 2  # Equivalent to volumetric_field[i, j, k][1] = 2
+volumetric_field[i, j, k].z = 3  # Equivalent to volumetric_field[i, j, k][2] = 3
+volumetric_field[i, j, k].w = 4  # Equivalent to volumetric_field[i, j, k][3] = 4
+volumetric_field[i, j, k].xyz = 1, 2, 3  # Assign 1, 2, 3 to the first three components
+volumetric_field[i, j, k].rgb = 1, 2, 3  # Equivalent to the above
   ```
 
+:::
 
 The following code snippet generates and prints a random vector field:
 
@@ -324,24 +327,23 @@ As the name suggests, matrix fields are the fields whose elements are matrices. 
 The following code snippet declares a tensor field:
 
 ```python
-# Declare a 300x400x500 matrix field, each of its elements being a 3x2 matrix
+# Declares a 300x400x500 matrix field, each of its elements being a 3x2 matrix
 tensor_field = ti.Matrix.field(n=3, m=2, dtype=ti.f32, shape=(300, 400, 500))
 ```
 
 ### Access elements in a matrix field
 
-Accessing a matrix field is similar to accessing a vector field: You use an index operator `[]` for field indexing and a second `[]` for matrix indexing.
+Accessing a matrix field is similar to accessing a vector field: You use an index operator `[]` for field indexing and a second index operator `[]` for matrix indexing.
 
-- To retrieve the `i, j` element of the matrix field `tensor_field`:
+- To access the `i, j` element of the matrix field `tensor_field`:
 
   `mat = tensor_field[i, j]`
 
-- To retrieve the member on the first row and second column of the element `mat`:
+- To access the member on the first row and second column of the element `mat`:
 
   `mat[0, 1]` or `tensor_field[i, j][0, 1]`
 
 :::note
-
 To access the 0D matrix field `x = ti.Matrix.field(n=3, m=4, dtype=ti.f32, shape=())`:
 
 `x[None][p, q]` (0 &le; p < n, 0 &le; q < m)
@@ -349,7 +351,7 @@ To access the 0D matrix field `x = ti.Matrix.field(n=3, m=4, dtype=ti.f32, shape
 
 ### Considerations: Matrix size
 
-Matrix operations are unrolled during compile time. Take a look at the following example:
+Matrix operations are unrolled at compile time. Take a look at the following example:
 
 ```python
 import taichi as ti
@@ -361,7 +363,7 @@ def test():
     for i in ti.grouped(a):
         # a[i] is a 2x3 matrix
         a[i] = [[1, 1, 1], [1, 1, 1]]
-        # The assignment is unrolled to the following during compile time:
+        # The assignment is unrolled to the following at compile time:
         # a[i][0, 0] = 1
         # a[i][0, 1] = 1
         # a[i][0, 2] = 1
@@ -398,10 +400,10 @@ Struct fields are fields that store user-defined structs. Members of a struct el
 The following code snippet declares a 1D field of particle information (position, velocity, acceleration, and mass) using `ti.Struct.field()`. Note that:
 
 - Member variables `pos`, `vel`, `acc`, and `mass` are provided in the dictionary format.
-- [Compound types](../type_system/type.md#compound-types), such as `ti.types.vector`, `ti.types.matrix`, and `ti.types.struct`, can be used to declare vectors, matrices, or structs as struct members.
+- You can use [compound types](../type_system/type.md#compound-types), such as `ti.types.vector`, `ti.types.matrix`, and `ti.types.struct`, to declare vectors, matrices, or structs as struct members.
 
 ```python
-# Declare a 1D struct field using the ti.Struct.field() method
+# Declares a 1D struct field using the ti.Struct.field() method
 particle_field = ti.Struct.field({
     "pos": ti.math.vec3,
     "vel": ti.math.vec3,
@@ -415,11 +417,11 @@ Besides *directly* using `ti.Struct.field()`, you can first declare a compound t
 ```python
 # vec3 is a built-in vector type suppied in the `taichi.math` module
 vec3 = ti.math.vec3
-# Declare a struct composed of three vectors and one floating-point number
+# Declares a struct comprising three vectors and one floating-point number
 particle = ti.types.struct(
   pos=vec3, vel=vec3, acc=vec3, mass=float,
 )
-# Declare a 1D field of the struct particle using field()
+# Declares a 1D field of the struct particle by calling field()
 particle_field = particle.field(shape=(n,))
 ```
 
@@ -430,18 +432,18 @@ You can access a member of an element in a struct field in either of the followi
 + The index-first approach locates a certain element with its index before specifying the name of the target member:
 
 ```python
-# Set the position of the first particle in the field to origin [0.0, 0.0, 0.0]
-particle_field[0].pos = vec3(0) # pos is a 3D vector
+# Sets the position component of the first particle in the field to [0.0, 0.0, 0.0]
+particle_field[0].pos = vec3(0) # particle_field is a 1D struct field, pos is a 3D vector
 ```
 
-The name-first approach, in contrast, first creates the sub-field that gathers all the `mass` members in the struct field and then uses the index to access a specific one:
+- The name-first approach first creates a sub-field, which gathers all the `mass` members in the struct field, and then uses the index operator `[]` to access a specific member:
 
 ```python
-particle_field.mass[0] = 1.0  # Set the mass of the first particle in the field to 1.0
+particle_field.mass[0] = 1.0  # Sets the mass of the first particle in the field to 1.0
 ```
 
 Considering that `paticle_field.mass` is a field consisting of all the `mass` members of the structs in `paticle_field`, you can also call `fill()` to set the members to a specific value all at once:
 
 ```python
-particle_field.mass.fill(1.0)  # Set all mass of the particles in the struct field to 1.0
+particle_field.mass.fill(1.0)  # Sets all mass of the particles in the struct field to 1.0
 ```

@@ -30,7 +30,8 @@ def _test_op(dt, taichi_op, np_op):
             assert abs(np_op(float(f(i))) -
                        val[i]) < 1e-6 if ti.lang.impl.current_cfg(
                        ).arch != ti.opengl and ti.lang.impl.current_cfg(
-                       ).arch != ti.vulkan else 1e-5
+                       ).arch != ti.vulkan and ti.lang.impl.current_cfg(
+                       ).arch != ti.gles else 1e-5
 
 
 op_pairs = [

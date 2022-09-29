@@ -16,3 +16,4 @@ PER_ARCH(dx12)    // Microsoft DirectX 12, WIP
 PER_ARCH(opencl)  // OpenCL, N/A
 PER_ARCH(amdgpu)  // AMD GPU, N/A
 PER_ARCH(vulkan)  // Vulkan
+PER_ARCH(gles)    // OpenGL ES

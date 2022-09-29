@@ -10,6 +10,8 @@ namespace taichi::lang {
 class OpenglProgramImpl : public ProgramImpl {
  public:
   OpenglProgramImpl(CompileConfig &config);
+
+  ~OpenglProgramImpl() override;
   FunctionType compile(Kernel *kernel, OffloadedStmt *offloaded) override;
 
   std::size_t get_snode_num_dynamically_allocated(
@@ -33,6 +35,8 @@ class OpenglProgramImpl : public ProgramImpl {
   StreamSemaphore flush() override {
     return runtime_->flush();
   }
+
+  void finalize() override;
 
   std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override;
 

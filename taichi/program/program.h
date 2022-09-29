@@ -130,6 +130,9 @@ class TI_DLL_EXPORT Program {
     }
     return configs[thread_id];
   }
+  const CompileConfig &config() {
+    return configs[main_thread_id_];
+  }
 
   struct KernelProfilerQueryResult {
     int counter{0};

@@ -64,7 +64,7 @@ def test_torch_ad():
 @pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
 @pytest.mark.skipif(sys.platform == 'win32', reason='not working on Windows.')
 # FIXME: crashes at glCreateShader when arch=ti.opengl
-@test_utils.test(exclude=ti.opengl)
+@test_utils.test(exclude=[ti.opengl, ti.gles])
 def test_torch_ad_gpu():
     if not torch.cuda.is_available():
         return

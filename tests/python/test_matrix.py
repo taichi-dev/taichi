@@ -193,10 +193,7 @@ def test_matrix_non_constant_index_numpy():
     assert v[3][9] == 9
 
 
-@test_utils.test(require=ti.extension.dynamic_index,
-                 dynamic_index=True,
-                 debug=True)
-def test_matrix_non_constant_index():
+def _test_matrix_non_constant_index():
     m = ti.Matrix.field(2, 2, ti.i32, 5)
     v = ti.Vector.field(10, ti.i32, 5)
 
@@ -246,6 +243,20 @@ def test_matrix_non_constant_index():
         assert tmp[2] == k * 3
 
     func4(10)
+
+
+@test_utils.test(require=ti.extension.dynamic_index,
+                 dynamic_index=True,
+                 debug=True)
+def test_matrix_non_constant_index():
+    _test_matrix_non_constant_index()
+
+
+@test_utils.test(require=ti.extension.dynamic_index,
+                 real_matrix=True,
+                 debug=True)
+def test_matrix_non_constant_index_real_matrix():
+    _test_matrix_non_constant_index()
 
 
 def _test_matrix_constant_index():

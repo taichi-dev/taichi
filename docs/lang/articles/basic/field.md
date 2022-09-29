@@ -65,7 +65,7 @@ The simplest way to declare a scalar field is to call `ti.field(dtype, shape)`, 
     # f1 and f2 are basically interchangeable
     f1 = ti.field(int, shape=())
     f2 = ti.field(int, shape=1)
-  
+
     f1[None] = 1  # Use None to access a 0D field
     f2[0] = 1  # Use 0 to access a 1D field of length 1
     ```
@@ -82,7 +82,7 @@ The simplest way to declare a scalar field is to call `ti.field(dtype, shape)`, 
                          f_2d.shape[1]
                              (=6)
                    ┌───────────────────────┐
-  
+
                 ┌  ┌───┬───┬───┬───┬───┬───┐  ┐
                 │  │   │   │   │   │   │   │  │
                 │  ├───┼───┼───┼───┼───┼───┤  │
@@ -94,7 +94,7 @@ The simplest way to declare a scalar field is to call `ti.field(dtype, shape)`, 
 
 Scalar fields of higher dimensions can be similarily defined.
 
-:::caution WARNING 
+:::caution WARNING
 
 Taichi only supports fields of dimensions &le; 8.
 

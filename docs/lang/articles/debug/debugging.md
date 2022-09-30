@@ -164,7 +164,7 @@ print(val)
 
 ## Out-of-bound array access
 
-The array index out of bounds error is very common, by default Taichi would proceed without raising a warning and thus may end up with a wrong result. This may result in segmentation faults and can be very hard to debug.
+The array index out of bounds error is common. But Taichi turns off bounds checking by default and proceeds without raising a warning. Therefore, a program with such an error may end up with a wrong result or even trigger segmentation faults, which makes debugging hard.
 
 Taichi detects index-out-of-bound error in debugging mode. You can activate this mode by setting `debug=True` in the `ti.init()` call:
 

@@ -49,25 +49,24 @@ TEST(Scalarize, ScalarizeGlobalStore) {
   irpass::die(block.get());
 
   EXPECT_EQ(block->size(), 2 /*const*/ + 1 /*argload*/ + 1 /*external_ptr*/ +
-                               1 /*matrix_init*/ + 4 /*const*/ +
-                               4 /*matrix_ptr*/ + 4 /*store*/);
+                               4 /*const*/ + 4 /*matrix_ptr*/ + 4 /*store*/);
 
   // Check for scalarized statements
-  EXPECT_EQ(block->statements[5]->is<ConstStmt>(), true);
-  EXPECT_EQ(block->statements[6]->is<MatrixPtrStmt>(), true);
-  EXPECT_EQ(block->statements[7]->is<GlobalStoreStmt>(), true);
+  EXPECT_EQ(block->statements[4]->is<ConstStmt>(), true);
+  EXPECT_EQ(block->statements[5]->is<MatrixPtrStmt>(), true);
+  EXPECT_EQ(block->statements[6]->is<GlobalStoreStmt>(), true);
 
-  EXPECT_EQ(block->statements[8]->is<ConstStmt>(), true);
-  EXPECT_EQ(block->statements[9]->is<MatrixPtrStmt>(), true);
-  EXPECT_EQ(block->statements[10]->is<GlobalStoreStmt>(), true);
+  EXPECT_EQ(block->statements[7]->is<ConstStmt>(), true);
+  EXPECT_EQ(block->statements[8]->is<MatrixPtrStmt>(), true);
+  EXPECT_EQ(block->statements[9]->is<GlobalStoreStmt>(), true);
 
-  EXPECT_EQ(block->statements[11]->is<ConstStmt>(), true);
-  EXPECT_EQ(block->statements[12]->is<MatrixPtrStmt>(), true);
-  EXPECT_EQ(block->statements[13]->is<GlobalStoreStmt>(), true);
+  EXPECT_EQ(block->statements[10]->is<ConstStmt>(), true);
+  EXPECT_EQ(block->statements[11]->is<MatrixPtrStmt>(), true);
+  EXPECT_EQ(block->statements[12]->is<GlobalStoreStmt>(), true);
 
-  EXPECT_EQ(block->statements[14]->is<ConstStmt>(), true);
-  EXPECT_EQ(block->statements[15]->is<MatrixPtrStmt>(), true);
-  EXPECT_EQ(block->statements[16]->is<GlobalStoreStmt>(), true);
+  EXPECT_EQ(block->statements[13]->is<ConstStmt>(), true);
+  EXPECT_EQ(block->statements[14]->is<MatrixPtrStmt>(), true);
+  EXPECT_EQ(block->statements[15]->is<GlobalStoreStmt>(), true);
 }
 
 TEST(Scalarize, ScalarizeGlobalLoad) {
@@ -86,6 +85,7 @@ TEST(Scalarize, ScalarizeGlobalLoad) {
   /*
     TensorType<4 x i32>* %1 = ExternalPtrStmt()
     TensorType<4 x i32>  %2 = LoadStmt(%1)
+    StoreStmt(%1, %2)
   */
   Type *tensor_type = type_factory.get_tensor_type(
       {2, 2}, type_factory.get_primitive_type(PrimitiveTypeID::i32));
@@ -96,14 +96,17 @@ TEST(Scalarize, ScalarizeGlobalLoad) {
       argload_stmt, indices);  // fake ExternalPtrStmt
   src_stmt->ret_type = type_factory.get_pointer_type(tensor_type);
 
-  block->push_back<GlobalLoadStmt>(src_stmt);
+  auto load_stmt = block->push_back<GlobalLoadStmt>(src_stmt);
+
+  // Without this GlobalStoreStmt, nothing survives irpass::die()
+  block->push_back<GlobalStoreStmt>(src_stmt, load_stmt);
 
   irpass::scalarize(block.get());
   irpass::die(block.get());
 
   EXPECT_EQ(block->size(), 1 /*argload*/ + 1 /*external_ptr*/ + 4 /*const*/ +
-                               4 /*matrix_ptr*/ + 4 /*load*/ +
-                               1 /*matrix_init*/);
+                               4 /*matrix_ptr*/ + 4 /*load*/ + 4 /*const*/ +
+                               4 /*matrix_ptr*/ + 4 /*store*/);
 
   // Check for scalarized statements
   EXPECT_EQ(block->statements[2]->is<ConstStmt>(), true);
@@ -121,8 +124,6 @@ TEST(Scalarize, ScalarizeGlobalLoad) {
   EXPECT_EQ(block->statements[11]->is<ConstStmt>(), true);
   EXPECT_EQ(block->statements[12]->is<MatrixPtrStmt>(), true);
   EXPECT_EQ(block->statements[13]->is<GlobalLoadStmt>(), true);
-
-  EXPECT_EQ(block->statements[14]->is<MatrixInitStmt>(), true);
 }
 
 TEST(Scalarize, ScalarizeLocalStore) {
@@ -157,13 +158,13 @@ TEST(Scalarize, ScalarizeLocalStore) {
       block->push_back<MatrixInitStmt>(std::move(matrix_init_vals));
   matrix_init_stmt->ret_type = tensor_type;
 
+  // LocalStoreStmt survives irpass::die()
   block->push_back<LocalStoreStmt>(dest_stmt, matrix_init_stmt);
 
   irpass::scalarize(block.get());
   irpass::die(block.get());
 
-  EXPECT_EQ(block->size(),
-            2 /*const*/ + 1 /*matrix_init*/ + 4 /*alloca*/ + 4 /*store*/);
+  EXPECT_EQ(block->size(), 2 /*const*/ + 4 /*alloca*/ + 4 /*store*/);
 
   // Check for scalarized statements
   EXPECT_EQ(block->statements[0]->is<AllocaStmt>(), true);
@@ -173,12 +174,11 @@ TEST(Scalarize, ScalarizeLocalStore) {
 
   EXPECT_EQ(block->statements[4]->is<ConstStmt>(), true);
   EXPECT_EQ(block->statements[5]->is<ConstStmt>(), true);
-  EXPECT_EQ(block->statements[6]->is<MatrixInitStmt>(), true);
 
+  EXPECT_EQ(block->statements[6]->is<LocalStoreStmt>(), true);
   EXPECT_EQ(block->statements[7]->is<LocalStoreStmt>(), true);
   EXPECT_EQ(block->statements[8]->is<LocalStoreStmt>(), true);
   EXPECT_EQ(block->statements[9]->is<LocalStoreStmt>(), true);
-  EXPECT_EQ(block->statements[10]->is<LocalStoreStmt>(), true);
 }
 
 TEST(Scalarize, ScalarizeLocalLoad) {
@@ -204,12 +204,15 @@ TEST(Scalarize, ScalarizeLocalLoad) {
   Stmt *src_stmt = block->push_back<AllocaStmt>(tensor_type);
   src_stmt->ret_type = type_factory.get_pointer_type(tensor_type);
 
-  block->push_back<LocalLoadStmt>(src_stmt);
+  auto load_stmt = block->push_back<LocalLoadStmt>(src_stmt);
+
+  // Without this GlobalStoreStmt, nothing survives irpass::die()
+  block->push_back<GlobalStoreStmt>(src_stmt, load_stmt);
 
   irpass::scalarize(block.get());
   irpass::die(block.get());
 
-  EXPECT_EQ(block->size(), 4 /*alloca*/ + 4 /*load*/ + 1 /*matrix_init*/);
+  EXPECT_EQ(block->size(), 4 /*alloca*/ + 4 /*load*/ + 4 /*store*/);
 
   // Check for scalarized statements
   EXPECT_EQ(block->statements[0]->is<AllocaStmt>(), true);
@@ -221,8 +224,6 @@ TEST(Scalarize, ScalarizeLocalLoad) {
   EXPECT_EQ(block->statements[5]->is<LocalLoadStmt>(), true);
   EXPECT_EQ(block->statements[6]->is<LocalLoadStmt>(), true);
   EXPECT_EQ(block->statements[7]->is<LocalLoadStmt>(), true);
-
-  EXPECT_EQ(block->statements[8]->is<MatrixInitStmt>(), true);
 }
 
 }  // namespace taichi::lang

@@ -60,10 +60,10 @@ Taichi's math module overlaps to a large extent with Python's built-in math modu
 Taichi's math module provides a few small vector and matrix types:
 
 
-- `vec2/vec3/vec4` for 2D/3D/4D floating-point vector types.
-- `ivec2/ivec3/ivec4` for 2D/3D/4D integer vector types.
-- `uvec2/uvec3/uvec4` for 2D/3D/4D unsigned integer vector types.
-- `mat2/mat3/mat4` for 2D/3D/4D floating-point square matrix types.
+- `vec2/vec3/vec4`: 2D/3D/4D floating-point vector types.
+- `ivec2/ivec3/ivec4`: 2D/3D/4D integer vector types.
+- `uvec2/uvec3/uvec4`: 2D/3D/4D unsigned integer vector types.
+- `mat2/mat3/mat4`: 2D/3D/4D floating-point square matrix types.
 
 To create one of the vector/matrix types above, use template function `ti.types.vector()` or `ti.types.matrix()`. For example, `vec2` is defined as follows:
 

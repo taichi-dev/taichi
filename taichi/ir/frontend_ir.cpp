@@ -517,7 +517,13 @@ Stmt *make_ndarray_access(Expression::FlattenContext *ctx,
   auto expr = var.cast<ExternalTensorExpression>();
   auto external_ptr_stmt = std::make_unique<ExternalPtrStmt>(
       expr->stmt, index_stmts, expr->dt.get_shape(), expr->element_dim);
-  external_ptr_stmt->ret_type = expr->dt;
+  if (expr->dim == indices.size()) {
+    // Indexing into an scalar element
+    external_ptr_stmt->ret_type = expr->dt.ptr_removed().get_element_type();
+  } else {
+    // Indexing ouuter dimensions
+    external_ptr_stmt->ret_type = expr->dt.ptr_removed();
+  }
 
   return ctx->push_back(std::move(external_ptr_stmt));
 }

@@ -11,7 +11,7 @@ To facilitate code debugging and code optimization, Taichi provides a set of pro
 Currently, Taichi provides two profiling tools:
 
 - `ScopedProfiler` analyzes the performance of the Taichi JIT compiler (host).
-- `KernelProfiler` analyzes the performance of Taichi kernels (device). Its advanced mode, which is applicable to the CUDA backend only, provides detailed low-level performance metrics, such as memory bandwidth consumption.
+- `KernelProfiler` analyzes the performance of Taichi kernels (device). Its advanced mode, which works with the CUDA backend only, provides detailed low-level performance metrics, such as memory bandwidth consumption.
 
 ## ScopedProfiler
 

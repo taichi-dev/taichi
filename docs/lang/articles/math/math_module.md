@@ -14,7 +14,7 @@ Taichi provides a built-in `math` module that supports frequently used mathemati
 
 ## Mathematical functions
 
-You should call the mathematical functions supported by Taichi's `math` module from within the Taichi scope. For example:
+You should call the mathematical functions provided by Taichi's `math` module from within the Taichi scope. For example:
 
 ```python
 import taichi as ti

@@ -6,7 +6,7 @@ sidebar_position: 1
 
 ## Overview
 
-To facilitate code debugging and code optimization, Taichi provides a set of profiling tools, which collect hardware and Taichi-related information to quantify program performance and analyze where a bottleneck occurs.
+To facilitate code debugging and code optimization, Taichi provides a set of profiling tools, which collect hardware and Taichi-related information to quantify program performance and analyze where the bottleneck is.
 
 Currently, Taichi provides two profiling tools:
 

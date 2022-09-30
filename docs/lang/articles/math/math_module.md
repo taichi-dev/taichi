@@ -118,7 +118,7 @@ u = v.rraa  # vec4(1, 1, 2, 2)
 ## GLSL-standard functions
 
 
-Taichi's math module also supports a few [GLSL standard functions](https://registry.khronos.org/OpenGL-Refpages/gl4/index.php). These functions follow the GLSL standard, except that they accept arbitrary vectors and matrices as arguments and perform element-wise operations. For example:
+Taichi's math module also supports a few [GLSL standard functions](https://registry.khronos.org/OpenGL-Refpages/gl4/index.php). These functions follow the GLSL standard, except that they accept arbitrary vectors and matrices as arguments and operate on them element-wise. For example:
 
 ```python
 import taichi as ti

@@ -7,7 +7,7 @@ sidebar_position: 1
 
 Taichi is a domain-specific language embedded in Python and designed specifically for high-performance, parallel computing.
 
-When writing compute-intensive tasks in Python, you can take advantage of Taichi's high performance by obeying a few extra rules. Generally, Taichi provides two decorators `@ti.func` and `@ti.kernel`, which signal Taichi to take over the implementation of the tasks. Its just-in-time (JIT) compiler compiles the decorated functions to machine code, and all subsequent calls to the functions are executed on multi-CPU cores or GPUs. In a typical compute-intensive scenario, such as a numerical simulation, Taichi can accelerate performance by 50x~100x compared with native Python code.
+When writing compute-intensive tasks in Python, you can take advantage of Taichi's high performance computation by following a few extra rules. Generally, Taichi provides two decorators `@ti.func` and `@ti.kernel`, which instruct Taichi to take over the implementation of the tasks. Its just-in-time (JIT) compiler compiles the decorated functions to machine code, and all subsequent calls to these functions are executed on multi-CPU cores or GPUs. In a typical compute-intensive scenario, such as a numerical simulation, Taichi can accelerate performance by 50x~100x compared with native Python code.
 
 Taichi also has a built-in ahead-of-time (AOT) system for exporting your code into binary/shader files, which can then be called in C/C++ and run without the Python environment. See the [AOT deployment](../deployment/ndarray_android.md) for more information.
 
@@ -60,7 +60,7 @@ for i in range(1000000):
     gui.show()
 ```
 
-Save the code above to your disk and run the program.
+Save the code above to your local machine and run this program.
 
 *You get the following animation:*
 
@@ -79,7 +79,10 @@ import taichi as ti
 import taichi.math as tm
 ```
 
-The first two lines import Taichi and its `math` module. The `math` module contains some frequently used math functions and built-in vectors and matrices of small dimensions, such as `vec2` for 2D real vectors and `mat3` for 3 x 3 real matrices. See the [Math Module](../math/math_module.md) for more information.
+The first two lines import Taichi and its `math` module. The `math` module contains:
+- Frequently used math functions.
+- Built-in vectors and matrices of small dimensions, such as `vec2` for 2D real vectors and `mat3` for 3&times;3 real matrices. 
+See the [Math Module](../math/math_module.md) for more information.
 
 ```python
 ti.init(arch=ti.gpu)
@@ -87,9 +90,9 @@ ti.init(arch=ti.gpu)
 
 This line calls `ti.init()` to customize your Taichi runtime depending on the arguments passed into it. For now, we only introduce the most important argument, namely, `arch`.
 
-The argument `arch` specifies the *backend* that executes the compiled code. A backend can be either `ti.cpu` or `ti.gpu`. When `ti.gpu` is designated, Taichi opts for `ti.cuda`, `ti.vulkan`, or `ti.opengl/ti.metal` in descending order of preference. If no GPU architecture is available, Taichi falls back to your CPU device.
+The argument `arch` specifies the *backend* that executes the compiled code. A backend can be either `ti.cpu` or `ti.gpu`. When `ti.gpu` is specified, Taichi moves down the backend list of `ti.cuda`, `ti.vulkan`, and `ti.opengl/ti.metal`. If no GPU architecture is available, Taichi falls back to your CPU device.
 
-You can also directly specify which GPU backend to use. For example, set `arch=ti.cuda` to run your program on CUDA. Taichi raises an error if the target architecture is unavailable. See the [Global Settings](../reference/global_settings.md) for more information on `ti.init()`.
+You can also directly specify which GPU backend to use. For example, set `arch=ti.cuda` to run your program on CUDA. Taichi raises an error if the target architecture is unavailable. See the [Global Settings](../reference/global_settings.md) for more information about `ti.init()`.
 
 ### Define a field
 
@@ -100,7 +103,7 @@ n = 320
 pixels = ti.field(dtype=float, shape=(n * 2, n))
 ```
 
-The code snippet defines a field whose shape is (640, 320) and whose elements are floating-point data.
+The code snippet defines a field whose shape is (640, 320) and whose elements are floating-point numbers.
 
 *field* is the most important and frequently used data structure in Taichi. You can compare it to NumPy's `ndarray` or PyTorch's `tensor`. But Taichi's field is more flexible than the two counterparts. For example, a Taichi field can be [spatially sparse](../basic/sparse.md) and can easily [switch between different data layouts](../basic/layout.md).
 

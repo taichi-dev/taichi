@@ -63,7 +63,7 @@ def inside_taichi_scope():
     #=> ray.ori = [0.0, 0.0, 0.0], ray.dir = [0.0, 0.0, 1.0], ray.len = 1.0
 ```
 
-直
+
 ### Applicable backends
 
 `print` in the Taichi scope is supported on the CPU, CUDA, and Vulkan backends only.
@@ -95,7 +95,7 @@ foo()
 ## Compile-time `ti.static_print`
 
 It can be useful to print Python objects and their properties like data types or SNodes in the Taichi scope. Similar to `ti.static`, which makes the compiler evaluate an argument at compile time (see the [Metaprogramming](../advanced/meta.md) for more information), `ti.static_print` prints compile-time constants in the Taichi scope:
-直
+
 ```python
 x = ti.field(ti.f32, (2, 3))
 y = 1

@@ -143,7 +143,7 @@ Texture support in Taichi is implemented in the `ti.types.texture_types` module.
 
 Taichi's math module also supports basic complex arithmetic operations on 2D vectors.
 
-You can use a 2D vector of type `ti.math.vec2` to represent a complex number. In this way, additions and subtractions of complex numbers come in the form of 2D vector additions and subtractions. You can call  `ti.math.cmul()` and `ti.math.cdiv()` to conduct multiplication and division of complex numbers:
+You can use a 2D vector of type `ti.math.vec2` to represent a complex number. In this way, additions and subtractions of complex numbers come in the form of 2D vector additions and subtractions. You can call `ti.math.cmul()` and `ti.math.cdiv()` to conduct multiplication and division of complex numbers:
 
 ```python
 import taichi as ti

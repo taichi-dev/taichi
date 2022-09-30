@@ -111,7 +111,7 @@ u = v.rraa  # vec4(1, 1, 2, 2)
     def test(v: vec5f):
         print(v.xyz)
     ```
-    Unlike `ti.Vector`, whose input data must be a 1D array, `ti.types.vector()` creates vector types that allow more flexible initiation rules, as explained above.
+    Unlike `ti.Vector`, whose input data must be a 1D array, vector types created by `ti.types.vector()` have more flexible ways to initialize, as explained above.
 + `ti.math.vec3` is created by `vec3 = ti.types.vector(3, float)`.
 
 

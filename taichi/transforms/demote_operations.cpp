@@ -61,25 +61,6 @@ class DemoteOperations : public BasicStmtVisitor {
     return floor;
   }
 
-  void visit(BitExtractStmt *stmt) override {
-    // @ti.func
-    // def bit_extract(input, begin, end):
-    //   return (input >> begin) & ((1 << (end - begin)) - 1)
-    VecStatement statements;
-    auto begin = statements.push_back<ConstStmt>(
-        TypedConstant(stmt->input->ret_type, stmt->bit_begin));
-    auto input_sar_begin = statements.push_back<BinaryOpStmt>(
-        BinaryOpType::bit_sar, stmt->input, begin);
-    auto mask = statements.push_back<ConstStmt>(TypedConstant(
-        stmt->input->ret_type, (1LL << (stmt->bit_end - stmt->bit_begin)) - 1));
-    auto ret = statements.push_back<BinaryOpStmt>(BinaryOpType::bit_and,
-                                                  input_sar_begin, mask);
-    ret->ret_type = stmt->ret_type;
-    stmt->replace_usages_with(ret);
-    modifier.insert_before(stmt, std::move(statements));
-    modifier.erase(stmt);
-  }
-
   void visit(BinaryOpStmt *stmt) override {
     auto lhs = stmt->lhs;
     auto rhs = stmt->rhs;

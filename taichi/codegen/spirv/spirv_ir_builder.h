@@ -445,6 +445,7 @@ class IRBuilder {
   Value le(Value a, Value b);
   Value gt(Value a, Value b);
   Value ge(Value a, Value b);
+  Value bit_field_extract(Value base, Value offset, Value count);
   Value select(Value cond, Value a, Value b);
 
   // Create a cast that cast value to dst_type

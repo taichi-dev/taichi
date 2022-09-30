@@ -462,6 +462,10 @@ void ExternalTensorExpression::flatten(FlattenContext *ctx) {
     prim_dt = dt.get_element_type();
   }
   auto ptr = Stmt::make<ArgLoadStmt>(arg_id, prim_dt, /*is_ptr=*/true);
+
+  int external_dims = dim - std::abs(element_dim);
+  ptr->cast<ArgLoadStmt>()->set_extern_dims(external_dims);
+
   ptr->tb = tb;
   ctx->push_back(std::move(ptr));
   stmt = ctx->back_stmt();

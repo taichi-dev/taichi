@@ -161,11 +161,19 @@ class ArgLoadStmt : public Stmt {
   int arg_id;
   bool is_ptr;
 
+  // field_dims of external ndarray
+  int extern_dims_ = 0;
+
   ArgLoadStmt(int arg_id, const DataType &dt, bool is_ptr = false)
       : arg_id(arg_id) {
     this->ret_type = dt;
     this->is_ptr = is_ptr;
+    this->extern_dims_ = -1;  // -1 means uninitialized
     TI_STMT_REG_FIELDS;
+  }
+
+  void set_extern_dims(int dims) {
+    this->extern_dims_ = dims;
   }
 
   bool has_global_side_effect() const override {

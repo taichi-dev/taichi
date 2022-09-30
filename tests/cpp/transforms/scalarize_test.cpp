@@ -46,27 +46,28 @@ TEST(Scalarize, ScalarizeGlobalStore) {
   block->push_back<GlobalStoreStmt>(dest_stmt, matrix_init_stmt);
 
   irpass::scalarize(block.get());
+  irpass::lower_matrix_ptr(block.get());
   irpass::die(block.get());
 
-  EXPECT_EQ(block->size(), 2 /*const*/ + 1 /*argload*/ + 1 /*external_ptr*/ +
-                               4 /*const*/ + 4 /*matrix_ptr*/ + 4 /*store*/);
+  EXPECT_EQ(block->size(), 2 /*const*/ + 1 /*argload*/ + 4 /*const*/ +
+                               4 /*external_ptr*/ + 4 /*store*/);
 
   // Check for scalarized statements
-  EXPECT_EQ(block->statements[4]->is<ConstStmt>(), true);
-  EXPECT_EQ(block->statements[5]->is<MatrixPtrStmt>(), true);
-  EXPECT_EQ(block->statements[6]->is<GlobalStoreStmt>(), true);
+  EXPECT_EQ(block->statements[3]->is<ConstStmt>(), true);
+  EXPECT_EQ(block->statements[4]->is<ExternalPtrStmt>(), true);
+  EXPECT_EQ(block->statements[5]->is<GlobalStoreStmt>(), true);
 
-  EXPECT_EQ(block->statements[7]->is<ConstStmt>(), true);
-  EXPECT_EQ(block->statements[8]->is<MatrixPtrStmt>(), true);
-  EXPECT_EQ(block->statements[9]->is<GlobalStoreStmt>(), true);
+  EXPECT_EQ(block->statements[6]->is<ConstStmt>(), true);
+  EXPECT_EQ(block->statements[7]->is<ExternalPtrStmt>(), true);
+  EXPECT_EQ(block->statements[8]->is<GlobalStoreStmt>(), true);
 
-  EXPECT_EQ(block->statements[10]->is<ConstStmt>(), true);
-  EXPECT_EQ(block->statements[11]->is<MatrixPtrStmt>(), true);
-  EXPECT_EQ(block->statements[12]->is<GlobalStoreStmt>(), true);
+  EXPECT_EQ(block->statements[9]->is<ConstStmt>(), true);
+  EXPECT_EQ(block->statements[10]->is<ExternalPtrStmt>(), true);
+  EXPECT_EQ(block->statements[11]->is<GlobalStoreStmt>(), true);
 
-  EXPECT_EQ(block->statements[13]->is<ConstStmt>(), true);
-  EXPECT_EQ(block->statements[14]->is<MatrixPtrStmt>(), true);
-  EXPECT_EQ(block->statements[15]->is<GlobalStoreStmt>(), true);
+  EXPECT_EQ(block->statements[12]->is<ConstStmt>(), true);
+  EXPECT_EQ(block->statements[13]->is<ExternalPtrStmt>(), true);
+  EXPECT_EQ(block->statements[14]->is<GlobalStoreStmt>(), true);
 }
 
 TEST(Scalarize, ScalarizeGlobalLoad) {
@@ -102,28 +103,29 @@ TEST(Scalarize, ScalarizeGlobalLoad) {
   block->push_back<GlobalStoreStmt>(src_stmt, load_stmt);
 
   irpass::scalarize(block.get());
+  irpass::lower_matrix_ptr(block.get());
   irpass::die(block.get());
 
-  EXPECT_EQ(block->size(), 1 /*argload*/ + 1 /*external_ptr*/ + 4 /*const*/ +
-                               4 /*matrix_ptr*/ + 4 /*load*/ + 4 /*const*/ +
-                               4 /*matrix_ptr*/ + 4 /*store*/);
+  EXPECT_EQ(block->size(), 1 /*argload*/ + 4 /*const*/ + 4 /*external_ptr*/ +
+                               4 /*load*/ + 4 /*const*/ + 4 /*external_ptr*/ +
+                               4 /*store*/);
 
   // Check for scalarized statements
-  EXPECT_EQ(block->statements[2]->is<ConstStmt>(), true);
-  EXPECT_EQ(block->statements[3]->is<MatrixPtrStmt>(), true);
-  EXPECT_EQ(block->statements[4]->is<GlobalLoadStmt>(), true);
+  EXPECT_EQ(block->statements[1]->is<ConstStmt>(), true);
+  EXPECT_EQ(block->statements[2]->is<ExternalPtrStmt>(), true);
+  EXPECT_EQ(block->statements[3]->is<GlobalLoadStmt>(), true);
 
-  EXPECT_EQ(block->statements[5]->is<ConstStmt>(), true);
-  EXPECT_EQ(block->statements[6]->is<MatrixPtrStmt>(), true);
-  EXPECT_EQ(block->statements[7]->is<GlobalLoadStmt>(), true);
+  EXPECT_EQ(block->statements[4]->is<ConstStmt>(), true);
+  EXPECT_EQ(block->statements[5]->is<ExternalPtrStmt>(), true);
+  EXPECT_EQ(block->statements[6]->is<GlobalLoadStmt>(), true);
 
-  EXPECT_EQ(block->statements[8]->is<ConstStmt>(), true);
-  EXPECT_EQ(block->statements[9]->is<MatrixPtrStmt>(), true);
-  EXPECT_EQ(block->statements[10]->is<GlobalLoadStmt>(), true);
+  EXPECT_EQ(block->statements[7]->is<ConstStmt>(), true);
+  EXPECT_EQ(block->statements[8]->is<ExternalPtrStmt>(), true);
+  EXPECT_EQ(block->statements[9]->is<GlobalLoadStmt>(), true);
 
-  EXPECT_EQ(block->statements[11]->is<ConstStmt>(), true);
-  EXPECT_EQ(block->statements[12]->is<MatrixPtrStmt>(), true);
-  EXPECT_EQ(block->statements[13]->is<GlobalLoadStmt>(), true);
+  EXPECT_EQ(block->statements[10]->is<ConstStmt>(), true);
+  EXPECT_EQ(block->statements[11]->is<ExternalPtrStmt>(), true);
+  EXPECT_EQ(block->statements[12]->is<GlobalLoadStmt>(), true);
 }
 
 TEST(Scalarize, ScalarizeLocalStore) {

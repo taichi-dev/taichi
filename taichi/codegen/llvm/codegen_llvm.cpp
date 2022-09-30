@@ -1941,17 +1941,25 @@ void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
     auto address_offset = builder->CreateSExt(
         linear_index, llvm::Type::getInt64Ty(*llvm_context));
 
-    auto offset = builder->CreateMul(
-        address_offset,
-        tlctx->get_constant(
-            get_data_type<int64>(),
-            operand_dtype->cast<TensorType>()->get_num_elements()));
+    if (stmt->ret_type->is<TensorType>()) {
+      // This case corresponds to outter indexing only
+      // The stride for linear_index is num_elements() in TensorType.
+      address_offset = builder->CreateMul(
+          address_offset,
+          tlctx->get_constant(
+              get_data_type<int64>(),
+              stmt->ret_type->cast<TensorType>()->get_num_elements()));
+    } else {
+      // This case corresponds to outter + inner indexing
+      // Since both outter and inner indices are linearized into linear_index,
+      // the stride for linear_index is 1, and there's nothing to do here.
+    }
 
     auto ret_ptr = builder->CreateGEP(
 #ifdef TI_LLVM_15
         tlctx->get_data_type(primitive_type),
 #endif
-        primitive_ptr, offset);
+        primitive_ptr, address_offset);
     llvm_val[stmt] = builder->CreateBitCast(
         ret_ptr, llvm::PointerType::get(tlctx->get_data_type(dt), 0));
 

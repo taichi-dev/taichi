@@ -143,7 +143,7 @@ serialize_kv_impl(SER &ser,
     TI_IO(__VA_ARGS__);          \
   }
 
-#define TI_IO_DEF_WITH_BASE_CLASS(BaseClass, ...) \
+#define TI_IO_DEF_WITH_BASECLASS(BaseClass, ...) \
   template <typename S>          \
   void io(S &serializer) const { \
     this->BaseClass::io(serializer);   \

@@ -11,7 +11,7 @@ namespace gfx {
 struct OfflineCacheKernelMetadata : public offline_cache::KernelMetadataBase {
   std::size_t num_files{0};
 
-  TI_IO_DEF_WITH_BASE_CLASS(offline_cache::KernelMetadataBase, num_files);
+  TI_IO_DEF_WITH_BASECLASS(offline_cache::KernelMetadataBase, num_files);
 };
 
 class CacheManager {

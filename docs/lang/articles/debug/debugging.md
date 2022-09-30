@@ -118,7 +118,7 @@ def inside_taichi_scope():
 
 ## Serial execution
 
-Taichi's automatic parallelization mechanism may lead to non-deterministic behaviors. This is due to the reason that the order that threads get executed is not controllable. For debugging purposes, serializing program execution may be useful for getting repeatable results or diagnosing data races. You can serialize either the entire Taichi program or a specific for loop.
+Taichi's automatic parallelization mechanism may lead to non-deterministic behaviors because the threads are executed in random order. For debugging purposes, serializing program execution may be useful for getting repeatable results or diagnosing data races. You can serialize either the entire Taichi program or a specific for loop.
 
 ### Serialize an entire Taichi program
 

@@ -7,10 +7,10 @@ sidebar_position: 1
 
 Taichi provides a built-in `math` module that supports frequently used mathematical functions and utility functions, including:
 
-+ Commonly-used mathematical functions that are analogous to those in Python's built-in `math` module.
-+ Small vector and matrix types that are analogous to those in the [OpenGL shading language](https://www.khronos.org/opengl/wiki/OpenGL_Shading_Language) (GLSL).
-+ Some GLSL-standard functions.
-+ Complex number operations of 2D vectors.
+- Commonly-used mathematical functions that are analogous to those in Python's built-in `math` module.
+- Small vector and matrix types that are analogous to those in the [OpenGL shading language](https://www.khronos.org/opengl/wiki/OpenGL_Shading_Language) (GLSL).
+- Some GLSL-standard functions.
+- Complex number operations of 2D vectors.
 
 ## Mathematical functions
 
@@ -50,8 +50,8 @@ def test():
 Taichi's math module has a large overlap with Python's built-in math module. But you should follow a few extra rules when using Taichi's math module:
 
 - You must call the functions provided by Taichi's math moduled from within the Taichi scope.
-+ Functions in Taichi's math module also accept vectors or matrices as arguments.
-+ The precision of a function in Taichi's math module depends on the value of `default_fp` and the backend specified in the `ti.init()` method call.
+- Functions in Taichi's math module also accept vectors or matrices as arguments.
+- The precision of a function in Taichi's math module depends on the value of `default_fp` and the backend specified in the `ti.init()` method call.
 
 :::
 
@@ -60,10 +60,10 @@ Taichi's math module has a large overlap with Python's built-in math module. But
 Taichi's math module provides a few small vector and matrix types:
 
 
-+ `vec2/vec3/vec4` for 2D/3D/4D floating-point vector types.
-+ `ivec2/ivec3/ivec4` for 2D/3D/4D integer vector types.
-+ `uvec2/uvec3/uvec4` for 2D/3D/4D unsigned integer vector types.
-+ `mat2/mat3/mat4` for 2D/3D/4D floating-point square matrix types.
+- `vec2/vec3/vec4` for 2D/3D/4D floating-point vector types.
+- `ivec2/ivec3/ivec4` for 2D/3D/4D integer vector types.
+- `uvec2/uvec3/uvec4` for 2D/3D/4D unsigned integer vector types.
+- `mat2/mat3/mat4` for 2D/3D/4D floating-point square matrix types.
 
 To create one of the vector/matrix types above, use the template `ti.types.vector()` or `ti.types.matrix()`. For example, `vec2` is defined in the following way:
 
@@ -103,8 +103,8 @@ u = v.rraa  # vec4(1, 1, 2, 2)
 
 ### Relations between `ti.Vector`, `ti.types.vector` and `ti.math.vec3`
 
-+ `ti.Vector` is a function that accepts a 1D array and returns a matrix instance that has only one column. For example, `ti.Vector([1, 2, 3, 4, 5])`.
-+ `ti.types.vector` is a function that accepts an integer and a primitive type and returns a vector type. For example: `vec5f = ti.types.vector(5, float)`. `vec5f` can then be used to instantiate 5D vectors or annotate data types of function arguments and struct members:
+- `ti.Vector` is a function that accepts a 1D array and returns a matrix instance that has only one column. For example, `ti.Vector([1, 2, 3, 4, 5])`.
+- `ti.types.vector` is a function that accepts an integer and a primitive type and returns a vector type. For example: `vec5f = ti.types.vector(5, float)`. `vec5f` can then be used to instantiate 5D vectors or annotate data types of function arguments and struct members:
 
     ```python
     @ti.kernel
@@ -112,7 +112,7 @@ u = v.rraa  # vec4(1, 1, 2, 2)
         print(v.xyz)
     ```
     Unlike `ti.Vector`, whose input data must be a 1D array, vector types created by `ti.types.vector()` have more flexible ways to initialize, as explained above.
-+ `ti.math.vec3` is created by `vec3 = ti.types.vector(3, float)`.
+- `ti.math.vec3` is created by `vec3 = ti.types.vector(3, float)`.
 
 
 ## GLSL-standard functions

@@ -81,7 +81,7 @@ import taichi.math as tm
 
 The first two lines import Taichi and its `math` module. The `math` module contains:
 - Frequently-used math functions.
-- Built-in vectors and matrices of small dimensions, such as `vec2` for 2D real vectors and `mat3` for 3&times;3 real matrices. 
+- Built-in vectors and matrices of small dimensions, such as `vec2` for 2D real vectors and `mat3` for 3&times;3 real matrices.
 See the [Math Module](../math/math_module.md) for more information.
 
 ```python
@@ -117,7 +117,7 @@ The main differences between Taichi functions and kernels:
 
 - Kernels are the entry points where Taichi kicks in and takes over the task. A kernel can be called anywhere, anytime in your program, while a Taichi function can be called only from inside a kernel or from inside another Taichi function. In the example above, the Taichi function `complex_sqr` is called by the kernel `paint`.
 - A kernel *must* take type-hinted arguments and return type-hinted results. But Taichi functions do not require type hinting. In the example above, the argument `t` in the kernel `paint` is type hinted; the argument `z` in the Taichi function `complex_sqr` is not.
-- Taichi *supports* nested functions but *does not support* nested kernels. 
+- Taichi *supports* nested functions but *does not support* nested kernels.
 - Taichi *does not* support recursive Taichi function calls.
 
 :::tip

@@ -49,7 +49,7 @@ def test():
 
 Taichi's math module has a large overlap with Python's built-in math module. But you should follow a few extra rules when using Taichi's math module:
 
-- You must call the functions provided by Taichi's math moduled from within the Taichi scope.
+- You must call the functions provided by Taichi's math module from within the Taichi scope.
 - Functions in Taichi's math module also accept vectors or matrices as arguments.
 - The precision of a function in Taichi's math module depends on the value of `default_fp` and the backend specified in the `ti.init()` method call.
 

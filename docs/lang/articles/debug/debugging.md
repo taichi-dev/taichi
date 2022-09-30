@@ -145,7 +145,7 @@ val.fill(1)
 
 @ti.kernel
 def prefix_sum():
-    ti.loop_config(serialize=True) # Serialize the for loop immediately follows
+    ti.loop_config(serialize=True) # Serializes the next for loop
     for i in range(1, n):
         val[i] += val[i - 1]
 

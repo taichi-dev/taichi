@@ -47,7 +47,7 @@ def test():
 
 :::note
 
-Taichi's math module has a large overlap with Python's built-in math module. But you should follow a few extra rules when using Taichi's math module:
+Taichi's math module overlaps to a large extent with Python's built-in math module. Ensure that you follow a few extra rules when using Taichi's math module:
 
 - You must call the functions provided by Taichi's math module from within the Taichi scope.
 - Functions in Taichi's math module also accept vectors or matrices as arguments.

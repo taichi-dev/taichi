@@ -10,7 +10,7 @@ Taichi provides a built-in `math` module that supports frequently used mathemati
 - Commonly-used mathematical functions that are analogous to those in Python's built-in `math` module.
 - Small vector and matrix types that are analogous to those in the [OpenGL shading language](https://www.khronos.org/opengl/wiki/OpenGL_Shading_Language) (GLSL).
 - Some GLSL-standard functions.
-- Complex number operations of 2D vectors.
+- Complex number operations in the form of 2D vectors.
 
 ## Mathematical functions
 
@@ -65,15 +65,15 @@ Taichi's math module provides a few small vector and matrix types:
 - `uvec2/uvec3/uvec4` for 2D/3D/4D unsigned integer vector types.
 - `mat2/mat3/mat4` for 2D/3D/4D floating-point square matrix types.
 
-To create one of the vector/matrix types above, use the template `ti.types.vector()` or `ti.types.matrix()`. For example, `vec2` is defined in the following way:
+To create one of the vector/matrix types above, use template function `ti.types.vector()` or `ti.types.matrix()`. For example, `vec2` is defined as follows:
 
 ```python
 vec2 = ti.types.vector(2, float)
 ```
 
-The number of precision bits of such a type is determined by `default_fp` or `default_ip` in the `ti.init()` method call. For example, if `ti.init(default_fp=ti.f64)` is called, then `vec2/vec3/vec4` and `mat2/mat3/mat4` defined in the Taichi scope all have 64-bit floating-point precision.
+The number of precision bits of such a type is determined by `default_fp` or `default_ip` in the `ti.init()` method call. For example, if `ti.init(default_fp=ti.f64)` is called, then `vec2/vec3/vec4` and `mat2/mat3/mat4` defined in the Taichi scope all have a 64-bit floating-point precision.
 
-You can use these types to instantiate vectors/matrices or annotate the data types of function arguments and struct members. See the [Type System](../type_system/type.md) for more information. Here we emphasize that they have very flexible initialization routines:
+You can use these types to instantiate vectors/matrices or annotate data types for function arguments and struct members. See the [Type System](../type_system/type.md) for more information. Here we emphasize that they have very flexible initialization routines:
 
 ```python
 mat2 = ti.math.mat2

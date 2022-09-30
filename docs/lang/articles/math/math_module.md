@@ -14,7 +14,7 @@ Taichi provides a built-in `math` module that supports frequently used mathemati
 
 ## Mathematical functions
 
-You should call the mathematical functions provided by Taichi's `math` module from within the Taichi scope. For example:
+You must call the mathematical functions provided by Taichi's `math` module from within the Taichi scope. For example:
 
 ```python
 import taichi as ti
@@ -31,7 +31,7 @@ def test():
     ...
 ```
 
-These functions also accept vectors and matrices as arguments and conduct element-wise operations:
+These functions also take vectors and matrices as arguments and operate on them element-wise:
 
 ```python
 @ti.kernel
@@ -141,9 +141,9 @@ Texture support in Taichi is implemented in the `ti.types.texture_types` module.
 
 ## Complex number operations
 
-Taichi's math module also supports basic complex number operations via 2D vectors.
+Taichi's math module also supports basic complex arithmetic operations on 2D vectors.
 
-You can use a 2D vector of type `ti.math.vec2` to represent a complex number. In this way, the addition and subtraction of complex numbers are equivalent to the addtion and subtraction of 2D vectors, and the multiplication and division of complex numbers can be performed by calling `ti.math.cmul` and `ti.math.cdiv`:
+You can use a 2D vector of type `ti.math.vec2` to represent a complex number. In this way, additions and subtractions of complex numbers come in the form of 2D vector additions and subtractions. You can call  `ti.math.cmul()` and `ti.math.cdiv()` to conduct multiplication and division of complex numbers:
 
 ```python
 import taichi as ti
@@ -158,7 +158,7 @@ def test():
     w = tm.cdiv(x, y)  #  vec2(2, 0) = 2+0j
 ```
 
-You can also compute the power, logarithm and exponential of a complex number:
+You can also compute the power, logarithm, and exponential of a complex number:
 
 ```python
 

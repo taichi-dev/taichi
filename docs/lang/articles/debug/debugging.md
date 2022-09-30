@@ -132,7 +132,7 @@ If your program works well in serial but fails in parallel, check if there are p
 
 ### Serialize a specified parallel for loop
 
-By default, Taichi automatically parallelizes the for loops at the outermost scope in a Taichi kernel. But some scenarios require serial exeution. In this case, you can prevent automatic parallelization with `ti.loop_config(serialize=True)`, this will only affect the outermost for loop that immediately follows this line:
+By default, Taichi automatically parallelizes the for loops at the outermost scope in a Taichi kernel. But some scenarios require serial execution. In this case, you can prevent automatic parallelization with `ti.loop_config(serialize=True)`. Note that only the outermost for loop that immediately follows this line is serialized. For example:
 
 ```python
 import taichi as ti

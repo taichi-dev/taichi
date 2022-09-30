@@ -389,22 +389,6 @@ class AdStackAllocaJudger : public BasicStmtVisitor {
     }
   }
 
-  // Check whether the target serves as the condition of a if stmt
-  void visit(IfStmt *stmt) override {
-    if (is_stack_needed_)
-      return;
-
-    if (stmt->cond == target_alloca_) {
-      is_stack_needed_ = true;
-      return;
-    }
-
-    if (stmt->true_statements)
-      stmt->true_statements->accept(this);
-    if (stmt->false_statements)
-      stmt->false_statements->accept(this);
-  }
-
   static bool run(AllocaStmt *target_alloca) {
     AdStackAllocaJudger judger;
     judger.target_alloca_ = target_alloca;

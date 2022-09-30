@@ -21,7 +21,7 @@ You can call `print()` in the Taichi scope to debug your program:
 print(*args, sep='', end='\n')
 ```
 
-When called from within the Taichi scope, `args` can take string literal, scalar, vector, and matrix expressions.
+When passed into a runtime `print()` in the Taichi scope, `args` can take string literal, scalar, vector, and matrix expressions.
 
 
 For example:

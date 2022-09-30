@@ -15,7 +15,7 @@ Taichi provides the following mechanisms to facilitate parallel programming debu
 ## Runtime `print` in Taichi scope
 
 
-You can call `print()` in the Taichi scope to debug your program. The syntax is:
+You can call `print()` in the Taichi scope to debug your program:
 
 ```python
 print(*args, sep='', end='\n')

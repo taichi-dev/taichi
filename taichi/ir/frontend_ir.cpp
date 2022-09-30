@@ -521,7 +521,7 @@ Stmt *make_ndarray_access(Expression::FlattenContext *ctx,
     // Indexing into an scalar element
     external_ptr_stmt->ret_type = expr->dt.ptr_removed().get_element_type();
   } else {
-    // Indexing ouuter dimensions
+    // Indexing outer dimensions
     external_ptr_stmt->ret_type = expr->dt.ptr_removed();
   }
 

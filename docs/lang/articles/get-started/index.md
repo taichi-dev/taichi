@@ -156,7 +156,7 @@ def fill():
         for k in range(5):  # Not parallelized because it is not at the outermost scope
 ```
 
-You can also serialize a parallel for loop at the outermost scope via `ti.loop_config(serialize=True)`. See [Serialize a specified parallel for loop](../debug/debugging.md#serialize-a-specified-parallel-for-loop) for more information.
+You can also serialize a for loop at the outermost scope using `ti.loop_config(serialize=True)`. See [Serialize a specified parallel for loop](../debug/debugging.md#serialize-a-specified-parallel-for-loop) for more information.
 
 :::caution WARNING
 

@@ -209,7 +209,7 @@ def do_sqrt_all():
         x[i] = ti.sqrt(x[i])
 ```
 
-When you are done with debugging, set `debug=False`, and then the program ignores all `assert` statements in the Taichi scope hence avoid additional runtime overhead.
+When you are done with debugging, set `debug=False`. Then, the program ignores all `assert` statements in the Taichi scope, which can avoid additional runtime overhead.
 
 ## Compile-time `ti.static_assert`
 

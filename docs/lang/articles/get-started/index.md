@@ -224,6 +224,19 @@ To access the full list of Taichi examples, run `ti example`. Other useful comma
 - `ti example -p fractal`/`ti example -P fractal` prints the source code of the fractal example.
 - `ti example -s fractal` saves the example to your current work directory.
 
+## Supported systems and backends
+
+The following table lists the supported operating systems and the backends that Taichi supports on these platforms:
+
+| **platform** |      **CPU**       |      **CUDA**      |     **OpenGL**     |     **Metal**      |    **Vulkan**    |
+| :----------: | :----------------: | :----------------: | :----------------: | :----------------: | :----------------: |
+|   Windows    | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |        N/A         | :heavy_check_mark: |
+|    Linux     | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |        N/A         | :heavy_check_mark: |
+|    macOS     | :heavy_check_mark: |        N/A         |        N/A         | :heavy_check_mark: | :heavy_check_mark: |
+
+- :heavy_check_mark:: supported;
+- N/A: not available
+
 You are now ready to move on and start writing your own Taichi programs. See the following documents for more information about how to use Taichi in some of its typical application scenarios:
 - [Accelerate Python with Taichi](./accelerate_python.md)
 - [Conduct Physical Simulation](./cloth_simulation.md)

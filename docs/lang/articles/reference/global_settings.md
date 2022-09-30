@@ -89,7 +89,7 @@ Following are some frequently-used configurations in `ti.init()`:
 [Develop Options]
 
     gdb_trigger: bool
-        Enable/disable GDB when Taichi crashes. For example, `ti.init(gdb_trigger=True)` activates GDB.
+        Enable/disable GDB when Taichi crashes. For example, `ti.init(gdb_trigger=True)` enables GDB.
 ```
 
 

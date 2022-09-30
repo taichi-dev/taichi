@@ -31,6 +31,7 @@ def test():
     ...
 ```
 
+
 These functions also take vectors and matrices as arguments and operate on them element-wise:
 
 ```python
@@ -47,15 +48,18 @@ def test():
 
 :::note
 
+
 Taichi's math module overlaps to a large extent with Python's built-in math module. Ensure that you follow a few extra rules when using Taichi's math module:
 
 - You must call the functions provided by Taichi's math module from within the Taichi scope.
 - Functions in Taichi's math module also take vectors or matrices as arguments.
 - The precision of a function in Taichi's math module depends on the settings of `default_fp` and `arch` (backend) in `ti.init()`.
 
+
 :::
 
 ## Small vector and matrix types
+
 
 Taichi's math module provides a few small vector and matrix types:
 
@@ -71,9 +75,11 @@ To create one of the vector/matrix types above, use template function `ti.types.
 vec2 = ti.types.vector(2, float)
 ```
 
+
 The number of precision bits of such a type is determined by `default_fp` or `default_ip` in the `ti.init()` method call. For example, if `ti.init(default_fp=ti.f64)` is called, then `vec2/vec3/vec4` and `mat2/mat3/mat4` defined in the Taichi scope all have a 64-bit floating-point precision.
 
 You can use these types to instantiate vectors/matrices or annotate data types for function arguments and struct members. See the [Type System](../type_system/type.md) for more information. Here we emphasize that they have very flexible initialization routines:
+
 
 ```python
 mat2 = ti.math.mat2
@@ -101,10 +107,12 @@ u = v.wzyx  # vec4(4, 3, 2, 1)
 u = v.rraa  # vec4(1, 1, 2, 2)
 ```
 
+
 ### Relations between `ti.Vector`, `ti.types.vector` and `ti.math.vec3`
 
 - `ti.Vector` is a function that accepts a 1D array and returns a matrix instance that has only one column. For example, `ti.Vector([1, 2, 3, 4, 5])`.
 - `ti.types.vector` is a function that accepts an integer and a primitive type and returns a vector type. For example: `vec5f = ti.types.vector(5, float)`. `vec5f` can then be used to instantiate 5D vectors or annotate data types of function arguments and struct members:
+
 
     ```python
     @ti.kernel
@@ -112,7 +120,9 @@ u = v.rraa  # vec4(1, 1, 2, 2)
         print(v.xyz)
     ```
     Unlike `ti.Vector`, whose input data must be a 1D array, vector types created by `ti.types.vector()` have more flexible ways to initialize, as explained above.
+
 - `ti.math.vec3` is created by `vec3 = ti.types.vector(3, float)`.
+
 
 
 ## GLSL-standard functions
@@ -141,9 +151,11 @@ Texture support in Taichi is implemented in the `ti.types.texture_types` module.
 
 ## Complex number operations
 
+
 Taichi's math module also supports basic complex arithmetic operations on 2D vectors.
 
 You can use a 2D vector of type `ti.math.vec2` to represent a complex number. In this way, additions and subtractions of complex numbers come in the form of 2D vector additions and subtractions. You can call `ti.math.cmul()` and `ti.math.cdiv()` to conduct multiplication and division of complex numbers:
+
 
 ```python
 import taichi as ti
@@ -159,6 +171,7 @@ def test():
 ```
 
 You can also compute the power, logarithm, and exponential of a complex number:
+
 
 ```python
 

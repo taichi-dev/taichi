@@ -200,7 +200,7 @@ The program iterates over `pixels` 1,000,000 times, and the fractal pattern stor
 Congratulations! After walking through the short example above, you have learned the most significant features of Taichi:
 
 - Taichi compiles and runs Taichi functions and kernels on the specified backend.
-- for loops at the outermost scope in a Taichi kernel are automatically parallelized.
+- For loops at the outermost scope in a Taichi kernel are automatically parallelized.
 - Taichi provides a flexible data container field, and you can use indices to loop over a field.
 
 ## Taichi examples

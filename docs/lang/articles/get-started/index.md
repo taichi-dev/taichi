@@ -111,13 +111,14 @@ We will introduce more advanced features of field in other scenario-based tutori
 
 ### Kernels and functions
 
-Lines 9~22 define two functions, one decorated with `@ti.func` and the other with `@ti.kernel`. They are called a *Taichi function* and a *kernel*, respectively. Taichi functions and kernels are not executed by Python's interpreter; they are taken over by Taichi's JIT compiler and deployed to your parallel CPU cores or GPU.
+Lines 9~22 define two functions, one decorated with `@ti.func` and the other with `@ti.kernel`. They are called *Taichi function* and *kernel* respectively. Taichi functions and kernels are not executed by Python's interpreter but taken over by Taichi's JIT compiler and deployed to your parallel multi-core CPU or GPU.
 
 The main differences between Taichi functions and kernels:
 
 - Kernels are the entry points where Taichi kicks in and takes over the task. A kernel can be called anywhere, anytime in your program, while a Taichi function can only be called from inside a kernel or from inside another Taichi function. In the example above, the Taichi function `complex_sqr` is called by the kernel `paint`.
-- A kernel *must* take type-hinted arguments and return type-hinted results. But Taichi functions do not require type hinting compulsorily. In the example above, the argument `t` in the kernel `paint` is type hinted, but the argument `z` in the Taichi function `complex_sqr` is not.
-- Taichi *supports* nested functions but *does not support* nested kernels. Calling Taichi functions recursively is *not supported*.
+- A kernel *must* take type-hinted arguments and return type-hinted results. But Taichi functions do not require type hinting. In the example above, the argument `t` in the kernel `paint` is type hinted; the argument `z` in the Taichi function `complex_sqr` is not.
+- Taichi *supports* nested functions but *does not support* nested kernels. 
+- Taichi *does not* support recursive Taichi function calls.
 
 :::tip
 ​
@@ -152,7 +153,7 @@ def fill():
             total += i * j
 
     if total > 10:
-        for k in range(5):  # Not parallelized: not at the outermost scope
+        for k in range(5):  # Not parallelized because it is not at the outermost scope
 ```
 
 You can also serialize a parallel for loop at the outermost scope via `ti.loop_config(serialize=True)`. See [Serialize a specified parallel for loop](../debug/debugging.md#serialize-a-specified-parallel-for-loop) for more information.
@@ -192,19 +193,19 @@ for i in range(1000000):
     gui.show()
 ```
 
-The program iterates over `pixels` 1,000,000 times, and the fractal pattern stored in `pixels` is updated accordingly. Call `gui.set_image()` to set the window and `gui.show()` to display the synchronized result on the screen.
+The program iterates over `pixels` 1,000,000 times, and the fractal pattern stored in `pixels` is updated accordingly. Call `gui.set_image()` to set the window and `gui.show()` to display the synchronized result on your screen.
 
 ### Key takeaways
 
 Congratulations! After walking through the short example above, you have learned the most significant features of Taichi:
 
 - Taichi compiles and runs Taichi functions and kernels on the specified backend.
-- The for loop at the outermost scope in a kernel is automatically parallelized.
+- for loops at the outermost scope in a Taichi kernel are automatically parallelized.
 - Taichi provides a flexible data container field, and you can use indices to loop over a field.
 
 ## Taichi examples
 
-The Julia fractal is one of the representative demos Taichi provides. Run the following command in your terminal to view more selected demos in Taichi gallery:
+The Julia fractal is one of the representative demos Taichi provides. To view more selected demos in Taichi gallery:
 
 ```bash
 ti gallery
@@ -218,7 +219,7 @@ This window appears:
 
 </center>
 
-To access the full list of Taichi examples, run `ti example` instead. Other useful command lines:
+To access the full list of Taichi examples, run `ti example`. Other useful command lines:
 
 - `ti example -p fractal`/`ti example -P fractal` prints the source code of the fractal example.
 - `ti example -s fractal` saves the example to your current work directory.

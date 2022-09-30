@@ -17,7 +17,7 @@ def test():
     x = ti.Vector([1, 1])  # Error!
 ```
 
-- Line 3: `x` is an integer because it is assigned an integer value the first time it is declared. 
+- Line 3: `x` is an integer because it is assigned an integer value the first time it is declared.
 - Line 4: `x` is reassigned a floating-point number 3.14 but takes the value 3. This is because 3.14 is automatically cast to integer 3 to match the type of `x`.
 - Line 5:  The system throws an error, because `ti.Vector` cannot be cast into an integer.
 
@@ -61,7 +61,7 @@ ti.init(default_fp=ti.f64)  # Sets the default floating-point type to ti.f64
 
 :::note
 
-The numeric literals in the Taichi scope also have default integer/floating-point types. For example, if the default floating-point type is `ti.f32`, then a numeric literal `3.14159265358979` in the Taichi scope suffers a precision loss because it is cast to a 32-bit floating-point number, which has a precision of about seven decimal digits. 
+The numeric literals in the Taichi scope also have default integer/floating-point types. For example, if the default floating-point type is `ti.f32`, then a numeric literal `3.14159265358979` in the Taichi scope suffers a precision loss because it is cast to a 32-bit floating-point number, which has a precision of about seven decimal digits.
 
 If you are working on a high-precision application scenario, such as numeric simulation for engineering, set `default_fp` as `ti.f64`.
 

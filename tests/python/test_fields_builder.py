@@ -1,7 +1,7 @@
+import numpy as np
 import pytest
 from taichi.lang.exception import TaichiRuntimeError
 
-import numpy as np
 import taichi as ti
 from tests import test_utils
 

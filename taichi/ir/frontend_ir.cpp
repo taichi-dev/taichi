@@ -788,6 +788,7 @@ void AtomicOpExpression::flatten(FlattenContext *ctx) {
     ctx->push_back<AtomicOpStmt>(op_type, dest->stmt, src_val);
   }
   stmt = ctx->back_stmt();
+  stmt->ret_type = stmt->as<AtomicOpStmt>()->dest->ret_type;
   stmt->tb = tb;
 }
 

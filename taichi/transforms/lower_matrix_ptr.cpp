@@ -11,7 +11,7 @@ namespace taichi::lang {
 class LowerMatrixPtr : public BasicStmtVisitor {
  private:
   using BasicStmtVisitor::visit;
-  DelayedIRModifier modifier;
+  DelayedIRModifier modifier_;
 
  public:
   void visit(MatrixPtrStmt *stmt) override {
@@ -22,8 +22,8 @@ class LowerMatrixPtr : public BasicStmtVisitor {
         auto lowered = std::make_unique<GlobalPtrStmt>(
             origin->snodes[offset->val.val_int()], origin->indices);
         stmt->replace_usages_with(lowered.get());
-        modifier.insert_before(stmt, std::move(lowered));
-        modifier.erase(stmt);
+        modifier_.insert_before(stmt, std::move(lowered));
+        modifier_.erase(stmt);
       } else {
         TI_ASSERT_INFO(
             origin->dynamic_indexable,
@@ -38,11 +38,11 @@ class LowerMatrixPtr : public BasicStmtVisitor {
         auto lowered =
             std::make_unique<MatrixPtrStmt>(ptr_base.get(), offset.get());
         stmt->replace_usages_with(lowered.get());
-        modifier.insert_before(stmt, std::move(stride));
-        modifier.insert_before(stmt, std::move(offset));
-        modifier.insert_before(stmt, std::move(ptr_base));
-        modifier.insert_before(stmt, std::move(lowered));
-        modifier.erase(stmt);
+        modifier_.insert_before(stmt, std::move(stride));
+        modifier_.insert_before(stmt, std::move(offset));
+        modifier_.insert_before(stmt, std::move(ptr_base));
+        modifier_.insert_before(stmt, std::move(lowered));
+        modifier_.erase(stmt);
       }
       return;
     }
@@ -66,8 +66,8 @@ class LowerMatrixPtr : public BasicStmtVisitor {
       fused->ret_type = stmt->ret_type;
 
       stmt->replace_usages_with(fused.get());
-      modifier.insert_before(stmt, std::move(fused));
-      modifier.erase(stmt);
+      modifier_.insert_before(stmt, std::move(fused));
+      modifier_.erase(stmt);
       return;
     }
   }
@@ -75,23 +75,23 @@ class LowerMatrixPtr : public BasicStmtVisitor {
   static void run(IRNode *node) {
     LowerMatrixPtr pass;
     node->accept(&pass);
-    pass.modifier.modify_ir();
+    pass.modifier_.modify_ir();
   }
 };
 
 class RemoveMatrixOfGlobalPtr : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
-  DelayedIRModifier modifier;
+  DelayedIRModifier modifier_;
 
   void visit(MatrixOfGlobalPtrStmt *stmt) override {
-    modifier.erase(stmt);
+    modifier_.erase(stmt);
   }
 
   static void run(IRNode *node) {
     RemoveMatrixOfGlobalPtr pass;
     node->accept(&pass);
-    pass.modifier.modify_ir();
+    pass.modifier_.modify_ir();
   }
 };
 

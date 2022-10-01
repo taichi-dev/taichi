@@ -13,4 +13,5 @@ target_include_directories(metal_program_impl
   )
 
 target_link_libraries(metal_program_impl PUBLIC metal_codegen)
+target_link_libraries(metal_program_impl PUBLIC metal_cache)
 target_link_libraries(metal_program_impl PUBLIC metal_runtime)

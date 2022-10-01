@@ -35,7 +35,7 @@ class CacheManager {
   CacheManager(Params &&init_params);
   
   // Load from memory || Load from disk || (Compile && Cache the result in memory)
-  CompiledKernelData load_or_compile(const CompileConfig *config, Kernel *kernel);
+  CompiledKernelData load_or_compile(const CompileConfig *compile_config, Kernel *kernel);
 
   // Dump the cached data in memory to disk
   void dump_with_merging() const;
@@ -46,6 +46,12 @@ class CacheManager {
                            double cleaning_factor) const {}
 
  private:
+  CompiledKernelData compile_kernel(Kernel *kernel) const;
+  std::string make_kernel_key(const CompileConfig *compile_config, Kernel *kernel) const;
+  std::optional<CompiledKernelData> try_load_cached_kernel(Kernel *kernel, const std::string &key);
+  CompiledKernelData compile_and_cache_kernel(const std::string &key, Kernel *kernel);
+  bool complete_kernel_data(OfflineCacheKernelMetadata &kernel_data);
+
   Params config_;
   CachingData caching_kernels_;
   Metadata cached_data_;

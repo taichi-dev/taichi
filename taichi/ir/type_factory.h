@@ -23,15 +23,17 @@ class TypeFactory {
 
   const Type *get_pointer_type(Type *element, bool is_bit_pointer = false);
 
-  const Type *get_quant_int_type(int num_bits, bool is_signed, Type *compute_type);
+  const Type *get_quant_int_type(int num_bits,
+                                 bool is_signed,
+                                 Type *compute_type);
 
   const Type *get_quant_fixed_type(Type *digits_type,
-                             Type *compute_type,
-                             float64 scale);
+                                   Type *compute_type,
+                                   float64 scale);
 
   const Type *get_quant_float_type(Type *digits_type,
-                             Type *exponent_type,
-                             Type *compute_type);
+                                   Type *exponent_type,
+                                   Type *compute_type);
 
   const BitStructType *get_bit_struct_type(
       PrimitiveType *physical_type,
@@ -41,10 +43,11 @@ class TypeFactory {
       const std::vector<std::vector<int>> &member_exponent_users);
 
   const Type *get_quant_array_type(PrimitiveType *physical_type,
-                             Type *element_type,
-                             int num_elements);
+                                   Type *element_type,
+                                   int num_elements);
 
-  static const DataType create_tensor_type(std::vector<int> shape, DataType element);
+  static const DataType create_tensor_type(std::vector<int> shape,
+                                           DataType element);
 
  private:
   TypeFactory();

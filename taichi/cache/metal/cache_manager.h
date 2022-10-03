@@ -43,7 +43,9 @@ class CacheManager {
   // Run offline cache cleaning
   void clean_offline_cache(offline_cache::CleanCachePolicy policy,
                            int max_bytes,
-                           double cleaning_factor) const {}
+                           double cleaning_factor) const {
+    TI_NOT_IMPLEMENTED;
+  }
 
  private:
   CompiledKernelData compile_kernel(Kernel *kernel) const;

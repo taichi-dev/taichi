@@ -49,8 +49,8 @@ FunctionType MetalProgramImpl::compile(Kernel *kernel,
                                        OffloadedStmt *offloaded) {
   TI_ASSERT(offloaded == nullptr);
   return metal::compiled_kernel_to_metal_executable(
-    get_cache_manager()->load_or_compile(config, kernel), 
-    metal_kernel_mgr_.get());
+      get_cache_manager()->load_or_compile(config, kernel),
+      metal_kernel_mgr_.get());
 }
 
 std::size_t MetalProgramImpl::get_snode_num_dynamically_allocated(SNode *snode,
@@ -126,7 +126,8 @@ void MetalProgramImpl::dump_cache_data_to_disk() {
   get_cache_manager()->dump_with_merging();
 }
 
-const std::unique_ptr<metal::CacheManager> &MetalProgramImpl::get_cache_manager() {
+const std::unique_ptr<metal::CacheManager>
+    &MetalProgramImpl::get_cache_manager() {
   if (!cache_manager_) {
     TI_ASSERT(compiled_runtime_module_.has_value());
     using Mgr = metal::CacheManager;
@@ -135,7 +136,8 @@ const std::unique_ptr<metal::CacheManager> &MetalProgramImpl::get_cache_manager(
         offline_cache::enabled_wip_offline_cache(config->offline_cache)
             ? Mgr::MemAndDiskCache
             : Mgr::MemCache;
-    params.cache_path = offline_cache::get_cache_path_by_arch(config->offline_cache_file_path, Arch::metal);
+    params.cache_path = offline_cache::get_cache_path_by_arch(
+        config->offline_cache_file_path, Arch::metal);
     params.compiled_runtime_module_ = &(*compiled_runtime_module_);
     params.compiled_snode_trees_ = &compiled_snode_trees_;
     cache_manager_ = std::make_unique<Mgr>(std::move(params));

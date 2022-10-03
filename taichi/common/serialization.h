@@ -144,10 +144,10 @@ serialize_kv_impl(SER &ser,
   }
 
 #define TI_IO_DEF_WITH_BASECLASS(BaseClass, ...) \
-  template <typename S>          \
-  void io(S &serializer) const { \
-    this->BaseClass::io(serializer);   \
-    TI_IO(__VA_ARGS__);          \
+  template <typename S>                          \
+  void io(S &serializer) const {                 \
+    this->BaseClass::io(serializer);             \
+    TI_IO(__VA_ARGS__);                          \
   }
 
 // This macro serializes each field with its name by doing the following:

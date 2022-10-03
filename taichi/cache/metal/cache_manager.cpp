@@ -10,7 +10,8 @@
 namespace taichi::lang {
 namespace metal {
 
-CacheManager::CacheManager(Params &&init_params) : config_(std::move(init_params)) {
+CacheManager::CacheManager(Params &&init_params)
+    : config_(std::move(init_params)) {
   if (config_.mode == MemAndDiskCache) {
     const auto filepath = join_path(config_.cache_path, kMetadataFilename);
     const auto lock_path = join_path(config_.cache_path, kMetadataLockName);
@@ -21,7 +22,9 @@ CacheManager::CacheManager(Params &&init_params) : config_(std::move(init_params
   }
 }
 
-CacheManager::CompiledKernelData CacheManager::load_or_compile(const CompileConfig *compile_config, Kernel *kernel) {
+CacheManager::CompiledKernelData CacheManager::load_or_compile(
+    const CompileConfig *compile_config,
+    Kernel *kernel) {
   if (kernel->is_evaluator || config_.mode == NotCache) {
     return compile_kernel(kernel);
   }
@@ -64,7 +67,8 @@ void CacheManager::dump_with_merging() const {
       }
       // Dump
       for (const auto &[_, k] : data.kernels) {
-        const auto code_filepath = join_path(config_.cache_path, fmt::format(kMetalCodeFormat, k.kernel_key));
+        const auto code_filepath = join_path(
+            config_.cache_path, fmt::format(kMetalCodeFormat, k.kernel_key));
         if (try_lock_with_file(code_filepath)) {
           std::ofstream fs{code_filepath};
           fs << k.compiled_kernel_data.source_code;
@@ -77,11 +81,8 @@ void CacheManager::dump_with_merging() const {
 
 CompiledKernelData CacheManager::compile_kernel(Kernel *kernel) const {
   kernel->lower();
-  return run_codegen(
-    config_.compiled_runtime_module_,
-    *config_.compiled_snode_trees_, 
-    kernel, 
-    nullptr);
+  return run_codegen(config_.compiled_runtime_module_,
+                     *config_.compiled_snode_trees_, kernel, nullptr);
 }
 
 std::string CacheManager::make_kernel_key(const CompileConfig *compile_config,
@@ -97,13 +98,16 @@ std::string CacheManager::make_kernel_key(const CompileConfig *compile_config,
   return key;
 }
 
-std::optional<CompiledKernelData> CacheManager::try_load_cached_kernel(Kernel *kernel, const std::string &key) {
+std::optional<CompiledKernelData> CacheManager::try_load_cached_kernel(
+    Kernel *kernel,
+    const std::string &key) {
   TI_ASSERT(config_.mode > NotCache);
-  { // Find in memory-cache (caching_kernels_)
+  {  // Find in memory-cache (caching_kernels_)
     const auto &kernels = caching_kernels_;
     auto iter = kernels.find(key);
     if (iter != kernels.end()) {
-      TI_DEBUG("Create kernel '{}' from in-memory cache (key='{}')", kernel->get_name(), key);
+      TI_DEBUG("Create kernel '{}' from in-memory cache (key='{}')",
+               kernel->get_name(), key);
       kernel->mark_as_from_cache();
       return iter->second.compiled_kernel_data;
     }
@@ -116,7 +120,8 @@ std::optional<CompiledKernelData> CacheManager::try_load_cached_kernel(Kernel *k
       auto &k = iter->second;
       TI_ASSERT(k.kernel_key == k.compiled_kernel_data.kernel_name);
       if (complete_kernel_data(k)) {
-        TI_DEBUG("Create kernel '{}' from cache (key='{}')", kernel->get_name(), key);
+        TI_DEBUG("Create kernel '{}' from cache (key='{}')", kernel->get_name(),
+                 key);
         k.last_used_at = std::time(nullptr);
         updated_data_.push_back(&k);
         kernel->mark_as_from_cache();
@@ -127,8 +132,11 @@ std::optional<CompiledKernelData> CacheManager::try_load_cached_kernel(Kernel *k
   return std::nullopt;
 }
 
-CompiledKernelData CacheManager::compile_and_cache_kernel(const std::string &key, Kernel *kernel) {
-  TI_DEBUG_IF(config_.mode == MemAndDiskCache, "Cache kernel '{}' (key='{}')", kernel->get_name(), key);
+CompiledKernelData CacheManager::compile_and_cache_kernel(
+    const std::string &key,
+    Kernel *kernel) {
+  TI_DEBUG_IF(config_.mode == MemAndDiskCache, "Cache kernel '{}' (key='{}')",
+              kernel->get_name(), key);
   OfflineCacheKernelMetadata k;
   k.kernel_key = key;
   k.created_at = k.last_used_at = std::time(nullptr);
@@ -138,12 +146,15 @@ CompiledKernelData CacheManager::compile_and_cache_kernel(const std::string &key
   return kernel_data.compiled_kernel_data;
 }
 
-bool CacheManager::complete_kernel_data(OfflineCacheKernelMetadata &kernel_data) {
+bool CacheManager::complete_kernel_data(
+    OfflineCacheKernelMetadata &kernel_data) {
   auto &src = kernel_data.compiled_kernel_data.source_code;
   if (!src.empty()) {
     return true;
   }
-  auto filepath = join_path(config_.cache_path, fmt::format(kMetalCodeFormat, kernel_data.kernel_key));
+  auto filepath =
+      join_path(config_.cache_path,
+                fmt::format(kMetalCodeFormat, kernel_data.kernel_key));
   std::ifstream f(filepath);
   if (!f.is_open()) {
     return false;

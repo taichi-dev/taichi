@@ -178,6 +178,8 @@ struct TaichiKernelAttributes {
     // Whether [[thread_index_in_simdgroup]] is used. This is only supported
     // since MSL 2.1
     bool simdgroup = false;
+
+    TI_IO_DEF(print, assertion, sparse, simdgroup);
   };
   std::string name;
   // Is this kernel for evaluating the constant fold result?
@@ -186,7 +188,7 @@ struct TaichiKernelAttributes {
   std::vector<KernelAttributes> mtl_kernels_attribs;
   UsedFeatures used_features;
 
-  TI_IO_DEF(name, mtl_kernels_attribs);
+  TI_IO_DEF(name, is_jit_evaluator, mtl_kernels_attribs, used_features);
 };
 
 // This class contains the attributes descriptors for both the input args and

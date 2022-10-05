@@ -143,10 +143,15 @@ struct KernelAttributes {
   };
 
   struct RuntimeListOpAttributes {
-    const SNode *snode = nullptr;
+    int parent_snode_id{-1};
+    int snode_id{-1};
+
+    TI_IO_DEF(parent_snode_id, snode_id);
   };
   struct GcOpAttributes {
-    const SNode *snode = nullptr;
+    int snode_id{-1};
+
+    TI_IO_DEF(snode_id);
   };
   std::vector<BufferDescriptor> buffers;
   std::unordered_map<int, int> arr_args_to_binding_indices;
@@ -161,9 +166,12 @@ struct KernelAttributes {
 
   TI_IO_DEF(name,
             advisory_total_num_threads,
+            advisory_num_threads_per_group,
             task_type,
             buffers,
-            range_for_attribs);
+            range_for_attribs,
+            runtime_list_op_attribs,
+            gc_op_attribs);
 };
 
 // Groups all the Metal kernels generated from a single ti.kernel

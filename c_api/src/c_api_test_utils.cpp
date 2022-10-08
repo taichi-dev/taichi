@@ -1,6 +1,7 @@
 #include "c_api_test_utils.h"
 #include "taichi_llvm_impl.h"
 #include "taichi/platform/cuda/detect_cuda.h"
+#include "taichi/rhi/cuda/cuda_driver.h"
 
 #ifdef TI_WITH_VULKAN
 #include "taichi/rhi/vulkan/vulkan_loader.h"
@@ -12,6 +13,35 @@
 
 namespace capi {
 namespace utils {
+
+template <class T>
+bool check_cuda_value(void *ptr, T value) {
+#ifdef TI_WITH_CUDA
+  T host_val;
+  taichi::lang::CUDADriver::get_instance().memcpy_device_to_host(&host_val, ptr,
+                                                                 sizeof(T));
+  if (host_val == value)
+    return true;
+#endif
+  return false;
+}
+
+template <>
+bool check_cuda_value<float>(void *ptr, float value) {
+  return check_cuda_value(ptr, value);
+}
+template <>
+bool check_cuda_value<double>(void *ptr, double value) {
+  return check_cuda_value(ptr, value);
+}
+template <>
+bool check_cuda_value<int>(void *ptr, int value) {
+  return check_cuda_value(ptr, value);
+}
+template <>
+bool check_cuda_value<uint64_t>(void *ptr, uint64_t value) {
+  return check_cuda_value(ptr, value);
+}
 
 bool is_vulkan_available() {
 #ifdef TI_WITH_VULKAN

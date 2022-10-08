@@ -9,6 +9,9 @@ TI_DLL_EXPORT bool TI_API_CALL is_opengl_available();
 TI_DLL_EXPORT bool TI_API_CALL is_cuda_available();
 TI_DLL_EXPORT void TI_API_CALL check_runtime_error(TiRuntime runtime);
 
+template <class T>
+TI_DLL_EXPORT bool TI_API_CALL check_cuda_value(void *ptr, T value);
+
 typedef struct TiNdarrayAndMem {
   TiRuntime runtime_;
   TiMemory memory_;

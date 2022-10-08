@@ -125,6 +125,14 @@ TiError ti_get_last_error(uint64_t message_size, char *message) {
 // external procedures.
 void ti_set_last_error(TiError error, const char *message) {
   TI_CAPI_TRY_CATCH_BEGIN();
+  if (error >= TI_ERROR_SUCCESS &&
+      thread_error_cache.error < TI_ERROR_SUCCESS) {
+    TI_WARN(
+        "Overriding C-API error: ({}) with ({}) is forbidden thus rejected.",
+        describe_error(thread_error_cache.error), describe_error(error));
+    return;
+  }
+
   if (error < TI_ERROR_SUCCESS) {
     TI_WARN("C-API error: ({}) {}", describe_error(error), message);
     if (message != nullptr) {
@@ -132,11 +140,10 @@ void ti_set_last_error(TiError error, const char *message) {
     } else {
       thread_error_cache.message.clear();
     }
-    thread_error_cache.error = error;
   } else {
-    thread_error_cache.error = TI_ERROR_SUCCESS;
     thread_error_cache.message.clear();
   }
+  thread_error_cache.error = error;
   TI_CAPI_TRY_CATCH_END();
 }
 

@@ -12,6 +12,9 @@
 #if defined(TI_WITH_CUDA)
 #include "taichi/codegen/cuda/codegen_cuda.h"
 #endif
+#if defined(TI_WITH_DX12)
+#include "taichi/codegen/dx12/codegen_dx12.h"
+#endif
 #include "taichi/system/timer.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/transforms.h"
@@ -45,6 +48,12 @@ std::unique_ptr<KernelCodeGen> KernelCodeGen::create(Arch arch,
   } else if (arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
     return std::make_unique<KernelCodeGenCUDA>(kernel, stmt);
+#else
+    TI_NOT_IMPLEMENTED
+#endif
+  } else if (arch == Arch::dx12) {
+#if defined(TI_WITH_DX12)
+    return std::make_unique<KernelCodeGenDX12>(kernel, stmt);
 #else
     TI_NOT_IMPLEMENTED
 #endif

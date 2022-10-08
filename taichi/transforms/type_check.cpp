@@ -421,8 +421,8 @@ class TypeCheck : public IRVisitor {
 
   void visit(ExternalPtrStmt *stmt) override {
     /* ExternalPtrStmt may have two different semantics:
-       1. outter indexing to an argloaded external tensor
-       2. outter indexing + inner indexing to get the innermost primitive
+       1. outer indexing to an argloaded external tensor
+       2. outer indexing + inner indexing to get the innermost primitive
        element of an external tensor
        We rely on "external_dims" and "indices" to distinguish these two cases.
        Case #1: external_dims == indices.size(), return TensorType

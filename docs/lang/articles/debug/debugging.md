@@ -198,15 +198,19 @@ You can use `assert` statements in the Taichi scope to verify the assertion cond
 Ensure that you activate `debug` mode before using `assert` statements in the Taichi scope:
 
 ```python
+import taichi as ti
 ti.init(arch=ti.cpu, debug=True)
 
 x = ti.field(ti.f32, 128)
+x.fill(-1)
 
 @ti.kernel
 def do_sqrt_all():
     for i in x:
-        assert x[i] >= 0
+        assert x[i] >= 0, f"The {i}-th element cannot be negative"
         x[i] = ti.sqrt(x[i])
+
+do_sqrt_all()
 ```
 
 When you are done with debugging, set `debug=False`. Then, the program ignores all `assert` statements in the Taichi scope, which can avoid additional runtime overhead.

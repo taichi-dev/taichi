@@ -112,13 +112,12 @@ u = v.rraa  # vec4(1, 1, 2, 2)
 
 - `ti.Vector` is a function that accepts a 1D array and returns a matrix instance that has only one column. For example, `ti.Vector([1, 2, 3, 4, 5])`.
 - `ti.types.vector` is a function that accepts an integer and a primitive type and returns a vector type. For example: `vec5f = ti.types.vector(5, float)`. `vec5f` can then be used to instantiate 5D vectors or annotate data types of function arguments and struct members:
-
-
     ```python
     @ti.kernel
     def test(v: vec5f):
         print(v.xyz)
     ```
+
     Unlike `ti.Vector`, whose input data must be a 1D array, vector types created by `ti.types.vector()` have more flexible ways to initialize, as explained above.
 
 - `ti.math.vec3` is created by `vec3 = ti.types.vector(3, float)`.

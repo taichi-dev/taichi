@@ -379,9 +379,10 @@ class SNodeHostAccessor:
                 assert len(key) == _ti_core.get_max_num_indices()
                 snode.write_float(key, value)
                 if impl.get_runtime().target_tape and impl.get_runtime(
-                ).target_tape.grad_check and not impl.get_runtime(
+                ).target_tape.grad_checker and not impl.get_runtime(
                 ).grad_replaced:
-                    for x in impl.get_runtime().target_tape.grad_check:
+                    for x in impl.get_runtime(
+                    ).target_tape.grad_checker.to_check:
                         assert snode != x.snode.ptr, "Overwritten is prohibitive when doing grad check."
                     impl.get_runtime().target_tape.insert(
                         snode.write_float, (key, value))
@@ -401,9 +402,10 @@ class SNodeHostAccessor:
                 assert len(key) == _ti_core.get_max_num_indices()
                 snode.write_int(key, value)
                 if impl.get_runtime().target_tape and impl.get_runtime(
-                ).target_tape.grad_check and not impl.get_runtime(
+                ).target_tape.grad_checker and not impl.get_runtime(
                 ).grad_replaced:
-                    for x in impl.get_runtime().target_tape.grad_check:
+                    for x in impl.get_runtime(
+                    ).target_tape.grad_checker.to_check:
                         assert snode != x.snode.ptr, "Overwritten is prohibitive when doing grad check."
                     impl.get_runtime().target_tape.insert(
                         snode.write_int, (key, value))

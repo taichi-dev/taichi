@@ -84,7 +84,7 @@ class RemoveMatrixOfGlobalPtr : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
   DelayedIRModifier modifier_;
 
-public:
+ public:
   void visit(MatrixOfGlobalPtrStmt *stmt) override {
     modifier_.erase(stmt);
   }

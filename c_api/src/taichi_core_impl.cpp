@@ -370,7 +370,16 @@ void ti_copy_memory_device_to_device(TiRuntime runtime,
                  .get_ptr(dst_memory->offset);
   auto src = devmem2devalloc(*runtime2, src_memory->memory)
                  .get_ptr(src_memory->offset);
-  runtime2->buffer_copy(dst, src, dst_memory->size);
+  if (src.device == dst.device) {
+    // Same-device memcpy
+    runtime2->buffer_copy(dst, src, dst_memory->size);
+  } else {
+    // Cross-device memcpy
+    taichi::lang::Device::memcpy_direct(dst, src, dst_memory->size);
+
+    // TODO: judge whether src/dst memory is host accesible
+    //       swtich to Device::memcpy_via_staging() if neccessary
+  }
   TI_CAPI_TRY_CATCH_END();
 }
 

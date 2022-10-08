@@ -54,8 +54,20 @@ void memcpy_cpu_to_vulkan_via_staging(DevicePtr dst,
   stream->submit_synced(cmd_list.get());
 }
 
+void memcpy_vulkan_to_cpu_via_staging(DevicePtr dst,
+                                      DevicePtr src,
+                                      DevicePtr staging,
+                                      uint64_t size) {
+  TI_NOT_IMPLEMENTED;
+}
+
 #else
 void memcpy_cpu_to_vulkan(DevicePtr dst, DevicePtr src, uint64_t size) {
+  TI_NOT_IMPLEMENTED;
+}
+void memcpy_vulkan_to_cpu_via_staging(DevicePtr dst,
+                                      DevicePtr src,
+                                      uint64_t size) {
   TI_NOT_IMPLEMENTED;
 }
 void memcpy_cpu_to_vulkan_via_staging(DevicePtr dst,

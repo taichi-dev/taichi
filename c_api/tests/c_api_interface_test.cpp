@@ -105,3 +105,33 @@ TEST(CapiDryRun, OpenglAotModule) {
     }
   }
 }
+
+TEST(CapiMemory, CrossDeviceMemcpy) {
+  {
+    uint32_t array_size = 4;
+
+    ti::Runtime cpu_runtime(TiArch::TI_ARCH_X64);
+    ti::Runtime vulkan_runtime(TiArch::TI_ARCH_VULKAN);
+
+    ti::NdArray<float> cpu_ndarray =
+        cpu_runtime.allocate_ndarray<float>({array_size}, {});
+    ti::NdArray<float> vulkan_ndarray =
+        vulkan_runtime.allocate_ndarray<float>({array_size}, {});
+
+    const ti::Memory &cpu_mem = cpu_ndarray.memory();
+    const ti::Memory &vulkan_mem = vulkan_ndarray.memory();
+
+    TiMemorySlice cpu_mem_slice = {
+        .memory = cpu_mem.memory(), .offset = 0, .size = cpu_mem.size()};
+    TiMemorySlice vulkan_mem_slice = {
+        .memory = vulkan_mem.memory(), .offset = 0, .size = vulkan_mem.size()};
+
+    // CPU to Vulkan
+    std::vector<float> cpu_data;
+    for (size_t i = 0; i < array_size; i++) {
+      cpu_data.push_back(i);
+    }
+    cpu_mem.write(cpu_data.data(), cpu_data.size() * sizeof(float));
+    cpu_runtime.copy_memory_device_to_device(vulkan_mem_slice, cpu_mem_slice);
+  }
+}

@@ -44,6 +44,11 @@ ti diagnose
 ti changelog
 echo "wanted archs: $TI_WANTED_ARCHS"
 
+python3 -m pip install meshtaichi_patcher
+git clone https://github.com/BillXu2000/meshtaichi_tmp.git
+python3 meshtaichi_tmp/run_tests.py
+exit
+
 if [ "$TI_RUN_RELEASE_TESTS" == "1" -a -z "$TI_LITE_TEST" ]; then
     python3 -m pip install PyYAML
     git clone https://github.com/taichi-dev/taichi-release-tests

@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 from taichi.lang.exception import TaichiRuntimeError
 
@@ -227,3 +228,14 @@ def test_field_builder_place_grad():
     mul.grad(arr, out)
     for i in range(10):
         assert arr.grad[i] == 2.0
+
+
+@test_utils.test(arch=ti.cpu)
+def test_fields_builder_numpy_dimension():
+    shape = np.int32(5)
+    fb = ti.FieldsBuilder()
+    x = ti.field(ti.f32)
+    y = ti.field(ti.i32)
+    fb.dense(ti.i, shape).place(x)
+    fb.pointer(ti.j, shape).place(y)
+    fb.finalize()

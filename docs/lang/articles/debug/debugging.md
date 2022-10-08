@@ -14,11 +14,17 @@ Taichi provides the following mechanisms to facilitate parallel programming debu
 
 ## Runtime `print` in Taichi scope
 
+
+You can call `print()` in the Taichi scope to debug your program:
+
 ```python
-print(arg1, ..., sep='', end='\n')
+print(*args, sep='', end='\n')
 ```
 
-Debug your program with `print()` in the Taichi scope. For example:
+When passed into a runtime `print()` in the Taichi scope, `args` can take string literal, scalar, vector, and matrix expressions.
+
+
+For example:
 
 ```python {1}
 @ti.kernel
@@ -57,7 +63,6 @@ def inside_taichi_scope():
     #=> ray.ori = [0.0, 0.0, 0.0], ray.dir = [0.0, 0.0, 1.0], ray.len = 1.0
 ```
 
-Behaviors of `print` vary depending on the scope where it is called. When called from within the Taichi scope, `print` can take string literal, scalar, vector, and matrix expressions as arguments.
 
 ### Applicable backends
 
@@ -113,11 +118,11 @@ def inside_taichi_scope():
 
 ## Serial execution
 
-Taichi's automatic parallelization mechanism may lead to non-deterministic behaviors. For debugging purposes, serializing program execution may be useful for getting repeatable results or diagnosing data races. You can serialize either the entire Taichi program or a specific for loop.
+Taichi's automatic parallelization mechanism may lead to non-deterministic behaviors because the threads are executed in random order. For debugging purposes, serializing program execution may be useful for getting repeatable results or diagnosing data races. You can serialize either the entire Taichi program or a specific for loop.
 
 ### Serialize an entire Taichi program
 
-If you choose your backend as CPU, you can set cpu_max_num_thread=1 when initializing Taichi to serialize the program. Then the program runs on a single thread and its behavior becomes deterministic. For example:
+If you choose CPU as the backend, you can set `cpu_max_num_thread=1` when initializing Taichi to serialize the program. Then the program runs on a single thread and its behavior becomes deterministic. For example:
 
 ```python
 ti.init(arch=ti.cpu, cpu_max_num_threads=1)
@@ -127,7 +132,7 @@ If your program works well in serial but fails in parallel, check if there are p
 
 ### Serialize a specified parallel for loop
 
-By default, Taichi automatically parallelizes the for loops at the outermost scope in a Taichi kernel. But some scenarios require serial exeution. In this case, you can prevent automatic parallelization with `ti.loop_config(serialize=True)`:
+By default, Taichi automatically parallelizes the for loops at the outermost scope in a Taichi kernel. But some scenarios require serial execution. In this case, you can prevent automatic parallelization with `ti.loop_config(serialize=True)`. Note that only the outermost for loop that immediately follows this line is serialized. For example:
 
 ```python
 import taichi as ti
@@ -140,9 +145,12 @@ val.fill(1)
 
 @ti.kernel
 def prefix_sum():
-    ti.loop_config(serialize=True) # Serialize the for loop
+    ti.loop_config(serialize=True) # Serializes the next for loop
     for i in range(1, n):
         val[i] += val[i - 1]
+
+    for i in range(1, n):  # Parallel for loop
+	    val[i] += val[i - 1]
 
 prefix_sum()
 print(val)
@@ -150,17 +158,15 @@ print(val)
 
 :::note
 
-- `ti.loop_config(serialize=True)` decorates the outermost for loop that immediately follows it.
 - `ti.loop_config` works only for the *range-for* loop at the outermost scope.
-- Inner for loops are serialized by default.
 
 :::
 
 ## Out-of-bound array access
 
-The array access violation issue is common, but a program would usually proceed without raising a warning and end up with a wrong result. Even if a segmentation fault is triggered, it is hard to debug.
+The array index out of bounds error is common. But Taichi turns off bounds checking by default and proceeds without raising a warning. Therefore, a program with such an error may end up with a wrong result or even trigger segmentation faults, which makes debugging hard.
 
-Taichi makes out-of-bound array accesses readily detectable in auto-debugging mode. Set `debug=True` when initiating Taichi to activate this mode:
+Taichi detects array index out of bound errors in debug mode. You can activate this mode by setting `debug=True` in the `ti.init()` call:
 
 ```python
 import taichi as ti
@@ -173,7 +179,7 @@ def test() -> ti.i32:
 print(test())
 ```
 
-The code snippet above raises a `TaichiAssertionError`, indicating that you are trying to access a field with improper indices.
+The code snippet above raises a `TaichiAssertionError` because you are trying to access elements from a field of shape (32, 32) with indices `[0, 73]`.
 
 :::note
 Automatic bound checks are supported on the CPU and CUDA beckends only.
@@ -183,7 +189,7 @@ Your program performance may worsen if you set `debug=True`.
 
 ## Runtime `assert` in Taichi scope
 
-You can use `assert` statements in the Taichi scope to verify the assertion conditions. If an assertion fails, the program halts and throws a `TaichiAssertionError`.
+You can use `assert` statements in the Taichi scope to verify the assertion conditions. If an assertion fails, the program throws a `TaichiAssertionError`.
 
 :::note
 `assert` is currently supported on the CPU, CUDA, and Metal backends.
@@ -203,7 +209,7 @@ def do_sqrt_all():
         x[i] = ti.sqrt(x[i])
 ```
 
-When you are done with debugging, set `debug=False`, and then the program ignores the subsequent `assert` statements and avoid additional runtime overhead.
+When you are done with debugging, set `debug=False`. Then, the program ignores all `assert` statements in the Taichi scope, which can avoid additional runtime overhead.
 
 ## Compile-time `ti.static_assert`
 
@@ -225,7 +231,7 @@ def copy(dst: ti.template(), src: ti.template()):
 
 ## Conciser tracebacks in Taichi scope
 
-Taichi reports a traceback when an error occurs in the **Taichi scope**. For example:
+Taichi reports the traceback of an error in the **Taichi scope**. For example:
 
 ```python
 import taichi as ti

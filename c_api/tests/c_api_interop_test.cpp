@@ -55,7 +55,7 @@ TEST_F(CapiTest, AotTestCudaBufferInterop) {
     ti_export_cuda_runtime(runtime, ndarray.memory().memory(), &interop_info);
 
     for (int i = 0; i < total_size; i++) {
-      capi::utils::check_cuda_value(interop_info.ptr, 5.0);
+      capi::utils::check_cuda_value((float *)interop_info.ptr + i, 5.0);
     }
   }
 }

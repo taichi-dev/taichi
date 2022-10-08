@@ -555,4 +555,10 @@ typedef enum libraryPropertyType_t {
 
 struct cusolverSpContext;
 typedef struct cusolverSpContext *cusolverSpHandle_t;
+
+// copy from cusolverSp_LOWLEVEL_PREVIEW.h
+struct csrcholInfoHost;
+typedef struct csrcholInfoHost *csrcholInfoHost_t;
+struct csrcholInfo;
+typedef struct csrcholInfo *csrcholInfo_t;
 #endif

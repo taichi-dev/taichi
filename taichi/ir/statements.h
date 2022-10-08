@@ -386,18 +386,18 @@ class MatrixOfGlobalPtrStmt : public Stmt {
 };
 
 /**
- * An accessing tensor element operation.
+ * A pointer to an element of a matrix.
  */
-class PtrOffsetStmt : public Stmt {
+class MatrixPtrStmt : public Stmt {
  public:
   Stmt *origin{nullptr};
   Stmt *offset{nullptr};
 
-  PtrOffsetStmt(Stmt *, Stmt *);
+  MatrixPtrStmt(Stmt *, Stmt *);
 
-  /* TODO(zhanlue/yi): Unify semantics of offset in PrtOffsetStmt
+  /* TODO(zhanlue/yi): Unify semantics of offset in MatrixPtrStmt
 
-    There is a hack in PtrOffsetStmt in terms of the semantics of "offset",
+    There is a hack in MatrixPtrStmt in terms of the semantics of "offset",
     where "offset" can be interpreted as "number of bytes" or "index" in
     different upper-level code paths
 
@@ -408,7 +408,7 @@ class PtrOffsetStmt : public Stmt {
     if (origin->is<AllocaStmt>() || origin->is<GlobalTemporaryStmt>() ||
         origin->is<ExternalPtrStmt>()) {
       TI_ASSERT_INFO(origin->ret_type.ptr_removed()->is<TensorType>(),
-                     "PtrOffsetStmt can only be used for TensorType.");
+                     "MatrixPtrStmt can only be used for TensorType.");
       return true;
     }
     return false;
@@ -663,8 +663,8 @@ class LocalStoreStmt : public Stmt {
 
   LocalStoreStmt(Stmt *dest, Stmt *val) : dest(dest), val(val) {
     TI_ASSERT(dest->is<AllocaStmt>() ||
-              (dest->is<PtrOffsetStmt>() &&
-               dest->cast<PtrOffsetStmt>()->offset_used_as_index()));
+              (dest->is<MatrixPtrStmt>() &&
+               dest->cast<MatrixPtrStmt>()->offset_used_as_index()));
     TI_STMT_REG_FIELDS;
   }
 
@@ -1813,6 +1813,11 @@ class MatrixInitStmt : public Stmt {
   MatrixInitStmt(const std::vector<Stmt *> &values) : values(values) {
     TI_STMT_REG_FIELDS;
   }
+
+  bool has_global_side_effect() const override {
+    return false;
+  }
+
   TI_STMT_DEF_FIELDS(ret_type, values);
   TI_DEFINE_ACCEPT_AND_CLONE
 };

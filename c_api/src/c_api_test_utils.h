@@ -1,7 +1,6 @@
 #pragma once
 #include <taichi/taichi_platform.h>
 #include "taichi/taichi_core.h"
-
 namespace capi {
 namespace utils {
 

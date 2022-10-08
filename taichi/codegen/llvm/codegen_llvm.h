@@ -142,15 +142,6 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void emit_gc(OffloadedStmt *stmt);
 
-  llvm::Value *create_call(llvm::Function *func,
-                           llvm::ArrayRef<llvm::Value *> args = {});
-
-  llvm::Value *create_call(llvm::Value *func,
-                           llvm::FunctionType *func_ty,
-                           llvm::ArrayRef<llvm::Value *> args = {});
-
-  llvm::Value *create_call(std::string func_name,
-                           llvm::ArrayRef<llvm::Value *> args = {});
   llvm::Value *call(SNode *snode,
                     llvm::Value *node_ptr,
                     const std::string &method,
@@ -242,7 +233,7 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(GlobalPtrStmt *stmt) override;
 
-  void visit(PtrOffsetStmt *stmt) override;
+  void visit(MatrixPtrStmt *stmt) override;
 
   void store_quant_int(llvm::Value *ptr,
                        llvm::Type *physical_type,

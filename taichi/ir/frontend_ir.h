@@ -478,6 +478,7 @@ class ExternalTensorExpression : public Expression {
   }
 
   void type_check(CompileConfig *config) override {
+    ret_type = dt;
     config_ = config;
   }
 

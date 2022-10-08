@@ -517,7 +517,13 @@ Stmt *make_ndarray_access(Expression::FlattenContext *ctx,
   auto expr = var.cast<ExternalTensorExpression>();
   auto external_ptr_stmt = std::make_unique<ExternalPtrStmt>(
       expr->stmt, index_stmts, expr->dt.get_shape(), expr->element_dim);
-  external_ptr_stmt->ret_type = expr->dt;
+  if (expr->dim == indices.size()) {
+    // Indexing into an scalar element
+    external_ptr_stmt->ret_type = expr->dt.ptr_removed().get_element_type();
+  } else {
+    // Indexing outer dimensions
+    external_ptr_stmt->ret_type = expr->dt.ptr_removed();
+  }
 
   return ctx->push_back(std::move(external_ptr_stmt));
 }
@@ -558,7 +564,7 @@ Stmt *make_tensor_access(Expression::FlattenContext *ctx,
     offset_stmt = ctx->push_back<BinaryOpStmt>(BinaryOpType::mul, offset_stmt,
                                                stride_stmt);
   }
-  return ctx->push_back<PtrOffsetStmt>(var->stmt, offset_stmt);
+  return ctx->push_back<MatrixPtrStmt>(var->stmt, offset_stmt);
 }
 
 void MatrixExpression::type_check(CompileConfig *config) {
@@ -782,6 +788,7 @@ void AtomicOpExpression::flatten(FlattenContext *ctx) {
     ctx->push_back<AtomicOpStmt>(op_type, dest->stmt, src_val);
   }
   stmt = ctx->back_stmt();
+  stmt->ret_type = stmt->as<AtomicOpStmt>()->dest->ret_type;
   stmt->tb = tb;
 }
 

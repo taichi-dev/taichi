@@ -27,7 +27,7 @@ TEST_F(CapiTest, AotTestCpuBufferInterop) {
   ndarray.write(data);
 
   TiCpuMemoryInteropInfo interop_info;
-  ti_export_cpu_runtime(runtime, ndarray.memory().memory(), &interop_info);
+  ti_export_cpu_memory(runtime, ndarray.memory().memory(), &interop_info);
 
   for (int i = 0; i < total_size; i++) {
     EXPECT_EQ(((float *)interop_info.ptr)[i], 5.0);
@@ -52,7 +52,7 @@ TEST_F(CapiTest, AotTestCudaBufferInterop) {
     ndarray.write(data);
 
     TiCudaMemoryInteropInfo interop_info;
-    ti_export_cuda_runtime(runtime, ndarray.memory().memory(), &interop_info);
+    ti_export_cuda_memory(runtime, ndarray.memory().memory(), &interop_info);
 
     for (int i = 0; i < total_size; i++) {
       capi::utils::check_cuda_value((float *)interop_info.ptr + i, 5.0);

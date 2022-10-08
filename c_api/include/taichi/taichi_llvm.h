@@ -19,15 +19,15 @@ typedef struct TiCudaMemoryInteropInfo {
 
 // function.export_cpu_runtime
 TI_DLL_EXPORT void TI_API_CALL
-ti_export_cpu_runtime(TiRuntime runtime,
-                      TiMemory memory,
-                      TiCpuMemoryInteropInfo *interop_info);
+ti_export_cpu_memory(TiRuntime runtime,
+                     TiMemory memory,
+                     TiCpuMemoryInteropInfo *interop_info);
 
 // function.export_cuda_runtime
 TI_DLL_EXPORT void TI_API_CALL
-ti_export_cuda_runtime(TiRuntime runtime,
-                       TiMemory memory,
-                       TiCudaMemoryInteropInfo *interop_info);
+ti_export_cuda_memory(TiRuntime runtime,
+                      TiMemory memory,
+                      TiCudaMemoryInteropInfo *interop_info);
 
 #ifdef __cplusplus
 }  // extern "C"

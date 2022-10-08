@@ -134,9 +134,9 @@ void LlvmRuntime::wait() {
 }  // namespace capi
 
 // function.export_cpu_runtime
-void ti_export_cpu_runtime(TiRuntime runtime,
-                           TiMemory memory,
-                           TiCpuMemoryInteropInfo *interop_info) {
+void ti_export_cpu_memory(TiRuntime runtime,
+                          TiMemory memory,
+                          TiCpuMemoryInteropInfo *interop_info) {
   TI_CAPI_ARGUMENT_NULL(runtime);
   TI_CAPI_ARGUMENT_NULL(memory);
   TI_CAPI_ARGUMENT_NULL(interop_info);
@@ -161,9 +161,9 @@ void ti_export_cpu_runtime(TiRuntime runtime,
 }
 
 // function.export_cuda_runtime
-void ti_export_cuda_runtime(TiRuntime runtime,
-                            TiMemory memory,
-                            TiCudaMemoryInteropInfo *interop_info) {
+void ti_export_cuda_memory(TiRuntime runtime,
+                           TiMemory memory,
+                           TiCudaMemoryInteropInfo *interop_info) {
 #ifdef TI_WITH_CUDA
   TI_CAPI_ARGUMENT_NULL(runtime);
   TI_CAPI_ARGUMENT_NULL(memory);

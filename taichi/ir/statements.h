@@ -159,21 +159,32 @@ class UnaryOpStmt : public Stmt {
 class ArgLoadStmt : public Stmt {
  public:
   int arg_id;
+
+  /* TODO(zhanlue): more organized argument-type information
+
+     ArgLoadStmt is able to load everything passed into the kernel,
+     including but not limited to: scalar, matrix, snode_tree_types(WIP),
+     ndarray, ...
+
+     Therefore we need to add a field to indicate the type of the argument. For
+     now, only "is_ptr" and "field_dims" is needed.
+
+  */
   bool is_ptr;
 
-  // field_dims of external ndarray
-  int extern_dims_ = 0;
+  // field_dims of ndarray
+  int field_dims_ = 0;
 
   ArgLoadStmt(int arg_id, const DataType &dt, bool is_ptr = false)
       : arg_id(arg_id) {
     this->ret_type = dt;
     this->is_ptr = is_ptr;
-    this->extern_dims_ = -1;  // -1 means uninitialized
+    this->field_dims_ = -1;  // -1 means uninitialized
     TI_STMT_REG_FIELDS;
   }
 
   void set_extern_dims(int dims) {
-    this->extern_dims_ = dims;
+    this->field_dims_ = dims;
   }
 
   bool has_global_side_effect() const override {

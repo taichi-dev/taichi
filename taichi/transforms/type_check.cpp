@@ -431,7 +431,7 @@ class TypeCheck : public IRVisitor {
     TI_ASSERT(stmt->base_ptr->is<ArgLoadStmt>());
     auto arg_load_stmt = stmt->base_ptr->cast<ArgLoadStmt>();
 
-    int external_dims = arg_load_stmt->extern_dims_;
+    int external_dims = arg_load_stmt->field_dims_;
     if (external_dims == stmt->indices.size() || external_dims == -1) {
       stmt->ret_type = arg_load_stmt->ret_type;
     } else {

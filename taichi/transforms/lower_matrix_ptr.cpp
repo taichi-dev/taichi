@@ -80,7 +80,7 @@ class LowerMatrixPtr : public BasicStmtVisitor {
 };
 
 class RemoveMatrixOfGlobalPtr : public BasicStmtVisitor {
- public:
+ private:
   using BasicStmtVisitor::visit;
   DelayedIRModifier modifier_;
 

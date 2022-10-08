@@ -14,8 +14,8 @@
 namespace capi {
 namespace utils {
 
-template <class T>
-bool check_cuda_value(void *ptr, T value) {
+template <typename T>
+bool check_cuda_value_impl(void *ptr, T value) {
 #ifdef TI_WITH_CUDA
   T host_val;
   taichi::lang::CUDADriver::get_instance().memcpy_device_to_host(&host_val, ptr,
@@ -26,21 +26,12 @@ bool check_cuda_value(void *ptr, T value) {
   return false;
 }
 
-template <>
-bool check_cuda_value<float>(void *ptr, float value) {
-  return check_cuda_value(ptr, value);
+bool check_cuda_value(void *ptr, float value) {
+  return check_cuda_value_impl(ptr, value);
 }
-template <>
-bool check_cuda_value<double>(void *ptr, double value) {
-  return check_cuda_value(ptr, value);
-}
-template <>
-bool check_cuda_value<int>(void *ptr, int value) {
-  return check_cuda_value(ptr, value);
-}
-template <>
-bool check_cuda_value<uint64_t>(void *ptr, uint64_t value) {
-  return check_cuda_value(ptr, value);
+
+bool check_cuda_value(void *ptr, double value) {
+  return check_cuda_value_impl(ptr, value);
 }
 
 bool is_vulkan_available() {

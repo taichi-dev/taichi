@@ -378,6 +378,7 @@ class SNodeHostAccessor:
             def setter(value, *key):
                 assert len(key) == _ti_core.get_max_num_indices()
                 snode.write_float(key, value)
+                # we only capture write kernels in tape scope with no grad_repaced
                 if impl.get_runtime().target_tape and impl.get_runtime(
                 ).target_tape.grad_checker and not impl.get_runtime(
                 ).grad_replaced:
@@ -401,6 +402,7 @@ class SNodeHostAccessor:
             def setter(value, *key):
                 assert len(key) == _ti_core.get_max_num_indices()
                 snode.write_int(key, value)
+                # same as above
                 if impl.get_runtime().target_tape and impl.get_runtime(
                 ).target_tape.grad_checker and not impl.get_runtime(
                 ).grad_replaced:

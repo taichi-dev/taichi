@@ -18,18 +18,11 @@ We strongly recommend each developer to write C++ unit tests when sending a PR.
 TAICHI_CMAKE_ARGS="-DTI_BUILD_TESTS:BOOL=ON" python setup.py develop
 
 # run the C++ test
-TI_LIB_DIR=$TAICHI_INSTALL_DIR/_lib/runtime ./taichi_cpp_tests
+python tests/run_tests.py --cpp
 ```
 
 :::note
-`$TAICHI_INSTALL_DIR` can be retrieved from `taichi.__path__[0]` in python.
-:::
 
-:::note
-On Windows, `taichi_cpp_tests.exe` will be placed inside the `%TAICHI_REPO_DIR%\bin` directory.
-:::
-
-:::note
 Consider polishing the C++ test infrastructure:
 
 * Separate each translation unit into its own test executable

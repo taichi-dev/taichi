@@ -6,7 +6,7 @@ import taichi as ti
 import numpy as np
 import matplotlib
 import matplotlib.cm as cm
-import matplotlib.pyplot as plt
+
 
 ti.init(arch=ti.gpu)
 

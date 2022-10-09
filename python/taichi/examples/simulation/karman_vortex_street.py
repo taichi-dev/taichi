@@ -70,7 +70,7 @@ class lbm_solver:
             for k in ti.static(range(9)):
                 self.f_new[i, j][k] = self.f_eq(i, j, k)
                 self.f_old[i, j][k] = self.f_new[i, j][k]
-            if (self.cy == 1):
+            if self.cy == 1:
                 if ((ti.cast(i, ti.f32) - self.cy_para[0])**2.0 +
                     (ti.cast(j, ti.f32) - self.cy_para[1])**2.0 <=
                         self.cy_para[2]**2.0):
@@ -127,11 +127,11 @@ class lbm_solver:
                 self.vel[i, j][1] = 0.0
                 inb = 0
                 jnb = 0
-                if (ti.cast(i, ti.f32) >= self.cy_para[0]):
+                if ti.cast(i, ti.f32) >= self.cy_para[0]:
                     inb = i + 1
                 else:
                     inb = i - 1
-                if (ti.cast(j, ti.f32) >= self.cy_para[1]):
+                if ti.cast(j, ti.f32) >= self.cy_para[1]:
                     jnb = j + 1
                 else:
                     jnb = j - 1
@@ -139,11 +139,11 @@ class lbm_solver:
 
     @ti.func
     def apply_bc_core(self, outer, dr, ibc, jbc, inb, jnb):
-        if (outer == 1):  # handle outer boundary
-            if (self.bc_type[dr] == 0):
+        if outer == 1:  # handle outer boundary
+            if self.bc_type[dr] == 0:
                 self.vel[ibc, jbc][0] = self.bc_value[dr, 0]
                 self.vel[ibc, jbc][1] = self.bc_value[dr, 1]
-            elif (self.bc_type[dr] == 1):
+            elif self.bc_type[dr] == 1:
                 self.vel[ibc, jbc][0] = self.vel[inb, jnb][0]
                 self.vel[ibc, jbc][1] = self.vel[inb, jnb][1]
         self.rho[ibc, jbc] = self.rho[inb, jnb]

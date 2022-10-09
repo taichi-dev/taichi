@@ -268,7 +268,7 @@ class CuSparseMatrix : public SparseMatrix {
     return &matrix_;
   };
 
-  float get_element(int row, int col) const ;
+  float get_element(int row, int col) const;
 
   const std::string to_string() const override;
 

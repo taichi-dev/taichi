@@ -36,11 +36,11 @@ struct key_hash {
 
 template <typename T, typename T1, typename T2>
 void print_triplets_from_csr(int64_t n_rows,
-                            int n_cols,
-                            T *row,
-                            T1 *col,
-                            T2 *value,
-                            std::ostringstream &ostr) {
+                             int n_cols,
+                             T *row,
+                             T1 *col,
+                             T2 *value,
+                             std::ostringstream &ostr) {
   using Triplets = Eigen::Triplet<T2>;
   std::vector<Triplets> trips;
   for (int64_t i = 1; i <= n_rows; ++i) {
@@ -58,9 +58,10 @@ void print_triplets_from_csr(int64_t n_rows,
 }
 
 template <typename T, typename T1, typename T2>
-T get_element_from_csr(int row, int col, T* row_data, T1* col_data, T2* value) {
+T get_element_from_csr(int row, int col, T *row_data, T1 *col_data, T2 *value) {
   for (T i = row_data[row]; i < row_data[row + 1]; ++i) {
-    if (col == col_data[i]) return value[i];
+    if (col == col_data[i])
+      return value[i];
   }
   // zero entry
   return 0;
@@ -696,7 +697,7 @@ float CuSparseMatrix::get_element(int row, int col) const {
   delete[] hR;
   delete[] hC;
   delete[] hV;
-#endif // TI_WITH_CUDA
+#endif  // TI_WITH_CUDA
   return res;
 }
 

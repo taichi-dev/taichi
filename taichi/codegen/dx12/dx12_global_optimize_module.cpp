@@ -79,7 +79,7 @@ std::vector<uint8_t> global_optimize_module(llvm::Module *module,
     F.addFnAttr(llvm::Attribute::AlwaysInline);
   }
   // FIXME: choose shader model based on feature used.
-  llvm::StringRef triple = "dxil-pc-shadermodel6.0-compute";
+  llvm::StringRef triple = "dxil-pc-shadermodel6.3-compute";
   module->setTargetTriple(triple);
   module->setSourceFileName("");
   std::string err_str;

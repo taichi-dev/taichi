@@ -149,14 +149,9 @@ dx11 = _ti_core.dx11
 """
 # ----------------------
 
-dx12 = _ti_core.dx12
-"""The DX11 backend.
-"""
-# ----------------------
-
-gpu = [cuda, metal, vulkan, opengl, dx11, dx12]
+gpu = [cuda, metal, vulkan, opengl, dx11]
 """A list of GPU backends supported on the current system.
-Currently contains 'cuda', 'metal', 'opengl', 'vulkan', 'dx11', 'dx12'.
+Currently contains 'cuda', 'metal', 'opengl', 'vulkan', 'dx11'.
 
 When this is used, Taichi automatically picks the matching GPU backend. If no
 GPU is detected, Taichi falls back to the CPU backend.
@@ -731,7 +726,6 @@ def is_arch_supported(arch, use_gles=False):
         cc: _ti_core.with_cc,
         vulkan: _ti_core.with_vulkan,
         dx11: _ti_core.with_dx11,
-        dx12: _ti_core.with_dx12,
         wasm: lambda: True,
         cpu: lambda: True,
     }
@@ -771,9 +765,9 @@ def get_compute_stream_device_time_elapsed_us() -> float:
 
 __all__ = [
     'i', 'ij', 'ijk', 'ijkl', 'ijl', 'ik', 'ikl', 'il', 'j', 'jk', 'jkl', 'jl',
-    'k', 'kl', 'l', 'x86_64', 'x64', 'dx11', 'dx12', 'wasm', 'arm64', 'cc',
-    'cpu', 'cuda', 'gpu', 'metal', 'opengl', 'vulkan', 'extension',
-    'loop_config', 'global_thread_idx', 'assume_in_range', 'block_local',
-    'cache_read_only', 'init', 'mesh_local', 'no_activate', 'reset',
-    'mesh_patch_idx', 'get_compute_stream_device_time_elapsed_us'
+    'k', 'kl', 'l', 'x86_64', 'x64', 'dx11', 'wasm', 'arm64', 'cc', 'cpu',
+    'cuda', 'gpu', 'metal', 'opengl', 'vulkan', 'extension', 'loop_config',
+    'global_thread_idx', 'assume_in_range', 'block_local', 'cache_read_only',
+    'init', 'mesh_local', 'no_activate', 'reset', 'mesh_patch_idx',
+    'get_compute_stream_device_time_elapsed_us'
 ]

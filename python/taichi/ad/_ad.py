@@ -84,7 +84,7 @@ class GradChecker:
                     re = err / (abs(ip_autodiff) + 1e-20)
                 re_range.append(re)
 
-                if err * 100 < abs(ip_autodiff):
+                if err * 100 <= abs(ip_autodiff):
                     check_pass = True
                     break
 

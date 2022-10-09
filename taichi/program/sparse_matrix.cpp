@@ -58,7 +58,7 @@ void print_triplets_from_csr(int64_t n_rows,
 }
 
 template <typename T, typename T1, typename T2>
-T get_element_from_csr(int row, int col, T *row_data, T1 *col_data, T2 *value) {
+T2 get_element_from_csr(int row, int col, T* row_data, T1* col_data, T2* value) {
   for (T i = row_data[row]; i < row_data[row + 1]; ++i) {
     if (col == col_data[i])
       return value[i];

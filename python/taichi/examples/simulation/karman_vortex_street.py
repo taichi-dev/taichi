@@ -3,7 +3,7 @@
 # Original code at https://github.com/hietwll/LBM_Taichi
 
 import matplotlib
-import matplotlib.cm as cm
+from matplotlib import cm
 import numpy as np
 
 import taichi as ti

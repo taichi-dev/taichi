@@ -119,7 +119,7 @@ std::optional<CompiledKernelData> CacheManager::try_load_cached_kernel(
     if (iter != kernels.end()) {
       auto &k = iter->second;
       TI_ASSERT(k.kernel_key == k.compiled_kernel_data.kernel_name);
-      if (complete_kernel_data(k)) {
+      if (load_kernel_source_code(k)) {
         TI_DEBUG("Create kernel '{}' from cache (key='{}')", kernel->get_name(),
                  key);
         k.last_used_at = std::time(nullptr);
@@ -146,7 +146,7 @@ CompiledKernelData CacheManager::compile_and_cache_kernel(
   return kernel_data.compiled_kernel_data;
 }
 
-bool CacheManager::complete_kernel_data(
+bool CacheManager::load_kernel_source_code(
     OfflineCacheKernelMetadata &kernel_data) {
   auto &src = kernel_data.compiled_kernel_data.source_code;
   if (!src.empty()) {

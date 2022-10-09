@@ -62,7 +62,7 @@ class CacheManager {
       const std::string &key);
   CompiledKernelData compile_and_cache_kernel(const std::string &key,
                                               Kernel *kernel);
-  bool complete_kernel_data(OfflineCacheKernelMetadata &kernel_data);
+  bool load_kernel_source_code(OfflineCacheKernelMetadata &kernel_data);
 
   Params config_;
   CachingData caching_kernels_;

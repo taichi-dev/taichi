@@ -35,7 +35,7 @@ struct key_hash {
 };
 
 template <typename T, typename T1, typename T2>
-void print_triplet_from_csr(int64_t n_rows,
+void print_triplets_from_csr(int64_t n_rows,
                             int n_cols,
                             T *row,
                             T1 *col,
@@ -55,6 +55,15 @@ void print_triplet_from_csr(int64_t n_rows,
   m.setFromTriplets(trips.begin(), trips.end());
   Eigen::IOFormat clean_fmt(4, 0, ", ", "\n", "[", "]");
   ostr << Eigen::MatrixXf(m.cast<float>()).format(clean_fmt);
+}
+
+template <typename T, typename T1, typename T2>
+T get_element_from_csr(int row, int col, T* row_data, T1* col_data, T2* value) {
+  for (T i = row_data[row]; i < row_data[row + 1]; ++i) {
+    if (col == col_data[i]) return value[i];
+  }
+  // zero entry
+  return 0;
 }
 
 }  // namespace
@@ -647,9 +656,48 @@ const std::string CuSparseMatrix::to_string() const {
   CUDADriver::get_instance().memcpy_device_to_host((void *)hV, (void *)dV,
                                                    (nnz) * sizeof(float));
 
-  print_triplet_from_csr<int, int, float>(rows, cols, hR, hC, hV, ostr);
+  print_triplets_from_csr<int, int, float>(rows, cols, hR, hC, hV, ostr);
+  delete[] hR;
+  delete[] hC;
+  delete[] hV;
 #endif
   return ostr.str();
+}
+
+float CuSparseMatrix::get_element(int row, int col) const {
+  float res = 0.0f;
+#ifdef TI_WITH_CUDA
+  size_t rows, cols, nnz;
+  float *dR;
+  int *dC, *dV;
+  cusparseIndexType_t row_type, column_type;
+  cusparseIndexBase_t idx_base;
+  cudaDataType value_type;
+  CUSPARSEDriver::get_instance().cpCsrGet(
+      matrix_, &rows, &cols, &nnz, (void **)&dR, (void **)&dC, (void **)&dV,
+      &row_type, &column_type, &idx_base, &value_type);
+
+  TI_ASSERT(row < rows);
+  TI_ASSERT(col < cols);
+
+  auto *hR = new int[rows + 1];
+  auto *hC = new int[nnz];
+  auto *hV = new float[nnz];
+
+  CUDADriver::get_instance().memcpy_device_to_host((void *)hR, (void *)dR,
+                                                   (rows + 1) * sizeof(int));
+  CUDADriver::get_instance().memcpy_device_to_host((void *)hC, (void *)dC,
+                                                   (nnz) * sizeof(int));
+  CUDADriver::get_instance().memcpy_device_to_host((void *)hV, (void *)dV,
+                                                   (nnz) * sizeof(float));
+
+  res = get_element_from_csr<int, int, float>(row, col, hR, hC, hV);
+
+  delete[] hR;
+  delete[] hC;
+  delete[] hV;
+#endif // TI_WITH_CUDA
+  return res;
 }
 
 }  // namespace taichi::lang

@@ -5,7 +5,7 @@ import taichi as ti
 from tests import test_utils
 
 
-@test_utils.test(default_fp=ti.f64, exclude=[ti.cc, ti.vulkan])
+@test_utils.test(default_fp=ti.f64, exclude=[ti.cc, ti.vulkan, ti.opengl])
 def test_grad_check():
     x1 = ti.field(dtype=float, shape=(2, 2), needs_grad=True)
     y1 = ti.field(dtype=float, shape=(), needs_grad=True)

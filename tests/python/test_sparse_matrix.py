@@ -421,8 +421,8 @@ def test_gpu_sparse_matrix():
 def test_gpu_sparse_matrix_ops(N):
     import numpy as np
     from numpy.random import default_rng
-    from scipy.sparse import random, coo_matrix
     from scipy import stats
+    from scipy.sparse import coo_matrix, random
 
     seed = 2
     np.random.seed(seed)
@@ -479,7 +479,7 @@ def test_gpu_sparse_matrix_ops(N):
     E = A * 2.5
     S5 = S1 * 2.5
     verify(S5, E)
-    
+
     F = A.transpose()
     S6 = S1.T
     verify(S6, F)

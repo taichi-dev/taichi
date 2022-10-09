@@ -4,6 +4,7 @@ import inspect
 import re
 import sys
 import textwrap
+import weakref
 
 import numpy as np
 import taichi.lang
@@ -346,7 +347,9 @@ class TaichiCallableTemplateMapper:
                 raise TaichiRuntimeTypeError(
                     'Ndarray shouldn\'t be passed in via `ti.template()`, please annotate your kernel using `ti.types.ndarray(...)` instead'
                 )
-            return arg
+            # Taichi kernel will cache extracted arguments, therefore we can't return the original argument.
+            # Instead, we return a weak reference to the original value to avoid memory leak.
+            return weakref.ref(arg)
         if isinstance(anno, texture_type.TextureType):
             return '#'
         if isinstance(anno, ndarray_type.NdarrayType):
@@ -388,7 +391,7 @@ class TaichiCallableTemplateMapper:
             )
 
         key = self.extract(args)
-        if key not in self.mapping:
+        if key not in self.mapping or self.mapping[key] is None:
             count = len(self.mapping)
             self.mapping[key] = count
         return self.mapping[key], key

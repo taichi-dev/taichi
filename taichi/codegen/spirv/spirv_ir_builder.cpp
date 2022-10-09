@@ -1037,6 +1037,13 @@ DEFINE_BUILDER_CMP_OP(ge, GreaterThanEqual);
 DEFINE_BUILDER_CMP_UOP(eq, Equal);
 DEFINE_BUILDER_CMP_UOP(ne, NotEqual);
 
+Value IRBuilder::bit_field_extract(Value base, Value offset, Value count) {
+  TI_ASSERT(is_integral(base.stype.dt));
+  TI_ASSERT(is_integral(offset.stype.dt));
+  TI_ASSERT(is_integral(count.stype.dt));
+  return make_value(spv::OpBitFieldUExtract, base.stype, base, offset, count);
+}
+
 Value IRBuilder::select(Value cond, Value a, Value b) {
   TI_ASSERT(a.stype.id == b.stype.id);
   TI_ASSERT(cond.stype.id == t_bool_.id);

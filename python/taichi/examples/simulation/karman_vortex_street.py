@@ -7,8 +7,12 @@ import numpy as np
 from matplotlib import cm
 
 import taichi as ti
-
+import taichi.math as tm
 ti.init(arch=ti.gpu)
+
+
+vec9 = ti.types.vector(9, float)
+imat9x2 = ti.types.matrix(9, 2, int)
 
 
 @ti.data_oriented
@@ -28,53 +32,37 @@ class lbm_solver:
         self.niu = niu
         self.tau = 3.0 * niu + 0.5
         self.inv_tau = 1.0 / self.tau
-        self.rho = ti.field(dtype=ti.f32, shape=(nx, ny))
-        self.vel = ti.Vector.field(2, dtype=ti.f32, shape=(nx, ny))
-        self.mask = ti.field(dtype=ti.f32, shape=(nx, ny))
-        self.f_old = ti.Vector.field(9, dtype=ti.f32, shape=(nx, ny))
-        self.f_new = ti.Vector.field(9, dtype=ti.f32, shape=(nx, ny))
-        self.w = ti.field(dtype=ti.f32, shape=9)
-        self.e = ti.field(dtype=ti.i32, shape=(9, 2))
-        self.bc_type = ti.field(dtype=ti.i32, shape=4)
-        self.bc_value = ti.field(dtype=ti.f32, shape=(4, 2))
-        self.cy = cy
-        self.cy_para = ti.field(dtype=ti.f32, shape=3)
+        self.rho = ti.field(float, shape=(nx, ny))
+        self.vel = ti.Vector.field(2, float, shape=(nx, ny))
+        self.mask = ti.field(float, shape=(nx, ny))
+        self.f_old = ti.Vector.field(9, float, shape=(nx, ny))
+        self.f_new = ti.Vector.field(9, float, shape=(nx, ny))
+        self.w = vec9(4, 1, 1, 1, 1, 1/4, 1/4, 1/4, 1/4) / 9.0
+        self.e = imat9x2(
+            [0, 0], [1, 0], [0, 1], [-1, 0], [0, -1], [1, 1], [-1, 1], [-1, -1], [1, -1]
+        )
+        self.bc_type = ti.field(int, 4)
         self.bc_type.from_numpy(np.array(bc_type, dtype=np.int32))
+        self.bc_value = ti.Vector.field(2, float, shape=4)
         self.bc_value.from_numpy(np.array(bc_value, dtype=np.float32))
-        self.cy_para.from_numpy(np.array(cy_para, dtype=np.float32))
-        arr = np.array([
-            4.0 / 9.0, 1.0 / 9.0, 1.0 / 9.0, 1.0 / 9.0, 1.0 / 9.0, 1.0 / 36.0,
-            1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0
-        ],
-                       dtype=np.float32)
-        self.w.from_numpy(arr)
-        arr = np.array([[0, 0], [1, 0], [0, 1], [-1, 0], [0, -1], [1, 1],
-                        [-1, 1], [-1, -1], [1, -1]],
-                       dtype=np.int32)
-        self.e.from_numpy(arr)
+        self.cy = cy
+        self.cy_para = tm.vec3(cy_para)
 
     @ti.func  # compute equilibrium distribution function
-    def f_eq(self, i, j, k):
-        eu = ti.cast(self.e[k, 0], ti.f32) * self.vel[i, j][0] + ti.cast(
-            self.e[k, 1], ti.f32) * self.vel[i, j][1]
-        uv = self.vel[i, j][0]**2.0 + self.vel[i, j][1]**2.0
-        return self.w[k] * self.rho[i, j] * (1.0 + 3.0 * eu + 4.5 * eu**2 -
-                                             1.5 * uv)
+    def f_eq(self, i, j):
+        eu = self.e @ self.vel[i, j]
+        uv = tm.dot(self.vel[i, j], self.vel[i, j])
+        return self.w * self.rho[i, j] * (1 + 3 * eu + 4.5 * eu * eu - 1.5 * uv)
 
     @ti.kernel
     def init(self):
+        self.vel.fill(0)
+        self.rho.fill(1)
+        self.mask.fill(0)
         for i, j in self.rho:
-            self.vel[i, j][0] = 0.0
-            self.vel[i, j][1] = 0.0
-            self.rho[i, j] = 1.0
-            self.mask[i, j] = 0.0
-            for k in ti.static(range(9)):
-                self.f_new[i, j][k] = self.f_eq(i, j, k)
-                self.f_old[i, j][k] = self.f_new[i, j][k]
+            self.f_old[i, j] = self.f_new[i, j] = self.f_eq(i, j)
             if self.cy == 1:
-                if ((ti.cast(i, ti.f32) - self.cy_para[0])**2.0 +
-                    (ti.cast(j, ti.f32) - self.cy_para[1])**2.0 <=
-                        self.cy_para[2]**2.0):
+                if ((i - self.cy_para[0]) ** 2 + (j - self.cy_para[1]) ** 2 <= self.cy_para[2] ** 2):
                     self.mask[i, j] = 1.0
 
     @ti.kernel
@@ -83,24 +71,21 @@ class lbm_solver:
             for k in ti.static(range(9)):
                 ip = i - self.e[k, 0]
                 jp = j - self.e[k, 1]
-                self.f_new[i,j][k] = (1.0-self.inv_tau)*self.f_old[ip,jp][k] + \
-                                        self.f_eq(ip,jp,k)*self.inv_tau
+                feq = self.f_eq(ip, jp)
+                self.f_new[i, j][k] = (1 - self.inv_tau) * self.f_old[ip, jp][k] + feq[k] * self.inv_tau
 
     @ti.kernel
     def update_macro_var(self):  # compute rho u v
         for i, j in ti.ndrange((1, self.nx - 1), (1, self.ny - 1)):
-            self.rho[i, j] = 0.0
-            self.vel[i, j][0] = 0.0
-            self.vel[i, j][1] = 0.0
+            self.rho[i, j] = 0
+            self.vel[i, j] = 0, 0
             for k in ti.static(range(9)):
                 self.f_old[i, j][k] = self.f_new[i, j][k]
                 self.rho[i, j] += self.f_new[i, j][k]
-                self.vel[i, j][0] += (ti.cast(self.e[k, 0], ti.f32) *
-                                      self.f_new[i, j][k])
-                self.vel[i, j][1] += (ti.cast(self.e[k, 1], ti.f32) *
-                                      self.f_new[i, j][k])
-            self.vel[i, j][0] /= self.rho[i, j]
-            self.vel[i, j][1] /= self.rho[i, j]
+                self.vel[i, j][0] += self.e[k, 0] * self.f_new[i, j][k]
+                self.vel[i, j][1] += self.e[k, 1] * self.f_new[i, j][k]
+
+            self.vel[i, j] /= self.rho[i, j]
 
     @ti.kernel
     def apply_bc(self):  # impose boundary conditions
@@ -124,15 +109,14 @@ class lbm_solver:
         # Note: for cuda backend, putting 'if statement' inside loops can be much faster!
         for i, j in ti.ndrange(self.nx, self.ny):
             if (self.cy == 1 and self.mask[i, j] == 1):
-                self.vel[i, j][0] = 0.0  # velocity is zero at solid boundary
-                self.vel[i, j][1] = 0.0
+                self.vel[i, j] = 0, 0  # velocity is zero at solid boundary
                 inb = 0
                 jnb = 0
-                if ti.cast(i, ti.f32) >= self.cy_para[0]:
+                if i >= self.cy_para[0]:
                     inb = i + 1
                 else:
                     inb = i - 1
-                if ti.cast(j, ti.f32) >= self.cy_para[1]:
+                if j >= self.cy_para[1]:
                     jnb = j + 1
                 else:
                     jnb = j - 1
@@ -142,18 +126,16 @@ class lbm_solver:
     def apply_bc_core(self, outer, dr, ibc, jbc, inb, jnb):
         if outer == 1:  # handle outer boundary
             if self.bc_type[dr] == 0:
-                self.vel[ibc, jbc][0] = self.bc_value[dr, 0]
-                self.vel[ibc, jbc][1] = self.bc_value[dr, 1]
+                self.vel[ibc, jbc] = self.bc_value[dr]
+
             elif self.bc_type[dr] == 1:
-                self.vel[ibc, jbc][0] = self.vel[inb, jnb][0]
-                self.vel[ibc, jbc][1] = self.vel[inb, jnb][1]
+                self.vel[ibc, jbc] = self.vel[inb, jnb]
+
         self.rho[ibc, jbc] = self.rho[inb, jnb]
-        for k in ti.static(range(9)):
-            self.f_old[ibc,jbc][k] = self.f_eq(ibc,jbc,k) - self.f_eq(inb,jnb,k) + \
-                                        self.f_old[inb,jnb][k]
+        self.f_old[ibc, jbc] = self.f_eq(ibc, jbc) - self.f_eq(inb, jnb) + self.f_old[inb, jnb]
 
     def solve(self):
-        gui = ti.GUI('lbm solver', (self.nx, 2 * self.ny))
+        gui = ti.GUI('Karman Vortex Street', (self.nx, 2 * self.ny))
         self.init()
         while not gui.get_event(ti.GUI.ESCAPE, ti.GUI.EXIT):
             for _ in range(10):

@@ -8,8 +8,8 @@ from matplotlib import cm
 
 import taichi as ti
 import taichi.math as tm
-ti.init(arch=ti.gpu)
 
+ti.init(arch=ti.gpu)
 
 vec9 = ti.types.vector(9, float)
 imat9x2 = ti.types.matrix(9, 2, int)
@@ -37,10 +37,9 @@ class lbm_solver:
         self.mask = ti.field(float, shape=(nx, ny))
         self.f_old = ti.Vector.field(9, float, shape=(nx, ny))
         self.f_new = ti.Vector.field(9, float, shape=(nx, ny))
-        self.w = vec9(4, 1, 1, 1, 1, 1/4, 1/4, 1/4, 1/4) / 9.0
-        self.e = imat9x2(
-            [0, 0], [1, 0], [0, 1], [-1, 0], [0, -1], [1, 1], [-1, 1], [-1, -1], [1, -1]
-        )
+        self.w = vec9(4, 1, 1, 1, 1, 1 / 4, 1 / 4, 1 / 4, 1 / 4) / 9.0
+        self.e = imat9x2([0, 0], [1, 0], [0, 1], [-1, 0], [0, -1], [1, 1],
+                         [-1, 1], [-1, -1], [1, -1])
         self.bc_type = ti.field(int, 4)
         self.bc_type.from_numpy(np.array(bc_type, dtype=np.int32))
         self.bc_value = ti.Vector.field(2, float, shape=4)
@@ -52,7 +51,8 @@ class lbm_solver:
     def f_eq(self, i, j):
         eu = self.e @ self.vel[i, j]
         uv = tm.dot(self.vel[i, j], self.vel[i, j])
-        return self.w * self.rho[i, j] * (1 + 3 * eu + 4.5 * eu * eu - 1.5 * uv)
+        return self.w * self.rho[i,
+                                 j] * (1 + 3 * eu + 4.5 * eu * eu - 1.5 * uv)
 
     @ti.kernel
     def init(self):
@@ -62,7 +62,8 @@ class lbm_solver:
         for i, j in self.rho:
             self.f_old[i, j] = self.f_new[i, j] = self.f_eq(i, j)
             if self.cy == 1:
-                if ((i - self.cy_para[0]) ** 2 + (j - self.cy_para[1]) ** 2 <= self.cy_para[2] ** 2):
+                if ((i - self.cy_para[0])**2 +
+                    (j - self.cy_para[1])**2 <= self.cy_para[2]**2):
                     self.mask[i, j] = 1.0
 
     @ti.kernel
@@ -72,7 +73,8 @@ class lbm_solver:
                 ip = i - self.e[k, 0]
                 jp = j - self.e[k, 1]
                 feq = self.f_eq(ip, jp)
-                self.f_new[i, j][k] = (1 - self.inv_tau) * self.f_old[ip, jp][k] + feq[k] * self.inv_tau
+                self.f_new[i, j][k] = (1 - self.inv_tau) * self.f_old[
+                    ip, jp][k] + feq[k] * self.inv_tau
 
     @ti.kernel
     def update_macro_var(self):  # compute rho u v
@@ -132,7 +134,8 @@ class lbm_solver:
                 self.vel[ibc, jbc] = self.vel[inb, jnb]
 
         self.rho[ibc, jbc] = self.rho[inb, jnb]
-        self.f_old[ibc, jbc] = self.f_eq(ibc, jbc) - self.f_eq(inb, jnb) + self.f_old[inb, jnb]
+        self.f_old[ibc, jbc] = self.f_eq(ibc, jbc) - self.f_eq(
+            inb, jnb) + self.f_old[inb, jnb]
 
     def solve(self):
         gui = ti.GUI('Karman Vortex Street', (self.nx, 2 * self.ny))

@@ -84,7 +84,8 @@ class lbm_solver:
             for k in ti.static(range(9)):
                 self.f_old[i, j][k] = self.f_new[i, j][k]
                 self.rho[i, j] += self.f_new[i, j][k]
-                self.vel[i, j] += tm.vec2(self.e[k, 0], self.e[k, 1]) * self.f_new[i, j][k]
+                self.vel[i, j] += tm.vec2(self.e[k, 0],
+                                          self.e[k, 1]) * self.f_new[i, j][k]
 
             self.vel[i, j] /= self.rho[i, j]
 

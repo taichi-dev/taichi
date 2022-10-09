@@ -46,7 +46,8 @@ void print_triplet_from_csr(int64_t n_rows,
   for (int64_t i = 1; i <= n_rows; ++i) {
     auto n_i = row[i] - row[i - 1];
     for (auto j = 0; j < n_i; ++j) {
-      trips.push_back({int(i - 1), int(col[row[i - 1] + j]), float(value[row[i - 1] + j])});
+      trips.push_back(
+          {int(i - 1), int(col[row[i - 1] + j]), float(value[row[i - 1] + j])});
     }
   }
   Eigen::SparseMatrix<float> m(n_rows, n_cols);

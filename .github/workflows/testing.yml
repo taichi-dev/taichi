@@ -320,6 +320,7 @@ jobs:
             -DTI_BUILD_TESTS:BOOL=OFF
             -DTI_WITH_DX12:BOOL=OFF
 
+
       - name: Test
         shell: pwsh
         if: needs.check_files.outputs.run_job == 'true'

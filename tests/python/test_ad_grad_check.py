@@ -14,7 +14,6 @@ def test_grad_check():
 
     @ti.kernel
     def compute_y1():
-        ti.loop_config(serialize=True)
         for i, j in ti.ndrange(2, 2):
             y1[None] += ti.cos(x1[i, j])
 
@@ -28,18 +27,6 @@ def test_grad_check():
     @ti.kernel
     def compute_y2():
         y2[None] += x2[0, 0][0] + x2[1, 0][1] + x2[1, 1][2]
-
-    # t1 = ti.ad.Tape(y1, grad_check=[x1])
-    # t1.__enter__()
-    # compute_y1()
-    # t1.__exit__(None, None, None)
-    # assert all(t1.result) is True
-
-    # t2 = ti.ad.Tape(y2, grad_check=[x2])
-    # t2.__enter__()
-    # compute_y2()
-    # t2.__exit__(None, None, None)
-    # assert all(t2.result) is True
 
     with ti.ad.Tape(y1, grad_check=[x1]):
         compute_y1()

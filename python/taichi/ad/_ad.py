@@ -58,13 +58,13 @@ class GradChecker:
 
                 restore_all_fields(self.all_fields, self.backups)
                 x_pos(x, tangent_np, eps)
-                for func, args in self.calls:
+                for func, args, _ in self.calls:
                     func(*args)
                 loss_pos = self.loss.to_numpy()
 
                 restore_all_fields(self.all_fields, self.backups)
                 x_neg(x, tangent_np, eps)
-                for func, args in self.calls:
+                for func, args, _ in self.calls:
                     func(*args)
                 loss_neg = self.loss.to_numpy()
 
@@ -216,7 +216,7 @@ class Tape:
                 if mode_original == AutodiffMode.VALIDATION:
                     f.autodiff_mode = AutodiffMode.NONE
 
-    def insert(self, func, args, autodiff_mode):
+    def insert(self, func, args, autodiff_mode=AutodiffMode.NONE):
         self.calls.append((func, args, autodiff_mode))
 
     def grad(self):

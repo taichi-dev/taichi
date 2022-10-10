@@ -347,9 +347,16 @@ class TaichiCallableTemplateMapper:
                 raise TaichiRuntimeTypeError(
                     'Ndarray shouldn\'t be passed in via `ti.template()`, please annotate your kernel using `ti.types.ndarray(...)` instead'
                 )
-            # Taichi kernel will cache extracted arguments, therefore we can't return the original argument.
-            # Instead, we return a weak reference to the original value to avoid memory leak.
-            return weakref.ref(arg)
+
+            if isinstance(arg, (list, tuple, dict, set)) or hasattr(
+                    arg, '__class__'):
+                # [Composite arguments] Return weak reference to the object
+                # Taichi kernel will cache extracted arguments, therefore we can't return the original argument.
+                # Instead, we return a weak reference to the original value to avoid memory leak.
+                return weakref.ref(arg)
+
+            # [Primitive arguments] Return the value
+            return arg
         if isinstance(anno, texture_type.TextureType):
             return '#'
         if isinstance(anno, ndarray_type.NdarrayType):

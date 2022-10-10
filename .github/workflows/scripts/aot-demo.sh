@@ -15,6 +15,7 @@ function build-and-smoke-test-android-aot-demo {
 
     export TAICHI_REPO_DIR=$(pwd)/taichi
 
+    rm -rf taichi-aot-demo
     git clone https://github.com/taichi-dev/taichi-aot-demo
 
     # Normally we checkout the master's commit Id: https://github.com/taichi-dev/taichi-aot-demo/commit/master
@@ -92,6 +93,52 @@ function smoke-test-unity-demo {
         taichi/Taichi-UnityExample/build/Android/Android.apk \
         com.TaichiGraphics.TaichiUnityExample/com.unity3d.player.UnityPlayerActivity \
         6
+}
+
+function build-and-test-headless-demo {
+    setup-android-ndk-env
+
+    pushd taichi
+    export TAICHI_REPO_DIR=$(pwd)
+    popd
+
+    rm -rf taichi-aot-demo
+    git clone https://github.com/taichi-dev/taichi-aot-demo
+    cd taichi-aot-demo
+    mkdir build
+    pushd build
+    export TAICHI_C_API_INSTALL_DIR=$(find $TAICHI_REPO_DIR -name cmake-install -type d | head -n 1)/c_api
+    cmake $ANDROID_CMAKE_ARGS ..
+    make -j
+    export PATH=/android/platform-tools:$PATH
+    grab-android-bot
+    trap release-android-bot EXIT
+    adb connect $BOT
+    cd headless
+    BINARIES=$(ls E*)
+    for b in $BINARIES; do
+        adb push $b /data/local/tmp
+    done
+    adb push $TAICHI_C_API_INSTALL_DIR/lib/libtaichi_c_api.so /data/local/tmp
+
+    popd # build
+
+    for dir in ?_*; do
+        adb push $dir /data/local/tmp
+    done
+
+    for b in $BINARIES; do
+        adb shell "cd /data/local/tmp && LD_LIBRARY_PATH=\$(pwd) ./$b"
+        adb pull /data/local/tmp/0001.bmp $b.bmp
+    done
+
+    sha1sum *.bmp | tee checksum.txt
+    cat <<EOF > ground-truth.txt
+3c5c45f3da749cc4aa377a6d2a9565a8e5293a61  E1_hello_world_headless.bmp
+72c793bbb19a42ac6039b2be0b740f2b9d695e1c  E2_mpm88_headless.bmp
+1ad54ff5a238e71a01962ddbfb887f288fba6fa9  E3_implicit_fem_headless.bmp
+EOF
+    diff -bB checksum.txt ground-truth.txt
 }
 
 $1

@@ -35,3 +35,20 @@ def test_indices():
         for j in range(32):
             assert b[i, j] == i * 10 + j
     assert get_field_addr(0, 1) + 4 == get_field_addr(1, 1)
+
+
+@test_utils.test(arch=get_host_arch_list(), default_ip=ti.i64)
+def test_indices_i64():
+    n = 1024
+    val = ti.field(dtype=ti.i64, shape=n)
+    val.fill(1)
+
+    @ti.kernel
+    def prefix_sum():
+        ti.loop_config(serialize=True)
+        for i in range(1, 1024):
+            val[i] += val[i - 1]
+
+    prefix_sum()
+    for i in range(n):
+        assert (val[i] == i + 1)

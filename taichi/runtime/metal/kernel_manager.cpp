@@ -232,8 +232,7 @@ class SparseRuntimeMtlKernelBase : public CompiledMtlKernelBase {
 
 class ListgenOpMtlKernel : public SparseRuntimeMtlKernelBase {
  public:
-  struct Params : public SparseRuntimeMtlKernelBase::Params {
-  };
+  struct Params : public SparseRuntimeMtlKernelBase::Params {};
 
   explicit ListgenOpMtlKernel(Params &params)
       : SparseRuntimeMtlKernelBase(params, /*args_size=*/sizeof(int32_t) * 2) {
@@ -242,8 +241,10 @@ class ListgenOpMtlKernel : public SparseRuntimeMtlKernelBase {
     // args[1] = child_snode_id
     // Note that this args buffer has nothing to do with the one passed to
     // Taichi kernel. See taichi/rhi/metal/shaders/runtime_kernels.metal.h
-    const int parent_snode_id = params.kernel_attribs->runtime_list_op_attribs->parent_snode_id;
-    const int child_snode_id = params.kernel_attribs->runtime_list_op_attribs->snode_id;
+    const int parent_snode_id =
+        params.kernel_attribs->runtime_list_op_attribs->parent_snode_id;
+    const int child_snode_id =
+        params.kernel_attribs->runtime_list_op_attribs->snode_id;
     auto *mem = reinterpret_cast<int32_t *>(args_mem_->ptr());
     mem[0] = parent_snode_id;
     mem[1] = child_snode_id;
@@ -259,8 +260,7 @@ class ListgenOpMtlKernel : public SparseRuntimeMtlKernelBase {
 
 class GcOpMtlKernel : public SparseRuntimeMtlKernelBase {
  public:
-  struct Params : public SparseRuntimeMtlKernelBase::Params {
-  };
+  struct Params : public SparseRuntimeMtlKernelBase::Params {};
 
   explicit GcOpMtlKernel(Params &params)
       : SparseRuntimeMtlKernelBase(params, /*args_size=*/sizeof(int32_t)) {

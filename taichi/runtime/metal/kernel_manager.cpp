@@ -728,7 +728,7 @@ class KernelManager::Impl {
 
   void register_taichi_kernel(const CompiledKernelData &compiled_kernel) {
     if (compiled_taichi_kernels_.find(compiled_kernel.kernel_name) !=
-              compiled_taichi_kernels_.end()) {
+        compiled_taichi_kernels_.end()) {
       return;
     }
 

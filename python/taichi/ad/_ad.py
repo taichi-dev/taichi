@@ -91,11 +91,13 @@ class GradChecker:
             self.result[i] = check_pass
 
             if not check_pass:
-                print("variable", i, "has relative error", re_range)
+                print("variable", i, "has relative error", min(re_range),
+                      ", expected relative error 0.01")
             else:
                 print("variable", i, "passes grad check")
 
-        assert all(self.result), "Not all variables pass grad check"
+        assert all(self.result
+                   ), "Grad check failed: Not all variables pass grad check"
 
         restore_all_fields(self.all_fields, self.backups)
         for func, args in self.calls:

@@ -8,6 +8,10 @@
         ["cpp", "aot", "python_scripts", "kernel_aot_test1.py"],
         "--arch=cuda"
     ],
+    "LlvmAotTest.DX12Kernel": [
+        ["cpp", "aot", "python_scripts", "kernel_aot_test1.py"],
+        "--arch=dx12"
+    ],
     "LlvmAotTest.CpuField": [
         ["cpp", "aot", "python_scripts", "field_aot_test.py"],
         "--arch=cpu"
@@ -107,87 +111,87 @@
 },
 
 "capi_aot_test_cases" : {
-    "CapiMpm88Test.Vulkan": [
+    "CapiTest.Mpm88TestVulkan": [
         ["cpp", "aot", "python_scripts", "mpm88_graph_aot.py"],
         "--arch=vulkan"
     ],
-    "CapiMpm88Test.Opengl": [
+    "CapiTest.Mpm88TestOpengl": [
         ["cpp", "aot", "python_scripts", "mpm88_graph_aot.py"],
         "--arch=opengl"
     ],
-    "CapiMpm88Test.Cuda": [
+    "CapiTest.Mpm88TestCuda": [
         ["cpp", "aot", "python_scripts", "mpm88_graph_aot.py"],
         "--arch=cuda"
     ],
-    "CapiSphTest.Vulkan": [
+    "CapiTest.SphTestVulkan": [
         ["cpp", "aot", "python_scripts", "sph_aot.py"],
         "--arch=vulkan"
     ],
-    "CapiSphTest.Opengl": [
+    "CapiTest.SphTestOpengl": [
         ["cpp", "aot", "python_scripts", "sph_aot.py"],
         "--arch=opengl"
     ],
-    "CapiSphTest.Cuda": [
+    "CapiTest.SphTestCuda": [
         ["cpp", "aot", "python_scripts", "sph_aot.py"],
         "--arch=cuda"
     ],
-    "CapiCometTest.Cuda": [
+    "CapiTest.CometTestCuda": [
         ["cpp", "aot", "python_scripts", "comet_aot.py"],
         "--arch=cuda"
     ],
-    "CapiTaichiSparseTest.Cuda": [
+    "CapiTest.TaichiSparseTestCuda": [
         ["cpp", "aot", "python_scripts", "taichi_sparse_test.py"],
         ""
     ],
-    "CapiAotTest.CpuField": [
+    "CapiTest.AotTestCpuField": [
         ["cpp", "aot", "python_scripts", "field_aot_test.py"],
         "--arch=cpu"
     ],
-    "CapiAotTest.CudaField": [
+    "CapiTest.AotTestCudaField": [
         ["cpp", "aot", "python_scripts", "field_aot_test.py"],
         "--arch=cuda"
     ],
-    "CapiGraphTest.CpuGraph": [
+    "CapiTest.GraphTestCpuGraph": [
         ["cpp", "aot", "python_scripts", "graph_aot_test.py"],
         "--arch=cpu"
     ],
-    "CapiGraphTest.CudaGraph": [
+    "CapiTest.GraphTestCudaGraph": [
         ["cpp", "aot", "python_scripts", "graph_aot_test.py"],
         "--arch=cuda"
     ],
-    "CapiGraphTest.VulkanGraph": [
+    "CapiTest.GraphTestVulkanGraph": [
         ["cpp", "aot", "python_scripts", "graph_aot_test.py"],
         "--arch=vulkan"
     ],
-    "CapiGraphTest.VulkanTextureGraph": [
+    "CapiTest.GraphTestVulkanTextureGraph": [
         ["cpp", "aot", "python_scripts", "texture_aot_test.py"],
         "--arch=vulkan"
     ],
-    "CapiGraphTest.OpenglGraph": [
+    "CapiTest.GraphTestOpenglGraph": [
         ["cpp", "aot", "python_scripts", "graph_aot_test.py"],
         "--arch=opengl"
     ],
-    "CapiAotTest.CpuKernel": [
+    "CapiTest.AotTestCpuKernel": [
         ["cpp", "aot", "python_scripts", "kernel_aot_test1.py"],
         "--arch=cpu"
     ],
-    "CapiAotTest.CudaKernel": [
+    "CapiTest.AotTestCudaKernel": [
         ["cpp", "aot", "python_scripts", "kernel_aot_test1.py"],
         "--arch=cuda"
     ],
-    "CapiAotTest.VulkanKernel": [
+    "CapiTest.AotTestVulkanKernel": [
         ["cpp", "aot", "python_scripts", "kernel_aot_test1.py"],
         "--arch=vulkan"
     ],
-    "CapiAotTest.OpenglKernel": [
+    "CapiTest.AotTestOpenglKernel": [
         ["cpp", "aot", "python_scripts", "kernel_aot_test1.py"],
         "--arch=opengl"
     ],
-    "CapiDryRun.VulkanAotModule": [
+    "CapiTest.DryRunVulkanAotModule": [
         ["cpp", "aot", "python_scripts", "kernel_aot_test1.py"],
         "--arch=vulkan"
     ],
-    "CapiDryRun.OpenglAotModule": [
+    "CapiTest.DryRunOpenglAotModule": [
         ["cpp", "aot", "python_scripts", "kernel_aot_test1.py"],
         "--arch=opengl"
     ]

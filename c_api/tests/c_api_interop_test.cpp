@@ -6,6 +6,7 @@
 #include "gtest/gtest.h"
 #include "c_api_test_utils.h"
 #include "taichi/cpp/taichi.hpp"
+#include "c_api/tests/gtest_fixture.h"
 
 #if TI_WITH_VULKAN
 
@@ -26,7 +27,7 @@ static void texture_interop_test(TiArch arch) {
   EXPECT_GE(ti_get_last_error(0, nullptr), TI_ERROR_SUCCESS);
 }
 
-TEST(CapiAotTest, VulkanTextureInterop) {
+TEST_F(CapiTest, AotTestVulkanTextureInterop) {
   if (capi::utils::is_vulkan_available()) {
     TiArch arch = TiArch::TI_ARCH_VULKAN;
     texture_interop_test(arch);

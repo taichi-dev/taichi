@@ -61,3 +61,15 @@ print(x_np)
 print(
     f"The solution is identical?: {np.allclose(x_ti.to_numpy(), x_np, atol=1e-1)}"
 )
+
+solver = ti.linalg.SparseSolver()
+solver.analyze_pattern(A_ti)
+solver.factorize(A_ti)
+solver.solve_rf(A_ti, b, x_ti)
+
+ti.sync()
+print_x(x_ti, ncols)
+ti.sync()
+print(
+    f"The cusolver rf solution and numpy solution is identical?: {np.allclose(x_ti.to_numpy(), x_np, atol=1e-1)}"
+)

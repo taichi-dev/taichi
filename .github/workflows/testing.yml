@@ -168,7 +168,3 @@ jobs:
           name: broken-wheel
           path: dist/*
           retention-days: 7
-
-      - name: Fix Cache Permissions
-        run: |
-          sudo -n chmod -R 0777 /tmp/build-cache || true

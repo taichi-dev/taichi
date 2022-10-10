@@ -349,7 +349,7 @@ class TaichiCallableTemplateMapper:
                 )
 
             if isinstance(arg, (list, tuple, dict, set)) or hasattr(
-                    arg, '__class__'):
+                    arg, '_data_oriented'):
                 # [Composite arguments] Return weak reference to the object
                 # Taichi kernel will cache the extracted arguments, thus we can't simply return the original argument.
                 # Instead, a weak reference to the original value is returned to avoid memory leak.

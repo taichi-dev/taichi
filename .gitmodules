@@ -59,3 +59,6 @@
 [submodule "external/PicoSHA2"]
 	path = external/PicoSHA2
 	url = https://github.com/okdshin/PicoSHA2.git
+[submodule "external/DirectX-Headers"]
+	path = external/DirectX-Headers
+	url = https://github.com/microsoft/DirectX-Headers.git

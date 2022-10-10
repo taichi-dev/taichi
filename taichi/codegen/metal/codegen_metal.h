@@ -22,15 +22,9 @@ CompiledKernelData run_codegen(
     Kernel *kernel,
     OffloadedStmt *offloaded);
 
-// If |offloaded| is nullptr, this compiles the AST in |kernel|. Otherwise it
-// compiles just |offloaded|. These ASTs must have already been lowered at the
-// CHI level.
-FunctionType compile_to_metal_executable(
-    Kernel *kernel,
-    KernelManager *kernel_mgr,
-    const CompiledRuntimeModule *compiled_runtime_module,
-    const std::vector<CompiledStructs> &compiled_snode_trees,
-    OffloadedStmt *offloaded = nullptr);
+FunctionType compiled_kernel_to_metal_executable(
+    const CompiledKernelData &compiled_kernel,
+    KernelManager *kernel_mgr);
 
 }  // namespace metal
 }  // namespace taichi::lang

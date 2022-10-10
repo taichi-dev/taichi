@@ -1689,17 +1689,12 @@ CompiledKernelData run_codegen(
   return codegen.run();
 }
 
-FunctionType compile_to_metal_executable(
-    Kernel *kernel,
-    KernelManager *kernel_mgr,
-    const CompiledRuntimeModule *compiled_runtime_module,
-    const std::vector<CompiledStructs> &compiled_snode_trees,
-    OffloadedStmt *offloaded) {
-  const auto compiled_res = run_codegen(
-      compiled_runtime_module, compiled_snode_trees, kernel, offloaded);
-  kernel_mgr->register_taichi_kernel(compiled_res);
+FunctionType compiled_kernel_to_metal_executable(
+    const CompiledKernelData &compiled_kernel,
+    KernelManager *kernel_mgr) {
+  kernel_mgr->register_taichi_kernel(compiled_kernel);
   return [kernel_mgr,
-          kernel_name = compiled_res.kernel_name](RuntimeContext &ctx) {
+          kernel_name = compiled_kernel.kernel_name](RuntimeContext &ctx) {
     kernel_mgr->launch_taichi_kernel(kernel_name, &ctx);
   };
 }

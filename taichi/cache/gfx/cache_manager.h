@@ -8,11 +8,17 @@
 namespace taichi::lang {
 namespace gfx {
 
+struct OfflineCacheKernelMetadata : public offline_cache::KernelMetadataBase {
+  std::size_t num_files{0};
+
+  TI_IO_DEF_WITH_BASECLASS(offline_cache::KernelMetadataBase, num_files);
+};
+
 class CacheManager {
   using CompiledKernelData = gfx::GfxRuntime::RegisterParams;
 
  public:
-  using Metadata = offline_cache::Metadata;
+  using Metadata = offline_cache::Metadata<OfflineCacheKernelMetadata>;
   enum Mode { NotCache, MemCache, MemAndDiskCache };
 
   struct Params {

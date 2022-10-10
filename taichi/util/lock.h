@@ -1,5 +1,6 @@
 #pragma once
 
+#include "taichi/common/cleanup.h"
 #include "taichi/common/core.h"
 #include <thread>
 
@@ -52,6 +53,14 @@ inline bool lock_with_file(const std::string &path,
     }
   }
   return false;
+}
+
+inline RaiiCleanup make_unlocker(const std::string &path) {
+  return make_cleanup([&path]() {
+    if (!unlock_with_file(path)) {
+      TI_WARN("Unlock {} failed", path);
+    }
+  });
 }
 
 }  // namespace taichi

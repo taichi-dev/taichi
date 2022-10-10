@@ -610,6 +610,7 @@ void GfxRuntime::synchronize() {
   flush();
   device_->wait_idle();
   ctx_buffers_.clear();
+  fflush(stdout);
 }
 
 StreamSemaphore GfxRuntime::flush() {

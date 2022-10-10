@@ -12,7 +12,7 @@ if os.name == 'nt':
         allow_module_level=True)
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda])
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan])
 def test_no_debug(capfd):
     capfd.readouterr()
 
@@ -42,7 +42,7 @@ add_table = [
 
 
 @pytest.mark.parametrize("ty,num", add_table)
-@test_utils.test(arch=[ti.cpu, ti.cuda], debug=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan], debug=True)
 def test_add_overflow(capfd, ty, num):
     capfd.readouterr()
 
@@ -60,7 +60,7 @@ def test_add_overflow(capfd, ty, num):
 
 
 @pytest.mark.parametrize("ty,num", add_table)
-@test_utils.test(arch=[ti.cpu, ti.cuda], debug=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan], debug=True)
 def test_add_no_overflow(capfd, ty, num):
     capfd.readouterr()
 
@@ -86,7 +86,7 @@ sub_table = [
 
 
 @pytest.mark.parametrize("ty,num", sub_table)
-@test_utils.test(arch=[ti.cpu, ti.cuda], debug=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan], debug=True)
 def test_sub_overflow_i(capfd, ty, num):
     capfd.readouterr()
 
@@ -104,7 +104,7 @@ def test_sub_overflow_i(capfd, ty, num):
 
 
 @pytest.mark.parametrize("ty,num", sub_table)
-@test_utils.test(arch=[ti.cpu, ti.cuda], debug=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan], debug=True)
 def test_sub_no_overflow_i(capfd, ty, num):
     capfd.readouterr()
 
@@ -122,7 +122,7 @@ def test_sub_no_overflow_i(capfd, ty, num):
 
 
 @pytest.mark.parametrize("ty", [ti.u8, ti.u16, ti.u32, ti.u64])
-@test_utils.test(arch=[ti.cpu, ti.cuda], debug=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan], debug=True)
 def test_sub_overflow_u(capfd, ty):
     capfd.readouterr()
 
@@ -140,7 +140,7 @@ def test_sub_overflow_u(capfd, ty):
 
 
 @pytest.mark.parametrize("ty", [ti.u8, ti.u16, ti.u32, ti.u64])
-@test_utils.test(arch=[ti.cpu, ti.cuda], debug=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan], debug=True)
 def test_sub_no_overflow_u(capfd, ty):
     capfd.readouterr()
 
@@ -170,7 +170,7 @@ mul_table = [
 
 
 @pytest.mark.parametrize("ty,num1,num2", mul_table)
-@test_utils.test(arch=[ti.cpu, ti.cuda], debug=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan], debug=True)
 def test_mul_overflow(capfd, ty, num1, num2):
     capfd.readouterr()
 
@@ -188,7 +188,7 @@ def test_mul_overflow(capfd, ty, num1, num2):
 
 
 @pytest.mark.parametrize("ty,num1,num2", mul_table)
-@test_utils.test(arch=[ti.cpu, ti.cuda], debug=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan], debug=True)
 def test_mul_no_overflow(capfd, ty, num1, num2):
     capfd.readouterr()
 
@@ -218,7 +218,7 @@ shl_table = [
 
 
 @pytest.mark.parametrize("ty,num", shl_table)
-@test_utils.test(arch=[ti.cpu, ti.cuda], debug=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan], debug=True)
 def test_shl_overflow(capfd, ty, num):
     capfd.readouterr()
 
@@ -236,7 +236,7 @@ def test_shl_overflow(capfd, ty, num):
 
 
 @pytest.mark.parametrize("ty,num", shl_table)
-@test_utils.test(arch=[ti.cpu, ti.cuda], debug=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan], debug=True)
 def test_shl_no_overflow(capfd, ty, num):
     capfd.readouterr()
 

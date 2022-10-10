@@ -78,6 +78,7 @@ class Tape:
 
         # Attach the context manager to runtime
         self.runtime.target_tape = self
+        return self
 
     def __exit__(self, _type, value, tb):
         self.runtime.target_tape = None

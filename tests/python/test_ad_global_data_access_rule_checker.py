@@ -1,4 +1,5 @@
 import pytest
+from taichi.lang.enums import AutodiffMode
 
 import taichi as ti
 from tests import test_utils
@@ -94,3 +95,38 @@ def test_break_gdar_rule_1():
     with pytest.raises(ti.TaichiAssertionError):
         with ti.ad.Tape(loss=loss, validation=True):
             func_broke_rule_1()
+
+
+@test_utils.test(require=ti.extension.assertion,
+                 exclude=[ti.cc],
+                 debug=True,
+                 validate_autodiff=True)
+def test_autodiff_mode_recovered():
+    N = 16
+    x = ti.field(dtype=ti.f32, shape=N, needs_grad=True)
+    loss = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
+    b = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
+
+    @ti.kernel
+    def kernel_1():
+        loss[None] = x[1] * b[None]
+
+    @ti.kernel
+    def kernel_2():
+        loss[None] = x[1] * b[None]
+
+    for i in range(N):
+        x[i] = i
+
+    b[None] = 10
+    loss.grad[None] = 1
+
+    func_calls = []
+    with ti.ad.Tape(loss=loss, validation=True) as t:
+        kernel_1()
+        kernel_2()
+        for f, _, _ in t.calls:
+            assert f.autodiff_mode == AutodiffMode.VALIDATION
+        func_calls = t.calls
+    for f, _, _ in func_calls:
+        assert f.autodiff_mode == AutodiffMode.NONE

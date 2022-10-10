@@ -23,6 +23,7 @@ from taichi.lang.shell import _shell_pop_print, oinspect
 from taichi.lang.util import has_paddle, has_pytorch, to_taichi_type
 from taichi.types import (ndarray_type, primitive_types, sparse_matrix_builder,
                           template, texture_type)
+from taichi.types.utils import is_signed
 
 from taichi import _logging
 
@@ -646,10 +647,13 @@ class Kernel:
                     if not isinstance(v, int):
                         raise TaichiRuntimeTypeError.get(
                             i, needed.to_string(), provided)
-                    launch_ctx.set_arg_int(actual_argument_slot, int(v))
+                    if is_signed(needed):
+                        launch_ctx.set_arg_int(actual_argument_slot, int(v))
+                    else:
+                        launch_ctx.set_arg_uint(actual_argument_slot, int(v))
                 elif isinstance(needed, sparse_matrix_builder):
                     # Pass only the base pointer of the ti.types.sparse_matrix_builder() argument
-                    launch_ctx.set_arg_int(actual_argument_slot, v._get_addr())
+                    launch_ctx.set_arg_uint(actual_argument_slot, v._get_addr())
                 elif isinstance(needed,
                                 ndarray_type.NdarrayType) and isinstance(
                                     v, taichi.lang._ndarray.Ndarray):
@@ -728,7 +732,11 @@ class Kernel:
                                 if not isinstance(val, int):
                                     raise TaichiRuntimeTypeError.get(
                                         i, needed.dtype.to_string(), type(val))
-                                launch_ctx.set_arg_int(actual_argument_slot,
+                                if is_signed(needed.dtype):
+                                    launch_ctx.set_arg_int(actual_argument_slot,
+                                                       int(val))
+                                else:
+                                    launch_ctx.set_arg_uint(actual_argument_slot,
                                                        int(val))
                                 actual_argument_slot += 1
                     else:

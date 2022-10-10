@@ -398,7 +398,7 @@ class TaichiCallableTemplateMapper:
             )
 
         key = self.extract(args)
-        if key not in self.mapping or self.mapping[key] is None:
+        if key not in self.mapping:
             count = len(self.mapping)
             self.mapping[key] = count
         return self.mapping[key], key

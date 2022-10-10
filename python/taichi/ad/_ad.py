@@ -100,7 +100,7 @@ class GradChecker:
                    ), "Grad check failed: Not all variables pass grad check"
 
         restore_all_fields(self.all_fields, self.backups)
-        for func, args in self.calls:
+        for func, args, _ in self.calls:
             func(*args)
 
 

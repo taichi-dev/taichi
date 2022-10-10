@@ -165,9 +165,6 @@ class lbm_solver:
             gui.set_image(img)
             gui.show()
 
-    def pass_to_py(self):
-        return self.vel.to_numpy()[:, :, 0]
-
 
 if __name__ == '__main__':
     lbm = lbm_solver(801, 201, 0.01, [0, 0, 1, 0],

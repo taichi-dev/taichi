@@ -4,19 +4,17 @@ sidebar_position: 3
 
 # Global Settings
 
+Every Taichi program starts with `ti.init()`. You can customize your Taichi runtime by passing arguments to `ti.init()` or setting environment variables. Each argument or environment variable controls one specific behavior of the Taichi runtime. For example, the argument `arch` specifies the backend, and the argument `debug` decides whether to run the program in debug mode.
 
-The call `ti.init()` is indispensable in every Taichi program. Taichi allows you to customize your Taichi runtime by passing arguments to `ti.init()` or setting environment variables. Each argument or environment variable controls one specific behavior of the Taichi runtime. For example, the argument `arch` specifies the backend, and the argument `debug` decides whether to run the program in debug mode. The document [Hello, World!](../get-started/index.md) gives a brief introduction to this function, and this document provides more details.
+Taichi executes the following to initialize a specific configuration in the `ti.init()` method call. Taking the `arch` argument as an example:
 
-Generally, when you call `ti.init()`, Taichi executes the following steps to initialize a specific configuration. We use the `arch` argument as an example:
-
-1. Taichi looks for the arguments passed to `ti.init()`. In this case, after Taichi reads `ti.init(arch=cuda)`, it chooses CUDA as the backend and omits the environment variable.
-2. If no argument is found, Taichi checks the corresponding environment variable. In this case, if `arch` is not specified but the environment variable is set to `export TI_ARCH=cuda`, Taichi chooses CUDA as the backend.
+1. Taichi first looks for the arguments passed to `ti.init()`. In this case, after Taichi reads `ti.init(arch=cuda)`, it chooses CUDA as the backend and ignores the corresponding environment variable for backend setting, namely, `TI_ARCH`.
+2. If no argument is found, Taichi checks the corresponding environment variable. In this case, if `arch` is not specified but the environment variable is set to `export TI_ARCH=cuda`, Taichi still chooses CUDA as the backend.
 3. If no customized setting is found, Taichi uses a default configuration. In this case, if neither the argument `arch` is specified nor an environment variable `TI_ARCH` is found, Taichi adopts the default backend `arch=ti.cpu`.
 
+Following are some frequently-used configurations in `ti.init()`:
 
-Following are some frequently used configurations that the `ti.init()` method call supports:
-
-**Customize `ti.init()` via arguments**
+**Customize Taichi runtime via arguments**
 
 ```
 [Backend Options]
@@ -31,13 +29,13 @@ Following are some frequently used configurations that the `ti.init()` method ca
 [Compilation Options]
 
     advanced_optimization: bool
-        Enable/disable advanced optimization to save compile time and reduce possible errors.
+        Enable/disable advanced optimization. Turning off the setting can save compile time and reduce possible errors.
 
     fast_math: bool
-        Enable/disable fast math to prevent possible undefined math behavior.
+        Enable/disable fast math. Turning off the setting can prevent possible undefined math behavior.
 
     print_ir: bool
-        Turn on/off printing intermediate IR generated.
+        Turn on/off the printing of the intermediate IR generated.
 
 
 [Runtime Options]
@@ -46,7 +44,7 @@ Following are some frequently used configurations that the `ti.init()` method ca
         Set the number of threads used by the CPU thread pool.
 
     debug: bool
-        Run program in debug mode.
+        Run your program in debug mode.
 
     default_cpu_block_dim: int
         Set the number of threads in a block on CPU.
@@ -61,7 +59,7 @@ Following are some frequently used configurations that the `ti.init()` method ca
         Set the default precision of integers in the Taichi scope.
 
     dynamic_index: bool
-        Enable/disable the use of variables as indices to access vector/matrix elements in the Taichi scope.
+        Enable/disable the use of variables as indices when accessing vector/matrix elements in the Taichi scope.
 
     kernel_profiler: bool
         Turn on/off kernel performance profiling.
@@ -85,19 +83,19 @@ Following are some frequently used configurations that the `ti.init()` method ca
         Set the logging level.
 
     verbose: bool
-        Turn on/off verbose outputs. For example, set `ti.init(verbose=False)` to eliminate verbose outputs.
+        Turn on/off verbose outputs. For example, `ti.init(verbose=False)` prevents verbose outputs.
 
 
 [Develop Options]
 
     gdb_trigger: bool
-        Enable/disable triggering GDB when Taichi crashes, e.g. `ti.init(gdb_trigger=True)`.
+        Enable/disable GDB when Taichi crashes. For example, `ti.init(gdb_trigger=True)` enables GDB.
 ```
 
 
-**Customize `ti.init()` via environment variables**
+**Customize Taichi runtime via environment variables**
 
-Below are some environment variables that you can set to customize your Taichi program, they overlap but are not in one-to-one correspondence with the `ti.init()` arguments listed above:
+Taichi allows a number of environment variables for runtime customization. Some provide an alternative to the `ti.init()` arguments listed above. For example, as mentioned above, `arch` is interchangeable with `TI_ARCH`. But not all of the environment variables can be replaced by arguments, and vice versa.
 
 ```
 [Backend Options]
@@ -118,7 +116,7 @@ Below are some environment variables that you can set to customize your Taichi p
 [Runtime Options]
 
     TI_DEBUG
-        Turn on/off the debug mode. For example, `export TI_DEBUG=1` activates the debug mode.
+        Turn on/off debug mode. For example, `export TI_DEBUG=1` activates debug mode.
 
     TI_ENABLE_TORCH
         Enable/disable the import of torch upon startup. For example, `export TI_ENABLE_TORCH=0` prohibits the use of torch.
@@ -132,7 +130,8 @@ Below are some environment variables that you can set to customize your Taichi p
 [Develop Options]
 
     TI_CACHE_RUNTIME_BITCODE
-        Enable/disable the caching of compiled runtime bitcode in developer mode to save startup time. For example, `export TI_CACHE_RUNTIME_BITCODE=1` enables the program to cache compiled runtime bitcode.
+        Enable/disable the caching of compiled runtime bitcode in developer mode. For example, `export TI_CACHE_RUNTIME_BITCODE=1` enables the program to cache compiled runtime bitcode.
+        Turning off the setting can save startup time.
 
     TI_TEST_THREADS
         Specify the number of threads to run a test. For example, set `export TI_TEST_THREADS=4` to allocate four threads.
@@ -142,28 +141,28 @@ Below are some environment variables that you can set to customize your Taichi p
 [Logging Options]
 
     TI_LOG_LEVEL
-        Set the logging level, such as `export TI_LOG_LEVEL=trace`.
+        Set the logging level. For example, `export TI_LOG_LEVEL=trace` enables the TRACE level.
 ```
 
 ## Backends
 
-- To specify which architecture to use: `ti.init(arch=ti.cuda)`. This argument is equivalent to the environment variable `TI_ARCH`.
-- To specify the pre-allocated memory size for CUDA: For example, `ti.init(device_memory_GB=0.5)` allocates 0.5 GB size of memory.
+- To specify which architecture to use: `ti.init(arch=ti.cuda)` designates CUDA as the backend. This argument is equivalent to the environment variable `TI_ARCH`.
+- To specify the pre-allocated memory size for CUDA: `ti.init(device_memory_GB=0.5)` allocates 0.5 GB size of memory.
 - To specify which GPU to use for CUDA: `export CUDA_VISIBLE_DEVICES=[gpuid]`.
 - To specify which GPU to use for VULKAN: `export TI_VISIBLE_DEVICE=[gpuid]`.
 - To disable a backend (`CUDA`, `METAL`, `OPENGL`) upon startup: For example, `export TI_ENABLE_CUDA=0` disables CUDA.
 
 :::note
 
-If you want to use CUDA and Taichi's GGUI system at the same time on a machine with multiple GPU cards, ensure that `CUDA_VISIBLE_DEVICES` matches `TI_VISIBLE_DEVICE`. In principle, `CUDA_VISIBLE_DEVICES` and `TI_VISIBLE_DEVICE` should point to a GPU device with the same UUID. Use `nvidia-smi -L` to retrieve the details of your GPU devices.
+If you want to use CUDA and Taichi's GGUI system at the same time on a machine with multiple GPU cards, ensure that `CUDA_VISIBLE_DEVICES` matches `TI_VISIBLE_DEVICE`. In principle, `CUDA_VISIBLE_DEVICES` and `TI_VISIBLE_DEVICE` should point to the same GPU device identified with UUID. Use `nvidia-smi -L` to retrieve the details of your GPU devices.
 
 :::
 
 ## Compilation
 
-- To disable advanced optimization to save compile time and reduce possible errors: `ti.init(advanced_optimization=False)`.
-- To disable fast math to prevent possible undefined math behavior: `ti.init(fast_math=False)`.
-- To print intermediate IR generated: `ti.init(print_ir=True)`. Note that compiled kernels are [cached by default](../performance_tuning/performance.md#offline-cache). To force compilation and IR emission, use `ti.init(print_ir=True, offline_cache=False)`.
+- To disable advanced optimization: `ti.init(advanced_optimization=False)`, which helps save compile time and reduce possible errors.
+- To disable fast math: `ti.init(fast_math=False)`, which helps prevent possible undefined math behavior.
+- To print the intermediate IR generated: `ti.init(print_ir=True)`. Note that compiled kernels are [cached by default](../performance_tuning/performance.md#offline-cache). To force compilation and IR emission, use `ti.init(print_ir=True, offline_cache=False)`.
 
 
 ## Runtime
@@ -183,20 +182,19 @@ If you want to use CUDA and Taichi's GGUI system at the same time on a machine w
 
 ## Logging
 
-- To set the logging level: For example, set `ti.init(log_level=ti.TRACE)` or  `ti.set_logging_level(ti.TRACE)` to choose TRACE. The environment variable `TI_LOG_LEVEL` serves the same purpose.
+- To set the logging level: `ti.init(log_level=ti.TRACE)` or  `ti.set_logging_level(ti.TRACE)` enables the TRACE level. The environment variable `TI_LOG_LEVEL` serves the same purpose.
 - To eliminate verbose outputs: `ti.init(verbose=False)`.
 
 ## Develop
 
 - To trigger GDB when Taichi crashes: `ti.init(gdb_trigger=True)`.
-- To cache compiled runtime bitcode in **dev mode** to save startup time: `export TI_CACHE_RUNTIME_BITCODE=1`.
+- To cache compiled runtime bitcode in **dev mode**: `export TI_CACHE_RUNTIME_BITCODE=1`, which saves startup time.
 - To allocate four threads to run a test: `export TI_TEST_THREADS=4` or `python tests/run_tests.py -t4`.
 
 
 :::note
 
-If `ti.init` is called twice, then the configuration in first invocation
-will be completely discarded, e.g.:
+If `ti.init` is called twice, the configuration in the first call is discarded. For example:
 
 ```python {1,3}
 ti.init(debug=True)

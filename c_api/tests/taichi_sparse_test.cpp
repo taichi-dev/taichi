@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 #include "c_api_test_utils.h"
 #include "taichi/cpp/taichi.hpp"
+#include "c_api/tests/gtest_fixture.h"
 
 static void taichi_sparse_test(TiArch arch) {
   const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
@@ -38,7 +39,7 @@ static void taichi_sparse_test(TiArch arch) {
   capi::utils::check_runtime_error(runtime);
 }
 
-TEST(CapiTaichiSparseTest, Cuda) {
+TEST_F(CapiTest, TaichiSparseTestCuda) {
   if (capi::utils::is_cuda_available()) {
     TiArch arch = TiArch::TI_ARCH_CUDA;
     taichi_sparse_test(arch);

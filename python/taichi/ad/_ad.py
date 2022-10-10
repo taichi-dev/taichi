@@ -223,7 +223,7 @@ class Tape:
         assert self.entered, "Before evaluating gradients tape must be entered."
         assert not self.gradient_evaluated, "Gradients of grad can be evaluated only once."
 
-        for func, args in reversed(self.calls):
+        for func, args, _ in reversed(self.calls):
             # we need to check whether "func" has "grad" attribute
             # since we insert write_int and write_float kernels to self.calls
             # e.g. x[None] = 0.0, this func has no grad attribute

@@ -7,16 +7,138 @@ import warnings
 from functools import reduce
 
 import numpy as np
+import taichi.types.primitive_types as types
 from taichi.lang import impl
+
 from taichi.lang.enums import AutodiffMode, SNodeGradType
+from taichi.lang.expr import Expr
+
 from taichi.lang.field import ScalarField
+from taichi.lang.kernel_impl import kernel
 from taichi.lang.snode import SNode
+from taichi.types import ndarray, template
 
 from taichi import _snode
 
 
+class GradChecker:
+    def __init__(self, loss, to_check):
+        self.to_check = to_check
+        self.loss = loss
+        self.eps_range = 2.**np.arange(-3, -30, -2).astype(np.float64)
+        self.result = [None] * len(to_check)
+        self.all_fields = get_all_fields()
+        self.backups = save_all_fields(self.all_fields)
+
+    def add_calls(self, calls):
+        self.calls = calls
+
+    def check_grad(self):
+        assert self.loss.dtype == types.f64, "Only f64 is supported when checking grad."
+
+        @kernel
+        def x_pos(x: template(), tangent_np: ndarray(), eps: types.f64):
+            for I in impl.grouped(x):
+                x[I] += eps * tangent_np[I]
+
+        @kernel
+        def x_neg(x: template(), tangent_np: ndarray(), eps: types.f64):
+            for I in impl.grouped(x):
+                x[I] -= eps * tangent_np[I]
+
+        for i, x in enumerate(self.to_check):
+            if x is self.loss:
+                self.result[i] = True
+                continue
+
+            check_pass = False
+
+            re_range = []
+            for eps in self.eps_range:
+                tangent_np = np.array(np.random.rand(*x.shape)).astype(
+                    np.float64)
+
+                restore_all_fields(self.all_fields, self.backups)
+                x_pos(x, tangent_np, eps)
+                for func, args in self.calls:
+                    func(*args)
+                loss_pos = self.loss.to_numpy()
+
+                restore_all_fields(self.all_fields, self.backups)
+                x_neg(x, tangent_np, eps)
+                for func, args in self.calls:
+                    func(*args)
+                loss_neg = self.loss.to_numpy()
+
+                ip_numerical = (loss_pos - loss_neg) * 0.5 / eps
+                x_grad_np = x.grad.to_numpy()
+                extra_dim = x_grad_np.ndim - tangent_np.ndim
+                if extra_dim == 1:
+                    tangent_np = np.expand_dims(tangent_np, axis=-1)
+                if extra_dim == 2:
+                    tangent_np = np.expand_dims(tangent_np, axis=-1)
+
+                ip_autodiff = np.sum(x_grad_np * tangent_np)
+                err = abs(ip_autodiff - ip_numerical)
+                if ip_numerical != 0:
+                    re = err / abs(ip_autodiff)
+                else:
+                    re = err / (abs(ip_autodiff) + 1e-20)
+                re_range.append(re)
+
+                if err * 100 <= abs(ip_autodiff):
+                    check_pass = True
+                    break
+
+            self.result[i] = check_pass
+
+            if not check_pass:
+                print("variable", i, "has relative error", min(re_range),
+                      ", expected relative error 0.01")
+            else:
+                print("variable", i, "passes grad check")
+
+        assert all(self.result
+                   ), "Grad check failed: Not all variables pass grad check"
+
+        restore_all_fields(self.all_fields, self.backups)
+        for func, args in self.calls:
+            func(*args)
+
+
+def get_all_fields():
+    def visit(node, fields):
+        for _i in range(node.ptr.get_num_ch()):
+            ch = node.ptr.get_ch(_i)
+            if not ch.is_place():
+                visit(SNode(ch), fields)
+            else:
+                if not ch.is_primal():
+                    continue
+                fields.append(ScalarField(Expr(ch.get_expr())))
+
+    fields = []
+    for root_fb in _snode.FieldsBuilder._finalized_roots():
+        visit(root_fb, fields)
+    return fields
+
+
+def save_all_fields(all_fields):
+    return [x.to_numpy() for x in all_fields]
+
+
+def restore_all_fields(all_fields, backups):
+    assert len(all_fields) == len(backups)
+    for f, x in zip(all_fields, backups):
+        f.from_numpy(x)
+
+
 class Tape:
-    def __init__(self, loss=None, clear_gradients=True, validation=False):
+    def __init__(self,
+                 loss=None,
+                 clear_gradients=True,
+                 validation=False,
+                 grad_check=None):
         """A context manager for reverse mode autodiff :class:`~taichi.ad.Tape`. The
         context manager would catching all of the callings of functions that
         decorated by :func:`~taichi.lang.kernel_impl.kernel` or
@@ -32,6 +154,7 @@ class Tape:
             loss(:class:`~taichi.lang.expr.Expr`): The loss field, which shape should be ().
             clear_gradients(Bool): Before `with` body start, clear all gradients or not.
             validation(Bool): Check whether the code inside the context manager is autodiff valid, e.g., agree with the global data access rule.
+            grad_check(List[Field]): List of fields that need to check gradients.
 
         Example::
 
@@ -55,6 +178,12 @@ class Tape:
                 Warning)
         self.eval_on_exit = loss is not None
         self.loss = loss
+        self.grad_checker = None
+        if grad_check:
+            assert isinstance(
+                grad_check, list
+            ), "grad_check should be a list of fields that need to check gradients."
+            self.grad_checker = GradChecker(loss, grad_check)
 
     def __enter__(self):
         assert not self.entered, "Tape can be entered only once."
@@ -95,9 +224,18 @@ class Tape:
     def grad(self):
         assert self.entered, "Before evaluating gradients tape must be entered."
         assert not self.gradient_evaluated, "Gradients of grad can be evaluated only once."
-        for func, args, _ in reversed(self.calls):
-            func.grad(*args)
+
+        for func, args in reversed(self.calls):
+            # we need to check whether "func" has "grad" attribute
+            # since we insert write_int and write_float kernels to self.calls
+            # e.g. x[None] = 0.0, this func has no grad attribute
+            if hasattr(func, 'grad'):
+                func.grad(*args)
+
         self.gradient_evaluated = True
+        if self.grad_checker:
+            self.grad_checker.add_calls(self.calls)
+            self.grad_checker.check_grad()
 
 
 def clear_all_gradients(gradient_type=SNodeGradType.ADJOINT):

@@ -129,6 +129,11 @@ opengl = _ti_core.opengl
 """
 # ----------------------
 
+gles = _ti_core.gles
+"""The OpenGL ES backend. OpenGL ES 3.1 required.
+"""
+# ----------------------
+
 # Skip annotating this one because it is barely maintained.
 cc = _ti_core.cc
 
@@ -154,7 +159,8 @@ dx12 = _ti_core.dx12
 """
 # ----------------------
 
-gpu = [cuda, metal, vulkan, opengl, dx11, dx12]
+gpu = [cuda, metal, vulkan, opengl, dx11, dx12, gles]
+
 """A list of GPU backends supported on the current system.
 Currently contains 'cuda', 'metal', 'opengl', 'vulkan', 'dx11', 'dx12'.
 
@@ -414,7 +420,6 @@ def init(arch=None,
     env_spec.add('log_level', str)
     env_spec.add('gdb_trigger')
     env_spec.add('short_circuit_operators')
-
     # compiler configurations (ti.cfg):
     for key in dir(cfg):
         if key in ['arch', 'default_fp', 'default_ip']:
@@ -430,7 +435,6 @@ def init(arch=None,
         raise KeyError(
             f'Unrecognized keyword argument(s) for ti.init: {", ".join(unexpected_keys)}'
         )
-
     # dispatch configurations that are not in ti.cfg:
     if not _test_mode:
         _ti_core.set_core_trigger_gdb_when_crash(spec_cfg.gdb_trigger)
@@ -443,7 +447,7 @@ def init(arch=None,
     if env_arch is not None:
         _logging.info(f'Following TI_ARCH setting up for arch={env_arch}')
         arch = _ti_core.arch_from_name(env_arch)
-    cfg.arch = adaptive_arch_select(arch, enable_fallback, cfg.use_gles)
+    cfg.arch = adaptive_arch_select(arch, enable_fallback)
     if cfg.arch == cc:
         _ti_core.set_tmp_dir(locale_encode(prepare_sandbox()))
     print(f'[Taichi] Starting on arch={_ti_core.arch_name(cfg.arch)}')
@@ -706,14 +710,11 @@ def mesh_patch_idx():
     )
 
 
-def is_arch_supported(arch, use_gles=False):
+def is_arch_supported(arch):
     """Checks whether an arch is supported on the machine.
 
     Args:
         arch (taichi_python.Arch): Specified arch.
-        use_gles (bool): If True, check is GLES is available otherwise
-          check if GLSL is available. Only effective when `arch` is `ti.opengl`.
-          Default is `False`.
 
     Returns:
         bool: Whether `arch` is supported on the machine.
@@ -722,7 +723,8 @@ def is_arch_supported(arch, use_gles=False):
     arch_table = {
         cuda: _ti_core.with_cuda,
         metal: _ti_core.with_metal,
-        opengl: functools.partial(_ti_core.with_opengl, use_gles),
+        opengl: functools.partial(_ti_core.with_opengl, False),
+        gles: functools.partial(_ti_core.with_opengl, True),
         cc: _ti_core.with_cc,
         vulkan: _ti_core.with_vulkan,
         dx11: _ti_core.with_dx11,
@@ -742,13 +744,13 @@ def is_arch_supported(arch, use_gles=False):
         return False
 
 
-def adaptive_arch_select(arch, enable_fallback, use_gles):
+def adaptive_arch_select(arch, enable_fallback):
     if arch is None:
         return cpu
     if not isinstance(arch, (list, tuple)):
         arch = [arch]
     for a in arch:
-        if is_arch_supported(a, use_gles):
+        if is_arch_supported(a):
             return a
     if not enable_fallback:
         raise RuntimeError(f'Arch={arch} is not supported')
@@ -767,7 +769,7 @@ def get_compute_stream_device_time_elapsed_us() -> float:
 __all__ = [
     'i', 'ij', 'ijk', 'ijkl', 'ijl', 'ik', 'ikl', 'il', 'j', 'jk', 'jkl', 'jl',
     'k', 'kl', 'l', 'x86_64', 'x64', 'dx11', 'dx12', 'wasm', 'arm64', 'cc',
-    'cpu', 'cuda', 'gpu', 'metal', 'opengl', 'vulkan', 'extension',
+    'cpu', 'cuda', 'gles', 'gpu', 'metal', 'opengl', 'vulkan', 'extension',
     'loop_config', 'global_thread_idx', 'assume_in_range', 'block_local',
     'cache_read_only', 'init', 'mesh_local', 'no_activate', 'reset',
     'mesh_patch_idx', 'get_compute_stream_device_time_elapsed_us'

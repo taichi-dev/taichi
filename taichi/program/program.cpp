@@ -108,7 +108,14 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
 #endif
   } else if (config.arch == Arch::opengl) {
 #ifdef TI_WITH_OPENGL
-    TI_ASSERT(opengl::initialize_opengl(config.use_gles));
+    TI_ASSERT(opengl::initialize_opengl(false));
+    program_impl_ = std::make_unique<OpenglProgramImpl>(config);
+#else
+    TI_ERROR("This taichi is not compiled with OpenGL");
+#endif
+  } else if (config.arch == Arch::gles) {
+#ifdef TI_WITH_OPENGL
+    TI_ASSERT(opengl::initialize_opengl(true));
     program_impl_ = std::make_unique<OpenglProgramImpl>(config);
 #else
     TI_ERROR("This taichi is not compiled with OpenGL");
@@ -225,7 +232,8 @@ void Program::synchronize() {
   if (arch_uses_llvm(this_thread_config().arch) ||
       this_thread_config().arch == Arch::metal ||
       this_thread_config().arch == Arch::vulkan ||
-      this_thread_config().arch == Arch::opengl) {
+      this_thread_config().arch == Arch::opengl ||
+      this_thread_config().arch == Arch::gles) {
     program_impl_->synchronize();
   }
 }
@@ -324,6 +332,8 @@ void Program::visualize_layout(const std::string &fn) {
 Arch Program::get_accessor_arch() {
   if (this_thread_config().arch == Arch::opengl) {
     return Arch::opengl;
+  } else if (this_thread_config().arch == Arch::gles) {
+    return Arch::gles;
   } else if (this_thread_config().arch == Arch::vulkan) {
     return Arch::vulkan;
   } else if (this_thread_config().arch == Arch::cuda) {
@@ -442,6 +452,8 @@ void Program::finalize() {
   finalized_ = true;
   num_instances_ -= 1;
   program_impl_->dump_cache_data_to_disk();
+  configs.clear();
+  configs[main_thread_id_] = default_compile_config;
   TI_TRACE("Program ({}) finalized_.", fmt::ptr(this));
 }
 
@@ -461,7 +473,8 @@ std::size_t Program::get_snode_num_dynamically_allocated(SNode *snode) {
   TI_ASSERT(arch_uses_llvm(this_thread_config().arch) ||
             this_thread_config().arch == Arch::metal ||
             this_thread_config().arch == Arch::vulkan ||
-            this_thread_config().arch == Arch::opengl);
+            this_thread_config().arch == Arch::opengl ||
+            this_thread_config().arch == Arch::gles);
   return program_impl_->get_snode_num_dynamically_allocated(snode,
                                                             result_buffer);
 }
@@ -531,7 +544,8 @@ std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(Arch arch) {
   if (arch_uses_llvm(this_thread_config().arch) ||
       this_thread_config().arch == Arch::metal ||
       this_thread_config().arch == Arch::vulkan ||
-      this_thread_config().arch == Arch::opengl) {
+      this_thread_config().arch == Arch::opengl ||
+      this_thread_config().arch == Arch::gles) {
     return program_impl_->make_aot_module_builder();
   }
   return nullptr;

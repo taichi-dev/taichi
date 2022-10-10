@@ -74,7 +74,7 @@ user_api[ti] = [
     'data_oriented', 'dataclass', 'deactivate', 'deactivate_all_snodes',
     'dx11', 'dx12', 'eig', 'exp', 'experimental', 'extension', 'f16', 'f32',
     'f64', 'field', 'float16', 'float32', 'float64', 'floor', 'func',
-    'get_addr', 'get_compute_stream_device_time_elapsed_us',
+    'get_addr', 'get_compute_stream_device_time_elapsed_us', 'gles',
     'global_thread_idx', 'gpu', 'graph', 'grouped', 'hex_to_rgb', 'i', 'i16',
     'i32', 'i64', 'i8', 'ij', 'ijk', 'ijkl', 'ijl', 'ik', 'ikl', 'il', 'init',
     'int16', 'int32', 'int64', 'int8', 'is_active', 'is_logging_effective',

@@ -116,4 +116,13 @@ const std::unique_ptr<gfx::CacheManager>
   return cache_manager_;
 }
 
+void OpenglProgramImpl::finalize() {
+  runtime_.reset();
+  device_.reset();
+  opengl::initialize_opengl(false, false, true);
+}
+
+OpenglProgramImpl::~OpenglProgramImpl() {
+  finalize();
+}
 }  // namespace taichi::lang

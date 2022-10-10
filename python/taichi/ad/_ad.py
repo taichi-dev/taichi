@@ -362,7 +362,7 @@ def no_grad(func):
     def decorated(*args, **kwargs):
         impl.get_runtime().grad_replaced = True
         if impl.get_runtime().target_tape:
-            impl.get_runtime().target_tape.insert(decorated, args)
+            impl.get_runtime().target_tape.insert(decorated, args, AutodiffMode.NONE)
         try:
             func(*args, **kwargs)
         finally:

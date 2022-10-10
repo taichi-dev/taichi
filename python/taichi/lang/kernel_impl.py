@@ -748,7 +748,7 @@ class Kernel:
                     self.autodiff_mode == AutodiffMode.NONE
                     or self.autodiff_mode == AutodiffMode.VALIDATION
             ) and self.runtime.target_tape and not self.runtime.grad_replaced:
-                self.runtime.target_tape.insert(self, args)
+                self.runtime.target_tape.insert(self, args, self.autodiff_mode)
 
             if actual_argument_slot > 8 and impl.current_cfg(
             ).arch == _ti_core.cc:
@@ -828,7 +828,7 @@ class Kernel:
             mode_original = self.autodiff_mode
             self.autodiff_mode = AutodiffMode.FORWARD
             self.runtime.fwd_mode_manager.insert(self, mode_original)
-        elif self.runtime.target_tape and self.runtime.target_tape.validation:
+        elif self.runtime.target_tape and self.runtime.target_tape.validation and not self.runtime.grad_replaced:
             # The autodiff valid check happens on forward kernel
             self.autodiff_mode = AutodiffMode.VALIDATION
 

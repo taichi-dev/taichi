@@ -24,7 +24,7 @@ def test_pass_u64():
     def foo(a: ti.u64):
         pass
 
-    foo(2 ** 64 - 1)
+    foo(2**64 - 1)
 
 
 @test_utils.test()

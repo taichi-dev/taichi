@@ -148,8 +148,8 @@ class TypeCheck : public IRVisitor {
     auto check_indices = [&](SNode *snode) {
       if (snode->num_active_indices != stmt->indices.size()) {
         TI_ERROR("[{}] {} has {} indices. Indexed with {}.", stmt->name(),
-                 snode->node_type_name,
-                 snode->num_active_indices, stmt->indices.size());
+                 snode->node_type_name, snode->num_active_indices,
+                 stmt->indices.size());
       }
     };
     check_indices(stmt->is_cell_access ? stmt->snode : stmt->snode->parent);

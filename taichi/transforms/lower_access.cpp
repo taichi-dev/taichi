@@ -166,8 +166,8 @@ class LowerAccess : public IRVisitor {
         stmt->ptr = lowered.back().get();
         modifier.replace_with(stmt, std::move(lowered));
       } else {
-        auto lowered = lower_ptr(global_ptr,
-                                 SNodeOpStmt::need_activation(stmt->op_type));
+        auto lowered =
+            lower_ptr(global_ptr, SNodeOpStmt::need_activation(stmt->op_type));
         stmt->ptr = lowered.back().get();
         modifier.insert_before(stmt, std::move(lowered));
       }

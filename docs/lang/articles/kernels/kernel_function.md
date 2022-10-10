@@ -14,8 +14,8 @@ In the following example, `inv_square()` is decorated with `@ti.func` and is a T
 
 Here comes an important difference between Python and Taichi, type hinting:
 
-- Type hinting in Python is recommended, *not* mandatory. 
-- Taichi makes it mandatory that you type hint the arguments and the return value of a kernel unless it does not have an argument or a return statement. 
+- Type hinting in Python is recommended, *not* mandatory.
+- Taichi makes it mandatory that you type hint the arguments and the return value of a kernel unless it does not have an argument or a return statement.
 
 ```python
 import taichi as ti
@@ -73,9 +73,9 @@ For example, you can call the kernel `partial_sum()` from inside a Python functi
 
 ```python {1,6,7}
 @ti.kernel
-def partial_sum(n: int) -> float:  
+def partial_sum(n: int) -> float:
     ...
-    
+
 def main():
     print(partial_sum(100))
     print(partial_sum(1000))
@@ -135,7 +135,7 @@ print(x)  # Prints [5, 7, 9]
 ```
 
 
-### Return value 
+### Return value
 
 A kernel can have *at most* one return value, which can be a scalar, `ti.Matrix`, or `ti.Vector`. Follow these rules when defining the return value of a kernel:
 
@@ -226,7 +226,7 @@ kernel_2()  # Prints 2
 
 ## Taichi function
 
-Taichi functions are the building blocks of a kernel. *You must call a Taichi function from inside a kernel or from inside another Taichi function*. 
+Taichi functions are the building blocks of a kernel. *You must call a Taichi function from inside a kernel or from inside another Taichi function*.
 
 In the following code snippet, Taichi raises an error because the Taichi function `foo_1()` must be called from the Taichi scope:
 
@@ -256,7 +256,7 @@ foo_kernel()
 
 :::caution WARNING
 
-All Taichi functions are force-inlined. Therefore, no runtime recursion is allowed. 
+All Taichi functions are force-inlined. Therefore, no runtime recursion is allowed.
 
 :::
 

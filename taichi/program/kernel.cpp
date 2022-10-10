@@ -185,7 +185,7 @@ void Kernel::LaunchContextBuilder::set_arg_float(int arg_id, float64 d) {
   }
 }
 
-void Kernel::LaunchContextBuilder::set_arg_int(int arg_id, int64 d) {
+void Kernel::LaunchContextBuilder::set_arg_int(int arg_id, uint64 d) {
   TI_ASSERT_INFO(!kernel_->args[arg_id].is_array,
                  "Assigning scalar value to external (numpy) array argument is "
                  "not allowed.");
@@ -193,7 +193,7 @@ void Kernel::LaunchContextBuilder::set_arg_int(int arg_id, int64 d) {
   ActionRecorder::get_instance().record(
       "set_kernel_arg_int64",
       {ActionArg("kernel_name", kernel_->name), ActionArg("arg_id", arg_id),
-       ActionArg("val", d)});
+       ActionArg("val", (int64)d)});
 
   auto dt = kernel_->args[arg_id].get_dtype();
   if (dt->is_primitive(PrimitiveTypeID::i32)) {

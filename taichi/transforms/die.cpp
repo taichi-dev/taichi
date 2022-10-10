@@ -108,13 +108,6 @@ class DIE : public IRVisitor {
     }
     stmt->all_blocks_accept(this, true);
   }
-
-  void visit(MatrixInitStmt *stmt) override {
-    register_usage(stmt);
-    for (auto &elts : stmt->values) {
-      elts->accept(this);
-    }
-  }
 };
 
 namespace irpass {

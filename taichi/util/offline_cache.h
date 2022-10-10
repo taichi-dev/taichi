@@ -13,6 +13,7 @@
 #include "taichi/rhi/arch.h"
 #include "taichi/util/io.h"
 #include "taichi/util/lock.h"
+#include "taichi/program/compile_config.h"
 
 namespace taichi::lang {
 namespace offline_cache {
@@ -286,6 +287,7 @@ class CacheCleaner {
   }
 };
 
+void disable_offline_cache_if_needed(CompileConfig *config);
 std::string get_cache_path_by_arch(const std::string &base_path, Arch arch);
 bool enabled_wip_offline_cache(bool enable_hint);
 std::string mangle_name(const std::string &primal_name, const std::string &key);

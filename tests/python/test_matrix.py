@@ -193,10 +193,7 @@ def test_matrix_non_constant_index_numpy():
     assert v[3][9] == 9
 
 
-@test_utils.test(require=ti.extension.dynamic_index,
-                 dynamic_index=True,
-                 debug=True)
-def test_matrix_non_constant_index():
+def _test_matrix_non_constant_index():
     m = ti.Matrix.field(2, 2, ti.i32, 5)
     v = ti.Vector.field(10, ti.i32, 5)
 
@@ -246,6 +243,20 @@ def test_matrix_non_constant_index():
         assert tmp[2] == k * 3
 
     func4(10)
+
+
+@test_utils.test(require=ti.extension.dynamic_index,
+                 dynamic_index=True,
+                 debug=True)
+def test_matrix_non_constant_index():
+    _test_matrix_non_constant_index()
+
+
+@test_utils.test(require=ti.extension.dynamic_index,
+                 real_matrix=True,
+                 debug=True)
+def test_matrix_non_constant_index_real_matrix():
+    _test_matrix_non_constant_index()
 
 
 def _test_matrix_constant_index():
@@ -876,6 +887,37 @@ def test_elementwise_ops():
                 assert factors1[i, j] == 2
 
     test()
+
+
+@test_utils.test(arch=[ti.cuda, ti.cpu],
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_local_matrix_scalarize():
+    @ti.kernel
+    def func():
+        x = ti.Matrix([[1, 2], [3, 4]], ti.f32)
+
+        # Store
+        x[0, 0] = 100.
+
+        # Load + Store
+        x[0, 1] = x[0, 0]
+
+        # Binary
+        x[1, 0] = x[0, 1] + x[0, 1]
+
+        # Unary
+        x[1, 1] = ti.sqrt(x[1, 0])
+
+        # TODO: test for dynamic indexing
+
+        assert (x[0, 0] == 100.)
+        assert (x[0, 1] == 200.)
+        assert (x[1, 0] == 200.)
+        assert (x[1, 1] < 14.14214)
+        assert (x[1, 1] > 14.14213)
+
+    func()
 
 
 @test_utils.test()

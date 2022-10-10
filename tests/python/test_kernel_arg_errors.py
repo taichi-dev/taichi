@@ -18,6 +18,15 @@ def test_pass_float_as_i32():
         foo(1.2)
 
 
+@test_utils.test(exclude=[ti.metal])
+def test_pass_u64():
+    @ti.kernel
+    def foo(a: ti.u64):
+        pass
+
+    foo(2 ** 64 - 1)
+
+
 @test_utils.test()
 def test_argument_redefinition():
     @ti.kernel

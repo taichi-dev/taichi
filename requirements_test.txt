@@ -4,6 +4,7 @@ pytest-xdist
 pytest-rerunfailures
 pytest-cov
 numpy
+psutil
 autograd
 requests==2.26
 matplotlib

@@ -806,7 +806,9 @@ void SNodeOpExpression::flatten(FlattenContext *ctx) {
     flatten_rvalue(indices[i], ctx);
     indices_stmt.push_back(indices[i]->stmt);
   }
-  auto ptr = ctx->push_back<GlobalPtrStmt>(snode, indices_stmt);
+  auto is_cell_access = SNodeOpStmt::activation_related(op_type) &&
+                        snode->type != SNodeType::dynamic;
+  auto ptr = ctx->push_back<GlobalPtrStmt>(snode, indices_stmt, true, is_cell_access);
   ptr->tb = tb;
   if (op_type == SNodeOpType::is_active) {
     TI_ERROR_IF(snode->type != SNodeType::pointer &&

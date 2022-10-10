@@ -433,7 +433,7 @@ class LowerAST : public IRVisitor {
                stmt->snode->type == SNodeType::dense ||
                stmt->snode->type == SNodeType::bitmasked) {
       TI_ASSERT(SNodeOpStmt::activation_related(stmt->op_type));
-      auto ptr = fctx.push_back<GlobalPtrStmt>(stmt->snode, indices_stmt);
+      auto ptr = fctx.push_back<GlobalPtrStmt>(stmt->snode, indices_stmt, true, true);
       fctx.push_back<SNodeOpStmt>(stmt->op_type, stmt->snode, ptr, val_stmt);
     } else {
       TI_ERROR("The {} operation is not supported on {} SNode",

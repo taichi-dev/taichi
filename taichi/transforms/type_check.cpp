@@ -145,12 +145,14 @@ class TypeCheck : public IRVisitor {
     } else
       TI_WARN("[{}] Type inference failed: snode is nullptr.\n{}", stmt->name(),
               stmt->tb);
-    if (stmt->snode->parent->num_active_indices != 0 &&
-        stmt->snode->parent->num_active_indices != stmt->indices.size()) {
-      TI_ERROR("[{}] {} has {} indices. Indexed with {}.", stmt->name(),
-               stmt->snode->parent->node_type_name,
-               stmt->snode->parent->num_active_indices, stmt->indices.size());
-    }
+    auto check_indices = [&](SNode *snode) {
+      if (snode->num_active_indices != stmt->indices.size()) {
+        TI_ERROR("[{}] {} has {} indices. Indexed with {}.", stmt->name(),
+                 snode->node_type_name,
+                 snode->num_active_indices, stmt->indices.size());
+      }
+    };
+    check_indices(stmt->is_cell_access ? stmt->snode : stmt->snode->parent);
     for (int i = 0; i < stmt->indices.size(); i++) {
       if (!is_integral(stmt->indices[i]->ret_type)) {
         TI_WARN(

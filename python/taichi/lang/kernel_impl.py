@@ -353,6 +353,11 @@ class TaichiCallableTemplateMapper:
                 # [Composite arguments] Return weak reference to the object
                 # Taichi kernel will cache the extracted arguments, thus we can't simply return the original argument.
                 # Instead, a weak reference to the original value is returned to avoid memory leak.
+
+                # TODO(zhanlue): replacing "tuple(args)" with "hash of argument values"
+                # This can resolve the following issues:
+                # 1. Invalid weak-ref will leave a dead(dangling) entry in both caches: "self.mapping" and "self.compiled_functions"
+                # 2. Different argument instances with same type and same value, will get templatized into seperate kernels.
                 return weakref.ref(arg)
 
             # [Primitive arguments] Return the value

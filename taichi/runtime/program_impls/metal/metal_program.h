@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "taichi/cache/metal/cache_manager.h"
 #include "taichi/runtime/metal/kernel_manager.h"
 #include "taichi/codegen/metal/struct_metal.h"
 #include "taichi/system/memory_pool.h"
@@ -46,6 +47,10 @@ class MetalProgramImpl : public ProgramImpl {
   DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
                                            uint64 *result_buffer) override;
 
+  void dump_cache_data_to_disk() override;
+
+  const std::unique_ptr<metal::CacheManager> &get_cache_manager();
+
  private:
   const metal::CompiledStructs &compile_snode_tree_types_impl(SNodeTree *tree);
 
@@ -53,6 +58,7 @@ class MetalProgramImpl : public ProgramImpl {
       std::nullopt};
   std::vector<metal::CompiledStructs> compiled_snode_trees_;
   std::unique_ptr<metal::KernelManager> metal_kernel_mgr_{nullptr};
+  std::unique_ptr<metal::CacheManager> cache_manager_{nullptr};
 };
 
 }  // namespace taichi::lang

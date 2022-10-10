@@ -284,6 +284,7 @@ if (TI_WITH_METAL)
     add_subdirectory(taichi/runtime/metal)
     add_subdirectory(taichi/runtime/program_impls/metal)
     add_subdirectory(taichi/codegen/metal)
+    add_subdirectory(taichi/cache/metal)
 
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE metal_codegen)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE metal_runtime)

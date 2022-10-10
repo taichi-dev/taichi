@@ -16,4 +16,5 @@ target_include_directories(opengl_program_impl
   )
 
 target_link_libraries(opengl_program_impl PRIVATE gfx_runtime)
+target_link_libraries(opengl_program_impl PRIVATE gfx_cache)
 target_link_libraries(opengl_program_impl PRIVATE opengl_rhi)

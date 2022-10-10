@@ -465,13 +465,7 @@ class TaskCodegen : public IRVisitor {
     spirv::Value tmp0 = ir_->int_immediate_number(stype, stmt->bit_begin);
     spirv::Value tmp1 =
         ir_->int_immediate_number(stype, stmt->bit_end - stmt->bit_begin);
-    spirv::Value tmp2 =
-        ir_->make_value(spv::OpShiftRightArithmetic, stype, input_val, tmp0);
-    spirv::Value tmp3 =
-        ir_->make_value(spv::OpShiftLeftLogical, stype,
-                        ir_->int_immediate_number(stype, 1), tmp1);
-    spirv::Value tmp4 = ir_->sub(tmp3, ir_->int_immediate_number(stype, 1));
-    spirv::Value val = ir_->make_value(spv::OpBitwiseAnd, stype, tmp2, tmp4);
+    spirv::Value val = ir_->bit_field_extract(input_val, tmp0, tmp1);
     ir_->register_value(stmt->raw_name(), val);
   }
 

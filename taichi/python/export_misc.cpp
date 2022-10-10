@@ -32,6 +32,10 @@
 #include "taichi/rhi/opengl/opengl_api.h"
 #endif
 
+#ifdef TI_WITH_DX12
+#include "taichi/rhi/dx12/dx12_api.h"
+#endif
+
 #ifdef TI_WITH_CC
 namespace taichi::lang::cccp {
 extern bool is_c_backend_available();
@@ -162,6 +166,11 @@ void export_misc(py::module &m) {
   m.def("with_dx11", taichi::lang::directx11::is_dx_api_available);
 #else
   m.def("with_dx11", []() { return false; });
+#endif
+#ifdef TI_WITH_DX12
+  m.def("with_dx12", taichi::lang::directx12::is_dx12_api_available);
+#else
+  m.def("with_dx12", []() { return false; });
 #endif
 
 #ifdef TI_WITH_CC

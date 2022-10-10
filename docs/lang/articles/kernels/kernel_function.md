@@ -52,7 +52,7 @@ print(inv_square(1.0))  # Syntax error
 
 You must call Taichi functions from within the Taichi scope, a concept as opposed to the *Python scope*.
 
-:::tip IMPORTANT
+:::note IMPORTANT
 
 For convenience, we introduce two concepts, *Taichi scope* and *Python scope*:
 

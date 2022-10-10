@@ -8,7 +8,7 @@ from functools import reduce
 
 import numpy as np
 from taichi.lang import impl
-from taichi.lang.enums import SNodeGradType
+from taichi.lang.enums import AutodiffMode, SNodeGradType
 from taichi.lang.field import ScalarField
 from taichi.lang.snode import SNode
 
@@ -83,14 +83,18 @@ class Tape:
         self.runtime.target_tape = None
         if self.eval_on_exit:
             self.grad()
+        if self.validation:
+            for f, _, mode_original in self.calls:
+                if mode_original == AutodiffMode.VALIDATION:
+                    f.autodiff_mode = AutodiffMode.NONE
 
-    def insert(self, func, args):
-        self.calls.append((func, args))
+    def insert(self, func, args, autodiff_mode):
+        self.calls.append((func, args, autodiff_mode))
 
     def grad(self):
         assert self.entered, "Before evaluating gradients tape must be entered."
         assert not self.gradient_evaluated, "Gradients of grad can be evaluated only once."
-        for func, args in reversed(self.calls):
+        for func, args, _ in reversed(self.calls):
             func.grad(*args)
         self.gradient_evaluated = True
 
@@ -157,7 +161,8 @@ def grad_replaced(func):
         # TODO [#3025]: get rid of circular imports and move this to the top.
         impl.get_runtime().grad_replaced = True
         if impl.get_runtime().target_tape:
-            impl.get_runtime().target_tape.insert(decorated, args)
+            impl.get_runtime().target_tape.insert(decorated, args,
+                                                  AutodiffMode.NONE)
         try:
             func(*args, **kwargs)
         finally:

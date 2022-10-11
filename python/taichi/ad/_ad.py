@@ -216,8 +216,8 @@ class Tape:
                 if mode_original == AutodiffMode.VALIDATION:
                     f.autodiff_mode = AutodiffMode.NONE
 
-    def insert(self, func, args, autodiff_mode=AutodiffMode.NONE):
-        self.calls.append((func, args, autodiff_mode))
+    def insert(self, func, args):
+        self.calls.append((func, args, func.autodiff_mode))
 
     def grad(self):
         assert self.entered, "Before evaluating gradients tape must be entered."

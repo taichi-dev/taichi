@@ -1,7 +1,6 @@
 import os
 import shutil
 
-from taichi._lib.utils import get_os_name
 from taichi.tools.image import imwrite
 
 FRAME_FN_TEMPLATE = '%06d.png'
@@ -32,25 +31,12 @@ def get_ffmpeg_path():
     return 'ffmpeg'
 
 
-def mp4_to_gif(input_fn, output_fn, framerate):
-    # Generate the palette
-    palette_name = 'palette.png'
-    if get_os_name() == 'win':
-        command = get_ffmpeg_path(
-        ) + f" -loglevel panic -i {input_fn} -vf 'palettegen' -y {palette_name}"
-    else:
-        command = get_ffmpeg_path(
-        ) + f" -loglevel panic -i {input_fn} -vf 'fps={framerate}," \
-            f"scale=320:640:flags=lanczos,palettegen' -y {palette_name}"
-    # print command
-    os.system(command)
+def mp4_to_gif(input_fn, output_fn, framerate, **kwargs):
+    from moviepy.editor import VideoFileClip  # pylint: disable=import-outside-toplevel
 
-    # Generate the GIF
-    command = get_ffmpeg_path(
-    ) + f" -loglevel panic -i {input_fn} -i {palette_name} -lavfi paletteuse -y {output_fn}"
-    # print command
-    os.system(command)
-    os.remove(palette_name)
+    clip = VideoFileClip(input_fn)
+    prog = get_ffmpeg_path()
+    clip.write_gif(output_fn, fps=framerate, program=prog, **kwargs)
 
 
 class VideoManager:

@@ -129,11 +129,6 @@ jobs:
           fetch-depth: '0'
           submodules: 'recursive'
 
-      - uses: actions/checkout@v3
-        with:
-          repository:  taichi-dev/meshtaichi 
-          path: meshtaichi_checkout
-
       - name: Get Build Cache
         uses: actions/cache@v2
         with:
@@ -361,11 +356,6 @@ jobs:
         with:
           submodules: 'recursive'
           fetch-depth: '0'
-
-      - uses: actions/checkout@v3
-        with:
-          repository:  taichi-dev/meshtaichi 
-          path: meshtaichi_checkout
 
       - name: Prepare Environment
         run: |

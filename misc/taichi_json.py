@@ -217,13 +217,20 @@ class Function(EntryBase):
 class Module:
     all_modules = {}
 
-    def __init__(self, j, builtin_tys):
+    def __init__(self, version, j, builtin_tys):
         self.name = j["name"]
         self.is_built_in = False
         self.declr_reg = DeclarationRegistry(builtin_tys)
         self.required_modules = []
+        self.default_definitions = []
 
         DeclarationRegistry.set_current(self.declr_reg)
+
+        if "default_definitions" in j:
+            for jj in j["default_definitions"]:
+                name = jj["name"]
+                value = jj["value"] if "value" in jj else str(version)
+                self.default_definitions += [(name, value)]
 
         if "is_built_in" in j:
             self.is_built_in = True
@@ -267,15 +274,25 @@ class Module:
 
     @staticmethod
     def load_all(builtin_tys):
+        def ver2int(ver: str) -> int:
+            xs = [int(x) for x in ver.split('.')]
+            assert len(xs) <= 3
+            xs += ['0'] * (3 - len(xs))
+
+            version_number = 0
+            for i in range(3):
+                version_number = version_number * 1000 + xs[i]
+            return version_number
+
         j = None
         with open("c_api/taichi.json") as f:
             j = json.load(f)
 
-        version = j["version"]
+        version = ver2int(j["version"])
         print("taichi c-api version is:", version)
 
         for k in j["modules"]:
-            module = Module(k, builtin_tys)
+            module = Module(version, k, builtin_tys)
             Module.all_modules[module.name] = module
 
         return list(Module.all_modules.values())

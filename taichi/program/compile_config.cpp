@@ -48,8 +48,8 @@ CompileConfig::CompileConfig() {
   detect_read_only = true;
   ndarray_use_cached_allocator = true;
   use_mesh = false;
-  real_matrix = true;
-  real_matrix_scalarize = true;
+  real_matrix = false;
+  real_matrix_scalarize = false;
 
   saturating_grid_dim = 0;
   max_block_dim = 0;

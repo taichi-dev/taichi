@@ -625,12 +625,12 @@ class ASTTransformer(Builder):
                                   (MatrixType)):
 
                         # with real_matrix=True, "data" is expected to be an Expr here
-                        # Therefore we directly call "impl.expr_init_func(data)" to perform:
+                        # Therefore we simply call "impl.expr_init_func(data)" to perform:
                         #
                         # TensorType* t = alloca()
                         # assign(t, data)
                         #
-                        # Thus we created local variable "t" - a copy of the passed-in argument "data"
+                        # We created local variable "t" - a copy of the passed-in argument "data"
                         if not current_cfg().real_matrix:
                             if not isinstance(data, Matrix):
                                 raise TaichiSyntaxError(

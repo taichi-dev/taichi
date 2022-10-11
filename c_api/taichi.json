@@ -872,27 +872,13 @@
             ]
         },
         {
-            "name": "taichi/taichi_llvm.h",
+            "name": "taichi/taichi_cpu.h",
             "required_modules": [
                 "taichi/taichi_core.h"
             ],
             "declarations": [
                 {
                     "name": "cpu_memory_interop_info",
-                    "type": "structure",
-                    "fields": [
-                        {
-                            "name": "ptr",
-                            "type": "void*"
-                        },
-                        {
-                            "name": "size",
-                            "type": "uint64_t"
-                        }
-                    ]
-                },
-                {
-                    "name": "cuda_memory_interop_info",
                     "type": "structure",
                     "fields": [
                         {
@@ -919,6 +905,28 @@
                             "name": "interop_info",
                             "type": "structure.cpu_memory_interop_info",
                             "by_mut": true
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "taichi/taichi_cuda.h",
+            "required_modules": [
+                "taichi/taichi_core.h"
+            ],
+            "declarations": [
+                {
+                    "name": "cuda_memory_interop_info",
+                    "type": "structure",
+                    "fields": [
+                        {
+                            "name": "ptr",
+                            "type": "void*"
+                        },
+                        {
+                            "name": "size",
+                            "type": "uint64_t"
                         }
                     ]
                 },

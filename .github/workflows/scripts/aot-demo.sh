@@ -133,7 +133,7 @@ function build-and-test-headless-demo {
     done
 
     for b in $BINARIES; do
-        if [[ $(cmp -l $b.bmp ci/headless-truths/$b.bmp | wc -l) -gt 20 ]]; then
+        if [[ $(cmp -l $b.bmp ci/headless-truths/$b.bmp | wc -l) -gt 200 ]]; then
             echo "Above threshold: $b"
             exit 1
         fi

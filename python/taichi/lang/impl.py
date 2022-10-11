@@ -199,10 +199,23 @@ def subscript(value, *_indices, skip_reordered=False, get_ref=False):
                     f"Gradient {_var.get_expr_name()} has not been placed, check whether `needs_grad=True`"
                 )
         field_dim = snode.num_active_indices()
+
         if field_dim != index_dim:
-            raise IndexError(
-                f'Field with dim {field_dim} accessed with indices of dim {index_dim}'
-            )
+            is_valid = False
+
+            # With real_matrix, we can index a field with MatrixType-index, e.g. x[ti.Vector([1, 2])]
+            # In that case, we should check whether MatrixType's size matches field_dim
+            if current_cfg().real_matrix and index_dim == 1 and isinstance(
+                    _indices[0], Expr):
+                shape = _indices[0].get_shape()
+                if shape and len(shape) == field_dim:
+                    is_valid = True
+
+            if not is_valid:
+                raise IndexError(
+                    f'Field with dim {field_dim} accessed with indices of dim {index_dim}'
+                )
+
         if isinstance(value, MatrixField):
             if current_cfg().real_matrix:
                 return Expr(

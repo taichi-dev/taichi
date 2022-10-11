@@ -110,3 +110,10 @@ install(DIRECTORY
     PATTERN *.h
     PATTERN *.hpp
     )
+
+if(TI_WITH_LLVM)
+# Install runtime .bc files for LLVM backend
+install(DIRECTORY
+      ${INSTALL_LIB_DIR}/runtime
+      DESTINATION c_api)
+endif()

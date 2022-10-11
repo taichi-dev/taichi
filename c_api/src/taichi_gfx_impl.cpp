@@ -1,4 +1,5 @@
 #include "taichi_gfx_impl.h"
+#include "taichi/runtime/gfx/aot_module_loader_impl.h"
 
 GfxRuntime::GfxRuntime(taichi::Arch arch) : Runtime(arch) {
 }

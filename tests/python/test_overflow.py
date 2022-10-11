@@ -30,10 +30,10 @@ def test_no_debug(capfd):
     assert "return a + b" not in captured
 
 
-
 def supports_overflow(arch):
     return arch != ti.vulkan or platform.system(
     ) != "Darwin"  # Vulkan on macOS do not have the validation layer.
+
 
 add_table = [
     (ti.i8, 2**6),

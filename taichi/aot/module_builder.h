@@ -64,7 +64,8 @@ class AotModuleBuilder {
     TI_NOT_IMPLEMENTED;
   }
 
-  virtual void add_compiled_kernel(const std::string &identifier, aot::Kernel *kernel) {
+  virtual void add_compiled_kernel(const std::string &identifier,
+                                   aot::Kernel *kernel) {
     TI_NOT_IMPLEMENTED;
   }
 

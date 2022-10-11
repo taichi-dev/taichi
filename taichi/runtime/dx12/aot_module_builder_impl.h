@@ -34,7 +34,8 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
                             const std::string &key,
                             Kernel *kernel) override;
 
-  void add_compiled_kernel(const std::string &identifier, aot::Kernel *kernel) override;
+  void add_compiled_kernel(const std::string &identifier,
+                           aot::Kernel *kernel) override;
 
   LlvmProgramImpl *prog;
   ModuleDataDX12 module_data;

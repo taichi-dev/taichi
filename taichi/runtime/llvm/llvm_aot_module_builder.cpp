@@ -60,7 +60,8 @@ void LlvmAotModuleBuilder::add_field_per_backend(const std::string &identifier,
   cache_.fields[snode_tree_id] = std::move(field_cache);
 }
 
-void LlvmAotModuleBuilder::add_compiled_kernel(const std::string &identifier, aot::Kernel *kernel) {
+void LlvmAotModuleBuilder::add_compiled_kernel(const std::string &identifier,
+                                               aot::Kernel *kernel) {
   auto *kernel_impl = dynamic_cast<llvm_aot::KernelImpl *>(kernel);
   TI_ASSERT(kernel_impl);
   if (!kernel_impl->kernel_data_.created_at) {

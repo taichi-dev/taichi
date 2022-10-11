@@ -10,8 +10,7 @@ class KernelImpl : public aot::Kernel {
  public:
   explicit KernelImpl(FunctionType fn,
                       LlvmOfflineCache::KernelCacheData &&kernel_data)
-      : kernel_data_(std::move(kernel_data)),
-        fn_(fn) {
+      : kernel_data_(std::move(kernel_data)), fn_(fn) {
   }
 
   void launch(RuntimeContext *ctx) override {

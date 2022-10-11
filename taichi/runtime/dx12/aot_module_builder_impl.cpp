@@ -28,7 +28,8 @@ void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
   compiled_kernel.tasks = compiled_data.tasks;
 }
 
-void AotModuleBuilderImpl::add_compiled_kernel(aot::Kernel *kernel) {
+void AotModuleBuilderImpl::add_compiled_kernel(const std::string &identifier,
+                                               aot::Kernel *kernel) {
   // FIXME: implement add_compiled_kernel.
   TI_NOT_IMPLEMENTED;
 }

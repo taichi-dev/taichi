@@ -96,3 +96,10 @@ else
     python3 tests/run_tests.py -vr2 -t1 -k "torch" -a "$TI_WANTED_ARCHS"
     # Paddle's paddle.fluid.core.Tensor._ptr() is only available on develop branch, and CUDA version on linux will get error `Illegal Instruction`
 fi
+
+# meshtaichi end-to-end test
+if [[ $TI_WANTED_ARCHS == *"cuda"* || $TI_WANTED_ARCHS == *"cpu"* ]]; then
+    python3 -m pip install meshtaichi_patcher --upgrade
+    git clone https://github.com/BillXu2000/meshtaichi_tmp.git
+    python3 meshtaichi_tmp/run_tests.py
+fi

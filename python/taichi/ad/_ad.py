@@ -305,6 +305,7 @@ def grad_replaced(func):
             impl.get_runtime().grad_replaced = False
 
     decorated.grad = None
+    decorated.autodiff_mode = AutodiffMode.NONE
     return decorated
 
 
@@ -371,6 +372,7 @@ def no_grad(func):
         return
 
     decorated.grad = placeholder
+    decorated.autodiff_mode = AutodiffMode.NONE
     return decorated
 
 

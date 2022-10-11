@@ -115,11 +115,12 @@ def test_skip_grad_replaced():
     @ti.ad.grad_replaced
     def kernel_2():
         loss[None] = x[1] * b[None]
+        b[None] += 100
 
     # The user defined grad kernel is not restricted by the global data access rule, thus should be skipped when checking
     @ti.ad.grad_for(kernel_2)
     def kernel_2_grad():
-        b[None] += 100
+        pass
 
     for i in range(N):
         x[i] = i

@@ -623,20 +623,29 @@ class ASTTransformer(Builder):
                     # Matrix arguments are passed by value.
                     if isinstance(ctx.func.arguments[i].annotation,
                                   (MatrixType)):
-                        if not isinstance(data, Matrix):
-                            raise TaichiSyntaxError(
-                                f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix, but got {type(data)}."
-                            )
 
-                        if data.m != ctx.func.arguments[i].annotation.m:
-                            raise TaichiSyntaxError(
-                                f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix with m {ctx.func.arguments[i].annotation.m}, but got {data.m}."
-                            )
+                        # with real_matrix=True, "data" is expected to be an Expr here
+                        # Therefore we directly call "impl.expr_init_func(data)" to perform:
+                        #
+                        # TensorType* t = alloca()
+                        # assign(t, data)
+                        #
+                        # Thus we created local variable "t" - a copy of the passed-in argument "data"
+                        if not current_cfg().real_matrix:
+                            if not isinstance(data, Matrix):
+                                raise TaichiSyntaxError(
+                                    f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix, but got {type(data)}."
+                                )
 
-                        if data.n != ctx.func.arguments[i].annotation.n:
-                            raise TaichiSyntaxError(
-                                f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix with n {ctx.func.arguments[i].annotation.n}, but got {data.n}."
-                            )
+                            if data.m != ctx.func.arguments[i].annotation.m:
+                                raise TaichiSyntaxError(
+                                    f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix with m {ctx.func.arguments[i].annotation.m}, but got {data.m}."
+                                )
+
+                            if data.n != ctx.func.arguments[i].annotation.n:
+                                raise TaichiSyntaxError(
+                                    f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix with n {ctx.func.arguments[i].annotation.n}, but got {data.n}."
+                                )
                         ctx.create_variable(arg.arg, impl.expr_init_func(data))
                         continue
 

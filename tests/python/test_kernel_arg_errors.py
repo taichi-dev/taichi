@@ -1,5 +1,6 @@
-import pytest
 import platform
+
+import pytest
 
 import taichi as ti
 from tests import test_utils
@@ -21,7 +22,8 @@ def test_pass_float_as_i32():
 
 @test_utils.test(exclude=[ti.metal])
 def test_pass_u64():
-    if ti.lang.impl.current_cfg().arch == ti.vulkan and platform.system() == "Darwin":
+    if ti.lang.impl.current_cfg().arch == ti.vulkan and platform.system(
+    ) == "Darwin":
         return
 
     @ti.kernel

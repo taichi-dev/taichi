@@ -152,9 +152,9 @@ class TypeCheck : public IRVisitor {
                stmt->snode->parent->num_active_indices, stmt->indices.size());
     }
     for (int i = 0; i < stmt->indices.size(); i++) {
-      if (!is_integral(stmt->indices[i]->ret_type)) {
+      if (!stmt->indices[i]->ret_type->is_primitive(PrimitiveTypeID::i32)) {
         TI_WARN(
-            "[{}] Field index {} not integral, casting into int32 "
+            "[{}] Field index {} not int32, casting into int32 "
             "implicitly\n{}",
             stmt->name(), i, stmt->tb);
         stmt->indices[i] =

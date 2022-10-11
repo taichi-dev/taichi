@@ -1,6 +1,10 @@
 #pragma once
-#include <taichi/taichi_core.h>
-#include <vulkan/vulkan.h>
+
+#ifndef TI_WITH_VULKAN
+#define TI_WITH_VULKAN 1
+#endif  // TI_WITH_VULKAN
+
+#include <taichi/taichi.h>
 
 #ifdef __cplusplus
 extern "C" {

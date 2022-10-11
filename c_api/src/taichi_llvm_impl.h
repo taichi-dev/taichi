@@ -1,4 +1,5 @@
 #pragma once
+#ifdef TI_WITH_LLVM
 
 #include "taichi_core_impl.h"
 
@@ -41,3 +42,5 @@ class LlvmRuntime : public Runtime {
 };
 
 }  // namespace capi
+
+#endif  // TI_WITH_LLVM

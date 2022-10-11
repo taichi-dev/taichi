@@ -1,4 +1,5 @@
 #include "taichi_opengl_impl.h"
+#ifdef TI_WITH_OPENGL
 
 OpenglRuntime::OpenglRuntime()
     : GfxRuntime(taichi::Arch::opengl),
@@ -30,3 +31,5 @@ void ti_export_opengl_memory(TiRuntime runtime,
   interop_info->size = runtime2->get_gl().get_devalloc_size(devalloc);
   TI_CAPI_TRY_CATCH_END();
 }
+
+#endif  // TI_WITH_OPENGL

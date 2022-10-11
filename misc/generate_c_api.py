@@ -120,12 +120,18 @@ def get_human_readable_name(x: EntryBase):
 
 
 def print_module_header(module):
-    out = ["#pragma once"]
+    out = ["#pragma once", ""]
 
-    for x in module.required_modules:
-        out += [f"#include <{x}>"]
+    for (name, value) in module.default_definitions:
+        out += [
+            f"#ifndef {name}",
+            f"#define {name} {value}",
+            f"#endif // {name}",
+            "",
+        ]
 
     out += [
+        "#include <taichi/taichi.h>",
         "",
         "#ifdef __cplusplus",
         'extern "C" {',
@@ -192,6 +198,7 @@ if __name__ == "__main__":
         BuiltInType("VkImageViewType", "VkImageViewType"),
         BuiltInType("PFN_vkGetInstanceProcAddr", "PFN_vkGetInstanceProcAddr"),
         BuiltInType("char", "char"),
+        BuiltInType("GLuint", "GLuint"),
     }
 
     for module in Module.load_all(builtin_tys):

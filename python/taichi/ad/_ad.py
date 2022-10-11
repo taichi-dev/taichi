@@ -298,8 +298,7 @@ def grad_replaced(func):
         # TODO [#3025]: get rid of circular imports and move this to the top.
         impl.get_runtime().grad_replaced = True
         if impl.get_runtime().target_tape:
-            impl.get_runtime().target_tape.insert(decorated, args,
-                                                  AutodiffMode.NONE)
+            impl.get_runtime().target_tape.insert(decorated, args)
         try:
             func(*args, **kwargs)
         finally:
@@ -362,8 +361,7 @@ def no_grad(func):
     def decorated(*args, **kwargs):
         impl.get_runtime().grad_replaced = True
         if impl.get_runtime().target_tape:
-            impl.get_runtime().target_tape.insert(decorated, args,
-                                                  AutodiffMode.NONE)
+            impl.get_runtime().target_tape.insert(decorated, args)
         try:
             func(*args, **kwargs)
         finally:

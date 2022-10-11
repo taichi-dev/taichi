@@ -940,21 +940,21 @@ class TaskCodegen : public IRVisitor {
 
     bool debug = device_->get_cap(DeviceCapability::spirv_has_non_semantic_info);
 
-    if (debug && op_type == BinaryOpType::add) {
+    if (debug && op_type == BinaryOpType::add && is_integral(dst_type.dt)) {
       if (is_unsigned(dst_type.dt)) {
         bin_value = generate_uadd_overflow(lhs_value, rhs_value, bin->tb);
       } else {
         bin_value = generate_sadd_overflow(lhs_value, rhs_value, bin->tb);
       }
       bin_value = ir_->cast(dst_type, bin_value);
-    } else if (debug && op_type == BinaryOpType::sub) {
+    } else if (debug && op_type == BinaryOpType::sub && is_integral(dst_type.dt)) {
       if (is_unsigned(dst_type.dt)) {
         bin_value = generate_usub_overflow(lhs_value, rhs_value, bin->tb);
       } else {
         bin_value = generate_ssub_overflow(lhs_value, rhs_value, bin->tb);
       }
       bin_value = ir_->cast(dst_type, bin_value);
-    } else if (debug && op_type == BinaryOpType::mul) {
+    } else if (debug && op_type == BinaryOpType::mul && is_integral(dst_type.dt)) {
       if (is_unsigned(dst_type.dt)) {
         bin_value = generate_umul_overflow(lhs_value, rhs_value, bin->tb);
       } else {

@@ -1,7 +1,7 @@
 import os
+import platform
 
 import pytest
-import platform
 
 import taichi as ti
 from tests import test_utils
@@ -37,7 +37,8 @@ def supports_overflow(arch, ty):
         return True
     if platform.machine() == "arm64":  # M1 does not support validation layers
         return False
-    return id(ty) not in [id(ti.i64), id(ti.u64)]  # macOS does not support 64-bit data types
+    return id(ty) not in [id(ti.i64), id(ti.u64)
+                          ]  # macOS does not support 64-bit data types
 
 
 add_table = [

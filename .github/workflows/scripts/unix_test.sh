@@ -101,5 +101,10 @@ fi
 if [[ $OSTYPE == "linux-"* && ($TI_WANTED_ARCHS == *"cuda"* || $TI_WANTED_ARCHS == *"cpu"*) ]]; then
     python3 -m pip install meshtaichi_patcher --upgrade
     git clone https://github.com/BillXu2000/meshtaichi_tmp.git
-    python3 meshtaichi_tmp/run_tests.py --arch "$TI_WANTED_ARCHS"
+    if [[ $TI_WANTED_ARCHS == *"cuda"* ]]; then
+        python3 meshtaichi_tmp/run_tests.py --arch cuda
+    fi
+    if [[ $TI_WANTED_ARCHS == *"cpu"* ]]; then
+        python3 meshtaichi_tmp/run_tests.py --arch cpu
+    fi
 fi

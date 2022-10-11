@@ -20,7 +20,7 @@ from taichi.lang.expr import Expr
 from taichi.lang.kernel_arguments import KernelArgument
 from taichi.lang.matrix import Matrix, MatrixType
 from taichi.lang.shell import _shell_pop_print, oinspect
-from taichi.lang.util import has_paddle, has_pytorch, to_taichi_type
+from taichi.lang.util import has_paddle, has_pytorch, to_taichi_type, cook_dtype
 from taichi.types import (ndarray_type, primitive_types, sparse_matrix_builder,
                           template, texture_type)
 from taichi.types.utils import is_signed
@@ -647,7 +647,7 @@ class Kernel:
                     if not isinstance(v, int):
                         raise TaichiRuntimeTypeError.get(
                             i, needed.to_string(), provided)
-                    if is_signed(needed):
+                    if is_signed(cook_dtype(needed)):
                         launch_ctx.set_arg_int(actual_argument_slot, int(v))
                     else:
                         launch_ctx.set_arg_uint(actual_argument_slot, int(v))

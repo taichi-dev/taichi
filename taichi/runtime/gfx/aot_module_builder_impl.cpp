@@ -205,10 +205,11 @@ void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
   ti_aot_data_.spirv_codes.push_back(compiled.task_spirv_source_codes);
 }
 
-void AotModuleBuilderImpl::add_compiled_kernel(aot::Kernel *kernel) {
-  const auto register_params = static_cast<KernelImpl *>(kernel)->params();
-  ti_aot_data_.kernels.push_back(register_params.kernel_attribs);
-  ti_aot_data_.spirv_codes.push_back(register_params.task_spirv_source_codes);
+void AotModuleBuilderImpl::add_compiled_kernel(const std::string &identifier, aot::Kernel *kernel) {
+  GfxRuntime::RegisterParams register_params = static_cast<KernelImpl *>(kernel)->params();
+  register_params.kernel_attribs.name = identifier;
+  ti_aot_data_.kernels.push_back(std::move(register_params.kernel_attribs));
+  ti_aot_data_.spirv_codes.push_back(std::move(register_params.task_spirv_source_codes));
 }
 
 void AotModuleBuilderImpl::add_field_per_backend(const std::string &identifier,

@@ -748,7 +748,7 @@ class Kernel:
                     self.autodiff_mode == AutodiffMode.NONE
                     or self.autodiff_mode == AutodiffMode.VALIDATION
             ) and self.runtime.target_tape and not self.runtime.grad_replaced:
-                self.runtime.target_tape.insert(self, args, self.autodiff_mode)
+                self.runtime.target_tape.insert(self, args)
 
             if actual_argument_slot > 8 and impl.current_cfg(
             ).arch == _ti_core.cc:

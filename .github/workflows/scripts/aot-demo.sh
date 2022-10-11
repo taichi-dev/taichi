@@ -132,13 +132,12 @@ function build-and-test-headless-demo {
         adb pull /data/local/tmp/0001.bmp $b.bmp
     done
 
-    sha1sum *.bmp | tee checksum.txt
-    cat <<EOF > ground-truth.txt
-3c5c45f3da749cc4aa377a6d2a9565a8e5293a61  E1_hello_world_headless.bmp
-72c793bbb19a42ac6039b2be0b740f2b9d695e1c  E2_mpm88_headless.bmp
-1ad54ff5a238e71a01962ddbfb887f288fba6fa9  E3_implicit_fem_headless.bmp
-EOF
-    diff -bB checksum.txt ground-truth.txt
+    for b in $BINARIES; do
+        if [[ $(cmp -l $b ci/headless-truths/$b.bmp | wc -l) -gt 20 ]]; then
+            echo "Above threshold: $b"
+            exit 1
+        fi
+    done
 }
 
 $1

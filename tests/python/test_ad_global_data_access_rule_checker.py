@@ -146,7 +146,7 @@ def test_autodiff_mode_recovered():
     x = ti.field(dtype=ti.f32, shape=N, needs_grad=True)
     loss = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
     b = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
-    
+
     @ti.kernel
     def kernel_1():
         loss[None] = x[1] * b[None]
@@ -154,13 +154,13 @@ def test_autodiff_mode_recovered():
     @ti.kernel
     def kernel_2():
         loss[None] = x[1] * b[None]
-    
+
     for i in range(N):
         x[i] = i
 
     b[None] = 10
     loss.grad[None] = 1
-    
+
     func_calls = []
     with ti.ad.Tape(loss=loss, validation=True) as t:
         kernel_1()

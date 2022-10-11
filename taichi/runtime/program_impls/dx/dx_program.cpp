@@ -13,9 +13,9 @@ namespace directx11 {
 FunctionType compile_to_executable(Kernel *kernel,
                                    gfx::GfxRuntime *runtime,
                                    gfx::SNodeTreeManager *snode_tree_mgr) {
-  auto handle = runtime->register_taichi_kernel(
-      gfx::run_codegen(kernel, runtime->get_ti_device(),
-                       snode_tree_mgr->get_compiled_structs()));
+  auto handle = runtime->register_taichi_kernel(gfx::run_codegen(
+      kernel, Arch::dx11, runtime->get_ti_device()->get_current_caps(),
+      snode_tree_mgr->get_compiled_structs()));
   return [runtime, handle](RuntimeContext &ctx) {
     runtime->launch_kernel(handle, &ctx);
   };
@@ -66,10 +66,12 @@ void Dx11ProgramImpl::materialize_snode_tree(SNodeTree *tree,
 std::unique_ptr<AotModuleBuilder> Dx11ProgramImpl::make_aot_module_builder() {
   if (runtime_) {
     return std::make_unique<gfx::AotModuleBuilderImpl>(
-        snode_tree_mgr_->get_compiled_structs(), Arch::dx11);
+        snode_tree_mgr_->get_compiled_structs(), Arch::dx11,
+        runtime_->get_ti_device()->get_current_caps());
   } else {
     return std::make_unique<gfx::AotModuleBuilderImpl>(
-        aot_compiled_snode_structs_, Arch::dx11);
+        aot_compiled_snode_structs_, Arch::dx11,
+        runtime_->get_ti_device()->get_current_caps());
   }
 }
 
@@ -84,8 +86,9 @@ DeviceAllocation Dx11ProgramImpl::allocate_memory_ndarray(
 std::unique_ptr<aot::Kernel> Dx11ProgramImpl::make_aot_kernel(Kernel &kernel) {
   spirv::lower(&kernel);
   std::vector<gfx::CompiledSNodeStructs> compiled_structs;
-  gfx::GfxRuntime::RegisterParams kparams =
-      gfx::run_codegen(&kernel, get_compute_device(), compiled_structs);
+  gfx::GfxRuntime::RegisterParams kparams = gfx::run_codegen(
+      &kernel, Arch::dx11, get_compute_device()->get_current_caps(),
+      compiled_structs);
   return std::make_unique<gfx::KernelImpl>(runtime_.get(), std::move(kparams));
 }
 

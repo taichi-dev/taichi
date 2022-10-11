@@ -302,13 +302,6 @@ const std::string to_string(DeviceCapability c) {
 #undef PER_DEVICE_CAPABILITY
 }
 
-void Device::print_all_cap() const {
-  for (auto &pair : caps_) {
-    TI_TRACE("DeviceCapability::{} ({}) = {}", to_string(pair.first),
-             int(pair.first), pair.second);
-  }
-}
-
 void GraphicsDevice::image_transition(DeviceAllocation img,
                                       ImageLayout old_layout,
                                       ImageLayout new_layout) {

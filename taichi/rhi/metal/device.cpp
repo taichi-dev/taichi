@@ -286,6 +286,10 @@ class DeviceImpl : public Device, public AllocToMTLBufferMapper {
     TI_ASSERT(stream_ != nullptr);
   }
 
+  virtual Arch arch() const override final {
+    return Arch::metal;
+  }
+
   DeviceAllocation allocate_memory(const AllocParams &params) override {
     DeviceAllocation res;
     res.device = this;

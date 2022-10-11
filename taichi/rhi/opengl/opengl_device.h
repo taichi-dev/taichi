@@ -241,6 +241,10 @@ class GLDevice : public GraphicsDevice {
   GLDevice();
   ~GLDevice() override;
 
+  virtual Arch arch() const override final {
+    return Arch::opengl;
+  }
+
   DeviceAllocation allocate_memory(const AllocParams &params) override;
   void dealloc_memory(DeviceAllocation handle) override;
 
@@ -298,7 +302,18 @@ class GLDevice : public GraphicsDevice {
     return image_to_int_format_.at(image);
   }
 
+  virtual const DeviceCapabilityConfig &get_current_caps()
+      const override final {
+    return caps_;
+  }
+
+  void set_current_caps(DeviceCapabilityConfig &&caps) {
+    caps_ = caps;
+  }
+
  private:
+  DeviceCapabilityConfig caps_;
+
   GLStream stream_;
   std::unordered_map<GLuint, GLbitfield> buffer_to_access_;
   std::unordered_map<GLuint, GLuint> image_to_dims_;

@@ -63,7 +63,8 @@ class TaskCodegen : public IRVisitor {
  public:
   struct Params {
     OffloadedStmt *task_ir;
-    Device *device;
+    Arch arch;
+    DeviceCapabilityConfig *caps;
     std::vector<CompiledSNodeStructs> compiled_structs;
     const KernelContextAttributes *ctx_attribs;
     std::string ti_kernel_name;
@@ -73,7 +74,8 @@ class TaskCodegen : public IRVisitor {
   const bool use_64bit_pointers = false;
 
   explicit TaskCodegen(const Params &params)
-      : device_(params.device),
+      : arch_(params.arch),
+        caps_(params.caps),
         task_ir_(params.task_ir),
         compiled_structs_(params.compiled_structs),
         ctx_attribs_(params.ctx_attribs),
@@ -84,7 +86,7 @@ class TaskCodegen : public IRVisitor {
     invoke_default_visitor = true;
 
     fill_snode_to_root();
-    ir_ = std::make_shared<spirv::IRBuilder>(params.device);
+    ir_ = std::make_shared<spirv::IRBuilder>(arch_, caps_);
   }
 
   void fill_snode_to_root() {
@@ -147,7 +149,7 @@ class TaskCodegen : public IRVisitor {
   }
 
   void visit(PrintStmt *stmt) override {
-    if (!device_->get_cap(DeviceCapability::spirv_has_non_semantic_info)) {
+    if (!caps_->get(DeviceCapability::spirv_has_non_semantic_info)) {
       return;
     }
 
@@ -640,7 +642,7 @@ class TaskCodegen : public IRVisitor {
       ir_->decorate(spv::OpDecorate, linear_offset,
                     spv::DecorationNoSignedWrap);
     }
-    if (device_->get_cap(DeviceCapability::spirv_has_physical_storage_buffer)) {
+    if (caps_->get(DeviceCapability::spirv_has_physical_storage_buffer)) {
       spirv::Value addr_ptr = ir_->make_value(
           spv::OpAccessChain,
           ir_->get_pointer_type(ir_->u64_type(), spv::StorageClassUniform),
@@ -982,8 +984,7 @@ class TaskCodegen : public IRVisitor {
                lhs_value.stype.dt->to_string(), rhs_name,
                rhs_value.stype.dt->to_string(), bin->tb);
 
-    bool debug =
-        device_->get_cap(DeviceCapability::spirv_has_non_semantic_info);
+    bool debug = caps_->get(DeviceCapability::spirv_has_non_semantic_info);
 
     if (debug && op_type == BinaryOpType::add && is_integral(dst_type.dt)) {
       if (is_unsigned(dst_type.dt)) {
@@ -1394,7 +1395,7 @@ class TaskCodegen : public IRVisitor {
     bool use_subgroup_reduction = false;
 
     if (stmt->is_reduction &&
-        device_->get_cap(DeviceCapability::spirv_has_subgroup_arithmetic)) {
+        caps_->get(DeviceCapability::spirv_has_subgroup_arithmetic)) {
       spv::Op atomic_op = spv::OpNop;
       bool negation = false;
       if (is_integral(dt)) {
@@ -1458,14 +1459,14 @@ class TaskCodegen : public IRVisitor {
     spirv::Value addr_ptr;
 
     if (dt->is_primitive(PrimitiveTypeID::f64)) {
-      if (device_->get_cap(DeviceCapability::spirv_has_atomic_float64_add) &&
+      if (caps_->get(DeviceCapability::spirv_has_atomic_float64_add) &&
           stmt->op_type == AtomicOpType::add) {
         addr_ptr = at_buffer(stmt->dest, dt);
       } else {
         addr_ptr = at_buffer(stmt->dest, ir_->get_taichi_uint_type(dt));
       }
     } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
-      if (device_->get_cap(DeviceCapability::spirv_has_atomic_float_add) &&
+      if (caps_->get(DeviceCapability::spirv_has_atomic_float_add) &&
           stmt->op_type == AtomicOpType::add) {
         addr_ptr = at_buffer(stmt->dest, dt);
       } else {
@@ -1486,17 +1487,17 @@ class TaskCodegen : public IRVisitor {
       bool use_native_atomics = false;
 
       if (dt->is_primitive(PrimitiveTypeID::f64)) {
-        if (device_->get_cap(DeviceCapability::spirv_has_atomic_float64_add) &&
+        if (caps_->get(DeviceCapability::spirv_has_atomic_float64_add) &&
             stmt->op_type == AtomicOpType::add) {
           use_native_atomics = true;
         }
       } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
-        if (device_->get_cap(DeviceCapability::spirv_has_atomic_float_add) &&
+        if (caps_->get(DeviceCapability::spirv_has_atomic_float_add) &&
             stmt->op_type == AtomicOpType::add) {
           use_native_atomics = true;
         }
       } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
-        if (device_->get_cap(DeviceCapability::spirv_has_atomic_float16_add) &&
+        if (caps_->get(DeviceCapability::spirv_has_atomic_float16_add) &&
             stmt->op_type == AtomicOpType::add) {
           use_native_atomics = true;
         }
@@ -1731,7 +1732,7 @@ class TaskCodegen : public IRVisitor {
         task_attribs_.advisory_num_threads_per_group, 1, 1};
     ir_->set_work_group_size(group_size);
     std::vector<spirv::Value> buffers;
-    if (device_->get_cap(DeviceCapability::spirv_version) > 0x10300) {
+    if (caps_->get(DeviceCapability::spirv_version) > 0x10300) {
       buffers = shared_array_binds_;
       for (const auto &bb : task_attribs_.buffer_binds) {
         for (auto &it : buffer_value_map_) {
@@ -2267,8 +2268,7 @@ class TaskCodegen : public IRVisitor {
     for (auto &arg : ctx_attribs_->args()) {
       const tinyir::Type *t;
       if (arg.is_array &&
-          device_->get_cap(
-              DeviceCapability::spirv_has_physical_storage_buffer)) {
+          caps_->get(DeviceCapability::spirv_has_physical_storage_buffer)) {
         t = blk.emplace_back<IntType>(/*num_bits=*/64, /*is_signed=*/false);
       } else {
         t = translate_ti_primitive(blk, PrimitiveType::get(arg.dtype));
@@ -2362,7 +2362,8 @@ class TaskCodegen : public IRVisitor {
     return continue_label_stack_.front();
   }
 
-  Device *device_;
+  Arch arch_;
+  DeviceCapabilityConfig *caps_;
 
   struct BufferInfoTypeTupleHasher {
     std::size_t operator()(const std::pair<BufferInfo, int> &buf) const {
@@ -2437,11 +2438,10 @@ static void spriv_message_consumer(spv_message_level_t level,
 }
 
 KernelCodegen::KernelCodegen(const Params &params)
-    : params_(params), ctx_attribs_(*params.kernel, params.device) {
-  spv_target_env target_env = SPV_ENV_VULKAN_1_0;
-  uint32_t spirv_version =
-      params.device->get_cap(DeviceCapability::spirv_version);
+    : params_(params), ctx_attribs_(*params.kernel, &params.caps) {
+  uint32_t spirv_version = params.caps.get(DeviceCapability::spirv_version);
 
+  spv_target_env target_env;
   if (spirv_version >= 0x10600) {
     target_env = SPV_ENV_VULKAN_1_3;
   } else if (spirv_version >= 0x10500) {
@@ -2450,6 +2450,8 @@ KernelCodegen::KernelCodegen(const Params &params)
     target_env = SPV_ENV_VULKAN_1_1_SPIRV_1_4;
   } else if (spirv_version >= 0x10300) {
     target_env = SPV_ENV_VULKAN_1_1;
+  } else {
+    target_env = SPV_ENV_VULKAN_1_0;
   }
 
   spirv_opt_ = std::make_unique<spvtools::Optimizer>(target_env);
@@ -2497,7 +2499,8 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
     tp.compiled_structs = params_.compiled_structs;
     tp.ctx_attribs = &ctx_attribs_;
     tp.ti_kernel_name = fmt::format("{}_{}", params_.ti_kernel_name, i);
-    tp.device = params_.device;
+    tp.arch = params_.arch;
+    tp.caps = &params_.caps;
 
     TaskCodegen cgen(tp);
     auto task_res = cgen.run();

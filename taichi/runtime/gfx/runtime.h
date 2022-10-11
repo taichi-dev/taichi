@@ -159,7 +159,8 @@ class TI_DLL_EXPORT GfxRuntime {
 
 GfxRuntime::RegisterParams run_codegen(
     Kernel *kernel,
-    Device *device,
+    Arch arch,
+    const DeviceCapabilityConfig &caps,
     const std::vector<CompiledSNodeStructs> &compiled_structs);
 
 }  // namespace gfx

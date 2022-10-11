@@ -21,7 +21,7 @@ function build-and-smoke-test-android-aot-demo {
     # Normally we checkout the master's commit Id: https://github.com/taichi-dev/taichi-aot-demo/commit/master
     # As for why we need this explicit commit Id here, refer to: https://docs.taichi-lang.org/docs/master/contributor_guide#handle-special-ci-failures
     pushd taichi-aot-demo
-    git checkout bd8fb7bf30a3494f4ecc671cd4d017b926afed10
+    git checkout ed5bb27b600920d6fbb2942c5315242baba57944
     popd
 
     APP_ROOT=taichi-aot-demo/implicit_fem
@@ -33,6 +33,8 @@ function build-and-smoke-test-android-aot-demo {
     sudo chmod 0777 $HOME/.cache
     python implicit_fem.py --aot
     popd
+
+    ls taichi-aot-demo/implicit_fem/android/app/src/main/assets/shaders/aot/implicit_fem
 
     mkdir -p $JNI_PATH
     cp taichi/build/libtaichi_export_core.so $JNI_PATH
@@ -49,7 +51,7 @@ function prepare-unity-build-env {
     cd taichi
 
     # Dependencies
-    git clone --reference-if-able /var/lib/git-cache -b upgrade-modules1 https://github.com/taichi-dev/Taichi-UnityExample
+    git clone --reference-if-able /var/lib/git-cache -b upgrade-modules2 https://github.com/taichi-dev/Taichi-UnityExample
 
     python misc/generate_unity_language_binding.py
     cp c_api/unity/*.cs Taichi-UnityExample/Assets/Taichi/Generated

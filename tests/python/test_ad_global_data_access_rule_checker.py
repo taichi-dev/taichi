@@ -101,19 +101,27 @@ def test_break_gdar_rule_1():
                  exclude=[ti.cc],
                  debug=True,
                  validate_autodiff=True)
-def test_autodiff_mode_recovered():
+def test_skip_grad_replaced():
     N = 16
     x = ti.field(dtype=ti.f32, shape=N, needs_grad=True)
     loss = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
     b = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
 
+    # This kernel breaks the global data access rule
     @ti.kernel
     def kernel_1():
         loss[None] = x[1] * b[None]
+        b[None] += 100
 
-    @ti.kernel
+    @ti.ad.grad_replaced
     def kernel_2():
         loss[None] = x[1] * b[None]
+        b[None] += 100
+
+    # The user defined grad kernel is not restricted by the global data access rule, thus should be skipped when checking
+    @ti.ad.grad_for(kernel_2)
+    def kernel_2_grad():
+        pass
 
     for i in range(N):
         x[i] = i
@@ -121,6 +129,38 @@ def test_autodiff_mode_recovered():
     b[None] = 10
     loss.grad[None] = 1
 
+    with pytest.raises(ti.TaichiAssertionError):
+        with ti.ad.Tape(loss=loss, validation=True):
+            kernel_1()
+
+    with ti.ad.Tape(loss=loss, validation=True):
+        kernel_2()
+
+
+@test_utils.test(require=ti.extension.assertion,
+                 exclude=[ti.cc],
+                 debug=True,
+                 validate_autodiff=True)
+def test_autodiff_mode_recovered():
+    N = 16
+    x = ti.field(dtype=ti.f32, shape=N, needs_grad=True)
+    loss = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
+    b = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
+    
+    @ti.kernel
+    def kernel_1():
+        loss[None] = x[1] * b[None]
+
+    @ti.kernel
+    def kernel_2():
+        loss[None] = x[1] * b[None]
+    
+    for i in range(N):
+        x[i] = i
+
+    b[None] = 10
+    loss.grad[None] = 1
+    
     func_calls = []
     with ti.ad.Tape(loss=loss, validation=True) as t:
         kernel_1()

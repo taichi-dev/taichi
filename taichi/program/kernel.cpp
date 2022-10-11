@@ -191,7 +191,7 @@ void Kernel::LaunchContextBuilder::set_arg_int(int arg_id, int64 d) {
                  "not allowed.");
 
   ActionRecorder::get_instance().record(
-      "set_kernel_arg_int64",
+      "set_kernel_arg_integer",
       {ActionArg("kernel_name", kernel_->name), ActionArg("arg_id", arg_id),
        ActionArg("val", d)});
 
@@ -216,6 +216,10 @@ void Kernel::LaunchContextBuilder::set_arg_int(int arg_id, int64 d) {
     TI_INFO(dt->to_string());
     TI_NOT_IMPLEMENTED
   }
+}
+
+void Kernel::LaunchContextBuilder::set_arg_uint(int arg_id, uint64 d) {
+  set_arg_int(arg_id, d);
 }
 
 void Kernel::LaunchContextBuilder::set_extra_arg_int(int i, int j, int32 d) {

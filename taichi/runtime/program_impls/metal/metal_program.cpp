@@ -136,10 +136,7 @@ const std::unique_ptr<metal::CacheManager>
     TI_ASSERT(compiled_runtime_module_.has_value());
     using Mgr = metal::CacheManager;
     Mgr::Params params;
-    params.mode =
-        offline_cache::enabled_wip_offline_cache(config->offline_cache)
-            ? Mgr::MemAndDiskCache
-            : Mgr::MemCache;
+    params.mode = config->offline_cache ? Mgr::MemAndDiskCache : Mgr::MemCache;
     params.cache_path = offline_cache::get_cache_path_by_arch(
         config->offline_cache_file_path, Arch::metal);
     params.compiled_runtime_module_ = &(*compiled_runtime_module_);

@@ -639,7 +639,7 @@ class ASTTransformer(Builder):
                                     f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix, but got {type(data)}."
                                 )
 
-                            element_shape = data.ptr.get_ret_type().get_shape()
+                            element_shape = data.ptr.get_ret_type().shape()
                             if len(element_shape
                                    ) != ctx.func.arguments[i].annotation.ndim:
                                 raise TaichiSyntaxError(

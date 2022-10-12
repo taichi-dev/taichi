@@ -192,6 +192,10 @@ mul_table = [
 def test_mul_overflow(capfd, ty, num1, num2):
     if not supports_overflow(ti.lang.impl.current_cfg().arch):
         return
+    # 64-bit Multiplication overflow detection does not function correctly on old drivers.
+    # See https://github.com/taichi-dev/taichi/issues/6303
+    if ti.lang.impl.current_cfg().arch == ti.vulkan and id(ty) in [id(ti.i64), id(ti.u64)]:
+        return
     capfd.readouterr()
 
     @ti.kernel

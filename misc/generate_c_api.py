@@ -1,10 +1,9 @@
 import re
-from os import system
+#from os import system
 
 from taichi_json import (Alias, BitField, BuiltInType, Definition, EntryBase,
                          Enumeration, Field, Function, Handle, Module,
                          Structure, Union)
-
 
 def get_type_name(x: EntryBase):
     ty = type(x)
@@ -273,7 +272,7 @@ def generate_module_header(module):
     with open(path, "w") as f:
         f.write(print_module_header(module))
 
-    system(f"clang-format {path} -i")
+    #system(f"clang-format {path} -i")
 
 
 if __name__ == "__main__":

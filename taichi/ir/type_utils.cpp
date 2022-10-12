@@ -116,9 +116,9 @@ std::string data_type_format(DataType dt) {
   } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
     // Use %lld on Windows.
     // Discussion: https://github.com/taichi-dev/taichi/issues/2522
-    return "%lld";
+    return "%ld";
   } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
-    return "%llu";
+    return "%lu";
   } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
     return "%f";
   } else if (dt->is_primitive(PrimitiveTypeID::f64)) {

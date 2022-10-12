@@ -806,8 +806,7 @@ class TaskCodegen : public IRVisitor {
     ir_->make_inst(spv::OpBranchConditional, cond, then_label, merge_label);
     // then block
     ir_->start_label(then_label);
-    PrintStmt print_stmt({op + " overflow detected in " + tb});
-    visit(&print_stmt);
+    ir_->call_debugprintf(op + " overflow detected in " + tb, {});
     ir_->make_inst(spv::OpBranch, merge_label);
     // merge label
     ir_->start_label(merge_label);
@@ -903,18 +902,20 @@ class TaskCodegen : public IRVisitor {
     auto mul_ext = ir_->make_value(spv::OpUMulExtended, struct_type, a, b);
     auto low = ir_->make_value(spv::OpCompositeExtract, a.stype, mul_ext, 0);
     auto high = ir_->make_value(spv::OpCompositeExtract, a.stype, mul_ext, 1);
-    if (device_->get_cap(DeviceCapability::spirv_has_non_semantic_info)) {
-      std::vector<Value> vals;
-      std::string formats;
-      auto tf = data_type_format(a.stype.dt);
-      formats += "UMul: a: " + tf + " b: " + tf + "low: " + tf + "high: " + tf;
-      vals.push_back(a);
-      vals.push_back(b);
-      vals.push_back(low);
-      vals.push_back(high);
-      ir_->call_debugprintf(formats, vals);
-    }
-    generate_overflow_branch(high, "Multiplication", tb);
+
+    auto overflow = ir_->ne(high, ir_->int_immediate_number(a.stype, 0));
+    auto overflow_int = ir_->cast(a.stype, overflow);
+    std::vector<Value> vals;
+    std::string formats;
+    auto tf = data_type_format(a.stype.dt);
+    formats += "UMul: a: " + tf + " b: " + tf + " low: " + tf + " high: " + tf + "overflow: " + tf;
+    vals.push_back(a);
+    vals.push_back(b);
+    vals.push_back(low);
+    vals.push_back(high);
+    vals.push_back(overflow_int);
+    ir_->call_debugprintf(formats, vals);
+    generate_overflow_branch(overflow, "Multiplication", tb);
     return low;
   }
 

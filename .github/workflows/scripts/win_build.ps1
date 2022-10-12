@@ -81,9 +81,10 @@ if ($installVulkan) {
             -OutFile VulkanSDK.exe
         $installer = Start-Process -FilePath VulkanSDK.exe -Wait -PassThru -ArgumentList @("/S")
         $installer.WaitForExit();
-        $env:VULKAN_SDK = "C:\VulkanSDK\1.2.189.0"
-        $env:PATH += ";$env:VULKAN_SDK\Bin"
+
     }
+    $env:VULKAN_SDK = "C:\VulkanSDK\1.2.189.0"
+    $env:PATH += ";$env:VULKAN_SDK\Bin"
     $env:TAICHI_CMAKE_ARGS += " -DTI_WITH_VULKAN:BOOL=ON"
 }
 

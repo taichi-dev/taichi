@@ -16,7 +16,7 @@ from taichi.lang.field import Field, ScalarField
 from taichi.lang.kernel_arguments import SparseMatrixProxy
 from taichi.lang.matrix import (Matrix, MatrixField, MatrixNdarray, MatrixType,
                                 Vector, _IntermediateMatrix,
-                                _MatrixFieldElement)
+                                _MatrixFieldElement, make_matrix)
 from taichi.lang.mesh import (ConvType, MeshElementFieldProxy, MeshInstance,
                               MeshRelationAccessProxy,
                               MeshReorderedMatrixFieldProxy,

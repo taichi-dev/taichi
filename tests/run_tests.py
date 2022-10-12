@@ -81,6 +81,7 @@ def _test_cpp(test_keys=None):
         # Search AOT tests
         aot_test_cases = copy.copy(__aot_test_cases)
         for cpp_test_name, (_, _) in __aot_test_cases.items():
+
             name_match = re.match(test_keys, cpp_test_name, re.I)
             if name_match is None:
                 aot_test_cases.pop(cpp_test_name, None)
@@ -97,11 +98,13 @@ def _test_cpp(test_keys=None):
             _test_cpp_aot(capi_test_filename, build_dir, capi_aot_test_cases)
 
         # Search Cpp tests
+        exclude_cpp_aot_tests = ":".join(aot_test_cases.keys())
         _run_cpp_test(cpp_test_filename, build_dir,
-                      f"--gtest_filter={test_keys}")
+                      f"--gtest_filter={test_keys}:-{exclude_cpp_aot_tests}")
 
+        exclude_capi_aot_tests = ":".join(capi_aot_test_cases.keys())
         _run_cpp_test(capi_test_filename, build_dir,
-                      f"--gtest_filter={test_keys}")
+                      f"--gtest_filter={test_keys}:-{exclude_capi_aot_tests}")
 
         return
 

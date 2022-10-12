@@ -271,23 +271,6 @@ class MeshElement:
         return MeshElementField(mesh_instance, self._type, self.attr_dict,
                                 field_dict, g2r_field)
 
-    def link(self, element):
-        """Explicitly declares the element-element connectivity for compiler to pre-generate relation data.
-
-        Args:
-            element (MeshElement): mesh element in the same builder to represent the to-end of connectivity.
-
-        Example::
-            >>> mesh = ti.TriMesh()
-            >>> mesh.faces.link(mesh.verts) # declares F-V connectivity
-            >>> mesh.verts.link(mesh.verts) # declares V-V connectivity
-        """
-        assert isinstance(element, MeshElement)
-        assert element.builder == self.builder
-        self.builder.relations.add(tuple([self._type, element._type]))
-        self.builder.elements.add(self._type)
-        self.builder.elements.add(element._type)
-
 
 # Define the instance of the Mesh Type, stores the field (type and data) info
 class MeshInstance:
@@ -442,9 +425,6 @@ class MeshBuilder:
         if topology == MeshTopology.Tetrahedron:
             self.cells = MeshElement(MeshElementType.Cell, self)
 
-        self.elements = set()
-        self.relations = set()
-
     def build(self, metadata: MeshMetadata):
         """Build and instantiate mesh from model meta data
 
@@ -463,7 +443,6 @@ class MeshBuilder:
         instance.set_num_patches(metadata.num_patches)
 
         for element in metadata.element_fields:
-            self.elements.add(element)
             _ti_core.set_num_elements(instance.mesh_ptr, element,
                                       metadata.num_elements[element])
             instance.set_patch_max_element_num(

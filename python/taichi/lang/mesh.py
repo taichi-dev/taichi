@@ -141,51 +141,12 @@ class MeshElementField:
             field_members += m._get_field_members()
         return field_members
 
-    @python_scope
-    def copy_from(self, other):
-        assert isinstance(other, Field)
-        assert set(self.keys) == set(other.keys)
-        for k in self.keys:
-            self.field_dict[k].copy_from(other[k])
-
-    @python_scope
-    def fill(self, val):
-        for v in self._members:
-            v.fill(val)
-
     def _initialize_host_accessors(self):
         for v in self._members:
             v._initialize_host_accessors()
 
     def get_member_field(self, key):
         return self.field_dict[key]
-
-    @python_scope
-    def from_numpy(self, array_dict):
-        for k, v in self._items:
-            v.from_numpy(array_dict[k])
-
-    @python_scope
-    def from_torch(self, array_dict):
-        for k, v in self._items:
-            v.from_torch(array_dict[k])
-
-    @python_scope
-    def from_paddle(self, array_dict):
-        for k, v in self._items:
-            v.from_paddle(array_dict[k])
-
-    @python_scope
-    def to_numpy(self):
-        return {k: v.to_numpy() for k, v in self._items}
-
-    @python_scope
-    def to_torch(self, device=None):
-        return {k: v.to_torch(device=device) for k, v in self._items}
-
-    @python_scope
-    def to_paddle(self, place=None):
-        return {k: v.to_paddle(place=place) for k, v in self._items}
 
     @python_scope
     def __len__(self):

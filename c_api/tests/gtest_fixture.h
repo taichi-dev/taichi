@@ -6,6 +6,7 @@ class CapiTest : public ::testing::Test {
   }
 
   virtual void TearDown() {
-    EXPECT_GE(ti_get_last_error(0, nullptr), TI_ERROR_SUCCESS);
+    EXPECT_GE(ti_get_last_error(0, nullptr),
+              TI_ERROR_SUCCESS || TI_ERROR_NOT_SUPPORTED);
   }
 };

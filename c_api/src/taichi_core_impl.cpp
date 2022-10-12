@@ -140,10 +140,11 @@ void ti_set_last_error(TiError error, const char *message) {
     } else {
       thread_error_cache.message.clear();
     }
+    thread_error_cache.error = error;
   } else {
+    thread_error_cache.error = TI_ERROR_SUCCESS;
     thread_error_cache.message.clear();
   }
-  thread_error_cache.error = error;
   TI_CAPI_TRY_CATCH_END();
 }
 

@@ -199,8 +199,6 @@ def subscript(value, *_indices, skip_reordered=False, get_ref=False):
                     f"Gradient {_var.get_expr_name()} has not been placed, check whether `needs_grad=True`"
                 )
         field_dim = snode.num_active_indices()
-        print(field_dim)
-        print(index_dim)
         if field_dim != index_dim:
             raise IndexError(
                 f'Field with dim {field_dim} accessed with indices of dim {index_dim}'

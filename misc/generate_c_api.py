@@ -7,7 +7,6 @@ from taichi_json import (Alias, BitField, BuiltInType, Definition, EntryBase,
 #from os import system
 
 
-
 def get_type_name(x: EntryBase):
     ty = type(x)
     if ty in [BuiltInType]:

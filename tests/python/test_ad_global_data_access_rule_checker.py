@@ -165,8 +165,8 @@ def test_autodiff_mode_recovered():
     with ti.ad.Tape(loss=loss, validation=True) as t:
         kernel_1()
         kernel_2()
-        for f, _, _ in t.calls:
+        for f, _ in t.calls:
             assert f.autodiff_mode == AutodiffMode.VALIDATION
         func_calls = t.calls
-    for f, _, _ in func_calls:
+    for f, _ in func_calls:
         assert f.autodiff_mode == AutodiffMode.NONE

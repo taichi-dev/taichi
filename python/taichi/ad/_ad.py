@@ -58,13 +58,13 @@ class GradChecker:
 
                 restore_all_fields(self.all_fields, self.backups)
                 x_pos(x, tangent_np, eps)
-                for func, args, _ in self.calls:
+                for func, args in self.calls:
                     func(*args)
                 loss_pos = self.loss.to_numpy()
 
                 restore_all_fields(self.all_fields, self.backups)
                 x_neg(x, tangent_np, eps)
-                for func, args, _ in self.calls:
+                for func, args in self.calls:
                     func(*args)
                 loss_neg = self.loss.to_numpy()
 
@@ -100,7 +100,7 @@ class GradChecker:
                    ), "Grad check failed: Not all variables pass grad check"
 
         restore_all_fields(self.all_fields, self.backups)
-        for func, args, _ in self.calls:
+        for func, args in self.calls:
             func(*args)
 
 
@@ -165,6 +165,7 @@ class Tape:
             >>>     sum(2)
         """
         self.calls = []
+        self.validation_mode_kernels = []
         self.entered = False
         self.gradient_evaluated = False
         self.clear_gradients = clear_gradients
@@ -212,18 +213,20 @@ class Tape:
         if self.eval_on_exit:
             self.grad()
         if self.validation:
-            for f, _, mode_original in self.calls:
-                if mode_original == AutodiffMode.VALIDATION:
-                    f.autodiff_mode = AutodiffMode.NONE
+            for f in self.validation_mode_kernels:
+                f.autodiff_mode = AutodiffMode.NONE
 
     def insert(self, func, args):
-        self.calls.append((func, args, func.autodiff_mode))
+        if self.validation:
+            if func.autodiff_mode == AutodiffMode.VALIDATION:
+                self.validation_mode_kernels.append(func)
+        self.calls.append((func, args))
 
     def grad(self):
         assert self.entered, "Before evaluating gradients tape must be entered."
         assert not self.gradient_evaluated, "Gradients of grad can be evaluated only once."
 
-        for func, args, _ in reversed(self.calls):
+        for func, args in reversed(self.calls):
             # we need to check whether "func" has "grad" attribute
             # since we insert write_int and write_float kernels to self.calls
             # e.g. x[None] = 0.0, this func has no grad attribute

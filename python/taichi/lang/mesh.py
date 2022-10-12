@@ -1,4 +1,3 @@
-import ast
 import json
 
 import numpy as np
@@ -207,10 +206,10 @@ class MeshElement:
         self.layout = Layout.AOS if aos else Layout.SOA
 
     SOA = property(fset=_SOA)
-    """ Set `True` for SOA (structure of arrays) layout.
+    """(Deprecated) Set `True` for SOA (structure of arrays) layout.
     """
     AOS = property(fset=_AOS)
-    """ Set `True` for AOS (array of structures) layout.
+    """(Deprecated) Set `True` for AOS (array of structures) layout.
     """
 
     def place(
@@ -219,7 +218,7 @@ class MeshElement:
         reorder=False,
         needs_grad=False,
     ):
-        """Declares mesh attributes for the mesh element in current mesh builder.
+        """(Deprecated) Declares mesh attributes for the mesh element in current mesh builder.
 
         Args:
         members (Dict[str, Union[PrimitiveType, MatrixType]]): \
@@ -233,11 +232,10 @@ class MeshElement:
         >>> mesh.faces.place({'area' : ti.f32}) # declares a mesh attribute `area` for each face element.
         >>> mesh.verts.place({'pos' : vec3}, reorder=True) # declares a mesh attribute `pos` for each vertex element, and reorder it in memory.
         """
-        self.builder.elements.add(self._type)
         for key, dtype in members.items():
             if key in {'verts', 'edges', 'faces', 'cells'}:
                 raise TaichiSyntaxError(
-                    f"'{key}' cannot use as attribute name. It has been reserved as ti.Mesh's keyword."
+                    f"'{key}' cannot use as attribute name. It has been reserved as MeshTaichi's keyword."
                 )
             self.attr_dict[key] = MeshAttrType(key, dtype, reorder, needs_grad)
 
@@ -426,17 +424,6 @@ class MeshBuilder:
             self.cells = MeshElement(MeshElementType.Cell, self)
 
     def build(self, metadata: MeshMetadata):
-        """Build and instantiate mesh from model meta data
-
-        Use the following external lib to generate meta data:
-        https://github.com/BillXu2000/meshtaichi_patcher
-
-        Args:
-            metadata : model meta data.
-
-        Returns:
-            The mesh instance class.
-        """
         instance = MeshInstance(self)
         instance.fields = {}
 
@@ -489,20 +476,20 @@ class MeshBuilder:
 
 # Mesh First Class
 class _Mesh:
-    """The Mesh type class.
+    """(Deprecated) The Mesh type class.
 
-    ti.Mesh offers first-class support for triangular/tetrahedral meshes
+    MeshTaichi offers first-class support for triangular/tetrahedral meshes
     and allows efficient computation on these irregular data structures,
     only available for backends supporting `ti.extension.mesh`.
 
-    Related to https://github.com/taichi-dev/taichi/issues/3608
+    Related to https://github.com/taichi-dev/meshtaichi
     """
     def __init__(self):
         pass
 
     @staticmethod
     def Tet():
-        """Create a tetrahedron mesh (a set of vert/edge/face/cell elements, attributes, and connectivity) builder.
+        """(Deprecated) Create a tetrahedron mesh (a set of vert/edge/face/cell elements, attributes, and connectivity) builder.
 
         Returns:
             An instance of mesh builder.
@@ -511,7 +498,7 @@ class _Mesh:
 
     @staticmethod
     def Tri():
-        """Create a triangle mesh (a set of vert/edge/face elements, attributes, and connectivity) builder.
+        """(Deprecated) Create a triangle mesh (a set of vert/edge/face elements, attributes, and connectivity) builder.
 
         Returns:
             An instance of mesh builder.
@@ -529,7 +516,7 @@ class _Mesh:
         return MeshMetadata(data)
 
 def _TriMesh():
-    """Create a triangle mesh (a set of vert/edge/face elements, attributes, and connectivity) builder.
+    """(Deprecated) Create a triangle mesh (a set of vert/edge/face elements, attributes, and connectivity) builder.
 
     Returns:
         An instance of mesh builder.
@@ -538,7 +525,7 @@ def _TriMesh():
 
 
 def _TetMesh():
-    """Create a tetrahedron mesh (a set of vert/edge/face/cell elements, attributes, and connectivity) builder.
+    """(Deprecated) Create a tetrahedron mesh (a set of vert/edge/face/cell elements, attributes, and connectivity) builder.
 
     Returns:
         An instance of mesh builder.
@@ -566,7 +553,7 @@ class MeshElementFieldProxy:
                 setattr(self, key,
                         _MatrixFieldElement(attr, global_entry_expr_group))
             elif isinstance(attr, StructField):
-                raise RuntimeError('ti.Mesh has not support StructField yet')
+                raise RuntimeError('MeshTaichi has not support StructField yet')
             else:  # isinstance(attr, Field)
                 var = attr._get_field_members()[0].ptr
                 setattr(
@@ -576,7 +563,7 @@ class MeshElementFieldProxy:
                             var, global_entry_expr_group,
                             impl.get_runtime().get_current_src_info())))
 
-        for element_type in self.mesh._type.elements:
+        for element_type in {MeshElementType.Vertex, MeshElementType.Edge, MeshElementType.Face, MeshElementType.Cell}:
             setattr(self, element_type_name(element_type),
                     impl.mesh_relation_access(self.mesh, self, element_type))
 

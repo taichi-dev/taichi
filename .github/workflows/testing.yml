@@ -619,3 +619,11 @@ jobs:
           ci-docker-run \
             registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.6 \
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh smoke-test-unity-demo
+
+      - name: Build & Run C-API Headless Demos
+        run: |
+          . .github/workflows/scripts/common-utils.sh
+          chown -R 1000:1000 .
+          ci-docker-run \
+            registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.6 \
+            /home/dev/taichi/.github/workflows/scripts/aot-demo.sh build-and-test-headless-demo

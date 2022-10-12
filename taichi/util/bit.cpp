@@ -6,7 +6,7 @@
 #include "taichi/util/testing.h"
 #include "taichi/util/bit.h"
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 namespace bit {
 
@@ -245,4 +245,4 @@ TI_TEST("bit") {
   // TI_P(std::get<1>(e));
   // CHECK(t == compress(std::get<0>(e), std::get<1>(e)));
 }
-TI_NAMESPACE_END
+}  // namespace taichi

@@ -69,8 +69,7 @@ gui = ti.GUI(res, title, fast_gui=True)
 
 For this mode to work, ensure that the data passed into `gui.set_image()` is in a display-compatible format. In other words, If it is a Taichi field, ensure that it is one of the following:
 
-- A scalar field `ti.field(dtype, shape) `
-- a vector field  `ti.field(3, dtype, shape)` compatible with RGB format
+- a vector field `ti.field(3, dtype, shape)` compatible with RGB format.
 - a vector field `ti.field(4, dtype, shape)`  compatible with RGBA format.
 
 Note that `dtype` must be `ti.f32`, `ti.f64`, or `ti.u8`.

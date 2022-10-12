@@ -2,8 +2,7 @@
 
 #include "taichi/ir/pass.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class DemoteMeshStatements : public Pass {
  public:
@@ -14,5 +13,4 @@ class DemoteMeshStatements : public Pass {
   };
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

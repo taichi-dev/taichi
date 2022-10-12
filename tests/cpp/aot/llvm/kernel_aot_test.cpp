@@ -5,6 +5,7 @@
 #include "taichi/system/memory_pool.h"
 #include "taichi/runtime/cpu/aot_module_loader_impl.h"
 #include "taichi/runtime/cuda/aot_module_loader_impl.h"
+#include "taichi/runtime/dx12/aot_module_loader_impl.h"
 #include "taichi/rhi/cuda/cuda_driver.h"
 #include "taichi/platform/cuda/detect_cuda.h"
 
@@ -12,8 +13,7 @@
 #include "taichi/program/context.h"
 #undef TI_RUNTIME_HOST
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 TEST(LlvmAotTest, CpuKernel) {
   CompileConfig cfg;
@@ -102,5 +102,20 @@ TEST(LlvmAotTest, CudaKernel) {
   }
 }
 
-}  // namespace lang
-}  // namespace taichi
+#ifdef TI_WITH_DX12
+TEST(LlvmAotTest, DX12Kernel) {
+  directx12::AotModuleParams aot_params;
+  const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
+
+  std::stringstream aot_mod_ss;
+  aot_mod_ss << folder_dir;
+  aot_params.module_path = aot_mod_ss.str();
+  // FIXME: add executor.
+  auto mod = directx12::make_aot_module(aot_params, Arch::dx12);
+  auto *k_run = mod->get_kernel("run");
+  EXPECT_TRUE(k_run);
+  // FIXME: launch the kernel and check result.
+}
+#endif
+
+}  // namespace taichi::lang

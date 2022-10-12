@@ -6,8 +6,7 @@
 
 #include "sparse_matrix.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class SparseSolver {
  public:
@@ -16,6 +15,10 @@ class SparseSolver {
   virtual void analyze_pattern(const SparseMatrix &sm) = 0;
   virtual void factorize(const SparseMatrix &sm) = 0;
   virtual Eigen::VectorXf solve(const Eigen::Ref<const Eigen::VectorXf> &b) = 0;
+  virtual void solve_rf(Program *prog,
+                        const SparseMatrix &sm,
+                        const Ndarray &b,
+                        Ndarray &x) = 0;
   virtual void solve_cu(Program *prog,
                         const SparseMatrix &sm,
                         const Ndarray &b,
@@ -37,28 +40,44 @@ class EigenSparseSolver : public SparseSolver {
   void solve_cu(Program *prog,
                 const SparseMatrix &sm,
                 const Ndarray &b,
-                Ndarray &x) override{};
+                Ndarray &x) override {
+    TI_NOT_IMPLEMENTED;
+  };
+  void solve_rf(Program *prog,
+                const SparseMatrix &sm,
+                const Ndarray &b,
+                Ndarray &x) override {
+    TI_NOT_IMPLEMENTED;
+  };
+
   bool info() override;
 };
 
 class CuSparseSolver : public SparseSolver {
  private:
+  csrcholInfo_t info_{nullptr};
+  cusolverSpHandle_t cusolver_handle_{nullptr};
+  cusparseHandle_t cusparse_handel_{nullptr};
+  cusparseMatDescr_t descr_{nullptr};
+  void *gpu_buffer_{nullptr};
+
  public:
   CuSparseSolver();
   ~CuSparseSolver() override = default;
   bool compute(const SparseMatrix &sm) override {
     TI_NOT_IMPLEMENTED;
   };
-  void analyze_pattern(const SparseMatrix &sm) override {
-    TI_NOT_IMPLEMENTED;
-  };
-  void factorize(const SparseMatrix &sm) override {
-    TI_NOT_IMPLEMENTED;
-  };
+  void analyze_pattern(const SparseMatrix &sm) override;
+
+  void factorize(const SparseMatrix &sm) override;
   Eigen::VectorXf solve(const Eigen::Ref<const Eigen::VectorXf> &b) override {
     TI_NOT_IMPLEMENTED;
   };
   void solve_cu(Program *prog,
+                const SparseMatrix &sm,
+                const Ndarray &b,
+                Ndarray &x) override;
+  void solve_rf(Program *prog,
                 const SparseMatrix &sm,
                 const Ndarray &b,
                 Ndarray &x) override;
@@ -75,5 +94,4 @@ std::unique_ptr<SparseSolver> make_cusparse_solver(
     DataType dt,
     const std::string &solver_type,
     const std::string &ordering);
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

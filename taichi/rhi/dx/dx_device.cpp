@@ -5,8 +5,7 @@
 #include "spirv_hlsl.hpp"
 #include <d3dcompiler.h>
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace directx11 {
 
 #ifdef TAICHI_DX11_DEBUG_WINDOW
@@ -952,7 +951,6 @@ ResourceBinder *Dx11Pipeline::resource_binder() {
 }
 
 }  // namespace directx11
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang
 
 #endif

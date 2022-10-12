@@ -22,7 +22,7 @@
 #include "taichi/ui/common/canvas_base.h"
 #include "taichi/rhi/device.h"
 
-TI_UI_NAMESPACE_BEGIN
+namespace taichi::ui {
 
 namespace vulkan {
 
@@ -77,4 +77,4 @@ class SetImage final : public Renderable {
 
 }  // namespace vulkan
 
-TI_UI_NAMESPACE_END
+}  // namespace taichi::ui

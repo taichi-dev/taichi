@@ -30,7 +30,7 @@ class SNode:
         Returns:
             The added :class:`~taichi.lang.SNode` instance.
         """
-        if isinstance(dimensions, int):
+        if isinstance(dimensions, numbers.Number):
             dimensions = [dimensions] * len(axes)
         return SNode(
             self.ptr.dense(axes, dimensions,
@@ -46,7 +46,7 @@ class SNode:
         Returns:
             The added :class:`~taichi.lang.SNode` instance.
         """
-        if isinstance(dimensions, int):
+        if isinstance(dimensions, numbers.Number):
             dimensions = [dimensions] * len(axes)
         return SNode(
             self.ptr.pointer(axes, dimensions,
@@ -90,7 +90,7 @@ class SNode:
         Returns:
             The added :class:`~taichi.lang.SNode` instance.
         """
-        if isinstance(dimensions, int):
+        if isinstance(dimensions, numbers.Number):
             dimensions = [dimensions] * len(axes)
         return SNode(
             self.ptr.bitmasked(axes, dimensions,
@@ -107,7 +107,7 @@ class SNode:
         Returns:
             The added :class:`~taichi.lang.SNode` instance.
         """
-        if isinstance(dimensions, int):
+        if isinstance(dimensions, numbers.Number):
             dimensions = [dimensions] * len(axes)
         return SNode(
             self.ptr.quant_array(axes, dimensions, max_num_bits,

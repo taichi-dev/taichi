@@ -12,8 +12,7 @@
 #include "taichi/ir/snode.h"
 #include "taichi/aot/graph_data.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 struct RuntimeContext;
 class Graph;
@@ -166,5 +165,4 @@ class TargetDevice : public Device {
 };
 
 }  // namespace aot
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

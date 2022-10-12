@@ -2,7 +2,7 @@
 
 #include "taichi/util/lang_util.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 class CCProgramImpl;
 
 namespace cccp {
@@ -31,4 +31,4 @@ class CCRuntime {
 };
 
 }  // namespace cccp
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

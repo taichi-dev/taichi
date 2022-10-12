@@ -5,7 +5,7 @@
 
 #include <unordered_set>
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 class DetectForsWithBreak : public BasicStmtVisitor {
  public:
@@ -50,4 +50,4 @@ std::unordered_set<Stmt *> detect_fors_with_break(IRNode *root) {
 }
 }  // namespace irpass::analysis
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

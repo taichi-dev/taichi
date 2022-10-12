@@ -1,7 +1,6 @@
 #include "taichi/ir/statements.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 Stmt *generate_mod_x_div_y(VecStatement *stmts, Stmt *num, int x, int y) {
   auto const_x = stmts->push_back<ConstStmt>(TypedConstant(x));
@@ -10,5 +9,4 @@ Stmt *generate_mod_x_div_y(VecStatement *stmts, Stmt *num, int x, int y) {
   return stmts->push_back<BinaryOpStmt>(BinaryOpType::div, mod_x, const_y);
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

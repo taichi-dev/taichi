@@ -14,7 +14,7 @@
 #include "taichi/common/core.h"
 #include "taichi/system/timer.h"
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 class ProfilerRecords;
 
@@ -56,4 +56,4 @@ class Profiling {
 
 #define TI_AUTO_PROF TI_PROFILER(__FUNCTION__)
 
-TI_NAMESPACE_END
+}  // namespace taichi

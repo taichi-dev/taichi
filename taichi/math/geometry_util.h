@@ -10,7 +10,7 @@
 #include "taichi/common/core.h"
 #include "linalg.h"
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 inline bool intersect(const Vector2 &a,
                       const Vector2 &b,
@@ -85,4 +85,4 @@ inline std::vector<Vector2> points_inside_sphere(std::vector<float> x_range,
   return ret;
 }
 
-TI_NAMESPACE_END
+}  // namespace taichi

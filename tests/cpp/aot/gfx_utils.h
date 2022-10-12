@@ -6,8 +6,7 @@
 #include "taichi/program/graph_builder.h"
 #include "taichi/program/program.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace aot_test_utils {
 [[maybe_unused]] static void write_devalloc(
     taichi::lang::DeviceAllocation &alloc,
@@ -32,5 +31,4 @@ void view_devalloc_as_ndarray(Device *device_);
 
 [[maybe_unused]] void run_mpm88_graph(Arch arch, taichi::lang::Device *device_);
 }  // namespace aot_test_utils
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

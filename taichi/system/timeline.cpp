@@ -1,6 +1,6 @@
 #include "taichi/system/timeline.h"
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 std::string TimelineEvent::to_json() {
   std::string json{"{"};
@@ -122,4 +122,4 @@ void Timelines::set_enabled(bool enabled) {
   enabled_ = enabled;
 }
 
-TI_NAMESPACE_END
+}  // namespace taichi

@@ -38,5 +38,7 @@ if __name__ == "__main__":
         compile_kernel_aot_test1(arch=ti.vulkan)
     elif args.arch == "opengl":
         compile_kernel_aot_test1(arch=ti.opengl)
+    elif args.arch == "dx12":
+        compile_kernel_aot_test1(arch=ti.dx12)
     else:
         assert False

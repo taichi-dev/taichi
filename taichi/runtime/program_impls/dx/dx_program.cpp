@@ -7,8 +7,7 @@
 #include "taichi/runtime/gfx/snode_tree_manager.h"
 #include "taichi/runtime/gfx/aot_module_loader_impl.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace directx11 {
 
 FunctionType compile_to_executable(Kernel *kernel,
@@ -90,7 +89,6 @@ std::unique_ptr<aot::Kernel> Dx11ProgramImpl::make_aot_kernel(Kernel &kernel) {
   return std::make_unique<gfx::KernelImpl>(runtime_.get(), std::move(kparams));
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang
 
 #endif

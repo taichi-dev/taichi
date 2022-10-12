@@ -31,7 +31,7 @@
 #include "taichi/ui/backends/vulkan/renderables/circles.h"
 #include "taichi/ui/backends/vulkan/renderables/lines.h"
 
-TI_UI_NAMESPACE_BEGIN
+namespace taichi::ui {
 
 namespace vulkan {
 
@@ -59,4 +59,4 @@ class TI_DLL_EXPORT Canvas final : public CanvasBase {
 
 }  // namespace vulkan
 
-TI_UI_NAMESPACE_END
+}  // namespace taichi::ui

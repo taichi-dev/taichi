@@ -8,8 +8,7 @@
 #include "taichi/runtime/metal/aot_utils.h"
 #include "taichi/codegen/metal/struct_metal.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace metal {
 
 class AotModuleBuilderImpl : public AotModuleBuilder {
@@ -45,10 +44,8 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
   const CompiledRuntimeModule *compiled_runtime_module_;
   const std::vector<CompiledStructs> &compiled_snode_trees_;
   const std::unordered_set<const SNode *> fields_;
-  PrintStringTable strtab_;
   TaichiAotData ti_aot_data_;
 };
 
 }  // namespace metal
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

@@ -4,7 +4,7 @@
 #include "taichi/ir/analysis.h"
 #include "taichi/system/profiler.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 namespace irpass {
 bool cfg_optimization(
@@ -35,4 +35,4 @@ bool cfg_optimization(
 }
 }  // namespace irpass
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

@@ -18,7 +18,7 @@
 #pragma warning(pop)
 #endif
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 #define TIME(x)                                                      \
   {                                                                  \
@@ -105,4 +105,4 @@ class TI_DLL_EXPORT Time {
   };
 };
 
-TI_NAMESPACE_END
+}  // namespace taichi

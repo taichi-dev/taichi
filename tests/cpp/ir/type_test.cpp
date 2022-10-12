@@ -2,8 +2,7 @@
 
 #include "taichi/ir/type_factory.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 TEST(Type, TypeToString) {
   auto f16 = TypeFactory::get_instance().get_primitive_real_type(16);
@@ -45,5 +44,4 @@ TEST(Type, TypeToString) {
   EXPECT_EQ(qa->to_string(), "qa(qi1x32)");
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

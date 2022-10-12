@@ -21,7 +21,7 @@
 #include "taichi/program/field_info.h"
 #include "taichi/ui/backends/vulkan/scene.h"
 
-TI_UI_NAMESPACE_BEGIN
+namespace taichi::ui {
 
 namespace vulkan {
 
@@ -69,4 +69,4 @@ class Mesh final : public Renderable {
 
 }  // namespace vulkan
 
-TI_UI_NAMESPACE_END
+}  // namespace taichi::ui

@@ -39,6 +39,11 @@ if(TI_WITH_OPENGL)
   list(APPEND TAICHI_TESTS_SOURCE ${TAICHI_TESTS_OPENGL_SOURCE})
 endif()
 
+if(TI_WITH_DX12)
+  file(GLOB TAICHI_TESTS_DX12_SOURCE "tests/cpp/aot/dx12/*.cpp")
+  list(APPEND TAICHI_TESTS_SOURCE ${TAICHI_TESTS_DX12_SOURCE})
+endif()
+
 add_executable(${TESTS_NAME} ${TAICHI_TESTS_SOURCE})
 if (WIN32)
     # Output the executable to build/ instead of build/Debug/...
@@ -62,6 +67,11 @@ endif()
 
 if (TI_WITH_OPENGL)
   target_link_libraries(${TESTS_NAME} PRIVATE opengl_rhi)
+endif()
+
+if (TI_WITH_DX12)
+  target_link_libraries(${TESTS_NAME} PRIVATE dx12_runtime)
+  target_link_libraries(${TESTS_NAME} PRIVATE dx12_rhi)
 endif()
 
 target_include_directories(${TESTS_NAME}

@@ -4,7 +4,7 @@
 #include "llvm/IR/DataLayout.h"
 #endif
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 #ifdef TI_WITH_LLVM
 std::unique_ptr<JITSession> create_llvm_jit_session_cpu(
@@ -34,6 +34,13 @@ std::unique_ptr<JITSession> JITSession::create(TaichiLLVMContext *tlctx,
 #else
     TI_NOT_IMPLEMENTED
 #endif
+  } else if (arch == Arch::dx12) {
+#ifdef TI_WITH_DX12
+    // NOTE: there's no jit for dx12. Create cpu session to avoid crash.
+    return create_llvm_jit_session_cpu(tlctx, config, Arch::x64);
+#else
+    TI_NOT_IMPLEMENTED
+#endif
   }
 #else
   TI_ERROR("Llvm disabled");
@@ -41,4 +48,4 @@ std::unique_ptr<JITSession> JITSession::create(TaichiLLVMContext *tlctx,
   return nullptr;
 }
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

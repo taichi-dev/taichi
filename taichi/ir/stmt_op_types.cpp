@@ -2,8 +2,7 @@
 
 #include "taichi/common/logging.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 std::string unary_op_type_name(UnaryOpType type) {
   switch (type) {
 #define PER_UNARY_OP(i) \
@@ -164,5 +163,4 @@ std::string texture_op_type_name(TextureOpType type) {
   }
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

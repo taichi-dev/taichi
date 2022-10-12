@@ -2,7 +2,7 @@
 
 #include "taichi/ir/snode.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 class Stmt;
 
@@ -258,4 +258,4 @@ class ScratchPads {
   }
 };
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

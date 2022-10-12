@@ -12,8 +12,7 @@
 #endif  // TI_WITH_CUDA
 #endif  // TI_WITH_VULKAN
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 // FIXME: (penguinliong) We might have to differentiate buffer formats and
 // texture formats at some point because formats like `rgb10a2` are not easily
@@ -337,5 +336,4 @@ void GraphicsDevice::image_to_buffer(DevicePtr dst_buf,
   stream->submit_synced(cmd_list.get());
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

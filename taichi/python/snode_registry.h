@@ -3,8 +3,7 @@
 #include <vector>
 #include <memory>
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class SNode;
 class Program;
@@ -40,5 +39,4 @@ class SNodeRegistry {
   std::vector<std::unique_ptr<SNode>> snodes_;
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

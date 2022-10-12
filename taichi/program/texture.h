@@ -7,8 +7,7 @@
 #include "taichi/ir/type_utils.h"
 #include "taichi/rhi/device.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class Program;
 class Ndarray;
@@ -66,5 +65,4 @@ class TI_DLL_EXPORT Texture {
   Program *prog_{nullptr};
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

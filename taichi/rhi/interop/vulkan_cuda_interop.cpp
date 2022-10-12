@@ -9,8 +9,7 @@
 
 #include <unordered_map>
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 #if TI_WITH_VULKAN && TI_WITH_CUDA
 
@@ -228,5 +227,4 @@ void memcpy_vulkan_to_cuda(DevicePtr dst, DevicePtr src, uint64_t size) {
 }
 #endif  // TI_WITH_VULKAN && TI_WITH_CUDA
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

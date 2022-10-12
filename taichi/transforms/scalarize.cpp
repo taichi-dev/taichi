@@ -4,15 +4,13 @@
 #include "taichi/ir/visitors.h"
 #include "taichi/system/profiler.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
-class Scalarize : public IRVisitor {
+class Scalarize : public BasicStmtVisitor {
  public:
   DelayedIRModifier modifier_;
 
   Scalarize(IRNode *node) {
-    allow_undefined_visitor = true;
-    invoke_default_visitor = false;
     node->accept(this);
 
     modifier_.modify_ir();
@@ -26,10 +24,10 @@ class Scalarize : public IRVisitor {
       StoreStmt(TensorType<4 x i32>* dest, TensorType<4 x i32> val)
 
     After:
-      addr0 = PtrOffsetStmt(TensorType<4 x i32>* dest, 0)
-      addr1 = PtrOffsetStmt(TensorType<4 x i32>* dest, 1)
-      addr2 = PtrOffsetStmt(TensorType<4 x i32>* dest, 2)
-      addr2 = PtrOffsetStmt(TensorType<4 x i32>* dest, 3)
+      addr0 = MatrixPtrStmt(TensorType<4 x i32>* dest, 0)
+      addr1 = MatrixPtrStmt(TensorType<4 x i32>* dest, 1)
+      addr2 = MatrixPtrStmt(TensorType<4 x i32>* dest, 2)
+      addr2 = MatrixPtrStmt(TensorType<4 x i32>* dest, 3)
 
       StoreStmt(i32* addr0, i32 val->cast<MatrixInitStmt>()->val[0])
       StoreStmt(i32* addr1, i32 val->cast<MatrixInitStmt>()->val[1])
@@ -52,33 +50,37 @@ class Scalarize : public IRVisitor {
       auto matrix_init_stmt = stmt->val->template as<MatrixInitStmt>();
 
       int num_elements = val_tensor_type->get_num_elements();
+      auto primitive_type = dest_tensor_type->get_element_type();
       for (int i = 0; i < num_elements; i++) {
         auto const_stmt = std::make_unique<ConstStmt>(
             TypedConstant(get_data_type<int32>(), i));
 
-        auto ptr_offset_stmt =
-            std::make_unique<PtrOffsetStmt>(stmt->dest, const_stmt.get());
-        auto scalarized_stmt = std::make_unique<T>(ptr_offset_stmt.get(),
+        auto matrix_ptr_stmt =
+            std::make_unique<MatrixPtrStmt>(stmt->dest, const_stmt.get());
+        matrix_ptr_stmt->ret_type = primitive_type;
+        matrix_ptr_stmt->ret_type.set_is_pointer(true);
+
+        auto scalarized_stmt = std::make_unique<T>(matrix_ptr_stmt.get(),
                                                    matrix_init_stmt->values[i]);
 
         modifier_.insert_before(stmt, std::move(const_stmt));
-        modifier_.insert_before(stmt, std::move(ptr_offset_stmt));
+        modifier_.insert_before(stmt, std::move(matrix_ptr_stmt));
         modifier_.insert_before(stmt, std::move(scalarized_stmt));
       }
+
       modifier_.erase(stmt);
     }
   }
 
   /*
-
     Before:
       TensorType<4 x i32> val = LoadStmt(TensorType<4 x i32>* src)
 
     After:
-      i32* addr0 = PtrOffsetStmt(TensorType<4 x i32>* src, 0)
-      i32* addr1 = PtrOffsetStmt(TensorType<4 x i32>* src, 1)
-      i32* addr2 = PtrOffsetStmt(TensorType<4 x i32>* src, 2)
-      i32* addr3 = PtrOffsetStmt(TensorType<4 x i32>* src, 3)
+      i32* addr0 = MatrixPtrStmt(TensorType<4 x i32>* src, 0)
+      i32* addr1 = MatrixPtrStmt(TensorType<4 x i32>* src, 1)
+      i32* addr2 = MatrixPtrStmt(TensorType<4 x i32>* src, 2)
+      i32* addr3 = MatrixPtrStmt(TensorType<4 x i32>* src, 3)
 
       i32 val0 = LoadStmt(addr0)
       i32 val1 = LoadStmt(addr1)
@@ -86,7 +88,6 @@ class Scalarize : public IRVisitor {
       i32 val3 = LoadStmt(addr3)
 
       tmp = MatrixInitStmt(val0, val1, val2, val3)
-
       stmt->replace_all_usages_with(tmp)
   */
   template <typename T>
@@ -99,24 +100,28 @@ class Scalarize : public IRVisitor {
       std::vector<Stmt *> matrix_init_values;
       int num_elements = src_tensor_type->get_num_elements();
 
+      auto primitive_type = src_tensor_type->get_element_type();
       for (size_t i = 0; i < num_elements; i++) {
         auto const_stmt = std::make_unique<ConstStmt>(
             TypedConstant(get_data_type<int32>(), i));
 
-        auto ptr_offset_stmt =
-            std::make_unique<PtrOffsetStmt>(stmt->src, const_stmt.get());
-        auto scalarized_stmt = std::make_unique<T>(ptr_offset_stmt.get());
+        auto matrix_ptr_stmt =
+            std::make_unique<MatrixPtrStmt>(stmt->src, const_stmt.get());
+        matrix_ptr_stmt->ret_type = primitive_type;
+        matrix_ptr_stmt->ret_type.set_is_pointer(true);
+
+        auto scalarized_stmt = std::make_unique<T>(matrix_ptr_stmt.get());
+        scalarized_stmt->ret_type = primitive_type;
 
         matrix_init_values.push_back(scalarized_stmt.get());
 
         modifier_.insert_before(stmt, std::move(const_stmt));
-        modifier_.insert_before(stmt, std::move(ptr_offset_stmt));
+        modifier_.insert_before(stmt, std::move(matrix_ptr_stmt));
         modifier_.insert_before(stmt, std::move(scalarized_stmt));
       }
 
       auto matrix_init_stmt =
           std::make_unique<MatrixInitStmt>(matrix_init_values);
-
       matrix_init_stmt->ret_type = src_dtype;
 
       stmt->replace_usages_with(matrix_init_stmt.get());
@@ -159,9 +164,11 @@ class Scalarize : public IRVisitor {
 
       std::vector<Stmt *> matrix_init_values;
       int num_elements = operand_tensor_type->get_num_elements();
+      auto primitive_type = operand_tensor_type->get_element_type();
       for (size_t i = 0; i < num_elements; i++) {
         auto unary_stmt = std::make_unique<UnaryOpStmt>(
             stmt->op_type, operand_matrix_init_stmt->values[i]);
+        unary_stmt->ret_type = primitive_type;
         matrix_init_values.push_back(unary_stmt.get());
 
         modifier_.insert_before(stmt, std::move(unary_stmt));
@@ -178,38 +185,77 @@ class Scalarize : public IRVisitor {
     }
   }
 
-  void visit(Block *stmt_list) override {
-    for (auto &stmt : stmt_list->statements) {
-      stmt->accept(this);
+  /*
+    Before:
+      TensorType<4 x i32> val = BinaryStmt(TensorType<4 x i32> lhs,
+                                           TensorType<4 x i32> rhs)
+
+      * Note that "lhs" and "rhs" should have already been scalarized to
+    MatrixInitStmt
+
+    After:
+      i32 calc_val0 = BinaryStmt(lhs->cast<MatrixInitStmt>()->val[0],
+                                 rhs->cast<MatrixInitStmt>()->val[0])
+      i32 calc_val1 = BinaryStmt(lhs->cast<MatrixInitStmt>()->val[1],
+                                 rhs->cast<MatrixInitStmt>()->val[1])
+      i32 calc_val2 = BinaryStmt(lhs->cast<MatrixInitStmt>()->val[2],
+                                 rhs->cast<MatrixInitStmt>()->val[2])
+      i32 calc_val3 = BinaryStmt(lhs->cast<MatrixInitStmt>()->val[3],
+                                 rhs->cast<MatrixInitStmt>()->val[3])
+
+      tmp = MatrixInitStmt(calc_val0, calc_val1,
+                           calc_val2, calc_val3)
+
+      stmt->replace_all_usages_with(tmp)
+  */
+  void visit(BinaryOpStmt *stmt) override {
+    auto lhs_dtype = stmt->lhs->ret_type;
+    auto rhs_dtype = stmt->rhs->ret_type;
+
+    if (lhs_dtype->is<PrimitiveType>() && rhs_dtype->is<PrimitiveType>()) {
+      return;
     }
-  }
 
-  void visit(IfStmt *if_stmt) override {
-    if (if_stmt->true_statements)
-      if_stmt->true_statements->accept(this);
-    if (if_stmt->false_statements) {
-      if_stmt->false_statements->accept(this);
+    // BinaryOpExpression::type_check() should have taken care of the
+    // broadcasting and neccessary conversions. So we simply add an assertion
+    // here to make sure that the operands are of the same shape and dtype
+    TI_ASSERT(lhs_dtype == rhs_dtype);
+
+    if (lhs_dtype->is<TensorType>() && rhs_dtype->is<TensorType>()) {
+      // Scalarization for LoadStmt should have already replaced both operands
+      // to MatrixInitStmt
+      TI_ASSERT(stmt->lhs->is<MatrixInitStmt>());
+      TI_ASSERT(stmt->rhs->is<MatrixInitStmt>());
+
+      auto lhs_matrix_init_stmt = stmt->lhs->cast<MatrixInitStmt>();
+      std::vector<Stmt *> lhs_vals = lhs_matrix_init_stmt->values;
+
+      auto rhs_matrix_init_stmt = stmt->rhs->cast<MatrixInitStmt>();
+      std::vector<Stmt *> rhs_vals = rhs_matrix_init_stmt->values;
+
+      TI_ASSERT(rhs_vals.size() == lhs_vals.size());
+
+      size_t num_elements = lhs_vals.size();
+      auto primitive_type = stmt->ret_type.get_element_type();
+      std::vector<Stmt *> matrix_init_values;
+      for (size_t i = 0; i < num_elements; i++) {
+        auto binary_stmt = std::make_unique<BinaryOpStmt>(
+            stmt->op_type, lhs_vals[i], rhs_vals[i]);
+        matrix_init_values.push_back(binary_stmt.get());
+        binary_stmt->ret_type = primitive_type;
+
+        modifier_.insert_before(stmt, std::move(binary_stmt));
+      }
+
+      auto matrix_init_stmt =
+          std::make_unique<MatrixInitStmt>(matrix_init_values);
+      matrix_init_stmt->ret_type = stmt->ret_type;
+
+      stmt->replace_usages_with(matrix_init_stmt.get());
+      modifier_.insert_before(stmt, std::move(matrix_init_stmt));
+
+      modifier_.erase(stmt);
     }
-  }
-
-  void visit(WhileStmt *stmt) override {
-    stmt->body->accept(this);
-  }
-
-  void visit(RangeForStmt *for_stmt) override {
-    for_stmt->body->accept(this);
-  }
-
-  void visit(StructForStmt *for_stmt) override {
-    for_stmt->body->accept(this);
-  }
-
-  void visit(MeshForStmt *for_stmt) override {
-    for_stmt->body->accept(this);
-  }
-
-  void visit(OffloadedStmt *stmt) override {
-    stmt->all_blocks_accept(this);
   }
 
   void visit(GlobalStoreStmt *stmt) override {
@@ -227,6 +273,107 @@ class Scalarize : public IRVisitor {
   void visit(LocalLoadStmt *stmt) override {
     scalarize_load_stmt<LocalLoadStmt>(stmt);
   }
+
+ private:
+  using BasicStmtVisitor::visit;
+};
+
+class ScalarizePointers : public BasicStmtVisitor {
+ public:
+  DelayedIRModifier modifier_;
+
+  // { original_alloca_stmt : [scalarized_alloca_stmt0, ...] }
+  std::unordered_map<Stmt *, std::vector<Stmt *>> scalarized_local_tensor_map_;
+
+  ScalarizePointers(IRNode *node) {
+    node->accept(this);
+
+    modifier_.modify_ir();
+  }
+
+  /*
+    Accessing scalar values are always more efficient than accessing elements
+    from a vector - the former generates less instructions, leading to better
+    performance in both compilation and runtime.
+
+    Although we can do nothing about "global" tensors like tensors from
+    ArgLoadStmt or GlobalPtrStmt, we can still optimize "local" tensors like
+    tensors from AllocaStmt. In this pass, we ask AllocaStmt to allocate
+    multiple scalarized PrimitiveTyped variables in replacement of the original
+    TensorType.
+
+    An additional container "scalarized_local_tensor_map_" is used to keep track
+    of the scalarized AllocaStmt, for later use in LoadStmt and StoreStmt.
+
+    Before:
+      TensorType<4 x i32>* addr = AllocaStmt(TensorType<4 x i32>)
+
+    After:
+      i32 addr0 = AllocaStmt(i32)
+      i32 addr1 = AllocaStmt(i32)
+      i32 addr2 = AllocaStmt(i32)
+      i32 addr3 = AllocaStmt(i32)
+
+      scalarized_local_tensor_map_[addr] = {addr0, addr1, addr2, addr3}
+  */
+  void visit(AllocaStmt *stmt) override {
+    auto tensor_type = stmt->ret_type.ptr_removed()->cast<TensorType>();
+    if (tensor_type) {
+      auto primitive_type = tensor_type->get_element_type();
+
+      TI_ASSERT(scalarized_local_tensor_map_.count(stmt) == 0);
+      scalarized_local_tensor_map_[stmt] = {};
+      for (size_t i = 0; i < tensor_type->get_num_elements(); i++) {
+        auto scalarized_alloca_stmt =
+            std::make_unique<AllocaStmt>(primitive_type);
+        scalarized_alloca_stmt->ret_type = primitive_type;
+
+        scalarized_local_tensor_map_[stmt].push_back(
+            scalarized_alloca_stmt.get());
+        modifier_.insert_before(stmt, std::move(scalarized_alloca_stmt));
+      }
+
+      modifier_.erase(stmt);
+    }
+  }
+
+  /*
+    Before:
+      MatrixPtrStmt(TensorType<4 x i32>* alloca_stmt, int offset)
+
+    After:
+      scalarized_alloca_stmt = scalarized_local_tensor_map_[alloca_stmt][offset]
+      stmt->replace_all_usages_with(scalarized_alloca_stmt)
+  */
+  void visit(MatrixPtrStmt *stmt) override {
+    if (stmt->origin->is<AllocaStmt>()) {
+      auto alloca_stmt = stmt->origin->cast<AllocaStmt>();
+      auto tensor_type =
+          alloca_stmt->ret_type.ptr_removed()->cast<TensorType>();
+      if (tensor_type) {
+        int num_elements = tensor_type->get_num_elements();
+        TI_ASSERT(scalarized_local_tensor_map_.count(alloca_stmt));
+
+        const auto &scalarized_alloca_stmts =
+            scalarized_local_tensor_map_[alloca_stmt];
+        TI_ASSERT(scalarized_alloca_stmts.size() == num_elements);
+
+        // TODO(zhanlue): loose this contraint once dynamic indexing is properly
+        // handled
+        TI_ASSERT(stmt->offset->is<ConstStmt>());
+        int offset = stmt->offset->cast<ConstStmt>()->val.val_int32();
+
+        TI_ASSERT(offset < scalarized_alloca_stmts.size());
+        auto alloca_stmt = scalarized_alloca_stmts[offset];
+
+        stmt->replace_usages_with(alloca_stmt);
+        modifier_.erase(stmt);
+      }
+    }
+  }
+
+ private:
+  using BasicStmtVisitor::visit;
 };
 
 namespace irpass {
@@ -234,13 +381,9 @@ namespace irpass {
 void scalarize(IRNode *root) {
   TI_AUTO_PROF;
   Scalarize scalarize_pass(root);
-
-  /* TODO(zhanlue): Remove redundant MatrixInitStmt
-    Scalarize pass will generate temporary MatrixInitStmts, which are only used
-    as rvalues. Remove these MatrixInitStmts since it's no longer needed.
-  */
+  ScalarizePointers scalarize_pointers_pass(root);
 }
 
 }  // namespace irpass
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

@@ -22,8 +22,7 @@
 
 #include <optional>
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 namespace vulkan {
 class VulkanDeviceCreator;
@@ -110,5 +109,4 @@ class VulkanProgramImpl : public ProgramImpl {
   std::vector<spirv::CompiledSNodeStructs> aot_compiled_snode_structs_;
   std::unique_ptr<gfx::CacheManager> cache_manager_{nullptr};
 };
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

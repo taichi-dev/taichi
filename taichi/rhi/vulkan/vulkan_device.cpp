@@ -17,8 +17,7 @@
 
 #include "spirv_reflect.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace vulkan {
 
 const std::unordered_map<BufferFormat, VkFormat> buffer_format_ti_2_vk = {
@@ -773,7 +772,11 @@ VulkanCommandList::VulkanCommandList(VulkanDevice *ti_device,
     : ti_device_(ti_device),
       stream_(stream),
       device_(ti_device->vk_device()),
+#if !defined(__APPLE__)
       query_pool_(vkapi::create_query_pool(ti_device->vk_device())),
+#else
+      query_pool_(),
+#endif
       buffer_(buffer) {
   VkCommandBufferBeginInfo info{};
   info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -1853,6 +1856,7 @@ DeviceAllocation VulkanDevice::import_vk_image(vkapi::IVkImage image,
   alloc_int.external = true;
   alloc_int.image = image;
   alloc_int.view = view;
+  alloc_int.view_lods.emplace_back(view);
 
   DeviceAllocation alloc;
   alloc.device = this;
@@ -2666,5 +2670,4 @@ VulkanStream::~VulkanStream() {
 }
 
 }  // namespace vulkan
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

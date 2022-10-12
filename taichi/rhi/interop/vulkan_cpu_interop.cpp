@@ -7,8 +7,7 @@
 
 #include <unordered_map>
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 #if TI_WITH_VULKAN && defined(TI_WITH_LLVM)
 
@@ -67,5 +66,4 @@ void memcpy_cpu_to_vulkan_via_staging(DevicePtr dst,
 }
 #endif  // TI_WITH_VULKAN
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

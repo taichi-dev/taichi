@@ -6,8 +6,7 @@
 #include "taichi/program/program.h"
 #include "taichi/analysis/offline_cache_util.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class ExpressionPrinter : public ExpressionVisitor {
  public:
@@ -286,5 +285,4 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
   }
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

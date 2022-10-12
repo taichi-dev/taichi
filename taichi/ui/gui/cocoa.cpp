@@ -271,7 +271,7 @@ __attribute__((constructor)) static void initView() {
   objc_registerClassPair(AppDelClass);
 }
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 void GUI::create_window() {
   clscall("NSApplication", "sharedApplication");
@@ -431,6 +431,6 @@ GUI::~GUI() {
   }
 }
 
-TI_NAMESPACE_END
+}  // namespace taichi
 
 #endif

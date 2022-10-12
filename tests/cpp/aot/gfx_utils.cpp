@@ -2,8 +2,7 @@
 
 #include "taichi/runtime/gfx/aot_module_loader_impl.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace aot_test_utils {
 static void write_devalloc(taichi::lang::DeviceAllocation &alloc,
                            const void *data,
@@ -475,5 +474,4 @@ void run_mpm88_graph(Arch arch, taichi::lang::Device *device_) {
   device_->dealloc_memory(devalloc_pos);
 }
 }  // namespace aot_test_utils
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

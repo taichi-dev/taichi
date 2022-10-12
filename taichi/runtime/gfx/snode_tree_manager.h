@@ -6,8 +6,7 @@
 #include "taichi/codegen/spirv/snode_struct_compiler.h"
 #include "taichi/struct/snode_tree.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace gfx {
 
 class GfxRuntime;
@@ -41,5 +40,4 @@ class SNodeTreeManager {
 };
 
 }  // namespace gfx
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

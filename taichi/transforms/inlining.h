@@ -2,8 +2,7 @@
 
 #include "taichi/ir/pass.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class InliningPass : public Pass {
  public:
@@ -12,5 +11,4 @@ class InliningPass : public Pass {
   struct Args {};
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

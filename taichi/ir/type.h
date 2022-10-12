@@ -3,7 +3,7 @@
 #include "taichi/common/core.h"
 #include "taichi/util/bit.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 class TensorType;
 
@@ -479,4 +479,4 @@ class TypedConstant {
   float64 val_cast_to_float64() const;
 };
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

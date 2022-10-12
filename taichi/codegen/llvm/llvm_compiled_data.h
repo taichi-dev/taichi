@@ -5,8 +5,7 @@
 
 #include "llvm/IR/Module.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class OffloadedTask {
  public:
@@ -56,5 +55,4 @@ struct LLVMCompiledKernel {
   TI_IO_DEF(tasks);
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

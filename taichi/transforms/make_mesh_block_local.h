@@ -6,8 +6,7 @@
 
 #include <set>
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class MakeMeshBlockLocal : public Pass {
  public:
@@ -70,5 +69,4 @@ class MakeMeshBlockLocal : public Pass {
   int mapping_dtype_size_{0};
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

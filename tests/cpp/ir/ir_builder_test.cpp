@@ -8,8 +8,7 @@
 #include "taichi/rhi/vulkan/vulkan_loader.h"
 #endif
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 TEST(IRBuilder, Basic) {
   IRBuilder builder;
@@ -154,5 +153,30 @@ TEST(IRBuilder, Ndarray) {
   EXPECT_EQ(array.read_int({1}), 3);
   EXPECT_EQ(array.read_int({2}), 42);
 }
-}  // namespace lang
-}  // namespace taichi
+
+TEST(IRBuilder, AtomicOp) {
+  TestProgram test_prog;
+  test_prog.setup();
+
+  IRBuilder builder;
+  const int size = 10;
+  auto array = std::make_unique<int[]>(size);
+  array[0] = 2;
+  array[2] = 40;
+  auto *arg = builder.create_arg_load(/*arg_id=*/0, get_data_type<int>(),
+                                      /*is_ptr=*/true);
+  auto *zero = builder.get_int32(0);
+  auto *one = builder.get_int32(1);
+  auto *a0ptr = builder.create_external_ptr(arg, {zero});
+  builder.create_atomic_add(a0ptr, one);  // a[0] += 1
+  auto block = builder.extract_ir();
+  auto ker = std::make_unique<Kernel>(*test_prog.prog(), std::move(block));
+  ker->insert_arr_arg(get_data_type<int>(), /*total_dim=*/1, {1});
+  auto launch_ctx = ker->make_launch_context();
+  launch_ctx.set_arg_external_array_with_shape(
+      /*arg_id=*/0, (uint64)array.get(), size, {size});
+  (*ker)(launch_ctx);
+
+  EXPECT_EQ(array[0], 3);
+}
+}  // namespace taichi::lang

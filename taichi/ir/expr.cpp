@@ -4,7 +4,7 @@
 #include "taichi/ir/ir.h"
 #include "taichi/program/program.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 void Expr::set_tb(const std::string &tb) {
   expr->tb = tb;
@@ -27,13 +27,8 @@ Expr bit_cast(const Expr &input, DataType dt) {
 }
 
 Expr Expr::operator[](const ExprGroup &indices) const {
-  if (is<IndexExpression>()) {
-    // Allow indexing IndexExpression with ret_type = TensorType
-    TI_ASSERT(is_tensor(expr->ret_type));
-  } else {
-    TI_ASSERT(is<FieldExpression>() || is<ExternalTensorExpression>() ||
-              is<IdExpression>());
-  }
+  TI_ASSERT(is<FieldExpression>() || is<MatrixFieldExpression>() ||
+            is<ExternalTensorExpression>() || is_tensor(expr->ret_type));
   return Expr::make<IndexExpression>(*this, indices);
 }
 
@@ -125,4 +120,4 @@ Expr expr_matrix_field(const std::vector<Expr> &fields,
   return Expr::make<MatrixFieldExpression>(fields, element_shape);
 }
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

@@ -2,8 +2,7 @@
 #include "taichi/ir/snode.h"
 #include "taichi/ir/frontend_ir.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 namespace {
 
@@ -101,5 +100,4 @@ void make_lazy_place(SNode *snode,
   }
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

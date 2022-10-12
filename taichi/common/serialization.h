@@ -20,10 +20,8 @@
 #include <vector>
 
 #ifdef TI_INCLUDED
-TI_NAMESPACE_BEGIN
+namespace taichi {
 #else
-#define TI_NAMESPACE_BEGIN
-#define TI_NAMESPACE_END
 #define TI_TRACE
 #define TI_CRITICAL
 #define TI_ASSERT assert
@@ -143,6 +141,13 @@ serialize_kv_impl(SER &ser,
   template <typename S>          \
   void io(S &serializer) const { \
     TI_IO(__VA_ARGS__);          \
+  }
+
+#define TI_IO_DEF_WITH_BASECLASS(BaseClass, ...) \
+  template <typename S>                          \
+  void io(S &serializer) const {                 \
+    this->BaseClass::io(serializer);             \
+    TI_IO(__VA_ARGS__);                          \
   }
 
 // This macro serializes each field with its name by doing the following:
@@ -933,4 +938,6 @@ static_assert(
         std::vector<std::unique_ptr<int>> &>(),
     "");
 
-TI_NAMESPACE_END
+#ifdef TI_INCLUDED
+}  // namespace taichi
+#endif

@@ -14,7 +14,7 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/analysis/offline_cache_util.h"
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 namespace {
 
@@ -47,9 +47,8 @@ class TaskCodeGenLLVMDX12 : public TaskCodeGenLLVM {
     auto epilogue = create_xlogue(stmt->tls_epilogue);
 
     auto [begin, end] = get_range_for_bounds(stmt);
-    create_call("gpu_parallel_range_for",
-                {get_arg(0), begin, end, tls_prologue, body, epilogue,
-                 tlctx->get_constant(stmt->tls_size)});
+    call("gpu_parallel_range_for", get_arg(0), begin, end, tls_prologue, body,
+         epilogue, tlctx->get_constant(stmt->tls_size));
   }
 
   void create_offload_mesh_for(OffloadedStmt *stmt) override {
@@ -131,10 +130,9 @@ class TaskCodeGenLLVMDX12 : public TaskCodeGenLLVM {
 
     auto tls_epilogue = create_mesh_xlogue(stmt->tls_epilogue);
 
-    create_call(
-        "gpu_parallel_mesh_for",
-        {get_arg(0), tlctx->get_constant(stmt->mesh->num_patches), tls_prologue,
-         body, tls_epilogue, tlctx->get_constant(stmt->tls_size)});
+    call("gpu_parallel_mesh_for", get_arg(0),
+         tlctx->get_constant(stmt->mesh->num_patches), tls_prologue, body,
+         tls_epilogue, tlctx->get_constant(stmt->tls_size));
   }
 
   void create_bls_buffer(OffloadedStmt *stmt) {
@@ -160,7 +158,8 @@ class TaskCodeGenLLVMDX12 : public TaskCodeGenLLVM {
       create_bls_buffer(stmt);
     using Type = OffloadedStmt::TaskType;
     auto offloaded_task_name = init_offloaded_task_function(stmt);
-    if (prog->config.kernel_profiler && arch_is_cpu(prog->config.arch)) {
+    if (prog->this_thread_config().kernel_profiler &&
+        arch_is_cpu(prog->this_thread_config().arch)) {
       call(
           builder.get(), "LLVMRuntime_profiler_start",
           {get_runtime(), builder->CreateGlobalStringPtr(offloaded_task_name)});
@@ -182,7 +181,8 @@ class TaskCodeGenLLVMDX12 : public TaskCodeGenLLVM {
     } else {
       TI_NOT_IMPLEMENTED
     }
-    if (prog->config.kernel_profiler && arch_is_cpu(prog->config.arch)) {
+    if (prog->this_thread_config().kernel_profiler &&
+        arch_is_cpu(prog->this_thread_config().arch)) {
       llvm::IRBuilderBase::InsertPointGuard guard(*builder);
       builder->SetInsertPoint(final_block);
       call(builder.get(), "LLVMRuntime_profiler_stop", {get_runtime()});
@@ -219,12 +219,13 @@ static std::vector<uint8_t> generate_dxil_from_llvm(
     TI_ASSERT(func);
     directx12::mark_function_as_cs_entry(func);
     directx12::set_num_threads(
-        func, kernel->program->config.default_gpu_block_dim, 1, 1);
+        func, kernel->program->this_thread_config().default_gpu_block_dim, 1,
+        1);
     // FIXME: save task.block_dim like
     // tlctx->mark_function_as_cuda_kernel(func, task.block_dim);
   }
-  auto dx_container =
-      directx12::global_optimize_module(module, kernel->program->config);
+  auto dx_container = directx12::global_optimize_module(
+      module, kernel->program->this_thread_config());
   // validate and sign dx container.
   return directx12::validate_and_sign(dx_container);
 }
@@ -233,7 +234,7 @@ KernelCodeGenDX12::CompileResult KernelCodeGenDX12::compile() {
   TI_AUTO_PROF;
   auto *llvm_prog = get_llvm_program(prog);
   auto *tlctx = llvm_prog->get_llvm_context(kernel->arch);
-  auto &config = prog->config;
+  auto &config = prog->this_thread_config();
   std::string kernel_key = get_hashed_offline_cache_key(&config, kernel);
   kernel->set_kernel_key_for_cache(kernel_key);
 
@@ -280,4 +281,4 @@ FunctionType KernelCodeGenDX12::compile_to_function() {
   // FIXME: implement compile_to_function.
   return [](RuntimeContext &ctx) {};
 }
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

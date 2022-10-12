@@ -3,7 +3,7 @@
 #include "taichi/rhi/cuda/cuda_driver.h"
 #include "taichi/rhi/cuda/cuda_context.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 #if defined(TI_WITH_CUDA)
 
@@ -369,4 +369,4 @@ void EventToolkit::update_timeline(
 }
 #endif
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

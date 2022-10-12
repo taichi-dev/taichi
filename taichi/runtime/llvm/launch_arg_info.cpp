@@ -2,8 +2,7 @@
 
 #include "taichi/program/kernel.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 bool LlvmLaunchArgInfo::operator==(const LlvmLaunchArgInfo &other) const {
   return is_array == other.is_array;
@@ -18,5 +17,4 @@ std::vector<LlvmLaunchArgInfo> infer_launch_args(const Kernel *kernel) {
   return res;
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

@@ -4,8 +4,7 @@
 #include "taichi/ir/statements.h"
 #include "taichi/util/testing.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 namespace {
 class TestStmt : public Stmt {
@@ -74,5 +73,4 @@ TEST(StmtFieldManager, TestStmtFieldManagerWithVector) {
   EXPECT_EQ(a->field_manager.equal(c->field_manager), false);
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

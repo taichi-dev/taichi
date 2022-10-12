@@ -5,8 +5,7 @@
 #include "taichi/runtime/gfx/aot_module_builder_impl.h"
 #include "taichi/runtime/gfx/aot_module_loader_impl.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 namespace {
 
@@ -107,10 +106,7 @@ const std::unique_ptr<gfx::CacheManager>
     using Mgr = gfx::CacheManager;
     Mgr::Params params;
     params.arch = config->arch;
-    params.mode =
-        offline_cache::enabled_wip_offline_cache(config->offline_cache)
-            ? Mgr::MemAndDiskCache
-            : Mgr::MemCache;
+    params.mode = config->offline_cache ? Mgr::MemAndDiskCache : Mgr::MemCache;
     params.cache_path = config->offline_cache_file_path;
     params.runtime = runtime_.get();
     params.target_device = std::move(target_device);
@@ -120,5 +116,4 @@ const std::unique_ptr<gfx::CacheManager>
   return cache_manager_;
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

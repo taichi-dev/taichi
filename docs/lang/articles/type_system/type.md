@@ -3,31 +3,28 @@ sidebar_position: 1
 
 ---
 
-# Type system
+# Type System
 
-
-Taichi is a statically typed programming language. The type of a variable in the Taichi scope is determined at compile time. After a variable is declared, you cannot assign to it a value of a different type.
+Taichi is a statically typed programming language: The type of a variable in the Taichi scope is determined at compile time; once a variable is declared, you cannot assign to it a value of a different type.
 
 Let's see a quick example:
 
-```python
+```python {3-5}
 @ti.kernel
 def test():
     x = 1  # x is the integer 1
-    x = 3.14  # 3.14 is cast to 3 since x is an integer, so x takes the value 3
+    x = 3.14  # x is an integer, so the value 3.14 is cast to 3 and x takes the value 3
     x = ti.Vector([1, 1])  # Error!
 ```
 
-Line 3 indicates that `x` should be an integer since it is assigned by an integer value 1 upon its declaration. In Line 4, we re-assign a floating-point number 3.14 to `x`. This scalar will be automatically cast to integer 3 to match the type of `x`; hence, `x` takes the value 3 after this line. Line 5 will raise a syntax error when we try to assign a `ti.Vector` to `x` because `ti.Vector` is a different data type, which cannot be cast into an integer.
+- Line 3: `x` is an integer because it is assigned an integer value the first time it is declared.
+- Line 4: `x` is reassigned a floating-point number 3.14 but takes the value 3. This is because 3.14 is automatically cast to integer 3 to match the type of `x`.
+- Line 5:  The system throws an error, because `ti.Vector` cannot be cast into an integer.
 
-We can briefly summarize the data types supported by Taichi as follows:
+Taichi's `ti.types` module defines all the supported data types, and they are classified into two categories: primitive types and compound types.
 
-Taichi supports two categories of data types in the [Taichi scope](../kernels/syntax.md#taichi-scope): primitive types and compound types.
-
-- Primitive types: Various commonly used numerical data types, such as `ti.i32` (`int32`), `ti.u8` (`uint8`), and `ti.f64` (`float64`).
-- Compound types: Array-like or struct-like data types, including `ti.types.matrix`, `ti.types.struct`, and `ti.types.ndarray`, which comprise multiple members of primitive types or other compound types.
-
-More details will be provided in the following sections.
+- Primitive types refer to various commonly-used numerical data types, such as `ti.i32` (`int32`), `ti.u8` (`uint8`), and `ti.f64` (`float64`).
+- Compound types refer to various array-like or struct-like data types, including `ti.types.matrix`, `ti.types.ndarray`, and `ti.types.struct`. Compound types comprise multiple members of primitive types or of other compound types.
 
 ## Primitive types
 
@@ -36,9 +33,9 @@ Primitive types refer to scalars, which are the smallest building blocks of comp
 - `i32`: 32-bit signed integer
 - `f32` : 32-bit floating-point number.
 
-Not all primitive types are supported across all backends. Check out the following table for the supported types on various backends. Note that some backends may require extensions to support a specific primitive type.
+Not all backends support Taichi's primitive types. See the following table for how a primitive type is supported by various backends. Note that some backends may require extensions to support a specific primitive type.
 
-| Backend | `i8`               | `i16`              | `i32`              | `i64`              | `u8`                 | `u16`                | `u32`                | `u64`                | `f16`                | `f32`                | `f64`                |
+| Backend | `i8`               | `i16`              | `i32`              | `i64`              | `u8`               | `u16`              | `u32`              | `u64`              | `f16`              | `f32`              | `f64`              |
 | ------- | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ |
 | CPU     | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 | CUDA    | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
@@ -48,45 +45,51 @@ Not all primitive types are supported across all backends. Check out the followi
 
 > :o:: Requiring extensions for the backend.
 
-### Customize the default primitive types for integers and floating-point numbers
+### Customize default primitive types
 
-When you call the `ti.init()` method to initialize the Taichi runtime, Taichi automatically applies the default primitive data types:
+When initializing the Taichi runtime, Taichi automatically uses the following data types as the default primitive data types:
 
-- The default integer type in Taichi is `ti.i32`.
-- The default floating-point type in Taichi is `ti.f32`.
+- `ti.i32`: the default integer type.
+- `ti.f32`: the default floating-point type.
 
-You can customize the default setting by explicitly specifying the primitive data type(s) you want to use in the `init()` call:
+Taichi allows you to specify the default primitive data type(s) when calling `init()`:
 
 ```python
-ti.init(default_ip=ti.i64)  # Set the default integer type to ti.i64
-ti.init(default_fp=ti.f64)  # Set the default floating-point type to ti.f64
+ti.init(default_ip=ti.i64)  # Sets the default integer type to ti.i64
+ti.init(default_fp=ti.f64)  # Sets the default floating-point type to ti.f64
 ```
 
-It should be noted that the numeric literals in the Taichi scope also have default integer/floating-point types. For example, if the default floating-point type is `ti.f32`, then a numeric literal `3.14159265358979` in the Taichi scope will be cast into a 32-bit floating-point number, hence a precision of up to about seven decimal digits. If you work on high-precision workloads, such as numeric simulations for engineering, use `ti.f64` as the `default_fp`.
+:::note
 
-### Use `int` and `float` as aliases for default primitive types
+The numeric literals in the Taichi scope also have default integer/floating-point types. For example, if the default floating-point type is `ti.f32`, then a numeric literal `3.14159265358979` in the Taichi scope suffers a precision loss because it is cast to a 32-bit floating-point number, which has a precision of about seven decimal digits.
 
-Taichi supports using `int` as an alias for the default integer type and `float` as an alias for the default floating-point type. For example, after changing the default primitive types to `i64` and `f64` when initializing Taichi, you can use `int` as an alias for `i64` and `float` as an alias for `f64`.
+If you are working on a high-precision application scenario, such as numeric simulation for engineering, set `default_fp` as `ti.f64`.
+
+:::
+
+### Set default primitive type alias
+
+Taichi supports using `int` as the alias for the default integer type and `float` as the alias for the default floating-point type. For example, after changing the default primitive types to `i64` and `f64`, you can use `int` as the alias for `i64` and `float` as the alias for `f64`.
 
 ```python
 ti.init(default_ip=ti.i64, default_fp=ti.f64)
 
 x = ti.field(float, 5)
 y = ti.field(int, 5)
-# is equivalent to:
+# Is equivalent to:
 x = ti.field(ti.f64, 5)
 y = ti.field(ti.i64, 5)
 
 def func(a: float) -> int:
     ...
-# is equivalent to:
+# Is equivalent to:
 def func(a: ti.f64) -> ti.i64:
     ...
 ```
 
 ### Explicit type casting
 
-As mentioned at the beginning of this article, the type of a variable in the Taichi scope is *statically typed* upon initialization. Taichi's compiler performs type checking at compile time, which means you *cannot* change a variable's type once it is initialized. However, from time to time, you may run into a situation where you need to switch to a different data type because the original one is not feasible for an assignment or calculation. In such cases, you need explicit type casting:
+As mentioned at the beginning of this document, the type of a variable in the Taichi scope is *statically typed* upon initialization. Taichi's compiler performs type checking at compile time, meaning that you *cannot* change a variable's type once it is initialized. However, from time to time, you may run into situations where you need to switch to a different data type because the original is not feasible for an assignment or calculation. In such situations, you need explicit type casting:
 
 - You can use `ti.cast()` to convert a value to the target type:
 
@@ -98,9 +101,9 @@ As mentioned at the beginning of this article, the type of a variable in the Tai
       c = ti.cast(b, ti.f32)  # 3.0
   ```
 
-- As of v1.1.0, you are allowed to use primitive types such as `ti.f32` and `ti.i64` to convert a scalar variable to a different scalar type:
+- As of v1.1.0, Taichi allows you to use primitive types such as `ti.f32` and `ti.i64` to convert a scalar variable to a different scalar type:
 
-  ```python
+  ```python {6,7}
   @ti.kernel
   def foo():
       a = 3.14
@@ -112,11 +115,10 @@ As mentioned at the beginning of this article, the type of a variable in the Tai
 
 ### Implicit type casting
 
-Implicit type casting occurs when you *accidentally* put or assign a value in a place where a different data type is expected.
+Implicit type casting happens when you *accidentally* put or assign a value where a different data type is expected.
 
 :::caution WARNING
 As a rule of thumb, implicit type casting is a major source of bugs. And Taichi does *not* recommend resorting to this mechanism.
-
 :::
 
 Implicit type casting can happen in binary operations or in assignments, as explained below.
@@ -139,6 +141,7 @@ Taichi implements its own implicit type casting rules for binary operations, whi
    - `u8 + i8 -> u8`
 
 When it comes to rule conflicts, the rule of the highest priority applies:
+
   - `u8 + i16 -> i16` (when rule #2 conflicts with rule #3, rule #2 applies.)
   - `f16 + i32 -> f16` (when rule #1 conflicts with rule #2, rule #1 applies.)
 
@@ -182,7 +185,7 @@ Taichi allows you to use all types supplied in the `ti.types` module as scaffold
 
 :::note
 
-The `ndarray` type is discussed in another article [interacting with External Arrays](../basic/external.md).
+The `ndarray` type is discussed in another document [interacting with External Arrays](../basic/external.md).
 
 :::
 
@@ -210,12 +213,12 @@ def test():
     print(length(v))
 ```
 
-In practice, `ti.types.matrix` only would suffice your need for vector/matrix customization because Taichi treats vectors as a special kind of matrices, i.e., matrices with one column.
+In practical terms, `ti.types.matrix` only would suffice your need for vector/matrix customization because Taichi treats vectors as a special kind of matrices, i.e., matrices with one column.
 
-In fact, calling the function `ti.types.vector()` produces a matrix type of a single column:
+In fact, calling `ti.types.vector()` produces a matrix type of a single column:
 
 ```
-vec3 = ti.types.vector(3, float)  # equivalent to vec3 = ti.types.matrix(3, 1, float)
+vec3 = ti.types.vector(3, float)  # Equivalent to vec3 = ti.types.matrix(3, 1, float)
 ```
 
 Similarly, `ti.Vector()` simply converts the input into a matrix of a single column:
@@ -255,14 +258,14 @@ The code above serves the same purpose as the line below does but provides bette
 Sphere = ti.types.struct(center=vec3, radius=float)
 ```
 
-Another advantage of using `@ti.dataclass` over `ti.types.struct` is that you can define member functions in a dataclass and call them in the Taichi scope, making object-oriented programming (OOP) possible. See the article [objective data-oriented programming](../advanced/odop2.md) for more details.
+Another advantage of using `@ti.dataclass` over `ti.types.struct` is that you can define member functions in a dataclass and call them in the Taichi scope, making object-oriented programming (OOP) possible. See the [objective data-oriented programming](../advanced/odop.md) for more information.
 
 
 ### Initialization
 
 Just as you do with any other data type, you can call a compound type directly to create vector, matrix, or struct instances in Taichi.
 
-As of v1.1.0, you are given more options to initialize a struct or a dataclass.
+As of v1.1.0, Taichi supports more options for initializing a struct or a dataclass.
 
 - Pass positional arguments to a struct in the order they are defined.
 - Pass keyword arguments to a struct to set the corresponding struct members.
@@ -277,10 +280,9 @@ For example:
       rd: vec3
       t: float
 
-  # the definition above is equivalent to
+  # The definition above is equivalent to
   #Ray = ti.types.struct(ro=vec3, rd=vec3, t=float)
-
-  # use positional arguments to set struct members in order
+  # Use positional arguments to set struct members in order
   ray = Ray(vec3(0), vec3(1, 0, 0), 1.0)
   # ro is set to vec3(0) and t will be set to 0
   ray = Ray(vec3(0), rd=vec3(1, 0, 0))
@@ -288,7 +290,7 @@ For example:
   ray = Ray(t=1.0)
   # ro is set to vec3(1), rd=vec3(0) and t=0.0
   ray = Ray(1)
-  # all members are set to 0.
+  # All members are set to 0
   ray = Ray()
   ```
 

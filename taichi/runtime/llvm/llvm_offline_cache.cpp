@@ -19,8 +19,7 @@
 #include "taichi/util/lock.h"
 #include "taichi/util/offline_cache.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace {
 
 using Format = LlvmOfflineCache::Format;
@@ -400,5 +399,4 @@ LlvmOfflineCache::KernelCacheData LlvmOfflineCache::KernelCacheData::clone()
     const {
   return {kernel_key, args, compiled_data.clone()};
 }
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

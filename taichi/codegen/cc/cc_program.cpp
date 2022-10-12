@@ -2,7 +2,7 @@
 
 using namespace taichi::lang::cccp;
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 CCProgramImpl::CCProgramImpl(CompileConfig &config) : ProgramImpl(config) {
   this->config = &config;
@@ -197,4 +197,4 @@ bool is_c_backend_available() {
 }
 };  // namespace cccp
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

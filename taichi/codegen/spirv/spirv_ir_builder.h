@@ -10,8 +10,7 @@
 #include "taichi/rhi/device.h"
 #include "taichi/ir/statements.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace spirv {
 
 template <bool stop, std::size_t I, typename F>
@@ -446,6 +445,7 @@ class IRBuilder {
   Value le(Value a, Value b);
   Value gt(Value a, Value b);
   Value ge(Value a, Value b);
+  Value bit_field_extract(Value base, Value offset, Value count);
   Value select(Value cond, Value a, Value b);
 
   // Create a cast that cast value to dst_type
@@ -641,5 +641,4 @@ class IRBuilder {
   std::vector<uint32_t> function_;
 };
 }  // namespace spirv
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

@@ -242,3 +242,36 @@ def test_stack():
         impl.call_internal("test_stack")
 
     func()
+
+
+# FIXME: There is no tensor constant (brought by dynamic index) until the whole mat/vec refactor is done, which will potentially break the adstack.
+# Temporially disable the dynamic index, will make workaround to handle tensor constant in other PRs
+@test_utils.test(dynamic_index=False)
+def test_if_condition_depend_on_for_loop_index():
+    scalar = lambda: ti.field(dtype=ti.f32)
+    vec = lambda: ti.Vector.field(3, dtype=ti.f32)
+
+    pos = vec()
+    F = vec()
+    f_bend = scalar()
+    loss_n = scalar()
+    ti.root.dense(ti.ij, (10, 10)).place(pos, F)
+    ti.root.dense(ti.i, 1).place(f_bend)
+    ti.root.place(loss_n)
+    ti.root.lazy_grad()
+
+    @ti.kernel
+    def simulation(t: ti.i32):
+        for i, j in pos:
+            coord = ti.Vector([i, j])
+            for n in range(12):
+                f = ti.Vector([0.0, 0.0, 0.0])
+                if n < 4:
+                    f = ti.Vector([1.0, 1.0, 1.0])
+                else:
+                    f = f_bend[0] * pos[coord]
+                F[coord] += f
+            pos[coord] += 1.0 * t
+
+    with ti.ad.Tape(loss=loss_n):
+        simulation(5)

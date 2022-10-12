@@ -1,14 +1,13 @@
 #pragma once
+#ifdef TI_WITH_LLVM
 
 #include "taichi_core_impl.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 class LlvmRuntimeExecutor;
 class MemoryPool;
 struct CompileConfig;
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang
 
 namespace capi {
 
@@ -43,3 +42,5 @@ class LlvmRuntime : public Runtime {
 };
 
 }  // namespace capi
+
+#endif  // TI_WITH_LLVM

@@ -7,7 +7,7 @@
 #include "taichi/util/lang_util.h"
 #include "taichi/jit/jit_module.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 // Backend JIT compiler for all archs
 
@@ -45,4 +45,4 @@ class JITSession {
   virtual ~JITSession() = default;
 };
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

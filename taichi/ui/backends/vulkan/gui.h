@@ -17,7 +17,7 @@
 #include "taichi/ui/common/gui_base.h"
 #include "taichi/rhi/vulkan/vulkan_device.h"
 
-TI_UI_NAMESPACE_BEGIN
+namespace taichi::ui {
 
 namespace vulkan {
 
@@ -81,4 +81,4 @@ class TI_DLL_EXPORT Gui final : public GuiBase {
 
 }  // namespace vulkan
 
-TI_UI_NAMESPACE_END
+}  // namespace taichi::ui

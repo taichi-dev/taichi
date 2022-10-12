@@ -10,7 +10,7 @@
 #include <unordered_map>
 #include "taichi/common/core.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 class ParallelExecutor {
  public:
   using TaskType = std::function<void()>;
@@ -62,4 +62,4 @@ class ParallelExecutor {
   // callback to be executed?
   std::condition_variable flush_cv_;
 };
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

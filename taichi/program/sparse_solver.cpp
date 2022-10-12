@@ -26,8 +26,7 @@ struct key_hash {
 };
 }  // namespace
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 #define GET_EM(sm) \
   const EigenMatrix *mat = (const EigenMatrix *)(sm.get_matrix());
@@ -83,6 +82,73 @@ CuSparseSolver::CuSparseSolver() {
   }
 #endif
 }
+// Reference:
+// https://github.com/NVIDIA/cuda-samples/blob/master/Samples/4_CUDA_Libraries/cuSolverSp_LowlevelCholesky/cuSolverSp_LowlevelCholesky.cpp
+void CuSparseSolver::analyze_pattern(const SparseMatrix &sm) {
+#if defined(TI_WITH_CUDA)
+  // Retrive the info of the sparse matrix
+  SparseMatrix *sm_no_cv = const_cast<SparseMatrix *>(&sm);
+  CuSparseMatrix *A = dynamic_cast<CuSparseMatrix *>(sm_no_cv);
+  size_t rowsA = A->num_rows();
+  size_t nnzA = A->get_nnz();
+  void *d_csrRowPtrA = A->get_row_ptr();
+  void *d_csrColIndA = A->get_col_ind();
+
+  CUSOLVERDriver::get_instance().csSpCreate(&cusolver_handle_);
+  CUSPARSEDriver::get_instance().cpCreate(&cusparse_handel_);
+  CUSPARSEDriver::get_instance().cpCreateMatDescr(&descr_);
+  CUSPARSEDriver::get_instance().cpSetMatType(descr_,
+                                              CUSPARSE_MATRIX_TYPE_GENERAL);
+  CUSPARSEDriver::get_instance().cpSetMatIndexBase(descr_,
+                                                   CUSPARSE_INDEX_BASE_ZERO);
+
+  // step 1: create opaque info structure
+  CUSOLVERDriver::get_instance().csSpCreateCsrcholInfo(&info_);
+
+  // step 2: analyze chol(A) to know structure of L
+  CUSOLVERDriver::get_instance().csSpXcsrcholAnalysis(
+      cusolver_handle_, rowsA, nnzA, descr_, d_csrRowPtrA, d_csrColIndA, info_);
+
+#else
+  TI_NOT_IMPLEMENTED
+#endif
+}
+
+void CuSparseSolver::factorize(const SparseMatrix &sm) {
+#if defined(TI_WITH_CUDA)
+  // Retrive the info of the sparse matrix
+  SparseMatrix *sm_no_cv = const_cast<SparseMatrix *>(&sm);
+  CuSparseMatrix *A = dynamic_cast<CuSparseMatrix *>(sm_no_cv);
+  size_t rowsA = A->num_rows();
+  size_t nnzA = A->get_nnz();
+  void *d_csrRowPtrA = A->get_row_ptr();
+  void *d_csrColIndA = A->get_col_ind();
+  void *d_csrValA = A->get_val_ptr();
+
+  size_t size_internal = 0;
+  size_t size_chol = 0;  // size of working space for csrlu
+  // step 1: workspace for chol(A)
+  CUSOLVERDriver::get_instance().csSpScsrcholBufferInfo(
+      cusolver_handle_, rowsA, nnzA, descr_, d_csrValA, d_csrRowPtrA,
+      d_csrColIndA, info_, &size_internal, &size_chol);
+
+  if (size_chol > 0)
+    CUDADriver::get_instance().malloc(&gpu_buffer_, sizeof(char) * size_chol);
+
+  // step 2: compute A = L*L^T
+  CUSOLVERDriver::get_instance().csSpScsrcholFactor(
+      cusolver_handle_, rowsA, nnzA, descr_, d_csrValA, d_csrRowPtrA,
+      d_csrColIndA, info_, gpu_buffer_);
+  // step 3: check if the matrix is singular
+  const double tol = 1.e-14;
+  int singularity = 0;
+  CUSOLVERDriver::get_instance().csSpScsrcholZeroPivot(cusolver_handle_, info_,
+                                                       tol, &singularity);
+  TI_ASSERT(singularity == -1);
+#else
+  TI_NOT_IMPLEMENTED
+#endif
+}
 
 void CuSparseSolver::solve_cu(Program *prog,
                               const SparseMatrix &sm,
@@ -101,16 +167,15 @@ void CuSparseSolver::solve_cu(Program *prog,
   printf("Cusolver version: %d.%d.%d\n", major_version, minor_version,
          patch_level);
 
-  const cusparseSpMatDescr_t *A =
-      (const cusparseSpMatDescr_t *)(sm.get_matrix());
-  size_t nrows = 0, ncols = 0, nnz = 0;
-  void *drow_offsets = NULL, *dcol_indices = NULL, *dvalues = NULL;
-  cusparseIndexType_t csrRowOffsetsType, csrColIndType;
-  cusparseIndexBase_t idxBase;
-  cudaDataType valueType;
-  CUSPARSEDriver::get_instance().cpCsrGet(
-      *A, &nrows, &ncols, &nnz, &drow_offsets, &dcol_indices, &dvalues,
-      &csrRowOffsetsType, &csrColIndType, &idxBase, &valueType);
+  // Retrive the info of the sparse matrix
+  SparseMatrix *sm_no_cv = const_cast<SparseMatrix *>(&sm);
+  CuSparseMatrix *A = dynamic_cast<CuSparseMatrix *>(sm_no_cv);
+  size_t nrows = A->num_rows();
+  size_t ncols = A->num_cols();
+  size_t nnz = A->get_nnz();
+  void *drow_offsets = A->get_row_ptr();
+  void *dcol_indices = A->get_col_ind();
+  void *dvalues = A->get_val_ptr();
 
   size_t db = prog->get_ndarray_data_ptr_as_int(&b);
   size_t dx = prog->get_ndarray_data_ptr_as_int(&x);
@@ -250,6 +315,30 @@ void CuSparseSolver::solve_cu(Program *prog,
 #endif
 }
 
+void CuSparseSolver::solve_rf(Program *prog,
+                              const SparseMatrix &sm,
+                              const Ndarray &b,
+                              Ndarray &x) {
+#if defined(TI_WITH_CUDA)
+  // Retrive the info of the sparse matrix
+  SparseMatrix *sm_no_cv = const_cast<SparseMatrix *>(&sm);
+  CuSparseMatrix *A = dynamic_cast<CuSparseMatrix *>(sm_no_cv);
+  size_t rowsA = A->num_rows();
+  size_t d_b = prog->get_ndarray_data_ptr_as_int(&b);
+  size_t d_x = prog->get_ndarray_data_ptr_as_int(&x);
+  CUSOLVERDriver::get_instance().csSpScsrcholSolve(
+      cusolver_handle_, rowsA, (void *)d_b, (void *)d_x, info_, gpu_buffer_);
+
+  // TODO: free allocated memory and handles
+  // CUDADriver::get_instance().mem_free(gpu_buffer_);
+  // CUSOLVERDriver::get_instance().csSpDestory(cusolver_handle_);
+  // CUSPARSEDriver::get_instance().cpDestroy(cusparse_handel_);
+  // CUSPARSEDriver::get_instance().cpDestroyMatDescr(descrA);
+#else
+  TI_NOT_IMPLEMENTED
+#endif
+}
+
 std::unique_ptr<SparseSolver> make_sparse_solver(DataType dt,
                                                  const std::string &solver_type,
                                                  const std::string &ordering) {
@@ -284,5 +373,4 @@ std::unique_ptr<SparseSolver> make_cusparse_solver(
     const std::string &ordering) {
   return std::make_unique<CuSparseSolver>();
 }
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

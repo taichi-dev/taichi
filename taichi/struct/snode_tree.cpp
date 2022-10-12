@@ -1,7 +1,6 @@
 #include "taichi/struct/snode_tree.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace {
 
 void get_snodes_to_root_id_impl(const SNode &node,
@@ -39,5 +38,4 @@ std::unordered_map<int, int> get_snodes_to_root_id(const SNode &root) {
   return res;
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

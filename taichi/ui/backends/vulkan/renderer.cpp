@@ -4,7 +4,7 @@
 
 using taichi::lang::Program;
 
-TI_UI_NAMESPACE_BEGIN
+namespace taichi::ui {
 
 namespace vulkan {
 
@@ -225,4 +225,4 @@ taichi::lang::StreamSemaphore Renderer::get_render_complete_semaphore() {
 
 }  // namespace vulkan
 
-TI_UI_NAMESPACE_END
+}  // namespace taichi::ui

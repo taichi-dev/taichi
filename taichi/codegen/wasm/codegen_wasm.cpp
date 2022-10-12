@@ -11,8 +11,7 @@
 #include "taichi/util/file_sequence_writer.h"
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 namespace {
 constexpr std::array<const char *, 5> kPreloadedFuncNames = {
@@ -206,7 +205,7 @@ class TaskCodeGenWASM : public TaskCodeGenLLVM {
     builder->SetInsertPoint(entry_block);
     builder->CreateBr(func_body_bb);
 
-    if (prog->config.print_kernel_llvm_ir) {
+    if (prog->this_thread_config().print_kernel_llvm_ir) {
       static FileSequenceWriter writer(
           "taichi_kernel_generic_llvm_ir_{:04d}.ll",
           "unoptimized LLVM IR (generic)");
@@ -292,5 +291,4 @@ LLVMCompiledKernel KernelCodeGenWASM::compile_kernel_to_module() {
   return tlctx->link_compiled_tasks(std::move(data));
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

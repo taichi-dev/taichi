@@ -3,7 +3,7 @@
 #include "taichi/util/str.h"
 #include "taichi/ir/type_utils.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 struct CompileConfig;
 class Expression;
@@ -149,4 +149,4 @@ Expr expr_field(Expr id_expr, DataType dt);
 Expr expr_matrix_field(const std::vector<Expr> &fields,
                        const std::vector<int> &element_shape);
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

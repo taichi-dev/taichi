@@ -5,8 +5,7 @@
 #include "glad/gl.h"
 #include "GLFW/glfw3.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace opengl {
 
 class GLDevice;
@@ -320,5 +319,4 @@ class GLSurface : public Surface {
 };
 
 }  // namespace opengl
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

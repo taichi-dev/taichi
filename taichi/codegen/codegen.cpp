@@ -12,12 +12,15 @@
 #if defined(TI_WITH_CUDA)
 #include "taichi/codegen/cuda/codegen_cuda.h"
 #endif
+#if defined(TI_WITH_DX12)
+#include "taichi/codegen/dx12/codegen_dx12.h"
+#endif
 #include "taichi/system/timer.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/analysis/offline_cache_util.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 KernelCodeGen::KernelCodeGen(Kernel *kernel, IRNode *ir)
     : prog(kernel->program), kernel(kernel), ir(ir) {
@@ -48,6 +51,12 @@ std::unique_ptr<KernelCodeGen> KernelCodeGen::create(Arch arch,
 #else
     TI_NOT_IMPLEMENTED
 #endif
+  } else if (arch == Arch::dx12) {
+#if defined(TI_WITH_DX12)
+    return std::make_unique<KernelCodeGenDX12>(kernel, stmt);
+#else
+    TI_NOT_IMPLEMENTED
+#endif
   } else {
     TI_NOT_IMPLEMENTED
   }
@@ -61,7 +70,7 @@ std::optional<LLVMCompiledKernel>
 KernelCodeGen::maybe_read_compilation_from_cache(
     const std::string &kernel_key) {
   TI_AUTO_PROF;
-  const auto &config = prog->config;
+  const auto &config = prog->this_thread_config();
   auto *llvm_prog = get_llvm_program(prog);
   const auto &reader = llvm_prog->get_cache_reader();
   if (!reader) {
@@ -88,7 +97,7 @@ void KernelCodeGen::cache_kernel(const std::string &kernel_key,
 LLVMCompiledKernel KernelCodeGen::compile_kernel_to_module() {
   auto *llvm_prog = get_llvm_program(prog);
   auto *tlctx = llvm_prog->get_llvm_context(kernel->arch);
-  auto &config = prog->config;
+  auto &config = prog->this_thread_config();
   std::string kernel_key = get_hashed_offline_cache_key(&config, kernel);
   kernel->set_kernel_key_for_cache(kernel_key);
   if (config.offline_cache && this->supports_offline_cache() &&
@@ -152,4 +161,4 @@ FunctionType ModuleToFunctionConverter::convert(const Kernel *kernel,
 }
 
 #endif
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

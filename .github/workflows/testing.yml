@@ -107,7 +107,7 @@ jobs:
   build_and_test_cpu_linux:
     name: Build and Test linux (CPU)
     needs: check_files
-    timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 120 }}
+    timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 120 || 180 }}
     strategy:
       matrix:
         include:
@@ -189,10 +189,14 @@ jobs:
           path: dist/*
           retention-days: 7
 
+      - name: Fix Cache Permissions
+        run: |
+          sudo -n chmod -R 0777 /tmp/build-cache || true
+
   build_and_test_cpu_mac:
     name: Build and Test macos (CPU)
     needs: check_files
-    timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 60 || 120 }}
+    timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 120 || 180 }}
     strategy:
       matrix:
         include:
@@ -266,7 +270,7 @@ jobs:
             llvmVer : '15'
           - os: windows-2019
             llvmVer : '10'
-    timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 180 }}
+    timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 120 || 180 }}
     runs-on: windows-2019
     permissions:
       packages: read
@@ -283,7 +287,8 @@ jobs:
         uses: actions/cache@v3
         if: needs.check_files.outputs.run_job == 'true'
         with:
-          path: ${{ env.LocalAppData }}/build-cache
+          # env.LocalAppData is not usable according to actions/cache README
+          path: ~/AppData/Local/build-cache
           key: build-cache-win64-cpu-${{ github.sha }}
           restore-keys: |
             build-cache-win64-cpu-
@@ -313,7 +318,8 @@ jobs:
             -DTI_WITH_VULKAN:BOOL=OFF
             -DTI_WITH_CUDA:BOOL=OFF
             -DTI_BUILD_TESTS:BOOL=OFF
-            -DTI_WITH_DX12:BOOL=ON
+            -DTI_WITH_DX12:BOOL=OFF
+
 
       - name: Test
         shell: pwsh
@@ -435,6 +441,7 @@ jobs:
           TAICHI_CMAKE_ARGS: >-
             -DTI_WITH_OPENGL:BOOL=ON
             -DTI_WITH_DX11:BOOL=ON
+            -DTI_WITH_DX12:BOOL=ON
             -DTI_WITH_CC:BOOL=OFF
             -DTI_BUILD_TESTS:BOOL=ON
             -DTI_WITH_C_API=ON

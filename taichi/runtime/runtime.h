@@ -8,7 +8,7 @@
 #include <memory>
 #include <functional>
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 class Runtime {
  protected:
@@ -52,4 +52,4 @@ void Runtime::register_impl(Arch arch) {
   factories[arch] = [] { return std::make_unique<RuntimeT>(); };
 }
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

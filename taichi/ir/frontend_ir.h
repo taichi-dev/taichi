@@ -11,7 +11,7 @@
 #include "taichi/program/function.h"
 #include "taichi/ir/mesh.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 struct ForLoopConfig {
   bool is_bit_vectorized{false};
@@ -478,6 +478,7 @@ class ExternalTensorExpression : public Expression {
   }
 
   void type_check(CompileConfig *config) override {
+    ret_type = dt;
     config_ = config;
   }
 
@@ -515,8 +516,6 @@ class FieldExpression : public Expression {
   void set_snode(SNode *snode) {
     this->snode = snode;
   }
-
-  void flatten(FlattenContext *ctx) override;
 
   TI_DEFINE_ACCEPT_FOR_EXPRESSION
 };
@@ -577,8 +576,8 @@ class MatrixExpression : public Expression {
 
 class IndexExpression : public Expression {
  public:
-  // `var` is one of FieldExpression, ExternalTensorExpression,
-  // IdExpression
+  // `var` is one of FieldExpression, MatrixFieldExpression,
+  // ExternalTensorExpression, IdExpression
   Expr var;
   ExprGroup indices;
 
@@ -606,6 +605,7 @@ class IndexExpression : public Expression {
 
  private:
   bool is_field() const;
+  bool is_matrix_field() const;
   bool is_ndarray() const;
   bool is_tensor() const;
 };
@@ -1042,4 +1042,4 @@ void flatten_lvalue(Expr expr, Expression::FlattenContext *ctx);
 
 void flatten_rvalue(Expr expr, Expression::FlattenContext *ctx);
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

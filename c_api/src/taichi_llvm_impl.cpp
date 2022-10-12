@@ -1,3 +1,5 @@
+#ifdef TI_WITH_LLVM
+
 #include "taichi_core_impl.h"
 #include "taichi_llvm_impl.h"
 
@@ -66,7 +68,7 @@ void LlvmRuntime::free_memory(TiMemory devmem) {
   // the corresponding Device::free_memory() interface has not been
   // implemented yet...
   if (taichi::arch_is_cpu(config->arch)) {
-    TI_CAPI_NOT_SUPPORTED_IF(taichi::arch_is_cpu(config->arch));
+    TI_CAPI_INCOMPLETE_IF(taichi::arch_is_cpu(config->arch));
   }
 
   Runtime::free_memory(devmem);
@@ -128,3 +130,5 @@ void LlvmRuntime::wait() {
 }
 
 }  // namespace capi
+
+#endif  // TI_WITH_LLVM

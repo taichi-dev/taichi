@@ -2,8 +2,7 @@
 
 #include "taichi/runtime/gfx/runtime.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace gfx {
 
 SNodeTreeManager::SNodeTreeManager(GfxRuntime *rtm) : runtime_(rtm) {
@@ -52,5 +51,4 @@ DevicePtr SNodeTreeManager::get_snode_tree_device_ptr(int tree_id) {
 }
 
 }  // namespace gfx
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

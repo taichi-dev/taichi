@@ -7,7 +7,7 @@
 #include "taichi/program/program.h"
 #include "taichi/program/snode_rw_accessors_bank.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 std::atomic<int> SNode::counter{0};
 
@@ -361,4 +361,4 @@ int SNode::get_snode_tree_id() const {
   return snode_tree_id_;
 }
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

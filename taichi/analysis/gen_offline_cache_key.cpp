@@ -8,8 +8,7 @@
 #include "taichi/program/function.h"
 #include "taichi/program/program.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 namespace {
 
@@ -656,5 +655,4 @@ void gen_offline_cache_key(Program *prog, IRNode *ast, std::ostream *os) {
   ASTSerializer::run(prog, ast, os);
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

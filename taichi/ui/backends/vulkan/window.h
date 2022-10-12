@@ -23,13 +23,11 @@
 #include "taichi/ui/backends/vulkan/gui.h"
 #include "taichi/program/ndarray.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 class Program;
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang
 
-TI_UI_NAMESPACE_BEGIN
+namespace taichi::ui {
 
 namespace vulkan {
 
@@ -76,4 +74,4 @@ class Window final : public WindowBase {
 
 }  // namespace vulkan
 
-TI_UI_NAMESPACE_END
+}  // namespace taichi::ui

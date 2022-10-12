@@ -17,8 +17,7 @@
 #include <spirv-tools/libspirv.hpp>
 #include <spirv-tools/optimizer.hpp>
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace spirv {
 namespace {
 
@@ -242,7 +241,7 @@ class TaskCodegen : public IRVisitor {
     }
   }
 
-  void visit(PtrOffsetStmt *stmt) override {
+  void visit(MatrixPtrStmt *stmt) override {
     spirv::SType data_type =
         ir_->get_primitive_type(stmt->element_type().ptr_removed());
     spirv::SType ptr_type =
@@ -466,13 +465,7 @@ class TaskCodegen : public IRVisitor {
     spirv::Value tmp0 = ir_->int_immediate_number(stype, stmt->bit_begin);
     spirv::Value tmp1 =
         ir_->int_immediate_number(stype, stmt->bit_end - stmt->bit_begin);
-    spirv::Value tmp2 =
-        ir_->make_value(spv::OpShiftRightArithmetic, stype, input_val, tmp0);
-    spirv::Value tmp3 =
-        ir_->make_value(spv::OpShiftLeftLogical, stype,
-                        ir_->int_immediate_number(stype, 1), tmp1);
-    spirv::Value tmp4 = ir_->sub(tmp3, ir_->int_immediate_number(stype, 1));
-    spirv::Value val = ir_->make_value(spv::OpBitwiseAnd, stype, tmp2, tmp4);
+    spirv::Value val = ir_->bit_field_extract(input_val, tmp0, tmp1);
     ir_->register_value(stmt->raw_name(), val);
   }
 
@@ -841,7 +834,6 @@ class TaskCodegen : public IRVisitor {
     BINARY_OP_TO_SPIRV_BITWISE(bit_or, OpBitwiseOr)
     BINARY_OP_TO_SPIRV_BITWISE(bit_xor, OpBitwiseXor)
     BINARY_OP_TO_SPIRV_BITWISE(bit_shl, OpShiftLeftLogical)
-    BINARY_OP_TO_SPIRV_BITWISE(bit_shr, OpShiftRightLogical)
     // NOTE: `OpShiftRightArithmetic` will treat the first bit as sign bit even
     // it's the unsigned type
     else if (op_type == BinaryOpType::bit_sar) {
@@ -915,15 +907,6 @@ class TaskCodegen : public IRVisitor {
       lhs_value = ir_->cast(dst_type, lhs_value);
       rhs_value = ir_->cast(dst_type, rhs_value);
       bin_value = ir_->div(lhs_value, rhs_value);
-    }
-    else if (op_type == BinaryOpType::floordiv) {
-      uint32_t Floor_id = 8;
-      lhs_value =
-          ir_->cast(ir_->f32_type(), lhs_value);  // TODO: Hard-coded f32
-      rhs_value = ir_->cast(ir_->f32_type(), rhs_value);
-      bin_value = ir_->div(lhs_value, rhs_value);
-      bin_value = ir_->call_glsl450(ir_->f32_type(), Floor_id, bin_value);
-      bin_value = ir_->cast(dst_type, bin_value);
     }
     else {TI_NOT_IMPLEMENTED} ir_->register_value(bin_name, bin_value);
   }
@@ -2364,7 +2347,7 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
 }
 
 void lower(Kernel *kernel) {
-  auto &config = kernel->program->config;
+  auto &config = kernel->program->this_thread_config();
   config.demote_dense_struct_fors = true;
   irpass::compile_to_executable(kernel->ir.get(), config, kernel,
                                 kernel->autodiff_mode,
@@ -2374,5 +2357,4 @@ void lower(Kernel *kernel) {
 }
 
 }  // namespace spirv
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

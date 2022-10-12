@@ -20,7 +20,7 @@ static_assert(sizeof(CUjit_option) == sizeof(uint32));
 }  // namespace taichi
 #endif
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 // Driver constants from cuda.h
 
@@ -178,4 +178,4 @@ class CUSOLVERDriver : protected CUDADriverBase {
   bool cusolver_loaded_{false};
 };
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

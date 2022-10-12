@@ -9,7 +9,7 @@
 #include <unordered_map>
 #include <utility>
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 namespace irpass {
 namespace {
@@ -38,7 +38,7 @@ class SquashPtrOffset : public IRVisitor {
   void visit(Stmt *stmt) override {
     top_level_ptr_ = stmt;
   }
-  void visit(PtrOffsetStmt *stmt) override {
+  void visit(MatrixPtrStmt *stmt) override {
     stmt->origin->accept(this);
   }
   static Stmt *run(Stmt *root) {
@@ -539,7 +539,7 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
                              data_type_size(tensor_type->get_element_type()));
         auto const_offset_stmt = replacement.push_back<ConstStmt>(offset);
         auto ptr_offset_stmt =
-            replacement.push_back<PtrOffsetStmt>(ptr, const_offset_stmt);
+            replacement.push_back<MatrixPtrStmt>(ptr, const_offset_stmt);
         auto global_store_stmt = replacement.push_back<GlobalStoreStmt>(
             ptr_offset_stmt, const_zero_stmt);
         stmt_to_offloaded_[const_offset_stmt] = offloaded;
@@ -611,7 +611,7 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
     if (local_to_global_offset_.find(op) == local_to_global_offset_.end()) {
       // For stmts that are not promoted to global tmp, clone them into current
       // offloaded task. E.g.
-      // ConstStmt/PtrOffsetStmt/GlobalTemporaryStmt/ExternalTensorShapeAlongAxisStmt
+      // ConstStmt/MatrixPtrStmt/GlobalTemporaryStmt/ExternalTensorShapeAlongAxisStmt
       // etc.
       auto copy = op->clone();
       auto pcopy = copy.get();
@@ -789,4 +789,4 @@ void offload(IRNode *root, const CompileConfig &config) {
 
 }  // namespace irpass
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

@@ -7,7 +7,7 @@
 #include "taichi/program/kernel_profiler.h"
 #include "taichi/rhi/cuda/cuda_driver.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 // Note:
 // It would be ideal to create a CUDA context per Taichi program, yet CUDA
@@ -103,4 +103,4 @@ class CUDAContext {
   static CUDAContext &get_instance();
 };
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

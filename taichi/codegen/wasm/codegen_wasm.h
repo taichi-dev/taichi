@@ -8,8 +8,7 @@
 #include "llvm/IR/Module.h"
 #endif
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class KernelCodeGenWASM : public KernelCodeGen {
  public:
@@ -28,5 +27,4 @@ class KernelCodeGenWASM : public KernelCodeGen {
 #endif
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

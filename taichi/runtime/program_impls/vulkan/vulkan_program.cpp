@@ -13,8 +13,7 @@
 
 using namespace taichi::lang::vulkan;
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 namespace {
 std::vector<std::string> get_required_instance_extensions() {
@@ -236,10 +235,7 @@ const std::unique_ptr<gfx::CacheManager>
     using Mgr = gfx::CacheManager;
     Mgr::Params params;
     params.arch = config->arch;
-    params.mode =
-        offline_cache::enabled_wip_offline_cache(config->offline_cache)
-            ? Mgr::MemAndDiskCache
-            : Mgr::MemCache;
+    params.mode = config->offline_cache ? Mgr::MemAndDiskCache : Mgr::MemCache;
     params.cache_path = config->offline_cache_file_path;
     params.runtime = vulkan_runtime_.get();
     params.target_device = std::move(target_device);
@@ -255,5 +251,4 @@ VulkanProgramImpl::~VulkanProgramImpl() {
   embedded_device_.reset();
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

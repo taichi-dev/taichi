@@ -5,8 +5,7 @@
 #include "taichi/runtime/gfx/snode_tree_manager.h"
 #include "taichi/program/program_impl.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class OpenglProgramImpl : public ProgramImpl {
  public:
@@ -76,5 +75,4 @@ class OpenglProgramImpl : public ProgramImpl {
   std::unique_ptr<gfx::CacheManager> cache_manager_{nullptr};
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

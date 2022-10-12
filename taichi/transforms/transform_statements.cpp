@@ -3,7 +3,7 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/visitors.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 // Transform each filtered statement
 class StatementsTransformer : public BasicStmtVisitor {
@@ -58,4 +58,4 @@ bool transform_statements(
 
 }  // namespace irpass
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

@@ -2,7 +2,7 @@
 #include <string>
 #include "taichi/ui/utils/utils.h"
 
-TI_UI_NAMESPACE_BEGIN
+namespace taichi::ui {
 
 class GuiBase {
  public:
@@ -27,4 +27,4 @@ class GuiBase {
   virtual ~GuiBase() = default;
 };
 
-TI_UI_NAMESPACE_END
+}  // namespace taichi::ui

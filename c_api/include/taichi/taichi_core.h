@@ -1,5 +1,10 @@
 #pragma once
-#include <taichi/taichi_platform.h>
+
+#ifndef TI_C_API_VERSION
+#define TI_C_API_VERSION 1000002
+#endif  // TI_C_API_VERSION
+
+#include <taichi/taichi.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -251,6 +256,7 @@ typedef struct TiImageAllocateInfo {
   TiImageExtent extent;
   uint32_t mip_level_count;
   TiFormat format;
+  TiBool export_sharing;
   TiImageUsageFlags usage;
 } TiImageAllocateInfo;
 
@@ -377,6 +383,11 @@ TI_DLL_EXPORT void TI_API_CALL
 ti_copy_image_device_to_device(TiRuntime runtime,
                                const TiImageSlice *dst_image,
                                const TiImageSlice *src_image);
+
+// function.track_image
+TI_DLL_EXPORT void TI_API_CALL ti_track_image_ext(TiRuntime runtime,
+                                                  TiImage image,
+                                                  TiImageLayout layout);
 
 // function.transition_image
 TI_DLL_EXPORT void TI_API_CALL ti_transition_image(TiRuntime runtime,

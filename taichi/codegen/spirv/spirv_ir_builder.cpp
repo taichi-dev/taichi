@@ -1,8 +1,7 @@
 #include "taichi/codegen/spirv/spirv_ir_builder.h"
 #include "taichi/rhi/dx/dx_device.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 namespace spirv {
 
@@ -1038,6 +1037,13 @@ DEFINE_BUILDER_CMP_OP(ge, GreaterThanEqual);
 DEFINE_BUILDER_CMP_UOP(eq, Equal);
 DEFINE_BUILDER_CMP_UOP(ne, NotEqual);
 
+Value IRBuilder::bit_field_extract(Value base, Value offset, Value count) {
+  TI_ASSERT(is_integral(base.stype.dt));
+  TI_ASSERT(is_integral(offset.stype.dt));
+  TI_ASSERT(is_integral(count.stype.dt));
+  return make_value(spv::OpBitFieldUExtract, base.stype, base, offset, count);
+}
+
 Value IRBuilder::select(Value cond, Value a, Value b) {
   TI_ASSERT(a.stype.id == b.stype.id);
   TI_ASSERT(cond.stype.id == t_bool_.id);
@@ -1170,8 +1176,7 @@ Value IRBuilder::load_variable(Value pointer, const SType &res_type) {
             pointer.flag == ValueKind::kPhysicalPtr);
   Value ret = new_value(res_type, ValueKind::kNormal);
   if (pointer.flag == ValueKind::kPhysicalPtr) {
-    Value alignment =
-        uint_immediate_number(t_uint32_, get_primitive_type_size(res_type.dt));
+    uint32_t alignment = uint32_t(get_primitive_type_size(res_type.dt));
     ib_.begin(spv::OpLoad)
         .add_seq(res_type, ret, pointer, spv::MemoryAccessAlignedMask,
                  alignment)
@@ -1186,8 +1191,7 @@ void IRBuilder::store_variable(Value pointer, Value value) {
             pointer.flag == ValueKind::kPhysicalPtr);
   TI_ASSERT(value.stype.id == pointer.stype.element_type_id);
   if (pointer.flag == ValueKind::kPhysicalPtr) {
-    Value alignment = uint_immediate_number(
-        t_uint32_, get_primitive_type_size(value.stype.dt));
+    uint32_t alignment = uint32_t(get_primitive_type_size(value.stype.dt));
     ib_.begin(spv::OpStore)
         .add_seq(pointer, value, spv::MemoryAccessAlignedMask, alignment)
         .commit(&function_);
@@ -1558,5 +1562,4 @@ void IRBuilder::init_random_function(Value global_tmp_) {
 }
 
 }  // namespace spirv
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

@@ -21,7 +21,7 @@
 #include <sys/stat.h>
 #endif
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 inline bool path_exists(const std::string &dir) {
   struct stat buffer;
@@ -149,4 +149,4 @@ bool read_vector_from_disk(std::vector<T> *p_vec, std::string fn) {
   return true;
 }
 
-TI_NAMESPACE_END
+}  // namespace taichi

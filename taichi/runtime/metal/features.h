@@ -4,7 +4,7 @@
 
 #include "taichi/util/lang_util.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 namespace metal {
 
 inline bool is_supported_sparse_type(SNodeType t) {
@@ -14,4 +14,4 @@ inline bool is_supported_sparse_type(SNodeType t) {
 
 }  // namespace metal
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

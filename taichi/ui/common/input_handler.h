@@ -4,7 +4,7 @@
 #include <vector>
 #include "taichi/ui/utils/utils.h"
 
-TI_UI_NAMESPACE_BEGIN
+namespace taichi::ui {
 
 class InputHandler {
  public:
@@ -101,4 +101,4 @@ class InputHandler {
   std::vector<std::function<void(int, int)>> user_mouse_button_callbacks_;
 };
 
-TI_UI_NAMESPACE_END
+}  // namespace taichi::ui

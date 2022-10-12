@@ -10,14 +10,14 @@ Taichi Core exposes all necessary interfaces for offloading the AOT modules to T
 
 Taichi C-API intends to support the following backends:
 
-|Backend|Offload Target|Maintenance Tier|
-|-|-|-|
-|Vulkan|GPU|Tier 1|
-|CUDA (LLVM)|GPU (NVIDIA)|Tier 1|
-|CPU (LLVM)|CPU|Tier 1|
-|OpenGL|GPU|Tier 2|
-|DirectX 11|GPU (Windows)|N/A|
-|Metal|GPU (macOS, iOS)|N/A|
+|Backend     |Offload Target   |Maintenance Tier |
+|------------|-----------------|-----------------|
+|Vulkan      |GPU              |Tier 1           |
+|CUDA (LLVM) |GPU (NVIDIA)     |Tier 1           |
+|CPU (LLVM)  |CPU              |Tier 1           |
+|OpenGL      |GPU              |Tier 2           |
+|DirectX 11  |GPU (Windows)    |N/A              |
+|Metal       |GPU (macOS, iOS) |N/A              |
 
 The backends with tier-1 support are being developed and tested more intensively. And most new features will be available on Vulkan first because it has the most outstanding cross-platform compatibility among all the tier-1 backends.
 For the backends with tier-2 support, you should expect a delay in the fixes to minor issues.

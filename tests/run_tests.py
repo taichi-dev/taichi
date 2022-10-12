@@ -369,12 +369,14 @@ def test():
                     ])
                 return size
 
-            n = len(os.listdir(tmp_cache_file_path))
             size = size_of_dir(tmp_cache_file_path)
+            stat = {}
+            for subdir in os.listdir(tmp_cache_file_path):
+                stat[subdir] = len(os.listdir(os.path.join(tmp_cache_file_path, subdir)))
             shutil.rmtree(tmp_cache_file_path)
             print('Summary of testing the offline cache:')
-            print(f'    The number of cache files: {n}')
-            print(f'    Size of cache files:       {size / 1024:.2f} KB')
+            print(f'    Simple statistics: {stat}')
+            print(f'    Size of cache files: {size / 1024:.2f} KB')
 
         atexit.register(print_and_remove)
     else:  # Default: disable offline cache

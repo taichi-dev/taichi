@@ -45,7 +45,7 @@ TEST(Scalarize, ScalarizeGlobalStore) {
 
   block->push_back<GlobalStoreStmt>(dest_stmt, matrix_init_stmt);
 
-  irpass::scalarize(block.get());
+  irpass::scalarize(block.get(), kernel->program->this_thread_config());
   irpass::lower_matrix_ptr(block.get());
   irpass::die(block.get());
 
@@ -102,7 +102,7 @@ TEST(Scalarize, ScalarizeGlobalLoad) {
   // Without this GlobalStoreStmt, nothing survives irpass::die()
   block->push_back<GlobalStoreStmt>(src_stmt, load_stmt);
 
-  irpass::scalarize(block.get());
+  irpass::scalarize(block.get(), kernel->program->this_thread_config());
   irpass::lower_matrix_ptr(block.get());
   irpass::die(block.get());
 
@@ -163,7 +163,7 @@ TEST(Scalarize, ScalarizeLocalStore) {
   // LocalStoreStmt survives irpass::die()
   block->push_back<LocalStoreStmt>(dest_stmt, matrix_init_stmt);
 
-  irpass::scalarize(block.get());
+  irpass::scalarize(block.get(), kernel->program->this_thread_config());
   irpass::die(block.get());
 
   EXPECT_EQ(block->size(), 2 /*const*/ + 4 /*alloca*/ + 4 /*store*/);
@@ -211,7 +211,7 @@ TEST(Scalarize, ScalarizeLocalLoad) {
   // Without this GlobalStoreStmt, nothing survives irpass::die()
   block->push_back<GlobalStoreStmt>(src_stmt, load_stmt);
 
-  irpass::scalarize(block.get());
+  irpass::scalarize(block.get(), kernel->program->this_thread_config());
   irpass::die(block.get());
 
   EXPECT_EQ(block->size(), 4 /*alloca*/ + 4 /*load*/ + 4 /*store*/);

@@ -584,20 +584,7 @@ class IndexExpression : public Expression {
   IndexExpression(const Expr &var,
                   const ExprGroup &indices,
                   std::string tb = "")
-      : var(var) {
-    // Special case: single index with ret_type=MatrixType, where we have to
-    // expand this MatrixType.
-    if (indices.exprs.size() == 1 &&
-        indices.exprs[0].get_ret_type()->is<TensorType>()) {
-      auto dtype = indices.exprs[0].get_ret_type()->as<TensorType>();
-      ExprGroup expanded_indices;
-      for (int i = 0; i < dtype->get_num_elements(); i++) {
-        // TODO: fill in expanded_indices
-      }
-      this->indices = expanded_indices;
-    } else {
-      this->indices = indices;
-    }
+      : var(var), indices(indices) {
     this->tb = tb;
   }
 

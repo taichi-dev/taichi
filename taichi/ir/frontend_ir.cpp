@@ -471,13 +471,45 @@ void ExternalTensorExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
+std::vector<Stmt *> flatten_indices(Expression::FlattenContext *ctx,
+                                    ExprGroup indices) {
+  std::vector<Stmt *> flattened_indices;
+
+  // Special case: single index with ret_type=MatrixType, where we have to
+  // expand this MatrixType.
+  if (indices.exprs.size() == 1 &&
+      indices.exprs[0].get_ret_type()->is<TensorType>()) {
+    flatten_rvalue(indices.exprs[0], ctx);
+
+    auto dtype = indices.exprs[0].get_ret_type()->as<TensorType>();
+    auto alloca_stmt = ctx->push_back<AllocaStmt>(dtype);
+    ctx->push_back<LocalStoreStmt>(alloca_stmt, indices.exprs[0]->stmt);
+
+    for (int i = 0; i < dtype->get_num_elements(); i++) {
+      // TODO: fill in expanded_indices
+      auto const_stmt = ctx->push_back<ConstStmt>(TypedConstant(i));
+      auto matrix_ptr_stmt =
+          ctx->push_back<MatrixPtrStmt>(alloca_stmt, const_stmt);
+      auto flattened_index = ctx->push_back<LocalLoadStmt>(matrix_ptr_stmt);
+      flattened_indices.push_back(flattened_index);
+    }
+  } else {
+    for (size_t i = 0; i < indices.exprs.size(); i++) {
+      flatten_rvalue(indices.exprs[i], ctx);
+      flattened_indices.push_back(indices.exprs[i]->stmt);
+    }
+  }
+  return flattened_indices;
+}
+
 std::vector<Stmt *> make_index_stmts(Expression::FlattenContext *ctx,
                                      const ExprGroup &indices,
                                      const std::vector<int> &offsets) {
+  auto flattened_indices = flatten_indices(ctx, indices);
+
   std::vector<Stmt *> index_stmts;
-  for (int i = 0; i < (int)indices.size(); i++) {
-    flatten_rvalue(indices.exprs[i], ctx);
-    Stmt *ind = indices.exprs[i]->stmt;
+  for (int i = 0; i < (int)flattened_indices.size(); i++) {
+    Stmt *ind = flattened_indices[i];
     if (!offsets.empty()) {
       auto offset = ctx->push_back<ConstStmt>(TypedConstant(offsets[i]));
       ind = ctx->push_back<BinaryOpStmt>(BinaryOpType::sub, ind, offset);
@@ -511,17 +543,13 @@ Stmt *make_matrix_field_access(Expression::FlattenContext *ctx,
 Stmt *make_ndarray_access(Expression::FlattenContext *ctx,
                           Expr var,
                           ExprGroup indices) {
-  std::vector<Stmt *> index_stmts;
-  for (int i = 0; i < (int)indices.size(); i++) {
-    flatten_rvalue(indices.exprs[i], ctx);
-    Stmt *ind = indices.exprs[i]->stmt;
-    index_stmts.push_back(ind);
-  }
+  auto index_stmts = flatten_indices(ctx, indices);
+
   flatten_lvalue(var, ctx);
   auto expr = var.cast<ExternalTensorExpression>();
   auto external_ptr_stmt = std::make_unique<ExternalPtrStmt>(
       expr->stmt, index_stmts, expr->dt.get_shape(), expr->element_dim);
-  if (expr->dim == indices.size()) {
+  if (expr->dim == index_stmts.size()) {
     // Indexing into an scalar element
     external_ptr_stmt->ret_type = expr->dt.ptr_removed().get_element_type();
   } else {
@@ -537,6 +565,8 @@ Stmt *make_tensor_access(Expression::FlattenContext *ctx,
                          ExprGroup indices,
                          std::vector<int> shape,
                          int stride) {
+  auto index_stmts = flatten_indices(ctx, indices);
+
   flatten_lvalue(var, ctx);
   if (!var->is_lvalue()) {
     auto alloca_stmt = ctx->push_back<AllocaStmt>(var->ret_type);
@@ -544,27 +574,26 @@ Stmt *make_tensor_access(Expression::FlattenContext *ctx,
     var->stmt = alloca_stmt;
   }
   bool needs_dynamic_index = false;
-  for (int i = 0; i < (int)indices.size(); ++i) {
-    if (!indices[i].is<ConstExpression>()) {
+  for (int i = 0; i < (int)index_stmts.size(); ++i) {
+    if (!index_stmts[i]->is<ConstStmt>()) {
       needs_dynamic_index = true;
     }
   }
   Stmt *offset_stmt = nullptr;
   if (needs_dynamic_index) {
     offset_stmt = ctx->push_back<ConstStmt>(TypedConstant(0));
-    for (int i = 0; i < (int)indices.size(); ++i) {
-      flatten_rvalue(indices[i], ctx);
+    for (int i = 0; i < (int)index_stmts.size(); ++i) {
       Stmt *shape_stmt = ctx->push_back<ConstStmt>(TypedConstant(shape[i]));
       Stmt *mul_stmt = ctx->push_back<BinaryOpStmt>(BinaryOpType::mul,
                                                     offset_stmt, shape_stmt);
       offset_stmt = ctx->push_back<BinaryOpStmt>(BinaryOpType::add, mul_stmt,
-                                                 indices[i]->stmt);
+                                                 index_stmts[i]);
     }
   } else {
     int offset = 0;
-    for (int i = 0; i < (int)indices.size(); ++i) {
+    for (int i = 0; i < (int)index_stmts.size(); ++i) {
       offset =
-          offset * shape[i] + indices[i].cast<ConstExpression>()->val.val_int();
+          offset * shape[i] + index_stmts[i]->cast<ConstStmt>()->val.val_int();
     }
     offset_stmt = ctx->push_back<ConstStmt>(TypedConstant(offset));
   }
@@ -667,11 +696,19 @@ void IndexExpression::type_check(CompileConfig *) {
   for (int i = 0; i < indices.exprs.size(); i++) {
     auto &expr = indices.exprs[i];
     TI_ASSERT_TYPE_CHECKED(expr);
-    if (!is_integral(expr->ret_type))
+
+    auto dtype = expr->ret_type;
+    if (indices.exprs.size() == 1 && expr->ret_type->is<TensorType>()) {
+      // Special case: single index with ret_type=MatrixType,
+      // the MatrixType will be expanded during IndexExpression::flatten()
+      dtype = expr->ret_type->cast<TensorType>()->get_element_type();
+    }
+
+    if (!is_integral(dtype))
       throw TaichiTypeError(
           fmt::format("indices must be integers, however '{}' is "
                       "provided as index {}",
-                      expr->ret_type->to_string(), i));
+                      dtype->to_string(), i));
   }
 }
 

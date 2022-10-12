@@ -408,7 +408,6 @@ def floor(x, dtype=None):
         >>>     y = ti.floor(x, ti.f64)
         >>>     print(y)  # [-2.000000000000, 2.000000000000, 3.000000000000]
     """
-    print(11111)
     result = _floor(x)
     if dtype is not None:
         result = cast(result, dtype)

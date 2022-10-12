@@ -205,10 +205,12 @@ def subscript(value, *_indices, skip_reordered=False, get_ref=False):
 
             # With real_matrix, we can index a field with MatrixType-index, e.g. x[ti.Vector([1, 2])]
             # In that case, we should check whether MatrixType's size matches field_dim
+
             if current_cfg().real_matrix and index_dim == 1 and isinstance(
                     _indices[0], Expr):
+
                 shape = _indices[0].get_shape()
-                if shape and len(shape) == field_dim:
+                if len(shape) == 1 and shape[0] == field_dim:
                     is_valid = True
 
             if not is_valid:

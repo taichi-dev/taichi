@@ -101,14 +101,16 @@ void make_mesh_thread_local_offload(OffloadedStmt *offload,
                   TypeFactory::get_instance().get_pointer_type(data_type));
           auto _offset_val =
               offload->mesh_prologue->push_back<GlobalLoadStmt>(offset_ptr);
-          auto offset_val = offload->mesh_prologue->push_back<UnaryOpStmt>(UnaryOpType::cast_value, _offset_val);
+          auto offset_val = offload->mesh_prologue->push_back<UnaryOpStmt>(
+              UnaryOpType::cast_value, _offset_val);
           offset_val->as<UnaryOpStmt>()->cast_type = PrimitiveType::i32;
           auto num_ptr = offload->mesh_prologue->push_back<ThreadLocalPtrStmt>(
               num_tls_offset,
               TypeFactory::get_instance().get_pointer_type(data_type));
           auto _num_val =
               offload->mesh_prologue->push_back<GlobalLoadStmt>(num_ptr);
-          auto num_val = offload->mesh_prologue->push_back<UnaryOpStmt>(UnaryOpType::cast_value, _num_val);
+          auto num_val = offload->mesh_prologue->push_back<UnaryOpStmt>(
+              UnaryOpType::cast_value, _num_val);
           num_val->as<UnaryOpStmt>()->cast_type = PrimitiveType::i32;
 
           offset_local.insert(std::pair(element_type, offset_val));

@@ -61,11 +61,11 @@ def _get_expected_matrix_apis():
 user_api = {}
 user_api[ti] = [
     'BitpackedFields', 'CRITICAL', 'DEBUG', 'ERROR', 'Field', 'FieldsBuilder',
-    'GUI', 'INFO', 'Layout', 'Matrix', 'MatrixField', 'MatrixNdarray', 'Mesh',
+    'GUI', 'INFO', 'Layout', 'Matrix', 'MatrixField', 'MatrixNdarray',
     'Ndarray', 'SNode', 'ScalarField', 'ScalarNdarray', 'Struct',
     'StructField', 'TRACE', 'TaichiAssertionError', 'TaichiCompilationError',
     'TaichiNameError', 'TaichiRuntimeError', 'TaichiRuntimeTypeError',
-    'TaichiSyntaxError', 'TaichiTypeError', 'TetMesh', 'Texture', 'TriMesh',
+    'TaichiSyntaxError', 'TaichiTypeError', 'Texture',
     'Vector', 'VectorNdarray', 'WARN', 'abs', 'acos', 'activate', 'ad',
     'algorithms', 'aot', 'append', 'arm64', 'asin', 'assume_in_range', 'atan2',
     'atomic_add', 'atomic_and', 'atomic_max', 'atomic_min', 'atomic_or',

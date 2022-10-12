@@ -756,6 +756,16 @@ def test_local_matrix_read():
 
 
 @test_utils.test(arch=[ti.cuda, ti.cpu], real_matrix=True)
+def test_local_matrix_read_without_assign():
+    @ti.kernel
+    def local_vector_read(i: ti.i32) -> ti.i32:
+        return ti.Vector([0, 1, 2])[i]
+
+    for i in range(3):
+        assert local_vector_read(i) == i
+
+
+@test_utils.test(arch=[ti.cuda, ti.cpu], real_matrix=True)
 def test_local_matrix_indexing_in_loop():
     s = ti.field(ti.i32, shape=(3, 3))
 

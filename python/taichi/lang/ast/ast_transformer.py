@@ -744,6 +744,7 @@ class ASTTransformer(Builder):
             ast.MatMult: lambda l, r: l @ r,
         }.get(type(node.op))
         if impl.current_cfg().real_matrix and type(node.op) == ast.MatMult:
+            # pylint: disable-msg=C0415
             from taichi.lang import matrix_ops
             node.ptr = matrix_ops.matmul(node.left.ptr, node.right.ptr)
         else:

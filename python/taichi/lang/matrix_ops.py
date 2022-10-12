@@ -158,6 +158,7 @@ def inverse(x):
                      (E(x, i + 1, j + 2, n) * E(x, i + 2, j + 3, n) -
                       E(x, i + 2, j + 2, n) * E(x, i + 1, j + 3, n))))
         return result
+    # unreachable
     return None
 
 
@@ -235,7 +236,41 @@ def norm_inv(m, eps=1e-6):
     return norm_inv_impl()
 
 
+@preconditions(is_tensor)
+@ti.func
+# pylint: disable=W0622
+def max(m):
+    s = static(m.get_shape())
+    if static(len(s) == 1):
+        r = m[0]
+        for i in range(1, s[0]):
+            ti.atomic_max(r, m[i])
+        return r
+    r = m[0, 0]
+    for i in range(s[0]):
+        for j in range(s[1]):
+            ti.atomic_max(r, m[i, j])
+    return r
+
+
+@preconditions(is_tensor)
+@ti.func
+# pylint: disable=W0622
+def min(m):
+    s = static(m.get_shape())
+    if static(len(s) == 1):
+        r = m[0]
+        for i in range(1, s[0]):
+            ti.atomic_min(r, m[i])
+        return r
+    r = m[0, 0]
+    for i in range(s[0]):
+        for j in range(s[1]):
+            ti.atomic_min(r, m[i, j])
+    return r
+
+
 __all__ = [
     'transpose', 'matmul', 'determinant', 'trace', 'inverse', 'transpose',
-    'diag', 'sum', 'norm_sqr', 'norm', 'norm_inv'
+    'diag', 'sum', 'norm_sqr', 'norm', 'norm_inv', 'max', 'min'
 ]

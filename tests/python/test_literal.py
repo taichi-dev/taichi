@@ -60,7 +60,7 @@ def test_literal_compound_error():
     _test_literal_compound_error()
 
 
-@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
+@test_utils.test(real_matrix=True)
 def test_literal_compound_error_real_matrix():
     _test_literal_compound_error()
 

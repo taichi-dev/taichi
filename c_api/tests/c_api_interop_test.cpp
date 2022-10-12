@@ -77,8 +77,6 @@ static void texture_interop_test(TiArch arch) {
 
   ti_track_image_ext(runtime, tex_0.image(), TI_IMAGE_LAYOUT_SHADER_READ_WRITE);
   runtime.wait();
-
-  EXPECT_GE(ti_get_last_error(0, nullptr), TI_ERROR_SUCCESS);
 }
 
 TEST_F(CapiTest, AotTestVulkanTextureInterop) {

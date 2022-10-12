@@ -49,7 +49,8 @@ class ReplaceIndexConversion : public BasicStmtVisitor {
           block.push_back<BinaryOpStmt>(BinaryOpType::add, stmt->idx, offset);
       val = get_load(mapping, index, block);
     }
-    Stmt *casted_val = block.push_back<UnaryOpStmt>(UnaryOpType::cast_value, val);
+    Stmt *casted_val =
+        block.push_back<UnaryOpStmt>(UnaryOpType::cast_value, val);
     casted_val->as<UnaryOpStmt>()->cast_type = PrimitiveType::i32;
     stmt->replace_with(std::move(block));
   }
@@ -125,7 +126,8 @@ void demote_mesh_statements_offload(OffloadedStmt *offload,
         Stmt *offset_1 = get_load(rel_offset, index_1, block);
         Stmt *val =
             block.push_back<BinaryOpStmt>(BinaryOpType::sub, offset_1, offset);
-        Stmt *casted_val = block.push_back<UnaryOpStmt>(UnaryOpType::cast_value, val);
+        Stmt *casted_val =
+            block.push_back<UnaryOpStmt>(UnaryOpType::cast_value, val);
         casted_val->as<UnaryOpStmt>()->cast_type = PrimitiveType::i32;
       } else {
         SNode *rel_value = stmt->mesh->relations.find(rel_type)->second.value;

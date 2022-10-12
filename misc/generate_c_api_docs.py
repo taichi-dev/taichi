@@ -6,10 +6,7 @@ from taichi_json import BuiltInType, Module
 def print_module_doc(module: Module):
     out = ["---"]
     out += module.doc.markdown_metadata
-    out += [
-        "---",
-        ""
-    ]
+    out += ["---", ""]
     for line in module.doc.module_doc:
         out += [resolve_inline_symbols_to_names(module, line)]
     out += [""]

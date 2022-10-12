@@ -1,9 +1,9 @@
+import re
+from os import system
+
 from taichi_json import (Alias, BitField, BuiltInType, Definition, EntryBase,
                          Enumeration, Field, Function, Handle, Module,
                          Structure, Union)
-
-from os import system
-import re
 
 
 def get_type_name(x: EntryBase):
@@ -216,7 +216,9 @@ def print_module_header(module: Module):
     out = []
     if module.doc is not None:
         out += [
-            f"// {resolve_inline_symbols_to_names(module, x)}" for x in module.doc.module_doc]
+            f"// {resolve_inline_symbols_to_names(module, x)}"
+            for x in module.doc.module_doc
+        ]
         # Remove the trailing `## API References`.
         del out[-1]
     out += ["#pragma once", ""]
@@ -246,7 +248,9 @@ def print_module_header(module: Module):
         ]
         if module.doc is not None:
             out += [
-                f"// {resolve_inline_symbols_to_names(module, y)}" for y in module.doc.api_refs[x]]
+                f"// {resolve_inline_symbols_to_names(module, y)}"
+                for y in module.doc.api_refs[x]
+            ]
         out += [get_declr(declr)]
 
     out += [

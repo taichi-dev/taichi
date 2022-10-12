@@ -270,14 +270,12 @@ def _test_matrix_field_non_constant_index():
     assert v[1][9] == 9
 
 
-@test_utils.test(require=ti.extension.dynamic_index,
-                 dynamic_index=True)
+@test_utils.test(require=ti.extension.dynamic_index, dynamic_index=True)
 def test_matrix_field_non_constant_index():
     _test_matrix_field_non_constant_index()
 
 
-@test_utils.test(require=ti.extension.dynamic_index,
-                 real_matrix=True)
+@test_utils.test(require=ti.extension.dynamic_index, real_matrix=True)
 def test_matrix_field_non_constant_index_real_matrix():
     _test_matrix_field_non_constant_index()
 

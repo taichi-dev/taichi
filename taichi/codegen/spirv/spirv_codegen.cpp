@@ -892,6 +892,7 @@ class TaskCodegen : public IRVisitor {
   spirv::Value generate_umul_overflow(const spirv::Value &a,
                                       const spirv::Value &b,
                                       const std::string &tb) {
+
     // overflow iff high bits != 0
     std::vector<std::tuple<spirv::SType, std::string, size_t>>
         struct_components_;
@@ -902,6 +903,17 @@ class TaskCodegen : public IRVisitor {
     auto mul_ext = ir_->make_value(spv::OpUMulExtended, struct_type, a, b);
     auto low = ir_->make_value(spv::OpCompositeExtract, a.stype, mul_ext, 0);
     auto high = ir_->make_value(spv::OpCompositeExtract, a.stype, mul_ext, 1);
+    if (device_->get_cap(DeviceCapability::spirv_has_non_semantic_info)) {
+      std::vector<Value> vals;
+      std::string formats;
+      auto tf = data_type_format(a.stype.dt);
+      formats += "UMul: a: " + tf + " b: " + tf + "low: " + tf + "high: " + tf;
+      vals.push_back(a);
+      vals.push_back(b);
+      vals.push_back(low);
+      vals.push_back(high);
+      ir_->call_debugprintf(formats, vals);
+    }
     generate_overflow_branch(high, "Multiplication", tb);
     return low;
   }

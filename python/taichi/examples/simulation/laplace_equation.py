@@ -1,5 +1,6 @@
-import taichi as ti
 import math
+
+import taichi as ti
 
 ti.init()
 vec2 = ti.types.vector(2, float)
@@ -13,7 +14,9 @@ vec2 = ti.types.vector(2, float)
 # Pressing left and right mouse buttons will delete element around cursor position.
 # Pressing left/right mouse button without other keys will increase/decrease the intensity of element around cursor.
 
-screen = (30, 20)  # density of point generation positions on the boundary, also decide window size
+screen = (
+    30, 20
+)  # density of point generation positions on the boundary, also decide window size
 arrowField = [int(it / 2) for it in screen]  # number of arrow in window
 meshSpace = 20  # screen * meshSpace = windowSize
 maxElements = 20  # the max number of each element(source/sink, vortex, dipole)
@@ -28,23 +31,15 @@ gui = ti.GUI('demo', tuple(it * meshSpace for it in screen))
 guiHeight = meshSpace * screen[1]
 
 points = ti.Vector.field(2, float, maxPoints)
-sources = ti.Struct.field({
-    "pos": vec2,
-    "q": ti.f32
-}, shape=maxElements)
-vortexes = ti.Struct.field({
-    "pos": vec2,
-    "q": ti.f32
-}, shape=maxElements)
-dipoles = ti.Struct.field({
-    "pos": vec2,
-    "m": ti.f32
-}, shape=maxElements)
+sources = ti.Struct.field({"pos": vec2, "q": ti.f32}, shape=maxElements)
+vortexes = ti.Struct.field({"pos": vec2, "q": ti.f32}, shape=maxElements)
+dipoles = ti.Struct.field({"pos": vec2, "m": ti.f32}, shape=maxElements)
 arrows = ti.Struct.field({
     "base": vec2,
     "dir": vec2,
     "vel": ti.f32
-}, shape=arrowField)
+},
+                         shape=arrowField)
 points.fill(-100)
 
 
@@ -65,17 +60,17 @@ def getVel(pos):
         # add source/sink velocity
         uv = pos - sources[i].pos
         uv[0] *= screen[1] / screen[0]
-        vel += uv * sources[i].q / (2 * ti.math.pi * (uv[0] ** 2 + uv[1] ** 2))
+        vel += uv * sources[i].q / (2 * ti.math.pi * (uv[0]**2 + uv[1]**2))
         # add vortex velocity
         uv = pos - vortexes[i].pos
         uv = vec2(-uv[1], uv[0])
         uv[0] *= screen[1] / screen[0]
-        vel += uv * vortexes[i].q / (2 * ti.math.pi * (uv[0] ** 2 + uv[1] ** 2))
+        vel += uv * vortexes[i].q / (2 * ti.math.pi * (uv[0]**2 + uv[1]**2))
         # add dipole velocity
         uv = pos - dipoles[i].pos
         uv[0] *= screen[1] / screen[0]
-        vel_t = vec2(uv[1] ** 2 - uv[0] ** 2, -2 * uv[0] * uv[1])
-        vel += vel_t * dipoles[i].m / (uv[0] ** 2 + uv[1] ** 2) ** 2
+        vel_t = vec2(uv[1]**2 - uv[0]**2, -2 * uv[0] * uv[1])
+        vel += vel_t * dipoles[i].m / (uv[0]**2 + uv[1]**2)**2
     return vel
 
 
@@ -92,13 +87,17 @@ def refillPointsOnOneBoundary(boundary, index):
             if points[index][0] == -100:
                 found = True
                 if boundary == 0:
-                    points[index] = vec2(-dt * refillVelThresh, (i + .5) / screen[1])
+                    points[index] = vec2(-dt * refillVelThresh,
+                                         (i + .5) / screen[1])
                 elif boundary == 1:
-                    points[index] = vec2((i + .5) / screen[0], -dt * refillVelThresh)
+                    points[index] = vec2((i + .5) / screen[0],
+                                         -dt * refillVelThresh)
                 elif boundary == 2:
-                    points[index] = vec2(1 + dt * refillVelThresh, (i + .5) / screen[1])
+                    points[index] = vec2(1 + dt * refillVelThresh,
+                                         (i + .5) / screen[1])
                 elif boundary == 3:
-                    points[index] = vec2((i + .5) / screen[0], 1 + dt * refillVelThresh)
+                    points[index] = vec2((i + .5) / screen[0],
+                                         1 + dt * refillVelThresh)
                 break
             index += 1
             if index >= maxPoints:
@@ -132,9 +131,11 @@ def updatePoints():
         if not (0 <= points[i][0] <= 1 and 0 <= points[i][1] <= 1):
             points[i] = vec2(-100, -100)
         for j in range(maxElements):
-            if sources[j].q < 0 and ti.math.length(points[i] - sources[j].pos) < 0.025:
+            if sources[j].q < 0 and ti.math.length(points[i] -
+                                                   sources[j].pos) < 0.025:
                 points[i] = vec2(-100, -100)
-            if dipoles[j].m != 0 and ti.math.length(points[i] - dipoles[j].pos) < 0.05:
+            if dipoles[j].m != 0 and ti.math.length(points[i] -
+                                                    dipoles[j].pos) < 0.05:
                 points[i] = vec2(-100, -100)
 
 
@@ -160,19 +161,22 @@ def drawArrows(gui):
         if mean > 0x7f:
             vel /= mean / 0x7f  # make uniform stream more beautiful
         vel = vel.astype(int)
-        vel *= 2 ** 16 + 2 ** 8 + 1
+        vel *= 2**16 + 2**8 + 1
         gui.arrows(
-            arr['base'].reshape(arr['base'].shape[0] * arr['base'].shape[1], 2),
+            arr['base'].reshape(arr['base'].shape[0] * arr['base'].shape[1],
+                                2),
             arr['dir'].reshape(arr['dir'].shape[0] * arr['dir'].shape[1], 2),
-            radius=1.5, color=vel
-        )
+            radius=1.5,
+            color=vel)
 
 
 def drawMark(gui, frame):
     triangleTrans = [
         vec2(0, 1) / guiHeight,
-        vec2(math.cos(7. / 6. * math.pi), math.sin(7. / 6. * math.pi)) / guiHeight,
-        vec2(math.cos(-1. / 6. * math.pi), math.sin(-1. / 6. * math.pi)) / guiHeight
+        vec2(math.cos(7. / 6. * math.pi), math.sin(7. / 6. * math.pi)) /
+        guiHeight,
+        vec2(math.cos(-1. / 6. * math.pi), math.sin(-1. / 6. * math.pi)) /
+        guiHeight
     ]
     rectTrans = [
         vec2(1 * screen[1] / screen[0], 1) / guiHeight,
@@ -184,43 +188,46 @@ def drawMark(gui, frame):
         elif dipoles[i].m < 0:
             gui.circle(dipoles[i].pos, 0xD25565, dipoles[i].m * -2000)
         if sources[i].q > 0:
-            gui.rect(
-                sources[i].pos + rectTrans[0] * 2 * sources[i].q,
-                sources[i].pos + rectTrans[1] * 2 * sources[i].q,
-                2 * sources[i].q + 1, 0xFFFDC0
-            )
+            gui.rect(sources[i].pos + rectTrans[0] * 2 * sources[i].q,
+                     sources[i].pos + rectTrans[1] * 2 * sources[i].q,
+                     2 * sources[i].q + 1, 0xFFFDC0)
         elif sources[i].q < 0:
-            gui.rect(
-                sources[i].pos + rectTrans[0] * 2 * sources[i].q,
-                sources[i].pos + rectTrans[1] * 2 * sources[i].q,
-                -2 * sources[i].q + 1, 0xD25565
-            )
+            gui.rect(sources[i].pos + rectTrans[0] * 2 * sources[i].q,
+                     sources[i].pos + rectTrans[1] * 2 * sources[i].q,
+                     -2 * sources[i].q + 1, 0xD25565)
         if vortexes[i].q != 0:
-            rotateMatrix = ti.Matrix([
-                [math.cos(vortexes[i].q * dt * 40 * frame), -math.sin(vortexes[i].q * dt * 40 * frame)],
-                [math.sin(vortexes[i].q * dt * 40 * frame), math.cos(vortexes[i].q * dt * 40 * frame)]
-            ])
+            rotateMatrix = ti.Matrix(
+                [[
+                    math.cos(vortexes[i].q * dt * 40 * frame),
+                    -math.sin(vortexes[i].q * dt * 40 * frame)
+                ],
+                 [
+                     math.sin(vortexes[i].q * dt * 40 * frame),
+                     math.cos(vortexes[i].q * dt * 40 * frame)
+                 ]])
             trans = [rotateMatrix @ it for it in triangleTrans]
             for it in trans:
                 it[0] *= screen[1] / screen[0]
-            gui.triangle(
-                vortexes[i].pos + trans[0] * 16,
-                vortexes[i].pos + trans[1] * 16,
-                vortexes[i].pos + trans[2] * 16,
-                0xD25565
-            )
+            gui.triangle(vortexes[i].pos + trans[0] * 16,
+                         vortexes[i].pos + trans[1] * 16,
+                         vortexes[i].pos + trans[2] * 16, 0xD25565)
 
 
 def processGuiEvent(gui):
     global fade
-    while gui.get_event((ti.GUI.PRESS, ti.GUI.LMB), (ti.GUI.PRESS, ti.GUI.RMB)):
-        if gui.is_pressed(ti.GUI.LMB) and gui.is_pressed(ti.GUI.RMB):  # process delete event
+    while gui.get_event((ti.GUI.PRESS, ti.GUI.LMB),
+                        (ti.GUI.PRESS, ti.GUI.RMB)):
+        if gui.is_pressed(ti.GUI.LMB) and gui.is_pressed(
+                ti.GUI.RMB):  # process delete event
             for i in range(maxElements):
-                if sources[i].q != 0 and (sources[i].pos - vec2(*gui.get_cursor_pos())).norm() < 5 / guiHeight:
+                if sources[i].q != 0 and (sources[i].pos - vec2(
+                        *gui.get_cursor_pos())).norm() < 5 / guiHeight:
                     sources[i].q = 0
-                if vortexes[i].q != 0 and (vortexes[i].pos - vec2(*gui.get_cursor_pos())).norm() < 5 / guiHeight:
+                if vortexes[i].q != 0 and (vortexes[i].pos - vec2(
+                        *gui.get_cursor_pos())).norm() < 5 / guiHeight:
                     vortexes[i].q = 0
-                if dipoles[i].m != 0 and (dipoles[i].pos - vec2(*gui.get_cursor_pos())).norm() < 5 / guiHeight:
+                if dipoles[i].m != 0 and (dipoles[i].pos - vec2(
+                        *gui.get_cursor_pos())).norm() < 5 / guiHeight:
                     dipoles[i].m = 0
         else:
             if gui.is_pressed('s'):  # process add source/sink event
@@ -252,21 +259,30 @@ def processGuiEvent(gui):
                         break
             else:
                 for i in range(maxElements):  # process increase/decrease event
-                    if sources[i].q != 0 and (sources[i].pos - vec2(*gui.get_cursor_pos())).norm() < 5 / guiHeight:
+                    if sources[i].q != 0 and (sources[i].pos - vec2(
+                            *gui.get_cursor_pos())).norm() < 5 / guiHeight:
                         if gui.is_pressed(ti.GUI.RMB):
-                            sources[i].q -= 0.5 * int(sources[i].q >= 0.0) - (sources[i].q <= 0.0)
+                            sources[i].q -= 0.5 * int(sources[i].q >= 0.0) - (
+                                sources[i].q <= 0.0)
                         else:
-                            sources[i].q += 0.5 * int(sources[i].q >= 0.0) - (sources[i].q <= 0.0)
-                    if vortexes[i].q != 0 and (vortexes[i].pos - vec2(*gui.get_cursor_pos())).norm() < 5 / guiHeight:
+                            sources[i].q += 0.5 * int(sources[i].q >= 0.0) - (
+                                sources[i].q <= 0.0)
+                    if vortexes[i].q != 0 and (vortexes[i].pos - vec2(
+                            *gui.get_cursor_pos())).norm() < 5 / guiHeight:
                         if gui.is_pressed(ti.GUI.RMB):
-                            vortexes[i].q -= 0.1 * int(vortexes[i].q >= 0.0) - (vortexes[i].q <= 0.0)
+                            vortexes[i].q -= 0.1 * int(
+                                vortexes[i].q >= 0.0) - (vortexes[i].q <= 0.0)
                         else:
-                            vortexes[i].q += 0.1 * int(vortexes[i].q >= 0.0) - (vortexes[i].q <= 0.0)
-                    if dipoles[i].m != 0 and (dipoles[i].pos - vec2(*gui.get_cursor_pos())).norm() < 5 / guiHeight:
+                            vortexes[i].q += 0.1 * int(
+                                vortexes[i].q >= 0.0) - (vortexes[i].q <= 0.0)
+                    if dipoles[i].m != 0 and (dipoles[i].pos - vec2(
+                            *gui.get_cursor_pos())).norm() < 5 / guiHeight:
                         if gui.is_pressed(ti.GUI.RMB):
-                            dipoles[i].m -= 0.001 * int(dipoles[i].m >= 0.0) - (dipoles[i].m <= 0.0)
+                            dipoles[i].m -= 0.001 * int(
+                                dipoles[i].m >= 0.0) - (dipoles[i].m <= 0.0)
                         else:
-                            dipoles[i].m += 0.001 * int(dipoles[i].m >= 0.0) - (dipoles[i].m <= 0.0)
+                            dipoles[i].m += 0.001 * int(
+                                dipoles[i].m >= 0.0) - (dipoles[i].m <= 0.0)
         fade = -math.fabs(fade)  # fade out arrow filed
 
 
@@ -289,5 +305,3 @@ if __name__ == '__main__':
         gui.show()
         refillCount += 1
         frame += 1
-
-

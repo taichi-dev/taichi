@@ -1,29 +1,22 @@
 #pragma once
-#include <taichi/taichi_core.h>
+
+#ifndef TI_WITH_CUDA
+#define TI_WITH_CUDA 1
+#endif  // TI_WITH_CUDA
+
+#include <taichi/taichi.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
 
-/*
-    We want to avoid including the entire <cuda.h> in C-API headers,
-    which exposes binary compatibility risks in the scenario where
-    the <cuda.h> used by C-API users is different from that used during taichi
-   compilation.
-
-    Thus we only copy neccessary declarations from <cuda.h>
-*/
-typedef void
-    *CUdeviceptr;  // Same implementation as "unsigned integer type matching
-                   // size of the pointer on target platform" in <cuda.h>
-
 // structure.cuda_memory_interop_info
 typedef struct TiCudaMemoryInteropInfo {
-  CUdeviceptr ptr;
+  void *ptr;
   uint64_t size;
 } TiCudaMemoryInteropInfo;
 
-// function.export_cuda_runtime
+// function.export_cuda_memory
 TI_DLL_EXPORT void TI_API_CALL
 ti_export_cuda_memory(TiRuntime runtime,
                       TiMemory memory,

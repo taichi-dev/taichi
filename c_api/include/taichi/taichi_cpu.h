@@ -1,5 +1,6 @@
 #pragma once
-#include <taichi/taichi_core.h>
+
+#include <taichi/taichi.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -11,7 +12,7 @@ typedef struct TiCpuMemoryInteropInfo {
   uint64_t size;
 } TiCpuMemoryInteropInfo;
 
-// function.export_cpu_runtime
+// function.export_cpu_memory
 TI_DLL_EXPORT void TI_API_CALL
 ti_export_cpu_memory(TiRuntime runtime,
                      TiMemory memory,

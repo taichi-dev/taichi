@@ -913,6 +913,12 @@
         },
         {
             "name": "taichi/taichi_cuda.h",
+            "default_definitions": [
+                {
+                    "name": "TI_WITH_CUDA",
+                    "value": "1"
+                }
+            ],
             "required_modules": [
                 "taichi/taichi_core.h"
             ],

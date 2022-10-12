@@ -507,6 +507,17 @@ class Kernel {
     return at(i);
   }
 
+  // Temporary workaround for setting vec/matrix arguments in a flattened way.
+  template <typename T>
+  void set(uint32_t i, const std::vector<T> &v) {
+    if (i + v.size() >= args_.size()) {
+      args_.resize(i + v.size());
+    }
+    for (int j = 0; j < v.size(); ++j) {
+      at(i + j) = v[j];
+    }
+  }
+
   void launch(uint32_t argument_count, const TiArgument *arguments) {
     ti_launch_kernel(runtime_, kernel_, argument_count, arguments);
   }

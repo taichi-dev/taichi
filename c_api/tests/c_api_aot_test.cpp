@@ -19,8 +19,11 @@ static void kernel_aot_test(TiArch arch) {
   ti::AotModule aot_mod = runtime.load_aot_module(aot_mod_ss.str().c_str());
   ti::Kernel k_run = aot_mod.get_kernel("run");
 
+  std::vector<int> arg2_v = {1, 2, 3};
+
   k_run[0] = arg0_val;
   k_run[1] = arg1_array;
+  k_run.set(2, arg2_v);
   k_run.launch();
   runtime.wait();
 
@@ -28,7 +31,7 @@ static void kernel_aot_test(TiArch arch) {
   int32_t *data = reinterpret_cast<int32_t *>(arg1_array.map());
 
   for (int i = 0; i < kArrLen; ++i) {
-    EXPECT_EQ(data[i], i);
+    EXPECT_EQ(data[i], i + arg0_val + arg2_v[0]);
   }
 
   arg1_array.unmap();

@@ -721,8 +721,10 @@ class KernelManager::Impl {
   }
 
   void register_taichi_kernel(const CompiledKernelData &compiled_kernel) {
-    TI_ASSERT(compiled_taichi_kernels_.find(compiled_kernel.kernel_name) ==
-              compiled_taichi_kernels_.end());
+    if (compiled_taichi_kernels_.find(compiled_kernel.kernel_name) !=
+        compiled_taichi_kernels_.end()) {
+      return;
+    }
 
     if (config_->print_kernel_llvm_ir) {
       // If users have enabled |print_kernel_llvm_ir|, it probably means that

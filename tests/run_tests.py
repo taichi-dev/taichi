@@ -372,7 +372,8 @@ def test():
             size = size_of_dir(tmp_cache_file_path)
             stat = {}
             for subdir in os.listdir(tmp_cache_file_path):
-                stat[subdir] = len(os.listdir(os.path.join(tmp_cache_file_path, subdir)))
+                stat[subdir] = len(
+                    os.listdir(os.path.join(tmp_cache_file_path, subdir)))
             shutil.rmtree(tmp_cache_file_path)
             print('Summary of testing the offline cache:')
             print(f'    Simple statistics: {stat}')

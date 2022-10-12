@@ -35,7 +35,9 @@ class TI_DLL_EXPORT Kernel : public Callable {
 
     void set_arg_float(int arg_id, float64 d);
 
+    // Created signed and unsigned version for argument range check of pybind
     void set_arg_int(int arg_id, int64 d);
+    void set_arg_uint(int arg_id, uint64 d);
 
     void set_extra_arg_int(int i, int j, int32 d);
 

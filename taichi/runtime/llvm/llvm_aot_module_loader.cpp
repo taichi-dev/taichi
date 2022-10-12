@@ -18,7 +18,7 @@ std::unique_ptr<aot::Kernel> LlvmAotModule::make_new_kernel(
     const std::string &name) {
   auto fn = convert_module_to_function(name, load_kernel_from_cache(name));
   return std::make_unique<llvm_aot::KernelImpl>(
-      fn, name, LlvmOfflineCache::KernelCacheData());
+      fn, LlvmOfflineCache::KernelCacheData());
 }
 
 std::unique_ptr<aot::Field> LlvmAotModule::make_new_field(

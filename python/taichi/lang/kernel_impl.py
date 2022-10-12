@@ -21,9 +21,11 @@ from taichi.lang.expr import Expr
 from taichi.lang.kernel_arguments import KernelArgument
 from taichi.lang.matrix import Matrix, MatrixType
 from taichi.lang.shell import _shell_pop_print, oinspect
-from taichi.lang.util import has_paddle, has_pytorch, to_taichi_type
+from taichi.lang.util import (cook_dtype, has_paddle, has_pytorch,
+                              to_taichi_type)
 from taichi.types import (ndarray_type, primitive_types, sparse_matrix_builder,
                           template, texture_type)
+from taichi.types.utils import is_signed
 
 from taichi import _logging
 
@@ -661,10 +663,14 @@ class Kernel:
                     if not isinstance(v, int):
                         raise TaichiRuntimeTypeError.get(
                             i, needed.to_string(), provided)
-                    launch_ctx.set_arg_int(actual_argument_slot, int(v))
+                    if is_signed(cook_dtype(needed)):
+                        launch_ctx.set_arg_int(actual_argument_slot, int(v))
+                    else:
+                        launch_ctx.set_arg_uint(actual_argument_slot, int(v))
                 elif isinstance(needed, sparse_matrix_builder):
                     # Pass only the base pointer of the ti.types.sparse_matrix_builder() argument
-                    launch_ctx.set_arg_int(actual_argument_slot, v._get_addr())
+                    launch_ctx.set_arg_uint(actual_argument_slot,
+                                            v._get_addr())
                 elif isinstance(needed,
                                 ndarray_type.NdarrayType) and isinstance(
                                     v, taichi.lang._ndarray.Ndarray):
@@ -743,8 +749,12 @@ class Kernel:
                                 if not isinstance(val, int):
                                     raise TaichiRuntimeTypeError.get(
                                         i, needed.dtype.to_string(), type(val))
-                                launch_ctx.set_arg_int(actual_argument_slot,
-                                                       int(val))
+                                if is_signed(needed.dtype):
+                                    launch_ctx.set_arg_int(
+                                        actual_argument_slot, int(val))
+                                else:
+                                    launch_ctx.set_arg_uint(
+                                        actual_argument_slot, int(val))
                                 actual_argument_slot += 1
                     else:
                         raise ValueError(
@@ -843,7 +853,7 @@ class Kernel:
             mode_original = self.autodiff_mode
             self.autodiff_mode = AutodiffMode.FORWARD
             self.runtime.fwd_mode_manager.insert(self, mode_original)
-        elif self.runtime.target_tape and self.runtime.target_tape.validation:
+        elif self.runtime.target_tape and self.runtime.target_tape.validation and not self.runtime.grad_replaced:
             # The autodiff valid check happens on forward kernel
             self.autodiff_mode = AutodiffMode.VALIDATION
 

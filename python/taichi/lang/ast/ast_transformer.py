@@ -448,7 +448,12 @@ class ASTTransformer(Builder):
                 raise TaichiSyntaxError(
                     "A primitive type cannot decorate an expression with a compound type."
                 )
+
             if isinstance(args[0], expr.Expr):
+                if args[0].ptr.is_tensor():
+                    raise TaichiSyntaxError(
+                        "A primitive type cannot decorate an expression with a compound type."
+                    )
                 node.ptr = ti_ops.cast(args[0], func)
             else:
                 node.ptr = expr.Expr(args[0], dtype=func)

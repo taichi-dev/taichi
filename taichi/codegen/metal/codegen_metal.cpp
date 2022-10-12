@@ -1409,7 +1409,8 @@ class KernelCodegenImpl : public IRVisitor {
                   BufferDescriptor::context()};
 
     ka.runtime_list_op_attribs = KernelAttributes::RuntimeListOpAttributes();
-    ka.runtime_list_op_attribs->snode = sn;
+    ka.runtime_list_op_attribs->parent_snode_id = sn->parent->id;
+    ka.runtime_list_op_attribs->snode_id = sn->id;
     current_kernel_attribs_ = nullptr;
 
     mtl_kernels_attribs()->push_back(ka);
@@ -1425,7 +1426,7 @@ class KernelCodegenImpl : public IRVisitor {
     KernelAttributes ka;
     ka.task_type = OffloadedTaskType::gc;
     ka.gc_op_attribs = KernelAttributes::GcOpAttributes();
-    ka.gc_op_attribs->snode = sn;
+    ka.gc_op_attribs->snode_id = sn->id;
     ka.buffers = {BufferDescriptor::runtime(), BufferDescriptor::context()};
     current_kernel_attribs_ = nullptr;
     // stage 1 specific

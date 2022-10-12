@@ -1,3 +1,5 @@
+#ifdef TI_WITH_LLVM
+
 #include "taichi_core_impl.h"
 #include "taichi_llvm_impl.h"
 
@@ -128,3 +130,5 @@ void LlvmRuntime::wait() {
 }
 
 }  // namespace capi
+
+#endif  // TI_WITH_LLVM

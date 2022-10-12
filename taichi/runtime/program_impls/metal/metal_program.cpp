@@ -122,8 +122,12 @@ DeviceAllocation MetalProgramImpl::allocate_memory_ndarray(
 }
 
 void MetalProgramImpl::dump_cache_data_to_disk() {
-  // TODO(PGZXB): Implement cache cleaning
-  get_cache_manager()->dump_with_merging();
+  const auto &mgr = get_cache_manager();
+  mgr->clean_offline_cache(offline_cache::string_to_clean_cache_policy(
+                               config->offline_cache_cleaning_policy),
+                           config->offline_cache_max_size_of_files,
+                           config->offline_cache_cleaning_factor);
+  mgr->dump_with_merging();
 }
 
 const std::unique_ptr<metal::CacheManager>

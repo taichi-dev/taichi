@@ -116,7 +116,7 @@ def _test_cpp(test_keys=None):
         _test_cpp_aot(capi_test_filename, build_dir, __capi_aot_test_cases)
 
         # Run rest of the C-API tests
-        print_test_section("Running C-API C++ tests")
+        print_section("Running C-API C++ tests")
         exclude_tests_cmd = "--gtest_filter=-" + ":".join(
             __capi_aot_test_cases.keys())
         _run_cpp_test(capi_test_filename, build_dir, exclude_tests_cmd)

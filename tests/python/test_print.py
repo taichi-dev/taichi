@@ -167,7 +167,7 @@ def test_print_u64():
 
     @ti.kernel
     def func(i: ti.u64):
-        print("i = ", i)
+        print("i =", i)
 
     func(2 ** 64 - 1)
     ti.sync()
@@ -178,7 +178,7 @@ def test_print_i64():
 
     @ti.kernel
     def func(i: ti.i64):
-        print("i = ", i)
+        print("i =", i)
 
     func(-2 ** 63)
     ti.sync()

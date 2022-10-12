@@ -6,11 +6,12 @@
             "is_built_in": true
         },
         {
-            "name": "vulkan/vulkan.h",
-            "is_built_in": true
-        },
-        {
             "name": "taichi/taichi_core.h",
+            "default_definitions": [
+                {
+                    "name": "TI_C_API_VERSION"
+                }
+            ],
             "required_modules": [
                 "taichi/taichi_platform.h"
             ],
@@ -951,9 +952,14 @@
         },
         {
             "name": "taichi/taichi_vulkan.h",
+            "default_definitions": [
+                {
+                    "name": "TI_WITH_VULKAN",
+                    "value": "1"
+                }
+            ],
             "required_modules": [
-                "taichi/taichi_core.h",
-                "vulkan/vulkan.h"
+                "taichi/taichi_core.h"
             ],
             "declarations": [
                 {
@@ -1237,6 +1243,68 @@
                         {
                             "name": "interop_info",
                             "type": "structure.vulkan_event_interop_info",
+                            "by_mut": true
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "taichi/taichi_opengl.h",
+            "default_definitions": [
+                {
+                    "name": "TI_WITH_OPENGL",
+                    "value": "1"
+                }
+            ],
+            "required_modules": [
+                "taichi/taichi_core.h"
+            ],
+            "declarations": [
+                {
+                    "name": "opengl_memory_interop_info",
+                    "type": "structure",
+                    "fields": [
+                        {
+                            "name": "buffer",
+                            "type": "GLuint"
+                        },
+                        {
+                            "name": "size",
+                            "type": "uint64_t"
+                        }
+                    ]
+                },
+                {
+                    "name": "import_opengl_memory",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "type": "handle.memory"
+                        },
+                        {
+                            "name": "interop_info",
+                            "type": "structure.opengl_memory_interop_info",
+                            "by_mut": true
+                        }
+                    ]
+                },
+                {
+                    "name": "export_opengl_memory",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "type": "handle.memory"
+                        },
+                        {
+                            "name": "interop_info",
+                            "type": "structure.opengl_memory_interop_info",
                             "by_mut": true
                         }
                     ]

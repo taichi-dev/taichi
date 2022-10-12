@@ -3,6 +3,7 @@
 #include "metal_program.h"
 #include "taichi/codegen/metal/codegen_metal.h"
 #include "taichi/codegen/metal/struct_metal.h"
+#include "taichi/util/offline_cache.h"
 
 namespace taichi::lang {
 namespace {
@@ -46,12 +47,10 @@ MetalProgramImpl::MetalProgramImpl(CompileConfig &config_)
 
 FunctionType MetalProgramImpl::compile(Kernel *kernel,
                                        OffloadedStmt *offloaded) {
-  if (!kernel->lowered()) {
-    kernel->lower();
-  }
-  return metal::compile_to_metal_executable(kernel, metal_kernel_mgr_.get(),
-                                            &(compiled_runtime_module_.value()),
-                                            compiled_snode_trees_, offloaded);
+  TI_ASSERT(offloaded == nullptr);
+  return metal::compiled_kernel_to_metal_executable(
+      get_cache_manager()->load_or_compile(config, kernel),
+      metal_kernel_mgr_.get());
 }
 
 std::size_t MetalProgramImpl::get_snode_num_dynamically_allocated(SNode *snode,
@@ -120,6 +119,34 @@ DeviceAllocation MetalProgramImpl::allocate_memory_ndarray(
   params.usage = AllocUsage::Storage;
   params.export_sharing = false;
   return metal_kernel_mgr_->allocate_memory(params);
+}
+
+void MetalProgramImpl::dump_cache_data_to_disk() {
+  const auto &mgr = get_cache_manager();
+  mgr->clean_offline_cache(offline_cache::string_to_clean_cache_policy(
+                               config->offline_cache_cleaning_policy),
+                           config->offline_cache_max_size_of_files,
+                           config->offline_cache_cleaning_factor);
+  mgr->dump_with_merging();
+}
+
+const std::unique_ptr<metal::CacheManager>
+    &MetalProgramImpl::get_cache_manager() {
+  if (!cache_manager_) {
+    TI_ASSERT(compiled_runtime_module_.has_value());
+    using Mgr = metal::CacheManager;
+    Mgr::Params params;
+    params.mode =
+        offline_cache::enabled_wip_offline_cache(config->offline_cache)
+            ? Mgr::MemAndDiskCache
+            : Mgr::MemCache;
+    params.cache_path = offline_cache::get_cache_path_by_arch(
+        config->offline_cache_file_path, Arch::metal);
+    params.compiled_runtime_module_ = &(*compiled_runtime_module_);
+    params.compiled_snode_trees_ = &compiled_snode_trees_;
+    cache_manager_ = std::make_unique<Mgr>(std::move(params));
+  }
+  return cache_manager_;
 }
 
 }  // namespace taichi::lang

@@ -57,7 +57,7 @@ void AotModuleBuilder::add_graph(const std::string &name,
   }
   // Handle adding kernels separately.
   for (const auto &dispatch : graph.dispatches) {
-    add_compiled_kernel(dispatch.compiled_kernel);
+    add_compiled_kernel(dispatch.kernel_name, dispatch.compiled_kernel);
   }
   graphs_[name] = graph;
 }

@@ -112,6 +112,10 @@ bool VulkanLoader::init(PFN_vkGetInstanceProcAddr get_proc_addr) {
     initialized = result == VK_SUCCESS;
 #endif
     initialized = initialized && check_vulkan_device();
+    const char *id = std::getenv("TI_VISIBLE_DEVICE");
+    if (id) {
+      set_vulkan_visible_device(id);
+    }
   });
   return initialized;
 }

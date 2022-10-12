@@ -715,6 +715,7 @@ void export_lang(py::module &m) {
 
   py::class_<Kernel::LaunchContextBuilder>(m, "KernelLaunchContext")
       .def("set_arg_int", &Kernel::LaunchContextBuilder::set_arg_int)
+      .def("set_arg_uint", &Kernel::LaunchContextBuilder::set_arg_uint)
       .def("set_arg_float", &Kernel::LaunchContextBuilder::set_arg_float)
       .def("set_arg_external_array_with_shape",
            &Kernel::LaunchContextBuilder::set_arg_external_array_with_shape)

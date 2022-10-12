@@ -104,7 +104,7 @@ TEST(OfflineCache, LoadMetadata) {
 #ifdef TI_WITH_LLVM
   load_metadata_test<LlvmOfflineCache>();
 #endif  // TI_WITH_LLVM
-  load_metadata_test<oc::Metadata>();
+  load_metadata_test<oc::Metadata<oc::KernelMetadataBase>>();
 }
 
 }  // namespace taichi::lang

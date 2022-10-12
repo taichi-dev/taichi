@@ -24,6 +24,8 @@ std::string get_cache_path_by_arch(const std::string &base_path, Arch arch) {
     subdir = "llvm";
   } else if (arch == Arch::vulkan || arch == Arch::opengl) {
     subdir = "gfx";
+  } else if (arch == Arch::metal) {
+    subdir = "metal";
   } else {
     return base_path;
   }

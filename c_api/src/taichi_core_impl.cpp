@@ -3,6 +3,7 @@
 #include "taichi_vulkan_impl.h"
 #include "taichi_llvm_impl.h"
 #include "taichi/program/ndarray.h"
+#include "taichi/program/texture.h"
 
 struct ErrorCache {
   TiError error{TI_ERROR_SUCCESS};

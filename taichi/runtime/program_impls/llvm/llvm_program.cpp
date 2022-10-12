@@ -118,7 +118,7 @@ std::unique_ptr<aot::Kernel> LlvmProgramImpl::make_aot_kernel(Kernel &kernel) {
       cache_data_->kernels[kernel_key];
   LlvmOfflineCache::KernelCacheData compiled_kernel = kernel_data.clone();
   compiled_kernel.kernel_key = kernel.get_name();
-  return std::make_unique<llvm_aot::KernelImpl>(compiled_fn, kernel.get_name(),
+  return std::make_unique<llvm_aot::KernelImpl>(compiled_fn,
                                                 std::move(compiled_kernel));
 }
 

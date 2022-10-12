@@ -1,3 +1,5 @@
+#ifdef TI_WITH_LLVM
+
 #include "taichi_core_impl.h"
 #include "taichi_llvm_impl.h"
 
@@ -134,10 +136,13 @@ void LlvmRuntime::wait() {
 
 }  // namespace capi
 
+#endif  // TI_WITH_LLVM
+
 // function.export_cpu_runtime
 void ti_export_cpu_memory(TiRuntime runtime,
                           TiMemory memory,
                           TiCpuMemoryInteropInfo *interop_info) {
+#ifdef TI_WITH_LLVM
   TI_CAPI_ARGUMENT_NULL(runtime);
   TI_CAPI_ARGUMENT_NULL(memory);
   TI_CAPI_ARGUMENT_NULL(interop_info);
@@ -159,6 +164,9 @@ void ti_export_cpu_memory(TiRuntime runtime,
 
   interop_info->ptr = cpu_info.ptr;
   interop_info->size = cpu_info.size;
+#else
+  TI_NOT_IMPLEMENTED;
+#endif  // TI_WITH_LLVM
 }
 
 // function.export_cuda_runtime

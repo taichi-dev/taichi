@@ -1409,7 +1409,8 @@ class KernelCodegenImpl : public IRVisitor {
                   BufferDescriptor::context()};
 
     ka.runtime_list_op_attribs = KernelAttributes::RuntimeListOpAttributes();
-    ka.runtime_list_op_attribs->snode = sn;
+    ka.runtime_list_op_attribs->parent_snode_id = sn->parent->id;
+    ka.runtime_list_op_attribs->snode_id = sn->id;
     current_kernel_attribs_ = nullptr;
 
     mtl_kernels_attribs()->push_back(ka);
@@ -1425,7 +1426,7 @@ class KernelCodegenImpl : public IRVisitor {
     KernelAttributes ka;
     ka.task_type = OffloadedTaskType::gc;
     ka.gc_op_attribs = KernelAttributes::GcOpAttributes();
-    ka.gc_op_attribs->snode = sn;
+    ka.gc_op_attribs->snode_id = sn->id;
     ka.buffers = {BufferDescriptor::runtime(), BufferDescriptor::context()};
     current_kernel_attribs_ = nullptr;
     // stage 1 specific
@@ -1689,17 +1690,12 @@ CompiledKernelData run_codegen(
   return codegen.run();
 }
 
-FunctionType compile_to_metal_executable(
-    Kernel *kernel,
-    KernelManager *kernel_mgr,
-    const CompiledRuntimeModule *compiled_runtime_module,
-    const std::vector<CompiledStructs> &compiled_snode_trees,
-    OffloadedStmt *offloaded) {
-  const auto compiled_res = run_codegen(
-      compiled_runtime_module, compiled_snode_trees, kernel, offloaded);
-  kernel_mgr->register_taichi_kernel(compiled_res);
+FunctionType compiled_kernel_to_metal_executable(
+    const CompiledKernelData &compiled_kernel,
+    KernelManager *kernel_mgr) {
+  kernel_mgr->register_taichi_kernel(compiled_kernel);
   return [kernel_mgr,
-          kernel_name = compiled_res.kernel_name](RuntimeContext &ctx) {
+          kernel_name = compiled_kernel.kernel_name](RuntimeContext &ctx) {
     kernel_mgr->launch_taichi_kernel(kernel_name, &ctx);
   };
 }

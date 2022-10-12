@@ -288,11 +288,10 @@ void VulkanDeviceCreator::create_instance(bool manual_create) {
   }
 
   // Response to `DebugPrintf`.
+  std::array<VkValidationFeatureEnableEXT, 1> vfes = {
+      VK_VALIDATION_FEATURE_ENABLE_DEBUG_PRINTF_EXT};
   VkValidationFeaturesEXT vf = {};
   if (params_.enable_validation_layer) {
-    std::array<VkValidationFeatureEnableEXT, 1> vfes = {
-        VK_VALIDATION_FEATURE_ENABLE_DEBUG_PRINTF_EXT};
-
     vf.sType = VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT;
     vf.pNext = create_info.pNext;
     vf.enabledValidationFeatureCount = vfes.size();

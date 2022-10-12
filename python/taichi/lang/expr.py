@@ -42,6 +42,9 @@ class Expr(TaichiOperations):
     def is_tensor(self):
         return self.ptr.is_tensor()
 
+    def element_type(self):
+        return self.ptr.get_ret_type().element_type()
+
     def get_shape(self):
         if not self.is_tensor():
             raise TaichiCompilationError(

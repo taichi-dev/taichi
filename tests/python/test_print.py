@@ -182,5 +182,5 @@ def test_print_i64():
     def func(i: ti.i64):
         print("i =", i)
 
-    func(-2**63 + 2 ** 31)
+    func(-2**63 + 2**31)
     ti.sync()

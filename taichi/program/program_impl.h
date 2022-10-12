@@ -84,6 +84,12 @@ class ProgramImpl {
   virtual void dump_cache_data_to_disk() {
   }
 
+  virtual void save_root_buffer(const int save_id, const int snode_tree_id) {
+  }
+
+  virtual void restore_root_buffer(const int save_id, const int snode_tree_id) {
+  }
+
   virtual Device *get_compute_device() {
     return nullptr;
   }

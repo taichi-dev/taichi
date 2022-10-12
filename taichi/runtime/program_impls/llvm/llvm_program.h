@@ -73,6 +73,17 @@ class LlvmProgramImpl : public ProgramImpl {
 
   void dump_cache_data_to_disk() override;
 
+  void save_root_buffer(const int save_id, const int snode_tree_id) override {
+    runtime_exec_->snode_tree_buffer_manager_->save_root_buffer(save_id,
+                                                                snode_tree_id);
+  };
+
+  void restore_root_buffer(const int save_id,
+                           const int snode_tree_id) override {
+    runtime_exec_->snode_tree_buffer_manager_->restore_root_buffer(
+        save_id, snode_tree_id);
+  };
+
   /* -------------------------------- */
   /* ---- JIT-Runtime Interfaces ---- */
   /* -------------------------------- */

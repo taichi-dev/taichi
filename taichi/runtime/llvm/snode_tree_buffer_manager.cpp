@@ -79,4 +79,25 @@ void SNodeTreeBufferManager::destroy(SNodeTree *snode_tree) {
   TI_DEBUG("SNode tree {} destroyed.", snode_tree_id);
 }
 
+void SNodeTreeBufferManager::save_root_buffer(const int save_id,
+                                              const int snode_tree_id) {
+  Ptr ptr = roots_[snode_tree_id];
+  std::size_t size = sizes_[snode_tree_id];
+  // std::cout << "save size " << size * sizeof(uint8_t) << std::endl;
+  std::vector<uint8_t> buffer(size, 0);
+  if (ptr != nullptr) {
+    std::memcpy(&buffer[0], ptr, size * sizeof(uint8_t));
+  }
+  root_buffer_snapshots_[save_id] = buffer;
+}
+
+void SNodeTreeBufferManager::restore_root_buffer(const int save_id,
+                                                 const int snode_tree_id) {
+  Ptr ptr = roots_[snode_tree_id];
+  std::vector<uint8_t> buffer = root_buffer_snapshots_[save_id];
+  // std::cout << "restore size " << sizeof(uint8_t) * buffer.size() <<
+  // std::endl;
+  std::memcpy(ptr, &buffer[0], sizeof(uint8_t) * buffer.size());
+}
+
 }  // namespace taichi::lang

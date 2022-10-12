@@ -380,6 +380,8 @@ void export_lang(py::module &m) {
       .def("get_snode_tree_size", &Program::get_snode_tree_size)
       .def("get_snode_root", &Program::get_snode_root,
            py::return_value_policy::reference)
+      .def("save_snode_tree_root_buffer", &Program::save_root_buffer)
+      .def("restore_snode_tree_root_buffer", &Program::restore_root_buffer)
       .def("current_ast_builder", &Program::current_ast_builder,
            py::return_value_policy::reference)
       .def(

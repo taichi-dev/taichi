@@ -394,7 +394,7 @@ jobs:
         env:
           PY: py38
           TI_WANTED_ARCHS: 'cuda,vulkan,opengl'
-          TI_DEVICE_MEMORY_GB: '0.7'
+          TI_DEVICE_MEMORY_GB: '1'
           TI_RUN_RELEASE_TESTS: '1'
 
       - name: Save wheel if test failed
@@ -403,6 +403,14 @@ jobs:
         with:
           name: broken-wheel
           path: dist/*
+          retention-days: 7
+
+      - name: Save Bad Captures
+        if: failure() && steps.test.conclusion == 'failure'
+        uses: actions/upload-artifact@v3
+        with:
+          name: bad-captures
+          path: taichi-release-tests/bad-compare/*
           retention-days: 7
 
   build_and_test_windows:
@@ -456,7 +464,7 @@ jobs:
           PY: "3.7"
           TI_WANTED_ARCHS: ${{ matrix.archs }}
           TI_SKIP_VERSION_CHECK: ON
-          TI_DEVICE_MEMORY_GB: '0.7'
+          TI_DEVICE_MEMORY_GB: '1'
           TI_RUN_RELEASE_TESTS: '1'
 
       - name: Save wheel if test failed
@@ -522,6 +530,14 @@ jobs:
         with:
           name: broken-wheel
           path: dist/*
+          retention-days: 7
+
+      - name: Save Bad Captures
+        if: failure() && steps.test.conclusion == 'failure'
+        uses: actions/upload-artifact@v3
+        with:
+          name: bad-captures
+          path: taichi-release-tests/bad-compare/*
           retention-days: 7
 
   build_android_demos:

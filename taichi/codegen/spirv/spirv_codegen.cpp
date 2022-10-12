@@ -891,7 +891,6 @@ class TaskCodegen : public IRVisitor {
   spirv::Value generate_umul_overflow(const spirv::Value &a,
                                       const spirv::Value &b,
                                       const std::string &tb) {
-
     // overflow iff high bits != 0
     std::vector<std::tuple<spirv::SType, std::string, size_t>>
         struct_components_;

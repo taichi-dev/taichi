@@ -52,6 +52,7 @@ def expr_init_shared_array(shape, element_type):
 
 @taichi_scope
 def expr_init(rhs):
+    print(11111)
     if rhs is None:
         return Expr(get_runtime().prog.current_ast_builder().expr_alloca())
     if isinstance(rhs, Matrix) and (hasattr(rhs, "_DIM")):

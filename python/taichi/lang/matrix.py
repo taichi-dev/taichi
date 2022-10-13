@@ -473,6 +473,7 @@ class Matrix(TaichiOperations):
                 local_tensor_proxy, mat = initializer.with_dynamic_index(
                     arr, dt)
         self.n, self.m = len(mat), 1
+        self.dt = dt
         if len(mat) > 0:
             self.m = len(mat[0])
         entries = [x for row in mat for x in row]
@@ -499,6 +500,12 @@ class Matrix(TaichiOperations):
         else:
             self._impl = _TiScopeMatrixImpl(m, n, entries, local_tensor_proxy,
                                             None)
+
+    def get_shape(self):
+        return (self.n, self.m)
+
+    def element_type(self):
+        return self.dt
 
     def _element_wise_binary(self, foo, other):
         other = self._broadcast_copy(other)
@@ -718,11 +725,9 @@ class Matrix(TaichiOperations):
             >>> m.trace()
             5
         """
-        assert self.n == self.m
-        _sum = self(0, 0)
-        for i in range(1, self.n):
-            _sum = _sum + self(i, i)
-        return _sum
+        # pylint: disable-msg=C0415
+        from taichi.lang.matrix_ops import trace
+        return trace(self)
 
     @taichi_scope
     def inverse(self):
@@ -1479,6 +1484,9 @@ class Vector(Matrix):
             [4 6]
         """
         super().__init__(arr, dt=dt, **kwargs)
+
+    def get_shape(self):
+        return (self.n, )
 
     @classmethod
     def field(cls, n, dtype, *args, **kwargs):

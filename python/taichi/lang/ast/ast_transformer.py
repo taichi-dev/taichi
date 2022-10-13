@@ -14,6 +14,7 @@ from taichi.lang.ast.ast_transformer_utils import (Builder, LoopStatus,
                                                    ReturnStatus)
 from taichi.lang.ast.symbol_resolver import ASTResolver
 from taichi.lang.exception import TaichiSyntaxError, TaichiTypeError
+from taichi.lang.expr import Expr
 from taichi.lang.field import Field
 from taichi.lang.impl import current_cfg
 from taichi.lang.matrix import (Matrix, MatrixType, Vector, _PyScopeMatrixImpl,
@@ -518,6 +519,10 @@ class ASTTransformer(Builder):
         if ASTTransformer.build_call_if_is_type(ctx, node, args, keywords):
             return node.ptr
 
+        if getattr(node.func, 'call_tensor_op', False):
+            node.ptr = func(node.func.caller, *args, **keywords)
+            return node.ptr
+
         node.ptr = func(*args, **keywords)
         ASTTransformer.warn_if_is_external_func(ctx, node)
 
@@ -720,7 +725,15 @@ class ASTTransformer(Builder):
             node.ptr = lambda val: append(x.parent(), index, val)
         else:
             build_stmt(ctx, node.value)
-            node.ptr = getattr(node.value.ptr, node.attr)
+            if isinstance(node.value.ptr,
+                          Expr) and not hasattr(node.value.ptr, node.attr):
+                # pylint: disable-msg=C0415
+                from taichi.lang import matrix_ops as tensor_ops
+                node.ptr = getattr(tensor_ops, node.attr)
+                setattr(node, 'call_tensor_op', True)
+                setattr(node, 'caller', node.value.ptr)
+            else:
+                node.ptr = getattr(node.value.ptr, node.attr)
         return node.ptr
 
     @staticmethod
@@ -742,12 +755,7 @@ class ASTTransformer(Builder):
             ast.BitAnd: lambda l, r: l & r,
             ast.MatMult: lambda l, r: l @ r,
         }.get(type(node.op))
-        if impl.current_cfg().real_matrix and type(node.op) == ast.MatMult:
-            # pylint: disable-msg=C0415
-            from taichi.lang import matrix_ops
-            node.ptr = matrix_ops.matmul(node.left.ptr, node.right.ptr)
-        else:
-            node.ptr = op(node.left.ptr, node.right.ptr)
+        node.ptr = op(node.left.ptr, node.right.ptr)
         return node.ptr
 
     @staticmethod

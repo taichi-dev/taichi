@@ -120,9 +120,7 @@ jobs:
             with_cc: ON
             wanted_archs: 'cpu,cc'
     runs-on: ${{ matrix.os }}
-    permissions:
-      packages: read
-      contents: read
+    permissions: read-all
     steps:
       - uses: actions/checkout@v3
         with:

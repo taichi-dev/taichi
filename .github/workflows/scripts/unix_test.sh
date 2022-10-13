@@ -52,7 +52,7 @@ if [[ $OSTYPE == "linux-"* && ($TI_WANTED_ARCHS == *"cuda"* || $TI_WANTED_ARCHS 
         python3 meshtaichi/ci/run_test.py --arch cuda
     fi
     if [[ $TI_WANTED_ARCHS == *"cpu"* ]]; then
-        python3 meshtaichi/ci/run_tests.py --arch cpu
+        python3 meshtaichi/ci/run_test.py --arch cpu
     fi
 fi
 exit

@@ -34,7 +34,7 @@ def forall(func):
     return check
 
 
-def is_tensor(m, msg='not a matrix: {}'):
+def is_tensor(m, msg='not tensor type: {}'):
     if isinstance(m, Matrix):
         return True, None
     if isinstance(m, Expr) and m.is_tensor():

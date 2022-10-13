@@ -238,22 +238,6 @@ We address this problem by introducing the *offline* cache feature, which dumps 
   * `'lru'`: Discards the cached files least used recently;
   * `'fifo'`: Discards the cached files added in the earliest.
 
-To verify the effect, run some examples twice and observe the launch overhead:
-![](../static/assets/effect_of_offline_cache.png)
-
-Supported backends:
-
-| Backend | Supported or not |
-| ----------- | ----------- |
-| CPU | :heavy_check_mark: |
-| CUDA | :heavy_check_mark: |
-| Vulkan | :heavy_check_mark: |
-| OpenGL | :heavy_check_mark: |
-| Metal | :heavy_check_mark: |
-| CC | :x: |
-| Microsoft DirectX 11 | :x: |
-| Microsoft DirectX 12 | :x: |
-
 :::note
 If your code behaves abnormally, disable offline cache by setting the environment variable `TI_OFFLINE_CACHE=0` or `offline_cache=False` in the `ti.init()` method call and file an issue with us on [Taichi's GitHub repo](https://github.com/taichi-dev/taichi/issues/new/choose).
 :::

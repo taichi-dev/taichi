@@ -61,7 +61,8 @@ def _get_expected_matrix_apis():
 user_api = {}
 user_api[ti] = [
     'BitpackedFields', 'CRITICAL', 'DEBUG', 'ERROR', 'Field', 'FieldsBuilder',
-    'GUI', 'INFO', 'Layout', 'Matrix', 'MatrixField', 'MatrixNdarray',
+    'GUI', 'INFO', 'Layout', 'Mesh', 'MeshInstance', 
+    'Matrix', 'MatrixField', 'MatrixNdarray',
     'Ndarray', 'SNode', 'ScalarField', 'ScalarNdarray', 'Struct',
     'StructField', 'TRACE', 'TaichiAssertionError', 'TaichiCompilationError',
     'TaichiNameError', 'TaichiRuntimeError', 'TaichiRuntimeTypeError',

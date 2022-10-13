@@ -925,12 +925,14 @@ class TaskCodegen : public IRVisitor {
     auto b_sign = ir_->make_value(spv::OpSLessThan, ir_->bool_type(), b, zero);
     auto a_not_zero = ir_->ne(a, zero);
     auto b_not_zero = ir_->ne(b, zero);
-    auto a_b_not_zero = ir_->make_value(spv::OpLogicalAnd, ir_->bool_type(), a_not_zero, b_not_zero);
+    auto a_b_not_zero = ir_->make_value(spv::OpLogicalAnd, ir_->bool_type(),
+                                        a_not_zero, b_not_zero);
     auto low_sign =
         ir_->make_value(spv::OpSLessThan, ir_->bool_type(), low, zero);
     auto expected_sign = ir_->make_value(spv::OpLogicalNotEqual,
                                          ir_->bool_type(), a_sign, b_sign);
-    expected_sign = ir_->make_value(spv::OpLogicalAnd, ir_->bool_type(), expected_sign, a_b_not_zero);
+    expected_sign = ir_->make_value(spv::OpLogicalAnd, ir_->bool_type(),
+                                    expected_sign, a_b_not_zero);
     auto not_expected_sign = ir_->ne(low_sign, expected_sign);
     auto expected_high = ir_->select(expected_sign, minus_one, zero);
     auto not_expected_high = ir_->ne(high, expected_high);

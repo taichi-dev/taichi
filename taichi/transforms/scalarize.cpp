@@ -2,6 +2,7 @@
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/visitors.h"
+#include "taichi/program/program.h"
 #include "taichi/system/profiler.h"
 
 namespace taichi::lang {
@@ -378,10 +379,10 @@ class ScalarizePointers : public BasicStmtVisitor {
 
 namespace irpass {
 
-void scalarize(IRNode *root, const CompileConfig &config) {
+void scalarize(IRNode *root) {
   TI_AUTO_PROF;
   Scalarize scalarize_pass(root);
-  if (!config.dynamic_index) {
+  if (!root->get_kernel()->program->this_thread_config().dynamic_index) {
     ScalarizePointers scalarize_pointers_pass(root);
   }
 }

@@ -131,3 +131,4 @@ jobs:
         with:
           repository:  taichi-dev/meshtaichi 
           path: meshtaichi_checkout
+          token: ${{ secrets.GARDENER_PAT }}

@@ -391,24 +391,63 @@ void make_ifte(Expression::FlattenContext *ctx,
   return;
 }
 
-void TernaryOpExpression::type_check(CompileConfig *) {
+void TernaryOpExpression::type_check(CompileConfig *config) {
   TI_ASSERT_TYPE_CHECKED(op1);
   TI_ASSERT_TYPE_CHECKED(op2);
   TI_ASSERT_TYPE_CHECKED(op3);
   auto op1_type = op1->ret_type;
   auto op2_type = op2->ret_type;
   auto op3_type = op3->ret_type;
+
   auto error = [&]() {
     throw TaichiTypeError(
         fmt::format("unsupported operand type(s) for '{}': '{}', '{}' and '{}'",
                     ternary_type_name(type), op1->ret_type->to_string(),
                     op2->ret_type->to_string(), op3->ret_type->to_string()));
   };
-  if (op1_type != PrimitiveType::i32)
+
+  bool is_valid = true;
+  bool is_tensor = false;
+  if (op1_type->is<TensorType>() && op2_type->is<TensorType>() &&
+      op3_type->is<TensorType>()) {
+    // valid
+    is_tensor = true;
+    if (op1_type->cast<TensorType>()->get_shape().size() !=
+        op2_type->cast<TensorType>()->get_shape().size()) {
+      is_valid = false;
+    }
+    if (op2_type->cast<TensorType>()->get_shape().size() !=
+        op3_type->cast<TensorType>()->get_shape().size()) {
+      is_valid = false;
+    }
+    op1_type = op1_type->cast<TensorType>()->get_element_type();
+    op2_type = op2_type->cast<TensorType>()->get_element_type();
+    op3_type = op3_type->cast<TensorType>()->get_element_type();
+
+  } else if (op1_type->is<PrimitiveType>() && op2_type->is<PrimitiveType>() &&
+             op3_type->is<PrimitiveType>()) {
+    // valid
+  } else {
+    is_valid = false;
+  }
+
+  if (op1_type != PrimitiveType::i32) {
+    is_valid = false;
+  }
+  if (!op2_type->is<PrimitiveType>() || !op3_type->is<PrimitiveType>()) {
+    is_valid = false;
+  }
+
+  if (!is_valid)
     error();
-  if (!op2_type->is<PrimitiveType>() || !op3_type->is<PrimitiveType>())
-    error();
-  ret_type = promoted_type(op2_type, op3_type);
+
+  if (is_tensor) {
+    auto primitive_dtype = promoted_type(op2_type, op3_type);
+    ret_type = TypeFactory::create_tensor_type(
+        op2->ret_type->cast<TensorType>()->get_shape(), primitive_dtype);
+  } else {
+    ret_type = promoted_type(op2_type, op3_type);
+  }
 }
 
 void TernaryOpExpression::flatten(FlattenContext *ctx) {
@@ -425,6 +464,7 @@ void TernaryOpExpression::flatten(FlattenContext *ctx) {
   }
   stmt = ctx->back_stmt();
   stmt->tb = tb;
+  stmt->ret_type = ret_type;
 }
 
 void InternalFuncCallExpression::type_check(CompileConfig *) {

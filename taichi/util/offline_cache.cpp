@@ -32,14 +32,6 @@ std::string get_cache_path_by_arch(const std::string &base_path, Arch arch) {
   return taichi::join_path(base_path, subdir);
 }
 
-bool enabled_wip_offline_cache(bool enable_hint) {
-  // CompileConfig::offline_cache is a global option to enable offline cache on
-  // all backends To disable WIP offline cache by default & enable when
-  // developing/testing:
-  const char *enable_env = std::getenv("TI_WIP_OFFLINE_CACHE");
-  return enable_hint && enable_env && std::strncmp("1", enable_env, 1) == 0;
-}
-
 std::string mangle_name(const std::string &primal_name,
                         const std::string &key) {
   // Result: {primal_name}{key: char[65]}_{(checksum(primal_name)) ^

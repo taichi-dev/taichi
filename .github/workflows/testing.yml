@@ -132,5 +132,69 @@ jobs:
       - uses: actions/checkout@v3
         with:
           repository:  taichi-dev/meshtaichi
-          path: meshtaichi_checkout
+          path: meshtaichi
           token: ${{ secrets.GARDENER_PAT }}
+
+      - name: Get Build Cache
+        uses: actions/cache@v2
+        with:
+          path: /tmp/build-cache
+          key: build-cache-linux-${{ github.sha }}
+          restore-keys: |
+            build-cache-linux-
+
+      - name: Prepare Environment
+        run: |
+          . .github/workflows/scripts/common-utils.sh
+          prepare-build-cache /tmp/build-cache
+          echo CI_DOCKER_RUN_EXTRA_ARGS="-v $(pwd):/home/dev/taichi" >> $GITHUB_ENV
+          sudo -n chown -R 1000:1000 . || true
+
+      - name: Get Docker Images
+        if: needs.check_files.outputs.run_job == 'true'
+        run: |
+          # https://docs.github.com/en/packages/managing-github-packages-using-github-actions-workflows/publishing-and-installing-a-package-with-github-actions#upgrading-a-workflow-that-accesses-ghcrio
+          docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
+          docker pull ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.3.3
+
+      - name: Build
+        if: needs.check_files.outputs.run_job == 'true'
+        run: |
+          . .github/workflows/scripts/common-utils.sh
+          ci-docker-run \
+            ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.3.3 \
+            /home/dev/taichi/.github/workflows/scripts/unix-build.sh
+
+        env:
+          PY: ${{ matrix.python }}
+          PROJECT_NAME: taichi
+          TAICHI_CMAKE_ARGS: >-
+            -DTI_WITH_OPENGL:BOOL=OFF
+            -DTI_WITH_CC:BOOL=${{ matrix.with_cc }}
+            -DTI_WITH_VULKAN:BOOL=OFF
+            -DTI_BUILD_TESTS:BOOL=ON
+            -DTI_WITH_C_API=ON
+
+      - name: Test
+        id: test
+        if: needs.check_files.outputs.run_job == 'true'
+        run: |
+          . .github/workflows/scripts/common-utils.sh
+          ci-docker-run \
+            ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.3.3 \
+             /home/dev/taichi/.github/workflows/scripts/unix_test.sh
+        env:
+          PY: ${{ matrix.python }}
+          TI_WANTED_ARCHS: ${{ matrix.wanted_archs }}
+
+      - name: Save wheel if test failed
+        if: failure() && steps.test.conclusion == 'failure'
+        uses: actions/upload-artifact@v3
+        with:
+          name: broken-wheel
+          path: dist/*
+          retention-days: 7
+
+      - name: Fix Cache Permissions
+        run: |
+          sudo -n chmod -R 0777 /tmp/build-cache || true

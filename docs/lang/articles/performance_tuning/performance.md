@@ -242,6 +242,7 @@ To verify the effect, run some examples twice and observe the launch overhead:
 ![](../static/assets/effect_of_offline_cache.png)
 
 Supported backends:
+
 | Backend | Supported or not |
 | ----------- | ----------- |
 | CPU     | ✔ |

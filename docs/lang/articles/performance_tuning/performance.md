@@ -245,14 +245,14 @@ Supported backends:
 
 | Backend | Supported or not |
 | ----------- | ----------- |
-| CPU     | ✔ |
-| CUDA |  ✔  |
-| Vulkan |  ✔  |
-| OpenGL |  ✔  |
-| Metal |  ✔ |
-| CC  |  ❌ |
-| Microsoft DirectX 11  |  ❌ |
-| Microsoft DirectX 12  |  ❌ |
+| CPU | :heavy_check_mark: |
+| CUDA | :heavy_check_mark: |
+| Vulkan | :heavy_check_mark: |
+| OpenGL | :heavy_check_mark: |
+| Metal | :heavy_check_mark: |
+| CC | :x: |
+| Microsoft DirectX 11 | :x: |
+| Microsoft DirectX 12 | :x: |
 
 :::note
 If your code behaves abnormally, disable offline cache by setting the environment variable `TI_OFFLINE_CACHE=0` or `offline_cache=False` in the `ti.init()` method call and file an issue with us on [Taichi's GitHub repo](https://github.com/taichi-dev/taichi/issues/new/choose).

@@ -304,8 +304,7 @@ class MeshElement:
 
 # Define the instance of the Mesh Type, stores the field (type and data) info
 class MeshInstance:
-    def __init__(self, _type):
-        self._type = _type
+    def __init__(self):
         self.mesh_ptr = _ti_core.create_mesh()
         self.relation_set = set()
         self.verts = MeshElementField(self, MeshElementType.Vertex, {}, {}, {})
@@ -469,7 +468,7 @@ class MeshBuilder:
         self.cells = MeshElement(MeshElementType.Cell, self)
 
     def build(self, metadata: MeshMetadata) -> MeshInstance:
-        instance = MeshInstance(self)
+        instance = MeshInstance()
         instance.fields = {}
 
         instance.set_num_patches(metadata.num_patches)
@@ -529,6 +528,54 @@ class Mesh:
     """
     def __init__(self):
         pass
+
+    @staticmethod
+    def _create_instance(metadata: MeshMetadata) -> MeshInstance:
+        instance = MeshInstance()
+        instance.fields = {}
+
+        instance.set_num_patches(metadata.num_patches)
+
+        for element in metadata.element_fields:
+            _ti_core.set_num_elements(instance.mesh_ptr, element,
+                                      metadata.num_elements[element])
+            instance.set_patch_max_element_num(
+                element, metadata.max_num_per_patch[element])
+
+            element_name = element_type_name(element)
+            setattr(
+                instance, element_name,
+                MeshElementField(instance, element, {}, {}, metadata.element_fields[element]["g2r"])
+            )
+            instance.fields[element] = getattr(instance, element_name)
+
+            instance.set_owned_offset(
+                element, metadata.element_fields[element]["owned"])
+            instance.set_total_offset(
+                element, metadata.element_fields[element]["total"])
+            instance.set_index_mapping(element, ConvType.l2g,
+                                       metadata.element_fields[element]["l2g"])
+            instance.set_index_mapping(element, ConvType.l2r,
+                                       metadata.element_fields[element]["l2r"])
+            instance.set_index_mapping(element, ConvType.g2r,
+                                       metadata.element_fields[element]["g2r"])
+
+        for rel_type in metadata.relation_fields:
+            from_order = metadata.relation_fields[rel_type]["from_order"]
+            to_order = metadata.relation_fields[rel_type]["to_order"]
+            if from_order <= to_order:
+                instance.set_relation_dynamic(
+                    rel_type, metadata.relation_fields[rel_type]["value"],
+                    metadata.relation_fields[rel_type]["patch_offset"],
+                    metadata.relation_fields[rel_type]["offset"])
+            else:
+                instance.set_relation_fixed(
+                    rel_type, metadata.relation_fields[rel_type]["value"])
+
+        instance._vert_position = metadata.attrs["x"]
+        instance.patcher = metadata.patcher
+
+        return instance
 
     @staticmethod
     def load_meta(filename):
@@ -627,4 +674,4 @@ class MeshRelationAccessProxy:
                                      entry_expr)
 
 
-__all__ = ['Mesh']
+__all__ = ['Mesh', 'MeshInstance']

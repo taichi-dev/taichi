@@ -776,7 +776,7 @@ void AtomicOpExpression::type_check(CompileConfig *config) {
 
   // Validate dtype
   auto dtype = val->ret_type;
-  if (config->real_matrix) {
+  if (dtype->is<TensorType>()) {
     dtype = dtype.get_element_type();
   }
 

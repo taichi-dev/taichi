@@ -29,3 +29,7 @@ typedef void *CUdeviceptr;
 
 #include "taichi/taichi_cuda.h"
 #endif  // TI_WITH_CUDA
+
+#ifdef TI_WITH_CPU
+#include "taichi/taichi_cpu.h"
+#endif  // TI_WITH_CPU

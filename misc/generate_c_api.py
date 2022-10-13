@@ -56,7 +56,6 @@ def get_declr(module: Module, x: EntryBase, with_docs=False):
     out = [""]
     if with_docs:
         out += get_api_ref(module, x)
-        
 
     ty = type(x)
     if ty is BuiltInType:

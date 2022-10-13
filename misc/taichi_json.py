@@ -153,8 +153,8 @@ class Enumeration(EntryBase):
         if "inc_cases" in j:
             self.cases = load_inc_enums()[j["inc_cases"]]
         else:
-            self.cases = dict((Name(name), value)
-                              for name, value in j["cases"].items())
+            self.cases = dict(
+                (Name(name), value) for name, value in j["cases"].items())
 
 
 class BitField(EntryBase):
@@ -163,8 +163,8 @@ class BitField(EntryBase):
         if "inc_cases" in j:
             self.bits = load_inc_enums()[j["inc_bits"]]
         else:
-            self.bits = dict((Name(name), value)
-                             for name, value in j["bits"].items())
+            self.bits = dict(
+                (Name(name), value) for name, value in j["bits"].items())
 
 
 class Field:
@@ -214,6 +214,7 @@ class Function(EntryBase):
         if "is_device_command" in j:
             self.is_device_command = True
 
+
 class Documentation:
     def __init__(self, name: str):
         self.markdown_metadata = []
@@ -260,7 +261,8 @@ class Documentation:
                 m = re.match(SYM_PATTERN, line)
                 if m:
                     # Remove trailing empty lines.
-                    while api_refs[cur_sym] and len(api_refs[cur_sym][-1]) == 0:
+                    while api_refs[cur_sym] and len(
+                            api_refs[cur_sym][-1]) == 0:
                         del api_refs[cur_sym][-1]
 
                     # Enter parsing for the next symbol.

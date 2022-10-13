@@ -47,7 +47,7 @@ echo "wanted archs: $TI_WANTED_ARCHS"
 # meshtaichi end-to-end test
 if [[ $OSTYPE == "linux-"* && ($TI_WANTED_ARCHS == *"cuda"* || $TI_WANTED_ARCHS == *"cpu"*) ]]; then
     python3 -m pip install meshtaichi_patcher --upgrade
-    # legacy: git clone git@github.com:taichi-dev/meshtaichi.git 
+    # legacy: git clone git@github.com:taichi-dev/meshtaichi.git
     # meshtaichi has been cloned in actions/checkout step in testing.yml
     if [[ $TI_WANTED_ARCHS == *"cuda"* ]]; then
         python3 meshtaichi/ci/run_test.py --arch cuda

@@ -11,7 +11,7 @@ model_file_path = os.path.join(this_dir, 'ell.json')
 
 @test_utils.test(require=ti.extension.mesh)
 def test_mesh_patch_idx():
-    mesh_builder = ti.Mesh.Tet()
+    mesh_builder = ti.TetMesh()
     mesh_builder.verts.place({'idx': ti.i32})
     model = mesh_builder.build(ti.Mesh.load_meta(model_file_path))
 
@@ -27,7 +27,7 @@ def test_mesh_patch_idx():
 
 
 def _test_mesh_for(cell_reorder=False, vert_reorder=False, extra_tests=True):
-    mesh_builder = ti.Mesh.Tet()
+    mesh_builder = ti.TetMesh()
     mesh_builder.verts.place({'t': ti.i32}, reorder=vert_reorder)
     mesh_builder.cells.place({'t': ti.i32}, reorder=cell_reorder)
     model = mesh_builder.build(ti.Mesh.load_meta(model_file_path))
@@ -108,7 +108,7 @@ def test_mesh_localize_mapping1():
 @test_utils.test(require=ti.extension.mesh)
 def test_mesh_reorder():
     vec3i = ti.types.vector(3, ti.i32)
-    mesh_builder = ti.Mesh.Tet()
+    mesh_builder = ti.TetMesh()
     mesh_builder.verts.place({'s': ti.i32, 's3': vec3i}, reorder=True)
     model = mesh_builder.build(ti.Mesh.load_meta(model_file_path))
 
@@ -144,7 +144,7 @@ def test_mesh_reorder():
 
 @test_utils.test(require=ti.extension.mesh)
 def test_mesh_minor_relations():
-    mesh_builder = ti.Mesh.Tet()
+    mesh_builder = ti.TetMesh()
     mesh_builder.verts.place({'y': ti.i32})
     mesh_builder.edges.place({'x': ti.i32})
     model = mesh_builder.build(ti.Mesh.load_meta(model_file_path))
@@ -166,7 +166,7 @@ def test_mesh_minor_relations():
 
 @test_utils.test(require=ti.extension.mesh, demote_no_access_mesh_fors=True)
 def test_multiple_meshes():
-    mesh_builder = ti.Mesh.Tet()
+    mesh_builder = ti.TetMesh()
     mesh_builder.verts.place({'y': ti.i32})
     meta = ti.Mesh.load_meta(model_file_path)
     model1 = mesh_builder.build(meta)
@@ -188,7 +188,7 @@ def test_multiple_meshes():
 
 @test_utils.test(require=ti.extension.mesh)
 def test_mesh_local():
-    mesh_builder = ti.Mesh.Tet()
+    mesh_builder = ti.TetMesh()
     mesh_builder.verts.place({'a': ti.i32})
     model = mesh_builder.build(ti.Mesh.load_meta(model_file_path))
     ext_a = ti.field(ti.i32, shape=len(model.verts))
@@ -223,7 +223,7 @@ def test_mesh_local():
 
 @test_utils.test(require=ti.extension.mesh, experimental_auto_mesh_local=True)
 def test_auto_mesh_local():
-    mesh_builder = ti.Mesh.Tet()
+    mesh_builder = ti.TetMesh()
     mesh_builder.verts.place({'a': ti.i32, 's': ti.i32})
     model = mesh_builder.build(ti.Mesh.load_meta(model_file_path))
     ext_a = ti.field(ti.i32, shape=len(model.verts))
@@ -259,7 +259,7 @@ def test_auto_mesh_local():
 
 @test_utils.test(require=ti.extension.mesh)
 def test_nested_mesh_for():
-    mesh_builder = ti.Mesh.Tet()
+    mesh_builder = ti.TetMesh()
     mesh_builder.faces.place({'a': ti.i32, 'b': ti.i32})
     model = mesh_builder.build(ti.Mesh.load_meta(model_file_path))
 

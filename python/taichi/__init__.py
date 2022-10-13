@@ -51,7 +51,6 @@ __customized_deprecations__ = {
     'block_dim': ('Please use ti.loop_config(block_dim=...) instead.',
                   'lang.misc._block_dim'),
     'pyfunc': ('Please avoid using it.', 'lang.kernel_impl.pyfunc'),
-    'Mesh': ('Please import meshtaichi_patcher as Patcher and use Patcher.load_mesh(...) instead.', 'lang.mesh._Mesh'),
     'TriMesh': ('Please import meshtaichi_patcher as Patcher and use Patcher.load_mesh(...) instead.', 'lang.mesh._TriMesh'),
     'TetMesh': ('Please import meshtaichi_patcher as Patcher and use Patcher.load_mesh(...) instead.', 'lang.mesh._TetMesh')
 }

@@ -1,26 +1,36 @@
 #pragma once
+#include <vector>
+#include <memory>
+#include <string>
 #include <exception>
-#include "taichi/taichi_core.h"
-#include "taichi/aot/module_loader.h"
-#include "taichi/rhi/device.h"
-#include "taichi/program/texture.h"
-#include "taichi/runtime/gfx/aot_module_loader_impl.h"
+#include <stdexcept>
 
+// Taichi runtime is not necessarily using the same 3rd-party headers as the
+// user codes. For C-API implementations we only use the internal headers.
+#ifdef TI_WITH_VULKAN
+#ifndef VK_NO_PROTOTYPES
+#define VK_NO_PROTOTYPES 1
+#endif  // VK_NO_PROTOTYPES
+#include "vulkan/vulkan.h"
+#define TI_NO_VULKAN_INCLUDES 1
+#endif  // TI_WITH_VULKAN
+
+#ifdef TI_WITH_OPENGL
+#include "glad/gl.h"
+#define TI_NO_OPENGL_INCLUDES 1
+#endif  // TI_WITH_OPENGL
+
+// Then Include all C-API symbols.
+#include "taichi/taichi.h"
+
+// Include for the base types.
+#include "taichi/rhi/arch.h"
 #define TI_RUNTIME_HOST 1
 #include "taichi/program/context.h"
 #undef TI_RUNTIME_HOST
-
-// Error reporting.
-#define TI_CAPI_INCOMPLETE(x) ti_set_last_error(TI_ERROR_INCOMPLETE, #x);
-#define TI_CAPI_INCOMPLETE_IF(x)                \
-  if (x) {                                      \
-    ti_set_last_error(TI_ERROR_INCOMPLETE, #x); \
-  }
-#define TI_CAPI_INCOMPLETE_IF_RV(x)             \
-  if (x) {                                      \
-    ti_set_last_error(TI_ERROR_INCOMPLETE, #x); \
-    return TI_NULL_HANDLE;                      \
-  }
+#include "taichi/rhi/device.h"
+#include "taichi/aot/graph_data.h"
+#include "taichi/aot/module_loader.h"
 
 #define TI_CAPI_NOT_SUPPORTED(x) ti_set_last_error(TI_ERROR_NOT_SUPPORTED, #x);
 #define TI_CAPI_NOT_SUPPORTED_IF(x)                \
@@ -78,10 +88,6 @@
   catch (...) {                                                 \
     ti_set_last_error(TI_ERROR_INVALID_STATE, "c++ exception"); \
   }
-
-class Runtime;
-class Context;
-class AotModule;
 
 class Runtime {
  protected:

@@ -17,6 +17,19 @@ from taichi.lang.misc import is_arch_supported
 import taichi as ti
 
 
+def print_section(message, symbol="-"):
+    length = len(message)
+    vert_border_length = 4
+
+    section_horiz_border = symbol * (length + 2 + vert_border_length * 2)
+    vert_border = symbol * vert_border_length
+    message = f"{vert_border} {message} {vert_border}"
+
+    print(section_horiz_border)
+    print(message)
+    print(section_horiz_border)
+
+
 def parse_test_configs():
     curr_dir = os.path.dirname(os.path.abspath(__file__))
     test_config_path = os.path.join(curr_dir, "test_config.json")

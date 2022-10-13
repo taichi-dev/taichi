@@ -1,10 +1,11 @@
+#ifdef TI_WITH_VULKAN
 #include "taichi_vulkan_impl.h"
 #include "taichi/rhi/vulkan/vulkan_loader.h"
-#include "vulkan/vulkan.h"
+
 #ifdef ANDROID
 #define VK_KHR_android_surface 1
 #include "vulkan/vulkan_android.h"
-#endif
+#endif  // ANDROID
 
 VulkanRuntime::VulkanRuntime() : GfxRuntime(taichi::Arch::vulkan) {
 }
@@ -28,9 +29,7 @@ VulkanRuntimeImported::Workaround::Workaround(
                     api_version);
 
   vk_device.set_cap(taichi::lang::DeviceCapability::spirv_version, 0x10000);
-  if (api_version >= VK_API_VERSION_1_3) {
-    vk_device.set_cap(taichi::lang::DeviceCapability::spirv_version, 0x10500);
-  } else if (api_version >= VK_API_VERSION_1_2) {
+  if (api_version >= VK_API_VERSION_1_2) {
     vk_device.set_cap(taichi::lang::DeviceCapability::spirv_version, 0x10500);
   } else if (api_version >= VK_API_VERSION_1_1) {
     vk_device.set_cap(taichi::lang::DeviceCapability::spirv_version, 0x10300);
@@ -362,3 +361,5 @@ void ti_export_vulkan_event(TiRuntime runtime,
   interop_info->event = event2->vkapi_ref->event;
   TI_CAPI_TRY_CATCH_END();
 }
+
+#endif  // TI_WITH_VULKAN

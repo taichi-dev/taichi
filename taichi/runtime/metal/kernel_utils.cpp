@@ -66,9 +66,9 @@ std::string KernelAttributes::debug_string() const {
   result += "]";  // closes |buffers|
   // TODO(k-ye): show range_for
   if (task_type == OffloadedTaskType::listgen) {
-    result += fmt::format(" snode={}", runtime_list_op_attribs->snode->id);
+    result += fmt::format(" snode={}", runtime_list_op_attribs->snode_id);
   } else if (task_type == OffloadedTaskType::gc) {
-    result += fmt::format(" snode={}", gc_op_attribs->snode->id);
+    result += fmt::format(" snode={}", gc_op_attribs->snode_id);
   }
   result += ">";
   return result;

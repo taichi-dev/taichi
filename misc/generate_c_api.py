@@ -1,3 +1,5 @@
+import re
+
 from taichi_json import (Alias, BitField, BuiltInType, Definition, EntryBase,
                          Enumeration, Field, Function, Handle, Module,
                          Structure, Union)
@@ -119,13 +121,119 @@ def get_human_readable_name(x: EntryBase):
         raise RuntimeError(f"'{x.id}' doesn't have a human readable name")
 
 
-def print_module_header(module):
-    out = ["#pragma once"]
+def get_title(x: EntryBase):
+    if isinstance(x, BuiltInType):
+        return ""
 
-    for x in module.required_modules:
-        out += [f"#include <{x}>"]
+    extra = ""
+    if isinstance(x, Function) and x.is_device_command:
+        extra += " (Device Command)"
+
+    if isinstance(x, (Alias, Definition, Handle, Enumeration, BitField,
+                      Structure, Union, Function)):
+        return f"{type(x).__name__} `{get_human_readable_name(x)}`" + extra
+    else:
+        raise RuntimeError(f"'{x.id}' doesn't need title")
+
+
+def resolve_symbol_to_name(module: Module, id: str):
+    """Returns the resolved symbol and its hyperlink (if available)"""
+    try:
+        ifirst_dot = id.index('.')
+    except ValueError:
+        return None
+
+    field_name = ""
+    try:
+        isecond_dot = id.index('.', ifirst_dot + 1)
+        field_name = id[isecond_dot + 1:]
+        id = id[:isecond_dot]
+    except ValueError:
+        pass
+
+    out = module.declr_reg.resolve(id)
+    href = None
+
+    try:
+        if field_name:
+            out = get_human_readable_field_name(out, field_name)
+        else:
+            href = "#" + get_title(out).lower().replace(' ', '-').replace(
+                '`', '').replace('(', '').replace(')', '')
+            out = get_human_readable_name(out)
+    except:
+        print(f"WARNING: Unable to resolve symbol {id}")
+        out = id
+
+    return out, href
+
+
+def resolve_inline_symbols_to_names(module: Module, line: str):
+    SYM_PATTERN = r"\`(\w+\.\w+(?:\.\w+)?)\`"
+    matches = re.findall(SYM_PATTERN, line)
+
+    replacements = {}
+    for m in matches:
+        id = str(m)
+        replacements[id] = resolve_symbol_to_name(module, id)
+
+    for old, (new, href) in replacements.items():
+        if new is None:
+            print(f"WARNING: Unresolved inline symbol `{old}`")
+        else:
+            if href is None:
+                new = f"`{new}`"
+            else:
+                new = f"[`{new}`]({href})"
+            line = line.replace(f"`{old}`", new)
+    return line
+
+
+def get_human_readable_field_name(x: EntryBase, field_name: str):
+    out = None
+    if isinstance(x, Enumeration):
+        out = x.name.extend(field_name).screaming_snake_case
+    elif isinstance(x, BitField):
+        out = x.name.extend(field_name).extend('bit').screaming_snake_case
+    elif isinstance(x, Structure):
+        for field in x.fields:
+            if str(field.name) == field_name:
+                out = str(field.name)
+                break
+    elif isinstance(x, Union):
+        for field in x.variants:
+            if str(field.name) == field_name:
+                out = str(field.name)
+                break
+    elif isinstance(x, Function):
+        for field in x.params:
+            if str(field.name) == field_name:
+                out = str(field.name)
+                break
+    return out
+
+
+def print_module_header(module: Module):
+    out = []
+    if module.doc is not None:
+        out += [
+            f"// {resolve_inline_symbols_to_names(module, x)}"
+            for x in module.doc.module_doc
+        ]
+        # Remove the trailing `## API References`.
+        del out[-1]
+    out += ["#pragma once", ""]
+
+    for (name, value) in module.default_definitions:
+        out += [
+            f"#ifndef {name}",
+            f"#define {name} {value}",
+            f"#endif // {name}",
+            "",
+        ]
 
     out += [
+        "#include <taichi/taichi.h>",
         "",
         "#ifdef __cplusplus",
         'extern "C" {',
@@ -134,11 +242,17 @@ def print_module_header(module):
     ]
 
     for x in module.declr_reg:
+        declr = module.declr_reg.resolve(x)
         out += [
             "",
-            f"// {x}",
-            get_declr(module.declr_reg.resolve(x)),
+            f"// {get_title(declr)}",
         ]
+        if module.doc is not None:
+            out += [
+                f"// {resolve_inline_symbols_to_names(module, y)}"
+                for y in module.doc.api_refs[x]
+            ]
+        out += [get_declr(declr)]
 
     out += [
         "",
@@ -192,6 +306,7 @@ if __name__ == "__main__":
         BuiltInType("VkImageViewType", "VkImageViewType"),
         BuiltInType("PFN_vkGetInstanceProcAddr", "PFN_vkGetInstanceProcAddr"),
         BuiltInType("char", "char"),
+        BuiltInType("GLuint", "GLuint"),
     }
 
     for module in Module.load_all(builtin_tys):

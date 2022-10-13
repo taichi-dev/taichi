@@ -538,6 +538,11 @@ Stmt *make_tensor_access(Expression::FlattenContext *ctx,
                          std::vector<int> shape,
                          int stride) {
   flatten_lvalue(var, ctx);
+  if (!var->is_lvalue()) {
+    auto alloca_stmt = ctx->push_back<AllocaStmt>(var->ret_type);
+    ctx->push_back<LocalStoreStmt>(alloca_stmt, var->stmt);
+    var->stmt = alloca_stmt;
+  }
   bool needs_dynamic_index = false;
   for (int i = 0; i < (int)indices.size(); ++i) {
     if (!indices[i].is<ConstExpression>()) {
@@ -810,7 +815,10 @@ void SNodeOpExpression::flatten(FlattenContext *ctx) {
     flatten_rvalue(indices[i], ctx);
     indices_stmt.push_back(indices[i]->stmt);
   }
-  auto ptr = ctx->push_back<GlobalPtrStmt>(snode, indices_stmt);
+  auto is_cell_access = SNodeOpStmt::activation_related(op_type) &&
+                        snode->type != SNodeType::dynamic;
+  auto ptr =
+      ctx->push_back<GlobalPtrStmt>(snode, indices_stmt, true, is_cell_access);
   ptr->tb = tb;
   if (op_type == SNodeOpType::is_active) {
     TI_ERROR_IF(snode->type != SNodeType::pointer &&

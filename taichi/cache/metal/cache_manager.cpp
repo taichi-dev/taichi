@@ -8,6 +8,50 @@
 #include "taichi/util/offline_cache.h"
 
 namespace taichi::lang {
+
+namespace offline_cache {
+template <>
+struct CacheCleanerUtils<metal::CacheManager::Metadata> {
+  using MetadataType = metal::CacheManager::Metadata;
+  using KernelMetaData = MetadataType::KernelMetadata;
+
+  // To save metadata as file
+  static bool save_metadata(const CacheCleanerConfig &config,
+                            const MetadataType &data) {
+    write_to_binary_file(
+        data, taichi::join_path(config.path, config.metadata_filename));
+    return true;
+  }
+
+  static bool save_debugging_metadata(const CacheCleanerConfig &config,
+                                      const MetadataType &data) {
+    // Do nothing
+    return true;
+  }
+
+  // To get cache files name
+  static std::vector<std::string> get_cache_files(
+      const CacheCleanerConfig &config,
+      const KernelMetaData &kernel_meta) {
+    std::string fn = kernel_meta.kernel_key + ".metal";
+    return {fn};
+  }
+
+  // To remove other files except cache files and offline cache metadta files
+  static void remove_other_files(const CacheCleanerConfig &config) {
+    // Do nothing
+    return;
+  }
+
+  // To check if a file is cache file
+  static bool is_valid_cache_file(const CacheCleanerConfig &config,
+                                  const std::string &name) {
+    return filename_extension(name) == "metal";
+  }
+};
+
+}  // namespace offline_cache
+
 namespace metal {
 
 CacheManager::CacheManager(Params &&init_params)
@@ -76,6 +120,23 @@ void CacheManager::dump_with_merging() const {
       }
       write_to_binary_file(data, filepath);
     }
+  }
+}
+
+void CacheManager::clean_offline_cache(offline_cache::CleanCachePolicy policy,
+                                       int max_bytes,
+                                       double cleaning_factor) const {
+  if (config_.mode == MemAndDiskCache) {
+    using CacheCleaner = offline_cache::CacheCleaner<Metadata>;
+    offline_cache::CacheCleanerConfig params;
+    params.path = config_.cache_path;
+    params.policy = policy;
+    params.cleaning_factor = cleaning_factor;
+    params.max_size = max_bytes;
+    params.metadata_filename = kMetadataFilename;
+    params.debugging_metadata_filename = "";  // No debugging file
+    params.metadata_lock_name = kMetadataLockName;
+    CacheCleaner::run(params);
   }
 }
 

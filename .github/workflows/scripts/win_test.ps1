@@ -61,13 +61,21 @@ if ("$env:TI_WANTED_ARCHS".Contains("vulkan")) {
 Invoke python tests/run_tests.py -vr2 -t1 -k "torch" -a "$env:TI_WANTED_ARCHS"
 
 if ("$env:TI_RUN_RELEASE_TESTS" -eq "1" -and -not "$env:TI_LITE_TEST") {
-    echo "Running release tests"
+    Info "Running release tests"
     # release tests
     Invoke pip install PyYAML
     Invoke git clone https://github.com/taichi-dev/taichi-release-tests
+    Push-Location taichi-release-tests
+    Invoke git checkout v1.1.0
     mkdir -p repos/taichi/python/taichi
     $EXAMPLES = & python -c 'import taichi.examples as e; print(e.__path__._path[0])' | Select-Object -Last 1
-    New-Item -Target $EXAMPLES -Path repos/taichi/python/taichi/examples -ItemType Junction
-    New-Item -Target taichi-release-tests/truths -Path truths -ItemType Junction
-    Invoke python taichi-release-tests/run.py --log=DEBUG --runners 1 taichi-release-tests/timelines
+    Push-Location repos
+    Invoke git clone --depth=1 https://github.com/taichi-dev/quantaichi
+    Invoke git clone --depth=1 https://github.com/taichi-dev/difftaichi
+    Pop-Location
+    Push-Location repos/difftaichi
+    Invoke pip install -r requirements.txt
+    Pop-Location
+    Invoke python run.py --log=DEBUG --runners 1 timelines
+    Pop-Location
 }

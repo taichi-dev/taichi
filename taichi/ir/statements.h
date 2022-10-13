@@ -345,11 +345,13 @@ class GlobalPtrStmt : public Stmt {
   SNode *snode;
   std::vector<Stmt *> indices;
   bool activate;
+  bool is_cell_access;
   bool is_bit_vectorized;  // for bit_loop_vectorize pass
 
   GlobalPtrStmt(SNode *snode,
                 const std::vector<Stmt *> &indices,
-                bool activate = true);
+                bool activate = true,
+                bool is_cell_access = false);
 
   bool has_global_side_effect() const override {
     return activate;

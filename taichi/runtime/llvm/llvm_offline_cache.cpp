@@ -266,7 +266,7 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
       TI_ASSERT(mod != nullptr);
       if (format & Format::LL) {
         std::string filename = filename_prefix + ".ll";
-        if (try_lock_with_file(filename)) {  // Not exists
+        if (!merge_with_old || try_lock_with_file(filename)) {
           size += write_llvm_module(filename, [mod](llvm::raw_os_ostream &os) {
             mod->print(os, /*AAW=*/nullptr);
           });
@@ -276,7 +276,7 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
       }
       if (format & Format::BC) {
         std::string filename = filename_prefix + ".bc";
-        if (try_lock_with_file(filename)) {  // Not exists
+        if (!merge_with_old || try_lock_with_file(filename)) {
           size += write_llvm_module(filename, [mod](llvm::raw_os_ostream &os) {
             llvm::WriteBitcodeToFile(*mod, os);
           });

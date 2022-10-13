@@ -12,6 +12,7 @@
                     "name": "TI_C_API_VERSION"
                 }
             ],
+            "doc": "taichi/taichi_core.h.md",
             "required_modules": [
                 "taichi/taichi_platform.h"
             ],
@@ -964,6 +965,7 @@
                     "value": "1"
                 }
             ],
+            "doc": "taichi/taichi_vulkan.h.md",
             "required_modules": [
                 "taichi/taichi_core.h"
             ],

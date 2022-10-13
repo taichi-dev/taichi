@@ -2,6 +2,7 @@ import glob
 import json
 import re
 from collections import defaultdict
+from pathlib import Path
 
 
 class Name:
@@ -214,6 +215,60 @@ class Function(EntryBase):
             self.is_device_command = True
 
 
+class Documentation:
+    def __init__(self, name: str):
+        self.markdown_metadata = []
+        self.module_doc = []
+        self.api_refs = defaultdict(list)
+
+        path = Path(f"c_api/docs/{name}")
+        if path.exists():
+            with path.open() as f:
+                templ = f.readlines()
+
+            # Ignore markdown headers
+            markdown_metadata = []
+            if len(templ) > 0 and templ[0].startswith("---"):
+                for i in range(1, len(templ)):
+                    if templ[i].startswith("---"):
+                        i += 1
+                        break
+                    markdown_metadata += [templ[i].strip()]
+
+            # Skip initial empty lines.
+            for i in range(i, len(templ)):
+                if len(templ[i].strip()) != 0:
+                    break
+
+            # Collect module-level documentation.
+            module_doc = []
+            for i in range(i, len(templ)):
+                line = templ[i].strip()
+                module_doc += [line]
+                if line.startswith("## API Reference"):
+                    break
+
+            # Collect API-references.
+            SYM_PATTERN = r"\`(\w+\.\w+(?:\.\w+)?)\`"
+            cur_sym = None
+            api_refs = defaultdict(list)
+            for line in templ[i:]:
+                line = line.strip()
+                if re.match(SYM_PATTERN, line):
+                    # Remove trailing empty lines.
+                    while len(api_refs[cur_sym][-1]) == 0:
+                        del api_refs[cur_sym][-1]
+
+                    # Enter parsing for the next symbol.
+                    cur_sym = line[1:-1]
+                    continue
+                api_refs[cur_sym] += [line]
+
+            self.markdown_metadata = markdown_metadata
+            self.module_doc = module_doc
+            self.api_refs = api_refs
+
+
 class Module:
     all_modules = {}
 
@@ -223,6 +278,7 @@ class Module:
         self.declr_reg = DeclarationRegistry(builtin_tys)
         self.required_modules = []
         self.default_definitions = []
+        self.doc = None
 
         DeclarationRegistry.set_current(self.declr_reg)
 
@@ -231,6 +287,9 @@ class Module:
                 name = jj["name"]
                 value = jj["value"] if "value" in jj else str(version)
                 self.default_definitions += [(name, value)]
+
+        if "doc" in j:
+            self.doc = Documentation(j["doc"])
 
         if "is_built_in" in j:
             self.is_built_in = True

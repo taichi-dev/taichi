@@ -1,4 +1,5 @@
 import os
+import platform
 
 import pytest
 
@@ -12,7 +13,7 @@ if os.name == 'nt':
         allow_module_level=True)
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda])
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan])
 def test_no_debug(capfd):
     capfd.readouterr()
 
@@ -29,6 +30,11 @@ def test_no_debug(capfd):
     assert "return a + b" not in captured
 
 
+def supports_overflow(arch):
+    return arch != ti.vulkan or platform.system(
+    ) != "Darwin"  # Vulkan on macOS do not have the validation layer.
+
+
 add_table = [
     (ti.i8, 2**6),
     (ti.u8, 2**7),
@@ -42,8 +48,10 @@ add_table = [
 
 
 @pytest.mark.parametrize("ty,num", add_table)
-@test_utils.test(arch=[ti.cpu, ti.cuda], debug=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan], debug=True)
 def test_add_overflow(capfd, ty, num):
+    if not supports_overflow(ti.lang.impl.current_cfg().arch):
+        return
     capfd.readouterr()
 
     @ti.kernel
@@ -60,8 +68,10 @@ def test_add_overflow(capfd, ty, num):
 
 
 @pytest.mark.parametrize("ty,num", add_table)
-@test_utils.test(arch=[ti.cpu, ti.cuda], debug=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan], debug=True)
 def test_add_no_overflow(capfd, ty, num):
+    if not supports_overflow(ti.lang.impl.current_cfg().arch):
+        return
     capfd.readouterr()
 
     @ti.kernel
@@ -86,8 +96,10 @@ sub_table = [
 
 
 @pytest.mark.parametrize("ty,num", sub_table)
-@test_utils.test(arch=[ti.cpu, ti.cuda], debug=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan], debug=True)
 def test_sub_overflow_i(capfd, ty, num):
+    if not supports_overflow(ti.lang.impl.current_cfg().arch):
+        return
     capfd.readouterr()
 
     @ti.kernel
@@ -104,8 +116,10 @@ def test_sub_overflow_i(capfd, ty, num):
 
 
 @pytest.mark.parametrize("ty,num", sub_table)
-@test_utils.test(arch=[ti.cpu, ti.cuda], debug=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan], debug=True)
 def test_sub_no_overflow_i(capfd, ty, num):
+    if not supports_overflow(ti.lang.impl.current_cfg().arch):
+        return
     capfd.readouterr()
 
     @ti.kernel
@@ -122,8 +136,10 @@ def test_sub_no_overflow_i(capfd, ty, num):
 
 
 @pytest.mark.parametrize("ty", [ti.u8, ti.u16, ti.u32, ti.u64])
-@test_utils.test(arch=[ti.cpu, ti.cuda], debug=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan], debug=True)
 def test_sub_overflow_u(capfd, ty):
+    if not supports_overflow(ti.lang.impl.current_cfg().arch):
+        return
     capfd.readouterr()
 
     @ti.kernel
@@ -140,8 +156,10 @@ def test_sub_overflow_u(capfd, ty):
 
 
 @pytest.mark.parametrize("ty", [ti.u8, ti.u16, ti.u32, ti.u64])
-@test_utils.test(arch=[ti.cpu, ti.cuda], debug=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan], debug=True)
 def test_sub_no_overflow_u(capfd, ty):
+    if not supports_overflow(ti.lang.impl.current_cfg().arch):
+        return
     capfd.readouterr()
 
     @ti.kernel
@@ -170,8 +188,16 @@ mul_table = [
 
 
 @pytest.mark.parametrize("ty,num1,num2", mul_table)
-@test_utils.test(arch=[ti.cpu, ti.cuda], debug=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan], debug=True)
 def test_mul_overflow(capfd, ty, num1, num2):
+    if not supports_overflow(ti.lang.impl.current_cfg().arch):
+        return
+    # 64-bit Multiplication overflow detection does not function correctly on old drivers.
+    # See https://github.com/taichi-dev/taichi/issues/6303
+    if ti.lang.impl.current_cfg().arch == ti.vulkan and id(ty) in [
+            id(ti.i64), id(ti.u64)
+    ]:
+        return
     capfd.readouterr()
 
     @ti.kernel
@@ -188,8 +214,10 @@ def test_mul_overflow(capfd, ty, num1, num2):
 
 
 @pytest.mark.parametrize("ty,num1,num2", mul_table)
-@test_utils.test(arch=[ti.cpu, ti.cuda], debug=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan], debug=True)
 def test_mul_no_overflow(capfd, ty, num1, num2):
+    if not supports_overflow(ti.lang.impl.current_cfg().arch):
+        return
     capfd.readouterr()
 
     @ti.kernel
@@ -218,8 +246,10 @@ shl_table = [
 
 
 @pytest.mark.parametrize("ty,num", shl_table)
-@test_utils.test(arch=[ti.cpu, ti.cuda], debug=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan], debug=True)
 def test_shl_overflow(capfd, ty, num):
+    if not supports_overflow(ti.lang.impl.current_cfg().arch):
+        return
     capfd.readouterr()
 
     @ti.kernel
@@ -236,8 +266,10 @@ def test_shl_overflow(capfd, ty, num):
 
 
 @pytest.mark.parametrize("ty,num", shl_table)
-@test_utils.test(arch=[ti.cpu, ti.cuda], debug=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan], debug=True)
 def test_shl_no_overflow(capfd, ty, num):
+    if not supports_overflow(ti.lang.impl.current_cfg().arch):
+        return
     capfd.readouterr()
 
     @ti.kernel

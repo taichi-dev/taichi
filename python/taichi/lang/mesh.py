@@ -524,7 +524,7 @@ class Mesh:
     and allows efficient computation on these irregular data structures,
     only available for backends supporting `ti.extension.mesh`.
 
-    See details in https://github.com/taichi-dev/meshtaichi
+    See more details in https://github.com/taichi-dev/meshtaichi
     """
     def __init__(self):
         pass

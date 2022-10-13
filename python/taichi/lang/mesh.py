@@ -320,8 +320,7 @@ class MeshInstance:
         """
         if hasattr(self, "_vert_position"):
             return self._vert_position
-        else:
-            raise TaichiSyntaxError(f"Position info is not in the file.")
+        raise TaichiSyntaxError("Position info is not in the file.")
 
     def set_owned_offset(self, element_type: MeshElementType,
                          owned_offset: ScalarField):

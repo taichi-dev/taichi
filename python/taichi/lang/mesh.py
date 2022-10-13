@@ -95,14 +95,12 @@ class MeshElementField:
         self.g2r_field = g2r_field
 
         self._register_fields()
-    
-    def place(
-        self,
-        members,
-        reorder=False,
-        needs_grad=False,
-        layout=Layout.SOA
-    ):
+
+    def place(self,
+              members,
+              reorder=False,
+              needs_grad=False,
+              layout=Layout.SOA):
         """Declares mesh attributes for the mesh element in current mesh.
 
         Args:
@@ -127,27 +125,27 @@ class MeshElementField:
                 )
             if key in self.attr_dict:
                 raise TaichiSyntaxError(
-                    f"'{key}' has already use as attribute name."
-                )
-                
+                    f"'{key}' has already use as attribute name.")
+
             # init attr type
             self.attr_dict[key] = MeshAttrType(key, dtype, reorder, needs_grad)
 
             # init field
             if isinstance(dtype, CompoundType):
                 self.field_dict[key] = dtype.field(shape=None,
-                                                needs_grad=needs_grad)
+                                                   needs_grad=needs_grad)
             else:
                 self.field_dict[key] = impl.field(dtype,
-                                            shape=None,
-                                            needs_grad=needs_grad)
-        
+                                                  shape=None,
+                                                  needs_grad=needs_grad)
+
         size = _ti_core.get_num_elements(self.mesh.mesh_ptr, self._type)
         if layout == Layout.SOA:
             for key in members.keys():
                 impl.root.dense(impl.axes(0), size).place(self.field_dict[key])
                 if self.attr_dict[key].needs_grad:
-                    impl.root.dense(impl.axes(0), size).place(self.field_dict[key].grad)
+                    impl.root.dense(impl.axes(0),
+                                    size).place(self.field_dict[key].grad)
         elif len(members) > 0:
             _member_fields = {}
             for key in members.keys():
@@ -161,11 +159,10 @@ class MeshElementField:
             if len(grads) > 0:
                 impl.root.dense(impl.axes(0), size).place(*grads)
 
-
         for key, dtype in members.items():
             # expose interface
             setattr(MeshElementField, key,
-                property(fget=MeshElementField._make_getter(key)))
+                    property(fget=MeshElementField._make_getter(key)))
 
     @property
     def keys(self):
@@ -311,7 +308,7 @@ class MeshInstance:
         self.edges = MeshElementField(self, MeshElementType.Edge, {}, {}, {})
         self.faces = MeshElementField(self, MeshElementType.Face, {}, {}, {})
         self.cells = MeshElementField(self, MeshElementType.Cell, {}, {}, {})
-    
+
     def get_position_as_numpy(self):
         """Get the vertex position of current mesh to numpy array.
 
@@ -544,8 +541,8 @@ class Mesh:
             element_name = element_type_name(element)
             setattr(
                 instance, element_name,
-                MeshElementField(instance, element, {}, {}, metadata.element_fields[element]["g2r"])
-            )
+                MeshElementField(instance, element, {}, {},
+                                 metadata.element_fields[element]["g2r"]))
             instance.fields[element] = getattr(instance, element_name)
 
             instance.set_owned_offset(
@@ -586,6 +583,7 @@ class Mesh:
     def generate_meta(data):
         return MeshMetadata(data)
 
+
 def _TriMesh():
     """(Deprecated) Create a triangle mesh (a set of vert/edge/face elements, attributes, and connectivity) builder.
 
@@ -624,7 +622,8 @@ class MeshElementFieldProxy:
                 setattr(self, key,
                         _MatrixFieldElement(attr, global_entry_expr_group))
             elif isinstance(attr, StructField):
-                raise RuntimeError('MeshTaichi has not support StructField yet')
+                raise RuntimeError(
+                    'MeshTaichi has not support StructField yet')
             else:  # isinstance(attr, Field)
                 var = attr._get_field_members()[0].ptr
                 setattr(
@@ -634,7 +633,10 @@ class MeshElementFieldProxy:
                             var, global_entry_expr_group,
                             impl.get_runtime().get_current_src_info())))
 
-        for element_type in {MeshElementType.Vertex, MeshElementType.Edge, MeshElementType.Face, MeshElementType.Cell}:
+        for element_type in {
+                MeshElementType.Vertex, MeshElementType.Edge,
+                MeshElementType.Face, MeshElementType.Cell
+        }:
             setattr(self, element_type_name(element_type),
                     impl.mesh_relation_access(self.mesh, self, element_type))
 

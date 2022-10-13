@@ -2,6 +2,7 @@
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/visitors.h"
+#include "taichi/program/program.h"
 #include "taichi/system/profiler.h"
 
 namespace taichi::lang {
@@ -381,7 +382,9 @@ namespace irpass {
 void scalarize(IRNode *root) {
   TI_AUTO_PROF;
   Scalarize scalarize_pass(root);
-  ScalarizePointers scalarize_pointers_pass(root);
+  if (!root->get_kernel()->program->this_thread_config().dynamic_index) {
+    ScalarizePointers scalarize_pointers_pass(root);
+  }
 }
 
 }  // namespace irpass

@@ -152,7 +152,7 @@ llvm::Type *TaichiLLVMContext::get_data_type(DataType dt) {
     auto num_elements = tensor_type->get_num_elements();
     // Return type is <element_type * num_elements> if real matrix is used,
     // otherwise [element_type * num_elements].
-    if (config_->real_matrix) {
+    if (config_->real_matrix && !config_->real_matrix_scalarize) {
       return llvm::VectorType::get(element_type, num_elements,
                                    /*scalable=*/false);
     }

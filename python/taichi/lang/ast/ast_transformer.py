@@ -244,7 +244,8 @@ class ASTTransformer(Builder):
         build_stmt(ctx, node.slice)
         if not ASTTransformer.is_tuple(node.slice):
             node.slice.ptr = [node.slice.ptr]
-        node.ptr = impl.subscript(node.value.ptr,
+        node.ptr = impl.subscript(ctx.ast_builder,
+                                  node.value.ptr,
                                   *node.slice.ptr,
                                   get_ref=get_ref)
         return node.ptr
@@ -1014,8 +1015,9 @@ class ASTTransformer(Builder):
             ndrange_var = impl.expr_init(build_stmt(ctx, node.iter))
             ndrange_begin = ti_ops.cast(expr.Expr(0), primitive_types.i32)
             ndrange_end = ti_ops.cast(
-                expr.Expr(impl.subscript(ndrange_var.acc_dimensions, 0)),
-                primitive_types.i32)
+                expr.Expr(
+                    impl.subscript(ctx.ast_builder, ndrange_var.acc_dimensions,
+                                   0)), primitive_types.i32)
             ndrange_loop_var = expr.Expr(ctx.ast_builder.make_id_expr(''))
             ctx.ast_builder.begin_frontend_range_for(ndrange_loop_var.ptr,
                                                      ndrange_begin.ptr,
@@ -1031,7 +1033,9 @@ class ASTTransformer(Builder):
                 ctx.create_variable(
                     target,
                     impl.expr_init(target_tmp + impl.subscript(
-                        impl.subscript(ndrange_var.bounds, i), 0)))
+                        ctx.ast_builder,
+                        impl.subscript(ctx.ast_builder, ndrange_var.bounds, i),
+                        0)))
                 if i + 1 < len(targets):
                     I._assign(I -
                               target_tmp * ndrange_var.acc_dimensions[i + 1])
@@ -1045,8 +1049,9 @@ class ASTTransformer(Builder):
             ndrange_var = impl.expr_init(build_stmt(ctx, node.iter.args[0]))
             ndrange_begin = ti_ops.cast(expr.Expr(0), primitive_types.i32)
             ndrange_end = ti_ops.cast(
-                expr.Expr(impl.subscript(ndrange_var.acc_dimensions, 0)),
-                primitive_types.i32)
+                expr.Expr(
+                    impl.subscript(ctx.ast_builder, ndrange_var.acc_dimensions,
+                                   0)), primitive_types.i32)
             ndrange_loop_var = expr.Expr(ctx.ast_builder.make_id_expr(''))
             ctx.ast_builder.begin_frontend_range_for(ndrange_loop_var.ptr,
                                                      ndrange_begin.ptr,
@@ -1068,8 +1073,9 @@ class ASTTransformer(Builder):
                     target_tmp = I // ndrange_var.acc_dimensions[i + 1]
                 else:
                     target_tmp = I
-                impl.subscript(target_var, i)._assign(target_tmp +
-                                                      ndrange_var.bounds[i][0])
+                impl.subscript(ctx.ast_builder, target_var,
+                               i)._assign(target_tmp +
+                                          ndrange_var.bounds[i][0])
                 if i + 1 < len(ndrange_var.dimensions):
                     I._assign(I -
                               target_tmp * ndrange_var.acc_dimensions[i + 1])

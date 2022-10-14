@@ -505,6 +505,11 @@ class Matrix(TaichiOperations):
         return (self.n, self.m)
 
     def element_type(self):
+        if self.dt is None:
+            if self._impl.entries:
+                return getattr(self._impl.entries[0], 'element_type',
+                               lambda: None)()
+            return None
         return self.dt
 
     def _element_wise_binary(self, foo, other):

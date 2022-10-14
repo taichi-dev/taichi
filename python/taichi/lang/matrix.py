@@ -990,10 +990,9 @@ class Matrix(TaichiOperations):
             >>> A
             [-1, -1, -1, -1]
         """
-        def assign_renamed(x, y):
-            return ops_mod.assign(x, y)
-
-        return self._element_wise_writeback_binary(assign_renamed, val)
+        # pylint: disable=C0415
+        from taichi.lang.matrix_ops import fill
+        return fill(self, val)
 
     @python_scope
     def to_numpy(self, keep_dims=False):

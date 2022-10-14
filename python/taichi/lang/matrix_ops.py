@@ -18,9 +18,10 @@ def trace(x):
     return result
 
 
-@preconditions(lambda m, _: is_tensor(m))
+@preconditions(lambda m, *_: is_tensor(m))
 @taichi_scope
 def fill(m, val):
+    # capture reference to m
     @func
     def fill_impl():
         s = static(m.get_shape())
@@ -29,12 +30,13 @@ def fill(m, val):
             loop_config(serialize=True)
             for i in range(s[0]):
                 m[i] = val
-            return
+            return m
         # TODO: fix parallelization
         loop_config(serialize=True)
         for i in range(s[0]):
             for j in range(s[1]):
                 m[i, j] = val
+        return m
 
     return fill_impl()
 

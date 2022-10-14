@@ -764,7 +764,7 @@ void AtomicOpExpression::type_check(CompileConfig *config) {
   // Broadcast val to dest if neccessary
   auto val_dtype = val->ret_type;
   auto dest_dtype = dest->ret_type.ptr_removed();
-  if (dest_dtype->is<PrimitiveType>() and val_dtype->is<TensorType>()) {
+  if (dest_dtype->is<PrimitiveType>() && val_dtype->is<TensorType>()) {
     error();
   }
 

@@ -397,6 +397,13 @@ void LlvmOfflineCacheFileWriter::clean_cache(const std::string &path,
 
 LlvmOfflineCache::KernelCacheData LlvmOfflineCache::KernelCacheData::clone()
     const {
-  return {kernel_key, args, compiled_data.clone()};
+  LlvmOfflineCache::KernelCacheData result;
+  result.kernel_key = kernel_key;
+  result.args = args;
+  result.compiled_data = compiled_data.clone();
+  result.size = size;
+  result.created_at = created_at;
+  result.last_used_at = last_used_at;
+  return result;
 }
 }  // namespace taichi::lang

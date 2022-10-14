@@ -151,7 +151,8 @@ def subscript(ast_builder,
     has_slice = False
 
     if len(_indices) == 1 and isinstance(_indices[0], Expr):
-        indices = ast_builder.flatten_indices([ind.ptr for ind in _indices])
+        indices = tuple(
+            ast_builder.flatten_indices([ind.ptr for ind in _indices]))
     else:
         flattened_indices = []
         for _index in _indices:

@@ -27,9 +27,9 @@ class SNodeTreeBufferManager {
 
   void destroy(SNodeTree *snode_tree);
 
-  void save_root_buffer(const int save_id, const int snode_tree_id);
+  Ptr get_root_buffer(const int snode_tree_id);
 
-  void restore_root_buffer(const int save_id, const int snode_tree_id);
+  std::size_t get_root_buffer_size(const int snode_tree_id);
 
  private:
   std::set<std::pair<std::size_t, Ptr>> size_set_;
@@ -37,8 +37,6 @@ class SNodeTreeBufferManager {
   LlvmRuntimeExecutor *runtime_exec_;
   Ptr roots_[kMaxNumSnodeTreesLlvm];
   std::size_t sizes_[kMaxNumSnodeTreesLlvm];
-  // For autodiff checkpointing use
-  std::map<int, std::vector<uint8_t>> root_buffer_snapshots_;
 };
 
 }  // namespace taichi::lang

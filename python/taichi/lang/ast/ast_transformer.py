@@ -457,10 +457,6 @@ class ASTTransformer(Builder):
         return False
 
     @staticmethod
-    def build_call_if_is_tensor_op(ctx, node, args, keywords):
-        func = node.func.ptr
-
-    @staticmethod
     def warn_if_is_external_func(ctx, node):
         func = node.func.ptr
         if ctx.is_in_static_scope():  # allow external function in static scope

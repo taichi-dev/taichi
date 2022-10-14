@@ -161,7 +161,7 @@ class TaskCodegen : public IRVisitor {
 
         auto value = ir_->query_value(arg_stmt->raw_name());
         vals.push_back(value);
-        formats += data_type_format(arg_stmt->ret_type);
+        formats += data_type_format(arg_stmt->ret_type, Arch::vulkan);
       } else {
         auto arg_str = std::get<std::string>(content);
         formats += arg_str;

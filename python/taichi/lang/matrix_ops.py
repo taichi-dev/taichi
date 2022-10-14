@@ -1,6 +1,6 @@
 from taichi.lang.impl import static
 from taichi.lang.kernel_impl import func
-from taichi.lang.matrix_ops_utils import (is_tensor, preconditions,
+from taichi.lang.matrix_ops_utils import (arg_at, is_tensor, preconditions,
                                           square_matrix)
 from taichi.lang.misc import loop_config
 from taichi.lang.ops import cast
@@ -21,7 +21,7 @@ def trace(x):
     return result
 
 
-@preconditions(lambda m, *_: is_tensor(m))
+@preconditions(arg_at(0, is_tensor))
 @taichi_scope
 def fill(m, val):
     # capture reference to m

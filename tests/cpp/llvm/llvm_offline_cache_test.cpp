@@ -5,7 +5,7 @@
 
 #ifdef TI_WITH_LLVM
 
-#if 1
+#if defined(TI_PLATFORM_LINUX) || defined(TI_PLATFORM_WINDOWS)
 #if __has_include(<filesystem>)
 #include <filesystem>
 namespace fs = std::filesystem;

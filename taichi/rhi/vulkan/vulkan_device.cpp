@@ -1839,7 +1839,7 @@ DeviceAllocation VulkanDevice::import_vkbuffer(vkapi::IVkBuffer buffer) {
   alloc_int.buffer = buffer;
   alloc_int.mapped = nullptr;
   if (get_cap(DeviceCapability::spirv_has_physical_storage_buffer)) {
-    VkBufferDeviceAddressInfoKHR info {};
+    VkBufferDeviceAddressInfoKHR info{};
     info.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
     info.buffer = buffer->buffer;
     info.pNext = nullptr;

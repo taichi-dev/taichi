@@ -768,7 +768,7 @@ void AtomicOpExpression::type_check(CompileConfig *config) {
     error();
   }
 
-  if (val_dtype->is<PrimitiveType>() and dest_dtype->is<TensorType>()) {
+  if (val_dtype->is<PrimitiveType>() && dest_dtype->is<TensorType>()) {
     auto broadcasted_expr = to_broadcast_tensor(val, dest_dtype);
     val = std::move(broadcasted_expr);
     val.type_check(config);

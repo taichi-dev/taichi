@@ -14,7 +14,9 @@ def trace(x):
     result = cast(0, x.element_type())
     # TODO: fix parallelization
     loop_config(serialize=True)
-    for i in range(shape[0]):
+    # TODO: get rid of static when
+    # CHI IR Tensor repr is ready stable
+    for i in static(range(shape[0])):
         result += x[i, i]
     return result
 
@@ -29,13 +31,13 @@ def fill(m, val):
         if static(len(s) == 1):
             # TODO: fix parallelization
             loop_config(serialize=True)
-            for i in range(s[0]):
+            for i in static(range(s[0])):
                 m[i] = val
             return m
         # TODO: fix parallelization
         loop_config(serialize=True)
-        for i in range(s[0]):
-            for j in range(s[1]):
+        for i in static(range(s[0])):
+            for j in static(range(s[1])):
                 m[i, j] = val
         return m
 

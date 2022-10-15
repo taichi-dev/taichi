@@ -144,7 +144,7 @@ class GroupedNDRange:
 
     def __iter__(self):
         for ind in self.r:
-            yield _IntermediateMatrix(len(ind), 1, list(ind))
+            yield _IntermediateMatrix(len(ind), 1, list(ind), ndim=1)
 
 
 __all__ = ['ndrange']

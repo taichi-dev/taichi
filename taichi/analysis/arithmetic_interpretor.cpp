@@ -7,8 +7,7 @@
 #include "taichi/ir/type_utils.h"
 #include "taichi/ir/visitors.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace {
 
 using CodeRegion = ArithmeticInterpretor::CodeRegion;
@@ -180,5 +179,4 @@ std::optional<TypedConstant> ArithmeticInterpretor::evaluate(
   return ev.run(region, init_ctx);
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

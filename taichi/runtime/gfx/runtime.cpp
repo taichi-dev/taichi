@@ -16,8 +16,7 @@
 #include "taichi/program/context.h"
 #undef TI_RUNTIME_HOST
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace gfx {
 
 namespace {
@@ -573,10 +572,17 @@ DeviceAllocation GfxRuntime::create_image(const ImageParams &params) {
   TI_ERROR_IF(gfx_device == nullptr,
               "Image can only be created on a graphics device");
   DeviceAllocation image = gfx_device->create_image(params);
-  last_image_layouts_[image.alloc_id] = params.initial_layout;
+  track_image(image, ImageLayout::undefined);
+  last_image_layouts_.at(image.alloc_id) = params.initial_layout;
   return image;
 }
 
+void GfxRuntime::track_image(DeviceAllocation image, ImageLayout layout) {
+  last_image_layouts_[image.alloc_id] = layout;
+}
+void GfxRuntime::untrack_image(DeviceAllocation image) {
+  last_image_layouts_.erase(image.alloc_id);
+}
 void GfxRuntime::transition_image(DeviceAllocation image, ImageLayout layout) {
   ImageLayout &last_layout = last_image_layouts_.at(image.alloc_id);
   ensure_current_cmdlist();
@@ -604,6 +610,7 @@ void GfxRuntime::synchronize() {
   flush();
   device_->wait_idle();
   ctx_buffers_.clear();
+  fflush(stdout);
 }
 
 StreamSemaphore GfxRuntime::flush() {
@@ -702,6 +709,23 @@ size_t GfxRuntime::get_root_buffer_size(int id) const {
   return it->second;
 }
 
+void GfxRuntime::enqueue_compute_op_lambda(
+    std::function<void(Device *device, CommandList *cmdlist)> op,
+    const std::vector<ComputeOpImageRef> &image_refs) {
+  for (const auto &ref : image_refs) {
+    TI_ASSERT(last_image_layouts_.find(ref.image.alloc_id) !=
+              last_image_layouts_.end());
+    transition_image(ref.image, ref.initial_layout);
+  }
+
+  ensure_current_cmdlist();
+  op(device_, current_cmdlist_.get());
+
+  for (const auto &ref : image_refs) {
+    last_image_layouts_[ref.image.alloc_id] = ref.final_layout;
+  }
+}
+
 GfxRuntime::RegisterParams run_codegen(
     Kernel *kernel,
     Device *device,
@@ -715,7 +739,7 @@ GfxRuntime::RegisterParams run_codegen(
   params.compiled_structs = compiled_structs;
   params.device = device;
   params.enable_spv_opt =
-      kernel->program->config.external_optimization_level > 0;
+      kernel->program->this_thread_config().external_optimization_level > 0;
   spirv::KernelCodegen codegen(params);
   GfxRuntime::RegisterParams res;
   codegen.run(res.kernel_attribs, res.task_spirv_source_codes);
@@ -724,5 +748,4 @@ GfxRuntime::RegisterParams run_codegen(
 }
 
 }  // namespace gfx
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

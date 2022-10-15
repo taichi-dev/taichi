@@ -6,8 +6,7 @@
 #include "taichi/ir/type.h"
 #include "taichi/aot/graph_data.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 class Kernel;
 class GraphBuilder;
 
@@ -77,5 +76,4 @@ class GraphBuilder {
   std::vector<std::unique_ptr<Node>> all_nodes_;
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

@@ -4,8 +4,7 @@
 
 #include "taichi/codegen/metal/codegen_metal.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace metal {
 
 AotModuleBuilderImpl::AotModuleBuilderImpl(
@@ -56,7 +55,7 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir,
 void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
                                            Kernel *kernel) {
   auto compiled = run_codegen(compiled_runtime_module_, compiled_snode_trees_,
-                              kernel, &strtab_, /*offloaded=*/nullptr);
+                              kernel, /*offloaded=*/nullptr);
   compiled.kernel_name = identifier;
   ti_aot_data_.kernels.push_back(std::move(compiled));
 }
@@ -90,7 +89,7 @@ void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier,
                                                 const std::string &key,
                                                 Kernel *kernel) {
   auto compiled = run_codegen(compiled_runtime_module_, compiled_snode_trees_,
-                              kernel, &strtab_, /*offloaded=*/nullptr);
+                              kernel, /*offloaded=*/nullptr);
   for (auto &k : ti_aot_data_.tmpl_kernels) {
     if (k.kernel_bundle_name == identifier) {
       k.kernel_tmpl_map.insert(std::make_pair(key, compiled));
@@ -104,5 +103,4 @@ void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier,
 }
 
 }  // namespace metal
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

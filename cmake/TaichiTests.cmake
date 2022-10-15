@@ -12,20 +12,24 @@ endif()
 # 2. Re-implement the legacy CPP tests using googletest
 file(GLOB_RECURSE TAICHI_TESTS_SOURCE
         "tests/cpp/analysis/*.cpp"
-        "tests/cpp/aot/llvm/*.cpp"
         "tests/cpp/backends/*.cpp"
         "tests/cpp/codegen/*.cpp"
         "tests/cpp/common/*.cpp"
         "tests/cpp/ir/*.cpp"
-        "tests/cpp/llvm/*.cpp"
         "tests/cpp/program/*.cpp"
         "tests/cpp/struct/*.cpp"
-        "tests/cpp/transforms/*.cpp")
+        "tests/cpp/transforms/*.cpp"
+        "tests/cpp/offline_cache/*.cpp")
 
 if (TI_WITH_OPENGL OR TI_WITH_VULKAN)
     file(GLOB TAICHI_TESTS_GFX_UTILS_SOURCE
         "tests/cpp/aot/gfx_utils.cpp")
     list(APPEND TAICHI_TESTS_SOURCE ${TAICHI_TESTS_GFX_UTILS_SOURCE})
+endif()
+
+if(TI_WITH_LLVM)
+  file(GLOB TAICHI_TESTS_LLVM_SOURCE "tests/cpp/aot/llvm/*.cpp" "tests/cpp/llvm/*.cpp")
+  list(APPEND TAICHI_TESTS_SOURCE ${TAICHI_TESTS_LLVM_SOURCE})
 endif()
 
 if(TI_WITH_VULKAN)
@@ -38,10 +42,15 @@ if(TI_WITH_OPENGL)
   list(APPEND TAICHI_TESTS_SOURCE ${TAICHI_TESTS_OPENGL_SOURCE})
 endif()
 
+if(TI_WITH_DX12)
+  file(GLOB TAICHI_TESTS_DX12_SOURCE "tests/cpp/aot/dx12/*.cpp")
+  list(APPEND TAICHI_TESTS_SOURCE ${TAICHI_TESTS_DX12_SOURCE})
+endif()
+
 add_executable(${TESTS_NAME} ${TAICHI_TESTS_SOURCE})
 if (WIN32)
-    # Output the executable to bin/ instead of build/Debug/...
-    set(TESTS_OUTPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/bin")
+    # Output the executable to build/ instead of build/Debug/...
+    set(TESTS_OUTPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/build")
     set_target_properties(${TESTS_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${TESTS_OUTPUT_DIR})
     set_target_properties(${TESTS_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG ${TESTS_OUTPUT_DIR})
     set_target_properties(${TESTS_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELEASE ${TESTS_OUTPUT_DIR})
@@ -61,6 +70,11 @@ endif()
 
 if (TI_WITH_OPENGL)
   target_link_libraries(${TESTS_NAME} PRIVATE opengl_rhi)
+endif()
+
+if (TI_WITH_DX12)
+  target_link_libraries(${TESTS_NAME} PRIVATE dx12_runtime)
+  target_link_libraries(${TESTS_NAME} PRIVATE dx12_rhi)
 endif()
 
 target_include_directories(${TESTS_NAME}

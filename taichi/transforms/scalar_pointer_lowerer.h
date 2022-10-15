@@ -4,8 +4,7 @@
 
 #include "taichi/ir/stmt_op_types.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class LinearizeStmt;
 class SNode;
@@ -75,5 +74,4 @@ class ScalarPointerLowerer {
   int path_length_{0};
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

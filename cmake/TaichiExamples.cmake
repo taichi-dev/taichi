@@ -11,8 +11,8 @@ file(GLOB_RECURSE TAICHI_EXAMPLES_SOURCE
 
 add_executable(${EXAMPLES_NAME} ${TAICHI_EXAMPLES_SOURCE})
 if (WIN32)
-    # Output the executable to bin/ instead of build/Debug/...
-    set(EXAMPLES_OUTPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/bin")
+    # Output the executable to build/ instead of build/Debug/...
+    set(EXAMPLES_OUTPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/build")
     set_target_properties(${EXAMPLES_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${EXAMPLES_OUTPUT_DIR})
     set_target_properties(${EXAMPLES_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG ${EXAMPLES_OUTPUT_DIR})
     set_target_properties(${EXAMPLES_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELEASE ${EXAMPLES_OUTPUT_DIR})

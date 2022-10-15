@@ -15,8 +15,9 @@ from taichi.lang.ast.ast_transformer_utils import (Builder, LoopStatus,
 from taichi.lang.ast.symbol_resolver import ASTResolver
 from taichi.lang.exception import TaichiSyntaxError, TaichiTypeError
 from taichi.lang.field import Field
+from taichi.lang.impl import current_cfg
 from taichi.lang.matrix import (Matrix, MatrixType, Vector, _PyScopeMatrixImpl,
-                                _TiScopeMatrixImpl)
+                                _TiScopeMatrixImpl, make_matrix)
 from taichi.lang.snode import append
 from taichi.lang.util import in_taichi_scope, is_taichi_class, to_taichi_type
 from taichi.types import (annotations, ndarray_type, primitive_types,
@@ -72,6 +73,11 @@ class ASTTransformer(Builder):
             is_static_assign: A boolean value indicating whether this is a static assignment
         """
         is_local = isinstance(target, ast.Name)
+        if is_local and target.id in ctx.kernel_args:
+            raise TaichiSyntaxError(
+                f"Kernel argument \"{target.id}\" is immutable in the kernel. "
+                f"If you want to change its value, please create a new variable."
+            )
         anno = impl.expr_init(annotation)
         if is_static_assign:
             raise TaichiSyntaxError(
@@ -109,6 +115,9 @@ class ASTTransformer(Builder):
     @staticmethod
     def build_assign_slice(ctx, node_target, values, is_static_assign):
         target = ASTTransformer.build_Subscript(ctx, node_target, get_ref=True)
+        if current_cfg().real_matrix and isinstance(values, (list, tuple)):
+            values = make_matrix(values)
+
         if isinstance(node_target.value.ptr, Matrix):
             if isinstance(node_target.value.ptr._impl, _TiScopeMatrixImpl):
                 target._assign(values)
@@ -182,6 +191,11 @@ class ASTTransformer(Builder):
             is_static_assign: A boolean value indicating whether this is a static assignment
         """
         is_local = isinstance(target, ast.Name)
+        if is_local and target.id in ctx.kernel_args:
+            raise TaichiSyntaxError(
+                f"Kernel argument \"{target.id}\" is immutable in the kernel. "
+                f"If you want to change its value, please create a new variable."
+            )
         if is_static_assign:
             if not is_local:
                 raise TaichiSyntaxError(
@@ -434,7 +448,12 @@ class ASTTransformer(Builder):
                 raise TaichiSyntaxError(
                     "A primitive type cannot decorate an expression with a compound type."
                 )
+
             if isinstance(args[0], expr.Expr):
+                if args[0].ptr.is_tensor():
+                    raise TaichiSyntaxError(
+                        "A primitive type cannot decorate an expression with a compound type."
+                    )
                 node.ptr = ti_ops.cast(args[0], func)
             else:
                 node.ptr = expr.Expr(args[0], dtype=func)
@@ -526,6 +545,9 @@ class ASTTransformer(Builder):
                 kernel_arguments.decl_ret(ctx.func.return_type)
 
             for i, arg in enumerate(args.args):
+                if not isinstance(ctx.func.arguments[i].annotation,
+                                  primitive_types.RefType):
+                    ctx.kernel_args.append(arg.arg)
                 if isinstance(ctx.func.arguments[i].annotation,
                               annotations.template):
                     ctx.create_variable(arg.arg, ctx.global_vars[arg.arg])
@@ -563,16 +585,11 @@ class ASTTransformer(Builder):
                         arg.arg,
                         kernel_arguments.decl_matrix_arg(
                             ctx.func.arguments[i].annotation))
-                elif isinstance(ctx.func.arguments[i].annotation,
-                                primitive_types.RefType):
+                else:
                     ctx.create_variable(
                         arg.arg,
                         kernel_arguments.decl_scalar_arg(
                             ctx.func.arguments[i].annotation))
-                else:
-                    ctx.global_vars[
-                        arg.arg] = kernel_arguments.decl_scalar_arg(
-                            ctx.func.arguments[i].annotation)
             # remove original args
             node.args.args = []
 
@@ -611,20 +628,58 @@ class ASTTransformer(Builder):
                     # Matrix arguments are passed by value.
                     if isinstance(ctx.func.arguments[i].annotation,
                                   (MatrixType)):
-                        if not isinstance(data, Matrix):
-                            raise TaichiSyntaxError(
-                                f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix, but got {type(data)}."
-                            )
 
-                        if data.m != ctx.func.arguments[i].annotation.m:
-                            raise TaichiSyntaxError(
-                                f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix with m {ctx.func.arguments[i].annotation.m}, but got {data.m}."
-                            )
+                        if current_cfg().real_matrix:
+                            # with real_matrix=True, "data" is expected to be an Expr here
+                            # Therefore we simply call "impl.expr_init_func(data)" to perform:
+                            #
+                            # TensorType* t = alloca()
+                            # assign(t, data)
+                            #
+                            # We created local variable "t" - a copy of the passed-in argument "data"
+                            if not isinstance(
+                                    data,
+                                    expr.Expr) or not data.ptr.is_tensor():
+                                raise TaichiSyntaxError(
+                                    f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix, but got {type(data)}."
+                                )
 
-                        if data.n != ctx.func.arguments[i].annotation.n:
-                            raise TaichiSyntaxError(
-                                f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix with n {ctx.func.arguments[i].annotation.n}, but got {data.n}."
-                            )
+                            element_shape = data.ptr.get_ret_type().shape()
+                            if len(element_shape
+                                   ) != ctx.func.arguments[i].annotation.ndim:
+                                raise TaichiSyntaxError(
+                                    f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix with ndim {ctx.func.arguments[i].annotation.ndim}, but got {len(element_shape)}."
+                                )
+
+                            assert ctx.func.arguments[i].annotation.ndim > 0
+                            if element_shape[0] != ctx.func.arguments[
+                                    i].annotation.n:
+                                raise TaichiSyntaxError(
+                                    f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix with n {ctx.func.arguments[i].annotation.n}, but got {element_shape[0]}."
+                                )
+
+                            if ctx.func.arguments[
+                                    i].annotation.ndim == 2 and element_shape[
+                                        1] != ctx.func.arguments[
+                                            i].annotation.m:
+                                raise TaichiSyntaxError(
+                                    f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix with m {ctx.func.arguments[i].annotation.m}, but got {element_shape[0]}."
+                                )
+                        else:
+                            if not isinstance(data, Matrix):
+                                raise TaichiSyntaxError(
+                                    f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix, but got {type(data)}."
+                                )
+
+                            if data.m != ctx.func.arguments[i].annotation.m:
+                                raise TaichiSyntaxError(
+                                    f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix with m {ctx.func.arguments[i].annotation.m}, but got {data.m}."
+                                )
+
+                            if data.n != ctx.func.arguments[i].annotation.n:
+                                raise TaichiSyntaxError(
+                                    f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix with n {ctx.func.arguments[i].annotation.n}, but got {data.n}."
+                                )
                         ctx.create_variable(arg.arg, impl.expr_init_func(data))
                         continue
 
@@ -662,10 +717,13 @@ class ASTTransformer(Builder):
                         ti_ops.cast(expr.Expr(node.value.ptr),
                                     ctx.func.return_type).ptr))
             elif isinstance(ctx.func.return_type, MatrixType):
+                item_iter = iter(node.value.ptr.to_list())\
+                            if isinstance(node.value.ptr, Vector) or node.value.ptr.ndim == 1\
+                            else itertools.chain.from_iterable(node.value.ptr.to_list())
                 ctx.ast_builder.create_kernel_exprgroup_return(
                     expr.make_expr_group([
-                        ti_ops.cast(exp, ctx.func.return_type.dtype) for exp in
-                        itertools.chain.from_iterable(node.value.ptr.to_list())
+                        ti_ops.cast(exp, ctx.func.return_type.dtype)
+                        for exp in item_iter
                     ]))
             else:
                 raise TaichiSyntaxError(
@@ -731,6 +789,12 @@ class ASTTransformer(Builder):
     def build_AugAssign(ctx, node):
         build_stmt(ctx, node.target)
         build_stmt(ctx, node.value)
+        if isinstance(node.target,
+                      ast.Name) and node.target.id in ctx.kernel_args:
+            raise TaichiSyntaxError(
+                f"Kernel argument \"{node.target.id}\" is immutable in the kernel. "
+                f"If you want to change its value, please create a new variable."
+            )
         node.ptr = node.target.ptr._augassign(node.value.ptr,
                                               type(node.op).__name__)
         return node.ptr
@@ -1093,13 +1157,13 @@ class ASTTransformer(Builder):
             loop_var = expr.Expr(ctx.ast_builder.make_id_expr(''))
             ctx.create_variable(loop_name, loop_var)
             begin = expr.Expr(0)
-            end = node.iter.ptr.size
+            end = ti_ops.cast(node.iter.ptr.size, primitive_types.i32)
             ctx.ast_builder.begin_frontend_range_for(loop_var.ptr, begin.ptr,
                                                      end.ptr)
             entry_expr = _ti_core.get_relation_access(
                 ctx.mesh.mesh_ptr, node.iter.ptr.from_index.ptr,
                 node.iter.ptr.to_element_type, loop_var.ptr)
-            entry_expr.type_check(impl.get_runtime().prog.config)
+            entry_expr.type_check(impl.get_runtime().prog.config())
             mesh_idx = mesh.MeshElementFieldProxy(
                 ctx.mesh, node.iter.ptr.to_element_type, entry_expr)
             ctx.create_variable(target, mesh_idx)

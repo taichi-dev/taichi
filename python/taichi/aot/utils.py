@@ -1,6 +1,5 @@
 from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang._texture import Texture
-from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiCompilationError
 from taichi.lang.matrix import Matrix, MatrixNdarray, MatrixType, VectorNdarray
 from taichi.lang.util import cook_dtype
@@ -77,15 +76,13 @@ def produce_injected_args(kernel, symbolic_args=None):
                 injected_args.append(
                     VectorNdarray(element_shape[0],
                                   dtype=dtype,
-                                  shape=(2, ) * field_dim,
-                                  layout=Layout.AOS))
+                                  shape=(2, ) * field_dim))
             elif element_dim == 2:
                 injected_args.append(
                     MatrixNdarray(element_shape[0],
                                   element_shape[1],
                                   dtype=dtype,
-                                  shape=(2, ) * field_dim,
-                                  layout=Layout.AOS))
+                                  shape=(2, ) * field_dim))
             else:
                 raise RuntimeError('')
         elif isinstance(anno, (TextureType, RWTextureType)):

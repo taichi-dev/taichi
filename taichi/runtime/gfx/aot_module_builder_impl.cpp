@@ -7,8 +7,7 @@
 #include "taichi/codegen/spirv/spirv_codegen.h"
 #include "taichi/runtime/gfx/aot_graph_data.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace gfx {
 
 namespace {
@@ -29,6 +28,7 @@ class AotDataConverter {
       res.kernels[ker.name] = val;
     }
     res.fields = in.fields;
+    res.required_caps = in.required_caps;
     res.root_buffer_size = in.root_buffer_size;
     return res;
   }
@@ -110,6 +110,7 @@ AotModuleBuilderImpl::AotModuleBuilderImpl(
   aot_target_device_ =
       target_device ? std::move(target_device)
                     : std::make_unique<aot::TargetDevice>(device_api_backend_);
+  aot_target_device_->clone_caps(ti_aot_data_.required_caps);
   if (!compiled_structs.empty()) {
     ti_aot_data_.root_buffer_size = compiled_structs[0].root_size;
   }
@@ -204,10 +205,14 @@ void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
   ti_aot_data_.spirv_codes.push_back(compiled.task_spirv_source_codes);
 }
 
-void AotModuleBuilderImpl::add_compiled_kernel(aot::Kernel *kernel) {
-  const auto register_params = static_cast<KernelImpl *>(kernel)->params();
-  ti_aot_data_.kernels.push_back(register_params.kernel_attribs);
-  ti_aot_data_.spirv_codes.push_back(register_params.task_spirv_source_codes);
+void AotModuleBuilderImpl::add_compiled_kernel(const std::string &identifier,
+                                               aot::Kernel *kernel) {
+  GfxRuntime::RegisterParams register_params =
+      static_cast<KernelImpl *>(kernel)->params();
+  register_params.kernel_attribs.name = identifier;
+  ti_aot_data_.kernels.push_back(std::move(register_params.kernel_attribs));
+  ti_aot_data_.spirv_codes.push_back(
+      std::move(register_params.task_spirv_source_codes));
 }
 
 void AotModuleBuilderImpl::add_field_per_backend(const std::string &identifier,
@@ -254,5 +259,4 @@ void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier,
 }
 
 }  // namespace gfx
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

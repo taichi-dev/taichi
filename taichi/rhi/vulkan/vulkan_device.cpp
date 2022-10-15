@@ -17,8 +17,7 @@
 
 #include "spirv_reflect.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace vulkan {
 
 const std::unordered_map<BufferFormat, VkFormat> buffer_format_ti_2_vk = {
@@ -773,7 +772,11 @@ VulkanCommandList::VulkanCommandList(VulkanDevice *ti_device,
     : ti_device_(ti_device),
       stream_(stream),
       device_(ti_device->vk_device()),
+#if !defined(__APPLE__)
       query_pool_(vkapi::create_query_pool(ti_device->vk_device())),
+#else
+      query_pool_(),
+#endif
       buffer_(buffer) {
   VkCommandBufferBeginInfo info{};
   info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -782,9 +785,13 @@ VulkanCommandList::VulkanCommandList(VulkanDevice *ti_device,
   info.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 
   vkBeginCommandBuffer(buffer->buffer, &info);
+
+// Workaround for MacOS: https://github.com/taichi-dev/taichi/issues/5888
+#if !defined(__APPLE__)
   vkCmdResetQueryPool(buffer->buffer, query_pool_->query_pool, 0, 2);
   vkCmdWriteTimestamp(buffer->buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
                       query_pool_->query_pool, 0);
+#endif
 }
 
 VulkanCommandList::~VulkanCommandList() {
@@ -1304,8 +1311,11 @@ vkapi::IVkRenderPass VulkanCommandList::current_renderpass() {
 
 vkapi::IVkCommandBuffer VulkanCommandList::finalize() {
   if (!finalized_) {
+// Workaround for MacOS: https://github.com/taichi-dev/taichi/issues/5888
+#if !defined(__APPLE__)
     vkCmdWriteTimestamp(buffer_->buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
                         query_pool_->query_pool, 1);
+#endif
     vkEndCommandBuffer(buffer_->buffer);
     finalized_ = true;
   }
@@ -1719,11 +1729,17 @@ void VulkanStream::command_sync() {
       continue;
     }
 
+    double duration_us = 0.0;
+
+// Workaround for MacOS: https://github.com/taichi-dev/taichi/issues/5888
+#if !defined(__APPLE__)
     uint64_t t[2];
     vkGetQueryPoolResults(device_.vk_device(), cmdbuf.query_pool->query_pool, 0,
                           2, sizeof(uint64_t) * 2, &t, sizeof(uint64_t),
                           VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
-    double duration_us = (t[1] - t[0]) * props.limits.timestampPeriod / 1000.0;
+    duration_us = (t[1] - t[0]) * props.limits.timestampPeriod / 1000.0;
+#endif
+
     device_time_elapsed_us_ += duration_us;
   }
 
@@ -1822,7 +1838,13 @@ DeviceAllocation VulkanDevice::import_vkbuffer(vkapi::IVkBuffer buffer) {
   alloc_int.external = true;
   alloc_int.buffer = buffer;
   alloc_int.mapped = nullptr;
-  alloc_int.addr = 0;
+  if (get_cap(DeviceCapability::spirv_has_physical_storage_buffer)) {
+    VkBufferDeviceAddressInfoKHR info{};
+    info.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+    info.buffer = buffer->buffer;
+    info.pNext = nullptr;
+    alloc_int.addr = vkGetBufferDeviceAddress(device_, &info);
+  }
 
   DeviceAllocation alloc;
   alloc.device = this;
@@ -1840,6 +1862,7 @@ DeviceAllocation VulkanDevice::import_vk_image(vkapi::IVkImage image,
   alloc_int.external = true;
   alloc_int.image = image;
   alloc_int.view = view;
+  alloc_int.view_lods.emplace_back(view);
 
   DeviceAllocation alloc;
   alloc.device = this;
@@ -2390,12 +2413,12 @@ void VulkanSurface::create_swap_chain() {
   extent.height =
       std::max(capabilities.minImageExtent.height,
                std::min(capabilities.maxImageExtent.height, extent.height));
-  TI_INFO("Creating suface of {}x{}", width, height);
+  TI_INFO("Creating suface of {}x{}", extent.width, extent.height);
   VkImageUsageFlags usage =
       VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 
-  this->width_ = width;
-  this->height_ = height;
+  this->width_ = extent.width;
+  this->height_ = extent.height;
 
   VkSwapchainCreateInfoKHR createInfo;
   createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -2653,5 +2676,4 @@ VulkanStream::~VulkanStream() {
 }
 
 }  // namespace vulkan
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

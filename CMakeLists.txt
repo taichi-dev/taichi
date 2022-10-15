@@ -6,20 +6,6 @@ cmake_minimum_required(VERSION 3.17)
 
 project(taichi)
 
-# Taichi does not set target architecture explicitly,
-# but rather rely on CMake to detect the host arch.
-#
-# However on Mac m1, there are two available architectures namely x86_64 and arm64.
-# On some combination of "OSX version" and "CMake version", CMake will use x86_64 as default architecture even if it's on m1 chip.
-# This causes conflicts with the precompiled LLVM/Clang binaries downloaded from Taichi's repo (pre-built for arm64)
-#
-# Therefore we force CMake to choose arm64 architecture on arm64 chips.
-if (APPLE)
-  if( "${CMAKE_HOST_SYSTEM_PROCESSOR}" STREQUAL "arm64" )
-    set(CMAKE_OSX_ARCHITECTURES ${CMAKE_HOST_SYSTEM_PROCESSOR})
-  endif()
-endif()
-
 if (NOT DEFINED TI_VERSION_MAJOR)
     message(WARNING "It seems that you are running cmake manually, which may cause issues. Please use setup.py to build taichi from source, see https://docs.taichi-lang.org/docs/dev_install for more details.")
     set(TI_VERSION_MAJOR 0)
@@ -117,13 +103,10 @@ if (TI_BUILD_TESTS)
 endif()
 
 option(TI_BUILD_EXAMPLES "Build the CPP examples" ON)
+option(TI_BUILD_RHI_EXAMPLES "Build the Unified Device API examples" OFF)
 
 if(NOT TI_WITH_LLVM OR NOT TI_WITH_METAL)
     set(TI_BUILD_EXAMPLES OFF)
-endif()
-
-if (TI_BUILD_EXAMPLES)
-  include(cmake/TaichiExamples.cmake)
 endif()
 
 message("C++ Flags: ${CMAKE_CXX_FLAGS}")
@@ -214,6 +197,14 @@ if (TI_WITH_C_API)
   if (TI_BUILD_TESTS)
     include(cmake/TaichiCAPITests.cmake)
   endif()
+endif()
+
+if (TI_BUILD_EXAMPLES)
+  include(cmake/TaichiExamples.cmake)
+endif()
+
+if (TI_BUILD_RHI_EXAMPLES)
+  add_subdirectory(cpp_examples/rhi_examples)
 endif()
 
 

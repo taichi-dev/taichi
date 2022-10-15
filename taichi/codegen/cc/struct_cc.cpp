@@ -2,7 +2,7 @@
 #include "cc_layout.h"
 #include "cc_utils.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 namespace cccp {
 
 void CCLayoutGen::generate_children(SNode *snode) {
@@ -47,4 +47,4 @@ std::unique_ptr<CCLayout> CCLayoutGen::compile() {
 }
 
 }  // namespace cccp
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

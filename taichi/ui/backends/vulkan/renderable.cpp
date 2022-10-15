@@ -3,7 +3,7 @@
 #include "taichi/program/program.h"
 #include "taichi/ui/utils/utils.h"
 
-TI_UI_NAMESPACE_BEGIN
+namespace taichi::ui {
 
 namespace vulkan {
 
@@ -39,12 +39,39 @@ void Renderable::init_buffers() {
   create_bindings();
 }
 
+void copy_helper(Program *prog,
+                 DevicePtr dst,
+                 DevicePtr src,
+                 DevicePtr staging,
+                 size_t size) {
+  if (prog && dst.device == src.device &&
+      dst.device == prog->get_graphics_device()) {
+    prog->enqueue_compute_op_lambda(
+        [=](Device *device, CommandList *cmdlist) {
+          cmdlist->buffer_barrier(src);
+          cmdlist->buffer_copy(dst, src, size);
+          cmdlist->buffer_barrier(dst);
+        },
+        {});
+  } else {
+    Device::MemcpyCapability memcpy_cap =
+        Device::check_memcpy_capability(dst, src, size);
+    if (memcpy_cap == Device::MemcpyCapability::Direct) {
+      Device::memcpy_direct(dst, src, size);
+    } else if (memcpy_cap == Device::MemcpyCapability::RequiresStagingBuffer) {
+      Device::memcpy_via_staging(dst, staging, src, size);
+    } else {
+      TI_NOT_IMPLEMENTED;
+    }
+  }
+}
+
 void Renderable::update_data(const RenderableInfo &info) {
   TI_ASSERT(info.vbo_attrs == config_.vbo_attrs);
   // We might not have a current program if GGUI is used in external apps to
   // load AOT modules
   Program *prog = app_context_->prog();
-  if (prog) {
+  if (prog && prog->get_graphics_device() != &app_context_->device()) {
     prog->flush();
   }
 
@@ -114,18 +141,8 @@ void Renderable::update_data(const RenderableInfo &info) {
   }
 
   const uint64_t vbo_size = config_.vbo_size() * num_vertices;
-
-  Device::MemcpyCapability memcpy_cap = Device::check_memcpy_capability(
-      vertex_buffer_.get_ptr(), vbo_dev_ptr, vbo_size);
-  if (memcpy_cap == Device::MemcpyCapability::Direct) {
-    Device::memcpy_direct(vertex_buffer_.get_ptr(), vbo_dev_ptr, vbo_size);
-  } else if (memcpy_cap == Device::MemcpyCapability::RequiresStagingBuffer) {
-    Device::memcpy_via_staging(vertex_buffer_.get_ptr(),
-                               staging_vertex_buffer_.get_ptr(), vbo_dev_ptr,
-                               vbo_size);
-  } else {
-    TI_NOT_IMPLEMENTED;
-  }
+  copy_helper(prog, vertex_buffer_.get_ptr(0), vbo_dev_ptr,
+              staging_vertex_buffer_.get_ptr(), vbo_size);
 
   if (info.indices.valid) {
     indexed_ = true;
@@ -134,15 +151,8 @@ void Renderable::update_data(const RenderableInfo &info) {
       ibo_dev_ptr = get_device_ptr(prog, info.indices.snode);
     }
     uint64_t ibo_size = num_indices * sizeof(int);
-    if (memcpy_cap == Device::MemcpyCapability::Direct) {
-      Device::memcpy_direct(index_buffer_.get_ptr(), ibo_dev_ptr, ibo_size);
-    } else if (memcpy_cap == Device::MemcpyCapability::RequiresStagingBuffer) {
-      Device::memcpy_via_staging(index_buffer_.get_ptr(),
-                                 staging_index_buffer_.get_ptr(), ibo_dev_ptr,
-                                 ibo_size);
-    } else {
-      TI_NOT_IMPLEMENTED;
-    }
+    copy_helper(prog, index_buffer_.get_ptr(), ibo_dev_ptr,
+                staging_index_buffer_.get_ptr(), ibo_size);
   }
 }
 
@@ -305,4 +315,4 @@ void Renderable::resize_storage_buffers(int new_ssbo_size) {
 
 }  // namespace vulkan
 
-TI_UI_NAMESPACE_END
+}  // namespace taichi::ui

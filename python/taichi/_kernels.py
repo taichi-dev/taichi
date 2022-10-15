@@ -1,13 +1,14 @@
+from typing import Iterable
+
 from taichi._lib.utils import get_os_name
 from taichi.lang import ops
 from taichi.lang._ndrange import ndrange
 from taichi.lang.expr import Expr
 from taichi.lang.field import ScalarField
-from taichi.lang.impl import current_cfg, field, grouped, static, static_assert
+from taichi.lang.impl import grouped, static, static_assert
 from taichi.lang.kernel_impl import func, kernel
-from taichi.lang.misc import cuda, loop_config, vulkan
-from taichi.lang.runtime_ops import sync
-from taichi.lang.simt import block, subgroup, warp
+from taichi.lang.misc import loop_config
+from taichi.lang.simt import block, warp
 from taichi.lang.snode import deactivate
 from taichi.types import ndarray_type, texture_type, vector
 from taichi.types.annotations import template
@@ -241,9 +242,15 @@ def fill_matrix(mat: template(), vals: template()):
         for p in static(range(mat.n)):
             for q in static(range(mat.m)):
                 if static(mat[I].ndim == 2):
-                    mat[I][p, q] = vals[p][q]
+                    if static(isinstance(vals[p], Iterable)):
+                        mat[I][p, q] = vals[p][q]
+                    else:
+                        mat[I][p, q] = vals[p]
                 else:
-                    mat[I][p] = vals[p][q]
+                    if static(isinstance(vals[p], Iterable)):
+                        mat[I][p] = vals[p][q]
+                    else:
+                        mat[I][p] = vals[p]
 
 
 @kernel
@@ -284,9 +291,6 @@ def save_texture_to_numpy(tex: texture_type.rw_texture(num_dimensions=2,
 
 
 # Odd-even merge sort
-# References:
-# https://developer.nvidia.com/gpugems/gpugems2/part-vi-simulation-and-numerical-algorithms/chapter-46-improved-gpu-sorting
-# https://en.wikipedia.org/wiki/Batcher_odd%E2%80%93even_mergesort
 @kernel
 def sort_stage(keys: template(), use_values: int, values: template(), N: int,
                p: int, k: int, invocations: int):
@@ -307,26 +311,7 @@ def sort_stage(keys: template(), use_values: int, values: template(), N: int,
                         values[b] = temp
 
 
-def parallel_sort(keys, values=None):
-    N = keys.shape[0]
-
-    num_stages = 0
-    p = 1
-    while p < N:
-        k = p
-        while k >= 1:
-            invocations = int((N - k - k % p) / (2 * k)) + 1
-            if values is None:
-                sort_stage(keys, 0, keys, N, p, k, invocations)
-            else:
-                sort_stage(keys, 1, values, N, p, k, invocations)
-            num_stages += 1
-            sync()
-            k = int(k / 2)
-        p = int(p * 2)
-    print(num_stages)
-
-
+# Parallel Prefix Sum (Scan)
 @func
 def warp_shfl_up_i32(val: template()):
     global_tid = block.global_thread_idx()
@@ -413,53 +398,3 @@ def blit_from_field_to_field(
         dst: template(), src: template(), offset: i32, size: i32):
     for i in range(size):
         dst[i + offset] = src[i]
-
-
-# Parallel Prefix Sum (Scan)
-# Ref[0]: https://developer.download.nvidia.com/compute/cuda/1.1-Beta/x86_website/projects/scan/doc/scan.pdf
-# Ref[1]: https://github.com/NVIDIA/cuda-samples/blob/master/Samples/2_Concepts_and_Techniques/shfl_scan/shfl_scan.cu
-def prefix_sum_inclusive_inplace(input_arr, length):
-    BLOCK_SZ = 64
-    GRID_SZ = int((length + BLOCK_SZ - 1) / BLOCK_SZ)
-
-    # Buffer position and length
-    # This is a single buffer implementation for ease of aot usage
-    ele_num = length
-    ele_nums = [ele_num]
-    start_pos = 0
-    ele_nums_pos = [start_pos]
-
-    while ele_num > 1:
-        ele_num = int((ele_num + BLOCK_SZ - 1) / BLOCK_SZ)
-        ele_nums.append(ele_num)
-        start_pos += BLOCK_SZ * ele_num
-        ele_nums_pos.append(start_pos)
-
-    if input_arr.dtype != i32:
-        raise RuntimeError("Only ti.i32 type is supported for prefix sum.")
-
-    large_arr = field(i32, shape=start_pos)
-
-    if current_cfg().arch == cuda:
-        inclusive_add = warp_shfl_up_i32
-    elif current_cfg().arch == vulkan:
-        inclusive_add = subgroup.inclusive_add
-    else:
-        raise RuntimeError(
-            f"{str(current_cfg().arch)} is not supported for prefix sum.")
-
-    blit_from_field_to_field(large_arr, input_arr, 0, length)
-
-    # Kogge-Stone construction
-    for i in range(len(ele_nums) - 1):
-        if i == len(ele_nums) - 2:
-            scan_add_inclusive(large_arr, ele_nums_pos[i], ele_nums_pos[i + 1],
-                               True, inclusive_add)
-        else:
-            scan_add_inclusive(large_arr, ele_nums_pos[i], ele_nums_pos[i + 1],
-                               False, inclusive_add)
-
-    for i in range(len(ele_nums) - 3, -1, -1):
-        uniform_add(large_arr, ele_nums_pos[i], ele_nums_pos[i + 1])
-
-    blit_from_field_to_field(input_arr, large_arr, 0, length)

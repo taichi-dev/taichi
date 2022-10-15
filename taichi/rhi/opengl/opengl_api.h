@@ -3,8 +3,7 @@
 #include "taichi/common/core.h"
 #include "taichi/rhi/device.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace opengl {
 
 bool initialize_opengl(bool use_gles = false, bool error_tolerance = false);
@@ -18,5 +17,4 @@ std::shared_ptr<Device> make_opengl_device();
 #undef PER_OPENGL_EXTENSION
 
 }  // namespace opengl
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

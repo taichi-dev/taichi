@@ -3,7 +3,7 @@
 #include "taichi/ui/utils/utils.h"
 #include "taichi/rhi/vulkan/vulkan_device.h"
 
-TI_UI_NAMESPACE_BEGIN
+namespace taichi::ui {
 
 namespace vulkan {
 
@@ -83,4 +83,4 @@ void SceneLines::cleanup() {
 
 }  // namespace vulkan
 
-TI_UI_NAMESPACE_END
+}  // namespace taichi::ui

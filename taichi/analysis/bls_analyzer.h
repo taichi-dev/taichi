@@ -4,8 +4,7 @@
 #include "taichi/ir/statements.h"
 #include "taichi/ir/scratch_pad.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 // Figure out accessed SNodes, and their ranges in this for stmt
 class BLSAnalyzer : public BasicStmtVisitor {
@@ -56,5 +55,4 @@ class BLSAnalyzer : public BasicStmtVisitor {
   bool analysis_ok_{true};
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

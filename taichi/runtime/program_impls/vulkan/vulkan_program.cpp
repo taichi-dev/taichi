@@ -13,8 +13,7 @@
 
 using namespace taichi::lang::vulkan;
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 namespace {
 std::vector<std::string> get_required_instance_extensions() {
@@ -130,6 +129,11 @@ void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
     int32_t patch = std::atoll(config->vk_api_version.c_str() + idot2 + 1);
     evd_params.api_version = VK_MAKE_API_VERSION(0, major, minor, patch);
   }
+
+  if (config->debug) {
+    TI_WARN("Enabling vulkan validation layer in debug mode");
+    evd_params.enable_validation_layer = true;
+  }
 #if !defined(ANDROID)
   if (glfw_window) {
     // then we should be able to create a device with graphics abilities
@@ -207,6 +211,12 @@ std::unique_ptr<aot::Kernel> VulkanProgramImpl::make_aot_kernel(
                                            std::move(params));
 }
 
+void VulkanProgramImpl::enqueue_compute_op_lambda(
+    std::function<void(Device *device, CommandList *cmdlist)> op,
+    const std::vector<ComputeOpImageRef> &image_refs) {
+  vulkan_runtime_->enqueue_compute_op_lambda(op, image_refs);
+}
+
 void VulkanProgramImpl::dump_cache_data_to_disk() {
   const auto &mgr = get_cache_manager();
   mgr->clean_offline_cache(offline_cache::string_to_clean_cache_policy(
@@ -225,10 +235,7 @@ const std::unique_ptr<gfx::CacheManager>
     using Mgr = gfx::CacheManager;
     Mgr::Params params;
     params.arch = config->arch;
-    params.mode =
-        offline_cache::enabled_wip_offline_cache(config->offline_cache)
-            ? Mgr::MemAndDiskCache
-            : Mgr::MemCache;
+    params.mode = config->offline_cache ? Mgr::MemAndDiskCache : Mgr::MemCache;
     params.cache_path = config->offline_cache_file_path;
     params.runtime = vulkan_runtime_.get();
     params.target_device = std::move(target_device);
@@ -244,5 +251,4 @@ VulkanProgramImpl::~VulkanProgramImpl() {
   embedded_device_.reset();
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

@@ -7,8 +7,7 @@
 #include "GLFW/glfw3.h"
 #include "taichi/rhi/opengl/opengl_device.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace opengl {
 
 #define PER_OPENGL_EXTENSION(x) bool opengl_extension_##x;
@@ -60,7 +59,9 @@ bool initialize_opengl(bool use_gles, bool error_tolerance) {
       glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     }
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+#if defined(__APPLE__)
     glfwWindowHint(GLFW_COCOA_MENUBAR, GLFW_FALSE);
+#endif
     // GL context needs a window (when using GLFW)
     GLFWwindow *window =
         glfwCreateWindow(1, 1, "Make OpenGL Context", nullptr, nullptr);
@@ -206,12 +207,14 @@ bool is_gles() {
 
 std::shared_ptr<Device> make_opengl_device() {
   std::shared_ptr<Device> dev = std::make_shared<GLDevice>();
-  dev->set_cap(DeviceCapability::spirv_has_int64, true);
-  dev->set_cap(DeviceCapability::spirv_has_float64, true);
+  if (!is_gles()) {
+    // 64bit isn't supported in ES profile
+    dev->set_cap(DeviceCapability::spirv_has_int64, true);
+    dev->set_cap(DeviceCapability::spirv_has_float64, true);
+  }
   dev->set_cap(DeviceCapability::spirv_version, 0x10300);
   return dev;
 }
 
 }  // namespace opengl
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

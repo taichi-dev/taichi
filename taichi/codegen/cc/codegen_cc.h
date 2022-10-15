@@ -3,7 +3,7 @@
 #include "taichi/util/lang_util.h"
 #include "taichi/codegen/codegen.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 class CCProgramImpl;
 
@@ -28,4 +28,4 @@ class CCKernelGen {
 FunctionType compile_kernel(Kernel *kernel);
 
 }  // namespace cccp
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

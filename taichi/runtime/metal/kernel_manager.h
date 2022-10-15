@@ -13,8 +13,7 @@
 #include "taichi/program/kernel_profiler.h"
 #include "taichi/system/memory_pool.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class Kernel;
 struct RuntimeContext;
@@ -49,11 +48,7 @@ class KernelManager {
   // TODO(k-ye): Remove |taichi_kernel_name| now that it's part of
   // |ti_kernel_attribs|. Return a handle that will be passed to
   // launch_taichi_kernel(), instead of using kernel name as the identifier.
-  void register_taichi_kernel(const std::string &taichi_kernel_name,
-                              const std::string &mtl_kernel_source_code,
-                              const TaichiKernelAttributes &ti_kernel_attribs,
-                              const KernelContextAttributes &ctx_attribs,
-                              const Kernel *kernel);
+  void register_taichi_kernel(const CompiledKernelData &compiled_kernel);
 
   // Launch the given |taichi_kernel_name|.
   // Kernel launching is asynchronous, therefore the Metal memory is not valid
@@ -83,5 +78,4 @@ class KernelManager {
 };
 
 }  // namespace metal
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

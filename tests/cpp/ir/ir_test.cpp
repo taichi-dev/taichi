@@ -3,8 +3,7 @@
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace {
 
 std::unique_ptr<ConstStmt> make_const_i32(int32_t value) {
@@ -43,5 +42,4 @@ TEST(Block, EraseRange) {
 }
 
 }  // namespace
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

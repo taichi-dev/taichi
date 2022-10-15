@@ -8,8 +8,7 @@
 
 #include <unordered_set>
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class Stmt;
 
@@ -93,5 +92,4 @@ struct MeshPtr {  // Mesh wrapper in python
 };
 
 }  // namespace mesh
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

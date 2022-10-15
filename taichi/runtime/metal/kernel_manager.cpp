@@ -31,8 +31,7 @@
 #include "taichi/program/program.h"
 #endif  // TI_PLATFORM_OSX
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace metal {
 
 #ifdef TI_PLATFORM_OSX
@@ -233,11 +232,7 @@ class SparseRuntimeMtlKernelBase : public CompiledMtlKernelBase {
 
 class ListgenOpMtlKernel : public SparseRuntimeMtlKernelBase {
  public:
-  struct Params : public SparseRuntimeMtlKernelBase::Params {
-    const SNode *snode() const {
-      return kernel_attribs->runtime_list_op_attribs->snode;
-    }
-  };
+  struct Params : public SparseRuntimeMtlKernelBase::Params {};
 
   explicit ListgenOpMtlKernel(Params &params)
       : SparseRuntimeMtlKernelBase(params, /*args_size=*/sizeof(int32_t) * 2) {
@@ -246,8 +241,10 @@ class ListgenOpMtlKernel : public SparseRuntimeMtlKernelBase {
     // args[1] = child_snode_id
     // Note that this args buffer has nothing to do with the one passed to
     // Taichi kernel. See taichi/rhi/metal/shaders/runtime_kernels.metal.h
-    const int parent_snode_id = params.snode()->parent->id;
-    const int child_snode_id = params.snode()->id;
+    const int parent_snode_id =
+        params.kernel_attribs->runtime_list_op_attribs->parent_snode_id;
+    const int child_snode_id =
+        params.kernel_attribs->runtime_list_op_attribs->snode_id;
     auto *mem = reinterpret_cast<int32_t *>(args_mem_->ptr());
     mem[0] = parent_snode_id;
     mem[1] = child_snode_id;
@@ -263,15 +260,11 @@ class ListgenOpMtlKernel : public SparseRuntimeMtlKernelBase {
 
 class GcOpMtlKernel : public SparseRuntimeMtlKernelBase {
  public:
-  struct Params : public SparseRuntimeMtlKernelBase::Params {
-    const SNode *snode() const {
-      return kernel_attribs->gc_op_attribs->snode;
-    }
-  };
+  struct Params : public SparseRuntimeMtlKernelBase::Params {};
 
   explicit GcOpMtlKernel(Params &params)
       : SparseRuntimeMtlKernelBase(params, /*args_size=*/sizeof(int32_t)) {
-    const int snode_id = params.snode()->id;
+    const int snode_id = params.kernel_attribs->gc_op_attribs->snode_id;
     auto *mem = reinterpret_cast<int32_t *>(args_mem_->ptr());
     mem[0] = snode_id;
     TI_DEBUG("Registered GcOpMtlKernel: name={} num_threads={} snode_id={}",
@@ -287,20 +280,20 @@ class CompiledTaichiKernel {
  public:
   struct Params {
     std::string mtl_source_code;
-    const TaichiKernelAttributes *ti_kernel_attribs;
-    const KernelContextAttributes *ctx_attribs;
-    MTLDevice *device;
-    MemoryPool *mem_pool;
-    KernelProfilerBase *profiler;
-    const CompileConfig *compile_config;
-    const Kernel *kernel;
-    Device *rhi_device;
+    const TaichiKernelAttributes *ti_kernel_attribs{nullptr};
+    const KernelContextAttributes *ctx_attribs{nullptr};
+    const PrintStringTable *print_str_table{nullptr};
+    MTLDevice *device{nullptr};
+    MemoryPool *mem_pool{nullptr};
+    KernelProfilerBase *profiler{nullptr};
+    const CompileConfig *compile_config{nullptr};
+    Device *rhi_device{nullptr};
   };
 
   CompiledTaichiKernel(Params params)
       : ti_kernel_attribs(*params.ti_kernel_attribs),
         ctx_attribs(*params.ctx_attribs),
-        kernel_(params.kernel),
+        print_str_table(*params.print_str_table),
         rhi_device_(params.rhi_device) {
     auto *const device = params.device;
     auto kernel_lib = new_library_with_source(
@@ -421,6 +414,7 @@ class CompiledTaichiKernel {
   std::vector<std::unique_ptr<CompiledMtlKernelBase>> compiled_mtl_kernels;
   TaichiKernelAttributes ti_kernel_attribs;
   KernelContextAttributes ctx_attribs;
+  PrintStringTable print_str_table;
   std::unique_ptr<BufferMemoryView> ctx_mem;
   nsobj_unique_ptr<MTLBuffer> ctx_buffer;
 
@@ -431,7 +425,6 @@ class CompiledTaichiKernel {
   std::unordered_map<int, AllocAndSize> ext_arr_arg_to_dev_alloc;
 
  private:
-  const Kernel *const kernel_;
   Device *const rhi_device_;
 };
 
@@ -727,34 +720,32 @@ class KernelManager::Impl {
     root_buffers_.push_back(std::move(rtbuf));
   }
 
-  void register_taichi_kernel(const std::string &taichi_kernel_name,
-                              const std::string &mtl_kernel_source_code,
-                              const TaichiKernelAttributes &ti_kernel_attribs,
-                              const KernelContextAttributes &ctx_attribs,
-                              const Kernel *kernel) {
-    TI_ASSERT(compiled_taichi_kernels_.find(taichi_kernel_name) ==
-              compiled_taichi_kernels_.end());
+  void register_taichi_kernel(const CompiledKernelData &compiled_kernel) {
+    if (compiled_taichi_kernels_.find(compiled_kernel.kernel_name) !=
+        compiled_taichi_kernels_.end()) {
+      return;
+    }
 
     if (config_->print_kernel_llvm_ir) {
       // If users have enabled |print_kernel_llvm_ir|, it probably means that
       // they want to see the compiled code on the given arch. Maybe rename this
       // flag, or add another flag (e.g. |print_kernel_source_code|)?
-      TI_INFO("Metal source code for kernel <{}>\n{}", taichi_kernel_name,
-              mtl_kernel_source_code);
+      TI_INFO("Metal source code for kernel <{}>\n{}",
+              compiled_kernel.kernel_name, compiled_kernel.source_code);
     }
     CompiledTaichiKernel::Params params;
-    params.mtl_source_code = mtl_kernel_source_code;
-    params.ti_kernel_attribs = &ti_kernel_attribs;
-    params.ctx_attribs = &ctx_attribs;
+    params.mtl_source_code = compiled_kernel.source_code;
+    params.ti_kernel_attribs = &compiled_kernel.kernel_attribs;
+    params.ctx_attribs = &compiled_kernel.ctx_attribs;
+    params.print_str_table = &compiled_kernel.print_str_table;
     params.device = device_.get();
     params.mem_pool = mem_pool_;
     params.profiler = profiler_;
     params.compile_config = config_;
-    params.kernel = kernel;
     params.rhi_device = rhi_device_.get();
-    compiled_taichi_kernels_[taichi_kernel_name] =
+    compiled_taichi_kernels_[compiled_kernel.kernel_name] =
         std::make_unique<CompiledTaichiKernel>(params);
-    TI_DEBUG("Registered Taichi kernel <{}>", taichi_kernel_name);
+    TI_DEBUG("Registered Taichi kernel <{}>", compiled_kernel.kernel_name);
   }
 
   void launch_taichi_kernel(const std::string &taichi_kernel_name,
@@ -813,10 +804,10 @@ class KernelManager::Impl {
         ctx_blitter->metal_to_host();
       }
       if (used.assertion) {
-        check_assertion_failure();
+        check_assertion_failure(cti_kernel.print_str_table);
       }
       if (used.print) {
-        flush_print_buffers();
+        flush_print_buffers(cti_kernel.print_str_table);
       }
     }
   }
@@ -828,10 +819,6 @@ class KernelManager::Impl {
 
   BufferMetaData get_buffer_meta_data() {
     return buffer_meta_data_;
-  }
-
-  PrintStringTable *print_strtable() {
-    return &print_strtable_;
   }
 
   std::size_t get_snode_num_dynamically_allocated(SNode *snode) {
@@ -1101,7 +1088,7 @@ class KernelManager::Impl {
     // print_runtime_debug();
   }
 
-  void check_assertion_failure() {
+  void check_assertion_failure(const PrintStringTable &print_str_table) {
     // TODO: Copy this to program's result_buffer, and let the Taichi runtime
     // handle the assertion failures uniformly.
     auto *asst_rec = reinterpret_cast<shaders::AssertRecorderData *>(
@@ -1113,7 +1100,7 @@ class KernelManager::Impl {
     shaders::PrintMsg msg(msg_ptr, asst_rec->num_args);
     using MsgType = shaders::PrintMsg::Type;
     TI_ASSERT(msg.pm_get_type(0) == MsgType::Str);
-    const auto fmt_str = print_strtable_.get(msg.pm_get_data(0));
+    const auto fmt_str = print_str_table.get(msg.pm_get_data(0));
     const auto err_str = format_error_message(fmt_str, [&msg](int argument_id) {
       // +1 to skip the first arg, which is the error message template.
       const int32 x = msg.pm_get_data(argument_id + 1);
@@ -1142,7 +1129,7 @@ class KernelManager::Impl {
     throw TaichiAssertionError(err_str);
   }
 
-  void flush_print_buffers() {
+  void flush_print_buffers(const PrintStringTable &print_str_table) {
     auto *pa = reinterpret_cast<shaders::PrintMsgAllocator *>(
         print_assert_idevalloc_.mem->ptr() + shaders::kMetalAssertBufferSize);
     const int used_sz =
@@ -1167,7 +1154,7 @@ class KernelManager::Impl {
         } else if (dt == MsgType::F32) {
           py_cout << *reinterpret_cast<const float *>(&x);
         } else if (dt == MsgType::Str) {
-          py_cout << print_strtable_.get(x);
+          py_cout << print_str_table.get(x);
         } else {
           TI_ERROR("Unexpected data type={}", dt);
         }
@@ -1275,7 +1262,6 @@ class KernelManager::Impl {
   int last_snode_id_used_in_runtime_{-1};
   std::unordered_map<std::string, std::unique_ptr<CompiledTaichiKernel>>
       compiled_taichi_kernels_;
-  PrintStringTable print_strtable_;
 
   // The |dev_*_mirror_|s are the data structures stored in the Metal device
   // side that get mirrored to the host side. This is possible because the
@@ -1302,11 +1288,7 @@ class KernelManager::Impl {
     TI_ERROR("Metal not supported on the current OS");
   }
 
-  void register_taichi_kernel(const std::string &taichi_kernel_name,
-                              const std::string &mtl_kernel_source_code,
-                              const TaichiKernelAttributes &ti_kernel_attribs,
-                              const KernelContextAttributes &ctx_attribs,
-                              const Kernel *kernel) {
+  void register_taichi_kernel(const CompiledKernelData &) {
     TI_ERROR("Metal not supported on the current OS");
   }
 
@@ -1352,14 +1334,8 @@ void KernelManager::add_compiled_snode_tree(const CompiledStructs &snode_tree) {
   impl_->add_compiled_snode_tree(snode_tree);
 }
 
-void KernelManager::register_taichi_kernel(
-    const std::string &taichi_kernel_name,
-    const std::string &mtl_kernel_source_code,
-    const TaichiKernelAttributes &ti_kernel_attribs,
-    const KernelContextAttributes &ctx_attribs,
-    const Kernel *kernel) {
-  impl_->register_taichi_kernel(taichi_kernel_name, mtl_kernel_source_code,
-                                ti_kernel_attribs, ctx_attribs, kernel);
+void KernelManager::register_taichi_kernel(const CompiledKernelData &compiled) {
+  impl_->register_taichi_kernel(compiled);
 }
 
 void KernelManager::launch_taichi_kernel(const std::string &taichi_kernel_name,
@@ -1375,10 +1351,6 @@ BufferMetaData KernelManager::get_buffer_meta_data() {
   return impl_->get_buffer_meta_data();
 }
 
-PrintStringTable *KernelManager::print_strtable() {
-  return impl_->print_strtable();
-}
-
 std::size_t KernelManager::get_snode_num_dynamically_allocated(SNode *snode) {
   return impl_->get_snode_num_dynamically_allocated(snode);
 }
@@ -1389,5 +1361,4 @@ DeviceAllocation KernelManager::allocate_memory(
 }
 
 }  // namespace metal
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

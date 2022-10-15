@@ -4,7 +4,7 @@
 #include "taichi/ir/visitors.h"
 #include "taichi/transforms/utils.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 namespace {
 
@@ -193,4 +193,4 @@ void demote_dense_struct_fors(IRNode *root, bool packed) {
 
 }  // namespace irpass
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

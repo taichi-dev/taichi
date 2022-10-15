@@ -1,7 +1,7 @@
 #include "canvas.h"
 #include "taichi/ui/utils/utils.h"
 
-TI_UI_NAMESPACE_BEGIN
+namespace taichi::ui {
 
 namespace vulkan {
 
@@ -16,6 +16,10 @@ void Canvas::set_background_color(const glm::vec3 &color) {
 
 void Canvas::set_image(const SetImageInfo &info) {
   renderer_->set_image(info);
+}
+
+void Canvas::set_image(Texture *tex) {
+  renderer_->set_image(tex);
 }
 
 void Canvas::triangles(const TrianglesInfo &info) {
@@ -40,4 +44,4 @@ void Canvas::scene(SceneBase *scene_base) {
 
 }  // namespace vulkan
 
-TI_UI_NAMESPACE_END
+}  // namespace taichi::ui

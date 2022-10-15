@@ -3,8 +3,7 @@
 #include "taichi/rhi/metal/constants.h"
 #include "taichi/util/environ_config.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace metal {
 
 #ifdef TI_PLATFORM_OSX
@@ -195,5 +194,4 @@ bool is_metal_api_available() {
 }
 
 }  // namespace metal
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

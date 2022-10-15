@@ -7,7 +7,7 @@
 #include "taichi/ir/frontend_ir.h"
 #include "taichi/transforms/utils.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 static_assert(
     sizeof(real) == sizeof(float32),
@@ -84,8 +84,8 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(LocalLoadStmt *stmt) override {
-    TI_ASSERT(stmt->src->is<AllocaStmt>() || stmt->src->is<PtrOffsetStmt>());
-    if (auto ptr_offset_stmt = stmt->src->cast<PtrOffsetStmt>()) {
+    TI_ASSERT(stmt->src->is<AllocaStmt>() || stmt->src->is<MatrixPtrStmt>());
+    if (auto ptr_offset_stmt = stmt->src->cast<MatrixPtrStmt>()) {
       TI_ASSERT(ptr_offset_stmt->origin->is<AllocaStmt>() ||
                 ptr_offset_stmt->origin->is<GlobalTemporaryStmt>());
       if (auto alloca_stmt = ptr_offset_stmt->origin->cast<AllocaStmt>()) {
@@ -145,16 +145,18 @@ class TypeCheck : public IRVisitor {
     } else
       TI_WARN("[{}] Type inference failed: snode is nullptr.\n{}", stmt->name(),
               stmt->tb);
-    if (stmt->snode->parent->num_active_indices != 0 &&
-        stmt->snode->parent->num_active_indices != stmt->indices.size()) {
-      TI_ERROR("[{}] {} has {} indices. Indexed with {}.", stmt->name(),
-               stmt->snode->parent->node_type_name,
-               stmt->snode->parent->num_active_indices, stmt->indices.size());
-    }
+    auto check_indices = [&](SNode *snode) {
+      if (snode->num_active_indices != stmt->indices.size()) {
+        TI_ERROR("[{}] {} has {} indices. Indexed with {}.", stmt->name(),
+                 snode->node_type_name, snode->num_active_indices,
+                 stmt->indices.size());
+      }
+    };
+    check_indices(stmt->is_cell_access ? stmt->snode : stmt->snode->parent);
     for (int i = 0; i < stmt->indices.size(); i++) {
-      if (!is_integral(stmt->indices[i]->ret_type)) {
+      if (!stmt->indices[i]->ret_type->is_primitive(PrimitiveTypeID::i32)) {
         TI_WARN(
-            "[{}] Field index {} not integral, casting into int32 "
+            "[{}] Field index {} not int32, casting into int32 "
             "implicitly\n{}",
             stmt->name(), i, stmt->tb);
         stmt->indices[i] =
@@ -163,7 +165,7 @@ class TypeCheck : public IRVisitor {
     }
   }
 
-  void visit(PtrOffsetStmt *stmt) override {
+  void visit(MatrixPtrStmt *stmt) override {
     TI_ASSERT(stmt->offset->ret_type->is_primitive(PrimitiveTypeID::i32));
     stmt->ret_type.set_is_pointer(true);
   }
@@ -195,12 +197,21 @@ class TypeCheck : public IRVisitor {
     if (stmt->is_cast()) {
       stmt->ret_type = stmt->cast_type;
     }
-    if (!is_real(stmt->operand->ret_type)) {
+
+    DataType primitive_dtype = stmt->operand->ret_type.get_element_type();
+    if (!is_real(primitive_dtype)) {
       if (stmt->op_type == UnaryOpType::sqrt ||
           stmt->op_type == UnaryOpType::exp ||
           stmt->op_type == UnaryOpType::log) {
-        cast(stmt->operand, config_.default_fp);
-        stmt->ret_type = config_.default_fp;
+        DataType target_dtype = config_.default_fp;
+        if (stmt->operand->ret_type->is<TensorType>()) {
+          target_dtype = TypeFactory::get_instance().create_tensor_type(
+              stmt->operand->ret_type->as<TensorType>()->get_shape(),
+              target_dtype);
+        }
+
+        cast(stmt->operand, target_dtype);
+        stmt->ret_type = target_dtype;
       }
     }
   }
@@ -276,16 +287,29 @@ class TypeCheck : public IRVisitor {
     if (stmt->lhs->ret_type->is_primitive(PrimitiveTypeID::unknown) &&
         stmt->rhs->ret_type->is_primitive(PrimitiveTypeID::unknown))
       error();
+    if (stmt->op_type == BinaryOpType::pow &&
+        (is_integral(stmt->rhs->ret_type.get_element_type()))) {
+      stmt->ret_type = stmt->lhs->ret_type;
+      return;
+    }
+
+    auto make_dt = [stmt](DataType dt) {
+      if (auto tensor_ty = stmt->lhs->ret_type->cast<TensorType>()) {
+        return TypeFactory::create_tensor_type(tensor_ty->get_shape(), dt);
+      } else {
+        return dt;
+      }
+    };
 
     // lower truediv into div
 
     if (stmt->op_type == BinaryOpType::truediv) {
       auto default_fp = config_.default_fp;
-      if (!is_real(stmt->lhs->ret_type)) {
-        cast(stmt->lhs, default_fp);
+      if (!is_real(stmt->lhs->ret_type.get_element_type())) {
+        cast(stmt->lhs, make_dt(default_fp));
       }
-      if (!is_real(stmt->rhs->ret_type)) {
-        cast(stmt->rhs, default_fp);
+      if (!is_real(stmt->rhs->ret_type.get_element_type())) {
+        cast(stmt->rhs, make_dt(default_fp));
       }
       stmt->op_type = BinaryOpType::div;
     }
@@ -295,13 +319,13 @@ class TypeCheck : public IRVisitor {
     if (stmt->op_type == BinaryOpType::atan2) {
       if (stmt->rhs->ret_type == PrimitiveType::f64 ||
           stmt->lhs->ret_type == PrimitiveType::f64) {
-        stmt->ret_type = PrimitiveType::f64;
-        cast(stmt->rhs, PrimitiveType::f64);
-        cast(stmt->lhs, PrimitiveType::f64);
+        stmt->ret_type = make_dt(PrimitiveType::f64);
+        cast(stmt->rhs, make_dt(PrimitiveType::f64));
+        cast(stmt->lhs, make_dt(PrimitiveType::f64));
       } else {
-        stmt->ret_type = PrimitiveType::f32;
-        cast(stmt->rhs, PrimitiveType::f32);
-        cast(stmt->lhs, PrimitiveType::f32);
+        stmt->ret_type = make_dt(PrimitiveType::f32);
+        cast(stmt->rhs, make_dt(PrimitiveType::f32));
+        cast(stmt->lhs, make_dt(PrimitiveType::f32));
       }
     }
 
@@ -345,7 +369,7 @@ class TypeCheck : public IRVisitor {
       error();
     }
     if (is_comparison(stmt->op_type)) {
-      stmt->ret_type = PrimitiveType::i32;
+      stmt->ret_type = make_dt(PrimitiveType::i32);
     } else {
       stmt->ret_type = stmt->lhs->ret_type;
     }
@@ -398,8 +422,25 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(ExternalPtrStmt *stmt) override {
+    /* ExternalPtrStmt may have two different semantics:
+       1. outer indexing to an argloaded external tensor
+       2. outer indexing + inner indexing to get the innermost primitive
+       element of an external tensor
+       We rely on "external_dims" and "indices" to distinguish these two cases.
+       Case #1: external_dims == indices.size(), return TensorType
+       Case #2: external_dims < indices.size(), return PrimitiveType
+    */
+    TI_ASSERT(stmt->base_ptr->is<ArgLoadStmt>());
+    auto arg_load_stmt = stmt->base_ptr->cast<ArgLoadStmt>();
+
+    int external_dims = arg_load_stmt->field_dims_;
+    if (external_dims == stmt->indices.size() || external_dims == -1) {
+      stmt->ret_type = arg_load_stmt->ret_type;
+    } else {
+      stmt->ret_type = arg_load_stmt->ret_type.ptr_removed().get_element_type();
+    }
+
     stmt->ret_type.set_is_pointer(true);
-    stmt->ret_type = stmt->base_ptr->ret_type;
     for (int i = 0; i < stmt->indices.size(); i++) {
       TI_ASSERT(is_integral(stmt->indices[i]->ret_type));
       if (stmt->indices[i]->ret_type != PrimitiveType::i32) {
@@ -506,7 +547,12 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(GlobalTemporaryStmt *stmt) override {
-    if (!stmt->ret_type->is<TensorType>())
+    /**
+     * We need to convert TensorType to pointer when
+     * real_matrix is enabled because one can store value
+     * in a loop to a tensor defined outside the loop
+     */
+    if (!stmt->ret_type->is<TensorType>() || config_.real_matrix)
       stmt->ret_type.set_is_pointer(true);
   }
 
@@ -549,4 +595,4 @@ void type_check(IRNode *root, const CompileConfig &config) {
 
 }  // namespace irpass
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

@@ -11,9 +11,9 @@ def compile_kernel_aot_test1(arch):
         return
 
     @ti.kernel
-    def run(base: int, arr: ti.types.ndarray()):
+    def run(base: int, arr: ti.types.ndarray(), v: ti.types.vector(3, ti.i32)):
         for i in arr:
-            arr[i] = base + i
+            arr[i] = base + i + v[0]
 
     arr = ti.ndarray(int, shape=16)
 
@@ -38,5 +38,7 @@ if __name__ == "__main__":
         compile_kernel_aot_test1(arch=ti.vulkan)
     elif args.arch == "opengl":
         compile_kernel_aot_test1(arch=ti.opengl)
+    elif args.arch == "dx12":
+        compile_kernel_aot_test1(arch=ti.dx12)
     else:
         assert False

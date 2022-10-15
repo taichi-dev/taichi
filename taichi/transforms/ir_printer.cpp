@@ -8,7 +8,7 @@
 #include "taichi/ir/frontend_ir.h"
 #include "taichi/util/str.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 namespace {
 
@@ -377,6 +377,30 @@ class IRPrinter : public IRVisitor {
     print("}}");
   }
 
+  void visit(MatrixOfGlobalPtrStmt *stmt) override {
+    std::string s = fmt::format("{}{} = matrix of global ptr [",
+                                stmt->type_hint(), stmt->name());
+
+    for (int i = 0; i < (int)stmt->snodes.size(); i++) {
+      s += fmt::format("{}", stmt->snodes[i]->get_node_type_name_hinted());
+      if (i + 1 < (int)stmt->snodes.size()) {
+        s += ", ";
+      }
+    }
+    s += "], index [";
+    for (int i = 0; i < (int)stmt->indices.size(); i++) {
+      s += fmt::format("{}", stmt->indices[i]->name());
+      if (i + 1 < (int)stmt->indices.size()) {
+        s += ", ";
+      }
+    }
+    s += "]";
+
+    s += " activate=" + std::string(stmt->activate ? "true" : "false");
+
+    print_raw(s);
+  }
+
   void visit(GlobalPtrStmt *stmt) override {
     std::string s =
         fmt::format("{}{} = global ptr [", stmt->type_hint(), stmt->name());
@@ -402,7 +426,7 @@ class IRPrinter : public IRVisitor {
     print_raw(s);
   }
 
-  void visit(PtrOffsetStmt *stmt) override {
+  void visit(MatrixPtrStmt *stmt) override {
     std::string s =
         fmt::format("{}{} = shift ptr [{} + {}]", stmt->type_hint(),
                     stmt->name(), stmt->origin->name(), stmt->offset->name());
@@ -418,9 +442,16 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(TextureOpStmt *stmt) override {
-    print("<struct> {} = texture_{}({}, {}, {})", stmt->name(),
-          texture_op_type_name(stmt->op), stmt->args[0]->name(),
-          stmt->args[1]->name(), stmt->args[2]->name());
+    std::string args_string = "";
+    for (int i = 0; i < (int)stmt->args.size(); i++) {
+      args_string += fmt::format("{}", stmt->args[i]->name());
+      if (i + 1 < (int)stmt->args.size()) {
+        args_string += ", ";
+      }
+    }
+
+    print("<struct> {} = texture_{}({})", stmt->name(),
+          texture_op_type_name(stmt->op), args_string);
   }
 
   void visit(FrontendReturnStmt *stmt) override {
@@ -812,4 +843,4 @@ void print(IRNode *root, std::string *output) {
 
 }  // namespace irpass
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

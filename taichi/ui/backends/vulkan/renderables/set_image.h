@@ -22,7 +22,7 @@
 #include "taichi/ui/common/canvas_base.h"
 #include "taichi/rhi/device.h"
 
-TI_UI_NAMESPACE_BEGIN
+namespace taichi::ui {
 
 namespace vulkan {
 
@@ -35,11 +35,14 @@ class SetImage final : public Renderable {
     // the actual image is only a corner of the whole image
     float x_factor{1.0};
     float y_factor{1.0};
+    int transpose{0};
   };
 
   SetImage(AppContext *app_context, VertexAttributes vbo_attrs);
 
   void update_data(const SetImageInfo &info);
+
+  void update_data(taichi::lang::Texture *tex);
 
   virtual void cleanup() override;
 
@@ -50,8 +53,13 @@ class SetImage final : public Renderable {
   taichi::lang::DataType texture_dtype_{taichi::lang::PrimitiveType::u8};
   taichi::lang::DeviceAllocation texture_;
 
+  taichi::lang::BufferFormat format_;
+
  private:
-  void init_set_image(AppContext *app_context, int img_width, int img_height);
+  void init_set_image(AppContext *app_context,
+                      int img_width,
+                      int img_height,
+                      taichi::lang::BufferFormat format);
 
   virtual void create_bindings() override;
 
@@ -64,9 +72,9 @@ class SetImage final : public Renderable {
 
   int get_correct_dimension(int dimension);
 
-  void update_ubo(float x_factor, float y_factor);
+  void update_ubo(float x_factor, float y_factor, bool transpose);
 };
 
 }  // namespace vulkan
 
-TI_UI_NAMESPACE_END
+}  // namespace taichi::ui

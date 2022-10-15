@@ -20,8 +20,7 @@
 #include "llvm/ADT/MapVector.h"
 #endif
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class IRNode;
 class Block;
@@ -605,5 +604,4 @@ inline void StmtFieldManager::operator()(const char *key, T &&value) {
   }
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

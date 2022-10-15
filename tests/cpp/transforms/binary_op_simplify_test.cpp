@@ -5,8 +5,7 @@
 #include "taichi/ir/transforms.h"
 #include "tests/cpp/program/test_program.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class BinaryOpSimplifyTest : public ::testing::Test {
  protected:
@@ -101,5 +100,4 @@ TEST_F(BinaryOpSimplifyTest, ModPOT) {
   EXPECT_EQ(ir_block->statements[3]->as<ReturnStmt>()->values[0], bin_op);
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

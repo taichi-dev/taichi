@@ -2,8 +2,7 @@
 
 #include "taichi/struct/snode_tree.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 TEST(SNodeTree, GetSNodeToRootMapping) {
   constexpr int kSNodeSize = 16;
@@ -27,5 +26,4 @@ TEST(SNodeTree, GetSNodeToRootMapping) {
   }
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

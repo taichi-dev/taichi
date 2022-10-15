@@ -5,8 +5,7 @@
 
 #include "taichi/ir/snode.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 /**
  * Represents a tree of SNodes.
@@ -52,5 +51,4 @@ class SNodeTree {
  */
 std::unordered_map<int, int> get_snodes_to_root_id(const SNode &root);
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

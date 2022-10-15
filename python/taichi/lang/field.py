@@ -1,5 +1,6 @@
 import taichi.lang
 from taichi._lib import core as _ti_core
+from taichi.lang import impl
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.util import (in_python_scope, python_scope, to_numpy_type,
                               to_paddle_type, to_pytorch_type)
@@ -377,6 +378,15 @@ class SNodeHostAccessor:
             def setter(value, *key):
                 assert len(key) == _ti_core.get_max_num_indices()
                 snode.write_float(key, value)
+                # we only capture write kernels in tape scope with no grad_repaced
+                if impl.get_runtime().target_tape and impl.get_runtime(
+                ).target_tape.grad_checker and not impl.get_runtime(
+                ).grad_replaced:
+                    for x in impl.get_runtime(
+                    ).target_tape.grad_checker.to_check:
+                        assert snode != x.snode.ptr, "Overwritten is prohibitive when doing grad check."
+                    impl.get_runtime().target_tape.insert(
+                        snode.write_float, (key, value))
         else:
             if _ti_core.is_signed(snode.data_type()):
 
@@ -392,6 +402,15 @@ class SNodeHostAccessor:
             def setter(value, *key):
                 assert len(key) == _ti_core.get_max_num_indices()
                 snode.write_int(key, value)
+                # same as above
+                if impl.get_runtime().target_tape and impl.get_runtime(
+                ).target_tape.grad_checker and not impl.get_runtime(
+                ).grad_replaced:
+                    for x in impl.get_runtime(
+                    ).target_tape.grad_checker.to_check:
+                        assert snode != x.snode.ptr, "Overwritten is prohibitive when doing grad check."
+                    impl.get_runtime().target_tape.insert(
+                        snode.write_int, (key, value))
 
         self.getter = getter
         self.setter = setter

@@ -11,12 +11,14 @@ RUN apt-get update && \
     apt-get install -y python3-pip \
                        libtinfo-dev \
                        clang-10 \
+                       sudo \
                        wget \
                        git \
                        unzip \
                        libx11-xcb-dev \
                        zlib1g-dev \
                        && \
+    printf "root ALL=(ALL:ALL) NOPASSWD: ALL\ndev ALL=(ALL:ALL) NOPASSWD: ALL\n" > /etc/sudoers && \
     apt-get autoclean && \
     rm -rf /var/cache/apt/archives
 

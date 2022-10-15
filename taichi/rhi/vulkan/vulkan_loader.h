@@ -6,8 +6,7 @@
 #include "taichi/rhi/vulkan/vulkan_common.h"
 #include "taichi/system/dynamic_loader.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace vulkan {
 
 class TI_DLL_EXPORT VulkanLoader {
@@ -25,7 +24,7 @@ class TI_DLL_EXPORT VulkanLoader {
 
   void load_instance(VkInstance instance_);
   void load_device(VkDevice device_);
-  bool init();
+  bool init(PFN_vkGetInstanceProcAddr get_proc_addr = nullptr);
   PFN_vkVoidFunction load_function(const char *name);
   VkInstance get_instance() {
     return vulkan_instance_;
@@ -51,5 +50,4 @@ TI_DLL_EXPORT bool is_vulkan_api_available();
 TI_DLL_EXPORT void set_vulkan_visible_device(std::string id);
 
 }  // namespace vulkan
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

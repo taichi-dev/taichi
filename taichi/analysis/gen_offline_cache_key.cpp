@@ -8,8 +8,7 @@
 #include "taichi/program/function.h"
 #include "taichi/program/program.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 namespace {
 
@@ -158,6 +157,13 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     emit(expr->adjoint);
     emit(expr->dual);
     emit(expr->adjoint_checkbit);
+  }
+
+  void visit(MatrixFieldExpression *expr) override {
+    emit(ExprOpCode::MatrixFieldExpression);
+    emit(expr->fields);
+    emit(expr->element_shape);
+    emit(expr->dynamic_index_stride);
   }
 
   void visit(IndexExpression *expr) override {
@@ -649,5 +655,4 @@ void gen_offline_cache_key(Program *prog, IRNode *ast, std::ostream *os) {
   ASTSerializer::run(prog, ast, os);
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

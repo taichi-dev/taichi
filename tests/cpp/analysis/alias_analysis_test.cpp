@@ -8,8 +8,7 @@
 #include "taichi/ir/snode.h"
 #include "taichi/ir/statements.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace irpass {
 namespace analysis {
 namespace {
@@ -148,5 +147,4 @@ TEST(AliasAnalysis, ExternalPtr_DiffPtr) {
 
 }  // namespace analysis
 }  // namespace irpass
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

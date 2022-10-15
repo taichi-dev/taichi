@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 #include "c_api_test_utils.h"
 #include "taichi/cpp/taichi.hpp"
+#include "c_api/tests/gtest_fixture.h"
 
 static void kernel_aot_test(TiArch arch) {
   uint32_t kArrLen = 32;
@@ -18,8 +19,11 @@ static void kernel_aot_test(TiArch arch) {
   ti::AotModule aot_mod = runtime.load_aot_module(aot_mod_ss.str().c_str());
   ti::Kernel k_run = aot_mod.get_kernel("run");
 
+  std::vector<int> arg2_v = {1, 2, 3};
+
   k_run[0] = arg0_val;
   k_run[1] = arg1_array;
+  k_run.set(2, arg2_v);
   k_run.launch();
   runtime.wait();
 
@@ -27,7 +31,7 @@ static void kernel_aot_test(TiArch arch) {
   int32_t *data = reinterpret_cast<int32_t *>(arg1_array.map());
 
   for (int i = 0; i < kArrLen; ++i) {
-    EXPECT_EQ(data[i], i);
+    EXPECT_EQ(data[i], i + arg0_val + arg2_v[0]);
   }
 
   arg1_array.unmap();
@@ -71,38 +75,38 @@ static void field_aot_test(TiArch arch) {
   capi::utils::check_runtime_error(runtime);
 }
 
-TEST(CapiAotTest, CpuField) {
+TEST_F(CapiTest, AotTestCpuField) {
   TiArch arch = TiArch::TI_ARCH_X64;
   field_aot_test(arch);
 }
 
-TEST(CapiAotTest, CudaField) {
+TEST_F(CapiTest, AotTestCudaField) {
   if (capi::utils::is_cuda_available()) {
     TiArch arch = TiArch::TI_ARCH_CUDA;
     field_aot_test(arch);
   }
 }
 
-TEST(CapiAotTest, CpuKernel) {
+TEST_F(CapiTest, AotTestCpuKernel) {
   TiArch arch = TiArch::TI_ARCH_X64;
   kernel_aot_test(arch);
 }
 
-TEST(CapiAotTest, CudaKernel) {
+TEST_F(CapiTest, AotTestCudaKernel) {
   if (capi::utils::is_cuda_available()) {
     TiArch arch = TiArch::TI_ARCH_CUDA;
     kernel_aot_test(arch);
   }
 }
 
-TEST(CapiAotTest, VulkanKernel) {
+TEST_F(CapiTest, AotTestVulkanKernel) {
   if (capi::utils::is_vulkan_available()) {
     TiArch arch = TiArch::TI_ARCH_VULKAN;
     kernel_aot_test(arch);
   }
 }
 
-TEST(CapiAotTest, OpenglKernel) {
+TEST_F(CapiTest, AotTestOpenglKernel) {
   if (capi::utils::is_opengl_available()) {
     TiArch arch = TiArch::TI_ARCH_OPENGL;
     kernel_aot_test(arch);

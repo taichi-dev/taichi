@@ -4,8 +4,7 @@
 
 #include <string>
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 enum class OffloadedTaskType : int {
 #define PER_TASK_TYPE(x) x,
@@ -15,5 +14,4 @@ enum class OffloadedTaskType : int {
 
 std::string offloaded_task_type_name(OffloadedTaskType tt);
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

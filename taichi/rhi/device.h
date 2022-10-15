@@ -6,8 +6,7 @@
 #include <string>
 #include <vector>
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 constexpr size_t kBufferSizeEntireSize = size_t(-1);
 
@@ -418,6 +417,11 @@ class Device {
       dest.set_cap(k, v);
     }
   }
+  void clone_caps(std::map<DeviceCapability, uint32_t> &dest) const {
+    for (const auto &[k, v] : caps_) {
+      dest[k] = v;
+    }
+  }
 
   void print_all_cap() const;
 
@@ -621,5 +625,4 @@ class TI_DLL_EXPORT GraphicsDevice : public Device {
                                const BufferImageCopyParams &params);
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

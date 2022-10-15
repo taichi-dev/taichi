@@ -17,7 +17,7 @@ class AnyArray:
     def __init__(self, ptr):
         assert ptr.is_external_tensor_expr()
         self.ptr = ptr
-        self.ptr.type_check(impl.get_runtime().prog.config)
+        self.ptr.type_check(impl.get_runtime().prog.config())
 
     def element_shape(self):
         return _ti_core.get_external_tensor_element_shape(self.ptr)
@@ -33,8 +33,8 @@ class AnyArray:
     def get_type(self):
         return NdarrayTypeMetadata(
             self.ptr.get_ret_type(),
-            None,  # AnyArray can take any shape
-            self.layout())
+            None  # AnyArray can take any shape
+        )
 
     @property
     @taichi_scope

@@ -8,7 +8,7 @@
 #include <deque>
 #include <set>
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 class DemoteAtomics : public BasicStmtVisitor {
  private:
@@ -93,8 +93,8 @@ class DemoteAtomics : public BasicStmtVisitor {
       }
     }
     if (stmt->dest->is<AllocaStmt>() ||
-        (stmt->dest->is<PtrOffsetStmt>() &&
-         stmt->dest->cast<PtrOffsetStmt>()->origin->is<AllocaStmt>())) {
+        (stmt->dest->is<MatrixPtrStmt>() &&
+         stmt->dest->cast<MatrixPtrStmt>()->origin->is<AllocaStmt>())) {
       demote = true;
       is_local = true;
     }
@@ -195,4 +195,4 @@ bool demote_atomics(IRNode *root, const CompileConfig &config) {
 
 }  // namespace irpass
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

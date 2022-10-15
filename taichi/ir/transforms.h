@@ -18,7 +18,7 @@
 #include "taichi/transforms/simplify.h"
 #include "taichi/common/trait.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 class ScratchPads;
 
@@ -29,12 +29,15 @@ namespace irpass {
 
 void re_id(IRNode *root);
 void flag_access(IRNode *root);
+void scalarize(IRNode *root);
+void lower_matrix_ptr(IRNode *root);
 bool die(IRNode *root);
 bool simplify(IRNode *root, const CompileConfig &config);
 bool cfg_optimization(
     IRNode *root,
     bool after_lower_access,
     bool autodiff_enabled,
+    bool real_matrix_enabled,
     const std::optional<ControlFlowGraph::LiveVarAnalysisConfig>
         &lva_config_opt = std::nullopt);
 bool alg_simp(IRNode *root, const CompileConfig &config);
@@ -44,6 +47,8 @@ bool whole_kernel_cse(IRNode *root);
 bool extract_constant(IRNode *root, const CompileConfig &config);
 bool unreachable_code_elimination(IRNode *root);
 bool loop_invariant_code_motion(IRNode *root, const CompileConfig &config);
+bool cache_loop_invariant_global_vars(IRNode *root,
+                                      const CompileConfig &config);
 void full_simplify(IRNode *root,
                    const CompileConfig &config,
                    const FullSimplifyPass::Args &args);
@@ -191,4 +196,4 @@ void compile_function(IRNode *ir,
                       bool start_from_ast);
 }  // namespace irpass
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

@@ -6,8 +6,7 @@
 #include "taichi/program/program.h"
 #include "taichi/analysis/offline_cache_util.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class ExpressionPrinter : public ExpressionVisitor {
  public:
@@ -108,6 +107,17 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
     } else {
       emit(fmt::format(" (dt={})", expr->dt->to_string()));
     }
+  }
+
+  void visit(MatrixFieldExpression *expr) override {
+    emit('[');
+    emit_vector(expr->fields);
+    emit("] (");
+    emit_vector(expr->element_shape);
+    if (expr->dynamic_index_stride) {
+      emit(", dynamic_index_stride = ", expr->dynamic_index_stride);
+    }
+    emit(')');
   }
 
   void visit(MatrixExpression *expr) override {
@@ -275,5 +285,4 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
   }
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

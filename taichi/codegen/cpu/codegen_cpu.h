@@ -7,7 +7,7 @@
 #include "taichi/codegen/codegen.h"
 #include "taichi/codegen/llvm/codegen_llvm.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 class KernelCodeGenCPU : public KernelCodeGen {
  public:
@@ -23,7 +23,7 @@ class KernelCodeGenCPU : public KernelCodeGen {
   bool supports_offline_cache() const override {
     return true;
   }
-  LLVMCompiledData compile_task(
+  LLVMCompiledTask compile_task(
       std::unique_ptr<llvm::Module> &&module = nullptr,
       OffloadedStmt *stmt = nullptr) override;
 
@@ -45,9 +45,9 @@ class CPUModuleToFunctionConverter : public ModuleToFunctionConverter {
 
   FunctionType convert(const std::string &kernel_name,
                        const std::vector<LlvmLaunchArgInfo> &args,
-                       LLVMCompiledData data) const override;
+                       LLVMCompiledKernel data) const override;
 };
 
 #endif
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

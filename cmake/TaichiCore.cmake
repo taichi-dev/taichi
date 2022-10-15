@@ -233,6 +233,7 @@ if(TI_WITH_LLVM)
         add_subdirectory(taichi/runtime/dx12)
         add_subdirectory(taichi/codegen/dx12)
 
+        target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/DirectX-Headers/include)
         target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE dx12_codegen)
         target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE dx12_runtime)
     endif()
@@ -283,6 +284,7 @@ if (TI_WITH_METAL)
     add_subdirectory(taichi/runtime/metal)
     add_subdirectory(taichi/runtime/program_impls/metal)
     add_subdirectory(taichi/codegen/metal)
+    add_subdirectory(taichi/cache/metal)
 
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE metal_codegen)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE metal_runtime)
@@ -317,6 +319,11 @@ add_subdirectory(taichi/runtime/gfx)
 if (TI_WITH_OPENGL OR TI_WITH_VULKAN OR TI_WITH_DX11)
   target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE spirv_codegen)
   target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE gfx_runtime)
+endif()
+
+if (TI_WITH_OPENGL OR TI_WITH_DX11)
+  set(SPIRV_CROSS_CLI false)
+  add_subdirectory(${PROJECT_SOURCE_DIR}/external/SPIRV-Cross ${PROJECT_BINARY_DIR}/external/SPIRV-Cross)
 endif()
 
 # Vulkan Device API

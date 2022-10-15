@@ -4,19 +4,20 @@
 #include "taichi/ir/analysis.h"
 #include "taichi/system/profiler.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 namespace irpass {
 bool cfg_optimization(
     IRNode *root,
     bool after_lower_access,
     bool autodiff_enabled,
+    bool real_matrix_enabled,
     const std::optional<ControlFlowGraph::LiveVarAnalysisConfig>
         &lva_config_opt) {
   TI_AUTO_PROF;
   auto cfg = analysis::build_cfg(root);
   bool result_modified = false;
-  while (true) {
+  while (true && !real_matrix_enabled) {
     bool modified = false;
     cfg->simplify_graph();
     if (cfg->store_to_load_forwarding(after_lower_access, autodiff_enabled))
@@ -34,4 +35,4 @@ bool cfg_optimization(
 }
 }  // namespace irpass
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

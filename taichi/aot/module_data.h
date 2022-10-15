@@ -3,11 +3,11 @@
 #include <string>
 #include <vector>
 
+#include "taichi/rhi/device.h"
 #include "taichi/common/core.h"
 #include "taichi/common/serialization.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace aot {
 
 struct CompiledFieldData {
@@ -120,6 +120,7 @@ struct ModuleData {
   std::unordered_map<std::string, CompiledTaichiKernel> kernels;
   std::unordered_map<std::string, CompiledTaichiKernel> kernel_tmpls;
   std::vector<aot::CompiledFieldData> fields;
+  std::map<DeviceCapability, uint32_t> required_caps;
 
   size_t root_buffer_size;
 
@@ -129,9 +130,8 @@ struct ModuleData {
     ts.write_to_file(path);
   }
 
-  TI_IO_DEF(kernels, kernel_tmpls, fields, root_buffer_size);
+  TI_IO_DEF(kernels, kernel_tmpls, fields, required_caps, root_buffer_size);
 };
 
 }  // namespace aot
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

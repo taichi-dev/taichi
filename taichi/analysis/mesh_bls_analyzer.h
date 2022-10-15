@@ -7,8 +7,7 @@
 
 #include <set>
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class MeshBLSCache {
  public:
@@ -154,5 +153,4 @@ class MeshBLSAnalyzer : public BasicStmtVisitor {
   CompileConfig config_;
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

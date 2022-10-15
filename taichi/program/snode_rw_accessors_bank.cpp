@@ -2,8 +2,7 @@
 
 #include "taichi/program/program.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 namespace {
 void set_kernel_args(const std::vector<int> &I,
@@ -79,5 +78,4 @@ uint64 SNodeRwAccessorsBank::Accessors::read_uint(const std::vector<int> &I) {
   return (uint64)read_int(I);
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

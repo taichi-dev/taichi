@@ -149,9 +149,14 @@ dx11 = _ti_core.dx11
 """
 # ----------------------
 
-gpu = [cuda, metal, vulkan, opengl, dx11]
+dx12 = _ti_core.dx12
+"""The DX11 backend.
+"""
+# ----------------------
+
+gpu = [cuda, metal, vulkan, opengl, dx11, dx12]
 """A list of GPU backends supported on the current system.
-Currently contains 'cuda', 'metal', 'opengl', 'vulkan', 'dx11'.
+Currently contains 'cuda', 'metal', 'opengl', 'vulkan', 'dx11', 'dx12'.
 
 When this is used, Taichi automatically picks the matching GPU backend. If no
 GPU is detected, Taichi falls back to the CPU backend.
@@ -347,7 +352,6 @@ def init(arch=None,
     # changed by the Vulkan backend initialization on OS X.
     current_dir = os.getcwd()
 
-    cfg = impl.default_cfg()
     # Check if installed version meets the requirements.
     if require_version is not None:
         check_require_version(require_version)
@@ -363,6 +367,9 @@ def init(arch=None,
     default_ip = _deepcopy(default_ip)
     kwargs = _deepcopy(kwargs)
     reset()
+
+    cfg = impl.default_cfg()
+    cfg.offline_cache = True  # Enable offline cache in frontend instead of C++ side
 
     spec_cfg = _SpecialConfig()
     env_comp = _EnvironmentConfigurator(kwargs, cfg)
@@ -440,11 +447,6 @@ def init(arch=None,
     if cfg.arch == cc:
         _ti_core.set_tmp_dir(locale_encode(prepare_sandbox()))
     print(f'[Taichi] Starting on arch={_ti_core.arch_name(cfg.arch)}')
-
-    # user selected visible device
-    visible_device = os.environ.get("TI_VISIBLE_DEVICE")
-    if visible_device and (cfg.arch == vulkan or _ti_core.GGUI_AVAILABLE):
-        _ti_core.set_vulkan_visible_device(visible_device)
 
     if _test_mode:
         return spec_cfg
@@ -594,10 +596,10 @@ def _block_dim(dim):
 def _block_dim_adaptive(block_dim_adaptive):
     """Enable/Disable backends set block_dim adaptively.
     """
-    if get_runtime().prog.config.arch != cpu:
+    if get_runtime().prog.config().arch != cpu:
         _logging.warn('Adaptive block_dim is supported on CPU backend only')
     else:
-        get_runtime().prog.config.cpu_block_dim_adaptive = block_dim_adaptive
+        get_runtime().prog.config().cpu_block_dim_adaptive = block_dim_adaptive
 
 
 def _bit_vectorize():
@@ -724,6 +726,7 @@ def is_arch_supported(arch, use_gles=False):
         cc: _ti_core.with_cc,
         vulkan: _ti_core.with_vulkan,
         dx11: _ti_core.with_dx11,
+        dx12: _ti_core.with_dx12,
         wasm: lambda: True,
         cpu: lambda: True,
     }
@@ -763,9 +766,9 @@ def get_compute_stream_device_time_elapsed_us() -> float:
 
 __all__ = [
     'i', 'ij', 'ijk', 'ijkl', 'ijl', 'ik', 'ikl', 'il', 'j', 'jk', 'jkl', 'jl',
-    'k', 'kl', 'l', 'x86_64', 'x64', 'dx11', 'wasm', 'arm64', 'cc', 'cpu',
-    'cuda', 'gpu', 'metal', 'opengl', 'vulkan', 'extension', 'loop_config',
-    'global_thread_idx', 'assume_in_range', 'block_local', 'cache_read_only',
-    'init', 'mesh_local', 'no_activate', 'reset', 'mesh_patch_idx',
-    'get_compute_stream_device_time_elapsed_us'
+    'k', 'kl', 'l', 'x86_64', 'x64', 'dx11', 'dx12', 'wasm', 'arm64', 'cc',
+    'cpu', 'cuda', 'gpu', 'metal', 'opengl', 'vulkan', 'extension',
+    'loop_config', 'global_thread_idx', 'assume_in_range', 'block_local',
+    'cache_read_only', 'init', 'mesh_local', 'no_activate', 'reset',
+    'mesh_patch_idx', 'get_compute_stream_device_time_elapsed_us'
 ]

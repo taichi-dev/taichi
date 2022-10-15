@@ -17,14 +17,14 @@ class Ndarray:
     """
     def __init__(self):
         self.host_accessor = None
-        self.layout = None
         self.shape = None
         self.element_type = None
         self.dtype = None
         self.arr = None
+        self.layout = Layout.AOS
 
     def get_type(self):
-        return NdarrayTypeMetadata(self.element_type, self.shape, self.layout)
+        return NdarrayTypeMetadata(self.element_type, self.shape)
 
     @property
     def element_shape(self):
@@ -91,7 +91,7 @@ class Ndarray:
         return arr
 
     @python_scope
-    def _ndarray_matrix_to_numpy(self, layout, as_vector):
+    def _ndarray_matrix_to_numpy(self, as_vector):
         """Converts matrix ndarray to a numpy array.
 
         Returns:
@@ -101,7 +101,7 @@ class Ndarray:
                        dtype=to_numpy_type(self.dtype))
         from taichi._kernels import \
             ndarray_matrix_to_ext_arr  # pylint: disable=C0415
-        layout_is_aos = 1 if layout == Layout.AOS else 0
+        layout_is_aos = 1
         ndarray_matrix_to_ext_arr(self, arr, layout_is_aos, as_vector)
         impl.get_runtime().sync()
         return arr
@@ -127,7 +127,7 @@ class Ndarray:
         impl.get_runtime().sync()
 
     @python_scope
-    def _ndarray_matrix_from_numpy(self, arr, layout, as_vector):
+    def _ndarray_matrix_from_numpy(self, arr, as_vector):
         """Loads all values from a numpy array.
 
         Args:
@@ -144,7 +144,7 @@ class Ndarray:
 
         from taichi._kernels import \
             ext_arr_to_ndarray_matrix  # pylint: disable=C0415
-        layout_is_aos = 1 if layout == Layout.AOS else 0
+        layout_is_aos = 1
         ext_arr_to_ndarray_matrix(arr, self, layout_is_aos, as_vector)
         impl.get_runtime().sync()
 
@@ -301,10 +301,7 @@ class NdarrayHostAccess:
     def __init__(self, arr, indices_first, indices_second):
         self.ndarr = arr
         self.arr = arr.arr
-        if arr.layout == Layout.SOA:
-            self.indices = indices_second + indices_first
-        else:
-            self.indices = indices_first + indices_second
+        self.indices = indices_first + indices_second
 
         def getter():
             self.ndarr._initialize_host_accessor()

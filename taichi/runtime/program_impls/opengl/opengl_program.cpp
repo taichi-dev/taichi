@@ -1,26 +1,24 @@
 #include "opengl_program.h"
 
+#include "taichi/analysis/offline_cache_util.h"
 #include "taichi/rhi/opengl/opengl_api.h"
 #include "taichi/runtime/gfx/aot_module_builder_impl.h"
 #include "taichi/runtime/gfx/aot_module_loader_impl.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
-namespace opengl {
+namespace {
 
-FunctionType compile_to_executable(Kernel *kernel,
-                                   gfx::GfxRuntime *runtime,
-                                   gfx::SNodeTreeManager *snode_tree_mgr) {
-  auto handle = runtime->register_taichi_kernel(
-      gfx::run_codegen(kernel, runtime->get_ti_device(),
-                       snode_tree_mgr->get_compiled_structs()));
+FunctionType register_params_to_executable(
+    gfx::GfxRuntime::RegisterParams &&params,
+    gfx::GfxRuntime *runtime) {
+  auto handle = runtime->register_taichi_kernel(std::move(params));
   return [runtime, handle](RuntimeContext &ctx) {
     runtime->launch_kernel(handle, &ctx);
   };
 }
 
-}  // namespace opengl
+}  // namespace
 
 OpenglProgramImpl::OpenglProgramImpl(CompileConfig &config)
     : ProgramImpl(config) {
@@ -28,9 +26,8 @@ OpenglProgramImpl::OpenglProgramImpl(CompileConfig &config)
 
 FunctionType OpenglProgramImpl::compile(Kernel *kernel,
                                         OffloadedStmt *offloaded) {
-  spirv::lower(kernel);
-  return opengl::compile_to_executable(kernel, runtime_.get(),
-                                       snode_tree_mgr_.get());
+  return register_params_to_executable(
+      get_cache_manager()->load_or_compile(config, kernel), runtime_.get());
 }
 
 void OpenglProgramImpl::materialize_runtime(MemoryPool *memory_pool,
@@ -87,12 +84,36 @@ DeviceAllocation OpenglProgramImpl::allocate_texture(
 
 std::unique_ptr<aot::Kernel> OpenglProgramImpl::make_aot_kernel(
     Kernel &kernel) {
-  spirv::lower(&kernel);
-  std::vector<gfx::CompiledSNodeStructs> compiled_structs;
-  gfx::GfxRuntime::RegisterParams kparams =
-      gfx::run_codegen(&kernel, get_compute_device(), compiled_structs);
-  return std::make_unique<gfx::KernelImpl>(runtime_.get(), std::move(kparams));
+  auto params = get_cache_manager()->load_or_compile(config, &kernel);
+  return std::make_unique<gfx::KernelImpl>(runtime_.get(), std::move(params));
 }
 
-}  // namespace lang
-}  // namespace taichi
+void OpenglProgramImpl::dump_cache_data_to_disk() {
+  const auto &mgr = get_cache_manager();
+  mgr->clean_offline_cache(offline_cache::string_to_clean_cache_policy(
+                               config->offline_cache_cleaning_policy),
+                           config->offline_cache_max_size_of_files,
+                           config->offline_cache_cleaning_factor);
+  mgr->dump_with_merging();
+}
+
+const std::unique_ptr<gfx::CacheManager>
+    &OpenglProgramImpl::get_cache_manager() {
+  if (!cache_manager_) {
+    TI_ASSERT(runtime_ && snode_tree_mgr_ && device_);
+    auto target_device = std::make_unique<aot::TargetDevice>(config->arch);
+    device_->clone_caps(*target_device);
+    using Mgr = gfx::CacheManager;
+    Mgr::Params params;
+    params.arch = config->arch;
+    params.mode = config->offline_cache ? Mgr::MemAndDiskCache : Mgr::MemCache;
+    params.cache_path = config->offline_cache_file_path;
+    params.runtime = runtime_.get();
+    params.target_device = std::move(target_device);
+    params.compiled_structs = &snode_tree_mgr_->get_compiled_structs();
+    cache_manager_ = std::make_unique<gfx::CacheManager>(std::move(params));
+  }
+  return cache_manager_;
+}
+
+}  // namespace taichi::lang

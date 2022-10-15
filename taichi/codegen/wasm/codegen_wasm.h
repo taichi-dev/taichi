@@ -8,8 +8,7 @@
 #include "llvm/IR/Module.h"
 #endif
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class KernelCodeGenWASM : public KernelCodeGen {
  public:
@@ -20,13 +19,12 @@ class KernelCodeGenWASM : public KernelCodeGen {
   FunctionType compile_to_function() override;
 
 #ifdef TI_WITH_LLVM
-  LLVMCompiledData compile_task(
+  LLVMCompiledTask compile_task(
       std::unique_ptr<llvm::Module> &&module = nullptr,
       OffloadedStmt *stmt = nullptr) override;  // AOT Module Gen
 
-  LLVMCompiledData compile_kernel_to_module() override;
+  LLVMCompiledKernel compile_kernel_to_module() override;
 #endif
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

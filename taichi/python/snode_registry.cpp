@@ -4,8 +4,7 @@
 #include "taichi/ir/snode.h"
 #include "taichi/program/program.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 SNode *SNodeRegistry::create_root(Program *prog) {
   TI_ASSERT(prog != nullptr);
@@ -28,5 +27,4 @@ std::unique_ptr<SNode> SNodeRegistry::finalize(const SNode *snode) {
   return nullptr;
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

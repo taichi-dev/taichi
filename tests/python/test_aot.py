@@ -137,8 +137,10 @@ def test_non_dense_snode():
         m.add_field('y', y)
 
 
+@pytest.mark.parametrize('use_gles', [True, False])
 @test_utils.test(arch=[ti.opengl, ti.vulkan])
-def test_mpm88_aot():
+def test_mpm88_aot(use_gles):
+    ti.init(ti.lang.impl.current_cfg().arch, use_gles=use_gles)
     n_particles = 8192
     n_grid = 128
     dx = 1 / n_grid

@@ -14,6 +14,7 @@ setup-sccache-local
 setup_python
 setup-android-ndk-env
 
+python -m pip install -r requirements_dev.txt
 python setup.py clean
 python setup.py build_ext
 cd build

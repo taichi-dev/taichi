@@ -1,14 +1,13 @@
 #pragma once
+#ifdef TI_WITH_LLVM
 
 #include "taichi_core_impl.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 class LlvmRuntimeExecutor;
 class MemoryPool;
 struct CompileConfig;
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang
 
 namespace capi {
 
@@ -17,11 +16,10 @@ class LlvmRuntime : public Runtime {
   LlvmRuntime(taichi::Arch arch);
 
   void check_runtime_error();
+  taichi::lang::Device &get() override;
 
  private:
   /* Internally used interfaces */
-  taichi::lang::Device &get() override;
-
   TiAotModule load_aot_module(const char *module_path) override;
   TiMemory allocate_memory(
       const taichi::lang::Device::AllocParams &params) override;
@@ -43,3 +41,5 @@ class LlvmRuntime : public Runtime {
 };
 
 }  // namespace capi
+
+#endif  // TI_WITH_LLVM

@@ -5,8 +5,7 @@
 #include "taichi/rhi/metal/constants.h"
 #include "taichi/runtime/metal/runtime_utils.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace metal {
 
 #ifdef TI_PLATFORM_OSX
@@ -422,5 +421,4 @@ MakeDeviceResult make_compute_device(const ComputeDeviceParams &params) {
 #endif  // TI_PLATFORM_OSX
 
 }  // namespace metal
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

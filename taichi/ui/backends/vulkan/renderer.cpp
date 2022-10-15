@@ -4,7 +4,7 @@
 
 using taichi::lang::Program;
 
-TI_UI_NAMESPACE_BEGIN
+namespace taichi::ui {
 
 namespace vulkan {
 
@@ -47,6 +47,12 @@ void Renderer::set_background_color(const glm::vec3 &color) {
 void Renderer::set_image(const SetImageInfo &info) {
   SetImage *s = get_renderable_of_type<SetImage>(VboHelpers::all());
   s->update_data(info);
+  next_renderable_ += 1;
+}
+
+void Renderer::set_image(Texture *tex) {
+  SetImage *s = get_renderable_of_type<SetImage>(VboHelpers::all());
+  s->update_data(tex);
   next_renderable_ += 1;
 }
 
@@ -219,4 +225,4 @@ taichi::lang::StreamSemaphore Renderer::get_render_complete_semaphore() {
 
 }  // namespace vulkan
 
-TI_UI_NAMESPACE_END
+}  // namespace taichi::ui

@@ -5,6 +5,7 @@
 
 #include "c_api_test_utils.h"
 #include "taichi/cpp/taichi.hpp"
+#include "c_api/tests/gtest_fixture.h"
 
 constexpr int img_h = 680;
 constexpr int img_w = 680;
@@ -33,7 +34,7 @@ static void comet_run(TiArch arch, const std::string &folder_dir) {
   }
 }
 
-TEST(CapiCometTest, Cuda) {
+TEST_F(CapiTest, CometTestCuda) {
   if (capi::utils::is_cuda_available()) {
     const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
 

@@ -4,16 +4,27 @@ sidebar_position: 1
 
 # Debugging
 
-Debugging a parallel program is not easy, so Taichi provides built-in
-utilities that could hopefully help you debug your Taichi program.
+Taichi provides the following mechanisms to facilitate parallel programming debugging:
 
-## Runtime `print` in Taichi-scope
+- `print` in the Taichi scope checks the value of a variable.
+- Serialization of your program or a specific parallel for loop.
+- Activated with `ti.init(debug=True)`, debug mode detects out-of-bound array accesses.
+- Static or non-static `assert` verifies an assertion condition at compile time or runtime respectively.
+- `sys.tracebacklimit` produces a conciser traceback.
+
+## Runtime `print` in Taichi scope
+
+
+You can call `print()` in the Taichi scope to debug your program:
 
 ```python
-print(arg1, ..., sep='', end='\n')
+print(*args, sep='', end='\n')
 ```
 
-Debug your program with `print()` in Taichi-scope. For example:
+When passed into a runtime `print()` in the Taichi scope, `args` can take string literal, scalar, vector, and matrix expressions.
+
+
+For example:
 
 ```python {1}
 @ti.kernel
@@ -52,59 +63,18 @@ def inside_taichi_scope():
     #=> ray.ori = [0.0, 0.0, 0.0], ray.dir = [0.0, 0.0, 1.0], ray.len = 1.0
 ```
 
-For now, Taichi-scope `print` supports string, scalar, vector, and
-matrix expressions as arguments. `print` in Taichi-scope may be a little
-different from `print` in Python-scope. Please see the details below.
+
+### Applicable backends
+
+`print` in the Taichi scope is supported on the CPU, CUDA, and Vulkan backends only.
 
 :::note
-`print` in Taichi-scope is currently supported on the CPU, CUDA, OpenGL, and Metal backends.
+`print` does not work in Graphical Python Shells, such as IDLE and Jupyter Notebook. This is because these backends print outputs to the console, not to the GUI.
 :::
 
-:::caution
-For the **CPU and CUDA backends**, `print` will not work in Graphical
-Python Shells including IDLE and Jupyter notebook. This is because these
-backends print the outputs to the console instead of the GUI. Use the
-**OpenGL or Metal backend** if you wish to use `print` in IDLE /
-Jupyter.
-:::
+### Comma-separated strings only
 
-:::caution
-
-For the **CUDA backend**, the printed result will not show up until
-`ti.sync()` is called:
-
-```python
-import taichi as ti
-ti.init(arch=ti.cuda)
-
-@ti.kernel
-def kern():
-    print('inside kernel')
-
-print('before kernel')
-kern()
-print('after kernel')
-ti.sync()
-print('after sync')
-```
-
-results in:
-
-```
-before kernel
-after kernel
-inside kernel
-after sync
-```
-
-Note that host access or program end will also implicitly invoke
-`ti.sync()`.
-:::
-
-:::note
-Note that `print` in Taichi-scope can only receive **comma-separated
-parameters**. Neither f-string nor formatted string should be used. For
-example:
+Strings passed to `print` in the Taichi scope *must* be comma-separated. Neither f-strings nor formatted strings can be recognized. For example:
 
 ```python {9-11}
 import taichi as ti
@@ -116,20 +86,15 @@ a = ti.field(ti.f32, 4)
 def foo():
     a[0] = 1.0
     print('a[0] = ', a[0]) # right
-    print(f'a[0] = {a[0]}') # wrong, f-string is not supported
-    print("a[0] = %f" % a[0]) # wrong, formatted string is not supported
+    print(f'a[0] = {a[0]}') # wrong: f-strings are not supported
+    print("a[0] = %f" % a[0]) # wrong: formatted strings are not supported
 
 foo()
 ```
 
-:::
-
 ## Compile-time `ti.static_print`
 
-Sometimes it is useful to print Python-scope objects and constants like
-data types or SNodes in Taichi-scope. So, similar to `ti.static`, Taichi
-provides `ti.static_print` to print compile-time constants, which is similar
-to Python-scope `print`:
+It can be useful to print Python objects and their properties like data types or SNodes in the Taichi scope. Similar to `ti.static`, which makes the compiler evaluate an argument at compile time (see the [Metaprogramming](../advanced/meta.md) for more information), `ti.static_print` prints compile-time constants in the Taichi scope:
 
 ```python
 x = ti.field(ti.f32, (2, 3))
@@ -146,55 +111,109 @@ def inside_taichi_scope():
     for i in range(4):
         ti.static_print(i.dtype)
         # => DataType.int32
-        # will only print once
+        # Only print once
 ```
 
-Unlike `print`, `ti.static_print` will only print the expression once at
-compile-time, and therefore it has no runtime cost.
+`ti.static_print` behaves similarly to `print` in the Python scope. The difference is that, unlike `print`, `ti.static_print` prints the expression only once at compile time, thus incurring no runtime cost.
 
 ## Serial execution
 
-The automatic parallelization feature of Taichi may lead to
-non-deterministic behaviors. For debugging purposes, it may be useful to
-serialize program execution to get repeatable results and to diagnose
-data races. When running your Taichi program on CPUs, you can initialize
-Taichi to use a single thread with `cpu_max_num_threads=1`, so that the
-whole program becomes serial and deterministic. For example,
+Taichi's automatic parallelization mechanism may lead to non-deterministic behaviors because the threads are executed in random order. For debugging purposes, serializing program execution may be useful for getting repeatable results or diagnosing data races. You can serialize either the entire Taichi program or a specific for loop.
 
-```
+### Serialize an entire Taichi program
+
+If you choose CPU as the backend, you can set `cpu_max_num_thread=1` when initializing Taichi to serialize the program. Then the program runs on a single thread and its behavior becomes deterministic. For example:
+
+```python
 ti.init(arch=ti.cpu, cpu_max_num_threads=1)
 ```
 
-If your program works well in serial but not in parallel, check
-parallelization-related issues such as data races.
+If your program works well in serial but fails in parallel, check if there are parallelization-related issues, such as data races.
 
-## Runtime `assert` in Taichi-scope
+### Serialize a specified parallel for loop
 
-Programmers may use `assert` statements in Taichi-scope. When the
-assertion condition fails, a `TaichiAssertionError` will be raised to indicate
-the error.
+By default, Taichi automatically parallelizes the for loops at the outermost scope in a Taichi kernel. But some scenarios require serial execution. In this case, you can prevent automatic parallelization with `ti.loop_config(serialize=True)`. Note that only the outermost for loop that immediately follows this line is serialized. For example:
+
+```python
+import taichi as ti
+
+ti.init(arch=ti.cpu)
+n = 1024
+val = ti.field(dtype=ti.i32, shape=n)
+
+val.fill(1)
+
+@ti.kernel
+def prefix_sum():
+    ti.loop_config(serialize=True) # Serializes the next for loop
+    for i in range(1, n):
+        val[i] += val[i - 1]
+
+    for i in range(1, n):  # Parallel for loop
+	    val[i] += val[i - 1]
+
+prefix_sum()
+print(val)
+```
+
+:::note
+
+- `ti.loop_config` works only for the *range-for* loop at the outermost scope.
+
+:::
+
+## Out-of-bound array access
+
+The array index out of bounds error is common. But Taichi turns off bounds checking by default and proceeds without raising a warning. Therefore, a program with such an error may end up with a wrong result or even trigger segmentation faults, which makes debugging hard.
+
+Taichi detects array index out of bound errors in debug mode. You can activate this mode by setting `debug=True` in the `ti.init()` call:
+
+```python
+import taichi as ti
+ti.init(arch=ti.cpu, debug=True)
+f = ti.field(dtype=ti.i32, shape=(32, 32))
+@ti.kernel
+def test() -> ti.i32:
+    return f[0, 73]
+
+print(test())
+```
+
+The code snippet above raises a `TaichiAssertionError` because you are trying to access elements from a field of shape (32, 32) with indices `[0, 73]`.
+
+:::note
+Automatic bound checks are supported on the CPU and CUDA beckends only.
+
+Your program performance may worsen if you set `debug=True`.
+:::
+
+## Runtime `assert` in Taichi scope
+
+You can use `assert` statements in the Taichi scope to verify the assertion conditions. If an assertion fails, the program throws a `TaichiAssertionError`.
 
 :::note
 `assert` is currently supported on the CPU, CUDA, and Metal backends.
 :::
 
-For performance reasons, `assert` only works when `debug` mode
-is on. For example:
+Ensure that you activate `debug` mode before using `assert` statements in the Taichi scope:
 
 ```python
+import taichi as ti
 ti.init(arch=ti.cpu, debug=True)
 
 x = ti.field(ti.f32, 128)
+x.fill(-1)
 
 @ti.kernel
 def do_sqrt_all():
     for i in x:
-        assert x[i] >= 0
-        x[i] = ti.sqrt(x)
+        assert x[i] >= 0, f"The {i}-th element cannot be negative"
+        x[i] = ti.sqrt(x[i])
+
+do_sqrt_all()
 ```
 
-When you are done with debugging, simply set `debug=False`. Now `assert`
-will be ignored and there will be no runtime overhead.
+When you are done with debugging, set `debug=False`. Then, the program ignores all `assert` statements in the Taichi scope, which can avoid additional runtime overhead.
 
 ## Compile-time `ti.static_assert`
 
@@ -202,11 +221,7 @@ will be ignored and there will be no runtime overhead.
 ti.static_assert(cond, msg=None)
 ```
 
-Like `ti.static_print`, Taichi also provides a static version of `assert`:
-`ti.static_assert`. It can be useful to make assertions on data types,
-dimensionality, and shapes. It works whether `debug=True` is specified
-or not. When an assertion fails, it will raise an `AssertionError`, just
-like a Python-scope `assert`.
+Like `ti.static_print`, Taichi also provides a static version of `assert`: `ti.static_assert`, which is useful to make assertions on data types, dimensionality, and shapes. It works regardless of whether `debug=True` is set or not. A false statement of `ti.static_assert` triggers an `AssertionError`, just as a false `assert` statement in the Python scope does.
 
 For example:
 
@@ -216,12 +231,11 @@ def copy(dst: ti.template(), src: ti.template()):
     ti.static_assert(dst.shape == src.shape, "copy() needs src and dst fields to be same shape")
     for I in ti.grouped(src):
         dst[I] = src[I]
-    return x % 2 == 1
 ```
 
-## Pretty Taichi-scope traceback
+## Conciser tracebacks in Taichi scope
 
-Taichi reports traceback messages when encountered errors in **Taichi-scope**. For example:
+Taichi reports the traceback of an error in the **Taichi scope**. For example:
 
 ```python
 import taichi as ti
@@ -246,7 +260,7 @@ def func0():
 func0()
 ```
 
-The above snippet would trigger a long and scaring `AssertionError`:
+The above snippet triggers an `AssertionError`, with a lengthy traceback message:
 
 ```
 Traceback (most recent call last):
@@ -293,17 +307,17 @@ Traceback (most recent call last):
     build_stmt(ctx, node.value)
   File "/Users/lanhaidong/taichi/taichi/python/taichi/lang/ast/ast_transformer_utils.py", line 32, in __call__
     raise TaichiCompilationError(msg)
-taichi.lang.exception.TaichiCompilationError: On line 10 of file "misc/demo_traceback.py":
+taichi.lang.exception.TaichiCompilationError: File "misc/demo_traceback.py", line 10:
     ti.static_assert(1 + 1 == 3)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError:
 
 ...
 ```
-The error message can be verbose and scary. However, many stack frames reveal
-Taichi compiler implementation details, which are too noisy for debugging.
-In current version, you could choose to suppress the level of traceback messages by setting `sys.tracebacklimit`,
-which makes the stack traceback from Taichi-scope more intuitive:
+
+It takes time to read through the message. In addition, many stack frames reveal implementation details, which are irrelevant to debugging.
+
+Taichi allows you to access a conciser and more intuitive version of traceback messages via `sys.tracebacklimit`:
 
 ```python {2}
 import taichi as ti
@@ -312,14 +326,14 @@ sys.tracebacklimit=0
 ...
 ```
 
-which makes the result look like:
+The traceback contains the following information only:
 
 ```python
 AssertionError
 
 During handling of the above exception, another exception occurred:
 
-taichi.lang.exception.TaichiCompilationError: On line 10 of file "misc/demo_traceback.py":
+taichi.lang.exception.TaichiCompilationError: File "misc/demo_traceback.py", line 10:
     ti.static_assert(1 + 1 == 3)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError:
@@ -327,27 +341,20 @@ AssertionError:
 ...
 ```
 
-Moreover, when filing an issue, please always unset the `sys.tracebacklimit` value and paste full traceback messages.
+However, always unset `sys.tracebacklimit` and submit the full traceback messages when filing an issue with us.
 
-## Debugging Tips
+## Debugging tips
 
-Debugging a Taichi program can be hard even with the above built-in tools.
-Here we showcase some common bugs that one may encounter in a
+The above built-in tools cannot guarantee a smooth debugging experience, though. Here, we conclude some common bugs that one may encounter in a
 Taichi program.
 
 ### Static type system
 
-Python code in Taichi-scope is translated into a statically typed
-language for high performance. This means code in Taichi-scope can have
-a different behavior compared with that in Python-scope, especially when
-it comes to types.
+Taichi translates Python code into a statically typed language for high performance. Therefore, code in the Taichi scope may behave differently from native Python code, especially when it comes to variable types.
 
-The type of a variable is **determined at its initialization and
-never changes later**.
+In the Taichi scope, the type of a variable is *determined upon initialization and never changes afterwards*.
 
-Although Taichi's static type system provides better performance, it
-may lead to bugs if programmers use the wrong types. For
-example:
+Although Taichi's static typing system delivers a better performance, it may lead to unexpected results if you fail to specify the correct types. For example:
 
 ```python
 @ti.kernel
@@ -360,15 +367,13 @@ def buggy():
 buggy()
 ```
 
-The code above shows a common bug due to misuse of Taichi's static type system.
-The Taichi compiler should show a warning like:
+The code above leads to an unexpected result due to a misuse of Taichi's static typing system. The Taichi compiler shows a warning:
 
 ```
 [W 06/27/20 21:43:51.853] [type_check.cpp:visit@66] [$19] Atomic add (float32 to int32) may lose precision.
 ```
 
-This means that Taichi cannot store a `float32` result precisely to
-`int32`. The solution is to initialize `ret` as a float-point value:
+This means that a precision loss occurs when Taichi converts a `float32` result to `int32`. The solution is to initialize `ret` as a floating-point value:
 
 ```python
 @ti.kernel
@@ -383,13 +388,8 @@ not_buggy()
 
 ### Advanced Optimization
 
-By default, Taichi runs a handful of advanced IR optimizations to make your
-Taichi kernels as performant as possible. Unfortunately, advanced
-optimization may occasionally lead to compilation errors, such as the following:
+By default, Taichi runs a number of advanced IR optimizations to maximize the performance of your Taichi kernels. However, advanced optimizations may occasionally lead to compilation errors, such as:
 
 `RuntimeError: [verify.cpp:basic_verify@40] stmt 8 cannot have operand 7.`
 
-You can turn off the advanced optimizations with
-`ti.init(advanced_optimization=False)` and see if it makes a difference. If
-the issue persists, please feel free to report this bug on
-[GitHub](https://github.com/taichi-dev/taichi/issues/new?labels=potential+bug&template=bug_report.md).
+You can use the `ti.init(advanced_optimization=False)` setting to turn off advanced optimizations and see if it makes a difference. If this issue persists, feel free to report it on [GitHub](https://github.com/taichi-dev/taichi/issues/new?labels=potential+bug&template=bug_report.md).

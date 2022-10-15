@@ -9,7 +9,7 @@
 #include "taichi/program/texture.h"
 #include "taichi/aot/graph_data.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 class Program;
 
@@ -35,7 +35,9 @@ class TI_DLL_EXPORT Kernel : public Callable {
 
     void set_arg_float(int arg_id, float64 d);
 
+    // Created signed and unsigned version for argument range check of pybind
     void set_arg_int(int arg_id, int64 d);
+    void set_arg_uint(int arg_id, uint64 d);
 
     void set_extra_arg_int(int i, int j, int32 d);
 
@@ -168,4 +170,4 @@ class TI_DLL_EXPORT Kernel : public Callable {
   bool from_cache_{false};
 };
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

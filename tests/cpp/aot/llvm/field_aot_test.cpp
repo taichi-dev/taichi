@@ -13,8 +13,7 @@
 #include "taichi/program/context.h"
 #undef TI_RUNTIME_HOST
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 static void run_field_tests(aot::Module *mod,
                             LlvmRuntimeExecutor *exec,
@@ -143,5 +142,4 @@ TEST(LlvmAotTest, CudaField) {
   }
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

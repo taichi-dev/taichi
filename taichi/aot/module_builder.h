@@ -9,8 +9,7 @@
 #include "taichi/aot/module_data.h"
 #include "taichi/aot/graph_data.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class Kernel;
 class DataType;
@@ -65,7 +64,8 @@ class AotModuleBuilder {
     TI_NOT_IMPLEMENTED;
   }
 
-  virtual void add_compiled_kernel(aot::Kernel *kernel) {
+  virtual void add_compiled_kernel(const std::string &identifier,
+                                   aot::Kernel *kernel) {
     TI_NOT_IMPLEMENTED;
   }
 
@@ -83,5 +83,4 @@ class AotModuleBuilder {
   std::unordered_map<std::string, aot::CompiledGraph> graphs_;
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

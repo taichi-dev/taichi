@@ -2,8 +2,7 @@
 
 #include <string>
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 enum class SNodeType {
 #define PER_SNODE(x) x,
@@ -15,5 +14,4 @@ std::string snode_type_name(SNodeType t);
 
 bool is_gc_able(SNodeType t);
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

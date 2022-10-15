@@ -11,7 +11,7 @@
 
 #define C90_COMPAT 0
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 namespace cccp {  // Codegen for C Compiler Processor
 
 namespace {
@@ -46,7 +46,7 @@ class CCTransformer : public IRVisitor {
 
   void lower_ast() {
     auto ir = kernel_->ir.get();
-    auto config = kernel_->program->config;
+    auto config = kernel_->program->this_thread_config();
     config.demote_dense_struct_fors = true;
     irpass::compile_to_executable(ir, config, kernel_,
                                   /*autodiff_mode=*/kernel_->autodiff_mode,
@@ -333,16 +333,6 @@ class CCTransformer : public IRVisitor {
         emit("{} = -({} {} {});", var, lhs_name, binop, rhs_name);
       } else if (bin->op_type == BinaryOpType::truediv) {
         emit("{} = ({}) {} / {};", var, dt_name, lhs_name, rhs_name);
-      } else if (bin->op_type == BinaryOpType::floordiv) {
-        auto lhs_dt_name = data_type_name(bin->lhs->element_type());
-        if (is_integral(bin->lhs->element_type()) &&
-            is_integral(bin->rhs->element_type())) {
-          emit("{} = Ti_floordiv_{}({}, {});", var, lhs_dt_name, lhs_name,
-               rhs_name);
-        } else {
-          emit("{} = Ti_floordiv_{}({}, {});", var, lhs_dt_name, lhs_name,
-               rhs_name);
-        }
       } else {
         emit("{} = {} {} {};", var, lhs_name, binop, rhs_name);
       }
@@ -615,4 +605,4 @@ std::unique_ptr<CCKernel> CCKernelGen::compile() {
 }
 
 }  // namespace cccp
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

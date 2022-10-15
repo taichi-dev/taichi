@@ -11,8 +11,7 @@
 #include "taichi/rhi/vulkan/vulkan_device.h"
 #include "taichi/common/logging.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace vulkan {
 
 namespace {
@@ -46,7 +45,16 @@ vk_debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
                   const VkDebugUtilsMessengerCallbackDataEXT *p_callback_data,
                   void *p_user_data) {
   if (message_severity > VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT) {
-    TI_WARN("validation layer: {}", p_callback_data->pMessage);
+    TI_WARN("validation layer: {}, {}", message_type,
+            p_callback_data->pMessage);
+  }
+  if (message_type == VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT &&
+      message_severity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT &&
+      strstr(p_callback_data->pMessage, "DEBUG-PRINTF") != NULL) {
+    // Message format is "BLABLA | MessageID=xxxxx | <DEBUG_PRINT_MSG>"
+    std::string msg(p_callback_data->pMessage);
+    auto const pos = msg.find_last_of("|");
+    std::cout << msg.substr(pos + 2);
   }
   return VK_FALSE;
 }
@@ -56,6 +64,7 @@ void populate_debug_messenger_create_info(
   *create_info = {};
   create_info->sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
   create_info->messageSeverity =
+      VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
       VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
       VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
       VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
@@ -256,8 +265,13 @@ void VulkanDeviceCreator::create_instance(bool manual_create) {
   create_info.pApplicationInfo = &app_info;
 
   if (params_.enable_validation_layer) {
-    TI_ASSERT_INFO(check_validation_layer_support(),
-                   "validation layers requested but not available");
+    if (!check_validation_layer_support()) {
+      TI_WARN(
+          "Validation layers requested but not available, turning off... "
+          "Please make sure Vulkan SDK from https://vulkan.lunarg.com/sdk/home "
+          "is installed.");
+      params_.enable_validation_layer = false;
+    }
   }
 
   VkDebugUtilsMessengerCreateInfoEXT debug_create_info{};
@@ -271,6 +285,18 @@ void VulkanDeviceCreator::create_instance(bool manual_create) {
   } else {
     create_info.enabledLayerCount = 0;
     create_info.pNext = nullptr;
+  }
+
+  // Response to `DebugPrintf`.
+  std::array<VkValidationFeatureEnableEXT, 1> vfes = {
+      VK_VALIDATION_FEATURE_ENABLE_DEBUG_PRINTF_EXT};
+  VkValidationFeaturesEXT vf = {};
+  if (params_.enable_validation_layer) {
+    vf.sType = VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT;
+    vf.pNext = create_info.pNext;
+    vf.enabledValidationFeatureCount = vfes.size();
+    vf.pEnabledValidationFeatures = vfes.data();
+    create_info.pNext = &vf;
   }
 
   std::unordered_set<std::string> extensions;
@@ -515,6 +541,12 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
       enabled_extensions.push_back(ext.extensionName);
     } else if (name == VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME) {
       enabled_extensions.push_back(ext.extensionName);
+    } else if (name == VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME &&
+               params_.enable_validation_layer) {
+      // VK_KHR_shader_non_semantic_info isn't supported on molten-vk.
+      // Tracking issue: https://github.com/KhronosGroup/MoltenVK/issues/1214
+      ti_device_->set_cap(DeviceCapability::spirv_has_non_semantic_info, true);
+      enabled_extensions.push_back(ext.extensionName);
     } else if (std::find(params_.additional_device_extensions.begin(),
                          params_.additional_device_extensions.end(),
                          name) != params_.additional_device_extensions.end()) {
@@ -742,5 +774,4 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
 }
 
 }  // namespace vulkan
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

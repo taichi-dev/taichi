@@ -32,13 +32,11 @@
 #include "renderables/lines.h"
 #include "renderables/scene_lines.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 class Program;
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang
 
-TI_UI_NAMESPACE_BEGIN
+namespace taichi::ui {
 
 namespace vulkan {
 
@@ -53,6 +51,8 @@ class TI_DLL_EXPORT Renderer {
   void set_background_color(const glm::vec3 &color);
 
   void set_image(const SetImageInfo &info);
+
+  void set_image(taichi::lang::Texture *tex);
 
   void triangles(const TrianglesInfo &info);
 
@@ -94,4 +94,4 @@ class TI_DLL_EXPORT Renderer {
 
 }  // namespace vulkan
 
-TI_UI_NAMESPACE_END
+}  // namespace taichi::ui

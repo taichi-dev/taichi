@@ -9,8 +9,7 @@
 #include "taichi/codegen/spirv/snode_struct_compiler.h"
 #include "taichi/codegen/spirv/kernel_utils.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace gfx {
 
 class AotModuleBuilderImpl : public AotModuleBuilder {
@@ -43,7 +42,8 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
                             const std::string &key,
                             Kernel *kernel) override;
 
-  void add_compiled_kernel(aot::Kernel *kernel) override;
+  void add_compiled_kernel(const std::string &identifier,
+                           aot::Kernel *kernel) override;
 
   std::string write_spv_file(const std::string &output_dir,
                              const TaskAttributes &k,
@@ -57,5 +57,4 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
 };
 
 }  // namespace gfx
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

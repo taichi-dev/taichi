@@ -44,20 +44,6 @@ static inline Ti_f32 Ti_fsgnf(Ti_f32 x) {
 static inline Ti_f64 Ti_fsgn(Ti_f64 x) {
   return x < 0 ? -1 : x != 0;
 }
-static inline Ti_i64 Ti_floordiv_i64(Ti_i64 x, Ti_i64 y) {
-  Ti_i64 r = x / y;
-  return r - ((x < 0) != (y < 0) && x && y * r != x);
-}
-static inline Ti_i32 Ti_floordiv_i32(Ti_i32 x, Ti_i32 y) {
-  Ti_i32 r = x / y;
-  return r - ((x < 0) != (y < 0) && x && y * r != x);
-}
-static inline Ti_f32 Ti_floordiv_f32(Ti_f32 x, Ti_f32 y) {
-  return floorf(x / y);
-}
-static inline Ti_f64 Ti_floordiv_f64(Ti_f64 x, Ti_f64 y) {
-  return floor(x / y);
-}
 static inline Ti_f32 Ti_rsqrtf(Ti_f32 x) {
   return 1 / sqrt(x);
 }

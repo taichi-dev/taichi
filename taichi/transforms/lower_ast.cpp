@@ -8,7 +8,7 @@
 
 #include <unordered_set>
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 namespace {
 
@@ -433,7 +433,8 @@ class LowerAST : public IRVisitor {
                stmt->snode->type == SNodeType::dense ||
                stmt->snode->type == SNodeType::bitmasked) {
       TI_ASSERT(SNodeOpStmt::activation_related(stmt->op_type));
-      auto ptr = fctx.push_back<GlobalPtrStmt>(stmt->snode, indices_stmt);
+      auto ptr =
+          fctx.push_back<GlobalPtrStmt>(stmt->snode, indices_stmt, true, true);
       fctx.push_back<SNodeOpStmt>(stmt->op_type, stmt->snode, ptr, val_stmt);
     } else {
       TI_ERROR("The {} operation is not supported on {} SNode",
@@ -522,4 +523,4 @@ void lower_ast(IRNode *root) {
 
 }  // namespace irpass
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

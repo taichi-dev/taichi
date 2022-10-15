@@ -1,12 +1,10 @@
 #pragma once
-
-#define VK_NO_PROTOTYPES
-#include "taichi/taichi_vulkan.h"
-#include "taichi/rhi/vulkan/vulkan_device.h"
-#include "taichi/rhi/vulkan/vulkan_device_creator.h"
+#ifdef TI_WITH_VULKAN
 
 #include "taichi_core_impl.h"
 #include "taichi_gfx_impl.h"
+#include "taichi/rhi/vulkan/vulkan_device.h"
+#include "taichi/rhi/vulkan/vulkan_device_creator.h"
 
 class VulkanRuntime;
 class VulkanRuntimeImported;
@@ -18,9 +16,9 @@ class VulkanRuntime : public GfxRuntime {
   VulkanRuntime();
 
   taichi::lang::vulkan::VulkanDevice &get_vk();
-  virtual TiTexture allocate_texture(
+  virtual TiImage allocate_image(
       const taichi::lang::ImageParams &params) override final;
-  virtual void free_texture(TiTexture texture) override final;
+  virtual void free_image(TiImage image) override final;
 };
 class VulkanRuntimeImported : public VulkanRuntime {
   // A dirty workaround to ensure the device is fully initialized before
@@ -52,3 +50,5 @@ class VulkanRuntimeOwned : public VulkanRuntime {
   virtual taichi::lang::Device &get() override final;
   virtual taichi::lang::gfx::GfxRuntime &get_gfx_runtime() override final;
 };
+
+#endif  // TI_WITH_VULKAN

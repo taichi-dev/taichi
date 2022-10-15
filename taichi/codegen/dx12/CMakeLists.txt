@@ -5,6 +5,8 @@ target_sources(dx12_codegen
   PRIVATE
     codegen_dx12.cpp
     dx12_global_optimize_module.cpp
+    dx12_lower_intrinsic.cpp
+    dx12_lower_runtime_context.cpp
   )
 
 target_include_directories(dx12_codegen

@@ -6,8 +6,7 @@
 #include "taichi/math/arithmetic.h"
 #include "taichi/system/memory_pool.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace metal {
 
 BufferMemoryView::BufferMemoryView(std::size_t size, MemoryPool *mem_pool) {
@@ -19,5 +18,4 @@ BufferMemoryView::BufferMemoryView(std::size_t size, MemoryPool *mem_pool) {
 }
 
 }  // namespace metal
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

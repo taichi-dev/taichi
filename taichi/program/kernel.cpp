@@ -15,7 +15,7 @@
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
 #endif
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 class Function;
 
@@ -46,7 +46,7 @@ Kernel::Kernel(Program &program,
   ir_is_ast_ = false;  // CHI IR
   this->ir->as<Block>()->kernel = this;
 
-  arch = program.config.arch;
+  arch = program.this_thread_config().arch;
 
   if (autodiff_mode == AutodiffMode::kNone) {
     name = primal_name;
@@ -56,7 +56,7 @@ Kernel::Kernel(Program &program,
     name = primal_name + "_reverse_grad";
   }
 
-  if (!program.config.lazy_compilation)
+  if (!program.this_thread_config().lazy_compilation)
     compile();
 }
 
@@ -74,7 +74,7 @@ void Kernel::lower(bool to_executable) {
   TI_ASSERT(supports_lowering(arch));
 
   CurrentCallableGuard _(program, this);
-  auto config = program->config;
+  auto config = program->this_thread_config();
   bool verbose = config.print_ir;
   if ((is_accessor && !config.print_accessor_ir) ||
       (is_evaluator && !config.print_evaluator_ir))
@@ -124,8 +124,9 @@ void Kernel::operator()(LaunchContextBuilder &ctx_builder) {
 
   program->sync = (program->sync && arch_is_cpu(arch));
   // Note that Kernel::arch may be different from program.config.arch
-  if (program->config.debug && (arch_is_cpu(program->config.arch) ||
-                                program->config.arch == Arch::cuda)) {
+  if (program->this_thread_config().debug &&
+      (arch_is_cpu(program->this_thread_config().arch) ||
+       program->this_thread_config().arch == Arch::cuda)) {
     program->check_runtime_error();
   }
 }
@@ -190,7 +191,7 @@ void Kernel::LaunchContextBuilder::set_arg_int(int arg_id, int64 d) {
                  "not allowed.");
 
   ActionRecorder::get_instance().record(
-      "set_kernel_arg_int64",
+      "set_kernel_arg_integer",
       {ActionArg("kernel_name", kernel_->name), ActionArg("arg_id", arg_id),
        ActionArg("val", d)});
 
@@ -215,6 +216,10 @@ void Kernel::LaunchContextBuilder::set_arg_int(int arg_id, int64 d) {
     TI_INFO(dt->to_string());
     TI_NOT_IMPLEMENTED
   }
+}
+
+void Kernel::LaunchContextBuilder::set_arg_uint(int arg_id, uint64 d) {
+  set_arg_int(arg_id, d);
 }
 
 void Kernel::LaunchContextBuilder::set_extra_arg_int(int i, int j, int32 d) {
@@ -391,11 +396,12 @@ void Kernel::init(Program &program,
   is_accessor = false;
   is_evaluator = false;
   compiled_ = nullptr;
-  context = std::make_unique<FrontendContext>(program.config.arch);
+  context =
+      std::make_unique<FrontendContext>(program.this_thread_config().arch);
   ir = context->get_root();
   ir_is_ast_ = true;
 
-  this->arch = program.config.arch;
+  this->arch = program.this_thread_config().arch;
 
   if (autodiff_mode == AutodiffMode::kNone ||
       autodiff_mode == AutodiffMode::kCheckAutodiffValid) {
@@ -415,7 +421,7 @@ void Kernel::init(Program &program,
     ir->as<Block>()->kernel = this;
   }
 
-  if (!program.config.lazy_compilation)
+  if (!program.this_thread_config().lazy_compilation)
     compile();
 }
 
@@ -426,8 +432,7 @@ bool Kernel::supports_lowering(Arch arch) {
 }
 
 void Kernel::offload_to_executable(IRNode *stmt) {
-  CurrentCallableGuard _(program, this);
-  auto config = program->config;
+  auto config = program->this_thread_config();
   bool verbose = config.print_ir;
   if ((is_accessor && !config.print_accessor_ir) ||
       (is_evaluator && !config.print_evaluator_ir))
@@ -441,4 +446,4 @@ void Kernel::offload_to_executable(IRNode *stmt) {
       is_extension_supported(config.arch, Extension::bls) &&
           config.make_block_local);
 }
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

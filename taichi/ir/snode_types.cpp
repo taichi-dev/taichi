@@ -2,8 +2,7 @@
 
 #include "taichi/common/logging.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 std::string snode_type_name(SNodeType t) {
   switch (t) {
@@ -23,5 +22,4 @@ bool is_gc_able(SNodeType t) {
   return (t == SNodeType::pointer || t == SNodeType::dynamic);
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

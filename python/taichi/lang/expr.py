@@ -2,7 +2,7 @@ import numpy as np
 from taichi._lib import core as _ti_core
 from taichi.lang import impl
 from taichi.lang.common_ops import TaichiOperations
-from taichi.lang.exception import TaichiTypeError
+from taichi.lang.exception import TaichiCompilationError, TaichiTypeError
 from taichi.lang.util import is_taichi_class, to_numpy_type
 from taichi.types import primitive_types
 from taichi.types.primitive_types import integer_types, real_types
@@ -37,7 +37,16 @@ class Expr(TaichiOperations):
             assert False
         if self.tb:
             self.ptr.set_tb(self.tb)
-        self.ptr.type_check(impl.get_runtime().prog.config)
+        self.ptr.type_check(impl.get_runtime().prog.config())
+
+    def is_tensor(self):
+        return self.ptr.is_tensor()
+
+    def get_shape(self):
+        if not self.is_tensor():
+            raise TaichiCompilationError(
+                f"Getting shape of non-tensor type: {self.ptr.get_ret_type()}")
+        return self.ptr.get_shape()
 
     def __hash__(self):
         return self.ptr.get_raw_address()

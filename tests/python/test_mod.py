@@ -70,3 +70,12 @@ def test_py_style_float_const_mod_one():
         return a % 1
 
     assert func() == 0.5
+
+
+@test_utils.test()
+def test_py_style_unsigned_mod():
+    @ti.kernel
+    def func() -> ti.u32:
+        return ti.u32(3583196299) % ti.u32(524288)
+
+    assert func() == 212107

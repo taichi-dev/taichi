@@ -14,7 +14,7 @@
 #undef Success
 #endif
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 class CXImage {
  public:
@@ -202,6 +202,6 @@ GUI::~GUI() {
   }
 }
 
-TI_NAMESPACE_END
+}  // namespace taichi
 
 #endif

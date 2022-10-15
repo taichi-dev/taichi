@@ -25,15 +25,21 @@ class Window:
         res (tuple[int]): resolution (width, height) of the window, in pixels.
         vsync (bool): whether or not vertical sync should be enabled.
         show_window (bool): where or not display the window after initialization.
+        pos (tuple[int]): position (left to right, up to bottom) of the window which origins from the left-top of your main screen, in pixels.
     """
-    def __init__(self, name, res, vsync=False, show_window=True):
+    def __init__(self,
+                 name,
+                 res,
+                 vsync=False,
+                 show_window=True,
+                 pos=(100, 100)):
         check_ggui_availability()
         package_path = str(pathlib.Path(__file__).parent.parent)
         ti_arch = default_cfg().arch
         is_packed = default_cfg().packed
-        self.window = _ti_core.PyWindow(get_runtime().prog, name, res, vsync,
-                                        show_window, package_path, ti_arch,
-                                        is_packed)
+        self.window = _ti_core.PyWindow(get_runtime().prog, name, res, pos,
+                                        vsync, show_window, package_path,
+                                        ti_arch, is_packed)
 
     @property
     def running(self):

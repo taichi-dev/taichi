@@ -8,7 +8,7 @@
 #include "taichi/codegen/llvm/codegen_llvm.h"
 #include "taichi/aot/module_data.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 class KernelCodeGenDX12 : public KernelCodeGen {
  public:
@@ -22,11 +22,11 @@ class KernelCodeGenDX12 : public KernelCodeGen {
   };
   CompileResult compile();
 #ifdef TI_WITH_LLVM
-  LLVMCompiledData compile_task(
+  LLVMCompiledTask compile_task(
       std::unique_ptr<llvm::Module> &&module = nullptr,
       OffloadedStmt *stmt = nullptr) override;
 #endif
   FunctionType compile_to_function() override;
 };
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

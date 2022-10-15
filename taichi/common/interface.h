@@ -14,7 +14,7 @@
 #include <memory>
 #include <iostream>
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 template <typename T>
 std::shared_ptr<T> create_instance(const std::string &alias);
@@ -333,4 +333,4 @@ class InterfaceHolder {
     return alias;                                 \
   }
 
-TI_NAMESPACE_END
+}  // namespace taichi

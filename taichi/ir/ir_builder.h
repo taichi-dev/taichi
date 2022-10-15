@@ -3,7 +3,7 @@
 #include "taichi/ir/ir.h"
 #include "taichi/ir/mesh.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 class Function;
 
@@ -136,6 +136,11 @@ class IRBuilder {
   ConstStmt *get_float32(float32 value);
   ConstStmt *get_float64(float64 value);
 
+  template <typename T>
+  ConstStmt *get_constant(DataType dt, const T &value) {
+    return insert(Stmt::make_typed<ConstStmt>(TypedConstant(dt, value)));
+  }
+
   RandStmt *create_rand(DataType value_type);
 
   // Load kernel arguments.
@@ -211,6 +216,9 @@ class IRBuilder {
                                Stmt *true_result,
                                Stmt *false_result);
 
+  // Matrix Initialization
+  MatrixInitStmt *create_matrix_init(std::vector<Stmt *> elements);
+
   // Print values and strings. Arguments can be Stmt* or std::string.
   template <typename... Args>
   PrintStmt *create_print(Args &&...args) {
@@ -281,4 +289,4 @@ class IRBuilder {
   InsertPoint insert_point_;
 };
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

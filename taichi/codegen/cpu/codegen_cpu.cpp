@@ -11,7 +11,7 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/analysis/offline_cache_util.h"
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 namespace {
 
@@ -57,7 +57,7 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
     auto [begin, end] = get_range_for_bounds(stmt);
 
     // adaptive block_dim
-    if (prog->config.cpu_block_dim_adaptive) {
+    if (prog->this_thread_config().cpu_block_dim_adaptive) {
       int num_items = (stmt->end_value - stmt->begin_value) / std::abs(step);
       int num_threads = stmt->num_cpu_threads;
       int items_per_thread = std::max(1, num_items / (num_threads * 32));
@@ -66,11 +66,10 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
       stmt->block_dim = std::min(1024, std::max(512, items_per_thread));
     }
 
-    create_call(
-        "cpu_parallel_range_for",
-        {get_arg(0), tlctx->get_constant(stmt->num_cpu_threads), begin, end,
+    call("cpu_parallel_range_for", get_arg(0),
+         tlctx->get_constant(stmt->num_cpu_threads), begin, end,
          tlctx->get_constant(step), tlctx->get_constant(stmt->block_dim),
-         tls_prologue, body, epilogue, tlctx->get_constant(stmt->tls_size)});
+         tls_prologue, body, epilogue, tlctx->get_constant(stmt->tls_size));
   }
 
   void create_offload_mesh_for(OffloadedStmt *stmt) override {
@@ -147,11 +146,11 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
 
     llvm::Value *epilogue = create_mesh_xlogue(stmt->tls_epilogue);
 
-    create_call("cpu_parallel_mesh_for",
-                {get_arg(0), tlctx->get_constant(stmt->num_cpu_threads),
-                 tlctx->get_constant(stmt->mesh->num_patches),
-                 tlctx->get_constant(stmt->block_dim), tls_prologue, body,
-                 epilogue, tlctx->get_constant(stmt->tls_size)});
+    call("cpu_parallel_mesh_for", get_arg(0),
+         tlctx->get_constant(stmt->num_cpu_threads),
+         tlctx->get_constant(stmt->mesh->num_patches),
+         tlctx->get_constant(stmt->block_dim), tls_prologue, body, epilogue,
+         tlctx->get_constant(stmt->tls_size));
   }
 
   void create_bls_buffer(OffloadedStmt *stmt) {
@@ -177,10 +176,10 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
       create_bls_buffer(stmt);
     using Type = OffloadedStmt::TaskType;
     auto offloaded_task_name = init_offloaded_task_function(stmt);
-    if (prog->config.kernel_profiler && arch_is_cpu(prog->config.arch)) {
-      call(
-          builder.get(), "LLVMRuntime_profiler_start",
-          {get_runtime(), builder->CreateGlobalStringPtr(offloaded_task_name)});
+    if (prog->this_thread_config().kernel_profiler &&
+        arch_is_cpu(prog->this_thread_config().arch)) {
+      call("LLVMRuntime_profiler_start", get_runtime(),
+           builder->CreateGlobalStringPtr(offloaded_task_name));
     }
     if (stmt->task_type == Type::serial) {
       stmt->body->accept(this);
@@ -199,10 +198,11 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
     } else {
       TI_NOT_IMPLEMENTED
     }
-    if (prog->config.kernel_profiler && arch_is_cpu(prog->config.arch)) {
+    if (prog->this_thread_config().kernel_profiler &&
+        arch_is_cpu(prog->this_thread_config().arch)) {
       llvm::IRBuilderBase::InsertPointGuard guard(*builder);
       builder->SetInsertPoint(final_block);
-      call(builder.get(), "LLVMRuntime_profiler_stop", {get_runtime()});
+      call("LLVMRuntime_profiler_stop", get_runtime());
     }
     finalize_offloaded_task_function();
     offloaded_tasks.push_back(*current_task);
@@ -234,7 +234,7 @@ std::unique_ptr<TaskCodeGenLLVM> KernelCodeGenCPU::make_codegen_llvm(
 FunctionType CPUModuleToFunctionConverter::convert(
     const std::string &kernel_name,
     const std::vector<LlvmLaunchArgInfo> &args,
-    LLVMCompiledData data) const {
+    LLVMCompiledKernel data) const {
   TI_AUTO_PROF;
   auto jit_module = tlctx_->create_jit_module(std::move(data.module));
   using TaskFunc = int32 (*)(void *);
@@ -271,7 +271,7 @@ FunctionType CPUModuleToFunctionConverter::convert(
   };
 }
 
-LLVMCompiledData KernelCodeGenCPU::compile_task(
+LLVMCompiledTask KernelCodeGenCPU::compile_task(
     std::unique_ptr<llvm::Module> &&module,
     OffloadedStmt *stmt) {
   TaskCodeGenCPU gen(kernel, stmt);
@@ -284,10 +284,8 @@ FunctionType KernelCodeGenCPU::compile_to_function() {
   auto *llvm_prog = get_llvm_program(prog);
   auto *tlctx = llvm_prog->get_llvm_context(kernel->arch);
 
-  LLVMCompiledData data = compile_kernel_to_module();
-
   CPUModuleToFunctionConverter converter(
       tlctx, get_llvm_program(prog)->get_runtime_executor());
-  return converter.convert(kernel, std::move(data));
+  return converter.convert(kernel, compile_kernel_to_module());
 }
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

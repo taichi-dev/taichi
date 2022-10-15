@@ -15,8 +15,7 @@
 #include "taichi/jit/jit_session.h"
 #include "taichi/codegen/llvm/llvm_compiled_data.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class JITSessionCPU;
 class LlvmProgramImpl;
@@ -142,8 +141,8 @@ class TaichiLLVMContext {
 
   static std::string get_struct_for_func_name(int tls_size);
 
-  LLVMCompiledData link_compiled_tasks(
-      std::vector<std::unique_ptr<LLVMCompiledData>> data_list);
+  LLVMCompiledKernel link_compiled_tasks(
+      std::vector<std::unique_ptr<LLVMCompiledTask>> data_list);
 
  private:
   std::unique_ptr<llvm::Module> clone_module_to_context(
@@ -205,5 +204,4 @@ std::unique_ptr<llvm::Module> module_from_bitcode_file(
     const std::string &bitcode_path,
     llvm::LLVMContext *ctx);
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

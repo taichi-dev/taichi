@@ -9,11 +9,13 @@
 
 #include "taichi/common/core.h"
 #include "taichi/common/cleanup.h"
+#include "taichi/common/version.h"
+#include "taichi/rhi/arch.h"
 #include "taichi/util/io.h"
 #include "taichi/util/lock.h"
+#include "taichi/program/compile_config.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace offline_cache {
 
 using Version = std::uint16_t[3];  // {MAJOR, MINOR, PATCH}
@@ -45,25 +47,62 @@ inline CleanCachePolicy string_to_clean_cache_policy(const std::string &str) {
   return Never;
 }
 
-struct KernelMetadata {
+struct KernelMetadataBase {
   std::string kernel_key;
   std::size_t size{0};          // byte
   std::time_t created_at{0};    // sec
   std::time_t last_used_at{0};  // sec
-  std::size_t num_files{0};
 
-  TI_IO_DEF(kernel_key, size, created_at, last_used_at, num_files);
+  TI_IO_DEF(kernel_key, size, created_at, last_used_at);
 };
 
+template <typename KernelMetadataType>
 struct Metadata {
-  using KernelMetadata = KernelMetadata;
+  using KernelMetadata = KernelMetadataType;
 
   Version version{};
   std::size_t size{0};  // byte
   std::unordered_map<std::string, KernelMetadata> kernels;
 
+  // NOTE: The "version" must be the first field to be serialized
   TI_IO_DEF(version, size, kernels);
 };
+
+enum class LoadMetadataError {
+  kNoError,
+  kCorrupted,
+  kFileNotFound,
+  kVersionNotMatched,
+};
+
+template <typename MetadataType>
+inline LoadMetadataError load_metadata_with_checking(
+    MetadataType &result,
+    const std::string &filepath) {
+  if (!taichi::path_exists(filepath)) {
+    TI_DEBUG("Offline cache metadata file {} not found", filepath);
+    return LoadMetadataError::kFileNotFound;
+  }
+
+  using VerType = std::remove_reference_t<decltype(result.version)>;
+  static_assert(std::is_same_v<VerType, Version>);
+  const std::vector<uint8> bytes = read_data_from_file(filepath);
+
+  VerType ver{};
+  if (!read_from_binary(ver, bytes.data(), bytes.size(), false)) {
+    return LoadMetadataError::kCorrupted;
+  }
+  if (ver[0] != TI_VERSION_MAJOR || ver[1] != TI_VERSION_MINOR ||
+      ver[2] != TI_VERSION_PATCH) {
+    TI_DEBUG("The offline cache metadata file {} is old (version={}.{}.{})",
+             filepath, ver[0], ver[1], ver[2]);
+    return LoadMetadataError::kVersionNotMatched;
+  }
+
+  return !read_from_binary(result, bytes.data(), bytes.size())
+             ? LoadMetadataError::kCorrupted
+             : LoadMetadataError::kNoError;
+}
 
 struct CacheCleanerConfig {
   std::string path;
@@ -79,12 +118,6 @@ template <typename MetadataType>
 struct CacheCleanerUtils {
   using KernelMetaData = typename MetadataType::KernelMetadata;
 
-  // To load metadata from file
-  static bool load_metadata(const CacheCleanerConfig &config,
-                            MetadataType &result) {
-    TI_NOT_IMPLEMENTED;
-  }
-
   // To save metadata as file
   static bool save_metadata(const CacheCleanerConfig &config,
                             const MetadataType &data) {
@@ -93,12 +126,6 @@ struct CacheCleanerUtils {
 
   static bool save_debugging_metadata(const CacheCleanerConfig &config,
                                       const MetadataType &data) {
-    TI_NOT_IMPLEMENTED;
-  }
-
-  // To check version
-  static bool check_version(const CacheCleanerConfig &config,
-                            const Version &version) {
     TI_NOT_IMPLEMENTED;
   }
 
@@ -111,6 +138,12 @@ struct CacheCleanerUtils {
 
   // To remove other files except cache files and offline cache metadta files
   static void remove_other_files(const CacheCleanerConfig &config) {
+    TI_NOT_IMPLEMENTED;
+  }
+
+  // To check if a file is cache file
+  static bool is_valid_cache_file(const CacheCleanerConfig &config,
+                                  const std::string &name) {
     TI_NOT_IMPLEMENTED;
   }
 };
@@ -160,19 +193,25 @@ class CacheCleaner {
       });
       TI_DEBUG("Start cleaning cache");
 
-      if (!Utils::load_metadata(config, cache_data)) {
+      using Error = LoadMetadataError;
+      Error error = load_metadata_with_checking(cache_data, metadata_file);
+      if (error == Error::kFileNotFound) {
         return;
-      }
-
-      if ((policy & CleanOldVersion) &&
-          !Utils::check_version(config, cache_data.version)) {
-        if (taichi::remove(metadata_file)) {
-          taichi::remove(debugging_metadata_file);
-          Utils::remove_other_files(config);
-          for (const auto &[k, v] : cache_data.kernels) {
-            for (const auto &f : Utils::get_cache_files(config, v)) {
-              taichi::remove(taichi::join_path(path, f));
-            }
+      } else if (error == Error::kCorrupted ||
+                 error == Error::kVersionNotMatched) {
+        if (policy &
+            CleanOldVersion) {  // Remove cache files and metadata files
+          TI_DEBUG("Removing all cache files");
+          if (taichi::remove(metadata_file)) {
+            taichi::remove(debugging_metadata_file);
+            Utils::remove_other_files(config);
+            bool success = taichi::traverse_directory(
+                config.path, [&config](const std::string &name, bool is_dir) {
+                  if (!is_dir && Utils::is_valid_cache_file(config, name)) {
+                    taichi::remove(taichi::join_path(config.path, name));
+                  }
+                });
+            TI_ASSERT(success);
           }
         }
         return;
@@ -250,6 +289,12 @@ class CacheCleaner {
   }
 };
 
+void disable_offline_cache_if_needed(CompileConfig *config);
+std::string get_cache_path_by_arch(const std::string &base_path, Arch arch);
+std::string mangle_name(const std::string &primal_name, const std::string &key);
+bool try_demangle_name(const std::string &mangled_name,
+                       std::string &primal_name,
+                       std::string &key);
+
 }  // namespace offline_cache
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

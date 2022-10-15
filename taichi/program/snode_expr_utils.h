@@ -9,8 +9,7 @@
 // given SNode. Expr is part of the frontend, which somehow depends on the
 // files inside "taichi/program". To make SNode fairly low-level and depend
 // on less, we thus move SNode-Expr related utils away from SNode itself.
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 class Expr;
 class SNode;
 class FieldExpression;
@@ -29,5 +28,4 @@ void make_lazy_place(SNode *snode,
                      const std::function<void(std::unique_ptr<SNode> &,
                                               std::vector<Expr> &)> &collect);
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

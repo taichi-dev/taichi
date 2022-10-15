@@ -4,8 +4,7 @@
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/statements.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 TEST(SameStatements, TestSameBlock) {
   auto block = std::make_unique<Block>();
@@ -168,5 +167,4 @@ TEST(SameStatements, TestSameLoopIndex) {
   EXPECT_TRUE(irpass::analysis::same_value(loop_index_a, loop_index_b));
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

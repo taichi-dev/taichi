@@ -173,6 +173,7 @@ class ASTTransformerContext:
         self.ast_builder = ast_builder
         self.visited_funcdef = False
         self.is_real_function = is_real_function
+        self.kernel_args = []
 
     # e.g.: FunctionDef, Module, Global
     def variable_scope_guard(self):
@@ -251,7 +252,7 @@ class ASTTransformerContext:
             raise TaichiNameError(f'Name "{name}" is not defined')
 
     def get_pos_info(self, node):
-        msg = f'On line {node.lineno + self.lineno_offset} of file "{self.file}", in {self.func.func.__name__}:\n'
+        msg = f'File "{self.file}", line {node.lineno + self.lineno_offset}, in {self.func.func.__name__}:\n'
         if version_info < (3, 8):
             msg += self.src[node.lineno - 1] + "\n"
             return msg

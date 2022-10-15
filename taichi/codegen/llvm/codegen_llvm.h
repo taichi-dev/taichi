@@ -12,8 +12,7 @@
 #include "taichi/codegen/llvm/llvm_compiled_data.h"
 #include "taichi/program/program.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class TaskCodeGenLLVM;
 
@@ -102,6 +101,16 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
                              llvm::Value *node_meta,
                              SNode *snode);
 
+  void create_elementwise_binary(
+      BinaryOpStmt *stmt,
+      std::function<llvm::Value *(llvm::Value *lhs, llvm::Value *rhs)> f);
+
+  void create_elementwise_cast(
+      UnaryOpStmt *stmt,
+      llvm::Type *to_ty,
+      std::function<llvm::Value *(llvm::Value *, llvm::Type *)> f,
+      bool on_self = false);
+
   std::unique_ptr<RuntimeObject> emit_struct_meta_object(SNode *snode);
 
   llvm::Value *emit_struct_meta(SNode *snode);
@@ -115,9 +124,9 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
    *
    * After this call, `module` and `tasks` will be moved.
    *
-   * @return LLVMCompiledData
+   * @return LLVMCompiledTask
    */
-  virtual LLVMCompiledData run_compilation();
+  virtual LLVMCompiledTask run_compilation();
   // For debugging only
   virtual llvm::Value *create_print(std::string tag,
                                     DataType dt,
@@ -133,15 +142,6 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void emit_gc(OffloadedStmt *stmt);
 
-  llvm::Value *create_call(llvm::Function *func,
-                           llvm::ArrayRef<llvm::Value *> args = {});
-
-  llvm::Value *create_call(llvm::Value *func,
-                           llvm::FunctionType *func_ty,
-                           llvm::ArrayRef<llvm::Value *> args = {});
-
-  llvm::Value *create_call(std::string func_name,
-                           llvm::ArrayRef<llvm::Value *> args = {});
   llvm::Value *call(SNode *snode,
                     llvm::Value *node_ptr,
                     const std::string &method,
@@ -233,7 +233,7 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(GlobalPtrStmt *stmt) override;
 
-  void visit(PtrOffsetStmt *stmt) override;
+  void visit(MatrixPtrStmt *stmt) override;
 
   void store_quant_int(llvm::Value *ptr,
                        llvm::Type *physical_type,
@@ -396,7 +396,6 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   ~TaskCodeGenLLVM() override = default;
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang
 
 #endif  // #ifdef TI_WITH_LLVM

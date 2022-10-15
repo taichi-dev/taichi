@@ -8,8 +8,7 @@
 #include "taichi/transforms/scalar_pointer_lowerer.h"
 #include "taichi/transforms/utils.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 ScalarPointerLowerer::ScalarPointerLowerer(SNode *leaf_snode,
                                            const std::vector<Stmt *> &indices,
@@ -100,5 +99,4 @@ void ScalarPointerLowerer::run() {
   }
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

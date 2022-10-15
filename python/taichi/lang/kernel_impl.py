@@ -4,6 +4,7 @@ import inspect
 import re
 import sys
 import textwrap
+import weakref
 
 import numpy as np
 import taichi.lang
@@ -20,9 +21,11 @@ from taichi.lang.expr import Expr
 from taichi.lang.kernel_arguments import KernelArgument
 from taichi.lang.matrix import Matrix, MatrixType
 from taichi.lang.shell import _shell_pop_print, oinspect
-from taichi.lang.util import has_paddle, has_pytorch, to_taichi_type
+from taichi.lang.util import (cook_dtype, has_paddle, has_pytorch,
+                              to_taichi_type)
 from taichi.types import (ndarray_type, primitive_types, sparse_matrix_builder,
                           template, texture_type)
+from taichi.types.utils import is_signed
 
 from taichi import _logging
 
@@ -346,6 +349,20 @@ class TaichiCallableTemplateMapper:
                 raise TaichiRuntimeTypeError(
                     'Ndarray shouldn\'t be passed in via `ti.template()`, please annotate your kernel using `ti.types.ndarray(...)` instead'
                 )
+
+            if isinstance(arg, (list, tuple, dict, set)) or hasattr(
+                    arg, '_data_oriented'):
+                # [Composite arguments] Return weak reference to the object
+                # Taichi kernel will cache the extracted arguments, thus we can't simply return the original argument.
+                # Instead, a weak reference to the original value is returned to avoid memory leak.
+
+                # TODO(zhanlue): replacing "tuple(args)" with "hash of argument values"
+                # This can resolve the following issues:
+                # 1. Invalid weak-ref will leave a dead(dangling) entry in both caches: "self.mapping" and "self.compiled_functions"
+                # 2. Different argument instances with same type and same value, will get templatized into seperate kernels.
+                return weakref.ref(arg)
+
+            # [Primitive arguments] Return the value
             return arg
         if isinstance(anno, texture_type.TextureType):
             return '#'
@@ -355,24 +372,21 @@ class TaichiCallableTemplateMapper:
                 return arg.dtype, len(arg.shape), (), Layout.AOS
             if isinstance(arg, taichi.lang.matrix.VectorNdarray):
                 anno.check_matched(arg.get_type())
-                return arg.dtype, len(arg.shape) + 1, (arg.n, ), arg.layout
+                return arg.dtype, len(arg.shape) + 1, (arg.n, ), Layout.AOS
             if isinstance(arg, taichi.lang.matrix.MatrixNdarray):
                 anno.check_matched(arg.get_type())
                 return arg.dtype, len(arg.shape) + 2, (arg.n,
-                                                       arg.m), arg.layout
+                                                       arg.m), Layout.AOS
             # external arrays
             element_dim = 0 if anno.element_dim is None else anno.element_dim
-            layout = Layout.AOS if anno.layout is None else anno.layout
             shape = tuple(arg.shape)
             if len(shape) < element_dim:
                 raise ValueError(
                     f"Invalid argument into ti.types.ndarray() - required element_dim={element_dim}, "
                     f"but the argument has only {len(shape)} dimensions")
-            element_shape = (
-            ) if element_dim == 0 else shape[:
-                                             element_dim] if layout == Layout.SOA else shape[
-                                                 -element_dim:]
-            return to_taichi_type(arg.dtype), len(shape), element_shape, layout
+            element_shape = () if element_dim == 0 else shape[-element_dim:]
+            return to_taichi_type(
+                arg.dtype), len(shape), element_shape, Layout.AOS
         if isinstance(anno, sparse_matrix_builder):
             return arg.dtype
         # Use '#' as a placeholder because other kinds of arguments are not involved in template instantiation
@@ -520,9 +534,6 @@ class Kernel:
         if self.autodiff_mode != AutodiffMode.NONE:
             KernelSimplicityASTChecker(self.func).visit(tree)
 
-        if impl.current_cfg().use_mesh:
-            taichi.lang.Mesh.update_relation(tree, ctx)
-
         # Do not change the name of 'taichi_ast_generator'
         # The warning system needs this identifier to remove unnecessary messages
         def taichi_ast_generator(kernel_cxx):
@@ -572,7 +583,7 @@ class Kernel:
                 "Non contiguous tensors are not supported, please call tensor.contiguous() before passing it into taichi kernel."
             )
         tmp = v
-        taichi_arch = self.runtime.prog.config.arch
+        taichi_arch = self.runtime.prog.config().arch
 
         if str(v.device).startswith('cuda'):
             # External tensor on cuda
@@ -596,7 +607,7 @@ class Kernel:
         assert isinstance(v, paddle.Tensor)
 
         tmp = v.value().get_tensor()
-        taichi_arch = self.runtime.prog.config.arch
+        taichi_arch = self.runtime.prog.config().arch
 
         if v.place.is_gpu_place():
             # External tensor on cuda
@@ -649,10 +660,14 @@ class Kernel:
                     if not isinstance(v, int):
                         raise TaichiRuntimeTypeError.get(
                             i, needed.to_string(), provided)
-                    launch_ctx.set_arg_int(actual_argument_slot, int(v))
+                    if is_signed(cook_dtype(needed)):
+                        launch_ctx.set_arg_int(actual_argument_slot, int(v))
+                    else:
+                        launch_ctx.set_arg_uint(actual_argument_slot, int(v))
                 elif isinstance(needed, sparse_matrix_builder):
                     # Pass only the base pointer of the ti.types.sparse_matrix_builder() argument
-                    launch_ctx.set_arg_int(actual_argument_slot, v._get_addr())
+                    launch_ctx.set_arg_uint(actual_argument_slot,
+                                            v._get_addr())
                 elif isinstance(needed,
                                 ndarray_type.NdarrayType) and isinstance(
                                     v, taichi.lang._ndarray.Ndarray):
@@ -731,8 +746,12 @@ class Kernel:
                                 if not isinstance(val, int):
                                     raise TaichiRuntimeTypeError.get(
                                         i, needed.dtype.to_string(), type(val))
-                                launch_ctx.set_arg_int(actual_argument_slot,
-                                                       int(val))
+                                if is_signed(needed.dtype):
+                                    launch_ctx.set_arg_int(
+                                        actual_argument_slot, int(val))
+                                else:
+                                    launch_ctx.set_arg_uint(
+                                        actual_argument_slot, int(val))
                                 actual_argument_slot += 1
                     else:
                         raise ValueError(
@@ -831,7 +850,7 @@ class Kernel:
             mode_original = self.autodiff_mode
             self.autodiff_mode = AutodiffMode.FORWARD
             self.runtime.fwd_mode_manager.insert(self, mode_original)
-        elif self.runtime.target_tape and self.runtime.target_tape.validation:
+        elif self.runtime.target_tape and self.runtime.target_tape.validation and not self.runtime.grad_replaced:
             # The autodiff valid check happens on forward kernel
             self.autodiff_mode = AutodiffMode.VALIDATION
 

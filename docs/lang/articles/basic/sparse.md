@@ -2,7 +2,7 @@
 sidebar_position: 3
 ---
 
-# Sparse Spatial Data Structures
+# Spatially Sparse Data Structures
 
 :::note
 Prerequisite: please read the [Fields](./field.md), [Fields (advanced)](./layout.md), and [SNodes](../internals/internal.md#data-structure-organization) first.
@@ -32,30 +32,31 @@ we will significantly save storage and computing power.
 The key to leveraging spatial sparsity is replacing *dense* grids with *sparse* grids.
 :::
 
-The traditional sparse spatial data structures are [Quadtrees](https://en.wikipedia.org/wiki/Quadtree) (2D) and
+The traditional spatially sparse data structures are [Quadtrees](https://en.wikipedia.org/wiki/Quadtree) (2D) and
 [Octrees](https://en.wikipedia.org/wiki/Octree) (3D). Since dereferencing pointers is relatively costly on modern computer architectures, compared to quadtrees and octrees, it is more performance-friendly to use shallower trees with larger branching factors.
 [VDB](https://www.openvdb.org/) and [SPGrid](http://pages.cs.wisc.edu/~sifakis/papers/SPGrid.pdf) are such examples.
-In Taichi, programmers can compose data structures similar to VDB and SPGrid with SNodes. The advantages of Taichi sparse spatial data structures include
-1. Access with indices, which just like accessing a dense data structure.
-2. Automatic parallelization when iterating.
-3. Automatic memory access optimization.
+In Taichi, programmers can compose data structures similar to VDB and SPGrid with SNodes. The advantages of Taichi spatially sparse data structures include:
+
+- Access with indices, which just like accessing a dense data structure.
+- Automatic parallelization when iterating.
+- Automatic memory access optimization.
 
 
 
 :::note
-**Backend compatibility**: The LLVM backends (CPU/CUDA) and the Metal backend offer the full functionality of computation on sparse spatial data structures.
+**Backend compatibility**: The LLVM backends (CPU/CUDA) and the Metal backend offer the full functionality of computation on spatially sparse data structures.
 :::
 
 
 :::note
-Sparse matrices are usually **not** implemented in Taichi via sparse spatial data structures. See [sparse matrix](../math/sparse_matrix.md) instead.
+Sparse matrices are usually **not** implemented in Taichi via spatially sparse data structures. See [sparse matrix](../math/sparse_matrix.md) instead.
 :::
 
-## Sparse spatial data structures in Taichi
+## Spatially sparse data structures in Taichi
 
-Sparse spatial data structures in Taichi are usually composed of `pointer`, `bitmasked`, `dynamic`, and `dense` SNodes. A SNode tree merely composed of `dense` SNodes is not a sparse spatial data structure.
+Spatially sparse data structures in Taichi are usually composed of `pointer`, `bitmasked`, `dynamic`, and `dense` SNodes. A SNode tree merely composed of `dense` SNodes is not a spatially sparse data structure.
 
-On a sparse spatial data structure, we consider a pixel, voxel, or a grid node to be *active*,
+On a spatially sparse data structure, we consider a pixel, voxel, or a grid node to be *active*,
 if it is allocated and involved in the computation.
 The rest of the grid is simply *inactive*.
 In SNode terms, the *activity* of a leaf or intermediate cell is a boolean value. The activity value of a cell is `True` if and only if the cell is *active*. When writing to an inactive cell, Taichi automatically activates it. Taichi also provides manual manipulation of the activity of a cell, see [Explicitly manipulating and querying sparsity](#explicitly-manipulating-and-querying-sparsity).
@@ -123,7 +124,7 @@ of a single pixel can consume too much space.
 For example, if each pixel contains a single `f32` value (4 bytes),
 the 64-bit pointer pointing to the value would take 8 bytes.
 The fact that storage costs of pointers are higher than the space to store the value themselves
-goes against our goal to use sparse spatial data structures to save space.
+goes against our goal to use spatially sparse data structures to save space.
 
 To amortize the storage cost of pointers, you could organize pixels in a *blocked* manner
 and let the pointers directly point to the blocks like the data structure defined in `pointer.py`.
@@ -194,12 +195,12 @@ def make_lists():
 
 </center>
 
-## Computation on sparse spatial data structures
+## Computation on spatially sparse data structures
 
 ### Sparse struct-fors
 
 Efficiently looping over sparse grid cells that distribute irregularly can be challenging, especially on parallel devices such as GPUs.
-In Taichi, *struct-for*s natively support sparse spatial data structures and only loop over currently active pixels with automatic efficient parallelization.
+In Taichi, *struct-for*s natively support spatially sparse data structures and only loop over currently active pixels with automatic efficient parallelization.
 
 ### Explicitly manipulating and querying sparsity
 
@@ -284,6 +285,6 @@ Regarding line 1, you can also compute the `block1` index given `pixel` index `[
 
 Please read the SIGGRAPH Asia 2019 [paper](https://yuanming.taichi.graphics/publication/2019-taichi/taichi-lang.pdf) or watch the associated
 [introduction video](https://www.youtube.com/watch?v=wKw8LMF3Djo) with [slides](https://yuanming.taichi.graphics/publication/2019-taichi/taichi-lang-slides.pdf)
-for more details on computation of sparse spatial data structures.
+for more details on computation of spatially sparse data structures.
 
 [Taichi elements](https://github.com/taichi-dev/taichi_elements) implement a high-performance MLS-MPM solver on Taichi sparse grids.

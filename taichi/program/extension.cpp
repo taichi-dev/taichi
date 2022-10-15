@@ -3,7 +3,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 bool is_extension_supported(Arch arch, Extension ext) {
   static std::unordered_map<Arch, std::unordered_set<Extension>> arch2ext = {
@@ -33,4 +33,4 @@ bool is_extension_supported(Arch arch, Extension ext) {
   return exts.find(ext) != exts.end();
 }
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

@@ -2,7 +2,7 @@
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/visitors.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 class FieldsRegisteredChecker : public BasicStmtVisitor {
  public:
@@ -33,4 +33,4 @@ void check_fields_registered(IRNode *root) {
 }
 }  // namespace irpass::analysis
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

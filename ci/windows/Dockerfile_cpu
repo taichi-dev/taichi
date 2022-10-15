@@ -31,5 +31,8 @@ RUN conda create -n py37 python=3.7
 # TODO: replace this when merge into ci
 COPY win_build_test.ps1 C:\win_build_test.ps1
 
+# Powershell 7
+RUN choco install -y pwsh
+
 # MUST use x64 as entry point
 ENTRYPOINT ["C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\VC\\Auxiliary\\build\\vcvars64.bat", "&&", "powershell.exe", "-NoLogo", "-ExecutionPolicy", "Bypass"]

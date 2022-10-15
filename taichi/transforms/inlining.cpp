@@ -6,8 +6,7 @@
 #include "taichi/ir/visitors.h"
 #include "taichi/program/program.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 // Inline all functions.
 class Inliner : public BasicStmtVisitor {
@@ -92,5 +91,4 @@ bool inlining(IRNode *root,
 
 }  // namespace irpass
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

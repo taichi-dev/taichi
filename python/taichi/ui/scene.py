@@ -307,10 +307,14 @@ class Scene:
                 index_count = vertex_count
             else:
                 index_count = indices.shape[0]
-        if instance_count is None:
-            instance_count = transforms.shape[0]
-        if transforms and (transforms.m != 4 or transforms.n != 4):
-            raise Exception("Error! Transform matrix must be 4x4 shape")
+        if transforms:
+            if (transforms.m != 4 or transforms.n != 4):
+                raise Exception("Error! Transform matrix must be 4x4 shape")
+            if instance_count is None:
+                instance_count = transforms.shape[0]
+        else:
+            instance_count = 1
+
         copy_normals_to_vbo(vbo, normals)
         vbo_info = get_field_info(vbo)
         indices_info = get_field_info(indices)

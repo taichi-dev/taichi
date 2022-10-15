@@ -1,7 +1,7 @@
 #include "taichi/util/action_recorder.h"
 #include "taichi/util/str.h"
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 void ActionArg::serialize(std::ostream &ss) const {
   ss << key << ": ";
@@ -53,4 +53,4 @@ void ActionRecorder::record(const std::string &content,
   ofs_.flush();
 }
 
-TI_NAMESPACE_END
+}  // namespace taichi

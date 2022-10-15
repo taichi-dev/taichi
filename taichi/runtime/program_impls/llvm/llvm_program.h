@@ -17,8 +17,7 @@ namespace llvm {
 class Module;
 }  // namespace llvm
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class StructCompiler;
 class Program;
@@ -51,7 +50,7 @@ class LlvmProgramImpl : public ProgramImpl {
   void materialize_snode_tree(SNodeTree *tree, uint64 *result_buffer) override;
 
   void cache_kernel(const std::string &kernel_key,
-                    const LLVMCompiledData &data,
+                    const LLVMCompiledKernel &data,
                     std::vector<LlvmLaunchArgInfo> &&args);
   ;
 
@@ -299,5 +298,4 @@ class LlvmProgramImpl : public ProgramImpl {
 
 LlvmProgramImpl *get_llvm_program(Program *prog);
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

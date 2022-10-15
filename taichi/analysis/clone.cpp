@@ -7,7 +7,7 @@
 
 #include <unordered_map>
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 class IRCloner : public IRVisitor {
  private:
@@ -139,4 +139,4 @@ std::unique_ptr<IRNode> clone(IRNode *root, Kernel *kernel) {
 }
 }  // namespace irpass::analysis
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

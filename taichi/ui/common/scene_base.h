@@ -7,7 +7,7 @@
 #include "taichi/ui/common/camera.h"
 #include "taichi/ui/utils/utils.h"
 
-TI_UI_NAMESPACE_BEGIN
+namespace taichi::ui {
 
 struct alignas(16) PointLight {
   glm::vec4 pos;
@@ -78,4 +78,4 @@ class SceneBase {
   int next_object_id_ = 0;
 };
 
-TI_UI_NAMESPACE_END
+}  // namespace taichi::ui

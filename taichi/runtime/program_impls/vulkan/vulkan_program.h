@@ -22,8 +22,7 @@
 
 #include <optional>
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 namespace vulkan {
 class VulkanDeviceCreator;
@@ -93,6 +92,10 @@ class VulkanProgramImpl : public ProgramImpl {
 
   std::unique_ptr<aot::Kernel> make_aot_kernel(Kernel &kernel) override;
 
+  void enqueue_compute_op_lambda(
+      std::function<void(Device *device, CommandList *cmdlist)> op,
+      const std::vector<ComputeOpImageRef> &image_refs) override;
+
   void dump_cache_data_to_disk() override;
 
   const std::unique_ptr<gfx::CacheManager> &get_cache_manager();
@@ -106,5 +109,4 @@ class VulkanProgramImpl : public ProgramImpl {
   std::vector<spirv::CompiledSNodeStructs> aot_compiled_snode_structs_;
   std::unique_ptr<gfx::CacheManager> cache_manager_{nullptr};
 };
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

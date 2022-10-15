@@ -9,8 +9,7 @@
 #include "taichi/util/lock.h"
 #include "taichi/util/offline_cache.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 namespace {
 
@@ -47,13 +46,6 @@ struct CacheCleanerUtils<gfx::CacheManager::Metadata> {
   using MetadataType = gfx::CacheManager::Metadata;
   using KernelMetaData = MetadataType::KernelMetadata;
 
-  // To load metadata from file
-  static bool load_metadata(const CacheCleanerConfig &config,
-                            MetadataType &result) {
-    return read_from_binary_file(
-        result, taichi::join_path(config.path, config.metadata_filename));
-  }
-
   // To save metadata as file
   static bool save_metadata(const CacheCleanerConfig &config,
                             const MetadataType &data) {
@@ -81,13 +73,6 @@ struct CacheCleanerUtils<gfx::CacheManager::Metadata> {
     return true;
   }
 
-  // To check version
-  static bool check_version(const CacheCleanerConfig &config,
-                            const Version &version) {
-    return version[0] == TI_VERSION_MAJOR && version[1] == TI_VERSION_MINOR &&
-           version[2] == TI_VERSION_PATCH;
-  }
-
   // To get cache files name
   static std::vector<std::string> get_cache_files(
       const CacheCleanerConfig &config,
@@ -106,6 +91,12 @@ struct CacheCleanerUtils<gfx::CacheManager::Metadata> {
         taichi::join_path(config.path, kDebuggingAotMetadataFilename));
     taichi::remove(taichi::join_path(config.path, kGraphMetadataFilename));
   }
+
+  // To check if a file is cache file
+  static bool is_valid_cache_file(const CacheCleanerConfig &config,
+                                  const std::string &name) {
+    return filename_extension(name) == "spv";
+  }
 };
 
 }  // namespace offline_cache
@@ -121,20 +112,28 @@ CacheManager::CacheManager(Params &&init_params)
 
   path_ = offline_cache::get_cache_path_by_arch(init_params.cache_path,
                                                 init_params.arch);
-
-  if (taichi::path_exists(taichi::join_path(path_, kAotMetadataFilename)) &&
-      taichi::path_exists(taichi::join_path(path_, kGraphMetadataFilename))) {
-    auto lock_path = taichi::join_path(path_, kMetadataFileLockName);
-    if (lock_with_file(lock_path)) {
-      auto _ = make_cleanup([&lock_path]() {
-        if (!unlock_with_file(lock_path)) {
-          TI_WARN("Unlock {} failed", lock_path);
-        }
-      });
-      gfx::AotModuleParams params;
-      params.module_path = path_;
-      params.runtime = runtime_;
-      cached_module_ = gfx::make_aot_module(params, init_params.arch);
+  {  // Load cached module with checking
+    using Error = offline_cache::LoadMetadataError;
+    using offline_cache::load_metadata_with_checking;
+    Metadata tmp;
+    auto filepath = taichi::join_path(path_, kOfflineCacheMetadataFilename);
+    if (load_metadata_with_checking(tmp, filepath) == Error::kNoError) {
+      auto lock_path = taichi::join_path(path_, kMetadataFileLockName);
+      auto exists =
+          taichi::path_exists(taichi::join_path(path_, kAotMetadataFilename)) &&
+          taichi::path_exists(taichi::join_path(path_, kGraphMetadataFilename));
+      if (exists && lock_with_file(lock_path)) {
+        auto _ = make_cleanup([&lock_path]() {
+          if (!unlock_with_file(lock_path)) {
+            TI_WARN("Unlock {} failed", lock_path);
+          }
+        });
+        gfx::AotModuleParams params;
+        params.module_path = path_;
+        params.runtime = runtime_;
+        params.enable_lazy_loading = true;
+        cached_module_ = gfx::make_aot_module(params, init_params.arch);
+      }
     }
   }
 
@@ -183,10 +182,12 @@ void CacheManager::dump_with_merging() const {
       cache_builder->dump(path_, "");
 
       // Update offline_cache_metadata.tcb
+      using offline_cache::load_metadata_with_checking;
+      using Error = offline_cache::LoadMetadataError;
       Metadata old_data;
       const auto filename =
           taichi::join_path(path_, kOfflineCacheMetadataFilename);
-      if (read_from_binary_file(old_data, filename)) {
+      if (load_metadata_with_checking(old_data, filename) == Error::kNoError) {
         for (auto &[k, v] : offline_cache_metadata_.kernels) {
           auto iter = old_data.kernels.find(k);
           if (iter != old_data.kernels.end()) {  // Update
@@ -291,5 +292,4 @@ std::string CacheManager::make_kernel_key(CompileConfig *config,
 }
 
 }  // namespace gfx
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

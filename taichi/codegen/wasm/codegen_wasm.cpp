@@ -11,8 +11,7 @@
 #include "taichi/util/file_sequence_writer.h"
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 namespace {
 constexpr std::array<const char *, 5> kPreloadedFuncNames = {
@@ -206,7 +205,7 @@ class TaskCodeGenWASM : public TaskCodeGenLLVM {
     builder->SetInsertPoint(entry_block);
     builder->CreateBr(func_body_bb);
 
-    if (prog->config.print_kernel_llvm_ir) {
+    if (prog->this_thread_config().print_kernel_llvm_ir) {
       static FileSequenceWriter writer(
           "taichi_kernel_generic_llvm_ir_{:04d}.ll",
           "unoptimized LLVM IR (generic)");
@@ -215,7 +214,7 @@ class TaskCodeGenWASM : public TaskCodeGenLLVM {
     TI_ASSERT(!llvm::verifyFunction(*func, &llvm::errs()));
   }
 
-  LLVMCompiledData run_compilation() override {
+  LLVMCompiledTask run_compilation() override {
     // lower kernel
     if (!kernel->lowered()) {
       kernel->lower();
@@ -235,7 +234,7 @@ class TaskCodeGenWASM : public TaskCodeGenLLVM {
           }
           return func_name == offloaded_task_name;
         });
-    LLVMCompiledData res;
+    LLVMCompiledTask res;
     res.tasks.emplace_back(offloaded_task_name);
     res.module = std::move(this->module);
     return res;
@@ -255,7 +254,7 @@ FunctionType KernelCodeGenWASM::compile_to_function() {
   };
 }
 
-LLVMCompiledData KernelCodeGenWASM::compile_task(
+LLVMCompiledTask KernelCodeGenWASM::compile_task(
     std::unique_ptr<llvm::Module> &&module,
     OffloadedStmt *stmt) {
   kernel->offload_to_executable(ir);
@@ -281,16 +280,15 @@ LLVMCompiledData KernelCodeGenWASM::compile_task(
   return {name_list, std::move(gen->module), {}, {}};
 }
 
-LLVMCompiledData KernelCodeGenWASM::compile_kernel_to_module() {
+LLVMCompiledKernel KernelCodeGenWASM::compile_kernel_to_module() {
   auto *tlctx = get_llvm_program(prog)->get_llvm_context(kernel->arch);
   if (!kernel->lowered()) {
     kernel->lower(/*to_executable=*/false);
   }
   auto res = compile_task();
-  std::vector<std::unique_ptr<LLVMCompiledData>> data;
-  data.push_back(std::make_unique<LLVMCompiledData>(std::move(res)));
+  std::vector<std::unique_ptr<LLVMCompiledTask>> data;
+  data.push_back(std::make_unique<LLVMCompiledTask>(std::move(res)));
   return tlctx->link_compiled_tasks(std::move(data));
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

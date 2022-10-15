@@ -2,8 +2,7 @@
 #include "taichi/program/ndarray.h"
 #include "taichi/program/program.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 void Dispatch::compile(
     std::vector<aot::CompiledDispatch> &compiled_dispatches) {
   if (kernel_->compiled_aot_kernel() == nullptr) {
@@ -69,5 +68,4 @@ void GraphBuilder::dispatch(Kernel *kernel, const std::vector<aot::Arg> &args) {
   seq()->dispatch(kernel, args);
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

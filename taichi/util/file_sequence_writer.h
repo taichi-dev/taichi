@@ -5,11 +5,9 @@
 #include "taichi/runtime/llvm/llvm_fwd.h"
 #endif
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 class IRNode;
-}
-}  // namespace taichi
+}  // namespace taichi::lang
 
 namespace taichi {
 

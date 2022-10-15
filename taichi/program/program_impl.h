@@ -10,8 +10,16 @@
 #include "taichi/rhi/device.h"
 #include "taichi/aot/graph_data.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
+
+// Represents an image resource reference for a compute/render Op
+struct ComputeOpImageRef {
+  DeviceAllocation image;
+  // The requested initial layout of the image, when Op is invoked
+  ImageLayout initial_layout;
+  // The final layout the image will be in once Op finishes
+  ImageLayout final_layout;
+};
 
 struct RuntimeContext;
 
@@ -128,6 +136,12 @@ class ProgramImpl {
   virtual void prepare_runtime_context(RuntimeContext *ctx) {
   }
 
+  virtual void enqueue_compute_op_lambda(
+      std::function<void(Device *device, CommandList *cmdlist)> op,
+      const std::vector<ComputeOpImageRef> &image_refs) {
+    TI_NOT_IMPLEMENTED;
+  }
+
   virtual void print_memory_profiler_info(
       std::vector<std::unique_ptr<SNodeTree>> &snode_trees_,
       uint64 *result_buffer) {
@@ -149,5 +163,4 @@ class ProgramImpl {
  private:
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

@@ -3,7 +3,7 @@
 #include "taichi/gui/gui.h"
 #include "taichi/common/task.h"
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 auto test_gui = []() {
   // GUI gui("GUI Test", 1000, 400, false);
@@ -47,4 +47,4 @@ auto test_gui = []() {
 
 TI_REGISTER_TASK(test_gui);
 
-TI_NAMESPACE_END
+}  // namespace taichi

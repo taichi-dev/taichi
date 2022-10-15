@@ -306,7 +306,7 @@ def test_arg_float(dt):
 
 
 @pytest.mark.parametrize('dt', [ti.i32, ti.i64, ti.u32, ti.u64])
-@test_utils.test(arch=supported_archs_cgraph)
+@test_utils.test(arch=supported_archs_cgraph, exclude=[(ti.vulkan, "Darwin")])
 def test_arg_int(dt):
     @ti.kernel
     def foo(a: dt, b: ti.types.ndarray(dtype=dt, field_dim=1)):

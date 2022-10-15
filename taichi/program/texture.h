@@ -7,8 +7,7 @@
 #include "taichi/ir/type_utils.h"
 #include "taichi/rhi/device.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class Program;
 class Ndarray;
@@ -46,6 +45,14 @@ class TI_DLL_EXPORT Texture {
 
   ~Texture();
 
+  BufferFormat get_buffer_format() const {
+    return format_;
+  }
+
+  std::array<int, 3> get_size() const {
+    return {width_, height_, depth_};
+  }
+
  private:
   DeviceAllocation texture_alloc_{kDeviceNullAllocation};
   DataType dtype_;
@@ -58,5 +65,4 @@ class TI_DLL_EXPORT Texture {
   Program *prog_{nullptr};
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

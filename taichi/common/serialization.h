@@ -20,10 +20,8 @@
 #include <vector>
 
 #ifdef TI_INCLUDED
-TI_NAMESPACE_BEGIN
+namespace taichi {
 #else
-#define TI_NAMESPACE_BEGIN
-#define TI_NAMESPACE_END
 #define TI_TRACE
 #define TI_CRITICAL
 #define TI_ASSERT assert
@@ -143,6 +141,13 @@ serialize_kv_impl(SER &ser,
   template <typename S>          \
   void io(S &serializer) const { \
     TI_IO(__VA_ARGS__);          \
+  }
+
+#define TI_IO_DEF_WITH_BASECLASS(BaseClass, ...) \
+  template <typename S>                          \
+  void io(S &serializer) const {                 \
+    this->BaseClass::io(serializer);             \
+    TI_IO(__VA_ARGS__);                          \
   }
 
 // This macro serializes each field with its name by doing the following:
@@ -345,15 +350,20 @@ class BinarySerializer : public Serializer {
     preserved = 0;
   }
 
+  template <bool writing_ = writing>
+  typename std::enable_if<!writing_, std::size_t>::type retrieve_length() {
+    return *reinterpret_cast<std::size_t *>(c_data);
+  }
+
   void finalize() {
-    if (writing) {
+    if constexpr (writing) {
       if (c_data) {
         *reinterpret_cast<std::size_t *>(&c_data[0]) = head;
       } else {
         *reinterpret_cast<std::size_t *>(&data[0]) = head;
       }
     } else {
-      assert(head == *reinterpret_cast<std::size_t *>(c_data));
+      assert(head == retrieve_length());
     }
   }
 
@@ -881,6 +891,21 @@ operator<<(std::ostream &os, const T &t) {
 
 // Returns true if deserialization succeeded.
 template <typename T>
+bool read_from_binary(T &t,
+                      const void *bin,
+                      std::size_t len,
+                      bool match_all = true) {
+  BinaryInputSerializer reader;
+  reader.initialize(const_cast<void *>(bin));
+  if (len != reader.retrieve_length()) {
+    return false;
+  }
+  reader(t);
+  auto head = reader.head;
+  return match_all ? head == len : head <= len;
+}
+
+template <typename T>
 bool read_from_binary_file(T &t, const std::string &file_name) {
   BinaryInputSerializer reader;
   if (!reader.initialize(file_name)) {
@@ -913,4 +938,6 @@ static_assert(
         std::vector<std::unique_ptr<int>> &>(),
     "");
 
-TI_NAMESPACE_END
+#ifdef TI_INCLUDED
+}  // namespace taichi
+#endif

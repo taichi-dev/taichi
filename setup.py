@@ -8,6 +8,7 @@
 import glob
 import multiprocessing
 import os
+import platform
 import shutil
 import sys
 from distutils.command.clean import clean
@@ -131,6 +132,11 @@ def get_cmake_args():
 
     if sys.platform != 'win32':
         os.environ['SKBUILD_BUILD_OPTIONS'] = f'-j{num_threads}'
+    if sys.platform == "darwin":
+        if platform.machine() == "arm64":
+            cmake_args += ["-DCMAKE_OSX_ARCHITECTURES=arm64"]
+        else:
+            cmake_args += ["-DCMAKE_OSX_ARCHITECTURES=x86_64"]
     return cmake_args
 
 

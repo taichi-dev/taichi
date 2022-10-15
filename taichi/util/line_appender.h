@@ -5,7 +5,7 @@
 #include "spdlog/spdlog.h"
 #include "taichi/common/core.h"
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 class LineAppender {
  public:
@@ -74,4 +74,4 @@ class ScopedIndent {
   LineAppender &la_;
 };
 
-TI_NAMESPACE_END
+}  // namespace taichi

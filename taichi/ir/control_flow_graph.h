@@ -5,8 +5,7 @@
 
 #include "taichi/ir/ir.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 /**
  * A basic block in control-flow graph.
@@ -168,5 +167,4 @@ class ControlFlowGraph {
   void determine_ad_stack_size(int default_ad_stack_size);
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

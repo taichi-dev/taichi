@@ -2,7 +2,7 @@
 
 #include "taichi/ir/type_utils.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 TypeFactory &TypeFactory::get_instance() {
   static TypeFactory *type_factory = new TypeFactory;
@@ -181,11 +181,25 @@ static DataType to_primitive_type(DataType d) {
 };
 }  // namespace
 
-DataType promoted_type(DataType x, DataType y) {
+DataType promoted_primitive_type(DataType x, DataType y) {
   if (compare_types(to_primitive_type(x), to_primitive_type(y)))
     return x;
   else
     return y;
 }
 
-TLANG_NAMESPACE_END
+DataType promoted_type(DataType a, DataType b) {
+  if (a->is<TensorType>() || b->is<TensorType>()) {
+    TI_ASSERT(a->is<TensorType>() && b->is<TensorType>());
+    auto tensor_ty_a = a->cast<TensorType>();
+    auto tensor_ty_b = b->cast<TensorType>();
+    auto promoted_dt = promoted_type(tensor_ty_a->get_element_type(),
+                                     tensor_ty_b->get_element_type());
+    return TypeFactory::create_tensor_type(tensor_ty_a->get_shape(),
+                                           promoted_dt);
+  } else {
+    return promoted_primitive_type(a, b);
+  }
+};
+
+}  // namespace taichi::lang

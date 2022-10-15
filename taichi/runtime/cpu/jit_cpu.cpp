@@ -49,7 +49,7 @@
 #include "taichi/util/file_sequence_writer.h"
 #include "taichi/runtime/llvm/llvm_context.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 #ifdef TI_WITH_LLVM
 using namespace llvm;
@@ -361,4 +361,4 @@ std::unique_ptr<JITSession> create_llvm_jit_session_cpu(
 #endif
 }
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

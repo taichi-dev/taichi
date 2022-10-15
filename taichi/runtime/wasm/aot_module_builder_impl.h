@@ -9,8 +9,7 @@
 
 #include "taichi/codegen/wasm/codegen_wasm.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace wasm {
 
 class AotModuleBuilderImpl : public AotModuleBuilder {
@@ -40,5 +39,4 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
 };
 
 }  // namespace wasm
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

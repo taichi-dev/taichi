@@ -1,15 +1,37 @@
 #pragma once
-#include "taichi/taichi_core.h"
-#include "taichi/aot/module_loader.h"
-#include "taichi/rhi/device.h"
-#include "taichi/program/texture.h"
-#include "taichi/runtime/gfx/aot_module_loader_impl.h"
+#include <vector>
+#include <memory>
+#include <string>
+#include <exception>
+#include <stdexcept>
 
+// Taichi runtime is not necessarily using the same 3rd-party headers as the
+// user codes. For C-API implementations we only use the internal headers.
+#ifdef TI_WITH_VULKAN
+#ifndef VK_NO_PROTOTYPES
+#define VK_NO_PROTOTYPES 1
+#endif  // VK_NO_PROTOTYPES
+#include "vulkan/vulkan.h"
+#define TI_NO_VULKAN_INCLUDES 1
+#endif  // TI_WITH_VULKAN
+
+#ifdef TI_WITH_OPENGL
+#include "glad/gl.h"
+#define TI_NO_OPENGL_INCLUDES 1
+#endif  // TI_WITH_OPENGL
+
+// Then Include all C-API symbols.
+#include "taichi/taichi.h"
+
+// Include for the base types.
+#include "taichi/rhi/arch.h"
 #define TI_RUNTIME_HOST 1
 #include "taichi/program/context.h"
 #undef TI_RUNTIME_HOST
+#include "taichi/rhi/device.h"
+#include "taichi/aot/graph_data.h"
+#include "taichi/aot/module_loader.h"
 
-// Error reporting.
 #define TI_CAPI_NOT_SUPPORTED(x) ti_set_last_error(TI_ERROR_NOT_SUPPORTED, #x);
 #define TI_CAPI_NOT_SUPPORTED_IF(x)                \
   if (x) {                                         \
@@ -32,15 +54,15 @@
     return TI_NULL_HANDLE;                         \
   }
 
-#define TI_CAPI_INVALID_ARGUMENT(x)                   \
-  if (x == TI_NULL_HANDLE) {                          \
-    ti_set_last_error(TI_ERROR_INVALID_ARGUMENT, #x); \
-    return;                                           \
+#define TI_CAPI_INVALID_ARGUMENT(pred)                   \
+  if (pred) {                                            \
+    ti_set_last_error(TI_ERROR_INVALID_ARGUMENT, #pred); \
+    return;                                              \
   }
-#define TI_CAPI_INVALID_ARGUMENT_RV(x)                \
-  if (x == TI_NULL_HANDLE) {                          \
-    ti_set_last_error(TI_ERROR_INVALID_ARGUMENT, #x); \
-    return TI_NULL_HANDLE;                            \
+#define TI_CAPI_INVALID_ARGUMENT_RV(pred)                \
+  if (pred) {                                            \
+    ti_set_last_error(TI_ERROR_INVALID_ARGUMENT, #pred); \
+    return TI_NULL_HANDLE;                               \
   }
 
 #define TI_CAPI_INVALID_INTEROP_ARCH(x, arch)                    \
@@ -54,9 +76,18 @@
     return TI_NULL_HANDLE;                                       \
   }
 
-class Runtime;
-class Context;
-class AotModule;
+#define TI_CAPI_TRY_CATCH_BEGIN() try {
+#define TI_CAPI_TRY_CATCH_END()                                 \
+  }                                                             \
+  catch (const std::exception &e) {                             \
+    ti_set_last_error(TI_ERROR_INVALID_STATE, e.what());        \
+  }                                                             \
+  catch (const std::string &e) {                                \
+    ti_set_last_error(TI_ERROR_INVALID_STATE, e.c_str());       \
+  }                                                             \
+  catch (...) {                                                 \
+    ti_set_last_error(TI_ERROR_INVALID_STATE, "c++ exception"); \
+  }
 
 class Runtime {
  protected:
@@ -78,10 +109,10 @@ class Runtime {
       const taichi::lang::Device::AllocParams &params);
   virtual void free_memory(TiMemory devmem);
 
-  virtual TiTexture allocate_texture(const taichi::lang::ImageParams &params) {
+  virtual TiImage allocate_image(const taichi::lang::ImageParams &params) {
     TI_NOT_IMPLEMENTED
   }
-  virtual void free_texture(TiTexture texture) {
+  virtual void free_image(TiImage image) {
     TI_NOT_IMPLEMENTED
   }
 
@@ -91,6 +122,13 @@ class Runtime {
   virtual void copy_image(const taichi::lang::DeviceAllocation &dst,
                           const taichi::lang::DeviceAllocation &src,
                           const taichi::lang::ImageCopyParams &params) {
+    TI_NOT_IMPLEMENTED
+  }
+  virtual void track_image(const taichi::lang::DeviceAllocation &image,
+                           taichi::lang::ImageLayout layout) {
+    TI_NOT_IMPLEMENTED
+  }
+  virtual void untrack_image(const taichi::lang::DeviceAllocation &image) {
     TI_NOT_IMPLEMENTED
   }
   virtual void transition_image(const taichi::lang::DeviceAllocation &image,
@@ -168,16 +206,16 @@ struct devalloc_cast_t {
   return devalloc_cast_t<TiMemory>::devalloc2handle(runtime, devalloc);
 }
 
-[[maybe_unused]] taichi::lang::DeviceAllocation devtex2devalloc(
+[[maybe_unused]] taichi::lang::DeviceAllocation devimg2devalloc(
     Runtime &runtime,
-    TiTexture devtex) {
-  return devalloc_cast_t<TiTexture>::handle2devalloc(runtime, devtex);
+    TiImage devimg) {
+  return devalloc_cast_t<TiImage>::handle2devalloc(runtime, devimg);
 }
 
-[[maybe_unused]] TiTexture devalloc2devtex(
+[[maybe_unused]] TiImage devalloc2devimg(
     Runtime &runtime,
     const taichi::lang::DeviceAllocation &devalloc) {
-  return devalloc_cast_t<TiTexture>::devalloc2handle(runtime, devalloc);
+  return devalloc_cast_t<TiImage>::devalloc2handle(runtime, devalloc);
 }
 
 }  // namespace

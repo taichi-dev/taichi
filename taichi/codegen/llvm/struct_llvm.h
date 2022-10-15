@@ -5,8 +5,7 @@
 #include "taichi/codegen/llvm/llvm_codegen_utils.h"
 #include "taichi/struct/struct.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class LlvmProgramImpl;
 class StructCompilerLLVM : public StructCompiler, public LLVMModuleBuilder {
@@ -53,5 +52,4 @@ class StructCompilerLLVM : public StructCompiler, public LLVMModuleBuilder {
   int snode_tree_id_;
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

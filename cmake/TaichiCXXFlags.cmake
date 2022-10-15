@@ -81,8 +81,15 @@ if ("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64" OR "${CMAKE_SYSTEM_PROCESSOR}"
     if (MSVC)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /D \"TI_ARCH_x64\"")
     else()
-        message("Setting -march=nehalem for x86_64 processors")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=nehalem -DTI_ARCH_x64")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_ARCH_x64")
+        if ("arm64" IN_LIST CMAKE_OSX_ARCHITECTURES)
+            # TODO: (penguinliong) Will probably need this in a future version
+            # of Clang. Clang11 doesn't recognize this.
+            #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcpu=apple-m1")
+        else()
+            message("Setting -march=nehalem for x86_64 processors")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=nehalem")
+        endif()
     endif()
     set(ARCH "x64")
 elseif ("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "aarch64" OR "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "arm64")

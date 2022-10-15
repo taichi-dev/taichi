@@ -2,7 +2,7 @@
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/statements.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 namespace irpass::analysis {
 
@@ -14,14 +14,14 @@ AliasResult alias_analysis(Stmt *var1, Stmt *var2) {
   if (!var1 || !var2)
     return AliasResult::different;
 
-  // TODO: further optimize with offset inside PtrOffsetStmt
+  // TODO: further optimize with offset inside MatrixPtrStmt
   // If at least one of var1 and var2 is local, they will be treated here.
   auto retrieve_local = [&](Stmt *var) {
     if (var->is<AllocaStmt>()) {
       return var;
-    } else if (var->is<PtrOffsetStmt>() &&
-               var->cast<PtrOffsetStmt>()->offset_used_as_index()) {
-      return var->cast<PtrOffsetStmt>()->origin;
+    } else if (var->is<MatrixPtrStmt>() &&
+               var->cast<MatrixPtrStmt>()->offset_used_as_index()) {
+      return var->cast<MatrixPtrStmt>()->origin;
     } else {
       return (Stmt *)nullptr;
     }
@@ -30,9 +30,9 @@ AliasResult alias_analysis(Stmt *var1, Stmt *var2) {
   Stmt *origin2 = retrieve_local(var2);
   if (origin1 != nullptr && origin2 != nullptr) {
     if (origin1 == origin2) {
-      if (var1->is<PtrOffsetStmt>() && var2->is<PtrOffsetStmt>()) {
-        auto diff = value_diff_ptr_index(var1->cast<PtrOffsetStmt>()->offset,
-                                         var2->cast<PtrOffsetStmt>()->offset);
+      if (var1->is<MatrixPtrStmt>() && var2->is<MatrixPtrStmt>()) {
+        auto diff = value_diff_ptr_index(var1->cast<MatrixPtrStmt>()->offset,
+                                         var2->cast<MatrixPtrStmt>()->offset);
         if (diff.is_diff_certain) {
           return diff.diff_range == 0 ? AliasResult::same
                                       : AliasResult::different;
@@ -168,4 +168,4 @@ bool maybe_same_address(Stmt *var1, Stmt *var2) {
 
 }  // namespace irpass::analysis
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

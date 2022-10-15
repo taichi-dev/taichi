@@ -30,8 +30,7 @@
 #include "taichi/program/sparse_matrix.h"
 #include "taichi/ir/mesh.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 struct JITEvaluatorId {
   std::thread::id thread_id;
@@ -39,6 +38,7 @@ struct JITEvaluatorId {
   // thread cannot be used in another. Hence the thread_id member.
   int op;
   DataType ret, lhs, rhs;
+  std::string tb;
   bool is_binary;
 
   UnaryOpType unary_op() const {
@@ -53,12 +53,12 @@ struct JITEvaluatorId {
 
   bool operator==(const JITEvaluatorId &o) const {
     return thread_id == o.thread_id && op == o.op && ret == o.ret &&
-           lhs == o.lhs && rhs == o.rhs && is_binary == o.is_binary;
+           lhs == o.lhs && rhs == o.rhs && is_binary == o.is_binary &&
+           tb == o.tb;
   }
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang
 
 namespace std {
 template <>
@@ -72,8 +72,7 @@ struct hash<taichi::lang::JITEvaluatorId> {
 };
 }  // namespace std
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class StructCompiler;
 
@@ -94,7 +93,12 @@ class TI_DLL_EXPORT Program {
  public:
   using Kernel = taichi::lang::Kernel;
   Callable *current_callable{nullptr};
-  CompileConfig config;
+  // We let every thread has its own config because the constant folding pass
+  // wants to change the CompileConfig so that it can compile the evaluator,
+  // but we don't want it to change the global config. We will refactor it
+  // later when we make Taichi thread-safe.
+  std::unordered_map<std::thread::id, CompileConfig> configs;
+  std::thread::id main_thread_id_;
   bool sync{false};  // device/host synchronized?
 
   uint64 *result_buffer{nullptr};  // Note result_buffer is used by all backends
@@ -118,6 +122,14 @@ class TI_DLL_EXPORT Program {
   explicit Program(Arch arch);
 
   ~Program();
+
+  CompileConfig &this_thread_config() {
+    auto thread_id = std::this_thread::get_id();
+    if (!configs.count(thread_id)) {
+      configs[thread_id] = configs[main_thread_id_];
+    }
+    return configs[thread_id];
+  }
 
   struct KernelProfilerQueryResult {
     int counter{0};
@@ -331,6 +343,15 @@ class TI_DLL_EXPORT Program {
 
   void prepare_runtime_context(RuntimeContext *ctx);
 
+  /** Enqueue a custom compute op to the current program execution flow.
+   *
+   *  @params op The lambda that is invoked to construct the custom compute Op
+   *  @params image_refs The image resource references used in this compute Op
+   */
+  void enqueue_compute_op_lambda(
+      std::function<void(Device *device, CommandList *cmdlist)> op,
+      const std::vector<ComputeOpImageRef> &image_refs);
+
   /**
    * TODO(zhanlue): Remove this interface
    *
@@ -342,7 +363,7 @@ class TI_DLL_EXPORT Program {
    * Please limit its use to LLVM backend only
    */
   ProgramImpl *get_program_impl() {
-    TI_ASSERT(arch_uses_llvm(config.arch));
+    TI_ASSERT(arch_uses_llvm(this_thread_config().arch));
     return program_impl_.get();
   }
 
@@ -378,5 +399,4 @@ class TI_DLL_EXPORT Program {
   std::vector<std::unique_ptr<Texture>> textures_;
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

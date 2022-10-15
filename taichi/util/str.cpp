@@ -4,7 +4,7 @@
 
 #include "taichi/inc/constants.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 std::string c_quoted(std::string const &str) {
   // https://zh.cppreference.com/w/cpp/language/escape
@@ -60,4 +60,4 @@ std::string format_error_message(const std::string &error_message_template,
   return error_message_formatted;
 }
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

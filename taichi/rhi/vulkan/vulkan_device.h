@@ -17,8 +17,7 @@
 #include <taichi/rhi/vulkan/vulkan_utils.h>
 #include <taichi/common/ref_counted_pool.h>
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace vulkan {
 
 using std::unordered_map;
@@ -564,6 +563,7 @@ class VulkanStream : public Stream {
 class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
  public:
   struct Params {
+    PFN_vkGetInstanceProcAddr get_proc_addr{nullptr};
     VkInstance instance;
     VkPhysicalDevice physical_device;
     VkDevice device;
@@ -739,5 +739,4 @@ VkFormat buffer_format_ti_to_vk(BufferFormat f);
 BufferFormat buffer_format_vk_to_ti(VkFormat f);
 
 }  // namespace vulkan
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

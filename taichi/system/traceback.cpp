@@ -195,7 +195,7 @@ inline std::vector<StackFrame> stack_trace() {
 #include <cxxabi.h>
 #endif
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 void print_traceback() {
 #ifdef __APPLE__
@@ -367,4 +367,4 @@ void print_traceback() {
       "https://docs.taichi-lang.org/docs/install\n");
 }
 
-TI_NAMESPACE_END
+}  // namespace taichi

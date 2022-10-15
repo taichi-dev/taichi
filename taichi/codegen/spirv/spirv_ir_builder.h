@@ -10,8 +10,7 @@
 #include "taichi/rhi/device.h"
 #include "taichi/ir/statements.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace spirv {
 
 template <bool stop, std::size_t I, typename F>
@@ -209,9 +208,11 @@ class IRBuilder {
   }
 
   template <typename... Args>
-  void debug(spv::Op op, Args &&...args) {
-    ib_.begin(op).add_seq(std::forward<Args>(args)...).commit(&debug_);
+  void debug_name(spv::Op op, Args &&...args) {
+    ib_.begin(op).add_seq(std::forward<Args>(args)...).commit(&names_);
   }
+
+  Value debug_string(std::string str);
 
   template <typename... Args>
   void execution_mode(Value func, Args &&...args) {
@@ -444,6 +445,7 @@ class IRBuilder {
   Value le(Value a, Value b);
   Value gt(Value a, Value b);
   Value ge(Value a, Value b);
+  Value bit_field_extract(Value base, Value offset, Value count);
   Value select(Value cond, Value a, Value b);
 
   // Create a cast that cast value to dst_type
@@ -458,6 +460,18 @@ class IRBuilder {
         .add_seq(std::forward<Args>(args)...)
         .commit(&function_);
     return val;
+  }
+
+  // Create a debugPrintf call
+  void call_debugprintf(std::string formats, const std::vector<Value> &args) {
+    Value format_str = debug_string(formats);
+    Value val = new_value(t_void_, ValueKind::kNormal);
+    ib_.begin(spv::OpExtInst)
+        .add_seq(t_void_, val, debug_printf_, 1, format_str);
+    for (const auto &arg : args) {
+      ib_.add(arg);
+    }
+    ib_.commit(&function_);
   }
 
   // Local allocate, load, store methods
@@ -551,6 +565,9 @@ class IRBuilder {
   // glsl 450 extension
   Value ext_glsl450_;
 
+  // debugprint extension
+  Value debug_printf_;
+
   SType t_bool_;
   SType t_int8_;
   SType t_int16_;
@@ -603,7 +620,17 @@ class IRBuilder {
   // Header segment
   std::vector<uint32_t> exec_mode_;
   // Debug segment
-  std::vector<uint32_t> debug_;
+  //   According to SPIR-V spec, the following debug instructions must be
+  //   grouped in the order:
+  //   - All OpString, OpSourceExtension, OpSource, and OpSourceContinued,
+  //   without forward references.
+  //   - All OpName and all OpMemberName.
+  //   - All OpModuleProcessed instructions.
+
+  // OpString segment
+  std::vector<uint32_t> strings_;
+  // OpName segment
+  std::vector<uint32_t> names_;
   // Annotation segment
   std::vector<uint32_t> decorate_;
   // Global segment: types, variables, types
@@ -614,5 +641,4 @@ class IRBuilder {
   std::vector<uint32_t> function_;
 };
 }  // namespace spirv
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

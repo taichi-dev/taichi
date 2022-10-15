@@ -19,20 +19,12 @@
 #include "taichi/util/lock.h"
 #include "taichi/util/offline_cache.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace {
 
 using Format = LlvmOfflineCache::Format;
 constexpr char kMetadataFilename[] = "metadata";
 constexpr char kMetadataFileLockName[] = "metadata.lock";
-
-static bool is_current_llvm_cache_version(
-    const LlvmOfflineCache::Version &ver) {
-  // TODO(PGZXB): Do more detailed checking
-  return ver[0] == TI_VERSION_MAJOR && ver[1] == TI_VERSION_MINOR &&
-         ver[2] == TI_VERSION_PATCH;
-}
 
 static std::string get_llvm_cache_metadata_file_path(const std::string &dir) {
   return taichi::join_path(dir, std::string(kMetadataFilename) + ".tcb");
@@ -60,13 +52,6 @@ struct CacheCleanerUtils<LlvmOfflineCache> {
   using MetadataType = LlvmOfflineCache;
   using KernelMetaData = typename MetadataType::KernelMetadata;
 
-  // To load metadata from file
-  static bool load_metadata(const CacheCleanerConfig &config,
-                            MetadataType &result) {
-    return read_from_binary_file(
-        result, taichi::join_path(config.path, config.metadata_filename));
-  }
-
   // To save metadata as file
   static bool save_metadata(const CacheCleanerConfig &config,
                             const MetadataType &data) {
@@ -84,12 +69,6 @@ struct CacheCleanerUtils<LlvmOfflineCache> {
     return true;
   }
 
-  // To check version
-  static bool check_version(const CacheCleanerConfig &config,
-                            const Version &version) {
-    return is_current_llvm_cache_version(version);
-  }
-
   // To get cache files name
   static std::vector<std::string> get_cache_files(
       const CacheCleanerConfig &config,
@@ -105,6 +84,13 @@ struct CacheCleanerUtils<LlvmOfflineCache> {
   // To remove other files except cache files and offline cache metadta files
   static void remove_other_files(const CacheCleanerConfig &config) {
     // Do nothing
+  }
+
+  // To check if a file is cache file
+  static bool is_valid_cache_file(const CacheCleanerConfig &config,
+                                  const std::string &name) {
+    std::string ext = filename_extension(name);
+    return ext == "ll" || ext == "bc";
   }
 };
 
@@ -126,20 +112,17 @@ bool LlvmOfflineCacheFileReader::load_meta_data(
     LlvmOfflineCache &data,
     const std::string &cache_file_path,
     bool with_lock) {
+  using offline_cache::load_metadata_with_checking;
+  using Error = offline_cache::LoadMetadataError;
   const auto tcb_path = get_llvm_cache_metadata_file_path(cache_file_path);
-  {
-    // No the best way to check for filepath existence, but whatever... See
-    // https://stackoverflow.com/questions/12774207/fastest-way-to-check-if-a-file-exists-using-standard-c-c11-14-17-c
-    std::ifstream fs(tcb_path, std::ios::in | std::ios::binary);
-    if (!fs.good()) {
-      TI_DEBUG("LLVM cache {} does not exist", cache_file_path);
-      return false;
-    }
+
+  if (!taichi::path_exists(tcb_path)) {
+    TI_DEBUG("File {} not found", tcb_path);
+    return false;
   }
 
   if (!with_lock) {
-    read_from_binary_file(data, tcb_path);
-    return true;
+    return Error::kNoError == load_metadata_with_checking(data, tcb_path);
   }
 
   std::string lock_path =
@@ -150,8 +133,7 @@ bool LlvmOfflineCacheFileReader::load_meta_data(
         TI_WARN("Unlock {} failed", lock_path);
       }
     });
-    read_from_binary_file(data, tcb_path);
-    return true;
+    return Error::kNoError == load_metadata_with_checking(data, tcb_path);
   }
   TI_WARN("Lock {} failed", lock_path);
   return false;
@@ -284,7 +266,7 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
       TI_ASSERT(mod != nullptr);
       if (format & Format::LL) {
         std::string filename = filename_prefix + ".ll";
-        if (try_lock_with_file(filename)) {  // Not exists
+        if (!merge_with_old || try_lock_with_file(filename)) {
           size += write_llvm_module(filename, [mod](llvm::raw_os_ostream &os) {
             mod->print(os, /*AAW=*/nullptr);
           });
@@ -294,7 +276,7 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
       }
       if (format & Format::BC) {
         std::string filename = filename_prefix + ".bc";
-        if (try_lock_with_file(filename)) {  // Not exists
+        if (!merge_with_old || try_lock_with_file(filename)) {
           size += write_llvm_module(filename, [mod](llvm::raw_os_ostream &os) {
             llvm::WriteBitcodeToFile(*mod, os);
           });
@@ -384,15 +366,11 @@ void LlvmOfflineCacheFileWriter::merge_with(LlvmOfflineCache &&data) {
 
 void LlvmOfflineCacheFileWriter::mangle_offloaded_task_name(
     const std::string &kernel_key,
-    LLVMCompiledData &compiled_data) {
+    LLVMCompiledKernel &compiled_data) {
   if (!mangled_) {
     for (auto &offload : compiled_data.tasks) {
       std::string mangled_name =
           offline_cache::mangle_name(offload.name, kernel_key);
-      TI_DEBUG(
-          "Mangle offloaded-task from internal name '{}' to offline cache "
-          "key '{}'",
-          offload.name, mangled_name);
       auto func = compiled_data.module->getFunction(offload.name);
       TI_ASSERT(func != nullptr);
       func->setName(mangled_name);
@@ -419,7 +397,13 @@ void LlvmOfflineCacheFileWriter::clean_cache(const std::string &path,
 
 LlvmOfflineCache::KernelCacheData LlvmOfflineCache::KernelCacheData::clone()
     const {
-  return {kernel_key, args, compiled_data.clone()};
+  LlvmOfflineCache::KernelCacheData result;
+  result.kernel_key = kernel_key;
+  result.args = args;
+  result.compiled_data = compiled_data.clone();
+  result.size = size;
+  result.created_at = created_at;
+  result.last_used_at = last_used_at;
+  return result;
 }
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

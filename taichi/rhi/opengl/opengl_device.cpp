@@ -3,8 +3,7 @@
 
 #include "spirv_glsl.hpp"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace opengl {
 
 namespace {
@@ -251,6 +250,7 @@ GLPipeline::GLPipeline(const PipelineSourceDesc &desc,
                        const std::string &name) {
   GLuint shader_id;
   shader_id = glCreateShader(GL_COMPUTE_SHADER);
+  check_opengl_error("glCreateShader");
 
   if (desc.type == PipelineSourceType::glsl_src) {
     const GLchar *source_cstr = (const GLchar *)desc.data;
@@ -261,9 +261,13 @@ GLPipeline::GLPipeline(const PipelineSourceDesc &desc,
     spirv_cross::CompilerGLSL glsl((uint32_t *)desc.data,
                                    desc.size / sizeof(uint32_t));
     spirv_cross::CompilerGLSL::Options options;
-    options.es = is_gles();
+    if (is_gles()) {
+      options.es = true;
+      options.version = 310;
+    } else {
+      options.enable_420pack_extension = true;
+    }
     options.vulkan_semantics = false;
-    options.enable_420pack_extension = true;
     glsl.set_common_options(options);
     std::string source = glsl.compile();
     TI_TRACE("GLSL source: \n{}", source);
@@ -277,37 +281,50 @@ GLPipeline::GLPipeline(const PipelineSourceDesc &desc,
   }
 
   glCompileShader(shader_id);
+  check_opengl_error("glCompileShader");
   int status = GL_TRUE;
   glGetShaderiv(shader_id, GL_COMPILE_STATUS, &status);
+  check_opengl_error("glGetShaderiv");
   if (status != GL_TRUE) {
     GLsizei logLength;
     glGetShaderiv(shader_id, GL_INFO_LOG_LENGTH, &logLength);
+    check_opengl_error("glGetShaderiv");
+
     auto log = std::vector<GLchar>(logLength + 1);
     glGetShaderInfoLog(shader_id, logLength, &logLength, log.data());
+    check_opengl_error("glGetShaderInfoLog");
+
     log[logLength] = 0;
     TI_ERROR("[glsl] error while compiling shader:\n{}", log.data());
   }
   check_opengl_error();
 
   program_id_ = glCreateProgram();
+  check_opengl_error("glCreateProgram");
   glAttachShader(program_id_, shader_id);
+  check_opengl_error("glAttachShader");
   glLinkProgram(program_id_);
+  check_opengl_error("glLinkProgram");
   glGetProgramiv(program_id_, GL_LINK_STATUS, &status);
+  check_opengl_error("glGetProgramiv");
   if (status != GL_TRUE) {
     GLsizei logLength;
     glGetProgramiv(program_id_, GL_INFO_LOG_LENGTH, &logLength);
+    check_opengl_error("glGetProgramiv");
     auto log = std::vector<GLchar>(logLength + 1);
     glGetProgramInfoLog(program_id_, logLength, &logLength, log.data());
+    check_opengl_error("glGetProgramInfoLog");
     log[logLength] = 0;
     TI_ERROR("[glsl] error while linking program:\n{}", log.data());
   }
-  check_opengl_error();
 
   glDeleteShader(shader_id);
+  check_opengl_error("glDeleteShader");
 }
 
 GLPipeline::~GLPipeline() {
   glDeleteProgram(program_id_);
+  check_opengl_error("glDeleteShader");
 }
 
 ResourceBinder *GLPipeline::resource_binder() {
@@ -489,12 +506,14 @@ StreamSemaphore GLStream::submit_synced(
     const std::vector<StreamSemaphore> &wait_semaphores) {
   submit(cmdlist);
   glFinish();
+  check_opengl_error("glFinish");
 
   // OpenGL is fully serial
   return nullptr;
 }
 void GLStream::command_sync() {
   glFinish();
+  check_opengl_error("glFinish");
 }
 
 GLDevice::GLDevice() : stream_(this) {
@@ -553,6 +572,7 @@ GLint GLDevice::get_devalloc_size(DeviceAllocation handle) {
   check_opengl_error("glGetBufferParameteriv");
   return size;
   glBindBuffer(GL_ARRAY_BUFFER, 0);
+  check_opengl_error("glBindBuffer");
 }
 
 std::unique_ptr<Pipeline> GLDevice::create_pipeline(
@@ -576,7 +596,11 @@ void *GLDevice::map_range(DevicePtr ptr, uint64_t size) {
 void *GLDevice::map(DeviceAllocation alloc) {
   int size = 0;
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, alloc.alloc_id);
+  check_opengl_error("glBindBuffer");
+
   glGetBufferParameteriv(GL_SHADER_STORAGE_BUFFER, GL_BUFFER_SIZE, &size);
+  check_opengl_error("glGetBufferParameteriv");
+
   return map_range(alloc.get_ptr(0), size);
 }
 
@@ -604,6 +628,7 @@ void GLDevice::memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) {
                       dst.offset, size);
   check_opengl_error("glCopyBufferSubData");
   glFinish();
+  check_opengl_error("glFinish");
 }
 
 Stream *GLDevice::get_compute_stream() {
@@ -629,6 +654,7 @@ Stream *GLDevice::get_graphics_stream() {
 
 void GLDevice::wait_idle() {
   glFinish();
+  check_opengl_error("glFinish");
 }
 
 std::unique_ptr<Surface> GLDevice::create_surface(const SurfaceConfig &config) {
@@ -686,6 +712,7 @@ void GLDevice::image_transition(DeviceAllocation img,
   glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT | GL_TEXTURE_UPDATE_BARRIER_BIT |
                   GL_SHADER_IMAGE_ACCESS_BARRIER_BIT |
                   GL_FRAMEBUFFER_BARRIER_BIT);
+  check_opengl_error("glMemoryBarrier");
 }
 
 void GLDevice::buffer_to_image(DeviceAllocation dst_img,
@@ -779,8 +806,8 @@ void GLCommandList::CmdBufferFill::execute() {
   glGetBufferParameteriv(GL_SHADER_STORAGE_BUFFER, GL_BUFFER_SIZE, &buf_size);
   check_opengl_error("glGetBufferParameteriv");
   if (is_gles()) {
-    TI_ASSERT(offset == 0 && data == 0 && size == buf_size &&
-              "GLES only supports full clear");
+    TI_ASSERT_INFO(offset == 0 && data == 0 && size >= buf_size,
+                   "GLES only supports full clear");
     glBufferData(GL_SHADER_STORAGE_BUFFER, buf_size, nullptr, GL_DYNAMIC_READ);
     check_opengl_error("glBufferData");
   } else {
@@ -793,12 +820,14 @@ void GLCommandList::CmdBufferFill::execute() {
 
 void GLCommandList::CmdDispatch::execute() {
   glDispatchCompute(x, y, z);
+  check_opengl_error("glDispatchCompute");
 }
 
 void GLCommandList::CmdImageTransition::execute() {
   glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT | GL_TEXTURE_UPDATE_BARRIER_BIT |
                   GL_SHADER_IMAGE_ACCESS_BARRIER_BIT |
                   GL_FRAMEBUFFER_BARRIER_BIT);
+  check_opengl_error("glMemoryBarrier");
 }
 
 void GLCommandList::CmdBufferToImage::execute() {
@@ -830,7 +859,9 @@ void GLCommandList::CmdBufferToImage::execute() {
   }
   check_opengl_error("glTexSubImage");
   glBindTexture(image_dims, /*target=*/0);
+  check_opengl_error("glBindTexture");
   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, /*target=*/0);
+  check_opengl_error("glBindBuffer");
 }
 
 void GLCommandList::CmdImageToBuffer::execute() {
@@ -854,5 +885,4 @@ void GLCommandList::CmdImageToBuffer::execute() {
 }
 
 }  // namespace opengl
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

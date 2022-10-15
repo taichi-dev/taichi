@@ -1,4 +1,5 @@
 #include "taichi_gfx_impl.h"
+#include "taichi/runtime/gfx/aot_module_loader_impl.h"
 
 GfxRuntime::GfxRuntime(taichi::Arch arch) : Runtime(arch) {
 }
@@ -25,6 +26,13 @@ void GfxRuntime::copy_image(const taichi::lang::DeviceAllocation &dst,
                             const taichi::lang::DeviceAllocation &src,
                             const taichi::lang::ImageCopyParams &params) {
   get_gfx_runtime().copy_image(dst, src, params);
+}
+void GfxRuntime::track_image(const taichi::lang::DeviceAllocation &image,
+                             taichi::lang::ImageLayout layout) {
+  get_gfx_runtime().track_image(image, layout);
+}
+void GfxRuntime::untrack_image(const taichi::lang::DeviceAllocation &image) {
+  get_gfx_runtime().untrack_image(image);
 }
 void GfxRuntime::transition_image(const taichi::lang::DeviceAllocation &image,
                                   taichi::lang::ImageLayout layout) {

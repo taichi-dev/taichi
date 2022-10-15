@@ -1,7 +1,7 @@
 #include <taichi/system/timeline.h>
 #include "taichi/program/parallel_executor.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 ParallelExecutor::ParallelExecutor(const std::string &name, int num_threads)
     : name_(name),
@@ -116,4 +116,4 @@ void ParallelExecutor::worker_loop() {
     }
   }
 }
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

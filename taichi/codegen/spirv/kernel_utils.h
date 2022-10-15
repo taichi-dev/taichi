@@ -9,8 +9,7 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/rhi/device.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class Kernel;
 class SNode;
@@ -274,5 +273,4 @@ struct TaichiKernelAttributes {
 };
 
 }  // namespace spirv
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

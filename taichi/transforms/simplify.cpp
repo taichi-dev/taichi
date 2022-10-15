@@ -11,7 +11,7 @@
 #include <unordered_set>
 #include <utility>
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 // Common subexpression elimination, store forwarding, useless local store
 // elimination; Simplify if statements into conditional stores.
@@ -636,8 +636,8 @@ void full_simplify(IRNode *root,
       // not modified.
       if (config.opt_level > 0 && (first_iteration || modified) &&
           config.cfg_optimization &&
-          cfg_optimization(root, args.after_lower_access,
-                           args.autodiff_enabled))
+          cfg_optimization(root, args.after_lower_access, args.autodiff_enabled,
+                           config.real_matrix && !config.real_matrix_scalarize))
         modified = true;
       first_iteration = false;
       if (!modified)
@@ -655,4 +655,4 @@ void full_simplify(IRNode *root,
 
 }  // namespace irpass
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

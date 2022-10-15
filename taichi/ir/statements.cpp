@@ -2,7 +2,7 @@
 #include "taichi/ir/statements.h"
 #include "taichi/util/bit.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 UnaryOpStmt::UnaryOpStmt(UnaryOpType op_type, Stmt *operand)
     : op_type(op_type), operand(operand) {
@@ -51,42 +51,49 @@ ExternalPtrStmt::ExternalPtrStmt(Stmt *base_ptr,
 
 GlobalPtrStmt::GlobalPtrStmt(SNode *snode,
                              const std::vector<Stmt *> &indices,
-                             bool activate)
+                             bool activate,
+                             bool is_cell_access)
     : snode(snode),
       indices(indices),
       activate(activate),
+      is_cell_access(is_cell_access),
       is_bit_vectorized(false) {
   TI_ASSERT(snode != nullptr);
   element_type() = snode->dt;
   TI_STMT_REG_FIELDS;
 }
 
-PtrOffsetStmt::PtrOffsetStmt(Stmt *origin_input, Stmt *offset_input) {
+MatrixOfGlobalPtrStmt::MatrixOfGlobalPtrStmt(const std::vector<SNode *> &snodes,
+                                             const std::vector<Stmt *> &indices,
+                                             bool dynamic_indexable,
+                                             int dynamic_index_stride,
+                                             DataType dt,
+                                             bool activate)
+    : snodes(snodes),
+      indices(indices),
+      dynamic_indexable(dynamic_indexable),
+      dynamic_index_stride(dynamic_index_stride),
+      activate(activate) {
+  ret_type = dt;
+  TI_STMT_REG_FIELDS;
+}
+
+MatrixPtrStmt::MatrixPtrStmt(Stmt *origin_input, Stmt *offset_input) {
   origin = origin_input;
   offset = offset_input;
-  if (origin->is<AllocaStmt>()) {
-    TI_ASSERT(origin->cast<AllocaStmt>()->ret_type->is<TensorType>());
-    auto tensor_type = origin->cast<AllocaStmt>()->ret_type->cast<TensorType>();
-    element_type() = tensor_type->get_element_type();
-    element_type().set_is_pointer(true);
-  } else if (origin->is<GlobalTemporaryStmt>()) {
-    TI_ASSERT(origin->cast<GlobalTemporaryStmt>()->ret_type->is<TensorType>());
-    auto tensor_type =
-        origin->cast<GlobalTemporaryStmt>()->ret_type->cast<TensorType>();
+  if (origin->is<AllocaStmt>() || origin->is<GlobalTemporaryStmt>() ||
+      origin->is<ExternalPtrStmt>() || origin->is<MatrixOfGlobalPtrStmt>()) {
+    auto tensor_type = origin->ret_type.ptr_removed()->cast<TensorType>();
+    TI_ASSERT(tensor_type != nullptr);
     element_type() = tensor_type->get_element_type();
     element_type().set_is_pointer(true);
   } else if (origin->is<GlobalPtrStmt>()) {
     element_type() = origin->cast<GlobalPtrStmt>()->ret_type;
-  } else if (origin->is<ExternalPtrStmt>()) {
-    TI_ASSERT(origin->cast<ExternalPtrStmt>()->ret_type->is<TensorType>());
-    auto tensor_type =
-        origin->cast<ExternalPtrStmt>()->ret_type->cast<TensorType>();
-    element_type() = tensor_type->get_element_type();
-    element_type().set_is_pointer(true);
   } else {
     TI_ERROR(
-        "PtrOffsetStmt must be used for AllocaStmt / GlobalTemporaryStmt "
-        "(locally) or GlobalPtrStmt (globally).")
+        "MatrixPtrStmt must be used for AllocaStmt / GlobalTemporaryStmt "
+        "(locally) or GlobalPtrStmt / MatrixOfGlobalPtrStmt / ExternalPtrStmt "
+        "(globally).")
   }
   TI_STMT_REG_FIELDS;
 }
@@ -407,4 +414,4 @@ BitStructType *BitStructStoreStmt::get_bit_struct() const {
   return ptr->as<SNodeLookupStmt>()->snode->dt->as<BitStructType>();
 }
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

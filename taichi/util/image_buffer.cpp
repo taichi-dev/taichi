@@ -15,7 +15,7 @@
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h"
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 template <typename T>
 void Array2D<T>::load_image(const std::string &filename, bool linearize) {
@@ -213,4 +213,4 @@ void write_pgm(Array2D<real> img, const std::string &fn) {
   }
 }
 
-TI_NAMESPACE_END
+}  // namespace taichi

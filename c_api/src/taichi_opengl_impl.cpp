@@ -1,4 +1,5 @@
 #include "taichi_opengl_impl.h"
+#ifdef TI_WITH_OPENGL
 
 OpenglRuntime::OpenglRuntime()
     : GfxRuntime(taichi::Arch::opengl),
@@ -18,6 +19,7 @@ taichi::lang::gfx::GfxRuntime &OpenglRuntime::get_gfx_runtime() {
 void ti_export_opengl_memory(TiRuntime runtime,
                              TiMemory memory,
                              TiOpenglMemoryInteropInfo *interop_info) {
+  TI_CAPI_TRY_CATCH_BEGIN();
   TI_CAPI_ARGUMENT_NULL(runtime);
   TI_CAPI_ARGUMENT_NULL(memory);
   TI_CAPI_ARGUMENT_NULL(interop_info);
@@ -27,4 +29,7 @@ void ti_export_opengl_memory(TiRuntime runtime,
   taichi::lang::DeviceAllocation devalloc = devmem2devalloc(*runtime2, memory);
   interop_info->buffer = devalloc.alloc_id;
   interop_info->size = runtime2->get_gl().get_devalloc_size(devalloc);
+  TI_CAPI_TRY_CATCH_END();
 }
+
+#endif  // TI_WITH_OPENGL

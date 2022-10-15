@@ -3,14 +3,14 @@
 #include "taichi/system/unified_allocator.h"
 #define TI_RUNTIME_HOST
 #include "taichi/runtime/llvm/runtime_module/mem_request.h"
+#undef TI_RUNTIME_HOST
 #include "taichi/rhi/device.h"
 #include <mutex>
 #include <vector>
 #include <memory>
 #include <thread>
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 // A memory pool that runs on the host
 
@@ -54,5 +54,4 @@ class TI_DLL_EXPORT MemoryPool {
   Device *device_;
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

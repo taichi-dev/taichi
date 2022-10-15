@@ -115,7 +115,7 @@ def test_constant_matrices():
         m += ti.Matrix([[3, 4], [5, t]])
         print(m @ v)
         print(r.x, r.y, r.z, r.w)
-        s = w.transpose() @ m
+        s = w @ m
         print(s)
         print(m)
 
@@ -164,8 +164,56 @@ def test_taichi_scope_matrix_operations_with_global_matrices(ops):
     assert np.allclose(r2[None].to_numpy(), ops(a, c))
 
 
+def _test_local_matrix_non_constant_index():
+    @ti.kernel
+    def func1():
+        tmp = ti.Vector([1, 2, 3])
+        for i in range(3):
+            vec = ti.Vector([4, 5, 6])
+            for j in range(3):
+                vec[tmp[i] % 3] += vec[j]
+            tmp[i] = vec[tmp[i] % 3]
+        assert tmp[0] == 24
+        assert tmp[1] == 30
+        assert tmp[2] == 19
+
+    func1()
+
+    @ti.kernel
+    def func2(i: ti.i32, j: ti.i32, k: ti.i32):
+        tmp = ti.Matrix([[k, k * 2], [k * 2, k * 3]])
+        assert tmp[i, j] == k * (i + j + 1)
+
+    for i in range(2):
+        for j in range(2):
+            func2(i, j, 10)
+
+
+@test_utils.test(require=ti.extension.dynamic_index,
+                 dynamic_index=True,
+                 debug=True)
+def test_local_matrix_non_constant_index():
+    _test_local_matrix_non_constant_index()
+
+
+@test_utils.test(require=ti.extension.dynamic_index,
+                 real_matrix=True,
+                 debug=True)
+def test_local_matrix_non_constant_index_real_matrix():
+    _test_local_matrix_non_constant_index()
+
+
+@test_utils.test(require=ti.extension.dynamic_index,
+                 dynamic_index=True,
+                 real_matrix=True,
+                 real_matrix_scalarize=True,
+                 debug=True)
+def test_local_matrix_non_constant_index_real_matrix_scalarize():
+    _test_local_matrix_non_constant_index()
+
+
 @test_utils.test(exclude=[ti.cc])
-def test_matrix_non_constant_index_numpy():
+def test_matrix_ndarray_non_constant_index():
     @ti.kernel
     def func1(a: ti.types.ndarray(element_dim=2)):
         for i in range(5):
@@ -180,23 +228,20 @@ def test_matrix_non_constant_index_numpy():
     assert m[4][0, 1] == 1
 
     @ti.kernel
-    def func2(b: ti.types.ndarray(element_dim=1, layout=ti.Layout.SOA)):
+    def func2(b: ti.types.ndarray(element_dim=1)):
         for i in range(5):
             for j in range(4):
                 b[i][j * j] = j * j
 
-    v = np.empty((10, 5), dtype=np.int32)
+    v = np.empty((5, 10), dtype=np.int32)
     func2(v)
-    assert v[0][1] == 0
+    assert v[0][0] == 0
     assert v[1][1] == 1
-    assert v[4][1] == 4
-    assert v[9][1] == 9
+    assert v[2][4] == 4
+    assert v[3][9] == 9
 
 
-@test_utils.test(require=ti.extension.dynamic_index,
-                 dynamic_index=True,
-                 debug=True)
-def test_matrix_non_constant_index():
+def _test_matrix_field_non_constant_index():
     m = ti.Matrix.field(2, 2, ti.i32, 5)
     v = ti.Vector.field(10, ti.i32, 5)
 
@@ -205,11 +250,11 @@ def test_matrix_non_constant_index():
         for i in range(5):
             for j, k in ti.ndrange(2, 2):
                 m[i][j, k] = j * j + k * k
-        assert m[1][0, 1] == 1
-        assert m[2][1, 0] == 1
-        assert m[3][1, 1] == 2
 
     func1()
+    assert m[1][0, 1] == 1
+    assert m[2][1, 0] == 1
+    assert m[3][1, 1] == 2
     assert m[4][0, 1] == 1
 
     @ti.kernel
@@ -217,39 +262,25 @@ def test_matrix_non_constant_index():
         for i in range(5):
             for j in range(4):
                 v[i][j * j] = j * j
-        assert v[1][0] == 0
-        assert v[1][1] == 1
-        assert v[1][4] == 4
 
     func2()
+    assert v[1][0] == 0
+    assert v[1][1] == 1
+    assert v[1][4] == 4
     assert v[1][9] == 9
 
-    @ti.kernel
-    def func3():
-        tmp = ti.Vector([1, 2, 3])
-        for i in range(3):
-            tmp[i] = i * i
-            vec = ti.Vector([4, 5, 6])
-            for j in range(3):
-                vec[tmp[i] % 3] += vec[j % 3]
-        assert tmp[0] == 0
-        assert tmp[1] == 1
-        assert tmp[2] == 4
 
-    func3()
-
-    @ti.kernel
-    def func4(k: ti.i32):
-        tmp = ti.Vector([k, k * 2, k * 3])
-        assert tmp[0] == k
-        assert tmp[1] == k * 2
-        assert tmp[2] == k * 3
-
-    func4(10)
+@test_utils.test(require=ti.extension.dynamic_index, dynamic_index=True)
+def test_matrix_field_non_constant_index():
+    _test_matrix_field_non_constant_index()
 
 
-@test_utils.test(arch=ti.cpu)
-def test_matrix_constant_index():
+@test_utils.test(require=ti.extension.dynamic_index, real_matrix=True)
+def test_matrix_field_non_constant_index_real_matrix():
+    _test_matrix_field_non_constant_index()
+
+
+def _test_matrix_field_constant_index():
     m = ti.Matrix.field(2, 2, ti.i32, 5)
 
     @ti.kernel
@@ -261,6 +292,16 @@ def test_matrix_constant_index():
     func()
 
     assert np.allclose(m.to_numpy(), np.ones((5, 2, 2), np.int32) * 12)
+
+
+@test_utils.test()
+def test_matrix_field_constant_index():
+    _test_matrix_field_constant_index()
+
+
+@test_utils.test(real_matrix=True)
+def test_matrix_field_constant_index_real_matrix():
+    _test_matrix_field_constant_index()
 
 
 @test_utils.test(arch=ti.cpu)
@@ -402,10 +443,10 @@ def test_matrix_field_dynamic_index_stride():
     @ti.kernel
     def check_stride():
         for i in range(128):
-            assert ti.get_addr(y, i) - ti.get_addr(x,
-                                                   i) == v.dynamic_index_stride
-            assert ti.get_addr(z, i) - ti.get_addr(y,
-                                                   i) == v.dynamic_index_stride
+            assert ti.get_addr(y, i) - ti.get_addr(
+                x, i) == v._get_dynamic_index_stride()
+            assert ti.get_addr(z, i) - ti.get_addr(
+                y, i) == v._get_dynamic_index_stride()
 
     check_stride()
 
@@ -431,7 +472,7 @@ def test_matrix_field_dynamic_index_different_path_length():
     ti.root.dense(ti.i, 2).dense(ti.i, 4).place(y)
 
     impl.get_runtime().materialize()
-    assert v.dynamic_index_stride is None
+    assert v._get_dynamic_index_stride() is None
 
 
 @test_utils.test(arch=[ti.cpu, ti.cuda])
@@ -444,7 +485,7 @@ def test_matrix_field_dynamic_index_not_pure_dense():
     ti.root.dense(ti.i, 2).dense(ti.i, 4).place(y)
 
     impl.get_runtime().materialize()
-    assert v.dynamic_index_stride is None
+    assert v._get_dynamic_index_stride() is None
 
 
 @test_utils.test(arch=[ti.cpu, ti.cuda])
@@ -459,7 +500,7 @@ def test_matrix_field_dynamic_index_different_cell_size_bytes():
     ti.root.dense(ti.i, 8).place(y)
 
     impl.get_runtime().materialize()
-    assert v.dynamic_index_stride is None
+    assert v._get_dynamic_index_stride() is None
 
 
 @test_utils.test(arch=[ti.cpu, ti.cuda])
@@ -475,7 +516,7 @@ def test_matrix_field_dynamic_index_different_offset_bytes_in_parent_cell():
     ti.root.dense(ti.i, 8).place(y, temp_b)
 
     impl.get_runtime().materialize()
-    assert v.dynamic_index_stride is None
+    assert v._get_dynamic_index_stride() is None
 
 
 @test_utils.test(arch=[ti.cpu, ti.cuda])
@@ -490,7 +531,7 @@ def test_matrix_field_dynamic_index_different_stride():
     ti.root.dense(ti.i, 8).place(x, y, temp, z)
 
     impl.get_runtime().materialize()
-    assert v.dynamic_index_stride is None
+    assert v._get_dynamic_index_stride() is None
 
 
 @test_utils.test(arch=[ti.cpu, ti.cuda], dynamic_index=True)
@@ -544,10 +585,10 @@ def test_vector_dtype():
 def test_matrix_dtype():
     @ti.kernel
     def foo():
-        a = ti.Vector([[1, 2], [3, 4]], ti.f32)
+        a = ti.Matrix([[1, 2], [3, 4]], ti.f32)
         a /= 2
         assert all(abs(a - ((0.5, 1.), (1.5, 2.))) < 1e-6)
-        b = ti.Vector([[1.5, 2.5], [3.5, 4.5]], ti.i32)
+        b = ti.Matrix([[1.5, 2.5], [3.5, 4.5]], ti.i32)
         assert all(b == ((1, 2), (3, 4)))
 
     foo()
@@ -699,3 +740,328 @@ def test_indexing_in_struct_field():
     with pytest.raises(TaichiCompilationError,
                        match=r'Expected 2 indices, got 1'):
         bar()
+
+
+@test_utils.test(arch=get_host_arch_list(), debug=True)
+def test_matrix_vector_multiplication():
+    mat = ti.math.mat3(1)
+    vec = ti.math.vec3(3)
+    r = mat @ vec
+    for i in range(3):
+        assert r[i] == 9
+
+    @ti.kernel
+    def foo():
+        mat = ti.math.mat3(1)
+        vec = ti.math.vec3(3)
+        r = mat @ vec
+        assert r[0] == r[1] == r[2] == 9
+
+    foo()
+
+
+@test_utils.test(arch=[ti.cuda, ti.cpu], real_matrix=True)
+def test_local_matrix_read():
+
+    s = ti.field(ti.i32, shape=())
+
+    @ti.kernel
+    def get_index(i: ti.i32, j: ti.i32):
+        mat = ti.Matrix([[x * 3 + y for y in range(3)] for x in range(3)])
+        s[None] = mat[i, j]
+
+    for i in range(3):
+        for j in range(3):
+            get_index(i, j)
+            assert s[None] == i * 3 + j
+
+
+@test_utils.test(arch=[ti.cuda, ti.cpu], real_matrix=True)
+def test_local_matrix_read_without_assign():
+    @ti.kernel
+    def local_vector_read(i: ti.i32) -> ti.i32:
+        return ti.Vector([0, 1, 2])[i]
+
+    for i in range(3):
+        assert local_vector_read(i) == i
+
+
+@test_utils.test(arch=[ti.cuda, ti.cpu], real_matrix=True)
+def test_local_matrix_indexing_in_loop():
+    s = ti.field(ti.i32, shape=(3, 3))
+
+    @ti.kernel
+    def test():
+        mat = ti.Matrix([[x * 3 + y for y in range(3)] for x in range(3)])
+        for i in range(3):
+            for j in range(3):
+                s[i, j] = mat[i, j] + 1
+
+    test()
+    for i in range(3):
+        for j in range(3):
+            assert s[i, j] == i * 3 + j + 1
+
+
+@test_utils.test(arch=[ti.cuda, ti.cpu], real_matrix=True)
+def test_local_matrix_indexing_ops():
+    @ti.kernel
+    def element_write() -> ti.i32:
+        mat = ti.Matrix([[x * 3 + y for y in range(3)] for x in range(3)])
+        s = 0
+        for i in range(3):
+            for j in range(3):
+                mat[i, j] = 10
+                s += mat[i, j]
+        return s
+
+    f = ti.field(ti.i32, shape=(3, 3))
+
+    @ti.kernel
+    def assign_from_index():
+        mat = ti.Matrix([[x * 3 + y for y in range(3)] for x in range(3)])
+        result = ti.Matrix([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+        # TODO: fix parallelization
+        ti.loop_config(serialize=True)
+        for i in range(3):
+            for j in range(3):
+                result[i, j] = mat[j, i]
+        for i in range(3):
+            for j in range(3):
+                f[i, j] = result[i, j]
+
+    assert element_write() == 90
+    assign_from_index()
+    xs = [[x * 3 + y for y in range(3)] for x in range(3)]
+    for i in range(3):
+        for j in range(3):
+            assert f[i, j] == xs[j][i]
+
+
+@test_utils.test(arch=[ti.cuda, ti.cpu], real_matrix=True)
+def test_local_matrix_index_check():
+    @ti.kernel
+    def foo():
+        mat = ti.Matrix([[1, 2, 3], [4, 5, 6]])
+        print(mat[0])
+
+    with pytest.raises(TaichiCompilationError,
+                       match=r'Expected 2 indices, but got 1'):
+        foo()
+
+    @ti.kernel
+    def bar():
+        vec = ti.Vector([1, 2, 3, 4])
+        print(vec[0, 0])
+
+    with pytest.raises(TaichiCompilationError,
+                       match=r'Expected 1 indices, but got 2'):
+        bar()
+
+
+@test_utils.test(arch=[ti.cuda, ti.cpu], real_matrix=True, debug=True)
+def test_elementwise_ops():
+    @ti.kernel
+    def test():
+        # TODO: fix parallelization
+        x = ti.Matrix([[1, 2], [3, 4]])
+        # Unify rhs
+        t1 = x + 10
+        ti.loop_config(serialize=True)
+        for i in range(2):
+            for j in range(2):
+                assert t1[i, j] == x[i, j] + 10
+        t2 = x * 2
+        ti.loop_config(serialize=True)
+        for i in range(2):
+            for j in range(2):
+                assert t2[i, j] == x[i, j] * 2
+        # elementwise-add
+        t3 = t1 + t2
+        ti.loop_config(serialize=True)
+        for i in range(2):
+            for j in range(2):
+                assert t3[i, j] == t1[i, j] + t2[i, j]
+        # Unify lhs
+        t4 = 1 / t1
+        # these should be *exactly* equals
+        ti.loop_config(serialize=True)
+        for i in range(2):
+            for j in range(2):
+                assert t4[i, j] == 1 / t1[i, j]
+        t5 = 1 << x
+        ti.loop_config(serialize=True)
+        for i in range(2):
+            for j in range(2):
+                assert t5[i, j] == 1 << x[i, j]
+        t6 = 1 + (x // 2)
+        ti.loop_config(serialize=True)
+        for i in range(2):
+            for j in range(2):
+                assert t6[i, j] == 1 + (x[i, j] // 2)
+
+        # test floordiv
+        y = ti.Matrix([[1, 2], [3, 4]], dt=ti.i32)
+        z = y * 2
+        factors = z // y
+        ti.loop_config(serialize=True)
+        for i in range(2):
+            for j in range(2):
+                assert factors[i, j] == 2
+
+        y1 = ti.Matrix([[1, 2], [3, 4]], dt=ti.f32)
+        z1 = y1 * 2
+        factors1 = z1 // y1
+        ti.loop_config(serialize=True)
+        for i in range(2):
+            for j in range(2):
+                assert factors1[i, j] == 2
+
+    test()
+
+
+@test_utils.test(arch=[ti.cuda, ti.cpu],
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_local_matrix_scalarize():
+    @ti.kernel
+    def func():
+        x = ti.Matrix([[1, 2], [3, 4]], ti.f32)
+
+        # Store
+        x[0, 0] = 100.
+
+        # Load + Store
+        x[0, 1] = x[0, 0]
+
+        # Binary
+        x[1, 0] = x[0, 1] + x[0, 1]
+
+        # Unary
+        x[1, 1] = ti.sqrt(x[1, 0])
+
+        # TODO: test for dynamic indexing
+
+        assert (x[0, 0] == 100.)
+        assert (x[0, 1] == 200.)
+        assert (x[1, 0] == 200.)
+        assert (x[1, 1] < 14.14214)
+        assert (x[1, 1] > 14.14213)
+
+    func()
+
+
+@test_utils.test()
+def test_vector_vector_t():
+    @ti.kernel
+    def foo() -> ti.types.matrix(2, 2, ti.f32):
+        a = ti.Vector([1.0, 2.0])
+        b = ti.Vector([1.0, 2.0])
+        return a @ b.transpose()
+
+    assert foo() == [[1.0, 2.0], [2.0, 4.0]]
+
+
+def _test_field_and_ndarray(field, ndarray, func, verify):
+    @ti.kernel
+    def kern_field(a: ti.template()):
+        func(a)
+
+    @ti.kernel
+    def kern_ndarray(a: ti.types.ndarray()):
+        func(a)
+
+    kern_field(field)
+    verify(field)
+    kern_ndarray(ndarray)
+    verify(ndarray)
+
+
+@test_utils.test(arch=[ti.cuda, ti.cpu],
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_store_scalarize():
+    @ti.func
+    def func(a: ti.template()):
+        for i in range(5):
+            a[i] = [[i, i + 1], [i + 2, i + 3]]
+
+    def verify(x):
+        assert (x[0] == [[0, 1], [2, 3]]).all()
+        assert (x[1] == [[1, 2], [3, 4]]).all()
+        assert (x[2] == [[2, 3], [4, 5]]).all()
+        assert (x[3] == [[3, 4], [5, 6]]).all()
+        assert (x[4] == [[4, 5], [6, 7]]).all()
+
+    field = ti.Matrix.field(2, 2, ti.i32, shape=5)
+    ndarray = ti.Matrix.ndarray(2, 2, ti.i32, shape=5)
+    _test_field_and_ndarray(field, ndarray, func, verify)
+
+
+@test_utils.test(arch=[ti.cuda, ti.cpu],
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_load_store_scalarize():
+    @ti.func
+    def func(a: ti.template()):
+        for i in range(3):
+            a[i] = [[i, i + 1], [i + 2, i + 3]]
+
+        a[3] = a[1]
+        a[4] = a[2]
+
+    def verify(x):
+        assert (x[3] == [[1, 2], [3, 4]]).all()
+        assert (x[4] == [[2, 3], [4, 5]]).all()
+
+    field = ti.Matrix.field(2, 2, ti.i32, shape=5)
+    ndarray = ti.Matrix.ndarray(2, 2, ti.i32, shape=5)
+    _test_field_and_ndarray(field, ndarray, func, verify)
+
+
+@test_utils.test(arch=[ti.cuda, ti.cpu],
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_unary_op_scalarize():
+    @ti.func
+    def func(a: ti.template()):
+        a[0] = [[0, 1], [2, 3]]
+        a[1] = [[3, 4], [5, 6]]
+        a[2] = -a[0]
+        a[3] = ti.exp(a[1])
+        a[4] = ti.sqrt(a[3])
+
+    def verify(x):
+        assert (x[0] == [[0., 1.], [2., 3.]]).all()
+        assert (x[1] == [[3., 4.], [5., 6.]]).all()
+        assert (x[2] == [[-0., -1.], [-2., -3.]]).all()
+        assert (x[3] < [[20.086, 54.60], [148.42, 403.43]]).all()
+        assert (x[3] > [[20.085, 54.59], [148.41, 403.42]]).all()
+        assert (x[4] < [[4.49, 7.39], [12.19, 20.09]]).all()
+        assert (x[4] > [[4.48, 7.38], [12.18, 20.08]]).all()
+
+    field = ti.Matrix.field(2, 2, ti.f32, shape=5)
+    ndarray = ti.Matrix.ndarray(2, 2, ti.f32, shape=5)
+    _test_field_and_ndarray(field, ndarray, func, verify)
+
+
+@test_utils.test(arch=[ti.cuda, ti.cpu],
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_binary_op_scalarize():
+    @ti.func
+    def func(a: ti.template()):
+        a[0] = [[0., 1.], [2., 3.]]
+        a[1] = [[3., 4.], [5., 6.]]
+        a[2] = a[0] + a[0]
+        a[3] = a[1] * a[1]
+        a[4] = ti.max(a[2], a[3])
+
+    def verify(x):
+        assert (x[2] == [[0., 2.], [4., 6.]]).all()
+        assert (x[3] == [[9., 16.], [25., 36.]]).all()
+        assert (x[4] == [[9., 16.], [25., 36.]]).all()
+
+    field = ti.Matrix.field(2, 2, ti.f32, shape=5)
+    ndarray = ti.Matrix.ndarray(2, 2, ti.f32, shape=5)
+    _test_field_and_ndarray(field, ndarray, func, verify)

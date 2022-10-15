@@ -3,8 +3,7 @@
 #include "taichi/runtime/metal/aot_utils.h"
 #include "taichi/runtime/metal/kernel_manager.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace metal {
 namespace {
 
@@ -71,9 +70,7 @@ class AotModuleImpl : public aot::Module {
       return nullptr;
     }
     auto *kernel_data = itr->second;
-    runtime_->register_taichi_kernel(
-        name, kernel_data->source_code, kernel_data->kernel_attribs,
-        kernel_data->ctx_attribs, /*kernel=*/nullptr);
+    runtime_->register_taichi_kernel(*kernel_data);
     return std::make_unique<KernelImpl>(runtime_, name);
   }
 
@@ -107,5 +104,4 @@ std::unique_ptr<aot::Module> make_aot_module(std::any mod_params) {
 }
 
 }  // namespace metal
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

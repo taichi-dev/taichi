@@ -7,8 +7,7 @@
 #include <typeindex>
 #include <utility>
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 using PassID = std::string;
 
@@ -85,5 +84,4 @@ class AnalysisManager {
   std::unordered_map<PassID, std::unique_ptr<AnalysisResultConcept>> result_;
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

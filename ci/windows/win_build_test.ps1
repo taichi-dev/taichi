@@ -32,7 +32,7 @@ if (!$llvmVer.CompareTo("10")) {
 } else {
     if (-not (Test-Path "taichi_llvm_15")) {
         WriteInfo("Download and extract LLVM")
-        curl.exe --retry 10 --retry-delay 5 https://github.com/python3kgae/taichi_assets/releases/download/llvm15_vs2019_clang_220731/taichi-llvm-15.0.0-msvc2019.zip -LO
+        curl.exe --retry 10 --retry-delay 5 https://github.com/python3kgae/taichi_assets/releases/download/llvm15_vs2019_clang/taichi-llvm-15.0.0-msvc2019.zip -LO
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE; }
         7z x taichi-llvm-15.0.0-msvc2019.zip -otaichi_llvm_15
     }
@@ -69,6 +69,7 @@ if (!$llvmVer.CompareTo("10")) {
     $env:TAICHI_CMAKE_ARGS += " -DCLANG_EXECUTABLE=C:\\taichi_clang_15\\bin\\clang++.exe"
 	$env:TAICHI_CMAKE_ARGS += " -DLLVM_AS_EXECUTABLE=C:\\taichi_llvm_15\\bin\\llvm-as.exe"
 	$env:TAICHI_CMAKE_ARGS += " -DTI_LLVM_15:BOOL=ON"
+    $env:TAICHI_CMAKE_ARGS += " -DTI_WITH_DX12:BOOL=ON"
 }
 
 $env:TAICHI_CMAKE_ARGS += " -DTI_WITH_VULKAN:BOOL=OFF -DTI_WITH_CUDA:BOOL=OFF -DTI_WITH_OPENGL:BOOL=OFF"

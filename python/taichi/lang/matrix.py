@@ -113,6 +113,14 @@ def make_matrix(arr, dt=None):
             [expr.Expr(elt).ptr for row in arr for elt in row]))
 
 
+def is_vector(x):
+    return isinstance(x, Vector) or getattr(x, "ndim", None) == 1
+
+
+def is_col_vector(x):
+    return is_vector(x) and getattr(x, "m", None) == 1
+
+
 class _MatrixBaseImpl:
     def __init__(self, m, n, entries):
         self.m = m
@@ -257,8 +265,7 @@ class _TiScopeMatrixImpl(_MatrixBaseImpl):
                               is_ref=get_ref)
             return Matrix([[self._subscript(is_global_mat, a, b) for b in j]
                            for a in i],
-                          is_ref=get_ref,
-                          ndim=1)
+                          is_ref=get_ref)
 
         if self.any_array_access:
             return self.any_array_access.subscript(i, j)
@@ -441,9 +448,14 @@ class Matrix(TaichiOperations):
         elif isinstance(arr[0], Matrix):
             raise Exception('cols/rows required when using list of vectors')
         else:
-            is_matrix = isinstance(arr[0], Iterable)
+            is_matrix = isinstance(arr[0], Iterable) and not is_vector(self)
             initializer = _make_entries_initializer(is_matrix)
             self.ndim = 2 if is_matrix else 1
+            if not is_matrix and isinstance(arr[0], Iterable):
+                flattened = []
+                for row in arr:
+                    flattened += row
+                arr = flattened
 
             if in_python_scope() or is_ref:
                 mat = initializer.pyscope_or_ref(arr)
@@ -490,17 +502,26 @@ class Matrix(TaichiOperations):
 
     def _element_wise_binary(self, foo, other):
         other = self._broadcast_copy(other)
+        if is_col_vector(self):
+            return Vector([foo(self(i), other(i)) for i in range(self.n)],
+                          ndim=self.ndim)
         return Matrix([[foo(self(i, j), other(i, j)) for j in range(self.m)]
                        for i in range(self.n)],
                       ndim=self.ndim)
 
     def _broadcast_copy(self, other):
         if isinstance(other, (list, tuple)):
-            other = Matrix(other)
+            if is_col_vector(self):
+                other = Vector(other, ndim=self.ndim)
+            else:
+                other = Matrix(other, ndim=self.ndim)
         if not isinstance(other, Matrix):
-            other = Matrix([[other for _ in range(self.m)]
-                            for _ in range(self.n)],
-                           ndim=self.ndim)
+            if isinstance(self, Vector):
+                other = Vector([other for _ in range(self.n)])
+            else:
+                other = Matrix([[other for _ in range(self.m)]
+                                for _ in range(self.n)],
+                               ndim=self.ndim)
         assert self.m == other.m and self.n == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
         return other
 
@@ -541,6 +562,11 @@ class Matrix(TaichiOperations):
 
         """
         assert isinstance(other, Matrix), "rhs of `@` is not a matrix / vector"
+        if (is_col_vector(self)) and not is_vector(other):
+            # left multiplication
+            assert self.n == other.m, f"Dimension mismatch between (left multiplication) shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
+            return other.transpose() @ self
+        # right multiplication
         assert self.m == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
         entries = []
         for i in range(self.n):
@@ -550,6 +576,8 @@ class Matrix(TaichiOperations):
                 for k in range(1, other.n):
                     acc = acc + self(i, k) * other(k, j)
                 entries[i].append(acc)
+        if is_col_vector(other):
+            return Vector(entries)
         return Matrix(entries)
 
     # host access & python scope operation
@@ -645,6 +673,8 @@ class Matrix(TaichiOperations):
         This is similar to `numpy.ndarray`'s `flatten` and `ravel` methods,
         the difference is that this function always returns a new list.
         """
+        if is_col_vector(self):
+            return [self(i) for i in range(self.n)]
         return [[self(i, j) for j in range(self.m)] for i in range(self.n)]
 
     @taichi_scope
@@ -665,6 +695,10 @@ class Matrix(TaichiOperations):
             >>> B
             [0.0, 1.0, 2.0]
         """
+        if is_col_vector(self):
+            # when using _IntermediateMatrix, we can only check `self.ndim`
+            return Vector(
+                [ops_mod.cast(self(i), dtype) for i in range(self.n)])
         return Matrix(
             [[ops_mod.cast(self(i, j), dtype) for j in range(self.m)]
              for i in range(self.n)],
@@ -1258,7 +1292,7 @@ class Matrix(TaichiOperations):
 
     @classmethod
     @python_scope
-    def ndarray(cls, n, m, dtype, shape, layout=Layout.AOS):
+    def ndarray(cls, n, m, dtype, shape):
         """Defines a Taichi ndarray with matrix elements.
         This function must be called in Python scope, and after `ti.init` is called.
 
@@ -1267,7 +1301,6 @@ class Matrix(TaichiOperations):
             m (int): Number of columns of the matrix.
             dtype (DataType): Data type of each value.
             shape (Union[int, tuple[int]]): Shape of the ndarray.
-            layout (Layout, optional): Memory layout, AOS by default.
 
         Example::
 
@@ -1278,7 +1311,7 @@ class Matrix(TaichiOperations):
         """
         if isinstance(shape, numbers.Number):
             shape = (shape, )
-        return MatrixNdarray(n, m, dtype, shape, layout)
+        return MatrixNdarray(n, m, dtype, shape)
 
     @staticmethod
     def rows(rows):
@@ -1421,8 +1454,8 @@ class Matrix(TaichiOperations):
             :class:`~taichi.Matrix`: The outer product of the two Vectors.
         """
         from taichi._funcs import \
-            _matrix_outer_product  # pylint: disable=C0415
-        return _matrix_outer_product(self, other)
+            _vector_outer_product  # pylint: disable=C0415
+        return _vector_outer_product(self, other)
 
 
 class Vector(Matrix):
@@ -1457,7 +1490,7 @@ class Vector(Matrix):
 
     @classmethod
     @python_scope
-    def ndarray(cls, n, dtype, shape, layout=Layout.AOS):
+    def ndarray(cls, n, dtype, shape):
         """Defines a Taichi ndarray with vector elements.
 
         Args:
@@ -1473,7 +1506,7 @@ class Vector(Matrix):
         """
         if isinstance(shape, numbers.Number):
             shape = (shape, )
-        return VectorNdarray(n, dtype, shape, layout)
+        return VectorNdarray(n, dtype, shape)
 
 
 class _IntermediateMatrix(Matrix):
@@ -1521,7 +1554,7 @@ class _MatrixFieldElement(_IntermediateMatrix):
                 for e in field._get_field_members()
             ],
             ndim=getattr(field, "ndim", 2))
-        self._impl.dynamic_index_stride = field.dynamic_index_stride
+        self._impl.dynamic_index_stride = field._get_dynamic_index_stride()
 
 
 class MatrixField(Field):
@@ -1540,7 +1573,8 @@ class MatrixField(Field):
         self.n = n
         self.m = m
         self.ndim = ndim
-        self.dynamic_index_stride = None
+        self.ptr = ti_python_core.expr_matrix_field(
+            [var.ptr for var in self.vars], [n, m][:ndim])
 
     def get_scalar_field(self, *indices):
         """Creates a ScalarField using a specific field member.
@@ -1556,12 +1590,17 @@ class MatrixField(Field):
         j = 0 if len(indices) == 1 else indices[1]
         return ScalarField(self.vars[i * self.m + j])
 
+    def _get_dynamic_index_stride(self):
+        if self.ptr.get_dynamic_indexable():
+            return self.ptr.get_dynamic_index_stride()
+        return None
+
     def _calc_dynamic_index_stride(self):
         # Algorithm: https://github.com/taichi-dev/taichi/issues/3810
         paths = [ScalarField(var).snode._path_from_root() for var in self.vars]
         num_members = len(paths)
         if num_members == 1:
-            self.dynamic_index_stride = 0
+            self.ptr.set_dynamic_index_stride(0)
             return
         length = len(paths[0])
         if any(
@@ -1585,7 +1624,7 @@ class MatrixField(Field):
             if stride != paths[i][depth_below_lca]._offset_bytes_in_parent_cell \
                     - paths[i - 1][depth_below_lca]._offset_bytes_in_parent_cell:
                 return
-        self.dynamic_index_stride = stride
+        self.ptr.set_dynamic_index_stride(stride)
 
     def fill(self, val):
         """Fills this matrix field with specified values.
@@ -1600,7 +1639,9 @@ class MatrixField(Field):
         elif isinstance(val,
                         (list, tuple)) and isinstance(val[0], numbers.Number):
             assert self.m == 1
-            val = tuple([(v, ) for v in val])
+            val = tuple(val)
+        elif is_vector(val):
+            val = tuple([(val(i), ) for i in range(self.n * self.m)])
         elif isinstance(val, Matrix):
             val_tuple = []
             for i in range(val.n):
@@ -1611,7 +1652,8 @@ class MatrixField(Field):
                 val_tuple.append(row)
             val = tuple(val_tuple)
         assert len(val) == self.n
-        assert len(val[0]) == self.m
+        if self.ndim != 1:
+            assert len(val[0]) == self.m
 
         if in_python_scope():
             from taichi._kernels import fill_matrix  # pylint: disable=C0415
@@ -1724,6 +1766,8 @@ class MatrixField(Field):
         self._initialize_host_accessors()
         key = self._pad_key(key)
         _host_access = self._host_access(key)
+        if self.ndim == 1:
+            return Vector([_host_access[i] for i in range(self.n)])
         return Matrix([[_host_access[i * self.m + j] for j in range(self.m)]
                        for i in range(self.n)],
                       ndim=self.ndim)
@@ -1902,25 +1946,24 @@ class MatrixNdarray(Ndarray):
         m (int): Number of columns of the matrix.
         dtype (DataType): Data type of each value.
         shape (Union[int, tuple[int]]): Shape of the ndarray.
-        layout (Layout): Memory layout.
 
     Example::
 
-        >>> arr = ti.MatrixNdarray(2, 2, ti.f32, shape=(3, 3), layout=Layout.SOA)
+        >>> arr = ti.MatrixNdarray(2, 2, ti.f32, shape=(3, 3))
     """
-    def __init__(self, n, m, dtype, shape, layout):
+    def __init__(self, n, m, dtype, shape):
         self.n = n
         self.m = m
         super().__init__()
         # TODO(zhanlue): remove self.dtype and migrate its usages to element_type
         self.dtype = cook_dtype(dtype)
 
-        self.layout = layout
+        self.layout = Layout.AOS
         self.shape = tuple(shape)
         self.element_type = TensorType((self.n, self.m), dtype)
         # TODO: we should pass in element_type, shape, layout instead.
         self.arr = impl.get_runtime().prog.create_ndarray(
-            cook_dtype(self.element_type.ptr), shape, layout)
+            cook_dtype(self.element_type.ptr), shape, Layout.AOS)
 
     @property
     def element_shape(self):
@@ -1928,7 +1971,7 @@ class MatrixNdarray(Ndarray):
 
         Example::
 
-            >>> arr = ti.MatrixNdarray(2, 2, ti.f32, shape=(3, 3), layout=Layout.SOA)
+            >>> arr = ti.MatrixNdarray(2, 2, ti.f32, shape=(3, 3))
             >>> arr.element_shape
             (2, 2)
         """
@@ -1958,7 +2001,7 @@ class MatrixNdarray(Ndarray):
 
         Example::
 
-            >>> arr = ti.MatrixNdarray(2, 2, ti.f32, shape=(2, 1), layout=Layout.SOA)
+            >>> arr = ti.MatrixNdarray(2, 2, ti.f32, shape=(2, 1))
             >>> arr.to_numpy()
             [[[[0. 0.]
                [0. 0.]]]
@@ -1966,7 +2009,7 @@ class MatrixNdarray(Ndarray):
              [[[0. 0.]
                [0. 0.]]]]
         """
-        return self._ndarray_matrix_to_numpy(self.layout, as_vector=0)
+        return self._ndarray_matrix_to_numpy(as_vector=0)
 
     @python_scope
     def from_numpy(self, arr):
@@ -1978,12 +2021,11 @@ class MatrixNdarray(Ndarray):
             >>> arr = np.ones((2, 1, 2, 2))
             >>> m.from_numpy(arr)
         """
-        self._ndarray_matrix_from_numpy(arr, self.layout, as_vector=0)
+        self._ndarray_matrix_from_numpy(arr, as_vector=0)
 
     @python_scope
     def __deepcopy__(self, memo=None):
-        ret_arr = MatrixNdarray(self.n, self.m, self.dtype, self.shape,
-                                self.layout)
+        ret_arr = MatrixNdarray(self.n, self.m, self.dtype, self.shape)
         ret_arr.copy_from(self)
         return ret_arr
 
@@ -1995,7 +2037,7 @@ class MatrixNdarray(Ndarray):
 
     @python_scope
     def __repr__(self):
-        return f'<{self.n}x{self.m} {self.layout} ti.Matrix.ndarray>'
+        return f'<{self.n}x{self.m} {Layout.AOS} ti.Matrix.ndarray>'
 
 
 class VectorNdarray(Ndarray):
@@ -2009,19 +2051,19 @@ class VectorNdarray(Ndarray):
 
     Example::
 
-        >>> a = ti.VectorNdarray(3, ti.f32, (3, 3), layout=Layout.SOA)
+        >>> a = ti.VectorNdarray(3, ti.f32, (3, 3))
     """
-    def __init__(self, n, dtype, shape, layout):
+    def __init__(self, n, dtype, shape):
         self.n = n
         super().__init__()
         # TODO(zhanlue): remove self.dtype and migrate its usages to element_type
         self.dtype = cook_dtype(dtype)
 
-        self.layout = layout
+        self.layout = Layout.AOS
         self.shape = tuple(shape)
         self.element_type = TensorType((n, ), self.dtype)
         self.arr = impl.get_runtime().prog.create_ndarray(
-            cook_dtype(self.element_type.ptr), shape, layout)
+            cook_dtype(self.element_type.ptr), shape, Layout.AOS)
 
     @property
     def element_shape(self):
@@ -2029,7 +2071,7 @@ class VectorNdarray(Ndarray):
 
         Example::
 
-            >>> a = ti.VectorNdarray(3, ti.f32, (3, 3), layout=Layout.SOA)
+            >>> a = ti.VectorNdarray(3, ti.f32, (3, 3))
             >>> a.element_shape
             (3,)
         """
@@ -2055,7 +2097,7 @@ class VectorNdarray(Ndarray):
 
         Example::
 
-            >>> a = ti.VectorNdarray(3, ti.f32, (2, 2), layout=Layout.SOA)
+            >>> a = ti.VectorNdarray(3, ti.f32, (2, 2))
             >>> a.to_numpy()
             array([[[0., 0., 0.],
                     [0., 0., 0.]],
@@ -2063,7 +2105,7 @@ class VectorNdarray(Ndarray):
                    [[0., 0., 0.],
                     [0., 0., 0.]]], dtype=float32)
         """
-        return self._ndarray_matrix_to_numpy(self.layout, as_vector=1)
+        return self._ndarray_matrix_to_numpy(as_vector=1)
 
     @python_scope
     def from_numpy(self, arr):
@@ -2078,11 +2120,11 @@ class VectorNdarray(Ndarray):
             >>> b = np.ones((2, 2, 3), dtype=np.float32)
             >>> a.from_numpy(b)
         """
-        self._ndarray_matrix_from_numpy(arr, self.layout, as_vector=1)
+        self._ndarray_matrix_from_numpy(arr, as_vector=1)
 
     @python_scope
     def __deepcopy__(self, memo=None):
-        ret_arr = VectorNdarray(self.n, self.dtype, self.shape, self.layout)
+        ret_arr = VectorNdarray(self.n, self.dtype, self.shape)
         ret_arr.copy_from(self)
         return ret_arr
 
@@ -2094,7 +2136,7 @@ class VectorNdarray(Ndarray):
 
     @python_scope
     def __repr__(self):
-        return f'<{self.n} {self.layout} ti.Vector.ndarray>'
+        return f'<{self.n} {Layout.AOS} ti.Vector.ndarray>'
 
 
 __all__ = ["Matrix", "Vector", "MatrixField", "MatrixNdarray", "VectorNdarray"]

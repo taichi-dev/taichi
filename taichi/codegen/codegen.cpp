@@ -12,12 +12,15 @@
 #if defined(TI_WITH_CUDA)
 #include "taichi/codegen/cuda/codegen_cuda.h"
 #endif
+#if defined(TI_WITH_DX12)
+#include "taichi/codegen/dx12/codegen_dx12.h"
+#endif
 #include "taichi/system/timer.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/analysis/offline_cache_util.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 KernelCodeGen::KernelCodeGen(Kernel *kernel, IRNode *ir)
     : prog(kernel->program), kernel(kernel), ir(ir) {
@@ -48,6 +51,12 @@ std::unique_ptr<KernelCodeGen> KernelCodeGen::create(Arch arch,
 #else
     TI_NOT_IMPLEMENTED
 #endif
+  } else if (arch == Arch::dx12) {
+#if defined(TI_WITH_DX12)
+    return std::make_unique<KernelCodeGenDX12>(kernel, stmt);
+#else
+    TI_NOT_IMPLEMENTED
+#endif
   } else {
     TI_NOT_IMPLEMENTED
   }
@@ -57,11 +66,11 @@ std::unique_ptr<KernelCodeGen> KernelCodeGen::create(Arch arch,
 }
 #ifdef TI_WITH_LLVM
 
-std::optional<LLVMCompiledData>
+std::optional<LLVMCompiledKernel>
 KernelCodeGen::maybe_read_compilation_from_cache(
     const std::string &kernel_key) {
   TI_AUTO_PROF;
-  const auto &config = prog->config;
+  const auto &config = prog->this_thread_config();
   auto *llvm_prog = get_llvm_program(prog);
   const auto &reader = llvm_prog->get_cache_reader();
   if (!reader) {
@@ -79,16 +88,16 @@ KernelCodeGen::maybe_read_compilation_from_cache(
   return {std::move(cache_data.compiled_data)};
 }
 
-void KernelCodeGen::cache_module(const std::string &kernel_key,
-                                 const LLVMCompiledData &data) {
+void KernelCodeGen::cache_kernel(const std::string &kernel_key,
+                                 const LLVMCompiledKernel &data) {
   get_llvm_program(prog)->cache_kernel(kernel_key, data,
                                        infer_launch_args(kernel));
 }
 
-LLVMCompiledData KernelCodeGen::compile_kernel_to_module() {
+LLVMCompiledKernel KernelCodeGen::compile_kernel_to_module() {
   auto *llvm_prog = get_llvm_program(prog);
   auto *tlctx = llvm_prog->get_llvm_context(kernel->arch);
-  auto &config = prog->config;
+  auto &config = prog->this_thread_config();
   std::string kernel_key = get_hashed_offline_cache_key(&config, kernel);
   kernel->set_kernel_key_for_cache(kernel_key);
   if (config.offline_cache && this->supports_offline_cache() &&
@@ -97,7 +106,7 @@ LLVMCompiledData KernelCodeGen::compile_kernel_to_module() {
     if (res) {
       TI_DEBUG("Create kernel '{}' from cache (key='{}')", kernel->get_name(),
                kernel_key);
-      cache_module(kernel_key, *res);
+      cache_kernel(kernel_key, *res);
       return std::move(*res);
     }
   }
@@ -110,7 +119,7 @@ LLVMCompiledData KernelCodeGen::compile_kernel_to_module() {
   TI_ASSERT(block);
 
   auto &offloads = block->statements;
-  std::vector<std::unique_ptr<LLVMCompiledData>> data(offloads.size());
+  std::vector<std::unique_ptr<LLVMCompiledTask>> data(offloads.size());
   using TaskFunc = int32 (*)(void *);
   std::vector<TaskFunc> task_funcs(offloads.size());
   for (int i = 0; i < offloads.size(); i++) {
@@ -120,7 +129,7 @@ LLVMCompiledData KernelCodeGen::compile_kernel_to_module() {
           irpass::analysis::clone(offloads[i].get(), offloads[i]->get_kernel());
       irpass::re_id(offload.get());
       auto new_data = this->compile_task(nullptr, offload->as<OffloadedStmt>());
-      data[i] = std::make_unique<LLVMCompiledData>(std::move(new_data));
+      data[i] = std::make_unique<LLVMCompiledTask>(std::move(new_data));
     };
     if (kernel->is_evaluator) {
       compile_func();
@@ -135,7 +144,7 @@ LLVMCompiledData KernelCodeGen::compile_kernel_to_module() {
 
   if (!kernel->is_evaluator) {
     TI_DEBUG("Cache kernel '{}' (key='{}')", kernel->get_name(), kernel_key);
-    cache_module(kernel_key, linked);
+    cache_kernel(kernel_key, linked);
   }
   return linked;
 }
@@ -147,9 +156,9 @@ ModuleToFunctionConverter::ModuleToFunctionConverter(
 }
 
 FunctionType ModuleToFunctionConverter::convert(const Kernel *kernel,
-                                                LLVMCompiledData data) const {
+                                                LLVMCompiledKernel data) const {
   return convert(kernel->name, infer_launch_args(kernel), std::move(data));
 }
 
 #endif
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

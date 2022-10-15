@@ -7,19 +7,17 @@ export PYTHONUNBUFFERED=1
 
 export TI_SKIP_VERSION_CHECK=ON
 export TI_CI=1
-export TI_IN_DOCKER=$(check_in_docker)
 export LD_LIBRARY_PATH=$PWD/build/:$LD_LIBRARY_PATH
 export TI_OFFLINE_CACHE_FILE_PATH=$PWD/.cache/taichi
 
+setup_python
 
-if [[ "$TI_IN_DOCKER" == "true" ]]; then
-    source $HOME/miniconda/etc/profile.d/conda.sh
-    conda activate "$PY"
-fi
+[[ "$IN_DOCKER" == "true" ]] && cd taichi
+
 python3 -m pip install dist/*.whl
 if [ -z "$GPU_TEST" ]; then
     python3 -m pip install -r requirements_test.txt
-    python3 -m pip install "torch; python_version < '3.10'"
+    python3 -m pip install "torch>1.12.0; python_version < '3.10'"
     # Paddle's develop package doesn't support CI's MACOS machine at present
     if [[ $OSTYPE == "linux-"* ]]; then
         python3 -m pip install "paddlepaddle==2.3.0; python_version < '3.10'"
@@ -49,6 +47,8 @@ echo "wanted archs: $TI_WANTED_ARCHS"
 if [ "$TI_RUN_RELEASE_TESTS" == "1" -a -z "$TI_LITE_TEST" ]; then
     python3 -m pip install PyYAML
     git clone https://github.com/taichi-dev/taichi-release-tests
+    pushd taichi-release-tests
+    git checkout v1.1.0
     mkdir -p repos/taichi/python/taichi
     EXAMPLES=$(cat <<EOF | python3 | tail -n 1
 import taichi.examples
@@ -56,10 +56,23 @@ print(taichi.examples.__path__[0])
 EOF
 )
     ln -sf $EXAMPLES repos/taichi/python/taichi/examples
-    ln -sf taichi-release-tests/truths truths
-    python3 taichi-release-tests/run.py --log=DEBUG --runners 1 taichi-release-tests/timelines
-fi
+    pushd repos
+    git clone --depth=1 https://github.com/taichi-dev/quantaichi
+    git clone --depth=1 https://github.com/taichi-dev/difftaichi
+    popd
 
+    pushd repos/difftaichi
+    if [ "$(uname -s):$(uname -m)" == "Darwin:arm64" ]; then
+        # No FORTRAN compiler is currently working reliably on M1 Macs
+        # We can't just pip install scipy, using conda instead
+        conda install -y scipy
+    fi
+    pip install -r requirements.txt
+    popd
+
+    python3 run.py --log=DEBUG --runners 1 timelines
+    popd
+fi
 
 if [ -z "$TI_SKIP_CPP_TESTS" ]; then
     python3 tests/run_tests.py --cpp

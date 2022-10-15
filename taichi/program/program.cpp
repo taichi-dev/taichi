@@ -40,13 +40,12 @@
 #include "taichi/rhi/dx/dx_api.h"
 #endif
 
-#if defined(TI_ARCH_x64)
+#if defined(_M_X64) || defined(__x86_64)
 // For _MM_SET_FLUSH_ZERO_MODE
 #include <xmmintrin.h>
-#endif
+#endif  // defined(_M_X64) || defined(__x86_64)
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 std::atomic<int> Program::num_instances_;
 
 Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
@@ -55,9 +54,10 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   // For performance considerations and correctness of QuantFloatType
   // operations, we force floating-point operations to flush to zero on all
   // backends (including CPUs).
-#if defined(TI_ARCH_x64)
+#if defined(_M_X64) || defined(__x86_64)
   _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
-#else
+#endif  // defined(_M_X64) || defined(__x86_64)
+#if defined(__arm64__) || defined(__aarch64__)
   // Enforce flush to zero on arm64 CPUs
   // https://developer.arm.com/documentation/100403/0201/register-descriptions/advanced-simd-and-floating-point-registers/aarch64-register-descriptions/fpcr--floating-point-control-register?lang=en
   std::uint64_t fpcr;
@@ -68,12 +68,15 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
                        :
                        : "ri"(fpcr | (1 << 24)));  // Bit 24 is FZ
   __asm__ __volatile__("");
-#endif
-  config = default_compile_config;
-  config.arch = desired_arch;
+#endif  // defined(__arm64__) || defined(__aarch64__)
+  main_thread_id_ = std::this_thread::get_id();
+  configs[main_thread_id_] = default_compile_config;
+  configs[main_thread_id_].arch = desired_arch;
+  auto &config = this_thread_config();
   // TODO: allow users to run in debug mode without out-of-bound checks
   if (config.debug)
     config.check_out_of_bound = true;
+  offline_cache::disable_offline_cache_if_needed(&config);
 
   profiler = make_profiler(config.arch, config.kernel_profiler);
   if (arch_uses_llvm(config.arch)) {
@@ -183,8 +186,9 @@ void Program::materialize_runtime() {
 }
 
 void Program::destroy_snode_tree(SNodeTree *snode_tree) {
-  TI_ASSERT(arch_uses_llvm(config.arch) || config.arch == Arch::vulkan ||
-            config.arch == Arch::dx11);
+  TI_ASSERT(arch_uses_llvm(this_thread_config().arch) ||
+            this_thread_config().arch == Arch::vulkan ||
+            this_thread_config().arch == Arch::dx11);
   program_impl_->destroy_snode_tree(snode_tree);
   free_snode_tree_ids_.push(snode_tree->id());
 }
@@ -218,8 +222,10 @@ void Program::check_runtime_error() {
 
 void Program::synchronize() {
   // Normal mode shouldn't be affected by `sync` flag.
-  if (arch_uses_llvm(config.arch) || config.arch == Arch::metal ||
-      config.arch == Arch::vulkan || config.arch == Arch::opengl) {
+  if (arch_uses_llvm(this_thread_config().arch) ||
+      this_thread_config().arch == Arch::metal ||
+      this_thread_config().arch == Arch::vulkan ||
+      this_thread_config().arch == Arch::opengl) {
     program_impl_->synchronize();
   }
 }
@@ -316,19 +322,19 @@ void Program::visualize_layout(const std::string &fn) {
 }
 
 Arch Program::get_accessor_arch() {
-  if (config.arch == Arch::opengl) {
+  if (this_thread_config().arch == Arch::opengl) {
     return Arch::opengl;
-  } else if (config.arch == Arch::vulkan) {
+  } else if (this_thread_config().arch == Arch::vulkan) {
     return Arch::vulkan;
-  } else if (config.arch == Arch::cuda) {
+  } else if (this_thread_config().arch == Arch::cuda) {
     return Arch::cuda;
-  } else if (config.arch == Arch::metal) {
+  } else if (this_thread_config().arch == Arch::metal) {
     return Arch::metal;
-  } else if (config.arch == Arch::cc) {
+  } else if (this_thread_config().arch == Arch::cc) {
     return Arch::cc;
-  } else if (config.arch == Arch::dx11) {
+  } else if (this_thread_config().arch == Arch::dx11) {
     return Arch::dx11;
-  } else if (config.arch == Arch::dx12) {
+  } else if (this_thread_config().arch == Arch::dx12) {
     return Arch::dx12;
   } else {
     return get_host_arch();
@@ -389,9 +395,9 @@ void Program::finalize() {
     return;
   }
   synchronize();
-
+  TI_ASSERT(std::this_thread::get_id() == main_thread_id_);
   TI_TRACE("Program finalizing...");
-  if (config.print_benchmark_stat) {
+  if (this_thread_config().print_benchmark_stat) {
     const char *current_test = std::getenv("PYTEST_CURRENT_TEST");
     const char *output_dir = std::getenv("TI_BENCHMARK_OUTPUT_DIR");
     if (current_test != nullptr) {
@@ -427,7 +433,7 @@ void Program::finalize() {
 
   synchronize();
   memory_pool_->terminate();
-  if (arch_uses_llvm(config.arch)) {
+  if (arch_uses_llvm(this_thread_config().arch)) {
     program_impl_->finalize();
   }
 
@@ -452,8 +458,10 @@ void Program::print_memory_profiler_info() {
 }
 
 std::size_t Program::get_snode_num_dynamically_allocated(SNode *snode) {
-  TI_ASSERT(arch_uses_llvm(config.arch) || config.arch == Arch::metal ||
-            config.arch == Arch::vulkan || config.arch == Arch::opengl);
+  TI_ASSERT(arch_uses_llvm(this_thread_config().arch) ||
+            this_thread_config().arch == Arch::metal ||
+            this_thread_config().arch == Arch::vulkan ||
+            this_thread_config().arch == Arch::opengl);
   return program_impl_->get_snode_num_dynamically_allocated(snode,
                                                             result_buffer);
 }
@@ -486,7 +494,8 @@ Texture *Program::create_texture(const DataType type,
 
 intptr_t Program::get_ndarray_data_ptr_as_int(const Ndarray *ndarray) {
   uint64_t *data_ptr{nullptr};
-  if (arch_is_cpu(config.arch) || config.arch == Arch::cuda) {
+  if (arch_is_cpu(this_thread_config().arch) ||
+      this_thread_config().arch == Arch::cuda) {
     // For the LLVM backends, device allocation is a physical pointer.
     data_ptr =
         program_impl_->get_ndarray_alloc_info_ptr(ndarray->ndarray_alloc_);
@@ -519,8 +528,10 @@ std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(Arch arch) {
     TI_NOT_IMPLEMENTED
 #endif
   }
-  if (arch_uses_llvm(config.arch) || config.arch == Arch::metal ||
-      config.arch == Arch::vulkan || config.arch == Arch::opengl) {
+  if (arch_uses_llvm(this_thread_config().arch) ||
+      this_thread_config().arch == Arch::metal ||
+      this_thread_config().arch == Arch::vulkan ||
+      this_thread_config().arch == Arch::opengl) {
     return program_impl_->make_aot_module_builder();
   }
   return nullptr;
@@ -541,5 +552,10 @@ void Program::prepare_runtime_context(RuntimeContext *ctx) {
   program_impl_->prepare_runtime_context(ctx);
 }
 
-}  // namespace lang
-}  // namespace taichi
+void Program::enqueue_compute_op_lambda(
+    std::function<void(Device *device, CommandList *cmdlist)> op,
+    const std::vector<ComputeOpImageRef> &image_refs) {
+  program_impl_->enqueue_compute_op_lambda(op, image_refs);
+}
+
+}  // namespace taichi::lang

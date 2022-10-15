@@ -6,7 +6,7 @@
 #if defined(TI_GUI_ANDROID)
 #include <cstdlib>
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 void GUI::process_event() {
   TI_ERROR("GGUI not supported on Android");
@@ -27,6 +27,6 @@ void GUI::set_title(std::string title) {
 GUI::~GUI() {
 }
 
-TI_NAMESPACE_END
+}  // namespace taichi
 
 #endif

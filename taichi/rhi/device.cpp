@@ -12,8 +12,7 @@
 #endif  // TI_WITH_CUDA
 #endif  // TI_WITH_VULKAN
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 // FIXME: (penguinliong) We might have to differentiate buffer formats and
 // texture formats at some point because formats like `rgb10a2` are not easily
@@ -244,7 +243,14 @@ void Device::memcpy_direct(DevicePtr dst, DevicePtr src, uint64_t size) {
     dst.device->memcpy_internal(dst, src, size);
     return;
   }
-  // Inter-device copy
+#if TI_WITH_VULKAN && TI_WITH_LLVM
+  // cross-device copy directly
+  else if (dynamic_cast<vulkan::VulkanDevice *>(dst.device) &&
+           dynamic_cast<cpu::CpuDevice *>(src.device)) {
+    memcpy_cpu_to_vulkan(dst, src, size);
+    return;
+  }
+#endif
 #if TI_WITH_VULKAN && TI_WITH_CUDA
   if (dynamic_cast<vulkan::VulkanDevice *>(dst.device) &&
       dynamic_cast<cuda::CudaDevice *>(src.device)) {
@@ -330,5 +336,4 @@ void GraphicsDevice::image_to_buffer(DevicePtr dst_buf,
   stream->submit_synced(cmd_list.get());
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

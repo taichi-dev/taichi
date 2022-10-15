@@ -30,7 +30,8 @@ Kernel::Kernel(Program &program,
                const std::function<void(Kernel *)> &func,
                const std::string &primal_name,
                AutodiffMode autodiff_mode) {
-  this->init(program, std::bind(func, this), primal_name, autodiff_mode);
+  this->init(
+      program, [func, this] { return func(this); }, primal_name, autodiff_mode);
 }
 
 Kernel::Kernel(Program &program,

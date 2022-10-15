@@ -44,7 +44,7 @@ bool test_threading();
 namespace taichi::lang {
 
 Expr expr_index(const Expr &expr, const Expr &index) {
-  return expr[index];
+  return expr[ExprGroup(index)];
 }
 
 std::string libdevice_path();

@@ -24,7 +24,7 @@ class Axis {
   Axis() {
     value = 0;
   }
-  Axis(int value) : value(value) {
+  explicit Axis(int value) : value(value) {
     TI_ERROR_UNLESS(0 <= value && value < taichi_max_num_indices,
                     "Too many dimensions. The maximum dimensionality is {}",
                     taichi_max_num_indices);
@@ -144,8 +144,8 @@ class SNode {
   // Whether the path from root to |this| contains only `dense` SNodes.
   bool is_path_all_dense{true};
 
-  SNode(SNodeFieldMap *snode_to_fields = nullptr,
-        SNodeRwAccessorsBank *snode_rw_accessors_bank = nullptr);
+  explicit SNode(SNodeFieldMap *snode_to_fields = nullptr,
+                 SNodeRwAccessorsBank *snode_rw_accessors_bank = nullptr);
 
   SNode(int depth,
         SNodeType t,

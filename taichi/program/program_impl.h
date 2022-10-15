@@ -30,7 +30,7 @@ class ProgramImpl {
   CompileConfig *config;
 
  public:
-  ProgramImpl(CompileConfig &config);
+  explicit ProgramImpl(CompileConfig &config);
 
   /**
    * Codegen to specific backend

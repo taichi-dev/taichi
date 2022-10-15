@@ -9,6 +9,7 @@ Checks:  '-*,
          bugprone-unused-raii,
          bugprone-use-after-move,
          google-build-explicit-make-pair,
+         google-explicit-constructor,
          modernize-use-override,
          performance-inefficient-string-concatenation,
          readability-identifier-naming'

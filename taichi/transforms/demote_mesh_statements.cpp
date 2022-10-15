@@ -24,7 +24,7 @@ class ReplaceIndexConversion : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
 
-  ReplaceIndexConversion(OffloadedStmt *node) {
+  explicit ReplaceIndexConversion(OffloadedStmt *node) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
 

@@ -290,7 +290,7 @@ class DeferedExecution {
   std::function<void(void)> statement_;
 
  public:
-  DeferedExecution(const std::function<void(void)> &statement)
+  explicit DeferedExecution(const std::function<void(void)> &statement)
       : statement_(statement) {
   }
 

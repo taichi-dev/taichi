@@ -15,7 +15,7 @@ class DetectForsWithBreak : public BasicStmtVisitor {
   std::unordered_set<Stmt *> fors_with_break;
   IRNode *root;
 
-  DetectForsWithBreak(IRNode *root) : root(root) {
+  explicit DetectForsWithBreak(IRNode *root) : root(root) {
   }
 
   void visit(FrontendBreakStmt *stmt) override {

@@ -12,7 +12,7 @@ class GatherDeactivations : public BasicStmtVisitor {
   std::unordered_set<SNode *> snodes;
   IRNode *root;
 
-  GatherDeactivations(IRNode *root) : root(root) {
+  explicit GatherDeactivations(IRNode *root) : root(root) {
   }
 
   void visit(SNodeOpStmt *stmt) override {

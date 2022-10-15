@@ -156,7 +156,10 @@ class ArgLengthMismatch : public TypeSystemError {
 class Constraint {
  public:
   const std::shared_ptr<TyVar> tyvar;
-  const std::shared_ptr<Trait> trait;
+  const Trait *trait;
+  Constraint(const std::shared_ptr<TyVar> tyvar, const Trait *trait)
+      : tyvar(tyvar), trait(trait) {
+  }
 };
 
 class Signature {
@@ -170,20 +173,12 @@ class Signature {
             TypeExpr ret_type)
       : constraints(constraints), parameters(parameters), ret_type(ret_type) {
   }
-  DataType type_check(std::vector<DataType> arguments) const;
-};
-
-class Operation {
-  const std::string name;
-  const Signature sig;
-
- public:
-  Operation(std::string name, Signature sig) : name(name), sig(sig) {
+  Signature(std::vector<TypeExpr> parameters, TypeExpr ret_type)
+      : parameters(parameters), ret_type(ret_type) {
   }
-  void type_check(std::vector<DataType> arg_types) const;
-  virtual Stmt *flatten(Expression::FlattenContext *ctx,
-                        std::vector<Expr> args,
-                        DataType ret_type) const = 0;
+  Signature(TypeExpr ret_type) : ret_type(ret_type) {
+  }
+  DataType type_check(std::vector<DataType> arguments) const;
 };
 
 class StaticTraits {
@@ -198,44 +193,73 @@ class StaticTraits {
   const Trait *scalar;
 };
 
+namespace TypeExprBuilder {
+
+int var_counter_ = 0;
+
+#define PRIM(dt) \
+  DataType dt =  \
+      TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::dt);
+
+PRIM(i32)
+PRIM(i64)
+PRIM(f32)
+PRIM(f64)
+PRIM(u32)
+PRIM(u64)
+DataType i0 = i32;
+DataType f32_ptr = TypeFactory::get_instance().get_pointer_type(f32, false);
+const Trait *Real = StaticTraits::get()->real;
+const Trait *Integral = StaticTraits::get()->integral;
+const Trait *Primitive = StaticTraits::get()->primitive;
+const Trait *Scalar = StaticTraits::get()->scalar;
+
+Constraint operator<(const std::shared_ptr<TyVar> tyvar, const Trait *trait) {
+  return Constraint(tyvar, trait);
+}
+
+std::shared_ptr<TyMono> operator!(DataType dt) {
+  return std::make_shared<TyMono>(dt);
+}
+
+std::shared_ptr<TyLub> operator|(TypeExpr lhs, TypeExpr rhs) {
+  return std::make_shared<TyLub>(lhs, rhs);
+}
+
+std::shared_ptr<TyVar> tyvar(std::string name) {
+  return std::make_shared<TyVar>(Identifier(var_counter_++, name));
+}
+
+std::shared_ptr<TyCompute> comp(TypeExpr ty) {
+  return std::make_shared<TyCompute>(ty);
+}
+};  // namespace TypeExprBuilder
+
+class Operation {
+  const std::string name;
+  const Signature sig;
+
+ public:
+  Operation(std::string name, Signature sig) : name(name), sig(sig) {
+  }
+  void type_check(std::vector<DataType> arg_types) const;
+  virtual Stmt *flatten(Expression::FlattenContext *ctx,
+                        std::vector<Expr> args,
+                        DataType ret_type) const = 0;
+};
+
 class InternalOps {
   static std::shared_ptr<InternalOps> ops_;
 
  public:
   InternalOps();
   static std::shared_ptr<InternalOps> get();
-  const Operation *composite_extract_0;
-  const Operation *composite_extract_1;
-  const Operation *composite_extract_2;
-  const Operation *composite_extract_3;
-  const Operation *insert_triplet_f32;
-  const Operation *insert_triplet_f64;
-  const Operation *block_barrier;           // cuda
-  const Operation *workgroupBarrier;        // vulkan
-  const Operation *workgroupMemoryBarrier;  // vulkan
-  const Operation *localInvocationId;       // vulkan
-  const Operation *vkGlobalThreadIdx;       // vulkan
-  const Operation *grid_memfence;
-  const Operation *subgroupBarrier;
-  const Operation *subgroupMemoryBarrier;
-  const Operation *subgroupElect;
-  const Operation *subgroupBroadcast;
-  const Operation *subgroupSize;
-  const Operation *subgroupInvocationId;
-  const Operation *subgroupAdd;
-  const Operation *subgroupMul;
-  const Operation *subgroupMin;
-  const Operation *subgroupMax;
-  const Operation *subgroupAnd;
-  const Operation *subgroupOr;
-  const Operation *subgroupXor;
-  const Operation *subgroupInclusiveAdd;
-  const Operation *subgroupInclusiveMul;
-  const Operation *subgroupInclusiveMin;
-  const Operation *subgroupInclusiveMax;
-  const Operation *subgroupInclusiveAnd;
-  const Operation *subgroupInclusiveOr;
-  const Operation *subgroupInclusiveXor;
+  const Operation *composite_extract_0, *composite_extract_1,
+      *composite_extract_2, *composite_extract_3;
+  const Operation *insert_triplet_f32, *insert_triplet_f64;
+#define PER_INTERNAL_OP(x) const Operation *x;
+#include "taichi/inc/internal_ops.inc.h"
+#undef PER_INTERNAL_OP
 };
 
 class InternalTestOps {};

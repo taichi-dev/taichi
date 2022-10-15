@@ -826,8 +826,8 @@ class Matrix(TaichiOperations):
             >>> A.transpose()
             [[0, 2], [1, 3]]
         """
-        from taichi._funcs import _matrix_transpose  # pylint: disable=C0415
-        return _matrix_transpose(self)
+        from taichi.lang.matrix_ops import transpose  # pylint: disable=C0415
+        return transpose(self)
 
     @taichi_scope
     def determinant(a):
@@ -842,33 +842,9 @@ class Matrix(TaichiOperations):
         Raises:
             Exception: Determinants of matrices with sizes >= 5 are not supported.
         """
-        if a.n == 1 and a.m == 1:
-            return a(0, 0)
-        if a.n == 2 and a.m == 2:
-            return a(0, 0) * a(1, 1) - a(0, 1) * a(1, 0)
-        if a.n == 3 and a.m == 3:
-            return a(0, 0) * (a(1, 1) * a(2, 2) - a(2, 1) * a(1, 2)) - a(
-                1, 0) * (a(0, 1) * a(2, 2) - a(2, 1) * a(0, 2)) + a(
-                    2, 0) * (a(0, 1) * a(1, 2) - a(1, 1) * a(0, 2))
-        if a.n == 4 and a.m == 4:
-            n = 4
-
-            def E(x, y):
-                return a(x % n, y % n)
-
-            det = impl.expr_init(0.0)
-            for i in range(4):
-                det = det + (-1.0)**i * (
-                    a(i, 0) *
-                    (E(i + 1, 1) *
-                     (E(i + 2, 2) * E(i + 3, 3) - E(i + 3, 2) * E(i + 2, 3)) -
-                     E(i + 2, 1) *
-                     (E(i + 1, 2) * E(i + 3, 3) - E(i + 3, 2) * E(i + 1, 3)) +
-                     E(i + 3, 1) *
-                     (E(i + 1, 2) * E(i + 2, 3) - E(i + 2, 2) * E(i + 1, 3))))
-            return det
-        raise Exception(
-            "Determinants of matrices with sizes >= 5 are not supported")
+        # pylint: disable=C0415
+        from taichi.lang.matrix_ops import determinant
+        return determinant(a)
 
     @staticmethod
     def diag(dim, val):
@@ -889,9 +865,9 @@ class Matrix(TaichiOperations):
              [0, 1, 0],
              [0, 0, 1]]
         """
-        # TODO: need a more systematic way to create a "0" with the right type
-        return Matrix([[val if i == j else 0 * val for j in range(dim)]
-                       for i in range(dim)])
+        # pylint: disable=C0415
+        from taichi.lang.matrix_ops import diag
+        return diag(dim, val)
 
     def sum(self):
         """Return the sum of all elements.
@@ -902,10 +878,9 @@ class Matrix(TaichiOperations):
             >>> m.sum()
             10
         """
-        ret = self.entries[0]
-        for i in range(1, len(self.entries)):
-            ret = ret + self.entries[i]
-        return ret
+        # pylint: disable=C0415, W0622
+        from taichi.lang.matrix_ops import sum
+        return sum(self)
 
     def norm(self, eps=0):
         """Returns the square root of the sum of the absolute squares
@@ -923,7 +898,9 @@ class Matrix(TaichiOperations):
         Returns:
             The square root of the sum of the absolute squares of its elements.
         """
-        return ops_mod.sqrt(self.norm_sqr() + eps)
+        # pylint: disable=C0415
+        from taichi.lang.matrix_ops import norm
+        return norm(self, eps=eps)
 
     def norm_inv(self, eps=0):
         """The inverse of the matrix :func:`~taichi.lang.matrix.Matrix.norm`.
@@ -934,11 +911,15 @@ class Matrix(TaichiOperations):
         Returns:
             The inverse of the matrix/vector `norm`.
         """
-        return ops_mod.rsqrt(self.norm_sqr() + eps)
+        # pylint: disable=C0415
+        from taichi.lang.matrix_ops import norm_inv
+        return norm_inv(self, eps=eps)
 
     def norm_sqr(self):
         """Returns the sum of the absolute squares of its elements."""
-        return (self * self).sum()
+        # pylint: disable=C0415
+        from taichi.lang.matrix_ops import norm_sqr
+        return norm_sqr(self)
 
     def max(self):
         """Returns the maximum element value."""
@@ -960,10 +941,9 @@ class Matrix(TaichiOperations):
             >>> v.any()
             True
         """
-        ret = False
-        for entry in self.entries:
-            ret = ret | ops_mod.cmp_ne(entry, 0)
-        return ret & True
+        # pylint: disable=C0415, W0622
+        from taichi.lang.matrix_ops import any
+        return any(self)
 
     def all(self):
         """Test whether all element not equal zero.
@@ -977,10 +957,9 @@ class Matrix(TaichiOperations):
             >>> v.all()
             False
         """
-        ret = True
-        for entry in self.entries:
-            ret = ret & ops_mod.cmp_ne(entry, 0)
-        return ret
+        # pylint: disable=C0415, W0622
+        from taichi.lang.matrix_ops import all
+        return all(self)
 
     @taichi_scope
     def fill(self, val):

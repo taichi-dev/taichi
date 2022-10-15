@@ -70,7 +70,7 @@ void print_all_units() {
 }
 
 void export_misc(py::module &m) {
-  py::class_<Config>(m, "Config");
+  py::class_<Config>(m, "Config");  // NOLINT(bugprone-unused-raii)
   py::register_exception_translator([](std::exception_ptr p) {
     try {
       if (p)

@@ -1181,8 +1181,9 @@ class TaskCodegen : public IRVisitor {
         }
 
         int binding = binding_head_++;
-        val = ir_->storage_image_argument(/*num_channels=*/4, stmt->dimensions,
-                                          /*set=*/0, binding, format);
+        val =
+            ir_->storage_image_argument(/*num_channels=*/4, stmt->dimensions,
+                                        /*descriptor_set=*/0, binding, format);
         TextureBind bind;
         bind.arg_id = arg_id;
         bind.binding = binding;
@@ -1192,7 +1193,7 @@ class TaskCodegen : public IRVisitor {
       } else {
         int binding = binding_head_++;
         val = ir_->texture_argument(/*num_channels=*/4, stmt->dimensions,
-                                    /*set=*/0, binding);
+                                    /*descriptor_set=*/0, binding);
         TextureBind bind;
         bind.arg_id = arg_id;
         bind.binding = binding;

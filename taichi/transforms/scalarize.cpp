@@ -11,7 +11,7 @@ class Scalarize : public BasicStmtVisitor {
  public:
   DelayedIRModifier modifier_;
 
-  Scalarize(IRNode *node) {
+  explicit Scalarize(IRNode *node) {
     node->accept(this);
 
     modifier_.modify_ir();
@@ -286,7 +286,7 @@ class ScalarizePointers : public BasicStmtVisitor {
   // { original_alloca_stmt : [scalarized_alloca_stmt0, ...] }
   std::unordered_map<Stmt *, std::vector<Stmt *>> scalarized_local_tensor_map_;
 
-  ScalarizePointers(IRNode *node) {
+  explicit ScalarizePointers(IRNode *node) {
     node->accept(this);
 
     modifier_.modify_ir();

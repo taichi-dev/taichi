@@ -84,7 +84,7 @@ class TI_DLL_EXPORT Canvas {
     bool finished;
     static Vector2 vertices[128];  // TODO: ...
 
-    TI_FORCE_INLINE Line(Canvas &canvas)
+    TI_FORCE_INLINE explicit Line(Canvas &canvas)
         : canvas(canvas),
           _color(canvas.context._color),
           _radius(canvas.context._radius) {
@@ -297,7 +297,7 @@ class TI_DLL_EXPORT Canvas {
   Array2D<Vector4> &img;
   Matrix3 transform_matrix;
 
-  Canvas(Array2D<Vector4> &img) : img(img) {
+  explicit Canvas(Array2D<Vector4> &img) : img(img) {
     transform_matrix = Matrix3(Vector3(img.get_res().cast<real>(), 1.0_f));
   }
 
@@ -566,7 +566,7 @@ class TI_DLL_EXPORT GUI : public GUIBase {
       hover = false;
     }
 
-    Widget(Rect rect) : Widget() {
+    explicit Widget(Rect rect) : Widget() {
       this->rect = rect;
     }
 

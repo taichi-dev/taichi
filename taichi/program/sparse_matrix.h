@@ -112,11 +112,11 @@ class EigenSparseMatrix : public SparseMatrix {
   explicit EigenSparseMatrix(int rows, int cols, DataType dt)
       : SparseMatrix(rows, cols, dt), matrix_(rows, cols) {
   }
-  explicit EigenSparseMatrix(EigenSparseMatrix &sm)
+  EigenSparseMatrix(EigenSparseMatrix &sm)
       : SparseMatrix(sm.num_rows(), sm.num_cols(), sm.dtype_),
         matrix_(sm.matrix_) {
   }
-  explicit EigenSparseMatrix(EigenSparseMatrix &&sm)
+  EigenSparseMatrix(EigenSparseMatrix &&sm)
       : SparseMatrix(sm.num_rows(), sm.num_cols(), sm.dtype_),
         matrix_(sm.matrix_) {
   }

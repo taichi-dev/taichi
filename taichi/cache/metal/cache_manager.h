@@ -36,7 +36,7 @@ class CacheManager {
     const std::vector<CompiledStructs> *compiled_snode_trees_{nullptr};
   };
 
-  CacheManager(Params &&init_params);
+  explicit CacheManager(Params &&init_params);
 
   // Load from memory || Load from disk || (Compile && Cache the result in
   // memory)

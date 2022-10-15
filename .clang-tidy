@@ -1,5 +1,13 @@
 ---
-Checks: '-*,
+Checks:  '-*,
+         bugprone-argument-comment,
+         bugprone-assert-side-effect,
+         bugprone-dangling-handle,
+         bugprone-inaccurate-erase,
+         bugprone-string-constructor,
+         bugprone-string-integer-assignment,
+         bugprone-unused-raii,
+         bugprone-use-after-move,
          modernize-use-override,
          performance-inefficient-string-concatenation,
          readability-identifier-naming'

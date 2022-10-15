@@ -77,7 +77,7 @@ class SparseMatrix {
   }
 
   virtual const std::string to_string() const {
-    return nullptr;
+    return "";
   }
 
   virtual const void *get_matrix() const {

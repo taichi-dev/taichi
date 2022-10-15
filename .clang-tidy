@@ -1,5 +1,6 @@
 ---
 Checks: '-*,
+         modernize-use-override,
          performance-inefficient-string-concatenation,
          readability-identifier-naming'
 CheckOptions:

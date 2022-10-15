@@ -221,7 +221,7 @@ class CuSparseMatrix : public SparseMatrix {
       : SparseMatrix(sm.rows_, sm.cols_, sm.dtype_), matrix_(sm.matrix_) {
   }
 
-  virtual ~CuSparseMatrix();
+  ~CuSparseMatrix() override;
 
   // TODO: Overload +=, -= and *=
   friend std::unique_ptr<SparseMatrix> operator+(const CuSparseMatrix &lhs,

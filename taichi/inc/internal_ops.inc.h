@@ -1,3 +1,23 @@
+PER_INTERNAL_OP(composite_extract_0)
+PER_INTERNAL_OP(composite_extract_1)
+PER_INTERNAL_OP(composite_extract_2)
+PER_INTERNAL_OP(composite_extract_3)
+
+PER_INTERNAL_OP(insert_triplet_f32)
+PER_INTERNAL_OP(insert_triplet_f64)
+
+PER_INTERNAL_OP(linear_thread_idx)
+
+PER_INTERNAL_OP(test_stack)
+PER_INTERNAL_OP(test_active_mask)
+PER_INTERNAL_OP(test_shfl)
+PER_INTERNAL_OP(test_list_manager)
+PER_INTERNAL_OP(test_node_allocator)
+PER_INTERNAL_OP(test_node_allocator_gc_cpu)
+PER_INTERNAL_OP(do_nothing)
+PER_INTERNAL_OP(refresh_counter)
+PER_INTERNAL_OP(test_internal_func_args)
+
 // Vulkan
 PER_INTERNAL_OP(workgroupBarrier)
 PER_INTERNAL_OP(workgroupMemoryBarrier)

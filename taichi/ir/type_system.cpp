@@ -1,10 +1,9 @@
 #include "taichi/ir/type_system.h"
 #include "taichi/ir/statements.h"
+#include "taichi/ir/frontend_ir.h"
 
 namespace taichi {
 namespace lang {
-
-using namespace TypeExprBuilder;
 
 void TyVar::unify(int pos,
                   DataType dt,
@@ -77,9 +76,14 @@ std::string TyMono::to_string() const {
   return monotype.to_string();
 }
 
+std::string TyVarMismatch::to_string() const {
+  return "expected " + original.to_string() + " for type variable " +
+         var.name() + ", but got " + conflicting.to_string();
+}
+
 std::string TypeMismatch::to_string() const {
-  return "expected " + arg.to_string() + " for argument " +
-         std::to_string(position) + ", but got " + param.to_string();
+  return "expected " + arg.to_string() + " for argument #" +
+         std::to_string(position + 1) + ", but got " + param.to_string();
 }
 
 std::string TyVarUnsolved::to_string() const {
@@ -115,24 +119,76 @@ DataType Signature::type_check(std::vector<DataType> arguments) const {
   return ret_type->resolve(solutions);
 }
 
-void Operation::type_check(std::vector<DataType> arg_types) const {
+DataType Operation::type_check(std::vector<DataType> arg_types) const {
   try {
-    sig.type_check(arg_types);
+    return sig.type_check(arg_types);
   } catch (TypeSystemError &err) {
     std::string msg;
     msg += "In a call to the operation `" + name + "`:\n";
     msg += "  " + err.to_string();
-    msg += "  ( called with argument types ";
+    msg += "  (called with argument types ";
     for (int i = 0; i < arg_types.size(); i++) {
       msg += arg_types[i].to_string();
-      if (i != arg_types.size())
+      if (i != arg_types.size() - 1)
         msg += ", ";
       else
-        msg += " )\n";
+        msg += ")\n";
     }
     throw TaichiTypeError(msg);
   }
 }
+
+namespace TypeExprBuilder {
+
+int var_counter_ = 0;
+
+#define PRIM(dt) \
+  DataType dt =  \
+      TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::dt);
+
+PRIM(i32)
+PRIM(i64)
+PRIM(f32)
+PRIM(f64)
+PRIM(u32)
+PRIM(u64)
+DataType i0 = i32;
+DataType f32_ptr = TypeFactory::get_instance().get_pointer_type(f32, false);
+
+#undef PRIM
+
+const Trait *Real = StaticTraits::get()->real;
+const Trait *Integral = StaticTraits::get()->integral;
+const Trait *Primitive = StaticTraits::get()->primitive;
+const Trait *Scalar = StaticTraits::get()->scalar;
+
+Constraint operator<(const std::shared_ptr<TyVar> tyvar, const Trait *trait) {
+  return Constraint(tyvar, trait);
+}
+
+std::shared_ptr<TyMono> operator!(DataType dt) {
+  return std::make_shared<TyMono>(dt);
+}
+
+std::shared_ptr<TyLub> operator|(TypeExpr lhs, TypeExpr rhs) {
+  return std::make_shared<TyLub>(lhs, rhs);
+}
+
+std::shared_ptr<TyVar> tyvar(std::string name) {
+  return std::make_shared<TyVar>(Identifier(var_counter_++, name));
+}
+
+std::shared_ptr<TyCompute> comp(TypeExpr ty) {
+  return std::make_shared<TyCompute>(ty);
+}
+};  // namespace TypeExprBuilder
+
+const InternalOps *InternalOps::get() {
+  static const InternalOps *ops_ = new InternalOps();
+  return ops_;
+}
+
+using namespace TypeExprBuilder;
 
 bool DynamicTrait::validate(const DataType dt) const {
   return impl(dt);
@@ -152,10 +208,8 @@ StaticTraits::StaticTraits() {
   });
 }
 
-std::shared_ptr<StaticTraits> StaticTraits::get() {
-  if (traits_ == nullptr) {
-    traits_ = std::make_shared<StaticTraits>();
-  }
+const StaticTraits *StaticTraits::get() {
+  static const StaticTraits *traits_ = new StaticTraits();
   return traits_;
 }
 
@@ -167,12 +221,12 @@ std::vector<TypeExpr> type_exprs_from_dts(std::vector<DataType> params) {
   return exprs;
 }
 
-std::vector<Stmt *> get_all_stmts(std::vector<Expr> args,
-                                  Expression::FlattenContext *ctx) {
+std::vector<Stmt *> get_all_rvalues(std::vector<Expr> args,
+                                    Expression::FlattenContext *ctx) {
   std::vector<Stmt *> stmts;
   for (auto arg : args) {
-    arg->flatten(ctx);
-    stmts.push_back(ctx->back_stmt());
+    flatten_rvalue(arg, ctx);
+    stmts.push_back(arg->stmt);
   }
   return stmts;
 }
@@ -202,9 +256,9 @@ class InternalCallOperation : public Operation {
   Stmt *flatten(Expression::FlattenContext *ctx,
                 std::vector<Expr> args,
                 DataType ret_type) const override {
+    auto rargs = get_all_rvalues(args, ctx);
     return ctx->push_back<InternalFuncStmt>(
-        internal_call_name_, get_all_stmts(args, ctx), (Type *)ret_type,
-        with_runtime_context_);
+        internal_call_name_, rargs, (Type *)ret_type, with_runtime_context_);
   }
 };
 
@@ -228,7 +282,16 @@ InternalOps::InternalOps() {
   INSERT_TRIPLET(f64);
 #undef INSERT_TRIPLET
 
-#define SIMPLE_OP(name) PLAIN_OP(name, i0, false)
+  PLAIN_OP(linear_thread_idx, i32, true);
+  PLAIN_OP(test_stack, i0, true);
+  PLAIN_OP(test_active_mask, i0, true);
+  PLAIN_OP(test_shfl, i0, true);
+  PLAIN_OP(test_list_manager, i0, true);
+  PLAIN_OP(test_node_allocator, i0, true);
+  PLAIN_OP(test_node_allocator_gc_cpu, i0, true);
+  PLAIN_OP(do_nothing, i0, true);
+  PLAIN_OP(refresh_counter, i0, true);
+  PLAIN_OP(test_internal_func_args, i32, true, f32, f32, i32);
 
   // CUDA ops:
   // block_barrier, grid_memfence, cuda_all_sync, cuda_any_sync, cuda_uni_sync,

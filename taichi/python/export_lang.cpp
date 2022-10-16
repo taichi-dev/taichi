@@ -818,10 +818,8 @@ void export_lang(py::module &m) {
   m.def("expr_snode_length", &snode_length);
 
   m.def("insert_internal_func_call",
-        [&](const std::string &func_name, const ExprGroup &args,
-            bool with_runtime_context) {
-          return Expr::make<InternalFuncCallExpression>(func_name, args.exprs,
-                                                        with_runtime_context);
+        [&](const Operation *op, const ExprGroup &args) {
+          return Expr::make<InternalFuncCallExpression>(op, args.exprs);
         });
 
   m.def("make_func_call_expr",
@@ -1369,6 +1367,16 @@ void export_lang(py::module &m) {
       ::Sleep(100);
 #endif
   });
+
+  auto operationClass = py::class_<Operation>(m, "Operation");
+  auto internalOpClass = py::class_<InternalOps>(m, "InternalOps");
+
+#define PER_INTERNAL_OP(x)                                  \
+  internalOpClass.def_property_readonly_static(             \
+      #x, [](py::object) { return InternalOps::get()->x; }, \
+      py::return_value_policy::reference);
+#include "taichi/inc/internal_ops.inc.h"
+#undef PER_INTERNAL_OP
 }
 
 }  // namespace taichi

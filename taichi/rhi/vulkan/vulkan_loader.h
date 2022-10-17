@@ -33,7 +33,7 @@ class TI_DLL_EXPORT VulkanLoader {
 
  private:
   std::once_flag init_flag_;
-  bool initialized{false};
+  bool initialized_{false};
 
   VulkanLoader();
 

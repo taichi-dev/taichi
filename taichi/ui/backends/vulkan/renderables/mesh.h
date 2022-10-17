@@ -29,11 +29,11 @@ class Mesh final : public Renderable {
  public:
   Mesh(AppContext *app_context, VertexAttributes vbo_attrs);
 
-  virtual void cleanup() override;
+  void cleanup() override;
 
   void update_data(const MeshInfo &info, const Scene &scene);
 
-  virtual void record_this_frame_commands(
+  void record_this_frame_commands(
       taichi::lang::CommandList *command_list) override;
 
  private:
@@ -58,7 +58,7 @@ class Mesh final : public Renderable {
 
   void update_ubo(const MeshInfo &info, const Scene &scene);
 
-  virtual void create_bindings() override;
+  void create_bindings() override;
 
   void create_mesh_storage_buffers();
 

@@ -164,8 +164,8 @@ void Renderer::draw_frame(Gui *gui) {
                              ImageLayout::color_attachment);
   auto depth_image = swap_chain_.depth_allocation();
   cmd_list->begin_renderpass(
-      /*xmin=*/0, /*ymin=*/0, /*xmax=*/swap_chain_.width(),
-      /*ymax=*/swap_chain_.height(), /*num_color_attachments=*/1, &image,
+      /*x0=*/0, /*y0=*/0, /*x1=*/swap_chain_.width(),
+      /*y1=*/swap_chain_.height(), /*num_color_attachments=*/1, &image,
       &color_clear, &clear_colors, &depth_image,
       /*depth_clear=*/true);
 

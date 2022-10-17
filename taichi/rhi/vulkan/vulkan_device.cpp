@@ -498,7 +498,7 @@ void VulkanPipeline::create_graphics_pipeline(
   VkPipelineDynamicStateCreateInfo &dynamic_state =
       graphics_pipeline_template_->dynamic_state;
   dynamic_state.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-  dynamic_state.pNext = NULL;
+  dynamic_state.pNext = nullptr;
   dynamic_state.pDynamicStates =
       graphics_pipeline_template_->dynamic_state_enables.data();
   dynamic_state.dynamicStateCount =
@@ -1444,7 +1444,7 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
   VkExternalMemoryBufferCreateInfo external_mem_buffer_create_info = {};
   external_mem_buffer_create_info.sType =
       VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO;
-  external_mem_buffer_create_info.pNext = NULL;
+  external_mem_buffer_create_info.pNext = nullptr;
 
 #ifdef _WIN64
   external_mem_buffer_create_info.handleTypes =
@@ -1957,7 +1957,7 @@ DeviceAllocation VulkanDevice::create_image(const ImageParams &params) {
   if (export_sharing) {
     external_mem_image_create_info.sType =
         VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO;
-    external_mem_image_create_info.pNext = NULL;
+    external_mem_image_create_info.pNext = nullptr;
 
 #ifdef _WIN64
     external_mem_image_create_info.handleTypes =
@@ -2089,7 +2089,7 @@ vkapi::IVkRenderPass VulkanDevice::get_renderpass(
   subpass.pInputAttachments = nullptr;
   subpass.colorAttachmentCount = color_attachments.size();
   subpass.pColorAttachments = color_attachments.data();
-  subpass.pResolveAttachments = 0;
+  subpass.pResolveAttachments = nullptr;
   subpass.pDepthStencilAttachment = desc.depth_attachment == VK_FORMAT_UNDEFINED
                                         ? nullptr
                                         : &depth_attachment;
@@ -2167,7 +2167,7 @@ void VulkanDevice::create_vma_allocator() {
   allocatorInfo.instance = instance_;
 
   VolkDeviceTable table;
-  VmaVulkanFunctions vk_vma_functions{0};
+  VmaVulkanFunctions vk_vma_functions{nullptr};
 
   volkLoadDeviceTable(&table, device_);
   vk_vma_functions.vkGetPhysicalDeviceProperties =
@@ -2322,7 +2322,7 @@ VulkanSurface::VulkanSurface(VulkanDevice *device, const SurfaceConfig &config)
 #else
       glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
       VkResult err = glfwCreateWindowSurface(device->vk_instance(), window_,
-                                             NULL, &surface_);
+                                             nullptr, &surface_);
       if (err) {
         TI_ERROR("Failed to create window surface ({})", err);
         return;

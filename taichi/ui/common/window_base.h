@@ -48,7 +48,7 @@ class WindowBase {
 
   virtual std::vector<uint32_t> &get_image_buffer(uint32_t &w, uint32_t &h) = 0;
 
-  virtual GuiBase *GUI();
+  virtual GuiBase *gui();
 
   virtual ~WindowBase();
 
@@ -65,7 +65,7 @@ class WindowBase {
   Event current_event_{EventType::Any, ""};
 
  protected:
-  WindowBase(AppConfig config);
+  explicit WindowBase(AppConfig config);
 
   void set_callbacks();
 

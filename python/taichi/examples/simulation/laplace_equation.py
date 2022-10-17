@@ -262,27 +262,27 @@ def processGuiEvent(_gui):
                     if sources[i].q != 0 and (sources[i].pos - vec2(
                             *_gui.get_cursor_pos())).norm() < 5 / guiHeight:
                         if _gui.is_pressed(ti.GUI.RMB):
-                            sources[i].q -= 0.5 * int(sources[i].q >= 0.0) - (
-                                sources[i].q <= 0.0)
+                            sources[i].q -= 0.5 * int((sources[i].q >= 0.0) - (
+                                sources[i].q <= 0.0))
                         else:
-                            sources[i].q += 0.5 * int(sources[i].q >= 0.0) - (
-                                sources[i].q <= 0.0)
+                            sources[i].q += 0.5 * int((sources[i].q >= 0.0) - (
+                                sources[i].q <= 0.0))
                     if vortexes[i].q != 0 and (vortexes[i].pos - vec2(
                             *_gui.get_cursor_pos())).norm() < 5 / guiHeight:
                         if _gui.is_pressed(ti.GUI.RMB):
-                            vortexes[i].q -= 0.1 * int(
-                                vortexes[i].q >= 0.0) - (vortexes[i].q <= 0.0)
+                            vortexes[i].q -= 0.1 * int((
+                                vortexes[i].q >= 0.0) - (vortexes[i].q <= 0.0))
                         else:
-                            vortexes[i].q += 0.1 * int(
-                                vortexes[i].q >= 0.0) - (vortexes[i].q <= 0.0)
+                            vortexes[i].q += 0.1 * int((
+                                vortexes[i].q >= 0.0) - (vortexes[i].q <= 0.0))
                     if dipoles[i].m != 0 and (dipoles[i].pos - vec2(
                             *_gui.get_cursor_pos())).norm() < 5 / guiHeight:
                         if _gui.is_pressed(ti.GUI.RMB):
-                            dipoles[i].m -= 0.001 * int(
-                                dipoles[i].m >= 0.0) - (dipoles[i].m <= 0.0)
+                            dipoles[i].m -= 0.001 * int((
+                                dipoles[i].m >= 0.0) - (dipoles[i].m <= 0.0))
                         else:
-                            dipoles[i].m += 0.001 * int(
-                                dipoles[i].m >= 0.0) - (dipoles[i].m <= 0.0)
+                            dipoles[i].m += 0.001 * int((
+                                dipoles[i].m >= 0.0) - (dipoles[i].m <= 0.0))
         fade = -math.fabs(fade)  # fade out arrow filed
 
 

@@ -766,14 +766,6 @@ class Kernel:
                         f'Argument type mismatch. Expecting {needed}, got {type(v)}.'
                     )
                 actual_argument_slot += 1
-            # Both the class kernels and the plain-function kernels are unified now.
-            # In both cases, |self.grad| is another Kernel instance that computes the
-            # gradient. For class kernels, args[0] is always the kernel owner.
-            if (
-                    self.autodiff_mode == AutodiffMode.NONE
-                    or self.autodiff_mode == AutodiffMode.VALIDATION
-            ) and self.runtime.target_tape and not self.runtime.grad_replaced:
-                self.runtime.target_tape.insert(self, args)
 
             if actual_argument_slot > 8 and impl.current_cfg(
             ).arch == _ti_core.cc:
@@ -850,12 +842,13 @@ class Kernel:
             # TODO: if we would like to compute 2nd-order derivatives by forward-on-reverse in a nested context manager fashion,
             # i.e., a `Tape` nested in the `FwdMode`, we can transform the kernels with `mode_original == AutodiffMode.REVERSE` only,
             # to avoid duplicate computation for 1st-order derivatives
-            mode_original = self.autodiff_mode
-            self.autodiff_mode = AutodiffMode.FORWARD
-            self.runtime.fwd_mode_manager.insert(self, mode_original)
-        elif self.runtime.target_tape and self.runtime.target_tape.validation and not self.runtime.grad_replaced:
-            # The autodiff valid check happens on forward kernel
-            self.autodiff_mode = AutodiffMode.VALIDATION
+            self.runtime.fwd_mode_manager.insert(self, args)
+
+        # Both the class kernels and the plain-function kernels are unified now.
+        # In both cases, |self.grad| is another Kernel instance that computes the
+        # gradient. For class kernels, args[0] is always the kernel owner.
+        if self.autodiff_mode == AutodiffMode.NONE and self.runtime.target_tape and not self.runtime.grad_replaced:
+            self.runtime.target_tape.insert(self, args)
 
         if self.autodiff_mode != AutodiffMode.NONE and impl.current_cfg(
         ).opt_level == 0:

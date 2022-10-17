@@ -165,7 +165,7 @@ class Tape:
             >>>     sum(2)
         """
         self.calls = []
-        self.validation_mode_kernels = []
+        self.modes = []
         self.entered = False
         self.gradient_evaluated = False
         self.clear_gradients = clear_gradients
@@ -212,14 +212,13 @@ class Tape:
         self.runtime.target_tape = None
         if self.eval_on_exit:
             self.grad()
-        if self.validation:
-            for f in self.validation_mode_kernels:
-                f.autodiff_mode = AutodiffMode.NONE
+        for calls, mode in zip(self.calls, self.modes):
+            calls[0].autodiff_mode = mode
 
     def insert(self, func, args):
-        if self.validation:
-            if func.autodiff_mode == AutodiffMode.VALIDATION:
-                self.validation_mode_kernels.append(func)
+        if self.validation and not impl.get_runtime().grad_replaced:
+            self.modes.append(func.autodiff_mode)
+            func.autodiff_mode = AutodiffMode.VALIDATION
         self.calls.append((func, args))
 
     def grad(self):
@@ -382,6 +381,7 @@ def no_grad(func):
 class FwdMode:
     def __init__(self, loss, param, seed=None, clear_gradients=True):
         self.calls = []
+        self.modes = []
         self.entered = False
         self.kernels_recovered = False
         self.runtime = impl.get_runtime()
@@ -454,13 +454,16 @@ class FwdMode:
         self.clear_seed()
         self.recover_kernels()
 
-    def insert(self, func, mode_original):
-        self.calls.append((func, mode_original))
+    def insert(self, func, args):
+        if not impl.get_runtime().grad_replaced:
+            self.modes.append(func.autodiff_mode)
+            func.autodiff_mode = AutodiffMode.FORWARD
+        self.calls.append((func))
 
     def recover_kernels(self):
         assert self.entered, "Before recover the kernels, fwd mode manager must be entered."
-        for f, mode_original in self.calls:
-            f.autodiff_mode = mode_original
+        for calls, mode in zip(self.calls, self.modes):
+            calls.autodiff_mode = mode
         self.kernels_recovered = True
 
     def clear_seed(self):

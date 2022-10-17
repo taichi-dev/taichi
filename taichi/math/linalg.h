@@ -121,7 +121,7 @@ struct VectorND : public VectorNDBase<dim__, T, ISE> {
 
   template <typename T_ = T,
             typename std::enable_if_t<std::is_same<T_, int>::value, int> = 0>
-  VectorND(const TIndex<dim> &ind);
+  explicit VectorND(const TIndex<dim> &ind);
 
   // Vector initialization
   template <typename F,
@@ -524,7 +524,7 @@ struct VectorND : public VectorNDBase<dim__, T, ISE> {
     }
   }
 
-  TI_FORCE_INLINE operator std::array<T, dim>() const {
+  TI_FORCE_INLINE explicit operator std::array<T, dim>() const {
     std::array<T, dim> arr;
     for (int i = 0; i < dim; i++) {
       arr[i] = d[i];
@@ -639,7 +639,7 @@ struct MatrixND {
     }
   }
 
-  TI_FORCE_INLINE MatrixND(T v) : MatrixND() {
+  TI_FORCE_INLINE explicit MatrixND(T v) : MatrixND() {
     for (int i = 0; i < dim; i++) {
       d[i][i] = v;
     }

@@ -118,7 +118,8 @@ def get_declr(x: EntryBase):
     elif ty is Enumeration:
         out = ["public enum " + get_type_name(x) + " {"]
         for name, value in x.cases.items():
-            out += [f"  {name.screaming_snake_case} = {value},"]
+            name = x.name.extend(name).screaming_snake_case
+            out += [f"  {name} = {value},"]
         out += [
             f"  {x.name.extend('max_enum').screaming_snake_case} = 0x7fffffff,"
         ]
@@ -128,9 +129,8 @@ def get_declr(x: EntryBase):
     elif ty is BitField:
         out = ["[Flags]", "public enum " + get_type_name(x) + " {"]
         for name, value in x.bits.items():
-            out += [
-                f"  {name.extend('bit').screaming_snake_case} = 1 << {value},"
-            ]
+            name = x.name.extend(name).extend('bit').screaming_snake_case
+            out += [f"  {name} = 1 << {value},"]
         out += ["};"]
         return '\n'.join(out)
 

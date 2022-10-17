@@ -1289,7 +1289,7 @@ void ASTBuilder::begin_frontend_mesh_for(
       "ti.loop_config(serialize=True) does not have effect on the mesh for. "
       "The execution order is not guaranteed.");
   auto stmt_unique = std::make_unique<FrontendForStmt>(
-      i, mesh_ptr, element_type, arch_, for_loop_dec_.config);
+      ExprGroup(i), mesh_ptr, element_type, arch_, for_loop_dec_.config);
   for_loop_dec_.reset();
   auto stmt = stmt_unique.get();
   this->insert(std::move(stmt_unique));

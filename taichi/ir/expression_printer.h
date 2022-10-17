@@ -10,7 +10,7 @@ namespace taichi::lang {
 
 class ExpressionPrinter : public ExpressionVisitor {
  public:
-  ExpressionPrinter(std::ostream *os = nullptr) : os_(os) {
+  explicit ExpressionPrinter(std::ostream *os = nullptr) : os_(os) {
   }
 
   void set_ostream(std::ostream *os) {

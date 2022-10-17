@@ -18,7 +18,7 @@ class DIE : public IRVisitor {
   DelayedIRModifier modifier;
   bool modified_ir;
 
-  DIE(IRNode *node) {
+  explicit DIE(IRNode *node) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
     modified_ir = false;

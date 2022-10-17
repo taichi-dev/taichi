@@ -32,7 +32,7 @@ class Expr {
 
   explicit Expr(float64 x);
 
-  Expr(std::shared_ptr<Expression> expr) : Expr() {
+  explicit Expr(std::shared_ptr<Expression> expr) : Expr() {
     this->expr = expr;
   }
 
@@ -53,6 +53,7 @@ class Expr {
     expr = o.expr;
   }
 
+  // NOLINTNEXTLINE(google-explicit-constructor)
   operator bool() const {
     return expr.get() != nullptr;
   }

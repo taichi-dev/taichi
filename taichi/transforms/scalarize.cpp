@@ -259,6 +259,92 @@ class Scalarize : public BasicStmtVisitor {
     }
   }
 
+  /*
+    Before:
+      TensorType<4 x i32> val = AtomicStmt(TensorType<4 x i32>* dest,
+                                           TensorType<4 x i32>  val)
+
+    After:
+      i32* dest_ptr_0 = MatrixPtrStmt(dest, 0)
+      i32* dest_ptr_1 = MatrixPtrStmt(dest, 1)
+      i32* dest_ptr_2 = MatrixPtrStmt(dest, 2)
+      i32* dest_ptr_3 = MatrixPtrStmt(dest, 3)
+
+      i32 dest_val0 = AtomicStmt(dest_ptr_0,
+                                 val->cast<MatrixInitStmt>()->val[0])
+      i32 dest_val1 = AtomicStmt(dest_ptr_1,
+                                 val->cast<MatrixInitStmt>()->val[1])
+      i32 dest_val2 = AtomicStmt(dest_ptr_2,
+                                 val->cast<MatrixInitStmt>()->val[2])
+      i32 dest_val3 = AtomicStmt(dest_ptr_3,
+                                 val->cast<MatrixInitStmt>()->val[3])
+
+      tmp = MatrixInitStmt(dest_val0, dest_val1,
+                           dest_val2, dest_val3)
+
+      stmt->replace_all_usages_with(tmp)
+  */
+  void visit(AtomicOpStmt *stmt) override {
+    auto dest_dtype = stmt->dest->ret_type.ptr_removed();
+    auto val_dtype = stmt->val->ret_type;
+
+    if (dest_dtype->is<PrimitiveType>() && val_dtype->is<PrimitiveType>()) {
+      return;
+    }
+
+    // AtomicOpExpression::type_check() have taken care of the broadcasting,
+    // but the type conversions are delayed until irpass::type_check().
+    // So we only check for the shape here.
+    TI_ASSERT(dest_dtype->is<TensorType>() && val_dtype->is<TensorType>());
+    TI_ASSERT(dest_dtype->cast<TensorType>()->get_shape() ==
+              val_dtype->cast<TensorType>()->get_shape());
+
+    if (dest_dtype->is<TensorType>() && val_dtype->is<TensorType>()) {
+      // Scalarization for LoadStmt should have already replaced val operand
+      // to MatrixInitStmt
+      TI_ASSERT(stmt->val->is<MatrixInitStmt>());
+
+      auto val_matrix_init_stmt = stmt->val->cast<MatrixInitStmt>();
+      std::vector<Stmt *> val_values = val_matrix_init_stmt->values;
+
+      size_t num_elements = val_values.size();
+      auto primitive_type = stmt->ret_type.get_element_type();
+
+      // Scalarize dest & val
+      std::vector<Stmt *> matrix_init_values;
+      for (size_t i = 0; i < num_elements; i++) {
+        // scalarize to dest_i
+        auto const_stmt = std::make_unique<ConstStmt>(
+            TypedConstant(get_data_type<int32>(), i));
+        auto matrix_ptr_stmt =
+            std::make_unique<MatrixPtrStmt>(stmt->dest, const_stmt.get());
+
+        // scalarize to val_i
+        auto val_stmt = val_values[i];
+
+        // assemble to scalarized atomic_op
+        auto atomic_stmt = std::make_unique<AtomicOpStmt>(
+            stmt->op_type, matrix_ptr_stmt.get(), val_stmt);
+        atomic_stmt->ret_type = primitive_type;
+
+        matrix_init_values.push_back(atomic_stmt.get());
+
+        modifier_.insert_before(stmt, std::move(const_stmt));
+        modifier_.insert_before(stmt, std::move(matrix_ptr_stmt));
+        modifier_.insert_before(stmt, std::move(atomic_stmt));
+      }
+
+      auto matrix_init_stmt =
+          std::make_unique<MatrixInitStmt>(matrix_init_values);
+      matrix_init_stmt->ret_type = stmt->ret_type;
+
+      stmt->replace_usages_with(matrix_init_stmt.get());
+      modifier_.insert_before(stmt, std::move(matrix_init_stmt));
+
+      modifier_.erase(stmt);
+    }
+  }
+
   void visit(GlobalStoreStmt *stmt) override {
     scalarize_store_stmt<GlobalStoreStmt>(stmt);
   }

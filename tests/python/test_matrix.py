@@ -1065,3 +1065,33 @@ def test_binary_op_scalarize():
     field = ti.Matrix.field(2, 2, ti.f32, shape=5)
     ndarray = ti.Matrix.ndarray(2, 2, ti.f32, shape=5)
     _test_field_and_ndarray(field, ndarray, func, verify)
+
+
+@test_utils.test(arch=[ti.cuda, ti.cpu],
+                 real_matrix=True,
+                 real_matrix_scalarize=True,
+                 debug=True)
+def test_atomic_op_scalarize():
+    @ti.func
+    def func(x: ti.template()):
+        x[0] = [1., 2., 3.]
+        tmp = ti.Vector([3., 2., 1.])
+        z = ti.atomic_add(x[0], tmp)
+        assert z[0] == 1.
+        assert z[1] == 2.
+        assert z[2] == 3.
+
+        # Broadcasting
+        x[1] = [1., 1., 1.]
+        g = ti.atomic_add(x[1], 2)
+        assert g[0] == 1.
+        assert g[1] == 1.
+        assert g[2] == 1.
+
+    def verify(x):
+        assert (x[0] == [4., 4., 4.]).all()
+        assert (x[1] == [3., 3., 3.]).all()
+
+    field = ti.Vector.field(n=3, dtype=ti.f32, shape=10)
+    ndarray = ti.Vector.ndarray(n=3, dtype=ti.f32, shape=(10))
+    _test_field_and_ndarray(field, ndarray, func, verify)

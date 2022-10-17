@@ -751,7 +751,7 @@ void IdExpression::flatten(FlattenContext *ctx) {
   }
 }
 
-void AtomicOpExpression::type_check(CompileConfig *) {
+void AtomicOpExpression::type_check(CompileConfig *config) {
   TI_ASSERT_TYPE_CHECKED(dest);
   TI_ASSERT_TYPE_CHECKED(val);
   auto error = [&]() {
@@ -760,11 +760,34 @@ void AtomicOpExpression::type_check(CompileConfig *) {
         atomic_op_type_name(op_type), dest->ret_type->to_string(),
         val->ret_type->to_string()));
   };
-  if (!val->ret_type->is<PrimitiveType>())
+
+  // Broadcast val to dest if neccessary
+  auto val_dtype = val->ret_type;
+  auto dest_dtype = dest->ret_type.ptr_removed();
+  if (dest_dtype->is<PrimitiveType>() && val_dtype->is<TensorType>()) {
     error();
+  }
+
+  if (val_dtype->is<PrimitiveType>() && dest_dtype->is<TensorType>()) {
+    auto broadcasted_expr = to_broadcast_tensor(val, dest_dtype);
+    val = std::move(broadcasted_expr);
+    val.type_check(config);
+  }
+
+  // Validate dtype
+  auto dtype = val->ret_type;
+  if (dtype->is<TensorType>()) {
+    dtype = dtype.get_element_type();
+  }
+
+  if (!dtype->is<PrimitiveType>()) {
+    error();
+  }
+
   if (is_quant(dest->ret_type)) {
     ret_type = dest->ret_type->get_compute_type();
-  } else if (dest->ret_type->is<PrimitiveType>()) {
+  } else if (dest->ret_type->is<PrimitiveType>() ||
+             dest->ret_type->is<TensorType>()) {
     ret_type = dest->ret_type;
   } else {
     error();

@@ -1095,6 +1095,7 @@ def test_trace_op():
                        match=r"not a square matrix: \(3, 2\)"):
         failed_func()
 
+
 @test_utils.test(arch=[ti.cuda, ti.cpu],
                  real_matrix=True,
                  real_matrix_scalarize=True,
@@ -1129,6 +1130,7 @@ def test_fill_op():
                 assert y[i, j] == x[i, j] == 1.14
 
     test_fun()
+
 
 @test_utils.test(arch=[ti.cuda, ti.cpu],
                  real_matrix=True,

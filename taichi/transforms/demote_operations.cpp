@@ -13,7 +13,7 @@ class DemoteOperations : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
   DelayedIRModifier modifier;
 
-  DemoteOperations() : BasicStmtVisitor() {
+  DemoteOperations() {
   }
 
   std::unique_ptr<Stmt> demote_ifloordiv(BinaryOpStmt *stmt,

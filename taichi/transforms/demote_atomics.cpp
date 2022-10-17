@@ -21,7 +21,7 @@ class DemoteAtomics : public BasicStmtVisitor {
   OffloadedStmt *current_offloaded;
   DelayedIRModifier modifier;
 
-  DemoteAtomics() : BasicStmtVisitor() {
+  DemoteAtomics() {
     current_offloaded = nullptr;
   }
 

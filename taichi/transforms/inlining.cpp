@@ -13,7 +13,7 @@ class Inliner : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
 
-  explicit Inliner() : BasicStmtVisitor() {
+  explicit Inliner() {
   }
 
   void visit(FuncCallStmt *stmt) override {

@@ -955,12 +955,18 @@ void TaskCodeGenLLVM::visit(PrintStmt *stmt) {
     if (std::holds_alternative<Stmt *>(content)) {
       auto arg_stmt = std::get<Stmt *>(content);
       auto value = llvm_val[arg_stmt];
+      auto value_type = value->getType();
       if (arg_stmt->ret_type->is<TensorType>()) {
         auto dtype = arg_stmt->ret_type->cast<TensorType>();
         auto elem_type = dtype->get_element_type();
         for (int i = 0; i < dtype->get_num_elements(); ++i) {
-          auto elem_value = builder->CreateExtractElement(value, i);
-          args.push_back(value_for_printf(elem_value, elem_type));
+          if (llvm::dyn_cast<llvm::VectorType>(value_type)) {
+            auto elem = builder->CreateExtractElement(value, i);
+            args.push_back(value_for_printf(elem, elem_type));
+          } else {
+            auto elem = builder->CreateExtractValue(value, i);
+            args.push_back(value_for_printf(elem, elem_type));
+          }
         }
         formats += data_type_format(arg_stmt->ret_type);
       } else {
@@ -2632,7 +2638,11 @@ void TaskCodeGenLLVM::visit(MatrixInitStmt *stmt) {
   llvm::Value *vec = llvm::UndefValue::get(type);
   for (int i = 0; i < stmt->values.size(); ++i) {
     auto *elem = llvm_val[stmt->values[i]];
-    vec = builder->CreateInsertElement(vec, elem, i);
+    if (llvm::dyn_cast<llvm::VectorType>(type)) {
+      vec = builder->CreateInsertElement(vec, elem, i);
+    } else {
+      vec = builder->CreateInsertValue(vec, elem, i);
+    }
   }
   llvm_val[stmt] = vec;
 }

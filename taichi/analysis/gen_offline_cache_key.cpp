@@ -344,7 +344,7 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     for (const auto &c : stmt->contents) {
       emit(static_cast<std::uint8_t>(c.index()));
       if (std::holds_alternative<Expr>(c)) {
-        emit(std::get<Expr>(c).expr);
+        emit(std::get<Expr>(c));
       } else {
         emit(std::get<std::string>(c));
       }

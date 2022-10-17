@@ -31,7 +31,7 @@ class TaichiLLVMContext {
     llvm::LLVMContext *llvm_context{nullptr};
     std::unique_ptr<llvm::Module> runtime_module{nullptr};
     std::unordered_map<int, std::unique_ptr<llvm::Module>> struct_modules;
-    ThreadLocalData(std::unique_ptr<llvm::orc::ThreadSafeContext> ctx);
+    explicit ThreadLocalData(std::unique_ptr<llvm::orc::ThreadSafeContext> ctx);
     ~ThreadLocalData();
   };
   CompileConfig *config_;

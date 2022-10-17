@@ -29,6 +29,60 @@ class GatherMeshforRelationTypes : public BasicStmtVisitor {
     TI_ASSERT(stmt->minor_relation_types.size() == 0);
     mesh_for = stmt;
     stmt->body->accept(this);
+
+    // Check metadata available
+    std::set<mesh::MeshElementType> all_elements;
+    all_elements.insert(mesh_for->major_from_type);
+    for (auto _type : mesh_for->major_to_types) {
+      all_elements.insert(_type);
+    }
+    for (auto _type : all_elements) {
+      TI_ERROR_IF(mesh_for->mesh->num_elements.find(_type) ==
+                      mesh_for->mesh->num_elements.end(),
+                  "Cannot load mesh element {}'s metadata",
+                  mesh::element_type_name(_type));
+    }
+
+    std::set<mesh::MeshRelationType> all_relations;
+    for (auto _type : mesh_for->major_to_types) {
+      all_relations.insert(
+          mesh::relation_by_orders(int(mesh_for->major_from_type), int(_type)));
+    }
+    for (auto _type : mesh_for->minor_relation_types) {
+      all_relations.insert(_type);
+    }
+
+    bool missing = false;
+    std::string full_name;
+    std::string short_name;
+    for (auto _type : all_relations) {
+      if (mesh_for->mesh->relations.find(_type) ==
+          mesh_for->mesh->relations.end()) {
+        if (missing) {
+          full_name += ", ";
+          short_name += ", ";
+        }
+        full_name += mesh::relation_type_name(_type);
+        short_name += '\'';
+        short_name += char(mesh::element_type_name(mesh::MeshElementType(
+                               mesh::from_end_element_order(_type)))[0] +
+                           'A' - 'a');
+        short_name += char(mesh::element_type_name(mesh::MeshElementType(
+                               mesh::to_end_element_order(_type)))[0] +
+                           'A' - 'a');
+        short_name += '\'';
+        missing = true;
+      }
+    }
+
+    if (missing) {
+      TI_ERROR(
+          "Relation {} detected in mesh-for loop but not initialized."
+          " Please add them with syntax: Patcher.load_mesh(..., "
+          "relations=[..., {}])",
+          full_name, short_name);
+    }
+
     mesh_for = nullptr;
   }
 

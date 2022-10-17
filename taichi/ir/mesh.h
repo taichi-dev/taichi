@@ -57,7 +57,7 @@ struct MeshLocalRelation {
     fixed = false;
   }
 
-  MeshLocalRelation(SNode *value_) : value(value_) {
+  explicit MeshLocalRelation(SNode *value_) : value(value_) {
     fixed = true;
   }
 

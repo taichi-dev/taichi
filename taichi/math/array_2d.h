@@ -226,9 +226,9 @@ class ArrayND<2, T> {
     return region;
   }
 
-  ArrayND(const Vector2i &res,
-          T init = T(0),
-          Vector2 storage_offset = Vector2(0.5f)) {
+  explicit ArrayND(const Vector2i &res,
+                   T init = T(0),
+                   Vector2 storage_offset = Vector2(0.5f)) {
     initialize(res, init, storage_offset);
   }
 
@@ -730,7 +730,7 @@ class ArrayND<2, T> {
     return true;
   }
 
-  ArrayND(const std::string &filename) {
+  explicit ArrayND(const std::string &filename) {
     load_image(filename);
   }
 

@@ -187,6 +187,7 @@ void ti_export_vulkan_runtime(TiRuntime runtime,
   Runtime *runtime2 = (Runtime *)runtime;
   taichi::lang::vulkan::VulkanDevice &vk_device =
       static_cast<VulkanRuntime *>(runtime2)->get_vk();
+  interop_info->get_instance_proc_addr = vkGetInstanceProcAddr;
   interop_info->api_version =
       vk_device.get_cap(taichi::lang::DeviceCapability::vk_api_version);
   interop_info->instance = vk_device.vk_instance();

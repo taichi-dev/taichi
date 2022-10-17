@@ -31,8 +31,8 @@ class Inliner : public BasicStmtVisitor {
           [&](Stmt *s) { return stmt->args[s->as<ArgLoadStmt>()->arg_id]; });
     }
     if (func->rets.empty()) {
-      modifier_.replace_with(stmt,
-                             std::move(inlined_ir->as<Block>()->statements));
+      modifier_.replace_with(
+          stmt, VecStatement(std::move(inlined_ir->as<Block>()->statements)));
     } else {
       if (irpass::analysis::gather_statements(inlined_ir.get(), [&](Stmt *s) {
             return s->is<ReturnStmt>();

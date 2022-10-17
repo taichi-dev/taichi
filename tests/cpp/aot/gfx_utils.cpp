@@ -150,13 +150,19 @@ void run_kernel_test1(Arch arch, taichi::lang::Device *device) {
   host_ctx.set_arg(/*arg_id=*/0, /*base=*/0);
   host_ctx.set_arg_ndarray(/*arg_id=*/1, arr.get_device_allocation_ptr_as_int(),
                            /*shape=*/arr.shape);
+
+  // Hack to set vector/matrix args
+  std::vector<int> vec = {1, 2, 3};
+  for (int i = 0; i < vec.size(); ++i) {
+    host_ctx.set_arg(/*arg_id=*/i + 2, vec[i]);
+  }
   k_run->launch(&host_ctx);
   gfx_runtime->synchronize();
 
   int dst[size] = {0};
   load_devalloc(devalloc_arr_, dst, sizeof(dst));
   for (int i = 0; i < size; i++) {
-    EXPECT_EQ(dst[i], i);
+    EXPECT_EQ(dst[i], i + vec[0]);
   }
 
   // Deallocate

@@ -1,4 +1,21 @@
-Checks: '-*,readability-identifier-naming,modernize-use-override'
+---
+Checks:  '-*,
+         bugprone-argument-comment,
+         bugprone-assert-side-effect,
+         bugprone-dangling-handle,
+         bugprone-inaccurate-erase,
+         bugprone-string-constructor,
+         bugprone-string-integer-assignment,
+         bugprone-unused-raii,
+         bugprone-use-after-move,
+         google-build-explicit-make-pair,
+         google-explicit-constructor,
+         modernize-avoid-bind,
+         modernize-replace-random-shuffle,
+         modernize-shrink-to-fit,
+         modernize-use-override,
+         performance-inefficient-string-concatenation,
+         readability-identifier-naming'
 CheckOptions:
   - { key: readability-identifier-naming.PrivateMemberSuffix,    value: _          }
   - { key: readability-identifier-naming.PrivateMemberCase,      value: lower_case }

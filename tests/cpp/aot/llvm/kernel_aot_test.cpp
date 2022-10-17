@@ -47,12 +47,16 @@ TEST(LlvmAotTest, CpuKernel) {
   ctx.set_arg(0, /*v=*/0);
   ctx.set_arg_ndarray(/*arg_id=*/1, arr.get_device_allocation_ptr_as_int(),
                       /*shape=*/arr.shape);
+  std::vector<int> vec = {1, 2, 3};
+  for (int i = 0; i < vec.size(); ++i) {
+    ctx.set_arg(/*arg_id=*/i + 2, vec[i]);
+  }
   k_run->launch(&ctx);
 
   auto *data = reinterpret_cast<int32_t *>(
       exec.get_ndarray_alloc_info_ptr(arr_devalloc));
   for (int i = 0; i < kArrLen; ++i) {
-    EXPECT_EQ(data[i], i);
+    EXPECT_EQ(data[i], i + vec[0]);
   }
 }
 
@@ -87,6 +91,10 @@ TEST(LlvmAotTest, CudaKernel) {
     ctx.set_arg(0, /*v=*/0);
     ctx.set_arg_ndarray(/*arg_id=*/1, arr.get_device_allocation_ptr_as_int(),
                         /*shape=*/arr.shape);
+    std::vector<int> vec = {1, 2, 3};
+    for (int i = 0; i < vec.size(); ++i) {
+      ctx.set_arg(/*arg_id=*/i + 2, vec[i]);
+    }
     k_run->launch(&ctx);
 
     auto *data = reinterpret_cast<int32_t *>(
@@ -97,7 +105,7 @@ TEST(LlvmAotTest, CudaKernel) {
         (void *)cpu_data.data(), (void *)data, kArrLen * sizeof(int32_t));
 
     for (int i = 0; i < kArrLen; ++i) {
-      EXPECT_EQ(cpu_data[i], i);
+      EXPECT_EQ(cpu_data[i], i + vec[0]);
     }
   }
 }

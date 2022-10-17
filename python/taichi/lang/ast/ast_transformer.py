@@ -245,7 +245,8 @@ class ASTTransformer(Builder):
         build_stmt(ctx, node.slice)
         if not ASTTransformer.is_tuple(node.slice):
             node.slice.ptr = [node.slice.ptr]
-        node.ptr = impl.subscript(node.value.ptr,
+        node.ptr = impl.subscript(ctx.ast_builder,
+                                  node.value.ptr,
                                   *node.slice.ptr,
                                   get_ref=get_ref)
         return node.ptr
@@ -449,7 +450,12 @@ class ASTTransformer(Builder):
                 raise TaichiSyntaxError(
                     "A primitive type cannot decorate an expression with a compound type."
                 )
+
             if isinstance(args[0], expr.Expr):
+                if args[0].ptr.is_tensor():
+                    raise TaichiSyntaxError(
+                        "A primitive type cannot decorate an expression with a compound type."
+                    )
                 node.ptr = ti_ops.cast(args[0], func)
             else:
                 node.ptr = expr.Expr(args[0], dtype=func)
@@ -627,20 +633,58 @@ class ASTTransformer(Builder):
                     # Matrix arguments are passed by value.
                     if isinstance(ctx.func.arguments[i].annotation,
                                   (MatrixType)):
-                        if not isinstance(data, Matrix):
-                            raise TaichiSyntaxError(
-                                f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix, but got {type(data)}."
-                            )
 
-                        if data.m != ctx.func.arguments[i].annotation.m:
-                            raise TaichiSyntaxError(
-                                f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix with m {ctx.func.arguments[i].annotation.m}, but got {data.m}."
-                            )
+                        if current_cfg().real_matrix:
+                            # with real_matrix=True, "data" is expected to be an Expr here
+                            # Therefore we simply call "impl.expr_init_func(data)" to perform:
+                            #
+                            # TensorType* t = alloca()
+                            # assign(t, data)
+                            #
+                            # We created local variable "t" - a copy of the passed-in argument "data"
+                            if not isinstance(
+                                    data,
+                                    expr.Expr) or not data.ptr.is_tensor():
+                                raise TaichiSyntaxError(
+                                    f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix, but got {type(data)}."
+                                )
 
-                        if data.n != ctx.func.arguments[i].annotation.n:
-                            raise TaichiSyntaxError(
-                                f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix with n {ctx.func.arguments[i].annotation.n}, but got {data.n}."
-                            )
+                            element_shape = data.ptr.get_ret_type().shape()
+                            if len(element_shape
+                                   ) != ctx.func.arguments[i].annotation.ndim:
+                                raise TaichiSyntaxError(
+                                    f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix with ndim {ctx.func.arguments[i].annotation.ndim}, but got {len(element_shape)}."
+                                )
+
+                            assert ctx.func.arguments[i].annotation.ndim > 0
+                            if element_shape[0] != ctx.func.arguments[
+                                    i].annotation.n:
+                                raise TaichiSyntaxError(
+                                    f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix with n {ctx.func.arguments[i].annotation.n}, but got {element_shape[0]}."
+                                )
+
+                            if ctx.func.arguments[
+                                    i].annotation.ndim == 2 and element_shape[
+                                        1] != ctx.func.arguments[
+                                            i].annotation.m:
+                                raise TaichiSyntaxError(
+                                    f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix with m {ctx.func.arguments[i].annotation.m}, but got {element_shape[0]}."
+                                )
+                        else:
+                            if not isinstance(data, Matrix):
+                                raise TaichiSyntaxError(
+                                    f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix, but got {type(data)}."
+                                )
+
+                            if data.m != ctx.func.arguments[i].annotation.m:
+                                raise TaichiSyntaxError(
+                                    f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix with m {ctx.func.arguments[i].annotation.m}, but got {data.m}."
+                                )
+
+                            if data.n != ctx.func.arguments[i].annotation.n:
+                                raise TaichiSyntaxError(
+                                    f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix with n {ctx.func.arguments[i].annotation.n}, but got {data.n}."
+                                )
                         ctx.create_variable(arg.arg, impl.expr_init_func(data))
                         continue
 
@@ -982,8 +1026,9 @@ class ASTTransformer(Builder):
             ndrange_var = impl.expr_init(build_stmt(ctx, node.iter))
             ndrange_begin = ti_ops.cast(expr.Expr(0), primitive_types.i32)
             ndrange_end = ti_ops.cast(
-                expr.Expr(impl.subscript(ndrange_var.acc_dimensions, 0)),
-                primitive_types.i32)
+                expr.Expr(
+                    impl.subscript(ctx.ast_builder, ndrange_var.acc_dimensions,
+                                   0)), primitive_types.i32)
             ndrange_loop_var = expr.Expr(ctx.ast_builder.make_id_expr(''))
             ctx.ast_builder.begin_frontend_range_for(ndrange_loop_var.ptr,
                                                      ndrange_begin.ptr,
@@ -999,7 +1044,9 @@ class ASTTransformer(Builder):
                 ctx.create_variable(
                     target,
                     impl.expr_init(target_tmp + impl.subscript(
-                        impl.subscript(ndrange_var.bounds, i), 0)))
+                        ctx.ast_builder,
+                        impl.subscript(ctx.ast_builder, ndrange_var.bounds, i),
+                        0)))
                 if i + 1 < len(targets):
                     I._assign(I -
                               target_tmp * ndrange_var.acc_dimensions[i + 1])
@@ -1013,8 +1060,9 @@ class ASTTransformer(Builder):
             ndrange_var = impl.expr_init(build_stmt(ctx, node.iter.args[0]))
             ndrange_begin = ti_ops.cast(expr.Expr(0), primitive_types.i32)
             ndrange_end = ti_ops.cast(
-                expr.Expr(impl.subscript(ndrange_var.acc_dimensions, 0)),
-                primitive_types.i32)
+                expr.Expr(
+                    impl.subscript(ctx.ast_builder, ndrange_var.acc_dimensions,
+                                   0)), primitive_types.i32)
             ndrange_loop_var = expr.Expr(ctx.ast_builder.make_id_expr(''))
             ctx.ast_builder.begin_frontend_range_for(ndrange_loop_var.ptr,
                                                      ndrange_begin.ptr,
@@ -1036,8 +1084,9 @@ class ASTTransformer(Builder):
                     target_tmp = I // ndrange_var.acc_dimensions[i + 1]
                 else:
                     target_tmp = I
-                impl.subscript(target_var, i)._assign(target_tmp +
-                                                      ndrange_var.bounds[i][0])
+                impl.subscript(ctx.ast_builder, target_var,
+                               i)._assign(target_tmp +
+                                          ndrange_var.bounds[i][0])
                 if i + 1 < len(ndrange_var.dimensions):
                     I._assign(I -
                               target_tmp * ndrange_var.acc_dimensions[i + 1])

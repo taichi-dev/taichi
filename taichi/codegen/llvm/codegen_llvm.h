@@ -67,9 +67,9 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   using IRVisitor::visit;
   using LLVMModuleBuilder::call;
 
-  TaskCodeGenLLVM(Kernel *kernel,
-                  IRNode *ir = nullptr,
-                  std::unique_ptr<llvm::Module> &&module = nullptr);
+  explicit TaskCodeGenLLVM(Kernel *kernel,
+                           IRNode *ir = nullptr,
+                           std::unique_ptr<llvm::Module> &&module = nullptr);
 
   Arch current_arch() {
     return kernel->arch;

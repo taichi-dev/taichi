@@ -47,7 +47,6 @@ CompileConfig::CompileConfig() {
   make_block_local = true;
   detect_read_only = true;
   ndarray_use_cached_allocator = true;
-  use_mesh = false;
   real_matrix = false;
   real_matrix_scalarize = false;
 

@@ -12,6 +12,7 @@
                     "name": "TI_C_API_VERSION"
                 }
             ],
+            "doc": "taichi/taichi_core.h.md",
             "required_modules": [
                 "taichi/taichi_platform.h"
             ],
@@ -873,6 +874,90 @@
             ]
         },
         {
+            "name": "taichi/taichi_cpu.h",
+            "required_modules": [
+                "taichi/taichi_core.h"
+            ],
+            "declarations": [
+                {
+                    "name": "cpu_memory_interop_info",
+                    "type": "structure",
+                    "fields": [
+                        {
+                            "name": "ptr",
+                            "type": "void*"
+                        },
+                        {
+                            "name": "size",
+                            "type": "uint64_t"
+                        }
+                    ]
+                },
+                {
+                    "name": "export_cpu_memory",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "type": "handle.memory"
+                        },
+                        {
+                            "name": "interop_info",
+                            "type": "structure.cpu_memory_interop_info",
+                            "by_mut": true
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "taichi/taichi_cuda.h",
+            "default_definitions": [
+                {
+                    "name": "TI_WITH_CUDA",
+                    "value": "1"
+                }
+            ],
+            "required_modules": [
+                "taichi/taichi_core.h"
+            ],
+            "declarations": [
+                {
+                    "name": "cuda_memory_interop_info",
+                    "type": "structure",
+                    "fields": [
+                        {
+                            "name": "ptr",
+                            "type": "void*"
+                        },
+                        {
+                            "name": "size",
+                            "type": "uint64_t"
+                        }
+                    ]
+                },
+                {
+                    "name": "export_cuda_memory",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "type": "handle.memory"
+                        },
+                        {
+                            "name": "interop_info",
+                            "type": "structure.cuda_memory_interop_info",
+                            "by_mut": true
+                        }
+                    ]
+                }
+            ]
+        },
+        {
             "name": "taichi/taichi_vulkan.h",
             "default_definitions": [
                 {
@@ -880,6 +965,7 @@
                     "value": "1"
                 }
             ],
+            "doc": "taichi/taichi_vulkan.h.md",
             "required_modules": [
                 "taichi/taichi_core.h"
             ],

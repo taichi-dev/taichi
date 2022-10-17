@@ -233,7 +233,8 @@ class DemoteOperations : public BasicStmtVisitor {
       }
       auto final_result = builder.create_local_load(result);
       stmt->replace_usages_with(final_result);
-      modifier.insert_before(stmt, std::move(builder.extract_ir()->statements));
+      modifier.insert_before(
+          stmt, VecStatement(std::move(builder.extract_ir()->statements)));
       modifier.erase(stmt);
     }
   }

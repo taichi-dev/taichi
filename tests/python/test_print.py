@@ -160,3 +160,27 @@ def test_print_fstring():
 
     func(123, 4.56)
     ti.sync()
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan],
+                 exclude=[vk_on_mac],
+                 debug=True)
+def test_print_u64():
+    @ti.kernel
+    def func(i: ti.u64):
+        print("i =", i)
+
+    func(2**64 - 1)
+    ti.sync()
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan],
+                 exclude=[vk_on_mac],
+                 debug=True)
+def test_print_i64():
+    @ti.kernel
+    def func(i: ti.i64):
+        print("i =", i)
+
+    func(-2**63 + 2**31)
+    ti.sync()

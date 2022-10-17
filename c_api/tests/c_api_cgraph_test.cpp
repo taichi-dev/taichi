@@ -67,8 +67,6 @@ void texture_aot_test(TiArch arch) {
   run_graph.launch();
   runtime.wait();
 
-  EXPECT_GE(ti_get_last_error(0, nullptr), TI_ERROR_SUCCESS);
-
   std::vector<float> arr_data(128 * 128);
   arr.read(arr_data);
   for (auto x : arr_data) {

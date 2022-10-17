@@ -23,7 +23,7 @@ void make_mesh_thread_local_offload(OffloadedStmt *offload,
 
   std::size_t tls_offset = offload->tls_size;
 
-  auto data_type = PrimitiveType::u32;  // uint32_t type address
+  auto data_type = PrimitiveType::u32;  // unt32_t type address
   auto dtype_size = data_type_size(data_type);
 
   if (offload->tls_prologue == nullptr) {
@@ -39,7 +39,7 @@ void make_mesh_thread_local_offload(OffloadedStmt *offload,
   auto patch_idx =
       offload->tls_prologue->insert(std::make_unique<MeshPatchIndexStmt>(), -1);
   auto one = offload->tls_prologue->insert(
-      std::make_unique<ConstStmt>(TypedConstant(data_type, 1)), -1);
+      std::make_unique<ConstStmt>(TypedConstant(PrimitiveType::i32, 1)), -1);
   auto patch_idx_1 = offload->tls_prologue->insert(
       std::make_unique<BinaryOpStmt>(BinaryOpType::add, patch_idx, one), -1);
 
@@ -99,13 +99,19 @@ void make_mesh_thread_local_offload(OffloadedStmt *offload,
               offload->mesh_prologue->push_back<ThreadLocalPtrStmt>(
                   offset_tls_offset,
                   TypeFactory::get_instance().get_pointer_type(data_type));
-          auto offset_val =
+          auto _offset_val =
               offload->mesh_prologue->push_back<GlobalLoadStmt>(offset_ptr);
+          auto offset_val = offload->mesh_prologue->push_back<UnaryOpStmt>(
+              UnaryOpType::cast_value, _offset_val);
+          offset_val->as<UnaryOpStmt>()->cast_type = PrimitiveType::i32;
           auto num_ptr = offload->mesh_prologue->push_back<ThreadLocalPtrStmt>(
               num_tls_offset,
               TypeFactory::get_instance().get_pointer_type(data_type));
-          auto num_val =
+          auto _num_val =
               offload->mesh_prologue->push_back<GlobalLoadStmt>(num_ptr);
+          auto num_val = offload->mesh_prologue->push_back<UnaryOpStmt>(
+              UnaryOpType::cast_value, _num_val);
+          num_val->as<UnaryOpStmt>()->cast_type = PrimitiveType::i32;
 
           offset_local.insert(std::pair(element_type, offset_val));
           num_local.insert(std::pair(element_type, num_val));

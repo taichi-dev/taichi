@@ -10,19 +10,19 @@
 extern "C" {
 #endif  // __cplusplus
 
-// structure.opengl_memory_interop_info
+// Structure `TiOpenglMemoryInteropInfo`
 typedef struct TiOpenglMemoryInteropInfo {
   GLuint buffer;
   uint64_t size;
 } TiOpenglMemoryInteropInfo;
 
-// function.import_opengl_memory
+// Function `ti_import_opengl_memory`
 TI_DLL_EXPORT void TI_API_CALL
 ti_import_opengl_memory(TiRuntime runtime,
                         TiMemory memory,
                         TiOpenglMemoryInteropInfo *interop_info);
 
-// function.export_opengl_memory
+// Function `ti_export_opengl_memory`
 TI_DLL_EXPORT void TI_API_CALL
 ti_export_opengl_memory(TiRuntime runtime,
                         TiMemory memory,

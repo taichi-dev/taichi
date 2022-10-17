@@ -216,8 +216,8 @@ class Tape:
             calls[0].autodiff_mode = mode
 
     def insert(self, func, args):
-        if self.validation and not impl.get_runtime().grad_replaced:
-            self.modes.append(func.autodiff_mode)
+        self.modes.append(func.autodiff_mode)
+        if self.validation:
             func.autodiff_mode = AutodiffMode.VALIDATION
         self.calls.append((func, args))
 
@@ -454,7 +454,7 @@ class FwdMode:
         self.clear_seed()
         self.recover_kernels()
 
-    def insert(self, func, args):
+    def insert(self, func):
         if not impl.get_runtime().grad_replaced:
             self.modes.append(func.autodiff_mode)
             func.autodiff_mode = AutodiffMode.FORWARD

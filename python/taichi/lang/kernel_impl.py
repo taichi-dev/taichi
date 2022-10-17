@@ -842,7 +842,7 @@ class Kernel:
             # TODO: if we would like to compute 2nd-order derivatives by forward-on-reverse in a nested context manager fashion,
             # i.e., a `Tape` nested in the `FwdMode`, we can transform the kernels with `mode_original == AutodiffMode.REVERSE` only,
             # to avoid duplicate computation for 1st-order derivatives
-            self.runtime.fwd_mode_manager.insert(self, args)
+            self.runtime.fwd_mode_manager.insert(self)
 
         # Both the class kernels and the plain-function kernels are unified now.
         # In both cases, |self.grad| is another Kernel instance that computes the

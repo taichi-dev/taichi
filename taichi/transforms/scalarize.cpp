@@ -295,6 +295,12 @@ class Scalarize : public BasicStmtVisitor {
       return;
     }
 
+    // TernaryOpExpression::type_check() have taken care of the broadcasting,
+    // but the type conversions are delayed until irpass::type_check().
+    // So we only check for the shape here.
+    TI_ASSERT(cond_dtype.get_shape() == op2_dtype.get_shape());
+    TI_ASSERT(op2_dtype.get_shape() == op3_dtype.get_shape());
+
     if (cond_dtype->is<TensorType>() && op2_dtype->is<TensorType>() &&
         op3_dtype->is<TensorType>()) {
       TI_ASSERT(stmt->op1->is<MatrixInitStmt>());

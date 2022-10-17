@@ -412,12 +412,12 @@ void TernaryOpExpression::type_check(CompileConfig *config) {
       op3_type->is<TensorType>()) {
     // valid
     is_tensor = true;
-    if (op1_type->cast<TensorType>()->get_shape().size() !=
-        op2_type->cast<TensorType>()->get_shape().size()) {
+    if (op1_type->cast<TensorType>()->get_shape() !=
+        op2_type->cast<TensorType>()->get_shape()) {
       is_valid = false;
     }
-    if (op2_type->cast<TensorType>()->get_shape().size() !=
-        op3_type->cast<TensorType>()->get_shape().size()) {
+    if (op2_type->cast<TensorType>()->get_shape() !=
+        op3_type->cast<TensorType>()->get_shape()) {
       is_valid = false;
     }
     op1_type = op1_type->cast<TensorType>()->get_element_type();

@@ -1393,6 +1393,54 @@ void ASTBuilder::insert_snode_deactivate(SNode *snode,
                                                expr_group));
 }
 
+std::vector<Expr> ASTBuilder::flatten_indices_expr(
+    const std::vector<Expr> &indices) {
+  TI_ASSERT(indices.size() > 0);
+
+  if (indices.size() > 1) {
+    return indices;
+  }
+
+  Expr index_expr = indices[0];
+  TI_ASSERT_TYPE_CHECKED(index_expr);
+  if (!index_expr->ret_type->is<TensorType>()) {
+    return indices;
+  }
+
+  // Flatten indices
+  /*
+    Before:
+      TensorType<4 x i32> index = Expr;
+
+    After:
+      TensorType<4 x i32>* id_expr = FrontendAllocaStmt(TensorType<4 x i32>)
+      i32 ind0 = IndexExpression(id_expr, 0)
+      i32 ind1 = IndexExpression(id_expr, 1)
+      i32 ind2 = IndexExpression(id_expr, 2)
+      i32 ind3 = IndexExpression(id_expr, 3)
+
+      return {ind0, ind1, ind2, ind3}
+
+  */
+  std::vector<Expr> flattened_indices;
+
+  auto tensor_type = index_expr->ret_type->cast<TensorType>();
+
+  Expr id_expr;
+  if (index_expr.is<IdExpression>()) {
+    id_expr = index_expr;
+  } else {
+    id_expr = make_var(index_expr, index_expr->tb);
+  }
+  for (int i = 0; i < tensor_type->get_num_elements(); i++) {
+    auto ind = Expr(std::make_shared<IndexExpression>(
+        id_expr, ExprGroup(Expr(i)), index_expr->tb));
+    ind.expr->ret_type = tensor_type->get_element_type();
+    flattened_indices.push_back(ind);
+  }
+  return flattened_indices;
+}
+
 void ASTBuilder::create_scope(std::unique_ptr<Block> &list, LoopType tp) {
   TI_ASSERT(list == nullptr);
   LoopState prev = loop_state_stack_.back();

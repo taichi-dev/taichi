@@ -34,7 +34,12 @@ points = ti.Vector.field(2, float, maxPoints)
 sources = ti.Struct.field({"pos": vec2, "q": ti.f32}, shape=maxElements)
 vortexes = ti.Struct.field({"pos": vec2, "q": ti.f32}, shape=maxElements)
 dipoles = ti.Struct.field({"pos": vec2, "m": ti.f32}, shape=maxElements)
-arrows = ti.Struct.field({"base": vec2, "dir": vec2, "vel": ti.f32}, shape=arrowField)
+arrows = ti.Struct.field({
+    "base": vec2,
+    "dir": vec2,
+    "vel": ti.f32
+},
+                         shape=arrowField)
 points.fill(-100)
 
 
@@ -184,12 +189,12 @@ def drawMark(_gui, _frame):
             _gui.circle(dipoles[i].pos, 0xD25565, dipoles[i].m * -2000)
         if sources[i].q > 0:
             _gui.rect(sources[i].pos + rectTrans[0] * 2 * sources[i].q,
-                     sources[i].pos + rectTrans[1] * 2 * sources[i].q,
-                     2 * sources[i].q + 1, 0xFFFDC0)
+                      sources[i].pos + rectTrans[1] * 2 * sources[i].q,
+                      2 * sources[i].q + 1, 0xFFFDC0)
         elif sources[i].q < 0:
             _gui.rect(sources[i].pos + rectTrans[0] * 2 * sources[i].q,
-                     sources[i].pos + rectTrans[1] * 2 * sources[i].q,
-                     -2 * sources[i].q + 1, 0xD25565)
+                      sources[i].pos + rectTrans[1] * 2 * sources[i].q,
+                      -2 * sources[i].q + 1, 0xD25565)
         if vortexes[i].q != 0:
             rotateMatrix = ti.Matrix(
                 [[
@@ -204,14 +209,14 @@ def drawMark(_gui, _frame):
             for it in trans:
                 it[0] *= screen[1] / screen[0]
             _gui.triangle(vortexes[i].pos + trans[0] * 16,
-                         vortexes[i].pos + trans[1] * 16,
-                         vortexes[i].pos + trans[2] * 16, 0xD25565)
+                          vortexes[i].pos + trans[1] * 16,
+                          vortexes[i].pos + trans[2] * 16, 0xD25565)
 
 
 def processGuiEvent(_gui):
     global fade
     while _gui.get_event((ti.GUI.PRESS, ti.GUI.LMB),
-                        (ti.GUI.PRESS, ti.GUI.RMB)):
+                         (ti.GUI.PRESS, ti.GUI.RMB)):
         if _gui.is_pressed(ti.GUI.LMB) and _gui.is_pressed(
                 ti.GUI.RMB):  # process delete event
             for i in range(maxElements):

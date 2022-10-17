@@ -10,7 +10,7 @@ class TaichiExceptionImpl : public std::exception {
  public:
   explicit TaichiExceptionImpl(const std::string msg) : msg_(msg) {
   }
-  const char *what() const throw() override {
+  const char *what() const noexcept override {
     return msg_.c_str();
   }
 };

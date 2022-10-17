@@ -456,9 +456,8 @@ class FwdMode:
         self.recover_kernels()
 
     def insert(self, func):
-        if not impl.get_runtime().grad_replaced:
-            self.modes.append(func.autodiff_mode)
-            func.autodiff_mode = AutodiffMode.FORWARD
+        self.modes.append(func.autodiff_mode)
+        func.autodiff_mode = AutodiffMode.FORWARD
         self.calls.append((func))
 
     def recover_kernels(self):

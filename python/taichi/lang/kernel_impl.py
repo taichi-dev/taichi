@@ -838,7 +838,7 @@ class Kernel:
 
         # Transform the primal kernel to forward mode grad kernel
         # then recover to primal when exiting the forward mode manager
-        if self.runtime.fwd_mode_manager:
+        if self.runtime.fwd_mode_manager and not self.runtime.grad_replaced:
             # TODO: if we would like to compute 2nd-order derivatives by forward-on-reverse in a nested context manager fashion,
             # i.e., a `Tape` nested in the `FwdMode`, we can transform the kernels with `mode_original == AutodiffMode.REVERSE` only,
             # to avoid duplicate computation for 1st-order derivatives

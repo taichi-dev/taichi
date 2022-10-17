@@ -92,7 +92,7 @@ class GLPipeline : public Pipeline {
 
 class GLCommandList : public CommandList {
  public:
-  GLCommandList(GLDevice *device) : device_(device) {
+  explicit GLCommandList(GLDevice *device) : device_(device) {
   }
   ~GLCommandList() override;
 
@@ -218,7 +218,7 @@ class GLCommandList : public CommandList {
 
 class GLStream : public Stream {
  public:
-  GLStream(GLDevice *device) : device_(device) {
+  explicit GLStream(GLDevice *device) : device_(device) {
   }
   ~GLStream() override;
 

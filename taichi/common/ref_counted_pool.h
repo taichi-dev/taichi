@@ -11,17 +11,17 @@ namespace taichi {
 class RefCount {
  public:
   void inc() {
-    ref_count++;
+    ref_count_++;
   }
   int dec() {
-    return --ref_count;
+    return --ref_count_;
   }
   int count() {
-    return ref_count;
+    return ref_count_;
   }
 
  private:
-  int ref_count{1};
+  int ref_count_{1};
 };
 
 template <class T, bool sync>

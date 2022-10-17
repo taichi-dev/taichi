@@ -303,6 +303,47 @@ assert x.grad[1] == 4.0
 assert x.grad[2] == 3.0
 ```
 
+### Global Data Access Rules Checker
+A checker is provided for detecting potential violation of global data access rules.
+
+1. To enable this checker, set `validate_autodiff=True` when calling `ti.init()`.
+2. To check the kernels you want to automatically differentiate, set `validation=True` when using the `with ti.Tape()`.
+3. The checker will help locate the line of code which breaks the rules if the violation happens.
+
+For example:
+
+```python
+import taichi as ti
+ti.init(validate_autodiff=True)
+
+N = 5
+x = ti.field(dtype=ti.f32, shape=N, needs_grad=True)
+loss = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
+b = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
+
+@ti.kernel
+def func_1():
+    for i in range(N):
+        loss[None] += x[i] * b[None]
+
+@ti.kernel
+def func_2():
+    b[None] += 100
+
+b[None] = 10
+with ti.Tape(loss, validation=True):
+    func_1()
+    func_2()
+
+"""
+taichi.lang.exception.TaichiAssertionError:
+(kernel=func_2_c78_0) Breaks the global data access rule. Snode S10 is overwritten unexpectedly.
+File "across_kernel.py", line 16, in func_2:
+    b[None] += 100
+    ^^^^^^^^^^^^^^
+"""
+```
+
 ### Avoid mixed usage of parallel for-loop and non-for statements
 
 Mixed usage of parallel for-loops and non-for statements are not supported in the autodiff system.

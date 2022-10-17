@@ -156,7 +156,7 @@ def drawArrows(_gui):
     else:
         arr = arrows.to_numpy()
         vel = arr['vel'].reshape(1, -1)[0]
-        vel = (vel / vel.max() * 0xdd + 0x11) * (math.fabs(fade / fadeMax))
+        vel = (vel / vel.max() * 0xdd + 0x11) * (ti.abs(fade / fadeMax))
         mean = vel.mean()
         if mean > 0x7f:
             vel /= mean / 0x7f  # make uniform stream more beautiful

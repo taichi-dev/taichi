@@ -71,7 +71,8 @@ void CompiledGraph::run(
         ctx.set_arg_texture(i, tex->get_device_allocation_ptr_as_int());
       } else if (ival.tag == aot::ArgKind::kRWTexture) {
         Texture *tex = reinterpret_cast<Texture *>(ival.val);
-        ctx.set_arg_rw_texture(i, tex->get_device_allocation_ptr_as_int());
+        ctx.set_arg_rw_texture(i, tex->get_device_allocation_ptr_as_int(),
+                               tex->get_size());
       } else {
         TI_ERROR("Error in compiled graph: unknown tag {}", ival.tag);
       }

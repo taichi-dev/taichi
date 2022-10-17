@@ -150,3 +150,27 @@ def test_from_to_image():
     out = tex.to_image()
 
     assert (np.asarray(out) == np.asarray(img.convert('RGB'))).all()
+
+
+@test_utils.test(arch=supported_archs_texture)
+def test_rw_texture_2d_struct_for():
+    res = (128, 128)
+    tex = ti.Texture(ti.f32, 1, res)
+    arr = ti.ndarray(ti.f32, res)
+
+    @ti.kernel
+    def write(tex: ti.types.rw_texture(num_dimensions=2,
+                                       num_channels=1,
+                                       channel_format=ti.f32,
+                                       lod=0)):
+        for i, j in tex:
+            tex.store(ti.Vector([i, j]), ti.Vector([1.0, 0.0, 0.0, 0.0]))
+
+    @ti.kernel
+    def read(tex: ti.types.texture(num_dimensions=2), arr: ti.types.ndarray()):
+        for i, j in arr:
+            arr[i, j] = tex.fetch(ti.Vector([i, j]), 0).x
+
+    write(tex)
+    read(tex, arr)
+    assert arr.to_numpy().sum() == 128 * 128

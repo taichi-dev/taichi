@@ -64,6 +64,7 @@ class TextureSampler:
 
 class RWTextureAccessor:
     def __init__(self, ptr_expr, num_dims) -> None:
+        # taichi_python.TexturePtrExpression.
         self.ptr_expr = ptr_expr
         self.num_dims = num_dims
 
@@ -108,6 +109,15 @@ class RWTextureAccessor:
         impl.expr_init(
             _ti_core.make_texture_op_expr(_ti_core.TextureOpType.kStore,
                                           self.ptr_expr, args_group))
+
+    @taichi_scope
+    def _loop_range(self):
+        """Gets the corresponding taichi_python.Expr to serve as loop range.
+
+        Returns:
+            taichi_python.Expr: See above.
+        """
+        return self.ptr_expr
 
 
 class Texture:

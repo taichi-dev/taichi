@@ -106,7 +106,7 @@ bool VulkanLoader::init(PFN_vkGetInstanceProcAddr get_proc_addr) {
             "vkGetInstanceProcAddr");
 
     volkInitializeCustom(get_proc_addr);
-    initialized = true;
+    initialized_ = true;
 #else
     VkResult result = volkInitialize();
     initialized_ = result == VK_SUCCESS;

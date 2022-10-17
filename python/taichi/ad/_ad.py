@@ -456,6 +456,7 @@ class FwdMode:
         self.recover_kernels()
 
     def insert(self, func):
+        assert func.autodiff_mode == AutodiffMode.NONE, "Inserted funcs should be forward kernels."
         self.modes.append(func.autodiff_mode)
         func.autodiff_mode = AutodiffMode.FORWARD
         self.calls.append((func))

@@ -45,7 +45,7 @@ class CompiledTaichiKernel {
     DeviceAllocation *listgen_buffer{nullptr};
   };
 
-  CompiledTaichiKernel(const Params &ti_params);
+  explicit CompiledTaichiKernel(const Params &ti_params);
 
   const TaichiKernelAttributes &ti_kernel_attribs() const;
 

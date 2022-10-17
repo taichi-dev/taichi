@@ -21,33 +21,30 @@ extern "C" {
 // Necessary detail to share the same Vulkan runtime between Taichi and external
 // procedures.
 //
-// - `get_instance_proc_addr`: Pointer to Vulkan loader function
-// `vkGetInstanceProcAddr`.
-// - `api_version`: Target Vulkan API version.
-// - `instance`: Vulkan instance handle.
-// - `physical_device`: Vulkan physical device handle.
-// - `device`: Vulkan logical device handle.
-// - `compute_queue`: Vulkan queue handle created in the queue family at
-// `compute_queue_family_index`.
-// - `compute_queue_family_index`: Index of a Vulkan queue family with the
-// `VK_QUEUE_COMPUTE_BIT` set.
-// - `graphics_queue`: Vulkan queue handle created in the queue family at
-// `graphics_queue_family_index`.
-// - `graphics_queue_family_index`: Index of a Vulkan queue family with the
-// `VK_QUEUE_GRAPHICS_BIT` set.
 //
 // **NOTE** `compute_queue` and `graphics_queue` can be the same if the queue
 // family have `VK_QUEUE_COMPUTE_BIT` and `VK_QUEUE_GRAPHICS_BIT` set at the
 // same tiem.
 typedef struct TiVulkanRuntimeInteropInfo {
+  // Pointer to Vulkan loader function `vkGetInstanceProcAddr`.
   PFN_vkGetInstanceProcAddr get_instance_proc_addr;
+  // Target Vulkan API version.
   uint32_t api_version;
+  // Vulkan instance handle.
   VkInstance instance;
+  // Vulkan physical device handle.
   VkPhysicalDevice physical_device;
+  // Vulkan logical device handle.
   VkDevice device;
+  // Vulkan queue handle created in the queue family at
+  // `structure.vulkan_runtime_interop_info.compute_queue_family_index`.
   VkQueue compute_queue;
+  // Index of a Vulkan queue family with the `VK_QUEUE_COMPUTE_BIT` set.
   uint32_t compute_queue_family_index;
+  // Vulkan queue handle created in the queue family at
+  // `structure.vulkan_runtime_interop_info.graphics_queue_family_index`.
   VkQueue graphics_queue;
+  // Index of a Vulkan queue family with the `VK_QUEUE_GRAPHICS_BIT` set.
   uint32_t graphics_queue_family_index;
 } TiVulkanRuntimeInteropInfo;
 
@@ -55,14 +52,13 @@ typedef struct TiVulkanRuntimeInteropInfo {
 //
 // Necessary detail to share the same piece of Vulkan buffer between Taichi and
 // external procedures.
-//
-// - `buffer`: Vulkan buffer.
-// - `size`: Size of the piece of memory in bytes.
-// - `usage`: Vulkan buffer usage. In most of the cases, Taichi requires the
-// `VK_BUFFER_USAGE_STORAGE_BUFFER_BIT`.
 typedef struct TiVulkanMemoryInteropInfo {
+  // Vulkan buffer.
   VkBuffer buffer;
+  // Size of the piece of memory in bytes.
   uint64_t size;
+  // Vulkan buffer usage. In most of the cases, Taichi requires the
+  // `VK_BUFFER_USAGE_STORAGE_BUFFER_BIT`.
   VkBufferUsageFlags usage;
 } TiVulkanMemoryInteropInfo;
 
@@ -70,26 +66,25 @@ typedef struct TiVulkanMemoryInteropInfo {
 //
 // Necessary detail to share the same piece of Vulkan image between Taichi and
 // external procedures.
-//
-// - `image`: Vulkan image.
-// - `image_type`: Vulkan image allocation type.
-// - `format`: Pixel format.
-// - `extent`: Image extent.
-// - `mip_level_count`: Number of mip-levels of the image.
-// - `array_layer_count`: Number of array layers.
-// - `sample_count`: Number of samples per pixel.
-// - `tiling`: Image tiling.
-// - `usage`: Vulkan image usage. In most cases, Taichi requires the
-// `VK_IMAGE_USAGE_STORAGE_BIT` and the `VK_IMAGE_USAGE_SAMPLED_BIT`.
 typedef struct TiVulkanImageInteropInfo {
+  // Vulkan image.
   VkImage image;
+  // Vulkan image allocation type.
   VkImageType image_type;
+  // Pixel format.
   VkFormat format;
+  // Image extent.
   VkExtent3D extent;
+  // Number of mip-levels of the image.
   uint32_t mip_level_count;
+  // Number of array layers.
   uint32_t array_layer_count;
+  // Number of samples per pixel.
   VkSampleCountFlagBits sample_count;
+  // Image tiling.
   VkImageTiling tiling;
+  // Vulkan image usage. In most cases, Taichi requires the
+  // `VK_IMAGE_USAGE_STORAGE_BIT` and the `VK_IMAGE_USAGE_SAMPLED_BIT`.
   VkImageUsageFlags usage;
 } TiVulkanImageInteropInfo;
 
@@ -97,9 +92,8 @@ typedef struct TiVulkanImageInteropInfo {
 //
 // Necessary detail to share the same Vulkan event synchronization primitive
 // between Taichi and the user application.
-//
-// - `event`: Vulkan event handle.
 typedef struct TiVulkanEventInteropInfo {
+  // Vulkan event handle.
   VkEvent event;
 } TiVulkanEventInteropInfo;
 

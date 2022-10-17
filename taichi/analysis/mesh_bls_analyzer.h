@@ -27,7 +27,7 @@ class MeshBLSCache {
 
   MeshBLSCache() = default;
 
-  MeshBLSCache(SNode *snode) : snode(snode) {
+  explicit MeshBLSCache(SNode *snode) : snode(snode) {
     total_flags = AccessFlag(0);
     initialized = false;
     finalized = false;

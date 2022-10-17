@@ -28,6 +28,7 @@ struct TaskAttributes {
 
     BufferInfo() = default;
 
+    // NOLINTNEXTLINE(google-explicit-constructor)
     BufferInfo(BufferType buffer_type) : type(buffer_type) {
     }
 

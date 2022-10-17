@@ -77,7 +77,7 @@ class SparseMatrix {
   }
 
   virtual const std::string to_string() const {
-    return nullptr;
+    return "";
   }
 
   virtual const void *get_matrix() const {
@@ -112,11 +112,11 @@ class EigenSparseMatrix : public SparseMatrix {
   explicit EigenSparseMatrix(int rows, int cols, DataType dt)
       : SparseMatrix(rows, cols, dt), matrix_(rows, cols) {
   }
-  explicit EigenSparseMatrix(EigenSparseMatrix &sm)
+  EigenSparseMatrix(EigenSparseMatrix &sm)
       : SparseMatrix(sm.num_rows(), sm.num_cols(), sm.dtype_),
         matrix_(sm.matrix_) {
   }
-  explicit EigenSparseMatrix(EigenSparseMatrix &&sm)
+  EigenSparseMatrix(EigenSparseMatrix &&sm)
       : SparseMatrix(sm.num_rows(), sm.num_cols(), sm.dtype_),
         matrix_(sm.matrix_) {
   }
@@ -221,7 +221,7 @@ class CuSparseMatrix : public SparseMatrix {
       : SparseMatrix(sm.rows_, sm.cols_, sm.dtype_), matrix_(sm.matrix_) {
   }
 
-  virtual ~CuSparseMatrix();
+  ~CuSparseMatrix() override;
 
   // TODO: Overload +=, -= and *=
   friend std::unique_ptr<SparseMatrix> operator+(const CuSparseMatrix &lhs,

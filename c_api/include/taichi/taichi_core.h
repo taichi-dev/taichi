@@ -319,41 +319,37 @@ typedef struct TiComputeGraph_t *TiComputeGraph;
 //
 // Errors reported by the Taichi C-API. Enumerants greater than or equal to zero
 // are success states.
-//
-// - `TI_ERROR_INCOMPLETE`: The output data is truncated because the
-// user-provided buffer is too small.
-// - `TI_ERROR_SUCCESS`: The Taichi C-API invocation finished gracefully.
-// - `TI_ERROR_NOT_SUPPORTED`: The invoked API, or the combination of parameters
-// is not supported by the Taichi C-API.
-// - `TI_ERROR_CORRUPTED_DATA`: Provided data is corrupted.
-// - `TI_ERROR_NAME_NOT_FOUND`: Provided name does not refer to any existing
-// item.
-// - `TI_ERROR_INVALID_ARGUMENT`: One or more function arguments violate
-// constraints specified in C-API documents, or kernel arguments mismatch the
-// kernel argument list defined in the AOT module.
-// - `TI_ERROR_ARGUMENT_NULL`: One or more by-reference (pointer) function
-// arguments point to null.
-// - `TI_ERROR_ARGUMENT_OUT_OF_RANGE`: One or more function arguments are out of
-// its acceptable range; or enumeration arguments have undefined value.
-// - `TI_ERROR_ARGUMENT_NOT_FOUND`: One or more kernel arguments are missing.
-// - `TI_ERROR_INVALID_INTEROP`: The intended interoperation is not possible on
-// the current arch. For example, attempts to export a Vulkan object from a CUDA
-// runtime are not allowed.
-// - `TI_ERROR_INVALID_STATE`: The Taichi C-API enters an unrecoverable invalid
-// state. Related Taichi objects are potentially corrupted. The users *should*
-// release the contaminated resources for stability. Please feel free to file an
-// issue if you encountered this error in a normal routine.
 typedef enum TiError {
+  // The output data is truncated because the user-provided buffer is too small.
   TI_ERROR_INCOMPLETE = 1,
+  // The Taichi C-API invocation finished gracefully.
   TI_ERROR_SUCCESS = 0,
+  // The invoked API, or the combination of parameters is not supported by the
+  // Taichi C-API.
   TI_ERROR_NOT_SUPPORTED = -1,
+  // Provided data is corrupted.
   TI_ERROR_CORRUPTED_DATA = -2,
+  // Provided name does not refer to any existing item.
   TI_ERROR_NAME_NOT_FOUND = -3,
+  // One or more function arguments violate constraints specified in C-API
+  // documents, or kernel arguments mismatch the kernel argument list defined in
+  // the AOT module.
   TI_ERROR_INVALID_ARGUMENT = -4,
+  // One or more by-reference (pointer) function arguments point to null.
   TI_ERROR_ARGUMENT_NULL = -5,
+  // One or more function arguments are out of its acceptable range; or
+  // enumeration arguments have undefined value.
   TI_ERROR_ARGUMENT_OUT_OF_RANGE = -6,
+  // One or more kernel arguments are missing.
   TI_ERROR_ARGUMENT_NOT_FOUND = -7,
+  // The intended interoperation is not possible on the current arch. For
+  // example, attempts to export a Vulkan object from a CUDA runtime are not
+  // allowed.
   TI_ERROR_INVALID_INTEROP = -8,
+  // The Taichi C-API enters an unrecoverable invalid state. Related Taichi
+  // objects are potentially corrupted. The users *should* release the
+  // contaminated resources for stability. Please feel free to file an issue if
+  // you encountered this error in a normal routine.
   TI_ERROR_INVALID_STATE = -9,
   TI_ERROR_MAX_ENUM = 0xffffffff,
 } TiError;
@@ -361,25 +357,24 @@ typedef enum TiError {
 // Enumeration `TiArch`
 //
 // Types of backend archs.
-//
-// - `TI_ARCH_X64`: x64 native CPU backend.
-// - `TI_ARCH_ARM64`: Arm64 native CPU backend.
-// - `TI_ARCH_CUDA`: NVIDIA CUDA GPU backend.
-// - `TI_ARCH_VULKAN`: Vulkan GPU backend.
-// - `TI_ARCH_OPENGL`: OpenGL GPU backend.
 typedef enum TiArch {
+  // x64 native CPU backend.
   TI_ARCH_X64 = 0,
+  // Arm64 native CPU backend.
   TI_ARCH_ARM64 = 1,
   TI_ARCH_JS = 2,
   TI_ARCH_CC = 3,
   TI_ARCH_WASM = 4,
+  // NVIDIA CUDA GPU backend.
   TI_ARCH_CUDA = 5,
   TI_ARCH_METAL = 6,
+  // OpenGL GPU backend.
   TI_ARCH_OPENGL = 7,
   TI_ARCH_DX11 = 8,
   TI_ARCH_DX12 = 9,
   TI_ARCH_OPENCL = 10,
   TI_ARCH_AMDGPU = 11,
+  // Vulkan GPU backend.
   TI_ARCH_VULKAN = 12,
   TI_ARCH_MAX_ENUM = 0xffffffff,
 } TiArch;
@@ -389,30 +384,29 @@ typedef enum TiArch {
 // Elementary (primitive) data types. There might be vendor-specific constraints
 // on the available data types so it's recommended to use 32-bit data types if
 // multi-platform distribution is desired.
-//
-// - `TI_DATA_TYPE_F16`: 16-bit IEEE 754 half-precision floating-point number.
-// - `TI_DATA_TYPE_F32`: 32-bit IEEE 754 single-precision floating-point number.
-// - `TI_DATA_TYPE_F64`: 64-bit IEEE 754 double-precision floating-point number.
-// - `TI_DATA_TYPE_I8`: 8-bit one's complement signed integer.
-// - `TI_DATA_TYPE_I16`: 16-bit one's complement signed integer.
-// - `TI_DATA_TYPE_I32`: 32-bit one's complement signed integer.
-// - `TI_DATA_TYPE_I64`: 64-bit one's complement signed integer.
-// - `TI_DATA_TYPE_U8`: 8-bit unsigned integer.
-// - `TI_DATA_TYPE_U16`: 16-bit unsigned integer.
-// - `TI_DATA_TYPE_U32`: 32-bit unsigned integer.
-// - `TI_DATA_TYPE_U64`: 64-bit unsigned integer.
 typedef enum TiDataType {
+  // 16-bit IEEE 754 half-precision floating-point number.
   TI_DATA_TYPE_F16 = 0,
+  // 32-bit IEEE 754 single-precision floating-point number.
   TI_DATA_TYPE_F32 = 1,
+  // 64-bit IEEE 754 double-precision floating-point number.
   TI_DATA_TYPE_F64 = 2,
+  // 8-bit one's complement signed integer.
   TI_DATA_TYPE_I8 = 3,
+  // 16-bit one's complement signed integer.
   TI_DATA_TYPE_I16 = 4,
+  // 32-bit one's complement signed integer.
   TI_DATA_TYPE_I32 = 5,
+  // 64-bit one's complement signed integer.
   TI_DATA_TYPE_I64 = 6,
   TI_DATA_TYPE_U1 = 7,
+  // 8-bit unsigned integer.
   TI_DATA_TYPE_U8 = 8,
+  // 16-bit unsigned integer.
   TI_DATA_TYPE_U16 = 9,
+  // 32-bit unsigned integer.
   TI_DATA_TYPE_U32 = 10,
+  // 64-bit unsigned integer.
   TI_DATA_TYPE_U64 = 11,
   TI_DATA_TYPE_GEN = 12,
   TI_DATA_TYPE_UNKNOWN = 13,
@@ -422,18 +416,14 @@ typedef enum TiDataType {
 // Enumeration `TiArgumentType`
 //
 // Types of kernel and compute graph argument.
-//
-// - `TI_ARGUMENT_TYPE_I32`: 32-bit one's complement signed integer.
-// - `TI_ARGUMENT_TYPE_F32`: 32-bit IEEE 754 single-precision floating-point
-// number.
-// - `TI_ARGUMENT_TYPE_NDARRAY`: ND-array wrapped around a
-// [`TiMemory`](#handle-timemory).
-// - `TI_ARGUMENT_TYPE_TEXTURE`: Texture wrapped around a
-// [`TiImage`](#handle-tiimage).
 typedef enum TiArgumentType {
+  // 32-bit one's complement signed integer.
   TI_ARGUMENT_TYPE_I32 = 0,
+  // 32-bit IEEE 754 single-precision floating-point number.
   TI_ARGUMENT_TYPE_F32 = 1,
+  // ND-array wrapped around a `handle.memory`.
   TI_ARGUMENT_TYPE_NDARRAY = 2,
+  // Texture wrapped around a `handle.image`.
   TI_ARGUMENT_TYPE_TEXTURE = 3,
   TI_ARGUMENT_TYPE_MAX_ENUM = 0xffffffff,
 } TiArgumentType;
@@ -442,19 +432,14 @@ typedef enum TiArgumentType {
 //
 // Usages of a memory allocation. Taichi requires kernel argument memories to be
 // allocated with `TI_MEMORY_USAGE_STORAGE_BIT`.
-//
-// - `TI_MEMORY_USAGE_STORAGE_BIT`: The memory can be read/write accessed by any
-// kernel.
-// - `TI_MEMORY_USAGE_UNIFORM_BIT`: The memory can be used as a uniform buffer
-// in graphics pipelines.
-// - `TI_MEMORY_USAGE_VERTEX_BIT`: The memory can be used as a vertex buffer in
-// graphics pipelines.
-// - `TI_MEMORY_USAGE_INDEX_BIT`: The memory can be used as an index buffer in
-// graphics pipelines.
 typedef enum TiMemoryUsageFlagBits {
+  // The memory can be read/write accessed by any kernel.
   TI_MEMORY_USAGE_STORAGE_BIT = 1 << 0,
+  // The memory can be used as a uniform buffer in graphics pipelines.
   TI_MEMORY_USAGE_UNIFORM_BIT = 1 << 1,
+  // The memory can be used as a vertex buffer in graphics pipelines.
   TI_MEMORY_USAGE_VERTEX_BIT = 1 << 2,
+  // The memory can be used as an index buffer in graphics pipelines.
   TI_MEMORY_USAGE_INDEX_BIT = 1 << 3,
 } TiMemoryUsageFlagBits;
 typedef TiFlags TiMemoryUsageFlags;
@@ -462,19 +447,18 @@ typedef TiFlags TiMemoryUsageFlags;
 // Structure `TiMemoryAllocateInfo`
 //
 // Parameters of a newly allocated memory.
-//
-// - `size`: Size of the allocation in bytes.
-// - `host_write`: True if the host needs to write to the allocated memory.
-// - `host_read`: True if the host needs to read from the allocated memory.
-// - `export_sharing`: True if the memory allocation needs to be exported to
-// other backends (e.g., from Vulkan to CUDA).
-// - `usage`: All possible usage of this memory allocation. In most cases,
-// `TI_MEMORY_USAGE_STORAGE_BIT` is enough.
 typedef struct TiMemoryAllocateInfo {
+  // Size of the allocation in bytes.
   uint64_t size;
+  // True if the host needs to write to the allocated memory.
   TiBool host_write;
+  // True if the host needs to read from the allocated memory.
   TiBool host_read;
+  // True if the memory allocation needs to be exported to other backends (e.g.,
+  // from Vulkan to CUDA).
   TiBool export_sharing;
+  // All possible usage of this memory allocation. In most cases,
+  // `bit_field.memory_usage.storage` is enough.
   TiMemoryUsageFlags usage;
 } TiMemoryAllocateInfo;
 
@@ -482,13 +466,12 @@ typedef struct TiMemoryAllocateInfo {
 //
 // A subsection of a memory allocation. The sum of `offset` and `size` cannot
 // exceed the size of `memory`.
-//
-// - `memory`: The subsectioned memory allocation.
-// - `offset`: Offset from the beginning of the allocation.
-// - `size`: Size of the subsection.
 typedef struct TiMemorySlice {
+  // The subsectioned memory allocation.
   TiMemory memory;
+  // Offset from the beginning of the allocation.
   uint64_t offset;
+  // Size of the subsection.
   uint64_t size;
 } TiMemorySlice;
 
@@ -496,27 +479,25 @@ typedef struct TiMemorySlice {
 //
 // Multi-dimensional size of an ND-array. Dimension sizes after `dim_count` are
 // ignored.
-//
-// - `dim_count`: Number of dimensions.
-// - `dims`: Dimension sizes.
 typedef struct TiNdShape {
+  // Number of dimensions.
   uint32_t dim_count;
+  // Dimension sizes.
   uint32_t dims[16];
 } TiNdShape;
 
 // Structure `TiNdArray`
 //
 // Multi-dimensional array of dense primitive data.
-//
-// - `memory`: Memory bound to the ND-array.
-// - `shape`: Shape of the ND-array.
-// - `elem_shape`: Shape of the ND-array elements. It *must not* be empty for
-// vector or matrix ND-arrays.
-// - `elem_type`: Primitive data type of the ND-array elements.
 typedef struct TiNdArray {
+  // Memory bound to the ND-array.
   TiMemory memory;
+  // Shape of the ND-array.
   TiNdShape shape;
+  // Shape of the ND-array elements. It *must not* be empty for vector or matrix
+  // ND-arrays.
   TiNdShape elem_shape;
+  // Primitive data type of the ND-array elements.
   TiDataType elem_type;
 } TiNdArray;
 
@@ -524,16 +505,13 @@ typedef struct TiNdArray {
 //
 // Usages of an image allocation. Taichi requires kernel argument images to be
 // allocated with `TI_IMAGE_USAGE_STORAGE_BIT` and `TI_IMAGE_USAGE_SAMPLED_BIT`.
-//
-// - `TI_IMAGE_USAGE_STORAGE_BIT`: The image can be read/write accessed by any
-// kernel.
-// - `TI_IMAGE_USAGE_SAMPLED_BIT`: The image can be read-only accessed by any
-// kernel.
-// - `TI_IMAGE_USAGE_ATTACHMENT_BIT`: The image can be used as a color or
-// depth-stencil attachment depending on its format.
 typedef enum TiImageUsageFlagBits {
+  // The image can be read/write accessed by any kernel.
   TI_IMAGE_USAGE_STORAGE_BIT = 1 << 0,
+  // The image can be read-only accessed by any kernel.
   TI_IMAGE_USAGE_SAMPLED_BIT = 1 << 1,
+  // The image can be used as a color or depth-stencil attachment depending on
+  // its format.
   TI_IMAGE_USAGE_ATTACHMENT_BIT = 1 << 2,
 } TiImageUsageFlagBits;
 typedef TiFlags TiImageUsageFlags;
@@ -541,54 +519,47 @@ typedef TiFlags TiImageUsageFlags;
 // Enumeration `TiImageDimension`
 //
 // Dimensions of an image allocation.
-//
-// - `TI_IMAGE_DIMENSION_1D`: The image is 1-dimensional.
-// - `TI_IMAGE_DIMENSION_2D`: The image is 2-dimensional.
-// - `TI_IMAGE_DIMENSION_3D`: The image is 3-dimensional.
-// - `TI_IMAGE_DIMENSION_1D_ARRAY`: The image is 1-dimensional and it has one or
-// more layers.
-// - `TI_IMAGE_DIMENSION_2D_ARRAY`: The image is 2-dimensional and it has one or
-// more layers.
-// - `TI_IMAGE_DIMENSION_CUBE`: The image is 2-dimensional and it has 6 layers
-// for the faces towards +X, -X, +Y, -Y, +Z, -Z in sequence.
 typedef enum TiImageDimension {
+  // The image is 1-dimensional.
   TI_IMAGE_DIMENSION_1D = 0,
+  // The image is 2-dimensional.
   TI_IMAGE_DIMENSION_2D = 1,
+  // The image is 3-dimensional.
   TI_IMAGE_DIMENSION_3D = 2,
+  // The image is 1-dimensional and it has one or more layers.
   TI_IMAGE_DIMENSION_1D_ARRAY = 3,
+  // The image is 2-dimensional and it has one or more layers.
   TI_IMAGE_DIMENSION_2D_ARRAY = 4,
+  // The image is 2-dimensional and it has 6 layers for the faces towards +X,
+  // -X, +Y, -Y, +Z, -Z in sequence.
   TI_IMAGE_DIMENSION_CUBE = 5,
   TI_IMAGE_DIMENSION_MAX_ENUM = 0xffffffff,
 } TiImageDimension;
 
 // Enumeration `TiImageLayout`
-//
-// - `TI_IMAGE_LAYOUT_UNDEFINED`: Undefined layout. An image in this layout does
-// not contain any semantical information.
-// - `TI_IMAGE_LAYOUT_SHADER_READ`: Optimal layout for read-only access,
-// including sampling.
-// - `TI_IMAGE_LAYOUT_SHADER_WRITE`: Optimal layout for write-only access.
-// - `TI_IMAGE_LAYOUT_SHADER_READ_WRITE`: Optimal layout for read/write access.
-// - `TI_IMAGE_LAYOUT_COLOR_ATTACHMENT`: Optimal layout as a color attachment.
-// - `TI_IMAGE_LAYOUT_COLOR_ATTACHMENT_READ`: Optimal layout as an input color
-// attachment.
-// - `TI_IMAGE_LAYOUT_DEPTH_ATTACHMENT`: Optimal layout as a depth attachment.
-// - `TI_IMAGE_LAYOUT_DEPTH_ATTACHMENT_READ`: Optimal layout as an input depth
-// attachment.
-// - `TI_IMAGE_LAYOUT_TRANSFER_DST`: Optimal layout as a data copy destination.
-// - `TI_IMAGE_LAYOUT_TRANSFER_SRC`: Optimal layout as a data copy source.
-// - `TI_IMAGE_LAYOUT_PRESENT_SRC`:  Optimal layout as a presentation source.
 typedef enum TiImageLayout {
+  // Undefined layout. An image in this layout does not contain any semantical
+  // information.
   TI_IMAGE_LAYOUT_UNDEFINED = 0,
+  // Optimal layout for read-only access, including sampling.
   TI_IMAGE_LAYOUT_SHADER_READ = 1,
+  // Optimal layout for write-only access.
   TI_IMAGE_LAYOUT_SHADER_WRITE = 2,
+  // Optimal layout for read/write access.
   TI_IMAGE_LAYOUT_SHADER_READ_WRITE = 3,
+  // Optimal layout as a color attachment.
   TI_IMAGE_LAYOUT_COLOR_ATTACHMENT = 4,
+  // Optimal layout as an input color attachment.
   TI_IMAGE_LAYOUT_COLOR_ATTACHMENT_READ = 5,
+  // Optimal layout as a depth attachment.
   TI_IMAGE_LAYOUT_DEPTH_ATTACHMENT = 6,
+  // Optimal layout as an input depth attachment.
   TI_IMAGE_LAYOUT_DEPTH_ATTACHMENT_READ = 7,
+  // Optimal layout as a data copy destination.
   TI_IMAGE_LAYOUT_TRANSFER_DST = 8,
+  // Optimal layout as a data copy source.
   TI_IMAGE_LAYOUT_TRANSFER_SRC = 9,
+  // Optimal layout as a presentation source.
   TI_IMAGE_LAYOUT_PRESENT_SRC = 10,
   TI_IMAGE_LAYOUT_MAX_ENUM = 0xffffffff,
 } TiImageLayout;
@@ -645,64 +616,65 @@ typedef enum TiFormat {
 // Structure `TiImageOffset`
 //
 // Offsets of an image in X, Y, Z, and array layers.
-//
-// - `x`: Image offset in the X direction.
-// - `y`: Image offset in the Y direction. *Must* be 0 if the image has a
-// dimension of `TI_IMAGE_DIMENSION_1D` or `TI_IMAGE_DIMENSION_1D_ARRAY`.
-// - `z`: Image offset in the Z direction. *Must* be 0 if the image has a
-// dimension of `TI_IMAGE_DIMENSION_1D`, `TI_IMAGE_DIMENSION_2D`,
-// `TI_IMAGE_DIMENSION_1D_ARRAY`, `TI_IMAGE_DIMENSION_2D_ARRAY` or
-// `TI_IMAGE_DIMENSION_CUBE_ARRAY`.
-// - `array_layer_offset`: Image offset in array layers. *Must* be 0 if the
-// image has a dimension of `TI_IMAGE_DIMENSION_1D`, `TI_IMAGE_DIMENSION_2D` or
-// `TI_IMAGE_DIMENSION_3D`.
 typedef struct TiImageOffset {
+  // Image offset in the X direction.
   uint32_t x;
+  // Image offset in the Y direction. *Must* be 0 if the image has a dimension
+  // of `enumeration.image_dimension.1d` or
+  // `enumeration.image_dimension.1d_array`.
   uint32_t y;
+  // Image offset in the Z direction. *Must* be 0 if the image has a dimension
+  // of `enumeration.image_dimension.1d`, `enumeration.image_dimension.2d`,
+  // `enumeration.image_dimension.1d_array`,
+  // `enumeration.image_dimension.2d_array` or
+  // `enumeration.image_dimension.cube_array`.
   uint32_t z;
+  // Image offset in array layers. *Must* be 0 if the image has a dimension of
+  // `enumeration.image_dimension.1d`, `enumeration.image_dimension.2d` or
+  // `enumeration.image_dimension.3d`.
   uint32_t array_layer_offset;
 } TiImageOffset;
 
 // Structure `TiImageExtent`
 //
 // Extents of an image in X, Y, Z, and array layers.
-//
-// - `width`: Image extent in the X direction.
-// - `height`: Image extent in the Y direction. *Must* be 1 if the image has a
-// dimension of `TI_IMAGE_DIMENSION_1D` or `TI_IMAGE_DIMENSION_1D_ARRAY`.
-// - `depth`: Image extent in the Z direction. *Must* be 1 if the image has a
-// dimension of `TI_IMAGE_DIMENSION_1D`, `TI_IMAGE_DIMENSION_2D`,
-// `TI_IMAGE_DIMENSION_1D_ARRAY`, `TI_IMAGE_DIMENSION_2D_ARRAY` or
-// `TI_IMAGE_DIMENSION_CUBE_ARRAY`.
-// - `array_layer_count`: Image extent in array layers. *Must* be 1 if the image
-// has a dimension of `TI_IMAGE_DIMENSION_1D`, `TI_IMAGE_DIMENSION_2D` or
-// `TI_IMAGE_DIMENSION_3D`. *Must* be 6 if the image has a dimension of
-// `TI_IMAGE_DIMENSION_CUBE_ARRAY`.
 typedef struct TiImageExtent {
+  // Image extent in the X direction.
   uint32_t width;
+  // Image extent in the Y direction. *Must* be 1 if the image has a dimension
+  // of `enumeration.image_dimension.1d` or
+  // `enumeration.image_dimension.1d_array`.
   uint32_t height;
+  // Image extent in the Z direction. *Must* be 1 if the image has a dimension
+  // of `enumeration.image_dimension.1d`, `enumeration.image_dimension.2d`,
+  // `enumeration.image_dimension.1d_array`,
+  // `enumeration.image_dimension.2d_array` or
+  // `enumeration.image_dimension.cube_array`.
   uint32_t depth;
+  // Image extent in array layers. *Must* be 1 if the image has a dimension of
+  // `enumeration.image_dimension.1d`, `enumeration.image_dimension.2d` or
+  // `enumeration.image_dimension.3d`. *Must* be 6 if the image has a dimension
+  // of `enumeration.image_dimension.cube_array`.
   uint32_t array_layer_count;
 } TiImageExtent;
 
 // Structure `TiImageAllocateInfo`
 //
 // Parameters of a newly allocated image.
-//
-// - `dimension`: Image dimension.
-// - `extent`: Image extent.
-// - `mip_level_count`: Number of mip-levels.
-// - `format`: Image texel format.
-// - `export_sharing`: True if the memory allocation needs to be exported to
-// other backends (e.g., from Vulkan to CUDA).
-// - `usage`: All possible usages of this image allocation. In most cases,
-// `TI_IMAGE_USAGE_STORAGE_BIT` and `TI_IMAGE_USAGE_SAMPLED_BIT` enough.
 typedef struct TiImageAllocateInfo {
+  // Image dimension.
   TiImageDimension dimension;
+  // Image extent.
   TiImageExtent extent;
+  // Number of mip-levels.
   uint32_t mip_level_count;
+  // Image texel format.
   TiFormat format;
+  // True if the memory allocation needs to be exported to other backends (e.g.,
+  // from Vulkan to CUDA).
   TiBool export_sharing;
+  // All possible usages of this image allocation. In most cases,
+  // `bit_field.image_usage.storage` and `bit_field.image_usage.sampled` enough.
   TiImageUsageFlags usage;
 } TiImageAllocateInfo;
 
@@ -710,15 +682,14 @@ typedef struct TiImageAllocateInfo {
 //
 // A subsection of a memory allocation. The sum of `offset` and `extent` in each
 // dimension cannot exceed the size of `image`.
-//
-// - `image`: The subsectioned image allocation.
-// - `offset`: Offset from the beginning of the allocation in each dimension.
-// - `extent`: Size of the subsection in each dimension.
-// - `mip_level`: The subsectioned mip-level.
 typedef struct TiImageSlice {
+  // The subsectioned image allocation.
   TiImage image;
+  // Offset from the beginning of the allocation in each dimension.
   TiImageOffset offset;
+  // Size of the subsection in each dimension.
   TiImageExtent extent;
+  // The subsectioned mip-level.
   uint32_t mip_level;
 } TiImageSlice;
 
@@ -748,55 +719,51 @@ typedef struct TiSamplerCreateInfo {
 // Structure `TiTexture`
 //
 // Image data bound to a sampler.
-//
-// - `image`: Image bound to the texture.
-// - `sampler`: The bound sampler that controls the sampling behavior of
-// `image`.
-// - `dimension`: Image Dimension.
-// - `extent`: Image extent.
-// - `format`: Image texel format.
 typedef struct TiTexture {
+  // Image bound to the texture.
   TiImage image;
+  // The bound sampler that controls the sampling behavior of
+  // `structure.texture.image`.
   TiSampler sampler;
+  // Image Dimension.
   TiImageDimension dimension;
+  // Image extent.
   TiImageExtent extent;
+  // Image texel format.
   TiFormat format;
 } TiTexture;
 
 // Union `TiArgumentValue`
 //
 // A scalar or structured argument value.
-//
-// - `i32`: Value of a 32-bit one's complement signed integer.
-// - `f32`: Value of a 32-bit IEEE 754 single-precision floating-poing number.
-// - `ndarray`: An ND-array to be bound.
-// - `texture`: A texture to be bound.
 typedef union TiArgumentValue {
+  // Value of a 32-bit one's complement signed integer.
   int32_t i32;
+  // Value of a 32-bit IEEE 754 single-precision floating-poing number.
   float f32;
+  // An ND-array to be bound.
   TiNdArray ndarray;
+  // A texture to be bound.
   TiTexture texture;
 } TiArgumentValue;
 
 // Structure `TiArgument`
 //
 // An argument value to feed kernels.
-//
-// - `type`: Type of the argument.
-// - `value`: Value of the argument.
 typedef struct TiArgument {
+  // Type of the argument.
   TiArgumentType type;
+  // Value of the argument.
   TiArgumentValue value;
 } TiArgument;
 
 // Structure `TiNamedArgument`
 //
 // A named argument value to feed compute graphs.
-//
-// - `name`: Name of the argument.
-// - `argument`: Argument body.
 typedef struct TiNamedArgument {
+  // Name of the argument.
   const char *name;
+  // Argument body.
   TiArgument argument;
 } TiNamedArgument;
 
@@ -804,24 +771,24 @@ typedef struct TiNamedArgument {
 //
 // Get the last error raised by Taichi C-API invocations. Returns the semantical
 // error code.
-//
-// - `message_size`: Size of textual error message in `message`
-// - `message`: Text buffer for the textual error message. Ignored when
-// `message_size` is 0.
-TI_DLL_EXPORT TiError TI_API_CALL ti_get_last_error(uint64_t message_size,
-                                                    char *message);
+TI_DLL_EXPORT TiError TI_API_CALL ti_get_last_error(
+    // Size of textual error message in `function.get_last_error.message`
+    uint64_t message_size,
+    // Text buffer for the textual error message. Ignored when `message_size` is
+    // 0.
+    char *message);
 
 // Function `ti_set_last_error`
 //
 // Set the provided error as the last error raised by Taichi C-API invocations.
 // It can be useful in extended validation procedures in Taichi C-API wrappers
 // and helper libraries.
-//
-// - `error`: Semantical error code.
-// - `message`: A null-terminated string of the textual error message or
-// `nullptr` for empty error message.
-TI_DLL_EXPORT void TI_API_CALL ti_set_last_error(TiError error,
-                                                 const char *message);
+TI_DLL_EXPORT void TI_API_CALL ti_set_last_error(
+    // Semantical error code.
+    TiError error,
+    // A null-terminated string of the textual error message or `nullptr` for
+    // empty error message.
+    const char *message);
 
 // Function `ti_create_runtime`
 //

@@ -414,7 +414,7 @@ void TaskCodeGenLLVM::visit(UnaryOpStmt *stmt) {
         if (!cast_type->is<TensorType>()) {
           llvm_val[stmt] = trunc_func(llvm_val[stmt], to_ty);
         } else {
-          create_elementwise_cast(stmt, to_ty, trunc_func, /*trunc_self=*/true);
+          create_elementwise_cast(stmt, to_ty, trunc_func, /*on_self=*/true);
         }
       }
     } else if (is_real(from.get_element_type()) &&

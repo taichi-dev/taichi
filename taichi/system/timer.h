@@ -57,7 +57,7 @@ class TI_DLL_EXPORT Time {
     bool have_output;
 
    public:
-    Timer(std::string name);
+    explicit Timer(std::string name);
 
     Timer() {
     }
@@ -76,7 +76,7 @@ class TI_DLL_EXPORT Time {
                       double average) override;
 
    public:
-    TickTimer(std::string name);
+    explicit TickTimer(std::string name);
 
     ~TickTimer() override {
       output();

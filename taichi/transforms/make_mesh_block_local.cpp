@@ -124,7 +124,7 @@ void MakeMeshBlockLocal::replace_global_ptrs(SNode *snode) {
   }
 
   // in the cpu backend, atomic op in body block could be demoted to non-atomic
-  if (config_.arch != Arch::x64) {
+  if (config_.arch != Arch::x64 && config_.arch != Arch::arm64) {
     return;
   }
   std::vector<AtomicOpStmt *> atomic_ops;
@@ -162,7 +162,7 @@ Stmt *MakeMeshBlockLocal::create_xlogue(
   [[maybe_unused]] Stmt *init_val =
       block_->push_back<LocalStoreStmt>(idx, start_val);
   Stmt *block_dim_val;
-  if (config_.arch == Arch::x64) {
+  if (config_.arch == Arch::x64 || config_.arch == Arch::arm64) {
     block_dim_val = block_->push_back<ConstStmt>(TypedConstant(1));
   } else {
     block_dim_val =
@@ -320,7 +320,7 @@ void MakeMeshBlockLocal::fetch_mapping(
     std::function<void(Block *body, Stmt *idx_val, Stmt *mapping_val)>
         attr_callback_handler) {
   Stmt *thread_idx_stmt;
-  if (config_.arch == Arch::x64) {
+  if (config_.arch == Arch::x64 || config_.arch == Arch::arm64) {
     thread_idx_stmt = block_->push_back<ConstStmt>(TypedConstant(0));
   } else {
     thread_idx_stmt = block_->push_back<LoopLinearIndexStmt>(

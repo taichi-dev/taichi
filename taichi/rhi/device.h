@@ -72,7 +72,8 @@ struct TI_DLL_EXPORT DeviceAllocation {
 };
 
 struct TI_DLL_EXPORT DeviceAllocationGuard : public DeviceAllocation {
-  DeviceAllocationGuard(DeviceAllocation alloc) : DeviceAllocation(alloc) {
+  explicit DeviceAllocationGuard(DeviceAllocation alloc)
+      : DeviceAllocation(alloc) {
   }
   DeviceAllocationGuard(const DeviceAllocationGuard &) = delete;
   ~DeviceAllocationGuard();

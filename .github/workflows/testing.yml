@@ -102,7 +102,7 @@ jobs:
           docker exec --user dev check_clang_tidy /home/dev/taichi/.github/workflows/scripts/check_clang_tidy.sh "$CI_SETUP_CMAKE_ARGS"
         env:
           CR_PAT: ${{ secrets.GITHUB_TOKEN }}
-          CI_SETUP_CMAKE_ARGS: -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=ON -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=OFF
+          CI_SETUP_CMAKE_ARGS: -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=ON -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=ON
 
   build_and_test_cpu_linux:
     name: Build and Test linux (CPU)
@@ -128,12 +128,6 @@ jobs:
         with:
           fetch-depth: '0'
           submodules: 'recursive'
-
-      - uses: actions/checkout@v3
-        with:
-          repository:  taichi-dev/meshtaichi
-          path: meshtaichi
-          token: ${{ secrets.GARDENER_PAT }}
 
       - name: Get Build Cache
         uses: actions/cache@v2
@@ -362,12 +356,6 @@ jobs:
         with:
           submodules: 'recursive'
           fetch-depth: '0'
-
-      - uses: actions/checkout@v3
-        with:
-          repository:  taichi-dev/meshtaichi
-          path: meshtaichi
-          token: ${{ secrets.GARDENER_PAT }}
 
       - name: Prepare Environment
         run: |

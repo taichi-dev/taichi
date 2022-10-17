@@ -9,7 +9,7 @@ namespace taichi::lang {
 
 class KernelCodeGenCUDA : public KernelCodeGen {
  public:
-  KernelCodeGenCUDA(Kernel *kernel, IRNode *ir = nullptr)
+  explicit KernelCodeGenCUDA(Kernel *kernel, IRNode *ir = nullptr)
       : KernelCodeGen(kernel, ir) {
   }
 

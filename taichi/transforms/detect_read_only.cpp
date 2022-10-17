@@ -29,7 +29,8 @@ class ExternalPtrAccessVisitor : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
 
-  ExternalPtrAccessVisitor(std::unordered_map<int, ExternalPtrAccess> &map)
+  explicit ExternalPtrAccessVisitor(
+      std::unordered_map<int, ExternalPtrAccess> &map)
       : BasicStmtVisitor(), map_(map) {
   }
 

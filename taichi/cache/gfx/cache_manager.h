@@ -30,7 +30,7 @@ class CacheManager {
     const std::vector<spirv::CompiledSNodeStructs> *compiled_structs;
   };
 
-  CacheManager(Params &&init_params);
+  explicit CacheManager(Params &&init_params);
 
   CompiledKernelData load_or_compile(CompileConfig *config, Kernel *kernel);
   void dump_with_merging() const;

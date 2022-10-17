@@ -515,7 +515,7 @@ class ASTTransformer(Builder):
         if ASTTransformer.build_call_if_is_type(ctx, node, args, keywords):
             return node.ptr
 
-        if getattr(node.func, 'call_tensor_op', False):
+        if hasattr(node.func, 'caller'):
             node.ptr = func(node.func.caller, *args, **keywords)
             return node.ptr
 
@@ -726,7 +726,6 @@ class ASTTransformer(Builder):
                 # pylint: disable-msg=C0415
                 from taichi.lang import matrix_ops as tensor_ops
                 node.ptr = getattr(tensor_ops, node.attr)
-                setattr(node, 'call_tensor_op', True)
                 setattr(node, 'caller', node.value.ptr)
             else:
                 node.ptr = getattr(node.value.ptr, node.attr)

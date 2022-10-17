@@ -274,7 +274,7 @@ def processGuiEvent(_gui):
                         else:
                             dipoles[i].m += 0.001 * int((dipoles[i].m >= 0.0) -
                                                         (dipoles[i].m <= 0.0))
-        fade = -abs(fade)  # fade out arrow filed
+        fade = -abs(fade)  # fade out arrow field
 
 
 if __name__ == '__main__':

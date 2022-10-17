@@ -138,7 +138,7 @@ def _test_sym_eig3x3(dt, a00):
 
 
 @pytest.mark.parametrize("func", [_test_eig2x2_real, _test_eig2x2_complex])
-@test_utils.test(default_fp=ti.f32, fast_math=False, dynamic_index=True)
+@test_utils.test(default_fp=ti.f32, fast_math=False)
 def test_eig2x2_f32(func):
     func(ti.f32)
 

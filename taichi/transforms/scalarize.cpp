@@ -345,6 +345,90 @@ class Scalarize : public BasicStmtVisitor {
     }
   }
 
+  /*
+    Before:
+      TensorType<4 x i32> val = TernaryStmt(TensorType<4 x i32> cond,
+                                            TensorType<4 x i32> lhs,
+                                            TensorType<4 x i32> rhs)
+
+    After:
+      i32 val0 = TernaryStmt(cond->cast<MatrixInitStmt>()->val[0],
+                             lhs->cast<MatrixInitStmt>()->val[0],
+                             rhs->cast<MatrixInitStmt>()->val[0])
+
+      i32 val1 = TernaryStmt(cond->cast<MatrixInitStmt>()->val[1],
+                             lhs->cast<MatrixInitStmt>()->val[1],
+                             rhs->cast<MatrixInitStmt>()->val[1])
+
+      i32 val2 = TernaryStmt(cond->cast<MatrixInitStmt>()->val[2],
+                             lhs->cast<MatrixInitStmt>()->val[2],
+                             rhs->cast<MatrixInitStmt>()->val[2])
+
+      i32 val3 = TernaryStmt(cond->cast<MatrixInitStmt>()->val[3],
+                             lhs->cast<MatrixInitStmt>()->val[3],
+                             rhs->cast<MatrixInitStmt>()->val[3])
+
+      tmp = MatrixInitStmt(val0, val1, val2, val3)
+
+      stmt->replace_all_usages_with(tmp)
+  */
+  void visit(TernaryOpStmt *stmt) override {
+    auto cond_dtype = stmt->op1->ret_type;
+    auto op2_dtype = stmt->op2->ret_type;
+    auto op3_dtype = stmt->op3->ret_type;
+
+    if (cond_dtype->is<PrimitiveType>() && op2_dtype->is<PrimitiveType>() &&
+        op3_dtype->is<PrimitiveType>()) {
+      return;
+    }
+
+    // TernaryOpExpression::type_check() have taken care of the broadcasting,
+    // but the type conversions are delayed until irpass::type_check().
+    // So we only check for the shape here.
+    TI_ASSERT(cond_dtype.get_shape() == op2_dtype.get_shape());
+    TI_ASSERT(op2_dtype.get_shape() == op3_dtype.get_shape());
+
+    if (cond_dtype->is<TensorType>() && op2_dtype->is<TensorType>() &&
+        op3_dtype->is<TensorType>()) {
+      TI_ASSERT(stmt->op1->is<MatrixInitStmt>());
+      TI_ASSERT(stmt->op2->is<MatrixInitStmt>());
+      TI_ASSERT(stmt->op3->is<MatrixInitStmt>());
+
+      auto cond_matrix_init_stmt = stmt->op1->cast<MatrixInitStmt>();
+      std::vector<Stmt *> cond_vals = cond_matrix_init_stmt->values;
+
+      auto op2_matrix_init_stmt = stmt->op2->cast<MatrixInitStmt>();
+      std::vector<Stmt *> op2_vals = op2_matrix_init_stmt->values;
+
+      auto op3_matrix_init_stmt = stmt->op3->cast<MatrixInitStmt>();
+      std::vector<Stmt *> op3_vals = op3_matrix_init_stmt->values;
+
+      TI_ASSERT(cond_vals.size() == op2_vals.size());
+      TI_ASSERT(op2_vals.size() == op3_vals.size());
+
+      size_t num_elements = cond_vals.size();
+      auto primitive_type = stmt->ret_type.get_element_type();
+      std::vector<Stmt *> matrix_init_values;
+      for (size_t i = 0; i < num_elements; i++) {
+        auto ternary_stmt = std::make_unique<TernaryOpStmt>(
+            stmt->op_type, cond_vals[i], op2_vals[i], op3_vals[i]);
+        matrix_init_values.push_back(ternary_stmt.get());
+        ternary_stmt->ret_type = primitive_type;
+
+        modifier_.insert_before(stmt, std::move(ternary_stmt));
+      }
+
+      auto matrix_init_stmt =
+          std::make_unique<MatrixInitStmt>(matrix_init_values);
+      matrix_init_stmt->ret_type = stmt->ret_type;
+
+      stmt->replace_usages_with(matrix_init_stmt.get());
+      modifier_.insert_before(stmt, std::move(matrix_init_stmt));
+
+      modifier_.erase(stmt);
+    }
+  }
+
   void visit(GlobalStoreStmt *stmt) override {
     scalarize_store_stmt<GlobalStoreStmt>(stmt);
   }

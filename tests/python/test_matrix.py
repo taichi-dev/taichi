@@ -1071,6 +1071,26 @@ def test_binary_op_scalarize():
                  real_matrix=True,
                  real_matrix_scalarize=True,
                  debug=True)
+def test_ternary_op_scalarize():
+    @ti.kernel
+    def test():
+        cond = ti.Vector([1, 0, 1])
+        x = ti.Vector([3, 3, 3])
+        y = ti.Vector([5, 5, 5])
+
+        z = ti.select(cond, x, y)
+
+        assert z[0] == 3
+        assert z[1] == 5
+        assert z[2] == 3
+
+    test()
+
+
+@test_utils.test(arch=[ti.cuda, ti.cpu],
+                 real_matrix=True,
+                 real_matrix_scalarize=True,
+                 debug=True)
 def test_atomic_op_scalarize():
     @ti.func
     def func(x: ti.template()):

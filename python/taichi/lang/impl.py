@@ -194,7 +194,10 @@ def subscript(ast_builder,
                                               Expr(indices[0]).ptr,
                                               ConvType.g2r))
         ])
-        return subscript(value, *reordered_index, skip_reordered=True)
+        return subscript(ast_builder,
+                         value,
+                         *reordered_index,
+                         skip_reordered=True)
     if isinstance(value, SparseMatrixProxy):
         return value.subscript(*indices)
     if isinstance(value, Field):
@@ -220,7 +223,10 @@ def subscript(ast_builder,
                                        get_runtime().get_current_src_info()))
             return _MatrixFieldElement(value, indices_expr_group)
         if isinstance(value, StructField):
-            entries = {k: subscript(v, *indices) for k, v in value._items}
+            entries = {
+                k: subscript(ast_builder, v, *indices)
+                for k, v in value._items
+            }
             entries['__struct_methods'] = value.struct_methods
             return _IntermediateStruct(entries)
         return Expr(

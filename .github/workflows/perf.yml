@@ -51,6 +51,7 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
 
           ci-docker-run-gpu --name taichi-benchmark-run \
+            -e BENCHMARK_UPLOAD_TOKEN \
              registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
              /home/dev/taichi/.github/workflows/scripts/unix-perf-mon.sh
         env:

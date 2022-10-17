@@ -733,8 +733,8 @@ class Matrix(TaichiOperations):
             5
         """
         # pylint: disable-msg=C0415
-        from taichi.lang.matrix_ops import trace
-        return trace(self)
+        from taichi.lang import matrix_ops
+        return matrix_ops.trace(self)
 
     @taichi_scope
     def inverse(self):

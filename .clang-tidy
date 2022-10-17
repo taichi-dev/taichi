@@ -11,9 +11,17 @@ Checks:  '-*,
          google-build-explicit-make-pair,
          google-explicit-constructor,
          modernize-avoid-bind,
+         modernize-make-shared,
+         modernize-make-unique,
          modernize-replace-random-shuffle,
          modernize-shrink-to-fit,
+         modernize-use-bool-literals,
+         modernize-use-equals-default
+         modernize-use-equals-delete,
+         modernize-use-noexcept,
+         modernize-use-nullptr,
          modernize-use-override,
+         modernize-use-transparent-functors,
          performance-inefficient-string-concatenation,
          readability-identifier-naming'
 CheckOptions:

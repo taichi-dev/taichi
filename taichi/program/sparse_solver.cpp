@@ -155,9 +155,9 @@ void CuSparseSolver::solve_cu(Program *prog,
                               const Ndarray &b,
                               Ndarray &x) {
 #ifdef TI_WITH_CUDA
-  cusparseHandle_t cusparseHandle = NULL;
+  cusparseHandle_t cusparseHandle = nullptr;
   CUSPARSEDriver::get_instance().cpCreate(&cusparseHandle);
-  cusolverSpHandle_t handle = NULL;
+  cusolverSpHandle_t handle = nullptr;
   CUSOLVERDriver::get_instance().csSpCreate(&handle);
 
   int major_version, minor_version, patch_level;
@@ -191,21 +191,21 @@ void CuSparseSolver::solve_cu(Program *prog,
   float *h_val_B = (float *)malloc(sizeof(float) * nnz);
   int *h_mapBfromA = (int *)malloc(sizeof(int) * nnz);
 
-  assert(NULL != h_z);
-  assert(NULL != h_x);
-  assert(NULL != h_b);
-  assert(NULL != h_Qb);
-  assert(NULL != h_Q);
-  assert(NULL != hrow_offsets_B);
-  assert(NULL != hcol_indices_B);
-  assert(NULL != h_val_B);
-  assert(NULL != h_mapBfromA);
+  assert(nullptr != h_z);
+  assert(nullptr != h_x);
+  assert(nullptr != h_b);
+  assert(nullptr != h_Qb);
+  assert(nullptr != h_Q);
+  assert(nullptr != hrow_offsets_B);
+  assert(nullptr != hcol_indices_B);
+  assert(nullptr != h_val_B);
+  assert(nullptr != h_mapBfromA);
 
-  int *hrow_offsets = NULL, *hcol_indices = NULL;
+  int *hrow_offsets = nullptr, *hcol_indices = nullptr;
   hrow_offsets = (int *)malloc(sizeof(int) * (nrows + 1));
   hcol_indices = (int *)malloc(sizeof(int) * nnz);
-  assert(NULL != hrow_offsets);
-  assert(NULL != hcol_indices);
+  assert(nullptr != hrow_offsets);
+  assert(nullptr != hcol_indices);
   // Attention: drow_offsets is not freed at other palces
   CUDADriver::get_instance().memcpy_device_to_host(
       (void *)hrow_offsets, drow_offsets, sizeof(int) * (nrows + 1));
@@ -213,7 +213,7 @@ void CuSparseSolver::solve_cu(Program *prog,
       (void *)hcol_indices, dcol_indices, sizeof(int) * nnz);
 
   /* configure matrix descriptor*/
-  cusparseMatDescr_t descrA = NULL;
+  cusparseMatDescr_t descrA = nullptr;
   CUSPARSEDriver::get_instance().cpCreateMatDescr(&descrA);
   CUSPARSEDriver::get_instance().cpSetMatType(descrA,
                                               CUSPARSE_MATRIX_TYPE_GENERAL);
@@ -286,31 +286,31 @@ void CuSparseSolver::solve_cu(Program *prog,
   CUSOLVERDriver::get_instance().csSpDestory(handle);
   CUSPARSEDriver::get_instance().cpDestroy(cusparseHandle);
 
-  if (hrow_offsets != NULL)
+  if (hrow_offsets != nullptr)
     free(hrow_offsets);
-  if (hcol_indices != NULL)
+  if (hcol_indices != nullptr)
     free(hcol_indices);
-  if (hrow_offsets_B != NULL)
+  if (hrow_offsets_B != nullptr)
     free(hrow_offsets_B);
-  if (hcol_indices_B != NULL)
+  if (hcol_indices_B != nullptr)
     free(hcol_indices_B);
-  if (h_Q != NULL)
+  if (h_Q != nullptr)
     free(h_Q);
-  if (h_mapBfromA != NULL)
+  if (h_mapBfromA != nullptr)
     free(h_mapBfromA);
-  if (h_z != NULL)
+  if (h_z != nullptr)
     free(h_z);
-  if (h_b != NULL)
+  if (h_b != nullptr)
     free(h_b);
-  if (h_Qb != NULL)
+  if (h_Qb != nullptr)
     free(h_Qb);
-  if (h_x != NULL)
+  if (h_x != nullptr)
     free(h_x);
-  if (buffer_cpu != NULL)
+  if (buffer_cpu != nullptr)
     free(buffer_cpu);
-  if (h_val_A != NULL)
+  if (h_val_A != nullptr)
     free(h_val_A);
-  if (h_val_B != NULL)
+  if (h_val_B != nullptr)
     free(h_val_B);
 #endif
 }

@@ -195,7 +195,7 @@ STR(
                                                 metal::memory_order_relaxed);
       if (cur + sz >= kMetalPrintMsgsMaxQueueSize) {
         // Avoid buffer overflow
-        return (device int32_t *)0;
+        return (device int32_t *)nullptr;
       }
       device byte *data_begin = reinterpret_cast<device byte *>(pa + 1);
       device int32_t *ptr =

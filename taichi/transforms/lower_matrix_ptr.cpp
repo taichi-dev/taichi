@@ -57,9 +57,9 @@ class LowerMatrixPtr : public BasicStmtVisitor {
       // during IndexExpression::flatten() Here we need to modify the
       // element_dim and element_shape a little bit.
       int element_dim = -1;  // AOS Vector
-      std::vector<int> element_shape = {std::accumulate(
-          begin(origin->element_shape), end(origin->element_shape), 1,
-          std::multiplies<int>())};
+      std::vector<int> element_shape = {
+          std::accumulate(begin(origin->element_shape),
+                          end(origin->element_shape), 1, std::multiplies<>())};
 
       auto fused = std::make_unique<ExternalPtrStmt>(
           origin->base_ptr, indices, element_shape, element_dim);

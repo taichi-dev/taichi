@@ -155,7 +155,7 @@ def drawArrows(_gui):
     else:
         arr = arrows.to_numpy()
         vel = arr['vel'].reshape(1, -1)[0]
-        vel = (vel / vel.max() * 0xdd + 0x11) * (ti.abs(fade / fadeMax))
+        vel = (vel / vel.max() * 0xdd + 0x11) * (abs(fade / fadeMax))
         mean = vel.mean()
         if mean > 0x7f:
             vel /= mean / 0x7f  # make uniform stream more beautiful
@@ -274,7 +274,7 @@ def processGuiEvent(_gui):
                         else:
                             dipoles[i].m += 0.001 * int((dipoles[i].m >= 0.0) -
                                                         (dipoles[i].m <= 0.0))
-        fade = -ti.abs(fade)  # fade out arrow filed
+        fade = -abs(fade)  # fade out arrow filed
 
 
 if __name__ == '__main__':

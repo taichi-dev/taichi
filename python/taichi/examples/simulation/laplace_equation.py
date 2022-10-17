@@ -1,9 +1,9 @@
+import taichi as ti
+import taichi.math as tm
 import math
 
-import taichi as ti
-
 ti.init()
-vec2 = ti.types.vector(2, float)
+vec2 = tm.vec2
 
 # Author: bismarckkk
 # 2D-Simulation of fundamental solutions of Laplace equation
@@ -60,12 +60,12 @@ def getVel(pos):
         # add source/sink velocity
         uv = pos - sources[i].pos
         uv[0] *= screen[1] / screen[0]
-        vel += uv * sources[i].q / (2 * ti.math.pi * (uv[0]**2 + uv[1]**2))
+        vel += uv * sources[i].q / (2 * tm.pi * (uv[0]**2 + uv[1]**2))
         # add vortex velocity
         uv = pos - vortexes[i].pos
         uv = vec2(-uv[1], uv[0])
         uv[0] *= screen[1] / screen[0]
-        vel += uv * vortexes[i].q / (2 * ti.math.pi * (uv[0]**2 + uv[1]**2))
+        vel += uv * vortexes[i].q / (2 * tm.pi * (uv[0]**2 + uv[1]**2))
         # add dipole velocity
         uv = pos - dipoles[i].pos
         uv[0] *= screen[1] / screen[0]
@@ -131,10 +131,10 @@ def updatePoints():
         if not (0 <= points[i][0] <= 1 and 0 <= points[i][1] <= 1):
             points[i] = vec2(-100, -100)
         for j in range(maxElements):
-            if sources[j].q < 0 and ti.math.length(points[i] -
+            if sources[j].q < 0 and tm.length(points[i] -
                                                    sources[j].pos) < 0.025:
                 points[i] = vec2(-100, -100)
-            if dipoles[j].m != 0 and ti.math.length(points[i] -
+            if dipoles[j].m != 0 and tm.length(points[i] -
                                                     dipoles[j].pos) < 0.05:
                 points[i] = vec2(-100, -100)
 
@@ -173,9 +173,9 @@ def drawArrows(_gui):
 def drawMark(_gui, _frame):
     triangleTrans = [
         vec2(0, 1) / guiHeight,
-        vec2(math.cos(7. / 6. * math.pi), math.sin(7. / 6. * math.pi)) /
+        vec2(tm.cos(7. / 6. * tm.pi), tm.sin(7. / 6. * tm.pi)) /
         guiHeight,
-        vec2(math.cos(-1. / 6. * math.pi), math.sin(-1. / 6. * math.pi)) /
+        vec2(tm.cos(-1. / 6. * tm.pi), tm.sin(-1. / 6. * tm.pi)) /
         guiHeight
     ]
     rectTrans = [
@@ -196,15 +196,9 @@ def drawMark(_gui, _frame):
                       sources[i].pos + rectTrans[1] * 2 * sources[i].q,
                       -2 * sources[i].q + 1, 0xD25565)
         if vortexes[i].q != 0:
-            rotateMatrix = ti.Matrix(
-                [[
-                    math.cos(vortexes[i].q * dt * 40 * _frame),
-                    -math.sin(vortexes[i].q * dt * 40 * _frame)
-                ],
-                 [
-                     math.sin(vortexes[i].q * dt * 40 * _frame),
-                     math.cos(vortexes[i].q * dt * 40 * _frame)
-                 ]])
+            theta = vortexes[i].q * dt * 40 * _frame
+            ct, st = ti.cos(theta), ti.sin(theta)
+            rotateMatrix = ti.Matrix([[ct, -st], [st, ct]])
             trans = [rotateMatrix @ it for it in triangleTrans]
             for it in trans:
                 it[0] *= screen[1] / screen[0]
@@ -262,28 +256,28 @@ def processGuiEvent(_gui):
                     if sources[i].q != 0 and (sources[i].pos - vec2(
                             *_gui.get_cursor_pos())).norm() < 5 / guiHeight:
                         if _gui.is_pressed(ti.GUI.RMB):
-                            sources[i].q -= 0.5 * int((sources[i].q >= 0.0) -
-                                                      (sources[i].q <= 0.0))
+                            sources[i].q -= 0.5 * int((sources[i].q >= 0.0) - (
+                                sources[i].q <= 0.0))
                         else:
-                            sources[i].q += 0.5 * int((sources[i].q >= 0.0) -
-                                                      (sources[i].q <= 0.0))
+                            sources[i].q += 0.5 * int((sources[i].q >= 0.0) - (
+                                sources[i].q <= 0.0))
                     if vortexes[i].q != 0 and (vortexes[i].pos - vec2(
                             *_gui.get_cursor_pos())).norm() < 5 / guiHeight:
                         if _gui.is_pressed(ti.GUI.RMB):
-                            vortexes[i].q -= 0.1 * int((vortexes[i].q >= 0.0) -
-                                                       (vortexes[i].q <= 0.0))
+                            vortexes[i].q -= 0.1 * int((
+                                vortexes[i].q >= 0.0) - (vortexes[i].q <= 0.0))
                         else:
-                            vortexes[i].q += 0.1 * int((vortexes[i].q >= 0.0) -
-                                                       (vortexes[i].q <= 0.0))
+                            vortexes[i].q += 0.1 * int((
+                                vortexes[i].q >= 0.0) - (vortexes[i].q <= 0.0))
                     if dipoles[i].m != 0 and (dipoles[i].pos - vec2(
                             *_gui.get_cursor_pos())).norm() < 5 / guiHeight:
                         if _gui.is_pressed(ti.GUI.RMB):
-                            dipoles[i].m -= 0.001 * int((dipoles[i].m >= 0.0) -
-                                                        (dipoles[i].m <= 0.0))
+                            dipoles[i].m -= 0.001 * int((
+                                dipoles[i].m >= 0.0) - (dipoles[i].m <= 0.0))
                         else:
-                            dipoles[i].m += 0.001 * int((dipoles[i].m >= 0.0) -
-                                                        (dipoles[i].m <= 0.0))
-        fade = -math.fabs(fade)  # fade out arrow filed
+                            dipoles[i].m += 0.001 * int((
+                                dipoles[i].m >= 0.0) - (dipoles[i].m <= 0.0))
+        fade = -ti.abs(fade)  # fade out arrow filed
 
 
 if __name__ == '__main__':

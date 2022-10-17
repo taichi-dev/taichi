@@ -283,7 +283,7 @@ class Scalarize : public BasicStmtVisitor {
     modifier_.insert_before(stmt, Stmt::make<PrintStmt>(new_contents));
     modifier_.erase(stmt);
   }
-  
+
   /*
     Before:
       TensorType<4 x i32> val = AtomicStmt(TensorType<4 x i32>* dest,

@@ -981,7 +981,7 @@ class ASTBuilder {
   void insert_snode_activate(SNode *snode, const ExprGroup &expr_group);
   void insert_snode_deactivate(SNode *snode, const ExprGroup &expr_group);
 
-  std::vector<Expr> flatten_indices_expr(std::vector<Expr> &indices);
+  std::vector<Expr> expand_expr(std::vector<Expr> &indices);
 
   void create_scope(std::unique_ptr<Block> &list, LoopType tp = NotLoop);
   void pop_scope();

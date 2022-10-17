@@ -147,6 +147,9 @@ class ASTTransformer(Builder):
             values: A node/list representing the values.
             is_static_assign: A boolean value indicating whether this is a static assignment
         """
+        if isinstance(values, impl.Expr) and values.ptr.is_tensor():
+            values = ctx.ast_builder.expand_expr([values.ptr])
+
         if isinstance(node_target, ast.Subscript):
             return ASTTransformer.build_assign_slice(ctx, node_target, values,
                                                      is_static_assign)

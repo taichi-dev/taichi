@@ -41,7 +41,7 @@ class Timeline {
 
   class Guard {
    public:
-    Guard(const std::string &name);
+    explicit Guard(const std::string &name);
 
     ~Guard();
 

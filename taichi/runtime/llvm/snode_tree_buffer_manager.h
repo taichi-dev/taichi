@@ -14,7 +14,7 @@ class LlvmRuntimeExecutor;
 
 class SNodeTreeBufferManager {
  public:
-  SNodeTreeBufferManager(LlvmRuntimeExecutor *runtime_exec);
+  explicit SNodeTreeBufferManager(LlvmRuntimeExecutor *runtime_exec);
 
   void merge_and_insert(Ptr ptr, std::size_t size);
 

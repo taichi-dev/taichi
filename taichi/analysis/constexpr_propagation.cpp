@@ -15,7 +15,7 @@ class ConstExprPropagation : public IRVisitor {
  public:
   using is_const_seed_func = std::function<bool(Stmt *)>;
 
-  ConstExprPropagation(const is_const_seed_func &is_const_seed)
+  explicit ConstExprPropagation(const is_const_seed_func &is_const_seed)
       : is_const_seed_(is_const_seed) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;

@@ -44,7 +44,7 @@ bool test_threading();
 namespace taichi::lang {
 
 Expr expr_index(const Expr &expr, const Expr &index) {
-  return expr[index];
+  return expr[ExprGroup(index)];
 }
 
 std::string libdevice_path();
@@ -203,7 +203,6 @@ void export_lang(py::module &m) {
       .def_readwrite("detect_read_only", &CompileConfig::detect_read_only)
       .def_readwrite("ndarray_use_cached_allocator",
                      &CompileConfig::ndarray_use_cached_allocator)
-      .def_readwrite("use_mesh", &CompileConfig::use_mesh)
       .def_readwrite("real_matrix", &CompileConfig::real_matrix)
       .def_readwrite("real_matrix_scalarize",
                      &CompileConfig::real_matrix_scalarize)
@@ -620,7 +619,7 @@ void export_lang(py::module &m) {
       .def("dtype", &aot::Arg::dtype)
       .def("channel_format", &aot::Arg::dtype);
 
-  py::class_<Node>(m, "Node");
+  py::class_<Node>(m, "Node");  // NOLINT(bugprone-unused-raii)
 
   py::class_<Sequential, Node>(m, "Sequential")
       .def(py::init<GraphBuilder *>())
@@ -811,7 +810,7 @@ void export_lang(py::module &m) {
       .def("size", [](ExprGroup *eg) { return eg->exprs.size(); })
       .def("push_back", &ExprGroup::push_back);
 
-  py::class_<Stmt>(m, "Stmt");
+  py::class_<Stmt>(m, "Stmt");  // NOLINT(bugprone-unused-raii)
 
   m.def("expr_snode_get_addr", &snode_get_addr);
   m.def("expr_snode_append", &snode_append);
@@ -1157,6 +1156,7 @@ void export_lang(py::module &m) {
   m.def("get_type_factory_instance", TypeFactory::get_instance,
         py::return_value_policy::reference);
 
+  // NOLINTNEXTLINE(bugprone-unused-raii)
   py::class_<BitStructType>(m, "BitStructType");
   py::class_<BitStructTypeBuilder>(m, "BitStructTypeBuilder")
       .def(py::init<int>())
@@ -1295,8 +1295,8 @@ void export_lang(py::module &m) {
       .value("g2r", mesh::ConvType::g2r)
       .export_values();
 
-  py::class_<mesh::Mesh>(m, "Mesh");
-  py::class_<mesh::MeshPtr>(m, "MeshPtr");
+  py::class_<mesh::Mesh>(m, "Mesh");        // NOLINT(bugprone-unused-raii)
+  py::class_<mesh::MeshPtr>(m, "MeshPtr");  // NOLINT(bugprone-unused-raii)
 
   m.def("element_order", mesh::element_order);
   m.def("from_end_element_order", mesh::from_end_element_order);

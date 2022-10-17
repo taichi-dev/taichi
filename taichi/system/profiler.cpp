@@ -62,7 +62,7 @@ class ProfilerRecords {
   int current_depth;
   bool enabled;
 
-  ProfilerRecords(const std::string &name) {
+  explicit ProfilerRecords(const std::string &name) {
     root = std::make_unique<ProfilerRecordNode>(
         fmt::format("[Profiler {}]", name), nullptr);
     current_node = root.get();

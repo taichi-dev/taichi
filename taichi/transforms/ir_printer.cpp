@@ -44,8 +44,8 @@ class IRPrinter : public IRVisitor {
   std::string *output{nullptr};
   std::stringstream ss;
 
-  IRPrinter(ExpressionPrinter *expr_printer = nullptr,
-            std::string *output = nullptr)
+  explicit IRPrinter(ExpressionPrinter *expr_printer = nullptr,
+                     std::string *output = nullptr)
       : expr_printer_(expr_printer), output(output) {
   }
 

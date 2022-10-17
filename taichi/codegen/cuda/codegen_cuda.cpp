@@ -30,7 +30,7 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
  public:
   using IRVisitor::visit;
 
-  TaskCodeGenCUDA(Kernel *kernel, IRNode *ir = nullptr)
+  explicit TaskCodeGenCUDA(Kernel *kernel, IRNode *ir = nullptr)
       : TaskCodeGenLLVM(kernel, ir) {
   }
 

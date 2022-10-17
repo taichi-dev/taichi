@@ -53,7 +53,7 @@ class FrontendExprStmt : public Stmt {
  public:
   Expr val;
 
-  FrontendExprStmt(const Expr &val) : val(val) {
+  explicit FrontendExprStmt(const Expr &val) : val(val) {
   }
 
   TI_DEFINE_ACCEPT
@@ -132,7 +132,7 @@ class FrontendIfStmt : public Stmt {
   Expr condition;
   std::unique_ptr<Block> true_statements, false_statements;
 
-  FrontendIfStmt(const Expr &condition) : condition(condition) {
+  explicit FrontendIfStmt(const Expr &condition) : condition(condition) {
   }
 
   bool is_container_statement() const override {
@@ -147,7 +147,7 @@ class FrontendPrintStmt : public Stmt {
   using EntryType = std::variant<Expr, std::string>;
   std::vector<EntryType> contents;
 
-  FrontendPrintStmt(const std::vector<EntryType> &contents_) {
+  explicit FrontendPrintStmt(const std::vector<EntryType> &contents_) {
     for (const auto &c : contents_) {
       if (std::holds_alternative<Expr>(c))
         contents.push_back(std::get<Expr>(c));
@@ -215,7 +215,7 @@ class FrontendFuncDefStmt : public Stmt {
   std::string funcid;
   std::unique_ptr<Block> body;
 
-  FrontendFuncDefStmt(const std::string &funcid) : funcid(funcid) {
+  explicit FrontendFuncDefStmt(const std::string &funcid) : funcid(funcid) {
   }
 
   bool is_container_statement() const override {
@@ -253,7 +253,7 @@ class FrontendWhileStmt : public Stmt {
   Expr cond;
   std::unique_ptr<Block> body;
 
-  FrontendWhileStmt(const Expr &cond) : cond(cond) {
+  explicit FrontendWhileStmt(const Expr &cond) : cond(cond) {
   }
 
   bool is_container_statement() const override {
@@ -267,7 +267,7 @@ class FrontendReturnStmt : public Stmt {
  public:
   ExprGroup values;
 
-  FrontendReturnStmt(const ExprGroup &group) : values(group) {
+  explicit FrontendReturnStmt(const ExprGroup &group) : values(group) {
   }
 
   bool is_container_statement() const override {
@@ -313,7 +313,7 @@ class TexturePtrExpression : public Expression {
   DataType channel_format{PrimitiveType::f32};
   int lod{0};
 
-  TexturePtrExpression(int arg_id, int num_dims = 2)
+  explicit TexturePtrExpression(int arg_id, int num_dims = 2)
       : arg_id(arg_id), num_dims(num_dims) {
   }
 
@@ -341,7 +341,7 @@ class RandExpression : public Expression {
  public:
   DataType dt;
 
-  RandExpression(DataType dt) : dt(dt) {
+  explicit RandExpression(DataType dt) : dt(dt) {
   }
 
   void type_check(CompileConfig *config) override;
@@ -677,7 +677,7 @@ class IdExpression : public Expression {
  public:
   Identifier id;
 
-  IdExpression(const Identifier &id) : id(id) {
+  explicit IdExpression(const Identifier &id) : id(id) {
   }
 
   void type_check(CompileConfig *config) override {
@@ -762,7 +762,7 @@ class ConstExpression : public Expression {
   TypedConstant val;
 
   template <typename T>
-  ConstExpression(const T &x) : val(x) {
+  explicit ConstExpression(const T &x) : val(x) {
     ret_type = val.dt;
   }
   template <typename T>
@@ -879,7 +879,7 @@ class ReferenceExpression : public Expression {
   Expr var;
   void type_check(CompileConfig *config) override;
 
-  ReferenceExpression(const Expr &expr) : var(expr) {
+  explicit ReferenceExpression(const Expr &expr) : var(expr) {
   }
 
   void flatten(FlattenContext *ctx) override;
@@ -1024,7 +1024,7 @@ class FrontendContext {
   std::unique_ptr<Block> root_node_;
 
  public:
-  FrontendContext(Arch arch) {
+  explicit FrontendContext(Arch arch) {
     root_node_ = std::make_unique<Block>();
     current_builder_ = std::make_unique<ASTBuilder>(root_node_.get(), arch);
   }

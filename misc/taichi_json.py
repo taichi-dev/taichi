@@ -74,7 +74,7 @@ class DeclarationRegistry:
         DeclarationRegistry.current = declr_reg
 
 
-def load_inc_enums(name):
+def load_inc_enums():
     paths = glob.glob("taichi/inc/*.inc.h")
     cases = defaultdict(dict)
     for path in paths:
@@ -84,7 +84,7 @@ def load_inc_enums(name):
                 if m:
                     key = m[1]
                     try:
-                        case_name = name.extend(m[2])
+                        case_name = Name(m[2])
                     except AssertionError:
                         continue
                     cases[key][case_name] = len(cases[key])
@@ -151,20 +151,20 @@ class Enumeration(EntryBase):
     def __init__(self, j):
         super().__init__(j, "enumeration")
         if "inc_cases" in j:
-            self.cases = load_inc_enums(self.name)[j["inc_cases"]]
+            self.cases = load_inc_enums()[j["inc_cases"]]
         else:
-            self.cases = dict((self.name.extend(name), value)
-                              for name, value in j["cases"].items())
+            self.cases = dict(
+                (Name(name), value) for name, value in j["cases"].items())
 
 
 class BitField(EntryBase):
     def __init__(self, j):
         super().__init__(j, "bit_field")
         if "inc_cases" in j:
-            self.bits = load_inc_enums(self.name)[j["inc_bits"]]
+            self.bits = load_inc_enums()[j["inc_bits"]]
         else:
-            self.bits = dict((self.name.extend(name), value)
-                             for name, value in j["bits"].items())
+            self.bits = dict(
+                (Name(name), value) for name, value in j["bits"].items())
 
 
 class Field:
@@ -249,24 +249,37 @@ class Documentation:
                     break
 
             # Collect API-references.
-            SYM_PATTERN = r"\`(\w+\.\w+(?:\.\w+)?)\`"
+            SYM_PATTERN = r"\`(\w+\.\w+)\`"
+            FIELD_PATTERN = r"-\s+\`(\w+\.\w+\.\w+)\`:\s*(.*)$"
             cur_sym = None
             api_refs = defaultdict(list)
+            api_field_refs = defaultdict(str)
             for line in templ[i:]:
                 line = line.strip()
-                if re.match(SYM_PATTERN, line):
+
+                # Match API header
+                m = re.match(SYM_PATTERN, line)
+                if m:
                     # Remove trailing empty lines.
-                    while len(api_refs[cur_sym][-1]) == 0:
+                    while api_refs[cur_sym] and len(
+                            api_refs[cur_sym][-1]) == 0:
                         del api_refs[cur_sym][-1]
 
                     # Enter parsing for the next symbol.
-                    cur_sym = line[1:-1]
+                    cur_sym = m[1]
                     continue
+
+                m = re.match(FIELD_PATTERN, line)
+                if m:
+                    api_field_refs[m[1]] = m[2]
+                    continue
+
                 api_refs[cur_sym] += [line]
 
             self.markdown_metadata = markdown_metadata
             self.module_doc = module_doc
             self.api_refs = api_refs
+            self.api_field_refs = api_field_refs
 
 
 class Module:

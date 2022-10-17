@@ -1,4 +1,5 @@
 import pytest
+from taichi.lang.exception import TaichiCompilationError
 
 import taichi as ti
 from tests import test_utils
@@ -209,3 +210,22 @@ def test_dynamic_activate():
     assert l[0] == m
     assert l[1] == 21
     assert l[2] == 21
+
+
+@test_utils.test(require=ti.extension.sparse)
+def test_append_vec():
+    x = ti.Vector.field(3, ti.f32)
+    block = ti.root.dense(ti.i, 16)
+    pixel = block.dynamic(ti.j, 16)
+    pixel.place(x)
+
+    @ti.kernel
+    def make_lists():
+        for i in range(5):
+            for j in range(i):
+                x_vec3 = ti.math.vec3(i, j, j * j)
+                ti.append(x.parent(), i, x_vec3)
+
+    with pytest.raises(TaichiCompilationError,
+                       match=r'append only supports appending a scalar value'):
+        make_lists()

@@ -33,7 +33,7 @@ struct KernelProfileStatisticalResult {
   double max;
   double total;
 
-  KernelProfileStatisticalResult(const std::string &name)
+  explicit KernelProfileStatisticalResult(const std::string &name)
       : name(name), counter(0), min(0), max(0), total(0) {
   }
 

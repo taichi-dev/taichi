@@ -1,6 +1,5 @@
 import pytest
 from taichi.lang.enums import AutodiffMode
-from taichi.lang.kernel_impl import _kernel_impl
 
 import taichi as ti
 from tests import test_utils
@@ -171,26 +170,3 @@ def test_autodiff_mode_recovered():
         func_calls = t.calls
     for f, _ in func_calls:
         assert f.autodiff_mode == AutodiffMode.NONE
-
-    # Test for kernels whose initial modes are AutodiffMode.REVERSE
-    def func_3():
-        loss[None] = x[1] * b[None]
-
-    def func_4():
-        loss[None] = x[1] * b[None]
-
-    kernel_3 = _kernel_impl(func_3, level_of_class_stackframe=3)
-    kernel_3._primal.autodiff_mode = AutodiffMode.REVERSE
-
-    kernel_4 = _kernel_impl(func_4, level_of_class_stackframe=3)
-    kernel_4._primal.autodiff_mode = AutodiffMode.REVERSE
-
-    func_calls = []
-    with ti.ad.Tape(loss=loss, validation=True) as t:
-        kernel_3()
-        kernel_4()
-        for f, _ in t.calls:
-            assert f.autodiff_mode == AutodiffMode.VALIDATION
-        func_calls = t.calls
-    for f, _ in func_calls:
-        assert f.autodiff_mode == AutodiffMode.REVERSE

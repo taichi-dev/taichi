@@ -216,6 +216,7 @@ class Tape:
             calls[0].autodiff_mode = mode
 
     def insert(self, func, args):
+        assert func.autodiff_mode == AutodiffMode.NONE, "Inserted funcs should be forward kernels."
         self.modes.append(func.autodiff_mode)
         if self.validation:
             func.autodiff_mode = AutodiffMode.VALIDATION

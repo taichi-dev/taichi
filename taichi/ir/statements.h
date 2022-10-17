@@ -474,6 +474,8 @@ class SNodeOpStmt : public Stmt {
 };
 
 // TODO: remove this
+// (penguinliong) This Stmt is used for both ND-arrays and textures. This is
+// subject to change in the future.
 class ExternalTensorShapeAlongAxisStmt : public Stmt {
  public:
   int axis;

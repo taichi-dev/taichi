@@ -291,9 +291,13 @@ class Scalarize : public BasicStmtVisitor {
       return;
     }
 
-    // AtomicOpExpression::type_check() should have taken care of the
-    // broadcasting and neccessary conversions. So we simply add an assertion
-    // here to make sure that the operands are of the same shape and dtype
+    // AtomicOpExpression::type_check() have taken care of the broadcasting,
+    // but the type conversions are delayed until irpass::type_check().
+    // So we only check for the shape here.
+    TI_ASSERT(dest_dtype->is<TensorType>() && val_dtype->is<TensorType>());
+    TI_ASSERT(dest_dtype->cast<TensorType>()->get_shape() ==
+              val_dtype->cast<TensorType>()->get_shape());
+
     if (dest_dtype->is<TensorType>() && val_dtype->is<TensorType>()) {
       // Scalarization for LoadStmt should have already replaced val operand
       // to MatrixInitStmt
@@ -313,8 +317,6 @@ class Scalarize : public BasicStmtVisitor {
             TypedConstant(get_data_type<int32>(), i));
         auto matrix_ptr_stmt =
             std::make_unique<MatrixPtrStmt>(stmt->dest, const_stmt.get());
-        matrix_ptr_stmt->ret_type = primitive_type;
-        matrix_ptr_stmt->ret_type.set_is_pointer(true);
 
         // scalarize to val_i
         auto val_stmt = val_values[i];

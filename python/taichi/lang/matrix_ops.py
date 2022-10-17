@@ -1,6 +1,6 @@
 from taichi.lang.impl import static
 from taichi.lang.kernel_impl import func, pyfunc
-from taichi.lang.matrix_ops_utils import (arg_at, is_tensor, preconditions,
+from taichi.lang.matrix_ops_utils import (arg_at, assert_tensor, preconditions,
                                           square_matrix)
 from taichi.lang.ops import cast
 from taichi.lang.util import in_taichi_scope
@@ -19,7 +19,7 @@ def trace(x):
     return result
 
 
-@preconditions(arg_at(0, is_tensor))
+@preconditions(arg_at(0, assert_tensor))
 @func
 def fill(m: Template(), val):
     s = static(m.get_shape())

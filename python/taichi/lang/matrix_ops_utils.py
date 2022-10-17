@@ -42,7 +42,7 @@ def arg_at(i, *fns):
     return check
 
 
-def is_tensor(m, msg='not tensor type: {}'):
+def assert_tensor(m, msg='not tensor type: {}'):
     if isinstance(m, Matrix):
         return True, None
     if isinstance(m, Expr) and m.is_tensor():
@@ -51,7 +51,7 @@ def is_tensor(m, msg='not tensor type: {}'):
 
 
 def square_matrix(x):
-    is_tensor(x)
+    assert_tensor(x)
     shape = x.get_shape()
     if shape[0] != shape[1]:
         return False, f'not a square matrix: {shape}'

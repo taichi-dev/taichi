@@ -43,8 +43,7 @@ class AlgSimp : public BasicStmtVisitor {
   bool fast_math;
   DelayedIRModifier modifier;
 
-  explicit AlgSimp(bool fast_math_)
-      : BasicStmtVisitor(), fast_math(fast_math_) {
+  explicit AlgSimp(bool fast_math_) : fast_math(fast_math_) {
   }
 
   [[nodiscard]] bool is_redundant_cast(const DataType &first_cast,

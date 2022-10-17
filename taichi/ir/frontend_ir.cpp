@@ -1366,19 +1366,6 @@ std::vector<Expr> ASTBuilder::flatten_indices_expr(const std::vector<Expr> &indi
   if (index_expr.is<IdExpression>()) {
     id_expr = index_expr;
   } else {
-    /*
-      auto var = Expr(std::make_shared<IdExpression>(get_next_id()));
-      var.expr->ret_type = tensor_type;
-
-      auto frontend_alloca_stmt = std::make_unique<FrontendAllocaStmt>(
-          std::static_pointer_cast<IdExpression>(var.expr)->id,
-          tensor_type);
-      frontend_alloca_stmt->ret_type = tensor_type;
-
-      auto frontend_assign_stmt = std::make_unique<FrontendAssignStmt>(var,
-      index_expr); this->insert(std::move(frontend_alloca_stmt));
-      this->insert(std::move(frontend_assign_stmt));
-    */
     id_expr = make_var(index_expr, index_expr->tb);
   }
   for (int i = 0; i < tensor_type->get_num_elements(); i++) {

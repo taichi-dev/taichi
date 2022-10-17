@@ -998,8 +998,8 @@ class Matrix(TaichiOperations):
             [-1, -1, -1, -1]
         """
         # pylint: disable=C0415
-        from taichi.lang.matrix_ops import fill
-        return fill(self, val)
+        from taichi.lang import matrix_ops
+        return matrix_ops.fill(self, val)
 
     @python_scope
     def to_numpy(self, keep_dims=False):

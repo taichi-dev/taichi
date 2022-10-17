@@ -1382,8 +1382,8 @@ std::vector<Expr> ASTBuilder::flatten_indices_expr(std::vector<Expr> &indices) {
     id_expr = make_var(index_expr, index_expr->tb);
   }
   for (int i = 0; i < tensor_type->get_num_elements(); i++) {
-    auto ind = Expr(
-        std::make_shared<IndexExpression>(id_expr, Expr(i), index_expr->tb));
+    auto ind = Expr(std::make_shared<IndexExpression>(
+        id_expr, ExprGroup(Expr(i)), index_expr->tb));
     ind.expr->ret_type = tensor_type->get_element_type();
     flattened_indices.push_back(ind);
   }

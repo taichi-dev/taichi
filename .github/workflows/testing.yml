@@ -618,14 +618,14 @@ jobs:
         run: |
           . .github/workflows/scripts/common-utils.sh
           chown -R 1000:1000 .
-          ci-docker-run \
+          ci-docker-run --name taichi-prepare-unity-build-env \
             registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.6 \
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh prepare-unity-build-env
 
       - name: Build Taichi-UnityExample
         run: |
           . .github/workflows/scripts/common-utils.sh
-          ci-docker-run \
+          ci-docker-run --name taichi-build-unity-demo \
             registry.taichigraphics.com/unityci-editor:ubuntu-2020.3.14f1-android-1-with-secret-sauce \
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh build-unity-demo
 
@@ -633,7 +633,7 @@ jobs:
         run: |
           . .github/workflows/scripts/common-utils.sh
           chown -R 1000:1000 .
-          ci-docker-run \
+          ci-docker-run --name taichi-run-unity-demo \
             registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.6 \
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh smoke-test-unity-demo
 
@@ -641,6 +641,6 @@ jobs:
         run: |
           . .github/workflows/scripts/common-utils.sh
           chown -R 1000:1000 .
-          ci-docker-run \
+          ci-docker-run --name taichi-test-capi-headless-demo \
             registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.6 \
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh build-and-test-headless-demo

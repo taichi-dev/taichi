@@ -11,17 +11,18 @@ import taichi as ti
 
 @ti.data_oriented
 class Dendrite:
-    def __init__(self,
-                 dx=0.03,
-                 dt=2.e-4,
-                 n=512,
-                 dtype=ti.f64,
-                 n_fold_symmetry=6,
-                 angle0=0.):
+    def __init__(
+            self,
+            dx=0.03,  # grid space
+            dt=2.e-4,  # time step
+            n=512,  # field shape
+            dtype=ti.f64,  # data type
+            n_fold_symmetry=6,  # dendrites number
+            angle0=0.,  # initial angle
+    ):
         self.n = n  # the size of the field
-        self.phi = ti.field(
-            dtype=dtype, shape=(n, n)
-        )  # phase field indicate solid phase (phi=1) and water vapor phase (phi=0)
+        ### phase field indicate solid phase (phi=1) and water vapor phase (phi=0)
+        self.phi = ti.field(dtype=dtype, shape=(n, n))
         self.temperature = ti.field(dtype=dtype, shape=(n, n))
         self.phi_old = ti.field(dtype=dtype, shape=(n, n))
         self.temperature_old = ti.field(dtype=dtype, shape=(n, n))
@@ -30,9 +31,7 @@ class Dendrite:
             dtype=dtype,
             shape=(n, n))  # anisotropic gradient energy coefficient
         self.phiRate = ti.Vector.field(
-            4, dtype=dtype,
-            shape=(n, n))  # phiRate[i, j][0] ~  phiRate[i, j][3]
-        # is the rate for 4th-order Runge-Kutta method
+            4, dtype=dtype, shape=(n, n))  # rate of phi, with RK4 method
         self.temperatureRate = ti.Vector.field(4, dtype=dtype, shape=(n, n))
 
         self.dx = dx
@@ -90,10 +89,10 @@ class Dendrite:
             self.phi, self.phi_old, self.temperature, self.temperature_old,
             self.dt)
         for I in ti.grouped(phi):
-            phi[I] = phi_old[I] + self.dtRatio_rk4[
-                rk_loop] * dt * self.phiRate[I][rk_loop - 1]
-            temperature[I] = temperature_old[I] + self.dtRatio_rk4[
-                rk_loop] * dt * self.temperatureRate[I][rk_loop - 1]
+            phi[I] = phi_old[I] + \
+                self.dtRatio_rk4[rk_loop] * dt * self.phiRate[I][rk_loop - 1]
+            temperature[I] = temperature_old[I] + \
+                self.dtRatio_rk4[rk_loop] * dt * self.temperatureRate[I][rk_loop - 1]
 
     @ti.kernel
     def get_rate(self, rk_loop: int):
@@ -162,10 +161,8 @@ class Dendrite:
 
             self.phiRate[i, j][rk_loop] = mobility * (
                 chemicalForce + gradForce_term1 + gradForce_term2)
-            self.temperatureRate[
-                i,
-                j][rk_loop] = lapla_tp + self.latent_heat_coef * self.phiRate[
-                    i, j][rk_loop]
+            self.temperatureRate[i,j][rk_loop] = \
+                lapla_tp + self.latent_heat_coef * self.phiRate[i, j][rk_loop]
 
     @ti.kernel
     def rk4_total_update(self, ):
@@ -175,10 +172,10 @@ class Dendrite:
             self.temperature_old, self.phiRate, self.temperatureRate)
         for I in ti.grouped(phi):
             for k in ti.static(range(4)):
-                phi_old[
-                    I] = phi_old[I] + self.weights_rk4[k] * dt * phiRate[I][k]
-                temperature_old[I] = temperature_old[
-                    I] + self.weights_rk4[k] * dt * temperatureRate[I][k]
+                phi_old[I] = phi_old[I] + \
+                    self.weights_rk4[k] * dt * phiRate[I][k]
+                temperature_old[I] = temperature_old[I] + \
+                    self.weights_rk4[k] * dt * temperatureRate[I][k]
         for I in ti.grouped(phi):
             phi[I] = phi_old[I]
             temperature[I] = temperature_old[I]
@@ -202,13 +199,13 @@ class Dendrite:
 
         if self.writeImages:
             path = "./results/"
-            if not os.path.exists(path): os.makedirs(path)
+            if not os.path.exists(path):
+                os.makedirs(path)
 
         for i in range(steps):
             if i % self.showFrameFrequency == 0:
                 gui_phi.set_image(self.phi)
-                gui_phi.show(path +
-                             "time_{:.4f}s.png".format(i * self.dt) if i %
+                gui_phi.show(path + f"time_{i * self.dt :.4f}s.png" if i %
                              (self.showFrameFrequency *
                               8) == 0 and self.writeImages else None)
             self.advance()

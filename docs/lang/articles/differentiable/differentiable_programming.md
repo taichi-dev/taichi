@@ -306,15 +306,15 @@ assert x.grad[2] == 3.0
 ### Global Data Access Rules Checker
 A checker is provided for detecting potential violation of global data access rules.
 
-1. To enable this checker, set `validate_autodiff=True` when calling `ti.init()`.
-2. To check the kernels you want to automatically differentiate, set `validation=True` when using the `with ti.Tape()`.
+1. The checker only works in debug mode, to enable it, set `debug=True` when calling `ti.init()`.
+2. Set `validation=True` when using the `with ti.ad.Tape()`, the kernels captured by the `ti.ad.Tape()` will be checked.
 3. The checker will help locate the line of code which breaks the rules if the violation happens.
 
 For example:
 
 ```python
 import taichi as ti
-ti.init(validate_autodiff=True)
+ti.init(debug=True)
 
 N = 5
 x = ti.field(dtype=ti.f32, shape=N, needs_grad=True)
@@ -331,7 +331,7 @@ def func_2():
     b[None] += 100
 
 b[None] = 10
-with ti.Tape(loss, validation=True):
+with ti.ad.Tape(loss, validation=True):
     func_1()
     func_2()
 

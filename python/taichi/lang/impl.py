@@ -352,8 +352,7 @@ class PyTaichi:
             # https://github.com/taichi-dev/taichi/blob/27bb1dc3227d9273a79fcb318fdb06fd053068f5/tests/python/test_ad_basics.py#L260-L266
             return
 
-        if get_runtime().prog.config().debug and get_runtime().prog.config(
-        ).validate_autodiff:
+        if get_runtime().prog.config().debug:
             if not root.finalized:
                 root._allocate_adjoint_checkbit()
 
@@ -643,7 +642,7 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
         if needs_grad:
             pytaichi.grad_vars.append(x_grad)
 
-        if prog.config().debug and prog.config().validate_autodiff:
+        if prog.config().debug:
             # adjoint checkbit
             x_grad_checkbit = Expr(get_runtime().prog.make_id_expr(""))
             dtype = u8

@@ -216,6 +216,8 @@ class Tape:
             calls[0].autodiff_mode = mode
 
     def insert(self, func, args):
+        # Kernels with mode `AutodiffMode.NONE` and `AutodiffMode.VALIDATION` are all forward kernels.
+        # The difference is there are `assert` for global data access rule check in VALIDATION kernels.
         assert func.autodiff_mode == AutodiffMode.NONE or func.autodiff_mode == AutodiffMode.VALIDATION, "Inserted funcs should be forward kernels."
         self.modes.append(func.autodiff_mode)
         if self.validation:

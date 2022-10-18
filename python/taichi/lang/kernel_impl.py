@@ -846,6 +846,8 @@ class Kernel:
         # Both the class kernels and the plain-function kernels are unified now.
         # In both cases, |self.grad| is another Kernel instance that computes the
         # gradient. For class kernels, args[0] is always the kernel owner.
+
+        # No need to capture grad kernels because they are already binded with their primal kernels
         if self.autodiff_mode != AutodiffMode.REVERSE and self.runtime.target_tape and not self.runtime.grad_replaced:
             self.runtime.target_tape.insert(self, args)
 

@@ -232,10 +232,12 @@ if(TI_WITH_LLVM)
         add_subdirectory(taichi/rhi/dx12)
         add_subdirectory(taichi/runtime/dx12)
         add_subdirectory(taichi/codegen/dx12)
+        add_subdirectory(taichi/runtime/program_impls/dx12)
 
         target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/DirectX-Headers/include)
         target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE dx12_codegen)
         target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE dx12_runtime)
+        target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE dx12_program_impl)
     endif()
 
     add_subdirectory(taichi/rhi/llvm)

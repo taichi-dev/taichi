@@ -26,6 +26,8 @@ std::string get_cache_path_by_arch(const std::string &base_path, Arch arch) {
     subdir = "gfx";
   } else if (arch == Arch::metal) {
     subdir = "metal";
+  } else if (arch == Arch::dx12) {
+    subdir = "dx12";
   } else {
     return base_path;
   }

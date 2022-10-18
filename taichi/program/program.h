@@ -310,6 +310,13 @@ class TI_DLL_EXPORT Program {
     return program_impl_->get_snode_tree_device_ptr(tree_id);
   }
 
+  Ndarray *create_root_buffer_backup(const DataType &type,
+                                     const int snode_tree_id) {
+    std::size_t size =
+        program_impl_->get_snode_tree_root_buffer_size(snode_tree_id);
+    return create_ndarray(type, {static_cast<int>(size)});
+  }
+
   void save_root_buffer(Ndarray *buffer_arr, const int snode_tree_id) {
     // FIXME: Assert llvm backend
     program_impl_->save_root_buffer(buffer_arr, snode_tree_id);

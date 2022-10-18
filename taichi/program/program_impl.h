@@ -84,6 +84,10 @@ class ProgramImpl {
   virtual void dump_cache_data_to_disk() {
   }
 
+  virtual std::size_t get_snode_tree_root_buffer_size(const int snode_tree_id) {
+    return 0;
+  }
+
   virtual void save_root_buffer(Ndarray *buffer_arr, const int snode_tree_id) {
   }
 

@@ -90,7 +90,8 @@ class LlvmProgramImpl : public ProgramImpl {
         ptr, buffer_arr->ndarray_alloc_.get_ptr(), size);
   };
 
-  std::size_t get_snode_tree_root_buffer_size(const int snode_tree_id) {
+  std::size_t get_snode_tree_root_buffer_size(
+      const int snode_tree_id) override {
     return runtime_exec_->snode_tree_buffer_manager_->get_root_buffer_size(
         snode_tree_id);
   };

@@ -163,3 +163,19 @@ def test_return_none():
         return None
 
     foo()
+
+@test_utils.test(exclude=ti.metal)
+def test_return_uint64():
+    @ti.kernel
+    def foo()->ti.u64:
+        return ti.u64(2 ** 64 - 1)
+
+    assert(foo() == 2 ** 64 - 1)
+
+@test_utils.test(exclude=ti.metal)
+def test_return_uint64_vec():
+    @ti.kernel
+    def foo()->ti.types.vector(2, ti.u64):
+        return ti.Vector([ti.u64(2 ** 64 - 1), ti.u64(2 ** 64 - 1)])
+
+    assert(foo()[0] == 2 ** 64 - 1)

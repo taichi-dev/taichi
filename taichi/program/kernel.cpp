@@ -30,6 +30,7 @@ Kernel::Kernel(Program &program,
                const std::function<void(Kernel *)> &func,
                const std::string &primal_name,
                AutodiffMode autodiff_mode) {
+  // due to #6362, we cannot write [func, this] { return func(this); }
   this->init(
       program, [&] { return func(this); }, primal_name, autodiff_mode);
 }

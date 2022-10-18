@@ -31,7 +31,7 @@ Kernel::Kernel(Program &program,
                const std::string &primal_name,
                AutodiffMode autodiff_mode) {
   this->init(
-      program, [func, this] { return func(this); }, primal_name, autodiff_mode);
+      program, [&] { return func(this); }, primal_name, autodiff_mode);
 }
 
 Kernel::Kernel(Program &program,

@@ -404,9 +404,10 @@ void Kernel::init(Program &program,
 
   this->arch = program.this_thread_config().arch;
 
-  if (autodiff_mode == AutodiffMode::kNone ||
-      autodiff_mode == AutodiffMode::kCheckAutodiffValid) {
+  if (autodiff_mode == AutodiffMode::kNone) {
     name = primal_name;
+  } else if (autodiff_mode == AutodiffMode::kCheckAutodiffValid) {
+    name = primal_name + "_validate_grad";
   } else if (autodiff_mode == AutodiffMode::kForward) {
     name = primal_name + "_forward_grad";
   } else if (autodiff_mode == AutodiffMode::kReverse) {

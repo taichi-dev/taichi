@@ -473,7 +473,6 @@ class Matrix(TaichiOperations):
                 local_tensor_proxy, mat = initializer.with_dynamic_index(
                     arr, dt)
         self.n, self.m = len(mat), 1
-        self.dt = dt
         if len(mat) > 0:
             self.m = len(mat[0])
         entries = [x for row in mat for x in row]
@@ -507,12 +506,10 @@ class Matrix(TaichiOperations):
         return (self.n, self.m)
 
     def element_type(self):
-        if self.dt is None:
-            if self._impl.entries:
-                return getattr(self._impl.entries[0], 'element_type',
-                               lambda: None)()
-            return None
-        return self.dt
+        if self._impl.entries:
+            return getattr(self._impl.entries[0], 'element_type',
+                           lambda: None)()
+        return None
 
     def _element_wise_binary(self, foo, other):
         other = self._broadcast_copy(other)

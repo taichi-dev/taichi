@@ -448,11 +448,6 @@ def init(arch=None,
         _ti_core.set_tmp_dir(locale_encode(prepare_sandbox()))
     print(f'[Taichi] Starting on arch={_ti_core.arch_name(cfg.arch)}')
 
-    # user selected visible device
-    visible_device = os.environ.get("TI_VISIBLE_DEVICE")
-    if visible_device and (cfg.arch == vulkan or _ti_core.GGUI_AVAILABLE):
-        _ti_core.set_vulkan_visible_device(visible_device)
-
     if _test_mode:
         return spec_cfg
 

@@ -44,7 +44,7 @@ bool test_threading();
 namespace taichi::lang {
 
 Expr expr_index(const Expr &expr, const Expr &index) {
-  return expr[index];
+  return expr[ExprGroup(index)];
 }
 
 std::string libdevice_path();
@@ -146,7 +146,6 @@ void export_lang(py::module &m) {
       .def_readwrite("debug", &CompileConfig::debug)
       .def_readwrite("cfg_optimization", &CompileConfig::cfg_optimization)
       .def_readwrite("check_out_of_bound", &CompileConfig::check_out_of_bound)
-      .def_readwrite("validate_autodiff", &CompileConfig::validate_autodiff)
       .def_readwrite("print_accessor_ir", &CompileConfig::print_accessor_ir)
       .def_readwrite("print_evaluator_ir", &CompileConfig::print_evaluator_ir)
       .def_readwrite("use_llvm", &CompileConfig::use_llvm)
@@ -203,7 +202,6 @@ void export_lang(py::module &m) {
       .def_readwrite("detect_read_only", &CompileConfig::detect_read_only)
       .def_readwrite("ndarray_use_cached_allocator",
                      &CompileConfig::ndarray_use_cached_allocator)
-      .def_readwrite("use_mesh", &CompileConfig::use_mesh)
       .def_readwrite("real_matrix", &CompileConfig::real_matrix)
       .def_readwrite("real_matrix_scalarize",
                      &CompileConfig::real_matrix_scalarize)
@@ -318,6 +316,7 @@ void export_lang(py::module &m) {
       .def("insert_expr_stmt", &ASTBuilder::insert_expr_stmt)
       .def("insert_thread_idx_expr", &ASTBuilder::insert_thread_idx_expr)
       .def("insert_patch_idx_expr", &ASTBuilder::insert_patch_idx_expr)
+      .def("flatten_indices", &ASTBuilder::flatten_indices_expr)
       .def("sifakis_svd_f32", sifakis_svd_export<float32, int32>)
       .def("sifakis_svd_f64", sifakis_svd_export<float64, int64>)
       .def("expr_var", &ASTBuilder::make_var)
@@ -620,7 +619,7 @@ void export_lang(py::module &m) {
       .def("dtype", &aot::Arg::dtype)
       .def("channel_format", &aot::Arg::dtype);
 
-  py::class_<Node>(m, "Node");
+  py::class_<Node>(m, "Node");  // NOLINT(bugprone-unused-raii)
 
   py::class_<Sequential, Node>(m, "Sequential")
       .def(py::init<GraphBuilder *>())
@@ -715,6 +714,7 @@ void export_lang(py::module &m) {
 
   py::class_<Kernel::LaunchContextBuilder>(m, "KernelLaunchContext")
       .def("set_arg_int", &Kernel::LaunchContextBuilder::set_arg_int)
+      .def("set_arg_uint", &Kernel::LaunchContextBuilder::set_arg_uint)
       .def("set_arg_float", &Kernel::LaunchContextBuilder::set_arg_float)
       .def("set_arg_external_array_with_shape",
            &Kernel::LaunchContextBuilder::set_arg_external_array_with_shape)
@@ -810,7 +810,7 @@ void export_lang(py::module &m) {
       .def("size", [](ExprGroup *eg) { return eg->exprs.size(); })
       .def("push_back", &ExprGroup::push_back);
 
-  py::class_<Stmt>(m, "Stmt");
+  py::class_<Stmt>(m, "Stmt");  // NOLINT(bugprone-unused-raii)
 
   m.def("expr_snode_get_addr", &snode_get_addr);
   m.def("expr_snode_append", &snode_append);
@@ -1156,6 +1156,7 @@ void export_lang(py::module &m) {
   m.def("get_type_factory_instance", TypeFactory::get_instance,
         py::return_value_policy::reference);
 
+  // NOLINTNEXTLINE(bugprone-unused-raii)
   py::class_<BitStructType>(m, "BitStructType");
   py::class_<BitStructTypeBuilder>(m, "BitStructTypeBuilder")
       .def(py::init<int>())
@@ -1294,8 +1295,8 @@ void export_lang(py::module &m) {
       .value("g2r", mesh::ConvType::g2r)
       .export_values();
 
-  py::class_<mesh::Mesh>(m, "Mesh");
-  py::class_<mesh::MeshPtr>(m, "MeshPtr");
+  py::class_<mesh::Mesh>(m, "Mesh");        // NOLINT(bugprone-unused-raii)
+  py::class_<mesh::MeshPtr>(m, "MeshPtr");  // NOLINT(bugprone-unused-raii)
 
   m.def("element_order", mesh::element_order);
   m.def("from_end_element_order", mesh::from_end_element_order);

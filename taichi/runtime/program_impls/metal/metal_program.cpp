@@ -122,8 +122,12 @@ DeviceAllocation MetalProgramImpl::allocate_memory_ndarray(
 }
 
 void MetalProgramImpl::dump_cache_data_to_disk() {
-  // TODO(PGZXB): Implement cache cleaning
-  get_cache_manager()->dump_with_merging();
+  const auto &mgr = get_cache_manager();
+  mgr->clean_offline_cache(offline_cache::string_to_clean_cache_policy(
+                               config->offline_cache_cleaning_policy),
+                           config->offline_cache_max_size_of_files,
+                           config->offline_cache_cleaning_factor);
+  mgr->dump_with_merging();
 }
 
 const std::unique_ptr<metal::CacheManager>
@@ -132,10 +136,7 @@ const std::unique_ptr<metal::CacheManager>
     TI_ASSERT(compiled_runtime_module_.has_value());
     using Mgr = metal::CacheManager;
     Mgr::Params params;
-    params.mode =
-        offline_cache::enabled_wip_offline_cache(config->offline_cache)
-            ? Mgr::MemAndDiskCache
-            : Mgr::MemCache;
+    params.mode = config->offline_cache ? Mgr::MemAndDiskCache : Mgr::MemCache;
     params.cache_path = offline_cache::get_cache_path_by_arch(
         config->offline_cache_file_path, Arch::metal);
     params.compiled_runtime_module_ = &(*compiled_runtime_module_);

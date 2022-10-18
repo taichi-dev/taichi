@@ -109,7 +109,8 @@ void compile_to_offloads(IRNode *ir,
     irpass::analysis::verify(ir);
   }
 
-  if (autodiff_mode != AutodiffMode::kNone) {
+  if (autodiff_mode == AutodiffMode::kReverse ||
+      autodiff_mode == AutodiffMode::kForward) {
     // Remove local atomics here so that we don't have to handle their gradients
     irpass::demote_atomics(ir, config);
 

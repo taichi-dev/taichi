@@ -153,13 +153,12 @@ class LowerAccess : public IRVisitor {
 
   void visit(SNodeOpStmt *stmt) override {
     if (stmt->ptr->is<GlobalPtrStmt>()) {
-      if (SNodeOpStmt::activation_related(stmt->op_type) &&
-          stmt->snode->type != SNodeType::dynamic) {
-        auto lowered =
-            lower_ptr(stmt->ptr->as<GlobalPtrStmt>(), false, stmt->op_type);
+      auto global_ptr = stmt->ptr->as<GlobalPtrStmt>();
+      if (global_ptr->is_cell_access) {
+        auto lowered = lower_ptr(global_ptr, false, stmt->op_type);
         modifier.replace_with(stmt, std::move(lowered), true);
       } else if (stmt->op_type == SNodeOpType::get_addr) {
-        auto lowered = lower_ptr(stmt->ptr->as<GlobalPtrStmt>(), false);
+        auto lowered = lower_ptr(global_ptr, false);
         auto cast = lowered.push_back<UnaryOpStmt>(UnaryOpType::cast_bits,
                                                    lowered.back().get());
         cast->cast_type = TypeFactory::get_instance().get_primitive_type(
@@ -167,8 +166,8 @@ class LowerAccess : public IRVisitor {
         stmt->ptr = lowered.back().get();
         modifier.replace_with(stmt, std::move(lowered));
       } else {
-        auto lowered = lower_ptr(stmt->ptr->as<GlobalPtrStmt>(),
-                                 SNodeOpStmt::need_activation(stmt->op_type));
+        auto lowered =
+            lower_ptr(global_ptr, SNodeOpStmt::need_activation(stmt->op_type));
         stmt->ptr = lowered.back().get();
         modifier.insert_before(stmt, std::move(lowered));
       }

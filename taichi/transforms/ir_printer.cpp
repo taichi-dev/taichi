@@ -44,8 +44,8 @@ class IRPrinter : public IRVisitor {
   std::string *output{nullptr};
   std::stringstream ss;
 
-  IRPrinter(ExpressionPrinter *expr_printer = nullptr,
-            std::string *output = nullptr)
+  explicit IRPrinter(ExpressionPrinter *expr_printer = nullptr,
+                     std::string *output = nullptr)
       : expr_printer_(expr_printer), output(output) {
   }
 
@@ -442,9 +442,16 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(TextureOpStmt *stmt) override {
-    print("<struct> {} = texture_{}({}, {}, {})", stmt->name(),
-          texture_op_type_name(stmt->op), stmt->args[0]->name(),
-          stmt->args[1]->name(), stmt->args[2]->name());
+    std::string args_string = "";
+    for (int i = 0; i < (int)stmt->args.size(); i++) {
+      args_string += fmt::format("{}", stmt->args[i]->name());
+      if (i + 1 < (int)stmt->args.size()) {
+        args_string += ", ";
+      }
+    }
+
+    print("<struct> {} = texture_{}({})", stmt->name(),
+          texture_op_type_name(stmt->op), args_string);
   }
 
   void visit(FrontendReturnStmt *stmt) override {

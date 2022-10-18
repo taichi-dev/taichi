@@ -65,7 +65,7 @@ ti.init(arch=ti.cpu)
 3. Decorate `is_prime()` with `@ti.func` and `count_primes()` with `@ti.kernel`:
 
 > - Taichi's compiler compiles the Python code decorated with `@ti.kernel` onto different devices, such as CPU and GPU, for high-performance computation.
-> - See [Kernels & Functions](../kernels/syntax.md) for a detailed explanation of Taichi's core concepts: kernels and functions.
+> - See [Kernels & Functions](../kernels/kernel_function.md) for a detailed explanation of Taichi's core concepts: kernels and functions.
 
 ```python
 @ti.func

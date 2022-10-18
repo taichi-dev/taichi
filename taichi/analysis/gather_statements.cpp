@@ -12,7 +12,7 @@ class StmtSearcher : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
 
-  StmtSearcher(std::function<bool(Stmt *)> test) : test_(test) {
+  explicit StmtSearcher(std::function<bool(Stmt *)> test) : test_(test) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
   }

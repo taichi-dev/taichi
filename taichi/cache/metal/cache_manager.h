@@ -36,7 +36,7 @@ class CacheManager {
     const std::vector<CompiledStructs> *compiled_snode_trees_{nullptr};
   };
 
-  CacheManager(Params &&init_params);
+  explicit CacheManager(Params &&init_params);
 
   // Load from memory || Load from disk || (Compile && Cache the result in
   // memory)
@@ -49,9 +49,7 @@ class CacheManager {
   // Run offline cache cleaning
   void clean_offline_cache(offline_cache::CleanCachePolicy policy,
                            int max_bytes,
-                           double cleaning_factor) const {
-    TI_NOT_IMPLEMENTED;
-  }
+                           double cleaning_factor) const;
 
  private:
   CompiledKernelData compile_kernel(Kernel *kernel) const;

@@ -204,7 +204,7 @@ class InstrBuilder {
 // Builder to build up a single SPIR-V module
 class IRBuilder {
  public:
-  IRBuilder(const Device *device) : device_(device) {
+  explicit IRBuilder(const Device *device) : device_(device) {
   }
 
   template <typename... Args>

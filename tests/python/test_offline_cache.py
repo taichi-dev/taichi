@@ -493,9 +493,7 @@ def test_offline_cache_with_changing_compile_config(curr_arch):
         curr_arch, [2, 2])
 
 
-# TODO(PGZXB): Implement cache cleaning on metal
-@pytest.mark.parametrize('curr_arch',
-                         supported_archs_offline_cache - supported_metal_arch)
+@pytest.mark.parametrize('curr_arch', supported_archs_offline_cache)
 @pytest.mark.parametrize('factor', [0.0, 0.25, 0.85, 1.0])
 @pytest.mark.parametrize('policy', ['never', 'version', 'lru', 'fifo'])
 @_test_offline_cache_dec

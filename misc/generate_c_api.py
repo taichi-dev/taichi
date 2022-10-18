@@ -1,3 +1,5 @@
+import re
+
 from taichi_json import (Alias, BitField, BuiltInType, Definition, EntryBase,
                          Enumeration, Field, Function, Handle, Module,
                          Structure, Union)
@@ -33,69 +35,100 @@ def get_field(x: Field):
         return f"{type_name} {x.name}"
 
 
-def get_declr(x: EntryBase):
+def get_api_ref(module: Module, x: EntryBase) -> list:
+    out = [f"// {get_title(x)}"]
+    if module.doc and x.id in module.doc.api_refs:
+        out += [
+            f"// {resolve_inline_symbols_to_names(module, y)}"
+            for y in module.doc.api_refs[x.id]
+        ]
+    return out
+
+
+def get_api_field_ref(module: Module, x: EntryBase, field_sym: str) -> list:
+    field_sym = f"{x.id}.{field_sym}"
+    if module.doc and field_sym in module.doc.api_field_refs:
+        return [f"  // {module.doc.api_field_refs[field_sym]}"]
+    return []
+
+
+def get_declr(module: Module, x: EntryBase, with_docs=False):
+    out = [""]
+    if with_docs:
+        out += get_api_ref(module, x)
+
     ty = type(x)
     if ty is BuiltInType:
-        return ""
+        out += [""]
 
     elif ty is Alias:
-        return f"typedef {get_type_name(x.alias_of)} {get_type_name(x)};"
+        out += [f"typedef {get_type_name(x.alias_of)} {get_type_name(x)};"]
 
     elif ty is Definition:
-        return f"#define {x.name.screaming_snake_case} {x.value}"
+        out += [f"#define {x.name.screaming_snake_case} {x.value}"]
 
     elif ty is Handle:
-        return f"typedef struct {get_type_name(x)}_t* {get_type_name(x)};"
+        out += [f"typedef struct {get_type_name(x)}_t* {get_type_name(x)};"]
 
     elif ty is Enumeration:
-        out = ["typedef enum " + get_type_name(x) + " {"]
+        out += ["typedef enum " + get_type_name(x) + " {"]
         for name, value in x.cases.items():
-            out += [f"  {name.screaming_snake_case} = {value},"]
+            if with_docs:
+                out += get_api_field_ref(module, x, name)
+            name = x.name.extend(name).screaming_snake_case
+            out += [f"  {name} = {value},"]
         out += [
             f"  {x.name.extend('max_enum').screaming_snake_case} = 0xffffffff,"
         ]
         out += ["} " + get_type_name(x) + ";"]
-        return '\n'.join(out)
 
     elif ty is BitField:
         bit_type_name = x.name.extend('flag_bits').upper_camel_case
-        out = ["typedef enum " + bit_type_name + " {"]
+        out += ["typedef enum " + bit_type_name + " {"]
         for name, value in x.bits.items():
-            out += [
-                f"  {name.extend('bit').screaming_snake_case} = 1 << {value},"
-            ]
+            if with_docs:
+                out += get_api_field_ref(module, x, name)
+            name = x.name.extend(name).extend("bit").screaming_snake_case
+            out += [f"  {name} = 1 << {value},"]
         out += ["} " + bit_type_name + ";"]
         out += [f"typedef TiFlags {get_type_name(x)};"]
-        return '\n'.join(out)
 
     elif ty is Structure:
-        out = ["typedef struct " + get_type_name(x) + " {"]
+        out += ["typedef struct " + get_type_name(x) + " {"]
         for field in x.fields:
+            if with_docs:
+                out += get_api_field_ref(module, x, field.name)
             out += [f"  {get_field(field)};"]
         out += ["} " + get_type_name(x) + ";"]
-        return '\n'.join(out)
 
     elif ty is Union:
-        out = ["typedef union " + get_type_name(x) + " {"]
+        out += ["typedef union " + get_type_name(x) + " {"]
         for variant in x.variants:
+            if with_docs:
+                out += get_api_field_ref(module, x, variant.name)
             out += [f"  {get_field(variant)};"]
         out += ["} " + get_type_name(x) + ";"]
-        return '\n'.join(out)
 
     elif ty is Function:
         return_value_type = "void" if x.return_value_type == None else get_type_name(
             x.return_value_type)
-        out = [
+        out += [
             "TI_DLL_EXPORT " + return_value_type + " TI_API_CALL " +
             x.name.snake_case + "("
         ]
         if x.params:
-            out += [',\n'.join(f"  {get_field(param)}" for param in x.params)]
+            for i, param in enumerate(x.params):
+                if i != 0:
+                    out[-1] += ","
+                if with_docs:
+                    out += get_api_field_ref(module, x, param.name)
+                out += [f"  {get_field(param)}"]
         out += [");"]
-        return '\n'.join(out)
 
     else:
         raise RuntimeError(f"'{x.id}' doesn't need declaration")
+
+    return '\n'.join(out)
 
 
 def get_human_readable_name(x: EntryBase):
@@ -119,13 +152,119 @@ def get_human_readable_name(x: EntryBase):
         raise RuntimeError(f"'{x.id}' doesn't have a human readable name")
 
 
-def print_module_header(module):
-    out = ["#pragma once"]
+def get_title(x: EntryBase):
+    if isinstance(x, BuiltInType):
+        return ""
 
-    for x in module.required_modules:
-        out += [f"#include <{x}>"]
+    extra = ""
+    if isinstance(x, Function) and x.is_device_command:
+        extra += " (Device Command)"
+
+    if isinstance(x, (Alias, Definition, Handle, Enumeration, BitField,
+                      Structure, Union, Function)):
+        return f"{type(x).__name__} `{get_human_readable_name(x)}`" + extra
+    else:
+        raise RuntimeError(f"'{x.id}' doesn't need title")
+
+
+def resolve_symbol_to_name(module: Module, id: str):
+    """Returns the resolved symbol and its hyperlink (if available)"""
+    try:
+        ifirst_dot = id.index('.')
+    except ValueError:
+        return None
+
+    field_name = ""
+    try:
+        isecond_dot = id.index('.', ifirst_dot + 1)
+        field_name = id[isecond_dot + 1:]
+        id = id[:isecond_dot]
+    except ValueError:
+        pass
+
+    out = module.declr_reg.resolve(id)
+    href = None
+
+    try:
+        if field_name:
+            out = get_human_readable_field_name(out, field_name)
+        else:
+            href = "#" + get_title(out).lower().replace(' ', '-').replace(
+                '`', '').replace('(', '').replace(')', '')
+            out = get_human_readable_name(out)
+    except:
+        print(f"WARNING: Unable to resolve symbol {id}")
+        out = id
+
+    return out, href
+
+
+def resolve_inline_symbols_to_names(module: Module, line: str):
+    SYM_PATTERN = r"\`(\w+\.\w+(?:\.\w+)?)\`"
+    matches = re.findall(SYM_PATTERN, line)
+
+    replacements = {}
+    for m in matches:
+        id = str(m)
+        replacements[id] = resolve_symbol_to_name(module, id)
+
+    for old, (new, href) in replacements.items():
+        if new is None:
+            print(f"WARNING: Unresolved inline symbol `{old}`")
+        else:
+            if href is None:
+                new = f"`{new}`"
+            else:
+                new = f"[`{new}`]({href})"
+            line = line.replace(f"`{old}`", new)
+    return line
+
+
+def get_human_readable_field_name(x: EntryBase, field_name: str):
+    out = None
+    if isinstance(x, Enumeration):
+        out = x.name.extend(field_name).screaming_snake_case
+    elif isinstance(x, BitField):
+        out = x.name.extend(field_name).extend('bit').screaming_snake_case
+    elif isinstance(x, Structure):
+        for field in x.fields:
+            if str(field.name) == field_name:
+                out = str(field.name)
+                break
+    elif isinstance(x, Union):
+        for field in x.variants:
+            if str(field.name) == field_name:
+                out = str(field.name)
+                break
+    elif isinstance(x, Function):
+        for field in x.params:
+            if str(field.name) == field_name:
+                out = str(field.name)
+                break
+    return out
+
+
+def print_module_header(module: Module):
+    out = []
+    if module.doc is not None:
+        out += [
+            f"// {resolve_inline_symbols_to_names(module, x)}"
+            for x in module.doc.module_doc
+        ]
+        # Remove the trailing `## API References`.
+        del out[-1]
+    out += ["#pragma once", ""]
+
+    for (name, value) in module.default_definitions:
+        out += [
+            f"#ifndef {name}",
+            f"#define {name} {value}",
+            f"#endif // {name}",
+            "",
+        ]
 
     out += [
+        "#include <taichi/taichi.h>",
         "",
         "#ifdef __cplusplus",
         'extern "C" {',
@@ -134,11 +273,8 @@ def print_module_header(module):
     ]
 
     for x in module.declr_reg:
-        out += [
-            "",
-            f"// {x}",
-            get_declr(module.declr_reg.resolve(x)),
-        ]
+        declr = module.declr_reg.resolve(x)
+        out += [get_declr(module, declr, True)]
 
     out += [
         "",
@@ -192,6 +328,7 @@ if __name__ == "__main__":
         BuiltInType("VkImageViewType", "VkImageViewType"),
         BuiltInType("PFN_vkGetInstanceProcAddr", "PFN_vkGetInstanceProcAddr"),
         BuiltInType("char", "char"),
+        BuiltInType("GLuint", "GLuint"),
     }
 
     for module in Module.load_all(builtin_tys):

@@ -201,9 +201,9 @@ class VulkanResourceBinder : public ResourceBinder {
         sets;
   };
 
-  VulkanResourceBinder(
+  explicit VulkanResourceBinder(
       VkPipelineBindPoint bind_point = VK_PIPELINE_BIND_POINT_COMPUTE);
-  ~VulkanResourceBinder();
+  ~VulkanResourceBinder() override;
 
   std::unique_ptr<Bindings> materialize() override;
 
@@ -274,7 +274,7 @@ class VulkanPipeline : public Pipeline {
       const RasterParams &raster_params,
       const std::vector<VertexInputBinding> &vertex_inputs,
       const std::vector<VertexInputAttribute> &vertex_attrs);
-  ~VulkanPipeline();
+  ~VulkanPipeline() override;
 
   ResourceBinder *resource_binder() override {
     return &resource_binder_;
@@ -350,9 +350,9 @@ class VulkanPipeline : public Pipeline {
 
 class VulkanDeviceEvent : public DeviceEvent {
  public:
-  VulkanDeviceEvent(vkapi::IVkEvent event) : vkapi_ref(event) {
+  explicit VulkanDeviceEvent(vkapi::IVkEvent event) : vkapi_ref(event) {
   }
-  ~VulkanDeviceEvent() {
+  ~VulkanDeviceEvent() override {
   }
 
   vkapi::IVkEvent vkapi_ref{nullptr};
@@ -363,7 +363,7 @@ class VulkanCommandList : public CommandList {
   VulkanCommandList(VulkanDevice *ti_device,
                     VulkanStream *stream,
                     vkapi::IVkCommandBuffer buffer);
-  ~VulkanCommandList();
+  ~VulkanCommandList() override;
 
   void bind_pipeline(Pipeline *p) override;
   void bind_resources(ResourceBinder *binder) override;
@@ -461,7 +461,7 @@ class VulkanCommandList : public CommandList {
 class VulkanSurface : public Surface {
  public:
   VulkanSurface(VulkanDevice *device, const SurfaceConfig &config);
-  ~VulkanSurface();
+  ~VulkanSurface() override;
 
   StreamSemaphore acquire_next_image() override;
   DeviceAllocation get_target_image() override;
@@ -510,15 +510,16 @@ struct DescPool {
   // Threads share descriptor sets
   RefCountedPool<vkapi::IVkDescriptorSet, true> sets;
 
-  DescPool(VkDescriptorPool pool) : pool(pool) {
+  explicit DescPool(VkDescriptorPool pool) : pool(pool) {
   }
 };
 
 class VulkanStreamSemaphoreObject : public StreamSemaphoreObject {
  public:
-  VulkanStreamSemaphoreObject(vkapi::IVkSemaphore sema) : vkapi_ref(sema) {
+  explicit VulkanStreamSemaphoreObject(vkapi::IVkSemaphore sema)
+      : vkapi_ref(sema) {
   }
-  ~VulkanStreamSemaphoreObject() {
+  ~VulkanStreamSemaphoreObject() override {
   }
 
   vkapi::IVkSemaphore vkapi_ref{nullptr};
@@ -529,7 +530,7 @@ class VulkanStream : public Stream {
   VulkanStream(VulkanDevice &device,
                VkQueue queue,
                uint32_t queue_family_index);
-  ~VulkanStream();
+  ~VulkanStream() override;
 
   std::unique_ptr<CommandList> new_command_list() override;
   StreamSemaphore submit(

@@ -61,7 +61,7 @@ class ScratchPad {
 
   ScratchPad() = default;
 
-  ScratchPad(SNode *snode) : snode(snode) {
+  explicit ScratchPad(SNode *snode) : snode(snode) {
     TI_ASSERT(snode != nullptr);
     dim = snode->num_active_indices;
     coefficients.resize(dim);

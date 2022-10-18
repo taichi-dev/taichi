@@ -22,7 +22,7 @@ class ProfilerRecords;
 // profiler instance
 class ScopedProfiler {
  public:
-  ScopedProfiler(std::string name, uint64 elements = -1);
+  explicit ScopedProfiler(std::string name, uint64 elements = -1);
 
   void stop();
 

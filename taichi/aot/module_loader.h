@@ -119,7 +119,7 @@ class TI_DLL_EXPORT Module {
 // Only responsible for reporting device capabilities
 class TargetDevice : public Device {
  public:
-  TargetDevice(Arch arch) {
+  explicit TargetDevice(Arch arch) {
     // TODO: make this configurable
     set_default_caps(arch);
   }

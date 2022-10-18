@@ -114,7 +114,7 @@ class HostDeviceContextBlitter {
         }
         TI_ERROR("Device does not support arg type={}",
                  PrimitiveType::get(arg.dtype).to_string());
-      } while (0);
+      } while (false);
     }
 
     char *device_ptr = device_base + ctx_attribs_->extra_args_mem_offset();
@@ -610,6 +610,7 @@ void GfxRuntime::synchronize() {
   flush();
   device_->wait_idle();
   ctx_buffers_.clear();
+  fflush(stdout);
 }
 
 StreamSemaphore GfxRuntime::flush() {

@@ -11,9 +11,9 @@ def compile_kernel_aot_test1(arch):
         return
 
     @ti.kernel
-    def run(base: int, arr: ti.types.ndarray()):
+    def run(base: int, arr: ti.types.ndarray(), v: ti.types.vector(3, ti.i32)):
         for i in arr:
-            arr[i] = base + i
+            arr[i] = base + i + v[0]
 
     arr = ti.ndarray(int, shape=16)
 

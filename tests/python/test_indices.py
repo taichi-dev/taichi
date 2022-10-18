@@ -35,3 +35,39 @@ def test_indices():
         for j in range(32):
             assert b[i, j] == i * 10 + j
     assert get_field_addr(0, 1) + 4 == get_field_addr(1, 1)
+
+
+@test_utils.test(arch=get_host_arch_list(), default_ip=ti.i64)
+def test_indices_i64():
+    n = 1024
+    val = ti.field(dtype=ti.i64, shape=n)
+    val.fill(1)
+
+    @ti.kernel
+    def prefix_sum():
+        ti.loop_config(serialize=True)
+        for i in range(1, 1024):
+            val[i] += val[i - 1]
+
+    prefix_sum()
+    for i in range(n):
+        assert (val[i] == i + 1)
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda],
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_indices_with_matrix():
+    grid_m = ti.field(dtype=ti.i32, shape=(10, 10))
+
+    @ti.kernel
+    def build_grid():
+        base = int(ti.Vector([2, 4]))
+        grid_m[base] = 100
+
+        grid_m[int(ti.Vector([1, 1]))] = 10
+
+    build_grid()
+
+    assert grid_m[1, 1] == 10
+    assert grid_m[2, 4] == 100

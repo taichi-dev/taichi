@@ -47,7 +47,7 @@ CanvasBase *Window::get_canvas() {
   return canvas_.get();
 }
 
-GuiBase *Window::GUI() {
+GuiBase *Window::gui() {
   return gui_.get();
 }
 

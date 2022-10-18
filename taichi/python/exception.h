@@ -16,9 +16,9 @@ class ExceptionForPython : public std::exception {
   std::string msg_;
 
  public:
-  ExceptionForPython(const std::string &msg) : msg_(msg) {
+  explicit ExceptionForPython(const std::string &msg) : msg_(msg) {
   }
-  char const *what() const throw() override {
+  char const *what() const noexcept override {
     return msg_.c_str();
   }
 };

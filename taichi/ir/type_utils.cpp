@@ -89,16 +89,16 @@ std::string tensor_type_format_helper(const std::vector<int> &shape,
   return fmt;
 }
 
-std::string tensor_type_format(DataType t) {
+std::string tensor_type_format(DataType t, Arch arch) {
   TI_ASSERT(t->is<TensorType>());
   auto tensor_type = t->as<TensorType>();
   auto shape = tensor_type->get_shape();
   auto element_type = tensor_type->get_element_type();
-  auto element_type_format = data_type_format(element_type);
+  auto element_type_format = data_type_format(element_type, arch);
   return tensor_type_format_helper(shape, element_type_format, 0);
 }
 
-std::string data_type_format(DataType dt) {
+std::string data_type_format(DataType dt, Arch arch) {
   if (dt->is_primitive(PrimitiveTypeID::i8)) {
     // i8/u8 is converted to i16/u16 before printing, because CUDA doesn't
     // support the "%hhd"/"%hhu" specifiers.
@@ -116,9 +116,11 @@ std::string data_type_format(DataType dt) {
   } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
     // Use %lld on Windows.
     // Discussion: https://github.com/taichi-dev/taichi/issues/2522
+    // Vulkan does not support printing 64-bit signed integer
     return "%lld";
   } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
-    return "%llu";
+    // Vulkan requires %lu to print 64-bit unsigned integer
+    return arch == Arch::vulkan ? "%lu" : "%llu";
   } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
     return "%f";
   } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
@@ -131,7 +133,7 @@ std::string data_type_format(DataType dt) {
     // TaskCodeGenCUDA::visit(PrintStmt *stmt) for more details.
     return "%f";
   } else if (dt->is<TensorType>()) {
-    return tensor_type_format(dt);
+    return tensor_type_format(dt, arch);
   } else {
     TI_NOT_IMPLEMENTED
   }

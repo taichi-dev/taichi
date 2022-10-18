@@ -368,8 +368,7 @@ def test_func_ndarray_arg():
         test_error(arr)
 
 
-@test_utils.test(arch=[ti.cpu, ti.gpu], debug=True)
-def test_func_matrix_arg():
+def _test_func_matrix_arg():
     vec3 = ti.types.vector(3, ti.f32)
 
     @ti.func
@@ -384,14 +383,36 @@ def test_func_matrix_arg():
 
         assert x[0] == 20
 
+    test_k()
+
+
+def _test_func_matrix_arg_with_error():
+    vec3 = ti.types.vector(3, ti.f32)
+
+    @ti.func
+    def test(a: vec3):
+        a[0] = 100
+
     @ti.kernel
     def test_error():
         x = ti.Matrix([3, 4])
         test(x)
 
-    test_k()
-
     with pytest.raises(
             ti.TaichiSyntaxError,
             match=r"is expected to be a Matrix with n 3, but got 2"):
         test_error()
+
+
+@test_utils.test(arch=[ti.cpu, ti.gpu], debug=True)
+def test_func_matrix_arg():
+    _test_func_matrix_arg()
+    _test_func_matrix_arg_with_error()
+
+
+@test_utils.test(arch=[ti.cpu, ti.gpu],
+                 debug=True,
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_func_matrix_arg_real_matrix():
+    _test_func_matrix_arg()

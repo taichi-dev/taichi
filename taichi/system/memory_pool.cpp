@@ -84,7 +84,7 @@ void MemoryPool::push(volatile T *dest, const T &val) {
 }
 
 void MemoryPool::daemon() {
-  while (1) {
+  while (true) {
     Time::usleep(1000);
     std::lock_guard<std::mutex> _(mut);
     if (terminating) {

@@ -30,7 +30,8 @@ Kernel::Kernel(Program &program,
                const std::function<void(Kernel *)> &func,
                const std::string &primal_name,
                AutodiffMode autodiff_mode) {
-  this->init(program, std::bind(func, this), primal_name, autodiff_mode);
+  this->init(
+      program, [func, this] { return func(this); }, primal_name, autodiff_mode);
 }
 
 Kernel::Kernel(Program &program,
@@ -191,7 +192,7 @@ void Kernel::LaunchContextBuilder::set_arg_int(int arg_id, int64 d) {
                  "not allowed.");
 
   ActionRecorder::get_instance().record(
-      "set_kernel_arg_int64",
+      "set_kernel_arg_integer",
       {ActionArg("kernel_name", kernel_->name), ActionArg("arg_id", arg_id),
        ActionArg("val", d)});
 
@@ -216,6 +217,10 @@ void Kernel::LaunchContextBuilder::set_arg_int(int arg_id, int64 d) {
     TI_INFO(dt->to_string());
     TI_NOT_IMPLEMENTED
   }
+}
+
+void Kernel::LaunchContextBuilder::set_arg_uint(int arg_id, uint64 d) {
+  set_arg_int(arg_id, d);
 }
 
 void Kernel::LaunchContextBuilder::set_extra_arg_int(int i, int j, int32 d) {
@@ -437,7 +442,7 @@ void Kernel::offload_to_executable(IRNode *stmt) {
       stmt, config, this, verbose,
       /*determine_ad_stack_size=*/autodiff_mode == AutodiffMode::kReverse,
       /*lower_global_access=*/true,
-      /*make_block_local=*/config.make_thread_local,
+      /*make_thread_local=*/config.make_thread_local,
       /*make_block_local=*/
       is_extension_supported(config.arch, Extension::bls) &&
           config.make_block_local);

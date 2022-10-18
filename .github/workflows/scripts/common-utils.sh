@@ -155,7 +155,7 @@ function ci-docker-run-gpu {
 }
 
 function setup-android-ndk-env {
-    export ANDROID_NDK_ROOT=/android-sdk/ndk-bundle
+    export ANDROID_NDK_ROOT=${ANDROID_NDK_ROOT:-/android-sdk/ndk-bundle}
     export ANDROID_CMAKE_ARGS="-DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK_ROOT}/build/cmake/android.toolchain.cmake -DANDROID_NATIVE_API_LEVEL=29 -DANDROID_ABI=arm64-v8a"
     export TAICHI_CMAKE_ARGS="$TAICHI_CMAKE_ARGS $ANDROID_CMAKE_ARGS"
     export PATH=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH

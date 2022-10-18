@@ -316,6 +316,7 @@ def test_static_ndrange_should_accept_numpy_integer():
 
     example()
 
+
 @test_utils.test()
 def test_n_loop_var_neq_dimension():
     @ti.kernel
@@ -323,5 +324,9 @@ def test_n_loop_var_neq_dimension():
         for i in ti.ndrange(1, 4):
             print(i)
 
-    with pytest.raises(ti.TaichiSyntaxError, match="The number of the loop variables does not match the dimension of the ndrange."):
+    with pytest.raises(
+            ti.TaichiSyntaxError,
+            match=
+            "The number of the loop variables does not match the dimension of the ndrange."
+    ):
         iter()

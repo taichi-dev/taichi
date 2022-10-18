@@ -372,7 +372,6 @@ void ti_copy_memory_device_to_device(TiRuntime runtime,
   TI_CAPI_ARGUMENT_NULL(dst_memory->memory);
   TI_CAPI_ARGUMENT_NULL(src_memory);
   TI_CAPI_ARGUMENT_NULL(src_memory->memory);
-  TI_CAPI_INVALID_ARGUMENT(dst_memory->memory != src_memory->memory);
 
   Runtime *runtime2 = (Runtime *)runtime;
   auto dst = devmem2devalloc(*runtime2, dst_memory->memory)

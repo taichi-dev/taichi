@@ -207,8 +207,8 @@ Stmt *MakeMeshBlockLocal::create_cache_mapping(
     Stmt *bls_ptr = body->push_back<BlockLocalPtrStmt>(
         offset,
         TypeFactory::get_instance().get_pointer_type(mapping_data_type_));
-    Stmt *casted_val = body->push_back<UnaryOpStmt>(
-        UnaryOpType::cast_value, global_val(body, idx_val));
+    Stmt *casted_val = body->push_back<UnaryOpStmt>(UnaryOpType::cast_value,
+                                                    global_val(body, idx_val));
     casted_val->as<UnaryOpStmt>()->cast_type = PrimitiveType::i32;
     [[maybe_unused]] Stmt *bls_store =
         body->push_back<GlobalStoreStmt>(bls_ptr, casted_val);
@@ -372,7 +372,7 @@ void MakeMeshBlockLocal::fetch_mapping(
               mapping_snode_, std::vector<Stmt *>{global_offset});
           Stmt *global_load = body->push_back<GlobalLoadStmt>(global_ptr);
           Stmt *casted_global_load = body->push_back<UnaryOpStmt>(
-          UnaryOpType::cast_value, global_load);
+              UnaryOpType::cast_value, global_load);
           casted_global_load->as<UnaryOpStmt>()->cast_type = PrimitiveType::i32;
           attr_callback_handler(body, idx_val, casted_global_load);
           return casted_global_load;
@@ -395,7 +395,7 @@ void MakeMeshBlockLocal::fetch_mapping(
               mapping_snode_, std::vector<Stmt *>{global_offset});
           Stmt *global_load = body->push_back<GlobalLoadStmt>(global_ptr);
           Stmt *casted_global_load = body->push_back<UnaryOpStmt>(
-          UnaryOpType::cast_value, global_load);
+              UnaryOpType::cast_value, global_load);
           casted_global_load->as<UnaryOpStmt>()->cast_type = PrimitiveType::i32;
           attr_callback_handler(body, idx_val, casted_global_load);
           return casted_global_load;

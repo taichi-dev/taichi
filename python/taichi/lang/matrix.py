@@ -249,10 +249,10 @@ class _TiScopeMatrixImpl(_MatrixBaseImpl):
         j = 0 if len(indices) == 1 else indices[1]
         has_slice = False
         if isinstance(i, slice):
-            i = self._calc_slice(i, 0)
+            i = impl._calc_slice(i, self.n)
             has_slice = True
         if isinstance(j, slice):
-            j = self._calc_slice(j, 1)
+            j = impl._calc_slice(j, self.m)
             has_slice = True
 
         if has_slice:
@@ -279,21 +279,6 @@ class _TiScopeMatrixImpl(_MatrixBaseImpl):
                                          (self.n, self.m),
                                          self.dynamic_index_stride)
         return self._get_entry(i, j)
-
-    def _calc_slice(self, index, dim):
-        start, stop, step = index.start or 0, index.stop or (
-            self.n if dim == 0 else self.m), index.step or 1
-
-        def helper(x):
-            #  TODO(mzmzm): support variable in slice
-            if isinstance(x, expr.Expr):
-                raise TaichiCompilationError(
-                    "Taichi does not support variables in slice now, please use constant instead of it."
-                )
-            return x
-
-        start, stop, step = helper(start), helper(stop), helper(step)
-        return [_ for _ in range(start, stop, step)]
 
 
 class _MatrixEntriesInitializer:

@@ -6,7 +6,6 @@
 #include "taichi/ir/visitors.h"
 #include "taichi/system/profiler.h"
 
-#include <variant>
 #include <unordered_set>
 
 namespace taichi::lang {

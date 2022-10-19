@@ -368,8 +368,10 @@ def append(node, indices, val):
     Args:
         node (:class:`~taichi.SNode`): Input SNode.
         indices (Union[int, :class:`~taichi.Vector`]): the indices to visit.
-        val (:mod:`~taichi.types`): the data to be appended.
+        val (:mod:`~taichi.types.primitive_types`): the scalar data to be appended, only i32 value is support for now.
     """
+    if isinstance(val, matrix.Matrix):
+        raise ValueError("ti.append only supports appending a scalar value")
     a = impl.expr_init(
         _ti_core.expr_snode_append(node._snode.ptr,
                                    expr.make_expr_group(indices),

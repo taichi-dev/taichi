@@ -39,7 +39,7 @@ class ThreadPool {
                                  // taichi::lang::Context.
   int thread_counter;
 
-  ThreadPool(int max_num_threads);
+  explicit ThreadPool(int max_num_threads);
 
   void run(int splits,
            int desired_num_threads,

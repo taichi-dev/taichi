@@ -18,7 +18,7 @@ namespace taichi::lang {
 
 class MetalProgramImpl : public ProgramImpl {
  public:
-  MetalProgramImpl(CompileConfig &config);
+  explicit MetalProgramImpl(CompileConfig &config);
 
   FunctionType compile(Kernel *kernel, OffloadedStmt *offloaded) override;
 

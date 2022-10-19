@@ -14,6 +14,7 @@ from taichi.lang.ast.ast_transformer_utils import (Builder, LoopStatus,
                                                    ReturnStatus)
 from taichi.lang.ast.symbol_resolver import ASTResolver
 from taichi.lang.exception import TaichiSyntaxError, TaichiTypeError
+from taichi.lang.expr import Expr
 from taichi.lang.field import Field
 from taichi.lang.impl import current_cfg
 from taichi.lang.matrix import (Matrix, MatrixType, Vector, _PyScopeMatrixImpl,
@@ -244,7 +245,8 @@ class ASTTransformer(Builder):
         build_stmt(ctx, node.slice)
         if not ASTTransformer.is_tuple(node.slice):
             node.slice.ptr = [node.slice.ptr]
-        node.ptr = impl.subscript(node.value.ptr,
+        node.ptr = impl.subscript(ctx.ast_builder,
+                                  node.value.ptr,
                                   *node.slice.ptr,
                                   get_ref=get_ref)
         return node.ptr
@@ -508,9 +510,8 @@ class ASTTransformer(Builder):
             node.ptr = impl.ti_format(*args, **keywords)
             return node.ptr
 
-        if (isinstance(node.func, ast.Attribute) and
-            (func == Matrix
-             or func == Vector)) and impl.current_cfg().real_matrix:
+        if ((id(func) == id(Matrix)
+             or id(func) == id(Vector))) and impl.current_cfg().real_matrix:
             node.ptr = matrix.make_matrix(*args, **keywords)
             return node.ptr
 
@@ -518,6 +519,10 @@ class ASTTransformer(Builder):
             return node.ptr
 
         if ASTTransformer.build_call_if_is_type(ctx, node, args, keywords):
+            return node.ptr
+
+        if hasattr(node.func, 'caller'):
+            node.ptr = func(node.func.caller, *args, **keywords)
             return node.ptr
 
         node.ptr = func(*args, **keywords)
@@ -760,7 +765,14 @@ class ASTTransformer(Builder):
             node.ptr = lambda val: append(x.parent(), index, val)
         else:
             build_stmt(ctx, node.value)
-            node.ptr = getattr(node.value.ptr, node.attr)
+            if isinstance(node.value.ptr,
+                          Expr) and not hasattr(node.value.ptr, node.attr):
+                # pylint: disable-msg=C0415
+                from taichi.lang import matrix_ops as tensor_ops
+                node.ptr = getattr(tensor_ops, node.attr)
+                setattr(node, 'caller', node.value.ptr)
+            else:
+                node.ptr = getattr(node.value.ptr, node.attr)
         return node.ptr
 
     @staticmethod
@@ -1014,14 +1026,19 @@ class ASTTransformer(Builder):
             ndrange_var = impl.expr_init(build_stmt(ctx, node.iter))
             ndrange_begin = ti_ops.cast(expr.Expr(0), primitive_types.i32)
             ndrange_end = ti_ops.cast(
-                expr.Expr(impl.subscript(ndrange_var.acc_dimensions, 0)),
-                primitive_types.i32)
+                expr.Expr(
+                    impl.subscript(ctx.ast_builder, ndrange_var.acc_dimensions,
+                                   0)), primitive_types.i32)
             ndrange_loop_var = expr.Expr(ctx.ast_builder.make_id_expr(''))
             ctx.ast_builder.begin_frontend_range_for(ndrange_loop_var.ptr,
                                                      ndrange_begin.ptr,
                                                      ndrange_end.ptr)
             I = impl.expr_init(ndrange_loop_var)
             targets = ASTTransformer.get_for_loop_targets(node)
+            if len(targets) != len(ndrange_var.dimensions):
+                raise TaichiSyntaxError(
+                    "The number of the loop variables does not match the dimension of the ndrange."
+                )
             for i, target in enumerate(targets):
                 if i + 1 < len(targets):
                     target_tmp = impl.expr_init(
@@ -1031,7 +1048,9 @@ class ASTTransformer(Builder):
                 ctx.create_variable(
                     target,
                     impl.expr_init(target_tmp + impl.subscript(
-                        impl.subscript(ndrange_var.bounds, i), 0)))
+                        ctx.ast_builder,
+                        impl.subscript(ctx.ast_builder, ndrange_var.bounds, i),
+                        0)))
                 if i + 1 < len(targets):
                     I._assign(I -
                               target_tmp * ndrange_var.acc_dimensions[i + 1])
@@ -1045,8 +1064,9 @@ class ASTTransformer(Builder):
             ndrange_var = impl.expr_init(build_stmt(ctx, node.iter.args[0]))
             ndrange_begin = ti_ops.cast(expr.Expr(0), primitive_types.i32)
             ndrange_end = ti_ops.cast(
-                expr.Expr(impl.subscript(ndrange_var.acc_dimensions, 0)),
-                primitive_types.i32)
+                expr.Expr(
+                    impl.subscript(ctx.ast_builder, ndrange_var.acc_dimensions,
+                                   0)), primitive_types.i32)
             ndrange_loop_var = expr.Expr(ctx.ast_builder.make_id_expr(''))
             ctx.ast_builder.begin_frontend_range_for(ndrange_loop_var.ptr,
                                                      ndrange_begin.ptr,
@@ -1068,8 +1088,9 @@ class ASTTransformer(Builder):
                     target_tmp = I // ndrange_var.acc_dimensions[i + 1]
                 else:
                     target_tmp = I
-                impl.subscript(target_var, i)._assign(target_tmp +
-                                                      ndrange_var.bounds[i][0])
+                impl.subscript(ctx.ast_builder, target_var,
+                               i)._assign(target_tmp +
+                                          ndrange_var.bounds[i][0])
                 if i + 1 < len(ndrange_var.dimensions):
                     I._assign(I -
                               target_tmp * ndrange_var.acc_dimensions[i + 1])

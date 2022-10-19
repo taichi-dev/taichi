@@ -30,7 +30,9 @@ Kernel::Kernel(Program &program,
                const std::function<void(Kernel *)> &func,
                const std::string &primal_name,
                AutodiffMode autodiff_mode) {
-  this->init(program, std::bind(func, this), primal_name, autodiff_mode);
+  // due to #6362, we cannot write [func, this] { return func(this); }
+  this->init(
+      program, [&] { return func(this); }, primal_name, autodiff_mode);
 }
 
 Kernel::Kernel(Program &program,
@@ -325,12 +327,27 @@ int64 Kernel::get_ret_int(int i) {
   return fetch_ret<int64>(dt, i);
 }
 
+uint64 Kernel::get_ret_uint(int i) {
+  auto dt = rets[i].dt->get_compute_type();
+  return fetch_ret<uint64>(dt, i);
+}
+
 std::vector<int64> Kernel::get_ret_int_tensor(int i) {
   DataType dt = rets[i].dt->as<TensorType>()->get_element_type();
   int size = rets[i].dt->as<TensorType>()->get_num_elements();
   std::vector<int64> res;
   for (int j = 0; j < size; j++) {
     res.emplace_back(fetch_ret<int64>(dt, j));
+  }
+  return res;
+}
+
+std::vector<uint64> Kernel::get_ret_uint_tensor(int i) {
+  DataType dt = rets[i].dt->as<TensorType>()->get_element_type();
+  int size = rets[i].dt->as<TensorType>()->get_num_elements();
+  std::vector<uint64> res;
+  for (int j = 0; j < size; j++) {
+    res.emplace_back(fetch_ret<uint64>(dt, j));
   }
   return res;
 }
@@ -437,7 +454,7 @@ void Kernel::offload_to_executable(IRNode *stmt) {
       stmt, config, this, verbose,
       /*determine_ad_stack_size=*/autodiff_mode == AutodiffMode::kReverse,
       /*lower_global_access=*/true,
-      /*make_block_local=*/config.make_thread_local,
+      /*make_thread_local=*/config.make_thread_local,
       /*make_block_local=*/
       is_extension_supported(config.arch, Extension::bls) &&
           config.make_block_local);

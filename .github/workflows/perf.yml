@@ -1,0 +1,57 @@
+name: Performance Monitoring
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  gpu_backends:
+    name: Performance Monitoring
+    timeout-minutes: 60
+    # Disable this workflow on forks
+    if: github.repository_owner == 'taichi-dev'
+    runs-on: [self-hosted, x64, cuda, linux, benchmark]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: "recursive"
+          fetch-depth: '0'
+
+      - name: Prepare Environment
+        run: |
+          . .github/workflows/scripts/common-utils.sh
+          prepare-build-cache
+          echo CI_DOCKER_RUN_EXTRA_ARGS="-v $(pwd):/home/dev/taichi" >> $GITHUB_ENV
+
+      - name: Build Taichi Wheel
+        run: |
+          . .github/workflows/scripts/common-utils.sh
+
+          ci-docker-run-gpu --name taichi-benchmark-build \
+            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
+            /home/dev/taichi/.github/workflows/scripts/unix-build.sh
+
+        env:
+          PY: py38
+          PROJECT_NAME: taichi
+          TAICHI_CMAKE_ARGS: >-
+            -DTI_WITH_OPENGL:BOOL=ON
+            -DTI_WITH_CUDA:BOOL=ON
+            -DTI_WITH_VULKAN:BOOL=ON
+            -DTI_WITH_CC:BOOL=OFF
+            -DTI_BUILD_TESTS:BOOL=OFF
+            -DTI_WITH_C_API=OFF
+
+      # --------------
+      - name: Run taichi-benchmark
+        id: run-benchmark
+        run: |
+          . .github/workflows/scripts/common-utils.sh
+
+          ci-docker-run-gpu --name taichi-benchmark-run \
+            -e BENCHMARK_UPLOAD_TOKEN \
+             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
+             /home/dev/taichi/.github/workflows/scripts/unix-perf-mon.sh
+        env:
+          PY: py38
+          BENCHMARK_UPLOAD_TOKEN: ${{ secrets.BENCHMARK_UPLOAD_TOKEN }}

@@ -50,7 +50,7 @@ vk_debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
   }
   if (message_type == VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT &&
       message_severity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT &&
-      strstr(p_callback_data->pMessage, "DEBUG-PRINTF") != NULL) {
+      strstr(p_callback_data->pMessage, "DEBUG-PRINTF") != nullptr) {
     // Message format is "BLABLA | MessageID=xxxxx | <DEBUG_PRINT_MSG>"
     std::string msg(p_callback_data->pMessage);
     auto const pos = msg.find_last_of("|");
@@ -211,7 +211,7 @@ VulkanDeviceCreator::VulkanDeviceCreator(
     manual_create = true;
   } else {
     // The highest version designed to use
-    api_version_ = VulkanEnvSettings::kApiVersion();
+    api_version_ = VulkanEnvSettings::k_api_version();
     manual_create = false;
   }
 
@@ -258,7 +258,7 @@ void VulkanDeviceCreator::create_instance(bool manual_create) {
   app_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
   app_info.pEngineName = "No Engine";
   app_info.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-  app_info.apiVersion = VulkanEnvSettings::kApiVersion();
+  app_info.apiVersion = VulkanEnvSettings::k_api_version();
 
   VkInstanceCreateInfo create_info{};
   create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -395,7 +395,7 @@ void VulkanDeviceCreator::pick_physical_device() {
   }
 
   auto device_id = VulkanLoader::instance().visible_device_id;
-  bool has_visible_device{0};
+  bool has_visible_device{false};
   if (!device_id.empty()) {
     int id = std::stoi(device_id);
     TI_ASSERT_INFO(
@@ -404,7 +404,7 @@ void VulkanDeviceCreator::pick_physical_device() {
         device_count);
     if (get_device_score(devices[id], surface_)) {
       physical_device_ = devices[id];
-      has_visible_device = 1;
+      has_visible_device = true;
     }
   }
 
@@ -587,7 +587,7 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
     VkPhysicalDeviceSubgroupProperties subgroup_properties{};
     subgroup_properties.sType =
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES;
-    subgroup_properties.pNext = NULL;
+    subgroup_properties.pNext = nullptr;
 
     VkPhysicalDeviceProperties2 physical_device_properties{};
     physical_device_properties.sType =

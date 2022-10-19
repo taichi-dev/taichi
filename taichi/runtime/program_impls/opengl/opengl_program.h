@@ -9,7 +9,7 @@ namespace taichi::lang {
 
 class OpenglProgramImpl : public ProgramImpl {
  public:
-  OpenglProgramImpl(CompileConfig &config);
+  explicit OpenglProgramImpl(CompileConfig &config);
   FunctionType compile(Kernel *kernel, OffloadedStmt *offloaded) override;
 
   std::size_t get_snode_num_dynamically_allocated(

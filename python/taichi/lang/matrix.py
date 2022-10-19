@@ -476,7 +476,7 @@ class Matrix(TaichiOperations):
             assert ndim in (0, 1, 2)
             self.ndim = ndim
 
-        if self.n * self.m > 32 and is_logging_effective('warn'):
+        if self.n * self.m > 32:
             warning(
                 f'Taichi matrices/vectors with {self.n}x{self.m} > 32 entries are not suggested.'
                 ' Matrices/vectors will be automatically unrolled at compile-time for performance.'

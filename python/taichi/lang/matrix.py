@@ -500,6 +500,17 @@ class Matrix(TaichiOperations):
             self._impl = _TiScopeMatrixImpl(m, n, entries, local_tensor_proxy,
                                             None)
 
+    def get_shape(self):
+        if self.ndim == 1:
+            return (self.n, )
+        return (self.n, self.m)
+
+    def element_type(self):
+        if self._impl.entries:
+            return getattr(self._impl.entries[0], 'element_type',
+                           lambda: None)()
+        return None
+
     def _element_wise_binary(self, foo, other):
         other = self._broadcast_copy(other)
         if is_col_vector(self):
@@ -718,11 +729,9 @@ class Matrix(TaichiOperations):
             >>> m.trace()
             5
         """
-        assert self.n == self.m
-        _sum = self(0, 0)
-        for i in range(1, self.n):
-            _sum = _sum + self(i, i)
-        return _sum
+        # pylint: disable-msg=C0415
+        from taichi.lang import matrix_ops
+        return matrix_ops.trace(self)
 
     @taichi_scope
     def inverse(self):
@@ -985,10 +994,9 @@ class Matrix(TaichiOperations):
             >>> A
             [-1, -1, -1, -1]
         """
-        def assign_renamed(x, y):
-            return ops_mod.assign(x, y)
-
-        return self._element_wise_writeback_binary(assign_renamed, val)
+        # pylint: disable=C0415
+        from taichi.lang import matrix_ops
+        return matrix_ops.fill(self, val)
 
     @python_scope
     def to_numpy(self, keep_dims=False):
@@ -1479,6 +1487,9 @@ class Vector(Matrix):
             [4 6]
         """
         super().__init__(arr, dt=dt, **kwargs)
+
+    def get_shape(self):
+        return (self.n, )
 
     @classmethod
     def field(cls, n, dtype, *args, **kwargs):

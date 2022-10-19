@@ -1069,6 +1069,35 @@ def test_binary_op_scalarize():
 
 @test_utils.test(arch=[ti.cuda, ti.cpu],
                  real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_trace_op():
+    @ti.kernel
+    def test_fun() -> ti.f32:
+        x = ti.Matrix([[.1, 3.], [5., 7.]])
+        return x.trace()
+
+    assert np.abs(test_fun() - 7.1) < 1e-6
+
+    x = ti.Matrix([[.1, 3.], [5., 7.]])
+    assert np.abs(x.trace() - 7.1) < 1e-6
+
+    with pytest.raises(TaichiCompilationError,
+                       match=r"not a square matrix: \(3, 2\)"):
+        x = ti.Matrix([[.1, 3.], [5., 7.], [1., 2.]])
+        print(x.trace())
+
+    @ti.kernel
+    def failed_func():
+        x = ti.Matrix([[.1, 3.], [5., 7.], [1., 2.]])
+        print(x.trace())
+
+    with pytest.raises(TaichiCompilationError,
+                       match=r"not a square matrix: \(3, 2\)"):
+        failed_func()
+
+
+@test_utils.test(arch=[ti.cuda, ti.cpu],
+                 real_matrix=True,
                  real_matrix_scalarize=True,
                  debug=True)
 def test_ternary_op_scalarize():
@@ -1085,6 +1114,22 @@ def test_ternary_op_scalarize():
         assert z[2] == 3
 
     test()
+
+
+@test_utils.test(arch=[ti.cuda, ti.cpu],
+                 real_matrix=True,
+                 real_matrix_scalarize=True,
+                 debug=True)
+def test_fill_op():
+    @ti.kernel
+    def test_fun():
+        x = ti.Matrix([[0.0 for _ in range(4)] for _ in range(5)])
+        y = x.fill(1.14)
+        for i in ti.static(range(5)):
+            for j in ti.static(range(4)):
+                assert y[i, j] == x[i, j] == 1.14
+
+    test_fun()
 
 
 @test_utils.test(arch=[ti.cuda, ti.cpu],

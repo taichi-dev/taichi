@@ -522,6 +522,8 @@ class Kernel:
             grad_suffix = "_forward_grad"
         elif self.autodiff_mode == AutodiffMode.REVERSE:
             grad_suffix = "_reverse_grad"
+        elif self.autodiff_mode == AutodiffMode.VALIDATION:
+            grad_suffix = "_validate_grad"
         kernel_name = f"{self.func.__name__}_c{self.kernel_counter}_{key[1]}{grad_suffix}"
         _logging.trace(f"Compiling kernel {kernel_name}...")
 
@@ -850,7 +852,11 @@ class Kernel:
         # Both the class kernels and the plain-function kernels are unified now.
         # In both cases, |self.grad| is another Kernel instance that computes the
         # gradient. For class kernels, args[0] is always the kernel owner.
-        if self.autodiff_mode == AutodiffMode.NONE and self.runtime.target_tape and not self.runtime.grad_replaced:
+
+        # No need to capture grad kernels because they are already bound with their primal kernels
+        if self.autodiff_mode in (
+                AutodiffMode.NONE, AutodiffMode.VALIDATION
+        ) and self.runtime.target_tape and not self.runtime.grad_replaced:
             self.runtime.target_tape.insert(self, args)
 
         if self.autodiff_mode != AutodiffMode.NONE and impl.current_cfg(

@@ -1393,8 +1393,7 @@ void ASTBuilder::insert_snode_deactivate(SNode *snode,
                                                expr_group));
 }
 
-std::vector<Expr> ASTBuilder::flatten_indices_expr(
-    const std::vector<Expr> &indices) {
+std::vector<Expr> ASTBuilder::expand_expr(const std::vector<Expr> &indices) {
   TI_ASSERT(indices.size() > 0);
 
   if (indices.size() > 1) {

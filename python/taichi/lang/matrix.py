@@ -4,6 +4,7 @@ from collections.abc import Iterable
 
 import numpy as np
 from taichi._lib import core as ti_python_core
+from taichi._logging import is_logging_effective
 from taichi.lang import expr, impl
 from taichi.lang import ops as ops_mod
 from taichi.lang import runtime_ops
@@ -19,7 +20,6 @@ from taichi.lang.util import (cook_dtype, in_python_scope, python_scope,
                               to_pytorch_type, warning)
 from taichi.types import primitive_types
 from taichi.types.compound_types import CompoundType, TensorType
-from taichi._logging import is_logging_effective
 
 
 def _gen_swizzles(cls):
@@ -429,11 +429,7 @@ class Matrix(TaichiOperations):
     _is_taichi_class = True
     __array_priority__ = 1000
 
-    def __init__(self,
-                 arr,
-                 dt=None,
-                 is_ref=False,
-                 ndim=None):
+    def __init__(self, arr, dt=None, is_ref=False, ndim=None):
         local_tensor_proxy = None
 
         if not isinstance(arr, (list, tuple, np.ndarray)):

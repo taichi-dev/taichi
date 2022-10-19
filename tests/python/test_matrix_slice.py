@@ -41,13 +41,11 @@ def test_matrix_slice_invalid():
         a = ti.Matrix([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
         b = a[:i:, :i]
 
-    with pytest.raises(
-            ti.TaichiCompilationError,
-            match='Taichi does not support variables in slice now'):
+    with pytest.raises(ti.TaichiCompilationError,
+                       match='Taichi does not support variables in slice now'):
         foo1(1)
-    with pytest.raises(
-            ti.TaichiCompilationError,
-            match='Taichi does not support variables in slice now'):
+    with pytest.raises(ti.TaichiCompilationError,
+                       match='Taichi does not support variables in slice now'):
         foo2()
 
 

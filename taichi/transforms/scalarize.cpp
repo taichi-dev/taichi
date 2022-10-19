@@ -1,3 +1,5 @@
+#include <variant>
+
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
@@ -257,6 +259,29 @@ class Scalarize : public BasicStmtVisitor {
 
       modifier_.erase(stmt);
     }
+  }
+
+  void visit(PrintStmt *stmt) override {
+    auto &contents = stmt->contents;
+    std::vector<std::variant<Stmt *, std::string>> new_contents;
+    for (size_t i = 0; i < contents.size(); i++) {
+      auto content = contents[i];
+      if (auto string_ptr = std::get_if<std::string>(&content)) {
+        new_contents.push_back(*string_ptr);
+      } else {
+        Stmt *print_stmt = std::get<Stmt *>(content);
+        if (print_stmt->is<MatrixInitStmt>()) {
+          auto matrix_init_stmt = print_stmt->cast<MatrixInitStmt>();
+          for (size_t j = 0; j < matrix_init_stmt->values.size(); j++) {
+            new_contents.push_back(matrix_init_stmt->values[j]);
+          }
+        } else {
+          new_contents.push_back(print_stmt);
+        }
+      }
+    }
+    modifier_.insert_before(stmt, Stmt::make<PrintStmt>(new_contents));
+    modifier_.erase(stmt);
   }
 
   /*

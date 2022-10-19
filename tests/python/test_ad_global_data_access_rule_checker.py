@@ -161,3 +161,35 @@ def test_autodiff_mode_recovered():
         func_calls = t.calls
     for f, _ in func_calls:
         assert f.autodiff_mode == AutodiffMode.NONE
+
+
+@test_utils.test(require=ti.extension.assertion, exclude=[ti.cc], debug=True)
+def test_validation_kernel_capture():
+    N = 16
+    T = 8
+    x = ti.field(dtype=ti.f32, shape=N, needs_grad=True)
+    loss = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
+    b = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
+
+    @ti.kernel
+    def kernel_1():
+        loss[None] = x[1] * b[None]
+
+    @ti.kernel
+    def kernel_2():
+        loss[None] = x[1] * b[None]
+
+    def forward(T):
+        for t in range(T):
+            kernel_1()
+            kernel_2()
+
+    for i in range(N):
+        x[i] = i
+
+    b[None] = 10
+    loss.grad[None] = 1
+
+    with ti.ad.Tape(loss=loss, validation=True) as t:
+        forward(T)
+        assert len(t.calls) == 2 * T and len(t.modes) == 2 * T

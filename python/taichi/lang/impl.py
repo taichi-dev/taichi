@@ -151,10 +151,7 @@ def _calc_slice(index, default_stop):
 
 
 @taichi_scope
-def subscript(ast_builder,
-              value,
-              *_indices,
-              skip_reordered=False):
+def subscript(ast_builder, value, *_indices, skip_reordered=False):
     if isinstance(value, np.ndarray):
         return value.__getitem__(_indices)
 

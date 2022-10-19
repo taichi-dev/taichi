@@ -156,10 +156,7 @@ class ASTTransformer(Builder):
         return None
 
     @staticmethod
-    def build_assign_basic(ctx,
-                           target,
-                           value,
-                           is_static_assign):
+    def build_assign_basic(ctx, target, value, is_static_assign):
         """Build basic assignment like this: target = value.
 
          Args:
@@ -220,8 +217,7 @@ class ASTTransformer(Builder):
         build_stmt(ctx, node.slice)
         if not ASTTransformer.is_tuple(node.slice):
             node.slice.ptr = [node.slice.ptr]
-        node.ptr = impl.subscript(ctx.ast_builder,
-                                  node.value.ptr,
+        node.ptr = impl.subscript(ctx.ast_builder, node.value.ptr,
                                   *node.slice.ptr)
         return node.ptr
 

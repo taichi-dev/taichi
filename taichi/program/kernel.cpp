@@ -331,12 +331,27 @@ int64 Kernel::get_ret_int(int i) {
   return fetch_ret<int64>(dt, i);
 }
 
+uint64 Kernel::get_ret_uint(int i) {
+  auto dt = rets[i].dt->get_compute_type();
+  return fetch_ret<uint64>(dt, i);
+}
+
 std::vector<int64> Kernel::get_ret_int_tensor(int i) {
   DataType dt = rets[i].dt->as<TensorType>()->get_element_type();
   int size = rets[i].dt->as<TensorType>()->get_num_elements();
   std::vector<int64> res;
   for (int j = 0; j < size; j++) {
     res.emplace_back(fetch_ret<int64>(dt, j));
+  }
+  return res;
+}
+
+std::vector<uint64> Kernel::get_ret_uint_tensor(int i) {
+  DataType dt = rets[i].dt->as<TensorType>()->get_element_type();
+  int size = rets[i].dt->as<TensorType>()->get_num_elements();
+  std::vector<uint64> res;
+  for (int j = 0; j < size; j++) {
+    res.emplace_back(fetch_ret<uint64>(dt, j));
   }
   return res;
 }

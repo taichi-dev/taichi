@@ -112,8 +112,10 @@ class TI_DLL_EXPORT Kernel : public Callable {
   float64 get_ret_float(int i);
 
   int64 get_ret_int(int i);
+  uint64 get_ret_uint(int i);
 
   std::vector<int64> get_ret_int_tensor(int i);
+  std::vector<uint64> get_ret_uint_tensor(int i);
 
   std::vector<float64> get_ret_float_tensor(int i);
 

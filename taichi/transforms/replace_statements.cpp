@@ -1,6 +1,6 @@
 #include "taichi/ir/transforms.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 namespace irpass {
 
@@ -27,4 +27,4 @@ bool replace_statements(IRNode *root,
 
 }  // namespace irpass
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

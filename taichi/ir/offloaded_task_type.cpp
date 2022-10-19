@@ -1,6 +1,6 @@
 #include "taichi/ir/offloaded_task_type.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 std::string offloaded_task_type_name(OffloadedTaskType tt) {
   if (false) {
@@ -12,4 +12,4 @@ std::string offloaded_task_type_name(OffloadedTaskType tt) {
     TI_NOT_IMPLEMENTED
 }
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

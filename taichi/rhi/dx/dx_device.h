@@ -6,8 +6,7 @@
 #include "taichi/rhi/dx/dx_info_queue.h"
 #include <d3d11.h>
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace directx11 {
 
 // Only enable debug layer when the corresponding testing facility is enabled
@@ -297,7 +296,6 @@ class Dx11Device : public GraphicsDevice {
 };
 
 }  // namespace directx11
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang
 
 #endif

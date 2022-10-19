@@ -3,7 +3,7 @@
 #include "taichi/ir/ir.h"
 #include "taichi/ir/expression_ops.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 template <typename Tf, typename Ti>
 Expr svd_bitwise_or(const Expr &a, const Expr &b) {
@@ -59,8 +59,9 @@ sifakis_svd_export(ASTBuilder *ast_builder,
   constexpr Tf Cosine_Pi_Over_Eight = 0.9238795325112867f;
 
   std::string tb = "";
-  auto Var =
-      std::bind(&ASTBuilder::make_var, ast_builder, std::placeholders::_1, tb);
+  auto Var = [ast_builder, tb](const taichi::lang::Expr &x) {
+    return ast_builder->make_var(x, tb);
+  };
 
   auto Sfour_gamma_squared = Var(Expr(Tf(0.0)));
   auto Ssine_pi_over_eight = Var(Expr(Tf(0.0)));
@@ -903,4 +904,4 @@ sifakis_svd_export(ASTBuilder *ast_builder,
                          Sa11, Sa22, Sa33);
 }
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

@@ -8,12 +8,11 @@
 #include "llvm/IR/Module.h"
 #endif
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class KernelCodeGenWASM : public KernelCodeGen {
  public:
-  KernelCodeGenWASM(Kernel *kernel, IRNode *ir = nullptr)
+  explicit KernelCodeGenWASM(Kernel *kernel, IRNode *ir = nullptr)
       : KernelCodeGen(kernel, ir) {
   }
 
@@ -28,5 +27,4 @@ class KernelCodeGenWASM : public KernelCodeGen {
 #endif
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

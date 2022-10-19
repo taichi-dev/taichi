@@ -6,7 +6,7 @@
 #include "taichi/transforms/utils.h"
 #include <set>
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 // TODO: also check RangeAssumptionStmt
 
@@ -18,7 +18,7 @@ class CheckOutOfBound : public BasicStmtVisitor {
   std::string kernel_name;
 
   explicit CheckOutOfBound(const std::string &kernel_name)
-      : BasicStmtVisitor(), visited(), kernel_name(kernel_name) {
+      : kernel_name(kernel_name) {
   }
 
   bool is_done(Stmt *stmt) {
@@ -160,4 +160,4 @@ bool check_out_of_bound(IRNode *root,
 
 }  // namespace irpass
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

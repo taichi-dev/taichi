@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 #include "c_api_test_utils.h"
 #include "taichi/cpp/taichi.hpp"
+#include "c_api/tests/gtest_fixture.h"
 
 void graph_aot_test(TiArch arch) {
   uint32_t kArrLen = 100;
@@ -66,8 +67,6 @@ void texture_aot_test(TiArch arch) {
   run_graph.launch();
   runtime.wait();
 
-  EXPECT_GE(ti_get_last_error(0, nullptr), TI_ERROR_SUCCESS);
-
   std::vector<float> arr_data(128 * 128);
   arr.read(arr_data);
   for (auto x : arr_data) {
@@ -75,32 +74,32 @@ void texture_aot_test(TiArch arch) {
   }
 }
 
-TEST(CapiGraphTest, CpuGraph) {
+TEST_F(CapiTest, GraphTestCpuGraph) {
   TiArch arch = TiArch::TI_ARCH_X64;
   graph_aot_test(arch);
 }
 
-TEST(CapiGraphTest, CudaGraph) {
+TEST_F(CapiTest, GraphTestCudaGraph) {
   if (capi::utils::is_cuda_available()) {
     TiArch arch = TiArch::TI_ARCH_CUDA;
     graph_aot_test(arch);
   }
 }
 
-TEST(CapiGraphTest, VulkanGraph) {
+TEST_F(CapiTest, GraphTestVulkanGraph) {
   if (capi::utils::is_vulkan_available()) {
     TiArch arch = TiArch::TI_ARCH_VULKAN;
     graph_aot_test(arch);
   }
 }
-TEST(CapiGraphTest, VulkanTextureGraph) {
+TEST_F(CapiTest, GraphTestVulkanTextureGraph) {
   if (capi::utils::is_vulkan_available()) {
     TiArch arch = TiArch::TI_ARCH_VULKAN;
     texture_aot_test(arch);
   }
 }
 
-TEST(CapiGraphTest, OpenglGraph) {
+TEST_F(CapiTest, GraphTestOpenglGraph) {
   if (capi::utils::is_opengl_available()) {
     TiArch arch = TiArch::TI_ARCH_OPENGL;
     graph_aot_test(arch);

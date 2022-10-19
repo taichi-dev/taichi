@@ -4,7 +4,7 @@
 #include "taichi/ir/visitors.h"
 #include "taichi/system/profiler.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 // Replace all usages statement A with a new statement B.
 // Note that the original statement A is NOT replaced.
@@ -93,4 +93,4 @@ void replace_all_usages_with(IRNode *root, Stmt *old_stmt, Stmt *new_stmt) {
 
 }  // namespace irpass
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

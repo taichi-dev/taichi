@@ -17,7 +17,7 @@
 #include "taichi/common/core.h"
 #include "taichi/math/math.h"
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 // Declare and then load
 // Load to `this`
@@ -354,4 +354,4 @@ inline bool Dict::get<bool>(std::string key) const {
 
 using Config = Dict;
 
-TI_NAMESPACE_END
+}  // namespace taichi

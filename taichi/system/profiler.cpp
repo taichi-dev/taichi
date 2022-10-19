@@ -1,7 +1,7 @@
 #include "taichi/system/profiler.h"
 #include "spdlog/fmt/bundled/color.h"
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 // A profiler's records form a tree structure
 struct ProfilerRecordNode {
@@ -62,7 +62,7 @@ class ProfilerRecords {
   int current_depth;
   bool enabled;
 
-  ProfilerRecords(const std::string &name) {
+  explicit ProfilerRecords(const std::string &name) {
     root = std::make_unique<ProfilerRecordNode>(
         fmt::format("[Profiler {}]", name), nullptr);
     current_node = root.get();
@@ -278,4 +278,4 @@ void Profiling::clear_profile_info() {
   }
 }
 
-TI_NAMESPACE_END
+}  // namespace taichi

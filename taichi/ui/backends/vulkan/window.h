@@ -23,13 +23,11 @@
 #include "taichi/ui/backends/vulkan/gui.h"
 #include "taichi/program/ndarray.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 class Program;
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang
 
-TI_UI_NAMESPACE_BEGIN
+namespace taichi::ui {
 
 namespace vulkan {
 
@@ -37,9 +35,9 @@ class Window final : public WindowBase {
  public:
   Window(lang::Program *prog, const AppConfig &config);
 
-  virtual void show() override;
-  virtual CanvasBase *get_canvas() override;
-  virtual GuiBase *GUI() override;
+  void show() override;
+  CanvasBase *get_canvas() override;
+  GuiBase *gui() override;
 
   std::pair<uint32_t, uint32_t> get_window_shape() override;
 
@@ -50,7 +48,7 @@ class Window final : public WindowBase {
 
   std::vector<uint32_t> &get_image_buffer(uint32_t &w, uint32_t &h) override;
 
-  ~Window();
+  ~Window() override;
 
  private:
   std::unique_ptr<Canvas> canvas_;
@@ -76,4 +74,4 @@ class Window final : public WindowBase {
 
 }  // namespace vulkan
 
-TI_UI_NAMESPACE_END
+}  // namespace taichi::ui

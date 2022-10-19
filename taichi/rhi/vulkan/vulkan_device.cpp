@@ -17,8 +17,7 @@
 
 #include "spirv_reflect.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace vulkan {
 
 const std::unordered_map<BufferFormat, VkFormat> buffer_format_ti_2_vk = {
@@ -499,7 +498,7 @@ void VulkanPipeline::create_graphics_pipeline(
   VkPipelineDynamicStateCreateInfo &dynamic_state =
       graphics_pipeline_template_->dynamic_state;
   dynamic_state.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-  dynamic_state.pNext = NULL;
+  dynamic_state.pNext = nullptr;
   dynamic_state.pDynamicStates =
       graphics_pipeline_template_->dynamic_state_enables.data();
   dynamic_state.dynamicStateCount =
@@ -773,7 +772,11 @@ VulkanCommandList::VulkanCommandList(VulkanDevice *ti_device,
     : ti_device_(ti_device),
       stream_(stream),
       device_(ti_device->vk_device()),
+#if !defined(__APPLE__)
       query_pool_(vkapi::create_query_pool(ti_device->vk_device())),
+#else
+      query_pool_(),
+#endif
       buffer_(buffer) {
   VkCommandBufferBeginInfo info{};
   info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -1441,7 +1444,7 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
   VkExternalMemoryBufferCreateInfo external_mem_buffer_create_info = {};
   external_mem_buffer_create_info.sType =
       VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO;
-  external_mem_buffer_create_info.pNext = NULL;
+  external_mem_buffer_create_info.pNext = nullptr;
 
 #ifdef _WIN64
   external_mem_buffer_create_info.handleTypes =
@@ -1835,7 +1838,13 @@ DeviceAllocation VulkanDevice::import_vkbuffer(vkapi::IVkBuffer buffer) {
   alloc_int.external = true;
   alloc_int.buffer = buffer;
   alloc_int.mapped = nullptr;
-  alloc_int.addr = 0;
+  if (get_cap(DeviceCapability::spirv_has_physical_storage_buffer)) {
+    VkBufferDeviceAddressInfoKHR info{};
+    info.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+    info.buffer = buffer->buffer;
+    info.pNext = nullptr;
+    alloc_int.addr = vkGetBufferDeviceAddress(device_, &info);
+  }
 
   DeviceAllocation alloc;
   alloc.device = this;
@@ -1853,6 +1862,7 @@ DeviceAllocation VulkanDevice::import_vk_image(vkapi::IVkImage image,
   alloc_int.external = true;
   alloc_int.image = image;
   alloc_int.view = view;
+  alloc_int.view_lods.emplace_back(view);
 
   DeviceAllocation alloc;
   alloc.device = this;
@@ -1947,7 +1957,7 @@ DeviceAllocation VulkanDevice::create_image(const ImageParams &params) {
   if (export_sharing) {
     external_mem_image_create_info.sType =
         VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO;
-    external_mem_image_create_info.pNext = NULL;
+    external_mem_image_create_info.pNext = nullptr;
 
 #ifdef _WIN64
     external_mem_image_create_info.handleTypes =
@@ -2079,7 +2089,7 @@ vkapi::IVkRenderPass VulkanDevice::get_renderpass(
   subpass.pInputAttachments = nullptr;
   subpass.colorAttachmentCount = color_attachments.size();
   subpass.pColorAttachments = color_attachments.data();
-  subpass.pResolveAttachments = 0;
+  subpass.pResolveAttachments = nullptr;
   subpass.pDepthStencilAttachment = desc.depth_attachment == VK_FORMAT_UNDEFINED
                                         ? nullptr
                                         : &depth_attachment;
@@ -2157,7 +2167,7 @@ void VulkanDevice::create_vma_allocator() {
   allocatorInfo.instance = instance_;
 
   VolkDeviceTable table;
-  VmaVulkanFunctions vk_vma_functions{0};
+  VmaVulkanFunctions vk_vma_functions{nullptr};
 
   volkLoadDeviceTable(&table, device_);
   vk_vma_functions.vkGetPhysicalDeviceProperties =
@@ -2312,7 +2322,7 @@ VulkanSurface::VulkanSurface(VulkanDevice *device, const SurfaceConfig &config)
 #else
       glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
       VkResult err = glfwCreateWindowSurface(device->vk_instance(), window_,
-                                             NULL, &surface_);
+                                             nullptr, &surface_);
       if (err) {
         TI_ERROR("Failed to create window surface ({})", err);
         return;
@@ -2666,5 +2676,4 @@ VulkanStream::~VulkanStream() {
 }
 
 }  // namespace vulkan
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

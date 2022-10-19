@@ -2,12 +2,12 @@
 #include "taichi/ir/statements.h"
 #include "taichi/program/program.h"
 
-void aot_save() {
+void aot_save(taichi::Arch arch) {
   using namespace taichi;
   using namespace lang;
-  auto program = Program(Arch::vulkan);
+  auto program = Program(arch);
 
-  program.config.advanced_optimization = false;
+  program.this_thread_config().advanced_optimization = false;
 
   int n = 10;
 
@@ -18,7 +18,7 @@ void aot_save() {
   place->dt = PrimitiveType::i32;
   program.add_snode_tree(std::unique_ptr<SNode>(root), /*compile_only=*/true);
 
-  auto aot_builder = program.make_aot_module_builder(Arch::vulkan);
+  auto aot_builder = program.make_aot_module_builder(arch);
 
   std::unique_ptr<Kernel> kernel_init, kernel_ret;
 
@@ -73,6 +73,6 @@ void aot_save() {
   aot_builder->add_field("place", place, true, place->dt, {n}, 1, 1);
   aot_builder->add("init", kernel_init.get());
   aot_builder->add("ret", kernel_ret.get());
-  aot_builder->dump(".", "aot.tcb");
+  aot_builder->dump(".", taichi::arch_name(arch) + "_aot.tcb");
   std::cout << "done" << std::endl;
 }

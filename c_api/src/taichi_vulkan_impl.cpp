@@ -1,10 +1,11 @@
+#ifdef TI_WITH_VULKAN
 #include "taichi_vulkan_impl.h"
 #include "taichi/rhi/vulkan/vulkan_loader.h"
-#include "vulkan/vulkan.h"
+
 #ifdef ANDROID
 #define VK_KHR_android_surface 1
 #include "vulkan/vulkan_android.h"
-#endif
+#endif  // ANDROID
 
 VulkanRuntime::VulkanRuntime() : GfxRuntime(taichi::Arch::vulkan) {
 }
@@ -28,9 +29,7 @@ VulkanRuntimeImported::Workaround::Workaround(
                     api_version);
 
   vk_device.set_cap(taichi::lang::DeviceCapability::spirv_version, 0x10000);
-  if (api_version >= VK_API_VERSION_1_3) {
-    vk_device.set_cap(taichi::lang::DeviceCapability::spirv_version, 0x10500);
-  } else if (api_version >= VK_API_VERSION_1_2) {
+  if (api_version >= VK_API_VERSION_1_2) {
     vk_device.set_cap(taichi::lang::DeviceCapability::spirv_version, 0x10500);
   } else if (api_version >= VK_API_VERSION_1_1) {
     vk_device.set_cap(taichi::lang::DeviceCapability::spirv_version, 0x10300);
@@ -112,7 +111,9 @@ TiImage VulkanRuntime::allocate_image(const taichi::lang::ImageParams &params) {
   return devalloc2devimg(*this, devalloc);
 }
 void VulkanRuntime::free_image(TiImage image) {
-  get_vk().destroy_image(devimg2devalloc(*this, image));
+  taichi::lang::DeviceAllocation devimg = devimg2devalloc(*this, image);
+  get_vk().destroy_image(devimg);
+  get_gfx_runtime().untrack_image(devimg);
 }
 
 // -----------------------------------------------------------------------------
@@ -186,6 +187,7 @@ void ti_export_vulkan_runtime(TiRuntime runtime,
   Runtime *runtime2 = (Runtime *)runtime;
   taichi::lang::vulkan::VulkanDevice &vk_device =
       static_cast<VulkanRuntime *>(runtime2)->get_vk();
+  interop_info->get_instance_proc_addr = vkGetInstanceProcAddr;
   interop_info->api_version =
       vk_device.get_cap(taichi::lang::DeviceCapability::vk_api_version);
   interop_info->instance = vk_device.vk_instance();
@@ -286,6 +288,10 @@ TiImage ti_import_vulkan_image(TiRuntime runtime,
 
   taichi::lang::DeviceAllocation image2 =
       vk_runtime.import_vk_image(image, image_view, layout);
+
+  taichi::lang::ImageLayout layout2 = (taichi::lang::ImageLayout)layout;
+  static_cast<VulkanRuntime *>(runtime2)->track_image(image2, layout2);
+
   out = devalloc2devimg(*runtime2, image2);
   TI_CAPI_TRY_CATCH_END();
   return out;
@@ -307,6 +313,7 @@ void ti_export_vulkan_image(TiRuntime runtime,
       std::get<0>(runtime2->get_vk().get_vk_image(devalloc));
   interop_info->image = image2->image;
   interop_info->image_type = image2->type;
+  interop_info->format = image2->format;
   interop_info->extent.width = image2->width;
   interop_info->extent.height = image2->height;
   interop_info->extent.depth = image2->depth;
@@ -355,3 +362,5 @@ void ti_export_vulkan_event(TiRuntime runtime,
   interop_info->event = event2->vkapi_ref->event;
   TI_CAPI_TRY_CATCH_END();
 }
+
+#endif  // TI_WITH_VULKAN

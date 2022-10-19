@@ -4,7 +4,7 @@
 #include "taichi/ir/visitors.h"
 #include "taichi/system/profiler.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 namespace {
 
@@ -40,4 +40,4 @@ bool remove_range_assumption(IRNode *root) {
 
 }  // namespace irpass
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

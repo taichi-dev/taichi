@@ -2,7 +2,7 @@
 
 #include "taichi/ir/statements.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 std::string ScratchPad::global_to_linearized_local(
     const std::vector<Stmt *> &loop_vars,
@@ -19,4 +19,4 @@ std::string ScratchPad::global_to_linearized_local(
   return ret;
 }
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

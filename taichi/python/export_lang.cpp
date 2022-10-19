@@ -36,22 +36,22 @@
 #include "taichi/rhi/cuda/cuda_context.h"
 #endif
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 bool test_threading();
 
-TI_NAMESPACE_END
+}  // namespace taichi
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 Expr expr_index(const Expr &expr, const Expr &index) {
-  return expr[index];
+  return expr[ExprGroup(index)];
 }
 
 std::string libdevice_path();
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 void export_lang(py::module &m) {
   using namespace taichi::lang;
   using namespace std::placeholders;
@@ -146,7 +146,6 @@ void export_lang(py::module &m) {
       .def_readwrite("debug", &CompileConfig::debug)
       .def_readwrite("cfg_optimization", &CompileConfig::cfg_optimization)
       .def_readwrite("check_out_of_bound", &CompileConfig::check_out_of_bound)
-      .def_readwrite("validate_autodiff", &CompileConfig::validate_autodiff)
       .def_readwrite("print_accessor_ir", &CompileConfig::print_accessor_ir)
       .def_readwrite("print_evaluator_ir", &CompileConfig::print_evaluator_ir)
       .def_readwrite("use_llvm", &CompileConfig::use_llvm)
@@ -166,6 +165,8 @@ void export_lang(py::module &m) {
       .def_readwrite("lower_access", &CompileConfig::lower_access)
       .def_readwrite("move_loop_invariant_outside_if",
                      &CompileConfig::move_loop_invariant_outside_if)
+      .def_readwrite("cache_loop_invariant_global_vars",
+                     &CompileConfig::cache_loop_invariant_global_vars)
       .def_readwrite("default_cpu_block_dim",
                      &CompileConfig::default_cpu_block_dim)
       .def_readwrite("cpu_block_dim_adaptive",
@@ -201,7 +202,6 @@ void export_lang(py::module &m) {
       .def_readwrite("detect_read_only", &CompileConfig::detect_read_only)
       .def_readwrite("ndarray_use_cached_allocator",
                      &CompileConfig::ndarray_use_cached_allocator)
-      .def_readwrite("use_mesh", &CompileConfig::use_mesh)
       .def_readwrite("real_matrix", &CompileConfig::real_matrix)
       .def_readwrite("real_matrix_scalarize",
                      &CompileConfig::real_matrix_scalarize)
@@ -316,6 +316,7 @@ void export_lang(py::module &m) {
       .def("insert_expr_stmt", &ASTBuilder::insert_expr_stmt)
       .def("insert_thread_idx_expr", &ASTBuilder::insert_thread_idx_expr)
       .def("insert_patch_idx_expr", &ASTBuilder::insert_patch_idx_expr)
+      .def("expand_expr", &ASTBuilder::expand_expr)
       .def("sifakis_svd_f32", sifakis_svd_export<float32, int32>)
       .def("sifakis_svd_f64", sifakis_svd_export<float64, int64>)
       .def("expr_var", &ASTBuilder::make_var)
@@ -328,7 +329,8 @@ void export_lang(py::module &m) {
 
   py::class_<Program>(m, "Program")
       .def(py::init<>())
-      .def_readonly("config", &Program::config)
+      .def("config", &Program::this_thread_config,
+           py::return_value_policy::reference)
       .def("sync_kernel_profiler",
            [](Program *program) { program->profiler->sync(); })
       .def("update_kernel_profiler",
@@ -395,7 +397,7 @@ void export_lang(py::module &m) {
       .def("create_sparse_matrix_builder",
            [](Program *program, int n, int m, uint64 max_num_entries,
               DataType dtype, const std::string &storage_format) {
-             TI_ERROR_IF(!arch_is_cpu(program->config.arch),
+             TI_ERROR_IF(!arch_is_cpu(program->this_thread_config().arch),
                          "SparseMatrix Builder only supports CPU for now.");
              return SparseMatrixBuilder(n, m, max_num_entries, dtype,
                                         storage_format);
@@ -403,18 +405,18 @@ void export_lang(py::module &m) {
       .def("create_sparse_matrix",
            [](Program *program, int n, int m, DataType dtype,
               std::string storage_format) {
-             TI_ERROR_IF(!arch_is_cpu(program->config.arch) &&
-                             !arch_is_cuda(program->config.arch),
+             TI_ERROR_IF(!arch_is_cpu(program->this_thread_config().arch) &&
+                             !arch_is_cuda(program->this_thread_config().arch),
                          "SparseMatrix only supports CPU and CUDA for now.");
-             if (arch_is_cpu(program->config.arch))
+             if (arch_is_cpu(program->this_thread_config().arch))
                return make_sparse_matrix(n, m, dtype, storage_format);
              else
                return make_cu_sparse_matrix(n, m, dtype);
            })
       .def("make_sparse_matrix_from_ndarray",
            [](Program *program, SparseMatrix &sm, const Ndarray &ndarray) {
-             TI_ERROR_IF(!arch_is_cpu(program->config.arch) &&
-                             !arch_is_cuda(program->config.arch),
+             TI_ERROR_IF(!arch_is_cpu(program->this_thread_config().arch) &&
+                             !arch_is_cuda(program->this_thread_config().arch),
                          "SparseMatrix only supports CPU and CUDA for now.");
              return make_sparse_matrix_from_ndarray(program, sm, ndarray);
            })
@@ -422,7 +424,7 @@ void export_lang(py::module &m) {
            [](Program *program, CuSparseMatrix &sm, const Ndarray &row_coo,
               const Ndarray &col_coo, const Ndarray &val_coo) {
              TI_ERROR_IF(
-                 !arch_is_cuda(program->config.arch),
+                 !arch_is_cuda(program->this_thread_config().arch),
                  "SparseMatrix based on GPU only supports CUDA for now.");
              return make_sparse_matrix_from_ndarray_cusparse(
                  program, sm, row_coo, col_coo, val_coo);
@@ -617,7 +619,7 @@ void export_lang(py::module &m) {
       .def("dtype", &aot::Arg::dtype)
       .def("channel_format", &aot::Arg::dtype);
 
-  py::class_<Node>(m, "Node");
+  py::class_<Node>(m, "Node");  // NOLINT(bugprone-unused-raii)
 
   py::class_<Sequential, Node>(m, "Sequential")
       .def(py::init<GraphBuilder *>())
@@ -694,8 +696,10 @@ void export_lang(py::module &m) {
 
   py::class_<Kernel>(m, "Kernel")
       .def("get_ret_int", &Kernel::get_ret_int)
+      .def("get_ret_uint", &Kernel::get_ret_uint)
       .def("get_ret_float", &Kernel::get_ret_float)
       .def("get_ret_int_tensor", &Kernel::get_ret_int_tensor)
+      .def("get_ret_uint_tensor", &Kernel::get_ret_uint_tensor)
       .def("get_ret_float_tensor", &Kernel::get_ret_float_tensor)
       .def("make_launch_context", &Kernel::make_launch_context)
       .def(
@@ -712,6 +716,7 @@ void export_lang(py::module &m) {
 
   py::class_<Kernel::LaunchContextBuilder>(m, "KernelLaunchContext")
       .def("set_arg_int", &Kernel::LaunchContextBuilder::set_arg_int)
+      .def("set_arg_uint", &Kernel::LaunchContextBuilder::set_arg_uint)
       .def("set_arg_float", &Kernel::LaunchContextBuilder::set_arg_float)
       .def("set_arg_external_array_with_shape",
            &Kernel::LaunchContextBuilder::set_arg_external_array_with_shape)
@@ -777,6 +782,16 @@ void export_lang(py::module &m) {
           },
           py::return_value_policy::reference)
       .def("get_ret_type", &Expr::get_ret_type)
+      .def("is_tensor",
+           [](Expr *expr) { return expr->expr->ret_type->is<TensorType>(); })
+      .def("get_shape",
+           [](Expr *expr) -> std::optional<std::vector<int>> {
+             if (expr->expr->ret_type->is<TensorType>()) {
+               return std::optional<std::vector<int>>(
+                   expr->expr->ret_type->cast<TensorType>()->get_shape());
+             }
+             return std::nullopt;
+           })
       .def("type_check", &Expr::type_check)
       .def("get_expr_name",
            [](Expr *expr) { return expr->cast<FieldExpression>()->name; })
@@ -797,7 +812,7 @@ void export_lang(py::module &m) {
       .def("size", [](ExprGroup *eg) { return eg->exprs.size(); })
       .def("push_back", &ExprGroup::push_back);
 
-  py::class_<Stmt>(m, "Stmt");
+  py::class_<Stmt>(m, "Stmt");  // NOLINT(bugprone-unused-raii)
 
   m.def("expr_snode_get_addr", &snode_get_addr);
   m.def("expr_snode_append", &snode_append);
@@ -1143,6 +1158,7 @@ void export_lang(py::module &m) {
   m.def("get_type_factory_instance", TypeFactory::get_instance,
         py::return_value_policy::reference);
 
+  // NOLINTNEXTLINE(bugprone-unused-raii)
   py::class_<BitStructType>(m, "BitStructType");
   py::class_<BitStructTypeBuilder>(m, "BitStructTypeBuilder")
       .def(py::init<int>())
@@ -1220,7 +1236,15 @@ void export_lang(py::module &m) {
 
   py::class_<CuSparseMatrix, SparseMatrix>(m, "CuSparseMatrix")
       .def(py::init<int, int, DataType>())
-      .def("spmv", &CuSparseMatrix::spmv);
+      .def(py::init<const CuSparseMatrix &>())
+      .def("spmv", &CuSparseMatrix::spmv)
+      .def(py::self + py::self)
+      .def(py::self - py::self)
+      .def(py::self * float32())
+      .def(float32() * py::self)
+      .def("matmul", &CuSparseMatrix::matmul)
+      .def("transpose", &CuSparseMatrix::transpose)
+      .def("to_string", &CuSparseMatrix::to_string);
 
   py::class_<SparseSolver>(m, "SparseSolver")
       .def("compute", &SparseSolver::compute)
@@ -1228,6 +1252,7 @@ void export_lang(py::module &m) {
       .def("factorize", &SparseSolver::factorize)
       .def("solve", &SparseSolver::solve)
       .def("solve_cu", &SparseSolver::solve_cu)
+      .def("solve_rf", &SparseSolver::solve_rf)
       .def("info", &SparseSolver::info);
 
   m.def("make_sparse_solver", &make_sparse_solver);
@@ -1272,8 +1297,8 @@ void export_lang(py::module &m) {
       .value("g2r", mesh::ConvType::g2r)
       .export_values();
 
-  py::class_<mesh::Mesh>(m, "Mesh");
-  py::class_<mesh::MeshPtr>(m, "MeshPtr");
+  py::class_<mesh::Mesh>(m, "Mesh");        // NOLINT(bugprone-unused-raii)
+  py::class_<mesh::MeshPtr>(m, "MeshPtr");  // NOLINT(bugprone-unused-raii)
 
   m.def("element_order", mesh::element_order);
   m.def("from_end_element_order", mesh::from_end_element_order);
@@ -1349,4 +1374,4 @@ void export_lang(py::module &m) {
   });
 }
 
-TI_NAMESPACE_END
+}  // namespace taichi

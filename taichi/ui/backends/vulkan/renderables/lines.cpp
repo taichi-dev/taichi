@@ -4,7 +4,7 @@
 
 #include "taichi/rhi/vulkan/vulkan_device.h"
 
-TI_UI_NAMESPACE_BEGIN
+namespace taichi::ui {
 
 namespace vulkan {
 
@@ -79,4 +79,4 @@ void Lines::cleanup() {
 
 }  // namespace vulkan
 
-TI_UI_NAMESPACE_END
+}  // namespace taichi::ui

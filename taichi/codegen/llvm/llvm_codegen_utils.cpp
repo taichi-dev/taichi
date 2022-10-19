@@ -1,7 +1,6 @@
 #include "llvm_codegen_utils.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 std::string type_name(llvm::Type *type) {
   std::string type_name_str;
@@ -65,38 +64,37 @@ bool is_same_type(llvm::Type *a, llvm::Type *b) {
     }
     len_same++;
   }
-  if (len_same != a_name.size()) {
-    // a is xxx.yyy, and b is xxx.zzz, yyy and zzz are numbers
-    if (len_same == 0) {
-      return false;
-    }
-    int dot_pos = len_same - 1;
-    while (dot_pos && a_name[dot_pos] != '.') {
-      dot_pos--;
-    }
-    if (!dot_pos) {
-      return false;
-    }
-    for (int i = dot_pos + 1; i < a_name.size(); i++) {
-      if (!std::isdigit(a_name[i])) {
-        return false;
-      }
-    }
-    for (int i = dot_pos + 1; i < b_name.size(); i++) {
-      if (!std::isdigit(b_name[i])) {
-        return false;
-      }
-    }
-  } else {
-    // a is xxx, and b is xxx.yyy, yyy is a number
+  if (len_same == a_name.size()) {
     TI_ASSERT(len_same != b_name.size());
-    if (b_name[len_same] != '.') {
+    if (b_name[len_same] == '.') {
+      // a is xxx, and b is xxx.yyy, yyy is a number
+      for (int i = len_same + 1; i < b_name.size(); i++) {
+        if (!std::isdigit(b_name[i])) {
+          return false;
+        }
+      }
+      return true;
+    }
+  }
+  // a is xxx.yyy, and b is xxx.zzz, yyy and zzz are numbers
+  if (len_same == 0) {
+    return false;
+  }
+  int dot_pos = len_same - 1;
+  while (dot_pos && a_name[dot_pos] != '.') {
+    dot_pos--;
+  }
+  if (!dot_pos) {
+    return false;
+  }
+  for (int i = dot_pos + 1; i < a_name.size(); i++) {
+    if (!std::isdigit(a_name[i])) {
       return false;
     }
-    for (int i = len_same + 1; i < b_name.size(); i++) {
-      if (!std::isdigit(b_name[i])) {
-        return false;
-      }
+  }
+  for (int i = dot_pos + 1; i < b_name.size(); i++) {
+    if (!std::isdigit(b_name[i])) {
+      return false;
     }
   }
   return true;
@@ -146,5 +144,4 @@ void check_func_call_signature(llvm::FunctionType *func_type,
   }
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

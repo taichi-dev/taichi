@@ -5,8 +5,7 @@
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
 #include "taichi/runtime/llvm/aot_graph_data.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 void LlvmAotModuleBuilder::dump(const std::string &output_dir,
                                 const std::string &filename) const {
@@ -61,18 +60,18 @@ void LlvmAotModuleBuilder::add_field_per_backend(const std::string &identifier,
   cache_.fields[snode_tree_id] = std::move(field_cache);
 }
 
-void LlvmAotModuleBuilder::add_compiled_kernel(aot::Kernel *kernel) {
+void LlvmAotModuleBuilder::add_compiled_kernel(const std::string &identifier,
+                                               aot::Kernel *kernel) {
   auto *kernel_impl = dynamic_cast<llvm_aot::KernelImpl *>(kernel);
   TI_ASSERT(kernel_impl);
   if (!kernel_impl->kernel_data_.created_at) {
     kernel_impl->kernel_data_.last_used_at = std::time(nullptr);
     kernel_impl->kernel_data_.created_at = std::time(nullptr);
   }
-  const std::string &kernel_name = kernel_impl->kernel_name_;
+  const std::string &kernel_name = identifier;
   if (cache_.kernels.find(kernel_name) == cache_.kernels.end()) {
     cache_.kernels[kernel_name] = std::move(kernel_impl->kernel_data_);
   }
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

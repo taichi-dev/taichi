@@ -5,15 +5,13 @@
 #include "taichi/ui/common/renderable_info.h"
 #include "taichi/ui/utils/utils.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class Texture;
 
-}
-}  // namespace taichi
+}  // namespace taichi::lang
 
-TI_UI_NAMESPACE_BEGIN
+namespace taichi::ui {
 
 struct SetImageInfo {
   FieldInfo img;
@@ -48,4 +46,4 @@ class CanvasBase {
   virtual ~CanvasBase() = default;
 };
 
-TI_UI_NAMESPACE_END
+}  // namespace taichi::ui

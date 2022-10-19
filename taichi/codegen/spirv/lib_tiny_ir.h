@@ -75,7 +75,7 @@ class Node : public Polymorphic {
   Node() {
   }
 
-  virtual ~Node() {
+  ~Node() override {
   }
 
   const std::string &debug_name() const {
@@ -103,7 +103,7 @@ class Node : public Polymorphic {
   }
 
  private:
-  virtual bool is_equal(const Polymorphic &other) const {
+  bool is_equal(const Polymorphic &other) const override {
     return false;
   }
 
@@ -116,7 +116,7 @@ class Type : public Node {
   }
 
  private:
-  virtual bool is_equal(const Polymorphic &other) const {
+  bool is_equal(const Polymorphic &other) const override {
     return false;
   }
 };
@@ -179,7 +179,7 @@ class LayoutContext : public Polymorphic {
   }
 
  private:
-  virtual bool is_equal(const Polymorphic &other) const {
+  bool is_equal(const Polymorphic &other) const override {
     // This is only called when `other` has the same typeid
     return true;
   }

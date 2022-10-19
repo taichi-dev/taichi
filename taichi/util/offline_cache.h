@@ -10,11 +10,12 @@
 #include "taichi/common/core.h"
 #include "taichi/common/cleanup.h"
 #include "taichi/common/version.h"
+#include "taichi/rhi/arch.h"
 #include "taichi/util/io.h"
 #include "taichi/util/lock.h"
+#include "taichi/program/compile_config.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace offline_cache {
 
 using Version = std::uint16_t[3];  // {MAJOR, MINOR, PATCH}
@@ -46,16 +47,18 @@ inline CleanCachePolicy string_to_clean_cache_policy(const std::string &str) {
   return Never;
 }
 
-struct Metadata {
-  struct KernelMetadata {
-    std::string kernel_key;
-    std::size_t size{0};          // byte
-    std::time_t created_at{0};    // sec
-    std::time_t last_used_at{0};  // sec
-    std::size_t num_files{0};
+struct KernelMetadataBase {
+  std::string kernel_key;
+  std::size_t size{0};          // byte
+  std::time_t created_at{0};    // sec
+  std::time_t last_used_at{0};  // sec
 
-    TI_IO_DEF(kernel_key, size, created_at, last_used_at, num_files);
-  };
+  TI_IO_DEF(kernel_key, size, created_at, last_used_at);
+};
+
+template <typename KernelMetadataType>
+struct Metadata {
+  using KernelMetadata = KernelMetadataType;
 
   Version version{};
   std::size_t size{0};  // byte
@@ -286,6 +289,12 @@ class CacheCleaner {
   }
 };
 
+void disable_offline_cache_if_needed(CompileConfig *config);
+std::string get_cache_path_by_arch(const std::string &base_path, Arch arch);
+std::string mangle_name(const std::string &primal_name, const std::string &key);
+bool try_demangle_name(const std::string &mangled_name,
+                       std::string &primal_name,
+                       std::string &key);
+
 }  // namespace offline_cache
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

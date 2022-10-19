@@ -5,8 +5,7 @@
 
 #include "llvm/IR/Module.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class OffloadedTask {
  public:
@@ -14,9 +13,9 @@ class OffloadedTask {
   int block_dim{0};
   int grid_dim{0};
 
-  OffloadedTask(const std::string &name = "",
-                int block_dim = 0,
-                int grid_dim = 0)
+  explicit OffloadedTask(const std::string &name = "",
+                         int block_dim = 0,
+                         int grid_dim = 0)
       : name(name), block_dim(block_dim), grid_dim(grid_dim){};
   TI_IO_DEF(name, block_dim, grid_dim);
 };
@@ -56,5 +55,4 @@ struct LLVMCompiledKernel {
   TI_IO_DEF(tasks);
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

@@ -16,9 +16,7 @@
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
 #include "taichi/codegen/llvm/struct_llvm.h"
 
-namespace taichi {
-
-namespace lang {
+namespace taichi::lang {
 namespace {
 
 constexpr char kFuncName[] = "run_refine_coords";
@@ -183,6 +181,5 @@ TEST_F(RefineCoordinatesTest, Basic) {
 }
 
 }  // namespace
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang
 #endif  // #ifdef TI_WITH_LLVM

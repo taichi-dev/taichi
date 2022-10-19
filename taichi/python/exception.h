@@ -9,20 +9,20 @@
 
 #include <exception>
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 class ExceptionForPython : public std::exception {
  private:
   std::string msg_;
 
  public:
-  ExceptionForPython(const std::string &msg) : msg_(msg) {
+  explicit ExceptionForPython(const std::string &msg) : msg_(msg) {
   }
-  char const *what() const throw() override {
+  char const *what() const noexcept override {
     return msg_.c_str();
   }
 };
 
 void raise_assertion_failure_in_python(const std::string &msg);
 
-TI_NAMESPACE_END
+}  // namespace taichi

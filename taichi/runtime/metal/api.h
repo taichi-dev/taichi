@@ -9,8 +9,7 @@
 #include "taichi/util/lang_util.h"
 #include "taichi/platform/mac/objc_api.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace metal {
 
 // Expose these incomplete structs so that other modules (e.g. MetalRuntime)
@@ -169,5 +168,4 @@ size_t get_max_total_threads_per_threadgroup(
 bool is_metal_api_available();
 
 }  // namespace metal
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

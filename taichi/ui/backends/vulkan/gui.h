@@ -17,39 +17,38 @@
 #include "taichi/ui/common/gui_base.h"
 #include "taichi/rhi/vulkan/vulkan_device.h"
 
-TI_UI_NAMESPACE_BEGIN
+namespace taichi::ui {
 
 namespace vulkan {
 
 class TI_DLL_EXPORT Gui final : public GuiBase {
  public:
   Gui(AppContext *app_context, SwapChain *swap_chain, TaichiWindow *window);
-  ~Gui();
+  ~Gui() override;
   void cleanup();
 
   void init_render_resources(VkRenderPass render_pass);
   void cleanup_render_resources();
 
-  virtual void begin(std::string name,
-                     float x,
-                     float y,
-                     float width,
-                     float height) override;
-  virtual void end() override;
-  virtual void text(std::string text) override;
-  virtual bool checkbox(std::string name, bool old_value) override;
-  virtual int slider_int(std::string name,
-                         int old_value,
-                         int minimum,
-                         int maximum) override;
-  virtual float slider_float(std::string name,
-                             float old_value,
-                             float minimum,
-                             float maximum) override;
+  void begin(std::string name,
+             float x,
+             float y,
+             float width,
+             float height) override;
+  void end() override;
+  void text(std::string text) override;
+  bool checkbox(std::string name, bool old_value) override;
+  int slider_int(std::string name,
+                 int old_value,
+                 int minimum,
+                 int maximum) override;
+  float slider_float(std::string name,
+                     float old_value,
+                     float minimum,
+                     float maximum) override;
   // TODO: consider renaming this?
-  virtual glm::vec3 color_edit_3(std::string name,
-                                 glm::vec3 old_value) override;
-  virtual bool button(std::string text) override;
+  glm::vec3 color_edit_3(std::string name, glm::vec3 old_value) override;
+  bool button(std::string text) override;
 
   void draw(taichi::lang::CommandList *cmd_list);
 
@@ -81,4 +80,4 @@ class TI_DLL_EXPORT Gui final : public GuiBase {
 
 }  // namespace vulkan
 
-TI_UI_NAMESPACE_END
+}  // namespace taichi::ui

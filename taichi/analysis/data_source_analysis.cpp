@@ -2,7 +2,7 @@
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/statements.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 namespace irpass::analysis {
 
@@ -77,4 +77,4 @@ std::vector<Stmt *> get_store_destination(Stmt *store_stmt) {
 
 }  // namespace irpass::analysis
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

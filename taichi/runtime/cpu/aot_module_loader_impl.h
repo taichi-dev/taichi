@@ -2,8 +2,7 @@
 
 #include "taichi/aot/module_loader.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class LlvmRuntimeExecutor;
 
@@ -17,5 +16,4 @@ struct TI_DLL_EXPORT AotModuleParams {
 TI_DLL_EXPORT std::unique_ptr<aot::Module> make_aot_module(std::any mod_params);
 
 }  // namespace cpu
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

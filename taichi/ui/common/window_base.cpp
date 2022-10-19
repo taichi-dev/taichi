@@ -1,6 +1,6 @@
 #include "taichi/ui/common/window_base.h"
 
-TI_UI_NAMESPACE_BEGIN
+namespace taichi::ui {
 
 #define CHECK_WINDOW_SHOWING        \
   TI_ERROR_IF(!config_.show_window, \
@@ -9,7 +9,8 @@ TI_UI_NAMESPACE_BEGIN
 WindowBase ::WindowBase(AppConfig config) : config_(config) {
   if (config_.show_window) {
     glfw_window_ = create_glfw_window_(config_.name, config_.width,
-                                       config_.height, config_.vsync);
+                                       config_.height, config_.window_pos_x,
+                                       config_.window_pos_y, config_.vsync);
     glfwSetWindowUserPointer(glfw_window_, this);
     set_callbacks();
     last_record_time_ = glfwGetTime();
@@ -161,7 +162,7 @@ WindowBase::~WindowBase() {
   }
 }
 
-GuiBase *WindowBase::GUI() {
+GuiBase *WindowBase::gui() {
   return nullptr;
 }
 
@@ -193,4 +194,4 @@ void WindowBase::mouse_button_callback(GLFWwindow *glfw_window,
                                                modifier);
 }
 
-TI_UI_NAMESPACE_END
+}  // namespace taichi::ui

@@ -3,7 +3,7 @@
 #include "taichi/ir/statements.h"
 #include "taichi/ir/visitors.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 // Find if there is a store (or AtomicOpStmt).
 class LocalStoreSearcher : public BasicStmtVisitor {
@@ -54,4 +54,4 @@ bool has_store_or_atomic(IRNode *root, const std::vector<Stmt *> &vars) {
 }
 }  // namespace irpass::analysis
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

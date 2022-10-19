@@ -3,8 +3,7 @@
 #include <functional>
 #include <string>
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 /**
  * A unique key of a function.
@@ -27,8 +26,7 @@ class FunctionKey {
   [[nodiscard]] std::string get_full_name() const;
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang
 
 namespace std {
 template <>

@@ -6,7 +6,7 @@
 #include "taichi/program/program.h"
 #include "taichi/util/bit.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 // Algebraic Simplification and Strength Reduction
 class AlgSimp : public BasicStmtVisitor {
@@ -43,8 +43,7 @@ class AlgSimp : public BasicStmtVisitor {
   bool fast_math;
   DelayedIRModifier modifier;
 
-  explicit AlgSimp(bool fast_math_)
-      : BasicStmtVisitor(), fast_math(fast_math_) {
+  explicit AlgSimp(bool fast_math_) : fast_math(fast_math_) {
   }
 
   [[nodiscard]] bool is_redundant_cast(const DataType &first_cast,
@@ -126,6 +125,7 @@ class AlgSimp : public BasicStmtVisitor {
       auto result = Stmt::make<BinaryOpStmt>(BinaryOpType::bit_shl, stmt->lhs,
                                              new_rhs.get());
       result->ret_type = stmt->ret_type;
+      result->set_tb(stmt->tb);
       stmt->replace_usages_with(result.get());
       modifier.insert_before(stmt, std::move(new_rhs));
       modifier.insert_before(stmt, std::move(result));
@@ -140,6 +140,7 @@ class AlgSimp : public BasicStmtVisitor {
       cast_to_result_type(a, stmt);
       auto sum = Stmt::make<BinaryOpStmt>(BinaryOpType::add, a, a);
       sum->ret_type = a->ret_type;
+      sum->set_tb(stmt->tb);
       stmt->replace_usages_with(sum.get());
       modifier.insert_before(stmt, std::move(sum));
       modifier.erase(stmt);
@@ -445,4 +446,4 @@ bool alg_simp(IRNode *root, const CompileConfig &config) {
 
 }  // namespace irpass
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

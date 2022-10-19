@@ -1,7 +1,6 @@
 #include "taichi/codegen/spirv/snode_struct_compiler.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace spirv {
 namespace {
 
@@ -174,5 +173,4 @@ CompiledSNodeStructs compile_snode_structs(SNode &root) {
 }
 
 }  // namespace spirv
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

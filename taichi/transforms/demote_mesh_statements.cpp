@@ -5,15 +5,16 @@
 #include "taichi/transforms/demote_mesh_statements.h"
 #include "taichi/ir/visitors.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 const PassID DemoteMeshStatements::id = "DemoteMeshStatements";
 
 namespace irpass {
 
 auto get_load = [](SNode *snode, Stmt *idx, VecStatement &block) {
-  const auto lane = std::vector<Stmt *>{idx};
+  Stmt *casted_idx = block.push_back<UnaryOpStmt>(UnaryOpType::cast_value, idx);
+  casted_idx->as<UnaryOpStmt>()->cast_type = PrimitiveType::i32;
+  const auto lane = std::vector<Stmt *>{casted_idx};
   Stmt *globalptr = block.push_back<GlobalPtrStmt>(snode, lane);
   Stmt *load = block.push_back<GlobalLoadStmt>(globalptr);
   return load;
@@ -23,7 +24,7 @@ class ReplaceIndexConversion : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
 
-  ReplaceIndexConversion(OffloadedStmt *node) {
+  explicit ReplaceIndexConversion(OffloadedStmt *node) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
 
@@ -37,16 +38,20 @@ class ReplaceIndexConversion : public BasicStmtVisitor {
                           ->second);
 
     VecStatement block;
+    Stmt *val;
     if (stmt->conv_type == mesh::ConvType::g2r) {
       // E.g, v_reordered = v_g2r[v_global]
-      [[maybe_unused]] Stmt *val = get_load(mapping, stmt->idx, block);
+      val = get_load(mapping, stmt->idx, block);
     } else {
       // E.g, v_global = v_l2g[v_local + total_vertices_offset]
       Stmt *offset = offload->total_offset_local.find(stmt->idx_type)->second;
       Stmt *index =
           block.push_back<BinaryOpStmt>(BinaryOpType::add, stmt->idx, offset);
-      [[maybe_unused]] Stmt *val = get_load(mapping, index, block);
+      val = get_load(mapping, index, block);
     }
+    Stmt *casted_val =
+        block.push_back<UnaryOpStmt>(UnaryOpType::cast_value, val);
+    casted_val->as<UnaryOpStmt>()->cast_type = PrimitiveType::i32;
     stmt->replace_with(std::move(block));
   }
 
@@ -119,8 +124,11 @@ void demote_mesh_statements_offload(OffloadedStmt *offload,
         Stmt *index_1 =
             block.push_back<BinaryOpStmt>(BinaryOpType::add, index, one);
         Stmt *offset_1 = get_load(rel_offset, index_1, block);
-        [[maybe_unused]] Stmt *val =
+        Stmt *val =
             block.push_back<BinaryOpStmt>(BinaryOpType::sub, offset_1, offset);
+        Stmt *casted_val =
+            block.push_back<UnaryOpStmt>(UnaryOpType::cast_value, val);
+        casted_val->as<UnaryOpStmt>()->cast_type = PrimitiveType::i32;
       } else {
         SNode *rel_value = stmt->mesh->relations.find(rel_type)->second.value;
         Stmt *val_local_index = block.push_back<BinaryOpStmt>(
@@ -153,5 +161,4 @@ void demote_mesh_statements(IRNode *root,
 }
 
 }  // namespace irpass
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

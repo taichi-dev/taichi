@@ -7,7 +7,7 @@
 #include "taichi/program/kernel_profiler.h"
 #include "taichi/rhi/cuda/cuda_driver.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 // Note:
 // It would be ideal to create a CUDA context per Taichi program, yet CUDA
@@ -78,7 +78,7 @@ class CUDAContext {
     void *new_ctx_;
 
    public:
-    ContextGuard(CUDAContext *new_ctx)
+    explicit ContextGuard(CUDAContext *new_ctx)
         : old_ctx_(nullptr), new_ctx_(new_ctx->context_) {
       CUDADriver::get_instance().context_get_current(&old_ctx_);
       if (old_ctx_ != new_ctx_)
@@ -103,4 +103,4 @@ class CUDAContext {
   static CUDAContext &get_instance();
 };
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

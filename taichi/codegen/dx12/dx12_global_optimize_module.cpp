@@ -35,8 +35,7 @@
 
 using namespace llvm;
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace directx12 {
 
 const char *NumWorkGroupsCBName = "num_work_groups.cbuf";
@@ -80,7 +79,7 @@ std::vector<uint8_t> global_optimize_module(llvm::Module *module,
     F.addFnAttr(llvm::Attribute::AlwaysInline);
   }
   // FIXME: choose shader model based on feature used.
-  llvm::StringRef triple = "dxil-pc-shadermodel6.3-compute";
+  llvm::StringRef triple = "dxil-pc-shadermodel6.0-compute";
   module->setTargetTriple(triple);
   module->setSourceFileName("");
   std::string err_str;
@@ -167,5 +166,4 @@ std::vector<uint8_t> global_optimize_module(llvm::Module *module,
 }
 
 }  // namespace directx12
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

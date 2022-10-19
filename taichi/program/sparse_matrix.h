@@ -9,8 +9,7 @@
 
 #include "Eigen/Sparse"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class SparseMatrix;
 
@@ -78,7 +77,7 @@ class SparseMatrix {
   }
 
   virtual const std::string to_string() const {
-    return nullptr;
+    return "";
   }
 
   virtual const void *get_matrix() const {
@@ -113,11 +112,11 @@ class EigenSparseMatrix : public SparseMatrix {
   explicit EigenSparseMatrix(int rows, int cols, DataType dt)
       : SparseMatrix(rows, cols, dt), matrix_(rows, cols) {
   }
-  explicit EigenSparseMatrix(EigenSparseMatrix &sm)
+  EigenSparseMatrix(EigenSparseMatrix &sm)
       : SparseMatrix(sm.num_rows(), sm.num_cols(), sm.dtype_),
         matrix_(sm.matrix_) {
   }
-  explicit EigenSparseMatrix(EigenSparseMatrix &&sm)
+  EigenSparseMatrix(EigenSparseMatrix &&sm)
       : SparseMatrix(sm.num_rows(), sm.num_cols(), sm.dtype_),
         matrix_(sm.matrix_) {
   }
@@ -126,6 +125,7 @@ class EigenSparseMatrix : public SparseMatrix {
   }
 
   ~EigenSparseMatrix() override = default;
+
   void build_triplets(void *triplets_adr) override;
   const std::string to_string() const override;
 
@@ -211,22 +211,84 @@ class CuSparseMatrix : public SparseMatrix {
     }
 #endif
   }
+  explicit CuSparseMatrix(cusparseSpMatDescr_t A,
+                          int rows,
+                          int cols,
+                          DataType dt)
+      : SparseMatrix(rows, cols, dt), matrix_(A) {
+  }
+  CuSparseMatrix(const CuSparseMatrix &sm)
+      : SparseMatrix(sm.rows_, sm.cols_, sm.dtype_), matrix_(sm.matrix_) {
+  }
 
-  virtual ~CuSparseMatrix();
+  ~CuSparseMatrix() override;
+
+  // TODO: Overload +=, -= and *=
+  friend std::unique_ptr<SparseMatrix> operator+(const CuSparseMatrix &lhs,
+                                                 const CuSparseMatrix &rhs) {
+    auto m = lhs.addition(rhs, 1.0, 1.0);
+    return m;
+  };
+
+  friend std::unique_ptr<SparseMatrix> operator-(const CuSparseMatrix &lhs,
+                                                 const CuSparseMatrix &rhs) {
+    return lhs.addition(rhs, 1.0, -1.0);
+  };
+
+  friend std::unique_ptr<SparseMatrix> operator*(const CuSparseMatrix &sm,
+                                                 float scale) {
+    return sm.addition(sm, scale, 0.0);
+  }
+
+  friend std::unique_ptr<SparseMatrix> operator*(float scale,
+                                                 const CuSparseMatrix &sm) {
+    return sm.addition(sm, scale, 0.0);
+  }
+
+  std::unique_ptr<SparseMatrix> addition(const CuSparseMatrix &other,
+                                         const float alpha,
+                                         const float beta) const;
+
+  std::unique_ptr<SparseMatrix> matmul(const CuSparseMatrix &other) const;
+
+  std::unique_ptr<SparseMatrix> gemm(const CuSparseMatrix &other,
+                                     const float alpha,
+                                     const float beta) const;
+
+  std::unique_ptr<SparseMatrix> transpose() const;
+
   void build_csr_from_coo(void *coo_row_ptr,
                           void *coo_col_ptr,
                           void *coo_values_ptr,
                           int nnz) override;
+
   void spmv(Program *prog, const Ndarray &x, Ndarray &y);
 
   const void *get_matrix() const override {
     return &matrix_;
   };
 
-  void print_info();
+  const std::string to_string() const override;
+
+  void *get_row_ptr() const {
+    return csr_row_ptr_;
+  }
+  void *get_col_ind() const {
+    return csr_col_ind_;
+  }
+  void *get_val_ptr() const {
+    return csr_val_;
+  }
+  int get_nnz() const {
+    return nnz_;
+  }
 
  private:
   cusparseSpMatDescr_t matrix_;
+  void *csr_row_ptr_{nullptr};
+  void *csr_col_ind_{nullptr};
+  void *csr_val_{nullptr};
+  int nnz_{0};
 };
 
 std::unique_ptr<SparseMatrix> make_sparse_matrix(
@@ -235,6 +297,10 @@ std::unique_ptr<SparseMatrix> make_sparse_matrix(
     DataType dt,
     const std::string &storage_format);
 std::unique_ptr<SparseMatrix> make_cu_sparse_matrix(int rows,
+                                                    int cols,
+                                                    DataType dt);
+std::unique_ptr<SparseMatrix> make_cu_sparse_matrix(cusparseSpMatDescr_t mat,
+                                                    int rows,
                                                     int cols,
                                                     DataType dt);
 
@@ -246,5 +312,4 @@ void make_sparse_matrix_from_ndarray_cusparse(Program *prog,
                                               const Ndarray &row_indices,
                                               const Ndarray &col_indices,
                                               const Ndarray &values);
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

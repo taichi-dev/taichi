@@ -2,8 +2,7 @@
 
 #include "taichi/runtime/gfx/aot_module_loader_impl.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace aot_test_utils {
 static void write_devalloc(taichi::lang::DeviceAllocation &alloc,
                            const void *data,
@@ -151,13 +150,19 @@ void run_kernel_test1(Arch arch, taichi::lang::Device *device) {
   host_ctx.set_arg(/*arg_id=*/0, /*base=*/0);
   host_ctx.set_arg_ndarray(/*arg_id=*/1, arr.get_device_allocation_ptr_as_int(),
                            /*shape=*/arr.shape);
+
+  // Hack to set vector/matrix args
+  std::vector<int> vec = {1, 2, 3};
+  for (int i = 0; i < vec.size(); ++i) {
+    host_ctx.set_arg(/*arg_id=*/i + 2, vec[i]);
+  }
   k_run->launch(&host_ctx);
   gfx_runtime->synchronize();
 
   int dst[size] = {0};
   load_devalloc(devalloc_arr_, dst, sizeof(dst));
   for (int i = 0; i < size; i++) {
-    EXPECT_EQ(dst[i], i);
+    EXPECT_EQ(dst[i], i + vec[0]);
   }
 
   // Deallocate
@@ -475,5 +480,4 @@ void run_mpm88_graph(Arch arch, taichi::lang::Device *device_) {
   device_->dealloc_memory(devalloc_pos);
 }
 }  // namespace aot_test_utils
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

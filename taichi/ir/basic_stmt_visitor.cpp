@@ -2,7 +2,7 @@
 #include "taichi/ir/statements.h"
 #include "taichi/ir/visitors.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 BasicStmtVisitor::BasicStmtVisitor() {
   allow_undefined_visitor = true;
@@ -68,4 +68,4 @@ void BasicStmtVisitor::visit(FrontendIfStmt *stmt) {
     stmt->false_statements->accept(this);
 }
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

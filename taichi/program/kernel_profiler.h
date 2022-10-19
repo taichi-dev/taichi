@@ -10,7 +10,7 @@
 #include <memory>
 #include <regex>
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 struct KernelProfileTracedRecord {
   // kernel attributes
@@ -33,7 +33,7 @@ struct KernelProfileStatisticalResult {
   double max;
   double total;
 
-  KernelProfileStatisticalResult(const std::string &name)
+  explicit KernelProfileStatisticalResult(const std::string &name)
       : name(name), counter(0), min(0), max(0), total(0) {
   }
 
@@ -105,4 +105,4 @@ class KernelProfilerBase {
 
 std::unique_ptr<KernelProfilerBase> make_profiler(Arch arch, bool enable);
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

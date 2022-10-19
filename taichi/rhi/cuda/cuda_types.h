@@ -447,6 +447,10 @@ struct cusparseSpMatDescr;
 typedef struct cusparseSpVecDescr *cusparseSpVecDescr_t;
 typedef struct cusparseDnVecDescr *cusparseDnVecDescr_t;
 typedef struct cusparseSpMatDescr *cusparseSpMatDescr_t;
+
+struct cusparseSpGEMMDescr;
+typedef struct cusparseSpGEMMDescr *cusparseSpGEMMDescr_t;
+
 typedef enum {
   CUSPARSE_INDEX_16U = 1,  ///< 16-bit unsigned integer for matrix/vector
                            ///< indices
@@ -505,6 +509,27 @@ typedef enum {
 } cusparseSpMVAlg_t;
 
 typedef enum {
+  CUSPARSE_SPGEMM_DEFAULT = 0,
+  CUSPARSE_SPGEMM_CSR_ALG_DETERMINITIC = 1,
+  CUSPARSE_SPGEMM_CSR_ALG_NONDETERMINITIC = 2
+} cusparseSpGEMMAlg_t;
+
+typedef enum {
+  CUSPARSE_POINTER_MODE_HOST = 0,
+  CUSPARSE_POINTER_MODE_DEVICE = 1
+} cusparsePointerMode_t;
+
+typedef enum {
+  CUSPARSE_ACTION_SYMBOLIC = 0,
+  CUSPARSE_ACTION_NUMERIC = 1
+} cusparseAction_t;
+
+typedef enum {
+  CUSPARSE_CSR2CSC_ALG1 = 1,  // faster than V2 (in general), deterministc
+  CUSPARSE_CSR2CSC_ALG2 = 2   // low memory requirement, non-deterministc
+} cusparseCsr2CscAlg_t;
+
+typedef enum {
   CUSPARSE_MATRIX_TYPE_GENERAL = 0,
   CUSPARSE_MATRIX_TYPE_SYMMETRIC = 1,
   CUSPARSE_MATRIX_TYPE_HERMITIAN = 2,
@@ -530,4 +555,10 @@ typedef enum libraryPropertyType_t {
 
 struct cusolverSpContext;
 typedef struct cusolverSpContext *cusolverSpHandle_t;
+
+// copy from cusolverSp_LOWLEVEL_PREVIEW.h
+struct csrcholInfoHost;
+typedef struct csrcholInfoHost *csrcholInfoHost_t;
+struct csrcholInfo;
+typedef struct csrcholInfo *csrcholInfo_t;
 #endif

@@ -3,8 +3,7 @@
 #include "lib_tiny_ir.h"
 #include "taichi/ir/type.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace spirv {
 
 class STD140LayoutContext : public tinyir::LayoutContext {};
@@ -45,7 +44,7 @@ class IntType : public tinyir::Type, public tinyir::MemRefElementTypeInterface {
 class FloatType : public tinyir::Type,
                   public tinyir::MemRefElementTypeInterface {
  public:
-  FloatType(int num_bits) : num_bits_(num_bits) {
+  explicit FloatType(int num_bits) : num_bits_(num_bits) {
   }
 
   int num_bits() const {
@@ -72,7 +71,7 @@ class FloatType : public tinyir::Type,
 class PhysicalPointerType : public IntType,
                             public tinyir::PointerTypeInterface {
  public:
-  PhysicalPointerType(const tinyir::Type *pointed_type)
+  explicit PhysicalPointerType(const tinyir::Type *pointed_type)
       : IntType(/*num_bits=*/64, /*is_signed=*/false),
         pointed_type_(pointed_type) {
   }
@@ -95,7 +94,7 @@ class StructType : public tinyir::Type,
                    public tinyir::AggregateTypeInterface,
                    public tinyir::MemRefAggregateTypeInterface {
  public:
-  StructType(std::vector<const tinyir::Type *> &elements)
+  explicit StructType(std::vector<const tinyir::Type *> &elements)
       : elements_(elements) {
   }
 
@@ -241,5 +240,4 @@ std::unordered_map<const tinyir::Node *, uint32_t> ir_translate_to_spirv(
     IRBuilder *spir_builder);
 
 }  // namespace spirv
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

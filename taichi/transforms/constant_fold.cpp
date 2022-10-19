@@ -11,7 +11,7 @@
 #include "taichi/transforms/constant_fold.h"
 #include "taichi/program/program.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 class ConstantFold : public BasicStmtVisitor {
  public:
@@ -19,8 +19,7 @@ class ConstantFold : public BasicStmtVisitor {
   DelayedIRModifier modifier;
   Program *program;
 
-  explicit ConstantFold(Program *program)
-      : BasicStmtVisitor(), program(program) {
+  explicit ConstantFold(Program *program) : program(program) {
   }
 
   Kernel *get_jit_evaluator_kernel(JITEvaluatorId const &id) {
@@ -42,6 +41,7 @@ class ConstantFold : public BasicStmtVisitor {
       if (id.is_binary) {
         oper = Stmt::make<BinaryOpStmt>(id.binary_op(), lhstmt.get(),
                                         rhstmt.get());
+        oper->set_tb(id.tb);
       } else {
         oper = Stmt::make<UnaryOpStmt>(id.unary_op(), lhstmt.get());
         if (unary_op_is_cast(id.unary_op())) {
@@ -97,6 +97,7 @@ class ConstantFold : public BasicStmtVisitor {
                       ret.dt,
                       lhs.dt,
                       rhs.dt,
+                      program->this_thread_config().debug ? stmt->tb : "",
                       true};
     auto *ker = get_jit_evaluator_kernel(id);
     auto launch_ctx = ker->make_launch_context();
@@ -120,6 +121,7 @@ class ConstantFold : public BasicStmtVisitor {
                       ret.dt,
                       operand.dt,
                       stmt->cast_type,
+                      "",
                       false};
     auto *ker = get_jit_evaluator_kernel(id);
     auto launch_ctx = ker->make_launch_context();
@@ -222,10 +224,10 @@ class ConstantFold : public BasicStmtVisitor {
     ConstantFold folder(program);
     bool modified = false;
 
-    auto program_compile_config_org = program->config;
-    program->config.advanced_optimization = false;
-    program->config.constant_folding = false;
-    program->config.external_optimization_level = 0;
+    auto program_compile_config_org = program->this_thread_config();
+    program->this_thread_config().advanced_optimization = false;
+    program->this_thread_config().constant_folding = false;
+    program->this_thread_config().external_optimization_level = 0;
 
     while (true) {
       node->accept(&folder);
@@ -236,7 +238,7 @@ class ConstantFold : public BasicStmtVisitor {
       }
     }
 
-    program->config = program_compile_config_org;
+    program->this_thread_config() = program_compile_config_org;
 
     return modified;
   }
@@ -266,4 +268,4 @@ bool constant_fold(IRNode *root,
 
 }  // namespace irpass
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

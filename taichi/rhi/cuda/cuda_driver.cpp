@@ -4,7 +4,7 @@
 #include "taichi/rhi/cuda/cuda_context.h"
 #include "taichi/util/environ_config.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 std::string get_cuda_error_message(uint32 err) {
   const char *err_name_ptr;
@@ -132,4 +132,4 @@ bool CUSOLVERDriver::load_cusolver() {
 #undef PER_CUSOLVER_FUNCTION
   return cusolver_loaded_;
 }
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

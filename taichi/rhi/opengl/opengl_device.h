@@ -5,8 +5,7 @@
 #include "glad/gl.h"
 #include "GLFW/glfw3.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace opengl {
 
 class GLDevice;
@@ -93,7 +92,7 @@ class GLPipeline : public Pipeline {
 
 class GLCommandList : public CommandList {
  public:
-  GLCommandList(GLDevice *device) : device_(device) {
+  explicit GLCommandList(GLDevice *device) : device_(device) {
   }
   ~GLCommandList() override;
 
@@ -219,7 +218,7 @@ class GLCommandList : public CommandList {
 
 class GLStream : public Stream {
  public:
-  GLStream(GLDevice *device) : device_(device) {
+  explicit GLStream(GLDevice *device) : device_(device) {
   }
   ~GLStream() override;
 
@@ -320,5 +319,4 @@ class GLSurface : public Surface {
 };
 
 }  // namespace opengl
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

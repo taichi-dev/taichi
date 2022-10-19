@@ -1,7 +1,7 @@
 #include "taichi/runtime/runtime.h"
 #include "taichi/rhi/cuda/cuda_context.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 #if !defined(TI_WITH_CUDA)
 static_assert(
@@ -37,4 +37,4 @@ static class RuntimeCUDAInjector {
   }
 } injector;
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

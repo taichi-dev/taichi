@@ -8,9 +8,7 @@
 #include "taichi/program/compile_config.h"
 #include "taichi/system/timer.h"
 
-TI_NAMESPACE_BEGIN
-
-namespace lang {
+namespace taichi::lang {
 
 CompileConfig default_compile_config;
 std::string compiled_lib_dir;
@@ -102,8 +100,8 @@ bool command_exist(const std::string &command) {
 #endif
 }
 
-}  // namespace lang
-
+}  // namespace taichi::lang
+namespace taichi {
 void initialize_benchmark() {
   // CoreState::set_trigger_gdb_when_crash(true);
   lang::get_cpu_frequency();
@@ -121,4 +119,4 @@ void initialize_benchmark() {
 #endif
 }
 
-TI_NAMESPACE_END
+}  // namespace taichi

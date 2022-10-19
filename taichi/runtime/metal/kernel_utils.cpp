@@ -7,8 +7,7 @@
 #include "taichi/program/context.h"
 #undef TI_RUNTIME_HOST
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 namespace metal {
 
@@ -23,7 +22,7 @@ int PrintStringTable::put(const std::string &str) {
   return i;
 }
 
-const std::string &PrintStringTable::get(int i) {
+const std::string &PrintStringTable::get(int i) const {
   return strs_[i];
 }
 
@@ -67,9 +66,9 @@ std::string KernelAttributes::debug_string() const {
   result += "]";  // closes |buffers|
   // TODO(k-ye): show range_for
   if (task_type == OffloadedTaskType::listgen) {
-    result += fmt::format(" snode={}", runtime_list_op_attribs->snode->id);
+    result += fmt::format(" snode={}", runtime_list_op_attribs->snode_id);
   } else if (task_type == OffloadedTaskType::gc) {
-    result += fmt::format(" snode={}", gc_op_attribs->snode->id);
+    result += fmt::format(" snode={}", gc_op_attribs->snode_id);
   }
   result += ">";
   return result;
@@ -164,5 +163,4 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
 
 }  // namespace metal
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

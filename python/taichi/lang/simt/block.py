@@ -4,7 +4,7 @@ from taichi.lang.util import taichi_scope
 
 
 def sync():
-    arch = impl.get_runtime().prog.config.arch
+    arch = impl.get_runtime().prog.config().arch
     if arch == _ti_core.cuda:
         return impl.call_internal("block_barrier", with_runtime_context=False)
     if arch == _ti_core.vulkan:
@@ -14,7 +14,7 @@ def sync():
 
 
 def mem_sync():
-    arch = impl.get_runtime().prog.config.arch
+    arch = impl.get_runtime().prog.config().arch
     if arch == _ti_core.cuda:
         return impl.call_internal("block_barrier", with_runtime_context=False)
     if arch == _ti_core.vulkan:
@@ -24,7 +24,7 @@ def mem_sync():
 
 
 def thread_idx():
-    arch = impl.get_runtime().prog.config.arch
+    arch = impl.get_runtime().prog.config().arch
     if arch is _ti_core.vulkan:
         return impl.call_internal("localInvocationId",
                                   with_runtime_context=False)
@@ -32,11 +32,11 @@ def thread_idx():
 
 
 def global_thread_idx():
-    arch = impl.get_runtime().prog.config.arch
+    arch = impl.get_runtime().prog.config().arch
     if arch == _ti_core.cuda:
         return impl.get_runtime().prog.current_ast_builder(
         ).insert_thread_idx_expr()
-    if impl.get_runtime().prog.config.arch == _ti_core.vulkan:
+    if impl.get_runtime().prog.config().arch == _ti_core.vulkan:
         return impl.call_internal("vkGlobalThreadIdx",
                                   with_runtime_context=False)
     raise ValueError(

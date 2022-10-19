@@ -8,7 +8,7 @@
 #include "taichi/ir/visitors.h"
 #include "taichi/ir/analysis.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 class BitLoopVectorize : public IRVisitor {
  public:
@@ -335,4 +335,4 @@ void bit_loop_vectorize(IRNode *root) {
 
 }  // namespace irpass
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

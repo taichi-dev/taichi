@@ -1,8 +1,7 @@
 #include "spirv_types.h"
 #include "spirv_ir_builder.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace spirv {
 
 size_t StructType::memory_size(tinyir::LayoutContext &ctx) const {
@@ -291,7 +290,7 @@ class TypeReducer : public TypeVisitor {
   std::unique_ptr<tinyir::Block> copy{nullptr};
   std::unordered_map<const tinyir::Type *, const tinyir::Type *> &oldptr2newptr;
 
-  TypeReducer(
+  explicit TypeReducer(
       std::unordered_map<const tinyir::Type *, const tinyir::Type *> &old2new)
       : oldptr2newptr(old2new) {
     copy = std::make_unique<tinyir::Block>();
@@ -473,5 +472,4 @@ std::unordered_map<const tinyir::Node *, uint32_t> ir_translate_to_spirv(
 }
 
 }  // namespace spirv
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

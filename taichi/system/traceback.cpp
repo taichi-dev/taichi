@@ -195,7 +195,7 @@ inline std::vector<StackFrame> stack_trace() {
 #include <cxxabi.h>
 #endif
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 void print_traceback() {
 #ifdef __APPLE__
@@ -343,7 +343,8 @@ void print_traceback() {
 
       int status = -1;
 
-      demangled_name_ = abi::__cxa_demangle(name.c_str(), NULL, NULL, &status);
+      demangled_name_ =
+          abi::__cxa_demangle(name.c_str(), nullptr, nullptr, &status);
 
       if (demangled_name_) {
         name = std::string(demangled_name_);
@@ -367,4 +368,4 @@ void print_traceback() {
       "https://docs.taichi-lang.org/docs/install\n");
 }
 
-TI_NAMESPACE_END
+}  // namespace taichi

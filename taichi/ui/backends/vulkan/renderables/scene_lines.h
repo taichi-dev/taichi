@@ -21,7 +21,7 @@
 #include "taichi/program/field_info.h"
 #include "taichi/ui/backends/vulkan/scene.h"
 
-TI_UI_NAMESPACE_BEGIN
+namespace taichi::ui {
 
 namespace vulkan {
 
@@ -31,7 +31,7 @@ class SceneLines final : public Renderable {
 
   void update_data(const SceneLinesInfo &info, const Scene &scene);
 
-  virtual void record_this_frame_commands(
+  void record_this_frame_commands(
       taichi::lang::CommandList *command_list) override;
 
  private:
@@ -47,13 +47,13 @@ class SceneLines final : public Renderable {
 
   void update_ubo(const SceneLinesInfo &info, const Scene &scene);
 
-  virtual void cleanup() override;
+  void cleanup() override;
 
-  virtual void create_bindings() override;
+  void create_bindings() override;
 
   float curr_width_;
 };
 
 }  // namespace vulkan
 
-TI_UI_NAMESPACE_END
+}  // namespace taichi::ui

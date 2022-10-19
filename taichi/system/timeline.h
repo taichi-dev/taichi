@@ -6,7 +6,7 @@
 #include "taichi/common/core.h"
 #include "taichi/system/timer.h"
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 struct TimelineEvent {
   std::string name;
@@ -41,7 +41,7 @@ class Timeline {
 
   class Guard {
    public:
-    Guard(const std::string &name);
+    explicit Guard(const std::string &name);
 
     ~Guard();
 
@@ -88,4 +88,4 @@ class Timelines {
 
 #define TI_AUTO_TIMELINE TI_TIMELINE(__FUNCTION__)
 
-TI_NAMESPACE_END
+}  // namespace taichi

@@ -2,7 +2,7 @@
 
 #include "taichi/program/kernel_profiler.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 struct CuptiConfig {
 #if defined(TI_WITH_CUDA_TOOLKIT)
@@ -43,4 +43,4 @@ class CuptiToolkit {
   CuptiImage cupti_image_;
 };
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

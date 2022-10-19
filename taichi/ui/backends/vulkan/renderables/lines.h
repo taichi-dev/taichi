@@ -21,7 +21,7 @@
 #include "taichi/program/field_info.h"
 #include "taichi/ui/common/canvas_base.h"
 
-TI_UI_NAMESPACE_BEGIN
+namespace taichi::ui {
 
 namespace vulkan {
 
@@ -31,7 +31,7 @@ class Lines final : public Renderable {
 
   void update_data(const LinesInfo &info);
 
-  virtual void record_this_frame_commands(
+  void record_this_frame_commands(
       taichi::lang::CommandList *command_list) override;
 
  private:
@@ -46,13 +46,13 @@ class Lines final : public Renderable {
 
   void update_ubo(glm::vec3 color, bool use_per_vertex_color);
 
-  virtual void cleanup() override;
+  void cleanup() override;
 
-  virtual void create_bindings() override;
+  void create_bindings() override;
 
   float curr_width_;
 };
 
 }  // namespace vulkan
 
-TI_UI_NAMESPACE_END
+}  // namespace taichi::ui

@@ -1,7 +1,6 @@
 #include "taichi/rhi/cuda/cuda_caching_allocator.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace cuda {
 
 CudaCachingAllocator::CudaCachingAllocator(LlvmDevice *device)
@@ -36,5 +35,4 @@ void CudaCachingAllocator::release(size_t sz, uint64_t *ptr) {
 }
 
 }  // namespace cuda
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

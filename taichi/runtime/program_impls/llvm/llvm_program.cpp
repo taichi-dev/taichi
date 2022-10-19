@@ -20,8 +20,7 @@
 #include "taichi/codegen/dx12/codegen_dx12.h"
 #endif
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
                                  KernelProfilerBase *profiler)
@@ -119,7 +118,7 @@ std::unique_ptr<aot::Kernel> LlvmProgramImpl::make_aot_kernel(Kernel &kernel) {
       cache_data_->kernels[kernel_key];
   LlvmOfflineCache::KernelCacheData compiled_kernel = kernel_data.clone();
   compiled_kernel.kernel_key = kernel.get_name();
-  return std::make_unique<llvm_aot::KernelImpl>(compiled_fn, kernel.get_name(),
+  return std::make_unique<llvm_aot::KernelImpl>(compiled_fn,
                                                 std::move(compiled_kernel));
 }
 
@@ -193,5 +192,4 @@ LlvmProgramImpl *get_llvm_program(Program *prog) {
   return llvm_prog;
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

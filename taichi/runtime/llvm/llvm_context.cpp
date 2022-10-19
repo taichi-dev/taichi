@@ -58,8 +58,7 @@
 #include "taichi/rhi/cuda/cuda_context.h"
 #endif
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 using namespace llvm;
 
@@ -148,12 +147,16 @@ llvm::Type *TaichiLLVMContext::get_data_type(DataType dt) {
   } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
     return llvm::Type::getHalfTy(*ctx);
   } else if (dt->is<TensorType>()) {
-    TI_ASSERT_INFO(config_->real_matrix || config_->dynamic_index,
-                   "Real matrix not enabled but got TensorType");
     auto tensor_type = dt->cast<TensorType>();
     auto element_type = get_data_type(tensor_type->get_element_type());
-    return llvm::VectorType::get(element_type, tensor_type->get_num_elements(),
-                                 /*scalable=*/false);
+    auto num_elements = tensor_type->get_num_elements();
+    // Return type is <element_type * num_elements> if real matrix is used,
+    // otherwise [element_type * num_elements].
+    if (config_->real_matrix && !config_->real_matrix_scalarize) {
+      return llvm::VectorType::get(element_type, num_elements,
+                                   /*scalable=*/false);
+    }
+    return llvm::ArrayType::get(element_type, num_elements);
   } else {
     TI_INFO(data_type_name(dt));
     TI_NOT_IMPLEMENTED;
@@ -1000,5 +1003,4 @@ std::string TaichiLLVMContext::get_struct_for_func_name(int tls_size) {
 
 TI_REGISTER_TASK(make_slim_libdevice);
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

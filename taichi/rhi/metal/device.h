@@ -6,8 +6,7 @@
 #include "taichi/runtime/metal/api.h"
 #include "taichi/runtime/metal/runtime_utils.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class MemoryPool;
 
@@ -48,5 +47,4 @@ struct MakeDeviceResult {
 MakeDeviceResult make_compute_device(const ComputeDeviceParams &params);
 
 }  // namespace metal
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

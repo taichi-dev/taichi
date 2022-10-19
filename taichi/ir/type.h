@@ -3,7 +3,7 @@
 #include "taichi/common/core.h"
 #include "taichi/util/bit.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 class TensorType;
 
@@ -55,6 +55,7 @@ class TI_DLL_EXPORT DataType {
  public:
   DataType();
 
+  // NOLINTNEXTLINE(google-explicit-constructor)
   DataType(Type *ptr) : ptr_(ptr) {
   }
 
@@ -75,10 +76,12 @@ class TI_DLL_EXPORT DataType {
     return ptr_->to_string();
   };
 
+  // NOLINTNEXTLINE(google-explicit-constructor)
   operator const Type *() const {
     return ptr_;
   }
 
+  // NOLINTNEXTLINE(google-explicit-constructor)
   operator Type *() {
     return ptr_;
   }
@@ -120,7 +123,7 @@ class TI_DLL_EXPORT PrimitiveType : public Type {
   // TODO(type): make 'type' private and add a const getter
   PrimitiveTypeID type;
 
-  PrimitiveType(PrimitiveTypeID type) : type(type) {
+  explicit PrimitiveType(PrimitiveTypeID type) : type(type) {
   }
 
   std::string to_string() const override;
@@ -383,41 +386,41 @@ class TypedConstant {
   TypedConstant() : dt(PrimitiveType::unknown) {
   }
 
-  TypedConstant(DataType dt) : dt(dt) {
+  explicit TypedConstant(DataType dt) : dt(dt) {
     TI_ASSERT_INFO(dt->is<PrimitiveType>(),
                    "TypedConstant can only be PrimitiveType, got {}",
                    dt->to_string());
     value_bits = 0;
   }
 
-  TypedConstant(int32 x) : dt(PrimitiveType::i32), val_i32(x) {
+  explicit TypedConstant(int32 x) : dt(PrimitiveType::i32), val_i32(x) {
   }
 
-  TypedConstant(float32 x) : dt(PrimitiveType::f32), val_f32(x) {
+  explicit TypedConstant(float32 x) : dt(PrimitiveType::f32), val_f32(x) {
   }
 
-  TypedConstant(int64 x) : dt(PrimitiveType::i64), val_i64(x) {
+  explicit TypedConstant(int64 x) : dt(PrimitiveType::i64), val_i64(x) {
   }
 
-  TypedConstant(float64 x) : dt(PrimitiveType::f64), val_f64(x) {
+  explicit TypedConstant(float64 x) : dt(PrimitiveType::f64), val_f64(x) {
   }
 
-  TypedConstant(int8 x) : dt(PrimitiveType::i8), val_i8(x) {
+  explicit TypedConstant(int8 x) : dt(PrimitiveType::i8), val_i8(x) {
   }
 
-  TypedConstant(int16 x) : dt(PrimitiveType::i16), val_i16(x) {
+  explicit TypedConstant(int16 x) : dt(PrimitiveType::i16), val_i16(x) {
   }
 
-  TypedConstant(uint8 x) : dt(PrimitiveType::u8), val_u8(x) {
+  explicit TypedConstant(uint8 x) : dt(PrimitiveType::u8), val_u8(x) {
   }
 
-  TypedConstant(uint16 x) : dt(PrimitiveType::u16), val_u16(x) {
+  explicit TypedConstant(uint16 x) : dt(PrimitiveType::u16), val_u16(x) {
   }
 
-  TypedConstant(uint32 x) : dt(PrimitiveType::u32), val_u32(x) {
+  explicit TypedConstant(uint32 x) : dt(PrimitiveType::u32), val_u32(x) {
   }
 
-  TypedConstant(uint64 x) : dt(PrimitiveType::u64), val_u64(x) {
+  explicit TypedConstant(uint64 x) : dt(PrimitiveType::u64), val_u64(x) {
   }
 
   template <typename T>
@@ -479,4 +482,4 @@ class TypedConstant {
   float64 val_cast_to_float64() const;
 };
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

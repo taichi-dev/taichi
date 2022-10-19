@@ -2,8 +2,7 @@
 
 #include "taichi/util/lang_util.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class Program;
 class IRNode;
@@ -105,5 +104,4 @@ class TI_DLL_EXPORT Callable {
   };
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

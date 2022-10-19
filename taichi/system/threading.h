@@ -12,7 +12,7 @@
 #include <functional>
 #include <thread>
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 using RangeForTaskFunc = void(void *, int thread_id, int i);
 using ParallelFor = void(int n, int num_threads, void *, RangeForTaskFunc func);
@@ -39,7 +39,7 @@ class ThreadPool {
                                  // taichi::lang::Context.
   int thread_counter;
 
-  ThreadPool(int max_num_threads);
+  explicit ThreadPool(int max_num_threads);
 
   void run(int splits,
            int desired_num_threads,
@@ -59,4 +59,4 @@ class ThreadPool {
   ~ThreadPool();
 };
 
-TI_NAMESPACE_END
+}  // namespace taichi

@@ -3,7 +3,7 @@
 #include "taichi/ir/statements.h"
 #include "taichi/ir/visitors.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 class GatherDeactivations : public BasicStmtVisitor {
  public:
@@ -12,7 +12,7 @@ class GatherDeactivations : public BasicStmtVisitor {
   std::unordered_set<SNode *> snodes;
   IRNode *root;
 
-  GatherDeactivations(IRNode *root) : root(root) {
+  explicit GatherDeactivations(IRNode *root) : root(root) {
   }
 
   void visit(SNodeOpStmt *stmt) override {
@@ -36,4 +36,4 @@ std::unordered_set<SNode *> gather_deactivations(IRNode *root) {
 }
 }  // namespace irpass::analysis
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

@@ -11,8 +11,7 @@
 #include "taichi/rhi/cuda/cuda_context.h"
 #endif
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace {
 void assert_failed_host(const char *msg) {
   TI_ERROR("Assertion failure: {}", msg);
@@ -121,7 +120,7 @@ LlvmRuntimeExecutor::LlvmRuntimeExecutor(CompileConfig &config,
     llvm_context_device_ =
         std::make_unique<TaichiLLVMContext>(config_, Arch::dx12);
     // FIXME: add dx12 JIT.
-    // llvm_context_device_->init_runtime_jit_module();
+    llvm_context_device_->init_runtime_jit_module();
   }
 #endif
 
@@ -181,6 +180,7 @@ void LlvmRuntimeExecutor::synchronize() {
     TI_ERROR("No CUDA support");
 #endif
   }
+  fflush(stdout);
 }
 
 uint64 LlvmRuntimeExecutor::fetch_result_uint64(int i, uint64 *result_buffer) {
@@ -629,5 +629,4 @@ void LlvmRuntimeExecutor::prepare_runtime_context(RuntimeContext *ctx) {
   ctx->runtime = get_llvm_runtime();
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

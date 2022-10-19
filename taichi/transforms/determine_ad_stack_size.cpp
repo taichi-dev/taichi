@@ -7,8 +7,7 @@
 #include <queue>
 #include <unordered_map>
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 namespace irpass {
 
@@ -29,5 +28,4 @@ bool determine_ad_stack_size(IRNode *root, const CompileConfig &config) {
 
 }  // namespace irpass
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

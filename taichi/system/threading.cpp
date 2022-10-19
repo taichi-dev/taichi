@@ -10,7 +10,7 @@
 #include <thread>
 #include <vector>
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 bool test_threading() {
   auto tp = ThreadPool(20);
@@ -136,4 +136,4 @@ ThreadPool::~ThreadPool() {
     th.join();
 }
 
-TI_NAMESPACE_END
+}  // namespace taichi

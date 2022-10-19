@@ -13,8 +13,7 @@
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/program/program_impl.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace gfx {
 
 using namespace taichi::lang::spirv;
@@ -46,7 +45,7 @@ class CompiledTaichiKernel {
     DeviceAllocation *listgen_buffer{nullptr};
   };
 
-  CompiledTaichiKernel(const Params &ti_params);
+  explicit CompiledTaichiKernel(const Params &ti_params);
 
   const TaichiKernelAttributes &ti_kernel_attribs() const;
 
@@ -107,6 +106,8 @@ class TI_DLL_EXPORT GfxRuntime {
                   const ImageCopyParams &params);
 
   DeviceAllocation create_image(const ImageParams &params);
+  void track_image(DeviceAllocation image, ImageLayout layout);
+  void untrack_image(DeviceAllocation image);
   void transition_image(DeviceAllocation image, ImageLayout layout);
 
   void signal_event(DeviceEvent *event);
@@ -162,5 +163,4 @@ GfxRuntime::RegisterParams run_codegen(
     const std::vector<CompiledSNodeStructs> &compiled_structs);
 
 }  // namespace gfx
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

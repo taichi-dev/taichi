@@ -21,7 +21,7 @@
 #include "taichi/program/field_info.h"
 #include "taichi/ui/backends/vulkan/scene.h"
 
-TI_UI_NAMESPACE_BEGIN
+namespace taichi::ui {
 
 namespace vulkan {
 
@@ -51,9 +51,9 @@ class Particles final : public Renderable {
                   float radius,
                   const Scene &scene);
 
-  virtual void create_bindings() override;
+  void create_bindings() override;
 };
 
 }  // namespace vulkan
 
-TI_UI_NAMESPACE_END
+}  // namespace taichi::ui

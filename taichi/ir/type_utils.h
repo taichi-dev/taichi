@@ -2,9 +2,9 @@
 
 #include "taichi/ir/type.h"
 #include "taichi/ir/type_factory.h"
+#include "taichi/rhi/arch.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 std::vector<int> data_type_shape(DataType t);
 
@@ -12,7 +12,7 @@ TI_DLL_EXPORT std::string data_type_name(DataType t);
 
 TI_DLL_EXPORT int data_type_size(DataType t);
 
-TI_DLL_EXPORT std::string data_type_format(DataType dt);
+TI_DLL_EXPORT std::string data_type_format(DataType dt, Arch arch = Arch::x64);
 
 inline int data_type_bits(DataType t) {
   return data_type_size(t) * 8;
@@ -270,5 +270,4 @@ class BitStructTypeBuilder {
   int current_shared_exponent_{-1};
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

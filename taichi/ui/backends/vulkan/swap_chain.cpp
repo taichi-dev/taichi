@@ -3,7 +3,7 @@
 #include "taichi/ui/backends/vulkan/swap_chain.h"
 #include "taichi/util/image_io.h"
 
-TI_UI_NAMESPACE_BEGIN
+namespace taichi::ui {
 
 namespace vulkan {
 
@@ -91,9 +91,9 @@ bool SwapChain::copy_depth_buffer_to_ndarray(
     arr_dev_ptr.device->unmap(field_buffer);
   } else {
     TI_NOT_IMPLEMENTED;
-    return 0;
+    return false;
   }
-  return 1;
+  return true;
 }
 
 void SwapChain::cleanup() {
@@ -156,4 +156,4 @@ void SwapChain::write_image(const std::string &filename) {
 
 }  // namespace vulkan
 
-TI_UI_NAMESPACE_END
+}  // namespace taichi::ui

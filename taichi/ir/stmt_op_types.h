@@ -4,8 +4,7 @@
 
 #include "taichi/common/core.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 enum class UnaryOpType : int {
 #define PER_UNARY_OP(x) x,
@@ -38,7 +37,7 @@ enum class BinaryOpType : int {
 inline bool binary_is_bitwise(BinaryOpType t) {
   return t == BinaryOpType ::bit_and || t == BinaryOpType ::bit_or ||
          t == BinaryOpType ::bit_xor || t == BinaryOpType ::bit_shl ||
-         t == BinaryOpType ::bit_sar;
+         t == BinaryOpType ::bit_shr || t == BinaryOpType ::bit_sar;
 }
 
 inline bool binary_is_logical(BinaryOpType t) {
@@ -94,5 +93,4 @@ enum class TextureOpType : int {
 
 std::string texture_op_type_name(TextureOpType type);
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

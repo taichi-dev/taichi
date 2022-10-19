@@ -6,8 +6,7 @@
 #include "taichi/util/file_sequence_writer.h"
 #include "llvm/Linker/Linker.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace wasm {
 
 AotModuleBuilderImpl::AotModuleBuilderImpl() : module_(nullptr) {
@@ -61,5 +60,4 @@ void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier,
 }
 
 }  // namespace wasm
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

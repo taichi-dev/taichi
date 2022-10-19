@@ -7,8 +7,7 @@
 #include "taichi/common/dict.h"
 #include "taichi/util/testing.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 TEST(Dict, Config) {
   Dict dict;
@@ -32,5 +31,4 @@ TEST(Dict, Config) {
   EXPECT_EQ(dict.get<std::string>("str"), "Hello");
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

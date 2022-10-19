@@ -4,7 +4,7 @@
 #include <unordered_set>
 #include <functional>
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 namespace {
 
@@ -15,7 +15,7 @@ class ConstExprPropagation : public IRVisitor {
  public:
   using is_const_seed_func = std::function<bool(Stmt *)>;
 
-  ConstExprPropagation(const is_const_seed_func &is_const_seed)
+  explicit ConstExprPropagation(const is_const_seed_func &is_const_seed)
       : is_const_seed_(is_const_seed) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
@@ -106,4 +106,4 @@ std::unordered_set<Stmt *> constexpr_prop(
 }
 }  // namespace irpass::analysis
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

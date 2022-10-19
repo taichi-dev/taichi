@@ -3,7 +3,7 @@
 #include "taichi/util/str.h"
 #include "taichi/ir/type_utils.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 struct CompileConfig;
 class Expression;
@@ -32,7 +32,7 @@ class Expr {
 
   explicit Expr(float64 x);
 
-  Expr(std::shared_ptr<Expression> expr) : Expr() {
+  explicit Expr(std::shared_ptr<Expression> expr) : Expr() {
     this->expr = expr;
   }
 
@@ -53,6 +53,7 @@ class Expr {
     expr = o.expr;
   }
 
+  // NOLINTNEXTLINE(google-explicit-constructor)
   operator bool() const {
     return expr.get() != nullptr;
   }
@@ -149,4 +150,4 @@ Expr expr_field(Expr id_expr, DataType dt);
 Expr expr_matrix_field(const std::vector<Expr> &fields,
                        const std::vector<int> &element_shape);
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

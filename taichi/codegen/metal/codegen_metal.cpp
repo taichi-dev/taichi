@@ -14,8 +14,7 @@
 #include "taichi/math/arithmetic.h"
 #include "taichi/util/line_appender.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace metal {
 namespace {
 
@@ -188,14 +187,12 @@ class KernelCodegenImpl : public IRVisitor {
                     Kernel *kernel,
                     const CompiledRuntimeModule *compiled_runtime_module,
                     const std::vector<CompiledStructs> &compiled_snode_trees,
-                    PrintStringTable *print_strtab,
                     const Config &config,
                     OffloadedStmt *offloaded)
       : mtl_kernel_prefix_(taichi_kernel_name),
         kernel_(kernel),
         compiled_runtime_module_(compiled_runtime_module),
         compiled_snode_trees_(compiled_snode_trees),
-        print_strtab_(print_strtab),
         cgen_config_(config),
         offloaded_(offloaded),
         ctx_attribs_(*kernel_) {
@@ -217,11 +214,13 @@ class KernelCodegenImpl : public IRVisitor {
   }
 
   CompiledKernelData run() {
+    CompiledKernelData res;
+    print_strtab_ = &res.print_str_table;
+
     emit_headers();
     generate_structs();
     generate_kernels();
 
-    CompiledKernelData res;
     res.kernel_name = mtl_kernel_prefix_;
     res.kernel_attribs = std::move(ti_kernel_attribs_);
     res.ctx_attribs = std::move(ctx_attribs_);
@@ -549,16 +548,6 @@ class KernelCodegenImpl : public IRVisitor {
     const auto rhs_name = bin->rhs->raw_name();
     const auto bin_name = bin->raw_name();
     const auto op_type = bin->op_type;
-    if (op_type == BinaryOpType::floordiv) {
-      if (is_integral(bin->ret_type)) {
-        emit("const {} {} = ifloordiv({}, {});", dt_name, bin_name, lhs_name,
-             rhs_name);
-      } else {
-        emit("const {} {} = floor({} / {});", dt_name, bin_name, lhs_name,
-             rhs_name);
-      }
-      return;
-    }
     const auto binop = metal_binary_op_type_symbol(op_type);
     if (is_metal_binary_op_infix(op_type)) {
       if (is_comparison(op_type)) {
@@ -1420,7 +1409,8 @@ class KernelCodegenImpl : public IRVisitor {
                   BufferDescriptor::context()};
 
     ka.runtime_list_op_attribs = KernelAttributes::RuntimeListOpAttributes();
-    ka.runtime_list_op_attribs->snode = sn;
+    ka.runtime_list_op_attribs->parent_snode_id = sn->parent->id;
+    ka.runtime_list_op_attribs->snode_id = sn->id;
     current_kernel_attribs_ = nullptr;
 
     mtl_kernels_attribs()->push_back(ka);
@@ -1436,7 +1426,7 @@ class KernelCodegenImpl : public IRVisitor {
     KernelAttributes ka;
     ka.task_type = OffloadedTaskType::gc;
     ka.gc_op_attribs = KernelAttributes::GcOpAttributes();
-    ka.gc_op_attribs->snode = sn;
+    ka.gc_op_attribs->snode_id = sn->id;
     ka.buffers = {BufferDescriptor::runtime(), BufferDescriptor::context()};
     current_kernel_attribs_ = nullptr;
     // stage 1 specific
@@ -1665,7 +1655,7 @@ class KernelCodegenImpl : public IRVisitor {
   };
   std::unordered_map<int, RootInfo> snode_to_roots_;
   std::unordered_map<int, const GetRootStmt *> root_id_to_stmts_;
-  PrintStringTable *const print_strtab_;
+  PrintStringTable *print_strtab_{nullptr};
   const Config &cgen_config_;
   OffloadedStmt *const offloaded_;
 
@@ -1686,7 +1676,6 @@ CompiledKernelData run_codegen(
     const CompiledRuntimeModule *compiled_runtime_module,
     const std::vector<CompiledStructs> &compiled_snode_trees,
     Kernel *kernel,
-    PrintStringTable *strtab,
     OffloadedStmt *offloaded) {
   const auto id = Program::get_kernel_id();
   const auto taichi_kernel_name(
@@ -1696,30 +1685,20 @@ CompiledKernelData run_codegen(
   cgen_config.allow_simdgroup = EnvConfig::instance().is_simdgroup_enabled();
 
   KernelCodegenImpl codegen(taichi_kernel_name, kernel, compiled_runtime_module,
-                            compiled_snode_trees, strtab, cgen_config,
-                            offloaded);
+                            compiled_snode_trees, cgen_config, offloaded);
 
   return codegen.run();
 }
 
-FunctionType compile_to_metal_executable(
-    Kernel *kernel,
-    KernelManager *kernel_mgr,
-    const CompiledRuntimeModule *compiled_runtime_module,
-    const std::vector<CompiledStructs> &compiled_snode_trees,
-    OffloadedStmt *offloaded) {
-  const auto compiled_res =
-      run_codegen(compiled_runtime_module, compiled_snode_trees, kernel,
-                  kernel_mgr->print_strtable(), offloaded);
-  kernel_mgr->register_taichi_kernel(
-      compiled_res.kernel_name, compiled_res.source_code,
-      compiled_res.kernel_attribs, compiled_res.ctx_attribs, kernel);
+FunctionType compiled_kernel_to_metal_executable(
+    const CompiledKernelData &compiled_kernel,
+    KernelManager *kernel_mgr) {
+  kernel_mgr->register_taichi_kernel(compiled_kernel);
   return [kernel_mgr,
-          kernel_name = compiled_res.kernel_name](RuntimeContext &ctx) {
+          kernel_name = compiled_kernel.kernel_name](RuntimeContext &ctx) {
     kernel_mgr->launch_taichi_kernel(kernel_name, &ctx);
   };
 }
 
 }  // namespace metal
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

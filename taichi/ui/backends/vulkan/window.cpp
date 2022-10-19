@@ -6,7 +6,7 @@
 
 using taichi::lang::Program;
 
-TI_UI_NAMESPACE_BEGIN
+namespace taichi::ui {
 
 namespace vulkan {
 
@@ -47,7 +47,7 @@ CanvasBase *Window::get_canvas() {
   return canvas_.get();
 }
 
-GuiBase *Window::GUI() {
+GuiBase *Window::gui() {
   return gui_.get();
 }
 
@@ -164,4 +164,4 @@ std::vector<uint32_t> &Window::get_image_buffer(uint32_t &w, uint32_t &h) {
 
 }  // namespace vulkan
 
-TI_UI_NAMESPACE_END
+}  // namespace taichi::ui

@@ -20,7 +20,7 @@ PER_STATEMENT(ReturnStmt)
 PER_STATEMENT(ArgLoadStmt)
 PER_STATEMENT(ReferenceStmt)
 PER_STATEMENT(ExternalPtrStmt)
-PER_STATEMENT(PtrOffsetStmt)
+PER_STATEMENT(MatrixPtrStmt)
 PER_STATEMENT(ConstStmt)
 PER_STATEMENT(AllocaStmt)
 PER_STATEMENT(UnaryOpStmt)
@@ -59,6 +59,7 @@ PER_STATEMENT(GetChStmt)
 // With per-lane attributes
 PER_STATEMENT(LocalLoadStmt)
 PER_STATEMENT(GlobalPtrStmt)
+PER_STATEMENT(MatrixOfGlobalPtrStmt)
 
 // Offloaded
 PER_STATEMENT(OffloadedStmt)

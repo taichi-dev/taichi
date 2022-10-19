@@ -22,8 +22,7 @@
 
 #include <optional>
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 namespace vulkan {
 class VulkanDeviceCreator;
@@ -31,7 +30,7 @@ class VulkanDeviceCreator;
 
 class VulkanProgramImpl : public ProgramImpl {
  public:
-  VulkanProgramImpl(CompileConfig &config);
+  explicit VulkanProgramImpl(CompileConfig &config);
   FunctionType compile(Kernel *kernel, OffloadedStmt *offloaded) override;
 
   std::size_t get_snode_num_dynamically_allocated(
@@ -101,7 +100,7 @@ class VulkanProgramImpl : public ProgramImpl {
 
   const std::unique_ptr<gfx::CacheManager> &get_cache_manager();
 
-  ~VulkanProgramImpl();
+  ~VulkanProgramImpl() override;
 
  private:
   std::unique_ptr<vulkan::VulkanDeviceCreator> embedded_device_{nullptr};
@@ -110,5 +109,4 @@ class VulkanProgramImpl : public ProgramImpl {
   std::vector<spirv::CompiledSNodeStructs> aot_compiled_snode_structs_;
   std::unique_ptr<gfx::CacheManager> cache_manager_{nullptr};
 };
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

@@ -14,7 +14,7 @@
 #include <memory>
 #include <iostream>
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 template <typename T>
 std::shared_ptr<T> create_instance(const std::string &alias);
@@ -117,7 +117,7 @@ class InterfaceHolder {
   class TI_IMPLEMENTATION_HOLDER_NAME(T) final                                \
       : public ImplementationHolderBase {                                     \
    public:                                                                    \
-    TI_IMPLEMENTATION_HOLDER_NAME(T)(const std::string &name) {               \
+    explicit TI_IMPLEMENTATION_HOLDER_NAME(T)(const std::string &name) {      \
       this->name = name;                                                      \
     }                                                                         \
     using FactoryMethod = std::function<std::shared_ptr<T>()>;                \
@@ -333,4 +333,4 @@ class InterfaceHolder {
     return alias;                                 \
   }
 
-TI_NAMESPACE_END
+}  // namespace taichi

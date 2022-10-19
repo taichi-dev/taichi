@@ -5,7 +5,7 @@
 #include "taichi/ir/scratch_pad.h"
 #include "taichi/transforms/make_block_local.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 namespace {
 
@@ -358,4 +358,4 @@ void make_block_local(IRNode *root,
 
 }  // namespace irpass
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

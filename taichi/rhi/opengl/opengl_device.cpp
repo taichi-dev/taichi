@@ -3,8 +3,7 @@
 
 #include "spirv_glsl.hpp"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace opengl {
 
 namespace {
@@ -886,5 +885,4 @@ void GLCommandList::CmdImageToBuffer::execute() {
 }
 
 }  // namespace opengl
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

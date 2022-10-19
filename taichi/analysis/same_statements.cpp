@@ -5,7 +5,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 // Compare if two IRNodes are equivalent.
 class IRNodeComparator : public IRVisitor {
@@ -333,4 +333,4 @@ bool same_value(Stmt *stmt1,
 }
 }  // namespace irpass::analysis
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

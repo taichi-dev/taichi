@@ -7,7 +7,7 @@
 #include "taichi/util/image_io.h"
 #include "taichi/ui/gui/gui.h"
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 void export_visual(py::module &m) {
   // GUI
@@ -116,4 +116,4 @@ void export_visual(py::module &m) {
   });
 }
 
-TI_NAMESPACE_END
+}  // namespace taichi

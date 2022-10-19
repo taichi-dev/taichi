@@ -3,25 +3,20 @@
 #include "taichi/aot/graph_data.h"
 #include "taichi/aot/module_loader.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace llvm_aot {
 
 class KernelImpl : public aot::Kernel {
  public:
   explicit KernelImpl(FunctionType fn,
-                      const std::string &kernel_name,
                       LlvmOfflineCache::KernelCacheData &&kernel_data)
-      : kernel_name_(kernel_name),
-        kernel_data_(std::move(kernel_data)),
-        fn_(fn) {
+      : kernel_data_(std::move(kernel_data)), fn_(fn) {
   }
 
   void launch(RuntimeContext *ctx) override {
     fn_(*ctx);
   }
 
-  std::string kernel_name_;
   LlvmOfflineCache::KernelCacheData kernel_data_;
 
  private:
@@ -47,5 +42,4 @@ class FieldImpl : public aot::Field {
 };
 
 }  // namespace llvm_aot
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

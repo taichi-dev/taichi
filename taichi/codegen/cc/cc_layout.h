@@ -4,12 +4,13 @@
 
 class CCProgramImpl;
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 namespace cccp {
 
 class CCLayout {
  public:
-  CCLayout(CCProgramImpl *cc_program_impl) : cc_program_impl_(cc_program_impl) {
+  explicit CCLayout(CCProgramImpl *cc_program_impl)
+      : cc_program_impl_(cc_program_impl) {
   }
 
   std::string get_object() {
@@ -28,4 +29,4 @@ class CCLayout {
 };
 
 }  // namespace cccp
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

@@ -6,7 +6,7 @@
 
 using taichi::lang::Program;
 
-TI_UI_NAMESPACE_BEGIN
+namespace taichi::ui {
 
 namespace vulkan {
 
@@ -223,8 +223,8 @@ void SetImage::init_set_image(AppContext *app_context,
 
   Renderable::init_render_resources();
 
-  update_vertex_buffer_();
-  update_index_buffer_();
+  update_vertex_buffer();
+  update_index_buffer();
 }
 
 void SetImage::create_texture() {
@@ -260,7 +260,7 @@ void SetImage::destroy_texture() {
   app_context_->device().dealloc_memory(gpu_staging_buffer_);
 }
 
-void SetImage::update_vertex_buffer_() {
+void SetImage::update_vertex_buffer() {
   const std::vector<Vertex> vertices = {
       {{-1.f, -1.f, 0.f}, {0.f, 0.f, 1.f}, {0.f, 1.f}, {1.f, 1.f, 1.f}},
       {{-1.f, 1.f, 0.f}, {0.f, 0.f, 1.f}, {0.f, 0.f}, {1.f, 1.f, 1.f}},
@@ -296,7 +296,7 @@ void SetImage::update_vertex_buffer_() {
       config_.vertices_count * config_.vbo_size());
 }
 
-void SetImage::update_index_buffer_() {
+void SetImage::update_index_buffer() {
   const std::vector<uint32_t> indices = {
       0, 1, 2, 3, 4, 5,
   };
@@ -328,4 +328,4 @@ void SetImage::cleanup() {
 
 }  // namespace vulkan
 
-TI_UI_NAMESPACE_END
+}  // namespace taichi::ui

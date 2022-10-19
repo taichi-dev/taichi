@@ -13,8 +13,7 @@
 #include "taichi/program/context.h"
 #undef TI_RUNTIME_HOST
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 void run_graph_tests(aot::Module *mod,
                      LlvmRuntimeExecutor *exec,
@@ -89,5 +88,4 @@ TEST(LlvmCGraph, CudaField) {
   }
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

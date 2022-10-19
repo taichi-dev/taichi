@@ -1,3 +1,5 @@
+import platform
+
 import pytest
 
 import taichi as ti
@@ -16,6 +18,19 @@ def test_pass_float_as_i32():
             r"Argument 0 \(type=<class 'float'>\) cannot be converted into required type i32"
     ) as e:
         foo(1.2)
+
+
+@test_utils.test(exclude=[ti.metal])
+def test_pass_u64():
+    if ti.lang.impl.current_cfg().arch == ti.vulkan and platform.system(
+    ) == "Darwin":
+        return
+
+    @ti.kernel
+    def foo(a: ti.u64):
+        pass
+
+    foo(2**64 - 1)
 
 
 @test_utils.test()

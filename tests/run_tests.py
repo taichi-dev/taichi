@@ -1,8 +1,10 @@
 import argparse
 import atexit
+import copy
 import os
 import pdb
 import platform
+import re
 import shutil
 import subprocess
 import sys
@@ -10,14 +12,13 @@ import tempfile
 import warnings
 
 from test_utils import (__aot_test_cases, __capi_aot_test_cases,
-                        print_aot_test_guide)
+                        print_aot_test_guide, print_section)
 
 import taichi as ti
 
 
 def _run_cpp_test(test_filename, build_dir, gtest_option="", extra_env=None):
     ti.reset()
-    print("Running C++ tests...")
     ti_lib_dir = os.path.join(ti.__path__[0], '_lib', 'runtime')
     fullpath = os.path.join(build_dir, test_filename)
 
@@ -33,7 +34,6 @@ def _run_cpp_test(test_filename, build_dir, gtest_option="", extra_env=None):
 
 
 def _test_cpp_aot(test_filename, build_dir, test_info):
-    tests_visited = []
     for cpp_test_name, (python_rpath, args) in test_info.items():
         # Temporary folder will be removed upon handle destruction
         temp_handle = tempfile.TemporaryDirectory()
@@ -55,13 +55,9 @@ def _test_cpp_aot(test_filename, build_dir, test_info):
         # Run AOT C++ codes
         _run_cpp_test(test_filename, build_dir,
                       f"--gtest_filter={cpp_test_name}", extra_env)
-        tests_visited.append(cpp_test_name)
-
-    exclude_tests_cmd = "--gtest_filter=-" + ":".join(tests_visited)
-    return exclude_tests_cmd
 
 
-def _test_cpp():
+def _test_cpp(test_keys=None):
     curr_dir = os.path.dirname(os.path.abspath(__file__))
     build_dir = os.path.join(curr_dir, '../build')
     cpp_test_filename = 'taichi_cpp_tests'
@@ -73,20 +69,69 @@ def _test_cpp():
     capi_tests_exe_path = os.path.join(build_dir, capi_test_filename)
     cpp_tests_exe_path = os.path.join(build_dir, cpp_test_filename)
 
+    # Run manually specified C++ tests only, for example:
+    # "python3 tests/run_tests.py --cpp -k Scalarize.*"
+    if test_keys:
+        # Search AOT tests
+        aot_test_cases = copy.copy(__aot_test_cases)
+        for cpp_test_name, (_, _) in __aot_test_cases.items():
+
+            name_match = re.match(test_keys, cpp_test_name, re.I)
+            if name_match is None:
+                aot_test_cases.pop(cpp_test_name, None)
+        if aot_test_cases:
+            print_section("Running Taichi AOT tests")
+            _test_cpp_aot(cpp_test_filename, build_dir, aot_test_cases)
+
+        # Search CAPI tests
+        capi_aot_test_cases = copy.copy(__capi_aot_test_cases)
+        for cpp_test_name, (_, _) in __capi_aot_test_cases.items():
+            name_match = re.match(test_keys, cpp_test_name, re.I)
+            if name_match is None:
+                capi_aot_test_cases.pop(cpp_test_name, None)
+
+        if capi_aot_test_cases:
+            print_section("Running C-API AOT tests")
+            _test_cpp_aot(capi_test_filename, build_dir, capi_aot_test_cases)
+
+        # Search Cpp tests
+        print_section("Running Taichi C++ tests")
+
+        exclude_cpp_aot_tests = ":".join(__aot_test_cases.keys())
+        _run_cpp_test(cpp_test_filename, build_dir,
+                      f"--gtest_filter={test_keys}:-{exclude_cpp_aot_tests}")
+
+        print_section("Running C-API C++ tests")
+
+        exclude_capi_aot_tests = ":".join(__capi_aot_test_cases.keys())
+        _run_cpp_test(capi_test_filename, build_dir,
+                      f"--gtest_filter={test_keys}:-{exclude_capi_aot_tests}")
+
+        return
+
+    # Regular C++ tests
     if os.path.exists(capi_tests_exe_path):
         # Run C-API test cases
-        exclude_tests_cmd = _test_cpp_aot(capi_test_filename, build_dir,
-                                          __capi_aot_test_cases)
+        print_section("Running C-API AOT tests")
+        _test_cpp_aot(capi_test_filename, build_dir, __capi_aot_test_cases)
+
         # Run rest of the C-API tests
+        print_section("Running C-API C++ tests")
+        exclude_tests_cmd = "--gtest_filter=-" + ":".join(
+            __capi_aot_test_cases.keys())
         _run_cpp_test(capi_test_filename, build_dir, exclude_tests_cmd)
     else:
         print(f'Not found {capi_tests_exe_path}, skipping...')
 
     if os.path.exists(cpp_tests_exe_path):
         # Run AOT test cases
-        exclude_tests_cmd = _test_cpp_aot(cpp_test_filename, build_dir,
-                                          __aot_test_cases)
+        print_section("Running Taichi AOT tests")
+        _test_cpp_aot(cpp_test_filename, build_dir, __aot_test_cases)
+
         # Run rest of the cpp tests
+        print_section("Running Taichi C++ tests")
+        exclude_tests_cmd = "--gtest_filter=-" + ":".join(
+            __aot_test_cases.keys())
         _run_cpp_test(cpp_test_filename, build_dir, exclude_tests_cmd)
     else:
         print(f'Not found {cpp_tests_exe_path}, skipping...')
@@ -324,19 +369,22 @@ def test():
                     ])
                 return size
 
-            n = len(os.listdir(tmp_cache_file_path))
             size = size_of_dir(tmp_cache_file_path)
+            stat = {}
+            for subdir in os.listdir(tmp_cache_file_path):
+                stat[subdir] = len(
+                    os.listdir(os.path.join(tmp_cache_file_path, subdir)))
             shutil.rmtree(tmp_cache_file_path)
             print('Summary of testing the offline cache:')
-            print(f'    The number of cache files: {n}')
-            print(f'    Size of cache files:       {size / 1024:.2f} KB')
+            print(f'    Simple statistics: {stat}')
+            print(f'    Size of cache files: {size / 1024:.2f} KB')
 
         atexit.register(print_and_remove)
     else:  # Default: disable offline cache
         os.environ['TI_OFFLINE_CACHE'] = '0'
 
     if args.cpp:
-        _test_cpp()
+        _test_cpp(args.keys)
         return
 
     for _ in range(run_count):

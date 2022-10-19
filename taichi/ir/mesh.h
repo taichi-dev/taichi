@@ -8,8 +8,7 @@
 
 #include <unordered_set>
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class Stmt;
 
@@ -58,7 +57,7 @@ struct MeshLocalRelation {
     fixed = false;
   }
 
-  MeshLocalRelation(SNode *value_) : value(value_) {
+  explicit MeshLocalRelation(SNode *value_) : value(value_) {
     fixed = true;
   }
 
@@ -93,5 +92,4 @@ struct MeshPtr {  // Mesh wrapper in python
 };
 
 }  // namespace mesh
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

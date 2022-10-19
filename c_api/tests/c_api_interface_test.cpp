@@ -1,8 +1,9 @@
 #include "gtest/gtest.h"
 #include "c_api_test_utils.h"
 #include "taichi/cpp/taichi.hpp"
+#include "c_api/tests/gtest_fixture.h"
 
-TEST(CapiDryRun, Runtime) {
+TEST_F(CapiTest, DryRunRuntime) {
   {
     // CPU Runtime
     TiArch arch = TiArch::TI_ARCH_X64;
@@ -27,7 +28,7 @@ TEST(CapiDryRun, Runtime) {
   }
 }
 
-TEST(CapiDryRun, MemoryAllocation) {
+TEST_F(CapiTest, DryRunMemoryAllocation) {
   {
     // CPU Runtime
     TiArch arch = TiArch::TI_ARCH_X64;
@@ -61,7 +62,7 @@ TEST(CapiDryRun, MemoryAllocation) {
   }
 }
 
-TEST(CapiDryRun, ImageAllocation) {
+TEST_F(CapiTest, DryRunImageAllocation) {
   if (capi::utils::is_vulkan_available()) {
     {
       // Vulkan Runtime
@@ -73,7 +74,7 @@ TEST(CapiDryRun, ImageAllocation) {
   }
 }
 
-TEST(CapiDryRun, VulkanAotModule) {
+TEST_F(CapiTest, DryRunVulkanAotModule) {
   if (capi::utils::is_vulkan_available()) {
     const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
 
@@ -89,7 +90,7 @@ TEST(CapiDryRun, VulkanAotModule) {
   }
 }
 
-TEST(CapiDryRun, OpenglAotModule) {
+TEST_F(CapiTest, DryRunOpenglAotModule) {
   if (capi::utils::is_opengl_available()) {
     const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
 

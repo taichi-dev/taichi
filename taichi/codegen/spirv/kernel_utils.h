@@ -9,8 +9,7 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/rhi/device.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class Kernel;
 class SNode;
@@ -29,6 +28,7 @@ struct TaskAttributes {
 
     BufferInfo() = default;
 
+    // NOLINTNEXTLINE(google-explicit-constructor)
     BufferInfo(BufferType buffer_type) : type(buffer_type) {
     }
 
@@ -274,5 +274,4 @@ struct TaichiKernelAttributes {
 };
 
 }  // namespace spirv
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

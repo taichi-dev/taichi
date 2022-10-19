@@ -6,8 +6,7 @@
 #include <string>
 #include <vector>
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 constexpr size_t kBufferSizeEntireSize = size_t(-1);
 
@@ -73,7 +72,8 @@ struct TI_DLL_EXPORT DeviceAllocation {
 };
 
 struct TI_DLL_EXPORT DeviceAllocationGuard : public DeviceAllocation {
-  DeviceAllocationGuard(DeviceAllocation alloc) : DeviceAllocation(alloc) {
+  explicit DeviceAllocationGuard(DeviceAllocation alloc)
+      : DeviceAllocation(alloc) {
   }
   DeviceAllocationGuard(const DeviceAllocationGuard &) = delete;
   ~DeviceAllocationGuard();
@@ -626,5 +626,4 @@ class TI_DLL_EXPORT GraphicsDevice : public Device {
                                const BufferImageCopyParams &params);
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

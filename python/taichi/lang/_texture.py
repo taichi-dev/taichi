@@ -161,7 +161,8 @@ class Texture:
         assert self.num_dims == 2
         assert self.dtype == u8
         assert self.num_channels == 4
-        image = image.transpose(Image.Transpose.ROTATE_90)
+        # Don't use transpose method since its enums are too new
+        image = image.rotate(90, expand=True)
         arr = np.asarray(image)
         from taichi._kernels import \
             load_texture_from_numpy  # pylint: disable=import-outside-toplevel
@@ -181,4 +182,4 @@ class Texture:
         from taichi._kernels import \
             save_texture_to_numpy  # pylint: disable=import-outside-toplevel
         save_texture_to_numpy(self, res)
-        return Image.fromarray(res).transpose(Image.TRANSPOSE.ROTATE_270)
+        return Image.fromarray(res).rotate(270, expand=True)

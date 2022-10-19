@@ -3,8 +3,7 @@
 #include "taichi/rhi/cuda/cuda_driver.h"
 #include "taichi/rhi/cuda/cuda_device.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 // In the future we wish to move the MemoryPool inside each Device
 // so that the memory allocated from each Device can be used as-is.
@@ -85,7 +84,7 @@ void MemoryPool::push(volatile T *dest, const T &val) {
 }
 
 void MemoryPool::daemon() {
-  while (1) {
+  while (true) {
     Time::usleep(1000);
     std::lock_guard<std::mutex> _(mut);
     if (terminating) {
@@ -137,5 +136,4 @@ MemoryPool::~MemoryPool() {
   }
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

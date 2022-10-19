@@ -7,14 +7,14 @@
 
 using Ptr = uint8_t *;
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 class JITModule;
 class LlvmRuntimeExecutor;
 
 class SNodeTreeBufferManager {
  public:
-  SNodeTreeBufferManager(LlvmRuntimeExecutor *runtime_exec);
+  explicit SNodeTreeBufferManager(LlvmRuntimeExecutor *runtime_exec);
 
   void merge_and_insert(Ptr ptr, std::size_t size);
 
@@ -35,4 +35,4 @@ class SNodeTreeBufferManager {
   std::size_t sizes_[kMaxNumSnodeTreesLlvm];
 };
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

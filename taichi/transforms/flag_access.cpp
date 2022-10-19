@@ -4,12 +4,12 @@
 #include "taichi/ir/visitors.h"
 #include "taichi/system/profiler.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 // Flag accesses to be either weak (non-activating) or strong (activating)
 class FlagAccess : public IRVisitor {
  public:
-  FlagAccess(IRNode *node) {
+  explicit FlagAccess(IRNode *node) {
     allow_undefined_visitor = true;
     invoke_default_visitor = false;
     node->accept(this);
@@ -58,9 +58,9 @@ class FlagAccess : public IRVisitor {
     if (stmt->dest->is<GlobalPtrStmt>()) {
       stmt->dest->as<GlobalPtrStmt>()->activate = true;
     }
-    if (stmt->dest->is<PtrOffsetStmt>()) {
-      if (stmt->dest->as<PtrOffsetStmt>()->is_unlowered_global_ptr()) {
-        stmt->dest->as<PtrOffsetStmt>()->origin->as<GlobalPtrStmt>()->activate =
+    if (stmt->dest->is<MatrixPtrStmt>()) {
+      if (stmt->dest->as<MatrixPtrStmt>()->is_unlowered_global_ptr()) {
+        stmt->dest->as<MatrixPtrStmt>()->origin->as<GlobalPtrStmt>()->activate =
             true;
       }
     }
@@ -85,7 +85,7 @@ class WeakenAccess : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
 
-  WeakenAccess(IRNode *node) {
+  explicit WeakenAccess(IRNode *node) {
     allow_undefined_visitor = true;
     invoke_default_visitor = false;
     current_struct_for_ = nullptr;
@@ -176,4 +176,4 @@ void flag_access(IRNode *root) {
 
 }  // namespace irpass
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

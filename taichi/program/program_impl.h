@@ -10,8 +10,7 @@
 #include "taichi/rhi/device.h"
 #include "taichi/aot/graph_data.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 // Represents an image resource reference for a compute/render Op
 struct ComputeOpImageRef {
@@ -31,7 +30,7 @@ class ProgramImpl {
   CompileConfig *config;
 
  public:
-  ProgramImpl(CompileConfig &config);
+  explicit ProgramImpl(CompileConfig &config);
 
   /**
    * Codegen to specific backend
@@ -164,5 +163,4 @@ class ProgramImpl {
  private:
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

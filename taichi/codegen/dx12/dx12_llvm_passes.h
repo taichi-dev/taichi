@@ -11,8 +11,7 @@ class Type;
 class GlobalVariable;
 }  // namespace llvm
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 struct CompileConfig;
 
 namespace directx12 {
@@ -30,8 +29,7 @@ std::vector<uint8_t> global_optimize_module(llvm::Module *module,
 extern const char *NumWorkGroupsCBName;
 
 }  // namespace directx12
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang
 
 namespace llvm {
 class ModulePass;

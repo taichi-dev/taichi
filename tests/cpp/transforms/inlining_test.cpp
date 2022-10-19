@@ -6,8 +6,7 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/program/program.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class InliningTest : public ::testing::Test {
  protected:
@@ -58,5 +57,4 @@ TEST_F(InliningTest, ArgLoadOfArgLoad) {
   EXPECT_TRUE(irpass::analysis::same_statements(func_block, kernel_block));
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

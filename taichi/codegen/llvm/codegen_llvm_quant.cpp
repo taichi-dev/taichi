@@ -2,7 +2,7 @@
 #include "taichi/codegen/llvm/codegen_llvm.h"
 #include "taichi/ir/statements.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 namespace {
 
@@ -21,11 +21,10 @@ llvm::Value *TaskCodeGenLLVM::atomic_add_quant_int(llvm::Value *ptr,
                                                    llvm::Value *value,
                                                    bool value_is_signed) {
   auto [byte_ptr, bit_offset] = load_bit_ptr(ptr);
-  return create_call(
-      fmt::format("atomic_add_partial_bits_b{}",
-                  physical_type->getIntegerBitWidth()),
-      {byte_ptr, bit_offset, tlctx->get_constant(qit->get_num_bits()),
-       builder->CreateIntCast(value, physical_type, value_is_signed)});
+  return call(fmt::format("atomic_add_partial_bits_b{}",
+                          physical_type->getIntegerBitWidth()),
+              byte_ptr, bit_offset, tlctx->get_constant(qit->get_num_bits()),
+              builder->CreateIntCast(value, physical_type, value_is_signed));
 }
 
 llvm::Value *TaskCodeGenLLVM::atomic_add_quant_fixed(llvm::Value *ptr,
@@ -36,10 +35,10 @@ llvm::Value *TaskCodeGenLLVM::atomic_add_quant_fixed(llvm::Value *ptr,
   auto qit = qfxt->get_digits_type()->as<QuantIntType>();
   auto val_store = to_quant_fixed(value, qfxt);
   val_store = builder->CreateSExt(val_store, physical_type);
-  return create_call(fmt::format("atomic_add_partial_bits_b{}",
-                                 physical_type->getIntegerBitWidth()),
-                     {byte_ptr, bit_offset,
-                      tlctx->get_constant(qit->get_num_bits()), val_store});
+  return call(fmt::format("atomic_add_partial_bits_b{}",
+                          physical_type->getIntegerBitWidth()),
+              byte_ptr, bit_offset, tlctx->get_constant(qit->get_num_bits()),
+              val_store);
 }
 
 llvm::Value *TaskCodeGenLLVM::to_quant_fixed(llvm::Value *real,
@@ -53,9 +52,9 @@ llvm::Value *TaskCodeGenLLVM::to_quant_fixed(llvm::Value *real,
   auto scaled = builder->CreateFMul(input_real, s);
 
   // Add/minus the 0.5 offset for rounding
-  scaled = create_call(
-      fmt::format("rounding_prepare_f{}", data_type_bits(compute_type)),
-      {scaled});
+  scaled =
+      call(fmt::format("rounding_prepare_f{}", data_type_bits(compute_type)),
+           scaled);
 
   auto qit = qfxt->get_digits_type()->as<QuantIntType>();
   if (qit->get_is_signed()) {
@@ -75,10 +74,10 @@ void TaskCodeGenLLVM::store_quant_int(llvm::Value *ptr,
   auto [byte_ptr, bit_offset] = load_bit_ptr(ptr);
   // TODO(type): CUDA only supports atomicCAS on 32- and 64-bit integers.
   // Try to support 8/16-bit physical types.
-  create_call(fmt::format("{}set_partial_bits_b{}", atomic ? "atomic_" : "",
-                          physical_type->getIntegerBitWidth()),
-              {byte_ptr, bit_offset, tlctx->get_constant(qit->get_num_bits()),
-               builder->CreateIntCast(value, physical_type, false)});
+  call(fmt::format("{}set_partial_bits_b{}", atomic ? "atomic_" : "",
+                   physical_type->getIntegerBitWidth()),
+       byte_ptr, bit_offset, tlctx->get_constant(qit->get_num_bits()),
+       builder->CreateIntCast(value, physical_type, false));
 }
 
 void TaskCodeGenLLVM::store_quant_fixed(llvm::Value *ptr,
@@ -101,15 +100,15 @@ void TaskCodeGenLLVM::store_masked(llvm::Value *ptr,
     return;
   }
   uint64 full_mask = (~(uint64)0) >> (64 - ty->getIntegerBitWidth());
-  if ((!atomic || prog->config.quant_opt_atomic_demotion) &&
+  if ((!atomic || prog->this_thread_config().quant_opt_atomic_demotion) &&
       ((mask & full_mask) == full_mask)) {
     builder->CreateStore(value, ptr);
     return;
   }
-  create_call(fmt::format("{}set_mask_b{}", atomic ? "atomic_" : "",
-                          ty->getIntegerBitWidth()),
-              {ptr, tlctx->get_constant(mask),
-               builder->CreateIntCast(value, ty, false)});
+  call(fmt::format("{}set_mask_b{}", atomic ? "atomic_" : "",
+                   ty->getIntegerBitWidth()),
+       ptr, tlctx->get_constant(mask),
+       builder->CreateIntCast(value, ty, false));
 }
 
 llvm::Value *TaskCodeGenLLVM::get_exponent_offset(llvm::Value *exponent,
@@ -155,7 +154,7 @@ void TaskCodeGenLLVM::visit(BitStructStoreStmt *stmt) {
     }
   }
   bool store_all_components = false;
-  if (prog->config.quant_opt_atomic_demotion &&
+  if (prog->this_thread_config().quant_opt_atomic_demotion &&
       stmt->ch_ids.size() == num_non_exponent_children) {
     stmt->is_atomic = false;
     store_all_components = true;
@@ -220,8 +219,7 @@ void TaskCodeGenLLVM::visit(BitStructStoreStmt *stmt) {
 
       auto exponent_offset = get_exponent_offset(exponent_bits, qflt);
       exponent_bits = builder->CreateSub(exponent_bits, exponent_offset);
-      exponent_bits =
-          create_call("max_i32", {exponent_bits, tlctx->get_constant(0)});
+      exponent_bits = call("max_i32", exponent_bits, tlctx->get_constant(0));
 
       // Compute the bit pointer of the exponent bits.
       val = builder->CreateIntCast(exponent_bits, physical_type, false);
@@ -318,7 +316,7 @@ void TaskCodeGenLLVM::store_quant_floats_with_shared_exponents(
       // TODO: we only support f32 here.
       auto exp_bits = extract_exponent_from_f32(f);
       if (max_exp_bits) {
-        max_exp_bits = create_call("max_u32", {max_exp_bits, exp_bits});
+        max_exp_bits = call("max_u32", max_exp_bits, exp_bits);
       } else {
         max_exp_bits = exp_bits;
       }
@@ -332,7 +330,7 @@ void TaskCodeGenLLVM::store_quant_floats_with_shared_exponents(
         builder->CreateSub(max_exp_bits, exponent_offset);
 
     max_exp_bits_to_store =
-        create_call("max_i32", {max_exp_bits_to_store, tlctx->get_constant(0)});
+        call("max_i32", max_exp_bits_to_store, tlctx->get_constant(0));
 
     // store the exponent
     auto bit_offset = bit_struct->get_member_bit_offset(i);
@@ -360,8 +358,7 @@ void TaskCodeGenLLVM::store_quant_floats_with_shared_exponents(
       digits = builder->CreateAdd(
           digits, tlctx->get_constant(1 << (right_shift_bits - 1)));
       // do not allow overflowing
-      digits =
-          create_call("min_u32", {digits, tlctx->get_constant((1u << 24) - 1)});
+      digits = call("min_u32", digits, tlctx->get_constant((1u << 24) - 1));
 
       // Compress f32 digits to qflt digits.
       // Note that we need to keep the leading 1 bit so 24 instead of 23 in the
@@ -427,7 +424,7 @@ llvm::Value *TaskCodeGenLLVM::extract_digits_from_f32_with_shared_exponent(
 
   auto digits = extract_digits_from_f32(f, true);
   digits = builder->CreateOr(digits, implicit_bit);
-  exp_offset = create_call("min_u32", {exp_offset, tlctx->get_constant(31)});
+  exp_offset = call("min_u32", exp_offset, tlctx->get_constant(31));
   return builder->CreateLShr(digits, exp_offset);
 }
 
@@ -591,6 +588,6 @@ llvm::Value *TaskCodeGenLLVM::reconstruct_quant_float(
   }
 }
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang
 
 #endif  // #ifdef TI_WITH_LLVM

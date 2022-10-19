@@ -3,8 +3,7 @@
 #include "taichi/program/callable.h"
 #include "taichi/program/function_key.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class Program;
 
@@ -31,5 +30,4 @@ class Function : public Callable {
   std::optional<std::string> ast_serialization_data_;  // For generating AST-Key
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

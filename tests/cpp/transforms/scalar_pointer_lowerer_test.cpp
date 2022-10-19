@@ -10,8 +10,7 @@
 #include "taichi/transforms/scalar_pointer_lowerer.h"
 #include "tests/cpp/struct/fake_struct_compiler.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace {
 
 constexpr int kPointerSize = 4;
@@ -94,16 +93,15 @@ TEST_F(ScalarPointerLowererTest, Basic) {
       code_region.end = lowerer.linears[kPointerLevel];
       auto res_opt = ai.evaluate(code_region, init_ctx);
       ASSERT_TRUE(res_opt.has_value());
-      EXPECT_EQ(res_opt.value(), i);
+      EXPECT_EQ(res_opt.value().val_int(), i);
 
       code_region.end = lowerer.linears[kDenseLevel];
       res_opt = ai.evaluate(code_region, init_ctx);
       ASSERT_TRUE(res_opt.has_value());
-      EXPECT_EQ(res_opt.value(), j);
+      EXPECT_EQ(res_opt.value().val_int(), j);
     }
   }
 }
 
 }  // namespace
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

@@ -12,8 +12,7 @@
 #include "taichi/ir/snode.h"
 #include "taichi/aot/graph_data.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 struct RuntimeContext;
 class Graph;
@@ -120,7 +119,7 @@ class TI_DLL_EXPORT Module {
 // Only responsible for reporting device capabilities
 class TargetDevice : public Device {
  public:
-  TargetDevice(Arch arch) {
+  explicit TargetDevice(Arch arch) {
     // TODO: make this configurable
     set_default_caps(arch);
   }
@@ -166,5 +165,4 @@ class TargetDevice : public Device {
 };
 
 }  // namespace aot
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

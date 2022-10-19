@@ -7,8 +7,7 @@
 #include "taichi/ir/type_utils.h"
 #include "taichi/rhi/device.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class Program;
 class NdarrayRwAccessorsBank;
@@ -81,5 +80,4 @@ class TI_DLL_EXPORT Ndarray {
   Program *prog_{nullptr};
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

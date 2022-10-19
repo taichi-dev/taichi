@@ -5,15 +5,20 @@
 #include "taichi/runtime/gfx/runtime.h"
 #include "taichi/util/offline_cache.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace gfx {
+
+struct OfflineCacheKernelMetadata : public offline_cache::KernelMetadataBase {
+  std::size_t num_files{0};
+
+  TI_IO_DEF_WITH_BASECLASS(offline_cache::KernelMetadataBase, num_files);
+};
 
 class CacheManager {
   using CompiledKernelData = gfx::GfxRuntime::RegisterParams;
 
  public:
-  using Metadata = offline_cache::Metadata;
+  using Metadata = offline_cache::Metadata<OfflineCacheKernelMetadata>;
   enum Mode { NotCache, MemCache, MemAndDiskCache };
 
   struct Params {
@@ -25,7 +30,7 @@ class CacheManager {
     const std::vector<spirv::CompiledSNodeStructs> *compiled_structs;
   };
 
-  CacheManager(Params &&init_params);
+  explicit CacheManager(Params &&init_params);
 
   CompiledKernelData load_or_compile(CompileConfig *config, Kernel *kernel);
   void dump_with_merging() const;
@@ -51,5 +56,4 @@ class CacheManager {
 };
 
 }  // namespace gfx
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

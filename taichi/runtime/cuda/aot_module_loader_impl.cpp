@@ -5,8 +5,7 @@
 #include "taichi/runtime/llvm/llvm_runtime_executor.h"
 #include "taichi/codegen/cuda/codegen_cuda.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace {
 
 class AotModuleImpl : public LlvmAotModule {
@@ -46,5 +45,4 @@ std::unique_ptr<aot::Module> make_aot_module(std::any mod_params) {
 }
 
 }  // namespace cuda
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

@@ -3,8 +3,7 @@
 #include "taichi/system/profiler.h"
 #include "taichi/ir/analysis.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 MeshBLSAnalyzer::MeshBLSAnalyzer(OffloadedStmt *for_stmt,
                                  MeshBLSCaches *caches,
@@ -113,5 +112,4 @@ std::unique_ptr<MeshBLSCaches> initialize_mesh_local_attribute(
 }  // namespace analysis
 }  // namespace irpass
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

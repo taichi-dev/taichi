@@ -3,6 +3,7 @@
 #include "taichi_vulkan_impl.h"
 #include "taichi_llvm_impl.h"
 #include "taichi/program/ndarray.h"
+#include "taichi/program/texture.h"
 
 struct ErrorCache {
   TiError error{TI_ERROR_SUCCESS};
@@ -125,6 +126,14 @@ TiError ti_get_last_error(uint64_t message_size, char *message) {
 // external procedures.
 void ti_set_last_error(TiError error, const char *message) {
   TI_CAPI_TRY_CATCH_BEGIN();
+  if (error >= TI_ERROR_SUCCESS &&
+      thread_error_cache.error < TI_ERROR_SUCCESS) {
+    TI_WARN(
+        "Overriding C-API error: ({}) with ({}) is forbidden thus rejected.",
+        describe_error(thread_error_cache.error), describe_error(error));
+    return;
+  }
+
   if (error < TI_ERROR_SUCCESS) {
     TI_WARN("C-API error: ({}) {}", describe_error(error), message);
     if (message != nullptr) {
@@ -363,7 +372,6 @@ void ti_copy_memory_device_to_device(TiRuntime runtime,
   TI_CAPI_ARGUMENT_NULL(dst_memory->memory);
   TI_CAPI_ARGUMENT_NULL(src_memory);
   TI_CAPI_ARGUMENT_NULL(src_memory->memory);
-  TI_CAPI_INVALID_ARGUMENT(dst_memory->memory != src_memory->memory);
 
   Runtime *runtime2 = (Runtime *)runtime;
   auto dst = devmem2devalloc(*runtime2, dst_memory->memory)
@@ -403,9 +411,34 @@ void ti_copy_texture_device_to_device(TiRuntime runtime,
   runtime2->copy_image(dst, src, params);
   TI_CAPI_TRY_CATCH_END();
 }
-void ti_transition_texture(TiRuntime runtime,
-                           TiImage texture,
-                           TiImageLayout layout) {
+void ti_track_image_ext(TiRuntime runtime,
+                        TiImage image,
+                        TiImageLayout layout) {
+  TI_CAPI_TRY_CATCH_BEGIN();
+  TI_CAPI_ARGUMENT_NULL(runtime);
+  TI_CAPI_ARGUMENT_NULL(image);
+
+  Runtime *runtime2 = (Runtime *)runtime;
+  auto image2 = devimg2devalloc(*runtime2, image);
+  auto layout2 = (taichi::lang::ImageLayout)layout;
+
+  switch ((taichi::lang::ImageLayout)layout) {
+#define PER_IMAGE_LAYOUT(x) case taichi::lang::ImageLayout::x:
+#include "taichi/inc/rhi_constants.inc.h"
+#undef PER_IMAGE_LAYOUT
+    break;
+    default: {
+      ti_set_last_error(TI_ERROR_ARGUMENT_OUT_OF_RANGE, "layout");
+      return;
+    }
+  }
+
+  runtime2->track_image(image2, layout2);
+  TI_CAPI_TRY_CATCH_END();
+}
+void ti_transition_image(TiRuntime runtime,
+                         TiImage texture,
+                         TiImageLayout layout) {
   TI_CAPI_TRY_CATCH_BEGIN();
   TI_CAPI_ARGUMENT_NULL(runtime);
   TI_CAPI_ARGUMENT_NULL(texture);

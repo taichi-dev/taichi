@@ -25,7 +25,7 @@ namespace py = pybind11;
 #include "taichi/program/ndarray.h"
 #include <memory>
 
-TI_UI_NAMESPACE_BEGIN
+namespace taichi::ui {
 
 using namespace taichi::lang;
 
@@ -355,14 +355,22 @@ struct PyWindow {
   PyWindow(Program *prog,
            std::string name,
            py::tuple res,
+           py::tuple pos,
            bool vsync,
            bool show_window,
            std::string package_path,
            Arch ti_arch,
            bool is_packed_mode) {
-    AppConfig config = {name,    res[0].cast<int>(), res[1].cast<int>(),
-                        vsync,   show_window,        package_path,
-                        ti_arch, is_packed_mode};
+    AppConfig config = {name,
+                        res[0].cast<int>(),
+                        res[1].cast<int>(),
+                        pos[0].cast<int>(),
+                        pos[1].cast<int>(),
+                        vsync,
+                        show_window,
+                        package_path,
+                        ti_arch,
+                        is_packed_mode};
     // todo: support other ggui backends
     if (!(taichi::arch_is_cpu(ti_arch) || ti_arch == Arch::vulkan ||
           ti_arch == Arch::cuda)) {
@@ -456,8 +464,8 @@ struct PyWindow {
     return canvas;
   }
 
-  PyGui GUI() {
-    PyGui gui = {window->GUI()};
+  PyGui gui() {
+    PyGui gui = {window->gui()};
     return gui;
   }
 
@@ -480,8 +488,8 @@ void export_ggui(py::module &m) {
   m.attr("GGUI_AVAILABLE") = py::bool_(true);
 
   py::class_<PyWindow>(m, "PyWindow")
-      .def(py::init<Program *, std::string, py::tuple, bool, bool, std::string,
-                    Arch, bool>())
+      .def(py::init<Program *, std::string, py::tuple, py::tuple, bool, bool,
+                    std::string, Arch, bool>())
       .def("get_canvas", &PyWindow::get_canvas)
       .def("show", &PyWindow::show)
       .def("get_window_shape", &PyWindow::get_window_shape)
@@ -498,7 +506,7 @@ void export_ggui(py::module &m) {
       .def("get_current_event", &PyWindow::get_current_event)
       .def("set_current_event", &PyWindow::set_current_event)
       .def("destroy", &PyWindow::destroy)
-      .def("GUI", &PyWindow::GUI);
+      .def("GUI", &PyWindow::gui);
 
   py::class_<PyCanvas>(m, "PyCanvas")
       .def("set_background_color", &PyCanvas::set_background_color)
@@ -592,24 +600,24 @@ void export_ggui(py::module &m) {
       .export_values();
 }
 
-TI_UI_NAMESPACE_END
+}  // namespace taichi::ui
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 void export_ggui(py::module &m) {
   ui::export_ggui(m);
 }
 
-TI_NAMESPACE_END
+}  // namespace taichi
 
 #else
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 void export_ggui(py::module &m) {
   m.attr("GGUI_AVAILABLE") = py::bool_(false);
 }
 
-TI_NAMESPACE_END
+}  // namespace taichi
 
 #endif

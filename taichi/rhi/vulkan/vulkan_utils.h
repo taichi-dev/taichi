@@ -15,8 +15,7 @@
 #include <string>
 #include <vector>
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 namespace vulkan {
 
 class VulkanEnvSettings {
@@ -25,7 +24,7 @@ class VulkanEnvSettings {
   // the highest API version that is designed to use.
   // Reference:
   // https://www.khronos.org/registry/vulkan/specs/1.3-extensions/man/html/VkApplicationInfo.html
-  static constexpr uint32_t kApiVersion() {
+  static constexpr uint32_t k_api_version() {
     return VK_API_VERSION_1_3;
   }
 };
@@ -101,5 +100,4 @@ inline WindowsSecurityAttributes::~WindowsSecurityAttributes() {
 #endif  //_WIN64
 
 }  // namespace vulkan
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

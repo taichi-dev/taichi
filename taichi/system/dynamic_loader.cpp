@@ -6,7 +6,7 @@
 #include <dlfcn.h>
 #endif
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
 DynamicLoader::DynamicLoader(const std::string &dll_path) {
   load_dll(dll_path);
@@ -52,4 +52,4 @@ bool DynamicLoader::loaded() const {
   return dll_ != nullptr;
 }
 
-TI_NAMESPACE_END
+}  // namespace taichi

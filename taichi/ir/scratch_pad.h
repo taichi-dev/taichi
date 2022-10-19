@@ -2,7 +2,7 @@
 
 #include "taichi/ir/snode.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 class Stmt;
 
@@ -61,7 +61,7 @@ class ScratchPad {
 
   ScratchPad() = default;
 
-  ScratchPad(SNode *snode) : snode(snode) {
+  explicit ScratchPad(SNode *snode) : snode(snode) {
     TI_ASSERT(snode != nullptr);
     dim = snode->num_active_indices;
     coefficients.resize(dim);
@@ -258,4 +258,4 @@ class ScratchPads {
   }
 };
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

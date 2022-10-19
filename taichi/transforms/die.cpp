@@ -8,7 +8,7 @@
 
 #include <unordered_set>
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 // Dead Instruction Elimination
 class DIE : public IRVisitor {
@@ -18,7 +18,7 @@ class DIE : public IRVisitor {
   DelayedIRModifier modifier;
   bool modified_ir;
 
-  DIE(IRNode *node) {
+  explicit DIE(IRNode *node) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
     modified_ir = false;
@@ -108,13 +108,6 @@ class DIE : public IRVisitor {
     }
     stmt->all_blocks_accept(this, true);
   }
-
-  void visit(MatrixInitStmt *stmt) override {
-    register_usage(stmt);
-    for (auto &elts : stmt->values) {
-      elts->accept(this);
-    }
-  }
 };
 
 namespace irpass {
@@ -127,4 +120,4 @@ bool die(IRNode *root) {
 
 }  // namespace irpass
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

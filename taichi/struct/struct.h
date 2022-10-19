@@ -3,8 +3,7 @@
 
 #include "taichi/ir/snode.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class StructCompiler {
  public:
@@ -24,5 +23,4 @@ class StructCompiler {
   virtual void run(SNode &node) = 0;
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

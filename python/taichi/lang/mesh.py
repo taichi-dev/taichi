@@ -1,4 +1,3 @@
-import ast
 import json
 
 import numpy as np
@@ -97,6 +96,74 @@ class MeshElementField:
 
         self._register_fields()
 
+    def place(self,
+              members,
+              reorder=False,
+              needs_grad=False,
+              layout=Layout.SOA):
+        """Declares mesh attributes for the mesh element in current mesh.
+
+        Args:
+        members (Dict[str, Union[PrimitiveType, MatrixType]]): \
+            names and types for element attributes.
+        reorder: True if reorders the internal memory for coalesced data access within mesh-for loop.
+        needs_grad: True if needs to record grad.
+        layout: ti.Layout.AoS/ti.Layout.SoA
+
+        Example::
+        >>> import meshtaichi_patcher as Patcher
+        >>> vec3 = ti.types.vector(3, ti.f32)
+        >>> mesh = Patcher.load_mesh("bunny.obj", relations=['FV'])
+        >>> mesh.faces.place({'area' : ti.f32}) # declares a mesh attribute `area` for each face element.
+        >>> mesh.verts.place({'pos' : vec3}, reorder=True) # declares a mesh attribute `pos` for each vertex element, and reorder it in memory.
+        """
+
+        for key, dtype in members.items():
+            if key in {'verts', 'edges', 'faces', 'cells'}:
+                raise TaichiSyntaxError(
+                    f"'{key}' cannot use as attribute name. It has been reserved as MeshTaichi's keyword."
+                )
+            if key in self.attr_dict:
+                raise TaichiSyntaxError(
+                    f"'{key}' has already use as attribute name.")
+
+            # init attr type
+            self.attr_dict[key] = MeshAttrType(key, dtype, reorder, needs_grad)
+
+            # init field
+            if isinstance(dtype, CompoundType):
+                self.field_dict[key] = dtype.field(shape=None,
+                                                   needs_grad=needs_grad)
+            else:
+                self.field_dict[key] = impl.field(dtype,
+                                                  shape=None,
+                                                  needs_grad=needs_grad)
+
+        size = _ti_core.get_num_elements(self.mesh.mesh_ptr, self._type)
+        if layout == Layout.SOA:
+            for key in members.keys():
+                impl.root.dense(impl.axes(0), size).place(self.field_dict[key])
+                if self.attr_dict[key].needs_grad:
+                    impl.root.dense(impl.axes(0),
+                                    size).place(self.field_dict[key].grad)
+        elif len(members) > 0:
+            _member_fields = {}
+            for key in members.keys():
+                _member_fields[key] = self.field_dict[key]
+            impl.root.dense(impl.axes(0),
+                            size).place(*tuple(_member_fields.values()))
+            grads = []
+            for key in members.keys():
+                if self.attr_dict[key].needs_grad:
+                    grads.append(self.field_dict[key].grad)
+            if len(grads) > 0:
+                impl.root.dense(impl.axes(0), size).place(*grads)
+
+        for key, dtype in members.items():
+            # expose interface
+            setattr(MeshElementField, key,
+                    property(fget=MeshElementField._make_getter(key)))
+
     @property
     def keys(self):
         return list(self.field_dict.keys())
@@ -142,51 +209,12 @@ class MeshElementField:
             field_members += m._get_field_members()
         return field_members
 
-    @python_scope
-    def copy_from(self, other):
-        assert isinstance(other, Field)
-        assert set(self.keys) == set(other.keys)
-        for k in self.keys:
-            self.field_dict[k].copy_from(other[k])
-
-    @python_scope
-    def fill(self, val):
-        for v in self._members:
-            v.fill(val)
-
     def _initialize_host_accessors(self):
         for v in self._members:
             v._initialize_host_accessors()
 
     def get_member_field(self, key):
         return self.field_dict[key]
-
-    @python_scope
-    def from_numpy(self, array_dict):
-        for k, v in self._items:
-            v.from_numpy(array_dict[k])
-
-    @python_scope
-    def from_torch(self, array_dict):
-        for k, v in self._items:
-            v.from_torch(array_dict[k])
-
-    @python_scope
-    def from_paddle(self, array_dict):
-        for k, v in self._items:
-            v.from_paddle(array_dict[k])
-
-    @python_scope
-    def to_numpy(self):
-        return {k: v.to_numpy() for k, v in self._items}
-
-    @python_scope
-    def to_torch(self, device=None):
-        return {k: v.to_torch(device=device) for k, v in self._items}
-
-    @python_scope
-    def to_paddle(self, place=None):
-        return {k: v.to_paddle(place=place) for k, v in self._items}
 
     @python_scope
     def __len__(self):
@@ -207,10 +235,10 @@ class MeshElement:
         self.layout = Layout.AOS if aos else Layout.SOA
 
     SOA = property(fset=_SOA)
-    """ Set `True` for SOA (structure of arrays) layout.
+    """(Deprecated) Set `True` for SOA (structure of arrays) layout.
     """
     AOS = property(fset=_AOS)
-    """ Set `True` for AOS (array of structures) layout.
+    """(Deprecated) Set `True` for AOS (array of structures) layout.
     """
 
     def place(
@@ -219,7 +247,7 @@ class MeshElement:
         reorder=False,
         needs_grad=False,
     ):
-        """Declares mesh attributes for the mesh element in current mesh builder.
+        """(Deprecated) Declares mesh attributes for the mesh element in current mesh builder.
 
         Args:
         members (Dict[str, Union[PrimitiveType, MatrixType]]): \
@@ -233,11 +261,10 @@ class MeshElement:
         >>> mesh.faces.place({'area' : ti.f32}) # declares a mesh attribute `area` for each face element.
         >>> mesh.verts.place({'pos' : vec3}, reorder=True) # declares a mesh attribute `pos` for each vertex element, and reorder it in memory.
         """
-        self.builder.elements.add(self._type)
         for key, dtype in members.items():
             if key in {'verts', 'edges', 'faces', 'cells'}:
                 raise TaichiSyntaxError(
-                    f"'{key}' cannot use as attribute name. It has been reserved as ti.Mesh's keyword."
+                    f"'{key}' cannot use as attribute name. It has been reserved as MeshTaichi's keyword."
                 )
             self.attr_dict[key] = MeshAttrType(key, dtype, reorder, needs_grad)
 
@@ -271,30 +298,26 @@ class MeshElement:
         return MeshElementField(mesh_instance, self._type, self.attr_dict,
                                 field_dict, g2r_field)
 
-    def link(self, element):
-        """Explicitly declares the element-element connectivity for compiler to pre-generate relation data.
-
-        Args:
-            element (MeshElement): mesh element in the same builder to represent the to-end of connectivity.
-
-        Example::
-            >>> mesh = ti.TriMesh()
-            >>> mesh.faces.link(mesh.verts) # declares F-V connectivity
-            >>> mesh.verts.link(mesh.verts) # declares V-V connectivity
-        """
-        assert isinstance(element, MeshElement)
-        assert element.builder == self.builder
-        self.builder.relations.add(tuple([self._type, element._type]))
-        self.builder.elements.add(self._type)
-        self.builder.elements.add(element._type)
-
 
 # Define the instance of the Mesh Type, stores the field (type and data) info
 class MeshInstance:
-    def __init__(self, _type):
-        self._type = _type
+    def __init__(self):
         self.mesh_ptr = _ti_core.create_mesh()
         self.relation_set = set()
+        self.verts = MeshElementField(self, MeshElementType.Vertex, {}, {}, {})
+        self.edges = MeshElementField(self, MeshElementType.Edge, {}, {}, {})
+        self.faces = MeshElementField(self, MeshElementType.Face, {}, {}, {})
+        self.cells = MeshElementField(self, MeshElementType.Cell, {}, {}, {})
+
+    def get_position_as_numpy(self):
+        """Get the vertex position of current mesh to numpy array.
+
+        Returns:
+            3d numpy array: [x, y, z] with float-format.
+        """
+        if hasattr(self, "_vert_position"):
+            return self._vert_position
+        raise TaichiSyntaxError("Position info is not in the file.")
 
     def set_owned_offset(self, element_type: MeshElementType,
                          owned_offset: ScalarField):
@@ -346,23 +369,6 @@ class MeshInstance:
                             neighbor_idx_ptr):
         return _ti_core.get_relation_access(self.mesh_ptr, from_index.ptr,
                                             to_element_type, neighbor_idx_ptr)
-
-    def update_relation(self, from_order, to_order):
-        rel_type = MeshRelationType(relation_by_orders(from_order, to_order))
-        if rel_type not in self.relation_set:
-            meta = self.patcher.get_relation_meta(from_order, to_order)
-
-            def fun(arr, dtype):
-                field = impl.field(dtype=dtype, shape=arr.shape)
-                field.from_numpy(arr)
-                return field
-
-            if from_order <= to_order:
-                self.set_relation_dynamic(rel_type, fun(meta["value"], u16),
-                                          fun(meta["patch_offset"], u32),
-                                          fun(meta["offset"], u16))
-            else:
-                self.set_relation_fixed(rel_type, fun(meta["value"], u16))
 
 
 class MeshMetadata:
@@ -446,43 +452,24 @@ class MeshMetadata:
 
 # Define the Mesh Type, stores the field type info
 class MeshBuilder:
-    def __init__(self, topology):
+    def __init__(self):
         if not lang.misc.is_extension_supported(impl.current_cfg().arch,
                                                 lang.extension.mesh):
             raise Exception('Backend ' + str(impl.current_cfg().arch) +
                             ' doesn\'t support MeshTaichi extension')
 
-        self.topology = topology
         self.verts = MeshElement(MeshElementType.Vertex, self)
         self.edges = MeshElement(MeshElementType.Edge, self)
         self.faces = MeshElement(MeshElementType.Face, self)
-        if topology == MeshTopology.Tetrahedron:
-            self.cells = MeshElement(MeshElementType.Cell, self)
+        self.cells = MeshElement(MeshElementType.Cell, self)
 
-        self.elements = set()
-        self.relations = set()
-
-        impl.current_cfg().use_mesh = True
-
-    def build(self, metadata: MeshMetadata):
-        """Build and instantiate mesh from model meta data
-
-        Use the following external lib to generate meta data:
-        https://github.com/BillXu2000/meshtaichi_patcher
-
-        Args:
-            metadata : model meta data.
-
-        Returns:
-            The mesh instance class.
-        """
-        instance = MeshInstance(self)
+    def build(self, metadata: MeshMetadata) -> MeshInstance:
+        instance = MeshInstance()
         instance.fields = {}
 
         instance.set_num_patches(metadata.num_patches)
 
         for element in metadata.element_fields:
-            self.elements.add(element)
             _ti_core.set_num_elements(instance.mesh_ptr, element,
                                       metadata.num_elements[element])
             instance.set_patch_max_element_num(
@@ -519,9 +506,7 @@ class MeshBuilder:
                 instance.set_relation_fixed(
                     rel_type, metadata.relation_fields[rel_type]["value"])
 
-        if "x" in instance.verts.attr_dict:  # pylint: disable=E1101
-            instance.verts.x.from_numpy(metadata.attrs["x"])  # pylint: disable=E1101
-
+        instance._vert_position = metadata.attrs["x"]
         instance.patcher = metadata.patcher
 
         return instance
@@ -531,32 +516,62 @@ class MeshBuilder:
 class Mesh:
     """The Mesh type class.
 
-    ti.Mesh offers first-class support for triangular/tetrahedral meshes
+    MeshTaichi offers first-class support for triangular/tetrahedral meshes
     and allows efficient computation on these irregular data structures,
     only available for backends supporting `ti.extension.mesh`.
 
-    Related to https://github.com/taichi-dev/taichi/issues/3608
+    See more details in https://github.com/taichi-dev/meshtaichi
     """
     def __init__(self):
         pass
 
     @staticmethod
-    def Tet():
-        """Create a tetrahedron mesh (a set of vert/edge/face/cell elements, attributes, and connectivity) builder.
+    def _create_instance(metadata: MeshMetadata) -> MeshInstance:
+        instance = MeshInstance()
+        instance.fields = {}
 
-        Returns:
-            An instance of mesh builder.
-        """
-        return MeshBuilder(MeshTopology.Tetrahedron)
+        instance.set_num_patches(metadata.num_patches)
 
-    @staticmethod
-    def Tri():
-        """Create a triangle mesh (a set of vert/edge/face elements, attributes, and connectivity) builder.
+        for element in metadata.element_fields:
+            _ti_core.set_num_elements(instance.mesh_ptr, element,
+                                      metadata.num_elements[element])
+            instance.set_patch_max_element_num(
+                element, metadata.max_num_per_patch[element])
 
-        Returns:
-            An instance of mesh builder.
-        """
-        return MeshBuilder(MeshTopology.Triangle)
+            element_name = element_type_name(element)
+            setattr(
+                instance, element_name,
+                MeshElementField(instance, element, {}, {},
+                                 metadata.element_fields[element]["g2r"]))
+            instance.fields[element] = getattr(instance, element_name)
+
+            instance.set_owned_offset(
+                element, metadata.element_fields[element]["owned"])
+            instance.set_total_offset(
+                element, metadata.element_fields[element]["total"])
+            instance.set_index_mapping(element, ConvType.l2g,
+                                       metadata.element_fields[element]["l2g"])
+            instance.set_index_mapping(element, ConvType.l2r,
+                                       metadata.element_fields[element]["l2r"])
+            instance.set_index_mapping(element, ConvType.g2r,
+                                       metadata.element_fields[element]["g2r"])
+
+        for rel_type in metadata.relation_fields:
+            from_order = metadata.relation_fields[rel_type]["from_order"]
+            to_order = metadata.relation_fields[rel_type]["to_order"]
+            if from_order <= to_order:
+                instance.set_relation_dynamic(
+                    rel_type, metadata.relation_fields[rel_type]["value"],
+                    metadata.relation_fields[rel_type]["patch_offset"],
+                    metadata.relation_fields[rel_type]["offset"])
+            else:
+                instance.set_relation_fixed(
+                    rel_type, metadata.relation_fields[rel_type]["value"])
+
+        instance._vert_position = metadata.attrs["x"]
+        instance.patcher = metadata.patcher
+
+        return instance
 
     @staticmethod
     def load_meta(filename):
@@ -568,72 +583,23 @@ class Mesh:
     def generate_meta(data):
         return MeshMetadata(data)
 
-    class RelationVisitor(ast.NodeVisitor):
-        # TODO: only works for simple cases
 
-        def __init__(self, ctx):
-            self.vars = {}
-            self.visits = []
-            self.ctx = ctx
-
-        def visit_For(self, node):
-            if isinstance(node.iter, ast.Attribute):
-                value = node.iter.value
-                if isinstance(value, ast.Name):
-                    if value.id in self.ctx.global_vars:
-                        var = self.ctx.global_vars[value.id]
-                        if isinstance(var, MeshInstance):
-                            self.vars[node.target.id] = [var, node.iter.attr]
-            if isinstance(node.iter, ast.Name):
-                if node.iter.id in self.ctx.global_vars:
-                    var = self.ctx.global_vars[node.iter.id]
-                    if isinstance(var, MeshElementField):
-                        self.vars[node.target.id] = [
-                            var.mesh, element_type_name(var._type)
-                        ]
-            ast.NodeVisitor.generic_visit(self, node)
-
-        def visit_Assign(self, node):
-            if isinstance(node.targets[0], ast.Name):
-                if isinstance(node.value, ast.Name):
-                    if node.value.id in self.vars:
-                        self.vars[node.targets[0].id] = self.vars[
-                            node.value.id]
-            ast.NodeVisitor.generic_visit(self, node)
-
-        def visit_Attribute(self, node):
-            if isinstance(node.value, ast.Name):
-                if node.value.id in self.vars:
-                    self.visits.append(self.vars[node.value.id] + [node.attr])
-            ast.NodeVisitor.generic_visit(self, node)
-
-    @staticmethod
-    def update_relation(tree, ctx):
-        x = Mesh.RelationVisitor(ctx)
-        x.visit(tree)
-        name_to_order = {"verts": 0, "edges": 1, "faces": 2, "cells": 3}
-        for visit in x.visits:
-            if visit[1] in name_to_order and visit[2] in name_to_order:
-                visit[0].update_relation(name_to_order[visit[1]],
-                                         name_to_order[visit[2]])
-
-
-def TriMesh():
-    """Create a triangle mesh (a set of vert/edge/face elements, attributes, and connectivity) builder.
+def _TriMesh():
+    """(Deprecated) Create a triangle mesh (a set of vert/edge/face elements, attributes, and connectivity) builder.
 
     Returns:
         An instance of mesh builder.
     """
-    return Mesh.Tri()
+    return MeshBuilder()
 
 
-def TetMesh():
-    """Create a tetrahedron mesh (a set of vert/edge/face/cell elements, attributes, and connectivity) builder.
+def _TetMesh():
+    """(Deprecated) Create a tetrahedron mesh (a set of vert/edge/face/cell elements, attributes, and connectivity) builder.
 
     Returns:
         An instance of mesh builder.
     """
-    return Mesh.Tet()
+    return MeshBuilder()
 
 
 class MeshElementFieldProxy:
@@ -656,7 +622,8 @@ class MeshElementFieldProxy:
                 setattr(self, key,
                         _MatrixFieldElement(attr, global_entry_expr_group))
             elif isinstance(attr, StructField):
-                raise RuntimeError('ti.Mesh has not support StructField yet')
+                raise RuntimeError(
+                    'MeshTaichi has not support StructField yet')
             else:  # isinstance(attr, Field)
                 var = attr._get_field_members()[0].ptr
                 setattr(
@@ -666,7 +633,10 @@ class MeshElementFieldProxy:
                             var, global_entry_expr_group,
                             impl.get_runtime().get_current_src_info())))
 
-        for element_type in self.mesh._type.elements:
+        for element_type in {
+                MeshElementType.Vertex, MeshElementType.Edge,
+                MeshElementType.Face, MeshElementType.Cell
+        }:
             setattr(self, element_type_name(element_type),
                     impl.mesh_relation_access(self.mesh, self, element_type))
 
@@ -700,9 +670,9 @@ class MeshRelationAccessProxy:
         entry_expr = self.mesh.get_relation_access(self.from_index,
                                                    self.to_element_type,
                                                    impl.Expr(indices[0]).ptr)
-        entry_expr.type_check(impl.get_runtime().prog.config)
+        entry_expr.type_check(impl.get_runtime().prog.config())
         return MeshElementFieldProxy(self.mesh, self.to_element_type,
                                      entry_expr)
 
 
-__all__ = ["Mesh", "TetMesh", "TriMesh"]
+__all__ = ['Mesh', 'MeshInstance']

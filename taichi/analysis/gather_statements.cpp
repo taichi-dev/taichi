@@ -2,7 +2,7 @@
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/visitors.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 class StmtSearcher : public BasicStmtVisitor {
  private:
@@ -12,7 +12,7 @@ class StmtSearcher : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
 
-  StmtSearcher(std::function<bool(Stmt *)> test) : test_(test) {
+  explicit StmtSearcher(std::function<bool(Stmt *)> test) : test_(test) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
   }
@@ -37,4 +37,4 @@ std::vector<Stmt *> gather_statements(IRNode *root,
 }
 }  // namespace irpass::analysis
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang

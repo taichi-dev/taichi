@@ -42,7 +42,7 @@ struct Ti_Context {
 #include "cc_program.h"
 #include "taichi/util/lang_util.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi::lang {
 
 namespace cccp {
 
@@ -56,6 +56,6 @@ struct CCContext {
 
 };  // namespace cccp
 
-TLANG_NAMESPACE_END
+}  // namespace taichi::lang
 
 #endif  // _CC_INSIDE_KERNEL

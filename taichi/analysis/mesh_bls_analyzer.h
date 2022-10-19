@@ -7,8 +7,7 @@
 
 #include <set>
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class MeshBLSCache {
  public:
@@ -28,7 +27,7 @@ class MeshBLSCache {
 
   MeshBLSCache() = default;
 
-  MeshBLSCache(SNode *snode) : snode(snode) {
+  explicit MeshBLSCache(SNode *snode) : snode(snode) {
     total_flags = AccessFlag(0);
     initialized = false;
     finalized = false;
@@ -154,5 +153,4 @@ class MeshBLSAnalyzer : public BasicStmtVisitor {
   CompileConfig config_;
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

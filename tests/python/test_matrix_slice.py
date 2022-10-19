@@ -5,27 +5,52 @@ from tests import test_utils
 
 
 @test_utils.test()
-def test_slice():
-    b = 3
+def test_matrix_slice_read():
+    b = 6
 
     @ti.kernel
     def foo1() -> ti.types.vector(3, dtype=ti.i32):
         c = ti.Vector([0, 1, 2, 3, 4, 5, 6])
-        return c[:5:2]
+        return c[:b:2]
 
     @ti.kernel
-    def foo2() -> ti.types.matrix(2, 2, dtype=ti.i32):
-        a = ti.Matrix([[1, 2, 3], [4, 5, 6]])
-        return a[:, :b:2]
+    def foo2() -> ti.types.matrix(2, 3, dtype=ti.i32):
+        a = ti.Matrix([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+        return a[1::, :]
 
     v1 = foo1()
-    assert (v1 == ti.Vector([0, 2, 4])).all() == 1
+    assert (v1 == ti.Vector([0, 2, 4])).all()
     m1 = foo2()
-    assert (m1 == ti.Matrix([[1, 3], [4, 6]])).all() == 1
+    assert (m1 == ti.Matrix([[4, 5, 6], [7, 8, 9]])).all()
+    v2 = ti.Vector([1, 2, 3, 4, 5, 6])[2::3]
+    assert (v2 == ti.Vector([3, 6])).all()
+    m2 = ti.Matrix([[2, 3], [4, 5]])[:1, 1:]
+    assert (m2 == ti.Matrix([[3]])).all()
+
+
+@test_utils.test()
+def test_matrix_slice_invalid():
+    @ti.kernel
+    def foo1(i: ti.i32):
+        a = ti.Vector([0, 1, 2, 3, 4, 5, 6])
+        b = a[i::2]
+
+    @ti.kernel
+    def foo2():
+        i = 2
+        a = ti.Matrix([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+        b = a[:i:, :i]
+
+    with pytest.raises(ti.TaichiCompilationError,
+                       match='Taichi does not support variables in slice now'):
+        foo1(1)
+    with pytest.raises(ti.TaichiCompilationError,
+                       match='Taichi does not support variables in slice now'):
+        foo2()
 
 
 @test_utils.test(dynamic_index=True)
-def test_dyn():
+def test_matrix_slice_with_variable():
     @ti.kernel
     def test_one_row_slice() -> ti.types.matrix(2, 1, dtype=ti.i32):
         m = ti.Matrix([[1, 2, 3], [4, 5, 6]])
@@ -39,13 +64,13 @@ def test_dyn():
         return m[index, :]
 
     r1 = test_one_row_slice()
-    assert (r1 == ti.Matrix([[2], [5]])).all() == 1
+    assert (r1 == ti.Matrix([[2], [5]])).all()
     c1 = test_one_col_slice()
-    assert (c1 == ti.Matrix([[4, 5, 6]])).all() == 1
+    assert (c1 == ti.Matrix([[4, 5, 6]])).all()
 
 
 @test_utils.test(dynamic_index=False)
-def test_no_dyn():
+def test_matrix_slice_with_variable_invalid():
     @ti.kernel
     def test_one_col_slice() -> ti.types.matrix(1, 3, dtype=ti.i32):
         m = ti.Matrix([[1, 2, 3], [4, 5, 6]])

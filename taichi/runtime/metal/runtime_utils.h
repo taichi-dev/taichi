@@ -2,8 +2,7 @@
 
 #include <cstddef>
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class MemoryPool;
 
@@ -34,5 +33,4 @@ class BufferMemoryView {
 };
 
 }  // namespace metal
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

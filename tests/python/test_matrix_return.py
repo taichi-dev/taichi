@@ -43,7 +43,9 @@ def test_matrix_return_real_matrix():
     _test_matrix_return()
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda, ti.metal], real_matrix=True, real_matrix_scalarize=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.metal],
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
 def test_matrix_return_real_matrix_scalarize():
     _test_matrix_return()
 
@@ -57,7 +59,8 @@ def _test_matrix_return_limit():
 
     assert (func() == ti.Matrix([[0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
                                  [10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
-                                 [20, 21, 22, 23, 24, 25, 26, 27, 28, 29]])).all()
+                                 [20, 21, 22, 23, 24, 25, 26, 27, 28,
+                                  29]])).all()
 
 
 @test_utils.test()

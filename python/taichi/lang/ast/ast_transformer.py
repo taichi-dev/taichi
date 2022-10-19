@@ -17,7 +17,7 @@ from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.expr import Expr
 from taichi.lang.field import Field
 from taichi.lang.impl import current_cfg
-from taichi.lang.matrix import (Matrix, MatrixType, Vector)
+from taichi.lang.matrix import Matrix, MatrixType, Vector, is_vector
 from taichi.lang.snode import append
 from taichi.lang.util import is_taichi_class, to_taichi_type
 from taichi.types import (annotations, ndarray_type, primitive_types,
@@ -691,13 +691,17 @@ class ASTTransformer(Builder):
                         ti_ops.cast(expr.Expr(node.value.ptr),
                                     ctx.func.return_type).ptr))
             elif isinstance(ctx.func.return_type, MatrixType):
-                item_iter = iter(node.value.ptr.to_list())\
-                            if isinstance(node.value.ptr, Vector) or node.value.ptr.ndim == 1\
-                            else itertools.chain.from_iterable(node.value.ptr.to_list())
+                values = node.value.ptr
+                if isinstance(values, Expr) and values.ptr.is_tensor():
+                    values = ctx.ast_builder.expand_expr([values.ptr])
+                else:
+                    assert isinstance(values, Matrix)
+                    values = itertools.chain.from_iterable(values.to_list()) if\
+                        not is_vector(values) else iter(values.to_list())
                 ctx.ast_builder.create_kernel_exprgroup_return(
                     expr.make_expr_group([
                         ti_ops.cast(exp, ctx.func.return_type.dtype)
-                        for exp in item_iter
+                        for exp in values
                     ]))
             else:
                 raise TaichiSyntaxError(

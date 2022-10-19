@@ -791,11 +791,17 @@ class Kernel:
 
             if has_ret:
                 if id(ret_dt) in primitive_types.integer_type_ids:
-                    ret = t_kernel.get_ret_int(0)
+                    if is_signed(cook_dtype(ret_dt)):
+                        ret = t_kernel.get_ret_int(0)
+                    else:
+                        ret = t_kernel.get_ret_uint(0)
                 elif id(ret_dt) in primitive_types.real_type_ids:
                     ret = t_kernel.get_ret_float(0)
                 elif id(ret_dt.dtype) in primitive_types.integer_type_ids:
-                    it = iter(t_kernel.get_ret_int_tensor(0))
+                    if is_signed(cook_dtype(ret_dt.dtype)):
+                        it = iter(t_kernel.get_ret_int_tensor(0))
+                    else:
+                        it = iter(t_kernel.get_ret_uint_tensor(0))
                     ret = Matrix([[next(it) for _ in range(ret_dt.m)]
                                   for _ in range(ret_dt.n)],
                                  ndim=getattr(ret_dt, 'ndim', 2))

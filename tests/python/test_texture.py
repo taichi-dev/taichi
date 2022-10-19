@@ -1,3 +1,4 @@
+from ast import Index
 from io import BytesIO
 
 import numpy as np
@@ -174,3 +175,23 @@ def test_rw_texture_2d_struct_for():
     write(tex)
     read(tex, arr)
     assert arr.to_numpy().sum() == 128 * 128
+
+@test_utils.test(arch=supported_archs_texture)
+def test_rw_texture_2d_struct_for_dim_check():
+    tex = ti.Texture(ti.f32, 1, (32, 32, 32))
+
+    @ti.kernel
+    def write(tex: ti.types.rw_texture(num_dimensions=2,
+                                       num_channels=1,
+                                       channel_format=ti.f32,
+                                       lod=0)):
+        for i, j in tex:
+            tex.store(ti.Vector([i, j]), ti.Vector([1.0, 0.0, 0.0, 0.0]))
+
+    has_exception = False
+    try:
+        write(tex)
+        pass
+    except ti.TaichiCompilationError:
+        has_exception = True
+    assert has_exception

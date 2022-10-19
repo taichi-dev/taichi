@@ -365,7 +365,11 @@ class TaichiCallableTemplateMapper:
             # [Primitive arguments] Return the value
             return arg
         if isinstance(anno, texture_type.TextureType):
-            return '#'
+            return arg.num_dims,
+        if isinstance(anno, texture_type.RWTextureType):
+            # (penguinliong) '0' is the assumed LOD level. We currently don't
+            # support mip-mapping.
+            return arg.num_dims, arg.num_channels, arg.dtype, 0
         if isinstance(anno, ndarray_type.NdarrayType):
             if isinstance(arg, taichi.lang._ndarray.ScalarNdarray):
                 anno.check_matched(arg.get_type())

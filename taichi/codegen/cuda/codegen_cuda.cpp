@@ -18,6 +18,7 @@
 #include "taichi/analysis/offline_cache_util.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/transforms.h"
+#include "taichi/codegen/codegen_utils.h"
 
 namespace taichi::lang {
 
@@ -109,9 +110,11 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
           auto elem_type = dtype->get_element_type();
           for (int i = 0; i < dtype->get_num_elements(); ++i) {
             llvm::Value *elem_value;
-            if (llvm::dyn_cast<llvm::VectorType>(value_type)) {
+            if (codegen_vector_type(&prog->this_thread_config())) {
+              TI_ASSERT(llvm::dyn_cast<llvm::VectorType>(value_type));
               elem_value = builder->CreateExtractElement(value, i);
             } else {
+              TI_ASSERT(llvm::dyn_cast<llvm::ArrayType>(value_type));
               elem_value = builder->CreateExtractValue(value, i);
             }
             auto [casted_value, elem_value_type] =

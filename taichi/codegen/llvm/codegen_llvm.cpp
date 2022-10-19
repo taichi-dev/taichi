@@ -13,6 +13,7 @@
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
 #include "taichi/codegen/llvm/struct_llvm.h"
 #include "taichi/util/file_sequence_writer.h"
+#include "taichi/codegen/codegen_utils.h"
 
 namespace taichi::lang {
 
@@ -960,10 +961,12 @@ void TaskCodeGenLLVM::visit(PrintStmt *stmt) {
         auto dtype = arg_stmt->ret_type->cast<TensorType>();
         auto elem_type = dtype->get_element_type();
         for (int i = 0; i < dtype->get_num_elements(); ++i) {
-          if (llvm::dyn_cast<llvm::VectorType>(value_type)) {
+          if (codegen_vector_type(&prog->this_thread_config())) {
+            TI_ASSERT(llvm::dyn_cast<llvm::VectorType>(value_type));
             auto elem = builder->CreateExtractElement(value, i);
             args.push_back(value_for_printf(elem, elem_type));
           } else {
+            TI_ASSERT(llvm::dyn_cast<llvm::ArrayType>(value_type));
             auto elem = builder->CreateExtractValue(value, i);
             args.push_back(value_for_printf(elem, elem_type));
           }
@@ -2638,9 +2641,11 @@ void TaskCodeGenLLVM::visit(MatrixInitStmt *stmt) {
   llvm::Value *vec = llvm::UndefValue::get(type);
   for (int i = 0; i < stmt->values.size(); ++i) {
     auto *elem = llvm_val[stmt->values[i]];
-    if (llvm::dyn_cast<llvm::VectorType>(type)) {
+    if (codegen_vector_type(&prog->this_thread_config())) {
+      TI_ASSERT(llvm::dyn_cast<llvm::VectorType>(type));
       vec = builder->CreateInsertElement(vec, elem, i);
     } else {
+      TI_ASSERT(llvm::dyn_cast<llvm::ArrayType>(type));
       vec = builder->CreateInsertValue(vec, elem, i);
     }
   }

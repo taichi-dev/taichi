@@ -19,6 +19,7 @@ from taichi.lang.util import (cook_dtype, in_python_scope, python_scope,
                               to_pytorch_type, warning)
 from taichi.types import primitive_types
 from taichi.types.compound_types import CompoundType, TensorType
+from taichi._logging import is_logging_effective
 
 
 def _gen_swizzles(cls):
@@ -397,8 +398,6 @@ class Matrix(TaichiOperations):
     Args:
         arr (Union[list, tuple, np.ndarray]): the initial values of a matrix.
         dt (:mod:`~taichi.types.primitive_types`): the element data type.
-        suppress_warning (bool): whether raise warning or not when the matrix contains more \
-            than 32 elements.
         ndim (int optional): the number of dimensions of the matrix; forced reshape if given.
 
     Example::
@@ -433,7 +432,6 @@ class Matrix(TaichiOperations):
     def __init__(self,
                  arr,
                  dt=None,
-                 suppress_warning=False,
                  is_ref=False,
                  ndim=None):
         local_tensor_proxy = None
@@ -482,7 +480,7 @@ class Matrix(TaichiOperations):
             assert ndim in (0, 1, 2)
             self.ndim = ndim
 
-        if self.n * self.m > 32 and not suppress_warning:
+        if self.n * self.m > 32 and is_logging_effective('warn'):
             warning(
                 f'Taichi matrices/vectors with {self.n}x{self.m} > 32 entries are not suggested.'
                 ' Matrices/vectors will be automatically unrolled at compile-time for performance.'

@@ -42,11 +42,14 @@ class Expr(TaichiOperations):
     def is_tensor(self):
         return self.ptr.is_tensor()
 
+    def element_type(self):
+        return self.ptr.get_ret_type().element_type()
+
     def get_shape(self):
         if not self.is_tensor():
             raise TaichiCompilationError(
                 f"Getting shape of non-tensor type: {self.ptr.get_ret_type()}")
-        return self.ptr.get_shape()
+        return tuple(self.ptr.get_shape())
 
     def __hash__(self):
         return self.ptr.get_raw_address()

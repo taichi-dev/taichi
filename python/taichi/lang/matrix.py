@@ -10,7 +10,7 @@ from taichi.lang import runtime_ops
 from taichi.lang._ndarray import Ndarray, NdarrayHostAccess
 from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.enums import Layout
-from taichi.lang.exception import (TaichiRuntimeError, TaichiSyntaxError,
+from taichi.lang.exception import (TaichiCompilationError, TaichiSyntaxError,
                                    TaichiTypeError)
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
 from taichi.lang.swizzle_generator import SwizzleGenerator
@@ -81,7 +81,7 @@ def _gen_swizzles(cls):
                 @python_scope
                 def prop_setter(instance, value):
                     if len(pattern) != len(value):
-                        raise TaichiRuntimeError(
+                        raise TaichiCompilationError(
                             f'value len does not match the swizzle pattern={prop_key}'
                         )
                     checker(instance, pattern)

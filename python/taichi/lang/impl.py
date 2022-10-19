@@ -111,8 +111,7 @@ def begin_frontend_struct_for(ast_builder, group, loop_range):
         raise TypeError(
             f"Cannot loop over the object {type(loop_range)} in Taichi scope. Only Taichi fields (via template) or dense arrays (via types.ndarray) are supported."
         )
-    if (not isinstance(loop_range, RWTextureAccessor)) and group.size() != len(
-            loop_range.shape):
+    if group.size() != len(loop_range.shape):
         raise IndexError(
             'Number of struct-for indices does not match loop variable dimensionality '
             f'({group.size()} != {len(loop_range.shape)}). Maybe you wanted to '

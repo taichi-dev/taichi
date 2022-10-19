@@ -1014,8 +1014,14 @@ void export_lang(py::module &m) {
   });
 
   m.def("get_external_tensor_dim", [](const Expr &expr) {
-    TI_ASSERT(expr.is<ExternalTensorExpression>());
-    return expr.cast<ExternalTensorExpression>()->dim;
+    if (expr.is<ExternalTensorExpression>()) {
+      return expr.cast<ExternalTensorExpression>()->dim;
+    } else if (expr.is<TexturePtrExpression>()) {
+      return expr.cast<TexturePtrExpression>()->num_dims;
+    } else {
+      TI_ASSERT(false);
+      return 0;
+    }
   });
 
   m.def("get_external_tensor_shape_along_axis",

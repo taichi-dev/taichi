@@ -947,7 +947,7 @@ void ConstExpression::flatten(FlattenContext *ctx) {
 }
 
 void ExternalTensorShapeAlongAxisExpression::type_check(CompileConfig *) {
-  TI_ASSERT_INFO(ptr.is<ExternalTensorExpression>(),
+  TI_ASSERT_INFO(ptr.is<ExternalTensorExpression>() || ptr.is<TexturePtrExpression>(),
                  "Invalid ptr [{}] for ExternalTensorShapeAlongAxisExpression",
                  ExpressionHumanFriendlyPrinter::expr_to_string(ptr));
   ret_type = PrimitiveType::i32;

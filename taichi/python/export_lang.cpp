@@ -696,8 +696,10 @@ void export_lang(py::module &m) {
 
   py::class_<Kernel>(m, "Kernel")
       .def("get_ret_int", &Kernel::get_ret_int)
+      .def("get_ret_uint", &Kernel::get_ret_uint)
       .def("get_ret_float", &Kernel::get_ret_float)
       .def("get_ret_int_tensor", &Kernel::get_ret_int_tensor)
+      .def("get_ret_uint_tensor", &Kernel::get_ret_uint_tensor)
       .def("get_ret_float_tensor", &Kernel::get_ret_float_tensor)
       .def("make_launch_context", &Kernel::make_launch_context)
       .def(

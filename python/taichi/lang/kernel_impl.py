@@ -848,7 +848,9 @@ class Kernel:
         # gradient. For class kernels, args[0] is always the kernel owner.
 
         # No need to capture grad kernels because they are already bound with their primal kernels
-        if self.autodiff_mode in (AutodiffMode.NONE, AutodiffMode.VALIDATION) and self.runtime.target_tape and not self.runtime.grad_replaced:
+        if self.autodiff_mode in (
+                AutodiffMode.NONE, AutodiffMode.VALIDATION
+        ) and self.runtime.target_tape and not self.runtime.grad_replaced:
             self.runtime.target_tape.insert(self, args)
 
         if self.autodiff_mode != AutodiffMode.NONE and impl.current_cfg(

@@ -176,6 +176,7 @@ def test_rw_texture_2d_struct_for():
     read(tex, arr)
     assert arr.to_numpy().sum() == 128 * 128
 
+
 @test_utils.test(arch=supported_archs_texture)
 def test_rw_texture_2d_struct_for_dim_check():
     tex = ti.Texture(ti.f32, 1, (32, 32, 32))

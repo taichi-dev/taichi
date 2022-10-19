@@ -208,7 +208,7 @@ print(ti.cfg.debug)  # False
 
 ## Going high precision
 
-The function `ti.sqrt` has a lower precision on the CUDA backend than on the CPU backend, see this [issue](https://github.com/taichi-dev/taichi/issues/6346). To work around this problem, you can set the default precision to `ti.f64` and turn off the `fast_math` option:
+The function `ti.sqrt` (and those who rely it, such as `ti.norm`) may have a lower precision on the CUDA backend than on the CPU backends, see this [issue](https://github.com/taichi-dev/taichi/issues/6346). To work around this problem, you can set the default precision to `ti.f64` and turn off the `fast_math` option:
 
 ```python
 ti.init(default_fp=ti.f64, fast_math=False)

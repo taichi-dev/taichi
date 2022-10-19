@@ -121,8 +121,9 @@ class RWTextureAccessor:
         """
         dim = _ti_core.get_external_tensor_dim(self.ptr_expr)
         ret = [
-            Expr(_ti_core.get_external_tensor_shape_along_axis(self.ptr_expr, i))
-            for i in range(dim)
+            Expr(
+                _ti_core.get_external_tensor_shape_along_axis(
+                    self.ptr_expr, i)) for i in range(dim)
         ]
         return ret
 

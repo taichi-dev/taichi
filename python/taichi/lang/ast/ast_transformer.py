@@ -114,28 +114,6 @@ class ASTTransformer(Builder):
         return None
 
     @staticmethod
-    def build_assign_slice(ctx, node_target, values, is_static_assign):
-        target = ASTTransformer.build_Subscript(ctx, node_target)
-        if current_cfg().real_matrix and isinstance(values, (list, tuple)):
-            values = make_matrix(values)
-
-        if isinstance(node_target.value.ptr, Matrix):
-            if isinstance(node_target.value.ptr._impl, _TiScopeMatrixImpl):
-                target._assign(values)
-            elif isinstance(node_target.value.ptr._impl, _PyScopeMatrixImpl):
-                if in_taichi_scope():
-                    raise TaichiTypeError(
-                        'PyScope matrix cannot be assigned in Taichi Scope')
-                node_target.ptr._assign(node_target.slice.ptr, values)
-            else:
-                raise TaichiTypeError(f'{type(target)} cannot be subscripted')
-        else:
-            ASTTransformer.build_assign_basic(ctx,
-                                              target,
-                                              values,
-                                              is_static_assign)
-
-    @staticmethod
     def build_assign_unpack(ctx, node_target, values, is_static_assign):
         """Build the unpack assignments like this: (target1, target2) = (value1, value2).
         The function should be called only if the node target is a tuple.
@@ -147,10 +125,6 @@ class ASTTransformer(Builder):
             values: A node/list representing the values.
             is_static_assign: A boolean value indicating whether this is a static assignment
         """
-        #if isinstance(node_target, ast.Subscript):
-        #    return ASTTransformer.build_assign_slice(ctx, node_target, values,
-        #                                             is_static_assign)
-
         if not isinstance(node_target, ast.Tuple):
             return ASTTransformer.build_assign_basic(ctx, node_target, values,
                                                      is_static_assign)

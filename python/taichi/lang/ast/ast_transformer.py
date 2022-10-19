@@ -115,7 +115,7 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_assign_slice(ctx, node_target, values, is_static_assign):
-        target = ASTTransformer.build_Subscript(ctx, node_target, get_ref=True)
+        target = ASTTransformer.build_Subscript(ctx, node_target)
         if current_cfg().real_matrix and isinstance(values, (list, tuple)):
             values = make_matrix(values)
 
@@ -133,8 +133,7 @@ class ASTTransformer(Builder):
             ASTTransformer.build_assign_basic(ctx,
                                               target,
                                               values,
-                                              is_static_assign,
-                                              build_target=False)
+                                              is_static_assign)
 
     @staticmethod
     def build_assign_unpack(ctx, node_target, values, is_static_assign):
@@ -148,9 +147,9 @@ class ASTTransformer(Builder):
             values: A node/list representing the values.
             is_static_assign: A boolean value indicating whether this is a static assignment
         """
-        if isinstance(node_target, ast.Subscript):
-            return ASTTransformer.build_assign_slice(ctx, node_target, values,
-                                                     is_static_assign)
+        #if isinstance(node_target, ast.Subscript):
+        #    return ASTTransformer.build_assign_slice(ctx, node_target, values,
+        #                                             is_static_assign)
 
         if not isinstance(node_target, ast.Tuple):
             return ASTTransformer.build_assign_basic(ctx, node_target, values,
@@ -186,8 +185,7 @@ class ASTTransformer(Builder):
     def build_assign_basic(ctx,
                            target,
                            value,
-                           is_static_assign,
-                           build_target=True):
+                           is_static_assign):
         """Build basic assignment like this: target = value.
 
          Args:
@@ -213,10 +211,7 @@ class ASTTransformer(Builder):
             var = impl.expr_init(value)
             ctx.create_variable(target.id, var)
         else:
-            if build_target:
-                var = build_stmt(ctx, target)
-            else:
-                var = target
+            var = build_stmt(ctx, target)
             try:
                 var._assign(value)
             except AttributeError:
@@ -246,15 +241,14 @@ class ASTTransformer(Builder):
         return False
 
     @staticmethod
-    def build_Subscript(ctx, node, get_ref=False):
+    def build_Subscript(ctx, node):
         build_stmt(ctx, node.value)
         build_stmt(ctx, node.slice)
         if not ASTTransformer.is_tuple(node.slice):
             node.slice.ptr = [node.slice.ptr]
         node.ptr = impl.subscript(ctx.ast_builder,
                                   node.value.ptr,
-                                  *node.slice.ptr,
-                                  get_ref=get_ref)
+                                  *node.slice.ptr)
         return node.ptr
 
     @staticmethod

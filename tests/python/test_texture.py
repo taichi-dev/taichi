@@ -2,7 +2,7 @@ from io import BytesIO
 
 import numpy as np
 import requests
-from PIL import Image, ImageChops
+from PIL import Image
 from taichi.lang import impl
 
 import taichi as ti
@@ -188,10 +188,7 @@ def test_rw_texture_2d_struct_for_dim_check():
         for i, j in tex:
             tex.store(ti.Vector([i, j]), ti.Vector([1.0, 0.0, 0.0, 0.0]))
 
-    has_exception = False
-    try:
+    with pytest.raises(
+            ti.TaichiCompilationError,
+            match="Number of struct-for indices does not match loop variable dimensionality (2 != 3).") as e:
         write(tex)
-        pass
-    except ti.TaichiCompilationError:
-        has_exception = True
-    assert has_exception

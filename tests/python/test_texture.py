@@ -190,5 +190,7 @@ def test_rw_texture_2d_struct_for_dim_check():
 
     with pytest.raises(
             ti.TaichiCompilationError,
-            match="Number of struct-for indices does not match loop variable dimensionality (2 != 3).") as e:
+            match=
+            "Number of struct-for indices does not match loop variable dimensionality (2 != 3)."
+    ) as e:
         write(tex)

@@ -1393,21 +1393,20 @@ void ASTBuilder::insert_snode_deactivate(SNode *snode,
                                                expr_group));
 }
 
-std::vector<Expr> ASTBuilder::flatten_indices_expr(
-    const std::vector<Expr> &indices) {
-  TI_ASSERT(indices.size() > 0);
+std::vector<Expr> ASTBuilder::expand_expr(const std::vector<Expr> &exprs) {
+  TI_ASSERT(exprs.size() > 0);
 
-  if (indices.size() > 1) {
-    return indices;
+  if (exprs.size() > 1) {
+    return exprs;
   }
 
-  Expr index_expr = indices[0];
+  Expr index_expr = exprs[0];
   TI_ASSERT_TYPE_CHECKED(index_expr);
   if (!index_expr->ret_type->is<TensorType>()) {
-    return indices;
+    return exprs;
   }
 
-  // Flatten indices
+  // Expand TensorType expr
   /*
     Before:
       TensorType<4 x i32> index = Expr;
@@ -1422,7 +1421,7 @@ std::vector<Expr> ASTBuilder::flatten_indices_expr(
       return {ind0, ind1, ind2, ind3}
 
   */
-  std::vector<Expr> flattened_indices;
+  std::vector<Expr> expanded_exprs;
 
   auto tensor_type = index_expr->ret_type->cast<TensorType>();
 
@@ -1432,13 +1431,26 @@ std::vector<Expr> ASTBuilder::flatten_indices_expr(
   } else {
     id_expr = make_var(index_expr, index_expr->tb);
   }
-  for (int i = 0; i < tensor_type->get_num_elements(); i++) {
-    auto ind = Expr(std::make_shared<IndexExpression>(
-        id_expr, ExprGroup(Expr(i)), index_expr->tb));
-    ind.expr->ret_type = tensor_type->get_element_type();
-    flattened_indices.push_back(ind);
+  auto shape = tensor_type->get_shape();
+  if (shape.size() == 1) {
+    for (int i = 0; i < shape[0]; i++) {
+      auto ind = Expr(std::make_shared<IndexExpression>(
+          id_expr, ExprGroup(Expr(i)), index_expr->tb));
+      ind.expr->ret_type = tensor_type->get_element_type();
+      expanded_exprs.push_back(ind);
+    }
+  } else {
+    TI_ASSERT(shape.size() == 2);
+    for (int i = 0; i < shape[0]; i++) {
+      for (int j = 0; j < shape[1]; j++) {
+        auto ind = Expr(std::make_shared<IndexExpression>(
+            id_expr, ExprGroup(Expr(i), Expr(j)), index_expr->tb));
+        ind.expr->ret_type = tensor_type->get_element_type();
+        expanded_exprs.push_back(ind);
+      }
+    }
   }
-  return flattened_indices;
+  return expanded_exprs;
 }
 
 void ASTBuilder::create_scope(std::unique_ptr<Block> &list, LoopType tp) {

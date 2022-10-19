@@ -249,10 +249,10 @@ class _TiScopeMatrixImpl(_MatrixBaseImpl):
         j = 0 if len(indices) == 1 else indices[1]
         has_slice = False
         if isinstance(i, slice):
-            i = self._calc_slice(i, 0)
+            i = impl._calc_slice(i, self.n)
             has_slice = True
         if isinstance(j, slice):
-            j = self._calc_slice(j, 1)
+            j = impl._calc_slice(j, self.m)
             has_slice = True
 
         if has_slice:
@@ -279,21 +279,6 @@ class _TiScopeMatrixImpl(_MatrixBaseImpl):
                                          (self.n, self.m),
                                          self.dynamic_index_stride)
         return self._get_entry(i, j)
-
-    def _calc_slice(self, index, dim):
-        start, stop, step = index.start or 0, index.stop or (
-            self.n if dim == 0 else self.m), index.step or 1
-
-        def helper(x):
-            #  TODO(mzmzm): support variable in slice
-            if isinstance(x, expr.Expr):
-                raise TaichiCompilationError(
-                    "Taichi does not support variables in slice now, please use constant instead of it."
-                )
-            return x
-
-        start, stop, step = helper(start), helper(stop), helper(step)
-        return [_ for _ in range(start, stop, step)]
 
 
 class _MatrixEntriesInitializer:
@@ -499,6 +484,17 @@ class Matrix(TaichiOperations):
         else:
             self._impl = _TiScopeMatrixImpl(m, n, entries, local_tensor_proxy,
                                             None)
+
+    def get_shape(self):
+        if self.ndim == 1:
+            return (self.n, )
+        return (self.n, self.m)
+
+    def element_type(self):
+        if self._impl.entries:
+            return getattr(self._impl.entries[0], 'element_type',
+                           lambda: None)()
+        return None
 
     def _element_wise_binary(self, foo, other):
         other = self._broadcast_copy(other)
@@ -718,11 +714,9 @@ class Matrix(TaichiOperations):
             >>> m.trace()
             5
         """
-        assert self.n == self.m
-        _sum = self(0, 0)
-        for i in range(1, self.n):
-            _sum = _sum + self(i, i)
-        return _sum
+        # pylint: disable-msg=C0415
+        from taichi.lang import matrix_ops
+        return matrix_ops.trace(self)
 
     @taichi_scope
     def inverse(self):
@@ -985,10 +979,9 @@ class Matrix(TaichiOperations):
             >>> A
             [-1, -1, -1, -1]
         """
-        def assign_renamed(x, y):
-            return ops_mod.assign(x, y)
-
-        return self._element_wise_writeback_binary(assign_renamed, val)
+        # pylint: disable=C0415
+        from taichi.lang import matrix_ops
+        return matrix_ops.fill(self, val)
 
     @python_scope
     def to_numpy(self, keep_dims=False):
@@ -1479,6 +1472,9 @@ class Vector(Matrix):
             [4 6]
         """
         super().__init__(arr, dt=dt, **kwargs)
+
+    def get_shape(self):
+        return (self.n, )
 
     @classmethod
     def field(cls, n, dtype, *args, **kwargs):

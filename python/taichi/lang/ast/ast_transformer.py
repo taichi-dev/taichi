@@ -14,10 +14,11 @@ from taichi.lang.ast.ast_transformer_utils import (Builder, LoopStatus,
                                                    ReturnStatus)
 from taichi.lang.ast.symbol_resolver import ASTResolver
 from taichi.lang.exception import TaichiSyntaxError, TaichiTypeError
+from taichi.lang.expr import Expr
 from taichi.lang.field import Field
 from taichi.lang.impl import current_cfg
 from taichi.lang.matrix import (Matrix, MatrixType, Vector, _PyScopeMatrixImpl,
-                                _TiScopeMatrixImpl, make_matrix)
+                                _TiScopeMatrixImpl, is_vector, make_matrix)
 from taichi.lang.snode import append
 from taichi.lang.util import in_taichi_scope, is_taichi_class, to_taichi_type
 from taichi.types import (annotations, ndarray_type, primitive_types,
@@ -161,6 +162,12 @@ class ASTTransformer(Builder):
                 raise ValueError(
                     'Matrices with more than one columns cannot be unpacked')
             values = values.entries
+
+        # Unpack: a, b, c = ti.Vector([1., 2., 3.])
+        if isinstance(values, impl.Expr) and values.ptr.is_tensor():
+            values = ctx.ast_builder.expand_expr([values.ptr])
+            if len(values) == 1:
+                values = values[0]
 
         if not isinstance(values, collections.abc.Sequence):
             raise TaichiSyntaxError(f'Cannot unpack type: {type(values)}')
@@ -509,9 +516,8 @@ class ASTTransformer(Builder):
             node.ptr = impl.ti_format(*args, **keywords)
             return node.ptr
 
-        if (isinstance(node.func, ast.Attribute) and
-            (func == Matrix
-             or func == Vector)) and impl.current_cfg().real_matrix:
+        if ((id(func) == id(Matrix)
+             or id(func) == id(Vector))) and impl.current_cfg().real_matrix:
             node.ptr = matrix.make_matrix(*args, **keywords)
             return node.ptr
 
@@ -519,6 +525,10 @@ class ASTTransformer(Builder):
             return node.ptr
 
         if ASTTransformer.build_call_if_is_type(ctx, node, args, keywords):
+            return node.ptr
+
+        if hasattr(node.func, 'caller'):
+            node.ptr = func(node.func.caller, *args, **keywords)
             return node.ptr
 
         node.ptr = func(*args, **keywords)
@@ -718,13 +728,17 @@ class ASTTransformer(Builder):
                         ti_ops.cast(expr.Expr(node.value.ptr),
                                     ctx.func.return_type).ptr))
             elif isinstance(ctx.func.return_type, MatrixType):
-                item_iter = iter(node.value.ptr.to_list())\
-                            if isinstance(node.value.ptr, Vector) or node.value.ptr.ndim == 1\
-                            else itertools.chain.from_iterable(node.value.ptr.to_list())
+                values = node.value.ptr
+                if isinstance(values, Expr) and values.ptr.is_tensor():
+                    values = ctx.ast_builder.expand_expr([values.ptr])
+                else:
+                    assert isinstance(values, Matrix)
+                    values = itertools.chain.from_iterable(values.to_list()) if\
+                        not is_vector(values) else iter(values.to_list())
                 ctx.ast_builder.create_kernel_exprgroup_return(
                     expr.make_expr_group([
                         ti_ops.cast(exp, ctx.func.return_type.dtype)
-                        for exp in item_iter
+                        for exp in values
                     ]))
             else:
                 raise TaichiSyntaxError(
@@ -761,7 +775,14 @@ class ASTTransformer(Builder):
             node.ptr = lambda val: append(x.parent(), index, val)
         else:
             build_stmt(ctx, node.value)
-            node.ptr = getattr(node.value.ptr, node.attr)
+            if isinstance(node.value.ptr,
+                          Expr) and not hasattr(node.value.ptr, node.attr):
+                # pylint: disable-msg=C0415
+                from taichi.lang import matrix_ops as tensor_ops
+                node.ptr = getattr(tensor_ops, node.attr)
+                setattr(node, 'caller', node.value.ptr)
+            else:
+                node.ptr = getattr(node.value.ptr, node.attr)
         return node.ptr
 
     @staticmethod

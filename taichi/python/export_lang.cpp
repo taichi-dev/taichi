@@ -316,7 +316,7 @@ void export_lang(py::module &m) {
       .def("insert_expr_stmt", &ASTBuilder::insert_expr_stmt)
       .def("insert_thread_idx_expr", &ASTBuilder::insert_thread_idx_expr)
       .def("insert_patch_idx_expr", &ASTBuilder::insert_patch_idx_expr)
-      .def("flatten_indices", &ASTBuilder::flatten_indices_expr)
+      .def("expand_expr", &ASTBuilder::expand_expr)
       .def("sifakis_svd_f32", sifakis_svd_export<float32, int32>)
       .def("sifakis_svd_f64", sifakis_svd_export<float64, int64>)
       .def("expr_var", &ASTBuilder::make_var)
@@ -696,8 +696,10 @@ void export_lang(py::module &m) {
 
   py::class_<Kernel>(m, "Kernel")
       .def("get_ret_int", &Kernel::get_ret_int)
+      .def("get_ret_uint", &Kernel::get_ret_uint)
       .def("get_ret_float", &Kernel::get_ret_float)
       .def("get_ret_int_tensor", &Kernel::get_ret_int_tensor)
+      .def("get_ret_uint_tensor", &Kernel::get_ret_uint_tensor)
       .def("get_ret_float_tensor", &Kernel::get_ret_float_tensor)
       .def("make_launch_context", &Kernel::make_launch_context)
       .def(

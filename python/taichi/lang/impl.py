@@ -9,8 +9,8 @@ from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang._ndrange import GroupedNDRange, _Ndrange
 from taichi.lang.any_array import AnyArray, AnyArrayAccess
 from taichi.lang.enums import SNodeGradType
-from taichi.lang.exception import (TaichiRuntimeError, TaichiSyntaxError,
-                                   TaichiTypeError)
+from taichi.lang.exception import (TaichiCompilationError, TaichiRuntimeError,
+                                   TaichiSyntaxError, TaichiTypeError)
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.kernel_arguments import SparseMatrixProxy
@@ -136,6 +136,21 @@ def begin_frontend_if(ast_builder, cond):
 
 
 @taichi_scope
+def _calc_slice(index, default_stop):
+    start, stop, step = index.start or 0, index.stop or default_stop, index.step or 1
+
+    def check_validity(x):
+        #  TODO(mzmzm): support variable in slice
+        if isinstance(x, Expr):
+            raise TaichiCompilationError(
+                "Taichi does not support variables in slice now, please use constant instead of it."
+            )
+
+    check_validity(start), check_validity(stop), check_validity(step)
+    return [_ for _ in range(start, stop, step)]
+
+
+@taichi_scope
 def subscript(ast_builder,
               value,
               *_indices,
@@ -151,8 +166,7 @@ def subscript(ast_builder,
     has_slice = False
 
     if len(_indices) == 1 and isinstance(_indices[0], Expr):
-        indices = tuple(
-            ast_builder.flatten_indices([ind.ptr for ind in _indices]))
+        indices = tuple(ast_builder.expand_expr([ind.ptr for ind in _indices]))
     else:
         flattened_indices = []
         for _index in _indices:

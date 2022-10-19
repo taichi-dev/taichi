@@ -1,4 +1,3 @@
-from ast import Index
 from io import BytesIO
 
 import numpy as np

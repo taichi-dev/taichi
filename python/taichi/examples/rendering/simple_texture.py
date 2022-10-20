@@ -8,7 +8,7 @@ res = (512, 512)
 pixels = ti.Vector.field(3, dtype=float, shape=res)
 
 k = 256
-texture = ti.Texture(ti.f32, 1, (k, k))
+texture = ti.Texture(ti.Format.r32f, (k, k))
 
 
 @ti.kernel

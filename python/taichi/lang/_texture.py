@@ -1,10 +1,11 @@
 import numpy as np
 from taichi._lib import core as _ti_core
 from taichi.lang import impl
+from taichi.lang.enums import Format
 from taichi.lang.expr import Expr
 from taichi.lang.util import taichi_scope
 from taichi.types import vector
-from taichi.types.primitive_types import f32, u8
+from taichi.types.primitive_types import f16, f32, i8, i16, i32, u8, u16, u32
 
 
 class TextureSampler:
@@ -137,6 +138,47 @@ class RWTextureAccessor:
         return self.ptr_expr
 
 
+FORMAT2TY_CH = {
+    Format.r8: (u8, 1),
+    Format.r8u: (u8, 1),
+    Format.r8i: (i8, 1),
+    Format.rg8: (u8, 2),
+    Format.rg8u: (u8, 2),
+    Format.rg8i: (i8, 2),
+    Format.rgba8: (u8, 4),
+    Format.rgba8u: (u8, 4),
+    Format.rgba8i: (i8, 4),
+    Format.r16: (u16, 1),
+    Format.r16u: (u16, 1),
+    Format.r16i: (i16, 1),
+    Format.r16f: (f16, 1),
+    Format.rg16: (u16, 2),
+    Format.rg16u: (u16, 2),
+    Format.rg16i: (i16, 2),
+    Format.rg16f: (f16, 2),
+    Format.rgb16: (u16, 3),
+    Format.rgb16u: (u16, 3),
+    Format.rgb16i: (i16, 3),
+    Format.rgb16f: (f16, 3),
+    Format.rgba16: (u16, 4),
+    Format.rgba16u: (u16, 4),
+    Format.rgba16i: (i16, 4),
+    Format.rgba16f: (f16, 4),
+    Format.r32u: (u32, 1),
+    Format.r32i: (i32, 1),
+    Format.r32f: (f32, 1),
+    Format.rg32u: (u32, 2),
+    Format.rg32i: (i32, 2),
+    Format.rg32f: (f32, 2),
+    Format.rgb32u: (u32, 3),
+    Format.rgb32i: (i32, 3),
+    Format.rgb32f: (f32, 3),
+    Format.rgba32u: (u32, 4),
+    Format.rgba32i: (i32, 4),
+    Format.rgba32f: (f32, 4),
+}
+
+
 class Texture:
     """Taichi Texture class.
 
@@ -145,9 +187,11 @@ class Texture:
         num_channels (int): Number of channels in texture
         shape (Tuple[int]): Shape of the Texture.
     """
-    def __init__(self, dtype, num_channels, arr_shape):
+    def __init__(self, fmt, arr_shape):
+        dtype, num_channels = FORMAT2TY_CH[fmt]
         self.tex = impl.get_runtime().prog.create_texture(
             dtype, num_channels, arr_shape)
+        self.fmt = fmt
         self.dtype = dtype
         self.num_channels = num_channels
         self.num_dims = len(arr_shape)

@@ -85,9 +85,9 @@ def test_texture_compiled_functions():
             pixels[i, j] = [c.r, c.r, c.r]
 
     n1 = 128
-    texture1 = ti.Texture(ti.f32, 1, (n1, n1))
+    texture1 = ti.Texture(ti.Format.r32f, (n1, n1))
     n2 = 256
-    texture2 = ti.Texture(ti.f32, 1, (n2, n2))
+    texture2 = ti.Texture(ti.Format.r32f, (n2, n2))
 
     make_texture_2d(texture1, n1)
     assert impl.get_runtime().get_num_compiled_functions() == 1
@@ -106,7 +106,7 @@ def test_texture_compiled_functions():
 def test_texture_from_field():
     res = (128, 128)
     f = ti.Vector.field(2, ti.f32, res)
-    tex = ti.Texture(ti.f32, 1, res)
+    tex = ti.Texture(ti.Format.r32f, res)
 
     @ti.kernel
     def init_taichi_logo_field():
@@ -121,7 +121,7 @@ def test_texture_from_field():
 def test_texture_from_ndarray():
     res = (128, 128)
     f = ti.Vector.ndarray(2, ti.f32, res)
-    tex = ti.Texture(ti.f32, 1, res)
+    tex = ti.Texture(ti.Format.r32f, res)
 
     @ti.kernel
     def init_taichi_logo_ndarray(f: ti.types.ndarray(field_dim=2)):
@@ -135,7 +135,7 @@ def test_texture_from_ndarray():
 @test_utils.test(arch=supported_archs_texture)
 def test_texture_3d():
     res = (32, 32, 32)
-    tex = ti.Texture(ti.f32, 1, res)
+    tex = ti.Texture(ti.Format.r32f, res)
 
     make_texture_3d(tex, res[0])
 
@@ -145,7 +145,7 @@ def test_from_to_image():
     url = 'https://github.com/taichi-dev/taichi/blob/master/misc/logo.png?raw=true'
     response = requests.get(url)
     img = Image.open(BytesIO(response.content))
-    tex = ti.Texture(ti.u8, 4, img.size)
+    tex = ti.Texture(ti.Format.rgba8, img.size)
 
     tex.from_image(img)
     out = tex.to_image()
@@ -156,7 +156,7 @@ def test_from_to_image():
 @test_utils.test(arch=supported_archs_texture)
 def test_rw_texture_2d_struct_for():
     res = (128, 128)
-    tex = ti.Texture(ti.f32, 1, res)
+    tex = ti.Texture(ti.Format.r32f, res)
     arr = ti.ndarray(ti.f32, res)
 
     @ti.kernel
@@ -179,7 +179,7 @@ def test_rw_texture_2d_struct_for():
 
 @test_utils.test(arch=supported_archs_texture)
 def test_rw_texture_2d_struct_for_dim_check():
-    tex = ti.Texture(ti.f32, 1, (32, 32, 32))
+    tex = ti.Texture(ti.Format.r32f, (32, 32, 32))
 
     @ti.kernel
     def write(tex: ti.types.rw_texture(num_dimensions=2,

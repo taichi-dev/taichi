@@ -587,6 +587,12 @@ void export_lang(py::module &m) {
       .def_readonly("dtype", &Ndarray::dtype)
       .def_readonly("shape", &Ndarray::shape);
 
+  py::enum_<BufferFormat>(m, "Format")
+#define PER_BUFFER_FORMAT(x) .value(#x, BufferFormat::x)
+#include "taichi/inc/rhi_constants.inc.h"
+#undef PER_EXTENSION
+      ;
+
   py::class_<Texture>(m, "Texture")
       .def("device_allocation_ptr", &Texture::get_device_allocation_ptr_as_int)
       .def("from_ndarray", &Texture::from_ndarray)

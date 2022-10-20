@@ -63,9 +63,9 @@ def _get_expected_matrix_apis():
 user_api = {}
 user_api[ti] = [
     'BitpackedFields', 'CRITICAL', 'DEBUG', 'ERROR', 'Field', 'FieldsBuilder',
-    'GUI', 'INFO', 'Layout', 'Matrix', 'MatrixField', 'MatrixNdarray', 'Mesh',
-    'MeshInstance', 'Ndarray', 'SNode', 'ScalarField', 'ScalarNdarray',
-    'Struct', 'StructField', 'TRACE', 'TaichiAssertionError',
+    'Format', 'GUI', 'INFO', 'Layout', 'Matrix', 'MatrixField',
+    'MatrixNdarray', 'Mesh', 'MeshInstance', 'Ndarray', 'SNode', 'ScalarField',
+    'ScalarNdarray', 'Struct', 'StructField', 'TRACE', 'TaichiAssertionError',
     'TaichiCompilationError', 'TaichiNameError', 'TaichiRuntimeError',
     'TaichiRuntimeTypeError', 'TaichiSyntaxError', 'TaichiTypeError',
     'Texture', 'Vector', 'VectorNdarray', 'WARN', 'abs', 'acos', 'activate',

@@ -348,7 +348,7 @@ class ScalarField(Field):
         """
         if not arr.flags.c_contiguous:
             arr = np.ascontiguousarray(arr)
-        self._from_external_arr(self, arr)
+        self._from_external_arr(arr)
 
     @python_scope
     def __setitem__(self, key, value):

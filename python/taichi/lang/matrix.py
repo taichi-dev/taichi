@@ -1741,6 +1741,8 @@ class MatrixField(Field):
             assert len(arr.shape) == len(self.shape) + 2
         dim_ext = 1 if as_vector else 2
         assert len(arr.shape) == len(self.shape) + dim_ext
+        if not arr.flags.c_contiguous:
+            arr = np.ascontiguousarray(arr)
         from taichi._kernels import ext_arr_to_matrix  # pylint: disable=C0415
         ext_arr_to_matrix(arr, self, as_vector)
         runtime_ops.sync()

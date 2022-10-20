@@ -1024,10 +1024,6 @@ class ASTTransformer(Builder):
                                                      ndrange_end.ptr)
             I = impl.expr_init(ndrange_loop_var)
             targets = ASTTransformer.get_for_loop_targets(node)
-            if len(targets) != len(ndrange_var.dimensions):
-                raise TaichiSyntaxError(
-                    "The number of the loop variables does not match the dimension of the ndrange."
-                )
             for i, target in enumerate(targets):
                 if i + 1 < len(targets):
                     target_tmp = impl.expr_init(

@@ -1,5 +1,6 @@
 from typing import Iterable
 
+from taichi._funcs import field_fill_taichi_scope
 from taichi._lib.utils import get_os_name
 from taichi.lang import ops
 from taichi.lang._ndrange import ndrange
@@ -237,20 +238,8 @@ def clear_loss(l: template()):
 
 
 @kernel
-def fill_matrix(mat: template(), vals: template()):
-    for I in grouped(mat):
-        for p in static(range(mat.n)):
-            for q in static(range(mat.m)):
-                if static(mat[I].ndim == 2):
-                    if static(isinstance(vals[p], Iterable)):
-                        mat[I][p, q] = vals[p][q]
-                    else:
-                        mat[I][p, q] = vals[p]
-                else:
-                    if static(isinstance(vals[p], Iterable)):
-                        mat[I][p] = vals[p][q]
-                    else:
-                        mat[I][p] = vals[p]
+def field_fill_python_scope(F: template(), val: template()):
+    field_fill_taichi_scope(F, val)
 
 
 @kernel

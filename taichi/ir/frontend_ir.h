@@ -313,7 +313,7 @@ class TexturePtrExpression : public Expression {
   DataType channel_format{PrimitiveType::f32};
   int lod{0};
 
-  explicit TexturePtrExpression(int arg_id, int num_dims = 2)
+  explicit TexturePtrExpression(int arg_id, int num_dims)
       : arg_id(arg_id), num_dims(num_dims) {
   }
 

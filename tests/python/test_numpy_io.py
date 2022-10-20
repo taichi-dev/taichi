@@ -160,3 +160,20 @@ def test_numpy_io_example():
     assert arr.shape == (n, m, 3, 4)
 
     # For PyTorch tensors, use to_torch/from_torch instead
+
+
+@test_utils.test(exclude=[ti.cc])
+def test_from_numpy_non_contiguous():
+    n = 9
+    m = 7
+    p = 4
+    arr = np.ones(shape=(n, m, p, p), dtype=np.int32)
+
+    val = ti.field(ti.i32, shape=(2, 2))
+    val.from_numpy(arr[0:6:3, 0:6:3, 0, 0])
+
+    vec = ti.Vector.field(3, dtype=ti.i32, shape=(2, 2))
+    vec.from_numpy(arr[0:6:3, 0:6:3, 0:3, 0])
+
+    mat = ti.Matrix.field(3, 4, dtype=ti.i32, shape=(2, 2))
+    mat.from_numpy(arr[0:6:3, 0:6:3, 0:3, 0:4])

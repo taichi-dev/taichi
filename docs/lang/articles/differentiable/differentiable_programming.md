@@ -307,7 +307,7 @@ assert x.grad[2] == 3.0
 A checker is provided for detecting potential violations of global data access rules.
 
 1. The checker only works in debug mode. To enable it, set `debug=True` when calling `ti.init()`.
-2. Set `validation=True` when using `with ti.ad.Tape()` to validate the kernels captured by `ti.ad.Tape()`.
+2. Set `validation=True` when using `ti.ad.Tape()` to validate the kernels captured by `ti.ad.Tape()`.
 *The checker pinpoints the line of code breaking the rules, if a violation occurs.*
 
 For example:

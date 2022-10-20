@@ -92,7 +92,7 @@ class lbm_solver:
     @ti.kernel
     def apply_bc(self):  # impose boundary conditions
         # left and right
-        for j in range(self.ny - 1):
+        for j in range(1, self.ny - 1):
             # left: dr = 0; ibc = 0; jbc = j; inb = 1; jnb = j
             self.apply_bc_core(1, 0, 0, j, 1, j)
 

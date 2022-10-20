@@ -1,8 +1,8 @@
 import numpy as np
 from taichi._lib import core as _ti_core
 from taichi.lang import impl
-from taichi.lang.expr import Expr
 from taichi.lang.enums import Format
+from taichi.lang.expr import Expr
 from taichi.lang.util import taichi_scope
 from taichi.types import vector
 from taichi.types.primitive_types import f16, f32, i8, i16, i32, u8, u16, u32

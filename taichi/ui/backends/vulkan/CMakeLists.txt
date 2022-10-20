@@ -1,6 +1,6 @@
 # ./taichi/ui/backends/vulkan/CMakeLists.txt
 
-add_library(taichi_ui_vulkan OBJECT)
+add_library(taichi_ui_vulkan)
 target_sources(taichi_ui_vulkan
   PRIVATE
     app_context.cpp

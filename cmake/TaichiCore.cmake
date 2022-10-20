@@ -131,7 +131,7 @@ endif()
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 set(CORE_LIBRARY_NAME taichi_core)
-add_library(${CORE_LIBRARY_NAME} OBJECT ${TAICHI_CORE_SOURCE})
+add_library(${CORE_LIBRARY_NAME} ${TAICHI_CORE_SOURCE})
 
 if (APPLE)
     # Ask OS X to minic Linux dynamic linking behavior

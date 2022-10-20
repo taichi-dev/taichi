@@ -382,8 +382,6 @@ class Matrix(TaichiOperations):
     Args:
         arr (Union[list, tuple, np.ndarray]): the initial values of a matrix.
         dt (:mod:`~taichi.types.primitive_types`): the element data type.
-        suppress_warning (bool): whether raise warning or not when the matrix contains more \
-            than 32 elements.
         ndim (int optional): the number of dimensions of the matrix; forced reshape if given.
 
     Example::
@@ -415,12 +413,7 @@ class Matrix(TaichiOperations):
     _is_taichi_class = True
     __array_priority__ = 1000
 
-    def __init__(self,
-                 arr,
-                 dt=None,
-                 suppress_warning=False,
-                 is_ref=False,
-                 ndim=None):
+    def __init__(self, arr, dt=None, is_ref=False, ndim=None):
         local_tensor_proxy = None
 
         if not isinstance(arr, (list, tuple, np.ndarray)):
@@ -467,7 +460,7 @@ class Matrix(TaichiOperations):
             assert ndim in (0, 1, 2)
             self.ndim = ndim
 
-        if self.n * self.m > 32 and not suppress_warning:
+        if self.n * self.m > 32:
             warning(
                 f'Taichi matrices/vectors with {self.n}x{self.m} > 32 entries are not suggested.'
                 ' Matrices/vectors will be automatically unrolled at compile-time for performance.'

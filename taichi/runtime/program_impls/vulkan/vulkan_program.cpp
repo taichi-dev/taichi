@@ -185,8 +185,7 @@ std::unique_ptr<AotModuleBuilder> VulkanProgramImpl::make_aot_module_builder(
     const DeviceCapabilityConfig &caps) {
   if (vulkan_runtime_) {
     return std::make_unique<gfx::AotModuleBuilderImpl>(
-        snode_tree_mgr_->get_compiled_structs(), Arch::vulkan,
-        vulkan_runtime_->get_ti_device()->get_current_caps());
+        snode_tree_mgr_->get_compiled_structs(), Arch::vulkan, caps);
   } else {
     return std::make_unique<gfx::AotModuleBuilderImpl>(
         aot_compiled_snode_structs_, Arch::vulkan, caps);

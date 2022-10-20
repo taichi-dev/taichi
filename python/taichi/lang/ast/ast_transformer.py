@@ -581,16 +581,14 @@ class ASTTransformer(Builder):
                     ctx.create_variable(
                         arg.arg,
                         kernel_arguments.decl_texture_arg(
-                            ctx.func.arguments[i].annotation.num_dimensions))
+                            ctx.arg_features[i][0]))
                 elif isinstance(ctx.func.arguments[i].annotation,
                                 texture_type.RWTextureType):
                     ctx.create_variable(
                         arg.arg,
                         kernel_arguments.decl_rw_texture_arg(
-                            ctx.func.arguments[i].annotation.num_dimensions,
-                            ctx.func.arguments[i].annotation.num_channels,
-                            ctx.func.arguments[i].annotation.channel_format,
-                            ctx.func.arguments[i].annotation.lod))
+                            ctx.arg_features[i][0], ctx.arg_features[i][1],
+                            ctx.arg_features[i][2], ctx.arg_features[i][3]))
                 elif isinstance(ctx.func.arguments[i].annotation, MatrixType):
                     ctx.create_variable(
                         arg.arg,

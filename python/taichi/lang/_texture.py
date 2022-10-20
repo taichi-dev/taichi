@@ -1,6 +1,7 @@
 import numpy as np
 from taichi._lib import core as _ti_core
 from taichi.lang import impl
+from taichi.lang.expr import Expr
 from taichi.lang.util import taichi_scope
 from taichi.types import vector
 from taichi.types.primitive_types import f32, u8
@@ -64,6 +65,7 @@ class TextureSampler:
 
 class RWTextureAccessor:
     def __init__(self, ptr_expr, num_dims) -> None:
+        # taichi_python.TexturePtrExpression.
         self.ptr_expr = ptr_expr
         self.num_dims = num_dims
 
@@ -108,6 +110,31 @@ class RWTextureAccessor:
         impl.expr_init(
             _ti_core.make_texture_op_expr(_ti_core.TextureOpType.kStore,
                                           self.ptr_expr, args_group))
+
+    @property
+    @taichi_scope
+    def shape(self):
+        """A list containing sizes for each dimension. Note that element shape will be excluded.
+
+        Returns:
+            List[Int]: The result list.
+        """
+        dim = _ti_core.get_external_tensor_dim(self.ptr_expr)
+        ret = [
+            Expr(
+                _ti_core.get_external_tensor_shape_along_axis(
+                    self.ptr_expr, i)) for i in range(dim)
+        ]
+        return ret
+
+    @taichi_scope
+    def _loop_range(self):
+        """Gets the corresponding taichi_python.Expr to serve as loop range.
+
+        Returns:
+            taichi_python.Expr: See above.
+        """
+        return self.ptr_expr
 
 
 class Texture:

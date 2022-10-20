@@ -1724,6 +1724,20 @@ class MatrixField(Field):
         return arr
 
     @python_scope
+    def _from_external_arr(self, arr):
+        if len(arr.shape) == len(self.shape) + 1:
+            as_vector = True
+            assert self.m == 1, "This is not a vector field"
+        else:
+            as_vector = False
+            assert len(arr.shape) == len(self.shape) + 2
+        dim_ext = 1 if as_vector else 2
+        assert len(arr.shape) == len(self.shape) + dim_ext
+        from taichi._kernels import ext_arr_to_matrix  # pylint: disable=C0415
+        ext_arr_to_matrix(arr, self, as_vector)
+        runtime_ops.sync()
+
+    @python_scope
     def from_numpy(self, arr):
         """Copies an `numpy.ndarray` into this field.
 
@@ -1733,19 +1747,10 @@ class MatrixField(Field):
             >>> arr = numpp.ones((3, 3, 2, 2))
             >>> m.from_numpy(arr)
         """
-        if len(arr.shape) == len(self.shape) + 1:
-            as_vector = True
-            assert self.m == 1, "This is not a vector field"
-        else:
-            as_vector = False
-            assert len(arr.shape) == len(self.shape) + 2
-        dim_ext = 1 if as_vector else 2
-        assert len(arr.shape) == len(self.shape) + dim_ext
+
         if not arr.flags.c_contiguous:
             arr = np.ascontiguousarray(arr)
-        from taichi._kernels import ext_arr_to_matrix  # pylint: disable=C0415
-        ext_arr_to_matrix(arr, self, as_vector)
-        runtime_ops.sync()
+        self._from_external_arr(arr)
 
     @python_scope
     def __setitem__(self, key, value):

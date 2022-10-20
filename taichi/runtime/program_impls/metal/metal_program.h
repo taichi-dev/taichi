@@ -42,7 +42,7 @@ class MetalProgramImpl : public ProgramImpl {
     TI_NOT_IMPLEMENTED;
   }
 
-  std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override;
+  std::unique_ptr<AotModuleBuilder> make_aot_module_builder(const DeviceCapabilityConfig& caps) override;
 
   DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
                                            uint64 *result_buffer) override;

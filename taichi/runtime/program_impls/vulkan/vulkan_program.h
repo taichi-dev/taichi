@@ -57,7 +57,7 @@ class VulkanProgramImpl : public ProgramImpl {
     return vulkan_runtime_->flush();
   }
 
-  std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override;
+  std::unique_ptr<AotModuleBuilder> make_aot_module_builder(const DeviceCapabilityConfig& caps) override;
 
   void destroy_snode_tree(SNodeTree *snode_tree) override {
     TI_ASSERT(snode_tree_mgr_ != nullptr);

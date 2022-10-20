@@ -181,9 +181,10 @@ void VulkanProgramImpl::materialize_snode_tree(SNodeTree *tree,
   snode_tree_mgr_->materialize_snode_tree(tree);
 }
 
-std::unique_ptr<AotModuleBuilder> VulkanProgramImpl::make_aot_module_builder() {
-  const DeviceCapabilityConfig &caps =
-      embedded_device_->device()->get_current_caps();
+
+
+std::unique_ptr<AotModuleBuilder> VulkanProgramImpl::make_aot_module_builder(
+    const DeviceCapabilityConfig& caps) {
   if (vulkan_runtime_) {
     return std::make_unique<gfx::AotModuleBuilderImpl>(
         snode_tree_mgr_->get_compiled_structs(), Arch::vulkan, caps);

@@ -70,7 +70,7 @@ class LlvmProgramImpl : public ProgramImpl {
 
   std::unique_ptr<aot::Kernel> make_aot_kernel(Kernel &kernel) override;
 
-  std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override;
+  std::unique_ptr<AotModuleBuilder> make_aot_module_builder(const DeviceCapabilityConfig& caps) override;
 
   void dump_cache_data_to_disk() override;
 

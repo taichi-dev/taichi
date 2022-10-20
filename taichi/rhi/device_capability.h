@@ -13,6 +13,7 @@ enum class DeviceCapability : uint32_t {
 #include "taichi/inc/rhi_constants.inc.h"
 #undef PER_DEVICE_CAPABILITY
 };
+DeviceCapability str2devcap(const std::string_view& name);
 const std::string to_string(DeviceCapability c);
 
 // A collection of device capability.
@@ -21,6 +22,10 @@ struct DeviceCapabilityConfig {
   std::map<DeviceCapability, uint32_t> inner_;
 
  public:
+  inline uint32_t contains(DeviceCapability cap) const {
+    auto it = inner_.find(cap);
+    return it != inner_.end();
+  }
   inline uint32_t get(DeviceCapability cap) const {
     auto it = inner_.find(cap);
     if (it != inner_.end()) {

@@ -18,7 +18,7 @@ void aot_save(taichi::Arch arch) {
   place->dt = PrimitiveType::i32;
   program.add_snode_tree(std::unique_ptr<SNode>(root), /*compile_only=*/true);
 
-  auto aot_builder = program.make_aot_module_builder(arch);
+  auto aot_builder = program.make_aot_module_builder(arch, {});
 
   std::unique_ptr<Kernel> kernel_init, kernel_ret;
 

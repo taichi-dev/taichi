@@ -64,7 +64,8 @@ std::unique_ptr<AotModuleBuilder> OpenglProgramImpl::make_aot_module_builder(
     const DeviceCapabilityConfig &caps) {
   if (runtime_) {
     return std::make_unique<gfx::AotModuleBuilderImpl>(
-        snode_tree_mgr_->get_compiled_structs(), Arch::opengl, caps);
+        snode_tree_mgr_->get_compiled_structs(), Arch::opengl,
+        runtime_->get_ti_device()->get_current_caps());
   } else {
     return std::make_unique<gfx::AotModuleBuilderImpl>(
         aot_compiled_snode_structs_, Arch::opengl, caps);

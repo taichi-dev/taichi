@@ -1636,7 +1636,7 @@ class MatrixField(Field):
             val = val.to_list()
         else:
             assert isinstance(val, (list, tuple))
-        val = tuple(tuple(x) for x in val)
+        val = tuple(tuple(x) if isinstance(x, list) else x for x in val)
         assert len(val) == self.n
         if self.ndim != 1:
             assert len(val[0]) == self.m

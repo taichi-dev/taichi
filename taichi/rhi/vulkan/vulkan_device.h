@@ -587,7 +587,7 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
   void init_vulkan_structs(Params &params);
   ~VulkanDevice() override;
 
-  virtual Arch arch() const override final {
+  Arch arch() const override {
     return Arch::vulkan;
   }
 
@@ -687,7 +687,7 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
   inline void set_current_caps(DeviceCapabilityConfig &&caps) {
     caps_ = std::move(caps);
   }
-  virtual const DeviceCapabilityConfig &get_current_caps()
+  const DeviceCapabilityConfig &get_current_caps()
       const override final {
     return caps_;
   }

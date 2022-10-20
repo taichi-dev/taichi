@@ -13,7 +13,7 @@ class LlvmDevice : public Device {
     uint64 *result_buffer{nullptr};
   };
 
-  virtual Arch arch() const override final {
+  Arch arch() const override {
     TI_NOT_IMPLEMENTED
   }
 

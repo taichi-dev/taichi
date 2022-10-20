@@ -241,7 +241,7 @@ class GLDevice : public GraphicsDevice {
   GLDevice();
   ~GLDevice() override;
 
-  virtual Arch arch() const override final {
+  Arch arch() const override {
     return Arch::opengl;
   }
 
@@ -302,7 +302,7 @@ class GLDevice : public GraphicsDevice {
     return image_to_int_format_.at(image);
   }
 
-  virtual const DeviceCapabilityConfig &get_current_caps()
+  const DeviceCapabilityConfig &get_current_caps()
       const override final {
     return caps_;
   }

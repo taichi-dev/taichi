@@ -171,7 +171,7 @@ class Dx11Device : public GraphicsDevice {
   Dx11Device();
   ~Dx11Device() override;
 
-  virtual Arch arch() const override final {
+  Arch arch() const override {
     return Arch::dx11;
   }
 
@@ -296,7 +296,7 @@ class Dx11Device : public GraphicsDevice {
                                        ID3D11Device *device);
   };
 
-  virtual const DeviceCapabilityConfig &get_current_caps()
+  const DeviceCapabilityConfig &get_current_caps()
       const override final {
     return caps_;
   }

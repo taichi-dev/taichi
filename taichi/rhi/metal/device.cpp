@@ -286,7 +286,7 @@ class DeviceImpl : public Device, public AllocToMTLBufferMapper {
     TI_ASSERT(stream_ != nullptr);
   }
 
-  virtual Arch arch() const override final {
+  Arch arch() const override {
     return Arch::metal;
   }
 

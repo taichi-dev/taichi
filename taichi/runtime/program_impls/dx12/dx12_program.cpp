@@ -11,7 +11,8 @@ Dx12ProgramImpl::Dx12ProgramImpl(CompileConfig &config)
     : LlvmProgramImpl(config, nullptr) {
 }
 
-std::unique_ptr<AotModuleBuilder> Dx12ProgramImpl::make_aot_module_builder(const DeviceCapabilityConfig& caps) {
+std::unique_ptr<AotModuleBuilder> Dx12ProgramImpl::make_aot_module_builder(
+    const DeviceCapabilityConfig &caps) {
   return std::make_unique<directx12::AotModuleBuilderImpl>(this);
 }
 

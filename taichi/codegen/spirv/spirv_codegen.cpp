@@ -1733,11 +1733,20 @@ class TaskCodegen : public IRVisitor {
     std::vector<spirv::Value> buffers;
     if (device_->get_cap(DeviceCapability::spirv_version) > 0x10300) {
       buffers = shared_array_binds_;
+      std::unordered_set<BufferInfo, BufferInfoHasher> unique_bufs;
+      // One buffer can be bound to different bind points but has to be unique
+      // in OpEntryPoint interface declarations.
+      // From Spec: before SPIR-V version 1.4, duplication of these interface id
+      // is tolerated. Starting with version 1.4, an interface id must not
+      // appear more than once.
       for (const auto &bb : task_attribs_.buffer_binds) {
-        for (auto &it : buffer_value_map_) {
-          if (it.first.first == bb.buffer) {
-            buffers.push_back(it.second);
+        if (unique_bufs.count(bb.buffer) == 0) {
+          for (auto &it : buffer_value_map_) {
+            if (it.first.first == bb.buffer) {
+              buffers.push_back(it.second);
+            }
           }
+          unique_bufs.insert(bb.buffer);
         }
       }
     }

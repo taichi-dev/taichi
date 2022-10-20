@@ -156,7 +156,7 @@ def test_from_to_image():
 @test_utils.test(arch=supported_archs_texture)
 def test_rw_texture_2d_struct_for():
     res = (128, 128)
-    tex = ti.Texture(ti.f32, 1, res)
+    tex = ti.Texture(ti.r32f, res)
     arr = ti.ndarray(ti.f32, res)
 
     @ti.kernel
@@ -179,7 +179,7 @@ def test_rw_texture_2d_struct_for():
 
 @test_utils.test(arch=supported_archs_texture)
 def test_rw_texture_2d_struct_for_dim_check():
-    tex = ti.Texture(ti.f32, 1, (32, 32, 32))
+    tex = ti.Texture(ti.r32f, (32, 32, 32))
 
     @ti.kernel
     def write(tex: ti.types.rw_texture(num_dimensions=2,

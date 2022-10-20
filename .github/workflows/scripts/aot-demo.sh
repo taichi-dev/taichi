@@ -34,8 +34,6 @@ function build-and-smoke-test-android-aot-demo {
     python implicit_fem.py --aot
     popd
 
-    ls taichi-aot-demo/implicit_fem/android/app/src/main/assets/shaders/aot/implicit_fem
-
     mkdir -p $JNI_PATH
     cp taichi/build/libtaichi_export_core.so $JNI_PATH
     cd $ANDROID_APP_ROOT

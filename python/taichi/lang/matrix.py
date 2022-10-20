@@ -1629,7 +1629,8 @@ class MatrixField(Field):
             val (Union[Number, Expr, List, Tuple, Matrix]): Values to fill,
                 should have consistent dimension consistent with `self`.
         """
-        if isinstance(val, numbers.Number) or (isinstance(val, expr.Expr) and not val.is_tensor()):
+        if isinstance(val, numbers.Number) or (isinstance(val, expr.Expr)
+                                               and not val.is_tensor()):
             val = list(list(val for _ in range(self.m)) for _ in range(self.n))
         elif isinstance(val, Matrix):
             val = val.to_list()
@@ -1640,7 +1641,8 @@ class MatrixField(Field):
         if self.ndim != 1:
             assert len(val[0]) == self.m
         if in_python_scope():
-            from taichi._kernels import field_fill_python_scope  # pylint: disable=C0415
+            from taichi._kernels import \
+                field_fill_python_scope  # pylint: disable=C0415
             field_fill_python_scope(self, val)
         else:
             from taichi._funcs import \

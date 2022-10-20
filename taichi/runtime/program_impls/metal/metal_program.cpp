@@ -88,7 +88,8 @@ void MetalProgramImpl::materialize_snode_tree(SNodeTree *tree,
   metal_kernel_mgr_->add_compiled_snode_tree(csnode_tree);
 }
 
-std::unique_ptr<AotModuleBuilder> MetalProgramImpl::make_aot_module_builder(const DeviceCapabilityConfig& caps) {
+std::unique_ptr<AotModuleBuilder> MetalProgramImpl::make_aot_module_builder(
+    const DeviceCapabilityConfig &caps) {
   TI_ERROR_IF(compiled_snode_trees_.size() > 1,
               "AOT: only supports one SNodeTree");
   const auto fields =

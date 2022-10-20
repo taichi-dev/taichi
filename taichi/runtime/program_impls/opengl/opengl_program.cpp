@@ -60,7 +60,8 @@ void OpenglProgramImpl::materialize_snode_tree(SNodeTree *tree,
   snode_tree_mgr_->materialize_snode_tree(tree);
 }
 
-std::unique_ptr<AotModuleBuilder> OpenglProgramImpl::make_aot_module_builder(const DeviceCapabilityConfig& caps) {
+std::unique_ptr<AotModuleBuilder> OpenglProgramImpl::make_aot_module_builder(
+    const DeviceCapabilityConfig &caps) {
   if (runtime_) {
     return std::make_unique<gfx::AotModuleBuilderImpl>(
         snode_tree_mgr_->get_compiled_structs(), Arch::opengl, caps);

@@ -533,12 +533,12 @@ Program::~Program() {
   finalize();
 }
 
-DeviceCapabilityConfig translate_devcaps(const std::vector<std::string>& caps) {
+DeviceCapabilityConfig translate_devcaps(const std::vector<std::string> &caps) {
   // Each device capability assignment is named like this:
   // - `spirv_version=1.3`
   // - `spirv_has_int8`
-  DeviceCapabilityConfig cfg {};
-  for (const std::string& cap : caps) {
+  DeviceCapabilityConfig cfg{};
+  for (const std::string &cap : caps) {
     std::string_view key;
     std::string_view value;
     size_t ieq = cap.find('=');
@@ -550,22 +550,23 @@ DeviceCapabilityConfig translate_devcaps(const std::vector<std::string>& caps) {
     }
     DeviceCapability devcap = str2devcap(key);
     switch (devcap) {
-    case DeviceCapability::spirv_version:
-    {
-      if (value == "1.3") {
-        cfg.set(devcap, 0x10300);
-      } else if (value == "1.4") {
-        cfg.set(devcap, 0x10400);
-      } else if (value == "1.5") {
-        cfg.set(devcap, 0x10500);
-      } else {
-        TI_ERROR("'{}' is not a valid value of device capability `spirv_version`", value);
+      case DeviceCapability::spirv_version: {
+        if (value == "1.3") {
+          cfg.set(devcap, 0x10300);
+        } else if (value == "1.4") {
+          cfg.set(devcap, 0x10400);
+        } else if (value == "1.5") {
+          cfg.set(devcap, 0x10500);
+        } else {
+          TI_ERROR(
+              "'{}' is not a valid value of device capability `spirv_version`",
+              value);
+        }
+        break;
       }
-      break;
-    }
-    default:
-      cfg.set(devcap, 1);
-      break;
+      default:
+        cfg.set(devcap, 1);
+        break;
     }
   }
 
@@ -578,7 +579,7 @@ DeviceCapabilityConfig translate_devcaps(const std::vector<std::string>& caps) {
 
 std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(
     Arch arch,
-    const std::vector<std::string>& caps) {
+    const std::vector<std::string> &caps) {
   DeviceCapabilityConfig cfg = translate_devcaps(caps);
   // FIXME: This couples the runtime backend with the target AOT backend. E.g.
   // If we want to build a Metal AOT module, we have to be on the macOS

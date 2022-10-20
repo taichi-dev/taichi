@@ -11,7 +11,8 @@ class Dx12ProgramImpl : public LlvmProgramImpl {
  public:
   Dx12ProgramImpl(CompileConfig &config);
 
-  std::unique_ptr<AotModuleBuilder> make_aot_module_builder(const DeviceCapabilityConfig& caps) override;
+  std::unique_ptr<AotModuleBuilder> make_aot_module_builder(
+      const DeviceCapabilityConfig &caps) override;
 };
 
 }  // namespace lang

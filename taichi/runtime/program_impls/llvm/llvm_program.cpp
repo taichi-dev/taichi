@@ -87,7 +87,8 @@ void LlvmProgramImpl::materialize_snode_tree(SNodeTree *tree,
                                  result_buffer);
 }
 
-std::unique_ptr<AotModuleBuilder> LlvmProgramImpl::make_aot_module_builder(const DeviceCapabilityConfig& caps) {
+std::unique_ptr<AotModuleBuilder> LlvmProgramImpl::make_aot_module_builder(
+    const DeviceCapabilityConfig &caps) {
   if (config->arch == Arch::x64 || config->arch == Arch::arm64) {
     return std::make_unique<cpu::AotModuleBuilderImpl>(this);
   }

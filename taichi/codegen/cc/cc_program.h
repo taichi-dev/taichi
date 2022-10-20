@@ -47,7 +47,8 @@ class CCProgramImpl : public ProgramImpl {
     // Not implemented yet.
   }
 
-  std::unique_ptr<AotModuleBuilder> make_aot_module_builder(const DeviceCapabilityConfig& caps) override {
+  std::unique_ptr<AotModuleBuilder> make_aot_module_builder(
+      const DeviceCapabilityConfig &caps) override {
     // Not implemented yet.
     return nullptr;
   }

@@ -13,7 +13,7 @@ enum class DeviceCapability : uint32_t {
 #include "taichi/inc/rhi_constants.inc.h"
 #undef PER_DEVICE_CAPABILITY
 };
-DeviceCapability str2devcap(const std::string_view& name);
+DeviceCapability str2devcap(const std::string_view &name);
 const std::string to_string(DeviceCapability c);
 
 // A collection of device capability.

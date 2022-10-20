@@ -347,6 +347,7 @@ class ScalarField(Field):
         """Copies the data from a `numpy.ndarray` into this field.
         """
         if not arr.flags.c_contiguous:
+            import numpy as np  # pylint: disable=C0415
             arr = np.ascontiguousarray(arr)
         self._from_external_arr(arr)
 

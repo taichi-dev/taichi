@@ -711,12 +711,28 @@ class Kernel:
                         array_shape = v.shape[
                             element_dim:] if is_soa else v.shape[:-element_dim]
                     if is_numpy:
-                        tmp = np.ascontiguousarray(v)
-                        # Purpose: DO NOT GC |tmp|!
-                        tmps.append(tmp)
-                        launch_ctx.set_arg_external_array_with_shape(
-                            actual_argument_slot, int(tmp.ctypes.data),
-                            tmp.nbytes, array_shape)
+                        if v.flags.c_contiguous:
+                            launch_ctx.set_arg_external_array_with_shape(
+                                actual_argument_slot, int(v.ctypes.data),
+                                v.nbytes, array_shape)
+                        elif v.flags.f_contiguous:
+                            # TODO: A better way that avoids copying is saving strides info.
+                            tmp = np.ascontiguousarray(v)
+                            # Purpose: DO NOT GC |tmp|!
+                            tmps.append(tmp)
+
+                            def callback(original, updated):
+                                np.copyto(original, np.asfortranarray(updated))
+
+                            callbacks.append(
+                                functools.partial(callback, v, tmp))
+                            launch_ctx.set_arg_external_array_with_shape(
+                                actual_argument_slot, int(tmp.ctypes.data),
+                                tmp.nbytes, array_shape)
+                        else:
+                            raise ValueError(
+                                "Non contiguous numpy arrays are not supported, please call np.ascontiguousarray(arr) before passing it into taichi kernel."
+                            )
                     elif is_torch:
                         is_ndarray = False
                         tmp, torch_callbacks = self.get_torch_callbacks(

@@ -3,7 +3,7 @@
 #include <memory>
 
 #include "taichi/rhi/device.h"
-#include "taichi/runtime/metal/api.h"
+#include "taichi/rhi/metal/api.h"
 #include "taichi/runtime/metal/runtime_utils.h"
 
 namespace taichi::lang {

@@ -27,7 +27,7 @@
 
 #include <algorithm>
 
-#include "taichi/runtime/metal/api.h"
+#include "taichi/rhi/metal/api.h"
 #include "taichi/program/program.h"
 #endif  // TI_PLATFORM_OSX
 

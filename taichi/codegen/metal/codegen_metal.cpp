@@ -3,7 +3,6 @@
 #include <functional>
 #include <string>
 
-#include "taichi/runtime/metal/api.h"
 #include "taichi/rhi/metal/constants.h"
 #include "taichi/codegen/metal/env_config.h"
 #include "taichi/runtime/metal/features.h"

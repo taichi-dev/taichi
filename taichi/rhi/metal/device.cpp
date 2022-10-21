@@ -1,7 +1,7 @@
 #include "taichi/rhi/metal/device.h"
 
 #include "taichi/platform/mac/objc_api.h"
-#include "taichi/runtime/metal/api.h"
+#include "taichi/rhi/metal/api.h"
 #include "taichi/rhi/metal/constants.h"
 #include "taichi/runtime/metal/runtime_utils.h"
 

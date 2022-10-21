@@ -3,7 +3,6 @@
 add_library(metal_runtime)
 target_sources(metal_runtime
   PRIVATE
-    api.cpp
     aot_module_builder_impl.cpp
     aot_module_loader_impl.cpp
     data_types.cpp

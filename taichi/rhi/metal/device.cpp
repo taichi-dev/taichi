@@ -180,7 +180,8 @@ class CommandListImpl : public CommandList {
 
   void dispatch(CommandList::ComputeSize grid_size,
                 CommandList::ComputeSize block_size) override {
-    MTL::ComputeCommandEncoder* encoder = command_buffer_->computeCommandEncoder();
+    MTL::ComputeCommandEncoder *encoder =
+        command_buffer_->computeCommandEncoder();
     TI_ASSERT(encoder != nullptr);
 
     encoder->setLabel(inflight_label_.get());
@@ -196,10 +197,9 @@ class CommandListImpl : public CommandList {
     auto ceil_div = [](uint32_t a, uint32_t b) -> uint32_t {
       return (a + b - 1) / b;
     };
-    MTL::Size block_count(
-      ceil_div(grid_size.x, block_size.x),
-      ceil_div(grid_size.y, block_size.y),
-      ceil_div(grid_size.z, block_size.z));
+    MTL::Size block_count(ceil_div(grid_size.x, block_size.x),
+                          ceil_div(grid_size.y, block_size.y),
+                          ceil_div(grid_size.z, block_size.z));
     MTL::Size block_size2(block_size.x, block_size.y, block_size.z);
     encoder->dispatchThreadgroups(block_count, block_size2);
     encoder->endEncoding();
@@ -228,7 +228,8 @@ class StreamImpl : public Stream {
   }
 
   std::unique_ptr<CommandList> new_command_list() override {
-    auto cb = mac::retain_and_wrap_as_nsobj_unique_ptr(command_queue_->commandBuffer());
+    auto cb = mac::retain_and_wrap_as_nsobj_unique_ptr(
+        command_queue_->commandBuffer());
     TI_ASSERT(cb != nullptr);
     auto label = fmt::format("command_buffer_{}", list_counter_++);
     cb->setLabel(mac::wrap_string_as_ns_string(label).get());

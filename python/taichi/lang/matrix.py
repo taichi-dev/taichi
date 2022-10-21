@@ -1630,34 +1630,24 @@ class MatrixField(Field):
         """Fills this matrix field with specified values.
 
         Args:
-            val (Union[Number, List, Tuple, Matrix]): Values to fill,
+            val (Union[Number, Expr, List, Tuple, Matrix]): Values to fill,
                 should have consistent dimension consistent with `self`.
         """
-        if isinstance(val, numbers.Number):
-            val = tuple(
-                [tuple([val for _ in range(self.m)]) for _ in range(self.n)])
-        elif isinstance(val,
-                        (list, tuple)) and isinstance(val[0], numbers.Number):
-            assert self.m == 1
-            val = tuple(val)
-        elif is_vector(val):
-            val = tuple([(val(i), ) for i in range(self.n * self.m)])
+        if isinstance(val, numbers.Number) or (isinstance(val, expr.Expr)
+                                               and not val.is_tensor()):
+            val = list(list(val for _ in range(self.m)) for _ in range(self.n))
         elif isinstance(val, Matrix):
-            val_tuple = []
-            for i in range(val.n):
-                row = []
-                for j in range(val.m):
-                    row.append(val(i, j))
-                row = tuple(row)
-                val_tuple.append(row)
-            val = tuple(val_tuple)
+            val = val.to_list()
+        else:
+            assert isinstance(val, (list, tuple))
+        val = tuple(tuple(x) if isinstance(x, list) else x for x in val)
         assert len(val) == self.n
         if self.ndim != 1:
             assert len(val[0]) == self.m
-
         if in_python_scope():
-            from taichi._kernels import fill_matrix  # pylint: disable=C0415
-            fill_matrix(self, val)
+            from taichi._kernels import \
+                field_fill_python_scope  # pylint: disable=C0415
+            field_fill_python_scope(self, val)
         else:
             from taichi._funcs import \
                 field_fill_taichi_scope  # pylint: disable=C0415

@@ -1744,7 +1744,7 @@ class MatrixField(Field):
         Example::
 
             >>> m = ti.Matrix.field(2, 2, ti.f32, shape=(3, 3))
-            >>> arr = numpp.ones((3, 3, 2, 2))
+            >>> arr = numpy.ones((3, 3, 2, 2))
             >>> m.from_numpy(arr)
         """
 

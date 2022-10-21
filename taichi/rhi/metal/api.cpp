@@ -68,6 +68,18 @@ new_compute_pipeline_state_with_function(MTLDevice *device,
   return wrap_as_nsobj_unique_ptr(pipeline_state);
 }
 
+nsobj_unique_ptr<MTLBuffer> new_mtl_buffer_no_copy(MTLDevice *device,
+                                                   void *ptr,
+                                                   size_t length) {
+  // MTLResourceCPUCacheModeDefaultCache | MTLResourceStorageModeManaged
+  constexpr int kMtlBufferResourceOptions = 16;
+
+  auto *buffer = cast_call<MTLBuffer *>(
+      device, "newBufferWithBytesNoCopy:length:options:deallocator:", ptr,
+      length, kMtlBufferResourceOptions, nullptr);
+  return wrap_as_nsobj_unique_ptr(buffer);
+}
+
 #endif  // TI_PLATFORM_OSX
 
 bool is_metal_api_available() {

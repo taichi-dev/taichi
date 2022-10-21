@@ -206,10 +206,17 @@ class UserMtlKernel : public CompiledMtlKernelBase {
 // Internal Metal kernel used to maintain the kernel runtime data
 class SparseRuntimeMtlKernelBase : public CompiledMtlKernelBase {
  public:
-  explicit SparseRuntimeMtlKernelBase(KernelManager &kernel_manager,
-                                      int args_size)
+  struct Params : public CompiledMtlKernelBase::Params {
+    MemoryPool *mem_pool = nullptr;
+  };
+
+  explicit SparseRuntimeMtlKernelBase(Params &params, int args_size)
       : CompiledMtlKernelBase(params),
-        devalloc_(kernel_manager.allocate_memory(args_size)) {
+        args_mem_(
+            std::make_unique<BufferMemoryView>(args_size, params.mem_pool)),
+        args_buffer_(new_mtl_buffer_no_copy(params.device,
+                                            args_mem_->ptr(),
+                                            args_mem_->size())) {
     TI_ASSERT(args_buffer_ != nullptr);
   }
 
@@ -228,7 +235,8 @@ class SparseRuntimeMtlKernelBase : public CompiledMtlKernelBase {
   }
 
  protected:
-  DeviceAllocation devalloc_;
+  std::unique_ptr<BufferMemoryView> args_mem_;
+  nsobj_unique_ptr<MTLBuffer> args_buffer_;
 };
 
 class ListgenOpMtlKernel : public SparseRuntimeMtlKernelBase {
@@ -285,6 +293,7 @@ class CompiledTaichiKernel {
     const KernelContextAttributes *ctx_attribs{nullptr};
     const PrintStringTable *print_str_table{nullptr};
     MTLDevice *device{nullptr};
+    MemoryPool *mem_pool{nullptr};
     KernelProfilerBase *profiler{nullptr};
     const CompileConfig *compile_config{nullptr};
     Device *rhi_device{nullptr};
@@ -325,6 +334,7 @@ class CompiledTaichiKernel {
         kparams.config = params.compile_config;
         kparams.device = device;
         kparams.mtl_func = mtl_func.get();
+        kparams.mem_pool = params.mem_pool;
         kernel = std::make_unique<ListgenOpMtlKernel>(kparams);
       } else if (ktype == KernelTaskType::gc) {
         GcOpMtlKernel::Params kparams;
@@ -333,6 +343,7 @@ class CompiledTaichiKernel {
         kparams.config = params.compile_config;
         kparams.device = device;
         kparams.mtl_func = mtl_func.get();
+        kparams.mem_pool = params.mem_pool;
         kernel = std::make_unique<GcOpMtlKernel>(kparams);
       } else {
         UserMtlKernel::Params kparams;

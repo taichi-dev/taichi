@@ -297,12 +297,12 @@ class DeviceImpl : public Device, public AllocToMTLBufferMapper {
     // API ref:
     // https://developer.apple.com/documentation/metal/mtldevice/1433382-makebuffer
     //
-    // We initially used .shared storage mode, meaning the GPU and CPU shared the
-    // system memory. This turned out to be slow as page fault on GPU was very
-    // costly. By switching to .managed mode, on GPUs with discrete memory model,
-    // the data will reside in both GPU's VRAM and CPU's system RAM. This made the
-    // GPU memory access much faster. But we will need to manually synchronize the
-    // buffer resources between CPU and GPU.
+    // We initially used .shared storage mode, meaning the GPU and CPU shared
+    // the system memory. This turned out to be slow as page fault on GPU was
+    // very costly. By switching to .managed mode, on GPUs with discrete memory
+    // model, the data will reside in both GPU's VRAM and CPU's system RAM. This
+    // made the GPU memory access much faster. But we will need to manually
+    // synchronize the buffer resources between CPU and GPU.
     //
     // See also:
     // https://developer.apple.com/documentation/metal/synchronizing_a_managed_resource

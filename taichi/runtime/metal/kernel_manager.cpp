@@ -156,7 +156,7 @@ class CompiledMtlKernelBase {
       int advisory_num_threads,
       int advisory_num_threads_per_group) {
     int num_threads_per_group =
-        get_max_total_threads_per_threadgroup(pipeline_state_.get());
+        pipeline_state_->maxTotalThreadsPerThreadgroup();
     // Sometimes it is helpful to limit the maximum GPU block dim for the
     // kernels. E.g., when you are generating iPhone shaders on a Mac.
     const int prescribed_block_dim = config_->max_block_dim;
@@ -263,7 +263,7 @@ class ListgenOpMtlKernel : public SparseRuntimeMtlKernelBase {
         "child_snode={}",
         params.kernel_attribs->name,
         params.kernel_attribs->advisory_total_num_threads, mem[0], mem[1]);
-    did_modify_range(args_buffer_.get(), /*location=*/0, args_mem_->size());
+    args_buffer_->didModifyRange(NS::Range(0, args_mem_->size()));
   }
 };
 
@@ -279,7 +279,7 @@ class GcOpMtlKernel : public SparseRuntimeMtlKernelBase {
     TI_DEBUG("Registered GcOpMtlKernel: name={} num_threads={} snode_id={}",
              params.kernel_attribs->name,
              params.kernel_attribs->advisory_total_num_threads, mem[0]);
-    did_modify_range(args_buffer_.get(), /*location=*/0, args_mem_->size());
+    args_buffer_->didModifyRange(NS::Range(0, args_mem_->size()));
   }
 };
 
@@ -529,7 +529,7 @@ class HostMetalCtxBlitter {
     buf_sz.push_back(
         BufferAndSize{kernel_ctx_buffer_, kernel_ctx_mem_->size()});
     for (auto bs : buf_sz) {
-      did_modify_range(bs.buffer, /*length=*/0, bs.size);
+      bs.buffer->didModifyRange(NS::Range(0, bs.size));
     }
   }
 
@@ -1061,14 +1061,13 @@ class KernelManager::Impl {
   }
 
   void mark_runtime_buffer_modified() {
-    did_modify_range(runtime_idevalloc_.buffer, /*location=*/0,
-                     runtime_idevalloc_.mem->size());
+    runtime_idevalloc_.buffer->didModifyRange(NS::Range(0, runtime_idevalloc_.mem->size()));
   }
 
   void clear_print_assert_buffer() {
     const auto sz = print_assert_idevalloc_.mem->size();
     std::memset(print_assert_idevalloc_.mem->ptr(), 0, sz);
-    did_modify_range(print_assert_idevalloc_.buffer, /*location=*/0, sz);
+    print_assert_idevalloc_.buffer->didModifyRange(NS::Range(0, sz));
   }
 
   void blit_buffers_and_sync(
@@ -1088,8 +1087,8 @@ class KernelManager::Impl {
     // Sync
     if (profiler_)
       profiler_->start("metal_synchronize");
-    commit_command_buffer(cur_command_buffer_.get());
-    wait_until_completed(cur_command_buffer_.get());
+    cur_command_buffer_->commit();
+    cur_command_buffer_->waitUntilCompleted();
     create_new_command_buffer();
     if (profiler_)
       profiler_->stop();
@@ -1130,7 +1129,8 @@ class KernelManager::Impl {
     //   flush_print_buffers();
     //   memset(print_assert_idevalloc_.mem->ptr(), 0,
     //          print_assert_idevalloc_.mem->size());
-    //   did_modify_range(print_assert_idevalloc_.buffer);
+    //   print_assert_idevalloc_.buffer->didModifyRange(
+    //      NS::Range(0, print_assert_idevalloc_.mem->size()));
     //
     // As a workaround, we put [didModifyRange:] before sync, where the program
     // is still executing normally.

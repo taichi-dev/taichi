@@ -9,6 +9,7 @@
 #include "taichi/common/trait.h"
 #include "taichi/util/lang_util.h"
 #include "taichi/platform/mac/objc_api.h"
+#include "taichi/rhi/metal/metal_api.h"
 
 namespace taichi::lang {
 namespace metal {
@@ -93,52 +94,6 @@ inline void dispatch_threadgroups(MTLComputeCommandEncoder *encoder,
   dispatch_threadgroups(encoder, blocks_x, 1, 1, threads_x, 1, 1);
 }
 
-template <typename T>
-void set_label(T *mtl_obj, const std::string &label) {
-  // Set labels on Metal command buffer and encoders, so that they can be
-  // tracked in Instrument - Metal System Trace
-  if constexpr (std::is_same_v<T, MTLComputeCommandEncoder> ||
-                std::is_same_v<T, MTLBlitCommandEncoder> ||
-                std::is_same_v<T, MTLCommandBuffer>) {
-    auto label_str = mac::wrap_string_as_ns_string(label);
-    mac::call(mtl_obj, "setLabel:", label_str.get());
-  } else {
-    static_assert(always_false_v<T>);
-  }
-}
-
-inline void enqueue_command_buffer(MTLCommandBuffer *cmd_buffer) {
-  mac::call(cmd_buffer, "enqueue");
-}
-
-inline void commit_command_buffer(MTLCommandBuffer *cmd_buffer) {
-  mac::call(cmd_buffer, "commit");
-}
-
-inline void wait_until_completed(MTLCommandBuffer *cmd_buffer) {
-  mac::call(cmd_buffer, "waitUntilCompleted");
-}
-
-inline void *mtl_buffer_contents(MTLBuffer *buffer) {
-  return mac::cast_call<void *>(buffer, "contents");
-}
-
-void did_modify_range(MTLBuffer *buffer, size_t location, size_t length);
-
-void fill_buffer(MTLBlitCommandEncoder *encoder,
-                 MTLBuffer *buffer,
-                 mac::TI_NSRange range,
-                 uint8_t value);
-
-void copy_from_buffer_to_buffer(MTLBlitCommandEncoder *encoder,
-                                MTLBuffer *source_buffer,
-                                size_t source_offset,
-                                MTLBuffer *destination_buffer,
-                                size_t destination_offset,
-                                size_t size);
-
-size_t get_max_total_threads_per_threadgroup(
-    MTLComputePipelineState *pipeline_state);
 #endif  // TI_PLATFORM_OSX
 
 bool is_metal_api_available();

@@ -239,7 +239,7 @@ class StreamImpl : public Stream {
       CommandList *cmdlist,
       const std::vector<StreamSemaphore> &wait_semaphores) override {
     auto *cb = static_cast<CommandListImpl *>(cmdlist)->command_buffer();
-    commit_command_buffer(cb);
+    cb->commit();
 
     // FIXME: Implement semaphore mechanism for Metal backend
     //        and return the actual semaphore corresponding to the submitted
@@ -250,8 +250,8 @@ class StreamImpl : public Stream {
       CommandList *cmdlist,
       const std::vector<StreamSemaphore> &wait_semaphores) override {
     auto *cb = static_cast<CommandListImpl *>(cmdlist)->command_buffer();
-    commit_command_buffer(cb);
-    wait_until_completed(cb);
+    cb->commit();
+    cb->waitUntilCompleted();
 
     return nullptr;
   }

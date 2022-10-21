@@ -80,63 +80,6 @@ nsobj_unique_ptr<MTLBuffer> new_mtl_buffer_no_copy(MTLDevice *device,
   return wrap_as_nsobj_unique_ptr(buffer);
 }
 
-void dispatch_threadgroups(MTLComputeCommandEncoder *encoder,
-                           int32_t blocks_x,
-                           int32_t blocks_y,
-                           int32_t blocks_z,
-                           int32_t threads_x,
-                           int32_t threads_y,
-                           int32_t threads_z) {
-  struct MTLSize {
-    uint64_t width;
-    uint64_t height;
-    uint64_t depth;
-  };
-
-  MTLSize threadgroups_per_grid;
-  threadgroups_per_grid.width = blocks_x;
-  threadgroups_per_grid.height = blocks_y;
-  threadgroups_per_grid.depth = blocks_z;
-
-  MTLSize threads_per_threadgroup;
-  threads_per_threadgroup.width = threads_x;
-  threads_per_threadgroup.height = threads_y;
-  threads_per_threadgroup.depth = threads_z;
-
-  call(encoder,
-       "dispatchThreadgroups:threadsPerThreadgroup:", threadgroups_per_grid,
-       threads_per_threadgroup);
-}
-
-size_t get_max_total_threads_per_threadgroup(
-    MTLComputePipelineState *pipeline_state) {
-  // The value of the pointer returned by call is the actual result
-  return (size_t)call(pipeline_state, "maxTotalThreadsPerThreadgroup");
-}
-
-void did_modify_range(MTLBuffer *buffer, size_t location, size_t length) {
-  mac::TI_NSRange range((NS::UInteger)location, (NS::UInteger)length);
-  call(buffer, "didModifyRange:", range);
-}
-
-void fill_buffer(MTLBlitCommandEncoder *encoder,
-                 MTLBuffer *buffer,
-                 mac::TI_NSRange range,
-                 uint8_t value) {
-  call(encoder, "fillBuffer:bufferrange:rangevalue:", buffer, range, value);
-}
-
-void copy_from_buffer_to_buffer(MTLBlitCommandEncoder *encoder,
-                                MTLBuffer *source_buffer,
-                                size_t source_offset,
-                                MTLBuffer *destination_buffer,
-                                size_t destination_offset,
-                                size_t size) {
-  call(encoder, "copyFromBuffer:sourceOffset:toBuffer:destinationOffset:size:",
-       source_buffer, source_offset, destination_buffer, destination_offset,
-       size);
-}
-
 #endif  // TI_PLATFORM_OSX
 
 bool is_metal_api_available() {

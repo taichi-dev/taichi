@@ -6,7 +6,6 @@
 #include "taichi/program/extension.h"
 #include "taichi/codegen/cpu/codegen_cpu.h"
 #include "taichi/struct/struct.h"
-#include "taichi/rhi/metal/api.h"
 #include "taichi/runtime/wasm/aot_module_builder_impl.h"
 #include "taichi/runtime/program_impls/opengl/opengl_program.h"
 #include "taichi/runtime/program_impls/metal/metal_program.h"
@@ -26,6 +25,10 @@
 
 #if defined(TI_WITH_CC)
 #include "taichi/codegen/cc/cc_program.h"
+#endif
+
+#ifdef TI_WITH_METAL
+#include "taichi/rhi/metal/metal_api.h"
 #endif
 #ifdef TI_WITH_VULKAN
 #include "taichi/runtime/program_impls/vulkan/vulkan_program.h"

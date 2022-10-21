@@ -3,7 +3,6 @@
     The use of this software is governed by the LICENSE file.
 *******************************************************************************/
 
-#include "taichi/rhi/metal/api.h"
 #include "taichi/runtime/gfx/runtime.h"
 #include "taichi/rhi/dx/dx_api.h"
 #include "taichi/common/core.h"
@@ -22,6 +21,10 @@
 #include "taichi/util/statistics.h"
 #if defined(TI_WITH_CUDA)
 #include "taichi/rhi/cuda/cuda_driver.h"
+#endif
+
+#ifdef TI_WITH_METAL
+#include "taichi/rhi/metal/metal_api.h"
 #endif
 
 #ifdef TI_WITH_VULKAN

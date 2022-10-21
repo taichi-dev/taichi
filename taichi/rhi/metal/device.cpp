@@ -149,8 +149,7 @@ class CommandListImpl : public CommandList {
     if (inflight_label_ != nullptr) {
       encoder->setLabel(inflight_label_.get());
     }
-    copy_from_buffer_to_buffer(encoder, src_buf, src.offset, dst_buf,
-                               dst.offset, size);
+    encoder->copyFromBuffer(src_buf, src.offset, dst_buf, dst.offset, size);
     encoder->endEncoding();
   }
 
@@ -169,8 +168,8 @@ class CommandListImpl : public CommandList {
     }
     auto *buf = alloc_buf_mapper_->find(ptr).buffer;
     TI_ASSERT(buf != nullptr);
-    mac::TI_NSRange range(ptr.offset, size);
-    fill_buffer(encoder, buf, range, (data & 0xff));
+    NS::Range range(ptr.offset, size);
+    encoder->fillBuffer(buf, range, (data & 0xff));
     encoder->endEncoding();
   }
 

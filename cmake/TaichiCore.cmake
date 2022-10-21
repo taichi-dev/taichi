@@ -279,7 +279,7 @@ if (TI_WITH_CUDA AND TI_WITH_CUDA_TOOLKIT)
     target_link_libraries(${CORE_LIBRARY_NAME} PUBLIC CUDA::cupti)
 endif()
 
-if (TI_WITH_METAL)
+if (TI_WITH_METAL AND APPLE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_METAL")
 
     add_subdirectory(taichi/rhi/metal)

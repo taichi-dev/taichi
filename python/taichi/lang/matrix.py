@@ -10,7 +10,7 @@ from taichi.lang import runtime_ops
 from taichi.lang._ndarray import Ndarray, NdarrayHostAccess
 from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.enums import Layout
-from taichi.lang.exception import (TaichiCompilationError, TaichiSyntaxError,
+from taichi.lang.exception import (TaichiRuntimeError, TaichiSyntaxError,
                                    TaichiTypeError)
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
 from taichi.lang.swizzle_generator import SwizzleGenerator
@@ -78,17 +78,15 @@ def _gen_swizzles(cls):
                             instance._impl._get_entry(key_group.index(ch)))
                     return Vector(res, is_ref=True)
 
+                @python_scope
                 def prop_setter(instance, value):
                     if len(pattern) != len(value):
-                        raise TaichiCompilationError(
+                        raise TaichiRuntimeError(
                             f'value len does not match the swizzle pattern={prop_key}'
                         )
                     checker(instance, pattern)
                     for ch, val in zip(pattern, value):
-                        if in_python_scope():
-                            instance[key_group.index(ch)] = val
-                        else:
-                            instance(key_group.index(ch))._assign(val)
+                        instance[key_group.index(ch)] = val
 
                 prop = property(prop_getter, prop_setter)
                 return prop_key, prop
@@ -243,7 +241,7 @@ class _TiScopeMatrixImpl(_MatrixBaseImpl):
         self.dynamic_index_stride = dynamic_index_stride
 
     @taichi_scope
-    def _subscript(self, is_global_mat, *indices, get_ref=False):
+    def _subscript(self, is_global_mat, *indices):
         assert len(indices) in [1, 2]
         i = indices[0]
         j = 0 if len(indices) == 1 else indices[1]
@@ -262,10 +260,10 @@ class _TiScopeMatrixImpl(_MatrixBaseImpl):
                 j = [j]
             if len(indices) == 1:
                 return Vector([self._subscript(is_global_mat, a) for a in i],
-                              is_ref=get_ref)
+                              is_ref=True)
             return Matrix([[self._subscript(is_global_mat, a, b) for b in j]
                            for a in i],
-                          is_ref=get_ref)
+                          is_ref=True)
 
         if self.any_array_access:
             return self.any_array_access.subscript(i, j)
@@ -644,7 +642,7 @@ class Matrix(TaichiOperations):
         return self._impl.dynamic_index_stride
 
     @taichi_scope
-    def _subscript(self, *indices, get_ref=False):
+    def _subscript(self, *indices):
         assert len(
             indices
         ) == self.ndim, f"Expected {self.ndim} indices, got {len(indices)}"
@@ -654,7 +652,7 @@ class Matrix(TaichiOperations):
             # 2. Taichi kernel directlly uses a matrix (global variable) created in the Python scope.
             return self._impl.subscript_scope_ignored(indices)
         is_global_mat = isinstance(self, _MatrixFieldElement)
-        return self._impl._subscript(is_global_mat, *indices, get_ref=get_ref)
+        return self._impl._subscript(is_global_mat, *indices)
 
     def to_list(self):
         """Return this matrix as a 1D `list`.

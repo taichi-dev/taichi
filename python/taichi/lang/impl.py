@@ -153,11 +153,7 @@ def _calc_slice(index, default_stop):
 
 
 @taichi_scope
-def subscript(ast_builder,
-              value,
-              *_indices,
-              skip_reordered=False,
-              get_ref=False):
+def subscript(ast_builder, value, *_indices, skip_reordered=False):
     if isinstance(value, np.ndarray):
         return value.__getitem__(_indices)
 
@@ -194,7 +190,7 @@ def subscript(ast_builder,
         index_dim = indices_expr_group.size()
 
     if is_taichi_class(value):
-        return value._subscript(*indices, get_ref=get_ref)
+        return value._subscript(*indices)
     if isinstance(value, MeshElementFieldProxy):
         return value.subscript(*indices)
     if isinstance(value, MeshRelationAccessProxy):

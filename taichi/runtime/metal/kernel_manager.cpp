@@ -1061,7 +1061,8 @@ class KernelManager::Impl {
   }
 
   void mark_runtime_buffer_modified() {
-    runtime_idevalloc_.buffer->didModifyRange(NS::Range(0, runtime_idevalloc_.mem->size()));
+    runtime_idevalloc_.buffer->didModifyRange(
+        NS::Range(0, runtime_idevalloc_.mem->size()));
   }
 
   void clear_print_assert_buffer() {

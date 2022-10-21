@@ -206,7 +206,8 @@ class UserMtlKernel : public CompiledMtlKernelBase {
 // Internal Metal kernel used to maintain the kernel runtime data
 class SparseRuntimeMtlKernelBase : public CompiledMtlKernelBase {
  public:
-  explicit SparseRuntimeMtlKernelBase(KernelManager& kernel_manager, int args_size)
+  explicit SparseRuntimeMtlKernelBase(KernelManager &kernel_manager,
+                                      int args_size)
       : CompiledMtlKernelBase(params),
         devalloc_(kernel_manager.allocate_memory(args_size)) {
     TI_ASSERT(args_buffer_ != nullptr);

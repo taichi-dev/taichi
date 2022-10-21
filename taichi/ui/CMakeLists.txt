@@ -19,6 +19,7 @@ target_include_directories(taichi_ui
     ${PROJECT_SOURCE_DIR}/external/eigen
     ${PROJECT_SOURCE_DIR}/external/volk
     ${PROJECT_SOURCE_DIR}/external/Vulkan-Headers/include
+    ${PROJECT_SOURCE_DIR}/external/include
     ${LLVM_INCLUDE_DIRS}
   PUBLIC
     ${PROJECT_SOURCE_DIR}/external/glm

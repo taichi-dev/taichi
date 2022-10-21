@@ -450,7 +450,8 @@ if(TI_WITH_PYTHON)
         ${PROJECT_SOURCE_DIR}/external/Vulkan-Headers/include
         ${PROJECT_SOURCE_DIR}/external/imgui
         ${PROJECT_SOURCE_DIR}/external/imgui/backends
-      )
+        ${PROJECT_SOURCE_DIR}/external/include
+    )
     target_include_directories(${CORE_WITH_PYBIND_LIBRARY_NAME} SYSTEM
       PRIVATE
         ${PROJECT_SOURCE_DIR}/external/VulkanMemoryAllocator/include

@@ -168,9 +168,7 @@ class CommandListImpl : public CommandList {
     }
     auto *buf = alloc_buf_mapper_->find(ptr).buffer;
     TI_ASSERT(buf != nullptr);
-    mac::TI_NSRange range;
-    range.location = ptr.offset;
-    range.length = size;
+    mac::TI_NSRange range(ptr.offset, size);
     fill_buffer(encoder.get(), buf, range, (data & 0xff));
     finish_encoder(encoder.get());
   }

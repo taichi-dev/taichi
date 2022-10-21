@@ -4,6 +4,7 @@
 // https://github.com/halide/Halide/blob/master/src/runtime/metal.cpp
 
 #include <string>
+#include <Metal/Metal.hpp>
 
 #include "taichi/common/trait.h"
 #include "taichi/util/lang_util.h"
@@ -14,16 +15,16 @@ namespace metal {
 
 // Expose these incomplete structs so that other modules (e.g. MetalRuntime)
 // don't have to be compiled conditionally.
-struct MTLDevice;
-struct MTLLibrary;
-struct MTLComputePipelineState;
-struct MTLCommandQueue;
-struct MTLCommandBuffer;
-struct MTLComputeCommandEncoder;
-struct MTLBlitCommandEncoder;
-struct MTLFunction;
-struct MTLComputePipelineState;
-struct MTLBuffer;
+typedef MTL::Device MTLDevice;
+typedef MTL::Library MTLLibrary;
+typedef MTL::ComputePipelineState MTLComputePipelineState;
+typedef MTL::CommandQueue MTLCommandQueue;
+typedef MTL::CommandBuffer MTLCommandBuffer;
+typedef MTL::ComputeCommandEncoder MTLComputeCommandEncoder;
+typedef MTL::BlitCommandEncoder MTLBlitCommandEncoder;
+typedef MTL::Function MTLFunction;
+typedef MTL::ComputePipelineState MTLComputePipelineState;
+typedef MTL::Buffer MTLBuffer;
 
 #ifdef TI_PLATFORM_OSX
 

@@ -9,6 +9,7 @@
 #include <objc/message.h>
 #include <objc/objc.h>
 #include <objc/runtime.h>
+#include <Metal/Metal.hpp>
 
 extern "C" {
 void NSLog(/* NSString */ id format, ...);
@@ -79,13 +80,9 @@ nsobj_unique_ptr<O> retain_and_wrap_as_nsobj_unique_ptr(O *nsobj) {
 
 // Prepend "TI_" to native ObjC type names, otherwise clang-format thinks this
 // is an ObjC file and is not happy formatting it.
-struct TI_NSString;
-struct TI_NSArray;
-
-struct TI_NSRange {
-  size_t location{0};
-  size_t length{0};
-};
+typedef NS::String TI_NSString;
+typedef NS::Array TI_NSArray;
+typedef NS::Range TI_NSRange;
 
 // |str| must exist during the entire lifetime of the returned object, as it
 // does not own the underlying memory. Think of it as std::string_view.

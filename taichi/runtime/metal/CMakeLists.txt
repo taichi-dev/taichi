@@ -19,6 +19,7 @@ target_include_directories(metal_runtime
     ${PROJECT_SOURCE_DIR}/external/glad/include
     ${PROJECT_SOURCE_DIR}/external/eigen
     ${PROJECT_SOURCE_DIR}/external/glfw/include
+    ${PROJECT_SOURCE_DIR}/external/include
     ${LLVM_INCLUDE_DIRS}
   PUBLIC
     ${PROJECT_SOURCE_DIR}/external/spdlog/include

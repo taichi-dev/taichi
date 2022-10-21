@@ -12,8 +12,6 @@ class MemoryPool;
 
 namespace metal {
 
-struct MTLDevice;
-
 struct ComputeDeviceParams {
   MTLDevice *device{nullptr};
   MemoryPool *mem_pool{nullptr};

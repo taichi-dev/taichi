@@ -1,5 +1,3 @@
-#include "Metal/Metal.hpp"
-
 #include "taichi/rhi/metal/api.h"
 
 #include "taichi/rhi/metal/constants.h"
@@ -9,11 +7,6 @@ namespace taichi::lang {
 namespace metal {
 
 #ifdef TI_PLATFORM_OSX
-
-extern "C" {
-id MTLCreateSystemDefaultDevice();
-id MTLCopyAllDevices();
-}
 
 namespace {
 
@@ -26,18 +19,16 @@ using mac::wrap_as_nsobj_unique_ptr;
 
 }  // namespace
 
-nsobj_unique_ptr<MTLDevice> mtl_create_system_default_device() {
-  id dev = MTLCreateSystemDefaultDevice();
-  return wrap_as_nsobj_unique_ptr(reinterpret_cast<MTLDevice *>(dev));
+nsobj_unique_ptr<MTL::Device> mtl_create_system_default_device() {
+  return wrap_as_nsobj_unique_ptr(MTL::CreateSystemDefaultDevice());
 }
 
 nsobj_unique_ptr<mac::TI_NSArray> mtl_copy_all_devices() {
-  id na = MTLCopyAllDevices();
-  return wrap_as_nsobj_unique_ptr(reinterpret_cast<mac::TI_NSArray *>(na));
+  return wrap_as_nsobj_unique_ptr(MTL::CopyAllDevices());
 }
 
 std::string mtl_device_name(MTLDevice *dev) {
-  return mac::to_string(cast_call<mac::TI_NSString *>(dev, "name"));
+  return mac::to_string(dev->name());
 }
 
 nsobj_unique_ptr<MTLCommandQueue> new_command_queue(MTLDevice *dev) {
@@ -156,9 +147,7 @@ size_t get_max_total_threads_per_threadgroup(
 }
 
 void did_modify_range(MTLBuffer *buffer, size_t location, size_t length) {
-  mac::TI_NSRange range;
-  range.location = location;
-  range.length = length;
+  mac::TI_NSRange range((NS::UInteger)location, (NS::UInteger)length);
   call(buffer, "didModifyRange:", range);
 }
 

@@ -101,10 +101,12 @@ class CompiledMtlKernelBase {
     }
     TI_ASSERT(buffers.size() == kernel_attribs_.buffers.size());
 
-    MTL::ComputeCommandEncoder* encoder = command_buffer->computeCommandEncoder();
+    MTL::ComputeCommandEncoder *encoder =
+        command_buffer->computeCommandEncoder();
     TI_ASSERT(encoder != nullptr);
 
-    encoder->setLabel(mac::wrap_string_as_ns_string(kernel_attribs_.name).get());
+    encoder->setLabel(
+        mac::wrap_string_as_ns_string(kernel_attribs_.name).get());
     encoder->setComputePipelineState(pipeline_state_.get());
 
     for (int bi = 0; bi < buffers.size(); ++bi) {
@@ -1189,7 +1191,8 @@ class KernelManager::Impl {
   }
 
   void create_new_command_buffer() {
-    cur_command_buffer_ = mac::retain_and_wrap_as_nsobj_unique_ptr(command_queue_->commandBuffer());
+    cur_command_buffer_ = mac::retain_and_wrap_as_nsobj_unique_ptr(
+        command_queue_->commandBuffer());
     TI_ASSERT(cur_command_buffer_ != nullptr);
     auto label = fmt::format("command_buffer_{}", command_buffer_id_++);
     cur_command_buffer_->setLabel(mac::wrap_string_as_ns_string(label).get());

@@ -27,7 +27,6 @@ class AllocToMTLBufferMapper {
 
   struct BufferAndMem {
     MTLBuffer *buffer{nullptr};
-    BufferMemoryView *mem{nullptr};
   };
 
   virtual BufferAndMem find(DeviceAllocationId alloc_id) const = 0;

@@ -292,8 +292,24 @@ class DeviceImpl : public Device, public AllocToMTLBufferMapper {
     AllocationInternal &ialloc =
         allocations_[res.alloc_id];  // "i" for internal
     auto mem = std::make_unique<BufferMemoryView>(params.size, mem_pool_);
-    ialloc.buffer = new_mtl_buffer_no_copy(device_, mem->ptr(), mem->size());
-    ialloc.buffer_mem = std::move(mem);
+
+    // The created MTLBuffer has its storege mode being .manged.
+    // API ref:
+    // https://developer.apple.com/documentation/metal/mtldevice/1433382-makebuffer
+    //
+    // We initially used .shared storage mode, meaning the GPU and CPU shared the
+    // system memory. This turned out to be slow as page fault on GPU was very
+    // costly. By switching to .managed mode, on GPUs with discrete memory model,
+    // the data will reside in both GPU's VRAM and CPU's system RAM. This made the
+    // GPU memory access much faster. But we will need to manually synchronize the
+    // buffer resources between CPU and GPU.
+    //
+    // See also:
+    // https://developer.apple.com/documentation/metal/synchronizing_a_managed_resource
+    // https://developer.apple.com/documentation/metal/setting_resource_storage_modes/choosing_a_resource_storage_mode_in_macos
+    ialloc.buffer = mac::wrap_as_nsobj_unique_ptr(device_->newBuffer(
+        params.size,
+        MTL::ResourceCPUCacheModeDefaultCache | MTL::StorageModeManaged));
     return res;
   }
 
@@ -323,23 +339,23 @@ class DeviceImpl : public Device, public AllocToMTLBufferMapper {
   }
 
   void *map_range(DevicePtr ptr, uint64_t size) override {
-    auto *mem = find(ptr).mem;
-    if (!mem) {
+    auto *buf = find(ptr).buffer;
+    if (!buf) {
       return nullptr;
     }
-    if ((ptr.offset + size) > mem->size()) {
+    if ((ptr.offset + size) > buf->allocatedSize()) {
       TI_ERROR("Range exceeded");
       return nullptr;
     }
-    return (mem->ptr() + ptr.offset);
+    return (buf->contents() + ptr.offset);
   }
 
   void *map(DeviceAllocation alloc) override {
-    auto *mem = find(alloc).mem;
-    if (!mem) {
+    auto *buf = find(alloc).buffer;
+    if (!buf) {
       return nullptr;
     }
-    return mem->ptr();
+    return buf->contents();
   }
 
   void unmap(DevicePtr ptr) override {
@@ -372,7 +388,6 @@ class DeviceImpl : public Device, public AllocToMTLBufferMapper {
       return bm;
     }
     bm.buffer = itr->second.buffer.get();
-    bm.mem = itr->second.buffer_mem.get();
     return bm;
   }
   // Un-shadow the overload from the base class
@@ -384,7 +399,6 @@ class DeviceImpl : public Device, public AllocToMTLBufferMapper {
 
  private:
   struct AllocationInternal {
-    std::unique_ptr<BufferMemoryView> buffer_mem{nullptr};
     nsobj_unique_ptr<MTLBuffer> buffer{nullptr};
   };
 

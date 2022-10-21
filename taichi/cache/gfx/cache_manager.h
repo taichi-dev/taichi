@@ -26,7 +26,7 @@ class CacheManager {
     Mode mode{MemCache};
     std::string cache_path;
     GfxRuntime *runtime{nullptr};
-    std::unique_ptr<aot::TargetDevice> target_device;
+    DeviceCapabilityConfig caps{};
     const std::vector<spirv::CompiledSNodeStructs> *compiled_structs;
   };
 

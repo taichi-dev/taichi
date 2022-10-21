@@ -104,13 +104,13 @@ class AotDataConverter {
 AotModuleBuilderImpl::AotModuleBuilderImpl(
     const std::vector<CompiledSNodeStructs> &compiled_structs,
     Arch device_api_backend,
-    std::unique_ptr<Device> &&target_device)
+    const DeviceCapabilityConfig &caps)
     : compiled_structs_(compiled_structs),
-      device_api_backend_(device_api_backend) {
-  aot_target_device_ =
-      target_device ? std::move(target_device)
-                    : std::make_unique<aot::TargetDevice>(device_api_backend_);
-  aot_target_device_->clone_caps(ti_aot_data_.required_caps);
+      device_api_backend_(device_api_backend),
+      caps_(caps) {
+  for (const auto &pair : caps.to_inner()) {
+    ti_aot_data_.required_caps[to_string(pair.first)] = pair.second;
+  }
   if (!compiled_structs.empty()) {
     ti_aot_data_.root_buffer_size = compiled_structs[0].root_size;
   }
@@ -199,7 +199,7 @@ void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
                                            Kernel *kernel) {
   spirv::lower(kernel);
   auto compiled =
-      run_codegen(kernel, aot_target_device_.get(), compiled_structs_);
+      run_codegen(kernel, this->device_api_backend_, caps_, compiled_structs_);
   compiled.kernel_attribs.name = identifier;
   ti_aot_data_.kernels.push_back(compiled.kernel_attribs);
   ti_aot_data_.spirv_codes.push_back(compiled.task_spirv_source_codes);
@@ -251,7 +251,7 @@ void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier,
                                                 Kernel *kernel) {
   spirv::lower(kernel);
   auto compiled =
-      run_codegen(kernel, aot_target_device_.get(), compiled_structs_);
+      run_codegen(kernel, device_api_backend_, caps_, compiled_structs_);
 
   compiled.kernel_attribs.name = identifier + "|" + key;
   ti_aot_data_.kernels.push_back(compiled.kernel_attribs);

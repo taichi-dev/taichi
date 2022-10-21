@@ -13,6 +13,10 @@ class LlvmDevice : public Device {
     uint64 *result_buffer{nullptr};
   };
 
+  Arch arch() const override {
+    TI_NOT_IMPLEMENTED
+  }
+
   virtual DeviceAllocation allocate_memory_runtime(
       const LlvmRuntimeAllocParams &params) {
     TI_NOT_IMPLEMENTED;

@@ -32,12 +32,6 @@ using mac::nsobj_unique_ptr;
 
 nsobj_unique_ptr<MTLDevice> mtl_create_system_default_device();
 
-nsobj_unique_ptr<MTLComputeCommandEncoder> new_compute_command_encoder(
-    MTLCommandBuffer *buffer);
-
-nsobj_unique_ptr<MTLBlitCommandEncoder> new_blit_command_encoder(
-    MTLCommandBuffer *buffer);
-
 // msl_version: Metal Shader Language version. 0 means not set.
 // See https://developer.apple.com/documentation/metal/mtllanguageversion
 nsobj_unique_ptr<MTLLibrary> new_library_with_source(MTLDevice *device,
@@ -51,17 +45,6 @@ nsobj_unique_ptr<MTLFunction> new_function_with_name(MTLLibrary *library,
 nsobj_unique_ptr<MTLComputePipelineState>
 new_compute_pipeline_state_with_function(MTLDevice *device,
                                          MTLFunction *function);
-
-inline void set_compute_pipeline_state(
-    MTLComputeCommandEncoder *encoder,
-    MTLComputePipelineState *pipeline_state) {
-  mac::call(encoder, "setComputePipelineState:", pipeline_state);
-}
-
-inline void synchronize_resource(MTLBlitCommandEncoder *encoder,
-                                 MTLBuffer *buffer) {
-  mac::call(encoder, "synchronizeResource:", buffer);
-}
 
 template <typename T>
 inline void end_encoding(T *encoder) {

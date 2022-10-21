@@ -92,6 +92,7 @@ class CompiledMtlKernelBase {
  protected:
   using BindBuffers = std::vector<std::pair<MTLBuffer *, BufferDescriptor>>;
 
+  // In autorelease pool scope.
   void launch_if_not_empty(BindBuffers buffers,
                            MTLCommandBuffer *command_buffer) {
     const int num_threads = kernel_attribs_.advisory_total_num_threads;
@@ -99,16 +100,17 @@ class CompiledMtlKernelBase {
       return;
     }
     TI_ASSERT(buffers.size() == kernel_attribs_.buffers.size());
-    auto encoder = new_compute_command_encoder(command_buffer);
+
+    MTL::ComputeCommandEncoder* encoder = command_buffer->computeCommandEncoder();
     TI_ASSERT(encoder != nullptr);
 
-    set_label(encoder.get(), kernel_attribs_.name);
-    set_compute_pipeline_state(encoder.get(), pipeline_state_.get());
+    encoder->setLabel(mac::wrap_string_as_ns_string(kernel_attribs_.name).get());
+    encoder->setComputePipelineState(pipeline_state_.get());
 
     for (int bi = 0; bi < buffers.size(); ++bi) {
       auto &b = buffers[bi];
       TI_ASSERT(b.second == kernel_attribs_.buffers[bi]);
-      set_mtl_buffer(encoder.get(), b.first, /*offset=*/0, bi);
+      encoder->setBuffer(b.first, 0, bi);
     }
 
     const auto tgs = get_thread_grid_settings(
@@ -130,13 +132,16 @@ class CompiledMtlKernelBase {
       ActionRecorder::get_instance().record("launch_kernel",
                                             std::move(record_args));
     }
+
+    // Send to dispatch.
     TI_TRACE(
         "Dispatching Metal kernel {}, num_threadgroups={} "
         "num_threads_per_group={}",
         kernel_attribs_.name, tgs.num_threadgroups, tgs.num_threads_per_group);
-    dispatch_threadgroups(encoder.get(), tgs.num_threadgroups,
-                          tgs.num_threads_per_group);
-    end_encoding(encoder.get());
+    MTL::Size block_count(tgs.num_threadgroups, 1, 1);
+    MTL::Size block_size(tgs.num_threads_per_group, 1, 1);
+    encoder->dispatchThreadgroups(block_count, block_size);
+    encoder->endEncoding();
   }
 
   struct ThreadGridSettings {
@@ -144,6 +149,7 @@ class CompiledMtlKernelBase {
     int num_threadgroups;
   };
 
+  // In autorelease pool scope.
   ThreadGridSettings get_thread_grid_settings(
       int advisory_num_threads,
       int advisory_num_threads_per_group) {
@@ -212,6 +218,7 @@ class SparseRuntimeMtlKernelBase : public CompiledMtlKernelBase {
     TI_ASSERT(args_buffer_ != nullptr);
   }
 
+  // In autorelease pool scope.
   void launch(InputBuffersMap &input_buffers,
               MTLCommandBuffer *command_buffer) override {
     BindBuffers buffers;
@@ -1070,11 +1077,11 @@ class KernelManager::Impl {
     // read back data from root buffer to CPU, it's done through that kernel's
     // context buffer.
     if (!buffers_to_blit.empty()) {
-      auto encoder = new_blit_command_encoder(cur_command_buffer_.get());
+      auto encoder = cur_command_buffer_->blitCommandEncoder();
       for (auto *b : buffers_to_blit) {
-        synchronize_resource(encoder.get(), b);
+        encoder->synchronizeResource(b);
       }
-      end_encoding(encoder.get());
+      encoder->endEncoding();
     }
     // Sync
     if (profiler_)

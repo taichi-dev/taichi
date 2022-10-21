@@ -109,7 +109,7 @@ class CommandListImpl : public CommandList {
   }
 
   void set_label(const std::string &label) {
-    inflight_label_ = label;
+    inflight_label_ = mac::wrap_string_as_ns_string(label);
   }
 
   void bind_pipeline(Pipeline *p) override {
@@ -144,14 +144,14 @@ class CommandListImpl : public CommandList {
     TI_ASSERT(dst_buf != nullptr);
     auto *src_buf = alloc_buf_mapper_->find(src).buffer;
     TI_ASSERT(src_buf != nullptr);
-    auto encoder = new_blit_command_encoder(command_buffer_.get());
+    auto encoder = command_buffer_->blitCommandEncoder();
     TI_ASSERT(encoder != nullptr);
-    if (!inflight_label_.empty()) {
-      metal::set_label(encoder.get(), inflight_label_);
+    if (inflight_label_ != nullptr) {
+      encoder->setLabel(inflight_label_.get());
     }
-    copy_from_buffer_to_buffer(encoder.get(), src_buf, src.offset, dst_buf,
+    copy_from_buffer_to_buffer(encoder, src_buf, src.offset, dst_buf,
                                dst.offset, size);
-    finish_encoder(encoder.get());
+    encoder->endEncoding();
   }
 
   void buffer_fill(DevicePtr ptr, size_t size, uint32_t data) override {
@@ -161,16 +161,17 @@ class CommandListImpl : public CommandList {
       TI_ERROR("Metal can only support 8-bit data for buffer_fill");
       return;
     }
-    auto encoder = new_blit_command_encoder(command_buffer_.get());
+    auto encoder = command_buffer_->blitCommandEncoder();
     TI_ASSERT(encoder != nullptr);
-    if (!inflight_label_.empty()) {
-      metal::set_label(encoder.get(), inflight_label_);
+    encoder->label();
+    if (inflight_label_ != nullptr) {
+      encoder->setLabel(inflight_label_.get());
     }
     auto *buf = alloc_buf_mapper_->find(ptr).buffer;
     TI_ASSERT(buf != nullptr);
     mac::TI_NSRange range(ptr.offset, size);
-    fill_buffer(encoder.get(), buf, range, (data & 0xff));
-    finish_encoder(encoder.get());
+    fill_buffer(encoder, buf, range, (data & 0xff));
+    encoder->endEncoding();
   }
 
   void dispatch(uint32_t x, uint32_t y, uint32_t z) override {
@@ -179,26 +180,29 @@ class CommandListImpl : public CommandList {
 
   void dispatch(CommandList::ComputeSize grid_size,
                 CommandList::ComputeSize block_size) override {
-    auto encoder = new_compute_command_encoder(command_buffer_.get());
+    MTL::ComputeCommandEncoder* encoder = command_buffer_->computeCommandEncoder();
     TI_ASSERT(encoder != nullptr);
-    metal::set_label(encoder.get(), inflight_label_);
+
+    encoder->setLabel(inflight_label_.get());
     const auto &builder = inflight_compute_builder_.value();
-    set_compute_pipeline_state(encoder.get(), builder.pipeline);
-    auto ceil_div = [](uint32_t a, uint32_t b) -> uint32_t {
-      return (a + b - 1) / b;
-    };
+    encoder->setComputePipelineState(builder.pipeline);
+
     for (const auto &[idx, b] : builder.binding_map) {
       auto *buf = alloc_buf_mapper_->find(b.alloc_id).buffer;
       TI_ASSERT(buf != nullptr);
-      set_mtl_buffer(encoder.get(), buf, b.offset, idx);
+      encoder->setBuffer(buf, b.offset, idx);
     }
-    const auto num_blocks_x = ceil_div(grid_size.x, block_size.x);
-    const auto num_blocks_y = ceil_div(grid_size.y, block_size.y);
-    const auto num_blocks_z = ceil_div(grid_size.z, block_size.z);
-    dispatch_threadgroups(encoder.get(), num_blocks_x, num_blocks_y,
-                          num_blocks_z, block_size.x, block_size.y,
-                          block_size.z);
-    finish_encoder(encoder.get());
+
+    auto ceil_div = [](uint32_t a, uint32_t b) -> uint32_t {
+      return (a + b - 1) / b;
+    };
+    MTL::Size block_count(
+      ceil_div(grid_size.x, block_size.x),
+      ceil_div(grid_size.y, block_size.y),
+      ceil_div(grid_size.z, block_size.z));
+    MTL::Size block_size2(block_size.x, block_size.y, block_size.z);
+    encoder->dispatchThreadgroups(block_count, block_size2);
+    encoder->endEncoding();
   }
 
   // Graphics commands are not implemented on Metal
@@ -210,16 +214,9 @@ class CommandListImpl : public CommandList {
     return &(inflight_compute_builder_.value());
   }
 
-  template <typename T>
-  void finish_encoder(T *encoder) {
-    end_encoding(encoder);
-    inflight_label_.clear();
-    inflight_compute_builder_.reset();
-  }
-
   nsobj_unique_ptr<MTLCommandBuffer> command_buffer_{nullptr};
   AllocToMTLBufferMapper *const alloc_buf_mapper_;
-  std::string inflight_label_;
+  nsobj_unique_ptr<NS::String> inflight_label_;
   std::optional<ComputeEncoderBuilder> inflight_compute_builder_;
 };
 

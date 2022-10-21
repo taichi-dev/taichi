@@ -23,20 +23,6 @@ nsobj_unique_ptr<MTL::Device> mtl_create_system_default_device() {
   return wrap_as_nsobj_unique_ptr(MTL::CreateSystemDefaultDevice());
 }
 
-nsobj_unique_ptr<MTLComputeCommandEncoder> new_compute_command_encoder(
-    MTLCommandBuffer *buffer) {
-  auto *encoder =
-      cast_call<MTLComputeCommandEncoder *>(buffer, "computeCommandEncoder");
-  return retain_and_wrap_as_nsobj_unique_ptr(encoder);
-}
-
-nsobj_unique_ptr<MTLBlitCommandEncoder> new_blit_command_encoder(
-    MTLCommandBuffer *buffer) {
-  auto *encoder =
-      cast_call<MTLBlitCommandEncoder *>(buffer, "blitCommandEncoder");
-  return retain_and_wrap_as_nsobj_unique_ptr(encoder);
-}
-
 nsobj_unique_ptr<MTLLibrary> new_library_with_source(MTLDevice *device,
                                                      const std::string &source,
                                                      bool fast_math,

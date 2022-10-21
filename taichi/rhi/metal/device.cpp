@@ -231,9 +231,10 @@ class StreamImpl : public Stream {
   }
 
   std::unique_ptr<CommandList> new_command_list() override {
-    auto cb = new_command_buffer(command_queue_);
+    auto cb = mac::retain_and_wrap_as_nsobj_unique_ptr(command_queue_->commandBuffer());
     TI_ASSERT(cb != nullptr);
-    set_label(cb.get(), fmt::format("command_buffer_{}", list_counter_++));
+    auto label = fmt::format("command_buffer_{}", list_counter_++);
+    cb->setLabel(mac::wrap_string_as_ns_string(label).get());
     return std::make_unique<CommandListImpl>(std::move(cb), alloc_buf_mapper_);
   }
 
@@ -277,7 +278,7 @@ class DeviceImpl : public Device, public AllocToMTLBufferMapper {
     if (only_for_dev_allocation_) {
       return;
     }
-    command_queue_ = new_command_queue(device_);
+    command_queue_ = mac::wrap_as_nsobj_unique_ptr(device_->newCommandQueue());
     TI_ASSERT(command_queue_ != nullptr);
     // TODO: thread local streams?
     stream_ = std::make_unique<StreamImpl>(command_queue_.get(), this);

@@ -23,24 +23,6 @@ nsobj_unique_ptr<MTL::Device> mtl_create_system_default_device() {
   return wrap_as_nsobj_unique_ptr(MTL::CreateSystemDefaultDevice());
 }
 
-nsobj_unique_ptr<mac::TI_NSArray> mtl_copy_all_devices() {
-  return wrap_as_nsobj_unique_ptr(MTL::CopyAllDevices());
-}
-
-std::string mtl_device_name(MTLDevice *dev) {
-  return mac::to_string(dev->name());
-}
-
-nsobj_unique_ptr<MTLCommandQueue> new_command_queue(MTLDevice *dev) {
-  auto *queue = cast_call<MTLCommandQueue *>(dev, "newCommandQueue");
-  return wrap_as_nsobj_unique_ptr(queue);
-}
-
-nsobj_unique_ptr<MTLCommandBuffer> new_command_buffer(MTLCommandQueue *queue) {
-  auto *buffer = cast_call<MTLCommandBuffer *>(queue, "commandBuffer");
-  return retain_and_wrap_as_nsobj_unique_ptr(buffer);
-}
-
 nsobj_unique_ptr<MTLComputeCommandEncoder> new_compute_command_encoder(
     MTLCommandBuffer *buffer) {
   auto *encoder =

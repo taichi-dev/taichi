@@ -9,17 +9,12 @@ namespace taichi {
 namespace mac {
 
 nsobj_unique_ptr<TI_NSString> wrap_string_as_ns_string(const std::string &str) {
-  constexpr int kNSUTF8StringEncoding = 4;
-  id ns_string = clscall("NSString", "alloc");
-  auto *ptr = cast_call<TI_NSString *>(
-      ns_string,
-      "initWithBytesNoCopy:length:encoding:freeWhenDone:", str.data(),
-      str.size(), kNSUTF8StringEncoding, false);
-  return wrap_as_nsobj_unique_ptr(ptr);
+  return wrap_as_nsobj_unique_ptr(NS::String::string(str.c_str(), NS::StringEncoding::UTF8StringEncoding));
 }
 
 std::string to_string(TI_NSString *ns) {
-  return cast_call<const char *>(ns, "UTF8String");
+  // (penguinliong) Specify length to avoid crashes on `nil`.
+  return std::string(ns->utf8String(), ns->lengthOfBytes(NS::StringEncoding::UTF8StringEncoding));
 }
 
 int ns_array_count(TI_NSArray *na) {

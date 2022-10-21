@@ -640,7 +640,7 @@ class KernelManager::Impl {
     }
     device_ = mtl_create_system_default_device();
     TI_ASSERT(device_ != nullptr);
-    command_queue_ = new_command_queue(device_.get());
+    command_queue_ = mac::wrap_as_nsobj_unique_ptr(device_->newCommandQueue());
     TI_ASSERT(command_queue_ != nullptr);
     create_new_command_buffer();
 
@@ -1182,10 +1182,10 @@ class KernelManager::Impl {
   }
 
   void create_new_command_buffer() {
-    cur_command_buffer_ = new_command_buffer(command_queue_.get());
+    cur_command_buffer_ = mac::retain_and_wrap_as_nsobj_unique_ptr(command_queue_->commandBuffer());
     TI_ASSERT(cur_command_buffer_ != nullptr);
-    set_label(cur_command_buffer_.get(),
-              fmt::format("command_buffer_{}", command_buffer_id_++));
+    auto label = fmt::format("command_buffer_{}", command_buffer_id_++);
+    cur_command_buffer_->setLabel(mac::wrap_string_as_ns_string(label).get());
   }
 
   template <typename T>

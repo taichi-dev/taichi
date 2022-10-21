@@ -687,8 +687,7 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
   inline void set_current_caps(DeviceCapabilityConfig &&caps) {
     caps_ = std::move(caps);
   }
-  const DeviceCapabilityConfig &get_current_caps()
-      const override final {
+  const DeviceCapabilityConfig &get_current_caps() const override final {
     return caps_;
   }
 

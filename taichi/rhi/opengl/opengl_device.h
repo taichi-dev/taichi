@@ -302,8 +302,7 @@ class GLDevice : public GraphicsDevice {
     return image_to_int_format_.at(image);
   }
 
-  const DeviceCapabilityConfig &get_current_caps()
-      const override final {
+  const DeviceCapabilityConfig &get_current_caps() const override final {
     return caps_;
   }
 

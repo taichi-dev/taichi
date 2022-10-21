@@ -296,8 +296,7 @@ class Dx11Device : public GraphicsDevice {
                                        ID3D11Device *device);
   };
 
-  const DeviceCapabilityConfig &get_current_caps()
-      const override final {
+  const DeviceCapabilityConfig &get_current_caps() const override final {
     return caps_;
   }
 

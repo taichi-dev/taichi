@@ -91,3 +91,41 @@ def test_matrix_slice_with_variable_invalid():
             r'Or turn on ti.init\(..., dynamic_index=True\) to support indexing with variables!'
     ):
         test_one_col_slice()
+
+
+@test_utils.test(debug=True)
+def test_matrix_slice_write():
+    @ti.kernel
+    def foo():
+        m = ti.Matrix([[0., 0., 0., 0.] for _ in range(3)])
+        vec = ti.Vector([1., 2., 3., 4.])
+        m[0, :] = vec.transpose()
+        ref = ti.Matrix([[1., 2., 3., 4.], [0., 0., 0., 0.], [0., 0., 0., 0.]])
+        assert all(m == ref)
+
+        m[1, 1:3] = ti.Vector([1., 2.]).transpose()
+        ref = ti.Matrix([[1., 2., 3., 4.], [0., 1., 2., 0.], [0., 0., 0., 0.]])
+        assert all(m == ref)
+
+        m1 = ti.Matrix([[1., 1., 1., 1.] for _ in range(2)])
+        m[:2, :] += m1
+        ref = ti.Matrix([[2., 3., 4., 5.], [1., 2., 3., 1.], [0., 0., 0., 0.]])
+        assert all(m == ref)
+
+    foo()
+
+
+@test_utils.test(debug=True, dynamic_index=True)
+def test_matrix_slice_write_dynamic_index():
+    @ti.kernel
+    def foo(i: ti.i32, ref: ti.template()):
+        m = ti.Matrix([[0., 0., 0., 0.] for _ in range(3)])
+        vec = ti.Vector([1., 2., 3., 4.])
+        m[i, :] = vec.transpose()
+        assert all(m == ref)
+
+    for i in range(3):
+        foo(
+            i,
+            ti.Matrix([[1., 2., 3., 4.] if j == i else [0., 0., 0., 0.]
+                       for j in range(3)]))

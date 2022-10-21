@@ -1724,15 +1724,7 @@ class MatrixField(Field):
         return arr
 
     @python_scope
-    def from_numpy(self, arr):
-        """Copies an `numpy.ndarray` into this field.
-
-        Example::
-
-            >>> m = ti.Matrix.field(2, 2, ti.f32, shape=(3, 3))
-            >>> arr = numpp.ones((3, 3, 2, 2))
-            >>> m.from_numpy(arr)
-        """
+    def _from_external_arr(self, arr):
         if len(arr.shape) == len(self.shape) + 1:
             as_vector = True
             assert self.m == 1, "This is not a vector field"
@@ -1744,6 +1736,21 @@ class MatrixField(Field):
         from taichi._kernels import ext_arr_to_matrix  # pylint: disable=C0415
         ext_arr_to_matrix(arr, self, as_vector)
         runtime_ops.sync()
+
+    @python_scope
+    def from_numpy(self, arr):
+        """Copies an `numpy.ndarray` into this field.
+
+        Example::
+
+            >>> m = ti.Matrix.field(2, 2, ti.f32, shape=(3, 3))
+            >>> arr = numpy.ones((3, 3, 2, 2))
+            >>> m.from_numpy(arr)
+        """
+
+        if not arr.flags.c_contiguous:
+            arr = np.ascontiguousarray(arr)
+        self._from_external_arr(arr)
 
     @python_scope
     def __setitem__(self, key, value):

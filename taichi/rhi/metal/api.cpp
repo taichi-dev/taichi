@@ -1,3 +1,5 @@
+#include "Metal/Metal.hpp"
+
 #include "taichi/rhi/metal/api.h"
 
 #include "taichi/rhi/metal/constants.h"

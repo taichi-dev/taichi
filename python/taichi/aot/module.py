@@ -81,7 +81,7 @@ class Module:
         # Now the module file '/path/to/module' contains the Metal kernels
         # for running ``foo`` and ``bar``.
     """
-    def __init__(self, arch, caps=[]):
+    def __init__(self, arch, caps=None):
         """Creates a new AOT module instance
 
         Args:
@@ -89,6 +89,9 @@ class Module:
             in :func:`~taichi.lang.init`.
           caps (List[str]): Enabled device capabilities.
         """
+        if caps is None:
+            caps = []
+
         self._arch = arch
         self._kernels = []
         self._fields = {}

@@ -27,10 +27,10 @@ class TypeExpression {
 using TypeExpr = std::shared_ptr<TypeExpression>;
 
 class TyVar : public TypeExpression {
-  const Identifier name;
+  const Identifier name_;
 
  public:
-  TyVar(Identifier id) : name(id) {
+  explicit TyVar(Identifier id) : name_(id) {
   }
   void unify(int pos,
              DataType dt,
@@ -41,10 +41,10 @@ class TyVar : public TypeExpression {
 };
 
 class TyLub : public TypeExpression {
-  const TypeExpr lhs, rhs;
+  const TypeExpr lhs_, rhs_;
 
  public:
-  TyLub(TypeExpr lhs, TypeExpr rhs) : lhs(lhs), rhs(rhs) {
+  explicit TyLub(TypeExpr lhs, TypeExpr rhs) : lhs_(lhs), rhs_(rhs) {
   }
   void unify(int pos,
              DataType dt,
@@ -55,10 +55,10 @@ class TyLub : public TypeExpression {
 };
 
 class TyCompute : public TypeExpression {
-  const TypeExpr exp;
+  const TypeExpr exp_;
 
  public:
-  TyCompute(TypeExpr exp) : exp(exp) {
+  explicit TyCompute(TypeExpr exp) : exp_(exp) {
   }
   void unify(int pos,
              DataType dt,
@@ -69,10 +69,10 @@ class TyCompute : public TypeExpression {
 };
 
 class TyMono : public TypeExpression {
-  const DataType monotype;
+  const DataType monotype_;
 
  public:
-  TyMono(DataType dt) : monotype(dt) {
+  explicit TyMono(DataType dt) : monotype_(dt) {
   }
   void unify(int pos,
              DataType dt,
@@ -83,32 +83,34 @@ class TyMono : public TypeExpression {
 };
 
 class TyVarMismatch : public TypeSystemError {
-  const Identifier var;
-  const DataType original, conflicting;
+  const Identifier var_;
+  const DataType original_, conflicting_;
 
  public:
-  TyVarMismatch(Identifier var, DataType original, DataType conflicting)
-      : var(var), original(original), conflicting(conflicting) {
+  explicit TyVarMismatch(Identifier var,
+                         DataType original,
+                         DataType conflicting)
+      : var_(var), original_(original), conflicting_(conflicting) {
   }
   std::string to_string() const override;
 };
 
 class TypeMismatch : public TypeSystemError {
-  int position;
-  const DataType param, arg;
+  int position_;
+  const DataType param_, arg_;
 
  public:
-  TypeMismatch(int pos, DataType param, DataType arg)
-      : position(pos), param(param), arg(arg) {
+  explicit TypeMismatch(int pos, DataType param, DataType arg)
+      : position_(pos), param_(param), arg_(arg) {
   }
   std::string to_string() const override;
 };
 
 class TyVarUnsolved : public TypeSystemError {
-  const Identifier var;
+  const Identifier var_;
 
  public:
-  TyVarUnsolved(Identifier var) : var(var) {
+  explicit TyVarUnsolved(Identifier var) : var_(var) {
   }
   std::string to_string() const override;
 };
@@ -122,32 +124,34 @@ class Trait {
 
 class DynamicTrait : public Trait {
  private:
-  std::string name;
-  std::function<bool(const DataType dt)> impl;
+  std::string name_;
+  std::function<bool(const DataType dt)> impl_;
 
  public:
-  DynamicTrait(std::string name, std::function<bool(const DataType dt)> impl)
-      : name(name), impl(impl) {
+  explicit DynamicTrait(std::string name,
+                        std::function<bool(const DataType dt)> impl)
+      : name_(name), impl_(impl) {
   }
   bool validate(const DataType dt) const override;
   std::string to_string() const override;
 };
 
 class TraitMismatch : public TypeSystemError {
-  const DataType dt;
-  const Trait *trait;
+  const DataType dt_;
+  const Trait *trait_;
 
  public:
-  TraitMismatch(const DataType dt, const Trait *trait) : dt(dt), trait(trait) {
+  explicit TraitMismatch(const DataType dt, const Trait *trait)
+      : dt_(dt), trait_(trait) {
   }
   std::string to_string() const override;
 };
 
 class ArgLengthMismatch : public TypeSystemError {
-  const int param, arg;
+  const int param_, arg_;
 
  public:
-  ArgLengthMismatch(int param, int arg) : param(param), arg(arg) {
+  explicit ArgLengthMismatch(int param, int arg) : param_(param), arg_(arg) {
   }
   std::string to_string() const override;
 };
@@ -156,33 +160,35 @@ class Constraint {
  public:
   const std::shared_ptr<TyVar> tyvar;
   const Trait *trait;
-  Constraint(const std::shared_ptr<TyVar> tyvar, const Trait *trait)
+  explicit Constraint(const std::shared_ptr<TyVar> tyvar, const Trait *trait)
       : tyvar(tyvar), trait(trait) {
   }
 };
 
 class Signature {
-  const std::vector<Constraint> constraints;
-  const std::vector<TypeExpr> parameters;
-  const TypeExpr ret_type;
+  const std::vector<Constraint> constraints_;
+  const std::vector<TypeExpr> parameters_;
+  const TypeExpr ret_type_;
 
  public:
-  Signature(std::vector<Constraint> constraints,
-            std::vector<TypeExpr> parameters,
-            TypeExpr ret_type)
-      : constraints(constraints), parameters(parameters), ret_type(ret_type) {
+  explicit Signature(std::vector<Constraint> constraints,
+                     std::vector<TypeExpr> parameters,
+                     TypeExpr ret_type)
+      : constraints_(constraints),
+        parameters_(parameters),
+        ret_type_(ret_type) {
   }
-  Signature(std::vector<TypeExpr> parameters, TypeExpr ret_type)
-      : parameters(parameters), ret_type(ret_type) {
+  explicit Signature(std::vector<TypeExpr> parameters, TypeExpr ret_type)
+      : parameters_(parameters), ret_type_(ret_type) {
   }
-  Signature(TypeExpr ret_type) : ret_type(ret_type) {
+  explicit Signature(TypeExpr ret_type) : ret_type_(ret_type) {
   }
   DataType type_check(std::vector<DataType> arguments) const;
 };
 
 class StaticTraits {
  public:
-  StaticTraits();
+  explicit StaticTraits();
   static const StaticTraits *get();
   const Trait *real;
   const Trait *integral;
@@ -195,7 +201,7 @@ class Operation {
   const std::string name;
   const Signature sig;
 
-  Operation(std::string name, Signature sig) : name(name), sig(sig) {
+  explicit Operation(std::string name, Signature sig) : name(name), sig(sig) {
   }
   virtual ~Operation() = default;
 
@@ -207,14 +213,12 @@ class Operation {
 
 class InternalOps {
  public:
-  InternalOps();
+  explicit InternalOps();
   static const InternalOps *get();
 #define PER_INTERNAL_OP(x) const Operation *x;
 #include "taichi/inc/internal_ops.inc.h"
 #undef PER_INTERNAL_OP
 };
-
-class InternalTestOps {};
 
 }  // namespace lang
 }  // namespace taichi

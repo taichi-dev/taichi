@@ -5,7 +5,11 @@ add_library(${METAL_RHI})
 target_sources(${METAL_RHI}
   PRIVATE
     api.cpp
-    device.cpp
+    metal_device.cpp
+    metal_stream.cpp
+    metal_command_list.cpp
+    metal_pipeline.cpp
+    metal_resource_binder.cpp
   )
 
 # TODO(#4832) some dependencies here should not be required as they

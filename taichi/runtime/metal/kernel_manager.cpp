@@ -9,7 +9,6 @@
 #include <string_view>
 
 #include "taichi/rhi/metal/constants.h"
-#include "taichi/rhi/metal/device.h"
 #include "taichi/runtime/metal/features.h"
 #include "taichi/runtime/metal/runtime_utils.h"
 #include "taichi/inc/constants.h"

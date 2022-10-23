@@ -31,6 +31,9 @@ PER_DEVICE_CAPABILITY(spirv_has_subgroup_ballot)
 PER_DEVICE_CAPABILITY(spirv_has_non_semantic_info)
 // Graphics Caps
 PER_DEVICE_CAPABILITY(wide_lines)
+// Metal Caps
+PER_DEVICE_CAPABILITY(metal_msl_version)
+PER_DEVICE_CAPABILITY(metal_fast_math)
 #endif
 
 #ifdef PER_BUFFER_FORMAT

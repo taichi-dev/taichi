@@ -571,6 +571,7 @@ struct LLVMRuntime {
   parallel_for_type parallel_for;
   ListManager *element_lists[taichi_max_num_snodes];
   NodeManager *node_allocators[taichi_max_num_snodes];
+  NodeManager *argument_buffer_allocator;
   Ptr ambient_elements[taichi_max_num_snodes];
   Ptr temporaries;
   RandState *rand_states;
@@ -877,6 +878,14 @@ Ptr LLVMRuntime::request_allocate_aligned(std::size_t size,
   }
 }
 
+RuntimeContext *allocate_runtime_context(LLVMRuntime *runtime) {
+  return (RuntimeContext *)runtime->argument_buffer_allocator->allocate();
+}
+
+void recycle_runtime_context(LLVMRuntime *runtime, RuntimeContext *ptr) {
+  runtime->argument_buffer_allocator->recycle((Ptr)ptr);
+}
+
 void runtime_memory_allocate_aligned(LLVMRuntime *runtime,
                                      std::size_t size,
                                      std::size_t alignment) {
@@ -940,6 +949,10 @@ void runtime_initialize(
       sizeof(RandState) * runtime->num_rand_states, taichi_page_size);
   for (int i = 0; i < runtime->num_rand_states; i++)
     initialize_rand_state(&runtime->rand_states[i], starting_rand_state + i);
+}
+
+void runtime_initialize_runtime_context_buffer(LLVMRuntime *runtime) {
+  runtime->argument_buffer_allocator = runtime->create<NodeManager>(runtime, sizeof(RuntimeContext), 4096);
 }
 
 void runtime_initialize_snodes(LLVMRuntime *runtime,

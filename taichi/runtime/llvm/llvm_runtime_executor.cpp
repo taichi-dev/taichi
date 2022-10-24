@@ -610,6 +610,7 @@ void LlvmRuntimeExecutor::materialize_runtime(MemoryPool *memory_pool,
         "LLVMRuntime_set_profiler_stop", llvm_runtime_,
         (void *)&KernelProfilerBase::profiler_stop);
   }
+  runtime_jit->call<void *>("runtime_initialize_runtime_context_buffer", llvm_runtime_);
 }
 
 void LlvmRuntimeExecutor::destroy_snode_tree(SNodeTree *snode_tree) {

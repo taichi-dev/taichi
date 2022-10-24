@@ -26,6 +26,7 @@ struct RuntimeContext {
   // - raw ptrs: for external array, or torch-based ndarray
   // - DeviceAllocation*: for taichi ndaray
   uint64 args[taichi_max_num_args_total];
+  uint64 grad_args[taichi_max_num_args_total];
   int32 extra_args[taichi_max_num_args_extra][taichi_max_num_indices];
   int32 cpu_thread_id;
 
@@ -110,6 +111,23 @@ struct RuntimeContext {
                        intptr_t devalloc_ptr,
                        const std::vector<int> &shape) {
     args[arg_id] = taichi_union_cast_with_different_sizes<uint64>(devalloc_ptr);
+    set_array_device_allocation_type(arg_id, DevAllocType::kNdarray);
+    TI_ASSERT(shape.size() <= taichi_max_num_indices);
+    size_t total_size = 1;
+    for (int i = 0; i < shape.size(); i++) {
+      extra_args[arg_id][i] = shape[i];
+      total_size *= shape[i];
+    }
+    set_array_runtime_size(arg_id, total_size);
+  }
+
+  void set_arg_ndarray(int arg_id,
+                       intptr_t devalloc_ptr,
+                       intptr_t devalloc_ptr_grad,
+                       const std::vector<int> &shape) {
+    args[arg_id] = taichi_union_cast_with_different_sizes<uint64>(devalloc_ptr);
+    grad_args[arg_id] =
+        taichi_union_cast_with_different_sizes<uint64>(devalloc_ptr_grad);
     set_array_device_allocation_type(arg_id, DevAllocType::kNdarray);
     TI_ASSERT(shape.size() <= taichi_max_num_indices);
     size_t total_size = 1;

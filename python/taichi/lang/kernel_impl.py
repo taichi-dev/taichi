@@ -662,7 +662,15 @@ class Kernel:
                 elif isinstance(needed,
                                 ndarray_type.NdarrayType) and isinstance(
                                     v, taichi.lang._ndarray.Ndarray):
-                    launch_ctx.set_arg_ndarray(actual_argument_slot, v.arr)
+                    has_external_arrays = True
+                    v_primal = v.arr
+                    v_grad = v.grad.arr if v.grad else None
+                    if v_grad is None:
+                        launch_ctx.set_arg_ndarray(actual_argument_slot,
+                                                   v_primal)
+                    else:
+                        launch_ctx.set_arg_ndarray_with_grad(
+                            actual_argument_slot, v_primal, v_grad)
                 elif isinstance(needed,
                                 texture_type.TextureType) and isinstance(
                                     v, taichi.lang._texture.Texture):

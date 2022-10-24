@@ -189,7 +189,7 @@ class NdArray {
     return memory_.unmap();
   }
 
-  inline void read(T *dst, size_t size) const {
+  inline void read(void *dst, size_t size) const {
     memory_.read(dst, size);
   }
   inline void read(std::vector<T> &dst) const {
@@ -201,7 +201,7 @@ class NdArray {
                   "sizeof(U) must be a multiple of sizeof(T)");
     read((T *)dst.data(), dst.size() * sizeof(U));
   }
-  inline void write(const T *src, size_t size) const {
+  inline void write(const void *src, size_t size) const {
     memory_.write(src, size);
   }
   inline void write(const std::vector<T> &src) const {

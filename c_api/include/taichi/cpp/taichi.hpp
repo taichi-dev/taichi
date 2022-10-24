@@ -193,25 +193,25 @@ class NdArray {
     memory_.read(dst, count * sizeof(T));
   }
   inline void read(std::vector<T> &dst) const {
-    read(dst.data(), dst.size() * sizeof(T));
+    read(dst.data(), dst.size());
   }
   template <typename U>
   inline void read(std::vector<U> &dst) const {
     static_assert(sizeof(U) % sizeof(T) == 0,
                   "sizeof(U) must be a multiple of sizeof(T)");
-    read((T *)dst.data(), dst.size() * sizeof(U));
+    read((T *)dst.data(), dst.size() * (sizeof(U) / sizeof(T)));
   }
   inline void write(const T *src, size_t count) const {
     memory_.write(src, count * sizeof(T));
   }
   inline void write(const std::vector<T> &src) const {
-    write(src.data(), src.size() * sizeof(T));
+    write(src.data(), src.size());
   }
   template <typename U>
   inline void write(const std::vector<U> &src) const {
     static_assert(sizeof(U) % sizeof(T) == 0,
                   "sizeof(U) must be a multiple of sizeof(T)");
-    write((const T *)src.data(), src.size() * sizeof(U));
+    write((const T *)src.data(), src.size() * (sizeof(U) / sizeof(T)));
   }
 
   constexpr TiDataType elem_type() const {

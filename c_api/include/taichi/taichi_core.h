@@ -321,7 +321,7 @@ typedef struct TiComputeGraph_t *TiComputeGraph;
 // are success states.
 typedef enum TiError {
   // The output data is truncated because the user-provided buffer is too small.
-  TI_ERROR_INCOMPLETE = 1,
+  TI_ERROR_TRUNCATED = 1,
   // The Taichi C-API invocation finished gracefully.
   TI_ERROR_SUCCESS = 0,
   // The invoked API, or the combination of parameters is not supported by the

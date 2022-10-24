@@ -252,6 +252,7 @@ class Documentation:
             SYM_PATTERN = r"\`(\w+\.\w+)\`"
             FIELD_PATTERN = r"-\s+\`(\w+\.\w+\.\w+)\`:\s*(.*)$"
             cur_sym = None
+            api_full_refs = defaultdict(list)
             api_refs = defaultdict(list)
             api_field_refs = defaultdict(str)
             for line in templ[i:]:
@@ -269,6 +270,8 @@ class Documentation:
                     cur_sym = m[1]
                     continue
 
+                api_full_refs[cur_sym] += [line]
+
                 m = re.match(FIELD_PATTERN, line)
                 if m:
                     api_field_refs[m[1]] = m[2]
@@ -278,7 +281,12 @@ class Documentation:
 
             self.markdown_metadata = markdown_metadata
             self.module_doc = module_doc
+            # Full references including all lines for symbol specification and
+            # field specification.
+            self.api_full_refs = api_full_refs
+            # Symbol specifications without the field specifications.
             self.api_refs = api_refs
+            # Field specifications keyed by field symbol triplets.
             self.api_field_refs = api_field_refs
 
 

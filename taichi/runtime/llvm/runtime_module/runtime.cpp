@@ -952,7 +952,8 @@ void runtime_initialize(
 }
 
 void runtime_initialize_runtime_context_buffer(LLVMRuntime *runtime) {
-  runtime->argument_buffer_allocator = runtime->create<NodeManager>(runtime, sizeof(RuntimeContext), 4096);
+  runtime->argument_buffer_allocator =
+      runtime->create<NodeManager>(runtime, sizeof(RuntimeContext), 4096);
 }
 
 void runtime_initialize_snodes(LLVMRuntime *runtime,

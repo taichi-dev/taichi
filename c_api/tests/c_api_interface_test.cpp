@@ -62,6 +62,20 @@ TEST_F(CapiTest, DryRunMemoryAllocation) {
   }
 }
 
+TEST_F(CapiTest, MapDeviceOnlyMemory) {
+  {
+    ti::Runtime runtime(TI_ARCH_VULKAN);
+
+    runtime.allocate_memory(100);
+    char err_msg[256] {0};
+    TiError err = ti_get_last_error(sizeof(err_msg), err_msg);
+
+    TI_ASSERT(std::string(err_msg).find("host_read") != std::string::npos);
+    TI_ASSERT(std::string(err_msg).find("host_write") != std::string::npos);
+    TI_ASSERT(std::string(err_msg).find("host_access") != std::string::npos);
+  }
+}
+
 TEST_F(CapiTest, DryRunImageAllocation) {
   if (capi::utils::is_vulkan_available()) {
     {

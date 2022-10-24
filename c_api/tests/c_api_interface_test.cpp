@@ -76,6 +76,8 @@ TEST_F(CapiTest, FailMapDeviceOnlyMemory) {
     TI_ASSERT(std::string(err_msg).find("host_read") != std::string::npos);
     TI_ASSERT(std::string(err_msg).find("host_write") != std::string::npos);
     TI_ASSERT(std::string(err_msg).find("host_access") != std::string::npos);
+
+    ti_set_last_error(TI_ERROR_SUCCESS, nullptr);
   }
 }
 

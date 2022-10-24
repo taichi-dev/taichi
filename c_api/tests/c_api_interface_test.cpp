@@ -67,7 +67,7 @@ TEST_F(CapiTest, MapDeviceOnlyMemory) {
     ti::Runtime runtime(TI_ARCH_VULKAN);
 
     ti::Memory mem = runtime.allocate_memory(100);
-    void* mapped = mem.map();
+    mem.map();
 
     char err_msg[256]{0};
     TiError err = ti_get_last_error(sizeof(err_msg), err_msg);

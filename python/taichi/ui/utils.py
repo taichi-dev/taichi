@@ -1,8 +1,8 @@
 import platform
-import re
 from math import acos, asin, cos, sin
 
 from taichi._lib import core as _ti_core
+from taichi._lib.utils import try_get_wheel_tag
 from taichi.lang.impl import default_cfg
 from taichi.lang.matrix import Vector
 
@@ -66,31 +66,6 @@ def vec_to_euler(v):
     return yaw, pitch
 
 
-def try_get_wheel_tag(module):
-    try:
-        import wheel.metadata  # pylint: disable=import-outside-toplevel
-        wheel_path = f'{module.__path__[0]}-{".".join(map(str, module.__version__))}.dist-info/WHEEL'
-        meta = wheel.metadata.read_pkg_info(wheel_path)
-        return meta.get('Tag')
-    except Exception:
-        return None
-
-
-def try_get_loaded_libc_version():
-    assert platform.system() == "Linux"
-    with open('/proc/self/maps') as f:
-        content = f.read()
-
-    try:
-        libc_path = next(v for v in content.split() if 'libc-' in v)
-        ver = re.findall(r'\d+\.\d+', libc_path)
-        if not ver:
-            return None
-        return tuple([int(v) for v in ver[0].split('.')])
-    except StopIteration:
-        return None
-
-
 class GGUINotAvailableException(Exception):
     pass
 
@@ -98,8 +73,8 @@ class GGUINotAvailableException(Exception):
 def check_ggui_availability():
     """Checks if the `GGUI` environment is available.
     """
-    if _ti_core.GGUI_AVAILABLE:
-        return
+    # if _ti_core.GGUI_AVAILABLE:
+    #     return
 
     try:
         # Try identifying the reason
@@ -107,26 +82,9 @@ def check_ggui_availability():
         wheel_tag = try_get_wheel_tag(taichi)
         if platform.system(
         ) == "Linux" and wheel_tag and 'manylinux2014' in wheel_tag:
-            libc_ver = try_get_loaded_libc_version()
-            if libc_ver and libc_ver < (2, 27):
-                raise GGUINotAvailableException(
-                    "GGUI is not available since you have installed a restricted version of taichi. "
-                    "Your OS is outdated, try upgrading to a recent one (e.g. Ubuntu 18.04 or later) if possible."
-                )
-
-            try:
-                import pip  # pylint: disable=import-outside-toplevel
-                ver = tuple([int(v) for v in pip.__version__.split('.')])
-                if ver < (20, 3, 0):
-                    raise GGUINotAvailableException(
-                        "GGUI is not available since you have installed a restricted version of taichi. "
-                        f"Your pip (version {pip.__version__}) is outdated (20.3.0 or later required), "
-                        "try upgrading pip and install taichi again.")
-            except ImportError:
-                pass
-
             raise GGUINotAvailableException(
-                "GGUI is not available since you have installed a restricted version of taichi."
+                "GGUI is not available since you have installed a restricted version of taichi. "
+                "Please see yellow warning messages printed during startup for details."
             )
 
     except GGUINotAvailableException:

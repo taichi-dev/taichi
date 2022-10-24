@@ -1563,14 +1563,15 @@ void *VulkanDevice::map(DeviceAllocation alloc) {
   VkResult res;
   if (alloc_int.buffer->allocator) {
     res = vmaMapMemory(alloc_int.buffer->allocator,
-                 alloc_int.buffer->allocation, &alloc_int.mapped);
+                       alloc_int.buffer->allocation, &alloc_int.mapped);
   } else {
     res = vkMapMemory(device_, alloc_int.alloc_info.deviceMemory,
-                alloc_int.alloc_info.offset, alloc_int.alloc_info.size, 0,
-                &alloc_int.mapped);
+                      alloc_int.alloc_info.offset, alloc_int.alloc_info.size, 0,
+                      &alloc_int.mapped);
   }
   if (alloc_int.mapped == nullptr || res == VK_ERROR_MEMORY_MAP_FAILED) {
-    TI_ERROR("cannot map memory, potentially because the memory is not "
+    TI_ERROR(
+        "cannot map memory, potentially because the memory is not "
         "accessible from the host: ensure your memory is allocated with "
         "`host_read=true` or `host_write=true` (or `host_access=true` in C++ "
         "wrapper)");

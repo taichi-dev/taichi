@@ -246,7 +246,7 @@ A collection of Taichi kernels (a compute graph) to launch on the offload target
 
 Errors reported by the Taichi C-API. Enumerants greater than or equal to zero are success states.
 
-- `enumeration.error.incomplete`: The output data is truncated because the user-provided buffer is too small.
+- `enumeration.error.truncated`: The output data is truncated because the user-provided buffer is too small.
 - `enumeration.error.success`: The Taichi C-API invocation finished gracefully.
 - `enumeration.error.not_supported`: The invoked API, or the combination of parameters is not supported by the Taichi C-API.
 - `enumeration.error.corrupted_data`: Provided data is corrupted.

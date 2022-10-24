@@ -507,15 +507,25 @@ class Kernel {
     return at(i);
   }
 
-  // Temporary workaround for setting vec/matrix arguments in a flattened way.
   template <typename T>
-  void set(uint32_t i, const std::vector<T> &v) {
-    if (i + v.size() >= args_.size()) {
-      args_.resize(i + v.size());
-    }
+  void push_arg(const std::vector<T> &v) {
+    int idx = args_.size();
+    // Temporary workaround for setting vec/matrix arguments in a flattened way.
+    args_.resize(args_.size() + v.size());
     for (int j = 0; j < v.size(); ++j) {
-      at(i + j) = v[j];
+      at(idx + j) = v[j];
     }
+  }
+
+  template <typename T>
+  void push_arg(const T &arg) {
+    int idx = args_.size();
+    args_.resize(idx + 1);
+    at(idx) = arg;
+  }
+
+  void clear_args() {
+    args_.clear();
   }
 
   void launch(uint32_t argument_count, const TiArgument *arguments) {

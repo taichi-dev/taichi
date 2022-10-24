@@ -4,7 +4,7 @@ from taichi_json import (Alias, BitField, BuiltInType, Definition, EntryBase,
                          Enumeration, Field, Function, Handle, Module,
                          Structure, Union)
 
-#from os import system
+from os import system
 
 
 def get_type_name(x: EntryBase):
@@ -53,7 +53,7 @@ def get_api_field_ref(module: Module, x: EntryBase, field_sym: str) -> list:
 
 
 def get_declr(module: Module, x: EntryBase, with_docs=False):
-    out = [""]
+    out = []
     if with_docs:
         out += get_api_ref(module, x)
 
@@ -274,7 +274,7 @@ def print_module_header(module: Module):
 
     for x in module.declr_reg:
         declr = module.declr_reg.resolve(x)
-        out += [get_declr(module, declr, True)]
+        out += ["", get_declr(module, declr, True)]
 
     out += [
         "",
@@ -296,7 +296,7 @@ def generate_module_header(module):
     with open(path, "w") as f:
         f.write(print_module_header(module))
 
-    #system(f"clang-format {path} -i")
+    system(f"clang-format {path} -i")
 
 
 if __name__ == "__main__":

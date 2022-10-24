@@ -86,7 +86,7 @@
                     "name": "error",
                     "type": "enumeration",
                     "cases": {
-                        "incomplete": 1,
+                        "truncated": 1,
                         "success": 0,
                         "not_supported": -1,
                         "corrupted_data": -2,

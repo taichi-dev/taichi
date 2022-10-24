@@ -16,8 +16,8 @@ thread_local ErrorCache thread_error_cache;
 
 const char *describe_error(TiError error) {
   switch (error) {
-    case TI_ERROR_INCOMPLETE:
-      return "incomplete";
+    case TI_ERROR_TRUNCATED:
+      return "truncated";
     case TI_ERROR_SUCCESS:
       return "success";
     case TI_ERROR_NOT_SUPPORTED:
@@ -126,14 +126,6 @@ TiError ti_get_last_error(uint64_t message_size, char *message) {
 // external procedures.
 void ti_set_last_error(TiError error, const char *message) {
   TI_CAPI_TRY_CATCH_BEGIN();
-  if (error >= TI_ERROR_SUCCESS &&
-      thread_error_cache.error < TI_ERROR_SUCCESS) {
-    TI_WARN(
-        "Overriding C-API error: ({}) with ({}) is forbidden thus rejected.",
-        describe_error(thread_error_cache.error), describe_error(error));
-    return;
-  }
-
   if (error < TI_ERROR_SUCCESS) {
     TI_WARN("C-API error: ({}) {}", describe_error(error), message);
     if (message != nullptr) {

@@ -169,6 +169,7 @@ def _print_taichi_header():
 
     print(header)
 
+
 _print_taichi_header()
 
 
@@ -227,14 +228,18 @@ def warn_restricted_version():
                 if pip_ver and pip_ver < (20, 3, 0):
                     print_yellow_bold(
                         f"!! Your pip (version {'.'.join(map(str, pip_ver))}) is outdated (20.3.0 or later required), "
-                        "try upgrading pip and install taichi again."
+                        "try upgrading pip and install taichi again.")
+                    print()
+                    print_yellow_bold(
+                        "    $ python3 -m pip install --upgrade pip")
+                    print_yellow_bold(
+                        "    $ python3 -m pip install --force-reinstall taichi"
                     )
                     print()
-                    print_yellow_bold("    $ python3 -m pip install --upgrade pip")
-                    print_yellow_bold("    $ python3 -m pip install --force-reinstall taichi")
-                    print()
 
-                print_yellow_bold("You can suppress this warning by setting the environment variable TI_MANYLINUX2014_OK=1.")
+                print_yellow_bold(
+                    "You can suppress this warning by setting the environment variable TI_MANYLINUX2014_OK=1."
+                )
         except Exception:
             pass
 

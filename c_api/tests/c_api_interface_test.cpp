@@ -70,6 +70,7 @@ TEST_F(CapiTest, MapDeviceOnlyMemory) {
     char err_msg[256] {0};
     TiError err = ti_get_last_error(sizeof(err_msg), err_msg);
 
+    TI_ASSERT(err == TI_ERROR_INVALID_STATE);
     TI_ASSERT(std::string(err_msg).find("host_read") != std::string::npos);
     TI_ASSERT(std::string(err_msg).find("host_write") != std::string::npos);
     TI_ASSERT(std::string(err_msg).find("host_access") != std::string::npos);

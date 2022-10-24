@@ -735,7 +735,10 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
       if (CHECK_VERSION(1, 3) ||
           buffer_device_address_feature.bufferDeviceAddress) {
         if (device_supported_features.shaderInt64) {
+// Temporarily disable it on macOS: https://github.com/taichi-dev/taichi/issues/6295
+#if !defined(__APPLE__)
           caps.set(DeviceCapability::spirv_has_physical_storage_buffer, true);
+#endif
         }
       }
       *pNextEnd = &buffer_device_address_feature;

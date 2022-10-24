@@ -73,8 +73,8 @@ class GGUINotAvailableException(Exception):
 def check_ggui_availability():
     """Checks if the `GGUI` environment is available.
     """
-    # if _ti_core.GGUI_AVAILABLE:
-    #     return
+    if _ti_core.GGUI_AVAILABLE:
+        return
 
     try:
         # Try identifying the reason

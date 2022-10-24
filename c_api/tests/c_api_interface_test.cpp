@@ -62,8 +62,8 @@ TEST_F(CapiTest, DryRunMemoryAllocation) {
   }
 }
 
-TEST_F(CapiTest, MapDeviceOnlyMemory) {
-  {
+TEST_F(CapiTest, FailMapDeviceOnlyMemory) {
+  if (capi::utils::is_vulkan_available()) {
     ti::Runtime runtime(TI_ARCH_VULKAN);
 
     ti::Memory mem = runtime.allocate_memory(100);

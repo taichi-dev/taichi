@@ -1327,6 +1327,14 @@ class Matrix(TaichiOperations):
                     0].n, "Input vectors must share the same shape"
             # l-value copy:
             return Matrix([[row(i) for i in range(row.n)] for row in rows])
+
+        for i, row in enumerate(rows):
+            ast_builder = impl.get_runtime().prog.current_ast_builder()
+            if impl.current_cfg().real_matrix and isinstance(row, impl.Expr):
+                rows[i] = [
+                    impl.Expr(x) for x in ast_builder.expand_expr([row.ptr])
+                ]
+
         if isinstance(rows[0], list):
             for row in rows:
                 assert len(row) == len(

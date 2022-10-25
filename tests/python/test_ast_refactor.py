@@ -852,8 +852,7 @@ def test_dict():
         foo(2)
 
 
-@test_utils.test()
-def test_listcomp():
+def _test_listcomp():
     @ti.func
     def identity(dt, n: ti.template()):
         return ti.Matrix([[ti.cast(int(i == j), dt) for j in range(n)]
@@ -870,6 +869,16 @@ def test_listcomp():
         return ret
 
     assert foo(5) == 1 + 4 + 9 + 16
+
+
+@test_utils.test()
+def test_listcomp():
+    _test_listcomp()
+
+
+@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
+def test_listcomp_matrix_scalarize():
+    _test_listcomp()
 
 
 @test_utils.test()

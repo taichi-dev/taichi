@@ -14,7 +14,7 @@ class BinaryOpSimp : public BasicStmtVisitor {
   bool operand_swapped;
 
   explicit BinaryOpSimp(bool fast_math_)
-      : BasicStmtVisitor(), fast_math(fast_math_), operand_swapped(false) {
+      : fast_math(fast_math_), operand_swapped(false) {
   }
 
   bool try_rearranging_const_rhs(BinaryOpStmt *stmt) {

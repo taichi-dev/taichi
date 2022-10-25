@@ -22,14 +22,12 @@ static void taichi_sparse_test(TiArch arch) {
   ti::Kernel k_check_img_value = aot_mod.get_kernel("check_img_value");
 
   k_fill_img.launch();
-  for (int i = 0; i < 100; i++) {
-    float val = 0.05f * i;
+  float val = 0.05f;
 
-    k_block1_deactivate_all.launch();
-    k_activate[0] = val;
-    k_activate.launch();
-    k_paint.launch();
-  }
+  k_block1_deactivate_all.launch();
+  k_activate[0] = val;
+  k_activate.launch();
+  k_paint.launch();
 
   // Accuracy Check
   k_check_img_value.launch();

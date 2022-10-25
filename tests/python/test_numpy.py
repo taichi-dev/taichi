@@ -89,18 +89,21 @@ def test_numpy_2d_transpose():
     def test_numpy(arr: ti.types.ndarray()):
         for i in ti.grouped(val):
             val[i] = arr[i]
+            arr[i] = 1
 
     a = np.empty(shape=(n, m), dtype=np.int32)
+    b = a.transpose()
 
     for i in range(n):
         for j in range(m):
             a[i, j] = i * j + i * 4
 
-    test_numpy(a.transpose())
+    test_numpy(b)
 
     for i in range(n):
         for j in range(m):
             assert val[i, j] == i * j + j * 4
+            assert a[i][j] == 1
 
 
 @test_utils.test()
@@ -234,3 +237,15 @@ def test_numpy_op_with_matrix():
         assert all(y == [1.0, 2.0])
 
     test()
+
+
+@test_utils.test()
+def test_numpy_view():
+    @ti.kernel
+    def fill(img: ti.types.ndarray()):
+        img[0] = 1
+
+    a = np.zeros(shape=(2, 2))[:, 0]
+    with pytest.raises(ValueError,
+                       match='Non contiguous numpy arrays are not supported'):
+        fill(a)

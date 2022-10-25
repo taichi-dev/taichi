@@ -26,11 +26,11 @@ class CacheManager {
     Mode mode{MemCache};
     std::string cache_path;
     GfxRuntime *runtime{nullptr};
-    std::unique_ptr<aot::TargetDevice> target_device;
+    DeviceCapabilityConfig caps{};
     const std::vector<spirv::CompiledSNodeStructs> *compiled_structs;
   };
 
-  CacheManager(Params &&init_params);
+  explicit CacheManager(Params &&init_params);
 
   CompiledKernelData load_or_compile(CompileConfig *config, Kernel *kernel);
   void dump_with_merging() const;

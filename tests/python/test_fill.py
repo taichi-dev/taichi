@@ -3,69 +3,65 @@ from tests import test_utils
 
 
 @test_utils.test()
-def test_fill_scalar():
-    val = ti.field(ti.i32)
+def test_fill_scalar_field():
     n = 4
     m = 7
-
-    ti.root.dense(ti.ij, (n, m)).place(val)
-
-    for i in range(n):
-        for j in range(m):
-            val[i, j] = i + j * 3
+    val = ti.field(ti.i32, shape=(n, m))
 
     val.fill(2)
-
     for i in range(n):
         for j in range(m):
             assert val[i, j] == 2
 
+    @ti.kernel
+    def fill_in_kernel(v: ti.i32):
+        val.fill(v)
 
-@test_utils.test()
-def test_fill_matrix_scalar():
-    val = ti.Matrix.field(2, 3, ti.i32)
-
-    n = 4
-    m = 7
-
-    ti.root.dense(ti.ij, (n, m)).place(val)
-
+    fill_in_kernel(3)
     for i in range(n):
         for j in range(m):
-            for p in range(2):
-                for q in range(3):
-                    val[i, j][p, q] = i + j * 3
+            assert val[i, j] == 3
+
+
+@test_utils.test()
+def test_fill_matrix_field_with_scalar():
+    n = 4
+    m = 7
+    val = ti.Matrix.field(2, 3, ti.i32, shape=(n, m))
 
     val.fill(2)
-
     for i in range(n):
         for j in range(m):
-            for p in range(2):
-                for q in range(3):
-                    assert val[i, j][p, q] == 2
+            assert (val[i, j] == 2).all()
+
+    @ti.kernel
+    def fill_in_kernel(v: ti.i32):
+        val.fill(v)
+
+    fill_in_kernel(3)
+    for i in range(n):
+        for j in range(m):
+            assert (val[i, j] == 3).all()
 
 
 @test_utils.test()
-def test_fill_matrix_matrix():
-    val = ti.Matrix.field(2, 3, ti.i32)
-
+def test_fill_matrix_field_with_matrix():
     n = 4
     m = 7
-
-    ti.root.dense(ti.ij, (n, m)).place(val)
-
-    for i in range(n):
-        for j in range(m):
-            for p in range(2):
-                for q in range(3):
-                    val[i, j][p, q] = i + j * 3
+    val = ti.Matrix.field(2, 3, ti.i32, shape=(n, m))
 
     mat = ti.Matrix([[0, 1, 2], [2, 3, 4]])
-
     val.fill(mat)
-
     for i in range(n):
         for j in range(m):
-            for p in range(2):
-                for q in range(3):
-                    assert val[i, j][p, q] == mat(p, q)
+            assert (val[i, j] == mat).all()
+
+    @ti.kernel
+    def fill_in_kernel(v: ti.types.matrix(2, 3, ti.i32)):
+        val.fill(v)
+
+    mat = ti.Matrix([[4, 5, 6], [6, 7, 8]])
+    fill_in_kernel(mat)
+    for i in range(n):
+        for j in range(m):
+            assert (val[i, j] == mat).all()

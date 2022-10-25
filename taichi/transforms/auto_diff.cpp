@@ -239,7 +239,7 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
 class PromoteSSA2LocalVar : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
 
-  PromoteSSA2LocalVar(Block *block) {
+  explicit PromoteSSA2LocalVar(Block *block) {
     alloca_block_ = block;
     invoke_default_visitor = true;
     execute_once_ = true;
@@ -436,7 +436,7 @@ class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
       auto stack_alloca = Stmt::make<AdStackAllocaStmt>(dtype, ad_stack_size);
       auto stack_alloca_ptr = stack_alloca.get();
 
-      alloc->replace_with(std::move(stack_alloca));
+      alloc->replace_with(VecStatement(std::move(stack_alloca)));
 
       // Note that unlike AllocaStmt, AdStackAllocaStmt does NOT have an 0 as
       // initial value. Therefore here we push an initial 0 value.
@@ -462,7 +462,8 @@ class ReverseOuterLoops : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
 
  private:
-  ReverseOuterLoops(const std::set<Block *> &IB) : loop_depth_(0), ib_(IB) {
+  explicit ReverseOuterLoops(const std::set<Block *> &IB)
+      : loop_depth_(0), ib_(IB) {
   }
 
   bool is_ib(Block *block) const {
@@ -675,7 +676,7 @@ class MakeAdjoint : public ADTransform {
   Block *forward_backup;
   std::map<Stmt *, Stmt *> adjoint_stmt;
 
-  MakeAdjoint(Block *block) {
+  explicit MakeAdjoint(Block *block) {
     current_block = nullptr;
     alloca_block = block;
     forward_backup = block;
@@ -1101,7 +1102,7 @@ class MakeDual : public ADTransform {
   Block *alloca_block;
   std::map<Stmt *, Stmt *> dual_stmt;
 
-  MakeDual(Block *block) {
+  explicit MakeDual(Block *block) {
     current_stmt = nullptr;
     alloca_block = block;
     current_block = block;
@@ -1412,7 +1413,8 @@ class BackupSSA : public BasicStmtVisitor {
   Block *independent_block;
   std::map<Stmt *, Stmt *> backup_alloca;
 
-  BackupSSA(Block *independent_block) : independent_block(independent_block) {
+  explicit BackupSSA(Block *independent_block)
+      : independent_block(independent_block) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
   }

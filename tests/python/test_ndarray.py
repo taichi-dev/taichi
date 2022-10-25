@@ -645,3 +645,33 @@ def test_ndarray_as_template():
     with pytest.raises(ti.TaichiRuntimeTypeError,
                        match=r"Ndarray shouldn't be passed in via"):
         func(arr_0, arr_1)
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_gaussian_kernel():
+    M_PI = 3.14159265358979323846
+
+    @ti.func
+    def gaussian(x, sigma):
+        return ti.exp(
+            -0.5 * ti.pow(x / sigma, 2)) / (sigma * ti.sqrt(2.0 * M_PI))
+
+    @ti.kernel
+    def fill_gaussian_kernel(
+            ker: ti.types.ndarray(ti.f32, field_dim=1), N: ti.i32):
+        sum = 0.0
+        for i in range(2 * N + 1):
+            ker[i] = gaussian(i - N, ti.sqrt(N))
+            sum += ker[i]
+        for i in range(2 * N + 1):
+            ker[i] = ker[i] / sum
+
+    N = 4
+    arr = ti.ndarray(dtype=ti.f32, shape=(20))
+    fill_gaussian_kernel(arr, N)
+    res = arr.to_numpy()
+
+    np_arr = np.zeros(20, dtype=np.float32)
+    fill_gaussian_kernel(np_arr, N)
+
+    assert test_utils.allclose(res, np_arr)

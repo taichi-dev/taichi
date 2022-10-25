@@ -464,8 +464,8 @@ struct PyWindow {
     return canvas;
   }
 
-  PyGui GUI() {
-    PyGui gui = {window->GUI()};
+  PyGui gui() {
+    PyGui gui = {window->gui()};
     return gui;
   }
 
@@ -506,7 +506,7 @@ void export_ggui(py::module &m) {
       .def("get_current_event", &PyWindow::get_current_event)
       .def("set_current_event", &PyWindow::set_current_event)
       .def("destroy", &PyWindow::destroy)
-      .def("GUI", &PyWindow::GUI);
+      .def("GUI", &PyWindow::gui);
 
   py::class_<PyCanvas>(m, "PyCanvas")
       .def("set_background_color", &PyCanvas::set_background_color)

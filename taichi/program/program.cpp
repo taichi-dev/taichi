@@ -39,6 +39,10 @@
 #include "taichi/runtime/program_impls/dx/dx_program.h"
 #include "taichi/rhi/dx/dx_api.h"
 #endif
+#ifdef TI_WITH_DX12
+#include "taichi/runtime/program_impls/dx12/dx12_program.h"
+#include "taichi/rhi/dx12/dx12_api.h"
+#endif
 
 #if defined(_M_X64) || defined(__x86_64)
 // For _MM_SET_FLUSH_ZERO_MODE
@@ -81,7 +85,17 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   profiler = make_profiler(config.arch, config.kernel_profiler);
   if (arch_uses_llvm(config.arch)) {
 #ifdef TI_WITH_LLVM
-    program_impl_ = std::make_unique<LlvmProgramImpl>(config, profiler.get());
+    if (config.arch != Arch::dx12) {
+      program_impl_ = std::make_unique<LlvmProgramImpl>(config, profiler.get());
+    } else {
+      // NOTE: use Dx12ProgramImpl to avoid using LlvmRuntimeExecutor for dx12.
+#ifdef TI_WITH_DX12
+      TI_ASSERT(directx12::is_dx12_api_available());
+      program_impl_ = std::make_unique<Dx12ProgramImpl>(config);
+#else
+      TI_ERROR("This taichi is not compiled with DX12");
+#endif
+    }
 #else
     TI_ERROR("This taichi is not compiled with LLVM");
 #endif
@@ -188,7 +202,8 @@ void Program::materialize_runtime() {
 void Program::destroy_snode_tree(SNodeTree *snode_tree) {
   TI_ASSERT(arch_uses_llvm(this_thread_config().arch) ||
             this_thread_config().arch == Arch::vulkan ||
-            this_thread_config().arch == Arch::dx11);
+            this_thread_config().arch == Arch::dx11 ||
+            this_thread_config().arch == Arch::dx12);
   program_impl_->destroy_snode_tree(snode_tree);
   free_snode_tree_ids_.push(snode_tree->id());
 }
@@ -225,7 +240,8 @@ void Program::synchronize() {
   if (arch_uses_llvm(this_thread_config().arch) ||
       this_thread_config().arch == Arch::metal ||
       this_thread_config().arch == Arch::vulkan ||
-      this_thread_config().arch == Arch::opengl) {
+      this_thread_config().arch == Arch::opengl ||
+      this_thread_config().arch == Arch::dx12) {
     program_impl_->synchronize();
   }
 }
@@ -461,7 +477,8 @@ std::size_t Program::get_snode_num_dynamically_allocated(SNode *snode) {
   TI_ASSERT(arch_uses_llvm(this_thread_config().arch) ||
             this_thread_config().arch == Arch::metal ||
             this_thread_config().arch == Arch::vulkan ||
-            this_thread_config().arch == Arch::opengl);
+            this_thread_config().arch == Arch::opengl ||
+            this_thread_config().arch == Arch::dx12);
   return program_impl_->get_snode_num_dynamically_allocated(snode,
                                                             result_buffer);
 }
@@ -516,7 +533,54 @@ Program::~Program() {
   finalize();
 }
 
-std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(Arch arch) {
+DeviceCapabilityConfig translate_devcaps(const std::vector<std::string> &caps) {
+  // Each device capability assignment is named like this:
+  // - `spirv_version=1.3`
+  // - `spirv_has_int8`
+  DeviceCapabilityConfig cfg{};
+  for (const std::string &cap : caps) {
+    std::string_view key;
+    std::string_view value;
+    size_t ieq = cap.find('=');
+    if (ieq == std::string::npos) {
+      key = cap;
+    } else {
+      key = std::string_view(cap.c_str(), ieq);
+      value = std::string_view(cap.c_str() + ieq + 1);
+    }
+    DeviceCapability devcap = str2devcap(key);
+    switch (devcap) {
+      case DeviceCapability::spirv_version: {
+        if (value == "1.3") {
+          cfg.set(devcap, 0x10300);
+        } else if (value == "1.4") {
+          cfg.set(devcap, 0x10400);
+        } else if (value == "1.5") {
+          cfg.set(devcap, 0x10500);
+        } else {
+          TI_ERROR(
+              "'{}' is not a valid value of device capability `spirv_version`",
+              value);
+        }
+        break;
+      }
+      default:
+        cfg.set(devcap, 1);
+        break;
+    }
+  }
+
+  // Assign default caps (that always present).
+  if (!cfg.contains(DeviceCapability::spirv_version)) {
+    cfg.set(DeviceCapability::spirv_version, 0x10300);
+  }
+  return cfg;
+}
+
+std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(
+    Arch arch,
+    const std::vector<std::string> &caps) {
+  DeviceCapabilityConfig cfg = translate_devcaps(caps);
   // FIXME: This couples the runtime backend with the target AOT backend. E.g.
   // If we want to build a Metal AOT module, we have to be on the macOS
   // platform. Consider decoupling this part
@@ -531,8 +595,9 @@ std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(Arch arch) {
   if (arch_uses_llvm(this_thread_config().arch) ||
       this_thread_config().arch == Arch::metal ||
       this_thread_config().arch == Arch::vulkan ||
-      this_thread_config().arch == Arch::opengl) {
-    return program_impl_->make_aot_module_builder();
+      this_thread_config().arch == Arch::opengl ||
+      this_thread_config().arch == Arch::dx12) {
+    return program_impl_->make_aot_module_builder(cfg);
   }
   return nullptr;
 }

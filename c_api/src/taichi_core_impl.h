@@ -32,18 +32,6 @@
 #include "taichi/aot/graph_data.h"
 #include "taichi/aot/module_loader.h"
 
-// Error reporting helpers.
-#define TI_CAPI_INCOMPLETE(x) ti_set_last_error(TI_ERROR_INCOMPLETE, #x);
-#define TI_CAPI_INCOMPLETE_IF(x)                \
-  if (x) {                                      \
-    ti_set_last_error(TI_ERROR_INCOMPLETE, #x); \
-  }
-#define TI_CAPI_INCOMPLETE_IF_RV(x)             \
-  if (x) {                                      \
-    ti_set_last_error(TI_ERROR_INCOMPLETE, #x); \
-    return TI_NULL_HANDLE;                      \
-  }
-
 #define TI_CAPI_NOT_SUPPORTED(x) ti_set_last_error(TI_ERROR_NOT_SUPPORTED, #x);
 #define TI_CAPI_NOT_SUPPORTED_IF(x)                \
   if (x) {                                         \

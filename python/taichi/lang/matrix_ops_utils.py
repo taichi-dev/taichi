@@ -5,7 +5,7 @@ from taichi.lang.expr import Expr
 from taichi.lang.matrix import Matrix
 
 
-def _do_check(checker_fns, *args, **kwargs):
+def do_check(checker_fns, *args, **kwargs):
     for f in checker_fns:
         try:
             ok, msg = f(*args, **kwargs)
@@ -19,7 +19,7 @@ def preconditions(*checker_funcs):
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            _do_check(checker_funcs, *args, **kwargs)
+            do_check(checker_funcs, *args, **kwargs)
             return func(*args, **kwargs)
 
         return wrapper
@@ -36,17 +36,13 @@ def arg_at(i, *fns):
                 arg = args[i]
             except IndexError:
                 raise
-        try:
-            _do_check(fns, arg, **kwargs)
-        except TaichiCompilationError as e:
-            raise TaichiCompilationError(f'#{i + 1} argument is illegal; ' +
-                                         str(e))
+        do_check(fns, arg, **kwargs)
         return True, None
 
     return check
 
 
-def is_tensor(m, msg='not tensor type: {}'):
+def assert_tensor(m, msg='not tensor type: {}'):
     if isinstance(m, Matrix):
         return True, None
     if isinstance(m, Expr) and m.is_tensor():
@@ -55,7 +51,7 @@ def is_tensor(m, msg='not tensor type: {}'):
 
 
 def square_matrix(x):
-    is_tensor(x)
+    assert_tensor(x)
     shape = x.get_shape()
     if shape[0] != shape[1]:
         return False, f'not a square matrix: {shape}'
@@ -64,7 +60,7 @@ def square_matrix(x):
 
 def dim_lt(dim, limit, msg=None):
     def check(x):
-        is_tensor(x)
+        assert_tensor(x)
         shape = x.get_shape()
         return shape[dim] < limit, (
             f'Dimension >= {limit} is not supported: {shape}'

@@ -7,10 +7,11 @@ from taichi._lib import core as _ti_core
 from taichi._snode.fields_builder import FieldsBuilder
 from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang._ndrange import GroupedNDRange, _Ndrange
+from taichi.lang._texture import RWTextureAccessor
 from taichi.lang.any_array import AnyArray, AnyArrayAccess
 from taichi.lang.enums import SNodeGradType
-from taichi.lang.exception import (TaichiRuntimeError, TaichiSyntaxError,
-                                   TaichiTypeError)
+from taichi.lang.exception import (TaichiCompilationError, TaichiRuntimeError,
+                                   TaichiSyntaxError, TaichiTypeError)
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.kernel_arguments import SparseMatrixProxy
@@ -105,7 +106,8 @@ def expr_init_func(
 
 
 def begin_frontend_struct_for(ast_builder, group, loop_range):
-    if not isinstance(loop_range, (AnyArray, Field, SNode, _Root)):
+    if not isinstance(loop_range,
+                      (AnyArray, Field, SNode, RWTextureAccessor, _Root)):
         raise TypeError(
             f"Cannot loop over the object {type(loop_range)} in Taichi scope. Only Taichi fields (via template) or dense arrays (via types.ndarray) are supported."
         )
@@ -115,7 +117,7 @@ def begin_frontend_struct_for(ast_builder, group, loop_range):
             f'({group.size()} != {len(loop_range.shape)}). Maybe you wanted to '
             'use "for I in ti.grouped(x)" to group all indices into a single vector I?'
         )
-    if isinstance(loop_range, AnyArray):
+    if isinstance(loop_range, (AnyArray, RWTextureAccessor)):
         ast_builder.begin_frontend_struct_for_on_external_tensor(
             group, loop_range._loop_range())
     else:
@@ -136,7 +138,22 @@ def begin_frontend_if(ast_builder, cond):
 
 
 @taichi_scope
-def subscript(value, *_indices, skip_reordered=False, get_ref=False):
+def _calc_slice(index, default_stop):
+    start, stop, step = index.start or 0, index.stop or default_stop, index.step or 1
+
+    def check_validity(x):
+        #  TODO(mzmzm): support variable in slice
+        if isinstance(x, Expr):
+            raise TaichiCompilationError(
+                "Taichi does not support variables in slice now, please use constant instead of it."
+            )
+
+    check_validity(start), check_validity(stop), check_validity(step)
+    return [_ for _ in range(start, stop, step)]
+
+
+@taichi_scope
+def subscript(ast_builder, value, *_indices, skip_reordered=False):
     if isinstance(value, np.ndarray):
         return value.__getitem__(_indices)
 
@@ -145,34 +162,39 @@ def subscript(value, *_indices, skip_reordered=False, get_ref=False):
         return value[_indices[0]]
 
     has_slice = False
-    flattened_indices = []
-    for _index in _indices:
-        if is_taichi_class(_index):
-            ind = _index.entries
-        elif isinstance(_index, slice):
-            ind = [_index]
-            has_slice = True
-        else:
-            ind = [_index]
-        flattened_indices += ind
-    _indices = tuple(flattened_indices)
-    if len(_indices) == 1 and _indices[0] is None:
-        _indices = ()
+
+    if len(_indices) == 1 and isinstance(_indices[0], Expr):
+        indices = tuple(ast_builder.expand_expr([ind.ptr for ind in _indices]))
+    else:
+        flattened_indices = []
+        for _index in _indices:
+            if is_taichi_class(_index):
+                ind = _index.entries
+            elif isinstance(_index, slice):
+                ind = [_index]
+                has_slice = True
+            else:
+                ind = [_index]
+            flattened_indices += ind
+        indices = tuple(flattened_indices)
+
+    if len(indices) == 1 and indices[0] is None:
+        indices = ()
 
     if has_slice:
         if not isinstance(value, Matrix):
             raise SyntaxError(
                 f"The type {type(value)} do not support index of slice type")
     else:
-        indices_expr_group = make_expr_group(*_indices)
+        indices_expr_group = make_expr_group(*indices)
         index_dim = indices_expr_group.size()
 
     if is_taichi_class(value):
-        return value._subscript(*_indices, get_ref=get_ref)
+        return value._subscript(*indices)
     if isinstance(value, MeshElementFieldProxy):
-        return value.subscript(*_indices)
+        return value.subscript(*indices)
     if isinstance(value, MeshRelationAccessProxy):
-        return value.subscript(*_indices)
+        return value.subscript(*indices)
     if isinstance(value,
                   (MeshReorderedScalarFieldProxy,
                    MeshReorderedMatrixFieldProxy)) and not skip_reordered:
@@ -181,12 +203,15 @@ def subscript(value, *_indices, skip_reordered=False, get_ref=False):
             Expr(
                 _ti_core.get_index_conversion(value.mesh_ptr,
                                               value.element_type,
-                                              Expr(_indices[0]).ptr,
+                                              Expr(indices[0]).ptr,
                                               ConvType.g2r))
         ])
-        return subscript(value, *reordered_index, skip_reordered=True)
+        return subscript(ast_builder,
+                         value,
+                         *reordered_index,
+                         skip_reordered=True)
     if isinstance(value, SparseMatrixProxy):
-        return value.subscript(*_indices)
+        return value.subscript(*indices)
     if isinstance(value, Field):
         _var = value._get_field_members()[0].ptr
         snode = _var.snode()
@@ -210,7 +235,10 @@ def subscript(value, *_indices, skip_reordered=False, get_ref=False):
                                        get_runtime().get_current_src_info()))
             return _MatrixFieldElement(value, indices_expr_group)
         if isinstance(value, StructField):
-            entries = {k: subscript(v, *_indices) for k, v in value._items}
+            entries = {
+                k: subscript(ast_builder, v, *indices)
+                for k, v in value._items
+            }
             entries['__struct_methods'] = value.struct_methods
             return _IntermediateStruct(entries)
         return Expr(
@@ -229,7 +257,7 @@ def subscript(value, *_indices, skip_reordered=False, get_ref=False):
                                    get_runtime().get_current_src_info()))
         n = value.element_shape()[0]
         m = 1 if element_dim == 1 else value.element_shape()[1]
-        any_array_access = AnyArrayAccess(value, _indices)
+        any_array_access = AnyArrayAccess(value, indices)
         ret = _IntermediateMatrix(n,
                                   m, [
                                       any_array_access.subscript(i, j)
@@ -249,7 +277,7 @@ def subscript(value, *_indices, skip_reordered=False, get_ref=False):
                                get_runtime().get_current_src_info()))
 
     # Directly evaluate in Python for non-Taichi types
-    return value.__getitem__(*_indices)
+    return value.__getitem__(*indices)
 
 
 @taichi_scope
@@ -336,8 +364,7 @@ class PyTaichi:
             # https://github.com/taichi-dev/taichi/blob/27bb1dc3227d9273a79fcb318fdb06fd053068f5/tests/python/test_ad_basics.py#L260-L266
             return
 
-        if get_runtime().prog.config().debug and get_runtime().prog.config(
-        ).validate_autodiff:
+        if get_runtime().prog.config().debug:
             if not root.finalized:
                 root._allocate_adjoint_checkbit()
 
@@ -627,7 +654,7 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
         if needs_grad:
             pytaichi.grad_vars.append(x_grad)
 
-        if prog.config().debug and prog.config().validate_autodiff:
+        if prog.config().debug:
             # adjoint checkbit
             x_grad_checkbit = Expr(get_runtime().prog.make_id_expr(""))
             dtype = u8

@@ -391,24 +391,63 @@ void make_ifte(Expression::FlattenContext *ctx,
   return;
 }
 
-void TernaryOpExpression::type_check(CompileConfig *) {
+void TernaryOpExpression::type_check(CompileConfig *config) {
   TI_ASSERT_TYPE_CHECKED(op1);
   TI_ASSERT_TYPE_CHECKED(op2);
   TI_ASSERT_TYPE_CHECKED(op3);
   auto op1_type = op1->ret_type;
   auto op2_type = op2->ret_type;
   auto op3_type = op3->ret_type;
+
   auto error = [&]() {
     throw TaichiTypeError(
         fmt::format("unsupported operand type(s) for '{}': '{}', '{}' and '{}'",
                     ternary_type_name(type), op1->ret_type->to_string(),
                     op2->ret_type->to_string(), op3->ret_type->to_string()));
   };
-  if (op1_type != PrimitiveType::i32)
+
+  bool is_valid = true;
+  bool is_tensor = false;
+  if (op1_type->is<TensorType>() && op2_type->is<TensorType>() &&
+      op3_type->is<TensorType>()) {
+    // valid
+    is_tensor = true;
+    if (op1_type->cast<TensorType>()->get_shape() !=
+        op2_type->cast<TensorType>()->get_shape()) {
+      is_valid = false;
+    }
+    if (op2_type->cast<TensorType>()->get_shape() !=
+        op3_type->cast<TensorType>()->get_shape()) {
+      is_valid = false;
+    }
+    op1_type = op1_type->cast<TensorType>()->get_element_type();
+    op2_type = op2_type->cast<TensorType>()->get_element_type();
+    op3_type = op3_type->cast<TensorType>()->get_element_type();
+
+  } else if (op1_type->is<PrimitiveType>() && op2_type->is<PrimitiveType>() &&
+             op3_type->is<PrimitiveType>()) {
+    // valid
+  } else {
+    is_valid = false;
+  }
+
+  if (op1_type != PrimitiveType::i32) {
+    is_valid = false;
+  }
+  if (!op2_type->is<PrimitiveType>() || !op3_type->is<PrimitiveType>()) {
+    is_valid = false;
+  }
+
+  if (!is_valid)
     error();
-  if (!op2_type->is<PrimitiveType>() || !op3_type->is<PrimitiveType>())
-    error();
-  ret_type = promoted_type(op2_type, op3_type);
+
+  if (is_tensor) {
+    auto primitive_dtype = promoted_type(op2_type, op3_type);
+    ret_type = TypeFactory::create_tensor_type(
+        op2->ret_type->cast<TensorType>()->get_shape(), primitive_dtype);
+  } else {
+    ret_type = promoted_type(op2_type, op3_type);
+  }
 }
 
 void TernaryOpExpression::flatten(FlattenContext *ctx) {
@@ -425,6 +464,7 @@ void TernaryOpExpression::flatten(FlattenContext *ctx) {
   }
   stmt = ctx->back_stmt();
   stmt->tb = tb;
+  stmt->ret_type = ret_type;
 }
 
 void InternalFuncCallExpression::type_check(CompileConfig *) {
@@ -538,6 +578,11 @@ Stmt *make_tensor_access(Expression::FlattenContext *ctx,
                          std::vector<int> shape,
                          int stride) {
   flatten_lvalue(var, ctx);
+  if (!var->is_lvalue()) {
+    auto alloca_stmt = ctx->push_back<AllocaStmt>(var->ret_type);
+    ctx->push_back<LocalStoreStmt>(alloca_stmt, var->stmt);
+    var->stmt = alloca_stmt;
+  }
   bool needs_dynamic_index = false;
   for (int i = 0; i < (int)indices.size(); ++i) {
     if (!indices[i].is<ConstExpression>()) {
@@ -746,7 +791,7 @@ void IdExpression::flatten(FlattenContext *ctx) {
   }
 }
 
-void AtomicOpExpression::type_check(CompileConfig *) {
+void AtomicOpExpression::type_check(CompileConfig *config) {
   TI_ASSERT_TYPE_CHECKED(dest);
   TI_ASSERT_TYPE_CHECKED(val);
   auto error = [&]() {
@@ -755,11 +800,34 @@ void AtomicOpExpression::type_check(CompileConfig *) {
         atomic_op_type_name(op_type), dest->ret_type->to_string(),
         val->ret_type->to_string()));
   };
-  if (!val->ret_type->is<PrimitiveType>())
+
+  // Broadcast val to dest if neccessary
+  auto val_dtype = val->ret_type;
+  auto dest_dtype = dest->ret_type.ptr_removed();
+  if (dest_dtype->is<PrimitiveType>() && val_dtype->is<TensorType>()) {
     error();
+  }
+
+  if (val_dtype->is<PrimitiveType>() && dest_dtype->is<TensorType>()) {
+    auto broadcasted_expr = to_broadcast_tensor(val, dest_dtype);
+    val = std::move(broadcasted_expr);
+    val.type_check(config);
+  }
+
+  // Validate dtype
+  auto dtype = val->ret_type;
+  if (dtype->is<TensorType>()) {
+    dtype = dtype.get_element_type();
+  }
+
+  if (!dtype->is<PrimitiveType>()) {
+    error();
+  }
+
   if (is_quant(dest->ret_type)) {
     ret_type = dest->ret_type->get_compute_type();
-  } else if (dest->ret_type->is<PrimitiveType>()) {
+  } else if (dest->ret_type->is<PrimitiveType>() ||
+             dest->ret_type->is<TensorType>()) {
     ret_type = dest->ret_type;
   } else {
     error();
@@ -942,9 +1010,10 @@ void ConstExpression::flatten(FlattenContext *ctx) {
 }
 
 void ExternalTensorShapeAlongAxisExpression::type_check(CompileConfig *) {
-  TI_ASSERT_INFO(ptr.is<ExternalTensorExpression>(),
-                 "Invalid ptr [{}] for ExternalTensorShapeAlongAxisExpression",
-                 ExpressionHumanFriendlyPrinter::expr_to_string(ptr));
+  TI_ASSERT_INFO(
+      ptr.is<ExternalTensorExpression>() || ptr.is<TexturePtrExpression>(),
+      "Invalid ptr [{}] for ExternalTensorShapeAlongAxisExpression",
+      ExpressionHumanFriendlyPrinter::expr_to_string(ptr));
   ret_type = PrimitiveType::i32;
 }
 
@@ -1284,7 +1353,7 @@ void ASTBuilder::begin_frontend_mesh_for(
       "ti.loop_config(serialize=True) does not have effect on the mesh for. "
       "The execution order is not guaranteed.");
   auto stmt_unique = std::make_unique<FrontendForStmt>(
-      i, mesh_ptr, element_type, arch_, for_loop_dec_.config);
+      ExprGroup(i), mesh_ptr, element_type, arch_, for_loop_dec_.config);
   for_loop_dec_.reset();
   auto stmt = stmt_unique.get();
   this->insert(std::move(stmt_unique));
@@ -1323,6 +1392,66 @@ void ASTBuilder::insert_snode_deactivate(SNode *snode,
                                          const ExprGroup &expr_group) {
   this->insert(Stmt::make<FrontendSNodeOpStmt>(SNodeOpType::deactivate, snode,
                                                expr_group));
+}
+
+std::vector<Expr> ASTBuilder::expand_expr(const std::vector<Expr> &exprs) {
+  TI_ASSERT(exprs.size() > 0);
+
+  if (exprs.size() > 1) {
+    return exprs;
+  }
+
+  Expr index_expr = exprs[0];
+  TI_ASSERT_TYPE_CHECKED(index_expr);
+  if (!index_expr->ret_type->is<TensorType>()) {
+    return exprs;
+  }
+
+  // Expand TensorType expr
+  /*
+    Before:
+      TensorType<4 x i32> index = Expr;
+
+    After:
+      TensorType<4 x i32>* id_expr = FrontendAllocaStmt(TensorType<4 x i32>)
+      i32 ind0 = IndexExpression(id_expr, 0)
+      i32 ind1 = IndexExpression(id_expr, 1)
+      i32 ind2 = IndexExpression(id_expr, 2)
+      i32 ind3 = IndexExpression(id_expr, 3)
+
+      return {ind0, ind1, ind2, ind3}
+
+  */
+  std::vector<Expr> expanded_exprs;
+
+  auto tensor_type = index_expr->ret_type->cast<TensorType>();
+
+  Expr id_expr;
+  if (index_expr.is<IdExpression>()) {
+    id_expr = index_expr;
+  } else {
+    id_expr = make_var(index_expr, index_expr->tb);
+  }
+  auto shape = tensor_type->get_shape();
+  if (shape.size() == 1) {
+    for (int i = 0; i < shape[0]; i++) {
+      auto ind = Expr(std::make_shared<IndexExpression>(
+          id_expr, ExprGroup(Expr(i)), index_expr->tb));
+      ind.expr->ret_type = tensor_type->get_element_type();
+      expanded_exprs.push_back(ind);
+    }
+  } else {
+    TI_ASSERT(shape.size() == 2);
+    for (int i = 0; i < shape[0]; i++) {
+      for (int j = 0; j < shape[1]; j++) {
+        auto ind = Expr(std::make_shared<IndexExpression>(
+            id_expr, ExprGroup(Expr(i), Expr(j)), index_expr->tb));
+        ind.expr->ret_type = tensor_type->get_element_type();
+        expanded_exprs.push_back(ind);
+      }
+    }
+  }
+  return expanded_exprs;
 }
 
 void ASTBuilder::create_scope(std::unique_ptr<Block> &list, LoopType tp) {

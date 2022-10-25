@@ -13,9 +13,9 @@ class OffloadedTask {
   int block_dim{0};
   int grid_dim{0};
 
-  OffloadedTask(const std::string &name = "",
-                int block_dim = 0,
-                int grid_dim = 0)
+  explicit OffloadedTask(const std::string &name = "",
+                         int block_dim = 0,
+                         int grid_dim = 0)
       : name(name), block_dim(block_dim), grid_dim(grid_dim){};
   TI_IO_DEF(name, block_dim, grid_dim);
 };

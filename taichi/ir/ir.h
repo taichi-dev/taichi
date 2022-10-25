@@ -83,7 +83,8 @@ class Identifier {
   // Identifier() = default;
 
   // Multiple identifiers can share the same name but must have different id's
-  Identifier(int id, const std::string &name = "") : name_(name), id(id) {
+  explicit Identifier(int id, const std::string &name = "")
+      : name_(name), id(id) {
   }
 
   std::string raw_name() const;
@@ -114,6 +115,7 @@ class VecStatement {
   VecStatement() {
   }
 
+  // NOLINTNEXTLINE(google-explicit-constructor)
   VecStatement(pStmt &&stmt) {
     push_back(std::move(stmt));
   }
@@ -122,6 +124,7 @@ class VecStatement {
     stmts = std::move(o.stmts);
   }
 
+  // NOLINTNEXTLINE(google-explicit-constructor)
   VecStatement(stmt_vector &&other_stmts) {
     stmts = std::move(other_stmts);
   }
@@ -331,7 +334,7 @@ class StmtFieldManager {
  public:
   std::vector<std::unique_ptr<StmtField>> fields;
 
-  StmtFieldManager(Stmt *stmt) : stmt_(stmt) {
+  explicit StmtFieldManager(Stmt *stmt) : stmt_(stmt) {
   }
 
   template <typename T>

@@ -17,7 +17,7 @@ class Function;
  */
 class AllocaStmt : public Stmt {
  public:
-  AllocaStmt(DataType type) : is_shared(false) {
+  explicit AllocaStmt(DataType type) : is_shared(false) {
     ret_type = type;
     TI_STMT_REG_FIELDS;
   }
@@ -206,7 +206,7 @@ class ArgLoadStmt : public Stmt {
  */
 class RandStmt : public Stmt {
  public:
-  RandStmt(const DataType &dt) {
+  explicit RandStmt(const DataType &dt) {
     ret_type = dt;
     TI_STMT_REG_FIELDS;
   }
@@ -474,6 +474,8 @@ class SNodeOpStmt : public Stmt {
 };
 
 // TODO: remove this
+// (penguinliong) This Stmt is used for both ND-arrays and textures. This is
+// subject to change in the future.
 class ExternalTensorShapeAlongAxisStmt : public Stmt {
  public:
   int axis;
@@ -740,18 +742,19 @@ class PrintStmt : public Stmt {
   using EntryType = std::variant<Stmt *, std::string>;
   std::vector<EntryType> contents;
 
-  PrintStmt(const std::vector<EntryType> &contents_) : contents(contents_) {
+  explicit PrintStmt(const std::vector<EntryType> &contents_)
+      : contents(contents_) {
     TI_STMT_REG_FIELDS;
   }
 
   template <typename... Args>
-  PrintStmt(Stmt *t, Args &&...args)
+  explicit PrintStmt(Stmt *t, Args &&...args)
       : contents(make_entries(t, std::forward<Args>(args)...)) {
     TI_STMT_REG_FIELDS;
   }
 
   template <typename... Args>
-  PrintStmt(const std::string &str, Args &&...args)
+  explicit PrintStmt(const std::string &str, Args &&...args)
       : contents(make_entries(str, std::forward<Args>(args)...)) {
     TI_STMT_REG_FIELDS;
   }
@@ -950,7 +953,7 @@ class ReferenceStmt : public Stmt {
   Stmt *var;
   bool global_side_effect{false};
 
-  ReferenceStmt(Stmt *var) : var(var) {
+  explicit ReferenceStmt(Stmt *var) : var(var) {
     TI_STMT_REG_FIELDS;
   }
 
@@ -1089,7 +1092,7 @@ class BitExtractStmt : public Stmt {
  */
 class GetRootStmt : public Stmt {
  public:
-  GetRootStmt(SNode *root = nullptr) : root_(root) {
+  explicit GetRootStmt(SNode *root = nullptr) : root_(root) {
     if (this->root_ != nullptr) {
       while (this->root_->parent) {
         this->root_ = this->root_->parent;
@@ -1831,7 +1834,7 @@ class MatrixInitStmt : public Stmt {
  public:
   std::vector<Stmt *> values;
 
-  MatrixInitStmt(const std::vector<Stmt *> &values) : values(values) {
+  explicit MatrixInitStmt(const std::vector<Stmt *> &values) : values(values) {
     TI_STMT_REG_FIELDS;
   }
 

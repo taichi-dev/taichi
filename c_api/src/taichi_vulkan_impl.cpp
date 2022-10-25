@@ -25,22 +25,24 @@ VulkanRuntimeImported::Workaround::Workaround(
   }
   taichi::lang::vulkan::VulkanLoader::instance().load_instance(params.instance);
   taichi::lang::vulkan::VulkanLoader::instance().load_device(params.device);
-  vk_device.set_cap(taichi::lang::DeviceCapability::vk_api_version,
-                    api_version);
+  vk_device.vk_caps().vk_api_version = api_version;
 
-  vk_device.set_cap(taichi::lang::DeviceCapability::spirv_version, 0x10000);
+  taichi::lang::DeviceCapabilityConfig caps{};
+
   if (api_version >= VK_API_VERSION_1_2) {
-    vk_device.set_cap(taichi::lang::DeviceCapability::spirv_version, 0x10500);
+    caps.set(taichi::lang::DeviceCapability::spirv_version, 0x10500);
   } else if (api_version >= VK_API_VERSION_1_1) {
-    vk_device.set_cap(taichi::lang::DeviceCapability::spirv_version, 0x10300);
+    caps.set(taichi::lang::DeviceCapability::spirv_version, 0x10300);
+  } else {
+    caps.set(taichi::lang::DeviceCapability::spirv_version, 0x10000);
   }
 
   if (api_version > VK_API_VERSION_1_0) {
-    vk_device.set_cap(
-        taichi::lang::DeviceCapability::spirv_has_physical_storage_buffer,
-        true);
+    caps.set(taichi::lang::DeviceCapability::spirv_has_physical_storage_buffer,
+             true);
   }
 
+  vk_device.set_current_caps(std::move(caps));
   vk_device.init_vulkan_structs(
       const_cast<taichi::lang::vulkan::VulkanDevice::Params &>(params));
 }
@@ -187,8 +189,8 @@ void ti_export_vulkan_runtime(TiRuntime runtime,
   Runtime *runtime2 = (Runtime *)runtime;
   taichi::lang::vulkan::VulkanDevice &vk_device =
       static_cast<VulkanRuntime *>(runtime2)->get_vk();
-  interop_info->api_version =
-      vk_device.get_cap(taichi::lang::DeviceCapability::vk_api_version);
+  interop_info->get_instance_proc_addr = vkGetInstanceProcAddr;
+  interop_info->api_version = vk_device.vk_caps().vk_api_version;
   interop_info->instance = vk_device.vk_instance();
   interop_info->physical_device = vk_device.vk_physical_device();
   interop_info->device = vk_device.vk_device();

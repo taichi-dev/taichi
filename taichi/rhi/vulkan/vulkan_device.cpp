@@ -498,7 +498,7 @@ void VulkanPipeline::create_graphics_pipeline(
   VkPipelineDynamicStateCreateInfo &dynamic_state =
       graphics_pipeline_template_->dynamic_state;
   dynamic_state.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-  dynamic_state.pNext = NULL;
+  dynamic_state.pNext = nullptr;
   dynamic_state.pDynamicStates =
       graphics_pipeline_template_->dynamic_state_enables.data();
   dynamic_state.dynamicStateCount =
@@ -1300,7 +1300,7 @@ void VulkanCommandList::wait_event(DeviceEvent *event) {
 }
 
 void VulkanCommandList::set_line_width(float width) {
-  if (ti_device_->get_cap(DeviceCapability::wide_lines)) {
+  if (ti_device_->vk_caps().wide_line) {
     vkCmdSetLineWidth(buffer_->buffer, width);
   }
 }
@@ -1329,6 +1329,7 @@ struct VulkanDevice::ThreadLocalStreams {
 VulkanDevice::VulkanDevice()
     : compute_streams_(std::make_unique<ThreadLocalStreams>()),
       graphics_streams_(std::make_unique<ThreadLocalStreams>()) {
+  caps_.set(DeviceCapability::spirv_version, 0x10000);
 }
 
 void VulkanDevice::init_vulkan_structs(Params &params) {
@@ -1380,6 +1381,8 @@ std::unique_ptr<Pipeline> VulkanDevice::create_pipeline(
     std::string name) {
   TI_ASSERT(src.type == PipelineSourceType::spirv_binary &&
             src.stage == PipelineStageType::compute);
+  TI_ERROR_IF(src.data == nullptr || src.size == 0,
+              "pipeline source cannot be empty");
 
   SpirvCodeView code;
   code.data = (uint32_t *)src.data;
@@ -1444,7 +1447,7 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
   VkExternalMemoryBufferCreateInfo external_mem_buffer_create_info = {};
   external_mem_buffer_create_info.sType =
       VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO;
-  external_mem_buffer_create_info.pNext = NULL;
+  external_mem_buffer_create_info.pNext = nullptr;
 
 #ifdef _WIN64
   external_mem_buffer_create_info.handleTypes =
@@ -1454,8 +1457,7 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
       VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR;
 #endif
 
-  bool export_sharing = params.export_sharing &&
-                        this->get_cap(DeviceCapability::vk_has_external_memory);
+  bool export_sharing = params.export_sharing && vk_caps_.external_memory;
 
   VmaAllocationCreateInfo alloc_info{};
   if (export_sharing) {
@@ -1487,7 +1489,7 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
     alloc_info.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
   }
 
-  if (get_cap(DeviceCapability::spirv_has_physical_storage_buffer)) {
+  if (caps_.get(DeviceCapability::spirv_has_physical_storage_buffer)) {
     buffer_info.usage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_KHR;
   }
 
@@ -1502,7 +1504,7 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
            handle.alloc_id);
 #endif
 
-  if (get_cap(DeviceCapability::spirv_has_physical_storage_buffer)) {
+  if (caps_.get(DeviceCapability::spirv_has_physical_storage_buffer)) {
     VkBufferDeviceAddressInfoKHR info{};
     info.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_KHR;
     info.buffer = alloc.buffer->buffer;
@@ -1838,7 +1840,13 @@ DeviceAllocation VulkanDevice::import_vkbuffer(vkapi::IVkBuffer buffer) {
   alloc_int.external = true;
   alloc_int.buffer = buffer;
   alloc_int.mapped = nullptr;
-  alloc_int.addr = 0;
+  if (caps_.get(DeviceCapability::spirv_has_physical_storage_buffer)) {
+    VkBufferDeviceAddressInfoKHR info{};
+    info.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+    info.buffer = buffer->buffer;
+    info.pNext = nullptr;
+    alloc_int.addr = vkGetBufferDeviceAddress(device_, &info);
+  }
 
   DeviceAllocation alloc;
   alloc.device = this;
@@ -1944,14 +1952,13 @@ DeviceAllocation VulkanDevice::create_image(const ImageParams &params) {
     image_info.pQueueFamilyIndices = queue_family_indices;
   }
 
-  bool export_sharing = params.export_sharing &&
-                        this->get_cap(DeviceCapability::vk_has_external_memory);
+  bool export_sharing = params.export_sharing && vk_caps_.external_memory;
 
   VkExternalMemoryImageCreateInfo external_mem_image_create_info = {};
   if (export_sharing) {
     external_mem_image_create_info.sType =
         VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO;
-    external_mem_image_create_info.pNext = NULL;
+    external_mem_image_create_info.pNext = nullptr;
 
 #ifdef _WIN64
     external_mem_image_create_info.handleTypes =
@@ -2083,7 +2090,7 @@ vkapi::IVkRenderPass VulkanDevice::get_renderpass(
   subpass.pInputAttachments = nullptr;
   subpass.colorAttachmentCount = color_attachments.size();
   subpass.pColorAttachments = color_attachments.data();
-  subpass.pResolveAttachments = 0;
+  subpass.pResolveAttachments = nullptr;
   subpass.pDepthStencilAttachment = desc.depth_attachment == VK_FORMAT_UNDEFINED
                                         ? nullptr
                                         : &depth_attachment;
@@ -2154,14 +2161,13 @@ vkapi::IVkDescriptorSet VulkanDevice::alloc_desc_set(
 
 void VulkanDevice::create_vma_allocator() {
   VmaAllocatorCreateInfo allocatorInfo = {};
-  allocatorInfo.vulkanApiVersion =
-      this->get_cap(DeviceCapability::vk_api_version);
+  allocatorInfo.vulkanApiVersion = vk_caps_.vk_api_version;
   allocatorInfo.physicalDevice = physical_device_;
   allocatorInfo.device = device_;
   allocatorInfo.instance = instance_;
 
   VolkDeviceTable table;
-  VmaVulkanFunctions vk_vma_functions{0};
+  VmaVulkanFunctions vk_vma_functions{nullptr};
 
   volkLoadDeviceTable(&table, device_);
   vk_vma_functions.vkGetPhysicalDeviceProperties =
@@ -2204,7 +2210,7 @@ void VulkanDevice::create_vma_allocator() {
 
   allocatorInfo.pVulkanFunctions = &vk_vma_functions;
 
-  if (get_cap(DeviceCapability::spirv_has_physical_storage_buffer)) {
+  if (caps_.get(DeviceCapability::spirv_has_physical_storage_buffer)) {
     allocatorInfo.flags |= VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
   }
 
@@ -2316,7 +2322,7 @@ VulkanSurface::VulkanSurface(VulkanDevice *device, const SurfaceConfig &config)
 #else
       glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
       VkResult err = glfwCreateWindowSurface(device->vk_instance(), window_,
-                                             NULL, &surface_);
+                                             nullptr, &surface_);
       if (err) {
         TI_ERROR("Failed to create window surface ({})", err);
         return;

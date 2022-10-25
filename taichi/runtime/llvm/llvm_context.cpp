@@ -46,6 +46,7 @@
 #include "taichi/util/environ_config.h"
 #include "llvm_context.h"
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
+#include "taichi/codegen/codegen_utils.h"
 
 #ifdef _WIN32
 // Travis CI seems doesn't support <filesystem>...
@@ -152,7 +153,7 @@ llvm::Type *TaichiLLVMContext::get_data_type(DataType dt) {
     auto num_elements = tensor_type->get_num_elements();
     // Return type is <element_type * num_elements> if real matrix is used,
     // otherwise [element_type * num_elements].
-    if (config_->real_matrix) {
+    if (codegen_vector_type(config_)) {
       return llvm::VectorType::get(element_type, num_elements,
                                    /*scalable=*/false);
     }

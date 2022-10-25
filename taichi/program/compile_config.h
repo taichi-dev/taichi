@@ -43,7 +43,6 @@ struct CompileConfig {
   bool make_block_local;
   bool detect_read_only;
   bool ndarray_use_cached_allocator;
-  bool use_mesh;
   bool real_matrix;
   bool real_matrix_scalarize;
   DataType default_fp;

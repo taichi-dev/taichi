@@ -19,3 +19,17 @@
 
 #include "taichi/taichi_opengl.h"
 #endif  // TI_WITH_OPENGL
+
+#ifdef TI_WITH_CUDA
+#ifndef TI_NO_CUDA_INCLUDES
+// Only a few CUDA types is needed, including the entire <cuda.h> is overkill
+// for this
+typedef void *CUdeviceptr;
+#endif  // TI_NO_CUDA_INCLUDES
+
+#include "taichi/taichi_cuda.h"
+#endif  // TI_WITH_CUDA
+
+#ifdef TI_WITH_CPU
+#include "taichi/taichi_cpu.h"
+#endif  // TI_WITH_CPU

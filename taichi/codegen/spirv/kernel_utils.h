@@ -28,6 +28,7 @@ struct TaskAttributes {
 
     BufferInfo() = default;
 
+    // NOLINTNEXTLINE(google-explicit-constructor)
     BufferInfo(BufferType buffer_type) : type(buffer_type) {
     }
 
@@ -176,7 +177,8 @@ class KernelContextAttributes {
   struct RetAttributes : public AttribsBase {};
 
   KernelContextAttributes() = default;
-  explicit KernelContextAttributes(const Kernel &kernel, Device *device);
+  explicit KernelContextAttributes(const Kernel &kernel,
+                                   const DeviceCapabilityConfig *caps);
 
   /**
    * Whether this kernel has any argument

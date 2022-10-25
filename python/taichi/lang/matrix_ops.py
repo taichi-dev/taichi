@@ -1,16 +1,12 @@
-import numbers
-
-import taichi.lang.ops as ops_mod
-from taichi.lang.expr import Expr
-from taichi.lang.impl import static, subscript
-from taichi.lang.kernel_impl import func
-from taichi.lang.matrix import Matrix, Vector
-from taichi.lang.matrix_ops_utils import (arg_at, dim_lt, is_int_const,
-                                          is_tensor, preconditions,
+from taichi.lang.impl import static
+from taichi.lang.kernel_impl import func, pyfunc
+from taichi.lang.matrix_ops_utils import (arg_at, assert_tensor, preconditions,
                                           square_matrix)
-from taichi.lang.misc import loop_config
 from taichi.lang.ops import cast
-from taichi.lang.util import cook_dtype, taichi_scope
+from taichi.lang.util import in_taichi_scope, taichi_scope
+from taichi.types.annotations import template
+from taichi.lang.expr import Expr
+from taichi.lang.matrix import Matrix, Vector
 
 
 @taichi_scope
@@ -174,7 +170,6 @@ def diag(dim, val):
     @func
     def diag_impl():
         result = _init_matrix((dim, dim), dt)
-        loop_config(serialize=True)
         for i in static(range(dim)):
             result[i, i] = val
         return result
@@ -182,7 +177,7 @@ def diag(dim, val):
     return diag_impl()
 
 
-@preconditions(is_tensor)
+@preconditions(assert_tensor)
 def sum(m):  # pylint: disable=W0622
     # pylint: disable=W0108
     f = lambda x, y: ops_mod.atomic_add(x, y)
@@ -194,25 +189,25 @@ def sum(m):  # pylint: disable=W0622
     return sum_impl()
 
 
-@preconditions(is_tensor)
+@preconditions(assert_tensor)
 @func
 def norm_sqr(m):
     return sum(m * m)
 
 
-@preconditions(arg_at(0, is_tensor))
+@preconditions(arg_at(0, assert_tensor))
 @func
 def norm(m, eps=1e-6):
     return ops_mod.sqrt(norm_sqr(m) + eps)
 
 
-@preconditions(arg_at(0, is_tensor))
+@preconditions(arg_at(0, assert_tensor))
 @func
 def norm_inv(m, eps=1e-6):
     return ops_mod.rsqrt(norm_sqr(m) + eps)
 
 
-@preconditions(is_tensor)
+@preconditions(assert_tensor)
 @taichi_scope
 def any(x):  # pylint: disable=W0622
     cmp_fn = lambda r, e: ops_mod.atomic_or(r, ops_mod.cmp_ne(e, 0))
@@ -224,7 +219,7 @@ def any(x):  # pylint: disable=W0622
     return any_impl()
 
 
-@preconditions(is_tensor)
+@preconditions(assert_tensor)
 def all(x):  # pylint: disable=W0622
 
     cmp_fn = lambda r, e: ops_mod.atomic_and(r, ops_mod.cmp_ne(e, 0))
@@ -236,12 +231,38 @@ def all(x):  # pylint: disable=W0622
     return all_impl()
 
 
-@preconditions(is_tensor)
+@preconditions(assert_tensor)
 def max(x):  # pylint: disable=W0622
     return ops_mod.max(x)
 
 
+@preconditions(square_matrix)
+@pyfunc
+def trace(mat):
+    shape = static(mat.get_shape())
+    result = cast(0, mat.element_type()) if static(in_taichi_scope()) else 0
+    # TODO: get rid of static when
+    # CHI IR Tensor repr is ready stable
+    for i in static(range(shape[0])):
+        result += mat[i, i]
+    return result
+
+
+@preconditions(arg_at(0, assert_tensor))
+@func
+def fill(mat: template(), val):
+    shape = static(mat.get_shape())
+    if static(len(shape) == 1):
+        for i in static(range(shape[0])):
+            mat[i] = val
+        return mat
+    for i in static(range(shape[0])):
+        for j in static(range(shape[1])):
+            mat[i, j] = val
+    return mat
+
+
 __all__ = [
-    'trace', 'fill', 'determinant', 'transpose', 'diag', 'sum', 'norm',
-    'norm_inv', 'norm_sqr', 'any', 'all'
+    'trace',
+    'fill',
 ]

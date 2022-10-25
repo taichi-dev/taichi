@@ -240,6 +240,6 @@ def noop(arr: ti.types.ndarray()) -> float:
     return np.sum(arr)
 ```
 
-This is *not allowed*: Taichi doesn't compile NumPy's functions. This is a major difference between Taichi and other Python accelerating frameworks like Numba. 
+This is *not allowed*: Taichi doesn't compile NumPy's functions. This is a major difference between Taichi and other Python accelerating frameworks like Numba.
 
 If you want to use a Numpy function which Taichi does not offer its counterpart functionality, you can call it in the Python scope as usual, and pass the result array  to Taichi kernels via `ti.types.ndarray()`.

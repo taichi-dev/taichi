@@ -741,7 +741,8 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
 // Temporarily disable it on macOS:
 // https://github.com/taichi-dev/taichi/issues/6295
 #if !defined(__APPLE__)
-          caps.set(DeviceCapability::spirv_has_physical_storage_buffer, true);
+          ti_device_->set_cap(
+              DeviceCapability::spirv_has_physical_storage_buffer, true);
 #endif
         }
       }

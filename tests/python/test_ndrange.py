@@ -327,6 +327,5 @@ def test_n_loop_var_neq_dimension():
     with pytest.warns(
             DeprecationWarning,
             match=
-            "Ndrange for loop with number of the loop variables not equal to"
-    ):
+            "Ndrange for loop with number of the loop variables not equal to"):
         iter()

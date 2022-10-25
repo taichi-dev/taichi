@@ -1,5 +1,6 @@
 import os
 import platform
+import re
 import sys
 
 from colorama import Fore, Style
@@ -92,6 +93,12 @@ def print_red_bold(*args, **kwargs):
     print(Style.RESET_ALL, end='')
 
 
+def print_yellow_bold(*args, **kwargs):
+    print(Fore.YELLOW + Style.BRIGHT, end='')
+    print(*args, **kwargs)
+    print(Style.RESET_ALL, end='')
+
+
 def check_exists(src):
     if not os.path.exists(src):
         raise FileNotFoundError(
@@ -164,3 +171,77 @@ def _print_taichi_header():
 
 
 _print_taichi_header()
+
+
+def try_get_wheel_tag(module):
+    try:
+        import wheel.metadata  # pylint: disable=import-outside-toplevel
+        wheel_path = f'{module.__path__[0]}-{".".join(map(str, module.__version__))}.dist-info/WHEEL'
+        meta = wheel.metadata.read_pkg_info(wheel_path)
+        return meta.get('Tag')
+    except Exception:
+        return None
+
+
+def try_get_loaded_libc_version():
+    assert platform.system() == "Linux"
+    with open('/proc/self/maps') as f:
+        content = f.read()
+
+    try:
+        libc_path = next(v for v in content.split() if 'libc-' in v)
+        ver = re.findall(r'\d+\.\d+', libc_path)
+        if not ver:
+            return None
+        return tuple([int(v) for v in ver[0].split('.')])
+    except StopIteration:
+        return None
+
+
+def try_get_pip_version():
+    try:
+        import pip  # pylint: disable=import-outside-toplevel
+        return tuple([int(v) for v in pip.__version__.split('.')])
+    except ImportError:
+        return None
+
+
+def warn_restricted_version():
+    if os.environ.get('TI_MANYLINUX2014_OK', ''):
+        return
+
+    if get_os_name() == 'linux':
+        try:
+            import taichi as ti  # pylint: disable=import-outside-toplevel
+            wheel_tag = try_get_wheel_tag(ti)
+            if wheel_tag and 'manylinux2014' in wheel_tag:
+                print_yellow_bold(
+                    "You have installed a restricted version of taichi, certain features (e.g. Vulkan & GGUI) will not work."
+                )
+                libc_ver = try_get_loaded_libc_version()
+                if libc_ver and libc_ver < (2, 27):
+                    print_yellow_bold(
+                        "!! Taichi requires glibc >= 2.27 to run, please try upgrading your OS to a recent one (e.g. Ubuntu 18.04 or later) if possible."
+                    )
+
+                pip_ver = try_get_pip_version()
+                if pip_ver and pip_ver < (20, 3, 0):
+                    print_yellow_bold(
+                        f"!! Your pip (version {'.'.join(map(str, pip_ver))}) is outdated (20.3.0 or later required), "
+                        "try upgrading pip and install taichi again.")
+                    print()
+                    print_yellow_bold(
+                        "    $ python3 -m pip install --upgrade pip")
+                    print_yellow_bold(
+                        "    $ python3 -m pip install --force-reinstall taichi"
+                    )
+                    print()
+
+                print_yellow_bold(
+                    "You can suppress this warning by setting the environment variable TI_MANYLINUX2014_OK=1."
+                )
+        except Exception:
+            pass
+
+
+warn_restricted_version()

@@ -324,9 +324,8 @@ def test_n_loop_var_neq_dimension():
         for i in ti.ndrange(1, 4):
             print(i)
 
-    with pytest.raises(
-            ti.TaichiSyntaxError,
+    with pytest.warns(
+            DeprecationWarning,
             match=
-            "The number of the loop variables does not match the dimension of the ndrange."
-    ):
+            "Ndrange for loop with number of the loop variables not equal to"):
         iter()

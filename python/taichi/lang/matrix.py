@@ -449,7 +449,6 @@ class Matrix(TaichiOperations):
                 local_tensor_proxy, mat = initializer.with_dynamic_index(
                     arr, dt)
         self.n, self.m = len(mat), 1
-        self.dt = dt
         if len(mat) > 0:
             self.m = len(mat[0])
         entries = [x for row in mat for x in row]

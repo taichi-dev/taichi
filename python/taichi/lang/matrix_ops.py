@@ -9,13 +9,12 @@ from taichi.lang.matrix_ops_utils import (arg_at, assert_tensor, dim_lt,
                                           is_int_const, preconditions,
                                           square_matrix)
 from taichi.lang.ops import cast
-from taichi.lang.util import cook_dtype, in_taichi_scope, taichi_scope
+from taichi.lang.util import cook_dtype, in_taichi_scope
 from taichi.types.annotations import template
 
 
-@taichi_scope
 def _init_matrix(shape, dt=None):
-    @func
+    @pyfunc
     def init():
         return Matrix([[0 for _ in static(range(shape[1]))]
                        for _ in static(range(shape[0]))],
@@ -24,20 +23,18 @@ def _init_matrix(shape, dt=None):
     return init()
 
 
-@taichi_scope
 def _init_vector(shape, dt=None):
-    @func
+    @pyfunc
     def init():
         return Vector([0 for _ in static(range(shape[0]))], dt=dt)
 
     return init()
 
 
-@taichi_scope
 def matrix_reduce(m, f, init, inplace=False):
     shape = m.get_shape()
 
-    @func
+    @pyfunc
     def _reduce():
         result = init
         for i in static(range(shape[0])):
@@ -51,11 +48,10 @@ def matrix_reduce(m, f, init, inplace=False):
     return _reduce()
 
 
-@taichi_scope
 def vector_reduce(v, f, init, inplace=False):
     shape = v.get_shape()
 
-    @func
+    @pyfunc
     def _reduce():
         result = init
         for i in static(range(shape[0])):
@@ -69,7 +65,6 @@ def vector_reduce(v, f, init, inplace=False):
 
 
 @preconditions(arg_at(0, assert_tensor))
-@taichi_scope
 def reduce(x, f, init, inplace=False):
     if len(x.get_shape()) == 1:
         return vector_reduce(x, f, init, inplace)
@@ -174,11 +169,13 @@ def norm_inv(m, eps=1e-6):
 
 
 @preconditions(assert_tensor)
-@taichi_scope
 def any(x):  # pylint: disable=W0622
-    cmp_fn = lambda r, e: ops_mod.atomic_or(r, ops_mod.cmp_ne(e, 0))
+    if in_taichi_scope():
+        cmp_fn = lambda r, e: ops_mod.atomic_or(r, ops_mod.cmp_ne(e, 0))
+    else:
+        cmp_fn = lambda r, e: r or (e != 0)
 
-    @func
+    @pyfunc
     def any_impl():
         return 1 & reduce(x, cmp_fn, 0, inplace=True)
 
@@ -187,10 +184,12 @@ def any(x):  # pylint: disable=W0622
 
 @preconditions(assert_tensor)
 def all(x):  # pylint: disable=W0622
+    if in_taichi_scope():
+        cmp_fn = lambda r, e: ops_mod.atomic_and(r, ops_mod.cmp_ne(e, 0))
+    else:
+        cmp_fn = lambda r, e: r & (e != 0)
 
-    cmp_fn = lambda r, e: ops_mod.atomic_and(r, ops_mod.cmp_ne(e, 0))
-
-    @func
+    @pyfunc
     def all_impl():
         return reduce(x, cmp_fn, 1, inplace=True)
 

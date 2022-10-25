@@ -36,7 +36,7 @@ def arg_at(i, *fns):
                 arg = args[i]
             except IndexError:
                 raise
-        do_check(fns, arg, **kwargs)
+        do_check(fns, arg)
         return True, None
 
     return check

@@ -69,7 +69,7 @@ TEST_F(CapiTest, FailMapDeviceOnlyMemory) {
     ti::Memory mem = runtime.allocate_memory(100);
     mem.map();
 
-    char err_msg[256]{0};
+    char err_msg[1024]{0};
     TiError err = ti_get_last_error(sizeof(err_msg), err_msg);
 
     TI_ASSERT(err == TI_ERROR_INVALID_STATE);

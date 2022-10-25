@@ -627,11 +627,13 @@ Stmt *make_tensor_access(Expression::FlattenContext *ctx,
   if (is_tensor(ret_type)) {
     std::vector<Stmt *> stmts;
     for (auto &indices : indices_group) {
-      stmts.push_back(make_tensor_access_single_element(ctx, var, indices, shape, stride));
+      stmts.push_back(
+          make_tensor_access_single_element(ctx, var, indices, shape, stride));
     }
     return ctx->push_back<MatrixOfMatrixPtrStmt>(stmts, ret_type);
   }
-  return make_tensor_access_single_element(ctx, var, indices_group[0], shape, stride);
+  return make_tensor_access_single_element(ctx, var, indices_group[0], shape,
+                                           stride);
 }
 
 void MatrixExpression::type_check(CompileConfig *config) {
@@ -689,7 +691,9 @@ bool IndexExpression::is_global() const {
 void IndexExpression::type_check(CompileConfig *) {
   // TODO: Change to type-based solution
   // Currently, dimension compatibility check happens in Python
-  TI_ASSERT(indices_group.size() == std::accumulate(begin(ret_shape), end(ret_shape), 1, std::multiplies<>()));
+  TI_ASSERT(indices_group.size() == std::accumulate(begin(ret_shape),
+                                                    end(ret_shape), 1,
+                                                    std::multiplies<>()));
   if (!ret_shape.empty()) {
     TI_ASSERT_INFO(is_tensor(), "Slice or swizzle can only apply on matrices");
     auto element_type = var->ret_type->as<TensorType>()->get_element_type();
@@ -742,15 +746,17 @@ void IndexExpression::type_check(CompileConfig *) {
 
 void IndexExpression::flatten(FlattenContext *ctx) {
   if (is_field()) {
-    stmt = make_field_access(ctx, *var.cast<FieldExpression>(), indices_group[0]);
+    stmt =
+        make_field_access(ctx, *var.cast<FieldExpression>(), indices_group[0]);
   } else if (is_matrix_field()) {
     stmt = make_matrix_field_access(ctx, *var.cast<MatrixFieldExpression>(),
                                     indices_group[0], ret_type);
   } else if (is_ndarray()) {
     stmt = make_ndarray_access(ctx, var, indices_group[0]);
   } else if (is_tensor()) {
-    stmt = make_tensor_access(
-        ctx, var, indices_group, ret_type, var->ret_type->cast<TensorType>()->get_shape(), 1);
+    stmt =
+        make_tensor_access(ctx, var, indices_group, ret_type,
+                           var->ret_type->cast<TensorType>()->get_shape(), 1);
   } else {
     throw TaichiTypeError(
         "Invalid IndexExpression: the source is not among field, ndarray or "

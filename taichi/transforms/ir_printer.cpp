@@ -427,7 +427,8 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(MatrixOfMatrixPtrStmt *stmt) override {
-    std::string s = fmt::format("{}{} = matrix of matrix ptr [", stmt->type_hint(), stmt->name());
+    std::string s = fmt::format("{}{} = matrix of matrix ptr [",
+                                stmt->type_hint(), stmt->name());
     for (int i = 0; i < (int)stmt->stmts.size(); i++) {
       s += fmt::format("{}", stmt->stmts[i]->name());
       if (i + 1 < (int)stmt->stmts.size()) {

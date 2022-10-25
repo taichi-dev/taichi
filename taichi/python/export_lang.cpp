@@ -1006,7 +1006,10 @@ void export_lang(py::module &m) {
           return idx_expr;
         });
 
-  m.def("subscript_with_multiple_indices", Expr::make<IndexExpression, const Expr &, const std::vector<ExprGroup> &, const std::vector<int> &, std::string>);
+  m.def(
+      "subscript_with_multiple_indices",
+      Expr::make<IndexExpression, const Expr &, const std::vector<ExprGroup> &,
+                 const std::vector<int> &, std::string>);
 
   m.def("make_stride_expr",
         Expr::make<StrideExpression, const Expr &, const ExprGroup &,

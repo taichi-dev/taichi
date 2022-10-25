@@ -91,7 +91,9 @@ def test_matrix_slice_with_variable():
     _test_matrix_slice_with_variable()
 
 
-@test_utils.test(real_matrix=True, real_matrix_scalarize=True, dynamic_index=True)
+@test_utils.test(real_matrix=True,
+                 real_matrix_scalarize=True,
+                 dynamic_index=True)
 def test_matrix_slice_with_variable_real_matrix_scalarize():
     _test_matrix_slice_with_variable()
 

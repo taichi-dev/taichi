@@ -1012,7 +1012,7 @@ class ASTTransformer(Builder):
                     'the dimension of the ndrange is deprecated. '
                     'Please check if the number of arguments of ti.ndrange() is equal to '
                     'the number of the loop variables.', DeprecationWarning,
-                    ctx.file, node.lineno + ctx.lineno_offset)
+                    ctx.file, node.lineno + ctx.lineno_offset, module="taichi")
             for i, target in enumerate(targets):
                 if i + 1 < len(targets):
                     target_tmp = impl.expr_init(

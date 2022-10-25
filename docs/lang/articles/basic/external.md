@@ -236,10 +236,20 @@ Users frequently ask whether they can call NumPy functions to process an array i
 import numpy as np
 
 @ti.kernel
-def invalid_sum(arr: ti.types.ndarray()) -> float:
-    return np.sum(arr)
+def invalid_sum(arr: ti.types.ndarray()):
+    total = np.sum(arr)
+    ...
 ```
 
-This is *not allowed*: Taichi doesn't compile NumPy's functions. This is a major difference between Taichi and other Python accelerating frameworks like Numba.
+This is *not supported*: Taichi doesn't compile NumPy's functions. This is a major difference between Taichi and other Python accelerating frameworks like Numba.
 
-If you want to use a Numpy function which Taichi does not offer its counterpart functionality, you can call it in the Python scope as usual, and pass the result array  to Taichi kernels via `ti.types.ndarray()`.
+If you want to use a Numpy function which Taichi does not offer its counterpart functionality, you can call it in the Python scope as usual, and pass the result array  to Taichi kernels via `ti.types.ndarray()`. For example:
+
+```python
+indices = np.argsort(arr)  # arr is a Numpy.ndarray
+
+@ti.kernel
+def valid_example(arr: ti.types.ndarray(), indices: ti.types.ndarray()):
+    min_element = arr[indices[0]]
+    ...
+```

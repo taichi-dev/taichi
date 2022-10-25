@@ -86,7 +86,7 @@
                     "name": "error",
                     "type": "enumeration",
                     "cases": {
-                        "incomplete": 1,
+                        "truncated": 1,
                         "success": 0,
                         "not_supported": -1,
                         "corrupted_data": -2,
@@ -103,6 +103,24 @@
                     "name": "arch",
                     "type": "enumeration",
                     "inc_cases": "PER_ARCH"
+                },
+                {
+                    "name": "capability",
+                    "type": "enumeration",
+                    "inc_cases": "PER_DEVICE_CAPABILITY"
+                },
+                {
+                    "name": "capability_level_info",
+                    "type": "structure",
+                    "fields": [
+                        {
+                            "type": "enumeration.capability"
+                        },
+                        {
+                            "name": "level",
+                            "type": "uint32_t"
+                        }
+                    ]
                 },
                 {
                     "name": "data_type",
@@ -493,6 +511,25 @@
                     "parameters": [
                         {
                             "type": "handle.runtime"
+                        }
+                    ]
+                },
+                {
+                    "name": "set_runtime_capabilities",
+                    "type": "function",
+                    "is_extension": true,
+                    "parameters": [
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "name": "capability_count",
+                            "type": "uint32_t"
+                        },
+                        {
+                            "name": "capabilities",
+                            "type": "enumeration.capability",
+                            "count": "capability_count"
                         }
                     ]
                 },

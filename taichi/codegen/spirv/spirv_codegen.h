@@ -22,7 +22,8 @@ class KernelCodegen {
     std::string ti_kernel_name;
     Kernel *kernel;
     std::vector<CompiledSNodeStructs> compiled_structs;
-    Device *device;
+    Arch arch;
+    DeviceCapabilityConfig caps;
     bool enable_spv_opt{true};
   };
 

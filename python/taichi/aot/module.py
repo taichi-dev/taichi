@@ -81,19 +81,23 @@ class Module:
         # Now the module file '/path/to/module' contains the Metal kernels
         # for running ``foo`` and ``bar``.
     """
-    def __init__(self, arch):
+    def __init__(self, arch, caps=None):
         """Creates a new AOT module instance
 
         Args:
-          arch: Target backend architecture. This is ignored for now. The AOT
-            backend still uses the one specified in :func:`~taichi.lang.init`.
+          arch: Target backend architecture. This must match the one specified
+            in :func:`~taichi.lang.init`.
+          caps (List[str]): Enabled device capabilities.
         """
+        if caps is None:
+            caps = []
+
         self._arch = arch
         self._kernels = []
         self._fields = {}
         rtm = impl.get_runtime()
         rtm._finalize_root_fb_for_aot()
-        self._aot_builder = rtm.prog.make_aot_module_builder(arch)
+        self._aot_builder = rtm.prog.make_aot_module_builder(arch, caps)
         self._content = []
 
     def add_field(self, name, field):

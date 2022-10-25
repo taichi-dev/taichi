@@ -8,7 +8,7 @@ res = (512, 512)
 img = ti.Vector.field(4, dtype=float, shape=res)
 pixels_arr = ti.Vector.ndarray(4, dtype=float, shape=res)
 
-texture = ti.Texture(ti.f32, 1, (128, 128))
+texture = ti.Texture(ti.Format.r32f, (128, 128))
 
 
 @ti.kernel

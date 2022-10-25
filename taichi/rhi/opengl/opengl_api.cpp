@@ -207,12 +207,6 @@ bool is_gles() {
 
 std::shared_ptr<Device> make_opengl_device() {
   std::shared_ptr<Device> dev = std::make_shared<GLDevice>();
-  if (!is_gles()) {
-    // 64bit isn't supported in ES profile
-    dev->set_cap(DeviceCapability::spirv_has_int64, true);
-    dev->set_cap(DeviceCapability::spirv_has_float64, true);
-  }
-  dev->set_cap(DeviceCapability::spirv_version, 0x10300);
   return dev;
 }
 

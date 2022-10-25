@@ -3,6 +3,7 @@ from taichi._lib import core as _ti_core
 from taichi.lang import impl
 from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.exception import TaichiCompilationError, TaichiTypeError
+from taichi.lang.matrix import make_matrix
 from taichi.lang.util import is_taichi_class, to_numpy_type
 from taichi.types import primitive_types
 from taichi.types.primitive_types import integer_types, real_types
@@ -23,6 +24,9 @@ class Expr(TaichiOperations):
                 raise TaichiTypeError(
                     'Cannot initialize scalar expression from '
                     f'taichi class: {type(args[0])}')
+            elif isinstance(args[0], (list, tuple)):
+                assert impl.current_cfg().real_matrix
+                self.ptr = make_matrix(args[0]).ptr
             else:
                 # assume to be constant
                 arg = args[0]

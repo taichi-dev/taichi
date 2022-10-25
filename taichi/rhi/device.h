@@ -1,10 +1,11 @@
 #pragma once
+#include <string>
+#include <vector>
 #include "taichi/util/lang_util.h"
 
 #include "taichi/jit/jit_module.h"
 #include "taichi/program/compile_config.h"
-#include <string>
-#include <vector>
+#include "taichi/rhi/device_capability.h"
 
 namespace taichi::lang {
 
@@ -20,16 +21,6 @@ constexpr size_t kBufferSizeEntireSize = size_t(-1);
   inline bool operator&&(name a, name b) {     \
     return (int(a) & int(b)) != 0;             \
   }
-
-// For backend dependent code (e.g. codegen)
-// Or the backend runtime itself
-// Capabilities are per-device
-enum class DeviceCapability : uint32_t {
-#define PER_DEVICE_CAPABILITY(name) name,
-#include "taichi/inc/rhi_constants.inc.h"
-#undef PER_DEVICE_CAPABILITY
-};
-const std::string to_string(DeviceCapability c);
 
 enum class BlendOp : uint32_t { add, subtract, reverse_subtract, min, max };
 
@@ -403,29 +394,6 @@ class Device {
  public:
   virtual ~Device(){};
 
-  uint32_t get_cap(DeviceCapability capability_id) const {
-    if (caps_.find(capability_id) == caps_.end())
-      return 0;
-    return caps_.at(capability_id);
-  }
-
-  void set_cap(DeviceCapability capability_id, uint32_t val) {
-    caps_[capability_id] = val;
-  }
-
-  void clone_caps(Device &dest) const {
-    for (const auto &[k, v] : caps_) {
-      dest.set_cap(k, v);
-    }
-  }
-  void clone_caps(std::map<DeviceCapability, uint32_t> &dest) const {
-    for (const auto &[k, v] : caps_) {
-      dest[k] = v;
-    }
-  }
-
-  void print_all_cap() const;
-
   struct AllocParams {
     uint64_t size{0};
     bool host_write{false};
@@ -439,7 +407,12 @@ class Device {
   virtual void dealloc_memory(DeviceAllocation handle) = 0;
 
   virtual uint64_t get_memory_physical_pointer(DeviceAllocation handle) {
-    TI_NOT_IMPLEMENTED
+    // FIXME: (penguinliong) This method reports the actual device memory
+    // address, it's used for bindless (like argument buffer on Metal). If the
+    // backend doesn't have access to physical memory address, it should return
+    // null and it depends on the backend implementation to use the address in
+    // argument binders.
+    return 0;
   }
 
   virtual std::unique_ptr<Pipeline> create_pipeline(
@@ -496,8 +469,12 @@ class Device {
                               DevicePtr src,
                               uint64_t size);
 
- private:
-  std::unordered_map<DeviceCapability, uint32_t> caps_;
+  // Get all supported capabilities of the current created device.
+  virtual Arch arch() const = 0;
+  virtual const DeviceCapabilityConfig &get_current_caps() const {
+    static DeviceCapabilityConfig default_cfg;
+    return default_cfg;
+  }
 };
 
 class Surface {

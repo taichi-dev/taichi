@@ -587,6 +587,12 @@ void export_lang(py::module &m) {
       .def_readonly("dtype", &Ndarray::dtype)
       .def_readonly("shape", &Ndarray::shape);
 
+  py::enum_<BufferFormat>(m, "Format")
+#define PER_BUFFER_FORMAT(x) .value(#x, BufferFormat::x)
+#include "taichi/inc/rhi_constants.inc.h"
+#undef PER_EXTENSION
+      ;
+
   py::class_<Texture>(m, "Texture")
       .def("device_allocation_ptr", &Texture::get_device_allocation_ptr_as_int)
       .def("from_ndarray", &Texture::from_ndarray)
@@ -1016,8 +1022,14 @@ void export_lang(py::module &m) {
   });
 
   m.def("get_external_tensor_dim", [](const Expr &expr) {
-    TI_ASSERT(expr.is<ExternalTensorExpression>());
-    return expr.cast<ExternalTensorExpression>()->dim;
+    if (expr.is<ExternalTensorExpression>()) {
+      return expr.cast<ExternalTensorExpression>()->dim;
+    } else if (expr.is<TexturePtrExpression>()) {
+      return expr.cast<TexturePtrExpression>()->num_dims;
+    } else {
+      TI_ASSERT(false);
+      return 0;
+    }
   });
 
   m.def("get_external_tensor_shape_along_axis",

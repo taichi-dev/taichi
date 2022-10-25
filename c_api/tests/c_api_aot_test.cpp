@@ -21,9 +21,13 @@ static void kernel_aot_test(TiArch arch) {
 
   std::vector<int> arg2_v = {1, 2, 3};
 
-  k_run[0] = arg0_val;
-  k_run[1] = arg1_array;
-  k_run.set(2, arg2_v);
+  // This is just to make sure clear_args() does its work.
+  k_run.push_arg(arg0_val);
+  k_run.clear_args();
+
+  k_run.push_arg(arg0_val);
+  k_run.push_arg(arg1_array);
+  k_run.push_arg(arg2_v);
   k_run.launch();
   runtime.wait();
 

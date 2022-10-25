@@ -21,7 +21,7 @@ function build-and-smoke-test-android-aot-demo {
     # Normally we checkout the master's commit Id: https://github.com/taichi-dev/taichi-aot-demo/commit/master
     # As for why we need this explicit commit Id here, refer to: https://docs.taichi-lang.org/docs/master/contributor_guide#handle-special-ci-failures
     pushd taichi-aot-demo
-    git checkout bd8fb7bf30a3494f4ecc671cd4d017b926afed10
+    git checkout 6b8d22f2c38318cf7a7333dc17cff4ae7ee5e607
     popd
 
     APP_ROOT=taichi-aot-demo/implicit_fem
@@ -49,7 +49,7 @@ function prepare-unity-build-env {
     cd taichi
 
     # Dependencies
-    git clone --reference-if-able /var/lib/git-cache -b upgrade-modules1 https://github.com/taichi-dev/Taichi-UnityExample
+    git clone --reference-if-able /var/lib/git-cache -b upgrade-modules2 https://github.com/taichi-dev/Taichi-UnityExample
 
     python misc/generate_unity_language_binding.py
     cp c_api/unity/*.cs Taichi-UnityExample/Assets/Taichi/Generated
@@ -103,7 +103,7 @@ function build-and-test-headless-demo {
     popd
 
     rm -rf taichi-aot-demo
-    git clone --recursive --depth=1 https://github.com/taichi-dev/taichi-aot-demo
+    git clone --recursive --depth=1 https://github.com/taichi-dev/taichi-aot-demo -b update-aot-module1
     cd taichi-aot-demo
     mkdir build
     pushd build

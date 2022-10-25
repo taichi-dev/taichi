@@ -7,6 +7,7 @@ from taichi._lib import core as _ti_core
 from taichi._snode.fields_builder import FieldsBuilder
 from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang._ndrange import GroupedNDRange, _Ndrange
+from taichi.lang._texture import RWTextureAccessor
 from taichi.lang.any_array import AnyArray, AnyArrayAccess
 from taichi.lang.enums import SNodeGradType
 from taichi.lang.exception import (TaichiCompilationError, TaichiRuntimeError,
@@ -105,7 +106,8 @@ def expr_init_func(
 
 
 def begin_frontend_struct_for(ast_builder, group, loop_range):
-    if not isinstance(loop_range, (AnyArray, Field, SNode, _Root)):
+    if not isinstance(loop_range,
+                      (AnyArray, Field, SNode, RWTextureAccessor, _Root)):
         raise TypeError(
             f"Cannot loop over the object {type(loop_range)} in Taichi scope. Only Taichi fields (via template) or dense arrays (via types.ndarray) are supported."
         )
@@ -115,7 +117,7 @@ def begin_frontend_struct_for(ast_builder, group, loop_range):
             f'({group.size()} != {len(loop_range.shape)}). Maybe you wanted to '
             'use "for I in ti.grouped(x)" to group all indices into a single vector I?'
         )
-    if isinstance(loop_range, AnyArray):
+    if isinstance(loop_range, (AnyArray, RWTextureAccessor)):
         ast_builder.begin_frontend_struct_for_on_external_tensor(
             group, loop_range._loop_range())
     else:
@@ -151,11 +153,7 @@ def _calc_slice(index, default_stop):
 
 
 @taichi_scope
-def subscript(ast_builder,
-              value,
-              *_indices,
-              skip_reordered=False,
-              get_ref=False):
+def subscript(ast_builder, value, *_indices, skip_reordered=False):
     if isinstance(value, np.ndarray):
         return value.__getitem__(_indices)
 
@@ -192,7 +190,7 @@ def subscript(ast_builder,
         index_dim = indices_expr_group.size()
 
     if is_taichi_class(value):
-        return value._subscript(*indices, get_ref=get_ref)
+        return value._subscript(*indices)
     if isinstance(value, MeshElementFieldProxy):
         return value.subscript(*indices)
     if isinstance(value, MeshRelationAccessProxy):

@@ -47,8 +47,9 @@ std::string TaskAttributes::BufferBind::debug_string() const {
                      TaskAttributes::buffers_name(buffer), binding);
 }
 
-KernelContextAttributes::KernelContextAttributes(const Kernel &kernel,
-                                                 Device *device)
+KernelContextAttributes::KernelContextAttributes(
+    const Kernel &kernel,
+    const DeviceCapabilityConfig *caps)
     : args_bytes_(0),
       rets_bytes_(0),
       extra_args_bytes_(RuntimeContext::extra_args_size) {
@@ -114,7 +115,7 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel,
   TI_TRACE("args:");
   args_bytes_ = arange_args(
       &arg_attribs_vec_, 0, false,
-      device->get_cap(DeviceCapability::spirv_has_physical_storage_buffer));
+      caps->get(DeviceCapability::spirv_has_physical_storage_buffer));
   // Align to extra args
   args_bytes_ = (args_bytes_ + 4 - 1) / 4 * 4;
 

@@ -325,7 +325,7 @@ A collection of Taichi kernels (a compute graph) to launch on the offload target
 ```c
 // enumeration.error
 typedef enum TiError {
-  TI_ERROR_INCOMPLETE = 1,
+  TI_ERROR_TRUNCATED = 1,
   TI_ERROR_SUCCESS = 0,
   TI_ERROR_NOT_SUPPORTED = -1,
   TI_ERROR_CORRUPTED_DATA = -2,
@@ -342,7 +342,7 @@ typedef enum TiError {
 
 Errors reported by the Taichi C-API. Enumerants greater than or equal to zero are success states.
 
-- `TI_ERROR_INCOMPLETE`: The output data is truncated because the user-provided buffer is too small.
+- `TI_ERROR_TRUNCATED`: The output data is truncated because the user-provided buffer is too small.
 - `TI_ERROR_SUCCESS`: The Taichi C-API invocation finished gracefully.
 - `TI_ERROR_NOT_SUPPORTED`: The invoked API, or the combination of parameters is not supported by the Taichi C-API.
 - `TI_ERROR_CORRUPTED_DATA`: Provided data is corrupted.

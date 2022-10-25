@@ -365,7 +365,11 @@ class TaichiCallableTemplateMapper:
             # [Primitive arguments] Return the value
             return arg
         if isinstance(anno, texture_type.TextureType):
-            return '#'
+            return arg.num_dims,
+        if isinstance(anno, texture_type.RWTextureType):
+            # (penguinliong) '0' is the assumed LOD level. We currently don't
+            # support mip-mapping.
+            return arg.num_dims, arg.num_channels, arg.dtype, 0
         if isinstance(anno, ndarray_type.NdarrayType):
             if isinstance(arg, taichi.lang._ndarray.ScalarNdarray):
                 anno.check_matched(arg.get_type())
@@ -522,6 +526,8 @@ class Kernel:
             grad_suffix = "_forward_grad"
         elif self.autodiff_mode == AutodiffMode.REVERSE:
             grad_suffix = "_reverse_grad"
+        elif self.autodiff_mode == AutodiffMode.VALIDATION:
+            grad_suffix = "_validate_grad"
         kernel_name = f"{self.func.__name__}_c{self.kernel_counter}_{key[1]}{grad_suffix}"
         _logging.trace(f"Compiling kernel {kernel_name}...")
 
@@ -705,12 +711,28 @@ class Kernel:
                         array_shape = v.shape[
                             element_dim:] if is_soa else v.shape[:-element_dim]
                     if is_numpy:
-                        tmp = np.ascontiguousarray(v)
-                        # Purpose: DO NOT GC |tmp|!
-                        tmps.append(tmp)
-                        launch_ctx.set_arg_external_array_with_shape(
-                            actual_argument_slot, int(tmp.ctypes.data),
-                            tmp.nbytes, array_shape)
+                        if v.flags.c_contiguous:
+                            launch_ctx.set_arg_external_array_with_shape(
+                                actual_argument_slot, int(v.ctypes.data),
+                                v.nbytes, array_shape)
+                        elif v.flags.f_contiguous:
+                            # TODO: A better way that avoids copying is saving strides info.
+                            tmp = np.ascontiguousarray(v)
+                            # Purpose: DO NOT GC |tmp|!
+                            tmps.append(tmp)
+
+                            def callback(original, updated):
+                                np.copyto(original, np.asfortranarray(updated))
+
+                            callbacks.append(
+                                functools.partial(callback, v, tmp))
+                            launch_ctx.set_arg_external_array_with_shape(
+                                actual_argument_slot, int(tmp.ctypes.data),
+                                tmp.nbytes, array_shape)
+                        else:
+                            raise ValueError(
+                                "Non contiguous numpy arrays are not supported, please call np.ascontiguousarray(arr) before passing it into taichi kernel."
+                            )
                     elif is_torch:
                         is_ndarray = False
                         tmp, torch_callbacks = self.get_torch_callbacks(
@@ -850,7 +872,11 @@ class Kernel:
         # Both the class kernels and the plain-function kernels are unified now.
         # In both cases, |self.grad| is another Kernel instance that computes the
         # gradient. For class kernels, args[0] is always the kernel owner.
-        if self.autodiff_mode == AutodiffMode.NONE and self.runtime.target_tape and not self.runtime.grad_replaced:
+
+        # No need to capture grad kernels because they are already bound with their primal kernels
+        if self.autodiff_mode in (
+                AutodiffMode.NONE, AutodiffMode.VALIDATION
+        ) and self.runtime.target_tape and not self.runtime.grad_replaced:
             self.runtime.target_tape.insert(self, args)
 
         if self.autodiff_mode != AutodiffMode.NONE and impl.current_cfg(

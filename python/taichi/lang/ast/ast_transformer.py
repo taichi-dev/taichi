@@ -13,14 +13,13 @@ from taichi.lang._ndrange import _Ndrange, ndrange
 from taichi.lang.ast.ast_transformer_utils import (Builder, LoopStatus,
                                                    ReturnStatus)
 from taichi.lang.ast.symbol_resolver import ASTResolver
-from taichi.lang.exception import TaichiSyntaxError, TaichiTypeError
+from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.expr import Expr
 from taichi.lang.field import Field
 from taichi.lang.impl import current_cfg
-from taichi.lang.matrix import (Matrix, MatrixType, Vector, _PyScopeMatrixImpl,
-                                _TiScopeMatrixImpl, is_vector, make_matrix)
+from taichi.lang.matrix import Matrix, MatrixType, Vector, is_vector
 from taichi.lang.snode import append
-from taichi.lang.util import in_taichi_scope, is_taichi_class, to_taichi_type
+from taichi.lang.util import is_taichi_class, to_taichi_type
 from taichi.types import (annotations, ndarray_type, primitive_types,
                           texture_type)
 from taichi.types.utils import is_integral
@@ -114,29 +113,6 @@ class ASTTransformer(Builder):
         return None
 
     @staticmethod
-    def build_assign_slice(ctx, node_target, values, is_static_assign):
-        target = ASTTransformer.build_Subscript(ctx, node_target, get_ref=True)
-        if current_cfg().real_matrix and isinstance(values, (list, tuple)):
-            values = make_matrix(values)
-
-        if isinstance(node_target.value.ptr, Matrix):
-            if isinstance(node_target.value.ptr._impl, _TiScopeMatrixImpl):
-                target._assign(values)
-            elif isinstance(node_target.value.ptr._impl, _PyScopeMatrixImpl):
-                if in_taichi_scope():
-                    raise TaichiTypeError(
-                        'PyScope matrix cannot be assigned in Taichi Scope')
-                node_target.ptr._assign(node_target.slice.ptr, values)
-            else:
-                raise TaichiTypeError(f'{type(target)} cannot be subscripted')
-        else:
-            ASTTransformer.build_assign_basic(ctx,
-                                              target,
-                                              values,
-                                              is_static_assign,
-                                              build_target=False)
-
-    @staticmethod
     def build_assign_unpack(ctx, node_target, values, is_static_assign):
         """Build the unpack assignments like this: (target1, target2) = (value1, value2).
         The function should be called only if the node target is a tuple.
@@ -148,10 +124,6 @@ class ASTTransformer(Builder):
             values: A node/list representing the values.
             is_static_assign: A boolean value indicating whether this is a static assignment
         """
-        if isinstance(node_target, ast.Subscript):
-            return ASTTransformer.build_assign_slice(ctx, node_target, values,
-                                                     is_static_assign)
-
         if not isinstance(node_target, ast.Tuple):
             return ASTTransformer.build_assign_basic(ctx, node_target, values,
                                                      is_static_assign)
@@ -183,11 +155,7 @@ class ASTTransformer(Builder):
         return None
 
     @staticmethod
-    def build_assign_basic(ctx,
-                           target,
-                           value,
-                           is_static_assign,
-                           build_target=True):
+    def build_assign_basic(ctx, target, value, is_static_assign):
         """Build basic assignment like this: target = value.
 
          Args:
@@ -213,10 +181,7 @@ class ASTTransformer(Builder):
             var = impl.expr_init(value)
             ctx.create_variable(target.id, var)
         else:
-            if build_target:
-                var = build_stmt(ctx, target)
-            else:
-                var = target
+            var = build_stmt(ctx, target)
             try:
                 var._assign(value)
             except AttributeError:
@@ -246,15 +211,13 @@ class ASTTransformer(Builder):
         return False
 
     @staticmethod
-    def build_Subscript(ctx, node, get_ref=False):
+    def build_Subscript(ctx, node):
         build_stmt(ctx, node.value)
         build_stmt(ctx, node.slice)
         if not ASTTransformer.is_tuple(node.slice):
             node.slice.ptr = [node.slice.ptr]
-        node.ptr = impl.subscript(ctx.ast_builder,
-                                  node.value.ptr,
-                                  *node.slice.ptr,
-                                  get_ref=get_ref)
+        node.ptr = impl.subscript(ctx.ast_builder, node.value.ptr,
+                                  *node.slice.ptr)
         return node.ptr
 
     @staticmethod
@@ -581,16 +544,14 @@ class ASTTransformer(Builder):
                     ctx.create_variable(
                         arg.arg,
                         kernel_arguments.decl_texture_arg(
-                            ctx.func.arguments[i].annotation.num_dimensions))
+                            ctx.arg_features[i][0]))
                 elif isinstance(ctx.func.arguments[i].annotation,
                                 texture_type.RWTextureType):
                     ctx.create_variable(
                         arg.arg,
                         kernel_arguments.decl_rw_texture_arg(
-                            ctx.func.arguments[i].annotation.num_dimensions,
-                            ctx.func.arguments[i].annotation.num_channels,
-                            ctx.func.arguments[i].annotation.channel_format,
-                            ctx.func.arguments[i].annotation.lod))
+                            ctx.arg_features[i][0], ctx.arg_features[i][1],
+                            ctx.arg_features[i][2], ctx.arg_features[i][3]))
                 elif isinstance(ctx.func.arguments[i].annotation, MatrixType):
                     ctx.create_variable(
                         arg.arg,

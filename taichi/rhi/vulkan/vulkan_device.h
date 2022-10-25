@@ -561,6 +561,15 @@ class VulkanStream : public Stream {
   double device_time_elapsed_us_;
 };
 
+struct VulkanCapabilities {
+  uint32_t vk_api_version;
+  bool physical_device_features2;
+  bool external_memory;
+  bool wide_line;
+  bool surface;
+  bool present;
+};
+
 class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
  public:
   struct Params {
@@ -577,6 +586,10 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
   VulkanDevice();
   void init_vulkan_structs(Params &params);
   ~VulkanDevice() override;
+
+  Arch arch() const override {
+    return Arch::vulkan;
+  }
 
   std::unique_ptr<Pipeline> create_pipeline(
       const PipelineSourceDesc &src,
@@ -671,11 +684,28 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
       VulkanResourceBinder::Set &set);
   vkapi::IVkDescriptorSet alloc_desc_set(vkapi::IVkDescriptorSetLayout layout);
 
+  inline void set_current_caps(DeviceCapabilityConfig &&caps) {
+    caps_ = std::move(caps);
+  }
+  const DeviceCapabilityConfig &get_current_caps() const override {
+    return caps_;
+  }
+
+  constexpr VulkanCapabilities &vk_caps() {
+    return vk_caps_;
+  }
+  constexpr const VulkanCapabilities &vk_caps() const {
+    return vk_caps_;
+  }
+
  private:
   friend VulkanSurface;
 
   void create_vma_allocator();
   void new_descriptor_pool();
+
+  DeviceCapabilityConfig caps_;
+  VulkanCapabilities vk_caps_;
 
   VkInstance instance_;
   VkDevice device_;

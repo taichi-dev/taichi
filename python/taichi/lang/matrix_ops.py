@@ -76,16 +76,6 @@ def reduce(x, f, init, inplace=False):
     return matrix_reduce(x, f, init, inplace)
 
 
-@preconditions(square_matrix)
-@func
-def trace(x):
-    shape = static(x.get_shape())
-    result = cast(0, x.element_type())
-    for i in static(range(shape[0])):
-        result += x[i, i]
-    return result
-
-
 def E(m, x, y, n):
     return subscript(m, x % n, y % n)
 
@@ -121,25 +111,6 @@ def determinant(x):
         return det
     # unreachable
     return None
-
-
-@preconditions(arg_at(0, assert_tensor))
-@taichi_scope
-def fill(m, val):
-    # capture reference to m
-    @func
-    def fill_impl():
-        s = static(m.get_shape())
-        if static(len(s) == 1):
-            for i in static(range(s[0])):
-                m[i] = val
-            return m
-        for i in static(range(s[0])):
-            for j in static(range(s[1])):
-                m[i, j] = val
-        return m
-
-    return fill_impl()
 
 
 @preconditions(assert_tensor)

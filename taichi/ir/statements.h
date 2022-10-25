@@ -407,6 +407,21 @@ class MatrixOfGlobalPtrStmt : public Stmt {
 };
 
 /**
+ * A matrix of MatrixPtrStmts. The purpose of this stmt is to handle matrix
+ * slice and vector swizzle. This stmt will be eliminated after the
+ * lower_matrix_ptr pass.
+ */
+class MatrixOfMatrixPtrStmt : public Stmt {
+ public:
+  std::vector<Stmt *> stmts;
+
+  MatrixOfMatrixPtrStmt(const std::vector<Stmt *> &stmts, DataType dt);
+
+  TI_STMT_DEF_FIELDS(ret_type, stmts);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
+/**
  * A pointer to an element of a matrix.
  */
 class MatrixPtrStmt : public Stmt {

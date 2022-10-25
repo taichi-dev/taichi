@@ -5,7 +5,7 @@ from tests import test_utils
 
 
 @test_utils.test()
-def test_matrix_slice_read():
+def _test_matrix_slice_read():
     b = 6
 
     @ti.kernel
@@ -26,6 +26,16 @@ def test_matrix_slice_read():
     assert (v2 == ti.Vector([3, 6])).all()
     m2 = ti.Matrix([[2, 3], [4, 5]])[:1, 1:]
     assert (m2 == ti.Matrix([[3]])).all()
+
+
+@test_utils.test()
+def test_matrix_slice_read():
+    _test_matrix_slice_read()
+
+
+@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
+def test_matrix_slice_read_real_matrix_scalarize():
+    _test_matrix_slice_read()
 
 
 @test_utils.test()

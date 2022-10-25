@@ -15,6 +15,13 @@ endif()
 
 set(CMAKE_CXX_STANDARD 17)
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffunction-sections -fdata-sections")
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=lld")
+set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -fuse-ld=lld")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=lld")
+message("C++ Flags: ${CMAKE_CXX_FLAGS}")
+message("Build type: ${CMAKE_BUILD_TYPE}")
+
 execute_process(
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
   COMMAND git rev-parse --short HEAD
@@ -106,13 +113,6 @@ option(TI_BUILD_RHI_EXAMPLES "Build the Unified Device API examples" OFF)
 if(NOT TI_WITH_LLVM OR NOT TI_WITH_METAL)
     set(TI_BUILD_EXAMPLES OFF)
 endif()
-
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffunction-sections -fdata-sections -flto")
-set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=lld")
-set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -fuse-ld=lld")
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=lld")
-message("C++ Flags: ${CMAKE_CXX_FLAGS}")
-message("Build type: ${CMAKE_BUILD_TYPE}")
 
 if (NOT TI_WITH_CUDA)
     set(CUDA_VERSION "0.0")

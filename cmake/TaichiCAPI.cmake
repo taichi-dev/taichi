@@ -8,9 +8,7 @@ if (TI_WITH_LLVM)
   list(APPEND C_API_SOURCE "c_api/src/taichi_llvm_impl.cpp")
 endif()
 
-if (TI_WITH_OPENGL OR TI_WITH_VULKAN)
-  list(APPEND C_API_SOURCE "c_api/src/taichi_gfx_impl.cpp")
-endif()
+list(APPEND C_API_SOURCE "c_api/src/taichi_gfx_impl.cpp")
 
 if (TI_WITH_OPENGL)
   list(APPEND C_API_SOURCE "c_api/src/taichi_opengl_impl.cpp")
@@ -36,7 +34,8 @@ endif()
 # Avoid exporting third party symbols from libtaichi_c_api.so
 # Note that on Windows, external symbols will be excluded from .dll automatically, by default.
 if(LINUX)
-    target_link_options(${TAICHI_C_API_NAME} PRIVATE -Wl,--exclude-libs,ALL -Wl,--gc-sections -Wl,--lto-O3 -Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/c_api/version.script)
+    target_link_options(${TAICHI_C_API_NAME} PRIVATE -Wl,--exclude-libs,ALL -Wl,--gc-sections -Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/c_api/version.script)
+    #target_link_options(${TAICHI_C_API_NAME} PRIVATE -Wl,--exclude-libs,ALL -Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/c_api/version.script)
 elseif(APPLE)
     # Unfortunately, ld on MacOS does not support --exclude-libs and we have to manually specify the exported symbols
     target_link_options(${TAICHI_C_API_NAME} PRIVATE -Wl,-exported_symbols_list,${CMAKE_CURRENT_SOURCE_DIR}/c_api/export_symbols_mac.lds)

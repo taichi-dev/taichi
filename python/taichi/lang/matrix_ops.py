@@ -1,12 +1,12 @@
+from taichi.lang.expr import Expr
 from taichi.lang.impl import static
 from taichi.lang.kernel_impl import func, pyfunc
+from taichi.lang.matrix import Matrix, Vector
 from taichi.lang.matrix_ops_utils import (arg_at, assert_tensor, preconditions,
                                           square_matrix)
 from taichi.lang.ops import cast
 from taichi.lang.util import in_taichi_scope, taichi_scope
 from taichi.types.annotations import template
-from taichi.lang.expr import Expr
-from taichi.lang.matrix import Matrix, Vector
 
 
 @taichi_scope

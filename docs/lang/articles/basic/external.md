@@ -236,7 +236,7 @@ Users frequently ask whether they can call NumPy functions to process an array i
 import numpy as np
 
 @ti.kernel
-def noop(arr: ti.types.ndarray()) -> float:
+def invalid_sum(arr: ti.types.ndarray()) -> float:
     return np.sum(arr)
 ```
 

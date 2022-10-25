@@ -286,9 +286,3 @@ def fill(mat: template(), val):
         for j in static(range(shape[1])):
             mat[i, j] = val
     return mat
-
-
-__all__ = [
-    'trace',
-    'fill',
-]

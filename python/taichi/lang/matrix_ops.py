@@ -1,11 +1,15 @@
+import numbers
+
+import taichi.lang.ops as ops_mod
 from taichi.lang.expr import Expr
-from taichi.lang.impl import static
+from taichi.lang.impl import static, subscript
 from taichi.lang.kernel_impl import func, pyfunc
 from taichi.lang.matrix import Matrix, Vector
-from taichi.lang.matrix_ops_utils import (arg_at, assert_tensor, preconditions,
+from taichi.lang.matrix_ops_utils import (arg_at, assert_tensor, dim_lt,
+                                          is_int_const, preconditions,
                                           square_matrix)
 from taichi.lang.ops import cast
-from taichi.lang.util import in_taichi_scope, taichi_scope
+from taichi.lang.util import cook_dtype, in_taichi_scope, taichi_scope
 from taichi.types.annotations import template
 
 
@@ -64,6 +68,7 @@ def vector_reduce(v, f, init, inplace=False):
     return _reduce()
 
 
+@preconditions(arg_at(0, assert_tensor))
 @taichi_scope
 def reduce(x, f, init, inplace=False):
     if len(x.get_shape()) == 1:
@@ -76,10 +81,6 @@ def reduce(x, f, init, inplace=False):
 def trace(x):
     shape = static(x.get_shape())
     result = cast(0, x.element_type())
-    # TODO: fix parallelization
-    loop_config(serialize=True)
-    # TODO: get rid of static when
-    # CHI IR Tensor repr is ready stable
     for i in static(range(shape[0])):
         result += x[i, i]
     return result
@@ -107,9 +108,7 @@ def determinant(x):
         n = 4
 
         det = 0.0
-        # TODO: fix parallelization
-        loop_config(serialize=True)
-        for i in range(4):
+        for i in static(range(4)):
             det += (-1.0)**i * (
                 x[i, 0] *
                 (E(x, i + 1, 1, n) *
@@ -124,7 +123,7 @@ def determinant(x):
     return None
 
 
-@preconditions(arg_at(0, is_tensor))
+@preconditions(arg_at(0, assert_tensor))
 @taichi_scope
 def fill(m, val):
     # capture reference to m
@@ -132,13 +131,9 @@ def fill(m, val):
     def fill_impl():
         s = static(m.get_shape())
         if static(len(s) == 1):
-            # TODO: fix parallelization
-            loop_config(serialize=True)
             for i in static(range(s[0])):
                 m[i] = val
             return m
-        # TODO: fix parallelization
-        loop_config(serialize=True)
         for i in static(range(s[0])):
             for j in static(range(s[1])):
                 m[i, j] = val
@@ -147,7 +142,7 @@ def fill(m, val):
     return fill_impl()
 
 
-@preconditions(is_tensor)
+@preconditions(assert_tensor)
 @func
 def transpose(m):
     shape = static(m.get_shape())
@@ -231,9 +226,40 @@ def all(x):  # pylint: disable=W0622
     return all_impl()
 
 
-@preconditions(assert_tensor)
+@preconditions(assert_tensor, lambda x: (len(x.get_shape(
+)) <= 2, f"Dimension > 2 not supported: got {len(x.get_shape())}"))
 def max(x):  # pylint: disable=W0622
-    return ops_mod.max(x)
+    shape = static(x.get_shape())
+
+    @func
+    def max_impl():
+        if static(len(shape) == 1):
+            if static(shape[0] > 0):
+                return vector_reduce(x, ops_mod.atomic_max, x[0], inplace=True)
+            return Vector([])
+        if static(shape[0] > 0 and shape[1] > 0):
+            return matrix_reduce(x, ops_mod.atomic_max, x[0, 0], inplace=True)
+        return Matrix([])
+
+    return max_impl()
+
+
+@preconditions(assert_tensor, lambda x: (len(x.get_shape(
+)) <= 2, f"Dimension > 2 not supported: got {len(x.get_shape())}"))
+def min(x):  # pylint: disable=W0622
+    shape = static(x.get_shape())
+
+    @func
+    def min_impl():
+        if static(len(shape) == 1):
+            if static(shape[0] > 0):
+                return vector_reduce(x, ops_mod.atomic_min, x[0], inplace=True)
+            return Vector([])
+        if static(shape[0] > 0 and shape[1] > 0):
+            return matrix_reduce(x, ops_mod.atomic_min, x[0, 0], inplace=True)
+        return Matrix([])
+
+    return min_impl()
 
 
 @preconditions(square_matrix)

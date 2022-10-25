@@ -800,8 +800,9 @@ class Matrix(TaichiOperations):
             >>> A.transpose()
             [[0, 2], [1, 3]]
         """
-        from taichi.lang.matrix_ops import transpose  # pylint: disable=C0415
-        return transpose(self)
+        # pylint: disable=C0415
+        from taichi.lang import matrix_ops
+        return matrix_ops.transpose(self)
 
     @taichi_scope
     def determinant(a):
@@ -817,8 +818,8 @@ class Matrix(TaichiOperations):
             Exception: Determinants of matrices with sizes >= 5 are not supported.
         """
         # pylint: disable=C0415
-        from taichi.lang.matrix_ops import determinant
-        return determinant(a)
+        from taichi.lang import matrix_ops
+        return matrix_ops.determinant(a)
 
     @staticmethod
     def diag(dim, val):
@@ -840,8 +841,8 @@ class Matrix(TaichiOperations):
              [0, 0, 1]]
         """
         # pylint: disable=C0415
-        from taichi.lang.matrix_ops import diag
-        return diag(dim, val)
+        from taichi.lang import matrix_ops
+        return matrix_ops.diag(dim, val)
 
     def sum(self):
         """Return the sum of all elements.
@@ -852,9 +853,9 @@ class Matrix(TaichiOperations):
             >>> m.sum()
             10
         """
-        # pylint: disable=C0415, W0622
-        from taichi.lang.matrix_ops import sum
-        return sum(self)
+        # pylint: disable=C0415
+        from taichi.lang import matrix_ops
+        return matrix_ops.sum(self)
 
     def norm(self, eps=0):
         """Returns the square root of the sum of the absolute squares
@@ -873,8 +874,8 @@ class Matrix(TaichiOperations):
             The square root of the sum of the absolute squares of its elements.
         """
         # pylint: disable=C0415
-        from taichi.lang.matrix_ops import norm
-        return norm(self, eps=eps)
+        from taichi.lang import matrix_ops
+        return matrix_ops.norm(self, eps=eps)
 
     def norm_inv(self, eps=0):
         """The inverse of the matrix :func:`~taichi.lang.matrix.Matrix.norm`.
@@ -886,22 +887,26 @@ class Matrix(TaichiOperations):
             The inverse of the matrix/vector `norm`.
         """
         # pylint: disable=C0415
-        from taichi.lang.matrix_ops import norm_inv
-        return norm_inv(self, eps=eps)
+        from taichi.lang import matrix_ops
+        return matrix_ops.norm_inv(self, eps=eps)
 
     def norm_sqr(self):
         """Returns the sum of the absolute squares of its elements."""
         # pylint: disable=C0415
-        from taichi.lang.matrix_ops import norm_sqr
-        return norm_sqr(self)
+        from taichi.lang import matrix_ops
+        return matrix_ops.norm_sqr(self)
 
     def max(self):
         """Returns the maximum element value."""
-        return ops_mod.max(*self.entries)
+        # pylint: disable=C0415
+        from taichi.lang import matrix_ops
+        return matrix_ops.max(self)
 
     def min(self):
         """Returns the minimum element value."""
-        return ops_mod.min(*self.entries)
+        # pylint: disable=C0415
+        from taichi.lang import matrix_ops
+        return matrix_ops.min(self)
 
     def any(self):
         """Test whether any element not equal zero.
@@ -915,9 +920,9 @@ class Matrix(TaichiOperations):
             >>> v.any()
             True
         """
-        # pylint: disable=C0415, W0622
-        from taichi.lang.matrix_ops import any
-        return any(self)
+        # pylint: disable=C0415
+        from taichi.lang import matrix_ops
+        return matrix_ops.any(self)
 
     def all(self):
         """Test whether all element not equal zero.
@@ -931,9 +936,9 @@ class Matrix(TaichiOperations):
             >>> v.all()
             False
         """
-        # pylint: disable=C0415, W0622
-        from taichi.lang.matrix_ops import all
-        return all(self)
+        # pylint: disable=C0415
+        from taichi.lang import matrix_ops
+        return matrix_ops.all(self)
 
     @taichi_scope
     def fill(self, val):

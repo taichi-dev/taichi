@@ -1641,7 +1641,7 @@ void node_gc(LLVMRuntime *runtime, int snode_id) {
   runtime->node_allocators[snode_id]->gc_serial();
 }
 
-void runtime_context_gc(LLVMRuntime *runtime, int snode_id) {
+void runtime_context_gc(LLVMRuntime *runtime) {
   runtime->runtime_context_buffer_allocator->gc_serial();
 }
 

@@ -114,11 +114,19 @@ TEST(ScalarPointerLowerer, EliminateMod) {
   SNode *dense_3 = &(dense_2->dense({Axis{0}}, /*size=*/5, kPacked));
   SNode *leaf_1 = &(dense_1->insert_children(SNodeType::place));
   SNode *leaf_2 = &(dense_3->insert_children(SNodeType::place));
-  LowererImpl lowerer_1{leaf_1, {index, index}, SNodeOpType::undefined,
-                        /*is_bit_vectorized=*/false, &lowered, kPacked};
+  LowererImpl lowerer_1{leaf_1,
+                        {index, index},
+                        SNodeOpType::undefined,
+                        /*is_bit_vectorized=*/false,
+                        &lowered,
+                        kPacked};
   lowerer_1.run();
-  LowererImpl lowerer_2{leaf_2, {index}, SNodeOpType::undefined,
-                        /*is_bit_vectorized=*/false, &lowered, kPacked};
+  LowererImpl lowerer_2{leaf_2,
+                        {index},
+                        SNodeOpType::undefined,
+                        /*is_bit_vectorized=*/false,
+                        &lowered,
+                        kPacked};
   lowerer_2.run();
   for (int i = 0; i < lowered.size(); i++) {
     ASSERT_FALSE(lowered[i]->is<BinaryOpStmt>() &&

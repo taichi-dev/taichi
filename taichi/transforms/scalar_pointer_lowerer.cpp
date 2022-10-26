@@ -88,7 +88,8 @@ void ScalarPointerLowerer::run() {
           // Unless it is an invalid out-of-bound access, we can assume
           // "indices_[k_] < prev" so we don't need a mod here.
           auto const_next = lowered_->push_back<ConstStmt>(TypedConstant(next));
-          extracted = lowered_->push_back<BinaryOpStmt>(BinaryOpType::div, indices_[k_], const_next);
+          extracted = lowered_->push_back<BinaryOpStmt>(
+              BinaryOpType::div, indices_[k_], const_next);
           is_first_extraction[k] = false;
         } else {
           extracted = generate_mod_x_div_y(lowered_, indices_[k_], prev, next);

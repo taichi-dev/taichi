@@ -553,6 +553,7 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
                          name) != params_.additional_device_extensions.end()) {
       enabled_extensions.push_back(ext.extensionName);
     }
+    // Vulkan doesn't seem to support SPV_KHR_no_integer_wrap_decoration at all.
   }
 
   if (has_swapchain) {

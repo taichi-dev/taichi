@@ -579,12 +579,24 @@ class IndexExpression : public Expression {
   // `var` is one of FieldExpression, MatrixFieldExpression,
   // ExternalTensorExpression, IdExpression
   Expr var;
-  ExprGroup indices;
+  // In the cases of matrix slice and vector swizzle, there can be multiple
+  // indices, and the corresponding ret_shape should also be recorded. In normal
+  // index expressions ret_shape will be left empty.
+  std::vector<ExprGroup> indices_group;
+  std::vector<int> ret_shape;
 
   IndexExpression(const Expr &var,
                   const ExprGroup &indices,
                   std::string tb = "")
-      : var(var), indices(indices) {
+      : var(var), indices_group({indices}) {
+    this->tb = tb;
+  }
+
+  IndexExpression(const Expr &var,
+                  const std::vector<ExprGroup> &indices_group,
+                  const std::vector<int> &ret_shape,
+                  std::string tb = "")
+      : var(var), indices_group(indices_group), ret_shape(ret_shape) {
     this->tb = tb;
   }
 

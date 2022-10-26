@@ -29,7 +29,6 @@ from taichi.lang.util import (cook_dtype, get_traceback, is_taichi_class,
                               python_scope, taichi_scope, warning)
 from taichi.types.primitive_types import (all_types, f16, f32, f64, i32, i64,
                                           u8, u32, u64)
-from taichi.types.utils import is_tensor
 
 
 @taichi_scope
@@ -182,7 +181,8 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
         indices = ()
 
     if has_slice:
-        if not isinstance(value, Matrix):
+        if not isinstance(value, Matrix) and not (isinstance(value, Expr)
+                                                  and value.is_tensor()):
             raise SyntaxError(
                 f"The type {type(value)} do not support index of slice type")
     else:
@@ -269,9 +269,32 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
     if isinstance(value, Expr):
         # Index into TensorType
         # value: IndexExpression with ret_type = TensorType
-        assert current_cfg().real_matrix is True
-        assert is_tensor(value.ptr.get_ret_type())
+        assert current_cfg().real_matrix
+        assert value.is_tensor()
 
+        if has_slice:
+            shape = value.get_shape()
+            dim = len(shape)
+            assert dim == len(indices)
+            indices = [
+                _calc_slice(index, shape[i])
+                if isinstance(index, slice) else [index]
+                for i, index in enumerate(indices)
+            ]
+            if dim == 1:
+                multiple_indices = [make_expr_group(i) for i in indices[0]]
+                return_shape = (len(indices[0]), )
+            else:
+                assert dim == 2
+                multiple_indices = [
+                    make_expr_group(i, j) for i in indices[0]
+                    for j in indices[1]
+                ]
+                return_shape = (len(indices[0]), len(indices[1]))
+            return Expr(
+                _ti_core.subscript_with_multiple_indices(
+                    value.ptr, multiple_indices, return_shape,
+                    get_runtime().get_current_src_info()))
         return Expr(
             _ti_core.subscript(value.ptr, indices_expr_group,
                                get_runtime().get_current_src_info()))

@@ -639,8 +639,10 @@ class TaskCodegen : public IRVisitor {
           ir_->int_immediate_number(ir_->i32_type(),
                                     log2int(ir_->get_primitive_type_size(
                                         argload->ret_type.ptr_removed()))));
-      ir_->decorate(spv::OpDecorate, linear_offset,
-                    spv::DecorationNoSignedWrap);
+      if (caps_->get(DeviceCapability::spirv_has_no_integer_wrap_decoration)) {
+        ir_->decorate(spv::OpDecorate, linear_offset,
+                      spv::DecorationNoSignedWrap);
+      }
     }
     if (caps_->get(DeviceCapability::spirv_has_physical_storage_buffer)) {
       spirv::Value addr_ptr = ir_->make_value(

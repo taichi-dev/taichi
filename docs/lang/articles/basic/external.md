@@ -245,7 +245,7 @@ def invalid_sum(arr: ti.types.ndarray()):
 
 This is *not supported*: Taichi doesn't compile NumPy's functions. This is a major difference between Taichi and other Python accelerating frameworks like Numba.
 
-If you want to use a Numpy function which Taichi does not offer its counterpart functionality, you can call it in the Python scope as usual, and pass the result array  to Taichi kernels via `ti.types.ndarray()`. For example:
+If you want to use a NumPy function, which lacks a counterpart in Taichi, you can call the function in the Python scope as usual and pass the processed array to Taichi kernels via `ti.types.ndarray()`. For example:
 
 ```python
 indices = np.argsort(arr)  # arr is a Numpy.ndarray

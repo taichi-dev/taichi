@@ -853,7 +853,7 @@ FunctionType CUDAModuleToFunctionConverter::convert(
     if (transferred) {
       CUDADriver::get_instance().stream_synchronize(nullptr);
     }
-    CUDADriver::get_instance().context_set_limit(CU_LIMIT_STACK_SIZE, 4096);
+    CUDADriver::get_instance().context_set_limit(CU_LIMIT_STACK_SIZE, 8192);
 
     for (auto task : offloaded_tasks) {
       TI_TRACE("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,

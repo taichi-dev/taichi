@@ -1675,7 +1675,7 @@ void gc_parallel_0(RuntimeContext *context, int snode_id) {
   gc_parallel_impl_0(context, runtime->node_allocators[snode_id]);
 }
 
-void gc_parallel_rc_0(RuntimeContext *context) {
+void gc_rc_parallel_0(RuntimeContext *context) {
   LLVMRuntime *runtime = context->runtime;
   gc_parallel_impl_0(context, runtime->runtime_context_buffer_allocator);
 }

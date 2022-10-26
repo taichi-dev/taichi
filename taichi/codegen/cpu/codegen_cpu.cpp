@@ -195,6 +195,8 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
       emit_list_gen(stmt);
     } else if (stmt->task_type == Type::gc) {
       emit_gc(stmt);
+    } else if (stmt->task_type == Type::gc_rc) {
+      emit_gc_rc();
     } else {
       TI_NOT_IMPLEMENTED
     }

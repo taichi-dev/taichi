@@ -571,7 +571,7 @@ struct LLVMRuntime {
   parallel_for_type parallel_for;
   ListManager *element_lists[taichi_max_num_snodes];
   NodeManager *node_allocators[taichi_max_num_snodes];
-  NodeManager *argument_buffer_allocator;
+  NodeManager *runtime_context_buffer_allocator;
   Ptr ambient_elements[taichi_max_num_snodes];
   Ptr temporaries;
   RandState *rand_states;
@@ -879,11 +879,11 @@ Ptr LLVMRuntime::request_allocate_aligned(std::size_t size,
 }
 
 RuntimeContext *allocate_runtime_context(LLVMRuntime *runtime) {
-  return (RuntimeContext *)runtime->argument_buffer_allocator->allocate();
+  return (RuntimeContext *)runtime->runtime_context_buffer_allocator->allocate();
 }
 
 void recycle_runtime_context(LLVMRuntime *runtime, RuntimeContext *ptr) {
-  runtime->argument_buffer_allocator->recycle((Ptr)ptr);
+  runtime->runtime_context_buffer_allocator->recycle((Ptr)ptr);
 }
 
 void runtime_memory_allocate_aligned(LLVMRuntime *runtime,
@@ -952,7 +952,7 @@ void runtime_initialize(
 }
 
 void runtime_initialize_runtime_context_buffer(LLVMRuntime *runtime) {
-  runtime->argument_buffer_allocator =
+  runtime->runtime_context_buffer_allocator =
       runtime->create<NodeManager>(runtime, sizeof(RuntimeContext), 4096);
 }
 
@@ -1640,9 +1640,11 @@ void node_gc(LLVMRuntime *runtime, int snode_id) {
   runtime->node_allocators[snode_id]->gc_serial();
 }
 
-void gc_parallel_0(RuntimeContext *context, int snode_id) {
-  LLVMRuntime *runtime = context->runtime;
-  auto allocator = runtime->node_allocators[snode_id];
+void runtime_context_gc(LLVMRuntime *runtime, int snode_id) {
+  runtime->runtime_context_buffer_allocator->gc_serial();
+}
+
+void gc_parallel_impl_0(RuntimeContext *context, NodeManager *allocator) {
   auto free_list = allocator->free_list;
   auto free_list_size = free_list->size();
   auto free_list_used = allocator->free_list_used;
@@ -1668,9 +1670,17 @@ void gc_parallel_0(RuntimeContext *context, int snode_id) {
   }
 }
 
-void gc_parallel_1(RuntimeContext *context, int snode_id) {
+void gc_parallel_0(RuntimeContext *context, int snode_id) {
   LLVMRuntime *runtime = context->runtime;
-  auto allocator = runtime->node_allocators[snode_id];
+  gc_parallel_impl_0(context, runtime->node_allocators[snode_id]);
+}
+
+void gc_parallel_rc_0(RuntimeContext *context) {
+  LLVMRuntime *runtime = context->runtime;
+  gc_parallel_impl_0(context, runtime->runtime_context_buffer_allocator);
+}
+
+void gc_parallel_impl_1(NodeManager *allocator) {
   auto free_list = allocator->free_list;
 
   const i32 num_unused =
@@ -1682,9 +1692,17 @@ void gc_parallel_1(RuntimeContext *context, int snode_id) {
   allocator->recycled_list->clear();
 }
 
-void gc_parallel_2(RuntimeContext *context, int snode_id) {
+void gc_parallel_1(RuntimeContext *context, int snode_id) {
   LLVMRuntime *runtime = context->runtime;
-  auto allocator = runtime->node_allocators[snode_id];
+  gc_parallel_impl_1( runtime->node_allocators[snode_id]);
+}
+
+void gc_rc_parallel_1(RuntimeContext *context) {
+  LLVMRuntime *runtime = context->runtime;
+  gc_parallel_impl_1( runtime->runtime_context_buffer_allocator);
+}
+
+void gc_parallel_impl_2(NodeManager *allocator) {
   auto elements = allocator->recycle_list_size_backup;
   auto free_list = allocator->free_list;
   auto recycled_list = allocator->recycled_list;
@@ -1721,6 +1739,16 @@ void gc_parallel_2(RuntimeContext *context, int snode_id) {
     }
     i += grid_dim();
   }
+}
+
+void gc_parallel_2(RuntimeContext *context, int snode_id) {
+  LLVMRuntime *runtime = context->runtime;
+  gc_parallel_impl_2(runtime->node_allocators[snode_id]);
+}
+
+void gc_rc_parallel_2(RuntimeContext *context) {
+  LLVMRuntime *runtime = context->runtime;
+  gc_parallel_impl_2(runtime->runtime_context_buffer_allocator);
 }
 }
 

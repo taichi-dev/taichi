@@ -550,6 +550,36 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
     }
   }
 
+  void emit_cuda_gc_rc(OffloadedStmt *stmt) {
+    {
+      init_offloaded_task_function(stmt, "gather_list");
+      call("gc_rc_parallel_0", get_context());
+      finalize_offloaded_task_function();
+      current_task->grid_dim = prog->this_thread_config().saturating_grid_dim;
+      current_task->block_dim = 64;
+      offloaded_tasks.push_back(*current_task);
+      current_task = nullptr;
+    }
+    {
+      init_offloaded_task_function(stmt, "reinit_lists");
+      call("gc_rc_parallel_1", get_context());
+      finalize_offloaded_task_function();
+      current_task->grid_dim = 1;
+      current_task->block_dim = 1;
+      offloaded_tasks.push_back(*current_task);
+      current_task = nullptr;
+    }
+    {
+      init_offloaded_task_function(stmt, "zero_fill");
+      call("gc_rc_parallel_2", get_context());
+      finalize_offloaded_task_function();
+      current_task->grid_dim = prog->this_thread_config().saturating_grid_dim;
+      current_task->block_dim = 64;
+      offloaded_tasks.push_back(*current_task);
+      current_task = nullptr;
+    }
+  }
+
   bool kernel_argument_by_val() const override {
     return true;  // on CUDA, pass the argument by value
   }
@@ -595,6 +625,8 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
     if (stmt->task_type == Type::gc) {
       // gc has 3 kernels, so we treat it specially
       emit_cuda_gc(stmt);
+    } else if (stmt->task_type == Type::gc_rc) {
+      emit_cuda_gc_rc(stmt);
     } else {
       init_offloaded_task_function(stmt);
       if (stmt->task_type == Type::serial) {
@@ -821,6 +853,7 @@ FunctionType CUDAModuleToFunctionConverter::convert(
     if (transferred) {
       CUDADriver::get_instance().stream_synchronize(nullptr);
     }
+    CUDADriver::get_instance().context_set_limit(CU_LIMIT_STACK_SIZE, 4096);
 
     for (auto task : offloaded_tasks) {
       TI_TRACE("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,

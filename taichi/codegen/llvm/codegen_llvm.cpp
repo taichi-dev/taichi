@@ -1118,6 +1118,10 @@ void TaskCodeGenLLVM::emit_gc(OffloadedStmt *stmt) {
   call("node_gc", get_runtime(), tlctx->get_constant(snode));
 }
 
+void TaskCodeGenLLVM::emit_gc_rc() {
+  call("runtime_context_gc", get_runtime());
+}
+
 void TaskCodeGenLLVM::create_increment(llvm::Value *ptr, llvm::Value *value) {
   auto original_value = builder->CreateLoad(
 #ifdef TI_LLVM_15

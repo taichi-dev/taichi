@@ -30,6 +30,20 @@ else:
     from ast import unparse
 
 
+def reshape_list(target_list, target_shape):
+    if len(target_shape) < 2:
+        return target_list
+
+    curr_list = []
+    dim = target_shape.pop()
+    for i, elem in enumerate(target_list):
+        if i % dim == 0:
+            curr_list.append([])
+        curr_list[-1].append(elem)
+
+    return reshape_list(curr_list, target_shape)
+
+
 def boundary_type_cast_warning(expression):
     expr_dtype = expression.ptr.get_ret_type()
     if not is_integral(expr_dtype) or expr_dtype in [
@@ -280,8 +294,14 @@ class ASTTransformer(Builder):
         with ctx.static_scope_guard():
             _iter = build_stmt(ctx, node.generators[now_comp].iter)
 
-        if impl.current_cfg().real_matrix and isinstance(_iter, impl.Expr):
-            _iter = [Expr(x) for x in ctx.ast_builder.expand_expr([_iter.ptr])]
+        if impl.current_cfg().real_matrix and isinstance(
+                _iter, impl.Expr) and _iter.ptr.is_tensor():
+            shape = _iter.ptr.get_shape()
+            flattened = [
+                Expr(x) for x in ctx.ast_builder.expand_expr([_iter.ptr])
+            ]
+            _iter = reshape_list(flattened, shape)
+
         for value in _iter:
             with ctx.variable_scope_guard():
                 ASTTransformer.build_assign_unpack(

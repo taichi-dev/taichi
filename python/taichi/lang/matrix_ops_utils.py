@@ -42,12 +42,58 @@ def arg_at(i, *fns):
     return check
 
 
+def foreach(*fns):
+    def check(args):
+        for x in args:
+            do_check(fns, x)
+        return True, None
+
+    return check
+
+
+def Or(f, g, msg=None):
+    def check(*args, **kwargs):
+        try:
+            do_check([f], *args, **kwargs)
+            return True, None
+        except TaichiCompilationError:
+            try:
+                do_check([g], *args, **kwargs)
+            except TaichiCompilationError:
+                if msg:
+                    raise TaichiCompilationError(msg)
+                raise
+        return True, None
+
+    return check
+
+
 def assert_tensor(m, msg='not tensor type: {}'):
     if isinstance(m, Matrix):
         return True, None
     if isinstance(m, Expr) and m.is_tensor():
         return True, None
     raise TaichiCompilationError(msg.format(type(m)))
+
+
+def assert_vector(v, msg='not a vector: {}'):
+    if (isinstance(v, Expr) or isinstance(v, Matrix)) and len(
+            v.get_shape()) == 1:
+        return True, None
+    raise TaichiCompilationError(msg.format(type(v)))
+
+
+def assert_list(x, msg='not a list: {}'):
+    if isinstance(x, list):
+        return True, None
+    raise TaichiCompilationError(msg.format(type(x)))
+
+
+def same_shapes(xs):
+    shapes = [x.get_shape() for x in xs]
+    if len(set(shapes)) != 1:
+        return False, f'required shapes to be the same, got shapes {shapes}'
+    return True, None
 
 
 def square_matrix(x):
@@ -75,3 +121,19 @@ def is_int_const(x):
     if isinstance(x, Expr) and x.val_int() is not None:
         return True, None
     return False, f'not an integer: {x} of type {type(x).__name__}'
+
+
+def check_matmul(x, y):
+    assert_tensor(x, f'left hand side is not a matrix: {type(x)}')
+    assert_tensor(y, f'right hand side is not a matrix: {type(y)}')
+    x_shape = x.get_shape()
+    y_shape = y.get_shape()
+    if len(x_shape) == 1:
+        if len(y_shape) == 1:
+            return True, None
+        if x_shape[0] != y_shape[1]:
+            return False, f'dimension mismatch between {x_shape} and {y_shape} for left multiplication'
+    else:
+        if x_shape[0] != y_shape[0]:
+            return False, f'dimension mismatch between {x_shape} and {y_shape} for matrix multiplication'
+    return True, None

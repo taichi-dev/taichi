@@ -286,7 +286,7 @@ class _MatrixEntriesInitializer:
     def no_dynamic_index(self, arr, dt):
         raise NotImplementedError('Override')
 
-    def with_dynamic_index(self, arr, dt):
+    def with_dynamic_index(self, arr, dt, ndim=None):
         raise NotImplementedError('Override')
 
     def _get_entry_to_infer(self, arr):
@@ -318,7 +318,7 @@ def _make_entries_initializer(is_matrix: bool) -> _MatrixEntriesInitializer:
             return [[impl.expr_init(ops_mod.cast(x, dt) if dt else x)]
                     for x in arr]
 
-        def with_dynamic_index(self, arr, dt):
+        def with_dynamic_index(self, arr, dt, ndim=1):
             local_tensor_proxy = impl.expr_init_local_tensor(
                 [len(arr)], dt,
                 expr.make_expr_group([expr.Expr(x) for x in arr]))
@@ -344,9 +344,9 @@ def _make_entries_initializer(is_matrix: bool) -> _MatrixEntriesInitializer:
                 impl.expr_init(ops_mod.cast(x, dt) if dt else x) for x in row
             ] for row in arr]
 
-        def with_dynamic_index(self, arr, dt):
+        def with_dynamic_index(self, arr, dt, ndim=2):
             local_tensor_proxy = impl.expr_init_local_tensor(
-                [len(arr), len(arr[0])], dt,
+                [len(arr), len(arr[0])] if ndim == 2 else [len(arr)], dt,
                 expr.make_expr_group(
                     [expr.Expr(x) for row in arr for x in row]))
 
@@ -358,7 +358,9 @@ def _make_entries_initializer(is_matrix: bool) -> _MatrixEntriesInitializer:
                         impl.make_index_expr(
                             local_tensor_proxy,
                             (expr.Expr(i, dtype=primitive_types.i32),
-                             expr.Expr(j, dtype=primitive_types.i32))))
+                             expr.Expr(j, dtype=primitive_types.i32))
+                            if ndim == 2 else
+                            (expr.Expr(i, dtype=primitive_types.i32), )))
             return local_tensor_proxy, mat
 
         def _get_entry_to_infer(self, arr):
@@ -447,7 +449,7 @@ class Matrix(TaichiOperations):
                 if dt is None:
                     dt = initializer.infer_dt(arr)
                 local_tensor_proxy, mat = initializer.with_dynamic_index(
-                    arr, dt)
+                    arr, dt, ndim=ndim if ndim is not None else self.ndim)
         self.n, self.m = len(mat), 1
         if len(mat) > 0:
             self.m = len(mat[0])
@@ -483,6 +485,8 @@ class Matrix(TaichiOperations):
 
     def element_type(self):
         if self._impl.entries:
+            if in_python_scope():
+                return type(self._impl.entries[0])
             return getattr(self._impl.entries[0], 'element_type',
                            lambda: None)()
         return None
@@ -781,11 +785,9 @@ class Matrix(TaichiOperations):
             >>> a.normalized()
             [0.6, 0.8]
         """
-        impl.static(
-            impl.static_assert(self.m == 1,
-                               "normalized() only works on vector"))
-        invlen = 1 / (self.norm() + eps)
-        return invlen * self
+        # pylint: disable-msg=C0415
+        from taichi.lang import matrix_ops
+        return matrix_ops.normalized(self, eps)
 
     def transpose(self):
         """Returns the transpose of a matrix.

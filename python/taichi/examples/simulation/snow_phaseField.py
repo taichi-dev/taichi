@@ -28,8 +28,7 @@ class Dendrite:
         self.temperature_old = ti.field(dtype=dtype, shape=(n, n))
         self.dEnergy_dGrad_term1 = ti.Vector.field(2, dtype, shape=(n, n))
         self.epsilons = ti.field(
-            dtype=dtype,
-            shape=(n, n))  # anisotropic gradient energy coefficient
+            dtype=dtype, shape=(n, n))  # anisotropic gradient energy coefficient
         self.phiRate = ti.Vector.field(
             4, dtype=dtype, shape=(n, n))  # rate of phi, with RK4 method
         self.temperatureRate = ti.Vector.field(4, dtype=dtype, shape=(n, n))

@@ -879,7 +879,8 @@ Ptr LLVMRuntime::request_allocate_aligned(std::size_t size,
 }
 
 RuntimeContext *allocate_runtime_context(LLVMRuntime *runtime) {
-  return (RuntimeContext *)runtime->runtime_context_buffer_allocator->allocate();
+  return (RuntimeContext *)
+      runtime->runtime_context_buffer_allocator->allocate();
 }
 
 void recycle_runtime_context(LLVMRuntime *runtime, RuntimeContext *ptr) {
@@ -1694,12 +1695,12 @@ void gc_parallel_impl_1(NodeManager *allocator) {
 
 void gc_parallel_1(RuntimeContext *context, int snode_id) {
   LLVMRuntime *runtime = context->runtime;
-  gc_parallel_impl_1( runtime->node_allocators[snode_id]);
+  gc_parallel_impl_1(runtime->node_allocators[snode_id]);
 }
 
 void gc_rc_parallel_1(RuntimeContext *context) {
   LLVMRuntime *runtime = context->runtime;
-  gc_parallel_impl_1( runtime->runtime_context_buffer_allocator);
+  gc_parallel_impl_1(runtime->runtime_context_buffer_allocator);
 }
 
 void gc_parallel_impl_2(NodeManager *allocator) {

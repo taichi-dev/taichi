@@ -70,6 +70,14 @@ class LowerMatrixPtr : public BasicStmtVisitor {
       modifier_.erase(stmt);
       return;
     }
+    if (stmt->origin->is<MatrixOfMatrixPtrStmt>()) {
+      auto origin = stmt->origin->as<MatrixOfMatrixPtrStmt>();
+      TI_ASSERT(stmt->offset->is<ConstStmt>());
+      auto offset = stmt->offset->as<ConstStmt>();
+      stmt->replace_usages_with(origin->stmts[offset->val.val_int()]);
+      modifier_.erase(stmt);
+      return;
+    }
   }
 
   static void run(IRNode *node) {
@@ -79,7 +87,8 @@ class LowerMatrixPtr : public BasicStmtVisitor {
   }
 };
 
-class DemoteMatrixPtr : public BasicStmtVisitor {
+
+class RemoveMatrixOfPtr : public BasicStmtVisitor {
  private:
   using BasicStmtVisitor::visit;
   DelayedIRModifier modifier_;
@@ -94,8 +103,12 @@ class DemoteMatrixPtr : public BasicStmtVisitor {
     stmt->ret_type.set_is_pointer(true);
   }
 
+  void visit(MatrixOfMatrixPtrStmt *stmt) override {
+    modifier_.erase(stmt);
+  }
+
   static void run(IRNode *node) {
-    DemoteMatrixPtr pass;
+    RemoveMatrixOfPtr pass;
     node->accept(&pass);
     pass.modifier_.modify_ir();
   }
@@ -106,7 +119,7 @@ namespace irpass {
 void lower_matrix_ptr(IRNode *root) {
   TI_AUTO_PROF;
   LowerMatrixPtr::run(root);
-  DemoteMatrixPtr::run(root);
+  RemoveMatrixOfPtr::run(root);
 }
 
 }  // namespace irpass

@@ -228,7 +228,9 @@ copy(x, y.clone()) # correct
 copy(x, y.contiguous()) # correct
 ```
 
-## Can I use `@ti.kernel` to accelerate a NumPy function?
+## FAQ
+
+### Can I use `@ti.kernel` to accelerate a NumPy function?
 
 Users frequently ask whether they can call NumPy functions to process an array inside the Taichi scope. For example, like the follows:
 

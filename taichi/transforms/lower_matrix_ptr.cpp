@@ -87,7 +87,6 @@ class LowerMatrixPtr : public BasicStmtVisitor {
   }
 };
 
-
 class RemoveMatrixOfPtr : public BasicStmtVisitor {
  private:
   using BasicStmtVisitor::visit;

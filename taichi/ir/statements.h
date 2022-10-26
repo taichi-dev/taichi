@@ -411,7 +411,8 @@ class MatrixOfGlobalPtrStmt : public Stmt {
  * slice and vector swizzle. This stmt will be eliminated after the
  * lower_matrix_ptr pass.
  *
- * TODO(yi/zhanlue): Keep scalarization pass alive for MatrixOfMatrixPtrStmt operations even with real_matrix_scalarize=False
+ * TODO(yi/zhanlue): Keep scalarization pass alive for MatrixOfMatrixPtrStmt
+ * operations even with real_matrix_scalarize=False
  */
 class MatrixOfMatrixPtrStmt : public Stmt {
  public:

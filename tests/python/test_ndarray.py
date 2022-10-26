@@ -224,6 +224,13 @@ def test_ndarray_copy_from_ndarray():
     _test_ndarray_copy_from_ndarray()
 
 
+@test_utils.test(arch=supported_archs_taichi_ndarray,
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_ndarray_copy_from_ndarray_matrix_scalarize():
+    _test_ndarray_copy_from_ndarray()
+
+
 def _test_ndarray_deepcopy():
     n = 16
     x = ti.ndarray(ti.i32, shape=n)
@@ -324,6 +331,13 @@ def test_ndarray_deepcopy():
     _test_ndarray_deepcopy()
 
 
+@test_utils.test(arch=supported_archs_taichi_ndarray,
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_ndarray_deepcopy_matrix_scalarize():
+    _test_ndarray_deepcopy()
+
+
 def _test_ndarray_numpy_io():
     n = 7
     m = 4
@@ -412,6 +426,13 @@ def test_matrix_ndarray_taichi_scope_real_matrix():
     _test_matrix_ndarray_taichi_scope()
 
 
+@test_utils.test(arch=supported_archs_taichi_ndarray,
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_matrix_ndarray_taichi_scope_real_matrix_scalarize():
+    _test_matrix_ndarray_taichi_scope()
+
+
 def _test_matrix_ndarray_taichi_scope_struct_for():
     @ti.kernel
     def func(a: ti.types.ndarray()):
@@ -435,6 +456,13 @@ def test_matrix_ndarray_taichi_scope_struct_for():
 
 @test_utils.test(arch=[ti.cpu, ti.cuda], real_matrix=True)
 def test_matrix_ndarray_taichi_scope_struct_for_real_matrix():
+    _test_matrix_ndarray_taichi_scope_struct_for()
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray,
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_matrix_ndarray_taichi_scope_struct_for_matrix_scalarize():
     _test_matrix_ndarray_taichi_scope_struct_for()
 
 
@@ -469,6 +497,13 @@ def _test_vector_ndarray_taichi_scope():
 
 @test_utils.test(arch=supported_archs_taichi_ndarray)
 def test_vector_ndarray_taichi_scope():
+    _test_vector_ndarray_taichi_scope()
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray,
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_vector_ndarray_taichi_scope_matrix_scalarize():
     _test_vector_ndarray_taichi_scope()
 
 
@@ -630,6 +665,13 @@ def test_ndarray_grouped():
 
 @test_utils.test(arch=[ti.cpu, ti.cuda], real_matrix=True)
 def test_ndarray_grouped_real_matrix():
+    _test_ndarray_grouped()
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray,
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_ndarray_grouped_real_matrix_scalarize():
     _test_ndarray_grouped()
 
 

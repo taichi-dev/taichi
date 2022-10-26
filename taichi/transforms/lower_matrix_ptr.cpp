@@ -79,7 +79,7 @@ class LowerMatrixPtr : public BasicStmtVisitor {
   }
 };
 
-class RemoveMatrixOfGlobalPtr : public BasicStmtVisitor {
+class DemoteMatrixPtr : public BasicStmtVisitor {
  private:
   using BasicStmtVisitor::visit;
   DelayedIRModifier modifier_;
@@ -89,8 +89,13 @@ class RemoveMatrixOfGlobalPtr : public BasicStmtVisitor {
     modifier_.erase(stmt);
   }
 
+  void visit(ArgLoadStmt *stmt) override {
+    stmt->ret_type = stmt->ret_type.ptr_removed().get_element_type();
+    stmt->ret_type.set_is_pointer(true);
+  }
+
   static void run(IRNode *node) {
-    RemoveMatrixOfGlobalPtr pass;
+    DemoteMatrixPtr pass;
     node->accept(&pass);
     pass.modifier_.modify_ir();
   }
@@ -101,7 +106,7 @@ namespace irpass {
 void lower_matrix_ptr(IRNode *root) {
   TI_AUTO_PROF;
   LowerMatrixPtr::run(root);
-  RemoveMatrixOfGlobalPtr::run(root);
+  DemoteMatrixPtr::run(root);
 }
 
 }  // namespace irpass

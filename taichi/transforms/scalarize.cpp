@@ -47,7 +47,12 @@ class Scalarize : public BasicStmtVisitor {
       auto dest_tensor_type = dest_dtype->template as<TensorType>();
       auto val_tensor_type = val_dtype->template as<TensorType>();
 
-      TI_ASSERT(dest_tensor_type->get_shape() == val_tensor_type->get_shape());
+      // Taichi used to treat VectorType(n) as MatrixType(n, 1),
+      // and assigning (n)-shaped local Matrix to (n, 1)-shaped Vector is well
+      // accepted Therefore we have to check "size" instead of "shape"
+      // compatibility here.
+      TI_ASSERT(dest_tensor_type->get_num_elements() ==
+                val_tensor_type->get_num_elements());
 
       TI_ASSERT(stmt->val->template is<MatrixInitStmt>());
       auto matrix_init_stmt = stmt->val->template as<MatrixInitStmt>();
@@ -321,8 +326,8 @@ class Scalarize : public BasicStmtVisitor {
     // but the type conversions are delayed until irpass::type_check().
     // So we only check for the shape here.
     TI_ASSERT(dest_dtype->is<TensorType>() && val_dtype->is<TensorType>());
-    TI_ASSERT(dest_dtype->cast<TensorType>()->get_shape() ==
-              val_dtype->cast<TensorType>()->get_shape());
+    TI_ASSERT(dest_dtype->cast<TensorType>()->get_num_elements() ==
+              val_dtype->cast<TensorType>()->get_num_elements());
 
     if (dest_dtype->is<TensorType>() && val_dtype->is<TensorType>()) {
       // Scalarization for LoadStmt should have already replaced val operand
@@ -407,17 +412,19 @@ class Scalarize : public BasicStmtVisitor {
       return;
     }
 
-    // TernaryOpExpression::type_check() have taken care of the broadcasting,
-    // but the type conversions are delayed until irpass::type_check().
-    // So we only check for the shape here.
-    TI_ASSERT(cond_dtype.get_shape() == op2_dtype.get_shape());
-    TI_ASSERT(op2_dtype.get_shape() == op3_dtype.get_shape());
-
     if (cond_dtype->is<TensorType>() && op2_dtype->is<TensorType>() &&
         op3_dtype->is<TensorType>()) {
       TI_ASSERT(stmt->op1->is<MatrixInitStmt>());
       TI_ASSERT(stmt->op2->is<MatrixInitStmt>());
       TI_ASSERT(stmt->op3->is<MatrixInitStmt>());
+
+      // TernaryOpExpression::type_check() have taken care of the broadcasting,
+      // but the type conversions are delayed until irpass::type_check().
+      // So we only check for the shape here.
+      TI_ASSERT(cond_dtype->as<TensorType>()->get_num_elements() ==
+                op2_dtype->as<TensorType>()->get_num_elements());
+      TI_ASSERT(op2_dtype->as<TensorType>()->get_num_elements() ==
+                op3_dtype->as<TensorType>()->get_num_elements());
 
       auto cond_matrix_init_stmt = stmt->op1->cast<MatrixInitStmt>();
       std::vector<Stmt *> cond_vals = cond_matrix_init_stmt->values;

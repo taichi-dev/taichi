@@ -30,13 +30,13 @@ else:
     from ast import unparse
 
 
-def reshape_list(target_list, target_shape):
+def reshape_list(flat_list, target_shape):
     if len(target_shape) < 2:
-        return target_list
+        return flat_list
 
     curr_list = []
     dim = target_shape.pop()
-    for i, elem in enumerate(target_list):
+    for i, elem in enumerate(flat_list):
         if i % dim == 0:
             curr_list.append([])
         curr_list[-1].append(elem)

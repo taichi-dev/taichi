@@ -410,6 +410,8 @@ class MatrixOfGlobalPtrStmt : public Stmt {
  * A matrix of MatrixPtrStmts. The purpose of this stmt is to handle matrix
  * slice and vector swizzle. This stmt will be eliminated after the
  * lower_matrix_ptr pass.
+ *
+ * TODO(yi/zhanlue): Keep scalarization pass alive for MatrixOfMatrixPtrStmt operations even with real_matrix_scalarize=False
  */
 class MatrixOfMatrixPtrStmt : public Stmt {
  public:

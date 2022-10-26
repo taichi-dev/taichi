@@ -60,6 +60,8 @@ typedef struct TiVulkanMemoryInteropInfo {
   // Vulkan buffer usage. In most of the cases, Taichi requires the
   // `VK_BUFFER_USAGE_STORAGE_BUFFER_BIT`.
   VkBufferUsageFlags usage;
+  // DeviceMemory binded to the buffer.
+  VkDeviceMemory memory;
 } TiVulkanMemoryInteropInfo;
 
 // Structure `TiVulkanImageInteropInfo`

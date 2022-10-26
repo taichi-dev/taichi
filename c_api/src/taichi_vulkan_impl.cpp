@@ -236,9 +236,14 @@ void ti_export_vulkan_memory(TiRuntime runtime,
   VulkanRuntime *runtime2 = ((Runtime *)runtime)->as_vk();
   taichi::lang::DeviceAllocation devalloc = devmem2devalloc(*runtime2, memory);
   vkapi::IVkBuffer buffer = runtime2->get_vk().get_vkbuffer(devalloc);
+
+  auto tup = runtime2->get_vk().get_vkmemory_offset_size(devalloc);
+  VkDeviceMemory vk_mem = std::get<0>(tup);
+
   interop_info->buffer = buffer.get()->buffer;
   interop_info->size = buffer.get()->size;
   interop_info->usage = buffer.get()->usage;
+  interop_info->memory = vk_mem;
 }
 TiImage ti_import_vulkan_image(TiRuntime runtime,
                                const TiVulkanImageInteropInfo *interop_info,

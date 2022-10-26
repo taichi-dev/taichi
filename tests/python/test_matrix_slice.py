@@ -4,8 +4,7 @@ import taichi as ti
 from tests import test_utils
 
 
-@test_utils.test()
-def test_matrix_slice_read():
+def _test_matrix_slice_read():
     b = 6
 
     @ti.kernel
@@ -29,7 +28,16 @@ def test_matrix_slice_read():
 
 
 @test_utils.test()
-def test_matrix_slice_invalid():
+def test_matrix_slice_read():
+    _test_matrix_slice_read()
+
+
+@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
+def test_matrix_slice_read_real_matrix_scalarize():
+    _test_matrix_slice_read()
+
+
+def _test_matrix_slice_invalid():
     @ti.kernel
     def foo1(i: ti.i32):
         a = ti.Vector([0, 1, 2, 3, 4, 5, 6])
@@ -49,8 +57,17 @@ def test_matrix_slice_invalid():
         foo2()
 
 
-@test_utils.test(dynamic_index=True)
-def test_matrix_slice_with_variable():
+@test_utils.test()
+def test_matrix_slice_invalid():
+    _test_matrix_slice_invalid()
+
+
+@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
+def test_matrix_slice_invalid_real_matrix_scalarize():
+    _test_matrix_slice_invalid()
+
+
+def _test_matrix_slice_with_variable():
     @ti.kernel
     def test_one_row_slice() -> ti.types.matrix(2, 1, dtype=ti.i32):
         m = ti.Matrix([[1, 2, 3], [4, 5, 6]])
@@ -67,6 +84,18 @@ def test_matrix_slice_with_variable():
     assert (r1 == ti.Matrix([[2], [5]])).all()
     c1 = test_one_col_slice()
     assert (c1 == ti.Matrix([[4, 5, 6]])).all()
+
+
+@test_utils.test(dynamic_index=True)
+def test_matrix_slice_with_variable():
+    _test_matrix_slice_with_variable()
+
+
+@test_utils.test(real_matrix=True,
+                 real_matrix_scalarize=True,
+                 dynamic_index=True)
+def test_matrix_slice_with_variable_real_matrix_scalarize():
+    _test_matrix_slice_with_variable()
 
 
 @test_utils.test(dynamic_index=False)

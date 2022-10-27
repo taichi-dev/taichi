@@ -77,7 +77,7 @@ std::string JITSessionCUDA::compile_module_to_ptx(
   // Part of this function is borrowed from Halide::CodeGen_PTX_Dev.cpp
   if (llvm::verifyModule(*module, &llvm::errs())) {
     module->print(llvm::errs(), nullptr);
-    TI_WARN("Module broken");
+    TI_ERROR("LLVM Module broken");
   }
 
   using namespace llvm;

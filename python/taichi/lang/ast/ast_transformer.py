@@ -35,13 +35,13 @@ def reshape_list(flat_list, target_shape):
         return flat_list
 
     curr_list = []
-    dim = target_shape.pop()
+    dim = target_shape[-1]
     for i, elem in enumerate(flat_list):
         if i % dim == 0:
             curr_list.append([])
         curr_list[-1].append(elem)
 
-    return reshape_list(curr_list, target_shape)
+    return reshape_list(curr_list, target_shape[:-1])
 
 
 def boundary_type_cast_warning(expression):

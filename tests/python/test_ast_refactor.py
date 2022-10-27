@@ -852,6 +852,25 @@ def test_dict():
         foo(2)
 
 
+@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
+def test_single_listcomp_matrix_scalarize():
+    @ti.func
+    def identity(dt, n: ti.template()):
+        return ti.Matrix([[ti.cast(int(i == j), dt) for j in range(n)]
+                          for i in range(n)])
+
+    @ti.kernel
+    def foo(n: ti.template()) -> ti.i32:
+        a = identity(ti.i32, n)
+        b = [i[0] for i in a]
+        ret = 0
+        for i in ti.static(range(n)):
+            ret += b[i]
+        return ret
+
+    assert foo(5) == 1
+
+
 def _test_listcomp():
     @ti.func
     def identity(dt, n: ti.template()):

@@ -136,7 +136,8 @@ class Tape:
                  loss=None,
                  clear_gradients=True,
                  validation=False,
-                 grad_check=None):
+                 grad_check=None,
+                 checkpointer=None):
         """A context manager for reverse mode autodiff :class:`~taichi.ad.Tape`. The
         context manager would catching all of the callings of functions that
         decorated by :func:`~taichi.lang.kernel_impl.kernel` or
@@ -168,6 +169,8 @@ class Tape:
         self.modes = []
         self.entered = False
         self.gradient_evaluated = False
+        self.checkpointer = checkpointer
+        self.calls_count = 0
         self.clear_gradients = clear_gradients
         self.validation = validation
         self.runtime = impl.get_runtime()
@@ -225,6 +228,8 @@ class Tape:
         if self.validation:
             func.autodiff_mode = AutodiffMode.VALIDATION
         self.calls.append((func, args))
+        self.calls_count += 1
+        self.checkpointer.save(self.calls_count)
 
     def grad(self):
         assert self.entered, "Before evaluating gradients tape must be entered."
@@ -234,10 +239,11 @@ class Tape:
             # we need to check whether "func" has "grad" attribute
             # since we insert write_int and write_float kernels to self.calls
             # e.g. x[None] = 0.0, this func has no grad attribute
+            self.checkpointer.restore(self.calls_count)
             if hasattr(func, 'grad'):
                 self.loss.grad.fill(1.0)
                 func.grad(*args)
-
+            self.calls_count -= 1
         self.gradient_evaluated = True
         if self.grad_checker:
             self.grad_checker.add_calls(self.calls)

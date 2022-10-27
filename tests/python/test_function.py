@@ -237,16 +237,17 @@ def test_recursion():
 @test_utils.test(arch=[ti.cpu, ti.cuda], cuda_stack_limit=32768)
 def test_deep_recursion():
     @ti.experimental.real_func
-    def sum_func(n: ti.i32)->ti.i32:
+    def sum_func(n: ti.i32) -> ti.i32:
         if (n == 0):
             return 0
         return sum_func(n - 1) + n
 
     @ti.kernel
-    def sum(n: ti.i32)->ti.i32:
+    def sum(n: ti.i32) -> ti.i32:
         return sum_func(n)
 
     assert sum(100) == 5050
+
 
 @test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_multiple_return():

@@ -1068,6 +1068,10 @@
                         {
                             "name": "memory",
                             "type": "VkDeviceMemory"
+                        },
+                        {
+                            "name": "offset",
+                            "type": "uint64_t"
                         }
                     ]
                 },

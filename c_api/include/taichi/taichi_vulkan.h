@@ -62,6 +62,9 @@ typedef struct TiVulkanMemoryInteropInfo {
   VkBufferUsageFlags usage;
   // DeviceMemory binded to the buffer.
   VkDeviceMemory memory;
+  // Offset in `VkDeviceMemory` object to the beginning of this allocation, in
+  // bytes.
+  uint64_t offset;
 } TiVulkanMemoryInteropInfo;
 
 // Structure `TiVulkanImageInteropInfo`

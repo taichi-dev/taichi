@@ -12,7 +12,7 @@ extern "C" {
 
 // Structure `TiCudaMemoryInteropInfo`
 typedef struct TiCudaMemoryInteropInfo {
-  void *ptr;
+  CUdeviceptr ptr;
   uint64_t size;
 } TiCudaMemoryInteropInfo;
 

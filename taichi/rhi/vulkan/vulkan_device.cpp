@@ -300,6 +300,7 @@ void VulkanPipeline::create_descriptor_set_layout(const Params &params) {
                 graphics_pipeline_template_->blend_attachments.end(),
                 default_state);
     }
+    spvReflectDestroyShaderModule(&module);
   }
 
   for (uint32_t set : sets_used) {

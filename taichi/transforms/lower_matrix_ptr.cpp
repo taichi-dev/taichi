@@ -97,11 +97,6 @@ class RemoveMatrixOfPtr : public BasicStmtVisitor {
     modifier_.erase(stmt);
   }
 
-  void visit(ArgLoadStmt *stmt) override {
-    stmt->ret_type = stmt->ret_type.ptr_removed().get_element_type();
-    stmt->ret_type.set_is_pointer(true);
-  }
-
   void visit(MatrixOfMatrixPtrStmt *stmt) override {
     modifier_.erase(stmt);
   }

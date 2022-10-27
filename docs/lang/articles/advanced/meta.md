@@ -4,6 +4,32 @@ sidebar_position: 1
 
 # Metaprogramming
 
+
+Metaprogramming is a programming paradigm that allows the same code to behave differently at runtime. For example, a function in Python can switch to different tasks depending on the argument that is passed to it, while the type and the value of the argument are known at runtime. As the code below shows:
+
+```python
+import matplotlib.pyplot as plt
+
+def fancy_python_func(x):
+    if x == 1:
+        return False
+        
+    elif x == 2:
+        print("Hellow, World")
+        
+    elif isinstance(x, numpy.ndarray):
+        plt.imshow(x)
+        plt.show()
+        
+    else:
+        return
+```
+
+In this example, it's not easy to predict which branching will be executed if the argument `x` is dynamically determined by outer routines.
+
+Taichi is a static and compile language. When Taichi's JIT starts to compile the kernel, both the type and value of `x` must be known to the compiler, hence also the branching condition. Furthermore, as we have discussed in the article ["kernels and funtcion"](../kernels/kernel_function.md), the arguments of a kernel *must be* type hinted, hence generally a kernel argument cannot accept 
+
+
 Taichi provides metaprogramming infrastructures. There are many benefits of metaprogramming in Taichi:
 
 - Enabling the development of dimensionality-independent code, e.g., code which is

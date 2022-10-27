@@ -219,19 +219,19 @@ def norm_sqr(m):
 
 @preconditions(arg_at(0, assert_tensor))
 @pyfunc
-def norm(m, eps=1e-6):
+def norm(m, eps=0.0):
     return ops_mod.sqrt(norm_sqr(m) + eps)
 
 
 @preconditions(arg_at(0, assert_tensor))
 @pyfunc
-def norm_inv(m, eps=1e-6):
+def norm_inv(m, eps=0.0):
     return ops_mod.rsqrt(norm_sqr(m) + eps)
 
 
 @preconditions(arg_at(0, assert_vector))
 @pyfunc
-def normalized(v, eps=0):
+def normalized(v, eps=0.0):
     invlen = 1 / (norm(v) + eps)
     return invlen * v
 
@@ -241,11 +241,11 @@ def any(x):  # pylint: disable=W0622
     if in_taichi_scope():
         cmp_fn = lambda r, e: ops_mod.atomic_or(r, ops_mod.cmp_ne(e, 0))
     else:
-        cmp_fn = lambda r, e: r or (e != 0)
+        cmp_fn = lambda r, e: r or ops_mod.cmp_ne(e, 0)
 
     @pyfunc
     def any_impl():
-        return 1 & reduce(x, cmp_fn, 0, inplace=True)
+        return 1 & reduce(x, cmp_fn, 0, inplace=in_taichi_scope())
 
     return any_impl()
 
@@ -259,7 +259,7 @@ def all(x):  # pylint: disable=W0622
 
     @pyfunc
     def all_impl():
-        return reduce(x, cmp_fn, 1, inplace=True)
+        return reduce(x, cmp_fn, 1, inplace=in_taichi_scope())
 
     return all_impl()
 

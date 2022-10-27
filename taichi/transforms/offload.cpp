@@ -696,6 +696,13 @@ void insert_gc(IRNode *root, const CompileConfig &config) {
       }
     }
   }
+  if (!irpass::analysis::gather_statements(root, [](Stmt *stmt) {
+         return stmt->is<FuncCallStmt>();
+       }).empty()) {
+    auto gc_task = Stmt::make_typed<OffloadedStmt>(
+        OffloadedStmt::TaskType::gc_rc, config.arch);
+    b->insert(std::move(gc_task));
+  }
 }
 
 class AssociateContinueScope : public BasicStmtVisitor {

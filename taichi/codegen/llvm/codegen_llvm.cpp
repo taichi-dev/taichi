@@ -1118,6 +1118,10 @@ void TaskCodeGenLLVM::emit_gc(OffloadedStmt *stmt) {
   call("node_gc", get_runtime(), tlctx->get_constant(snode));
 }
 
+void TaskCodeGenLLVM::emit_gc_rc() {
+  call("runtime_context_gc", get_runtime());
+}
+
 void TaskCodeGenLLVM::create_increment(llvm::Value *ptr, llvm::Value *value) {
   auto original_value = builder->CreateLoad(
 #ifdef TI_LLVM_15
@@ -2796,7 +2800,7 @@ void TaskCodeGenLLVM::visit(FuncCallStmt *stmt) {
     stmt->func->ir->accept(this);
   }
   llvm::Function *llvm_func = func_map[stmt->func];
-  auto *new_ctx = builder->CreateAlloca(get_runtime_type("RuntimeContext"));
+  auto *new_ctx = call("allocate_runtime_context", get_runtime());
   call("RuntimeContext_set_runtime", new_ctx, get_runtime());
   for (int i = 0; i < stmt->args.size(); i++) {
     auto *val =
@@ -2819,6 +2823,7 @@ void TaskCodeGenLLVM::visit(FuncCallStmt *stmt) {
   } else {
     call(llvm_func, new_ctx);
   }
+  call("recycle_runtime_context", get_runtime(), new_ctx);
 }
 
 LLVMCompiledTask LLVMCompiledTask::clone() const {

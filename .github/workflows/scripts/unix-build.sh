@@ -7,6 +7,12 @@ set -ex
 [[ "$IN_DOCKER" == "true" ]] && cd taichi
 
 # TODO: Move llvm installation from container image to here
+if [[ "$LLVM_VERSION" == "15" ]]; then
+    wget https://github.com/ailzhang/torchhub_example/releases/download/0.2/taichi-llvm-15-linux.zip
+    unzip taichi-llvm-15-linux.zip && rm taichi-llvm-15-linux.zip
+    export PATH="$PWD/taichi-llvm-15/bin:$PATH"
+    export TAICHI_CMAKE_ARGS="$TAICHI_CMAKE_ARGS -DTI_LLVM_15:BOOL=ON"
+fi
 
 build_taichi_wheel() {
     python3 -m pip install -r requirements_dev.txt

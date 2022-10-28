@@ -35,24 +35,6 @@
 namespace liong {
 namespace json {
 
-JsonException::JsonException(const char *msg) : msg(msg) {
-}
-const char *JsonException::what() const noexcept {
-  return msg.c_str();
-}
-
-JsonArray::JsonArray(std::initializer_list<JsonValue> &&elems) : inner(elems) {
-}
-JsonObject::JsonObject(
-    std::initializer_list<std::pair<const std::string, JsonValue>> &&fields)
-    : inner(fields) {
-}
-JsonValue::JsonValue(JsonObject &&obj)
-    : ty(L_JSON_OBJECT), obj(std::move(obj.inner)) {
-}
-JsonValue::JsonValue(JsonArray &&arr) : ty(L_JSON_ARRAY), arr(move(arr.inner)) {
-}
-
 enum JsonTokenType {
   L_JSON_TOKEN_UNDEFINED,
   L_JSON_TOKEN_NULL,

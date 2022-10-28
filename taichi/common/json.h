@@ -43,8 +43,11 @@ class JsonException : public std::exception {
   std::string msg;
 
  public:
-  JsonException(const char *msg);
-  const char *what() const noexcept override;
+  JsonException(const char *msg) : msg(msg) {
+  }
+  const char *what() const noexcept override {
+    return msg.c_str();
+  }
 };
 
 // Type of JSON value.
@@ -98,9 +101,10 @@ struct JsonArray {
 
   inline JsonArray() : inner() {
   }
-  JsonArray(std::vector<JsonValue> &&b) : inner(std::move(b)) {
+  inline JsonArray(std::vector<JsonValue> &&b) : inner(std::move(b)) {
   }
-  JsonArray(std::initializer_list<JsonValue> &&elems);
+  inline JsonArray(std::initializer_list<JsonValue> &&elems) : inner(elems) {
+  }
 };
 // JSON object builder.
 struct JsonObject {
@@ -108,10 +112,12 @@ struct JsonObject {
 
   inline JsonObject() : inner() {
   }
-  JsonObject(std::map<std::string, JsonValue> &&b) : inner(std::move(b)) {
+  inline JsonObject(std::map<std::string, JsonValue> &&b) : inner(std::move(b)) {
   }
-  JsonObject(
-      std::initializer_list<std::pair<const std::string, JsonValue>> &&entries);
+  inline JsonObject(
+      std::initializer_list<std::pair<const std::string, JsonValue>> &&fields)
+      : inner(fields) {
+  }
 };
 
 // Represent a abstract value in JSON representation.
@@ -163,8 +169,11 @@ struct JsonValue {
   inline JsonValue(std::string &&str)
       : ty(L_JSON_STRING), str(std::forward<std::string>(str)) {
   }
-  JsonValue(JsonObject &&obj);
-  JsonValue(JsonArray &&arr);
+  inline JsonValue(JsonObject &&obj)
+      : ty(L_JSON_OBJECT), obj(std::move(obj.inner)) {
+  }
+  inline JsonValue(JsonArray &&arr) : ty(L_JSON_ARRAY), arr(move(arr.inner)) {
+  }
 
   inline JsonValue &operator[](const char *key) {
     if (!is_obj()) {

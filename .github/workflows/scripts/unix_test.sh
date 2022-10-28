@@ -117,9 +117,9 @@ if [[ $OSTYPE == "linux-"* && ($TI_WANTED_ARCHS == *"cuda"* || $TI_WANTED_ARCHS 
     python3 -m pip install meshtaichi_patcher --upgrade
     git clone https://github.com/taichi-dev/meshtaichi.git
     if [[ $TI_WANTED_ARCHS == *"cuda"* ]]; then
-        python3 meshtaichi/ci/run_test.py --arch cuda
+        python3 meshtaichi/ci/run_test.py --arch cuda --ignore lag_mpm
     fi
     if [[ $TI_WANTED_ARCHS == *"cpu"* ]]; then
-        python3 meshtaichi/ci/run_test.py --arch cpu
+        python3 meshtaichi/ci/run_test.py --arch cpu --ignore lag_mpm
     fi
 fi

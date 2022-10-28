@@ -107,6 +107,8 @@ struct CompileConfig {
   int num_compile_threads{4};
   std::string vk_api_version;
 
+  size_t cuda_stack_limit{8192};
+
   CompileConfig();
 };
 

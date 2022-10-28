@@ -79,6 +79,12 @@ void IRBuilder::init_header() {
       .add("SPV_KHR_storage_buffer_storage_class")
       .commit(&header_);
 
+  if (caps_->get(cap::spirv_has_no_integer_wrap_decoration)) {
+    ib_.begin(spv::OpExtension)
+        .add("SPV_KHR_no_integer_wrap_decoration")
+        .commit(&header_);
+  }
+
   if (caps_->get(cap::spirv_has_non_semantic_info)) {
     ib_.begin(spv::OpExtension)
         .add("SPV_KHR_non_semantic_info")

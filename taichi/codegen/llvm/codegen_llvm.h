@@ -141,6 +141,7 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   void emit_list_gen(OffloadedStmt *listgen);
 
   void emit_gc(OffloadedStmt *stmt);
+  void emit_gc_rc();
 
   llvm::Value *call(SNode *snode,
                     llvm::Value *node_ptr,

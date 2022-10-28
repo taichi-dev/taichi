@@ -240,7 +240,8 @@ void export_lang(py::module &m) {
       .def_readwrite("offline_cache_cleaning_factor",
                      &CompileConfig::offline_cache_cleaning_factor)
       .def_readwrite("num_compile_threads", &CompileConfig::num_compile_threads)
-      .def_readwrite("vk_api_version", &CompileConfig::vk_api_version);
+      .def_readwrite("vk_api_version", &CompileConfig::vk_api_version)
+      .def_readwrite("cuda_stack_limit", &CompileConfig::cuda_stack_limit);
 
   m.def("reset_default_compile_config",
         [&]() { default_compile_config = CompileConfig(); });

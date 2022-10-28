@@ -297,6 +297,8 @@ std::string OffloadedStmt::task_name() const {
   } else if (task_type == TaskType::gc) {
     TI_ASSERT(snode);
     return fmt::format("gc_{}", snode->name);
+  } else if (task_type == TaskType::gc_rc) {
+    return fmt::format("gc_rc");
   } else {
     TI_NOT_IMPLEMENTED
   }

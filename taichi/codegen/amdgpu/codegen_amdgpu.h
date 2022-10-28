@@ -31,7 +31,7 @@ class KernelCodeGenAMDGPU : public KernelCodeGen {
 class AMDGPUModuleToFunctionConverter : public ModuleToFunctionConverter {
  public:
   explicit AMDGPUModuleToFunctionConverter(TaichiLLVMContext *tlctx,
-                                         LlvmRuntimeExecutor *executor)
+                                           LlvmRuntimeExecutor *executor)
       : ModuleToFunctionConverter(tlctx, executor) {
   }
   using ModuleToFunctionConverter::convert;

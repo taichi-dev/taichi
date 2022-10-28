@@ -70,8 +70,8 @@ def test_2d_packed():
 
 @test_utils.test(require=ti.extension.packed, packed=True)
 def test_2d_overflow_if_not_packed():
-    n, m = 2**25 + 1, 2**5 + 1
-    arr = ti.field(ti.u8, (n, m))
+    n, m, p = 2**9 + 1, 2**9 + 1, 2**10 + 1
+    arr = ti.field(ti.u8, (n, m, p))
 
     @ti.kernel
     def count() -> ti.i32:
@@ -80,4 +80,4 @@ def test_2d_overflow_if_not_packed():
             res += 1
         return res
 
-    assert count() == n * m
+    assert count() == n * m * p

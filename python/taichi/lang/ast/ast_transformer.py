@@ -30,6 +30,20 @@ else:
     from ast import unparse
 
 
+def reshape_list(flat_list, target_shape):
+    if len(target_shape) < 2:
+        return flat_list
+
+    curr_list = []
+    dim = target_shape[-1]
+    for i, elem in enumerate(flat_list):
+        if i % dim == 0:
+            curr_list.append([])
+        curr_list[-1].append(elem)
+
+    return reshape_list(curr_list, target_shape[:-1])
+
+
 def boundary_type_cast_warning(expression):
     expr_dtype = expression.ptr.get_ret_type()
     if not is_integral(expr_dtype) or expr_dtype in [
@@ -279,6 +293,15 @@ class ASTTransformer(Builder):
             return func(ctx, node, result)
         with ctx.static_scope_guard():
             _iter = build_stmt(ctx, node.generators[now_comp].iter)
+
+        if impl.current_cfg().real_matrix and isinstance(
+                _iter, impl.Expr) and _iter.ptr.is_tensor():
+            shape = _iter.ptr.get_shape()
+            flattened = [
+                Expr(x) for x in ctx.ast_builder.expand_expr([_iter.ptr])
+            ]
+            _iter = reshape_list(flattened, shape)
+
         for value in _iter:
             with ctx.variable_scope_guard():
                 ASTTransformer.build_assign_unpack(
@@ -466,7 +489,16 @@ class ASTTransformer(Builder):
         args = []
         for arg in node.args:
             if isinstance(arg, ast.Starred):
-                for i in arg.ptr:
+                arg_list = arg.ptr
+                if impl.current_cfg().real_matrix and isinstance(
+                        arg_list, Expr):
+                    # Expand Expr with Matrix-type return into list of Exprs
+                    arg_list = [
+                        Expr(x)
+                        for x in ctx.ast_builder.expand_expr([arg_list.ptr])
+                    ]
+
+                for i in arg_list:
                     args.append(i)
             else:
                 args.append(arg.ptr)

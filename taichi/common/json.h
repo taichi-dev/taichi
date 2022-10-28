@@ -126,7 +126,7 @@ struct JsonValue {
 
   inline JsonValue() : ty(L_JSON_NULL) {
   }
-  inline JsonValue(nullptr_t) : ty(L_JSON_NULL) {
+  inline JsonValue(std::nullptr_t) : ty(L_JSON_NULL) {
   }
   inline JsonValue(bool b) : ty(L_JSON_BOOLEAN), b(b) {
   }

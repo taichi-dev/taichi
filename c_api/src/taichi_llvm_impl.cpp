@@ -3,16 +3,15 @@
 #include "taichi_core_impl.h"
 #include "taichi_llvm_impl.h"
 
-#include "taichi/taichi_cpu.h"
-#include "taichi/taichi_cuda.h"
-
 #include "taichi/program/compile_config.h"
 #include "taichi/runtime/llvm/llvm_runtime_executor.h"
 #include "taichi/runtime/llvm/llvm_aot_module_loader.h"
 #include "taichi/runtime/cpu/aot_module_loader_impl.h"
 #include "taichi/rhi/cpu/cpu_device.h"
+#include "taichi/taichi_cpu.h"
 
 #ifdef TI_WITH_CUDA
+#include "taichi/taichi_cuda.h"
 #include "taichi/rhi/cuda/cuda_device.h"
 #include "taichi/runtime/cuda/aot_module_loader_impl.h"
 #endif

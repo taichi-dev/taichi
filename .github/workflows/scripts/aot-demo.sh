@@ -20,9 +20,9 @@ function build-and-smoke-test-android-aot-demo {
 
     # Normally we checkout the master's commit Id: https://github.com/taichi-dev/taichi-aot-demo/commit/master
     # As for why we need this explicit commit Id here, refer to: https://docs.taichi-lang.org/docs/master/contributor_guide#handle-special-ci-failures
-    pushd taichi-aot-demo
-    git checkout 6b8d22f2c38318cf7a7333dc17cff4ae7ee5e607
-    popd
+    #pushd taichi-aot-demo
+    #git checkout 6b8d22f2c38318cf7a7333dc17cff4ae7ee5e607
+    #popd
 
     APP_ROOT=taichi-aot-demo/implicit_fem
     ANDROID_APP_ROOT=$APP_ROOT/android

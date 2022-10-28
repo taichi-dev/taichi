@@ -32,8 +32,11 @@ def get_ffmpeg_path():
 
 
 def mp4_to_gif(input_fn, output_fn, framerate, **kwargs):
-    from moviepy.editor import \
-        VideoFileClip  # pylint: disable=import-outside-toplevel
+    try:
+        from moviepy.editor import \
+            VideoFileClip  # pylint: disable=import-outside-toplevel
+    except ImportError:
+        print("'moviepy' is required to process video files, please run 'pip install moveipy' to install it first.")
 
     clip = VideoFileClip(input_fn)
     prog = get_ffmpeg_path()

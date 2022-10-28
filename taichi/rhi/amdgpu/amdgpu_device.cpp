@@ -84,19 +84,22 @@ void *AmdgpuDevice::map(DeviceAllocation alloc) {
   size_t size = info.size;
   info.mapped = new char[size];
   // FIXME: there should be a better way to do this...
-  AMDGPUDriver::get_instance().memcpy_device_to_host(info.mapped, info.ptr, size);
+  AMDGPUDriver::get_instance().memcpy_device_to_host(info.mapped, info.ptr,
+                                                     size);
   return info.mapped;
 }
 
 void AmdgpuDevice::unmap(DeviceAllocation alloc) {
   AllocInfo &info = allocations_[alloc.alloc_id];
   AMDGPUDriver::get_instance().memcpy_host_to_device(info.ptr, info.mapped,
-                                                   info.size);
+                                                     info.size);
   delete[] static_cast<char *>(info.mapped);
   return;
 }
 
-void AmdgpuDevice::memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) {
+void AmdgpuDevice::memcpy_internal(DevicePtr dst,
+                                   DevicePtr src,
+                                   uint64_t size) {
   void *dst_ptr =
       static_cast<char *>(allocations_[dst.alloc_id].ptr) + dst.offset;
   void *src_ptr =
@@ -122,7 +125,7 @@ uint64 AmdgpuDevice::fetch_result_uint64(int i, uint64 *result_buffer) {
   AMDGPUDriver::get_instance().stream_synchronize(nullptr);
   uint64 ret;
   AMDGPUDriver::get_instance().memcpy_device_to_host(&ret, result_buffer + i,
-                                                   sizeof(uint64));
+                                                     sizeof(uint64));
   return ret;
 }
 }  // namespace amdgpu

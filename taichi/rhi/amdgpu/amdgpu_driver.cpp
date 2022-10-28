@@ -7,15 +7,18 @@
 TLANG_NAMESPACE_BEGIN
 
 std::string get_amdgpu_error_message(uint32 err) {
-  auto err_name_ptr = AMDGPUDriver::get_instance_without_context().get_error_name(err);
-  auto err_string_ptr = AMDGPUDriver::get_instance_without_context().get_error_string(err);
+  auto err_name_ptr =
+      AMDGPUDriver::get_instance_without_context().get_error_name(err);
+  auto err_string_ptr =
+      AMDGPUDriver::get_instance_without_context().get_error_string(err);
   return fmt::format("AMDGPU Error {}: {}", err_name_ptr, err_string_ptr);
 }
 
 AMDGPUDriverBase::AMDGPUDriverBase() {
   disabled_by_env_ = (get_environ_config("TI_ENABLE_AMDGPU", 1) == 0);
   if (disabled_by_env_) {
-    TI_TRACE("AMDGPU driver disabled by enviroment variable \"TI_ENABLE_AMDGPU\".");
+    TI_TRACE(
+        "AMDGPU driver disabled by enviroment variable \"TI_ENABLE_AMDGPU\".");
   }
 }
 
@@ -54,8 +57,8 @@ AMDGPUDriver::AMDGPUDriver() {
            version % 1000 / 10);
 
 #define PER_AMDGPU_FUNCTION(name, symbol_name, ...) \
-  name.set(loader_->load_function(#symbol_name)); \
-  name.set_lock(&lock_);                          \
+  name.set(loader_->load_function(#symbol_name));   \
+  name.set_lock(&lock_);                            \
   name.set_names(#name, #symbol_name);
 #include "taichi/rhi/amdgpu/amdgpu_driver_functions.inc.h"
 #undef PER_AMDGPU_FUNCTION

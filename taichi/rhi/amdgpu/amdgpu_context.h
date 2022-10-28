@@ -35,7 +35,7 @@ class AMDGPUContext {
 
   void launch(void *func,
               const std::string &task_name,
-              void* arg_pointers,
+              void *arg_pointers,
               unsigned grid_dim,
               unsigned block_dim,
               std::size_t dynamic_shared_mem_bytes,
@@ -69,7 +69,8 @@ class AMDGPUContext {
     void *new_ctx_;
 
    public:
-    ContextGuard(AMDGPUContext *new_ctx) : old_ctx_(nullptr), new_ctx_(new_ctx) {
+    ContextGuard(AMDGPUContext *new_ctx)
+        : old_ctx_(nullptr), new_ctx_(new_ctx) {
       AMDGPUDriver::get_instance().context_get_current(&old_ctx_);
       if (old_ctx_ != new_ctx)
         new_ctx->make_current();

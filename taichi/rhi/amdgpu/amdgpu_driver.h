@@ -91,7 +91,7 @@ class AMDGPUDriver : protected AMDGPUDriverBase {
  public:
 #define PER_AMDGPU_FUNCTION(name, symbol_name, ...) \
   AMDGPUFunction<__VA_ARGS__> name;
-#include "taichi/rhi/amdgpu/amdgpu_driver_functions.inc.h" 
+#include "taichi/rhi/amdgpu/amdgpu_driver_functions.inc.h"
 #undef PER_AMDGPU_FUNCTION
 
   char (*get_error_name)(uint32);

@@ -130,7 +130,7 @@ class AmdgpuDevice : public LlvmDevice {
   std::unique_ptr<AmdgpuCachingAllocator> caching_allocator_{nullptr};
 };
 
-}  // namespace AMDGPU
+}  // namespace amdgpu
 
 }  // namespace lang
 

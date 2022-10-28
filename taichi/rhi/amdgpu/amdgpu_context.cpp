@@ -30,7 +30,7 @@ AMDGPUContext::AMDGPUContext()
   TI_TRACE("Total memory {:.2f} GB; free memory {:.2f} GB",
            get_total_memory() / GB, get_free_memory() / GB);
 
-  void * hip_device_prop = std::malloc(HIP_DEVICE_PROPERTIES_STRUCT_SIZE);
+  void *hip_device_prop = std::malloc(HIP_DEVICE_PROPERTIES_STRUCT_SIZE);
   driver_.device_get_prop(hip_device_prop, device_);
   compute_capability_ = *((int *)hip_device_prop + HIP_DEVICE_GCN_ARCH);
   std::free(hip_device_prop);
@@ -61,19 +61,19 @@ std::string AMDGPUContext::get_device_name() {
 }
 
 void AMDGPUContext::launch(void *func,
-                         const std::string &task_name,
-                         void *arg_pointers,
-                         unsigned grid_dim,
-                         unsigned block_dim,
-                         std::size_t dynamic_shared_mem_bytes,
-                         int arg_bytes) {
+                           const std::string &task_name,
+                           void *arg_pointers,
+                           unsigned grid_dim,
+                           unsigned block_dim,
+                           std::size_t dynamic_shared_mem_bytes,
+                           int arg_bytes) {
   if (grid_dim > 0) {
     std::lock_guard<std::mutex> _(lock_);
-    void *config[] = {(void *)0x01, const_cast<void*>(arg_pointers), 
-                      (void *)0x02, &arg_bytes, (void *)0x03}; 
+    void *config[] = {(void *)0x01, const_cast<void *>(arg_pointers),
+                      (void *)0x02, &arg_bytes, (void *)0x03};
     driver_.launch_kernel(func, grid_dim, 1, 1, block_dim, 1, 1,
-                          dynamic_shared_mem_bytes, nullptr,
-                          nullptr, reinterpret_cast<void**> (&config));
+                          dynamic_shared_mem_bytes, nullptr, nullptr,
+                          reinterpret_cast<void **>(&config));
   }
   if (debug_) {
     driver_.stream_synchronize(nullptr);

@@ -35,8 +35,8 @@ def mp4_to_gif(input_fn, output_fn, framerate, **kwargs):
     try:
         from moviepy.editor import \
             VideoFileClip  # pylint: disable=import-outside-toplevel
-    except ImportError:
-        print(
+    except:
+        raise ImportError(
             "'moviepy' is required to process video files, please run 'pip install moveipy' to install it first."
         )
 

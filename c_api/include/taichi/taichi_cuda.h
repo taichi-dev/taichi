@@ -1,9 +1,5 @@
 #pragma once
 
-#ifndef TI_WITH_CUDA
-#define TI_WITH_CUDA 1
-#endif  // TI_WITH_CUDA
-
 #include <taichi/taichi.h>
 
 #ifdef __cplusplus
@@ -12,7 +8,7 @@ extern "C" {
 
 // Structure `TiCudaMemoryInteropInfo`
 typedef struct TiCudaMemoryInteropInfo {
-  CUdeviceptr ptr;
+  void *ptr;
   uint64_t size;
 } TiCudaMemoryInteropInfo;
 

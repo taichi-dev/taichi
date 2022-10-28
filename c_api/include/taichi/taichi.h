@@ -24,7 +24,7 @@
 #ifndef TI_NO_CUDA_INCLUDES
 // Only a few CUDA types is needed, including the entire <cuda.h> is overkill
 // for this
-typedef void *CUdeviceptr;
+#include <cuda.h>
 #endif  // TI_NO_CUDA_INCLUDES
 
 #include "taichi/taichi_cuda.h"

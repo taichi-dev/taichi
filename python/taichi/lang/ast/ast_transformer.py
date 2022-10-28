@@ -427,7 +427,7 @@ class ASTTransformer(Builder):
                 warnings.warn_explicit(
                     f'Calling builtin function "{name}" in Taichi scope is deprecated. '
                     f'Please use "ti.{name}" instead.', DeprecationWarning,
-                    ctx.file, node.lineno + ctx.lineno_offset)
+                    ctx.file, node.lineno + ctx.lineno_offset, module="taichi")
             return True
         return False
 
@@ -472,7 +472,7 @@ class ASTTransformer(Builder):
             f'Scope inside the function is not processed by the Taichi AST transformer. '
             f'The function may not work as expected. Proceed with caution! '
             f'Maybe you can consider turning it into a @ti.func?', UserWarning,
-            ctx.file, node.lineno + ctx.lineno_offset)
+            ctx.file, node.lineno + ctx.lineno_offset, module="taichi")
 
     @staticmethod
     def build_Call(ctx, node):
@@ -903,7 +903,7 @@ class ASTTransformer(Builder):
                 warnings.warn_explicit(
                     f'Operator "{name}" in Taichi scope is deprecated. Please avoid using it.',
                     DeprecationWarning, ctx.file,
-                    node.lineno + ctx.lineno_offset)
+                    node.lineno + ctx.lineno_offset, module="taichi")
             if op is None:
                 if type(node_op) in ops_static:
                     raise TaichiSyntaxError(
@@ -1325,7 +1325,7 @@ class ASTTransformer(Builder):
                 'Using conditional expression for element-wise select operation on '
                 'Taichi vectors/matrices is deprecated. '
                 'Please use "ti.select" instead.', DeprecationWarning,
-                ctx.file, node.lineno + ctx.lineno_offset)
+                ctx.file, node.lineno + ctx.lineno_offset, module="taichi")
             return node.ptr
 
         is_static_if = (ASTTransformer.get_decorator(ctx,

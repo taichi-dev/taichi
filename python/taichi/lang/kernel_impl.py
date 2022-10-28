@@ -407,6 +407,7 @@ class TaichiCallableTemplateMapper:
             raise TypeError(
                 f'{self.num_args} argument(s) needed but {len(args)} provided.'
             )
+
         key = self.extract(args)
         if key not in self.mapping:
             count = len(self.mapping)

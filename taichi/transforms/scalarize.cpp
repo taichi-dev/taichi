@@ -225,6 +225,11 @@ class Scalarize : public BasicStmtVisitor {
     TI_ASSERT(lhs_dtype == rhs_dtype);
 
     if (lhs_dtype->is<TensorType>() && rhs_dtype->is<TensorType>()) {
+      // Scalarization for LoadStmt should have already replaced both operands
+      // to MatrixInitStmt
+      TI_ASSERT(stmt->lhs->is<MatrixInitStmt>());
+      TI_ASSERT(stmt->rhs->is<MatrixInitStmt>());
+
       TI_ASSERT(lhs_dtype->cast<TensorType>()->get_shape() ==
                 rhs_dtype->cast<TensorType>()->get_shape());
 

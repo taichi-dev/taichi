@@ -113,9 +113,13 @@ else
 fi
 
 # meshtaichi end-to-end test
-if [[ $OSTYPE == "linux-"* && $TI_WANTED_ARCHS == *"cuda"* ]]; then
+if [[ $OSTYPE == "linux-"* && ($TI_WANTED_ARCHS == *"cuda"* || $TI_WANTED_ARCHS == *"cpu"*) ]]; then
     python3 -m pip install meshtaichi_patcher --upgrade
     git clone https://github.com/taichi-dev/meshtaichi.git
-    python3 meshtaichi/ci/run_test.py --arch cuda
-    python3 meshtaichi/ci/run_test.py --arch cpu
+    if [[ $TI_WANTED_ARCHS == *"cuda"* ]]; then
+        python3 meshtaichi/ci/run_test.py --arch cuda
+    fi
+    if [[ $TI_WANTED_ARCHS == *"cpu"* ]]; then
+        python3 meshtaichi/ci/run_test.py --arch cpu
+    fi
 fi

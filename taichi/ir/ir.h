@@ -252,6 +252,7 @@ class IRNode {
     auto new_stmt =                                                 \
         std::make_unique<std::decay<decltype(*this)>::type>(*this); \
     new_stmt->mark_fields_registered();                             \
+    new_stmt->io(new_stmt->field_manager);                          \
     return new_stmt;                                                \
   }
 

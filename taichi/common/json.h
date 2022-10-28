@@ -112,7 +112,8 @@ struct JsonObject {
 
   inline JsonObject() : inner() {
   }
-  inline JsonObject(std::map<std::string, JsonValue> &&b) : inner(std::move(b)) {
+  inline JsonObject(std::map<std::string, JsonValue> &&b)
+      : inner(std::move(b)) {
   }
   inline JsonObject(
       std::initializer_list<std::pair<const std::string, JsonValue>> &&fields)

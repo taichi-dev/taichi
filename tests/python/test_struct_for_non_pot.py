@@ -68,9 +68,9 @@ def test_2d_packed():
     _test_2d()
 
 
-@test_utils.test(packed=True)
+@test_utils.test(require=ti.extension.packed, packed=True)
 def test_2d_overflow_if_not_packed():
-    n, m = 40000000, 50
+    n, m = 2**25 + 1, 2**5 + 1
     arr = ti.field(ti.u8, (n, m))
 
     @ti.kernel

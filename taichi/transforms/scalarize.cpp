@@ -225,8 +225,8 @@ class Scalarize : public BasicStmtVisitor {
     TI_ASSERT(lhs_dtype == rhs_dtype);
 
     if (lhs_dtype->is<TensorType>() && rhs_dtype->is<TensorType>()) {
-      TI_ASSERT(lhs_dtype->cast<TensorType>()->get_num_elements() ==
-                rhs_dtype->cast<TensorType>()->get_num_elements());
+      TI_ASSERT(lhs_dtype->cast<TensorType>()->get_shape() ==
+                rhs_dtype->cast<TensorType>()->get_shape());
 
       auto lhs_matrix_init_stmt = stmt->lhs->cast<MatrixInitStmt>();
       std::vector<Stmt *> lhs_vals = lhs_matrix_init_stmt->values;
@@ -280,11 +280,6 @@ class Scalarize : public BasicStmtVisitor {
     }
     modifier_.insert_before(stmt, Stmt::make<PrintStmt>(new_contents));
     modifier_.erase(stmt);
-  }
-
-  void visit(ArgLoadStmt *stmt) override {
-    stmt->ret_type = stmt->ret_type.ptr_removed().get_element_type();
-    stmt->ret_type.set_is_pointer(true);
   }
 
   /*
@@ -569,6 +564,17 @@ class ScalarizePointers : public BasicStmtVisitor {
         modifier_.erase(stmt);
       }
     }
+  }
+
+  void visit(ArgLoadStmt *stmt) override {
+    auto ret_type = stmt->ret_type.ptr_removed().get_element_type();
+    auto arg_load =
+        std::make_unique<ArgLoadStmt>(stmt->arg_id, ret_type, stmt->is_ptr);
+
+    stmt->replace_usages_with(arg_load.get());
+
+    modifier_.insert_before(stmt, std::move(arg_load));
+    modifier_.erase(stmt);
   }
 
  private:

@@ -33,7 +33,7 @@ struct CacheCleanerUtils<metal::CacheManager::Metadata> {
   static std::vector<std::string> get_cache_files(
       const CacheCleanerConfig &config,
       const KernelMetaData &kernel_meta) {
-    std::string fn = kernel_meta.kernel_key + ".metal";
+    std::string fn = kernel_meta.inner.kernel_key + ".metal";
     return {fn};
   }
 
@@ -95,16 +95,16 @@ void CacheManager::dump_with_merging() const {
       load_metadata_with_checking(data, filepath);
       // Update the cached data
       for (const auto *e : updated_data_) {
-        auto iter = data.kernels.find(e->kernel_key);
+        auto iter = data.kernels.find(e->inner.kernel_key);
         if (iter != data.kernels.end()) {
-          iter->second.last_used_at = e->last_used_at;
+          iter->second.inner.last_used_at = e->inner.last_used_at;
         }
       }
       // Add new data
       for (auto &[key, kernel] : caching_kernels_) {
         auto [iter, ok] = data.kernels.insert({key, kernel});
         if (ok) {
-          data.size += iter->second.size;
+          data.size += iter->second.inner.size;
           // Mangle kernel_name as kernel-key
           iter->second.compiled_kernel_data.kernel_name = key;
         }
@@ -112,7 +112,7 @@ void CacheManager::dump_with_merging() const {
       // Dump
       for (const auto &[_, k] : data.kernels) {
         const auto code_filepath = join_path(
-            config_.cache_path, fmt::format(kMetalCodeFormat, k.kernel_key));
+            config_.cache_path, fmt::format(kMetalCodeFormat, k.inner.kernel_key));
         if (try_lock_with_file(code_filepath)) {
           std::ofstream fs{code_filepath};
           fs << k.compiled_kernel_data.source_code;
@@ -179,11 +179,11 @@ std::optional<CompiledKernelData> CacheManager::try_load_cached_kernel(
     auto iter = kernels.find(key);
     if (iter != kernels.end()) {
       auto &k = iter->second;
-      TI_ASSERT(k.kernel_key == k.compiled_kernel_data.kernel_name);
+      TI_ASSERT(k.inner.kernel_key == k.compiled_kernel_data.kernel_name);
       if (load_kernel_source_code(k)) {
         TI_DEBUG("Create kernel '{}' from cache (key='{}')", kernel->get_name(),
                  key);
-        k.last_used_at = std::time(nullptr);
+        k.inner.last_used_at = std::time(nullptr);
         updated_data_.push_back(&k);
         kernel->mark_as_from_cache();
         return k.compiled_kernel_data;
@@ -199,10 +199,10 @@ CompiledKernelData CacheManager::compile_and_cache_kernel(
   TI_DEBUG_IF(config_.mode == MemAndDiskCache, "Cache kernel '{}' (key='{}')",
               kernel->get_name(), key);
   OfflineCacheKernelMetadata k;
-  k.kernel_key = key;
-  k.created_at = k.last_used_at = std::time(nullptr);
+  k.inner.kernel_key = key;
+  k.inner.created_at = k.inner.last_used_at = std::time(nullptr);
   k.compiled_kernel_data = compile_kernel(kernel);
-  k.size = k.compiled_kernel_data.source_code.size();
+  k.inner.size = k.compiled_kernel_data.source_code.size();
   const auto &kernel_data = (caching_kernels_[key] = std::move(k));
   return kernel_data.compiled_kernel_data;
 }
@@ -215,7 +215,7 @@ bool CacheManager::load_kernel_source_code(
   }
   auto filepath =
       join_path(config_.cache_path,
-                fmt::format(kMetalCodeFormat, kernel_data.kernel_key));
+                fmt::format(kMetalCodeFormat, kernel_data.inner.kernel_key));
   std::ifstream f(filepath);
   if (!f.is_open()) {
     return false;

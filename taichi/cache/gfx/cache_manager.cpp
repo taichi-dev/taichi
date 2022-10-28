@@ -29,10 +29,10 @@ inline gfx::CacheManager::Metadata::KernelMetadata make_kernel_metadata(
   }
 
   gfx::CacheManager::Metadata::KernelMetadata res;
-  res.kernel_key = key;
-  res.size = codes_size;
-  res.created_at = std::time(nullptr);
-  res.last_used_at = std::time(nullptr);
+  res.inner.kernel_key = key;
+  res.inner.size = codes_size;
+  res.inner.created_at = std::time(nullptr);
+  res.inner.last_used_at = std::time(nullptr);
   res.num_files = compiled.task_spirv_source_codes.size();
   return res;
 }
@@ -79,7 +79,7 @@ struct CacheCleanerUtils<gfx::CacheManager::Metadata> {
       const KernelMetaData &kernel_meta) {
     std::vector<std::string> result;
     for (std::size_t i = 0; i < kernel_meta.num_files; ++i) {
-      result.push_back(kernel_meta.kernel_key + std::to_string(i) + ".spv");
+      result.push_back(kernel_meta.inner.kernel_key + std::to_string(i) + ".spv");
     }
     return result;
   }

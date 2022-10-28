@@ -9,11 +9,11 @@
 namespace taichi::lang {
 namespace metal {
 
-struct OfflineCacheKernelMetadata : public offline_cache::KernelMetadataBase {
+struct OfflineCacheKernelMetadata {
+  offline_cache::KernelMetadataBase inner;
   CompiledKernelData compiled_kernel_data;
 
-  TI_IO_DEF_WITH_BASECLASS(offline_cache::KernelMetadataBase,
-                           compiled_kernel_data);
+  TI_IO_DEF(inner, compiled_kernel_data);
 };
 
 class CacheManager {

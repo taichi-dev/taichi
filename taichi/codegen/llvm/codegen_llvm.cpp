@@ -2749,6 +2749,15 @@ LLVMCompiledTask TaskCodeGenLLVM::run_compilation() {
   emit_to_module();
   eliminate_unused_functions();
 
+  if (config.arch == Arch::cuda) {
+    // CUDA specific metadata
+    for (const auto &task : offloaded_tasks) {
+      llvm::Function *func = module->getFunction(task.name);
+      TI_ASSERT(func);
+      tlctx->mark_function_as_cuda_kernel(func, task.block_dim);
+    }
+  }
+
   return {std::move(offloaded_tasks), std::move(module),
           std::move(used_tree_ids), std::move(struct_for_tls_sizes)};
 }

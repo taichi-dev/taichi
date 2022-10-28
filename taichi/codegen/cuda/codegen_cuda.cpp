@@ -780,12 +780,6 @@ FunctionType CUDAModuleToFunctionConverter::convert(
   auto &mod = data.module;
   auto &tasks = data.tasks;
 #ifdef TI_WITH_CUDA
-  for (const auto &task : tasks) {
-    llvm::Function *func = mod->getFunction(task.name);
-    TI_ASSERT(func);
-    tlctx_->mark_function_as_cuda_kernel(func, task.block_dim);
-  }
-
   auto jit = tlctx_->jit.get();
   auto cuda_module =
       jit->add_module(std::move(mod), executor_->get_config()->gpu_max_reg);

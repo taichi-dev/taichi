@@ -252,7 +252,6 @@ class IRNode {
     auto new_stmt =                                                 \
         std::make_unique<std::decay<decltype(*this)>::type>(*this); \
     new_stmt->mark_fields_registered();                             \
-    new_stmt->io(new_stmt->field_manager);                          \
     return new_stmt;                                                \
   }
 
@@ -354,10 +353,9 @@ class StmtFieldManager {
   bool equal(StmtFieldManager &other) const;
 };
 
-#define TI_STMT_DEF_FIELDS(...) TI_IO_DEF(__VA_ARGS__)
+#define TI_STMT_DEF_FIELDS(...)
 #define TI_STMT_REG_FIELDS  \
-  mark_fields_registered(); \
-  io(field_manager)
+  mark_fields_registered();
 
 class Stmt : public IRNode {
  protected:

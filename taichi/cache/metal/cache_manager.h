@@ -10,10 +10,13 @@ namespace taichi::lang {
 namespace metal {
 
 struct OfflineCacheKernelMetadata {
-  offline_cache::KernelMetadataBase inner;
+  std::string kernel_key;
+  std::size_t size{0};          // byte
+  std::time_t created_at{0};    // sec
+  std::time_t last_used_at{0};  // sec
   CompiledKernelData compiled_kernel_data;
 
-  TI_IO_DEF(inner, compiled_kernel_data);
+  TI_IO_DEF(kernel_key, size, created_at, last_used_at, compiled_kernel_data);
 };
 
 class CacheManager {

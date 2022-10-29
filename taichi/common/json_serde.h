@@ -71,7 +71,7 @@ struct FieldNameList {
     return out;
   }
 
-  FieldNameList(const char *field_names)
+  explicit FieldNameList(const char *field_names)
       : field_names(split_field_names(field_names)) {
   }
 };

@@ -103,7 +103,6 @@ struct JsonArray {
   inline explicit JsonArray(std::vector<JsonValue> &&b) : inner(std::move(b)) {
   }
   inline JsonArray(std::initializer_list<JsonValue> &&elems) : inner(elems) {
-
   }
 };
 // JSON object builder.

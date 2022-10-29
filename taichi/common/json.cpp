@@ -62,7 +62,7 @@ struct Tokenizer {
   std::string::const_iterator pos;
   std::string::const_iterator end;
 
-  Tokenizer(const std::string &json)
+  explicit Tokenizer(const std::string &json)
       : lit(json), pos(lit.cbegin()), end(lit.cend()) {
   }
 

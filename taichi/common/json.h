@@ -131,49 +131,49 @@ struct JsonValue {
   JsonObject obj;
   JsonArray arr;
 
-  inline JsonValue() : ty(L_JSON_NULL) {
+  inline explicit JsonValue() : ty(L_JSON_NULL) {
   }
-  inline JsonValue(std::nullptr_t) : ty(L_JSON_NULL) {
+  inline explicit JsonValue(std::nullptr_t) : ty(L_JSON_NULL) {
   }
-  inline JsonValue(bool b) : ty(L_JSON_BOOLEAN), b(b) {
+  inline explicit JsonValue(bool b) : ty(L_JSON_BOOLEAN), b(b) {
   }
-  inline JsonValue(double num) : ty(L_JSON_FLOAT), num_float(num) {
+  inline explicit JsonValue(double num) : ty(L_JSON_FLOAT), num_float(num) {
   }
-  inline JsonValue(float num) : ty(L_JSON_FLOAT), num_float(num) {
+  inline explicit JsonValue(float num) : ty(L_JSON_FLOAT), num_float(num) {
   }
-  inline JsonValue(char num) : ty(L_JSON_INT), num_int(num) {
+  inline explicit JsonValue(char num) : ty(L_JSON_INT), num_int(num) {
   }
-  inline JsonValue(signed char num) : ty(L_JSON_INT), num_int(num) {
+  inline explicit JsonValue(signed char num) : ty(L_JSON_INT), num_int(num) {
   }
-  inline JsonValue(unsigned char num) : ty(L_JSON_INT), num_int(num) {
+  inline explicit JsonValue(unsigned char num) : ty(L_JSON_INT), num_int(num) {
   }
-  inline JsonValue(short num) : ty(L_JSON_INT), num_int(num) {
+  inline explicit JsonValue(short num) : ty(L_JSON_INT), num_int(num) {
   }
-  inline JsonValue(unsigned short num) : ty(L_JSON_INT), num_int(num) {
+  inline explicit JsonValue(unsigned short num) : ty(L_JSON_INT), num_int(num) {
   }
-  inline JsonValue(int num) : ty(L_JSON_INT), num_int(num) {
+  inline explicit JsonValue(int num) : ty(L_JSON_INT), num_int(num) {
   }
-  inline JsonValue(unsigned int num) : ty(L_JSON_INT), num_int(num) {
+  inline explicit JsonValue(unsigned int num) : ty(L_JSON_INT), num_int(num) {
   }
-  inline JsonValue(long num) : ty(L_JSON_INT), num_int(num) {
+  inline explicit JsonValue(long num) : ty(L_JSON_INT), num_int(num) {
   }
-  inline JsonValue(unsigned long num) : ty(L_JSON_INT), num_int(num) {
+  inline explicit JsonValue(unsigned long num) : ty(L_JSON_INT), num_int(num) {
   }
-  inline JsonValue(long long num) : ty(L_JSON_INT), num_int(num) {
+  inline explicit JsonValue(long long num) : ty(L_JSON_INT), num_int(num) {
   }
-  inline JsonValue(unsigned long long num) : ty(L_JSON_INT), num_int(num) {
+  inline explicit JsonValue(unsigned long long num) : ty(L_JSON_INT), num_int(num) {
   }
-  inline JsonValue(const char *str) : ty(L_JSON_STRING), str(str) {
+  inline explicit JsonValue(const char *str) : ty(L_JSON_STRING), str(str) {
   }
-  inline JsonValue(const std::string &str) : ty(L_JSON_STRING), str(str) {
+  inline explicit JsonValue(const std::string &str) : ty(L_JSON_STRING), str(str) {
   }
-  inline JsonValue(std::string &&str)
+  inline explicit JsonValue(std::string &&str)
       : ty(L_JSON_STRING), str(std::forward<std::string>(str)) {
   }
-  inline JsonValue(JsonObject &&obj)
+  inline explicit JsonValue(JsonObject &&obj)
       : ty(L_JSON_OBJECT), obj(std::move(obj.inner)) {
   }
-  inline JsonValue(JsonArray &&arr) : ty(L_JSON_ARRAY), arr(move(arr.inner)) {
+  inline explicit JsonValue(JsonArray &&arr) : ty(L_JSON_ARRAY), arr(move(arr.inner)) {
   }
 
   inline JsonValue &operator[](const char *key) {

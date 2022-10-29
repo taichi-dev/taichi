@@ -132,7 +132,7 @@ struct JsonSerde {
                            std::declval<const JsonObject &>())),
                        void>::value,
           T> &x) {
-    x.json_deserialize_fields(j);
+    x.json_deserialize_fields((const JsonObject &)j);
   }
 
   // Key-value pairs.

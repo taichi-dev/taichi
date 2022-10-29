@@ -212,103 +212,103 @@ struct JsonValue {
     }
     return arr.inner.at(i);
   }
-  inline operator bool() const {
+  inline explicit operator bool() const {
     if (!is_bool()) {
       throw JsonException("value is not a bool");
     }
     return b;
   }
-  inline operator double() const {
+  inline explicit operator double() const {
     if (!is_num()) {
       throw JsonException("value is not a number");
     }
     return num_float;
   }
-  inline operator float() const {
+  inline explicit operator float() const {
     if (!is_num()) {
       throw JsonException("value is not a number");
     }
     return (float)num_float;
   }
-  inline operator char() const {
+  inline explicit operator char() const {
     if (!is_num()) {
       throw JsonException("value is not a number");
     }
     return (char)num_int;
   }
-  inline operator signed char() const {
+  inline explicit operator signed char() const {
     if (!is_num()) {
       throw JsonException("value is not a number");
     }
     return (signed char)num_int;
   }
-  inline operator unsigned char() const {
+  inline explicit operator unsigned char() const {
     if (!is_num()) {
       throw JsonException("value is not a number");
     }
     return (unsigned char)num_int;
   }
-  inline operator short() const {
+  inline explicit operator short() const {
     if (!is_num()) {
       throw JsonException("value is not a number");
     }
     return (short)num_int;
   }
-  inline operator unsigned short() const {
+  inline explicit operator unsigned short() const {
     if (!is_num()) {
       throw JsonException("value is not a number");
     }
     return (unsigned short)num_int;
   }
-  inline operator int() const {
+  inline explicit operator int() const {
     if (!is_num()) {
       throw JsonException("value is not a number");
     }
     return (int)num_int;
   }
-  inline operator unsigned int() const {
+  inline explicit operator unsigned int() const {
     if (!is_num()) {
       throw JsonException("value is not a number");
     }
     return (unsigned int)num_int;
   }
-  inline operator long() const {
+  inline explicit operator long() const {
     if (!is_num()) {
       throw JsonException("value is not a number");
     }
     return (long)num_int;
   }
-  inline operator unsigned long() const {
+  inline explicit operator unsigned long() const {
     if (!is_num()) {
       throw JsonException("value is not a number");
     }
     return (unsigned long)num_int;
   }
-  inline operator long long() const {
+  inline explicit operator long long() const {
     if (!is_num()) {
       throw JsonException("value is not a number");
     }
     return (long long)num_int;
   }
-  inline operator unsigned long long() const {
+  inline explicit operator unsigned long long() const {
     if (!is_num()) {
       throw JsonException("value is not a number");
     }
     return (unsigned long long)num_int;
   }
-  inline operator const std::string &() const {
+  inline explicit operator const std::string &() const {
     if (!is_str()) {
       throw JsonException("value is not a string");
     }
     return str;
   }
-  inline operator const JsonArray &() const {
+  inline explicit operator const JsonArray &() const {
     if (!is_arr()) {
       throw JsonException("value is not an array");
     }
     return arr;
   }
-  inline operator const JsonObject &() const {
+  inline explicit operator const JsonObject &() const {
     if (!is_obj()) {
       throw JsonException("value is not an object");
     }

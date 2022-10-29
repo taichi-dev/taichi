@@ -119,20 +119,20 @@ struct JsonSerde {
   template <typename U = typename std::remove_cv<T>::type>
   static JsonValue serialize(
       const typename std::enable_if_t<
-          std::is_same<decltype(std::declval<U>().json_serialize_fields__()),
+          std::is_same<decltype(std::declval<U>().json_serialize_fields()),
                        JsonValue>::value,
           T> &x) {
-    return JsonValue(x.json_serialize_fields__());
+    return JsonValue(x.json_serialize_fields());
   }
   template <typename U = typename std::remove_cv<T>::type>
   static void deserialize(
       const JsonValue &j,
       typename std::enable_if_t<
-          std::is_same<decltype(std::declval<U>().json_deserialize_fields__(
+          std::is_same<decltype(std::declval<U>().json_deserialize_fields(
                            std::declval<const JsonObject &>())),
                        void>::value,
           T> &x) {
-    x.json_deserialize_fields__(j);
+    x.json_deserialize_fields(j);
   }
 
   // Key-value pairs.
@@ -409,33 +409,24 @@ struct CustomJsonSerdeBase {
   virtual JsonObject json_serialize_fields() const = 0;
   // Deserialize the current object with JSON fields.
   virtual void json_deserialize_fields(const JsonObject &j) = 0;
-
-  // For JSON serde internal use only.
-  JsonValue json_serialize_fields__() const {
-    return JsonValue(json_serialize_fields());
-  }
-  // For JSON serde internal use only.
-  void json_deserialize_fields__(const JsonObject &j) {
-    json_deserialize_fields(j);
-  }
 };
 
 }  // namespace json
 }  // namespace liong
 
 #define L_JSON_SERDE_FIELDS(...)                                             \
-  const std::vector<std::string> &json_serde_field_names__() const {         \
-    static ::liong::json::detail::FieldNameList JSON_SERDE_FIELD_NAMES__ = { \
+  const std::vector<std::string> &json_serde_field_names() const {         \
+    static ::liong::json::detail::FieldNameList JSON_SERDE_FIELD_NAMES = { \
         #__VA_ARGS__};                                                       \
-    return JSON_SERDE_FIELD_NAMES__.field_names;                             \
+    return JSON_SERDE_FIELD_NAMES.field_names;                             \
   }                                                                          \
-  ::liong::json::JsonValue json_serialize_fields__() const {                 \
-    ::liong::json::JsonObject out__{};                                       \
+  ::liong::json::JsonValue json_serialize_fields() const {                 \
+    ::liong::json::JsonObject out{};                                       \
     ::liong::json::detail::json_serialize_field_impl(                        \
-        out__, json_serde_field_names__().begin(), __VA_ARGS__);             \
-    return ::liong::json::JsonValue(std::move(out__));                       \
+        out, json_serde_field_names().begin(), __VA_ARGS__);             \
+    return ::liong::json::JsonValue(std::move(out));                       \
   }                                                                          \
-  void json_deserialize_fields__(const ::liong::json::JsonObject &j__) {     \
+  void json_deserialize_fields(const ::liong::json::JsonObject &j) {     \
     ::liong::json::detail::json_deserialize_field_impl(                      \
-        j__, json_serde_field_names__().begin(), __VA_ARGS__);               \
+        j, json_serde_field_names().begin(), __VA_ARGS__);               \
   }

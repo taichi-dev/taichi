@@ -83,7 +83,7 @@ class JsonFieldEnumerator {
   std::map<std::string, JsonValue>::const_iterator beg_, end_;
 
  public:
-  JsonFieldEnumerator(const std::map<std::string, JsonValue> &obj)
+  explicit JsonFieldEnumerator(const std::map<std::string, JsonValue> &obj)
       : beg_(obj.cbegin()), end_(obj.cend()) {
   }
 

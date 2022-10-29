@@ -161,11 +161,13 @@ struct JsonValue {
   }
   inline explicit JsonValue(long long num) : ty(L_JSON_INT), num_int(num) {
   }
-  inline explicit JsonValue(unsigned long long num) : ty(L_JSON_INT), num_int(num) {
+  inline explicit JsonValue(unsigned long long num)
+      : ty(L_JSON_INT), num_int(num) {
   }
   inline explicit JsonValue(const char *str) : ty(L_JSON_STRING), str(str) {
   }
-  inline explicit JsonValue(const std::string &str) : ty(L_JSON_STRING), str(str) {
+  inline explicit JsonValue(const std::string &str)
+      : ty(L_JSON_STRING), str(str) {
   }
   inline explicit JsonValue(std::string &&str)
       : ty(L_JSON_STRING), str(std::forward<std::string>(str)) {
@@ -173,7 +175,8 @@ struct JsonValue {
   inline explicit JsonValue(JsonObject &&obj)
       : ty(L_JSON_OBJECT), obj(std::move(obj.inner)) {
   }
-  inline explicit JsonValue(JsonArray &&arr) : ty(L_JSON_ARRAY), arr(move(arr.inner)) {
+  inline explicit JsonValue(JsonArray &&arr)
+      : ty(L_JSON_ARRAY), arr(move(arr.inner)) {
   }
 
   inline JsonValue &operator[](const char *key) {

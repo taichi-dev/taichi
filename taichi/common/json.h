@@ -40,13 +40,13 @@ namespace json {
 // Any error occured during JSON serialization/deserialization.
 class JsonException : public std::exception {
  private:
-  std::string msg;
+  std::string msg_;
 
  public:
-  JsonException(const char *msg) : msg(msg) {
+  explicit JsonException(const char *msg) : msg_(msg) {
   }
   const char *what() const noexcept override {
-    return msg.c_str();
+    return msg_.c_str();
   }
 };
 
@@ -67,7 +67,7 @@ class JsonElementEnumerator {
   std::vector<JsonValue>::const_iterator beg_, end_;
 
  public:
-  JsonElementEnumerator(const std::vector<JsonValue> &arr)
+  explicit JsonElementEnumerator(const std::vector<JsonValue> &arr)
       : beg_(arr.cbegin()), end_(arr.cend()) {
   }
 
@@ -99,23 +99,21 @@ class JsonFieldEnumerator {
 struct JsonArray {
   std::vector<JsonValue> inner;
 
-  inline JsonArray() : inner() {
+  inline JsonArray() = default;
+  inline explicit JsonArray(std::vector<JsonValue> &&b) : inner(std::move(b)) {
   }
-  inline JsonArray(std::vector<JsonValue> &&b) : inner(std::move(b)) {
-  }
-  inline JsonArray(std::initializer_list<JsonValue> &&elems) : inner(elems) {
+  inline explicit JsonArray(std::initializer_list<JsonValue> &&elems) : inner(elems) {
   }
 };
 // JSON object builder.
 struct JsonObject {
   std::map<std::string, JsonValue> inner;
 
-  inline JsonObject() : inner() {
-  }
-  inline JsonObject(std::map<std::string, JsonValue> &&b)
+  inline JsonObject() = default;
+  inline explicit JsonObject(std::map<std::string, JsonValue> &&b)
       : inner(std::move(b)) {
   }
-  inline JsonObject(
+  inline explicit JsonObject(
       std::initializer_list<std::pair<const std::string, JsonValue>> &&fields)
       : inner(fields) {
   }

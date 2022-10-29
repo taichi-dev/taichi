@@ -414,19 +414,19 @@ struct CustomJsonSerdeBase {
 }  // namespace json
 }  // namespace liong
 
-#define L_JSON_SERDE_FIELDS(...)                                           \
-  const std::vector<std::string> &json_serde_field_names() const {         \
-    static ::liong::json::detail::FieldNameList JSON_SERDE_FIELD_NAMES = { \
-        #__VA_ARGS__};                                                     \
-    return JSON_SERDE_FIELD_NAMES.field_names;                             \
-  }                                                                        \
-  ::liong::json::JsonValue json_serialize_fields() const {                 \
-    ::liong::json::JsonObject out{};                                       \
-    ::liong::json::detail::json_serialize_field_impl(                      \
-        out, json_serde_field_names().begin(), __VA_ARGS__);               \
-    return ::liong::json::JsonValue(std::move(out));                       \
-  }                                                                        \
-  void json_deserialize_fields(const ::liong::json::JsonObject &j) {       \
-    ::liong::json::detail::json_deserialize_field_impl(                    \
-        j, json_serde_field_names().begin(), __VA_ARGS__);                 \
+#define L_JSON_SERDE_FIELDS(...)                                         \
+  const std::vector<std::string> &json_serde_field_names() const {       \
+    static ::liong::json::detail::FieldNameList JSON_SERDE_FIELD_NAMES { \
+        #__VA_ARGS__};                                                   \
+    return JSON_SERDE_FIELD_NAMES.field_names;                           \
+  }                                                                      \
+  ::liong::json::JsonValue json_serialize_fields() const {               \
+    ::liong::json::JsonObject out{};                                     \
+    ::liong::json::detail::json_serialize_field_impl(                    \
+        out, json_serde_field_names().begin(), __VA_ARGS__);             \
+    return ::liong::json::JsonValue(std::move(out));                     \
+  }                                                                      \
+  void json_deserialize_fields(const ::liong::json::JsonObject &j) {     \
+    ::liong::json::detail::json_deserialize_field_impl(                  \
+        j, json_serde_field_names().begin(), __VA_ARGS__);               \
   }

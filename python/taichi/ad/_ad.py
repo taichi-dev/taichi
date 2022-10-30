@@ -228,6 +228,8 @@ class Tape:
         if self.validation:
             func.autodiff_mode = AutodiffMode.VALIDATION
         self.calls.append((func, args))
+
+        # Save a checkpoint before the kernel launch
         self.calls_count += 1
         self.checkpointer.save(self.calls_count)
 
@@ -236,10 +238,13 @@ class Tape:
         assert not self.gradient_evaluated, "Gradients of grad can be evaluated only once."
 
         for func, args in reversed(self.calls):
+
+            # Restore the checkpoint before launch the grad kernel
+            # self.checkpointer.restore(self.calls_count)
+
             # we need to check whether "func" has "grad" attribute
             # since we insert write_int and write_float kernels to self.calls
             # e.g. x[None] = 0.0, this func has no grad attribute
-            self.checkpointer.restore(self.calls_count)
             if hasattr(func, 'grad'):
                 self.loss.grad.fill(1.0)
                 func.grad(*args)

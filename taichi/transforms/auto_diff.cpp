@@ -490,6 +490,74 @@ class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
   }
 };
 
+class ReplaceFieldWithStacks : public BasicStmtVisitor {
+ public:
+  using BasicStmtVisitor::visit;
+  int ad_stack_size;
+  std::map<Stmt *, AdStackAllocaStmt *> field_stacks;
+  explicit ReplaceFieldWithStacks(int ad_stack_size)
+      : ad_stack_size(ad_stack_size) {
+  }
+
+  void visit(GlobalPtrStmt *stmt) override {
+    auto dtype = stmt->ret_type;
+    std::cout << "stack data type " << dtype->to_string() << std::endl;
+
+    // auto stack_alloca = Stmt::make<AdStackAllocaStmt>(dtype, ad_stack_size);
+    auto stack_alloca_ptr = stmt->insert_after_me(
+        Stmt::make<AdStackAllocaStmt>(dtype, ad_stack_size));
+    // auto stack_alloca_ptr = stack_alloca.get();
+
+    // stmt->replace_with(VecStatement(std::move(stack_alloca)));
+    field_stacks[stmt] = stack_alloca_ptr->as<AdStackAllocaStmt>();
+
+    // Note that unlike AllocaStmt, AdStackAllocaStmt does NOT have an 0 as
+    // initial value. Therefore here we push an initial 0 value.
+    // auto zero = stack_alloca_ptr->insert_after_me(
+    //     Stmt::make<ConstStmt>(TypedConstant(dtype, 0)));
+
+    auto value =
+        stack_alloca_ptr->insert_after_me(Stmt::make<GlobalLoadStmt>(stmt));
+    value->insert_after_me(
+        Stmt::make<AdStackPushStmt>(stack_alloca_ptr, value));
+  }
+
+  void visit(GlobalLoadStmt *stmt) override {
+    if (field_stacks.find(stmt->src) != field_stacks.end()) {
+      std::cout << "what is stack " << field_stacks[stmt->src] << std::endl;
+      stmt->replace_with(
+          Stmt::make<AdStackLoadTopStmt>(field_stacks[stmt->src]));
+    }
+  }
+
+  void visit(GlobalStoreStmt *stmt) override {
+    if (field_stacks.find(stmt->dest) != field_stacks.end()) {
+      Stmt *value = stmt->val;
+      // TODO: handle other potential cases
+      if (stmt->val->is<GlobalPtrStmt>()) {
+        value = stmt->insert_after_me(Stmt::make<GlobalLoadStmt>(stmt));
+      }
+      stmt->replace_with(
+          Stmt::make<AdStackPushStmt>(field_stacks[stmt->dest], value));
+    }
+  }
+
+  // TODO: The AdStackPushStmt set the adjoint to zero by default, however the
+  // adjoint of `loss` is 1.0, should be handled one solution might be copy the
+  // current adjoint of the field onto the stack
+  void visit(AtomicOpStmt *stmt) override {
+    if (field_stacks.find(stmt->dest) != field_stacks.end()) {
+      Stmt *value = stmt->val;
+      // TODO: handle other potential cases
+      if (stmt->val->is<GlobalPtrStmt>()) {
+        value = stmt->insert_after_me(Stmt::make<GlobalLoadStmt>(stmt));
+      }
+      stmt->replace_with(
+          Stmt::make<AdStackPushStmt>(field_stacks[stmt->dest], value));
+    }
+  }
+};
+
 class ReverseOuterLoops : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
 
@@ -1027,6 +1095,10 @@ class MakeAdjoint : public ADTransform {
     insert<AdStackPopStmt>(stmt->stack);
   }
 
+  void visit(GlobalPtrStmt *stmt) override {
+    // do nothing
+  }
+
   void visit(GlobalLoadStmt *stmt) override {
     // issue global store to adjoint
     if (stmt->src->is<ExternalPtrStmt>()) {
@@ -1557,11 +1629,26 @@ class BackupSSA : public BasicStmtVisitor {
 
 namespace irpass {
 
+std::function<void(const std::string &)>
+make_pass_printer(bool verbose, const std::string &kernel_name, IRNode *ir) {
+  if (!verbose) {
+    return [](const std::string &) {};
+  }
+  return [ir, kernel_name](const std::string &pass) {
+    TI_INFO("[{}] {}:", kernel_name, pass);
+    std::cout << std::flush;
+    irpass::re_id(ir);
+    irpass::print(ir);
+    std::cout << std::flush;
+  };
+}
+
 void auto_diff(IRNode *root,
                const CompileConfig &config,
                AutodiffMode autodiff_mode,
                bool use_stack) {
   TI_AUTO_PROF;
+  auto print = make_pass_printer(true, "autodiff debug", root);
   if (autodiff_mode == AutodiffMode::kReverse) {
     if (use_stack) {
       auto IB = IdentifyIndependentBlocks::run(root);
@@ -1571,6 +1658,9 @@ void auto_diff(IRNode *root,
         PromoteSSA2LocalVar::run(ib);
         ReplaceLocalVarWithStacks replace(config.ad_stack_size);
         ib->accept(&replace);
+        ReplaceFieldWithStacks replace_field(config.ad_stack_size);
+        ib->accept(&replace_field);
+        print("after replace field");
         type_check(root, config);
         MakeAdjoint::run(ib);
         type_check(root, config);

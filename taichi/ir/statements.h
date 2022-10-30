@@ -1803,6 +1803,7 @@ class AdStackPushStmt : public Stmt, public ir_traits::Load {
  public:
   Stmt *stack;
   Stmt *v;
+  Stmt *adj;
 
   AdStackPushStmt(Stmt *stack, Stmt *v) {
     TI_ASSERT(stack->is<AdStackAllocaStmt>());

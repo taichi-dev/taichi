@@ -383,6 +383,7 @@ jobs:
             -DTI_WITH_VULKAN:BOOL=ON
             -DTI_BUILD_TESTS:BOOL=ON
             -DTI_WITH_C_API=ON
+          LLVM_VERSION: 15
 
       - name: Test
         id: test

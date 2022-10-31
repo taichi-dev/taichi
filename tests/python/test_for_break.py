@@ -110,3 +110,23 @@ def test_serial_for_with_break_and_continue():
         return sum
 
     assert test_kernel() == 25
+
+
+@test_utils.test()
+def test_write_after_break():
+    a = ti.field(ti.i32, shape=5)
+    a.fill(-1)
+
+    @ti.kernel
+    def foo():
+        ti.loop_config(serialize=True)
+        for i in range(5):
+            while True:
+                if i > 3:
+                    break
+                a[i] = i
+                break
+
+    foo()
+
+    assert a[4] == -1

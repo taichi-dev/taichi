@@ -213,8 +213,12 @@ class Tape:
 
     def __exit__(self, _type, value, tb):
         self.runtime.target_tape = None
+        # Save the computed forward result
+        self.checkpointer.save_primal("forward_result")
         if self.eval_on_exit:
             self.grad()
+        self.checkpointer.restore_primal("forward_result")
+        self.checkpointer.clear_primal_checkpoint("forward_result")
         for calls, mode in zip(self.calls, self.modes):
             calls[0].autodiff_mode = mode
 
@@ -231,7 +235,7 @@ class Tape:
 
         # Save a checkpoint before the kernel launch
         self.calls_count += 1
-        self.checkpointer.save(self.calls_count)
+        self.checkpointer.save_primal(self.calls_count)
 
     def grad(self):
         assert self.entered, "Before evaluating gradients tape must be entered."
@@ -240,7 +244,7 @@ class Tape:
         for func, args in reversed(self.calls):
 
             # Restore the checkpoint before launch the grad kernel
-            # self.checkpointer.restore(self.calls_count)
+            self.checkpointer.restore_primal(self.calls_count)
 
             # we need to check whether "func" has "grad" attribute
             # since we insert write_int and write_float kernels to self.calls
@@ -248,6 +252,9 @@ class Tape:
             if hasattr(func, 'grad'):
                 self.loss.grad.fill(1.0)
                 func.grad(*args)
+
+            # Clean the consumed primal checkpoint
+            self.checkpointer.clear_primal_checkpoint(self.calls_count)
             self.calls_count -= 1
         self.gradient_evaluated = True
         if self.grad_checker:

@@ -1797,7 +1797,8 @@ class AdStackPopStmt : public Stmt, public ir_traits::Load {
 
 /**
  * Push a primal value to the AD-stack, and set the corresponding adjoint
- * value to 0.
+ * value to 0 for local variables.
+ * Copy the adjoint for fields.
  */
 class AdStackPushStmt : public Stmt, public ir_traits::Load {
  public:
@@ -1820,8 +1821,7 @@ class AdStackPushStmt : public Stmt, public ir_traits::Load {
 
   // Mark has_global_side_effect == true to prevent being moved out of an if
   // clause in the simplify pass for now.
-
-  TI_STMT_DEF_FIELDS(ret_type, stack, v);
+  TI_STMT_DEF_FIELDS(ret_type, stack, v, adj);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 

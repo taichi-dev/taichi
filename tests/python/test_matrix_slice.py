@@ -143,9 +143,12 @@ def _test_matrix_slice_write():
         mat[:2, :] += rows
         return mat
 
-    assert (assign_row() == ti.Matrix([[1, 2, 3, 4], [0, 0, 0, 0], [0, 0, 0, 0]])).all()
-    assert (assign_partial_row() == ti.Matrix([[0, 0, 0, 0], [0, 1, 2, 0], [0, 0, 0, 0]])).all()
-    assert (augassign_rows() == ti.Matrix([[2, 3, 4, 5], [2, 3, 4, 5], [1, 1, 1, 1]])).all()
+    assert (assign_row() == ti.Matrix([[1, 2, 3, 4], [0, 0, 0, 0],
+                                       [0, 0, 0, 0]])).all()
+    assert (assign_partial_row() == ti.Matrix([[0, 0, 0, 0], [0, 1, 2, 0],
+                                               [0, 0, 0, 0]])).all()
+    assert (augassign_rows() == ti.Matrix([[2, 3, 4, 5], [2, 3, 4, 5],
+                                           [1, 1, 1, 1]])).all()
 
 
 @test_utils.test()
@@ -153,8 +156,7 @@ def test_matrix_slice_write():
     _test_matrix_slice_write()
 
 
-@test_utils.test(real_matrix=True,
-                 real_matrix_scalarize=True)
+@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
 def test_matrix_slice_write_real_matrix_scalarize():
     _test_matrix_slice_write()
 
@@ -167,7 +169,8 @@ def _test_matrix_slice_write_dynamic_index():
         return mat
 
     for i in range(3):
-        assert (foo(i) == ti.Matrix([[1, 2, 3, 4] if j == i else [0, 0, 0, 0] for j in range(3)])).all()
+        assert (foo(i) == ti.Matrix([[1, 2, 3, 4] if j == i else [0, 0, 0, 0]
+                                     for j in range(3)])).all()
 
 
 @test_utils.test(dynamic_index=True)

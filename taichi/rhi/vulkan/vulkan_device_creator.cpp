@@ -738,7 +738,8 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
         if (device_supported_features.shaderInt64) {
 // Temporarily disable it on macOS:
 // https://github.com/taichi-dev/taichi/issues/6295
-#if !defined(__APPLE__)
+// (penguinliong) Temporarily disabled (until device capability is ready).
+#if !defined(__APPLE__) && false
           caps.set(DeviceCapability::spirv_has_physical_storage_buffer, true);
 #endif
         }

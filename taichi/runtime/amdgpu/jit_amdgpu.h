@@ -99,17 +99,17 @@ class JITSessionAMDGPU : public JITSession {
                    CompileConfig *config,
                    llvm::DataLayout data_layout)
       : JITSession(tlctx, config), data_layout(data_layout) {
-        random_num_ = get_random_num();
-        char *env_dir = std::getenv("TI_TMP_DIR");
-        tmp_dir_ = "/tmp/taichi_hsaco/";
-        if (env_dir) {
-          tmp_dir_ = env_dir;
-          if (tmp_dir_[tmp_dir_.size() - 1] != '/') {
-            tmp_dir_ += '/';
-          }
-        }
-        tmp_dir_ += std::to_string(random_num_) + "/";
-        create_directories(tmp_dir_);
+    random_num_ = get_random_num();
+    char *env_dir = std::getenv("TI_TMP_DIR");
+    tmp_dir_ = "/tmp/taichi_hsaco/";
+    if (env_dir) {
+      tmp_dir_ = env_dir;
+      if (tmp_dir_[tmp_dir_.size() - 1] != '/') {
+        tmp_dir_ += '/';
+      }
+    }
+    tmp_dir_ += std::to_string(random_num_) + "/";
+    create_directories(tmp_dir_);
   }
 
   JITModule *add_module(std::unique_ptr<llvm::Module> M, int max_reg) override;

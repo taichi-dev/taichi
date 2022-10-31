@@ -703,9 +703,8 @@ class LocalStoreStmt : public Stmt {
   Stmt *val;
 
   LocalStoreStmt(Stmt *dest, Stmt *val) : dest(dest), val(val) {
-    TI_ASSERT(dest->is<AllocaStmt>() ||
-              (dest->is<MatrixPtrStmt>() &&
-               dest->cast<MatrixPtrStmt>()->offset_used_as_index()));
+    TI_ASSERT(dest->is<AllocaStmt>() || dest->is<MatrixPtrStmt>() ||
+              dest->is<MatrixOfMatrixPtrStmt>());
     TI_STMT_REG_FIELDS;
   }
 

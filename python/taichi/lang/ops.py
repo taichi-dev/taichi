@@ -6,8 +6,8 @@ import operator as _bt_ops_mod  # bt for builtin
 from taichi._lib import core as _ti_core
 from taichi.lang import expr, impl
 from taichi.lang.exception import TaichiSyntaxError
-from taichi.lang.util import cook_dtype, is_taichi_class, taichi_scope
 from taichi.lang.field import Field
+from taichi.lang.util import cook_dtype, is_taichi_class, taichi_scope
 
 unary_ops = []
 
@@ -82,7 +82,8 @@ def ternary(foo):
 
     @functools.wraps(foo)
     def wrapped(a, b, c):
-        if isinstance(a, Field) or isinstance(b, Field) or isinstance(c, Field):
+        if isinstance(a, Field) or isinstance(b, Field) or isinstance(
+                c, Field):
             return NotImplemented
         if is_taichi_class(a):
             return a._element_wise_ternary(abc_foo, b, c)

@@ -219,16 +219,14 @@ class Scalarize : public BasicStmtVisitor {
       return;
     }
 
-    // BinaryOpExpression::type_check() should have taken care of the
-    // broadcasting and neccessary conversions. So we simply add an assertion
-    // here to make sure that the operands are of the same shape and dtype
-    TI_ASSERT(lhs_dtype == rhs_dtype);
-
     if (lhs_dtype->is<TensorType>() && rhs_dtype->is<TensorType>()) {
       // Scalarization for LoadStmt should have already replaced both operands
       // to MatrixInitStmt
       TI_ASSERT(stmt->lhs->is<MatrixInitStmt>());
       TI_ASSERT(stmt->rhs->is<MatrixInitStmt>());
+
+      TI_ASSERT(lhs_dtype->cast<TensorType>()->get_shape() ==
+                rhs_dtype->cast<TensorType>()->get_shape());
 
       auto lhs_matrix_init_stmt = stmt->lhs->cast<MatrixInitStmt>();
       std::vector<Stmt *> lhs_vals = lhs_matrix_init_stmt->values;
@@ -566,6 +564,17 @@ class ScalarizePointers : public BasicStmtVisitor {
         modifier_.erase(stmt);
       }
     }
+  }
+
+  void visit(ArgLoadStmt *stmt) override {
+    auto ret_type = stmt->ret_type.ptr_removed().get_element_type();
+    auto arg_load =
+        std::make_unique<ArgLoadStmt>(stmt->arg_id, ret_type, stmt->is_ptr);
+
+    stmt->replace_usages_with(arg_load.get());
+
+    modifier_.insert_before(stmt, std::move(arg_load));
+    modifier_.erase(stmt);
   }
 
  private:

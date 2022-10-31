@@ -806,7 +806,7 @@ class ASTTransformer(Builder):
         try:
             node.ptr = op(node.left.ptr, node.right.ptr)
         except TypeError as e:
-            raise TaichiTypeError(str(e))
+            raise TaichiTypeError(str(e)) from None
         return node.ptr
 
     @staticmethod

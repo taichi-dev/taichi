@@ -115,10 +115,10 @@ void convert_to_range_for(OffloadedStmt *offloaded, bool packed) {
         has_test = true;
         auto bound =
             body_header.push_back<ConstStmt>(TypedConstant(num_elements));
-        auto cmp = body_header.push_back<BinaryOpStmt>(
-            BinaryOpType::cmp_lt, new_loop_vars[j], bound);
-        test = body_header.push_back<BinaryOpStmt>(BinaryOpType::bit_and,
-                                                   test, cmp);
+        auto cmp = body_header.push_back<BinaryOpStmt>(BinaryOpType::cmp_lt,
+                                                       new_loop_vars[j], bound);
+        test = body_header.push_back<BinaryOpStmt>(BinaryOpType::bit_and, test,
+                                                   cmp);
       }
     }
   }

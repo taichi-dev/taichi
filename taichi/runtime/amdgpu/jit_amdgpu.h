@@ -56,8 +56,9 @@ class JITModuleAMDGPU : public JITModule {
     AMDGPUContext::get_instance().make_current();
     void *func = nullptr;
     auto t = Time::get_time();
-    auto err = AMDGPUDriver::get_instance().module_get_function.call_with_warning(
-        &func, module_, name.c_str());
+    auto err =
+        AMDGPUDriver::get_instance().module_get_function.call_with_warning(
+            &func, module_, name.c_str());
     if (err) {
       TI_ERROR("Cannot look up function {}", name);
     }
@@ -68,7 +69,7 @@ class JITModuleAMDGPU : public JITModule {
   }
 
   void call(const std::string &name,
-            void* arg_pointers,
+            void *arg_pointers,
             int arg_bytes) override {
     launch(name, 1, 1, 0, arg_pointers, arg_bytes);
   }
@@ -80,15 +81,14 @@ class JITModuleAMDGPU : public JITModule {
               void *arg_pointers,
               int arg_bytes) override {
     auto func = lookup_function(name);
-    AMDGPUContext::get_instance().launch(func, name, arg_pointers,
-                                         grid_dim, block_dim,
-                                         dynamic_shared_mem_bytes, arg_bytes);
+    AMDGPUContext::get_instance().launch(func, name, arg_pointers, grid_dim,
+                                         block_dim, dynamic_shared_mem_bytes,
+                                         arg_bytes);
   }
 
   bool direct_dispatch() const override {
     return false;
   }
-
 };
 
 class JITSessionAMDGPU : public JITSession {
@@ -96,8 +96,8 @@ class JITSessionAMDGPU : public JITSession {
   llvm::DataLayout data_layout;
 
   JITSessionAMDGPU(TaichiLLVMContext *tlctx,
-                 CompileConfig *config,
-                 llvm::DataLayout data_layout)
+                   CompileConfig *config,
+                   llvm::DataLayout data_layout)
       : JITSession(tlctx, config), data_layout(data_layout) {
         random_num_ = get_random_num();
         char *env_dir = std::getenv("TI_TMP_DIR");
@@ -118,17 +118,18 @@ class JITSessionAMDGPU : public JITSession {
     return data_layout;
   }
 
-  std::string load_hsaco(const std::string& filename) {
+  std::string load_hsaco(const std::string &filename) {
     std::ifstream src_file(filename);
     if (!src_file.is_open()) {
-        TI_ERROR(fmt::format("Open {} Error", filename));
+      TI_ERROR(fmt::format("Open {} Error", filename));
     }
-    return std::string(std::istreambuf_iterator<char>(src_file), (std::istreambuf_iterator<char>()));
+    return std::string(std::istreambuf_iterator<char>(src_file),
+                       (std::istreambuf_iterator<char>()));
   }
 
   uint64 get_random_num() {
     static std::random_device device("/dev/urandom");
-    static std::mt19937_64* rng = new std::mt19937_64(device());
+    static std::mt19937_64 *rng = new std::mt19937_64(device());
     return (*rng)();
   }
 

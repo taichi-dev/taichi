@@ -98,7 +98,7 @@ function build-and-test-headless-demo {
     popd
 
     rm -rf taichi-aot-demo
-    git clone --recursive --depth=1 https://github.com/taichi-dev/taichi-aot-demo -b update-aot-module1
+    git clone --recursive --depth=1 https://github.com/taichi-dev/taichi-aot-demo
     cd taichi-aot-demo
     mkdir build
     pushd build

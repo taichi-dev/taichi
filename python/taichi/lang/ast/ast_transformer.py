@@ -594,7 +594,7 @@ class ASTTransformer(Builder):
                         kernel_arguments.decl_ndarray_arg(
                             to_taichi_type(ctx.arg_features[i][0]),
                             ctx.arg_features[i][1], ctx.arg_features[i][2],
-                            ctx.arg_features[i][3]))
+                            ctx.arg_features[i][3], ctx.arg_features[i][4]))
                 elif isinstance(ctx.func.arguments[i].annotation,
                                 texture_type.TextureType):
                     ctx.create_variable(

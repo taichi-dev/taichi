@@ -76,7 +76,7 @@ def decl_sparse_matrix(dtype):
         _ti_core.make_arg_load_expr(arg_id, ptr_type, False), value_type)
 
 
-def decl_ndarray_arg(dtype, dim, element_shape, layout):
+def decl_ndarray_arg(dtype, dim, element_shape, layout, grad):
     dtype = cook_dtype(dtype)
     element_dim = len(element_shape)
     arg_id = impl.get_runtime().compiling_callable.insert_arr_arg(

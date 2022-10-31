@@ -38,6 +38,12 @@ class AnyArray:
 
     @property
     @taichi_scope
+    def grad(self):
+        """Returns the gradient of this array."""
+        return AnyArray(_ti_core.get_external_tensor_grad(self.ptr))
+
+    @property
+    @taichi_scope
     def shape(self):
         """A list containing sizes for each dimension. Note that element shape will be excluded.
 

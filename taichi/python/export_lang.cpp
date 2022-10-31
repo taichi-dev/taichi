@@ -1001,6 +1001,9 @@ void export_lang(py::module &m) {
     }
   });
 
+  m.def("get_external_tensor_grad",
+        Expr::make<ExternalTensorGradExpression, const Expr &, int>);
+
   m.def("get_external_tensor_shape_along_axis",
         Expr::make<ExternalTensorShapeAlongAxisExpression, const Expr &, int>);
 

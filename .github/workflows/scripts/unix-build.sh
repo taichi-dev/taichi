@@ -8,10 +8,17 @@ set -ex
 
 # TODO: Move llvm installation from container image to here
 if [[ "$LLVM_VERSION" == "15" ]]; then
+  if [[ $OSTYPE == "linux-"* ]]; then
     wget https://github.com/ailzhang/torchhub_example/releases/download/0.2/taichi-llvm-15-linux.zip
     unzip taichi-llvm-15-linux.zip && rm taichi-llvm-15-linux.zip
     export PATH="$PWD/taichi-llvm-15/bin:$PATH"
-    export TAICHI_CMAKE_ARGS="$TAICHI_CMAKE_ARGS -DTI_LLVM_15:BOOL=ON"
+  elif [[ $OSTYPE == "darwin"* ]]; then
+    # The following commands are done manually to save time.
+    #wget https://github.com/ailzhang/torchhub_example/releases/download/0.2/taichi-llvm-15-m1.zip
+    #unzip taichi-llvm-15-m1.zip && rm taichi-llvm-15-m1.zip
+    export PATH="/Users/github/taichi-llvm-15-m1/bin:$PATH"
+  fi
+  export TAICHI_CMAKE_ARGS="$TAICHI_CMAKE_ARGS -DTI_LLVM_15:BOOL=ON"
 fi
 
 build_taichi_wheel() {

@@ -335,6 +335,7 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
           prepare-build-cache
           brew install molten-vk
+          brew install llvm@15
           .github/workflows/scripts/unix-build.sh
         env:
           PY: ${{ matrix.python }}
@@ -346,6 +347,7 @@ jobs:
             -DTI_WITH_VULKAN:BOOL=ON
             -DTI_BUILD_TESTS:BOOL=ON
             -DTI_WITH_C_API=ON
+          LLVM_VERSION: 15
 
       - name: Test
         id: test

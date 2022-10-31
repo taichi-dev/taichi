@@ -26,7 +26,6 @@ void convert_to_range_for(OffloadedStmt *offloaded, bool packed) {
     snode = snode->parent;
   }
   std::reverse(snodes.begin(), snodes.end());
-  TI_ASSERT(total_bits <= 30);
 
   // general shape calculation - no dependence on POT
   int64 total_n = 1;
@@ -38,6 +37,7 @@ void convert_to_range_for(OffloadedStmt *offloaded, bool packed) {
     }
     total_n *= s->num_cells_per_container;
   }
+  TI_ASSERT(total_n <= std::numeric_limits<int>::max());
 
   offloaded->const_begin = true;
   offloaded->const_end = true;

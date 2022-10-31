@@ -31,6 +31,8 @@ Necessary detail to share the same piece of Vulkan buffer between Taichi and ext
 - `structure.vulkan_memory_interop_info.buffer`: Vulkan buffer.
 - `structure.vulkan_memory_interop_info.size`: Size of the piece of memory in bytes.
 - `structure.vulkan_memory_interop_info.usage`: Vulkan buffer usage. In most of the cases, Taichi requires the `VK_BUFFER_USAGE_STORAGE_BUFFER_BIT`.
+- `structure.vulkan_memory_interop_info.memory`: Device memory binded to the Vulkan buffer.
+- `structure.vulkan_memory_interop_info.offset`: Offset in `VkDeviceMemory` object to the beginning of this allocation, in bytes.
 
 `structure.vulkan_image_interop_info`
 

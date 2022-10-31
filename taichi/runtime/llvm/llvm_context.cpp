@@ -338,6 +338,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::module_from_file(
   std::unique_ptr<llvm::Module> module = module_from_bitcode_file(
       fmt::format("{}/{}", runtime_lib_dir(), file), ctx);
   if (arch_ == Arch::cuda || arch_ == Arch::amdgpu) {
+#if defined(TI_WITH_CUDA) || defined(TI_WITH_AMDGPU)
       auto patch_intrinsic = [&](std::string name, Intrinsic::ID intrin,
                                bool ret = true,
                                std::vector<llvm::Type *> types = {},
@@ -391,8 +392,8 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::module_from_file(
     patch_atomic_add("atomic_add_i64", llvm::AtomicRMWInst::Add);
     patch_atomic_add("atomic_add_f64", llvm::AtomicRMWInst::FAdd);
     patch_atomic_add("atomic_add_f32", llvm::AtomicRMWInst::FAdd);
+#endif
   
-
     if (arch_ == Arch::cuda) {
       module->setTargetTriple("nvptx64-nvidia-cuda");
 
@@ -492,6 +493,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::module_from_file(
 
     if (arch_ == Arch::amdgpu) {
       module->setTargetTriple("amdgcn-amd-amdhsa");
+#ifdef TI_WITH_AMDGPU
       for (auto &f : *module) {
         f.addFnAttr("target-cpu","");
         f.addFnAttr("target-features","");
@@ -519,6 +521,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::module_from_file(
       }
       patch_intrinsic("thread_idx", llvm::Intrinsic::amdgcn_workitem_id_x);
       patch_intrinsic("block_idx", llvm::Intrinsic::amdgcn_workgroup_id_x);
+#endif
     }
   }
 

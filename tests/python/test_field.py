@@ -317,8 +317,10 @@ def test_python_for_in():
 def test_matrix_mult_field():
     x = ti.field(int, shape=())
     with pytest.raises(ti.TaichiTypeError, match="unsupported operand type"):
+
         @ti.kernel
         def foo():
             a = ti.Vector([1, 1, 1])
             b = a * x
+
         foo()

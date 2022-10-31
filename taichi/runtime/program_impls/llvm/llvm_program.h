@@ -159,6 +159,10 @@ class LlvmProgramImpl : public ProgramImpl {
     runtime_exec_->maybe_initialize_cuda_llvm_context();
   }
 
+  void maybe_initialize_amdgpu_llvm_context() {
+    runtime_exec_->maybe_initialize_amdgpu_llvm_context();
+  }
+
   uint64 fetch_result_uint64(int i, uint64 *result_buffer) override {
     return runtime_exec_->fetch_result_uint64(i, result_buffer);
   }

@@ -17,7 +17,7 @@
 #include "llvm/IR/IntrinsicsNVPTX.h"
 #ifdef TI_WITH_AMDGPU
 #include "llvm/IR/IntrinsicsAMDGPU.h"
-#endif //TI_WITH_AMDGPU
+#endif  // TI_WITH_AMDGPU
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Type.h"
@@ -338,7 +338,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::module_from_file(
   std::unique_ptr<llvm::Module> module = module_from_bitcode_file(
       fmt::format("{}/{}", runtime_lib_dir(), file), ctx);
   if (arch_ == Arch::cuda || arch_ == Arch::amdgpu) {
-      auto patch_intrinsic = [&](std::string name, Intrinsic::ID intrin,
+    auto patch_intrinsic = [&](std::string name, Intrinsic::ID intrin,
                                bool ret = true,
                                std::vector<llvm::Type *> types = {},
                                std::vector<llvm::Value *> extra_args = {}) {
@@ -391,11 +391,11 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::module_from_file(
     patch_atomic_add("atomic_add_i64", llvm::AtomicRMWInst::Add);
     patch_atomic_add("atomic_add_f64", llvm::AtomicRMWInst::FAdd);
     patch_atomic_add("atomic_add_f32", llvm::AtomicRMWInst::FAdd);
-  
+
     if (arch_ == Arch::cuda) {
       module->setTargetTriple("nvptx64-nvidia-cuda");
 
-  #if defined(TI_WITH_CUDA)
+#if defined(TI_WITH_CUDA)
       auto func = module->getFunction("cuda_compute_capability");
       if (func) {
         func->deleteBody();
@@ -406,7 +406,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::module_from_file(
             get_constant(CUDAContext::get_instance().get_compute_capability()));
         TaichiLLVMContext::mark_inline(func);
       }
-  #endif
+#endif
 
       patch_intrinsic("thread_idx", Intrinsic::nvvm_read_ptx_sreg_tid_x);
       patch_intrinsic("cuda_clock_i64", Intrinsic::nvvm_read_ptx_sreg_clock64);
@@ -436,8 +436,10 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::module_from_file(
       patch_intrinsic("cuda_shfl_down_sync_f32",
                       Intrinsic::nvvm_shfl_sync_down_f32);
 
-      patch_intrinsic("cuda_shfl_up_sync_i32", Intrinsic::nvvm_shfl_sync_up_i32);
-      patch_intrinsic("cuda_shfl_up_sync_f32", Intrinsic::nvvm_shfl_sync_up_f32);
+      patch_intrinsic("cuda_shfl_up_sync_i32",
+                      Intrinsic::nvvm_shfl_sync_up_i32);
+      patch_intrinsic("cuda_shfl_up_sync_f32",
+                      Intrinsic::nvvm_shfl_sync_up_f32);
 
       patch_intrinsic("cuda_shfl_sync_i32", Intrinsic::nvvm_shfl_sync_idx_i32);
 
@@ -493,27 +495,28 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::module_from_file(
       module->setTargetTriple("amdgcn-amd-amdhsa");
 #ifdef TI_WITH_AMDGPU
       for (auto &f : *module) {
-        f.addFnAttr("target-cpu","");
-        f.addFnAttr("target-features","");
-        for (auto &bb: f) {
-          std::vector<llvm::AllocaInst*> alloca_inst_vec;
+        f.addFnAttr("target-cpu", "");
+        f.addFnAttr("target-features", "");
+        for (auto &bb : f) {
+          std::vector<llvm::AllocaInst *> alloca_inst_vec;
           for (llvm::Instruction &inst : bb) {
-              llvm::AllocaInst* now_alloca = llvm::dyn_cast<AllocaInst>(&inst);
-              if (!now_alloca || 
-                  now_alloca->getType()->getAddressSpace() != (unsigned)0) {
-                continue;
-              }
-              alloca_inst_vec.push_back(now_alloca);
+            llvm::AllocaInst *now_alloca = llvm::dyn_cast<AllocaInst>(&inst);
+            if (!now_alloca ||
+                now_alloca->getType()->getAddressSpace() != (unsigned)0) {
+              continue;
+            }
+            alloca_inst_vec.push_back(now_alloca);
           }
           for (auto &allocainst : alloca_inst_vec) {
-              auto alloca_type = allocainst->getAllocatedType();
-              llvm::IRBuilder<> builder(allocainst);
-              auto *new_alloca = builder.CreateAlloca(alloca_type, (unsigned)5);
-              auto new_type = llvm::PointerType::get(alloca_type, (unsigned)0);
-              new_alloca->setAlignment(llvm::Align(allocainst->getAlignment()));
-              auto *addrspacecast = builder.CreateAddrSpaceCast(new_alloca, new_type);
-              allocainst->replaceAllUsesWith(addrspacecast);
-              allocainst->eraseFromParent();
+            auto alloca_type = allocainst->getAllocatedType();
+            llvm::IRBuilder<> builder(allocainst);
+            auto *new_alloca = builder.CreateAlloca(alloca_type, (unsigned)5);
+            auto new_type = llvm::PointerType::get(alloca_type, (unsigned)0);
+            new_alloca->setAlignment(llvm::Align(allocainst->getAlignment()));
+            auto *addrspacecast =
+                builder.CreateAddrSpaceCast(new_alloca, new_type);
+            allocainst->replaceAllUsesWith(addrspacecast);
+            allocainst->eraseFromParent();
           }
         }
       }
@@ -857,7 +860,7 @@ void TaichiLLVMContext::update_runtime_jit_module(
     }
   }
 
-    if (arch_ == Arch::amdgpu) {
+  if (arch_ == Arch::amdgpu) {
     for (auto &f : *module) {
       bool is_kernel = false;
       const std::string func_name = f.getName().str();
@@ -875,35 +878,40 @@ void TaichiLLVMContext::update_runtime_jit_module(
     }
     for (auto &f : global_func) {
       llvm::FunctionType *func_type = f->getFunctionType();
-      std::vector<llvm::Type*> new_func_params;
+      std::vector<llvm::Type *> new_func_params;
       for (auto &arg : f->args()) {
         if (arg.getType()->getTypeID() == llvm::Type::PointerTyID) {
-          auto new_type = llvm::PointerType::get(arg.getType()->getPointerElementType(), unsigned(1));
+          auto new_type = llvm::PointerType::get(
+              arg.getType()->getPointerElementType(), unsigned(1));
           new_func_params.push_back(new_type);
-        }
-        else {
+        } else {
           new_func_params.push_back(arg.getType());
         }
-      } 
-      auto new_func_type = llvm::FunctionType::get(func_type->getReturnType(), new_func_params, false);
-      auto new_func = llvm::Function::Create(new_func_type, f->getLinkage(), f->getAddressSpace());
-      //NF->copyAttributesFrom(f);
+      }
+      auto new_func_type = llvm::FunctionType::get(func_type->getReturnType(),
+                                                   new_func_params, false);
+      auto new_func = llvm::Function::Create(new_func_type, f->getLinkage(),
+                                             f->getAddressSpace());
+      // NF->copyAttributesFrom(f);
       new_func->setCallingConv(llvm::CallingConv::AMDGPU_KERNEL);
       new_func->addFnAttr("amdgpu-flat-work-group-size", "1, 1024");
       new_func->setComdat(f->getComdat());
       f->getParent()->getFunctionList().insert(f->getIterator(), new_func);
       new_func->takeName(f);
-      new_func->getBasicBlockList().splice(new_func->begin(), f->getBasicBlockList());
+      new_func->getBasicBlockList().splice(new_func->begin(),
+                                           f->getBasicBlockList());
       for (llvm::Function::arg_iterator I = f->arg_begin(), E = f->arg_end(),
-                                  I2 = new_func->arg_begin(); I != E; ++I, ++I2) {
+                                        I2 = new_func->arg_begin();
+           I != E; ++I, ++I2) {
         if (I->getType()->getTypeID() == llvm::Type::PointerTyID) {
           auto &front_bb = new_func->getBasicBlockList().front();
-          llvm::Instruction *addrspacecast = new AddrSpaceCastInst(I2, I->getType());
-          front_bb.getInstList().insertAfter(front_bb.getFirstInsertionPt(), addrspacecast);
+          llvm::Instruction *addrspacecast =
+              new AddrSpaceCastInst(I2, I->getType());
+          front_bb.getInstList().insertAfter(front_bb.getFirstInsertionPt(),
+                                             addrspacecast);
           I->replaceAllUsesWith(addrspacecast);
           I2->takeName(&*I);
-        } 
-        else {
+        } else {
           I->replaceAllUsesWith(&*I2);
           I2->takeName(&*I);
         }

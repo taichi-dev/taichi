@@ -15,6 +15,9 @@
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Intrinsics.h"
 #include "llvm/IR/IntrinsicsNVPTX.h"
+#ifdef TI_WITH_AMDGPU
+#include "llvm/IR/IntrinsicsAMDGPU.h"
+#endif //TI_WITH_AMDGPU
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Type.h"
@@ -334,23 +337,8 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::module_from_file(
   auto ctx = get_this_thread_context();
   std::unique_ptr<llvm::Module> module = module_from_bitcode_file(
       fmt::format("{}/{}", runtime_lib_dir(), file), ctx);
-  if (arch_ == Arch::cuda) {
-    module->setTargetTriple("nvptx64-nvidia-cuda");
-
-#if defined(TI_WITH_CUDA)
-    auto func = module->getFunction("cuda_compute_capability");
-    if (func) {
-      func->deleteBody();
-      auto bb = llvm::BasicBlock::Create(*ctx, "entry", func);
-      IRBuilder<> builder(*ctx);
-      builder.SetInsertPoint(bb);
-      builder.CreateRet(
-          get_constant(CUDAContext::get_instance().get_compute_capability()));
-      TaichiLLVMContext::mark_inline(func);
-    }
-#endif
-
-    auto patch_intrinsic = [&](std::string name, Intrinsic::ID intrin,
+  if (arch_ == Arch::cuda || arch_ == Arch::amdgpu) {
+      auto patch_intrinsic = [&](std::string name, Intrinsic::ID intrin,
                                bool ret = true,
                                std::vector<llvm::Type *> types = {},
                                std::vector<llvm::Value *> extra_args = {}) {
@@ -398,6 +386,28 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::module_from_file(
 #endif
       TaichiLLVMContext::mark_inline(func);
     };
+
+    patch_atomic_add("atomic_add_i32", llvm::AtomicRMWInst::Add);
+    patch_atomic_add("atomic_add_i64", llvm::AtomicRMWInst::Add);
+    patch_atomic_add("atomic_add_f64", llvm::AtomicRMWInst::FAdd);
+    patch_atomic_add("atomic_add_f32", llvm::AtomicRMWInst::FAdd);
+  }
+
+  if (arch_ == Arch::cuda) {
+    module->setTargetTriple("nvptx64-nvidia-cuda");
+
+#if defined(TI_WITH_CUDA)
+    auto func = module->getFunction("cuda_compute_capability");
+    if (func) {
+      func->deleteBody();
+      auto bb = llvm::BasicBlock::Create(*ctx, "entry", func);
+      IRBuilder<> builder(*ctx);
+      builder.SetInsertPoint(bb);
+      builder.CreateRet(
+          get_constant(CUDAContext::get_instance().get_compute_capability()));
+      TaichiLLVMContext::mark_inline(func);
+    }
+#endif
 
     patch_intrinsic("thread_idx", Intrinsic::nvvm_read_ptx_sreg_tid_x);
     patch_intrinsic("cuda_clock_i64", Intrinsic::nvvm_read_ptx_sreg_clock64);
@@ -464,14 +474,6 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::module_from_file(
     patch_intrinsic("cttz_i32", Intrinsic::cttz, true,
                     {llvm::Type::getInt32Ty(*ctx)}, {get_constant(false)});
 
-    patch_atomic_add("atomic_add_i32", llvm::AtomicRMWInst::Add);
-
-    patch_atomic_add("atomic_add_i64", llvm::AtomicRMWInst::Add);
-
-    patch_atomic_add("atomic_add_f32", llvm::AtomicRMWInst::FAdd);
-
-    patch_atomic_add("atomic_add_f64", llvm::AtomicRMWInst::FAdd);
-
     patch_intrinsic("block_memfence", Intrinsic::nvvm_membar_cta, false);
 
     link_module_with_cuda_libdevice(module);
@@ -486,6 +488,37 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::module_from_file(
     }
 
     // runtime_module->print(llvm::errs(), nullptr);
+  }
+
+  if (arch_ == Arch::amdgpu) {
+    module->setTargetTriple("amdgcn-amd-amdhsa");
+    for (auto &f : *module) {
+       f.addFnAttr("target-cpu","");
+       f.addFnAttr("target-features","");
+      for (auto &bb: f) {
+        std::vector<llvm::AllocaInst*> alloca_inst_vec;
+        for (llvm::Instruction &inst : bb) {
+            llvm::AllocaInst* now_alloca = llvm::dyn_cast<AllocaInst>(&inst);
+            if (!now_alloca || 
+                now_alloca->getType()->getAddressSpace() != (unsigned)0) {
+              continue;
+            }
+            alloca_inst_vec.push_back(now_alloca);
+        }
+        for (auto &allocainst : alloca_inst_vec) {
+            auto alloca_type = allocainst->getAllocatedType();
+            llvm::IRBuilder<> builder(allocainst);
+            auto *new_alloca = builder.CreateAlloca(alloca_type, (unsigned)5);
+            auto new_type = llvm::PointerType::get(alloca_type, (unsigned)0);
+            new_alloca->setAlignment(llvm::Align(allocainst->getAlignment()));
+            auto *addrspacecast = builder.CreateAddrSpaceCast(new_alloca, new_type);
+            allocainst->replaceAllUsesWith(addrspacecast);
+            allocainst->eraseFromParent();
+        }
+      }
+    }
+    patch_intrinsic("thread_idx", llvm::Intrinsic::amdgcn_workitem_id_x);
+    patch_intrinsic("block_idx", llvm::Intrinsic::amdgcn_workgroup_id_x);
   }
 
   return module;

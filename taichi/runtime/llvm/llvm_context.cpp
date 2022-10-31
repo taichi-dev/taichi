@@ -711,6 +711,11 @@ void TaichiLLVMContext::mark_function_as_cuda_kernel(llvm::Function *func,
   }
 }
 
+void TaichiLLVMContext::mark_function_as_amdgpu_kernel(llvm::Function *func) {
+  func->setCallingConv(llvm::CallingConv::AMDGPU_KERNEL);
+  func->addFnAttr("amdgpu-flat-work-group-size", "1, 1024");
+}
+
 void TaichiLLVMContext::eliminate_unused_functions(
     llvm::Module *module,
     std::function<bool(const std::string &)> export_indicator) {
@@ -814,6 +819,66 @@ void TaichiLLVMContext::update_runtime_jit_module(
         // duplicated symbols and to remove external symbol dependencies such as
         // std::sin
         f.setLinkage(llvm::Function::PrivateLinkage);
+    }
+  }
+
+    if (arch_ == Arch::amdgpu) {
+    for (auto &f : *module) {
+      bool is_kernel = false;
+      const std::string func_name = f.getName().str();
+      if (starts_with(func_name, "runtime_")) {
+        mark_function_as_amdgpu_kernel(&f);
+        is_kernel = true;
+      }
+      if (!is_kernel && !f.isDeclaration())
+        f.setLinkage(llvm::Function::PrivateLinkage);
+    }
+    std::vector<llvm::Function *> global_func;
+    for (auto &f : *module) {
+      if (f.getCallingConv() == llvm::CallingConv::AMDGPU_KERNEL)
+        global_func.push_back(&f);
+    }
+    for (auto &f : global_func) {
+      llvm::FunctionType *func_type = f->getFunctionType();
+      std::vector<llvm::Type*> new_func_params;
+      for (auto &arg : f->args()) {
+        if (arg.getType()->getTypeID() == llvm::Type::PointerTyID) {
+          auto new_type = llvm::PointerType::get(arg.getType()->getPointerElementType(), unsigned(1));
+          new_func_params.push_back(new_type);
+        }
+        else {
+          new_func_params.push_back(arg.getType());
+        }
+      } 
+      auto new_func_type = llvm::FunctionType::get(func_type->getReturnType(), new_func_params, false);
+      auto new_func = llvm::Function::Create(new_func_type, f->getLinkage(), f->getAddressSpace());
+      //NF->copyAttributesFrom(f);
+      new_func->setCallingConv(llvm::CallingConv::AMDGPU_KERNEL);
+      new_func->addFnAttr("amdgpu-flat-work-group-size", "1, 1024");
+      new_func->setComdat(f->getComdat());
+      f->getParent()->getFunctionList().insert(f->getIterator(), new_func);
+      new_func->takeName(f);
+      new_func->getBasicBlockList().splice(new_func->begin(), f->getBasicBlockList());
+      for (llvm::Function::arg_iterator I = f->arg_begin(), E = f->arg_end(),
+                                  I2 = new_func->arg_begin(); I != E; ++I, ++I2) {
+        if (I->getType()->getTypeID() == llvm::Type::PointerTyID) {
+          auto &front_bb = new_func->getBasicBlockList().front();
+          llvm::Instruction *addrspacecast = new AddrSpaceCastInst(I2, I->getType());
+          front_bb.getInstList().insertAfter(front_bb.getFirstInsertionPt(), addrspacecast);
+          I->replaceAllUsesWith(addrspacecast);
+          I2->takeName(&*I);
+        } 
+        else {
+          I->replaceAllUsesWith(&*I2);
+          I2->takeName(&*I);
+        }
+      }
+
+      SmallVector<std::pair<unsigned, MDNode *>, 1> MDs;
+      f->getAllMetadata(MDs);
+      for (auto [KindID, Node] : MDs)
+        new_func->addMetadata(KindID, *Node);
+      f->eraseFromParent();
     }
   }
 

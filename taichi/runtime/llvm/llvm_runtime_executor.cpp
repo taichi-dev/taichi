@@ -112,7 +112,7 @@ LlvmRuntimeExecutor::LlvmRuntimeExecutor(CompileConfig &config,
   }
 #endif
 
-#if define(TI_WITH_AMDGPU)
+#if defined(TI_WITH_AMDGPU)
   if (config.arch == Arch::amdgpu) {
     AMDGPUContext::get_instance().set_debug(config.debug);
     device_ = std::make_shared<amdgpu::AMDGPUDevice>();

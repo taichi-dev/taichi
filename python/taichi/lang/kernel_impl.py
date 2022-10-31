@@ -1017,9 +1017,12 @@ class _BoundedDifferentiableMethod:
         self.__name__ = None
 
     def __call__(self, *args, **kwargs):
-        if self._is_staticmethod:
-            return self._primal(*args, **kwargs)
-        return self._primal(self._kernel_owner, *args, **kwargs)
+        try:
+            if self._is_staticmethod:
+                return self._primal(*args, **kwargs)
+            return self._primal(self._kernel_owner, *args, **kwargs)
+        except (TaichiCompilationError, TaichiRuntimeError) as e:
+            raise type(e)('\n' + str(e)) from None
 
     def grad(self, *args, **kwargs):
         return self._adjoint(self._kernel_owner, *args, **kwargs)

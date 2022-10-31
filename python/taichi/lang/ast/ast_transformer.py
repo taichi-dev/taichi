@@ -13,7 +13,7 @@ from taichi.lang._ndrange import _Ndrange, ndrange
 from taichi.lang.ast.ast_transformer_utils import (Builder, LoopStatus,
                                                    ReturnStatus)
 from taichi.lang.ast.symbol_resolver import ASTResolver
-from taichi.lang.exception import TaichiSyntaxError
+from taichi.lang.exception import TaichiSyntaxError, TaichiTypeError
 from taichi.lang.expr import Expr
 from taichi.lang.field import Field
 from taichi.lang.impl import current_cfg
@@ -803,7 +803,10 @@ class ASTTransformer(Builder):
             ast.BitAnd: lambda l, r: l & r,
             ast.MatMult: lambda l, r: l @ r,
         }.get(type(node.op))
-        node.ptr = op(node.left.ptr, node.right.ptr)
+        try:
+            node.ptr = op(node.left.ptr, node.right.ptr)
+        except TypeError as e:
+            raise TaichiTypeError(str(e))
         return node.ptr
 
     @staticmethod

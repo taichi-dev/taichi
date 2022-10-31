@@ -91,8 +91,8 @@ SNode &SNode::create_node(std::vector<Axis> axes,
   }
   if (acc_shape > std::numeric_limits<int>::max()) {
     TI_WARN(
-        "Snode index might be out of int32 boundary but int64 indexing is not "
-        "supported yet.");
+        "SNode index might be out of int32 boundary but int64 indexing is not "
+        "supported yet. Struct fors might not work either.");
   }
   new_node.num_cells_per_container = acc_shape;
   // infer extractors (only for POT)

@@ -44,12 +44,6 @@ TLANG_NAMESPACE_BEGIN
 
 #if defined(TI_WITH_AMDGPU)
 
-uint64 get_random_num() {
-  static std::random_device device("/dev/urandom");
-  static std::mt19937_64* rng = new std::mt19937_64(device());
-  return (*rng)();
-}
-
 class JITModuleAMDGPU : public JITModule {
  private:
   void *module_;
@@ -122,6 +116,12 @@ class JITSessionAMDGPU : public JITSession {
     return std::string(std::istreambuf_iterator<char>(src_file), (std::istreambuf_iterator<char>()));
   }
 
+  uint64 get_random_num() {
+    static std::random_device device("/dev/urandom");
+    static std::mt19937_64* rng = new std::mt19937_64(device());
+    return (*rng)();
+  }
+  
   std::string get_tmp_dir() {
     char *env_dir = std::getenv("TI_TMP_DIR");
     std::string tmp_dir = "/tmp/taichi_hsaco/";

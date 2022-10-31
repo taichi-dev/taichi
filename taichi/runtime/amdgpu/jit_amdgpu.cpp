@@ -4,8 +4,6 @@
 TLANG_NAMESPACE_BEGIN
 
 #if defined(TI_WITH_AMDGPU)
-
-
 JITModule *JITSessionAMDGPU ::add_module(std::unique_ptr<llvm::Module> M,
                                        int max_reg) {
   auto hsaco = compile_module_to_hsaco(M);

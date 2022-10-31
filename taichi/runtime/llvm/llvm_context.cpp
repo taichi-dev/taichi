@@ -391,134 +391,135 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::module_from_file(
     patch_atomic_add("atomic_add_i64", llvm::AtomicRMWInst::Add);
     patch_atomic_add("atomic_add_f64", llvm::AtomicRMWInst::FAdd);
     patch_atomic_add("atomic_add_f32", llvm::AtomicRMWInst::FAdd);
-  }
+  
 
-  if (arch_ == Arch::cuda) {
-    module->setTargetTriple("nvptx64-nvidia-cuda");
+    if (arch_ == Arch::cuda) {
+      module->setTargetTriple("nvptx64-nvidia-cuda");
 
-#if defined(TI_WITH_CUDA)
-    auto func = module->getFunction("cuda_compute_capability");
-    if (func) {
-      func->deleteBody();
-      auto bb = llvm::BasicBlock::Create(*ctx, "entry", func);
-      IRBuilder<> builder(*ctx);
-      builder.SetInsertPoint(bb);
-      builder.CreateRet(
-          get_constant(CUDAContext::get_instance().get_compute_capability()));
-      TaichiLLVMContext::mark_inline(func);
-    }
-#endif
-
-    patch_intrinsic("thread_idx", Intrinsic::nvvm_read_ptx_sreg_tid_x);
-    patch_intrinsic("cuda_clock_i64", Intrinsic::nvvm_read_ptx_sreg_clock64);
-    patch_intrinsic("block_idx", Intrinsic::nvvm_read_ptx_sreg_ctaid_x);
-    patch_intrinsic("block_dim", Intrinsic::nvvm_read_ptx_sreg_ntid_x);
-    patch_intrinsic("grid_dim", Intrinsic::nvvm_read_ptx_sreg_nctaid_x);
-    patch_intrinsic("block_barrier", Intrinsic::nvvm_barrier0, false);
-    patch_intrinsic("warp_barrier", Intrinsic::nvvm_bar_warp_sync, false);
-    patch_intrinsic("block_memfence", Intrinsic::nvvm_membar_cta, false);
-    patch_intrinsic("grid_memfence", Intrinsic::nvvm_membar_gl, false);
-    patch_intrinsic("system_memfence", Intrinsic::nvvm_membar_sys, false);
-
-    patch_intrinsic("cuda_all", Intrinsic::nvvm_vote_all);
-    patch_intrinsic("cuda_all_sync", Intrinsic::nvvm_vote_all_sync);
-
-    patch_intrinsic("cuda_any", Intrinsic::nvvm_vote_any);
-    patch_intrinsic("cuda_any_sync", Intrinsic::nvvm_vote_any_sync);
-
-    patch_intrinsic("cuda_uni", Intrinsic::nvvm_vote_uni);
-    patch_intrinsic("cuda_uni_sync", Intrinsic::nvvm_vote_uni_sync);
-
-    patch_intrinsic("cuda_ballot", Intrinsic::nvvm_vote_ballot);
-    patch_intrinsic("cuda_ballot_sync", Intrinsic::nvvm_vote_ballot_sync);
-
-    patch_intrinsic("cuda_shfl_down_sync_i32",
-                    Intrinsic::nvvm_shfl_sync_down_i32);
-    patch_intrinsic("cuda_shfl_down_sync_f32",
-                    Intrinsic::nvvm_shfl_sync_down_f32);
-
-    patch_intrinsic("cuda_shfl_up_sync_i32", Intrinsic::nvvm_shfl_sync_up_i32);
-    patch_intrinsic("cuda_shfl_up_sync_f32", Intrinsic::nvvm_shfl_sync_up_f32);
-
-    patch_intrinsic("cuda_shfl_sync_i32", Intrinsic::nvvm_shfl_sync_idx_i32);
-
-    patch_intrinsic("cuda_shfl_sync_f32", Intrinsic::nvvm_shfl_sync_idx_f32);
-
-    patch_intrinsic("cuda_shfl_xor_sync_i32",
-                    Intrinsic::nvvm_shfl_sync_bfly_i32);
-
-    patch_intrinsic("cuda_match_any_sync_i32",
-                    Intrinsic::nvvm_match_any_sync_i32);
-
-    // LLVM 10.0.0 seems to have a bug on this intrinsic function
-    /*
-    nvvm_match_all_sync_i32
-    Args:
-        1. u32 mask
-        2. i32 value
-        3. i32 *pred
-    */
-    /*
-    patch_intrinsic("cuda_match_all_sync_i32p",
-                    Intrinsic::nvvm_math_all_sync_i32);
-    */
-
-    // LLVM 10.0.0 seems to have a bug on this intrinsic function
-    /*
-    patch_intrinsic("cuda_match_any_sync_i64",
-                    Intrinsic::nvvm_match_any_sync_i64);
-                    */
-
-    patch_intrinsic("ctlz_i32", Intrinsic::ctlz, true,
-                    {llvm::Type::getInt32Ty(*ctx)}, {get_constant(false)});
-    patch_intrinsic("cttz_i32", Intrinsic::cttz, true,
-                    {llvm::Type::getInt32Ty(*ctx)}, {get_constant(false)});
-
-    patch_intrinsic("block_memfence", Intrinsic::nvvm_membar_cta, false);
-
-    link_module_with_cuda_libdevice(module);
-
-    // To prevent potential symbol name conflicts, we use "cuda_vprintf"
-    // instead of "vprintf" in llvm/runtime.cpp. Now we change it back for
-    // linking
-    for (auto &f : *module) {
-      if (f.getName() == "cuda_vprintf") {
-        f.setName("vprintf");
+  #if defined(TI_WITH_CUDA)
+      auto func = module->getFunction("cuda_compute_capability");
+      if (func) {
+        func->deleteBody();
+        auto bb = llvm::BasicBlock::Create(*ctx, "entry", func);
+        IRBuilder<> builder(*ctx);
+        builder.SetInsertPoint(bb);
+        builder.CreateRet(
+            get_constant(CUDAContext::get_instance().get_compute_capability()));
+        TaichiLLVMContext::mark_inline(func);
       }
-    }
+  #endif
 
-    // runtime_module->print(llvm::errs(), nullptr);
-  }
+      patch_intrinsic("thread_idx", Intrinsic::nvvm_read_ptx_sreg_tid_x);
+      patch_intrinsic("cuda_clock_i64", Intrinsic::nvvm_read_ptx_sreg_clock64);
+      patch_intrinsic("block_idx", Intrinsic::nvvm_read_ptx_sreg_ctaid_x);
+      patch_intrinsic("block_dim", Intrinsic::nvvm_read_ptx_sreg_ntid_x);
+      patch_intrinsic("grid_dim", Intrinsic::nvvm_read_ptx_sreg_nctaid_x);
+      patch_intrinsic("block_barrier", Intrinsic::nvvm_barrier0, false);
+      patch_intrinsic("warp_barrier", Intrinsic::nvvm_bar_warp_sync, false);
+      patch_intrinsic("block_memfence", Intrinsic::nvvm_membar_cta, false);
+      patch_intrinsic("grid_memfence", Intrinsic::nvvm_membar_gl, false);
+      patch_intrinsic("system_memfence", Intrinsic::nvvm_membar_sys, false);
 
-  if (arch_ == Arch::amdgpu) {
-    module->setTargetTriple("amdgcn-amd-amdhsa");
-    for (auto &f : *module) {
-       f.addFnAttr("target-cpu","");
-       f.addFnAttr("target-features","");
-      for (auto &bb: f) {
-        std::vector<llvm::AllocaInst*> alloca_inst_vec;
-        for (llvm::Instruction &inst : bb) {
-            llvm::AllocaInst* now_alloca = llvm::dyn_cast<AllocaInst>(&inst);
-            if (!now_alloca || 
-                now_alloca->getType()->getAddressSpace() != (unsigned)0) {
-              continue;
-            }
-            alloca_inst_vec.push_back(now_alloca);
-        }
-        for (auto &allocainst : alloca_inst_vec) {
-            auto alloca_type = allocainst->getAllocatedType();
-            llvm::IRBuilder<> builder(allocainst);
-            auto *new_alloca = builder.CreateAlloca(alloca_type, (unsigned)5);
-            auto new_type = llvm::PointerType::get(alloca_type, (unsigned)0);
-            new_alloca->setAlignment(llvm::Align(allocainst->getAlignment()));
-            auto *addrspacecast = builder.CreateAddrSpaceCast(new_alloca, new_type);
-            allocainst->replaceAllUsesWith(addrspacecast);
-            allocainst->eraseFromParent();
+      patch_intrinsic("cuda_all", Intrinsic::nvvm_vote_all);
+      patch_intrinsic("cuda_all_sync", Intrinsic::nvvm_vote_all_sync);
+
+      patch_intrinsic("cuda_any", Intrinsic::nvvm_vote_any);
+      patch_intrinsic("cuda_any_sync", Intrinsic::nvvm_vote_any_sync);
+
+      patch_intrinsic("cuda_uni", Intrinsic::nvvm_vote_uni);
+      patch_intrinsic("cuda_uni_sync", Intrinsic::nvvm_vote_uni_sync);
+
+      patch_intrinsic("cuda_ballot", Intrinsic::nvvm_vote_ballot);
+      patch_intrinsic("cuda_ballot_sync", Intrinsic::nvvm_vote_ballot_sync);
+
+      patch_intrinsic("cuda_shfl_down_sync_i32",
+                      Intrinsic::nvvm_shfl_sync_down_i32);
+      patch_intrinsic("cuda_shfl_down_sync_f32",
+                      Intrinsic::nvvm_shfl_sync_down_f32);
+
+      patch_intrinsic("cuda_shfl_up_sync_i32", Intrinsic::nvvm_shfl_sync_up_i32);
+      patch_intrinsic("cuda_shfl_up_sync_f32", Intrinsic::nvvm_shfl_sync_up_f32);
+
+      patch_intrinsic("cuda_shfl_sync_i32", Intrinsic::nvvm_shfl_sync_idx_i32);
+
+      patch_intrinsic("cuda_shfl_sync_f32", Intrinsic::nvvm_shfl_sync_idx_f32);
+
+      patch_intrinsic("cuda_shfl_xor_sync_i32",
+                      Intrinsic::nvvm_shfl_sync_bfly_i32);
+
+      patch_intrinsic("cuda_match_any_sync_i32",
+                      Intrinsic::nvvm_match_any_sync_i32);
+
+      // LLVM 10.0.0 seems to have a bug on this intrinsic function
+      /*
+      nvvm_match_all_sync_i32
+      Args:
+          1. u32 mask
+          2. i32 value
+          3. i32 *pred
+      */
+      /*
+      patch_intrinsic("cuda_match_all_sync_i32p",
+                      Intrinsic::nvvm_math_all_sync_i32);
+      */
+
+      // LLVM 10.0.0 seems to have a bug on this intrinsic function
+      /*
+      patch_intrinsic("cuda_match_any_sync_i64",
+                      Intrinsic::nvvm_match_any_sync_i64);
+                      */
+
+      patch_intrinsic("ctlz_i32", Intrinsic::ctlz, true,
+                      {llvm::Type::getInt32Ty(*ctx)}, {get_constant(false)});
+      patch_intrinsic("cttz_i32", Intrinsic::cttz, true,
+                      {llvm::Type::getInt32Ty(*ctx)}, {get_constant(false)});
+
+      patch_intrinsic("block_memfence", Intrinsic::nvvm_membar_cta, false);
+
+      link_module_with_cuda_libdevice(module);
+
+      // To prevent potential symbol name conflicts, we use "cuda_vprintf"
+      // instead of "vprintf" in llvm/runtime.cpp. Now we change it back for
+      // linking
+      for (auto &f : *module) {
+        if (f.getName() == "cuda_vprintf") {
+          f.setName("vprintf");
         }
       }
+
+      // runtime_module->print(llvm::errs(), nullptr);
     }
-    patch_intrinsic("thread_idx", llvm::Intrinsic::amdgcn_workitem_id_x);
-    patch_intrinsic("block_idx", llvm::Intrinsic::amdgcn_workgroup_id_x);
+
+    if (arch_ == Arch::amdgpu) {
+      module->setTargetTriple("amdgcn-amd-amdhsa");
+      for (auto &f : *module) {
+        f.addFnAttr("target-cpu","");
+        f.addFnAttr("target-features","");
+        for (auto &bb: f) {
+          std::vector<llvm::AllocaInst*> alloca_inst_vec;
+          for (llvm::Instruction &inst : bb) {
+              llvm::AllocaInst* now_alloca = llvm::dyn_cast<AllocaInst>(&inst);
+              if (!now_alloca || 
+                  now_alloca->getType()->getAddressSpace() != (unsigned)0) {
+                continue;
+              }
+              alloca_inst_vec.push_back(now_alloca);
+          }
+          for (auto &allocainst : alloca_inst_vec) {
+              auto alloca_type = allocainst->getAllocatedType();
+              llvm::IRBuilder<> builder(allocainst);
+              auto *new_alloca = builder.CreateAlloca(alloca_type, (unsigned)5);
+              auto new_type = llvm::PointerType::get(alloca_type, (unsigned)0);
+              new_alloca->setAlignment(llvm::Align(allocainst->getAlignment()));
+              auto *addrspacecast = builder.CreateAddrSpaceCast(new_alloca, new_type);
+              allocainst->replaceAllUsesWith(addrspacecast);
+              allocainst->eraseFromParent();
+          }
+        }
+      }
+      patch_intrinsic("thread_idx", llvm::Intrinsic::amdgcn_workitem_id_x);
+      patch_intrinsic("block_idx", llvm::Intrinsic::amdgcn_workgroup_id_x);
+    }
   }
 
   return module;

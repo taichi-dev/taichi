@@ -338,7 +338,6 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::module_from_file(
   std::unique_ptr<llvm::Module> module = module_from_bitcode_file(
       fmt::format("{}/{}", runtime_lib_dir(), file), ctx);
   if (arch_ == Arch::cuda || arch_ == Arch::amdgpu) {
-#if defined(TI_WITH_CUDA) || defined(TI_WITH_AMDGPU)
       auto patch_intrinsic = [&](std::string name, Intrinsic::ID intrin,
                                bool ret = true,
                                std::vector<llvm::Type *> types = {},
@@ -392,7 +391,6 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::module_from_file(
     patch_atomic_add("atomic_add_i64", llvm::AtomicRMWInst::Add);
     patch_atomic_add("atomic_add_f64", llvm::AtomicRMWInst::FAdd);
     patch_atomic_add("atomic_add_f32", llvm::AtomicRMWInst::FAdd);
-#endif
   
     if (arch_ == Arch::cuda) {
       module->setTargetTriple("nvptx64-nvidia-cuda");

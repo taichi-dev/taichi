@@ -219,11 +219,6 @@ class Scalarize : public BasicStmtVisitor {
       return;
     }
 
-    // BinaryOpExpression::type_check() should have taken care of the
-    // broadcasting and neccessary conversions. So we simply add an assertion
-    // here to make sure that the operands are of the same shape and dtype
-    TI_ASSERT(lhs_dtype == rhs_dtype);
-
     if (lhs_dtype->is<TensorType>() && rhs_dtype->is<TensorType>()) {
       // Scalarization for LoadStmt should have already replaced both operands
       // to MatrixInitStmt

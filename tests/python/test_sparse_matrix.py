@@ -3,7 +3,6 @@ import pytest
 import taichi as ti
 from tests import test_utils
 
-
 # @pytest.mark.parametrize('dtype, storage_format', [(ti.f32, 'col_major'),
 #                                                    (ti.f32, 'row_major'),
 #                                                    (ti.f64, 'col_major'),
@@ -28,7 +27,6 @@ from tests import test_utils
 #         for j in range(n):
 #             assert A[i, j] == i + j
 
-
 # @pytest.mark.parametrize('dtype, storage_format', [(ti.f32, 'col_major'),
 #                                                    (ti.f32, 'row_major'),
 #                                                    (ti.f64, 'col_major'),
@@ -52,7 +50,6 @@ from tests import test_utils
 #     for i in range(n):
 #         for j in range(n):
 #             assert A[i, j] == i + j
-
 
 # @pytest.mark.parametrize('dtype, storage_format', [(ti.f32, 'col_major'),
 #                                                    (ti.f32, 'row_major'),
@@ -79,7 +76,6 @@ from tests import test_utils
 #     for i in range(n):
 #         assert A[i, i] == i
 
-
 # @pytest.mark.parametrize('dtype, storage_format', [(ti.f32, 'col_major'),
 #                                                    (ti.f32, 'row_major'),
 #                                                    (ti.f64, 'col_major'),
@@ -101,7 +97,6 @@ from tests import test_utils
 #     fill(Abuilder)
 #     A = Abuilder.build()
 #     assert A.shape == (n, m)
-
 
 # @pytest.mark.parametrize('dtype, storage_format', [(ti.f32, 'col_major'),
 #                                                    (ti.f32, 'row_major'),
@@ -126,7 +121,6 @@ from tests import test_utils
 #     for i in range(n):
 #         assert A[i, i] == i
 
-
 # @pytest.mark.parametrize('dtype, storage_format', [(ti.f32, 'col_major'),
 #                                                    (ti.f32, 'row_major'),
 #                                                    (ti.f64, 'col_major'),
@@ -149,7 +143,6 @@ from tests import test_utils
 #     A = Abuilder.build()
 #     A[0, 0] = 1024.0
 #     assert A[0, 0] == 1024.0
-
 
 # @pytest.mark.parametrize('dtype, storage_format', [(ti.f32, 'col_major'),
 #                                                    (ti.f32, 'row_major'),
@@ -184,7 +177,6 @@ from tests import test_utils
 #         for j in range(n):
 #             assert C[i, j] == 2 * i
 
-
 # @pytest.mark.parametrize('dtype, storage_format', [(ti.f32, 'col_major'),
 #                                                    (ti.f32, 'row_major'),
 #                                                    (ti.f64, 'col_major'),
@@ -218,7 +210,6 @@ from tests import test_utils
 #         for j in range(n):
 #             assert C[i, j] == 2 * j
 
-
 # @pytest.mark.parametrize('dtype, storage_format', [(ti.f32, 'col_major'),
 #                                                    (ti.f32, 'row_major'),
 #                                                    (ti.f64, 'col_major'),
@@ -244,7 +235,6 @@ from tests import test_utils
 #         for j in range(n):
 #             assert B[i, j] == 3 * (i + j)
 
-
 # @pytest.mark.parametrize('dtype, storage_format', [(ti.f32, 'col_major'),
 #                                                    (ti.f32, 'row_major'),
 #                                                    (ti.f64, 'col_major'),
@@ -269,7 +259,6 @@ from tests import test_utils
 #     for i in range(n):
 #         for j in range(n):
 #             assert B[i, j] == A[j, i]
-
 
 # @pytest.mark.parametrize('dtype, storage_format', [(ti.f32, 'col_major'),
 #                                                    (ti.f32, 'row_major'),
@@ -303,7 +292,6 @@ from tests import test_utils
 #     for i in range(n):
 #         for j in range(n):
 #             assert C[i, j] == (i + j) * (i - j)
-
 
 # @pytest.mark.parametrize('dtype, storage_format', [(ti.f32, 'col_major'),
 #                                                    (ti.f32, 'row_major'),
@@ -339,7 +327,6 @@ from tests import test_utils
 #     assert C[1, 0] == 2.0
 #     assert C[1, 1] == -1.0
 
-
 # @pytest.mark.parametrize('dtype, storage_format', [(ti.f32, 'col_major'),
 #                                                    (ti.f32, 'row_major'),
 #                                                    (ti.f64, 'col_major'),
@@ -374,7 +361,6 @@ from tests import test_utils
 #     for i in range(n):
 #         for j in range(m):
 #             assert C[i, j] == GT[i][j]
-
 
 # @test_utils.test(arch=ti.cuda)
 # def test_gpu_sparse_matrix():

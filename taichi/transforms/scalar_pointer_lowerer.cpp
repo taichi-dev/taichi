@@ -90,6 +90,7 @@ void ScalarPointerLowerer::run() {
           auto const_next = lowered_->push_back<ConstStmt>(TypedConstant(next));
           extracted = lowered_->push_back<BinaryOpStmt>(
               BinaryOpType::div, indices_[k_], const_next);
+          is_first_extraction[k] = false;
         } else {
           extracted = generate_mod_x_div_y(lowered_, indices_[k_], prev, next);
         }
@@ -97,16 +98,9 @@ void ScalarPointerLowerer::run() {
         const int end = start_bits[k];
         start_bits[k] -= snode->extractors[k].num_bits;
         const int begin = start_bits[k];
-        if (is_first_extraction[k] && begin == 0) {
-          // Similar optimization as above. In this case the full user
-          // coordinate is extracted so we don't need a BitExtractStmt.
-          extracted = indices_[k_];
-        } else {
-          extracted =
-              lowered_->push_back<BitExtractStmt>(indices_[k_], begin, end);
-        }
+        extracted =
+            lowered_->push_back<BitExtractStmt>(indices_[k_], begin, end);
       }
-      is_first_extraction[k] = false;
       lowered_indices.push_back(extracted);
       strides.push_back(snode->extractors[k].shape);
     }

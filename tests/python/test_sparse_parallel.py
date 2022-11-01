@@ -58,8 +58,7 @@ def test_nested_struct_fill_and_clear():
     a = ti.field(dtype=ti.f32)
     N = 512
 
-    ptr = ti.root.pointer(ti.ij, [N, N])
-    ptr.dense(ti.ij, [8, 8]).place(a)
+    ti.root.pointer(ti.ij, [N, N]).dense(ti.ij, [8, 8]).place(a)
 
     @ti.kernel
     def fill():
@@ -69,7 +68,7 @@ def test_nested_struct_fill_and_clear():
     @ti.kernel
     def clear():
         for i, j in a.parent():
-            ti.deactivate(ptr, ti.rescale_index(a, ptr, [i, j]))
+            ti.deactivate(a.parent().parent(), [i, j])
 
     def task():
         fill()

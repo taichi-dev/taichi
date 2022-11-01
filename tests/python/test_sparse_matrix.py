@@ -453,7 +453,7 @@ def test_gpu_sparse_matrix_ops(N):
         scipy_spm = scipy_spm.tocoo()
         for i, j, v in zip(scipy_spm.row, scipy_spm.col, scipy_spm.data):
             # assert v == taichi_spm[i, j]
-            assert test_utils.approx(v == taichi_spm[i, j], rel=1e-5)
+            assert v == test_utils.approx(taichi_spm[i, j], rel=1e-5)
 
     C = A + B
     S3 = S1 + S2

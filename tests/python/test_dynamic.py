@@ -239,6 +239,7 @@ def test_append_u8():
 
     @ti.kernel
     def make_list():
+        ti.loop_config(serialize=True)
         for i in range(20):
             x[()].append(i * i * i)
 
@@ -256,6 +257,7 @@ def test_append_u64():
 
     @ti.kernel
     def make_list():
+        ti.loop_config(serialize=True)
         for i in range(20):
             x[()].append(i * i * i * ti.u64(10000000000))
 

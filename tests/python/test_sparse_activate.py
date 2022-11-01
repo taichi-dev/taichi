@@ -17,8 +17,8 @@ def test_pointer():
 
     @ti.kernel
     def activate():
-        ti.activate(ptr, ti.rescale_index(x, ptr, [1]))
-        ti.activate(ptr, ti.rescale_index(x, ptr, [32]))
+        ti.activate(ptr, 1)
+        ti.activate(ptr, 32)
 
     @ti.kernel
     def func():

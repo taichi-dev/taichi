@@ -34,14 +34,13 @@ def test_pointer_is_active():
 
     n = 128
 
-    ptr = ti.root.pointer(ti.i, n)
-    ptr.dense(ti.i, n).place(x)
+    ti.root.pointer(ti.i, n).dense(ti.i, n).place(x)
     ti.root.place(s)
 
     @ti.kernel
     def func():
         for i in range(n * n):
-            s[None] += ti.is_active(ptr, ti.rescale_index(x, ptr, [i]))
+            s[None] += ti.is_active(x.parent().parent(), i)
 
     x[0] = 1
     x[127] = 1

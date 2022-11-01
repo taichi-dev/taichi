@@ -78,7 +78,7 @@ Ptr Dynamic_allocate(Ptr meta_, Ptr node_, i32 *len) {
     }
     if (i < chunk_start + chunk_size) {
       return *p_chunk_ptr + sizeof(Ptr) +
-               (i - chunk_start) * meta->element_size;
+             (i - chunk_start) * meta->element_size;
     }
     p_chunk_ptr = (Ptr *)(*p_chunk_ptr);
     chunk_start += chunk_size;

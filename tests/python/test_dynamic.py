@@ -236,6 +236,7 @@ def test_append_u8():
     x = ti.field(ti.u8)
     pixel = ti.root.dynamic(ti.j, 20)
     pixel.place(x)
+
     @ti.kernel
     def make_list():
         for i in range(20):
@@ -252,6 +253,7 @@ def test_append_u64():
     x = ti.field(ti.u64)
     pixel = ti.root.dynamic(ti.i, 20)
     pixel.place(x)
+
     @ti.kernel
     def make_list():
         for i in range(20):

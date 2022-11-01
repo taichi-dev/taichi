@@ -1369,8 +1369,10 @@ void TaskCodeGenLLVM::visit(SNodeOpStmt *stmt) {
   auto snode = stmt->snode;
   if (stmt->op_type == SNodeOpType::allocate) {
     TI_ASSERT(snode->type == SNodeType::dynamic);
-    TI_ASSERT(stmt->ret_type.is_pointer() && stmt->ret_type.ptr_removed()->is_primitive(PrimitiveTypeID::gen));
-    auto ptr = call(snode, llvm_val[stmt->ptr], "allocate", {llvm_val[stmt->val]});
+    TI_ASSERT(stmt->ret_type.is_pointer() &&
+              stmt->ret_type.ptr_removed()->is_primitive(PrimitiveTypeID::gen));
+    auto ptr =
+        call(snode, llvm_val[stmt->ptr], "allocate", {llvm_val[stmt->val]});
     llvm_val[stmt] = ptr;
   } else if (stmt->op_type == SNodeOpType::length) {
     TI_ASSERT(snode->type == SNodeType::dynamic);

@@ -66,8 +66,7 @@ std::vector<Stmt *> get_store_destination(Stmt *store_stmt) {
   } else if (auto snode_op = store_stmt->cast<SNodeOpStmt>()) {
     if (snode_op->op_type == SNodeOpType::allocate) {
       return {snode_op->val, snode_op->ptr};
-    }
-    else {
+    } else {
       return {};
     }
   } else if (auto external_func = store_stmt->cast<ExternalFuncCallStmt>()) {

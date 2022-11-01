@@ -928,7 +928,8 @@ void SNodeOpExpression::flatten(FlattenContext *ctx) {
     flatten_rvalue(value, ctx);
 
     auto alloca = ctx->push_back<AllocaStmt>(PrimitiveType::i32);
-    auto addr = ctx->push_back<SNodeOpStmt>(SNodeOpType::allocate, snode, ptr, alloca);
+    auto addr =
+        ctx->push_back<SNodeOpStmt>(SNodeOpType::allocate, snode, ptr, alloca);
     auto ch_addr = ctx->push_back<GetChStmt>(addr, snode, 0);
     ctx->push_back<GlobalStoreStmt>(ch_addr, value->stmt);
     ctx->push_back<LocalLoadStmt>(alloca);

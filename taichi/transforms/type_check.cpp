@@ -128,8 +128,7 @@ class TypeCheck : public IRVisitor {
     } else if (stmt->op_type == SNodeOpType::allocate) {
       stmt->ret_type = PrimitiveType::gen;
       stmt->ret_type.set_is_pointer(true);
-    }
-    else {
+    } else {
       stmt->ret_type = PrimitiveType::i32;
     }
   }

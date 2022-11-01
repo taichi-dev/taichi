@@ -125,7 +125,11 @@ class TypeCheck : public IRVisitor {
   void visit(SNodeOpStmt *stmt) override {
     if (stmt->op_type == SNodeOpType::get_addr) {
       stmt->ret_type = PrimitiveType::u64;
-    } else {
+    } else if (stmt->op_type == SNodeOpType::allocate) {
+      stmt->ret_type = PrimitiveType::gen;
+      stmt->ret_type.set_is_pointer(true);
+    }
+    else {
       stmt->ret_type = PrimitiveType::i32;
     }
   }

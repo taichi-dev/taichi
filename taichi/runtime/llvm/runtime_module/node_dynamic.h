@@ -58,11 +58,12 @@ void Dynamic_deactivate(Ptr meta_, Ptr node_) {
   }
 }
 
-i32 Dynamic_append(Ptr meta_, Ptr node_, i32 data) {
+Ptr Dynamic_allocate(Ptr meta_, Ptr node_, i32 *len) {
   auto meta = (DynamicMeta *)(meta_);
   auto node = (DynamicNode *)(node_);
   auto chunk_size = meta->chunk_size;
   auto i = atomic_add_i32(&node->n, 1);
+  *len = i;
   int chunk_start = 0;
   auto p_chunk_ptr = &node->ptr;
   while (true) {
@@ -76,14 +77,12 @@ i32 Dynamic_append(Ptr meta_, Ptr node_, i32 data) {
       });
     }
     if (i < chunk_start + chunk_size) {
-      *(i32 *)(*p_chunk_ptr + sizeof(Ptr) +
-               (i - chunk_start) * meta->element_size) = data;
-      break;
+      return *p_chunk_ptr + sizeof(Ptr) +
+               (i - chunk_start) * meta->element_size;
     }
     p_chunk_ptr = (Ptr *)(*p_chunk_ptr);
     chunk_start += chunk_size;
   }
-  return i;
 }
 
 i32 Dynamic_is_active(Ptr meta_, Ptr node_, int i) {

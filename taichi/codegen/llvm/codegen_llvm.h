@@ -25,7 +25,8 @@ class FunctionCreationGuard {
   llvm::IRBuilder<>::InsertPoint ip;
 
   FunctionCreationGuard(TaskCodeGenLLVM *mb,
-                        std::vector<llvm::Type *> arguments, const std::string &func_name);
+                        std::vector<llvm::Type *> arguments,
+                        const std::string &func_name);
 
   ~FunctionCreationGuard();
 };
@@ -316,7 +317,8 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   void finalize_offloaded_task_function();
 
   FunctionCreationGuard get_function_creation_guard(
-      std::vector<llvm::Type *> argument_types, const std::string &func_name = "function_body");
+      std::vector<llvm::Type *> argument_types,
+      const std::string &func_name = "function_body");
 
   std::tuple<llvm::Value *, llvm::Value *> get_range_for_bounds(
       OffloadedStmt *stmt);

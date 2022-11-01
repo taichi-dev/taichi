@@ -13,7 +13,7 @@ from taichi.lang._ndrange import _Ndrange, ndrange
 from taichi.lang.ast.ast_transformer_utils import (Builder, LoopStatus,
                                                    ReturnStatus)
 from taichi.lang.ast.symbol_resolver import ASTResolver
-from taichi.lang.exception import TaichiSyntaxError
+from taichi.lang.exception import TaichiSyntaxError, TaichiTypeError
 from taichi.lang.expr import Expr
 from taichi.lang.field import Field
 from taichi.lang.impl import current_cfg
@@ -426,8 +426,11 @@ class ASTTransformer(Builder):
                 name = "min" if func is min else "max"
                 warnings.warn_explicit(
                     f'Calling builtin function "{name}" in Taichi scope is deprecated. '
-                    f'Please use "ti.{name}" instead.', DeprecationWarning,
-                    ctx.file, node.lineno + ctx.lineno_offset)
+                    f'Please use "ti.{name}" instead.',
+                    DeprecationWarning,
+                    ctx.file,
+                    node.lineno + ctx.lineno_offset,
+                    module="taichi")
             return True
         return False
 
@@ -471,8 +474,11 @@ class ASTTransformer(Builder):
             f'Calling non-taichi function "{name}". '
             f'Scope inside the function is not processed by the Taichi AST transformer. '
             f'The function may not work as expected. Proceed with caution! '
-            f'Maybe you can consider turning it into a @ti.func?', UserWarning,
-            ctx.file, node.lineno + ctx.lineno_offset)
+            f'Maybe you can consider turning it into a @ti.func?',
+            UserWarning,
+            ctx.file,
+            node.lineno + ctx.lineno_offset,
+            module="taichi")
 
     @staticmethod
     def build_Call(ctx, node):
@@ -797,7 +803,10 @@ class ASTTransformer(Builder):
             ast.BitAnd: lambda l, r: l & r,
             ast.MatMult: lambda l, r: l @ r,
         }.get(type(node.op))
-        node.ptr = op(node.left.ptr, node.right.ptr)
+        try:
+            node.ptr = op(node.left.ptr, node.right.ptr)
+        except TypeError as e:
+            raise TaichiTypeError(str(e)) from None
         return node.ptr
 
     @staticmethod
@@ -902,8 +911,10 @@ class ASTTransformer(Builder):
                 name = "is" if isinstance(node_op, ast.Is) else "is not"
                 warnings.warn_explicit(
                     f'Operator "{name}" in Taichi scope is deprecated. Please avoid using it.',
-                    DeprecationWarning, ctx.file,
-                    node.lineno + ctx.lineno_offset)
+                    DeprecationWarning,
+                    ctx.file,
+                    node.lineno + ctx.lineno_offset,
+                    module="taichi")
             if op is None:
                 if type(node_op) in ops_static:
                     raise TaichiSyntaxError(
@@ -1324,8 +1335,11 @@ class ASTTransformer(Builder):
             warnings.warn_explicit(
                 'Using conditional expression for element-wise select operation on '
                 'Taichi vectors/matrices is deprecated. '
-                'Please use "ti.select" instead.', DeprecationWarning,
-                ctx.file, node.lineno + ctx.lineno_offset)
+                'Please use "ti.select" instead.',
+                DeprecationWarning,
+                ctx.file,
+                node.lineno + ctx.lineno_offset,
+                module="taichi")
             return node.ptr
 
         is_static_if = (ASTTransformer.get_decorator(ctx,

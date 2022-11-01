@@ -351,8 +351,7 @@ def test_ref_atomic():
     bar()
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda], debug=True)
-def test_func_ndarray_arg():
+def _test_func_ndarray_arg():
     vec3 = ti.types.vector(3, ti.f32)
 
     @ti.func
@@ -381,6 +380,19 @@ def test_func_ndarray_arg():
             ti.TaichiCompilationError,
             match=r"Expect TensorType element for Ndarray with element_dim"):
         test_error(arr)
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda], debug=True)
+def test_func_ndarray_arg():
+    _test_func_ndarray_arg()
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda],
+                 debug=True,
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_func_ndarray_arg_matrix_scalarize():
+    _test_func_ndarray_arg()
 
 
 def _test_func_matrix_arg():

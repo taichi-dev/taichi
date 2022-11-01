@@ -16,7 +16,7 @@ from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.kernel_arguments import SparseMatrixProxy
 from taichi.lang.matrix import (Matrix, MatrixField, MatrixNdarray, MatrixType,
-                                Vector, _IntermediateMatrix,
+                                Vector, VectorNdarray, _IntermediateMatrix,
                                 _MatrixFieldElement, make_matrix)
 from taichi.lang.mesh import (ConvType, MeshElementFieldProxy, MeshInstance,
                               MeshRelationAccessProxy,
@@ -824,6 +824,9 @@ def ndarray(dtype, shape):
     if dtype in all_types:
         return ScalarNdarray(dtype, shape)
     if isinstance(dtype, MatrixType):
+        if dtype.ndim == 1:
+            return VectorNdarray(dtype.n, dtype.dtype, shape)
+
         return MatrixNdarray(dtype.n, dtype.m, dtype.dtype, shape)
 
     raise TaichiRuntimeError(

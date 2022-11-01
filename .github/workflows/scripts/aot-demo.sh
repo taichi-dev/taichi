@@ -94,12 +94,21 @@ function build-and-test-headless-demo {
     setup-android-ndk-env
 
     pushd taichi
-    export TAICHI_REPO_DIR=$(pwd)
+    GIT_COMMIT=$(git rev-parse HEAD | cut -c1-7)
+    setup_python
+    popd
+
+    export TAICHI_REPO_DIR=$(pwd)/taichi
+
+    pushd taichi
+    pip install /taichi-wheel/*.whl
+    sudo chmod 0777 $HOME/.cache
     popd
 
     rm -rf taichi-aot-demo
-    git clone --recursive --depth=1 https://github.com/taichi-dev/taichi-aot-demo
+    git clone --recursive https://github.com/taichi-dev/taichi-aot-demo
     cd taichi-aot-demo
+    git checkout 88814e9
     mkdir build
     pushd build
     export TAICHI_C_API_INSTALL_DIR=$(find $TAICHI_REPO_DIR -name cmake-install -type d | head -n 1)/c_api

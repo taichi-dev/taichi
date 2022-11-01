@@ -444,6 +444,7 @@ def test_func_matrix_arg():
 def test_func_matrix_arg_real_matrix():
     _test_func_matrix_arg()
 
+
 @test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_real_func_matrix_arg():
     @ti.experimental.real_func
@@ -451,7 +452,7 @@ def test_real_func_matrix_arg():
         return a[0, 0] + a[0, 1] + a[1, 0] + a[1, 1]
 
     @ti.kernel
-    def foo()->float:
+    def foo() -> float:
         a = ti.math.mat2(1, 2, 3, 4)
         return mat_arg(a)
 

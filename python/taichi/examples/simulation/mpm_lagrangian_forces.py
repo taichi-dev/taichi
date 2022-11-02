@@ -25,7 +25,7 @@ v = ti.Vector.field(dim, dtype=float, shape=n_particles)
 C = ti.Matrix.field(dim, dim, dtype=float, shape=n_particles)
 grid_v = ti.Vector.field(dim, dtype=float, shape=(n_grid, n_grid))
 grid_m = ti.field(dtype=float, shape=(n_grid, n_grid))
-restT = ti.Matrix.field(dim, dim, dtype=float, shape=n_particles)
+restT = ti.Matrix.field(dim, dim, dtype=float, shape=n_elements)
 total_energy = ti.field(dtype=float, shape=(), needs_grad=True)
 vertices = ti.field(dtype=ti.i32, shape=(n_elements, 3))
 

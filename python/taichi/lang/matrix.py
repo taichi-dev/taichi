@@ -25,6 +25,7 @@ def _gen_swizzles(cls):
     swizzle_gen = SwizzleGenerator()
     # https://www.khronos.org/opengl/wiki/Data_Type_(GLSL)#Swizzling
     KEYGROUP_SET = ['xyzw', 'rgba', 'stpq']
+    cls._swizzle_to_keygroup = {}
 
     def make_valid_attribs_checker(key_group):
         def check(instance, pattern):
@@ -59,6 +60,7 @@ def _gen_swizzles(cls):
 
             prop = gen_property(attr, index, key_group)
             setattr(cls, attr, prop)
+            cls._swizzle_to_keygroup[attr] = key_group
 
     for key_group in KEYGROUP_SET:
         sw_patterns = swizzle_gen.generate(key_group, required_length=4)
@@ -93,6 +95,7 @@ def _gen_swizzles(cls):
 
             prop_key, prop = gen_property(pat, key_group)
             setattr(cls, prop_key, prop)
+            cls._swizzle_to_keygroup[prop_key] = key_group
     return cls
 
 

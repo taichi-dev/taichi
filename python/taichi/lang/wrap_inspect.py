@@ -73,7 +73,7 @@ def _Python_IPython_findsource(object):
             ip = get_ipython()
             if ip is not None:
                 session_id = ip.history_manager.get_last_session_id()
-                fd, filename = tempfile.mkstemp(prefix='_IPyhon_', suffix=f'_{session_id}.py')
+                fd, filename = tempfile.mkstemp(prefix='_IPython_', suffix=f'_{session_id}.py')
                 os.close(fd)
 
                 lines = ip.history_manager._i00

@@ -21,6 +21,8 @@ build_taichi_wheel() {
     EXTRA_ARGS=""
     if [ "$PROJECT_NAME" = "taichi-nightly" ]; then
         PROJECT_TAGS="egg_info --tag-date"
+        # Include C-API in nightly builds
+        TAICHI_CMAKE_ARGS="$TAICHI_CMAKE_ARGS -DTI_WITH_C_API:BOOL=ON"
     fi
 
     if [[ $OSTYPE == "linux-"* ]]; then

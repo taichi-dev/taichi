@@ -780,9 +780,19 @@ class ASTTransformer(Builder):
                     keygroup = Matrix._swizzle_to_keygroup[node.attr]
                     attr_len = len(node.attr)
                     if attr_len == 1:
-                        node.ptr = Expr(_ti_core.subscript(node.value.ptr.ptr, make_expr_group(keygroup.index(node.attr)), impl.get_runtime().get_current_src_info()))
+                        node.ptr = Expr(
+                            _ti_core.subscript(
+                                node.value.ptr.ptr,
+                                make_expr_group(keygroup.index(node.attr)),
+                                impl.get_runtime().get_current_src_info()))
                     else:
-                        node.ptr = Expr(_ti_core.subscript_with_multiple_indices(node.value.ptr.ptr, [make_expr_group(keygroup.index(ch)) for ch in node.attr], (attr_len, ), impl.get_runtime().get_current_src_info()))
+                        node.ptr = Expr(
+                            _ti_core.subscript_with_multiple_indices(
+                                node.value.ptr.ptr, [
+                                    make_expr_group(keygroup.index(ch))
+                                    for ch in node.attr
+                                ], (attr_len, ),
+                                impl.get_runtime().get_current_src_info()))
                 else:
                     # pylint: disable-msg=C0415
                     from taichi.lang import matrix_ops as tensor_ops

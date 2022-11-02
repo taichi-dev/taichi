@@ -73,24 +73,23 @@ def _Python_IPython_findsource(object):
             ip = get_ipython()
             if ip is not None:
                 lines = ip.history_manager._i00
-                fd, filename = tempfile.mkstemp(prefix='_IPyhon_', suffix=f'_{ip.history_manager.get_last_session_id()}.py')
+                session_id = ip.history_manager.get_last_session_id()
+                fd, filename = tempfile.mkstemp(prefix='_IPyhon_', suffix=f'_{session_id}.py')
                 os.close(fd)
 
                 index = lines.find("%time")
                 lines_stripped = lines[index:]
                 lines_stripped = lines_stripped.split(maxsplit=1)[1]
+
                 with open(filename, 'w') as f:
                     f.write(lines_stripped)
-                    
-            def wrapped_getfile(obj):
-                return filename
 
-            inspect._saved_getfile = inspect.getfile
-            inspect.getfile = wrapped_getfile
-            ret = inspect.findsource(object)
-            inspect.getfile = inspect._saved_getfile
-            del inspect._saved_getfile
-            return ret
+                inspect._saved_getfile = inspect.getfile
+                inspect.getfile = lambda obj: filename
+                ret = inspect.findsource(object)
+                inspect.getfile = inspect._saved_getfile
+                del inspect._saved_getfile
+                return ret
             
         raise IOError(f"Cannot find source code for Object: {object}")
 

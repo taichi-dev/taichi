@@ -3,7 +3,6 @@ import os
 import sys
 
 from taichi._lib import core as _ti_core
-from taichi._logging import info, warn
 
 
 pybuf_enabled = False

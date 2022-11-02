@@ -15,23 +15,23 @@ def _blender_get_text_name(filename: str):
     return None
 
 
-def _blender_find_source_text(object):
+def _blender_find_source_text(obj):
     try:
-        import bpy
+        import bpy  # pylint: disable=import-outside-toplevel
     except ImportError:
         raise IOError('Not in Blender environment!')
 
-    filename = inspect.getfile(object)
+    filename = inspect.getfile(obj)
     text_name = _blender_get_text_name(filename)
     if text_name is None:
-        raise IOError('Object `{object.__name__}` is not defined in a .blend file!')
+        raise IOError('Object `{obj.__name__}` is not defined in a .blend file!')
 
     lines = bpy.data.texts[text_name].as_string()
     return lines, text_name
 
 
-def _blender_findsource(object):
-    lines, text_name = _blender_find_source_text(object)
+def _blender_findsource(obj):
+    lines, text_name = _blender_find_source_text(obj)
 
     try:
         filename = _blender_findsource._saved_inspect_cache[lines]
@@ -44,15 +44,15 @@ def _blender_findsource(object):
 
         _blender_findsource._saved_inspect_cache[lines] = filename
 
-    def wrapped_getfile(obj):
-        if id(obj) == id(object):
+    def wrapped_getfile(o):
+        if id(o) == id(obj):
             return filename
 
-        return inspect._saved_getfile(obj)
+        return inspect._saved_getfile(o)
 
     inspect._saved_getfile = inspect.getfile
     inspect.getfile = wrapped_getfile
-    ret = inspect.findsource(object)
+    ret = inspect.findsource(obj)
     inspect.getfile = inspect._saved_getfile
     del inspect._saved_getfile
     return ret
@@ -61,15 +61,15 @@ def _blender_findsource(object):
 _blender_findsource._saved_inspect_cache = {}
 
 
-def _Python_IPython_findsource(object):
+def _Python_IPython_findsource(obj):
     try:
-        return inspect._saved_findsource(object)
+        return inspect._saved_findsource(obj)
     except IOError:
-        filename = inspect.getfile(object)
+        filename = inspect.getfile(obj)
         if (filename in {"<timed exec>", "<magic-timeit>"}
             and "IPython" in sys.modules
         ):
-            from IPython import get_ipython
+            from IPython import get_ipython  # pylint: disable=import-outside-toplevel
             ip = get_ipython()
             if ip is not None:
                 session_id = ip.history_manager.get_last_session_id()
@@ -86,22 +86,22 @@ def _Python_IPython_findsource(object):
 
                 inspect._saved_getfile = inspect.getfile
                 inspect.getfile = lambda obj: filename
-                ret = inspect.findsource(object)
+                ret = inspect.findsource(obj)
                 inspect.getfile = inspect._saved_getfile
                 del inspect._saved_getfile
                 return ret
             
-        raise IOError(f"Cannot find source code for Object: {object}")
+        raise IOError(f"Cannot find source code for Object: {obj}")
 
 
-def _custom_findsource(object):
+def _custom_findsource(obj):
     try:
-        return _Python_IPython_findsource(object)
+        return _Python_IPython_findsource(obj)
     except IOError:
         try:
-            return _blender_findsource(object)
+            return _blender_findsource(obj)
         except:
-            raise IOError(f"Cannot find source code for Object: {object} ")
+            raise IOError(f"Cannot find source code for Object: {obj} ")
 
 
 class _InspectContextManager:
@@ -116,20 +116,20 @@ class _InspectContextManager:
         del inspect._saved_findsource
 
 
-def getsourcelines(object):
+def getsourcelines(obj):
     with _InspectContextManager():
-        return inspect.getsourcelines(object)
+        return inspect.getsourcelines(obj)
 
 
-def getsourcefile(object):
+def getsourcefile(obj):
     with _InspectContextManager():
-        ret = inspect.getsourcefile(object)
+        ret = inspect.getsourcefile(obj)
         if ret is None:
             try:
-                ret = inspect.getfile(object)
+                ret = inspect.getfile(obj)
             except:
                 pass
         return ret
 
 
-all = ["getsourcelines", "getsourcefile"]
+__all__ = ["getsourcelines", "getsourcefile"]

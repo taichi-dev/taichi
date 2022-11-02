@@ -116,7 +116,9 @@ def test_matrix_slice_with_variable_invalid():
     _test_matrix_slice_with_variable_invalid()
 
 
-@test_utils.test(dynamic_index=False, real_matrix=True, real_matrix_scalarize=True)
+@test_utils.test(dynamic_index=False,
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
 def test_matrix_slice_with_variable_invalid_real_matrix_scalarize():
     _test_matrix_slice_with_variable_invalid()
 

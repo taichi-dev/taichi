@@ -568,7 +568,8 @@ class ScalarizePointers : public BasicStmtVisitor {
               "See https://docs.taichi-lang.org/docs/meta#when-to-use-tistatic-"
               "with-for-loops for more details."
               "Or turn on ti.init(..., dynamic_index=True) to support indexing "
-              "with variables!", stmt->tb));
+              "with variables!",
+              stmt->tb));
         }
         int offset = stmt->offset->cast<ConstStmt>()->val.val_int32();
 

@@ -20,10 +20,9 @@ from taichi.lang.exception import (TaichiCompilationError, TaichiRuntimeError,
 from taichi.lang.expr import Expr
 from taichi.lang.kernel_arguments import KernelArgument
 from taichi.lang.matrix import Matrix, MatrixType
+from taichi.lang.shell import _shell_pop_print
 from taichi.lang.util import (cook_dtype, has_paddle, has_pytorch,
                               to_taichi_type)
-from taichi.lang.shell import _shell_pop_print
-from taichi.lang.util import has_paddle, has_pytorch, to_taichi_type
 from taichi.lang.wrap_inspect import getsourcefile, getsourcelines
 from taichi.types import (ndarray_type, primitive_types, sparse_matrix_builder,
                           template, texture_type)

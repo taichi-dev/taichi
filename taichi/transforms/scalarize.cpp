@@ -554,7 +554,22 @@ class ScalarizePointers : public BasicStmtVisitor {
 
         // TODO(zhanlue): loose this contraint once dynamic indexing is properly
         // handled
-        TI_ASSERT(stmt->offset->is<ConstStmt>());
+        if (!stmt->offset->is<ConstStmt>()) {
+          modifier_.modify_ir();
+          throw TaichiSyntaxError(fmt::format(
+              "{}The index of a Matrix/Vector must be a compile-time constant "
+              "integer.\n"
+              "This is because matrix operations will be **unrolled** at "
+              "compile-time for performance reason.\n"
+              "If you want to *iterate through matrix elements*, use a static "
+              "range:\n"
+              "    for i in ti.static(range(3)):\n"
+              "        print(i, \"-th component is\", vec[i])\n"
+              "See https://docs.taichi-lang.org/docs/meta#when-to-use-tistatic-"
+              "with-for-loops for more details."
+              "Or turn on ti.init(..., dynamic_index=True) to support indexing "
+              "with variables!", stmt->tb));
+        }
         int offset = stmt->offset->cast<ConstStmt>()->val.val_int32();
 
         TI_ASSERT(offset < scalarized_alloca_stmts.size());

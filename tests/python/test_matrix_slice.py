@@ -98,8 +98,7 @@ def test_matrix_slice_with_variable_real_matrix_scalarize():
     _test_matrix_slice_with_variable()
 
 
-@test_utils.test(dynamic_index=False)
-def test_matrix_slice_with_variable_invalid():
+def _test_matrix_slice_with_variable_invalid():
     @ti.kernel
     def test_one_col_slice() -> ti.types.matrix(1, 3, dtype=ti.i32):
         m = ti.Matrix([[1, 2, 3], [4, 5, 6]])
@@ -108,18 +107,18 @@ def test_matrix_slice_with_variable_invalid():
 
     with pytest.raises(
             ti.TaichiCompilationError,
-            match=
-            r'The 0-th index of a Matrix/Vector must be a compile-time constant '
-            r"integer, got <class 'taichi.lang.expr.Expr'>.\n"
-            r'This is because matrix operations will be \*\*unrolled\*\* at compile-time '
-            r'for performance reason.\n'
-            r'If you want to \*iterate through matrix elements\*, use a static range:\n'
-            r'  for i in ti.static\(range\(3\)\):\n'
-            r'    print\(i, "-th component is", vec\[i\]\)\n'
-            r'See https://docs.taichi-lang.org/docs/meta#when-to-use-tistatic-with-for-loops for more details.'
-            r'Or turn on ti.init\(..., dynamic_index=True\) to support indexing with variables!'
-    ):
+            match='index of a Matrix/Vector must be a compile-time constant'):
         test_one_col_slice()
+
+
+@test_utils.test(dynamic_index=False)
+def test_matrix_slice_with_variable_invalid():
+    _test_matrix_slice_with_variable_invalid()
+
+
+@test_utils.test(dynamic_index=False, real_matrix=True, real_matrix_scalarize=True)
+def test_matrix_slice_with_variable_invalid_real_matrix_scalarize():
+    _test_matrix_slice_with_variable_invalid()
 
 
 def _test_matrix_slice_write():

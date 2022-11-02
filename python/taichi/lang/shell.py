@@ -21,8 +21,6 @@ def _shell_pop_print(old_call):
         # zero-overhead!
         return old_call
 
-    info('Graphical python shell detected, using wrapped sys.stdout')
-
     @functools.wraps(old_call)
     def new_call(*args, **kwargs):
         ret = old_call(*args, **kwargs)

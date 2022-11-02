@@ -72,11 +72,11 @@ def _Python_IPython_findsource(object):
             from IPython import get_ipython
             ip = get_ipython()
             if ip is not None:
-                lines = ip.history_manager._i00
                 session_id = ip.history_manager.get_last_session_id()
                 fd, filename = tempfile.mkstemp(prefix='_IPyhon_', suffix=f'_{session_id}.py')
                 os.close(fd)
 
+                lines = ip.history_manager._i00
                 index = lines.find("%time")
                 lines_stripped = lines[index:]
                 lines_stripped = lines_stripped.split(maxsplit=1)[1]

@@ -1,7 +1,7 @@
 import numbers
 
 from taichi._lib import core as _ti_core
-from taichi.lang import expr, impl, matrix
+from taichi.lang import expr, impl, matrix, struct
 from taichi.lang.field import BitpackedFields, Field
 
 
@@ -371,11 +371,17 @@ def append(node, indices, val):
         val (:mod:`~taichi.types.primitive_types`): the scalar data to be appended, only i32 value is support for now.
     """
     if isinstance(val, matrix.Matrix):
-        raise ValueError("ti.append only supports appending a scalar value")
+        raise ValueError("ti.append only supports appending a scalar value or a struct")
+    ptrs = []
+    if isinstance(val, struct.Struct):
+        for item in val._members:
+            ptrs.append(expr.Expr(item).ptr)
+    else:
+        ptrs = [expr.Expr(val).ptr]
     a = impl.expr_init(
         _ti_core.expr_snode_append(node._snode.ptr,
                                    expr.make_expr_group(indices),
-                                   expr.Expr(val).ptr))
+                                   ptrs))
     return a
 
 

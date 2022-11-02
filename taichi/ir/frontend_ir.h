@@ -730,7 +730,7 @@ class SNodeOpExpression : public Expression {
   SNode *snode;
   SNodeOpType op_type;
   ExprGroup indices;
-  Expr value;
+  std::vector<Expr> values;
 
   SNodeOpExpression(SNode *snode, SNodeOpType op_type, const ExprGroup &indices)
       : snode(snode), op_type(op_type), indices(indices) {
@@ -739,8 +739,8 @@ class SNodeOpExpression : public Expression {
   SNodeOpExpression(SNode *snode,
                     SNodeOpType op_type,
                     const ExprGroup &indices,
-                    const Expr &value)
-      : snode(snode), op_type(op_type), indices(indices), value(value) {
+                    const std::vector<Expr> &values)
+      : snode(snode), op_type(op_type), indices(indices), values(values) {
   }
 
   void type_check(CompileConfig *config) override;

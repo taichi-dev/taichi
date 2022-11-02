@@ -925,18 +925,19 @@ void SNodeOpExpression::flatten(FlattenContext *ctx) {
   } else if (op_type == SNodeOpType::get_addr) {
     ctx->push_back<SNodeOpStmt>(SNodeOpType::get_addr, snode, ptr, nullptr);
   } else if (op_type == SNodeOpType::append) {
-    flatten_rvalue(value, ctx);
-
+    for (auto &value : values) {
+      flatten_rvalue(value, ctx);
+    }
     auto alloca = ctx->push_back<AllocaStmt>(PrimitiveType::i32);
     auto addr =
         ctx->push_back<SNodeOpStmt>(SNodeOpType::allocate, snode, ptr, alloca);
-    auto ch_addr = ctx->push_back<GetChStmt>(addr, snode, 0);
-    ctx->push_back<GlobalStoreStmt>(ch_addr, value->stmt);
+    for (int i = 0; i < values.size(); i++) {
+      auto ch_addr = ctx->push_back<GetChStmt>(addr, snode, i);
+      ctx->push_back<GlobalStoreStmt>(ch_addr, values[i]->stmt);
+    }
     ctx->push_back<LocalLoadStmt>(alloca);
     TI_ERROR_IF(snode->type != SNodeType::dynamic,
                 "ti.append only works on dynamic nodes.");
-    TI_ERROR_IF(snode->ch.size() != 1,
-                "ti.append only works on single-child dynamic nodes.");
   }
   stmt = ctx->back_stmt();
 }

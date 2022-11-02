@@ -371,7 +371,8 @@ def append(node, indices, val):
         val (:mod:`~taichi.types.primitive_types`): the scalar data to be appended, only i32 value is support for now.
     """
     if isinstance(val, matrix.Matrix):
-        raise ValueError("ti.append only supports appending a scalar value or a struct")
+        raise ValueError(
+            "ti.append only supports appending a scalar value or a struct")
     ptrs = []
     if isinstance(val, struct.Struct):
         for item in val._members:
@@ -380,8 +381,7 @@ def append(node, indices, val):
         ptrs = [expr.Expr(val).ptr]
     a = impl.expr_init(
         _ti_core.expr_snode_append(node._snode.ptr,
-                                   expr.make_expr_group(indices),
-                                   ptrs))
+                                   expr.make_expr_group(indices), ptrs))
     return a
 
 

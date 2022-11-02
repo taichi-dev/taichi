@@ -133,7 +133,9 @@ Expr expr_rand() {
   return taichi::lang::expr_rand(get_data_type<T>());
 }
 
-Expr snode_append(SNode *snode, const ExprGroup &indices, const std::vector<Expr> &val);
+Expr snode_append(SNode *snode,
+                  const ExprGroup &indices,
+                  const std::vector<Expr> &val);
 
 Expr snode_is_active(SNode *snode, const ExprGroup &indices);
 

@@ -3,6 +3,7 @@ import pytest
 import taichi as ti
 from tests import test_utils
 
+
 @pytest.mark.parametrize('dtype, storage_format', [(ti.f32, 'col_major'),
                                                    (ti.f32, 'row_major'),
                                                    (ti.f64, 'col_major'),
@@ -27,6 +28,7 @@ def test_sparse_matrix_builder_deprecated_anno(dtype, storage_format):
         for j in range(n):
             assert A[i, j] == i + j
 
+
 @pytest.mark.parametrize('dtype, storage_format', [(ti.f32, 'col_major'),
                                                    (ti.f32, 'row_major'),
                                                    (ti.f64, 'col_major'),
@@ -50,6 +52,7 @@ def test_sparse_matrix_builder(dtype, storage_format):
     for i in range(n):
         for j in range(n):
             assert A[i, j] == i + j
+
 
 @pytest.mark.parametrize('dtype, storage_format', [(ti.f32, 'col_major'),
                                                    (ti.f32, 'row_major'),
@@ -76,6 +79,7 @@ def test_build_sparse_matrix_frome_ndarray(dtype, storage_format):
     for i in range(n):
         assert A[i, i] == i
 
+
 @pytest.mark.parametrize('dtype, storage_format', [(ti.f32, 'col_major'),
                                                    (ti.f32, 'row_major'),
                                                    (ti.f64, 'col_major'),
@@ -97,6 +101,7 @@ def test_sparse_matrix_shape(dtype, storage_format):
     fill(Abuilder)
     A = Abuilder.build()
     assert A.shape == (n, m)
+
 
 @pytest.mark.parametrize('dtype, storage_format', [(ti.f32, 'col_major'),
                                                    (ti.f32, 'row_major'),
@@ -121,6 +126,7 @@ def test_sparse_matrix_element_access(dtype, storage_format):
     for i in range(n):
         assert A[i, i] == i
 
+
 @pytest.mark.parametrize('dtype, storage_format', [(ti.f32, 'col_major'),
                                                    (ti.f32, 'row_major'),
                                                    (ti.f64, 'col_major'),
@@ -143,6 +149,7 @@ def test_sparse_matrix_element_modify(dtype, storage_format):
     A = Abuilder.build()
     A[0, 0] = 1024.0
     assert A[0, 0] == 1024.0
+
 
 @pytest.mark.parametrize('dtype, storage_format', [(ti.f32, 'col_major'),
                                                    (ti.f32, 'row_major'),
@@ -177,6 +184,7 @@ def test_sparse_matrix_addition(dtype, storage_format):
         for j in range(n):
             assert C[i, j] == 2 * i
 
+
 @pytest.mark.parametrize('dtype, storage_format', [(ti.f32, 'col_major'),
                                                    (ti.f32, 'row_major'),
                                                    (ti.f64, 'col_major'),
@@ -210,6 +218,7 @@ def test_sparse_matrix_subtraction(dtype, storage_format):
         for j in range(n):
             assert C[i, j] == 2 * j
 
+
 @pytest.mark.parametrize('dtype, storage_format', [(ti.f32, 'col_major'),
                                                    (ti.f32, 'row_major'),
                                                    (ti.f64, 'col_major'),
@@ -235,6 +244,7 @@ def test_sparse_matrix_scalar_multiplication(dtype, storage_format):
         for j in range(n):
             assert B[i, j] == 3 * (i + j)
 
+
 @pytest.mark.parametrize('dtype, storage_format', [(ti.f32, 'col_major'),
                                                    (ti.f32, 'row_major'),
                                                    (ti.f64, 'col_major'),
@@ -259,6 +269,7 @@ def test_sparse_matrix_transpose(dtype, storage_format):
     for i in range(n):
         for j in range(n):
             assert B[i, j] == A[j, i]
+
 
 @pytest.mark.parametrize('dtype, storage_format', [(ti.f32, 'col_major'),
                                                    (ti.f32, 'row_major'),
@@ -292,6 +303,7 @@ def test_sparse_matrix_elementwise_multiplication(dtype, storage_format):
     for i in range(n):
         for j in range(n):
             assert C[i, j] == (i + j) * (i - j)
+
 
 @pytest.mark.parametrize('dtype, storage_format', [(ti.f32, 'col_major'),
                                                    (ti.f32, 'row_major'),
@@ -327,6 +339,7 @@ def test_sparse_matrix_multiplication(dtype, storage_format):
     assert C[1, 0] == 2.0
     assert C[1, 1] == -1.0
 
+
 @pytest.mark.parametrize('dtype, storage_format', [(ti.f32, 'col_major'),
                                                    (ti.f32, 'row_major'),
                                                    (ti.f64, 'col_major'),
@@ -361,6 +374,7 @@ def test_sparse_matrix_nonsymmetric_multiplication(dtype, storage_format):
     for i in range(n):
         for j in range(m):
             assert C[i, j] == GT[i][j]
+
 
 @test_utils.test(arch=ti.cuda)
 def test_gpu_sparse_matrix():
@@ -466,7 +480,7 @@ def test_gpu_sparse_matrix_ops(N):
     E = A * 2.5
     S5 = S1 * 2.5
     verify(S5, E)
-    
+
     F = A * 2.5
     S6 = S1 * 2.5
     verify(S6, F)

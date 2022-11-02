@@ -22,15 +22,16 @@ namespace taichi::lang {
 // TODO(k-ye): Hide FunctionCreationGuard inside cpp file
 FunctionCreationGuard::FunctionCreationGuard(
     TaskCodeGenLLVM *mb,
-    std::vector<llvm::Type *> arguments)
+    std::vector<llvm::Type *> arguments,
+    const std::string &func_name)
     : mb(mb) {
   // Create the loop body function
   auto body_function_type = llvm::FunctionType::get(
       llvm::Type::getVoidTy(*mb->llvm_context), arguments, false);
 
   body = llvm::Function::Create(body_function_type,
-                                llvm::Function::InternalLinkage,
-                                "function_body", mb->module.get());
+                                llvm::Function::InternalLinkage, func_name,
+                                mb->module.get());
   old_func = mb->func;
   // emit into loop body function
   mb->func = body;
@@ -2668,8 +2669,9 @@ void TaskCodeGenLLVM::eliminate_unused_functions() {
 }
 
 FunctionCreationGuard TaskCodeGenLLVM::get_function_creation_guard(
-    std::vector<llvm::Type *> argument_types) {
-  return FunctionCreationGuard(this, argument_types);
+    std::vector<llvm::Type *> argument_types,
+    const std::string &func_name) {
+  return FunctionCreationGuard(this, argument_types, func_name);
 }
 
 void TaskCodeGenLLVM::initialize_context() {
@@ -2804,7 +2806,8 @@ void TaskCodeGenLLVM::visit(ReferenceStmt *stmt) {
 void TaskCodeGenLLVM::visit(FuncCallStmt *stmt) {
   if (!func_map.count(stmt->func)) {
     auto guard = get_function_creation_guard(
-        {llvm::PointerType::get(get_runtime_type("RuntimeContext"), 0)});
+        {llvm::PointerType::get(get_runtime_type("RuntimeContext"), 0)},
+        stmt->func->get_name());
     func_map.insert({stmt->func, guard.body});
     stmt->func->ir->accept(this);
   }

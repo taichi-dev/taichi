@@ -473,5 +473,7 @@ def test_gpu_sparse_matrix_ops(N):
 
     G = A @ B.transpose()
     S7 = S1 @ S2.T
-    # verify(S7, G)
+    print(G)
+    print(S7.A)
+    verify(S7, G)
     # print(S7.A)

@@ -75,11 +75,12 @@ def _Python_IPython_findsource(object):
                 lines = ip.history_manager._i00
                 fd, filename = tempfile.mkstemp(prefix='_IPyhon_', suffix=f'_{ip.history_manager.get_last_session_id()}.py')
                 os.close(fd)
+
                 index = lines.find("%time")
                 lines_stripped = lines[index:]
-                index = min(lines_stripped.index(" "), lines_stripped.index("\n"))
+                lines_stripped = lines_stripped.split(maxsplit=1)[1]
                 with open(filename, 'w') as f:
-                    f.write(lines_stripped[index + 1: ])
+                    f.write(lines_stripped)
                     
             def wrapped_getfile(obj):
                 return filename

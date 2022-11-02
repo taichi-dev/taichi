@@ -460,7 +460,7 @@ std::unique_ptr<SparseMatrix> CuSparseMatrix::gemm(const CuSparseMatrix &other,
                                                    const float alpha,
                                                    const float beta) const {
 #if defined(TI_WITH_CUDA)
-  cusparseHandle_t handle;
+  cusparseHandle_t handle = nullptr;
   CUSPARSEDriver::get_instance().cpCreate(&handle);
   cusparseOperation_t op_A = CUSPARSE_OPERATION_NON_TRANSPOSE;
   cusparseOperation_t op_B = CUSPARSE_OPERATION_NON_TRANSPOSE;
@@ -482,7 +482,7 @@ std::unique_ptr<SparseMatrix> CuSparseMatrix::gemm(const CuSparseMatrix &other,
   CUSPARSEDriver::get_instance().cpCreateSpGEMM(&spgemm_desc);
 
   // 3. ask buffer_size1 bytes for external memory
-  void *d_buffer1;
+  void *d_buffer1 = nullptr;
   size_t buffer_size1 = 0;
   CUSPARSEDriver::get_instance().cpSpGEMM_workEstimation(
       handle, op_A, op_B, &alpha, this->matrix_, other.matrix_, &beta, mat_C,
@@ -500,7 +500,7 @@ std::unique_ptr<SparseMatrix> CuSparseMatrix::gemm(const CuSparseMatrix &other,
   CUSPARSEDriver::get_instance().cpSpGEMM_compute(
       handle, op_A, op_B, &alpha, mat_A, mat_B, &beta, mat_C, CUDA_R_32F,
       CUSPARSE_SPGEMM_DEFAULT, spgemm_desc, &buffer_size2, nullptr);
-  void *d_buffer2;
+  void *d_buffer2 = nullptr;
   CUDADriver::get_instance().malloc((void **)&d_buffer2, buffer_size2);
 
   // 6. compute the intermediate product of A * B
@@ -536,7 +536,9 @@ std::unique_ptr<SparseMatrix> CuSparseMatrix::gemm(const CuSparseMatrix &other,
   CUSPARSEDriver::get_instance().cpDestroy(handle);
   CUSPARSEDriver::get_instance().cpDestroySpGEMM(spgemm_desc);
 
-  return make_cu_sparse_matrix(mat_C, nrows_A, ncols_B, PrimitiveType::f32);
+  auto c = make_cu_sparse_matrix(mat_C, nrows_A, ncols_B, PrimitiveType::f32);
+  TI_INFO("mat c: \n{}", c->to_string());
+  return c;
 #else
   TI_NOT_IMPLEMENTED;
   return std::unique_ptr<SparseMatrix>();

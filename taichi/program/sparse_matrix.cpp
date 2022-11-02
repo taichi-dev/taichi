@@ -536,9 +536,7 @@ std::unique_ptr<SparseMatrix> CuSparseMatrix::gemm(const CuSparseMatrix &other,
   CUSPARSEDriver::get_instance().cpDestroy(handle);
   CUSPARSEDriver::get_instance().cpDestroySpGEMM(spgemm_desc);
 
-  auto c = make_cu_sparse_matrix(mat_C, nrows_A, ncols_B, PrimitiveType::f32);
-  TI_INFO("mat c: \n{}", c->to_string());
-  return c;
+  return make_cu_sparse_matrix(mat_C, nrows_A, ncols_B, PrimitiveType::f32);
 #else
   TI_NOT_IMPLEMENTED;
   return std::unique_ptr<SparseMatrix>();

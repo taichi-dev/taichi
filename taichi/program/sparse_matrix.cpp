@@ -447,7 +447,7 @@ std::unique_ptr<SparseMatrix> CuSparseMatrix::addition(
 std::unique_ptr<SparseMatrix> CuSparseMatrix::matmul(
     const CuSparseMatrix &other) const {
 #if defined(TI_WITH_CUDA)
-  return gemm(other, 1.0f, 1.0f);
+  return gemm(other, 1.0f, 0.0f);
 #else
   TI_NOT_IMPLEMENTED;
   return std::unique_ptr<SparseMatrix>();

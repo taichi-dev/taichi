@@ -17,7 +17,6 @@ from taichi.lang.source_builder import *
 from taichi.lang.struct import *
 from taichi.lang.wrap_inspect import *
 
-
 __all__ = [
     s for s in dir() if not s.startswith('_') and s not in [
         'any_array', 'ast', 'common_ops', 'enums', 'exception', 'expr', 'impl',

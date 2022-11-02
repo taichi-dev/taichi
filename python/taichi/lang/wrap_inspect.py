@@ -1,7 +1,7 @@
 import inspect
 import os
-import tempfile
 import sys
+import tempfile
 
 
 def _blender_get_text_name(filename: str):
@@ -24,7 +24,8 @@ def _blender_find_source_text(object):
     filename = inspect.getfile(object)
     text_name = _blender_get_text_name(filename)
     if text_name is None:
-        raise IOError('Object `{object.__name__}` is not defined in a .blend file!')
+        raise IOError(
+            'Object `{object.__name__}` is not defined in a .blend file!')
 
     lines = bpy.data.texts[text_name].as_string()
     return lines, text_name
@@ -36,7 +37,8 @@ def _blender_findsource(object):
     try:
         filename = _blender_findsource._saved_inspect_cache[lines]
     except KeyError:
-        fd, filename = tempfile.mkstemp(prefix='SI_Blender_', suffix=f'_{text_name}.py')
+        fd, filename = tempfile.mkstemp(prefix='SI_Blender_',
+                                        suffix=f'_{text_name}.py')
         os.close(fd)
 
         with open(filename, 'w') as f:
@@ -67,13 +69,13 @@ def _Python_IPython_findsource(object):
     except IOError:
         filename = inspect.getfile(object)
         if (filename in {"<timed exec>", "<magic-timeit>"}
-            and "IPython" in sys.modules
-        ):
+                and "IPython" in sys.modules):
             from IPython import get_ipython
             ip = get_ipython()
             if ip is not None:
                 session_id = ip.history_manager.get_last_session_id()
-                fd, filename = tempfile.mkstemp(prefix='_IPython_', suffix=f'_{session_id}.py')
+                fd, filename = tempfile.mkstemp(prefix='_IPython_',
+                                                suffix=f'_{session_id}.py')
                 os.close(fd)
 
                 lines = ip.history_manager._i00
@@ -90,7 +92,7 @@ def _Python_IPython_findsource(object):
                 inspect.getfile = inspect._saved_getfile
                 del inspect._saved_getfile
                 return ret
-            
+
         raise IOError(f"Cannot find source code for Object: {object}")
 
 
@@ -105,7 +107,6 @@ def _custom_findsource(object):
 
 
 class _InspectContextManager:
-
     def __enter__(self):
         inspect._saved_findsource = inspect.findsource
         inspect.findsource = _custom_findsource

@@ -63,6 +63,12 @@ std::vector<Stmt *> get_store_destination(Stmt *store_stmt) {
     return std::vector<Stmt *>(1, global_store->dest);
   } else if (auto atomic = store_stmt->cast<AtomicOpStmt>()) {
     return std::vector<Stmt *>(1, atomic->dest);
+  } else if (auto snode_op = store_stmt->cast<SNodeOpStmt>()) {
+    if (snode_op->op_type == SNodeOpType::allocate) {
+      return {snode_op->val, snode_op->ptr};
+    } else {
+      return {};
+    }
   } else if (auto external_func = store_stmt->cast<ExternalFuncCallStmt>()) {
     if (store_stmt->cast<ExternalFuncCallStmt>()->type ==
         ExternalFuncCallStmt::BITCODE) {

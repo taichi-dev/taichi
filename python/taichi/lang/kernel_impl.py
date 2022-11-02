@@ -645,7 +645,6 @@ class Kernel:
 
             tmps = []
             callbacks = []
-            has_external_arrays = False
             has_torch = has_pytorch()
             has_pp = has_paddle()
 
@@ -677,25 +676,18 @@ class Kernel:
                 elif isinstance(needed,
                                 ndarray_type.NdarrayType) and isinstance(
                                     v, taichi.lang._ndarray.Ndarray):
-                    has_external_arrays = True
-                    v = v.arr
-                    launch_ctx.set_arg_ndarray(actual_argument_slot, v)
+                    launch_ctx.set_arg_ndarray(actual_argument_slot, v.arr)
                 elif isinstance(needed,
                                 texture_type.TextureType) and isinstance(
                                     v, taichi.lang._texture.Texture):
-                    has_external_arrays = True
-                    v = v.tex
-                    launch_ctx.set_arg_texture(actual_argument_slot, v)
+                    launch_ctx.set_arg_texture(actual_argument_slot, v.tex)
                 elif isinstance(needed,
                                 texture_type.RWTextureType) and isinstance(
                                     v, taichi.lang._texture.Texture):
-                    has_external_arrays = True
-                    v = v.tex
-                    launch_ctx.set_arg_rw_texture(actual_argument_slot, v)
+                    launch_ctx.set_arg_rw_texture(actual_argument_slot, v.tex)
                 elif isinstance(
                         needed,
                         ndarray_type.NdarrayType) and (self.match_ext_arr(v)):
-                    has_external_arrays = True
                     is_numpy = isinstance(v, np.ndarray)
                     is_torch = isinstance(v,
                                           torch.Tensor) if has_torch else False

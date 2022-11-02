@@ -794,8 +794,7 @@ class ASTTransformer(Builder):
                                 ], (attr_len, ),
                                 impl.get_runtime().get_current_src_info()))
                 else:
-                    # pylint: disable-msg=C0415
-                    from taichi.lang import matrix_ops as tensor_ops
+                    from taichi.lang import matrix_ops as tensor_ops  # pylint: disable=C0415
                     node.ptr = getattr(tensor_ops, node.attr)
                     setattr(node, 'caller', node.value.ptr)
             else:

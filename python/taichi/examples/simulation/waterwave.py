@@ -37,12 +37,10 @@ def laplacian(i, j):
 
 @ti.func
 def gradient(i, j):
-    return ti.Vector([
-        (height[i + 1, j] if i < shape[0] - 1 else 0) -
-        (height[i - 1, j] if i > 1 else 0),
-        (height[i, j + 1] if j < shape[1] - 1 else 0) -
-        (height[i, j - 1] if j > 1 else 0)
-    ]) * (0.5 / dx)
+    return ti.Vector([(height[i + 1, j] if i < shape[0] - 1 else 0) -
+                      (height[i - 1, j] if i > 1 else 0),
+                      (height[i, j + 1] if j < shape[1] - 1 else 0) -
+                      (height[i, j - 1] if j > 1 else 0)]) * (0.5 / dx)
 
 
 @ti.kernel

@@ -34,12 +34,14 @@ class TriangleRasterizer:
         self.colors = ti.root.dense(ti.i, n).place(self.c0, self.c1, self.c2)
 
         # Tile-based culling
-        self.block_num_triangles = ti.field(dtype=ti.i32,
-                                            shape=((width - 1) // tile_size + 1,
-                                                   (height - 1) // tile_size + 1))
+        self.block_num_triangles = ti.field(
+            dtype=ti.i32,
+            shape=((width - 1) // tile_size + 1,
+                   (height - 1) // tile_size + 1))
         self.block_indicies = ti.field(dtype=ti.i32,
                                        shape=((width - 1) // tile_size + 1,
-                                              (height - 1) // tile_size + 1, n))
+                                              (height - 1) // tile_size + 1,
+                                              n))
 
     def set_triangle(self, i, v0, v1, v2, c0, c1, c2):
         self.A[i] = v0

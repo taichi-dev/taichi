@@ -21,10 +21,10 @@ def get_alive(i, j):
 
 @ti.func
 def get_count(i, j):
-    return (get_alive(i - 1, j) + get_alive(i + 1, j) +
-            get_alive(i, j - 1) + get_alive(i, j + 1) +
-            get_alive(i - 1, j - 1) + get_alive(i + 1, j - 1) +
-            get_alive(i - 1, j + 1) + get_alive(i + 1, j + 1))
+    return (get_alive(i - 1, j) + get_alive(i + 1, j) + get_alive(i, j - 1) +
+            get_alive(i, j + 1) + get_alive(i - 1, j - 1) +
+            get_alive(i + 1, j - 1) + get_alive(i - 1, j + 1) +
+            get_alive(i + 1, j + 1))
 
 
 # See https://www.conwaylife.com/wiki/Cellular_automaton#Rules for more rules

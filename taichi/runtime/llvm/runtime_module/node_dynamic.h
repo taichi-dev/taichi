@@ -83,6 +83,8 @@ Ptr Dynamic_allocate(Ptr meta_, Ptr node_, i32 *len) {
     p_chunk_ptr = (Ptr *)(*p_chunk_ptr);
     chunk_start += chunk_size;
   }
+  // Unreachable
+  return nullptr;
 }
 
 i32 Dynamic_is_active(Ptr meta_, Ptr node_, int i) {

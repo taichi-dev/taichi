@@ -24,7 +24,8 @@ def _blender_find_source_text(obj):
     filename = inspect.getfile(obj)
     text_name = _blender_get_text_name(filename)
     if text_name is None:
-        raise IOError('Object `{obj.__name__}` is not defined in a .blend file!')
+        raise IOError(
+            'Object `{obj.__name__}` is not defined in a .blend file!')
 
     lines = bpy.data.texts[text_name].as_string()
     return lines, text_name
@@ -68,9 +69,9 @@ def _Python_IPython_findsource(obj):
     except IOError:
         filename = inspect.getfile(obj)
         if (filename in {"<timed exec>", "<magic-timeit>"}
-            and "IPython" in sys.modules
-        ):
-            from IPython import get_ipython  # pylint: disable=import-outside-toplevel
+                and "IPython" in sys.modules):
+            from IPython import \
+                get_ipython  # pylint: disable=import-outside-toplevel
             ip = get_ipython()
             if ip is not None:
                 session_id = ip.history_manager.get_last_session_id()
@@ -94,6 +95,7 @@ def _Python_IPython_findsource(obj):
                 return ret
 
         raise IOError(f"Cannot find source code for Object: {obj}")
+
 
 def _custom_findsource(obj):
     try:

@@ -122,9 +122,8 @@ class CacheLoopInvariantGlobalVars : public LoopInvariantDetector {
         std::make_unique<AllocaStmt>(dest->ret_type.ptr_removed());
     auto alloca_stmt = alloca_unique.get();
     modifier.insert_before(current_loop_stmt(), std::move(alloca_unique));
-    if (status == CacheStatus::Read) {
-      set_init_value(alloca_stmt, dest);
-    } else if (status == CacheStatus::Write) {
+    set_init_value(alloca_stmt, dest);
+    if (status == CacheStatus::Write) {
       add_writeback(alloca_stmt, dest);
     }
     cached_maps.top()[dest] = {status, alloca_stmt};

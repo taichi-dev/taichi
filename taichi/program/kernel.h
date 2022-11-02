@@ -35,7 +35,9 @@ class TI_DLL_EXPORT Kernel : public Callable {
 
     void set_arg_float(int arg_id, float64 d);
 
+    // Created signed and unsigned version for argument range check of pybind
     void set_arg_int(int arg_id, int64 d);
+    void set_arg_uint(int arg_id, uint64 d);
 
     void set_extra_arg_int(int i, int j, int32 d);
 
@@ -110,8 +112,10 @@ class TI_DLL_EXPORT Kernel : public Callable {
   float64 get_ret_float(int i);
 
   int64 get_ret_int(int i);
+  uint64 get_ret_uint(int i);
 
   std::vector<int64> get_ret_int_tensor(int i);
+  std::vector<uint64> get_ret_uint_tensor(int i);
 
   std::vector<float64> get_ret_float_tensor(int i);
 

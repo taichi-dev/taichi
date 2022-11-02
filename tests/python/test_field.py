@@ -304,26 +304,6 @@ def test_indexing_mat_field_with_np_int():
     val[idx][idx, idx]
 
 
-@test_utils.test(exclude=[ti.cc], debug=True)
-def test_field_fill():
-    x = ti.field(int, shape=(3, 3))
-    x.fill(2)
-
-    y = ti.field(float, shape=(3, 3))
-    y.fill(2.0)
-
-    z = ti.Vector.field(3, float, shape=(3, 3))
-    z.fill([1, 2, 3])
-
-    @ti.kernel
-    def test():
-        x.fill(3)
-        y.fill(3.0)
-        z.fill([4, 5, 6])
-
-    test()
-
-
 @test_utils.test()
 def test_python_for_in():
     x = ti.field(int, shape=3)
@@ -331,3 +311,16 @@ def test_python_for_in():
                        match="Struct for is only available in Taichi scope"):
         for i in x:
             pass
+
+
+@test_utils.test()
+def test_matrix_mult_field():
+    x = ti.field(int, shape=())
+    with pytest.raises(ti.TaichiTypeError, match="unsupported operand type"):
+
+        @ti.kernel
+        def foo():
+            a = ti.Vector([1, 1, 1])
+            b = a * x
+
+        foo()

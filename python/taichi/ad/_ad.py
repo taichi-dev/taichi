@@ -9,7 +9,7 @@ from functools import reduce
 import numpy as np
 import taichi.types.primitive_types as types
 from taichi.lang import impl
-from taichi.lang.enums import SNodeGradType
+from taichi.lang.enums import AutodiffMode, SNodeGradType
 from taichi.lang.expr import Expr
 from taichi.lang.field import ScalarField
 from taichi.lang.kernel_impl import kernel
@@ -165,6 +165,7 @@ class Tape:
             >>>     sum(2)
         """
         self.calls = []
+        self.modes = []
         self.entered = False
         self.gradient_evaluated = False
         self.clear_gradients = clear_gradients
@@ -205,24 +206,37 @@ class Tape:
 
         # Attach the context manager to runtime
         self.runtime.target_tape = self
+        return self
 
     def __exit__(self, _type, value, tb):
         self.runtime.target_tape = None
         if self.eval_on_exit:
             self.grad()
+        for calls, mode in zip(self.calls, self.modes):
+            calls[0].autodiff_mode = mode
 
     def insert(self, func, args):
+        # Kernels with mode `AutodiffMode.NONE` and `AutodiffMode.VALIDATION` are all forward kernels.
+        # The difference is there are `assert` for global data access rule check in VALIDATION kernels.
+        assert func.autodiff_mode in (
+            AutodiffMode.NONE, AutodiffMode.VALIDATION
+        ), "Inserted funcs should be forward kernels."
+        self.modes.append(func.autodiff_mode)
+        if self.validation:
+            func.autodiff_mode = AutodiffMode.VALIDATION
         self.calls.append((func, args))
 
     def grad(self):
         assert self.entered, "Before evaluating gradients tape must be entered."
         assert not self.gradient_evaluated, "Gradients of grad can be evaluated only once."
+
         for func, args in reversed(self.calls):
             # we need to check whether "func" has "grad" attribute
             # since we insert write_int and write_float kernels to self.calls
             # e.g. x[None] = 0.0, this func has no grad attribute
             if hasattr(func, 'grad'):
                 func.grad(*args)
+
         self.gradient_evaluated = True
         if self.grad_checker:
             self.grad_checker.add_calls(self.calls)
@@ -298,6 +312,7 @@ def grad_replaced(func):
             impl.get_runtime().grad_replaced = False
 
     decorated.grad = None
+    decorated.autodiff_mode = AutodiffMode.NONE
     return decorated
 
 
@@ -364,12 +379,14 @@ def no_grad(func):
         return
 
     decorated.grad = placeholder
+    decorated.autodiff_mode = AutodiffMode.NONE
     return decorated
 
 
 class FwdMode:
     def __init__(self, loss, param, seed=None, clear_gradients=True):
         self.calls = []
+        self.modes = []
         self.entered = False
         self.kernels_recovered = False
         self.runtime = impl.get_runtime()
@@ -442,13 +459,16 @@ class FwdMode:
         self.clear_seed()
         self.recover_kernels()
 
-    def insert(self, func, mode_original):
-        self.calls.append((func, mode_original))
+    def insert(self, func):
+        assert func.autodiff_mode == AutodiffMode.NONE or func.autodiff_mode == AutodiffMode.FORWARD, "Inserted funcs should be forward or grad kernels (forward mode)."
+        self.modes.append(func.autodiff_mode)
+        func.autodiff_mode = AutodiffMode.FORWARD
+        self.calls.append((func))
 
     def recover_kernels(self):
         assert self.entered, "Before recover the kernels, fwd mode manager must be entered."
-        for f, mode_original in self.calls:
-            f.autodiff_mode = mode_original
+        for calls, mode in zip(self.calls, self.modes):
+            calls.autodiff_mode = mode
         self.kernels_recovered = True
 
     def clear_seed(self):

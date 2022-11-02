@@ -10,7 +10,7 @@ from taichi.lang import runtime_ops
 from taichi.lang._ndarray import Ndarray, NdarrayHostAccess
 from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.enums import Layout
-from taichi.lang.exception import (TaichiCompilationError, TaichiSyntaxError,
+from taichi.lang.exception import (TaichiRuntimeError, TaichiSyntaxError,
                                    TaichiTypeError)
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
 from taichi.lang.swizzle_generator import SwizzleGenerator
@@ -78,17 +78,15 @@ def _gen_swizzles(cls):
                             instance._impl._get_entry(key_group.index(ch)))
                     return Vector(res, is_ref=True)
 
+                @python_scope
                 def prop_setter(instance, value):
                     if len(pattern) != len(value):
-                        raise TaichiCompilationError(
+                        raise TaichiRuntimeError(
                             f'value len does not match the swizzle pattern={prop_key}'
                         )
                     checker(instance, pattern)
                     for ch, val in zip(pattern, value):
-                        if in_python_scope():
-                            instance[key_group.index(ch)] = val
-                        else:
-                            instance(key_group.index(ch))._assign(val)
+                        instance[key_group.index(ch)] = val
 
                 prop = property(prop_getter, prop_setter)
                 return prop_key, prop
@@ -243,16 +241,16 @@ class _TiScopeMatrixImpl(_MatrixBaseImpl):
         self.dynamic_index_stride = dynamic_index_stride
 
     @taichi_scope
-    def _subscript(self, is_global_mat, *indices, get_ref=False):
+    def _subscript(self, is_global_mat, *indices):
         assert len(indices) in [1, 2]
         i = indices[0]
         j = 0 if len(indices) == 1 else indices[1]
         has_slice = False
         if isinstance(i, slice):
-            i = self._calc_slice(i, 0)
+            i = impl._calc_slice(i, self.n)
             has_slice = True
         if isinstance(j, slice):
-            j = self._calc_slice(j, 1)
+            j = impl._calc_slice(j, self.m)
             has_slice = True
 
         if has_slice:
@@ -262,10 +260,10 @@ class _TiScopeMatrixImpl(_MatrixBaseImpl):
                 j = [j]
             if len(indices) == 1:
                 return Vector([self._subscript(is_global_mat, a) for a in i],
-                              is_ref=get_ref)
+                              is_ref=True)
             return Matrix([[self._subscript(is_global_mat, a, b) for b in j]
                            for a in i],
-                          is_ref=get_ref)
+                          is_ref=True)
 
         if self.any_array_access:
             return self.any_array_access.subscript(i, j)
@@ -279,21 +277,6 @@ class _TiScopeMatrixImpl(_MatrixBaseImpl):
                                          (self.n, self.m),
                                          self.dynamic_index_stride)
         return self._get_entry(i, j)
-
-    def _calc_slice(self, index, dim):
-        start, stop, step = index.start or 0, index.stop or (
-            self.n if dim == 0 else self.m), index.step or 1
-
-        def helper(x):
-            #  TODO(mzmzm): support variable in slice
-            if isinstance(x, expr.Expr):
-                raise TaichiCompilationError(
-                    "Taichi does not support variables in slice now, please use constant instead of it."
-                )
-            return x
-
-        start, stop, step = helper(start), helper(stop), helper(step)
-        return [_ for _ in range(start, stop, step)]
 
 
 class _MatrixEntriesInitializer:
@@ -397,8 +380,6 @@ class Matrix(TaichiOperations):
     Args:
         arr (Union[list, tuple, np.ndarray]): the initial values of a matrix.
         dt (:mod:`~taichi.types.primitive_types`): the element data type.
-        suppress_warning (bool): whether raise warning or not when the matrix contains more \
-            than 32 elements.
         ndim (int optional): the number of dimensions of the matrix; forced reshape if given.
 
     Example::
@@ -430,12 +411,7 @@ class Matrix(TaichiOperations):
     _is_taichi_class = True
     __array_priority__ = 1000
 
-    def __init__(self,
-                 arr,
-                 dt=None,
-                 suppress_warning=False,
-                 is_ref=False,
-                 ndim=None):
+    def __init__(self, arr, dt=None, is_ref=False, ndim=None):
         local_tensor_proxy = None
 
         if not isinstance(arr, (list, tuple, np.ndarray)):
@@ -482,7 +458,7 @@ class Matrix(TaichiOperations):
             assert ndim in (0, 1, 2)
             self.ndim = ndim
 
-        if self.n * self.m > 32 and not suppress_warning:
+        if self.n * self.m > 32:
             warning(
                 f'Taichi matrices/vectors with {self.n}x{self.m} > 32 entries are not suggested.'
                 ' Matrices/vectors will be automatically unrolled at compile-time for performance.'
@@ -499,6 +475,17 @@ class Matrix(TaichiOperations):
         else:
             self._impl = _TiScopeMatrixImpl(m, n, entries, local_tensor_proxy,
                                             None)
+
+    def get_shape(self):
+        if self.ndim == 1:
+            return (self.n, )
+        return (self.n, self.m)
+
+    def element_type(self):
+        if self._impl.entries:
+            return getattr(self._impl.entries[0], 'element_type',
+                           lambda: None)()
+        return None
 
     def _element_wise_binary(self, foo, other):
         other = self._broadcast_copy(other)
@@ -655,7 +642,7 @@ class Matrix(TaichiOperations):
         return self._impl.dynamic_index_stride
 
     @taichi_scope
-    def _subscript(self, *indices, get_ref=False):
+    def _subscript(self, *indices):
         assert len(
             indices
         ) == self.ndim, f"Expected {self.ndim} indices, got {len(indices)}"
@@ -665,7 +652,7 @@ class Matrix(TaichiOperations):
             # 2. Taichi kernel directlly uses a matrix (global variable) created in the Python scope.
             return self._impl.subscript_scope_ignored(indices)
         is_global_mat = isinstance(self, _MatrixFieldElement)
-        return self._impl._subscript(is_global_mat, *indices, get_ref=get_ref)
+        return self._impl._subscript(is_global_mat, *indices)
 
     def to_list(self):
         """Return this matrix as a 1D `list`.
@@ -718,11 +705,9 @@ class Matrix(TaichiOperations):
             >>> m.trace()
             5
         """
-        assert self.n == self.m
-        _sum = self(0, 0)
-        for i in range(1, self.n):
-            _sum = _sum + self(i, i)
-        return _sum
+        # pylint: disable-msg=C0415
+        from taichi.lang import matrix_ops
+        return matrix_ops.trace(self)
 
     @taichi_scope
     def inverse(self):
@@ -985,10 +970,9 @@ class Matrix(TaichiOperations):
             >>> A
             [-1, -1, -1, -1]
         """
-        def assign_renamed(x, y):
-            return ops_mod.assign(x, y)
-
-        return self._element_wise_writeback_binary(assign_renamed, val)
+        # pylint: disable=C0415
+        from taichi.lang import matrix_ops
+        return matrix_ops.fill(self, val)
 
     @python_scope
     def to_numpy(self, keep_dims=False):
@@ -1480,6 +1464,9 @@ class Vector(Matrix):
         """
         super().__init__(arr, dt=dt, **kwargs)
 
+    def get_shape(self):
+        return (self.n, )
+
     @classmethod
     def field(cls, n, dtype, *args, **kwargs):
         """ti.Vector.field"""
@@ -1630,34 +1617,24 @@ class MatrixField(Field):
         """Fills this matrix field with specified values.
 
         Args:
-            val (Union[Number, List, Tuple, Matrix]): Values to fill,
+            val (Union[Number, Expr, List, Tuple, Matrix]): Values to fill,
                 should have consistent dimension consistent with `self`.
         """
-        if isinstance(val, numbers.Number):
-            val = tuple(
-                [tuple([val for _ in range(self.m)]) for _ in range(self.n)])
-        elif isinstance(val,
-                        (list, tuple)) and isinstance(val[0], numbers.Number):
-            assert self.m == 1
-            val = tuple(val)
-        elif is_vector(val):
-            val = tuple([(val(i), ) for i in range(self.n * self.m)])
+        if isinstance(val, numbers.Number) or (isinstance(val, expr.Expr)
+                                               and not val.is_tensor()):
+            val = list(list(val for _ in range(self.m)) for _ in range(self.n))
         elif isinstance(val, Matrix):
-            val_tuple = []
-            for i in range(val.n):
-                row = []
-                for j in range(val.m):
-                    row.append(val(i, j))
-                row = tuple(row)
-                val_tuple.append(row)
-            val = tuple(val_tuple)
+            val = val.to_list()
+        else:
+            assert isinstance(val, (list, tuple))
+        val = tuple(tuple(x) if isinstance(x, list) else x for x in val)
         assert len(val) == self.n
         if self.ndim != 1:
             assert len(val[0]) == self.m
-
         if in_python_scope():
-            from taichi._kernels import fill_matrix  # pylint: disable=C0415
-            fill_matrix(self, val)
+            from taichi._kernels import \
+                field_fill_python_scope  # pylint: disable=C0415
+            field_fill_python_scope(self, val)
         else:
             from taichi._funcs import \
                 field_fill_taichi_scope  # pylint: disable=C0415
@@ -1735,15 +1712,7 @@ class MatrixField(Field):
         return arr
 
     @python_scope
-    def from_numpy(self, arr):
-        """Copies an `numpy.ndarray` into this field.
-
-        Example::
-
-            >>> m = ti.Matrix.field(2, 2, ti.f32, shape=(3, 3))
-            >>> arr = numpp.ones((3, 3, 2, 2))
-            >>> m.from_numpy(arr)
-        """
+    def _from_external_arr(self, arr):
         if len(arr.shape) == len(self.shape) + 1:
             as_vector = True
             assert self.m == 1, "This is not a vector field"
@@ -1755,6 +1724,21 @@ class MatrixField(Field):
         from taichi._kernels import ext_arr_to_matrix  # pylint: disable=C0415
         ext_arr_to_matrix(arr, self, as_vector)
         runtime_ops.sync()
+
+    @python_scope
+    def from_numpy(self, arr):
+        """Copies an `numpy.ndarray` into this field.
+
+        Example::
+
+            >>> m = ti.Matrix.field(2, 2, ti.f32, shape=(3, 3))
+            >>> arr = numpy.ones((3, 3, 2, 2))
+            >>> m.from_numpy(arr)
+        """
+
+        if not arr.flags.c_contiguous:
+            arr = np.ascontiguousarray(arr)
+        self._from_external_arr(arr)
 
     @python_scope
     def __setitem__(self, key, value):

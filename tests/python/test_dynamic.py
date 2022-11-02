@@ -1,10 +1,11 @@
 import pytest
+from taichi.lang.exception import TaichiCompilationError
 
 import taichi as ti
 from tests import test_utils
 
 
-@test_utils.test(require=ti.extension.sparse)
+@test_utils.test(require=ti.extension.sparse, exclude=[ti.metal])
 def test_dynamic():
     x = ti.field(ti.f32)
     n = 128
@@ -22,7 +23,7 @@ def test_dynamic():
         assert x[i] == i
 
 
-@test_utils.test(require=ti.extension.sparse)
+@test_utils.test(require=ti.extension.sparse, exclude=[ti.metal])
 def test_dynamic2():
     x = ti.field(ti.f32)
     n = 128
@@ -40,7 +41,7 @@ def test_dynamic2():
         assert x[i] == i
 
 
-@test_utils.test(require=ti.extension.sparse)
+@test_utils.test(require=ti.extension.sparse, exclude=[ti.metal])
 def test_dynamic_matrix():
     x = ti.Matrix.field(2, 1, dtype=ti.i32)
     n = 8192
@@ -63,7 +64,7 @@ def test_dynamic_matrix():
             assert b == 0
 
 
-@test_utils.test(require=ti.extension.sparse)
+@test_utils.test(require=ti.extension.sparse, exclude=[ti.metal])
 def test_append():
     x = ti.field(ti.i32)
     n = 128
@@ -85,7 +86,7 @@ def test_append():
         assert elements[i] == i
 
 
-@test_utils.test(require=ti.extension.sparse)
+@test_utils.test(require=ti.extension.sparse, exclude=[ti.metal])
 def test_length():
     x = ti.field(ti.i32)
     y = ti.field(ti.f32, shape=())
@@ -109,7 +110,7 @@ def test_length():
     assert y[None] == n
 
 
-@test_utils.test(require=ti.extension.sparse)
+@test_utils.test(require=ti.extension.sparse, exclude=[ti.metal])
 def test_append_ret_value():
     x = ti.field(ti.i32)
     y = ti.field(ti.i32)
@@ -134,7 +135,7 @@ def test_append_ret_value():
         assert x[i] + 3 == z[i]
 
 
-@test_utils.test(require=ti.extension.sparse)
+@test_utils.test(require=ti.extension.sparse, exclude=[ti.metal])
 def test_dense_dynamic():
     # The spin lock implementation has triggered a bug in CUDA, the end result
     # being that appending to Taichi's dynamic node messes up its length. See
@@ -165,7 +166,7 @@ def test_dense_dynamic():
         assert l[i] == n
 
 
-@test_utils.test(require=ti.extension.sparse)
+@test_utils.test(require=ti.extension.sparse, exclude=[ti.metal])
 def test_dense_dynamic_len():
     n = 128
     x = ti.field(ti.i32)
@@ -184,7 +185,7 @@ def test_dense_dynamic_len():
         assert l[i] == 0
 
 
-@test_utils.test(require=ti.extension.sparse)
+@test_utils.test(require=ti.extension.sparse, exclude=[ti.metal])
 def test_dynamic_activate():
     # record the lengths
     l = ti.field(ti.i32, 3)
@@ -209,3 +210,58 @@ def test_dynamic_activate():
     assert l[0] == m
     assert l[1] == 21
     assert l[2] == 21
+
+
+@test_utils.test(require=ti.extension.sparse, exclude=[ti.metal])
+def test_append_vec():
+    x = ti.Vector.field(3, ti.f32)
+    block = ti.root.dense(ti.i, 16)
+    pixel = block.dynamic(ti.j, 16)
+    pixel.place(x)
+
+    @ti.kernel
+    def make_lists():
+        for i in range(5):
+            for j in range(i):
+                x_vec3 = ti.math.vec3(i, j, j * j)
+                ti.append(x.parent(), i, x_vec3)
+
+    with pytest.raises(TaichiCompilationError,
+                       match=r'append only supports appending a scalar value'):
+        make_lists()
+
+
+@test_utils.test(require=ti.extension.sparse, exclude=[ti.metal])
+def test_append_u8():
+    x = ti.field(ti.u8)
+    pixel = ti.root.dynamic(ti.j, 20)
+    pixel.place(x)
+
+    @ti.kernel
+    def make_list():
+        ti.loop_config(serialize=True)
+        for i in range(20):
+            x[()].append(i * i * i)
+
+    make_list()
+
+    for i in range(20):
+        assert x[i] == i * i * i % 256
+
+
+@test_utils.test(require=ti.extension.sparse, exclude=[ti.metal])
+def test_append_u64():
+    x = ti.field(ti.u64)
+    pixel = ti.root.dynamic(ti.i, 20)
+    pixel.place(x)
+
+    @ti.kernel
+    def make_list():
+        ti.loop_config(serialize=True)
+        for i in range(20):
+            x[()].append(i * i * i * ti.u64(10000000000))
+
+    make_list()
+
+    for i in range(20):
+        assert x[i] == i * i * i * 10000000000

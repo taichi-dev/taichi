@@ -60,6 +60,7 @@ PER_STATEMENT(GetChStmt)
 PER_STATEMENT(LocalLoadStmt)
 PER_STATEMENT(GlobalPtrStmt)
 PER_STATEMENT(MatrixOfGlobalPtrStmt)
+PER_STATEMENT(MatrixOfMatrixPtrStmt)
 
 // Offloaded
 PER_STATEMENT(OffloadedStmt)

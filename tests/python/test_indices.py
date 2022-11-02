@@ -52,3 +52,22 @@ def test_indices_i64():
     prefix_sum()
     for i in range(n):
         assert (val[i] == i + 1)
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda],
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_indices_with_matrix():
+    grid_m = ti.field(dtype=ti.i32, shape=(10, 10))
+
+    @ti.kernel
+    def build_grid():
+        base = int(ti.Vector([2, 4]))
+        grid_m[base] = 100
+
+        grid_m[int(ti.Vector([1, 1]))] = 10
+
+    build_grid()
+
+    assert grid_m[1, 1] == 10
+    assert grid_m[2, 4] == 100

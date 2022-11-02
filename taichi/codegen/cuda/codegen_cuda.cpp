@@ -18,6 +18,7 @@
 #include "taichi/analysis/offline_cache_util.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/transforms.h"
+#include "taichi/codegen/codegen_utils.h"
 
 namespace taichi::lang {
 
@@ -30,7 +31,7 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
  public:
   using IRVisitor::visit;
 
-  TaskCodeGenCUDA(Kernel *kernel, IRNode *ir = nullptr)
+  explicit TaskCodeGenCUDA(Kernel *kernel, IRNode *ir = nullptr)
       : TaskCodeGenLLVM(kernel, ir) {
   }
 
@@ -102,12 +103,20 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
         formats += data_type_format(arg_stmt->ret_type);
 
         auto value = llvm_val[arg_stmt];
+        auto value_type = value->getType();
         if (arg_stmt->ret_type->is<TensorType>()) {
           auto dtype = arg_stmt->ret_type->cast<TensorType>();
           num_contents += dtype->get_num_elements();
           auto elem_type = dtype->get_element_type();
           for (int i = 0; i < dtype->get_num_elements(); ++i) {
-            auto elem_value = builder->CreateExtractElement(value, i);
+            llvm::Value *elem_value;
+            if (codegen_vector_type(&prog->this_thread_config())) {
+              TI_ASSERT(llvm::dyn_cast<llvm::VectorType>(value_type));
+              elem_value = builder->CreateExtractElement(value, i);
+            } else {
+              TI_ASSERT(llvm::dyn_cast<llvm::ArrayType>(value_type));
+              elem_value = builder->CreateExtractValue(value, i);
+            }
             auto [casted_value, elem_value_type] =
                 create_value_and_type(elem_value, elem_type);
             types.push_back(elem_value_type);
@@ -541,6 +550,36 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
     }
   }
 
+  void emit_cuda_gc_rc(OffloadedStmt *stmt) {
+    {
+      init_offloaded_task_function(stmt, "gather_list");
+      call("gc_rc_parallel_0", get_context());
+      finalize_offloaded_task_function();
+      current_task->grid_dim = prog->this_thread_config().saturating_grid_dim;
+      current_task->block_dim = 64;
+      offloaded_tasks.push_back(*current_task);
+      current_task = nullptr;
+    }
+    {
+      init_offloaded_task_function(stmt, "reinit_lists");
+      call("gc_rc_parallel_1", get_context());
+      finalize_offloaded_task_function();
+      current_task->grid_dim = 1;
+      current_task->block_dim = 1;
+      offloaded_tasks.push_back(*current_task);
+      current_task = nullptr;
+    }
+    {
+      init_offloaded_task_function(stmt, "zero_fill");
+      call("gc_rc_parallel_2", get_context());
+      finalize_offloaded_task_function();
+      current_task->grid_dim = prog->this_thread_config().saturating_grid_dim;
+      current_task->block_dim = 64;
+      offloaded_tasks.push_back(*current_task);
+      current_task = nullptr;
+    }
+  }
+
   bool kernel_argument_by_val() const override {
     return true;  // on CUDA, pass the argument by value
   }
@@ -586,6 +625,8 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
     if (stmt->task_type == Type::gc) {
       // gc has 3 kernels, so we treat it specially
       emit_cuda_gc(stmt);
+    } else if (stmt->task_type == Type::gc_rc) {
+      emit_cuda_gc_rc(stmt);
     } else {
       init_offloaded_task_function(stmt);
       if (stmt->task_type == Type::serial) {
@@ -739,12 +780,6 @@ FunctionType CUDAModuleToFunctionConverter::convert(
   auto &mod = data.module;
   auto &tasks = data.tasks;
 #ifdef TI_WITH_CUDA
-  for (const auto &task : tasks) {
-    llvm::Function *func = mod->getFunction(task.name);
-    TI_ASSERT(func);
-    tlctx_->mark_function_as_cuda_kernel(func, task.block_dim);
-  }
-
   auto jit = tlctx_->jit.get();
   auto cuda_module =
       jit->add_module(std::move(mod), executor_->get_config()->gpu_max_reg);
@@ -812,6 +847,8 @@ FunctionType CUDAModuleToFunctionConverter::convert(
     if (transferred) {
       CUDADriver::get_instance().stream_synchronize(nullptr);
     }
+    CUDADriver::get_instance().context_set_limit(
+        CU_LIMIT_STACK_SIZE, executor->get_config()->cuda_stack_limit);
 
     for (auto task : offloaded_tasks) {
       TI_TRACE("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,

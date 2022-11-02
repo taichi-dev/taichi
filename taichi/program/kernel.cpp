@@ -30,7 +30,9 @@ Kernel::Kernel(Program &program,
                const std::function<void(Kernel *)> &func,
                const std::string &primal_name,
                AutodiffMode autodiff_mode) {
-  this->init(program, std::bind(func, this), primal_name, autodiff_mode);
+  // due to #6362, we cannot write [func, this] { return func(this); }
+  this->init(
+      program, [&] { return func(this); }, primal_name, autodiff_mode);
 }
 
 Kernel::Kernel(Program &program,
@@ -191,7 +193,7 @@ void Kernel::LaunchContextBuilder::set_arg_int(int arg_id, int64 d) {
                  "not allowed.");
 
   ActionRecorder::get_instance().record(
-      "set_kernel_arg_int64",
+      "set_kernel_arg_integer",
       {ActionArg("kernel_name", kernel_->name), ActionArg("arg_id", arg_id),
        ActionArg("val", d)});
 
@@ -216,6 +218,10 @@ void Kernel::LaunchContextBuilder::set_arg_int(int arg_id, int64 d) {
     TI_INFO(dt->to_string());
     TI_NOT_IMPLEMENTED
   }
+}
+
+void Kernel::LaunchContextBuilder::set_arg_uint(int arg_id, uint64 d) {
+  set_arg_int(arg_id, d);
 }
 
 void Kernel::LaunchContextBuilder::set_extra_arg_int(int i, int j, int32 d) {
@@ -253,17 +259,13 @@ void Kernel::LaunchContextBuilder::set_arg_ndarray(int arg_id,
 void Kernel::LaunchContextBuilder::set_arg_texture(int arg_id,
                                                    const Texture &tex) {
   intptr_t ptr = tex.get_device_allocation_ptr_as_int();
-  ctx_->set_arg(arg_id, ptr);
-  ctx_->set_array_device_allocation_type(
-      arg_id, RuntimeContext::DevAllocType::kTexture);
+  ctx_->set_arg_texture(arg_id, ptr);
 }
 
 void Kernel::LaunchContextBuilder::set_arg_rw_texture(int arg_id,
                                                       const Texture &tex) {
   intptr_t ptr = tex.get_device_allocation_ptr_as_int();
-  ctx_->set_arg(arg_id, ptr);
-  ctx_->set_array_device_allocation_type(
-      arg_id, RuntimeContext::DevAllocType::kRWTexture);
+  ctx_->set_arg_rw_texture(arg_id, ptr, tex.get_size());
 }
 
 void Kernel::LaunchContextBuilder::set_arg_raw(int arg_id, uint64 d) {
@@ -325,12 +327,27 @@ int64 Kernel::get_ret_int(int i) {
   return fetch_ret<int64>(dt, i);
 }
 
+uint64 Kernel::get_ret_uint(int i) {
+  auto dt = rets[i].dt->get_compute_type();
+  return fetch_ret<uint64>(dt, i);
+}
+
 std::vector<int64> Kernel::get_ret_int_tensor(int i) {
   DataType dt = rets[i].dt->as<TensorType>()->get_element_type();
   int size = rets[i].dt->as<TensorType>()->get_num_elements();
   std::vector<int64> res;
   for (int j = 0; j < size; j++) {
     res.emplace_back(fetch_ret<int64>(dt, j));
+  }
+  return res;
+}
+
+std::vector<uint64> Kernel::get_ret_uint_tensor(int i) {
+  DataType dt = rets[i].dt->as<TensorType>()->get_element_type();
+  int size = rets[i].dt->as<TensorType>()->get_num_elements();
+  std::vector<uint64> res;
+  for (int j = 0; j < size; j++) {
+    res.emplace_back(fetch_ret<uint64>(dt, j));
   }
   return res;
 }
@@ -399,9 +416,10 @@ void Kernel::init(Program &program,
 
   this->arch = program.this_thread_config().arch;
 
-  if (autodiff_mode == AutodiffMode::kNone ||
-      autodiff_mode == AutodiffMode::kCheckAutodiffValid) {
+  if (autodiff_mode == AutodiffMode::kNone) {
     name = primal_name;
+  } else if (autodiff_mode == AutodiffMode::kCheckAutodiffValid) {
+    name = primal_name + "_validate_grad";
   } else if (autodiff_mode == AutodiffMode::kForward) {
     name = primal_name + "_forward_grad";
   } else if (autodiff_mode == AutodiffMode::kReverse) {
@@ -437,7 +455,7 @@ void Kernel::offload_to_executable(IRNode *stmt) {
       stmt, config, this, verbose,
       /*determine_ad_stack_size=*/autodiff_mode == AutodiffMode::kReverse,
       /*lower_global_access=*/true,
-      /*make_block_local=*/config.make_thread_local,
+      /*make_thread_local=*/config.make_thread_local,
       /*make_block_local=*/
       is_extension_supported(config.arch, Extension::bls) &&
           config.make_block_local);

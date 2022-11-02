@@ -25,7 +25,8 @@ class FunctionCreationGuard {
   llvm::IRBuilder<>::InsertPoint ip;
 
   FunctionCreationGuard(TaskCodeGenLLVM *mb,
-                        std::vector<llvm::Type *> arguments);
+                        std::vector<llvm::Type *> arguments,
+                        const std::string &func_name);
 
   ~FunctionCreationGuard();
 };
@@ -67,9 +68,9 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   using IRVisitor::visit;
   using LLVMModuleBuilder::call;
 
-  TaskCodeGenLLVM(Kernel *kernel,
-                  IRNode *ir = nullptr,
-                  std::unique_ptr<llvm::Module> &&module = nullptr);
+  explicit TaskCodeGenLLVM(Kernel *kernel,
+                           IRNode *ir = nullptr,
+                           std::unique_ptr<llvm::Module> &&module = nullptr);
 
   Arch current_arch() {
     return kernel->arch;
@@ -141,6 +142,7 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   void emit_list_gen(OffloadedStmt *listgen);
 
   void emit_gc(OffloadedStmt *stmt);
+  void emit_gc_rc();
 
   llvm::Value *call(SNode *snode,
                     llvm::Value *node_ptr,
@@ -315,7 +317,8 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   void finalize_offloaded_task_function();
 
   FunctionCreationGuard get_function_creation_guard(
-      std::vector<llvm::Type *> argument_types);
+      std::vector<llvm::Type *> argument_types,
+      const std::string &func_name = "function_body");
 
   std::tuple<llvm::Value *, llvm::Value *> get_range_for_bounds(
       OffloadedStmt *stmt);

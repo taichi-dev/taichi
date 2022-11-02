@@ -2,6 +2,7 @@ import glob
 import json
 import re
 from collections import defaultdict
+from pathlib import Path
 
 
 class Name:
@@ -73,7 +74,7 @@ class DeclarationRegistry:
         DeclarationRegistry.current = declr_reg
 
 
-def load_inc_enums(name):
+def load_inc_enums():
     paths = glob.glob("taichi/inc/*.inc.h")
     cases = defaultdict(dict)
     for path in paths:
@@ -83,7 +84,7 @@ def load_inc_enums(name):
                 if m:
                     key = m[1]
                     try:
-                        case_name = name.extend(m[2])
+                        case_name = Name(m[2])
                     except AssertionError:
                         continue
                     cases[key][case_name] = len(cases[key])
@@ -150,20 +151,20 @@ class Enumeration(EntryBase):
     def __init__(self, j):
         super().__init__(j, "enumeration")
         if "inc_cases" in j:
-            self.cases = load_inc_enums(self.name)[j["inc_cases"]]
+            self.cases = load_inc_enums()[j["inc_cases"]]
         else:
-            self.cases = dict((self.name.extend(name), value)
-                              for name, value in j["cases"].items())
+            self.cases = dict(
+                (Name(name), value) for name, value in j["cases"].items())
 
 
 class BitField(EntryBase):
     def __init__(self, j):
         super().__init__(j, "bit_field")
         if "inc_cases" in j:
-            self.bits = load_inc_enums(self.name)[j["inc_bits"]]
+            self.bits = load_inc_enums()[j["inc_bits"]]
         else:
-            self.bits = dict((self.name.extend(name), value)
-                             for name, value in j["bits"].items())
+            self.bits = dict(
+                (Name(name), value) for name, value in j["bits"].items())
 
 
 class Field:
@@ -214,16 +215,102 @@ class Function(EntryBase):
             self.is_device_command = True
 
 
+class Documentation:
+    def __init__(self, name: str):
+        self.markdown_metadata = []
+        self.module_doc = []
+        self.api_refs = defaultdict(list)
+
+        path = Path(f"c_api/docs/{name}")
+        if path.exists():
+            with path.open() as f:
+                templ = f.readlines()
+
+            # Ignore markdown headers
+            markdown_metadata = []
+            if len(templ) > 0 and templ[0].startswith("---"):
+                for i in range(1, len(templ)):
+                    if templ[i].startswith("---"):
+                        i += 1
+                        break
+                    markdown_metadata += [templ[i].strip()]
+
+            # Skip initial empty lines.
+            for i in range(i, len(templ)):
+                if len(templ[i].strip()) != 0:
+                    break
+
+            # Collect module-level documentation.
+            module_doc = []
+            for i in range(i, len(templ)):
+                line = templ[i].strip()
+                module_doc += [line]
+                if line.startswith("## API Reference"):
+                    break
+
+            # Collect API-references.
+            SYM_PATTERN = r"\`(\w+\.\w+)\`"
+            FIELD_PATTERN = r"-\s+\`(\w+\.\w+\.\w+)\`:\s*(.*)$"
+            cur_sym = None
+            api_full_refs = defaultdict(list)
+            api_refs = defaultdict(list)
+            api_field_refs = defaultdict(str)
+            for line in templ[i:]:
+                line = line.strip()
+
+                # Match API header
+                m = re.match(SYM_PATTERN, line)
+                if m:
+                    # Remove trailing empty lines.
+                    while api_refs[cur_sym] and len(
+                            api_refs[cur_sym][-1]) == 0:
+                        del api_refs[cur_sym][-1]
+
+                    # Enter parsing for the next symbol.
+                    cur_sym = m[1]
+                    continue
+
+                api_full_refs[cur_sym] += [line]
+
+                m = re.match(FIELD_PATTERN, line)
+                if m:
+                    api_field_refs[m[1]] = m[2]
+                    continue
+
+                api_refs[cur_sym] += [line]
+
+            self.markdown_metadata = markdown_metadata
+            self.module_doc = module_doc
+            # Full references including all lines for symbol specification and
+            # field specification.
+            self.api_full_refs = api_full_refs
+            # Symbol specifications without the field specifications.
+            self.api_refs = api_refs
+            # Field specifications keyed by field symbol triplets.
+            self.api_field_refs = api_field_refs
+
+
 class Module:
     all_modules = {}
 
-    def __init__(self, j, builtin_tys):
+    def __init__(self, version, j, builtin_tys):
         self.name = j["name"]
         self.is_built_in = False
         self.declr_reg = DeclarationRegistry(builtin_tys)
         self.required_modules = []
+        self.default_definitions = []
+        self.doc = None
 
         DeclarationRegistry.set_current(self.declr_reg)
+
+        if "default_definitions" in j:
+            for jj in j["default_definitions"]:
+                name = jj["name"]
+                value = jj["value"] if "value" in jj else str(version)
+                self.default_definitions += [(name, value)]
+
+        if "doc" in j:
+            self.doc = Documentation(j["doc"])
 
         if "is_built_in" in j:
             self.is_built_in = True
@@ -267,15 +354,25 @@ class Module:
 
     @staticmethod
     def load_all(builtin_tys):
+        def ver2int(ver: str) -> int:
+            xs = [int(x) for x in ver.split('.')]
+            assert len(xs) <= 3
+            xs += ['0'] * (3 - len(xs))
+
+            version_number = 0
+            for i in range(3):
+                version_number = version_number * 1000 + xs[i]
+            return version_number
+
         j = None
         with open("c_api/taichi.json") as f:
             j = json.load(f)
 
-        version = j["version"]
+        version = ver2int(j["version"])
         print("taichi c-api version is:", version)
 
         for k in j["modules"]:
-            module = Module(k, builtin_tys)
+            module = Module(version, k, builtin_tys)
             Module.all_modules[module.name] = module
 
         return list(Module.all_modules.values())

@@ -15,6 +15,7 @@ PER_CUDA_FUNCTION(context_create, cuCtxCreate_v2, void*, int, void *);
 PER_CUDA_FUNCTION(context_set_current, cuCtxSetCurrent, void *);
 PER_CUDA_FUNCTION(context_get_current, cuCtxGetCurrent, void **);
 PER_CUDA_FUNCTION(primary_context_retain, cuDevicePrimaryCtxRetain, void **, int);
+PER_CUDA_FUNCTION(context_set_limit, cuCtxSetLimit, int, std::size_t);
 
 // Stream management
 PER_CUDA_FUNCTION(stream_create, cuStreamCreate, void **, uint32);

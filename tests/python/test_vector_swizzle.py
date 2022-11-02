@@ -108,7 +108,7 @@ def test_vector_invalid_swizzle_patterns():
                 "vec2 only has attributes=('x', 'y'), got=('x', 'y', 'z')")):
         a.xyz = [1, 2, 3]
 
-    with pytest.raises(ti.TaichiCompilationError,
+    with pytest.raises(ti.TaichiRuntimeError,
                        match=re.escape(
                            "value len does not match the swizzle pattern=xy")):
         a.xy = [1, 2, 3]

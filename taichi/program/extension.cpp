@@ -15,7 +15,7 @@ bool is_extension_supported(Arch arch, Extension ext) {
       {Arch::arm64,
        {Extension::sparse, Extension::quant, Extension::quant_basic,
         Extension::data64, Extension::adstack, Extension::assertion,
-        Extension::packed, Extension::dynamic_index}},
+        Extension::packed, Extension::dynamic_index, Extension::mesh}},
       {Arch::cuda,
        {Extension::sparse, Extension::quant, Extension::quant_basic,
         Extension::data64, Extension::adstack, Extension::bls,

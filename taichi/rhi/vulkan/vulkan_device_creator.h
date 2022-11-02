@@ -74,13 +74,12 @@ class TI_DLL_EXPORT VulkanDeviceCreator {
   }
 
  private:
-  void create_instance(bool manual_create);
+  void create_instance(uint32_t vk_api_version, bool manual_create);
   void setup_debug_messenger();
   void create_surface();
   void pick_physical_device();
   void create_logical_device(bool manual_create);
 
-  uint32_t api_version_{VK_API_VERSION_1_0};
   VkInstance instance_{VK_NULL_HANDLE};
   VkDebugUtilsMessengerEXT debug_messenger_{VK_NULL_HANDLE};
   VkPhysicalDevice physical_device_{VK_NULL_HANDLE};

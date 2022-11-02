@@ -98,11 +98,12 @@ jobs:
           docker pull ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.3.3
           docker run -id --user dev --name check_clang_tidy ghcr.io/taichi-dev/taichidev-cpu-ubuntu18.04:v0.3.3 /bin/bash
           tar -cf - ../${{ github.event.repository.name }} --mode u=+rwx,g=+rwx,o=+rwx --owner 1000 --group 1000 | docker cp - check_clang_tidy:/home/dev/
-          docker exec --user root check_clang_tidy apt install -y clang-tidy-10
+          docker exec --user root check_clang_tidy apt-get update
+          docker exec --user root check_clang_tidy apt install -y clang-tidy-10 libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev zlib1g-dev libglew-dev libglfw3-dev
           docker exec --user dev check_clang_tidy /home/dev/taichi/.github/workflows/scripts/check_clang_tidy.sh "$CI_SETUP_CMAKE_ARGS"
         env:
           CR_PAT: ${{ secrets.GITHUB_TOKEN }}
-          CI_SETUP_CMAKE_ARGS: -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=ON -DTI_WITH_VULKAN:BOOL=OFF -DTI_BUILD_TESTS:BOOL=OFF
+          CI_SETUP_CMAKE_ARGS: -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=ON -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON
 
   build_and_test_cpu_linux:
     name: Build and Test linux (CPU)
@@ -168,6 +169,7 @@ jobs:
             -DTI_WITH_VULKAN:BOOL=OFF
             -DTI_BUILD_TESTS:BOOL=ON
             -DTI_WITH_C_API=ON
+          LLVM_VERSION: 15
 
       - name: Test
         id: test
@@ -381,6 +383,7 @@ jobs:
             -DTI_WITH_VULKAN:BOOL=ON
             -DTI_BUILD_TESTS:BOOL=ON
             -DTI_WITH_C_API=ON
+          LLVM_VERSION: 15
 
       - name: Test
         id: test
@@ -394,7 +397,7 @@ jobs:
         env:
           PY: py38
           TI_WANTED_ARCHS: 'cuda,vulkan,opengl'
-          TI_DEVICE_MEMORY_GB: '0.7'
+          TI_DEVICE_MEMORY_GB: '1'
           TI_RUN_RELEASE_TESTS: '1'
 
       - name: Save wheel if test failed
@@ -403,6 +406,14 @@ jobs:
         with:
           name: broken-wheel
           path: dist/*
+          retention-days: 7
+
+      - name: Save Bad Captures
+        if: failure() && steps.test.conclusion == 'failure'
+        uses: actions/upload-artifact@v3
+        with:
+          name: bad-captures
+          path: taichi-release-tests/bad-compare/*
           retention-days: 7
 
   build_and_test_windows:
@@ -456,7 +467,7 @@ jobs:
           PY: "3.7"
           TI_WANTED_ARCHS: ${{ matrix.archs }}
           TI_SKIP_VERSION_CHECK: ON
-          TI_DEVICE_MEMORY_GB: '0.7'
+          TI_DEVICE_MEMORY_GB: '1'
           TI_RUN_RELEASE_TESTS: '1'
 
       - name: Save wheel if test failed
@@ -522,6 +533,14 @@ jobs:
         with:
           name: broken-wheel
           path: dist/*
+          retention-days: 7
+
+      - name: Save Bad Captures
+        if: failure() && steps.test.conclusion == 'failure'
+        uses: actions/upload-artifact@v3
+        with:
+          name: bad-captures
+          path: taichi-release-tests/bad-compare/*
           retention-days: 7
 
   build_android_demos:
@@ -601,14 +620,14 @@ jobs:
         run: |
           . .github/workflows/scripts/common-utils.sh
           chown -R 1000:1000 .
-          ci-docker-run \
+          ci-docker-run --name taichi-prepare-unity-build-env \
             registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.6 \
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh prepare-unity-build-env
 
       - name: Build Taichi-UnityExample
         run: |
           . .github/workflows/scripts/common-utils.sh
-          ci-docker-run \
+          ci-docker-run --name taichi-build-unity-demo \
             registry.taichigraphics.com/unityci-editor:ubuntu-2020.3.14f1-android-1-with-secret-sauce \
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh build-unity-demo
 
@@ -616,6 +635,14 @@ jobs:
         run: |
           . .github/workflows/scripts/common-utils.sh
           chown -R 1000:1000 .
-          ci-docker-run \
+          ci-docker-run --name taichi-run-unity-demo \
             registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.6 \
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh smoke-test-unity-demo
+
+      - name: Build & Run C-API Headless Demos
+        run: |
+          . .github/workflows/scripts/common-utils.sh
+          chown -R 1000:1000 .
+          ci-docker-run --name taichi-test-capi-headless-demo \
+            registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.6 \
+            /home/dev/taichi/.github/workflows/scripts/aot-demo.sh build-and-test-headless-demo

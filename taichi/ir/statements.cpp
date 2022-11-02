@@ -78,11 +78,19 @@ MatrixOfGlobalPtrStmt::MatrixOfGlobalPtrStmt(const std::vector<SNode *> &snodes,
   TI_STMT_REG_FIELDS;
 }
 
+MatrixOfMatrixPtrStmt::MatrixOfMatrixPtrStmt(const std::vector<Stmt *> &stmts,
+                                             DataType dt)
+    : stmts(stmts) {
+  ret_type = dt;
+  TI_STMT_REG_FIELDS;
+}
+
 MatrixPtrStmt::MatrixPtrStmt(Stmt *origin_input, Stmt *offset_input) {
   origin = origin_input;
   offset = offset_input;
   if (origin->is<AllocaStmt>() || origin->is<GlobalTemporaryStmt>() ||
-      origin->is<ExternalPtrStmt>() || origin->is<MatrixOfGlobalPtrStmt>()) {
+      origin->is<ExternalPtrStmt>() || origin->is<MatrixOfGlobalPtrStmt>() ||
+      origin->is<MatrixOfMatrixPtrStmt>()) {
     auto tensor_type = origin->ret_type.ptr_removed()->cast<TensorType>();
     TI_ASSERT(tensor_type != nullptr);
     element_type() = tensor_type->get_element_type();
@@ -113,7 +121,8 @@ bool SNodeOpStmt::activation_related(SNodeOpType op) {
 }
 
 bool SNodeOpStmt::need_activation(SNodeOpType op) {
-  return op == SNodeOpType::activate || op == SNodeOpType::append;
+  return op == SNodeOpType::activate || op == SNodeOpType::append ||
+         op == SNodeOpType::allocate;
 }
 
 ExternalTensorShapeAlongAxisStmt::ExternalTensorShapeAlongAxisStmt(int axis,
@@ -265,6 +274,16 @@ GetChStmt::GetChStmt(Stmt *input_ptr, int chid, bool is_bit_vectorized)
   TI_STMT_REG_FIELDS;
 }
 
+GetChStmt::GetChStmt(Stmt *input_ptr,
+                     SNode *snode,
+                     int chid,
+                     bool is_bit_vectorized)
+    : input_ptr(input_ptr), chid(chid), is_bit_vectorized(is_bit_vectorized) {
+  input_snode = snode;
+  output_snode = input_snode->ch[chid].get();
+  TI_STMT_REG_FIELDS;
+}
+
 OffloadedStmt::OffloadedStmt(TaskType task_type, Arch arch)
     : task_type(task_type), device(arch) {
   if (has_body()) {
@@ -289,6 +308,8 @@ std::string OffloadedStmt::task_name() const {
   } else if (task_type == TaskType::gc) {
     TI_ASSERT(snode);
     return fmt::format("gc_{}", snode->name);
+  } else if (task_type == TaskType::gc_rc) {
+    return fmt::format("gc_rc");
   } else {
     TI_NOT_IMPLEMENTED
   }

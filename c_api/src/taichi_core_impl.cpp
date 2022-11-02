@@ -3,6 +3,7 @@
 #include "taichi_vulkan_impl.h"
 #include "taichi_llvm_impl.h"
 #include "taichi/program/ndarray.h"
+#include "taichi/program/texture.h"
 
 struct ErrorCache {
   TiError error{TI_ERROR_SUCCESS};
@@ -15,8 +16,8 @@ thread_local ErrorCache thread_error_cache;
 
 const char *describe_error(TiError error) {
   switch (error) {
-    case TI_ERROR_INCOMPLETE:
-      return "incomplete";
+    case TI_ERROR_TRUNCATED:
+      return "truncated";
     case TI_ERROR_SUCCESS:
       return "success";
     case TI_ERROR_NOT_SUPPORTED:
@@ -363,7 +364,6 @@ void ti_copy_memory_device_to_device(TiRuntime runtime,
   TI_CAPI_ARGUMENT_NULL(dst_memory->memory);
   TI_CAPI_ARGUMENT_NULL(src_memory);
   TI_CAPI_ARGUMENT_NULL(src_memory->memory);
-  TI_CAPI_INVALID_ARGUMENT(dst_memory->memory != src_memory->memory);
 
   Runtime *runtime2 = (Runtime *)runtime;
   auto dst = devmem2devalloc(*runtime2, dst_memory->memory)

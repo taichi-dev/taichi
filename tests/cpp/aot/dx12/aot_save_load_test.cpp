@@ -28,7 +28,7 @@ namespace fs = std::filesystem;
   place->dt = PrimitiveType::i32;
   program.add_snode_tree(std::unique_ptr<SNode>(root), /*compile_only=*/true);
 
-  auto aot_builder = program.make_aot_module_builder(Arch::dx12);
+  auto aot_builder = program.make_aot_module_builder(Arch::dx12, {});
 
   std::unique_ptr<Kernel> kernel_init, kernel_ret, kernel_simple_ret;
 

@@ -11,7 +11,7 @@ namespace taichi::lang {
 
 class KernelCodeGenCPU : public KernelCodeGen {
  public:
-  KernelCodeGenCPU(Kernel *kernel, IRNode *ir = nullptr)
+  explicit KernelCodeGenCPU(Kernel *kernel, IRNode *ir = nullptr)
       : KernelCodeGen(kernel, ir) {
   }
 

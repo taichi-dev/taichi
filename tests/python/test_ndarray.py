@@ -167,10 +167,10 @@ def test_ndarray_compound_element():
 
     vec3 = ti.types.vector(3, ti.i32)
     b = ti.ndarray(vec3, shape=(n, n))
-    assert isinstance(b, ti.MatrixNdarray)
+    assert isinstance(b, ti.VectorNdarray)
     assert b.shape == (n, n)
     assert b.element_type.element_type() == ti.i32
-    assert b.element_type.shape() == (3, 1)
+    assert b.element_type.shape() == (3, )
 
     matrix34 = ti.types.matrix(3, 4, float)
     c = ti.ndarray(matrix34, shape=(n, n + 1))
@@ -221,6 +221,13 @@ def _test_ndarray_copy_from_ndarray():
 
 @test_utils.test(arch=supported_archs_taichi_ndarray)
 def test_ndarray_copy_from_ndarray():
+    _test_ndarray_copy_from_ndarray()
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray,
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_ndarray_copy_from_ndarray_matrix_scalarize():
     _test_ndarray_copy_from_ndarray()
 
 
@@ -324,6 +331,13 @@ def test_ndarray_deepcopy():
     _test_ndarray_deepcopy()
 
 
+@test_utils.test(arch=supported_archs_taichi_ndarray,
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_ndarray_deepcopy_matrix_scalarize():
+    _test_ndarray_deepcopy()
+
+
 def _test_ndarray_numpy_io():
     n = 7
     m = 4
@@ -412,6 +426,13 @@ def test_matrix_ndarray_taichi_scope_real_matrix():
     _test_matrix_ndarray_taichi_scope()
 
 
+@test_utils.test(arch=supported_archs_taichi_ndarray,
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_matrix_ndarray_taichi_scope_real_matrix_scalarize():
+    _test_matrix_ndarray_taichi_scope()
+
+
 def _test_matrix_ndarray_taichi_scope_struct_for():
     @ti.kernel
     def func(a: ti.types.ndarray()):
@@ -435,6 +456,13 @@ def test_matrix_ndarray_taichi_scope_struct_for():
 
 @test_utils.test(arch=[ti.cpu, ti.cuda], real_matrix=True)
 def test_matrix_ndarray_taichi_scope_struct_for_real_matrix():
+    _test_matrix_ndarray_taichi_scope_struct_for()
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray,
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_matrix_ndarray_taichi_scope_struct_for_matrix_scalarize():
     _test_matrix_ndarray_taichi_scope_struct_for()
 
 
@@ -469,6 +497,13 @@ def _test_vector_ndarray_taichi_scope():
 
 @test_utils.test(arch=supported_archs_taichi_ndarray)
 def test_vector_ndarray_taichi_scope():
+    _test_vector_ndarray_taichi_scope()
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray,
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_vector_ndarray_taichi_scope_matrix_scalarize():
     _test_vector_ndarray_taichi_scope()
 
 
@@ -633,6 +668,13 @@ def test_ndarray_grouped_real_matrix():
     _test_ndarray_grouped()
 
 
+@test_utils.test(arch=supported_archs_taichi_ndarray,
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_ndarray_grouped_real_matrix_scalarize():
+    _test_ndarray_grouped()
+
+
 @test_utils.test(arch=supported_archs_taichi_ndarray)
 def test_ndarray_as_template():
     @ti.kernel
@@ -645,3 +687,33 @@ def test_ndarray_as_template():
     with pytest.raises(ti.TaichiRuntimeTypeError,
                        match=r"Ndarray shouldn't be passed in via"):
         func(arr_0, arr_1)
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_gaussian_kernel():
+    M_PI = 3.14159265358979323846
+
+    @ti.func
+    def gaussian(x, sigma):
+        return ti.exp(
+            -0.5 * ti.pow(x / sigma, 2)) / (sigma * ti.sqrt(2.0 * M_PI))
+
+    @ti.kernel
+    def fill_gaussian_kernel(
+            ker: ti.types.ndarray(ti.f32, field_dim=1), N: ti.i32):
+        sum = 0.0
+        for i in range(2 * N + 1):
+            ker[i] = gaussian(i - N, ti.sqrt(N))
+            sum += ker[i]
+        for i in range(2 * N + 1):
+            ker[i] = ker[i] / sum
+
+    N = 4
+    arr = ti.ndarray(dtype=ti.f32, shape=(20))
+    fill_gaussian_kernel(arr, N)
+    res = arr.to_numpy()
+
+    np_arr = np.zeros(20, dtype=np.float32)
+    fill_gaussian_kernel(np_arr, N)
+
+    assert test_utils.allclose(res, np_arr)

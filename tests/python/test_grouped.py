@@ -2,8 +2,7 @@ import taichi as ti
 from tests import test_utils
 
 
-@test_utils.test()
-def test_vector_index():
+def _test_vector_index():
     val = ti.field(ti.i32)
 
     n = 4
@@ -26,6 +25,16 @@ def test_vector_index():
         for j in range(m):
             for k in range(p):
                 assert val[i, j, k] == i + j * 2 + k * 3
+
+
+@test_utils.test()
+def test_vector_index():
+    _test_vector_index()
+
+
+@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
+def test_vector_index_matrix_scalarize():
+    _test_vector_index()
 
 
 @test_utils.test()

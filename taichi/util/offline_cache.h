@@ -47,15 +47,6 @@ inline CleanCachePolicy string_to_clean_cache_policy(const std::string &str) {
   return Never;
 }
 
-struct KernelMetadataBase {
-  std::string kernel_key;
-  std::size_t size{0};          // byte
-  std::time_t created_at{0};    // sec
-  std::time_t last_used_at{0};  // sec
-
-  TI_IO_DEF(kernel_key, size, created_at, last_used_at);
-};
-
 template <typename KernelMetadataType>
 struct Metadata {
   using KernelMetadata = KernelMetadataType;
@@ -291,7 +282,6 @@ class CacheCleaner {
 
 void disable_offline_cache_if_needed(CompileConfig *config);
 std::string get_cache_path_by_arch(const std::string &base_path, Arch arch);
-bool enabled_wip_offline_cache(bool enable_hint);
 std::string mangle_name(const std::string &primal_name, const std::string &key);
 bool try_demangle_name(const std::string &mangled_name,
                        std::string &primal_name,

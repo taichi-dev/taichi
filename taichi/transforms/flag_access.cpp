@@ -9,7 +9,7 @@ namespace taichi::lang {
 // Flag accesses to be either weak (non-activating) or strong (activating)
 class FlagAccess : public IRVisitor {
  public:
-  FlagAccess(IRNode *node) {
+  explicit FlagAccess(IRNode *node) {
     allow_undefined_visitor = true;
     invoke_default_visitor = false;
     node->accept(this);
@@ -85,7 +85,7 @@ class WeakenAccess : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
 
-  WeakenAccess(IRNode *node) {
+  explicit WeakenAccess(IRNode *node) {
     allow_undefined_visitor = true;
     invoke_default_visitor = false;
     current_struct_for_ = nullptr;

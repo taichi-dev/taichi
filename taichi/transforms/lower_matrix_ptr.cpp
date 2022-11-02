@@ -57,9 +57,9 @@ class LowerMatrixPtr : public BasicStmtVisitor {
       // during IndexExpression::flatten() Here we need to modify the
       // element_dim and element_shape a little bit.
       int element_dim = -1;  // AOS Vector
-      std::vector<int> element_shape = {std::accumulate(
-          begin(origin->element_shape), end(origin->element_shape), 1,
-          std::multiplies<int>())};
+      std::vector<int> element_shape = {
+          std::accumulate(begin(origin->element_shape),
+                          end(origin->element_shape), 1, std::multiplies<>())};
 
       auto fused = std::make_unique<ExternalPtrStmt>(
           origin->base_ptr, indices, element_shape, element_dim);
@@ -67,6 +67,14 @@ class LowerMatrixPtr : public BasicStmtVisitor {
 
       stmt->replace_usages_with(fused.get());
       modifier_.insert_before(stmt, std::move(fused));
+      modifier_.erase(stmt);
+      return;
+    }
+    if (stmt->origin->is<MatrixOfMatrixPtrStmt>()) {
+      auto origin = stmt->origin->as<MatrixOfMatrixPtrStmt>();
+      TI_ASSERT(stmt->offset->is<ConstStmt>());
+      auto offset = stmt->offset->as<ConstStmt>();
+      stmt->replace_usages_with(origin->stmts[offset->val.val_int()]);
       modifier_.erase(stmt);
       return;
     }
@@ -79,7 +87,7 @@ class LowerMatrixPtr : public BasicStmtVisitor {
   }
 };
 
-class RemoveMatrixOfGlobalPtr : public BasicStmtVisitor {
+class RemoveMatrixOfPtr : public BasicStmtVisitor {
  private:
   using BasicStmtVisitor::visit;
   DelayedIRModifier modifier_;
@@ -89,8 +97,12 @@ class RemoveMatrixOfGlobalPtr : public BasicStmtVisitor {
     modifier_.erase(stmt);
   }
 
+  void visit(MatrixOfMatrixPtrStmt *stmt) override {
+    modifier_.erase(stmt);
+  }
+
   static void run(IRNode *node) {
-    RemoveMatrixOfGlobalPtr pass;
+    RemoveMatrixOfPtr pass;
     node->accept(&pass);
     pass.modifier_.modify_ir();
   }
@@ -101,7 +113,7 @@ namespace irpass {
 void lower_matrix_ptr(IRNode *root) {
   TI_AUTO_PROF;
   LowerMatrixPtr::run(root);
-  RemoveMatrixOfGlobalPtr::run(root);
+  RemoveMatrixOfPtr::run(root);
 }
 
 }  // namespace irpass

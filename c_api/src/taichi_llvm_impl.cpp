@@ -1,12 +1,19 @@
+#ifdef TI_WITH_LLVM
+
 #include "taichi_core_impl.h"
 #include "taichi_llvm_impl.h"
+
+#include "taichi/taichi_cpu.h"
+#include "taichi/taichi_cuda.h"
 
 #include "taichi/program/compile_config.h"
 #include "taichi/runtime/llvm/llvm_runtime_executor.h"
 #include "taichi/runtime/llvm/llvm_aot_module_loader.h"
 #include "taichi/runtime/cpu/aot_module_loader_impl.h"
+#include "taichi/rhi/cpu/cpu_device.h"
 
 #ifdef TI_WITH_CUDA
+#include "taichi/rhi/cuda/cuda_device.h"
 #include "taichi/runtime/cuda/aot_module_loader_impl.h"
 #endif
 
@@ -66,7 +73,7 @@ void LlvmRuntime::free_memory(TiMemory devmem) {
   // the corresponding Device::free_memory() interface has not been
   // implemented yet...
   if (taichi::arch_is_cpu(config->arch)) {
-    TI_CAPI_INCOMPLETE_IF(taichi::arch_is_cpu(config->arch));
+    TI_CAPI_NOT_SUPPORTED_IF(taichi::arch_is_cpu(config->arch));
   }
 
   Runtime::free_memory(devmem);
@@ -128,3 +135,65 @@ void LlvmRuntime::wait() {
 }
 
 }  // namespace capi
+
+#endif  // TI_WITH_LLVM
+
+// function.export_cpu_runtime
+void ti_export_cpu_memory(TiRuntime runtime,
+                          TiMemory memory,
+                          TiCpuMemoryInteropInfo *interop_info) {
+#ifdef TI_WITH_LLVM
+  TI_CAPI_ARGUMENT_NULL(runtime);
+  TI_CAPI_ARGUMENT_NULL(memory);
+  TI_CAPI_ARGUMENT_NULL(interop_info);
+  if (((Runtime *)runtime)->arch != taichi::Arch::x64 &&
+      ((Runtime *)runtime)->arch != taichi::Arch::arm64) {
+    ti_set_last_error(TI_ERROR_INVALID_INTEROP, "arch!= cpu");
+    return;
+  }
+
+  capi::LlvmRuntime *llvm_runtime =
+      static_cast<capi::LlvmRuntime *>((Runtime *)runtime);
+  taichi::lang::DeviceAllocation devalloc =
+      devmem2devalloc(*llvm_runtime, memory);
+
+  auto &device = llvm_runtime->get();
+  auto &cpu_device = static_cast<taichi::lang::cpu::CpuDevice &>(device);
+
+  auto cpu_info = cpu_device.get_alloc_info(devalloc);
+
+  interop_info->ptr = cpu_info.ptr;
+  interop_info->size = cpu_info.size;
+#else
+  TI_NOT_IMPLEMENTED;
+#endif  // TI_WITH_LLVM
+}
+
+// function.export_cuda_runtime
+void ti_export_cuda_memory(TiRuntime runtime,
+                           TiMemory memory,
+                           TiCudaMemoryInteropInfo *interop_info) {
+#ifdef TI_WITH_CUDA
+  TI_CAPI_ARGUMENT_NULL(runtime);
+  TI_CAPI_ARGUMENT_NULL(memory);
+  TI_CAPI_ARGUMENT_NULL(interop_info);
+  if (((Runtime *)runtime)->arch != taichi::Arch::cuda) {
+    ti_set_last_error(TI_ERROR_INVALID_INTEROP, "arch!= cuda");
+    return;
+  }
+
+  auto *llvm_runtime = static_cast<capi::LlvmRuntime *>((Runtime *)runtime);
+  taichi::lang::DeviceAllocation devalloc =
+      devmem2devalloc(*llvm_runtime, memory);
+
+  auto &device = llvm_runtime->get();
+  auto &cuda_device = static_cast<taichi::lang::cuda::CudaDevice &>(device);
+
+  auto cuda_info = cuda_device.get_alloc_info(devalloc);
+
+  interop_info->ptr = cuda_info.ptr;
+  interop_info->size = cuda_info.size;
+#else
+  TI_NOT_IMPLEMENTED;
+#endif
+}

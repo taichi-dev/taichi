@@ -93,15 +93,45 @@ TEST_F(ScalarPointerLowererTest, Basic) {
       code_region.end = lowerer.linears[kPointerLevel];
       auto res_opt = ai.evaluate(code_region, init_ctx);
       ASSERT_TRUE(res_opt.has_value());
-      EXPECT_EQ(res_opt.value(), i);
+      EXPECT_EQ(res_opt.value().val_int(), i);
 
       code_region.end = lowerer.linears[kDenseLevel];
       res_opt = ai.evaluate(code_region, init_ctx);
       ASSERT_TRUE(res_opt.has_value());
-      EXPECT_EQ(res_opt.value(), j);
+      EXPECT_EQ(res_opt.value().val_int(), j);
     }
   }
 }
 
+TEST(ScalarPointerLowerer, EliminateMod) {
+  const bool kPacked = true;
+  IRBuilder builder;
+  VecStatement lowered;
+  Stmt *index = builder.get_int32(2);
+  auto root = std::make_unique<SNode>(/*depth=*/0, SNodeType::root);
+  SNode *dense_1 = &(root->dense({Axis{2}, Axis{1}}, /*size=*/7, kPacked));
+  SNode *dense_2 = &(root->dense({Axis{1}}, /*size=*/3, kPacked));
+  SNode *dense_3 = &(dense_2->dense({Axis{0}}, /*size=*/5, kPacked));
+  SNode *leaf_1 = &(dense_1->insert_children(SNodeType::place));
+  SNode *leaf_2 = &(dense_3->insert_children(SNodeType::place));
+  LowererImpl lowerer_1{leaf_1,
+                        {index, index},
+                        SNodeOpType::undefined,
+                        /*is_bit_vectorized=*/false,
+                        &lowered,
+                        kPacked};
+  lowerer_1.run();
+  LowererImpl lowerer_2{leaf_2,
+                        {index},
+                        SNodeOpType::undefined,
+                        /*is_bit_vectorized=*/false,
+                        &lowered,
+                        kPacked};
+  lowerer_2.run();
+  for (int i = 0; i < lowered.size(); i++) {
+    ASSERT_FALSE(lowered[i]->is<BinaryOpStmt>() &&
+                 lowered[i]->as<BinaryOpStmt>()->op_type == BinaryOpType::mod);
+  }
+}
 }  // namespace
 }  // namespace taichi::lang

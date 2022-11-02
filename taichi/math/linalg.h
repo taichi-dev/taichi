@@ -121,7 +121,7 @@ struct VectorND : public VectorNDBase<dim__, T, ISE> {
 
   template <typename T_ = T,
             typename std::enable_if_t<std::is_same<T_, int>::value, int> = 0>
-  VectorND(const TIndex<dim> &ind);
+  explicit VectorND(const TIndex<dim> &ind);
 
   // Vector initialization
   template <typename F,
@@ -510,21 +510,9 @@ struct VectorND : public VectorNDBase<dim__, T, ISE> {
     return ret;
   }
 
-  TI_IO_DECL {
-    if (TI_SERIALIZER_IS(TextSerializer)) {
-      std::string ret = "(";
-      for (int i = 0; i < dim - 1; i++) {
-        ret += fmt::format("{}, ", d[i]);
-      }
-      ret += fmt::format("{}", d[dim - 1]);
-      ret += ")";
-      serializer("vec", ret);
-    } else {
-      TI_IO(d);
-    }
-  }
+  TI_IO_DEF(d);
 
-  TI_FORCE_INLINE operator std::array<T, dim>() const {
+  TI_FORCE_INLINE explicit operator std::array<T, dim>() const {
     std::array<T, dim> arr;
     for (int i = 0; i < dim; i++) {
       arr[i] = d[i];
@@ -639,7 +627,7 @@ struct MatrixND {
     }
   }
 
-  TI_FORCE_INLINE MatrixND(T v) : MatrixND() {
+  TI_FORCE_INLINE explicit MatrixND(T v) : MatrixND() {
     for (int i = 0; i < dim; i++) {
       d[i][i] = v;
     }
@@ -875,20 +863,7 @@ struct MatrixND {
     return MatrixND(1.0_f);
   }
 
-  TI_IO_DECL {
-    if constexpr (TI_SERIALIZER_IS(TextSerializer)) {
-      for (int i = 0; i < dim; i++) {
-        std::string line = "[";
-        for (int j = 0; j < dim; j++) {
-          line += fmt::format("{}   ", d[j][i]);
-        }
-        line += "]";
-        serializer.add_line(line);
-      }
-    } else {
-      TI_IO(d);
-    }
-  }
+  TI_IO_DEF(d);
 };
 
 template <int dim, typename T, InstSetExt ISE>
@@ -1413,10 +1388,6 @@ static_assert(Serializer::has_io<Matrix4>::value, "");
 static_assert(Serializer::has_io<const Matrix4>::value, "");
 static_assert(Serializer::has_io<const Matrix4 &>::value, "");
 static_assert(Serializer::has_io<Matrix4 &>::value, "");
-static_assert(
-    TextSerializer::has_io<
-        const taichi::MatrixND<4, double, (taichi::InstSetExt)3>>::value,
-    "");
 
 namespace type {
 template <typename T, typename = void>

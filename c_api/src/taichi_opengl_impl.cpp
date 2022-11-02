@@ -1,12 +1,15 @@
 #include "taichi_opengl_impl.h"
+#ifdef TI_WITH_OPENGL
 
 OpenglRuntime::OpenglRuntime()
     : GfxRuntime(taichi::Arch::opengl),
       gfx_runtime_(taichi::lang::gfx::GfxRuntime::Params{
           host_result_buffer_.data(), &device_}) {
-  device_.set_cap(taichi::lang::DeviceCapability::spirv_has_int64, true);
-  device_.set_cap(taichi::lang::DeviceCapability::spirv_has_float64, true);
-  device_.set_cap(taichi::lang::DeviceCapability::spirv_version, 0x10300);
+  taichi::lang::DeviceCapabilityConfig caps{};
+  caps.set(taichi::lang::DeviceCapability::spirv_has_int64, true);
+  caps.set(taichi::lang::DeviceCapability::spirv_has_float64, true);
+  caps.set(taichi::lang::DeviceCapability::spirv_version, 0x10300);
+  get_gl().set_current_caps(std::move(caps));
 }
 taichi::lang::Device &OpenglRuntime::get() {
   return static_cast<taichi::lang::Device &>(device_);
@@ -30,3 +33,5 @@ void ti_export_opengl_memory(TiRuntime runtime,
   interop_info->size = runtime2->get_gl().get_devalloc_size(devalloc);
   TI_CAPI_TRY_CATCH_END();
 }
+
+#endif  // TI_WITH_OPENGL

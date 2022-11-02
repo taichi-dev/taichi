@@ -13,6 +13,7 @@
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
 #include "taichi/codegen/llvm/struct_llvm.h"
 #include "taichi/util/file_sequence_writer.h"
+#include "taichi/codegen/codegen_utils.h"
 
 namespace taichi::lang {
 
@@ -21,15 +22,16 @@ namespace taichi::lang {
 // TODO(k-ye): Hide FunctionCreationGuard inside cpp file
 FunctionCreationGuard::FunctionCreationGuard(
     TaskCodeGenLLVM *mb,
-    std::vector<llvm::Type *> arguments)
+    std::vector<llvm::Type *> arguments,
+    const std::string &func_name)
     : mb(mb) {
   // Create the loop body function
   auto body_function_type = llvm::FunctionType::get(
       llvm::Type::getVoidTy(*mb->llvm_context), arguments, false);
 
   body = llvm::Function::Create(body_function_type,
-                                llvm::Function::InternalLinkage,
-                                "function_body", mb->module.get());
+                                llvm::Function::InternalLinkage, func_name,
+                                mb->module.get());
   old_func = mb->func;
   // emit into loop body function
   mb->func = body;
@@ -414,7 +416,7 @@ void TaskCodeGenLLVM::visit(UnaryOpStmt *stmt) {
         if (!cast_type->is<TensorType>()) {
           llvm_val[stmt] = trunc_func(llvm_val[stmt], to_ty);
         } else {
-          create_elementwise_cast(stmt, to_ty, trunc_func, /*trunc_self=*/true);
+          create_elementwise_cast(stmt, to_ty, trunc_func, /*on_self=*/true);
         }
       }
     } else if (is_real(from.get_element_type()) &&
@@ -955,12 +957,20 @@ void TaskCodeGenLLVM::visit(PrintStmt *stmt) {
     if (std::holds_alternative<Stmt *>(content)) {
       auto arg_stmt = std::get<Stmt *>(content);
       auto value = llvm_val[arg_stmt];
+      auto value_type = value->getType();
       if (arg_stmt->ret_type->is<TensorType>()) {
         auto dtype = arg_stmt->ret_type->cast<TensorType>();
         auto elem_type = dtype->get_element_type();
         for (int i = 0; i < dtype->get_num_elements(); ++i) {
-          auto elem_value = builder->CreateExtractElement(value, i);
-          args.push_back(value_for_printf(elem_value, elem_type));
+          if (codegen_vector_type(&prog->this_thread_config())) {
+            TI_ASSERT(llvm::dyn_cast<llvm::VectorType>(value_type));
+            auto elem = builder->CreateExtractElement(value, i);
+            args.push_back(value_for_printf(elem, elem_type));
+          } else {
+            TI_ASSERT(llvm::dyn_cast<llvm::ArrayType>(value_type));
+            auto elem = builder->CreateExtractValue(value, i);
+            args.push_back(value_for_printf(elem, elem_type));
+          }
         }
         formats += data_type_format(arg_stmt->ret_type);
       } else {
@@ -1107,6 +1117,10 @@ void TaskCodeGenLLVM::emit_list_gen(OffloadedStmt *listgen) {
 void TaskCodeGenLLVM::emit_gc(OffloadedStmt *stmt) {
   auto snode = stmt->snode->id;
   call("node_gc", get_runtime(), tlctx->get_constant(snode));
+}
+
+void TaskCodeGenLLVM::emit_gc_rc() {
+  call("runtime_context_gc", get_runtime());
 }
 
 void TaskCodeGenLLVM::create_increment(llvm::Value *ptr, llvm::Value *value) {
@@ -1354,11 +1368,13 @@ void TaskCodeGenLLVM::visit(AssertStmt *stmt) {
 
 void TaskCodeGenLLVM::visit(SNodeOpStmt *stmt) {
   auto snode = stmt->snode;
-  if (stmt->op_type == SNodeOpType::append) {
+  if (stmt->op_type == SNodeOpType::allocate) {
     TI_ASSERT(snode->type == SNodeType::dynamic);
-    TI_ASSERT(stmt->ret_type->is_primitive(PrimitiveTypeID::i32));
-    llvm_val[stmt] =
-        call(snode, llvm_val[stmt->ptr], "append", {llvm_val[stmt->val]});
+    TI_ASSERT(stmt->ret_type.is_pointer() &&
+              stmt->ret_type.ptr_removed()->is_primitive(PrimitiveTypeID::gen));
+    auto ptr =
+        call(snode, llvm_val[stmt->ptr], "allocate", {llvm_val[stmt->val]});
+    llvm_val[stmt] = ptr;
   } else if (stmt->op_type == SNodeOpType::length) {
     TI_ASSERT(snode->type == SNodeType::dynamic);
     llvm_val[stmt] = call(snode, llvm_val[stmt->ptr], "get_num_elements", {});
@@ -2632,7 +2648,13 @@ void TaskCodeGenLLVM::visit(MatrixInitStmt *stmt) {
   llvm::Value *vec = llvm::UndefValue::get(type);
   for (int i = 0; i < stmt->values.size(); ++i) {
     auto *elem = llvm_val[stmt->values[i]];
-    vec = builder->CreateInsertElement(vec, elem, i);
+    if (codegen_vector_type(&prog->this_thread_config())) {
+      TI_ASSERT(llvm::dyn_cast<llvm::VectorType>(type));
+      vec = builder->CreateInsertElement(vec, elem, i);
+    } else {
+      TI_ASSERT(llvm::dyn_cast<llvm::ArrayType>(type));
+      vec = builder->CreateInsertValue(vec, elem, i);
+    }
   }
   llvm_val[stmt] = vec;
 }
@@ -2649,8 +2671,9 @@ void TaskCodeGenLLVM::eliminate_unused_functions() {
 }
 
 FunctionCreationGuard TaskCodeGenLLVM::get_function_creation_guard(
-    std::vector<llvm::Type *> argument_types) {
-  return FunctionCreationGuard(this, argument_types);
+    std::vector<llvm::Type *> argument_types,
+    const std::string &func_name) {
+  return FunctionCreationGuard(this, argument_types, func_name);
 }
 
 void TaskCodeGenLLVM::initialize_context() {
@@ -2730,6 +2753,15 @@ LLVMCompiledTask TaskCodeGenLLVM::run_compilation() {
   emit_to_module();
   eliminate_unused_functions();
 
+  if (config.arch == Arch::cuda) {
+    // CUDA specific metadata
+    for (const auto &task : offloaded_tasks) {
+      llvm::Function *func = module->getFunction(task.name);
+      TI_ASSERT(func);
+      tlctx->mark_function_as_cuda_kernel(func, task.block_dim);
+    }
+  }
+
   return {std::move(offloaded_tasks), std::move(module),
           std::move(used_tree_ids), std::move(struct_for_tls_sizes)};
 }
@@ -2776,12 +2808,13 @@ void TaskCodeGenLLVM::visit(ReferenceStmt *stmt) {
 void TaskCodeGenLLVM::visit(FuncCallStmt *stmt) {
   if (!func_map.count(stmt->func)) {
     auto guard = get_function_creation_guard(
-        {llvm::PointerType::get(get_runtime_type("RuntimeContext"), 0)});
+        {llvm::PointerType::get(get_runtime_type("RuntimeContext"), 0)},
+        stmt->func->get_name());
     func_map.insert({stmt->func, guard.body});
     stmt->func->ir->accept(this);
   }
   llvm::Function *llvm_func = func_map[stmt->func];
-  auto *new_ctx = builder->CreateAlloca(get_runtime_type("RuntimeContext"));
+  auto *new_ctx = call("allocate_runtime_context", get_runtime());
   call("RuntimeContext_set_runtime", new_ctx, get_runtime());
   for (int i = 0; i < stmt->args.size(); i++) {
     auto *val =
@@ -2804,6 +2837,7 @@ void TaskCodeGenLLVM::visit(FuncCallStmt *stmt) {
   } else {
     call(llvm_func, new_ctx);
   }
+  call("recycle_runtime_context", get_runtime(), new_ctx);
 }
 
 LLVMCompiledTask LLVMCompiledTask::clone() const {

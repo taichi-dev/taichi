@@ -43,7 +43,6 @@ struct CompileConfig {
   bool make_block_local;
   bool detect_read_only;
   bool ndarray_use_cached_allocator;
-  bool use_mesh;
   bool real_matrix;
   bool real_matrix_scalarize;
   DataType default_fp;
@@ -107,6 +106,8 @@ struct CompileConfig {
 
   int num_compile_threads{4};
   std::string vk_api_version;
+
+  size_t cuda_stack_limit{8192};
 
   CompileConfig();
 };

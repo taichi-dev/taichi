@@ -30,7 +30,7 @@ class ProgramImpl {
   CompileConfig *config;
 
  public:
-  ProgramImpl(CompileConfig &config);
+  explicit ProgramImpl(CompileConfig &config);
 
   /**
    * Codegen to specific backend
@@ -75,7 +75,8 @@ class ProgramImpl {
   /**
    * Make a AotModulerBuilder, currently only supported by metal and wasm.
    */
-  virtual std::unique_ptr<AotModuleBuilder> make_aot_module_builder() = 0;
+  virtual std::unique_ptr<AotModuleBuilder> make_aot_module_builder(
+      const DeviceCapabilityConfig &caps) = 0;
 
   /**
    * Compile a taichi::lang::Kernel to taichi::lang::aot::Kernel.

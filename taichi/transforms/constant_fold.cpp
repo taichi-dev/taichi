@@ -19,8 +19,7 @@ class ConstantFold : public BasicStmtVisitor {
   DelayedIRModifier modifier;
   Program *program;
 
-  explicit ConstantFold(Program *program)
-      : BasicStmtVisitor(), program(program) {
+  explicit ConstantFold(Program *program) : program(program) {
   }
 
   Kernel *get_jit_evaluator_kernel(JITEvaluatorId const &id) {

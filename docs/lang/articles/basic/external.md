@@ -15,6 +15,9 @@ There are two ways to import a NumPy array `arr` to the Taichi scope:
 
 - Pass `arr` as an argument to a kernel or a Taichi function using `ti.types.ndarray()` as type hint. The argument is passed by reference without creating a copy of `arr`. Thus, any modification to this argument from inside a kernel or Taichi function also changes the original array `arr`. This approach is preferred when the kernel or Taichi function that takes in the argument needs to process the original array (for storage or filtering, for example).
 
+:::note
+`from_numpy() / from_torch()` can take in any numpy array or torch Tensor, no matter it's contiguous or not. Taichi will manage its own copy of data. However, when passing an argument to a Taichi kernel, only contiguous numpy arrays or torch Tensors are supported.
+:::
 
 ## Data transfer between NumPy arrays and Taichi fields
 
@@ -53,7 +56,6 @@ print(tensor.device) # device(type='cuda', index=0)
 ```
 
 For Paddle, you need to specify the device by calling `paddle.CPUPlace()` or `paddle.CUDAPlace(n)`, where `n` is an optional ID set to 0 by default.
-
 
 ## External array shapes
 

@@ -174,8 +174,7 @@ def test_64_min_max():
     assert max_i64(a, b) == max(a, b)
 
 
-@test_utils.test()
-def test_min_max_vector_starred():
+def _test_min_max_vector_starred():
     @ti.kernel
     def min_starred() -> ti.i32:
         a = ti.Vector([1, 2, 3])
@@ -190,3 +189,13 @@ def test_min_max_vector_starred():
 
     assert min_starred() == 1
     assert max_starred() == 6
+
+
+@test_utils.test()
+def test_min_max_vector_starred():
+    _test_min_max_vector_starred()
+
+
+@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
+def test_min_max_vector_starred_matrix_scalarize():
+    _test_min_max_vector_starred()

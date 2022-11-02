@@ -9,11 +9,14 @@
 namespace taichi::lang {
 namespace metal {
 
-struct OfflineCacheKernelMetadata : public offline_cache::KernelMetadataBase {
+struct OfflineCacheKernelMetadata {
+  std::string kernel_key;
+  std::size_t size{0};          // byte
+  std::time_t created_at{0};    // sec
+  std::time_t last_used_at{0};  // sec
   CompiledKernelData compiled_kernel_data;
 
-  TI_IO_DEF_WITH_BASECLASS(offline_cache::KernelMetadataBase,
-                           compiled_kernel_data);
+  TI_IO_DEF(kernel_key, size, created_at, last_used_at, compiled_kernel_data);
 };
 
 class CacheManager {
@@ -36,7 +39,7 @@ class CacheManager {
     const std::vector<CompiledStructs> *compiled_snode_trees_{nullptr};
   };
 
-  CacheManager(Params &&init_params);
+  explicit CacheManager(Params &&init_params);
 
   // Load from memory || Load from disk || (Compile && Cache the result in
   // memory)
@@ -49,9 +52,7 @@ class CacheManager {
   // Run offline cache cleaning
   void clean_offline_cache(offline_cache::CleanCachePolicy policy,
                            int max_bytes,
-                           double cleaning_factor) const {
-    TI_NOT_IMPLEMENTED;
-  }
+                           double cleaning_factor) const;
 
  private:
   CompiledKernelData compile_kernel(Kernel *kernel) const;

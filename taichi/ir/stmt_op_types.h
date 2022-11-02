@@ -77,6 +77,7 @@ enum class SNodeOpType : int {
   activate,
   deactivate,
   append,
+  allocate,
   clear,
   undefined
 };

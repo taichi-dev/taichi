@@ -10,14 +10,14 @@ Taichi Core exposes all necessary interfaces for offloading the AOT modules to T
 
 Taichi C-API intends to support the following backends:
 
-|Backend|Offload Target|Maintenance Tier|
-|-|-|-|
-|Vulkan|GPU|Tier 1|
-|CUDA (LLVM)|GPU (NVIDIA)|Tier 1|
-|CPU (LLVM)|CPU|Tier 1|
-|OpenGL|GPU|Tier 2|
-|DirectX 11|GPU (Windows)|N/A|
-|Metal|GPU (macOS, iOS)|N/A|
+|Backend     |Offload Target   |Maintenance Tier |
+|------------|-----------------|-----------------|
+|Vulkan      |GPU              |Tier 1           |
+|CUDA (LLVM) |GPU (NVIDIA)     |Tier 1           |
+|CPU (LLVM)  |CPU              |Tier 1           |
+|OpenGL      |GPU              |Tier 2           |
+|DirectX 11  |GPU (Windows)    |N/A              |
+|Metal       |GPU (macOS, iOS) |N/A              |
 
 The backends with tier-1 support are being developed and tested more intensively. And most new features will be available on Vulkan first because it has the most outstanding cross-platform compatibility among all the tier-1 backends.
 For the backends with tier-2 support, you should expect a delay in the fixes to minor issues.
@@ -325,7 +325,7 @@ A collection of Taichi kernels (a compute graph) to launch on the offload target
 ```c
 // enumeration.error
 typedef enum TiError {
-  TI_ERROR_INCOMPLETE = 1,
+  TI_ERROR_TRUNCATED = 1,
   TI_ERROR_SUCCESS = 0,
   TI_ERROR_NOT_SUPPORTED = -1,
   TI_ERROR_CORRUPTED_DATA = -2,
@@ -342,7 +342,7 @@ typedef enum TiError {
 
 Errors reported by the Taichi C-API. Enumerants greater than or equal to zero are success states.
 
-- `TI_ERROR_INCOMPLETE`: The output data is truncated because the user-provided buffer is too small.
+- `TI_ERROR_TRUNCATED`: The output data is truncated because the user-provided buffer is too small.
 - `TI_ERROR_SUCCESS`: The Taichi C-API invocation finished gracefully.
 - `TI_ERROR_NOT_SUPPORTED`: The invoked API, or the combination of parameters is not supported by the Taichi C-API.
 - `TI_ERROR_CORRUPTED_DATA`: Provided data is corrupted.
@@ -671,6 +671,7 @@ typedef enum TiFormat {
   TI_FORMAT_MAX_ENUM = 0xffffffff,
 } TiFormat;
 ```
+
 ---
 ### Structure `TiImageOffset`
 
@@ -766,6 +767,7 @@ typedef enum TiFilter {
   TI_FILTER_MAX_ENUM = 0xffffffff,
 } TiFilter;
 ```
+
 ---
 ### Enumeration `TiAddressMode`
 
@@ -778,6 +780,7 @@ typedef enum TiAddressMode {
   TI_ADDRESS_MODE_MAX_ENUM = 0xffffffff,
 } TiAddressMode;
 ```
+
 ---
 ### Structure `TiSamplerCreateInfo`
 
@@ -790,6 +793,7 @@ typedef struct TiSamplerCreateInfo {
   float max_anisotropy;
 } TiSamplerCreateInfo;
 ```
+
 ---
 ### Structure `TiTexture`
 
@@ -1008,6 +1012,7 @@ TI_DLL_EXPORT TiSampler TI_API_CALL ti_create_sampler(
   const TiSamplerCreateInfo* create_info
 );
 ```
+
 ---
 ### Function `ti_destroy_sampler`
 
@@ -1018,6 +1023,7 @@ TI_DLL_EXPORT void TI_API_CALL ti_destroy_sampler(
   TiSampler sampler
 );
 ```
+
 ---
 ### Function `ti_create_event`
 

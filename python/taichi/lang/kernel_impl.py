@@ -25,6 +25,7 @@ from taichi.lang.wrap_inspect import getsourcefile, getsourcelines
 from taichi.lang.util import has_paddle, has_pytorch, to_taichi_type
 from taichi.types import (ndarray_type, primitive_types, sparse_matrix_builder,
                           template, texture_type)
+from taichi.types.utils import is_signed
 
 from taichi import _logging
 
@@ -364,7 +365,11 @@ class TaichiCallableTemplateMapper:
             # [Primitive arguments] Return the value
             return arg
         if isinstance(anno, texture_type.TextureType):
-            return '#'
+            return arg.num_dims,
+        if isinstance(anno, texture_type.RWTextureType):
+            # (penguinliong) '0' is the assumed LOD level. We currently don't
+            # support mip-mapping.
+            return arg.num_dims, arg.num_channels, arg.dtype, 0
         if isinstance(anno, ndarray_type.NdarrayType):
             if isinstance(arg, taichi.lang._ndarray.ScalarNdarray):
                 anno.check_matched(arg.get_type())
@@ -521,6 +526,8 @@ class Kernel:
             grad_suffix = "_forward_grad"
         elif self.autodiff_mode == AutodiffMode.REVERSE:
             grad_suffix = "_reverse_grad"
+        elif self.autodiff_mode == AutodiffMode.VALIDATION:
+            grad_suffix = "_validate_grad"
         kernel_name = f"{self.func.__name__}_c{self.kernel_counter}_{key[1]}{grad_suffix}"
         _logging.trace(f"Compiling kernel {kernel_name}...")
 
@@ -532,9 +539,6 @@ class Kernel:
 
         if self.autodiff_mode != AutodiffMode.NONE:
             KernelSimplicityASTChecker(self.func).visit(tree)
-
-        if impl.current_cfg().use_mesh:
-            taichi.lang.Mesh.update_relation(tree, ctx)
 
         # Do not change the name of 'taichi_ast_generator'
         # The warning system needs this identifier to remove unnecessary messages
@@ -641,7 +645,6 @@ class Kernel:
 
             tmps = []
             callbacks = []
-            has_external_arrays = False
             has_torch = has_pytorch()
             has_pp = has_paddle()
 
@@ -662,32 +665,29 @@ class Kernel:
                     if not isinstance(v, int):
                         raise TaichiRuntimeTypeError.get(
                             i, needed.to_string(), provided)
-                    launch_ctx.set_arg_int(actual_argument_slot, int(v))
+                    if is_signed(cook_dtype(needed)):
+                        launch_ctx.set_arg_int(actual_argument_slot, int(v))
+                    else:
+                        launch_ctx.set_arg_uint(actual_argument_slot, int(v))
                 elif isinstance(needed, sparse_matrix_builder):
                     # Pass only the base pointer of the ti.types.sparse_matrix_builder() argument
-                    launch_ctx.set_arg_int(actual_argument_slot, v._get_addr())
+                    launch_ctx.set_arg_uint(actual_argument_slot,
+                                            v._get_addr())
                 elif isinstance(needed,
                                 ndarray_type.NdarrayType) and isinstance(
                                     v, taichi.lang._ndarray.Ndarray):
-                    has_external_arrays = True
-                    v = v.arr
-                    launch_ctx.set_arg_ndarray(actual_argument_slot, v)
+                    launch_ctx.set_arg_ndarray(actual_argument_slot, v.arr)
                 elif isinstance(needed,
                                 texture_type.TextureType) and isinstance(
                                     v, taichi.lang._texture.Texture):
-                    has_external_arrays = True
-                    v = v.tex
-                    launch_ctx.set_arg_texture(actual_argument_slot, v)
+                    launch_ctx.set_arg_texture(actual_argument_slot, v.tex)
                 elif isinstance(needed,
                                 texture_type.RWTextureType) and isinstance(
                                     v, taichi.lang._texture.Texture):
-                    has_external_arrays = True
-                    v = v.tex
-                    launch_ctx.set_arg_rw_texture(actual_argument_slot, v)
+                    launch_ctx.set_arg_rw_texture(actual_argument_slot, v.tex)
                 elif isinstance(
                         needed,
                         ndarray_type.NdarrayType) and (self.match_ext_arr(v)):
-                    has_external_arrays = True
                     is_numpy = isinstance(v, np.ndarray)
                     is_torch = isinstance(v,
                                           torch.Tensor) if has_torch else False
@@ -703,12 +703,28 @@ class Kernel:
                         array_shape = v.shape[
                             element_dim:] if is_soa else v.shape[:-element_dim]
                     if is_numpy:
-                        tmp = np.ascontiguousarray(v)
-                        # Purpose: DO NOT GC |tmp|!
-                        tmps.append(tmp)
-                        launch_ctx.set_arg_external_array_with_shape(
-                            actual_argument_slot, int(tmp.ctypes.data),
-                            tmp.nbytes, array_shape)
+                        if v.flags.c_contiguous:
+                            launch_ctx.set_arg_external_array_with_shape(
+                                actual_argument_slot, int(v.ctypes.data),
+                                v.nbytes, array_shape)
+                        elif v.flags.f_contiguous:
+                            # TODO: A better way that avoids copying is saving strides info.
+                            tmp = np.ascontiguousarray(v)
+                            # Purpose: DO NOT GC |tmp|!
+                            tmps.append(tmp)
+
+                            def callback(original, updated):
+                                np.copyto(original, np.asfortranarray(updated))
+
+                            callbacks.append(
+                                functools.partial(callback, v, tmp))
+                            launch_ctx.set_arg_external_array_with_shape(
+                                actual_argument_slot, int(tmp.ctypes.data),
+                                tmp.nbytes, array_shape)
+                        else:
+                            raise ValueError(
+                                "Non contiguous numpy arrays are not supported, please call np.ascontiguousarray(arr) before passing it into taichi kernel."
+                            )
                     elif is_torch:
                         is_ndarray = False
                         tmp, torch_callbacks = self.get_torch_callbacks(
@@ -744,8 +760,12 @@ class Kernel:
                                 if not isinstance(val, int):
                                     raise TaichiRuntimeTypeError.get(
                                         i, needed.dtype.to_string(), type(val))
-                                launch_ctx.set_arg_int(actual_argument_slot,
-                                                       int(val))
+                                if is_signed(needed.dtype):
+                                    launch_ctx.set_arg_int(
+                                        actual_argument_slot, int(val))
+                                else:
+                                    launch_ctx.set_arg_uint(
+                                        actual_argument_slot, int(val))
                                 actual_argument_slot += 1
                     else:
                         raise ValueError(
@@ -757,14 +777,6 @@ class Kernel:
                         f'Argument type mismatch. Expecting {needed}, got {type(v)}.'
                     )
                 actual_argument_slot += 1
-            # Both the class kernels and the plain-function kernels are unified now.
-            # In both cases, |self.grad| is another Kernel instance that computes the
-            # gradient. For class kernels, args[0] is always the kernel owner.
-            if (
-                    self.autodiff_mode == AutodiffMode.NONE
-                    or self.autodiff_mode == AutodiffMode.VALIDATION
-            ) and self.runtime.target_tape and not self.runtime.grad_replaced:
-                self.runtime.target_tape.insert(self, args)
 
             if actual_argument_slot > 8 and impl.current_cfg(
             ).arch == _ti_core.cc:
@@ -793,11 +805,17 @@ class Kernel:
 
             if has_ret:
                 if id(ret_dt) in primitive_types.integer_type_ids:
-                    ret = t_kernel.get_ret_int(0)
+                    if is_signed(cook_dtype(ret_dt)):
+                        ret = t_kernel.get_ret_int(0)
+                    else:
+                        ret = t_kernel.get_ret_uint(0)
                 elif id(ret_dt) in primitive_types.real_type_ids:
                     ret = t_kernel.get_ret_float(0)
                 elif id(ret_dt.dtype) in primitive_types.integer_type_ids:
-                    it = iter(t_kernel.get_ret_int_tensor(0))
+                    if is_signed(cook_dtype(ret_dt.dtype)):
+                        it = iter(t_kernel.get_ret_int_tensor(0))
+                    else:
+                        it = iter(t_kernel.get_ret_uint_tensor(0))
                     ret = Matrix([[next(it) for _ in range(ret_dt.m)]
                                   for _ in range(ret_dt.n)],
                                  ndim=getattr(ret_dt, 'ndim', 2))
@@ -837,16 +855,21 @@ class Kernel:
 
         # Transform the primal kernel to forward mode grad kernel
         # then recover to primal when exiting the forward mode manager
-        if self.runtime.fwd_mode_manager:
+        if self.runtime.fwd_mode_manager and not self.runtime.grad_replaced:
             # TODO: if we would like to compute 2nd-order derivatives by forward-on-reverse in a nested context manager fashion,
             # i.e., a `Tape` nested in the `FwdMode`, we can transform the kernels with `mode_original == AutodiffMode.REVERSE` only,
             # to avoid duplicate computation for 1st-order derivatives
-            mode_original = self.autodiff_mode
-            self.autodiff_mode = AutodiffMode.FORWARD
-            self.runtime.fwd_mode_manager.insert(self, mode_original)
-        elif self.runtime.target_tape and self.runtime.target_tape.validation:
-            # The autodiff valid check happens on forward kernel
-            self.autodiff_mode = AutodiffMode.VALIDATION
+            self.runtime.fwd_mode_manager.insert(self)
+
+        # Both the class kernels and the plain-function kernels are unified now.
+        # In both cases, |self.grad| is another Kernel instance that computes the
+        # gradient. For class kernels, args[0] is always the kernel owner.
+
+        # No need to capture grad kernels because they are already bound with their primal kernels
+        if self.autodiff_mode in (
+                AutodiffMode.NONE, AutodiffMode.VALIDATION
+        ) and self.runtime.target_tape and not self.runtime.grad_replaced:
+            self.runtime.target_tape.insert(self, args)
 
         if self.autodiff_mode != AutodiffMode.NONE and impl.current_cfg(
         ).opt_level == 0:
@@ -986,9 +1009,12 @@ class _BoundedDifferentiableMethod:
         self.__name__ = None
 
     def __call__(self, *args, **kwargs):
-        if self._is_staticmethod:
-            return self._primal(*args, **kwargs)
-        return self._primal(self._kernel_owner, *args, **kwargs)
+        try:
+            if self._is_staticmethod:
+                return self._primal(*args, **kwargs)
+            return self._primal(self._kernel_owner, *args, **kwargs)
+        except (TaichiCompilationError, TaichiRuntimeError) as e:
+            raise type(e)('\n' + str(e)) from None
 
     def grad(self, *args, **kwargs):
         return self._adjoint(self._kernel_owner, *args, **kwargs)

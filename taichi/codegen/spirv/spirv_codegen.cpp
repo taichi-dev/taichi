@@ -63,7 +63,8 @@ class TaskCodegen : public IRVisitor {
  public:
   struct Params {
     OffloadedStmt *task_ir;
-    Device *device;
+    Arch arch;
+    DeviceCapabilityConfig *caps;
     std::vector<CompiledSNodeStructs> compiled_structs;
     const KernelContextAttributes *ctx_attribs;
     std::string ti_kernel_name;
@@ -73,7 +74,8 @@ class TaskCodegen : public IRVisitor {
   const bool use_64bit_pointers = false;
 
   explicit TaskCodegen(const Params &params)
-      : device_(params.device),
+      : arch_(params.arch),
+        caps_(params.caps),
         task_ir_(params.task_ir),
         compiled_structs_(params.compiled_structs),
         ctx_attribs_(params.ctx_attribs),
@@ -84,7 +86,7 @@ class TaskCodegen : public IRVisitor {
     invoke_default_visitor = true;
 
     fill_snode_to_root();
-    ir_ = std::make_shared<spirv::IRBuilder>(params.device);
+    ir_ = std::make_shared<spirv::IRBuilder>(arch_, caps_);
   }
 
   void fill_snode_to_root() {
@@ -147,7 +149,7 @@ class TaskCodegen : public IRVisitor {
   }
 
   void visit(PrintStmt *stmt) override {
-    if (!device_->get_cap(DeviceCapability::spirv_has_non_semantic_info)) {
+    if (!caps_->get(DeviceCapability::spirv_has_non_semantic_info)) {
       return;
     }
 
@@ -161,7 +163,7 @@ class TaskCodegen : public IRVisitor {
 
         auto value = ir_->query_value(arg_stmt->raw_name());
         vals.push_back(value);
-        formats += data_type_format(arg_stmt->ret_type);
+        formats += data_type_format(arg_stmt->ret_type, Arch::vulkan);
       } else {
         auto arg_str = std::get<std::string>(content);
         formats += arg_str;
@@ -637,10 +639,12 @@ class TaskCodegen : public IRVisitor {
           ir_->int_immediate_number(ir_->i32_type(),
                                     log2int(ir_->get_primitive_type_size(
                                         argload->ret_type.ptr_removed()))));
-      ir_->decorate(spv::OpDecorate, linear_offset,
-                    spv::DecorationNoSignedWrap);
+      if (caps_->get(DeviceCapability::spirv_has_no_integer_wrap_decoration)) {
+        ir_->decorate(spv::OpDecorate, linear_offset,
+                      spv::DecorationNoSignedWrap);
+      }
     }
-    if (device_->get_cap(DeviceCapability::spirv_has_physical_storage_buffer)) {
+    if (caps_->get(DeviceCapability::spirv_has_physical_storage_buffer)) {
       spirv::Value addr_ptr = ir_->make_value(
           spv::OpAccessChain,
           ir_->get_pointer_type(ir_->u64_type(), spv::StorageClassUniform),
@@ -794,6 +798,178 @@ class TaskCodegen : public IRVisitor {
     else {TI_NOT_IMPLEMENTED} ir_->register_value(stmt->raw_name(), val);
   }
 
+  void generate_overflow_branch(const spirv::Value &cond_v,
+                                const std::string &op,
+                                const std::string &tb) {
+    spirv::Value cond =
+        ir_->ne(cond_v, ir_->cast(cond_v.stype, ir_->const_i32_zero_));
+    spirv::Label then_label = ir_->new_label();
+    spirv::Label merge_label = ir_->new_label();
+    ir_->make_inst(spv::OpSelectionMerge, merge_label,
+                   spv::SelectionControlMaskNone);
+    ir_->make_inst(spv::OpBranchConditional, cond, then_label, merge_label);
+    // then block
+    ir_->start_label(then_label);
+    ir_->call_debugprintf(op + " overflow detected in " + tb, {});
+    ir_->make_inst(spv::OpBranch, merge_label);
+    // merge label
+    ir_->start_label(merge_label);
+  }
+
+  spirv::Value generate_uadd_overflow(const spirv::Value &a,
+                                      const spirv::Value &b,
+                                      const std::string &tb) {
+    std::vector<std::tuple<spirv::SType, std::string, size_t>>
+        struct_components_;
+    struct_components_.emplace_back(a.stype, "result", 0);
+    struct_components_.emplace_back(a.stype, "carry",
+                                    ir_->get_primitive_type_size(a.stype.dt));
+    auto struct_type = ir_->create_struct_type(struct_components_);
+    auto add_carry = ir_->make_value(spv::OpIAddCarry, struct_type, a, b);
+    auto result =
+        ir_->make_value(spv::OpCompositeExtract, a.stype, add_carry, 0);
+    auto carry =
+        ir_->make_value(spv::OpCompositeExtract, a.stype, add_carry, 1);
+    generate_overflow_branch(carry, "Addition", tb);
+    return result;
+  }
+
+  spirv::Value generate_usub_overflow(const spirv::Value &a,
+                                      const spirv::Value &b,
+                                      const std::string &tb) {
+    std::vector<std::tuple<spirv::SType, std::string, size_t>>
+        struct_components_;
+    struct_components_.emplace_back(a.stype, "result", 0);
+    struct_components_.emplace_back(a.stype, "borrow",
+                                    ir_->get_primitive_type_size(a.stype.dt));
+    auto struct_type = ir_->create_struct_type(struct_components_);
+    auto add_carry = ir_->make_value(spv::OpISubBorrow, struct_type, a, b);
+    auto result =
+        ir_->make_value(spv::OpCompositeExtract, a.stype, add_carry, 0);
+    auto borrow =
+        ir_->make_value(spv::OpCompositeExtract, a.stype, add_carry, 1);
+    generate_overflow_branch(borrow, "Subtraction", tb);
+    return result;
+  }
+
+  spirv::Value generate_sadd_overflow(const spirv::Value &a,
+                                      const spirv::Value &b,
+                                      const std::string &tb) {
+    // overflow iff (sign(a) == sign(b)) && (sign(a) != sign(result))
+    auto result = ir_->make_value(spv::OpIAdd, a.stype, a, b);
+    auto zero = ir_->int_immediate_number(a.stype, 0);
+    auto a_sign = ir_->make_value(spv::OpSLessThan, ir_->bool_type(), a, zero);
+    auto b_sign = ir_->make_value(spv::OpSLessThan, ir_->bool_type(), b, zero);
+    auto r_sign =
+        ir_->make_value(spv::OpSLessThan, ir_->bool_type(), result, zero);
+    auto a_eq_b =
+        ir_->make_value(spv::OpLogicalEqual, ir_->bool_type(), a_sign, b_sign);
+    auto a_neq_r = ir_->make_value(spv::OpLogicalNotEqual, ir_->bool_type(),
+                                   a_sign, r_sign);
+    auto overflow =
+        ir_->make_value(spv::OpLogicalAnd, ir_->bool_type(), a_eq_b, a_neq_r);
+    generate_overflow_branch(overflow, "Addition", tb);
+    return result;
+  }
+
+  spirv::Value generate_ssub_overflow(const spirv::Value &a,
+                                      const spirv::Value &b,
+                                      const std::string &tb) {
+    // overflow iff (sign(a) != sign(b)) && (sign(a) != sign(result))
+    auto result = ir_->make_value(spv::OpISub, a.stype, a, b);
+    auto zero = ir_->int_immediate_number(a.stype, 0);
+    auto a_sign = ir_->make_value(spv::OpSLessThan, ir_->bool_type(), a, zero);
+    auto b_sign = ir_->make_value(spv::OpSLessThan, ir_->bool_type(), b, zero);
+    auto r_sign =
+        ir_->make_value(spv::OpSLessThan, ir_->bool_type(), result, zero);
+    auto a_neq_b = ir_->make_value(spv::OpLogicalNotEqual, ir_->bool_type(),
+                                   a_sign, b_sign);
+    auto a_neq_r = ir_->make_value(spv::OpLogicalNotEqual, ir_->bool_type(),
+                                   a_sign, r_sign);
+    auto overflow =
+        ir_->make_value(spv::OpLogicalAnd, ir_->bool_type(), a_neq_b, a_neq_r);
+    generate_overflow_branch(overflow, "Subtraction", tb);
+    return result;
+  }
+
+  spirv::Value generate_umul_overflow(const spirv::Value &a,
+                                      const spirv::Value &b,
+                                      const std::string &tb) {
+    // overflow iff high bits != 0
+    std::vector<std::tuple<spirv::SType, std::string, size_t>>
+        struct_components_;
+    struct_components_.emplace_back(a.stype, "low", 0);
+    struct_components_.emplace_back(a.stype, "high",
+                                    ir_->get_primitive_type_size(a.stype.dt));
+    auto struct_type = ir_->create_struct_type(struct_components_);
+    auto mul_ext = ir_->make_value(spv::OpUMulExtended, struct_type, a, b);
+    auto low = ir_->make_value(spv::OpCompositeExtract, a.stype, mul_ext, 0);
+    auto high = ir_->make_value(spv::OpCompositeExtract, a.stype, mul_ext, 1);
+    generate_overflow_branch(high, "Multiplication", tb);
+    return low;
+  }
+
+  spirv::Value generate_smul_overflow(const spirv::Value &a,
+                                      const spirv::Value &b,
+                                      const std::string &tb) {
+    // overflow if high bits are not all sign bit (0 if positive, -1 if
+    // negative) or the sign bit of the low bits is not the expected sign bit.
+    std::vector<std::tuple<spirv::SType, std::string, size_t>>
+        struct_components_;
+    struct_components_.emplace_back(a.stype, "low", 0);
+    struct_components_.emplace_back(a.stype, "high",
+                                    ir_->get_primitive_type_size(a.stype.dt));
+    auto struct_type = ir_->create_struct_type(struct_components_);
+    auto mul_ext = ir_->make_value(spv::OpSMulExtended, struct_type, a, b);
+    auto low = ir_->make_value(spv::OpCompositeExtract, a.stype, mul_ext, 0);
+    auto high = ir_->make_value(spv::OpCompositeExtract, a.stype, mul_ext, 1);
+    auto zero = ir_->int_immediate_number(a.stype, 0);
+    auto minus_one = ir_->int_immediate_number(a.stype, -1);
+    auto a_sign = ir_->make_value(spv::OpSLessThan, ir_->bool_type(), a, zero);
+    auto b_sign = ir_->make_value(spv::OpSLessThan, ir_->bool_type(), b, zero);
+    auto a_not_zero = ir_->ne(a, zero);
+    auto b_not_zero = ir_->ne(b, zero);
+    auto a_b_not_zero = ir_->make_value(spv::OpLogicalAnd, ir_->bool_type(),
+                                        a_not_zero, b_not_zero);
+    auto low_sign =
+        ir_->make_value(spv::OpSLessThan, ir_->bool_type(), low, zero);
+    auto expected_sign = ir_->make_value(spv::OpLogicalNotEqual,
+                                         ir_->bool_type(), a_sign, b_sign);
+    expected_sign = ir_->make_value(spv::OpLogicalAnd, ir_->bool_type(),
+                                    expected_sign, a_b_not_zero);
+    auto not_expected_sign = ir_->ne(low_sign, expected_sign);
+    auto expected_high = ir_->select(expected_sign, minus_one, zero);
+    auto not_expected_high = ir_->ne(high, expected_high);
+    auto overflow = ir_->make_value(spv::OpLogicalOr, ir_->bool_type(),
+                                    not_expected_high, not_expected_sign);
+    generate_overflow_branch(overflow, "Multiplication", tb);
+    return low;
+  }
+
+  spirv::Value generate_ushl_overflow(const spirv::Value &a,
+                                      const spirv::Value &b,
+                                      const std::string &tb) {
+    // overflow iff a << b >> b != a
+    auto result = ir_->make_value(spv::OpShiftLeftLogical, a.stype, a, b);
+    auto restore =
+        ir_->make_value(spv::OpShiftRightLogical, a.stype, result, b);
+    auto overflow = ir_->ne(a, restore);
+    generate_overflow_branch(overflow, "Shift left", tb);
+    return result;
+  }
+
+  spirv::Value generate_sshl_overflow(const spirv::Value &a,
+                                      const spirv::Value &b,
+                                      const std::string &tb) {
+    // overflow iff a << b >> b != a
+    auto result = ir_->make_value(spv::OpShiftLeftLogical, a.stype, a, b);
+    auto restore =
+        ir_->make_value(spv::OpShiftRightArithmetic, a.stype, result, b);
+    auto overflow = ir_->ne(a, restore);
+    generate_overflow_branch(overflow, "Shift left", tb);
+    return result;
+  }
+
   void visit(BinaryOpStmt *bin) override {
     const auto lhs_name = bin->lhs->raw_name();
     const auto rhs_name = bin->rhs->raw_name();
@@ -810,7 +986,31 @@ class TaskCodegen : public IRVisitor {
                lhs_value.stype.dt->to_string(), rhs_name,
                rhs_value.stype.dt->to_string(), bin->tb);
 
-    if (false) {
+    bool debug = caps_->get(DeviceCapability::spirv_has_non_semantic_info);
+
+    if (debug && op_type == BinaryOpType::add && is_integral(dst_type.dt)) {
+      if (is_unsigned(dst_type.dt)) {
+        bin_value = generate_uadd_overflow(lhs_value, rhs_value, bin->tb);
+      } else {
+        bin_value = generate_sadd_overflow(lhs_value, rhs_value, bin->tb);
+      }
+      bin_value = ir_->cast(dst_type, bin_value);
+    } else if (debug && op_type == BinaryOpType::sub &&
+               is_integral(dst_type.dt)) {
+      if (is_unsigned(dst_type.dt)) {
+        bin_value = generate_usub_overflow(lhs_value, rhs_value, bin->tb);
+      } else {
+        bin_value = generate_ssub_overflow(lhs_value, rhs_value, bin->tb);
+      }
+      bin_value = ir_->cast(dst_type, bin_value);
+    } else if (debug && op_type == BinaryOpType::mul &&
+               is_integral(dst_type.dt)) {
+      if (is_unsigned(dst_type.dt)) {
+        bin_value = generate_umul_overflow(lhs_value, rhs_value, bin->tb);
+      } else {
+        bin_value = generate_smul_overflow(lhs_value, rhs_value, bin->tb);
+      }
+      bin_value = ir_->cast(dst_type, bin_value);
     }
 #define BINARY_OP_TO_SPIRV_ARTHIMATIC(op, func)  \
   else if (op_type == BinaryOpType::op) {        \
@@ -830,6 +1030,13 @@ class TaskCodegen : public IRVisitor {
     bin_value = ir_->make_value(spv::sym, dst_type, lhs_value, rhs_value); \
   }
 
+    else if (debug && op_type == BinaryOpType::bit_shl) {
+      if (is_unsigned(dst_type.dt)) {
+        bin_value = generate_ushl_overflow(lhs_value, rhs_value, bin->tb);
+      } else {
+        bin_value = generate_sshl_overflow(lhs_value, rhs_value, bin->tb);
+      }
+    }
     BINARY_OP_TO_SPIRV_BITWISE(bit_and, OpBitwiseAnd)
     BINARY_OP_TO_SPIRV_BITWISE(bit_or, OpBitwiseOr)
     BINARY_OP_TO_SPIRV_BITWISE(bit_xor, OpBitwiseXor)
@@ -977,8 +1184,9 @@ class TaskCodegen : public IRVisitor {
         }
 
         int binding = binding_head_++;
-        val = ir_->storage_image_argument(/*num_channels=*/4, stmt->dimensions,
-                                          /*set=*/0, binding, format);
+        val =
+            ir_->storage_image_argument(/*num_channels=*/4, stmt->dimensions,
+                                        /*descriptor_set=*/0, binding, format);
         TextureBind bind;
         bind.arg_id = arg_id;
         bind.binding = binding;
@@ -988,7 +1196,7 @@ class TaskCodegen : public IRVisitor {
       } else {
         int binding = binding_head_++;
         val = ir_->texture_argument(/*num_channels=*/4, stmt->dimensions,
-                                    /*set=*/0, binding);
+                                    /*descriptor_set=*/0, binding);
         TextureBind bind;
         bind.arg_id = arg_id;
         bind.binding = binding;
@@ -1189,7 +1397,7 @@ class TaskCodegen : public IRVisitor {
     bool use_subgroup_reduction = false;
 
     if (stmt->is_reduction &&
-        device_->get_cap(DeviceCapability::spirv_has_subgroup_arithmetic)) {
+        caps_->get(DeviceCapability::spirv_has_subgroup_arithmetic)) {
       spv::Op atomic_op = spv::OpNop;
       bool negation = false;
       if (is_integral(dt)) {
@@ -1253,14 +1461,14 @@ class TaskCodegen : public IRVisitor {
     spirv::Value addr_ptr;
 
     if (dt->is_primitive(PrimitiveTypeID::f64)) {
-      if (device_->get_cap(DeviceCapability::spirv_has_atomic_float64_add) &&
+      if (caps_->get(DeviceCapability::spirv_has_atomic_float64_add) &&
           stmt->op_type == AtomicOpType::add) {
         addr_ptr = at_buffer(stmt->dest, dt);
       } else {
         addr_ptr = at_buffer(stmt->dest, ir_->get_taichi_uint_type(dt));
       }
     } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
-      if (device_->get_cap(DeviceCapability::spirv_has_atomic_float_add) &&
+      if (caps_->get(DeviceCapability::spirv_has_atomic_float_add) &&
           stmt->op_type == AtomicOpType::add) {
         addr_ptr = at_buffer(stmt->dest, dt);
       } else {
@@ -1281,17 +1489,17 @@ class TaskCodegen : public IRVisitor {
       bool use_native_atomics = false;
 
       if (dt->is_primitive(PrimitiveTypeID::f64)) {
-        if (device_->get_cap(DeviceCapability::spirv_has_atomic_float64_add) &&
+        if (caps_->get(DeviceCapability::spirv_has_atomic_float64_add) &&
             stmt->op_type == AtomicOpType::add) {
           use_native_atomics = true;
         }
       } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
-        if (device_->get_cap(DeviceCapability::spirv_has_atomic_float_add) &&
+        if (caps_->get(DeviceCapability::spirv_has_atomic_float_add) &&
             stmt->op_type == AtomicOpType::add) {
           use_native_atomics = true;
         }
       } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
-        if (device_->get_cap(DeviceCapability::spirv_has_atomic_float16_add) &&
+        if (caps_->get(DeviceCapability::spirv_has_atomic_float16_add) &&
             stmt->op_type == AtomicOpType::add) {
           use_native_atomics = true;
         }
@@ -1526,13 +1734,22 @@ class TaskCodegen : public IRVisitor {
         task_attribs_.advisory_num_threads_per_group, 1, 1};
     ir_->set_work_group_size(group_size);
     std::vector<spirv::Value> buffers;
-    if (device_->get_cap(DeviceCapability::spirv_version) > 0x10300) {
+    if (caps_->get(DeviceCapability::spirv_version) > 0x10300) {
       buffers = shared_array_binds_;
+      std::unordered_set<BufferInfo, BufferInfoHasher> unique_bufs;
+      // One buffer can be bound to different bind points but has to be unique
+      // in OpEntryPoint interface declarations.
+      // From Spec: before SPIR-V version 1.4, duplication of these interface id
+      // is tolerated. Starting with version 1.4, an interface id must not
+      // appear more than once.
       for (const auto &bb : task_attribs_.buffer_binds) {
-        for (auto &it : buffer_value_map_) {
-          if (it.first.first == bb.buffer) {
-            buffers.push_back(it.second);
+        if (unique_bufs.count(bb.buffer) == 0) {
+          for (auto &it : buffer_value_map_) {
+            if (it.first.first == bb.buffer) {
+              buffers.push_back(it.second);
+            }
           }
+          unique_bufs.insert(bb.buffer);
         }
       }
     }
@@ -2062,8 +2279,7 @@ class TaskCodegen : public IRVisitor {
     for (auto &arg : ctx_attribs_->args()) {
       const tinyir::Type *t;
       if (arg.is_array &&
-          device_->get_cap(
-              DeviceCapability::spirv_has_physical_storage_buffer)) {
+          caps_->get(DeviceCapability::spirv_has_physical_storage_buffer)) {
         t = blk.emplace_back<IntType>(/*num_bits=*/64, /*is_signed=*/false);
       } else {
         t = translate_ti_primitive(blk, PrimitiveType::get(arg.dtype));
@@ -2157,7 +2373,8 @@ class TaskCodegen : public IRVisitor {
     return continue_label_stack_.front();
   }
 
-  Device *device_;
+  Arch arch_;
+  DeviceCapabilityConfig *caps_;
 
   struct BufferInfoTypeTupleHasher {
     std::size_t operator()(const std::pair<BufferInfo, int> &buf) const {
@@ -2232,11 +2449,10 @@ static void spriv_message_consumer(spv_message_level_t level,
 }
 
 KernelCodegen::KernelCodegen(const Params &params)
-    : params_(params), ctx_attribs_(*params.kernel, params.device) {
-  spv_target_env target_env = SPV_ENV_VULKAN_1_0;
-  uint32_t spirv_version =
-      params.device->get_cap(DeviceCapability::spirv_version);
+    : params_(params), ctx_attribs_(*params.kernel, &params.caps) {
+  uint32_t spirv_version = params.caps.get(DeviceCapability::spirv_version);
 
+  spv_target_env target_env;
   if (spirv_version >= 0x10600) {
     target_env = SPV_ENV_VULKAN_1_3;
   } else if (spirv_version >= 0x10500) {
@@ -2245,6 +2461,8 @@ KernelCodegen::KernelCodegen(const Params &params)
     target_env = SPV_ENV_VULKAN_1_1_SPIRV_1_4;
   } else if (spirv_version >= 0x10300) {
     target_env = SPV_ENV_VULKAN_1_1;
+  } else {
+    target_env = SPV_ENV_VULKAN_1_0;
   }
 
   spirv_opt_ = std::make_unique<spvtools::Optimizer>(target_env);
@@ -2292,7 +2510,8 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
     tp.compiled_structs = params_.compiled_structs;
     tp.ctx_attribs = &ctx_attribs_;
     tp.ti_kernel_name = fmt::format("{}_{}", params_.ti_kernel_name, i);
-    tp.device = params_.device;
+    tp.arch = params_.arch;
+    tp.caps = &params_.caps;
 
     TaskCodegen cgen(tp);
     auto task_res = cgen.run();

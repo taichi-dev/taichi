@@ -126,10 +126,14 @@ class SparseMatrix:
         """
         if isinstance(other, SparseMatrix):
             assert self.m == other.n, f"Dimension mismatch between sparse matrices ({self.n}, {self.m}) and ({other.n}, {other.m})"
-            print('****************************************************************')
+            print(
+                '****************************************************************'
+            )
             print('this: ', self.matrix.to_string())
             print('other: ', other.matrix.to_string())
-            print('****************************************************************')
+            print(
+                '****************************************************************'
+            )
             sm = self.matrix.matmul(other.matrix)
             return SparseMatrix(sm=sm)
         if isinstance(other, Field):

@@ -23,7 +23,7 @@ from taichi.lang.matrix import Matrix, MatrixType
 from taichi.lang.shell import _shell_pop_print
 from taichi.lang.util import (cook_dtype, has_paddle, has_pytorch,
                               to_taichi_type)
-from taichi.lang.wrap_inspect import (_check_in_IPython, _getsourcefile,
+from taichi.lang._wrap_inspect import (_check_in_IPython, _getsourcefile,
                                       _getsourcelines)
 from taichi.types import (ndarray_type, primitive_types, sparse_matrix_builder,
                           template, texture_type)

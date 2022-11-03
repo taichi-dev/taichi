@@ -253,7 +253,8 @@ class Func:
                         _ti_core.make_reference(args[i].ptr))
                 else:
                     non_template_args.append(args[i])
-        non_template_args = impl.make_expr_group(non_template_args)
+        non_template_args = impl.make_expr_group(non_template_args,
+                                                 real_func_arg=True)
         return Expr(
             _ti_core.make_func_call_expr(
                 self.taichi_functions[key.instance_id], non_template_args))

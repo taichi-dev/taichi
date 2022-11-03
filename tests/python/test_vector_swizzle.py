@@ -112,3 +112,14 @@ def test_vector_invalid_swizzle_patterns():
                        match=re.escape(
                            "value len does not match the swizzle pattern=xy")):
         a.xy = [1, 2, 3]
+
+
+@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
+def test_vector_swizzle_real_matrix_scalarize():
+    @ti.kernel
+    def foo() -> ti.types.vector(3, ti.i32):
+        v = ti.Vector([1, 2, 3])
+        v.zxy += [v.z, v.y, v.x]
+        return v
+
+    assert (foo() == ti.Vector([3, 3, 6])).all()

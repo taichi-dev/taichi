@@ -135,4 +135,36 @@ function build-and-test-headless-demo {
     done
 }
 
+function build-and-test-headless-demo-desktop {
+    pushd taichi
+    setup_python
+    python3 -m pip install dist/*.whl
+    sudo chmod 0777 $HOME/.cache
+    export TAICHI_REPO_DIR=$(pwd)
+    popd
+
+    rm -rf taichi-aot-demo
+    git clone --recursive --depth=1 https://github.com/taichi-dev/taichi-aot-demo
+    cd taichi-aot-demo
+    mkdir build
+    pushd build
+    export TAICHI_C_API_INSTALL_DIR=$(find $TAICHI_REPO_DIR -name cmake-install -type d | head -n 1)/c_api
+    cmake .. -DTI_WITH_VULKAN=ON
+    make -j
+
+    cd headless
+    BINARIES=$(ls E*)
+    popd # build
+
+    for b in $BINARIES; do
+        ./build/headless/$b
+        ARCH="vulkan"
+        # compare with ground truth
+        if [[ $(cmp -l 0001.bmp ci/headless-truths/linux/$ARCH/$b.bmp | wc -l) -gt 300 ]]; then
+            echo "Above threshold: $b"
+            exit 1
+        fi
+    done
+}
+
 $1

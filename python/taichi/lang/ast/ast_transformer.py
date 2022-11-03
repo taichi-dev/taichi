@@ -772,7 +772,8 @@ class ASTTransformer(Builder):
             index = build_stmt(ctx, node.value.slice)
             node.value.ptr = None
             node.ptr = lambda val: append(x.parent(), index, val)
-        elif node.attr == "deactivate" and isinstance(node.value, ast.Subscript):
+        elif node.attr == "deactivate" and isinstance(node.value,
+                                                      ast.Subscript):
             x = build_stmt(ctx, node.value.value)
             if not isinstance(x, Field) or x.parent(
             ).ptr.type != _ti_core.SNodeType.dynamic:

@@ -286,7 +286,7 @@ class _MatrixEntriesInitializer:
     def no_dynamic_index(self, arr, dt):
         raise NotImplementedError('Override')
 
-    def with_dynamic_index(self, arr, dt, ndim=None):
+    def with_dynamic_index(self, arr, dt):
         raise NotImplementedError('Override')
 
     def _get_entry_to_infer(self, arr):
@@ -318,7 +318,7 @@ def _make_entries_initializer(is_matrix: bool) -> _MatrixEntriesInitializer:
             return [[impl.expr_init(ops_mod.cast(x, dt) if dt else x)]
                     for x in arr]
 
-        def with_dynamic_index(self, arr, dt, ndim=1):
+        def with_dynamic_index(self, arr, dt):
             local_tensor_proxy = impl.expr_init_local_tensor(
                 [len(arr)], dt,
                 expr.make_expr_group([expr.Expr(x) for x in arr]))
@@ -344,9 +344,9 @@ def _make_entries_initializer(is_matrix: bool) -> _MatrixEntriesInitializer:
                 impl.expr_init(ops_mod.cast(x, dt) if dt else x) for x in row
             ] for row in arr]
 
-        def with_dynamic_index(self, arr, dt, ndim=2):
+        def with_dynamic_index(self, arr, dt):
             local_tensor_proxy = impl.expr_init_local_tensor(
-                [len(arr), len(arr[0])] if ndim == 2 else [len(arr)], dt,
+                [len(arr), len(arr[0])], dt,
                 expr.make_expr_group(
                     [expr.Expr(x) for row in arr for x in row]))
 
@@ -358,9 +358,7 @@ def _make_entries_initializer(is_matrix: bool) -> _MatrixEntriesInitializer:
                         impl.make_index_expr(
                             local_tensor_proxy,
                             (expr.Expr(i, dtype=primitive_types.i32),
-                             expr.Expr(j, dtype=primitive_types.i32))
-                            if ndim == 2 else
-                            (expr.Expr(i, dtype=primitive_types.i32), )))
+                             expr.Expr(j, dtype=primitive_types.i32))))
             return local_tensor_proxy, mat
 
         def _get_entry_to_infer(self, arr):
@@ -426,9 +424,14 @@ class Matrix(TaichiOperations):
         elif isinstance(arr[0], Matrix):
             raise Exception('cols/rows required when using list of vectors')
         else:
-            is_matrix = isinstance(arr[0], Iterable) and not is_vector(self)
+            if ndim is not None:
+                self.ndim = ndim
+                is_matrix = ndim == 2
+            else:
+                is_matrix = isinstance(arr[0],
+                                       Iterable) and not is_vector(self)
+                self.ndim = 2 if is_matrix else 1
             initializer = _make_entries_initializer(is_matrix)
-            self.ndim = 2 if is_matrix else 1
             if not is_matrix and isinstance(arr[0], Iterable):
                 flattened = []
                 for row in arr:
@@ -449,7 +452,7 @@ class Matrix(TaichiOperations):
                 if dt is None:
                     dt = initializer.infer_dt(arr)
                 local_tensor_proxy, mat = initializer.with_dynamic_index(
-                    arr, dt, ndim=ndim if ndim is not None else self.ndim)
+                    arr, dt)
         self.n, self.m = len(mat), 1
         if len(mat) > 0:
             self.m = len(mat[0])

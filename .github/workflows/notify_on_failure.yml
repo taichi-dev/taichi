@@ -37,6 +37,6 @@ jobs:
                     "type": "mrkdwn",
                     "text": ${{ toJSON(github.event.workflow_run.head_commit.message) }}
                   }
-                },
+                }
               ]
             }

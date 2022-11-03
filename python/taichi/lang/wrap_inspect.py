@@ -4,6 +4,15 @@ import sys
 import tempfile
 
 
+def _check_in_IPython():
+    if "IPython" in sys.modules:
+        from IPython import get_ipython
+        ip = get_ipython()
+        return ip is not None
+
+    return False
+
+
 def _blender_get_text_name(filename: str):
     if filename.startswith(os.path.sep) and filename.count(os.path.sep) == 1:
         return filename[1:]
@@ -118,12 +127,12 @@ class _InspectContextManager:
         del inspect._saved_findsource
 
 
-def getsourcelines(obj):
+def _getsourcelines(obj):
     with _InspectContextManager():
         return inspect.getsourcelines(obj)
 
 
-def getsourcefile(obj):
+def _getsourcefile(obj):
     with _InspectContextManager():
         ret = inspect.getsourcefile(obj)
         if ret is None:
@@ -132,6 +141,3 @@ def getsourcefile(obj):
             except:
                 pass
         return ret
-
-
-__all__ = ["getsourcelines", "getsourcefile"]

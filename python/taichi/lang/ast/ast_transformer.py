@@ -18,7 +18,7 @@ from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field
 from taichi.lang.impl import current_cfg
 from taichi.lang.matrix import Matrix, MatrixType, Vector, is_vector
-from taichi.lang.snode import append
+from taichi.lang.snode import append, deactivate
 from taichi.lang.util import is_taichi_class, to_taichi_type
 from taichi.types import (annotations, ndarray_type, primitive_types,
                           texture_type)
@@ -772,6 +772,16 @@ class ASTTransformer(Builder):
             index = build_stmt(ctx, node.value.slice)
             node.value.ptr = None
             node.ptr = lambda val: append(x.parent(), index, val)
+        elif node.attr == "deactivate" and isinstance(node.value, ast.Subscript):
+            x = build_stmt(ctx, node.value.value)
+            if not isinstance(x, Field) or x.parent(
+            ).ptr.type != _ti_core.SNodeType.dynamic:
+                raise TaichiSyntaxError(
+                    f"In Taichi scope the `append` method is only defined for dynamic SNodes, but {x} is encountered"
+                )
+            index = build_stmt(ctx, node.value.slice)
+            node.value.ptr = None
+            node.ptr = lambda val: deactivate(x.parent(), index)
         else:
             build_stmt(ctx, node.value)
             if isinstance(node.value.ptr,

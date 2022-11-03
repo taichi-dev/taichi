@@ -555,6 +555,7 @@ class ScalarizePointers : public BasicStmtVisitor {
         // TODO(zhanlue): loose this contraint once dynamic indexing is properly
         // handled
         if (!stmt->offset->is<ConstStmt>()) {
+          // Removing this line will fail TI_ASSERT in ~DelayedIRModifier()
           modifier_.modify_ir();
           throw TaichiSyntaxError(fmt::format(
               "{}The index of a Matrix/Vector must be a compile-time constant "

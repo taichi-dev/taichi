@@ -909,8 +909,7 @@ void SNodeOpExpression::type_check(CompileConfig *config) {
       auto promoted = promoted_type(dst_type, values[i]->ret_type);
       if (dst_type != promoted) {
         TI_WARN("Append may lose precision: {} <- {}\n{}",
-                dst_type->to_string(), values[i]->ret_type->to_string(),
-                tb);
+                dst_type->to_string(), values[i]->ret_type->to_string(), tb);
       }
       values[i] = cast(values[i], dst_type);
       values[i]->type_check(config);

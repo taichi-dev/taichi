@@ -379,9 +379,9 @@ def append(node, indices, val):
             ptrs.append(expr.Expr(item).ptr)
     else:
         ptrs = [expr.Expr(val).ptr]
-    a = impl.expr_init(
-        _ti_core.expr_snode_append(node._snode.ptr,
-                                   expr.make_expr_group(indices), ptrs))
+    append_expr = expr.Expr(_ti_core.expr_snode_append(node._snode.ptr,
+                                   expr.make_expr_group(indices), ptrs), tb=impl.get_runtime().get_current_src_info())
+    a = impl.expr_init(append_expr)
     return a
 
 

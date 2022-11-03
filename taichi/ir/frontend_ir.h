@@ -730,7 +730,7 @@ class SNodeOpExpression : public Expression {
   SNode *snode;
   SNodeOpType op_type;
   ExprGroup indices;
-  std::vector<Expr> values;
+  std::vector<Expr> values; // Only for op_type==append
 
   SNodeOpExpression(SNode *snode, SNodeOpType op_type, const ExprGroup &indices)
       : snode(snode), op_type(op_type), indices(indices) {

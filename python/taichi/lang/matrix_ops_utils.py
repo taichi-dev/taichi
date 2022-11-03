@@ -75,6 +75,8 @@ def assert_tensor(m, msg='not tensor type: {}'):
     raise TaichiCompilationError(msg.format(type(m)))
 
 
+# TODO(zhanlue): rearrange to more generic checker functions
+# for example: "assert_is_instance(args, indices=[], instances=[], logic='or')"
 def assert_vector(v, msg='not a vector: {}'):
     if (isinstance(v, Expr) or isinstance(v, Matrix)) and len(
             v.get_shape()) == 1:

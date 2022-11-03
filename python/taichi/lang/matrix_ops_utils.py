@@ -7,19 +7,19 @@ from taichi.lang.matrix import Matrix
 
 def do_check(checker_fns, *args, **kwargs):
     for f in checker_fns:
-        try:
-            ok, msg = f(*args, **kwargs)
-        except TaichiCompilationError as e:
-            raise
+        ok, msg = f(*args, **kwargs)
         if not ok:
-            raise TaichiCompilationError(msg)
+            return False, msg
+    return True, None
 
 
 def preconditions(*checker_funcs):
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            do_check(checker_funcs, *args, **kwargs)
+            ok, msg = do_check(checker_funcs, *args, **kwargs)
+            if not ok:
+                raise TaichiCompilationError(msg)
             return func(*args, **kwargs)
 
         return wrapper
@@ -36,7 +36,9 @@ def arg_at(i, *fns):
                 arg = args[i]
             except IndexError:
                 raise
-        do_check(fns, arg)
+        ok, msg = do_check(fns, arg)
+        if not ok:
+            return False, msg
         return True, None
 
     return check
@@ -45,7 +47,9 @@ def arg_at(i, *fns):
 def foreach(*fns):
     def check(args):
         for x in args:
-            do_check(fns, x)
+            ok, msg = do_check(fns, x)
+            if not ok:
+                return False, msg
         return True, None
 
     return check
@@ -53,16 +57,11 @@ def foreach(*fns):
 
 def Or(f, g, msg=None):
     def check(*args, **kwargs):
-        try:
-            do_check([f], *args, **kwargs)
-            return True, None
-        except TaichiCompilationError:
-            try:
-                do_check([g], *args, **kwargs)
-            except TaichiCompilationError:
-                if msg:
-                    raise TaichiCompilationError(msg)
-                raise
+        ok, msg_f = do_check([f], *args, **kwargs)
+        if not ok:
+            ok, msg_g = do_check([g], *args, **kwargs)
+            if not ok:
+                return False, f'Both violated: {msg_f} {msg_g}'
         return True, None
 
     return check
@@ -131,9 +130,9 @@ def check_matmul(x, y):
     if len(x_shape) == 1:
         if len(y_shape) == 1:
             return True, None
-        if x_shape[0] != y_shape[1]:
+        if x_shape[0] != y_shape[0]:
             return False, f'dimension mismatch between {x_shape} and {y_shape} for left multiplication'
     else:
-        if x_shape[0] != y_shape[0]:
+        if x_shape[1] != y_shape[0]:
             return False, f'dimension mismatch between {x_shape} and {y_shape} for matrix multiplication'
     return True, None

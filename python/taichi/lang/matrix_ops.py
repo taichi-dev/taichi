@@ -82,12 +82,13 @@ def reduce(x, f, init, inplace=False):
                msg="Cols/rows must be a list of lists, or a list of vectors")),
         same_shapes))
 def rows(rows):  # pylint: disable=W0621
-    if isinstance(rows[0], Matrix):
+    if isinstance(rows[0], (Matrix, Expr)):
         shape = rows[0].get_shape()
+        assert len(shape) == 1, "Rows must be a list of vectors"
 
         @pyfunc
         def _rows():
-            return Matrix([[row(i) for i in range(shape[0])] for row in rows])
+            return Matrix([[row[i] for i in range(shape[0])] for row in rows])
 
         return _rows()
     if isinstance(rows[0], list):

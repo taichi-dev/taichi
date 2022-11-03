@@ -278,7 +278,9 @@ def test_append_struct():
     def make_list():
         for i in range(10):
             for j in range(20):
-                x[i].append(struct(i * j * 10, i * j * 10000, i * j * 100000000, i * j * ti.u64(10000000000)))
+                x[i].append(
+                    struct(i * j * 10, i * j * 10000, i * j * 100000000,
+                           i * j * ti.u64(10000000000)))
 
     make_list()
 

@@ -83,7 +83,7 @@ def test_compare_equality():
     assert not a[11]
 
 
-@test_utils.test(require=ti.extension.sparse)
+@test_utils.test(require=ti.extension.sparse, exclude=[ti.metal])
 def test_no_duplicate_eval():
     a = ti.field(ti.i32)
     ti.root.dynamic(ti.i, 256).place(a)

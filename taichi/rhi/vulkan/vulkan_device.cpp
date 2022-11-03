@@ -300,6 +300,7 @@ void VulkanPipeline::create_descriptor_set_layout(const Params &params) {
                 graphics_pipeline_template_->blend_attachments.end(),
                 default_state);
     }
+    spvReflectDestroyShaderModule(&module);
   }
 
   for (uint32_t set : sets_used) {
@@ -1560,14 +1561,23 @@ void *VulkanDevice::map(DeviceAllocation alloc) {
   TI_ASSERT_INFO(alloc_int.mapped == nullptr,
                  "Memory can not be mapped multiple times");
 
+  VkResult res;
   if (alloc_int.buffer->allocator) {
-    vmaMapMemory(alloc_int.buffer->allocator, alloc_int.buffer->allocation,
-                 &alloc_int.mapped);
+    res = vmaMapMemory(alloc_int.buffer->allocator,
+                       alloc_int.buffer->allocation, &alloc_int.mapped);
   } else {
-    vkMapMemory(device_, alloc_int.alloc_info.deviceMemory,
-                alloc_int.alloc_info.offset, alloc_int.alloc_info.size, 0,
-                &alloc_int.mapped);
+    res = vkMapMemory(device_, alloc_int.alloc_info.deviceMemory,
+                      alloc_int.alloc_info.offset, alloc_int.alloc_info.size, 0,
+                      &alloc_int.mapped);
   }
+  if (alloc_int.mapped == nullptr || res == VK_ERROR_MEMORY_MAP_FAILED) {
+    TI_ERROR(
+        "cannot map memory, potentially because the memory is not "
+        "accessible from the host: ensure your memory is allocated with "
+        "`host_read=true` or `host_write=true` (or `host_access=true` in C++ "
+        "wrapper)");
+  }
+  BAIL_ON_VK_BAD_RESULT(res, "failed to map memory for unknown reasons");
 
   return alloc_int.mapped;
 }

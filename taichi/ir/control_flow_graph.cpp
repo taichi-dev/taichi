@@ -604,7 +604,8 @@ void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access) {
           (!after_lower_access &&
            (stmt->is<GlobalPtrStmt>() || stmt->is<ExternalPtrStmt>() ||
             stmt->is<BlockLocalPtrStmt>() || stmt->is<ThreadLocalPtrStmt>() ||
-            stmt->is<GlobalTemporaryStmt>() || stmt->is<MatrixPtrStmt>()))) {
+            stmt->is<GlobalTemporaryStmt>() || stmt->is<MatrixPtrStmt>() ||
+            stmt->is<GetChStmt>()))) {
         // TODO: unify them
         // A global pointer that may contain some data before this kernel.
         nodes[start_node]->reach_gen.insert(stmt);

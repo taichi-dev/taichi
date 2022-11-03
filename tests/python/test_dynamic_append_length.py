@@ -21,7 +21,7 @@ def _test_dynamic_append_length(dt):
     test()
 
 
-@test_utils.test(exclude=[ti.cc, ti.opengl, ti.vulkan],
+@test_utils.test(exclude=[ti.cc, ti.opengl, ti.vulkan, ti.metal],
                  default_fp=ti.f32,
                  debug=True)
 def test_dynamic_append_length_f32():

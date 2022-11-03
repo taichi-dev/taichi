@@ -510,19 +510,7 @@ struct VectorND : public VectorNDBase<dim__, T, ISE> {
     return ret;
   }
 
-  TI_IO_DECL {
-    if (TI_SERIALIZER_IS(TextSerializer)) {
-      std::string ret = "(";
-      for (int i = 0; i < dim - 1; i++) {
-        ret += fmt::format("{}, ", d[i]);
-      }
-      ret += fmt::format("{}", d[dim - 1]);
-      ret += ")";
-      serializer("vec", ret);
-    } else {
-      TI_IO(d);
-    }
-  }
+  TI_IO_DEF(d);
 
   TI_FORCE_INLINE explicit operator std::array<T, dim>() const {
     std::array<T, dim> arr;
@@ -875,20 +863,7 @@ struct MatrixND {
     return MatrixND(1.0_f);
   }
 
-  TI_IO_DECL {
-    if constexpr (TI_SERIALIZER_IS(TextSerializer)) {
-      for (int i = 0; i < dim; i++) {
-        std::string line = "[";
-        for (int j = 0; j < dim; j++) {
-          line += fmt::format("{}   ", d[j][i]);
-        }
-        line += "]";
-        serializer.add_line(line);
-      }
-    } else {
-      TI_IO(d);
-    }
-  }
+  TI_IO_DEF(d);
 };
 
 template <int dim, typename T, InstSetExt ISE>
@@ -1413,10 +1388,6 @@ static_assert(Serializer::has_io<Matrix4>::value, "");
 static_assert(Serializer::has_io<const Matrix4>::value, "");
 static_assert(Serializer::has_io<const Matrix4 &>::value, "");
 static_assert(Serializer::has_io<Matrix4 &>::value, "");
-static_assert(
-    TextSerializer::has_io<
-        const taichi::MatrixND<4, double, (taichi::InstSetExt)3>>::value,
-    "");
 
 namespace type {
 template <typename T, typename = void>

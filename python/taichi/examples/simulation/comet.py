@@ -78,7 +78,8 @@ def render():
         img[p] = 1e-6 / (p / res - ti.Vector([sun.x, sun.y])).norm(1e-4)**3
     for i in x:
         p = int(ti.Vector([x[i].x, x[i].y]) * res)
-        img[p] += color[i]
+        if 0 <= p[0] < res and 0 <= p[1] < res:
+            img[p] += color[i]
 
 
 def main():

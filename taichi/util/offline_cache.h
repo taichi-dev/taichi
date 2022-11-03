@@ -47,15 +47,6 @@ inline CleanCachePolicy string_to_clean_cache_policy(const std::string &str) {
   return Never;
 }
 
-struct KernelMetadataBase {
-  std::string kernel_key;
-  std::size_t size{0};          // byte
-  std::time_t created_at{0};    // sec
-  std::time_t last_used_at{0};  // sec
-
-  TI_IO_DEF(kernel_key, size, created_at, last_used_at);
-};
-
 template <typename KernelMetadataType>
 struct Metadata {
   using KernelMetadata = KernelMetadataType;

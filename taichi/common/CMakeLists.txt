@@ -5,6 +5,7 @@ target_sources(taichi_common
   PRIVATE
     cleanup.cpp
     core.cpp
+    json.cpp
     logging.cpp
     symbol_version.cpp
   )

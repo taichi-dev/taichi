@@ -62,8 +62,6 @@ class OpenglProgramImpl : public ProgramImpl {
     return snode_tree_mgr_->get_snode_tree_device_ptr(tree_id);
   }
 
-  std::unique_ptr<aot::Kernel> make_aot_kernel(Kernel &kernel) override;
-
   void dump_cache_data_to_disk() override;
 
   const std::unique_ptr<gfx::CacheManager> &get_cache_manager();

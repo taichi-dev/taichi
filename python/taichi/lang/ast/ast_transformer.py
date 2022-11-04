@@ -767,11 +767,11 @@ class ASTTransformer(Builder):
             x = build_stmt(ctx, node.value.value)
         else:
             x = build_stmt(ctx, node.value)
-            
+
         names = ("append", "deactivate")
         if isinstance(x, Field) and x.parent(
-            ).ptr.type == _ti_core.SNodeType.dynamic and node.attr in names:
-        
+        ).ptr.type == _ti_core.SNodeType.dynamic and node.attr in names:
+
             def build_dynamic_snode_hack():
                 if is_subscript:
                     index = build_stmt(ctx, node.value.slice)
@@ -783,9 +783,9 @@ class ASTTransformer(Builder):
                     node.ptr = lambda val: append(x.parent(), index, val)
                 else:
                     node.ptr = lambda: deactivate(x.parent(), index)
-                    
+
             build_dynamic_snode_hack()
- 
+
         else:
             if isinstance(node.value.ptr,
                           Expr) and not hasattr(node.value.ptr, node.attr):

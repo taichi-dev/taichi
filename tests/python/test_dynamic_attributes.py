@@ -23,7 +23,7 @@ def _test_dynamic_append_length(dt):
             x[i].deactivate()
             for j in range(10):
                 assert x[i, j] == 0
- 
+
     test()
 
 

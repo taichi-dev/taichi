@@ -762,7 +762,8 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_Attribute(ctx, node):
-        if node.attr in ("append", "deactivate") and isinstance(node.value, ast.Subscript):
+        if node.attr in ("append", "deactivate") and isinstance(
+                node.value, ast.Subscript):
             x = build_stmt(ctx, node.value.value)
             if not isinstance(x, Field) or x.parent(
             ).ptr.type != _ti_core.SNodeType.dynamic:

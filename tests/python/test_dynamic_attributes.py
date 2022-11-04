@@ -7,7 +7,7 @@ def _test_dynamic_append_length(dt):
     block = ti.root.dense(ti.i, 10)
     pixel = block.dynamic(ti.j, 10)
     pixel.place(x)
-    
+
     y = ti.field(int)
     ti.root.dynamic(ti.i, 10).place(y)
 
@@ -26,7 +26,7 @@ def _test_dynamic_append_length(dt):
             x[i].deactivate()
             for j in range(10):
                 assert x[i, j] == 0
-                
+
         for j in range(10):
             y[j] = j
 

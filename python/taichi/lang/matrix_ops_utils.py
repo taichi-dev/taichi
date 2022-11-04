@@ -100,7 +100,7 @@ def same_shapes(xs):
 def square_matrix(x):
     assert_tensor(x)
     shape = x.get_shape()
-    if shape[0] != shape[1]:
+    if len(shape) != 2 or shape[0] != shape[1]:
         return False, f'not a square matrix: {shape}'
     return True, None
 

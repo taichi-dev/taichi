@@ -775,7 +775,7 @@ class ASTTransformer(Builder):
                 )
             if is_subscript:
                 index = build_stmt(ctx, node.value.slice)
-            
+
             node.value.ptr = None
             if is_subscript:
                 if node.attr == "append":
@@ -784,7 +784,7 @@ class ASTTransformer(Builder):
                     node.ptr = lambda: deactivate(x.parent(), index)
             else:
                 node.ptr = lambda: deactivate(x.parent(), [])
-    
+
         else:
             build_stmt(ctx, node.value)
             if isinstance(node.value.ptr,

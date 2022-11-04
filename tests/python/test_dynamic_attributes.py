@@ -29,8 +29,8 @@ def _test_dynamic_append_length(dt):
                 
         for j in range(10):
             y[j] = j
-            
-        y[None].deactivate()
+
+        y.deactivate()
         for j in range(10):
             assert y[j] == 0
 

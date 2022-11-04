@@ -762,20 +762,29 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_Attribute(ctx, node):
-        if node.attr in ("append", "deactivate") and isinstance(
-                node.value, ast.Subscript):
-            x = build_stmt(ctx, node.value.value)
+        if node.attr in ("append", "deactivate"):
+            is_subscript = isinstance(node.value, ast.Subscript)
+            if is_subscript:
+                x = build_stmt(ctx, node.value.value)
+            else:
+                x = build_stmt(ctx, node.value)
             if not isinstance(x, Field) or x.parent(
             ).ptr.type != _ti_core.SNodeType.dynamic:
                 raise TaichiSyntaxError(
                     f"In Taichi scope the `{node.attr}` method is only defined for dynamic SNodes, but {x} is encountered"
                 )
-            index = build_stmt(ctx, node.value.slice)
+            if is_subscript:
+                index = build_stmt(ctx, node.value.slice)
+            
             node.value.ptr = None
-            if node.attr == "append":
-                node.ptr = lambda val: append(x.parent(), index, val)
+            if is_subscript:
+                if node.attr == "append":
+                    node.ptr = lambda val: append(x.parent(), index, val)
+                else:
+                    node.ptr = lambda: deactivate(x.parent(), index)
             else:
-                node.ptr = lambda: deactivate(x.parent(), index)
+                node.ptr = lambda: deactivate(x.parent(), [])
+    
         else:
             build_stmt(ctx, node.value)
             if isinstance(node.value.ptr,

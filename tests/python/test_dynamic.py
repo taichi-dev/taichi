@@ -258,3 +258,28 @@ def test_append_u64():
 
     for i in range(20):
         assert x[i] == i * i * i * 10000000000
+
+
+@test_utils.test(require=ti.extension.sparse, exclude=[ti.metal])
+def test_append_struct():
+    struct = ti.types.struct(a=ti.u8, b=ti.u16, c=ti.u32, d=ti.u64)
+    x = struct.field()
+    pixel = ti.root.dense(ti.i, 10).dynamic(ti.j, 20, 5)
+    pixel.place(x)
+
+    @ti.kernel
+    def make_list():
+        for i in range(10):
+            for j in range(20):
+                x[i].append(
+                    struct(i * j * 10, i * j * 10000, i * j * 100000000,
+                           i * j * ti.u64(10000000000)))
+
+    make_list()
+
+    for i in range(10):
+        for j in range(20):
+            assert x[i, j].a == i * j * 10 % 256
+            assert x[i, j].b == i * j * 10000 % 65536
+            assert x[i, j].c == i * j * 100000000 % 4294967296
+            assert x[i, j].d == i * j * 10000000000

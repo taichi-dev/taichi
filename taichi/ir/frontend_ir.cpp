@@ -895,11 +895,25 @@ void AtomicOpExpression::flatten(FlattenContext *ctx) {
   stmt->tb = tb;
 }
 
-void SNodeOpExpression::type_check(CompileConfig *) {
+void SNodeOpExpression::type_check(CompileConfig *config) {
   if (op_type == SNodeOpType::get_addr) {
     ret_type = PrimitiveType::u64;
   } else {
     ret_type = PrimitiveType::i32;
+  }
+  if (op_type == SNodeOpType::append) {
+    TI_ASSERT(snode->ch.size() == values.size());
+    for (int i = 0; i < values.size(); i++) {
+      TI_ASSERT_TYPE_CHECKED(values[i]);
+      auto &dst_type = snode->ch[i]->dt;
+      auto promoted = promoted_type(dst_type, values[i]->ret_type);
+      if (dst_type != promoted) {
+        TI_WARN("Append may lose precision: {} <- {}\n{}",
+                dst_type->to_string(), values[i]->ret_type->to_string(), tb);
+      }
+      values[i] = cast(values[i], dst_type);
+      values[i]->type_check(config);
+    }
   }
 }
 
@@ -925,18 +939,22 @@ void SNodeOpExpression::flatten(FlattenContext *ctx) {
   } else if (op_type == SNodeOpType::get_addr) {
     ctx->push_back<SNodeOpStmt>(SNodeOpType::get_addr, snode, ptr, nullptr);
   } else if (op_type == SNodeOpType::append) {
-    flatten_rvalue(value, ctx);
-
+    for (auto &value : values) {
+      flatten_rvalue(value, ctx);
+    }
     auto alloca = ctx->push_back<AllocaStmt>(PrimitiveType::i32);
+    alloca->set_tb(tb);
     auto addr =
         ctx->push_back<SNodeOpStmt>(SNodeOpType::allocate, snode, ptr, alloca);
-    auto ch_addr = ctx->push_back<GetChStmt>(addr, snode, 0);
-    ctx->push_back<GlobalStoreStmt>(ch_addr, value->stmt);
-    ctx->push_back<LocalLoadStmt>(alloca);
+    addr->set_tb(tb);
+    for (int i = 0; i < values.size(); i++) {
+      auto ch_addr = ctx->push_back<GetChStmt>(addr, snode, i);
+      ch_addr->set_tb(tb);
+      ctx->push_back<GlobalStoreStmt>(ch_addr, values[i]->stmt)->set_tb(tb);
+    }
+    ctx->push_back<LocalLoadStmt>(alloca)->set_tb(tb);
     TI_ERROR_IF(snode->type != SNodeType::dynamic,
                 "ti.append only works on dynamic nodes.");
-    TI_ERROR_IF(snode->ch.size() != 1,
-                "ti.append only works on single-child dynamic nodes.");
   }
   stmt = ctx->back_stmt();
 }

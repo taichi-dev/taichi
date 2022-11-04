@@ -222,7 +222,7 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     emit(expr->op_type);
     emit(expr->snode);
     emit(expr->indices.exprs);
-    emit(expr->value);
+    emit(expr->values);
   }
 
   void visit(ConstExpression *expr) override {

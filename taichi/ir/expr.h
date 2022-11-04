@@ -133,7 +133,18 @@ Expr expr_rand() {
   return taichi::lang::expr_rand(get_data_type<T>());
 }
 
-Expr snode_append(SNode *snode, const ExprGroup &indices, const Expr &val);
+/*
+ * This function allocates the space for a new item (a struct or a scalar)
+ * in the Dynamic SNode, and assigns values to the elements inside it.
+ *
+ * When appending a struct, the size of vals must be equal to
+ * the number of elements in the struct. When appending a scalar,
+ * the size of vals must be one.
+ */
+
+Expr snode_append(SNode *snode,
+                  const ExprGroup &indices,
+                  const std::vector<Expr> &vals);
 
 Expr snode_is_active(SNode *snode, const ExprGroup &indices);
 

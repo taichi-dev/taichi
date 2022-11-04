@@ -416,8 +416,6 @@ def deactivate(node, indices):
         node (:class:`~taichi.SNode`): Must be a pointer, hash or bitmasked node.
         indices (Union[int, :class:`~taichi.Vector`]): the indices to deactivate.
     """
-    if indices is None:
-        indices = []
     impl.get_runtime().prog.current_ast_builder().insert_deactivate(
         node._snode.ptr, expr.make_expr_group(indices))
 

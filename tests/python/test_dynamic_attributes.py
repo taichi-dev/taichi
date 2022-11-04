@@ -13,20 +13,17 @@ def _test_dynamic_append_length(dt):
         for i in range(10):
             for j in range(i):
                 x[i].append(j)
+
         for i in range(10):
             assert (ti.length(x.parent(), i) == i)
             for j in range(i):
                 assert (x[i, j] == j)
 
-        for i in range(5):
-            x[i].deactivate([j for j in range(10)])
-            assert x[i, 0] == x[i, 9] == 0
-
-        for i in range(5, 10):
+        for i in range(10):
+            x[i].deactivate()
             for j in range(10):
-                x[i].deactivate(j)
                 assert x[i, j] == 0
-
+ 
     test()
 
 

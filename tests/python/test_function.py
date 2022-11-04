@@ -449,9 +449,11 @@ def _test_real_func_matrix_arg():
     @ti.experimental.real_func
     def mat_arg(a: ti.math.mat2, b: ti.math.vec2) -> float:
         return a[0, 0] + a[0, 1] + a[1, 0] + a[1, 1] + b[0] + b[1]
+
     b = ti.Vector.field(n=2, dtype=float, shape=())
     b[()][0] = 5
     b[()][1] = 6
+
     @ti.kernel
     def foo() -> float:
         a = ti.math.mat2(1, 2, 3, 4)

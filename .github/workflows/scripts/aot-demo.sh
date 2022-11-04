@@ -106,9 +106,8 @@ function build-and-test-headless-demo {
     popd
 
     rm -rf taichi-aot-demo
-    git clone --recursive https://github.com/taichi-dev/taichi-aot-demo
+    git clone --recursive --depth=1 https://github.com/taichi-dev/taichi-aot-demo
     cd taichi-aot-demo
-    git checkout 88814e9
     mkdir build
     pushd build
     export TAICHI_C_API_INSTALL_DIR=$(find $TAICHI_REPO_DIR -name cmake-install -type d | head -n 1)/c_api

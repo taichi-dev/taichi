@@ -85,9 +85,12 @@ MatrixOfMatrixPtrStmt::MatrixOfMatrixPtrStmt(const std::vector<Stmt *> &stmts,
   TI_STMT_REG_FIELDS;
 }
 
-MatrixPtrStmt::MatrixPtrStmt(Stmt *origin_input, Stmt *offset_input) {
+MatrixPtrStmt::MatrixPtrStmt(Stmt *origin_input,
+                             Stmt *offset_input,
+                             const std::string &tb) {
   origin = origin_input;
   offset = offset_input;
+  this->tb = tb;
   if (origin->is<AllocaStmt>() || origin->is<GlobalTemporaryStmt>() ||
       origin->is<ExternalPtrStmt>() || origin->is<MatrixOfGlobalPtrStmt>() ||
       origin->is<MatrixOfMatrixPtrStmt>()) {

@@ -578,7 +578,8 @@ Stmt *make_tensor_access_single_element(Expression::FlattenContext *ctx,
                                         const Expr &var,
                                         const ExprGroup &indices,
                                         const std::vector<int> &shape,
-                                        int stride) {
+                                        int stride,
+                                        const std::string &tb) {
   bool needs_dynamic_index = false;
   for (int i = 0; i < (int)indices.size(); ++i) {
     if (!indices[i].is<ConstExpression>()) {
@@ -609,7 +610,7 @@ Stmt *make_tensor_access_single_element(Expression::FlattenContext *ctx,
     offset_stmt = ctx->push_back<BinaryOpStmt>(BinaryOpType::mul, offset_stmt,
                                                stride_stmt);
   }
-  return ctx->push_back<MatrixPtrStmt>(var->stmt, offset_stmt);
+  return ctx->push_back<MatrixPtrStmt>(var->stmt, offset_stmt, tb);
 }
 
 Stmt *make_tensor_access(Expression::FlattenContext *ctx,
@@ -617,7 +618,8 @@ Stmt *make_tensor_access(Expression::FlattenContext *ctx,
                          const std::vector<ExprGroup> &indices_group,
                          DataType ret_type,
                          std::vector<int> shape,
-                         int stride) {
+                         int stride,
+                         const std::string &tb) {
   flatten_lvalue(var, ctx);
   if (!var->is_lvalue()) {
     auto alloca_stmt = ctx->push_back<AllocaStmt>(var->ret_type);
@@ -627,13 +629,13 @@ Stmt *make_tensor_access(Expression::FlattenContext *ctx,
   if (is_tensor(ret_type)) {
     std::vector<Stmt *> stmts;
     for (auto &indices : indices_group) {
-      stmts.push_back(
-          make_tensor_access_single_element(ctx, var, indices, shape, stride));
+      stmts.push_back(make_tensor_access_single_element(ctx, var, indices,
+                                                        shape, stride, tb));
     }
     return ctx->push_back<MatrixOfMatrixPtrStmt>(stmts, ret_type);
   }
   return make_tensor_access_single_element(ctx, var, indices_group[0], shape,
-                                           stride);
+                                           stride, tb);
 }
 
 void MatrixExpression::type_check(CompileConfig *config) {
@@ -754,9 +756,9 @@ void IndexExpression::flatten(FlattenContext *ctx) {
   } else if (is_ndarray()) {
     stmt = make_ndarray_access(ctx, var, indices_group[0]);
   } else if (is_tensor()) {
-    stmt =
-        make_tensor_access(ctx, var, indices_group, ret_type,
-                           var->ret_type->cast<TensorType>()->get_shape(), 1);
+    stmt = make_tensor_access(ctx, var, indices_group, ret_type,
+                              var->ret_type->cast<TensorType>()->get_shape(), 1,
+                              tb);
   } else {
     throw TaichiTypeError(
         "Invalid IndexExpression: the source is not among field, ndarray or "
@@ -777,7 +779,7 @@ void StrideExpression::type_check(CompileConfig *) {
 }
 
 void StrideExpression::flatten(FlattenContext *ctx) {
-  stmt = make_tensor_access(ctx, var, {indices}, ret_type, shape, stride);
+  stmt = make_tensor_access(ctx, var, {indices}, ret_type, shape, stride, tb);
 }
 
 void RangeAssumptionExpression::type_check(CompileConfig *) {

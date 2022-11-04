@@ -806,6 +806,8 @@ class ASTTransformer(Builder):
     def build_BinOp(ctx, node):
         build_stmt(ctx, node.left)
         build_stmt(ctx, node.right)
+        # pylint: disable-msg=C0415
+        from taichi.lang.matrix_ops import matmul
         op = {
             ast.Add: lambda l, r: l + r,
             ast.Sub: lambda l, r: l - r,
@@ -819,7 +821,7 @@ class ASTTransformer(Builder):
             ast.BitOr: lambda l, r: l | r,
             ast.BitXor: lambda l, r: l ^ r,
             ast.BitAnd: lambda l, r: l & r,
-            ast.MatMult: lambda l, r: l @ r,
+            ast.MatMult: matmul,
         }.get(type(node.op))
         try:
             node.ptr = op(node.left.ptr, node.right.ptr)

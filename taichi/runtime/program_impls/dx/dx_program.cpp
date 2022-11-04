@@ -82,15 +82,6 @@ DeviceAllocation Dx11ProgramImpl::allocate_memory_ndarray(
        /*export_sharing=*/false});
 }
 
-std::unique_ptr<aot::Kernel> Dx11ProgramImpl::make_aot_kernel(Kernel &kernel) {
-  spirv::lower(&kernel);
-  std::vector<gfx::CompiledSNodeStructs> compiled_structs;
-  gfx::GfxRuntime::RegisterParams kparams = gfx::run_codegen(
-      &kernel, Arch::dx11, get_compute_device()->get_current_caps(),
-      compiled_structs);
-  return std::make_unique<gfx::KernelImpl>(runtime_.get(), std::move(kparams));
-}
-
 }  // namespace taichi::lang
 
 #endif

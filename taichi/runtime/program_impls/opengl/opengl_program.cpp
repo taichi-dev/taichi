@@ -83,12 +83,6 @@ DeviceAllocation OpenglProgramImpl::allocate_texture(
   return runtime_->create_image(params);
 }
 
-std::unique_ptr<aot::Kernel> OpenglProgramImpl::make_aot_kernel(
-    Kernel &kernel) {
-  auto params = get_cache_manager()->load_or_compile(config, &kernel);
-  return std::make_unique<gfx::KernelImpl>(runtime_.get(), std::move(params));
-}
-
 void OpenglProgramImpl::dump_cache_data_to_disk() {
   const auto &mgr = get_cache_manager();
   mgr->clean_offline_cache(offline_cache::string_to_clean_cache_policy(

@@ -68,8 +68,6 @@ class LlvmProgramImpl : public ProgramImpl {
   std::unique_ptr<StructCompiler> compile_snode_tree_types_impl(
       SNodeTree *tree);
 
-  std::unique_ptr<aot::Kernel> make_aot_kernel(Kernel &kernel) override;
-
   std::unique_ptr<AotModuleBuilder> make_aot_module_builder(
       const DeviceCapabilityConfig &caps) override;
 

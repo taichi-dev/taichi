@@ -548,7 +548,7 @@ jobs:
     # Skip this job when testing the offline cache
     if: ${{ github.event.schedule != '0 18 * * *' }}
     needs: check_files
-    runs-on: [self-hosted, Linux, debug]
+    runs-on: [self-hosted, Linux, cn]
     timeout-minutes: 60
     permissions:
       packages: read
@@ -643,6 +643,6 @@ jobs:
         run: |
           . .github/workflows/scripts/common-utils.sh
           chown -R 1000:1000 .
-          ci-docker-run-gpu --name taichi-test-capi-headless-demo-debug \
+          ci-docker-run-gpu --name taichi-test-capi-headless-demo \
             registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.6 \
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh build-and-test-headless-demo

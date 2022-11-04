@@ -787,7 +787,6 @@ class ASTTransformer(Builder):
             build_dynamic_snode_hack()
  
         else:
-            build_stmt(ctx, node.value)
             if isinstance(node.value.ptr,
                           Expr) and not hasattr(node.value.ptr, node.attr):
                 if node.attr in Matrix._swizzle_to_keygroup:

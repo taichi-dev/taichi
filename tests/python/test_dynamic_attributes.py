@@ -2,7 +2,7 @@ import taichi as ti
 from tests import test_utils
 
 
-def _test_dynamic_append_length(dt):
+def _test_dynamic_attributes(dt):
     n = 10
     x = ti.field(int)
     block = ti.root.dense(ti.i, n)
@@ -46,7 +46,7 @@ def _test_dynamic_append_length(dt):
         y.deactivate()
         for j in range(n):
             assert y[j] == 0
-            y[j] == j
+            y[j] = j
 
         ti.deactivate(y.parent(), [])
         for j in range(n):

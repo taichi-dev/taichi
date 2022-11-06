@@ -27,41 +27,22 @@ def preconditions(*checker_funcs):
     return decorator
 
 
-def arg_at(i, *fns):
+def arg_at(indices, *fns):
     def check(*args, **kwargs):
-        if i in kwargs:
-            arg = kwargs[i]
-        else:
-            try:
-                arg = args[i]
-            except IndexError:
-                raise
-        ok, msg = do_check(fns, arg)
-        if not ok:
-            return False, msg
-        return True, None
-
-    return check
-
-
-def foreach(*fns):
-    def check(args):
-        for x in args:
-            ok, msg = do_check(fns, x)
+        nonlocal indices
+        if isinstance(indices, int):
+            indices = [indices]
+        for i in indices:
+            if i in kwargs:
+                arg = kwargs[i]
+            else:
+                try:
+                    arg = args[i]
+                except IndexError:
+                    raise
+            ok, msg = do_check(fns, arg)
             if not ok:
                 return False, msg
-        return True, None
-
-    return check
-
-
-def Or(f, g, msg=None):
-    def check(*args, **kwargs):
-        ok, msg_f = do_check([f], *args, **kwargs)
-        if not ok:
-            ok, msg_g = do_check([g], *args, **kwargs)
-            if not ok:
-                return False, f'Both violated: {msg_f} {msg_g}'
         return True, None
 
     return check
@@ -75,19 +56,44 @@ def assert_tensor(m, msg='not tensor type: {}'):
     raise TaichiCompilationError(msg.format(type(m)))
 
 
-# TODO(zhanlue): rearrange to more generic checker functions
-# for example: "assert_is_instance(args, indices=[], instances=[], logic='or')"
 def assert_vector(v, msg='not a vector: {}'):
     if (isinstance(v, Expr) or isinstance(v, Matrix)) and len(
             v.get_shape()) == 1:
         return True, None
-    raise TaichiCompilationError(msg.format(type(v)))
+    return False, msg.format(type(v))
 
 
 def assert_list(x, msg='not a list: {}'):
     if isinstance(x, list):
         return True, None
-    raise TaichiCompilationError(msg.format(type(x)))
+    return False, msg.format(type(x))
+
+
+def arg_foreach_check(*arg_indices, fns=[], logic='or', msg=None):
+    def check(*args, **kwargs):
+        for i in arg_indices:
+            if i in kwargs:
+                arg = kwargs[i]
+            else:
+                try:
+                    arg = args[i]
+                except IndexError:
+                    raise
+            if logic == 'or':
+                for a in arg:
+                    for fn in fns:
+                        ok, _ = do_check([fn], a)
+                        if ok:
+                            return True, None
+                return False, msg
+            if logic == 'and':
+                ok, _ = do_check(fns, arg)
+                if not ok:
+                    return False, msg
+                return True, None
+            raise ValueError(f'Unknown logic: {logic}')
+
+    return check
 
 
 def same_shapes(xs):

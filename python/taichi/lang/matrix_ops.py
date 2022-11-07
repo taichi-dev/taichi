@@ -123,36 +123,13 @@ def determinant(x):
     return None
 
 
-def _vector_transpose(v):
-    shape = v.get_shape()
-    if isinstance(v, Vector):
-
-        @pyfunc
-        def _transpose():
-            return Matrix([[v[i] for i in static(range(shape[0]))]], ndim=1)
-
-        return _transpose()
-    if isinstance(v, Matrix):
-
-        @pyfunc
-        def _transpose():
-            return Vector([v[i, 0] for i in static(range(shape[0]))])
-
-        return _transpose()
-    return v
-
-
 @preconditions(assert_tensor)
-@func
-def transpose(m):
-    shape = static(m.get_shape())
+@pyfunc
+def transpose(mat: template()):
+    shape = static(mat.get_shape())
     if static(len(shape) == 1):
-        return _vector_transpose(m)
-    result = _init_matrix((shape[1], shape[0]), dt=m.element_type())
-    for i in static(range(shape[0])):
-        for j in static(range(shape[1])):
-            result[j, i] = m[i, j]
-    return result
+        return Vector([mat[i] for i in static(range(shape[0]))])
+    return Matrix([[mat[i, j] for i in static(range(shape[0]))] for j in static(range(shape[1]))])
 
 
 @preconditions(arg_at(0, is_int_const),

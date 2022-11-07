@@ -291,13 +291,12 @@ def test_append_matrix():
     f = mat.field()
     pixel = ti.root.dense(ti.i, 10).dynamic(ti.j, 20, 4)
     pixel.place(f)
+
     @ti.kernel
     def make_list():
         for i in range(10):
             for j in range(20):
-                f[i].append(
-                    mat(i * j, i * j * 2, i * j * 3,
-                           i * j * 4))
+                f[i].append(mat(i * j, i * j * 2, i * j * 3, i * j * 4))
 
     make_list()
 
@@ -314,19 +313,21 @@ def test_append_matrix_in_struct():
     f = struct.field()
     pixel = ti.root.dense(ti.i, 10).dynamic(ti.j, 20, 4)
     pixel.place(f)
+
     @ti.kernel
     def make_list():
         for i in range(10):
             for j in range(20):
                 f[i].append(
-                    struct(i * j * ti.u64(10 ** 10), mat(i * j, i * j * 2, i * j * 3,
-                           i * j * 4), i * j * 5000))
+                    struct(i * j * ti.u64(10**10),
+                           mat(i * j, i * j * 2, i * j * 3, i * j * 4),
+                           i * j * 5000))
 
     make_list()
 
     for i in range(10):
         for j in range(20):
-            assert f[i, j].a == i * j * (10 ** 10)
+            assert f[i, j].a == i * j * (10**10)
             for k in range(4):
                 assert f[i, j].b[k // 2, k % 2] == i * j * (k + 1) % 256
             assert f[i, j].c == i * j * 5000 % 65536

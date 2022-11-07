@@ -432,7 +432,7 @@ class MatrixPtrStmt : public Stmt {
   Stmt *origin{nullptr};
   Stmt *offset{nullptr};
 
-  MatrixPtrStmt(Stmt *, Stmt *);
+  MatrixPtrStmt(Stmt *, Stmt *, const std::string & = "");
 
   /* TODO(zhanlue/yi): Unify semantics of offset in MatrixPtrStmt
 
@@ -1181,6 +1181,10 @@ class GetChStmt : public Stmt {
   bool is_bit_vectorized;
 
   GetChStmt(Stmt *input_ptr, int chid, bool is_bit_vectorized = false);
+  GetChStmt(Stmt *input_ptr,
+            SNode *snode,
+            int chid,
+            bool is_bit_vectorized = false);
 
   bool has_global_side_effect() const override {
     return false;

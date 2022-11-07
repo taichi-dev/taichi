@@ -109,20 +109,6 @@ std::unique_ptr<AotModuleBuilder> LlvmProgramImpl::make_aot_module_builder(
   return nullptr;
 }
 
-std::unique_ptr<aot::Kernel> LlvmProgramImpl::make_aot_kernel(Kernel &kernel) {
-  auto compiled_fn =
-      this->compile(&kernel, nullptr);  // Offloaded used in async mode only
-
-  const std::string &kernel_key = kernel.get_cached_kernel_key();
-  TI_ASSERT(cache_data_->kernels.count(kernel_key));
-  const LlvmOfflineCache::KernelCacheData &kernel_data =
-      cache_data_->kernels[kernel_key];
-  LlvmOfflineCache::KernelCacheData compiled_kernel = kernel_data.clone();
-  compiled_kernel.kernel_key = kernel.get_name();
-  return std::make_unique<llvm_aot::KernelImpl>(compiled_fn,
-                                                std::move(compiled_kernel));
-}
-
 void LlvmProgramImpl::cache_kernel(const std::string &kernel_key,
                                    const LLVMCompiledKernel &data,
                                    std::vector<LlvmLaunchArgInfo> &&args) {

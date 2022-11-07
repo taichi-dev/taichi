@@ -83,9 +83,11 @@ Expr expr_rand(DataType dt) {
   return Expr::make<RandExpression>(dt);
 }
 
-Expr snode_append(SNode *snode, const ExprGroup &indices, const Expr &val) {
+Expr snode_append(SNode *snode,
+                  const ExprGroup &indices,
+                  const std::vector<Expr> &vals) {
   return Expr::make<SNodeOpExpression>(snode, SNodeOpType::append, indices,
-                                       val);
+                                       vals);
 }
 
 Expr snode_is_active(SNode *snode, const ExprGroup &indices) {

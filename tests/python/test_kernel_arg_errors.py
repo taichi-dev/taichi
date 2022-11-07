@@ -20,6 +20,34 @@ def test_pass_float_as_i32():
         foo(1.2)
 
 
+@test_utils.test(arch=ti.cpu)
+def test_pass_float_as_ndarray():
+    @ti.kernel
+    def foo(a: ti.types.ndarray()):
+        pass
+
+    with pytest.raises(
+            ti.TaichiRuntimeTypeError,
+            match=r"Invalid argument into ti.types.ndarray\(\), got 1.2"):
+        foo(1.2)
+
+
+@test_utils.test(arch=ti.cpu)
+def test_random_python_class_as_ndarray():
+    @ti.kernel
+    def foo(a: ti.types.ndarray()):
+        pass
+
+    class Bla:
+        pass
+
+    with pytest.raises(
+            ti.TaichiRuntimeTypeError,
+            match=r"Invalid argument into ti.types.ndarray\(\), got"):
+        b = Bla()
+        foo(b)
+
+
 @test_utils.test(exclude=[ti.metal])
 def test_pass_u64():
     if ti.lang.impl.current_cfg().arch == ti.vulkan and platform.system(

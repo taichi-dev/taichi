@@ -14,7 +14,7 @@ from taichi.lang.ast.ast_transformer_utils import (Builder, LoopStatus,
                                                    ReturnStatus)
 from taichi.lang.ast.symbol_resolver import ASTResolver
 from taichi.lang.exception import TaichiSyntaxError, TaichiTypeError
-from taichi.lang.expr import Expr
+from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field
 from taichi.lang.impl import current_cfg
 from taichi.lang.matrix import Matrix, MatrixType, Vector, is_vector
@@ -776,10 +776,28 @@ class ASTTransformer(Builder):
             build_stmt(ctx, node.value)
             if isinstance(node.value.ptr,
                           Expr) and not hasattr(node.value.ptr, node.attr):
-                # pylint: disable-msg=C0415
-                from taichi.lang import matrix_ops as tensor_ops
-                node.ptr = getattr(tensor_ops, node.attr)
-                setattr(node, 'caller', node.value.ptr)
+                if node.attr in Matrix._swizzle_to_keygroup:
+                    keygroup = Matrix._swizzle_to_keygroup[node.attr]
+                    attr_len = len(node.attr)
+                    if attr_len == 1:
+                        node.ptr = Expr(
+                            _ti_core.subscript(
+                                node.value.ptr.ptr,
+                                make_expr_group(keygroup.index(node.attr)),
+                                impl.get_runtime().get_current_src_info()))
+                    else:
+                        node.ptr = Expr(
+                            _ti_core.subscript_with_multiple_indices(
+                                node.value.ptr.ptr, [
+                                    make_expr_group(keygroup.index(ch))
+                                    for ch in node.attr
+                                ], (attr_len, ),
+                                impl.get_runtime().get_current_src_info()))
+                else:
+                    from taichi.lang import \
+                        matrix_ops as tensor_ops  # pylint: disable=C0415
+                    node.ptr = getattr(tensor_ops, node.attr)
+                    setattr(node, 'caller', node.value.ptr)
             else:
                 node.ptr = getattr(node.value.ptr, node.attr)
         return node.ptr
@@ -788,6 +806,8 @@ class ASTTransformer(Builder):
     def build_BinOp(ctx, node):
         build_stmt(ctx, node.left)
         build_stmt(ctx, node.right)
+        # pylint: disable-msg=C0415
+        from taichi.lang.matrix_ops import matmul
         op = {
             ast.Add: lambda l, r: l + r,
             ast.Sub: lambda l, r: l - r,
@@ -801,7 +821,7 @@ class ASTTransformer(Builder):
             ast.BitOr: lambda l, r: l | r,
             ast.BitXor: lambda l, r: l ^ r,
             ast.BitAnd: lambda l, r: l & r,
-            ast.MatMult: lambda l, r: l @ r,
+            ast.MatMult: matmul,
         }.get(type(node.op))
         try:
             node.ptr = op(node.left.ptr, node.right.ptr)

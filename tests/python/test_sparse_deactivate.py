@@ -170,7 +170,7 @@ def test_pointer3():
                     assert xn[i, j] == i + j
 
 
-@test_utils.test(require=ti.extension.sparse)
+@test_utils.test(require=ti.extension.sparse, exclude=[ti.metal])
 def test_dynamic():
     x = ti.field(ti.i32)
     s = ti.field(ti.i32)

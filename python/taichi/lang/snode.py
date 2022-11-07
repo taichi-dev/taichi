@@ -1,7 +1,7 @@
 import numbers
 
 from taichi._lib import core as _ti_core
-from taichi.lang import expr, impl, matrix, struct
+from taichi.lang import expr, impl, matrix
 from taichi.lang.field import BitpackedFields, Field
 from taichi.lang.util import is_taichi_class
 

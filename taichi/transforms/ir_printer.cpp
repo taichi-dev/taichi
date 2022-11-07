@@ -459,7 +459,12 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(ArgLoadStmt *stmt) override {
-    print("{}{} = arg[{}]", stmt->type_hint(), stmt->name(), stmt->arg_id);
+    if (!stmt->is_grad) {
+      print("{}{} = arg[{}]", stmt->type_hint(), stmt->name(), stmt->arg_id);
+    } else {
+      print("{}{} = grad_arg[{}]", stmt->type_hint(), stmt->name(),
+            stmt->arg_id);
+    }
   }
 
   void visit(TexturePtrStmt *stmt) override {

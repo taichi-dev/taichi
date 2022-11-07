@@ -1257,8 +1257,11 @@ llvm::Value *TaskCodeGenLLVM::bitcast_to_u64(llvm::Value *val, DataType type) {
 }
 
 void TaskCodeGenLLVM::visit(ArgLoadStmt *stmt) {
-  auto raw_arg = call(builder.get(), "RuntimeContext_get_args", get_context(),
-                      tlctx->get_constant(stmt->arg_id));
+  auto raw_arg = stmt->is_grad
+                     ? (call(builder.get(), "RuntimeContext_get_grad_args",
+                             get_context(), tlctx->get_constant(stmt->arg_id)))
+                     : (call(builder.get(), "RuntimeContext_get_args",
+                             get_context(), tlctx->get_constant(stmt->arg_id)));
 
   llvm::Type *dest_ty = nullptr;
   if (stmt->is_ptr) {

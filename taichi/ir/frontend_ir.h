@@ -444,29 +444,42 @@ class ExternalTensorExpression : public Expression {
   int arg_id;
   int element_dim;  // 0: scalar; 1: vector (SOA); 2: matrix (SOA); -1: vector
                     // (AOS); -2: matrix (AOS)
+  bool is_grad;
 
   ExternalTensorExpression(const DataType &dt,
                            int dim,
                            int arg_id,
-                           int element_dim) {
-    init(dt, dim, arg_id, element_dim);
+                           int element_dim,
+                           bool is_grad = false) {
+    init(dt, dim, arg_id, element_dim, is_grad);
   }
 
   ExternalTensorExpression(const DataType &dt,
                            int dim,
                            int arg_id,
                            int element_dim,
-                           const std::vector<int> &element_shape) {
+                           const std::vector<int> &element_shape,
+                           bool is_grad = false) {
     if (element_shape.size() == 0) {
-      init(dt, dim, arg_id, element_dim);
+      init(dt, dim, arg_id, element_dim, is_grad);
     } else {
       TI_ASSERT(dt->is<PrimitiveType>());
 
       auto tensor_type =
           taichi::lang::TypeFactory::get_instance().create_tensor_type(
               element_shape, dt);
-      init(tensor_type, dim, arg_id, element_dim);
+      init(tensor_type, dim, arg_id, element_dim, is_grad);
     }
+  }
+
+  ExternalTensorExpression(Expr *expr, bool is_grad = true) {
+    std::cout
+        << "ExternalTensorExpression(Expr *expr, bool is_grad = true) start"
+        << std::endl;
+    auto ptr = expr->cast<ExternalTensorExpression>();
+    init(ptr->dt, ptr->dim, ptr->arg_id, ptr->element_dim, is_grad);
+    std::cout << "ExternalTensorExpression(Expr *expr, bool is_grad = true) end"
+              << std::endl;
   }
 
   void flatten(FlattenContext *ctx) override;
@@ -486,11 +499,16 @@ class ExternalTensorExpression : public Expression {
  private:
   CompileConfig *config_ = nullptr;
 
-  void init(const DataType &dt, int dim, int arg_id, int element_dim) {
+  void init(const DataType &dt,
+            int dim,
+            int arg_id,
+            int element_dim,
+            bool is_grad) {
     this->dt = dt;
     this->dim = dim;
     this->arg_id = arg_id;
     this->element_dim = element_dim;
+    this->is_grad = is_grad;
   }
 };
 

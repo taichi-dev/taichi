@@ -925,6 +925,9 @@ void export_lang(py::module &m) {
         Expr::make<ExternalTensorExpression, const DataType &, int, int, int,
                    const std::vector<int> &>);
 
+  m.def("make_external_grad_tensor_expr",
+        Expr::make<ExternalTensorExpression, Expr *>);
+
   m.def("make_rand_expr", Expr::make<RandExpression, const DataType &>);
 
   m.def("make_const_expr_int",
@@ -1000,9 +1003,6 @@ void export_lang(py::module &m) {
       return 0;
     }
   });
-
-  m.def("get_external_tensor_grad",
-        Expr::make<ExternalTensorGradExpression, const Expr &, int>);
 
   m.def("get_external_tensor_shape_along_axis",
         Expr::make<ExternalTensorShapeAlongAxisExpression, const Expr &, int>);

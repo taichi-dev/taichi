@@ -473,13 +473,8 @@ class ExternalTensorExpression : public Expression {
   }
 
   ExternalTensorExpression(Expr *expr, bool is_grad = true) {
-    std::cout
-        << "ExternalTensorExpression(Expr *expr, bool is_grad = true) start"
-        << std::endl;
     auto ptr = expr->cast<ExternalTensorExpression>();
     init(ptr->dt, ptr->dim, ptr->arg_id, ptr->element_dim, is_grad);
-    std::cout << "ExternalTensorExpression(Expr *expr, bool is_grad = true) end"
-              << std::endl;
   }
 
   void flatten(FlattenContext *ctx) override;

@@ -542,10 +542,8 @@ void ExternalTensorExpression::flatten(FlattenContext *ctx) {
   if (!get_compile_config()->real_matrix) {
     prim_dt = dt.get_element_type();
   }
-  std::cout << "Before make<ArgLoadStmt>" << std::endl;
   auto ptr = Stmt::make<ArgLoadStmt>(arg_id, prim_dt, /*is_ptr=*/true,
                                      /*is_ptr=*/is_grad);
-  std::cout << "After make<ArgLoadStmt>" << std::endl;
 
   int external_dims = dim - std::abs(element_dim);
   ptr->cast<ArgLoadStmt>()->set_extern_dims(external_dims);

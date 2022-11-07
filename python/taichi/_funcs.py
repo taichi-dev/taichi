@@ -50,21 +50,6 @@ def randn(dt=None):
 
 
 @pyfunc
-def _matrix_transpose(mat):
-    """Permute the first two axes of the matrix.
-
-    Args:
-        mat (:class:`~taichi.lang.matrix.Matrix`): Input matrix.
-
-    Returns:
-        Transpose of the input matrix.
-    """
-    return matrix.Matrix([[mat(i, j) for i in range(mat.n)]
-                          for j in range(mat.m)],
-                         ndim=mat.ndim)
-
-
-@pyfunc
 def _matrix_cross3d(self, other):
     return matrix.Matrix([
         self[1] * other[2] - self[2] * other[1],

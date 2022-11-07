@@ -53,7 +53,7 @@ def assert_tensor(m, msg='not tensor type: {}'):
         return True, None
     if isinstance(m, Expr) and m.is_tensor():
         return True, None
-    raise TaichiCompilationError(msg.format(type(m)))
+    return False, msg.format(type(m))
 
 
 def assert_vector(v, msg='not a vector: {}'):

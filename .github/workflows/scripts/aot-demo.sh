@@ -94,7 +94,6 @@ function build-and-test-headless-demo {
     setup-android-ndk-env
 
     pushd taichi
-    GIT_COMMIT=$(git rev-parse HEAD | cut -c1-7)
     setup_python
     popd
 

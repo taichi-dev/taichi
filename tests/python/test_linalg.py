@@ -272,42 +272,47 @@ def test_matrix_factories():
 
 
 # TODO: move codes below to test_matrix.py:
+def _test_init_matrix_from_vectors():
+    m1 = ti.Matrix.field(3, 3, dtype=ti.f32, shape=(3))
+    m2 = ti.Matrix.field(3, 3, dtype=ti.f32, shape=(3))
+    m3 = ti.Matrix.field(3, 3, dtype=ti.f32, shape=(3))
+    m4 = ti.Matrix.field(3, 3, dtype=ti.f32, shape=(3))
+
+    @ti.kernel
+    def fill():
+        for i in range(3):
+            a = ti.Vector([1.0, 4.0, 7.0])
+            b = ti.Vector([2.0, 5.0, 8.0])
+            c = ti.Vector([3.0, 6.0, 9.0])
+            m1[i] = ti.Matrix.rows([a, b, c])
+            m2[i] = ti.Matrix.cols([a, b, c])
+            m3[i] = ti.Matrix.rows([[1.0, 4.0, 7.0], [2.0, 5.0, 8.0],
+                                    [3.0, 6.0, 9.0]])
+            m4[i] = ti.Matrix.cols([[1.0, 4.0, 7.0], [2.0, 5.0, 8.0],
+                                    [3.0, 6.0, 9.0]])
+
+    fill()
+
+    for j in range(3):
+        for i in range(3):
+            assert m1[0][i, j] == int(i + 3 * j + 1)
+            assert m2[0][j, i] == int(i + 3 * j + 1)
+            assert m3[0][i, j] == int(i + 3 * j + 1)
+            assert m4[0][j, i] == int(i + 3 * j + 1)
 
 
 @test_utils.test()
 def test_init_matrix_from_vectors():
-    m1 = ti.Matrix.field(3, 3, dtype=ti.f32, shape=(3))
-    m2 = ti.Matrix.field(3, 3, dtype=ti.f32, shape=(3))
-    m3 = ti.Matrix.field(3, 3, dtype=ti.f32, shape=(3))
-    m4 = ti.Matrix.field(3, 3, dtype=ti.f32, shape=(3))
+    _test_init_matrix_from_vectors()
 
-    @ti.kernel
-    def fill():
-        for i in range(3):
-            a = ti.Vector([1.0, 4.0, 7.0])
-            b = ti.Vector([2.0, 5.0, 8.0])
-            c = ti.Vector([3.0, 6.0, 9.0])
-            m1[i] = ti.Matrix.rows([a, b, c])
-            m2[i] = ti.Matrix.cols([a, b, c])
-            m3[i] = ti.Matrix.rows([[1.0, 4.0, 7.0], [2.0, 5.0, 8.0],
-                                    [3.0, 6.0, 9.0]])
-            m4[i] = ti.Matrix.cols([[1.0, 4.0, 7.0], [2.0, 5.0, 8.0],
-                                    [3.0, 6.0, 9.0]])
 
-    fill()
-
-    for j in range(3):
-        for i in range(3):
-            assert m1[0][i, j] == int(i + 3 * j + 1)
-            assert m2[0][j, i] == int(i + 3 * j + 1)
-            assert m3[0][i, j] == int(i + 3 * j + 1)
-            assert m4[0][j, i] == int(i + 3 * j + 1)
+@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
+def test_init_matrix_from_vectors_matrix_scalarize():
+    _test_init_matrix_from_vectors()
 
 
 # TODO: Remove this once the APIs are obsolete.
-@pytest.mark.filterwarnings('ignore')
-@test_utils.test(arch=get_host_arch_list())
-def test_init_matrix_from_vectors_deprecated():
+def _test_init_matrix_from_vectors_deprecated():
     m1 = ti.Matrix.field(3, 3, dtype=ti.f32, shape=(3))
     m2 = ti.Matrix.field(3, 3, dtype=ti.f32, shape=(3))
     m3 = ti.Matrix.field(3, 3, dtype=ti.f32, shape=(3))
@@ -334,6 +339,20 @@ def test_init_matrix_from_vectors_deprecated():
             assert m2[0][j, i] == int(i + 3 * j + 1)
             assert m3[0][i, j] == int(i + 3 * j + 1)
             assert m4[0][j, i] == int(i + 3 * j + 1)
+
+
+@pytest.mark.filterwarnings('ignore')
+@test_utils.test(arch=get_host_arch_list())
+def test_init_matrix_from_vectors_deprecated():
+    _test_init_matrix_from_vectors_deprecated()
+
+
+@pytest.mark.filterwarnings('ignore')
+@test_utils.test(arch=get_host_arch_list(),
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_init_matrix_from_vectors_deprecated_matrix_scalarize():
+    _test_init_matrix_from_vectors_deprecated()
 
 
 @test_utils.test()

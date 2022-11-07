@@ -5,13 +5,13 @@ import tempfile
 
 
 def _check_in_IPython():
-    if "IPython" in sys.modules:
+    try:
         from IPython import \
             get_ipython  # pylint: disable=import-outside-toplevel
         ip = get_ipython()
         return ip is not None
-
-    return False
+    except ImportError:
+        return False
 
 
 def _blender_get_text_name(filename: str):

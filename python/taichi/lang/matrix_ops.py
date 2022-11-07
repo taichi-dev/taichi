@@ -125,7 +125,7 @@ def determinant(x):
 
 @preconditions(assert_tensor)
 @pyfunc
-def transpose(mat: template()):
+def transpose(mat):
     shape = static(mat.get_shape())
     if static(len(shape) == 1):
         return Vector([mat[i] for i in static(range(shape[0]))])

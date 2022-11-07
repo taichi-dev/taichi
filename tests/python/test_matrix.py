@@ -610,15 +610,14 @@ def test_python_scope_inplace_operator():
         assert np.allclose(m1.to_numpy(), ops(a, b))
 
 
-@test_utils.test()
-def test_indexing():
+def _test_indexing():
     @ti.kernel
     def foo():
         m = ti.Matrix([[0., 0., 0., 0.] for _ in range(4)])
         print(m[0])
 
     with pytest.raises(TaichiCompilationError,
-                       match=r'Expected 2 indices, got 1'):
+                       match=r'Expected 2 indices, but got 1'):
         foo()
 
     @ti.kernel
@@ -627,12 +626,11 @@ def test_indexing():
         print(vec[0, 0])
 
     with pytest.raises(TaichiCompilationError,
-                       match=r'Expected 1 indices, got 2'):
+                       match=r'Expected 1 indices, but got 2'):
         bar()
 
 
-@test_utils.test()
-def test_indexing_in_fields():
+def _test_indexing_in_fields():
     f = ti.Matrix.field(3, 3, ti.f32, shape=())
 
     @ti.kernel
@@ -641,7 +639,7 @@ def test_indexing_in_fields():
         print(f[None][0])
 
     with pytest.raises(TaichiCompilationError,
-                       match=r'Expected 2 indices, got 1'):
+                       match=r'Expected 2 indices, but got 1'):
         foo()
 
     g = ti.Vector.field(3, ti.f32, shape=())
@@ -652,19 +650,18 @@ def test_indexing_in_fields():
         print(g[None][0, 0])
 
     with pytest.raises(TaichiCompilationError,
-                       match=r'Expected 1 indices, got 2'):
+                       match=r'Expected 1 indices, but got 2'):
         bar()
 
 
-@test_utils.test()
-def test_indexing_in_struct():
+def _test_indexing_in_struct():
     @ti.kernel
     def foo():
         s = ti.Struct(a=ti.Vector([0, 0, 0]), b=2)
         print(s.a[0, 0])
 
     with pytest.raises(TaichiCompilationError,
-                       match=r'Expected 1 indices, got 2'):
+                       match=r'Expected 1 indices, but got 2'):
         foo()
 
     @ti.kernel
@@ -673,12 +670,11 @@ def test_indexing_in_struct():
         print(s.m[0])
 
     with pytest.raises(TaichiCompilationError,
-                       match=r'Expected 2 indices, got 1'):
+                       match=r'Expected 2 indices, but got 1'):
         bar()
 
 
-@test_utils.test()
-def test_indexing_in_struct_field():
+def _test_indexing_in_struct_field():
 
     s = ti.Struct.field(
         {
@@ -692,7 +688,7 @@ def test_indexing_in_struct_field():
         print(s[None].v[0, 0])
 
     with pytest.raises(TaichiCompilationError,
-                       match=r'Expected 1 indices, got 2'):
+                       match=r'Expected 1 indices, but got 2'):
         foo()
 
     @ti.kernel
@@ -700,8 +696,48 @@ def test_indexing_in_struct_field():
         print(s[None].m[0])
 
     with pytest.raises(TaichiCompilationError,
-                       match=r'Expected 2 indices, got 1'):
+                       match=r'Expected 2 indices, but got 1'):
         bar()
+
+
+@test_utils.test()
+def test_indexing_in_struct_field():
+    _test_indexing_in_struct_field()
+
+
+@test_utils.test()
+def test_indexing_in_struct():
+    _test_indexing_in_struct()
+
+
+@test_utils.test()
+def test_indexing_in_fields():
+    _test_indexing_in_fields()
+
+
+@test_utils.test()
+def test_indexing():
+    _test_indexing()
+
+
+@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
+def test_indexing_in_struct_field_matrix_scalarize():
+    _test_indexing_in_struct_field()
+
+
+@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
+def test_indexing_in_struct_matrix_scalarize():
+    _test_indexing_in_struct()
+
+
+@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
+def test_indexing_in_fields_matrix_scalarize():
+    _test_indexing_in_fields()
+
+
+@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
+def test_indexing_matrix_scalarize():
+    _test_indexing()
 
 
 @test_utils.test(arch=get_host_arch_list(), debug=True)

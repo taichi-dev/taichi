@@ -400,6 +400,19 @@ jobs:
           TI_DEVICE_MEMORY_GB: '1'
           TI_RUN_RELEASE_TESTS: '1'
 
+      - name: Build & Run C-API Headless Demos (Desktop)
+        run: |
+          . .github/workflows/scripts/common-utils.sh
+          chown -R 1000:1000 .
+          ci-docker-run-gpu --name taichi-test-capi-headless-demo-desktop \
+            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
+            /home/dev/taichi/.github/workflows/scripts/aot-demo.sh build-and-test-headless-demo-desktop
+        env:
+          PY: py38
+          TI_WANTED_ARCHS: 'cuda,vulkan,opengl'
+          TI_DEVICE_MEMORY_GB: '1'
+          TI_RUN_RELEASE_TESTS: '1'
+
       - name: Save wheel if test failed
         if: failure() && steps.test.conclusion == 'failure'
         uses: actions/upload-artifact@v3
@@ -415,14 +428,6 @@ jobs:
           name: bad-captures
           path: taichi-release-tests/bad-compare/*
           retention-days: 7
-
-      - name: Build & Run C-API Headless Demos (Desktop)
-        run: |
-          . .github/workflows/scripts/common-utils.sh
-          chown -R 1000:1000 .
-          ci-docker-run-gpu --name taichi-test-capi-headless-demo-desktop \
-            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
-            /home/dev/taichi/.github/workflows/scripts/aot-demo.sh build-and-test-headless-demo-desktop
 
 
   build_and_test_windows:

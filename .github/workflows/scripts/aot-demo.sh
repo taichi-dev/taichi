@@ -159,8 +159,9 @@ function build-and-test-headless-demo-desktop {
     for b in $BINARIES; do
         ./build/headless/$b
         ARCH="vulkan"
-        # compare with ground truth
-        if [[ $(cmp -l 0001.bmp ci/headless-truths/linux/$ARCH/$b.bmp | wc -l) -gt 300 ]]; then
+        # The result image with desktop run is not as stable,
+        # therefore we loose the threshold a little bit to avoid flaky tests
+        if [[ $(cmp -l 0001.bmp ci/headless-truths/linux/$ARCH/$b.bmp | wc -l) -gt 400 ]]; then
             echo "Above threshold: $b"
             exit 1
         fi

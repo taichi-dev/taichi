@@ -116,6 +116,10 @@ function build-and-test-headless-demo {
     grab-android-bot
     trap release-android-bot EXIT
     adb connect $BOT
+
+    # clear temporary test folder
+    adb shell "rm -rf /data/local/tmp/*"
+
     cd headless
     BINARIES=$(ls E*)
     for b in $BINARIES; do

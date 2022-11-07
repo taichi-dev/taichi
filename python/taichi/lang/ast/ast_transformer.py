@@ -408,6 +408,7 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_call_if_is_builtin(ctx, node, args, keywords):
+        from taichi.lang import matrix_ops  # pylint: disable=C0415
         func = node.func.ptr
         replace_func = {
             id(print): impl.ti_print,
@@ -415,8 +416,8 @@ class ASTTransformer(Builder):
             id(max): ti_ops.max,
             id(int): impl.ti_int,
             id(float): impl.ti_float,
-            id(any): ti_ops.ti_any,
-            id(all): ti_ops.ti_all,
+            id(any): matrix_ops.any,
+            id(all): matrix_ops.all,
             id(abs): abs,
             id(pow): pow,
         }

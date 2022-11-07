@@ -5,6 +5,8 @@
 #include "taichi/program/program.h"
 #include "taichi/common/exceptions.h"
 
+#include <numeric>
+
 namespace taichi::lang {
 
 #define TI_ASSERT_TYPE_CHECKED(x)                       \
@@ -572,17 +574,12 @@ Stmt *make_ndarray_access(Expression::FlattenContext *ctx,
   return ctx->push_back(std::move(external_ptr_stmt));
 }
 
-Stmt *make_tensor_access(Expression::FlattenContext *ctx,
-                         Expr var,
-                         ExprGroup indices,
-                         std::vector<int> shape,
-                         int stride) {
-  flatten_lvalue(var, ctx);
-  if (!var->is_lvalue()) {
-    auto alloca_stmt = ctx->push_back<AllocaStmt>(var->ret_type);
-    ctx->push_back<LocalStoreStmt>(alloca_stmt, var->stmt);
-    var->stmt = alloca_stmt;
-  }
+Stmt *make_tensor_access_single_element(Expression::FlattenContext *ctx,
+                                        const Expr &var,
+                                        const ExprGroup &indices,
+                                        const std::vector<int> &shape,
+                                        int stride,
+                                        const std::string &tb) {
   bool needs_dynamic_index = false;
   for (int i = 0; i < (int)indices.size(); ++i) {
     if (!indices[i].is<ConstExpression>()) {
@@ -613,7 +610,32 @@ Stmt *make_tensor_access(Expression::FlattenContext *ctx,
     offset_stmt = ctx->push_back<BinaryOpStmt>(BinaryOpType::mul, offset_stmt,
                                                stride_stmt);
   }
-  return ctx->push_back<MatrixPtrStmt>(var->stmt, offset_stmt);
+  return ctx->push_back<MatrixPtrStmt>(var->stmt, offset_stmt, tb);
+}
+
+Stmt *make_tensor_access(Expression::FlattenContext *ctx,
+                         Expr var,
+                         const std::vector<ExprGroup> &indices_group,
+                         DataType ret_type,
+                         std::vector<int> shape,
+                         int stride,
+                         const std::string &tb) {
+  flatten_lvalue(var, ctx);
+  if (!var->is_lvalue()) {
+    auto alloca_stmt = ctx->push_back<AllocaStmt>(var->ret_type);
+    ctx->push_back<LocalStoreStmt>(alloca_stmt, var->stmt);
+    var->stmt = alloca_stmt;
+  }
+  if (is_tensor(ret_type)) {
+    std::vector<Stmt *> stmts;
+    for (auto &indices : indices_group) {
+      stmts.push_back(make_tensor_access_single_element(ctx, var, indices,
+                                                        shape, stride, tb));
+    }
+    return ctx->push_back<MatrixOfMatrixPtrStmt>(stmts, ret_type);
+  }
+  return make_tensor_access_single_element(ctx, var, indices_group[0], shape,
+                                           stride, tb);
 }
 
 void MatrixExpression::type_check(CompileConfig *config) {
@@ -671,7 +693,14 @@ bool IndexExpression::is_global() const {
 void IndexExpression::type_check(CompileConfig *) {
   // TODO: Change to type-based solution
   // Currently, dimension compatibility check happens in Python
-  if (is_field()) {  // field
+  TI_ASSERT(indices_group.size() == std::accumulate(begin(ret_shape),
+                                                    end(ret_shape), 1,
+                                                    std::multiplies<>()));
+  if (!ret_shape.empty()) {
+    TI_ASSERT_INFO(is_tensor(), "Slice or swizzle can only apply on matrices");
+    auto element_type = var->ret_type->as<TensorType>()->get_element_type();
+    ret_type = TypeFactory::create_tensor_type(ret_shape, element_type);
+  } else if (is_field()) {  // field
     ret_type = var.cast<FieldExpression>()->dt->get_compute_type();
   } else if (is_matrix_field()) {
     auto matrix_field_expr = var.cast<MatrixFieldExpression>();
@@ -682,7 +711,7 @@ void IndexExpression::type_check(CompileConfig *) {
   } else if (is_ndarray()) {  // ndarray
     auto external_tensor_expr = var.cast<ExternalTensorExpression>();
     int total_dim = external_tensor_expr->dim;
-    int index_dim = indices.exprs.size();
+    int index_dim = indices_group[0].exprs.size();
 
     if (index_dim == total_dim) {
       // Access all the way to a single element
@@ -693,9 +722,9 @@ void IndexExpression::type_check(CompileConfig *) {
     }
   } else if (is_tensor()) {  // local tensor
     auto shape = var->ret_type->as<TensorType>()->get_shape();
-    if (indices.size() != shape.size()) {
+    if (indices_group[0].size() != shape.size()) {
       TI_ERROR("Expected {} indices, but got {}.", shape.size(),
-               indices.size());
+               indices_group[0].size());
     }
     ret_type = var->ret_type->cast<TensorType>()->get_element_type();
   } else {
@@ -704,28 +733,32 @@ void IndexExpression::type_check(CompileConfig *) {
         "local tensor");
   }
 
-  for (int i = 0; i < indices.exprs.size(); i++) {
-    auto &expr = indices.exprs[i];
-    TI_ASSERT_TYPE_CHECKED(expr);
-    if (!is_integral(expr->ret_type))
-      throw TaichiTypeError(
-          fmt::format("indices must be integers, however '{}' is "
-                      "provided as index {}",
-                      expr->ret_type->to_string(), i));
+  for (auto &indices : indices_group) {
+    for (int i = 0; i < indices.exprs.size(); i++) {
+      auto &expr = indices.exprs[i];
+      TI_ASSERT_TYPE_CHECKED(expr);
+      if (!is_integral(expr->ret_type))
+        throw TaichiTypeError(
+            fmt::format("indices must be integers, however '{}' is "
+                        "provided as index {}",
+                        expr->ret_type->to_string(), i));
+    }
   }
 }
 
 void IndexExpression::flatten(FlattenContext *ctx) {
   if (is_field()) {
-    stmt = make_field_access(ctx, *var.cast<FieldExpression>(), indices);
+    stmt =
+        make_field_access(ctx, *var.cast<FieldExpression>(), indices_group[0]);
   } else if (is_matrix_field()) {
     stmt = make_matrix_field_access(ctx, *var.cast<MatrixFieldExpression>(),
-                                    indices, ret_type);
+                                    indices_group[0], ret_type);
   } else if (is_ndarray()) {
-    stmt = make_ndarray_access(ctx, var, indices);
+    stmt = make_ndarray_access(ctx, var, indices_group[0]);
   } else if (is_tensor()) {
-    stmt = make_tensor_access(
-        ctx, var, indices, var->ret_type->cast<TensorType>()->get_shape(), 1);
+    stmt = make_tensor_access(ctx, var, indices_group, ret_type,
+                              var->ret_type->cast<TensorType>()->get_shape(), 1,
+                              tb);
   } else {
     throw TaichiTypeError(
         "Invalid IndexExpression: the source is not among field, ndarray or "
@@ -746,7 +779,7 @@ void StrideExpression::type_check(CompileConfig *) {
 }
 
 void StrideExpression::flatten(FlattenContext *ctx) {
-  stmt = make_tensor_access(ctx, var, indices, shape, stride);
+  stmt = make_tensor_access(ctx, var, {indices}, ret_type, shape, stride, tb);
 }
 
 void RangeAssumptionExpression::type_check(CompileConfig *) {
@@ -864,11 +897,25 @@ void AtomicOpExpression::flatten(FlattenContext *ctx) {
   stmt->tb = tb;
 }
 
-void SNodeOpExpression::type_check(CompileConfig *) {
+void SNodeOpExpression::type_check(CompileConfig *config) {
   if (op_type == SNodeOpType::get_addr) {
     ret_type = PrimitiveType::u64;
   } else {
     ret_type = PrimitiveType::i32;
+  }
+  if (op_type == SNodeOpType::append) {
+    TI_ASSERT(snode->ch.size() == values.size());
+    for (int i = 0; i < values.size(); i++) {
+      TI_ASSERT_TYPE_CHECKED(values[i]);
+      auto &dst_type = snode->ch[i]->dt;
+      auto promoted = promoted_type(dst_type, values[i]->ret_type);
+      if (dst_type != promoted) {
+        TI_WARN("Append may lose precision: {} <- {}\n{}",
+                dst_type->to_string(), values[i]->ret_type->to_string(), tb);
+      }
+      values[i] = cast(values[i], dst_type);
+      values[i]->type_check(config);
+    }
   }
 }
 
@@ -894,14 +941,22 @@ void SNodeOpExpression::flatten(FlattenContext *ctx) {
   } else if (op_type == SNodeOpType::get_addr) {
     ctx->push_back<SNodeOpStmt>(SNodeOpType::get_addr, snode, ptr, nullptr);
   } else if (op_type == SNodeOpType::append) {
-    flatten_rvalue(value, ctx);
-    ctx->push_back<SNodeOpStmt>(SNodeOpType::append, snode, ptr, value->stmt);
+    for (auto &value : values) {
+      flatten_rvalue(value, ctx);
+    }
+    auto alloca = ctx->push_back<AllocaStmt>(PrimitiveType::i32);
+    alloca->set_tb(tb);
+    auto addr =
+        ctx->push_back<SNodeOpStmt>(SNodeOpType::allocate, snode, ptr, alloca);
+    addr->set_tb(tb);
+    for (int i = 0; i < values.size(); i++) {
+      auto ch_addr = ctx->push_back<GetChStmt>(addr, snode, i);
+      ch_addr->set_tb(tb);
+      ctx->push_back<GlobalStoreStmt>(ch_addr, values[i]->stmt)->set_tb(tb);
+    }
+    ctx->push_back<LocalLoadStmt>(alloca)->set_tb(tb);
     TI_ERROR_IF(snode->type != SNodeType::dynamic,
                 "ti.append only works on dynamic nodes.");
-    TI_ERROR_IF(snode->ch.size() != 1,
-                "ti.append only works on single-child dynamic nodes.");
-    TI_ERROR_IF(data_type_size(snode->ch[0]->dt) != 4,
-                "ti.append only works on i32/f32 nodes.");
   }
   stmt = ctx->back_stmt();
 }
@@ -1505,9 +1560,6 @@ void flatten_rvalue(Expr ptr, Expression::FlattenContext *ctx) {
     }
   } else if (ptr.is<StrideExpression>()) {
     flatten_global_load(ptr, ctx);
-  } else if (ptr.is<FieldExpression>()) {
-    TI_ASSERT(ptr.cast<FieldExpression>()->snode->num_active_indices == 0);
-    flatten_global_load(ptr[ExprGroup()], ctx);
   } else if (ptr.is<ArgLoadExpression>() &&
              ptr.cast<ArgLoadExpression>()->is_ptr) {
     flatten_global_load(ptr, ctx);

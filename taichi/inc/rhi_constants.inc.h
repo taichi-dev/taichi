@@ -30,6 +30,7 @@ PER_DEVICE_CAPABILITY(spirv_has_subgroup_vote)
 PER_DEVICE_CAPABILITY(spirv_has_subgroup_arithmetic)
 PER_DEVICE_CAPABILITY(spirv_has_subgroup_ballot)
 PER_DEVICE_CAPABILITY(spirv_has_non_semantic_info)
+PER_DEVICE_CAPABILITY(spirv_has_no_integer_wrap_decoration)
 #endif
 
 #ifdef PER_BUFFER_FORMAT

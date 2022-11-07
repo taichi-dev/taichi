@@ -169,7 +169,10 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
   void visit(IndexExpression *expr) override {
     emit(ExprOpCode::IndexExpression);
     emit(expr->var);
-    emit(expr->indices.exprs);
+    for (auto &indices : expr->indices_group) {
+      emit(indices.exprs);
+    }
+    emit(expr->ret_shape);
   }
 
   void visit(MatrixExpression *expr) override {
@@ -219,7 +222,7 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     emit(expr->op_type);
     emit(expr->snode);
     emit(expr->indices.exprs);
-    emit(expr->value);
+    emit(expr->values);
   }
 
   void visit(ConstExpression *expr) override {

@@ -18,6 +18,8 @@
 #include <type_traits>
 #include <unordered_map>
 #include <vector>
+#include "taichi/common/json.h"
+#include "taichi/common/json_serde.h"
 
 #ifdef TI_INCLUDED
 namespace taichi {
@@ -137,17 +139,11 @@ serialize_kv_impl(SER &ser,
   template <typename S> \
   void io(S &serializer) const
 
-#define TI_IO_DEF(...)           \
-  template <typename S>          \
-  void io(S &serializer) const { \
-    TI_IO(__VA_ARGS__);          \
-  }
-
-#define TI_IO_DEF_WITH_BASECLASS(BaseClass, ...) \
-  template <typename S>                          \
-  void io(S &serializer) const {                 \
-    this->BaseClass::io(serializer);             \
-    TI_IO(__VA_ARGS__);                          \
+#define TI_IO_DEF(...)             \
+  L_JSON_SERDE_FIELDS(__VA_ARGS__) \
+  template <typename S>            \
+  void io(S &serializer) const {   \
+    TI_IO(__VA_ARGS__);            \
   }
 
 // This macro serializes each field with its name by doing the following:

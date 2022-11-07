@@ -22,15 +22,16 @@ namespace taichi::lang {
 // TODO(k-ye): Hide FunctionCreationGuard inside cpp file
 FunctionCreationGuard::FunctionCreationGuard(
     TaskCodeGenLLVM *mb,
-    std::vector<llvm::Type *> arguments)
+    std::vector<llvm::Type *> arguments,
+    const std::string &func_name)
     : mb(mb) {
   // Create the loop body function
   auto body_function_type = llvm::FunctionType::get(
       llvm::Type::getVoidTy(*mb->llvm_context), arguments, false);
 
   body = llvm::Function::Create(body_function_type,
-                                llvm::Function::InternalLinkage,
-                                "function_body", mb->module.get());
+                                llvm::Function::InternalLinkage, func_name,
+                                mb->module.get());
   old_func = mb->func;
   // emit into loop body function
   mb->func = body;
@@ -1118,6 +1119,10 @@ void TaskCodeGenLLVM::emit_gc(OffloadedStmt *stmt) {
   call("node_gc", get_runtime(), tlctx->get_constant(snode));
 }
 
+void TaskCodeGenLLVM::emit_gc_rc() {
+  call("runtime_context_gc", get_runtime());
+}
+
 void TaskCodeGenLLVM::create_increment(llvm::Value *ptr, llvm::Value *value) {
   auto original_value = builder->CreateLoad(
 #ifdef TI_LLVM_15
@@ -1363,11 +1368,13 @@ void TaskCodeGenLLVM::visit(AssertStmt *stmt) {
 
 void TaskCodeGenLLVM::visit(SNodeOpStmt *stmt) {
   auto snode = stmt->snode;
-  if (stmt->op_type == SNodeOpType::append) {
+  if (stmt->op_type == SNodeOpType::allocate) {
     TI_ASSERT(snode->type == SNodeType::dynamic);
-    TI_ASSERT(stmt->ret_type->is_primitive(PrimitiveTypeID::i32));
-    llvm_val[stmt] =
-        call(snode, llvm_val[stmt->ptr], "append", {llvm_val[stmt->val]});
+    TI_ASSERT(stmt->ret_type.is_pointer() &&
+              stmt->ret_type.ptr_removed()->is_primitive(PrimitiveTypeID::gen));
+    auto ptr =
+        call(snode, llvm_val[stmt->ptr], "allocate", {llvm_val[stmt->val]});
+    llvm_val[stmt] = ptr;
   } else if (stmt->op_type == SNodeOpType::length) {
     TI_ASSERT(snode->type == SNodeType::dynamic);
     llvm_val[stmt] = call(snode, llvm_val[stmt->ptr], "get_num_elements", {});
@@ -2664,8 +2671,9 @@ void TaskCodeGenLLVM::eliminate_unused_functions() {
 }
 
 FunctionCreationGuard TaskCodeGenLLVM::get_function_creation_guard(
-    std::vector<llvm::Type *> argument_types) {
-  return FunctionCreationGuard(this, argument_types);
+    std::vector<llvm::Type *> argument_types,
+    const std::string &func_name) {
+  return FunctionCreationGuard(this, argument_types, func_name);
 }
 
 void TaskCodeGenLLVM::initialize_context() {
@@ -2745,6 +2753,15 @@ LLVMCompiledTask TaskCodeGenLLVM::run_compilation() {
   emit_to_module();
   eliminate_unused_functions();
 
+  if (config.arch == Arch::cuda) {
+    // CUDA specific metadata
+    for (const auto &task : offloaded_tasks) {
+      llvm::Function *func = module->getFunction(task.name);
+      TI_ASSERT(func);
+      tlctx->mark_function_as_cuda_kernel(func, task.block_dim);
+    }
+  }
+
   return {std::move(offloaded_tasks), std::move(module),
           std::move(used_tree_ids), std::move(struct_for_tls_sizes)};
 }
@@ -2791,12 +2808,13 @@ void TaskCodeGenLLVM::visit(ReferenceStmt *stmt) {
 void TaskCodeGenLLVM::visit(FuncCallStmt *stmt) {
   if (!func_map.count(stmt->func)) {
     auto guard = get_function_creation_guard(
-        {llvm::PointerType::get(get_runtime_type("RuntimeContext"), 0)});
+        {llvm::PointerType::get(get_runtime_type("RuntimeContext"), 0)},
+        stmt->func->get_name());
     func_map.insert({stmt->func, guard.body});
     stmt->func->ir->accept(this);
   }
   llvm::Function *llvm_func = func_map[stmt->func];
-  auto *new_ctx = builder->CreateAlloca(get_runtime_type("RuntimeContext"));
+  auto *new_ctx = call("allocate_runtime_context", get_runtime());
   call("RuntimeContext_set_runtime", new_ctx, get_runtime());
   for (int i = 0; i < stmt->args.size(); i++) {
     auto *val =
@@ -2819,6 +2837,7 @@ void TaskCodeGenLLVM::visit(FuncCallStmt *stmt) {
   } else {
     call(llvm_func, new_ctx);
   }
+  call("recycle_runtime_context", get_runtime(), new_ctx);
 }
 
 LLVMCompiledTask LLVMCompiledTask::clone() const {

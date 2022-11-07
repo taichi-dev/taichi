@@ -593,7 +593,7 @@ def test_vulkan_cgraph_short():
 
     g.run({'a': a, 'c': c})
 
-    m = ti.aot.Module(ti.lang.impl.current_cfg().arch)
+    m = ti.aot.Module(ti.lang.impl.current_cfg().arch, caps=['spirv_has_int8'])
     m.add_graph('g_init', g)
     with tempfile.TemporaryDirectory() as tmpdir:
         m.save(tmpdir, '')

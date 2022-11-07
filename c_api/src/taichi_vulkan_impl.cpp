@@ -37,10 +37,13 @@ VulkanRuntimeImported::Workaround::Workaround(
     caps.set(taichi::lang::DeviceCapability::spirv_version, 0x10000);
   }
 
+  // (penguinliong) Will bring it back after devcap.
+  /*
   if (api_version > VK_API_VERSION_1_0) {
     caps.set(taichi::lang::DeviceCapability::spirv_has_physical_storage_buffer,
              true);
   }
+  */
 
   vk_device.set_current_caps(std::move(caps));
   vk_device.init_vulkan_structs(
@@ -236,9 +239,15 @@ void ti_export_vulkan_memory(TiRuntime runtime,
   VulkanRuntime *runtime2 = ((Runtime *)runtime)->as_vk();
   taichi::lang::DeviceAllocation devalloc = devmem2devalloc(*runtime2, memory);
   vkapi::IVkBuffer buffer = runtime2->get_vk().get_vkbuffer(devalloc);
+
+  auto [vk_mem, offset, __] =
+      runtime2->get_vk().get_vkmemory_offset_size(devalloc);
+
   interop_info->buffer = buffer.get()->buffer;
   interop_info->size = buffer.get()->size;
   interop_info->usage = buffer.get()->usage;
+  interop_info->memory = vk_mem;
+  interop_info->offset = (uint64_t)offset;
 }
 TiImage ti_import_vulkan_image(TiRuntime runtime,
                                const TiVulkanImageInteropInfo *interop_info,

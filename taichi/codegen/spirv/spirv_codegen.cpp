@@ -639,8 +639,10 @@ class TaskCodegen : public IRVisitor {
           ir_->int_immediate_number(ir_->i32_type(),
                                     log2int(ir_->get_primitive_type_size(
                                         argload->ret_type.ptr_removed()))));
-      ir_->decorate(spv::OpDecorate, linear_offset,
-                    spv::DecorationNoSignedWrap);
+      if (caps_->get(DeviceCapability::spirv_has_no_integer_wrap_decoration)) {
+        ir_->decorate(spv::OpDecorate, linear_offset,
+                      spv::DecorationNoSignedWrap);
+      }
     }
     if (caps_->get(DeviceCapability::spirv_has_physical_storage_buffer)) {
       spirv::Value addr_ptr = ir_->make_value(
@@ -2564,13 +2566,16 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
 }
 
 void lower(Kernel *kernel) {
-  auto &config = kernel->program->this_thread_config();
-  config.demote_dense_struct_fors = true;
-  irpass::compile_to_executable(kernel->ir.get(), config, kernel,
-                                kernel->autodiff_mode,
-                                /*ad_use_stack=*/false, config.print_ir,
-                                /*lower_global_access=*/true,
-                                /*make_thread_local=*/false);
+  if (!kernel->lowered()) {
+    auto &config = kernel->program->this_thread_config();
+    config.demote_dense_struct_fors = true;
+    irpass::compile_to_executable(kernel->ir.get(), config, kernel,
+                                  kernel->autodiff_mode,
+                                  /*ad_use_stack=*/false, config.print_ir,
+                                  /*lower_global_access=*/true,
+                                  /*make_thread_local=*/false);
+    kernel->set_lowered(true);
+  }
 }
 
 }  // namespace spirv

@@ -56,8 +56,12 @@ void AotModuleBuilder::add_graph(const std::string &name,
     TI_ERROR("Graph {} already exists", name);
   }
   // Handle adding kernels separately.
+  std::unordered_map<std::string, lang::Kernel *> kernels;
   for (const auto &dispatch : graph.dispatches) {
-    add_compiled_kernel(dispatch.kernel_name, dispatch.compiled_kernel);
+    kernels[dispatch.kernel_name] = dispatch.ti_kernel;
+  }
+  for (auto &e : kernels) {
+    add(e.first, e.second);
   }
   graphs_[name] = graph;
 }

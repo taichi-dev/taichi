@@ -13,8 +13,8 @@ from taichi.lang._ndrange import _Ndrange, ndrange
 from taichi.lang.ast.ast_transformer_utils import (Builder, LoopStatus,
                                                    ReturnStatus)
 from taichi.lang.ast.symbol_resolver import ASTResolver
-from taichi.lang.exception import TaichiSyntaxError
-from taichi.lang.expr import Expr
+from taichi.lang.exception import TaichiSyntaxError, TaichiTypeError
+from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field
 from taichi.lang.impl import current_cfg
 from taichi.lang.matrix import Matrix, MatrixType, Vector, is_vector
@@ -28,6 +28,20 @@ if version_info < (3, 9):
     from astunparse import unparse
 else:
     from ast import unparse
+
+
+def reshape_list(flat_list, target_shape):
+    if len(target_shape) < 2:
+        return flat_list
+
+    curr_list = []
+    dim = target_shape[-1]
+    for i, elem in enumerate(flat_list):
+        if i % dim == 0:
+            curr_list.append([])
+        curr_list[-1].append(elem)
+
+    return reshape_list(curr_list, target_shape[:-1])
 
 
 def boundary_type_cast_warning(expression):
@@ -279,6 +293,15 @@ class ASTTransformer(Builder):
             return func(ctx, node, result)
         with ctx.static_scope_guard():
             _iter = build_stmt(ctx, node.generators[now_comp].iter)
+
+        if impl.current_cfg().real_matrix and isinstance(
+                _iter, impl.Expr) and _iter.ptr.is_tensor():
+            shape = _iter.ptr.get_shape()
+            flattened = [
+                Expr(x) for x in ctx.ast_builder.expand_expr([_iter.ptr])
+            ]
+            _iter = reshape_list(flattened, shape)
+
         for value in _iter:
             with ctx.variable_scope_guard():
                 ASTTransformer.build_assign_unpack(
@@ -403,8 +426,11 @@ class ASTTransformer(Builder):
                 name = "min" if func is min else "max"
                 warnings.warn_explicit(
                     f'Calling builtin function "{name}" in Taichi scope is deprecated. '
-                    f'Please use "ti.{name}" instead.', DeprecationWarning,
-                    ctx.file, node.lineno + ctx.lineno_offset)
+                    f'Please use "ti.{name}" instead.',
+                    DeprecationWarning,
+                    ctx.file,
+                    node.lineno + ctx.lineno_offset,
+                    module="taichi")
             return True
         return False
 
@@ -448,8 +474,11 @@ class ASTTransformer(Builder):
             f'Calling non-taichi function "{name}". '
             f'Scope inside the function is not processed by the Taichi AST transformer. '
             f'The function may not work as expected. Proceed with caution! '
-            f'Maybe you can consider turning it into a @ti.func?', UserWarning,
-            ctx.file, node.lineno + ctx.lineno_offset)
+            f'Maybe you can consider turning it into a @ti.func?',
+            UserWarning,
+            ctx.file,
+            node.lineno + ctx.lineno_offset,
+            module="taichi")
 
     @staticmethod
     def build_Call(ctx, node):
@@ -466,7 +495,16 @@ class ASTTransformer(Builder):
         args = []
         for arg in node.args:
             if isinstance(arg, ast.Starred):
-                for i in arg.ptr:
+                arg_list = arg.ptr
+                if impl.current_cfg().real_matrix and isinstance(
+                        arg_list, Expr):
+                    # Expand Expr with Matrix-type return into list of Exprs
+                    arg_list = [
+                        Expr(x)
+                        for x in ctx.ast_builder.expand_expr([arg_list.ptr])
+                    ]
+
+                for i in arg_list:
                     args.append(i)
             else:
                 args.append(arg.ptr)
@@ -738,10 +776,28 @@ class ASTTransformer(Builder):
             build_stmt(ctx, node.value)
             if isinstance(node.value.ptr,
                           Expr) and not hasattr(node.value.ptr, node.attr):
-                # pylint: disable-msg=C0415
-                from taichi.lang import matrix_ops as tensor_ops
-                node.ptr = getattr(tensor_ops, node.attr)
-                setattr(node, 'caller', node.value.ptr)
+                if node.attr in Matrix._swizzle_to_keygroup:
+                    keygroup = Matrix._swizzle_to_keygroup[node.attr]
+                    attr_len = len(node.attr)
+                    if attr_len == 1:
+                        node.ptr = Expr(
+                            _ti_core.subscript(
+                                node.value.ptr.ptr,
+                                make_expr_group(keygroup.index(node.attr)),
+                                impl.get_runtime().get_current_src_info()))
+                    else:
+                        node.ptr = Expr(
+                            _ti_core.subscript_with_multiple_indices(
+                                node.value.ptr.ptr, [
+                                    make_expr_group(keygroup.index(ch))
+                                    for ch in node.attr
+                                ], (attr_len, ),
+                                impl.get_runtime().get_current_src_info()))
+                else:
+                    from taichi.lang import \
+                        matrix_ops as tensor_ops  # pylint: disable=C0415
+                    node.ptr = getattr(tensor_ops, node.attr)
+                    setattr(node, 'caller', node.value.ptr)
             else:
                 node.ptr = getattr(node.value.ptr, node.attr)
         return node.ptr
@@ -750,6 +806,8 @@ class ASTTransformer(Builder):
     def build_BinOp(ctx, node):
         build_stmt(ctx, node.left)
         build_stmt(ctx, node.right)
+        # pylint: disable-msg=C0415
+        from taichi.lang.matrix_ops import matmul
         op = {
             ast.Add: lambda l, r: l + r,
             ast.Sub: lambda l, r: l - r,
@@ -763,9 +821,12 @@ class ASTTransformer(Builder):
             ast.BitOr: lambda l, r: l | r,
             ast.BitXor: lambda l, r: l ^ r,
             ast.BitAnd: lambda l, r: l & r,
-            ast.MatMult: lambda l, r: l @ r,
+            ast.MatMult: matmul,
         }.get(type(node.op))
-        node.ptr = op(node.left.ptr, node.right.ptr)
+        try:
+            node.ptr = op(node.left.ptr, node.right.ptr)
+        except TypeError as e:
+            raise TaichiTypeError(str(e)) from None
         return node.ptr
 
     @staticmethod
@@ -870,8 +931,10 @@ class ASTTransformer(Builder):
                 name = "is" if isinstance(node_op, ast.Is) else "is not"
                 warnings.warn_explicit(
                     f'Operator "{name}" in Taichi scope is deprecated. Please avoid using it.',
-                    DeprecationWarning, ctx.file,
-                    node.lineno + ctx.lineno_offset)
+                    DeprecationWarning,
+                    ctx.file,
+                    node.lineno + ctx.lineno_offset,
+                    module="taichi")
             if op is None:
                 if type(node_op) in ops_static:
                     raise TaichiSyntaxError(
@@ -1292,8 +1355,11 @@ class ASTTransformer(Builder):
             warnings.warn_explicit(
                 'Using conditional expression for element-wise select operation on '
                 'Taichi vectors/matrices is deprecated. '
-                'Please use "ti.select" instead.', DeprecationWarning,
-                ctx.file, node.lineno + ctx.lineno_offset)
+                'Please use "ti.select" instead.',
+                DeprecationWarning,
+                ctx.file,
+                node.lineno + ctx.lineno_offset,
+                module="taichi")
             return node.ptr
 
         is_static_if = (ASTTransformer.get_decorator(ctx,

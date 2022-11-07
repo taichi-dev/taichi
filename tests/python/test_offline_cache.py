@@ -548,8 +548,8 @@ def test_offline_cache_cleaning(curr_arch, factor, policy):
 
 
 # FIXME: Change to `supported_archs_offline_cache` after fixing bugs of real-function on gpu
-@pytest.mark.parametrize(
-    'curr_arch', [ti.cpu] if ti.cpu in test_utils.expected_archs() else [])
+@pytest.mark.parametrize('curr_arch',
+                         {ti.cpu, ti.cuda} & supported_archs_offline_cache)
 @_test_offline_cache_dec
 def test_offline_cache_for_kernels_calling_real_func(curr_arch):
     count_of_cache_file = cache_files_cnt(curr_arch)

@@ -407,6 +407,24 @@ class MatrixOfGlobalPtrStmt : public Stmt {
 };
 
 /**
+ * A matrix of MatrixPtrStmts. The purpose of this stmt is to handle matrix
+ * slice and vector swizzle. This stmt will be eliminated after the
+ * lower_matrix_ptr pass.
+ *
+ * TODO(yi/zhanlue): Keep scalarization pass alive for MatrixOfMatrixPtrStmt
+ * operations even with real_matrix_scalarize=False
+ */
+class MatrixOfMatrixPtrStmt : public Stmt {
+ public:
+  std::vector<Stmt *> stmts;
+
+  MatrixOfMatrixPtrStmt(const std::vector<Stmt *> &stmts, DataType dt);
+
+  TI_STMT_DEF_FIELDS(ret_type, stmts);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
+/**
  * A pointer to an element of a matrix.
  */
 class MatrixPtrStmt : public Stmt {
@@ -414,7 +432,7 @@ class MatrixPtrStmt : public Stmt {
   Stmt *origin{nullptr};
   Stmt *offset{nullptr};
 
-  MatrixPtrStmt(Stmt *, Stmt *);
+  MatrixPtrStmt(Stmt *, Stmt *, const std::string & = "");
 
   /* TODO(zhanlue/yi): Unify semantics of offset in MatrixPtrStmt
 
@@ -685,9 +703,8 @@ class LocalStoreStmt : public Stmt {
   Stmt *val;
 
   LocalStoreStmt(Stmt *dest, Stmt *val) : dest(dest), val(val) {
-    TI_ASSERT(dest->is<AllocaStmt>() ||
-              (dest->is<MatrixPtrStmt>() &&
-               dest->cast<MatrixPtrStmt>()->offset_used_as_index()));
+    TI_ASSERT(dest->is<AllocaStmt>() || dest->is<MatrixPtrStmt>() ||
+              dest->is<MatrixOfMatrixPtrStmt>());
     TI_STMT_REG_FIELDS;
   }
 
@@ -1164,6 +1181,10 @@ class GetChStmt : public Stmt {
   bool is_bit_vectorized;
 
   GetChStmt(Stmt *input_ptr, int chid, bool is_bit_vectorized = false);
+  GetChStmt(Stmt *input_ptr,
+            SNode *snode,
+            int chid,
+            bool is_bit_vectorized = false);
 
   bool has_global_side_effect() const override {
     return false;
@@ -1235,7 +1256,8 @@ class OffloadedStmt : public Stmt {
   static std::string task_type_name(TaskType tt);
 
   bool has_body() const {
-    return task_type != TaskType::listgen && task_type != TaskType::gc;
+    return task_type != TaskType::listgen && task_type != TaskType::gc &&
+           task_type != TaskType::gc_rc;
   }
 
   bool is_container_statement() const override {

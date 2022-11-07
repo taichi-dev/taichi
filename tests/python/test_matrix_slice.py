@@ -4,8 +4,7 @@ import taichi as ti
 from tests import test_utils
 
 
-@test_utils.test()
-def test_matrix_slice_read():
+def _test_matrix_slice_read():
     b = 6
 
     @ti.kernel
@@ -29,7 +28,16 @@ def test_matrix_slice_read():
 
 
 @test_utils.test()
-def test_matrix_slice_invalid():
+def test_matrix_slice_read():
+    _test_matrix_slice_read()
+
+
+@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
+def test_matrix_slice_read_real_matrix_scalarize():
+    _test_matrix_slice_read()
+
+
+def _test_matrix_slice_invalid():
     @ti.kernel
     def foo1(i: ti.i32):
         a = ti.Vector([0, 1, 2, 3, 4, 5, 6])
@@ -49,8 +57,17 @@ def test_matrix_slice_invalid():
         foo2()
 
 
-@test_utils.test(dynamic_index=True)
-def test_matrix_slice_with_variable():
+@test_utils.test()
+def test_matrix_slice_invalid():
+    _test_matrix_slice_invalid()
+
+
+@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
+def test_matrix_slice_invalid_real_matrix_scalarize():
+    _test_matrix_slice_invalid()
+
+
+def _test_matrix_slice_with_variable():
     @ti.kernel
     def test_one_row_slice() -> ti.types.matrix(2, 1, dtype=ti.i32):
         m = ti.Matrix([[1, 2, 3], [4, 5, 6]])
@@ -69,8 +86,19 @@ def test_matrix_slice_with_variable():
     assert (c1 == ti.Matrix([[4, 5, 6]])).all()
 
 
-@test_utils.test(dynamic_index=False)
-def test_matrix_slice_with_variable_invalid():
+@test_utils.test(dynamic_index=True)
+def test_matrix_slice_with_variable():
+    _test_matrix_slice_with_variable()
+
+
+@test_utils.test(real_matrix=True,
+                 real_matrix_scalarize=True,
+                 dynamic_index=True)
+def test_matrix_slice_with_variable_real_matrix_scalarize():
+    _test_matrix_slice_with_variable()
+
+
+def _test_matrix_slice_with_variable_invalid():
     @ti.kernel
     def test_one_col_slice() -> ti.types.matrix(1, 3, dtype=ti.i32):
         m = ti.Matrix([[1, 2, 3], [4, 5, 6]])
@@ -79,53 +107,80 @@ def test_matrix_slice_with_variable_invalid():
 
     with pytest.raises(
             ti.TaichiCompilationError,
-            match=
-            r'The 0-th index of a Matrix/Vector must be a compile-time constant '
-            r"integer, got <class 'taichi.lang.expr.Expr'>.\n"
-            r'This is because matrix operations will be \*\*unrolled\*\* at compile-time '
-            r'for performance reason.\n'
-            r'If you want to \*iterate through matrix elements\*, use a static range:\n'
-            r'  for i in ti.static\(range\(3\)\):\n'
-            r'    print\(i, "-th component is", vec\[i\]\)\n'
-            r'See https://docs.taichi-lang.org/docs/meta#when-to-use-tistatic-with-for-loops for more details.'
-            r'Or turn on ti.init\(..., dynamic_index=True\) to support indexing with variables!'
-    ):
+            match='index of a Matrix/Vector must be a compile-time constant'):
         test_one_col_slice()
 
 
-@test_utils.test(debug=True)
+@test_utils.test(dynamic_index=False)
+def test_matrix_slice_with_variable_invalid():
+    _test_matrix_slice_with_variable_invalid()
+
+
+@test_utils.test(dynamic_index=False,
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_matrix_slice_with_variable_invalid_real_matrix_scalarize():
+    _test_matrix_slice_with_variable_invalid()
+
+
+def _test_matrix_slice_write():
+    @ti.kernel
+    def assign_row() -> ti.types.matrix(3, 4, ti.i32):
+        mat = ti.Matrix([[0, 0, 0, 0] for _ in range(3)])
+        row = ti.Matrix([[1, 2, 3, 4]])
+        mat[0, :] = row
+        return mat
+
+    @ti.kernel
+    def assign_partial_row() -> ti.types.matrix(3, 4, ti.i32):
+        mat = ti.Matrix([[0, 0, 0, 0] for _ in range(3)])
+        mat[1, 1:3] = ti.Matrix([[1, 2]])
+        return mat
+
+    @ti.kernel
+    def augassign_rows() -> ti.types.matrix(3, 4, ti.i32):
+        mat = ti.Matrix([[1, 1, 1, 1] for _ in range(3)])
+        rows = ti.Matrix([[1, 2, 3, 4] for _ in range(2)])
+        mat[:2, :] += rows
+        return mat
+
+    assert (assign_row() == ti.Matrix([[1, 2, 3, 4], [0, 0, 0, 0],
+                                       [0, 0, 0, 0]])).all()
+    assert (assign_partial_row() == ti.Matrix([[0, 0, 0, 0], [0, 1, 2, 0],
+                                               [0, 0, 0, 0]])).all()
+    assert (augassign_rows() == ti.Matrix([[2, 3, 4, 5], [2, 3, 4, 5],
+                                           [1, 1, 1, 1]])).all()
+
+
+@test_utils.test()
 def test_matrix_slice_write():
+    _test_matrix_slice_write()
+
+
+@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
+def test_matrix_slice_write_real_matrix_scalarize():
+    _test_matrix_slice_write()
+
+
+def _test_matrix_slice_write_dynamic_index():
     @ti.kernel
-    def foo():
-        m = ti.Matrix([[0., 0., 0., 0.] for _ in range(3)])
-        vec = ti.Vector([1., 2., 3., 4.])
-        m[0, :] = vec.transpose()
-        ref = ti.Matrix([[1., 2., 3., 4.], [0., 0., 0., 0.], [0., 0., 0., 0.]])
-        assert all(m == ref)
-
-        m[1, 1:3] = ti.Vector([1., 2.]).transpose()
-        ref = ti.Matrix([[1., 2., 3., 4.], [0., 1., 2., 0.], [0., 0., 0., 0.]])
-        assert all(m == ref)
-
-        m1 = ti.Matrix([[1., 1., 1., 1.] for _ in range(2)])
-        m[:2, :] += m1
-        ref = ti.Matrix([[2., 3., 4., 5.], [1., 2., 3., 1.], [0., 0., 0., 0.]])
-        assert all(m == ref)
-
-    foo()
-
-
-@test_utils.test(debug=True, dynamic_index=True)
-def test_matrix_slice_write_dynamic_index():
-    @ti.kernel
-    def foo(i: ti.i32, ref: ti.template()):
-        m = ti.Matrix([[0., 0., 0., 0.] for _ in range(3)])
-        vec = ti.Vector([1., 2., 3., 4.])
-        m[i, :] = vec.transpose()
-        assert all(m == ref)
+    def foo(i: ti.i32) -> ti.types.matrix(3, 4, ti.i32):
+        mat = ti.Matrix([[0, 0, 0, 0] for _ in range(3)])
+        mat[i, :] = ti.Matrix([[1, 2, 3, 4]])
+        return mat
 
     for i in range(3):
-        foo(
-            i,
-            ti.Matrix([[1., 2., 3., 4.] if j == i else [0., 0., 0., 0.]
-                       for j in range(3)]))
+        assert (foo(i) == ti.Matrix([[1, 2, 3, 4] if j == i else [0, 0, 0, 0]
+                                     for j in range(3)])).all()
+
+
+@test_utils.test(dynamic_index=True)
+def test_matrix_slice_write_dynamic_index():
+    _test_matrix_slice_write_dynamic_index()
+
+
+@test_utils.test(real_matrix=True,
+                 real_matrix_scalarize=True,
+                 dynamic_index=True)
+def test_matrix_slice_write_dynamic_index_real_matrix_scalarize():
+    _test_matrix_slice_write_dynamic_index()

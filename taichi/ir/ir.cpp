@@ -407,6 +407,7 @@ std::unique_ptr<Block> Block::clone() const {
 }
 
 DelayedIRModifier::~DelayedIRModifier() {
+  // TODO: destructors should not be interrupted
   TI_ASSERT(to_insert_before_.empty());
   TI_ASSERT(to_insert_after_.empty());
   TI_ASSERT(to_erase_.empty());

@@ -219,16 +219,14 @@ class Scalarize : public BasicStmtVisitor {
       return;
     }
 
-    // BinaryOpExpression::type_check() should have taken care of the
-    // broadcasting and neccessary conversions. So we simply add an assertion
-    // here to make sure that the operands are of the same shape and dtype
-    TI_ASSERT(lhs_dtype == rhs_dtype);
-
     if (lhs_dtype->is<TensorType>() && rhs_dtype->is<TensorType>()) {
       // Scalarization for LoadStmt should have already replaced both operands
       // to MatrixInitStmt
       TI_ASSERT(stmt->lhs->is<MatrixInitStmt>());
       TI_ASSERT(stmt->rhs->is<MatrixInitStmt>());
+
+      TI_ASSERT(lhs_dtype->cast<TensorType>()->get_shape() ==
+                rhs_dtype->cast<TensorType>()->get_shape());
 
       auto lhs_matrix_init_stmt = stmt->lhs->cast<MatrixInitStmt>();
       std::vector<Stmt *> lhs_vals = lhs_matrix_init_stmt->values;
@@ -556,7 +554,24 @@ class ScalarizePointers : public BasicStmtVisitor {
 
         // TODO(zhanlue): loose this contraint once dynamic indexing is properly
         // handled
-        TI_ASSERT(stmt->offset->is<ConstStmt>());
+        if (!stmt->offset->is<ConstStmt>()) {
+          // Removing this line will fail TI_ASSERT in ~DelayedIRModifier()
+          modifier_.modify_ir();
+          throw TaichiSyntaxError(fmt::format(
+              "{}The index of a Matrix/Vector must be a compile-time constant "
+              "integer.\n"
+              "This is because matrix operations will be **unrolled** at "
+              "compile-time for performance reason.\n"
+              "If you want to *iterate through matrix elements*, use a static "
+              "range:\n"
+              "    for i in ti.static(range(3)):\n"
+              "        print(i, \"-th component is\", vec[i])\n"
+              "See https://docs.taichi-lang.org/docs/meta#when-to-use-tistatic-"
+              "with-for-loops for more details."
+              "Or turn on ti.init(..., dynamic_index=True) to support indexing "
+              "with variables!",
+              stmt->tb));
+        }
         int offset = stmt->offset->cast<ConstStmt>()->val.val_int32();
 
         TI_ASSERT(offset < scalarized_alloca_stmts.size());
@@ -566,6 +581,17 @@ class ScalarizePointers : public BasicStmtVisitor {
         modifier_.erase(stmt);
       }
     }
+  }
+
+  void visit(ArgLoadStmt *stmt) override {
+    auto ret_type = stmt->ret_type.ptr_removed().get_element_type();
+    auto arg_load =
+        std::make_unique<ArgLoadStmt>(stmt->arg_id, ret_type, stmt->is_ptr);
+
+    stmt->replace_usages_with(arg_load.get());
+
+    modifier_.insert_before(stmt, std::move(arg_load));
+    modifier_.erase(stmt);
   }
 
  private:

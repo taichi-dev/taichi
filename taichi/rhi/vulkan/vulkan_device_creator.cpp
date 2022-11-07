@@ -553,6 +553,7 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
                          name) != params_.additional_device_extensions.end()) {
       enabled_extensions.push_back(ext.extensionName);
     }
+    // Vulkan doesn't seem to support SPV_KHR_no_integer_wrap_decoration at all.
   }
 
   if (has_swapchain) {
@@ -737,7 +738,8 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
         if (device_supported_features.shaderInt64) {
 // Temporarily disable it on macOS:
 // https://github.com/taichi-dev/taichi/issues/6295
-#if !defined(__APPLE__)
+// (penguinliong) Temporarily disabled (until device capability is ready).
+#if !defined(__APPLE__) && false
           caps.set(DeviceCapability::spirv_has_physical_storage_buffer, true);
 #endif
         }

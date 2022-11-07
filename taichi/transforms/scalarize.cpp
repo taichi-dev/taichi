@@ -9,6 +9,15 @@
 
 namespace taichi::lang {
 
+static bool is_alloca_scalarizable(AllocaStmt *stmt) {
+  /* Do not scalarize AllocaStmt allocated for CUDA SharedArray */
+  auto alloca = stmt->as<AllocaStmt>();
+  if (alloca->is_shared)
+    return false;
+
+  return true;
+}
+
 class Scalarize : public BasicStmtVisitor {
  public:
   DelayedIRModifier modifier_;
@@ -512,7 +521,7 @@ class ScalarizePointers : public BasicStmtVisitor {
   */
   void visit(AllocaStmt *stmt) override {
     auto tensor_type = stmt->ret_type.ptr_removed()->cast<TensorType>();
-    if (tensor_type) {
+    if (tensor_type && is_alloca_scalarizable(stmt)) {
       auto primitive_type = tensor_type->get_element_type();
 
       TI_ASSERT(scalarized_local_tensor_map_.count(stmt) == 0);
@@ -540,7 +549,8 @@ class ScalarizePointers : public BasicStmtVisitor {
       stmt->replace_all_usages_with(scalarized_alloca_stmt)
   */
   void visit(MatrixPtrStmt *stmt) override {
-    if (stmt->origin->is<AllocaStmt>()) {
+    if (stmt->origin->is<AllocaStmt>() &&
+        is_alloca_scalarizable(stmt->origin->cast<AllocaStmt>())) {
       auto alloca_stmt = stmt->origin->cast<AllocaStmt>();
       auto tensor_type =
           alloca_stmt->ret_type.ptr_removed()->cast<TensorType>();

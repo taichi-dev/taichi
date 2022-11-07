@@ -108,7 +108,7 @@ jobs:
   build_and_test_cpu_linux:
     name: Build and Test linux (CPU)
     needs: check_files
-    timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 120 || 180 }}
+    timeout-minutes: 300
     strategy:
       matrix:
         include:
@@ -272,7 +272,7 @@ jobs:
             llvmVer : '15'
           - os: windows-2019
             llvmVer : '10'
-    timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 120 || 180 }}
+    timeout-minutes: 300
     runs-on: windows-2019
     permissions:
       packages: read

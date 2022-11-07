@@ -636,6 +636,10 @@ class Matrix(TaichiOperations):
         return self._impl.entries
 
     @property
+    def _members(self):
+        return self.entries
+
+    @property
     def any_array_access(self):
         return self._impl.any_array_access
 

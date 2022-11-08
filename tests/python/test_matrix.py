@@ -1044,7 +1044,7 @@ def test_trace_op():
     assert np.abs(x.trace() - 7.1) < 1e-6
 
     with pytest.raises(TaichiCompilationError,
-                       match=r"not a square matrix: \(3, 2\)"):
+                       match=r"expected a square matrix, got shape \(3, 2\)"):
         x = ti.Matrix([[.1, 3.], [5., 7.], [1., 2.]])
         print(x.trace())
 
@@ -1054,7 +1054,7 @@ def test_trace_op():
         print(x.trace())
 
     with pytest.raises(TaichiCompilationError,
-                       match=r"not a square matrix: \(3, 2\)"):
+                       match=r"expected a square matrix, got shape \(3, 2\)"):
         failed_func()
 
 

@@ -83,42 +83,62 @@ def cols(cols):  # pylint: disable=W0621
     return rows(cols).transpose()
 
 
-def E(m, x, y, n):
-    @func
-    def _E():
-        return m[x % n, y % n]
-
-    return _E()
+@pyfunc
+def E(mat: template(), x: template(), y: template(), n: template()):
+    return mat[x % n, y % n]
 
 
-@preconditions(square_matrix,
-               dim_lt(0, 5,
-                      'Determinant of dimension >= 5 is not supported: {}'))
-@func
-def determinant(x):
-    shape = static(x.get_shape())
-    if static(shape[0] == 1 and shape[1] == 1):
-        return x[0, 0]
-    if static(shape[0] == 2 and shape[1] == 2):
-        return x[0, 0] * x[1, 1] - x[0, 1] * x[1, 0]
-    if static(shape[0] == 3 and shape[1] == 3):
-        return x[0, 0] * (x[1, 1] * x[2, 2] - x[2, 1] * x[1, 2]) - x[1, 0] * (
-            x[0, 1] * x[2, 2] - x[2, 1] * x[0, 2]) + x[2, 0] * (
-                x[0, 1] * x[1, 2] - x[1, 1] * x[0, 2])
-    if static(shape[0] == 4 and shape[1] == 4):
-
-        det = 0.0
+@preconditions(square_matrix, dim_lt(0, 5))
+@pyfunc
+def determinant(mat):
+    shape = static(mat.get_shape())
+    if static(shape[0] == 1):
+        return mat[0, 0]
+    if static(shape[0] == 2):
+        return mat[0, 0] * mat[1, 1] - mat[0, 1] * mat[1, 0]
+    if static(shape[0] == 3):
+        return mat[0, 0] * (mat[1, 1] * mat[2, 2] - mat[2, 1] * mat[1, 2]) - mat[1, 0] * (
+                mat[0, 1] * mat[2, 2] - mat[2, 1] * mat[0, 2]) + mat[2, 0] * (
+                       mat[0, 1] * mat[1, 2] - mat[1, 1] * mat[0, 2])
+    if static(shape[0] == 4):
+        det = mat[0, 0] * 0  # keep type
         for i in static(range(4)):
-            det += (-1.0)**i * (
-                x[i, 0] *
-                (E(x, i + 1, 1, 4) *
-                 (E(x, i + 2, 2, 4) * E(x, i + 3, 3, 4) -
-                  E(x, i + 3, 2, 4) * E(x, i + 2, 3, 4)) - E(x, i + 2, 1, 4) *
-                 (E(x, i + 1, 2, 4) * E(x, i + 3, 3, 4) -
-                  E(x, i + 3, 2, 4) * E(x, i + 1, 3, 4)) + E(x, i + 3, 1, 4) *
-                 (E(x, i + 1, 2, 4) * E(x, i + 2, 3, 4) -
-                  E(x, i + 2, 2, 4) * E(x, i + 1, 3, 4))))
+            det += (-1)**i * (
+                    mat[i, 0] *
+                    (E(mat, i + 1, 1, 4) *
+                     (E(mat, i + 2, 2, 4) * E(mat, i + 3, 3, 4) -
+                      E(mat, i + 3, 2, 4) * E(mat, i + 2, 3, 4)) - E(mat, i + 2, 1, 4) *
+                     (E(mat, i + 1, 2, 4) * E(mat, i + 3, 3, 4) -
+                      E(mat, i + 3, 2, 4) * E(mat, i + 1, 3, 4)) + E(mat, i + 3, 1, 4) *
+                     (E(mat, i + 1, 2, 4) * E(mat, i + 2, 3, 4) -
+                      E(mat, i + 2, 2, 4) * E(mat, i + 1, 3, 4))))
         return det
+    # unreachable
+    return None
+
+
+@preconditions(square_matrix, dim_lt(0, 5))
+@pyfunc
+def inverse(mat):
+    shape = static(mat.get_shape())
+    if static(shape[0] == 1):
+        return Matrix([[1.0 / mat[0, 0]]])
+    inv_determinant = 1.0 / determinant(mat)
+    if static(shape[0] == 2):
+        return inv_determinant * Matrix([[mat[1, 1], -mat[0, 1]], [-mat[1, 0], mat[0, 0]]])
+    if static(shape[0] == 3):
+        return inv_determinant * Matrix([[
+                E(mat, i + 1, j + 1, 3) * E(mat, i + 2, j + 2, 3) -
+                E(mat, i + 2, j + 1, 3) * E(mat, i + 1, j + 2, 3) for i in static(range(3))] for j in static(range(3))])
+    if static(shape[0] == 4):
+        return inv_determinant * Matrix([[(-1)**(i + j) * ((
+                        E(mat, i + 1, j + 1, 4) *
+                        (E(mat, i + 2, j + 2, 4) * E(mat, i + 3, j + 3, 4) -
+                         E(mat, i + 3, j + 2, 4) * E(mat, i + 2, j + 3, 4)) - E(mat, i + 2, j + 1, 4) *
+                        (E(mat, i + 1, j + 2, 4) * E(mat, i + 3, j + 3, 4) -
+                         E(mat, i + 3, j + 2, 4) * E(mat, i + 1, j + 3, 4)) + E(mat, i + 3, j + 1, 4) *
+                        (E(mat, i + 1, j + 2, 4) * E(mat, i + 2, j + 3, 4) -
+                         E(mat, i + 2, j + 2, 4) * E(mat, i + 1, j + 3, 4)))) for i in static(range(4))] for j in static(range(4))])
     # unreachable
     return None
 

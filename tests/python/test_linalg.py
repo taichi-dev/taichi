@@ -220,9 +220,7 @@ def test_matrix():
         assert x[i][1, 1] == 1 + i
 
 
-@pytest.mark.parametrize("n", range(1, 5))
-@test_utils.test()
-def test_mat_inverse_size(n):
+def _test_mat_inverse_size(n):
     m = ti.Matrix.field(n, n, dtype=ti.f32, shape=())
     M = np.empty(shape=(n, n), dtype=np.float32)
     for i in range(n):
@@ -240,6 +238,18 @@ def test_mat_inverse_size(n):
 
     m_np = m.to_numpy(keep_dims=True)
     np.testing.assert_almost_equal(m_np, np.linalg.inv(M))
+
+
+@pytest.mark.parametrize("n", range(1, 5))
+@test_utils.test()
+def test_mat_inverse_size(n):
+    _test_mat_inverse_size(n)
+
+
+@pytest.mark.parametrize("n", range(1, 5))
+@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
+def test_mat_inverse_size_real_matrix_scalarize(n):
+    _test_mat_inverse_size(n)
 
 
 @test_utils.test()

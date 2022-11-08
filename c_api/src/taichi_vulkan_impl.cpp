@@ -37,10 +37,13 @@ VulkanRuntimeImported::Workaround::Workaround(
     caps.set(taichi::lang::DeviceCapability::spirv_version, 0x10000);
   }
 
+  // (penguinliong) Will bring it back after devcap.
+  /*
   if (api_version > VK_API_VERSION_1_0) {
     caps.set(taichi::lang::DeviceCapability::spirv_has_physical_storage_buffer,
              true);
   }
+  */
 
   vk_device.set_current_caps(std::move(caps));
   vk_device.init_vulkan_structs(

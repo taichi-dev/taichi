@@ -201,10 +201,6 @@ class TI_DLL_EXPORT Program {
   // TODO(Lin): remove the offloaded parameter
   FunctionType compile(Kernel &kernel, OffloadedStmt *offloaded = nullptr);
 
-  std::unique_ptr<aot::Kernel> make_aot_kernel(Kernel &kernel) {
-    return program_impl_->make_aot_kernel(kernel);
-  }
-
   void check_runtime_error();
 
   Kernel &get_snode_reader(SNode *snode);

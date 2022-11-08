@@ -697,6 +697,7 @@ class Runtime {
 
   Runtime &operator=(const Runtime &) = delete;
   Runtime &operator=(Runtime &&b) {
+    arch_ = std::exchange(b.arch_, TI_ARCH_MAX_ENUM);
     runtime_ = detail::move_handle(b.runtime_);
     should_destroy_ = std::exchange(b.should_destroy_, false);
     return *this;

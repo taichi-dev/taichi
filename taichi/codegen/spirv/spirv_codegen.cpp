@@ -2566,13 +2566,16 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
 }
 
 void lower(Kernel *kernel) {
-  auto &config = kernel->program->this_thread_config();
-  config.demote_dense_struct_fors = true;
-  irpass::compile_to_executable(kernel->ir.get(), config, kernel,
-                                kernel->autodiff_mode,
-                                /*ad_use_stack=*/false, config.print_ir,
-                                /*lower_global_access=*/true,
-                                /*make_thread_local=*/false);
+  if (!kernel->lowered()) {
+    auto &config = kernel->program->this_thread_config();
+    config.demote_dense_struct_fors = true;
+    irpass::compile_to_executable(kernel->ir.get(), config, kernel,
+                                  kernel->autodiff_mode,
+                                  /*ad_use_stack=*/false, config.print_ir,
+                                  /*lower_global_access=*/true,
+                                  /*make_thread_local=*/false);
+    kernel->set_lowered(true);
+  }
 }
 
 }  // namespace spirv

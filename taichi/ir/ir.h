@@ -354,7 +354,11 @@ class StmtFieldManager {
   bool equal(StmtFieldManager &other) const;
 };
 
-#define TI_STMT_DEF_FIELDS(...) TI_IO_DEF(__VA_ARGS__)
+#define TI_STMT_DEF_FIELDS(...)  \
+  template <typename S>          \
+  void io(S &serializer) const { \
+    TI_IO(__VA_ARGS__);          \
+  }
 #define TI_STMT_REG_FIELDS  \
   mark_fields_registered(); \
   io(field_manager)

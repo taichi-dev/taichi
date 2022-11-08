@@ -100,11 +100,23 @@ void load_metadata_test() {
 
 }  // namespace
 
+// FIXME: (penguinliong) This structure has a same prototype as the actual types
+// including `OfflineCacheKernelMetadata`s. It's currently used only for the
+// tests and should probably be removed in the future.
+struct KernelMetadataBase {
+  std::string kernel_key;
+  std::size_t size{0};          // byte
+  std::time_t created_at{0};    // sec
+  std::time_t last_used_at{0};  // sec
+
+  TI_IO_DEF(kernel_key, size, created_at, last_used_at);
+};
+
 TEST(OfflineCache, LoadMetadata) {
 #ifdef TI_WITH_LLVM
   load_metadata_test<LlvmOfflineCache>();
 #endif  // TI_WITH_LLVM
-  load_metadata_test<oc::Metadata<oc::KernelMetadataBase>>();
+  load_metadata_test<oc::Metadata<KernelMetadataBase>>();
 }
 
 }  // namespace taichi::lang

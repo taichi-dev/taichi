@@ -2211,8 +2211,11 @@ void VulkanDevice::create_vma_allocator() {
   vk_vma_functions.vkBindBufferMemory2KHR = table.vkBindBufferMemory2KHR;
   vk_vma_functions.vkBindImageMemory2KHR = table.vkBindImageMemory2KHR;
   vk_vma_functions.vkGetPhysicalDeviceMemoryProperties2KHR =
-      PFN_vkGetPhysicalDeviceMemoryProperties2KHR(vkGetInstanceProcAddr(
-          volkGetLoadedInstance(), "vkGetPhysicalDeviceMemoryProperties2KHR"));
+      (PFN_vkGetPhysicalDeviceMemoryProperties2KHR)(std::max(
+          vkGetInstanceProcAddr(volkGetLoadedInstance(),
+                                "vkGetPhysicalDeviceMemoryProperties2KHR"),
+          vkGetInstanceProcAddr(volkGetLoadedInstance(),
+                                "vkGetPhysicalDeviceMemoryProperties2")));
   vk_vma_functions.vkGetDeviceBufferMemoryRequirements =
       table.vkGetDeviceBufferMemoryRequirements;
   vk_vma_functions.vkGetDeviceImageMemoryRequirements =

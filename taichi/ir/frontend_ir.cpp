@@ -578,7 +578,8 @@ Stmt *make_tensor_access_single_element(Expression::FlattenContext *ctx,
                                         const Expr &var,
                                         const ExprGroup &indices,
                                         const std::vector<int> &shape,
-                                        int stride) {
+                                        int stride,
+                                        const std::string &tb) {
   bool needs_dynamic_index = false;
   for (int i = 0; i < (int)indices.size(); ++i) {
     if (!indices[i].is<ConstExpression>()) {
@@ -609,7 +610,7 @@ Stmt *make_tensor_access_single_element(Expression::FlattenContext *ctx,
     offset_stmt = ctx->push_back<BinaryOpStmt>(BinaryOpType::mul, offset_stmt,
                                                stride_stmt);
   }
-  return ctx->push_back<MatrixPtrStmt>(var->stmt, offset_stmt);
+  return ctx->push_back<MatrixPtrStmt>(var->stmt, offset_stmt, tb);
 }
 
 Stmt *make_tensor_access(Expression::FlattenContext *ctx,
@@ -617,7 +618,8 @@ Stmt *make_tensor_access(Expression::FlattenContext *ctx,
                          const std::vector<ExprGroup> &indices_group,
                          DataType ret_type,
                          std::vector<int> shape,
-                         int stride) {
+                         int stride,
+                         const std::string &tb) {
   flatten_lvalue(var, ctx);
   if (!var->is_lvalue()) {
     auto alloca_stmt = ctx->push_back<AllocaStmt>(var->ret_type);
@@ -627,13 +629,13 @@ Stmt *make_tensor_access(Expression::FlattenContext *ctx,
   if (is_tensor(ret_type)) {
     std::vector<Stmt *> stmts;
     for (auto &indices : indices_group) {
-      stmts.push_back(
-          make_tensor_access_single_element(ctx, var, indices, shape, stride));
+      stmts.push_back(make_tensor_access_single_element(ctx, var, indices,
+                                                        shape, stride, tb));
     }
     return ctx->push_back<MatrixOfMatrixPtrStmt>(stmts, ret_type);
   }
   return make_tensor_access_single_element(ctx, var, indices_group[0], shape,
-                                           stride);
+                                           stride, tb);
 }
 
 void MatrixExpression::type_check(CompileConfig *config) {
@@ -721,7 +723,7 @@ void IndexExpression::type_check(CompileConfig *) {
   } else if (is_tensor()) {  // local tensor
     auto shape = var->ret_type->as<TensorType>()->get_shape();
     if (indices_group[0].size() != shape.size()) {
-      TI_ERROR("Expected {} indices, but got {}.", shape.size(),
+      TI_ERROR("Expected {} indices, got {}.", shape.size(),
                indices_group[0].size());
     }
     ret_type = var->ret_type->cast<TensorType>()->get_element_type();
@@ -754,9 +756,9 @@ void IndexExpression::flatten(FlattenContext *ctx) {
   } else if (is_ndarray()) {
     stmt = make_ndarray_access(ctx, var, indices_group[0]);
   } else if (is_tensor()) {
-    stmt =
-        make_tensor_access(ctx, var, indices_group, ret_type,
-                           var->ret_type->cast<TensorType>()->get_shape(), 1);
+    stmt = make_tensor_access(ctx, var, indices_group, ret_type,
+                              var->ret_type->cast<TensorType>()->get_shape(), 1,
+                              tb);
   } else {
     throw TaichiTypeError(
         "Invalid IndexExpression: the source is not among field, ndarray or "
@@ -777,7 +779,7 @@ void StrideExpression::type_check(CompileConfig *) {
 }
 
 void StrideExpression::flatten(FlattenContext *ctx) {
-  stmt = make_tensor_access(ctx, var, {indices}, ret_type, shape, stride);
+  stmt = make_tensor_access(ctx, var, {indices}, ret_type, shape, stride, tb);
 }
 
 void RangeAssumptionExpression::type_check(CompileConfig *) {
@@ -895,11 +897,25 @@ void AtomicOpExpression::flatten(FlattenContext *ctx) {
   stmt->tb = tb;
 }
 
-void SNodeOpExpression::type_check(CompileConfig *) {
+void SNodeOpExpression::type_check(CompileConfig *config) {
   if (op_type == SNodeOpType::get_addr) {
     ret_type = PrimitiveType::u64;
   } else {
     ret_type = PrimitiveType::i32;
+  }
+  if (op_type == SNodeOpType::append) {
+    TI_ASSERT(snode->ch.size() == values.size());
+    for (int i = 0; i < values.size(); i++) {
+      TI_ASSERT_TYPE_CHECKED(values[i]);
+      auto &dst_type = snode->ch[i]->dt;
+      auto promoted = promoted_type(dst_type, values[i]->ret_type);
+      if (dst_type != promoted) {
+        TI_WARN("Append may lose precision: {} <- {}\n{}",
+                dst_type->to_string(), values[i]->ret_type->to_string(), tb);
+      }
+      values[i] = cast(values[i], dst_type);
+      values[i]->type_check(config);
+    }
   }
 }
 
@@ -925,14 +941,22 @@ void SNodeOpExpression::flatten(FlattenContext *ctx) {
   } else if (op_type == SNodeOpType::get_addr) {
     ctx->push_back<SNodeOpStmt>(SNodeOpType::get_addr, snode, ptr, nullptr);
   } else if (op_type == SNodeOpType::append) {
-    flatten_rvalue(value, ctx);
-    ctx->push_back<SNodeOpStmt>(SNodeOpType::append, snode, ptr, value->stmt);
+    for (auto &value : values) {
+      flatten_rvalue(value, ctx);
+    }
+    auto alloca = ctx->push_back<AllocaStmt>(PrimitiveType::i32);
+    alloca->set_tb(tb);
+    auto addr =
+        ctx->push_back<SNodeOpStmt>(SNodeOpType::allocate, snode, ptr, alloca);
+    addr->set_tb(tb);
+    for (int i = 0; i < values.size(); i++) {
+      auto ch_addr = ctx->push_back<GetChStmt>(addr, snode, i);
+      ch_addr->set_tb(tb);
+      ctx->push_back<GlobalStoreStmt>(ch_addr, values[i]->stmt)->set_tb(tb);
+    }
+    ctx->push_back<LocalLoadStmt>(alloca)->set_tb(tb);
     TI_ERROR_IF(snode->type != SNodeType::dynamic,
                 "ti.append only works on dynamic nodes.");
-    TI_ERROR_IF(snode->ch.size() != 1,
-                "ti.append only works on single-child dynamic nodes.");
-    TI_ERROR_IF(data_type_size(snode->ch[0]->dt) != 4,
-                "ti.append only works on i32/f32 nodes.");
   }
   stmt = ctx->back_stmt();
 }

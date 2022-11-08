@@ -13,7 +13,7 @@ from taichi.lang._ndrange import _Ndrange, ndrange
 from taichi.lang.ast.ast_transformer_utils import (Builder, LoopStatus,
                                                    ReturnStatus)
 from taichi.lang.ast.symbol_resolver import ASTResolver
-from taichi.lang.exception import TaichiSyntaxError, TaichiTypeError
+from taichi.lang.exception import TaichiSyntaxError, TaichiTypeError, TaichiIndexError
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field
 from taichi.lang.impl import current_cfg
@@ -761,59 +761,72 @@ class ASTTransformer(Builder):
         return None
 
     @staticmethod
-    def build_Attribute(ctx, node):
+    def build_attribute_if_is_dynamic_snode_method(ctx, node):
         is_subscript = isinstance(node.value, ast.Subscript)
-        if is_subscript:
-            x = build_stmt(ctx, node.value.value)
-        else:
-            x = build_stmt(ctx, node.value)
-
         names = ("append", "deactivate")
-        if isinstance(x, Field) and x.parent(
-        ).ptr.type == _ti_core.SNodeType.dynamic and node.attr in names:
-
-            def build_dynamic_snode_hack():
-                if is_subscript:
-                    index = build_stmt(ctx, node.value.slice)
-                else:
-                    index = []
-
-                node.value.ptr = None
-                if node.attr == "append":
-                    node.ptr = lambda val: append(x.parent(), index, val)
-                else:
-                    node.ptr = lambda: deactivate(x.parent(), index)
-
-            build_dynamic_snode_hack()
-
+        if node.attr not in names:
+            return False
+        if is_subscript:
+            x = node.value.value.ptr
+            indices = node.value.slice.ptr
         else:
+            x = node.value.ptr
+            indices = []
+        if not isinstance(x, Field):
+            return False
+        if not x.parent(
+        ).ptr.type == _ti_core.SNodeType.dynamic:
+            return False
+        snode = x._get_field_members()[0].ptr.snode()
+        field_dim = snode.num_active_indices()
+        indices_expr_group = make_expr_group(*indices)
+        index_dim = indices_expr_group.size()
+        if field_dim != index_dim + 1:
+            return False
+        if node.attr == "append":
+            node.ptr = lambda val: append(x.parent(), indices, val)
+        else:
+            node.ptr = lambda: deactivate(x.parent(), indices)
+        return True
+
+    @staticmethod
+    def build_Attribute(ctx, node):
+        try:
             build_stmt(ctx, node.value)
-            if isinstance(node.value.ptr,
-                          Expr) and not hasattr(node.value.ptr, node.attr):
-                if node.attr in Matrix._swizzle_to_keygroup:
-                    keygroup = Matrix._swizzle_to_keygroup[node.attr]
-                    attr_len = len(node.attr)
-                    if attr_len == 1:
-                        node.ptr = Expr(
-                            _ti_core.subscript(
-                                node.value.ptr.ptr,
-                                make_expr_group(keygroup.index(node.attr)),
-                                impl.get_runtime().get_current_src_info()))
-                    else:
-                        node.ptr = Expr(
-                            _ti_core.subscript_with_multiple_indices(
-                                node.value.ptr.ptr, [
-                                    make_expr_group(keygroup.index(ch))
-                                    for ch in node.attr
-                                ], (attr_len, ),
-                                impl.get_runtime().get_current_src_info()))
+        except TaichiIndexError as e:
+            node.value.ptr = None
+            if ASTTransformer.build_attribute_if_is_dynamic_snode_method(ctx, node):
+                return node.ptr
+            raise e
+        if ASTTransformer.build_attribute_if_is_dynamic_snode_method(ctx, node):
+            return node.ptr
+
+        if isinstance(node.value.ptr,
+                      Expr) and not hasattr(node.value.ptr, node.attr):
+            if node.attr in Matrix._swizzle_to_keygroup:
+                keygroup = Matrix._swizzle_to_keygroup[node.attr]
+                attr_len = len(node.attr)
+                if attr_len == 1:
+                    node.ptr = Expr(
+                        _ti_core.subscript(
+                            node.value.ptr.ptr,
+                            make_expr_group(keygroup.index(node.attr)),
+                            impl.get_runtime().get_current_src_info()))
                 else:
-                    from taichi.lang import \
-                        matrix_ops as tensor_ops  # pylint: disable=C0415
-                    node.ptr = getattr(tensor_ops, node.attr)
-                    setattr(node, 'caller', node.value.ptr)
+                    node.ptr = Expr(
+                        _ti_core.subscript_with_multiple_indices(
+                            node.value.ptr.ptr, [
+                                make_expr_group(keygroup.index(ch))
+                                for ch in node.attr
+                            ], (attr_len, ),
+                            impl.get_runtime().get_current_src_info()))
             else:
-                node.ptr = getattr(node.value.ptr, node.attr)
+                from taichi.lang import \
+                    matrix_ops as tensor_ops  # pylint: disable=C0415
+                node.ptr = getattr(tensor_ops, node.attr)
+                setattr(node, 'caller', node.value.ptr)
+        else:
+            node.ptr = getattr(node.value.ptr, node.attr)
         return node.ptr
 
     @staticmethod

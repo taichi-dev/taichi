@@ -277,27 +277,35 @@ def dot(vec_x, vec_y):
     return sum(vec_x * vec_y)
 
 
-@preconditions(arg_at(0, assert_vector("lhs for outer_product is not a vector")),
-               arg_at(1, assert_vector("rhs for outer_product is not a vector")),
-               same_shapes,
-               arg_at(0, dim_lt(0, 4, "Cross product is only supported between pairs of 2D/3D vectors"))
-               )
+@preconditions(
+    arg_at(0, assert_vector("lhs for outer_product is not a vector")),
+    arg_at(1, assert_vector("rhs for outer_product is not a vector")),
+    same_shapes,
+    arg_at(
+        0,
+        dim_lt(
+            0, 4,
+            "Cross product is only supported between pairs of 2D/3D vectors")))
 @pyfunc
 def cross(vec_x, vec_y):
     shape = static(vec_x.get_shape())
     if static(shape[0] == 2):
         return vec_x[0] * vec_y[1] - vec_x[1] * vec_y[0]
     if static(shape[0] == 3):
-        return Vector([vec_x[1] * vec_y[2] - vec_x[2] * vec_y[1],
-                       vec_x[2] * vec_y[0] - vec_x[0] * vec_y[2],
-                       vec_x[0] * vec_y[1] - vec_x[1] * vec_y[0]])
+        return Vector([
+            vec_x[1] * vec_y[2] - vec_x[2] * vec_y[1],
+            vec_x[2] * vec_y[0] - vec_x[0] * vec_y[2],
+            vec_x[0] * vec_y[1] - vec_x[1] * vec_y[0]
+        ])
     return None
 
 
-@preconditions(arg_at(0, assert_vector("lhs for outer_product is not a vector")),
-               arg_at(1, assert_vector("rhs for outer_product is not a vector")))
+@preconditions(
+    arg_at(0, assert_vector("lhs for outer_product is not a vector")),
+    arg_at(1, assert_vector("rhs for outer_product is not a vector")))
 @pyfunc
 def outer_product(vec_x, vec_y):
     shape_x = static(vec_x.get_shape())
     shape_y = static(vec_y.get_shape())
-    return Matrix([[vec_x[i] * vec_y[j] for j in static(range(shape_y[0]))] for i in static(range(shape_x[0]))])
+    return Matrix([[vec_x[i] * vec_y[j] for j in static(range(shape_y[0]))]
+                   for i in static(range(shape_x[0]))])

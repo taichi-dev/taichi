@@ -777,8 +777,7 @@ class ASTTransformer(Builder):
             return False
         if not x.parent().ptr.type == _ti_core.SNodeType.dynamic:
             return False
-        snode = x._get_field_members()[0].ptr.snode()
-        field_dim = snode.num_active_indices()
+        field_dim = x.snode.ptr.num_active_indices()
         indices_expr_group = make_expr_group(*indices)
         index_dim = indices_expr_group.size()
         if field_dim != index_dim + 1:

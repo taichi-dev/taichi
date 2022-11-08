@@ -617,7 +617,7 @@ def _test_indexing():
         print(m[0])
 
     with pytest.raises(TaichiCompilationError,
-                       match=r'Expected 2 indices, but got 1'):
+                       match=r'Expected 2 indices, got 1'):
         foo()
 
     @ti.kernel
@@ -626,7 +626,7 @@ def _test_indexing():
         print(vec[0, 0])
 
     with pytest.raises(TaichiCompilationError,
-                       match=r'Expected 1 indices, but got 2'):
+                       match=r'Expected 1 indices, got 2'):
         bar()
 
 
@@ -639,7 +639,7 @@ def _test_indexing_in_fields():
         print(f[None][0])
 
     with pytest.raises(TaichiCompilationError,
-                       match=r'Expected 2 indices, but got 1'):
+                       match=r'Expected 2 indices, got 1'):
         foo()
 
     g = ti.Vector.field(3, ti.f32, shape=())
@@ -650,7 +650,7 @@ def _test_indexing_in_fields():
         print(g[None][0, 0])
 
     with pytest.raises(TaichiCompilationError,
-                       match=r'Expected 1 indices, but got 2'):
+                       match=r'Expected 1 indices, got 2'):
         bar()
 
 
@@ -661,7 +661,7 @@ def _test_indexing_in_struct():
         print(s.a[0, 0])
 
     with pytest.raises(TaichiCompilationError,
-                       match=r'Expected 1 indices, but got 2'):
+                       match=r'Expected 1 indices, got 2'):
         foo()
 
     @ti.kernel
@@ -670,7 +670,7 @@ def _test_indexing_in_struct():
         print(s.m[0])
 
     with pytest.raises(TaichiCompilationError,
-                       match=r'Expected 2 indices, but got 1'):
+                       match=r'Expected 2 indices, got 1'):
         bar()
 
 
@@ -688,7 +688,7 @@ def _test_indexing_in_struct_field():
         print(s[None].v[0, 0])
 
     with pytest.raises(TaichiCompilationError,
-                       match=r'Expected 1 indices, but got 2'):
+                       match=r'Expected 1 indices, got 2'):
         foo()
 
     @ti.kernel
@@ -696,7 +696,7 @@ def _test_indexing_in_struct_field():
         print(s[None].m[0])
 
     with pytest.raises(TaichiCompilationError,
-                       match=r'Expected 2 indices, but got 1'):
+                       match=r'Expected 2 indices, got 1'):
         bar()
 
 
@@ -844,7 +844,7 @@ def test_local_matrix_index_check():
         print(mat[0])
 
     with pytest.raises(TaichiCompilationError,
-                       match=r'Expected 2 indices, but got 1'):
+                       match=r'Expected 2 indices, got 1'):
         foo()
 
     @ti.kernel
@@ -853,7 +853,7 @@ def test_local_matrix_index_check():
         print(vec[0, 0])
 
     with pytest.raises(TaichiCompilationError,
-                       match=r'Expected 1 indices, but got 2'):
+                       match=r'Expected 1 indices, got 2'):
         bar()
 
 

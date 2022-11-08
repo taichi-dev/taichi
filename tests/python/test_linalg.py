@@ -336,8 +336,7 @@ def test_init_matrix_from_vectors_deprecated():
             assert m4[0][j, i] == int(i + 3 * j + 1)
 
 
-@test_utils.test()
-def test_any_all():
+def _test_any_all():
     a = ti.Matrix.field(2, 2, dtype=ti.i32, shape=())
     b = ti.field(dtype=ti.i32, shape=())
     c = ti.field(dtype=ti.i32, shape=())
@@ -364,6 +363,16 @@ def test_any_all():
                 assert c[None] == 1
             else:
                 assert c[None] == 0
+
+
+@test_utils.test()
+def test_any_all():
+    _test_any_all()
+
+
+@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
+def test_any_all_real_matrix_scalarize():
+    _test_any_all()
 
 
 @test_utils.test()

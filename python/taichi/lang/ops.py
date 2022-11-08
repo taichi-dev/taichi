@@ -1500,14 +1500,6 @@ def min(*args):  # pylint: disable=W0622
     return min_impl(args[0], min(*args[1:]))
 
 
-def ti_any(a):
-    return a.any()
-
-
-def ti_all(a):
-    return a.all()
-
-
 __all__ = [
     "acos", "asin", "atan2", "atomic_and", "atomic_or", "atomic_xor",
     "atomic_max", "atomic_sub", "atomic_min", "atomic_add", "bit_cast",

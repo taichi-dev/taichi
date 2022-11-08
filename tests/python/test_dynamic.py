@@ -276,7 +276,9 @@ def _test_append_matrix():
     def make_list():
         for i in range(10):
             for j in range(20):
-                f[i].append(ti.Matrix([[i * j, i * j * 2], [i * j * 3, i * j * 4]], dt=ti.u8))
+                f[i].append(
+                    ti.Matrix([[i * j, i * j * 2], [i * j * 3, i * j * 4]],
+                              dt=ti.u8))
 
     make_list()
 
@@ -291,7 +293,10 @@ def test_append_matrix():
     _test_append_matrix()
 
 
-@test_utils.test(require=ti.extension.sparse, exclude=[ti.metal], real_matrix=True, real_matrix_scalarize=True)
+@test_utils.test(require=ti.extension.sparse,
+                 exclude=[ti.metal],
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
 def test_append_matrix_real_matrix():
     _test_append_matrix()
 
@@ -309,9 +314,10 @@ def _test_append_matrix_in_struct():
         for i in range(10):
             for j in range(20):
                 f[i].append(
-                    struct(i * j * ti.u64(10**10),
-                           ti.Matrix([[i * j, i * j * 2], [i * j * 3, i * j * 4]], dt=ti.u8),
-                           i * j * 5000))
+                    struct(
+                        i * j * ti.u64(10**10),
+                        ti.Matrix([[i * j, i * j * 2], [i * j * 3, i * j * 4]],
+                                  dt=ti.u8), i * j * 5000))
 
     make_list()
 
@@ -328,6 +334,10 @@ def test_append_matrix_in_struct():
     _test_append_matrix_in_struct()
 
 
-@test_utils.test(require=ti.extension.sparse, exclude=[ti.metal], real_matrix=True, real_matrix_scalarize=True)
+@test_utils.test(require=ti.extension.sparse,
+                 exclude=[ti.metal],
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
 def _test_append_matrix_in_struct_real_matrix():
-    _test_append_matrix_in_struct()  # Fails because Matrix expression has no attribute 'cast'
+    _test_append_matrix_in_struct(
+    )  # Fails because Matrix expression has no attribute 'cast'

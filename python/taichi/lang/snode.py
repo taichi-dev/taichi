@@ -371,7 +371,8 @@ def _get_flattened_ptrs(val):
         return ptrs
     if impl.current_cfg().real_matrix and isinstance(
             val, expr.Expr) and val.ptr.is_tensor():
-        return impl.get_runtime().prog.current_ast_builder().expand_expr([val.ptr])
+        return impl.get_runtime().prog.current_ast_builder().expand_expr(
+            [val.ptr])
     return [expr.Expr(val).ptr]
 
 

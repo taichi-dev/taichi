@@ -202,9 +202,9 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
     emit('(', expr->snode->get_node_type_name_hinted(), ", [");
     emit_vector(expr->indices.exprs);
     emit("]");
-    if (expr->value.expr) {
+    if (!expr->values.empty()) {
       emit(' ');
-      expr->value->accept(this);
+      emit_vector(expr->values);
     }
     emit(')');
   }

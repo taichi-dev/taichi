@@ -417,7 +417,7 @@ IVkImage create_image(VkDevice device,
   image->depth = image_info->extent.depth;
   image->mip_levels = image_info->mipLevels;
   image->array_layers = image_info->arrayLayers;
-  image->usage = alloc_info->usage;
+  image->usage = image_info->usage;
 
   VkResult res = vmaCreateImage(allocator, image_info, alloc_info,
                                 &image->image, &image->allocation, nullptr);

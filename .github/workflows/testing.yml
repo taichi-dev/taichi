@@ -108,7 +108,7 @@ jobs:
   build_and_test_cpu_linux:
     name: Build and Test linux (CPU)
     needs: check_files
-    timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 120 || 180 }}
+    timeout-minutes: 300
     strategy:
       matrix:
         include:
@@ -272,7 +272,7 @@ jobs:
             llvmVer : '15'
           - os: windows-2019
             llvmVer : '10'
-    timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 120 || 180 }}
+    timeout-minutes: 300
     runs-on: windows-2019
     permissions:
       packages: read
@@ -643,6 +643,6 @@ jobs:
         run: |
           . .github/workflows/scripts/common-utils.sh
           chown -R 1000:1000 .
-          ci-docker-run --name taichi-test-capi-headless-demo \
+          ci-docker-run-gpu --name taichi-test-capi-headless-demo \
             registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.6 \
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh build-and-test-headless-demo

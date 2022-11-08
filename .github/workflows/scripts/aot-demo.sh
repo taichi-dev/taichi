@@ -120,12 +120,21 @@ function build-and-test-headless-demo {
     # clear temporary test folder
     adb shell "rm -rf /data/local/tmp/*"
 
-    cd headless
+    pushd headless
     BINARIES=$(ls E*)
     for b in $BINARIES; do
         adb push $b /data/local/tmp
     done
+    popd # headless
     adb push $TAICHI_C_API_INSTALL_DIR/lib/libtaichi_c_api.so /data/local/tmp
+
+    pushd 0_tutorial_cgraph
+    adb push E0_tutorial_cgraph /data/local/tmp
+    popd # 0_tutorial_cgraph
+
+    pushd 0_tutorial_kernel
+    adb push E0_tutorial_kernel /data/local/tmp
+    popd # 0_tutorial_kernel
 
     popd # build
 
@@ -133,6 +142,12 @@ function build-and-test-headless-demo {
         adb push $dir /data/local/tmp
     done
 
+    # Run 0_tutorial_cgraph
+    adb shell "cd /data/local/tmp && LD_LIBRARY_PATH=\$(pwd) ./E0_tutorial_cgraph"
+    # Run 0_tutorial_kernel
+    adb shell "cd /data/local/tmp && LD_LIBRARY_PATH=\$(pwd) ./E0_tutorial_kernel"
+
+    # Run demos with headless-truth
     for b in $BINARIES; do
         adb shell "cd /data/local/tmp && LD_LIBRARY_PATH=\$(pwd) ./$b"
         adb pull /data/local/tmp/0001.bmp $b.bmp

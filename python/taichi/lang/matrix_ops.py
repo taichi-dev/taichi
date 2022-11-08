@@ -97,21 +97,23 @@ def determinant(mat):
     if static(shape[0] == 2):
         return mat[0, 0] * mat[1, 1] - mat[0, 1] * mat[1, 0]
     if static(shape[0] == 3):
-        return mat[0, 0] * (mat[1, 1] * mat[2, 2] - mat[2, 1] * mat[1, 2]) - mat[1, 0] * (
+        return mat[0, 0] * (
+            mat[1, 1] * mat[2, 2] - mat[2, 1] * mat[1, 2]) - mat[1, 0] * (
                 mat[0, 1] * mat[2, 2] - mat[2, 1] * mat[0, 2]) + mat[2, 0] * (
-                       mat[0, 1] * mat[1, 2] - mat[1, 1] * mat[0, 2])
+                    mat[0, 1] * mat[1, 2] - mat[1, 1] * mat[0, 2])
     if static(shape[0] == 4):
         det = mat[0, 0] * 0  # keep type
         for i in static(range(4)):
-            det += (-1)**i * (
-                    mat[i, 0] *
-                    (E(mat, i + 1, 1, 4) *
-                     (E(mat, i + 2, 2, 4) * E(mat, i + 3, 3, 4) -
-                      E(mat, i + 3, 2, 4) * E(mat, i + 2, 3, 4)) - E(mat, i + 2, 1, 4) *
-                     (E(mat, i + 1, 2, 4) * E(mat, i + 3, 3, 4) -
-                      E(mat, i + 3, 2, 4) * E(mat, i + 1, 3, 4)) + E(mat, i + 3, 1, 4) *
-                     (E(mat, i + 1, 2, 4) * E(mat, i + 2, 3, 4) -
-                      E(mat, i + 2, 2, 4) * E(mat, i + 1, 3, 4))))
+            det += (-1)**i * (mat[i, 0] *
+                              (E(mat, i + 1, 1, 4) *
+                               (E(mat, i + 2, 2, 4) * E(mat, i + 3, 3, 4) -
+                                E(mat, i + 3, 2, 4) * E(mat, i + 2, 3, 4)) -
+                               E(mat, i + 2, 1, 4) *
+                               (E(mat, i + 1, 2, 4) * E(mat, i + 3, 3, 4) -
+                                E(mat, i + 3, 2, 4) * E(mat, i + 1, 3, 4)) +
+                               E(mat, i + 3, 1, 4) *
+                               (E(mat, i + 1, 2, 4) * E(mat, i + 2, 3, 4) -
+                                E(mat, i + 2, 2, 4) * E(mat, i + 1, 3, 4))))
         return det
     # unreachable
     return None
@@ -125,20 +127,27 @@ def inverse(mat):
         return Matrix([[1.0 / mat[0, 0]]])
     inv_determinant = 1.0 / determinant(mat)
     if static(shape[0] == 2):
-        return inv_determinant * Matrix([[mat[1, 1], -mat[0, 1]], [-mat[1, 0], mat[0, 0]]])
+        return inv_determinant * Matrix([[mat[1, 1], -mat[0, 1]],
+                                         [-mat[1, 0], mat[0, 0]]])
     if static(shape[0] == 3):
         return inv_determinant * Matrix([[
-                E(mat, i + 1, j + 1, 3) * E(mat, i + 2, j + 2, 3) -
-                E(mat, i + 2, j + 1, 3) * E(mat, i + 1, j + 2, 3) for i in static(range(3))] for j in static(range(3))])
+            E(mat, i + 1, j + 1, 3) * E(mat, i + 2, j + 2, 3) -
+            E(mat, i + 2, j + 1, 3) * E(mat, i + 1, j + 2, 3)
+            for i in static(range(3))
+        ] for j in static(range(3))])
     if static(shape[0] == 4):
-        return inv_determinant * Matrix([[(-1)**(i + j) * ((
-                        E(mat, i + 1, j + 1, 4) *
-                        (E(mat, i + 2, j + 2, 4) * E(mat, i + 3, j + 3, 4) -
-                         E(mat, i + 3, j + 2, 4) * E(mat, i + 2, j + 3, 4)) - E(mat, i + 2, j + 1, 4) *
-                        (E(mat, i + 1, j + 2, 4) * E(mat, i + 3, j + 3, 4) -
-                         E(mat, i + 3, j + 2, 4) * E(mat, i + 1, j + 3, 4)) + E(mat, i + 3, j + 1, 4) *
-                        (E(mat, i + 1, j + 2, 4) * E(mat, i + 2, j + 3, 4) -
-                         E(mat, i + 2, j + 2, 4) * E(mat, i + 1, j + 3, 4)))) for i in static(range(4))] for j in static(range(4))])
+        return inv_determinant * Matrix([[(-1)**(i + j) * (
+            (E(mat, i + 1, j + 1, 4) *
+             (E(mat, i + 2, j + 2, 4) * E(mat, i + 3, j + 3, 4) -
+              E(mat, i + 3, j + 2, 4) * E(mat, i + 2, j + 3, 4)) -
+             E(mat, i + 2, j + 1, 4) *
+             (E(mat, i + 1, j + 2, 4) * E(mat, i + 3, j + 3, 4) -
+              E(mat, i + 3, j + 2, 4) * E(mat, i + 1, j + 3, 4)) +
+             E(mat, i + 3, j + 1, 4) *
+             (E(mat, i + 1, j + 2, 4) * E(mat, i + 2, j + 3, 4) -
+              E(mat, i + 2, j + 2, 4) * E(mat, i + 1, j + 3, 4))))
+                                          for i in static(range(4))]
+                                         for j in static(range(4))])
     # unreachable
     return None
 

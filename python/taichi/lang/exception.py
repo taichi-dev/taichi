@@ -19,6 +19,12 @@ class TaichiNameError(TaichiCompilationError, NameError):
     pass
 
 
+class TaichiIndexError(TaichiCompilationError, IndexError):
+    """Thrown when an index error is found during compilation.
+    """
+    pass
+
+
 class TaichiTypeError(TaichiCompilationError, TypeError):
     """Thrown when a type mismatch is found during compilation.
     """

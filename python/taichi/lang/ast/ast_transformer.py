@@ -13,12 +13,13 @@ from taichi.lang._ndrange import _Ndrange, ndrange
 from taichi.lang.ast.ast_transformer_utils import (Builder, LoopStatus,
                                                    ReturnStatus)
 from taichi.lang.ast.symbol_resolver import ASTResolver
-from taichi.lang.exception import TaichiSyntaxError, TaichiTypeError
+from taichi.lang.exception import (TaichiIndexError, TaichiSyntaxError,
+                                   TaichiTypeError)
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field
 from taichi.lang.impl import current_cfg
 from taichi.lang.matrix import Matrix, MatrixType, Vector, is_vector
-from taichi.lang.snode import append
+from taichi.lang.snode import append, deactivate
 from taichi.lang.util import is_taichi_class, to_taichi_type
 from taichi.types import (annotations, ndarray_type, primitive_types,
                           texture_type)
@@ -762,45 +763,92 @@ class ASTTransformer(Builder):
         return None
 
     @staticmethod
-    def build_Attribute(ctx, node):
-        if node.attr == "append" and isinstance(node.value, ast.Subscript):
-            x = build_stmt(ctx, node.value.value)
-            if not isinstance(x, Field) or x.parent(
-            ).ptr.type != _ti_core.SNodeType.dynamic:
-                raise TaichiSyntaxError(
-                    f"In Taichi scope the `append` method is only defined for dynamic SNodes, but {x} is encountered"
-                )
-            index = build_stmt(ctx, node.value.slice)
-            node.value.ptr = None
-            node.ptr = lambda val: append(x.parent(), index, val)
+    def build_attribute_if_is_dynamic_snode_method(ctx, node):
+        is_subscript = isinstance(node.value, ast.Subscript)
+        names = ("append", "deactivate")
+        if node.attr not in names:
+            return False
+        if is_subscript:
+            x = node.value.value.ptr
+            indices = node.value.slice.ptr
         else:
+            x = node.value.ptr
+            indices = []
+        if not isinstance(x, Field):
+            return False
+        if not x.parent().ptr.type == _ti_core.SNodeType.dynamic:
+            return False
+        field_dim = x.snode.ptr.num_active_indices()
+        indices_expr_group = make_expr_group(*indices)
+        index_dim = indices_expr_group.size()
+        if field_dim != index_dim + 1:
+            return False
+        if node.attr == "append":
+            node.ptr = lambda val: append(x.parent(), indices, val)
+        else:
+            node.ptr = lambda: deactivate(x.parent(), indices)
+        return True
+
+    @staticmethod
+    def build_Attribute(ctx, node):
+        # There are two valid cases for the methods of Dynamic SNode:
+        #
+        # 1. x[i, j].append (where the dimension of the field (3 in this case) is equal to one plus the number of the
+        # indices (2 in this case) )
+        #
+        # 2. x.append (where the dimension of the field is one, equal to x[()].append)
+        #
+        # For the first case, the AST (simplified) is like node = Attribute(value=Subscript(value=x, slice=[i, j]),
+        # attr="append"), when we build_stmt(node.value)(build the expression of the Subscript i.e. x[i, j]),
+        # it should build the expression of node.value.value (i.e. x) and node.value.slice (i.e. [i, j]), and raise a
+        # TaichiIndexError because the dimension of the field is not equal to the number of the indices. Therefore,
+        # when we meet the error, we can detect whether it is a method of Dynamic SNode and build the expression if
+        # it is by calling build_attribute_if_is_dynamic_snode_method. If we find that it is not a method of Dynamic
+        # SNode, we raise the error again.
+        #
+        # For the second case, the AST (simplified) is like node = Attribute(value=x, attr="append"), and it does not
+        # raise error when we build_stmt(node.value). Therefore, when we do not meet the error, we can also detect
+        # whether it is a method of Dynamic SNode and build the expression if it is by calling
+        # build_attribute_if_is_dynamic_snode_method. If we find that it is not a method of Dynamic SNode,
+        # we continue to process it as a normal attribute node.
+        try:
             build_stmt(ctx, node.value)
-            if isinstance(node.value.ptr,
-                          Expr) and not hasattr(node.value.ptr, node.attr):
-                if node.attr in Matrix._swizzle_to_keygroup:
-                    keygroup = Matrix._swizzle_to_keygroup[node.attr]
-                    attr_len = len(node.attr)
-                    if attr_len == 1:
-                        node.ptr = Expr(
-                            _ti_core.subscript(
-                                node.value.ptr.ptr,
-                                make_expr_group(keygroup.index(node.attr)),
-                                impl.get_runtime().get_current_src_info()))
-                    else:
-                        node.ptr = Expr(
-                            _ti_core.subscript_with_multiple_indices(
-                                node.value.ptr.ptr, [
-                                    make_expr_group(keygroup.index(ch))
-                                    for ch in node.attr
-                                ], (attr_len, ),
-                                impl.get_runtime().get_current_src_info()))
+        except TaichiIndexError as e:
+            node.value.ptr = None
+            if ASTTransformer.build_attribute_if_is_dynamic_snode_method(
+                    ctx, node):
+                return node.ptr
+            raise e
+        if ASTTransformer.build_attribute_if_is_dynamic_snode_method(
+                ctx, node):
+            return node.ptr
+
+        if isinstance(node.value.ptr,
+                      Expr) and not hasattr(node.value.ptr, node.attr):
+            if node.attr in Matrix._swizzle_to_keygroup:
+                keygroup = Matrix._swizzle_to_keygroup[node.attr]
+                attr_len = len(node.attr)
+                if attr_len == 1:
+                    node.ptr = Expr(
+                        _ti_core.subscript(
+                            node.value.ptr.ptr,
+                            make_expr_group(keygroup.index(node.attr)),
+                            impl.get_runtime().get_current_src_info()))
                 else:
-                    from taichi.lang import \
-                        matrix_ops as tensor_ops  # pylint: disable=C0415
-                    node.ptr = getattr(tensor_ops, node.attr)
-                    setattr(node, 'caller', node.value.ptr)
+                    node.ptr = Expr(
+                        _ti_core.subscript_with_multiple_indices(
+                            node.value.ptr.ptr, [
+                                make_expr_group(keygroup.index(ch))
+                                for ch in node.attr
+                            ], (attr_len, ),
+                            impl.get_runtime().get_current_src_info()))
             else:
-                node.ptr = getattr(node.value.ptr, node.attr)
+                from taichi.lang import \
+                    matrix_ops as tensor_ops  # pylint: disable=C0415
+                node.ptr = getattr(tensor_ops, node.attr)
+                setattr(node, 'caller', node.value.ptr)
+        else:
+            node.ptr = getattr(node.value.ptr, node.attr)
         return node.ptr
 
     @staticmethod

@@ -50,7 +50,7 @@ if ("$env:TI_WANTED_ARCHS".Contains("cpu")) {
 if ("$env:TI_WANTED_ARCHS".Contains("cuda")) {
   # TODO relax this when torch supports 3.10
   Invoke pip install "torch==1.10.1+cu113; python_version < '3.10'" -f https://download.pytorch.org/whl/cu113/torch_stable.html
-  Invoke python tests/run_tests.py -vr2 -t4 -k "not torch and not paddle" -m "not run_in_serial" -a cuda
+  Invoke python tests/run_tests.py -vr2 -t8 -k "not torch and not paddle" -m "not run_in_serial" -a cuda
   Invoke python tests/run_tests.py -vr2 -t1 -k "not torch and not paddle" -m "run_in_serial" -a cuda
 }
 if ("$env:TI_WANTED_ARCHS".Contains("opengl")) {

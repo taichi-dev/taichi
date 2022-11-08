@@ -6,8 +6,23 @@ import taichi as ti
 
 
 @pytest.fixture(autouse=True)
-def wanted_arch(req_arch, req_options):
+def wanted_arch(request, req_arch, req_options):
     if req_arch is not None:
+        if req_arch == ti.cuda:
+            if not request.node.get_closest_marker('run_in_serial'):
+                # Optimization only apply to non-serial tests, since serial tests
+                # are picked out exactly because of extensive resource consumption.
+                # Separation of serial/non-serial tests is done by the test runner
+                # through `-m run_in_serial` / `-m not run_in_serial`.
+                req_options = {
+                    'default_gpu_block_dim': 32,
+                    'saturating_grid_dim': 8,
+                    'device_memory_GB': 0.4,
+                    **req_options
+                }
+            else:
+                # Serial tests run without aggressive resource optimization
+                req_options = {'device_memory_GB': 1, **req_options}
         ti.init(arch=req_arch, enable_fallback=False, **req_options)
     yield
     if req_arch is not None:

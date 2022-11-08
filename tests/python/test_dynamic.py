@@ -206,25 +206,6 @@ def test_dynamic_activate():
 
 
 @test_utils.test(require=ti.extension.sparse, exclude=[ti.metal])
-def test_append_vec():
-    x = ti.Vector.field(3, ti.f32)
-    block = ti.root.dense(ti.i, 16)
-    pixel = block.dynamic(ti.j, 16)
-    pixel.place(x)
-
-    @ti.kernel
-    def make_lists():
-        for i in range(5):
-            for j in range(i):
-                x_vec3 = ti.math.vec3(i, j, j * j)
-                ti.append(x.parent(), i, x_vec3)
-
-    with pytest.raises(TaichiCompilationError,
-                       match=r'append only supports appending a scalar value'):
-        make_lists()
-
-
-@test_utils.test(require=ti.extension.sparse, exclude=[ti.metal])
 def test_append_u8():
     x = ti.field(ti.u8)
     pixel = ti.root.dynamic(ti.j, 20)

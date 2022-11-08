@@ -209,7 +209,7 @@ jobs:
           PROJECT_NAME: taichi
           TAICHI_CMAKE_ARGS: >-
             -DTI_WITH_OPENGL:BOOL=ON
-            -DTI_WITH_CC:BOOL=OFF
+            -DTI_WITH_CC:BOOL=ON
             -DTI_WITH_VULKAN:BOOL=ON
             -DTI_BUILD_TESTS:BOOL=ON
             -DTI_WITH_C_API=ON

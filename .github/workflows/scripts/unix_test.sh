@@ -97,7 +97,7 @@ else
     # Split per arch to increase parallelism for linux GPU tests
     if [[ $TI_WANTED_ARCHS == *"cuda"* ]]; then
         # FIXME: suddenly tests exibit OOM on nvidia driver 470 + RTX2060 cards, lower parallelism by 1 (4->3)
-        python3 tests/run_tests.py -vr2 -t3 -k "not torch and not paddle" -m "not run_in_serial" -a cuda
+        python3 tests/run_tests.py -vr2 -t8 -k "not torch and not paddle" -m "not run_in_serial" -a cuda
         python3 tests/run_tests.py -vr2 -t1 -k "not torch and not paddle" -m "run_in_serial" -a cuda
     fi
     if [[ $TI_WANTED_ARCHS == *"cpu"* ]]; then

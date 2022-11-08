@@ -791,6 +791,26 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_Attribute(ctx, node):
+        # There are two valid cases for the methods of Dynamic SNode:
+        #
+        # 1. x[i, j].append (where the dimension of the field (3 in this case) is equal to one plus the number of the
+        # indices (2 in this case) )
+        #
+        # 2. x.append (where the dimension of the field is one, equal to x[()].append)
+        #
+        # For the first case, the AST (simplified) is like node = Attribute(value=Subscript(value=x, slice=[i, j]),
+        # attr="append"), when we build_stmt(node.value)(build the expression of the Subscript i.e. x[i, j]),
+        # it should build the expression of node.value.value (i.e. x) and node.value.slice (i.e. [i, j]), and raise a
+        # TaichiIndexError because the dimension of the field is not equal to the number of the indices. Therefore,
+        # when we meet the error, we can detect whether it is a method of Dynamic SNode and build the expression if
+        # it is by calling build_attribute_if_is_dynamic_snode_method. If we find that it is not a method of Dynamic
+        # SNode, we raise the error again.
+        #
+        # For the second case, the AST (simplified) is like node = Attribute(value=x, attr="append"), and it does not
+        # raise error when we build_stmt(node.value). Therefore, when we do not meet the error, we can also detect
+        # whether it is a method of Dynamic SNode and build the expression if it is by calling
+        # build_attribute_if_is_dynamic_snode_method. If we find that it is not a method of Dynamic SNode,
+        # we continue to process it as a normal attribute node.
         try:
             build_stmt(ctx, node.value)
         except TaichiIndexError as e:

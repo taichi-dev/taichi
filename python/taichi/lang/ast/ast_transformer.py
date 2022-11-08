@@ -13,7 +13,8 @@ from taichi.lang._ndrange import _Ndrange, ndrange
 from taichi.lang.ast.ast_transformer_utils import (Builder, LoopStatus,
                                                    ReturnStatus)
 from taichi.lang.ast.symbol_resolver import ASTResolver
-from taichi.lang.exception import TaichiSyntaxError, TaichiTypeError, TaichiIndexError
+from taichi.lang.exception import (TaichiIndexError, TaichiSyntaxError,
+                                   TaichiTypeError)
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field
 from taichi.lang.impl import current_cfg
@@ -774,11 +775,9 @@ class ASTTransformer(Builder):
             indices = []
         if not isinstance(x, Field):
             return False
-        if not x.parent(
-        ).ptr.type == _ti_core.SNodeType.dynamic:
+        if not x.parent().ptr.type == _ti_core.SNodeType.dynamic:
             return False
-        snode = x._get_field_members()[0].ptr.snode()
-        field_dim = snode.num_active_indices()
+        field_dim = x.snode.ptr.num_active_indices()
         indices_expr_group = make_expr_group(*indices)
         index_dim = indices_expr_group.size()
         if field_dim != index_dim + 1:
@@ -815,10 +814,12 @@ class ASTTransformer(Builder):
             build_stmt(ctx, node.value)
         except TaichiIndexError as e:
             node.value.ptr = None
-            if ASTTransformer.build_attribute_if_is_dynamic_snode_method(ctx, node):
+            if ASTTransformer.build_attribute_if_is_dynamic_snode_method(
+                    ctx, node):
                 return node.ptr
             raise e
-        if ASTTransformer.build_attribute_if_is_dynamic_snode_method(ctx, node):
+        if ASTTransformer.build_attribute_if_is_dynamic_snode_method(
+                ctx, node):
             return node.ptr
 
         if isinstance(node.value.ptr,

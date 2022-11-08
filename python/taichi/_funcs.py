@@ -49,41 +49,6 @@ def randn(dt=None):
     return _randn(dt)
 
 
-@pyfunc
-def _matrix_cross3d(self, other):
-    return matrix.Matrix([
-        self[1] * other[2] - self[2] * other[1],
-        self[2] * other[0] - self[0] * other[2],
-        self[0] * other[1] - self[1] * other[0],
-    ])
-
-
-@pyfunc
-def _matrix_cross2d(self, other):
-    return self[0] * other[1] - self[1] * other[0]
-
-
-@pyfunc
-def _vector_outer_product(self, other):
-    """Perform the outer product with the input Vector.
-
-    Args:
-        other (:class:`~taichi.lang.matrix.Vector`): The input Vector to perform the outer product.
-
-    Returns:
-        :class:`~taichi.lang.matrix.Matrix`: The outer product result (Matrix) of the two Vectors.
-
-    """
-    impl.static(
-        impl.static_assert(self.m == 1 and isinstance(self, Vector),
-                           "lhs for outer_product is not a vector"))
-    impl.static(
-        impl.static_assert(other.m == 1 and isinstance(other, Vector),
-                           "rhs for outer_product is not a vector"))
-    return matrix.Matrix([[self[i] * other[j] for j in range(other.n)]
-                          for i in range(self.n)])
-
-
 @func
 def polar_decompose2d(A, dt):
     """Perform polar decomposition (A=UP) for 2x2 matrix.

@@ -277,15 +277,10 @@ def dot(vec_x, vec_y):
     return sum(vec_x * vec_y)
 
 
-@preconditions(
-    arg_at(0, assert_vector("lhs for outer_product is not a vector")),
-    arg_at(1, assert_vector("rhs for outer_product is not a vector")),
-    same_shapes,
-    arg_at(
-        0,
-        dim_lt(
-            0, 4,
-            "Cross product is only supported between pairs of 2D/3D vectors")))
+@preconditions(arg_at(0, assert_vector("lhs for cross is not a vector")),
+               arg_at(1, assert_vector("rhs for cross is not a vector")),
+               same_shapes,
+               arg_at(0, dim_lt(0, 4)))
 @pyfunc
 def cross(vec_x, vec_y):
     shape = static(vec_x.get_shape())

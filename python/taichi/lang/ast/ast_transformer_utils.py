@@ -24,7 +24,6 @@ class Builder:
             with impl.get_runtime().src_info_guard(info):
                 return method(ctx, node)
         except Exception as e:
-            raise e
             if ctx.raised or not isinstance(node, (ast.stmt, ast.expr)):
                 raise e.with_traceback(None)
             ctx.raised = True

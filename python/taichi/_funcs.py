@@ -1,8 +1,8 @@
 import math
 
-from taichi.lang import impl, matrix, ops
+from taichi.lang import impl, ops
 from taichi.lang.impl import expr_init, get_runtime, grouped, static
-from taichi.lang.kernel_impl import func, pyfunc
+from taichi.lang.kernel_impl import func
 from taichi.lang.matrix import Matrix, Vector
 from taichi.types import f32, f64
 from taichi.types.annotations import template

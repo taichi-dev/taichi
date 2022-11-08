@@ -172,25 +172,6 @@ jobs:
           path: dist/*
           retention-days: 7
 
-      - name: Test
-        shell: pwsh
-        if: needs.check_files.outputs.run_job == 'true'
-        run: |
-          . .github/workflows/scripts/common-utils.ps1
-          CIDockerRun `
-            ghcr.io/taichi-dev/taichidev-cpu-windows:v0.0.2 `
-            .github/workflows/scripts/win_test.ps1 -libsDir X:/
-        env:
-          TI_WANTED_ARCHS: cpu
-
-      - name: Save wheel if test failed
-        if: failure() && steps.build_and_test.conclusion == 'failure'
-        uses: actions/upload-artifact@v3
-        with:
-          name: broken-wheel
-          path: dist/*
-          retention-days: 7
-
   build_and_test_gpu_linux:
     name: Build and Test (GPU)
     needs: check_files

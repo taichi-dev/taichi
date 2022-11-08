@@ -110,6 +110,7 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_Assign(ctx, node):
+        node.ptr = None
         build_stmt(ctx, node.value)
 
         is_static_assign = isinstance(
@@ -539,6 +540,7 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_FunctionDef(ctx, node):
+        node.ptr = None
         if ctx.visited_funcdef:
             raise TaichiSyntaxError(
                 f"Function definition is not allowed in 'ti.{'kernel' if ctx.is_kernel else 'func'}'."
@@ -704,6 +706,7 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_Return(ctx, node):
+        node.ptr = None
         if not ctx.is_real_function:
             if ctx.is_in_non_static_control_flow():
                 raise TaichiSyntaxError(
@@ -753,6 +756,7 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_Module(ctx, node):
+        node.ptr = None
         with ctx.variable_scope_guard():
             # Do NOT use |build_stmts| which inserts 'del' statements to the
             # end and deletes parameters passed into the module
@@ -1235,6 +1239,7 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_For(ctx, node):
+        node.ptr = None
         if node.orelse:
             raise TaichiSyntaxError(
                 "'else' clause for 'for' not supported in Taichi kernels")
@@ -1289,6 +1294,7 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_While(ctx, node):
+        node.ptr = None
         if node.orelse:
             raise TaichiSyntaxError(
                 "'else' clause for 'while' not supported in Taichi kernels")
@@ -1309,6 +1315,7 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_If(ctx, node):
+        node.ptr = None
         build_stmt(ctx, node.test)
         is_static_if = (ASTTransformer.get_decorator(ctx,
                                                      node.test) == "static")
@@ -1318,7 +1325,7 @@ class ASTTransformer(Builder):
                 build_stmts(ctx, node.body)
             else:
                 build_stmts(ctx, node.orelse)
-            return node
+            return None
 
         with ctx.non_static_if_guard(node):
             impl.begin_frontend_if(ctx.ast_builder, node.test.ptr)
@@ -1332,6 +1339,7 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_Expr(ctx, node):
+        node.ptr = None
         build_stmt(ctx, node.value)
         if not isinstance(node.value, ast.Call):
             return None
@@ -1424,6 +1432,7 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_Assert(ctx, node):
+        node.ptr = None
         extra_args = []
         if node.msg is not None:
             if ASTTransformer._is_string_mod_args(node.msg):
@@ -1451,6 +1460,7 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_Break(ctx, node):
+        node.ptr = None
         if ctx.is_in_static_for():
             nearest_non_static_if: ast.If = ctx.current_loop_scope(
             ).nearest_non_static_if
@@ -1466,6 +1476,7 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_Continue(ctx, node):
+        node.ptr = None
         if ctx.is_in_static_for():
             nearest_non_static_if: ast.If = ctx.current_loop_scope(
             ).nearest_non_static_if
@@ -1481,6 +1492,7 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_Pass(ctx, node):
+        node.ptr = None
         return None
 
 

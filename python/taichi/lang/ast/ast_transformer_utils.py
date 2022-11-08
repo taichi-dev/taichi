@@ -19,6 +19,8 @@ class Builder:
             if method is None:
                 error_msg = f'Unsupported node "{node.__class__.__name__}"'
                 raise TaichiSyntaxError(error_msg)
+            if hasattr(node, "ptr"):
+                return node.ptr
             info = ctx.get_pos_info(node) if isinstance(
                 node, (ast.stmt, ast.expr)) else ""
             with impl.get_runtime().src_info_guard(info):

@@ -549,12 +549,12 @@ class ScalarizePointers : public BasicStmtVisitor {
       stmt->replace_all_usages_with(scalarized_alloca_stmt)
   */
   void visit(MatrixPtrStmt *stmt) override {
-    if (stmt->origin->is<AllocaStmt>() &&
-        is_alloca_scalarizable(stmt->origin->cast<AllocaStmt>())) {
+    if (stmt->origin->is<AllocaStmt>()) {
       auto alloca_stmt = stmt->origin->cast<AllocaStmt>();
       auto tensor_type =
           alloca_stmt->ret_type.ptr_removed()->cast<TensorType>();
-      if (tensor_type) {
+      TI_ASSERT(tensor_type != nullptr);
+      if (is_alloca_scalarizable(alloca_stmt)) {
         int num_elements = tensor_type->get_num_elements();
         TI_ASSERT(scalarized_local_tensor_map_.count(alloca_stmt));
 

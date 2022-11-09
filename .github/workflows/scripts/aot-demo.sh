@@ -43,6 +43,10 @@ function build-and-smoke-test-android-aot-demo {
 function prepare-unity-build-env {
     cd taichi
 
+    pushd Taichi-UnityExample
+    python scripts/implicit_fem.cgraph.py --aot
+    popd
+
     # Dependencies
     git clone --reference-if-able /var/lib/git-cache -b upgrade-modules2 https://github.com/taichi-dev/Taichi-UnityExample
 
@@ -63,14 +67,7 @@ function prepare-unity-build-env {
 }
 
 function build-unity-demo {
-    pushd taichi
-    setup_python
-    popd
-
     cd taichi
-    pushd Taichi-UnityExample
-    python scripts/implicit_fem.cgraph.py --aot
-    popd
     mkdir -p Taichi-UnityExample/Assets/Editor
     cp -a /UnityBuilderAction Taichi-UnityExample/Assets/Editor/
     unity-editor \

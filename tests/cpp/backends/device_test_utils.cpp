@@ -1,8 +1,13 @@
 #include "taichi/program/ndarray.h"
+#include "taichi/system/memory_pool.h"
+#include "taichi/ir/ir_builder.h"
 
 #include "tests/cpp/backends/device_test_utils.h"
+#include "tests/cpp/program/test_program.h"
 
 namespace device_test_utils {
+
+using namespace taichi::lang;
 
 void test_memory_allocation(taichi::lang::Device *device) {
   taichi::lang::Device::AllocParams params;
@@ -55,4 +60,14 @@ void test_view_devalloc_as_ndarray(taichi::lang::Device *device_) {
   device_->dealloc_memory(devalloc_arr_);
 }
 
+void test_program(taichi::lang::ProgramImpl* program, taichi::Arch arch) {
+  TestProgram test_prog;
+  test_prog.setup();
+
+  IRBuilder builder;
+  auto block = builder.extract_ir();
+  test_prog.prog()->this_thread_config().arch = arch;
+  auto ker = std::make_unique<taichi::lang::Kernel>(*test_prog.prog(), std::move(block));
+  program->compile(ker.get(), nullptr);
+}
 };  // namespace device_test_utils

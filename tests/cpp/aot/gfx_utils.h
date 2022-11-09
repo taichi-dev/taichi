@@ -16,8 +16,6 @@ namespace aot_test_utils {
 [[maybe_unused]] static void
 load_devalloc(taichi::lang::DeviceAllocation &alloc, void *data, size_t size);
 
-void view_devalloc_as_ndarray(Device *device_);
-
 [[maybe_unused]] void run_cgraph1(Arch arch, taichi::lang::Device *device_);
 
 [[maybe_unused]] void run_cgraph2(Arch arch, taichi::lang::Device *device_);

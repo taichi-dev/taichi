@@ -2,7 +2,7 @@ import numbers
 
 import taichi.lang.ops as ops_mod
 from taichi.lang.expr import Expr
-from taichi.lang.impl import static
+from taichi.lang.impl import current_cfg, get_runtime, static
 from taichi.lang.kernel_impl import func, pyfunc
 from taichi.lang.matrix import Matrix, Vector
 from taichi.lang.matrix_ops_utils import (Or, arg_at, assert_list,
@@ -55,18 +55,25 @@ def _reduce(mat, fun: template()):
         foreach(
             Or(assert_vector(),
                assert_list,
-               msg="Cols/rows must be a list of lists, or a list of vectors")),
-        same_shapes))
+               msg="Cols/rows must be a list of lists, or a list of vectors")))
+)
 def rows(rows):  # pylint: disable=W0621
     if isinstance(rows[0], (Matrix, Expr)):
         shape = rows[0].get_shape()
         assert len(shape) == 1, "Rows must be a list of vectors"
+
+        for i, row in enumerate(rows):
+            ast_builder = get_runtime().prog.current_ast_builder()
+            if current_cfg().real_matrix and isinstance(
+                    row, Expr) and row.is_tensor():
+                rows[i] = [Expr(x) for x in ast_builder.expand_expr([row.ptr])]
 
         @pyfunc
         def _rows():
             return Matrix([[row[i] for i in range(shape[0])] for row in rows])
 
         return _rows()
+
     if isinstance(rows[0], list):
 
         @pyfunc

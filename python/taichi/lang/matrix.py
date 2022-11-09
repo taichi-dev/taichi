@@ -1312,29 +1312,8 @@ class Matrix(TaichiOperations):
             >>> test()
             [[1, 2, 3], [4, 5, 6]]
         """
-        if isinstance(rows[0], Matrix):
-            for row in rows:
-                assert row.m == 1, "Inputs must be vectors, i.e. m == 1"
-                assert row.n == rows[
-                    0].n, "Input vectors must share the same shape"
-            # l-value copy:
-            return Matrix([[row(i) for i in range(row.n)] for row in rows])
-
-        for i, row in enumerate(rows):
-            ast_builder = impl.get_runtime().prog.current_ast_builder()
-            if impl.current_cfg().real_matrix and isinstance(row, impl.Expr):
-                rows[i] = [
-                    impl.Expr(x) for x in ast_builder.expand_expr([row.ptr])
-                ]
-
-        if isinstance(rows[0], list):
-            for row in rows:
-                assert len(row) == len(
-                    rows[0]), "Input lists share the same shape"
-            # l-value copy:
-            return Matrix([[x for x in row] for row in rows])
-        raise Exception(
-            "Cols/rows must be a list of lists, or a list of vectors")
+        from taichi.lang import matrix_ops  # pylint: disable=C0415
+        return matrix_ops.rows(rows)
 
     @staticmethod
     def cols(cols):
@@ -1358,7 +1337,8 @@ class Matrix(TaichiOperations):
             >>> test()
             [[1, 4], [2, 5], [3, 6]]
         """
-        return Matrix.rows(cols).transpose()
+        from taichi.lang import matrix_ops  # pylint: disable=C0415
+        return matrix_ops.cols(cols)
 
     def __hash__(self):
         # TODO: refactor KernelTemplateMapper

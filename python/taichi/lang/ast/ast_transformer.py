@@ -1161,15 +1161,10 @@ class ASTTransformer(Builder):
                 impl.begin_frontend_struct_for(ctx.ast_builder, expr_group,
                                                loop_var)
                 if impl.current_cfg().real_matrix:
-                    if len(loop_indices) > 1:
-                        ctx.create_variable(
-                            target,
-                            matrix.make_matrix(loop_indices,
-                                               dt=primitive_types.i32))
-                    else:
-                        ctx.create_variable(
-                            target,
-                            ti_ops.cast(loop_indices[0], primitive_types.i32))
+                    ctx.create_variable(
+                        target,
+                        matrix.make_matrix(loop_indices,
+                                           dt=primitive_types.i32))
                 else:
                     ctx.create_variable(
                         target,

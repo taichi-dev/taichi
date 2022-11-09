@@ -162,20 +162,20 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
 
     has_slice = False
 
-    if len(_indices) == 1 and isinstance(_indices[0], Expr):
-        indices = tuple(ast_builder.expand_expr([ind.ptr for ind in _indices]))
-    else:
-        flattened_indices = []
-        for _index in _indices:
-            if is_taichi_class(_index):
-                ind = _index.entries
-            elif isinstance(_index, slice):
-                ind = [_index]
-                has_slice = True
-            else:
-                ind = [_index]
-            flattened_indices += ind
-        indices = tuple(flattened_indices)
+    flattened_indices = []
+    for _index in _indices:
+        if is_taichi_class(_index):
+            ind = _index.entries
+        elif isinstance(_index, slice):
+            ind = [_index]
+            has_slice = True
+        elif isinstance(_index, Expr) and _index.is_tensor():
+            # Expand Expr with TensorType return
+            ind = ast_builder.expand_expr([_index.ptr])
+        else:
+            ind = [_index]
+        flattened_indices += ind
+    indices = tuple(flattened_indices)
 
     if len(indices) == 1 and indices[0] is None:
         indices = ()

@@ -1157,7 +1157,6 @@ class ASTTransformer(Builder):
                 loop_var = build_stmt(ctx, node.iter)
                 loop_indices = expr.make_var_list(size=len(loop_var.shape),
                                                   ast_builder=ctx.ast_builder)
-
                 expr_group = expr.make_expr_group(loop_indices)
                 impl.begin_frontend_struct_for(ctx.ast_builder, expr_group,
                                                loop_var)

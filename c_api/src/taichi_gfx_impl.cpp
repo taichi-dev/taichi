@@ -13,6 +13,17 @@ TiAotModule GfxRuntime::load_aot_module(const char *module_path) {
   if (aot_module->is_corrupted()) {
     return TI_NULL_HANDLE;
   }
+
+  const taichi::lang::DeviceCapabilityConfig& current_devcaps = params.runtime->get_ti_device()->get_current_caps();
+  const taichi::lang::DeviceCapabilityConfig& required_devcaps = aot_module->get_required_caps();
+  for (const auto& pair : required_devcaps.devcaps) {
+    uint32_t current_version = current_devcaps.get(pair.first);
+    uint32_t required_version = pair.second;
+    if (current_version == required_version) {
+      ti_set_last_error(TI_ERROR_INCOMPATIBLE_MODULE, taichi::lang::to_string(pair.first).c_str());
+    }
+  }
+
   size_t root_size = aot_module->get_root_size();
   params.runtime->add_root_buffer(root_size);
   return (TiAotModule)(new AotModule(*this, std::move(aot_module)));

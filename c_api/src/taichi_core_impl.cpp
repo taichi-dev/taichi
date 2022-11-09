@@ -189,6 +189,40 @@ void ti_destroy_runtime(TiRuntime runtime) {
   TI_CAPI_TRY_CATCH_END();
 }
 
+void ti_get_runtime_capabilities(TiRuntime runtime,
+                                 uint32_t *capability_count,
+                                 TiCapabilityLevelInfo *capabilities) {
+  TI_CAPI_TRY_CATCH_BEGIN();
+  TI_CAPI_ARGUMENT_NULL(runtime);
+
+
+  Runtime* runtime2 = (Runtime *)runtime;
+  const taichi::lang::DeviceCapabilityConfig& devcaps = runtime2->get().get_current_caps();
+
+  if (capability_count == nullptr) {
+    return;
+  }
+
+  *capability_count = std::min<uint32_t>(devcaps.to_inner().size(), *capability_count);
+
+  if (capabilities == nullptr) {
+    return;
+  }
+
+  auto pos = devcaps.to_inner().begin();
+  auto end = devcaps.to_inner().end();
+  for (size_t i = 0; i < *capability_count; ++i) {
+    if (pos == end) {
+      break;
+    }
+    capabilities[i].capability = (TiCapability)(uint32_t)pos->first;
+    capabilities[i].level = pos->second;
+    ++pos;
+  }
+
+  TI_CAPI_TRY_CATCH_END();
+}
+
 TiMemory ti_allocate_memory(TiRuntime runtime,
                             const TiMemoryAllocateInfo *create_info) {
   TiMemory out = TI_NULL_HANDLE;

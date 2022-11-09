@@ -94,6 +94,11 @@ class TI_DLL_EXPORT Module {
     TI_NOT_IMPLEMENTED;
   }
 
+  virtual const DeviceCapabilityConfig& get_required_caps() const {
+    static DeviceCapabilityConfig default_cfg;
+    return default_cfg;
+  }
+
   inline bool is_corrupted() const {
     return is_corrupted_;
   }

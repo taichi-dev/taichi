@@ -23,7 +23,8 @@ void CompiledGraph::run(
       TI_ERROR_IF(found == args.end(), "Missing runtime value for {}",
                   symbolic_arg.name);
       const aot::IValue &ival = found->second;
-      if (ival.tag == aot::ArgKind::kNdarray) {
+      if (symbolic_arg.tag == aot::ArgKind::kNdarray) {
+        TI_ASSERT(ival.tag == aot::ArgKind::kNdarray);
         Ndarray *arr = reinterpret_cast<Ndarray *>(ival.val);
 
         TI_ERROR_IF(arr->get_element_shape() != symbolic_arg.element_shape,
@@ -65,12 +66,17 @@ void CompiledGraph::run(
                     arr_primitive_dtype.to_string());
         ctx.set_arg_ndarray(i, arr->get_device_allocation_ptr_as_int(),
                             arr->shape);
-      } else if (ival.tag == aot::ArgKind::kScalar) {
+      } else if (symbolic_arg.tag == aot::ArgKind::kScalar ||
+                 symbolic_arg.tag == aot::ArgKind::kMatrix) {
+        TI_ASSERT(ival.tag == aot::ArgKind::kScalar);
+        // Matrix args are flattened so they're same as scalars.
         ctx.set_arg(i, ival.val);
-      } else if (ival.tag == aot::ArgKind::kTexture) {
+      } else if (symbolic_arg.tag == aot::ArgKind::kTexture) {
+        TI_ASSERT(ival.tag == aot::ArgKind::kTexture);
         Texture *tex = reinterpret_cast<Texture *>(ival.val);
         ctx.set_arg_texture(i, tex->get_device_allocation_ptr_as_int());
-      } else if (ival.tag == aot::ArgKind::kRWTexture) {
+      } else if (symbolic_arg.tag == aot::ArgKind::kRWTexture) {
+        TI_ASSERT(ival.tag == aot::ArgKind::kTexture);
         Texture *tex = reinterpret_cast<Texture *>(ival.val);
         ctx.set_arg_rw_texture(i, tex->get_device_allocation_ptr_as_int(),
                                tex->get_size());

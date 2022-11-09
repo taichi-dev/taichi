@@ -401,7 +401,7 @@ void export_lang(py::module &m) {
              TI_ERROR_IF(!arch_is_cpu(program->this_thread_config().arch),
                          "SparseMatrix Builder only supports CPU for now.");
              return SparseMatrixBuilder(n, m, max_num_entries, dtype,
-                                        storage_format);
+                                        storage_format, program);
            })
       .def("create_sparse_matrix",
            [](Program *program, int n, int m, DataType dtype,
@@ -1204,6 +1204,8 @@ void export_lang(py::module &m) {
   // Sparse Matrix
   py::class_<SparseMatrixBuilder>(m, "SparseMatrixBuilder")
       .def("print_triplets", &SparseMatrixBuilder::print_triplets)
+      .def("print_ndarray_data", &SparseMatrixBuilder::print_ndarray_data)
+      .def("get_ndarray_data_ptr", &SparseMatrixBuilder::get_ndarray_data_ptr)
       .def("build", &SparseMatrixBuilder::build)
       .def("get_addr", [](SparseMatrixBuilder *mat) { return uint64(mat); });
 

@@ -36,7 +36,14 @@ i32 insert_triplet_f32(RuntimeContext *context,
                        int i,
                        int j,
                        float value) {
-  ATOMIC_INSERT(int32);
+  auto runtime = context->runtime;
+  auto base_ptr = reinterpret_cast<int32 *>(base_ptr_);
+  int32 *num_triplets = base_ptr;
+  auto data_base_ptr = base_ptr + 1;
+  auto triplet_id = atomic_add_i32(num_triplets, 1);
+  data_base_ptr[triplet_id * 3] = i;
+  data_base_ptr[triplet_id * 3 + 1] = j;
+  data_base_ptr[triplet_id * 3 + 2] = taichi_union_cast<float32>(value);
   return 0;
 }
 

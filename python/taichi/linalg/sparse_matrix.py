@@ -277,9 +277,20 @@ class SparseMatrixBuilder:
         """Get the address of the sparse matrix"""
         return self.ptr.get_addr()
 
+    def _get_ndarray_addr(self):
+        """Get the address of the ndarray"""
+        return self.ptr.get_ndarray_data_ptr()
+
     def print_triplets(self):
         """Print the triplets stored in the builder"""
         self.ptr.print_triplets()
+
+    def print_ndarray_data(self):
+        """Print the ndarray data stored in the builder"""
+        self.ptr.print_ndarray_data()
+
+    def test_ndarray(self):
+        self.ptr.test_ndarray()
 
     def build(self, dtype=f32, _format='CSR'):
         """Create a sparse matrix using the triplets"""

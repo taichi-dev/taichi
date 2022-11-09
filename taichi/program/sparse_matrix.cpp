@@ -65,16 +65,21 @@ SparseMatrixBuilder::SparseMatrixBuilder(int rows,
                                          int cols,
                                          int max_num_triplets,
                                          DataType dtype,
-                                         const std::string &storage_format)
+                                         const std::string &storage_format,
+                                         Program *prog)
     : rows_(rows),
       cols_(cols),
       max_num_triplets_(max_num_triplets),
       dtype_(dtype),
-      storage_format_(storage_format) {
+      storage_format_(storage_format),
+      prog_(prog) {
   auto element_size = data_type_size(dtype);
   TI_ASSERT((element_size == 4 || element_size == 8));
-  data_base_ptr_ =
-      std::make_unique<uchar[]>(max_num_triplets_ * 3 * element_size);
+  data_base_ptr_ndarray_ = std::make_unique<Ndarray>(
+      prog_, dtype_, std::vector<int>{3 * (int)max_num_triplets_});
+  for (auto i = 0; i < 3 * max_num_triplets_; i++) {
+    data_base_ptr_ndarray_->write_int(std::vector<int>{i}, 0);
+  }
 }
 
 template <typename T, typename G>
@@ -101,6 +106,21 @@ void SparseMatrixBuilder::print_triplets() {
     default:
       TI_ERROR("Unsupported sparse matrix data type!");
       break;
+  }
+}
+
+intptr_t SparseMatrixBuilder::get_ndarray_data_ptr() const {
+  return prog_->get_ndarray_data_ptr_as_int(data_base_ptr_ndarray_.get());
+}
+
+void SparseMatrixBuilder::print_ndarray_data() {
+  auto ptr = get_ndarray_data_ptr();
+  int32 *data = reinterpret_cast<int32 *>(ptr);
+  int32 num_numbers = data[0];
+  fmt::print("number of numebrs: {} \n", num_numbers);
+  data += 1;
+  for (int i = 0; i < 3 * num_numbers; i++) {
+    fmt::print("ndarray data:[{}] = {}\n", i, data[i]);
   }
 }
 

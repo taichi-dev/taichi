@@ -99,6 +99,7 @@ class TI_DLL_EXPORT Program {
   // later when we make Taichi thread-safe.
   std::unordered_map<std::thread::id, CompileConfig> configs;
   std::thread::id main_thread_id_;
+  std::mutex config_mut;
   bool sync{false};  // device/host synchronized?
 
   uint64 *result_buffer{nullptr};  // Note result_buffer is used by all backends
@@ -124,6 +125,7 @@ class TI_DLL_EXPORT Program {
   ~Program();
 
   CompileConfig &this_thread_config() {
+    std::lock_guard<std::mutex> _(config_mut);
     auto thread_id = std::this_thread::get_id();
     if (!configs.count(thread_id)) {
       configs[thread_id] = configs[main_thread_id_];

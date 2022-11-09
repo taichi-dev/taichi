@@ -171,6 +171,9 @@ class Scalarize : public BasicStmtVisitor {
       for (size_t i = 0; i < num_elements; i++) {
         auto unary_stmt = std::make_unique<UnaryOpStmt>(
             stmt->op_type, operand_matrix_init_stmt->values[i]);
+        if (stmt->is_cast()) {
+          unary_stmt->cast_type = stmt->cast_type;
+        }
         unary_stmt->ret_type = primitive_type;
         matrix_init_values.push_back(unary_stmt.get());
 

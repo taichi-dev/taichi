@@ -869,7 +869,10 @@ void AtomicOpExpression::type_check(CompileConfig *config) {
 }
 
 void AtomicOpExpression::flatten(FlattenContext *ctx) {
-  TI_ASSERT(dest.is<IdExpression>() || dest.is<IndexExpression>() || dest.is<StrideExpression>() || (dest.is<ArgLoadExpression>() && dest.cast<ArgLoadExpression>()->is_ptr));
+  TI_ASSERT(
+      dest.is<IdExpression>() || dest.is<IndexExpression>() ||
+      dest.is<StrideExpression>() ||
+      (dest.is<ArgLoadExpression>() && dest.cast<ArgLoadExpression>()->is_ptr));
   // replace atomic sub with negative atomic add
   if (op_type == AtomicOpType::sub) {
     if (val->ret_type != ret_type) {

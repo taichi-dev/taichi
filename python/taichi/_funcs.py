@@ -1,8 +1,8 @@
 import math
 
-from taichi.lang import impl, matrix, ops
+from taichi.lang import impl, ops
 from taichi.lang.impl import expr_init, get_runtime, grouped, static
-from taichi.lang.kernel_impl import func, pyfunc
+from taichi.lang.kernel_impl import func
 from taichi.lang.matrix import Matrix, Vector
 from taichi.types import f32, f64
 from taichi.types.annotations import template
@@ -47,56 +47,6 @@ def randn(dt=None):
     if dt is None:
         dt = impl.get_runtime().default_fp
     return _randn(dt)
-
-
-@pyfunc
-def _matrix_transpose(mat):
-    """Permute the first two axes of the matrix.
-
-    Args:
-        mat (:class:`~taichi.lang.matrix.Matrix`): Input matrix.
-
-    Returns:
-        Transpose of the input matrix.
-    """
-    return matrix.Matrix([[mat(i, j) for i in range(mat.n)]
-                          for j in range(mat.m)],
-                         ndim=mat.ndim)
-
-
-@pyfunc
-def _matrix_cross3d(self, other):
-    return matrix.Matrix([
-        self[1] * other[2] - self[2] * other[1],
-        self[2] * other[0] - self[0] * other[2],
-        self[0] * other[1] - self[1] * other[0],
-    ])
-
-
-@pyfunc
-def _matrix_cross2d(self, other):
-    return self[0] * other[1] - self[1] * other[0]
-
-
-@pyfunc
-def _vector_outer_product(self, other):
-    """Perform the outer product with the input Vector.
-
-    Args:
-        other (:class:`~taichi.lang.matrix.Vector`): The input Vector to perform the outer product.
-
-    Returns:
-        :class:`~taichi.lang.matrix.Matrix`: The outer product result (Matrix) of the two Vectors.
-
-    """
-    impl.static(
-        impl.static_assert(self.m == 1 and isinstance(self, Vector),
-                           "lhs for outer_product is not a vector"))
-    impl.static(
-        impl.static_assert(other.m == 1 and isinstance(other, Vector),
-                           "rhs for outer_product is not a vector"))
-    return matrix.Matrix([[self[i] * other[j] for j in range(other.n)]
-                          for i in range(self.n)])
 
 
 @func

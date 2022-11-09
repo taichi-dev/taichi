@@ -76,7 +76,8 @@ class LlvmProgramImpl : public ProgramImpl {
   void save_root_buffer(Ndarray *buffer_arr, const int snode_tree_id) override {
     DevicePtr ptr = get_snode_tree_device_ptr(snode_tree_id);
     std::size_t size = get_snode_tree_root_buffer_size(snode_tree_id);
-    // std::cout << "saved root buffer size " << size << std::endl;
+    // std::cout << "saved root buffer size " << size * 1.0 / 1048576 << " MB."
+    // << std::endl;
     runtime_exec_->get_compute_device()->memcpy_internal(
         buffer_arr->ndarray_alloc_.get_ptr(), ptr, size);
   };
@@ -85,7 +86,8 @@ class LlvmProgramImpl : public ProgramImpl {
                            const int snode_tree_id) override {
     DevicePtr ptr = get_snode_tree_device_ptr(snode_tree_id);
     std::size_t size = get_snode_tree_root_buffer_size(snode_tree_id);
-    // std::cout << "restored root buffer size " << size << std::endl;
+    // std::cout << "restore root buffer size " << size * 1.0 / 1048576 << "
+    // MB."  << std::endl;
     runtime_exec_->get_compute_device()->memcpy_internal(
         ptr, buffer_arr->ndarray_alloc_.get_ptr(), size);
   };

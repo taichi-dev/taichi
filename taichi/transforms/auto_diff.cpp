@@ -291,7 +291,7 @@ class PromoteSSA2LocalVar : public BasicStmtVisitor {
       return;
     if (!(stmt->is<UnaryOpStmt>() || stmt->is<BinaryOpStmt>() ||
           stmt->is<TernaryOpStmt>() || stmt->is<BitExtractStmt>() ||
-          stmt->is<GlobalLoadStmt>() || stmt->is<AllocaStmt>())) {
+          stmt->is<AllocaStmt>())) {
       // TODO: this list may be incomplete
       return;
     }
@@ -453,12 +453,71 @@ class AdStackAllocaJudger : public BasicStmtVisitor {
   bool load_only_ = true;
 };
 
+class GlobalDataModifiedChecker : public BasicStmtVisitor {
+  using BasicStmtVisitor::visit;
+
+ private:
+  GlobalPtrStmt *glb_ptr_stmt;
+
+ public:
+  void visit(GlobalStoreStmt *stmt) override {
+    if (modified_)
+      return;
+    if (stmt->dest == glb_ptr_stmt) {
+      modified_ = true;
+    }
+  }
+  void visit(AtomicOpStmt *stmt) override {
+    if (modified_)
+      return;
+    if (stmt->dest == glb_ptr_stmt) {
+      modified_ = true;
+    }
+  }
+
+  bool modified_;
+  GlobalDataModifiedChecker(Block *block, GlobalPtrStmt *stmt) {
+    glb_ptr_stmt = stmt;
+  }
+  static bool run(Block *block, GlobalPtrStmt *stmt) {
+    GlobalDataModifiedChecker pass(block, stmt);
+    block->accept(&pass);
+    return pass.modified_;
+  }
+};
+
 class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
+ private:
+  std::map<Block *, Block *> ib_to_top_level_block_;
+  Block *ib_;
+  std::map<SNode *, Stmt *> snode_to_stack_;
+
  public:
   using BasicStmtVisitor::visit;
   int ad_stack_size;
-  explicit ReplaceLocalVarWithStacks(int ad_stack_size)
+  explicit ReplaceLocalVarWithStacks(int ad_stack_size, Block *block)
       : ad_stack_size(ad_stack_size) {
+    ib_ = block;
+    find_top_level_block(block);
+  }
+
+  void find_top_level_block(Block *block) {
+    // TODO: simplify the logic...
+    Block *current_block = block;
+    Block *the_second_to_current_block = nullptr;
+    while (current_block->parent_block() != nullptr) {
+      if (current_block->parent_stmt->is<StructForStmt>()) {
+        break;
+      }
+      the_second_to_current_block = current_block;
+      current_block = current_block->parent_block();
+    }
+    if (the_second_to_current_block &&
+        the_second_to_current_block->parent_stmt->is<RangeForStmt>()) {
+      ib_to_top_level_block_[block] = the_second_to_current_block;
+    } else {
+      ib_to_top_level_block_[block] = current_block;
+    }
   }
 
   void visit(AllocaStmt *alloc) override {
@@ -486,11 +545,122 @@ class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
 
   void visit(LocalStoreStmt *stmt) override {
     if (stmt->dest->is<AdStackAllocaStmt>()) {
-      auto zero = stmt->insert_before_me(
-          Stmt::make<ConstStmt>(TypedConstant(stmt->val->ret_type, 0)));
+      auto zero = stmt->insert_before_me(Stmt::make<ConstStmt>(
+          TypedConstant(stmt->dest->as<AdStackAllocaStmt>()->dt, 0)));
       stmt->replace_with(
           Stmt::make<AdStackPushStmt>(stmt->dest, stmt->val, zero));
     }
+  }
+
+  // TODO: Handle more global load src
+  void visit(GlobalLoadStmt *stmt) override {
+    GlobalPtrStmt *glb_ptr = stmt->src->as<GlobalPtrStmt>();
+    Stmt *stack_alloca_ptr = nullptr;
+    auto dtype = stmt->ret_type;
+    std::cout << stmt->type() << " " << stmt->id << " type "
+              << dtype->to_string() << std::endl;
+    if (snode_to_stack_.find(glb_ptr->snode) == snode_to_stack_.end()) {
+      bool is_modifed = GlobalDataModifiedChecker::run(ib_, glb_ptr);
+      if (!is_modifed) {
+        return;
+      }
+      TI_ASSERT(ib_);
+      auto stack_alloca = Stmt::make<AdStackAllocaStmt>(dtype, 0);
+      stack_alloca_ptr = stack_alloca.get();
+      ib_to_top_level_block_[ib_]->insert(std::move(stack_alloca), 0);
+      snode_to_stack_[glb_ptr->snode] = stack_alloca_ptr;
+
+      // Load the value of the global ptr and push it into the stack
+      auto value =
+          glb_ptr->insert_after_me(Stmt::make<GlobalLoadStmt>(glb_ptr));
+      auto zero = value->insert_after_me(
+          Stmt::make<ConstStmt>(TypedConstant(dtype, 0)));
+      zero->insert_after_me(
+          Stmt::make<AdStackPushStmt>(stack_alloca_ptr, value, zero));
+    } else {
+      stack_alloca_ptr = snode_to_stack_[glb_ptr->snode];
+    }
+
+    auto load =
+        stmt->insert_after_me(Stmt::make<AdStackLoadTopStmt>(stack_alloca_ptr));
+    irpass::replace_all_usages_with(stmt->parent, stmt, load);
+    stmt->parent->erase(stmt);
+  }
+
+  void visit(GlobalStoreStmt *stmt) override {
+    GlobalPtrStmt *glb_ptr = stmt->dest->as<GlobalPtrStmt>();
+    Stmt *stack_alloca_ptr = nullptr;
+    auto dtype = stmt->dest->ret_type.ptr_removed();
+    std::cout << stmt->type() << " " << stmt->id << " type "
+              << dtype->to_string() << std::endl;
+    if (snode_to_stack_.find(glb_ptr->snode) == snode_to_stack_.end()) {
+      bool is_modifed = GlobalDataModifiedChecker::run(ib_, glb_ptr);
+      if (!is_modifed) {
+        return;
+      }
+      TI_ASSERT(ib_);
+      auto stack_alloca = Stmt::make<AdStackAllocaStmt>(dtype, 0);
+      stack_alloca_ptr = stack_alloca.get();
+      ib_to_top_level_block_[ib_]->insert(std::move(stack_alloca), 0);
+      snode_to_stack_[glb_ptr->snode] = stack_alloca_ptr;
+
+      // Load the value of the global ptr and push it into the stack
+      auto value =
+          glb_ptr->insert_after_me(Stmt::make<GlobalLoadStmt>(glb_ptr));
+      auto zero = value->insert_after_me(
+          Stmt::make<ConstStmt>(TypedConstant(dtype, 0)));
+      zero->insert_after_me(
+          Stmt::make<AdStackPushStmt>(stack_alloca_ptr, value, zero));
+    } else {
+      stack_alloca_ptr = snode_to_stack_[glb_ptr->snode];
+    }
+
+    // Record the modifed value
+    auto value = stmt->insert_after_me(Stmt::make<GlobalLoadStmt>(glb_ptr));
+    auto zero =
+        value->insert_after_me(Stmt::make<ConstStmt>(TypedConstant(dtype, 0)));
+    zero->insert_after_me(
+        Stmt::make<AdStackPushStmt>(stack_alloca_ptr, value, zero));
+    // irpass::replace_all_usages_with(stmt->parent, stmt, push);
+    // stmt->parent->erase(stmt);
+  }
+
+  void visit(AtomicOpStmt *stmt) override {
+    GlobalPtrStmt *glb_ptr = stmt->dest->as<GlobalPtrStmt>();
+    Stmt *stack_alloca_ptr = nullptr;
+    auto dtype = stmt->dest->ret_type.ptr_removed();
+    std::cout << stmt->type() << " " << stmt->id << " type "
+              << dtype->to_string() << std::endl;
+    if (snode_to_stack_.find(glb_ptr->snode) == snode_to_stack_.end()) {
+      bool is_modifed = GlobalDataModifiedChecker::run(ib_, glb_ptr);
+      if (!is_modifed) {
+        return;
+      }
+      TI_ASSERT(ib_);
+      auto stack_alloca = Stmt::make<AdStackAllocaStmt>(dtype, 0);
+      stack_alloca_ptr = stack_alloca.get();
+      ib_to_top_level_block_[ib_]->insert(std::move(stack_alloca), 0);
+      snode_to_stack_[glb_ptr->snode] = stack_alloca_ptr;
+
+      // Load the value of the global ptr and push it into the stack
+      auto value =
+          glb_ptr->insert_after_me(Stmt::make<GlobalLoadStmt>(glb_ptr));
+      auto zero = value->insert_after_me(
+          Stmt::make<ConstStmt>(TypedConstant(dtype, 0)));
+      zero->insert_after_me(
+          Stmt::make<AdStackPushStmt>(stack_alloca_ptr, value, zero));
+    } else {
+      stack_alloca_ptr = snode_to_stack_[glb_ptr->snode];
+    }
+
+    // Record the modifed value
+    auto value = stmt->insert_after_me(Stmt::make<GlobalLoadStmt>(glb_ptr));
+    auto zero =
+        value->insert_after_me(Stmt::make<ConstStmt>(TypedConstant(dtype, 0)));
+    zero->insert_after_me(
+        Stmt::make<AdStackPushStmt>(stack_alloca_ptr, value, zero));
+    // irpass::replace_all_usages_with(stmt->parent, stmt, push);
+    // stmt->parent->erase(stmt);
   }
 };
 
@@ -504,6 +674,9 @@ class ReplaceFieldWithStacks : public BasicStmtVisitor {
   }
 
   void visit(GlobalPtrStmt *stmt) override {
+    if (field_stacks.find(stmt) != field_stacks.end()) {
+      return;
+    }
     auto dtype = stmt->ret_type;
 
     auto stack_alloca_ptr = stmt->insert_after_me(
@@ -554,6 +727,12 @@ class ReplaceFieldWithStacks : public BasicStmtVisitor {
             snode, stmt->dest->as<GlobalPtrStmt>()->indices));
         adj_value =
             adj_ptr->insert_after_me(Stmt::make<GlobalLoadStmt>(adj_ptr));
+
+        // auto zero =
+        // adj_value->insert_after_me(Stmt::make<ConstStmt>(TypedConstant(adj_ptr->ret_type,
+        // 0))); zero->insert_after_me(Stmt::make<GlobalStoreStmt>(adj_ptr,
+        // zero));
+
       } else {
         adj_value = stmt->insert_before_me(
             Stmt::make<ConstStmt>(TypedConstant(stmt->dest->ret_type, 0)));
@@ -1164,6 +1343,8 @@ class MakeAdjoint : public ADTransform {
     }
 
     auto snode = src->snode;
+
+    /////////////////////////////////////
     if (!snode->has_adjoint()) {
       // No adjoint SNode. Do nothing
       return;
@@ -1174,6 +1355,21 @@ class MakeAdjoint : public ADTransform {
     }
     TI_ASSERT(snode->get_adjoint() != nullptr);
     snode = snode->get_adjoint();
+    /////////////////////////////////////
+
+    // // FIXME: Abuse dual as grad output for quick test
+    // if (!snode->has_dual()) {
+    //   // No adjoint SNode. Do nothing
+    //   return;
+    // }
+    // // if (gradients_stopped(stmt, snode)) {
+    // //   // gradients stopped, do nothing.
+    // //   return;
+    // // }
+    // TI_ASSERT(snode->get_dual() != nullptr);
+    // snode = snode->get_dual();
+    // std::cout << "do I has dual "<< stmt->src->id << std::endl;
+
     auto adj_ptr = insert<GlobalPtrStmt>(snode, src->indices);
     if (is_ptr_offset) {
       adj_ptr = insert<MatrixPtrStmt>(adj_ptr,
@@ -1206,6 +1402,7 @@ class MakeAdjoint : public ADTransform {
     }
     TI_ASSERT(snode->get_adjoint() != nullptr);
     snode = snode->get_adjoint();
+
     auto adjoint_ptr = insert<GlobalPtrStmt>(snode, dest->indices);
     if (is_ptr_offset) {
       adjoint_ptr = insert<MatrixPtrStmt>(
@@ -1246,7 +1443,7 @@ class MakeAdjoint : public ADTransform {
           adjoint_ptr, stmt->dest->as<MatrixPtrStmt>()->offset);
     }
     accumulate(stmt->val, insert<GlobalLoadStmt>(adjoint_ptr));
-    stmt->parent->erase(stmt);
+    // stmt->parent->erase(stmt);
   }
 };
 
@@ -1676,26 +1873,12 @@ class BackupSSA : public BasicStmtVisitor {
 
 namespace irpass {
 
-std::function<void(const std::string &)>
-make_pass_printer(bool verbose, const std::string &kernel_name, IRNode *ir) {
-  if (!verbose) {
-    return [](const std::string &) {};
-  }
-  return [ir, kernel_name](const std::string &pass) {
-    TI_INFO("[{}] {}:", kernel_name, pass);
-    std::cout << std::flush;
-    irpass::re_id(ir);
-    irpass::print(ir);
-    std::cout << std::flush;
-  };
-}
-
 void auto_diff(IRNode *root,
                const CompileConfig &config,
                AutodiffMode autodiff_mode,
                bool use_stack) {
   TI_AUTO_PROF;
-  auto print = make_pass_printer(true, "autodiff debug", root);
+  auto print = irpass::make_pass_printer(true, "autodiff debug", root);
   if (autodiff_mode == AutodiffMode::kReverse) {
     if (use_stack) {
       auto IB = IdentifyIndependentBlocks::run(root);
@@ -1703,17 +1886,22 @@ void auto_diff(IRNode *root,
 
       for (auto ib : IB) {
         PromoteSSA2LocalVar::run(ib);
-        ReplaceLocalVarWithStacks replace(config.ad_stack_size);
+        print("after promote SSA");
+        ReplaceLocalVarWithStacks replace(config.ad_stack_size, ib);
         ib->accept(&replace);
-        ReplaceFieldWithStacks replace_field(config.ad_stack_size);
-        ib->accept(&replace_field);
-        print("after replace field");
+        print("after replace with stack");
+        // ReplaceFieldWithStacks replace_field(config.ad_stack_size);
+        // ib->accept(&replace_field);
+        // print("after replace field");
         type_check(root, config);
         MakeAdjoint::run(ib);
+        // print("after make adjoint");
         type_check(root, config);
         // print("before backup SSA");
         BackupSSA::run(ib);
+        // print("after backup ssa");
         irpass::analysis::verify(root);
+        // print("after verify");
       }
     } else {
       auto IB = IdentifyIndependentBlocks::run(root);

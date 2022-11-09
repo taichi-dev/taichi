@@ -94,7 +94,14 @@ function build-and-test-headless-demo {
     setup-android-ndk-env
 
     pushd taichi
-    export TAICHI_REPO_DIR=$(pwd)
+    setup_python
+    popd
+
+    export TAICHI_REPO_DIR=$(pwd)/taichi
+
+    pushd taichi
+    pip install /taichi-wheel/*.whl
+    sudo chmod 0777 $HOME/.cache
     popd
 
     rm -rf taichi-aot-demo
@@ -109,12 +116,25 @@ function build-and-test-headless-demo {
     grab-android-bot
     trap release-android-bot EXIT
     adb connect $BOT
-    cd headless
+
+    # clear temporary test folder
+    adb shell "rm -rf /data/local/tmp/*"
+
+    pushd headless
     BINARIES=$(ls E*)
     for b in $BINARIES; do
         adb push $b /data/local/tmp
     done
+    popd # headless
     adb push $TAICHI_C_API_INSTALL_DIR/lib/libtaichi_c_api.so /data/local/tmp
+
+    pushd 0_tutorial_cgraph
+    adb push E0_tutorial_cgraph /data/local/tmp
+    popd # 0_tutorial_cgraph
+
+    pushd 0_tutorial_kernel
+    adb push E0_tutorial_kernel /data/local/tmp
+    popd # 0_tutorial_kernel
 
     popd # build
 
@@ -122,6 +142,12 @@ function build-and-test-headless-demo {
         adb push $dir /data/local/tmp
     done
 
+    # Run 0_tutorial_cgraph
+    adb shell "cd /data/local/tmp && LD_LIBRARY_PATH=\$(pwd) ./E0_tutorial_cgraph"
+    # Run 0_tutorial_kernel
+    adb shell "cd /data/local/tmp && LD_LIBRARY_PATH=\$(pwd) ./E0_tutorial_kernel"
+
+    # Run demos with headless-truth
     for b in $BINARIES; do
         adb shell "cd /data/local/tmp && LD_LIBRARY_PATH=\$(pwd) ./$b"
         adb pull /data/local/tmp/0001.bmp $b.bmp

@@ -10,8 +10,9 @@ from taichi.lang._ndrange import GroupedNDRange, _Ndrange
 from taichi.lang._texture import RWTextureAccessor
 from taichi.lang.any_array import AnyArray, AnyArrayAccess
 from taichi.lang.enums import SNodeGradType
-from taichi.lang.exception import (TaichiCompilationError, TaichiRuntimeError,
-                                   TaichiSyntaxError, TaichiTypeError)
+from taichi.lang.exception import (TaichiCompilationError, TaichiIndexError,
+                                   TaichiRuntimeError, TaichiSyntaxError,
+                                   TaichiTypeError)
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.kernel_arguments import SparseMatrixProxy
@@ -225,7 +226,7 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
                 )
         field_dim = snode.num_active_indices()
         if field_dim != index_dim:
-            raise IndexError(
+            raise TaichiIndexError(
                 f'Field with dim {field_dim} accessed with indices of dim {index_dim}'
             )
         if isinstance(value, MatrixField):

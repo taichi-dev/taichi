@@ -723,7 +723,7 @@ void IndexExpression::type_check(CompileConfig *) {
   } else if (is_tensor()) {  // local tensor
     auto shape = var->ret_type->as<TensorType>()->get_shape();
     if (indices_group[0].size() != shape.size()) {
-      TI_ERROR("Expected {} indices, but got {}.", shape.size(),
+      TI_ERROR("Expected {} indices, got {}.", shape.size(),
                indices_group[0].size());
     }
     ret_type = var->ret_type->cast<TensorType>()->get_element_type();

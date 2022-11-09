@@ -35,7 +35,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": ${{ toJSON(github.event.workflow_run.workflow_url) }}
+                    "text": ${{ toJSON(github.event.workflow_run.html_url) }}
                   }
                 }
               ]

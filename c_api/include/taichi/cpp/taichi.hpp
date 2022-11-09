@@ -709,9 +709,9 @@ class Runtime {
     std::vector<TiCapabilityLevelInfo> devcaps(n);
     ti_get_runtime_capabilities(runtime_, &n, devcaps.data());
 
-    std::map<TiCapability, uint32_t> out {};
+    std::map<TiCapability, uint32_t> out{};
     for (size_t i = 0; i < devcaps.size(); ++i) {
-      const auto& devcap = devcaps.at(i);
+      const auto &devcap = devcaps.at(i);
       out.at(devcap.capability) = devcap.level;
     }
     return out;

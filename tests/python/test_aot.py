@@ -48,7 +48,7 @@ def test_aot_field_range_hint():
         m = ti.aot.Module(ti.opengl)
         m.add_field('density', density)
         m.add_kernel(init)
-        m.save(tmpdir, '')
+        m.save(tmpdir)
         with open(os.path.join(tmpdir, 'metadata.json')) as json_file:
             res = json.load(json_file)
             range_hint = res['aot_data']['kernels']['init']['tasks'][0][
@@ -70,7 +70,7 @@ def test_aot_bind_id():
     with tempfile.TemporaryDirectory() as tmpdir:
         m = ti.aot.Module(ti.lang.impl.current_cfg().arch)
         m.add_kernel(init, {'density1': density1})
-        m.save(tmpdir, '')
+        m.save(tmpdir)
         with open(os.path.join(tmpdir, 'metadata.json')) as json_file:
             res = json.load(json_file)
             buffer_binds = res['aot_data']['kernels']['init']['tasks'][0][
@@ -96,7 +96,7 @@ def test_save():
         m = ti.aot.Module(ti.lang.impl.current_cfg().arch)
         m.add_field('density', density)
         m.add_kernel(init)
-        m.save(tmpdir, '')
+        m.save(tmpdir)
         with open(os.path.join(tmpdir, 'metadata.json')) as json_file:
             json.load(json_file)
 
@@ -117,7 +117,7 @@ def test_save_template_kernel():
         with m.add_kernel_template(foo) as kt:
             kt.instantiate(n=6)
             kt.instantiate(n=8)
-        m.save(tmpdir, '')
+        m.save(tmpdir)
         with open(os.path.join(tmpdir, 'metadata.json')) as json_file:
             json.load(json_file)
 
@@ -228,7 +228,7 @@ def test_mpm88_aot(use_gles):
         m.add_field("grid_m", grid_m)
         m.add_kernel(substep)
         m.add_kernel(init)
-        m.save(tmpdir, '')
+        m.save(tmpdir)
         with open(os.path.join(tmpdir, 'metadata.json')) as json_file:
             json.load(json_file)
 
@@ -409,7 +409,7 @@ def test_mpm99_aot():
         m.add_kernel(initialize)
         m.add_kernel(substep)
 
-        m.save(tmpdir, '')
+        m.save(tmpdir)
         with open(os.path.join(tmpdir, 'metadata.json')) as json_file:
             json.load(json_file)
 
@@ -503,7 +503,7 @@ def test_mpm88_ndarray():
         }
         m.add_kernel(substep, template_args=template_args)
 
-        m.save(tmpdir, '')
+        m.save(tmpdir)
         with open(os.path.join(tmpdir, 'metadata.json')) as json_file:
             json.load(json_file)
 
@@ -570,7 +570,7 @@ def test_sequential_dispatch():
         # note ti.aot.Module(ti.opengl) is no-op according to its docstring.
         m = ti.aot.Module(ti.lang.impl.current_cfg().arch)
         m.add_graph("g_init", g_init)
-        m.save(tmpdir, '')
+        m.save(tmpdir)
         with open(os.path.join(tmpdir, 'metadata.json'), "r") as json_file:
             json.load(json_file)
 
@@ -596,4 +596,4 @@ def test_vulkan_cgraph_short():
     m = ti.aot.Module(ti.lang.impl.current_cfg().arch, caps=['spirv_has_int8'])
     m.add_graph('g_init', g)
     with tempfile.TemporaryDirectory() as tmpdir:
-        m.save(tmpdir, '')
+        m.save(tmpdir)

@@ -107,18 +107,20 @@ void convert_to_range_for(OffloadedStmt *offloaded, bool packed) {
       }
     }
 
-    auto snode = snodes.back();
-    for (int j = 0; j < (int)physical_indices.size(); j++) {
-      auto p = physical_indices[j];
-      auto num_elements = snode->extractors[p].num_elements_from_root;
-      if (!bit::is_power_of_two(num_elements)) {
-        has_test = true;
-        auto bound =
-            body_header.push_back<ConstStmt>(TypedConstant(num_elements));
-        auto cmp = body_header.push_back<BinaryOpStmt>(BinaryOpType::cmp_lt,
-                                                       new_loop_vars[j], bound);
-        test = body_header.push_back<BinaryOpStmt>(BinaryOpType::bit_and, test,
-                                                   cmp);
+    if (!snodes.empty()) {
+      auto snode = snodes.back();
+      for (int j = 0; j < (int)physical_indices.size(); j++) {
+        auto p = physical_indices[j];
+        auto num_elements = snode->extractors[p].num_elements_from_root;
+        if (!bit::is_power_of_two(num_elements)) {
+          has_test = true;
+          auto bound =
+              body_header.push_back<ConstStmt>(TypedConstant(num_elements));
+          auto cmp = body_header.push_back<BinaryOpStmt>(
+              BinaryOpType::cmp_lt, new_loop_vars[j], bound);
+          test = body_header.push_back<BinaryOpStmt>(BinaryOpType::bit_and,
+                                                     test, cmp);
+        }
       }
     }
   }

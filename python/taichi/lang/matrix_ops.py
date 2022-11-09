@@ -55,8 +55,10 @@ def _filled_vector(n: template(), dtype: template(), val: template()):
 
 
 @func
-def _filled_matrix(n: template(), m: template(), dtype: template(), val: template()):
-    return Matrix([[val for _ in static(range(m))] for _ in static(range(n))], dtype)
+def _filled_matrix(n: template(), m: template(), dtype: template(),
+                   val: template()):
+    return Matrix([[val for _ in static(range(m))] for _ in static(range(n))],
+                  dtype)
 
 
 @func
@@ -66,7 +68,8 @@ def _unit_vector(n: template(), i: template(), dtype: template()):
 
 @func
 def _identity_matrix(n: template(), dtype: template()):
-    return Matrix([[i == j for j in static(range(n))] for i in static(range(n))], dtype)
+    return Matrix([[i == j for j in static(range(n))]
+                   for i in static(range(n))], dtype)
 
 
 @pyfunc

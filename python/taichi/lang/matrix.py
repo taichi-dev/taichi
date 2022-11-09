@@ -1828,6 +1828,9 @@ class MatrixType(CompoundType):
         return self.cast(Matrix(entries, dt=self.dtype, ndim=self.ndim))
 
     def cast(self, mat):
+        if isinstance(mat, impl.Expr) and mat.ptr.is_tensor():
+            return ops_mod.cast(mat, self.dtype)
+
         if in_python_scope():
             return Matrix([[
                 int(mat(i, j)) if self.dtype in primitive_types.integer_types

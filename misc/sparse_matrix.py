@@ -1,6 +1,6 @@
 import taichi as ti
 
-ti.init(arch=ti.x64)
+ti.init(arch=ti.x64, debug=True)
 
 n = 8
 
@@ -34,7 +34,9 @@ def fill(A: ti.types.sparse_matrix_builder(),
 fill(K, f, 3)
 
 print(">>>> K.print_triplets()")
-K.print_triplets()
+# K.print_triplets()
+
+K.print_ndarray_data()
 
 A = K.build()
 

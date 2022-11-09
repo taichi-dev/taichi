@@ -114,13 +114,15 @@ intptr_t SparseMatrixBuilder::get_ndarray_data_ptr() const {
 }
 
 void SparseMatrixBuilder::print_ndarray_data() {
-  auto ptr = get_ndarray_data_ptr();
-  int32 *data = reinterpret_cast<int32 *>(ptr);
-  int32 num_numbers = data[0];
-  fmt::print("number of numebrs: {} \n", num_numbers);
-  data += 1;
-  for (int i = 0; i < 3 * num_numbers; i++) {
-    fmt::print("ndarray data:[{}] = {}\n", i, data[i]);
+  num_triplets_ = data_base_ptr_ndarray_->read_int(std::vector<int>{0});
+  fmt::print("n={}, m={}, num_triplets={} (max={})\n", rows_, cols_,
+             num_triplets_, max_num_triplets_);
+  for (int i = 0; i < num_triplets_; i++) {
+    auto idx = 3 * i + 1;
+    auto row = data_base_ptr_ndarray_->read_int(std::vector<int>{idx});
+    auto col = data_base_ptr_ndarray_->read_int(std::vector<int>{idx + 1});
+    auto val = data_base_ptr_ndarray_->read_int(std::vector<int>{idx + 2});
+    fmt::print("[{}, {}] = {}\n", row, col, val);
   }
 }
 
@@ -128,10 +130,12 @@ template <typename T, typename G>
 void SparseMatrixBuilder::build_template(std::unique_ptr<SparseMatrix> &m) {
   using V = Eigen::Triplet<T>;
   std::vector<V> triplets;
-  T *data = reinterpret_cast<T *>(data_base_ptr_.get());
+  auto ptr = get_ndarray_data_ptr();
+  G *data = reinterpret_cast<G *>(ptr);
+  num_triplets_ = data[0];
+  data += 1;
   for (int i = 0; i < num_triplets_; i++) {
-    triplets.push_back(V(((G *)data)[i * 3], ((G *)data)[i * 3 + 1],
-                         taichi_union_cast<T>(data[i * 3 + 2])));
+    triplets.push_back(V(data[i * 3], data[i * 3 + 1], data[i * 3 + 2]));
   }
   m->build_triplets(static_cast<void *>(&triplets));
   clear();

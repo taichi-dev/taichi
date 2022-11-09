@@ -1,6 +1,6 @@
 import taichi as ti
 
-ti.init(arch=ti.x64, debug=True)
+ti.init(arch=ti.cuda, debug=True)
 
 n = 2
 

@@ -74,7 +74,7 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   __asm__ __volatile__("");
 #endif  // defined(__arm64__) || defined(__aarch64__)
   main_thread_id_ = std::this_thread::get_id();
-  //Rehash in advance to avoid rehashing during compilation
+  // Rehash in advance to avoid rehashing during compilation
   configs.rehash(default_compile_config.num_compile_threads + 1);
   configs[main_thread_id_] = default_compile_config;
   configs[main_thread_id_].arch = desired_arch;

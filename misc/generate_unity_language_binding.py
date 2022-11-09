@@ -225,8 +225,11 @@ def get_declr(x: EntryBase):
             ]
 
             for param in x.params:
-                is_single_ref = (param.by_ref or param.by_mut) and (not param.count)
-                if isinstance(param.type, (Structure, Union, BuiltInType)) and is_single_ref:
+                is_single_ref = (param.by_ref
+                                 or param.by_mut) and (not param.count)
+                if isinstance(
+                        param.type,
+                    (Structure, Union, BuiltInType)) and is_single_ref:
                     out += [
                         f"  var arr_{_T(param.name)} = new {get_type_name(param.type)}[1];",
                         f"  arr_{_T(param.name)}[0] = {_T(param.name)};"
@@ -236,8 +239,11 @@ def get_declr(x: EntryBase):
             else:
                 out += [f"  {_T(x.name.snake_case)}("]
             for i, param in enumerate(x.params):
-                is_single_ref = (param.by_ref or param.by_mut) and (not param.count)
-                if isinstance(param.type, (Structure, Union, BuiltInType)) and is_single_ref:
+                is_single_ref = (param.by_ref
+                                 or param.by_mut) and (not param.count)
+                if isinstance(
+                        param.type,
+                    (Structure, Union, BuiltInType)) and is_single_ref:
                     out += [
                         f"    arr_{_T(param.name)}{','if i + 1 != len(x.params) else ''}"
                     ]
@@ -248,10 +254,10 @@ def get_declr(x: EntryBase):
             out += ["  );"]
             for param in x.params:
                 is_single_ref = param.by_mut and (not param.count)
-                if isinstance(param.type, (Structure, Union, BuiltInType)) and is_single_ref:
-                    out += [
-                        f"  {_T(param.name)} = arr_{_T(param.name)}[0];"
-                    ]
+                if isinstance(
+                        param.type,
+                    (Structure, Union, BuiltInType)) and is_single_ref:
+                    out += [f"  {_T(param.name)} = arr_{_T(param.name)}[0];"]
             if x.return_value_type:
                 out += [f"  return rv;"]
             out += ["}", "}"]

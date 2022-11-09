@@ -206,25 +206,6 @@ def test_dynamic_activate():
 
 
 @test_utils.test(require=ti.extension.sparse, exclude=[ti.metal])
-def test_append_vec():
-    x = ti.Vector.field(3, ti.f32)
-    block = ti.root.dense(ti.i, 16)
-    pixel = block.dynamic(ti.j, 16)
-    pixel.place(x)
-
-    @ti.kernel
-    def make_lists():
-        for i in range(5):
-            for j in range(i):
-                x_vec3 = ti.math.vec3(i, j, j * j)
-                ti.append(x.parent(), i, x_vec3)
-
-    with pytest.raises(TaichiCompilationError,
-                       match=r'append only supports appending a scalar value'):
-        make_lists()
-
-
-@test_utils.test(require=ti.extension.sparse, exclude=[ti.metal])
 def test_append_u8():
     x = ti.field(ti.u8)
     pixel = ti.root.dynamic(ti.j, 20)
@@ -283,3 +264,80 @@ def test_append_struct():
             assert x[i, j].b == i * j * 10000 % 65536
             assert x[i, j].c == i * j * 100000000 % 4294967296
             assert x[i, j].d == i * j * 10000000000
+
+
+def _test_append_matrix():
+    mat = ti.types.matrix(n=2, m=2, dtype=ti.u8)
+    f = mat.field()
+    pixel = ti.root.dense(ti.i, 10).dynamic(ti.j, 20, 4)
+    pixel.place(f)
+
+    @ti.kernel
+    def make_list():
+        for i in range(10):
+            for j in range(20):
+                f[i].append(
+                    ti.Matrix([[i * j, i * j * 2], [i * j * 3, i * j * 4]],
+                              dt=ti.u8))
+
+    make_list()
+
+    for i in range(10):
+        for j in range(20):
+            for k in range(4):
+                assert f[i, j][k // 2, k % 2] == i * j * (k + 1) % 256
+
+
+@test_utils.test(require=ti.extension.sparse, exclude=[ti.metal])
+def test_append_matrix():
+    _test_append_matrix()
+
+
+@test_utils.test(require=ti.extension.sparse,
+                 exclude=[ti.metal],
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_append_matrix_real_matrix():
+    _test_append_matrix()
+
+
+@test_utils.test(require=ti.extension.sparse, exclude=[ti.metal])
+def _test_append_matrix_in_struct():
+    mat = ti.types.matrix(n=2, m=2, dtype=ti.u8)
+    struct = ti.types.struct(a=ti.u64, b=mat, c=ti.u16)
+    f = struct.field()
+    pixel = ti.root.dense(ti.i, 10).dynamic(ti.j, 20, 4)
+    pixel.place(f)
+
+    @ti.kernel
+    def make_list():
+        for i in range(10):
+            for j in range(20):
+                f[i].append(
+                    struct(
+                        i * j * ti.u64(10**10),
+                        ti.Matrix([[i * j, i * j * 2], [i * j * 3, i * j * 4]],
+                                  dt=ti.u8), i * j * 5000))
+
+    make_list()
+
+    for i in range(10):
+        for j in range(20):
+            assert f[i, j].a == i * j * (10**10)
+            for k in range(4):
+                assert f[i, j].b[k // 2, k % 2] == i * j * (k + 1) % 256
+            assert f[i, j].c == i * j * 5000 % 65536
+
+
+@test_utils.test(require=ti.extension.sparse, exclude=[ti.metal])
+def test_append_matrix_in_struct():
+    _test_append_matrix_in_struct()
+
+
+@test_utils.test(require=ti.extension.sparse,
+                 exclude=[ti.metal],
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
+def _test_append_matrix_in_struct_real_matrix():
+    _test_append_matrix_in_struct(
+    )  # Fails because Matrix expression has no attribute 'cast'

@@ -66,7 +66,8 @@ function build-unity-demo {
     cd taichi
     cd Taichi-UnityExample
     python scripts/implicit_fem.cgraph.py --aot
-    mkdir -p Assets/Editor
+    cd ..
+    mkdir -p Taichi-UnityExample/Assets/Editor
     cp -a /UnityBuilderAction Taichi-UnityExample/Assets/Editor/
     unity-editor \
         -logfile /dev/stdout \

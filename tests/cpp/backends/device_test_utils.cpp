@@ -43,16 +43,19 @@ void test_view_devalloc_as_ndarray(taichi::lang::Device *device_) {
   alloc_params.host_write = true;
   alloc_params.size = size * sizeof(int);
   alloc_params.usage = taichi::lang::AllocUsage::Storage;
-  taichi::lang::DeviceAllocation devalloc_arr_ = device_->allocate_memory(alloc_params);
+  taichi::lang::DeviceAllocation devalloc_arr_ =
+      device_->allocate_memory(alloc_params);
 
   std::vector<int> element_shape = {4};
-  auto arr1 = taichi::lang::Ndarray(devalloc_arr_, taichi::lang::PrimitiveType::i32, {10}, element_shape);
+  auto arr1 = taichi::lang::Ndarray(
+      devalloc_arr_, taichi::lang::PrimitiveType::i32, {10}, element_shape);
   EXPECT_TRUE(arr1.get_element_shape() == element_shape);
   EXPECT_EQ(arr1.total_shape()[0], 10);
   EXPECT_EQ(arr1.total_shape()[1], 4);
 
-  auto arr2 = taichi::lang::Ndarray(devalloc_arr_, taichi::lang::PrimitiveType::i32, {10}, element_shape,
-                      ExternalArrayLayout::kSOA);
+  auto arr2 =
+      taichi::lang::Ndarray(devalloc_arr_, taichi::lang::PrimitiveType::i32,
+                            {10}, element_shape, ExternalArrayLayout::kSOA);
   EXPECT_TRUE(arr2.get_element_shape() == element_shape);
   EXPECT_EQ(arr2.total_shape()[0], 4);
   EXPECT_EQ(arr2.total_shape()[1], 10);
@@ -60,14 +63,15 @@ void test_view_devalloc_as_ndarray(taichi::lang::Device *device_) {
   device_->dealloc_memory(devalloc_arr_);
 }
 
-void test_program(taichi::lang::ProgramImpl* program, taichi::Arch arch) {
+void test_program(taichi::lang::ProgramImpl *program, taichi::Arch arch) {
   TestProgram test_prog;
   test_prog.setup();
 
   IRBuilder builder;
   auto block = builder.extract_ir();
   test_prog.prog()->this_thread_config().arch = arch;
-  auto ker = std::make_unique<taichi::lang::Kernel>(*test_prog.prog(), std::move(block));
+  auto ker = std::make_unique<taichi::lang::Kernel>(*test_prog.prog(),
+                                                    std::move(block));
   program->compile(ker.get(), nullptr);
 }
 };  // namespace device_test_utils

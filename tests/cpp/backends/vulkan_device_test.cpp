@@ -39,7 +39,7 @@ TEST(VulkanDeviceTest, MaterializeRuntimeTest) {
   auto embedded_device =
       std::make_unique<taichi::lang::vulkan::VulkanDeviceCreator>(evd_params);
 
-  Device* device_ = embedded_device->device();
+  Device *device_ = embedded_device->device();
 
   // Materialize runtime
   std::unique_ptr<MemoryPool> pool =

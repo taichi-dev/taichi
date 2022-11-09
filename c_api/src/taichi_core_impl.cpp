@@ -16,8 +16,6 @@ thread_local ErrorCache thread_error_cache;
 
 const char *describe_error(TiError error) {
   switch (error) {
-    case TI_ERROR_TRUNCATED:
-      return "truncated";
     case TI_ERROR_SUCCESS:
       return "success";
     case TI_ERROR_NOT_SUPPORTED:
@@ -38,6 +36,8 @@ const char *describe_error(TiError error) {
       return "invalid interop";
     case TI_ERROR_INVALID_STATE:
       return "invalid state";
+    case TI_ERROR_INCOMPATIBLE_MODULE:
+      return "incompatible module";
     default:
       return "unknown error";
   }

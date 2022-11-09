@@ -36,10 +36,7 @@ def arg_at(indices, *fns):
             if i in kwargs:
                 arg = kwargs[i]
             else:
-                try:
-                    arg = args[i]
-                except IndexError:
-                    raise
+                arg = args[i]
             ok, msg = do_check(fns, arg)
             if not ok:
                 return False, msg
@@ -75,10 +72,7 @@ def arg_foreach_check(*arg_indices, fns=[], logic='or', msg=None):
             if i in kwargs:
                 arg = kwargs[i]
             else:
-                try:
-                    arg = args[i]
-                except IndexError:
-                    raise
+                arg = args[i]
             if logic == 'or':
                 for a in arg:
                     for fn in fns:

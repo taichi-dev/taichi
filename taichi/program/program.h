@@ -6,7 +6,6 @@
 #include <optional>
 #include <atomic>
 #include <stack>
-#include <shared_mutex>
 
 #define TI_RUNTIME_HOST
 #include "taichi/aot/module_builder.h"
@@ -126,12 +125,8 @@ class TI_DLL_EXPORT Program {
 
   CompileConfig &this_thread_config() {
     auto thread_id = std::this_thread::get_id();
-    std::shared_lock<std::shared_mutex> sharedLock(compile_config_mut);
     if (!configs.count(thread_id)) {
-      sharedLock.unlock();
-      std::unique_lock<std::shared_mutex> uniqueLock(compile_config_mut);
       configs[thread_id] = configs[main_thread_id_];
-      return configs[thread_id];
     }
     return configs[thread_id];
   }
@@ -400,8 +395,6 @@ class TI_DLL_EXPORT Program {
   std::unique_ptr<MemoryPool> memory_pool_{nullptr};
   std::vector<std::unique_ptr<Ndarray>> ndarrays_;
   std::vector<std::unique_ptr<Texture>> textures_;
-
-  std::shared_mutex compile_config_mut;
 };
 
 }  // namespace taichi::lang

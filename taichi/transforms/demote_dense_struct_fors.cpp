@@ -16,11 +16,11 @@ void convert_to_range_for(OffloadedStmt *offloaded, bool packed) {
   std::vector<SNode *> snodes;
   auto *snode = offloaded->snode;
   int total_bits = 0;
-  int start_bits_root[taichi_max_num_indices] = {0};
+  int start_bits[taichi_max_num_indices] = {0};
   while (snode->type != SNodeType::root) {
     snodes.push_back(snode);
     for (int j = 0; j < taichi_max_num_indices; j++) {
-      start_bits_root[j] += snode->extractors[j].num_bits;
+      start_bits[j] += snode->extractors[j].num_bits;
     }
     total_bits += snode->total_num_bits;
     snode = snode->parent;
@@ -88,9 +88,6 @@ void convert_to_range_for(OffloadedStmt *offloaded, bool packed) {
     }
   } else {
     int offset = total_bits;
-    int start_bits[taichi_max_num_indices] = {0};
-    std::copy(std::begin(start_bits_root), std::end(start_bits_root),
-              std::begin(start_bits));
     for (int i = 0; i < (int)snodes.size(); i++) {
       auto snode = snodes[i];
       offset -= snode->total_num_bits;
@@ -110,15 +107,11 @@ void convert_to_range_for(OffloadedStmt *offloaded, bool packed) {
       }
     }
 
-    std::copy(std::begin(start_bits_root), std::end(start_bits_root),
-              std::begin(start_bits));
-    for (int i = 0; i < (int)snodes.size(); i++) {
-      auto snode = snodes[i];
+    if (!snodes.empty()) {
+      auto snode = snodes.back();
       for (int j = 0; j < (int)physical_indices.size(); j++) {
         auto p = physical_indices[j];
-        start_bits[p] -= snode->extractors[p].num_bits;
-        auto num_elements = snode->extractors[p].num_elements_from_root
-                            << start_bits[p];
+        auto num_elements = snode->extractors[p].num_elements_from_root;
         if (!bit::is_power_of_two(num_elements)) {
           has_test = true;
           auto bound =

@@ -1,8 +1,9 @@
 import numbers
 
 from taichi._lib import core as _ti_core
-from taichi.lang import expr, impl, matrix, struct
+from taichi.lang import expr, impl, matrix
 from taichi.lang.field import BitpackedFields, Field
+from taichi.lang.util import is_taichi_class
 
 
 class SNode:
@@ -362,6 +363,19 @@ def rescale_index(a, b, I):
     return matrix.Vector(entries)
 
 
+def _get_flattened_ptrs(val):
+    if is_taichi_class(val):
+        ptrs = []
+        for item in val._members:
+            ptrs.extend(_get_flattened_ptrs(item))
+        return ptrs
+    if impl.current_cfg().real_matrix and isinstance(
+            val, expr.Expr) and val.ptr.is_tensor():
+        return impl.get_runtime().prog.current_ast_builder().expand_expr(
+            [val.ptr])
+    return [expr.Expr(val).ptr]
+
+
 def append(node, indices, val):
     """Append a value `val` to a SNode `node` at index `indices`.
 
@@ -370,15 +384,7 @@ def append(node, indices, val):
         indices (Union[int, :class:`~taichi.Vector`]): the indices to visit.
         val (:mod:`~taichi.types.primitive_types`): the scalar data to be appended, only i32 value is support for now.
     """
-    if isinstance(val, matrix.Matrix):
-        raise ValueError(
-            "ti.append only supports appending a scalar value or a struct")
-    ptrs = []
-    if isinstance(val, struct.Struct):
-        for item in val._members:
-            ptrs.append(expr.Expr(item).ptr)
-    else:
-        ptrs = [expr.Expr(val).ptr]
+    ptrs = _get_flattened_ptrs(val)
     append_expr = expr.Expr(_ti_core.expr_snode_append(
         node._snode.ptr, expr.make_expr_group(indices), ptrs),
                             tb=impl.get_runtime().get_current_src_info())

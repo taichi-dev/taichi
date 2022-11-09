@@ -63,10 +63,14 @@ function prepare-unity-build-env {
 }
 
 function build-unity-demo {
+    pushd taichi
+    setup_python
+    popd
+
     cd taichi
-    cd Taichi-UnityExample
+    pushd Taichi-UnityExample
     python scripts/implicit_fem.cgraph.py --aot
-    cd ..
+    popd
     mkdir -p Taichi-UnityExample/Assets/Editor
     cp -a /UnityBuilderAction Taichi-UnityExample/Assets/Editor/
     unity-editor \

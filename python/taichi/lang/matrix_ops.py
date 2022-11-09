@@ -53,7 +53,7 @@ def _reduce(mat, fun: template()):
     arg_at(
         0,
         foreach(
-            Or(assert_vector,
+            Or(assert_vector(),
                assert_list,
                msg="Cols/rows must be a list of lists, or a list of vectors")),
         same_shapes))
@@ -176,7 +176,7 @@ def norm_inv(mat, eps=0.0):
     return ops_mod.rsqrt(norm_sqr(mat) + eps)
 
 
-@preconditions(arg_at(0, assert_vector))
+@preconditions(arg_at(0, assert_vector()))
 @pyfunc
 def normalized(vec, eps=0.0):
     invlen = 1 / (norm(vec) + eps)
@@ -268,3 +268,38 @@ def matmul(x, y):
     if static(len(shape_x) == 1 and len(shape_y) == 2):
         return _matmul_helper(transpose(y), x)
     return _matmul_helper(x, y)
+
+
+@preconditions(arg_at(0, assert_vector("lhs for dot is not a vector")),
+               arg_at(1, assert_vector("rhs for dot is not a vector")))
+@pyfunc
+def dot(vec_x, vec_y):
+    return sum(vec_x * vec_y)
+
+
+@preconditions(arg_at(0, assert_vector("lhs for cross is not a vector")),
+               arg_at(1, assert_vector("rhs for cross is not a vector")),
+               same_shapes, arg_at(0, dim_lt(0, 4)))
+@pyfunc
+def cross(vec_x, vec_y):
+    shape = static(vec_x.get_shape())
+    if static(shape[0] == 2):
+        return vec_x[0] * vec_y[1] - vec_x[1] * vec_y[0]
+    if static(shape[0] == 3):
+        return Vector([
+            vec_x[1] * vec_y[2] - vec_x[2] * vec_y[1],
+            vec_x[2] * vec_y[0] - vec_x[0] * vec_y[2],
+            vec_x[0] * vec_y[1] - vec_x[1] * vec_y[0]
+        ])
+    return None
+
+
+@preconditions(
+    arg_at(0, assert_vector("lhs for outer_product is not a vector")),
+    arg_at(1, assert_vector("rhs for outer_product is not a vector")))
+@pyfunc
+def outer_product(vec_x, vec_y):
+    shape_x = static(vec_x.get_shape())
+    shape_y = static(vec_y.get_shape())
+    return Matrix([[vec_x[i] * vec_y[j] for j in static(range(shape_y[0]))]
+                   for i in static(range(shape_x[0]))])

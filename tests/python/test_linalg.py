@@ -28,8 +28,7 @@ def test_const_init():
         assert b[None][j] == j
 
 
-@test_utils.test()
-def test_basic_utils():
+def _test_basic_utils():
     a = ti.Vector.field(3, dtype=ti.f32)
     b = ti.Vector.field(2, dtype=ti.f32)
     abT = ti.Matrix.field(3, 2, dtype=ti.f32)
@@ -70,7 +69,16 @@ def test_basic_utils():
 
 
 @test_utils.test()
-def test_cross():
+def test_basic_utils():
+    _test_basic_utils()
+
+
+@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
+def test_basic_utils_real_matrix_scalarize():
+    _test_basic_utils()
+
+
+def _test_cross():
     a = ti.Vector.field(3, dtype=ti.f32)
     b = ti.Vector.field(3, dtype=ti.f32)
     c = ti.Vector.field(3, dtype=ti.f32)
@@ -99,7 +107,16 @@ def test_cross():
 
 
 @test_utils.test()
-def test_dot():
+def test_cross():
+    _test_cross()
+
+
+@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
+def test_cross_real_matrix_scalarize():
+    _test_cross()
+
+
+def _test_dot():
     a = ti.Vector.field(3, dtype=ti.f32)
     b = ti.Vector.field(3, dtype=ti.f32)
     c = ti.field(dtype=ti.f32)
@@ -123,6 +140,16 @@ def test_dot():
     init()
     assert c[None] == 32.0
     assert c2[None] == 14.0
+
+
+@test_utils.test()
+def test_dot():
+    _test_dot()
+
+
+@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
+def test_dot_real_matrix_scalarize():
+    _test_dot()
 
 
 @test_utils.test()

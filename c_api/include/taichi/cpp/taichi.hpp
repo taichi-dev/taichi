@@ -703,6 +703,20 @@ class Runtime {
     return *this;
   }
 
+  std::map<TiCapability, uint32_t> get_capabilities() const {
+    uint32_t n = 0;
+    ti_get_runtime_capabilities(runtime_, &n, nullptr);
+    std::vector<TiCapabilityLevelInfo> devcaps(n);
+    ti_get_runtime_capabilities(runtime_, &n, devcaps.data());
+
+    std::map<TiCapability, uint32_t> out {};
+    for (size_t i = 0; i < devcaps.size(); ++i) {
+      const auto& devcap = devcaps.at(i);
+      out.at(devcap.capability) = devcap.level;
+    }
+    return out;
+  }
+
   Memory allocate_memory(const TiMemoryAllocateInfo &allocate_info) {
     TiMemory memory = ti_allocate_memory(runtime_, &allocate_info);
     return Memory(runtime_, memory, allocate_info.size, true);

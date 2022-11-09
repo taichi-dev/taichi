@@ -171,7 +171,7 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
             has_slice = True
         elif isinstance(_index, Expr) and _index.is_tensor():
             # Expand Expr with TensorType return
-            ind = ast_builder.expand_expr([_index.ptr])
+            ind = [Expr(e) for e in ast_builder.expand_expr([_index.ptr])]
         else:
             ind = [_index]
         flattened_indices += ind

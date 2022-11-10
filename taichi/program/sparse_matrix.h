@@ -32,15 +32,11 @@ class SparseMatrixBuilder {
 
  private:
   template <typename T, typename G>
-  void print_template();
-
-  template <typename T, typename G>
   void build_template(std::unique_ptr<SparseMatrix> &);
 
  private:
   uint64 num_triplets_{0};
-  std::unique_ptr<uchar[]> data_base_ptr_{nullptr};
-  std::unique_ptr<Ndarray> data_base_ptr_ndarray_{nullptr};
+  std::unique_ptr<Ndarray> ndarray_data_base_ptr_{nullptr};
   int rows_{0};
   int cols_{0};
   uint64 max_num_triplets_{0};

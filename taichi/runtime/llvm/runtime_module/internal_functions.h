@@ -11,17 +11,13 @@
 
 #define ATOMIC_INSERT(T)                                                  \
   do {                                                                    \
-    auto runtime = context->runtime;                                      \
     auto base_ptr = reinterpret_cast<int##T *>(base_ptr_);                \
     int##T *num_triplets = base_ptr;                                      \
     auto data_base_ptr = base_ptr + 1;                                    \
     auto triplet_id = atomic_add_i##T(num_triplets, 1);                   \
     data_base_ptr[triplet_id * 3] = i;                                    \
     data_base_ptr[triplet_id * 3 + 1] = j;                                \
-    taichi_printf(runtime, "atomic inserted %d %d %f\t\n", i, j, value);  \
     data_base_ptr[triplet_id * 3 + 2] = taichi_union_cast<int##T>(value); \
-    taichi_printf(runtime, "atomic inserted %d %d %f\t\n", i, j,          \
-                  data_base_ptr[triplet_id * 3 + 2]);                     \
   } while (0);
 
 i32 do_nothing(RuntimeContext *context) {

@@ -139,7 +139,8 @@ jobs:
       - name: Build & Install
         if: needs.check_files.outputs.run_job == 'true'
         run: |
-          brew install molten-vk
+          # Use the molten-vk v1.1.10 downloaded from taichi assets
+          brew uninstall molten-vk -f
           .github/workflows/scripts/unix-build.sh
         env:
           CXX: clang++

@@ -195,7 +195,8 @@ jobs:
 
       - name: Create Python Wheel
         run: |
-          brew install molten-vk
+          # Use the molten-vk v1.1.10 downloaded from taichi assets
+          brew uninstall molten-vk -f
           export PATH=$(pwd)/taichi-llvm/bin/:$PATH
           .github/workflows/scripts/unix-build.sh
         env:

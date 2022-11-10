@@ -104,6 +104,8 @@ def make_matrix(arr, dt=None):
     is_matrix = isinstance(arr[0], Iterable)
     if dt is None:
         dt = _make_entries_initializer(is_matrix).infer_dt(arr)
+    else:
+        dt = cook_dtype(dt)
     if not is_matrix:
         return impl.Expr(
             impl.make_matrix_expr([len(arr)], dt,
@@ -454,6 +456,8 @@ class Matrix(TaichiOperations):
                     )
                 if dt is None:
                     dt = initializer.infer_dt(arr)
+                else:
+                    dt = cook_dtype(dt)
                 local_tensor_proxy, mat = initializer.with_dynamic_index(
                     arr, dt)
         self.n, self.m = len(mat), 1
@@ -1043,10 +1047,10 @@ class Matrix(TaichiOperations):
             :class:`~taichi.lang.matrix.Matrix`: A :class:`~taichi.lang.matrix.Matrix` instance filled with zeros.
 
         """
+        from taichi.lang import matrix_ops  # pylint: disable=C0415
         if m is None:
-            return Vector([ops_mod.cast(0, dt) for _ in range(n)])
-        return Matrix([[ops_mod.cast(0, dt) for _ in range(m)]
-                       for _ in range(n)])
+            return matrix_ops._filled_vector(n, dt, 0)
+        return matrix_ops._filled_matrix(n, m, dt, 0)
 
     @staticmethod
     @taichi_scope
@@ -1062,10 +1066,10 @@ class Matrix(TaichiOperations):
             :class:`~taichi.lang.matrix.Matrix`: A :class:`~taichi.lang.matrix.Matrix` instance filled with ones.
 
         """
+        from taichi.lang import matrix_ops  # pylint: disable=C0415
         if m is None:
-            return Vector([ops_mod.cast(1, dt) for _ in range(n)])
-        return Matrix([[ops_mod.cast(1, dt) for _ in range(m)]
-                       for _ in range(n)])
+            return matrix_ops._filled_vector(n, dt, 1)
+        return matrix_ops._filled_matrix(n, m, dt, 1)
 
     @staticmethod
     @taichi_scope
@@ -1087,10 +1091,11 @@ class Matrix(TaichiOperations):
             >>> A
             [0, 1, 0]
         """
+        from taichi.lang import matrix_ops  # pylint: disable=C0415
         if dt is None:
             dt = int
         assert 0 <= i < n
-        return Vector([ops_mod.cast(int(j == i), dt) for j in range(n)])
+        return matrix_ops._unit_vector(n, i, dt)
 
     @staticmethod
     @taichi_scope
@@ -1104,8 +1109,8 @@ class Matrix(TaichiOperations):
         Returns:
             :class:`~taichi.Matrix`: An `n x n` identity matrix.
         """
-        return Matrix([[ops_mod.cast(int(i == j), dt) for j in range(n)]
-                       for i in range(n)])
+        from taichi.lang import matrix_ops  # pylint: disable=C0415
+        return matrix_ops._identity_matrix(n, dt)
 
     @staticmethod
     def rotation2d(alpha):
@@ -1121,11 +1126,10 @@ class Matrix(TaichiOperations):
              [ 0.70710678  0.70710678]]
         """
         warnings.warn(
-            "`ti.Matrix.rotation2d(alpha)` is renamed to `ti.Math.rotation2d(ang)`",
+            "`ti.Matrix.rotation2d()` will be removed in release v1.4.0. Use `ti.math.rotation2d()` instead.",
             DeprecationWarning)
-        return Matrix([[ops_mod.cos(alpha), -ops_mod.sin(alpha)],
-                       [ops_mod.sin(alpha),
-                        ops_mod.cos(alpha)]])
+        from taichi.lang import matrix_ops  # pylint: disable=C0415
+        return matrix_ops._rotation2d_matrix(alpha)
 
     @classmethod
     @python_scope

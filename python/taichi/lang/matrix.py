@@ -1833,7 +1833,7 @@ class MatrixType(CompoundType):
 
         if isinstance(mat, impl.Expr) and mat.ptr.is_tensor():
             return ops_mod.cast(mat, self.dtype)
-        
+
         if isinstance(mat, Matrix) and impl.current_cfg().real_matrix
             arr = mat.entries
             return ops_mod.cast(make_matrix(arr), self.dtype)

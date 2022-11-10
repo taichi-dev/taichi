@@ -1209,9 +1209,15 @@ class ASTTransformer(Builder):
                 expr_group = expr.make_expr_group(loop_indices)
                 impl.begin_frontend_struct_for(ctx.ast_builder, expr_group,
                                                loop_var)
-                ctx.create_variable(
-                    target, matrix.Vector(loop_indices,
-                                          dt=primitive_types.i32))
+                if impl.current_cfg().real_matrix:
+                    ctx.create_variable(
+                        target,
+                        matrix.make_matrix(loop_indices,
+                                           dt=primitive_types.i32))
+                else:
+                    ctx.create_variable(
+                        target,
+                        matrix.Vector(loop_indices, dt=primitive_types.i32))
                 build_stmts(ctx, node.body)
                 ctx.ast_builder.end_frontend_struct_for()
             else:

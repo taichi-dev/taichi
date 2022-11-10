@@ -1,10 +1,10 @@
 from functools import reduce
 
 import numpy as np
+from taichi.lang._ndarray import Ndarray, ScalarNdarray
 from taichi.lang.exception import TaichiRuntimeError
 from taichi.lang.field import Field
 from taichi.lang.impl import get_runtime
-from taichi.lang.matrix import Ndarray
 from taichi.lang.util import warning
 from taichi.types import annotations, f32, i32
 
@@ -222,7 +222,7 @@ class SparseMatrix:
             get_runtime().prog.make_sparse_matrix_from_ndarray_cusparse(
                 self.matrix, row_coo.arr, col_coo.arr, value_coo.arr)
 
-    def spmv(self, x, y):
+    def spmv(self, x):
         """Sparse matrix-vector multiplication using cuSparse.
 
         Args:
@@ -236,7 +236,7 @@ class SparseMatrix:
             >>> A.build_from_ndarray_cusparse(row_csr, col_csr, value_csr)
             >>> A.spmv(x, y)
         """
-        if not isinstance(x, Ndarray) or not isinstance(y, Ndarray):
+        if not isinstance(x, Ndarray):
             raise TaichiRuntimeError(
                 'Sparse matrix only supports building from [ti.ndarray, ti.Vector.ndarray, ti.Matrix.ndarray]'
             )
@@ -244,8 +244,9 @@ class SparseMatrix:
             raise TaichiRuntimeError(
                 f"Dimension mismatch between sparse matrix ({self.n}, {self.m}) and vector ({x.shape})"
             )
-
-        self.matrix.spmv(get_runtime().prog, x.arr, y.arr)
+        res = ScalarNdarray(dtype=x.dtype, arr_shape=(self.n, ))
+        self.matrix.spmv(get_runtime().prog, x.arr, res.arr)
+        return res
 
 
 class SparseMatrixBuilder:

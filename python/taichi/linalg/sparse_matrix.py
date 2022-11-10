@@ -136,6 +136,14 @@ class SparseMatrix:
             assert self.m == other.shape[
                 0], f"Dimension mismatch between sparse matrix ({self.n}, {self.m}) and vector ({other.shape})"
             return self.matrix.mat_vec_mul(other)
+        if isinstance(other, Ndarray):
+            if self.m != other.shape[0]:
+                raise TaichiRuntimeError(
+                    f"Dimension mismatch between sparse matrix ({self.n}, {self.m}) and vector ({other.shape})"
+                )
+            res = ScalarNdarray(dtype=other.dtype, arr_shape=(self.n, ))
+            self.matrix.spmv(get_runtime().prog, other.arr, res.arr)
+            return res
         raise TaichiRuntimeError(
             f"Sparse matrix-matrix/vector multiplication does not support {type(other)} for now. Supported types are SparseMatrix, ti.field, and numpy ndarray."
         )
@@ -221,32 +229,6 @@ class SparseMatrix:
         else:
             get_runtime().prog.make_sparse_matrix_from_ndarray_cusparse(
                 self.matrix, row_coo.arr, col_coo.arr, value_coo.arr)
-
-    def spmv(self, x):
-        """Sparse matrix-vector multiplication using cuSparse.
-
-        Args:
-            x (ti.ndarray): the vector to be multiplied.
-            y (ti.ndarray): the result of matrix-vector multiplication.
-
-        Example::
-            >>> x = ti.ndarray(shape=4, dtype=val_dt)
-            >>> y = ti.ndarray(shape=4, dtype=val_dt)
-            >>> A = ti.linalg.SparseMatrix(n=4, m=4, dtype=ti.f32)
-            >>> A.build_from_ndarray_cusparse(row_csr, col_csr, value_csr)
-            >>> A.spmv(x, y)
-        """
-        if not isinstance(x, Ndarray):
-            raise TaichiRuntimeError(
-                'Sparse matrix only supports building from [ti.ndarray, ti.Vector.ndarray, ti.Matrix.ndarray]'
-            )
-        if self.m != x.shape[0]:
-            raise TaichiRuntimeError(
-                f"Dimension mismatch between sparse matrix ({self.n}, {self.m}) and vector ({x.shape})"
-            )
-        res = ScalarNdarray(dtype=x.dtype, arr_shape=(self.n, ))
-        self.matrix.spmv(get_runtime().prog, x.arr, res.arr)
-        return res
 
 
 class SparseMatrixBuilder:

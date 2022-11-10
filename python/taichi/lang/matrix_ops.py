@@ -332,3 +332,9 @@ def outer_product(vec_x, vec_y):
     shape_y = static(vec_y.get_shape())
     return Matrix([[vec_x[i] * vec_y[j] for j in static(range(shape_y[0]))]
                    for i in static(range(shape_x[0]))])
+
+
+@preconditions(assert_tensor)
+@func
+def cast(mat, dtype: template()):
+    return ops_mod.cast(mat, dtype)

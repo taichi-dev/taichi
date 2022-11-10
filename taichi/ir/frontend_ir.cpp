@@ -197,6 +197,7 @@ void UnaryOpExpression::flatten(FlattenContext *ctx) {
   }
   stmt = unary.get();
   stmt->tb = tb;
+  stmt->ret_type = ret_type;
   ctx->push_back(std::move(unary));
 }
 
@@ -868,6 +869,10 @@ void AtomicOpExpression::type_check(CompileConfig *config) {
 }
 
 void AtomicOpExpression::flatten(FlattenContext *ctx) {
+  TI_ASSERT(
+      dest.is<IdExpression>() || dest.is<IndexExpression>() ||
+      dest.is<StrideExpression>() ||
+      (dest.is<ArgLoadExpression>() && dest.cast<ArgLoadExpression>()->is_ptr));
   // replace atomic sub with negative atomic add
   if (op_type == AtomicOpType::sub) {
     if (val->ret_type != ret_type) {
@@ -881,18 +886,8 @@ void AtomicOpExpression::flatten(FlattenContext *ctx) {
   // expand rhs
   flatten_rvalue(val, ctx);
   auto src_val = val->stmt;
-  if (dest.is<IdExpression>()) {  // local variable
-    // emit local store stmt
-    auto alloca = ctx->current_block->lookup_var(dest.cast<IdExpression>()->id);
-    ctx->push_back<AtomicOpStmt>(op_type, alloca, src_val);
-  } else {
-    TI_ASSERT(dest.is<IndexExpression>() || dest.is<StrideExpression>() ||
-              (dest.is<ArgLoadExpression>() &&
-               dest.cast<ArgLoadExpression>()->is_ptr));
-    flatten_lvalue(dest, ctx);
-    ctx->push_back<AtomicOpStmt>(op_type, dest->stmt, src_val);
-  }
-  stmt = ctx->back_stmt();
+  flatten_lvalue(dest, ctx);
+  stmt = ctx->push_back<AtomicOpStmt>(op_type, dest->stmt, src_val);
   stmt->ret_type = stmt->as<AtomicOpStmt>()->dest->ret_type;
   stmt->tb = tb;
 }

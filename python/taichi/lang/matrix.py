@@ -1820,15 +1820,16 @@ class MatrixType(CompoundType):
         return self.cast(Matrix(entries, dt=self.dtype, ndim=self.ndim))
 
     def cast(self, mat):
-        if isinstance(mat, impl.Expr) and mat.ptr.is_tensor():
-            return ops_mod.cast(mat, self.dtype)
-
         if in_python_scope():
             return Matrix([[
                 int(mat(i, j)) if self.dtype in primitive_types.integer_types
                 else float(mat(i, j)) for j in range(self.m)
             ] for i in range(self.n)],
                           ndim=self.ndim)
+                          
+        if isinstance(mat, impl.Expr) and mat.ptr.is_tensor():
+            return ops_mod.cast(mat, self.dtype)
+            
         return mat.cast(self.dtype)
 
     def filled_with_scalar(self, value):
@@ -1912,6 +1913,10 @@ class VectorType(MatrixType):
                 int(vec(i)) if self.dtype in primitive_types.integer_types else
                 float(vec(i)) for i in range(self.n)
             ])
+            
+        if isinstance(vec, impl.Expr) and vec.ptr.is_tensor():
+            return ops_mod.cast(vec, self.dtype)
+            
         return vec.cast(self.dtype)
 
     def filled_with_scalar(self, value):

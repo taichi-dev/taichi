@@ -1786,6 +1786,16 @@ class MatrixType(CompoundType):
                 "Custom type instances need to be created with an initial value."
             )
         if len(args) == 1:
+            # Init from a real Matrix
+            if isinstance(args[0], expr.Expr) and args[0].ptr.is_tensor():
+                arg = args[0]
+                shape = arg.ptr.get_ret_type().shape()
+                assert self.ndim == len(shape)
+                assert self.n == shape[0]
+                if self.ndim > 1:
+                    assert self.m == shape[1]
+                return expr.Expr(arg.ptr)
+
             # initialize by a single scalar, e.g. matnxm(1)
             if isinstance(args[0], (numbers.Number, expr.Expr)):
                 return self.filled_with_scalar(args[0])
@@ -1820,9 +1830,14 @@ class MatrixType(CompoundType):
                 else float(mat(i, j)) for j in range(self.m)
             ] for i in range(self.n)],
                           ndim=self.ndim)
-        if impl.current_cfg().real_matrix:
+
+        if isinstance(mat, impl.Expr) and mat.ptr.is_tensor():
+            return ops_mod.cast(mat, self.dtype)
+        
+        if isinstance(mat, Matrix) and impl.current_cfg().real_matrix
             arr = mat.entries
             return ops_mod.cast(make_matrix(arr), self.dtype)
+
         return mat.cast(self.dtype)
 
     def filled_with_scalar(self, value):
@@ -1867,6 +1882,14 @@ class VectorType(MatrixType):
                 "Custom type instances need to be created with an initial value."
             )
         if len(args) == 1:
+            # Init from a real Matrix
+            if isinstance(args[0], expr.Expr) and args[0].ptr.is_tensor():
+                arg = args[0]
+                shape = arg.ptr.get_ret_type().shape()
+                assert len(shape) == 1
+                assert self.n == shape[0]
+                return expr.Expr(arg.ptr)
+
             # initialize by a single scalar, e.g. matnxm(1)
             if isinstance(args[0], (numbers.Number, expr.Expr)):
                 return self.filled_with_scalar(args[0])
@@ -1903,9 +1926,14 @@ class VectorType(MatrixType):
                 int(vec(i)) if self.dtype in primitive_types.integer_types else
                 float(vec(i)) for i in range(self.n)
             ])
-        if impl.current_cfg().real_matrix:
+
+        if isinstance(vec, impl.Expr) and vec.ptr.is_tensor():
+            return ops_mod.cast(vec, self.dtype)
+
+        if isinstance(vec, Matrix) and impl.current_cfg().real_matrix
             arr = vec.entries
             return ops_mod.cast(make_matrix(arr), self.dtype)
+
         return vec.cast(self.dtype)
 
     def filled_with_scalar(self, value):

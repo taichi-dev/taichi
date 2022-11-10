@@ -24,5 +24,6 @@ def pytest_generate_tests(metafunc):
 
 def pytest_configure(config):
     config.addinivalue_line(
-        "markers", "run_in_serial: mark test to run serially(usually for resource intensive tests)."
+        "markers",
+        "run_in_serial: mark test to run serially(usually for resource intensive tests)."
     )

@@ -58,31 +58,11 @@ def _reduce(mat, fun: template()):
                msg="Cols/rows must be a list of lists, or a list of vectors")))
 )
 def rows(rows):  # pylint: disable=W0621
-    if isinstance(rows[0], (Matrix, Expr)):
-        shape = rows[0].get_shape()
-        assert len(shape) == 1, "Rows must be a list of vectors"
-        """
-        for i, row in enumerate(rows):
-            ast_builder = get_runtime().prog.current_ast_builder()
-            if current_cfg().real_matrix and isinstance(
-                    row, Expr) and row.is_tensor():
-                rows[i] = [Expr(x) for x in ast_builder.expand_expr([row.ptr])]
-        """
-        @pyfunc
-        def _rows():
-            return Matrix([[row[i] for i in range(shape[0])] for row in rows])
+    @pyfunc
+    def _rows():
+        return Matrix([[x for x in row] for row in rows])
 
-        return _rows()
-
-    if isinstance(rows[0], list):
-
-        @pyfunc
-        def _rows():
-            return Matrix([[x for x in row] for row in rows])
-
-        return _rows()
-    # unreachable
-    return None
+    return _rows()
 
 
 @pyfunc

@@ -269,8 +269,7 @@ def test_mat_inverse_size(n):
     np.testing.assert_almost_equal(m_np, np.linalg.inv(M))
 
 
-@test_utils.test()
-def test_matrix_factories():
+def _test_matrix_factories():
     a = ti.Vector.field(3, dtype=ti.i32, shape=3)
     b = ti.Matrix.field(2, 2, dtype=ti.f32, shape=2)
     c = ti.Matrix.field(2, 3, dtype=ti.f32, shape=2)
@@ -296,6 +295,16 @@ def test_matrix_factories():
         np.array([[0.5, -sqrt3o2], [sqrt3o2, 0.5]]))
     assert c[0].to_numpy() == test_utils.approx(np.zeros((2, 3)))
     assert c[1].to_numpy() == test_utils.approx(np.ones((2, 3)))
+
+
+@test_utils.test()
+def test_matrix_factories():
+    _test_matrix_factories()
+
+
+@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
+def test_matrix_factories_real_matrix_scalarize():
+    _test_matrix_factories()
 
 
 def _test_init_matrix_from_vectors():

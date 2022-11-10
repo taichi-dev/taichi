@@ -28,7 +28,6 @@ function build-and-smoke-test-android-aot-demo {
     sudo chmod 0777 $HOME/.cache
     python implicit_fem.py --aot
     popd
-
     mkdir -p $JNI_PATH
     cp taichi/build/libtaichi_export_core.so $JNI_PATH
     cd $ANDROID_APP_ROOT
@@ -105,45 +104,45 @@ function build-and-test-headless-demo {
     popd
 
     rm -rf taichi-aot-demo
-    git clone --recursive --depth=1 https://github.com/taichi-dev/taichi-aot-demo
+    git clone --recursive --depth=1 -b add_test_script https://github.com/taichi-dev/taichi-aot-demo
     cd taichi-aot-demo
-    mkdir build
-    pushd build
+
+    . $(pwd)/ci/test_utils.sh
+
+    # Build demos
     export TAICHI_C_API_INSTALL_DIR=$(find $TAICHI_REPO_DIR -name cmake-install -type d | head -n 1)/c_api
-    cmake $ANDROID_CMAKE_ARGS ..
-    make -j
+    build_demos "$ANDROID_CMAKE_ARGS"
+
     export PATH=/android-sdk/platform-tools:$PATH
     grab-android-bot
     trap release-android-bot EXIT
     adb connect $BOT
 
-    # clear temporary test folder
-    adb shell "rm -rf /data/local/tmp/*"
+    # Clear temporary test folder
+    adb shell "rm -rf /data/local/tmp/* && mkdir /data/local/tmp/build"
 
-    cd headless
-    BINARIES=$(ls E*)
-    for b in $BINARIES; do
-        adb push $b /data/local/tmp
-    done
+    # Push all binaries and shaders to the phone
+    pushd ci
+    adb push ./*.sh /data/local/tmp
+    popd
     adb push $TAICHI_C_API_INSTALL_DIR/lib/libtaichi_c_api.so /data/local/tmp
-
-    popd # build
-
+    adb push ./build/headless /data/local/tmp/build
+    adb push ./build/tutorial /data/local/tmp/build
     for dir in ?_*; do
         adb push $dir /data/local/tmp
     done
 
-    for b in $BINARIES; do
-        adb shell "cd /data/local/tmp && LD_LIBRARY_PATH=\$(pwd) ./$b"
-        adb pull /data/local/tmp/0001.bmp $b.bmp
-    done
+    # Run demos
+    adb shell "cd /data/local/tmp && LD_LIBRARY_PATH=\$(pwd) ./run_demos.sh"
 
-    for b in $BINARIES; do
-        if [[ $(cmp -l $b.bmp ci/headless-truths/$b.bmp | wc -l) -gt 300 ]]; then
-            echo "Above threshold: $b"
-            exit 1
-        fi
-    done
+    # Pull output images and compare with groundtruth
+    rm -rf output
+    mkdir output
+
+    adb shell "ls /data/local/tmp/output"
+
+    adb pull /data/local/tmp/output .
+    compare_to_groundtruth android
 }
 
 $1

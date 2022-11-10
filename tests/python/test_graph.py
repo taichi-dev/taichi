@@ -448,3 +448,41 @@ def test_ti_func_with_template_args():
     g = g_builder.compile()
     g.run({'arr': arr})
     assert arr.to_numpy() == 1
+
+
+@test_utils.test(arch=[ti.vulkan])
+def test_texture_struct_for():
+    res = (128, 128)
+    tex = ti.Texture(ti.Format.r32f, res)
+    arr = ti.ndarray(ti.f32, res)
+
+    @ti.kernel
+    def write(tex: ti.types.rw_texture(num_dimensions=2,
+                                       num_channels=1,
+                                       channel_format=ti.f32,
+                                       lod=0)):
+        for i, j in tex:
+            tex.store(ti.Vector([i, j]), ti.Vector([1.0, 0.0, 0.0, 0.0]))
+
+    @ti.kernel
+    def read(tex: ti.types.texture(num_dimensions=2), arr: ti.types.ndarray()):
+        for i, j in arr:
+            arr[i, j] = tex.fetch(ti.Vector([i, j]), 0).x
+
+    sym_tex = ti.graph.Arg(ti.graph.ArgKind.RWTEXTURE,
+                           'tex',
+                           channel_format=ti.f32,
+                           shape=res,
+                           num_channels=1)
+    sym_arr = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
+                           'arr',
+                           ti.f32,
+                           field_dim=2)
+
+    gb = ti.graph.GraphBuilder()
+    gb.dispatch(write, sym_tex)
+    gb.dispatch(read, sym_tex, sym_arr)
+    graph = gb.compile()
+
+    graph.run({'tex': tex, 'arr': arr})
+    assert arr.to_numpy().sum() == 128 * 128

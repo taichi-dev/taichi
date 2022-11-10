@@ -49,6 +49,35 @@ def _reduce(mat, fun: template()):
     return result
 
 
+@func
+def _filled_vector(n: template(), dtype: template(), val: template()):
+    return Vector([val for _ in static(range(n))], dtype)
+
+
+@func
+def _filled_matrix(n: template(), m: template(), dtype: template(),
+                   val: template()):
+    return Matrix([[val for _ in static(range(m))] for _ in static(range(n))],
+                  dtype)
+
+
+@func
+def _unit_vector(n: template(), i: template(), dtype: template()):
+    return Vector([i == j for j in static(range(n))], dtype)
+
+
+@func
+def _identity_matrix(n: template(), dtype: template()):
+    return Matrix([[i == j for j in static(range(n))]
+                   for i in static(range(n))], dtype)
+
+
+@pyfunc
+def _rotation2d_matrix(alpha):
+    return Matrix([[ops_mod.cos(alpha), -ops_mod.sin(alpha)],
+                   [ops_mod.sin(alpha), ops_mod.cos(alpha)]])
+
+
 @preconditions(
     arg_at(
         0,
@@ -290,3 +319,9 @@ def outer_product(vec_x, vec_y):
     shape_y = static(vec_y.get_shape())
     return Matrix([[vec_x[i] * vec_y[j] for j in static(range(shape_y[0]))]
                    for i in static(range(shape_x[0]))])
+
+
+@preconditions(assert_tensor)
+@func
+def cast(mat, dtype: template()):
+    return ops_mod.cast(mat, dtype)

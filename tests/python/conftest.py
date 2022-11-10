@@ -20,3 +20,9 @@ def pytest_generate_tests(metafunc):
         # fill with empty values to avoid undefined fixtures
         metafunc.parametrize('req_arch,req_options', [(None, None)],
                              ids=['none'])
+
+
+def pytest_configure(config):
+    config.addinivalue_line(
+        "markers", "run_in_serial: mark test to run serially(usually for resource intensive tests)."
+    )

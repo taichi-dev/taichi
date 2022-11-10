@@ -4,40 +4,19 @@ import pytest
 import taichi as ti
 from tests import test_utils
 
-"""
-The symmetric positive definite matrix is created in matlab using the following script:
-    A = diag([1,2,3,4]);
-    OrthM = [1 0 1 0; -1 -2 0 1; 0 1 -1 0; 0, 1, 0 1];
-    U = orth(OrthM);
-    Aarray = U * A * U';
-    b = [1,2,3,4]';
-    res = inv(A) * b;
-""" # yapf: disable
-
-Aarray = np.array([[
-    2.73999501130921, 0.518002544441220, 0.745119303009342, 0.0508907745638859
-], [0.518002544441220, 1.45111665837647, 0.757997555750432, 0.290885785873098],
-                   [
-                       0.745119303009342, 0.757997555750432, 2.96711176987733,
-                       -0.518002544441220
-                   ],
-                   [
-                       0.0508907745638859, 0.290885785873098,
-                       -0.518002544441220, 2.84177656043698
-                   ]])
-
-res = np.array([
-    -0.0754984396447588, 0.469972700892492, 1.18527357933586, 1.57686870529319
-])
-
 
 @pytest.mark.parametrize("dtype", [ti.f32])
 @pytest.mark.parametrize("solver_type", ["LLT", "LDLT", "LU"])
 @pytest.mark.parametrize("ordering", ["AMD", "COLAMD"])
 @test_utils.test(arch=ti.cpu)
 def test_sparse_LLT_solver(dtype, solver_type, ordering):
-    n = 4
-    Abuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=100)
+    n = 10
+    A = np.random.rand(n, n)
+    A_psd = np.dot(A, A.transpose())
+    dtype = ti.float32
+    solver_type = "LLT"
+    ordering = "AMD"
+    Abuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=300)
     b = ti.field(ti.f32, shape=n)
 
     @ti.kernel
@@ -48,16 +27,19 @@ def test_sparse_LLT_solver(dtype, solver_type, ordering):
         for i in range(n):
             b[i] = i + 1
 
-    fill(Abuilder, Aarray, b)
+    fill(Abuilder, A_psd, b)
     A = Abuilder.build()
+    print(A)
     solver = ti.linalg.SparseSolver(dtype=dtype,
                                     solver_type=solver_type,
                                     ordering=ordering)
     solver.analyze_pattern(A)
     solver.factorize(A)
     x = solver.solve(b)
+
+    res = np.linalg.solve(A_psd, b.to_numpy())
     for i in range(n):
-        assert x[i] == test_utils.approx(res[i])
+        assert x[i] == test_utils.approx(res[i], rel=1.0)
 
 
 @test_utils.test(arch=ti.cuda)

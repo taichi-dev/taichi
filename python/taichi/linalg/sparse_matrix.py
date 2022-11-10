@@ -285,10 +285,6 @@ class SparseMatrixBuilder:
         """Print the triplets stored in the builder"""
         self.ptr.print_triplets()
 
-    def print_ndarray_data(self):
-        """Print the ndarray data stored in the builder"""
-        self.ptr.print_ndarray_data()
-
     def test_ndarray(self):
         self.ptr.test_ndarray()
 

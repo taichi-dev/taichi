@@ -1,24 +1,23 @@
 import taichi as ti
 
-ti.init(arch=ti.cuda, debug=True)
+ti.init(arch=ti.x64, debug=True, offline_cache=False)
 
-n = 2
-
-K = ti.linalg.SparseMatrixBuilder(n,
-                                  n,
-                                  max_num_triplets=100,
-                                  dtype=ti.f32,
-                                  storage_format='col_major')
-
-# K.test_ndarray()
+n = 8
+triplets = ti.Vector.ndarray(n=3, dtype=ti.f32, shape=n)
+A = ti.linalg.SparseMatrix(n=10,
+                           m=10,
+                           dtype=ti.f32,
+                           storage_format='col_major')
 
 
 @ti.kernel
-def fill(A: ti.types.sparse_matrix_builder()):
+def fill(triplets: ti.types.ndarray()):
     for i in range(n):
-        A[i, i] += 2
+        triplet = ti.Vector([i, i, i], dt=ti.f32)
+        triplets[i] = triplet
 
 
-fill(K)
-
-K.print_ndarray_data()
+fill(triplets)
+A.build_from_ndarray(triplets)
+for i in range(n):
+    assert A[i, i] == i

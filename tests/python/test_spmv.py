@@ -8,7 +8,7 @@ from tests import test_utils
                                                    (ti.f32, 'row_major'),
                                                    (ti.f64, 'col_major'),
                                                    (ti.f64, 'row_major')])
-@test_utils.test(arch=ti.cpu)
+@test_utils.test(arch=ti.cpu, offline_cache=False)
 def test_sparse_matrix_vector_multiplication1(dtype, storage_format):
     n = 8
     Abuilder = ti.linalg.SparseMatrixBuilder(n,
@@ -37,7 +37,7 @@ def test_sparse_matrix_vector_multiplication1(dtype, storage_format):
                                                    (ti.f32, 'row_major'),
                                                    (ti.f64, 'col_major'),
                                                    (ti.f64, 'row_major')])
-@test_utils.test(arch=ti.cpu)
+@test_utils.test(arch=ti.cpu, offline_cache=False)
 def test_sparse_matrix_vector_multiplication2(dtype, storage_format):
     n = 8
     Abuilder = ti.linalg.SparseMatrixBuilder(n,
@@ -69,7 +69,7 @@ def test_sparse_matrix_vector_multiplication2(dtype, storage_format):
                                                    (ti.f32, 'row_major'),
                                                    (ti.f64, 'col_major'),
                                                    (ti.f64, 'row_major')])
-@test_utils.test(arch=ti.cpu)
+@test_utils.test(arch=ti.cpu, offline_cache=False)
 def test_sparse_matrix_vector_multiplication3(dtype, storage_format):
     n = 8
     Abuilder = ti.linalg.SparseMatrixBuilder(n,

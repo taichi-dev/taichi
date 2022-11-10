@@ -23,7 +23,6 @@ class SparseMatrixBuilder {
                       Program *prog);
 
   void print_triplets();
-  void print_ndarray_data();
 
   intptr_t get_ndarray_data_ptr() const;
 

@@ -77,9 +77,6 @@ SparseMatrixBuilder::SparseMatrixBuilder(int rows,
   TI_ASSERT((element_size == 4 || element_size == 8));
   data_base_ptr_ndarray_ = std::make_unique<Ndarray>(
       prog_, dtype_, std::vector<int>{3 * (int)max_num_triplets_});
-  for (auto i = 0; i < 3 * max_num_triplets_; i++) {
-    data_base_ptr_ndarray_->write_int(std::vector<int>{i}, 0);
-  }
 }
 
 template <typename T, typename G>
@@ -95,25 +92,6 @@ void SparseMatrixBuilder::print_template() {
 }
 
 void SparseMatrixBuilder::print_triplets() {
-  auto element_size = data_type_size(dtype_);
-  switch (element_size) {
-    case 4:
-      print_template<float32, int32>();
-      break;
-    case 8:
-      print_template<float64, int64>();
-      break;
-    default:
-      TI_ERROR("Unsupported sparse matrix data type!");
-      break;
-  }
-}
-
-intptr_t SparseMatrixBuilder::get_ndarray_data_ptr() const {
-  return prog_->get_ndarray_data_ptr_as_int(data_base_ptr_ndarray_.get());
-}
-
-void SparseMatrixBuilder::print_ndarray_data() {
   num_triplets_ = data_base_ptr_ndarray_->read_int(std::vector<int>{0});
   fmt::print("n={}, m={}, num_triplets={} (max={})\n", rows_, cols_,
              num_triplets_, max_num_triplets_);
@@ -121,9 +99,13 @@ void SparseMatrixBuilder::print_ndarray_data() {
     auto idx = 3 * i + 1;
     auto row = data_base_ptr_ndarray_->read_int(std::vector<int>{idx});
     auto col = data_base_ptr_ndarray_->read_int(std::vector<int>{idx + 1});
-    auto val = data_base_ptr_ndarray_->read_int(std::vector<int>{idx + 2});
+    auto val = data_base_ptr_ndarray_->read_float(std::vector<int>{idx + 2});
     fmt::print("[{}, {}] = {}\n", row, col, val);
   }
+}
+
+intptr_t SparseMatrixBuilder::get_ndarray_data_ptr() const {
+  return prog_->get_ndarray_data_ptr_as_int(data_base_ptr_ndarray_.get());
 }
 
 template <typename T, typename G>
@@ -135,7 +117,10 @@ void SparseMatrixBuilder::build_template(std::unique_ptr<SparseMatrix> &m) {
   num_triplets_ = data[0];
   data += 1;
   for (int i = 0; i < num_triplets_; i++) {
-    triplets.push_back(V(data[i * 3], data[i * 3 + 1], data[i * 3 + 2]));
+    triplets.push_back(
+        V(data[i * 3], data[i * 3 + 1], taichi_union_cast<T>(data[i * 3 + 2])));
+    fmt::print("({}, {}) val={}\n", data[i * 3], data[i * 3 + 1],
+               taichi_union_cast<T>(data[i * 3 + 2]));
   }
   m->build_triplets(static_cast<void *>(&triplets));
   clear();

@@ -1,18 +1,18 @@
 import taichi as ti
 
-ti.init(arch=ti.x64, debug=True)
+ti.init(arch=ti.x64, debug=True, offline_cache=False)
 
 n = 8
 
 K = ti.linalg.SparseMatrixBuilder(n,
                                   n,
                                   max_num_triplets=100,
-                                  dtype=ti.f64,
+                                  dtype=ti.f32,
                                   storage_format='col_major')
 f = ti.linalg.SparseMatrixBuilder(n,
                                   1,
                                   max_num_triplets=100,
-                                  dtype=ti.f64,
+                                  dtype=ti.f32,
                                   storage_format='col_major')
 
 
@@ -34,9 +34,7 @@ def fill(A: ti.types.sparse_matrix_builder(),
 fill(K, f, 3)
 
 print(">>>> K.print_triplets()")
-# K.print_triplets()
-
-K.print_ndarray_data()
+K.print_triplets()
 
 A = K.build()
 

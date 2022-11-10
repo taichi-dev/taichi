@@ -1205,7 +1205,6 @@ void export_lang(py::module &m) {
   // Sparse Matrix
   py::class_<SparseMatrixBuilder>(m, "SparseMatrixBuilder")
       .def("print_triplets", &SparseMatrixBuilder::print_triplets)
-      .def("print_ndarray_data", &SparseMatrixBuilder::print_ndarray_data)
       .def("get_ndarray_data_ptr", &SparseMatrixBuilder::get_ndarray_data_ptr)
       .def("build", &SparseMatrixBuilder::build)
       .def("get_addr", [](SparseMatrixBuilder *mat) { return uint64(mat); });

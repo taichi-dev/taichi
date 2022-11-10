@@ -1874,6 +1874,11 @@ class VectorType(MatrixType):
                 entries += list(x.ravel())
             elif isinstance(x, Matrix):
                 entries += x.entries
+            elif isinstance(x, impl.Expr) and x.ptr.is_tensor():
+                entries += [
+                    impl.Expr(e) for e in impl.get_runtime().prog.
+                    current_ast_builder().expand_expr([x.ptr])
+                ]
             else:
                 entries.append(x)
 

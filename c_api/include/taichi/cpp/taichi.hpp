@@ -3,6 +3,7 @@
 #include <cstring>
 #include <list>
 #include <vector>
+#include <map>
 #include <string>
 #include <utility>
 #include "taichi/taichi.h"

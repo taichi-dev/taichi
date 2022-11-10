@@ -31,7 +31,7 @@ def pytest_configure(config):
         "markers",
         "run_in_serial: mark test to run serially(usually for resource intensive tests)."
     )
-    
+
     global IS_WORKER
     IS_WORKER = hasattr(config, "workerinput")
 

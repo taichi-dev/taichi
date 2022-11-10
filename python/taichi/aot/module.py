@@ -1,3 +1,4 @@
+import warnings
 from contextlib import contextmanager
 from glob import glob
 from pathlib import Path, PurePosixPath
@@ -199,14 +200,18 @@ class Module:
         kt = KernelTemplate(kernel_fn, self)
         yield kt
 
-    def save(self, filepath, filename):
+    def save(self, filepath, filename=None):
         """
         Args:
           filepath (str): path to a folder to store aot files.
           filename (str): filename prefix for stored aot files.
         """
+        if filename is not None:
+            warnings.warn(
+                "Specifying filename is no-op and will be removed in release v1.4.0",
+                DeprecationWarning)
         filepath = str(PurePosixPath(Path(filepath)))
-        self._aot_builder.dump(filepath, filename)
+        self._aot_builder.dump(filepath, "")
 
     def archive(self, filepath: str):
         """

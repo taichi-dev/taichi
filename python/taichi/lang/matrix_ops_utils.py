@@ -77,11 +77,14 @@ def assert_tensor(m, msg='not tensor type: {}'):
 
 # TODO(zhanlue): rearrange to more generic checker functions
 # for example: "assert_is_instance(args, indices=[], instances=[], logic='or')"
-def assert_vector(v, msg='not a vector: {}'):
-    if (isinstance(v, Expr) or isinstance(v, Matrix)) and len(
-            v.get_shape()) == 1:
-        return True, None
-    raise TaichiCompilationError(msg.format(type(v)))
+def assert_vector(msg='expected a vector, got {}'):
+    def check(v):
+        if (isinstance(v, Expr) or isinstance(v, Matrix)) and len(
+                v.get_shape()) == 1:
+            return True, None
+        return False, msg.format(type(v))
+
+    return check
 
 
 def assert_list(x, msg='not a list: {}'):
@@ -90,7 +93,7 @@ def assert_list(x, msg='not a list: {}'):
     raise TaichiCompilationError(msg.format(type(x)))
 
 
-def same_shapes(xs):
+def same_shapes(*xs):
     shapes = [x.get_shape() for x in xs]
     if len(set(shapes)) != 1:
         return False, f'required shapes to be the same, got shapes {shapes}'

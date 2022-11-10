@@ -2,8 +2,7 @@ import taichi as ti
 from tests import test_utils
 
 
-@test_utils.test(arch=[ti.cuda, ti.vulkan], exclude=[(ti.vulkan, "Darwin")])
-def test_scan():
+def _test_scan():
     def test_scan_for_dtype(dtype, N):
         arr = ti.field(dtype, N)
         arr_aux = ti.field(dtype, N)
@@ -30,3 +29,16 @@ def test_scan():
     test_scan_for_dtype(ti.i32, 512)
     test_scan_for_dtype(ti.i32, 1024)
     test_scan_for_dtype(ti.i32, 4096)
+
+
+@test_utils.test(arch=[ti.cuda, ti.vulkan], exclude=[(ti.vulkan, "Darwin")])
+def test_scan():
+    _test_scan()
+
+
+@test_utils.test(arch=[ti.cuda, ti.vulkan],
+                 exclude=[(ti.vulkan, "Darwin")],
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_scan_matrix_scalarize():
+    _test_scan()

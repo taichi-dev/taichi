@@ -1,7 +1,5 @@
 import os
 
-import pytest
-
 import taichi as ti
 from tests import test_utils
 
@@ -104,6 +102,11 @@ def run_mpm88_test():
 
 @test_utils.test()
 def test_mpm88():
+    run_mpm88_test()
+
+
+@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
+def test_mpm88_real_matrix_scalarize():
     run_mpm88_test()
 
 

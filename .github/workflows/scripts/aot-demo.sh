@@ -60,13 +60,14 @@ function prepare-unity-build-env {
     cmake --build .
     popd
     cp tu2-build/bin/libtaichi_unity.so Taichi-UnityExample/Assets/Plugins/Android
-
-    pushd Taichi-UnityExample
-    python scripts/implicit_fem.cgraph.py --aot
-    popd
 }
 
 function build-unity-demo {
+    pushd Taichi-UnityExample
+    pip install /taichi-wheel/*.whl
+    python scripts/implicit_fem.cgraph.py --aot
+    popd
+
     cd taichi
     mkdir -p Taichi-UnityExample/Assets/Editor
     cp -a /UnityBuilderAction Taichi-UnityExample/Assets/Editor/

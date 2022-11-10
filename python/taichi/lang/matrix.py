@@ -1808,6 +1808,11 @@ class MatrixType(CompoundType):
                 entries += x
             elif isinstance(x, np.ndarray):
                 entries += list(x.ravel())
+            elif isinstance(x, impl.Expr) and x.ptr.is_tensor():
+                entries += [
+                    impl.Expr(e) for e in impl.get_runtime().prog.
+                    current_ast_builder().expand_expr([x.ptr])
+                ]
             elif isinstance(x, Matrix):
                 entries += x.entries
             else:
@@ -1834,7 +1839,7 @@ class MatrixType(CompoundType):
         if isinstance(mat, impl.Expr) and mat.ptr.is_tensor():
             return ops_mod.cast(mat, self.dtype)
 
-        if isinstance(mat, Matrix) and impl.current_cfg().real_matrix
+        if isinstance(mat, Matrix) and impl.current_cfg().real_matrix:
             arr = mat.entries
             return ops_mod.cast(make_matrix(arr), self.dtype)
 
@@ -1930,7 +1935,7 @@ class VectorType(MatrixType):
         if isinstance(vec, impl.Expr) and vec.ptr.is_tensor():
             return ops_mod.cast(vec, self.dtype)
 
-        if isinstance(vec, Matrix) and impl.current_cfg().real_matrix
+        if isinstance(vec, Matrix) and impl.current_cfg().real_matrix:
             arr = vec.entries
             return ops_mod.cast(make_matrix(arr), self.dtype)
 

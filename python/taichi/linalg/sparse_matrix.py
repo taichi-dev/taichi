@@ -285,9 +285,6 @@ class SparseMatrixBuilder:
         """Print the triplets stored in the builder"""
         self.ptr.print_triplets()
 
-    def test_ndarray(self):
-        self.ptr.test_ndarray()
-
     def build(self, dtype=f32, _format='CSR'):
         """Create a sparse matrix using the triplets"""
         sm = self.ptr.build()

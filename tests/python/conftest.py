@@ -27,6 +27,11 @@ IS_WORKER = False
 
 @pytest.hookimpl(trylast=True)
 def pytest_configure(config):
+    config.addinivalue_line(
+        "markers",
+        "run_in_serial: mark test to run serially(usually for resource intensive tests)."
+    )
+    
     global IS_WORKER
     IS_WORKER = hasattr(config, "workerinput")
 

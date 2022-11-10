@@ -234,6 +234,7 @@ def test_recursion():
     assert get_sum() == 99 * 50
 
 
+@pytest.mark.run_in_serial
 @test_utils.test(arch=[ti.cpu, ti.cuda], cuda_stack_limit=32768)
 def test_deep_recursion():
     @ti.experimental.real_func

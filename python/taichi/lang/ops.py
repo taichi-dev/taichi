@@ -111,7 +111,7 @@ def writeback_binary(foo):
             return NotImplemented
         if is_taichi_class(a):
             return a._element_wise_writeback_binary(imp_foo, b)
-        if is_taichi_class(b) and not is_tensor_a:
+        if is_taichi_class(b):
             raise TaichiSyntaxError(
                 f'cannot augassign taichi class {type(b)} to scalar expr')
         else:

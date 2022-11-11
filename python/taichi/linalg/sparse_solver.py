@@ -1,10 +1,10 @@
 import numpy as np
 import taichi.lang
 from taichi._lib import core as _ti_core
+from taichi.lang._ndarray import Ndarray, ScalarNdarray
 from taichi.lang.exception import TaichiRuntimeError
 from taichi.lang.field import Field
 from taichi.lang.impl import get_runtime
-from taichi.lang.matrix import Ndarray
 from taichi.linalg.sparse_matrix import SparseMatrix
 from taichi.types.primitive_types import f32
 
@@ -19,6 +19,7 @@ class SparseSolver:
         ordering (str): The method for matrices re-ordering.
     """
     def __init__(self, dtype=f32, solver_type="LLT", ordering="AMD"):
+        self.matrix_ = None
         solver_type_list = ["LLT", "LDLT", "LU"]
         solver_ordering = ['AMD', 'COLAMD']
         if solver_type in solver_type_list and ordering in solver_ordering:
@@ -48,7 +49,13 @@ class SparseSolver:
             sparse_matrix (SparseMatrix): The sparse matrix to be computed.
         """
         if isinstance(sparse_matrix, SparseMatrix):
-            self.solver.compute(sparse_matrix.matrix)
+            self.matrix_ = sparse_matrix
+            taichi_arch = taichi.lang.impl.get_runtime().prog.config().arch
+            if taichi_arch == _ti_core.Arch.x64:
+                self.solver.compute(sparse_matrix.matrix)
+            elif taichi_arch == _ti_core.Arch.cuda:
+                self.analyze_pattern(self.matrix_)
+                self.factorize(self.matrix_)
         else:
             self._type_assert(sparse_matrix)
 
@@ -59,6 +66,7 @@ class SparseSolver:
             sparse_matrix (SparseMatrix): The sparse matrix to be analyzed.
         """
         if isinstance(sparse_matrix, SparseMatrix):
+            self.matrix_ = sparse_matrix
             self.solver.analyze_pattern(sparse_matrix.matrix)
         else:
             self._type_assert(sparse_matrix)
@@ -70,6 +78,7 @@ class SparseSolver:
             sparse_matrix (SparseMatrix): The sparse matrix to be factorized.
         """
         if isinstance(sparse_matrix, SparseMatrix):
+            self.matrix_ = sparse_matrix
             self.solver.factorize(sparse_matrix.matrix)
         else:
             self._type_assert(sparse_matrix)
@@ -82,23 +91,30 @@ class SparseSolver:
         Returns:
             numpy.array: The solution of linear systems.
         """
+        if self.matrix_ is None:
+            raise TaichiRuntimeError(
+                "Please call compute() before calling solve().")
         if isinstance(b, Field):
             return self.solver.solve(b.to_numpy())
         if isinstance(b, np.ndarray):
             return self.solver.solve(b)
+        if isinstance(b, Ndarray):
+            x = ScalarNdarray(b.dtype, [self.matrix_.m])
+            self.solve_rf(self.matrix_, b, x)
+            return x
         raise TaichiRuntimeError(
             f"The parameter type: {type(b)} is not supported in linear solvers for now."
         )
 
-    def solve_cu(self, sparse_matrix, b, x):
-        if isinstance(sparse_matrix, SparseMatrix) and isinstance(
-                b, Ndarray) and isinstance(x, Ndarray):
+    def solve_cu(self, sparse_matrix, b):
+        if isinstance(sparse_matrix, SparseMatrix) and isinstance(b, Ndarray):
+            x = ScalarNdarray(b.dtype, [sparse_matrix.m])
             self.solver.solve_cu(get_runtime().prog, sparse_matrix.matrix,
                                  b.arr, x.arr)
-        else:
-            raise TaichiRuntimeError(
-                f"The parameter type: {type(sparse_matrix)}, {type(b)} and {type(x)} is not supported in linear solvers for now."
-            )
+            return x
+        raise TaichiRuntimeError(
+            f"The parameter type: {type(sparse_matrix)}, {type(b)} and {type(x)} is not supported in linear solvers for now."
+        )
 
     def solve_rf(self, sparse_matrix, b, x):
         if isinstance(sparse_matrix, SparseMatrix) and isinstance(

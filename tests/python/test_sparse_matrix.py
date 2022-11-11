@@ -9,7 +9,7 @@ from tests import test_utils
                                                    (ti.f32, 'row_major'),
                                                    (ti.f64, 'col_major'),
                                                    (ti.f64, 'row_major')])
-@test_utils.test(arch=ti.cpu, offline_cache=False)
+@test_utils.test(arch=ti.cpu)
 def test_sparse_matrix_builder_deprecated_anno(dtype, storage_format):
     n = 8
     Abuilder = ti.linalg.SparseMatrixBuilder(n,
@@ -34,7 +34,7 @@ def test_sparse_matrix_builder_deprecated_anno(dtype, storage_format):
                                                    (ti.f32, 'row_major'),
                                                    (ti.f64, 'col_major'),
                                                    (ti.f64, 'row_major')])
-@test_utils.test(arch=ti.cpu, offline_cache=False)
+@test_utils.test(arch=ti.cpu)
 def test_sparse_matrix_builder(dtype, storage_format):
     n = 8
     Abuilder = ti.linalg.SparseMatrixBuilder(n,
@@ -59,7 +59,7 @@ def test_sparse_matrix_builder(dtype, storage_format):
                                                    (ti.f32, 'row_major'),
                                                    (ti.f64, 'col_major'),
                                                    (ti.f64, 'row_major')])
-@test_utils.test(arch=ti.cpu, offline_cache=False)
+@test_utils.test(arch=ti.cpu)
 def test_build_sparse_matrix_frome_ndarray(dtype, storage_format):
     n = 8
     triplets = ti.Vector.ndarray(n=3, dtype=ti.f32, shape=n)
@@ -85,7 +85,7 @@ def test_build_sparse_matrix_frome_ndarray(dtype, storage_format):
                                                    (ti.f32, 'row_major'),
                                                    (ti.f64, 'col_major'),
                                                    (ti.f64, 'row_major')])
-@test_utils.test(arch=ti.cpu, offline_cache=False)
+@test_utils.test(arch=ti.cpu)
 def test_sparse_matrix_shape(dtype, storage_format):
     n, m = 8, 9
     Abuilder = ti.linalg.SparseMatrixBuilder(n,
@@ -108,7 +108,7 @@ def test_sparse_matrix_shape(dtype, storage_format):
                                                    (ti.f32, 'row_major'),
                                                    (ti.f64, 'col_major'),
                                                    (ti.f64, 'row_major')])
-@test_utils.test(arch=ti.cpu, offline_cache=False)
+@test_utils.test(arch=ti.cpu)
 def test_sparse_matrix_element_access(dtype, storage_format):
     n = 8
     Abuilder = ti.linalg.SparseMatrixBuilder(n,
@@ -132,7 +132,7 @@ def test_sparse_matrix_element_access(dtype, storage_format):
                                                    (ti.f32, 'row_major'),
                                                    (ti.f64, 'col_major'),
                                                    (ti.f64, 'row_major')])
-@test_utils.test(arch=ti.cpu, offline_cache=False)
+@test_utils.test(arch=ti.cpu)
 def test_sparse_matrix_element_modify(dtype, storage_format):
     n = 8
     Abuilder = ti.linalg.SparseMatrixBuilder(n,
@@ -156,7 +156,7 @@ def test_sparse_matrix_element_modify(dtype, storage_format):
                                                    (ti.f32, 'row_major'),
                                                    (ti.f64, 'col_major'),
                                                    (ti.f64, 'row_major')])
-@test_utils.test(arch=ti.cpu, offline_cache=False)
+@test_utils.test(arch=ti.cpu)
 def test_sparse_matrix_addition(dtype, storage_format):
     n = 8
     Abuilder = ti.linalg.SparseMatrixBuilder(n,
@@ -190,7 +190,7 @@ def test_sparse_matrix_addition(dtype, storage_format):
                                                    (ti.f32, 'row_major'),
                                                    (ti.f64, 'col_major'),
                                                    (ti.f64, 'row_major')])
-@test_utils.test(arch=ti.cpu, offline_cache=False)
+@test_utils.test(arch=ti.cpu)
 def test_sparse_matrix_subtraction(dtype, storage_format):
     n = 8
     Abuilder = ti.linalg.SparseMatrixBuilder(n,
@@ -224,7 +224,7 @@ def test_sparse_matrix_subtraction(dtype, storage_format):
                                                    (ti.f32, 'row_major'),
                                                    (ti.f64, 'col_major'),
                                                    (ti.f64, 'row_major')])
-@test_utils.test(arch=ti.cpu, offline_cache=False)
+@test_utils.test(arch=ti.cpu)
 def test_sparse_matrix_scalar_multiplication(dtype, storage_format):
     n = 8
     Abuilder = ti.linalg.SparseMatrixBuilder(n,
@@ -250,7 +250,7 @@ def test_sparse_matrix_scalar_multiplication(dtype, storage_format):
                                                    (ti.f32, 'row_major'),
                                                    (ti.f64, 'col_major'),
                                                    (ti.f64, 'row_major')])
-@test_utils.test(arch=ti.cpu, offline_cache=False)
+@test_utils.test(arch=ti.cpu)
 def test_sparse_matrix_transpose(dtype, storage_format):
     n = 8
     Abuilder = ti.linalg.SparseMatrixBuilder(n,
@@ -276,7 +276,7 @@ def test_sparse_matrix_transpose(dtype, storage_format):
                                                    (ti.f32, 'row_major'),
                                                    (ti.f64, 'col_major'),
                                                    (ti.f64, 'row_major')])
-@test_utils.test(arch=ti.cpu, offline_cache=False)
+@test_utils.test(arch=ti.cpu)
 def test_sparse_matrix_elementwise_multiplication(dtype, storage_format):
     n = 8
     Abuilder = ti.linalg.SparseMatrixBuilder(n,
@@ -310,7 +310,7 @@ def test_sparse_matrix_elementwise_multiplication(dtype, storage_format):
                                                    (ti.f32, 'row_major'),
                                                    (ti.f64, 'col_major'),
                                                    (ti.f64, 'row_major')])
-@test_utils.test(arch=ti.cpu, offline_cache=False)
+@test_utils.test(arch=ti.cpu)
 def test_sparse_matrix_multiplication(dtype, storage_format):
     n = 2
     Abuilder = ti.linalg.SparseMatrixBuilder(n,
@@ -345,7 +345,7 @@ def test_sparse_matrix_multiplication(dtype, storage_format):
                                                    (ti.f32, 'row_major'),
                                                    (ti.f64, 'col_major'),
                                                    (ti.f64, 'row_major')])
-@test_utils.test(arch=ti.cpu, offline_cache=False)
+@test_utils.test(arch=ti.cpu)
 def test_sparse_matrix_nonsymmetric_multiplication(dtype, storage_format):
     n, k, m = 2, 3, 4
     Abuilder = ti.linalg.SparseMatrixBuilder(n,

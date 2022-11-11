@@ -1,6 +1,6 @@
 import taichi as ti
 
-ti.init(arch=ti.x64, debug=True, offline_cache=False)
+ti.init(arch=ti.x64)
 
 n = 8
 

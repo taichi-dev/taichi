@@ -100,12 +100,16 @@ def _gen_swizzles(cls):
 
 
 def make_matrix(arr, dt=None):
-    assert len(arr) > 0, "Cannot create empty matrix"
-    is_matrix = isinstance(arr[0], Iterable)
-    if dt is None:
-        dt = _make_entries_initializer(is_matrix).infer_dt(arr)
+    if len(arr) == 0:
+        # the only usage of an empty vector is to serve as field indices
+        is_matrix = False
+        dt = primitive_types.i32
     else:
-        dt = cook_dtype(dt)
+        is_matrix = isinstance(arr[0], Iterable)
+        if dt is None:
+            dt = _make_entries_initializer(is_matrix).infer_dt(arr)
+        else:
+            dt = cook_dtype(dt)
     if not is_matrix:
         return impl.Expr(
             impl.make_matrix_expr([len(arr)], dt,

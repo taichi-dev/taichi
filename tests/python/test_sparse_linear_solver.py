@@ -13,9 +13,6 @@ def test_sparse_LLT_solver(dtype, solver_type, ordering):
     n = 10
     A = np.random.rand(n, n)
     A_psd = np.dot(A, A.transpose())
-    dtype = ti.float32
-    solver_type = "LLT"
-    ordering = "AMD"
     Abuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=300)
     b = ti.field(ti.f32, shape=n)
 

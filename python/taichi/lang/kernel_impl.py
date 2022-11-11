@@ -100,6 +100,7 @@ def pyfunc(fn):
         return fun.__call__(*args, **kwargs)
 
     decorated._is_taichi_function = True
+    decorated.func = fun
     return decorated
 
 

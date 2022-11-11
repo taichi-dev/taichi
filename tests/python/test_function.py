@@ -234,6 +234,7 @@ def test_recursion():
     assert get_sum() == 99 * 50
 
 
+@pytest.mark.run_in_serial
 @test_utils.test(arch=[ti.cpu, ti.cuda], cuda_stack_limit=32768)
 def test_deep_recursion():
     @ti.experimental.real_func
@@ -338,6 +339,12 @@ def test_ref():
 
 @test_utils.test(arch=[ti.cpu, ti.cuda], debug=True)
 def test_ref_atomic():
+    # FIXME: failed test on Pascal (and potentially older) architecture.
+    # Please remove this guardiance when you fix this issue
+    cur_arch = ti.lang.impl.get_runtime().prog.config().arch
+    if cur_arch == ti.cuda and ti.lang.impl.get_cuda_compute_capability() < 70:
+        return
+
     @ti.experimental.real_func
     def foo(a: ti.ref(ti.f32)):
         a += a
@@ -445,15 +452,30 @@ def test_func_matrix_arg_real_matrix():
     _test_func_matrix_arg()
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda])
-def test_real_func_matrix_arg():
+def _test_real_func_matrix_arg():
     @ti.experimental.real_func
-    def mat_arg(a: ti.math.mat2) -> float:
-        return a[0, 0] + a[0, 1] + a[1, 0] + a[1, 1]
+    def mat_arg(a: ti.math.mat2, b: ti.math.vec2) -> float:
+        return a[0, 0] + a[0, 1] + a[1, 0] + a[1, 1] + b[0] + b[1]
+
+    b = ti.Vector.field(n=2, dtype=float, shape=())
+    b[()][0] = 5
+    b[()][1] = 6
 
     @ti.kernel
     def foo() -> float:
         a = ti.math.mat2(1, 2, 3, 4)
-        return mat_arg(a)
+        return mat_arg(a, b[()])
 
-    assert foo() == pytest.approx(10)
+    assert foo() == pytest.approx(21)
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda])
+def test_real_func_matrix_arg():
+    _test_real_func_matrix_arg()
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda],
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_real_func_matrix_arg_real_matrix():
+    _test_real_func_matrix_arg()

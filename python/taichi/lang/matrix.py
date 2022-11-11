@@ -104,6 +104,8 @@ def make_matrix(arr, dt=None):
     is_matrix = isinstance(arr[0], Iterable)
     if dt is None:
         dt = _make_entries_initializer(is_matrix).infer_dt(arr)
+    else:
+        dt = cook_dtype(dt)
     if not is_matrix:
         return impl.Expr(
             impl.make_matrix_expr([len(arr)], dt,
@@ -454,6 +456,8 @@ class Matrix(TaichiOperations):
                     )
                 if dt is None:
                     dt = initializer.infer_dt(arr)
+                else:
+                    dt = cook_dtype(dt)
                 local_tensor_proxy, mat = initializer.with_dynamic_index(
                     arr, dt)
         self.n, self.m = len(mat), 1
@@ -634,6 +638,10 @@ class Matrix(TaichiOperations):
     @property
     def entries(self):
         return self._impl.entries
+
+    @property
+    def _members(self):
+        return self.entries
 
     @property
     def any_array_access(self):
@@ -1039,10 +1047,10 @@ class Matrix(TaichiOperations):
             :class:`~taichi.lang.matrix.Matrix`: A :class:`~taichi.lang.matrix.Matrix` instance filled with zeros.
 
         """
+        from taichi.lang import matrix_ops  # pylint: disable=C0415
         if m is None:
-            return Vector([ops_mod.cast(0, dt) for _ in range(n)])
-        return Matrix([[ops_mod.cast(0, dt) for _ in range(m)]
-                       for _ in range(n)])
+            return matrix_ops._filled_vector(n, dt, 0)
+        return matrix_ops._filled_matrix(n, m, dt, 0)
 
     @staticmethod
     @taichi_scope
@@ -1058,10 +1066,10 @@ class Matrix(TaichiOperations):
             :class:`~taichi.lang.matrix.Matrix`: A :class:`~taichi.lang.matrix.Matrix` instance filled with ones.
 
         """
+        from taichi.lang import matrix_ops  # pylint: disable=C0415
         if m is None:
-            return Vector([ops_mod.cast(1, dt) for _ in range(n)])
-        return Matrix([[ops_mod.cast(1, dt) for _ in range(m)]
-                       for _ in range(n)])
+            return matrix_ops._filled_vector(n, dt, 1)
+        return matrix_ops._filled_matrix(n, m, dt, 1)
 
     @staticmethod
     @taichi_scope
@@ -1083,10 +1091,11 @@ class Matrix(TaichiOperations):
             >>> A
             [0, 1, 0]
         """
+        from taichi.lang import matrix_ops  # pylint: disable=C0415
         if dt is None:
             dt = int
         assert 0 <= i < n
-        return Vector([ops_mod.cast(int(j == i), dt) for j in range(n)])
+        return matrix_ops._unit_vector(n, i, dt)
 
     @staticmethod
     @taichi_scope
@@ -1100,8 +1109,8 @@ class Matrix(TaichiOperations):
         Returns:
             :class:`~taichi.Matrix`: An `n x n` identity matrix.
         """
-        return Matrix([[ops_mod.cast(int(i == j), dt) for j in range(n)]
-                       for i in range(n)])
+        from taichi.lang import matrix_ops  # pylint: disable=C0415
+        return matrix_ops._identity_matrix(n, dt)
 
     @staticmethod
     def rotation2d(alpha):
@@ -1117,11 +1126,10 @@ class Matrix(TaichiOperations):
              [ 0.70710678  0.70710678]]
         """
         warnings.warn(
-            "`ti.Matrix.rotation2d(alpha)` is renamed to `ti.Math.rotation2d(ang)`",
+            "`ti.Matrix.rotation2d()` will be removed in release v1.4.0. Use `ti.math.rotation2d()` instead.",
             DeprecationWarning)
-        return Matrix([[ops_mod.cos(alpha), -ops_mod.sin(alpha)],
-                       [ops_mod.sin(alpha),
-                        ops_mod.cos(alpha)]])
+        from taichi.lang import matrix_ops  # pylint: disable=C0415
+        return matrix_ops._rotation2d_matrix(alpha)
 
     @classmethod
     @python_scope
@@ -1376,19 +1384,8 @@ class Matrix(TaichiOperations):
             >>> v1.dot(v2)
             26
         """
-        impl.static(
-            impl.static_assert(self.m == 1, "lhs for dot is not a vector"))
-        impl.static(
-            impl.static_assert(other.m == 1, "rhs for dot is not a vector"))
-        return (self * other).sum()
-
-    def _cross3d(self, other):
-        from taichi._funcs import _matrix_cross3d  # pylint: disable=C0415
-        return _matrix_cross3d(self, other)
-
-    def _cross2d(self, other):
-        from taichi._funcs import _matrix_cross2d  # pylint: disable=C0415
-        return _matrix_cross2d(self, other)
+        from taichi.lang import matrix_ops  # pylint: disable=C0415
+        return matrix_ops.dot(self, other)
 
     def cross(self, other):
         """Performs the cross product with the input vector (1-D Matrix).
@@ -1407,14 +1404,8 @@ class Matrix(TaichiOperations):
         Returns:
             :class:`~taichi.Matrix`: The cross product of the two Vectors.
         """
-        if self.n == 3 and self.m == 1 and other.n == 3 and other.m == 1:
-            return self._cross3d(other)
-
-        if self.n == 2 and self.m == 1 and other.n == 2 and other.m == 1:
-            return self._cross2d(other)
-
-        raise ValueError(
-            "Cross product is only supported between pairs of 2D/3D vectors")
+        from taichi.lang import matrix_ops  # pylint: disable=C0415
+        return matrix_ops.cross(self, other)
 
     def outer_product(self, other):
         """Performs the outer product with the input Vector (1-D Matrix).
@@ -1429,9 +1420,8 @@ class Matrix(TaichiOperations):
         Returns:
             :class:`~taichi.Matrix`: The outer product of the two Vectors.
         """
-        from taichi._funcs import \
-            _vector_outer_product  # pylint: disable=C0415
-        return _vector_outer_product(self, other)
+        from taichi.lang import matrix_ops  # pylint: disable=C0415
+        return matrix_ops.outer_product(self, other)
 
 
 class Vector(Matrix):
@@ -1796,6 +1786,16 @@ class MatrixType(CompoundType):
                 "Custom type instances need to be created with an initial value."
             )
         if len(args) == 1:
+            # Init from a real Matrix
+            if isinstance(args[0], expr.Expr) and args[0].ptr.is_tensor():
+                arg = args[0]
+                shape = arg.ptr.get_ret_type().shape()
+                assert self.ndim == len(shape)
+                assert self.n == shape[0]
+                if self.ndim > 1:
+                    assert self.m == shape[1]
+                return expr.Expr(arg.ptr)
+
             # initialize by a single scalar, e.g. matnxm(1)
             if isinstance(args[0], (numbers.Number, expr.Expr)):
                 return self.filled_with_scalar(args[0])
@@ -1830,6 +1830,10 @@ class MatrixType(CompoundType):
                 else float(mat(i, j)) for j in range(self.m)
             ] for i in range(self.n)],
                           ndim=self.ndim)
+
+        if isinstance(mat, impl.Expr) and mat.ptr.is_tensor():
+            return ops_mod.cast(mat, self.dtype)
+
         return mat.cast(self.dtype)
 
     def filled_with_scalar(self, value):
@@ -1874,6 +1878,14 @@ class VectorType(MatrixType):
                 "Custom type instances need to be created with an initial value."
             )
         if len(args) == 1:
+            # Init from a real Matrix
+            if isinstance(args[0], expr.Expr) and args[0].ptr.is_tensor():
+                arg = args[0]
+                shape = arg.ptr.get_ret_type().shape()
+                assert len(shape) == 1
+                assert self.n == shape[0]
+                return expr.Expr(arg.ptr)
+
             # initialize by a single scalar, e.g. matnxm(1)
             if isinstance(args[0], (numbers.Number, expr.Expr)):
                 return self.filled_with_scalar(args[0])
@@ -1905,6 +1917,10 @@ class VectorType(MatrixType):
                 int(vec(i)) if self.dtype in primitive_types.integer_types else
                 float(vec(i)) for i in range(self.n)
             ])
+
+        if isinstance(vec, impl.Expr) and vec.ptr.is_tensor():
+            return ops_mod.cast(vec, self.dtype)
+
         return vec.cast(self.dtype)
 
     def filled_with_scalar(self, value):

@@ -1262,6 +1262,7 @@ void export_lang(py::module &m) {
       .def(float32() * py::self)
       .def("matmul", &CuSparseMatrix::matmul)
       .def("transpose", &CuSparseMatrix::transpose)
+      .def("get_element", &CuSparseMatrix::get_element)
       .def("to_string", &CuSparseMatrix::to_string);
 
   py::class_<SparseSolver>(m, "SparseSolver")

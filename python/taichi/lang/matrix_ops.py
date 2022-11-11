@@ -10,8 +10,7 @@ from taichi.lang.matrix_ops_utils import (arg_at, arg_foreach_check,
                                           assert_vector, check_matmul, dim_lt,
                                           is_int_const, preconditions,
                                           same_shapes, square_matrix)
-from taichi.lang.ops import cast
-from taichi.lang.util import cook_dtype, in_taichi_scope
+from taichi.lang.util import cook_dtype
 from taichi.types.annotations import template
 
 
@@ -33,51 +32,57 @@ def _init_vector(shape, dt=None):
     return init()
 
 
-def matrix_reduce(m, f, init, inplace=False):
-    shape = m.get_shape()
-
-    @pyfunc
-    def _reduce():
-        result = init
-        for i in static(range(shape[0])):
-            for j in static(range(shape[1])):
-                if static(inplace):
-                    f(result, m[i, j])
-                else:
-                    result = f(result, m[i, j])
-        return result
-
-    return _reduce()
-
-
-def vector_reduce(v, f, init, inplace=False):
-    shape = v.get_shape()
-
-    @pyfunc
-    def _reduce():
-        result = init
-        for i in static(range(shape[0])):
-            if static(inplace):
-                f(result, v[i])
-            else:
-                result = f(result, v[i])
-        return result
-
-    return _reduce()
-
-
 @preconditions(arg_at(0, assert_tensor))
-def reduce(x, f, init, inplace=False):
-    if len(x.get_shape()) == 1:
-        return vector_reduce(x, f, init, inplace)
-    return matrix_reduce(x, f, init, inplace)
+@pyfunc
+def _reduce(mat, fun: template()):
+    shape = static(mat.get_shape())
+    if static(len(shape) == 1):
+        result = mat[0]
+        for i in static(range(1, shape[0])):
+            result = fun(result, mat[i])
+        return result
+    result = mat[0, 0]
+    for i in static(range(shape[0])):
+        for j in static(range(shape[1])):
+            if static(i != 0 or j != 0):
+                result = fun(result, mat[i, j])
+    return result
+
+
+@func
+def _filled_vector(n: template(), dtype: template(), val: template()):
+    return Vector([val for _ in static(range(n))], dtype)
+
+
+@func
+def _filled_matrix(n: template(), m: template(), dtype: template(),
+                   val: template()):
+    return Matrix([[val for _ in static(range(m))] for _ in static(range(n))],
+                  dtype)
+
+
+@func
+def _unit_vector(n: template(), i: template(), dtype: template()):
+    return Vector([i == j for j in static(range(n))], dtype)
+
+
+@func
+def _identity_matrix(n: template(), dtype: template()):
+    return Matrix([[i == j for j in static(range(n))]
+                   for i in static(range(n))], dtype)
+
+
+@pyfunc
+def _rotation2d_matrix(alpha):
+    return Matrix([[ops_mod.cos(alpha), -ops_mod.sin(alpha)],
+                   [ops_mod.sin(alpha), ops_mod.cos(alpha)]])
 
 
 @preconditions(
     arg_at(0, same_shapes),
     arg_foreach_check(
         0,
-        fns=[assert_vector, assert_list],
+        fns=[assert_vector(), assert_list],
         logic='or',
         msg="Cols/rows must be a list of lists, or a list of vectors"))
 def rows(rows):  # pylint: disable=W0621
@@ -146,36 +151,14 @@ def determinant(x):
     return None
 
 
-def _vector_transpose(v):
-    shape = v.get_shape()
-    if isinstance(v, Vector):
-
-        @pyfunc
-        def _transpose():
-            return Matrix([[v[i] for i in static(range(shape[0]))]], ndim=1)
-
-        return _transpose()
-    if isinstance(v, Matrix):
-
-        @pyfunc
-        def _transpose():
-            return Vector([v[i, 0] for i in static(range(shape[0]))])
-
-        return _transpose()
-    return v
-
-
 @preconditions(assert_tensor)
-@func
-def transpose(m):
-    shape = static(m.get_shape())
+@pyfunc
+def transpose(mat):
+    shape = static(mat.get_shape())
     if static(len(shape) == 1):
-        return _vector_transpose(m)
-    result = _init_matrix((shape[1], shape[0]), dt=m.element_type())
-    for i in static(range(shape[0])):
-        for j in static(range(shape[1])):
-            result[j, i] = m[i, j]
-    return result
+        return Vector([mat[i] for i in static(range(shape[0]))])
+    return Matrix([[mat[i, j] for i in static(range(shape[0]))]
+                   for j in static(range(shape[1]))])
 
 
 @preconditions(arg_at(0, is_int_const),
@@ -198,116 +181,68 @@ def diag(dim, val):
 
 
 @preconditions(assert_tensor)
-def sum(m):  # pylint: disable=W0622
-    # pylint: disable=W0108
-    f = lambda x, y: x + y
-
-    @pyfunc
-    def sum_impl():
-        return reduce(
-            m, f,
-            cast(0, m.element_type()) if static(in_taichi_scope()) else 0)
-
-    return sum_impl()
+@pyfunc
+def sum(mat):  # pylint: disable=W0622
+    return _reduce(mat, ops_mod.add)
 
 
 @preconditions(assert_tensor)
 @pyfunc
-def norm_sqr(m):
-    return sum(m * m)
+def norm_sqr(mat):
+    return sum(mat * mat)
 
 
 @preconditions(arg_at(0, assert_tensor))
 @pyfunc
-def norm(m, eps=0.0):
-    return ops_mod.sqrt(norm_sqr(m) + eps)
+def norm(mat, eps=0.0):
+    return ops_mod.sqrt(norm_sqr(mat) + eps)
 
 
 @preconditions(arg_at(0, assert_tensor))
 @pyfunc
-def norm_inv(m, eps=0.0):
-    return ops_mod.rsqrt(norm_sqr(m) + eps)
+def norm_inv(mat, eps=0.0):
+    return ops_mod.rsqrt(norm_sqr(mat) + eps)
 
 
-@preconditions(arg_at(0, assert_vector))
+@preconditions(arg_at(0, assert_vector()))
 @pyfunc
-def normalized(v, eps=0.0):
-    invlen = 1 / (norm(v) + eps)
-    return invlen * v
+def normalized(vec, eps=0.0):
+    invlen = 1 / (norm(vec) + eps)
+    return invlen * vec
 
 
 @preconditions(assert_tensor)
-def any(x):  # pylint: disable=W0622
-    if in_taichi_scope():
-        cmp_fn = lambda r, e: ops_mod.atomic_or(r, ops_mod.cmp_ne(e, 0))
-    else:
-        cmp_fn = lambda r, e: r or ops_mod.cmp_ne(e, 0)
-
-    @pyfunc
-    def any_impl():
-        return 1 & reduce(x, cmp_fn, 0, inplace=in_taichi_scope())
-
-    return any_impl()
+@pyfunc
+def any(mat):  # pylint: disable=W0622
+    return _reduce(mat != 0, ops_mod.bit_or) & True
 
 
 @preconditions(assert_tensor)
-def all(x):  # pylint: disable=W0622
-    if in_taichi_scope():
-        cmp_fn = lambda r, e: ops_mod.atomic_and(r, ops_mod.cmp_ne(e, 0))
-    else:
-        cmp_fn = lambda r, e: r & (e != 0)
-
-    @pyfunc
-    def all_impl():
-        return reduce(x, cmp_fn, 1, inplace=in_taichi_scope())
-
-    return all_impl()
+@pyfunc
+def all(mat):  # pylint: disable=W0622
+    return _reduce(mat != 0, ops_mod.bit_and) & True
 
 
-@preconditions(assert_tensor, lambda x: (len(x.get_shape(
-)) <= 2, f"Dimension > 2 not supported: got {len(x.get_shape())}"))
-def max(x):  # pylint: disable=W0622
-    shape = static(x.get_shape())
-
-    @func
-    def max_impl():
-        if static(len(shape) == 1):
-            if static(shape[0] > 0):
-                return vector_reduce(x, ops_mod.atomic_max, x[0], inplace=True)
-            return Vector([])
-        if static(shape[0] > 0 and shape[1] > 0):
-            return matrix_reduce(x, ops_mod.atomic_max, x[0, 0], inplace=True)
-        return Matrix([])
-
-    return max_impl()
+@preconditions(assert_tensor)
+@pyfunc
+def max(mat):  # pylint: disable=W0622
+    return _reduce(mat, ops_mod.max_impl)
 
 
-@preconditions(assert_tensor, lambda x: (len(x.get_shape(
-)) <= 2, f"Dimension > 2 not supported: got {len(x.get_shape())}"))
-def min(x):  # pylint: disable=W0622
-    shape = static(x.get_shape())
-
-    @func
-    def min_impl():
-        if static(len(shape) == 1):
-            if static(shape[0] > 0):
-                return vector_reduce(x, ops_mod.atomic_min, x[0], inplace=True)
-            return Vector([])
-        if static(shape[0] > 0 and shape[1] > 0):
-            return matrix_reduce(x, ops_mod.atomic_min, x[0, 0], inplace=True)
-        return Matrix([])
-
-    return min_impl()
+@preconditions(assert_tensor)
+@pyfunc
+def min(mat):  # pylint: disable=W0622
+    return _reduce(mat, ops_mod.min_impl)
 
 
 @preconditions(square_matrix)
 @pyfunc
 def trace(mat):
     shape = static(mat.get_shape())
-    result = cast(0, mat.element_type()) if static(in_taichi_scope()) else 0
+    result = mat[0, 0]
     # TODO: get rid of static when
     # CHI IR Tensor repr is ready stable
-    for i in static(range(shape[0])):
+    for i in static(range(1, shape[0])):
         result += mat[i, i]
     return result
 
@@ -361,3 +296,44 @@ def matmul(x, y):
     if static(len(shape_x) == 1 and len(shape_y) == 2):
         return _matmul_helper(transpose(y), x)
     return _matmul_helper(x, y)
+
+
+@preconditions(arg_at(0, assert_vector("lhs for dot is not a vector")),
+               arg_at(1, assert_vector("rhs for dot is not a vector")))
+@pyfunc
+def dot(vec_x, vec_y):
+    return sum(vec_x * vec_y)
+
+
+@preconditions(arg_at(0, assert_vector("lhs for cross is not a vector")),
+               arg_at(1, assert_vector("rhs for cross is not a vector")),
+               same_shapes, arg_at(0, dim_lt(0, 4)))
+@pyfunc
+def cross(vec_x, vec_y):
+    shape = static(vec_x.get_shape())
+    if static(shape[0] == 2):
+        return vec_x[0] * vec_y[1] - vec_x[1] * vec_y[0]
+    if static(shape[0] == 3):
+        return Vector([
+            vec_x[1] * vec_y[2] - vec_x[2] * vec_y[1],
+            vec_x[2] * vec_y[0] - vec_x[0] * vec_y[2],
+            vec_x[0] * vec_y[1] - vec_x[1] * vec_y[0]
+        ])
+    return None
+
+
+@preconditions(
+    arg_at(0, assert_vector("lhs for outer_product is not a vector")),
+    arg_at(1, assert_vector("rhs for outer_product is not a vector")))
+@pyfunc
+def outer_product(vec_x, vec_y):
+    shape_x = static(vec_x.get_shape())
+    shape_y = static(vec_y.get_shape())
+    return Matrix([[vec_x[i] * vec_y[j] for j in static(range(shape_y[0]))]
+                   for i in static(range(shape_x[0]))])
+
+
+@preconditions(assert_tensor)
+@func
+def cast(mat, dtype: template()):
+    return ops_mod.cast(mat, dtype)

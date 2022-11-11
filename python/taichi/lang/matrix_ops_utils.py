@@ -53,11 +53,14 @@ def assert_tensor(m, msg='not tensor type: {}'):
     return False, msg.format(type(m))
 
 
-def assert_vector(v, msg='not a vector: {}'):
-    if (isinstance(v, Expr) or isinstance(v, Matrix)) and len(
-            v.get_shape()) == 1:
-        return True, None
-    return False, msg.format(type(v))
+def assert_vector(msg='expected a vector, got {}'):
+    def check(v):
+        if (isinstance(v, Expr) or isinstance(v, Matrix)) and len(
+                v.get_shape()) == 1:
+            return True, None
+        return False, msg.format(type(v))
+
+    return check
 
 
 def assert_list(x, msg='not a list: {}'):
@@ -95,7 +98,7 @@ def arg_foreach_check(*arg_indices, fns=[], logic='or', msg=None):
     return check
 
 
-def same_shapes(xs):
+def same_shapes(*xs):
     shapes = [x.get_shape() for x in xs]
     if len(set(shapes)) != 1:
         return False, f'required shapes to be the same, got shapes {shapes}'
@@ -105,7 +108,7 @@ def same_shapes(xs):
 def square_matrix(x):
     assert_tensor(x)
     shape = x.get_shape()
-    if shape[0] != shape[1]:
+    if len(shape) != 2 or shape[0] != shape[1]:
         return False, f'not a square matrix: {shape}'
     return True, None
 

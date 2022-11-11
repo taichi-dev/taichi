@@ -69,6 +69,7 @@ def func(fn, is_real_function=False):
 
     decorated._is_taichi_function = True
     decorated._is_real_function = is_real_function
+    decorated.func = fun
     return decorated
 
 
@@ -202,6 +203,7 @@ class Func:
         self.mapper = TaichiCallableTemplateMapper(
             self.arguments, self.template_slot_locations)
         self.taichi_functions = {}  # The |Function| class in C++
+        self.has_print = False
 
     def __call__(self, *args, **kwargs):
         args = _process_args(self, args, kwargs)
@@ -467,6 +469,7 @@ class Kernel:
         # TODO[#5114]: get rid of compiled_functions and use compiled_kernels instead.
         # Main motivation is that compiled_kernels can be potentially serialized in the AOT scenario.
         self.compiled_kernels = {}
+        self.has_print = False
 
     def reset(self):
         self.runtime = impl.get_runtime()
@@ -798,7 +801,7 @@ class Kernel:
             ret_dt = self.return_type
             has_ret = ret_dt is not None
 
-            if has_ret:
+            if has_ret or self.has_print:
                 runtime_ops.sync()
 
             if has_ret:

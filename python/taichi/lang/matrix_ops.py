@@ -79,7 +79,7 @@ def _rotation2d_matrix(alpha):
 
 
 @preconditions(
-    arg_at(0, same_shapes),
+    arg_at(0, lambda xs: same_shapes(*xs)),
     arg_foreach_check(
         0,
         fns=[assert_vector(), assert_list],

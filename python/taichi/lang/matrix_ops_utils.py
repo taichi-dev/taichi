@@ -104,17 +104,16 @@ def square_matrix(x):
     assert_tensor(x)
     shape = x.get_shape()
     if len(shape) != 2 or shape[0] != shape[1]:
-        return False, f'not a square matrix: {shape}'
+        return False, f'expected a square matrix, got shape {shape}'
     return True, None
 
 
-def dim_lt(dim, limit, msg=None):
+def dim_lt(dim, limit):
     def check(x):
         assert_tensor(x)
         shape = x.get_shape()
         return shape[dim] < limit, (
-            f'Dimension >= {limit} is not supported: {shape}'
-            if not msg else msg.format(shape))
+            f'only dimension < {limit} is supported, got shape {shape}')
 
     return check
 

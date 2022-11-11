@@ -99,11 +99,18 @@ function build-and-test-headless-demo {
     setup-android-ndk-env
 
     pushd taichi
-    export TAICHI_REPO_DIR=$(pwd)
+    setup_python
+    popd
+
+    export TAICHI_REPO_DIR=$(pwd)/taichi
+
+    pushd taichi
+    pip install /taichi-wheel/*.whl
+    sudo chmod 0777 $HOME/.cache
     popd
 
     rm -rf taichi-aot-demo
-    git clone --recursive --depth=2 https://github.com/taichi-dev/taichi-aot-demo
+    git clone --recursive https://github.com/taichi-dev/taichi-aot-demo
     cd taichi-aot-demo
 
     git checkout 28f1df9a5b33bd21b4b46b6ca081275dfd037a16
@@ -117,6 +124,10 @@ function build-and-test-headless-demo {
     grab-android-bot
     trap release-android-bot EXIT
     adb connect $BOT
+
+    # clear temporary test folder
+    adb shell "rm -rf /data/local/tmp/*"
+
     cd headless
     BINARIES=$(ls E*)
     for b in $BINARIES; do

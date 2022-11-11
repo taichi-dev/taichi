@@ -1,10 +1,11 @@
 from functools import reduce
 
 import numpy as np
+from taichi._lib import core as _ti_core
+from taichi.lang._ndarray import Ndarray
 from taichi.lang.exception import TaichiRuntimeError
 from taichi.lang.field import Field
 from taichi.lang.impl import get_runtime
-from taichi.lang.matrix import Ndarray
 from taichi.lang.util import warning
 from taichi.types import annotations, f32, i32
 
@@ -283,7 +284,11 @@ class SparseMatrixBuilder:
 
     def build(self, dtype=f32, _format='CSR'):
         """Create a sparse matrix using the triplets"""
-        sm = self.ptr.build()
+        taichi_arch = get_runtime().prog.config().arch
+        if taichi_arch == _ti_core.Arch.x64:
+            sm = self.ptr.build()
+        elif taichi_arch == _ti_core.Arch.cuda:
+            sm = self.ptr.build_cuda()
         return SparseMatrix(sm=sm)
 
 

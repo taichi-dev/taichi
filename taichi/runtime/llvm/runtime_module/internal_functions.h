@@ -11,6 +11,9 @@
 
 #define ATOMIC_INSERT(T)                                             \
   do {                                                               \
+    auto runtime = context->runtime;                                 \
+    taichi_printf(runtime, "[ %d, %d] = %f \n", i, j,                \
+                  taichi_union_cast<T>(value));                      \
     auto base_ptr = (int64 *)base_ptr_;                              \
     int64 *num_triplets = base_ptr;                                  \
     auto data_base_ptr = *(T **)(base_ptr + 1);                      \

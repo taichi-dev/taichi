@@ -25,6 +25,8 @@ class SparseMatrixBuilder {
 
   std::unique_ptr<SparseMatrix> build();
 
+  std::unique_ptr<SparseMatrix> build_cuda();
+
   void clear();
 
  private:

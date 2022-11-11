@@ -1,6 +1,6 @@
 import taichi as ti
 
-ti.init(arch=ti.x64)
+ti.init(arch=ti.cuda, debug=True, offline_cache=False)
 
 n = 8
 
@@ -33,44 +33,45 @@ def fill(A: ti.types.sparse_matrix_builder(),
 
 fill(K, f, 3)
 
-print(">>>> K.print_triplets()")
-K.print_triplets()
+# print(">>>> K.print_triplets()")
+# K.print_triplets()
 
-A = K.build()
+# print("start to build K.....")
+# A = K.build()
 
-print(">>>> A = K.build()")
-print(A)
+# print(">>>> A = K.build()")
+# print(A)
 
-print(">>>> Summation: B = A + A")
-B = A + A
-print(B)
+# print(">>>> Summation: B = A + A")
+# B = A + A
+# print(B)
 
-print(">>>> Summation: B += A")
-B += A
-print(B)
+# print(">>>> Summation: B += A")
+# B += A
+# print(B)
 
-print(">>>> Subtraction: C = B - A")
-C = B - A
-print(C)
+# print(">>>> Subtraction: C = B - A")
+# C = B - A
+# print(C)
 
-print(">>>> Subtraction: C -= A")
-C -= A
-print(C)
+# print(">>>> Subtraction: C -= A")
+# C -= A
+# print(C)
 
-print(">>>> Multiplication with a scalar on the right: D = A * 3.0")
-D = A * 3.0
-print(D)
+# print(">>>> Multiplication with a scalar on the right: D = A * 3.0")
+# D = A * 3.0
+# print(D)
 
-print(">>>> Multiplication with a scalar on the left: D = 3.0 * A")
-D = 3.0 * A
-print(D)
+# print(">>>> Multiplication with a scalar on the left: D = 3.0 * A")
+# D = 3.0 * A
+# print(D)
 
-print(">>>> Transpose: E = D.transpose()")
-E = D.transpose()
-print(E)
+# print(">>>> Transpose: E = D.transpose()")
+# E = D.transpose()
+# print(E)
 
-print(">>>> Matrix multiplication: F= E @ A")
-F = E @ A
-print(F)
+# print(">>>> Matrix multiplication: F= E @ A")
+# F = E @ A
+# print(F)
 
-print(f">>>> Element Access: F[0,0] = {F[0,0]}")
+# print(f">>>> Element Access: F[0,0] = {F[0,0]}")

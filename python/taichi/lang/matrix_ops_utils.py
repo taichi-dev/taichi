@@ -74,18 +74,23 @@ def arg_foreach_check(*arg_indices, fns=[], logic='or', msg=None):
             else:
                 arg = args[i]
             if logic == 'or':
+                passed = False
                 for a in arg:
                     for fn in fns:
                         ok, _ = do_check([fn], a)
                         if ok:
-                            return True, None
-                return False, msg
-            if logic == 'and':
-                ok, _ = do_check(fns, arg)
-                if not ok:
-                    return False, msg
-                return True, None
-            raise ValueError(f'Unknown logic: {logic}')
+                            passed = True
+                            break
+                    if not passed:
+                        return False, msg
+            elif logic == 'and':
+                for a in arg:
+                    ok, _ = do_check(fns, a)
+                    if not ok:
+                        return False, msg
+            else:
+                raise ValueError(f'Unknown logic: {logic}')
+        return True, None
 
     return check
 

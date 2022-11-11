@@ -87,11 +87,7 @@ def _rotation2d_matrix(alpha):
                msg="Cols/rows must be a list of lists, or a list of vectors")))
 )
 def rows(rows):  # pylint: disable=W0621
-    @pyfunc
-    def _rows():
-        return Matrix([[x for x in row] for row in rows])
-
-    return _rows()
+    return Matrix([[x for x in row] for row in rows])
 
 
 @pyfunc

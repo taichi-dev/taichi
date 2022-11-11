@@ -77,8 +77,8 @@ def arg_foreach_check(*arg_indices, fns=[], logic='or', msg=None):
             else:
                 arg = args[i]
             if logic == 'or':
-                passed = False
                 for a in arg:
+                    passed = False
                     for fn in fns:
                         ok, _ = do_check([fn], a)
                         if ok:

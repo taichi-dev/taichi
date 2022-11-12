@@ -5,9 +5,9 @@ from taichi.lang.expr import Expr
 from taichi.lang.impl import static
 from taichi.lang.kernel_impl import func, pyfunc
 from taichi.lang.matrix import Matrix, Vector
-from taichi.lang.matrix_ops_utils import (Or, arg_at, assert_list,
-                                          assert_tensor, assert_vector,
-                                          check_matmul, dim_lt, foreach,
+from taichi.lang.matrix_ops_utils import (arg_at, arg_foreach_check,
+                                          assert_list, assert_tensor,
+                                          assert_vector, check_matmul, dim_lt,
                                           is_int_const, preconditions,
                                           same_shapes, square_matrix)
 from taichi.lang.util import cook_dtype
@@ -79,13 +79,12 @@ def _rotation2d_matrix(alpha):
 
 
 @preconditions(
-    arg_at(
+    arg_at(0, lambda xs: same_shapes(*xs)),
+    arg_foreach_check(
         0,
-        foreach(
-            Or(assert_vector(),
-               assert_list,
-               msg="Cols/rows must be a list of lists, or a list of vectors")),
-        same_shapes))
+        fns=[assert_vector(), assert_list],
+        logic='or',
+        msg="Cols/rows must be a list of lists, or a list of vectors"))
 def rows(rows):  # pylint: disable=W0621
     if isinstance(rows[0], (Matrix, Expr)):
         shape = rows[0].get_shape()

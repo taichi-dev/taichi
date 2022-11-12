@@ -102,7 +102,7 @@ std::string ArgLengthMismatch::to_string() const {
          ". this is not supposed to happen; please report this as a bug";
 }
 
-DataType Signature::type_check(std::vector<DataType> arguments) const {
+DataType Signature::type_check(const std::vector<DataType> &arguments) const {
   if (parameters_.size() != arguments.size()) {
     throw ArgLengthMismatch(parameters_.size(), arguments.size());
   }
@@ -119,7 +119,7 @@ DataType Signature::type_check(std::vector<DataType> arguments) const {
   return ret_type_->resolve(solutions);
 }
 
-DataType Operation::type_check(std::vector<DataType> arg_types) const {
+DataType Operation::type_check(const std::vector<DataType> &arg_types) const {
   try {
     return sig.type_check(arg_types);
   } catch (TypeSystemError &err) {
@@ -157,12 +157,12 @@ DataType f32_ptr = TypeFactory::get_instance().get_pointer_type(f32, false);
 
 #undef PRIM
 
-const Trait *Real = StaticTraits::get()->real;
-const Trait *Integral = StaticTraits::get()->integral;
-const Trait *Primitive = StaticTraits::get()->primitive;
-const Trait *Scalar = StaticTraits::get()->scalar;
+Trait *Real = StaticTraits::get()->real;
+Trait *Integral = StaticTraits::get()->integral;
+Trait *Primitive = StaticTraits::get()->primitive;
+Trait *Scalar = StaticTraits::get()->scalar;
 
-Constraint operator<(const std::shared_ptr<TyVar> tyvar, const Trait *trait) {
+Constraint operator<(std::shared_ptr<TyVar> tyvar, Trait *trait) {
   return Constraint(tyvar, trait);
 }
 
@@ -184,8 +184,8 @@ std::shared_ptr<TyCompute> comp(TypeExpr ty) {
 };  // namespace TypeExprBuilder
 
 const InternalOps *InternalOps::get() {
-  static const InternalOps *ops_ = new InternalOps();
-  return ops_;
+  static std::unique_ptr<InternalOps> ops_ = std::make_unique<InternalOps>();
+  return ops_.get();
 }
 
 using namespace TypeExprBuilder;
@@ -202,18 +202,18 @@ StaticTraits::StaticTraits() {
   real = new DynamicTrait("Real", is_real);
   integral = new DynamicTrait("Integral", is_integral);
   primitive = new DynamicTrait(
-      "Primitive", [](const DataType dt) { return dt->is<PrimitiveType>(); });
-  scalar = new DynamicTrait("Scalar", [](const DataType dt) {
-    return is_real(dt) || is_integral(dt);
-  });
+      "Primitive", [](DataType dt) { return dt->is<PrimitiveType>(); });
+  scalar = new DynamicTrait(
+      "Scalar", [](DataType dt) { return is_real(dt) || is_integral(dt); });
 }
 
 const StaticTraits *StaticTraits::get() {
-  static const StaticTraits *traits_ = new StaticTraits();
-  return traits_;
+  static std::unique_ptr<StaticTraits> traits_ =
+      std::make_unique<StaticTraits>();
+  return traits_.get();
 }
 
-std::vector<TypeExpr> type_exprs_from_dts(std::vector<DataType> params) {
+std::vector<TypeExpr> type_exprs_from_dts(const std::vector<DataType> &params) {
   std::vector<TypeExpr> exprs;
   for (auto dt : params) {
     exprs.push_back(std::make_shared<TyMono>(dt));
@@ -221,7 +221,7 @@ std::vector<TypeExpr> type_exprs_from_dts(std::vector<DataType> params) {
   return exprs;
 }
 
-std::vector<Stmt *> get_all_rvalues(std::vector<Expr> args,
+std::vector<Stmt *> get_all_rvalues(const std::vector<Expr> &args,
                                     Expression::FlattenContext *ctx) {
   std::vector<Stmt *> stmts;
   for (auto arg : args) {
@@ -236,8 +236,8 @@ class InternalCallOperation : public Operation {
   const bool with_runtime_context_;
 
  public:
-  InternalCallOperation(std::string internal_name,
-                        std::vector<DataType> params,
+  InternalCallOperation(const std::string &internal_name,
+                        const std::vector<DataType> &params,
                         DataType result,
                         bool with_runtime_context)
       : Operation(internal_name,
@@ -245,7 +245,7 @@ class InternalCallOperation : public Operation {
         internal_call_name_(internal_name),
         with_runtime_context_(with_runtime_context) {
   }
-  InternalCallOperation(std::string internal_name,
+  InternalCallOperation(const std::string &internal_name,
                         Signature sig,
                         bool with_runtime_context)
       : Operation(internal_name, sig),
@@ -254,7 +254,7 @@ class InternalCallOperation : public Operation {
   }
 
   Stmt *flatten(Expression::FlattenContext *ctx,
-                std::vector<Expr> args,
+                const std::vector<Expr> &args,
                 DataType ret_type) const override {
     auto rargs = get_all_rvalues(args, ctx);
     return ctx->push_back<InternalFuncStmt>(
@@ -263,13 +263,14 @@ class InternalCallOperation : public Operation {
 };
 
 InternalOps::InternalOps() {
-#define PLAIN_OP(name, ret, ctx, ...) \
-  name = new InternalCallOperation(#name, {__VA_ARGS__}, ret, ctx)
+#define PLAIN_OP(name, ret, ctx, ...)                                         \
+  name = new InternalCallOperation(#name, std::vector<DataType>{__VA_ARGS__}, \
+                                   ret, ctx)
 #define POLY_OP(name, ctx, sig) \
   name = new InternalCallOperation(#name, sig, ctx)
 
 #define COMPOSITE_EXTRACT(n) \
-  PLAIN_OP(composite_extract_##n, f32, false, f32_ptr)
+  PLAIN_OP(composite_extract_##n, f32, false, f32_ptr);
   COMPOSITE_EXTRACT(0);
   COMPOSITE_EXTRACT(1);
   COMPOSITE_EXTRACT(2);
@@ -277,7 +278,7 @@ InternalOps::InternalOps() {
 #undef COMPOSITE_EXTRACT
 
 #define INSERT_TRIPLET(dt) \
-  PLAIN_OP(insert_triplet_##dt, i0, true, u64, i32, i32, dt)
+  PLAIN_OP(insert_triplet_##dt, i0, true, u64, i32, i32, dt);
   INSERT_TRIPLET(f32);
   INSERT_TRIPLET(f64);
 #undef INSERT_TRIPLET

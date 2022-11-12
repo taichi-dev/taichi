@@ -416,15 +416,11 @@ class TernaryOpExpression : public Expression {
 
 class InternalFuncCallExpression : public Expression {
  public:
-  const Operation *op;
+  Operation *op;
   std::vector<Expr> args;
-  
-  InternalFuncCallExpression(const Operation *op,
-                             const std::vector<Expr> &args_)
-      : op(op) {
-    for (auto &a : args_) {
-      args.push_back(a);
-    }
+
+  InternalFuncCallExpression(Operation *op, const std::vector<Expr> &args_)
+      : op(op), args(args_) {
   }
 
   void type_check(CompileConfig *config) override;

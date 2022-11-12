@@ -30,7 +30,7 @@ class TyVar : public TypeExpression {
   const Identifier name_;
 
  public:
-  explicit TyVar(Identifier id) : name_(id) {
+  explicit TyVar(const Identifier &id) : name_(id) {
   }
   void unify(int pos,
              DataType dt,
@@ -87,7 +87,7 @@ class TyVarMismatch : public TypeSystemError {
   const DataType original_, conflicting_;
 
  public:
-  explicit TyVarMismatch(Identifier var,
+  explicit TyVarMismatch(const Identifier &var,
                          DataType original,
                          DataType conflicting)
       : var_(var), original_(original), conflicting_(conflicting) {
@@ -96,7 +96,7 @@ class TyVarMismatch : public TypeSystemError {
 };
 
 class TypeMismatch : public TypeSystemError {
-  int position_;
+  const int position_;
   const DataType param_, arg_;
 
  public:
@@ -110,7 +110,7 @@ class TyVarUnsolved : public TypeSystemError {
   const Identifier var_;
 
  public:
-  explicit TyVarUnsolved(Identifier var) : var_(var) {
+  explicit TyVarUnsolved(const Identifier &var) : var_(var) {
   }
   std::string to_string() const override;
 };
@@ -118,31 +118,30 @@ class TyVarUnsolved : public TypeSystemError {
 class Trait {
  public:
   virtual ~Trait() = default;
-  virtual bool validate(const DataType dt) const = 0;
+  virtual bool validate(DataType dt) const = 0;
   virtual std::string to_string() const = 0;
 };
 
 class DynamicTrait : public Trait {
  private:
-  std::string name_;
-  std::function<bool(const DataType dt)> impl_;
+  const std::string name_;
+  const std::function<bool(DataType dt)> impl_;
 
  public:
-  explicit DynamicTrait(std::string name,
-                        std::function<bool(const DataType dt)> impl)
+  explicit DynamicTrait(const std::string &name,
+                        const std::function<bool(DataType dt)> &impl)
       : name_(name), impl_(impl) {
   }
-  bool validate(const DataType dt) const override;
+  bool validate(DataType dt) const override;
   std::string to_string() const override;
 };
 
 class TraitMismatch : public TypeSystemError {
   const DataType dt_;
-  const Trait *trait_;
+  Trait const *trait_;
 
  public:
-  explicit TraitMismatch(const DataType dt, const Trait *trait)
-      : dt_(dt), trait_(trait) {
+  explicit TraitMismatch(DataType dt, Trait *trait) : dt_(dt), trait_(trait) {
   }
   std::string to_string() const override;
 };
@@ -159,8 +158,8 @@ class ArgLengthMismatch : public TypeSystemError {
 class Constraint {
  public:
   const std::shared_ptr<TyVar> tyvar;
-  const Trait *trait;
-  explicit Constraint(const std::shared_ptr<TyVar> tyvar, const Trait *trait)
+  Trait *trait;
+  explicit Constraint(std::shared_ptr<TyVar> tyvar, Trait *trait)
       : tyvar(tyvar), trait(trait) {
   }
 };
@@ -171,29 +170,29 @@ class Signature {
   const TypeExpr ret_type_;
 
  public:
-  explicit Signature(std::vector<Constraint> constraints,
-                     std::vector<TypeExpr> parameters,
+  explicit Signature(const std::vector<Constraint> &constraints,
+                     const std::vector<TypeExpr> &parameters,
                      TypeExpr ret_type)
       : constraints_(constraints),
         parameters_(parameters),
         ret_type_(ret_type) {
   }
-  explicit Signature(std::vector<TypeExpr> parameters, TypeExpr ret_type)
+  explicit Signature(const std::vector<TypeExpr> &parameters, TypeExpr ret_type)
       : parameters_(parameters), ret_type_(ret_type) {
   }
   explicit Signature(TypeExpr ret_type) : ret_type_(ret_type) {
   }
-  DataType type_check(std::vector<DataType> arguments) const;
+  DataType type_check(const std::vector<DataType> &arguments) const;
 };
 
 class StaticTraits {
  public:
   explicit StaticTraits();
   static const StaticTraits *get();
-  const Trait *real;
-  const Trait *integral;
-  const Trait *primitive;
-  const Trait *scalar;
+  Trait *real;
+  Trait *integral;
+  Trait *primitive;
+  Trait *scalar;
 };
 
 class Operation {
@@ -201,13 +200,14 @@ class Operation {
   const std::string name;
   const Signature sig;
 
-  explicit Operation(std::string name, Signature sig) : name(name), sig(sig) {
+  explicit Operation(const std::string &name, const Signature &sig)
+      : name(name), sig(sig) {
   }
   virtual ~Operation() = default;
 
-  DataType type_check(std::vector<DataType> arg_types) const;
+  DataType type_check(const std::vector<DataType> &arg_types) const;
   virtual Stmt *flatten(Expression::FlattenContext *ctx,
-                        std::vector<Expr> args,
+                        const std::vector<Expr> &args,
                         DataType ret_type) const = 0;
 };
 
@@ -215,7 +215,7 @@ class InternalOps {
  public:
   explicit InternalOps();
   static const InternalOps *get();
-#define PER_INTERNAL_OP(x) const Operation *x;
+#define PER_INTERNAL_OP(x) Operation *x;
 #include "taichi/inc/internal_ops.inc.h"
 #undef PER_INTERNAL_OP
 };

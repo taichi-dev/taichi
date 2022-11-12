@@ -817,10 +817,9 @@ void export_lang(py::module &m) {
   m.def("expr_snode_is_active", &snode_is_active);
   m.def("expr_snode_length", &snode_length);
 
-  m.def("insert_internal_func_call",
-        [&](const Operation *op, const ExprGroup &args) {
-          return Expr::make<InternalFuncCallExpression>(op, args.exprs);
-        });
+  m.def("insert_internal_func_call", [&](Operation *op, const ExprGroup &args) {
+    return Expr::make<InternalFuncCallExpression>(op, args.exprs);
+  });
 
   m.def("make_func_call_expr",
         Expr::make<FuncCallExpression, Function *, const ExprGroup &>);

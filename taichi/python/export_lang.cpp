@@ -1368,11 +1368,12 @@ void export_lang(py::module &m) {
   });
 
   auto operationClass = py::class_<Operation>(m, "Operation");
-  auto internalOpClass = py::class_<InternalOps>(m, "InternalOps");
+  auto operationsClass = py::class_<Operations>(m, "Operations");
+  auto internalOpClass = py::class_<InternalOp>(operationsClass, "internal");
 
-#define PER_INTERNAL_OP(x)                                  \
-  internalOpClass.def_property_readonly_static(             \
-      #x, [](py::object) { return InternalOps::get()->x; }, \
+#define PER_INTERNAL_OP(x)                                           \
+  internalOpClass.def_property_readonly_static(                      \
+      #x, [](py::object) { return Operations::get(InternalOp::x); }, \
       py::return_value_policy::reference);
 #include "taichi/inc/internal_ops.inc.h"
 #undef PER_INTERNAL_OP

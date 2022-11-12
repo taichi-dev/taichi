@@ -185,14 +185,20 @@ class Signature {
   DataType type_check(const std::vector<DataType> &arguments) const;
 };
 
+enum class StaticTraitID {
+  real,
+  integral,
+  primitive,
+  scalar,
+};
+
 class StaticTraits {
  public:
-  explicit StaticTraits();
-  static const StaticTraits *get();
-  Trait *real;
-  Trait *integral;
-  Trait *primitive;
-  Trait *scalar;
+  static Trait *get(StaticTraitID traitId);
+
+ private:
+  inline static std::map<StaticTraitID, std::unique_ptr<Trait>> traits_;
+  static void init_traits();
 };
 
 class Operation {
@@ -211,13 +217,19 @@ class Operation {
                         DataType ret_type) const = 0;
 };
 
-class InternalOps {
- public:
-  explicit InternalOps();
-  static const InternalOps *get();
-#define PER_INTERNAL_OP(x) Operation *x;
+enum class InternalOp {
+#define PER_INTERNAL_OP(x) x,
 #include "taichi/inc/internal_ops.inc.h"
 #undef PER_INTERNAL_OP
+};
+
+class Operations {
+ public:
+  static Operation *get(InternalOp opcode);
+
+ private:
+  inline static std::map<InternalOp, std::unique_ptr<Operation>> internals_;
+  static void init_internals();
 };
 
 }  // namespace lang

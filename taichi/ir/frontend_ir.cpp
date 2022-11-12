@@ -1102,7 +1102,7 @@ Expr ASTBuilder::insert_thread_idx_expr() {
   TI_ERROR_IF(!(loop && loop->is<FrontendForStmt>()),
               "ti.thread_idx() is only valid within loops.");
   return Expr::make<InternalFuncCallExpression>(
-      InternalOps::get()->linear_thread_idx, std::vector<Expr>{});
+      Operations::get(InternalOp::linear_thread_idx), std::vector<Expr>{});
 }
 
 Expr ASTBuilder::insert_patch_idx_expr() {

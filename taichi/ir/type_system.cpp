@@ -157,10 +157,10 @@ DataType f32_ptr = TypeFactory::get_instance().get_pointer_type(f32, false);
 
 #undef PRIM
 
-Trait *Real = StaticTraits::get()->real;
-Trait *Integral = StaticTraits::get()->integral;
-Trait *Primitive = StaticTraits::get()->primitive;
-Trait *Scalar = StaticTraits::get()->scalar;
+Trait *Real = StaticTraits::get(StaticTraitID::real);
+Trait *Integral = StaticTraits::get(StaticTraitID::integral);
+Trait *Primitive = StaticTraits::get(StaticTraitID::primitive);
+Trait *Scalar = StaticTraits::get(StaticTraitID::scalar);
 
 Constraint operator<(std::shared_ptr<TyVar> tyvar, Trait *trait) {
   return Constraint(tyvar, trait);
@@ -183,11 +183,6 @@ std::shared_ptr<TyCompute> comp(TypeExpr ty) {
 }
 };  // namespace TypeExprBuilder
 
-const InternalOps *InternalOps::get() {
-  static std::unique_ptr<InternalOps> ops_ = std::make_unique<InternalOps>();
-  return ops_.get();
-}
-
 using namespace TypeExprBuilder;
 
 bool DynamicTrait::validate(const DataType dt) const {
@@ -198,19 +193,22 @@ std::string DynamicTrait::to_string() const {
   return name_;
 }
 
-StaticTraits::StaticTraits() {
-  real = new DynamicTrait("Real", is_real);
-  integral = new DynamicTrait("Integral", is_integral);
-  primitive = new DynamicTrait(
-      "Primitive", [](DataType dt) { return dt->is<PrimitiveType>(); });
-  scalar = new DynamicTrait(
-      "Scalar", [](DataType dt) { return is_real(dt) || is_integral(dt); });
+Trait *StaticTraits::get(StaticTraitID traitId) {
+  if (traits_.empty()) {
+    init_traits();
+  }
+  return traits_[traitId].get();
 }
 
-const StaticTraits *StaticTraits::get() {
-  static std::unique_ptr<StaticTraits> traits_ =
-      std::make_unique<StaticTraits>();
-  return traits_.get();
+void StaticTraits::init_traits() {
+  traits_[StaticTraitID::real] =
+      std::make_unique<DynamicTrait>("Real", is_real);
+  traits_[StaticTraitID::integral] =
+      std::make_unique<DynamicTrait>("Integral", is_integral);
+  traits_[StaticTraitID::primitive] = std::make_unique<DynamicTrait>(
+      "Primitive", [](DataType dt) { return dt->is<PrimitiveType>(); });
+  traits_[StaticTraitID::scalar] = std::make_unique<DynamicTrait>(
+      "Scalar", [](DataType dt) { return is_real(dt) || is_integral(dt); });
 }
 
 std::vector<TypeExpr> type_exprs_from_dts(const std::vector<DataType> &params) {
@@ -262,12 +260,20 @@ class InternalCallOperation : public Operation {
   }
 };
 
-InternalOps::InternalOps() {
-#define PLAIN_OP(name, ret, ctx, ...)                                         \
-  name = new InternalCallOperation(#name, std::vector<DataType>{__VA_ARGS__}, \
-                                   ret, ctx)
-#define POLY_OP(name, ctx, sig) \
-  name = new InternalCallOperation(#name, sig, ctx)
+Operation *Operations::get(InternalOp opcode) {
+  if (internals_.empty()) {
+    init_internals();
+  }
+  return internals_[opcode].get();
+}
+
+void Operations::init_internals() {
+#define PLAIN_OP(name, ret, ctx, ...)                                     \
+  internals_[InternalOp::name] = std::make_unique<InternalCallOperation>( \
+      #name, std::vector<DataType>{__VA_ARGS__}, ret, ctx)
+#define POLY_OP(name, ctx, sig)  \
+  internals_[InternalOp::name] = \
+      std::make_unique<InternalCallOperation>(#name, sig, ctx)
 
 #define COMPOSITE_EXTRACT(n) \
   PLAIN_OP(composite_extract_##n, f32, false, f32_ptr);

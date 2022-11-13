@@ -664,126 +664,6 @@ class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
   }
 };
 
-class ReplaceFieldWithStacks : public BasicStmtVisitor {
- public:
-  using BasicStmtVisitor::visit;
-  int ad_stack_size;
-  std::map<Stmt *, AdStackAllocaStmt *> field_stacks;
-  explicit ReplaceFieldWithStacks(int ad_stack_size)
-      : ad_stack_size(ad_stack_size) {
-  }
-
-  void visit(GlobalPtrStmt *stmt) override {
-    if (field_stacks.find(stmt) != field_stacks.end()) {
-      return;
-    }
-    auto dtype = stmt->ret_type;
-
-    auto stack_alloca_ptr = stmt->insert_after_me(
-        Stmt::make<AdStackAllocaStmt>(dtype, ad_stack_size));
-
-    field_stacks[stmt] = stack_alloca_ptr->as<AdStackAllocaStmt>();
-
-    auto value =
-        stack_alloca_ptr->insert_after_me(Stmt::make<GlobalLoadStmt>(stmt));
-
-    auto zero = value->insert_after_me(
-        Stmt::make<ConstStmt>(TypedConstant(stmt->ret_type.ptr_removed(), 0)));
-    zero->insert_after_me(
-        Stmt::make<AdStackPushStmt>(stack_alloca_ptr, value, zero));
-  }
-
-  void visit(GlobalLoadStmt *stmt) override {
-    if (field_stacks.find(stmt->src) != field_stacks.end()) {
-      stmt->replace_with(
-          Stmt::make<AdStackLoadTopStmt>(field_stacks[stmt->src]));
-    }
-  }
-
-  void visit(GlobalStoreStmt *stmt) override {
-    if (field_stacks.find(stmt->dest) != field_stacks.end()) {
-      Stmt *value = stmt->val;
-      Stmt *adj_value = nullptr;
-      // TODO: handle other potential cases
-      if (stmt->val->is<GlobalPtrStmt>()) {
-        value = stmt->insert_after_me(Stmt::make<GlobalLoadStmt>(stmt->val));
-      }
-
-      // Get the adjoint of dest
-      if (stmt->dest->is<GlobalPtrStmt>()) {
-        auto snode = stmt->dest->as<GlobalPtrStmt>()->snode;
-        if (!snode->has_adjoint()) {
-          // No adjoint SNode. Do nothing
-          return;
-        }
-        // TODO: Handle gradients stop
-        // if (gradients_stopped(stmt, snode)) {
-        //   // gradients stopped, do nothing.
-        //   return;
-        // }
-        TI_ASSERT(snode->get_adjoint() != nullptr);
-        snode = snode->get_adjoint();
-        auto adj_ptr = stmt->insert_before_me(Stmt::make<GlobalPtrStmt>(
-            snode, stmt->dest->as<GlobalPtrStmt>()->indices));
-        adj_value =
-            adj_ptr->insert_after_me(Stmt::make<GlobalLoadStmt>(adj_ptr));
-
-        // auto zero =
-        // adj_value->insert_after_me(Stmt::make<ConstStmt>(TypedConstant(adj_ptr->ret_type,
-        // 0))); zero->insert_after_me(Stmt::make<GlobalStoreStmt>(adj_ptr,
-        // zero));
-
-      } else {
-        adj_value = stmt->insert_before_me(
-            Stmt::make<ConstStmt>(TypedConstant(stmt->dest->ret_type, 0)));
-      }
-
-      stmt->replace_with(Stmt::make<AdStackPushStmt>(field_stacks[stmt->dest],
-                                                     value, adj_value));
-    }
-  }
-
-  // TODO: The AdStackPushStmt set the adjoint to zero by default, however the
-  // adjoint of `loss` is 1.0, should be handled one solution might be copy the
-  // current adjoint of the field onto the stack
-  void visit(AtomicOpStmt *stmt) override {
-    if (field_stacks.find(stmt->dest) != field_stacks.end()) {
-      Stmt *value = stmt->val;
-      Stmt *adj_value = nullptr;
-      // TODO: handle other potential cases
-      if (stmt->val->is<GlobalPtrStmt>()) {
-        value = stmt->insert_after_me(Stmt::make<GlobalLoadStmt>(stmt->val));
-      }
-
-      // Get the adjoint of dest
-      if (stmt->dest->is<GlobalPtrStmt>()) {
-        auto snode = stmt->dest->as<GlobalPtrStmt>()->snode;
-        if (!snode->has_adjoint()) {
-          // No adjoint SNode. Do nothing
-          return;
-        }
-        // TODO: Handle gradients stop
-        // if (gradients_stopped(stmt, snode)) {
-        //   // gradients stopped, do nothing.
-        //   return;
-        // }
-        TI_ASSERT(snode->get_adjoint() != nullptr);
-        snode = snode->get_adjoint();
-        auto adj_ptr = stmt->insert_before_me(Stmt::make<GlobalPtrStmt>(
-            snode, stmt->dest->as<GlobalPtrStmt>()->indices));
-        adj_value =
-            adj_ptr->insert_after_me(Stmt::make<GlobalLoadStmt>(adj_ptr));
-      } else {
-        adj_value = stmt->insert_before_me(
-            Stmt::make<ConstStmt>(TypedConstant(stmt->dest->ret_type, 0)));
-      }
-
-      stmt->replace_with(Stmt::make<AdStackPushStmt>(field_stacks[stmt->dest],
-                                                     value, adj_value));
-    }
-  }
-};
-
 class ReverseOuterLoops : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
 
@@ -1355,20 +1235,6 @@ class MakeAdjoint : public ADTransform {
     }
     TI_ASSERT(snode->get_adjoint() != nullptr);
     snode = snode->get_adjoint();
-    /////////////////////////////////////
-
-    // // FIXME: Abuse dual as grad output for quick test
-    // if (!snode->has_dual()) {
-    //   // No adjoint SNode. Do nothing
-    //   return;
-    // }
-    // // if (gradients_stopped(stmt, snode)) {
-    // //   // gradients stopped, do nothing.
-    // //   return;
-    // // }
-    // TI_ASSERT(snode->get_dual() != nullptr);
-    // snode = snode->get_dual();
-    // std::cout << "do I has dual "<< stmt->src->id << std::endl;
 
     auto adj_ptr = insert<GlobalPtrStmt>(snode, src->indices);
     if (is_ptr_offset) {
@@ -1443,6 +1309,7 @@ class MakeAdjoint : public ADTransform {
           adjoint_ptr, stmt->dest->as<MatrixPtrStmt>()->offset);
     }
     accumulate(stmt->val, insert<GlobalLoadStmt>(adjoint_ptr));
+
     // stmt->parent->erase(stmt);
   }
 };
@@ -1890,9 +1757,6 @@ void auto_diff(IRNode *root,
         ReplaceLocalVarWithStacks replace(config.ad_stack_size, ib);
         ib->accept(&replace);
         print("after replace with stack");
-        // ReplaceFieldWithStacks replace_field(config.ad_stack_size);
-        // ib->accept(&replace_field);
-        // print("after replace field");
         type_check(root, config);
         MakeAdjoint::run(ib);
         // print("after make adjoint");

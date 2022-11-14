@@ -150,28 +150,22 @@ std::unique_ptr<SparseMatrix> SparseMatrixBuilder::build_cuda() {
   TI_ASSERT(built_ == false);
   built_ = true;
   auto sm = make_cu_sparse_matrix(rows_, cols_, dtype_);
-  fmt::print("hello world\n");
 #ifdef TI_WITH_CUDA
-  float32 *data = reinterpret_cast<float32 *>(data_base_ptr_.get());
   std::map<int, std::tuple<int, int, float32>> entries;
   for (auto i = 0; i < num_triplets_; i++) {
-    int row = (int)data[i * 3];
-    int col = (int)data[i * 3 + 1];
-    float32 val = data[i * 3 + 2];
-    if (entries.find(row) == entries.end()) {
-      entries[row] = std::make_tuple(row, col, val);
+    auto idx = 3 * i + 1;
+    auto row = ndarray_data_base_ptr_->read_int(std::vector<int>{idx});
+    auto col = ndarray_data_base_ptr_->read_int(std::vector<int>{idx + 1});
+    auto val = ndarray_data_base_ptr_->read_float(std::vector<int>{idx + 2});
+    auto e_idx = row * cols_ + col;
+    if (entries.find(e_idx) == entries.end()) {
+      entries[e_idx] = std::make_tuple(row, col, val);
     } else {
-      auto [r, c, v] = entries[row];
-      entries[row] = std::make_tuple(r, c, v + val);
+      auto [r, c, v] = entries[e_idx];
+      entries[e_idx] = std::make_tuple(r, c, v + val);
     }
-    fmt::print("({}, {}) val={}", row, col, val);
   }
-
-  fmt::print("n={}, m={}, num_triplets={} (max={})\n", rows_, cols_,
-             num_triplets_, max_num_triplets_);
-
   auto entry_size = entries.size();
-  fmt::print("entry_size={}", entry_size);
   std::vector<int> row_host(entry_size);
   std::vector<int> col_host(entry_size);
   std::vector<float32> value_host(entry_size);
@@ -181,19 +175,18 @@ std::unique_ptr<SparseMatrix> SparseMatrixBuilder::build_cuda() {
     col_host.push_back(col);
     value_host.push_back(value);
   }
-
-// void *row_device = nullptr, *col_device = nullptr, *value_device = nullptr;
-// CUDADriver::get_instance().malloc(&row_device, entry_size * sizeof(int));
-// CUDADriver::get_instance().malloc(&col_device, entry_size * sizeof(int));
-// CUDADriver::get_instance().malloc(&value_device, entry_size *
-// sizeof(float32));
-// CUDADriver::get_instance().memcpy_host_to_device(row_device, row_host.data(),
-// entry_size * sizeof(int));
-// CUDADriver::get_instance().memcpy_host_to_device(col_device, col_host.data(),
-// entry_size * sizeof(int));
-// CUDADriver::get_instance().memcpy_host_to_device(value_device,
-// value_host.data(), entry_size * sizeof(float32));
-// sm->build_csr_from_coo(row_device, col_device, value_device, entry_size);
+  void *row_device = nullptr, *col_device = nullptr, *value_device = nullptr;
+  CUDADriver::get_instance().malloc(&row_device, entry_size * sizeof(int));
+  CUDADriver::get_instance().malloc(&col_device, entry_size * sizeof(int));
+  CUDADriver::get_instance().malloc(&value_device,
+                                    entry_size * sizeof(float32));
+  CUDADriver::get_instance().memcpy_host_to_device(row_device, row_host.data(),
+                                                   entry_size * sizeof(int));
+  CUDADriver::get_instance().memcpy_host_to_device(col_device, col_host.data(),
+                                                   entry_size * sizeof(int));
+  CUDADriver::get_instance().memcpy_host_to_device(
+      value_device, value_host.data(), entry_size * sizeof(float32));
+  sm->build_csr_from_coo(row_device, col_device, value_device, entry_size);
 #endif
   return sm;
 }

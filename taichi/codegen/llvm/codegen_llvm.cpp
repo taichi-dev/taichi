@@ -1262,7 +1262,6 @@ void TaskCodeGenLLVM::visit(ArgLoadStmt *stmt) {
                              get_context(), tlctx->get_constant(stmt->arg_id)))
                      : (call(builder.get(), "RuntimeContext_get_args",
                              get_context(), tlctx->get_constant(stmt->arg_id)));
-
   llvm::Type *dest_ty = nullptr;
   if (stmt->is_ptr) {
     dest_ty = llvm::PointerType::get(
@@ -1271,6 +1270,17 @@ void TaskCodeGenLLVM::visit(ArgLoadStmt *stmt) {
   } else {
     llvm_val[stmt] = bitcast_from_u64(raw_arg, stmt->ret_type);
   }
+
+  // print
+  std::vector<llvm::Value *> args;
+  std::string formats;
+  args.push_back(llvm_val[stmt]);
+  formats += "%lx\n";
+  auto runtime_printf = call("LLVMRuntime_get_host_printf", get_runtime());
+  args.insert(args.begin(),
+              builder->CreateGlobalStringPtr(formats.c_str(), "format_string"));
+  auto func_type_func = get_runtime_function("get_func_type_host_printf");
+  call(runtime_printf, func_type_func->getFunctionType(), std::move(args));
 }
 
 void TaskCodeGenLLVM::visit(ReturnStmt *stmt) {

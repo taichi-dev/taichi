@@ -55,6 +55,11 @@ struct RuntimeContext {
     return taichi_union_cast_with_different_sizes<T>(args[i]);
   }
 
+  template <typename T>
+  T get_grad_arg(int i) {
+    return taichi_union_cast_with_different_sizes<T>(grad_args[i]);
+  }
+
   uint64 get_arg_as_uint64(int i) {
     return args[i];
   }
@@ -63,6 +68,11 @@ struct RuntimeContext {
   void set_arg(int i, T v) {
     args[i] = taichi_union_cast_with_different_sizes<uint64>(v);
     set_array_device_allocation_type(i, DevAllocType::kNone);
+  }
+
+  template <typename T>
+  void set_grad_arg(int i, T v) {
+    grad_args[i] = taichi_union_cast_with_different_sizes<uint64>(v);
   }
 
   void set_array_runtime_size(int i, uint64 size) {

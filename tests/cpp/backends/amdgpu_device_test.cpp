@@ -87,6 +87,10 @@ TEST(AMDGPU, FetchResult) {
     // reduce kernel
 }
 
+TEST(AMDGPU, CodeGen) {
+    // NOT_IMPLEMENTED
+}
+
 } // lang
 } // taichi
 #endif

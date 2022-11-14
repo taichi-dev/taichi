@@ -109,9 +109,6 @@ function build-and-test-headless-demo {
     cd taichi-aot-demo
     git checkout refactor_cmake
 
-    mkdir build
-    pushd build
-
     . $(pwd)/ci/test_utils.sh
 
     # Build demos

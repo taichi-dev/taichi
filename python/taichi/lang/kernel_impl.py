@@ -680,7 +680,7 @@ class Kernel:
                 elif isinstance(needed, sparse_matrix_builder):
                     # Pass only the base pointer of the ti.types.sparse_matrix_builder() argument
                     launch_ctx.set_arg_uint(actual_argument_slot,
-                                            v._get_addr())
+                                            v._get_ndarray_addr())
                 elif isinstance(needed,
                                 ndarray_type.NdarrayType) and isinstance(
                                     v, taichi.lang._ndarray.Ndarray):

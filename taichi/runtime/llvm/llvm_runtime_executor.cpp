@@ -571,12 +571,12 @@ void LlvmRuntimeExecutor::materialize_runtime(MemoryPool *memory_pool,
 
   TI_TRACE("Launching runtime_initialize");
 
-  runtime_jit->call<void *, void *, std::size_t, void *, int, void *,
-                    void *, void *>(
-      "runtime_initialize", *result_buffer_ptr, memory_pool, prealloc_size,
-      preallocated_device_buffer_, num_rand_states,
-      (void *)&taichi_allocate_aligned, (void *)std::printf,
-      (void *)std::vsnprintf);
+  runtime_jit
+      ->call<void *, void *, std::size_t, void *, int, void *, void *, void *>(
+          "runtime_initialize", *result_buffer_ptr, memory_pool, prealloc_size,
+          preallocated_device_buffer_, num_rand_states,
+          (void *)&taichi_allocate_aligned, (void *)std::printf,
+          (void *)std::vsnprintf);
 
   TI_TRACE("LLVMRuntime initialized (excluding `root`)");
   llvm_runtime_ = fetch_result<void *>(taichi_result_buffer_ret_value_id,
@@ -585,14 +585,13 @@ void LlvmRuntimeExecutor::materialize_runtime(MemoryPool *memory_pool,
 
   if (config_->arch == Arch::cuda) {
     TI_TRACE("Initializing {} random states using CUDA", num_rand_states);
-    runtime_jit->launch<void *, int>("runtime_initialize_rand_states_cuda",
-                                config_->saturating_grid_dim,
-                                config_->max_block_dim,
-                                0,
-                                llvm_runtime_, starting_rand_state);
+    runtime_jit->launch<void *, int>(
+        "runtime_initialize_rand_states_cuda", config_->saturating_grid_dim,
+        config_->max_block_dim, 0, llvm_runtime_, starting_rand_state);
   } else {
     TI_TRACE("Initializing {} random states (serially)", num_rand_states);
-    runtime_jit->call<void *, int>("runtime_initialize_rand_states_serial", llvm_runtime_, starting_rand_state);
+    runtime_jit->call<void *, int>("runtime_initialize_rand_states_serial",
+                                   llvm_runtime_, starting_rand_state);
   }
 
   if (arch_use_host_memory(config_->arch)) {

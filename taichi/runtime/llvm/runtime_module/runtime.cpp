@@ -954,12 +954,14 @@ void runtime_initialize_runtime_context_buffer(LLVMRuntime *runtime) {
       runtime->create<NodeManager>(runtime, sizeof(RuntimeContext), 4096);
 }
 
-void runtime_initialize_rand_states_cuda(LLVMRuntime *runtime, int starting_rand_state) {
+void runtime_initialize_rand_states_cuda(LLVMRuntime *runtime,
+                                         int starting_rand_state) {
   int i = block_dim() * block_idx() + thread_idx();
   initialize_rand_state(&runtime->rand_states[i], starting_rand_state + i);
 }
 
-void runtime_initialize_rand_states_serial(LLVMRuntime *runtime, int starting_rand_state) {
+void runtime_initialize_rand_states_serial(LLVMRuntime *runtime,
+                                           int starting_rand_state) {
   for (int i = 0; i < runtime->num_rand_states; i++) {
     initialize_rand_state(&runtime->rand_states[i], starting_rand_state + i);
   }

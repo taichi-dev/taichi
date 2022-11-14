@@ -100,12 +100,16 @@ def _gen_swizzles(cls):
 
 
 def make_matrix(arr, dt=None):
-    assert len(arr) > 0, "Cannot create empty matrix"
-    is_matrix = isinstance(arr[0], Iterable)
-    if dt is None:
-        dt = _make_entries_initializer(is_matrix).infer_dt(arr)
+    if len(arr) == 0:
+        # the only usage of an empty vector is to serve as field indices
+        is_matrix = False
+        dt = primitive_types.i32
     else:
-        dt = cook_dtype(dt)
+        is_matrix = isinstance(arr[0], Iterable)
+        if dt is None:
+            dt = _make_entries_initializer(is_matrix).infer_dt(arr)
+        else:
+            dt = cook_dtype(dt)
     if not is_matrix:
         return impl.Expr(
             impl.make_matrix_expr([len(arr)], dt,
@@ -727,7 +731,6 @@ class Matrix(TaichiOperations):
         from taichi.lang import matrix_ops
         return matrix_ops.trace(self)
 
-    @taichi_scope
     def inverse(self):
         """Returns the inverse of this matrix.
 
@@ -740,48 +743,8 @@ class Matrix(TaichiOperations):
         Raises:
             Exception: Inversions of matrices with sizes >= 5 are not supported.
         """
-        assert self.n == self.m, 'Only square matrices are invertible'
-        if self.n == 1:
-            return Matrix([1 / self(0, 0)])
-        if self.n == 2:
-            inv_determinant = impl.expr_init(1.0 / self.determinant())
-            return inv_determinant * Matrix([[self(
-                1, 1), -self(0, 1)], [-self(1, 0), self(0, 0)]])
-        if self.n == 3:
-            n = 3
-            inv_determinant = impl.expr_init(1.0 / self.determinant())
-            entries = [[0] * n for _ in range(n)]
-
-            def E(x, y):
-                return self(x % n, y % n)
-
-            for i in range(n):
-                for j in range(n):
-                    entries[j][i] = inv_determinant * (
-                        E(i + 1, j + 1) * E(i + 2, j + 2) -
-                        E(i + 2, j + 1) * E(i + 1, j + 2))
-            return Matrix(entries)
-        if self.n == 4:
-            n = 4
-            inv_determinant = impl.expr_init(1.0 / self.determinant())
-            entries = [[0] * n for _ in range(n)]
-
-            def E(x, y):
-                return self(x % n, y % n)
-
-            for i in range(n):
-                for j in range(n):
-                    entries[j][i] = inv_determinant * (-1)**(i + j) * ((
-                        E(i + 1, j + 1) *
-                        (E(i + 2, j + 2) * E(i + 3, j + 3) -
-                         E(i + 3, j + 2) * E(i + 2, j + 3)) - E(i + 2, j + 1) *
-                        (E(i + 1, j + 2) * E(i + 3, j + 3) -
-                         E(i + 3, j + 2) * E(i + 1, j + 3)) + E(i + 3, j + 1) *
-                        (E(i + 1, j + 2) * E(i + 2, j + 3) -
-                         E(i + 2, j + 2) * E(i + 1, j + 3))))
-            return Matrix(entries)
-        raise Exception(
-            "Inversions of matrices with sizes >= 5 are not supported")
+        from taichi.lang import matrix_ops  # pylint: disable=C0415
+        return matrix_ops.inverse(self)
 
     def normalized(self, eps=0):
         """Normalize a vector, i.e. matrices with the second dimension being
@@ -1774,6 +1737,16 @@ class MatrixType(CompoundType):
                 "Custom type instances need to be created with an initial value."
             )
         if len(args) == 1:
+            # Init from a real Matrix
+            if isinstance(args[0], expr.Expr) and args[0].ptr.is_tensor():
+                arg = args[0]
+                shape = arg.ptr.get_ret_type().shape()
+                assert self.ndim == len(shape)
+                assert self.n == shape[0]
+                if self.ndim > 1:
+                    assert self.m == shape[1]
+                return expr.Expr(arg.ptr)
+
             # initialize by a single scalar, e.g. matnxm(1)
             if isinstance(args[0], (numbers.Number, expr.Expr)):
                 return self.filled_with_scalar(args[0])
@@ -1808,6 +1781,10 @@ class MatrixType(CompoundType):
                 else float(mat(i, j)) for j in range(self.m)
             ] for i in range(self.n)],
                           ndim=self.ndim)
+
+        if isinstance(mat, impl.Expr) and mat.ptr.is_tensor():
+            return ops_mod.cast(mat, self.dtype)
+
         return mat.cast(self.dtype)
 
     def filled_with_scalar(self, value):
@@ -1852,6 +1829,14 @@ class VectorType(MatrixType):
                 "Custom type instances need to be created with an initial value."
             )
         if len(args) == 1:
+            # Init from a real Matrix
+            if isinstance(args[0], expr.Expr) and args[0].ptr.is_tensor():
+                arg = args[0]
+                shape = arg.ptr.get_ret_type().shape()
+                assert len(shape) == 1
+                assert self.n == shape[0]
+                return expr.Expr(arg.ptr)
+
             # initialize by a single scalar, e.g. matnxm(1)
             if isinstance(args[0], (numbers.Number, expr.Expr)):
                 return self.filled_with_scalar(args[0])
@@ -1883,6 +1868,10 @@ class VectorType(MatrixType):
                 int(vec(i)) if self.dtype in primitive_types.integer_types else
                 float(vec(i)) for i in range(self.n)
             ])
+
+        if isinstance(vec, impl.Expr) and vec.ptr.is_tensor():
+            return ops_mod.cast(vec, self.dtype)
+
         return vec.cast(self.dtype)
 
     def filled_with_scalar(self, value):

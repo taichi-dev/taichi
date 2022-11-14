@@ -411,7 +411,7 @@ def test_gpu_sparse_matrix():
     A.build_coo(d_coo_row, d_coo_col, d_coo_val)
 
     # Compute Y = A @ X
-    A.spmv(X, Y)
+    Y = A @ X
     for i in range(4):
         assert Y[i] == h_Y[i]
 

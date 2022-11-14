@@ -301,7 +301,6 @@ def test_append_matrix_real_matrix():
     _test_append_matrix()
 
 
-@test_utils.test(require=ti.extension.sparse, exclude=[ti.metal])
 def _test_append_matrix_in_struct():
     mat = ti.types.matrix(n=2, m=2, dtype=ti.u8)
     struct = ti.types.struct(a=ti.u64, b=mat, c=ti.u16)
@@ -338,6 +337,5 @@ def test_append_matrix_in_struct():
                  exclude=[ti.metal],
                  real_matrix=True,
                  real_matrix_scalarize=True)
-def _test_append_matrix_in_struct_real_matrix():
-    _test_append_matrix_in_struct(
-    )  # Fails because Matrix expression has no attribute 'cast'
+def test_append_matrix_in_struct_matrix_scalarize():
+    _test_append_matrix_in_struct()

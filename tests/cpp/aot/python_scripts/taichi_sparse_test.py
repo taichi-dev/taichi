@@ -72,7 +72,7 @@ def paint():
 
 
 def save_kernels(arch):
-    m = ti.aot.Module(arch)
+    m = ti.aot.Module()
 
     m.add_kernel(fill_img, template_args={})
     m.add_kernel(block1_deactivate_all, template_args={})

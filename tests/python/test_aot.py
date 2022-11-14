@@ -45,7 +45,7 @@ def test_aot_field_range_hint():
             density[i, j] = 1
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        m = ti.aot.Module(ti.opengl)
+        m = ti.aot.Module()
         m.add_field('density', density)
         m.add_kernel(init)
         m.save(tmpdir)
@@ -68,7 +68,7 @@ def test_aot_bind_id():
             density1[i, j] = x + 1
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        m = ti.aot.Module(ti.lang.impl.current_cfg().arch)
+        m = ti.aot.Module()
         m.add_kernel(init, {'density1': density1})
         m.save(tmpdir)
         with open(os.path.join(tmpdir, 'metadata.json')) as json_file:
@@ -92,8 +92,7 @@ def test_save():
             density[i, j] = 1
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        # note ti.aot.Module(ti.opengl) is no-op according to its docstring.
-        m = ti.aot.Module(ti.lang.impl.current_cfg().arch)
+        m = ti.aot.Module()
         m.add_field('density', density)
         m.add_kernel(init)
         m.save(tmpdir)
@@ -111,8 +110,7 @@ def test_save_template_kernel():
             density[0, 0] += 1
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        # note ti.aot.Module(ti.opengl) is no-op according to its docstring.
-        m = ti.aot.Module(ti.lang.impl.current_cfg().arch)
+        m = ti.aot.Module()
         m.add_field('density', density)
         with m.add_kernel_template(foo) as kt:
             kt.instantiate(n=6)
@@ -132,7 +130,7 @@ def test_non_dense_snode():
     blk.dense(ti.i, n).place(y)
 
     with pytest.raises(RuntimeError, match='AOT: only supports dense field'):
-        m = ti.aot.Module(ti.lang.impl.current_cfg().arch)
+        m = ti.aot.Module()
         m.add_field('x', x)
         m.add_field('y', y)
 
@@ -219,7 +217,7 @@ def test_mpm88_aot(use_gles):
             J[i] = 1
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        m = ti.aot.Module(ti.lang.impl.current_cfg().arch)
+        m = ti.aot.Module()
         m.add_field("x", x)
         m.add_field("v", v)
         m.add_field("C", C)
@@ -396,7 +394,7 @@ def test_mpm99_aot():
             Jp[i] = 1
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        m = ti.aot.Module(ti.lang.impl.current_cfg().arch)
+        m = ti.aot.Module()
         m.add_field('x', x)
         m.add_field('v', v)
         m.add_field('C', C)
@@ -492,7 +490,7 @@ def test_mpm88_ndarray():
     grid_m = ti.ndarray(ti.f32, (n_grid, n_grid))
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        m = ti.aot.Module(ti.opengl)
+        m = ti.aot.Module()
         template_args = {
             'x': x,
             'v': v,
@@ -517,7 +515,7 @@ def test_aot_ndarray_template_mixed():
 
     with tempfile.TemporaryDirectory() as tmpdir:
         x = ti.ndarray(dtype=ti.f32, shape=16)
-        m = ti.aot.Module(ti.opengl)
+        m = ti.aot.Module()
         m.add_kernel(run, template_args={'arr': x, 'val2': 42})
         m.save(tmpdir, '')
         with open(os.path.join(tmpdir, 'metadata.json')) as json_file:
@@ -536,8 +534,7 @@ def test_archive():
             density[i, j] = 1
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        # note ti.aot.Module(ti.opengl) is no-op according to its docstring.
-        m = ti.aot.Module(ti.lang.impl.current_cfg().arch)
+        m = ti.aot.Module()
         m.add_field('density', density)
         m.add_kernel(init)
         tcm_path = f"{tmpdir}/x.tcm"
@@ -567,8 +564,7 @@ def test_sequential_dispatch():
     g_init = g_init_builder.compile()
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        # note ti.aot.Module(ti.opengl) is no-op according to its docstring.
-        m = ti.aot.Module(ti.lang.impl.current_cfg().arch)
+        m = ti.aot.Module()
         m.add_graph("g_init", g_init)
         m.save(tmpdir)
         with open(os.path.join(tmpdir, 'metadata.json'), "r") as json_file:
@@ -593,7 +589,17 @@ def test_vulkan_cgraph_short():
 
     g.run({'a': a, 'c': c})
 
-    m = ti.aot.Module(ti.lang.impl.current_cfg().arch, caps=['spirv_has_int8'])
+    m = ti.aot.Module(caps=['spirv_has_int8'])
     m.add_graph('g_init', g)
     with tempfile.TemporaryDirectory() as tmpdir:
         m.save(tmpdir)
+
+
+@test_utils.test(arch=[ti.vulkan])
+def test_module_arch_fallback():
+    with pytest.warns(
+            Warning,
+            match=
+            r'AOT compilation to a different arch than the current one is not yet supported, switching'
+    ):
+        m = ti.aot.Module(ti.cpu)

@@ -104,7 +104,7 @@ function build-and-test-headless-demo {
     popd
 
     rm -rf taichi-aot-demo
-    git clone --recursive --depth=1 -b add_test_script https://github.com/taichi-dev/taichi-aot-demo
+    git clone --recursive --depth=1 https://github.com/taichi-dev/taichi-aot-demo
     cd taichi-aot-demo
 
     . $(pwd)/ci/test_utils.sh
@@ -138,8 +138,6 @@ function build-and-test-headless-demo {
     # Pull output images and compare with groundtruth
     rm -rf output
     mkdir output
-
-    adb shell "ls /data/local/tmp/output"
 
     adb pull /data/local/tmp/output .
     compare_to_groundtruth android

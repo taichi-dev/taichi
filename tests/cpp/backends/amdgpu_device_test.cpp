@@ -75,7 +75,14 @@ TEST(AMDGPU, ImportMemory) {
     AMDGPUDriver::get_instance().mem_free(ptr);
 }
 
-TEST(AMDGPU, CreateContextAndLaunchKernel) {
+TEST(AMDGPU, CreateContextAndGetMemInfo) {
+    auto total_size = AMDGPUContext::get_instance().get_total_memory();
+    auto free_size = AMDGPUContext::get_instance().get_free_memory();
+    EXPECT_GE(total_size, free_size);
+    EXPECT_GE(free_size, 0);
+}
+
+TEST(AMDGPU, LaunchKernel) {
     // NOT_IMPLEMENTED
     // runtime part
     // vec kernel

@@ -99,7 +99,23 @@ def arg_foreach_check(*arg_indices, fns=[], logic='or', msg=None):
 
 
 def same_shapes(*xs):
-    shapes = [x.get_shape() for x in xs]
+    shapes = []
+    for x in xs:
+        if isinstance(x, Matrix):
+            shapes.append(x.get_shape())
+        elif isinstance(x, list):
+            shape = [len(x)]
+            for i in x:
+                if isinstance(i, list):
+                    shape.append(len(i))
+                if isinstance(i, Expr):
+                    shape += i.ptr.get_ret_type().shape()
+            shapes.append(tuple(shape))
+        elif isinstance(x, Expr):
+            shapes.append(tuple(x.ptr.get_ret_type().shape()))
+        else:
+            return False, f'same_shapes() received an unexpected argument of type: {x}'
+
     if len(set(shapes)) != 1:
         return False, f'required shapes to be the same, got shapes {shapes}'
     return True, None

@@ -272,55 +272,6 @@ jobs:
           PY: ${{ matrix.python }}
           GPU_TEST: ON
 
-  build_and_test_macos_1014:
-    name: Build and Upload (macos 1014)
-    needs: matrix_prep
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
-    runs-on: [self-hosted, macos10.14]
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: 'recursive'
-          fetch-depth: '0'
-
-      - name: Prepare Environment
-        run: |
-          . .github/workflows/scripts/common-utils.sh
-          prepare-build-cache
-
-      - name: Build
-        run: |
-          # TODO: should embed LLVM as submodule
-          export LLVM_DIR=/Users/buildbot6/taichi-llvm-10.0.0-macos
-          export PATH=$LLVM_DIR/bin:$PATH
-          .github/workflows/scripts/unix-build.sh
-        env:
-          PROJECT_NAME: ${{ matrix.name }}
-          PY: ${{ matrix.python }}
-          CXX: clang++
-          TAICHI_CMAKE_ARGS: >-
-            -DTI_WITH_OPENGL:BOOL=OFF
-            -DTI_WITH_CUDA:BOOL=OFF
-            -DTI_WITH_CC:BOOL=OFF
-            -DTI_WITH_VULKAN:BOOL=OFF
-            -DTI_BUILD_TESTS:BOOL=ON
-
-      - name: Archive Wheel Artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: dist
-          path: dist/*.whl
-          retention-days: 20
-
-      - name: Test
-        run: |
-          .github/workflows/scripts/unix_test.sh
-        env:
-          TI_WANTED_ARCHS: 'cpu'
-          PY: ${{ matrix.python }}
-
   build_and_test_windows:
     name: Build and Upload (Windows only)
     needs: matrix_prep

@@ -198,6 +198,7 @@ def test_local_matrix_non_constant_index():
 
 @test_utils.test(require=ti.extension.dynamic_index,
                  real_matrix=True,
+                 real_matrix_scalarize=False,
                  debug=True)
 def test_local_matrix_non_constant_index_real_matrix():
     _test_local_matrix_non_constant_index()
@@ -299,7 +300,7 @@ def test_matrix_field_constant_index():
     _test_matrix_field_constant_index()
 
 
-@test_utils.test(real_matrix=True)
+@test_utils.test(arch=[ti.cuda, ti.cpu], real_matrix=True)
 def test_matrix_field_constant_index_real_matrix():
     _test_matrix_field_constant_index()
 
@@ -758,7 +759,9 @@ def test_matrix_vector_multiplication():
     foo()
 
 
-@test_utils.test(arch=[ti.cuda, ti.cpu], real_matrix=True)
+@test_utils.test(arch=[ti.cuda, ti.cpu],
+                 real_matrix=True,
+                 real_matrix_scalarize=False)
 def test_local_matrix_read():
 
     s = ti.field(ti.i32, shape=())
@@ -774,7 +777,9 @@ def test_local_matrix_read():
             assert s[None] == i * 3 + j
 
 
-@test_utils.test(arch=[ti.cuda, ti.cpu], real_matrix=True)
+@test_utils.test(arch=[ti.cuda, ti.cpu],
+                 real_matrix=True,
+                 real_matrix_scalarize=False)
 def test_local_matrix_read_without_assign():
     @ti.kernel
     def local_vector_read(i: ti.i32) -> ti.i32:
@@ -784,7 +789,9 @@ def test_local_matrix_read_without_assign():
         assert local_vector_read(i) == i
 
 
-@test_utils.test(arch=[ti.cuda, ti.cpu], real_matrix=True)
+@test_utils.test(arch=[ti.cuda, ti.cpu],
+                 real_matrix=True,
+                 real_matrix_scalarize=False)
 def test_local_matrix_indexing_in_loop():
     s = ti.field(ti.i32, shape=(3, 3))
 
@@ -801,7 +808,9 @@ def test_local_matrix_indexing_in_loop():
             assert s[i, j] == i * 3 + j + 1
 
 
-@test_utils.test(arch=[ti.cuda, ti.cpu], real_matrix=True)
+@test_utils.test(arch=[ti.cuda, ti.cpu],
+                 real_matrix=True,
+                 real_matrix_scalarize=False)
 def test_local_matrix_indexing_ops():
     @ti.kernel
     def element_write() -> ti.i32:
@@ -857,7 +866,10 @@ def test_local_matrix_index_check():
         bar()
 
 
-@test_utils.test(arch=[ti.cuda, ti.cpu], real_matrix=True, debug=True)
+@test_utils.test(arch=[ti.cuda, ti.cpu],
+                 real_matrix=True,
+                 real_matrix_scalarize=False,
+                 debug=True)
 def test_elementwise_ops():
     @ti.kernel
     def test():
@@ -1080,7 +1092,7 @@ def test_trace_op():
     assert np.abs(x.trace() - 7.1) < 1e-6
 
     with pytest.raises(TaichiCompilationError,
-                       match=r"not a square matrix: \(3, 2\)"):
+                       match=r"expected a square matrix, got shape \(3, 2\)"):
         x = ti.Matrix([[.1, 3.], [5., 7.], [1., 2.]])
         print(x.trace())
 
@@ -1090,7 +1102,7 @@ def test_trace_op():
         print(x.trace())
 
     with pytest.raises(TaichiCompilationError,
-                       match=r"not a square matrix: \(3, 2\)"):
+                       match=r"expected a square matrix, got shape \(3, 2\)"):
         failed_func()
 
 

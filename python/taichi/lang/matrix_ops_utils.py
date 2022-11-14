@@ -27,41 +27,19 @@ def preconditions(*checker_funcs):
     return decorator
 
 
-def arg_at(i, *fns):
+def arg_at(indices, *fns):
     def check(*args, **kwargs):
-        if i in kwargs:
-            arg = kwargs[i]
-        else:
-            try:
+        nonlocal indices
+        if isinstance(indices, int):
+            indices = [indices]
+        for i in indices:
+            if i in kwargs:
+                arg = kwargs[i]
+            else:
                 arg = args[i]
-            except IndexError:
-                raise
-        ok, msg = do_check(fns, arg)
-        if not ok:
-            return False, msg
-        return True, None
-
-    return check
-
-
-def foreach(*fns):
-    def check(args):
-        for x in args:
-            ok, msg = do_check(fns, x)
+            ok, msg = do_check(fns, arg)
             if not ok:
                 return False, msg
-        return True, None
-
-    return check
-
-
-def Or(f, g, msg=None):
-    def check(*args, **kwargs):
-        ok, msg_f = do_check([f], *args, **kwargs)
-        if not ok:
-            ok, msg_g = do_check([g], *args, **kwargs)
-            if not ok:
-                return False, f'Both violated: {msg_f} {msg_g}'
         return True, None
 
     return check
@@ -72,25 +50,55 @@ def assert_tensor(m, msg='not tensor type: {}'):
         return True, None
     if isinstance(m, Expr) and m.is_tensor():
         return True, None
-    raise TaichiCompilationError(msg.format(type(m)))
+    return False, msg.format(type(m))
 
 
-# TODO(zhanlue): rearrange to more generic checker functions
-# for example: "assert_is_instance(args, indices=[], instances=[], logic='or')"
-def assert_vector(v, msg='not a vector: {}'):
-    if (isinstance(v, Expr) or isinstance(v, Matrix)) and len(
-            v.get_shape()) == 1:
-        return True, None
-    raise TaichiCompilationError(msg.format(type(v)))
+def assert_vector(msg='expected a vector, got {}'):
+    def check(v):
+        if (isinstance(v, Expr) or isinstance(v, Matrix)) and len(
+                v.get_shape()) == 1:
+            return True, None
+        return False, msg.format(type(v))
+
+    return check
 
 
 def assert_list(x, msg='not a list: {}'):
     if isinstance(x, list):
         return True, None
-    raise TaichiCompilationError(msg.format(type(x)))
+    return False, msg.format(type(x))
 
 
-def same_shapes(xs):
+def arg_foreach_check(*arg_indices, fns=[], logic='or', msg=None):
+    def check(*args, **kwargs):
+        for i in arg_indices:
+            if i in kwargs:
+                arg = kwargs[i]
+            else:
+                arg = args[i]
+            if logic == 'or':
+                for a in arg:
+                    passed = False
+                    for fn in fns:
+                        ok, _ = do_check([fn], a)
+                        if ok:
+                            passed = True
+                            break
+                    if not passed:
+                        return False, msg
+            elif logic == 'and':
+                for a in arg:
+                    ok, _ = do_check(fns, a)
+                    if not ok:
+                        return False, msg
+            else:
+                raise ValueError(f'Unknown logic: {logic}')
+        return True, None
+
+    return check
+
+
+def same_shapes(*xs):
     shapes = [x.get_shape() for x in xs]
     if len(set(shapes)) != 1:
         return False, f'required shapes to be the same, got shapes {shapes}'
@@ -101,17 +109,16 @@ def square_matrix(x):
     assert_tensor(x)
     shape = x.get_shape()
     if len(shape) != 2 or shape[0] != shape[1]:
-        return False, f'not a square matrix: {shape}'
+        return False, f'expected a square matrix, got shape {shape}'
     return True, None
 
 
-def dim_lt(dim, limit, msg=None):
+def dim_lt(dim, limit):
     def check(x):
         assert_tensor(x)
         shape = x.get_shape()
         return shape[dim] < limit, (
-            f'Dimension >= {limit} is not supported: {shape}'
-            if not msg else msg.format(shape))
+            f'only dimension < {limit} is supported, got shape {shape}')
 
     return check
 

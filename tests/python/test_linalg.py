@@ -28,8 +28,7 @@ def test_const_init():
         assert b[None][j] == j
 
 
-@test_utils.test()
-def test_basic_utils():
+def _test_basic_utils():
     a = ti.Vector.field(3, dtype=ti.f32)
     b = ti.Vector.field(2, dtype=ti.f32)
     abT = ti.Matrix.field(3, 2, dtype=ti.f32)
@@ -70,7 +69,16 @@ def test_basic_utils():
 
 
 @test_utils.test()
-def test_cross():
+def test_basic_utils():
+    _test_basic_utils()
+
+
+@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
+def test_basic_utils_real_matrix_scalarize():
+    _test_basic_utils()
+
+
+def _test_cross():
     a = ti.Vector.field(3, dtype=ti.f32)
     b = ti.Vector.field(3, dtype=ti.f32)
     c = ti.Vector.field(3, dtype=ti.f32)
@@ -99,7 +107,16 @@ def test_cross():
 
 
 @test_utils.test()
-def test_dot():
+def test_cross():
+    _test_cross()
+
+
+@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
+def test_cross_real_matrix_scalarize():
+    _test_cross()
+
+
+def _test_dot():
     a = ti.Vector.field(3, dtype=ti.f32)
     b = ti.Vector.field(3, dtype=ti.f32)
     c = ti.field(dtype=ti.f32)
@@ -123,6 +140,16 @@ def test_dot():
     init()
     assert c[None] == 32.0
     assert c2[None] == 14.0
+
+
+@test_utils.test()
+def test_dot():
+    _test_dot()
+
+
+@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
+def test_dot_real_matrix_scalarize():
+    _test_dot()
 
 
 @test_utils.test()
@@ -220,9 +247,7 @@ def test_matrix():
         assert x[i][1, 1] == 1 + i
 
 
-@pytest.mark.parametrize("n", range(1, 5))
-@test_utils.test()
-def test_mat_inverse_size(n):
+def _test_mat_inverse_size(n):
     m = ti.Matrix.field(n, n, dtype=ti.f32, shape=())
     M = np.empty(shape=(n, n), dtype=np.float32)
     for i in range(n):
@@ -242,8 +267,19 @@ def test_mat_inverse_size(n):
     np.testing.assert_almost_equal(m_np, np.linalg.inv(M))
 
 
+@pytest.mark.parametrize("n", range(1, 5))
 @test_utils.test()
-def test_matrix_factories():
+def test_mat_inverse_size(n):
+    _test_mat_inverse_size(n)
+
+
+@pytest.mark.parametrize("n", range(1, 5))
+@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
+def test_mat_inverse_size_real_matrix_scalarize(n):
+    _test_mat_inverse_size(n)
+
+
+def _test_matrix_factories():
     a = ti.Vector.field(3, dtype=ti.i32, shape=3)
     b = ti.Matrix.field(2, 2, dtype=ti.f32, shape=2)
     c = ti.Matrix.field(2, 3, dtype=ti.f32, shape=2)
@@ -269,6 +305,16 @@ def test_matrix_factories():
         np.array([[0.5, -sqrt3o2], [sqrt3o2, 0.5]]))
     assert c[0].to_numpy() == test_utils.approx(np.zeros((2, 3)))
     assert c[1].to_numpy() == test_utils.approx(np.ones((2, 3)))
+
+
+@test_utils.test()
+def test_matrix_factories():
+    _test_matrix_factories()
+
+
+@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
+def test_matrix_factories_real_matrix_scalarize():
+    _test_matrix_factories()
 
 
 # TODO: move codes below to test_matrix.py:
@@ -336,8 +382,7 @@ def test_init_matrix_from_vectors_deprecated():
             assert m4[0][j, i] == int(i + 3 * j + 1)
 
 
-@test_utils.test()
-def test_any_all():
+def _test_any_all():
     a = ti.Matrix.field(2, 2, dtype=ti.i32, shape=())
     b = ti.field(dtype=ti.i32, shape=())
     c = ti.field(dtype=ti.i32, shape=())
@@ -364,6 +409,16 @@ def test_any_all():
                 assert c[None] == 1
             else:
                 assert c[None] == 0
+
+
+@test_utils.test()
+def test_any_all():
+    _test_any_all()
+
+
+@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
+def test_any_all_real_matrix_scalarize():
+    _test_any_all()
 
 
 @test_utils.test()

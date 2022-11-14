@@ -48,7 +48,7 @@ def compile_graph_aot(arch):
     assert "TAICHI_AOT_FOLDER_PATH" in os.environ.keys()
     tmpdir = str(os.environ["TAICHI_AOT_FOLDER_PATH"])
 
-    mod = ti.aot.Module(arch)
+    mod = ti.aot.Module()
     mod.add_graph('run_graph', run_graph)
     mod.save(tmpdir, '')
 

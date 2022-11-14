@@ -303,3 +303,18 @@ In contrast, it is much more reassuring to keep everything in Python. Taichi acc
 Similar to Taichi, PyPy also accelerates Python code via just-in-time (JIT) compilation. PyPy is attractive because users can keep Python scripts as they are without even moderate modification. On the other hand, its strict conformity with Python rules leaves limited room for optimization.
 
 If you expect a greater leap in performance, Taichi can achieve the end. But you need to familiarize yourself with Taichi's syntax and assumptions, which differ from Python's slightly.
+
+### How do I compute the minimum/maximum of a field?
+
+Use `ti.automic.min/max` instead of `ti.min/max`. For example:
+
+```python
+for i in x:
+   ret = ti.atomic_min(ret, x[i])
+```
+
+### Does Taichi provide a barrier synchronization function similar to `__syncthreads()` or `glMemoryBarrier()`?
+
+You can call `ti.sync()`, which is similar to CUDA's `cudaStreamSynchronize()`, in Taichi to synchronize the parallel for loops.
+
+`__syncthreads()` is a block-level synchronization barrier, and Taichi provides a synonymous API `ti.simt.block.sync()`, which for now supports CUDA and Vulkan backends only. However, all block-level APIs are still experimental, and you should use this API only when it relates to SIMT operation synchronization and `SharedArray` reads and writes.

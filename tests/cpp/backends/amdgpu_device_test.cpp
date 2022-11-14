@@ -77,10 +77,14 @@ TEST(AMDGPU, ImportMemory) {
 
 TEST(AMDGPU, CreateContextAndLaunchKernel) {
     // NOT_IMPLEMENTED
+    // runtime part
+    // vec kernel
 }
 
 TEST(AMDGPU, FetchResult) {
     // NOT_IMPLEMENTED
+    // runtime part
+    // reduce kernel
 }
 
 } // lang

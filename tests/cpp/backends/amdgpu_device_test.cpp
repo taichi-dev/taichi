@@ -38,7 +38,7 @@ TEST(AMDGPU, CreateDeviceAndAlloc) {
     device->unmap(device_alloc);
 }
 
-TEST(AMDGPU, CreateDeviceAndImport) {
+TEST(AMDGPU, ImportMemory) {
     std::unique_ptr<amdgpu::AmdgpuDevice> device =
     std::make_unique<amdgpu::AmdgpuDevice>();
     EXPECT_TRUE(device != nullptr);
@@ -79,7 +79,7 @@ TEST(AMDGPU, CreateContextAndLaunchKernel) {
     // NOT_IMPLEMENTED
 }
 
-TEST(AMDGPU, DriverAndFetchResult) {
+TEST(AMDGPU, FetchResult) {
     // NOT_IMPLEMENTED
 }
 

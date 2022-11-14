@@ -430,8 +430,8 @@ AdStackAllocaStmt *IRBuilder::create_ad_stack(const DataType &dt,
   return insert(Stmt::make_typed<AdStackAllocaStmt>(dt, max_size));
 }
 
-void IRBuilder::ad_stack_push(AdStackAllocaStmt *stack, Stmt *val, Stmt *adj) {
-  insert(Stmt::make_typed<AdStackPushStmt>(stack, val, adj));
+void IRBuilder::ad_stack_push(AdStackAllocaStmt *stack, Stmt *val) {
+  insert(Stmt::make_typed<AdStackPushStmt>(stack, val));
 }
 
 void IRBuilder::ad_stack_pop(AdStackAllocaStmt *stack) {

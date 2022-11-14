@@ -732,9 +732,8 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(AdStackPushStmt *stmt) override {
-    print("{}{} : stack push {}, val = {}, adj = {}", stmt->type_hint(),
-          stmt->name(), stmt->stack->name(), stmt->v->name(),
-          stmt->adj->name());
+    print("{}{} : stack push {}, val = {}", stmt->type_hint(), stmt->name(),
+          stmt->stack->name(), stmt->v->name());
   }
 
   void visit(AdStackPopStmt *stmt) override {

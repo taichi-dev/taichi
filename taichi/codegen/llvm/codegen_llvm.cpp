@@ -2430,14 +2430,6 @@ void TaskCodeGenLLVM::visit(AdStackPushStmt *stmt) {
       primal_ptr,
       llvm::PointerType::get(tlctx->get_data_type(stmt->ret_type), 0));
   builder->CreateStore(llvm_val[stmt->v], primal_ptr);
-
-  // Copy adjoint for fields
-  auto adjoint_ptr = call("stack_top_adjoint", llvm_val[stack],
-                          tlctx->get_constant(stack->element_size_in_bytes()));
-  auto adjoint_ty = tlctx->get_data_type(stack->ret_type);
-  adjoint_ptr = builder->CreateBitCast(adjoint_ptr,
-                                       llvm::PointerType::get(adjoint_ty, 0));
-  builder->CreateStore(llvm_val[stmt->adj], adjoint_ptr);
 }
 
 void TaskCodeGenLLVM::visit(AdStackLoadTopStmt *stmt) {

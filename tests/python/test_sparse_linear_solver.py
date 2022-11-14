@@ -104,7 +104,7 @@ def test_gpu_sparse_solver():
     # solve Ax=b using numpy
     b_np = b.to_numpy()
     x_np = np.linalg.solve(A_psd, b_np)
-    assert (np.allclose(x_ti.to_numpy(), x_np, rtol=1.0e-2))
+    assert (np.allclose(x_ti.to_numpy(), x_np, rtol=5.0e-3))
 
     # solve Ax=b using cusolver refectorization
     solver = ti.linalg.SparseSolver()
@@ -112,11 +112,11 @@ def test_gpu_sparse_solver():
     solver.factorize(A_ti)
     x_ti = solver.solve(b)
     ti.sync()
-    assert (np.allclose(x_ti.to_numpy(), x_np, rtol=1.0e-2))
+    assert (np.allclose(x_ti.to_numpy(), x_np, rtol=5.0e-3))
 
     # solve Ax = b using compute function
     solver = ti.linalg.SparseSolver()
     solver.compute(A_ti)
     x_cti = solver.solve(b)
     ti.sync()
-    assert (np.allclose(x_cti.to_numpy(), x_np, rtol=1.0e-2))
+    assert (np.allclose(x_cti.to_numpy(), x_np, rtol=5.0e-3))

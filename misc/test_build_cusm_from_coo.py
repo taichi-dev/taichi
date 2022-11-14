@@ -26,7 +26,7 @@ y.fill(0.0)
 A = ti.linalg.SparseMatrix(n=4, m=4, dtype=ti.float32)
 A.build_coo(d_coo_row, d_coo_col, d_coo_val)
 
-A.spmv(x, y)
+y = A @ x
 
 # Check if the results are correct
 equal = True

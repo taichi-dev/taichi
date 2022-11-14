@@ -513,6 +513,9 @@ class ASTTransformer(Builder):
         keywords = dict(ChainMap(*[keyword.ptr for keyword in node.keywords]))
         func = node.func.ptr
 
+        if id(func) in [id(print), id(impl.ti_print)]:
+            ctx.func.has_print = True
+
         if isinstance(node.func, ast.Attribute) and isinstance(
                 node.func.value.ptr, str) and node.func.attr == 'format':
             args.insert(0, node.func.value.ptr)
@@ -536,6 +539,9 @@ class ASTTransformer(Builder):
 
         node.ptr = func(*args, **keywords)
         ASTTransformer.warn_if_is_external_func(ctx, node)
+
+        if getattr(func, "_is_taichi_function", False):
+            ctx.func.has_print |= func.func.has_print
 
         return node.ptr
 
@@ -1209,9 +1215,15 @@ class ASTTransformer(Builder):
                 expr_group = expr.make_expr_group(loop_indices)
                 impl.begin_frontend_struct_for(ctx.ast_builder, expr_group,
                                                loop_var)
-                ctx.create_variable(
-                    target, matrix.Vector(loop_indices,
-                                          dt=primitive_types.i32))
+                if impl.current_cfg().real_matrix:
+                    ctx.create_variable(
+                        target,
+                        matrix.make_matrix(loop_indices,
+                                           dt=primitive_types.i32))
+                else:
+                    ctx.create_variable(
+                        target,
+                        matrix.Vector(loop_indices, dt=primitive_types.i32))
                 build_stmts(ctx, node.body)
                 ctx.ast_builder.end_frontend_struct_for()
             else:

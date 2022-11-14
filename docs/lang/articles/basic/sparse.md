@@ -276,7 +276,7 @@ You can use `ti.rescale_index(descendant_snode/field, ancestor_snode, index)` to
 print(ti.rescale_index(x, block1, ti.Vector([7, 3]))) # output: [1, 0]
 print(ti.rescale_index(x, block2, [7, 3]))            # output: [3, 1]
 print(ti.rescale_index(x, pixel,  [7, 3]))            # output: [7, 3]
-print(ti.rescale_index(block1, block2, [3, 1]))       # output: [1, 0]
+print(ti.rescale_index(block2, block1, [3, 1]))       # output: [1, 0]
 ```
 
 Regarding line 1, you can also compute the `block1` index given `pixel` index `[7, 3]` as `[7//2//2, 3//2//2]`. However, doing so couples computation code with the internal configuration of data structures (in this case, the size of `block1` containers). By using `ti.rescale_index()`, you can avoid hard-coding internal information of data structures.

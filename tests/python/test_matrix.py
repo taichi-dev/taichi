@@ -300,7 +300,7 @@ def test_matrix_field_constant_index():
     _test_matrix_field_constant_index()
 
 
-@test_utils.test(real_matrix=True)
+@test_utils.test(arch=[ti.cuda, ti.cpu], real_matrix=True)
 def test_matrix_field_constant_index_real_matrix():
     _test_matrix_field_constant_index()
 
@@ -1092,7 +1092,7 @@ def test_trace_op():
     assert np.abs(x.trace() - 7.1) < 1e-6
 
     with pytest.raises(TaichiCompilationError,
-                       match=r"not a square matrix: \(3, 2\)"):
+                       match=r"expected a square matrix, got shape \(3, 2\)"):
         x = ti.Matrix([[.1, 3.], [5., 7.], [1., 2.]])
         print(x.trace())
 
@@ -1102,7 +1102,7 @@ def test_trace_op():
         print(x.trace())
 
     with pytest.raises(TaichiCompilationError,
-                       match=r"not a square matrix: \(3, 2\)"):
+                       match=r"expected a square matrix, got shape \(3, 2\)"):
         failed_func()
 
 

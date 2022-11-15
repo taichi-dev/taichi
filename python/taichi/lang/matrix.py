@@ -1791,7 +1791,8 @@ class MatrixType(CompoundType):
             return ops_mod.cast(mat, self.dtype)
 
         if isinstance(mat, Matrix) and impl.current_cfg().real_matrix:
-            arr = mat.entries
+            arr = [[mat(i, j) for j in range(self.m)] for i in range(self.n)]
+
             return ops_mod.cast(make_matrix(arr), self.dtype)
 
         return mat.cast(self.dtype)

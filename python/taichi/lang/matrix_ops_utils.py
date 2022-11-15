@@ -98,19 +98,30 @@ def arg_foreach_check(*arg_indices, fns=[], logic='or', msg=None):
     return check
 
 
+def get_list_shape(x):
+    outer_shape = [len(x)]
+    inner_shape = None
+    for element in x:
+        if isinstance(element, list):
+            cur_shape = get_list_shape(element)
+        else:
+            cur_shape = []
+
+        if inner_shape:
+            assert curr_shape == inner_shape
+        else:
+            inner_shape = cur_shape
+
+    return outer_shape + inner_shape
+
+
 def same_shapes(*xs):
     shapes = []
     for x in xs:
         if isinstance(x, Matrix):
             shapes.append(x.get_shape())
         elif isinstance(x, list):
-            shape = [len(x)]
-            for i in x:
-                if isinstance(i, list):
-                    shape.append(len(i))
-                if isinstance(i, Expr):
-                    shape += i.ptr.get_ret_type().shape()
-            shapes.append(tuple(shape))
+            shapes.append(tuple(get_list_shape(x)))
         elif isinstance(x, Expr):
             shapes.append(tuple(x.ptr.get_ret_type().shape()))
         else:

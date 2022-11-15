@@ -8,7 +8,7 @@ from tests import test_utils
 @pytest.mark.parametrize("dtype", [ti.f32])
 @pytest.mark.parametrize("solver_type", ["LLT", "LDLT", "LU"])
 @pytest.mark.parametrize("ordering", ["AMD", "COLAMD"])
-@test_utils.test(arch=[ti.cpu])
+@test_utils.test(arch=ti.cpu)
 def test_sparse_LLT_solver(dtype, solver_type, ordering):
     n = 10
     A = np.random.rand(n, n)
@@ -101,7 +101,7 @@ def test_gpu_sparse_solver():
 
 
 @pytest.mark.parametrize("dtype", [ti.f32])
-@test_utils.test(arch=[ti.cuda])
+@test_utils.test(arch=ti.cuda)
 def test_gpu_sparse_solver2(dtype):
     n = 10
     A = np.random.rand(n, n)

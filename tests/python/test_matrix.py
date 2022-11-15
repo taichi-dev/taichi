@@ -10,7 +10,7 @@ from taichi.lang.misc import get_host_arch_list
 import taichi as ti
 from tests import test_utils
 
-operation_types = [operator.add, operator.sub, operator.matmul]
+matrix_operation_types = [operator.add, operator.sub, operator.matmul]
 test_matrix_arrays = [
     np.array([[1, 2], [3, 4]]),
     np.array([[5, 6], [7, 8]]),
@@ -36,7 +36,7 @@ def test_python_scope_vector_operations():
 
 @test_utils.test(arch=get_host_arch_list())
 def test_python_scope_matrix_operations():
-    for ops in operation_types:
+    for ops in matrix_operation_types:
         a, b = test_matrix_arrays[:2]
         m1, m2 = ti.Matrix(a), ti.Matrix(b)
         c = ops(m1, m2)
@@ -60,7 +60,7 @@ def test_python_scope_vector_field(ops):
     assert np.allclose(c.to_numpy(), ops(a, b))
 
 
-@pytest.mark.parametrize('ops', vector_operation_types)
+@pytest.mark.parametrize('ops', matrix_operation_types)
 @test_utils.test(arch=get_host_arch_list())
 def test_python_scope_matrix_field(ops):
     t1 = ti.Matrix.field(2, 2, dtype=ti.i32, shape=())
@@ -143,14 +143,14 @@ def test_taichi_scope_vector_operations_with_global_vectors(ops):
     assert np.allclose(r2[None].to_numpy(), ops(a, c))
 
 
-@pytest.mark.parametrize('ops', vector_operation_types)
+@pytest.mark.parametrize('ops', matrix_operation_types)
 @test_utils.test(arch=get_host_arch_list())
 def test_taichi_scope_matrix_operations_with_global_matrices(ops):
     a, b, c = test_matrix_arrays[:3]
     m1, m2 = ti.Matrix(a), ti.Matrix(b)
     r1 = ti.Matrix.field(2, 2, dtype=ti.i32, shape=())
-    r2 = ti.Matrix.field(2, 2, dtype=ti.i32, shape=())
-    m3 = ti.Matrix.field(2, 2, dtype=ti.i32, shape=())
+    r2 = ti.Matrix.field(2, 2, dtype=ti.f32, shape=())
+    m3 = ti.Matrix.field(2, 2, dtype=ti.f32, shape=())
     m3.from_numpy(c)
 
     @ti.kernel
@@ -964,12 +964,12 @@ def test_local_matrix_scalarize():
 @test_utils.test()
 def test_vector_vector_t():
     @ti.kernel
-    def foo() -> ti.types.matrix(2, 2, ti.f32):
+    def foo() -> ti.f32:
         a = ti.Vector([1.0, 2.0])
         b = ti.Vector([1.0, 2.0])
-        return a @ b.transpose()
+        return a @ b
 
-    assert foo() == [[1.0, 2.0], [2.0, 4.0]]
+    assert foo() == test_utils.approx(5.0)
 
 
 def _test_field_and_ndarray(field, ndarray, func, verify):

@@ -1,6 +1,6 @@
 import taichi as ti
 
-ti.init(arch=ti.cuda, debug=True, offline_cache=False)
+ti.init(arch=ti.cuda)
 
 n = 8
 

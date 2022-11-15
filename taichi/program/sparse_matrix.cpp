@@ -151,6 +151,7 @@ std::unique_ptr<SparseMatrix> SparseMatrixBuilder::build_cuda() {
   built_ = true;
   auto sm = make_cu_sparse_matrix(rows_, cols_, dtype_);
 #ifdef TI_WITH_CUDA
+  num_triplets_ = ndarray_data_base_ptr_->read_int(std::vector<int>{0});
   std::map<int, std::tuple<int, int, float32>> entries;
   for (auto i = 0; i < num_triplets_; i++) {
     auto idx = 3 * i + 1;
@@ -189,6 +190,7 @@ std::unique_ptr<SparseMatrix> SparseMatrixBuilder::build_cuda() {
   CUDADriver::get_instance().memcpy_host_to_device(
       value_device, (void *)value_host, entry_size * sizeof(float32));
   sm->build_csr_from_coo(row_device, col_device, value_device, entry_size);
+  clear();
 #endif
   return sm;
 }
@@ -292,17 +294,6 @@ void CuSparseMatrix::build_csr_from_coo(void *coo_row_ptr,
                                         void *coo_values_ptr,
                                         int nnz) {
 #if defined(TI_WITH_CUDA)
-  int *coo_rows = (int *)malloc(nnz * sizeof(int));
-  CUDADriver::get_instance().memcpy_device_to_host(
-      (void *)coo_rows, (void *)coo_row_ptr, nnz * sizeof(int));
-  for (auto i = 0; i < nnz; i++)
-    fmt::print("{}-th value{} \n", i, coo_rows[i]);
-  float32 *coo_values = (float32 *)malloc(nnz * sizeof(float32));
-  CUDADriver::get_instance().memcpy_device_to_host(
-      (void *)coo_values, (void *)coo_values_ptr, nnz * sizeof(float32));
-  for (auto i = 0; i < nnz; i++)
-    fmt::print("{}-th value{} \n", i, coo_values[i]);
-
   // Step 1: Sort coo first
   cusparseHandle_t cusparse_handle = nullptr;
   CUSPARSEDriver::get_instance().cpCreate(&cusparse_handle);

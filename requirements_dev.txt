@@ -17,3 +17,4 @@ pre-commit
 scikit-build
 numpy
 ninja; platform_system != 'Windows'
+setuptools>=65.5.1 # not directly required, pinned by Snyk to avoid a vulnerability

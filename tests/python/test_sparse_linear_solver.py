@@ -8,7 +8,7 @@ from tests import test_utils
 @pytest.mark.parametrize("dtype", [ti.f32])
 @pytest.mark.parametrize("solver_type", ["LLT", "LDLT", "LU"])
 @pytest.mark.parametrize("ordering", ["AMD", "COLAMD"])
-@test_utils.test(arch=ti.cpu)
+@test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_sparse_LLT_solver(dtype, solver_type, ordering):
     n = 10
     A = np.random.rand(n, n)
@@ -26,7 +26,6 @@ def test_sparse_LLT_solver(dtype, solver_type, ordering):
 
     fill(Abuilder, A_psd, b)
     A = Abuilder.build()
-    print(A)
     solver = ti.linalg.SparseSolver(dtype=dtype,
                                     solver_type=solver_type,
                                     ordering=ordering)

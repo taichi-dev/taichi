@@ -158,7 +158,8 @@ def transpose(mat):
 @preconditions(arg_at(0, is_int_const))
 @pyfunc
 def diag(dim: template(), val: template()):
-    return Matrix([[val if i == j else 0 for j in static(range(dim))] for i in static(range(dim))])
+    return Matrix([[val if i == j else 0 for j in static(range(dim))]
+                   for i in static(range(dim))])
 
 
 @preconditions(assert_tensor)

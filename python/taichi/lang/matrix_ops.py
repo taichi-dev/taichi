@@ -67,25 +67,9 @@ def _rotation2d_matrix(alpha):
         fns=[assert_vector(), assert_list],
         logic='or',
         msg="Cols/rows must be a list of lists, or a list of vectors"))
+@pyfunc
 def rows(rows):  # pylint: disable=W0621
-    if isinstance(rows[0], (Matrix, Expr)):
-        shape = rows[0].get_shape()
-        assert len(shape) == 1, "Rows must be a list of vectors"
-
-        @pyfunc
-        def _rows():
-            return Matrix([[row[i] for i in range(shape[0])] for row in rows])
-
-        return _rows()
-    if isinstance(rows[0], list):
-
-        @pyfunc
-        def _rows():
-            return Matrix([[x for x in row] for row in rows])
-
-        return _rows()
-    # unreachable
-    return None
+    return Matrix([[x for x in row] for row in rows])
 
 
 @pyfunc

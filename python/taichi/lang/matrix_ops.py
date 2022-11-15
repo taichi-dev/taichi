@@ -264,13 +264,13 @@ def _matmul_helper(mat_x, mat_y):
     if static(len(shape_x) == 1 and len(shape_y) == 1):
         return dot(mat_x, mat_y)
     if static(len(shape_y) == 1):
-        zero_elem = mat_x[0, 0] * mat_y[0] * 0
+        zero_elem = mat_x[0, 0] * mat_y[0] * 0  # for correct return type
         vec_z = _filled_vector(shape_x[0], None, zero_elem)
         for i in static(range(shape_x[0])):
             for j in static(range(shape_x[1])):
                 vec_z[i] += mat_x[i, j] * mat_y[j]
         return vec_z
-    zero_elem = mat_x[0, 0] * mat_y[0, 0] * 0
+    zero_elem = mat_x[0, 0] * mat_y[0, 0] * 0  # for correct return type
     mat_z = _filled_matrix(shape_x[0], shape_y[1], None, zero_elem)
     for i in static(range(shape_x[0])):
         for j in static(range(shape_y[1])):

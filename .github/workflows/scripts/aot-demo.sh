@@ -107,7 +107,7 @@ function build-and-test-headless-demo {
     git clone --recursive https://github.com/jim19930609/taichi-aot-demo.git
 
     cd taichi-aot-demo
-    git checkout refactor_cmake
+    git checkout fix_arch
 
     . $(pwd)/ci/test_utils.sh
 

@@ -41,9 +41,9 @@ def test_oop_memory_leak():
         gc.collect()
 
     ref_mem = get_process_memory()
-    for i in range(5):
+    for i in range(50):
         X().run()
         gc.collect()
         curr_mem = get_process_memory()
-        assert (curr_mem - ref_mem < 6E-1
+        assert (curr_mem - ref_mem < 5
                 )  # shouldn't increase more than 0.6 MB each loop

@@ -902,10 +902,8 @@ class Matrix(TaichiOperations):
         from taichi.lang import matrix_ops
         return matrix_ops.all(self)
 
-    @taichi_scope
     def fill(self, val):
-        """Fills the matrix with a specified value, must be called
-        in Taichi scope.
+        """Fills the matrix with a specified value.
 
         Args:
             val (Union[int, float]): Value to fill.

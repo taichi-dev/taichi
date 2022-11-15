@@ -10,7 +10,6 @@ from taichi.lang.matrix_ops_utils import (arg_at, arg_foreach_check,
                                           assert_vector, check_matmul, dim_lt,
                                           is_int_const, preconditions,
                                           same_shapes, square_matrix)
-from taichi.lang.util import cook_dtype
 from taichi.types.annotations import template
 
 
@@ -156,23 +155,10 @@ def transpose(mat):
                    for j in static(range(shape[1]))])
 
 
-@preconditions(arg_at(0, is_int_const),
-               arg_at(
-                   1, lambda val:
-                   (isinstance(val,
-                               (numbers.Number, )) or isinstance(val, Expr),
-                    f'Invalid argument type for values: {type(val)}')))
-def diag(dim, val):
-    dt = val.element_type() if isinstance(val, Expr) else cook_dtype(type(val))
-
-    @func
-    def diag_impl():
-        result = _init_matrix((dim, dim), dt)
-        for i in static(range(dim)):
-            result[i, i] = val
-        return result
-
-    return diag_impl()
+@preconditions(arg_at(0, is_int_const))
+@pyfunc
+def diag(dim: template(), val: template()):
+    return Matrix([[val if i == j else 0 for j in static(range(dim))] for i in static(range(dim))])
 
 
 @preconditions(assert_tensor)
@@ -243,17 +229,15 @@ def trace(mat):
 
 
 @preconditions(arg_at(0, assert_tensor))
-@func
+@pyfunc
 def fill(mat: template(), val):
     shape = static(mat.get_shape())
     if static(len(shape) == 1):
         for i in static(range(shape[0])):
             mat[i] = val
-        return mat
     for i in static(range(shape[0])):
         for j in static(range(shape[1])):
             mat[i, j] = val
-    return mat
 
 
 @preconditions(check_matmul)

@@ -1134,10 +1134,10 @@ def test_fill_op():
     @ti.kernel
     def test_fun():
         x = ti.Matrix([[0.0 for _ in range(4)] for _ in range(5)])
-        y = x.fill(1.14)
+        x.fill(1.14)
         for i in ti.static(range(5)):
             for j in ti.static(range(4)):
-                assert y[i, j] == x[i, j] == 1.14
+                assert x[i, j] == 1.14
 
     test_fun()
 

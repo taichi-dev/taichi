@@ -193,6 +193,7 @@ std::unique_ptr<SparseMatrix> SparseMatrixBuilder::build_cuda() {
 
 void SparseMatrixBuilder::clear() {
   built_ = false;
+  ndarray_data_base_ptr_->write_int(std::vector<int>{0}, 0);
   num_triplets_ = 0;
 }
 

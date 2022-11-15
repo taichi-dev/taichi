@@ -46,7 +46,7 @@ def pytest_runtest_logreport(report):
     if not IS_WORKER:
         return
 
-    if report.outcome not in ('error', 'failed'):
+    if report.outcome not in ('rerun', 'error', 'failed'):
         return
 
     os._exit(0)

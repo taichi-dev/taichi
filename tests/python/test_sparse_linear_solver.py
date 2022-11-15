@@ -77,18 +77,25 @@ def test_gpu_sparse_solver():
     A_ti.build_coo(d_row_coo, d_col_coo, d_val_coo)
     x_ti = ti.ndarray(shape=ncols, dtype=ti.float32)
     solver = ti.linalg.SparseSolver()
-    solver.solve_cu(A_ti, b, x_ti)
+    x_ti = solver.solve_cu(A_ti, b)
     ti.sync()
 
     # solve Ax=b using numpy
     b_np = b.to_numpy()
     x_np = np.linalg.solve(A_psd, b_np)
-    assert (np.allclose(x_ti.to_numpy(), x_np, rtol=5e-3))
+    assert (np.allclose(x_ti.to_numpy(), x_np, rtol=5.0e-3))
 
     # solve Ax=b using cusolver refectorization
     solver = ti.linalg.SparseSolver()
     solver.analyze_pattern(A_ti)
     solver.factorize(A_ti)
-    solver.solve_rf(A_ti, b, x_ti)
+    x_ti = solver.solve(b)
     ti.sync()
-    assert (np.allclose(x_ti.to_numpy(), x_np, rtol=5e-3))
+    assert (np.allclose(x_ti.to_numpy(), x_np, rtol=5.0e-3))
+
+    # solve Ax = b using compute function
+    solver = ti.linalg.SparseSolver()
+    solver.compute(A_ti)
+    x_cti = solver.solve(b)
+    ti.sync()
+    assert (np.allclose(x_cti.to_numpy(), x_np, rtol=5.0e-3))

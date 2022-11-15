@@ -101,7 +101,7 @@ if [ -z "$GPU_TEST" ]; then
         if [[ $OSTYPE == "linux-"* ]]; then
             python3 tests/run_tests.py -vr2 -t1 -k "paddle" -a "$TI_WANTED_ARCHS"
         fi
-        python3 tests/run_tests.py -vr2 -t4 -k "not paddle" -a "$TI_WANTED_ARCHS"
+        python3 tests/run_tests.py -vr2 -t4 -k "memory_leak" -a "$TI_WANTED_ARCHS"
     fi
 else
     run-it cuda   6

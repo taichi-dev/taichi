@@ -166,26 +166,28 @@ std::unique_ptr<SparseMatrix> SparseMatrixBuilder::build_cuda() {
     }
   }
   auto entry_size = entries.size();
-  std::vector<int> row_host(entry_size);
-  std::vector<int> col_host(entry_size);
-  std::vector<float32> value_host(entry_size);
+  int *row_host = (int *)malloc(sizeof(int) * entry_size);
+  int *col_host = (int *)malloc(sizeof(int) * entry_size);
+  float32 *value_host = (float32 *)malloc(sizeof(float32) * entry_size);
+  int count = 0;
   for (auto entry : entries) {
     auto [row, col, value] = entry.second;
-    row_host.push_back(row);
-    col_host.push_back(col);
-    value_host.push_back(value);
+    row_host[count] = row;
+    col_host[count] = col;
+    value_host[count] = value;
+    count++;
   }
   void *row_device = nullptr, *col_device = nullptr, *value_device = nullptr;
   CUDADriver::get_instance().malloc(&row_device, entry_size * sizeof(int));
   CUDADriver::get_instance().malloc(&col_device, entry_size * sizeof(int));
   CUDADriver::get_instance().malloc(&value_device,
                                     entry_size * sizeof(float32));
-  CUDADriver::get_instance().memcpy_host_to_device(row_device, row_host.data(),
+  CUDADriver::get_instance().memcpy_host_to_device(row_device, (void *)row_host,
                                                    entry_size * sizeof(int));
-  CUDADriver::get_instance().memcpy_host_to_device(col_device, col_host.data(),
+  CUDADriver::get_instance().memcpy_host_to_device(col_device, (void *)col_host,
                                                    entry_size * sizeof(int));
   CUDADriver::get_instance().memcpy_host_to_device(
-      value_device, value_host.data(), entry_size * sizeof(float32));
+      value_device, (void *)value_host, entry_size * sizeof(float32));
   sm->build_csr_from_coo(row_device, col_device, value_device, entry_size);
 #endif
   return sm;
@@ -290,6 +292,17 @@ void CuSparseMatrix::build_csr_from_coo(void *coo_row_ptr,
                                         void *coo_values_ptr,
                                         int nnz) {
 #if defined(TI_WITH_CUDA)
+  int *coo_rows = (int *)malloc(nnz * sizeof(int));
+  CUDADriver::get_instance().memcpy_device_to_host(
+      (void *)coo_rows, (void *)coo_row_ptr, nnz * sizeof(int));
+  for (auto i = 0; i < nnz; i++)
+    fmt::print("{}-th value{} \n", i, coo_rows[i]);
+  float32 *coo_values = (float32 *)malloc(nnz * sizeof(float32));
+  CUDADriver::get_instance().memcpy_device_to_host(
+      (void *)coo_values, (void *)coo_values_ptr, nnz * sizeof(float32));
+  for (auto i = 0; i < nnz; i++)
+    fmt::print("{}-th value{} \n", i, coo_values[i]);
+
   // Step 1: Sort coo first
   cusparseHandle_t cusparse_handle = nullptr;
   CUSPARSEDriver::get_instance().cpCreate(&cusparse_handle);

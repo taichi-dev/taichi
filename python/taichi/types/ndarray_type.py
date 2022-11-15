@@ -1,5 +1,8 @@
 from taichi.lang.enums import Layout
-from taichi.types.compound_types import TensorType
+from taichi.types.compound_types import CompoundType, TensorType
+
+# We cannot use iomport Vector/MatrixType due to circular import
+# from taichi.lang.matrix import VectorType, MatrixType
 
 
 class NdarrayTypeMetadata:
@@ -25,6 +28,9 @@ class NdarrayType:
                  element_dim=None,
                  element_shape=None,
                  field_dim=None):
+        if element_dim is not None or element_shape is not None:
+            raise ValueError("Deprecation")
+
         if element_dim is not None and (element_dim < 0 or element_dim > 2):
             raise ValueError(
                 "Only scalars, vectors, and matrices are allowed as elements of ti.types.ndarray()"
@@ -35,10 +41,26 @@ class NdarrayType:
                 f"Both element_shape and element_dim are specified, but shape doesn't match specified dim: {len(element_shape)}!={element_dim}"
             )
         self.dtype = dtype
-        self.element_shape = element_shape
-        self.element_dim = len(
-            element_shape) if element_shape is not None else element_dim
-
+        # if isinstance(dtype, VectorType):
+        #     self.element_dim = 1
+        #     print(f"shape {(dtype.n)}")
+        #     self.element_shape = (dtype.n)
+        # elif isinstance(dtype, MatrixType):
+        #     self.element_dim = 1
+        #     self.element_shape = (dtype.n, dtype.m)
+        if isinstance(dtype, CompoundType):
+            if dtype == TensorType:
+                raise TypeError(f"TensorType is not supported for ndarray dtype annotation.")
+            if dtype.m == 1:
+                self.element_dim = 1
+                self.element_shape = (dtype.n,)
+            else:
+                self.element_dim = 2
+                self.element_shape = (dtype.n, dtype.m)
+        else:
+            self.element_shape = None
+            self.element_dim = None
+            
         self.field_dim = field_dim
         self.layout = Layout.AOS
 

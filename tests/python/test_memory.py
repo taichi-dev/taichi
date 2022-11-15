@@ -45,5 +45,5 @@ def test_oop_memory_leak():
         X().run()
         gc.collect()
         curr_mem = get_process_memory()
-        assert (curr_mem - ref_mem < 1E-1
-                )  # shouldn't increase more than 0.1 MB each loop
+        assert (curr_mem - ref_mem < 6E-1
+                )  # shouldn't increase more than 0.6 MB each loop

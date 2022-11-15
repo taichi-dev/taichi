@@ -104,7 +104,7 @@ function build-and-test-headless-demo {
     popd
 
     rm -rf taichi-aot-demo
-    git clone --recursive --depth=1 -b add_backward_cpp https://github.com/taichi-dev/taichi-aot-demo
+    git clone --recursive --depth=1 -b print https://github.com/taichi-dev/taichi-aot-demo
     cd taichi-aot-demo
 
     . $(pwd)/ci/test_utils.sh

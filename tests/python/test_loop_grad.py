@@ -27,8 +27,8 @@ def test_loop_grad():
     func.grad()
 
     for k in range(n):
-    # The grad of fields on left-hand sides of assignments (GlobalStoreStmt) need to be reset to zero after the corresponding adjoint assignments.
-    # Therefore, only the grad of the element with index 0 at second dimension is preserved here.
+        # The grad of fields on left-hand sides of assignments (GlobalStoreStmt) need to be reset to zero after the corresponding adjoint assignments.
+        # Therefore, only the grad of the element with index 0 at second dimension is preserved here.
         assert x[k, 0] == 2**0 * k
         assert x.grad[k, 0] == 2**(m - 1 - 0)
 

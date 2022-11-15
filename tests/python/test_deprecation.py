@@ -12,7 +12,7 @@ def test_deprecated_aot_save_filename():
     density = ti.field(float, shape=(4, 4))
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        m = ti.aot.Module(ti.lang.impl.current_cfg().arch)
+        m = ti.aot.Module()
         m.add_field('density', density)
         with pytest.warns(
                 DeprecationWarning,

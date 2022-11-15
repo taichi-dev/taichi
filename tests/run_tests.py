@@ -195,9 +195,6 @@ def _test_python(args):
     except NotImplementedError:
         threads = 2
 
-    if not os.environ.get('TI_DEVICE_MEMORY_GB'):
-        os.environ['TI_DEVICE_MEMORY_GB'] = '1.0'  # Discussion: #769
-
     env_threads = os.environ.get('TI_TEST_THREADS', '')
     threads = args.threads or env_threads or threads
     print(f'Starting {threads} testing thread(s)...')

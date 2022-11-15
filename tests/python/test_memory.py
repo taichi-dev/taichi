@@ -2,12 +2,14 @@ import gc
 import os
 
 import psutil
+import pytest
 from taichi.lang.misc import get_host_arch_list
 
 import taichi as ti
 from tests import test_utils
 
 
+@pytest.mark.run_in_serial
 @test_utils.test(arch=ti.cuda)
 def test_memory_allocate():
     HUGE_SIZE = 1024**2 * 128
@@ -45,5 +47,5 @@ def test_oop_memory_leak():
         X().run()
         gc.collect()
         curr_mem = get_process_memory()
-        assert (curr_mem - ref_mem < 1E-1
-                )  # shouldn't increase more than 0.1 MB each loop
+        assert (curr_mem - ref_mem < 6E-1
+                )  # shouldn't increase more than 0.6 MB each loop

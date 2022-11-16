@@ -393,6 +393,8 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(FuncCallStmt *stmt) override;
 
+  void visit(GetElementStmt *stmt) override;
+
   llvm::Value *bitcast_from_u64(llvm::Value *val, DataType type);
   llvm::Value *bitcast_to_u64(llvm::Value *val, DataType type);
 

@@ -1079,11 +1079,8 @@ void FuncCallExpression::type_check(CompileConfig *) {
     TI_ASSERT_TYPE_CHECKED(arg);
     // no arg type compatibility check for now due to lack of specification
   }
-  TI_ASSERT_INFO(func->rets.size() <= 1,
-                 "Too many (> 1) return values for FuncCallExpression");
-  if (func->rets.size() == 1) {
-    ret_type = func->rets[0].dt;
-  }
+  ret_type = PrimitiveType::u64;
+  ret_type.set_is_pointer(true);
 }
 
 void FuncCallExpression::flatten(FlattenContext *ctx) {
@@ -1096,6 +1093,21 @@ void FuncCallExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
+void GetElementExpression::type_check(CompileConfig *config) {
+  TI_ASSERT_TYPE_CHECKED(src);
+  auto func_call = src.cast<FuncCallExpression>();
+  TI_ASSERT(func_call);
+  TI_ASSERT(index < func_call->func->rets.size());
+  ret_type = func_call->func->rets[index].dt;
+}
+
+void GetElementExpression::flatten(FlattenContext *ctx) {
+  if (!src->stmt) {
+    src->flatten(ctx);
+  }
+  ctx->push_back<GetElementStmt>(src->stmt, index);
+  stmt = ctx->back_stmt();
+}
 // Mesh related.
 
 void MeshPatchIndexExpression::flatten(FlattenContext *ctx) {

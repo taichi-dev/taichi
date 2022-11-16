@@ -264,9 +264,11 @@ class Func:
                     non_template_args.append(args[i])
         non_template_args = impl.make_expr_group(non_template_args,
                                                  real_func_arg=True)
-        return Expr(
+        func_call = Expr(
             _ti_core.make_func_call_expr(
                 self.taichi_functions[key.instance_id], non_template_args))
+        if id(self.return_type) in primitive_types.type_ids:
+            return Expr(_ti_core.make_get_element_expr(func_call.ptr, 0))
 
     def do_compile(self, key, args):
         tree, ctx = _get_tree_and_ctx(self,

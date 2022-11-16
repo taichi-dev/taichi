@@ -821,6 +821,20 @@ class FuncCallExpression : public Expression {
   TI_DEFINE_ACCEPT_FOR_EXPRESSION
 };
 
+class GetElementExpression : public Expression {
+ public:
+  Expr src;
+  int index;
+
+  void type_check(CompileConfig *config) override;
+
+  GetElementExpression(const Expr &src, int index) : src(src), index(index) {}
+
+  void flatten(FlattenContext *ctx) override;
+
+  TI_DEFINE_ACCEPT_FOR_EXPRESSION
+};
+
 // Mesh related.
 
 class MeshPatchIndexExpression : public Expression {

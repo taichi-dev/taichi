@@ -2823,21 +2823,29 @@ void TaskCodeGenLLVM::visit(FuncCallStmt *stmt) {
          llvm::ConstantInt::get(*llvm_context, llvm::APInt(32, i, true)), val);
   }
   llvm::Value *result_buffer = nullptr;
-  if (stmt->ret_type->is<PrimitiveType>() &&
-      !stmt->ret_type->is_primitive(PrimitiveTypeID::unknown)) {
-    result_buffer = builder->CreateAlloca(tlctx->get_data_type<uint64>());
-    call("RuntimeContext_set_result_buffer", new_ctx, result_buffer);
-    call(llvm_func, new_ctx);
-    auto *ret_val_u64 = builder->CreateLoad(
-#ifdef TI_LLVM_15
-        builder->getInt64Ty(),
-#endif
-        result_buffer);
-    llvm_val[stmt] = bitcast_from_u64(ret_val_u64, stmt->ret_type);
-  } else {
-    call(llvm_func, new_ctx);
-  }
+  result_buffer = builder->CreateAlloca(llvm::ArrayType::get(
+      tlctx->get_data_type<uint64>(), stmt->func->rets.size()));
+  call("RuntimeContext_set_result_buffer", new_ctx, builder->CreatePointerCast(result_buffer, llvm::PointerType::get(tlctx->get_data_type<uint64>(), 0)));
+  call(llvm_func, new_ctx);
+  llvm_val[stmt] = result_buffer;
   call("recycle_runtime_context", get_runtime(), new_ctx);
+}
+
+void TaskCodeGenLLVM::visit(GetElementStmt *stmt) {
+  auto &rets = stmt->src->as<FuncCallStmt>()->func->rets;
+  auto *gep = builder->CreateGEP(
+#ifdef TI_LLVM_15
+      llvm::ArrayType::get(tlctx->get_data_type<uint64>(),
+                           rets.size()),
+#endif
+      llvm_val[stmt->src],
+      {tlctx->get_constant(0), tlctx->get_constant(stmt->index)});
+  auto *val_u64 = builder->CreateLoad(
+#ifdef TI_LLVM_15
+      builder->getInt64Ty(),
+#endif
+      gep);
+  llvm_val[stmt] = bitcast_from_u64(val_u64, rets[stmt->index].dt);
 }
 
 LLVMCompiledTask LLVMCompiledTask::clone() const {

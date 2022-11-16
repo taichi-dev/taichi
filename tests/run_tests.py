@@ -144,7 +144,7 @@ def _test_python(args):
 
     curr_dir = os.path.dirname(os.path.abspath(__file__))
     test_dir = os.path.join(curr_dir, 'python')
-    pytest_args = []
+    pytest_args = ['--nbmake']
 
     # TODO: use pathlib to deal with suffix and stem name manipulation
     if args.files:
@@ -153,7 +153,7 @@ def _test_python(args):
             # auto-complete file names
             if not f.startswith('test_'):
                 f = 'test_' + f
-            if not f.endswith('.py'):
+            if not (f.endswith('.py') or f.endswith('.ipynb')):
                 f = f + '.py'
             file = os.path.join(test_dir, f)
             has_tests = False

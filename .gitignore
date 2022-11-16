@@ -88,3 +88,4 @@ imgui.ini
 /_skbuild/
 .cache
 .do-not-clean
+*.dylib

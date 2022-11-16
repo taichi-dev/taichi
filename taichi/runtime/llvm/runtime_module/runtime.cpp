@@ -905,7 +905,6 @@ void runtime_initialize(
     std::size_t
         preallocated_size,  // Non-zero means use the preallocated buffer
     Ptr preallocated_buffer,
-    i32 starting_rand_state,
     i32 num_rand_states,
     void *_vm_allocator,
     void *_host_printf,
@@ -948,13 +947,24 @@ void runtime_initialize(
   runtime->num_rand_states = num_rand_states;
   runtime->rand_states = (RandState *)runtime->allocate_aligned(
       sizeof(RandState) * runtime->num_rand_states, taichi_page_size);
-  for (int i = 0; i < runtime->num_rand_states; i++)
-    initialize_rand_state(&runtime->rand_states[i], starting_rand_state + i);
 }
 
 void runtime_initialize_runtime_context_buffer(LLVMRuntime *runtime) {
   runtime->runtime_context_buffer_allocator =
       runtime->create<NodeManager>(runtime, sizeof(RuntimeContext), 4096);
+}
+
+void runtime_initialize_rand_states_cuda(LLVMRuntime *runtime,
+                                         int starting_rand_state) {
+  int i = block_dim() * block_idx() + thread_idx();
+  initialize_rand_state(&runtime->rand_states[i], starting_rand_state + i);
+}
+
+void runtime_initialize_rand_states_serial(LLVMRuntime *runtime,
+                                           int starting_rand_state) {
+  for (int i = 0; i < runtime->num_rand_states; i++) {
+    initialize_rand_state(&runtime->rand_states[i], starting_rand_state + i);
+  }
 }
 
 void runtime_initialize_snodes(LLVMRuntime *runtime,

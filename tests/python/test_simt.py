@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 from pytest import approx
 from taichi.lang.simt import subgroup
 
@@ -271,7 +272,8 @@ def test_shfl_down_f32():
 def test_match_any():
     # Skip match_any test for Pascal
     if ti.lang.impl.get_cuda_compute_capability() < 70:
-        return
+        pytest.skip('match_any not supported on Pascal')
+
     a = ti.field(dtype=ti.i32, shape=32)
     b = ti.field(dtype=ti.u32, shape=32)
 
@@ -297,7 +299,8 @@ def test_match_any():
 def test_match_all():
     # Skip match_all test for Pascal
     if ti.lang.impl.get_cuda_compute_capability() < 70:
-        return
+        pytest.skip('match_all not supported on Pascal')
+
     a = ti.field(dtype=ti.i32, shape=32)
     b = ti.field(dtype=ti.u32, shape=32)
     c = ti.field(dtype=ti.u32, shape=32)

@@ -86,7 +86,6 @@
                     "name": "error",
                     "type": "enumeration",
                     "cases": {
-                        "truncated": 1,
                         "success": 0,
                         "not_supported": -1,
                         "corrupted_data": -2,
@@ -96,7 +95,8 @@
                         "argument_out_of_range": -6,
                         "argument_not_found": -7,
                         "invalid_interop": -8,
-                        "invalid_state": -9
+                        "invalid_state": -9,
+                        "incompatible_module": -10
                     }
                 },
                 {
@@ -515,21 +515,22 @@
                     ]
                 },
                 {
-                    "name": "set_runtime_capabilities",
+                    "name": "get_runtime_capabilities",
                     "type": "function",
-                    "is_extension": true,
                     "parameters": [
                         {
                             "type": "handle.runtime"
                         },
                         {
                             "name": "capability_count",
-                            "type": "uint32_t"
+                            "type": "uint32_t",
+                            "by_mut": true
                         },
                         {
                             "name": "capabilities",
-                            "type": "enumeration.capability",
-                            "count": "capability_count"
+                            "type": "structure.capability_level_info",
+                            "count": "capability_count",
+                            "by_mut": true
                         }
                     ]
                 },

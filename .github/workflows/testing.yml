@@ -176,7 +176,7 @@ jobs:
   build_and_test_gpu_linux:
     name: Build and Test (GPU)
     needs: check_files
-    timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 60 || 120 }}
+    timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 120 }}
     strategy:
       matrix:
         tags:

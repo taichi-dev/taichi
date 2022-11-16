@@ -11,3 +11,4 @@ matplotlib
 cffi
 scipy
 nbmake
+setproctitle

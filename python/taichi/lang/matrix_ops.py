@@ -1,7 +1,4 @@
-import numbers
-
 import taichi.lang.ops as ops_mod
-from taichi.lang.expr import Expr
 from taichi.lang.impl import static
 from taichi.lang.kernel_impl import func, pyfunc
 from taichi.lang.matrix import Matrix, Vector
@@ -236,9 +233,10 @@ def fill(mat: template(), val):
     if static(len(shape) == 1):
         for i in static(range(shape[0])):
             mat[i] = val
-    for i in static(range(shape[0])):
-        for j in static(range(shape[1])):
-            mat[i, j] = val
+    else:
+        for i in static(range(shape[0])):
+            for j in static(range(shape[1])):
+                mat[i, j] = val
 
 
 @preconditions(check_matmul)

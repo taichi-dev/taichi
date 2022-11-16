@@ -1,7 +1,7 @@
 from taichi.lang.enums import Layout
 from taichi.types.compound_types import CompoundType, TensorType
 
-# We cannot use iomport Vector/MatrixType due to circular import
+# FIXME We cannot use iomport Vector/MatrixType due to circular import
 # from taichi.lang.matrix import VectorType, MatrixType
 
 
@@ -41,22 +41,21 @@ class NdarrayType:
                 f"Both element_shape and element_dim are specified, but shape doesn't match specified dim: {len(element_shape)}!={element_dim}"
             )
         self.dtype = dtype
-        # if isinstance(dtype, VectorType):
-        #     self.element_dim = 1
-        #     print(f"shape {(dtype.n)}")
-        #     self.element_shape = (dtype.n)
-        # elif isinstance(dtype, MatrixType):
-        #     self.element_dim = 1
-        #     self.element_shape = (dtype.n, dtype.m)
+
+        # The element shape are deprecated. Use dtype to manage element-wise arguments.
+        # TODO (Haidong) remove the element_dim and element_shape memebers internally
+
         if isinstance(dtype, CompoundType):
             if dtype == TensorType:
                 raise TypeError(f"TensorType is not supported for ndarray dtype annotation.")
-            if dtype.m == 1:
+            if dtype.ndim == 1:
                 self.element_dim = 1
                 self.element_shape = (dtype.n,)
-            else:
+            elif dtype.ndim == 2:
                 self.element_dim = 2
                 self.element_shape = (dtype.n, dtype.m)
+            else:
+                raise TypeError(f"Unexpected matrix data type {dtype} has dimension {dtype.ndim}, only vectors and matrices (ndim = 1,2) are accepted.")
         else:
             self.element_shape = None
             self.element_dim = None

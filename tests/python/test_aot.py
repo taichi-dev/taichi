@@ -430,7 +430,7 @@ def test_mpm88_ndarray():
     def substep(x: ti.types.ndarray(dtype=ti.math.vec2),
                 v: ti.types.ndarray(dtype=ti.math.vec2),
                 C: ti.types.ndarray(dtype=ti.math.mat2), J: ti.types.ndarray(),
-                grid_v: ti.types.ndarray(),
+                grid_v: ti.types.ndarray(dtype=ti.math.vec2),
                 grid_m: ti.types.ndarray()):
         for p in x:
             base = (x[p] * inv_dx - 0.5).cast(int)

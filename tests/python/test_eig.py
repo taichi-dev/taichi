@@ -175,3 +175,43 @@ def test_sym_eig3x3_f32(a00):
                  fast_math=False)
 def test_sym_eig3x3_f64(a00):
     _test_sym_eig3x3(ti.f64, a00)
+
+
+@pytest.mark.parametrize("func", [_test_eig2x2_real, _test_eig2x2_complex])
+@test_utils.test(default_fp=ti.f32, fast_math=False, real_matrix=True, real_matrix_scalarize=True)
+def test_eig2x2_f32_real_matrix_scalarize(func):
+    func(ti.f32)
+
+
+@pytest.mark.parametrize("func", [_test_eig2x2_real, _test_eig2x2_complex])
+@test_utils.test(require=ti.extension.data64,
+                 default_fp=ti.f64,
+                 fast_math=False, real_matrix=True, real_matrix_scalarize=True)
+def test_eig2x2_f64_real_matrix_scalarize(func):
+    func(ti.f64)
+
+
+@test_utils.test(default_fp=ti.f32, fast_math=False, real_matrix=True, real_matrix_scalarize=True)
+def test_sym_eig2x2_f32_real_matrix_scalarize():
+    _test_sym_eig2x2(ti.f32)
+
+
+@test_utils.test(require=ti.extension.data64,
+                 default_fp=ti.f64,
+                 fast_math=False, real_matrix=True, real_matrix_scalarize=True)
+def test_sym_eig2x2_f64_real_matrix_scalarize():
+    _test_sym_eig2x2(ti.f64)
+
+
+@pytest.mark.parametrize('a00', [i for i in range(10)])
+@test_utils.test(default_fp=ti.f32, fast_math=False, real_matrix=True, real_matrix_scalarize=True)
+def test_sym_eig3x3_f32_real_matrix_scalarize(a00):
+    _test_sym_eig3x3(ti.f32, a00)
+
+
+@pytest.mark.parametrize('a00', [i for i in range(10)])
+@test_utils.test(require=ti.extension.data64,
+                 default_fp=ti.f64,
+                 fast_math=False, real_matrix=True, real_matrix_scalarize=True)
+def test_sym_eig3x3_f64_real_matrix_scalarize(a00):
+    _test_sym_eig3x3(ti.f64, a00)

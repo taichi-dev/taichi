@@ -28,6 +28,19 @@ TEST_F(CapiTest, DryRunRuntime) {
   }
 }
 
+TEST_F(CapiTest, DryRunCapabilities) {
+  if (capi::utils::is_vulkan_available()) {
+    // Vulkan Runtime
+    {
+      ti::Runtime runtime(TI_ARCH_VULKAN);
+      auto devcaps = runtime.get_capabilities();
+      auto it = devcaps.find(TI_CAPABILITY_SPIRV_VERSION);
+      assert(it != devcaps.end());
+      assert(it->second >= 0x10000);
+    }
+  }
+}
+
 TEST_F(CapiTest, DryRunMemoryAllocation) {
   {
     // CPU Runtime

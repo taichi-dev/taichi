@@ -343,7 +343,9 @@ def test_ref_atomic():
     # Please remove this guardiance when you fix this issue
     cur_arch = ti.lang.impl.get_runtime().prog.config().arch
     if cur_arch == ti.cuda and ti.lang.impl.get_cuda_compute_capability() < 70:
-        return
+        pytest.skip(
+            'Skip this test on Pascal (and potentially older) architecture, ask turbo0628/Proton for more information'
+        )
 
     @ti.experimental.real_func
     def foo(a: ti.ref(ti.f32)):

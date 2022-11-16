@@ -319,7 +319,7 @@ def test_ndarray_rw_cache():
     a = ti.Vector.ndarray(3, ti.f32, ())
     b = ti.Vector.ndarray(3, ti.f32, 12)
 
-    n = 1000
+    n = 100
     for i in range(n):
         c_a = copy.deepcopy(a)
         c_b = copy.deepcopy(b)

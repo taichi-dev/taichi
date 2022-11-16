@@ -4,6 +4,17 @@ sidebar_position: 1
 
 # Frequently Asked Questions
 
+## Can I enable auto compeletion for Taichi?
+
+Yes, Taichi's Python user-facing APIs should work natively with any language server for Python.
+
+Take VSCode as an example, you can install `Python` or `Pylance` extensions to get language support like signature help with type information, code completion etc.
+
+If it doesn't work out of box after installing the extension, please make sure the right Python interpreter is selected by:
+- invoke command palette (`Shift + Command + P (Mac) / Ctrl + Shift + P (Windows/Linux)`)
+- find `Python: Select Interpreter` 
+- make sure you select the path to the Python interpreter you're using with a `taichi` package installed
+
 ### Why does my `pip` complain `package not found` when installing Taichi?
 
 You may have a Python interpreter with an unsupported version. Currently, Taichi only supports Python 3.7/3.8/3.9/3.10 (64-bit) . For more information about installation-specific issues, please check [Installation Troubleshooting](./install.md).

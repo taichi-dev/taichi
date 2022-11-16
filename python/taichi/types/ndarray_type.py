@@ -1,3 +1,5 @@
+import warnings
+
 from taichi.lang.enums import Layout
 from taichi.types.compound_types import CompoundType, TensorType
 
@@ -30,8 +32,9 @@ class NdarrayType:
                  field_dim=None):
         # The element shape are deprecated. Use dtype to manage element-wise arguments.
         if element_dim is not None or element_shape is not None:
-            import warnings
-            warnings.warn("The element_dim and element_shape arguments for ndarray are deprecated, use matrix dtype instead.", warnings.DeprecationWarning)
+            warnings.warn(
+                "The element_dim and element_shape arguments for ndarray are deprecated, use matrix dtype instead.",
+                DeprecationWarning)
 
         if element_dim is not None and (element_dim < 0 or element_dim > 2):
             raise ValueError(
@@ -48,19 +51,23 @@ class NdarrayType:
 
         if isinstance(dtype, CompoundType):
             if dtype == TensorType:
-                raise TypeError(f"TensorType is not supported for ndarray dtype annotation.")
+                raise TypeError(
+                    "TensorType is not supported for ndarray dtype annotation."
+                )
             if dtype.ndim == 1:
                 self.element_dim = 1
-                self.element_shape = (dtype.n,)
+                self.element_shape = (dtype.n, )
             elif dtype.ndim == 2:
                 self.element_dim = 2
                 self.element_shape = (dtype.n, dtype.m)
             else:
-                raise TypeError(f"Unexpected matrix data type {dtype} has dimension {dtype.ndim}, only vectors and matrices (ndim = 1,2) are accepted.")
+                raise TypeError(
+                    f"Unexpected matrix data type {dtype} has dimension {dtype.ndim}, only vectors and matrices (ndim = 1,2) are accepted."
+                )
         else:
             self.element_shape = None
             self.element_dim = None
-            
+
         self.field_dim = field_dim
         self.layout = Layout.AOS
 

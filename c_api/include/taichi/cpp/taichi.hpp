@@ -3,6 +3,7 @@
 #include <cstring>
 #include <list>
 #include <vector>
+#include <map>
 #include <string>
 #include <utility>
 #include "taichi/taichi.h"
@@ -701,6 +702,19 @@ class Runtime {
     runtime_ = detail::move_handle(b.runtime_);
     should_destroy_ = std::exchange(b.should_destroy_, false);
     return *this;
+  }
+
+  std::map<TiCapability, uint32_t> get_capabilities() const {
+    uint32_t n = 0;
+    ti_get_runtime_capabilities(runtime_, &n, nullptr);
+    std::vector<TiCapabilityLevelInfo> devcaps(n);
+    ti_get_runtime_capabilities(runtime_, &n, devcaps.data());
+
+    std::map<TiCapability, uint32_t> out{};
+    for (auto devcap : devcaps) {
+      out[devcap.capability] = devcap.level;
+    }
+    return out;
   }
 
   Memory allocate_memory(const TiMemoryAllocateInfo &allocate_info) {

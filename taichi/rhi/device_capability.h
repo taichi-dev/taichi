@@ -18,33 +18,34 @@ const std::string to_string(DeviceCapability c);
 
 // A collection of device capability.
 struct DeviceCapabilityConfig {
- private:
-  std::map<DeviceCapability, uint32_t> inner_;
-
  public:
+  std::map<DeviceCapability, uint32_t> devcaps;
+
   inline uint32_t contains(DeviceCapability cap) const {
-    auto it = inner_.find(cap);
-    return it != inner_.end();
+    auto it = devcaps.find(cap);
+    return it != devcaps.end();
   }
   inline uint32_t get(DeviceCapability cap) const {
-    auto it = inner_.find(cap);
-    if (it != inner_.end()) {
+    auto it = devcaps.find(cap);
+    if (it != devcaps.end()) {
       return it->second;
     }
     return 0;
   }
   inline void set(DeviceCapability cap, uint32_t level) {
-    inner_[cap] = level;
+    devcaps[cap] = level;
   }
   inline void dbg_print_all() const {
-    for (auto &pair : inner_) {
+    for (auto &pair : devcaps) {
       TI_TRACE("DeviceCapability::{} ({}) = {}", to_string(pair.first),
                int(pair.first), pair.second);
     }
   }
   inline const std::map<DeviceCapability, uint32_t> &to_inner() const {
-    return inner_;
+    return devcaps;
   }
+
+  TI_IO_DEF(devcaps);
 };
 
 }  // namespace taichi::lang

@@ -272,12 +272,14 @@ class SparseMatrixBuilder:
     def build(self, dtype=f32, _format='CSR'):
         """Create a sparse matrix using the triplets"""
         taichi_arch = get_runtime().prog.config().arch
-        sm = SparseMatrix(self.num_rows, self.num_cols)
         if taichi_arch == _ti_core.Arch.x64:
             sm = self.ptr.build()
-        elif taichi_arch == _ti_core.Arch.cuda:
+            return SparseMatrix(sm=sm)
+        if taichi_arch == _ti_core.Arch.cuda:
             sm = self.ptr.build_cuda()
-        return SparseMatrix(sm=sm)
+            return SparseMatrix(sm=sm)
+        raise TaichiRuntimeError(
+            'Sparse matrix only supports x64 and CUDA backends.')
 
 
 # TODO: remove this in 1.0 release

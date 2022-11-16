@@ -828,7 +828,8 @@ class GetElementExpression : public Expression {
 
   void type_check(CompileConfig *config) override;
 
-  GetElementExpression(const Expr &src, int index) : src(src), index(index) {}
+  GetElementExpression(const Expr &src, int index) : src(src), index(index) {
+  }
 
   void flatten(FlattenContext *ctx) override;
 

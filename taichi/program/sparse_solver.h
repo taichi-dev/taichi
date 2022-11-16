@@ -52,6 +52,17 @@ class EigenSparseSolver : public SparseSolver {
 
   bool info() override;
 };
+#define REGISTER_EIGEN_SOLVER(dt, type, order)                       \
+  typedef EigenSparseSolver<                                         \
+      Eigen::Simplicial##type<Eigen::SparseMatrix<dt>, Eigen::Lower, \
+                              Eigen::order##Ordering<int>>,          \
+      Eigen::SparseMatrix<dt>>                                       \
+      EigenSparseSolver##dt##type##order;
+
+REGISTER_EIGEN_SOLVER(float32, LLT, AMD);
+REGISTER_EIGEN_SOLVER(float32, LLT, COLAMD);
+REGISTER_EIGEN_SOLVER(float32, LDLT, AMD);
+REGISTER_EIGEN_SOLVER(float32, LDLT, COLAMD);
 
 class CuSparseSolver : public SparseSolver {
  private:

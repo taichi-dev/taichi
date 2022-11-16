@@ -4,14 +4,26 @@
 
 #include <unordered_map>
 
-#define MAKE_SOLVER(dt, type, order)                                           \
-  {                                                                            \
-    {#dt, #type, #order}, []() -> std::unique_ptr<SparseSolver> {              \
-      using T = Eigen::Simplicial##type<Eigen::SparseMatrix<dt>, Eigen::Lower, \
-                                        Eigen::order##Ordering<int>>;          \
-      return std::make_unique<                                                 \
-          EigenSparseSolver<T, Eigen::SparseMatrix<dt>>>();                    \
-    }                                                                          \
+namespace taichi::lang {
+#define EIGEN_SOLVER_INSTANTIATION(dt, type, order)                  \
+  template class EigenSparseSolver<                                  \
+      Eigen::Simplicial##type<Eigen::SparseMatrix<dt>, Eigen::Lower, \
+                              Eigen::order##Ordering<int>>,          \
+      Eigen::SparseMatrix<dt>>;
+EIGEN_SOLVER_INSTANTIATION(float32, LLT, AMD);
+EIGEN_SOLVER_INSTANTIATION(float32, LLT, COLAMD);
+EIGEN_SOLVER_INSTANTIATION(float32, LDLT, AMD);
+EIGEN_SOLVER_INSTANTIATION(float32, LDLT, COLAMD);
+}  // namespace taichi::lang
+
+#define MAKE_EIGEN_SOLVER(dt, type, order) \
+  std::make_unique<EigenSparseSolver##dt##type##order>()
+
+#define MAKE_SOLVER(dt, type, order)                              \
+  {                                                               \
+    {#dt, #type, #order}, []() -> std::unique_ptr<SparseSolver> { \
+      return MAKE_EIGEN_SOLVER(dt, type, order);                  \
+    }                                                             \
   }
 
 using Triplets = std::tuple<std::string, std::string, std::string>;

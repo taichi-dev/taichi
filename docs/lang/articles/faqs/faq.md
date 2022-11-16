@@ -12,7 +12,7 @@ Take VSCode as an example, you can install `Python` or `Pylance` extensions to g
 
 If it doesn't work out of box after installing the extension, please make sure the right Python interpreter is selected by:
 - invoke command palette (`Shift + Command + P (Mac) / Ctrl + Shift + P (Windows/Linux)`)
-- find `Python: Select Interpreter` 
+- find `Python: Select Interpreter`
 - make sure you select the path to the Python interpreter you're using with a `taichi` package installed
 
 ### Why does my `pip` complain `package not found` when installing Taichi?

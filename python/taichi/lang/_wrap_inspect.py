@@ -1,12 +1,13 @@
 import inspect
 import os
 import tempfile
+
 import sourceinspect
 from taichi._logging import warn
 
-
 _builtin_getfile = inspect.getfile
 _builtin_findsource = inspect.findsource
+
 
 def _find_source_with_custom_getfile_func(func, obj):
     inspect.getfile = func  # replace with our custom func

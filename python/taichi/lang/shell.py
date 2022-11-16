@@ -5,7 +5,6 @@ import sys
 from taichi._lib import core as _ti_core
 from taichi._logging import info
 
-
 pybuf_enabled = False
 _env_enable_pybuf = os.environ.get('TI_ENABLE_PYBUF', '1')
 if not _env_enable_pybuf or int(_env_enable_pybuf):

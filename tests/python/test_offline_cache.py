@@ -253,12 +253,13 @@ def _test_closing_offline_cache_for_a_kernel(curr_arch, kernel, args, result):
         return cache_files_cnt(curr_arch) - count_of_cache_file
 
     def my_init():
-        ti.init(arch=curr_arch,
-                enable_fallback=False,
-                offline_cache=False,
-                offline_cache_file_path=backend_specified_cache_path(curr_arch),
-                cuda_stack_limit=1024,
-                device_memory_GB=0.1)
+        ti.init(
+            arch=curr_arch,
+            enable_fallback=False,
+            offline_cache=False,
+            offline_cache_file_path=backend_specified_cache_path(curr_arch),
+            cuda_stack_limit=1024,
+            device_memory_GB=0.1)
 
     my_init()
     res1 = kernel(*args)
@@ -594,7 +595,9 @@ def test_offline_cache_for_kernels_calling_real_func(curr_arch):
     def my_init():
         ti.init(arch=curr_arch,
                 enable_fallback=False,
-                **{**current_thread_ext_options(), 'cuda_stack_limit': 4096})
+                **{
+                    **current_thread_ext_options(), 'cuda_stack_limit': 4096
+                })
 
     my_init()
     helper1()

@@ -28,8 +28,10 @@ class NdarrayType:
                  element_dim=None,
                  element_shape=None,
                  field_dim=None):
+        # The element shape are deprecated. Use dtype to manage element-wise arguments.
         if element_dim is not None or element_shape is not None:
-            raise ValueError("Deprecation")
+            import warnings
+            warnings.warn("The element_dim and element_shape arguments for ndarray are deprecated, use matrix dtype instead.", warnings.DeprecationWarning)
 
         if element_dim is not None and (element_dim < 0 or element_dim > 2):
             raise ValueError(
@@ -42,7 +44,6 @@ class NdarrayType:
             )
         self.dtype = dtype
 
-        # The element shape are deprecated. Use dtype to manage element-wise arguments.
         # TODO (Haidong) remove the element_dim and element_shape memebers internally
 
         if isinstance(dtype, CompoundType):

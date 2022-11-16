@@ -596,24 +596,6 @@ def test_vulkan_cgraph_short():
 
 @test_utils.test(arch=[ti.vulkan])
 def test_devcap():
-    module = ti.aot.Module(ti.vulkan, caps=[
-        ti.DeviceCapability.spirv_has_float16,
-        ti.DeviceCapability.spirv_has_atomic_float16_minmax
-    ])
-
-    with tempfile.TemporaryDirectory() as tmpdir:
-        module.save(tmpdir)
-
-        with open(tmpdir + "/metadata.json") as f:
-            j = json.load(f)
-            caps = j["aot_data"]["required_caps"]
-            assert caps["spirv_version"] == 0x10300
-            assert caps["spirv_has_float16"] == 1
-            assert caps["spirv_has_atomic_float16_minmax"] == 1
-
-
-@test_utils.test(arch=[ti.vulkan])
-def test_devcap():
     module = ti.aot.Module(
         ti.vulkan,
         caps=[
@@ -627,10 +609,22 @@ def test_devcap():
         with open(tmpdir + "/metadata.json") as f:
             j = json.load(f)
             caps = j["aot_data"]["required_caps"]
+            assert len(caps) == 3
             assert caps["spirv_version"] == 0x10300
             assert caps["spirv_has_float16"] == 1
             assert caps["spirv_has_atomic_float16_minmax"] == 1
 
+@test_utils.test(arch=[ti.vulkan])
+def test_devcap_weird_user_input():
+    with pytest.raises(RuntimeError, match='unexpected device capability name'):
+        ti.aot.Module(ti.vulkan, caps=[
+            "Never gonna give you up"
+            "Never gonna let you down"
+            "Never gonna run around and desert you"
+            "Never gonna make you cry"
+            "Never gonna say goodbye"
+            "Never gonna tell a lie and hurt you"
+        ])
 
 @test_utils.test(arch=[ti.vulkan])
 def test_module_arch_fallback():

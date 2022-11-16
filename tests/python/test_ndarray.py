@@ -528,11 +528,12 @@ def _test_compiled_functions():
     assert impl.get_runtime().get_num_compiled_functions() == 1
     v = np.zeros((6, 11), dtype=np.int32)
     with pytest.raises(
-        TypeError,
-        match=
-        r'Invalid argument into ti\.types\.ndarray\(\) - required element_shape=.*, but the argument has element shape .*.'
-        ):
+            TypeError,
+            match=
+            r'Invalid argument into ti\.types\.ndarray\(\) - required element_shape=.*, but the argument has element shape .*.'
+    ):
         func(v)
+
 
 @test_utils.test(arch=supported_archs_taichi_ndarray)
 def test_compiled_functions():

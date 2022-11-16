@@ -589,10 +589,30 @@ def test_vulkan_cgraph_short():
 
     g.run({'a': a, 'c': c})
 
-    m = ti.aot.Module(caps=['spirv_has_int8'])
+    m = ti.aot.Module(caps=[ti.DeviceCapability.spirv_has_int8])
     m.add_graph('g_init', g)
     with tempfile.TemporaryDirectory() as tmpdir:
         m.save(tmpdir)
+
+
+@test_utils.test(arch=[ti.vulkan])
+def test_devcap():
+    module = ti.aot.Module(
+        ti.vulkan,
+        caps=[
+            ti.DeviceCapability.spirv_has_float16,
+            ti.DeviceCapability.spirv_has_atomic_float16_minmax
+        ])
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        module.save(tmpdir)
+
+        with open(tmpdir + "/metadata.json") as f:
+            j = json.load(f)
+            caps = j["aot_data"]["required_caps"]
+            assert caps["spirv_version"] == 0x10300
+            assert caps["spirv_has_float16"] == 1
+            assert caps["spirv_has_atomic_float16_minmax"] == 1
 
 
 @test_utils.test(arch=[ti.vulkan])

@@ -30,12 +30,6 @@ class NdarrayType:
                  element_dim=None,
                  element_shape=None,
                  field_dim=None):
-        # The element shape are deprecated. Use dtype to manage element-wise arguments.
-        if element_dim is not None or element_shape is not None:
-            warnings.warn(
-                "The element_dim and element_shape arguments for ndarray are deprecated, use matrix dtype instead.",
-                DeprecationWarning)
-
         if element_dim is not None and (element_dim < 0 or element_dim > 2):
             raise ValueError(
                 "Only scalars, vectors, and matrices are allowed as elements of ti.types.ndarray()"

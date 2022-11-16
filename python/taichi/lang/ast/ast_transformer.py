@@ -833,7 +833,8 @@ class ASTTransformer(Builder):
                       Expr) and not hasattr(node.value.ptr, node.attr):
             if node.attr in Matrix._swizzle_to_keygroup:
                 keygroup = Matrix._swizzle_to_keygroup[node.attr]
-                Matrix._keygroup_to_checker[keygroup](node.value.ptr, node.attr)
+                Matrix._keygroup_to_checker[keygroup](node.value.ptr,
+                                                      node.attr)
                 attr_len = len(node.attr)
                 if attr_len == 1:
                     node.ptr = Expr(

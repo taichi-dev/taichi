@@ -43,7 +43,8 @@ def _gen_swizzles(cls):
         return check
 
     for key_group in KEYGROUP_SET:
-        cls._keygroup_to_checker[key_group] = make_valid_attribs_checker(key_group)
+        cls._keygroup_to_checker[key_group] = make_valid_attribs_checker(
+            key_group)
         for index, attr in enumerate(key_group):
 
             def gen_property(attr, attr_idx, key_group):

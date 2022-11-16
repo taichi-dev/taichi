@@ -239,7 +239,7 @@ import numpy as np
 
 @ti.kernel
 def invalid_sum(arr: ti.types.ndarray()):
-    total = np.sum(arr)
+    total = np.sum(arr)  # Not supported!
     ...
 ```
 

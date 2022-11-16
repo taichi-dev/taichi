@@ -9,6 +9,15 @@
 
 namespace taichi::lang {
 
+static bool is_alloca_scalarizable(AllocaStmt *stmt) {
+  /* Do not scalarize AllocaStmt allocated for CUDA SharedArray */
+  auto alloca = stmt->as<AllocaStmt>();
+  if (alloca->is_shared)
+    return false;
+
+  return true;
+}
+
 class Scalarize : public BasicStmtVisitor {
  public:
   DelayedIRModifier modifier_;
@@ -171,6 +180,9 @@ class Scalarize : public BasicStmtVisitor {
       for (size_t i = 0; i < num_elements; i++) {
         auto unary_stmt = std::make_unique<UnaryOpStmt>(
             stmt->op_type, operand_matrix_init_stmt->values[i]);
+        if (stmt->is_cast()) {
+          unary_stmt->cast_type = stmt->cast_type;
+        }
         unary_stmt->ret_type = primitive_type;
         matrix_init_values.push_back(unary_stmt.get());
 
@@ -512,7 +524,7 @@ class ScalarizePointers : public BasicStmtVisitor {
   */
   void visit(AllocaStmt *stmt) override {
     auto tensor_type = stmt->ret_type.ptr_removed()->cast<TensorType>();
-    if (tensor_type) {
+    if (tensor_type && is_alloca_scalarizable(stmt)) {
       auto primitive_type = tensor_type->get_element_type();
 
       TI_ASSERT(scalarized_local_tensor_map_.count(stmt) == 0);
@@ -544,7 +556,8 @@ class ScalarizePointers : public BasicStmtVisitor {
       auto alloca_stmt = stmt->origin->cast<AllocaStmt>();
       auto tensor_type =
           alloca_stmt->ret_type.ptr_removed()->cast<TensorType>();
-      if (tensor_type) {
+      TI_ASSERT(tensor_type != nullptr);
+      if (is_alloca_scalarizable(alloca_stmt)) {
         int num_elements = tensor_type->get_num_elements();
         TI_ASSERT(scalarized_local_tensor_map_.count(alloca_stmt));
 
@@ -554,7 +567,24 @@ class ScalarizePointers : public BasicStmtVisitor {
 
         // TODO(zhanlue): loose this contraint once dynamic indexing is properly
         // handled
-        TI_ASSERT(stmt->offset->is<ConstStmt>());
+        if (!stmt->offset->is<ConstStmt>()) {
+          // Removing this line will fail TI_ASSERT in ~DelayedIRModifier()
+          modifier_.modify_ir();
+          throw TaichiSyntaxError(fmt::format(
+              "{}The index of a Matrix/Vector must be a compile-time constant "
+              "integer.\n"
+              "This is because matrix operations will be **unrolled** at "
+              "compile-time for performance reason.\n"
+              "If you want to *iterate through matrix elements*, use a static "
+              "range:\n"
+              "    for i in ti.static(range(3)):\n"
+              "        print(i, \"-th component is\", vec[i])\n"
+              "See https://docs.taichi-lang.org/docs/meta#when-to-use-tistatic-"
+              "with-for-loops for more details."
+              "Or turn on ti.init(..., dynamic_index=True) to support indexing "
+              "with variables!",
+              stmt->tb));
+        }
         int offset = stmt->offset->cast<ConstStmt>()->val.val_int32();
 
         TI_ASSERT(offset < scalarized_alloca_stmts.size());

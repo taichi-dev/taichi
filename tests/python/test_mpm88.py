@@ -102,8 +102,15 @@ def run_mpm88_test():
                                                           rel=1e-2)
 
 
+@pytest.mark.skipif(os.environ.get('TI_LITE_TEST') or '0', reason='Lite test')
 @test_utils.test()
 def test_mpm88():
+    run_mpm88_test()
+
+
+@pytest.mark.skipif(os.environ.get('TI_LITE_TEST') or '0', reason='Lite test')
+@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
+def test_mpm88_real_matrix_scalarize():
     run_mpm88_test()
 
 
@@ -113,6 +120,7 @@ def _is_appveyor():
     return os.getenv('APPVEYOR', '').lower() == 'true'
 
 
+@pytest.mark.skipif(os.environ.get('TI_LITE_TEST') or '0', reason='Lite test')
 @test_utils.test(arch=[ti.cpu, ti.cuda, ti.opengl])
 def test_mpm88_numpy_and_ndarray():
     import numpy as np

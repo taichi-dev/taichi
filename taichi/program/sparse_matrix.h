@@ -19,9 +19,12 @@ class SparseMatrixBuilder {
                       int cols,
                       int max_num_triplets,
                       DataType dtype,
-                      const std::string &storage_format);
+                      const std::string &storage_format,
+                      Program *prog);
 
   void print_triplets();
+
+  intptr_t get_ndarray_data_ptr() const;
 
   std::unique_ptr<SparseMatrix> build();
 
@@ -29,20 +32,18 @@ class SparseMatrixBuilder {
 
  private:
   template <typename T, typename G>
-  void print_template();
-
-  template <typename T, typename G>
   void build_template(std::unique_ptr<SparseMatrix> &);
 
  private:
   uint64 num_triplets_{0};
-  std::unique_ptr<uchar[]> data_base_ptr_{nullptr};
+  std::unique_ptr<Ndarray> ndarray_data_base_ptr_{nullptr};
   int rows_{0};
   int cols_{0};
   uint64 max_num_triplets_{0};
   bool built_{false};
   DataType dtype_{PrimitiveType::f32};
   std::string storage_format_{"col_major"};
+  Program *prog_{nullptr};
 };
 
 class SparseMatrix {
@@ -267,6 +268,8 @@ class CuSparseMatrix : public SparseMatrix {
   const void *get_matrix() const override {
     return &matrix_;
   };
+
+  float get_element(int row, int col) const;
 
   const std::string to_string() const override;
 

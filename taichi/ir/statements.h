@@ -432,7 +432,7 @@ class MatrixPtrStmt : public Stmt {
   Stmt *origin{nullptr};
   Stmt *offset{nullptr};
 
-  MatrixPtrStmt(Stmt *, Stmt *);
+  MatrixPtrStmt(Stmt *, Stmt *, const std::string & = "");
 
   /* TODO(zhanlue/yi): Unify semantics of offset in MatrixPtrStmt
 

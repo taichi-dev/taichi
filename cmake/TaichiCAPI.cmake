@@ -18,6 +18,9 @@ endif()
 
 if (TI_WITH_VULKAN)
   list(APPEND C_API_SOURCE "c_api/src/taichi_vulkan_impl.cpp")
+  if (APPLE)
+    install(FILES ${MoltenVK_LIBRARY} DESTINATION c_api/lib)
+  endif()
 endif()
 
 if(TI_BUILD_TESTS)

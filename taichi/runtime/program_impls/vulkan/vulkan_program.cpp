@@ -205,13 +205,6 @@ DeviceAllocation VulkanProgramImpl::allocate_texture(
   return vulkan_runtime_->create_image(params);
 }
 
-std::unique_ptr<aot::Kernel> VulkanProgramImpl::make_aot_kernel(
-    Kernel &kernel) {
-  auto params = get_cache_manager()->load_or_compile(config, &kernel);
-  return std::make_unique<gfx::KernelImpl>(vulkan_runtime_.get(),
-                                           std::move(params));
-}
-
 void VulkanProgramImpl::enqueue_compute_op_lambda(
     std::function<void(Device *device, CommandList *cmdlist)> op,
     const std::vector<ComputeOpImageRef> &image_refs) {

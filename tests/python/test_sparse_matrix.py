@@ -1,4 +1,3 @@
-import numpy as np
 import pytest
 
 import taichi as ti
@@ -379,6 +378,7 @@ def test_sparse_matrix_nonsymmetric_multiplication(dtype, storage_format):
 
 @test_utils.test(arch=ti.cuda)
 def test_gpu_sparse_matrix():
+    import numpy as np
     h_coo_row = np.asarray([1, 0, 0, 0, 2, 2, 2, 3, 3], dtype=np.int32)
     h_coo_col = np.asarray([1, 0, 2, 3, 0, 2, 3, 1, 3], dtype=np.int32)
     h_coo_val = np.asarray([4.0, 1.0, 2.0, 3.0, 5.0, 6.0, 7.0, 8.0, 9.0],
@@ -411,6 +411,83 @@ def test_gpu_sparse_matrix():
     A.build_coo(d_coo_row, d_coo_col, d_coo_val)
 
     # Compute Y = A @ X
-    A.spmv(X, Y)
+    Y = A @ X
     for i in range(4):
         assert Y[i] == h_Y[i]
+
+
+@pytest.mark.parametrize('N', [5])
+@test_utils.test(arch=ti.cuda)
+def test_gpu_sparse_matrix_ops(N):
+    import numpy as np
+    from numpy.random import default_rng
+    from scipy import stats
+    from scipy.sparse import coo_matrix, random
+
+    seed = 2
+    np.random.seed(seed)
+    rng = default_rng(seed)
+    rvs = stats.poisson(3, loc=1).rvs
+    np_dtype = np.float32
+    idx_dt = ti.int32
+    val_dt = ti.float32
+
+    n_rows = N
+    n_cols = N - 1
+
+    S1 = random(n_rows, n_cols, density=0.5, random_state=rng,
+                data_rvs=rvs).astype(np_dtype).tocoo()
+    S2 = random(n_rows, n_cols, density=0.5, random_state=rng,
+                data_rvs=rvs).astype(np_dtype).tocoo()
+
+    nnz_A = len(S1.data)
+    nnz_B = len(S2.data)
+
+    row_coo_A = ti.ndarray(shape=nnz_A, dtype=idx_dt)
+    col_coo_A = ti.ndarray(shape=nnz_A, dtype=idx_dt)
+    value_coo_A = ti.ndarray(shape=nnz_A, dtype=val_dt)
+    row_coo_B = ti.ndarray(shape=nnz_B, dtype=idx_dt)
+    col_coo_B = ti.ndarray(shape=nnz_B, dtype=idx_dt)
+    value_coo_B = ti.ndarray(shape=nnz_B, dtype=val_dt)
+
+    row_coo_A.from_numpy(S1.row)
+    col_coo_A.from_numpy(S1.col)
+    value_coo_A.from_numpy(S1.data)
+
+    row_coo_B.from_numpy(S2.row)
+    col_coo_B.from_numpy(S2.col)
+    value_coo_B.from_numpy(S2.data)
+
+    A = ti.linalg.SparseMatrix(n=n_rows, m=n_cols, dtype=ti.f32)
+    B = ti.linalg.SparseMatrix(n=n_rows, m=n_cols, dtype=ti.f32)
+    A.build_coo(row_coo_A, col_coo_A, value_coo_A)
+    B.build_coo(row_coo_B, col_coo_B, value_coo_B)
+
+    def verify(scipy_spm, taichi_spm):
+        scipy_spm = scipy_spm.tocoo()
+        for i, j, v in zip(scipy_spm.row, scipy_spm.col, scipy_spm.data):
+            assert v == test_utils.approx(taichi_spm[i, j], rel=1e-5)
+
+    C = A + B
+    S3 = S1 + S2
+    verify(S3, C)
+
+    D = C - A
+    S4 = S3 - S1
+    verify(S4, D)
+
+    E = A * 2.5
+    S5 = S1 * 2.5
+    verify(S5, E)
+
+    F = A * 2.5
+    S6 = S1 * 2.5
+    verify(S6, F)
+
+    G = A.transpose()
+    S7 = S1.T
+    verify(S7, G)
+
+    H = A @ B.transpose()
+    S8 = S1 @ S2.T
+    verify(S8, H)

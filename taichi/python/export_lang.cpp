@@ -398,10 +398,11 @@ void export_lang(py::module &m) {
       .def("create_sparse_matrix_builder",
            [](Program *program, int n, int m, uint64 max_num_entries,
               DataType dtype, const std::string &storage_format) {
-             TI_ERROR_IF(!arch_is_cpu(program->this_thread_config().arch),
-                         "SparseMatrix Builder only supports CPU for now.");
+             TI_ERROR_IF(!arch_is_cpu(program->this_thread_config().arch) &&
+                             !arch_is_cuda(program->this_thread_config().arch),
+                         "SparseMatrix only supports CPU and CUDA for now.");
              return SparseMatrixBuilder(n, m, max_num_entries, dtype,
-                                        storage_format);
+                                        storage_format, program);
            })
       .def("create_sparse_matrix",
            [](Program *program, int n, int m, DataType dtype,
@@ -1204,6 +1205,7 @@ void export_lang(py::module &m) {
   // Sparse Matrix
   py::class_<SparseMatrixBuilder>(m, "SparseMatrixBuilder")
       .def("print_triplets", &SparseMatrixBuilder::print_triplets)
+      .def("get_ndarray_data_ptr", &SparseMatrixBuilder::get_ndarray_data_ptr)
       .def("build", &SparseMatrixBuilder::build)
       .def("get_addr", [](SparseMatrixBuilder *mat) { return uint64(mat); });
 
@@ -1262,6 +1264,7 @@ void export_lang(py::module &m) {
       .def(float32() * py::self)
       .def("matmul", &CuSparseMatrix::matmul)
       .def("transpose", &CuSparseMatrix::transpose)
+      .def("get_element", &CuSparseMatrix::get_element)
       .def("to_string", &CuSparseMatrix::to_string);
 
   py::class_<SparseSolver>(m, "SparseSolver")

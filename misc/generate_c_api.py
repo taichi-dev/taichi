@@ -328,6 +328,7 @@ if __name__ == "__main__":
         BuiltInType("PFN_vkGetInstanceProcAddr", "PFN_vkGetInstanceProcAddr"),
         BuiltInType("char", "char"),
         BuiltInType("GLuint", "GLuint"),
+        BuiltInType("VkDeviceMemory", "VkDeviceMemory"),
     }
 
     for module in Module.load_all(builtin_tys):

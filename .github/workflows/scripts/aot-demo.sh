@@ -28,7 +28,6 @@ function build-and-smoke-test-android-aot-demo {
     sudo chmod 0777 $HOME/.cache
     python implicit_fem.py --aot
     popd
-
     mkdir -p $JNI_PATH
     cp taichi/build/libtaichi_export_core.so $JNI_PATH
     cd $ANDROID_APP_ROOT
@@ -60,6 +59,11 @@ function prepare-unity-build-env {
     cmake --build .
     popd
     cp tu2-build/bin/libtaichi_unity.so Taichi-UnityExample/Assets/Plugins/Android
+
+    pushd Taichi-UnityExample
+    pip install /taichi-wheel/*.whl
+    python scripts/implicit_fem.cgraph.py --aot
+    popd
 }
 
 function build-unity-demo {
@@ -94,45 +98,54 @@ function build-and-test-headless-demo {
     setup-android-ndk-env
 
     pushd taichi
-    export TAICHI_REPO_DIR=$(pwd)
+    setup_python
+    popd
+
+    export TAICHI_REPO_DIR=$(pwd)/taichi
+
+    pushd taichi
+    pip install /taichi-wheel/*.whl
+    sudo chmod 0777 $HOME/.cache
     popd
 
     rm -rf taichi-aot-demo
     git clone --recursive --depth=1 https://github.com/taichi-dev/taichi-aot-demo
     cd taichi-aot-demo
-    mkdir build
-    pushd build
+
+    . $(pwd)/ci/test_utils.sh
+
+    # Build demos
     export TAICHI_C_API_INSTALL_DIR=$(find $TAICHI_REPO_DIR -name cmake-install -type d | head -n 1)/c_api
-    cmake $ANDROID_CMAKE_ARGS ..
-    make -j
+    build_demos "$ANDROID_CMAKE_ARGS"
+
     export PATH=/android-sdk/platform-tools:$PATH
     grab-android-bot
     trap release-android-bot EXIT
     adb connect $BOT
-    cd headless
-    BINARIES=$(ls E*)
-    for b in $BINARIES; do
-        adb push $b /data/local/tmp
-    done
+
+    # Clear temporary test folder
+    adb shell "rm -rf /data/local/tmp/* && mkdir /data/local/tmp/build"
+
+    # Push all binaries and shaders to the phone
+    pushd ci
+    adb push ./*.sh /data/local/tmp
+    popd
     adb push $TAICHI_C_API_INSTALL_DIR/lib/libtaichi_c_api.so /data/local/tmp
-
-    popd # build
-
+    adb push ./build/headless /data/local/tmp/build
+    adb push ./build/tutorial /data/local/tmp/build
     for dir in ?_*; do
         adb push $dir /data/local/tmp
     done
 
-    for b in $BINARIES; do
-        adb shell "cd /data/local/tmp && LD_LIBRARY_PATH=\$(pwd) ./$b"
-        adb pull /data/local/tmp/0001.bmp $b.bmp
-    done
+    # Run demos
+    adb shell "cd /data/local/tmp && LD_LIBRARY_PATH=\$(pwd) ./run_demos.sh"
 
-    for b in $BINARIES; do
-        if [[ $(cmp -l $b.bmp ci/headless-truths/$b.bmp | wc -l) -gt 300 ]]; then
-            echo "Above threshold: $b"
-            exit 1
-        fi
-    done
+    # Pull output images and compare with groundtruth
+    rm -rf output
+    mkdir output
+
+    adb pull /data/local/tmp/output .
+    compare_to_groundtruth android
 }
 
 function build-and-test-headless-demo-desktop {
@@ -146,26 +159,10 @@ function build-and-test-headless-demo-desktop {
     rm -rf taichi-aot-demo
     git clone --recursive --depth=1 https://github.com/taichi-dev/taichi-aot-demo
     cd taichi-aot-demo
-    mkdir build
-    pushd build
-    export TAICHI_C_API_INSTALL_DIR=$(find $TAICHI_REPO_DIR -name cmake-install -type d | head -n 1)/c_api
-    cmake .. -DTI_WITH_VULKAN=ON
-    make -j
 
-    cd headless
-    BINARIES=$(ls E*)
-    popd # build
-
-    for b in $BINARIES; do
-        ./build/headless/$b
-        ARCH="vulkan"
-        # The result image with desktop run is not as stable,
-        # therefore we loose the threshold a little bit to avoid flaky tests
-        if [[ $(cmp -l 0001.bmp ci/headless-truths/linux/$ARCH/$b.bmp | wc -l) -gt 400 ]]; then
-            echo "Above threshold: $b"
-            exit 1
-        fi
-    done
+    TAICHI_C_API_INSTALL_DIR=$(find $TAICHI_REPO_DIR -name cmake-install -type d | head -n 1)/c_api
+    python3 -m pip install -r ci/requirements.txt
+    python3 ci/run_tests.py -l $TAICHI_C_API_INSTALL_DIR
 }
 
 $1

@@ -26,8 +26,7 @@ def test_vector_swizzle_python():
     assert all(z == w.xxxx)
 
 
-@test_utils.test(debug=True)
-def test_vector_swizzle_taichi():
+def _test_vector_swizzle_taichi():
     @ti.kernel
     def foo():
         v = ti.math.vec3(0)
@@ -48,6 +47,16 @@ def test_vector_swizzle_taichi():
         assert all(z == w.xxxx)
 
     foo()
+
+
+@test_utils.test(debug=True)
+def test_vector_swizzle_taichi():
+    _test_vector_swizzle_taichi()
+
+
+@test_utils.test(real_matrix=True, real_matrix_scalarize=True, debug=True)
+def test_vector_swizzle_taichi_matrix_scalarize():
+    _test_vector_swizzle_taichi()
 
 
 @test_utils.test(debug=True)
@@ -112,3 +121,14 @@ def test_vector_invalid_swizzle_patterns():
                        match=re.escape(
                            "value len does not match the swizzle pattern=xy")):
         a.xy = [1, 2, 3]
+
+
+@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
+def test_vector_swizzle_real_matrix_scalarize():
+    @ti.kernel
+    def foo() -> ti.types.vector(3, ti.i32):
+        v = ti.Vector([1, 2, 3])
+        v.zxy += [v.z, v.y, v.x]
+        return v
+
+    assert (foo() == ti.Vector([3, 3, 6])).all()

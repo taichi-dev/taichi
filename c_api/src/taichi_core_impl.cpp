@@ -16,8 +16,6 @@ thread_local ErrorCache thread_error_cache;
 
 const char *describe_error(TiError error) {
   switch (error) {
-    case TI_ERROR_TRUNCATED:
-      return "truncated";
     case TI_ERROR_SUCCESS:
       return "success";
     case TI_ERROR_NOT_SUPPORTED:
@@ -38,6 +36,8 @@ const char *describe_error(TiError error) {
       return "invalid interop";
     case TI_ERROR_INVALID_STATE:
       return "invalid state";
+    case TI_ERROR_INCOMPATIBLE_MODULE:
+      return "incompatible module";
     default:
       return "unknown error";
   }
@@ -186,6 +186,38 @@ void ti_destroy_runtime(TiRuntime runtime) {
   TI_CAPI_TRY_CATCH_BEGIN();
   TI_CAPI_ARGUMENT_NULL(runtime);
   delete (Runtime *)runtime;
+  TI_CAPI_TRY_CATCH_END();
+}
+
+void ti_get_runtime_capabilities(TiRuntime runtime,
+                                 uint32_t *capability_count,
+                                 TiCapabilityLevelInfo *capabilities) {
+  TI_CAPI_TRY_CATCH_BEGIN();
+  TI_CAPI_ARGUMENT_NULL(runtime);
+
+  Runtime *runtime2 = (Runtime *)runtime;
+  const taichi::lang::DeviceCapabilityConfig &devcaps =
+      runtime2->get().get_current_caps();
+
+  if (capability_count == nullptr) {
+    return;
+  }
+
+  if (capabilities != nullptr) {
+    auto pos = devcaps.to_inner().begin();
+    auto end = devcaps.to_inner().end();
+    for (size_t i = 0; i < *capability_count; ++i) {
+      if (pos == end) {
+        break;
+      }
+      capabilities[i].capability = (TiCapability)(uint32_t)pos->first;
+      capabilities[i].level = pos->second;
+      ++pos;
+    }
+  }
+
+  *capability_count = devcaps.to_inner().size();
+
   TI_CAPI_TRY_CATCH_END();
 }
 

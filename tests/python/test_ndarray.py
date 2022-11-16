@@ -515,8 +515,6 @@ def test_vector_ndarray_taichi_scope_real_matrix():
 # number of compiled functions
 def _test_compiled_functions():
     @ti.kernel
-    # FIXME We should not specify n=10 in the type annotation.
-    # However, it wouldn't work if dtype is default as scalar.
     def func(a: ti.types.ndarray(ti.types.vector(n=10, dtype=ti.i32))):
         for i in range(5):
             for j in range(4):
@@ -529,9 +527,12 @@ def _test_compiled_functions():
     func(v)
     assert impl.get_runtime().get_num_compiled_functions() == 1
     v = np.zeros((6, 11), dtype=np.int32)
-    func(v)
-    assert impl.get_runtime().get_num_compiled_functions() == 2
-
+    with pytest.raises(
+        TypeError,
+        match=
+        r'Invalid argument into ti\.types\.ndarray\(\) - required element_shape=.*, but the argument has element shape .*.'
+        ):
+        func(v)
 
 @test_utils.test(arch=supported_archs_taichi_ndarray)
 def test_compiled_functions():

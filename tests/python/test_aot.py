@@ -594,6 +594,7 @@ def test_vulkan_cgraph_short():
     with tempfile.TemporaryDirectory() as tmpdir:
         m.save(tmpdir)
 
+
 @test_utils.test(arch=[ti.vulkan])
 def test_devcap():
     module = ti.aot.Module(
@@ -614,17 +615,21 @@ def test_devcap():
             assert caps["spirv_has_float16"] == 1
             assert caps["spirv_has_atomic_float16_minmax"] == 1
 
+
 @test_utils.test(arch=[ti.vulkan])
 def test_devcap_weird_user_input():
-    with pytest.raises(RuntimeError, match='unexpected device capability name'):
-        ti.aot.Module(ti.vulkan, caps=[
-            "Never gonna give you up"
-            "Never gonna let you down"
-            "Never gonna run around and desert you"
-            "Never gonna make you cry"
-            "Never gonna say goodbye"
-            "Never gonna tell a lie and hurt you"
-        ])
+    with pytest.raises(RuntimeError,
+                       match='unexpected device capability name'):
+        ti.aot.Module(ti.vulkan,
+                      caps=[
+                          "Never gonna give you up"
+                          "Never gonna let you down"
+                          "Never gonna run around and desert you"
+                          "Never gonna make you cry"
+                          "Never gonna say goodbye"
+                          "Never gonna tell a lie and hurt you"
+                      ])
+
 
 @test_utils.test(arch=[ti.vulkan])
 def test_module_arch_fallback():

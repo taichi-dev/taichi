@@ -594,12 +594,15 @@ def test_vulkan_cgraph_short():
     with tempfile.TemporaryDirectory() as tmpdir:
         m.save(tmpdir)
 
+
 @test_utils.test(arch=[ti.vulkan])
 def test_devcap():
-    module = ti.aot.Module(ti.vulkan, caps=[
-        ti.DeviceCapability.spirv_has_float16,
-        ti.DeviceCapability.spirv_has_atomic_float16_minmax
-    ])
+    module = ti.aot.Module(
+        ti.vulkan,
+        caps=[
+            ti.DeviceCapability.spirv_has_float16,
+            ti.DeviceCapability.spirv_has_atomic_float16_minmax
+        ])
 
     with tempfile.TemporaryDirectory() as tmpdir:
         module.save(tmpdir)

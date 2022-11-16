@@ -87,7 +87,7 @@ class LlvmProgramImpl : public ProgramImpl {
     DevicePtr ptr = get_snode_tree_device_ptr(snode_tree_id);
     std::size_t size = get_snode_tree_root_buffer_size(snode_tree_id);
     // std::cout << "restore root buffer size " << size * 1.0 / 1048576 << "
-    // MB."  << std::endl;
+    // MB." << std::endl;
     runtime_exec_->get_compute_device()->memcpy_internal(
         ptr, buffer_arr->ndarray_alloc_.get_ptr(), size);
   };

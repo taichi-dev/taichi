@@ -291,7 +291,7 @@ class PromoteSSA2LocalVar : public BasicStmtVisitor {
       return;
     if (!(stmt->is<UnaryOpStmt>() || stmt->is<BinaryOpStmt>() ||
           stmt->is<TernaryOpStmt>() || stmt->is<BitExtractStmt>() ||
-          stmt->is<AllocaStmt>())) {
+          stmt->is<AllocaStmt>() || stmt->is<LoopIndexStmt>())) {
       // TODO: this list may be incomplete
       return;
     }
@@ -464,8 +464,9 @@ class GlobalDataModifiedChecker : public BasicStmtVisitor {
     if (modified_)
       return;
     if (stmt->dest == glb_ptr_stmt) {
-      std::cout << " As a GlobalStoreStmt dest: " << stmt->id << " it is"
-                << glb_ptr_stmt->type() << " " << glb_ptr_stmt->id << std::endl;
+      // std::cout << " As a GlobalStoreStmt dest: " << stmt->id << " it is"
+      //           << glb_ptr_stmt->type() << " " << glb_ptr_stmt->id <<
+      //           std::endl;
       modified_ = true;
     }
   }
@@ -473,8 +474,9 @@ class GlobalDataModifiedChecker : public BasicStmtVisitor {
     if (modified_)
       return;
     if (stmt->dest == glb_ptr_stmt) {
-      std::cout << " As a AtomicOpStmt dest: " << stmt->id << " it is"
-                << glb_ptr_stmt->type() << " " << glb_ptr_stmt->id << std::endl;
+      // std::cout << " As a AtomicOpStmt dest: " << stmt->id << " it is"
+      //           << glb_ptr_stmt->type() << " " << glb_ptr_stmt->id <<
+      //           std::endl;
       modified_ = true;
     }
   }
@@ -526,6 +528,7 @@ class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
 
   void visit(AllocaStmt *alloc) override {
     bool is_stack_needed = AdStackAllocaJudger::run(alloc);
+    // std::cout << "Check alloc " << alloc->id << std::endl;
     if (is_stack_needed) {
       auto dtype = alloc->ret_type;
       auto stack_alloca = Stmt::make<AdStackAllocaStmt>(dtype, ad_stack_size);
@@ -553,112 +556,108 @@ class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
     }
   }
 
-  // TODO: Handle more global load src
-  void visit(GlobalLoadStmt *stmt) override {
-    GlobalPtrStmt *glb_ptr = stmt->src->as<GlobalPtrStmt>();
-    Stmt *stack_alloca_ptr = nullptr;
-    auto dtype = stmt->ret_type;
-    // std::cout << stmt->type() << " " << stmt->id << " type "
-    //           << dtype->to_string() << std::endl;
-    if (snode_to_stack_.find(glb_ptr->snode) == snode_to_stack_.end()) {
-      bool is_modifed = GlobalDataModifiedChecker::run(ib_, glb_ptr);
-      if (!is_modifed) {
-        return;
-      }
-      std::cout << "Required field stack: " << glb_ptr->type() << " "
-                << glb_ptr->id << " type " << dtype->to_string() << std::endl;
-      TI_ASSERT(ib_);
-      auto stack_alloca = Stmt::make<AdStackAllocaStmt>(dtype, 0);
-      stack_alloca_ptr = stack_alloca.get();
-      ib_to_top_level_block_[ib_]->insert(std::move(stack_alloca), 0);
-      snode_to_stack_[glb_ptr->snode] = stack_alloca_ptr;
+  // // TODO: Handle more global load src
+  // void visit(GlobalLoadStmt *stmt) override {
+  //   GlobalPtrStmt *glb_ptr = stmt->src->as<GlobalPtrStmt>();
+  //   Stmt *stack_alloca_ptr = nullptr;
+  //   auto dtype = stmt->ret_type;
+  //   // std::cout << stmt->type() << " " << stmt->id << " type "
+  //   //           << dtype->to_string() << std::endl;
+  //   if (snode_to_stack_.find(glb_ptr->snode) == snode_to_stack_.end()) {
+  //     bool is_modifed = GlobalDataModifiedChecker::run(ib_, glb_ptr);
+  //     if (!is_modifed) {
+  //       return;
+  //     }
+  //     // std::cout << "Required field stack: " << glb_ptr->type() << " "
+  //     //           << glb_ptr->id << " type " << dtype->to_string() <<
+  //     std::endl; TI_ASSERT(ib_); auto stack_alloca =
+  //     Stmt::make<AdStackAllocaStmt>(dtype, 0); stack_alloca_ptr =
+  //     stack_alloca.get();
+  //     ib_to_top_level_block_[ib_]->insert(std::move(stack_alloca), 0);
+  //     snode_to_stack_[glb_ptr->snode] = stack_alloca_ptr;
 
-      // Load the value of the global ptr and push it into the stack
-      auto value =
-          glb_ptr->insert_after_me(Stmt::make<GlobalLoadStmt>(glb_ptr));
-      value->insert_after_me(
-          Stmt::make<AdStackPushStmt>(stack_alloca_ptr, value));
-    } else {
-      stack_alloca_ptr = snode_to_stack_[glb_ptr->snode];
-    }
+  //     // Load the value of the global ptr and push it into the stack
+  //     auto value =
+  //         glb_ptr->insert_after_me(Stmt::make<GlobalLoadStmt>(glb_ptr));
+  //     value->insert_after_me(
+  //         Stmt::make<AdStackPushStmt>(stack_alloca_ptr, value));
+  //   } else {
+  //     stack_alloca_ptr = snode_to_stack_[glb_ptr->snode];
+  //   }
 
-    auto load =
-        stmt->insert_after_me(Stmt::make<AdStackLoadTopStmt>(stack_alloca_ptr));
-    irpass::replace_all_usages_with(stmt->parent, stmt, load);
-    stmt->parent->erase(stmt);
-  }
+  //   auto load =
+  //       stmt->insert_after_me(Stmt::make<AdStackLoadTopStmt>(stack_alloca_ptr));
+  //   irpass::replace_all_usages_with(stmt->parent, stmt, load);
+  //   stmt->parent->erase(stmt);
+  // }
 
-  void visit(GlobalStoreStmt *stmt) override {
-    GlobalPtrStmt *glb_ptr = stmt->dest->as<GlobalPtrStmt>();
-    Stmt *stack_alloca_ptr = nullptr;
-    auto dtype = stmt->dest->ret_type.ptr_removed();
-    // std::cout << stmt->type() << " " << stmt->id << " type "
-    //           << dtype->to_string() << std::endl;
-    if (snode_to_stack_.find(glb_ptr->snode) == snode_to_stack_.end()) {
-      bool is_modifed = GlobalDataModifiedChecker::run(ib_, glb_ptr);
-      if (!is_modifed) {
-        return;
-      }
-      std::cout << "Required field stack: " << glb_ptr->type() << " "
-                << glb_ptr->id << " type " << dtype->to_string() << std::endl;
-      TI_ASSERT(ib_);
-      auto stack_alloca = Stmt::make<AdStackAllocaStmt>(dtype, 0);
-      stack_alloca_ptr = stack_alloca.get();
-      ib_to_top_level_block_[ib_]->insert(std::move(stack_alloca), 0);
-      snode_to_stack_[glb_ptr->snode] = stack_alloca_ptr;
+  // void visit(GlobalStoreStmt *stmt) override {
+  //   GlobalPtrStmt *glb_ptr = stmt->dest->as<GlobalPtrStmt>();
+  //   Stmt *stack_alloca_ptr = nullptr;
+  //   auto dtype = stmt->dest->ret_type.ptr_removed();
+  //   // std::cout << stmt->type() << " " << stmt->id << " type "
+  //   //           << dtype->to_string() << std::endl;
+  //   if (snode_to_stack_.find(glb_ptr->snode) == snode_to_stack_.end()) {
+  //     bool is_modifed = GlobalDataModifiedChecker::run(ib_, glb_ptr);
+  //     if (!is_modifed) {
+  //       return;
+  //     }
+  //     // std::cout << "Required field stack: " << glb_ptr->type() << " "
+  //     //           << glb_ptr->id << " type " << dtype->to_string() <<
+  //     std::endl; TI_ASSERT(ib_); auto stack_alloca =
+  //     Stmt::make<AdStackAllocaStmt>(dtype, 0); stack_alloca_ptr =
+  //     stack_alloca.get();
+  //     ib_to_top_level_block_[ib_]->insert(std::move(stack_alloca), 0);
+  //     snode_to_stack_[glb_ptr->snode] = stack_alloca_ptr;
 
-      // Load the value of the global ptr and push it into the stack
-      auto value =
-          glb_ptr->insert_after_me(Stmt::make<GlobalLoadStmt>(glb_ptr));
-      value->insert_after_me(
-          Stmt::make<AdStackPushStmt>(stack_alloca_ptr, value));
-    } else {
-      stack_alloca_ptr = snode_to_stack_[glb_ptr->snode];
-    }
+  //     // Load the value of the global ptr and push it into the stack
+  //     auto value =
+  //         glb_ptr->insert_after_me(Stmt::make<GlobalLoadStmt>(glb_ptr));
+  //     value->insert_after_me(
+  //         Stmt::make<AdStackPushStmt>(stack_alloca_ptr, value));
+  //   } else {
+  //     stack_alloca_ptr = snode_to_stack_[glb_ptr->snode];
+  //   }
 
-    // Record the modifed value
-    auto value = stmt->insert_after_me(Stmt::make<GlobalLoadStmt>(glb_ptr));
-    value->insert_after_me(
-        Stmt::make<AdStackPushStmt>(stack_alloca_ptr, value));
-    // irpass::replace_all_usages_with(stmt->parent, stmt, push);
-    // stmt->parent->erase(stmt);
-  }
+  //   // Record the modifed value
+  //   auto value = stmt->insert_after_me(Stmt::make<GlobalLoadStmt>(glb_ptr));
+  //   value->insert_after_me(
+  //       Stmt::make<AdStackPushStmt>(stack_alloca_ptr, value));
+  // }
 
-  void visit(AtomicOpStmt *stmt) override {
-    GlobalPtrStmt *glb_ptr = stmt->dest->as<GlobalPtrStmt>();
-    Stmt *stack_alloca_ptr = nullptr;
-    auto dtype = stmt->dest->ret_type.ptr_removed();
-    // std::cout << stmt->type() << " " << stmt->id << " type "
-    //           << dtype->to_string() << std::endl;
-    if (snode_to_stack_.find(glb_ptr->snode) == snode_to_stack_.end()) {
-      bool is_modifed = GlobalDataModifiedChecker::run(ib_, glb_ptr);
-      if (!is_modifed) {
-        return;
-      }
-      std::cout << "Required field stack: " << glb_ptr->type() << " "
-                << glb_ptr->id << " type " << dtype->to_string() << std::endl;
-      TI_ASSERT(ib_);
-      auto stack_alloca = Stmt::make<AdStackAllocaStmt>(dtype, 0);
-      stack_alloca_ptr = stack_alloca.get();
-      ib_to_top_level_block_[ib_]->insert(std::move(stack_alloca), 0);
-      snode_to_stack_[glb_ptr->snode] = stack_alloca_ptr;
+  // void visit(AtomicOpStmt *stmt) override {
+  //   GlobalPtrStmt *glb_ptr = stmt->dest->as<GlobalPtrStmt>();
+  //   Stmt *stack_alloca_ptr = nullptr;
+  //   auto dtype = stmt->dest->ret_type.ptr_removed();
+  //   // std::cout << stmt->type() << " " << stmt->id << " type "
+  //   //           << dtype->to_string() << std::endl;
+  //   if (snode_to_stack_.find(glb_ptr->snode) == snode_to_stack_.end()) {
+  //     bool is_modifed = GlobalDataModifiedChecker::run(ib_, glb_ptr);
+  //     if (!is_modifed) {
+  //       return;
+  //     }
+  //     // std::cout << "Required field stack: " << glb_ptr->type() << " "
+  //     //           << glb_ptr->id << " type " << dtype->to_string() <<
+  //     std::endl; TI_ASSERT(ib_); auto stack_alloca =
+  //     Stmt::make<AdStackAllocaStmt>(dtype, 0); stack_alloca_ptr =
+  //     stack_alloca.get();
+  //     ib_to_top_level_block_[ib_]->insert(std::move(stack_alloca), 0);
+  //     snode_to_stack_[glb_ptr->snode] = stack_alloca_ptr;
 
-      // Load the value of the global ptr and push it into the stack
-      auto value =
-          glb_ptr->insert_after_me(Stmt::make<GlobalLoadStmt>(glb_ptr));
-      value->insert_after_me(
-          Stmt::make<AdStackPushStmt>(stack_alloca_ptr, value));
-    } else {
-      stack_alloca_ptr = snode_to_stack_[glb_ptr->snode];
-    }
+  //     // Load the value of the global ptr and push it into the stack
+  //     auto value =
+  //         glb_ptr->insert_after_me(Stmt::make<GlobalLoadStmt>(glb_ptr));
+  //     value->insert_after_me(
+  //         Stmt::make<AdStackPushStmt>(stack_alloca_ptr, value));
+  //   } else {
+  //     stack_alloca_ptr = snode_to_stack_[glb_ptr->snode];
+  //   }
 
-    // Record the modifed value
-    auto value = stmt->insert_after_me(Stmt::make<GlobalLoadStmt>(glb_ptr));
-    value->insert_after_me(
-        Stmt::make<AdStackPushStmt>(stack_alloca_ptr, value));
-    // irpass::replace_all_usages_with(stmt->parent, stmt, push);
-    // stmt->parent->erase(stmt);
-  }
+  //   // Record the modifed value
+  //   auto value = stmt->insert_after_me(Stmt::make<GlobalLoadStmt>(glb_ptr));
+  //   value->insert_after_me(
+  //       Stmt::make<AdStackPushStmt>(stack_alloca_ptr, value));
+  // }
 };
 
 class ReverseOuterLoops : public BasicStmtVisitor {
@@ -1278,6 +1277,7 @@ class MakeAdjoint : public ADTransform {
         TypedConstant(adjoint_ptr->ret_type.ptr_removed(), 0));
     insert<GlobalStoreStmt>(adjoint_ptr, zero);
 
+    // TODO: preserve the global load and atomic add
     stmt->parent->erase(stmt);
   }
 
@@ -1307,7 +1307,8 @@ class MakeAdjoint : public ADTransform {
     }
     accumulate(stmt->val, insert<GlobalLoadStmt>(adjoint_ptr));
 
-    // stmt->parent->erase(stmt);
+    // TODO: preserve the global load and atomic add
+    stmt->parent->erase(stmt);
   }
 };
 
@@ -1750,7 +1751,7 @@ void auto_diff(IRNode *root,
 
       for (auto ib : IB) {
         PromoteSSA2LocalVar::run(ib);
-        // print("after promote SSA");
+        print("after promote SSA");
         ReplaceLocalVarWithStacks replace(config.ad_stack_size, ib);
         ib->accept(&replace);
         print("after replace with stack");

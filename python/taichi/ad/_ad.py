@@ -251,17 +251,14 @@ class Tape:
             if self.checkpointer:
                 # Restore the checkpoint before launch the grad kernel
                 self.checkpointer.restore_primal(self.calls_count)
-
             # TODO: how to preserve the value of the seed?
             self.loss.grad.fill(1.0)
-
             # we need to check whether "func" has "grad" attribute
             # since we insert write_int and write_float kernels to self.calls
             # e.g. x[None] = 0.0, this func has no grad attribute
             if hasattr(func, 'grad'):
                 self.loss.grad.fill(1.0)
                 func.grad(*args)
-
             if self.checkpointer:
                 # self.checkpointer.swap_grad()
                 # Clean the consumed primal checkpoint

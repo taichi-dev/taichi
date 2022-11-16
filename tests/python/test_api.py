@@ -62,7 +62,7 @@ def _get_expected_matrix_apis():
 
 user_api = {}
 user_api[ti] = [
-    'BitpackedFields', 'CRITICAL', 'DEBUG', 'ERROR', 'Field', 'FieldsBuilder',
+    'BitpackedFields', 'CRITICAL', 'DEBUG', "DeviceCapability", 'ERROR', 'Field', 'FieldsBuilder',
     'Format', 'GUI', 'INFO', 'Layout', 'Matrix', 'MatrixField',
     'MatrixNdarray', 'Mesh', 'MeshInstance', 'Ndarray', 'SNode', 'ScalarField',
     'ScalarNdarray', 'Struct', 'StructField', 'TRACE', 'TaichiAssertionError',

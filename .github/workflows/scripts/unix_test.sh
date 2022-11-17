@@ -104,7 +104,7 @@ if [ -z "$GPU_TEST" ]; then
         python3 tests/run_tests.py -vr2 -t4 -k "not paddle" -a "$TI_WANTED_ARCHS"
     fi
 else
-    run-it cuda   8
+    run-it cuda   6
     run-it cpu    $(nproc)
     run-it vulkan 8
     run-it opengl 4

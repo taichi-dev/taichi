@@ -267,10 +267,6 @@ jobs:
         include:
           - os: windows-2019
             llvmVer : '15'
-            archs: "cpu,cuda"
-            runsOn: [self-hosted, windows, cuda]
-          - os: windows-2019
-            llvmVer : '10'
             archs: "cpu,cuda,opengl"
             runsOn: [self-hosted, windows, cuda, OpenGL]
     runs-on: ${{ matrix.runsOn }}

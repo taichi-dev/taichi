@@ -194,6 +194,7 @@ def _svd3d(A, dt, iters=None):
                 V[i, j] = V_entries[i * 3 + j]
             sigma[i, i] = sig_entries[i]
         return U, sigma, V
+
     return get_result()
 
 
@@ -381,8 +382,7 @@ def polar_decompose(A, dt=None):
         return _polar_decompose2d(A, dt)
     if A.n == 3:
         return _polar_decompose3d(A, dt)
-    raise Exception(
-        "Polar decomposition only supports 2D and 3D matrices.")
+    raise Exception("Polar decomposition only supports 2D and 3D matrices.")
 
 
 def svd(A, dt=None):

@@ -114,7 +114,6 @@ def test_transpose_no_loop():
     _test_transpose_no_loop()
 
 
-@test_utils.test(real_matrix=True,
-                 real_matrix_scalarize=True)
+@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
 def test_transpose_no_loop_real_matrix_scalarize():
     _test_transpose_no_loop()

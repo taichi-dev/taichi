@@ -1102,9 +1102,6 @@ void GetElementExpression::type_check(CompileConfig *config) {
 }
 
 void GetElementExpression::flatten(FlattenContext *ctx) {
-  if (!src->stmt) {
-    src->flatten(ctx);
-  }
   ctx->push_back<GetElementStmt>(src->stmt, index);
   stmt = ctx->back_stmt();
 }

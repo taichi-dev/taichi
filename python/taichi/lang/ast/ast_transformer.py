@@ -1394,13 +1394,6 @@ class ASTTransformer(Builder):
     @staticmethod
     def build_Expr(ctx, node):
         build_stmt(ctx, node.value)
-        if not isinstance(node.value, ast.Call):
-            return None
-        is_taichi_function = getattr(node.value.func.ptr,
-                                     '_is_taichi_function', False)
-        if is_taichi_function and node.value.func.ptr._is_real_function:
-            func_call_result = node.value.ptr
-            ctx.ast_builder.insert_expr_stmt(func_call_result.ptr)
         return None
 
     @staticmethod

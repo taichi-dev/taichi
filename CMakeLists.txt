@@ -149,7 +149,7 @@ endmacro()
 
 if (APPLE)
   set(CLANG_OSX_FLAGS "-isysroot${CMAKE_OSX_SYSROOT}")
-  set(CLANG_HIGHEST_VERSION "12")
+  set(CLANG_HIGHEST_VERSION "13")
 else()
   if (TI_LLVM_15)
     set(CLANG_HIGHEST_VERSION "15")

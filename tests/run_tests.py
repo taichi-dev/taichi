@@ -144,7 +144,7 @@ def _test_python(args):
 
     curr_dir = os.path.dirname(os.path.abspath(__file__))
     test_dir = os.path.join(curr_dir, 'python')
-    pytest_args = ['--nbmake']
+    pytest_args = []
 
     # TODO: use pathlib to deal with suffix and stem name manipulation
     if args.files:
@@ -164,6 +164,7 @@ def _test_python(args):
     else:
         # run all the tests
         pytest_args = [test_dir]
+    pytest_args += ['--nbmake']
     if args.verbose:
         pytest_args += ['-v']
     if args.rerun:

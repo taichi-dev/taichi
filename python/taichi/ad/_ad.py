@@ -235,6 +235,7 @@ class Tape:
             # since we insert write_int and write_float kernels to self.calls
             # e.g. x[None] = 0.0, this func has no grad attribute
             if hasattr(func, 'grad'):
+                self.loss.grad.fill(1.0)
                 func.grad(*args)
 
         self.gradient_evaluated = True

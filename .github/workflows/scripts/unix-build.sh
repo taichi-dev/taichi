@@ -12,11 +12,16 @@ if [[ "$LLVM_VERSION" == "15" ]]; then
     wget https://github.com/ailzhang/torchhub_example/releases/download/0.2/taichi-llvm-15-linux.zip
     unzip taichi-llvm-15-linux.zip && rm taichi-llvm-15-linux.zip
     export PATH="$PWD/taichi-llvm-15/bin:$PATH"
-  elif [[ $OSTYPE == "darwin"* ]]; then
+  elif [ "$(uname -s):$(uname -m)" == "Darwin:arm64" ]; then
     # The following commands are done manually to save time.
     #wget https://github.com/ailzhang/torchhub_example/releases/download/0.2/taichi-llvm-15-m1.zip
     #unzip taichi-llvm-15-m1.zip && rm taichi-llvm-15-m1.zip
     export PATH="/Users/github/taichi-llvm-15-m1/bin:$PATH"
+  elif [ "$(uname -s):$(uname -m)" == "Darwin:x86_64" ]; then
+    # The following commands are done manually to save time.
+    #wget https://github.com/ailzhang/torchhub_example/releases/download/0.2/llvm-15-macos10.15.zip
+    #unzip llvm-15-macos10.15.zip && rm llvm-15-macos10.15.zip
+    export LLVM_DIR="~/llvm-15-mac10.15/"
   fi
   export TAICHI_CMAKE_ARGS="$TAICHI_CMAKE_ARGS -DTI_LLVM_15:BOOL=ON"
 fi

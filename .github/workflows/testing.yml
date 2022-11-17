@@ -132,7 +132,6 @@ jobs:
         run: |
           . .github/workflows/scripts/common-utils.sh
           prepare-build-cache
-          python misc/ci_download.py
         env:
           CI_PLATFORM: macos
 
@@ -150,6 +149,7 @@ jobs:
             -DTI_WITH_VULKAN:BOOL=ON
             -DTI_WITH_C_API=ON
             -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }}
+          LLVM_VERSION: 15
 
       # [DEBUG] Copy this step around to enable debugging inside Github Action instances.
       #- name: Setup tmate session

@@ -936,7 +936,8 @@ def test_ndarray():
     m = 7
 
     @ti.kernel
-    def run(x: ti.types.ndarray(element_dim=2), y: ti.types.ndarray()):
+    def run(x: ti.types.ndarray(dtype=ti.types.matrix(1, 1, ti.i32)),
+            y: ti.types.ndarray()):
         for i in ti.static(range(n)):
             for j in ti.static(range(m)):
                 x[i, j][0, 0] += i + j + y[i, j]

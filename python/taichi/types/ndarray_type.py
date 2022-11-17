@@ -37,8 +37,8 @@ class NdarrayType:
         self.layout = Layout.AOS
 
     def check_matched(self, ndarray_type: NdarrayTypeMetadata):
-        # FIXME(Haidong) We cannot use iomport Vector/MatrixType due to circular import
-        # Therefore we are using the CompuoundType to determine the specific typs.
+        # FIXME(Haidong) Cannot use Vector/MatrixType due to circular import
+        # Use the CompuoundType instead to determine the specific typs.
         # TODO Replace CompoundType with MatrixType and VectorType
         if isinstance(self.dtype, CompoundType):
             element_dim = self.dtype.ndim

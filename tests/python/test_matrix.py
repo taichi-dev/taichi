@@ -122,9 +122,7 @@ def test_constant_matrices():
     func(5)
 
 
-@pytest.mark.parametrize('ops', vector_operation_types)
-@test_utils.test(arch=get_host_arch_list())
-def test_taichi_scope_vector_operations_with_global_vectors(ops):
+def _test_taichi_scope_vector_operations_with_global_vectors(ops):
     a, b, c = test_vector_arrays[:3]
     m1, m2 = ti.Vector(a), ti.Vector(b)
     r1 = ti.Vector.field(2, dtype=ti.i32, shape=())
@@ -145,7 +143,20 @@ def test_taichi_scope_vector_operations_with_global_vectors(ops):
 
 @pytest.mark.parametrize('ops', vector_operation_types)
 @test_utils.test(arch=get_host_arch_list())
-def test_taichi_scope_matrix_operations_with_global_matrices(ops):
+def test_taichi_scope_vector_operations_with_global_vectors(ops):
+    _test_taichi_scope_vector_operations_with_global_vectors(ops)
+
+
+@pytest.mark.parametrize('ops', vector_operation_types)
+@test_utils.test(arch=get_host_arch_list(),
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_taichi_scope_vector_operations_with_global_vectors_matrix_scalarize(
+        ops):
+    _test_taichi_scope_vector_operations_with_global_vectors(ops)
+
+
+def _test_taichi_scope_matrix_operations_with_global_matrices(ops):
     a, b, c = test_matrix_arrays[:3]
     m1, m2 = ti.Matrix(a), ti.Matrix(b)
     r1 = ti.Matrix.field(2, 2, dtype=ti.i32, shape=())
@@ -162,6 +173,21 @@ def test_taichi_scope_matrix_operations_with_global_matrices(ops):
 
     assert np.allclose(r1[None].to_numpy(), ops(a, b))
     assert np.allclose(r2[None].to_numpy(), ops(a, c))
+
+
+@pytest.mark.parametrize('ops', vector_operation_types)
+@test_utils.test(arch=get_host_arch_list())
+def test_taichi_scope_matrix_operations_with_global_matrices(ops):
+    _test_taichi_scope_matrix_operations_with_global_matrices(ops)
+
+
+@pytest.mark.parametrize('ops', vector_operation_types)
+@test_utils.test(arch=get_host_arch_list(),
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_taichi_scope_matrix_operations_with_global_matrices_matrix_scalarize(
+        ops):
+    _test_taichi_scope_matrix_operations_with_global_matrices(ops)
 
 
 def _test_local_matrix_non_constant_index():

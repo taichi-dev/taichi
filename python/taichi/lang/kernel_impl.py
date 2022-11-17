@@ -706,7 +706,7 @@ class Kernel:
                     # so that it only holds "real" array shapes.
                     is_soa = needed.layout == Layout.SOA
                     array_shape = v.shape
-                    if needed.dtype == None or id(
+                    if needed.dtype is None or id(
                             needed.dtype) in primitive_types.type_ids:
                         element_dim = 0
                     else:

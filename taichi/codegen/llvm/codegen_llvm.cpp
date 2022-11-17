@@ -1272,15 +1272,16 @@ void TaskCodeGenLLVM::visit(ArgLoadStmt *stmt) {
   }
 
   // print
-  std::vector<llvm::Value *> args;
-  std::string formats;
-  args.push_back(llvm_val[stmt]);
-  formats += "%lx\n";
-  auto runtime_printf = call("LLVMRuntime_get_host_printf", get_runtime());
-  args.insert(args.begin(),
-              builder->CreateGlobalStringPtr(formats.c_str(), "format_string"));
-  auto func_type_func = get_runtime_function("get_func_type_host_printf");
-  call(runtime_printf, func_type_func->getFunctionType(), std::move(args));
+  // std::vector<llvm::Value *> args;
+  // std::string formats;
+  // args.push_back(llvm_val[stmt]);
+  // formats += "%lx\n";
+  // auto runtime_printf = call("LLVMRuntime_get_host_printf", get_runtime());
+  // args.insert(args.begin(),
+  //             builder->CreateGlobalStringPtr(formats.c_str(),
+  //             "format_string"));
+  // auto func_type_func = get_runtime_function("get_func_type_host_printf");
+  // call(runtime_printf, func_type_func->getFunctionType(), std::move(args));
 }
 
 void TaskCodeGenLLVM::visit(ReturnStmt *stmt) {

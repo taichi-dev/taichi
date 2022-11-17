@@ -1,7 +1,4 @@
-import numbers
-
 import taichi.lang.ops as ops_mod
-from taichi.lang.expr import Expr
 from taichi.lang.impl import static
 from taichi.lang.kernel_impl import func, pyfunc
 from taichi.lang.matrix import Matrix, Vector
@@ -10,26 +7,7 @@ from taichi.lang.matrix_ops_utils import (arg_at, arg_foreach_check,
                                           assert_vector, check_matmul, dim_lt,
                                           is_int_const, preconditions,
                                           same_shapes, square_matrix)
-from taichi.lang.util import cook_dtype
 from taichi.types.annotations import template
-
-
-def _init_matrix(shape, dt=None):
-    @pyfunc
-    def init():
-        return Matrix([[0 for _ in static(range(shape[1]))]
-                       for _ in static(range(shape[0]))],
-                      dt=dt)
-
-    return init()
-
-
-def _init_vector(shape, dt=None):
-    @pyfunc
-    def init():
-        return Vector([0 for _ in static(range(shape[0]))], dt=dt)
-
-    return init()
 
 
 @preconditions(arg_at(0, assert_tensor))
@@ -49,24 +27,24 @@ def _reduce(mat, fun: template()):
     return result
 
 
-@func
+@pyfunc
 def _filled_vector(n: template(), dtype: template(), val: template()):
     return Vector([val for _ in static(range(n))], dtype)
 
 
-@func
+@pyfunc
 def _filled_matrix(n: template(), m: template(), dtype: template(),
                    val: template()):
     return Matrix([[val for _ in static(range(m))] for _ in static(range(n))],
                   dtype)
 
 
-@func
+@pyfunc
 def _unit_vector(n: template(), i: template(), dtype: template()):
     return Vector([i == j for j in static(range(n))], dtype)
 
 
-@func
+@pyfunc
 def _identity_matrix(n: template(), dtype: template()):
     return Matrix([[i == j for j in static(range(n))]
                    for i in static(range(n))], dtype)
@@ -174,23 +152,11 @@ def transpose(mat):
                    for j in static(range(shape[1]))])
 
 
-@preconditions(arg_at(0, is_int_const),
-               arg_at(
-                   1, lambda val:
-                   (isinstance(val,
-                               (numbers.Number, )) or isinstance(val, Expr),
-                    f'Invalid argument type for values: {type(val)}')))
-def diag(dim, val):
-    dt = val.element_type() if isinstance(val, Expr) else cook_dtype(type(val))
-
-    @func
-    def diag_impl():
-        result = _init_matrix((dim, dim), dt)
-        for i in static(range(dim)):
-            result[i, i] = val
-        return result
-
-    return diag_impl()
+@preconditions(arg_at(0, is_int_const))
+@pyfunc
+def diag(dim: template(), val: template()):
+    return Matrix([[val if i == j else 0 for j in static(range(dim))]
+                   for i in static(range(dim))])
 
 
 @preconditions(assert_tensor)
@@ -261,54 +227,48 @@ def trace(mat):
 
 
 @preconditions(arg_at(0, assert_tensor))
-@func
+@pyfunc
 def fill(mat: template(), val):
     shape = static(mat.get_shape())
     if static(len(shape) == 1):
         for i in static(range(shape[0])):
             mat[i] = val
-        return mat
-    for i in static(range(shape[0])):
-        for j in static(range(shape[1])):
-            mat[i, j] = val
-    return mat
+    else:
+        for i in static(range(shape[0])):
+            for j in static(range(shape[1])):
+                mat[i, j] = val
 
 
 @preconditions(check_matmul)
-@func
-def _matmul_helper(x, y):
-    shape_x = static(x.get_shape())
-    shape_y = static(y.get_shape())
+@pyfunc
+def _matmul_helper(mat_x, mat_y):
+    shape_x = static(mat_x.get_shape())
+    shape_y = static(mat_y.get_shape())
     if static(len(shape_x) == 1 and len(shape_y) == 1):
-        # TODO: Type comparison
-        result = _init_matrix((shape_x[0], shape_y[0]), x.element_type())
-        for i in static(range(shape_x[0])):
-            for j in static(range(shape_y[0])):
-                result[i, j] = x[i] * y[j]
-        return result
+        return dot(mat_x, mat_y)
     if static(len(shape_y) == 1):
-        # TODO: Type comparison
-        result = _init_vector(shape_x, x.element_type())
+        zero_elem = mat_x[0, 0] * mat_y[0] * 0  # for correct return type
+        vec_z = _filled_vector(shape_x[0], None, zero_elem)
         for i in static(range(shape_x[0])):
             for j in static(range(shape_x[1])):
-                result[i] += x[i, j] * y[j]
-        return result
-    # TODO: Type comparison
-    result = _init_matrix((shape_x[0], shape_y[1]), x.element_type())
+                vec_z[i] += mat_x[i, j] * mat_y[j]
+        return vec_z
+    zero_elem = mat_x[0, 0] * mat_y[0, 0] * 0  # for correct return type
+    mat_z = _filled_matrix(shape_x[0], shape_y[1], None, zero_elem)
     for i in static(range(shape_x[0])):
         for j in static(range(shape_y[1])):
             for k in static(range(shape_x[1])):
-                result[i, j] += x[i, k] * y[k, j]
-    return result
+                mat_z[i, j] += mat_x[i, k] * mat_y[k, j]
+    return mat_z
 
 
-@func
-def matmul(x, y):
-    shape_x = static(x.get_shape())
-    shape_y = static(y.get_shape())
+@pyfunc
+def matmul(mat_x, mat_y):
+    shape_x = static(mat_x.get_shape())
+    shape_y = static(mat_y.get_shape())
     if static(len(shape_x) == 1 and len(shape_y) == 2):
-        return _matmul_helper(transpose(y), x)
-    return _matmul_helper(x, y)
+        return _matmul_helper(transpose(mat_y), mat_x)
+    return _matmul_helper(mat_x, mat_y)
 
 
 @preconditions(arg_at(0, assert_vector("lhs for dot is not a vector")),

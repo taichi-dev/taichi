@@ -1900,9 +1900,9 @@ class VectorType(MatrixType):
 
     def field(self, **kwargs):
         return Vector.field(self.n, dtype=self.dtype, **kwargs)
-    
+
     def shape(self):
-        return (self.n,)
+        return (self.n, )
 
 
 class MatrixNdarray(Ndarray):

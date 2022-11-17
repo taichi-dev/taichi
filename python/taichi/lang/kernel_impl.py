@@ -397,7 +397,7 @@ class TaichiCallableTemplateMapper:
                 raise TaichiRuntimeTypeError(
                     f"Invalid argument into ti.types.ndarray(), got {arg}")
             shape = tuple(shape)
-            element_shape = () 
+            element_shape = ()
             if isinstance(anno.dtype, MatrixType):
                 if len(shape) < anno.dtype.ndim:
                     raise ValueError(
@@ -705,7 +705,8 @@ class Kernel:
                     # so that it only holds "real" array shapes.
                     is_soa = needed.layout == Layout.SOA
                     array_shape = v.shape
-                    if needed.dtype == None or id(needed.dtype) in primitive_types.type_ids:
+                    if needed.dtype == None or id(
+                            needed.dtype) in primitive_types.type_ids:
                         element_dim = 0
                     else:
                         element_dim = needed.dtype.ndim

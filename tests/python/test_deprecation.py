@@ -39,9 +39,11 @@ def test_deprecate_element_shape_ndarray_annotation():
             match=
             'The element_dim and element_shape arguments for ndarray will be deprecated in v1.4.0, use matrix dtype instead.'
     ):
+
         @ti.kernel
-        def func(x: ti.types.ndarray(element_shape=(3,))):
+        def func(x: ti.types.ndarray(element_shape=(3, ))):
             pass
+
 
 @test_utils.test()
 def test_deprecate_element_dim_ndarray_annotation():
@@ -50,6 +52,7 @@ def test_deprecate_element_dim_ndarray_annotation():
             match=
             'The element_dim and element_shape arguments for ndarray will be deprecated in v1.4.0, use matrix dtype instead.'
     ):
+
         @ti.kernel
         def func(x: ti.types.ndarray(element_dim=2)):
             pass

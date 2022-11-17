@@ -140,11 +140,12 @@ def get_cmake_args():
     return cmake_args
 
 
-def exclude_paths(manifest_files):
+# Control files to be included in package data
+def cmake_install_manifest_filter(manifest_files):
     return [
         f for f in manifest_files
-        if f.endswith(('.so', 'pyd',
-                       '.bc')) or os.path.basename(f) == 'libMoltenVK.dylib'
+        if f.endswith(('.so', 'pyd', '.bc', '.h',
+                       '.hpp')) or os.path.basename(f) == 'libMoltenVK.dylib'
     ]
 
 
@@ -174,7 +175,7 @@ setup(name=project_name,
       },
       classifiers=classifiers,
       cmake_args=get_cmake_args(),
-      cmake_process_manifest_hook=exclude_paths,
+      cmake_process_manifest_hook=cmake_install_manifest_filter,
       cmdclass={
           'egg_info': EggInfo,
           'clean': Clean

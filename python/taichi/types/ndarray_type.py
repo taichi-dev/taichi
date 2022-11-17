@@ -47,7 +47,8 @@ class NdarrayType:
                     "TensorType is not supported for ndarray dtype annotation."
                 )
             self.element_dim = dtype.ndim
-            self.element_shape = (dtype.n,) if dtype.ndim == 1 else (dtype.n, dtype.m)
+            self.element_shape = (dtype.n, ) if dtype.ndim == 1 else (dtype.n,
+                                                                      dtype.m)
             if not (self.element_dim > 0 and self.element_dim <= 2):
                 raise TypeError(
                     f"Unexpected matrix data type {dtype} has dimension {dtype.ndim}, only vectors and matrices (ndim = 1,2) are accepted."

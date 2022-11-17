@@ -1,10 +1,5 @@
-import warnings
-
 from taichi.lang.enums import Layout
 from taichi.types.compound_types import CompoundType, TensorType
-
-# FIXME We cannot use iomport Vector/MatrixType due to circular import
-# from taichi.lang.matrix import VectorType, MatrixType
 
 
 class NdarrayTypeMetadata:
@@ -30,6 +25,7 @@ class NdarrayType:
                  element_dim=None,
                  element_shape=None,
                  field_dim=None):
+        # TODO(Haidong) Remove the element_dim and element_shape memebers internally
         if element_dim is not None and (element_dim < 0 or element_dim > 2):
             raise ValueError(
                 "Only scalars, vectors, and matrices are allowed as elements of ti.types.ndarray()"
@@ -41,7 +37,9 @@ class NdarrayType:
             )
         self.dtype = dtype
 
-        # TODO (Haidong) remove the element_dim and element_shape memebers internally
+        # FIXME(Haidong) We cannot use iomport Vector/MatrixType due to circular import
+        # Therefore we are using the CompuoundType to determine the specific typs.
+        # TODO Replace CompoundType with MatrixType and VectorType
 
         if isinstance(dtype, CompoundType):
             if dtype == TensorType:

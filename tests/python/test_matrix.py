@@ -216,7 +216,7 @@ def test_local_matrix_non_constant_index_real_matrix_scalarize():
 @test_utils.test(exclude=[ti.cc])
 def test_matrix_ndarray_non_constant_index():
     @ti.kernel
-    def func1(a: ti.types.ndarray(dtype=ti.math.mat2)):
+    def func1(a: ti.types.ndarray(element_dim=2)):
         for i in range(5):
             for j, k in ti.ndrange(2, 2):
                 a[i][j, k] = j * j + k * k
@@ -229,7 +229,7 @@ def test_matrix_ndarray_non_constant_index():
     assert m[4][0, 1] == 1
 
     @ti.kernel
-    def func2(b: ti.types.ndarray(dtype=ti.types.vector(n=10, dtype=ti.i32))):
+    def func2(b: ti.types.ndarray(element_dim=1)):
         for i in range(5):
             for j in range(4):
                 b[i][j * j] = j * j

@@ -24,6 +24,12 @@
         }                                                                      \
   }
 
+#define INSTANTIATE_SPMV(type, storage)                               \
+  template void                                                       \
+  EigenSparseMatrix<Eigen::SparseMatrix<type, Eigen::storage>>::spmv( \
+      taichi::lang::Program *prog, const taichi::lang::Ndarray &x,    \
+      taichi::lang::Ndarray &y);
+
 namespace {
 using Pair = std::pair<std::string, std::string>;
 struct key_hash {
@@ -194,26 +200,10 @@ void taichi::lang::EigenSparseMatrix<EigenMatrix>::spmv(
   }
 }
 
-template void
-EigenSparseMatrix<Eigen::SparseMatrix<float32, Eigen::ColMajor>>::spmv(
-    taichi::lang::Program *prog,
-    const taichi::lang::Ndarray &x,
-    taichi::lang::Ndarray &y);
-template void
-EigenSparseMatrix<Eigen::SparseMatrix<float32, Eigen::RowMajor>>::spmv(
-    taichi::lang::Program *prog,
-    const taichi::lang::Ndarray &x,
-    taichi::lang::Ndarray &y);
-template void
-EigenSparseMatrix<Eigen::SparseMatrix<float64, Eigen::ColMajor>>::spmv(
-    taichi::lang::Program *prog,
-    const taichi::lang::Ndarray &x,
-    taichi::lang::Ndarray &y);
-template void
-EigenSparseMatrix<Eigen::SparseMatrix<float64, Eigen::RowMajor>>::spmv(
-    taichi::lang::Program *prog,
-    const taichi::lang::Ndarray &x,
-    taichi::lang::Ndarray &y);
+INSTANTIATE_SPMV(float32, ColMajor)
+INSTANTIATE_SPMV(float32, RowMajor)
+INSTANTIATE_SPMV(float64, ColMajor)
+INSTANTIATE_SPMV(float64, RowMajor)
 
 std::unique_ptr<SparseMatrix> make_sparse_matrix(
     int rows,

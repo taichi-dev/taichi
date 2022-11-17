@@ -1,6 +1,6 @@
 import taichi as ti
 
-ti.init(arch=ti.x64, debug=True, offline_cache=False)
+ti.init(arch=ti.x64)
 
 n = 8
 
@@ -14,8 +14,6 @@ f = ti.linalg.SparseMatrixBuilder(n,
                                   max_num_triplets=100,
                                   dtype=ti.f32,
                                   storage_format='col_major')
-
-x = ti.ndarray(ti.f32, n)
 
 
 @ti.kernel
@@ -76,16 +74,3 @@ F = E @ A
 print(F)
 
 print(f">>>> Element Access: F[0,0] = {F[0,0]}")
-
-print(">>>> Matrix-vector multiplication: b = A @ x")
-x.fill(2.0)
-b = F @ x
-
-
-@ti.kernel
-def print_b(b: ti.types.ndarray()):
-    for i in range(n):
-        print(b[i])
-
-
-print_b(b)

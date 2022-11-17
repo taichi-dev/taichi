@@ -43,7 +43,7 @@ def _blender_findsource(obj):
     # Now we have found the filename and code lines.
     # We first check if they are already cached, to avoid file io in each query.
     try:
-        filename = _blender_findsource._saved_inspect_cache[lines]
+        filename = _blender_findsource._saved_inspect_cache[lines]  # pylint: disable=no-member
     except KeyError:
         fd, filename = tempfile.mkstemp(prefix='_Blender_',
                                         suffix=f'_{text_name}.py')
@@ -52,7 +52,7 @@ def _blender_findsource(obj):
         with open(filename, 'w') as f:
             f.write(lines)
 
-        _blender_findsource._saved_inspect_cache[lines] = filename
+        _blender_findsource._saved_inspect_cache[lines] = filename  # pylint: disable=no-member
 
     def wrapped_getfile(ob):
         if id(ob) == id(obj):

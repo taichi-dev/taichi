@@ -76,8 +76,26 @@ def test_svd_f64(dim):
     _test_svd(ti.f64, dim)
 
 
-@test_utils.test()
-def test_transpose_no_loop():
+@pytest.mark.parametrize("dim", [2, 3])
+@test_utils.test(default_fp=ti.f32,
+                 fast_math=False,
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_svd_f32_real_matrix_scalarize(dim):
+    _test_svd(ti.f32, dim)
+
+
+@pytest.mark.parametrize("dim", [2, 3])
+@test_utils.test(require=ti.extension.data64,
+                 default_fp=ti.f64,
+                 fast_math=False,
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_svd_f64_real_matrix_scalarize(dim):
+    _test_svd(ti.f64, dim)
+
+
+def _test_transpose_no_loop():
     A = ti.Matrix.field(3, 3, dtype=ti.f32, shape=())
     U = ti.Matrix.field(3, 3, dtype=ti.f32, shape=())
     sigma = ti.Matrix.field(3, 3, dtype=ti.f32, shape=())
@@ -89,3 +107,14 @@ def test_transpose_no_loop():
 
     run()
     # As long as it passes compilation we are good
+
+
+@test_utils.test()
+def test_transpose_no_loop():
+    _test_transpose_no_loop()
+
+
+@test_utils.test(real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_transpose_no_loop_real_matrix_scalarize():
+    _test_transpose_no_loop()

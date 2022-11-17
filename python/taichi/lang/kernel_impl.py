@@ -267,7 +267,8 @@ class Func:
         func_call = Expr(
             _ti_core.make_func_call_expr(
                 self.taichi_functions[key.instance_id], non_template_args))
-        impl.get_runtime().prog.current_ast_builder().insert_expr_stmt(func_call.ptr)
+        impl.get_runtime().prog.current_ast_builder().insert_expr_stmt(
+            func_call.ptr)
         if self.return_type is None:
             return None
         if id(self.return_type) in primitive_types.type_ids:

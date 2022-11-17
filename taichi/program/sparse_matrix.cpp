@@ -173,6 +173,48 @@ void EigenSparseMatrix<EigenMatrix>::build_triplets(void *triplets_adr) {
   }
 }
 
+template <class EigenMatrix>
+void taichi::lang::EigenSparseMatrix<EigenMatrix>::spmv(
+    taichi::lang::Program *prog,
+    const taichi::lang::Ndarray &x,
+    taichi::lang::Ndarray &y) {
+  size_t dX = prog->get_ndarray_data_ptr_as_int(&x);
+  size_t dY = prog->get_ndarray_data_ptr_as_int(&y);
+  std::string sdtype = taichi::lang::data_type_name(dtype_);
+  if (sdtype == "f32") {
+    Eigen::Map<Eigen::VectorXf>((float *)dY, cols_) =
+        matrix_.template cast<float>() *
+        Eigen::Map<Eigen::VectorXf>((float *)dX, cols_);
+  } else if (sdtype == "f64") {
+    Eigen::Map<Eigen::VectorXd>((double *)dY, cols_) =
+        matrix_.template cast<double>() *
+        Eigen::Map<Eigen::VectorXd>((double *)dX, cols_);
+  } else {
+    TI_ERROR("Unsupported sparse matrix data type {}!", sdtype);
+  }
+}
+
+template void
+EigenSparseMatrix<Eigen::SparseMatrix<float32, Eigen::ColMajor>>::spmv(
+    taichi::lang::Program *prog,
+    const taichi::lang::Ndarray &x,
+    taichi::lang::Ndarray &y);
+template void
+EigenSparseMatrix<Eigen::SparseMatrix<float32, Eigen::RowMajor>>::spmv(
+    taichi::lang::Program *prog,
+    const taichi::lang::Ndarray &x,
+    taichi::lang::Ndarray &y);
+template void
+EigenSparseMatrix<Eigen::SparseMatrix<float64, Eigen::ColMajor>>::spmv(
+    taichi::lang::Program *prog,
+    const taichi::lang::Ndarray &x,
+    taichi::lang::Ndarray &y);
+template void
+EigenSparseMatrix<Eigen::SparseMatrix<float64, Eigen::RowMajor>>::spmv(
+    taichi::lang::Program *prog,
+    const taichi::lang::Ndarray &x,
+    taichi::lang::Ndarray &y);
+
 std::unique_ptr<SparseMatrix> make_sparse_matrix(
     int rows,
     int cols,

@@ -1237,6 +1237,7 @@ void export_lang(py::module &m) {
       .def(float##TYPE() * py::self)                                         \
       .def(py::self *py::self)                                               \
       .def("matmul", &EigenSparseMatrix<STORAGE##TYPE##EigenMatrix>::matmul) \
+      .def("spmv", &EigenSparseMatrix<STORAGE##TYPE##EigenMatrix>::spmv)     \
       .def("transpose",                                                      \
            &EigenSparseMatrix<STORAGE##TYPE##EigenMatrix>::transpose)        \
       .def("get_element",                                                    \

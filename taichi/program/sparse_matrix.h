@@ -195,6 +195,8 @@ class EigenSparseMatrix : public SparseMatrix {
     return matrix_ * b;
   }
 
+  void spmv(Program *prog, const Ndarray &x, Ndarray &y);
+
  private:
   EigenMatrix matrix_;
 };

@@ -42,7 +42,6 @@ class NdarrayType:
         self.dtype = dtype
 
         # TODO (Haidong) remove the element_dim and element_shape memebers internally
-
         if isinstance(dtype, CompoundType):
             if dtype == TensorType:
                 raise TypeError(

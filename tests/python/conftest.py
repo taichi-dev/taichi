@@ -1,4 +1,4 @@
-import os
+import sys
 
 import pytest
 
@@ -14,7 +14,11 @@ def wanted_arch(request, req_arch, req_options):
                 # are picked out exactly because of extensive resource consumption.
                 # Separation of serial/non-serial tests is done by the test runner
                 # through `-m run_in_serial` / `-m not run_in_serial`.
-                req_options = {'device_memory_GB': 0.3, **req_options}
+                req_options = {
+                    'device_memory_GB': 0.3,
+                    'cuda_stack_limit': 1024,
+                    **req_options,
+                }
             else:
                 # Serial tests run without aggressive resource optimization
                 req_options = {'device_memory_GB': 1, **req_options}
@@ -32,18 +36,12 @@ def pytest_generate_tests(metafunc):
                              ids=['none'])
 
 
-IS_WORKER = False
-
-
 @pytest.hookimpl(trylast=True)
 def pytest_configure(config):
     config.addinivalue_line(
         "markers",
         "run_in_serial: mark test to run serially(usually for resource intensive tests)."
     )
-
-    global IS_WORKER
-    IS_WORKER = hasattr(config, "workerinput")
 
 
 @pytest.hookimpl(trylast=True)
@@ -53,10 +51,21 @@ def pytest_runtest_logreport(report):
     This is to avoid the failing test leaving a corrupted GPU state for the
     following tests.
     '''
-    if not IS_WORKER:
+
+    interactor = getattr(sys, 'xdist_interactor', None)
+    if not interactor:
+        # not running under xdist, or xdist is not active,
+        # or using stock xdist (we need a customized version)
         return
 
     if report.outcome not in ('rerun', 'error', 'failed'):
         return
 
-    os._exit(0)
+    layoff = False
+
+    for _, loc, _ in report.longrepr.chain:
+        if 'CUDA_ERROR_OUT_OF_MEMORY' in loc.message:
+            layoff = True
+            break
+
+    interactor.retire(layoff=layoff)

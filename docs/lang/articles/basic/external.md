@@ -227,3 +227,30 @@ copy(x, y) # error!
 copy(x, y.clone()) # correct
 copy(x, y.contiguous()) # correct
 ```
+
+## FAQ
+
+### Can I use `@ti.kernel` to accelerate a NumPy function?
+
+Unlike other Python acceleration frameworks, such as Numba, Taichi does not compile NumPy functions. Calling NumPy functions inside the Taichi scope is not supported, as the following example shows:
+
+```python
+import numpy as np
+
+@ti.kernel
+def invalid_sum(arr: ti.types.ndarray()):
+    total = np.sum(arr)  # Not supported!
+    ...
+```
+
+
+If you want to use a NumPy function, which lacks a counterpart in Taichi, you can call the function in the Python scope as usual and pass the processed array to Taichi kernels via `ti.types.ndarray()`. For example:
+
+```python
+indices = np.argsort(arr)  # arr is a Numpy.ndarray
+
+@ti.kernel
+def valid_example(arr: ti.types.ndarray(), indices: ti.types.ndarray()):
+    min_element = arr[indices[0]]
+    ...
+```

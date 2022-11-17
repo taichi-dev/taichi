@@ -214,6 +214,7 @@ def test_different_argument_type():
     assert run() == 3
 
 
+@pytest.mark.run_in_serial
 @test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_recursion():
     @ti.experimental.real_func

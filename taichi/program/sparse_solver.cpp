@@ -34,6 +34,9 @@ namespace taichi::lang {
 template <class EigenSolver, class EigenMatrix>
 bool EigenSparseSolver<EigenSolver, EigenMatrix>::compute(
     const SparseMatrix &sm) {
+  if (!is_initialized_) {
+    SparseSolver::init_solver(sm.num_rows(), sm.num_cols(), sm.get_data_type());
+  }
   GET_EM(sm);
   solver_.compute(*mat);
   if (solver_.info() != Eigen::Success) {
@@ -44,6 +47,9 @@ bool EigenSparseSolver<EigenSolver, EigenMatrix>::compute(
 template <class EigenSolver, class EigenMatrix>
 void EigenSparseSolver<EigenSolver, EigenMatrix>::analyze_pattern(
     const SparseMatrix &sm) {
+  if (!is_initialized_) {
+    SparseSolver::init_solver(sm.num_rows(), sm.num_cols(), sm.get_data_type());
+  }
   GET_EM(sm);
   solver_.analyzePattern(*mat);
 }
@@ -65,6 +71,40 @@ template <class EigenSolver, class EigenMatrix>
 bool EigenSparseSolver<EigenSolver, EigenMatrix>::info() {
   return solver_.info() == Eigen::Success;
 }
+
+template <class EigenSolver, class EigenMatrix>
+void EigenSparseSolver<EigenSolver, EigenMatrix>::solve_rf(
+    Program *prog,
+    const SparseMatrix &sm,
+    const Ndarray &b,
+    Ndarray &x) {
+  size_t db = prog->get_ndarray_data_ptr_as_int(&b);
+  size_t dX = prog->get_ndarray_data_ptr_as_int(&x);
+  Eigen::Map<Eigen::VectorXf>((float *)dX, rows_) =
+      solver_.solve(Eigen::Map<Eigen::VectorXf>((float *)db, cols_));
+}
+
+using T = Eigen::SparseMatrix<float32>;
+using V = Eigen::SimplicialLLT<T, Eigen::Lower, Eigen::COLAMDOrdering<int>>;
+using W = Eigen::SimplicialLLT<T, Eigen::Lower, Eigen::AMDOrdering<int>>;
+using X = Eigen::SimplicialLDLT<T, Eigen::Lower, Eigen::COLAMDOrdering<int>>;
+using Y = Eigen::SimplicialLDLT<T, Eigen::Lower, Eigen::AMDOrdering<int>>;
+template void EigenSparseSolver<V, T>::solve_rf(Program *prog,
+                                                const SparseMatrix &sm,
+                                                const Ndarray &b,
+                                                Ndarray &x);
+template void EigenSparseSolver<W, T>::solve_rf(Program *prog,
+                                                const SparseMatrix &sm,
+                                                const Ndarray &b,
+                                                Ndarray &x);
+template void EigenSparseSolver<X, T>::solve_rf(Program *prog,
+                                                const SparseMatrix &sm,
+                                                const Ndarray &b,
+                                                Ndarray &x);
+template void EigenSparseSolver<Y, T>::solve_rf(Program *prog,
+                                                const SparseMatrix &sm,
+                                                const Ndarray &b,
+                                                Ndarray &x);
 
 CuSparseSolver::CuSparseSolver() {
 #if defined(TI_WITH_CUDA)

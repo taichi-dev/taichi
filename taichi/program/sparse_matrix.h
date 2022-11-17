@@ -85,7 +85,7 @@ class SparseMatrix {
     return nullptr;
   }
 
-  inline DataType get_data_type() {
+  inline const DataType get_data_type() const {
     return dtype_;
   }
 

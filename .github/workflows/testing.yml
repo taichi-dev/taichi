@@ -233,6 +233,7 @@ jobs:
 
       - name: Build & Run C-API Headless Demos (Desktop)
         run: |
+          [[ ${{needs.check_files.outputs.run_job}} == false ]] && exit 0
           . .github/workflows/scripts/common-utils.sh
           chown -R 1000:1000 .
           ci-docker-run-gpu --name taichi-test-capi-headless-demo-desktop \

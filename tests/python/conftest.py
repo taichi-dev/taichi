@@ -1,4 +1,4 @@
-import sys
+import os
 
 import pytest
 
@@ -36,12 +36,18 @@ def pytest_generate_tests(metafunc):
                              ids=['none'])
 
 
+IS_WORKER = False
+
+
 @pytest.hookimpl(trylast=True)
 def pytest_configure(config):
     config.addinivalue_line(
         "markers",
         "run_in_serial: mark test to run serially(usually for resource intensive tests)."
     )
+
+    global IS_WORKER
+    IS_WORKER = hasattr(config, "workerinput")
 
 
 @pytest.hookimpl(trylast=True)
@@ -51,21 +57,10 @@ def pytest_runtest_logreport(report):
     This is to avoid the failing test leaving a corrupted GPU state for the
     following tests.
     '''
-
-    interactor = getattr(sys, 'xdist_interactor', None)
-    if not interactor:
-        # not running under xdist, or xdist is not active,
-        # or using stock xdist (we need a customized version)
+    if not IS_WORKER:
         return
 
     if report.outcome not in ('rerun', 'error', 'failed'):
         return
 
-    layoff = False
-
-    for _, loc, _ in report.longrepr.chain:
-        if 'CUDA_ERROR_OUT_OF_MEMORY' in loc.message:
-            layoff = True
-            break
-
-    interactor.retire(layoff=layoff)
+    os._exit(0)

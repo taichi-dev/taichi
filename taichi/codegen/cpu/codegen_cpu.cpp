@@ -251,20 +251,18 @@ FunctionType CPUModuleToFunctionConverter::convert(
           context.array_runtime_sizes[i] > 0) {
         DeviceAllocation *ptr =
             static_cast<DeviceAllocation *>(context.get_arg<void *>(i));
-        DeviceAllocation *ptr_grad =
-            static_cast<DeviceAllocation *>(context.get_grad_arg<void *>(i));
-
         uint64 host_ptr = (uint64)executor->get_ndarray_alloc_info_ptr(*ptr);
-        uint64 host_ptr_grad =
-            (uint64)executor->get_ndarray_alloc_info_ptr(*ptr_grad);
-        std::cout << "host_ptr: " << std::hex << host_ptr << std::endl;
-        std::cout << "host_ptr_grad: " << std::hex << host_ptr_grad
-                  << std::endl;
-
         context.set_arg(i, host_ptr);
-        context.set_grad_arg(i, host_ptr_grad);
         context.set_array_device_allocation_type(
             i, RuntimeContext::DevAllocType::kNone);
+
+        if (context.has_grad) {
+          DeviceAllocation *ptr_grad =
+              static_cast<DeviceAllocation *>(context.get_grad_arg<void *>(i));
+          uint64 host_ptr_grad =
+              (uint64)executor->get_ndarray_alloc_info_ptr(*ptr_grad);
+          context.set_grad_arg(i, host_ptr_grad);
+        }
       }
     }
     for (auto task : task_funcs) {

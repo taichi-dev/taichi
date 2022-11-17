@@ -30,6 +30,8 @@ struct RuntimeContext {
   int32 extra_args[taichi_max_num_args_extra][taichi_max_num_indices];
   int32 cpu_thread_id;
 
+  bool has_grad{false};
+
   // Note that I've tried to group `array_runtime_size` and
   // `is_device_allocations` into a small struct. However, it caused some test
   // cases to stuck.
@@ -135,6 +137,7 @@ struct RuntimeContext {
                        intptr_t devalloc_ptr,
                        intptr_t devalloc_ptr_grad,
                        const std::vector<int> &shape) {
+    has_grad = true;
     args[arg_id] = taichi_union_cast_with_different_sizes<uint64>(devalloc_ptr);
     grad_args[arg_id] =
         taichi_union_cast_with_different_sizes<uint64>(devalloc_ptr_grad);

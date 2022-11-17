@@ -24,7 +24,7 @@ class Statistics {
 
  private:
   counters_map counters_;
-  std::mutex counters_map_mutex;
+  std::mutex counters_map_mutex_;
 };
 
 extern Statistics stat;

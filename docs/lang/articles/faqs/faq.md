@@ -318,3 +318,24 @@ for i in x:
 You can call `ti.sync()`, which is similar to CUDA's `cudaStreamSynchronize()`, in Taichi to synchronize the parallel for loops.
 
 `__syncthreads()` is a block-level synchronization barrier, and Taichi provides a synonymous API `ti.simt.block.sync()`, which for now supports CUDA and Vulkan backends only. However, all block-level APIs are still experimental, and you should use this API only when it relates to SIMT operation synchronization and `SharedArray` reads and writes.
+
+### How can I swap elements between two fields in the Taichi scope? `a,b = b,a` does not work.
+
+Direct value assignments lead to semantic ambiguity. For example, `a = b` can mean data copy if `a` is pre-defined, or otherwise can serve to define and initialize `a`.
+
+You can swap two fields in the Taichi scope using a struct for:
+
+```python
+@ti.func
+def field_copy(src: ti.template(), dst: ti.template()):
+    for I in ti.grouped(src):
+        dst[I] = src[I]
+
+@ti.kernel
+def test():
+    # copy b to a
+    field_copy(b, a)
+    print(a[0])
+
+test()
+```

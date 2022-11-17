@@ -57,8 +57,8 @@ class NdarrayType:
                     f"Unexpected matrix data type {dtype} has dimension {dtype.ndim}, only vectors and matrices (ndim = 1,2) are accepted."
                 )
         else:
-            self.element_shape = None
-            self.element_dim = None
+            self.element_shape = element_shape
+            self.element_dim = element_dim
 
         self.field_dim = field_dim
         self.layout = Layout.AOS

@@ -63,6 +63,9 @@ def _blender_findsource(obj):
     return _find_source_with_custom_getfile_func(wrapped_getfile, obj)
 
 
+_blender_findsource._saved_inspect_cache = {}
+
+
 def _Python_IPython_findsource(obj):
     try:
         # In Python and IPython the builtin findsource would suffice in most cases

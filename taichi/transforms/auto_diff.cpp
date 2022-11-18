@@ -80,11 +80,8 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
     // - If the #1 is satisfied, either an inner most loop or a block without
     // global atomics / global load is an IB
     ib_meta_data.is_smallest_ib =
-        Judger.qualified_glb_operations_ || Judger.inner_most_loop_;
-
-    // Each smallest IB must be a IB
-    if (ib_meta_data.is_smallest_ib)
-      TI_ASSERT(ib_meta_data.is_ib);
+        ib_meta_data.is_ib &&
+        (Judger.qualified_glb_operations_ || Judger.inner_most_loop_);
   }
 
  private:

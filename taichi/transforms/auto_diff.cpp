@@ -54,6 +54,7 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
     // another IndependentBlocksJudger
     if (is_inside_loop_)
       return;
+    // TODO: handle external ptr stmt after autodiff supporting ndarray
     if (stmt->src->is<GlobalPtrStmt>() &&
         stmt->src->as<GlobalPtrStmt>()->snode->has_adjoint()) {
       qualified_atomics_ = false;

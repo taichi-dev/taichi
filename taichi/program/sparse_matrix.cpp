@@ -27,8 +27,7 @@
 #define INSTANTIATE_SPMV(type, storage)                               \
   template void                                                       \
   EigenSparseMatrix<Eigen::SparseMatrix<type, Eigen::storage>>::spmv( \
-      taichi::lang::Program *prog, const taichi::lang::Ndarray &x,    \
-      taichi::lang::Ndarray &y);
+      Program *prog, const Ndarray &x, const Ndarray &y);
 
 namespace {
 using Pair = std::pair<std::string, std::string>;
@@ -180,10 +179,9 @@ void EigenSparseMatrix<EigenMatrix>::build_triplets(void *triplets_adr) {
 }
 
 template <class EigenMatrix>
-void taichi::lang::EigenSparseMatrix<EigenMatrix>::spmv(
-    taichi::lang::Program *prog,
-    const taichi::lang::Ndarray &x,
-    taichi::lang::Ndarray &y) {
+void EigenSparseMatrix<EigenMatrix>::spmv(Program *prog,
+                                          const Ndarray &x,
+                                          const Ndarray &y) {
   size_t dX = prog->get_ndarray_data_ptr_as_int(&x);
   size_t dY = prog->get_ndarray_data_ptr_as_int(&y);
   std::string sdtype = taichi::lang::data_type_name(dtype_);
@@ -632,7 +630,7 @@ std::unique_ptr<SparseMatrix> CuSparseMatrix::transpose() const {
 #endif
 }
 
-void CuSparseMatrix::spmv(Program *prog, const Ndarray &x, Ndarray &y) {
+void CuSparseMatrix::spmv(Program *prog, const Ndarray &x, const Ndarray &y) {
 #if defined(TI_WITH_CUDA)
   size_t dX = prog->get_ndarray_data_ptr_as_int(&x);
   size_t dY = prog->get_ndarray_data_ptr_as_int(&y);

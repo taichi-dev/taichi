@@ -26,7 +26,39 @@ def test_sparse_LLT_solver(dtype, solver_type, ordering):
 
     fill(Abuilder, A_psd, b)
     A = Abuilder.build()
-    print(A)
+    solver = ti.linalg.SparseSolver(dtype=dtype,
+                                    solver_type=solver_type,
+                                    ordering=ordering)
+    solver.analyze_pattern(A)
+    solver.factorize(A)
+    x = solver.solve(b)
+
+    res = np.linalg.solve(A_psd, b.to_numpy())
+    for i in range(n):
+        assert x[i] == test_utils.approx(res[i], rel=1.0)
+
+
+@pytest.mark.parametrize("dtype", [ti.f32])
+@pytest.mark.parametrize("solver_type", ["LLT", "LDLT", "LU"])
+@pytest.mark.parametrize("ordering", ["AMD", "COLAMD"])
+@test_utils.test(arch=ti.cpu)
+def test_sparse_solver_ndarray_vector(dtype, solver_type, ordering):
+    n = 10
+    A = np.random.rand(n, n)
+    A_psd = np.dot(A, A.transpose())
+    Abuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=300)
+    b = ti.ndarray(ti.f32, shape=n)
+
+    @ti.kernel
+    def fill(Abuilder: ti.types.sparse_matrix_builder(),
+             InputArray: ti.types.ndarray(), b: ti.types.ndarray()):
+        for i, j in ti.ndrange(n, n):
+            Abuilder[i, j] += InputArray[i, j]
+        for i in range(n):
+            b[i] = i + 1
+
+    fill(Abuilder, A_psd, b)
+    A = Abuilder.build()
     solver = ti.linalg.SparseSolver(dtype=dtype,
                                     solver_type=solver_type,
                                     ordering=ordering)

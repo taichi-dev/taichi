@@ -2,7 +2,7 @@ import numbers
 from types import MethodType
 
 from taichi._lib import core as _ti_core
-from taichi.lang import impl, ops, expr
+from taichi.lang import expr, impl, ops
 from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiSyntaxError
@@ -689,9 +689,11 @@ class StructType(CompoundType):
         for index, pair in enumerate(items):
             name, dtype = pair
             if isinstance(dtype, CompoundType):
-                d[name], ret_index = dtype.from_real_func_ret(func_ret, ret_index)
+                d[name], ret_index = dtype.from_real_func_ret(
+                    func_ret, ret_index)
             else:
-                d[name] = expr.Expr(_ti_core.make_get_element_expr(func_ret.ptr, ret_index))
+                d[name] = expr.Expr(
+                    _ti_core.make_get_element_expr(func_ret.ptr, ret_index))
                 ret_index += 1
 
         return Struct(d), ret_index

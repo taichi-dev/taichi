@@ -19,8 +19,8 @@ from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field
 from taichi.lang.impl import current_cfg
 from taichi.lang.matrix import Matrix, MatrixType, Vector, is_vector
-from taichi.lang.struct import StructType, Struct
 from taichi.lang.snode import append, deactivate
+from taichi.lang.struct import Struct, StructType
 from taichi.lang.util import is_taichi_class, to_taichi_type
 from taichi.types import (annotations, ndarray_type, primitive_types,
                           texture_type)

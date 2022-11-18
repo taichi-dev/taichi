@@ -15,13 +15,13 @@ from taichi.lang.ast import (ASTTransformerContext, KernelSimplicityASTChecker,
 from taichi.lang.ast.ast_transformer_utils import ReturnStatus
 from taichi.lang.enums import AutodiffMode, Layout
 from taichi.lang.exception import (TaichiCompilationError, TaichiRuntimeError,
-                                   TaichiRuntimeTypeError, TaichiSyntaxError, TaichiTypeError,
-                                   handle_exception_from_cpp)
+                                   TaichiRuntimeTypeError, TaichiSyntaxError,
+                                   TaichiTypeError, handle_exception_from_cpp)
 from taichi.lang.expr import Expr
 from taichi.lang.kernel_arguments import KernelArgument
 from taichi.lang.matrix import Matrix, MatrixType
-from taichi.lang.struct import StructType
 from taichi.lang.shell import _shell_pop_print, oinspect
+from taichi.lang.struct import StructType
 from taichi.lang.util import (cook_dtype, has_paddle, has_pytorch,
                               to_taichi_type)
 from taichi.types import (ndarray_type, primitive_types, sparse_matrix_builder,

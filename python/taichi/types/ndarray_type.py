@@ -1,5 +1,5 @@
 from taichi.lang.enums import Layout
-from taichi.types.compound_types import TensorType
+from taichi.types.compound_types import CompoundType, TensorType
 
 
 class NdarrayTypeMetadata:
@@ -25,6 +25,7 @@ class NdarrayType:
                  element_dim=None,
                  element_shape=None,
                  field_dim=None):
+        # TODO(Haidong) Remove the element_dim and element_shape memebers internally
         if element_dim is not None and (element_dim < 0 or element_dim > 2):
             raise ValueError(
                 "Only scalars, vectors, and matrices are allowed as elements of ti.types.ndarray()"
@@ -35,9 +36,26 @@ class NdarrayType:
                 f"Both element_shape and element_dim are specified, but shape doesn't match specified dim: {len(element_shape)}!={element_dim}"
             )
         self.dtype = dtype
-        self.element_shape = element_shape
-        self.element_dim = len(
-            element_shape) if element_shape is not None else element_dim
+
+        # FIXME(Haidong) We cannot use iomport Vector/MatrixType due to circular import
+        # Therefore we are using the CompuoundType to determine the specific typs.
+        # TODO Replace CompoundType with MatrixType and VectorType
+
+        if isinstance(dtype, CompoundType):
+            if dtype == TensorType:
+                raise TypeError(
+                    "TensorType is not supported for ndarray dtype annotation."
+                )
+            self.element_dim = dtype.ndim
+            self.element_shape = (dtype.n, ) if dtype.ndim == 1 else (dtype.n,
+                                                                      dtype.m)
+            if not (self.element_dim > 0 and self.element_dim <= 2):
+                raise TypeError(
+                    f"Unexpected matrix data type {dtype} has dimension {dtype.ndim}, only vectors and matrices (ndim = 1,2) are accepted."
+                )
+        else:
+            self.element_shape = element_shape
+            self.element_dim = element_dim
 
         self.field_dim = field_dim
         self.layout = Layout.AOS

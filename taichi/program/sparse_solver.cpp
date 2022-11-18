@@ -14,6 +14,14 @@
     }                                                                          \
   }
 
+#define INSTANTIATE_SOLVER(dt, type, order)                              \
+  using dt##type##order =                                                \
+      Eigen::Simplicial##type<Eigen::SparseMatrix<dt>, Eigen::Lower,     \
+                              Eigen::order##Ordering<int>>;              \
+  template void                                                          \
+  EigenSparseSolver<dt##type##order, Eigen::SparseMatrix<dt>>::solve_rf( \
+      Program *prog, const SparseMatrix &sm, const Ndarray &b, Ndarray &x);
+
 using Triplets = std::tuple<std::string, std::string, std::string>;
 namespace {
 struct key_hash {
@@ -84,27 +92,10 @@ void EigenSparseSolver<EigenSolver, EigenMatrix>::solve_rf(
       solver_.solve(Eigen::Map<Eigen::VectorXf>((float *)db, cols_));
 }
 
-using T = Eigen::SparseMatrix<float32>;
-using V = Eigen::SimplicialLLT<T, Eigen::Lower, Eigen::COLAMDOrdering<int>>;
-using W = Eigen::SimplicialLLT<T, Eigen::Lower, Eigen::AMDOrdering<int>>;
-using X = Eigen::SimplicialLDLT<T, Eigen::Lower, Eigen::COLAMDOrdering<int>>;
-using Y = Eigen::SimplicialLDLT<T, Eigen::Lower, Eigen::AMDOrdering<int>>;
-template void EigenSparseSolver<V, T>::solve_rf(Program *prog,
-                                                const SparseMatrix &sm,
-                                                const Ndarray &b,
-                                                Ndarray &x);
-template void EigenSparseSolver<W, T>::solve_rf(Program *prog,
-                                                const SparseMatrix &sm,
-                                                const Ndarray &b,
-                                                Ndarray &x);
-template void EigenSparseSolver<X, T>::solve_rf(Program *prog,
-                                                const SparseMatrix &sm,
-                                                const Ndarray &b,
-                                                Ndarray &x);
-template void EigenSparseSolver<Y, T>::solve_rf(Program *prog,
-                                                const SparseMatrix &sm,
-                                                const Ndarray &b,
-                                                Ndarray &x);
+INSTANTIATE_SOLVER(float32, LLT, COLAMD)
+INSTANTIATE_SOLVER(float32, LDLT, COLAMD)
+INSTANTIATE_SOLVER(float32, LLT, AMD)
+INSTANTIATE_SOLVER(float32, LDLT, AMD)
 
 CuSparseSolver::CuSparseSolver() {
 #if defined(TI_WITH_CUDA)

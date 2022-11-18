@@ -9,6 +9,23 @@
 
 namespace taichi::lang {
 
+template <typename T>
+static std::vector<Stmt *> get_scalarized_indices(T *stmt) {
+  auto indices = stmt->indices;
+  std::vector<Stmt *> flattened_indices;
+  for (auto &index : indices) {
+    if (index->template is<MatrixInitStmt>()) {
+      auto matrix_init_stmt = index->template cast<MatrixInitStmt>();
+      flattened_indices.insert(flattened_indices.end(),
+                               matrix_init_stmt->values.begin(),
+                               matrix_init_stmt->values.end());
+    } else {
+      flattened_indices.push_back(index);
+    }
+  }
+  return flattened_indices;
+}
+
 static bool is_alloca_scalarizable(AllocaStmt *stmt) {
   /* Do not scalarize AllocaStmt allocated for CUDA SharedArray */
   auto alloca = stmt->as<AllocaStmt>();
@@ -462,6 +479,42 @@ class Scalarize : public BasicStmtVisitor {
 
       modifier_.erase(stmt);
     }
+  }
+
+  /* Scalarize Indices */
+  void visit(ExternalPtrStmt *stmt) override {
+    auto flattened_indices = get_scalarized_indices<ExternalPtrStmt>(stmt);
+    auto new_stmt =
+        std::make_unique<ExternalPtrStmt>(stmt->base_ptr, flattened_indices);
+    new_stmt->ret_type = stmt->ret_type;
+
+    stmt->replace_usages_with(new_stmt.get());
+    modifier_.insert_before(stmt, std::move(new_stmt));
+    modifier_.erase(stmt);
+  }
+
+  void visit(GlobalPtrStmt *stmt) override {
+    auto flattened_indices = get_scalarized_indices<GlobalPtrStmt>(stmt);
+    auto new_stmt = std::make_unique<GlobalPtrStmt>(
+        stmt->snode, flattened_indices, stmt->activate, stmt->is_cell_access);
+    new_stmt->ret_type = stmt->ret_type;
+
+    stmt->replace_usages_with(new_stmt.get());
+    modifier_.insert_before(stmt, std::move(new_stmt));
+    modifier_.erase(stmt);
+  }
+
+  void visit(MatrixOfGlobalPtrStmt *stmt) override {
+    auto flattened_indices =
+        get_scalarized_indices<MatrixOfGlobalPtrStmt>(stmt);
+    auto new_stmt = std::make_unique<MatrixOfGlobalPtrStmt>(
+        stmt->snodes, flattened_indices, stmt->dynamic_indexable,
+        stmt->dynamic_index_stride, stmt->ret_type, stmt->activate);
+    new_stmt->ret_type = stmt->ret_type;
+
+    stmt->replace_usages_with(new_stmt.get());
+    modifier_.insert_before(stmt, std::move(new_stmt));
+    modifier_.erase(stmt);
   }
 
   void visit(GlobalStoreStmt *stmt) override {

@@ -498,4 +498,3 @@ def test_real_func_struct_ret():
         return a.a * a.b
 
     assert foo() == pytest.approx(123 * 1.2345e300)
-

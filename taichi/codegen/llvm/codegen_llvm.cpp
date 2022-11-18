@@ -2826,8 +2826,7 @@ void TaskCodeGenLLVM::visit(FuncCallStmt *stmt) {
   result_buffer = builder->CreateAlloca(llvm::ArrayType::get(
       tlctx->get_data_type<uint64>(), stmt->func->rets.size()));
   result_buffer = builder->CreatePointerCast(
-      result_buffer,
-      llvm::PointerType::get(tlctx->get_data_type<uint64>(), 0));
+      result_buffer, llvm::PointerType::get(tlctx->get_data_type<uint64>(), 0));
   call("RuntimeContext_set_result_buffer", new_ctx, result_buffer);
   call(llvm_func, new_ctx);
   llvm_val[stmt] = result_buffer;
@@ -2840,8 +2839,7 @@ void TaskCodeGenLLVM::visit(GetElementStmt *stmt) {
 #ifdef TI_LLVM_15
       tlctx->get_data_type<uint64>(),
 #endif
-      llvm_val[stmt->src],
-      tlctx->get_constant(stmt->index));
+      llvm_val[stmt->src], tlctx->get_constant(stmt->index));
   auto *val_u64 = builder->CreateLoad(
 #ifdef TI_LLVM_15
       builder->getInt64Ty(),

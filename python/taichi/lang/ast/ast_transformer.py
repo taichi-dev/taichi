@@ -19,6 +19,7 @@ from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field
 from taichi.lang.impl import current_cfg
 from taichi.lang.matrix import Matrix, MatrixType, Vector, is_vector
+from taichi.lang.struct import StructType, Struct
 from taichi.lang.snode import append, deactivate
 from taichi.lang.util import is_taichi_class, to_taichi_type
 from taichi.types import (annotations, ndarray_type, primitive_types,
@@ -562,7 +563,11 @@ class ASTTransformer(Builder):
         def transform_as_kernel():
             # Treat return type
             if node.returns is not None:
-                kernel_arguments.decl_ret(ctx.func.return_type)
+                if isinstance(ctx.func.return_type, StructType):
+                    for tp in ctx.func.return_type.members.values():
+                        kernel_arguments.decl_ret(tp)
+                else:
+                    kernel_arguments.decl_ret(ctx.func.return_type)
 
             for i, arg in enumerate(args.args):
                 if not isinstance(ctx.func.arguments[i].annotation,
@@ -747,6 +752,11 @@ class ASTTransformer(Builder):
                         ti_ops.cast(exp, ctx.func.return_type.dtype)
                         for exp in values
                     ]))
+            elif isinstance(ctx.func.return_type, StructType):
+                values = node.value.ptr
+                assert isinstance(values, Struct)
+                ctx.ast_builder.create_kernel_exprgroup_return(
+                    expr.make_expr_group(values._members))
             else:
                 raise TaichiSyntaxError(
                     "The return type is not supported now!")

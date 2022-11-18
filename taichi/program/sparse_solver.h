@@ -6,11 +6,17 @@
 #include "taichi/rhi/cuda/cuda_driver.h"
 #include "taichi/program/program.h"
 
-#define DECLARE_EIGEN_SOLVER(dt, type, order)                        \
+#define DECLARE_EIGEN_LLT_SOLVER(dt, type, order)                    \
   typedef EigenSparseSolver<                                         \
       Eigen::Simplicial##type<Eigen::SparseMatrix<dt>, Eigen::Lower, \
                               Eigen::order##Ordering<int>>,          \
       Eigen::SparseMatrix<dt>>                                       \
+      EigenSparseSolver##dt##type##order;
+
+#define DECLARE_EIGEN_LU_SOLVER(dt, type, order)                              \
+  typedef EigenSparseSolver<Eigen::Sparse##type<Eigen::SparseMatrix<dt>,      \
+                                                Eigen::order##Ordering<int>>, \
+                            Eigen::SparseMatrix<dt>>                          \
       EigenSparseSolver##dt##type##order;
 
 namespace taichi::lang {
@@ -39,31 +45,18 @@ class EigenSparseSolver : public SparseSolver {
   bool info() override;
 };
 
-DECLARE_EIGEN_SOLVER(float32, LLT, AMD);
-DECLARE_EIGEN_SOLVER(float32, LLT, COLAMD);
-DECLARE_EIGEN_SOLVER(float32, LDLT, AMD);
-DECLARE_EIGEN_SOLVER(float32, LDLT, COLAMD);
-DECLARE_EIGEN_SOLVER(float64, LLT, AMD);
-DECLARE_EIGEN_SOLVER(float64, LLT, COLAMD);
-DECLARE_EIGEN_SOLVER(float64, LDLT, AMD);
-DECLARE_EIGEN_SOLVER(float64, LDLT, COLAMD);
-
-typedef EigenSparseSolver<
-    Eigen::SparseLU<Eigen::SparseMatrix<float32>, Eigen::AMDOrdering<int>>,
-    Eigen::SparseMatrix<float32>>
-    EigenSparseSolverfloat32LUAMD;
-typedef EigenSparseSolver<
-    Eigen::SparseLU<Eigen::SparseMatrix<float32>, Eigen::COLAMDOrdering<int>>,
-    Eigen::SparseMatrix<float32>>
-    EigenSparseSolverfloat32LUCOLAMD;
-typedef EigenSparseSolver<
-    Eigen::SparseLU<Eigen::SparseMatrix<float64>, Eigen::AMDOrdering<int>>,
-    Eigen::SparseMatrix<float64>>
-    EigenSparseSolverfloat64LUAMD;
-typedef EigenSparseSolver<
-    Eigen::SparseLU<Eigen::SparseMatrix<float64>, Eigen::COLAMDOrdering<int>>,
-    Eigen::SparseMatrix<float64>>
-    EigenSparseSolverfloat64LUCOLAMD;
+DECLARE_EIGEN_LLT_SOLVER(float32, LLT, AMD);
+DECLARE_EIGEN_LLT_SOLVER(float32, LLT, COLAMD);
+DECLARE_EIGEN_LLT_SOLVER(float32, LDLT, AMD);
+DECLARE_EIGEN_LLT_SOLVER(float32, LDLT, COLAMD);
+DECLARE_EIGEN_LU_SOLVER(float32, LU, AMD);
+DECLARE_EIGEN_LU_SOLVER(float32, LU, COLAMD);
+DECLARE_EIGEN_LLT_SOLVER(float64, LLT, AMD);
+DECLARE_EIGEN_LLT_SOLVER(float64, LLT, COLAMD);
+DECLARE_EIGEN_LLT_SOLVER(float64, LDLT, AMD);
+DECLARE_EIGEN_LLT_SOLVER(float64, LDLT, COLAMD);
+DECLARE_EIGEN_LU_SOLVER(float64, LU, AMD);
+DECLARE_EIGEN_LU_SOLVER(float64, LU, COLAMD);
 
 class CuSparseSolver : public SparseSolver {
  private:

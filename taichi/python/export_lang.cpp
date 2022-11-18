@@ -1269,10 +1269,66 @@ void export_lang(py::module &m) {
       .def("compute", &SparseSolver::compute)
       .def("analyze_pattern", &SparseSolver::analyze_pattern)
       .def("factorize", &SparseSolver::factorize)
-      .def("solve", &SparseSolver::solve)
-      .def("solve_cu", &SparseSolver::solve_cu)
-      .def("solve_rf", &SparseSolver::solve_rf)
       .def("info", &SparseSolver::info);
+
+#define REGISTER_EIGEN_SOLVER(dt, type, order, fd)                         \
+  py::class_<EigenSparseSolver##dt##type##order, SparseSolver>(            \
+      m, "EigenSparseSolver" #dt #type #order)                             \
+      .def("compute", &EigenSparseSolver##dt##type##order::compute)        \
+      .def("analyze_pattern",                                              \
+           &EigenSparseSolver##dt##type##order::analyze_pattern)           \
+      .def("factorize", &EigenSparseSolver##dt##type##order::factorize)    \
+      .def("solve",                                                        \
+           &EigenSparseSolver##dt##type##order::solve<Eigen::VectorX##fd>) \
+      .def("info", &EigenSparseSolver##dt##type##order::info);
+
+  REGISTER_EIGEN_SOLVER(float32, LLT, AMD, f)
+  REGISTER_EIGEN_SOLVER(float32, LLT, COLAMD, f)
+  REGISTER_EIGEN_SOLVER(float32, LDLT, AMD, f)
+  REGISTER_EIGEN_SOLVER(float32, LDLT, COLAMD, f)
+  REGISTER_EIGEN_SOLVER(float64, LLT, AMD, d)
+  REGISTER_EIGEN_SOLVER(float64, LLT, COLAMD, d)
+  REGISTER_EIGEN_SOLVER(float64, LDLT, AMD, d)
+  REGISTER_EIGEN_SOLVER(float64, LDLT, COLAMD, d)
+
+  py::class_<EigenSparseSolverfloat32LUAMD, SparseSolver>(
+      m, "EigenSparseSolverfloat32LUAMD")
+      .def("compute", &EigenSparseSolverfloat32LUAMD::compute)
+      .def("analyze_pattern", &EigenSparseSolverfloat32LUAMD::analyze_pattern)
+      .def("factorize", &EigenSparseSolverfloat32LUAMD::factorize)
+      .def("solve", &EigenSparseSolverfloat32LUAMD::solve<Eigen::VectorXf>)
+      .def("info", &EigenSparseSolverfloat32LUAMD::info);
+  py::class_<EigenSparseSolverfloat32LUCOLAMD, SparseSolver>(
+      m, "EigenSparseSolverfloat32LUCOLAMD")
+      .def("compute", &EigenSparseSolverfloat32LUCOLAMD::compute)
+      .def("analyze_pattern",
+           &EigenSparseSolverfloat32LUCOLAMD::analyze_pattern)
+      .def("factorize", &EigenSparseSolverfloat32LUCOLAMD::factorize)
+      .def("solve", &EigenSparseSolverfloat32LUCOLAMD::solve<Eigen::VectorXf>)
+      .def("info", &EigenSparseSolverfloat32LUCOLAMD::info);
+  py::class_<EigenSparseSolverfloat64LUAMD, SparseSolver>(
+      m, "EigenSparseSolverfloat64LUAMD")
+      .def("compute", &EigenSparseSolverfloat64LUAMD::compute)
+      .def("analyze_pattern", &EigenSparseSolverfloat64LUAMD::analyze_pattern)
+      .def("factorize", &EigenSparseSolverfloat64LUAMD::factorize)
+      .def("solve", &EigenSparseSolverfloat64LUAMD::solve<Eigen::VectorXd>)
+      .def("info", &EigenSparseSolverfloat64LUAMD::info);
+  py::class_<EigenSparseSolverfloat64LUCOLAMD, SparseSolver>(
+      m, "EigenSparseSolverfloat64LUCOLAMD")
+      .def("compute", &EigenSparseSolverfloat64LUCOLAMD::compute)
+      .def("analyze_pattern",
+           &EigenSparseSolverfloat64LUCOLAMD::analyze_pattern)
+      .def("factorize", &EigenSparseSolverfloat64LUCOLAMD::factorize)
+      .def("solve", &EigenSparseSolverfloat64LUCOLAMD::solve<Eigen::VectorXd>)
+      .def("info", &EigenSparseSolverfloat64LUCOLAMD::info);
+
+  py::class_<CuSparseSolver, SparseSolver>(m, "CuSparseSolver")
+      .def("compute", &CuSparseSolver::compute)
+      .def("analyze_pattern", &CuSparseSolver::analyze_pattern)
+      .def("factorize", &CuSparseSolver::factorize)
+      .def("solve_rf", &CuSparseSolver::solve_rf)
+      .def("solve_cu", &CuSparseSolver::solve_cu)
+      .def("info", &CuSparseSolver::info);
 
   m.def("make_sparse_solver", &make_sparse_solver);
   m.def("make_cusparse_solver", &make_cusparse_solver);

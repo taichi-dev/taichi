@@ -14,7 +14,32 @@ EIGEN_SOLVER_INSTANTIATION(float32, LLT, AMD);
 EIGEN_SOLVER_INSTANTIATION(float32, LLT, COLAMD);
 EIGEN_SOLVER_INSTANTIATION(float32, LDLT, AMD);
 EIGEN_SOLVER_INSTANTIATION(float32, LDLT, COLAMD);
+EIGEN_SOLVER_INSTANTIATION(float64, LLT, AMD);
+EIGEN_SOLVER_INSTANTIATION(float64, LLT, COLAMD);
+EIGEN_SOLVER_INSTANTIATION(float64, LDLT, AMD);
+EIGEN_SOLVER_INSTANTIATION(float64, LDLT, COLAMD);
+template class EigenSparseSolver<
+    Eigen::SparseLU<Eigen::SparseMatrix<float32>, Eigen::AMDOrdering<int>>,
+    Eigen::SparseMatrix<float32>>;
+template class EigenSparseSolver<
+    Eigen::SparseLU<Eigen::SparseMatrix<float32>, Eigen::COLAMDOrdering<int>>,
+    Eigen::SparseMatrix<float32>>;
+template class EigenSparseSolver<
+    Eigen::SparseLU<Eigen::SparseMatrix<float64>, Eigen::AMDOrdering<int>>,
+    Eigen::SparseMatrix<float64>>;
+template class EigenSparseSolver<
+    Eigen::SparseLU<Eigen::SparseMatrix<float64>, Eigen::COLAMDOrdering<int>>,
+    Eigen::SparseMatrix<float64>>;
 }  // namespace taichi::lang
+
+#define EIGEN_SOLVE_INSTANTIATION(dt, type, order, df)                   \
+  using T##dt = Eigen::VectorX##df;                                      \
+  using S##dt##type##order =                                             \
+      Eigen::Simplicial##type<Eigen::SparseMatrix<dt>, Eigen::Lower,     \
+                              Eigen::order##Ordering<int>>;              \
+  template T##dt                                                         \
+  EigenSparseSolver<S##dt##type##order, Eigen::SparseMatrix<dt>>::solve( \
+      const T##dt &b);
 
 #define MAKE_EIGEN_SOLVER(dt, type, order) \
   std::make_unique<EigenSparseSolver##dt##type##order>()
@@ -68,10 +93,43 @@ void EigenSparseSolver<EigenSolver, EigenMatrix>::factorize(
 }
 
 template <class EigenSolver, class EigenMatrix>
-Eigen::VectorXf EigenSparseSolver<EigenSolver, EigenMatrix>::solve(
-    const Eigen::Ref<const Eigen::VectorXf> &b) {
+template <typename T>
+T EigenSparseSolver<EigenSolver, EigenMatrix>::solve(const T &b) {
   return solver_.solve(b);
 }
+
+EIGEN_SOLVE_INSTANTIATION(float32, LLT, AMD, f);
+EIGEN_SOLVE_INSTANTIATION(float32, LLT, COLAMD, f);
+EIGEN_SOLVE_INSTANTIATION(float32, LDLT, AMD, f);
+EIGEN_SOLVE_INSTANTIATION(float32, LDLT, COLAMD, f);
+EIGEN_SOLVE_INSTANTIATION(float64, LLT, AMD, d);
+EIGEN_SOLVE_INSTANTIATION(float64, LLT, COLAMD, d);
+EIGEN_SOLVE_INSTANTIATION(float64, LDLT, AMD, d);
+EIGEN_SOLVE_INSTANTIATION(float64, LDLT, COLAMD, d);
+
+using LUfloat32 = Eigen::VectorXf;
+using LUfloat32LLTAMD =
+    Eigen::SparseLU<Eigen::SparseMatrix<float32>, Eigen::AMDOrdering<int>>;
+template Tfloat32
+EigenSparseSolver<LUfloat32LLTAMD, Eigen::SparseMatrix<float32>>::solve(
+    const Tfloat32 &b);
+using LUfloat32LLTCOLAMD =
+    Eigen::SparseLU<Eigen::SparseMatrix<float32>, Eigen::COLAMDOrdering<int>>;
+template Tfloat32
+EigenSparseSolver<LUfloat32LLTCOLAMD, Eigen::SparseMatrix<float32>>::solve(
+    const Tfloat32 &b);
+
+using LUfloat64 = Eigen::VectorXf;
+using LUfloat64LLTAMD =
+    Eigen::SparseLU<Eigen::SparseMatrix<float64>, Eigen::AMDOrdering<int>>;
+template Tfloat64
+EigenSparseSolver<LUfloat64LLTAMD, Eigen::SparseMatrix<float64>>::solve(
+    const Tfloat64 &b);
+using LUfloat64LLTCOLAMD =
+    Eigen::SparseLU<Eigen::SparseMatrix<float64>, Eigen::COLAMDOrdering<int>>;
+template Tfloat64
+EigenSparseSolver<LUfloat64LLTCOLAMD, Eigen::SparseMatrix<float64>>::solve(
+    const Tfloat64 &b);
 
 template <class EigenSolver, class EigenMatrix>
 bool EigenSparseSolver<EigenSolver, EigenMatrix>::info() {
@@ -358,8 +416,10 @@ std::unique_ptr<SparseSolver> make_sparse_solver(DataType dt,
   using func_type = std::unique_ptr<SparseSolver> (*)();
   static const std::unordered_map<key_type, func_type, key_hash>
       solver_factory = {
-          MAKE_SOLVER(float32, LLT, AMD), MAKE_SOLVER(float32, LLT, COLAMD),
-          MAKE_SOLVER(float32, LDLT, AMD), MAKE_SOLVER(float32, LDLT, COLAMD)};
+          MAKE_SOLVER(float32, LLT, AMD),  MAKE_SOLVER(float32, LLT, COLAMD),
+          MAKE_SOLVER(float32, LDLT, AMD), MAKE_SOLVER(float32, LDLT, COLAMD),
+          MAKE_SOLVER(float64, LLT, AMD),  MAKE_SOLVER(float64, LLT, COLAMD),
+          MAKE_SOLVER(float64, LDLT, AMD), MAKE_SOLVER(float64, LDLT, COLAMD)};
   static const std::unordered_map<std::string, std::string> dt_map = {
       {"f32", "float32"}, {"f64", "float64"}};
   auto it = dt_map.find(taichi::lang::data_type_name(dt));
@@ -372,9 +432,17 @@ std::unique_ptr<SparseSolver> make_sparse_solver(DataType dt,
     auto solver_func = solver_factory.at(solver_key);
     return solver_func();
   } else if (solver_type == "LU") {
-    using EigenMatrix = Eigen::SparseMatrix<float32>;
-    using LU = Eigen::SparseLU<EigenMatrix>;
-    return std::make_unique<EigenSparseSolver<LU, EigenMatrix>>();
+    if (it->first == "f32") {
+      using EigenMatrix = Eigen::SparseMatrix<float32>;
+      using LU = Eigen::SparseLU<EigenMatrix>;
+      return std::make_unique<EigenSparseSolver<LU, EigenMatrix>>();
+    } else if (it->first == "f64") {
+      using EigenMatrix = Eigen::SparseMatrix<float64>;
+      using LU = Eigen::SparseLU<EigenMatrix>;
+      return std::make_unique<EigenSparseSolver<LU, EigenMatrix>>();
+    } else {
+      TI_ERROR("Not supported sparse solver data type: {}", it->second);
+    }
   } else
     TI_ERROR("Not supported sparse solver type: {}", solver_type);
 }

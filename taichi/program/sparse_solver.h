@@ -1,10 +1,17 @@
 #pragma once
 
+#include "sparse_matrix.h"
+
 #include "taichi/ir/type.h"
 #include "taichi/rhi/cuda/cuda_driver.h"
 #include "taichi/program/program.h"
 
-#include "sparse_matrix.h"
+#define DECLARE_EIGEN_SOLVER(dt, type, order)                        \
+  typedef EigenSparseSolver<                                         \
+      Eigen::Simplicial##type<Eigen::SparseMatrix<dt>, Eigen::Lower, \
+                              Eigen::order##Ordering<int>>,          \
+      Eigen::SparseMatrix<dt>>                                       \
+      EigenSparseSolver##dt##type##order;
 
 namespace taichi::lang {
 
@@ -14,15 +21,6 @@ class SparseSolver {
   virtual bool compute(const SparseMatrix &sm) = 0;
   virtual void analyze_pattern(const SparseMatrix &sm) = 0;
   virtual void factorize(const SparseMatrix &sm) = 0;
-  virtual Eigen::VectorXf solve(const Eigen::Ref<const Eigen::VectorXf> &b) = 0;
-  virtual void solve_rf(Program *prog,
-                        const SparseMatrix &sm,
-                        const Ndarray &b,
-                        Ndarray &x) = 0;
-  virtual void solve_cu(Program *prog,
-                        const SparseMatrix &sm,
-                        const Ndarray &b,
-                        Ndarray &x) = 0;
   virtual bool info() = 0;
 };
 
@@ -36,33 +34,36 @@ class EigenSparseSolver : public SparseSolver {
   bool compute(const SparseMatrix &sm) override;
   void analyze_pattern(const SparseMatrix &sm) override;
   void factorize(const SparseMatrix &sm) override;
-  Eigen::VectorXf solve(const Eigen::Ref<const Eigen::VectorXf> &b) override;
-  void solve_cu(Program *prog,
-                const SparseMatrix &sm,
-                const Ndarray &b,
-                Ndarray &x) override {
-    TI_NOT_IMPLEMENTED;
-  };
-  void solve_rf(Program *prog,
-                const SparseMatrix &sm,
-                const Ndarray &b,
-                Ndarray &x) override {
-    TI_NOT_IMPLEMENTED;
-  };
-
+  template <typename T>
+  T solve(const T &b);
   bool info() override;
 };
-#define REGISTER_EIGEN_SOLVER(dt, type, order)                       \
-  typedef EigenSparseSolver<                                         \
-      Eigen::Simplicial##type<Eigen::SparseMatrix<dt>, Eigen::Lower, \
-                              Eigen::order##Ordering<int>>,          \
-      Eigen::SparseMatrix<dt>>                                       \
-      EigenSparseSolver##dt##type##order;
 
-REGISTER_EIGEN_SOLVER(float32, LLT, AMD);
-REGISTER_EIGEN_SOLVER(float32, LLT, COLAMD);
-REGISTER_EIGEN_SOLVER(float32, LDLT, AMD);
-REGISTER_EIGEN_SOLVER(float32, LDLT, COLAMD);
+DECLARE_EIGEN_SOLVER(float32, LLT, AMD);
+DECLARE_EIGEN_SOLVER(float32, LLT, COLAMD);
+DECLARE_EIGEN_SOLVER(float32, LDLT, AMD);
+DECLARE_EIGEN_SOLVER(float32, LDLT, COLAMD);
+DECLARE_EIGEN_SOLVER(float64, LLT, AMD);
+DECLARE_EIGEN_SOLVER(float64, LLT, COLAMD);
+DECLARE_EIGEN_SOLVER(float64, LDLT, AMD);
+DECLARE_EIGEN_SOLVER(float64, LDLT, COLAMD);
+
+typedef EigenSparseSolver<
+    Eigen::SparseLU<Eigen::SparseMatrix<float32>, Eigen::AMDOrdering<int>>,
+    Eigen::SparseMatrix<float32>>
+    EigenSparseSolverfloat32LUAMD;
+typedef EigenSparseSolver<
+    Eigen::SparseLU<Eigen::SparseMatrix<float32>, Eigen::COLAMDOrdering<int>>,
+    Eigen::SparseMatrix<float32>>
+    EigenSparseSolverfloat32LUCOLAMD;
+typedef EigenSparseSolver<
+    Eigen::SparseLU<Eigen::SparseMatrix<float64>, Eigen::AMDOrdering<int>>,
+    Eigen::SparseMatrix<float64>>
+    EigenSparseSolverfloat64LUAMD;
+typedef EigenSparseSolver<
+    Eigen::SparseLU<Eigen::SparseMatrix<float64>, Eigen::COLAMDOrdering<int>>,
+    Eigen::SparseMatrix<float64>>
+    EigenSparseSolverfloat64LUCOLAMD;
 
 class CuSparseSolver : public SparseSolver {
  private:
@@ -81,17 +82,14 @@ class CuSparseSolver : public SparseSolver {
   void analyze_pattern(const SparseMatrix &sm) override;
 
   void factorize(const SparseMatrix &sm) override;
-  Eigen::VectorXf solve(const Eigen::Ref<const Eigen::VectorXf> &b) override {
-    TI_NOT_IMPLEMENTED;
-  };
   void solve_cu(Program *prog,
                 const SparseMatrix &sm,
                 const Ndarray &b,
-                Ndarray &x) override;
+                Ndarray &x);
   void solve_rf(Program *prog,
                 const SparseMatrix &sm,
                 const Ndarray &b,
-                Ndarray &x) override;
+                Ndarray &x);
   bool info() override {
     TI_NOT_IMPLEMENTED;
   };

@@ -223,6 +223,24 @@ def test_polar_decomp_f64(dim):
     _test_polar_decomp(dim, ti.f64)
 
 
+@pytest.mark.parametrize("dim", [2, 3])
+@test_utils.test(default_fp=ti.f32,
+                 exclude=ti.opengl,
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_polar_decomp_f32_real_matrix_scalarize(dim):
+    _test_polar_decomp(dim, ti.f32)
+
+
+@pytest.mark.parametrize("dim", [2, 3])
+@test_utils.test(require=ti.extension.data64,
+                 default_fp=ti.f64,
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_polar_decomp_f64_real_matrix_scalarize(dim):
+    _test_polar_decomp(dim, ti.f64)
+
+
 @test_utils.test()
 def test_matrix():
     x = ti.Matrix.field(2, 2, dtype=ti.i32)

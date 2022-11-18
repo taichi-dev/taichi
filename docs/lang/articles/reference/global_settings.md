@@ -214,4 +214,4 @@ The default setting `fast_math=True` may cause unexpected precision problems, wh
 ti.init(default_fp=ti.f64, fast_math=False)
 ```
 
-If you met other precision-losing problems, setting `ti.init(fast_math=False)` might be the solution. If this doesn't work, please [report an issue](https://github.com/taichi-dev/taichi/issues) to us.
+If you encounter other precision loss problems, set `ti.init(fast_math=False)` and see if it works. If not, [report an issue](https://github.com/taichi-dev/taichi/issues) to us.

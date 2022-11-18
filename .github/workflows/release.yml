@@ -188,16 +188,10 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
           prepare-build-cache
 
-      - name: Download Pre-Built LLVM 10.0.0
-        run: python misc/ci_download.py
-        env:
-          CI_PLATFORM: macos
-
       - name: Create Python Wheel
         run: |
           # Use the molten-vk v1.1.10 downloaded from taichi assets
           brew uninstall molten-vk -f
-          export PATH=$(pwd)/taichi-llvm/bin/:$PATH
           .github/workflows/scripts/unix-build.sh
         env:
           PROJECT_NAME: ${{ matrix.name }}
@@ -293,7 +287,7 @@ jobs:
         shell: pwsh
         if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
-          .\.github\workflows\scripts\win_build.ps1 -llvmVer 10 -installVulkan -libsDir "$env:LocalAppData/buildbot"
+          .\.github\workflows\scripts\win_build.ps1 -llvmVer 15 -installVulkan -libsDir "$env:LocalAppData/buildbot"
         env:
           PY: ${{ matrix.python }}
           PROJECT_NAME: ${{ matrix.name }}
@@ -316,7 +310,7 @@ jobs:
 
   upload_to_pypi:
     name: Upload release to PyPI
-    needs: [build_and_test_linux, build_and_test_manylinux2014, build_and_test_mac, build_and_test_m1, build_and_test_macos_1014, build_and_test_windows]
+    needs: [build_and_test_linux, build_and_test_manylinux2014, build_and_test_mac, build_and_test_m1, build_and_test_windows]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -377,20 +371,3 @@ jobs:
         with:
           body: ${{ steps.changelog.outputs.content }}
           tag_name: ${{ github.event.inputs.version }}
-
-      - name: Bump version
-        run: |
-          version_parts=(${RELEASE_VERSION//./ })
-          version_parts[2]=$(expr ${version_parts[2]} + 1)
-          next_version=$(IFS=.; echo "${version_parts[*]}")
-          # Update version.txt
-          git checkout -b "bump/$next_version"
-          echo "$next_version" > version.txt
-          git add version.txt
-          # Commit and push changes
-          git commit -m "Bump version to $next_version"
-          git push origin "bump/$next_version"
-          # Create pull request
-          gh pr create -B master -t "[misc] Bump version to $next_version" -b "Bump version to $next_version"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GARDENER_PAT }}

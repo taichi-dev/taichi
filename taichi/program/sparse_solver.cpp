@@ -108,7 +108,7 @@ void CuSparseSolver::analyze_pattern(const SparseMatrix &sm) {
   // step 2: analyze chol(A) to know structure of L
   CUSOLVERDriver::get_instance().csSpXcsrcholAnalysis(
       cusolver_handle_, rowsA, nnzA, descr_, d_csrRowPtrA, d_csrColIndA, info_);
-
+  is_analyzed_ = true;
 #else
   TI_NOT_IMPLEMENTED
 #endif
@@ -145,6 +145,7 @@ void CuSparseSolver::factorize(const SparseMatrix &sm) {
   CUSOLVERDriver::get_instance().csSpScsrcholZeroPivot(cusolver_handle_, info_,
                                                        tol, &singularity);
   TI_ASSERT(singularity == -1);
+  is_factorized_ = true;
 #else
   TI_NOT_IMPLEMENTED
 #endif
@@ -320,6 +321,12 @@ void CuSparseSolver::solve_rf(Program *prog,
                               const Ndarray &b,
                               Ndarray &x) {
 #if defined(TI_WITH_CUDA)
+  if (is_analyzed_ == false) {
+    analyze_pattern(sm);
+  }
+  if (is_factorized_ == false) {
+    factorize(sm);
+  }
   // Retrive the info of the sparse matrix
   SparseMatrix *sm_no_cv = const_cast<SparseMatrix *>(&sm);
   CuSparseMatrix *A = dynamic_cast<CuSparseMatrix *>(sm_no_cv);

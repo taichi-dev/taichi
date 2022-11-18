@@ -1061,6 +1061,12 @@ class MakeAdjoint : public ADTransform {
           adjoint_ptr, stmt->dest->as<MatrixPtrStmt>()->offset);
     }
     accumulate(stmt->val, insert<GlobalLoadStmt>(adjoint_ptr));
+
+    // Clear the gradient after accumulation finished.
+    auto zero = insert<ConstStmt>(
+        TypedConstant(adjoint_ptr->ret_type.ptr_removed(), 0));
+    insert<GlobalStoreStmt>(adjoint_ptr, zero);
+
     stmt->parent->erase(stmt);
   }
 

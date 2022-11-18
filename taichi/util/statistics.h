@@ -1,4 +1,5 @@
 #include <unordered_map>
+#include <mutex>
 
 #include "taichi/common/core.h"
 
@@ -23,6 +24,7 @@ class Statistics {
 
  private:
   counters_map counters_;
+  std::mutex counters_map_mutex_;
 };
 
 extern Statistics stat;

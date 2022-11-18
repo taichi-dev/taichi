@@ -1,7 +1,7 @@
 import math
 
 from taichi.lang import impl, ops
-from taichi.lang.impl import expr_init, get_runtime, grouped, static
+from taichi.lang.impl import get_runtime, grouped, static
 from taichi.lang.kernel_impl import func
 from taichi.lang.matrix import Matrix, Vector
 from taichi.types import f32, f64
@@ -50,7 +50,7 @@ def randn(dt=None):
 
 
 @func
-def polar_decompose2d(A, dt):
+def _polar_decompose2d(A, dt):
     """Perform polar decomposition (A=UP) for 2x2 matrix.
     Mathematical concept refers to https://en.wikipedia.org/wiki/Polar_decomposition.
 
@@ -88,7 +88,7 @@ def polar_decompose2d(A, dt):
 
 
 @func
-def polar_decompose3d(A, dt):
+def _polar_decompose3d(A, dt):
     """Perform polar decomposition (A=UP) for 3x3 matrix.
 
     Mathematical concept refers to https://en.wikipedia.org/wiki/Polar_decomposition.
@@ -100,13 +100,13 @@ def polar_decompose3d(A, dt):
     Returns:
         Decomposed 3x3 matrices `U` and `P`.
     """
-    U, sig, V = svd(A, dt)
+    U, sig, V = _svd3d(A, dt)
     return U @ V.transpose(), V @ sig @ V.transpose()
 
 
 # https://www.seas.upenn.edu/~cffjiang/research/svd/svd.pdf
 @func
-def svd2d(A, dt):
+def _svd2d(A, dt):
     """Perform singular value decomposition (A=USV^T) for 2x2 matrix.
 
     Mathematical concept refers to https://en.wikipedia.org/wiki/Singular_value_decomposition.
@@ -118,7 +118,7 @@ def svd2d(A, dt):
     Returns:
         Decomposed 2x2 matrices `U`, 'S' and `V`.
     """
-    R, S = polar_decompose2d(A, dt)
+    R, S = _polar_decompose2d(A, dt)
     c, s = ops.cast(0.0, dt), ops.cast(0.0, dt)
     s1, s2 = ops.cast(0.0, dt), ops.cast(0.0, dt)
     if abs(S[0, 1]) < 1e-5:
@@ -148,7 +148,7 @@ def svd2d(A, dt):
     return U, Matrix([[s1, ops.cast(0, dt)], [ops.cast(0, dt), s2]], dt=dt), V
 
 
-def svd3d(A, dt, iters=None):
+def _svd3d(A, dt, iters=None):
     """Perform singular value decomposition (A=USV^T) for 3x3 matrix.
 
     Mathematical concept refers to https://en.wikipedia.org/wiki/Singular_value_decomposition.
@@ -162,7 +162,10 @@ def svd3d(A, dt, iters=None):
         Decomposed 3x3 matrices `U`, 'S' and `V`.
     """
     assert A.n == 3 and A.m == 3
-    inputs = tuple([e.ptr for e in A.entries])
+    if impl.current_cfg().real_matrix:
+        inputs = get_runtime().prog.current_ast_builder().expand_expr([A.ptr])
+    else:
+        inputs = tuple([e.ptr for e in A.entries])
     assert dt in [f32, f64]
     if iters is None:
         if dt == f32:
@@ -179,19 +182,24 @@ def svd3d(A, dt, iters=None):
     U_entries = rets[:9]
     V_entries = rets[9:18]
     sig_entries = rets[18:]
-    U = expr_init(Matrix.zero(dt, 3, 3))
-    V = expr_init(Matrix.zero(dt, 3, 3))
-    sigma = expr_init(Matrix.zero(dt, 3, 3))
-    for i in range(3):
-        for j in range(3):
-            U(i, j)._assign(U_entries[i * 3 + j])
-            V(i, j)._assign(V_entries[i * 3 + j])
-        sigma(i, i)._assign(sig_entries[i])
-    return U, sigma, V
+
+    @func
+    def get_result():
+        U = Matrix.zero(dt, 3, 3)
+        V = Matrix.zero(dt, 3, 3)
+        sigma = Matrix.zero(dt, 3, 3)
+        for i in static(range(3)):
+            for j in static(range(3)):
+                U[i, j] = U_entries[i * 3 + j]
+                V[i, j] = V_entries[i * 3 + j]
+            sigma[i, i] = sig_entries[i]
+        return U, sigma, V
+
+    return get_result()
 
 
 @func
-def eig2x2(A, dt):
+def _eig2x2(A, dt):
     """Compute the eigenvalues and right eigenvectors (Av=lambda v) of a 2x2 real matrix.
 
     Mathematical concept refers to https://en.wikipedia.org/wiki/Eigendecomposition_of_a_matrix.
@@ -241,7 +249,7 @@ def eig2x2(A, dt):
 
 
 @func
-def sym_eig2x2(A, dt):
+def _sym_eig2x2(A, dt):
     """Compute the eigenvalues and right eigenvectors (Av=lambda v) of a 2x2 real symmetric matrix.
 
     Mathematical concept refers to https://en.wikipedia.org/wiki/Eigendecomposition_of_a_matrix.
@@ -254,6 +262,7 @@ def sym_eig2x2(A, dt):
         eigenvalues (ti.Vector(2)): The eigenvalues. Each entry store one eigen value.
         eigenvectors (ti.Matrix(2, 2)): The eigenvectors. Each column stores one eigenvector.
     """
+    assert all(A == A.transpose()), "A needs to be symmetric"
     tr = A.trace()
     det = A.determinant()
     gap = tr**2 - 4 * det
@@ -276,7 +285,7 @@ def sym_eig2x2(A, dt):
 
 
 @func
-def sym_eig3x3(A, dt):
+def _sym_eig3x3(A, dt):
     """Compute the eigenvalues and right eigenvectors (Av=lambda v) of a 3x3 real symmetric matrix using Cardano's method.
 
     Mathematical concept refers to https://www.mpi-hd.mpg.de/personalhomes/globes/3x3/.
@@ -289,6 +298,7 @@ def sym_eig3x3(A, dt):
         eigenvalues (ti.Vector(3)): The eigenvalues. Each entry store one eigen value.
         eigenvectors (ti.Matrix(3, 3)): The eigenvectors. Each column stores one eigenvector.
     """
+    assert all(A == A.transpose()), "A needs to be symmetric"
     M_SQRT3 = 1.73205080756887729352744634151
     m = A.trace()
     dd = A[0, 1] * A[0, 1]
@@ -354,55 +364,10 @@ def sym_eig3x3(A, dt):
     return eigenvalues, Q
 
 
-@func
-def _svd(A, dt):
-    """Perform singular value decomposition (A=USV^T) for arbitrary size matrix.
-
-    Mathematical concept refers to https://en.wikipedia.org/wiki/Singular_value_decomposition.
-    2D implementation refers to :func:`taichi.svd2d`.
-    3D implementation refers to :func:`taichi.svd3d`.
-
-    Args:
-        A (ti.Matrix(n, n)): input nxn matrix `A`.
-        dt (DataType): date type of elements in matrix `A`, typically accepts ti.f32 or ti.f64.
-
-    Returns:
-        Decomposed nxn matrices `U`, 'S' and `V`.
-    """
-    if static(A.n == 2):  # pylint: disable=R1705
-        ret = svd2d(A, dt)
-        return ret
-    else:
-        return svd3d(A, dt)
-
-
-@func
-def _polar_decompose(A, dt):
-    """Perform polar decomposition (A=UP) for arbitrary size matrix.
-
-    Mathematical concept refers to https://en.wikipedia.org/wiki/Polar_decomposition.
-    2D implementation refers to :func:`taichi.polar_decompose2d`.
-    3D implementation refers to :func:`taichi.polar_decompose3d`.
-
-    Args:
-        A (ti.Matrix(n, n)): input nxn matrix `A`.
-        dt (DataType): date type of elements in matrix `A`, typically accepts ti.f32 or ti.f64.
-
-    Returns:
-        Decomposed nxn matrices `U` and `P`.
-    """
-    if static(A.n == 2):  # pylint: disable=R1705
-        ret = polar_decompose2d(A, dt)
-        return ret
-    else:
-        return polar_decompose3d(A, dt)
-
-
 def polar_decompose(A, dt=None):
     """Perform polar decomposition (A=UP) for arbitrary size matrix.
 
     Mathematical concept refers to https://en.wikipedia.org/wiki/Polar_decomposition.
-    This is only a wrapper for :func:`taichi.polar_decompose`.
 
     Args:
         A (ti.Matrix(n, n)): input nxn matrix `A`.
@@ -413,17 +378,17 @@ def polar_decompose(A, dt=None):
     """
     if dt is None:
         dt = impl.get_runtime().default_fp
-    if A.n != 2 and A.n != 3:
-        raise Exception(
-            "Polar decomposition only supports 2D and 3D matrices.")
-    return _polar_decompose(A, dt)
+    if A.n == 2:
+        return _polar_decompose2d(A, dt)
+    if A.n == 3:
+        return _polar_decompose3d(A, dt)
+    raise Exception("Polar decomposition only supports 2D and 3D matrices.")
 
 
 def svd(A, dt=None):
     """Perform singular value decomposition (A=USV^T) for arbitrary size matrix.
 
     Mathematical concept refers to https://en.wikipedia.org/wiki/Singular_value_decomposition.
-    This is only a wrappers for :func:`taichi.svd`.
 
     Args:
         A (ti.Matrix(n, n)): input nxn matrix `A`.
@@ -434,16 +399,17 @@ def svd(A, dt=None):
     """
     if dt is None:
         dt = impl.get_runtime().default_fp
-    if A.n != 2 and A.n != 3:
-        raise Exception("SVD only supports 2D and 3D matrices.")
-    return _svd(A, dt)
+    if A.n == 2:
+        return _svd2d(A, dt)
+    if A.n == 3:
+        return _svd3d(A, dt)
+    raise Exception("SVD only supports 2D and 3D matrices.")
 
 
 def eig(A, dt=None):
     """Compute the eigenvalues and right eigenvectors of a real matrix.
 
     Mathematical concept refers to https://en.wikipedia.org/wiki/Eigendecomposition_of_a_matrix.
-    2D implementation refers to :func:`taichi.eig2x2`.
 
     Args:
         A (ti.Matrix(n, n)): 2D Matrix for which the eigenvalues and right eigenvectors will be computed.
@@ -456,7 +422,7 @@ def eig(A, dt=None):
     if dt is None:
         dt = impl.get_runtime().default_fp
     if A.n == 2:
-        return eig2x2(A, dt)
+        return _eig2x2(A, dt)
     raise Exception("Eigen solver only supports 2D matrices.")
 
 
@@ -464,7 +430,6 @@ def sym_eig(A, dt=None):
     """Compute the eigenvalues and right eigenvectors of a real symmetric matrix.
 
     Mathematical concept refers to https://en.wikipedia.org/wiki/Eigendecomposition_of_a_matrix.
-    2D implementation refers to :func:`taichi.sym_eig2x2`.
 
     Args:
         A (ti.Matrix(n, n)): Symmetric Matrix for which the eigenvalues and right eigenvectors will be computed.
@@ -474,13 +439,12 @@ def sym_eig(A, dt=None):
         eigenvalues (ti.Vector(n)): The eigenvalues. Each entry store one eigen value.
         eigenvectors (ti.Matrix(n, n)): The eigenvectors. Each column stores one eigenvector.
     """
-    assert all(A == A.transpose()), "A needs to be symmetric"
     if dt is None:
         dt = impl.get_runtime().default_fp
     if A.n == 2:
-        return sym_eig2x2(A, dt)
+        return _sym_eig2x2(A, dt)
     if A.n == 3:
-        return sym_eig3x3(A, dt)
+        return _sym_eig3x3(A, dt)
     raise Exception("Symmetric eigen solver only supports 2D and 3D matrices.")
 
 
@@ -535,6 +499,18 @@ def _gauss_elimination_3x3(Ab, dt):
     return x
 
 
+@func
+def _combine(A, b, dt):
+    n = static(A.n)
+    Ab = Matrix.zero(dt, n, n + 1)
+    for i in static(range(n)):
+        for j in static(range(n)):
+            Ab[i, j] = A[i, j]
+    for i in static(range(n)):
+        Ab[i, n] = b[i]
+    return Ab
+
+
 def solve(A, b, dt=None):
     """Solve a matrix using Gauss elimination method.
 
@@ -551,15 +527,7 @@ def solve(A, b, dt=None):
     assert A.m == b.n, "Matrix and Vector dimension dismatch"
     if dt is None:
         dt = impl.get_runtime().default_fp
-    nrow, ncol = static(A.n, A.n + 1)
-    Ab = expr_init(Matrix.zero(dt, nrow, ncol))
-    lhs = tuple([e.ptr for e in A.entries])
-    rhs = tuple([e.ptr for e in b.entries])
-    for i in range(nrow):
-        for j in range(nrow):
-            Ab(i, j)._assign(lhs[nrow * i + j])
-    for i in range(nrow):
-        Ab(i, nrow)._assign(rhs[i])
+    Ab = _combine(A, b, dt)
     if A.n == 2:
         return _gauss_elimination_2x2(Ab, dt)
     if A.n == 3:

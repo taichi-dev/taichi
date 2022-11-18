@@ -260,6 +260,10 @@ class SparseMatrixBuilder:
         """Get the address of the sparse matrix"""
         return self.ptr.get_addr()
 
+    def _get_ndarray_addr(self):
+        """Get the address of the ndarray"""
+        return self.ptr.get_ndarray_data_ptr()
+
     def print_triplets(self):
         """Print the triplets stored in the builder"""
         self.ptr.print_triplets()

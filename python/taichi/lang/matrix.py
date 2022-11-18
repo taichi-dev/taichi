@@ -566,24 +566,8 @@ class Matrix(TaichiOperations):
             The matrix-matrix product or matrix-vector product.
 
         """
-        assert isinstance(other, Matrix), "rhs of `@` is not a matrix / vector"
-        if (is_col_vector(self)) and not is_vector(other):
-            # left multiplication
-            assert self.n == other.m, f"Dimension mismatch between (left multiplication) shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
-            return other.transpose() @ self
-        # right multiplication
-        assert self.m == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
-        entries = []
-        for i in range(self.n):
-            entries.append([])
-            for j in range(other.m):
-                acc = self(i, 0) * other(0, j)
-                for k in range(1, other.n):
-                    acc = acc + self(i, k) * other(k, j)
-                entries[i].append(acc)
-        if is_col_vector(other):
-            return Vector(entries)
-        return Matrix(entries)
+        from taichi.lang import matrix_ops  # pylint: disable=C0415
+        return matrix_ops.matmul(self, other)
 
     # host access & python scope operation
     def __len__(self):
@@ -918,10 +902,8 @@ class Matrix(TaichiOperations):
         from taichi.lang import matrix_ops
         return matrix_ops.all(self)
 
-    @taichi_scope
     def fill(self, val):
-        """Fills the matrix with a specified value, must be called
-        in Taichi scope.
+        """Fills the matrix with a specified value.
 
         Args:
             val (Union[int, float]): Value to fill.
@@ -1283,21 +1265,8 @@ class Matrix(TaichiOperations):
             >>> test()
             [[1, 2, 3], [4, 5, 6]]
         """
-        if isinstance(rows[0], Matrix):
-            for row in rows:
-                assert row.m == 1, "Inputs must be vectors, i.e. m == 1"
-                assert row.n == rows[
-                    0].n, "Input vectors must share the same shape"
-            # l-value copy:
-            return Matrix([[row(i) for i in range(row.n)] for row in rows])
-        if isinstance(rows[0], list):
-            for row in rows:
-                assert len(row) == len(
-                    rows[0]), "Input lists share the same shape"
-            # l-value copy:
-            return Matrix([[x for x in row] for row in rows])
-        raise Exception(
-            "Cols/rows must be a list of lists, or a list of vectors")
+        from taichi.lang import matrix_ops  # pylint: disable=C0415
+        return matrix_ops.rows(rows)
 
     @staticmethod
     def cols(cols):
@@ -1321,7 +1290,8 @@ class Matrix(TaichiOperations):
             >>> test()
             [[1, 4], [2, 5], [3, 6]]
         """
-        return Matrix.rows(cols).transpose()
+        from taichi.lang import matrix_ops  # pylint: disable=C0415
+        return matrix_ops.cols(cols)
 
     def __hash__(self):
         # TODO: refactor KernelTemplateMapper
@@ -1771,6 +1741,11 @@ class MatrixType(CompoundType):
                 entries += x
             elif isinstance(x, np.ndarray):
                 entries += list(x.ravel())
+            elif isinstance(x, impl.Expr) and x.ptr.is_tensor():
+                entries += [
+                    impl.Expr(e) for e in impl.get_runtime().prog.
+                    current_ast_builder().expand_expr([x.ptr])
+                ]
             elif isinstance(x, Matrix):
                 entries += x.entries
             else:
@@ -1796,6 +1771,10 @@ class MatrixType(CompoundType):
 
         if isinstance(mat, impl.Expr) and mat.ptr.is_tensor():
             return ops_mod.cast(mat, self.dtype)
+
+        if isinstance(mat, Matrix) and impl.current_cfg().real_matrix:
+            arr = [[mat(i, j) for j in range(self.m)] for i in range(self.n)]
+            return ops_mod.cast(make_matrix(arr), self.dtype)
 
         return mat.cast(self.dtype)
 
@@ -1863,6 +1842,11 @@ class VectorType(MatrixType):
                 entries += list(x.ravel())
             elif isinstance(x, Matrix):
                 entries += x.entries
+            elif isinstance(x, impl.Expr) and x.ptr.is_tensor():
+                entries += [
+                    impl.Expr(e) for e in impl.get_runtime().prog.
+                    current_ast_builder().expand_expr([x.ptr])
+                ]
             else:
                 entries.append(x)
 
@@ -1883,6 +1867,10 @@ class VectorType(MatrixType):
 
         if isinstance(vec, impl.Expr) and vec.ptr.is_tensor():
             return ops_mod.cast(vec, self.dtype)
+
+        if isinstance(vec, Matrix) and impl.current_cfg().real_matrix:
+            arr = vec.entries
+            return ops_mod.cast(make_matrix(arr), self.dtype)
 
         return vec.cast(self.dtype)
 

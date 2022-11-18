@@ -6,7 +6,7 @@ from tests import test_utils
 
 @test_utils.test(arch=ti.cuda)
 def test_global_thread_idx():
-    n = 2048
+    n = 128
     x = ti.field(ti.i32, shape=n)
 
     @ti.kernel

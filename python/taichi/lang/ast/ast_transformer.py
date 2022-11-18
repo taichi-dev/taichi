@@ -1174,7 +1174,7 @@ class ASTTransformer(Builder):
                 )
             target = targets[0]
             if current_cfg().real_matrix:
-                mat = matrix.make_matrix([0] * len(ndrange_var.dimensions))
+                mat = matrix.make_matrix([0] * len(ndrange_var.dimensions), dt=primitive_types.i32)
             else:
                 mat = matrix.Vector([0] * len(ndrange_var.dimensions),
                                     dt=primitive_types.i32)

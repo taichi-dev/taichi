@@ -565,7 +565,6 @@ class MatrixExpression : public Expression {
                    DataType element_type)
       : elements(elements) {
     this->dt = DataType(TypeFactory::create_tensor_type(shape, element_type));
-    this->ret_type = this->dt;
   }
 
   void type_check(CompileConfig *config) override;

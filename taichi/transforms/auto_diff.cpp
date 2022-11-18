@@ -139,38 +139,6 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
     }
   }
 
-  // void visit(GlobalStoreStmt *stmt) override {
-  //   // We don't need to check the global store inside the range for-loops
-  //   // because
-  //   // 1. If the range for-loop is innermost, they will be captured by
-  //   // MakeAdjoint anyway
-  //   // 2. If the range for-loop is not innermost, they will be processed by
-  //   // another IndependentBlocksJudger
-  //   if (is_inside_loop_)
-  //     return;
-  //   // TI_ASSERT(stmt->val->is<GlobalPtrStmt>());
-  //   if (stmt->val->is<GlobalPtrStmt>() &&
-  //   stmt->val->as<GlobalPtrStmt>()->snode->has_adjoint()) {
-  //     std::cout << "Global Store " << stmt->id << " exist"<< std::endl;
-  //     qualified_glb_operations_ = false;
-  //   }
-  // }
-
-  void visit(GlobalLoadStmt *stmt) override {
-    // We don't need to check the global load inside the range for-loops
-    // because
-    // 1. If the range for-loop is innermost, they will be captured by
-    // MakeAdjoint anyway
-    // 2. If the range for-loop is not innermost, they will be processed by
-    // another IndependentBlocksJudger
-    if (is_inside_loop_)
-      return;
-    TI_ASSERT(stmt->src->is<GlobalPtrStmt>());
-    if (stmt->src->as<GlobalPtrStmt>()->snode->has_adjoint()) {
-      qualified_glb_operations_ = true;
-    }
-  }
-
   void visit(RangeForStmt *stmt) override {
     inner_most_loop_ = false;
     is_inside_loop_ = true;

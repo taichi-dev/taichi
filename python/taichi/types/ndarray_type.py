@@ -1,5 +1,9 @@
+import warnings
+
+from taichi.lang import impl
 from taichi.lang.enums import Layout
-from taichi.types.compound_types import CompoundType, TensorType
+from taichi.types.compound_types import (CompoundType, TensorType, matrix,
+                                         vector)
 
 
 class NdarrayTypeMetadata:
@@ -7,6 +11,52 @@ class NdarrayTypeMetadata:
         self.element_type = element_type
         self.shape = shape
         self.layout = Layout.AOS
+
+
+# TODO(Haidong): This is a helper function that creates a MatrixType
+#                with respect to element_dim and element_shape.
+#                Remove this function when the two args are totally deprecated.
+def make_matrix_dtype_from_element_shape(element_dim, element_shape,
+                                         primitive_dtype):
+    # Cook primitive dtype
+    if primitive_dtype is None:
+        primitive_dtype = impl.get_runtime().default_fp
+
+    if isinstance(primitive_dtype, CompoundType):
+        raise TypeError(
+            f'Cannot specifiy matrix dtype "{primitive_dtype}" and element shape or dim at the same time.'
+        )
+
+    # Scalars
+    if element_dim == 0 or (element_shape is not None
+                            and len(element_shape) == 0):
+        return primitive_dtype
+
+    # Cook element dim and shape into matrix type.
+    mat_dtype = None
+    if element_dim is not None:
+        if element_dim < 0 or element_dim > 2:
+            raise ValueError(
+                "Only scalars, vectors, and matrices are allowed as elements of ti.types.ndarray()"
+            )
+        # Check dim consistency. The matrix dtype will be cooked later.
+        if element_shape is not None and len(element_shape != element_dim):
+            raise ValueError(
+                f"Both element_shape and element_dim are specified, but shape doesn't match specified dim: {len(element_shape)}!={element_dim}"
+            )
+        mat_dtype = vector(None,
+                           primitive_dtype) if element_dim == 1 else matrix(
+                               None, None, primitive_dtype)
+    if element_shape is not None:
+        if len(element_shape) > 2:
+            raise ValueError(
+                "Only scalars, vectors, and matrices are allowed as elements of ti.types.ndarray()"
+            )
+        mat_dtype = vector(
+            element_shape[0],
+            primitive_dtype) if len(element_shape) == 1 else matrix(
+                element_shape[0], element_shape[1], primitive_dtype)
+    return mat_dtype
 
 
 class NdarrayType:
@@ -25,62 +75,45 @@ class NdarrayType:
                  element_dim=None,
                  element_shape=None,
                  field_dim=None):
-        # TODO(Haidong) Remove the element_dim and element_shape memebers internally
-        if element_dim is not None and (element_dim < 0 or element_dim > 2):
-            raise ValueError(
-                "Only scalars, vectors, and matrices are allowed as elements of ti.types.ndarray()"
-            )
-        if element_dim is not None and element_shape is not None and len(
-                element_shape) != element_dim:
-            raise ValueError(
-                f"Both element_shape and element_dim are specified, but shape doesn't match specified dim: {len(element_shape)}!={element_dim}"
-            )
-        self.dtype = dtype
-
-        # FIXME(Haidong) We cannot use iomport Vector/MatrixType due to circular import
-        # Therefore we are using the CompuoundType to determine the specific typs.
-        # TODO Replace CompoundType with MatrixType and VectorType
-
-        if isinstance(dtype, CompoundType):
-            if dtype == TensorType:
-                raise TypeError(
-                    "TensorType is not supported for ndarray dtype annotation."
-                )
-            self.element_dim = dtype.ndim
-            self.element_shape = (dtype.n, ) if dtype.ndim == 1 else (dtype.n,
-                                                                      dtype.m)
-            if not (self.element_dim > 0 and self.element_dim <= 2):
-                raise TypeError(
-                    f"Unexpected matrix data type {dtype} has dimension {dtype.ndim}, only vectors and matrices (ndim = 1,2) are accepted."
-                )
+        # TODO(Haidong) Deprecate element shape in 1.4.0. Use dtype to manage element-level arguments.
+        if element_dim is not None or element_shape is not None:
+            warnings.warn(
+                "The element_dim and element_shape arguments for ndarray will be deprecated in v1.4.0, use matrix dtype instead.",
+                DeprecationWarning)
+            self.dtype = make_matrix_dtype_from_element_shape(
+                element_dim, element_shape, dtype)
         else:
-            self.element_shape = element_shape
-            self.element_dim = element_dim
+            self.dtype = dtype
 
         self.field_dim = field_dim
         self.layout = Layout.AOS
 
     def check_matched(self, ndarray_type: NdarrayTypeMetadata):
-        if self.element_dim is not None and self.element_dim > 0:
-            if not isinstance(ndarray_type.element_type, TensorType):
-                raise TypeError(
-                    f"Expect TensorType element for Ndarray with element_dim: {self.element_dim} > 0"
-                )
-            if self.element_dim != len(ndarray_type.element_type.shape()):
-                raise ValueError(
-                    f"Invalid argument into ti.types.ndarray() - required element_dim={self.element_dim}, but {len(ndarray_type.element_type.shape())} is provided"
-                )
+        # FIXME(Haidong) Cannot use Vector/MatrixType due to circular import
+        # Use the CompuoundType instead to determine the specific typs.
+        # TODO Replace CompoundType with MatrixType and VectorType
+        if isinstance(self.dtype, CompoundType):
+            element_dim = self.dtype.ndim
+            element_shape = self.dtype.get_shape()
+            if element_dim is not None and element_dim > 0:
+                if not isinstance(ndarray_type.element_type, TensorType):
+                    raise TypeError(
+                        f"Expect TensorType element for Ndarray with element_dim: {element_dim} > 0"
+                    )
+                if element_dim != len(ndarray_type.element_type.shape()):
+                    raise ValueError(
+                        f"Invalid argument into ti.types.ndarray() - required element_dim={element_dim}, but {len(ndarray_type.element_type.shape())} is provided"
+                    )
+            if element_shape is not None and len(element_shape) > 0:
+                if not isinstance(ndarray_type.element_type, TensorType):
+                    raise TypeError(
+                        f"Expect TensorType element for Ndarray with element_shape: {element_shape}"
+                    )
 
-        if self.element_shape is not None and len(self.element_shape) > 0:
-            if not isinstance(ndarray_type.element_type, TensorType):
-                raise TypeError(
-                    f"Expect TensorType element for Ndarray with element_shape: {self.element_shape}"
-                )
-
-            if self.element_shape != ndarray_type.element_type.shape():
-                raise ValueError(
-                    f"Invalid argument into ti.types.ndarray() - required element_shape={self.element_shape}, but {ndarray_type.element_type.shape()} is provided"
-                )
+                if element_shape != ndarray_type.element_type.shape():
+                    raise ValueError(
+                        f"Invalid argument into ti.types.ndarray() - required element_shape={element_shape}, but {ndarray_type.element_type.shape()} is provided"
+                    )
 
         if self.field_dim is not None and \
             ndarray_type.shape is not None and \

@@ -139,6 +139,38 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
     }
   }
 
+  // void visit(GlobalStoreStmt *stmt) override {
+  //   // We don't need to check the global store inside the range for-loops
+  //   // because
+  //   // 1. If the range for-loop is innermost, they will be captured by
+  //   // MakeAdjoint anyway
+  //   // 2. If the range for-loop is not innermost, they will be processed by
+  //   // another IndependentBlocksJudger
+  //   if (is_inside_loop_)
+  //     return;
+  //   // TI_ASSERT(stmt->val->is<GlobalPtrStmt>());
+  //   if (stmt->val->is<GlobalPtrStmt>() &&
+  //   stmt->val->as<GlobalPtrStmt>()->snode->has_adjoint()) {
+  //     std::cout << "Global Store " << stmt->id << " exist"<< std::endl;
+  //     qualified_glb_operations_ = false;
+  //   }
+  // }
+
+  // void visit(GlobalLoadStmt *stmt) override {
+  //   // We don't need to check the global load inside the range for-loops
+  //   // because
+  //   // 1. If the range for-loop is innermost, they will be captured by
+  //   // MakeAdjoint anyway
+  //   // 2. If the range for-loop is not innermost, they will be processed by
+  //   // another IndependentBlocksJudger
+  //   if (is_inside_loop_)
+  //     return;
+  //   TI_ASSERT(stmt->src->is<GlobalPtrStmt>());
+  //   if (stmt->src->as<GlobalPtrStmt>()->snode->has_adjoint()) {
+  //     qualified_glb_operations_ = false;
+  //   }
+  // }
+
   void visit(RangeForStmt *stmt) override {
     inner_most_loop_ = false;
     is_inside_loop_ = true;
@@ -1818,6 +1850,20 @@ class BackupSSA : public BasicStmtVisitor {
 
 namespace irpass {
 
+std::function<void(const std::string &)>
+make_pass_printer(bool verbose, const std::string &kernel_name, IRNode *ir) {
+  if (!verbose) {
+    return [](const std::string &) {};
+  }
+  return [ir, kernel_name](const std::string &pass) {
+    TI_INFO("[{}] {}:", kernel_name, pass);
+    std::cout << std::flush;
+    irpass::re_id(ir);
+    irpass::print(ir);
+    std::cout << std::flush;
+  };
+}
+
 void auto_diff(IRNode *root,
                const CompileConfig &config,
                AutodiffMode autodiff_mode,
@@ -1826,10 +1872,13 @@ void auto_diff(IRNode *root,
   auto print = irpass::make_pass_printer(true, "autodiff debug", root);
   if (autodiff_mode == AutodiffMode::kReverse) {
     if (use_stack) {
+      // print("before identify IB");
       auto IB = IdentifyIndependentBlocks::run(root);
       ReverseOuterLoops::run(root, IB);
 
       for (auto ib : IB) {
+        std::cout << ib->statements[0]->id << " " << ib->statements[0]->type()
+                  << std::endl;
         PromoteSSA2LocalVar::run(ib);
         print("after promote SSA");
         ReplaceLocalVarWithStacks replace(config.ad_stack_size, ib);

@@ -336,14 +336,20 @@ void CuSparseMatrix::build_csr_from_coo(void *coo_row_ptr,
       &matrix_, rows_, cols_, nnz, csr_row_offset_ptr, coo_col_ptr,
       coo_values_ptr, CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I,
       CUSPARSE_INDEX_BASE_ZERO, CUDA_R_32F);
-  CUSPARSEDriver::get_instance().cpDestroySpVec(vec_permutation);
-  CUSPARSEDriver::get_instance().cpDestroyDnVec(vec_values);
-  CUSPARSEDriver::get_instance().cpDestroy(cusparse_handle);
-  // TODO: free csr_row_offset_ptr
-  // CUDADriver::get_instance().mem_free(csr_row_offset_ptr);
-  CUDADriver::get_instance().mem_free(d_values_sorted);
-  CUDADriver::get_instance().mem_free(d_permutation);
-  CUDADriver::get_instance().mem_free(dbuffer);
+  if (vec_permutation)
+    CUSPARSEDriver::get_instance().cpDestroySpVec(vec_permutation);
+  if (vec_values)
+    CUSPARSEDriver::get_instance().cpDestroyDnVec(vec_values);
+  if (cusparse_handle)
+    CUSPARSEDriver::get_instance().cpDestroy(cusparse_handle);
+  if (coo_row_ptr)
+    CUDADriver::get_instance().mem_free(coo_row_ptr);
+  if (d_values_sorted)
+    CUDADriver::get_instance().mem_free(d_values_sorted);
+  if (d_permutation)
+    CUDADriver::get_instance().mem_free(d_permutation);
+  if (dbuffer)
+    CUDADriver::get_instance().mem_free(dbuffer);
   csr_row_ptr_ = csr_row_offset_ptr;
   csr_col_ind_ = coo_col_ptr;
   csr_val_ = coo_values_ptr;
@@ -353,21 +359,14 @@ void CuSparseMatrix::build_csr_from_coo(void *coo_row_ptr,
 
 CuSparseMatrix::~CuSparseMatrix() {
 #if defined(TI_WITH_CUDA)
-  CUSPARSEDriver::get_instance().cpDestroySpMat(matrix_);
-#endif
-}
-void make_sparse_matrix_from_ndarray_cusparse(Program *prog,
-                                              SparseMatrix &sm,
-                                              const Ndarray &row_coo,
-                                              const Ndarray &col_coo,
-                                              const Ndarray &val_coo) {
-#if defined(TI_WITH_CUDA)
-  size_t coo_row_ptr = prog->get_ndarray_data_ptr_as_int(&row_coo);
-  size_t coo_col_ptr = prog->get_ndarray_data_ptr_as_int(&col_coo);
-  size_t coo_val_ptr = prog->get_ndarray_data_ptr_as_int(&val_coo);
-  int nnz = val_coo.get_nelement();
-  sm.build_csr_from_coo((void *)coo_row_ptr, (void *)coo_col_ptr,
-                        (void *)coo_val_ptr, nnz);
+  if (matrix_)
+    CUSPARSEDriver::get_instance().cpDestroySpMat(matrix_);
+  if (csr_row_ptr_)
+    CUDADriver::get_instance().mem_free(csr_row_ptr_);
+  if (csr_col_ind_)
+    CUDADriver::get_instance().mem_free(csr_col_ind_);
+  if (csr_val_)
+    CUDADriver::get_instance().mem_free(csr_val_);
 #endif
 }
 

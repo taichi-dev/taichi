@@ -65,15 +65,20 @@ def test_gpu_sparse_solver():
 
     # solve Ax = b using cusolver
     A_coo = A_csr.tocoo()
-    d_row_coo = ti.ndarray(shape=nnz, dtype=ti.i32)
-    d_col_coo = ti.ndarray(shape=nnz, dtype=ti.i32)
-    d_val_coo = ti.ndarray(shape=nnz, dtype=ti.f32)
-    d_row_coo.from_numpy(A_coo.row)
-    d_col_coo.from_numpy(A_coo.col)
-    d_val_coo.from_numpy(A_coo.data)
+    A_builder = ti.linalg.SparseMatrixBuilder(num_rows=nrows,
+                                              num_cols=ncols,
+                                              dtype=ti.f32,
+                                              max_num_triplets=nnz)
 
-    A_ti = ti.linalg.SparseMatrix(n=nrows, m=ncols, dtype=ti.float32)
-    A_ti.build_coo(d_row_coo, d_col_coo, d_val_coo)
+    @ti.kernel
+    def fill(A_builder: ti.types.sparse_matrix_builder(),
+             row_coo: ti.types.ndarray(), col_coo: ti.types.ndarray(),
+             val_coo: ti.types.ndarray()):
+        for i in range(nnz):
+            A_builder[row_coo[i], col_coo[i]] += val_coo[i]
+
+    fill(A_builder, A_coo.row, A_coo.col, A_coo.data)
+    A_ti = A_builder.build()
     x_ti = ti.ndarray(shape=ncols, dtype=ti.float32)
     solver = ti.linalg.SparseSolver()
     x_ti = solver.solve_cu(A_ti, b)

@@ -7,7 +7,7 @@ from taichi.lang.exception import TaichiRuntimeError
 from taichi.lang.field import Field
 from taichi.lang.impl import get_runtime
 from taichi.lang.util import warning
-from taichi.types import annotations, f32, i32
+from taichi.types import annotations, f32
 
 
 class SparseMatrix:
@@ -206,30 +206,6 @@ class SparseMatrix:
             raise TaichiRuntimeError(
                 'Sparse matrix only supports building from [ti.ndarray, ti.Vector.ndarray, ti.Matrix.ndarray]'
             )
-
-    def build_coo(self, row_coo, col_coo, value_coo):
-        """Build a CSR format sparse matrix from COO format inputs.
-
-        Args:
-            row_indices (ti.ndarray): the row indices of the matrix entries.
-            col_indices (ti.ndarray): the column indices of the matrix entries.
-            data (ti.ndarray): the entries of the matrix.
-
-        Raises:
-            TaichiRuntimeError: If the inputs are not ``ti.ndarray`` or the datatypes of the ndarray are not correct.
-        """
-        if not isinstance(row_coo, Ndarray) or not isinstance(
-                col_coo, Ndarray) or not isinstance(value_coo, Ndarray):
-            raise TaichiRuntimeError(
-                'Sparse matrix only supports COO format building from [ti.ndarray, ti.Vector.ndarray, ti.Matrix.ndarray].'
-            )
-        elif value_coo.dtype != f32 or row_coo.dtype != i32 or col_coo.dtype != i32:
-            raise TaichiRuntimeError(
-                'Sparse matrix only supports COO fromat building from float32 data and int32 row/col indices.'
-            )
-        else:
-            get_runtime().prog.make_sparse_matrix_from_ndarray_cusparse(
-                self.matrix, row_coo.arr, col_coo.arr, value_coo.arr)
 
 
 class SparseMatrixBuilder:

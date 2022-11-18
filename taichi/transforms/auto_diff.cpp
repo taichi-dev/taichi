@@ -34,9 +34,41 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
       return;
     TI_ASSERT(stmt->dest->is<GlobalPtrStmt>());
     if (stmt->dest->as<GlobalPtrStmt>()->snode->has_adjoint()) {
-      qualified_atomics_ = false;
+      qualified_glb_operations_ = true;
     }
   }
+
+  // void visit(GlobalStoreStmt *stmt) override {
+  //   // We don't need to check the global store inside the range for-loops
+  //   // because
+  //   // 1. If the range for-loop is innermost, they will be captured by
+  //   // MakeAdjoint anyway
+  //   // 2. If the range for-loop is not innermost, they will be processed by
+  //   // another IndependentBlocksJudger
+  //   if (is_inside_loop_)
+  //     return;
+  //   // TI_ASSERT(stmt->val->is<GlobalPtrStmt>());
+  //   if (stmt->val->is<GlobalPtrStmt>() &&
+  //   stmt->val->as<GlobalPtrStmt>()->snode->has_adjoint()) {
+  //     std::cout << "Global Store " << stmt->id << " exist"<< std::endl;
+  //     qualified_glb_operations_ = false;
+  //   }
+  // }
+
+  // void visit(GlobalLoadStmt *stmt) override {
+  //   // We don't need to check the global load inside the range for-loops
+  //   // because
+  //   // 1. If the range for-loop is innermost, they will be captured by
+  //   // MakeAdjoint anyway
+  //   // 2. If the range for-loop is not innermost, they will be processed by
+  //   // another IndependentBlocksJudger
+  //   if (is_inside_loop_)
+  //     return;
+  //   TI_ASSERT(stmt->src->is<GlobalPtrStmt>());
+  //   if (stmt->src->as<GlobalPtrStmt>()->snode->has_adjoint()) {
+  //     qualified_glb_operations_ = false;
+  //   }
+  // }
 
   void visit(RangeForStmt *stmt) override {
     inner_most_loop_ = false;
@@ -45,7 +77,7 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
     is_inside_loop_ = false;
   }
 
-  static bool run(IRNode *root) {
+  static void run(IRNode *root, bool &is_ib, bool &is_smallest_ib) {
     IndependentBlocksJudger Judger;
     Block *block = root->as<Block>();
     root->accept(&Judger);
@@ -60,7 +92,8 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
       // Test if the alloca belongs to the current block
       if (outside_blocks.find(alloca->parent) != outside_blocks.end()) {
         // This block is not an IB since it loads/modifies outside variables
-        return false;
+        // return false;
+        is_ib = false;
       }
     }
 
@@ -69,12 +102,18 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
     // enforced
     // 2. If the #1 is satisfied, either an inner most loop or a block without
     // global atomics is an IB
-    return Judger.qualified_atomics_ || Judger.inner_most_loop_;
+    if (!block->statements.empty())
+      std::cout << "Current block " << block->statements[0]->id
+                << " qualified glb operations "
+                << Judger.qualified_glb_operations_ << " inner most loop "
+                << Judger.inner_most_loop_ << std::endl;
+    is_smallest_ib =
+        Judger.qualified_glb_operations_ || Judger.inner_most_loop_;
   }
 
  private:
   std::set<Stmt *> touched_allocas_;
-  bool qualified_atomics_ = true;
+  bool qualified_glb_operations_ = false;
   bool inner_most_loop_ = true;
   bool is_inside_loop_ = false;
 };
@@ -153,25 +192,44 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
     TI_ERROR("WhileControlStmt (break) is not supported in AutoDiff.");
   }
 
-  bool is_independent_block(Block *block) {
+  // bool is_independent_block(Block *block) {
+  //   // An IB has no local load/store to allocas *outside* itself
+  //   // Note:
+  //   //  - Local atomics should have been demoted before this pass.
+  //   //  - It is OK for an IB to have more than two for loops.
+  //   //  - No atomics operations to the global variables which require
+  //   gradient
+
+  //   return IndependentBlocksJudger::run(block);
+  // }
+
+  void visit_loop_body(Block *block) {
+    bool is_ib = true;
+    bool is_smallest_ib = true;
     // An IB has no local load/store to allocas *outside* itself
     // Note:
     //  - Local atomics should have been demoted before this pass.
     //  - It is OK for an IB to have more than two for loops.
     //  - No atomics operations to the global variables which require gradient
-
-    return IndependentBlocksJudger::run(block);
-  }
-
-  void visit_loop_body(Block *block) {
-    if (is_independent_block(block)) {
-      current_ib_ = block;
-      auto old_current_ib_ = current_ib_;
-      block->accept(this);
-      // Lower level block is not an IB, therefore store the current block as an
-      // IB
-      if (old_current_ib_ == current_ib_) {
-        independent_blocks_.push_back({depth_, current_ib_});
+    if (block == nullptr)
+      return;
+    IndependentBlocksJudger::run(block, is_ib, is_smallest_ib);
+    if (!block->statements.empty())
+      std::cout << "Current block " << block->statements[0]->id << " is ib "
+                << is_ib << " is smallest " << is_smallest_ib << std::endl;
+    if (is_ib) {
+      if (is_smallest_ib) {
+        independent_blocks_.push_back({depth_, block});
+      } else {
+        current_ib_ = block;
+        // auto old_current_ib_ = current_ib_;
+        block->accept(this);
+        // // Lower level block is not an IB, therefore store the current block
+        // as an
+        // // IB
+        // if (old_current_ib_ == current_ib_) {
+        //   independent_blocks_.push_back({depth_, current_ib_});
+        // }
       }
     } else {
       if (depth_ <= 1) {
@@ -1525,18 +1583,37 @@ class BackupSSA : public BasicStmtVisitor {
 
 namespace irpass {
 
+std::function<void(const std::string &)>
+make_pass_printer(bool verbose, const std::string &kernel_name, IRNode *ir) {
+  if (!verbose) {
+    return [](const std::string &) {};
+  }
+  return [ir, kernel_name](const std::string &pass) {
+    TI_INFO("[{}] {}:", kernel_name, pass);
+    std::cout << std::flush;
+    irpass::re_id(ir);
+    irpass::print(ir);
+    std::cout << std::flush;
+  };
+}
+
 void auto_diff(IRNode *root,
                const CompileConfig &config,
                AutodiffMode autodiff_mode,
                bool use_stack) {
   TI_AUTO_PROF;
+  auto print = make_pass_printer(true, "autodiff debug", root);
   if (autodiff_mode == AutodiffMode::kReverse) {
     if (use_stack) {
+      // print("before identify IB");
       auto IB = IdentifyIndependentBlocks::run(root);
       ReverseOuterLoops::run(root, IB);
 
       for (auto ib : IB) {
+        std::cout << ib->statements[0]->id << " " << ib->statements[0]->type()
+                  << std::endl;
         PromoteSSA2LocalVar::run(ib);
+        // print("after promote SSA");
         ReplaceLocalVarWithStacks replace(config.ad_stack_size);
         ib->accept(&replace);
         type_check(root, config);

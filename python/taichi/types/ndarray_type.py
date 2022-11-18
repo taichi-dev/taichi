@@ -62,12 +62,14 @@ def make_matrix_dtype_from_element_shape(element_dim, element_shape,
 class NdarrayType:
     """Type annotation for arbitrary arrays, including external arrays (numpy ndarrays and torch tensors) and Taichi ndarrays.
 
-    For external arrays, we can treat it as a Taichi field with Vector or Matrix elements by specifying element dim.
-    For Taichi vector/matrix ndarrays, we will automatically identify element dim. If they are explicitly specified, we will check compatibility between the actual arguments and the annotation.
+    For external arrays, we treat it as a Taichi data container with Scalar, Vector or Matrix elements.
+    For Taichi vector/matrix ndarrays, we will automatically identify element dimension and their corresponding axis by the dimension of datatype, say scalars, matrices or vectors.
+    For example, given type annotation `ti.types.ndarray(dtype=ti.math.vec3)`, a numpy array `np.zeros(10, 10, 3)` will be recognized as a 10x10 matrix composed of vec3 elements.
 
     Args:
-        element_dim (Union[Int, NoneType], optional): None if not specified (will be treated as 0 for external arrays), 0 if scalar elements, 1 if vector elements, and 2 if matrix elements.
-        element_shape (Union[Tuple[Int], NoneType]): None if not specified, shapes of each element. For example, element_shape must be 1d for vector and 2d tuple for matrix. This argument is ignored for external arrays for now.
+        dtype (Union[PrimitiveType, VectorType, MatrixType, NoneType], optional): None if not speicified.
+        [DERPRECATED] element_dim (Union[Int, NoneType], optional): None if not specified (will be treated as 0 for external arrays), 0 if scalar elements, 1 if vector elements, and 2 if matrix elements.
+        [DERPRECATED] element_shape (Union[Tuple[Int], NoneType]): None if not specified, shapes of each element. For example, element_shape must be 1d for vector and 2d tuple for matrix. This argument is ignored for external arrays for now.
         field_dim (Union[Int, NoneType]): None if not specified, number of field dimensions. This argument is ignored for external arrays for now.
     """
     def __init__(self,

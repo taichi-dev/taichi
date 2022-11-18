@@ -5,6 +5,7 @@ namespace taichi {
 Statistics stat;
 
 void Statistics::add(std::string key, Statistics::value_type value) {
+  std::lock_guard<std::mutex> _(counters_map_mutex_);
   counters_[key] += value;
 }
 

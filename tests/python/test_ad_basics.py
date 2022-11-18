@@ -504,7 +504,7 @@ def test_ad_global_store_forwarding():
     with ti.ad.Tape(loss=e):
         func()
     assert x.grad[None] == 120.0
-    assert a.grad[None] == 120.0
-    assert b.grad[None] == 60.0
-    assert c.grad[None] == 20.0
-    assert d.grad[None] == 5.0
+    assert a.grad[None] == 0.0
+    assert b.grad[None] == 0.0
+    assert c.grad[None] == 0.0
+    assert d.grad[None] == 0.0

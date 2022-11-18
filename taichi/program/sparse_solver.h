@@ -65,6 +65,8 @@ class CuSparseSolver : public SparseSolver {
   cusparseHandle_t cusparse_handel_{nullptr};
   cusparseMatDescr_t descr_{nullptr};
   void *gpu_buffer_{nullptr};
+  bool is_analyzed_{false};
+  bool is_factorized_{false};
 
  public:
   CuSparseSolver();

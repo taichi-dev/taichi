@@ -244,9 +244,8 @@ A collection of Taichi kernels (a compute graph) to launch on the offload target
 
 `enumeration.error`
 
-Errors reported by the Taichi C-API. Enumerants greater than or equal to zero are success states.
+Errors reported by the Taichi C-API.
 
-- `enumeration.error.truncated`: The output data is truncated because the user-provided buffer is too small.
 - `enumeration.error.success`: The Taichi C-API invocation finished gracefully.
 - `enumeration.error.not_supported`: The invoked API, or the combination of parameters is not supported by the Taichi C-API.
 - `enumeration.error.corrupted_data`: Provided data is corrupted.
@@ -257,6 +256,7 @@ Errors reported by the Taichi C-API. Enumerants greater than or equal to zero ar
 - `enumeration.error.argument_not_found`: One or more kernel arguments are missing.
 - `enumeration.error.invalid_interop`: The intended interoperation is not possible on the current arch. For example, attempts to export a Vulkan object from a CUDA runtime are not allowed.
 - `enumeration.error.invalid_state`: The Taichi C-API enters an unrecoverable invalid state. Related Taichi objects are potentially corrupted. The users *should* release the contaminated resources for stability. Please feel free to file an issue if you encountered this error in a normal routine.
+- `enumeration.error.incompatible_module`: The AOT module is not compatible with the current runtime.
 
 `enumeration.arch`
 

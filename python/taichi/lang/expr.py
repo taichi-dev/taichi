@@ -55,6 +55,22 @@ class Expr(TaichiOperations):
                 f"Getting shape of non-tensor type: {self.ptr.get_ret_type()}")
         return tuple(self.ptr.get_shape())
 
+    @property
+    def n(self):
+        shape = self.get_shape()
+        if len(shape) < 1:
+            raise TaichiCompilationError(
+                f"Getting n of tensor type < 1D: {self.ptr.get_ret_type()}")
+        return shape[0]
+
+    @property
+    def m(self):
+        shape = self.get_shape()
+        if len(shape) < 2:
+            raise TaichiCompilationError(
+                f"Getting m of tensor type < 2D: {self.ptr.get_ret_type()}")
+        return shape[1]
+
     def __hash__(self):
         return self.ptr.get_raw_address()
 

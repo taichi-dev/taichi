@@ -59,6 +59,11 @@ function prepare-unity-build-env {
     cmake --build .
     popd
     cp tu2-build/bin/libtaichi_unity.so Taichi-UnityExample/Assets/Plugins/Android
+
+    pushd Taichi-UnityExample
+    pip install /taichi-wheel/*.whl
+    python scripts/implicit_fem.cgraph.py --aot
+    popd
 }
 
 function build-unity-demo {
@@ -141,6 +146,23 @@ function build-and-test-headless-demo {
 
     adb pull /data/local/tmp/output .
     compare_to_groundtruth android
+}
+
+function build-and-test-headless-demo-desktop {
+    pushd taichi
+    setup_python
+    python3 -m pip install dist/*.whl
+    sudo chmod 0777 $HOME/.cache
+    export TAICHI_REPO_DIR=$(pwd)
+    popd
+
+    rm -rf taichi-aot-demo
+    git clone --recursive --depth=1 https://github.com/taichi-dev/taichi-aot-demo
+    cd taichi-aot-demo
+
+    TAICHI_C_API_INSTALL_DIR=$(find $TAICHI_REPO_DIR -name cmake-install -type d | head -n 1)/c_api
+    python3 -m pip install -r ci/requirements.txt
+    python3 ci/run_tests.py -l $TAICHI_C_API_INSTALL_DIR
 }
 
 $1

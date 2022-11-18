@@ -48,6 +48,8 @@ typedef struct TiVulkanMemoryInteropInfo {
   VkBuffer buffer;
   uint64_t size;
   VkBufferUsageFlags usage;
+  VkDeviceMemory memory;
+  uint64_t offset;
 } TiVulkanMemoryInteropInfo;
 ```
 
@@ -56,6 +58,8 @@ Necessary detail to share the same piece of Vulkan buffer between Taichi and ext
 - `buffer`: Vulkan buffer.
 - `size`: Size of the piece of memory in bytes.
 - `usage`: Vulkan buffer usage. In most of the cases, Taichi requires the `VK_BUFFER_USAGE_STORAGE_BUFFER_BIT`.
+- `memory`: Device memory binded to the Vulkan buffer.
+- `offset`: Offset in `VkDeviceMemory` object to the beginning of this allocation, in bytes.
 
 ---
 ### Structure `TiVulkanImageInteropInfo`

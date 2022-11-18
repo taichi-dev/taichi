@@ -54,8 +54,8 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
     // another IndependentBlocksJudger
     if (is_inside_loop_)
       return;
-    TI_ASSERT(stmt->src->is<GlobalPtrStmt>());
-    if (stmt->src->as<GlobalPtrStmt>()->snode->has_adjoint()) {
+    if (stmt->src->is<GlobalPtrStmt>() &&
+        stmt->src->as<GlobalPtrStmt>()->snode->has_adjoint()) {
       qualified_atomics_ = false;
     }
   }

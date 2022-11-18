@@ -482,3 +482,20 @@ def test_real_func_matrix_arg():
                  real_matrix_scalarize=True)
 def test_real_func_matrix_arg_real_matrix():
     _test_real_func_matrix_arg()
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda])
+def test_real_func_struct_ret():
+    s = ti.types.struct(a=ti.i16, b=ti.f64)
+
+    @ti.experimental.real_func
+    def bar() -> s:
+        return s(a=123, b=ti.f64(1.2345e300))
+
+    @ti.kernel
+    def foo() -> ti.f64:
+        a = bar()
+        return a.a * a.b
+
+    assert foo() == pytest.approx(123 * 1.2345e300)
+

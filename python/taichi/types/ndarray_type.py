@@ -18,10 +18,6 @@ class NdarrayTypeMetadata:
 #                Remove this function when the two args are totally deprecated.
 def make_matrix_dtype_from_element_shape(element_dim, element_shape,
                                          primitive_dtype):
-    # Cook primitive dtype
-    if primitive_dtype is None:
-        primitive_dtype = impl.get_runtime().default_fp
-
     if isinstance(primitive_dtype, CompoundType):
         raise TypeError(
             f'Cannot specifiy matrix dtype "{primitive_dtype}" and element shape or dim at the same time.'
@@ -40,7 +36,7 @@ def make_matrix_dtype_from_element_shape(element_dim, element_shape,
                 "Only scalars, vectors, and matrices are allowed as elements of ti.types.ndarray()"
             )
         # Check dim consistency. The matrix dtype will be cooked later.
-        if element_shape is not None and len(element_shape != element_dim):
+        if element_shape is not None and len(element_shape) != element_dim:
             raise ValueError(
                 f"Both element_shape and element_dim are specified, but shape doesn't match specified dim: {len(element_shape)}!={element_dim}"
             )
@@ -97,6 +93,8 @@ class NdarrayType:
         if isinstance(self.dtype, CompoundType):
             element_dim = self.dtype.ndim
             element_shape = self.dtype.get_shape()
+            if None in element_shape:
+                element_shape = None
             if element_dim is not None and element_dim > 0:
                 if not isinstance(ndarray_type.element_type, TensorType):
                     raise TypeError(

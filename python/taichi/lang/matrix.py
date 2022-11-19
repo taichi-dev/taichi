@@ -495,7 +495,10 @@ class Matrix(TaichiOperations):
     def get_shape(self):
         if self.ndim == 1:
             return (self.n, )
-        return (self.n, self.m)
+        elif self.ndim == 2:
+            return (self.n, self.m)
+        else:
+            return None
 
     def element_type(self):
         if self._impl.entries:
@@ -1681,7 +1684,12 @@ class MatrixType(CompoundType):
         self.n = n
         self.m = m
         self.ndim = ndim
-        self.dtype = cook_dtype(dtype)
+        # FIXME(haidong): dtypes should not be left empty for ndarray. 
+        #                 Remove the None dtype when we are ready to break legacy code.
+        if dtype is not None:
+            self.dtype = cook_dtype(dtype)
+        else:
+            self.dtype = None
 
     def __call__(self, *args):
         """Return a matrix matching the shape and dtype.

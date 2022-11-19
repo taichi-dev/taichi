@@ -191,6 +191,9 @@ std::unique_ptr<SparseMatrix> SparseMatrixBuilder::build_cuda() {
       value_device, (void *)value_host, entry_size * sizeof(float32));
   sm->build_csr_from_coo(row_device, col_device, value_device, entry_size);
   clear();
+  free(row_host);
+  free(col_host);
+  free(value_host);
 #endif
   return sm;
 }

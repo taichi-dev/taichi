@@ -11,10 +11,9 @@ import sys
 import tempfile
 import warnings
 
+import taichi as ti
 from test_utils import (__aot_test_cases, __capi_aot_test_cases,
                         print_aot_test_guide, print_section)
-
-import taichi as ti
 
 
 def _run_cpp_test(test_filename, build_dir, gtest_option="", extra_env=None):

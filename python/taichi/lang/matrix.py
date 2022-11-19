@@ -495,10 +495,9 @@ class Matrix(TaichiOperations):
     def get_shape(self):
         if self.ndim == 1:
             return (self.n, )
-        elif self.ndim == 2:
+        if self.ndim == 2:
             return (self.n, self.m)
-        else:
-            return None
+        return None
 
     def element_type(self):
         if self._impl.entries:

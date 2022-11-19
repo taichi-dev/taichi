@@ -68,11 +68,10 @@ def produce_injected_args(kernel, symbolic_args=None):
             if isinstance(anno.dtype, MatrixType):
                 anno_dtype = anno.dtype.dtype
             if anno_dtype is not None:
-                if not check_type_match(
-                        dtype, anno_dtype):
+                if not check_type_match(dtype, anno_dtype):
                     raise TaichiCompilationError(
-                    f' Arg {arg.name}\'s dtype {dtype.to_string()} doesn\'t match kernel\'s annotated dtype={anno_dtype.to_string()}'
-                )
+                        f' Arg {arg.name}\'s dtype {dtype.to_string()} doesn\'t match kernel\'s annotated dtype={anno_dtype.to_string()}'
+                    )
 
             if element_dim is None or element_dim == 0 or element_shape == (
                     1, ):

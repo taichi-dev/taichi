@@ -1,6 +1,5 @@
 import warnings
 
-from taichi.lang import impl
 from taichi.lang.enums import Layout
 from taichi.types.compound_types import (CompoundType, TensorType, matrix,
                                          vector)

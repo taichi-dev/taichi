@@ -24,8 +24,8 @@ def main(arch):
     m.add_kernel(run, template_args={'arr': arr})
 
     tcm_path = dir_name + "/module.tcm"
-    print(tcm_path)
     m.archive(tcm_path)
+    print(tcm_path)
 
 
 if __name__ == "__main__":

@@ -65,7 +65,7 @@ def produce_injected_args(kernel, symbolic_args=None):
                     f'{field_dim} from Arg {arg.name} doesn\'t match kernel\'s annotated field_dim={anno.field_dim}'
                 )
             anno_dtype = anno.dtype
-            if isinstance(anno.dtype, MatrixType):
+            if isinstance(anno_dtype, MatrixType):
                 anno_dtype = anno.dtype.dtype
             if anno_dtype is not None:
                 if not check_type_match(dtype, anno_dtype):

@@ -61,8 +61,7 @@ struct Tokenizer {
   const char *pos;
   const char *end;
 
-  Tokenizer(const char *beg, const char *end)
-      : pos(beg), end(end) {
+  Tokenizer(const char *beg, const char *end) : pos(beg), end(end) {
   }
 
   // Check the range first before calling this method.

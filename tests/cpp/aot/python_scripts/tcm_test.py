@@ -1,6 +1,8 @@
-import taichi as ti
 import argparse
 import os
+
+import taichi as ti
+
 
 def main(arch):
     ti.init(arch=arch)
@@ -32,4 +34,3 @@ if __name__ == "__main__":
         main(arch=ti.vulkan)
     else:
         assert False
-

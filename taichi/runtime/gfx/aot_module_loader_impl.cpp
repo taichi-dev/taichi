@@ -28,13 +28,15 @@ class AotModuleImpl : public aot::Module {
         runtime_(params.runtime),
         device_api_backend_(device_api_backend) {
     auto dir = io::VirtualDir::open(params.module_path);
-    TI_ERROR_IF(dir == nullptr, "cannot open aot module '{}'", params.module_path);
+    TI_ERROR_IF(dir == nullptr, "cannot open aot module '{}'",
+                params.module_path);
 
     bool succ = true;
 
-    std::vector<uint8_t> metadata_tcb {};
+    std::vector<uint8_t> metadata_tcb{};
     succ = dir->load_file("metadata.tcb", metadata_tcb) != 0 &&
-      read_from_binary(ti_aot_data_, metadata_tcb.data(), metadata_tcb.size());
+           read_from_binary(ti_aot_data_, metadata_tcb.data(),
+                            metadata_tcb.size());
 
     if (!succ) {
       mark_corrupted();
@@ -58,9 +60,9 @@ class AotModuleImpl : public aot::Module {
       }
     }
 
-    std::vector<uint8_t> graphs_tcb {};
+    std::vector<uint8_t> graphs_tcb{};
     succ = dir->load_file("graphs.tcb", graphs_tcb) &&
-      read_from_binary(graphs_, graphs_tcb.data(), graphs_tcb.size());
+           read_from_binary(graphs_, graphs_tcb.data(), graphs_tcb.size());
 
     if (!succ) {
       mark_corrupted();

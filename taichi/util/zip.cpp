@@ -110,7 +110,7 @@ std::vector<uint8> read(const std::string fn, bool verbose) {
   return ret;
 }
 
-bool ZipArchive::try_from_bytes(const void* data, size_t size, ZipArchive &ar) {
+bool ZipArchive::try_from_bytes(const void *data, size_t size, ZipArchive &ar) {
   mz_bool succ = MZ_TRUE;
   ar.file_dict.clear();
 
@@ -134,7 +134,8 @@ bool ZipArchive::try_from_bytes(const void* data, size_t size, ZipArchive &ar) {
       }
 
       std::vector<uint8_t> file_data(file_stat.m_uncomp_size);
-      succ &= mz_zip_reader_extract_to_mem(&zip, i, file_data.data(), file_data.size(), 0);
+      succ &= mz_zip_reader_extract_to_mem(&zip, i, file_data.data(),
+                                           file_data.size(), 0);
       if (succ != MZ_TRUE) {
         goto fail;
       }

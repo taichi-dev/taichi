@@ -1,6 +1,5 @@
 #include "virtual_dir.h"
 #include "taichi/util/zip.h"
-#include <filesystem>
 
 namespace taichi {
 namespace io {
@@ -13,8 +12,6 @@ struct FilesystemVirtualDir : public VirtualDir {
   }
 
   static std::unique_ptr<VirtualDir> create(const std::string &base_dir) {
-    TI_ASSERT(std::filesystem::is_directory(base_dir));
-
     std::string base_dir2;
     if (base_dir.empty()) {
       base_dir2 = "./";
@@ -114,12 +111,12 @@ inline bool is_zip_file(const std::string &path) {
 }
 
 std::unique_ptr<VirtualDir> VirtualDir::open(const std::string &path) {
-  if (std::filesystem::is_directory(path)) {
-    return FilesystemVirtualDir::create(path);
-  } else if (is_zip_file(path)) {
+  if (is_zip_file(path)) {
     return ZipArchiveVirtualDir::create(path);
   } else {
-    return nullptr;
+    // (penguinliong) I wanted to use `std::filesyste::is_directory`. But it
+    // seems `<filesystem>` is only supported in MSVC.
+    return FilesystemVirtualDir::create(path);
   }
 }
 

@@ -5,6 +5,7 @@
 
 #include "taichi/runtime/gfx/runtime.h"
 #include "taichi/aot/graph_data.h"
+#include "taichi/util/virtual_dir.h"
 
 namespace taichi::lang {
 namespace gfx {
@@ -26,9 +27,16 @@ class AotModuleImpl : public aot::Module {
       : module_path_(params.module_path),
         runtime_(params.runtime),
         device_api_backend_(device_api_backend) {
-    const std::string bin_path =
-        fmt::format("{}/metadata.tcb", params.module_path);
-    if (!read_from_binary_file(ti_aot_data_, bin_path)) {
+    auto dir = io::VirtualDir::open(params.module_path);
+    TI_ERROR_IF(dir == nullptr, "cannot open aot module '{}'", params.module_path);
+
+    bool succ = true;
+
+    std::vector<uint8_t> metadata_tcb {};
+    succ = dir->load_file("metadata.tcb", metadata_tcb) != 0 &&
+      read_from_binary(ti_aot_data_, metadata_tcb.data(), metadata_tcb.size());
+
+    if (!succ) {
       mark_corrupted();
       return;
     }
@@ -38,21 +46,23 @@ class AotModuleImpl : public aot::Module {
         auto k = ti_aot_data_.kernels[i];
         std::vector<std::vector<uint32_t>> spirv_sources_codes;
         for (int j = 0; j < k.tasks_attribs.size(); ++j) {
-          std::vector<uint32_t> res =
-              read_spv_file(params.module_path, k.tasks_attribs[j]);
-          if (res.size() == 0) {
+          std::vector<uint32_t> spirv;
+          dir->load_file(k.tasks_attribs[j].name + ".spv", spirv);
+          if (spirv.size() == 0) {
             mark_corrupted();
             return;
           }
-          spirv_sources_codes.push_back(res);
+          spirv_sources_codes.emplace_back(std::move(spirv));
         }
-        ti_aot_data_.spirv_codes.push_back(spirv_sources_codes);
+        ti_aot_data_.spirv_codes.emplace_back(std::move(spirv_sources_codes));
       }
     }
 
-    const std::string graph_path =
-        fmt::format("{}/graphs.tcb", params.module_path);
-    if (!read_from_binary_file(graphs_, graph_path)) {
+    std::vector<uint8_t> graphs_tcb {};
+    succ = dir->load_file("graphs.tcb", graphs_tcb) &&
+      read_from_binary(graphs_, graphs_tcb.data(), graphs_tcb.size());
+
+    if (!succ) {
       mark_corrupted();
       return;
     }

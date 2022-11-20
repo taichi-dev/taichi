@@ -14,6 +14,7 @@ target_sources(taichi_util
     str.cpp
     testing.cpp
     zip.cpp
+    virtual_dir.cpp
   )
 
 target_include_directories(taichi_util

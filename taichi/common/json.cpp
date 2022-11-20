@@ -58,12 +58,11 @@ struct JsonToken {
 };
 
 struct Tokenizer {
-  std::string lit;
-  std::string::const_iterator pos;
-  std::string::const_iterator end;
+  const char *pos;
+  const char *end;
 
-  explicit Tokenizer(const std::string &json)
-      : lit(json), pos(lit.cbegin()), end(lit.cend()) {
+  Tokenizer(const char *beg, const char *end)
+      : pos(beg), end(end) {
   }
 
   // Check the range first before calling this method.
@@ -342,16 +341,19 @@ bool try_parse_impl(Tokenizer &tokenizer, JsonValue &out) {
   throw JsonException("unexpected program state");
 }
 
-JsonValue parse(const std::string &json_lit) {
-  if (json_lit.empty()) {
+JsonValue parse(const char *beg, const char *end) {
+  if (beg == nullptr || end == nullptr || beg >= end) {
     throw JsonException("json text is empty");
   }
   JsonValue rv;
-  Tokenizer tokenizer(json_lit);
+  Tokenizer tokenizer(beg, end);
   if (!try_parse_impl(tokenizer, rv)) {
     throw JsonException("unexpected close token");
   }
   return rv;
+}
+JsonValue parse(const std::string &json_lit) {
+  return parse(json_lit.c_str(), json_lit.c_str() + json_lit.size());
 }
 bool try_parse(const std::string &json_lit, JsonValue &out) {
   try {

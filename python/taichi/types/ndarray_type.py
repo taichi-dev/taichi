@@ -15,7 +15,7 @@ class NdarrayTypeMetadata:
 # TODO(Haidong): This is a helper function that creates a MatrixType
 #                with respect to element_dim and element_shape.
 #                Remove this function when the two args are totally deprecated.
-def make_matrix_dtype_from_element_shape(element_dim, element_shape,
+def _make_matrix_dtype_from_element_shape(element_dim, element_shape,
                                          primitive_dtype):
     if isinstance(primitive_dtype, CompoundType):
         raise TypeError(

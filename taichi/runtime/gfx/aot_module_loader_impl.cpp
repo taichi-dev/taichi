@@ -49,7 +49,7 @@ class AotModuleImpl : public aot::Module {
         std::vector<std::vector<uint32_t>> spirv_sources_codes;
         for (int j = 0; j < k.tasks_attribs.size(); ++j) {
           std::vector<uint32_t> spirv;
-          dir->load_file(k.tasks_attribs[j].name + ".spv", spirv);
+          dir->load_file(k.tasks_attribs[j].source_path, spirv);
           if (spirv.size() == 0) {
             mark_corrupted();
             return;

@@ -7,7 +7,6 @@
 # 2. Press 'w', 'a', 's', 'd' key to move the camera like FPS game
 # 3. Press 'q', 'e' key to move the camera up and down
 
-
 import argparse
 import os
 import platform
@@ -152,7 +151,8 @@ def dir_encode_func(dir_):
     out_feat[5] = data_type(-1.0925484305920792 * yz)
     out_feat[6] = data_type(0.94617469575755997 * z2 - 0.31539156525251999)
     out_feat[7] = data_type(-1.0925484305920792 * xz)
-    out_feat[8] = data_type(0.54627421529603959 * x2 - 0.54627421529603959 * y2)
+    out_feat[8] = data_type(0.54627421529603959 * x2 -
+                            0.54627421529603959 * y2)
     out_feat[9] = data_type(0.59004358992664352 * y * (-3.0 * x2 + y2))
     out_feat[10] = data_type(2.8906114426405538 * xy * z)
     out_feat[11] = data_type(0.45704579946446572 * y * (1.0 - 5.0 * z2))
@@ -848,7 +848,7 @@ class NGP_fw:
 
         while samples < max_samples:
             N_alive = self.counter[None]
-            if N_alive == 0: 
+            if N_alive == 0:
                 break
 
             # how many more samples the number of samples add for each ray

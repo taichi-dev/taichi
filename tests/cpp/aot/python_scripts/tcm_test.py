@@ -22,7 +22,10 @@ def main(arch):
 
     m = ti.aot.Module()
     m.add_kernel(run, template_args={'arr': arr})
-    m.archive(dir_name + "/module.tcm")
+
+    tcm_path = dir_name + "/module.tcm"
+    print(tcm_path)
+    m.archive(tcm_path)
 
 
 if __name__ == "__main__":

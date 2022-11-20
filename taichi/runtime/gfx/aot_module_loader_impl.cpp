@@ -60,7 +60,8 @@ class AotModuleImpl : public aot::Module {
             return;
           }
           if (spirv.at(0) != 0x07230203) {
-            TI_WARN("spirv '{}' has a incorrect magic number {}", spirv_path, spirv.at(0));
+            TI_WARN("spirv '{}' has a incorrect magic number {}", spirv_path,
+                    spirv.at(0));
           }
           spirv_sources_codes.emplace_back(std::move(spirv));
         }

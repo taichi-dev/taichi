@@ -40,6 +40,7 @@ class AotModuleImpl : public aot::Module {
 
     if (!succ) {
       mark_corrupted();
+      TI_WARN("'metadata.tcb' cannot be read");
       return;
     }
 
@@ -48,11 +49,18 @@ class AotModuleImpl : public aot::Module {
         auto k = ti_aot_data_.kernels[i];
         std::vector<std::vector<uint32_t>> spirv_sources_codes;
         for (int j = 0; j < k.tasks_attribs.size(); ++j) {
+          std::string spirv_path = k.tasks_attribs[j].name + ".spv";
+
           std::vector<uint32_t> spirv;
-          dir->load_file(k.tasks_attribs[j].source_path, spirv);
+          dir->load_file(spirv_path, spirv);
+
           if (spirv.size() == 0) {
             mark_corrupted();
+            TI_WARN("spirv '{}' cannot be read", spirv_path);
             return;
+          }
+          if (spirv.at(0) != 0x07230203) {
+            TI_WARN("spirv '{}' has a incorrect magic number {}", spirv_path, spirv.at(0));
           }
           spirv_sources_codes.emplace_back(std::move(spirv));
         }
@@ -66,6 +74,7 @@ class AotModuleImpl : public aot::Module {
 
     if (!succ) {
       mark_corrupted();
+      TI_WARN("'graphs.tcb' cannot be read");
       return;
     }
   }

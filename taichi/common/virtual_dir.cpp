@@ -25,7 +25,7 @@ struct FilesystemVirtualDir : public VirtualDir {
   }
 
   bool get_file_size(const std::string &path, size_t &size) const override {
-    std::fstream f(base_dir_ + path, std::ios::in | std::ios::ate);
+    std::fstream f(base_dir_ + path, std::ios::in | std::ios::binary | std::ios::ate);
     if (!f.is_open()) {
       return false;
     }
@@ -35,11 +35,10 @@ struct FilesystemVirtualDir : public VirtualDir {
   size_t load_file(const std::string &path,
                    void *data,
                    size_t size) const override {
-    std::fstream f(base_dir_ + path, std::ios::in);
+    std::fstream f(base_dir_ + path, std::ios::in | std::ios::binary);
     if (!f.is_open()) {
       return false;
     }
-    f.seekg(std::ios::beg);
 
     f.read((char *)data, size);
     size_t n = f.gcount();
@@ -54,7 +53,7 @@ struct ZipArchiveVirtualDir : public VirtualDir {
   }
 
   static std::unique_ptr<VirtualDir> create(const std::string &archive_path) {
-    std::fstream f(archive_path, std::ios::in | std::ios::ate);
+    std::fstream f(archive_path, std::ios::in | std::ios::binary | std::ios::ate);
     std::vector<uint8_t> archive_data(f.tellg());
     f.seekg(std::ios::beg);
     f.read((char *)archive_data.data(), archive_data.size());
@@ -94,7 +93,7 @@ struct ZipArchiveVirtualDir : public VirtualDir {
 };
 
 inline bool is_zip_file(const std::string &path) {
-  std::fstream f(path, std::ios::in);
+  std::fstream f(path, std::ios::in | std::ios::binary);
   if (!f.is_open()) {
     return false;
   }

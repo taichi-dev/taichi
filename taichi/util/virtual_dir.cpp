@@ -24,7 +24,7 @@ struct FilesystemVirtualDir : public VirtualDir {
       base_dir2 = base_dir;
     }
 
-    return std::unique_ptr<VirtualDir>(new FilesystemVirtualDir(base_dir));
+    return std::unique_ptr<VirtualDir>(new FilesystemVirtualDir(base_dir2));
   }
 
   bool get_file_size(const std::string &path, size_t &size) const override {

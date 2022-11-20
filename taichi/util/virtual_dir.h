@@ -5,7 +5,7 @@ namespace taichi {
 namespace io {
 
 // A universal filesystem interface for read-only access.
-struct VirtualDir {
+struct TI_DLL_EXPORT VirtualDir {
   virtual ~VirtualDir() {
   }
 

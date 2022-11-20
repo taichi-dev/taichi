@@ -138,3 +138,23 @@ TEST_F(CapiTest, DryRunOpenglAotModule) {
     }
   }
 }
+
+TEST_F(CapiTest, TestLoadTcmAotModule) {
+  if (capi::utils::is_vulkan_available()) {
+    const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
+
+    std::stringstream aot_mod_ss;
+    aot_mod_ss << folder_dir << "/module.tcm";
+
+    {
+      // Vulkan Runtime
+      TiArch arch = TiArch::TI_ARCH_VULKAN;
+      ti::Runtime runtime(arch);
+      ti::AotModule aot_mod = runtime.load_aot_module(aot_mod_ss.str());
+      ti::Kernel run = aot_mod.get_kernel("run");
+      ti::NdArray<int32_t> arr = runtime.allocate_ndarray<int32_t>({16});
+      run[0] = arr;
+      run.launch();
+    }
+  }
+}

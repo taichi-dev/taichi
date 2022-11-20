@@ -2,6 +2,12 @@
 # Author : Linyou (linyoutian.loyot@gmail.com)
 # Original code at https://github.com/Linyou/taichi-ngp-renderer
 
+# GUI instruction:
+# 1. Move the mouse with right click to rotate the camera
+# 2. Press 'w', 'a', 's', 'd' key to move the camera like FPS game
+# 3. Press 'q', 'e' key to move the camera up and down
+
+
 import argparse
 import os
 import platform
@@ -125,11 +131,11 @@ def random_normal():
 
 @ti.func
 def dir_encode_func(dir_):
-    input = tf_vec32(0.0)
-    dir = dir_ / dir_.norm()
-    x = dir[0]
-    y = dir[1]
-    z = dir[2]
+    out_feat = tf_vec32(0.0)
+    dir_n = dir_ / dir_.norm()
+    x = dir_n[0]
+    y = dir_n[1]
+    z = dir_n[2]
     xy = x * y
     xz = x * z
     yz = y * z
@@ -138,24 +144,24 @@ def dir_encode_func(dir_):
     z2 = z * z
 
     temp = 0.28209479177387814
-    input[0] = data_type(temp)
-    input[1] = data_type(-0.48860251190291987 * y)
-    input[2] = data_type(0.48860251190291987 * z)
-    input[3] = data_type(-0.48860251190291987 * x)
-    input[4] = data_type(1.0925484305920792 * xy)
-    input[5] = data_type(-1.0925484305920792 * yz)
-    input[6] = data_type(0.94617469575755997 * z2 - 0.31539156525251999)
-    input[7] = data_type(-1.0925484305920792 * xz)
-    input[8] = data_type(0.54627421529603959 * x2 - 0.54627421529603959 * y2)
-    input[9] = data_type(0.59004358992664352 * y * (-3.0 * x2 + y2))
-    input[10] = data_type(2.8906114426405538 * xy * z)
-    input[11] = data_type(0.45704579946446572 * y * (1.0 - 5.0 * z2))
-    input[12] = data_type(0.3731763325901154 * z * (5.0 * z2 - 3.0))
-    input[13] = data_type(0.45704579946446572 * x * (1.0 - 5.0 * z2))
-    input[14] = data_type(1.4453057213202769 * z * (x2 - y2))
-    input[15] = data_type(0.59004358992664352 * x * (-x2 + 3.0 * y2))
+    out_feat[0] = data_type(temp)
+    out_feat[1] = data_type(-0.48860251190291987 * y)
+    out_feat[2] = data_type(0.48860251190291987 * z)
+    out_feat[3] = data_type(-0.48860251190291987 * x)
+    out_feat[4] = data_type(1.0925484305920792 * xy)
+    out_feat[5] = data_type(-1.0925484305920792 * yz)
+    out_feat[6] = data_type(0.94617469575755997 * z2 - 0.31539156525251999)
+    out_feat[7] = data_type(-1.0925484305920792 * xz)
+    out_feat[8] = data_type(0.54627421529603959 * x2 - 0.54627421529603959 * y2)
+    out_feat[9] = data_type(0.59004358992664352 * y * (-3.0 * x2 + y2))
+    out_feat[10] = data_type(2.8906114426405538 * xy * z)
+    out_feat[11] = data_type(0.45704579946446572 * y * (1.0 - 5.0 * z2))
+    out_feat[12] = data_type(0.3731763325901154 * z * (5.0 * z2 - 3.0))
+    out_feat[13] = data_type(0.45704579946446572 * x * (1.0 - 5.0 * z2))
+    out_feat[14] = data_type(1.4453057213202769 * z * (x2 - y2))
+    out_feat[15] = data_type(0.59004358992664352 * x * (-x2 + 3.0 * y2))
 
-    return input
+    return out_feat
 
 
 @ti.data_oriented
@@ -320,7 +326,7 @@ class NGP_fw:
         return directions.reshape(-1, 3)
 
     def load_model(self, model_path):
-        print('Loading model from {}'.format(model_path))
+        print(f'Loading model from {model_path}')
         model = np.load(model_path, allow_pickle=True).item()
         # model = torch.load(model_path, map_location='cpu')['state_dict']
         self.hash_embedding.from_numpy(
@@ -580,7 +586,7 @@ class NGP_fw:
             tid = sn % block_dim
             did_launch_num = self.model_launch[None]
             init_val = tf_vec1(0.0)
-            input = ti.simt.block.SharedArray((32, block_dim), data_type)
+            xyz_feat = ti.simt.block.SharedArray((32, block_dim), data_type)
             weight = ti.simt.block.SharedArray((64 * 32 + 64 * 16, ),
                                                data_type)
             hid1 = ti.simt.block.SharedArray((64, block_dim), data_type)
@@ -593,12 +599,12 @@ class NGP_fw:
             if sn < did_launch_num:
 
                 for i in ti.static(range(32)):
-                    input[i, tid] = self.xyzs_embedding[sn, i]
+                    xyz_feat[i, tid] = self.xyzs_embedding[sn, i]
 
                 for i in range(64):
                     temp = init_val[0]
                     for j in ti.static(range(32)):
-                        temp += input[j, tid] * weight[i * 32 + j]
+                        temp += xyz_feat[j, tid] * weight[i * 32 + j]
 
                     hid1[i, tid] = temp
                 ti.simt.block.sync()
@@ -637,15 +643,15 @@ class NGP_fw:
             if sn < did_launch_num:
 
                 dir_ = self.dirs[ray_id]
-                input = dir_encode_func(dir_)
+                dir_feat = dir_encode_func(dir_)
 
                 for i in ti.static(range(16)):
-                    input[16 + i] = self.final_embedding[sn, i]
+                    dir_feat[16 + i] = self.final_embedding[sn, i]
 
                 for i in range(64):
                     temp = init_val[0]
                     for j in ti.static(range(32)):
-                        temp += input[j] * weight[i * 32 + j]
+                        temp += dir_feat[j] * weight[i * 32 + j]
 
                     hid1[i, tid] = temp
                 ti.simt.block.sync()
@@ -682,7 +688,7 @@ class NGP_fw:
             tid = sn % block_dim
             did_launch_num = self.model_launch[None]
             init_val = tf_vec1(0.0)
-            input_2 = tf_vec32(0.0)
+            xyz_feat = tf_vec32(0.0)
             weight = ti.simt.block.SharedArray((64 * 32 + 64 * 64 + 64 * 4, ),
                                                data_type)
             hid2_2 = ti.simt.block.SharedArray((32 * block_dim, ), data_type)
@@ -699,13 +705,13 @@ class NGP_fw:
             if sn < did_launch_num:
                 dir_ = self.dirs[ray_id]
                 for i in ti.static(range(32)):
-                    input_2[i] = self.xyzs_embedding[sn, i]
-                input = dir_encode_func(dir_)
+                    xyz_feat[i] = self.xyzs_embedding[sn, i]
+                dir_feat = dir_encode_func(dir_)
 
                 for i in range(64):
                     temp = init_val[0]
                     for j in ti.static(range(32)):
-                        temp += input_2[j] * hid2_1[i * 32 + j]
+                        temp += xyz_feat[j] * hid2_1[i * 32 + j]
                     hid1[i * block_dim + tid] = temp
                 ti.simt.block.sync()
 
@@ -722,12 +728,12 @@ class NGP_fw:
                 out1 = data_type(ti.exp(hid2_2[tid]))
 
                 for i in ti.static(range(16)):
-                    input[16 + i] = hid2_2[i * block_dim + tid]
+                    dir_feat[16 + i] = hid2_2[i * block_dim + tid]
 
                 for i in range(64):
                     temp = init_val[0]
                     for j in ti.static(range(32)):
-                        temp += input[j] * weight[i * 32 + j]
+                        temp += dir_feat[j] * weight[i * 32 + j]
                     hid1[i * block_dim + tid] = temp
                 ti.simt.block.sync()
 
@@ -842,7 +848,8 @@ class NGP_fw:
 
         while samples < max_samples:
             N_alive = self.counter[None]
-            if N_alive == 0: break
+            if N_alive == 0: 
+                break
 
             # how many more samples the number of samples add for each ray
             N_samples = max(min(self.N_rays // N_alive, 64), self.min_samples)
@@ -982,7 +989,7 @@ class NGP_fw:
                 total_frame = 1
 
             with gui.sub_window("Options", 0.05, 0.05, 0.68, 0.3) as w:
-                w.text(f'General')
+                w.text('General')
                 T_threshold = w.slider_float('transparency threshold',
                                              T_threshold, 0., 1.)
                 max_samples_for_rendering = w.slider_float(
@@ -990,7 +997,7 @@ class NGP_fw:
                 show_depth = w.checkbox("show depth", show_depth)
                 # white_bg = w.checkbox("white background", white_bg)
 
-                w.text(f'Camera')
+                w.text('Camera')
                 use_dof = w.checkbox("apply depth of field", use_dof)
                 dist_to_focus = w.slider_float("focus distance", dist_to_focus,
                                                0.8, 3.)
@@ -1099,5 +1106,4 @@ if __name__ == '__main__':
     parser.add_argument('--model_path', type=str, default=None)
     parser.add_argument('--gui', action='store_true', default=False)
     parser.add_argument('--print_profile', action='store_true', default=False)
-    args = parser.parse_args()
-    main(args)
+    main(parser.parse_args())

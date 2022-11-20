@@ -16,7 +16,7 @@ class NdarrayTypeMetadata:
 #                with respect to element_dim and element_shape.
 #                Remove this function when the two args are totally deprecated.
 def _make_matrix_dtype_from_element_shape(element_dim, element_shape,
-                                         primitive_dtype):
+                                          primitive_dtype):
     if isinstance(primitive_dtype, CompoundType):
         raise TypeError(
             f'Cannot specifiy matrix dtype "{primitive_dtype}" and element shape or dim at the same time.'

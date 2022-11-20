@@ -34,7 +34,7 @@ struct VirtualDir {
       return false;
     }
     data.resize(size / sizeof(T));
-    if (load_file(path, data.data(), data.size()) != size) {
+    if (load_file(path, data.data(), size) != size) {
       return false;
     }
     return true;

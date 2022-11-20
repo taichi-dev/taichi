@@ -43,7 +43,9 @@ struct FilesystemVirtualDir : public VirtualDir {
       return false;
     }
     f.seekg(std::ios::beg);
-    size_t n = f.readsome((char *)data, size);
+
+    f.read((char *)data, size);
+    size_t n = f.gcount();
     return n;
   }
 };
@@ -102,7 +104,8 @@ inline bool is_zip_file(const std::string &path) {
 
   // Ensure the file magic matches the Zip format.
   char magic[2];
-  size_t n = f.readsome(magic, 2);
+  f.read(magic, 2);
+  size_t n = f.gcount();
   if (n == 2 && magic[0] == 'P' && magic[1] == 'K') {
     return false;
   }

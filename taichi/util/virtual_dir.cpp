@@ -104,10 +104,10 @@ inline bool is_zip_file(const std::string &path) {
   f.read(magic, 2);
   size_t n = f.gcount();
   if (n == 2 && magic[0] == 'P' && magic[1] == 'K') {
-    return false;
+    return true;
   }
 
-  return true;
+  return false;
 }
 
 std::unique_ptr<VirtualDir> VirtualDir::open(const std::string &path) {

@@ -469,8 +469,8 @@ class NGP_fw:
 
                 idx = __morton3D(ti.cast(nxyz, ti.u32))
                 # occ = density_grid_taichi[idx] > 5.912066756501768
-                occ = self.density_bitfield[ti.u32(
-                    idx // 8)] & (1 << ti.u32(idx % 8))
+                occ = ti.u32(self.density_bitfield[ti.int32(
+                    idx // 8)]) & (1 << ti.u32(idx % 8))
 
                 if occ:
                     sn = start_idx + s

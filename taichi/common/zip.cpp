@@ -1,5 +1,5 @@
 #include "taichi/common/zip.h"
-#include "miniz.h"
+#include "taichi/common/miniz.h"
 
 namespace taichi {
 namespace zip {

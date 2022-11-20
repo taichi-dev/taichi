@@ -1,5 +1,5 @@
-#include "virtual_dir.h"
-#include "taichi/util/zip.h"
+#include "taichi/common/virtual_dir.h"
+#include "taichi/common/zip.h"
 
 namespace taichi {
 namespace io {

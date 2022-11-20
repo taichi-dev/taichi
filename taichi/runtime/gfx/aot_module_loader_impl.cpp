@@ -5,7 +5,7 @@
 
 #include "taichi/runtime/gfx/runtime.h"
 #include "taichi/aot/graph_data.h"
-#include "taichi/util/virtual_dir.h"
+#include "taichi/common/virtual_dir.h"
 
 namespace taichi::lang {
 namespace gfx {

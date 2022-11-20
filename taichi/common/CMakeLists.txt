@@ -10,6 +10,7 @@ target_sources(taichi_common
     symbol_version.cpp
     virtual_dir.cpp
     zip.cpp
+    miniz.c
   )
 
 target_include_directories(taichi_common

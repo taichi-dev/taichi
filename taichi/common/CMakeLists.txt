@@ -8,6 +8,8 @@ target_sources(taichi_common
     json.cpp
     logging.cpp
     symbol_version.cpp
+    virtual_dir.cpp
+    zip.cpp
   )
 
 target_include_directories(taichi_common

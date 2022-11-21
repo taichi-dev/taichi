@@ -17,7 +17,6 @@
 #include "taichi/ir/snode.h"
 #include "taichi/ir/frontend_ir.h"
 #include "taichi/program/snode_expr_utils.h"
-#include "taichi/util/statistics.h"
 #include "taichi/math/arithmetic.h"
 #ifdef TI_WITH_LLVM
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
@@ -163,8 +162,6 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
       config.check_out_of_bound = false;
     }
   }
-
-  stat.clear();
 
   Timelines::get_instance().set_enabled(config.timeline);
 
@@ -415,6 +412,38 @@ void Program::finalize() {
   synchronize();
   TI_ASSERT(std::this_thread::get_id() == main_thread_id_);
   TI_TRACE("Program finalizing...");
+  if (this_thread_config().print_benchmark_stat) {
+    const char *current_test = std::getenv("PYTEST_CURRENT_TEST");
+    const char *output_dir = std::getenv("TI_BENCHMARK_OUTPUT_DIR");
+    if (current_test != nullptr) {
+      if (output_dir == nullptr)
+        output_dir = ".";
+      std::string file_name = current_test;
+      auto slash_pos = file_name.find_last_of('/');
+      if (slash_pos != std::string::npos)
+        file_name = file_name.substr(slash_pos + 1);
+      auto py_pos = file_name.find(".py::");
+      TI_ASSERT(py_pos != std::string::npos);
+      file_name =
+          file_name.substr(0, py_pos) + "__" + file_name.substr(py_pos + 5);
+      auto first_space_pos = file_name.find_first_of(' ');
+      TI_ASSERT(first_space_pos != std::string::npos);
+      file_name = file_name.substr(0, first_space_pos);
+      if (auto lt_pos = file_name.find('<'); lt_pos != std::string::npos) {
+        file_name[lt_pos] = '_';
+      }
+      if (auto gt_pos = file_name.find('>'); gt_pos != std::string::npos) {
+        file_name[gt_pos] = '_';
+      }
+      file_name += ".dat";
+      file_name = std::string(output_dir) + "/" + file_name;
+      TI_INFO("Saving benchmark result to {}", file_name);
+      std::ofstream ofs(file_name);
+      TI_ASSERT(ofs);
+      std::string stat_string;
+      ofs << stat_string;
+    }
+  }
 
   synchronize();
   memory_pool_->terminate();

@@ -19,7 +19,6 @@
 #include "taichi/system/dynamic_loader.h"
 #include "taichi/system/hacked_signal_handler.h"
 #include "taichi/system/profiler.h"
-#include "taichi/util/statistics.h"
 #if defined(TI_WITH_CUDA)
 #include "taichi/rhi/cuda/cuda_driver.h"
 #endif
@@ -178,14 +177,6 @@ void export_misc(py::module &m) {
 #else
   m.def("with_cc", []() { return false; });
 #endif
-
-  py::class_<Statistics>(m, "Statistics")
-      .def(py::init<>())
-      .def("clear", &Statistics::clear)
-      .def("get_counters", &Statistics::get_counters);
-  m.def(
-      "get_kernel_stats", []() -> Statistics & { return stat; },
-      py::return_value_policy::reference);
 
   py::class_<HackedSignalRegister>(m, "HackedSignalRegister").def(py::init<>());
 }

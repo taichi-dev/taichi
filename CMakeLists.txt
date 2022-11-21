@@ -111,10 +111,10 @@ endmacro()
 
 if (APPLE)
   set(CLANG_OSX_FLAGS "-isysroot${CMAKE_OSX_SYSROOT}")
-  set(CLANG_HIGHEST_VERSION "13")
-else()
-  set(CLANG_HIGHEST_VERSION "15")
 endif()
+
+# Highest clang version that we've tested
+set(CLANG_HIGHEST_VERSION "15")
 
 check_clang_version()
 

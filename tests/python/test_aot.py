@@ -62,7 +62,7 @@ def test_aot_bind_id():
     density1 = ti.ndarray(dtype=ti.f32, shape=(8, 8))
 
     @ti.kernel
-    def init(x: ti.f32, density1: ti.types.ndarray(field_dim=2)):
+    def init(x: ti.f32, density1: ti.types.ndarray(ndim=2)):
         for i, j in density1:
             density[i, j] = x
             density1[i, j] = x + 1

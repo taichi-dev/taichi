@@ -64,12 +64,14 @@ class NdarrayType:
 
     Args:
         dtype (Union[PrimitiveType, VectorType, MatrixType, NoneType], optional): None if not speicified.
-        [DERPRECATED] element_dim (Union[Int, NoneType], optional): None if not specified (will be treated as 0 for external arrays), 0 if scalar elements, 1 if vector elements, and 2 if matrix elements.
-        [DERPRECATED] element_shape (Union[Tuple[Int], NoneType]): None if not specified, shapes of each element. For example, element_shape must be 1d for vector and 2d tuple for matrix. This argument is ignored for external arrays for now.
-        field_dim (Union[Int, NoneType]): None if not specified, number of field dimensions. This argument is ignored for external arrays for now.
+        ndim (Union[Int, NoneType]): None if not specified, number of field dimensions. This argument is ignored for external arrays for now.
+        [DEPRECATED] element_dim (Union[Int, NoneType], optional): None if not specified (will be treated as 0 for external arrays), 0 if scalar elements, 1 if vector elements, and 2 if matrix elements.
+        [DEPRECATED] element_shape (Union[Tuple[Int], NoneType]): None if not specified, shapes of each element. For example, element_shape must be 1d for vector and 2d tuple for matrix. This argument is ignored for external arrays for now.
+        [DEPRECATED] field_dim (Union[Int, NoneType]): None if not specified, number of field dimensions. This argument is ignored for external arrays for now.
     """
     def __init__(self,
                  dtype=None,
+                 ndim=None,
                  element_dim=None,
                  element_shape=None,
                  field_dim=None):
@@ -83,7 +85,17 @@ class NdarrayType:
         else:
             self.dtype = dtype
 
-        self.field_dim = field_dim
+        if field_dim is not None:
+            warnings.warn(
+                "The field_dim argument for ndarray will be deprecated in v1.4.0, use ndim instead.",
+                DeprecationWarning)
+            if ndim is not None:
+                raise ValueError(
+                    "Cannot specify ndim and field_dim at the same time. The field_dim is going to be deprecated."
+                )
+            ndim = field_dim
+
+        self.ndim = ndim
         self.layout = Layout.AOS
 
     def check_matched(self, ndarray_type: NdarrayTypeMetadata):
@@ -121,12 +133,12 @@ class NdarrayType:
                         f"Expect element type {self.dtype} for Ndarray, but get {ndarray_type.element_type}"
                     )
 
-        # Check field dim shape match
-        if self.field_dim is not None and \
+        # Check ndim match
+        if self.ndim is not None and \
             ndarray_type.shape is not None and \
-            self.field_dim != len(ndarray_type.shape):
+            self.ndim != len(ndarray_type.shape):
             raise ValueError(
-                f"Invalid argument into ti.types.ndarray() - required field_dim={self.field_dim}, but {ndarray_type.element_type} is provided"
+                f"Invalid argument into ti.types.ndarray() - required ndim={self.ndim}, but {ndarray_type.element_type} is provided"
             )
 
 

@@ -19,7 +19,7 @@ def test_ndarray_int():
     n = 4
 
     @ti.kernel
-    def test(pos: ti.types.ndarray(dtype=ti.i32, field_dim=1)):
+    def test(pos: ti.types.ndarray(dtype=ti.i32, ndim=1)):
         for i in range(n):
             pos[i] = 1
 
@@ -39,7 +39,7 @@ def test_ndarray_int():
 @test_utils.test(arch=supported_archs_cgraph)
 def test_ndarray_1dim_scalar():
     @ti.kernel
-    def ti_test_debug(arr: ti.types.ndarray(field_dim=1)):
+    def ti_test_debug(arr: ti.types.ndarray(ndim=1)):
         arr[0] = 0
 
     debug_arr = ti.ndarray(ti.i32, shape=5)
@@ -56,7 +56,7 @@ def test_ndarray_1dim_scalar():
 @test_utils.test(arch=supported_archs_cgraph)
 def test_ndarray_0dim():
     @ti.kernel
-    def test(pos: ti.types.ndarray(dtype=ti.i32, field_dim=0)):
+    def test(pos: ti.types.ndarray(dtype=ti.i32, ndim=0)):
         pos[None] = 1
 
     sym_pos = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
@@ -77,7 +77,7 @@ def test_ndarray_float():
     n = 4
 
     @ti.kernel
-    def test(pos: ti.types.ndarray(field_dim=1)):
+    def test(pos: ti.types.ndarray(ndim=1)):
         for i in range(n):
             pos[i] = 2.5
 
@@ -99,7 +99,7 @@ def test_arg_mismatched_field_dim():
     n = 4
 
     @ti.kernel
-    def test(pos: ti.types.ndarray(field_dim=1)):
+    def test(pos: ti.types.ndarray(ndim=1)):
         for i in range(n):
             pos[i] = 2.5
 
@@ -118,7 +118,7 @@ def test_arg_mismatched_field_dim_ndarray():
     n = 4
 
     @ti.kernel
-    def test(pos: ti.types.ndarray(field_dim=1)):
+    def test(pos: ti.types.ndarray(ndim=1)):
         for i in range(n):
             pos[i] = 2.5
 
@@ -137,7 +137,7 @@ def test_repeated_arg_name():
     n = 4
 
     @ti.kernel
-    def test1(pos: ti.types.ndarray(field_dim=1)):
+    def test1(pos: ti.types.ndarray(ndim=1)):
         for i in range(n):
             pos[i] = 2.5
 
@@ -163,7 +163,7 @@ def test_arg_mismatched_scalar_dtype():
     n = 4
 
     @ti.kernel
-    def test(pos: ti.types.ndarray(field_dim=1), val: ti.f32):
+    def test(pos: ti.types.ndarray(ndim=1), val: ti.f32):
         for i in range(n):
             pos[i] = val
 
@@ -180,7 +180,7 @@ def test_arg_mismatched_ndarray_dtype():
     n = 4
 
     @ti.kernel
-    def test(pos: ti.types.ndarray(dtype=ti.f32, field_dim=1)):
+    def test(pos: ti.types.ndarray(dtype=ti.f32, ndim=1)):
         for i in range(n):
             pos[i] = 2.5
 
@@ -196,7 +196,7 @@ def test_ndarray_dtype_mismatch_runtime():
     n = 4
 
     @ti.kernel
-    def test(pos: ti.types.ndarray(field_dim=1)):
+    def test(pos: ti.types.ndarray(ndim=1)):
         for i in range(n):
             pos[i] = 2.5
 
@@ -216,7 +216,7 @@ def test_ndarray_dtype_mismatch_runtime():
 def build_graph_vector(N, dtype):
     @ti.kernel
     def vector_sum(mat: ti.types.vector(N, dtype),
-                   res: ti.types.ndarray(dtype=dtype, field_dim=1)):
+                   res: ti.types.ndarray(dtype=dtype, ndim=1)):
         res[0] = mat.sum() + mat[2]
 
     sym_A = ti.graph.Arg(ti.graph.ArgKind.MATRIX, 'mat',
@@ -231,7 +231,7 @@ def build_graph_vector(N, dtype):
 def build_graph_matrix(N, dtype):
     @ti.kernel
     def matrix_sum(mat: ti.types.matrix(N, 2, dtype),
-                   res: ti.types.ndarray(dtype=dtype, field_dim=1)):
+                   res: ti.types.ndarray(dtype=dtype, ndim=1)):
         res[0] = mat.sum()
 
     sym_A = ti.graph.Arg(ti.graph.ArgKind.MATRIX, 'mat',
@@ -287,7 +287,7 @@ def test_vector_float():
 @test_utils.test(arch=supported_archs_cgraph)
 def test_arg_float(dt):
     @ti.kernel
-    def foo(a: dt, b: ti.types.ndarray(dtype=dt, field_dim=1)):
+    def foo(a: dt, b: ti.types.ndarray(dtype=dt, ndim=1)):
         b[0] = a
 
     k = ti.ndarray(dt, shape=(1, ))
@@ -309,7 +309,7 @@ def test_arg_float(dt):
 @test_utils.test(arch=supported_archs_cgraph, exclude=[(ti.vulkan, "Darwin")])
 def test_arg_int(dt):
     @ti.kernel
-    def foo(a: dt, b: ti.types.ndarray(dtype=dt, field_dim=1)):
+    def foo(a: dt, b: ti.types.ndarray(dtype=dt, ndim=1)):
         b[0] = a
 
     k = ti.ndarray(dt, shape=(1, ))
@@ -331,7 +331,7 @@ def test_arg_int(dt):
 @test_utils.test(arch=ti.vulkan)
 def test_arg_short(dt):
     @ti.kernel
-    def foo(a: dt, b: ti.types.ndarray(dtype=dt, field_dim=1)):
+    def foo(a: dt, b: ti.types.ndarray(dtype=dt, ndim=1)):
         b[0] = a
 
     k = ti.ndarray(dt, shape=(1, ))
@@ -362,7 +362,7 @@ def test_texture():
             tex.store(ti.Vector([i, j]), ti.Vector([0.1, 0.0, 0.0, 0.0]))
 
     @ti.kernel
-    def paint(t: ti.f32, pixels: ti.types.ndarray(field_dim=2),
+    def paint(t: ti.f32, pixels: ti.types.ndarray(ndim=2),
               tex: ti.types.texture(num_dimensions=2)):
         for i, j in pixels:
             uv = ti.Vector([i / res[0], j / res[1]])

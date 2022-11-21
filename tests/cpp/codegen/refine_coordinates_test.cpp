@@ -114,7 +114,7 @@ struct BitsRange {
 };
 
 constexpr int kPointerSize = 5;
-constexpr int kDenseSize = 7;
+constexpr int kDenseSize = 8;
 
 class RefineCoordinatesTest : public ::testing::Test {
  protected:

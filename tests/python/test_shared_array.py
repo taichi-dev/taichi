@@ -14,8 +14,7 @@ def _test_shared_array_nested_loop():
     reference = np.zeros(N).astype(np.float32)
 
     @ti.kernel
-    def calc(v: ti.types.ndarray(ndim=1),
-             d: ti.types.ndarray(ndim=1),
+    def calc(v: ti.types.ndarray(ndim=1), d: ti.types.ndarray(ndim=1),
              a: ti.types.ndarray(ndim=1)):
         for i in range(N):
             acc = 0.0

@@ -173,7 +173,9 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
     //  - No global load/atomics operations to the global variables which
     //  require gradient
     if (block->statements.empty()) {
-      ib_meta_data.is_ib = false;
+      // A empty block shoud be a smallest IB
+      ib_meta_data.is_ib = true;
+      ib_meta_data.is_smallest_ib = true;
     } else {
       IndependentBlocksJudger::run(block, ib_meta_data);
     }

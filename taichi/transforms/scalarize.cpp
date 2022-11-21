@@ -484,8 +484,9 @@ class Scalarize : public BasicStmtVisitor {
   /* Scalarize Indices */
   void visit(ExternalPtrStmt *stmt) override {
     auto flattened_indices = get_scalarized_indices<ExternalPtrStmt>(stmt);
-    auto new_stmt =
-        std::make_unique<ExternalPtrStmt>(stmt->base_ptr, flattened_indices);
+    auto new_stmt = std::make_unique<ExternalPtrStmt>(
+        stmt->base_ptr, flattened_indices, stmt->element_shape,
+        stmt->element_dim);
     new_stmt->ret_type = stmt->ret_type;
 
     stmt->replace_usages_with(new_stmt.get());

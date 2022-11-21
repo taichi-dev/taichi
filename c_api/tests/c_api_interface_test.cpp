@@ -175,7 +175,7 @@ TEST_F(CapiTest, TestCreateTcmAotModule) {
 
     std::vector<uint8_t> tcm;
     {
-      std::fstream f(aot_mod_ss.str(), std::ios::in | std::ios::ate);
+      std::fstream f(aot_mod_ss.str(), std::ios::in | std::ios::binary | std::ios::ate);
       TI_ASSERT(f.is_open());
       tcm.resize(f.tellg());
       f.seekg(std::ios::beg);

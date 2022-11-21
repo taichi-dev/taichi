@@ -238,18 +238,11 @@ void StructCompilerLLVM::generate_child_accessors(SNode &snode) {
       args.push_back(&arg);
     }
     llvm::Value *ret;
-#ifdef TI_LLVM_15
     ret = builder.CreateGEP(get_llvm_element_type(module.get(), parent),
                             builder.CreateBitCast(args[0], inp_type),
                             {tlctx_->get_constant(0),
                              tlctx_->get_constant(parent->child_id(&snode))},
                             "getch");
-#else
-    ret = builder.CreateGEP(builder.CreateBitCast(args[0], inp_type),
-                            {tlctx_->get_constant(0),
-                             tlctx_->get_constant(parent->child_id(&snode))},
-                            "getch");
-#endif
 
     builder.CreateRet(
         builder.CreateBitCast(ret, llvm::Type::getInt8PtrTy(*llvm_ctx_)));
@@ -299,12 +292,8 @@ llvm::Type *StructCompilerLLVM::get_stub(llvm::Module *module,
                                          uint32 index) {
   TI_ASSERT(module);
   TI_ASSERT(snode);
-#ifdef TI_LLVM_15
   auto stub = llvm::StructType::getTypeByName(module->getContext(),
                                               type_stub_name(snode));
-#else
-  auto stub = module->getTypeByName(type_stub_name(snode));
-#endif
   TI_ASSERT(stub);
   TI_ASSERT(stub->getStructNumElements() == 4);
   TI_ASSERT(0 <= index && index < 4);

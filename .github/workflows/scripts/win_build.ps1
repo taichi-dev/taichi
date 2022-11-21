@@ -65,7 +65,6 @@ if ($llvmVer -eq "10") {
     $env:LLVM_DIR = "$libsDir\taichi_llvm_15"
 	$env:TAICHI_CMAKE_ARGS += " -DCLANG_EXECUTABLE=$($libsDir -replace "\\", "\\")\\taichi_clang_15\\bin\\clang++.exe"
 	$env:TAICHI_CMAKE_ARGS += " -DLLVM_AS_EXECUTABLE=$($libsDir -replace "\\", "\\")\\taichi_llvm_15\\bin\\llvm-as.exe"
-    $env:TAICHI_CMAKE_ARGS += " -DTI_LLVM_15:BOOL=ON"
 } else {
     throw "Unsupported LLVM version"
 }

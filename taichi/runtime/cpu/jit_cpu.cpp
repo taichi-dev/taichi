@@ -33,13 +33,8 @@
 #include "llvm/Transforms/Scalar/GVN.h"
 #include "llvm/Transforms/IPO.h"
 
-#ifdef TI_LLVM_15
 #include "llvm/MC/TargetRegistry.h"
 #include "llvm/Support/Host.h"
-#else
-#include "llvm/Support/TargetRegistry.h"
-#include "llvm/ExecutionEngine/Orc/LambdaResolver.h"
-#endif
 
 #endif
 
@@ -57,14 +52,6 @@ using namespace llvm::orc;
 #endif
 
 std::pair<JITTargetMachineBuilder, llvm::DataLayout> get_host_target_info() {
-#if defined(TI_PLATFORM_OSX) and defined(TI_ARCH_ARM) and !defined(TI_LLVM_15)
-  // JITTargetMachineBuilder::detectHost() doesn't seem to work properly on
-  // Apple M1 yet. Hence the hardcoded strings here.
-  // Note this hack is no longer needed in LLVM15
-  auto jtmb =
-      JITTargetMachineBuilder(llvm::Triple("aarch64-apple-macosx11.0.0"));
-  llvm::DataLayout data_layout("e-m:o-i64:64-i128:128-n32:64-S128");
-#else
   auto expected_jtmb = JITTargetMachineBuilder::detectHost();
   if (!expected_jtmb)
     TI_ERROR("LLVM TargetMachineBuilder has failed.");
@@ -74,7 +61,6 @@ std::pair<JITTargetMachineBuilder, llvm::DataLayout> get_host_target_info() {
     TI_ERROR("LLVM TargetMachineBuilder has failed when getting data layout.");
   }
   auto data_layout = *expected_data_layout;
-#endif
   return std::make_pair(jtmb, data_layout);
 }
 
@@ -110,7 +96,6 @@ class JITSessionCPU : public JITSession {
   SectionMemoryManager *memory_manager_;
 
  public:
-#ifdef TI_LLVM_15
   JITSessionCPU(TaichiLLVMContext *tlctx,
                 std::unique_ptr<ExecutorProcessControl> EPC,
                 CompileConfig *config,
@@ -136,40 +121,13 @@ class JITSessionCPU : public JITSession {
       object_layer_.setAutoClaimResponsibilityForObjectSymbols(true);
     }
   }
-#else
-  JITSessionCPU(TaichiLLVMContext *tlctx,
-                CompileConfig *config,
-                JITTargetMachineBuilder JTMB,
-                DataLayout DL)
-      : JITSession(tlctx, config),
-        object_layer_(es_,
-                      [&]() {
-                        auto smgr = std::make_unique<SectionMemoryManager>();
-                        memory_manager_ = smgr.get();
-                        return smgr;
-                      }),
-        compile_layer_(es_,
-                       object_layer_,
-                       std::make_unique<ConcurrentIRCompiler>(JTMB)),
-        dl_(DL),
-        mangle_(es_, this->dl_),
-        module_counter_(0),
-        memory_manager_(nullptr) {
-    if (JTMB.getTargetTriple().isOSBinFormatCOFF()) {
-      object_layer_.setOverrideObjectFlagsWithResponsibilityFlags(true);
-      object_layer_.setAutoClaimResponsibilityForObjectSymbols(true);
-    }
-  }
-#endif
 
   ~JITSessionCPU() override {
     std::lock_guard<std::mutex> _(mut_);
     if (memory_manager_)
       memory_manager_->deregisterEHFrames();
-#ifdef TI_LLVM_15
     if (auto Err = es_.endSession())
       es_.reportError(std::move(Err));
-#endif
   }
 
   DataLayout get_data_layout() override {
@@ -185,13 +143,9 @@ class JITSessionCPU : public JITSession {
     TI_ASSERT(M);
     global_optimize_module_cpu(M.get());
     std::lock_guard<std::mutex> _(mut_);
-#ifdef TI_LLVM_15
     auto dylib_expect = es_.createJITDylib(fmt::format("{}", module_counter_));
     TI_ASSERT(dylib_expect);
     auto &dylib = dylib_expect.get();
-#else
-    auto &dylib = es_.createJITDylib(fmt::format("{}", module_counter_));
-#endif
     dylib.addGenerator(
         cantFail(llvm::orc::DynamicLibrarySearchGenerator::GetForCurrentProcess(
             dl_.getGlobalPrefix())));
@@ -255,10 +209,6 @@ void JITSessionCPU::global_optimize_module_cpu(llvm::Module *module) {
   TI_ERROR_UNLESS(target, err_str);
 
   TargetOptions options;
-#ifndef TI_LLVM_15
-  // PrintMachineCode is removed in https://reviews.llvm.org/D83275.
-  options.PrintMachineCode = false;
-#endif
   if (this->config_->fast_math) {
     options.AllowFPOpFusion = FPOpFusion::Fast;
     options.UnsafeFPMath = 1;
@@ -273,10 +223,6 @@ void JITSessionCPU::global_optimize_module_cpu(llvm::Module *module) {
   options.HonorSignDependentRoundingFPMathOption = false;
   options.NoZerosInBSS = false;
   options.GuaranteedTailCallOpt = false;
-#ifndef TI_LLVM_15
-  // StackAlignmentOverride is removed in https://reviews.llvm.org/D103048.
-  options.StackAlignmentOverride = 0;
-#endif
 
   legacy::FunctionPassManager function_pass_manager(module);
   legacy::PassManager module_pass_manager;
@@ -351,15 +297,10 @@ std::unique_ptr<JITSession> create_llvm_jit_session_cpu(
     Arch arch) {
   TI_ASSERT(arch_is_cpu(arch));
   auto target_info = get_host_target_info();
-#ifdef TI_LLVM_15
   auto EPC = SelfExecutorProcessControl::Create();
   TI_ASSERT(EPC);
   return std::make_unique<JITSessionCPU>(tlctx, std::move(*EPC), config,
                                          target_info.first, target_info.second);
-#else
-  return std::make_unique<JITSessionCPU>(tlctx, config, target_info.first,
-                                         target_info.second);
-#endif
 }
 
 }  // namespace taichi::lang

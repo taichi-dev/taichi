@@ -6,7 +6,6 @@
 
 #include "taichi/common/core.h"
 #include "taichi/util/io.h"
-#include "taichi/util/statistics.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"
 #include "taichi/program/program.h"
@@ -615,7 +614,6 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
   }
 
   void visit(OffloadedStmt *stmt) override {
-    stat.add("codegen_offloaded_tasks");
     if (stmt->bls_size > 0)
       create_bls_buffer(stmt);
 #if defined(TI_WITH_CUDA)

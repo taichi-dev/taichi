@@ -432,8 +432,7 @@ def test_ndrange_for():
                     assert x[i, j, k] == 0
 
 
-@test_utils.test(print_preprocessed_ir=True)
-def test_grouped_ndrange_for():
+def _test_grouped_ndrange_for():
     x = ti.field(ti.i32, shape=(6, 6, 6))
     y = ti.field(ti.i32, shape=(6, 6, 6))
 
@@ -456,6 +455,18 @@ def test_grouped_ndrange_for():
         for j in range(6):
             for k in range(6):
                 assert x[i, j, k] == y[i, j, k]
+
+
+@test_utils.test(print_preprocessed_ir=True)
+def test_grouped_ndrange_for():
+    _test_grouped_ndrange_for()
+
+
+@test_utils.test(print_preprocessed_ir=True,
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_grouped_ndrange_for_matrix_scalarize():
+    _test_grouped_ndrange_for()
 
 
 @test_utils.test(print_preprocessed_ir=True)
@@ -936,7 +947,8 @@ def test_ndarray():
     m = 7
 
     @ti.kernel
-    def run(x: ti.types.ndarray(element_dim=2), y: ti.types.ndarray()):
+    def run(x: ti.types.ndarray(dtype=ti.types.matrix(1, 1, ti.i32)),
+            y: ti.types.ndarray()):
         for i in ti.static(range(n)):
             for j in ti.static(range(m)):
                 x[i, j][0, 0] += i + j + y[i, j]

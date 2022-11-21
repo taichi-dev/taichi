@@ -9,7 +9,6 @@
 #include "taichi/program/extension.h"
 #include "taichi/program/program.h"
 #include "taichi/util/action_recorder.h"
-#include "taichi/util/statistics.h"
 
 #ifdef TI_WITH_LLVM
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
@@ -110,12 +109,6 @@ void Kernel::lower(bool to_executable) {
 void Kernel::operator()(LaunchContextBuilder &ctx_builder) {
   if (!compiled_) {
     compile();
-  }
-
-  if (!from_cache_) {
-    for (auto &offloaded : ir->as<Block>()->statements) {
-      account_for_offloaded(offloaded->as<OffloadedStmt>());
-    }
   }
 
   compiled_(ctx_builder.get_context());
@@ -361,33 +354,6 @@ std::vector<float64> Kernel::get_ret_float_tensor(int i) {
 void Kernel::set_arch(Arch arch) {
   TI_ASSERT(!compiled_);
   this->arch = arch;
-}
-
-void Kernel::account_for_offloaded(OffloadedStmt *stmt) {
-  if (is_evaluator || is_accessor)
-    return;
-  auto task_type = stmt->task_type;
-  stat.add("launched_tasks", 1.0);
-  if (task_type == OffloadedStmt::TaskType::listgen) {
-    stat.add("launched_tasks_list_op", 1.0);
-    stat.add("launched_tasks_list_gen", 1.0);
-  } else if (task_type == OffloadedStmt::TaskType::serial) {
-    // TODO: Do we need to distinguish serial tasks that contain clear lists vs
-    // those who don't?
-    stat.add("launched_tasks_compute", 1.0);
-    stat.add("launched_tasks_serial", 1.0);
-  } else if (task_type == OffloadedStmt::TaskType::range_for) {
-    stat.add("launched_tasks_compute", 1.0);
-    stat.add("launched_tasks_range_for", 1.0);
-  } else if (task_type == OffloadedStmt::TaskType::struct_for) {
-    stat.add("launched_tasks_compute", 1.0);
-    stat.add("launched_tasks_struct_for", 1.0);
-  } else if (task_type == OffloadedStmt::TaskType::mesh_for) {
-    stat.add("launched_tasks_compute", 1.0);
-    stat.add("launched_tasks_mesh_for", 1.0);
-  } else if (task_type == OffloadedStmt::TaskType::gc) {
-    stat.add("launched_tasks_garbage_collect", 1.0);
-  }
 }
 
 std::string Kernel::get_name() const {

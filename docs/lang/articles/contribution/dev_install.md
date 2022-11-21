@@ -161,7 +161,7 @@ Some Linux distributions may require additional packages to build Taichi. Keep a
 
 #### Install pre-built, customized LLVM binaries
 
-We provide pre-built, customized LLVM binaries. For now, Taichi supports LLVM 10.0.0 only.
+We provide pre-built, customized LLVM binaries. For now, Taichi supports LLVM 15 only.
 
 1. Download and install customized binaries from the following list per your system environment:
 
@@ -169,24 +169,23 @@ We provide pre-built, customized LLVM binaries. For now, Taichi supports LLVM 10
 <Tabs
   defaultValue="llvm_linux"
   values={[
-    {label: 'LLVM 10.0.0 for Linux', value: 'llvm_linux'},
-    {label: 'LLVM 10.0.0 for macOS (without M1 chip)', value: 'llvm_macos_sans_m1'},
-    {label: 'LLVM 10.0.0 for macOS (with M1 chip)', value: 'llvm_macos_m1'},
-    {label: 'LLVM 10.0.0 for Windows', value: 'llvm_windows'},
+    {label: 'LLVM 15 for Linux', value: 'llvm_linux'},
+    {label: 'LLVM 15 for macOS (without M1 chip)', value: 'llvm_macos_sans_m1'},
+    {label: 'LLVM 15 for macOS (with M1 chip)', value: 'llvm_macos_m1'},
+    {label: 'LLVM 15 for Windows', value: 'llvm_windows'},
   ]}>
 
 <TabItem value="llvm_linux">
-    <a href="https://github.com/taichi-dev/taichi_assets/releases/download/llvm10_linux_patch2/taichi-llvm-10.0.0-linux.zip">LLVM 10.0.0 for Linux</a>
+    <a href="https://github.com/taichi-dev/taichi_assets/releases/download/llvm15/taichi-llvm-15-linux.zip">LLVM 15.0.0 for Linux</a>
 </TabItem>
 <TabItem value="llvm_macos_sans_m1">
-    <a href="https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-macos.zip">LLVM 10.0.0 for macOS (without M1 chip)</a>
+    <a href="https://github.com/taichi-dev/taichi_assets/releases/download/llvm15/llvm-15-mac10.15.zip">LLVM 15.0.0 for macOS (without M1 chip)</a>
 </TabItem>
 <TabItem value="llvm_macos_m1">
-    <a href="https://github.com/taichi-dev/taichi_assets/releases/download/llvm10_m1/llvm-10.0.0-m1.zip">LLVM 10.0.0 for macOS (with M1 chip)</a>
+    <a href="https://github.com/taichi-dev/taichi_assets/releases/download/llvm15/taichi-llvm-15-m1.zip">LLVM 15.0.0 for macOS (with M1 chip)</a>
 </TabItem>
 <TabItem value="llvm_windows">
-    <a href="https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-msvc2019.zip">LLVM 10.0.0 for Windows MSVC 2019</a>
-    <a href="https://github.com/taichi-dev/taichi_assets/releases/download/llvm10_msvc2022/taichi-llvm-10.0.0-msvc2022.zip">LLVM 10.0.0 for Windows MSVC 2022</a>
+    <a href="https://github.com/taichi-dev/taichi_assets/releases/download/llvm15/taichi-llvm-15.0.0-msvc2019.zip">LLVM 15.0.0 for Windows MSVC 2019</a>
 </TabItem>
 </Tabs>
 
@@ -204,9 +203,9 @@ We provide pre-built, customized LLVM binaries. For now, Taichi supports LLVM 10
 
 <TabItem value="linux">
 
-1. Add LLVM to your PATH variable:
+1. Set `LLVM_DIR` environment variable:
    ```
-   echo "export PATH=<PATH_TO_LLVM_FOLDER>/bin:\$PATH" >>  ~/.bashrc
+   echo "export LLVM_DIR=<PATH_TO_LLVM_FOLDER>" >>  ~/.bashrc
    ```
 2. Update your path for the remainder of the session:
 
@@ -226,9 +225,9 @@ Add an environment variable `LLVM_DIR` with value `<Path to the extracted LLVM b
 ````
 
 <details>
-<summary><font color="#006284">Build LLVM 10.0.0 from source</font></summary>
+<summary><font color="#006284">Build LLVM 15.0.0 from source</font></summary>
 
-We provide instructions here if you need to build LLVM 10.0.0 from source.
+We provide instructions here if you need to build LLVM 15.0.0 from source.
 
 ````mdx-code-block
 <Tabs
@@ -241,11 +240,11 @@ We provide instructions here if you need to build LLVM 10.0.0 from source.
 <TabItem value="linux">
 
 ```shell
-wget https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.0/llvm-10.0.0.src.tar.xz
+wget https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-15.0.5.tar.gz
 
-tar xvJf llvm-10.0.0.src.tar.xz
+tar zxvf llvmorg-15.0.5.tar.gz
 
-cd llvm-10.0.0.src
+cd llvm-project-llvmorg-15.0.5/llvm
 
 mkdir build
 
@@ -265,7 +264,7 @@ sudo make install
 
 # Check your LLVM installation
 
-llvm-config --version  # You should get 10.0.0
+llvm-config --version  # You should get 15.0.5
 ```
 
 </TabItem>

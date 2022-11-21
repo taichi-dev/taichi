@@ -73,9 +73,9 @@ jobs:
           done
 
           if ${run_job}; then
-            echo "::set-output name=run_job::true"
+            echo "run_job=true"  >> $GITHUB_OUTPUT
           else
-            echo "::set-output name=run_job::false"
+            echo "run_job=false" >> $GITHUB_OUTPUT
           fi
 
   check_static_analyzer:
@@ -132,7 +132,6 @@ jobs:
         run: |
           . .github/workflows/scripts/common-utils.sh
           prepare-build-cache
-          python misc/ci_download.py
         env:
           CI_PLATFORM: macos
 
@@ -214,7 +213,6 @@ jobs:
             -DTI_WITH_VULKAN:BOOL=ON
             -DTI_BUILD_TESTS:BOOL=ON
             -DTI_WITH_C_API=ON
-          LLVM_VERSION: 15
 
       - name: Test
         id: test
@@ -230,6 +228,18 @@ jobs:
           TI_WANTED_ARCHS: 'cc,cpu,cuda,vulkan,opengl'
           TI_DEVICE_MEMORY_GB: '1'
           TI_RUN_RELEASE_TESTS: '1'
+
+      - name: Build & Run C-API Headless Demos (Desktop)
+        run: |
+          [[ ${{needs.check_files.outputs.run_job}} == false ]] && exit 0
+          . .github/workflows/scripts/common-utils.sh
+          chown -R 1000:1000 .
+          ci-docker-run-gpu --name taichi-test-capi-headless-demo-desktop \
+            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
+            /home/dev/taichi/.github/workflows/scripts/aot-demo.sh build-and-test-headless-demo-desktop
+        env:
+          PY: py38
+          TI_DEVICE_MEMORY_GB: '1'
 
       - name: Save wheel if test failed
         if: failure() && steps.test.conclusion == 'failure'
@@ -247,6 +257,7 @@ jobs:
           path: taichi-release-tests/bad-compare/*
           retention-days: 7
 
+
   build_and_test_windows:
     name: Build and Test Windows
     needs: check_files
@@ -255,10 +266,6 @@ jobs:
         include:
           - os: windows-2019
             llvmVer : '15'
-            archs: "cpu,cuda"
-            runsOn: [self-hosted, windows, cuda]
-          - os: windows-2019
-            llvmVer : '10'
             archs: "cpu,cuda,opengl"
             runsOn: [self-hosted, windows, cuda, OpenGL]
     runs-on: ${{ matrix.runsOn }}
@@ -269,7 +276,7 @@ jobs:
           fetch-depth: '0'
           submodules: 'recursive'
 
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v4
         with:
           python-version: 3.7
 
@@ -347,7 +354,6 @@ jobs:
             -DTI_WITH_VULKAN:BOOL=ON
             -DTI_BUILD_TESTS:BOOL=ON
             -DTI_WITH_C_API=ON
-          LLVM_VERSION: 15
 
       - name: Test
         id: test
@@ -472,7 +478,7 @@ jobs:
             registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.6 \
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh smoke-test-unity-demo
 
-      - name: Build & Run C-API Headless Demos
+      - name: Build & Run C-API Headless Demos (Android)
         run: |
           . .github/workflows/scripts/common-utils.sh
           chown -R 1000:1000 .

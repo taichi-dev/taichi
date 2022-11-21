@@ -28,6 +28,8 @@ class SparseMatrixBuilder {
 
   std::unique_ptr<SparseMatrix> build();
 
+  std::unique_ptr<SparseMatrix> build_cuda();
+
   void clear();
 
  private:
@@ -289,7 +291,7 @@ class CuSparseMatrix : public SparseMatrix {
   }
 
  private:
-  cusparseSpMatDescr_t matrix_;
+  cusparseSpMatDescr_t matrix_{nullptr};
   void *csr_row_ptr_{nullptr};
   void *csr_col_ind_{nullptr};
   void *csr_val_{nullptr};
@@ -312,9 +314,4 @@ std::unique_ptr<SparseMatrix> make_cu_sparse_matrix(cusparseSpMatDescr_t mat,
 void make_sparse_matrix_from_ndarray(Program *prog,
                                      SparseMatrix &sm,
                                      const Ndarray &ndarray);
-void make_sparse_matrix_from_ndarray_cusparse(Program *prog,
-                                              SparseMatrix &sm,
-                                              const Ndarray &row_indices,
-                                              const Ndarray &col_indices,
-                                              const Ndarray &values);
 }  // namespace taichi::lang

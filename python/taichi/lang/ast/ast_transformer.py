@@ -833,6 +833,8 @@ class ASTTransformer(Builder):
                       Expr) and not hasattr(node.value.ptr, node.attr):
             if node.attr in Matrix._swizzle_to_keygroup:
                 keygroup = Matrix._swizzle_to_keygroup[node.attr]
+                Matrix._keygroup_to_checker[keygroup](node.value.ptr,
+                                                      node.attr)
                 attr_len = len(node.attr)
                 if attr_len == 1:
                     node.ptr = Expr(
@@ -1173,9 +1175,14 @@ class ASTTransformer(Builder):
                     f"Group for should have 1 loop target, found {len(targets)}"
                 )
             target = targets[0]
-            target_var = impl.expr_init(
-                matrix.Vector([0] * len(ndrange_var.dimensions),
-                              dt=primitive_types.i32))
+            if current_cfg().real_matrix:
+                mat = matrix.make_matrix([0] * len(ndrange_var.dimensions),
+                                         dt=primitive_types.i32)
+            else:
+                mat = matrix.Vector([0] * len(ndrange_var.dimensions),
+                                    dt=primitive_types.i32)
+            target_var = impl.expr_init(mat)
+
             ctx.create_variable(target, target_var)
             I = impl.expr_init(ndrange_loop_var)
             for i in range(len(ndrange_var.dimensions)):

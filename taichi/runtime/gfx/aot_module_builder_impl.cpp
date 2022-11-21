@@ -124,7 +124,7 @@ std::string AotModuleBuilderImpl::write_spv_file(
   std::ofstream fs(spv_path, std::ios_base::binary | std::ios::trunc);
   fs.write((char *)source_code.data(), source_code.size() * sizeof(uint32_t));
   fs.close();
-  return spv_path;
+  return k.name + ".spv";
 }
 
 void AotModuleBuilderImpl::dump(const std::string &output_dir,

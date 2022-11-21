@@ -21,7 +21,6 @@
 #include "taichi/program/ndarray.h"
 #include "taichi/python/export.h"
 #include "taichi/math/svd.h"
-#include "taichi/util/statistics.h"
 #include "taichi/util/action_recorder.h"
 #include "taichi/system/timeline.h"
 #include "taichi/python/snode_registry.h"
@@ -421,15 +420,6 @@ void export_lang(py::module &m) {
                              !arch_is_cuda(program->this_thread_config().arch),
                          "SparseMatrix only supports CPU and CUDA for now.");
              return make_sparse_matrix_from_ndarray(program, sm, ndarray);
-           })
-      .def("make_sparse_matrix_from_ndarray_cusparse",
-           [](Program *program, CuSparseMatrix &sm, const Ndarray &row_coo,
-              const Ndarray &col_coo, const Ndarray &val_coo) {
-             TI_ERROR_IF(
-                 !arch_is_cuda(program->this_thread_config().arch),
-                 "SparseMatrix based on GPU only supports CUDA for now.");
-             return make_sparse_matrix_from_ndarray_cusparse(
-                 program, sm, row_coo, col_coo, val_coo);
            })
       .def("no_activate",
            [](Program *program, SNode *snode) {
@@ -1106,13 +1096,6 @@ void export_lang(py::module &m) {
   m.def("test_threading", test_threading);
   m.def("is_extension_supported", is_extension_supported);
 
-  m.def("print_stat", [] { stat.print(); });
-  m.def("stat", [] {
-    std::string result;
-    stat.print(&result);
-    return result;
-  });
-
   m.def("record_action_entry",
         [](std::string name,
            std::vector<std::pair<std::string,
@@ -1207,6 +1190,7 @@ void export_lang(py::module &m) {
       .def("print_triplets", &SparseMatrixBuilder::print_triplets)
       .def("get_ndarray_data_ptr", &SparseMatrixBuilder::get_ndarray_data_ptr)
       .def("build", &SparseMatrixBuilder::build)
+      .def("build_cuda", &SparseMatrixBuilder::build_cuda)
       .def("get_addr", [](SparseMatrixBuilder *mat) { return uint64(mat); });
 
   py::class_<SparseMatrix>(m, "SparseMatrix")

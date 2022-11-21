@@ -50,16 +50,16 @@ jobs:
         run: |
           if [ -n "$RELEASE_VERSION" ]; then
             # For production release, we run on five python versions.
-            echo '::set-output name=matrix::{"include":[{"name":"taichi","python":"3.7","conda_python":"py37"},{"name":"taichi","python":"3.8","conda_python":"py38"},{"name":"taichi","python":"3.9","conda_python":"py39"},{"name":"taichi","python":"3.10","conda_python":"py310"}]}"'
+            echo 'matrix={"include":[{"name":"taichi","python":"3.7","conda_python":"py37"},{"name":"taichi","python":"3.8","conda_python":"py38"},{"name":"taichi","python":"3.9","conda_python":"py39"},{"name":"taichi","python":"3.10","conda_python":"py310"}]}"' >> $GITHUB_OUTPUT
 
             # M1 only supports py38, py39, and py310(conda), so change matrix.
-            echo '::set-output name=matrix_osx::{"include":[{"name":"taichi","python":"3.8"},{"name":"taichi","python":"3.9"},{"name":"taichi","python":"3.10"}]}"'
+            echo 'matrix_osx={"include":[{"name":"taichi","python":"3.8"},{"name":"taichi","python":"3.9"},{"name":"taichi","python":"3.10"}]}"' >> $GITHUB_OUTPUT
           else
             # For nightly release, we run on three python versions.
-            echo '::set-output name=matrix::{"include":[{"name":"taichi-nightly","python":"3.7","conda_python":"py37"},{"name":"taichi-nightly","python":"3.8","conda_python":"py38"},{"name":"taichi-nightly","python":"3.9","conda_python":"py39"},{"name":"taichi-nightly","python":"3.10","conda_python":"py310"}]}"'
+            echo 'matrix={"include":[{"name":"taichi-nightly","python":"3.7","conda_python":"py37"},{"name":"taichi-nightly","python":"3.8","conda_python":"py38"},{"name":"taichi-nightly","python":"3.9","conda_python":"py39"},{"name":"taichi-nightly","python":"3.10","conda_python":"py310"}]}"' >> $GITHUB_OUTPUT
 
             # M1 only supports py38 and py310(conda), so change matrix.
-            echo '::set-output name=matrix_osx::{"include":[{"name":"taichi-nightly","python":"3.8"},{"name":"taichi-nightly","python":"3.9"},{"name":"taichi-nightly","python":"3.10"}]}"'
+            echo 'matrix_osx={"include":[{"name":"taichi-nightly","python":"3.8"},{"name":"taichi-nightly","python":"3.9"},{"name":"taichi-nightly","python":"3.10"}]}"' >> $GITHUB_OUTPUT
           fi
 
   build_and_test_linux:
@@ -138,7 +138,7 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
 
           ci-docker-run-gpu --name taichi-test \
-             registry.taichigraphics.com/taichidev-manylinux2014-cuda:v0.0.0 \
+             registry.taichigraphics.com/taichidev-manylinux2014-cuda:v0.0.1 \
              /home/dev/taichi/.github/workflows/scripts/unix-build.sh
 
         env:
@@ -188,16 +188,10 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
           prepare-build-cache
 
-      - name: Download Pre-Built LLVM 10.0.0
-        run: python misc/ci_download.py
-        env:
-          CI_PLATFORM: macos
-
       - name: Create Python Wheel
         run: |
           # Use the molten-vk v1.1.10 downloaded from taichi assets
           brew uninstall molten-vk -f
-          export PATH=$(pwd)/taichi-llvm/bin/:$PATH
           .github/workflows/scripts/unix-build.sh
         env:
           PROJECT_NAME: ${{ matrix.name }}
@@ -285,7 +279,7 @@ jobs:
           submodules: 'recursive'
           fetch-depth: '0'
 
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python }}
 
@@ -293,13 +287,13 @@ jobs:
         shell: pwsh
         if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
-          .\.github\workflows\scripts\win_build.ps1 -llvmVer 10 -installVulkan -libsDir "$env:LocalAppData/buildbot"
+          .\.github\workflows\scripts\win_build.ps1 -llvmVer 15 -installVulkan -libsDir "$env:LocalAppData/buildbot"
         env:
           PY: ${{ matrix.python }}
           PROJECT_NAME: ${{ matrix.name }}
 
       - name: Archive Wheel Artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: dist
           path: dist/*.whl
@@ -320,7 +314,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v4
         with:
           python-version: 3.9
 
@@ -348,7 +342,7 @@ jobs:
     if: ${{ github.event.inputs.version }}
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v4
         with:
           python-version: 3.9
 
@@ -363,7 +357,7 @@ jobs:
           content="${content//'%'/'%25'}"
           content="${content//$'\n'/'%0A'}"
           content="${content//$'\r'/'%0D'}"
-          echo "::set-output name=content::$content"
+          echo "content=$content" >>  $GITHUB_OUTPUT
 
       - name: Create tag
         run: |

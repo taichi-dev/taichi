@@ -17,7 +17,6 @@
 #include "taichi/ir/snode.h"
 #include "taichi/ir/frontend_ir.h"
 #include "taichi/program/snode_expr_utils.h"
-#include "taichi/util/statistics.h"
 #include "taichi/math/arithmetic.h"
 #ifdef TI_WITH_LLVM
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
@@ -163,8 +162,6 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
       config.check_out_of_bound = false;
     }
   }
-
-  stat.clear();
 
   Timelines::get_instance().set_enabled(config.timeline);
 
@@ -444,7 +441,6 @@ void Program::finalize() {
       std::ofstream ofs(file_name);
       TI_ASSERT(ofs);
       std::string stat_string;
-      stat.print(&stat_string);
       ofs << stat_string;
     }
   }

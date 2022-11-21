@@ -265,6 +265,14 @@ def test_field_shape_0():
 
 
 @test_utils.test()
+def test_non_first_division_should_be_power_of_two():
+    with pytest.raises(
+            ti._lib.core.TaichiRuntimeError,
+            match="Non-first division of an axis on a SNodeTree path should be a power of two"):
+        blk = ti.root.dense(ti.i, 3).dense(ti.i, 5)
+
+
+@test_utils.test()
 def test_index_mismatch():
     with pytest.raises(AssertionError,
                        match="Slicing is not supported on ti.field"):

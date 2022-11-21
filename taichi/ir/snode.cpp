@@ -56,15 +56,19 @@ SNode &SNode::create_node(std::vector<Axis> axes,
     }
     int ind = axes[i].value;
     auto end = new_node.physical_index_position + new_node.num_active_indices;
-    bool is_first_division = std::find(new_node.physical_index_position, end, ind) == end;
+    bool is_first_division =
+        std::find(new_node.physical_index_position, end, ind) == end;
     if (is_first_division) {
       new_node.physical_index_position[new_node.num_active_indices++] = ind;
     } else {
       if (!bit::is_power_of_two(sizes[i])) {
-        throw TaichiRuntimeError("Non-first division of an axis on a SNodeTree path should be a power of two");
+        throw TaichiRuntimeError(
+            "Non-first division of an axis on a SNodeTree path should be a "
+            "power of two");
       }
     }
-    new_node.extractors[ind].activate(bit::log2int(bit::least_pot_bound(sizes[i])));
+    new_node.extractors[ind].activate(
+        bit::log2int(bit::least_pot_bound(sizes[i])));
     new_node.extractors[ind].num_elements_from_root *= sizes[i];
     if (packed) {
       new_node.extractors[ind].shape = sizes[i];

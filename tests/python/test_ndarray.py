@@ -588,6 +588,16 @@ def _test_arg_not_match():
     ):
         func7(x)
 
+    @ti.kernel
+    def func8(x: ti.types.ndarray(dtype=ti.f32)):
+        pass
+
+    x = ti.ndarray(dtype=ti.i32, shape=(16, 16))
+    with pytest.raises(
+            TypeError,
+            match=r'Expect element type .* for Ndarray, but get .*'):
+        func8(x)
+
 
 @test_utils.test(arch=get_host_arch_list())
 def test_arg_not_match():

@@ -165,3 +165,39 @@ TEST_F(CapiTest, TestLoadTcmAotModule) {
     }
   }
 }
+
+TEST_F(CapiTest, TestCreateTcmAotModule) {
+  if (capi::utils::is_vulkan_available()) {
+    const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
+
+    std::stringstream aot_mod_ss;
+    aot_mod_ss << folder_dir << "/module.tcm";
+
+    std::vector<uint8_t> tcm;
+    {
+      std::fstream f(aot_mod_ss.str(), std::ios::in | std::ios::ate);
+      TI_ASSERT(f.is_open());
+      tcm.resize(f.tellg());
+      f.seekg(std::ios::beg);
+      f.read((char *)tcm.data(), tcm.size());
+    }
+
+    {
+      // Vulkan Runtime
+      TiArch arch = TiArch::TI_ARCH_VULKAN;
+      ti::Runtime runtime(arch);
+      ti::AotModule aot_mod = runtime.create_aot_module(tcm);
+      ti::Kernel run = aot_mod.get_kernel("run");
+      ti::NdArray<int32_t> arr =
+          runtime.allocate_ndarray<int32_t>({16}, {}, true);
+      run[0] = arr;
+      run.launch();
+      runtime.wait();
+      std::vector<int32_t> data(16);
+      arr.read(data);
+      for (int32_t i = 0; i < 16; ++i) {
+        TI_ASSERT(data.at(i) == i);
+      }
+    }
+  }
+}

@@ -148,8 +148,6 @@ void export_lang(py::module &m) {
       .def_readwrite("print_accessor_ir", &CompileConfig::print_accessor_ir)
       .def_readwrite("print_evaluator_ir", &CompileConfig::print_evaluator_ir)
       .def_readwrite("use_llvm", &CompileConfig::use_llvm)
-      .def_readwrite("print_benchmark_stat",
-                     &CompileConfig::print_benchmark_stat)
       .def_readwrite("print_struct_llvm_ir",
                      &CompileConfig::print_struct_llvm_ir)
       .def_readwrite("print_kernel_llvm_ir",

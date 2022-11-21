@@ -194,19 +194,6 @@ def test_cli_regression():
         assert args.gui == True
 
 
-def test_cli_benchmark():
-    with patch_sys_argv_helper(
-        ["ti", "benchmark", "a.py", "b.py", "-T", "-v", "-r2",
-         "-t4"]) as custom_argv:
-        cli = TaichiMain(test_mode=True)
-        args = cli()
-        assert args.files == ["a.py", "b.py"]
-        assert args.tprt == True
-        assert args.verbose == True
-        assert args.rerun == "2"
-        assert args.threads == "4"
-
-
 def test_cli_debug():
     with patch_sys_argv_helper(["ti", "debug", "a.py"]) as custom_argv:
         cli = TaichiMain(test_mode=True)

@@ -1,6 +1,6 @@
 option(USE_STDCPP "Use -stdlib=libc++" OFF)
 option(TI_WITH_LLVM "Build with LLVM backends" ON)
-option(TI_LLVM_15 "Switch to LLVM 15" OFF)
+option(TI_LLVM_15 "Switch to LLVM 15" ON)
 option(TI_WITH_METAL "Build with the Metal backend" ON)
 option(TI_WITH_CUDA "Build with the CUDA backend" ON)
 option(TI_WITH_CUDA_TOOLKIT "Build with the CUDA toolkit" OFF)

@@ -1173,9 +1173,14 @@ class ASTTransformer(Builder):
                     f"Group for should have 1 loop target, found {len(targets)}"
                 )
             target = targets[0]
-            target_var = impl.expr_init(
-                matrix.Vector([0] * len(ndrange_var.dimensions),
-                              dt=primitive_types.i32))
+            if current_cfg().real_matrix:
+                mat = matrix.make_matrix([0] * len(ndrange_var.dimensions),
+                                         dt=primitive_types.i32)
+            else:
+                mat = matrix.Vector([0] * len(ndrange_var.dimensions),
+                                    dt=primitive_types.i32)
+            target_var = impl.expr_init(mat)
+
             ctx.create_variable(target, target_var)
             I = impl.expr_init(ndrange_loop_var)
             for i in range(len(ndrange_var.dimensions)):

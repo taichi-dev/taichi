@@ -152,7 +152,8 @@ TEST_F(CapiTest, TestLoadTcmAotModule) {
       ti::Runtime runtime(arch);
       ti::AotModule aot_mod = runtime.load_aot_module(aot_mod_ss.str());
       ti::Kernel run = aot_mod.get_kernel("run");
-      ti::NdArray<int32_t> arr = runtime.allocate_ndarray<int32_t>({16}, {}, true);
+      ti::NdArray<int32_t> arr =
+          runtime.allocate_ndarray<int32_t>({16}, {}, true);
       run[0] = arr;
       run.launch();
       runtime.wait();

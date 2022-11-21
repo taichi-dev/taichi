@@ -4,6 +4,7 @@ from taichi._lib import core as _ti_core
 from taichi.lang import expr, impl, matrix
 from taichi.lang.field import BitpackedFields, Field
 from taichi.lang.util import is_taichi_class
+from taichi.types import primitive_types
 
 
 class SNode:
@@ -350,6 +351,10 @@ def rescale_index(a, b, I):
         b, (Field, SNode)), "The second argument must be a field or an SNode"
     if isinstance(I, list):
         I = matrix.Vector(I)
+    elif isinstance(I, expr.Expr) and I.ptr.is_tensor():
+        I = matrix.Vector(
+            impl.get_runtime().prog.current_ast_builder().expand_expr([I.ptr]),
+            dt=primitive_types.i32)
     else:
         assert isinstance(
             I, matrix.Matrix

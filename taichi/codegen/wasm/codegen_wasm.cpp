@@ -63,11 +63,7 @@ class TaskCodeGenWASM : public TaskCodeGenLLVM {
       // test block
       builder->SetInsertPoint(loop_test);
       llvm::Value *cond;
-#ifdef TI_LLVM_15
       auto *loop_var_load = builder->CreateLoad(begin->getType(), loop_var);
-#else
-      auto *loop_var_load = builder->CreateLoad(loop_var);
-#endif
       if (!stmt->reversed) {
         cond = builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SLT,
                                    loop_var_load, end);

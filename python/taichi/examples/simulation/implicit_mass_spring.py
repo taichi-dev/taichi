@@ -180,8 +180,6 @@ class Cloth:
 
         A = self.M - h * D - h**2 * K
 
-        # vel = self.vel.to_numpy().reshape(2 * self.NV)
-        # force = self.force.to_numpy().reshape(2 * self.NV)
         vel = ti.ndarray(ti.f32, 2 * self.NV)
         force = ti.ndarray(ti.f32, 2 * self.NV)
 

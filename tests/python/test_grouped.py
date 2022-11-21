@@ -60,8 +60,7 @@ def test_grouped():
                 assert val[i, j, k] == i + j * 2 + k * 3
 
 
-@test_utils.test()
-def test_grouped_ndrange():
+def _test_grouped_ndrange():
     val = ti.field(ti.i32)
 
     n = 4
@@ -85,6 +84,16 @@ def test_grouped_ndrange():
         for j in range(m):
             assert val[i, j] == (i +
                                  j * 2 if x0 <= i < y0 and x1 <= j < y1 else 0)
+
+
+@test_utils.test()
+def test_grouped_ndrange():
+    _test_grouped_ndrange()
+
+
+@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
+def test_grouped_ndrange_matrix_scalarize():
+    _test_grouped_ndrange()
 
 
 @test_utils.test()
@@ -114,8 +123,7 @@ def test_static_grouped_ndrange():
                                  j * 2 if x0 <= i < y0 and x1 <= j < y1 else 0)
 
 
-@test_utils.test()
-def test_grouped_ndrange_starred():
+def _test_grouped_ndrange_starred():
     val = ti.field(ti.i32)
 
     n = 4
@@ -137,6 +145,16 @@ def test_grouped_ndrange_starred():
             for k in range(p):
                 assert val[i, j,
                            k] == (i + j * 2 + k * 3 if j < n and k < n else 0)
+
+
+@test_utils.test()
+def test_grouped_ndrange_starred():
+    _test_grouped_ndrange_starred()
+
+
+@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
+def test_grouped_ndrange_starred_matrix_scalarize():
+    _test_grouped_ndrange_starred()
 
 
 @test_utils.test()

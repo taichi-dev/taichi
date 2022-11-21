@@ -137,7 +137,8 @@ class Tape:
                  clear_gradients=True,
                  validation=False,
                  grad_check=None,
-                 checkpointer=None):
+                 checkpointer=None,
+                 enable_checkpointing=True):
         """A context manager for reverse mode autodiff :class:`~taichi.ad.Tape`. The
         context manager would catching all of the callings of functions that
         decorated by :func:`~taichi.lang.kernel_impl.kernel` or
@@ -170,6 +171,7 @@ class Tape:
         self.entered = False
         self.gradient_evaluated = False
         self.checkpointer = checkpointer
+        self.enable_checkpointing = enable_checkpointing
         self.calls_count = 0
         self.clear_gradients = clear_gradients
         self.validation = validation
@@ -213,15 +215,19 @@ class Tape:
 
     def __exit__(self, _type, value, tb):
         self.runtime.target_tape = None
-        # Save the computed forward result
-        if self.checkpointer:
-            self.checkpointer.save_primal("forward_result")
+        # Save the computed forward result both in enable/disable checkpointing mode
+        assert self.checkpointer, "Checkpointer is not initialized."
+        self.checkpointer.save_primal("forward_result")
+
         if self.eval_on_exit:
             self.grad()
-        if self.checkpointer:
-            self.checkpointer.restore_primal("forward_result")
-            self.checkpointer.clear_primal_checkpoint("forward_result")
-            self.checkpointer.clear()
+
+        # Restore the computed forward result both in enable/disable checkpointing mode
+        assert self.checkpointer, "Checkpointer is not initialized."
+        self.checkpointer.restore_primal("forward_result")
+        self.checkpointer.clear_primal_checkpoint("forward_result")
+        self.checkpointer.clear()
+
         for calls, mode in zip(self.calls, self.modes):
             calls[0].autodiff_mode = mode
 
@@ -236,7 +242,7 @@ class Tape:
             func.autodiff_mode = AutodiffMode.VALIDATION
         self.calls.append((func, args))
 
-        if self.checkpointer:
+        if self.checkpointer and self.enable_checkpointing:
             self.calls_count += 1
             # Save a checkpoint before the kernel launch
             self.checkpointer.save_primal(self.calls_count)
@@ -248,7 +254,7 @@ class Tape:
 
         for func, args in reversed(self.calls):
 
-            if self.checkpointer:
+            if self.checkpointer and self.enable_checkpointing:
                 # Restore the checkpoint before launch the grad kernel
                 self.checkpointer.restore_primal(self.calls_count)
             # TODO: how to preserve the value of the seed?
@@ -259,8 +265,7 @@ class Tape:
             if hasattr(func, 'grad'):
                 self.loss.grad.fill(1.0)
                 func.grad(*args)
-            if self.checkpointer:
-                # self.checkpointer.swap_grad()
+            if self.checkpointer and self.enable_checkpointing:
                 # Clean the consumed primal checkpoint
                 self.checkpointer.clear_primal_checkpoint(self.calls_count)
                 self.calls_count -= 1

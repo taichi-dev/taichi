@@ -109,7 +109,7 @@ def test_arg_mismatched_field_dim():
                            field_dim=2)
     g_init = ti.graph.GraphBuilder()
     with pytest.raises(TaichiCompilationError,
-                       match="doesn't match kernel's annotated field_dim"):
+                       match="doesn't match kernel's annotated ndim"):
         g_init.dispatch(test, sym_pos)
 
 

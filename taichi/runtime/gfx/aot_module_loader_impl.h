@@ -24,8 +24,7 @@ struct TI_DLL_EXPORT AotModuleParams {
 
   AotModuleParams() = default;
 
-  [[deprecated]]
-  AotModuleParams(const std::string &path, GfxRuntime *rt)
+  [[deprecated]] AotModuleParams(const std::string &path, GfxRuntime *rt)
       : module_path(path), runtime(rt) {
   }
   AotModuleParams(const io::VirtualDir *dir, GfxRuntime *rt)

@@ -10,10 +10,6 @@ if [[ $OSTYPE == "linux-"* ]]; then
   if [ ! -d ~/taichi-llvm-15 ]; then
     pushd ~
     wget https://github.com/taichi-dev/taichi_assets/releases/download/llvm15/taichi-llvm-15-linux.zip
-    if ! [ -x "$(command -v unzip)" ]; then
-      echo 'unzip not found, installing from apt'
-      sudo apt install unzip -y
-    fi
     unzip taichi-llvm-15-linux.zip && rm taichi-llvm-15-linux.zip
     popd
   fi

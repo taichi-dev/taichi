@@ -45,6 +45,22 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
     }
   }
 
+  void visit(GlobalLoadStmt *stmt) override {
+    // We don't need to check the global load inside the range for-loops
+    // because
+    // 1. If the range for-loop is innermost, they will be captured by
+    // MakeAdjoint anyway
+    // 2. If the range for-loop is not innermost, they will be processed by
+    // another IndependentBlocksJudger
+    if (is_inside_loop_)
+      return;
+    // TODO: handle external ptr stmt after autodiff supporting ndarray
+    if (stmt->src->is<GlobalPtrStmt>() &&
+        stmt->src->as<GlobalPtrStmt>()->snode->has_adjoint()) {
+      qualified_glb_operations_ = true;
+    }
+  }
+
   void visit(RangeForStmt *stmt) override {
     inner_most_loop_ = false;
     is_inside_loop_ = true;

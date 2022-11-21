@@ -51,7 +51,7 @@ class SparseSolver:
         if isinstance(sparse_matrix, SparseMatrix):
             self.matrix = sparse_matrix
             taichi_arch = taichi.lang.impl.get_runtime().prog.config().arch
-            if taichi_arch == _ti_core.Arch.x64:
+            if taichi_arch == _ti_core.Arch.x64 or taichi_arch == _ti_core.Arch.arm64:
                 self.solver.compute(sparse_matrix.matrix)
             elif taichi_arch == _ti_core.Arch.cuda:
                 self.analyze_pattern(self.matrix)

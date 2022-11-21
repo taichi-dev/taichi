@@ -1537,12 +1537,18 @@ class MatrixField(Field):
         """
         if isinstance(val, numbers.Number) or (isinstance(val, expr.Expr)
                                                and not val.is_tensor()):
-            val = list(list(val for _ in range(self.m)) for _ in range(self.n))
+            if self.ndim == 2:
+                val = list(
+                    list(val for _ in range(self.m)) for _ in range(self.n))
+            else:
+                assert self.ndim == 1
+                val = list(val for _ in range(self.n))
         elif isinstance(val, Matrix):
             val = val.to_list()
         else:
             assert isinstance(val, (list, tuple))
         val = tuple(tuple(x) if isinstance(x, list) else x for x in val)
+
         assert len(val) == self.n
         if self.ndim != 1:
             assert len(val[0]) == self.m

@@ -397,6 +397,7 @@ class LowerAST : public IRVisitor {
     auto fctx = make_flatten_ctx();
     flatten_rvalue(expr, &fctx);
     if (dest.is<IdExpression>()) {
+      flatten_lvalue(dest, &fctx);
       fctx.push_back<LocalStoreStmt>(
           assign->parent->lookup_var(assign->lhs.cast<IdExpression>()->id),
           expr->stmt);

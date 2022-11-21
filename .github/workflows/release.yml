@@ -138,7 +138,7 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
 
           ci-docker-run-gpu --name taichi-test \
-             registry.taichigraphics.com/taichidev-manylinux2014-cuda:v0.0.0 \
+             registry.taichigraphics.com/taichidev-manylinux2014-cuda:v0.0.1 \
              /home/dev/taichi/.github/workflows/scripts/unix-build.sh
 
         env:

@@ -995,6 +995,11 @@ TI_DLL_EXPORT void TI_API_CALL ti_wait(TiRuntime runtime);
 TI_DLL_EXPORT TiAotModule TI_API_CALL
 ti_load_aot_module(TiRuntime runtime, const char *module_path);
 
+// Function `ti_create_aot_module`
+TI_DLL_EXPORT TiAotModule TI_API_CALL ti_create_aot_module(TiRuntime runtime,
+                                                           const void *tcm,
+                                                           uint64_t size);
+
 // Function `ti_destroy_aot_module`
 //
 // Destroys a loaded AOT module and releases all related resources.

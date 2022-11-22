@@ -53,6 +53,12 @@ class EigenSparseSolver : public SparseSolver {
   void factorize(const SparseMatrix &sm) override;
   template <typename T>
   T solve(const T &b);
+
+  template <typename T, typename V>
+  void solve_rf(Program *prog,
+                const SparseMatrix &sm,
+                const Ndarray &b,
+                const Ndarray &x);
   bool info() override;
 };
 
@@ -91,11 +97,11 @@ class CuSparseSolver : public SparseSolver {
   void solve_cu(Program *prog,
                 const SparseMatrix &sm,
                 const Ndarray &b,
-                Ndarray &x);
+                const Ndarray &x);
   void solve_rf(Program *prog,
                 const SparseMatrix &sm,
                 const Ndarray &b,
-                Ndarray &x);
+                const Ndarray &x);
   bool info() override {
     TI_NOT_IMPLEMENTED;
   };

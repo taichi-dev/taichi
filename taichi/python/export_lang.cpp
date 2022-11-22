@@ -1256,15 +1256,18 @@ void export_lang(py::module &m) {
       .def("factorize", &SparseSolver::factorize)
       .def("info", &SparseSolver::info);
 
-#define REGISTER_EIGEN_SOLVER(dt, type, order, fd)                         \
-  py::class_<EigenSparseSolver##dt##type##order, SparseSolver>(            \
-      m, "EigenSparseSolver" #dt #type #order)                             \
-      .def("compute", &EigenSparseSolver##dt##type##order::compute)        \
-      .def("analyze_pattern",                                              \
-           &EigenSparseSolver##dt##type##order::analyze_pattern)           \
-      .def("factorize", &EigenSparseSolver##dt##type##order::factorize)    \
-      .def("solve",                                                        \
-           &EigenSparseSolver##dt##type##order::solve<Eigen::VectorX##fd>) \
+#define REGISTER_EIGEN_SOLVER(dt, type, order, fd)                           \
+  py::class_<EigenSparseSolver##dt##type##order, SparseSolver>(              \
+      m, "EigenSparseSolver" #dt #type #order)                               \
+      .def("compute", &EigenSparseSolver##dt##type##order::compute)          \
+      .def("analyze_pattern",                                                \
+           &EigenSparseSolver##dt##type##order::analyze_pattern)             \
+      .def("factorize", &EigenSparseSolver##dt##type##order::factorize)      \
+      .def("solve",                                                          \
+           &EigenSparseSolver##dt##type##order::solve<Eigen::VectorX##fd>)   \
+      .def("solve_rf",                                                       \
+           &EigenSparseSolver##dt##type##order::solve_rf<Eigen::VectorX##fd, \
+                                                         dt>)                \
       .def("info", &EigenSparseSolver##dt##type##order::info);
 
   REGISTER_EIGEN_SOLVER(float32, LLT, AMD, f)

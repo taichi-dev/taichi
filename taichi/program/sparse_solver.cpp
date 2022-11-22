@@ -15,6 +15,7 @@ namespace taichi::lang {
       Eigen::Sparse##type<Eigen::SparseMatrix<dt>,      \
                           Eigen::order##Ordering<int>>, \
       Eigen::SparseMatrix<dt>>;
+// Explicit instantiation of EigenSparseSolver
 EIGEN_LLT_SOLVER_INSTANTIATION(float32, LLT, AMD);
 EIGEN_LLT_SOLVER_INSTANTIATION(float32, LLT, COLAMD);
 EIGEN_LLT_SOLVER_INSTANTIATION(float32, LDLT, AMD);
@@ -29,6 +30,7 @@ EIGEN_LU_SOLVER_INSTANTIATION(float64, LU, AMD);
 EIGEN_LU_SOLVER_INSTANTIATION(float64, LU, COLAMD);
 }  // namespace taichi::lang
 
+// Explicit instantiation of the template class EigenSparseSolver::solve
 #define EIGEN_LLT_SOLVE_INSTANTIATION(dt, type, order, df)               \
   using T##dt = Eigen::VectorX##df;                                      \
   using S##dt##type##order =                                             \
@@ -46,6 +48,27 @@ EIGEN_LU_SOLVER_INSTANTIATION(float64, LU, COLAMD);
   EigenSparseSolver<LUS##dt##type##order, Eigen::SparseMatrix<dt>>::solve( \
       const LUT##dt &b);
 
+// Explicit instantiation of the template class EigenSparseSolver::solve_rf
+#define INSTANTIATE_LLT_SOLVE_RF(dt, type, order, df)                     \
+  using llt##dt##type##order =                                            \
+      Eigen::Simplicial##type<Eigen::SparseMatrix<dt>, Eigen::Lower,      \
+                              Eigen::order##Ordering<int>>;               \
+  template void EigenSparseSolver<llt##dt##type##order,                   \
+                                  Eigen::SparseMatrix<dt>>::solve_rf<df,  \
+                                                                     dt>( \
+      Program * prog, const SparseMatrix &sm, const Ndarray &b,           \
+      const Ndarray &x);
+
+#define INSTANTIATE_LU_SOLVE_RF(dt, type, order, df)                      \
+  using lu##dt##type##order =                                             \
+      Eigen::Sparse##type<Eigen::SparseMatrix<dt>,                        \
+                          Eigen::order##Ordering<int>>;                   \
+  template void EigenSparseSolver<lu##dt##type##order,                    \
+                                  Eigen::SparseMatrix<dt>>::solve_rf<df,  \
+                                                                     dt>( \
+      Program * prog, const SparseMatrix &sm, const Ndarray &b,           \
+      const Ndarray &x);
+
 #define MAKE_EIGEN_SOLVER(dt, type, order) \
   std::make_unique<EigenSparseSolver##dt##type##order>()
 
@@ -55,14 +78,6 @@ EIGEN_LU_SOLVER_INSTANTIATION(float64, LU, COLAMD);
       return MAKE_EIGEN_SOLVER(dt, type, order);                  \
     }                                                             \
   }
-
-#define INSTANTIATE_SOLVER(dt, type, order)                              \
-  using dt##type##order =                                                \
-      Eigen::Simplicial##type<Eigen::SparseMatrix<dt>, Eigen::Lower,     \
-                              Eigen::order##Ordering<int>>;              \
-  template void                                                          \
-  EigenSparseSolver<dt##type##order, Eigen::SparseMatrix<dt>>::solve_rf( \
-      Program *prog, const SparseMatrix &sm, const Ndarray &b, Ndarray &x);
 
 using Triplets = std::tuple<std::string, std::string, std::string>;
 namespace {
@@ -136,21 +151,29 @@ bool EigenSparseSolver<EigenSolver, EigenMatrix>::info() {
 }
 
 template <class EigenSolver, class EigenMatrix>
+template <typename T, typename V>
 void EigenSparseSolver<EigenSolver, EigenMatrix>::solve_rf(
     Program *prog,
     const SparseMatrix &sm,
     const Ndarray &b,
-    Ndarray &x) {
+    const Ndarray &x) {
   size_t db = prog->get_ndarray_data_ptr_as_int(&b);
   size_t dX = prog->get_ndarray_data_ptr_as_int(&x);
-  Eigen::Map<Eigen::VectorXf>((float *)dX, rows_) =
-      solver_.solve(Eigen::Map<Eigen::VectorXf>((float *)db, cols_));
+  Eigen::Map<T>((V *)dX, rows_) = solver_.solve(Eigen::Map<T>((V *)db, cols_));
 }
 
-INSTANTIATE_SOLVER(float32, LLT, COLAMD)
-INSTANTIATE_SOLVER(float32, LDLT, COLAMD)
-INSTANTIATE_SOLVER(float32, LLT, AMD)
-INSTANTIATE_SOLVER(float32, LDLT, AMD)
+INSTANTIATE_LLT_SOLVE_RF(float32, LLT, COLAMD, Eigen::VectorXf)
+INSTANTIATE_LLT_SOLVE_RF(float32, LDLT, COLAMD, Eigen::VectorXf)
+INSTANTIATE_LLT_SOLVE_RF(float32, LLT, AMD, Eigen::VectorXf)
+INSTANTIATE_LLT_SOLVE_RF(float32, LDLT, AMD, Eigen::VectorXf)
+INSTANTIATE_LU_SOLVE_RF(float32, LU, AMD, Eigen::VectorXf)
+INSTANTIATE_LU_SOLVE_RF(float32, LU, COLAMD, Eigen::VectorXf)
+INSTANTIATE_LLT_SOLVE_RF(float64, LLT, COLAMD, Eigen::VectorXd)
+INSTANTIATE_LLT_SOLVE_RF(float64, LDLT, COLAMD, Eigen::VectorXd)
+INSTANTIATE_LLT_SOLVE_RF(float64, LLT, AMD, Eigen::VectorXd)
+INSTANTIATE_LLT_SOLVE_RF(float64, LDLT, AMD, Eigen::VectorXd)
+INSTANTIATE_LU_SOLVE_RF(float64, LU, AMD, Eigen::VectorXd)
+INSTANTIATE_LU_SOLVE_RF(float64, LU, COLAMD, Eigen::VectorXd)
 
 CuSparseSolver::CuSparseSolver() {
 #if defined(TI_WITH_CUDA)
@@ -240,7 +263,7 @@ void CuSparseSolver::factorize(const SparseMatrix &sm) {
 void CuSparseSolver::solve_cu(Program *prog,
                               const SparseMatrix &sm,
                               const Ndarray &b,
-                              Ndarray &x) {
+                              const Ndarray &x) {
 #ifdef TI_WITH_CUDA
   cusparseHandle_t cusparseHandle = nullptr;
   CUSPARSEDriver::get_instance().cpCreate(&cusparseHandle);
@@ -405,7 +428,7 @@ void CuSparseSolver::solve_cu(Program *prog,
 void CuSparseSolver::solve_rf(Program *prog,
                               const SparseMatrix &sm,
                               const Ndarray &b,
-                              Ndarray &x) {
+                              const Ndarray &x) {
 #if defined(TI_WITH_CUDA)
   if (is_analyzed_ == false) {
     analyze_pattern(sm);

@@ -77,12 +77,6 @@ if (WIN32)
   # MSVC in `Debug` config because MSVC would try to fill uninitialize memory
   # with `0xCC` but it too breaks `LLVMTableGen` which is depended on by almost
   # every component in LLVM.
-  #
-  # FIXME: (penguinliong) This is fixed in later releases of LLVM so maybe
-  # someday we can distribute `Debug` libraries, if it's ever needed.
-  if (NOT TI_LLVM_15)
-    SET(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreadedDLL)
-  endif()
   message("CMAKE_MSVC_RUNTIME_LIBRARY: ${CMAKE_MSVC_RUNTIME_LIBRARY}")
 endif()
 
@@ -111,10 +105,10 @@ endmacro()
 
 if (APPLE)
   set(CLANG_OSX_FLAGS "-isysroot${CMAKE_OSX_SYSROOT}")
-  set(CLANG_HIGHEST_VERSION "13")
-else()
-  set(CLANG_HIGHEST_VERSION "15")
 endif()
+
+# Highest clang version that we've tested
+set(CLANG_HIGHEST_VERSION "15")
 
 check_clang_version()
 

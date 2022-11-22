@@ -148,8 +148,6 @@ void export_lang(py::module &m) {
       .def_readwrite("print_accessor_ir", &CompileConfig::print_accessor_ir)
       .def_readwrite("print_evaluator_ir", &CompileConfig::print_evaluator_ir)
       .def_readwrite("use_llvm", &CompileConfig::use_llvm)
-      .def_readwrite("print_benchmark_stat",
-                     &CompileConfig::print_benchmark_stat)
       .def_readwrite("print_struct_llvm_ir",
                      &CompileConfig::print_struct_llvm_ir)
       .def_readwrite("print_kernel_llvm_ir",
@@ -420,15 +418,6 @@ void export_lang(py::module &m) {
                              !arch_is_cuda(program->this_thread_config().arch),
                          "SparseMatrix only supports CPU and CUDA for now.");
              return make_sparse_matrix_from_ndarray(program, sm, ndarray);
-           })
-      .def("make_sparse_matrix_from_ndarray_cusparse",
-           [](Program *program, CuSparseMatrix &sm, const Ndarray &row_coo,
-              const Ndarray &col_coo, const Ndarray &val_coo) {
-             TI_ERROR_IF(
-                 !arch_is_cuda(program->this_thread_config().arch),
-                 "SparseMatrix based on GPU only supports CUDA for now.");
-             return make_sparse_matrix_from_ndarray_cusparse(
-                 program, sm, row_coo, col_coo, val_coo);
            })
       .def("no_activate",
            [](Program *program, SNode *snode) {
@@ -1202,6 +1191,7 @@ void export_lang(py::module &m) {
       .def("print_triplets", &SparseMatrixBuilder::print_triplets)
       .def("get_ndarray_data_ptr", &SparseMatrixBuilder::get_ndarray_data_ptr)
       .def("build", &SparseMatrixBuilder::build)
+      .def("build_cuda", &SparseMatrixBuilder::build_cuda)
       .def("get_addr", [](SparseMatrixBuilder *mat) { return uint64(mat); });
 
   py::class_<SparseMatrix>(m, "SparseMatrix")

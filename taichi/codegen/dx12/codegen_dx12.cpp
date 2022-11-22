@@ -91,11 +91,7 @@ class TaskCodeGenLLVMDX12 : public TaskCodeGenLLVM {
         builder->SetInsertPoint(loop_test_bb);
         auto cond = builder->CreateICmp(
             llvm::CmpInst::Predicate::ICMP_SLT,
-            builder->CreateLoad(
-#ifdef TI_LLVM_15
-                i32_ty,
-#endif
-                loop_index),
+            builder->CreateLoad(i32_ty, loop_index),
             llvm_val[stmt->owned_num_local.find(stmt->major_from_type)
                          ->second]);
         builder->CreateCondBr(cond, loop_body_bb, func_exit);
@@ -108,13 +104,10 @@ class TaskCodeGenLLVMDX12 : public TaskCodeGenLLVM {
           auto &s = stmt->body->statements[i];
           s->accept(this);
         }
-        builder->CreateStore(builder->CreateAdd(builder->CreateLoad(
-#ifdef TI_LLVM_15
-                                                    i32_ty,
-#endif
-                                                    loop_index),
-                                                block_dim),
-                             loop_index);
+        builder->CreateStore(
+            builder->CreateAdd(builder->CreateLoad(i32_ty, loop_index),
+                               block_dim),
+            loop_index);
         builder->CreateBr(loop_test_bb);
         builder->SetInsertPoint(func_exit);
       }

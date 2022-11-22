@@ -26,10 +26,21 @@ class AotModuleImpl : public aot::Module {
       : module_path_(params.module_path),
         runtime_(params.runtime),
         device_api_backend_(device_api_backend) {
-    const std::string bin_path =
-        fmt::format("{}/metadata.tcb", params.module_path);
-    if (!read_from_binary_file(ti_aot_data_, bin_path)) {
+    std::unique_ptr<io::VirtualDir> dir_alt =
+        io::VirtualDir::from_fs_dir(module_path_);
+    const io::VirtualDir *dir =
+        params.dir == nullptr ? dir_alt.get() : params.dir;
+
+    bool succ = true;
+
+    std::vector<uint8_t> metadata_tcb{};
+    succ = dir->load_file("metadata.tcb", metadata_tcb) != 0 &&
+           read_from_binary(ti_aot_data_, metadata_tcb.data(),
+                            metadata_tcb.size());
+
+    if (!succ) {
       mark_corrupted();
+      TI_WARN("'metadata.tcb' cannot be read");
       return;
     }
 
@@ -38,22 +49,33 @@ class AotModuleImpl : public aot::Module {
         auto k = ti_aot_data_.kernels[i];
         std::vector<std::vector<uint32_t>> spirv_sources_codes;
         for (int j = 0; j < k.tasks_attribs.size(); ++j) {
-          std::vector<uint32_t> res =
-              read_spv_file(params.module_path, k.tasks_attribs[j]);
-          if (res.size() == 0) {
+          std::string spirv_path = k.tasks_attribs[j].name + ".spv";
+
+          std::vector<uint32_t> spirv;
+          dir->load_file(spirv_path, spirv);
+
+          if (spirv.size() == 0) {
             mark_corrupted();
+            TI_WARN("spirv '{}' cannot be read", spirv_path);
             return;
           }
-          spirv_sources_codes.push_back(res);
+          if (spirv.at(0) != 0x07230203) {
+            TI_WARN("spirv '{}' has a incorrect magic number {}", spirv_path,
+                    spirv.at(0));
+          }
+          spirv_sources_codes.emplace_back(std::move(spirv));
         }
-        ti_aot_data_.spirv_codes.push_back(spirv_sources_codes);
+        ti_aot_data_.spirv_codes.emplace_back(std::move(spirv_sources_codes));
       }
     }
 
-    const std::string graph_path =
-        fmt::format("{}/graphs.tcb", params.module_path);
-    if (!read_from_binary_file(graphs_, graph_path)) {
+    std::vector<uint8_t> graphs_tcb{};
+    succ = dir->load_file("graphs.tcb", graphs_tcb) &&
+           read_from_binary(graphs_, graphs_tcb.data(), graphs_tcb.size());
+
+    if (!succ) {
       mark_corrupted();
+      TI_WARN("'graphs.tcb' cannot be read");
       return;
     }
   }

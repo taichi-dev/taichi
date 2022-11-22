@@ -354,6 +354,7 @@ struct JsonValue {
 
 // Parse JSON literal into and `JsonValue` object. If the JSON is invalid or
 // unsupported, `JsonException` will be raised.
+JsonValue parse(const char *beg, const char *end);
 JsonValue parse(const std::string &json_lit);
 // Returns true when JSON parsing successfully finished and parsed value is
 // returned via `out`. Otherwise, false is returned and out contains incomplete

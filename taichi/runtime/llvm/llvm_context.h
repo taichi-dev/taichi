@@ -123,8 +123,6 @@ class TaichiLLVMContext {
       llvm::Module *module,
       std::function<bool(const std::string &)> export_indicator);
 
-  void mark_function_as_cuda_kernel(llvm::Function *func, int block_dim = 0);
-
   void fetch_this_thread_struct_module();
   llvm::Module *get_this_thread_runtime_module();
   llvm::Function *get_runtime_function(const std::string &name);
@@ -139,10 +137,13 @@ class TaichiLLVMContext {
 
   void add_struct_for_func(llvm::Module *module, int tls_size);
 
-  static std::string get_struct_for_func_name(int tls_size);
-
   LLVMCompiledKernel link_compiled_tasks(
       std::vector<std::unique_ptr<LLVMCompiledTask>> data_list);
+
+  static std::string get_struct_for_func_name(int tls_size);
+
+  static void mark_function_as_cuda_kernel(llvm::Function *func,
+                                           int block_dim = 0);
 
  private:
   std::unique_ptr<llvm::Module> clone_module_to_context(
@@ -151,16 +152,18 @@ class TaichiLLVMContext {
 
   void link_module_with_cuda_libdevice(std::unique_ptr<llvm::Module> &module);
 
-  static int num_instructions(llvm::Function *func);
-
-  void insert_nvvm_annotation(llvm::Function *func, std::string key, int val);
-
   std::unique_ptr<llvm::Module> clone_module_to_this_thread_context(
       llvm::Module *module);
 
   ThreadLocalData *get_this_thread_data();
 
   void update_runtime_jit_module(std::unique_ptr<llvm::Module> module);
+
+  static int num_instructions(llvm::Function *func);
+
+  static void insert_nvvm_annotation(llvm::Function *func,
+                                     std::string key,
+                                     int val);
 
   std::unordered_map<std::thread::id, std::unique_ptr<ThreadLocalData>>
       per_thread_data_;

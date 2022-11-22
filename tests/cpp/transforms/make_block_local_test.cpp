@@ -43,12 +43,14 @@ class MakeBlockLocalTest : public ::testing::Test {
     const std::vector<Axis> axes = {Axis{0}, Axis{1}};
     pointer_snode_ = &(root_snode_->pointer(axes, pointer_size, false, ""));
 
-    bls_snode_ = &(pointer_snode_->dense(axes, /*sizes=*/block_size, false, ""));
+    bls_snode_ =
+        &(pointer_snode_->dense(axes, /*sizes=*/block_size, false, ""));
     bls_place_snode_ = &(bls_snode_->insert_children(SNodeType::place));
     bls_place_snode_->dt = PrimitiveType::f32;
 
-    struct_for_snode_ = &(pointer_snode_->dynamic({Axis{2}}, /*n=*/1024,
-                                                  /*chunk_size=*/128, false, ""));
+    struct_for_snode_ =
+        &(pointer_snode_->dynamic({Axis{2}}, /*n=*/1024,
+                                  /*chunk_size=*/128, false, ""));
     struct_for_place_snode_ =
         &(struct_for_snode_->insert_children(SNodeType::place));
     struct_for_place_snode_->dt = PrimitiveType::i32;

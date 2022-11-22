@@ -62,7 +62,13 @@ SNode &SNode::create_node(std::vector<Axis> axes,
     if (is_first_division) {
       new_node.physical_index_position[new_node.num_active_indices++] = ind;
     } else {
-      TI_WARN_IF(packed && !bit::is_power_of_two(sizes[i]), "Non-first division of an axis on a SNodeTree path should be a power of two to achieve best performance:\n{} We plan to turn this warning into an error at v1.4.0. If you do have a use case that needs to violate this rule, please submit an issue to notify us.", tb);
+      TI_WARN_IF(
+          packed && !bit::is_power_of_two(sizes[i]),
+          "Non-first division of an axis on a SNodeTree path should be a power "
+          "of two to achieve best performance:\n{} We plan to turn this "
+          "warning into an error at v1.4.0. If you do have a use case that "
+          "needs to violate this rule, please submit an issue to notify us.",
+          tb);
     }
     new_node.extractors[ind].activate(
         bit::log2int(bit::least_pot_bound(sizes[i])));
@@ -123,13 +129,19 @@ SNode &SNode::create_node(std::vector<Axis> axes,
   return new_node;
 }
 
-SNode &SNode::dynamic(const Axis &expr, int n, int chunk_size, bool packed, const std::string &tb) {
+SNode &SNode::dynamic(const Axis &expr,
+                      int n,
+                      int chunk_size,
+                      bool packed,
+                      const std::string &tb) {
   auto &snode = create_node({expr}, {n}, SNodeType::dynamic, packed, tb);
   snode.chunk_size = chunk_size;
   return snode;
 }
 
-SNode &SNode::bit_struct(BitStructType *bit_struct_type, bool packed, const std::string &tb) {
+SNode &SNode::bit_struct(BitStructType *bit_struct_type,
+                         bool packed,
+                         const std::string &tb) {
   auto &snode = create_node({}, {}, SNodeType::bit_struct, packed, tb);
   snode.dt = bit_struct_type;
   snode.physical_type = bit_struct_type->get_physical_type();

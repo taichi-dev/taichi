@@ -44,13 +44,13 @@ void DeviceCapabilityConfig::set(DeviceCapability cap, uint32_t level) {
 void DeviceCapabilityConfig::dbg_print_all() const {
   for (auto &pair : devcaps) {
     TI_TRACE("DeviceCapability::{} ({}) = {}", to_string(pair.first),
-              int(pair.first), pair.second);
+             int(pair.first), pair.second);
   }
 }
 
-const std::map<DeviceCapability, uint32_t> &DeviceCapabilityConfig::to_inner() const {
+const std::map<DeviceCapability, uint32_t> &DeviceCapabilityConfig::to_inner()
+    const {
   return devcaps;
 }
 
-
-} // namespace taichi::lang
+}  // namespace taichi::lang

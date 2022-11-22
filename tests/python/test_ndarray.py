@@ -515,7 +515,7 @@ def test_vector_ndarray_taichi_scope_real_matrix():
 # number of compiled functions
 def _test_compiled_functions():
     @ti.kernel
-    def func(a: ti.types.ndarray(element_dim=1)):
+    def func(a: ti.types.ndarray(ti.types.vector(n=10, dtype=ti.i32))):
         for i in range(5):
             for j in range(4):
                 a[i][j * j] = j * j
@@ -541,7 +541,7 @@ def test_compiled_functions():
 
 def _test_arg_not_match():
     @ti.kernel
-    def func1(a: ti.types.ndarray(element_dim=1)):
+    def func1(a: ti.types.ndarray(dtype=ti.types.vector(2, ti.i32))):
         pass
 
     x = ti.Matrix.ndarray(2, 3, ti.i32, shape=(4, 7))
@@ -553,7 +553,7 @@ def _test_arg_not_match():
         func1(x)
 
     @ti.kernel
-    def func2(a: ti.types.ndarray(element_dim=2)):
+    def func2(a: ti.types.ndarray(dtype=ti.types.matrix(2, 2, ti.i32))):
         pass
 
     x = ti.Vector.ndarray(2, ti.i32, shape=(4, 7))
@@ -565,7 +565,7 @@ def _test_arg_not_match():
         func2(x)
 
     @ti.kernel
-    def func5(a: ti.types.ndarray(element_shape=(2, 3))):
+    def func5(a: ti.types.ndarray(dtype=ti.types.matrix(2, 3, dtype=ti.i32))):
         pass
 
     x = ti.Vector.ndarray(2, ti.i32, shape=(4, 7))
@@ -575,14 +575,6 @@ def _test_arg_not_match():
             r'Invalid argument into ti\.types\.ndarray\(\) - required element_dim'
     ):
         func5(x)
-
-    with pytest.raises(
-            ValueError,
-            match=r'Both element_shape and element_dim are specified'):
-
-        @ti.kernel
-        def func6(a: ti.types.ndarray(element_dim=1, element_shape=(2, 3))):
-            pass
 
     @ti.kernel
     def func7(a: ti.types.ndarray(field_dim=2)):

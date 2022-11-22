@@ -9,6 +9,13 @@
 #include <algorithm>
 
 namespace taichi::lang {
+
+class IndependentBlockMetaData {
+ public:
+  bool is_ib = true;
+  bool is_smallest_ib = true;
+};
+
 class IndependentBlocksJudger : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
@@ -34,7 +41,7 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
       return;
     TI_ASSERT(stmt->dest->is<GlobalPtrStmt>());
     if (stmt->dest->as<GlobalPtrStmt>()->snode->has_adjoint()) {
-      qualified_atomics_ = false;
+      qualified_glb_operations_ = true;
     }
   }
 
@@ -45,7 +52,7 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
     is_inside_loop_ = false;
   }
 
-  static bool run(IRNode *root) {
+  static void run(IRNode *root, IndependentBlockMetaData &ib_meta_data) {
     IndependentBlocksJudger Judger;
     Block *block = root->as<Block>();
     root->accept(&Judger);
@@ -60,21 +67,25 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
       // Test if the alloca belongs to the current block
       if (outside_blocks.find(alloca->parent) != outside_blocks.end()) {
         // This block is not an IB since it loads/modifies outside variables
-        return false;
+        ib_meta_data.is_ib = false;
       }
     }
 
     // To judge whether a block is an IB
-    // 1. No local load/store to allocas *outside* itself has been strictly
+    // - No local load/store to allocas *outside* itself has been strictly
     // enforced
-    // 2. If the #1 is satisfied, either an inner most loop or a block without
-    // global atomics is an IB
-    return Judger.qualified_atomics_ || Judger.inner_most_loop_;
+
+    // To judge whether a block is a smallest IB
+    // - If the #1 is satisfied, either an inner most loop or a block without
+    // global atomics / global load is an IB
+    ib_meta_data.is_smallest_ib =
+        ib_meta_data.is_ib &&
+        (Judger.qualified_glb_operations_ || Judger.inner_most_loop_);
   }
 
  private:
   std::set<Stmt *> touched_allocas_;
-  bool qualified_atomics_ = true;
+  bool qualified_glb_operations_ = false;
   bool inner_most_loop_ = true;
   bool is_inside_loop_ = false;
 };
@@ -153,26 +164,25 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
     TI_ERROR("WhileControlStmt (break) is not supported in AutoDiff.");
   }
 
-  bool is_independent_block(Block *block) {
+  void visit_loop_body(Block *block) {
+    auto ib_meta_data = IndependentBlockMetaData();
     // An IB has no local load/store to allocas *outside* itself
     // Note:
     //  - Local atomics should have been demoted before this pass.
     //  - It is OK for an IB to have more than two for loops.
-    //  - No atomics operations to the global variables which require gradient
+    //  - No global load/atomics operations to the global variables which
+    //  require gradient
+    if (block->statements.empty()) {
+      ib_meta_data.is_ib = false;
+    } else {
+      IndependentBlocksJudger::run(block, ib_meta_data);
+    }
 
-    return IndependentBlocksJudger::run(block);
-  }
-
-  void visit_loop_body(Block *block) {
-    if (is_independent_block(block)) {
+    if (ib_meta_data.is_smallest_ib) {
+      independent_blocks_.push_back({depth_, block});
+    } else if (ib_meta_data.is_ib) {
       current_ib_ = block;
-      auto old_current_ib_ = current_ib_;
       block->accept(this);
-      // Lower level block is not an IB, therefore store the current block as an
-      // IB
-      if (old_current_ib_ == current_ib_) {
-        independent_blocks_.push_back({depth_, current_ib_});
-      }
     } else {
       if (depth_ <= 1) {
         TI_ASSERT(depth_ == 1);

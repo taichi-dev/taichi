@@ -11,7 +11,6 @@ target_sources(taichi_util
     lang_util.cpp
     offline_cache.cpp
     short_name.cpp
-    statistics.cpp
     str.cpp
     testing.cpp
     zip.cpp

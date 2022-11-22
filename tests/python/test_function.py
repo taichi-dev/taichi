@@ -373,8 +373,8 @@ def _test_func_ndarray_arg():
         test(x)
 
     @ti.func
-    def test_error_func(a: ti.types.ndarray(field_dim=1, element_dim=1)):
-        a[0] = [100, 100, 100]
+    def test_error_func(a: ti.types.ndarray(dtype=ti.math.vec2, field_dim=1)):
+        a[0] = [100, 100]
 
     @ti.kernel
     def test_error(x: ti.types.ndarray(field_dim=1)):

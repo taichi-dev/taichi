@@ -73,9 +73,9 @@ jobs:
           done
 
           if ${run_job}; then
-            echo "::set-output name=run_job::true"
+            echo "run_job=true"  >> $GITHUB_OUTPUT
           else
-            echo "::set-output name=run_job::false"
+            echo "run_job=false" >> $GITHUB_OUTPUT
           fi
 
   check_static_analyzer:
@@ -276,7 +276,7 @@ jobs:
           fetch-depth: '0'
           submodules: 'recursive'
 
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v4
         with:
           python-version: 3.7
 

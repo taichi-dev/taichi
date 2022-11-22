@@ -376,34 +376,6 @@ def test_sparse_matrix_nonsymmetric_multiplication(dtype, storage_format):
             assert C[i, j] == GT[i][j]
 
 
-@pytest.mark.parametrize('dtype, storage_format', [(ti.f32, 'col_major'),
-                                                   (ti.f32, 'row_major'),
-                                                   (ti.f64, 'col_major'),
-                                                   (ti.f64, 'row_major')])
-@test_utils.test(arch=ti.cpu)
-def test_sparse_matrix_ndarray_vector_multiplication(dtype, storage_format):
-    n = 2
-    Abuilder = ti.linalg.SparseMatrixBuilder(n,
-                                             n,
-                                             max_num_triplets=100,
-                                             dtype=dtype,
-                                             storage_format=storage_format)
-    x = ti.ndarray(dtype, n)
-
-    @ti.kernel
-    def fill(Abuilder: ti.types.sparse_matrix_builder()):
-        for i, j in ti.ndrange(n, n):
-            Abuilder[i, j] += i + j
-
-    fill(Abuilder)
-    x.fill(1.0)
-    A = Abuilder.build()
-    res = A @ x
-    res_n = res.to_numpy()
-    assert res_n[0] == 1.0
-    assert res_n[1] == 3.0
-
-
 @test_utils.test(arch=ti.cuda)
 def test_gpu_sparse_matrix():
     import numpy as np

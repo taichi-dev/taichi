@@ -738,19 +738,23 @@ class CapabilityLevelConfigBuilder {
     return *this;
   }
   Self &spirv_has_float16(bool value = true) {
-    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_FLOAT16] = value ? TI_TRUE : TI_FALSE;
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_FLOAT16] =
+        value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_float64(bool value = true) {
-    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_FLOAT64] = value ? TI_TRUE : TI_FALSE;
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_FLOAT64] =
+        value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_atomic_i64(bool value = true) {
-    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_ATOMIC_I64] = value ? TI_TRUE : TI_FALSE;
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_ATOMIC_I64] =
+        value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_atomic_float16(bool value = true) {
-    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT16] = value ? TI_TRUE : TI_FALSE;
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT16] =
+        value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_atomic_float16_add(bool value = true) {
@@ -764,7 +768,8 @@ class CapabilityLevelConfigBuilder {
     return *this;
   }
   Self &spirv_has_atomic_float64(bool value = true) {
-    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT64] = value ? TI_TRUE : TI_FALSE;
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT64] =
+        value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_atomic_float64_add(bool value = true) {
@@ -773,7 +778,8 @@ class CapabilityLevelConfigBuilder {
     return *this;
   }
   Self &spirv_has_variable_ptr(bool value = true) {
-    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_VARIABLE_PTR] = value ? TI_TRUE : TI_FALSE;
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_VARIABLE_PTR] =
+        value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_physical_storage_buffer(bool value = true) {
@@ -782,11 +788,13 @@ class CapabilityLevelConfigBuilder {
     return *this;
   }
   Self &spirv_has_subgroup_basic(bool value = true) {
-    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_SUBGROUP_BASIC] = value ? TI_TRUE : TI_FALSE;
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_SUBGROUP_BASIC] =
+        value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_subgroup_vote(bool value = true) {
-    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_SUBGROUP_VOTE] = value ? TI_TRUE : TI_FALSE;
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_SUBGROUP_VOTE] =
+        value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_subgroup_arithmetic(bool value = true) {
@@ -795,7 +803,8 @@ class CapabilityLevelConfigBuilder {
     return *this;
   }
   Self &spirv_has_subgroup_ballot(bool value = true) {
-    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_SUBGROUP_BALLOT] = value ? TI_TRUE : TI_FALSE;
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_SUBGROUP_BALLOT] =
+        value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_non_semantic_info(bool value = true) {

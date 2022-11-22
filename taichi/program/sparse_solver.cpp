@@ -14,6 +14,14 @@
     }                                                                          \
   }
 
+#define INSTANTIATE_SOLVER(dt, type, order)                              \
+  using dt##type##order =                                                \
+      Eigen::Simplicial##type<Eigen::SparseMatrix<dt>, Eigen::Lower,     \
+                              Eigen::order##Ordering<int>>;              \
+  template void                                                          \
+  EigenSparseSolver<dt##type##order, Eigen::SparseMatrix<dt>>::solve_rf( \
+      Program *prog, const SparseMatrix &sm, const Ndarray &b, Ndarray &x);
+
 using Triplets = std::tuple<std::string, std::string, std::string>;
 namespace {
 struct key_hash {
@@ -34,6 +42,9 @@ namespace taichi::lang {
 template <class EigenSolver, class EigenMatrix>
 bool EigenSparseSolver<EigenSolver, EigenMatrix>::compute(
     const SparseMatrix &sm) {
+  if (!is_initialized_) {
+    SparseSolver::init_solver(sm.num_rows(), sm.num_cols(), sm.get_data_type());
+  }
   GET_EM(sm);
   solver_.compute(*mat);
   if (solver_.info() != Eigen::Success) {
@@ -44,6 +55,9 @@ bool EigenSparseSolver<EigenSolver, EigenMatrix>::compute(
 template <class EigenSolver, class EigenMatrix>
 void EigenSparseSolver<EigenSolver, EigenMatrix>::analyze_pattern(
     const SparseMatrix &sm) {
+  if (!is_initialized_) {
+    SparseSolver::init_solver(sm.num_rows(), sm.num_cols(), sm.get_data_type());
+  }
   GET_EM(sm);
   solver_.analyzePattern(*mat);
 }
@@ -65,6 +79,23 @@ template <class EigenSolver, class EigenMatrix>
 bool EigenSparseSolver<EigenSolver, EigenMatrix>::info() {
   return solver_.info() == Eigen::Success;
 }
+
+template <class EigenSolver, class EigenMatrix>
+void EigenSparseSolver<EigenSolver, EigenMatrix>::solve_rf(
+    Program *prog,
+    const SparseMatrix &sm,
+    const Ndarray &b,
+    Ndarray &x) {
+  size_t db = prog->get_ndarray_data_ptr_as_int(&b);
+  size_t dX = prog->get_ndarray_data_ptr_as_int(&x);
+  Eigen::Map<Eigen::VectorXf>((float *)dX, rows_) =
+      solver_.solve(Eigen::Map<Eigen::VectorXf>((float *)db, cols_));
+}
+
+INSTANTIATE_SOLVER(float32, LLT, COLAMD)
+INSTANTIATE_SOLVER(float32, LDLT, COLAMD)
+INSTANTIATE_SOLVER(float32, LLT, AMD)
+INSTANTIATE_SOLVER(float32, LDLT, AMD)
 
 CuSparseSolver::CuSparseSolver() {
 #if defined(TI_WITH_CUDA)

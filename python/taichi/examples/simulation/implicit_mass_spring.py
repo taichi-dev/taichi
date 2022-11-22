@@ -179,29 +179,9 @@ class Cloth:
 
         A = self.M - h * D - h**2 * K
 
-        vel = ti.ndarray(ti.f32, 2 * self.NV)
-        force = ti.ndarray(ti.f32, 2 * self.NV)
-
-        @ti.kernel
-        def copy_to(des: ti.types.ndarray(), source: ti.template()):
-            for i in range(self.NV):
-                des[2 * i] = source[i][0]
-                des[2 * i + 1] = source[i][1]
-
-        copy_to(vel, self.vel)
-        copy_to(force, self.force)
-
-        @ti.kernel
-        def compute_b(b: ti.types.ndarray(), f: ti.types.ndarray(),
-                      Kv: ti.types.ndarray(), h: ti.f32):
-            for i in range(2 * self.NV):
-                b[i] = (f[i] + Kv[i] * h) * h
-
-        # b = (force + h * K @ vel) * h
-        b = ti.ndarray(ti.f32, 2 * self.NV)
-        Kv = K @ vel
-        compute_b(b, force, Kv, h)
-
+        vel = self.vel.to_numpy().reshape(2 * self.NV)
+        force = self.force.to_numpy().reshape(2 * self.NV)
+        b = (force + h * K @ vel) * h
         # Sparse solver
         solver = ti.linalg.SparseSolver(solver_type="LDLT")
         solver.analyze_pattern(A)

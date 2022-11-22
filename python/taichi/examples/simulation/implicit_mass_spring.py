@@ -21,7 +21,7 @@ class Cloth:
         self.vel_1D = ti.ndarray(ti.f32, 2 * self.NV)
         self.force_1D = ti.ndarray(ti.f32, 2 * self.NV)
         self.b = ti.ndarray(ti.f32, 2 * self.NV)
-        
+
         self.spring = ti.Vector.field(2, ti.i32, self.NE)
         self.indices = ti.field(ti.i32, 2 * self.NE)
         self.Jx = ti.Matrix.field(2, 2, ti.f32,
@@ -167,7 +167,7 @@ class Cloth:
         for i in self.pos:
             self.vel[i] += ti.Vector([dv[2 * i], dv[2 * i + 1]])
             self.pos[i] += h * self.vel[i]
-            
+
     @ti.kernel
     def copy_to(self, des: ti.types.ndarray(), source: ti.template()):
         for i in range(self.NV):
@@ -196,7 +196,7 @@ class Cloth:
 
         self.copy_to(self.vel_1D, self.vel)
         self.copy_to(self.force_1D, self.force)
-        
+
         # b = (force + h * K @ vel) * h
         Kv = K @ self.vel_1D
         self.compute_b(self.b, self.force_1D, Kv, h)

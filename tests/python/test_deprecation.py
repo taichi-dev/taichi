@@ -56,3 +56,16 @@ def test_deprecate_element_dim_ndarray_annotation():
         @ti.kernel
         def func(x: ti.types.ndarray(element_dim=2)):
             pass
+
+
+@test_utils.test()
+def test_deprecate_field_dim_ndarray_annotation():
+    with pytest.warns(
+            DeprecationWarning,
+            match=
+            "The field_dim argument for ndarray will be deprecated in v1.4.0, use ndim instead."
+    ):
+
+        @ti.kernel
+        def func(x: ti.types.ndarray(field_dim=(16, 16))):
+            pass

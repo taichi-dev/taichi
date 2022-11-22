@@ -1330,7 +1330,7 @@ struct VulkanDevice::ThreadLocalStreams {
 VulkanDevice::VulkanDevice()
     : compute_streams_(std::make_unique<ThreadLocalStreams>()),
       graphics_streams_(std::make_unique<ThreadLocalStreams>()) {
-  DeviceCapabilityConfig caps {};
+  DeviceCapabilityConfig caps{};
   caps.set(DeviceCapability::spirv_version, 0x10000);
   set_caps(std::move(caps));
 }

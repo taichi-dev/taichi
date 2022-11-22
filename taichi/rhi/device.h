@@ -476,7 +476,7 @@ class Device {
   inline const DeviceCapabilityConfig &get_caps() const {
     return caps_;
   }
-  inline void set_caps(DeviceCapabilityConfig&& caps) {
+  inline void set_caps(DeviceCapabilityConfig &&caps) {
     caps_ = std::move(caps);
   }
 };

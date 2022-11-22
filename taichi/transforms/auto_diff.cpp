@@ -16,6 +16,19 @@ class IndependentBlockMetaData {
   bool is_smallest_ib = true;
 };
 
+class NonLinearOps {
+ public:
+  inline static const std::set<TernaryOpType> ternary_collections{
+      TernaryOpType::select};
+  inline static const std::set<UnaryOpType> unary_collections{
+      UnaryOpType::abs,  UnaryOpType::sin,  UnaryOpType::cos,
+      UnaryOpType::tanh, UnaryOpType::asin, UnaryOpType::acos,
+      UnaryOpType::exp,  UnaryOpType::log,  UnaryOpType::sqrt};
+  inline static const std::set<BinaryOpType> binary_collections{
+      BinaryOpType::mul, BinaryOpType::div, BinaryOpType::atan2,
+      BinaryOpType::pow};
+};
+
 class IndependentBlocksJudger : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
@@ -335,15 +348,6 @@ class PromoteSSA2LocalVar : public BasicStmtVisitor {
 
 class AdStackAllocaJudger : public BasicStmtVisitor {
  public:
-  inline static const std::set<TernaryOpType> stack_needed_ternary_collections{
-      TernaryOpType::select};
-  inline static const std::set<UnaryOpType> stack_needed_unary_collections{
-      UnaryOpType::abs,  UnaryOpType::sin,  UnaryOpType::cos,
-      UnaryOpType::tanh, UnaryOpType::asin, UnaryOpType::acos,
-      UnaryOpType::exp,  UnaryOpType::log,  UnaryOpType::sqrt};
-  inline static const std::set<BinaryOpType> stack_needed_binary_collections{
-      BinaryOpType::mul, BinaryOpType::div, BinaryOpType::atan2,
-      BinaryOpType::pow};
   using BasicStmtVisitor::visit;
   // Find the usage of the stmt recursively along the LocalLoadStmt
   void visit(LocalLoadStmt *stmt) override {
@@ -385,8 +389,8 @@ class AdStackAllocaJudger : public BasicStmtVisitor {
   void visit(UnaryOpStmt *stmt) override {
     if (is_stack_needed_)
       return;
-    if (stack_needed_unary_collections.find(stmt->op_type) !=
-        stack_needed_unary_collections.end()) {
+    if (NonLinearOps::unary_collections.find(stmt->op_type) !=
+        NonLinearOps::unary_collections.end()) {
       if (stmt->operand == target_alloca_)
         is_stack_needed_ = true;
     }
@@ -397,8 +401,8 @@ class AdStackAllocaJudger : public BasicStmtVisitor {
   void visit(BinaryOpStmt *stmt) override {
     if (is_stack_needed_)
       return;
-    if (stack_needed_binary_collections.find(stmt->op_type) !=
-        stack_needed_binary_collections.end()) {
+    if (NonLinearOps::binary_collections.find(stmt->op_type) !=
+        NonLinearOps::binary_collections.end()) {
       if (stmt->lhs == target_alloca_ || stmt->rhs == target_alloca_)
         is_stack_needed_ = true;
     }
@@ -409,8 +413,8 @@ class AdStackAllocaJudger : public BasicStmtVisitor {
   void visit(TernaryOpStmt *stmt) override {
     if (is_stack_needed_)
       return;
-    if (stack_needed_ternary_collections.find(stmt->op_type) !=
-        stack_needed_ternary_collections.end()) {
+    if (NonLinearOps::ternary_collections.find(stmt->op_type) !=
+        NonLinearOps::ternary_collections.end()) {
       if (stmt->op1 == target_alloca_ || stmt->op2 == target_alloca_ ||
           stmt->op3 == target_alloca_)
         is_stack_needed_ = true;

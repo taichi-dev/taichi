@@ -37,7 +37,8 @@ SNode &SNode::insert_children(SNodeType t) {
 SNode &SNode::create_node(std::vector<Axis> axes,
                           std::vector<int> sizes,
                           SNodeType type,
-                          bool packed) {
+                          bool packed,
+                          const std::string &tb) {
   TI_ASSERT(axes.size() == sizes.size() || sizes.size() == 1);
   if (sizes.size() == 1) {
     sizes = std::vector<int>(axes.size(), sizes[0]);
@@ -61,11 +62,7 @@ SNode &SNode::create_node(std::vector<Axis> axes,
     if (is_first_division) {
       new_node.physical_index_position[new_node.num_active_indices++] = ind;
     } else {
-      if (!bit::is_power_of_two(sizes[i])) {
-        throw TaichiRuntimeError(
-            "Non-first division of an axis on a SNodeTree path should be a "
-            "power of two");
-      }
+      TI_WARN_IF(packed && !bit::is_power_of_two(sizes[i]), "Non-first division of an axis on a SNodeTree path should be a power of two to achieve best performance:\n{} We plan to turn this warning into an error at v1.4.0. If you do have a use case that needs to violate this rule, please submit an issue to notify us.", tb);
     }
     new_node.extractors[ind].activate(
         bit::log2int(bit::least_pot_bound(sizes[i])));
@@ -126,14 +123,14 @@ SNode &SNode::create_node(std::vector<Axis> axes,
   return new_node;
 }
 
-SNode &SNode::dynamic(const Axis &expr, int n, int chunk_size, bool packed) {
-  auto &snode = create_node({expr}, {n}, SNodeType::dynamic, packed);
+SNode &SNode::dynamic(const Axis &expr, int n, int chunk_size, bool packed, const std::string &tb) {
+  auto &snode = create_node({expr}, {n}, SNodeType::dynamic, packed, tb);
   snode.chunk_size = chunk_size;
   return snode;
 }
 
-SNode &SNode::bit_struct(BitStructType *bit_struct_type, bool packed) {
-  auto &snode = create_node({}, {}, SNodeType::bit_struct, packed);
+SNode &SNode::bit_struct(BitStructType *bit_struct_type, bool packed, const std::string &tb) {
+  auto &snode = create_node({}, {}, SNodeType::bit_struct, packed, tb);
   snode.dt = bit_struct_type;
   snode.physical_type = bit_struct_type->get_physical_type();
   return snode;
@@ -142,8 +139,9 @@ SNode &SNode::bit_struct(BitStructType *bit_struct_type, bool packed) {
 SNode &SNode::quant_array(const std::vector<Axis> &axes,
                           const std::vector<int> &sizes,
                           int bits,
-                          bool packed) {
-  auto &snode = create_node(axes, sizes, SNodeType::quant_array, packed);
+                          bool packed,
+                          const std::string &tb) {
+  auto &snode = create_node(axes, sizes, SNodeType::quant_array, packed, tb);
   snode.physical_type =
       TypeFactory::get_instance().get_primitive_int_type(bits, false);
   return snode;

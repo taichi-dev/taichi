@@ -78,7 +78,8 @@ void convert_to_range_for(OffloadedStmt *offloaded, bool packed) {
       for (int j = 0; j < (int)physical_indices.size(); j++) {
         auto p = physical_indices[j];
         auto ext = snode->extractors[p];
-        if (!ext.active) continue;
+        if (!ext.active)
+          continue;
         Stmt *index = extracted;
         if (is_first_extraction) {  // first extraction doesn't need a mod
           is_first_extraction = false;

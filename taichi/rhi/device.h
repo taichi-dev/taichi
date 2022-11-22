@@ -473,10 +473,10 @@ class Device {
 
   // Get all supported capabilities of the current created device.
   virtual Arch arch() const = 0;
-  inline const DeviceCapabilityConfig &get_current_caps() const {
+  inline const DeviceCapabilityConfig &get_caps() const {
     return caps_;
   }
-  inline void set_current_caps(DeviceCapabilityConfig&& caps) {
+  inline void set_caps(DeviceCapabilityConfig&& caps) {
     caps_ = std::move(caps);
   }
 };

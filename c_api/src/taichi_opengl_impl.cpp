@@ -9,7 +9,7 @@ OpenglRuntime::OpenglRuntime()
   caps.set(taichi::lang::DeviceCapability::spirv_has_int64, true);
   caps.set(taichi::lang::DeviceCapability::spirv_has_float64, true);
   caps.set(taichi::lang::DeviceCapability::spirv_version, 0x10300);
-  get_gl().set_current_caps(std::move(caps));
+  get_gl().set_caps(std::move(caps));
 }
 taichi::lang::Device &OpenglRuntime::get() {
   return static_cast<taichi::lang::Device &>(device_);

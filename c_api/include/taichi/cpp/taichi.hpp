@@ -883,7 +883,7 @@ class Runtime {
                                     capabilities.data());
   }
   void set_capabilities_ext(const CapabilityLevelConfig &capabilities) {
-    set_capabilities_ext(runtime_, capabilities.cap_level_infos);
+    set_capabilities_ext(capabilities.cap_level_infos);
   }
   CapabilityLevelConfig get_capabilities() const {
     uint32_t n = 0;

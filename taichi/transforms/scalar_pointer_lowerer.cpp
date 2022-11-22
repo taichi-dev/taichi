@@ -87,9 +87,9 @@ void ScalarPointerLowerer::run() {
         // Unless it is an invalid out-of-bound access, we can assume
         // "indices_[k_] < prev" so we don't need a mod here.
         if (is_first_extraction[k]) {
-          extracted = indices_[k];
+          extracted = indices_[k_];
         } else {
-          extracted = generate_mod(lowered_, indices_[k], prev);
+          extracted = generate_mod(lowered_, indices_[k_], prev);
         }
         extracted = generate_div(lowered_, extracted, next);
       } else {

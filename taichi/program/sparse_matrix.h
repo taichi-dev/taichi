@@ -87,7 +87,7 @@ class SparseMatrix {
     return nullptr;
   }
 
-  inline const DataType get_data_type() const {
+  inline DataType get_data_type() {
     return dtype_;
   }
 
@@ -197,8 +197,6 @@ class EigenSparseMatrix : public SparseMatrix {
     return matrix_ * b;
   }
 
-  void spmv(Program *prog, const Ndarray &x, const Ndarray &y);
-
  private:
   EigenMatrix matrix_;
 };
@@ -267,7 +265,7 @@ class CuSparseMatrix : public SparseMatrix {
                           void *coo_values_ptr,
                           int nnz) override;
 
-  void spmv(Program *prog, const Ndarray &x, const Ndarray &y);
+  void spmv(Program *prog, const Ndarray &x, Ndarray &y);
 
   const void *get_matrix() const override {
     return &matrix_;

@@ -127,7 +127,6 @@ CacheManager::CacheManager(Params &&init_params)
             TI_WARN("Unlock {} failed", lock_path);
           }
         });
-        auto dir = io::VirtualDir::open(path_);
         gfx::AotModuleParams params;
         params.module_path = path_;
         params.runtime = runtime_;

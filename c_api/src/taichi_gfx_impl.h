@@ -2,7 +2,6 @@
 
 #include "taichi_core_impl.h"
 #include "taichi/runtime/gfx/runtime.h"
-#include "taichi/common/virtual_dir.h"
 
 class GfxRuntime;
 
@@ -11,8 +10,7 @@ class GfxRuntime : public Runtime {
   GfxRuntime(taichi::Arch arch);
   virtual taichi::lang::gfx::GfxRuntime &get_gfx_runtime() = 0;
 
-  virtual Error create_aot_module(const taichi::io::VirtualDir *dir,
-                                  TiAotModule &out) override final;
+  virtual TiAotModule load_aot_module(const char *module_path) override final;
   virtual void buffer_copy(const taichi::lang::DevicePtr &dst,
                            const taichi::lang::DevicePtr &src,
                            size_t size) override final;

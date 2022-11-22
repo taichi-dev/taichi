@@ -11,24 +11,19 @@
 #include "taichi/codegen/spirv/kernel_utils.h"
 #include "taichi/aot/module_builder.h"
 #include "taichi/aot/module_loader.h"
-#include "taichi/common/virtual_dir.h"
 
 namespace taichi::lang {
 namespace gfx {
 
 struct TI_DLL_EXPORT AotModuleParams {
-  std::string module_path{};
-  const io::VirtualDir *dir{nullptr};
+  std::string module_path;
   GfxRuntime *runtime{nullptr};
   bool enable_lazy_loading{false};
 
   AotModuleParams() = default;
 
-  [[deprecated]] AotModuleParams(const std::string &path, GfxRuntime *rt)
+  AotModuleParams(const std::string &path, GfxRuntime *rt)
       : module_path(path), runtime(rt) {
-  }
-  AotModuleParams(const io::VirtualDir *dir, GfxRuntime *rt)
-      : dir(dir), runtime(rt) {
   }
 };
 

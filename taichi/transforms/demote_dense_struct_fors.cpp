@@ -74,11 +74,15 @@ void convert_to_range_for(OffloadedStmt *offloaded, bool packed) {
       }
       total_n /= snode->num_cells_per_container;
       extracted = generate_div(&body_header, extracted, total_n);
+      bool is_first_extraction = true;
       for (int j = 0; j < (int)physical_indices.size(); j++) {
         auto p = physical_indices[j];
         auto ext = snode->extractors[p];
+        if (!ext.active) continue;
         Stmt *index = extracted;
-        if (j != 0) {  // first extraction doesn't need a mod
+        if (is_first_extraction) {  // first extraction doesn't need a mod
+          is_first_extraction = false;
+        } else {
           index = generate_mod(&body_header, index, ext.acc_shape * ext.shape);
         }
         index = generate_div(&body_header, index, ext.acc_shape);

@@ -55,6 +55,11 @@ if(CCACHE_PROGRAM)
     set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
 endif()
 
+# This compiles all the libraries with -fPIC, which is critical to link a static
+# library into a shared lib.
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+
 option(USE_LLD "Use lld (from llvm) linker" OFF)
 option(USE_MOLD "Use mold (A Modern Linker)" OFF)
 

@@ -119,10 +119,6 @@ if (TI_WITH_CC)
   list(APPEND TAICHI_CORE_SOURCE ${TAICHI_CC_SOURCE})
 endif()
 
-# This compiles all the libraries with -fPIC, which is critical to link a static
-# library into a shared lib.
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-
 set(CORE_LIBRARY_NAME taichi_core)
 add_library(${CORE_LIBRARY_NAME} OBJECT ${TAICHI_CORE_SOURCE})
 

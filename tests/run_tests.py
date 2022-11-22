@@ -348,7 +348,7 @@ def test():
         os.environ['TI_WANTED_ARCHS'] = arch
 
     args.with_offline_cache = True
-    args.rerun_with_offline_cache = 0
+    args.rerun_with_offline_cache = 1
     if args.with_offline_cache:
         run_count += args.rerun_with_offline_cache
         args.timeout *= run_count

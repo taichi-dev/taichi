@@ -60,11 +60,9 @@ struct ZipArchiveVirtualDir : public VirtualDir {
     f.seekg(std::ios::beg);
     f.read((char *)archive_data.data(), archive_data.size());
 
-    return from_zip(archive_data.data(), archive_data.size());
-  }
-  static std::unique_ptr<VirtualDir> from_zip(const void *data, size_t size) {
     zip::ZipArchive archive;
-    bool succ = zip::ZipArchive::try_from_bytes(data, size, archive);
+    bool succ = zip::ZipArchive::try_from_bytes(archive_data.data(),
+                                                archive_data.size(), archive);
     if (!succ) {
       return nullptr;
     }
@@ -121,15 +119,6 @@ std::unique_ptr<VirtualDir> VirtualDir::open(const std::string &path) {
     // seems `<filesystem>` is only supported in MSVC.
     return FilesystemVirtualDir::create(path);
   }
-}
-
-std::unique_ptr<VirtualDir> VirtualDir::from_zip(const void *data,
-                                                 size_t size) {
-  return ZipArchiveVirtualDir::from_zip(data, size);
-}
-std::unique_ptr<VirtualDir> VirtualDir::from_fs_dir(
-    const std::string &base_dir) {
-  return FilesystemVirtualDir::create(base_dir);
 }
 
 }  // namespace io

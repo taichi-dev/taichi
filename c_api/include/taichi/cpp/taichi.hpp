@@ -663,20 +663,20 @@ class Event {
 
 class CapabilityLevelConfigBuilder;
 class CapabilityLevelConfig {
-  std::vector<TiCapabilityLevelInfo> inner;
-
  public:
-  CapabilityLevelConfig() : inner() {
+  std::vector<TiCapabilityLevelInfo> cap_level_infos;
+
+  CapabilityLevelConfig() : cap_level_infos() {
   }
   CapabilityLevelConfig(std::vector<TiCapabilityLevelInfo> &&capabilities)
-      : inner(std::move(capabilities)) {
+      : cap_level_infos(std::move(capabilities)) {
   }
 
   static CapabilityLevelConfigBuilder build();
 
   uint32_t get(TiCapability capability) const {
-    for (size_t i = 0; i < inner.size(); ++i) {
-      const TiCapabilityLevelInfo &cap_level_info = inner.at(i);
+    for (size_t i = 0; i < cap_level_infos.size(); ++i) {
+      const TiCapabilityLevelInfo &cap_level_info = cap_level_infos.at(i);
       if (cap_level_info.capability == capability) {
         return cap_level_info.level;
       }
@@ -685,8 +685,8 @@ class CapabilityLevelConfig {
   }
 
   void set(TiCapability capability, uint32_t level) {
-    std::vector<TiCapabilityLevelInfo>::iterator it = inner.begin();
-    for (; it != inner.end(); ++it) {
+    std::vector<TiCapabilityLevelInfo>::iterator it = cap_level_infos.begin();
+    for (; it != cap_level_infos.end(); ++it) {
       if (it->capability == capability) {
         it->level = level;
         return;
@@ -695,16 +695,16 @@ class CapabilityLevelConfig {
     TiCapabilityLevelInfo cap_level_info{};
     cap_level_info.capability = capability;
     cap_level_info.level = level;
-    inner.emplace_back(std::move(cap_level_info));
+    cap_level_infos.emplace_back(std::move(cap_level_info));
   }
 };
 
 class CapabilityLevelConfigBuilder {
   typedef CapabilityLevelConfigBuilder Self;
-  std::map<TiCapability, uint32_t> inner;
+  std::map<TiCapability, uint32_t> cap_level_infos;
 
  public:
-  CapabilityLevelConfigBuilder() : inner() {
+  CapabilityLevelConfigBuilder() : cap_level_infos() {
   }
   CapabilityLevelConfigBuilder(const Self &) = delete;
   Self &operator=(const Self &) = delete;
@@ -712,11 +712,11 @@ class CapabilityLevelConfigBuilder {
   Self &spirv_version(uint32_t major, uint32_t minor) {
     if (major == 1) {
       if (minor == 3) {
-        inner[TI_CAPABILITY_SPIRV_VERSION] = 0x10300;
+        cap_level_infos[TI_CAPABILITY_SPIRV_VERSION] = 0x10300;
       } else if (minor == 4) {
-        inner[TI_CAPABILITY_SPIRV_VERSION] = 0x10400;
+        cap_level_infos[TI_CAPABILITY_SPIRV_VERSION] = 0x10400;
       } else if (minor == 5) {
-        inner[TI_CAPABILITY_SPIRV_VERSION] = 0x10500;
+        cap_level_infos[TI_CAPABILITY_SPIRV_VERSION] = 0x10500;
       } else {
         ti_set_last_error(TI_ERROR_ARGUMENT_OUT_OF_RANGE, "minor");
       }
@@ -726,92 +726,92 @@ class CapabilityLevelConfigBuilder {
     return *this;
   }
   Self &spirv_has_int8(bool value = true) {
-    inner[TI_CAPABILITY_SPIRV_HAS_INT8] = value ? TI_TRUE : TI_FALSE;
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_INT8] = value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_int16(bool value = true) {
-    inner[TI_CAPABILITY_SPIRV_HAS_INT16] = value ? TI_TRUE : TI_FALSE;
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_INT16] = value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_int64(bool value = true) {
-    inner[TI_CAPABILITY_SPIRV_HAS_INT64] = value ? TI_TRUE : TI_FALSE;
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_INT64] = value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_float16(bool value = true) {
-    inner[TI_CAPABILITY_SPIRV_HAS_FLOAT16] = value ? TI_TRUE : TI_FALSE;
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_FLOAT16] = value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_float64(bool value = true) {
-    inner[TI_CAPABILITY_SPIRV_HAS_FLOAT64] = value ? TI_TRUE : TI_FALSE;
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_FLOAT64] = value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_atomic_i64(bool value = true) {
-    inner[TI_CAPABILITY_SPIRV_HAS_ATOMIC_I64] = value ? TI_TRUE : TI_FALSE;
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_ATOMIC_I64] = value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_atomic_float16(bool value = true) {
-    inner[TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT16] = value ? TI_TRUE : TI_FALSE;
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT16] = value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_atomic_float16_add(bool value = true) {
-    inner[TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT16_ADD] =
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT16_ADD] =
         value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_atomic_float16_minmax(bool value = true) {
-    inner[TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT16_MINMAX] =
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT16_MINMAX] =
         value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_atomic_float64(bool value = true) {
-    inner[TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT64] = value ? TI_TRUE : TI_FALSE;
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT64] = value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_atomic_float64_add(bool value = true) {
-    inner[TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT64_ADD] =
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT64_ADD] =
         value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_variable_ptr(bool value = true) {
-    inner[TI_CAPABILITY_SPIRV_HAS_VARIABLE_PTR] = value ? TI_TRUE : TI_FALSE;
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_VARIABLE_PTR] = value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_physical_storage_buffer(bool value = true) {
-    inner[TI_CAPABILITY_SPIRV_HAS_PHYSICAL_STORAGE_BUFFER] =
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_PHYSICAL_STORAGE_BUFFER] =
         value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_subgroup_basic(bool value = true) {
-    inner[TI_CAPABILITY_SPIRV_HAS_SUBGROUP_BASIC] = value ? TI_TRUE : TI_FALSE;
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_SUBGROUP_BASIC] = value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_subgroup_vote(bool value = true) {
-    inner[TI_CAPABILITY_SPIRV_HAS_SUBGROUP_VOTE] = value ? TI_TRUE : TI_FALSE;
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_SUBGROUP_VOTE] = value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_subgroup_arithmetic(bool value = true) {
-    inner[TI_CAPABILITY_SPIRV_HAS_SUBGROUP_ARITHMETIC] =
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_SUBGROUP_ARITHMETIC] =
         value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_subgroup_ballot(bool value = true) {
-    inner[TI_CAPABILITY_SPIRV_HAS_SUBGROUP_BALLOT] = value ? TI_TRUE : TI_FALSE;
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_SUBGROUP_BALLOT] = value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_non_semantic_info(bool value = true) {
-    inner[TI_CAPABILITY_SPIRV_HAS_NON_SEMANTIC_INFO] =
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_NON_SEMANTIC_INFO] =
         value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_no_integer_wrap_decoration(bool value = true) {
-    inner[TI_CAPABILITY_SPIRV_HAS_NO_INTEGER_WRAP_DECORATION] =
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_NO_INTEGER_WRAP_DECORATION] =
         value ? TI_TRUE : TI_FALSE;
     return *this;
   }
 
   CapabilityLevelConfig build() {
     std::vector<TiCapabilityLevelInfo> cap_level_infos{};
-    for (const auto &pair : inner) {
+    for (const auto &pair : cap_level_infos) {
       TiCapabilityLevelInfo cap_level_info{};
       cap_level_info.capability = pair.first;
       cap_level_info.level = pair.second;
@@ -874,14 +874,14 @@ class Runtime {
                                     capabilities.data());
   }
   void set_capabilities_ext(const CapabilityLevelConfig &capabilities) {
-    ti_set_runtime_capabilities_ext(runtime_, capabilities.inner);
+    set_capabilities_ext(runtime_, capabilities.cap_level_infos);
   }
   CapabilityLevelConfig get_capabilities() const {
     uint32_t n = 0;
     ti_get_runtime_capabilities(runtime_, &n, nullptr);
     std::vector<TiCapabilityLevelInfo> devcaps(n);
     ti_get_runtime_capabilities(runtime_, &n, devcaps.data());
-    return CapabilityLevelConfig{std::move(out)};
+    return CapabilityLevelConfig{std::move(devcaps)};
   }
 
   Memory allocate_memory(const TiMemoryAllocateInfo &allocate_info) {

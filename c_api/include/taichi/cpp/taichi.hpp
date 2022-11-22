@@ -797,14 +797,6 @@ class Runtime {
     return load_aot_module(path.c_str());
   }
 
-  AotModule create_aot_module(const void *tcm, size_t size) {
-    TiAotModule aot_module = ti_create_aot_module(runtime_, tcm, size);
-    return AotModule(runtime_, aot_module, true);
-  }
-  AotModule create_aot_module(const std::vector<uint8_t> &tcm) {
-    return create_aot_module(tcm.data(), tcm.size());
-  }
-
   void copy_memory_device_to_device(const TiMemorySlice &dst_memory,
                                     const TiMemorySlice &src_memory) {
     ti_copy_memory_device_to_device(runtime_, &dst_memory, &src_memory);

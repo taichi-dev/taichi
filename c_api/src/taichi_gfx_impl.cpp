@@ -4,15 +4,14 @@
 GfxRuntime::GfxRuntime(taichi::Arch arch) : Runtime(arch) {
 }
 
-Error GfxRuntime::create_aot_module(const taichi::io::VirtualDir *dir,
-                                    TiAotModule &out) {
+TiAotModule GfxRuntime::load_aot_module(const char *module_path) {
   taichi::lang::gfx::AotModuleParams params{};
-  params.dir = dir;
+  params.module_path = module_path;
   params.runtime = &get_gfx_runtime();
   std::unique_ptr<taichi::lang::aot::Module> aot_module =
       taichi::lang::aot::Module::load(arch, params);
   if (aot_module->is_corrupted()) {
-    return Error(TI_ERROR_CORRUPTED_DATA, "aot_module");
+    return TI_NULL_HANDLE;
   }
 
   const taichi::lang::DeviceCapabilityConfig &current_devcaps =
@@ -22,16 +21,15 @@ Error GfxRuntime::create_aot_module(const taichi::io::VirtualDir *dir,
   for (const auto &pair : required_devcaps.devcaps) {
     uint32_t current_version = current_devcaps.get(pair.first);
     uint32_t required_version = pair.second;
-    if (current_version != required_version) {
-      return Error(TI_ERROR_INCOMPATIBLE_MODULE,
-                   taichi::lang::to_string(pair.first).c_str());
+    if (current_version == required_version) {
+      ti_set_last_error(TI_ERROR_INCOMPATIBLE_MODULE,
+                        taichi::lang::to_string(pair.first).c_str());
     }
   }
 
   size_t root_size = aot_module->get_root_size();
   params.runtime->add_root_buffer(root_size);
-  out = (TiAotModule) new AotModule(*this, std::move(aot_module));
-  return Error();
+  return (TiAotModule)(new AotModule(*this, std::move(aot_module)));
 }
 void GfxRuntime::buffer_copy(const taichi::lang::DevicePtr &dst,
                              const taichi::lang::DevicePtr &src,

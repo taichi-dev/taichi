@@ -4,7 +4,6 @@
 #include "taichi_llvm_impl.h"
 #include "taichi/program/ndarray.h"
 #include "taichi/program/texture.h"
-#include "taichi/common/virtual_dir.h"
 
 struct ErrorCache {
   TiError error{TI_ERROR_SUCCESS};
@@ -22,7 +21,7 @@ const char *describe_error(TiError error) {
     case TI_ERROR_NOT_SUPPORTED:
       return "not supported";
     case TI_ERROR_CORRUPTED_DATA:
-      return "corrupted data";
+      return "path not found";
     case TI_ERROR_NAME_NOT_FOUND:
       return "name not found";
     case TI_ERROR_INVALID_ARGUMENT:
@@ -493,8 +492,6 @@ TiAotModule ti_load_aot_module(TiRuntime runtime, const char *module_path) {
   TI_CAPI_ARGUMENT_NULL_RV(runtime);
   TI_CAPI_ARGUMENT_NULL_RV(module_path);
 
-  // (penguinliong) Should call `create_aot_module` directly after all backends
-  // adapted to it.
   TiAotModule aot_module = ((Runtime *)runtime)->load_aot_module(module_path);
 
   if (aot_module == TI_NULL_HANDLE) {
@@ -502,26 +499,6 @@ TiAotModule ti_load_aot_module(TiRuntime runtime, const char *module_path) {
     return TI_NULL_HANDLE;
   }
   out = aot_module;
-  TI_CAPI_TRY_CATCH_END();
-  return out;
-}
-TiAotModule ti_create_aot_module(TiRuntime runtime,
-                                 const void *tcm,
-                                 uint64_t size) {
-  TiAotModule out = TI_NULL_HANDLE;
-  TI_CAPI_TRY_CATCH_BEGIN();
-  TI_CAPI_ARGUMENT_NULL_RV(runtime);
-  TI_CAPI_ARGUMENT_NULL_RV(tcm);
-
-  auto dir = taichi::io::VirtualDir::from_zip(tcm, size);
-  if (dir == TI_NULL_HANDLE) {
-    ti_set_last_error(TI_ERROR_CORRUPTED_DATA, "tcm");
-    return TI_NULL_HANDLE;
-  }
-
-  Error err = ((Runtime *)runtime)->create_aot_module(dir.get(), out);
-  err.set_last_error();
-
   TI_CAPI_TRY_CATCH_END();
   return out;
 }

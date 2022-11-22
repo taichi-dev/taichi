@@ -25,6 +25,11 @@
         }                                                                      \
   }
 
+#define INSTANTIATE_SPMV(type, storage)                               \
+  template void                                                       \
+  EigenSparseMatrix<Eigen::SparseMatrix<type, Eigen::storage>>::spmv( \
+      Program *prog, const Ndarray &x, const Ndarray &y);
+
 namespace {
 using Pair = std::pair<std::string, std::string>;
 struct key_hash {
@@ -225,6 +230,31 @@ void EigenSparseMatrix<EigenMatrix>::build_triplets(void *triplets_adr) {
     TI_ERROR("Unsupported sparse matrix data type {}!", sdtype);
   }
 }
+
+template <class EigenMatrix>
+void EigenSparseMatrix<EigenMatrix>::spmv(Program *prog,
+                                          const Ndarray &x,
+                                          const Ndarray &y) {
+  size_t dX = prog->get_ndarray_data_ptr_as_int(&x);
+  size_t dY = prog->get_ndarray_data_ptr_as_int(&y);
+  std::string sdtype = taichi::lang::data_type_name(dtype_);
+  if (sdtype == "f32") {
+    Eigen::Map<Eigen::VectorXf>((float *)dY, cols_) =
+        matrix_.template cast<float>() *
+        Eigen::Map<Eigen::VectorXf>((float *)dX, cols_);
+  } else if (sdtype == "f64") {
+    Eigen::Map<Eigen::VectorXd>((double *)dY, cols_) =
+        matrix_.template cast<double>() *
+        Eigen::Map<Eigen::VectorXd>((double *)dX, cols_);
+  } else {
+    TI_ERROR("Unsupported sparse matrix data type {}!", sdtype);
+  }
+}
+
+INSTANTIATE_SPMV(float32, ColMajor)
+INSTANTIATE_SPMV(float32, RowMajor)
+INSTANTIATE_SPMV(float64, ColMajor)
+INSTANTIATE_SPMV(float64, RowMajor)
 
 std::unique_ptr<SparseMatrix> make_sparse_matrix(
     int rows,
@@ -652,7 +682,7 @@ std::unique_ptr<SparseMatrix> CuSparseMatrix::transpose() const {
 #endif
 }
 
-void CuSparseMatrix::spmv(Program *prog, const Ndarray &x, Ndarray &y) {
+void CuSparseMatrix::spmv(Program *prog, const Ndarray &x, const Ndarray &y) {
 #if defined(TI_WITH_CUDA)
   size_t dX = prog->get_ndarray_data_ptr_as_int(&x);
   size_t dY = prog->get_ndarray_data_ptr_as_int(&y);

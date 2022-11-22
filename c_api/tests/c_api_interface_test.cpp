@@ -72,6 +72,8 @@ TEST_F(CapiTest, SetCapabilities) {
         auto devcaps = ti::CapabilityLevelConfig::build()
                            .spirv_version(1, 5)
                            .spirv_has_atomic_float64()
+                           .spirv_has_atomic_float64(false)
+                           .spirv_has_atomic_float64(true)
                            .build();
         runtime.set_capabilities_ext(devcaps);
         auto devcaps2 = runtime.get_capabilities();
@@ -79,10 +81,8 @@ TEST_F(CapiTest, SetCapabilities) {
         TI_ASSERT(devcaps2.get(TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT64_ADD) ==
                   0);
         TI_ASSERT(devcaps2.get(TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT64) ==
-                  0x10500);
+                  1);
       }
-
-      auto devcaps = runtime.get_capabilities();
     }
   }
 }

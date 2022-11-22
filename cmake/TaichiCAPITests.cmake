@@ -25,6 +25,7 @@ if (WIN32)
 endif()
 target_link_libraries(${C_API_TESTS_NAME} PRIVATE taichi_c_api)
 target_link_libraries(${C_API_TESTS_NAME} PRIVATE gtest_main)
+target_link_libraries(${C_API_TESTS_NAME} PUBLIC ${BACKWARD_ENABLE})
 
 target_include_directories(${C_API_TESTS_NAME}
   PRIVATE

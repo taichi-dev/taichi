@@ -13,6 +13,8 @@ from taichi.types import ndarray_type, texture_type, vector
 from taichi.types.annotations import template
 from taichi.types.primitive_types import f16, f32, f64, i32, u8
 
+from taichi.math import vec3
+
 
 # A set of helper (meta)functions
 @kernel
@@ -257,8 +259,7 @@ def load_texture_from_numpy(tex: texture_type.rw_texture(num_dimensions=2,
                                                          num_channels=4,
                                                          channel_format=u8,
                                                          lod=0),
-                            img: ndarray_type.ndarray(field_dim=2,
-                                                      element_shape=(3, ))):
+                            img: ndarray_type.ndarray(dtype=vec3, ndim=2)):
     for i, j in img:
         tex.store(
             vector(2, i32)([i, j]),
@@ -271,8 +272,7 @@ def save_texture_to_numpy(tex: texture_type.rw_texture(num_dimensions=2,
                                                        num_channels=4,
                                                        channel_format=u8,
                                                        lod=0),
-                          img: ndarray_type.ndarray(field_dim=2,
-                                                    element_shape=(3, ))):
+                          img: ndarray_type.ndarray(dtype=vec3, ndim=2)):
     for i, j in img:
         img[i, j] = ops.round(tex.load(vector(2, i32)([i, j])).rgb * 255)
 

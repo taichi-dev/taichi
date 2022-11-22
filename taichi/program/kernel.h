@@ -119,8 +119,6 @@ class TI_DLL_EXPORT Kernel : public Callable {
 
   void set_arch(Arch arch);
 
-  void account_for_offloaded(OffloadedStmt *stmt);
-
   uint64 get_next_task_id() {
     return task_counter_++;
   }

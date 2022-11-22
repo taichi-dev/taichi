@@ -22,8 +22,19 @@
 namespace taichi::lang {
 
 class SparseSolver {
+ protected:
+  int rows_{0};
+  int cols_{0};
+  DataType dtype_{PrimitiveType::f32};
+  bool is_initialized_{false};
+
  public:
   virtual ~SparseSolver() = default;
+  void init_solver(const int rows, const int cols, const DataType dtype) {
+    rows_ = rows;
+    cols_ = cols;
+    dtype_ = dtype;
+  }
   virtual bool compute(const SparseMatrix &sm) = 0;
   virtual void analyze_pattern(const SparseMatrix &sm) = 0;
   virtual void factorize(const SparseMatrix &sm) = 0;

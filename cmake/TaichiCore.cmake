@@ -1,6 +1,5 @@
 option(USE_STDCPP "Use -stdlib=libc++" OFF)
 option(TI_WITH_LLVM "Build with LLVM backends" ON)
-option(TI_LLVM_15 "Switch to LLVM 15" ON)
 option(TI_WITH_METAL "Build with the Metal backend" ON)
 option(TI_WITH_CUDA "Build with the CUDA backend" ON)
 option(TI_WITH_CUDA_TOOLKIT "Build with the CUDA toolkit" OFF)
@@ -96,12 +95,6 @@ file(GLOB TAICHI_CORE_SOURCE
 
 if(TI_WITH_LLVM)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_LLVM")
-endif()
-
-if (TI_LLVM_15)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_LLVM_15")
-else()
-    set(TI_WITH_DX12 OFF)
 endif()
 
 ## This version var is only used to locate slim_libdevice.10.bc

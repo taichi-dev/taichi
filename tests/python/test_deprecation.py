@@ -30,3 +30,42 @@ def test_deprecated_matrix_rotation2d():
             r'`ti.Matrix.rotation2d\(\)` will be removed in release v1.4.0. Use `ti.math.rotation2d\(\)` instead.'
     ):
         a = ti.Matrix.rotation2d(math.pi / 2)
+
+
+@test_utils.test()
+def test_deprecate_element_shape_ndarray_annotation():
+    with pytest.warns(
+            DeprecationWarning,
+            match=
+            'The element_dim and element_shape arguments for ndarray will be deprecated in v1.4.0, use matrix dtype instead.'
+    ):
+
+        @ti.kernel
+        def func(x: ti.types.ndarray(element_shape=(3, ))):
+            pass
+
+
+@test_utils.test()
+def test_deprecate_element_dim_ndarray_annotation():
+    with pytest.warns(
+            DeprecationWarning,
+            match=
+            'The element_dim and element_shape arguments for ndarray will be deprecated in v1.4.0, use matrix dtype instead.'
+    ):
+
+        @ti.kernel
+        def func(x: ti.types.ndarray(element_dim=2)):
+            pass
+
+
+@test_utils.test()
+def test_deprecate_field_dim_ndarray_annotation():
+    with pytest.warns(
+            DeprecationWarning,
+            match=
+            "The field_dim argument for ndarray will be deprecated in v1.4.0, use ndim instead."
+    ):
+
+        @ti.kernel
+        def func(x: ti.types.ndarray(field_dim=(16, 16))):
+            pass

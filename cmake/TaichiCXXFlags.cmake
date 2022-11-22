@@ -74,6 +74,17 @@ endif()
     # [Global] By evaluating "constexpr", compiler throws a warning for functions known to be dead at compile time.
     # However, some of these "constexpr" are debug flags and will be manually enabled upon debugging.
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unneeded-internal-declaration ")
+
+    # CLANG_VERSION_MAJOR is set in check_clang_version
+    if (${CLANG_VERSION_MAJOR} VERSION_GREATER_EQUAL 15)
+      # [Global] FIXME: Newly introduced flag in clang-15
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unqualified-std-cast-call ")
+    endif()
+
+    if (${CLANG_VERSION_MAJOR} VERSION_GREATER_EQUAL 13)
+      # [Global] FIXME: Newly introduced flag in clang-13
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-but-set-variable ")
+    endif()
 endif ()
 
 message("Building for processor ${CMAKE_SYSTEM_PROCESSOR}")

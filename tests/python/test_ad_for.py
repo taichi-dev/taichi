@@ -980,3 +980,33 @@ def test_multiple_ib_inner_mixed():
 
     assert y[None] == 78.0
     assert x.grad[None] == 78.0
+
+
+@test_utils.test(require=ti.extension.adstack)
+def test_ib_global_load():
+    N = 10
+    a = ti.field(ti.f32, shape=N, needs_grad=True)
+    b = ti.field(ti.i32, shape=N)
+    p = ti.field(ti.f32, shape=N, needs_grad=True)
+
+    @ti.kernel
+    def compute():
+        for i in range(N):
+            val = a[i]
+            for j in range(b[i]):
+                p[i] += i
+            p[i] = val * i
+
+    for i in range(N):
+        a[i] = i
+        b[i] = 2
+
+    compute()
+
+    for i in range(N):
+        assert p[i] == i * i
+        p.grad[i] = 1
+
+    compute.grad()
+    for i in range(N):
+        assert a.grad[i] == i

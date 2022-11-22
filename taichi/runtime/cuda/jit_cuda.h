@@ -15,11 +15,7 @@
 #include "llvm/Transforms/IPO.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include "llvm/Analysis/TargetTransformInfo.h"
-#ifdef TI_LLVM_15
 #include "llvm/MC/TargetRegistry.h"
-#else
-#include "llvm/Support/TargetRegistry.h"
-#endif
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h"
 

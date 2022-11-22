@@ -365,19 +365,19 @@ def _test_func_ndarray_arg():
     vec3 = ti.types.vector(3, ti.f32)
 
     @ti.func
-    def test(a: ti.types.ndarray(field_dim=1)):
+    def test(a: ti.types.ndarray(ndim=1)):
         a[0] = [100, 100, 100]
 
     @ti.kernel
-    def test_k(x: ti.types.ndarray(field_dim=1)):
+    def test_k(x: ti.types.ndarray(ndim=1)):
         test(x)
 
     @ti.func
-    def test_error_func(a: ti.types.ndarray(field_dim=1, element_dim=1)):
-        a[0] = [100, 100, 100]
+    def test_error_func(a: ti.types.ndarray(dtype=ti.math.vec2, ndim=1)):
+        a[0] = [100, 100]
 
     @ti.kernel
-    def test_error(x: ti.types.ndarray(field_dim=1)):
+    def test_error(x: ti.types.ndarray(ndim=1)):
         test_error_func(x)
 
     arr = ti.ndarray(vec3, shape=(4))

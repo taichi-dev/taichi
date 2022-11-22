@@ -819,14 +819,14 @@ class CapabilityLevelConfigBuilder {
   }
 
   CapabilityLevelConfig build() {
-    std::vector<TiCapabilityLevelInfo> cap_level_infos{};
+    std::vector<TiCapabilityLevelInfo> out{};
     for (const auto &pair : cap_level_infos) {
       TiCapabilityLevelInfo cap_level_info{};
       cap_level_info.capability = pair.first;
       cap_level_info.level = pair.second;
-      cap_level_infos.emplace_back(std::move(cap_level_info));
+      out.emplace_back(std::move(cap_level_info));
     }
-    return CapabilityLevelConfig{std::move(cap_level_infos)};
+    return CapabilityLevelConfig{std::move(out)};
   }
 };
 

@@ -153,7 +153,9 @@ class TaichiLLVMContext {
 
   static int num_instructions(llvm::Function *func);
 
-  void insert_nvvm_annotation(llvm::Function *func, std::string key, int val);
+  static void insert_nvvm_annotation(llvm::Function *func,
+                                     std::string key,
+                                     int val);
 
   std::unique_ptr<llvm::Module> clone_module_to_this_thread_context(
       llvm::Module *module);

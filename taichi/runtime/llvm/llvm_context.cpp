@@ -664,9 +664,11 @@ void TaichiLLVMContext::insert_nvvm_annotation(llvm::Function *func,
                float addrspace(1)*)* @kernel, !"kernel", i32 1}
   *******************************************************************/
   auto ctx = &func->getParent()->getContext();
-  llvm::Metadata *md_args[] = {llvm::ValueAsMetadata::get(func),
-                               MDString::get(*ctx, key),
-                               llvm::ValueAsMetadata::get(get_constant(val))};
+  llvm::Metadata *md_args[] = {
+      llvm::ValueAsMetadata::get(func), MDString::get(*ctx, key),
+      llvm::ValueAsMetadata::get(llvm::ConstantInt::get(
+          *ctx, llvm::APInt(sizeof(val) * 8, (uint64)val,
+                            std::is_signed_v<decltype(val)>)))};
 
   MDNode *md_node = MDNode::get(*ctx, md_args);
 

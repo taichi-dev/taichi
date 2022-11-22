@@ -128,13 +128,18 @@ option(TI_WITH_PYTHON "Build with Python language binding" ON)
 if (TI_WITH_PYTHON AND NOT ANDROID)
     include(cmake/PythonNumpyPybind11.cmake)
 endif()
+
+if (TI_BUILD_TESTS)
+  add_subdirectory(external/googletest EXCLUDE_FROM_ALL)
+  add_subdirectory(external/backward_cpp)
+endif()
+
 include(cmake/TaichiCXXFlags.cmake)
 include(cmake/TaichiCore.cmake)
 
 option(TI_BUILD_TESTS "Build the CPP tests" OFF)
 
 if (TI_BUILD_TESTS)
-  add_subdirectory(external/googletest EXCLUDE_FROM_ALL)
   include(cmake/TaichiTests.cmake)
 endif()
 

@@ -439,6 +439,13 @@ if(TI_WITH_PYTHON)
         target_link_options(${CORE_WITH_PYBIND_LIBRARY_NAME} PUBLIC -Wl,--exclude-libs=ALL)
     endif()
 
+    if (TI_BUILD_TESTS)
+        # Defined by external/backward-cpp:
+        # This will add libraries, definitions and include directories needed by backward
+        # by setting each property on the target.
+        target_link_libraries(${CORE_WITH_PYBIND_LIBRARY_NAME} PUBLIC ${BACKWARD_ENABLE})
+    endif()
+
     if(TI_WITH_GGUI)
         target_compile_definitions(${CORE_WITH_PYBIND_LIBRARY_NAME} PRIVATE -DTI_WITH_GGUI)
         target_link_libraries(${CORE_WITH_PYBIND_LIBRARY_NAME} PRIVATE taichi_ui_vulkan)

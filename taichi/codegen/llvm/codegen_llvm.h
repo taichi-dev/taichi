@@ -60,6 +60,7 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   bool returned{false};
   std::unordered_set<int> used_tree_ids;
   std::unordered_set<int> struct_for_tls_sizes;
+  Function *now_real_func{nullptr};
 
   std::unordered_map<const Stmt *, std::vector<llvm::Value *>> loop_vars_llvm;
 
@@ -93,6 +94,8 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   llvm::Type *get_xlogue_function_type();
 
   llvm::Type *get_mesh_xlogue_function_type();
+
+  llvm::Type *get_real_func_ret_type(Function *real_func);
 
   llvm::Value *get_root(int snode_tree_id);
 

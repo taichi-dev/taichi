@@ -68,15 +68,15 @@ void convert_to_range_for(OffloadedStmt *offloaded, bool packed) {
   if (packed) {  // no dependence on POT
     for (int i = 0; i < (int)snodes.size(); i++) {
       auto snode = snodes[i];
-      auto extracted =
-          generate_mod_x_div_y(&body_header, main_loop_var, total_n,
-                               total_n / snode->num_cells_per_container);
+      auto old_total_n = total_n;
       total_n /= snode->num_cells_per_container;
+      auto extracted = i == 0 ? main_loop_var : generate_mod(&body_header, main_loop_var, old_total_n);  // first extraction doesn't need a mod
+      extracted = generate_div(&body_header, extracted, total_n);
       for (int j = 0; j < (int)physical_indices.size(); j++) {
         auto p = physical_indices[j];
         auto ext = snode->extractors[p];
-        auto index = generate_mod_x_div_y(
-            &body_header, extracted, ext.acc_shape * ext.shape, ext.acc_shape);
+        auto index = j == 0 ? extracted : generate_mod(&body_header, extracted, ext.acc_shape * ext.shape);  // first extraction doesn't need a mod
+        index = generate_div(&body_header, index, ext.acc_shape);
         total_shape[p] /= ext.shape;
         auto multiplier =
             body_header.push_back<ConstStmt>(TypedConstant(total_shape[p]));

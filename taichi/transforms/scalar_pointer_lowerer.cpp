@@ -82,17 +82,16 @@ void ScalarPointerLowerer::run() {
         const int prev = total_shape[k];
         total_shape[k] /= snode->extractors[k].shape;
         const int next = total_shape[k];
+        // Upon first extraction on axis k, "indices_[k_]" is the user
+        // coordinate on axis k and "prev" is the total shape of axis k.
+        // Unless it is an invalid out-of-bound access, we can assume
+        // "indices_[k_] < prev" so we don't need a mod here.
         if (is_first_extraction[k]) {
-          // Upon first extraction on axis k, "indices_[k_]" is the user
-          // coordinate on axis k and "prev" is the total shape of axis k.
-          // Unless it is an invalid out-of-bound access, we can assume
-          // "indices_[k_] < prev" so we don't need a mod here.
-          auto const_next = lowered_->push_back<ConstStmt>(TypedConstant(next));
-          extracted = lowered_->push_back<BinaryOpStmt>(
-              BinaryOpType::div, indices_[k_], const_next);
+          extracted = indices_[k];
         } else {
-          extracted = generate_mod_x_div_y(lowered_, indices_[k_], prev, next);
+          extracted = generate_mod(lowered_, indices_[k], prev);
         }
+        extracted = generate_div(lowered_, extracted, next);
       } else {
         const int end = start_bits[k];
         start_bits[k] -= snode->extractors[k].num_bits;

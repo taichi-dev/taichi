@@ -31,66 +31,68 @@ class NonLinearOps {
 
 class IndependentBlocksJudger : public BasicStmtVisitor {
  public:
-  inline static const std::set<TernaryOpType> stack_needed_ternary_collections{
+  inline static const std::set<TernaryOpType> ternary_collections{
       TernaryOpType::select};
-  inline static const std::set<UnaryOpType> stack_needed_unary_collections{
+  inline static const std::set<UnaryOpType> unary_collections{
       UnaryOpType::abs,  UnaryOpType::sin,  UnaryOpType::cos,
       UnaryOpType::tanh, UnaryOpType::asin, UnaryOpType::acos,
       UnaryOpType::exp,  UnaryOpType::log,  UnaryOpType::sqrt};
-  inline static const std::set<BinaryOpType> stack_needed_binary_collections{
+  inline static const std::set<BinaryOpType> binary_collections{
       BinaryOpType::mul, BinaryOpType::div, BinaryOpType::atan2,
       BinaryOpType::pow};
+};
+
+class IndependentBlocksJudger : public BasicStmtVisitor {
+ public:
   using BasicStmtVisitor::visit;
 
-  // // Check whether the target stmt is used by the UnaryOpStmts who requires
-  // the
-  // // ad stack
-  // void visit(UnaryOpStmt *stmt) override {
-  //   if (stack_needed_unary_collections.find(stmt->op_type) !=
-  //       stack_needed_unary_collections.end()) {
-  //     if (stmt->operand->is<GlobalLoadStmt>())
-  //       record_required_glb_ptrs_.insert(
-  //           stmt->operand->as<GlobalLoadStmt>()->src);
-  //   }
-  // }
+  // Check whether the target stmt is used by the UnaryOpStmts who requires
+  // the ad stack
+  void visit(UnaryOpStmt *stmt) override {
+    if (NonLinearOps::unary_collections.find(stmt->op_type) !=
+        NonLinearOps::unary_collections.end()) {
+      if (stmt->operand->is<GlobalLoadStmt>())
+        record_required_glb_ptrs_.insert(
+            stmt->operand->as<GlobalLoadStmt>()->src);
+    }
+  }
 
-  // // Check whether the target stmt is used by the BinaryOpStmts who requires
-  // the
-  // // ad stack
-  // void visit(BinaryOpStmt *stmt) override {
-  //   if (stack_needed_binary_collections.find(stmt->op_type) !=
-  //       stack_needed_binary_collections.end()) {
-  //     if (stmt->lhs->is<GlobalLoadStmt>())
-  //       record_required_glb_ptrs_.insert(stmt->lhs->as<GlobalLoadStmt>()->src);
-  //     if (stmt->rhs->is<GlobalLoadStmt>())
-  //       record_required_glb_ptrs_.insert(stmt->rhs->as<GlobalLoadStmt>()->src);
-  //   }
-  // }
+  // Check whether the target stmt is used by the BinaryOpStmts who requires
+  // the ad stack
+  void visit(BinaryOpStmt *stmt) override {
+    if (NonLinearOps::binary_collections.find(stmt->op_type) !=
+        NonLinearOps::binary_collections.end()) {
+      if (stmt->lhs->is<GlobalLoadStmt>())
+        record_required_glb_ptrs_.insert(stmt->lhs->as<GlobalLoadStmt>()->src);
+      if (stmt->rhs->is<GlobalLoadStmt>())
+        record_required_glb_ptrs_.insert(stmt->rhs->as<GlobalLoadStmt>()->src);
+    }
+  }
 
-  // // Check whether the target stmt is used by the TernaryOpStmts who requires
-  // // the ad stack
-  // void visit(TernaryOpStmt *stmt) override {
-  //   if (stack_needed_ternary_collections.find(stmt->op_type) !=
-  //       stack_needed_ternary_collections.end()) {
-  //     if (stmt->op1->is<GlobalLoadStmt>())
-  //       record_required_glb_ptrs_.insert(stmt->op1->as<GlobalLoadStmt>()->src);
-  //     if (stmt->op2->is<GlobalLoadStmt>())
-  //       record_required_glb_ptrs_.insert(stmt->op2->as<GlobalLoadStmt>()->src);
-  //     if (stmt->op3->is<GlobalLoadStmt>())
-  //       record_required_glb_ptrs_.insert(stmt->op3->as<GlobalLoadStmt>()->src);
-  //   }
-  // }
+  // Check whether the target stmt is used by the TernaryOpStmts who requires
+  // the ad stack
+  void visit(TernaryOpStmt *stmt) override {
+    if (NonLinearOps::ternary_collections.find(stmt->op_type) !=
+        NonLinearOps::ternary_collections.end()) {
+      if (stmt->op1->is<GlobalLoadStmt>())
+        record_required_glb_ptrs_.insert(stmt->op1->as<GlobalLoadStmt>()->src);
+      if (stmt->op2->is<GlobalLoadStmt>())
+        record_required_glb_ptrs_.insert(stmt->op2->as<GlobalLoadStmt>()->src);
+      if (stmt->op3->is<GlobalLoadStmt>())
+        record_required_glb_ptrs_.insert(stmt->op3->as<GlobalLoadStmt>()->src);
+    }
+  }
 
-  // // Check whether the target serves as the condition of a if stmt
-  // void visit(IfStmt *stmt) override {
-  //   if (stmt->cond->is<GlobalLoadStmt>())
-  //     record_required_glb_ptrs_.insert(stmt->cond->as<GlobalLoadStmt>()->src);
+  // Check whether the target serves as the condition of a if stmt
+  void visit(IfStmt *stmt) override {
+    if (stmt->cond->is<GlobalLoadStmt>())
+      record_required_glb_ptrs_.insert(stmt->cond->as<GlobalLoadStmt>()->src);
 
-  //   if (stmt->true_statements)
-  //     stmt->true_statements->accept(this);
-  //   if (stmt->false_statements)
-  //     stmt->false_statements->accept(this);
-  // }
+    if (stmt->true_statements)
+      stmt->true_statements->accept(this);
+    if (stmt->false_statements)
+      stmt->false_statements->accept(this);
+  }
 
   void visit(LocalLoadStmt *stmt) override {
     TI_ASSERT(stmt->src->is<AllocaStmt>() || stmt->src->is<MatrixPtrStmt>());
@@ -102,11 +104,11 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
     touched_allocas_.insert(stmt->dest);
   }
 
-  // void visit(GlobalStoreStmt *stmt) override {
-  //   TI_ASSERT(stmt->dest->is<GlobalPtrStmt>());
-  //   if (stmt->dest->as<GlobalPtrStmt>()->snode->has_adjoint())
-  //     overwritten_glb_ptrs_.insert(stmt->dest);
-  // }
+  void visit(GlobalStoreStmt *stmt) override {
+    TI_ASSERT(stmt->dest->is<GlobalPtrStmt>());
+    if (stmt->dest->as<GlobalPtrStmt>()->snode->has_adjoint())
+      overwritten_glb_ptrs_.insert(stmt->dest);
+  }
 
   void visit(AtomicOpStmt *stmt) override {
     // We don't need to check the global atomics inside the range for-loops
@@ -116,8 +118,8 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
     // 2. If the range for-loop is not innermost, they will be processed by
     // another IndependentBlocksJudger
 
-    // if (stmt->dest->as<GlobalPtrStmt>()->snode->has_adjoint())
-    //   overwritten_glb_ptrs_.insert(stmt->dest);
+    if (stmt->dest->as<GlobalPtrStmt>()->snode->has_adjoint())
+      overwritten_glb_ptrs_.insert(stmt->dest);
 
     if (is_inside_loop_)
       return;
@@ -136,11 +138,7 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
     // another IndependentBlocksJudger
     if (is_inside_loop_)
       return;
-<<<<<<< HEAD
     // TODO: handle external ptr stmt after autodiff supporting ndarray
-=======
-    // TODO: Handle the external ptr stmt when autodiff support ndarray
->>>>>>> [WIP] Global stack
     if (stmt->src->is<GlobalPtrStmt>() &&
         stmt->src->as<GlobalPtrStmt>()->snode->has_adjoint()) {
       qualified_glb_operations_ = true;
@@ -1366,7 +1364,7 @@ class MakeAdjoint : public ADTransform {
     insert<GlobalStoreStmt>(adjoint_ptr, zero);
 
     // TODO: preserve the global load and atomic add
-    stmt->parent->erase(stmt);
+    // stmt->parent->erase(stmt);
   }
 
   void visit(AtomicOpStmt *stmt) override {
@@ -1396,7 +1394,7 @@ class MakeAdjoint : public ADTransform {
     accumulate(stmt->val, insert<GlobalLoadStmt>(adjoint_ptr));
 
     // TODO: preserve the global load and atomic add
-    stmt->parent->erase(stmt);
+    // stmt->parent->erase(stmt);
   }
 };
 

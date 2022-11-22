@@ -34,9 +34,52 @@ TEST_F(CapiTest, DryRunCapabilities) {
     {
       ti::Runtime runtime(TI_ARCH_VULKAN);
       auto devcaps = runtime.get_capabilities();
-      auto it = devcaps.find(TI_CAPABILITY_SPIRV_VERSION);
-      assert(it != devcaps.end());
-      assert(it->second >= 0x10000);
+      auto level = devcaps.get(TI_CAPABILITY_SPIRV_VERSION);
+      assert(level >= 0x10000);
+    }
+  }
+}
+
+TEST_F(CapiTest, SetCapabilities) {
+  if (capi::utils::is_vulkan_available()) {
+    // Vulkan Runtime
+    {
+      ti::Runtime runtime(TI_ARCH_VULKAN);
+
+      {
+        auto devcaps = ti::CapabilityLevelConfig::build()
+          .spirv_version(1, 3)
+          .spirv_has_atomic_float64_add()
+          .build();
+        runtime.set_capabilities_ext(devcaps);
+        auto devcaps2 = runtime.get_capabilities();
+        TI_ASSERT(devcaps2.get(TI_CAPABILITY_SPIRV_VERSION) == 0x10300);
+        TI_ASSERT(devcaps2.get(TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT64_ADD) == 1);
+        TI_ASSERT(devcaps2.get(TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT64) == 0);
+      }
+      {
+        auto devcaps = ti::CapabilityLevelConfig::build()
+          .spirv_version(1, 4)
+          .build();
+        runtime.set_capabilities_ext(devcaps);
+        auto devcaps2 = runtime.get_capabilities();
+        TI_ASSERT(devcaps2.get(TI_CAPABILITY_SPIRV_VERSION) == 0x10400);
+        TI_ASSERT(devcaps2.get(TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT64_ADD) == 0);
+        TI_ASSERT(devcaps2.get(TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT64) == 0);
+      }
+      {
+        auto devcaps = ti::CapabilityLevelConfig::build()
+          .spirv_version(1, 5)
+          .spirv_has_atomic_float64()
+          .build();
+        runtime.set_capabilities_ext(devcaps);
+        auto devcaps2 = runtime.get_capabilities();
+        TI_ASSERT(devcaps2.get(TI_CAPABILITY_SPIRV_VERSION) == 0x10500);
+        TI_ASSERT(devcaps2.get(TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT64_ADD) == 0);
+        TI_ASSERT(devcaps2.get(TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT64) == 0x10500);
+      }
+
+      auto devcaps = runtime.get_capabilities();
     }
   }
 }

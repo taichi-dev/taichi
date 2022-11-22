@@ -5,7 +5,7 @@
 namespace taichi::lang {
 
 class JITModule;
-class LLVMRuntime;
+struct LLVMRuntime;
   
 class LlvmDevice : public Device {
  public:

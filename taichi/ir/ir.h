@@ -15,11 +15,6 @@
 #include "taichi/ir/type_factory.h"
 #include "taichi/util/short_name.h"
 
-#ifdef TI_WITH_LLVM
-#include "llvm/ADT/SmallVector.h"
-#include "llvm/ADT/MapVector.h"
-#endif
-
 namespace taichi::lang {
 
 class IRNode;
@@ -102,17 +97,14 @@ class Identifier {
   }
 };
 
-#ifdef TI_WITH_LLVM
-using stmt_vector = llvm::SmallVector<pStmt, 8>;
-#else
 using stmt_vector = std::vector<pStmt>;
-#endif
 
 class VecStatement {
  public:
   stmt_vector stmts;
 
   VecStatement() {
+    stmts.reserve(8);
   }
 
   // NOLINTNEXTLINE(google-explicit-constructor)

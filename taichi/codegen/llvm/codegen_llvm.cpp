@@ -1291,7 +1291,7 @@ void TaskCodeGenLLVM::visit(ReturnStmt *stmt) {
     auto *ret_type = get_real_func_ret_type(now_real_func);
     result_buf = builder->CreatePointerCast(result_buf, llvm::PointerType::get(ret_type, 0));
     for (int i = 0; i < stmt->values.size(); i++) {
-      auto *gep = builder->CreateGEP(result_buf, {tlctx->get_constant(0), tlctx->get_constant(i)});
+      auto *gep = builder->CreateGEP(ret_type, result_buf, {tlctx->get_constant(0), tlctx->get_constant(i)});
       builder->CreateStore(llvm_val[stmt->values[i]], gep);
     }
   } else {

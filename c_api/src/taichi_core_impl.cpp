@@ -190,6 +190,21 @@ void ti_destroy_runtime(TiRuntime runtime) {
   TI_CAPI_TRY_CATCH_END();
 }
 
+void ti_set_runtime_capabilities_ext(TiRuntime runtime, uint32_t capability_count, TiCapabilityLevelInfo* capabilities) {
+  TI_CAPI_TRY_CATCH_BEGIN();
+  TI_CAPI_ARGUMENT_NULL(runtime);
+
+  Runtime *runtime2 = (Runtime *)runtime;
+  taichi::lang::DeviceCapabilityConfig devcaps;
+  for (uint32_t i = 0; i < capability_count; ++i) {
+    const auto &cap_level_info = capabilities[i];
+    devcaps.set((taichi::lang::DeviceCapability)cap_level_info.capability, cap_level_info.level);
+  }
+  runtime2->get().set_current_caps(std::move(devcaps));
+
+  TI_CAPI_TRY_CATCH_END();
+}
+
 void ti_get_runtime_capabilities(TiRuntime runtime,
                                  uint32_t *capability_count,
                                  TiCapabilityLevelInfo *capabilities) {

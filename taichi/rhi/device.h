@@ -391,6 +391,8 @@ class Stream {
 };
 
 class Device {
+  DeviceCapabilityConfig caps_{};
+
  public:
   virtual ~Device(){};
 
@@ -471,9 +473,11 @@ class Device {
 
   // Get all supported capabilities of the current created device.
   virtual Arch arch() const = 0;
-  virtual const DeviceCapabilityConfig &get_current_caps() const {
-    static DeviceCapabilityConfig default_cfg;
-    return default_cfg;
+  inline const DeviceCapabilityConfig &get_current_caps() const {
+    return caps_;
+  }
+  inline void set_current_caps(DeviceCapabilityConfig&& caps) {
+    caps_ = std::move(caps);
   }
 };
 

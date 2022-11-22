@@ -443,7 +443,7 @@ if(TI_WITH_PYTHON)
         # Defined by external/backward-cpp:
         # This will add libraries, definitions and include directories needed by backward
         # by setting each property on the target.
-        target_link_libraries(${CORE_WITH_PYBIND_LIBRARY_NAME} PUBLIC ${BACKWARD_ENABLE})
+        target_link_libraries(${CORE_WITH_PYBIND_LIBRARY_NAME} PRIVATE ${BACKWARD_ENABLE})
     endif()
 
     if(TI_WITH_GGUI)

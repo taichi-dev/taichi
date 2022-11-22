@@ -125,6 +125,25 @@ void CuSparseSolver::analyze_pattern(const SparseMatrix &sm) {
   void *d_csrRowPtrA = A->get_row_ptr();
   void *d_csrColIndA = A->get_col_ind();
 
+  fmt::print("nnzA: {}, rowsA: {}, colsA: {}\n", nnzA, rowsA, A->num_cols());
+  int *row_ptr_h = new int[rowsA + 1];
+  int *col_ind_h = new int[nnzA];
+  CUDADriver::get_instance().memcpy_device_to_host(row_ptr_h, d_csrRowPtrA,
+                                                   (rowsA + 1) * sizeof(int));
+  CUDADriver::get_instance().memcpy_device_to_host(col_ind_h, d_csrColIndA,
+                                                   nnzA * sizeof(int));
+
+  fmt::print("start row_ptr_h output: \n");
+  for (auto i = 0; i < rowsA + 1; i++) {
+    fmt::print("row_ptr_h[{}]: {} \n", i, row_ptr_h[i]);
+  }
+  fmt::print("start col_ind_h output: \n");
+  for (auto i = 0; i < nnzA; i++) {
+    fmt::print("col_ind_h[{}]: {}\n", i, col_ind_h[i]);
+  }
+  free(row_ptr_h);
+  free(col_ind_h);
+
   CUSOLVERDriver::get_instance().csSpCreate(&cusolver_handle_);
   CUSPARSEDriver::get_instance().cpCreate(&cusparse_handel_);
   CUSPARSEDriver::get_instance().cpCreateMatDescr(&descr_);

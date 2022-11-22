@@ -3,8 +3,6 @@
 #include <vector>
 #include "taichi/util/lang_util.h"
 
-#include "taichi/jit/jit_module.h"
-#include "taichi/program/compile_config.h"
 #include "taichi/rhi/device_capability.h"
 
 namespace taichi::lang {

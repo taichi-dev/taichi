@@ -4,6 +4,9 @@
 
 namespace taichi::lang {
 
+class JITModule;
+class LLVMRuntime;
+  
 class LlvmDevice : public Device {
  public:
   struct LlvmRuntimeAllocParams : AllocParams {

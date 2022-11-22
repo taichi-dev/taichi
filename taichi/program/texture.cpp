@@ -147,8 +147,6 @@ BufferFormat type_channels2buffer_format(const DataType &type,
   }
   return format;
 }
- 
-
 
 Texture::Texture(Program *prog,
                  BufferFormat format,

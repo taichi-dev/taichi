@@ -31,7 +31,6 @@
 #include "taichi/rhi/device.h"
 #include "taichi/aot/graph_data.h"
 #include "taichi/aot/module_loader.h"
-#include "taichi/common/virtual_dir.h"
 
 #define TI_CAPI_NOT_SUPPORTED(x) ti_set_last_error(TI_ERROR_NOT_SUPPORTED, #x);
 #define TI_CAPI_NOT_SUPPORTED_IF(x)                \
@@ -90,28 +89,6 @@
     ti_set_last_error(TI_ERROR_INVALID_STATE, "c++ exception"); \
   }
 
-struct Error {
-  TiError error;
-  std::string message;
-
-  Error(TiError error, const std::string &message)
-      : error(error), message(message) {
-  }
-  Error() : error(TI_ERROR_SUCCESS), message() {
-  }
-  Error(const Error &) = delete;
-  Error(Error &&) = default;
-  Error &operator=(const Error &) = delete;
-  Error &operator=(Error &&) = default;
-
-  // Set this error as the last error if it's not `TI_ERROR_SUCCESS`.
-  inline void set_last_error() const {
-    if (error != TI_ERROR_SUCCESS) {
-      ti_set_last_error(error, message.c_str());
-    }
-  }
-};
-
 class Runtime {
  protected:
   // 32 is a magic number in `taichi/inc/constants.h`.
@@ -127,18 +104,7 @@ class Runtime {
 
   virtual taichi::lang::Device &get() = 0;
 
-  [[deprecated("create_aot_module")]] virtual TiAotModule load_aot_module(
-      const char *module_path) {
-    auto dir = taichi::io::VirtualDir::open(module_path);
-    TiAotModule aot_module = TI_NULL_HANDLE;
-    Error err = create_aot_module(dir.get(), aot_module);
-    err.set_last_error();
-    return aot_module;
-  }
-  virtual Error create_aot_module(const taichi::io::VirtualDir *dir,
-                                  TiAotModule &out) {
-    TI_NOT_IMPLEMENTED
-  }
+  virtual TiAotModule load_aot_module(const char *module_path) = 0;
   virtual TiMemory allocate_memory(
       const taichi::lang::Device::AllocParams &params);
   virtual void free_memory(TiMemory devmem);

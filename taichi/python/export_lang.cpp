@@ -499,22 +499,24 @@ void export_lang(py::module &m) {
       .def_readonly("id", &SNode::id)
       .def("dense",
            (SNode & (SNode::*)(const std::vector<Axis> &,
-                               const std::vector<int> &, bool))(&SNode::dense),
+                               const std::vector<int> &, bool,
+                               const std::string &))(&SNode::dense),
            py::return_value_policy::reference)
-      .def(
-          "pointer",
-          (SNode & (SNode::*)(const std::vector<Axis> &,
-                              const std::vector<int> &, bool))(&SNode::pointer),
-          py::return_value_policy::reference)
+      .def("pointer",
+           (SNode & (SNode::*)(const std::vector<Axis> &,
+                               const std::vector<int> &, bool,
+                               const std::string &))(&SNode::pointer),
+           py::return_value_policy::reference)
       .def("hash",
            (SNode & (SNode::*)(const std::vector<Axis> &,
-                               const std::vector<int> &, bool))(&SNode::hash),
+                               const std::vector<int> &, bool,
+                               const std::string &))(&SNode::hash),
            py::return_value_policy::reference)
       .def("dynamic", &SNode::dynamic, py::return_value_policy::reference)
       .def("bitmasked",
            (SNode & (SNode::*)(const std::vector<Axis> &,
-                               const std::vector<int> &,
-                               bool))(&SNode::bitmasked),
+                               const std::vector<int> &, bool,
+                               const std::string &))(&SNode::bitmasked),
            py::return_value_policy::reference)
       .def("bit_struct", &SNode::bit_struct, py::return_value_policy::reference)
       .def("quant_array", &SNode::quant_array,

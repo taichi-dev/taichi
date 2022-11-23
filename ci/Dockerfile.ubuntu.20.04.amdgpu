@@ -35,13 +35,6 @@ RUN apt-get update && \
                        libglfw3 \
                        libglfw3-dev \
                        libjpeg-dev
-# Install the latest version of CMAKE v3.20.5 from source
-WORKDIR /
-RUN wget https://github.com/Kitware/CMake/releases/download/v3.20.5/cmake-3.20.5-linux-x86_64.tar.gz
-RUN tar xf cmake-3.20.5-linux-x86_64.tar.gz && \
-    rm cmake-3.20.5-linux-x86_64.tar.gz
-ENV PATH="/cmake-3.20.5-linux-x86_64/bin:$PATH"
-
 # Install LLVM 15
 WORKDIR /
 # Make sure this URL gets updated each time there is a new prebuilt bin release

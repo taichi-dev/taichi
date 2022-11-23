@@ -1,6 +1,7 @@
 import ast
 import collections.abc
 import itertools
+import operator
 import warnings
 from collections import ChainMap
 from sys import version_info
@@ -112,7 +113,6 @@ class ASTTransformer(Builder):
     @staticmethod
     def build_Assign(ctx, node):
         build_stmt(ctx, node.value)
-
         is_static_assign = isinstance(
             node.value, ast.Call) and node.value.func.ptr is impl.static
 
@@ -421,6 +421,7 @@ class ASTTransformer(Builder):
             id(all): matrix_ops.all,
             id(abs): abs,
             id(pow): pow,
+            id(operator.matmul): matrix_ops.matmul,
         }
         if id(func) in replace_func:
             node.ptr = replace_func[id(func)](*args, **keywords)
@@ -536,7 +537,6 @@ class ASTTransformer(Builder):
         if hasattr(node.func, 'caller'):
             node.ptr = func(node.func.caller, *args, **keywords)
             return node.ptr
-
         node.ptr = func(*args, **keywords)
         ASTTransformer.warn_if_is_external_func(ctx, node)
 

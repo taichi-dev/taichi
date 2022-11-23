@@ -111,7 +111,8 @@ TEST(ScalarPointerLowerer, EliminateModDiv) {
   auto root = std::make_unique<SNode>(/*depth=*/0, SNodeType::root);
   SNode *dense_1 = &(root->dense({Axis{2}, Axis{1}}, /*size=*/7, kPacked, ""));
   SNode *dense_2 = &(root->dense({Axis{1}}, /*size=*/3, kPacked, ""));
-  SNode *dense_3 = &(dense_2->dense({Axis{0}, Axis{1}}, /*size=*/{5, 8}, kPacked, ""));
+  SNode *dense_3 =
+      &(dense_2->dense({Axis{0}, Axis{1}}, /*size=*/{5, 8}, kPacked, ""));
   SNode *leaf_1 = &(dense_1->insert_children(SNodeType::place));
   SNode *leaf_2 = &(dense_3->insert_children(SNodeType::place));
   LowererImpl lowerer_1{leaf_1,
@@ -129,9 +130,10 @@ TEST(ScalarPointerLowerer, EliminateModDiv) {
                         kPacked};
   lowerer_2.run();
   for (int i = 0; i < lowered.size(); i++) {
-    ASSERT_FALSE(lowered[i]->is<BinaryOpStmt>() &&
-                 (lowered[i]->as<BinaryOpStmt>()->op_type == BinaryOpType::mod ||
-                  lowered[i]->as<BinaryOpStmt>()->op_type == BinaryOpType::div));
+    ASSERT_FALSE(
+        lowered[i]->is<BinaryOpStmt>() &&
+        (lowered[i]->as<BinaryOpStmt>()->op_type == BinaryOpType::mod ||
+         lowered[i]->as<BinaryOpStmt>()->op_type == BinaryOpType::div));
   }
 }
 }  // namespace

@@ -1,9 +1,9 @@
 import numpy as np
+from taichi.lang import ops
 from taichi.lang._texture import Texture
 from taichi.lang.impl import ndarray
 from taichi.lang.kernel_impl import kernel
 from taichi.lang.matrix import Vector
-from taichi.lang import ops
 from taichi.types.annotations import template
 from taichi.types.primitive_types import f32, u8, u32
 

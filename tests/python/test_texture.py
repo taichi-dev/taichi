@@ -124,7 +124,7 @@ def test_texture_from_ndarray():
     tex = ti.Texture(ti.Format.r32f, res)
 
     @ti.kernel
-    def init_taichi_logo_ndarray(f: ti.types.ndarray(field_dim=2)):
+    def init_taichi_logo_ndarray(f: ti.types.ndarray(ndim=2)):
         for i, j in f:
             f[i, j] = [taichi_logo(ti.Vector([i / res[0], j / res[1]])), 0]
 

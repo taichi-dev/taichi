@@ -71,7 +71,8 @@ Installation instructions vary depending on which operating system (OS) you are 
 ### Install Clang
 
 <blockquote>
-This Clang compiler is used to compile the Taichi device runtime. It is **not required** to use this compiler for the C++ compiler.
+
+This Clang compiler is used to compile the Taichi device runtime. It is *not required* to use this compiler for the C++ compiler.
 </blockquote>
 
 ````mdx-code-block

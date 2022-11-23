@@ -103,12 +103,8 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
 
       {
         builder->SetInsertPoint(loop_test_bb);
-#ifdef TI_LLVM_15
         auto *loop_index_load =
             builder->CreateLoad(builder->getInt32Ty(), loop_index);
-#else
-        auto *loop_index_load = builder->CreateLoad(loop_index);
-#endif
         auto cond = builder->CreateICmp(
             llvm::CmpInst::Predicate::ICMP_SLT, loop_index_load,
             llvm_val[stmt->owned_num_local.find(stmt->major_from_type)
@@ -123,12 +119,8 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
           auto &s = stmt->body->statements[i];
           s->accept(this);
         }
-#ifdef TI_LLVM_15
         auto *loop_index_load =
             builder->CreateLoad(builder->getInt32Ty(), loop_index);
-#else
-        auto *loop_index_load = builder->CreateLoad(loop_index);
-#endif
         builder->CreateStore(
             builder->CreateAdd(loop_index_load, tlctx->get_constant(1)),
             loop_index);

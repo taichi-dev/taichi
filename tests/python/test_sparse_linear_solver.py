@@ -26,7 +26,6 @@ def test_sparse_LLT_solver(dtype, solver_type, ordering):
 
     fill(Abuilder, A_psd, b)
     A = Abuilder.build()
-    print(A)
     solver = ti.linalg.SparseSolver(dtype=dtype,
                                     solver_type=solver_type,
                                     ordering=ordering)
@@ -66,15 +65,20 @@ def test_gpu_sparse_solver():
 
     # solve Ax = b using cusolver
     A_coo = A_csr.tocoo()
-    d_row_coo = ti.ndarray(shape=nnz, dtype=ti.i32)
-    d_col_coo = ti.ndarray(shape=nnz, dtype=ti.i32)
-    d_val_coo = ti.ndarray(shape=nnz, dtype=ti.f32)
-    d_row_coo.from_numpy(A_coo.row)
-    d_col_coo.from_numpy(A_coo.col)
-    d_val_coo.from_numpy(A_coo.data)
+    A_builder = ti.linalg.SparseMatrixBuilder(num_rows=nrows,
+                                              num_cols=ncols,
+                                              dtype=ti.f32,
+                                              max_num_triplets=nnz)
 
-    A_ti = ti.linalg.SparseMatrix(n=nrows, m=ncols, dtype=ti.float32)
-    A_ti.build_coo(d_row_coo, d_col_coo, d_val_coo)
+    @ti.kernel
+    def fill(A_builder: ti.types.sparse_matrix_builder(),
+             row_coo: ti.types.ndarray(), col_coo: ti.types.ndarray(),
+             val_coo: ti.types.ndarray()):
+        for i in range(nnz):
+            A_builder[row_coo[i], col_coo[i]] += val_coo[i]
+
+    fill(A_builder, A_coo.row, A_coo.col, A_coo.data)
+    A_ti = A_builder.build()
     x_ti = ti.ndarray(shape=ncols, dtype=ti.float32)
     solver = ti.linalg.SparseSolver()
     x_ti = solver.solve_cu(A_ti, b)
@@ -99,3 +103,32 @@ def test_gpu_sparse_solver():
     x_cti = solver.solve(b)
     ti.sync()
     assert (np.allclose(x_cti.to_numpy(), x_np, rtol=5.0e-3))
+
+
+@pytest.mark.parametrize("dtype", [ti.f32])
+@test_utils.test(arch=ti.cuda)
+def test_gpu_sparse_solver2(dtype):
+    n = 10
+    A = np.random.rand(n, n)
+    A_psd = np.dot(A, A.transpose())
+    Abuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=300)
+    b = ti.ndarray(ti.f32, shape=n)
+
+    @ti.kernel
+    def fill(Abuilder: ti.types.sparse_matrix_builder(),
+             InputArray: ti.types.ndarray(), b: ti.types.ndarray()):
+        for i, j in ti.ndrange(n, n):
+            Abuilder[i, j] += InputArray[i, j]
+        for i in range(n):
+            b[i] = i + 1
+
+    fill(Abuilder, A_psd, b)
+    A = Abuilder.build()
+    solver = ti.linalg.SparseSolver(dtype=dtype)
+    solver.analyze_pattern(A)
+    solver.factorize(A)
+    x = solver.solve(b)
+
+    res = np.linalg.solve(A_psd, b.to_numpy())
+    for i in range(n):
+        assert x[i] == test_utils.approx(res[i], rel=1.0)

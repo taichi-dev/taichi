@@ -7,8 +7,12 @@ LABEL maintainer="https://github.com/taichi-dev"
 RUN yum check-update && \
     yum install -y git \
                    cmake \
+                   unzip \
+                   sudo \
                    wget \
                    libXrandr
+
+RUN printf "root ALL=(ALL:ALL) NOPASSWD: ALL\ndev ALL=(ALL:ALL) NOPASSWD: ALL\n" > /etc/sudoers
 
 # Build LLVM/Clang 10 from source
 WORKDIR /

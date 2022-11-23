@@ -577,16 +577,25 @@ def _test_arg_not_match():
         func5(x)
 
     @ti.kernel
-    def func7(a: ti.types.ndarray(field_dim=2)):
+    def func7(a: ti.types.ndarray(ndim=2)):
         pass
 
     x = ti.ndarray(ti.i32, shape=(3, ))
     with pytest.raises(
             ValueError,
             match=
-            r'Invalid argument into ti\.types\.ndarray\(\) - required field_dim'
-    ):
+            r'Invalid argument into ti\.types\.ndarray\(\) - required ndim'):
         func7(x)
+
+    @ti.kernel
+    def func8(x: ti.types.ndarray(dtype=ti.f32)):
+        pass
+
+    x = ti.ndarray(dtype=ti.i32, shape=(16, 16))
+    with pytest.raises(
+            TypeError,
+            match=r'Expect element type .* for Ndarray, but get .*'):
+        func8(x)
 
 
 @test_utils.test(arch=get_host_arch_list())
@@ -691,8 +700,7 @@ def test_gaussian_kernel():
             -0.5 * ti.pow(x / sigma, 2)) / (sigma * ti.sqrt(2.0 * M_PI))
 
     @ti.kernel
-    def fill_gaussian_kernel(
-            ker: ti.types.ndarray(ti.f32, field_dim=1), N: ti.i32):
+    def fill_gaussian_kernel(ker: ti.types.ndarray(ti.f32, ndim=1), N: ti.i32):
         sum = 0.0
         for i in range(2 * N + 1):
             ker[i] = gaussian(i - N, ti.sqrt(N))

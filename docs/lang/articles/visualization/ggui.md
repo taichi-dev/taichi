@@ -135,7 +135,7 @@ init_points_pos(points_pos)
 window = ti.ui.Window("Test for Drawing 3d-lines", (768, 768))
 canvas = window.get_canvas()
 scene = ti.ui.Scene()
-camera = ti.ui.make_camera()
+camera = ti.ui.Camera()
 camera.position(5, 2, 2)
 
 while window.running:
@@ -226,7 +226,7 @@ init_points_indices(points_indices)
 window = ti.ui.Window("Test for Drawing 3d-lines", (768, 768))
 canvas = window.get_canvas()
 scene = ti.ui.Scene()
-camera = ti.ui.make_camera()
+camera = ti.ui.Camera()
 camera.position(5, 2, 2)
 
 while window.running:
@@ -287,7 +287,7 @@ scene.mesh_instance(vertices, indices, transforms = m_transforms, instance_offse
 window = ti.ui.Window("Display Mesh", (1024, 1024), vsync=True)
 canvas = window.get_canvas()
 scene = ti.ui.Scene()
-camera = ti.ui.make_camera()
+camera = ti.ui.Camera()
 
 # slider_int usage
 some_int_type_value = 0
@@ -367,7 +367,7 @@ window_shape = (720, 1080)
 window = ti.ui.Window("Test for copy depth data", window_shape)
 canvas = window.get_canvas()
 scene = ti.ui.Scene()
-camera = ti.ui.make_camera()
+camera = ti.ui.Camera()
 
 # Get the shape of the window
 w, h = window.get_window_shape()

@@ -222,8 +222,6 @@ class Struct(TaichiOperations):
         Args:
             val (Union[int, float]): Value to fill.
         """
-
-        bcast_val = self._broadcast_copy(val)
         entries = {}
         for k, v in self.items:
             if isinstance(v, impl.Expr) and v.ptr.is_tensor():
@@ -231,11 +229,9 @@ class Struct(TaichiOperations):
                 matrix_ops.fill(v, val)
                 entries[k] = v
             elif isinstance(v, (Struct, Matrix)):
-                entries[k] = v._element_wise_binary(ops.assign,
-                                                    bcast_val.entries[k])
+                entries[k] = v._element_wise_binary(ops.assign, val)
             else:
-                entries[k] = ops.assign(v, bcast_val.entries[k])
-        return Struct(entries)
+                entries[k] = ops.assign(v, val)
 
     def __len__(self):
         """Get the number of entries in a custom struct"""

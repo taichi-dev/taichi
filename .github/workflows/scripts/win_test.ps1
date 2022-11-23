@@ -66,7 +66,7 @@ RunIt vulkan 4
 
 Invoke python tests/run_tests.py -vr2 -t1 -k "torch" -a "$env:TI_WANTED_ARCHS"
 
-if ("$env:TI_RUN_RELEASE_TESTS" -eq "1" -and -not "$env:TI_LITE_TEST") {
+if ("$env:TI_RUN_RELEASE_TESTS" -eq "1") {
     Info "Running release tests"
     # release tests
     Invoke pip install PyYAML

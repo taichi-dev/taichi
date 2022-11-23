@@ -398,8 +398,7 @@ class LowerAST : public IRVisitor {
     flatten_rvalue(expr, &fctx);
     flatten_lvalue(dest, &fctx);
     if (dest.is<IdExpression>()) {
-      fctx.push_back<LocalStoreStmt>(
-          dest->stmt, expr->stmt);
+      fctx.push_back<LocalStoreStmt>(dest->stmt, expr->stmt);
     } else if (dest.is<IndexExpression>()) {
       auto ix = dest.cast<IndexExpression>();
       if (ix->is_local()) {

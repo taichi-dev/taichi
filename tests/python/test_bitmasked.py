@@ -7,7 +7,7 @@ def _test_basic():
     c = ti.field(ti.i32)
     s = ti.field(ti.i32)
 
-    bm = ti.root.bitmasked(ti.ij, (3, 6)).bitmasked(ti.i, 5)
+    bm = ti.root.bitmasked(ti.ij, (3, 6)).bitmasked(ti.i, 8)
     bm.place(x)
     ti.root.place(c, s)
 
@@ -183,7 +183,7 @@ def _test_sparsity_changes():
     c = ti.field(ti.i32)
     s = ti.field(ti.i32)
 
-    bm = ti.root.bitmasked(ti.i, 5).bitmasked(ti.i, 3)
+    bm = ti.root.bitmasked(ti.i, 5).bitmasked(ti.i, 4)
     bm.place(x)
     ti.root.place(c, s)
 

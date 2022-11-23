@@ -5,7 +5,6 @@
 
 #include "taichi/runtime/gfx/runtime.h"
 #include "taichi/aot/graph_data.h"
-#include "taichi/common/virtual_dir.h"
 
 namespace taichi::lang {
 namespace gfx {
@@ -27,9 +26,10 @@ class AotModuleImpl : public aot::Module {
       : module_path_(params.module_path),
         runtime_(params.runtime),
         device_api_backend_(device_api_backend) {
-    auto dir = io::VirtualDir::open(params.module_path);
-    TI_ERROR_IF(dir == nullptr, "cannot open aot module '{}'",
-                params.module_path);
+    std::unique_ptr<io::VirtualDir> dir_alt =
+        io::VirtualDir::from_fs_dir(module_path_);
+    const io::VirtualDir *dir =
+        params.dir == nullptr ? dir_alt.get() : params.dir;
 
     bool succ = true;
 

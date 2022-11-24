@@ -1,6 +1,6 @@
 macro(make_sample executable_name src_file)
 add_executable(${executable_name})
-set_property(TARGET ${executable_name} PROPERTY CXX_STANDARD 17)
+set_property(TARGET ${executable_name} PROPERTY CXX_STANDARD 20)
 set_property(TARGET ${executable_name} PROPERTY C_STANDARD 17)
 target_sources(${executable_name} PRIVATE ${src_file} "common.h")
 target_include_directories(${executable_name}

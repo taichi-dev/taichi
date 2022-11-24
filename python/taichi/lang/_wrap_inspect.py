@@ -11,6 +11,7 @@ _builtin_findsource = inspect.findsource
 
 use_sourceinspect = int(os.getenv('USE_SOURCEINSPECT', 0)) == 1
 
+
 def _find_source_with_custom_getfile_func(func, obj):
     inspect.getfile = func  # replace with our custom func
     source = inspect.findsource(obj)
@@ -96,7 +97,9 @@ def _Python_IPython_findsource(obj):
                     with open(filename, 'w') as f:
                         f.write(lines_stripped)
 
-                    atexit.register(os.unlink, filename)  # Remove the file after the program exits
+                    atexit.register(
+                        os.unlink,
+                        filename)  # Remove the file after the program exits
                     func = lambda obj: filename
                     return _find_source_with_custom_getfile_func(func, obj)
 
@@ -136,7 +139,8 @@ def getsourcelines(obj):
                 You can try setting `USE_SOURCEINSPECT=1` in the enrionment variables \
                     or insert the lines `os.environ['USE_SOURCEINSPECT'] = 1` \
                         at the beginning of the source file. Please report an issue to help us \
-                fix the problem: https://github.com/taichi-dev/taichi/issues if you see this message")
+                fix the problem: https://github.com/taichi-dev/taichi/issues if you see this message"
+                          )
 
 
 def getsourcefile(obj):
@@ -154,7 +158,8 @@ def getsourcefile(obj):
                 You can try setting `USE_SOURCEINSPECT=1` in the enrionment variables \
                     or insert the lines `os.environ['USE_SOURCEINSPECT'] = 1` \
                         at the beginning of the source file. Please report an issue to help us \
-                fix the problem: https://github.com/taichi-dev/taichi/issues if you see this message")
+                fix the problem: https://github.com/taichi-dev/taichi/issues if you see this message"
+                          )
 
 
 __all__ = ['getsourcelines', 'getsourcefile']

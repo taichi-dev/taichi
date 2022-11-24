@@ -396,25 +396,21 @@ class LowerAST : public IRVisitor {
     auto expr = assign->rhs;
     auto fctx = make_flatten_ctx();
     flatten_rvalue(expr, &fctx);
+    flatten_lvalue(dest, &fctx);
     if (dest.is<IdExpression>()) {
-      fctx.push_back<LocalStoreStmt>(
-          assign->parent->lookup_var(assign->lhs.cast<IdExpression>()->id),
-          expr->stmt);
+      fctx.push_back<LocalStoreStmt>(dest->stmt, expr->stmt);
     } else if (dest.is<IndexExpression>()) {
       auto ix = dest.cast<IndexExpression>();
-      flatten_lvalue(dest, &fctx);
       if (ix->is_local()) {
         fctx.push_back<LocalStoreStmt>(dest->stmt, expr->stmt);
       } else {
         fctx.push_back<GlobalStoreStmt>(dest->stmt, expr->stmt);
       }
     } else if (dest.is<StrideExpression>()) {
-      flatten_lvalue(dest, &fctx);
       fctx.push_back<GlobalStoreStmt>(dest->stmt, expr->stmt);
     } else {
       TI_ASSERT(dest.is<ArgLoadExpression>() &&
                 dest.cast<ArgLoadExpression>()->is_ptr);
-      flatten_lvalue(dest, &fctx);
       fctx.push_back<GlobalStoreStmt>(dest->stmt, expr->stmt);
     }
     fctx.stmts.back()->set_tb(assign->tb);

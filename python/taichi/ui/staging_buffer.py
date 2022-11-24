@@ -1,4 +1,5 @@
 import numpy as np
+from taichi.lang import ops
 from taichi.lang._texture import Texture
 from taichi.lang.impl import ndarray
 from taichi.lang.kernel_impl import kernel
@@ -98,7 +99,7 @@ def copy_texture_to_rgba8(src: ti.types.texture(num_dimensions=2),
                           dst: ti.template(), w: ti.i32, h: ti.i32):
     for (i, j) in ti.ndrange(w, h):
         c = src.fetch(ti.Vector([i, j]), 0)
-        c = max(0.0, min(1.0, c))
+        c = ops.max(0.0, ops.min(1.0, c))
         c = c * 255
         px = ti.cast(c, u32)
         dst[i, j] = (px[0] << 0 | px[1] << 8 | px[2] << 16 | px[3] << 24)
@@ -113,7 +114,7 @@ def copy_image_f32_to_rgba8(src: ti.template(), dst: ti.template(),
         if ti.static(gray_scale):
             c = 0.0
             c = src[i, j]
-            c = max(0.0, min(1.0, c))
+            c = ops.max(0.0, ops.min(1.0, c))
             c = c * 255
             px[0] = px[1] = px[2] = ti.cast(c, u32)
         else:
@@ -125,7 +126,7 @@ def copy_image_f32_to_rgba8(src: ti.template(), dst: ti.template(),
                 else:
                     # 2D vector field source image
                     c = src[i, j][k]
-                c = max(0.0, min(1.0, c))
+                c = ops.max(0.0, ops.min(1.0, c))
                 c = c * 255
                 px[k] = ti.cast(c, u32)
         pack = (px[0] << 0 | px[1] << 8 | px[2] << 16 | px[3] << 24)
@@ -142,13 +143,13 @@ def copy_image_f32_to_rgba8_np(src: ti.types.ndarray(), dst: ti.template(),
         if ti.static(gray_scale):
             c = 0.0
             c = src[i, j]
-            c = max(0.0, min(1.0, c))
+            c = ops.max(0.0, ops.min(1.0, c))
             c = c * 255
             px[0] = px[1] = px[2] = ti.cast(c, u32)
         else:
             for k in ti.static(range(num_components)):
                 c = src[i, j, k]
-                c = max(0.0, min(1.0, c))
+                c = ops.max(0.0, ops.min(1.0, c))
                 c = c * 255
                 px[k] = ti.cast(c, u32)
         pack = (px[0] << 0 | px[1] << 8 | px[2] << 16 | px[3] << 24)

@@ -114,7 +114,7 @@ struct BitsRange {
 };
 
 constexpr int kPointerSize = 5;
-constexpr int kDenseSize = 7;
+constexpr int kDenseSize = 8;
 
 class RefineCoordinatesTest : public ::testing::Test {
  protected:
@@ -128,8 +128,8 @@ class RefineCoordinatesTest : public ::testing::Test {
 
     root_snode_ = std::make_unique<SNode>(/*depth=*/0, /*t=*/SNodeType::root);
     const std::vector<Axis> axes = {Axis{0}};
-    ptr_snode_ = &(root_snode_->pointer(axes, kPointerSize, false));
-    dense_snode_ = &(ptr_snode_->dense(axes, kDenseSize, false));
+    ptr_snode_ = &(root_snode_->pointer(axes, kPointerSize, false, ""));
+    dense_snode_ = &(ptr_snode_->dense(axes, kDenseSize, false, ""));
     // Must end with a `place` SNode.
     auto &leaf_snode = dense_snode_->insert_children(SNodeType::place);
     leaf_snode.dt = PrimitiveType::f32;

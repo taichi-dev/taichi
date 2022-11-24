@@ -719,64 +719,6 @@ class TaichiMain:
 
         return None
 
-    @register
-    def benchmark(self, arguments: list = sys.argv[2:]):
-        """Run Python tests in benchmark mode"""
-        parser = argparse.ArgumentParser(
-            prog='ti benchmark', description=f"{self.benchmark.__doc__}")
-        parser.add_argument('files', nargs='*', help='Test file(s) to be run')
-        parser.add_argument('-T',
-                            '--tprt',
-                            dest='tprt',
-                            action='store_true',
-                            help='Benchmark performance in terms of run time')
-        parser.add_argument('-v',
-                            '--verbose',
-                            dest='verbose',
-                            action='store_true',
-                            help='Run with verbose outputs')
-        parser.add_argument('-r',
-                            '--rerun',
-                            required=False,
-                            default=None,
-                            dest='rerun',
-                            type=str,
-                            help='Rerun failed tests for given times')
-        parser.add_argument(
-            '-t',
-            '--threads',
-            required=False,
-            default=None,
-            dest='threads',
-            type=str,
-            help='Custom number of threads for parallel testing')
-        args = parser.parse_args(arguments)
-
-        # Short circuit for testing
-        if self.test_mode:
-            return args
-
-        commit_hash = _ti_core.get_commit_hash()
-        with os.popen('git rev-parse HEAD') as f:
-            current_commit_hash = f.read().strip()
-        assert commit_hash == current_commit_hash, f"Built commit {commit_hash:.6} differs from current commit {current_commit_hash:.6}, refuse to benchmark"
-        os.environ['TI_PRINT_BENCHMARK_STAT'] = '1'
-        output_dir = TaichiMain._get_benchmark_output_dir()
-        shutil.rmtree(output_dir, True)
-        os.mkdir(output_dir)
-        os.environ['TI_BENCHMARK_OUTPUT_DIR'] = output_dir
-        if os.environ.get('TI_WANTED_ARCHS') is None and not args.tprt:
-            # since we only do number-of-statements benchmark for SPRT
-            os.environ['TI_WANTED_ARCHS'] = 'x64'
-        if args.tprt:
-            os.system('python benchmarks/run.py')
-            # TODO: benchmark_python(args)
-        else:
-            # TODO: shall we replace this with the new benchmark tools?
-            os.system('python tests/run_tests.py')
-
-        return None
-
     @staticmethod
     @register
     def test(self, arguments: list = sys.argv[2:]):

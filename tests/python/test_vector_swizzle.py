@@ -104,13 +104,14 @@ def test_vector_dtype():
     foo()
 
 
-@test_utils.test()
-def test_vector_invalid_swizzle_patterns():
+def _test_vector_invalid_swizzle_patterns():
     a = ti.math.vec2(1, 2)
+
     with pytest.raises(ti.TaichiSyntaxError,
                        match=re.escape(
                            "vec2 only has attributes=('x', 'y'), got=('z',)")):
         a.z = 3
+
     with pytest.raises(
             ti.TaichiSyntaxError,
             match=re.escape(
@@ -121,6 +122,37 @@ def test_vector_invalid_swizzle_patterns():
                        match=re.escape(
                            "value len does not match the swizzle pattern=xy")):
         a.xy = [1, 2, 3]
+
+    @ti.kernel
+    def invalid_z():
+        b = ti.math.vec2(1, 2)
+        b.z = 3
+
+    @ti.kernel
+    def invalid_xyz():
+        b = ti.math.vec2(1, 2)
+        b.xyz = [1, 2, 3]
+
+    with pytest.raises(ti.TaichiSyntaxError,
+                       match=re.escape(
+                           "vec2 only has attributes=('x', 'y'), got=('z',)")):
+        invalid_z()
+
+    with pytest.raises(
+            ti.TaichiSyntaxError,
+            match=re.escape(
+                "vec2 only has attributes=('x', 'y'), got=('x', 'y', 'z')")):
+        invalid_xyz()
+
+
+@test_utils.test()
+def test_vector_invalid_swizzle_patterns():
+    _test_vector_invalid_swizzle_patterns()
+
+
+@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
+def test_vector_invalid_swizzle_patterns_real_matrix_scalarize():
+    _test_vector_invalid_swizzle_patterns()
 
 
 @test_utils.test(real_matrix=True, real_matrix_scalarize=True)

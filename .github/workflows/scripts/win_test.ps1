@@ -58,7 +58,7 @@ if ("$env:TI_WANTED_ARCHS".Contains("cpu")) {
 if ("$env:TI_WANTED_ARCHS".Contains("cuda")) {
   # TODO relax this when torch supports 3.10
   Invoke pip install "torch==1.10.1+cu113; python_version < '3.10'" -f https://download.pytorch.org/whl/cu113/torch_stable.html
-  RunIt cuda 6
+  RunIt cuda 8
 }
 
 RunIt opengl 4
@@ -66,7 +66,7 @@ RunIt vulkan 4
 
 Invoke python tests/run_tests.py -vr2 -t1 -k "torch" -a "$env:TI_WANTED_ARCHS"
 
-if ("$env:TI_RUN_RELEASE_TESTS" -eq "1" -and -not "$env:TI_LITE_TEST") {
+if ("$env:TI_RUN_RELEASE_TESTS" -eq "1") {
     Info "Running release tests"
     # release tests
     Invoke pip install PyYAML

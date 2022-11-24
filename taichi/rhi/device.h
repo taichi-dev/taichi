@@ -174,7 +174,7 @@ enum class PolygonMode : int {
   Point = 2,
 };
 
-enum class TI_DLL_EXPORT BufferFormat : uint32_t {
+enum class BufferFormat : uint32_t {
 #define PER_BUFFER_FORMAT(x) x,
 #include "taichi/inc/rhi_constants.inc.h"
 #undef PER_BUFFER_FORMAT
@@ -192,13 +192,13 @@ class Pipeline {
   virtual ResourceBinder *resource_binder() = 0;
 };
 
-enum class TI_DLL_EXPORT ImageDimension {
+enum class ImageDimension {
 #define PER_IMAGE_DIMENSION(x) x,
 #include "taichi/inc/rhi_constants.inc.h"
 #undef PER_IMAGE_DIMENSION
 };
 
-enum class TI_DLL_EXPORT ImageLayout {
+enum class ImageLayout {
 #define PER_IMAGE_LAYOUT(x) x,
 #include "taichi/inc/rhi_constants.inc.h"
 #undef PER_IMAGE_LAYOUT

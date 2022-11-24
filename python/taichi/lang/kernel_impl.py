@@ -17,11 +17,12 @@ from taichi.lang.ast.ast_transformer_utils import ReturnStatus
 from taichi.lang.enums import AutodiffMode, Layout
 from taichi.lang.exception import (TaichiCompilationError, TaichiRuntimeError,
                                    TaichiRuntimeTypeError, TaichiSyntaxError,
-                                   handle_exception_from_cpp)
+                                   TaichiTypeError, handle_exception_from_cpp)
 from taichi.lang.expr import Expr
 from taichi.lang.kernel_arguments import KernelArgument
 from taichi.lang.matrix import Matrix, MatrixType
 from taichi.lang.shell import _shell_pop_print
+from taichi.lang.struct import StructType
 from taichi.lang.util import (cook_dtype, has_paddle, has_pytorch,
                               to_taichi_type)
 from taichi.types import (ndarray_type, primitive_types, sparse_matrix_builder,
@@ -101,6 +102,7 @@ def pyfunc(fn):
         return fun.__call__(*args, **kwargs)
 
     decorated._is_taichi_function = True
+    decorated._is_real_function = False
     decorated.func = fun
     return decorated
 
@@ -121,7 +123,6 @@ def _get_tree_and_ctx(self,
     func_body.decorator_list = []
 
     global_vars = _get_global_vars(self.func)
-
     for i, arg in enumerate(func_body.args.args):
         anno = arg.annotation
         if isinstance(anno, ast.Name):
@@ -265,9 +266,18 @@ class Func:
                     non_template_args.append(args[i])
         non_template_args = impl.make_expr_group(non_template_args,
                                                  real_func_arg=True)
-        return Expr(
+        func_call = Expr(
             _ti_core.make_func_call_expr(
                 self.taichi_functions[key.instance_id], non_template_args))
+        impl.get_runtime().prog.current_ast_builder().insert_expr_stmt(
+            func_call.ptr)
+        if self.return_type is None:
+            return None
+        if id(self.return_type) in primitive_types.type_ids:
+            return Expr(_ti_core.make_get_element_expr(func_call.ptr, 0))
+        if isinstance(self.return_type, StructType):
+            return self.return_type.from_real_func_ret(func_call)[0]
+        raise TaichiTypeError(f"Unsupported return type: {self.return_type}")
 
     def do_compile(self, key, args):
         tree, ctx = _get_tree_and_ctx(self,
@@ -393,17 +403,18 @@ class TaichiCallableTemplateMapper:
                 return arg.dtype, len(arg.shape) + 2, (arg.n,
                                                        arg.m), Layout.AOS
             # external arrays
-            element_dim = 0 if anno.element_dim is None else anno.element_dim
             shape = getattr(arg, 'shape', None)
             if shape is None:
                 raise TaichiRuntimeTypeError(
                     f"Invalid argument into ti.types.ndarray(), got {arg}")
             shape = tuple(shape)
-            if len(shape) < element_dim:
-                raise ValueError(
-                    f"Invalid argument into ti.types.ndarray() - required element_dim={element_dim}, "
-                    f"but the argument has only {len(shape)} dimensions")
-            element_shape = () if element_dim == 0 else shape[-element_dim:]
+            element_shape = ()
+            if isinstance(anno.dtype, MatrixType):
+                if len(shape) < anno.dtype.ndim:
+                    raise ValueError(
+                        f"Invalid argument into ti.types.ndarray() - required element_dim={anno.dtype.ndim}, "
+                        f"but the argument has only {len(shape)} dimensions")
+                element_shape = shape[-anno.dtype.ndim:]
             return to_taichi_type(
                 arg.dtype), len(shape), element_shape, Layout.AOS
         if isinstance(anno, sparse_matrix_builder):
@@ -589,64 +600,6 @@ class Kernel:
             taichi_kernel)
         self.compiled_kernels[key] = taichi_kernel
 
-    def get_torch_callbacks(self, v):
-        callbacks = []
-
-        def get_call_back(u, v):
-            def call_back():
-                u.copy_(v)
-
-            return call_back
-
-        if not v.is_contiguous():
-            raise ValueError(
-                "Non contiguous tensors are not supported, please call tensor.contiguous() before passing it into taichi kernel."
-            )
-        tmp = v
-        taichi_arch = self.runtime.prog.config().arch
-
-        if str(v.device).startswith('cuda'):
-            # External tensor on cuda
-            if taichi_arch != _ti_core.Arch.cuda:
-                # copy data back to cpu
-                host_v = v.to(device='cpu', copy=True)
-                tmp = host_v
-                callbacks.append(get_call_back(v, host_v))
-        return tmp, callbacks
-
-    def get_paddle_callbacks(self, v):
-        callbacks = []
-
-        def get_call_back(u, v):
-            def call_back():
-                u.copy_(v, False)
-
-            return call_back
-
-        tmp = v.value().get_tensor()
-        taichi_arch = self.runtime.prog.config().arch
-
-        if v.place.is_gpu_place():
-            # External tensor on cuda
-            if taichi_arch != _ti_core.Arch.cuda:
-                # copy data back to cpu
-                host_v = v.cpu()
-                tmp = host_v.value().get_tensor()
-                callbacks.append(get_call_back(v, host_v))
-        elif v.place.is_cpu_place():
-            # External tensor on cpu
-            if taichi_arch == _ti_core.Arch.cuda:
-                gpu_v = v.cuda()
-                tmp = gpu_v.value().get_tensor()
-                callbacks.append(get_call_back(v, gpu_v))
-        else:
-            # Paddle do support many other backends like XPU, NPU, MLU, IPU.
-            raise TaichiRuntimeError(
-                f"Taichi do not support backend {v.place} that Paddle support."
-            )
-
-        return tmp, callbacks
-
     def get_function_body(self, t_kernel):
         # The actual function body
         def func__(*args):
@@ -701,8 +654,11 @@ class Kernel:
                     # so that it only holds "real" array shapes.
                     is_soa = needed.layout == Layout.SOA
                     array_shape = v.shape
-                    element_dim = needed.element_dim
-                    if element_dim:
+                    if needed.dtype is None or id(
+                            needed.dtype) in primitive_types.type_ids:
+                        element_dim = 0
+                    else:
+                        element_dim = needed.dtype.ndim
                         array_shape = v.shape[
                             element_dim:] if is_soa else v.shape[:-element_dim]
                     if isinstance(v, np.ndarray):
@@ -729,15 +685,57 @@ class Kernel:
                                 "Non contiguous numpy arrays are not supported, please call np.ascontiguousarray(arr) before passing it into taichi kernel."
                             )
                     elif has_pytorch() and isinstance(v, torch.Tensor):
-                        tmp, torch_callbacks = self.get_torch_callbacks(v)
-                        callbacks += torch_callbacks
+                        if not v.is_contiguous():
+                            raise ValueError(
+                                "Non contiguous tensors are not supported, please call tensor.contiguous() before passing it into taichi kernel."
+                            )
+                        taichi_arch = self.runtime.prog.config().arch
+
+                        def get_call_back(u, v):
+                            def call_back():
+                                u.copy_(v)
+
+                            return call_back
+
+                        tmp = v
+                        if str(v.device).startswith(
+                                'cuda') and taichi_arch != _ti_core.Arch.cuda:
+                            # Getting a torch CUDA tensor on Taichi non-cuda arch:
+                            # We just replace it with a CPU tensor and by the end of kernel execution we'll use the callback to copy the values back to the original CUDA tensor.
+                            host_v = v.to(device='cpu', copy=True)
+                            tmp = host_v
+                            callbacks.append(get_call_back(v, host_v))
+
                         launch_ctx.set_arg_external_array_with_shape(
                             actual_argument_slot, int(tmp.data_ptr()),
                             tmp.element_size() * tmp.nelement(), array_shape)
                     elif has_paddle() and isinstance(v, paddle.Tensor):
                         # For now, paddle.fluid.core.Tensor._ptr() is only available on develop branch
-                        tmp, paddle_callbacks = self.get_paddle_callbacks(v)
-                        callbacks += paddle_callbacks
+                        def get_call_back(u, v):
+                            def call_back():
+                                u.copy_(v, False)
+
+                            return call_back
+
+                        tmp = v.value().get_tensor()
+                        taichi_arch = self.runtime.prog.config().arch
+                        if v.place.is_gpu_place():
+                            if taichi_arch != _ti_core.Arch.cuda:
+                                # Paddle cuda tensor on Taichi non-cuda arch
+                                host_v = v.cpu()
+                                tmp = host_v.value().get_tensor()
+                                callbacks.append(get_call_back(v, host_v))
+                        elif v.place.is_cpu_place():
+                            if taichi_arch == _ti_core.Arch.cuda:
+                                # Paddle cpu tensor on Taichi cuda arch
+                                gpu_v = v.cuda()
+                                tmp = gpu_v.value().get_tensor()
+                                callbacks.append(get_call_back(v, gpu_v))
+                        else:
+                            # Paddle do support many other backends like XPU, NPU, MLU, IPU
+                            raise TaichiRuntimeTypeError(
+                                f"Taichi do not support backend {v.place} that Paddle support"
+                            )
                         launch_ctx.set_arg_external_array_with_shape(
                             actual_argument_slot, int(tmp._ptr()),
                             v.element_size() * v.size, array_shape)

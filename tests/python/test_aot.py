@@ -62,7 +62,7 @@ def test_aot_bind_id():
     density1 = ti.ndarray(dtype=ti.f32, shape=(8, 8))
 
     @ti.kernel
-    def init(x: ti.f32, density1: ti.types.ndarray(field_dim=2)):
+    def init(x: ti.f32, density1: ti.types.ndarray(ndim=2)):
         for i, j in density1:
             density[i, j] = x
             density1[i, j] = x + 1
@@ -427,10 +427,10 @@ def test_mpm88_ndarray():
     E = 400
 
     @ti.kernel
-    def substep(x: ti.types.ndarray(element_dim=1),
-                v: ti.types.ndarray(element_dim=1),
-                C: ti.types.ndarray(element_dim=2), J: ti.types.ndarray(),
-                grid_v: ti.types.ndarray(element_dim=1),
+    def substep(x: ti.types.ndarray(dtype=ti.math.vec2),
+                v: ti.types.ndarray(dtype=ti.math.vec2),
+                C: ti.types.ndarray(dtype=ti.math.mat2), J: ti.types.ndarray(),
+                grid_v: ti.types.ndarray(dtype=ti.math.vec2),
                 grid_m: ti.types.ndarray()):
         for p in x:
             base = (x[p] * inv_dx - 0.5).cast(int)
@@ -610,9 +610,25 @@ def test_devcap():
         with open(tmpdir + "/metadata.json") as f:
             j = json.load(f)
             caps = j["aot_data"]["required_caps"]
+            assert len(caps) == 3
             assert caps["spirv_version"] == 0x10300
             assert caps["spirv_has_float16"] == 1
             assert caps["spirv_has_atomic_float16_minmax"] == 1
+
+
+@test_utils.test(arch=[ti.vulkan])
+def test_devcap_weird_user_input():
+    with pytest.raises(RuntimeError,
+                       match='unexpected device capability name'):
+        ti.aot.Module(ti.vulkan,
+                      caps=[
+                          "Never gonna give you up"
+                          "Never gonna let you down"
+                          "Never gonna run around and desert you"
+                          "Never gonna make you cry"
+                          "Never gonna say goodbye"
+                          "Never gonna tell a lie and hurt you"
+                      ])
 
 
 @test_utils.test(arch=[ti.vulkan])

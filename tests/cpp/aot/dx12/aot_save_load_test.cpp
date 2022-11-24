@@ -23,7 +23,7 @@ namespace fs = std::filesystem;
   int n = 10;
 
   auto *root = new SNode(0, SNodeType::root);
-  auto *pointer = &root->dense(Axis(0), n, false);
+  auto *pointer = &root->dense(Axis(0), n, false, "");
   auto *place = &pointer->insert_children(SNodeType::place);
   place->dt = PrimitiveType::i32;
   program.add_snode_tree(std::unique_ptr<SNode>(root), /*compile_only=*/true);

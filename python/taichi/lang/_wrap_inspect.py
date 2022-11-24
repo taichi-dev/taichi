@@ -4,7 +4,6 @@ import os
 import tempfile
 
 import sourceinspect
-from taichi._logging import warn
 
 _builtin_getfile = inspect.getfile
 _builtin_findsource = inspect.findsource
@@ -130,36 +129,34 @@ class _InspectContextManager:
 def getsourcelines(obj):
     if use_sourceinspect:
         return sourceinspect.getsourcelines(obj)
-    else:
-        try:
-            with _InspectContextManager():
-                return inspect.getsourcelines(obj)
-        except:
-            raise IOError(f"Cannot get the source lines of {obj}. \
-                You can try setting `USE_SOURCEINSPECT=1` in the enrionment variables \
-                    or insert the lines `os.environ['USE_SOURCEINSPECT'] = 1` \
-                        at the beginning of the source file. Please report an issue to help us \
-                fix the problem: https://github.com/taichi-dev/taichi/issues if you see this message"
-                          )
+
+    try:
+        with _InspectContextManager():
+            return inspect.getsourcelines(obj)
+    except:
+        raise IOError(f"Cannot get the source lines of {obj}. \
+            You can try setting `USE_SOURCEINSPECT=1` in the enrionment variables \
+                or insert the lines `os.environ['USE_SOURCEINSPECT'] = 1` \
+                    at the beginning of the source file. Please report an issue to help us \
+                        fix the problem: https://github.com/taichi-dev/taichi/issues if you see this message")
 
 
 def getsourcefile(obj):
     if use_sourceinspect:
         return sourceinspect.getsourcefile(obj)
-    else:
-        try:
-            with _InspectContextManager():
-                ret = inspect.getsourcefile(obj)
-                if ret is None:
-                    ret = inspect.getfile(obj)
-                return ret
-        except:
-            raise IOError(f"Cannot get the source file of {obj}. \
-                You can try setting `USE_SOURCEINSPECT=1` in the enrionment variables \
-                    or insert the lines `os.environ['USE_SOURCEINSPECT'] = 1` \
-                        at the beginning of the source file. Please report an issue to help us \
-                fix the problem: https://github.com/taichi-dev/taichi/issues if you see this message"
-                          )
+
+    try:
+        with _InspectContextManager():
+            ret = inspect.getsourcefile(obj)
+            if ret is None:
+                ret = inspect.getfile(obj)
+            return ret
+    except:
+        raise IOError(f"Cannot get the source file of {obj}. \
+            You can try setting `USE_SOURCEINSPECT=1` in the enrionment variables \
+                or insert the lines `os.environ['USE_SOURCEINSPECT'] = 1` \
+                    at the beginning of the source file. Please report an issue to help us \
+                        fix the problem: https://github.com/taichi-dev/taichi/issues if you see this message")
 
 
 __all__ = ['getsourcelines', 'getsourcefile']

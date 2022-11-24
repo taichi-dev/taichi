@@ -26,8 +26,7 @@ def test_vector_swizzle_python():
     assert all(z == w.xxxx)
 
 
-@test_utils.test(debug=True)
-def test_vector_swizzle_taichi():
+def _test_vector_swizzle_taichi():
     @ti.kernel
     def foo():
         v = ti.math.vec3(0)
@@ -48,6 +47,16 @@ def test_vector_swizzle_taichi():
         assert all(z == w.xxxx)
 
     foo()
+
+
+@test_utils.test(debug=True)
+def test_vector_swizzle_taichi():
+    _test_vector_swizzle_taichi()
+
+
+@test_utils.test(real_matrix=True, real_matrix_scalarize=True, debug=True)
+def test_vector_swizzle_taichi_matrix_scalarize():
+    _test_vector_swizzle_taichi()
 
 
 @test_utils.test(debug=True)
@@ -95,20 +104,63 @@ def test_vector_dtype():
     foo()
 
 
-@test_utils.test()
-def test_vector_invalid_swizzle_patterns():
+def _test_vector_invalid_swizzle_patterns():
     a = ti.math.vec2(1, 2)
+
     with pytest.raises(ti.TaichiSyntaxError,
                        match=re.escape(
                            "vec2 only has attributes=('x', 'y'), got=('z',)")):
         a.z = 3
+
     with pytest.raises(
             ti.TaichiSyntaxError,
             match=re.escape(
                 "vec2 only has attributes=('x', 'y'), got=('x', 'y', 'z')")):
         a.xyz = [1, 2, 3]
 
-    with pytest.raises(ti.TaichiCompilationError,
+    with pytest.raises(ti.TaichiRuntimeError,
                        match=re.escape(
                            "value len does not match the swizzle pattern=xy")):
         a.xy = [1, 2, 3]
+
+    @ti.kernel
+    def invalid_z():
+        b = ti.math.vec2(1, 2)
+        b.z = 3
+
+    @ti.kernel
+    def invalid_xyz():
+        b = ti.math.vec2(1, 2)
+        b.xyz = [1, 2, 3]
+
+    with pytest.raises(ti.TaichiSyntaxError,
+                       match=re.escape(
+                           "vec2 only has attributes=('x', 'y'), got=('z',)")):
+        invalid_z()
+
+    with pytest.raises(
+            ti.TaichiSyntaxError,
+            match=re.escape(
+                "vec2 only has attributes=('x', 'y'), got=('x', 'y', 'z')")):
+        invalid_xyz()
+
+
+@test_utils.test()
+def test_vector_invalid_swizzle_patterns():
+    _test_vector_invalid_swizzle_patterns()
+
+
+@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
+def test_vector_invalid_swizzle_patterns_real_matrix_scalarize():
+    _test_vector_invalid_swizzle_patterns()
+
+
+@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
+def test_vector_swizzle_real_matrix_scalarize():
+    @ti.kernel
+    def foo() -> ti.types.vector(3, ti.i32):
+        v = ti.Vector([1, 2, 3])
+        v.zxy += [v.z, v.y, v.x]
+        return v
+
+    assert (foo() == ti.Vector([3, 3, 6])).all()

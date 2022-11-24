@@ -12,12 +12,10 @@ endif()
 # 2. Re-implement the legacy CPP tests using googletest
 file(GLOB_RECURSE TAICHI_TESTS_SOURCE
         "tests/cpp/analysis/*.cpp"
-        "tests/cpp/aot/llvm/*.cpp"
         "tests/cpp/backends/*.cpp"
         "tests/cpp/codegen/*.cpp"
         "tests/cpp/common/*.cpp"
         "tests/cpp/ir/*.cpp"
-        "tests/cpp/llvm/*.cpp"
         "tests/cpp/program/*.cpp"
         "tests/cpp/struct/*.cpp"
         "tests/cpp/transforms/*.cpp"
@@ -27,6 +25,11 @@ if (TI_WITH_OPENGL OR TI_WITH_VULKAN)
     file(GLOB TAICHI_TESTS_GFX_UTILS_SOURCE
         "tests/cpp/aot/gfx_utils.cpp")
     list(APPEND TAICHI_TESTS_SOURCE ${TAICHI_TESTS_GFX_UTILS_SOURCE})
+endif()
+
+if(TI_WITH_LLVM)
+  file(GLOB TAICHI_TESTS_LLVM_SOURCE "tests/cpp/aot/llvm/*.cpp" "tests/cpp/llvm/*.cpp")
+  list(APPEND TAICHI_TESTS_SOURCE ${TAICHI_TESTS_LLVM_SOURCE})
 endif()
 
 if(TI_WITH_VULKAN)

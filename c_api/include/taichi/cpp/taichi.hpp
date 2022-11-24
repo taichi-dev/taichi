@@ -3,6 +3,7 @@
 #include <cstring>
 #include <list>
 #include <vector>
+#include <map>
 #include <string>
 #include <utility>
 #include "taichi/taichi.h"
@@ -189,29 +190,29 @@ class NdArray {
     return memory_.unmap();
   }
 
-  inline void read(T *dst, size_t size) const {
-    memory_.read(dst, size);
+  inline void read(T *dst, size_t count) const {
+    memory_.read(dst, count * sizeof(T));
   }
   inline void read(std::vector<T> &dst) const {
-    read(dst.data(), dst.size() * sizeof(T));
+    read(dst.data(), dst.size());
   }
   template <typename U>
   inline void read(std::vector<U> &dst) const {
     static_assert(sizeof(U) % sizeof(T) == 0,
                   "sizeof(U) must be a multiple of sizeof(T)");
-    read((T *)dst.data(), dst.size() * sizeof(U));
+    read((T *)dst.data(), dst.size() * (sizeof(U) / sizeof(T)));
   }
-  inline void write(const T *src, size_t size) const {
-    memory_.write(src, size);
+  inline void write(const T *src, size_t count) const {
+    memory_.write(src, count * sizeof(T));
   }
   inline void write(const std::vector<T> &src) const {
-    write(src.data(), src.size() * sizeof(T));
+    write(src.data(), src.size());
   }
   template <typename U>
   inline void write(const std::vector<U> &src) const {
     static_assert(sizeof(U) % sizeof(T) == 0,
                   "sizeof(U) must be a multiple of sizeof(T)");
-    write((const T *)src.data(), src.size() * sizeof(U));
+    write((const T *)src.data(), src.size() * (sizeof(U) / sizeof(T)));
   }
 
   constexpr TiDataType elem_type() const {
@@ -507,6 +508,27 @@ class Kernel {
     return at(i);
   }
 
+  template <typename T>
+  void push_arg(const std::vector<T> &v) {
+    int idx = args_.size();
+    // Temporary workaround for setting vec/matrix arguments in a flattened way.
+    args_.resize(args_.size() + v.size());
+    for (int j = 0; j < v.size(); ++j) {
+      at(idx + j) = v[j];
+    }
+  }
+
+  template <typename T>
+  void push_arg(const T &arg) {
+    int idx = args_.size();
+    args_.resize(idx + 1);
+    at(idx) = arg;
+  }
+
+  void clear_args() {
+    args_.clear();
+  }
+
   void launch(uint32_t argument_count, const TiArgument *arguments) {
     ti_launch_kernel(runtime_, kernel_, argument_count, arguments);
   }
@@ -676,9 +698,23 @@ class Runtime {
 
   Runtime &operator=(const Runtime &) = delete;
   Runtime &operator=(Runtime &&b) {
+    arch_ = std::exchange(b.arch_, TI_ARCH_MAX_ENUM);
     runtime_ = detail::move_handle(b.runtime_);
     should_destroy_ = std::exchange(b.should_destroy_, false);
     return *this;
+  }
+
+  std::map<TiCapability, uint32_t> get_capabilities() const {
+    uint32_t n = 0;
+    ti_get_runtime_capabilities(runtime_, &n, nullptr);
+    std::vector<TiCapabilityLevelInfo> devcaps(n);
+    ti_get_runtime_capabilities(runtime_, &n, devcaps.data());
+
+    std::map<TiCapability, uint32_t> out{};
+    for (auto devcap : devcaps) {
+      out[devcap.capability] = devcap.level;
+    }
+    return out;
   }
 
   Memory allocate_memory(const TiMemoryAllocateInfo &allocate_info) {

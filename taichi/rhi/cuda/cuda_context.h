@@ -78,7 +78,7 @@ class CUDAContext {
     void *new_ctx_;
 
    public:
-    ContextGuard(CUDAContext *new_ctx)
+    explicit ContextGuard(CUDAContext *new_ctx)
         : old_ctx_(nullptr), new_ctx_(new_ctx->context_) {
       CUDADriver::get_instance().context_get_current(&old_ctx_);
       if (old_ctx_ != new_ctx_)

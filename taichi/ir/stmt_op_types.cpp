@@ -136,6 +136,7 @@ std::string snode_op_type_name(SNodeOpType type) {
     REGISTER_TYPE(activate);
     REGISTER_TYPE(deactivate);
     REGISTER_TYPE(append);
+    REGISTER_TYPE(allocate);
     REGISTER_TYPE(clear);
     REGISTER_TYPE(undefined);
 

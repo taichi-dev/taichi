@@ -18,7 +18,7 @@ class CheckOutOfBound : public BasicStmtVisitor {
   std::string kernel_name;
 
   explicit CheckOutOfBound(const std::string &kernel_name)
-      : BasicStmtVisitor(), visited(), kernel_name(kernel_name) {
+      : kernel_name(kernel_name) {
   }
 
   bool is_done(Stmt *stmt) {

@@ -28,10 +28,10 @@ def get_c_function_param(x: Field):
 
     name = _T(x.name)
 
-    if x.by_ref or x.by_mut:
-        return f"IntPtr {name}"
-    elif is_dyn_array:
+    if is_dyn_array or x.by_ref:
         return f"[MarshalAs(UnmanagedType.LPArray)] {get_type_name(x.type)}[] {name}"
+    elif x.by_mut:
+        return f"[MarshalAs(UnmanagedType.LPArray)] [In, Out] {get_type_name(x.type)}[] {name}"
     elif x.count:
         return f"{get_type_name(x.type)}[{x.count}] {name}"
     else:
@@ -118,7 +118,8 @@ def get_declr(x: EntryBase):
     elif ty is Enumeration:
         out = ["public enum " + get_type_name(x) + " {"]
         for name, value in x.cases.items():
-            out += [f"  {name.screaming_snake_case} = {value},"]
+            name = x.name.extend(name).screaming_snake_case
+            out += [f"  {name} = {value},"]
         out += [
             f"  {x.name.extend('max_enum').screaming_snake_case} = 0x7fffffff,"
         ]
@@ -128,9 +129,8 @@ def get_declr(x: EntryBase):
     elif ty is BitField:
         out = ["[Flags]", "public enum " + get_type_name(x) + " {"]
         for name, value in x.bits.items():
-            out += [
-                f"  {name.extend('bit').screaming_snake_case} = 1 << {value},"
-            ]
+            name = x.name.extend(name).extend('bit').screaming_snake_case
+            out += [f"  {name} = 1 << {value},"]
         out += ["};"]
         return '\n'.join(out)
 
@@ -223,22 +223,29 @@ def get_declr(x: EntryBase):
                 ',\n'.join(function_params),
                 ") {",
             ]
+
             for param in x.params:
-                if (isinstance(param.type, Structure)
-                        or isinstance(param.type, Union)) and not param.count:
+                is_single_ref = (param.by_ref
+                                 or param.by_mut) and (not param.count)
+                if isinstance(
+                        param.type,
+                    (Structure, Union, BuiltInType)) and is_single_ref:
                     out += [
-                        f"  IntPtr hglobal_{_T(param.name)} = Marshal.AllocHGlobal(Marshal.SizeOf(typeof({get_type_name(param.type)})));",
-                        f"  Marshal.StructureToPtr({_T(param.name)}, hglobal_{_T(param.name)}, false);"
+                        f"  var arr_{_T(param.name)} = new {get_type_name(param.type)}[1];",
+                        f"  arr_{_T(param.name)}[0] = {_T(param.name)};"
                     ]
             if x.return_value_type:
                 out += [f"  var rv = {_T(x.name.snake_case)}("]
             else:
                 out += [f"  {_T(x.name.snake_case)}("]
             for i, param in enumerate(x.params):
-                if (isinstance(param.type, Structure)
-                        or isinstance(param.type, Union)) and not param.count:
+                is_single_ref = (param.by_ref
+                                 or param.by_mut) and (not param.count)
+                if isinstance(
+                        param.type,
+                    (Structure, Union, BuiltInType)) and is_single_ref:
                     out += [
-                        f"    hglobal_{_T(param.name)}{','if i + 1 != len(x.params) else ''}"
+                        f"    arr_{_T(param.name)}{','if i + 1 != len(x.params) else ''}"
                     ]
                 else:
                     out += [
@@ -246,11 +253,11 @@ def get_declr(x: EntryBase):
                     ]
             out += ["  );"]
             for param in x.params:
-                if (isinstance(param.type, Structure)
-                        or isinstance(param.type, Union)) and not param.count:
-                    out += [
-                        f"  Marshal.FreeHGlobal(hglobal_{_T(param.name)});"
-                    ]
+                is_single_ref = param.by_mut and (not param.count)
+                if isinstance(
+                        param.type,
+                    (Structure, Union, BuiltInType)) and is_single_ref:
+                    out += [f"  {_T(param.name)} = arr_{_T(param.name)}[0];"]
             if x.return_value_type:
                 out += [f"  return rv;"]
             out += ["}", "}"]

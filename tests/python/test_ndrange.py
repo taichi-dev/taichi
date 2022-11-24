@@ -221,8 +221,7 @@ def test_ndrange_ast_transform():
             assert A[i, j] == r
 
 
-@test_utils.test()
-def test_grouped_ndrange_star():
+def _test_grouped_ndrange_star():
     @ti.kernel
     def foo() -> ti.i32:
         ret = 0
@@ -231,6 +230,16 @@ def test_grouped_ndrange_star():
         return ret
 
     assert foo() == 36
+
+
+@test_utils.test()
+def test_grouped_ndrange_star():
+    _test_grouped_ndrange_star()
+
+
+@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
+def test_grouped_ndrange_star_matrix_scalarize():
+    _test_grouped_ndrange_star()
 
 
 @test_utils.test()
@@ -315,3 +324,17 @@ def test_static_ndrange_should_accept_numpy_integer():
             pass
 
     example()
+
+
+@test_utils.test()
+def test_n_loop_var_neq_dimension():
+    @ti.kernel
+    def iter():
+        for i in ti.ndrange(1, 4):
+            print(i)
+
+    with pytest.warns(
+            DeprecationWarning,
+            match=
+            "Ndrange for loop with number of the loop variables not equal to"):
+        iter()

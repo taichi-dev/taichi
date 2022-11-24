@@ -204,7 +204,8 @@ class InstrBuilder {
 // Builder to build up a single SPIR-V module
 class IRBuilder {
  public:
-  IRBuilder(const Device *device) : device_(device) {
+  IRBuilder(Arch arch, const DeviceCapabilityConfig *caps)
+      : arch_(arch), caps_(caps) {
   }
 
   template <typename... Args>
@@ -394,7 +395,7 @@ class IRBuilder {
     for (const auto &arg : args) {
       ib_.add(arg);
     }
-    if (device_->get_cap(DeviceCapability::spirv_version) >= 0x10400) {
+    if (caps_->get(DeviceCapability::spirv_version) >= 0x10400) {
       for (const auto &v : global_values) {
         ib_.add(v);
       }
@@ -553,7 +554,8 @@ class IRBuilder {
 
   void init_random_function(Value global_tmp_);
 
-  const Device *device_;
+  Arch arch_;
+  const DeviceCapabilityConfig *caps_;
 
   // internal instruction builder
   InstrBuilder ib_;

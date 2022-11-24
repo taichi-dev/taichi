@@ -93,7 +93,7 @@ TEST_P(LlvmOfflineCacheTest, ReadWrite) {
   {
     auto llvm_ctx = std::make_unique<llvm::LLVMContext>();
 
-    LlvmOfflineCacheFileWriter writer;
+    llvm_ctx->setOpaquePointers(false);
     LlvmOfflineCache::KernelCacheData kcache;
     kcache.created_at = 1;
     kcache.last_used_at = 1;
@@ -107,9 +107,15 @@ TEST_P(LlvmOfflineCacheTest, ReadWrite) {
     kcache.compiled_data.tasks = tasks;
     kcache.compiled_data.module = make_module(*llvm_ctx);
     kcache.args = arg_infos;
-    writer.add_kernel_cache(kKernelName, std::move(kcache));
-    writer.set_no_mangle();
-    writer.dump(tmp_dir_str, llvm_fmt);
+    LlvmOfflineCacheFileWriter writer1;
+    writer1.add_kernel_cache(kKernelName, kcache.clone());
+    writer1.set_no_mangle();
+    writer1.dump(tmp_dir_str, llvm_fmt, /*merge_with_old=*/false);
+    // Dump twice to verify the correctness of LlvmOfflineCacheFileWriter::dump
+    LlvmOfflineCacheFileWriter writer2;
+    writer2.add_kernel_cache(kKernelName, kcache.clone());
+    writer2.set_no_mangle();
+    writer2.dump(tmp_dir_str, llvm_fmt, /*merge_with_old=*/false);
   }
 
   auto *llvm_ctx = tlctx_->get_this_thread_context();

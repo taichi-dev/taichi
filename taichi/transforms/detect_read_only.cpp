@@ -29,8 +29,9 @@ class ExternalPtrAccessVisitor : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
 
-  ExternalPtrAccessVisitor(std::unordered_map<int, ExternalPtrAccess> &map)
-      : BasicStmtVisitor(), map_(map) {
+  explicit ExternalPtrAccessVisitor(
+      std::unordered_map<int, ExternalPtrAccess> &map)
+      : map_(map) {
   }
 
   void visit(GlobalLoadStmt *stmt) override {

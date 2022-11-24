@@ -1,6 +1,5 @@
 option(USE_STDCPP "Use -stdlib=libc++" OFF)
 option(TI_WITH_LLVM "Build with LLVM backends" ON)
-option(TI_LLVM_15 "Switch to LLVM 15" OFF)
 option(TI_WITH_METAL "Build with the Metal backend" ON)
 option(TI_WITH_CUDA "Build with the CUDA backend" ON)
 option(TI_WITH_CUDA_TOOLKIT "Build with the CUDA toolkit" OFF)
@@ -96,12 +95,6 @@ file(GLOB TAICHI_CORE_SOURCE
 
 if(TI_WITH_LLVM)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_LLVM")
-endif()
-
-if (TI_LLVM_15)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_LLVM_15")
-else()
-    set(TI_WITH_DX12 OFF)
 endif()
 
 ## This version var is only used to locate slim_libdevice.10.bc
@@ -232,10 +225,12 @@ if(TI_WITH_LLVM)
         add_subdirectory(taichi/rhi/dx12)
         add_subdirectory(taichi/runtime/dx12)
         add_subdirectory(taichi/codegen/dx12)
+        add_subdirectory(taichi/runtime/program_impls/dx12)
 
         target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/DirectX-Headers/include)
         target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE dx12_codegen)
         target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE dx12_runtime)
+        target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE dx12_program_impl)
     endif()
 
     add_subdirectory(taichi/rhi/llvm)
@@ -330,12 +325,19 @@ endif()
 if (TI_WITH_VULKAN)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_VULKAN")
     if (APPLE)
-        find_library(MOLTEN_VK libMoltenVK.dylib PATHS $HOMEBREW_CELLAR/molten-vk $VULKAN_SDK REQUIRED)
-        configure_file(${MOLTEN_VK} ${CMAKE_BINARY_DIR}/libMoltenVK.dylib COPYONLY)
-        message(STATUS "MoltenVK library ${MOLTEN_VK}")
-        if (EXISTS ${CMAKE_BINARY_DIR}/libMoltenVK.dylib)
-            install(FILES ${CMAKE_BINARY_DIR}/libMoltenVK.dylib DESTINATION ${INSTALL_LIB_DIR}/runtime)
+        # The latest Molten-vk v1.2.0 and v1.1.11 breaks GGUI: mpm3d_ggui.py
+        # So we have to manually download and install Molten-vk v1.10.0
+        #
+        # Uncomment the following lines if the mpm3d_ggui.py runs well with the latest Molten-vk
+        #find_library(MOLTEN_VK libMoltenVK.dylib PATHS $HOMEBREW_CELLAR/molten-vk $VULKAN_SDK REQUIRED)
+        #configure_file(${MOLTEN_VK} ${CMAKE_BINARY_DIR}/libMoltenVK.dylib COPYONLY)
+        #message(STATUS "MoltenVK library ${MOLTEN_VK}")
+
+        if(NOT EXISTS ${CMAKE_BINARY_DIR}/libMoltenVK.dylib)
+            execute_process(COMMAND curl -L -o ${CMAKE_BINARY_DIR}/libMoltenVK.zip https://github.com/taichi-dev/taichi_assets/files/9977436/libMoltenVK.dylib.zip)
+            execute_process(COMMAND tar -xf ${CMAKE_BINARY_DIR}/libMoltenVK.zip --directory ${CMAKE_BINARY_DIR})
         endif()
+        install(FILES ${CMAKE_BINARY_DIR}/libMoltenVK.dylib DESTINATION ${INSTALL_LIB_DIR}/runtime)
     endif()
     add_subdirectory(taichi/rhi/vulkan)
     add_subdirectory(taichi/runtime/program_impls/vulkan)

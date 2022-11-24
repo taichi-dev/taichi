@@ -233,12 +233,24 @@ class LowerAST : public IRVisitor {
       new_for->mem_access_opt = stmt->mem_access_opt;
       fctx.push_back(std::move(new_for));
     } else if (stmt->external_tensor) {
-      auto tensor = stmt->external_tensor.cast<ExternalTensorExpression>();
+      int arg_id = -1;
       std::vector<Stmt *> shape;
-      for (int i = 0; i < tensor->dim - abs(tensor->element_dim); i++) {
-        shape.push_back(fctx.push_back<ExternalTensorShapeAlongAxisStmt>(
-            i, tensor->arg_id));
+      if (stmt->external_tensor.is<ExternalTensorExpression>()) {
+        auto tensor = stmt->external_tensor.cast<ExternalTensorExpression>();
+        arg_id = tensor->arg_id;
+        for (int i = 0; i < tensor->dim - abs(tensor->element_dim); i++) {
+          shape.push_back(
+              fctx.push_back<ExternalTensorShapeAlongAxisStmt>(i, arg_id));
+        }
+      } else if (stmt->external_tensor.is<TexturePtrExpression>()) {
+        auto rw_texture = stmt->external_tensor.cast<TexturePtrExpression>();
+        arg_id = rw_texture->arg_id;
+        for (size_t i = 0; i < rw_texture->num_dims; ++i) {
+          shape.emplace_back(
+              fctx.push_back<ExternalTensorShapeAlongAxisStmt>(i, arg_id));
+        }
       }
+
       Stmt *begin = fctx.push_back<ConstStmt>(TypedConstant(0));
       Stmt *end = fctx.push_back<ConstStmt>(TypedConstant(1));
       for (int i = 0; i < (int)shape.size(); i++) {
@@ -248,7 +260,7 @@ class LowerAST : public IRVisitor {
       auto &&new_for = std::make_unique<RangeForStmt>(
           begin, end, std::move(stmt->body), stmt->is_bit_vectorized,
           stmt->num_cpu_threads, stmt->block_dim, stmt->strictly_serialized,
-          /*range_hint=*/fmt::format("arg {}", tensor->arg_id));
+          /*range_hint=*/fmt::format("arg {}", arg_id));
       VecStatement new_statements;
       Stmt *loop_index =
           new_statements.push_back<LoopIndexStmt>(new_for.get(), 0);
@@ -384,25 +396,21 @@ class LowerAST : public IRVisitor {
     auto expr = assign->rhs;
     auto fctx = make_flatten_ctx();
     flatten_rvalue(expr, &fctx);
+    flatten_lvalue(dest, &fctx);
     if (dest.is<IdExpression>()) {
-      fctx.push_back<LocalStoreStmt>(
-          assign->parent->lookup_var(assign->lhs.cast<IdExpression>()->id),
-          expr->stmt);
+      fctx.push_back<LocalStoreStmt>(dest->stmt, expr->stmt);
     } else if (dest.is<IndexExpression>()) {
       auto ix = dest.cast<IndexExpression>();
-      flatten_lvalue(dest, &fctx);
       if (ix->is_local()) {
         fctx.push_back<LocalStoreStmt>(dest->stmt, expr->stmt);
       } else {
         fctx.push_back<GlobalStoreStmt>(dest->stmt, expr->stmt);
       }
     } else if (dest.is<StrideExpression>()) {
-      flatten_lvalue(dest, &fctx);
       fctx.push_back<GlobalStoreStmt>(dest->stmt, expr->stmt);
     } else {
       TI_ASSERT(dest.is<ArgLoadExpression>() &&
                 dest.cast<ArgLoadExpression>()->is_ptr);
-      flatten_lvalue(dest, &fctx);
       fctx.push_back<GlobalStoreStmt>(dest->stmt, expr->stmt);
     }
     fctx.stmts.back()->set_tb(assign->tb);
@@ -477,7 +485,7 @@ class LowerAST : public IRVisitor {
     TI_ASSERT((int)(stmt->so_func != nullptr) +
                   (int)(!stmt->asm_source.empty()) +
                   (int)(!stmt->bc_filename.empty()) ==
-              1)
+              1);
     std::vector<Stmt *> arg_statements, output_statements;
     if (stmt->so_func != nullptr || !stmt->asm_source.empty()) {
       for (auto &s : stmt->args) {

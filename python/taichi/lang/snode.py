@@ -3,6 +3,7 @@ import numbers
 from taichi._lib import core as _ti_core
 from taichi.lang import expr, impl, matrix
 from taichi.lang.field import BitpackedFields, Field
+from taichi.lang.util import get_traceback, is_taichi_class
 
 
 class SNode:
@@ -34,7 +35,7 @@ class SNode:
             dimensions = [dimensions] * len(axes)
         return SNode(
             self.ptr.dense(axes, dimensions,
-                           impl.current_cfg().packed))
+                           impl.current_cfg().packed, get_traceback()))
 
     def pointer(self, axes, dimensions):
         """Adds a pointer SNode as a child component of `self`.
@@ -50,7 +51,7 @@ class SNode:
             dimensions = [dimensions] * len(axes)
         return SNode(
             self.ptr.pointer(axes, dimensions,
-                             impl.current_cfg().packed))
+                             impl.current_cfg().packed, get_traceback()))
 
     @staticmethod
     def _hash(axes, dimensions):
@@ -78,7 +79,7 @@ class SNode:
             chunk_size = dimension
         return SNode(
             self.ptr.dynamic(axis[0], dimension, chunk_size,
-                             impl.current_cfg().packed))
+                             impl.current_cfg().packed, get_traceback()))
 
     def bitmasked(self, axes, dimensions):
         """Adds a bitmasked SNode as a child component of `self`.
@@ -94,7 +95,7 @@ class SNode:
             dimensions = [dimensions] * len(axes)
         return SNode(
             self.ptr.bitmasked(axes, dimensions,
-                               impl.current_cfg().packed))
+                               impl.current_cfg().packed, get_traceback()))
 
     def quant_array(self, axes, dimensions, max_num_bits):
         """Adds a quant_array SNode as a child component of `self`.
@@ -111,7 +112,7 @@ class SNode:
             dimensions = [dimensions] * len(axes)
         return SNode(
             self.ptr.quant_array(axes, dimensions, max_num_bits,
-                                 impl.current_cfg().packed))
+                                 impl.current_cfg().packed, get_traceback()))
 
     def place(self, *args, offset=None):
         """Places a list of Taichi fields under the `self` container.
@@ -133,7 +134,7 @@ class SNode:
                 bit_struct_type = arg.bit_struct_type_builder.build()
                 bit_struct_snode = self.ptr.bit_struct(
                     bit_struct_type,
-                    impl.current_cfg().packed)
+                    impl.current_cfg().packed, get_traceback())
                 for (field, id_in_bit_struct) in arg.fields:
                     bit_struct_snode.place(field, offset, id_in_bit_struct)
             elif isinstance(arg, Field):
@@ -362,18 +363,32 @@ def rescale_index(a, b, I):
     return matrix.Vector(entries)
 
 
+def _get_flattened_ptrs(val):
+    if is_taichi_class(val):
+        ptrs = []
+        for item in val._members:
+            ptrs.extend(_get_flattened_ptrs(item))
+        return ptrs
+    if impl.current_cfg().real_matrix and isinstance(
+            val, expr.Expr) and val.ptr.is_tensor():
+        return impl.get_runtime().prog.current_ast_builder().expand_expr(
+            [val.ptr])
+    return [expr.Expr(val).ptr]
+
+
 def append(node, indices, val):
     """Append a value `val` to a SNode `node` at index `indices`.
 
     Args:
         node (:class:`~taichi.SNode`): Input SNode.
         indices (Union[int, :class:`~taichi.Vector`]): the indices to visit.
-        val (:mod:`~taichi.types`): the data to be appended.
+        val (:mod:`~taichi.types.primitive_types`): the scalar data to be appended, only i32 value is support for now.
     """
-    a = impl.expr_init(
-        _ti_core.expr_snode_append(node._snode.ptr,
-                                   expr.make_expr_group(indices),
-                                   expr.Expr(val).ptr))
+    ptrs = _get_flattened_ptrs(val)
+    append_expr = expr.Expr(_ti_core.expr_snode_append(
+        node._snode.ptr, expr.make_expr_group(indices), ptrs),
+                            tb=impl.get_runtime().get_current_src_info())
+    a = impl.expr_init(append_expr)
     return a
 
 

@@ -77,7 +77,7 @@ std::string JITSessionCUDA::compile_module_to_ptx(
   // Part of this function is borrowed from Halide::CodeGen_PTX_Dev.cpp
   if (llvm::verifyModule(*module, &llvm::errs())) {
     module->print(llvm::errs(), nullptr);
-    TI_WARN("Module broken");
+    TI_ERROR("LLVM Module broken");
   }
 
   using namespace llvm;
@@ -103,10 +103,6 @@ std::string JITSessionCUDA::compile_module_to_ptx(
   TI_ERROR_UNLESS(target, err_str);
 
   TargetOptions options;
-#ifndef TI_LLVM_15
-  // PrintMachineCode is removed in https://reviews.llvm.org/D83275.
-  options.PrintMachineCode = 0;
-#endif
   if (this->config_->fast_math) {
     options.AllowFPOpFusion = FPOpFusion::Fast;
     // See NVPTXISelLowering.cpp
@@ -124,10 +120,6 @@ std::string JITSessionCUDA::compile_module_to_ptx(
   options.HonorSignDependentRoundingFPMathOption = 0;
   options.NoZerosInBSS = 0;
   options.GuaranteedTailCallOpt = 0;
-#ifndef TI_LLVM_15
-  // StackAlignmentOverride is removed in https://reviews.llvm.org/D103048.
-  options.StackAlignmentOverride = 0;
-#endif
 
   std::unique_ptr<TargetMachine> target_machine(target->createTargetMachine(
       triple.str(), CUDAContext::get_instance().get_mcpu(), cuda_mattrs(),

@@ -77,13 +77,43 @@ if (WIN32)
   # MSVC in `Debug` config because MSVC would try to fill uninitialize memory
   # with `0xCC` but it too breaks `LLVMTableGen` which is depended on by almost
   # every component in LLVM.
-  #
-  # FIXME: (penguinliong) This is fixed in later releases of LLVM so maybe
-  # someday we can distribute `Debug` libraries, if it's ever needed.
-  if (NOT TI_LLVM_15)
-    SET(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreadedDLL)
-  endif()
   message("CMAKE_MSVC_RUNTIME_LIBRARY: ${CMAKE_MSVC_RUNTIME_LIBRARY}")
+endif()
+
+# Setup CLANG_EXECUTABLE
+if (CLANG_EXECUTABLE)
+  message("CLANG_EXECUTABLE defined: ${CLANG_EXECUTABLE}")
+elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+  set (CLANG_EXECUTABLE ${CMAKE_CXX_COMPILER})
+  message("Clang executable using host compiler ${CLANG_EXECUTABLE}")
+else()
+  find_program(CLANG_EXECUTABLE NAMES clang-15 clang-14 clang-13 clang-12 clang-11 clang-10 clang-9 clang-8 clang-7 clang)
+  message("Clang executable found at ${CLANG_EXECUTABLE}")
+endif()
+
+if (NOT CLANG_EXECUTABLE)
+  message(FATAL_ERROR "Cannot find any clang executable.")
+endif()
+
+macro(check_clang_version)
+  execute_process(COMMAND ${CLANG_EXECUTABLE} --version OUTPUT_VARIABLE CLANG_VERSION_OUTPUT)
+  string(REGEX MATCH "([0-9]+)\\.[0-9]+(\\.[0-9]+)?" CLANG_VERSION "${CLANG_VERSION_OUTPUT}")
+  message("${CLANG_EXECUTABLE} --version: ${CLANG_VERSION}")
+
+  set(CLANG_VERSION_MAJOR "${CMAKE_MATCH_1}")
+endmacro()
+
+if (APPLE)
+  set(CLANG_OSX_FLAGS "-isysroot${CMAKE_OSX_SYSROOT}")
+endif()
+
+# Highest clang version that we've tested
+set(CLANG_HIGHEST_VERSION "15")
+
+check_clang_version()
+
+if (${CLANG_VERSION_MAJOR} VERSION_GREATER ${CLANG_HIGHEST_VERSION})
+  message(FATAL_ERROR "${CLANG_EXECUTABLE} version: ${CLANG_VERSION}, required: <=${CLANG_HIGHEST_VERSION}. Consider passing -DCLANG_EXECUTABLE=/path/to/clang to cmake to use a specific clang.")
 endif()
 
 # No support of Python for Android build; or in any case taichi is integrated
@@ -123,54 +153,6 @@ endif()
 
 if (TI_WITH_DX12)
     set(DX12_ARCH "dx12")
-endif()
-
-if (CLANG_EXECUTABLE)
-  message("Clang executable ${CLANG_EXECUTABLE}")
-elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-  set (CLANG_EXECUTABLE ${CMAKE_CXX_COMPILER})
-  message("Clang executable using host compiler ${CLANG_EXECUTABLE}")
-else()
-  find_program(CLANG_EXECUTABLE NAMES clang clang-10 clang-11 clang-9 clang-8 clang-7)
-  message("Clang executable found at ${CLANG_EXECUTABLE}")
-endif()
-
-if (NOT CLANG_EXECUTABLE)
-  message(FATAL_ERROR "Cannot find any clang executable.")
-endif()
-
-macro(check_clang_version)
-  execute_process(COMMAND ${CLANG_EXECUTABLE} --version OUTPUT_VARIABLE CLANG_VERSION_OUTPUT)
-  string(REGEX MATCH "([0-9]+)\\.[0-9]+(\\.[0-9]+)?" CLANG_VERSION "${CLANG_VERSION_OUTPUT}")
-  message("${CLANG_EXECUTABLE} --version: ${CLANG_VERSION}")
-
-  set(CLANG_VERSION_MAJOR "${CMAKE_MATCH_1}")
-endmacro()
-
-if (APPLE)
-  set(CLANG_OSX_FLAGS "-isysroot${CMAKE_OSX_SYSROOT}")
-  set(CLANG_HIGHEST_VERSION "12")
-else()
-  if (TI_LLVM_15)
-    set(CLANG_HIGHEST_VERSION "15")
-  else()
-    set(CLANG_HIGHEST_VERSION "11")
-  endif()
-endif()
-
-check_clang_version()
-
-if (${CLANG_VERSION_MAJOR} VERSION_GREATER ${CLANG_HIGHEST_VERSION})
-  unset(CLANG_EXECUTABLE)
-  find_program(CLANG_EXECUTABLE NAMES clang-10 clang-11 clang-9 clang-8 clang-7)
-  if (NOT CLANG_EXECUTABLE)
-    message(FATAL_ERROR "${CLANG_EXECUTABLE} version: ${CLANG_VERSION}, required: <=${CLANG_HIGHEST_VERSION}. Consider passing -DCLANG_EXECUTABLE=/path/to/clang to cmake to use a specific clang.")
-  else()
-    check_clang_version()
-    if (${CLANG_VERSION_MAJOR} VERSION_GREATER ${CLANG_HIGHEST_VERSION})
-      message(FATAL_ERROR "${CLANG_EXECUTABLE} version: ${CLANG_VERSION}, required: <=${CLANG_HIGHEST_VERSION}. Consider passing -DCLANG_EXECUTABLE=/path/to/clang to cmake to use a specific clang.")
-    endif()
-  endif()
 endif()
 
 if (TI_WITH_LLVM)

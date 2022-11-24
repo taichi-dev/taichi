@@ -73,13 +73,14 @@ class HostDeviceContextBlitter {
               device_->unmap(buffer);
             }
           }
-          // Substitute in the device address if supported
+          // Substitute in the device address.
+
+          // (penguinliong) We don't check the availability of physical pointer
+          // here. It should be done before you need this class.
           if ((host_ctx_->device_allocation_type[i] ==
                    RuntimeContext::DevAllocType::kNone ||
                host_ctx_->device_allocation_type[i] ==
-                   RuntimeContext::DevAllocType::kNdarray) &&
-              device_->get_cap(
-                  DeviceCapability::spirv_has_physical_storage_buffer)) {
+                   RuntimeContext::DevAllocType::kNdarray)) {
             uint64_t addr =
                 device_->get_memory_physical_pointer(ext_arrays.at(i));
             reinterpret_cast<uint64 *>(device_ptr)[0] = addr;
@@ -87,34 +88,27 @@ class HostDeviceContextBlitter {
           // We should not process the rest
           break;
         }
-        if (device_->get_cap(DeviceCapability::spirv_has_int8)) {
-          TO_DEVICE(i8, int8)
-          TO_DEVICE(u8, uint8)
-        }
-        if (device_->get_cap(DeviceCapability::spirv_has_int16)) {
-          TO_DEVICE(i16, int16)
-          TO_DEVICE(u16, uint16)
-        }
+        // (penguinliong) Same. The availability of short/long int types depends
+        // on the kernels and compute graphs and the check should already be
+        // done during module loads.
+        TO_DEVICE(i8, int8)
+        TO_DEVICE(u8, uint8)
+        TO_DEVICE(i16, int16)
+        TO_DEVICE(u16, uint16)
         TO_DEVICE(i32, int32)
         TO_DEVICE(u32, uint32)
         TO_DEVICE(f32, float32)
-        if (device_->get_cap(DeviceCapability::spirv_has_int64)) {
-          TO_DEVICE(i64, int64)
-          TO_DEVICE(u64, uint64)
-        }
-        if (device_->get_cap(DeviceCapability::spirv_has_float64)) {
-          TO_DEVICE(f64, float64)
-        }
-        if (device_->get_cap(DeviceCapability::spirv_has_float16)) {
-          if (arg.dtype == PrimitiveTypeID::f16) {
-            auto d = fp16_ieee_from_fp32_value(host_ctx_->get_arg<float>(i));
-            reinterpret_cast<uint16 *>(device_ptr)[0] = d;
-            break;
-          }
+        TO_DEVICE(i64, int64)
+        TO_DEVICE(u64, uint64)
+        TO_DEVICE(f64, float64)
+        if (arg.dtype == PrimitiveTypeID::f16) {
+          auto d = fp16_ieee_from_fp32_value(host_ctx_->get_arg<float>(i));
+          reinterpret_cast<uint16 *>(device_ptr)[0] = d;
+          break;
         }
         TI_ERROR("Device does not support arg type={}",
                  PrimitiveType::get(arg.dtype).to_string());
-      } while (0);
+      } while (false);
     }
 
     char *device_ptr = device_base + ctx_attribs_->extra_args_mem_offset();
@@ -196,32 +190,24 @@ class HostDeviceContextBlitter {
       const auto dt = PrimitiveType::get(ret.dtype);
       const auto num = ret.stride / data_type_size(dt);
       for (int j = 0; j < num; ++j) {
-        if (device_->get_cap(DeviceCapability::spirv_has_int8)) {
-          TO_HOST(i8, int8, j)
-          TO_HOST(u8, uint8, j)
-        }
-        if (device_->get_cap(DeviceCapability::spirv_has_int16)) {
-          TO_HOST(i16, int16, j)
-          TO_HOST(u16, uint16, j)
-        }
+        // (penguinliong) Again, it's the module loader's responsibility to
+        // check the data type availability.
+        TO_HOST(i8, int8, j)
+        TO_HOST(u8, uint8, j)
+        TO_HOST(i16, int16, j)
+        TO_HOST(u16, uint16, j)
         TO_HOST(i32, int32, j)
         TO_HOST(u32, uint32, j)
         TO_HOST(f32, float32, j)
-        if (device_->get_cap(DeviceCapability::spirv_has_int64)) {
-          TO_HOST(i64, int64, j)
-          TO_HOST(u64, uint64, j)
-        }
-        if (device_->get_cap(DeviceCapability::spirv_has_float64)) {
-          TO_HOST(f64, float64, j)
-        }
-        if (device_->get_cap(DeviceCapability::spirv_has_float16)) {
-          if (dt->is_primitive(PrimitiveTypeID::f16)) {
-            const float d = fp16_ieee_to_fp32_value(
-                *reinterpret_cast<uint16 *>(device_ptr) + j);
-            host_result_buffer_[j] =
-                taichi_union_cast_with_different_sizes<uint64>(d);
-            continue;
-          }
+        TO_HOST(i64, int64, j)
+        TO_HOST(u64, uint64, j)
+        TO_HOST(f64, float64, j)
+        if (dt->is_primitive(PrimitiveTypeID::f16)) {
+          const float d = fp16_ieee_to_fp32_value(
+              *reinterpret_cast<uint16 *>(device_ptr) + j);
+          host_result_buffer_[j] =
+              taichi_union_cast_with_different_sizes<uint64>(d);
+          continue;
         }
         TI_ERROR("Device does not support return value type={}",
                  data_type_name(PrimitiveType::get(ret.dtype)));
@@ -610,6 +596,7 @@ void GfxRuntime::synchronize() {
   flush();
   device_->wait_idle();
   ctx_buffers_.clear();
+  fflush(stdout);
 }
 
 StreamSemaphore GfxRuntime::flush() {
@@ -727,7 +714,8 @@ void GfxRuntime::enqueue_compute_op_lambda(
 
 GfxRuntime::RegisterParams run_codegen(
     Kernel *kernel,
-    Device *device,
+    Arch arch,
+    const DeviceCapabilityConfig &caps,
     const std::vector<CompiledSNodeStructs> &compiled_structs) {
   const auto id = Program::get_kernel_id();
   const auto taichi_kernel_name(fmt::format("{}_k{:04d}_vk", kernel->name, id));
@@ -736,7 +724,8 @@ GfxRuntime::RegisterParams run_codegen(
   params.ti_kernel_name = taichi_kernel_name;
   params.kernel = kernel;
   params.compiled_structs = compiled_structs;
-  params.device = device;
+  params.arch = arch;
+  params.caps = caps;
   params.enable_spv_opt =
       kernel->program->this_thread_config().external_optimization_level > 0;
   spirv::KernelCodegen codegen(params);

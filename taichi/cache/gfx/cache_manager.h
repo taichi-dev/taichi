@@ -8,10 +8,14 @@
 namespace taichi::lang {
 namespace gfx {
 
-struct OfflineCacheKernelMetadata : public offline_cache::KernelMetadataBase {
+struct OfflineCacheKernelMetadata {
+  std::string kernel_key;
+  std::size_t size{0};          // byte
+  std::time_t created_at{0};    // sec
+  std::time_t last_used_at{0};  // sec
   std::size_t num_files{0};
 
-  TI_IO_DEF_WITH_BASECLASS(offline_cache::KernelMetadataBase, num_files);
+  TI_IO_DEF(kernel_key, size, created_at, last_used_at, num_files);
 };
 
 class CacheManager {
@@ -26,11 +30,11 @@ class CacheManager {
     Mode mode{MemCache};
     std::string cache_path;
     GfxRuntime *runtime{nullptr};
-    std::unique_ptr<aot::TargetDevice> target_device;
+    DeviceCapabilityConfig caps{};
     const std::vector<spirv::CompiledSNodeStructs> *compiled_structs;
   };
 
-  CacheManager(Params &&init_params);
+  explicit CacheManager(Params &&init_params);
 
   CompiledKernelData load_or_compile(CompileConfig *config, Kernel *kernel);
   void dump_with_merging() const;

@@ -121,7 +121,7 @@ def initialize():
 
 
 def save_kernels(arch):
-    mod = ti.aot.Module(arch)
+    mod = ti.aot.Module()
 
     # Initialize
     g_init_builder = ti.graph.GraphBuilder()

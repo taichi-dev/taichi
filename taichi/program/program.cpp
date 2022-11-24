@@ -17,7 +17,6 @@
 #include "taichi/ir/snode.h"
 #include "taichi/ir/frontend_ir.h"
 #include "taichi/program/snode_expr_utils.h"
-#include "taichi/util/statistics.h"
 #include "taichi/math/arithmetic.h"
 #ifdef TI_WITH_LLVM
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
@@ -38,6 +37,10 @@
 #ifdef TI_WITH_DX11
 #include "taichi/runtime/program_impls/dx/dx_program.h"
 #include "taichi/rhi/dx/dx_api.h"
+#endif
+#ifdef TI_WITH_DX12
+#include "taichi/runtime/program_impls/dx12/dx12_program.h"
+#include "taichi/rhi/dx12/dx12_api.h"
 #endif
 
 #if defined(_M_X64) || defined(__x86_64)
@@ -70,6 +73,8 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   __asm__ __volatile__("");
 #endif  // defined(__arm64__) || defined(__aarch64__)
   main_thread_id_ = std::this_thread::get_id();
+  // Rehash in advance to avoid rehashing during compilation
+  configs.rehash(default_compile_config.num_compile_threads + 1);
   configs[main_thread_id_] = default_compile_config;
   configs[main_thread_id_].arch = desired_arch;
   auto &config = this_thread_config();
@@ -81,7 +86,17 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   profiler = make_profiler(config.arch, config.kernel_profiler);
   if (arch_uses_llvm(config.arch)) {
 #ifdef TI_WITH_LLVM
-    program_impl_ = std::make_unique<LlvmProgramImpl>(config, profiler.get());
+    if (config.arch != Arch::dx12) {
+      program_impl_ = std::make_unique<LlvmProgramImpl>(config, profiler.get());
+    } else {
+      // NOTE: use Dx12ProgramImpl to avoid using LlvmRuntimeExecutor for dx12.
+#ifdef TI_WITH_DX12
+      TI_ASSERT(directx12::is_dx12_api_available());
+      program_impl_ = std::make_unique<Dx12ProgramImpl>(config);
+#else
+      TI_ERROR("This taichi is not compiled with DX12");
+#endif
+    }
 #else
     TI_ERROR("This taichi is not compiled with LLVM");
 #endif
@@ -148,8 +163,6 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
     }
   }
 
-  stat.clear();
-
   Timelines::get_instance().set_enabled(config.timeline);
 
   TI_TRACE("Program ({}) arch={} initialized.", fmt::ptr(this),
@@ -188,7 +201,8 @@ void Program::materialize_runtime() {
 void Program::destroy_snode_tree(SNodeTree *snode_tree) {
   TI_ASSERT(arch_uses_llvm(this_thread_config().arch) ||
             this_thread_config().arch == Arch::vulkan ||
-            this_thread_config().arch == Arch::dx11);
+            this_thread_config().arch == Arch::dx11 ||
+            this_thread_config().arch == Arch::dx12);
   program_impl_->destroy_snode_tree(snode_tree);
   free_snode_tree_ids_.push(snode_tree->id());
 }
@@ -225,7 +239,8 @@ void Program::synchronize() {
   if (arch_uses_llvm(this_thread_config().arch) ||
       this_thread_config().arch == Arch::metal ||
       this_thread_config().arch == Arch::vulkan ||
-      this_thread_config().arch == Arch::opengl) {
+      this_thread_config().arch == Arch::opengl ||
+      this_thread_config().arch == Arch::dx12) {
     program_impl_->synchronize();
   }
 }
@@ -397,39 +412,6 @@ void Program::finalize() {
   synchronize();
   TI_ASSERT(std::this_thread::get_id() == main_thread_id_);
   TI_TRACE("Program finalizing...");
-  if (this_thread_config().print_benchmark_stat) {
-    const char *current_test = std::getenv("PYTEST_CURRENT_TEST");
-    const char *output_dir = std::getenv("TI_BENCHMARK_OUTPUT_DIR");
-    if (current_test != nullptr) {
-      if (output_dir == nullptr)
-        output_dir = ".";
-      std::string file_name = current_test;
-      auto slash_pos = file_name.find_last_of('/');
-      if (slash_pos != std::string::npos)
-        file_name = file_name.substr(slash_pos + 1);
-      auto py_pos = file_name.find(".py::");
-      TI_ASSERT(py_pos != std::string::npos);
-      file_name =
-          file_name.substr(0, py_pos) + "__" + file_name.substr(py_pos + 5);
-      auto first_space_pos = file_name.find_first_of(' ');
-      TI_ASSERT(first_space_pos != std::string::npos);
-      file_name = file_name.substr(0, first_space_pos);
-      if (auto lt_pos = file_name.find('<'); lt_pos != std::string::npos) {
-        file_name[lt_pos] = '_';
-      }
-      if (auto gt_pos = file_name.find('>'); gt_pos != std::string::npos) {
-        file_name[gt_pos] = '_';
-      }
-      file_name += ".dat";
-      file_name = std::string(output_dir) + "/" + file_name;
-      TI_INFO("Saving benchmark result to {}", file_name);
-      std::ofstream ofs(file_name);
-      TI_ASSERT(ofs);
-      std::string stat_string;
-      stat.print(&stat_string);
-      ofs << stat_string;
-    }
-  }
 
   synchronize();
   memory_pool_->terminate();
@@ -461,7 +443,8 @@ std::size_t Program::get_snode_num_dynamically_allocated(SNode *snode) {
   TI_ASSERT(arch_uses_llvm(this_thread_config().arch) ||
             this_thread_config().arch == Arch::metal ||
             this_thread_config().arch == Arch::vulkan ||
-            this_thread_config().arch == Arch::opengl);
+            this_thread_config().arch == Arch::opengl ||
+            this_thread_config().arch == Arch::dx12);
   return program_impl_->get_snode_num_dynamically_allocated(snode,
                                                             result_buffer);
 }
@@ -516,7 +499,54 @@ Program::~Program() {
   finalize();
 }
 
-std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(Arch arch) {
+DeviceCapabilityConfig translate_devcaps(const std::vector<std::string> &caps) {
+  // Each device capability assignment is named like this:
+  // - `spirv_version=1.3`
+  // - `spirv_has_int8`
+  DeviceCapabilityConfig cfg{};
+  for (const std::string &cap : caps) {
+    std::string_view key;
+    std::string_view value;
+    size_t ieq = cap.find('=');
+    if (ieq == std::string::npos) {
+      key = cap;
+    } else {
+      key = std::string_view(cap.c_str(), ieq);
+      value = std::string_view(cap.c_str() + ieq + 1);
+    }
+    DeviceCapability devcap = str2devcap(key);
+    switch (devcap) {
+      case DeviceCapability::spirv_version: {
+        if (value == "1.3") {
+          cfg.set(devcap, 0x10300);
+        } else if (value == "1.4") {
+          cfg.set(devcap, 0x10400);
+        } else if (value == "1.5") {
+          cfg.set(devcap, 0x10500);
+        } else {
+          TI_ERROR(
+              "'{}' is not a valid value of device capability `spirv_version`",
+              value);
+        }
+        break;
+      }
+      default:
+        cfg.set(devcap, 1);
+        break;
+    }
+  }
+
+  // Assign default caps (that always present).
+  if (!cfg.contains(DeviceCapability::spirv_version)) {
+    cfg.set(DeviceCapability::spirv_version, 0x10300);
+  }
+  return cfg;
+}
+
+std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(
+    Arch arch,
+    const std::vector<std::string> &caps) {
+  DeviceCapabilityConfig cfg = translate_devcaps(caps);
   // FIXME: This couples the runtime backend with the target AOT backend. E.g.
   // If we want to build a Metal AOT module, we have to be on the macOS
   // platform. Consider decoupling this part
@@ -531,8 +561,9 @@ std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(Arch arch) {
   if (arch_uses_llvm(this_thread_config().arch) ||
       this_thread_config().arch == Arch::metal ||
       this_thread_config().arch == Arch::vulkan ||
-      this_thread_config().arch == Arch::opengl) {
-    return program_impl_->make_aot_module_builder();
+      this_thread_config().arch == Arch::opengl ||
+      this_thread_config().arch == Arch::dx12) {
+    return program_impl_->make_aot_module_builder(cfg);
   }
   return nullptr;
 }

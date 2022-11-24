@@ -35,7 +35,8 @@ class Dx11ProgramImpl : public ProgramImpl {
     return runtime_->flush();
   }
 
-  std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override;
+  std::unique_ptr<AotModuleBuilder> make_aot_module_builder(
+      const DeviceCapabilityConfig &caps) override;
 
   void destroy_snode_tree(SNodeTree *snode_tree) override {
     TI_ASSERT(snode_tree_mgr_ != nullptr);
@@ -60,8 +61,6 @@ class Dx11ProgramImpl : public ProgramImpl {
   DevicePtr get_snode_tree_device_ptr(int tree_id) override {
     return snode_tree_mgr_->get_snode_tree_device_ptr(tree_id);
   }
-
-  std::unique_ptr<aot::Kernel> make_aot_kernel(Kernel &kernel) override;
 
  private:
   std::shared_ptr<Device> device_{nullptr};

@@ -343,7 +343,8 @@ void print_traceback() {
 
       int status = -1;
 
-      demangled_name_ = abi::__cxa_demangle(name.c_str(), NULL, NULL, &status);
+      demangled_name_ =
+          abi::__cxa_demangle(name.c_str(), nullptr, nullptr, &status);
 
       if (demangled_name_) {
         name = std::string(demangled_name_);

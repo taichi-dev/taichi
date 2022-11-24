@@ -44,7 +44,7 @@ class SetImage final : public Renderable {
 
   void update_data(taichi::lang::Texture *tex);
 
-  virtual void cleanup() override;
+  void cleanup() override;
 
  private:
   taichi::lang::DeviceAllocation cpu_staging_buffer_;
@@ -61,14 +61,14 @@ class SetImage final : public Renderable {
                       int img_height,
                       taichi::lang::BufferFormat format);
 
-  virtual void create_bindings() override;
+  void create_bindings() override;
 
   void create_texture();
   void destroy_texture();
 
-  void update_vertex_buffer_();
+  void update_vertex_buffer();
 
-  void update_index_buffer_();
+  void update_index_buffer();
 
   int get_correct_dimension(int dimension);
 

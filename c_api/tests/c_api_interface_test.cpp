@@ -28,6 +28,19 @@ TEST_F(CapiTest, DryRunRuntime) {
   }
 }
 
+TEST_F(CapiTest, DryRunCapabilities) {
+  if (capi::utils::is_vulkan_available()) {
+    // Vulkan Runtime
+    {
+      ti::Runtime runtime(TI_ARCH_VULKAN);
+      auto devcaps = runtime.get_capabilities();
+      auto it = devcaps.find(TI_CAPABILITY_SPIRV_VERSION);
+      assert(it != devcaps.end());
+      assert(it->second >= 0x10000);
+    }
+  }
+}
+
 TEST_F(CapiTest, DryRunMemoryAllocation) {
   {
     // CPU Runtime
@@ -59,6 +72,25 @@ TEST_F(CapiTest, DryRunMemoryAllocation) {
     ti::Runtime runtime(arch);
     ti::Memory memory = runtime.allocate_memory(100);
     ti::NdArray<uint8_t> ndarray = runtime.allocate_ndarray<uint8_t>({100}, {});
+  }
+}
+
+TEST_F(CapiTest, FailMapDeviceOnlyMemory) {
+  if (capi::utils::is_vulkan_available()) {
+    ti::Runtime runtime(TI_ARCH_VULKAN);
+
+    ti::Memory mem = runtime.allocate_memory(100);
+    mem.map();
+
+    char err_msg[1024]{0};
+    TiError err = ti_get_last_error(sizeof(err_msg), err_msg);
+
+    TI_ASSERT(err == TI_ERROR_INVALID_STATE);
+    TI_ASSERT(std::string(err_msg).find("host_read") != std::string::npos);
+    TI_ASSERT(std::string(err_msg).find("host_write") != std::string::npos);
+    TI_ASSERT(std::string(err_msg).find("host_access") != std::string::npos);
+
+    ti_set_last_error(TI_ERROR_SUCCESS, nullptr);
   }
 }
 
@@ -103,6 +135,33 @@ TEST_F(CapiTest, DryRunOpenglAotModule) {
       ti::Runtime runtime(arch);
 
       ti::AotModule aot_mod = runtime.load_aot_module(aot_mod_ss.str());
+    }
+  }
+}
+
+TEST_F(CapiTest, TestLoadTcmAotModule) {
+  if (capi::utils::is_vulkan_available()) {
+    const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
+
+    std::stringstream aot_mod_ss;
+    aot_mod_ss << folder_dir << "/module.tcm";
+
+    {
+      // Vulkan Runtime
+      TiArch arch = TiArch::TI_ARCH_VULKAN;
+      ti::Runtime runtime(arch);
+      ti::AotModule aot_mod = runtime.load_aot_module(aot_mod_ss.str());
+      ti::Kernel run = aot_mod.get_kernel("run");
+      ti::NdArray<int32_t> arr =
+          runtime.allocate_ndarray<int32_t>({16}, {}, true);
+      run[0] = arr;
+      run.launch();
+      runtime.wait();
+      std::vector<int32_t> data(16);
+      arr.read(data);
+      for (int32_t i = 0; i < 16; ++i) {
+        TI_ASSERT(data.at(i) == i);
+      }
     }
   }
 }

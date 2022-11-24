@@ -5,8 +5,12 @@ target_sources(taichi_common
   PRIVATE
     cleanup.cpp
     core.cpp
+    json.cpp
     logging.cpp
     symbol_version.cpp
+    virtual_dir.cpp
+    zip.cpp
+    miniz.c
   )
 
 target_include_directories(taichi_common

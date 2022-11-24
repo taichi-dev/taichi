@@ -88,7 +88,8 @@ void MetalProgramImpl::materialize_snode_tree(SNodeTree *tree,
   metal_kernel_mgr_->add_compiled_snode_tree(csnode_tree);
 }
 
-std::unique_ptr<AotModuleBuilder> MetalProgramImpl::make_aot_module_builder() {
+std::unique_ptr<AotModuleBuilder> MetalProgramImpl::make_aot_module_builder(
+    const DeviceCapabilityConfig &caps) {
   TI_ERROR_IF(compiled_snode_trees_.size() > 1,
               "AOT: only supports one SNodeTree");
   const auto fields =
@@ -136,10 +137,7 @@ const std::unique_ptr<metal::CacheManager>
     TI_ASSERT(compiled_runtime_module_.has_value());
     using Mgr = metal::CacheManager;
     Mgr::Params params;
-    params.mode =
-        offline_cache::enabled_wip_offline_cache(config->offline_cache)
-            ? Mgr::MemAndDiskCache
-            : Mgr::MemCache;
+    params.mode = config->offline_cache ? Mgr::MemAndDiskCache : Mgr::MemCache;
     params.cache_path = offline_cache::get_cache_path_by_arch(
         config->offline_cache_file_path, Arch::metal);
     params.compiled_runtime_module_ = &(*compiled_runtime_module_);

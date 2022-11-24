@@ -60,7 +60,7 @@ def compile_bitmasked_aot(arch):
     assert "TAICHI_AOT_FOLDER_PATH" in os.environ.keys()
     dir_name = str(os.environ["TAICHI_AOT_FOLDER_PATH"])
 
-    m = ti.aot.Module(arch)
+    m = ti.aot.Module()
 
     m.add_kernel(activate, template_args={})
     m.add_kernel(check_value_0, template_args={})

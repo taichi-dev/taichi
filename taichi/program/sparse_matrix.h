@@ -19,30 +19,33 @@ class SparseMatrixBuilder {
                       int cols,
                       int max_num_triplets,
                       DataType dtype,
-                      const std::string &storage_format);
+                      const std::string &storage_format,
+                      Program *prog);
 
   void print_triplets();
 
+  intptr_t get_ndarray_data_ptr() const;
+
   std::unique_ptr<SparseMatrix> build();
+
+  std::unique_ptr<SparseMatrix> build_cuda();
 
   void clear();
 
  private:
   template <typename T, typename G>
-  void print_template();
-
-  template <typename T, typename G>
   void build_template(std::unique_ptr<SparseMatrix> &);
 
  private:
   uint64 num_triplets_{0};
-  std::unique_ptr<uchar[]> data_base_ptr_{nullptr};
+  std::unique_ptr<Ndarray> ndarray_data_base_ptr_{nullptr};
   int rows_{0};
   int cols_{0};
   uint64 max_num_triplets_{0};
   bool built_{false};
   DataType dtype_{PrimitiveType::f32};
   std::string storage_format_{"col_major"};
+  Program *prog_{nullptr};
 };
 
 class SparseMatrix {
@@ -77,7 +80,7 @@ class SparseMatrix {
   }
 
   virtual const std::string to_string() const {
-    return nullptr;
+    return "";
   }
 
   virtual const void *get_matrix() const {
@@ -112,11 +115,11 @@ class EigenSparseMatrix : public SparseMatrix {
   explicit EigenSparseMatrix(int rows, int cols, DataType dt)
       : SparseMatrix(rows, cols, dt), matrix_(rows, cols) {
   }
-  explicit EigenSparseMatrix(EigenSparseMatrix &sm)
+  EigenSparseMatrix(EigenSparseMatrix &sm)
       : SparseMatrix(sm.num_rows(), sm.num_cols(), sm.dtype_),
         matrix_(sm.matrix_) {
   }
-  explicit EigenSparseMatrix(EigenSparseMatrix &&sm)
+  EigenSparseMatrix(EigenSparseMatrix &&sm)
       : SparseMatrix(sm.num_rows(), sm.num_cols(), sm.dtype_),
         matrix_(sm.matrix_) {
   }
@@ -221,7 +224,7 @@ class CuSparseMatrix : public SparseMatrix {
       : SparseMatrix(sm.rows_, sm.cols_, sm.dtype_), matrix_(sm.matrix_) {
   }
 
-  virtual ~CuSparseMatrix();
+  ~CuSparseMatrix() override;
 
   // TODO: Overload +=, -= and *=
   friend std::unique_ptr<SparseMatrix> operator+(const CuSparseMatrix &lhs,
@@ -268,6 +271,8 @@ class CuSparseMatrix : public SparseMatrix {
     return &matrix_;
   };
 
+  float get_element(int row, int col) const;
+
   const std::string to_string() const override;
 
   void *get_row_ptr() const {
@@ -284,7 +289,7 @@ class CuSparseMatrix : public SparseMatrix {
   }
 
  private:
-  cusparseSpMatDescr_t matrix_;
+  cusparseSpMatDescr_t matrix_{nullptr};
   void *csr_row_ptr_{nullptr};
   void *csr_col_ind_{nullptr};
   void *csr_val_{nullptr};
@@ -307,9 +312,4 @@ std::unique_ptr<SparseMatrix> make_cu_sparse_matrix(cusparseSpMatDescr_t mat,
 void make_sparse_matrix_from_ndarray(Program *prog,
                                      SparseMatrix &sm,
                                      const Ndarray &ndarray);
-void make_sparse_matrix_from_ndarray_cusparse(Program *prog,
-                                              SparseMatrix &sm,
-                                              const Ndarray &row_indices,
-                                              const Ndarray &col_indices,
-                                              const Ndarray &values);
 }  // namespace taichi::lang

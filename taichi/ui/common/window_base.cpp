@@ -162,7 +162,7 @@ WindowBase::~WindowBase() {
   }
 }
 
-GuiBase *WindowBase::GUI() {
+GuiBase *WindowBase::gui() {
   return nullptr;
 }
 

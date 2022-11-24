@@ -69,6 +69,14 @@ def inside_taichi_scope():
 `print` in the Taichi scope is supported on the CPU, CUDA, and Vulkan backends only.
 
 :::note
+To enable printing on vulkan backend, please
+- make sure validation layer is installed via [vulkan sdk](https://vulkan.lunarg.com/sdk/home).
+- turn on debug mode by `ti.init(debug=True)`.
+
+Note printing is not supported on macOS vulkan backend.
+:::
+
+:::note
 `print` does not work in Graphical Python Shells, such as IDLE and Jupyter Notebook. This is because these backends print outputs to the console, not to the GUI.
 :::
 

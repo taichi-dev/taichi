@@ -17,7 +17,7 @@ setup_python
 python3 -m pip install dist/*.whl
 if [ -z "$GPU_TEST" ]; then
     python3 -m pip install -r requirements_test.txt
-    python3 -m pip install "torch; python_version < '3.10'"
+    python3 -m pip install "torch>1.12.0; python_version < '3.10'"
     # Paddle's develop package doesn't support CI's MACOS machine at present
     if [[ $OSTYPE == "linux-"* ]]; then
         python3 -m pip install "paddlepaddle==2.3.0; python_version < '3.10'"
@@ -44,9 +44,11 @@ ti diagnose
 ti changelog
 echo "wanted archs: $TI_WANTED_ARCHS"
 
-if [ "$TI_RUN_RELEASE_TESTS" == "1" -a -z "$TI_LITE_TEST" ]; then
+if [ "$TI_RUN_RELEASE_TESTS" == "1" ]; then
     python3 -m pip install PyYAML
     git clone https://github.com/taichi-dev/taichi-release-tests
+    pushd taichi-release-tests
+    git checkout v1.1.0
     mkdir -p repos/taichi/python/taichi
     EXAMPLES=$(cat <<EOF | python3 | tail -n 1
 import taichi.examples
@@ -54,22 +56,45 @@ print(taichi.examples.__path__[0])
 EOF
 )
     ln -sf $EXAMPLES repos/taichi/python/taichi/examples
-    ln -sf taichi-release-tests/truths truths
-    python3 taichi-release-tests/run.py --log=DEBUG --runners 1 taichi-release-tests/timelines
-fi
+    pushd repos
+    git clone --depth=1 https://github.com/taichi-dev/quantaichi
+    git clone --depth=1 https://github.com/taichi-dev/difftaichi
+    popd
 
+    pushd repos/difftaichi
+    if [ "$(uname -s):$(uname -m)" == "Darwin:arm64" ]; then
+        # No FORTRAN compiler is currently working reliably on M1 Macs
+        # We can't just pip install scipy, using conda instead
+        conda install -y scipy
+    fi
+    pip install -r requirements.txt
+    popd
+
+    python3 run.py --log=DEBUG --runners 1 timelines
+    popd
+fi
 
 if [ -z "$TI_SKIP_CPP_TESTS" ]; then
     python3 tests/run_tests.py --cpp
 fi
 
+function run-it {
+    ARCH=$1
+    PARALLELISM=$2
+    KEYS=${3:-"not torch and not paddle"}
+
+    if [[ $TI_WANTED_ARCHS == *"$1"* ]]; then
+        python3 tests/run_tests.py -vr2 -t$PARALLELISM -k "$KEYS" -m "not run_in_serial" -a $ARCH
+        python3 tests/run_tests.py -vr2 -t1 -k "$KEYS" -m "run_in_serial" -a $ARCH
+    fi
+}
+
 if [ -z "$GPU_TEST" ]; then
     if [[ $PLATFORM == *"m1"* ]]; then
-	# Split per arch to avoid flaky test
-        python3 tests/run_tests.py -vr2 -t4 -k "not torch and not paddle" -a cpu
-        # Run metal and vulkan separately so that they don't use M1 chip simultaneously.
-        python3 tests/run_tests.py -vr2 -t4 -k "not torch and not paddle" -a vulkan
-        python3 tests/run_tests.py -vr2 -t2 -k "not torch and not paddle" -a metal
+        run-it cpu 4
+        run-it vulkan 4
+        run-it metal 2
+
         python3 tests/run_tests.py -vr2 -t1 -k "torch" -a "$TI_WANTED_ARCHS"
     else
         # Fail fast, give priority to the error-prone tests
@@ -79,20 +104,11 @@ if [ -z "$GPU_TEST" ]; then
         python3 tests/run_tests.py -vr2 -t4 -k "not paddle" -a "$TI_WANTED_ARCHS"
     fi
 else
-    # Split per arch to increase parallelism for linux GPU tests
-    if [[ $TI_WANTED_ARCHS == *"cuda"* ]]; then
-        # FIXME: suddenly tests exibit OOM on nvidia driver 470 + RTX2060 cards, lower parallelism by 1 (4->3)
-        python3 tests/run_tests.py -vr2 -t3 -k "not torch and not paddle" -a cuda
-    fi
-    if [[ $TI_WANTED_ARCHS == *"cpu"* ]]; then
-        python3 tests/run_tests.py -vr2 -t8 -k "not torch and not paddle" -a cpu
-    fi
-    if [[ $TI_WANTED_ARCHS == *"vulkan"* ]]; then
-        python3 tests/run_tests.py -vr2 -t8 -k "not torch and not paddle" -a vulkan
-    fi
-    if [[ $TI_WANTED_ARCHS == *"opengl"* ]]; then
-        python3 tests/run_tests.py -vr2 -t4 -k "not torch and not paddle" -a opengl
-    fi
+    run-it cuda   8
+    run-it cpu    $(nproc)
+    run-it vulkan 8
+    run-it opengl 4
+
     python3 tests/run_tests.py -vr2 -t1 -k "torch" -a "$TI_WANTED_ARCHS"
     # Paddle's paddle.fluid.core.Tensor._ptr() is only available on develop branch, and CUDA version on linux will get error `Illegal Instruction`
 fi

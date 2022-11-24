@@ -20,124 +20,124 @@ namespace taichi::lang {
 std::pair<DataType, uint32_t> buffer_format2type_channels(BufferFormat format) {
   switch (format) {
     case BufferFormat::r8:
-      return std::make_pair<DataType, uint32_t>(
+      return std::pair<DataType, uint32_t>(
           PrimitiveType::get(PrimitiveTypeID::u8), 1);
     case BufferFormat::rg8:
-      return std::make_pair<DataType, uint32_t>(
+      return std::pair<DataType, uint32_t>(
           PrimitiveType::get(PrimitiveTypeID::u8), 2);
     case BufferFormat::rgba8:
-      return std::make_pair<DataType, uint32_t>(
+      return std::pair<DataType, uint32_t>(
           PrimitiveType::get(PrimitiveTypeID::u8), 4);
     case BufferFormat::rgba8srgb:
-      return std::make_pair<DataType, uint32_t>(
+      return std::pair<DataType, uint32_t>(
           PrimitiveType::get(PrimitiveTypeID::u8), 4);
     case BufferFormat::bgra8:
-      return std::make_pair<DataType, uint32_t>(
+      return std::pair<DataType, uint32_t>(
           PrimitiveType::get(PrimitiveTypeID::u8), 4);
     case BufferFormat::bgra8srgb:
-      return std::make_pair<DataType, uint32_t>(
+      return std::pair<DataType, uint32_t>(
           PrimitiveType::get(PrimitiveTypeID::u8), 4);
     case BufferFormat::r8u:
-      return std::make_pair<DataType, uint32_t>(
+      return std::pair<DataType, uint32_t>(
           PrimitiveType::get(PrimitiveTypeID::u8), 1);
     case BufferFormat::rg8u:
-      return std::make_pair<DataType, uint32_t>(
+      return std::pair<DataType, uint32_t>(
           PrimitiveType::get(PrimitiveTypeID::u8), 2);
     case BufferFormat::rgba8u:
-      return std::make_pair<DataType, uint32_t>(
+      return std::pair<DataType, uint32_t>(
           PrimitiveType::get(PrimitiveTypeID::u8), 4);
     case BufferFormat::r8i:
-      return std::make_pair<DataType, uint32_t>(
+      return std::pair<DataType, uint32_t>(
           PrimitiveType::get(PrimitiveTypeID::i8), 1);
     case BufferFormat::rg8i:
-      return std::make_pair<DataType, uint32_t>(
+      return std::pair<DataType, uint32_t>(
           PrimitiveType::get(PrimitiveTypeID::i8), 2);
     case BufferFormat::rgba8i:
-      return std::make_pair<DataType, uint32_t>(
+      return std::pair<DataType, uint32_t>(
           PrimitiveType::get(PrimitiveTypeID::i8), 4);
     case BufferFormat::r16:
-      return std::make_pair<DataType, uint32_t>(
+      return std::pair<DataType, uint32_t>(
           PrimitiveType::get(PrimitiveTypeID::u16), 1);
     case BufferFormat::rg16:
-      return std::make_pair<DataType, uint32_t>(
+      return std::pair<DataType, uint32_t>(
           PrimitiveType::get(PrimitiveTypeID::u16), 2);
     case BufferFormat::rgb16:
-      return std::make_pair<DataType, uint32_t>(
+      return std::pair<DataType, uint32_t>(
           PrimitiveType::get(PrimitiveTypeID::u16), 3);
     case BufferFormat::rgba16:
-      return std::make_pair<DataType, uint32_t>(
+      return std::pair<DataType, uint32_t>(
           PrimitiveType::get(PrimitiveTypeID::u16), 4);
     case BufferFormat::r16u:
-      return std::make_pair<DataType, uint32_t>(
+      return std::pair<DataType, uint32_t>(
           PrimitiveType::get(PrimitiveTypeID::u16), 1);
     case BufferFormat::rg16u:
-      return std::make_pair<DataType, uint32_t>(
+      return std::pair<DataType, uint32_t>(
           PrimitiveType::get(PrimitiveTypeID::u16), 2);
     case BufferFormat::rgb16u:
-      return std::make_pair<DataType, uint32_t>(
+      return std::pair<DataType, uint32_t>(
           PrimitiveType::get(PrimitiveTypeID::u16), 3);
     case BufferFormat::rgba16u:
-      return std::make_pair<DataType, uint32_t>(
+      return std::pair<DataType, uint32_t>(
           PrimitiveType::get(PrimitiveTypeID::u16), 4);
     case BufferFormat::r16i:
-      return std::make_pair<DataType, uint32_t>(
+      return std::pair<DataType, uint32_t>(
           PrimitiveType::get(PrimitiveTypeID::i16), 1);
     case BufferFormat::rg16i:
-      return std::make_pair<DataType, uint32_t>(
+      return std::pair<DataType, uint32_t>(
           PrimitiveType::get(PrimitiveTypeID::i16), 2);
     case BufferFormat::rgb16i:
-      return std::make_pair<DataType, uint32_t>(
+      return std::pair<DataType, uint32_t>(
           PrimitiveType::get(PrimitiveTypeID::i16), 3);
     case BufferFormat::rgba16i:
-      return std::make_pair<DataType, uint32_t>(
+      return std::pair<DataType, uint32_t>(
           PrimitiveType::get(PrimitiveTypeID::i16), 4);
     case BufferFormat::r16f:
-      return std::make_pair<DataType, uint32_t>(
+      return std::pair<DataType, uint32_t>(
           PrimitiveType::get(PrimitiveTypeID::f16), 1);
     case BufferFormat::rg16f:
-      return std::make_pair<DataType, uint32_t>(
+      return std::pair<DataType, uint32_t>(
           PrimitiveType::get(PrimitiveTypeID::f16), 2);
     case BufferFormat::rgb16f:
-      return std::make_pair<DataType, uint32_t>(
+      return std::pair<DataType, uint32_t>(
           PrimitiveType::get(PrimitiveTypeID::f16), 3);
     case BufferFormat::rgba16f:
-      return std::make_pair<DataType, uint32_t>(
+      return std::pair<DataType, uint32_t>(
           PrimitiveType::get(PrimitiveTypeID::f16), 4);
     case BufferFormat::r32u:
-      return std::make_pair<DataType, uint32_t>(
+      return std::pair<DataType, uint32_t>(
           PrimitiveType::get(PrimitiveTypeID::u32), 1);
     case BufferFormat::rg32u:
-      return std::make_pair<DataType, uint32_t>(
+      return std::pair<DataType, uint32_t>(
           PrimitiveType::get(PrimitiveTypeID::u32), 2);
     case BufferFormat::rgb32u:
-      return std::make_pair<DataType, uint32_t>(
+      return std::pair<DataType, uint32_t>(
           PrimitiveType::get(PrimitiveTypeID::u32), 3);
     case BufferFormat::rgba32u:
-      return std::make_pair<DataType, uint32_t>(
+      return std::pair<DataType, uint32_t>(
           PrimitiveType::get(PrimitiveTypeID::u32), 4);
     case BufferFormat::r32i:
-      return std::make_pair<DataType, uint32_t>(
+      return std::pair<DataType, uint32_t>(
           PrimitiveType::get(PrimitiveTypeID::i32), 1);
     case BufferFormat::rg32i:
-      return std::make_pair<DataType, uint32_t>(
+      return std::pair<DataType, uint32_t>(
           PrimitiveType::get(PrimitiveTypeID::i32), 2);
     case BufferFormat::rgb32i:
-      return std::make_pair<DataType, uint32_t>(
+      return std::pair<DataType, uint32_t>(
           PrimitiveType::get(PrimitiveTypeID::i32), 3);
     case BufferFormat::rgba32i:
-      return std::make_pair<DataType, uint32_t>(
+      return std::pair<DataType, uint32_t>(
           PrimitiveType::get(PrimitiveTypeID::i32), 4);
     case BufferFormat::r32f:
-      return std::make_pair<DataType, uint32_t>(
+      return std::pair<DataType, uint32_t>(
           PrimitiveType::get(PrimitiveTypeID::f32), 1);
     case BufferFormat::rg32f:
-      return std::make_pair<DataType, uint32_t>(
+      return std::pair<DataType, uint32_t>(
           PrimitiveType::get(PrimitiveTypeID::f32), 2);
     case BufferFormat::rgb32f:
-      return std::make_pair<DataType, uint32_t>(
+      return std::pair<DataType, uint32_t>(
           PrimitiveType::get(PrimitiveTypeID::f32), 3);
     case BufferFormat::rgba32f:
-      return std::make_pair<DataType, uint32_t>(
+      return std::pair<DataType, uint32_t>(
           PrimitiveType::get(PrimitiveTypeID::f32), 4);
     default:
       TI_ERROR("Invalid buffer format");
@@ -288,6 +288,15 @@ void Device::memcpy_via_host(DevicePtr dst,
   TI_NOT_IMPLEMENTED;
 }
 
+DeviceCapability str2devcap(const std::string_view &name) {
+#define PER_DEVICE_CAPABILITY(x) \
+  if (#x == name)                \
+    return DeviceCapability::x;
+#include "taichi/inc/rhi_constants.inc.h"
+#undef PER_DEVICE_CAPABILITY
+  TI_ERROR("unexpected device capability name {}", name);
+}
+
 const std::string to_string(DeviceCapability c) {
 #define PER_DEVICE_CAPABILITY(name) \
   case DeviceCapability::name:      \
@@ -300,13 +309,6 @@ const std::string to_string(DeviceCapability c) {
       break;
   }
 #undef PER_DEVICE_CAPABILITY
-}
-
-void Device::print_all_cap() const {
-  for (auto &pair : caps_) {
-    TI_TRACE("DeviceCapability::{} ({}) = {}", to_string(pair.first),
-             int(pair.first), pair.second);
-  }
 }
 
 void GraphicsDevice::image_transition(DeviceAllocation img,

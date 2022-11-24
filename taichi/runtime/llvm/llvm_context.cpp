@@ -20,11 +20,7 @@
 #include "llvm/IR/Type.h"
 #include "llvm/IR/Verifier.h"
 #include "llvm/Support/TargetSelect.h"
-#ifdef TI_LLVM_15
 #include "llvm/Support/FileSystem.h"
-#else
-#include "llvm/Support/TargetRegistry.h"
-#endif
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Transforms/InstCombine/InstCombine.h"
 #include "llvm/Transforms/Scalar.h"
@@ -46,6 +42,7 @@
 #include "taichi/util/environ_config.h"
 #include "llvm_context.h"
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
+#include "taichi/codegen/codegen_utils.h"
 
 #ifdef _WIN32
 // Travis CI seems doesn't support <filesystem>...
@@ -69,15 +66,9 @@ TaichiLLVMContext::TaichiLLVMContext(CompileConfig *config, Arch arch)
   main_thread_data_ = get_this_thread_data();
   llvm::remove_fatal_error_handler();
   llvm::install_fatal_error_handler(
-#ifdef TI_LLVM_15
       [](void *user_data, const char *reason, bool gen_crash_diag) {
         TI_ERROR("LLVM Fatal Error: {}", reason);
       },
-#else
-      [](void *user_data, const std::string &reason, bool gen_crash_diag) {
-        TI_ERROR("LLVM Fatal Error: {}", reason);
-      },
-#endif
       nullptr);
 
   if (arch_is_cpu(arch)) {
@@ -152,7 +143,7 @@ llvm::Type *TaichiLLVMContext::get_data_type(DataType dt) {
     auto num_elements = tensor_type->get_num_elements();
     // Return type is <element_type * num_elements> if real matrix is used,
     // otherwise [element_type * num_elements].
-    if (config_->real_matrix) {
+    if (codegen_vector_type(config_)) {
       return llvm::VectorType::get(element_type, num_elements,
                                    /*scalable=*/false);
     }
@@ -387,14 +378,9 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::module_from_file(
       std::vector<llvm::Value *> args;
       for (auto &arg : func->args())
         args.push_back(&arg);
-#ifdef TI_LLVM_15
       builder.CreateRet(builder.CreateAtomicRMW(
           op, args[0], args[1], llvm::MaybeAlign(0),
           llvm::AtomicOrdering::SequentiallyConsistent));
-#else
-      builder.CreateRet(builder.CreateAtomicRMW(
-          op, args[0], args[1], llvm::AtomicOrdering::SequentiallyConsistent));
-#endif
       TaichiLLVMContext::mark_inline(func);
     };
 
@@ -625,18 +611,9 @@ void TaichiLLVMContext::mark_inline(llvm::Function *f) {
         }
       }
     }
-#ifdef TI_LLVM_15
   f->removeFnAttr(llvm::Attribute::OptimizeNone);
   f->removeFnAttr(llvm::Attribute::NoInline);
   f->addFnAttr(llvm::Attribute::AlwaysInline);
-#else
-  f->removeAttribute(llvm::AttributeList::FunctionIndex,
-                     llvm::Attribute::OptimizeNone);
-  f->removeAttribute(llvm::AttributeList::FunctionIndex,
-                     llvm::Attribute::NoInline);
-  f->addAttribute(llvm::AttributeList::FunctionIndex,
-                  llvm::Attribute::AlwaysInline);
-#endif
 }
 
 int TaichiLLVMContext::num_instructions(llvm::Function *func) {
@@ -787,11 +764,7 @@ auto make_slim_libdevice = [](const std::vector<std::string> &args) {
 
   std::error_code ec;
   auto output_fn = "slim_" + args[0];
-#ifdef TI_LLVM_15
   llvm::raw_fd_ostream os(output_fn, ec, llvm::sys::fs::OF_None);
-#else
-  llvm::raw_fd_ostream os(output_fn, ec, llvm::sys::fs::F_None);
-#endif
   llvm::WriteBitcodeToFile(*libdevice_module, os);
   os.flush();
   TI_INFO("Slimmed libdevice written to {}", output_fn);
@@ -860,12 +833,8 @@ llvm::Function *TaichiLLVMContext::get_struct_function(const std::string &name,
 }
 
 llvm::Type *TaichiLLVMContext::get_runtime_type(const std::string &name) {
-#ifdef TI_LLVM_15
   auto ty = llvm::StructType::getTypeByName(
       get_this_thread_runtime_module()->getContext(), ("struct." + name));
-#else
-  auto ty = get_this_thread_runtime_module()->getTypeByName("struct." + name);
-#endif
   if (!ty) {
     TI_ERROR("LLVMRuntime type {} not found.", name);
   }
@@ -962,13 +931,7 @@ void TaichiLLVMContext::add_struct_for_func(llvm::Module *module,
   for (auto &bb : *patched_struct_for_func) {
     for (llvm::Instruction &inst : bb) {
       auto now_alloca = llvm::dyn_cast<AllocaInst>(&inst);
-      if (!now_alloca ||
-#ifdef TI_LLVM_15
-          now_alloca->getAlign().value() != 8
-#else
-          now_alloca->getAlignment() != 8
-#endif
-      )
+      if (!now_alloca || now_alloca->getAlign().value() != 8)
         continue;
       auto alloca_type = now_alloca->getAllocatedType();
       // Allocated type should be array [1 x i8]

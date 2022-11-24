@@ -15,13 +15,9 @@ function build-and-smoke-test-android-aot-demo {
 
     export TAICHI_REPO_DIR=$(pwd)/taichi
 
+    rm -rf taichi-aot-demo
+    # IF YOU PIN THIS TO A COMMIT/BRANCH, YOU'RE RESPONSIBLE TO REVERT IT BACK TO MASTER ONCE MERGED.
     git clone https://github.com/taichi-dev/taichi-aot-demo
-
-    # Normally we checkout the master's commit Id: https://github.com/taichi-dev/taichi-aot-demo/commit/master
-    # As for why we need this explicit commit Id here, refer to: https://docs.taichi-lang.org/docs/master/contributor_guide#handle-special-ci-failures
-    pushd taichi-aot-demo
-    git checkout bd8fb7bf30a3494f4ecc671cd4d017b926afed10
-    popd
 
     APP_ROOT=taichi-aot-demo/implicit_fem
     ANDROID_APP_ROOT=$APP_ROOT/android
@@ -32,7 +28,6 @@ function build-and-smoke-test-android-aot-demo {
     sudo chmod 0777 $HOME/.cache
     python implicit_fem.py --aot
     popd
-
     mkdir -p $JNI_PATH
     cp taichi/build/libtaichi_export_core.so $JNI_PATH
     cd $ANDROID_APP_ROOT
@@ -48,7 +43,7 @@ function prepare-unity-build-env {
     cd taichi
 
     # Dependencies
-    git clone --reference-if-able /var/lib/git-cache -b upgrade-modules1 https://github.com/taichi-dev/Taichi-UnityExample
+    git clone --reference-if-able /var/lib/git-cache https://github.com/taichi-dev/Taichi-UnityExample
 
     python misc/generate_unity_language_binding.py
     cp c_api/unity/*.cs Taichi-UnityExample/Assets/Taichi/Generated
@@ -64,6 +59,11 @@ function prepare-unity-build-env {
     cmake --build .
     popd
     cp tu2-build/bin/libtaichi_unity.so Taichi-UnityExample/Assets/Plugins/Android
+
+    pushd Taichi-UnityExample
+    pip install /taichi-wheel/*.whl
+    python scripts/implicit_fem.cgraph.py --aot
+    popd
 }
 
 function build-unity-demo {
@@ -92,6 +92,77 @@ function smoke-test-unity-demo {
         taichi/Taichi-UnityExample/build/Android/Android.apk \
         com.TaichiGraphics.TaichiUnityExample/com.unity3d.player.UnityPlayerActivity \
         6
+}
+
+function build-and-test-headless-demo {
+    setup-android-ndk-env
+
+    pushd taichi
+    setup_python
+    popd
+
+    export TAICHI_REPO_DIR=$(pwd)/taichi
+
+    pushd taichi
+    pip install /taichi-wheel/*.whl
+    sudo chmod 0777 $HOME/.cache
+    popd
+
+    rm -rf taichi-aot-demo
+    git clone --recursive --depth=1 https://github.com/taichi-dev/taichi-aot-demo
+    cd taichi-aot-demo
+
+    . $(pwd)/ci/test_utils.sh
+
+    # Build demos
+    export TAICHI_C_API_INSTALL_DIR=$(find $TAICHI_REPO_DIR -name cmake-install -type d | head -n 1)/c_api
+    build_demos "$ANDROID_CMAKE_ARGS"
+
+    export PATH=/android-sdk/platform-tools:$PATH
+    grab-android-bot
+    trap release-android-bot EXIT
+    adb connect $BOT
+
+    # Clear temporary test folder
+    adb shell "rm -rf /data/local/tmp/* && mkdir /data/local/tmp/build"
+
+    # Push all binaries and shaders to the phone
+    pushd ci
+    adb push ./*.sh /data/local/tmp
+    popd
+    adb push $TAICHI_C_API_INSTALL_DIR/lib/libtaichi_c_api.so /data/local/tmp
+    adb push ./build/headless /data/local/tmp/build
+    adb push ./build/tutorial /data/local/tmp/build
+    for dir in ?_*; do
+        adb push $dir /data/local/tmp
+    done
+
+    # Run demos
+    adb shell "cd /data/local/tmp && LD_LIBRARY_PATH=\$(pwd) ./run_demos.sh"
+
+    # Pull output images and compare with groundtruth
+    rm -rf output
+    mkdir output
+
+    adb pull /data/local/tmp/output .
+    compare_to_groundtruth android
+}
+
+function build-and-test-headless-demo-desktop {
+    pushd taichi
+    setup_python
+    python3 -m pip install dist/*.whl
+    sudo chmod 0777 $HOME/.cache
+    export TAICHI_REPO_DIR=$(pwd)
+    popd
+
+    rm -rf taichi-aot-demo
+    git clone --recursive --depth=1 https://github.com/taichi-dev/taichi-aot-demo
+    cd taichi-aot-demo
+
+    TAICHI_C_API_INSTALL_DIR=$(find $TAICHI_REPO_DIR -name cmake-install -type d | head -n 1)/c_api
+    python3 -m pip install -r ci/requirements.txt
+    python3 ci/run_tests.py -l $TAICHI_C_API_INSTALL_DIR
 }
 
 $1

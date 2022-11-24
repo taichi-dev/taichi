@@ -4,7 +4,7 @@ import taichi as ti
 from tests import test_utils
 
 
-@test_utils.test(arch=[ti.cpu, ti.gpu])
+@test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_function_without_return():
     x = ti.field(ti.i32, shape=())
 
@@ -22,7 +22,7 @@ def test_function_without_return():
     assert x[None] == 42
 
 
-@test_utils.test(arch=[ti.cpu, ti.gpu], debug=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda], debug=True)
 def test_function_with_return():
     x = ti.field(ti.i32, shape=())
 
@@ -42,7 +42,7 @@ def test_function_with_return():
     assert x[None] == 42
 
 
-@test_utils.test(arch=[ti.cpu, ti.gpu])
+@test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_call_expressions():
     x = ti.field(ti.i32, shape=())
 
@@ -130,7 +130,7 @@ def test_default_templates():
     run_func()
 
 
-@test_utils.test(arch=[ti.cpu, ti.gpu])
+@test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_experimental_templates():
     x = ti.field(ti.i32, shape=())
     y = ti.field(ti.i32, shape=())
@@ -176,7 +176,7 @@ def test_experimental_templates():
     verify()
 
 
-@test_utils.test(arch=[ti.cpu, ti.gpu])
+@test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_missing_arg_annotation():
     with pytest.raises(ti.TaichiSyntaxError, match='must be type annotated'):
 
@@ -185,7 +185,7 @@ def test_missing_arg_annotation():
             return a + b
 
 
-@test_utils.test(arch=[ti.cpu, ti.gpu])
+@test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_missing_return_annotation():
     with pytest.raises(ti.TaichiCompilationError,
                        match='return value must be annotated'):
@@ -201,7 +201,7 @@ def test_missing_return_annotation():
         run()
 
 
-@test_utils.test(arch=[ti.cpu, ti.gpu])
+@test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_different_argument_type():
     @ti.experimental.real_func
     def add(a: ti.f32, b: ti.f32) -> ti.f32:
@@ -214,7 +214,8 @@ def test_different_argument_type():
     assert run() == 3
 
 
-@test_utils.test(arch=[ti.cpu, ti.gpu])
+@pytest.mark.run_in_serial
+@test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_recursion():
     @ti.experimental.real_func
     def sum(f: ti.template(), l: ti.i32, r: ti.i32) -> ti.i32:
@@ -234,7 +235,23 @@ def test_recursion():
     assert get_sum() == 99 * 50
 
 
-@test_utils.test(arch=[ti.cpu, ti.gpu])
+@pytest.mark.run_in_serial
+@test_utils.test(arch=[ti.cpu, ti.cuda], cuda_stack_limit=32768)
+def test_deep_recursion():
+    @ti.experimental.real_func
+    def sum_func(n: ti.i32) -> ti.i32:
+        if (n == 0):
+            return 0
+        return sum_func(n - 1) + n
+
+    @ti.kernel
+    def sum(n: ti.i32) -> ti.i32:
+        return sum_func(n)
+
+    assert sum(100) == 5050
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_multiple_return():
     x = ti.field(ti.i32, shape=())
 
@@ -258,7 +275,7 @@ def test_multiple_return():
     assert x[None] == 26
 
 
-@test_utils.test(arch=[ti.cpu, ti.gpu])
+@test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_return_in_for():
     @ti.experimental.real_func
     def foo() -> ti.i32:
@@ -272,7 +289,7 @@ def test_return_in_for():
     assert bar() == 42
 
 
-@test_utils.test(arch=[ti.cpu, ti.gpu])
+@test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_return_in_while():
     @ti.experimental.real_func
     def foo() -> ti.i32:
@@ -287,7 +304,7 @@ def test_return_in_while():
     assert bar() == 42
 
 
-@test_utils.test(arch=[ti.cpu, ti.gpu])
+@test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_return_in_if_in_for():
     @ti.experimental.real_func
     def foo(a: ti.i32) -> ti.i32:
@@ -306,7 +323,7 @@ def test_return_in_if_in_for():
     assert bar(200) == 99 * 50
 
 
-@test_utils.test(arch=[ti.cpu, ti.gpu], debug=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda], debug=True)
 def test_ref():
     @ti.experimental.real_func
     def foo(a: ti.ref(ti.f32)):
@@ -321,8 +338,16 @@ def test_ref():
     bar()
 
 
-@test_utils.test(arch=[ti.cpu, ti.gpu], debug=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda], debug=True)
 def test_ref_atomic():
+    # FIXME: failed test on Pascal (and potentially older) architecture.
+    # Please remove this guardiance when you fix this issue
+    cur_arch = ti.lang.impl.get_runtime().prog.config().arch
+    if cur_arch == ti.cuda and ti.lang.impl.get_cuda_compute_capability() < 70:
+        pytest.skip(
+            'Skip this test on Pascal (and potentially older) architecture, ask turbo0628/Proton for more information'
+        )
+
     @ti.experimental.real_func
     def foo(a: ti.ref(ti.f32)):
         a += a
@@ -336,24 +361,23 @@ def test_ref_atomic():
     bar()
 
 
-@test_utils.test(arch=[ti.cpu, ti.gpu], debug=True)
-def test_func_ndarray_arg():
+def _test_func_ndarray_arg():
     vec3 = ti.types.vector(3, ti.f32)
 
     @ti.func
-    def test(a: ti.types.ndarray(field_dim=1)):
+    def test(a: ti.types.ndarray(ndim=1)):
         a[0] = [100, 100, 100]
 
     @ti.kernel
-    def test_k(x: ti.types.ndarray(field_dim=1)):
+    def test_k(x: ti.types.ndarray(ndim=1)):
         test(x)
 
     @ti.func
-    def test_error_func(a: ti.types.ndarray(field_dim=1, element_dim=1)):
-        a[0] = [100, 100, 100]
+    def test_error_func(a: ti.types.ndarray(dtype=ti.math.vec2, ndim=1)):
+        a[0] = [100, 100]
 
     @ti.kernel
-    def test_error(x: ti.types.ndarray(field_dim=1)):
+    def test_error(x: ti.types.ndarray(ndim=1)):
         test_error_func(x)
 
     arr = ti.ndarray(vec3, shape=(4))
@@ -368,8 +392,20 @@ def test_func_ndarray_arg():
         test_error(arr)
 
 
-@test_utils.test(arch=[ti.cpu, ti.gpu], debug=True)
-def test_func_matrix_arg():
+@test_utils.test(arch=[ti.cpu, ti.cuda], debug=True)
+def test_func_ndarray_arg():
+    _test_func_ndarray_arg()
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda],
+                 debug=True,
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_func_ndarray_arg_matrix_scalarize():
+    _test_func_ndarray_arg()
+
+
+def _test_func_matrix_arg():
     vec3 = ti.types.vector(3, ti.f32)
 
     @ti.func
@@ -384,14 +420,81 @@ def test_func_matrix_arg():
 
         assert x[0] == 20
 
+    test_k()
+
+
+def _test_func_matrix_arg_with_error():
+    vec3 = ti.types.vector(3, ti.f32)
+
+    @ti.func
+    def test(a: vec3):
+        a[0] = 100
+
     @ti.kernel
     def test_error():
         x = ti.Matrix([3, 4])
         test(x)
 
-    test_k()
-
     with pytest.raises(
             ti.TaichiSyntaxError,
             match=r"is expected to be a Matrix with n 3, but got 2"):
         test_error()
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda], debug=True)
+def test_func_matrix_arg():
+    _test_func_matrix_arg()
+    _test_func_matrix_arg_with_error()
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda],
+                 debug=True,
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_func_matrix_arg_real_matrix():
+    _test_func_matrix_arg()
+
+
+def _test_real_func_matrix_arg():
+    @ti.experimental.real_func
+    def mat_arg(a: ti.math.mat2, b: ti.math.vec2) -> float:
+        return a[0, 0] + a[0, 1] + a[1, 0] + a[1, 1] + b[0] + b[1]
+
+    b = ti.Vector.field(n=2, dtype=float, shape=())
+    b[()][0] = 5
+    b[()][1] = 6
+
+    @ti.kernel
+    def foo() -> float:
+        a = ti.math.mat2(1, 2, 3, 4)
+        return mat_arg(a, b[()])
+
+    assert foo() == pytest.approx(21)
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda])
+def test_real_func_matrix_arg():
+    _test_real_func_matrix_arg()
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda],
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_real_func_matrix_arg_real_matrix():
+    _test_real_func_matrix_arg()
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda])
+def test_real_func_struct_ret():
+    s = ti.types.struct(a=ti.i16, b=ti.f64)
+
+    @ti.experimental.real_func
+    def bar() -> s:
+        return s(a=123, b=ti.f64(1.2345e300))
+
+    @ti.kernel
+    def foo() -> ti.f64:
+        a = bar()
+        return a.a * a.b
+
+    assert foo() == pytest.approx(123 * 1.2345e300)

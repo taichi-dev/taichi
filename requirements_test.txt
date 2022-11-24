@@ -1,6 +1,6 @@
 Pillow
 pytest
-pytest-xdist
+git+https://github.com/taichi-dev/pytest-xdist@e3e1ccf517#egg=pytest-xdist
 pytest-rerunfailures
 pytest-cov
 numpy
@@ -10,3 +10,4 @@ requests==2.26
 matplotlib
 cffi
 scipy
+setproctitle

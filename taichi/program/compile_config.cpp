@@ -14,7 +14,6 @@ CompileConfig::CompileConfig() {
   print_preprocessed_ir = false;
   print_accessor_ir = false;
   print_evaluator_ir = false;
-  print_benchmark_stat = false;
   use_llvm = true;
   demote_dense_struct_fors = true;
   advanced_optimization = true;
@@ -23,7 +22,6 @@ CompileConfig::CompileConfig() {
   debug = false;
   cfg_optimization = true;
   check_out_of_bound = false;
-  validate_autodiff = false;
   lazy_compilation = true;
   serial_schedule = false;
   simplify_before_lower_access = true;
@@ -47,7 +45,6 @@ CompileConfig::CompileConfig() {
   make_block_local = true;
   detect_read_only = true;
   ndarray_use_cached_allocator = true;
-  use_mesh = false;
   real_matrix = false;
   real_matrix_scalarize = false;
 

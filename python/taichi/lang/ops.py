@@ -6,6 +6,7 @@ import operator as _bt_ops_mod  # bt for builtin
 from taichi._lib import core as _ti_core
 from taichi.lang import expr, impl
 from taichi.lang.exception import TaichiSyntaxError
+from taichi.lang.field import Field
 from taichi.lang.util import cook_dtype, is_taichi_class, taichi_scope
 
 unary_ops = []
@@ -51,6 +52,8 @@ def binary(foo):
 
     @functools.wraps(foo)
     def wrapped(a, b):
+        if isinstance(a, Field) or isinstance(b, Field):
+            return NotImplemented
         if is_taichi_class(a):
             return a._element_wise_binary(imp_foo, b)
         if is_taichi_class(b):
@@ -79,6 +82,9 @@ def ternary(foo):
 
     @functools.wraps(foo)
     def wrapped(a, b, c):
+        if isinstance(a, Field) or isinstance(b, Field) or isinstance(
+                c, Field):
+            return NotImplemented
         if is_taichi_class(a):
             return a._element_wise_ternary(abc_foo, b, c)
         if is_taichi_class(b):
@@ -101,6 +107,8 @@ def writeback_binary(foo):
 
     @functools.wraps(foo)
     def wrapped(a, b):
+        if isinstance(a, Field) or isinstance(b, Field):
+            return NotImplemented
         if is_taichi_class(a):
             return a._element_wise_writeback_binary(imp_foo, b)
         if is_taichi_class(b):
@@ -1490,14 +1498,6 @@ def min(*args):  # pylint: disable=W0622
     if num_args == 2:
         return min_impl(args[0], args[1])
     return min_impl(args[0], min(*args[1:]))
-
-
-def ti_any(a):
-    return a.any()
-
-
-def ti_all(a):
-    return a.all()
 
 
 __all__ = [

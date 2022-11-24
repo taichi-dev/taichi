@@ -290,7 +290,7 @@ class TypeReducer : public TypeVisitor {
   std::unique_ptr<tinyir::Block> copy{nullptr};
   std::unordered_map<const tinyir::Type *, const tinyir::Type *> &oldptr2newptr;
 
-  TypeReducer(
+  explicit TypeReducer(
       std::unordered_map<const tinyir::Type *, const tinyir::Type *> &old2new)
       : oldptr2newptr(old2new) {
     copy = std::make_unique<tinyir::Block>();

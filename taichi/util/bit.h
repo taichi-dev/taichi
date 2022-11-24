@@ -38,7 +38,7 @@ struct Bits {
   }
 
   // Uninitialized
-  Bits(void *) {
+  explicit Bits(void *) {
   }
 
   template <int start, int bits = 1>
@@ -159,7 +159,7 @@ class Bitset {
   class reference {
    public:
     reference(std::vector<value_t> &vec, int x);
-    operator bool() const;
+    explicit operator bool() const;
     bool operator~() const;
     reference &operator=(bool x);
     reference &operator=(const reference &other);

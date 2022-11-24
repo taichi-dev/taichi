@@ -130,7 +130,7 @@ def getsourcelines(obj):
             return inspect.getsourcelines(obj)
     except:
         warn(
-            f'Something is wrong and using sourceinspect (deprecated) to get source lines of {obj}, \
+            f'Something is wrong and using sourceinspect (deprecated) to get source lines of {obj}. \
             If you see this message, please report an issue to help us \
                 fix the problem: https://github.com/taichi-dev/taichi/issues')
         return sourceinspect.getsourcelines(obj)
@@ -150,7 +150,7 @@ def getsourcefile(obj):
             return ret
     except:
         warn(
-            f'Something is wrong and using sourceinspect (deprecated) to get source file of {obj}, \
+            f'Something is wrong and using sourceinspect (deprecated) to get source file of {obj}. \
             If you see this message, please report an issue to help us \
                 fix the problem: https://github.com/taichi-dev/taichi/issues')
         return sourceinspect.getsourcefile(obj)

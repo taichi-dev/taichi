@@ -717,3 +717,15 @@ def test_gaussian_kernel():
     fill_gaussian_kernel(np_arr, N)
 
     assert test_utils.allclose(res, np_arr)
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray,
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_ndarray_numpy_matrix_scalarize():
+    boundary_box_np = np.array([[0, 0, 0], [1, 1, 1]], dtype=np.float32)
+    boundary_box = ti.Vector.ndarray(3, ti.f32, shape=2)
+    boundary_box.from_numpy(boundary_box_np)
+    ref_numpy = boundary_box.to_numpy()
+
+    assert (boundary_box_np == ref_numpy).all()

@@ -93,8 +93,10 @@ def _Python_IPython_findsource(obj):
 
                     with open(filename, 'w') as f:
                         f.write(lines_stripped)
-                    
-                    atexit.register(os.unlink, filename)  # Remove file after the program exits
+
+                    atexit.register(
+                        os.unlink,
+                        filename)  # Remove file after the program exits
                     func = lambda obj: filename
                     return _find_source_with_custom_getfile_func(func, obj)
 
@@ -127,7 +129,8 @@ def getsourcelines(obj):
         with _InspectContextManager():
             return inspect.getsourcelines(obj)
     except:
-        warn(f'Something is wrong and using sourceinspect (deprecated) to get source lines of {obj}, \
+        warn(
+            f'Something is wrong and using sourceinspect (deprecated) to get source lines of {obj}, \
             If you see this message, please report an issue to help us \
                 fix the problem: https://github.com/taichi-dev/taichi/issues')
         return sourceinspect.getsourcelines(obj)
@@ -146,7 +149,8 @@ def getsourcefile(obj):
                     pass
             return ret
     except:
-        warn(f'Something is wrong and using sourceinspect (deprecated) to get source file of {obj}, \
+        warn(
+            f'Something is wrong and using sourceinspect (deprecated) to get source file of {obj}, \
             If you see this message, please report an issue to help us \
                 fix the problem: https://github.com/taichi-dev/taichi/issues')
         return sourceinspect.getsourcefile(obj)

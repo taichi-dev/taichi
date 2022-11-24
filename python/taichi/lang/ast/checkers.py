@@ -1,6 +1,6 @@
 import ast
 
-from taichi.lang._wrap_inspect import _getsourcefile, _getsourcelines
+from taichi.lang._wrap_inspect import getsourcefile, getsourcelines
 from taichi.lang.exception import TaichiSyntaxError
 
 
@@ -34,8 +34,8 @@ class KernelSimplicityASTChecker(ast.NodeVisitor):
 
     def __init__(self, func):
         super().__init__()
-        self._func_file = _getsourcefile(func)
-        self._func_lineno = _getsourcelines(func)[1]
+        self._func_file = getsourcefile(func)
+        self._func_lineno = getsourcelines(func)[1]
         self._func_name = func.__name__
         self._scope_guards = []
 

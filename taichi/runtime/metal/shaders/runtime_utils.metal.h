@@ -425,7 +425,7 @@ STR(
       if (child_extrators.packed) {
         for (int i = 0; i < kTaichiMaxNumIndices; ++i) {
           device const auto &ex = child_extrators.extractors[i];
-          const int addition = l % (ex.acc_shape * ex.shape) / ex.shape;
+          const int addition = l % (ex.acc_shape * ex.shape) / ex.acc_shape;
           child->at[i] = parent.at[i] * ex.shape + addition;
         }
       } else {

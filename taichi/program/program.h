@@ -125,6 +125,8 @@ class TI_DLL_EXPORT Program {
   ~Program();
 
   CompileConfig &this_thread_config() {
+    // std::unordered_map is not thread safe even if we do the rehash in advance,
+    // so we need to add a lock to protect it.
     std::shared_lock<std::shared_mutex> read_lock(config_map_mut);
     auto thread_id = std::this_thread::get_id();
     if (!configs.count(thread_id)) {

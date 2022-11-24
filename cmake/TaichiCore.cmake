@@ -428,7 +428,7 @@ if(TI_WITH_PYTHON)
         target_link_options(${CORE_WITH_PYBIND_LIBRARY_NAME} PUBLIC -Wl,--exclude-libs=ALL)
     endif()
 
-    if (TI_BUILD_TESTS)
+    if (TI_WITH_BACKTRACE)
         # Defined by external/backward-cpp:
         # This will add libraries, definitions and include directories needed by backward
         # by setting each property on the target.

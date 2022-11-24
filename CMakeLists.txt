@@ -62,6 +62,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 option(USE_LLD "Use lld (from llvm) linker" OFF)
 option(USE_MOLD "Use mold (A Modern Linker)" OFF)
+option(TI_WITH_BACKTRACE "Use backward-cpp to print out C++ stack trace upon failure" OFF)
 
 if (USE_LLD)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=lld")
@@ -128,8 +129,7 @@ if (TI_WITH_PYTHON AND NOT ANDROID)
     include(cmake/PythonNumpyPybind11.cmake)
 endif()
 
-if (TI_BUILD_TESTS)
-  add_subdirectory(external/googletest EXCLUDE_FROM_ALL)
+if (TI_WITH_BACKTRACE)
   add_subdirectory(external/backward_cpp)
 endif()
 
@@ -139,6 +139,7 @@ include(cmake/TaichiCore.cmake)
 option(TI_BUILD_TESTS "Build the CPP tests" OFF)
 
 if (TI_BUILD_TESTS)
+  add_subdirectory(external/googletest EXCLUDE_FROM_ALL)
   include(cmake/TaichiTests.cmake)
 endif()
 

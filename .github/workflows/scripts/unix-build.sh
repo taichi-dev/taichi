@@ -9,7 +9,12 @@ set -ex
 if [[ $OSTYPE == "linux-"* ]]; then
   if [ ! -d ~/taichi-llvm-15 ]; then
     pushd ~
-    wget https://github.com/taichi-dev/taichi_assets/releases/download/llvm15/taichi-llvm-15-linux.zip
+    if [ -f /etc/centos-release ] ; then
+      # FIXIME: prebuilt llvm15 on ubuntu didn't work on manylinux image of centos. Once that's fixed, remove this hack.
+      wget https://github.com/ailzhang/torchhub_example/releases/download/0.3/taichi-llvm-15-linux.zip
+    else
+      wget https://github.com/taichi-dev/taichi_assets/releases/download/llvm15/taichi-llvm-15-linux.zip
+    fi
     unzip taichi-llvm-15-linux.zip && rm taichi-llvm-15-linux.zip
     popd
   fi

@@ -237,7 +237,7 @@ class Cloth:
 
 
 def main():
-    ti.init(arch=ti.cpu, offline_cache=False)
+    ti.init(arch=ti.cpu)
     h = 0.01
     cloth = Cloth(N=5)
 
@@ -259,6 +259,7 @@ def main():
                     gui.running = False
                 elif e.key == gui.SPACE:
                     pause = not pause
+                    
             if not pause:
                 cloth.update(h)
 

@@ -138,7 +138,8 @@ def getsourcelines(obj):
             You can try setting `USE_SOURCEINSPECT=1` in the enrionment variables \
                 or insert the lines `os.environ['USE_SOURCEINSPECT'] = 1` \
                     at the beginning of the source file. Please report an issue to help us \
-                        fix the problem: https://github.com/taichi-dev/taichi/issues if you see this message")
+                        fix the problem: https://github.com/taichi-dev/taichi/issues if you see this message"
+                      )
 
 
 def getsourcefile(obj):
@@ -156,7 +157,8 @@ def getsourcefile(obj):
             You can try setting `USE_SOURCEINSPECT=1` in the enrionment variables \
                 or insert the lines `os.environ['USE_SOURCEINSPECT'] = 1` \
                     at the beginning of the source file. Please report an issue to help us \
-                        fix the problem: https://github.com/taichi-dev/taichi/issues if you see this message")
+                        fix the problem: https://github.com/taichi-dev/taichi/issues if you see this message"
+                      )
 
 
 __all__ = ['getsourcelines', 'getsourcefile']

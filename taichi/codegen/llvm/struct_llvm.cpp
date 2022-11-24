@@ -175,7 +175,9 @@ void StructCompilerLLVM::generate_refine_coordinates(SNode *snode) {
         auto prev = tlctx_->get_constant(snode->extractors[i].acc_shape *
                                          snode->extractors[i].shape);
         auto next = tlctx_->get_constant(snode->extractors[i].acc_shape);
-        addition = builder.CreateSDiv(builder.CreateSRem(l, prev), next);
+        // Use UDiv/URem instead of SDiv/SRem so that LLVM can optimize them
+        // into bitwise operations when the divisor is a power of two.
+        addition = builder.CreateUDiv(builder.CreateURem(l, prev), next);
       }
       auto in = call(&builder, "PhysicalCoordinates_get_val", inp_coords,
                      tlctx_->get_constant(i));

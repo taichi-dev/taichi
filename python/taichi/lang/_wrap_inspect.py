@@ -1,3 +1,4 @@
+import atexit
 import inspect
 import os
 import tempfile
@@ -53,6 +54,7 @@ def _blender_findsource(obj):
             f.write(lines)
 
         _blender_findsource._saved_inspect_cache[lines] = filename  # pylint: disable=no-member
+        atexit.register(os.unlink, filename)  # Remove file after program exits
 
     def wrapped_getfile(ob):
         if id(ob) == id(obj):
@@ -82,7 +84,7 @@ def _Python_IPython_findsource(obj):
                     fd, filename = tempfile.mkstemp(prefix='_IPython_',
                                                     suffix=f'_{session_id}.py')
                     os.close(fd)
-
+                    # The latest lines of code are stored in this file
                     lines = ip.history_manager._i00
                     # Remove the magic command (and spaces/sep around it) before saving to a file
                     index = lines.find("%time")
@@ -91,7 +93,8 @@ def _Python_IPython_findsource(obj):
 
                     with open(filename, 'w') as f:
                         f.write(lines_stripped)
-
+                    
+                    atexit.register(os.unlink, filename)  # Remove file after the program exits
                     func = lambda obj: filename
                     return _find_source_with_custom_getfile_func(func, obj)
 
@@ -119,16 +122,18 @@ class _InspectContextManager:
         inspect.findsource = _builtin_findsource
 
 
-def _getsourcelines(obj):
+def getsourcelines(obj):
     try:
         with _InspectContextManager():
             return inspect.getsourcelines(obj)
     except:
-        warn(f'Using sourceinspect to get source lines of {obj}')
+        warn(f'Something is wrong and using sourceinspect (deprecated) to get source lines of {obj}, \
+            If you see this message, please report an issue to help us \
+                fix the problem: https://github.com/taichi-dev/taichi/issues')
         return sourceinspect.getsourcelines(obj)
 
 
-def _getsourcefile(obj):
+def getsourcefile(obj):
     try:
         with _InspectContextManager():
             ret = inspect.getsourcefile(obj)
@@ -136,8 +141,15 @@ def _getsourcefile(obj):
                 try:
                     ret = inspect.getfile(obj)
                 except:
+                    # Cannot get the file, so let's return None and fall back to sourceinspect.
+                    # In the future a suitable error message should be raised here.
                     pass
             return ret
     except:
-        warn(f'Using sourceinspect to get source file of {obj}')
+        warn(f'Something is wrong and using sourceinspect (deprecated) to get source file of {obj}, \
+            If you see this message, please report an issue to help us \
+                fix the problem: https://github.com/taichi-dev/taichi/issues')
         return sourceinspect.getsourcefile(obj)
+
+
+__all__ = ['getsourcelines', 'getsourcefile']

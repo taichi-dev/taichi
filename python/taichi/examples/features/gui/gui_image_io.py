@@ -10,7 +10,7 @@ pixel = ti.field(ti.u8, shape=(512, 512, 3))
 @ti.kernel
 def paint():
     for I in ti.grouped(pixel):
-        pixel[I] = ti.random() * 255
+        pixel[I] = ti.u8(ti.random() * 255)
 
 
 paint()

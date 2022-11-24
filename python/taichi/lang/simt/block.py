@@ -47,6 +47,11 @@ class SharedArray:
     _is_taichi_class = True
 
     def __init__(self, shape, dtype):
+        arch = impl.get_runtime().prog.config().arch
+        if arch != _ti_core.vulkan and arch != _ti_core.cuda:
+            raise ValueError(
+                f"ti.block.SharedArray is not supported in current arch {arch}. Please use Vulkan or CUDA backends instead."
+            )
         self.shape = shape
         self.dtype = dtype
         self.shared_array_proxy = impl.expr_init_shared_array(shape, dtype)

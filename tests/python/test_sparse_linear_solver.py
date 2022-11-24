@@ -5,16 +5,19 @@ import taichi as ti
 from tests import test_utils
 
 
-@pytest.mark.parametrize("dtype", [ti.f32])
+@pytest.mark.parametrize("dtype", [ti.f32, ti.f64])
 @pytest.mark.parametrize("solver_type", ["LLT", "LDLT", "LU"])
 @pytest.mark.parametrize("ordering", ["AMD", "COLAMD"])
-@test_utils.test(arch=ti.cpu)
+@test_utils.test(arch=ti.x64)
 def test_sparse_LLT_solver(dtype, solver_type, ordering):
     n = 10
     A = np.random.rand(n, n)
     A_psd = np.dot(A, A.transpose())
-    Abuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=300)
-    b = ti.field(ti.f32, shape=n)
+    Abuilder = ti.linalg.SparseMatrixBuilder(n,
+                                             n,
+                                             max_num_triplets=100,
+                                             dtype=dtype)
+    b = ti.field(dtype=dtype, shape=n)
 
     @ti.kernel
     def fill(Abuilder: ti.types.sparse_matrix_builder(),

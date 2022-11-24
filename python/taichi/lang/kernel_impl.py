@@ -10,7 +10,7 @@ import numpy as np
 import taichi.lang
 from taichi._lib import core as _ti_core
 from taichi.lang import impl, ops, runtime_ops
-from taichi.lang._wrap_inspect import _getsourcefile, _getsourcelines
+from taichi.lang._wrap_inspect import getsourcefile, getsourcelines
 from taichi.lang.ast import (ASTTransformerContext, KernelSimplicityASTChecker,
                              transform_tree)
 from taichi.lang.ast.ast_transformer_utils import ReturnStatus
@@ -114,8 +114,8 @@ def _get_tree_and_ctx(self,
                       args=None,
                       ast_builder=None,
                       is_real_function=False):
-    file = _getsourcefile(self.func)
-    src, start_lineno = _getsourcelines(self.func)
+    file = getsourcefile(self.func)
+    src, start_lineno = getsourcelines(self.func)
     src = [textwrap.fill(line, tabsize=4, width=9999) for line in src]
     tree = ast.parse(textwrap.dedent("\n".join(src)))
 

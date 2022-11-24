@@ -259,7 +259,7 @@ def main():
                     gui.running = False
                 elif e.key == gui.SPACE:
                     pause = not pause
-                    
+
             if not pause:
                 cloth.update(h)
 

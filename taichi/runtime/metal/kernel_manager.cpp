@@ -956,8 +956,8 @@ class KernelManager::Impl {
         rtm_ext->extractors[j].acc_offset = ext.acc_offset;
         rtm_ext->extractors[j].shape = ext.shape;
         rtm_ext->extractors[j].acc_shape = ext.acc_shape;
-        TI_DEBUG("  [{}] num_bits={} acc_offset={} shape={} acc_shape={}",
-                 j, ext.num_bits, ext.acc_offset, ext.shape, ext.acc_shape);
+        TI_DEBUG("  [{}] num_bits={} acc_offset={} shape={} acc_shape={}", j,
+                 ext.num_bits, ext.acc_offset, ext.shape, ext.acc_shape);
       }
       TI_DEBUG("");
     }

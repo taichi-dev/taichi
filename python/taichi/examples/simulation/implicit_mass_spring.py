@@ -18,6 +18,9 @@ class Cloth:
         self.vel = ti.Vector.field(2, ti.f32, self.NV)
         self.force = ti.Vector.field(2, ti.f32, self.NV)
         self.mass = ti.field(ti.f32, self.NV)
+        self.vel_1D = ti.ndarray(ti.f32, 2 * self.NV)
+        self.force_1D = ti.ndarray(ti.f32, 2 * self.NV)
+        self.b = ti.ndarray(ti.f32, 2 * self.NV)
 
         self.spring = ti.Vector.field(2, ti.i32, self.NE)
         self.indices = ti.field(ti.i32, 2 * self.NE)
@@ -165,6 +168,18 @@ class Cloth:
             self.vel[i] += ti.Vector([dv[2 * i], dv[2 * i + 1]])
             self.pos[i] += h * self.vel[i]
 
+    @ti.kernel
+    def copy_to(self, des: ti.types.ndarray(), source: ti.template()):
+        for i in range(self.NV):
+            des[2 * i] = source[i][0]
+            des[2 * i + 1] = source[i][1]
+
+    @ti.kernel
+    def compute_b(self, b: ti.types.ndarray(), f: ti.types.ndarray(),
+                  Kv: ti.types.ndarray(), h: ti.f32):
+        for i in range(2 * self.NV):
+            b[i] = (f[i] + Kv[i] * h) * h
+
     def update(self, h):
         self.compute_force()
 
@@ -179,15 +194,19 @@ class Cloth:
 
         A = self.M - h * D - h**2 * K
 
-        vel = self.vel.to_numpy().reshape(2 * self.NV)
-        force = self.force.to_numpy().reshape(2 * self.NV)
-        b = (force + h * K @ vel) * h
+        self.copy_to(self.vel_1D, self.vel)
+        self.copy_to(self.force_1D, self.force)
+
+        # b = (force + h * K @ vel) * h
+        Kv = K @ self.vel_1D
+        self.compute_b(self.b, self.force_1D, Kv, h)
+
         # Sparse solver
         solver = ti.linalg.SparseSolver(solver_type="LDLT")
         solver.analyze_pattern(A)
         solver.factorize(A)
         # Solve the linear system
-        dv = solver.solve(b)
+        dv = solver.solve(self.b)
         self.updatePosVel(h, dv)
 
     def display(self, gui, radius=5, color=0xffffff):

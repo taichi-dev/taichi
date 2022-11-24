@@ -9,6 +9,7 @@ from taichi._logging import warn
 _builtin_getfile = inspect.getfile
 _builtin_findsource = inspect.findsource
 
+use_sourceinspect = int(os.getenv('USE_SOURCEINSPECT', 0)) == 1
 
 def _find_source_with_custom_getfile_func(func, obj):
     inspect.getfile = func  # replace with our custom func
@@ -54,7 +55,7 @@ def _blender_findsource(obj):
             f.write(lines)
 
         _blender_findsource._saved_inspect_cache[lines] = filename  # pylint: disable=no-member
-        atexit.register(os.unlink, filename)  # Remove file after program exits
+        atexit.register(os.unlink, filename)  # Remove file when program exits
 
     def wrapped_getfile(ob):
         if id(ob) == id(obj):
@@ -86,6 +87,7 @@ def _Python_IPython_findsource(obj):
                     os.close(fd)
                     # The latest lines of code are stored in this file
                     lines = ip.history_manager._i00
+
                     # Remove the magic command (and spaces/sep around it) before saving to a file
                     index = lines.find("%time")
                     lines_stripped = lines[index:]
@@ -94,9 +96,7 @@ def _Python_IPython_findsource(obj):
                     with open(filename, 'w') as f:
                         f.write(lines_stripped)
 
-                    atexit.register(
-                        os.unlink,
-                        filename)  # Remove file after the program exits
+                    atexit.register(os.unlink, filename)  # Remove the file after the program exits
                     func = lambda obj: filename
                     return _find_source_with_custom_getfile_func(func, obj)
 
@@ -125,35 +125,36 @@ class _InspectContextManager:
 
 
 def getsourcelines(obj):
-    try:
-        with _InspectContextManager():
-            return inspect.getsourcelines(obj)
-    except:
-        warn(
-            f'Something is wrong and using sourceinspect (deprecated) to get source lines of {obj}. \
-            If you see this message, please report an issue to help us \
-                fix the problem: https://github.com/taichi-dev/taichi/issues')
+    if use_sourceinspect:
         return sourceinspect.getsourcelines(obj)
+    else:
+        try:
+            with _InspectContextManager():
+                return inspect.getsourcelines(obj)
+        except:
+            raise IOError(f"Cannot get the source lines of {obj}. \
+                You can try setting `USE_SOURCEINSPECT=1` in the enrionment variables \
+                    or insert the lines `os.environ['USE_SOURCEINSPECT'] = 1` \
+                        at the beginning of the source file. Please report an issue to help us \
+                fix the problem: https://github.com/taichi-dev/taichi/issues if you see this message")
 
 
 def getsourcefile(obj):
-    try:
-        with _InspectContextManager():
-            ret = inspect.getsourcefile(obj)
-            if ret is None:
-                try:
-                    ret = inspect.getfile(obj)
-                except:
-                    # Cannot get the file, so let's return None and fall back to sourceinspect.
-                    # In the future a suitable error message should be raised here.
-                    pass
-            return ret
-    except:
-        warn(
-            f'Something is wrong and using sourceinspect (deprecated) to get source file of {obj}. \
-            If you see this message, please report an issue to help us \
-                fix the problem: https://github.com/taichi-dev/taichi/issues')
+    if use_sourceinspect:
         return sourceinspect.getsourcefile(obj)
+    else:
+        try:
+            with _InspectContextManager():
+                ret = inspect.getsourcefile(obj)
+                if ret is None:
+                    ret = inspect.getfile(obj)
+                return ret
+        except:
+            raise IOError(f"Cannot get the source file of {obj}. \
+                You can try setting `USE_SOURCEINSPECT=1` in the enrionment variables \
+                    or insert the lines `os.environ['USE_SOURCEINSPECT'] = 1` \
+                        at the beginning of the source file. Please report an issue to help us \
+                fix the problem: https://github.com/taichi-dev/taichi/issues if you see this message")
 
 
 __all__ = ['getsourcelines', 'getsourcefile']

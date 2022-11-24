@@ -37,7 +37,7 @@ target_link_libraries(${TAICHI_C_API_NAME} PRIVATE taichi_ui)
 endif()
 
 # Avoid exporting third party symbols from libtaichi_c_api.so
-# Note that on Windows, the default behaviour is that external symbols will be excluded from .dll.
+# Note that on Windows, external symbols will be excluded from .dll automatically, by default.
 if(LINUX)
     target_link_options(${TAICHI_C_API_NAME} PRIVATE -Wl,--exclude-libs,ALL)
 elseif(APPLE)

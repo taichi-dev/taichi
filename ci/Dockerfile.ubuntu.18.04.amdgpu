@@ -57,7 +57,9 @@ ENV CXX="clang++-10"
 
 # Create non-root user for running the container
 RUN useradd -m -s /bin/bash dev && \
-    usermod -a -G video dev
+    usermod -a -G video dev && \
+    chmod 666 /dev/kfd && \
+    chmod 666 /dev/dri/*
 WORKDIR /home/dev
 USER dev
 

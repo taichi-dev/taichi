@@ -67,13 +67,14 @@ def sdf(o):
     sphere = (o - ti.Vector([0.0, 0.35, 0.0])).norm() - 0.36
 
     q = ti.abs(o - ti.Vector([0.8, 0.3, 0])) - ti.Vector([0.3, 0.3, 0.3])
-    box = ti.Vector([ti.max(0, q[0]), ti.max(0, q[1]),
+    box = ti.Vector([ti.max(0, q[0]),
+                     ti.max(0, q[1]),
                      ti.max(0, q[2])]).norm() + ti.min(q.max(), 0)
 
     O = o - ti.Vector([-0.8, 0.3, 0])
     d = ti.Vector([ti.Vector([O[0], O[2]]).norm() - 0.3, abs(O[1]) - 0.3])
-    cylinder = ti.min(d.max(), 0.0) + ti.Vector([ti.max(0, d[0]),
-                                              ti.max(0, d[1])]).norm()
+    cylinder = ti.min(d.max(), 0.0) + ti.Vector(
+        [ti.max(0, d[0]), ti.max(0, d[1])]).norm()
 
     geometry = make_nested(ti.min(sphere, box, cylinder))
     geometry = ti.max(geometry, -(0.32 - (o[1] * 0.6 + o[2] * 0.8)))

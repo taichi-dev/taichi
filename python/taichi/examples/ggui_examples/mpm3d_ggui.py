@@ -78,7 +78,7 @@ def substep(g_x: float, g_y: float, g_z: float):
             new_sig = sig[d, d]
             if F_materials[p] == SNOW:  # Snow
                 new_sig = ti.min(ti.max(sig[d, d], 1 - 2.5e-2),
-                              1 + 4.5e-3)  # Plasticity
+                                 1 + 4.5e-3)  # Plasticity
             F_Jp[p] *= sig[d, d] / new_sig
             sig[d, d] = new_sig
             J *= new_sig

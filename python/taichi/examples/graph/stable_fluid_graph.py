@@ -73,8 +73,7 @@ def backtrace(vf: ti.template(), p, dt_: ti.template()):
 
 
 @ti.kernel
-def advect(vf: ti.types.ndarray(ndim=2),
-           qf: ti.types.ndarray(ndim=2),
+def advect(vf: ti.types.ndarray(ndim=2), qf: ti.types.ndarray(ndim=2),
            new_qf: ti.types.ndarray(ndim=2)):
     for i, j in vf:
         p = ti.Vector([i, j]) + 0.5
@@ -83,8 +82,7 @@ def advect(vf: ti.types.ndarray(ndim=2),
 
 
 @ti.kernel
-def apply_impulse(vf: ti.types.ndarray(ndim=2),
-                  dyef: ti.types.ndarray(ndim=2),
+def apply_impulse(vf: ti.types.ndarray(ndim=2), dyef: ti.types.ndarray(ndim=2),
                   imp_data: ti.types.ndarray(ndim=1)):
     g_dir = -ti.Vector([0, 9.8]) * 300
     for i, j in vf:

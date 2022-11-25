@@ -116,7 +116,7 @@ def grid_op():
             dist = ti.Vector([i * dx - 0.5, j * dx - 0.5])
             if dist.norm_sqr() < 0.005:
                 dist = dist.normalized()
-                grid_v[i, j] -= dist * min(0, grid_v[i, j].dot(dist))
+                grid_v[i, j] -= dist * ti.min(0, grid_v[i, j].dot(dist))
 
             # box
             if i < bound and grid_v[i, j].x < 0:

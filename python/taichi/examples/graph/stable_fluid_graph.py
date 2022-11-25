@@ -35,7 +35,7 @@ class TexPair:
 @ti.func
 def sample(qf: ti.template(), u, v):
     I = ti.Vector([int(u), int(v)])
-    I = max(0, min(res - 1, I))
+    I = ti.max(0, ti.min(res - 1, I))
     return qf[I]
 
 
@@ -73,9 +73,9 @@ def backtrace(vf: ti.template(), p, dt_: ti.template()):
 
 
 @ti.kernel
-def advect(vf: ti.types.ndarray(field_dim=2),
-           qf: ti.types.ndarray(field_dim=2),
-           new_qf: ti.types.ndarray(field_dim=2)):
+def advect(vf: ti.types.ndarray(ndim=2),
+           qf: ti.types.ndarray(ndim=2),
+           new_qf: ti.types.ndarray(ndim=2)):
     for i, j in vf:
         p = ti.Vector([i, j]) + 0.5
         p = backtrace(vf, p, dt)
@@ -83,9 +83,9 @@ def advect(vf: ti.types.ndarray(field_dim=2),
 
 
 @ti.kernel
-def apply_impulse(vf: ti.types.ndarray(field_dim=2),
-                  dyef: ti.types.ndarray(field_dim=2),
-                  imp_data: ti.types.ndarray(field_dim=1)):
+def apply_impulse(vf: ti.types.ndarray(ndim=2),
+                  dyef: ti.types.ndarray(ndim=2),
+                  imp_data: ti.types.ndarray(ndim=1)):
     g_dir = -ti.Vector([0, 9.8]) * 300
     for i, j in vf:
         omx, omy = imp_data[2], imp_data[3]
@@ -111,8 +111,8 @@ def apply_impulse(vf: ti.types.ndarray(field_dim=2),
 
 
 @ti.kernel
-def divergence(vf: ti.types.ndarray(field_dim=2),
-               velocity_divs: ti.types.ndarray(field_dim=2)):
+def divergence(vf: ti.types.ndarray(ndim=2),
+               velocity_divs: ti.types.ndarray(ndim=2)):
     for i, j in vf:
         vl = sample(vf, i - 1, j)
         vr = sample(vf, i + 1, j)
@@ -131,9 +131,9 @@ def divergence(vf: ti.types.ndarray(field_dim=2),
 
 
 @ti.kernel
-def pressure_jacobi(pf: ti.types.ndarray(field_dim=2),
-                    new_pf: ti.types.ndarray(field_dim=2),
-                    velocity_divs: ti.types.ndarray(field_dim=2)):
+def pressure_jacobi(pf: ti.types.ndarray(ndim=2),
+                    new_pf: ti.types.ndarray(ndim=2),
+                    velocity_divs: ti.types.ndarray(ndim=2)):
     for i, j in pf:
         pl = sample(pf, i - 1, j)
         pr = sample(pf, i + 1, j)
@@ -144,8 +144,8 @@ def pressure_jacobi(pf: ti.types.ndarray(field_dim=2),
 
 
 @ti.kernel
-def subtract_gradient(vf: ti.types.ndarray(field_dim=2),
-                      pf: ti.types.ndarray(field_dim=2)):
+def subtract_gradient(vf: ti.types.ndarray(ndim=2),
+                      pf: ti.types.ndarray(ndim=2)):
     for i, j in vf:
         pl = sample(pf, i - 1, j)
         pr = sample(pf, i + 1, j)

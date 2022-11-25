@@ -44,7 +44,7 @@ RUN apt-get update && \
     printf "root ALL=(ALL:ALL) NOPASSWD: ALL\ndev ALL=(ALL:ALL) NOPASSWD: ALL\n" > /etc/sudoers && \
     true
 
-# Install LLVM 10
+# Install LLVM 15
 WORKDIR /
 # Make sure this URL gets updated each time there is a new prebuilt bin release
 RUN wget https://github.com/GaleSeLee/assets/releases/download/v0.0.1/taichi-llvm-15.0.0-linux.zip

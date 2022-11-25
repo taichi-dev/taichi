@@ -563,7 +563,8 @@ class ASTTransformer(Builder):
         def transform_as_kernel():
             # Treat return type
             if node.returns is not None:
-                kernel_arguments.decl_ret(ctx.func.return_type, ctx.is_real_function)
+                kernel_arguments.decl_ret(ctx.func.return_type,
+                                          ctx.is_real_function)
 
             for i, arg in enumerate(args.args):
                 if not isinstance(ctx.func.arguments[i].annotation,

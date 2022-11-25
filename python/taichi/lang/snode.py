@@ -1,4 +1,5 @@
 import numbers
+import warnings
 
 from taichi._lib import core as _ti_core
 from taichi.lang import expr, impl, matrix
@@ -47,6 +48,8 @@ class SNode:
         Returns:
             The added :class:`~taichi.lang.SNode` instance.
         """
+        if impl.current_cfg().arch == _ti_core.metal:
+            warnings.warn("Pointer SNode on metal backend is deprecated, and it will be removed in the next minor release.")
         if isinstance(dimensions, numbers.Number):
             dimensions = [dimensions] * len(axes)
         return SNode(
@@ -74,6 +77,8 @@ class SNode:
         Returns:
             The added :class:`~taichi.lang.SNode` instance.
         """
+        if impl.current_cfg().arch == _ti_core.metal:
+            raise TaichiCompilationError("Dynamic SNode on metal backend is deprecated and removed in this release.")
         assert len(axis) == 1
         if chunk_size is None:
             chunk_size = dimension
@@ -91,6 +96,8 @@ class SNode:
         Returns:
             The added :class:`~taichi.lang.SNode` instance.
         """
+        if impl.current_cfg().arch == _ti_core.metal:
+            warnings.warn("Bitmasked SNode on metal backend is deprecated, and it will be removed in the next minor release.")
         if isinstance(dimensions, numbers.Number):
             dimensions = [dimensions] * len(axes)
         return SNode(

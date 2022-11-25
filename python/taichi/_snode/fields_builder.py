@@ -74,6 +74,8 @@ class FieldsBuilder:
     def pointer(self, indices: Union[Sequence[_Axis], _Axis],
                 dimensions: Union[Sequence[int], int]):
         """Same as :func:`taichi.lang.snode.SNode.pointer`"""
+        if impl.current_cfg().arch == _ti_core.metal:
+            warnings.warn("Pointer SNode on metal backend is deprecated, and it will be removed in the next minor release.")
         self._check_not_finalized()
         self.empty = False
         return self.root.pointer(indices, dimensions)
@@ -87,6 +89,8 @@ class FieldsBuilder:
                 dimension: Union[Sequence[int], int],
                 chunk_size: Optional[int] = None):
         """Same as :func:`taichi.lang.snode.SNode.dynamic`"""
+        if impl.current_cfg().arch == _ti_core.metal:
+            raise TaichiCompilationError("Dynamic SNode on metal backend is deprecated and removed in this release.")
         self._check_not_finalized()
         self.empty = False
         return self.root.dynamic(index, dimension, chunk_size)
@@ -94,6 +98,8 @@ class FieldsBuilder:
     def bitmasked(self, indices: Union[Sequence[_Axis], _Axis],
                   dimensions: Union[Sequence[int], int]):
         """Same as :func:`taichi.lang.snode.SNode.bitmasked`"""
+        if impl.current_cfg().arch == _ti_core.metal:
+            warnings.warn("Bitmasked SNode on metal backend is deprecated, and it will be removed in the next minor release.")
         self._check_not_finalized()
         self.empty = False
         return self.root.bitmasked(indices, dimensions)

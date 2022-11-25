@@ -96,7 +96,6 @@ jobs:
             -DTI_WITH_CC:BOOL=OFF
             -DTI_WITH_VULKAN:BOOL=ON
             -DTI_BUILD_TESTS:BOOL=ON
-            -DTI_WITH_BACKTRACE:BOOL=ON
 
       - name: Archive Wheel Artifacts
         uses: actions/upload-artifact@v3
@@ -150,7 +149,6 @@ jobs:
             -DTI_WITH_CC:BOOL=OFF
             -DTI_WITH_VULKAN:BOOL=OFF
             -DTI_BUILD_TESTS:BOOL=ON
-            -DTI_WITH_BACKTRACE:BOOL=ON
 
       - name: Archive Wheel Artifacts
         uses: actions/upload-artifact@v3
@@ -203,7 +201,6 @@ jobs:
             -DTI_WITH_OPENGL:BOOL=OFF
             -DTI_WITH_CC:BOOL=OFF
             -DTI_BUILD_TESTS:BOOL=ON
-            -DTI_WITH_BACKTRACE:BOOL=ON
 
       - name: Archive Wheel Artifacts
         uses: actions/upload-artifact@v3
@@ -253,7 +250,6 @@ jobs:
             -DTI_WITH_CC:BOOL=OFF
             -DTI_WITH_VULKAN:BOOL=ON
             -DTI_BUILD_TESTS:BOOL=ON
-            -DTI_WITH_BACKTRACE:BOOL=ON
 
       - name: Archive Wheel Artifacts
         uses: actions/upload-artifact@v3

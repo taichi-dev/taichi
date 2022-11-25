@@ -97,7 +97,7 @@ class Struct(TaichiOperations):
 
     def _register_members(self):
         for k in self.keys:
-            setattr(Struct, k,
+            setattr(self, k,
                     property(
                         Struct._make_getter(k),
                         Struct._make_setter(k),
@@ -769,7 +769,7 @@ def dataclass(cls):
             and methods from the class attached.
     """
     # save the annotation fields for the struct
-    fields = cls.__annotations__
+    fields = getattr(cls, '__annotations__', {})
     # get the class methods to be attached to the struct types
     fields['__struct_methods'] = {
         attribute: getattr(cls, attribute)

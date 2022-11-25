@@ -164,13 +164,13 @@ def matrix_to_ext_arr(mat: template(), arr: ndarray_type.ndarray(),
                       as_vector: template()):
     for I in grouped(mat):
         for p in static(range(mat.n)):
-            if static(as_vector):
-                if static(getattr(mat, "ndim", 2) == 1):
-                    arr[I, p] = mat[I][p]
+            for q in static(range(mat.m)):
+                if static(as_vector):
+                    if static(getattr(mat, "ndim", 2) == 1):
+                        arr[I, p] = mat[I][p]
+                    else:
+                        arr[I, p] = mat[I][p, q]
                 else:
-                    arr[I, p] = mat[I][p, q]
-            else:
-                for q in static(range(mat.m)):
                     if static(getattr(mat, "ndim", 2) == 1):
                         arr[I, p, q] = mat[I][p]
                     else:
@@ -182,13 +182,13 @@ def ext_arr_to_matrix(arr: ndarray_type.ndarray(), mat: template(),
                       as_vector: template()):
     for I in grouped(mat):
         for p in static(range(mat.n)):
-            if static(getattr(mat, "ndim", 2) == 1):
-                if static(as_vector):
-                    mat[I][p] = arr[I, p]
+            for q in static(range(mat.m)):
+                if static(getattr(mat, "ndim", 2) == 1):
+                    if static(as_vector):
+                        mat[I][p] = arr[I, p]
+                    else:
+                        mat[I][p] = arr[I, p, q]
                 else:
-                    mat[I][p] = arr[I, p, q]
-            else:
-                for q in static(range(mat.m)):
                     if static(as_vector):
                         mat[I][p, q] = arr[I, p]
                     else:

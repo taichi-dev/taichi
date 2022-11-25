@@ -324,14 +324,3 @@ def test_matrix_mult_field():
             b = a * x
 
         foo()
-
-
-@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
-def test_field_numpy_matrix_scalarize():
-    boundary_box_np = np.array([[0., 2., 3.], [3., 3., 4.]], dtype=np.float32)
-
-    boundary_box = ti.Vector.field(3, ti.f32, shape=2)
-    boundary_box.from_numpy(boundary_box_np)
-    ref_numpy = boundary_box.to_numpy()
-
-    assert (boundary_box_np == ref_numpy).all()

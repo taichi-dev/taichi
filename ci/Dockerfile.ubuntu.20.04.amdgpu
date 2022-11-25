@@ -48,9 +48,8 @@ ENV CXX="clang++-10"
 
 # Create non-root user for running the container
 # add user into video(&&render) group
-RUN useradd -m /bin/bash dev && \
-    usermod -a -G video dev && \
-    su dev
+RUN useradd -m -s /bin/bash dev && \
+    usermod -a -G video dev
 WORKDIR /home/dev
 USER dev
 

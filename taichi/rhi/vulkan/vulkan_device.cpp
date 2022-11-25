@@ -2438,7 +2438,7 @@ void VulkanSurface::create_swap_chain() {
   createInfo.pNext = nullptr;
   createInfo.flags = 0;
   createInfo.surface = surface_;
-  createInfo.minImageCount = std::min<uint32_t>(capabilities.maxImageCount, 3);
+  createInfo.minImageCount = capabilities.minImageCount;
   createInfo.imageFormat = surface_format.format;
   createInfo.imageColorSpace = surface_format.colorSpace;
   createInfo.imageExtent = extent;

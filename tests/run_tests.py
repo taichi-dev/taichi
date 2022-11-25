@@ -153,7 +153,7 @@ def _test_python(args):
             # auto-complete file names
             if not f.startswith('test_'):
                 f = 'test_' + f
-            if not f.endswith('.py'):
+            if not (f.endswith('.py') or f.endswith('.ipynb')):
                 f = f + '.py'
             file = os.path.join(test_dir, f)
             has_tests = False
@@ -164,6 +164,7 @@ def _test_python(args):
     else:
         # run all the tests
         pytest_args = [test_dir]
+    pytest_args += ['--nbmake']
     if args.verbose:
         pytest_args += ['-v']
     if args.rerun:

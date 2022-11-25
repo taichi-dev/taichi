@@ -5,6 +5,7 @@ from taichi._snode.snode_tree import SNodeTree
 from taichi.lang import impl, snode
 from taichi.lang.exception import TaichiRuntimeError
 from taichi.lang.util import warning
+import warnings
 
 _snode_registry = _ti_core.SNodeRegistry()
 
@@ -76,7 +77,7 @@ class FieldsBuilder:
         """Same as :func:`taichi.lang.snode.SNode.pointer`"""
         if impl.current_cfg().arch == _ti_core.metal:
             warnings.warn(
-                "Pointer SNode on metal backend is deprecated, and it will be removed in the next minor release."
+                "Pointer SNode on metal backend is deprecated, and it will be removed in v1.4.0.", DeprecationWarning
             )
         self._check_not_finalized()
         self.empty = False
@@ -92,7 +93,7 @@ class FieldsBuilder:
                 chunk_size: Optional[int] = None):
         """Same as :func:`taichi.lang.snode.SNode.dynamic`"""
         if impl.current_cfg().arch == _ti_core.metal:
-            raise TaichiCompilationError(
+            raise TaichiRuntimeError(
                 "Dynamic SNode on metal backend is deprecated and removed in this release."
             )
         self._check_not_finalized()
@@ -104,7 +105,7 @@ class FieldsBuilder:
         """Same as :func:`taichi.lang.snode.SNode.bitmasked`"""
         if impl.current_cfg().arch == _ti_core.metal:
             warnings.warn(
-                "Bitmasked SNode on metal backend is deprecated, and it will be removed in the next minor release."
+                "Bitmasked SNode on metal backend is deprecated, and it will be removed in v1.4.0.", DeprecationWarning
             )
         self._check_not_finalized()
         self.empty = False

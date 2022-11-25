@@ -56,9 +56,9 @@ ENV CC="clang-10"
 ENV CXX="clang++-10"
 
 # Create non-root user for running the container
-RUN useradd -ms /bin/bash dev
-WORKDIR /home/dev && \
+RUN useradd -m -s /bin/bash dev && \
     usermod -a -G video dev
+WORKDIR /home/dev
 USER dev
 
 # Install miniconda

@@ -50,8 +50,8 @@ class SNode:
         """
         if impl.current_cfg().arch == _ti_core.metal:
             warnings.warn(
-                "Pointer SNode on metal backend is deprecated, and it will be removed in v1.4.0.", DeprecationWarning
-            )
+                "Pointer SNode on metal backend is deprecated, and it will be removed in v1.4.0.",
+                DeprecationWarning)
         if isinstance(dimensions, numbers.Number):
             dimensions = [dimensions] * len(axes)
         return SNode(
@@ -102,8 +102,8 @@ class SNode:
         """
         if impl.current_cfg().arch == _ti_core.metal:
             warnings.warn(
-                "Bitmasked SNode on metal backend is deprecated, and it will be removed in v1.4.0.", DeprecationWarning
-            )
+                "Bitmasked SNode on metal backend is deprecated, and it will be removed in v1.4.0.",
+                DeprecationWarning)
         if isinstance(dimensions, numbers.Number):
             dimensions = [dimensions] * len(axes)
         return SNode(

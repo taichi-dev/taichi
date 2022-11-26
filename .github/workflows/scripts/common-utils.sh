@@ -155,6 +155,28 @@ function ci-docker-run-gpu {
         $@
 }
 
+function ci-docker-run-amdgpu {
+    for i in {0..9}; do
+        if xset -display ":$i" -q >/dev/null 2>&1; then
+            break
+        fi
+    done
+
+    if [ $? -ne 0 ]; then
+        echo "No display!"
+        exit 1
+    fi
+
+    ci-docker-run \
+        
+        # 注释说明一下
+        -e DISPLAY=:$i \
+        -e GPU_BUILD=ON \
+        -e GPU_TEST=ON \
+        -v /tmp/.X11-unix:/tmp/.X11-unix \
+        $@
+}
+
 function setup-android-ndk-env {
     export ANDROID_NDK_ROOT=${ANDROID_NDK_ROOT:-/android-sdk/ndk-bundle}
     export ANDROID_CMAKE_ARGS="-DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK_ROOT}/build/cmake/android.toolchain.cmake -DANDROID_NATIVE_API_LEVEL=29 -DANDROID_ABI=arm64-v8a"

@@ -1160,9 +1160,6 @@ uint32 cuda_active_mask() {
 }
 #endif
 
-void block_barrier() {
-}
-
 void warp_barrier(uint32 mask) {
 }
 

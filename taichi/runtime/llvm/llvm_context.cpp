@@ -389,7 +389,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::module_from_file(
     patch_intrinsic("block_idx", Intrinsic::nvvm_read_ptx_sreg_ctaid_x);
     patch_intrinsic("block_dim", Intrinsic::nvvm_read_ptx_sreg_ntid_x);
     patch_intrinsic("grid_dim", Intrinsic::nvvm_read_ptx_sreg_nctaid_x);
-    patch_intrinsic("block_barrier", Intrinsic::nvvm_barrier0, false);
+    // patch_intrinsic("block_barrier", Intrinsic::nvvm_barrier0, false);
     patch_intrinsic("warp_barrier", Intrinsic::nvvm_bar_warp_sync, false);
     patch_intrinsic("block_memfence", Intrinsic::nvvm_membar_cta, false);
     patch_intrinsic("grid_memfence", Intrinsic::nvvm_membar_gl, false);
@@ -458,6 +458,17 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::module_from_file(
     patch_atomic_add("atomic_add_f64", llvm::AtomicRMWInst::FAdd);
 
     patch_intrinsic("block_memfence", Intrinsic::nvvm_membar_cta, false);
+
+    // Link with cuda_runtime_alternative
+    std::unique_ptr<llvm::Module> alt_module = module_from_bitcode_file(
+        fmt::format("{}/{}", runtime_lib_dir(),
+                    "cuda_runtime-cuda-nvptx64-nvidia-cuda-sm_75.bc"),
+        ctx);
+
+    bool failed = llvm::Linker::linkModules(*module, std::move(alt_module));
+    if (failed) {
+      TI_ERROR("cuda_runtime.bc linking failure.");
+    }
 
     link_module_with_cuda_libdevice(module);
 

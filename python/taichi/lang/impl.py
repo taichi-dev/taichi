@@ -950,6 +950,13 @@ def ti_int(_var):
 
 
 @taichi_scope
+def ti_bool(_var):
+    if hasattr(_var, '__ti_bool__'):
+        return _var.__ti_bool__()
+    return bool(_var)
+
+
+@taichi_scope
 def ti_float(_var):
     if hasattr(_var, '__ti_float__'):
         return _var.__ti_float__()

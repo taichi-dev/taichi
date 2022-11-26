@@ -168,8 +168,9 @@ function ci-docker-run-amdgpu {
     fi
 
     ci-docker-run \
-        
-        # 注释说明一下
+        --device=/dev/kfd \
+        --device=/dev/dri \
+        --group-add=video \
         -e DISPLAY=:$i \
         -e GPU_BUILD=ON \
         -e GPU_TEST=ON \

@@ -28,6 +28,10 @@ endif()
 if (WIN32)
     link_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/lib)
     if (MSVC)
+        # C4244: conversion from 'type1' to 'type2', possible loss of data
+        # C4267: conversion from 'size_t' to 'type', possible loss of data
+        # C4624: destructor was implicitly defined as deleted because a base class destructor is inaccessible or deleted
+        # These warnings are not emitted on Clang (mostly within LLVM source code)
         set(CMAKE_CXX_FLAGS
             "${CMAKE_CXX_FLAGS} /Zc:__cplusplus /std:c++17 /bigobj /wd4244 /wd4267 /wd4624 /nologo /MP /Zi /D \"_CRT_SECURE_NO_WARNINGS\" /D \"_ENABLE_EXTENDED_ALIGNED_STORAGE\"")
     else()

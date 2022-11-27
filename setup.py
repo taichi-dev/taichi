@@ -140,6 +140,7 @@ def get_cmake_args():
     if sys.platform != 'win32':
         os.environ['SKBUILD_BUILD_OPTIONS'] = f'-j{num_threads}'
     elif use_msbuild:
+        # /M uses multi-threaded build (similar to -j)
         os.environ['SKBUILD_BUILD_OPTIONS'] = f'/M'
     if sys.platform == "darwin":
         if platform.machine() == "arm64":

@@ -50,7 +50,7 @@ dyes_pair = TexPair(_dye_buffer, _new_dye_buffer)
 @ti.func
 def sample(qf, u, v):
     I = ti.Vector([int(u), int(v)])
-    I = max(0, min(res - 1, I))
+    I = ti.max(0, ti.min(res - 1, I))
     return qf[I]
 
 

@@ -74,7 +74,7 @@ void run_dense_field_kernel(Arch arch, taichi::lang::Device *device) {
 
   // Retrieve kernels/fields/etc from AOT module
   auto root_size = vk_module->get_root_size();
-  EXPECT_EQ(root_size, 64);
+  EXPECT_EQ(root_size, 40);
   gfx_runtime->add_root_buffer(root_size);
 
   auto simple_ret_kernel = vk_module->get_kernel("simple_ret");

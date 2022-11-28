@@ -61,7 +61,7 @@ Installation instructions vary depending on which operating system (OS) you are 
 | OS            | Windows 7/8/10/11                                                                                                       |
 | Python        | 3.7/3.8/3.9/3.10  |
 | Clang++       | 8&leq; Clang++ &lt;12 (We provide pre-built versions in the clang section)                                            |
-| LLVM          | 10.0.0 (Taichi customized version)                                                                                                                                                       |
+| LLVM          | 15.0.0 (Taichi customized version)                                                                                                                                                       |
 | Visual Studio | Visual Studio 2019/2022 with "Desktop Development with C++" component. If you want to use Clang++ as the compiler, also install "C++ Clang Compiler for Windows" component  |
 
 </TabItem>
@@ -275,7 +275,7 @@ llvm-config --version  # You should get 15.0.5
 ```shell
 # For Windows
 
-# LLVM 10.0.0 + MSVC 2019
+# LLVM 15.0.0 + MSVC 2019
 
 cmake .. -G "Visual Studio 16 2019" -A x64 -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON -Thost=x64 -DLLVM_BUILD_TESTS:BOOL=OFF -DCMAKE_INSTALL_PREFIX=installed -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDLL -DCMAKE_CXX_STANDARD=17
 cmake --build . --target=INSTALL --config=Release
@@ -459,7 +459,7 @@ The `develop` command serves the developers' needs better because edits to the P
 
 <TabItem value="windows">
 
-1. Set-up the environment variable `TAICHI_CMAKE_ARGS` with value `-DCLANG_EXECUTABLE=<Path to Clang 10>/bin/clang.exe -DLLVM_AS_EXECUTABLE=<Path to LLVM 10>/bin/llvm-as.exe`
+1. Set-up the environment variable `TAICHI_CMAKE_ARGS` with value `-DCLANG_EXECUTABLE=<Path to Clang 10>/bin/clang.exe -DLLVM_AS_EXECUTABLE=<Path to LLVM 15>/bin/llvm-as.exe`
 2. Open the "x64 Native Tools Command Prompt" for VS2019 or VS2022. Please make sure you opened the x64 version. (Or load the Visual Studio environment yourself)
 3. Clone the Taichi repo *recursively* & install python dependencies
 

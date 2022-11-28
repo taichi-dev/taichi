@@ -4,8 +4,10 @@ set(VULKAN_RHI vulkan_rhi)
 add_library(${VULKAN_RHI})
 target_sources(${VULKAN_RHI}
   PRIVATE
+    vulkan_enums.cpp
     vulkan_api.cpp
     vulkan_device.cpp
+    vulkan_pipeline.cpp
     vulkan_surface.cpp
     vulkan_stream.cpp
     vulkan_device_creator.cpp

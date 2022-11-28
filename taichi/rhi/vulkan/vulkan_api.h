@@ -1,6 +1,7 @@
 #pragma once
 
 #include "taichi/rhi/vulkan/vulkan_common.h"
+#include "taichi/rhi/vulkan/vulkan_enums.h"
 
 #include <vk_mem_alloc.h>
 

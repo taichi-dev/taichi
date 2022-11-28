@@ -31,13 +31,16 @@ namespace vulkan {
 
 inline constexpr VkAllocationCallbacks *kNoVkAllocCallbacks = nullptr;
 
+// Classes declared in this RHI.
 class VulkanDevice;
+class VulkanPipeline;
 class VulkanSurface;
 class VulkanStream;
 class VulkanCommandList;
 class VulkanResourceBinder;
 class VulkanStreamSemaphoreObject;
 
+// Structs declared in this RHI.
 struct VulkanRenderPassDesc;
 struct VulkanFramebufferDesc;
 

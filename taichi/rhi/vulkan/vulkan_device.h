@@ -49,17 +49,6 @@ struct FramebufferDescHasher {
   }
 };
 
-class VulkanStreamSemaphoreObject : public StreamSemaphoreObject {
- public:
-  explicit VulkanStreamSemaphoreObject(vkapi::IVkSemaphore sema)
-      : vkapi_ref(sema) {
-  }
-  ~VulkanStreamSemaphoreObject() override {
-  }
-
-  vkapi::IVkSemaphore vkapi_ref{nullptr};
-};
-
 struct VulkanCapabilities {
   uint32_t vk_api_version;
   bool physical_device_features2;

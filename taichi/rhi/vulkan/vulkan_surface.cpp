@@ -1,5 +1,6 @@
 #include "taichi/rhi/vulkan/vulkan_surface.h"
 #include "taichi/rhi/vulkan/vulkan_device.h"
+#include "taichi/rhi/vulkan/vulkan_semaphore.h"
 
 namespace taichi::lang {
 namespace vulkan {

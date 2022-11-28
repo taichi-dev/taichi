@@ -173,9 +173,6 @@ The bitmasked SNodes are like dense SNodes with auxiliary activity values.
 ### Dynamic SNode
 
 To support variable-length fields, Taichi provides dynamic SNodes.
-The dynamic SNode must have only one axis, and the axis must be the last axis.
-No other SNode can be placed under a dynamic SNode, that is, a dynamic SNode must be directly placed with a field.
-There must not be another SNode which axes include the same axis as the dynamic SNode in the path from the dynamic SNode to the root of the SNode tree.
 
 The first argument of `dynamic` is the axis, the second argument is the maximum length,
 and the third argument (optional) is the `chunk_size`.
@@ -214,6 +211,12 @@ def dynamic_pair():
         #              [(3, 1), (3, 2), ... , (3, 8), (3, 9)]]
         l[i] = pair_field[i].length()  # l = [0, 1, 4, 9]
 ```
+
+:::note
+The dynamic SNode must have only one axis, and the axis must be the last axis.
+No other SNode can be placed under a dynamic SNode, that is, a dynamic SNode must be directly placed with a field.
+There must not be another SNode which axes include the same axis as the dynamic SNode in the path from the dynamic SNode to the root of the SNode tree.
+:::
 
 ## Computation on spatially sparse data structures
 

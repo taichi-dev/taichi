@@ -58,8 +58,8 @@ def expected_num_cache_files(arch, num_offloads: List[int] = None) -> int:
     if arch in supported_llvm_archs:
         result += 2  # metadata.{json, tcb}
     elif arch in supported_gfx_archs:
-        # metadata.{json, tcb}, graphs.tcb, offline_cache_metadata.tcb
-        result += 4
+        # metadata.{json, tcb}, graphs.{json, tcb}, offline_cache_metadata.tcb
+        result += 5
     elif arch in supported_metal_arch:
         result += 1  # metadata.tcb
     return result

@@ -12,6 +12,7 @@
 #include "taichi/rhi/vulkan/vulkan_utils.h"
 #include "taichi/rhi/vulkan/vulkan_loader.h"
 #include "taichi/rhi/vulkan/vulkan_device.h"
+#include "taichi/rhi/vulkan/vulkan_event.h"
 #include "taichi/rhi/vulkan/vulkan_stream.h"
 #include "taichi/common/core.h"
 

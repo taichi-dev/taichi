@@ -75,16 +75,6 @@ struct FramebufferDescHasher {
   }
 };
 
-class VulkanDeviceEvent : public DeviceEvent {
- public:
-  explicit VulkanDeviceEvent(vkapi::IVkEvent event) : vkapi_ref(event) {
-  }
-  ~VulkanDeviceEvent() override {
-  }
-
-  vkapi::IVkEvent vkapi_ref{nullptr};
-};
-
 class VulkanCommandList : public CommandList {
  public:
   VulkanCommandList(VulkanDevice *ti_device,

@@ -38,7 +38,7 @@ class AotModuleImpl : public aot::Module {
 
     if (!succ) {
       mark_corrupted();
-      TI_WARN("'metadata.tcb' cannot be read");
+      TI_WARN("'metadata.json' cannot be read");
       return;
     }
     auto json = liong::json::parse((const char*)metadata_json.data(),

@@ -14,7 +14,7 @@ function(COMPILE_LLVM_RUNTIME rtm_arch)
     file(GLOB ${RUNTIME_BC_FILES} "${CMAKE_SOURCE_DIR}/taichi/runtime/llvm/runtime_module/*.bc" )
     install(FILES "${CMAKE_SOURCE_DIR}/taichi/runtime/llvm/runtime_module/runtime_${arch}.bc" DESTINATION ${CMAKE_INSTALL_PREFIX}/python/taichi/_lib/runtime)
     install(FILES "${CMAKE_SOURCE_DIR}/taichi/runtime/llvm/runtime_module/cuda_runtime.bc" DESTINATION ${CMAKE_INSTALL_PREFIX}/python/taichi/_lib/runtime)
-    install(FILES "${CMAKE_SOURCE_DIR}/taichi/runtime/llvm/runtime_module/cuda_runtime-cuda-nvptx64-nvidia-cuda-sm_75.bc" DESTINATION ${CMAKE_INSTALL_PREFIX}/python/taichi/_lib/runtime)
+    install(FILES "${CMAKE_SOURCE_DIR}/taichi/runtime/llvm/runtime_module/cuda_runtime-cuda-nvptx64-nvidia-cuda-sm_50.bc" DESTINATION ${CMAKE_INSTALL_PREFIX}/python/taichi/_lib/runtime)
 
 endfunction()
 

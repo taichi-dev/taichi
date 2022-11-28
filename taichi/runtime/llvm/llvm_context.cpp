@@ -462,7 +462,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::module_from_file(
     // Link with cuda_runtime_alternative
     std::unique_ptr<llvm::Module> alt_module = module_from_bitcode_file(
         fmt::format("{}/{}", runtime_lib_dir(),
-                    "cuda_runtime-cuda-nvptx64-nvidia-cuda-sm_75.bc"),
+                    "cuda_runtime-cuda-nvptx64-nvidia-cuda-sm_50.bc"),
         ctx);
 
     bool failed = llvm::Linker::linkModules(*module, std::move(alt_module));

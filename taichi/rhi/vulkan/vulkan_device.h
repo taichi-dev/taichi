@@ -2,8 +2,6 @@
 
 #include "taichi/rhi/vulkan/vulkan_api.h"
 
-#include <vk_mem_alloc.h>
-
 #ifdef ANDROID
 #include <android/native_window_jni.h>
 #else
@@ -523,42 +521,6 @@ class VulkanStreamSemaphoreObject : public StreamSemaphoreObject {
   }
 
   vkapi::IVkSemaphore vkapi_ref{nullptr};
-};
-
-class VulkanStream : public Stream {
- public:
-  VulkanStream(VulkanDevice &device,
-               VkQueue queue,
-               uint32_t queue_family_index);
-  ~VulkanStream() override;
-
-  std::unique_ptr<CommandList> new_command_list() override;
-  StreamSemaphore submit(
-      CommandList *cmdlist,
-      const std::vector<StreamSemaphore> &wait_semaphores = {}) override;
-  StreamSemaphore submit_synced(
-      CommandList *cmdlist,
-      const std::vector<StreamSemaphore> &wait_semaphores = {}) override;
-
-  void command_sync() override;
-
-  double device_time_elapsed_us() const override;
-
- private:
-  struct TrackedCmdbuf {
-    vkapi::IVkFence fence;
-    vkapi::IVkCommandBuffer buf;
-    vkapi::IVkQueryPool query_pool;
-  };
-
-  VulkanDevice &device_;
-  VkQueue queue_;
-  uint32_t queue_family_index_;
-
-  // Command pools are per-thread
-  vkapi::IVkCommandPool command_pool_;
-  std::vector<TrackedCmdbuf> submitted_cmdbuffers_;
-  double device_time_elapsed_us_;
 };
 
 struct VulkanCapabilities {

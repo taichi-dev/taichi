@@ -30,5 +30,14 @@ namespace vulkan {
 
 inline constexpr VkAllocationCallbacks *kNoVkAllocCallbacks = nullptr;
 
+class VulkanDevice;
+class VulkanStream;
+class VulkanCommandList;
+class VulkanResourceBinder;
+class VulkanStreamSemaphoreObject;
+
+struct VulkanRenderPassDesc;
+struct VulkanFramebufferDesc;
+
 }  // namespace vulkan
 }  // namespace taichi::lang

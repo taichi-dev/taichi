@@ -6,6 +6,7 @@ target_sources(${VULKAN_RHI}
   PRIVATE
     vulkan_api.cpp
     vulkan_device.cpp
+    vulkan_stream.cpp
     vulkan_device_creator.cpp
     vulkan_loader.cpp
     vulkan_memory_allocator.cpp

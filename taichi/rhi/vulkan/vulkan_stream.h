@@ -1,5 +1,5 @@
 #pragma once
-#include "taichi/rhi/device.h" // TODO: (penguinliong) Split this up.
+#include "taichi/rhi/device.h"  // TODO: (penguinliong) Split this up.
 #include "taichi/rhi/vulkan/vulkan_api.h"
 
 namespace taichi::lang {

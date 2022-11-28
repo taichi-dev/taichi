@@ -125,5 +125,5 @@ double VulkanStream::device_time_elapsed_us() const {
   return device_time_elapsed_us_;
 }
 
-} // vulkan
-} // taichi::lang
+}  // namespace vulkan
+}  // namespace taichi::lang

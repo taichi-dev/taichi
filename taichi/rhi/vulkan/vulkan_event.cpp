@@ -8,5 +8,5 @@ VulkanDeviceEvent::VulkanDeviceEvent(vkapi::IVkEvent event) : vkapi_ref(event) {
 VulkanDeviceEvent::~VulkanDeviceEvent() {
 }
 
-} // namespace vulkan
-} // namespace taichi::lang
+}  // namespace vulkan
+}  // namespace taichi::lang

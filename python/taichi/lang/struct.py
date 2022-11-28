@@ -1,7 +1,8 @@
 import numbers
 from types import MethodType
 
-from taichi.lang import impl, ops
+from taichi._lib import core as _ti_core
+from taichi.lang import expr, impl, ops
 from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiSyntaxError
@@ -222,10 +223,14 @@ class Struct(TaichiOperations):
         Args:
             val (Union[int, float]): Value to fill.
         """
-        def assign_renamed(x, y):
-            return ops.assign(x, y)
-
-        return self._element_wise_writeback_binary(assign_renamed, val)
+        for k, v in self.items:
+            if isinstance(v, impl.Expr) and v.ptr.is_tensor():
+                from taichi.lang import matrix_ops  # pylint: disable=C0415
+                matrix_ops.fill(v, val)
+            elif isinstance(v, (Struct, Matrix)):
+                v._element_wise_binary(ops.assign, val)
+            else:
+                ops.assign(v, val)
 
     def __len__(self):
         """Get the number of entries in a custom struct"""
@@ -681,6 +686,21 @@ class StructType(CompoundType):
         entries = Struct(d)
         struct = self.cast(entries)
         return struct
+
+    def from_real_func_ret(self, func_ret, ret_index=0):
+        d = {}
+        items = self.members.items()
+        for index, pair in enumerate(items):
+            name, dtype = pair
+            if isinstance(dtype, CompoundType):
+                d[name], ret_index = dtype.from_real_func_ret(
+                    func_ret, ret_index)
+            else:
+                d[name] = expr.Expr(
+                    _ti_core.make_get_element_expr(func_ret.ptr, ret_index))
+                ret_index += 1
+
+        return Struct(d), ret_index
 
     def cast(self, struct):
         # sanity check members

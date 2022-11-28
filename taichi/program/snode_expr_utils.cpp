@@ -56,7 +56,7 @@ void place_child(Expr *expr_arg,
                  SNodeFieldMap *snode_to_exprs) {
   if (parent->type == SNodeType::root) {
     // never directly place to root
-    auto &ds = parent->dense(std::vector<Axis>(), {}, false);
+    auto &ds = parent->dense(std::vector<Axis>(), {}, false, "");
     place_child(expr_arg, offset, id_in_bit_struct, &ds, snode_to_exprs);
   } else {
     TI_ASSERT(expr_arg->is<FieldExpression>());

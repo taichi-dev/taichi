@@ -75,7 +75,7 @@ def vector_to_fast_image(img: template(), out: ndarray_type.ndarray()):
         r, g, b = 0, 0, 0
         color = img[i, img.shape[1] - 1 - j]
         if static(img.dtype in [f16, f32, f64]):
-            r, g, b = min(255, max(0, int(color * 255)))[:3]
+            r, g, b = ops.min(255, ops.max(0, int(color * 255)))[:3]
         else:
             static_assert(img.dtype == u8)
             r, g, b = color[:3]
@@ -259,8 +259,7 @@ def load_texture_from_numpy(tex: texture_type.rw_texture(num_dimensions=2,
                                                          num_channels=4,
                                                          channel_format=u8,
                                                          lod=0),
-                            img: ndarray_type.ndarray(dtype=vec3,
-                                                      field_dim=2)):
+                            img: ndarray_type.ndarray(dtype=vec3, ndim=2)):
     for i, j in img:
         tex.store(
             vector(2, i32)([i, j]),
@@ -273,7 +272,7 @@ def save_texture_to_numpy(tex: texture_type.rw_texture(num_dimensions=2,
                                                        num_channels=4,
                                                        channel_format=u8,
                                                        lod=0),
-                          img: ndarray_type.ndarray(dtype=vec3, field_dim=2)):
+                          img: ndarray_type.ndarray(dtype=vec3, ndim=2)):
     for i, j in img:
         img[i, j] = ops.round(tex.load(vector(2, i32)([i, j])).rgb * 255)
 

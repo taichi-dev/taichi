@@ -205,15 +205,20 @@ Expr to_broadcast_tensor(const Expr &elt, const DataType &dt) {
   TI_ASSERT(dt->is<TensorType>());
   if (elt->ret_type == dt) {
     return elt;
+  } else if (elt->ret_type->is<TensorType>()) {
+    TI_ERROR("Cannot broadcast tensor to tensor");
   }
+
   auto tensor_type = dt->as<TensorType>();
   auto elt_type = tensor_type->get_element_type();
   TI_ASSERT_INFO(elt_type->is<PrimitiveType>(),
                  "Only primitive types are supported in Tensors, got {}",
                  elt_type->to_string());
   std::vector<Expr> broadcast_values(tensor_type->get_num_elements(), elt);
-  return Expr::make<MatrixExpression>(broadcast_values,
-                                      tensor_type->get_shape(), elt->ret_type);
+  auto matrix_expr = Expr::make<MatrixExpression>(
+      broadcast_values, tensor_type->get_shape(), elt->ret_type);
+  matrix_expr->type_check(nullptr);
+  return matrix_expr;
 }
 
 std::tuple<Expr, Expr> unify_binop_operands(const Expr &e1, const Expr &e2) {
@@ -394,10 +399,42 @@ void make_ifte(Expression::FlattenContext *ctx,
   return;
 }
 
+static std::tuple<Expr, Expr, Expr> unify_ternaryop_operands(const Expr &e1,
+                                                             const Expr &e2,
+                                                             const Expr &e3) {
+  auto target_dtype = PrimitiveType::unknown;
+  // Since we don't support broadcasting between two TensorTypes,
+  // we can simply use the first TensorType's dtype as the target dtype.
+  if (e1->ret_type->is<TensorType>()) {
+    target_dtype = e1->ret_type;
+  } else if (e2->ret_type->is<TensorType>()) {
+    target_dtype = e2->ret_type;
+  } else if (e3->ret_type->is<TensorType>()) {
+    target_dtype = e3->ret_type;
+  }
+
+  if (target_dtype == PrimitiveType::unknown) {
+    return std::tuple(e1, e2, e3);
+  }
+
+  return std::tuple(to_broadcast_tensor(e1, target_dtype),
+                    to_broadcast_tensor(e2, target_dtype),
+                    to_broadcast_tensor(e3, target_dtype));
+}
+
 void TernaryOpExpression::type_check(CompileConfig *config) {
   TI_ASSERT_TYPE_CHECKED(op1);
   TI_ASSERT_TYPE_CHECKED(op2);
   TI_ASSERT_TYPE_CHECKED(op3);
+
+  bool is_valid = true;
+  bool is_tensor = false;
+
+  auto [unified_cond, unified_l, unified_r] =
+      unify_ternaryop_operands(op1, op2, op3);
+  op1 = unified_cond;
+  op2 = unified_l;
+  op3 = unified_r;
   auto op1_type = op1->ret_type;
   auto op2_type = op2->ret_type;
   auto op3_type = op3->ret_type;
@@ -409,8 +446,6 @@ void TernaryOpExpression::type_check(CompileConfig *config) {
                     op2->ret_type->to_string(), op3->ret_type->to_string()));
   };
 
-  bool is_valid = true;
-  bool is_tensor = false;
   if (op1_type->is<TensorType>() && op2_type->is<TensorType>() &&
       op3_type->is<TensorType>()) {
     // valid
@@ -446,8 +481,8 @@ void TernaryOpExpression::type_check(CompileConfig *config) {
 
   if (is_tensor) {
     auto primitive_dtype = promoted_type(op2_type, op3_type);
-    ret_type = TypeFactory::create_tensor_type(
-        op2->ret_type->cast<TensorType>()->get_shape(), primitive_dtype);
+    auto shape = op2->ret_type->cast<TensorType>()->get_shape();
+    ret_type = TypeFactory::create_tensor_type(shape, primitive_dtype);
   } else {
     ret_type = promoted_type(op2_type, op3_type);
   }
@@ -1079,11 +1114,8 @@ void FuncCallExpression::type_check(CompileConfig *) {
     TI_ASSERT_TYPE_CHECKED(arg);
     // no arg type compatibility check for now due to lack of specification
   }
-  TI_ASSERT_INFO(func->rets.size() <= 1,
-                 "Too many (> 1) return values for FuncCallExpression");
-  if (func->rets.size() == 1) {
-    ret_type = func->rets[0].dt;
-  }
+  ret_type = PrimitiveType::u64;
+  ret_type.set_is_pointer(true);
 }
 
 void FuncCallExpression::flatten(FlattenContext *ctx) {
@@ -1096,6 +1128,18 @@ void FuncCallExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
+void GetElementExpression::type_check(CompileConfig *config) {
+  TI_ASSERT_TYPE_CHECKED(src);
+  auto func_call = src.cast<FuncCallExpression>();
+  TI_ASSERT(func_call);
+  TI_ASSERT(index < func_call->func->rets.size());
+  ret_type = func_call->func->rets[index].dt;
+}
+
+void GetElementExpression::flatten(FlattenContext *ctx) {
+  ctx->push_back<GetElementStmt>(src->stmt, index);
+  stmt = ctx->back_stmt();
+}
 // Mesh related.
 
 void MeshPatchIndexExpression::flatten(FlattenContext *ctx) {

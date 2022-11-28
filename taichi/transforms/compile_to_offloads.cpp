@@ -337,7 +337,7 @@ void compile_function(IRNode *ir,
     irpass::lower_ast(ir);
     print("Lowered");
   }
-  
+
   if (config.real_matrix && config.real_matrix_scalarize) {
     irpass::scalarize(ir, config);
 

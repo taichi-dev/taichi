@@ -13,5 +13,5 @@ VkBlendOp blend_op_ti_to_vk(BlendOp op);
 
 VkBlendFactor blend_factor_ti_to_vk(BlendFactor factor);
 
-} // namespace vulkan
-} // namespace taichi::lang
+}  // namespace vulkan
+}  // namespace taichi::lang

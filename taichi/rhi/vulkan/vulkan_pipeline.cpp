@@ -412,5 +412,5 @@ std::unique_ptr<ResourceBinder::Bindings> VulkanResourceBinder::materialize() {
   return std::unique_ptr<Bindings>();
 }
 
-} // namespace vulkan
-} // namespace taichi::lang
+}  // namespace vulkan
+}  // namespace taichi::lang

@@ -12,5 +12,5 @@ class VulkanDeviceEvent : public DeviceEvent {
   vkapi::IVkEvent vkapi_ref{nullptr};
 };
 
-} // namespace vulkan
-} // namespace taichi::lang
+}  // namespace vulkan
+}  // namespace taichi::lang

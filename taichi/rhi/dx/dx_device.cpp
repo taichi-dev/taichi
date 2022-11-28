@@ -781,11 +781,6 @@ Stream *Dx11Device::get_graphics_stream() {
   TI_NOT_IMPLEMENTED;
 }
 
-std::unique_ptr<Surface> Dx11Device::create_surface(
-    const SurfaceConfig &config) {
-  TI_NOT_IMPLEMENTED;
-}
-
 DeviceAllocation Dx11Device::create_image(const ImageParams &params) {
   TI_NOT_IMPLEMENTED;
 }

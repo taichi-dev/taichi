@@ -62,32 +62,13 @@ taichi::lang::Device &VulkanRuntimeImported::get() {
 
 taichi::lang::vulkan::VulkanDeviceCreator::Params
 make_vulkan_runtime_creator_params() {
-#ifdef ANDROID
-  const std::vector<std::string> extensions = {
-      VK_KHR_SURFACE_EXTENSION_NAME,
-      VK_KHR_ANDROID_SURFACE_EXTENSION_NAME,
-      VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
-  };
-#else
-  std::vector<std::string> extensions = {
-      VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
-      VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
-  };
-
-  uint32_t glfw_ext_count = 0;
-  const char **glfw_extensions;
-  glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_ext_count);
-
-  for (int i = 0; i < glfw_ext_count; ++i) {
-    extensions.emplace_back(glfw_extensions[i]);
-  }
-#endif  // ANDROID
-
   // FIXME: (penguinliong) Vulkan runtime should be created outside.
   taichi::lang::vulkan::VulkanDeviceCreator::Params params{};
   params.api_version = std::nullopt;
-  params.additional_instance_extensions = extensions;
-  params.additional_device_extensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+  params.additional_instance_extensions = {
+    VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
+  };
+  params.additional_device_extensions = {};
   return params;
 }
 taichi::lang::gfx::GfxRuntime &VulkanRuntimeImported::get_gfx_runtime() {

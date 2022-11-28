@@ -3,6 +3,7 @@
 #include "taichi/rhi/vulkan/vulkan_device.h"
 #include "taichi/rhi/vulkan/vulkan_common.h"
 #include "taichi/rhi/vulkan/vulkan_loader.h"
+#include "taichi/rhi/vulkan/vulkan_surface.h"
 #include "taichi/rhi/vulkan/vulkan_device_creator.h"
 
 #define GLFW_INCLUDE_NONE
@@ -92,7 +93,7 @@ class App {
       config.window_handle = glfw_window;
       config.native_surface_handle = device_creator->get_surface();
 
-      surface = device->create_surface(config);
+      surface = std::make_unique<VulkanSurface>(device, config);
     }
   }
 

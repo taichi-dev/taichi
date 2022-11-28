@@ -15,6 +15,7 @@
 
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
+#include "taichi/rhi/device.h"
 
 #include <stdexcept>
 
@@ -31,6 +32,7 @@ namespace vulkan {
 inline constexpr VkAllocationCallbacks *kNoVkAllocCallbacks = nullptr;
 
 class VulkanDevice;
+class VulkanSurface;
 class VulkanStream;
 class VulkanCommandList;
 class VulkanResourceBinder;

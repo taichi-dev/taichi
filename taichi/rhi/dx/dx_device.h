@@ -193,7 +193,6 @@ class Dx11Device : public GraphicsDevice {
       const std::vector<VertexInputAttribute> &vertex_attrs,
       std::string name = "Pipeline") override;
   Stream *get_graphics_stream() override;
-  std::unique_ptr<Surface> create_surface(const SurfaceConfig &config) override;
   DeviceAllocation create_image(const ImageParams &params) override;
   void destroy_image(DeviceAllocation handle) override;
 

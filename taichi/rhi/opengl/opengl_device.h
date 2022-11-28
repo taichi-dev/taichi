@@ -278,7 +278,6 @@ class GLDevice : public GraphicsDevice {
 
   void wait_idle() override;
 
-  std::unique_ptr<Surface> create_surface(const SurfaceConfig &config) override;
   DeviceAllocation create_image(const ImageParams &params) override;
   void destroy_image(DeviceAllocation handle) override;
 

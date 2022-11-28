@@ -663,11 +663,6 @@ void GLDevice::wait_idle() {
   check_opengl_error("glFinish");
 }
 
-std::unique_ptr<Surface> GLDevice::create_surface(const SurfaceConfig &config) {
-  TI_NOT_IMPLEMENTED;
-  return nullptr;
-}
-
 DeviceAllocation GLDevice::create_image(const ImageParams &params) {
   GLuint tex;
   glGenTextures(1, &tex);

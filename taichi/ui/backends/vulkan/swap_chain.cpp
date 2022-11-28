@@ -1,6 +1,7 @@
 #include "taichi/ui/utils/utils.h"
 #include "taichi/ui/backends/vulkan/app_context.h"
 #include "taichi/ui/backends/vulkan/swap_chain.h"
+#include "taichi/rhi/vulkan/vulkan_surface.h"
 #include "taichi/util/image_io.h"
 
 namespace taichi::ui {
@@ -17,7 +18,7 @@ void SwapChain::init(class AppContext *app_context) {
   config.window_handle = app_context_->taichi_window();
   config.width = app_context_->config.width;
   config.height = app_context_->config.height;
-  surface_ = app_context_->device().create_surface(config);
+  surface_ = std::make_unique<VulkanSurface>(&app_context_->device(), config);
   auto [w, h] = surface_->get_size();
   curr_width_ = w;
   curr_height_ = h;

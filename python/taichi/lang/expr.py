@@ -167,4 +167,17 @@ def make_expr_group(*exprs, real_func_arg=False):
     return expr_group
 
 
+def _get_flattened_ptrs(val):
+    if is_taichi_class(val):
+        ptrs = []
+        for item in val._members:
+            ptrs.extend(_get_flattened_ptrs(item))
+        return ptrs
+    if impl.current_cfg().real_matrix and isinstance(
+            val, Expr) and val.ptr.is_tensor():
+        return impl.get_runtime().prog.current_ast_builder().expand_expr(
+            [val.ptr])
+    return [Expr(val).ptr]
+
+
 __all__ = []

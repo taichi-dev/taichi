@@ -366,6 +366,12 @@ jobs:
             -DTI_WITH_BACKTRACE:BOOL=ON
             -DTI_WITH_C_API=ON
 
+      - name: Check C-API Export Symbols
+        run: |
+          [[ ${{needs.check_files.outputs.run_job}} == false ]] && exit 0
+          . .github/workflows/scripts/aot-demo.sh
+          check-c-api-export-symbols
+
       - name: Test
         id: test
         run: |

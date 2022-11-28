@@ -166,19 +166,18 @@ function build-and-test-headless-demo-desktop {
 }
 
 function check-c-api-export-symbols {
-    pushd taichi
+    cd taichi
     TAICHI_REPO_DIR=$(pwd)
-    TAICHI_C_API_DIR=$(find $TAICHI_REPO_DIR -name cmake-install -type d | head -n 1)/c_api/lib/libtaichi_c_api.so
+    TAICHI_C_API_DIR=$(find $TAICHI_REPO_DIR -name libtaichi_c_api.* | head -n 1)
 
-    UNDEF_SYM=" U \| u \| W \| w \| A "
-    CAPI_SYM=" ti_"
+    EXPORT_SYM=" T \| B \| D "
+    CAPI_SYM=" _\?ti_"
     CAPI_UTILS_SYM=" capi::utils::"
 
-    NUM_LEAK_SYM=$(nm -C --extern-only ${TAICHI_C_API_DIR} | grep -v "${UNDEF_SYM}" | grep -v "${CAPI_SYM}" | grep -v "${CAPI_UTILS_SYM}" | wc -l)
-
+    NUM_LEAK_SYM=$(nm -C --extern-only ${TAICHI_C_API_DIR} | grep "${EXPORT_SYM}" | grep -v "${CAPI_SYM}" | grep -v "${CAPI_UTILS_SYM}" | wc -l)
     if [ ${NUM_LEAK_SYM} -gt 0 ]; then
         echo "Following symbols leaked from libtaichi_c_api: "
-        nm -C --extern-only ${TAICHI_C_API_DIR} | grep -v "${UNDEF_SYM}" | grep -v "${CAPI_SYM}" | grep -v "${CAPI_UTILS_SYM}"
+        nm -C --extern-only ${TAICHI_C_API_DIR} | grep "${EXPORT_SYM}" | grep -v "${CAPI_SYM}" | grep -v "${CAPI_UTILS_SYM}"
         exit 1
     fi
 }

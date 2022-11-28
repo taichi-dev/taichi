@@ -524,6 +524,5 @@ def test_real_func_struct_ret_with_matrix():
 @test_utils.test(arch=[ti.cpu, ti.cuda],
                  real_matrix=True,
                  real_matrix_scalarize=True)
-def _test_real_func_struct_ret_with_matrix_real_matrix():
-    # fails: Assertion failure: a->is<TensorType>() && b->is<TensorType>()
+def test_real_func_struct_ret_with_matrix_real_matrix():
     _test_real_func_struct_ret_with_matrix()

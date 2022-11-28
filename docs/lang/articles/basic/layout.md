@@ -323,6 +323,12 @@ ti.root.dense(ti.ij, (M // 8, N // 8)).dense(ti.ij, (8, 8)).place(val)
 
 where `M` and `N` are multiples of 8. We encourage you to try this out! The performance difference can be significant!
 
+:::note
+
+We highly recommend that you use power-of-two block size so that accelerated indexing with bitwise arithmetic and better memory address alignment can be enabled.
+
+:::
+
 ## Manage memory occupancy
 
 ### Manual field allocation and destruction
@@ -358,23 +364,3 @@ fb2_snode_tree.destroy()  # Destruction
 ```
 
 Actually, the above demonstrated `ti.root` statements are implemented with `FieldsBuilder`, despite that `ti.root` has the capability to automatically manage memory allocations and recycling.
-
-### Packed mode
-
-By default, Taichi implicitly fits a field in a larger buffer with power-of-two dimensions. We take the power-of-two padding convention because it is widely adopted in computer graphics. The design enables fast indexing with bitwise arithmetic and better memory address alignment, while trading off memory occupations.
-
-For example, a `(18, 65)` field is materialized with a `(32, 128)` buffer, which is acceptable. As field size grows, the padding strategy can be exaggeratedly unbearable: `(129, 6553600)` will be expanded to `(256, 6335600)`, which allocates considerable unused blank memory. Therefore, Taichi provides the optional packed mode to allocate buffer that tightly fits the requested field shape. It is especially useful when memory usage is a major concern.
-
-To leverage the packed mode, specify `packed` in `ti.init()` argument:
-
-```python
-ti.init()  # default: packed=False
-a = ti.field(ti.i32, shape=(18, 65))  # padded to (32, 128)
-```
-
-```python
-ti.init(packed=True)
-a = ti.field(ti.i32, shape=(18, 65))  # no padding
-```
-
-You might observe mild performance regression with the packed mode due to more complex addressing and memory alignment. Therefore, the packed mode should be specified only when memory capacity is a major concern.

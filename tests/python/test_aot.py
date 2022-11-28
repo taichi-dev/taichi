@@ -615,11 +615,6 @@ def test_devcap():
         with open(tmpdir + "/metadata.json") as f:
             j = json.load(f)
             caps = j["aot_data"]["required_caps"]
-            caps = j["required_caps"]
-            assert len(caps) == 3
-            assert caps["spirv_version"] == 0x10300
-            assert caps["spirv_has_float16"] == 1
-            assert caps["spirv_has_atomic_float16_minmax"] == 1
             for cap in caps:
                 key = cap["key"]
                 if key == "spirv_version":

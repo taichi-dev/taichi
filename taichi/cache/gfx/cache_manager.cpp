@@ -51,12 +51,20 @@ struct CacheCleanerUtils<gfx::CacheManager::Metadata> {
   static bool save_metadata(const CacheCleanerConfig &config,
                             const MetadataType &data) {
     // Update AOT metadata
+    gfx::TaichiAotData old_aot_data, new_aot_data;
     auto aot_metadata_path =
         taichi::join_path(config.path, kAotMetadataFilename);
-
-    std::fstream f(aot_metadata_path, std::ios::trunc | std::ios::out);
-    std::string json = liong::json::print(liong::json::serialize(data));
-    f.write(json.data(), json.size());
+    if (read_from_binary_file(old_aot_data, aot_metadata_path)) {
+      const auto &kernels = data.kernels;
+      for (auto &k : old_aot_data.kernels) {
+        if (kernels.count(k.name)) {
+          new_aot_data.kernels.push_back(std::move(k));
+        }
+      }
+      write_to_binary_file(new_aot_data, aot_metadata_path);
+    }
+    write_to_binary_file(
+        data, taichi::join_path(config.path, config.metadata_filename));
 
     return true;
   }

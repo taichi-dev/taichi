@@ -3,7 +3,7 @@ import numbers
 from taichi._lib import core as _ti_core
 from taichi.lang import expr, impl, matrix
 from taichi.lang.field import BitpackedFields, Field
-from taichi.lang.util import get_traceback, is_taichi_class
+from taichi.lang.util import get_traceback
 
 
 class SNode:

@@ -57,5 +57,5 @@ class VulkanSurface : public Surface {
   DeviceAllocation screenshot_buffer_{kDeviceNullAllocation};
 };
 
-} // namespace vulkan
-} // namespace taichi::lang
+}  // namespace vulkan
+}  // namespace taichi::lang

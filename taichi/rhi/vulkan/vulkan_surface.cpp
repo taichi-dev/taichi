@@ -405,5 +405,5 @@ DeviceAllocation VulkanSurface::get_image_data() {
   return screenshot_buffer_;
 }
 
-} // namespace vulkan
-} // namespace taichi::lang
+}  // namespace vulkan
+}  // namespace taichi::lang

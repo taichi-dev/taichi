@@ -66,7 +66,7 @@ make_vulkan_runtime_creator_params() {
   taichi::lang::vulkan::VulkanDeviceCreator::Params params{};
   params.api_version = std::nullopt;
   params.additional_instance_extensions = {
-    VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
+      VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
   };
   params.additional_device_extensions = {};
   return params;

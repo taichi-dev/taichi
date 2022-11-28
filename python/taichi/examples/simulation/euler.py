@@ -295,8 +295,8 @@ def thinc(wl, wc, wr, beta):
     if (wr - wc) * (wc - wl) > 0.0:
         # use thinc reconstruction
         eps = 1.0e-15
-        wmin = min(wr, wl)
-        wmax = max(wr, wl)
+        wmin = ti.min(wr, wl)
+        wmax = ti.max(wr, wl)
         wdelta = wmax - wmin
         theta = sign(wr - wl)
         C = (wc - wmin + eps) / (wdelta + eps)

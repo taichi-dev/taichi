@@ -19,7 +19,7 @@ block3.dense(ti.ij, 4).place(x)
 def activate(t: ti.f32):
     for i, j in ti.ndrange(n, n):
         p = ti.Vector([i, j]) / n
-        p = ti.Matrix.rotation2d(ti.sin(t)) @ (p - 0.5) + 0.5
+        p = ti.math.rotation2d(ti.sin(t)) @ (p - 0.5) + 0.5
 
         if taichi_logo(p) == 0:
             x[i, j] = 1

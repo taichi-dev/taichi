@@ -1,6 +1,6 @@
 #include "taichi/program/sparse_matrix.h"
 
-#include <map>
+#include <unordered_map>
 #include <sstream>
 #include <string>
 #include <unordered_map>
@@ -157,18 +157,12 @@ std::unique_ptr<SparseMatrix> SparseMatrixBuilder::build_cuda() {
   auto sm = make_cu_sparse_matrix(rows_, cols_, dtype_);
 #ifdef TI_WITH_CUDA
   num_triplets_ = ndarray_data_base_ptr_->read_int(std::vector<int>{0});
-  fmt::print("start to print triplets: \n");
   auto len = 3 * num_triplets_ + 1;
   std::vector<float32> trips(len);
   CUDADriver::get_instance().memcpy_device_to_host(
       (void *)trips.data(), (void *)get_ndarray_data_ptr(),
       len * sizeof(float32));
-  for (int i = 0; i < num_triplets_; i++) {
-    fmt::print("{}, {} = {}\n", taichi_union_cast<int>(trips[3 * i + 1]),
-               taichi_union_cast<int>(trips[3 * i + 2]), trips[i * 3 + 3]);
-  }
-  fmt::print("end to print triplets: \n");
-  std::map<int, std::tuple<int, int, float32>> entries;
+  std::unordered_map<int, std::tuple<int, int, float32>> entries;
   for (auto i = 0; i < num_triplets_; i++) {
     int row = taichi_union_cast<int>(trips[3 * i + 1]);
     int col = taichi_union_cast<int>(trips[3 * i + 2]);

@@ -26,9 +26,9 @@ def fill(A: ti.types.sparse_matrix_builder(),
         if i < n - 1:
             A[i + 1, i] += -1.0
             A[i, i] += 1.0
-
         if i % interval == 0:
             b[i, 0] += 1.0
+    A[0, 0] += 1.0
 
 
 fill(K, f, 3)

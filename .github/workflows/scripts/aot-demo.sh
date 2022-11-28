@@ -165,4 +165,22 @@ function build-and-test-headless-demo-desktop {
     python3 ci/run_tests.py -l $TAICHI_C_API_INSTALL_DIR
 }
 
+function check-c-api-export-symbols {
+    pushd taichi
+    TAICHI_REPO_DIR=$(pwd)
+    TAICHI_C_API_DIR=$(find $TAICHI_REPO_DIR -name cmake-install -type d | head -n 1)/c_api/lib/libtaichi_c_api.so
+
+    UNDEF_SYM=" U \| u \| W \| w \| A "
+    CAPI_SYM=" ti_"
+    CAPI_UTILS_SYM=" capi::utils::"
+
+    NUM_LEAK_SYM=$(nm -C --extern-only ${TAICHI_C_API_DIR} | grep -v "${UNDEF_SYM}" | grep -v "${CAPI_SYM}" | grep -v "${CAPI_UTILS_SYM}" | wc -l)
+
+    if [ ${NUM_LEAK_SYM} -gt 0 ]; then
+        echo "Following symbols leaked from libtaichi_c_api: "
+        nm -C --extern-only ${TAICHI_C_API_DIR} | grep -v "${UNDEF_SYM}" | grep -v "${CAPI_SYM}" | grep -v "${CAPI_UTILS_SYM}"
+        exit 1
+    fi
+}
+
 $1

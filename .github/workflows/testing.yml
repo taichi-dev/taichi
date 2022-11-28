@@ -216,6 +216,13 @@ jobs:
             -DTI_BUILD_TESTS:BOOL=ON
             -DTI_WITH_C_API=ON
 
+      - name: Check C-API Export Symbols
+        run: |
+          [[ ${{needs.check_files.outputs.run_job}} == false ]] && exit 0
+          ci-docker-run-gpu --name taichi-test-capi-headless-demo-desktop \
+            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
+            /home/dev/taichi/.github/workflows/scripts/aot-demo.sh check-c-api-export-symbols
+
       - name: Test
         id: test
         run: |

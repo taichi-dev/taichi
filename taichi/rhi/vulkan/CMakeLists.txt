@@ -7,6 +7,7 @@ target_sources(${VULKAN_RHI}
     vulkan_enums.cpp
     vulkan_api.cpp
     vulkan_device.cpp
+    vulkan_event.cpp
     vulkan_pipeline.cpp
     vulkan_surface.cpp
     vulkan_stream.cpp

@@ -180,7 +180,7 @@ There must not be another SNode which axes include the same axis as the dynamic 
 The first argument of `dynamic` is the axis, the second argument is the maximum length,
 and the third argument (optional) is the `chunk_size`.
 
-The `chunk_size` specifies how much space should the dynamic SNode allocate when the space already allocated is run out.
+The `chunk_size` specifies how much space should the dynamic SNode allocate when the space already allocated runs out.
 For example, if `chunk_size=4`, the dynamic SNode initially allocates the space for 4 elements.
 When the 5th (, 9th, 13th...) element is appended, the dynamic SNode further allocates the space for another 4 elements.
 
@@ -193,7 +193,7 @@ When the 5th (, 9th, 13th...) element is appended, the dynamic SNode further all
 The code snippet creates a struct field which stores pairs of `(i16, i64)`.
 The `i` axis is a dense SNode, and the `j` axis is a dynamic SNode.
 
-```python title=dynamic.py
+```python {5,14,19} title=dynamic.py
 pair = ti.types.struct(a=ti.i16, b=ti.i64)
 pair_field = pair.field()
 

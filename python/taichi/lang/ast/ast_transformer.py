@@ -20,7 +20,7 @@ from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field
 from taichi.lang.impl import current_cfg
 from taichi.lang.matrix import Matrix, MatrixType, Vector, is_vector
-from taichi.lang.snode import append, deactivate
+from taichi.lang.snode import append, deactivate, length
 from taichi.lang.struct import Struct, StructType
 from taichi.lang.util import is_taichi_class, to_taichi_type
 from taichi.types import (annotations, ndarray_type, primitive_types,
@@ -778,7 +778,7 @@ class ASTTransformer(Builder):
     @staticmethod
     def build_attribute_if_is_dynamic_snode_method(ctx, node):
         is_subscript = isinstance(node.value, ast.Subscript)
-        names = ("append", "deactivate")
+        names = ("append", "deactivate", "length")
         if node.attr not in names:
             return False
         if is_subscript:
@@ -798,8 +798,10 @@ class ASTTransformer(Builder):
             return False
         if node.attr == "append":
             node.ptr = lambda val: append(x.parent(), indices, val)
-        else:
+        elif node.attr == "deactivate":
             node.ptr = lambda: deactivate(x.parent(), indices)
+        else:
+            node.ptr = lambda: length(x.parent(), indices)
         return True
 
     @staticmethod

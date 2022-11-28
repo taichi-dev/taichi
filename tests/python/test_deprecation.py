@@ -108,6 +108,5 @@ def test_deprecated_packed_false():
             DeprecationWarning,
             match=
             r"The automatic padding mode \(packed=False\) will no longer exist in v1.4.0. The switch will "
-            "also be removed then. Make sure your code doesn't rely on it."
-    ):
+            "also be removed then. Make sure your code doesn't rely on it."):
         ti.init(packed=False)

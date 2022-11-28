@@ -358,11 +358,14 @@ def init(arch=None,
 
     if "packed" in kwargs:
         if kwargs["packed"] is True:
-            warnings.warn("Currently packed=True is the default setting and the switch will be removed in v1.4.0.",
-                          DeprecationWarning)
+            warnings.warn(
+                "Currently packed=True is the default setting and the switch will be removed in v1.4.0.",
+                DeprecationWarning)
         else:
-            warnings.warn("The automatic padding mode (packed=False) will no longer exist in v1.4.0. The switch will "
-                          "also be removed then. Make sure your code doesn't rely on it.", DeprecationWarning)
+            warnings.warn(
+                "The automatic padding mode (packed=False) will no longer exist in v1.4.0. The switch will "
+                "also be removed then. Make sure your code doesn't rely on it.",
+                DeprecationWarning)
 
     if "default_up" in kwargs:
         raise KeyError(

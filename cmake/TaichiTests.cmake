@@ -59,7 +59,6 @@ if (WIN32)
 endif()
 target_link_libraries(${TESTS_NAME} PRIVATE taichi_core)
 target_link_libraries(${TESTS_NAME} PRIVATE gtest_main)
-target_link_libraries(${TESTS_NAME} PRIVATE ${BACKWARD_ENABLE})
 
 if (TI_WITH_BACKTRACE)
     target_link_libraries(${TESTS_NAME} PRIVATE ${BACKWARD_ENABLE})

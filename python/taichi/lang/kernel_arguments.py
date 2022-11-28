@@ -113,9 +113,8 @@ def decl_ret(dtype, real_func=False):
             for i in range(dtype.n * dtype.m):
                 decl_ret(dtype.dtype)
             return
-        else:
-            dtype = _ti_core.get_type_factory_instance().get_tensor_type(
-                [dtype.n, dtype.m], dtype.dtype)
+        dtype = _ti_core.get_type_factory_instance().get_tensor_type(
+            [dtype.n, dtype.m], dtype.dtype)
     else:
         dtype = cook_dtype(dtype)
-    return impl.get_runtime().prog.decl_ret(dtype)
+    impl.get_runtime().prog.decl_ret(dtype)

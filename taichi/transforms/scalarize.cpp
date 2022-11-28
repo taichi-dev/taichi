@@ -613,7 +613,7 @@ class ScalarizePointers : public BasicStmtVisitor {
 
 namespace irpass {
 
-void scalarize(IRNode *root, const CompileConfig& config) {
+void scalarize(IRNode *root, const CompileConfig &config) {
   TI_AUTO_PROF;
   Scalarize scalarize_pass(root);
   if (!config.dynamic_index) {

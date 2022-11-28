@@ -12,5 +12,5 @@ class VulkanStreamSemaphoreObject : public StreamSemaphoreObject {
   vkapi::IVkSemaphore vkapi_ref{nullptr};
 };
 
-} // vulkan
-} // namespace taichi::lang
+}  // namespace vulkan
+}  // namespace taichi::lang

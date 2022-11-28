@@ -631,6 +631,7 @@ def test_devcap():
                 else:
                     assert False
 
+
 @test_utils.test(arch=[ti.vulkan])
 def test_devcap_weird_user_input():
     with pytest.raises(RuntimeError,

@@ -168,5 +168,5 @@ class VulkanResourceBinder : public ResourceBinder {
   VkIndexType index_type_;
 };
 
-} // namespace vulkan
-} // namespace taichi::lang
+}  // namespace vulkan
+}  // namespace taichi::lang

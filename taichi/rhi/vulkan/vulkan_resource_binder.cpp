@@ -226,5 +226,5 @@ void VulkanResourceBinder::lock_layout() {
   layout_locked_ = true;
 }
 
-} // namespace vulkan
-} // namespace taichi::lang
+}  // namespace vulkan
+}  // namespace taichi::lang

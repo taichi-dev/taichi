@@ -44,7 +44,9 @@ In Taichi, programmers can compose data structures similar to VDB and SPGrid wit
 
 
 :::note
-**Backend compatibility**: The LLVM backends (CPU/CUDA) and the Metal backend offer the full functionality of computation on spatially sparse data structures.
+**Backend compatibility**: The LLVM-based backends (CPU/CUDA) offer the full functionality of computation on spatially sparse data structures.
+Sparse data structures on Metal backend is deprecated (the support for Dynamic SNode is removed in v1.3.0, 
+and the support for Pointer SNode and Bitmasked SNode will be removed in v1.4.0).
 :::
 
 
@@ -170,30 +172,48 @@ The bitmasked SNodes are like dense SNodes with auxiliary activity values.
 
 ### Dynamic SNode
 
-To support variable-length fields, Taichi provides dynamic SNodes. The code snippet below first creates a 5x1 dense block (line 2). Then each cell of the dense block contains a variable-length dynamic container (line 3). The maximum length of the dynamic container is 5. In the `make_lists()` function, you can use `ti.append()` to add a value to the end of a dynamic SNode. `x.parent()` is the same as `pixel`. The dense field `l` stores the length of each dynamic SNode.
+To support variable-length fields, Taichi provides dynamic SNodes. 
+The dynamic SNode must have only one axis, and the axis must be the last axis. 
+No other SNode can be placed under a dynamic SNode, that is, a dynamic SNode must be directly placed with a field.
+There must not be another SNode which axes include the same axis as the dynamic SNode in the path from the dynamic SNode to the root of the SNode tree.
 
-```python {3} title=dynamic.py
-x = ti.field(ti.i32)
-block = ti.root.dense(ti.i, 5)
-pixel = block.dynamic(ti.j, 5)
-pixel.place(x)
-l = ti.field(ti.i32)
-ti.root.dense(ti.i, 5).place(l)
+The first argument of `dynamic` is the axis, the second argument is the maximum length, 
+and the third argument (optional) is the `chunk_size`.
 
-@ti.kernel
-def make_lists():
-    for i in range(5):
-        for j in range(i):
-            ti.append(x.parent(), i, j * j)  # ti.append(pixel, i, j * j)
-        l[i] = ti.length(x.parent(), i)  # [0, 1, 2, 3, 4]
-```
-
+The `chunk_size` specifies how much space should the dynamic SNode allocate when the space already allocated is run out.
+For example, if `chunk_size=4`, the dynamic SNode initially allocates the space for 4 elements. 
+When the 5th (, 9th, 13th...) element is appended, the dynamic SNode further allocates the space for another 4 elements.
 
 <center>
 
 ![Dynamic](https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/doc/dynamic.png)
 
 </center>
+
+The code snippet creates a struct field which stores pairs of `(i16, i64)`. 
+The `i` axis is a dense SNode, and the `j` axis is a dynamic SNode. 
+
+```python title=dynamic.py
+pair = ti.types.struct(a=ti.i16, b=ti.i64)
+pair_field = pair.field()
+
+block = ti.root.dense(ti.i, 4)
+pixel = block.dynamic(ti.j, 100, chunk_size=4)
+pixel.place(pair_field)
+l = ti.field(ti.i32)
+ti.root.dense(ti.i, 5).place(l)
+
+@ti.kernel
+def dynamic_pair():
+    for i in range(4):
+        for j in range(i * i):
+            pair_field[i].append(pair(i, j + 1))  
+        # pair_field = [[],
+        #              [(1, 1)],
+        #              [(2, 1), (2, 2), (2, 3), (2, 4)],
+        #              [(3, 1), (3, 2), ... , (3, 8), (3, 9)]]
+        l[i] = pair_field[i].length()  # l = [0, 1, 4, 9]
+```
 
 ## Computation on spatially sparse data structures
 

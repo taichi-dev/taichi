@@ -1135,8 +1135,7 @@ void GetElementExpression::type_check(CompileConfig *config) {
 }
 
 void GetElementExpression::flatten(FlattenContext *ctx) {
-  auto src_stmt = flatten_lvalue(src, ctx);
-  ctx->push_back<GetElementStmt>(src_stmt, index);
+  ctx->push_back<GetElementStmt>(src->get_flattened_stmt(), index);
   stmt = ctx->back_stmt();
 }
 // Mesh related.

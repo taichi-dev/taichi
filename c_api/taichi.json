@@ -867,6 +867,27 @@
                     ]
                 },
                 {
+                    "name": "create_aot_module",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "name": "@return",
+                            "type": "handle.aot_module"
+                        },
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "name": "tcm",
+                            "type": "const void*"
+                        },
+                        {
+                            "name": "size",
+                            "type": "uint64_t"
+                        }
+                    ]
+                },
+                {
                     "name": "destroy_aot_module",
                     "type": "function",
                     "parameters": [

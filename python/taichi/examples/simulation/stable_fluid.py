@@ -98,7 +98,7 @@ if use_sparse_matrix:
 @ti.func
 def sample(qf, u, v):
     I = ti.Vector([int(u), int(v)])
-    I = max(0, min(res - 1, I))
+    I = ti.max(0, ti.min(res - 1, I))
     return qf[I]
 
 
@@ -232,7 +232,7 @@ def enhance_vorticity(vf: ti.template(), cf: ti.template()):
         force = ti.Vector([abs(ct) - abs(cb),
                            abs(cl) - abs(cr)]).normalized(1e-3)
         force *= curl_strength * cc
-        vf[i, j] = min(max(vf[i, j] + force * dt, -1e3), 1e3)
+        vf[i, j] = ti.min(ti.max(vf[i, j] + force * dt, -1e3), 1e3)
 
 
 @ti.kernel

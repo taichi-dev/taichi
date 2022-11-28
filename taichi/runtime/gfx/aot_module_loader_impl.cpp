@@ -41,8 +41,9 @@ class AotModuleImpl : public aot::Module {
       TI_WARN("'metadata.json' cannot be read");
       return;
     }
-    auto json = liong::json::parse((const char*)metadata_json.data(),
-      (const char*)(metadata_json.data() + metadata_json.size()));
+    auto json = liong::json::parse(
+        (const char *)metadata_json.data(),
+        (const char *)(metadata_json.data() + metadata_json.size()));
     liong::json::deserialize(json, ti_aot_data_);
 
     if (!params.enable_lazy_loading) {

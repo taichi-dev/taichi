@@ -19,10 +19,9 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
       const std::unordered_set<const SNode *> &fields,
       BufferMetaData buffer_meta_data);
 
-  void dump(const std::string &output_dir,
-            const std::string &filename) const override;
-
  protected:
+  void dump_kernels(const std::string &output_dir) const override;
+
   void add_per_backend(const std::string &identifier, Kernel *kernel) override;
 
   void add_field_per_backend(const std::string &identifier,
@@ -38,7 +37,6 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
 
  private:
   void write_metal_file(const std::string &dir,
-                        const std::string &filename,
                         const CompiledKernelData &k) const;
 
   const CompiledRuntimeModule *compiled_runtime_module_;

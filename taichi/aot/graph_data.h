@@ -50,7 +50,8 @@ struct Arg {
         name(""),
         dtype_id(PrimitiveTypeID::unknown),
         field_dim(0),
-        element_shape({}) {
+        element_shape({}),
+        num_channels(0) {
   }
 
   explicit Arg(ArgKind tag,
@@ -63,7 +64,8 @@ struct Arg {
         name(name),
         dtype_id(dtype_id),
         field_dim(field_dim),
-        element_shape(element_shape) {
+        element_shape(element_shape),
+        num_channels(0) {
   }
 
   // Python/C++ interface that's user facing.
@@ -72,7 +74,12 @@ struct Arg {
                const DataType &dtype,
                size_t dim = 0,
                const std::vector<int> &element_shape = {})
-      : tag(tag), name(name), element_shape(element_shape) {
+      : tag(tag),
+        name(name),
+        dtype_id(PrimitiveTypeID::unknown),
+        field_dim(0),
+        element_shape(element_shape),
+        num_channels(0) {
     if (tag == ArgKind::kTexture || tag == ArgKind::kRWTexture) {
       num_channels = dim;
     } else {
@@ -88,7 +95,8 @@ struct Arg {
   bool operator==(const Arg &other) const {
     return tag == other.tag && name == other.name &&
            field_dim == other.field_dim && dtype_id == other.dtype_id &&
-           element_shape == other.element_shape;
+           element_shape == other.element_shape &&
+           num_channels == other.num_channels;
   }
 
   bool operator!=(const Arg &other) const {

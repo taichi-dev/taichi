@@ -356,7 +356,10 @@ struct JsonSerdeFieldImpl<TFirst, TOthers...> {
                                  std::vector<std::string>::const_iterator name,
                                  TFirst &first,
                                  TOthers &...others) {
-    JsonSerde<TFirst>::deserialize(obj.inner.at(*name), first);
+    auto it = obj.inner.find(*name);
+    if (it != obj.inner.end()) {
+      JsonSerde<TFirst>::deserialize(it->second, first);
+    }
     JsonSerdeFieldImpl<TOthers...>::deserialize(obj, ++name, others...);
   }
 };

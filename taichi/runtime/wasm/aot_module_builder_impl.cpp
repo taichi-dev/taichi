@@ -24,9 +24,10 @@ void AotModuleBuilderImpl::eliminate_unused_functions() const {
       });
 }
 
-void AotModuleBuilderImpl::dump(const std::string &output_dir,
-                                const std::string &filename) const {
-  std::string bin_path = output_dir + "/" + fmt::format("{}.ll", filename);
+void AotModuleBuilderImpl::dump_kernels(const std::string &output_dir) const {
+  std::string filename;
+  TI_ERROR("(penguinliong) `filename` was a parameter but it's removed atm");
+  std::string bin_path = output_dir + "/" + fmt::format("kernel.ll", filename);
 
   eliminate_unused_functions();
   FileSequenceWriter writer(bin_path, "optimized LLVM IR (WASM)");

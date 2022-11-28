@@ -7,13 +7,10 @@
 
 namespace taichi::lang {
 
-void LlvmAotModuleBuilder::dump(const std::string &output_dir,
-                                const std::string &filename) const {
+void LlvmAotModuleBuilder::dump_kernels(const std::string &output_dir) const {
   LlvmOfflineCacheFileWriter writer;
   writer.set_data(std::move(cache_));
   writer.dump(output_dir);
-
-  dump_graph(output_dir);
 }
 
 void LlvmAotModuleBuilder::add_per_backend(const std::string &identifier,

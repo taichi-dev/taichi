@@ -45,9 +45,26 @@ void AotModuleBuilder::load(const std::string &output_dir) {
   TI_ERROR("Aot loader not supported");
 }
 
-void AotModuleBuilder::dump_graph(std::string output_dir) const {
-  const std::string graph_file = fmt::format("{}/graphs.tcb", output_dir);
-  write_to_binary_file(graphs_, graph_file);
+void AotModuleBuilder::dump(const std::string &output_dir,
+                            const std::string &filename) const {
+  dump_kernels(output_dir);
+  dump_graphs(output_dir);
+}
+
+void AotModuleBuilder::dump_graphs(const std::string &output_dir) const {
+  // Save TCB (removed in the future).
+  {
+    const std::string graph_file = fmt::format("{}/graphs.tcb", output_dir);
+    write_to_binary_file(graphs_, graph_file);
+  }
+
+  // Save JSON.
+  {
+    std::string json = liong::json::print(liong::json::serialize(graphs_));
+    std::fstream f(output_dir + "/graphs.json",
+                   std::ios::trunc | std::ios::out);
+    f.write(json.data(), json.size());
+  }
 }
 
 void AotModuleBuilder::add_graph(const std::string &name,

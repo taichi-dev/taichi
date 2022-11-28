@@ -20,34 +20,29 @@ AotModuleBuilderImpl::AotModuleBuilderImpl(
 }
 
 void AotModuleBuilderImpl::write_metal_file(const std::string &dir,
-                                            const std::string &filename,
                                             const CompiledKernelData &k) const {
-  const std::string mtl_path =
-      fmt::format("{}/{}_{}.metal", dir, filename, k.kernel_name);
+  const std::string mtl_path = fmt::format("{}/_{}.metal", dir, k.kernel_name);
   std::ofstream fs{mtl_path};
   fs << k.source_code;
   fs.close();
 }
 
-void AotModuleBuilderImpl::dump(const std::string &output_dir,
-                                const std::string &filename) const {
-  const std::string bin_path =
-      fmt::format("{}/{}_metadata.tcb", output_dir, filename);
+void AotModuleBuilderImpl::dump_kernels(const std::string &output_dir) const {
+  const std::string bin_path = fmt::format("{}/_metadata.tcb", output_dir);
   write_to_binary_file(ti_aot_data_, bin_path);
   // The txt file is mostly for debugging purpose.
-  const std::string txt_path =
-      fmt::format("{}/{}_metadata.txt", output_dir, filename);
+  const std::string txt_path = fmt::format("{}/_metadata.txt", output_dir);
   TextSerializer ts;
   ts("taichi aot data", ti_aot_data_);
   ts.write_to_file(txt_path);
 
   for (const auto &k : ti_aot_data_.kernels) {
-    write_metal_file(output_dir, filename, k);
+    write_metal_file(output_dir, k);
   }
 
   for (const auto &k : ti_aot_data_.tmpl_kernels) {
     for (auto &ki : k.kernel_tmpl_map) {
-      write_metal_file(output_dir, filename, ki.second);
+      write_metal_file(output_dir, ki.second);
     }
   }
 }

@@ -11,10 +11,9 @@ class LlvmAotModuleBuilder : public AotModuleBuilder {
   explicit LlvmAotModuleBuilder(LlvmProgramImpl *prog) : prog_(prog) {
   }
 
-  void dump(const std::string &output_dir,
-            const std::string &filename) const override;
-
  protected:
+  void dump_kernels(const std::string &output_dir) const override;
+
   void add_per_backend(const std::string &identifier, Kernel *kernel) override;
   virtual LLVMCompiledKernel compile_kernel(Kernel *kernel) = 0;
 

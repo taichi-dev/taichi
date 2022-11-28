@@ -19,15 +19,14 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
       Arch device_api_backend,
       const DeviceCapabilityConfig &caps);
 
-  void dump(const std::string &output_dir,
-            const std::string &filename) const override;
-
   void mangle_aot_data();
   void merge_with_old_meta_data(const std::string &path);
   std::optional<GfxRuntime::RegisterParams> try_get_kernel_register_params(
       const std::string &kernel_name) const;
 
  private:
+  void dump_kernels(const std::string &output_dir) const override;
+
   void add_per_backend(const std::string &identifier, Kernel *kernel) override;
 
   void add_field_per_backend(const std::string &identifier,

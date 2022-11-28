@@ -127,10 +127,7 @@ std::string AotModuleBuilderImpl::write_spv_file(
   return k.name + ".spv";
 }
 
-void AotModuleBuilderImpl::dump(const std::string &output_dir,
-                                const std::string &filename) const {
-  TI_WARN_IF(!filename.empty(),
-             "Filename prefix is ignored on Unified Device API backends.");
+void AotModuleBuilderImpl::dump_kernels(const std::string &output_dir) const {
   const std::string bin_path = fmt::format("{}/metadata.tcb", output_dir);
   write_to_binary_file(ti_aot_data_, bin_path);
 
@@ -149,10 +146,10 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir,
     }
   }
 
-  const std::string json_path = fmt::format("{}/metadata.json", output_dir);
-  converted.dump_json(json_path);
-
-  dump_graph(output_dir);
+  std::string json = liong::json::print(liong::json::serialize(ti_aot_data_));
+  std::fstream f(output_dir + "/metadata.json",
+                 std::ios::trunc | std::ios::out);
+  f.write(json.data(), json.size());
 }
 
 void AotModuleBuilderImpl::mangle_aot_data() {

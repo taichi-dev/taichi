@@ -34,8 +34,7 @@ class AotModuleBuilder {
 
   virtual void load(const std::string &output_dir);
 
-  virtual void dump(const std::string &output_dir,
-                    const std::string &filename) const = 0;
+  void dump(const std::string &output_dir, const std::string &filename) const;
 
   void add_graph(const std::string &name, const aot::CompiledGraph &graph);
 
@@ -55,22 +54,14 @@ class AotModuleBuilder {
     TI_NOT_IMPLEMENTED;
   }
 
-  virtual void add_ndarray_per_backend(const std::string &identifier,
-                                       bool is_scalar,
-                                       DataType dt,
-                                       std::vector<int> shape,
-                                       int row_num,
-                                       int column_num) {
-    TI_NOT_IMPLEMENTED;
-  }
-
   virtual void add_per_backend_tmpl(const std::string &identifier,
                                     const std::string &key,
                                     Kernel *kernel) {
     TI_NOT_IMPLEMENTED;
   }
 
-  void dump_graph(std::string output_dir) const;
+  virtual void dump_kernels(const std::string &output_dir) const = 0;
+  virtual void dump_graphs(const std::string &output_dir) const;
 
   static bool all_fields_are_dense_in_container(const SNode *container);
 

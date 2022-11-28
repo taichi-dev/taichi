@@ -134,5 +134,5 @@ class VulkanCommandList : public CommandList {
   uint32_t viewport_width_{0}, viewport_height_{0};
 };
 
-} // namespace vulkan
-} // namespace taichi::lang
+}  // namespace vulkan
+}  // namespace taichi::lang

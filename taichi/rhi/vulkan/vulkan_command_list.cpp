@@ -561,5 +561,5 @@ vkapi::IVkCommandBuffer VulkanCommandList::finalize() {
   return buffer_;
 }
 
-} // namespace vulkan
-} // namespace taichi::lang
+}  // namespace vulkan
+}  // namespace taichi::lang

@@ -802,10 +802,26 @@ typedef struct TiNamedArgument {
   TiArgument argument;
 } TiNamedArgument;
 
+// Function `ti_get_available_archs`
+//
+// Gets a list of available archs on the current platform. An arch is only
+// available if:
+//
+// 1. The Runtime library is compiled with its support;
+// 2. The current platform is installed with a capable hardware or an emulation
+// software.
+//
+// An available arch has at least one device available, i.e., device index 0 is
+// always available. If an arch is not available on the current platform, a call
+// to [`ti_create_runtime`](#function-ti_create_runtime) with that arch is
+// guaranteed failing.
+TI_DLL_EXPORT void TI_API_CALL ti_get_available_archs(uint32_t *arch_count,
+                                                      TiArch *archs);
+
 // Function `ti_get_last_error`
 //
-// Get the last error raised by Taichi C-API invocations. Returns the semantical
-// error code.
+// Gets the last error raised by Taichi C-API invocations. Returns the
+// semantical error code.
 TI_DLL_EXPORT TiError TI_API_CALL ti_get_last_error(
     // Size of textual error message in `function.get_last_error.message`
     uint64_t message_size,
@@ -815,7 +831,7 @@ TI_DLL_EXPORT TiError TI_API_CALL ti_get_last_error(
 
 // Function `ti_set_last_error`
 //
-// Set the provided error as the last error raised by Taichi C-API invocations.
+// Sets the provided error as the last error raised by Taichi C-API invocations.
 // It can be useful in extended validation procedures in Taichi C-API wrappers
 // and helper libraries.
 TI_DLL_EXPORT void TI_API_CALL ti_set_last_error(

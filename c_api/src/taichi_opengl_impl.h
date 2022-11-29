@@ -19,3 +19,5 @@ class OpenglRuntime : public GfxRuntime {
 };
 
 #endif  // TI_WITH_OPENGL
+
+extern bool is_opengl_available();

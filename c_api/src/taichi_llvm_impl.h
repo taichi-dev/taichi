@@ -43,3 +43,7 @@ class LlvmRuntime : public Runtime {
 }  // namespace capi
 
 #endif  // TI_WITH_LLVM
+
+extern bool is_cuda_available();
+extern bool is_x64_available();
+extern bool is_arm64_available();

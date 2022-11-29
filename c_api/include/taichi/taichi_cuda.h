@@ -1,5 +1,9 @@
 #pragma once
 
+#ifndef TI_WITH_CUDA
+#define TI_WITH_CUDA 1
+#endif  // TI_WITH_CUDA
+
 #include <taichi/taichi.h>
 
 #ifdef __cplusplus

@@ -13,6 +13,7 @@
 #include "taichi/rhi/cpu/cpu_device.h"
 
 #ifdef TI_WITH_CUDA
+#include "taichi/platform/cuda/detect_cuda.h"
 #include "taichi/rhi/cuda/cuda_device.h"
 #include "taichi/runtime/cuda/aot_module_loader_impl.h"
 #endif
@@ -136,7 +137,6 @@ void LlvmRuntime::wait() {
 
 }  // namespace capi
 
-#endif  // TI_WITH_LLVM
 
 // function.export_cpu_runtime
 void ti_export_cpu_memory(TiRuntime runtime,
@@ -195,5 +195,31 @@ void ti_export_cuda_memory(TiRuntime runtime,
   interop_info->size = cuda_info.size;
 #else
   TI_NOT_IMPLEMENTED;
+#endif
+}
+
+#endif  // TI_WITH_LLVM
+
+bool is_cuda_available() {
+#ifdef TI_WITH_CUDA
+  return taichi::is_cuda_api_available();
+#else
+  return false;
+#endif
+}
+
+bool is_x64_available() {
+#if defined(TI_WITH_LLVM) && (defined(__x86_64__) || defined(__x86_64) || defined(__amd64__) || defined(__amd64) || defined(_M_X64))
+  return true;
+#else
+  return false;
+#endif
+}
+
+bool is_arm64_available() {
+#if defined(TI_WITH_LLVM) && (defined(__arm64__) || defined(__aarch64__))
+  return true;
+#else
+  return false;
 #endif
 }

@@ -1,5 +1,6 @@
 // C++ wrapper of Taichi C-API
 #pragma once
+#include <cstddef>
 #include <cstring>
 #include <list>
 #include <vector>
@@ -9,6 +10,23 @@
 #include "taichi/taichi.h"
 
 namespace ti {
+
+inline std::vector<TiArch> get_available_archs() {
+  uint32_t narch = 0;
+  ti_get_available_archs(&narch, nullptr);
+  std::vector<TiArch> archs(narch);
+  ti_get_available_archs(&narch, archs.data());
+  return archs;
+}
+inline bool is_arch_available(TiArch arch) {
+  std::vector<TiArch> archs = get_available_archs();
+  for (size_t i = 0; i < archs.size(); ++i) {
+    if (archs.at(i) == arch) {
+      return true;
+    }
+  }
+  return false;
+}
 
 // Token type for half-precision floats.
 struct half {

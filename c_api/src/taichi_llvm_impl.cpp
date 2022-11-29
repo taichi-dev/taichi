@@ -13,7 +13,6 @@
 #include "taichi/rhi/cpu/cpu_device.h"
 
 #ifdef TI_WITH_CUDA
-#include "taichi/platform/cuda/detect_cuda.h"
 #include "taichi/rhi/cuda/cuda_device.h"
 #include "taichi/runtime/cuda/aot_module_loader_impl.h"
 #endif

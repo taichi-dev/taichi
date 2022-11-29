@@ -213,7 +213,7 @@ def dynamic_pair():
 ```
 
 :::note
-The dynamic SNode must have only one axis, and the axis must be the last axis.
+A dynamic SNode must have one axis only, and the axis must be the last axis.
 No other SNodes can be placed under a dynamic SNode. In other words, a dynamic SNode must be directly placed with a field.
 There must not be another SNode which axes include the same axis as the dynamic SNode in the path from the dynamic SNode to the root of the SNode tree.
 :::

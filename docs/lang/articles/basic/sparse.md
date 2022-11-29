@@ -45,7 +45,7 @@ In Taichi, programmers can compose data structures similar to VDB and SPGrid wit
 
 :::note
 **Backend compatibility**: The LLVM-based backends (CPU/CUDA) offer the full functionality for performing computations on spatially sparse data structures.
-Using sparse data structures on the Metal backend are now deprecated. The support for Dynamic SNode has been removed in v1.3.0,
+Using sparse data structures on the Metal backend is now deprecated. The support for Dynamic SNode has been removed in v1.3.0,
 and the support for Pointer/Bitmasked SNode will be removed in v1.4.0.
 :::
 

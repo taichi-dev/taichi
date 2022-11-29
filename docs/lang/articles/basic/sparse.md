@@ -187,10 +187,13 @@ allocates space for another four when the 5th (, 9th, 13th...) element is append
 
 </center>
 
+You can use `x[i].append(...)` to append an element, 
+use `x[i].length()` to get the length, and use `x[i].deactivate()` to clear the list.
+
 The code snippet below creates a struct field that stores pairs of `(i16, i64)`.
 The `i` axis is a dense SNode, and the `j` axis is a dynamic SNode.
 
-```python {5,14,19} title=dynamic.py
+```python {5,13,15,20} title=dynamic.py
 pair = ti.types.struct(a=ti.i16, b=ti.i64)
 pair_field = pair.field()
 
@@ -203,6 +206,7 @@ ti.root.dense(ti.i, 5).place(l)
 @ti.kernel
 def dynamic_pair():
     for i in range(4):
+        pair_field[i].deactivate()
         for j in range(i * i):
             pair_field[i].append(pair(i, j + 1))
         # pair_field = [[],

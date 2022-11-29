@@ -178,7 +178,7 @@ The first argument of `dynamic` is the axis, the second argument is the maximum 
 and the third argument (optional) is the `chunk_size`.
 
 The `chunk_size` specifies how much space the dynamic SNode allocates when the previously-allocated space runs out.
-For example, with `chunk_size=4`, the dynamic SNode allocates the space for four elements in the beginning, and
+For example, with `chunk_size=4`, the dynamic SNode allocates the space for four elements when the first element is appended, and
 allocates space for another four when the 5th (, 9th, 13th...) element is appended.
 
 <center>

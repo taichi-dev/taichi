@@ -181,12 +181,6 @@ The `chunk_size` specifies how much space the dynamic SNode allocates when the p
 For example, with `chunk_size=4`, the dynamic SNode allocates the space for four elements when the first element is appended, and
 allocates space for another four when the 5th (, 9th, 13th...) element is appended.
 
-<center>
-
-![Dynamic](https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/doc/dynamic.png)
-
-</center>
-
 You can use `x[i].append(...)` to append an element, 
 use `x[i].length()` to get the length, and use `x[i].deactivate()` to clear the list.
 
@@ -215,6 +209,12 @@ def dynamic_pair():
         #              [(3, 1), (3, 2), ... , (3, 8), (3, 9)]]
         l[i] = pair_field[i].length()  # l = [0, 1, 4, 9]
 ```
+
+<center>
+
+![Dynamic](https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/doc/dynamic.png)
+
+</center>
 
 :::note
 A dynamic SNode must have one axis only, and the axis must be the last axis.

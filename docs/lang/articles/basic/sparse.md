@@ -45,8 +45,8 @@ In Taichi, programmers can compose data structures similar to VDB and SPGrid wit
 
 :::note
 **Backend compatibility**: The LLVM-based backends (CPU/CUDA) offer the full functionality for performing computations on spatially sparse data structures.
-Using sparse data structures on the Metal backend is now deprecated (the support for Dynamic SNode has been removed since v1.3.0,
-and the support for Pointer/Bitmasked SNode will be removed by v1.4.0.
+Using sparse data structures on the Metal backend are now deprecated. The support for Dynamic SNode has been removed in v1.3.0,
+and the support for Pointer/Bitmasked SNode will be removed in v1.4.0.
 :::
 
 
@@ -174,12 +174,12 @@ The bitmasked SNodes are like dense SNodes with auxiliary activity values.
 
 To support variable-length fields, Taichi provides dynamic SNodes.
 
-The first argument of `dynamic` is the axis, the second argument is the maximum length,
-and the third argument (optional) is the `chunk_size`.
+The first argument of `dynamic` is the axis, the second one is the maximum length,
+and the third one (optional) is the `chunk_size`.
 
-The `chunk_size` specifies how much space should the dynamic SNode allocate when the space already allocated runs out.
-For example, if `chunk_size=4`, the dynamic SNode initially allocates the space for 4 elements.
-When the 5th (, 9th, 13th...) element is appended, the dynamic SNode further allocates the space for another 4 elements.
+The `chunk_size` specifies how much space the dynamic SNode allocates when the previously-allocated space runs out.
+For example, with `chunk_size=4`, the dynamic SNode allocates the space for 4 elements in the beginning, and 
+allocates space for another four when the 5th (, 9th, 13th...) element is appended.
 
 <center>
 

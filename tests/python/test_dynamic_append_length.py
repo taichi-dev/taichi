@@ -14,7 +14,7 @@ def _test_dynamic_append_length(dt):
             for j in range(i):
                 x[i].append(j)
         for i in range(10):
-            assert (ti.length(x.parent(), i) == i)
+            assert (x[i].length() == i)
             for j in range(i):
                 assert (x[i, j] == j)
 

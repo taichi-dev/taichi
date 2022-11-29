@@ -582,8 +582,7 @@ class TI_DLL_EXPORT GraphicsDevice : public Device {
   virtual Stream *get_graphics_stream() = 0;
 
   // FIXME: (penguinliong) Remove this.
-  virtual std::unique_ptr<Surface> create_surface(
-      const SurfaceConfig &config) {
+  virtual std::unique_ptr<Surface> create_surface(const SurfaceConfig &config) {
     TI_NOT_IMPLEMENTED
   }
   // You are not expected to call this directly. If you want to use this image

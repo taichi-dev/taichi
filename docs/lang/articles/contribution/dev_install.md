@@ -48,8 +48,8 @@ Installation instructions vary depending on which operating system (OS) you are 
 |:----------------------------:|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | OS                           | macOS / Ubuntu / Arch Linux / Other Linux distributions                                                                                                       |
 | Python                       | 3.7/3.8/3.9/3.10 We recommend installing Python from [Miniforge](https://github.com/conda-forge/miniforge/#download) conda if you are on a MacBook with M1 chip. |
-| Clang++                      | 8&leq; Clang++ &lt;12                                                                                                                                                                       |
-| LLVM                         | 10.0.0 (Taichi customized version)                                                                                                                                                       |
+| Clang++                      | Clang++ &gt;8                            |
+| LLVM                         | 15.0.4 (Taichi customized version)                                                                                                                                                       |
 | Command line tools for Xcode | For macOS users only: `xcode-select --install `                                                                                                                                          |
 
 </TabItem>
@@ -60,8 +60,8 @@ Installation instructions vary depending on which operating system (OS) you are 
 |:-------------:|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | OS            | Windows 7/8/10/11                                                                                                       |
 | Python        | 3.7/3.8/3.9/3.10  |
-| Clang++       | 8&leq; Clang++ &lt;12 (We provide pre-built versions in the clang section)                                            |
-| LLVM          | 15.0.0 (Taichi customized version)                                                                                                                                                       |
+| Clang++       | Clang++ &gt;8                           |
+| LLVM          | 15.0.4 (Taichi customized version)                                                                                                                                                       |
 | Visual Studio | Visual Studio 2019/2022 with "Desktop Development with C++" component. If you want to use Clang++ as the compiler, also install "C++ Clang Compiler for Windows" component  |
 
 </TabItem>
@@ -72,97 +72,15 @@ Installation instructions vary depending on which operating system (OS) you are 
 
 <blockquote>
 
-This Clang compiler is used to compile the Taichi device runtime. It is *not required* to use this compiler for the C++ compiler.
+Taichi supports building from source with any clang compiler greater than version 8.0. Install one from your favorite package tool for the operating system. For example, you can use `apt` on Ubuntu, `brew` on macOS, and so on.
 </blockquote>
 
-````mdx-code-block
-<Tabs
-  defaultValue="arch"
-  values={[
-    {label: 'macOS', value: 'macos'},
-    {label: 'Windows', value: 'windows'},
-    {label: 'Ubuntu', value: 'ubuntu'},
-    {label: 'Arch Linux', value: 'arch'},
-    {label: 'Other Linux distributions', value: 'others'},
-  ]}>
-
-<TabItem value="macos">
-
-1. Ensure that the Clang that ships with your MacBook has a version &ge;8 and &lt;12:
-
-  ```
-  clang --version
-  ```
-
-2. If your Clang version is &ge;12, install Clang 11:
-
-  ```
-  brew install llvm@11
-  export CXX=/opt/homebrew/opt/llvm@11/bin/clang++
-  ```
-
-</TabItem>
-
-<TabItem value="windows">
-
-Download and extract [Clang 10.0.0 pre-built binary for windows](https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/clang-10.0.0-win.zip).
-
-</TabItem>
-
-<TabItem value="ubuntu">
-
-```
-sudo apt install clang-10
-```
-
-:::tip NOTE
-
-- Some Linux distributions may require additional packages to build Taichi. For example, you may need `libxi-dev` `libxcursor-dev` `libxinerama-dev` `libxrandr-dev` `libx11-dev` `libgl-dev` for Ubuntu 20.04. Keep an eye on the output of CMake when building from source.
-- If this installation fails, you may want to `apt-get` the corresponding Clang package for your distribution following [this page](https://apt.llvm.org/).
-
-:::
-
-</TabItem>
-
-<TabItem value="arch">
-
-1. Download [Clang + LLVM 10.0.0 pre-built binary for Ubuntu 18.04](https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.0/clang+llvm-10.0.0-x86_64-linux-gnu-ubuntu-18.04.tar.xz).
-2. Update the environment variables `TAICHI_CMAKE_ARGS` and `PATH`:
-
-  ```shell
-  export TAICHI_CMAKE_ARGS="-DCMAKE_CXX_COMPILER=<PATH_TO_LLVM_FOLDER>/bin/clang++ $TAICHI_CMAKE_ARGS"
-
-  export PATH=<PATH_TO_LLVM_FOLDER>/bin:$PATH
-  ```
-
-  :::tip NOTE
-
-  Some Linux distributions may require additional packages to build Taichi. Keep an eye on the output of CMake when building from source.
-
-  :::
-
-</TabItem>
-
-<TabItem value="others">
-
-Search [this site](https://pkgs.org/) for a Clang version that Taichi supports.
-
-:::tip NOTE
-
-Some Linux distributions may require additional packages to build Taichi. Keep an eye on the output of CMake when building from source.
-
-:::
-
-</TabItem>
-</Tabs>
-
-````
 
 ### Install LLVM
 
 #### Install pre-built, customized LLVM binaries
 
-We provide pre-built, customized LLVM binaries. For now, Taichi supports LLVM 15 only.
+We provide pre-built, customized LLVM 15 binaries.
 
 1. Download and install customized binaries from the following list per your system environment:
 
@@ -459,7 +377,7 @@ The `develop` command serves the developers' needs better because edits to the P
 
 <TabItem value="windows">
 
-1. Set-up the environment variable `TAICHI_CMAKE_ARGS` with value `-DCLANG_EXECUTABLE=<Path to Clang 10>/bin/clang.exe -DLLVM_AS_EXECUTABLE=<Path to LLVM 15>/bin/llvm-as.exe`
+1. Set-up the environment variable `TAICHI_CMAKE_ARGS` with value `-DCLANG_EXECUTABLE=<Path to Clang>/bin/clang.exe -DLLVM_AS_EXECUTABLE=<Path to LLVM 15>/bin/llvm-as.exe`
 2. Open the "x64 Native Tools Command Prompt" for VS2019 or VS2022. Please make sure you opened the x64 version. (Or load the Visual Studio environment yourself)
 3. Clone the Taichi repo *recursively* & install python dependencies
 
@@ -497,16 +415,6 @@ If you want to build Taichi with Clang or maybe utilize `ccache` to cache and sp
 ````
 
 ## Troubleshooting and debugging
-
-### `llvm-as` cannot be opened on macOS
-
-**Description**
-
-Gets an error message `llvm-as can’t be opened because Apple cannot check it for malicious software on macOS`.
-
-**Workaround**
-
-One-off: **System Preferences > Security & Privacy > General > Allow anyway**.
 
 ### Permission denied
 

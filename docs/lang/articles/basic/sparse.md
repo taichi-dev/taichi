@@ -187,7 +187,7 @@ allocates space for another four when the 5th (, 9th, 13th...) element is append
 
 </center>
 
-You can use `x[i].append(...)` to append an element, 
+You can use `x[i].append(...)` to append an element,
 use `x[i].length()` to get the length, and use `x[i].deactivate()` to clear the list.
 
 The code snippet below creates a struct field that stores pairs of `(i16, i64)`.

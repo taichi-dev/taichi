@@ -107,7 +107,7 @@ Runtime &Event::runtime() {
 
 // -----------------------------------------------------------------------------
 
-void ti_get_available_archs(uint32_t* arch_count, TiArch* archs) {
+void ti_get_available_archs(uint32_t *arch_count, TiArch *archs) {
   if (arch_count == nullptr) {
     return;
   }
@@ -138,7 +138,6 @@ void ti_get_available_archs(uint32_t* arch_count, TiArch* archs) {
       archs[i] = AVAILABLE_ARCHS.at(i);
     }
   }
-
 }
 
 TiError ti_get_last_error(uint64_t message_size, char *message) {

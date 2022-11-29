@@ -137,7 +137,6 @@ void LlvmRuntime::wait() {
 
 }  // namespace capi
 
-
 // function.export_cpu_runtime
 void ti_export_cpu_memory(TiRuntime runtime,
                           TiMemory memory,
@@ -209,7 +208,9 @@ bool is_cuda_available() {
 }
 
 bool is_x64_available() {
-#if defined(TI_WITH_LLVM) && (defined(__x86_64__) || defined(__x86_64) || defined(__amd64__) || defined(__amd64) || defined(_M_X64))
+#if defined(TI_WITH_LLVM) &&                                           \
+    (defined(__x86_64__) || defined(__x86_64) || defined(__amd64__) || \
+     defined(__amd64) || defined(_M_X64))
   return true;
 #else
   return false;

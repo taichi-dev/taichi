@@ -187,7 +187,7 @@ When the 5th (, 9th, 13th...) element is appended, the dynamic SNode further all
 
 </center>
 
-The code snippet creates a struct field which stores pairs of `(i16, i64)`.
+The code snippet below creates a struct field that stores pairs of `(i16, i64)`.
 The `i` axis is a dense SNode, and the `j` axis is a dynamic SNode.
 
 ```python {5,14,19} title=dynamic.py

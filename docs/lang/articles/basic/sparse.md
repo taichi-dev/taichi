@@ -174,8 +174,8 @@ The bitmasked SNodes are like dense SNodes with auxiliary activity values.
 
 To support variable-length fields, Taichi provides dynamic SNodes.
 
-The first argument of `dynamic` is the axis, the second one is the maximum length,
-and the third one (optional) is the `chunk_size`.
+The first argument of `dynamic` is the axis, the second argument is the maximum length,
+and the third argument (optional) is the `chunk_size`.
 
 The `chunk_size` specifies how much space the dynamic SNode allocates when the previously-allocated space runs out.
 For example, with `chunk_size=4`, the dynamic SNode allocates the space for 4 elements in the beginning, and 

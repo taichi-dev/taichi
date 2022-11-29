@@ -52,5 +52,3 @@ class VulkanRuntimeOwned : public VulkanRuntime {
 };
 
 #endif  // TI_WITH_VULKAN
-
-bool is_vulkan_available();

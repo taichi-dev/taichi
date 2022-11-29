@@ -374,11 +374,3 @@ void ti_export_vulkan_event(TiRuntime runtime,
 }
 
 #endif  // TI_WITH_VULKAN
-
-bool is_vulkan_available() {
-#ifdef TI_WITH_VULKAN
-  return taichi::lang::vulkan::is_vulkan_api_available();
-#else
-  return false;
-#endif
-}

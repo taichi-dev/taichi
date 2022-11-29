@@ -198,29 +198,3 @@ void ti_export_cuda_memory(TiRuntime runtime,
 }
 
 #endif  // TI_WITH_LLVM
-
-bool is_cuda_available() {
-#ifdef TI_WITH_CUDA
-  return taichi::is_cuda_api_available();
-#else
-  return false;
-#endif
-}
-
-bool is_x64_available() {
-#if defined(TI_WITH_LLVM) &&                                           \
-    (defined(__x86_64__) || defined(__x86_64) || defined(__amd64__) || \
-     defined(__amd64) || defined(_M_X64))
-  return true;
-#else
-  return false;
-#endif
-}
-
-bool is_arm64_available() {
-#if defined(TI_WITH_LLVM) && (defined(__arm64__) || defined(__aarch64__))
-  return true;
-#else
-  return false;
-#endif
-}

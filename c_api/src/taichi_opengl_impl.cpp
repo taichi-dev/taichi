@@ -36,11 +36,3 @@ void ti_export_opengl_memory(TiRuntime runtime,
 }
 
 #endif  // TI_WITH_OPENGL
-
-bool is_opengl_available() {
-#ifdef TI_WITH_OPENGL
-  return taichi::lang::opengl::is_opengl_api_available();
-#else
-  return false;
-#endif
-}

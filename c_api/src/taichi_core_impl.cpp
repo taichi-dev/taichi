@@ -6,6 +6,48 @@
 #include "taichi/program/texture.h"
 #include "taichi/common/virtual_dir.h"
 
+bool is_vulkan_available() {
+#ifdef TI_WITH_VULKAN
+  return taichi::lang::vulkan::is_vulkan_api_available();
+#else
+  return false;
+#endif
+}
+
+bool is_opengl_available() {
+#ifdef TI_WITH_OPENGL
+  return taichi::lang::opengl::is_opengl_api_available();
+#else
+  return false;
+#endif
+}
+
+bool is_cuda_available() {
+#ifdef TI_WITH_CUDA
+  return taichi::is_cuda_api_available();
+#else
+  return false;
+#endif
+}
+
+bool is_x64_available() {
+#if defined(TI_WITH_LLVM) &&                                           \
+    (defined(__x86_64__) || defined(__x86_64) || defined(__amd64__) || \
+     defined(__amd64) || defined(_M_X64))
+  return true;
+#else
+  return false;
+#endif
+}
+
+bool is_arm64_available() {
+#if defined(TI_WITH_LLVM) && (defined(__arm64__) || defined(__aarch64__))
+  return true;
+#else
+  return false;
+#endif
+}
+
 struct ErrorCache {
   TiError error{TI_ERROR_SUCCESS};
   std::string message{};

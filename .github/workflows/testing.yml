@@ -373,8 +373,7 @@ jobs:
           [[ ${{needs.check_files.outputs.run_job}} == false ]] && exit 0
           . .github/workflows/scripts/common-utils.sh
 
-          . .github/workflows/scripts/aot-demo.sh
-          check-c-api-export-symbols
+          .github/workflows/scripts/aot-demo.sh check-c-api-export-symbols
 
       - name: Test
         id: test

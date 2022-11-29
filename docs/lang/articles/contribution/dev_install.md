@@ -72,7 +72,7 @@ Installation instructions vary depending on which operating system (OS) you are 
 
 <blockquote>
 
-Taichi supports building from source with any clang compiler greater than version 8.0, please install one from your favorite package tool for the operating system. For example, you can use `apt` on Ubuntu, `brew` on macOS and so on.
+Taichi supports building from source with any clang compiler greater than version 8.0. Install one from your favorite package tool for the operating system. For example, you can use `apt` on Ubuntu, `brew` on macOS, and so on.
 </blockquote>
 
 

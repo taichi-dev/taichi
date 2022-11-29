@@ -181,7 +181,7 @@ The `chunk_size` specifies how much space the dynamic SNode allocates when the p
 For example, with `chunk_size=4`, the dynamic SNode allocates the space for four elements when the first element is appended, and
 allocates space for another four when the 5th (, 9th, 13th...) element is appended.
 
-You can use `x[i].append(...)` to append an element, 
+You can use `x[i].append(...)` to append an element,
 use `x[i].length()` to get the length, and use `x[i].deactivate()` to clear the list.
 
 The code snippet below creates a struct field that stores pairs of `(i16, i64)`.

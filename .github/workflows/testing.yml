@@ -297,6 +297,7 @@ jobs:
             -DTI_BUILD_TESTS:BOOL=ON
             -DTI_WITH_BACKTRACE=ON
             -DTI_WITH_C_API=ON
+            -DCMAKE_VERBOSE_MAKEFILE=ON
 
       - name: Test
         id: test

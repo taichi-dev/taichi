@@ -3,32 +3,8 @@
 #include "taichi/cpp/taichi.hpp"
 #include "c_api/tests/gtest_fixture.h"
 
-TEST_F(CapiTest, AvailableArchs) {
+TEST_F(CapiTest, DryRunAvailableArchs) {
   std::vector<TiArch> archs = ti::get_available_archs();
-
-#define HAS_ARCH(a) (std::find(archs.begin(), archs.end(), a) != archs.end())
-
-#ifdef TI_WITH_VULKAN
-  TI_ASSERT(HAS_ARCH(TI_ARCH_VULKAN));
-#else
-  TI_ASSERT(!HAS_ARCH(TI_ARCH_VULKAN));
-#endif
-
-#ifdef TI_WITH_OPENGL
-  TI_ASSERT(HAS_ARCH(TI_ARCH_OPENGL));
-#else
-  TI_ASSERT(!HAS_ARCH(TI_ARCH_OPENGL));
-#endif
-
-#ifdef TI_WITH_CUDA
-  TI_ASSERT(HAS_ARCH(TI_ARCH_CUDA));
-#else
-  TI_ASSERT(!HAS_ARCH(TI_ARCH_CUDA));
-#endif
-
-  TI_ASSERT(HAS_ARCH(TI_ARCH_X64));
-
-#undef HAS_ARCH
 }
 
 TEST_F(CapiTest, DryRunRuntime) {

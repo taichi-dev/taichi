@@ -4,18 +4,18 @@ sidebar_position: 2
 
 # Sparse Matrix
 
-Sparse matrices are frequently used when solving linear systems in science and engineering. Taichi provides programmers with useful APIs for sparse matrices on CPU and CUDA backend.
+Sparse matrices are frequently involved in solving linear systems in science and engineering. Taichi provides useful APIs for sparse matrices on the CPU and CUDA backends.
 
-To use the sparse matrix in taichi programs, you should follow these three steps:
+To use sparse matrices in Taichi programs, follow these three steps:
 
 1. Create a `builder` using `ti.linalg.SparseMatrixBuilder()`.
-2. Fill the `builder` using `ti.kernel` function with your matrices' data.
+2. Call `ti.kernel` to fill the `builder` with your matrices' data.
 3. Build sparse matrices from the `builder`.
 
 :::caution WARNING
-The sparse matrix is still under implementation. There are some limitations:
-- The sparse matrix data type on the CPU only supports `float32` and `double`.
-- The sparse matrix data type on the CUDA only supports `float32`.
+The sparse matrix feature is still under development. There are some limitations:
+- The sparse matrix data type on the CPU backend only supports `f32` and `f64`.
+- The sparse matrix data type on the CUDA backend only supports `f32`.
 
 :::
 Here's an example:
@@ -135,9 +135,9 @@ print(f">>>> Element Access: A[0,0] = {A[0,0]}")
 ## Sparse linear solver
 You may want to solve some linear equations using sparse matrices.
 Then, the following steps could help:
-1. Create a `solver` using `ti.linalg.SparseSolver(solver_type, ordering)`. Currently, the sparse solver on CPU supports `LLT`, `LDLT` and `LU` factorization types, and orderings including `AMD`, `COLAMD`. The sparse solver on CUDA supports `LLT` factorization type.
+1. Create a `solver` using `ti.linalg.SparseSolver(solver_type, ordering)`. Currently, the factorization types supported on CPU backends are `LLT`, `LDLT`, and `LU`, and supported orderings include `AMD` and `COLAMD`. The sparse solver on CUDA supports the `LLT` factorization type only.
 2. Analyze and factorize the sparse matrix you want to solve using `solver.analyze_pattern(sparse_matrix)` and `solver.factorize(sparse_matrix)`
-3. Call `x = solver.solve(b)`, where `x` is the solution and `b` is the right-hand side of the linear system. On CPU backend, `x` and `b` are numpy arrays, taichi ndarrays or taichi fileds. On CUDA backend, `x` and `b` can only be a taichi ndarray.
+3. Call `x = solver.solve(b)`, where `x` is the solution and `b` is the right-hand side of the linear system. On CPU backends, `x` and `b` can be NumPy arrays, Taichi Ndarrays, or Taichi fields. On the CUDA backend, `x` and `b` *must* be Taichi Ndarrays.
 4. Call `solver.info()` to check if the solving process succeeds.
 
 Here's a full example.

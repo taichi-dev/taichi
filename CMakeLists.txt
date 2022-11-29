@@ -133,6 +133,7 @@ if (TI_WITH_BACKTRACE)
   add_subdirectory(external/backward_cpp)
 endif()
 
+include(cmake/Distributed.cmake)
 include(cmake/TaichiCXXFlags.cmake)
 include(cmake/TaichiCore.cmake)
 
@@ -212,3 +213,4 @@ if (TI_WITH_GRAPHVIZ)
       WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   )
 endif()
+

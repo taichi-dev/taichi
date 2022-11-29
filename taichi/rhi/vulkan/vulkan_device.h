@@ -102,6 +102,8 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
   Stream *get_compute_stream() override;
   Stream *get_graphics_stream() override;
 
+  std::unique_ptr<Surface> create_surface(const SurfaceConfig &config) override;
+
   void wait_idle() override;
 
   std::unique_ptr<Pipeline> create_raster_pipeline(

@@ -581,6 +581,11 @@ class TI_DLL_EXPORT GraphicsDevice : public Device {
 
   virtual Stream *get_graphics_stream() = 0;
 
+  // FIXME: (penguinliong) Remove this.
+  virtual std::unique_ptr<Surface> create_surface(
+      const SurfaceConfig &config) {
+    TI_NOT_IMPLEMENTED
+  }
   // You are not expected to call this directly. If you want to use this image
   // in a taichi kernel, you usually want to create the image via
   // `GfxRuntime::create_image`. `GfxRuntime` is available in `ProgramImpl`

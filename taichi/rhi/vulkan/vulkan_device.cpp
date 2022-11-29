@@ -12,6 +12,7 @@
 #include "taichi/rhi/vulkan/vulkan_utils.h"
 #include "taichi/rhi/vulkan/vulkan_loader.h"
 #include "taichi/rhi/vulkan/vulkan_device.h"
+#include "taichi/rhi/vulkan/vulkan_surface.h"
 #include "taichi/rhi/vulkan/vulkan_event.h"
 #include "taichi/rhi/vulkan/vulkan_stream.h"
 #include "taichi/rhi/vulkan/vulkan_resource_binder.h"
@@ -339,6 +340,11 @@ Stream *VulkanDevice::get_graphics_stream() {
     return stream_map.at(tid).get();
   }
   return iter->second.get();
+}
+
+std::unique_ptr<Surface> VulkanDevice::create_surface(
+    const SurfaceConfig &config) {
+  return std::unique_ptr<Surface>(new VulkanSurface(this, config));
 }
 
 void VulkanDevice::wait_idle() {

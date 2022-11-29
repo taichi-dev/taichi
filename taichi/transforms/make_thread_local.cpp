@@ -76,7 +76,8 @@ std::vector<std::pair<T *, AtomicOpType>> find_global_reduction_destinations(
             }
           }
           for (auto &op : stmt->get_operands()) {
-            if (op == nullptr) continue;
+            if (op == nullptr)
+              continue;
             // Make sure the values of related atomic operations are not used.
             if (auto atomic = op->cast<AtomicOpStmt>()) {
               if (irpass::analysis::maybe_same_address(atomic->dest,

@@ -219,7 +219,9 @@ jobs:
       - name: Check C-API Export Symbols
         run: |
           [[ ${{needs.check_files.outputs.run_job}} == false ]] && exit 0
-          ci-docker-run-gpu --name taichi-test-capi-headless-demo-desktop \
+          . .github/workflows/scripts/common-utils.sh
+
+          ci-docker-run-gpu --name taichi-test-check-c-api-export-symbols \
             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh check-c-api-export-symbols
 
@@ -369,6 +371,8 @@ jobs:
       - name: Check C-API Export Symbols
         run: |
           [[ ${{needs.check_files.outputs.run_job}} == false ]] && exit 0
+          . .github/workflows/scripts/common-utils.sh
+
           . .github/workflows/scripts/aot-demo.sh
           check-c-api-export-symbols
 

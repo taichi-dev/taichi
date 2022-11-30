@@ -65,6 +65,8 @@ class LoopInvariantDetector : public BasicStmtVisitor {
     bool is_invariant = true;
 
     for (Stmt *operand : stmt->get_operands()) {
+      if (operand == nullptr)
+        continue;
       is_invariant &= is_operand_loop_invariant_impl(operand, current_scope);
     }
 

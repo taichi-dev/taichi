@@ -47,7 +47,7 @@ TEST_F(CapiTest, SetCapabilities) {
       ti::Runtime runtime(TI_ARCH_VULKAN);
 
       {
-        auto devcaps = ti::CapabilityLevelConfig::build()
+        auto devcaps = ti::CapabilityLevelConfig::builder()
                            .spirv_version(1, 3)
                            .spirv_has_atomic_float64_add()
                            .build();
@@ -60,7 +60,7 @@ TEST_F(CapiTest, SetCapabilities) {
       }
       {
         auto devcaps =
-            ti::CapabilityLevelConfig::build().spirv_version(1, 4).build();
+            ti::CapabilityLevelConfig::builder().spirv_version(1, 4).build();
         runtime.set_capabilities_ext(devcaps);
         auto devcaps2 = runtime.get_capabilities();
         TI_ASSERT(devcaps2.get(TI_CAPABILITY_SPIRV_VERSION) == 0x10400);
@@ -69,7 +69,7 @@ TEST_F(CapiTest, SetCapabilities) {
         TI_ASSERT(devcaps2.get(TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT64) == 0);
       }
       {
-        auto devcaps = ti::CapabilityLevelConfig::build()
+        auto devcaps = ti::CapabilityLevelConfig::builder()
                            .spirv_version(1, 5)
                            .spirv_has_atomic_float64()
                            .spirv_has_atomic_float64(false)

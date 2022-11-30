@@ -830,7 +830,7 @@ class CapabilityLevelConfigBuilder {
   }
 };
 
-inline CapabilityLevelConfigBuilder CapabilityLevelConfig::build() {
+inline CapabilityLevelConfigBuilder CapabilityLevelConfig::builder() {
   return {};
 }
 

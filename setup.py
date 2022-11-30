@@ -1,4 +1,4 @@
-# Optional envionment variables supported by setup.py:
+# Optional environment variables supported by setup.py:
 #   {DEBUG, RELWITHDEBINFO, MINSIZEREL}
 #     build the C++ taichi_python extension with various build types.
 #

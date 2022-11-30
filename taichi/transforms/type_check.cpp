@@ -407,10 +407,15 @@ class TypeCheck : public IRVisitor {
   void visit(FuncCallStmt *stmt) override {
     auto *func = stmt->func;
     TI_ASSERT(func);
-    TI_ASSERT(func->rets.size() <= 1);
-    if (func->rets.size() == 1) {
-      stmt->ret_type = func->rets[0].dt;
-    }
+    stmt->ret_type = PrimitiveType::u64;
+    stmt->ret_type.set_is_pointer(true);
+  }
+
+  void visit(GetElementStmt *stmt) override {
+    TI_ASSERT(stmt->src->is<FuncCallStmt>());
+    auto *func = stmt->src->as<FuncCallStmt>()->func;
+    TI_ASSERT(stmt->index < func->rets.size());
+    stmt->ret_type = func->rets[stmt->index].dt;
   }
 
   void visit(ArgLoadStmt *stmt) override {

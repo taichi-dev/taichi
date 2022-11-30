@@ -8,6 +8,7 @@ from taichi.lang.any_array import AnyArray
 from taichi.lang.enums import Layout
 from taichi.lang.expr import Expr
 from taichi.lang.matrix import Matrix, MatrixType, Vector, VectorType
+from taichi.lang.struct import StructType
 from taichi.lang.util import cook_dtype
 from taichi.types.primitive_types import RefType, f32, u64
 
@@ -102,10 +103,18 @@ def decl_rw_texture_arg(num_dimensions, num_channels, channel_format, lod):
                                           channel_format, lod), num_dimensions)
 
 
-def decl_ret(dtype):
+def decl_ret(dtype, real_func=False):
+    if isinstance(dtype, StructType):
+        for member in dtype.members.values():
+            decl_ret(member, real_func)
+        return
     if isinstance(dtype, MatrixType):
+        if real_func:
+            for i in range(dtype.n * dtype.m):
+                decl_ret(dtype.dtype)
+            return
         dtype = _ti_core.get_type_factory_instance().get_tensor_type(
             [dtype.n, dtype.m], dtype.dtype)
     else:
         dtype = cook_dtype(dtype)
-    return impl.get_runtime().prog.decl_ret(dtype)
+    impl.get_runtime().prog.decl_ret(dtype)

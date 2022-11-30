@@ -26,6 +26,10 @@ endif()
 target_link_libraries(${C_API_TESTS_NAME} PRIVATE taichi_c_api)
 target_link_libraries(${C_API_TESTS_NAME} PRIVATE gtest_main)
 
+if (TI_WITH_BACKTRACE)
+    target_link_libraries(${C_API_TESTS_NAME} PRIVATE ${BACKWARD_ENABLE})
+endif()
+
 target_include_directories(${C_API_TESTS_NAME}
   PRIVATE
     ${PROJECT_SOURCE_DIR}

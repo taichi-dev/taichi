@@ -119,10 +119,6 @@ if (TI_WITH_CC)
   list(APPEND TAICHI_CORE_SOURCE ${TAICHI_CC_SOURCE})
 endif()
 
-# This compiles all the libraries with -fPIC, which is critical to link a static
-# library into a shared lib.
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-
 set(CORE_LIBRARY_NAME taichi_core)
 add_library(${CORE_LIBRARY_NAME} OBJECT ${TAICHI_CORE_SOURCE})
 
@@ -430,6 +426,13 @@ if(TI_WITH_PYTHON)
     # Remove symbols from static libs: https://stackoverflow.com/a/14863432/12003165
     if (LINUX)
         target_link_options(${CORE_WITH_PYBIND_LIBRARY_NAME} PUBLIC -Wl,--exclude-libs=ALL)
+    endif()
+
+    if (TI_WITH_BACKTRACE)
+        # Defined by external/backward-cpp:
+        # This will add libraries, definitions and include directories needed by backward
+        # by setting each property on the target.
+        target_link_libraries(${CORE_WITH_PYBIND_LIBRARY_NAME} PRIVATE ${BACKWARD_ENABLE})
     endif()
 
     if(TI_WITH_GGUI)

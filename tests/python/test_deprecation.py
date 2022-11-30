@@ -69,3 +69,44 @@ def test_deprecate_field_dim_ndarray_annotation():
         @ti.kernel
         def func(x: ti.types.ndarray(field_dim=(16, 16))):
             pass
+
+
+@test_utils.test(arch=ti.metal)
+def test_deprecate_metal_sparse():
+    with pytest.warns(
+            DeprecationWarning,
+            match=
+            "Pointer SNode on metal backend is deprecated, and it will be removed in v1.4.0."
+    ):
+        a = ti.root.pointer(ti.i, 10)
+    with pytest.warns(
+            DeprecationWarning,
+            match=
+            "Bitmasked SNode on metal backend is deprecated, and it will be removed in v1.4.0."
+    ):
+        b = a.bitmasked(ti.j, 10)
+
+    with pytest.raises(
+            ti.TaichiRuntimeError,
+            match=
+            "Dynamic SNode on metal backend is deprecated and removed in this release."
+    ):
+        ti.root.dynamic(ti.i, 10)
+
+
+def test_deprecated_packed_true():
+    with pytest.warns(
+            DeprecationWarning,
+            match=
+            "Currently packed=True is the default setting and the switch will be removed in v1.4.0."
+    ):
+        ti.init(packed=True)
+
+
+def test_deprecated_packed_false():
+    with pytest.warns(
+            DeprecationWarning,
+            match=
+            r"The automatic padding mode \(packed=False\) will no longer exist in v1.4.0. The switch will "
+            "also be removed then. Make sure your code doesn't rely on it."):
+        ti.init(packed=False)

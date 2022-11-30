@@ -89,3 +89,4 @@ imgui.ini
 .cache
 .do-not-clean
 *.dylib
+*.ply

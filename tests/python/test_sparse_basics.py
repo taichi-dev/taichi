@@ -108,8 +108,7 @@ def test_pointer2():
     _test_pointer2()
 
 
-@test_utils.test(require=[ti.extension.sparse, ti.extension.packed],
-                 packed=True)
+@test_utils.test(require=ti.extension.sparse, packed=True)
 def test_pointer2_packed():
     _test_pointer2()
 

@@ -983,6 +983,21 @@ class ReferenceStmt : public Stmt {
 };
 
 /**
+ * Gets an element from a struct
+ */
+class GetElementStmt : public Stmt {
+ public:
+  Stmt *src;
+  int index;
+  GetElementStmt(Stmt *src, int index) : src(src), index(index) {
+    TI_STMT_REG_FIELDS;
+  }
+
+  TI_STMT_DEF_FIELDS(ret_type, src, index);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
+/**
  * Exit the kernel or function with a return value.
  */
 class ReturnStmt : public Stmt {

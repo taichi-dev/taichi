@@ -403,6 +403,7 @@ jobs:
           submodules: "recursive"
 
       - name: Prepare Environment
+        if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: >-
           . .github/workflows/scripts/common-utils.sh;
           prepare-build-cache;
@@ -418,6 +419,7 @@ jobs:
           " >> $GITHUB_ENV;
 
       - name: Build Host Taichi
+        if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
           . .github/workflows/scripts/common-utils.sh
           ci-docker-run --name taichi-build-host \
@@ -432,6 +434,7 @@ jobs:
             -DTI_WITH_C_API=OFF
 
       - name: Build For Android
+        if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
           . .github/workflows/scripts/common-utils.sh
           git clean -fxd
@@ -448,6 +451,7 @@ jobs:
             -DTI_WITH_C_API=ON
 
       - name: Test For Android AOT (export core)
+        if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
           . .github/workflows/scripts/common-utils.sh
           chown -R 1000:1000 .
@@ -456,6 +460,7 @@ jobs:
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh build-and-smoke-test-android-aot-demo
 
       - name: Prepare Unity Build Environment
+        if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
           . .github/workflows/scripts/common-utils.sh
           chown -R 1000:1000 .
@@ -464,6 +469,7 @@ jobs:
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh prepare-unity-build-env
 
       - name: Build Taichi-UnityExample
+        if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
           . .github/workflows/scripts/common-utils.sh
           ci-docker-run --name taichi-build-unity-demo \
@@ -471,6 +477,7 @@ jobs:
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh build-unity-demo
 
       - name: Run Taichi-UnityExample (C-API)
+        if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
           . .github/workflows/scripts/common-utils.sh
           chown -R 1000:1000 .
@@ -479,6 +486,7 @@ jobs:
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh smoke-test-unity-demo
 
       - name: Build & Run C-API Headless Demos (Android)
+        if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
           . .github/workflows/scripts/common-utils.sh
           chown -R 1000:1000 .

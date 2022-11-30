@@ -332,6 +332,8 @@ void BinaryOpExpression::flatten(FlattenContext *ctx) {
   // if (stmt)
   //  return;
   auto lhs_stmt = flatten_rvalue(lhs, ctx);
+  auto rhs_stmt = flatten_rvalue(rhs, &rctx);
+
   if (binary_is_logical(type)) {
     auto result = ctx->push_back<AllocaStmt>(ret_type);
     ctx->push_back<LocalStoreStmt>(result, lhs_stmt);
@@ -340,7 +342,6 @@ void BinaryOpExpression::flatten(FlattenContext *ctx) {
 
     FlattenContext rctx;
     rctx.current_block = ctx->current_block;
-    auto rhs_stmt = flatten_rvalue(rhs, &rctx);
     rctx.push_back<LocalStoreStmt>(result, rhs_stmt);
 
     auto true_block = std::make_unique<Block>();
@@ -361,7 +362,6 @@ void BinaryOpExpression::flatten(FlattenContext *ctx) {
     stmt->ret_type = ret_type;
     return;
   }
-  auto rhs_stmt = flatten_rvalue(rhs, ctx);
   ctx->push_back(std::make_unique<BinaryOpStmt>(type, lhs_stmt, rhs_stmt));
   ctx->stmts.back()->tb = tb;
   stmt = ctx->back_stmt();
@@ -517,8 +517,7 @@ void InternalFuncCallExpression::type_check(CompileConfig *) {
 void InternalFuncCallExpression::flatten(FlattenContext *ctx) {
   std::vector<Stmt *> args_stmts(args.size());
   for (int i = 0; i < (int)args.size(); ++i) {
-    auto arg_stmt = flatten_rvalue(args[i], ctx);
-    args_stmts[i] = arg_stmt;
+    args_stmts[i] = flatten_rvalue(args[i], ctx);
   }
   ctx->push_back<InternalFuncStmt>(func_name, args_stmts, nullptr,
                                    with_runtime_context);
@@ -554,8 +553,7 @@ std::vector<Stmt *> make_index_stmts(Expression::FlattenContext *ctx,
                                      const std::vector<int> &offsets) {
   std::vector<Stmt *> index_stmts;
   for (int i = 0; i < (int)indices.size(); i++) {
-    auto index_stmt = flatten_rvalue(indices.exprs[i], ctx);
-    Stmt *ind = index_stmt;
+    Stmt *ind = flatten_rvalue(indices.exprs[i], ctx);
     if (!offsets.empty()) {
       auto offset = ctx->push_back<ConstStmt>(TypedConstant(offsets[i]));
       ind = ctx->push_back<BinaryOpStmt>(BinaryOpType::sub, ind, offset);
@@ -591,8 +589,7 @@ Stmt *make_ndarray_access(Expression::FlattenContext *ctx,
                           ExprGroup indices) {
   std::vector<Stmt *> index_stmts;
   for (int i = 0; i < (int)indices.size(); i++) {
-    auto index_stmt = flatten_rvalue(indices.exprs[i], ctx);
-    Stmt *ind = index_stmt;
+    Stmt *ind = flatten_rvalue(indices.exprs[i], ctx);
     index_stmts.push_back(ind);
   }
   auto var_stmt = flatten_lvalue(var, ctx);
@@ -686,8 +683,7 @@ void MatrixExpression::flatten(FlattenContext *ctx) {
   TI_ASSERT(this->dt->is<TensorType>());
   std::vector<Stmt *> values;
   for (auto &elt : elements) {
-    auto elt_stmt = flatten_rvalue(elt, ctx);
-    values.push_back(elt_stmt);
+    values.push_back(flatten_rvalue(elt, ctx));
   }
   stmt = ctx->push_back<MatrixInitStmt>(values);
   stmt->ret_type = this->dt;
@@ -951,8 +947,7 @@ void SNodeOpExpression::type_check(CompileConfig *config) {
 void SNodeOpExpression::flatten(FlattenContext *ctx) {
   std::vector<Stmt *> indices_stmt;
   for (int i = 0; i < (int)indices.size(); i++) {
-    auto index_stmt = flatten_rvalue(indices[i], ctx);
-    indices_stmt.push_back(index_stmt);
+    indices_stmt.push_back(flatten_rvalue(indices[i], ctx));
   }
   auto is_cell_access = SNodeOpStmt::activation_related(op_type) &&
                         snode->type != SNodeType::dynamic;
@@ -1072,8 +1067,7 @@ void TextureOpExpression::flatten(FlattenContext *ctx) {
   auto texture_ptr_stmt = flatten_rvalue(texture_ptr, ctx);
   std::vector<Stmt *> arg_stmts;
   for (Expr &arg : args.exprs) {
-    auto arg_stmt = flatten_rvalue(arg, ctx);
-    arg_stmts.push_back(arg_stmt);
+    arg_stmts.push_back(flatten_rvalue(arg, ctx));
   }
   ctx->push_back<TextureOpStmt>(op, texture_ptr_stmt, arg_stmts);
   stmt = ctx->back_stmt();
@@ -1118,8 +1112,7 @@ void FuncCallExpression::type_check(CompileConfig *) {
 void FuncCallExpression::flatten(FlattenContext *ctx) {
   std::vector<Stmt *> stmt_args;
   for (auto &arg : args.exprs) {
-    auto arg_stmt = flatten_rvalue(arg, ctx);
-    stmt_args.push_back(arg_stmt);
+    stmt_args.push_back(flatten_rvalue(arg, ctx));
   }
   ctx->push_back<FuncCallStmt>(func, stmt_args);
   stmt = ctx->back_stmt();

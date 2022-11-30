@@ -920,9 +920,8 @@ void AtomicOpExpression::flatten(FlattenContext *ctx) {
   }
   // expand rhs
   auto val_stmt = flatten_rvalue(val, ctx);
-  auto src_val = val_stmt;
   auto dest_stmt = flatten_lvalue(dest, ctx);
-  stmt = ctx->push_back<AtomicOpStmt>(op_type, dest_stmt, src_val);
+  stmt = ctx->push_back<AtomicOpStmt>(op_type, dest_stmt, val_stmt);
   stmt->ret_type = stmt->as<AtomicOpStmt>()->dest->ret_type;
   stmt->tb = tb;
 }

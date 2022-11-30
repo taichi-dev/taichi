@@ -1,10 +1,8 @@
-if (DISTRIBUTED_COMPILE)
-
 if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    message(FATAL_ERROR "Distruted compiling only supports Clang for now." )
+    message(FATAL_ERROR "Distributed compiling only supports Clang for now." )
 endif()
 
-message("Enabling distributed compiling quirks")
+message(WARNING "Enabling distributed compiling support, this is experimental and only tested in Taichi's internal CI/CD system, use at your own risk.")
 
 execute_process(
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
@@ -23,5 +21,3 @@ add_compile_options(-Wno-parentheses-equality)
 # taichi/python/export_lang.cpp:1241
 # MAKE_SPARSE_MATRIX(32, ColMajor, f)
 add_compile_options(-Wno-self-assign-overloaded)
-
-endif()  # DISTRIBUTED_COMPILE

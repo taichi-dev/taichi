@@ -332,7 +332,6 @@ void BinaryOpExpression::flatten(FlattenContext *ctx) {
   // if (stmt)
   //  return;
   auto lhs_stmt = flatten_rvalue(lhs, ctx);
-  auto rhs_stmt = flatten_rvalue(rhs, &rctx);
 
   if (binary_is_logical(type)) {
     auto result = ctx->push_back<AllocaStmt>(ret_type);
@@ -342,6 +341,7 @@ void BinaryOpExpression::flatten(FlattenContext *ctx) {
 
     FlattenContext rctx;
     rctx.current_block = ctx->current_block;
+    auto rhs_stmt = flatten_rvalue(rhs, &rctx);
     rctx.push_back<LocalStoreStmt>(result, rhs_stmt);
 
     auto true_block = std::make_unique<Block>();
@@ -362,6 +362,7 @@ void BinaryOpExpression::flatten(FlattenContext *ctx) {
     stmt->ret_type = ret_type;
     return;
   }
+  auto rhs_stmt = flatten_rvalue(rhs, &rctx);
   ctx->push_back(std::make_unique<BinaryOpStmt>(type, lhs_stmt, rhs_stmt));
   ctx->stmts.back()->tb = tb;
   stmt = ctx->back_stmt();

@@ -168,6 +168,8 @@ template <typename T>
 class NdArray {
   Memory memory_{};
   TiNdArray ndarray_{};
+  size_t elem_count_{};
+  size_t scalar_count_{};
 
  public:
   constexpr bool is_valid() const {
@@ -177,16 +179,29 @@ class NdArray {
     memory_.destroy();
   }
 
-  NdArray() {
+  NdArray() : elem_count_(1), scalar_count_(1) {
   }
   NdArray(const NdArray<T> &) = delete;
   NdArray(NdArray<T> &&b)
-      : memory_(std::move(b.memory_)), ndarray_(std::exchange(b.ndarray_, {})) {
+      : memory_(std::move(b.memory_)),
+        ndarray_(std::exchange(b.ndarray_, {})),
+        elem_count_(std::exchange(b.elem_count_, 1)),
+        scalar_count_(std::exchange(b.scalar_count_, 1)) {
   }
   NdArray(Memory &&memory, const TiNdArray &ndarray)
-      : memory_(std::move(memory)), ndarray_(ndarray) {
+      : memory_(std::move(memory)),
+        ndarray_(ndarray),
+        elem_count_(1),
+        scalar_count_(1) {
     if (ndarray.memory != memory_) {
       ti_set_last_error(TI_ERROR_INVALID_ARGUMENT, "ndarray.memory != memory");
+    }
+    for (uint32_t i = 0; i < ndarray_.shape.dim_count; ++i) {
+      elem_count_ *= ndarray_.shape.dims[i];
+    }
+    scalar_count_ *= elem_count_;
+    for (uint32_t i = 0; i < ndarray_.elem_shape.dim_count; ++i) {
+      scalar_count_ *= ndarray_.elem_shape.dims[i];
     }
   }
   ~NdArray() {
@@ -198,6 +213,8 @@ class NdArray {
     destroy();
     memory_ = std::move(b.memory_);
     ndarray_ = std::exchange(b.ndarray_, {});
+    elem_count_ = std::exchange(b.elem_count_, 1);
+    scalar_count_ = std::exchange(b.scalar_count_, 1);
     return *this;
   }
 
@@ -208,7 +225,21 @@ class NdArray {
     return memory_.unmap();
   }
 
+  inline size_t scalar_count() const {
+    return scalar_count_;
+  }
+  inline size_t elem_count() const {
+    return elem_count_;
+  }
+
   inline void read(T *dst, size_t count) const {
+    if (count > scalar_count_) {
+      ti_set_last_error(
+          TI_ERROR_ARGUMENT_OUT_OF_RANGE,
+          "ndarray read ouf of range; please ensure you specified the correct "
+          "number of elements (rather than size-in-bytes) to be read");
+      return;
+    }
     memory_.read(dst, count * sizeof(T));
   }
   inline void read(std::vector<T> &dst) const {
@@ -221,6 +252,13 @@ class NdArray {
     read((T *)dst.data(), dst.size() * (sizeof(U) / sizeof(T)));
   }
   inline void write(const T *src, size_t count) const {
+    if (count > scalar_count_) {
+      ti_set_last_error(
+          TI_ERROR_ARGUMENT_OUT_OF_RANGE,
+          "ndarray write ouf of range; please ensure you specified the correct "
+          "number of elements (rather than size-in-bytes) to be written");
+      return;
+    }
     memory_.write(src, count * sizeof(T));
   }
   inline void write(const std::vector<T> &src) const {

@@ -98,6 +98,27 @@ TEST_F(CapiTest, FailMapDeviceOnlyMemory) {
   }
 }
 
+TEST_F(CapiTest, FailOutOfRangeReadWrite) {
+  if (ti::is_arch_available(TI_ARCH_VULKAN)) {
+    ti::Runtime runtime(TI_ARCH_VULKAN);
+
+    std::vector<float> data(101);
+    ti::NdArray<float> arr = runtime.allocate_ndarray<float>({50}, {2});
+
+    TI_ASSERT(arr.elem_count() == 50);
+    TI_ASSERT(arr.scalar_count() == 100);
+
+    arr.write(data);
+
+    char err_msg[1024]{0};
+    TiError err = ti_get_last_error(sizeof(err_msg), err_msg);
+
+    TI_ASSERT(err == TI_ERROR_ARGUMENT_OUT_OF_RANGE);
+
+    ti_set_last_error(TI_ERROR_SUCCESS, nullptr);
+  }
+}
+
 TEST_F(CapiTest, DryRunImageAllocation) {
   if (ti::is_arch_available(TI_ARCH_VULKAN)) {
     {

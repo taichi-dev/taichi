@@ -515,10 +515,7 @@ Dx11Device::Dx11Device() {
   if (kD3d11DebugEnabled) {
     info_queue_ = std::make_unique<Dx11InfoQueue>(device_);
   }
-
-  DeviceCapabilityConfig caps{};
-  caps.set(DeviceCapability::spirv_version, 0x10300);
-  set_caps(std::move(caps));
+  caps_.set(DeviceCapability::spirv_version, 0x10300);
 
   stream_ = std::make_unique<Dx11Stream>(this);
 }

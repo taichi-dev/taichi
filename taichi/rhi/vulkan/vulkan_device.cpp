@@ -1330,9 +1330,7 @@ struct VulkanDevice::ThreadLocalStreams {
 VulkanDevice::VulkanDevice()
     : compute_streams_(std::make_unique<ThreadLocalStreams>()),
       graphics_streams_(std::make_unique<ThreadLocalStreams>()) {
-  DeviceCapabilityConfig caps{};
-  caps.set(DeviceCapability::spirv_version, 0x10000);
-  set_caps(std::move(caps));
+  caps_.set(DeviceCapability::spirv_version, 0x10000);
 }
 
 void VulkanDevice::init_vulkan_structs(Params &params) {
@@ -1460,7 +1458,7 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
       VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR;
 #endif
 
-  bool export_sharing = params.export_sharing && vk_caps().external_memory;
+  bool export_sharing = params.export_sharing && vk_caps_.external_memory;
 
   VmaAllocationCreateInfo alloc_info{};
   if (export_sharing) {
@@ -1492,7 +1490,7 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
     alloc_info.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
   }
 
-  if (get_caps().get(DeviceCapability::spirv_has_physical_storage_buffer)) {
+  if (caps_.get(DeviceCapability::spirv_has_physical_storage_buffer)) {
     buffer_info.usage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_KHR;
   }
 
@@ -1507,7 +1505,7 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
            handle.alloc_id);
 #endif
 
-  if (get_caps().get(DeviceCapability::spirv_has_physical_storage_buffer)) {
+  if (caps_.get(DeviceCapability::spirv_has_physical_storage_buffer)) {
     VkBufferDeviceAddressInfoKHR info{};
     info.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_KHR;
     info.buffer = alloc.buffer->buffer;
@@ -1852,7 +1850,7 @@ DeviceAllocation VulkanDevice::import_vkbuffer(vkapi::IVkBuffer buffer) {
   alloc_int.external = true;
   alloc_int.buffer = buffer;
   alloc_int.mapped = nullptr;
-  if (get_caps().get(DeviceCapability::spirv_has_physical_storage_buffer)) {
+  if (caps_.get(DeviceCapability::spirv_has_physical_storage_buffer)) {
     VkBufferDeviceAddressInfoKHR info{};
     info.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
     info.buffer = buffer->buffer;
@@ -2173,7 +2171,7 @@ vkapi::IVkDescriptorSet VulkanDevice::alloc_desc_set(
 
 void VulkanDevice::create_vma_allocator() {
   VmaAllocatorCreateInfo allocatorInfo = {};
-  allocatorInfo.vulkanApiVersion = vk_caps().vk_api_version;
+  allocatorInfo.vulkanApiVersion = vk_caps_.vk_api_version;
   allocatorInfo.physicalDevice = physical_device_;
   allocatorInfo.device = device_;
   allocatorInfo.instance = instance_;
@@ -2225,7 +2223,7 @@ void VulkanDevice::create_vma_allocator() {
 
   allocatorInfo.pVulkanFunctions = &vk_vma_functions;
 
-  if (get_caps().get(DeviceCapability::spirv_has_physical_storage_buffer)) {
+  if (caps_.get(DeviceCapability::spirv_has_physical_storage_buffer)) {
     allocatorInfo.flags |= VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
   }
 

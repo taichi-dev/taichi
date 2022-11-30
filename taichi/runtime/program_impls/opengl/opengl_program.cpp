@@ -102,7 +102,7 @@ const std::unique_ptr<gfx::CacheManager>
     params.mode = config->offline_cache ? Mgr::MemAndDiskCache : Mgr::MemCache;
     params.cache_path = config->offline_cache_file_path;
     params.runtime = runtime_.get();
-    params.caps = device_->get_caps();
+    params.caps = device_->get_current_caps();
     params.compiled_structs = &snode_tree_mgr_->get_compiled_structs();
     cache_manager_ = std::make_unique<gfx::CacheManager>(std::move(params));
   }

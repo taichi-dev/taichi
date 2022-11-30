@@ -517,14 +517,12 @@ void GLStream::command_sync() {
 }
 
 GLDevice::GLDevice() : stream_(this) {
-  DeviceCapabilityConfig caps{};
   if (!is_gles()) {
     // 64bit isn't supported in ES profile
-    caps.set(DeviceCapability::spirv_has_int64, true);
-    caps.set(DeviceCapability::spirv_has_float64, true);
+    caps_.set(DeviceCapability::spirv_has_int64, true);
+    caps_.set(DeviceCapability::spirv_has_float64, true);
   }
-  caps.set(DeviceCapability::spirv_version, 0x10300);
-  set_caps(std::move(caps));
+  caps_.set(DeviceCapability::spirv_version, 0x10300);
 }
 
 GLDevice::~GLDevice() {

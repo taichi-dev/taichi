@@ -773,7 +773,7 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
 
   // Dump capabilities
   caps.dbg_print_all();
-  ti_device_->set_caps(std::move(caps));
+  ti_device_->set_current_caps(std::move(caps));
 }
 
 }  // namespace vulkan

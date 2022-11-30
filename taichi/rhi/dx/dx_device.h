@@ -241,6 +241,7 @@ class Dx11Device : public GraphicsDevice {
   void create_dx11_device();
   void destroy_dx11_device();
 
+  DeviceCapabilityConfig caps_{};
   ID3D11Device *device_{nullptr};
   ID3D11DeviceContext *context_{nullptr};
   std::unique_ptr<Dx11InfoQueue> info_queue_{nullptr};
@@ -294,6 +295,10 @@ class Dx11Device : public GraphicsDevice {
     ID3D11UnorderedAccessView *get_uav(ID3D11DeviceContext *context,
                                        ID3D11Device *device);
   };
+
+  const DeviceCapabilityConfig &get_current_caps() const override {
+    return caps_;
+  }
 
   std::unordered_map<uint32_t, BufferTuple> alloc_id_to_buffer_;
   int alloc_serial_{0};

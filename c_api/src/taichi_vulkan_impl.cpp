@@ -45,7 +45,7 @@ VulkanRuntimeImported::Workaround::Workaround(
   }
   */
 
-  vk_device.set_caps(std::move(caps));
+  vk_device.set_current_caps(std::move(caps));
   vk_device.init_vulkan_structs(
       const_cast<taichi::lang::vulkan::VulkanDevice::Params &>(params));
 }

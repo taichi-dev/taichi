@@ -16,7 +16,7 @@ Error GfxRuntime::create_aot_module(const taichi::io::VirtualDir *dir,
   }
 
   const taichi::lang::DeviceCapabilityConfig &current_devcaps =
-      params.runtime->get_ti_device()->get_caps();
+      params.runtime->get_ti_device()->get_current_caps();
   const taichi::lang::DeviceCapabilityConfig &required_devcaps =
       aot_module->get_required_caps();
   for (const auto &pair : required_devcaps.devcaps) {

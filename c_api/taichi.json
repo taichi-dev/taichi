@@ -460,6 +460,23 @@
                     ]
                 },
                 {
+                    "name": "get_available_archs",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "name": "arch_count",
+                            "type": "uint32_t",
+                            "by_mut": true
+                        },
+                        {
+                            "name": "archs",
+                            "type": "enumeration.arch",
+                            "count": "arch_count",
+                            "by_mut": true
+                        }
+                    ]
+                },
+                {
                     "name": "get_last_error",
                     "type": "function",
                     "parameters": [
@@ -973,12 +990,6 @@
         },
         {
             "name": "taichi/taichi_cuda.h",
-            "default_definitions": [
-                {
-                    "name": "TI_WITH_CUDA",
-                    "value": "1"
-                }
-            ],
             "required_modules": [
                 "taichi/taichi_core.h"
             ],
@@ -1018,12 +1029,6 @@
         },
         {
             "name": "taichi/taichi_vulkan.h",
-            "default_definitions": [
-                {
-                    "name": "TI_WITH_VULKAN",
-                    "value": "1"
-                }
-            ],
             "doc": "taichi/taichi_vulkan.h.md",
             "required_modules": [
                 "taichi/taichi_core.h"
@@ -1326,12 +1331,6 @@
         },
         {
             "name": "taichi/taichi_opengl.h",
-            "default_definitions": [
-                {
-                    "name": "TI_WITH_OPENGL",
-                    "value": "1"
-                }
-            ],
             "required_modules": [
                 "taichi/taichi_core.h"
             ],

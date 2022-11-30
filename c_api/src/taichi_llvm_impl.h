@@ -3,6 +3,10 @@
 
 #include "taichi_core_impl.h"
 
+#ifdef TI_WITH_CUDA
+#include "taichi/platform/cuda/detect_cuda.h"
+#endif
+
 namespace taichi::lang {
 class LlvmRuntimeExecutor;
 class MemoryPool;

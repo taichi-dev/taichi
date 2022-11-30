@@ -6,6 +6,48 @@
 #include "taichi/program/texture.h"
 #include "taichi/common/virtual_dir.h"
 
+bool is_vulkan_available() {
+#ifdef TI_WITH_VULKAN
+  return taichi::lang::vulkan::is_vulkan_api_available();
+#else
+  return false;
+#endif
+}
+
+bool is_opengl_available() {
+#ifdef TI_WITH_OPENGL
+  return taichi::lang::opengl::is_opengl_api_available();
+#else
+  return false;
+#endif
+}
+
+bool is_cuda_available() {
+#ifdef TI_WITH_CUDA
+  return taichi::is_cuda_api_available();
+#else
+  return false;
+#endif
+}
+
+bool is_x64_available() {
+#if defined(TI_WITH_LLVM) &&                                           \
+    (defined(__x86_64__) || defined(__x86_64) || defined(__amd64__) || \
+     defined(__amd64) || defined(_M_X64))
+  return true;
+#else
+  return false;
+#endif
+}
+
+bool is_arm64_available() {
+#if defined(TI_WITH_LLVM) && (defined(__arm64__) || defined(__aarch64__))
+  return true;
+#else
+  return false;
+#endif
+}
+
 struct ErrorCache {
   TiError error{TI_ERROR_SUCCESS};
   std::string message{};
@@ -106,6 +148,39 @@ Runtime &Event::runtime() {
 }
 
 // -----------------------------------------------------------------------------
+
+void ti_get_available_archs(uint32_t *arch_count, TiArch *archs) {
+  if (arch_count == nullptr) {
+    return;
+  }
+
+  thread_local std::vector<TiArch> AVAILABLE_ARCHS{};
+  if (AVAILABLE_ARCHS.empty()) {
+    if (is_vulkan_available()) {
+      AVAILABLE_ARCHS.emplace_back(TI_ARCH_VULKAN);
+    }
+    if (is_opengl_available()) {
+      AVAILABLE_ARCHS.emplace_back(TI_ARCH_OPENGL);
+    }
+    if (is_cuda_available()) {
+      AVAILABLE_ARCHS.emplace_back(TI_ARCH_CUDA);
+    }
+    if (is_x64_available()) {
+      AVAILABLE_ARCHS.emplace_back(TI_ARCH_X64);
+    }
+    if (is_arm64_available()) {
+      AVAILABLE_ARCHS.emplace_back(TI_ARCH_ARM64);
+    }
+  }
+
+  size_t n = std::min((size_t)*arch_count, AVAILABLE_ARCHS.size());
+  *arch_count = (uint32_t)n;
+  if (archs != nullptr) {
+    for (size_t i = 0; i < n; ++i) {
+      archs[i] = AVAILABLE_ARCHS.at(i);
+    }
+  }
+}
 
 TiError ti_get_last_error(uint64_t message_size, char *message) {
   TiError out = TI_ERROR_INVALID_STATE;

@@ -383,8 +383,7 @@ class LowerAST : public IRVisitor {
     auto fctx = make_flatten_ctx();
     std::vector<Stmt *> return_ele;
     for (auto &x : expr_group.exprs) {
-      auto x_stmt = flatten_rvalue(x, &fctx);
-      return_ele.push_back(x_stmt);
+      return_ele.push_back(flatten_rvalue(x, &fctx));
     }
     fctx.push_back<ReturnStmt>(return_ele);
     stmt->parent->replace_with(stmt, std::move(fctx.stmts));
@@ -421,15 +420,12 @@ class LowerAST : public IRVisitor {
     Stmt *val_stmt = nullptr;
     auto fctx = make_flatten_ctx();
     if (stmt->val.expr) {
-      auto expr = stmt->val;
-      auto expr_stmt = flatten_rvalue(expr, &fctx);
-      val_stmt = expr_stmt;
+      val_stmt = flatten_rvalue(stmt->val, &fctx);
     }
     std::vector<Stmt *> indices_stmt(stmt->indices.size(), nullptr);
 
     for (int i = 0; i < (int)stmt->indices.size(); i++) {
-      auto index_stmt = flatten_rvalue(stmt->indices[i], &fctx);
-      indices_stmt[i] = index_stmt;
+      indices_stmt[i] = flatten_rvalue(stmt->indices[i], &fctx);
     }
 
     if (stmt->snode->type == SNodeType::dynamic) {
@@ -458,16 +454,13 @@ class LowerAST : public IRVisitor {
     Stmt *val_stmt = nullptr;
     auto fctx = make_flatten_ctx();
     if (stmt->cond.expr) {
-      auto expr = stmt->cond;
-      auto expr_stmt = flatten_rvalue(expr, &fctx);
-      val_stmt = expr_stmt;
+      val_stmt = flatten_rvalue(stmt->cond, &fctx);
     }
 
     auto &fargs = stmt->args;  // frontend stmt args
     std::vector<Stmt *> args_stmts(fargs.size());
     for (int i = 0; i < (int)fargs.size(); ++i) {
-      auto fargs_stmt = flatten_rvalue(fargs[i], &fctx);
-      args_stmts[i] = fargs_stmt;
+      args_stmts[i] = flatten_rvalue(fargs[i], &fctx);
     }
     fctx.push_back<AssertStmt>(val_stmt, stmt->text, args_stmts);
     stmt->parent->replace_with(stmt, std::move(fctx.stmts));
@@ -488,12 +481,10 @@ class LowerAST : public IRVisitor {
     std::vector<Stmt *> arg_statements, output_statements;
     if (stmt->so_func != nullptr || !stmt->asm_source.empty()) {
       for (auto &s : stmt->args) {
-        auto s_stmt = flatten_rvalue(s, &ctx);
-        arg_statements.push_back(s_stmt);
+        arg_statements.push_back(flatten_rvalue(s, &ctx));
       }
       for (auto &s : stmt->outputs) {
-        auto s_stmt = flatten_lvalue(s, &ctx);
-        output_statements.push_back(s_stmt);
+        output_statements.push_back(flatten_lvalue(s, &ctx));
       }
       ctx.push_back(std::make_unique<ExternalFuncCallStmt>(
           (stmt->so_func != nullptr) ? ExternalFuncCallStmt::SHARED_OBJECT
@@ -505,8 +496,7 @@ class LowerAST : public IRVisitor {
         TI_ASSERT_INFO(
             s.is<IdExpression>(),
             "external func call via bitcode must pass in local variables.")
-        auto s_stmt = flatten_lvalue(s, &ctx);
-        arg_statements.push_back(s_stmt);
+        arg_statements.push_back(flatten_lvalue(s, &ctx));
       }
       ctx.push_back(std::make_unique<ExternalFuncCallStmt>(
           ExternalFuncCallStmt::BITCODE, nullptr, "", stmt->bc_filename,

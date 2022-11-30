@@ -672,7 +672,7 @@ class CapabilityLevelConfig {
       : cap_level_infos(std::move(capabilities)) {
   }
 
-  static CapabilityLevelConfigBuilder build();
+  static CapabilityLevelConfigBuilder builder();
 
   uint32_t get(TiCapability capability) const {
     for (size_t i = 0; i < cap_level_infos.size(); ++i) {

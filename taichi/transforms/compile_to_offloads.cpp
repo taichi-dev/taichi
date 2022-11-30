@@ -53,7 +53,7 @@ void compile_to_offloads(IRNode *ir,
   }
 
   if (config.real_matrix && config.real_matrix_scalarize) {
-    irpass::scalarize(ir);
+    irpass::scalarize(ir, config);
 
     // Remove redundant MatrixInitStmt inserted during scalarization
     irpass::die(ir);
@@ -336,6 +336,14 @@ void compile_function(IRNode *ir,
     irpass::frontend_type_check(ir);
     irpass::lower_ast(ir);
     print("Lowered");
+  }
+
+  if (config.real_matrix && config.real_matrix_scalarize) {
+    irpass::scalarize(ir, config);
+
+    // Remove redundant MatrixInitStmt inserted during scalarization
+    irpass::die(ir);
+    print("Scalarized");
   }
 
   irpass::lower_access(ir, config, {{}, true});

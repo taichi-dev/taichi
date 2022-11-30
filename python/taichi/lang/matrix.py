@@ -1776,6 +1776,12 @@ class MatrixType(CompoundType):
         #  type cast
         return self.cast(Matrix(entries, dt=self.dtype, ndim=self.ndim))
 
+    def from_real_func_ret(self, func_ret, ret_index=0):
+        return self([
+            expr.Expr(ti_python_core.make_get_element_expr(func_ret.ptr, i))
+            for i in range(ret_index, ret_index + self.m * self.n)
+        ]), ret_index + self.m * self.n
+
     def cast(self, mat):
         if in_python_scope():
             return Matrix([[

@@ -21,7 +21,7 @@ def _test_dynamic_attributes(dt):
                 x[i].append(j)
 
         for i in range(n):
-            assert (ti.length(x.parent(), i) == i)
+            assert (x[i].length() == i)
             for j in range(i):
                 assert (x[i, j] == j)
 

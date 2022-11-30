@@ -1,7 +1,10 @@
 #include "c_api_test_utils.h"
 #include "taichi_llvm_impl.h"
 #include "taichi/platform/cuda/detect_cuda.h"
+
+#ifdef TI_WITH_CUDA
 #include "taichi/rhi/cuda/cuda_driver.h"
+#endif
 
 #ifdef TI_WITH_VULKAN
 #include "taichi/rhi/vulkan/vulkan_loader.h"

@@ -170,7 +170,12 @@ function check-c-api-export-symbols {
     TAICHI_REPO_DIR=$(pwd)
     TAICHI_C_API_DIR=$(find $TAICHI_REPO_DIR -name libtaichi_c_api.* | head -n 1)
 
+    # T: global functions
+    # B: global variables (uninitialized)
+    # D: global variables (initialized)
     EXPORT_SYM=" T \| B \| D "
+    
+    # Note: this has to be consistent with the version scripts (export_symbol_linux.ld, export_symbol_mac.ld)
     CAPI_SYM=" _\?ti_"
     CAPI_UTILS_SYM=" capi::utils::"
 

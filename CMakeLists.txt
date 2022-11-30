@@ -133,6 +133,10 @@ if (TI_WITH_BACKTRACE)
   add_subdirectory(external/backward_cpp)
 endif()
 
+if (TI_DISTRIBUTED_COMPILE)
+    include(cmake/Distributed.cmake)
+endif()
+
 include(cmake/TaichiCXXFlags.cmake)
 include(cmake/TaichiCore.cmake)
 

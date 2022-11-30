@@ -79,7 +79,7 @@ def main():
         mod.save(tmpdir, '')
     else:
         t = 0.0
-        window = ti.ui.Window('UV', res)
+        window = ti.ui.Window('UV', res, True)
         canvas = window.get_canvas()
         while window.running:
             g.run({'t': t, 'pixels_arr': pixels_arr, 'tex': texture})

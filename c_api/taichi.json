@@ -990,12 +990,6 @@
         },
         {
             "name": "taichi/taichi_cuda.h",
-            "default_definitions": [
-                {
-                    "name": "TI_WITH_CUDA",
-                    "value": "1"
-                }
-            ],
             "required_modules": [
                 "taichi/taichi_core.h"
             ],
@@ -1035,12 +1029,6 @@
         },
         {
             "name": "taichi/taichi_vulkan.h",
-            "default_definitions": [
-                {
-                    "name": "TI_WITH_VULKAN",
-                    "value": "1"
-                }
-            ],
             "doc": "taichi/taichi_vulkan.h.md",
             "required_modules": [
                 "taichi/taichi_core.h"
@@ -1343,12 +1331,6 @@
         },
         {
             "name": "taichi/taichi_opengl.h",
-            "default_definitions": [
-                {
-                    "name": "TI_WITH_OPENGL",
-                    "value": "1"
-                }
-            ],
             "required_modules": [
                 "taichi/taichi_core.h"
             ],

@@ -73,7 +73,9 @@ def test_quant_int_atomics_b64():
 
 
 @test_utils.test(require=[ti.extension.quant_basic, ti.extension.data64],
-                 debug=True, real_matrix=True, real_matrix_scalarize=True)
+                 debug=True,
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
 def test_quant_int_atomics_b64_real_matrix_scalarize():
     _test_quant_int_atomics_b64()
 
@@ -107,6 +109,9 @@ def test_quant_fixed_atomics():
     _test_quant_fixed_atomics()
 
 
-@test_utils.test(require=ti.extension.quant_basic, debug=True, real_matrix=True, real_matrix_scalarize=True)
+@test_utils.test(require=ti.extension.quant_basic,
+                 debug=True,
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
 def test_quant_fixed_atomics_real_matrix_scalarize():
     _test_quant_fixed_atomics()

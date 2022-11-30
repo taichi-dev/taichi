@@ -226,11 +226,6 @@ class Scalarize : public BasicStmtVisitor {
   void visit(BinaryOpStmt *stmt) override {
     auto lhs_dtype = stmt->lhs->ret_type;
     auto rhs_dtype = stmt->rhs->ret_type;
-
-    if (lhs_dtype->is<PrimitiveType>() && rhs_dtype->is<PrimitiveType>()) {
-      return;
-    }
-
     if (lhs_dtype->is<TensorType>() && rhs_dtype->is<TensorType>()) {
       // Scalarization for LoadStmt should have already replaced both operands
       // to MatrixInitStmt
@@ -322,19 +317,13 @@ class Scalarize : public BasicStmtVisitor {
   void visit(AtomicOpStmt *stmt) override {
     auto dest_dtype = stmt->dest->ret_type.ptr_removed();
     auto val_dtype = stmt->val->ret_type;
-
-    if (dest_dtype->is<PrimitiveType>() && val_dtype->is<PrimitiveType>()) {
-      return;
-    }
-
-    // AtomicOpExpression::type_check() have taken care of the broadcasting,
-    // but the type conversions are delayed until irpass::type_check().
-    // So we only check for the shape here.
-    TI_ASSERT(dest_dtype->is<TensorType>() && val_dtype->is<TensorType>());
-    TI_ASSERT(dest_dtype->cast<TensorType>()->get_shape() ==
-              val_dtype->cast<TensorType>()->get_shape());
-
     if (dest_dtype->is<TensorType>() && val_dtype->is<TensorType>()) {
+      // AtomicOpExpression::type_check() have taken care of the broadcasting,
+      // but the type conversions are delayed until irpass::type_check().
+      // So we only check for the shape here.
+      TI_ASSERT(dest_dtype->cast<TensorType>()->get_shape() ==
+                val_dtype->cast<TensorType>()->get_shape());
+
       // Scalarization for LoadStmt should have already replaced val operand
       // to MatrixInitStmt
       TI_ASSERT(stmt->val->is<MatrixInitStmt>());
@@ -411,20 +400,14 @@ class Scalarize : public BasicStmtVisitor {
     auto cond_dtype = stmt->op1->ret_type;
     auto op2_dtype = stmt->op2->ret_type;
     auto op3_dtype = stmt->op3->ret_type;
-
-    if (cond_dtype->is<PrimitiveType>() && op2_dtype->is<PrimitiveType>() &&
-        op3_dtype->is<PrimitiveType>()) {
-      return;
-    }
-
-    // TernaryOpExpression::type_check() have taken care of the broadcasting,
-    // but the type conversions are delayed until irpass::type_check().
-    // So we only check for the shape here.
-    TI_ASSERT(cond_dtype.get_shape() == op2_dtype.get_shape());
-    TI_ASSERT(op2_dtype.get_shape() == op3_dtype.get_shape());
-
     if (cond_dtype->is<TensorType>() && op2_dtype->is<TensorType>() &&
         op3_dtype->is<TensorType>()) {
+      // TernaryOpExpression::type_check() have taken care of the broadcasting,
+      // but the type conversions are delayed until irpass::type_check().
+      // So we only check for the shape here.
+      TI_ASSERT(cond_dtype.get_shape() == op2_dtype.get_shape());
+      TI_ASSERT(op2_dtype.get_shape() == op3_dtype.get_shape());
+
       TI_ASSERT(stmt->op1->is<MatrixInitStmt>());
       TI_ASSERT(stmt->op2->is<MatrixInitStmt>());
       TI_ASSERT(stmt->op3->is<MatrixInitStmt>());

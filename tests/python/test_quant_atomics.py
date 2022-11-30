@@ -43,9 +43,7 @@ def test_quant_int_atomics():
     assert z[None] == 3
 
 
-@test_utils.test(require=[ti.extension.quant_basic, ti.extension.data64],
-                 debug=True)
-def test_quant_int_atomics_b64():
+def _test_quant_int_atomics_b64():
     qi13 = ti.types.quant.int(13, True)
 
     x = ti.field(dtype=qi13)
@@ -68,8 +66,19 @@ def test_quant_int_atomics_b64():
     assert x[2] == 315
 
 
-@test_utils.test(require=ti.extension.quant_basic, debug=True)
-def test_quant_fixed_atomics():
+@test_utils.test(require=[ti.extension.quant_basic, ti.extension.data64],
+                 debug=True)
+def test_quant_int_atomics_b64():
+    _test_quant_int_atomics_b64()
+
+
+@test_utils.test(require=[ti.extension.quant_basic, ti.extension.data64],
+                 debug=True, real_matrix=True, real_matrix_scalarize=True)
+def test_quant_int_atomics_b64_real_matrix_scalarize():
+    _test_quant_int_atomics_b64()
+
+
+def _test_quant_fixed_atomics():
     qfxt13 = ti.types.quant.fixed(bits=13, signed=True, scale=0.1)
     qfxt19 = ti.types.quant.fixed(bits=19, signed=False, scale=0.1)
 
@@ -91,3 +100,13 @@ def test_quant_fixed_atomics():
     foo()
     assert x[None] == approx(-3.3)
     assert y[None] == approx(1124.4)
+
+
+@test_utils.test(require=ti.extension.quant_basic, debug=True)
+def test_quant_fixed_atomics():
+    _test_quant_fixed_atomics()
+
+
+@test_utils.test(require=ti.extension.quant_basic, debug=True, real_matrix=True, real_matrix_scalarize=True)
+def test_quant_fixed_atomics_real_matrix_scalarize():
+    _test_quant_fixed_atomics()

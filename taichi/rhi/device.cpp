@@ -288,29 +288,6 @@ void Device::memcpy_via_host(DevicePtr dst,
   TI_NOT_IMPLEMENTED;
 }
 
-DeviceCapability str2devcap(const std::string_view &name) {
-#define PER_DEVICE_CAPABILITY(x) \
-  if (#x == name)                \
-    return DeviceCapability::x;
-#include "taichi/inc/rhi_constants.inc.h"
-#undef PER_DEVICE_CAPABILITY
-  TI_ERROR("unexpected device capability name {}", name);
-}
-
-const std::string to_string(DeviceCapability c) {
-#define PER_DEVICE_CAPABILITY(name) \
-  case DeviceCapability::name:      \
-    return #name;                   \
-    break;
-  switch (c) {
-#include "taichi/inc/rhi_constants.inc.h"
-    default:
-      return "Unknown";
-      break;
-  }
-#undef PER_DEVICE_CAPABILITY
-}
-
 void GraphicsDevice::image_transition(DeviceAllocation img,
                                       ImageLayout old_layout,
                                       ImageLayout new_layout) {

@@ -362,7 +362,7 @@ void BinaryOpExpression::flatten(FlattenContext *ctx) {
     stmt->ret_type = ret_type;
     return;
   }
-  auto rhs_stmt = flatten_rvalue(rhs, &rctx);
+  auto rhs_stmt = flatten_rvalue(rhs, ctx);
   ctx->push_back(std::make_unique<BinaryOpStmt>(type, lhs_stmt, rhs_stmt));
   ctx->stmts.back()->tb = tb;
   stmt = ctx->back_stmt();

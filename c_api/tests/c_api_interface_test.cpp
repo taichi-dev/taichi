@@ -45,7 +45,7 @@ TEST_F(CapiTest, DryRunCapabilities) {
 }
 
 TEST_F(CapiTest, SetCapabilities) {
-  if (capi::utils::is_vulkan_available()) {
+  if (ti::is_arch_available(TI_ARCH_VULKAN)) {
     // Vulkan Runtime
     {
       ti::Runtime runtime(TI_ARCH_VULKAN);

@@ -99,7 +99,7 @@ TEST_F(CapiTest, FailMapDeviceOnlyMemory) {
 }
 
 TEST_F(CapiTest, FailOutOfRangeReadWrite) {
-  if (capi::utils::is_vulkan_available()) {
+  if (ti::is_arch_available(TI_ARCH_VULKAN)) {
     ti::Runtime runtime(TI_ARCH_VULKAN);
 
     std::vector<float> data(101);

@@ -87,7 +87,8 @@ class RWTextureAccessor:
 
     @taichi_scope
     def store(self, index, value):
-        args_group = make_expr_group(*_get_entries(index), *_get_entries(value))
+        args_group = make_expr_group(*_get_entries(index),
+                                     *_get_entries(value))
         impl.expr_init(
             _ti_core.make_texture_op_expr(_ti_core.TextureOpType.kStore,
                                           self.ptr_expr, args_group))

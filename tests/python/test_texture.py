@@ -144,7 +144,9 @@ def test_texture_3d():
     _test_texture_3d()
 
 
-@test_utils.test(arch=supported_archs_texture, real_matrix=True, real_matrix_scalarize=True)
+@test_utils.test(arch=supported_archs_texture,
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
 def test_texture_3d_real_matrix_scalarize():
     _test_texture_3d()
 
@@ -166,7 +168,9 @@ def test_from_to_image():
     _test_from_to_image()
 
 
-@test_utils.test(arch=supported_archs_texture, real_matrix=True, real_matrix_scalarize=True)
+@test_utils.test(arch=supported_archs_texture,
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
 def test_from_to_image_real_matrix_scalarize():
     _test_from_to_image()
 
@@ -199,7 +203,9 @@ def test_rw_texture_2d_struct_for():
     _test_rw_texture_2d_struct_for()
 
 
-@test_utils.test(arch=supported_archs_texture, real_matrix=True, real_matrix_scalarize=True)
+@test_utils.test(arch=supported_archs_texture,
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
 def test_rw_texture_2d_struct_for_real_matrix_scalarize():
     _test_rw_texture_2d_struct_for()
 

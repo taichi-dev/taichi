@@ -631,7 +631,7 @@ class NGP_fw:
             tid = sn % block_dim
             did_launch_num = self.model_launch[None]
             init_val = tf_vec1(0.0)
-            weight = ti.simt.block.SharedArray((64 * 32 + 64 * 64 + 64 * 4, ),
+            weight = ti.simt.block.SharedArray((64 * 32 + 64 * 64 + 64 * 3, ),
                                                data_type)
             hid1 = ti.simt.block.SharedArray((64, block_dim), data_type)
             hid2 = ti.simt.block.SharedArray((64, block_dim), data_type)

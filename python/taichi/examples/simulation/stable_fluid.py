@@ -24,7 +24,7 @@ parser.add_argument('-a',
                     default="cpu",
                     dest='arch',
                     type=str,
-                    help='Custom the arch(s) (backend) to run tests on')
+                    help='The arch (backend) to run this example on')
 args, unknowns = parser.parse_known_args()
 
 res = 256

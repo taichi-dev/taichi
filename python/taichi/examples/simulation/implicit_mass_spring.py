@@ -248,7 +248,7 @@ def main():
                         default="cpu",
                         dest='arch',
                         type=str,
-                        help='Custom the arch(s) (backend) to run tests on')
+                        help='The arch (backend) to run this example on')
     args, unknowns = parser.parse_known_args()
     arch = args.arch
     if arch in ["x64", "cpu", "arm64"]:

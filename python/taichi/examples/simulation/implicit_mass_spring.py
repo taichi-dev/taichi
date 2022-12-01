@@ -237,20 +237,32 @@ class Cloth:
 
 
 def main():
-    ti.init(arch=ti.cpu)
-    h = 0.01
-    cloth = Cloth(N=5)
-
-    pause = False
     parser = argparse.ArgumentParser()
     parser.add_argument('-g',
                         '--use-ggui',
                         action='store_true',
                         help='Display with GGUI')
+    parser.add_argument('-a',
+                        '--arch',
+                        required=False,
+                        default="cpu",
+                        dest='arch',
+                        type=str,
+                        help='Custom the arch(s) (backend) to run tests on')
     args, unknowns = parser.parse_known_args()
-    use_ggui = False
-    use_ggui = args.use_ggui
+    arch = args.arch
+    if arch in ["x64", "cpu", "arm64"]:
+        ti.init(arch=ti.cpu)
+    elif arch in ["cuda", "gpu"]:
+        ti.init(arch=ti.cuda)
+    else:
+        raise ValueError(f'Only CPU and CUDA backends are supported for now.')
 
+    h = 0.01
+    pause = False
+    cloth = Cloth(N=5)
+
+    use_ggui = args.use_ggui
     if not use_ggui:
         gui = ti.GUI('Implicit Mass Spring System', res=(500, 500))
         while gui.running:

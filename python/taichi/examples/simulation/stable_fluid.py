@@ -45,7 +45,7 @@ if arch in ["x64", "cpu", "arm64"]:
 elif arch in ["cuda", "gpu"]:
     ti.init(arch=ti.cuda)
 else:
-    raise ValueError(f'Only CPU and CUDA backends are supported for now.')
+    raise ValueError('Only CPU and CUDA backends are supported for now.')
 
 if use_sparse_matrix:
     print('Using sparse matrix')

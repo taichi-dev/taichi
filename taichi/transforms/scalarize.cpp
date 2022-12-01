@@ -481,43 +481,6 @@ class Scalarize : public BasicStmtVisitor {
     }
   }
 
-  /* Scalarize Indices */
-  void visit(ExternalPtrStmt *stmt) override {
-    auto flattened_indices = get_scalarized_indices<ExternalPtrStmt>(stmt);
-    auto new_stmt = std::make_unique<ExternalPtrStmt>(
-        stmt->base_ptr, flattened_indices, stmt->element_shape,
-        stmt->element_dim);
-    new_stmt->ret_type = stmt->ret_type;
-
-    stmt->replace_usages_with(new_stmt.get());
-    modifier_.insert_before(stmt, std::move(new_stmt));
-    modifier_.erase(stmt);
-  }
-
-  void visit(GlobalPtrStmt *stmt) override {
-    auto flattened_indices = get_scalarized_indices<GlobalPtrStmt>(stmt);
-    auto new_stmt = std::make_unique<GlobalPtrStmt>(
-        stmt->snode, flattened_indices, stmt->activate, stmt->is_cell_access);
-    new_stmt->ret_type = stmt->ret_type;
-
-    stmt->replace_usages_with(new_stmt.get());
-    modifier_.insert_before(stmt, std::move(new_stmt));
-    modifier_.erase(stmt);
-  }
-
-  void visit(MatrixOfGlobalPtrStmt *stmt) override {
-    auto flattened_indices =
-        get_scalarized_indices<MatrixOfGlobalPtrStmt>(stmt);
-    auto new_stmt = std::make_unique<MatrixOfGlobalPtrStmt>(
-        stmt->snodes, flattened_indices, stmt->dynamic_indexable,
-        stmt->dynamic_index_stride, stmt->ret_type, stmt->activate);
-    new_stmt->ret_type = stmt->ret_type;
-
-    stmt->replace_usages_with(new_stmt.get());
-    modifier_.insert_before(stmt, std::move(new_stmt));
-    modifier_.erase(stmt);
-  }
-
   void visit(GlobalStoreStmt *stmt) override {
     scalarize_store_stmt<GlobalStoreStmt>(stmt);
   }

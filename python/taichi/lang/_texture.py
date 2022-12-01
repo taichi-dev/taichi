@@ -2,10 +2,18 @@ import numpy as np
 from taichi._lib import core as _ti_core
 from taichi.lang import impl
 from taichi.lang.enums import Format
-from taichi.lang.expr import Expr
+from taichi.lang.expr import Expr, make_expr_group
+from taichi.lang.matrix import Matrix
 from taichi.lang.util import taichi_scope
 from taichi.types import vector
 from taichi.types.primitive_types import f16, f32, i8, i16, i32, u8, u16, u32
+
+
+def _get_entries(mat):
+    if isinstance(mat, Matrix):
+        return mat.entries
+    assert isinstance(mat, Expr) and mat.is_tensor()
+    return impl.get_runtime().prog.current_ast_builder().expand_expr([mat.ptr])
 
 
 class TextureSampler:
@@ -15,13 +23,7 @@ class TextureSampler:
 
     @taichi_scope
     def sample_lod(self, uv, lod):
-        args_group = ()
-        if self.num_dims == 1:
-            args_group = (uv.x, lod)
-        elif self.num_dims == 2:
-            args_group = impl.make_expr_group(uv.x, uv.y, lod)
-        elif self.num_dims == 3:
-            args_group = impl.make_expr_group(uv.x, uv.y, uv.z, lod)
+        args_group = make_expr_group(*_get_entries(uv), lod)
         v = _ti_core.make_texture_op_expr(_ti_core.TextureOpType.kSampleLod,
                                           self.ptr_expr, args_group)
         r = impl.call_internal("composite_extract_0",
@@ -40,13 +42,7 @@ class TextureSampler:
 
     @taichi_scope
     def fetch(self, index, lod):
-        args_group = ()
-        if self.num_dims == 1:
-            args_group = impl.make_expr_group(index.x, lod)
-        elif self.num_dims == 2:
-            args_group = impl.make_expr_group(index.x, index.y, lod)
-        elif self.num_dims == 3:
-            args_group = impl.make_expr_group(index.x, index.y, index.z, lod)
+        args_group = make_expr_group(*_get_entries(index), lod)
         v = _ti_core.make_texture_op_expr(_ti_core.TextureOpType.kFetchTexel,
                                           self.ptr_expr, args_group)
         r = impl.call_internal("composite_extract_0",
@@ -72,13 +68,7 @@ class RWTextureAccessor:
 
     @taichi_scope
     def load(self, index):
-        args_group = ()
-        if self.num_dims == 1:
-            args_group = impl.make_expr_group(index.x)
-        elif self.num_dims == 2:
-            args_group = impl.make_expr_group(index.x, index.y)
-        elif self.num_dims == 3:
-            args_group = impl.make_expr_group(index.x, index.y, index.z)
+        args_group = make_expr_group(*_get_entries(index))
         v = _ti_core.make_texture_op_expr(_ti_core.TextureOpType.kLoad,
                                           self.ptr_expr, args_group)
         r = impl.call_internal("composite_extract_0",
@@ -97,17 +87,8 @@ class RWTextureAccessor:
 
     @taichi_scope
     def store(self, index, value):
-        args_group = ()
-        if self.num_dims == 1:
-            args_group = impl.make_expr_group(index.x, value.r, value.g,
-                                              value.b, value.a)
-        elif self.num_dims == 2:
-            args_group = impl.make_expr_group(index.x, index.y, value.r,
-                                              value.g, value.b, value.a)
-        elif self.num_dims == 3:
-            args_group = impl.make_expr_group(index.x, index.y, index.z,
-                                              value.r, value.g, value.b,
-                                              value.a)
+        args_group = make_expr_group(*_get_entries(index),
+                                     *_get_entries(value))
         impl.expr_init(
             _ti_core.make_texture_op_expr(_ti_core.TextureOpType.kStore,
                                           self.ptr_expr, args_group))

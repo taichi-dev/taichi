@@ -289,11 +289,6 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
           prepare-build-cache
           echo CI_DOCKER_RUN_EXTRA_ARGS="-v $(pwd):/home/dev/taichi" >> $GITHUB_ENV
-          sudo chmod 666 /dev/kfd
-          sudo chmod 666 /dev/dri/*
-          ln -s /usr/bin/clang++-10 /usr/bin/clang++
-          ln -s /usr/bin/clang-10 /usr/bin/clang
-          ln -s /usr/bin/lld-10 /usr/bin/lld
 
       - name: Build & Install
         run: |
@@ -303,6 +298,11 @@ jobs:
           ci-docker-run-amdgpu --name taichi-build \
             registry.taichigraphics.com/taichidev-ubuntu18.04.amdgpu:v0.0.3 \
             /home/dev/taichi/.github/workflows/scripts/unix-build.sh
+          sudo chmod 666 /dev/dri/*
+          sudo chmod 666 /dev/kfd
+          sudo ln -s /usr/bin/clang++-10 /usr/bin/clang++
+          sudo ln -s /usr/bin/clang-10 /usr/bin/clang
+          sudo ln -s /usr/bin/lld-10 /usr/bin/lld
 
         env:
           PY: py38

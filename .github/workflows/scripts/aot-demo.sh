@@ -165,4 +165,26 @@ function build-and-test-headless-demo-desktop {
     python3 ci/run_tests.py -l $TAICHI_C_API_INSTALL_DIR
 }
 
+function check-c-api-export-symbols {
+    cd taichi
+    TAICHI_REPO_DIR=$(pwd)
+    TAICHI_C_API_DIR=$(find $TAICHI_REPO_DIR -name libtaichi_c_api.* | head -n 1)
+
+    # T: global functions
+    # B: global variables (uninitialized)
+    # D: global variables (initialized)
+    EXPORT_SYM=" T \| B \| D "
+
+    # Note: this has to be consistent with the version scripts (export_symbol_linux.ld, export_symbol_mac.ld)
+    CAPI_SYM=" _\?ti_"
+    CAPI_UTILS_SYM=" capi::utils::"
+
+    NUM_LEAK_SYM=$(nm -C --extern-only ${TAICHI_C_API_DIR} | grep "${EXPORT_SYM}" | grep -v "${CAPI_SYM}" | grep -v "${CAPI_UTILS_SYM}" | wc -l)
+    if [ ${NUM_LEAK_SYM} -gt 0 ]; then
+        echo "Following symbols leaked from libtaichi_c_api: "
+        nm -C --extern-only ${TAICHI_C_API_DIR} | grep "${EXPORT_SYM}" | grep -v "${CAPI_SYM}" | grep -v "${CAPI_UTILS_SYM}"
+        exit 1
+    fi
+}
+
 $1

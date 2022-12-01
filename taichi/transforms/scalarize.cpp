@@ -228,15 +228,16 @@ class Scalarize : public BasicStmtVisitor {
     auto rhs_dtype = stmt->rhs->ret_type;
     if (lhs_dtype->is<TensorType>() || rhs_dtype->is<TensorType>()) {
       // Make sure broadcasting has been correctly applied by
-      // BinaryOpStmt::type_check()
+      // BinaryOpExpression::type_check().
       TI_ASSERT(lhs_dtype->is<TensorType>() && rhs_dtype->is<TensorType>());
-      // Scalarization for LoadStmt should have already replaced both operands
-      // to MatrixInitStmt
-      TI_ASSERT(stmt->lhs->is<MatrixInitStmt>());
-      TI_ASSERT(stmt->rhs->is<MatrixInitStmt>());
-
+      // However, since the type conversions are delayed until
+      // irpass::type_check(), we only check for the shape here.
       TI_ASSERT(lhs_dtype->cast<TensorType>()->get_shape() ==
                 rhs_dtype->cast<TensorType>()->get_shape());
+      // Scalarization for LoadStmt should have already replaced both operands
+      // to MatrixInitStmt.
+      TI_ASSERT(stmt->lhs->is<MatrixInitStmt>());
+      TI_ASSERT(stmt->rhs->is<MatrixInitStmt>());
 
       auto lhs_matrix_init_stmt = stmt->lhs->cast<MatrixInitStmt>();
       std::vector<Stmt *> lhs_vals = lhs_matrix_init_stmt->values;
@@ -322,16 +323,14 @@ class Scalarize : public BasicStmtVisitor {
     auto val_dtype = stmt->val->ret_type;
     if (dest_dtype->is<TensorType>() || val_dtype->is<TensorType>()) {
       // Make sure broadcasting has been correctly applied by
-      // AtomicOpStmt::type_check()
+      // AtomicOpExpression::type_check().
       TI_ASSERT(dest_dtype->is<TensorType>() && val_dtype->is<TensorType>());
-      // AtomicOpExpression::type_check() have taken care of the broadcasting,
-      // but the type conversions are delayed until irpass::type_check().
-      // So we only check for the shape here.
+      // However, since the type conversions are delayed until
+      // irpass::type_check(), we only check for the shape here.
       TI_ASSERT(dest_dtype->cast<TensorType>()->get_shape() ==
                 val_dtype->cast<TensorType>()->get_shape());
-
       // Scalarization for LoadStmt should have already replaced val operand
-      // to MatrixInitStmt
+      // to MatrixInitStmt.
       TI_ASSERT(stmt->val->is<MatrixInitStmt>());
 
       auto val_matrix_init_stmt = stmt->val->cast<MatrixInitStmt>();
@@ -406,14 +405,17 @@ class Scalarize : public BasicStmtVisitor {
     auto cond_dtype = stmt->op1->ret_type;
     auto op2_dtype = stmt->op2->ret_type;
     auto op3_dtype = stmt->op3->ret_type;
-    if (cond_dtype->is<TensorType>() && op2_dtype->is<TensorType>() &&
+    if (cond_dtype->is<TensorType>() || op2_dtype->is<TensorType>() ||
         op3_dtype->is<TensorType>()) {
-      // TernaryOpExpression::type_check() have taken care of the broadcasting,
-      // but the type conversions are delayed until irpass::type_check().
-      // So we only check for the shape here.
+      // Make sure broadcasting has been correctly applied by
+      // TernaryOpExpression::type_check().
+      TI_ASSERT(cond_dtype->is<TensorType>() && op2_dtype->is<TensorType>() && op3_dtype->is<TensorType>());
+      // However, since the type conversions are delayed until
+      // irpass::type_check(), we only check for the shape here.
       TI_ASSERT(cond_dtype.get_shape() == op2_dtype.get_shape());
       TI_ASSERT(op2_dtype.get_shape() == op3_dtype.get_shape());
-
+      // Scalarization for LoadStmt should have already replaced all operands
+      // to MatrixInitStmt.
       TI_ASSERT(stmt->op1->is<MatrixInitStmt>());
       TI_ASSERT(stmt->op2->is<MatrixInitStmt>());
       TI_ASSERT(stmt->op3->is<MatrixInitStmt>());

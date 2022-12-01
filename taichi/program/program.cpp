@@ -368,7 +368,6 @@ Kernel &Program::get_snode_reader(SNode *snode) {
         ExprGroup(Expr(snode_to_fields_.at(snode))[indices]));
     kernel->context->builder().insert(std::move(ret));
   });
-  ker.set_arch(get_accessor_arch());
   ker.name = kernel_name;
   ker.is_accessor = true;
   for (int i = 0; i < snode->num_active_indices; i++)
@@ -392,7 +391,6 @@ Kernel &Program::get_snode_writer(SNode *snode) {
                                       snode->dt->get_compute_type()),
         expr->tb);
   });
-  ker.set_arch(get_accessor_arch());
   ker.name = kernel_name;
   ker.is_accessor = true;
   for (int i = 0; i < snode->num_active_indices; i++)

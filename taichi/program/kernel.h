@@ -13,59 +13,59 @@ namespace taichi::lang {
 
 class Program;
 
+// Refactor2023:FIXME: Move to KernelLauncher
+class LaunchContextBuilder {
+ public:
+  LaunchContextBuilder(Kernel *kernel, RuntimeContext *ctx);
+  explicit LaunchContextBuilder(Kernel *kernel);
+
+  LaunchContextBuilder(LaunchContextBuilder &&) = default;
+  LaunchContextBuilder &operator=(LaunchContextBuilder &&) = default;
+  LaunchContextBuilder(const LaunchContextBuilder &) = delete;
+  LaunchContextBuilder &operator=(const LaunchContextBuilder &) = delete;
+
+  void set_arg_float(int arg_id, float64 d);
+
+  // Created signed and unsigned version for argument range check of pybind
+  void set_arg_int(int arg_id, int64 d);
+  void set_arg_uint(int arg_id, uint64 d);
+
+  void set_extra_arg_int(int i, int j, int32 d);
+
+  void set_arg_external_array_with_shape(int arg_id,
+                                         uintptr_t ptr,
+                                         uint64 size,
+                                         const std::vector<int64> &shape);
+
+  void set_arg_ndarray(int arg_id, const Ndarray &arr);
+
+  void set_arg_texture(int arg_id, const Texture &tex);
+  void set_arg_rw_texture(int arg_id, const Texture &tex);
+
+  // Sets the |arg_id|-th arg in the context to the bits stored in |d|.
+  // This ignores the underlying kernel's |arg_id|-th arg type.
+  void set_arg_raw(int arg_id, uint64 d);
+
+  RuntimeContext &get_context();
+
+ private:
+  Kernel *kernel_;
+  std::unique_ptr<RuntimeContext> owned_ctx_;
+  // |ctx_| *almost* always points to |owned_ctx_|. However, it is possible
+  // that the caller passes a RuntimeContext pointer externally. In that case,
+  // |owned_ctx_| will be nullptr.
+  // Invariant: |ctx_| will never be nullptr.
+  RuntimeContext *ctx_;
+};
+
 class TI_DLL_EXPORT Kernel : public Callable {
  public:
   std::string name;
   std::vector<SNode *> no_activate;
-  Arch arch;
 
   bool is_accessor{false};
   bool is_evaluator{false};
   AutodiffMode autodiff_mode{AutodiffMode::kNone};
-
-  class LaunchContextBuilder {
-   public:
-    LaunchContextBuilder(Kernel *kernel, RuntimeContext *ctx);
-    explicit LaunchContextBuilder(Kernel *kernel);
-
-    LaunchContextBuilder(LaunchContextBuilder &&) = default;
-    LaunchContextBuilder &operator=(LaunchContextBuilder &&) = default;
-    LaunchContextBuilder(const LaunchContextBuilder &) = delete;
-    LaunchContextBuilder &operator=(const LaunchContextBuilder &) = delete;
-
-    void set_arg_float(int arg_id, float64 d);
-
-    // Created signed and unsigned version for argument range check of pybind
-    void set_arg_int(int arg_id, int64 d);
-    void set_arg_uint(int arg_id, uint64 d);
-
-    void set_extra_arg_int(int i, int j, int32 d);
-
-    void set_arg_external_array_with_shape(int arg_id,
-                                           uintptr_t ptr,
-                                           uint64 size,
-                                           const std::vector<int64> &shape);
-
-    void set_arg_ndarray(int arg_id, const Ndarray &arr);
-
-    void set_arg_texture(int arg_id, const Texture &tex);
-    void set_arg_rw_texture(int arg_id, const Texture &tex);
-
-    // Sets the |arg_id|-th arg in the context to the bits stored in |d|.
-    // This ignores the underlying kernel's |arg_id|-th arg type.
-    void set_arg_raw(int arg_id, uint64 d);
-
-    RuntimeContext &get_context();
-
-   private:
-    Kernel *kernel_;
-    std::unique_ptr<RuntimeContext> owned_ctx_;
-    // |ctx_| *almost* always points to |owned_ctx_|. However, it is possible
-    // that the caller passes a RuntimeContext pointer externally. In that case,
-    // |owned_ctx_| will be nullptr.
-    // Invariant: |ctx_| will never be nullptr.
-    RuntimeContext *ctx_;
-  };
 
   Kernel(Program &program,
          const std::function<void()> &func,
@@ -116,8 +116,6 @@ class TI_DLL_EXPORT Kernel : public Callable {
   std::vector<uint64> get_ret_uint_tensor(int i);
 
   std::vector<float64> get_ret_float_tensor(int i);
-
-  void set_arch(Arch arch);
 
   uint64 get_next_task_id() {
     return task_counter_++;

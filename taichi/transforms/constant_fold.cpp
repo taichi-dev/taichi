@@ -49,12 +49,13 @@ class ConstantFold : public BasicStmtVisitor {
         }
       }
       auto &ast_builder = kernel->context->builder();
+      auto ret = Stmt::make<ReturnStmt>(oper.get());
       ast_builder.insert(std::move(lhstmt));
       if (id.is_binary) {
         ast_builder.insert(std::move(rhstmt));
       }
       ast_builder.insert(std::move(oper));
-      ast_builder.insert(Stmt::make<ReturnStmt>(oper.get()));
+      ast_builder.insert(std::move(ret));
     };
 
     auto ker = std::make_unique<Kernel>(*program, func, kernel_name);

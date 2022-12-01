@@ -74,7 +74,7 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
                            std::unique_ptr<llvm::Module> &&module = nullptr);
 
   Arch current_arch() {
-    return kernel->arch;
+    return prog->this_thread_config().arch;
   }
 
   void initialize_context();

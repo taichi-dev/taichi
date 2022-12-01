@@ -490,7 +490,7 @@ def block_local(*args):
         impl.current_cfg().opt_level = 1
     for a in args:
         for v in a._get_field_members():
-            get_runtime().prog.current_ast_builder().insert_snode_access_flag(
+            get_runtime().current_ast_builder.insert_snode_access_flag(
                 _ti_core.SNodeAccessFlag.block_local, v.ptr)
 
 
@@ -524,14 +524,14 @@ def mesh_local(*args):
     """
     for a in args:
         for v in a._get_field_members():
-            get_runtime().prog.current_ast_builder().insert_snode_access_flag(
+            get_runtime().current_ast_builder.insert_snode_access_flag(
                 _ti_core.SNodeAccessFlag.mesh_local, v.ptr)
 
 
 def cache_read_only(*args):
     for a in args:
         for v in a._get_field_members():
-            get_runtime().prog.current_ast_builder().insert_snode_access_flag(
+            get_runtime().current_ast_builder.insert_snode_access_flag(
                 _ti_core.SNodeAccessFlag.read_only, v.ptr)
 
 
@@ -576,9 +576,9 @@ def loop_unique(val, covers=None):
 def _parallelize(v):
     """Sets the number of threads to use on CPU.
     """
-    get_runtime().prog.current_ast_builder().parallelize(v)
+    get_runtime().current_ast_builder.parallelize(v)
     if v == 1:
-        get_runtime().prog.current_ast_builder().strictly_serialize()
+        get_runtime().current_ast_builder.strictly_serialize()
 
 
 def _serialize():
@@ -590,7 +590,7 @@ def _serialize():
 def _block_dim(dim):
     """Set the number of threads in a block to `dim`.
     """
-    get_runtime().prog.current_ast_builder().block_dim(dim)
+    get_runtime().current_ast_builder.block_dim(dim)
 
 
 def _block_dim_adaptive(block_dim_adaptive):
@@ -605,7 +605,7 @@ def _block_dim_adaptive(block_dim_adaptive):
 def _bit_vectorize():
     """Enable bit vectorization of struct fors on quant_arrays.
     """
-    get_runtime().prog.current_ast_builder().bit_vectorize()
+    get_runtime().current_ast_builder.bit_vectorize()
 
 
 def loop_config(*,
@@ -702,7 +702,7 @@ def mesh_patch_idx():
 
     Related to https://github.com/taichi-dev/taichi/issues/3608
     """
-    return impl.get_runtime().prog.current_ast_builder().insert_patch_idx_expr(
+    return impl.get_runtime().current_ast_builder.insert_patch_idx_expr(
     )
 
 

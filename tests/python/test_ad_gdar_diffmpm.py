@@ -4,8 +4,7 @@ import taichi as ti
 from tests import test_utils
 
 
-@test_utils.test(require=ti.extension.assertion, debug=True, exclude=[ti.cc])
-def test_gdar_mpm():
+def _test_gdar_mpm():
     real = ti.f32
 
     dim = 2
@@ -85,7 +84,7 @@ def test_gdar_mpm():
                 for j in ti.static(range(3)):
                     offset = ti.Vector([i, j])
                     dpos = (ti.cast(ti.Vector([i, j]), real) - fx) * dx
-                    weight = w[i](0) * w[j](1)
+                    weight = w[i][0] * w[j][1]
                     grid_v_in[f, base + offset] += weight * (p_mass * v[f, p] +
                                                              affine @ dpos)
                     grid_m_in[f, base + offset] += weight * p_mass
@@ -122,8 +121,8 @@ def test_gdar_mpm():
             for i in ti.static(range(3)):
                 for j in ti.static(range(3)):
                     dpos = ti.cast(ti.Vector([i, j]), real) - fx
-                    g_v = grid_v_out[f, base(0) + i, base(1) + j]
-                    weight = w[i](0) * w[j](1)
+                    g_v = grid_v_out[f, base[0] + i, base[1] + j]
+                    weight = w[i][0] * w[j][1]
                     new_v += weight * g_v
                     new_C += 4 * weight * g_v.outer_product(dpos) * inv_dx
 
@@ -183,3 +182,13 @@ def test_gdar_mpm():
         learning_rate = 10
         init_v[None][0] -= learning_rate * grad[0]
         init_v[None][1] -= learning_rate * grad[1]
+
+
+@test_utils.test(require=ti.extension.assertion, debug=True, exclude=[ti.cc])
+def test_gdar_mpm():
+    _test_gdar_mpm()
+
+
+@test_utils.test(require=ti.extension.assertion, debug=True, exclude=[ti.cc], real_matrix=True, real_matrix_scalarize=True)
+def test_gdar_mpm_real_matrix_scalarize():
+    _test_gdar_mpm()

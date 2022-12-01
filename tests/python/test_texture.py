@@ -46,8 +46,7 @@ def taichi_logo(pos: ti.template(), scale: float = 1 / 1.11):
 
 @ti.kernel
 def make_texture_2d(tex: ti.types.rw_texture(
-    num_dimensions=2, num_channels=1, channel_format=ti.f32, lod=0), n: ti.i32
-                    ):
+    num_dimensions=2, fmt=ti.Format.r32f, lod=0), n: ti.i32):
     for i, j in ti.ndrange(n, n):
         ret = ti.cast(taichi_logo(ti.Vector([i, j]) / n), ti.f32)
         tex.store(ti.Vector([i, j]), ti.Vector([ret, 0.0, 0.0, 0.0]))
@@ -55,8 +54,7 @@ def make_texture_2d(tex: ti.types.rw_texture(
 
 @ti.kernel
 def make_texture_3d(tex: ti.types.rw_texture(
-    num_dimensions=3, num_channels=1, channel_format=ti.f32, lod=0), n: ti.i32
-                    ):
+    num_dimensions=3, fmt=ti.Format.r32f, lod=0), n: ti.i32):
     for i, j, k in ti.ndrange(n, n, n):
         div = ti.cast(i / n, ti.f32)
         if div > 0.5:
@@ -168,8 +166,7 @@ def test_rw_texture_2d_struct_for():
 
     @ti.kernel
     def write(tex: ti.types.rw_texture(num_dimensions=2,
-                                       num_channels=1,
-                                       channel_format=ti.f32,
+                                       fmt=ti.Format.r32f,
                                        lod=0)):
         for i, j in tex:
             tex.store(ti.Vector([i, j]), ti.Vector([1.0, 0.0, 0.0, 0.0]))
@@ -190,8 +187,7 @@ def test_rw_texture_2d_struct_for_dim_check():
 
     @ti.kernel
     def write(tex: ti.types.rw_texture(num_dimensions=2,
-                                       num_channels=1,
-                                       channel_format=ti.f32,
+                                       fmt=ti.Format.r32f,
                                        lod=0)):
         for i, j in tex:
             tex.store(ti.Vector([i, j]), ti.Vector([1.0, 0.0, 0.0, 0.0]))

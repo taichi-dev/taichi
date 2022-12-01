@@ -110,3 +110,23 @@ def test_deprecated_packed_false():
             r"The automatic padding mode \(packed=False\) will no longer exist in v1.4.0. The switch will "
             "also be removed then. Make sure your code doesn't rely on it."):
         ti.init(packed=False)
+
+
+@test_utils.test(arch=ti.vulkan)
+def test_deprecated_rwtexture_type():
+    n = 128
+
+    with pytest.warns(
+            DeprecationWarning,
+            match=
+            r"Specifying num_channels and channel_format is deprecated and will be removed in v1.5.0, please specify fmt instead"
+    ):
+
+        @ti.kernel
+        def ker(tex: ti.types.rw_texture(num_dimensions=2,
+                                         num_channels=1,
+                                         channel_format=ti.f32,
+                                         lod=0)):
+            for i, j in ti.ndrange(n, n):
+                ret = ti.cast(1, ti.f32)
+                tex.store(ti.Vector([i, j]), ti.Vector([ret, 0.0, 0.0, 0.0]))

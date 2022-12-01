@@ -174,7 +174,7 @@ function check-c-api-export-symbols {
     # B: global variables (uninitialized)
     # D: global variables (initialized)
     EXPORT_SYM=" T \| B \| D "
-    
+
     # Note: this has to be consistent with the version scripts (export_symbol_linux.ld, export_symbol_mac.ld)
     CAPI_SYM=" _\?ti_"
     CAPI_UTILS_SYM=" capi::utils::"

@@ -1,4 +1,3 @@
-# Note: this version script for Linux should match the one for MacOS (export_symbols_macos.ld)
 LIB_C_API_1.0 {
   global: # specify symbols to be export from libtaichi_c_api
     ti_*; # CAPI interface starts with "ti_*"

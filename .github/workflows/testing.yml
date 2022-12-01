@@ -291,6 +291,9 @@ jobs:
           echo CI_DOCKER_RUN_EXTRA_ARGS="-v $(pwd):/home/dev/taichi" >> $GITHUB_ENV
           sudo chmod 666 /dev/kfd
           sudo chmod 666 /dev/dri/*
+          ln -s /usr/bin/clang++-10 /usr/bin/clang++
+          ln -s /usr/bin/clang-10 /usr/bin/clang
+          ln -s /usr/bin/lld-10 /usr/bin/lld
 
       - name: Build & Install
         run: |

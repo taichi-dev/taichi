@@ -189,6 +189,10 @@ def test_gdar_mpm():
     _test_gdar_mpm()
 
 
-@test_utils.test(require=ti.extension.assertion, debug=True, exclude=[ti.cc], real_matrix=True, real_matrix_scalarize=True)
+@test_utils.test(require=ti.extension.assertion,
+                 debug=True,
+                 exclude=[ti.cc],
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
 def test_gdar_mpm_real_matrix_scalarize():
     _test_gdar_mpm()

@@ -227,7 +227,8 @@ class Scalarize : public BasicStmtVisitor {
     auto lhs_dtype = stmt->lhs->ret_type;
     auto rhs_dtype = stmt->rhs->ret_type;
     if (lhs_dtype->is<TensorType>() || rhs_dtype->is<TensorType>()) {
-      // Make sure broadcasting has been correctly applied by BinaryOpStmt::type_check()
+      // Make sure broadcasting has been correctly applied by
+      // BinaryOpStmt::type_check()
       TI_ASSERT(lhs_dtype->is<TensorType>() && rhs_dtype->is<TensorType>());
       // Scalarization for LoadStmt should have already replaced both operands
       // to MatrixInitStmt
@@ -320,7 +321,8 @@ class Scalarize : public BasicStmtVisitor {
     auto dest_dtype = stmt->dest->ret_type.ptr_removed();
     auto val_dtype = stmt->val->ret_type;
     if (dest_dtype->is<TensorType>() || val_dtype->is<TensorType>()) {
-      // Make sure broadcasting has been correctly applied by AtomicOpStmt::type_check()
+      // Make sure broadcasting has been correctly applied by
+      // AtomicOpStmt::type_check()
       TI_ASSERT(dest_dtype->is<TensorType>() && val_dtype->is<TensorType>());
       // AtomicOpExpression::type_check() have taken care of the broadcasting,
       // but the type conversions are delayed until irpass::type_check().

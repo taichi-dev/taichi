@@ -1,7 +1,6 @@
 import numpy as np
 from taichi._lib import core as _ti_core
 from taichi.lang import impl
-from taichi.lang.enums import Format
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.matrix import Matrix
 from taichi.lang.util import taichi_scope

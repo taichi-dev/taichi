@@ -301,7 +301,7 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
 
           ci-docker-run-amdgpu --name taichi-build \
-            registry.taichigraphics.com/taichidev-ubuntu18.04.amdgpu:v0.0.2 \
+            registry.taichigraphics.com/taichidev-ubuntu18.04.amdgpu:v0.0.3 \
             /home/dev/taichi/.github/workflows/scripts/unix-build.sh
 
         env:

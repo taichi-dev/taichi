@@ -385,7 +385,7 @@ class TaichiCallableTemplateMapper:
             # [Primitive arguments] Return the value
             return arg
         if isinstance(anno, texture_type.TextureType):
-            return arg.num_dims,
+            return arg.num_dims, arg.dtype
         if isinstance(anno, texture_type.RWTextureType):
             # (penguinliong) '0' is the assumed LOD level. We currently don't
             # support mip-mapping.

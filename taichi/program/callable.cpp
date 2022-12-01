@@ -31,15 +31,4 @@ int Callable::insert_texture_arg(const DataType &dt) {
   return (int)args.size() - 1;
 }
 
-Callable::CurrentCallableGuard::CurrentCallableGuard(Program *program,
-                                                     Callable *callable)
-    : program_(program) {
-  old_callable_ = program->current_callable;
-  program->current_callable = callable;
-}
-
-Callable::CurrentCallableGuard::~CurrentCallableGuard() {
-  program_->current_callable = old_callable_;
-}
-
 }  // namespace taichi::lang

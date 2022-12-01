@@ -1758,8 +1758,7 @@ class MatrixType(CompoundType):
                 entries += list(x.ravel())
             elif isinstance(x, impl.Expr) and x.ptr.is_tensor():
                 entries += [
-                    impl.Expr(e) for e in impl.get_runtime().prog.
-                    current_ast_builder().expand_expr([x.ptr])
+                    impl.Expr(e) for e in impl.get_runtime().compiling_callable.ast_builder().expand_expr([x.ptr])
                 ]
             elif isinstance(x, Matrix):
                 entries += x.entries
@@ -1864,8 +1863,7 @@ class VectorType(MatrixType):
                 entries += x.entries
             elif isinstance(x, impl.Expr) and x.ptr.is_tensor():
                 entries += [
-                    impl.Expr(e) for e in impl.get_runtime().prog.
-                    current_ast_builder().expand_expr([x.ptr])
+                    impl.Expr(e) for e in impl.get_runtime().compiling_callable.ast_builder().expand_expr([x.ptr])
                 ]
             else:
                 entries.append(x)

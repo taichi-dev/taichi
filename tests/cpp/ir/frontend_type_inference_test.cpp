@@ -29,10 +29,9 @@ TEST(FrontendTypeInference, Id) {
   auto prog = std::make_unique<Program>(Arch::x64);
   auto func = []() {};
   auto kernel = std::make_unique<Kernel>(*prog, func, "fake_kernel");
-  Callable::CurrentCallableGuard _(kernel->program, kernel.get());
   auto const_i32 = value<int32>(-(1 << 20));
   const_i32->type_check(nullptr);
-  auto id_i32 = prog->current_ast_builder()->make_var(const_i32, const_i32->tb);
+  auto id_i32 = kernel->context->builder().make_var(const_i32, const_i32->tb);
   EXPECT_EQ(id_i32->ret_type, PrimitiveType::i32);
 }
 
@@ -108,14 +107,13 @@ TEST(FrontendTypeInference, TensorElement) {
   auto prog = std::make_unique<Program>(Arch::x64);
   auto func = []() {};
   auto kernel = std::make_unique<Kernel>(*prog, func, "fake_kernel");
-  Callable::CurrentCallableGuard _(kernel->program, kernel.get());
-  auto ast_builder = prog->current_ast_builder();
+  auto *ast_builder = &kernel->context->builder();
   const std::vector<int> shape{3};
   auto var = Expr(std::make_shared<IdExpression>(ast_builder->get_next_id()));
   ast_builder->insert(std::make_unique<FrontendAllocaStmt>(
       std::static_pointer_cast<IdExpression>(var.expr)->id, shape,
       PrimitiveType::u32));
-  var->ret_type = prog->current_ast_builder()->get_last_stmt()->ret_type;
+  var->ret_type = ast_builder->get_last_stmt()->ret_type;
   auto index = value<int32>(2);
   index->type_check(nullptr);
   auto tensor_element = Expr::make<IndexExpression>(var, ExprGroup(index));

@@ -92,16 +92,6 @@ class TI_DLL_EXPORT Callable {
   int insert_ret(const DataType &dt);
 
   [[nodiscard]] virtual std::string get_name() const = 0;
-
-  class CurrentCallableGuard {
-    Callable *old_callable_;
-    Program *program_;
-
-   public:
-    CurrentCallableGuard(Program *program, Callable *callable);
-
-    ~CurrentCallableGuard();
-  };
 };
 
 }  // namespace taichi::lang

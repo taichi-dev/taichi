@@ -380,8 +380,6 @@ void export_lang(py::module &m) {
       .def("get_snode_tree_size", &Program::get_snode_tree_size)
       .def("get_snode_root", &Program::get_snode_root,
            py::return_value_policy::reference)
-      .def("current_ast_builder", &Program::current_ast_builder,
-           py::return_value_policy::reference)
       .def(
           "create_kernel",
           [](Program *program, const std::function<void(Kernel *)> &body,
@@ -418,31 +416,6 @@ void export_lang(py::module &m) {
                              !arch_is_cuda(program->this_thread_config().arch),
                          "SparseMatrix only supports CPU and CUDA for now.");
              return make_sparse_matrix_from_ndarray(program, sm, ndarray);
-           })
-      .def("no_activate",
-           [](Program *program, SNode *snode) {
-             // TODO(#2193): Also apply to @ti.func?
-             auto *kernel = dynamic_cast<Kernel *>(program->current_callable);
-             TI_ASSERT(kernel);
-             kernel->no_activate.push_back(snode);
-           })
-      .def("decl_scalar_arg",
-           [&](Program *program, const DataType &dt) {
-             return program->current_callable->insert_scalar_arg(dt);
-           })
-      .def("decl_arr_arg",
-           [&](Program *program, const DataType &dt, int total_dim,
-               std::vector<int> shape) {
-             return program->current_callable->insert_arr_arg(dt, total_dim,
-                                                              shape);
-           })
-      .def("decl_texture_arg",
-           [&](Program *program, const DataType &dt) {
-             return program->current_callable->insert_texture_arg(dt);
-           })
-      .def("decl_ret",
-           [&](Program *program, const DataType &dt) {
-             return program->current_callable->insert_ret(dt);
            })
       .def("make_id_expr",
            [](Program *program, const std::string &name) {
@@ -693,6 +666,15 @@ void export_lang(py::module &m) {
       });
 
   py::class_<Kernel>(m, "Kernel")
+      .def("no_activate",
+           [](Kernel *self, SNode *snode) {
+             // TODO(#2193): Also apply to @ti.func?
+             self->no_activate.push_back(snode);
+           })
+      .def("insert_scalar_arg", &Kernel::insert_scalar_arg)
+      .def("insert_arr_arg", &Kernel::insert_arr_arg)
+      .def("insert_texture_arg", &Kernel::insert_texture_arg)
+      .def("insert_ret", &Kernel::insert_ret)
       .def("get_ret_int", &Kernel::get_ret_int)
       .def("get_ret_uint", &Kernel::get_ret_uint)
       .def("get_ret_float", &Kernel::get_ret_float)
@@ -706,11 +688,10 @@ void export_lang(py::module &m) {
             return &self->context->builder();
           },
           py::return_value_policy::reference)
-      .def("__call__",
-           [](Kernel *kernel, LaunchContextBuilder &launch_ctx) {
-             py::gil_scoped_release release;
-             kernel->operator()(launch_ctx);
-           });
+      .def("__call__", [](Kernel *kernel, LaunchContextBuilder &launch_ctx) {
+        py::gil_scoped_release release;
+        kernel->operator()(launch_ctx);
+      });
 
   py::class_<LaunchContextBuilder>(m, "KernelLaunchContext")
       .def("set_arg_int", &LaunchContextBuilder::set_arg_int)
@@ -720,12 +701,14 @@ void export_lang(py::module &m) {
            &LaunchContextBuilder::set_arg_external_array_with_shape)
       .def("set_arg_ndarray", &LaunchContextBuilder::set_arg_ndarray)
       .def("set_arg_texture", &LaunchContextBuilder::set_arg_texture)
-      .def("set_arg_rw_texture",
-           &LaunchContextBuilder::set_arg_rw_texture)
-      .def("set_extra_arg_int",
-           &LaunchContextBuilder::set_extra_arg_int);
+      .def("set_arg_rw_texture", &LaunchContextBuilder::set_arg_rw_texture)
+      .def("set_extra_arg_int", &LaunchContextBuilder::set_extra_arg_int);
 
   py::class_<Function>(m, "Function")
+      .def("insert_scalar_arg", &Function::insert_scalar_arg)
+      .def("insert_arr_arg", &Function::insert_arr_arg)
+      .def("insert_texture_arg", &Function::insert_texture_arg)
+      .def("insert_ret", &Function::insert_ret)
       .def("set_function_body",
            py::overload_cast<const std::function<void()> &>(
                &Function::set_function_body))

@@ -1456,7 +1456,7 @@ def atomic_xor(x, y):
 
 @writeback_binary
 def assign(a, b):
-    impl.get_runtime().current_ast_builder.expr_assign(
+    impl.get_runtime().compiling_callable.ast_builder().expr_assign(
         a.ptr, b.ptr, stack_info())
     return a
 

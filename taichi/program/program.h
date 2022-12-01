@@ -92,7 +92,6 @@ class StructCompiler;
 class TI_DLL_EXPORT Program {
  public:
   using Kernel = taichi::lang::Kernel;
-  Callable *current_callable{nullptr};
   // We let every thread has its own config because the constant folding pass
   // wants to change the CompileConfig so that it can compile the evaluator,
   // but we don't want it to change the global config. We will refactor it
@@ -339,10 +338,6 @@ class TI_DLL_EXPORT Program {
   intptr_t get_ndarray_data_ptr_as_int(const Ndarray *ndarray);
 
   void fill_ndarray_fast_u32(Ndarray *ndarray, uint32_t val);
-
-  ASTBuilder *current_ast_builder() {
-    return current_callable ? &current_callable->context->builder() : nullptr;
-  }
 
   Identifier get_next_global_id(const std::string &name = "") {
     return Identifier(global_id_counter_++, name);

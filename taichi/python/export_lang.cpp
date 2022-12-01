@@ -3,6 +3,7 @@
 #include <optional>
 #include <string>
 #include "taichi/ir/snode.h"
+#include "taichi/program/function.h"
 
 #if TI_WITH_LLVM
 #include "llvm/Config/llvm-config.h"
@@ -327,166 +328,147 @@ void export_lang(py::module &m) {
       .def("reset_snode_access_flag", &ASTBuilder::reset_snode_access_flag);
 
   py::class_<Program>(m, "Program")
-      .def(py::init<>())
-      .def("config", &Program::config)
-      .def("sync_kernel_profiler",
-           [](Program *program) { program->profiler->sync(); })
-      .def("update_kernel_profiler",
-           [](Program *program) { program->profiler->update(); })
-      .def("clear_kernel_profiler",
-           [](Program *program) { program->profiler->clear(); })
-      .def("query_kernel_profile_info",
-           [](Program *program, const std::string &name) {
-             return program->query_kernel_profile_info(name);
-           })
-      .def("get_kernel_profiler_records",
-           [](Program *program) {
-             return program->profiler->get_traced_records();
-           })
-      .def(
-          "get_kernel_profiler_device_name",
-          [](Program *program) { return program->profiler->get_device_name(); })
-      .def("get_compute_stream_device_time_elapsed_us",
-           [](Program *program) {
-             return program->get_compute_device()
-                 ->get_compute_stream()
-                 ->device_time_elapsed_us();
-           })
-      .def("reinit_kernel_profiler_with_metrics",
-           [](Program *program, const std::vector<std::string> metrics) {
-             return program->profiler->reinit_with_metrics(metrics);
-           })
-      .def("kernel_profiler_total_time",
-           [](Program *program) { return program->profiler->get_total_time(); })
-      .def("set_kernel_profiler_toolkit",
-           [](Program *program, const std::string toolkit_name) {
-             return program->profiler->set_profiler_toolkit(toolkit_name);
-           })
-      .def("timeline_clear",
-           [](Program *) { Timelines::get_instance().clear(); })
-      .def("timeline_save",
-           [](Program *, const std::string &fn) {
-             Timelines::get_instance().save(fn);
-           })
-      .def("print_memory_profiler_info", &Program::print_memory_profiler_info)
-      .def("finalize", &Program::finalize)
-      .def("get_total_compilation_time", &Program::get_total_compilation_time)
-      .def("visualize_layout", &Program::visualize_layout)
-      .def("get_snode_num_dynamically_allocated",
-           &Program::get_snode_num_dynamically_allocated)
-      .def("synchronize", &Program::synchronize)
-      .def("materialize_runtime", &Program::materialize_runtime)
-      .def("make_aot_module_builder", &Program::make_aot_module_builder)
-      .def("get_snode_tree_size", &Program::get_snode_tree_size)
-      .def("get_snode_root", &Program::get_snode_root,
-           py::return_value_policy::reference)
-      .def("current_ast_builder", &Program::current_ast_builder,
-           py::return_value_policy::reference)
-      .def(
-          "create_kernel",
-          [](Program *program, const std::function<void(Kernel *)> &body,
-             const std::string &name, AutodiffMode autodiff_mode) -> Kernel * {
-            py::gil_scoped_release release;
-            return &program->kernel(body, name, autodiff_mode);
-          },
-          py::return_value_policy::reference)
-      .def("create_function", &Program::create_function,
-           py::return_value_policy::reference)
-      .def("create_sparse_matrix_builder",
-           [](Program *program, int n, int m, uint64 max_num_entries,
-              DataType dtype, const std::string &storage_format) {
-             TI_ERROR_IF(!arch_is_cpu(program->this_thread_config().arch) &&
-                             !arch_is_cuda(program->this_thread_config().arch),
-                         "SparseMatrix only supports CPU and CUDA for now.");
-             return SparseMatrixBuilder(n, m, max_num_entries, dtype,
-                                        storage_format, program);
-           })
-      .def("create_sparse_matrix",
-           [](Program *program, int n, int m, DataType dtype,
-              std::string storage_format) {
-             TI_ERROR_IF(!arch_is_cpu(program->this_thread_config().arch) &&
-                             !arch_is_cuda(program->this_thread_config().arch),
-                         "SparseMatrix only supports CPU and CUDA for now.");
-             if (arch_is_cpu(program->this_thread_config().arch))
-               return make_sparse_matrix(n, m, dtype, storage_format);
-             else
-               return make_cu_sparse_matrix(n, m, dtype);
-           })
-      .def("make_sparse_matrix_from_ndarray",
-           [](Program *program, SparseMatrix &sm, const Ndarray &ndarray) {
-             TI_ERROR_IF(!arch_is_cpu(program->this_thread_config().arch) &&
-                             !arch_is_cuda(program->this_thread_config().arch),
-                         "SparseMatrix only supports CPU and CUDA for now.");
-             return make_sparse_matrix_from_ndarray(program, sm, ndarray);
-           })
-      .def("no_activate",
-           [](Program *program, SNode *snode) {
-             // TODO(#2193): Also apply to @ti.func?
-             auto *kernel = dynamic_cast<Kernel *>(program->current_callable);
-             TI_ASSERT(kernel);
-             kernel->no_activate.push_back(snode);
-           })
-      .def("decl_scalar_arg",
-           [&](Program *program, const DataType &dt) {
-             return program->current_callable->insert_scalar_arg(dt);
-           })
-      .def("decl_arr_arg",
-           [&](Program *program, const DataType &dt, int total_dim,
-               std::vector<int> shape) {
-             return program->current_callable->insert_arr_arg(dt, total_dim,
-                                                              shape);
-           })
-      .def("decl_texture_arg",
-           [&](Program *program, const DataType &dt) {
-             return program->current_callable->insert_texture_arg(dt);
-           })
-      .def("decl_ret",
-           [&](Program *program, const DataType &dt) {
-             return program->current_callable->insert_ret(dt);
-           })
-      .def("finalize_rets",
-           [&](Program *program) {
-             return program->current_callable->finalize_rets();
-           })
-      .def("make_id_expr",
-           [](Program *program, const std::string &name) {
-             return Expr::make<IdExpression>(program->get_next_global_id(name));
-           })
-      .def(
-          "create_ndarray",
-          [&](Program *program, const DataType &dt,
-              const std::vector<int> &shape,
-              ExternalArrayLayout layout) -> Ndarray * {
-            return program->create_ndarray(dt, shape, layout);
-          },
-          py::arg("dt"), py::arg("shape"),
-          py::arg("layout") = ExternalArrayLayout::kNull,
-          py::return_value_policy::reference)
-      .def(
-          "create_texture",
-          [&](Program *program, const DataType &dt, int num_channels,
-              const std::vector<int> &shape) -> Texture * {
-            return program->create_texture(dt, num_channels, shape);
-          },
-          py::arg("dt"), py::arg("num_channels"),
-          py::arg("shape") = py::tuple(), py::return_value_policy::reference)
-      .def("get_ndarray_data_ptr_as_int",
-           [](Program *program, Ndarray *ndarray) {
-             return program->get_ndarray_data_ptr_as_int(ndarray);
-           })
-      .def("fill_float",
-           [](Program *program, Ndarray *ndarray, float val) {
-             program->fill_ndarray_fast_u32(ndarray,
-                                            reinterpret_cast<uint32_t &>(val));
-           })
-      .def("fill_int",
-           [](Program *program, Ndarray *ndarray, int32_t val) {
-             program->fill_ndarray_fast_u32(ndarray,
-                                            reinterpret_cast<int32_t &>(val));
-           })
-      .def("fill_uint", [](Program *program, Ndarray *ndarray, uint32_t val) {
-        program->fill_ndarray_fast_u32(ndarray, val);
-      });
+          .def(py::init<>())
+          .def("config", &Program::config)
+          .def("sync_kernel_profiler",
+               [](Program *program) { program->profiler->sync(); })
+          .def("update_kernel_profiler",
+               [](Program *program) { program->profiler->update(); })
+          .def("clear_kernel_profiler",
+               [](Program *program) { program->profiler->clear(); })
+          .def("query_kernel_profile_info",
+               [](Program *program, const std::string &name) {
+                 return program->query_kernel_profile_info(name);
+               })
+          .def("get_kernel_profiler_records",
+               [](Program *program) {
+                 return program->profiler->get_traced_records();
+               })
+          .def("get_kernel_profiler_device_name",
+               [](Program *program) {
+                 return program->profiler->get_device_name();
+               })
+          .def("get_compute_stream_device_time_elapsed_us",
+               [](Program *program) {
+                 return program->get_compute_device()
+                     ->get_compute_stream()
+                     ->device_time_elapsed_us();
+               })
+          .def("reinit_kernel_profiler_with_metrics",
+               [](Program *program, const std::vector<std::string> metrics) {
+                 return program->profiler->reinit_with_metrics(metrics);
+               })
+          .def("kernel_profiler_total_time",
+               [](Program *program) {
+                 return program->profiler->get_total_time();
+               })
+          .def("set_kernel_profiler_toolkit",
+               [](Program *program, const std::string toolkit_name) {
+                 return program->profiler->set_profiler_toolkit(toolkit_name);
+               })
+          .def("timeline_clear",
+               [](Program *) { Timelines::get_instance().clear(); })
+          .def("timeline_save",
+               [](Program *, const std::string &fn) {
+                 Timelines::get_instance().save(fn);
+               })
+          .def("print_memory_profiler_info",
+               &Program::print_memory_profiler_info)
+          .def("finalize", &Program::finalize)
+          .def("get_total_compilation_time",
+               &Program::get_total_compilation_time)
+          .def("visualize_layout", &Program::visualize_layout)
+          .def("get_snode_num_dynamically_allocated",
+               &Program::get_snode_num_dynamically_allocated)
+          .def("synchronize", &Program::synchronize)
+          .def("materialize_runtime", &Program::materialize_runtime)
+          .def("make_aot_module_builder", &Program::make_aot_module_builder)
+          .def("get_snode_tree_size", &Program::get_snode_tree_size)
+          .def("get_snode_root", &Program::get_snode_root,
+               py::return_value_policy::reference)
+          .def(
+              "create_kernel",
+              [](Program *program, const std::function<void(Kernel *)> &body,
+                 const std::string &name,
+                 AutodiffMode autodiff_mode) -> Kernel * {
+                py::gil_scoped_release release;
+                return &program->kernel(body, name, autodiff_mode);
+              },
+              py::return_value_policy::reference)
+          .def("create_function", &Program::create_function,
+               py::return_value_policy::reference)
+          .def("create_sparse_matrix_builder",
+               [](Program *program, int n, int m, uint64 max_num_entries,
+                  DataType dtype, const std::string &storage_format) {
+                 TI_ERROR_IF(
+                     !arch_is_cpu(program->this_thread_config().arch) &&
+                         !arch_is_cuda(program->this_thread_config().arch),
+                     "SparseMatrix only supports CPU and CUDA for now.");
+                 return SparseMatrixBuilder(n, m, max_num_entries, dtype,
+                                            storage_format, program);
+               })
+          .def("create_sparse_matrix",
+               [](Program *program, int n, int m, DataType dtype,
+                  std::string storage_format) {
+                 TI_ERROR_IF(
+                     !arch_is_cpu(program->this_thread_config().arch) &&
+                         !arch_is_cuda(program->this_thread_config().arch),
+                     "SparseMatrix only supports CPU and CUDA for now.");
+                 if (arch_is_cpu(program->this_thread_config().arch))
+                   return make_sparse_matrix(n, m, dtype, storage_format);
+                 else
+                   return make_cu_sparse_matrix(n, m, dtype);
+               })
+          .def("make_sparse_matrix_from_ndarray",
+               [](Program *program, SparseMatrix &sm, const Ndarray &ndarray) {
+                 TI_ERROR_IF(
+                     !arch_is_cpu(program->this_thread_config().arch) &&
+                         !arch_is_cuda(program->this_thread_config().arch),
+                     "SparseMatrix only supports CPU and CUDA for now.");
+                 return make_sparse_matrix_from_ndarray(program, sm, ndarray);
+               })
+          .def("make_id_expr",
+               [](Program *program, const std::string &name) {
+                 return Expr::make<IdExpression>(
+                     program->get_next_global_id(name));
+               })
+          .def(
+              "create_ndarray",
+              [&](Program *program, const DataType &dt,
+                  const std::vector<int> &shape,
+                  ExternalArrayLayout layout) -> Ndarray * {
+                return program->create_ndarray(dt, shape, layout);
+              },
+              py::arg("dt"), py::arg("shape"),
+              py::arg("layout") = ExternalArrayLayout::kNull,
+              py::return_value_policy::reference)
+          .def(
+              "create_texture",
+              [&](Program *program, const DataType &dt, int num_channels,
+                  const std::vector<int> &shape) -> Texture * {
+                return program->create_texture(dt, num_channels, shape);
+              },
+              py::arg("dt"), py::arg("num_channels"),
+              py::arg("shape") = py::tuple(),
+              py::return_value_policy::reference)
+          .def("get_ndarray_data_ptr_as_int",
+               [](Program *program, Ndarray *ndarray) {
+                 return program->get_ndarray_data_ptr_as_int(ndarray);
+               })
+          .def("fill_float",
+               [](Program *program, Ndarray *ndarray, float val) {
+                 program->fill_ndarray_fast_u32(
+                     ndarray, reinterpret_cast<uint32_t &>(val));
+               })
+          .def("fill_int",
+               [](Program *program, Ndarray *ndarray, int32_t val) {
+                 program->fill_ndarray_fast_u32(
+                     ndarray, reinterpret_cast<int32_t &>(val));
+               })
+          .def("fill_uint",
+               [](Program *program, Ndarray *ndarray, uint32_t val) {
+                 program->fill_ndarray_fast_u32(ndarray, val);
+               });
 
   py::class_<AotModuleBuilder>(m, "AotModuleBuilder")
       .def("add_field", &AotModuleBuilder::add_field)
@@ -697,6 +679,15 @@ void export_lang(py::module &m) {
       });
 
   py::class_<Kernel>(m, "Kernel")
+      .def("no_activate",
+           [](Kernel *self, SNode *snode) {
+             // TODO(#2193): Also apply to @ti.func?
+             self->no_activate.push_back(snode);
+           })
+      .def("insert_scalar_arg", &Kernel::insert_scalar_arg)
+      .def("insert_arr_arg", &Kernel::insert_arr_arg)
+      .def("insert_texture_arg", &Kernel::insert_texture_arg)
+      .def("insert_ret", &Kernel::insert_ret)
       .def("get_ret_int", &Kernel::get_ret_int)
       .def("get_ret_uint", &Kernel::get_ret_uint)
       .def("get_ret_float", &Kernel::get_ret_float)
@@ -729,475 +720,477 @@ void export_lang(py::module &m) {
       .def("set_extra_arg_int",
            &Kernel::LaunchContextBuilder::set_extra_arg_int);
 
-  py::class_<Function>(m, "Function")
-      .def("set_function_body",
-           py::overload_cast<const std::function<void()> &>(
-               &Function::set_function_body))
-      .def(
-          "ast_builder",
-          [](Function *self) -> ASTBuilder * {
-            return &self->context->builder();
-          },
-          py::return_value_policy::reference);
+py::class_<Function>(m, "Function")
+    .def("insert_scalar_arg", &Function::insert_scalar_arg)
+    .def("insert_arr_arg", &Function::insert_arr_arg)
+    .def("insert_texture_arg", &Function::insert_texture_arg)
+    .def("insert_ret", &Function::insert_ret)
+    .def("set_function_body", py::overload_cast<const std::function<void()> &>(
+                                  &Function::set_function_body))
+    .def("finalize_rets",
+         &Function::finalize_rets)
+    .def(
+        "ast_builder",
+        [](Function *self) -> ASTBuilder * {
+          return &self->context->builder();
+        },
+        py::return_value_policy::reference);
 
-  py::class_<Expr> expr(m, "Expr");
-  expr.def("snode", &Expr::snode, py::return_value_policy::reference)
-      .def("is_external_tensor_expr",
-           [](Expr *expr) { return expr->is<ExternalTensorExpression>(); })
-      .def("is_index_expr",
-           [](Expr *expr) { return expr->is<IndexExpression>(); })
-      .def("is_primal",
-           [](Expr *expr) {
-             return expr->cast<FieldExpression>()->snode_grad_type ==
-                    SNodeGradType::kPrimal;
-           })
-      .def("set_tb", &Expr::set_tb)
-      .def("set_name",
-           [&](Expr *expr, std::string na) {
-             expr->cast<FieldExpression>()->name = na;
-           })
-      .def("set_grad_type",
-           [&](Expr *expr, SNodeGradType t) {
-             expr->cast<FieldExpression>()->snode_grad_type = t;
-           })
-      .def("set_adjoint", &Expr::set_adjoint)
-      .def("set_adjoint_checkbit", &Expr::set_adjoint_checkbit)
-      .def("set_dual", &Expr::set_dual)
-      .def("set_dynamic_index_stride",
-           [&](Expr *expr, int dynamic_index_stride) {
-             auto matrix_field = expr->cast<MatrixFieldExpression>();
-             matrix_field->dynamic_indexable = true;
-             matrix_field->dynamic_index_stride = dynamic_index_stride;
-           })
-      .def("get_dynamic_indexable",
-           [&](Expr *expr) -> bool {
-             return expr->cast<MatrixFieldExpression>()->dynamic_indexable;
-           })
-      .def("get_dynamic_index_stride",
-           [&](Expr *expr) -> int {
-             return expr->cast<MatrixFieldExpression>()->dynamic_index_stride;
-           })
-      .def(
-          "get_dt",
-          [&](Expr *expr) -> const Type * {
-            return expr->cast<FieldExpression>()->dt;
-          },
-          py::return_value_policy::reference)
-      .def("get_ret_type", &Expr::get_ret_type)
-      .def("is_tensor",
-           [](Expr *expr) { return expr->expr->ret_type->is<TensorType>(); })
-      .def("get_shape",
-           [](Expr *expr) -> std::optional<std::vector<int>> {
-             if (expr->expr->ret_type->is<TensorType>()) {
-               return std::optional<std::vector<int>>(
-                   expr->expr->ret_type->cast<TensorType>()->get_shape());
-             }
-             return std::nullopt;
-           })
-      .def("type_check", &Expr::type_check)
-      .def("get_expr_name",
-           [](Expr *expr) { return expr->cast<FieldExpression>()->name; })
-      .def("get_raw_address", [](Expr *expr) { return (uint64)expr; })
-      .def("get_underlying_ptr_address", [](Expr *e) {
-        // The reason that there are both get_raw_address() and
-        // get_underlying_ptr_address() is that Expr itself is mostly wrapper
-        // around its underlying |expr| (of type Expression). Expr |e| can be
-        // temporary, while the underlying |expr| is mostly persistent.
-        //
-        // Same get_raw_address() implies that get_underlying_ptr_address() are
-        // also the same. The reverse is not true.
-        return (uint64)e->expr.get();
+py::class_<Expr> expr(m, "Expr");
+expr.def("snode", &Expr::snode, py::return_value_policy::reference)
+    .def("is_external_tensor_expr",
+         [](Expr *expr) { return expr->is<ExternalTensorExpression>(); })
+    .def("is_index_expr",
+         [](Expr *expr) { return expr->is<IndexExpression>(); })
+    .def("is_primal",
+         [](Expr *expr) {
+           return expr->cast<FieldExpression>()->snode_grad_type ==
+                  SNodeGradType::kPrimal;
+         })
+    .def("set_tb", &Expr::set_tb)
+    .def("set_name",
+         [&](Expr *expr, std::string na) {
+           expr->cast<FieldExpression>()->name = na;
+         })
+    .def("set_grad_type",
+         [&](Expr *expr, SNodeGradType t) {
+           expr->cast<FieldExpression>()->snode_grad_type = t;
+         })
+    .def("set_adjoint", &Expr::set_adjoint)
+    .def("set_adjoint_checkbit", &Expr::set_adjoint_checkbit)
+    .def("set_dual", &Expr::set_dual)
+    .def("set_dynamic_index_stride",
+         [&](Expr *expr, int dynamic_index_stride) {
+           auto matrix_field = expr->cast<MatrixFieldExpression>();
+           matrix_field->dynamic_indexable = true;
+           matrix_field->dynamic_index_stride = dynamic_index_stride;
+         })
+    .def("get_dynamic_indexable",
+         [&](Expr *expr) -> bool {
+           return expr->cast<MatrixFieldExpression>()->dynamic_indexable;
+         })
+    .def("get_dynamic_index_stride",
+         [&](Expr *expr) -> int {
+           return expr->cast<MatrixFieldExpression>()->dynamic_index_stride;
+         })
+    .def(
+        "get_dt",
+        [&](Expr *expr) -> const Type * {
+          return expr->cast<FieldExpression>()->dt;
+        },
+        py::return_value_policy::reference)
+    .def("get_ret_type", &Expr::get_ret_type)
+    .def("is_tensor",
+         [](Expr *expr) { return expr->expr->ret_type->is<TensorType>(); })
+    .def("get_shape",
+         [](Expr *expr) -> std::optional<std::vector<int>> {
+           if (expr->expr->ret_type->is<TensorType>()) {
+             return std::optional<std::vector<int>>(
+                 expr->expr->ret_type->cast<TensorType>()->get_shape());
+           }
+           return std::nullopt;
+         })
+    .def("type_check", &Expr::type_check)
+    .def("get_expr_name",
+         [](Expr *expr) { return expr->cast<FieldExpression>()->name; })
+    .def("get_raw_address", [](Expr *expr) { return (uint64)expr; })
+    .def("get_underlying_ptr_address", [](Expr *e) {
+      // The reason that there are both get_raw_address() and
+      // get_underlying_ptr_address() is that Expr itself is mostly wrapper
+      // around its underlying |expr| (of type Expression). Expr |e| can be
+      // temporary, while the underlying |expr| is mostly persistent.
+      //
+      // Same get_raw_address() implies that get_underlying_ptr_address() are
+      // also the same. The reverse is not true.
+      return (uint64)e->expr.get();
+    });
+
+py::class_<ExprGroup>(m, "ExprGroup")
+    .def(py::init<>())
+    .def("size", [](ExprGroup *eg) { return eg->exprs.size(); })
+    .def("push_back", &ExprGroup::push_back);
+
+py::class_<Stmt>(m, "Stmt");  // NOLINT(bugprone-unused-raii)
+
+m.def("insert_internal_func_call",
+      [&](const std::string &func_name, const ExprGroup &args,
+          bool with_runtime_context) {
+        return Expr::make<InternalFuncCallExpression>(func_name, args.exprs,
+                                                      with_runtime_context);
       });
 
-  py::class_<ExprGroup>(m, "ExprGroup")
-      .def(py::init<>())
-      .def("size", [](ExprGroup *eg) { return eg->exprs.size(); })
-      .def("push_back", &ExprGroup::push_back);
+m.def("make_func_call_expr",
+      Expr::make<FuncCallExpression, Function *, const ExprGroup &>);
 
-  py::class_<Stmt>(m, "Stmt");  // NOLINT(bugprone-unused-raii)
+m.def("make_get_element_expr",
+      Expr::make<GetElementExpression, const Expr &, std::vector<int>>);
 
-  m.def("insert_internal_func_call",
-        [&](const std::string &func_name, const ExprGroup &args,
-            bool with_runtime_context) {
-          return Expr::make<InternalFuncCallExpression>(func_name, args.exprs,
-                                                        with_runtime_context);
-        });
+m.def("value_cast", static_cast<Expr (*)(const Expr &expr, DataType)>(cast));
+m.def("bits_cast", static_cast<Expr (*)(const Expr &expr, DataType)>(bit_cast));
 
-  m.def("make_func_call_expr",
-        Expr::make<FuncCallExpression, Function *, const ExprGroup &>);
+m.def("expr_atomic_add", [&](const Expr &a, const Expr &b) {
+  return Expr::make<AtomicOpExpression>(AtomicOpType::add, a, b);
+});
 
-  m.def("make_get_element_expr",
-        Expr::make<GetElementExpression, const Expr &, std::vector<int>>);
+m.def("expr_atomic_sub", [&](const Expr &a, const Expr &b) {
+  return Expr::make<AtomicOpExpression>(AtomicOpType::sub, a, b);
+});
 
-  m.def("value_cast", static_cast<Expr (*)(const Expr &expr, DataType)>(cast));
-  m.def("bits_cast",
-        static_cast<Expr (*)(const Expr &expr, DataType)>(bit_cast));
+m.def("expr_atomic_min", [&](const Expr &a, const Expr &b) {
+  return Expr::make<AtomicOpExpression>(AtomicOpType::min, a, b);
+});
 
-  m.def("expr_atomic_add", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::add, a, b);
-  });
+m.def("expr_atomic_max", [&](const Expr &a, const Expr &b) {
+  return Expr::make<AtomicOpExpression>(AtomicOpType::max, a, b);
+});
 
-  m.def("expr_atomic_sub", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::sub, a, b);
-  });
+m.def("expr_atomic_bit_and", [&](const Expr &a, const Expr &b) {
+  return Expr::make<AtomicOpExpression>(AtomicOpType::bit_and, a, b);
+});
 
-  m.def("expr_atomic_min", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::min, a, b);
-  });
+m.def("expr_atomic_bit_or", [&](const Expr &a, const Expr &b) {
+  return Expr::make<AtomicOpExpression>(AtomicOpType::bit_or, a, b);
+});
 
-  m.def("expr_atomic_max", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::max, a, b);
-  });
+m.def("expr_atomic_bit_xor", [&](const Expr &a, const Expr &b) {
+  return Expr::make<AtomicOpExpression>(AtomicOpType::bit_xor, a, b);
+});
 
-  m.def("expr_atomic_bit_and", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_and, a, b);
-  });
+m.def("expr_assume_in_range", assume_range);
 
-  m.def("expr_atomic_bit_or", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_or, a, b);
-  });
+m.def("expr_loop_unique", loop_unique);
 
-  m.def("expr_atomic_bit_xor", [&](const Expr &a, const Expr &b) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::bit_xor, a, b);
-  });
+m.def("expr_field", expr_field);
 
-  m.def("expr_assume_in_range", assume_range);
-
-  m.def("expr_loop_unique", loop_unique);
-
-  m.def("expr_field", expr_field);
-
-  m.def("expr_matrix_field", expr_matrix_field);
+m.def("expr_matrix_field", expr_matrix_field);
 
 #define DEFINE_EXPRESSION_OP(x) m.def("expr_" #x, expr_##x);
 
-  DEFINE_EXPRESSION_OP(neg)
-  DEFINE_EXPRESSION_OP(sqrt)
-  DEFINE_EXPRESSION_OP(round)
-  DEFINE_EXPRESSION_OP(floor)
-  DEFINE_EXPRESSION_OP(ceil)
-  DEFINE_EXPRESSION_OP(abs)
-  DEFINE_EXPRESSION_OP(sin)
-  DEFINE_EXPRESSION_OP(asin)
-  DEFINE_EXPRESSION_OP(cos)
-  DEFINE_EXPRESSION_OP(acos)
-  DEFINE_EXPRESSION_OP(tan)
-  DEFINE_EXPRESSION_OP(tanh)
-  DEFINE_EXPRESSION_OP(inv)
-  DEFINE_EXPRESSION_OP(rcp)
-  DEFINE_EXPRESSION_OP(rsqrt)
-  DEFINE_EXPRESSION_OP(exp)
-  DEFINE_EXPRESSION_OP(log)
+DEFINE_EXPRESSION_OP(neg)
+DEFINE_EXPRESSION_OP(sqrt)
+DEFINE_EXPRESSION_OP(round)
+DEFINE_EXPRESSION_OP(floor)
+DEFINE_EXPRESSION_OP(ceil)
+DEFINE_EXPRESSION_OP(abs)
+DEFINE_EXPRESSION_OP(sin)
+DEFINE_EXPRESSION_OP(asin)
+DEFINE_EXPRESSION_OP(cos)
+DEFINE_EXPRESSION_OP(acos)
+DEFINE_EXPRESSION_OP(tan)
+DEFINE_EXPRESSION_OP(tanh)
+DEFINE_EXPRESSION_OP(inv)
+DEFINE_EXPRESSION_OP(rcp)
+DEFINE_EXPRESSION_OP(rsqrt)
+DEFINE_EXPRESSION_OP(exp)
+DEFINE_EXPRESSION_OP(log)
 
-  DEFINE_EXPRESSION_OP(select)
-  DEFINE_EXPRESSION_OP(ifte)
+DEFINE_EXPRESSION_OP(select)
+DEFINE_EXPRESSION_OP(ifte)
 
-  DEFINE_EXPRESSION_OP(cmp_le)
-  DEFINE_EXPRESSION_OP(cmp_lt)
-  DEFINE_EXPRESSION_OP(cmp_ge)
-  DEFINE_EXPRESSION_OP(cmp_gt)
-  DEFINE_EXPRESSION_OP(cmp_ne)
-  DEFINE_EXPRESSION_OP(cmp_eq)
+DEFINE_EXPRESSION_OP(cmp_le)
+DEFINE_EXPRESSION_OP(cmp_lt)
+DEFINE_EXPRESSION_OP(cmp_ge)
+DEFINE_EXPRESSION_OP(cmp_gt)
+DEFINE_EXPRESSION_OP(cmp_ne)
+DEFINE_EXPRESSION_OP(cmp_eq)
 
-  DEFINE_EXPRESSION_OP(bit_and)
-  DEFINE_EXPRESSION_OP(bit_or)
-  DEFINE_EXPRESSION_OP(bit_xor)
-  DEFINE_EXPRESSION_OP(bit_shl)
-  DEFINE_EXPRESSION_OP(bit_shr)
-  DEFINE_EXPRESSION_OP(bit_sar)
-  DEFINE_EXPRESSION_OP(bit_not)
+DEFINE_EXPRESSION_OP(bit_and)
+DEFINE_EXPRESSION_OP(bit_or)
+DEFINE_EXPRESSION_OP(bit_xor)
+DEFINE_EXPRESSION_OP(bit_shl)
+DEFINE_EXPRESSION_OP(bit_shr)
+DEFINE_EXPRESSION_OP(bit_sar)
+DEFINE_EXPRESSION_OP(bit_not)
 
-  DEFINE_EXPRESSION_OP(logic_not)
-  DEFINE_EXPRESSION_OP(logical_and)
-  DEFINE_EXPRESSION_OP(logical_or)
+DEFINE_EXPRESSION_OP(logic_not)
+DEFINE_EXPRESSION_OP(logical_and)
+DEFINE_EXPRESSION_OP(logical_or)
 
-  DEFINE_EXPRESSION_OP(add)
-  DEFINE_EXPRESSION_OP(sub)
-  DEFINE_EXPRESSION_OP(mul)
-  DEFINE_EXPRESSION_OP(div)
-  DEFINE_EXPRESSION_OP(truediv)
-  DEFINE_EXPRESSION_OP(floordiv)
-  DEFINE_EXPRESSION_OP(mod)
-  DEFINE_EXPRESSION_OP(max)
-  DEFINE_EXPRESSION_OP(min)
-  DEFINE_EXPRESSION_OP(atan2)
-  DEFINE_EXPRESSION_OP(pow)
+DEFINE_EXPRESSION_OP(add)
+DEFINE_EXPRESSION_OP(sub)
+DEFINE_EXPRESSION_OP(mul)
+DEFINE_EXPRESSION_OP(div)
+DEFINE_EXPRESSION_OP(truediv)
+DEFINE_EXPRESSION_OP(floordiv)
+DEFINE_EXPRESSION_OP(mod)
+DEFINE_EXPRESSION_OP(max)
+DEFINE_EXPRESSION_OP(min)
+DEFINE_EXPRESSION_OP(atan2)
+DEFINE_EXPRESSION_OP(pow)
 
 #undef DEFINE_EXPRESSION_OP
 
-  m.def("make_global_load_stmt", Stmt::make<GlobalLoadStmt, Stmt *>);
-  m.def("make_global_store_stmt", Stmt::make<GlobalStoreStmt, Stmt *, Stmt *>);
-  m.def("make_frontend_assign_stmt",
-        Stmt::make<FrontendAssignStmt, const Expr &, const Expr &>);
+m.def("make_global_load_stmt", Stmt::make<GlobalLoadStmt, Stmt *>);
+m.def("make_global_store_stmt", Stmt::make<GlobalStoreStmt, Stmt *, Stmt *>);
+m.def("make_frontend_assign_stmt",
+      Stmt::make<FrontendAssignStmt, const Expr &, const Expr &>);
 
-  m.def("make_arg_load_expr",
-        Expr::make<ArgLoadExpression, int, const DataType &, bool>);
+m.def("make_arg_load_expr",
+      Expr::make<ArgLoadExpression, int, const DataType &, bool>);
 
-  m.def("make_reference", Expr::make<ReferenceExpression, const Expr &>);
+m.def("make_reference", Expr::make<ReferenceExpression, const Expr &>);
 
-  m.def("make_external_tensor_expr",
-        Expr::make<ExternalTensorExpression, const DataType &, int, int, int,
-                   const std::vector<int> &>);
+m.def("make_external_tensor_expr",
+      Expr::make<ExternalTensorExpression, const DataType &, int, int, int,
+                 const std::vector<int> &>);
 
-  m.def("make_rand_expr", Expr::make<RandExpression, const DataType &>);
+m.def("make_rand_expr", Expr::make<RandExpression, const DataType &>);
 
-  m.def("make_const_expr_int",
-        Expr::make<ConstExpression, const DataType &, int64>);
+m.def("make_const_expr_int",
+      Expr::make<ConstExpression, const DataType &, int64>);
 
-  m.def("make_const_expr_fp",
-        Expr::make<ConstExpression, const DataType &, float64>);
+m.def("make_const_expr_fp",
+      Expr::make<ConstExpression, const DataType &, float64>);
 
-  m.def("make_texture_ptr_expr", Expr::make<TexturePtrExpression, int, int>);
-  m.def("make_rw_texture_ptr_expr",
-        Expr::make<TexturePtrExpression, int, int, int, const DataType &, int>);
+m.def("make_texture_ptr_expr", Expr::make<TexturePtrExpression, int, int>);
+m.def("make_rw_texture_ptr_expr",
+      Expr::make<TexturePtrExpression, int, int, int, const DataType &, int>);
 
-  auto &&texture =
-      py::enum_<TextureOpType>(m, "TextureOpType", py::arithmetic());
-  for (int t = 0; t <= (int)TextureOpType::kStore; t++)
-    texture.value(texture_op_type_name(TextureOpType(t)).c_str(),
-                  TextureOpType(t));
-  texture.export_values();
-  m.def("make_texture_op_expr",
-        Expr::make<TextureOpExpression, const TextureOpType &, const Expr &,
-                   const ExprGroup &>);
+auto &&texture = py::enum_<TextureOpType>(m, "TextureOpType", py::arithmetic());
+for (int t = 0; t <= (int)TextureOpType::kStore; t++)
+  texture.value(texture_op_type_name(TextureOpType(t)).c_str(),
+                TextureOpType(t));
+texture.export_values();
+m.def("make_texture_op_expr",
+      Expr::make<TextureOpExpression, const TextureOpType &, const Expr &,
+                 const ExprGroup &>);
 
-  auto &&bin = py::enum_<BinaryOpType>(m, "BinaryOpType", py::arithmetic());
-  for (int t = 0; t <= (int)BinaryOpType::undefined; t++)
-    bin.value(binary_op_type_name(BinaryOpType(t)).c_str(), BinaryOpType(t));
-  bin.export_values();
-  m.def("make_binary_op_expr",
-        Expr::make<BinaryOpExpression, const BinaryOpType &, const Expr &,
-                   const Expr &>);
+auto &&bin = py::enum_<BinaryOpType>(m, "BinaryOpType", py::arithmetic());
+for (int t = 0; t <= (int)BinaryOpType::undefined; t++)
+  bin.value(binary_op_type_name(BinaryOpType(t)).c_str(), BinaryOpType(t));
+bin.export_values();
+m.def("make_binary_op_expr",
+      Expr::make<BinaryOpExpression, const BinaryOpType &, const Expr &,
+                 const Expr &>);
 
-  auto &&unary = py::enum_<UnaryOpType>(m, "UnaryOpType", py::arithmetic());
-  for (int t = 0; t <= (int)UnaryOpType::undefined; t++)
-    unary.value(unary_op_type_name(UnaryOpType(t)).c_str(), UnaryOpType(t));
-  unary.export_values();
-  m.def("make_unary_op_expr",
-        Expr::make<UnaryOpExpression, const UnaryOpType &, const Expr &>);
+auto &&unary = py::enum_<UnaryOpType>(m, "UnaryOpType", py::arithmetic());
+for (int t = 0; t <= (int)UnaryOpType::undefined; t++)
+  unary.value(unary_op_type_name(UnaryOpType(t)).c_str(), UnaryOpType(t));
+unary.export_values();
+m.def("make_unary_op_expr",
+      Expr::make<UnaryOpExpression, const UnaryOpType &, const Expr &>);
 #define PER_TYPE(x)                                                  \
   m.attr(("DataType_" + data_type_name(PrimitiveType::x)).c_str()) = \
       PrimitiveType::x;
 #include "taichi/inc/data_type.inc.h"
 #undef PER_TYPE
 
-  m.def("data_type_size", data_type_size);
-  m.def("is_quant", is_quant);
-  m.def("is_integral", is_integral);
-  m.def("is_signed", is_signed);
-  m.def("is_real", is_real);
-  m.def("is_unsigned", is_unsigned);
-  m.def("is_tensor", is_tensor);
+m.def("data_type_size", data_type_size);
+m.def("is_quant", is_quant);
+m.def("is_integral", is_integral);
+m.def("is_signed", is_signed);
+m.def("is_real", is_real);
+m.def("is_unsigned", is_unsigned);
+m.def("is_tensor", is_tensor);
 
-  m.def("data_type_name", data_type_name);
+m.def("data_type_name", data_type_name);
 
-  m.def(
-      "subscript_with_multiple_indices",
+m.def("subscript_with_multiple_indices",
       Expr::make<IndexExpression, const Expr &, const std::vector<ExprGroup> &,
                  const std::vector<int> &, std::string>);
 
-  m.def("get_external_tensor_element_dim", [](const Expr &expr) {
-    TI_ASSERT(expr.is<ExternalTensorExpression>());
-    return expr.cast<ExternalTensorExpression>()->element_dim;
-  });
+m.def("get_external_tensor_element_dim", [](const Expr &expr) {
+  TI_ASSERT(expr.is<ExternalTensorExpression>());
+  return expr.cast<ExternalTensorExpression>()->element_dim;
+});
 
-  m.def("get_external_tensor_element_shape", [](const Expr &expr) {
-    TI_ASSERT(expr.is<ExternalTensorExpression>());
-    auto external_tensor_expr = expr.cast<ExternalTensorExpression>();
-    return external_tensor_expr->dt.get_shape();
-  });
+m.def("get_external_tensor_element_shape", [](const Expr &expr) {
+  TI_ASSERT(expr.is<ExternalTensorExpression>());
+  auto external_tensor_expr = expr.cast<ExternalTensorExpression>();
+  return external_tensor_expr->dt.get_shape();
+});
 
-  m.def("get_external_tensor_dim", [](const Expr &expr) {
-    if (expr.is<ExternalTensorExpression>()) {
-      return expr.cast<ExternalTensorExpression>()->dim;
-    } else if (expr.is<TexturePtrExpression>()) {
-      return expr.cast<TexturePtrExpression>()->num_dims;
-    } else {
-      TI_ASSERT(false);
-      return 0;
-    }
-  });
+m.def("get_external_tensor_dim", [](const Expr &expr) {
+  if (expr.is<ExternalTensorExpression>()) {
+    return expr.cast<ExternalTensorExpression>()->dim;
+  } else if (expr.is<TexturePtrExpression>()) {
+    return expr.cast<TexturePtrExpression>()->num_dims;
+  } else {
+    TI_ASSERT(false);
+    return 0;
+  }
+});
 
-  m.def("get_external_tensor_shape_along_axis",
-        Expr::make<ExternalTensorShapeAlongAxisExpression, const Expr &, int>);
+m.def("get_external_tensor_shape_along_axis",
+      Expr::make<ExternalTensorShapeAlongAxisExpression, const Expr &, int>);
 
-  // Mesh related.
-  m.def("get_relation_size", [](mesh::MeshPtr mesh_ptr, const Expr &mesh_idx,
-                                mesh::MeshElementType to_type) {
-    return Expr::make<MeshRelationAccessExpression>(mesh_ptr.ptr.get(),
-                                                    mesh_idx, to_type);
-  });
+// Mesh related.
+m.def("get_relation_size", [](mesh::MeshPtr mesh_ptr, const Expr &mesh_idx,
+                              mesh::MeshElementType to_type) {
+  return Expr::make<MeshRelationAccessExpression>(mesh_ptr.ptr.get(), mesh_idx,
+                                                  to_type);
+});
 
-  m.def("get_relation_access",
-        [](mesh::MeshPtr mesh_ptr, const Expr &mesh_idx,
-           mesh::MeshElementType to_type, const Expr &neighbor_idx) {
-          return Expr::make<MeshRelationAccessExpression>(
-              mesh_ptr.ptr.get(), mesh_idx, to_type, neighbor_idx);
-        });
+m.def("get_relation_access",
+      [](mesh::MeshPtr mesh_ptr, const Expr &mesh_idx,
+         mesh::MeshElementType to_type, const Expr &neighbor_idx) {
+        return Expr::make<MeshRelationAccessExpression>(
+            mesh_ptr.ptr.get(), mesh_idx, to_type, neighbor_idx);
+      });
 
-  py::class_<FunctionKey>(m, "FunctionKey")
-      .def(py::init<const std::string &, int, int>())
-      .def_readonly("instance_id", &FunctionKey::instance_id);
+py::class_<FunctionKey>(m, "FunctionKey")
+    .def(py::init<const std::string &, int, int>())
+    .def_readonly("instance_id", &FunctionKey::instance_id);
 
-  m.def("test_throw", [] {
-    try {
-      throw IRModified();
-    } catch (IRModified) {
-      TI_INFO("caught");
-    }
-  });
+m.def("test_throw", [] {
+  try {
+    throw IRModified();
+  } catch (IRModified) {
+    TI_INFO("caught");
+  }
+});
 
-  m.def("test_throw", [] { throw IRModified(); });
+m.def("test_throw", [] { throw IRModified(); });
 
 #if TI_WITH_LLVM
-  m.def("libdevice_path", libdevice_path);
+m.def("libdevice_path", libdevice_path);
 #endif
 
-  m.def("host_arch", host_arch);
+m.def("host_arch", host_arch);
 
-  m.def("set_lib_dir", [&](const std::string &dir) { compiled_lib_dir = dir; });
-  m.def("set_tmp_dir", [&](const std::string &dir) { runtime_tmp_dir = dir; });
+m.def("set_lib_dir", [&](const std::string &dir) { compiled_lib_dir = dir; });
+m.def("set_tmp_dir", [&](const std::string &dir) { runtime_tmp_dir = dir; });
 
-  m.def("get_commit_hash", get_commit_hash);
-  m.def("get_version_string", get_version_string);
-  m.def("get_version_major", get_version_major);
-  m.def("get_version_minor", get_version_minor);
-  m.def("get_version_patch", get_version_patch);
-  m.def("get_llvm_target_support", [] {
+m.def("get_commit_hash", get_commit_hash);
+m.def("get_version_string", get_version_string);
+m.def("get_version_major", get_version_major);
+m.def("get_version_minor", get_version_minor);
+m.def("get_version_patch", get_version_patch);
+m.def("get_llvm_target_support", [] {
 #if defined(TI_WITH_LLVM)
-    return LLVM_VERSION_STRING;
+  return LLVM_VERSION_STRING;
 #else
     return "targets unsupported";
 #endif
-  });
-  m.def("test_printf", [] { printf("test_printf\n"); });
-  m.def("test_logging", [] { TI_INFO("test_logging"); });
-  m.def("trigger_crash", [] { *(int *)(1) = 0; });
-  m.def("get_max_num_indices", [] { return taichi_max_num_indices; });
-  m.def("get_max_num_args", [] { return taichi_max_num_args; });
-  m.def("test_threading", test_threading);
-  m.def("is_extension_supported", is_extension_supported);
+});
+m.def("test_printf", [] { printf("test_printf\n"); });
+m.def("test_logging", [] { TI_INFO("test_logging"); });
+m.def("trigger_crash", [] { *(int *)(1) = 0; });
+m.def("get_max_num_indices", [] { return taichi_max_num_indices; });
+m.def("get_max_num_args", [] { return taichi_max_num_args; });
+m.def("test_threading", test_threading);
+m.def("is_extension_supported", is_extension_supported);
 
-  m.def("record_action_entry",
-        [](std::string name,
-           std::vector<std::pair<std::string,
-                                 std::variant<std::string, int, float>>> args) {
-          std::vector<ActionArg> acts;
-          for (auto const &[k, v] : args) {
-            if (std::holds_alternative<int>(v)) {
-              acts.push_back(ActionArg(k, std::get<int>(v)));
-            } else if (std::holds_alternative<float>(v)) {
-              acts.push_back(ActionArg(k, std::get<float>(v)));
-            } else {
-              acts.push_back(ActionArg(k, std::get<std::string>(v)));
-            }
+m.def("record_action_entry",
+      [](std::string name,
+         std::vector<std::pair<std::string,
+                               std::variant<std::string, int, float>>> args) {
+        std::vector<ActionArg> acts;
+        for (auto const &[k, v] : args) {
+          if (std::holds_alternative<int>(v)) {
+            acts.push_back(ActionArg(k, std::get<int>(v)));
+          } else if (std::holds_alternative<float>(v)) {
+            acts.push_back(ActionArg(k, std::get<float>(v)));
+          } else {
+            acts.push_back(ActionArg(k, std::get<std::string>(v)));
           }
-          ActionRecorder::get_instance().record(name, acts);
-        });
+        }
+        ActionRecorder::get_instance().record(name, acts);
+      });
 
-  m.def("start_recording", [](const std::string &fn) {
-    ActionRecorder::get_instance().start_recording(fn);
-  });
+m.def("start_recording", [](const std::string &fn) {
+  ActionRecorder::get_instance().start_recording(fn);
+});
 
-  m.def("stop_recording",
-        []() { ActionRecorder::get_instance().stop_recording(); });
+m.def("stop_recording",
+      []() { ActionRecorder::get_instance().stop_recording(); });
 
-  m.def("query_int64", [](const std::string &key) {
-    if (key == "cuda_compute_capability") {
+m.def("query_int64", [](const std::string &key) {
+  if (key == "cuda_compute_capability") {
 #if defined(TI_WITH_CUDA)
-      return CUDAContext::get_instance().get_compute_capability();
+    return CUDAContext::get_instance().get_compute_capability();
 #else
-    TI_NOT_IMPLEMENTED
+      TI_NOT_IMPLEMENTED
 #endif
-    } else {
-      TI_ERROR("Key {} not supported in query_int64", key);
-    }
-  });
+  } else {
+    TI_ERROR("Key {} not supported in query_int64", key);
+  }
+});
 
-  // Type system
+// Type system
 
-  py::class_<Type>(m, "Type").def("to_string", &Type::to_string);
+py::class_<Type>(m, "Type").def("to_string", &Type::to_string);
 
-  m.def("promoted_type", promoted_type);
+m.def("promoted_type", promoted_type);
 
-  // Note that it is important to specify py::return_value_policy::reference for
-  // the factory methods, otherwise pybind11 will delete the Types owned by
-  // TypeFactory on Python-scope pointer destruction.
-  py::class_<TypeFactory>(m, "TypeFactory")
-      .def("get_quant_int_type", &TypeFactory::get_quant_int_type,
-           py::arg("num_bits"), py::arg("is_signed"), py::arg("compute_type"),
-           py::return_value_policy::reference)
-      .def("get_quant_fixed_type", &TypeFactory::get_quant_fixed_type,
-           py::arg("digits_type"), py::arg("compute_type"), py::arg("scale"),
-           py::return_value_policy::reference)
-      .def("get_quant_float_type", &TypeFactory::get_quant_float_type,
-           py::arg("digits_type"), py::arg("exponent_type"),
-           py::arg("compute_type"), py::return_value_policy::reference)
-      .def(
-          "get_tensor_type",
-          [&](TypeFactory *factory, std::vector<int> shape,
-              const DataType &element_type) {
-            return factory->create_tensor_type(shape, element_type);
-          },
-          py::return_value_policy::reference)
-      .def(
-          "get_struct_type",
-          [&](TypeFactory *factory, std::vector<DataType> elements) {
-            std::vector<const Type *> types;
-            for (auto &element : elements) {
-              types.push_back(element);
-            }
-            return DataType(factory->get_struct_type(types));
-          },
-          py::return_value_policy::reference);
-
-  m.def("get_type_factory_instance", TypeFactory::get_instance,
+// Note that it is important to specify py::return_value_policy::reference for
+// the factory methods, otherwise pybind11 will delete the Types owned by
+// TypeFactory on Python-scope pointer destruction.
+py::class_<TypeFactory>(m, "TypeFactory")
+    .def("get_quant_int_type", &TypeFactory::get_quant_int_type,
+         py::arg("num_bits"), py::arg("is_signed"), py::arg("compute_type"),
+         py::return_value_policy::reference)
+    .def("get_quant_fixed_type", &TypeFactory::get_quant_fixed_type,
+         py::arg("digits_type"), py::arg("compute_type"), py::arg("scale"),
+         py::return_value_policy::reference)
+    .def("get_quant_float_type", &TypeFactory::get_quant_float_type,
+         py::arg("digits_type"), py::arg("exponent_type"),
+         py::arg("compute_type"), py::return_value_policy::reference)
+    .def(
+        "get_tensor_type",
+        [&](TypeFactory *factory, std::vector<int> shape,
+            const DataType &element_type) {
+          return factory->create_tensor_type(shape, element_type);
+        },
+        py::return_value_policy::reference)
+    .def(
+        "get_struct_type",
+        [&](TypeFactory *factory, std::vector<DataType> elements) {
+          std::vector<const Type *> types;
+          for (auto &element : elements) {
+            types.push_back(element);
+          }
+          return DataType(factory->get_struct_type(types));
+        },
         py::return_value_policy::reference);
 
-  // NOLINTNEXTLINE(bugprone-unused-raii)
-  py::class_<BitStructType>(m, "BitStructType");
-  py::class_<BitStructTypeBuilder>(m, "BitStructTypeBuilder")
-      .def(py::init<int>())
-      .def("begin_placing_shared_exponent",
-           &BitStructTypeBuilder::begin_placing_shared_exponent)
-      .def("end_placing_shared_exponent",
-           &BitStructTypeBuilder::end_placing_shared_exponent)
-      .def("add_member", &BitStructTypeBuilder::add_member)
-      .def("build", &BitStructTypeBuilder::build,
-           py::return_value_policy::reference);
-
-  py::class_<SNodeRegistry>(m, "SNodeRegistry")
-      .def(py::init<>())
-      .def("create_root", &SNodeRegistry::create_root,
-           py::return_value_policy::reference);
-
-  m.def(
-      "finalize_snode_tree",
-      [](SNodeRegistry *registry, const SNode *root, Program *program,
-         bool compile_only) -> SNodeTree * {
-        return program->add_snode_tree(registry->finalize(root), compile_only);
-      },
+m.def("get_type_factory_instance", TypeFactory::get_instance,
       py::return_value_policy::reference);
 
-  // Sparse Matrix
-  py::class_<SparseMatrixBuilder>(m, "SparseMatrixBuilder")
-      .def("print_triplets_eigen", &SparseMatrixBuilder::print_triplets_eigen)
-      .def("print_triplets_cuda", &SparseMatrixBuilder::print_triplets_cuda)
-      .def("get_ndarray_data_ptr", &SparseMatrixBuilder::get_ndarray_data_ptr)
-      .def("build", &SparseMatrixBuilder::build)
-      .def("build_cuda", &SparseMatrixBuilder::build_cuda)
-      .def("get_addr", [](SparseMatrixBuilder *mat) { return uint64(mat); });
+// NOLINTNEXTLINE(bugprone-unused-raii)
+py::class_<BitStructType>(m, "BitStructType");
+py::class_<BitStructTypeBuilder>(m, "BitStructTypeBuilder")
+    .def(py::init<int>())
+    .def("begin_placing_shared_exponent",
+         &BitStructTypeBuilder::begin_placing_shared_exponent)
+    .def("end_placing_shared_exponent",
+         &BitStructTypeBuilder::end_placing_shared_exponent)
+    .def("add_member", &BitStructTypeBuilder::add_member)
+    .def("build", &BitStructTypeBuilder::build,
+         py::return_value_policy::reference);
 
-  py::class_<SparseMatrix>(m, "SparseMatrix")
-      .def(py::init<>())
-      .def(py::init<int, int, DataType>(), py::arg("rows"), py::arg("cols"),
-           py::arg("dt") = PrimitiveType::f32)
-      .def(py::init<SparseMatrix &>())
-      .def("to_string", &SparseMatrix::to_string)
-      .def("get_element", &SparseMatrix::get_element<float32>)
-      .def("set_element", &SparseMatrix::set_element<float32>)
-      .def("num_rows", &SparseMatrix::num_rows)
-      .def("num_cols", &SparseMatrix::num_cols);
+py::class_<SNodeRegistry>(m, "SNodeRegistry")
+    .def(py::init<>())
+    .def("create_root", &SNodeRegistry::create_root,
+         py::return_value_policy::reference);
+
+m.def(
+    "finalize_snode_tree",
+    [](SNodeRegistry *registry, const SNode *root, Program *program,
+       bool compile_only) -> SNodeTree * {
+      return program->add_snode_tree(registry->finalize(root), compile_only);
+    },
+    py::return_value_policy::reference);
+
+// Sparse Matrix
+py::class_<SparseMatrixBuilder>(m, "SparseMatrixBuilder")
+    .def("print_triplets_eigen", &SparseMatrixBuilder::print_triplets_eigen)
+    .def("print_triplets_cuda", &SparseMatrixBuilder::print_triplets_cuda)
+    .def("get_ndarray_data_ptr", &SparseMatrixBuilder::get_ndarray_data_ptr)
+    .def("build", &SparseMatrixBuilder::build)
+    .def("build_cuda", &SparseMatrixBuilder::build_cuda)
+    .def("get_addr", [](SparseMatrixBuilder *mat) { return uint64(mat); });
+
+py::class_<SparseMatrix>(m, "SparseMatrix")
+    .def(py::init<>())
+    .def(py::init<int, int, DataType>(), py::arg("rows"), py::arg("cols"),
+         py::arg("dt") = PrimitiveType::f32)
+    .def(py::init<SparseMatrix &>())
+    .def("to_string", &SparseMatrix::to_string)
+    .def("get_element", &SparseMatrix::get_element<float32>)
+    .def("set_element", &SparseMatrix::set_element<float32>)
+    .def("num_rows", &SparseMatrix::num_rows)
+    .def("num_cols", &SparseMatrix::num_cols);
 
 #define MAKE_SPARSE_MATRIX(TYPE, STORAGE, VTYPE)                             \
   using STORAGE##TYPE##EigenMatrix =                                         \
@@ -1229,29 +1222,29 @@ void export_lang(py::module &m) {
            &EigenSparseMatrix<STORAGE##TYPE##EigenMatrix>::mat_vec_mul<      \
                Eigen::VectorX##VTYPE>);
 
-  MAKE_SPARSE_MATRIX(32, ColMajor, f);
-  MAKE_SPARSE_MATRIX(32, RowMajor, f);
-  MAKE_SPARSE_MATRIX(64, ColMajor, d);
-  MAKE_SPARSE_MATRIX(64, RowMajor, d);
+MAKE_SPARSE_MATRIX(32, ColMajor, f);
+MAKE_SPARSE_MATRIX(32, RowMajor, f);
+MAKE_SPARSE_MATRIX(64, ColMajor, d);
+MAKE_SPARSE_MATRIX(64, RowMajor, d);
 
-  py::class_<CuSparseMatrix, SparseMatrix>(m, "CuSparseMatrix")
-      .def(py::init<int, int, DataType>())
-      .def(py::init<const CuSparseMatrix &>())
-      .def("spmv", &CuSparseMatrix::spmv)
-      .def(py::self + py::self)
-      .def(py::self - py::self)
-      .def(py::self * float32())
-      .def(float32() * py::self)
-      .def("matmul", &CuSparseMatrix::matmul)
-      .def("transpose", &CuSparseMatrix::transpose)
-      .def("get_element", &CuSparseMatrix::get_element)
-      .def("to_string", &CuSparseMatrix::to_string);
+py::class_<CuSparseMatrix, SparseMatrix>(m, "CuSparseMatrix")
+    .def(py::init<int, int, DataType>())
+    .def(py::init<const CuSparseMatrix &>())
+    .def("spmv", &CuSparseMatrix::spmv)
+    .def(py::self + py::self)
+    .def(py::self - py::self)
+    .def(py::self * float32())
+    .def(float32() * py::self)
+    .def("matmul", &CuSparseMatrix::matmul)
+    .def("transpose", &CuSparseMatrix::transpose)
+    .def("get_element", &CuSparseMatrix::get_element)
+    .def("to_string", &CuSparseMatrix::to_string);
 
-  py::class_<SparseSolver>(m, "SparseSolver")
-      .def("compute", &SparseSolver::compute)
-      .def("analyze_pattern", &SparseSolver::analyze_pattern)
-      .def("factorize", &SparseSolver::factorize)
-      .def("info", &SparseSolver::info);
+py::class_<SparseSolver>(m, "SparseSolver")
+    .def("compute", &SparseSolver::compute)
+    .def("analyze_pattern", &SparseSolver::analyze_pattern)
+    .def("factorize", &SparseSolver::factorize)
+    .def("info", &SparseSolver::info);
 
 #define REGISTER_EIGEN_SOLVER(dt, type, order, fd)                           \
   py::class_<EigenSparseSolver##dt##type##order, SparseSolver>(              \
@@ -1267,143 +1260,142 @@ void export_lang(py::module &m) {
                                                          dt>)                \
       .def("info", &EigenSparseSolver##dt##type##order::info);
 
-  REGISTER_EIGEN_SOLVER(float32, LLT, AMD, f)
-  REGISTER_EIGEN_SOLVER(float32, LLT, COLAMD, f)
-  REGISTER_EIGEN_SOLVER(float32, LDLT, AMD, f)
-  REGISTER_EIGEN_SOLVER(float32, LDLT, COLAMD, f)
-  REGISTER_EIGEN_SOLVER(float32, LU, AMD, f)
-  REGISTER_EIGEN_SOLVER(float32, LU, COLAMD, f)
-  REGISTER_EIGEN_SOLVER(float64, LLT, AMD, d)
-  REGISTER_EIGEN_SOLVER(float64, LLT, COLAMD, d)
-  REGISTER_EIGEN_SOLVER(float64, LDLT, AMD, d)
-  REGISTER_EIGEN_SOLVER(float64, LDLT, COLAMD, d)
-  REGISTER_EIGEN_SOLVER(float64, LU, AMD, d)
-  REGISTER_EIGEN_SOLVER(float64, LU, COLAMD, d)
+REGISTER_EIGEN_SOLVER(float32, LLT, AMD, f)
+REGISTER_EIGEN_SOLVER(float32, LLT, COLAMD, f)
+REGISTER_EIGEN_SOLVER(float32, LDLT, AMD, f)
+REGISTER_EIGEN_SOLVER(float32, LDLT, COLAMD, f)
+REGISTER_EIGEN_SOLVER(float32, LU, AMD, f)
+REGISTER_EIGEN_SOLVER(float32, LU, COLAMD, f)
+REGISTER_EIGEN_SOLVER(float64, LLT, AMD, d)
+REGISTER_EIGEN_SOLVER(float64, LLT, COLAMD, d)
+REGISTER_EIGEN_SOLVER(float64, LDLT, AMD, d)
+REGISTER_EIGEN_SOLVER(float64, LDLT, COLAMD, d)
+REGISTER_EIGEN_SOLVER(float64, LU, AMD, d)
+REGISTER_EIGEN_SOLVER(float64, LU, COLAMD, d)
 
-  py::class_<CuSparseSolver, SparseSolver>(m, "CuSparseSolver")
-      .def("compute", &CuSparseSolver::compute)
-      .def("analyze_pattern", &CuSparseSolver::analyze_pattern)
-      .def("factorize", &CuSparseSolver::factorize)
-      .def("solve_rf", &CuSparseSolver::solve_rf)
-      .def("info", &CuSparseSolver::info);
+py::class_<CuSparseSolver, SparseSolver>(m, "CuSparseSolver")
+    .def("compute", &CuSparseSolver::compute)
+    .def("analyze_pattern", &CuSparseSolver::analyze_pattern)
+    .def("factorize", &CuSparseSolver::factorize)
+    .def("solve_rf", &CuSparseSolver::solve_rf)
+    .def("info", &CuSparseSolver::info);
 
-  m.def("make_sparse_solver", &make_sparse_solver);
-  m.def("make_cusparse_solver", &make_cusparse_solver);
+m.def("make_sparse_solver", &make_sparse_solver);
+m.def("make_cusparse_solver", &make_cusparse_solver);
 
-  // Mesh Class
-  // Mesh related.
-  py::enum_<mesh::MeshTopology>(m, "MeshTopology", py::arithmetic())
-      .value("Triangle", mesh::MeshTopology::Triangle)
-      .value("Tetrahedron", mesh::MeshTopology::Tetrahedron)
-      .export_values();
+// Mesh Class
+// Mesh related.
+py::enum_<mesh::MeshTopology>(m, "MeshTopology", py::arithmetic())
+    .value("Triangle", mesh::MeshTopology::Triangle)
+    .value("Tetrahedron", mesh::MeshTopology::Tetrahedron)
+    .export_values();
 
-  py::enum_<mesh::MeshElementType>(m, "MeshElementType", py::arithmetic())
-      .value("Vertex", mesh::MeshElementType::Vertex)
-      .value("Edge", mesh::MeshElementType::Edge)
-      .value("Face", mesh::MeshElementType::Face)
-      .value("Cell", mesh::MeshElementType::Cell)
-      .export_values();
+py::enum_<mesh::MeshElementType>(m, "MeshElementType", py::arithmetic())
+    .value("Vertex", mesh::MeshElementType::Vertex)
+    .value("Edge", mesh::MeshElementType::Edge)
+    .value("Face", mesh::MeshElementType::Face)
+    .value("Cell", mesh::MeshElementType::Cell)
+    .export_values();
 
-  py::enum_<mesh::MeshRelationType>(m, "MeshRelationType", py::arithmetic())
-      .value("VV", mesh::MeshRelationType::VV)
-      .value("VE", mesh::MeshRelationType::VE)
-      .value("VF", mesh::MeshRelationType::VF)
-      .value("VC", mesh::MeshRelationType::VC)
-      .value("EV", mesh::MeshRelationType::EV)
-      .value("EE", mesh::MeshRelationType::EE)
-      .value("EF", mesh::MeshRelationType::EF)
-      .value("EC", mesh::MeshRelationType::EC)
-      .value("FV", mesh::MeshRelationType::FV)
-      .value("FE", mesh::MeshRelationType::FE)
-      .value("FF", mesh::MeshRelationType::FF)
-      .value("FC", mesh::MeshRelationType::FC)
-      .value("CV", mesh::MeshRelationType::CV)
-      .value("CE", mesh::MeshRelationType::CE)
-      .value("CF", mesh::MeshRelationType::CF)
-      .value("CC", mesh::MeshRelationType::CC)
-      .export_values();
+py::enum_<mesh::MeshRelationType>(m, "MeshRelationType", py::arithmetic())
+    .value("VV", mesh::MeshRelationType::VV)
+    .value("VE", mesh::MeshRelationType::VE)
+    .value("VF", mesh::MeshRelationType::VF)
+    .value("VC", mesh::MeshRelationType::VC)
+    .value("EV", mesh::MeshRelationType::EV)
+    .value("EE", mesh::MeshRelationType::EE)
+    .value("EF", mesh::MeshRelationType::EF)
+    .value("EC", mesh::MeshRelationType::EC)
+    .value("FV", mesh::MeshRelationType::FV)
+    .value("FE", mesh::MeshRelationType::FE)
+    .value("FF", mesh::MeshRelationType::FF)
+    .value("FC", mesh::MeshRelationType::FC)
+    .value("CV", mesh::MeshRelationType::CV)
+    .value("CE", mesh::MeshRelationType::CE)
+    .value("CF", mesh::MeshRelationType::CF)
+    .value("CC", mesh::MeshRelationType::CC)
+    .export_values();
 
-  py::enum_<mesh::ConvType>(m, "ConvType", py::arithmetic())
-      .value("l2g", mesh::ConvType::l2g)
-      .value("l2r", mesh::ConvType::l2r)
-      .value("g2r", mesh::ConvType::g2r)
-      .export_values();
+py::enum_<mesh::ConvType>(m, "ConvType", py::arithmetic())
+    .value("l2g", mesh::ConvType::l2g)
+    .value("l2r", mesh::ConvType::l2r)
+    .value("g2r", mesh::ConvType::g2r)
+    .export_values();
 
-  py::class_<mesh::Mesh>(m, "Mesh");        // NOLINT(bugprone-unused-raii)
-  py::class_<mesh::MeshPtr>(m, "MeshPtr");  // NOLINT(bugprone-unused-raii)
+py::class_<mesh::Mesh>(m, "Mesh");        // NOLINT(bugprone-unused-raii)
+py::class_<mesh::MeshPtr>(m, "MeshPtr");  // NOLINT(bugprone-unused-raii)
 
-  m.def("element_order", mesh::element_order);
-  m.def("from_end_element_order", mesh::from_end_element_order);
-  m.def("to_end_element_order", mesh::to_end_element_order);
-  m.def("relation_by_orders", mesh::relation_by_orders);
-  m.def("inverse_relation", mesh::inverse_relation);
-  m.def("element_type_name", mesh::element_type_name);
+m.def("element_order", mesh::element_order);
+m.def("from_end_element_order", mesh::from_end_element_order);
+m.def("to_end_element_order", mesh::to_end_element_order);
+m.def("relation_by_orders", mesh::relation_by_orders);
+m.def("inverse_relation", mesh::inverse_relation);
+m.def("element_type_name", mesh::element_type_name);
 
-  m.def(
-      "create_mesh",
-      []() {
-        auto mesh_shared = std::make_shared<mesh::Mesh>();
-        mesh::MeshPtr mesh_ptr = mesh::MeshPtr{mesh_shared};
-        return mesh_ptr;
-      },
-      py::return_value_policy::reference);
+m.def(
+    "create_mesh",
+    []() {
+      auto mesh_shared = std::make_shared<mesh::Mesh>();
+      mesh::MeshPtr mesh_ptr = mesh::MeshPtr{mesh_shared};
+      return mesh_ptr;
+    },
+    py::return_value_policy::reference);
 
-  // ad-hoc setters
-  m.def("set_owned_offset",
-        [](mesh::MeshPtr &mesh_ptr, mesh::MeshElementType type, SNode *snode) {
-          mesh_ptr.ptr->owned_offset.insert(std::pair(type, snode));
-        });
-  m.def("set_total_offset",
-        [](mesh::MeshPtr &mesh_ptr, mesh::MeshElementType type, SNode *snode) {
-          mesh_ptr.ptr->total_offset.insert(std::pair(type, snode));
-        });
-  m.def("set_num_patches", [](mesh::MeshPtr &mesh_ptr, int num_patches) {
-    mesh_ptr.ptr->num_patches = num_patches;
-  });
+// ad-hoc setters
+m.def("set_owned_offset",
+      [](mesh::MeshPtr &mesh_ptr, mesh::MeshElementType type, SNode *snode) {
+        mesh_ptr.ptr->owned_offset.insert(std::pair(type, snode));
+      });
+m.def("set_total_offset",
+      [](mesh::MeshPtr &mesh_ptr, mesh::MeshElementType type, SNode *snode) {
+        mesh_ptr.ptr->total_offset.insert(std::pair(type, snode));
+      });
+m.def("set_num_patches", [](mesh::MeshPtr &mesh_ptr, int num_patches) {
+  mesh_ptr.ptr->num_patches = num_patches;
+});
 
-  m.def("set_num_elements", [](mesh::MeshPtr &mesh_ptr,
-                               mesh::MeshElementType type, int num_elements) {
-    mesh_ptr.ptr->num_elements.insert(std::pair(type, num_elements));
-  });
+m.def("set_num_elements", [](mesh::MeshPtr &mesh_ptr,
+                             mesh::MeshElementType type, int num_elements) {
+  mesh_ptr.ptr->num_elements.insert(std::pair(type, num_elements));
+});
 
-  m.def("get_num_elements",
-        [](mesh::MeshPtr &mesh_ptr, mesh::MeshElementType type) {
-          return mesh_ptr.ptr->num_elements.find(type)->second;
-        });
+m.def("get_num_elements",
+      [](mesh::MeshPtr &mesh_ptr, mesh::MeshElementType type) {
+        return mesh_ptr.ptr->num_elements.find(type)->second;
+      });
 
-  m.def("set_patch_max_element_num",
-        [](mesh::MeshPtr &mesh_ptr, mesh::MeshElementType type,
-           int max_element_num) {
-          mesh_ptr.ptr->patch_max_element_num.insert(
-              std::pair(type, max_element_num));
-        });
+m.def("set_patch_max_element_num", [](mesh::MeshPtr &mesh_ptr,
+                                      mesh::MeshElementType type,
+                                      int max_element_num) {
+  mesh_ptr.ptr->patch_max_element_num.insert(std::pair(type, max_element_num));
+});
 
-  m.def("set_index_mapping",
-        [](mesh::MeshPtr &mesh_ptr, mesh::MeshElementType element_type,
-           mesh::ConvType conv_type, SNode *snode) {
-          mesh_ptr.ptr->index_mapping.insert(
-              std::make_pair(std::make_pair(element_type, conv_type), snode));
-        });
+m.def("set_index_mapping",
+      [](mesh::MeshPtr &mesh_ptr, mesh::MeshElementType element_type,
+         mesh::ConvType conv_type, SNode *snode) {
+        mesh_ptr.ptr->index_mapping.insert(
+            std::make_pair(std::make_pair(element_type, conv_type), snode));
+      });
 
-  m.def("set_relation_fixed",
-        [](mesh::MeshPtr &mesh_ptr, mesh::MeshRelationType type, SNode *value) {
-          mesh_ptr.ptr->relations.insert(
-              std::pair(type, mesh::MeshLocalRelation(value)));
-        });
+m.def("set_relation_fixed",
+      [](mesh::MeshPtr &mesh_ptr, mesh::MeshRelationType type, SNode *value) {
+        mesh_ptr.ptr->relations.insert(
+            std::pair(type, mesh::MeshLocalRelation(value)));
+      });
 
-  m.def("set_relation_dynamic",
-        [](mesh::MeshPtr &mesh_ptr, mesh::MeshRelationType type, SNode *value,
-           SNode *patch_offset, SNode *offset) {
-          mesh_ptr.ptr->relations.insert(std::pair(
-              type, mesh::MeshLocalRelation(value, patch_offset, offset)));
-        });
+m.def("set_relation_dynamic",
+      [](mesh::MeshPtr &mesh_ptr, mesh::MeshRelationType type, SNode *value,
+         SNode *patch_offset, SNode *offset) {
+        mesh_ptr.ptr->relations.insert(std::pair(
+            type, mesh::MeshLocalRelation(value, patch_offset, offset)));
+      });
 
-  m.def("wait_for_debugger", []() {
+m.def("wait_for_debugger", []() {
 #ifdef WIN32
-    while (!::IsDebuggerPresent())
-      ::Sleep(100);
+  while (!::IsDebuggerPresent())
+    ::Sleep(100);
 #endif
-  });
+});
 }
 
 }  // namespace taichi

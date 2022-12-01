@@ -40,16 +40,4 @@ void Callable::finalize_rets() {
   ret_type =
       TypeFactory::get_instance().get_struct_type(types)->as<StructType>();
 }
-
-Callable::CurrentCallableGuard::CurrentCallableGuard(Program *program,
-                                                     Callable *callable)
-    : program_(program) {
-  old_callable_ = program->current_callable;
-  program->current_callable = callable;
-}
-
-Callable::CurrentCallableGuard::~CurrentCallableGuard() {
-  program_->current_callable = old_callable_;
-}
-
 }  // namespace taichi::lang

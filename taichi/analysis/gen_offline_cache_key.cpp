@@ -571,7 +571,7 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
       emit(expr.const_value);
       emit(expr.atomic);
       auto *e = expr.expr.get();
-      emit(e->stmt);
+      emit(e->get_flattened_stmt());
       emit(e->attributes);
       emit(e->ret_type);
       expr.expr->accept(this);

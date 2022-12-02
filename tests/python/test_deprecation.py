@@ -1,11 +1,9 @@
 import math
 import tempfile
-
 import pytest
 
 import taichi as ti
 from tests import test_utils
-
 
 @test_utils.test(arch=[ti.vulkan, ti.opengl, ti.cuda, ti.cpu])
 def test_deprecated_aot_save_filename():
@@ -68,4 +66,19 @@ def test_deprecate_field_dim_ndarray_annotation():
 
         @ti.kernel
         def func(x: ti.types.ndarray(field_dim=(16, 16))):
+            pass
+
+
+@test_utils.test()
+def test_deprecate_sourceinspect():
+    with pytest.warns(
+            DeprecationWarning,
+            match=
+            "Sourceinspect will be deprecated in v1.4.0"
+    ):
+        import os
+        os.environ['USE_SOURCEINSPECT'] = '1'
+
+        @ti.kernel
+        def func():
             pass

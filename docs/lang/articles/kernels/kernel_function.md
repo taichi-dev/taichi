@@ -1,6 +1,12 @@
 ---
 sidebar_position: 1
 ---
+:::note IMPORTANT
+
+If new to programming and/or Python, it is best to recap what [decorators](https://python101.pythonlibrary.org/chapter25_decorators.html) are.
+
+:::
+
 
 # Kernels and Functions
 
@@ -62,8 +68,11 @@ For convenience, we introduce two concepts, *Taichi scope* and *Python scope*:
 
 :::
 
-Do not confuse kernels with Taichi functions. They have slightly different syntax. The following sections describe their usages.
+:::note WARNING
 
+Do not confuse kernels with Taichi functions. They have slightly different syntax. The following sections describe their usages:
+
+:::
 
 ## Kernel
 
@@ -95,26 +104,58 @@ You call a kernel either directly or from inside a native Python function. You m
 ### Arguments
 
 
-A kernel can take multiple arguments. Note that you *cannot* pass any arbitrary Python object to a kernel because Python objects can be highly dynamic and may hold data that Taichi's compiler cannot recognize.
+A kernel can take multiple arguments. Note that you *cannot* pass any arbitrary Python object to a kernel because Python objects can be highly dynamic and may hold data that Taichi's compiler cannot recognize. Here are some common arguements that allow you to easily pass data from the Python scope to the Taichi scope.
 
-The argument types that a kernel accepts are scalars, `ti.Matrix`, `ti.Vector` (vectors are essentially matrices), `ti.types.ndarray()`, and `ti.template()`, allowing you to easily pass data from the Python scope to the Taichi scope. The supported types are defined in the `ti.types` module (see the [Type System](../type_system/type.md) for more information).
 
-- Scalars and `ti.Matrix` are *passed by value*.
-- `ti.types.ndarray()` and `ti.template()` are passed by reference. This means that any modification to the arguments in the kernel being called also affects the original values.
+:::note IMPORTANT
 
-> We skip `ti.template()` here and leave it to a more advanced topic: [Metaprogramming](../advanced/meta.md#template-metaprogramming).
+- We skip `ti.template()` here and leave it to a more advanced topic: [Metaprogramming](../advanced/meta.md#template-metaprogramming).
 
-In the following example, the arguments `x` and `y` are passed to `my_kernel()` *by value*:
+- The supported types are defined in the `ti.types` module (see the [Type System](../type_system/type.md) for more information).
+
+:::
+
+#### Matrix Fields
+We can use the ti.Matrix() function to declare our own [Matrix Field](https://docs.taichi-lang.org/docs/master/field#matrix-fields) and pass it into the kernel. This also works for [Vector Fields](https://docs.taichi-lang.org/docs/master/field#vector-fields)
+
+In the following example, we declare a Matrix Field, generate its values, and pass it into `myKernel()`:
+
+```python
+import taichi as ti
+ti.init()
+
+
+@ti.kernel
+def myKernel(a):
+    for i in ti.grouped(a):
+        a[i] = [[1,1,1], [1,1,1]]
+
+# Declares a 2x2 matrix field, with each of its elements being a 3x2 matrix
+a = ti.Matrix.field(n=2, m=3, dtype=ti.f32, shape=(2, 2))
+myKernel(a)
+print(a[0][0,0])#prints 1
+
+```
+
+
+#### Scalar Fields
+
+Scalar Fields are fields that only store constants. Click [here](https://docs.taichi-lang.org/docs/master/field#scalar-fields) for more information on Scalar Fields.
+
+In the following example, the arguments `x` and `y` are passed to `myKernel()` *by value*:
 
 ```python {1}
 @ti.kernel
-def my_kernel(x: int, y: float):
+def myKernel(x: int, y: float):
     print(x + y)
 
-my_kernel(1, 1.0)  # Prints 2.0
+myKernel(1, 1.0)  # Prints 2.0
 ```
 
-You can use `ti.types.ndarray()` as type hint to pass a NumPy's `ndarray` or a PyTorch's `tensor` to a kernel. Taichi recognizes the shape and data type of such a data structure and allows you to access these attributes in a kernel. In the following example, `x` is updated after `my_kernel()` is called because it is passed by reference.
+
+#### ti.types.ndarray()
+
+You can use `ti.types.ndarray()` as type hint to pass a NumPy's `ndarray` or a PyTorch's `tensor` to a kernel. Taichi recognizes the shape and data type of such a data structure and allows you to access these attributes in a kernel. In the following example, `x` is updated after `myKernel()` is called because it is passed by reference.
 
 ```python {9,10,11}
 import numpy as np
@@ -125,12 +166,12 @@ x = np.array([1, 2, 3])
 y = np.array([4, 5, 6])
 
 @ti.kernel
-def my_kernel(x: ti.types.ndarray(), y: ti.types.ndarray()):
+def myKernel(x: ti.types.ndarray(), y: ti.types.ndarray()):
     # Taichi recognizes the shape of the array x and allows you to access it in a kernel
     for i in range(x.shape[0]):
         x[i] += y[i]
 
-my_kernel(x, y)
+myKernel(x, y)
 print(x)  # Prints [5, 7, 9]
 ```
 
@@ -138,11 +179,6 @@ print(x)  # Prints [5, 7, 9]
 ### Return value
 
 A kernel can have *at most* one return value, which can be a scalar, `ti.Matrix`, or `ti.Vector`. Follow these rules when defining the return value of a kernel:
-
-- Type hint the return value of a kernel.
-- Ensure that you have *at most* one return value in a kernel.
-- Ensure that you have *at most* one return statement in a kernel.
-- Ensure that the number of elements in the return value does not exceed 30.
 
 #### At most one return value
 
@@ -153,20 +189,22 @@ vec2 = ti.math.vec2
 
 @ti.kernel
 def test(x: float, y: float) -> vec2: # Return value must be type hinted
+    
     # Return x, y  # Compilation error: Only one return value is allowed
     return vec2(x, y)  # Fine
 ```
 
-#### Automatic type cast
+#### Automatic type casting
 
 In the following code snippet, the return value is automatically cast into the hinted type:
 
 ```python
 @ti.kernel
-def my_kernel() -> ti.i32:  # int32
+def myKernel() -> ti.i32:  # int32
     return 128.32
+
 # The return value is cast into the hinted type ti.i32
-print(my_kernel())  # 128
+print(myKernel())  # 128
 ```
 
 #### At most one return statement
@@ -183,7 +221,7 @@ def test_sign(x: float) -> float:
     # Error: multiple return statements
 ```
 
-As a workaround, you can save the result in a local variable and return it at the end:
+To fix this, we reccomend that you can save the result in a local variable and return it at the end:
 
 ```python
 @ti.kernel
@@ -195,7 +233,8 @@ def test_sign(x: float) -> float:
     # One return statement works fine
 ```
 
-### Global variables are compile-time constants
+
+### Global Variables
 
 A kernel treats global variables as compile-time constants. This means that it takes in the current values of the global variables at the time it is compiled and that it does not track changes to them afterwards. Then, if the value of a global variable is updated between two calls of the same kernel, the second call does not take the updated value.
 
@@ -224,7 +263,8 @@ kernel_1()  # Prints 1
 kernel_2()  # Prints 2
 ```
 
-## Taichi function
+
+## Taichi Function
 
 Taichi functions are the building blocks of a kernel. *You must call a Taichi function from inside a kernel or from inside another Taichi function*.
 
@@ -262,7 +302,7 @@ All Taichi functions are force-inlined. Therefore, no runtime recursion is allow
 
 ### Arguments
 
-A Taichi function can have multiple arguments, supporting scalar, `ti.Matrix`, `ti.Vector`, `ti.types.ndarray()`, `ti.template()`, `ti.field`, and `ti.Struct` as argument types. Note that some of the restrictions on a kernel's arguments do not apply here:
+A Taichi function can have multiple arguments, supporting [Scalar](https://docs.taichi-lang.org/docs/master/field#scalar-fields), [ti.Matrix](https://docs.taichi-lang.org/docs/master/field#matrix-fields), [ti.Vector](https://docs.taichi-lang.org/docs/master/field#vector-fields), `ti.types.ndarray()`, `ti.template()`, and [ti.Struct](https://docs.taichi-lang.org/docs/master/field#struct-fields) as argument types. Note that some of the restrictions on a kernel's arguments do not apply here:
 
 - It is *not* required (but still recommended) to type hint arguments.
 - You can have an *unlimited* number of elements in the arguments.
@@ -273,7 +313,7 @@ A Taichi function can have multiple arguments, supporting scalar, `ti.Matrix`, `
 The return values of a Taichi function can be scalars, `ti.Matrix`, `ti.Vector`, `ti.Struct`, or others. Note that:
 
 - Unlike a kernel, a Taichi function can have multiple return values.
-- It is *not* required (but still recommended) to type hint the return values of a Taichi function.
+- It is recommended to type hint the return values of a Taichi function.
 
 Still, you *cannot* have more than one `return` statement in a Taichi function.
 
@@ -288,32 +328,6 @@ Still, you *cannot* have more than one `return` statement in a Taichi function.
 | Maximum number of elements in arguments               | <ul><li>32 (OpenGL)</li><li>64 (otherwise)</li></ul>         | Unlimited                                                    |
 | Maximum number of return values in a return statement | 1                                                            | Unlimited                                                    |
 
-
-## Key terms
-
-#### Backend
-
-In the computer world, the term *backend* may have different meanings based on the context, and generally refers to any part of a software program that users do not directly engage with. In the context of Taichi, backend is the place where your code is being executed, for example `cpu`, `opengl`, `cuda`, and `vulkan`.
-
-#### Compile-time recursion
-
-Compile-time recursion is a technique of meta-programming. The recursion is handled by Taichi's compiler and expanded and compiled into a serial function without recursion. The recursion conditions must be constant during compile time, and the depth of the recursion must be a constant.
-
-#### Force inline
-
-Force inline means that the users cannot choose whether to inline a function or not. The function will always be expanded into the caller by the compiler.
-
-#### Metaprogramming
-
-Metaprogramming generally refers to the manipulation of programs with programs. In the context of Taichi, it means generating actual-running programs with compile-time computations. In many cases, this allows developers to minimize the number of code lines to express a solution.
-
-#### Runtime recursion
-
-Runtime recursion is the kind of recursion that happens at runtime. The compiler does not expand the recursion, and it is compiled into a function that calls itself recursively. The recursion conditions are evaluated at runtime, and the depth does not need to be a constant number.
-
-#### Type hint
-
-Type hinting is a formal solution to statically indicate the type of value within your code.
 
 ## FAQ
 

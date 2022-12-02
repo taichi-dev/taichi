@@ -320,7 +320,7 @@ jobs:
           PY: py38
           TI_WANTED_ARCHS: 'cc,cpu,amdgpu'
           TI_DEVICE_MEMORY_GB: '1'
-          TI_RUN_RELEASE_TESTS: '1'
+          TI_RUN_RELEASE_TESTS: '0'
 
       - name: Save wheel if test failed
         if: failure() && steps.test.conclusion == 'failure'

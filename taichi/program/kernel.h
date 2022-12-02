@@ -94,12 +94,6 @@ class TI_DLL_EXPORT Kernel : public Callable {
     lowered_ = lowered;
   }
 
-  // Refactor2023:FIXME: Split & Move
-  void compile();
-
-  // Refactor2023:FIXME: Pre-refactor & Move
-  void operator()(LaunchContextBuilder &ctx_builder);
-
   // Refactor2023:FIXME: Move
   LaunchContextBuilder make_launch_context();
 
@@ -152,6 +146,15 @@ class TI_DLL_EXPORT Kernel : public Callable {
   // Refactor2023:FIXME: Remove
   void offload_to_executable(IRNode *stmt);
 
+  // Refactor2023:FIXME: Remove
+  FunctionType get_compiled_func() {
+    return compiled_;
+  }
+
+  void set_compiled_func(FunctionType func) {
+    compiled_ = func;
+  }
+
  private:
   void init(Program &program,
             const std::function<void()> &func,
@@ -171,5 +174,8 @@ class TI_DLL_EXPORT Kernel : public Callable {
   std::string kernel_key_;
   bool from_cache_{false};
 };
+
+// Refactor2023:FIXME: Remove
+void launch_kernel(Program *prog, Kernel &kernel, RuntimeContext &ctx);
 
 }  // namespace taichi::lang

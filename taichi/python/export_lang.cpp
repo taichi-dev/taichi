@@ -690,7 +690,7 @@ void export_lang(py::module &m) {
           py::return_value_policy::reference)
       .def("__call__", [](Kernel *kernel, LaunchContextBuilder &launch_ctx) {
         py::gil_scoped_release release;
-        kernel->operator()(launch_ctx);
+        launch_kernel(kernel->program, *kernel, launch_ctx.get_context());
       });
 
   py::class_<LaunchContextBuilder>(m, "KernelLaunchContext")

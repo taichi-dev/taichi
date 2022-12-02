@@ -92,7 +92,8 @@ void CompiledGraph::run(
       // JIT & Run
       TI_ASSERT(dispatch.ti_kernel);
       lang::LaunchContextBuilder launch_ctx(dispatch.ti_kernel, &ctx);
-      dispatch.ti_kernel->operator()(launch_ctx);
+      lang::launch_kernel(dispatch.ti_kernel->program, *dispatch.ti_kernel,
+                          launch_ctx.get_context());
     }
   }
 }

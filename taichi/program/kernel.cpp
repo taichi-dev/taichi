@@ -56,27 +56,6 @@ Kernel::Kernel(Program &program,
   }
 }
 
-void Kernel::compile() {
-  compiled_ = program->compile(*this);
-}
-
-void Kernel::operator()(LaunchContextBuilder &ctx_builder) {
-  if (!compiled_) {
-    compile();
-  }
-
-  compiled_(ctx_builder.get_context());
-
-  program->sync =
-      (program->sync && arch_is_cpu(program->this_thread_config().arch));
-  // Note that Kernel::arch may be different from program.config.arch
-  if (program->this_thread_config().debug &&
-      (arch_is_cpu(program->this_thread_config().arch) ||
-       program->this_thread_config().arch == Arch::cuda)) {
-    program->check_runtime_error();
-  }
-}
-
 LaunchContextBuilder Kernel::make_launch_context() {
   return LaunchContextBuilder(this);
 }
@@ -356,5 +335,25 @@ void Kernel::offload_to_executable(IRNode *stmt) {
       /*make_block_local=*/
       is_extension_supported(config.arch, Extension::bls) &&
           config.make_block_local);
+}
+
+// Refactor2023:FIXME: Remove (:Temp)
+void launch_kernel(Program *prog, Kernel &kernel, RuntimeContext &ctx) {
+  auto fn = kernel.get_compiled_func();
+  if (!fn) {
+    kernel.set_compiled_func(fn = prog->compile(kernel));
+  }
+  TI_ASSERT(!!fn);
+
+  fn(ctx);
+
+  const auto config = prog->this_thread_config();
+  const auto arch = config.arch;
+
+  prog->sync = (prog->sync && arch_is_cpu(arch));
+  // Note that Kernel::arch may be different from program.config.arch
+  if (config.debug && (arch_is_cpu(arch) || arch == Arch::cuda)) {
+    prog->check_runtime_error();
+  }
 }
 }  // namespace taichi::lang

@@ -101,7 +101,10 @@ class Struct(TaichiOperations):
         cls = self.__class__
         new_cls_name = cls.__name__ + str(cls._instance_count)
         cls._instance_count += 1
-        properties = {k: property(cls._make_getter(k), cls._make_setter(k)) for k in self.keys}
+        properties = {
+            k: property(cls._make_getter(k), cls._make_setter(k))
+            for k in self.keys
+        }
         self.__class__ = type(new_cls_name, (cls, ), properties)
 
     def _register_methods(self):

@@ -1,4 +1,7 @@
+import warnings
+
 from taichi.lang.enums import Format
+from taichi.lang.exception import TaichiCompilationError
 from taichi.types.primitive_types import f16, f32, i8, i16, i32, u8, u16, u32
 
 FORMAT2TY_CH = {
@@ -40,7 +43,9 @@ FORMAT2TY_CH = {
     Format.rgba32i: (i32, 4),
     Format.rgba32f: (f32, 4),
 }
-import warnings
+
+# Reverse lookup by (channel_format, num_channels)
+TY_CH2FORMAT = {v: k for k, v in FORMAT2TY_CH.items()}
 
 
 class TextureType:
@@ -74,10 +79,16 @@ class RWTextureType:
             warnings.warn(
                 "Specifying num_channels and channel_format is deprecated and will be removed in v1.5.0, please specify fmt instead.",
                 DeprecationWarning)
+            if num_channels is None or channel_format is None:
+                raise TaichiCompilationError(
+                    "Incomplete type info for rw_texture, please specify its fmt (ti.Format)"
+                )
             self.num_channels = num_channels
             self.channel_format = channel_format
+            self.fmt = TY_CH2FORMAT[(self.channel_format, self.num_channels)]
         else:
-            self.num_channels, self.channel_format = FORMAT2TY_CH[fmt]
+            self.channel_format, self.num_channels = FORMAT2TY_CH[fmt]
+            self.fmt = fmt
         self.lod = lod
 
 

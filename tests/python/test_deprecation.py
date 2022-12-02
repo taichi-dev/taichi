@@ -130,3 +130,45 @@ def test_deprecated_rwtexture_type():
             for i, j in ti.ndrange(n, n):
                 ret = ti.cast(1, ti.f32)
                 tex.store(ti.Vector([i, j]), ti.Vector([ret, 0.0, 0.0, 0.0]))
+
+
+@test_utils.test(arch=ti.vulkan)
+def test_incomplete_info_rwtexture():
+    n = 128
+
+    with pytest.raises(
+            ti.TaichiCompilationError,
+            match=r"Incomplete type info for rw_texture, please specify its fmt"
+    ):
+
+        @ti.kernel
+        def ker(tex: ti.types.rw_texture(num_dimensions=2,
+                                         channel_format=ti.f32,
+                                         lod=0)):
+            for i, j in ti.ndrange(n, n):
+                ret = ti.cast(1, ti.f32)
+                tex.store(ti.Vector([i, j]), ti.Vector([ret, 0.0, 0.0, 0.0]))
+
+    with pytest.raises(
+            ti.TaichiCompilationError,
+            match=r"Incomplete type info for rw_texture, please specify its fmt"
+    ):
+
+        @ti.kernel
+        def ker(tex: ti.types.rw_texture(num_dimensions=2,
+                                         num_channels=2,
+                                         lod=0)):
+            for i, j in ti.ndrange(n, n):
+                ret = ti.cast(1, ti.f32)
+                tex.store(ti.Vector([i, j]), ti.Vector([ret, 0.0, 0.0, 0.0]))
+
+    with pytest.raises(
+            ti.TaichiCompilationError,
+            match=r"Incomplete type info for rw_texture, please specify its fmt"
+    ):
+
+        @ti.kernel
+        def ker(tex: ti.types.rw_texture(num_dimensions=2, lod=0)):
+            for i, j in ti.ndrange(n, n):
+                ret = ti.cast(1, ti.f32)
+                tex.store(ti.Vector([i, j]), ti.Vector([ret, 0.0, 0.0, 0.0]))

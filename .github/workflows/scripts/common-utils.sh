@@ -172,8 +172,8 @@ function ci-docker-run-amdgpu {
         --device=/dev/dri \
         --group-add=video \
         -e DISPLAY=:$i \
-        -e GPU_BUILD=ON \
         -e GPU_TEST=ON \
+        -e AMDGPU_TEST=ON \
         -v /tmp/.X11-unix:/tmp/.X11-unix \
         $@
 }

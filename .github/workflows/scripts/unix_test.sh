@@ -14,6 +14,11 @@ setup_python
 
 [[ "$IN_DOCKER" == "true" ]] && cd taichi
 
+if ["$AMDGPU_TEST"]; then
+    sudo chmod 666 /dev/kfd
+    sudo chmod 666 /dev/dri/*
+fi
+
 python3 -m pip install dist/*.whl
 if [ -z "$GPU_TEST" ]; then
     python3 -m pip install -r requirements_test.txt
@@ -103,6 +108,9 @@ if [ -z "$GPU_TEST" ]; then
         fi
         python3 tests/run_tests.py -vr2 -t4 -k "not paddle" -a "$TI_WANTED_ARCHS"
     fi
+elif ["$AMDGPU_TEST"]; then
+    run-it cpu    $(nproc)
+    # run-it amdgpu 4
 else
     run-it cuda   8
     run-it cpu    $(nproc)

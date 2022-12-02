@@ -18,9 +18,16 @@ parser.add_argument('-S',
                     '--use-sp-mat',
                     action='store_true',
                     help='Solve Poisson\'s equation by using a sparse matrix')
+parser.add_argument('-a',
+                    '--arch',
+                    required=False,
+                    default="cpu",
+                    dest='arch',
+                    type=str,
+                    help='The arch (backend) to run this example on')
 args, unknowns = parser.parse_known_args()
 
-res = 512
+res = 256
 dt = 0.03
 p_jacobi_iters = 500  # 40 for a quicker but less accurate result
 f_strength = 10000.0
@@ -32,12 +39,17 @@ force_radius = res / 2.0
 debug = False
 
 use_sparse_matrix = args.use_sp_mat
+arch = args.arch
+if arch in ["x64", "cpu", "arm64"]:
+    ti.init(arch=ti.cpu)
+elif arch in ["cuda", "gpu"]:
+    ti.init(arch=ti.cuda)
+else:
+    raise ValueError('Only CPU and CUDA backends are supported for now.')
 
 if use_sparse_matrix:
-    ti.init(arch=ti.x64)
     print('Using sparse matrix')
 else:
-    ti.init(arch=ti.gpu)
     print('Using jacobi iteration')
 
 _velocities = ti.Vector.field(2, float, shape=(res, res))
@@ -86,7 +98,7 @@ if use_sparse_matrix:
 
     N = res * res
     K = ti.linalg.SparseMatrixBuilder(N, N, max_num_triplets=N * 6)
-    F_b = ti.field(ti.f32, shape=N)
+    F_b = ti.ndarray(ti.f32, shape=N)
 
     fill_laplacian_matrix(K)
     L = K.build()
@@ -236,7 +248,7 @@ def enhance_vorticity(vf: ti.template(), cf: ti.template()):
 
 
 @ti.kernel
-def copy_divergence(div_in: ti.template(), div_out: ti.template()):
+def copy_divergence(div_in: ti.template(), div_out: ti.types.ndarray()):
     for I in ti.grouped(div_in):
         div_out[I[0] * res + I[1]] = -div_in[I]
 

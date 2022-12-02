@@ -68,6 +68,10 @@ build_taichi_wheel() {
             EXTRA_ARGS="-p manylinux_2_27_x86_64"
         fi
     fi
+
+    if ["$AMDGPU_TEST"]; then
+      TAICHI_CMAKE_ARGS="$TAICHI_CMAKE_ARGS -DTI_WITH_CUDA:BOOL=OFF"
+    fi
     python3 misc/make_changelog.py --ver origin/master --repo_dir ./ --save
 
     python3 setup.py $PROJECT_TAGS bdist_wheel $EXTRA_ARGS

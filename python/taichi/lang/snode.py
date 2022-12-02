@@ -392,7 +392,7 @@ def rescale_index(a, b, I):
     assert isinstance(
         b, (Field, SNode)), "The second argument must be a field or an SNode"
     if isinstance(I, list):
-        I = matrix.Vector(I)
+        n = len(I)
     else:
         assert isinstance(
             I, (list, expr.Expr, matrix.Matrix)

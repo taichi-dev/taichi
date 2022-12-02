@@ -403,13 +403,13 @@ def rescale_index(a, b, I):
 
     @pyfunc
     def _rescale_index():
-        entries = [I[i] for i in range(I.n)]
-        for n in impl.static(range(min(I.n, min(len(a.shape), len(b.shape))))):
-            if a.shape[n] > b.shape[n]:
-                entries[n] = I[n] // (a.shape[n] // b.shape[n])
-            if a.shape[n] < b.shape[n]:
-                entries[n] = I[n] * (b.shape[n] // a.shape[n])
-        return matrix.Vector(entries)
+        result = matrix.Vector([I[i] for i in range(n)])
+        for i in impl.static(range(min(n, min(len(a.shape), len(b.shape))))):
+            if a.shape[i] > b.shape[i]:
+                result[i] = I[i] // (a.shape[i] // b.shape[i])
+            if a.shape[i] < b.shape[i]:
+                result[i] = I[i] * (b.shape[i] // a.shape[i])
+        return result
 
     return _rescale_index()
 

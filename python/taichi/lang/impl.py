@@ -6,7 +6,7 @@ import numpy as np
 from taichi._lib import core as _ti_core
 from taichi._snode.fields_builder import FieldsBuilder
 from taichi.lang._ndarray import ScalarNdarray
-from taichi.lang._ndrange import GroupedNDRange, _Ndrange
+from taichi.lang._ndrange import GroupedNDRange, StaticGroupedNDRange, _Ndrange
 from taichi.lang._texture import RWTextureAccessor
 from taichi.lang.any_array import AnyArray, AnyArrayAccess
 from taichi.lang.enums import SNodeGradType
@@ -1070,10 +1070,15 @@ def static(x, *xs):
     if len(xs):  # for python-ish pointer assign: x, y = ti.static(y, x)
         return [static(x)] + [static(x) for x in xs]
 
-    if isinstance(x,
-                  (bool, int, float, range, list, tuple, enumerate, _Ndrange,
-                   GroupedNDRange, zip, filter, map)) or x is None:
+    if isinstance(x, (bool, int, float, range, list, tuple, enumerate,
+                      _Ndrange, zip, filter, map)) or x is None:
         return x
+
+    if isinstance(x, GroupedNDRange):
+        if current_cfg().real_matrix:
+            return StaticGroupedNDRange(x.r)
+        return x
+
     if isinstance(x, AnyArray):
         return x
     if isinstance(x, Field):

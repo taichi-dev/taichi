@@ -139,16 +139,24 @@ def ndrange(*args):
     return _Ndrange(*args)
 
 
-class GroupedNDRange:
+class GroupedNDRangeBase:
     def __init__(self, r):
         self.r = r
 
+
+class GroupedNDRange(GroupedNDRangeBase):
     def __iter__(self):
         for ind in self.r:
             if impl.current_cfg().real_matrix:
                 yield make_matrix(list(ind), dt=primitive_types.i32)
             else:
                 yield _IntermediateMatrix(len(ind), 1, list(ind), ndim=1)
+
+
+class StaticGroupedNDRange(GroupedNDRangeBase):
+    def __iter__(self):
+        for ind in self.r:
+            yield list(ind)
 
 
 __all__ = ['ndrange']

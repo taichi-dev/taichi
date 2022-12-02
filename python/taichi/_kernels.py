@@ -2,6 +2,7 @@ from taichi._funcs import field_fill_taichi_scope
 from taichi._lib.utils import get_os_name
 from taichi.lang import ops
 from taichi.lang._ndrange import ndrange
+from taichi.lang.enums import Format
 from taichi.lang.expr import Expr
 from taichi.lang.field import ScalarField
 from taichi.lang.impl import grouped, static, static_assert
@@ -256,8 +257,7 @@ def snode_deactivate_dynamic(b: template()):
 
 @kernel
 def load_texture_from_numpy(tex: texture_type.rw_texture(num_dimensions=2,
-                                                         num_channels=4,
-                                                         channel_format=u8,
+                                                         fmt=Format.rgba8u,
                                                          lod=0),
                             img: ndarray_type.ndarray(dtype=vec3, ndim=2)):
     for i, j in img:
@@ -269,8 +269,7 @@ def load_texture_from_numpy(tex: texture_type.rw_texture(num_dimensions=2,
 
 @kernel
 def save_texture_to_numpy(tex: texture_type.rw_texture(num_dimensions=2,
-                                                       num_channels=4,
-                                                       channel_format=u8,
+                                                       fmt=Format.rgba8u,
                                                        lod=0),
                           img: ndarray_type.ndarray(dtype=vec3, ndim=2)):
     for i, j in img:

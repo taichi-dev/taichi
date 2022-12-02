@@ -54,9 +54,6 @@ Kernel::Kernel(Program &program,
   } else if (autodiff_mode == AutodiffMode::kReverse) {
     name = primal_name + "_reverse_grad";
   }
-
-  if (!program.this_thread_config().lazy_compilation)
-    compile();
 }
 
 void Kernel::compile() {
@@ -337,9 +334,6 @@ void Kernel::init(Program &program,
 
   func();
   ir->as<Block>()->kernel = this;
-
-  if (!program.this_thread_config().lazy_compilation)
-    compile();
 }
 
 // static

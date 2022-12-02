@@ -13,8 +13,7 @@ texture = ti.Texture(ti.Format.r32f, (128, 128))
 
 @ti.kernel
 def make_texture(tex: ti.types.rw_texture(num_dimensions=2,
-                                          num_channels=1,
-                                          channel_format=ti.f32,
+                                          fmt=ti.Format.r32f,
                                           lod=0)):
     for i, j in ti.ndrange(128, 128):
         ret = ti.cast(taichi_logo(ti.Vector([i, j]) / 128), ti.f32)

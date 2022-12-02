@@ -493,8 +493,7 @@ def test_static_for_break():
             assert a[i] == 0
 
 
-@test_utils.test(print_preprocessed_ir=True)
-def test_static_grouped_for_break():
+def _test_static_grouped_for_break():
     n = 4
 
     @ti.kernel
@@ -519,6 +518,18 @@ def test_static_grouped_for_break():
 
 
 @test_utils.test(print_preprocessed_ir=True)
+def test_static_grouped_for_break():
+    _test_static_grouped_for_break()
+
+
+@test_utils.test(print_preprocessed_ir=True,
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_static_grouped_for_break_matrix_scalarize():
+    _test_static_grouped_for_break()
+
+
+@test_utils.test(print_preprocessed_ir=True)
 def test_static_for_continue():
     n = 10
 
@@ -540,8 +551,7 @@ def test_static_for_continue():
             assert a[i] == 3
 
 
-@test_utils.test(print_preprocessed_ir=True)
-def test_static_grouped_for_continue():
+def _test_static_grouped_for_continue():
     n = 4
 
     @ti.kernel
@@ -561,6 +571,18 @@ def test_static_grouped_for_continue():
                 assert a[i, j] == 5
             else:
                 assert a[i, j] == 3
+
+
+@test_utils.test(print_preprocessed_ir=True)
+def test_static_grouped_for_continue():
+    _test_static_grouped_for_continue()
+
+
+@test_utils.test(print_preprocessed_ir=True,
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_static_grouped_for_continue_matrix_scalarize():
+    _test_static_grouped_for_continue()
 
 
 @test_utils.test(print_preprocessed_ir=True)

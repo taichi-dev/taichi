@@ -386,17 +386,6 @@ def rescale_index(a, b, I):
     Returns:
         Ib (:class:`~taichi.Vector`): rescaled grouped loop index
     """
-    from taichi.lang.kernel_impl import pyfunc  # pylint: disable=C0415
-
-    @pyfunc
-    def _rescale_index(a, b, I):
-        entries = [I[i] for i in range(I.n)]
-        for n in impl.static(range(min(I.n, min(len(a.shape), len(b.shape))))):
-            if a.shape[n] > b.shape[n]:
-                entries[n] = I[n] // (a.shape[n] // b.shape[n])
-            if a.shape[n] < b.shape[n]:
-                entries[n] = I[n] * (b.shape[n] // a.shape[n])
-        return matrix.Vector(entries)
 
     assert isinstance(
         a, (Field, SNode)), "The first argument must be a field or an SNode"
@@ -409,7 +398,19 @@ def rescale_index(a, b, I):
             I, (list, expr.Expr, matrix.Matrix)
         ), "The third argument must be an index (list, ti.Vector, or Expr with TensorType)"
 
-    return _rescale_index(a, b, I)
+    from taichi.lang.kernel_impl import pyfunc  # pylint: disable=C0415
+
+    @pyfunc
+    def _rescale_index():
+        entries = [I[i] for i in range(I.n)]
+        for n in impl.static(range(min(I.n, min(len(a.shape), len(b.shape))))):
+            if a.shape[n] > b.shape[n]:
+                entries[n] = I[n] // (a.shape[n] // b.shape[n])
+            if a.shape[n] < b.shape[n]:
+                entries[n] = I[n] * (b.shape[n] // a.shape[n])
+        return matrix.Vector(entries)
+
+    return _rescale_index()
 
 
 @_expand_indices

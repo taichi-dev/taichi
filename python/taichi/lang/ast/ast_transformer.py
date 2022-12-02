@@ -153,6 +153,10 @@ class ASTTransformer(Builder):
 
         # Unpack: a, b, c = ti.Vector([1., 2., 3.])
         if isinstance(values, impl.Expr) and values.ptr.is_tensor():
+            if len(values.get_shape()) > 1:
+                raise ValueError(
+                    'Matrices with more than one columns cannot be unpacked')
+
             values = ctx.ast_builder.expand_expr([values.ptr])
             if len(values) == 1:
                 values = values[0]

@@ -207,8 +207,7 @@ def test_unpack_mismatch_type():
         func()
 
 
-@test_utils.test(arch=get_host_arch_list())
-def test_unpack_mismatch_matrix():
+def _test_unpack_mismatch_matrix():
     a = ti.field(ti.f32, ())
     b = ti.field(ti.f32, ())
     c = ti.field(ti.f32, ())
@@ -221,6 +220,18 @@ def test_unpack_mismatch_matrix():
 
     with pytest.raises(ti.TaichiCompilationError):
         func()
+
+
+@test_utils.test(arch=get_host_arch_list())
+def test_unpack_mismatch_matrix():
+    _test_unpack_mismatch_matrix()
+
+
+@test_utils.test(arch=get_host_arch_list(),
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_unpack_mismatch_matrix_scalarize():
+    _test_unpack_mismatch_matrix()
 
 
 @test_utils.test(arch=get_host_arch_list())

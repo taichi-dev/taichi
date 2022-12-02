@@ -2,6 +2,7 @@
 
 #include "taichi/codegen/llvm/codegen_llvm.h"
 #include "taichi/common/core.h"
+#include "taichi/ir/transforms.h"
 #include "taichi/util/io.h"
 #include "taichi/util/lang_util.h"
 #include "taichi/program/program.h"
@@ -211,9 +212,8 @@ class TaskCodeGenWASM : public TaskCodeGenLLVM {
 
   LLVMCompiledTask run_compilation() override {
     // lower kernel
-    if (!kernel->lowered()) {
-      kernel->lower();
-    }
+    irpass::ast_to_ir(kernel->program->this_thread_config(), *kernel);
+
     // emit_to_module
     auto offloaded_task_name = init_taichi_kernel_function();
     ir->accept(this);
@@ -275,10 +275,10 @@ LLVMCompiledTask KernelCodeGenWASM::compile_task(
 }
 
 LLVMCompiledKernel KernelCodeGenWASM::compile_kernel_to_module() {
-  auto *tlctx = get_llvm_program(prog)->get_llvm_context(kernel->arch);
-  if (!kernel->lowered()) {
-    kernel->lower(/*to_executable=*/false);
-  }
+  auto *tlctx =
+      get_llvm_program(prog)->get_llvm_context(prog->this_thread_config().arch);
+  irpass::ast_to_ir(kernel->program->this_thread_config(), *kernel, false);
+
   auto res = compile_task();
   std::vector<std::unique_ptr<LLVMCompiledTask>> data;
   data.push_back(std::make_unique<LLVMCompiledTask>(std::move(res)));

@@ -100,9 +100,8 @@ LLVMCompiledKernel KernelCodeGen::compile_kernel_to_module() {
       return std::move(*res);
     }
   }
-  if (!kernel->lowered()) {
-    kernel->lower(/*to_executable=*/false);
-  }
+
+  irpass::ast_to_ir(config, *kernel, false);
 
   auto block = dynamic_cast<Block *>(kernel->ir.get());
   auto &worker = get_llvm_program(kernel->program)->compilation_workers;

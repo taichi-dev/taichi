@@ -22,7 +22,7 @@ def make_texture(tex: ti.types.rw_texture(num_dimensions=2,
 
 
 @ti.kernel
-def paint(t: ti.f32, pixels: ti.types.ndarray(field_dim=2),
+def paint(t: ti.f32, pixels: ti.types.ndarray(ndim=2),
           tex: ti.types.texture(num_dimensions=2)):
     for i, j in pixels:
         uv = ti.Vector([i / res[0], j / res[1]])
@@ -38,7 +38,7 @@ def paint(t: ti.f32, pixels: ti.types.ndarray(field_dim=2),
 
 
 @ti.kernel
-def copy_to_field(pixels: ti.types.ndarray(field_dim=2)):
+def copy_to_field(pixels: ti.types.ndarray(ndim=2)):
     for I in ti.grouped(pixels):
         img[I] = pixels[I]
 

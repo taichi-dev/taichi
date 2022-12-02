@@ -440,16 +440,25 @@ A named argument value to feed compute graphs.
 - `structure.named_argument.name`: Name of the argument.
 - `structure.named_argument.argument`: Argument body.
 
+`function.get_available_archs`
+
+Gets a list of available archs on the current platform. An arch is only available if:
+
+1. The Runtime library is compiled with its support;
+2. The current platform is installed with a capable hardware or an emulation software.
+
+An available arch has at least one device available, i.e., device index 0 is always available. If an arch is not available on the current platform, a call to `function.create_runtime` with that arch is guaranteed failing.
+
 `function.get_last_error`
 
-Get the last error raised by Taichi C-API invocations. Returns the semantical error code.
+Gets the last error raised by Taichi C-API invocations. Returns the semantical error code.
 
 - `function.get_last_error.message_size`: Size of textual error message in `function.get_last_error.message`
 - `function.get_last_error.message`: Text buffer for the textual error message. Ignored when `message_size` is 0.
 
 `function.set_last_error`
 
-Set the provided error as the last error raised by Taichi C-API invocations. It can be useful in extended validation procedures in Taichi C-API wrappers and helper libraries.
+Sets the provided error as the last error raised by Taichi C-API invocations. It can be useful in extended validation procedures in Taichi C-API wrappers and helper libraries.
 
 - `function.set_last_error.error`: Semantical error code.
 - `function.set_last_error.message`: A null-terminated string of the textual error message or `nullptr` for empty error message.

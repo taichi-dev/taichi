@@ -462,7 +462,7 @@ class MCISO_Example(MCISO):
             if ti.static(self.dim == 3):
                 p.z -= 0.5
             b = self.gauss(p.norm() / 0.25)
-            r = max(a + b - 0.08, 0)
+            r = ti.max(a + b - 0.08, 0)
             if r <= 0:
                 continue
             self.m[o] = r * 3

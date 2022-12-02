@@ -1,9 +1,10 @@
 import numbers
+import warnings
 
 from taichi._lib import core as _ti_core
 from taichi.lang import expr, impl, matrix
 from taichi.lang.field import BitpackedFields, Field
-from taichi.lang.util import get_traceback, is_taichi_class
+from taichi.lang.util import get_traceback
 
 
 class SNode:
@@ -47,6 +48,10 @@ class SNode:
         Returns:
             The added :class:`~taichi.lang.SNode` instance.
         """
+        if impl.current_cfg().arch == _ti_core.metal:
+            warnings.warn(
+                "Pointer SNode on metal backend is deprecated, and it will be removed in v1.4.0.",
+                DeprecationWarning)
         if isinstance(dimensions, numbers.Number):
             dimensions = [dimensions] * len(axes)
         return SNode(
@@ -74,6 +79,10 @@ class SNode:
         Returns:
             The added :class:`~taichi.lang.SNode` instance.
         """
+        if impl.current_cfg().arch == _ti_core.metal:
+            raise TaichiCompilationError(
+                "Dynamic SNode on metal backend is deprecated and removed in this release."
+            )
         assert len(axis) == 1
         if chunk_size is None:
             chunk_size = dimension
@@ -91,6 +100,10 @@ class SNode:
         Returns:
             The added :class:`~taichi.lang.SNode` instance.
         """
+        if impl.current_cfg().arch == _ti_core.metal:
+            warnings.warn(
+                "Bitmasked SNode on metal backend is deprecated, and it will be removed in v1.4.0.",
+                DeprecationWarning)
         if isinstance(dimensions, numbers.Number):
             dimensions = [dimensions] * len(axes)
         return SNode(
@@ -363,19 +376,6 @@ def rescale_index(a, b, I):
     return matrix.Vector(entries)
 
 
-def _get_flattened_ptrs(val):
-    if is_taichi_class(val):
-        ptrs = []
-        for item in val._members:
-            ptrs.extend(_get_flattened_ptrs(item))
-        return ptrs
-    if impl.current_cfg().real_matrix and isinstance(
-            val, expr.Expr) and val.ptr.is_tensor():
-        return impl.get_runtime().prog.current_ast_builder().expand_expr(
-            [val.ptr])
-    return [expr.Expr(val).ptr]
-
-
 def append(node, indices, val):
     """Append a value `val` to a SNode `node` at index `indices`.
 
@@ -384,7 +384,7 @@ def append(node, indices, val):
         indices (Union[int, :class:`~taichi.Vector`]): the indices to visit.
         val (:mod:`~taichi.types.primitive_types`): the scalar data to be appended, only i32 value is support for now.
     """
-    ptrs = _get_flattened_ptrs(val)
+    ptrs = expr._get_flattened_ptrs(val)
     append_expr = expr.Expr(_ti_core.expr_snode_append(
         node._snode.ptr, expr.make_expr_group(indices), ptrs),
                             tb=impl.get_runtime().get_current_src_info())

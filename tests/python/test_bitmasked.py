@@ -35,8 +35,7 @@ def test_basic():
     _test_basic()
 
 
-@test_utils.test(require=[ti.extension.sparse, ti.extension.packed],
-                 packed=True)
+@test_utils.test(require=ti.extension.sparse, packed=True)
 def test_basic_packed():
     _test_basic()
 
@@ -216,8 +215,7 @@ def test_sparsity_changes():
     _test_sparsity_changes()
 
 
-@test_utils.test(require=[ti.extension.sparse, ti.extension.packed],
-                 packed=True)
+@test_utils.test(require=ti.extension.sparse, packed=True)
 def test_sparsity_changes_packed():
     _test_sparsity_changes()
 

@@ -223,10 +223,14 @@ class Struct(TaichiOperations):
         Args:
             val (Union[int, float]): Value to fill.
         """
-        def assign_renamed(x, y):
-            return ops.assign(x, y)
-
-        return self._element_wise_writeback_binary(assign_renamed, val)
+        for k, v in self.items:
+            if isinstance(v, impl.Expr) and v.ptr.is_tensor():
+                from taichi.lang import matrix_ops  # pylint: disable=C0415
+                matrix_ops.fill(v, val)
+            elif isinstance(v, (Struct, Matrix)):
+                v._element_wise_binary(ops.assign, val)
+            else:
+                ops.assign(v, val)
 
     def __len__(self):
         """Get the number of entries in a custom struct"""

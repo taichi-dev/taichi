@@ -57,7 +57,7 @@ def test_mpm_particle_list_no_leakage():
 
 
 @pytest.mark.run_in_serial
-@test_utils.test(require=[ti.extension.sparse, ti.extension.packed],
+@test_utils.test(require=ti.extension.sparse,
                  exclude=[ti.metal],
                  device_memory_GB=1.0,
                  packed=True)

@@ -64,11 +64,9 @@ SNode &SNode::create_node(std::vector<Axis> axes,
     } else {
       TI_WARN_IF(
           packed && !bit::is_power_of_two(sizes[i]),
-          "Non-first division of an axis on a SNodeTree path should be a power "
-          "of two to achieve best performance:\n{} We plan to turn this "
-          "warning into an error at v1.4.0. If you do have a use case that "
-          "needs to violate this rule, please submit an issue to notify us.",
-          tb);
+          "Shape {} is detected on non-first division of axis {}:\n{} For "
+          "best performance, we recommend that you set it to a power of two.",
+          sizes[i], char('i' + ind), tb);
     }
     new_node.extractors[ind].activate(
         bit::log2int(bit::least_pot_bound(sizes[i])));

@@ -7,7 +7,12 @@ set -ex
 [[ "$IN_DOCKER" == "true" ]] && cd taichi
 
 if [[ $OSTYPE == "linux-"* ]]; then
-  if [ -z "$AMDGPU_TEST"]; then
+  if ["$AMDGPU_TEST"]; then
+    sudo ln -s /usr/bin/clang++-10 /usr/bin/clang++
+    sudo ln -s /usr/bin/clang-10 /usr/bin/clang
+    sudo ln -s /usr/bin/ld.lld-10 /usr/bin/ld.lld
+    export LLVM_DIR="/taichi-llvm-15.0.0-linux"
+  else
     if [ ! -d ~/taichi-llvm-15 ]; then
       pushd ~
       if [ -f /etc/centos-release ] ; then
@@ -20,11 +25,6 @@ if [[ $OSTYPE == "linux-"* ]]; then
       popd
     fi
     export LLVM_DIR="$HOME/taichi-llvm-15"
-  else
-    sudo ln -s /usr/bin/clang++-10 /usr/bin/clang++
-    sudo ln -s /usr/bin/clang-10 /usr/bin/clang
-    sudo ln -s /usr/bin/ld.lld-10 /usr/bin/ld.lld
-    export LLVM_DIR="/taichi-llvm-15.0.0-linux"
   fi
 
     

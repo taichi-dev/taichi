@@ -71,7 +71,7 @@ LaunchContextBuilder::LaunchContextBuilder(Kernel *kernel)
 }
 
 void LaunchContextBuilder::set_arg_float(int arg_id, float64 d) {
-  TI_ASSERT_INFO(!kernel_->args[arg_id].is_array,
+  TI_ASSERT_INFO(!kernel_->parameter_list[arg_id].is_array,
                  "Assigning scalar value to external (numpy) array argument is "
                  "not allowed.");
 
@@ -80,7 +80,7 @@ void LaunchContextBuilder::set_arg_float(int arg_id, float64 d) {
       {ActionArg("kernel_name", kernel_->name), ActionArg("arg_id", arg_id),
        ActionArg("val", d)});
 
-  auto dt = kernel_->args[arg_id].get_dtype();
+  auto dt = kernel_->parameter_list[arg_id].get_dtype();
   if (dt->is_primitive(PrimitiveTypeID::f32)) {
     ctx_->set_arg(arg_id, (float32)d);
   } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
@@ -110,7 +110,7 @@ void LaunchContextBuilder::set_arg_float(int arg_id, float64 d) {
 }
 
 void LaunchContextBuilder::set_arg_int(int arg_id, int64 d) {
-  TI_ASSERT_INFO(!kernel_->args[arg_id].is_array,
+  TI_ASSERT_INFO(!kernel_->parameter_list[arg_id].is_array,
                  "Assigning scalar value to external (numpy) array argument is "
                  "not allowed.");
 
@@ -119,7 +119,7 @@ void LaunchContextBuilder::set_arg_int(int arg_id, int64 d) {
       {ActionArg("kernel_name", kernel_->name), ActionArg("arg_id", arg_id),
        ActionArg("val", d)});
 
-  auto dt = kernel_->args[arg_id].get_dtype();
+  auto dt = kernel_->parameter_list[arg_id].get_dtype();
   if (dt->is_primitive(PrimitiveTypeID::i32)) {
     ctx_->set_arg(arg_id, (int32)d);
   } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
@@ -156,7 +156,7 @@ void LaunchContextBuilder::set_arg_external_array_with_shape(
     uint64 size,
     const std::vector<int64> &shape) {
   TI_ASSERT_INFO(
-      kernel_->args[arg_id].is_array,
+      kernel_->parameter_list[arg_id].is_array,
       "Assigning external (numpy) array to scalar argument is not allowed.");
 
   ActionRecorder::get_instance().record(
@@ -188,7 +188,7 @@ void LaunchContextBuilder::set_arg_rw_texture(int arg_id, const Texture &tex) {
 }
 
 void LaunchContextBuilder::set_arg_raw(int arg_id, uint64 d) {
-  TI_ASSERT_INFO(!kernel_->args[arg_id].is_array,
+  TI_ASSERT_INFO(!kernel_->parameter_list[arg_id].is_array,
                  "Assigning scalar value to external (numpy) array argument is "
                  "not allowed.");
 

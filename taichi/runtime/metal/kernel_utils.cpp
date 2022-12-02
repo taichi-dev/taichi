@@ -76,8 +76,8 @@ std::string KernelAttributes::debug_string() const {
 
 KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
     : ctx_bytes_(0), extra_args_bytes_(RuntimeContext::extra_args_size) {
-  arg_attribs_vec_.reserve(kernel.args.size());
-  for (const auto &ka : kernel.args) {
+  arg_attribs_vec_.reserve(kernel.parameter_list.size());
+  for (const auto &ka : kernel.parameter_list) {
     ArgAttributes ma;
     ma.dt = to_metal_type(ka.get_element_type());
     const size_t dt_bytes = metal_data_type_bytes(ma.dt);

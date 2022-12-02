@@ -14,7 +14,7 @@ class TI_DLL_EXPORT Callable {
   std::unique_ptr<IRNode> ir{nullptr};
   std::unique_ptr<FrontendContext> context{nullptr};
 
-  struct Arg {
+  struct Parameter {
     bool is_array{
         false};  // This is true for both ndarray and external array args.
     std::size_t total_dim{0};  // total dim of array
@@ -32,7 +32,7 @@ class TI_DLL_EXPORT Callable {
     However we kept the interfaces unchanged temporarily, so as to minimize
     possible regressions.
     */
-    explicit Arg(const DataType &dt = PrimitiveType::unknown,
+    explicit Parameter(const DataType &dt = PrimitiveType::unknown,
                  bool is_array = false,
                  std::size_t size_unused = 0,
                  int total_dim = 0,
@@ -69,27 +69,27 @@ class TI_DLL_EXPORT Callable {
     DataType dt_;
   };
 
-  struct Ret {
+struct Ret {
     DataType dt;
 
     explicit Ret(const DataType &dt = PrimitiveType::unknown) : dt(dt) {
     }
   };
 
-  std::vector<Arg> args;
+  std::vector<Parameter> parameter_list;
   std::vector<Ret> rets;
 
   Callable();
   virtual ~Callable();
 
-  int insert_scalar_arg(const DataType &dt);
+  int add_scalar_param(const DataType &dt);
 
-  int insert_arr_arg(const DataType &dt,
+  int add_arr_param(const DataType &dt,
                      int total_dim,
                      std::vector<int> element_shape);
-  int insert_texture_arg(const DataType &dt);
+  int add_texture_param(const DataType &dt);
 
-  int insert_ret(const DataType &dt);
+  int add_ret(const DataType &dt);
 
   [[nodiscard]] virtual std::string get_name() const = 0;
 };

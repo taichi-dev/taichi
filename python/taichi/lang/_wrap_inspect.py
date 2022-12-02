@@ -11,7 +11,9 @@ _builtin_findsource = inspect.findsource
 
 use_sourceinspect = int(os.getenv('USE_SOURCEINSPECT', 0)) == 1
 if use_sourceinspect:
-    warnings.warn("Sourceinspect will be deprecated in v1.4.0", DeprecationWarning)
+    warnings.warn("Sourceinspect will be deprecated in v1.4.0",
+                  DeprecationWarning)
+
 
 def _find_source_with_custom_getfile_func(func, obj):
     inspect.getfile = func  # replace with our custom func

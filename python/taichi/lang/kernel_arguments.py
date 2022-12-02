@@ -54,7 +54,7 @@ def decl_scalar_arg(dtype):
         is_ref = True
         dtype = dtype.tp
     dtype = cook_dtype(dtype)
-    arg_id = impl.get_runtime().compiling_callable.insert_scalar_arg(dtype)
+    arg_id = impl.get_runtime().compiling_callable.add_scalar_param(dtype)
     return Expr(_ti_core.make_arg_load_expr(arg_id, dtype, is_ref))
 
 
@@ -71,7 +71,7 @@ def decl_sparse_matrix(dtype):
     value_type = cook_dtype(dtype)
     ptr_type = cook_dtype(u64)
     # Treat the sparse matrix argument as a scalar since we only need to pass in the base pointer
-    arg_id = impl.get_runtime().compiling_callable.insert_scalar_arg(ptr_type)
+    arg_id = impl.get_runtime().compiling_callable.add_scalar_param(ptr_type)
     return SparseMatrixProxy(
         _ti_core.make_arg_load_expr(arg_id, ptr_type, False), value_type)
 
@@ -79,8 +79,7 @@ def decl_sparse_matrix(dtype):
 def decl_ndarray_arg(dtype, dim, element_shape, layout):
     dtype = cook_dtype(dtype)
     element_dim = len(element_shape)
-    arg_id = impl.get_runtime().compiling_callable.insert_arr_arg(
-        dtype, dim, element_shape)
+    arg_id = impl.get_runtime().compiling_callable.add_arr_param(dtype, dim, element_shape)
     if layout == Layout.AOS:
         element_dim = -element_dim
     return AnyArray(
@@ -90,14 +89,14 @@ def decl_ndarray_arg(dtype, dim, element_shape, layout):
 
 def decl_texture_arg(num_dimensions):
     # FIXME: texture_arg doesn't have element_shape so better separate them
-    arg_id = impl.get_runtime().compiling_callable.insert_texture_arg(f32)
+    arg_id = impl.get_runtime().compiling_callable.add_texture_param(f32)
     return TextureSampler(
         _ti_core.make_texture_ptr_expr(arg_id, num_dimensions), num_dimensions)
 
 
 def decl_rw_texture_arg(num_dimensions, num_channels, channel_format, lod):
     # FIXME: texture_arg doesn't have element_shape so better separate them
-    arg_id = impl.get_runtime().compiling_callable.insert_texture_arg(f32)
+    arg_id = impl.get_runtime().compiling_callable.add_texture_param(f32)
     return RWTextureAccessor(
         _ti_core.make_rw_texture_ptr_expr(arg_id, num_dimensions, num_channels,
                                           channel_format, lod), num_dimensions)
@@ -115,4 +114,4 @@ def decl_ret(dtype, real_func=False):
             [dtype.n, dtype.m], dtype.dtype)
     else:
         dtype = cook_dtype(dtype)
-    impl.get_runtime().compiling_callable.insert_ret(dtype)
+    return impl.get_runtime().compiling_callable.add_ret(dtype)

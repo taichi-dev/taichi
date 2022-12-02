@@ -82,41 +82,47 @@ class TI_DLL_EXPORT Kernel : public Callable {
          const std::string &name = "",
          AutodiffMode autodiff_mode = AutodiffMode::kNone);
 
+  bool ir_is_ast() const {
+    return ir_is_ast_;
+  }
+
   bool lowered() const {
     return lowered_;
   }
 
-  void set_lowered(bool lowered) {
+  void set_lowered(bool lowered) const {
     lowered_ = lowered;
   }
 
+  // Refactor2023:FIXME: Split & Move
   void compile();
 
-  /**
-   * Lowers |ir| to CHI IR level
-   *
-   * @param to_executable: If true, lowers |ir| to a point where the CHI
-   * statements can be directly translated by each backend's codegen.
-   */
-  void lower(bool to_executable = true);
-
+  // Refactor2023:FIXME: Pre-refactor & Move
   void operator()(LaunchContextBuilder &ctx_builder);
 
+  // Refactor2023:FIXME: Move
   LaunchContextBuilder make_launch_context();
 
+  // Refactor2023:FIXME: Move
   template <typename T>
   T fetch_ret(DataType dt, int i);
 
+  // Refactor2023:FIXME: Move
   float64 get_ret_float(int i);
 
+  // Refactor2023:FIXME: Move
   int64 get_ret_int(int i);
+  // Refactor2023:FIXME: Move
   uint64 get_ret_uint(int i);
 
+  // Refactor2023:FIXME: Move
   std::vector<int64> get_ret_int_tensor(int i);
+  // Refactor2023:FIXME: Move
   std::vector<uint64> get_ret_uint_tensor(int i);
-
+  // Refactor2023:FIXME: Move
   std::vector<float64> get_ret_float_tensor(int i);
 
+  // Refactor2023:FIXME: Pre-refactor & Remove
   uint64 get_next_task_id() {
     return task_counter_++;
   }
@@ -132,6 +138,7 @@ class TI_DLL_EXPORT Kernel : public Callable {
    * @param arch: The arch to check
    * @return: True if supported.
    */
+  // Refactor2023:FIXME: Remove
   static bool supports_lowering(Arch arch);
 
   void set_kernel_key_for_cache(const std::string &kernel_key) {
@@ -141,6 +148,8 @@ class TI_DLL_EXPORT Kernel : public Callable {
   const std::string &get_cached_kernel_key() {
     return kernel_key_;
   }
+
+  // Refactor2023:FIXME: Remove
   void offload_to_executable(IRNode *stmt);
 
  private:
@@ -152,11 +161,12 @@ class TI_DLL_EXPORT Kernel : public Callable {
   // True if |ir| is a frontend AST. False if it's already offloaded to CHI IR.
   bool ir_is_ast_{false};
   // The closure that, if invoked, launches the backend kernel (shader)
+  // Refactor2023:FIXME: Remove
   FunctionType compiled_{nullptr};
   // A flag to record whether |ir| has been fully lowered.
   // lower initial AST all the way down to a bunch of
   // OffloadedStmt for async execution TODO(Lin): Check this comment
-  bool lowered_{false};
+  mutable bool lowered_{false};
   std::atomic<uint64> task_counter_{0};
   std::string kernel_key_;
   bool from_cache_{false};

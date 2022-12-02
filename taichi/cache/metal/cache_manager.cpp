@@ -2,6 +2,7 @@
 #include "taichi/analysis/offline_cache_util.h"
 #include "taichi/codegen/metal/codegen_metal.h"
 #include "taichi/common/version.h"
+#include "taichi/ir/transforms.h"
 #include "taichi/program/kernel.h"
 #include "taichi/util/io.h"
 #include "taichi/util/lock.h"
@@ -141,7 +142,7 @@ void CacheManager::clean_offline_cache(offline_cache::CleanCachePolicy policy,
 }
 
 CompiledKernelData CacheManager::compile_kernel(Kernel *kernel) const {
-  kernel->lower();
+  irpass::ast_to_ir(kernel->program->this_thread_config(), *kernel);
   return run_codegen(config_.compiled_runtime_module_,
                      *config_.compiled_snode_trees_, kernel, nullptr);
 }

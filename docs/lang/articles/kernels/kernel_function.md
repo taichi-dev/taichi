@@ -104,7 +104,7 @@ You call a kernel either directly or from inside a native Python function. You m
 ### Arguments
 
 
-A kernel can take multiple arguments. Note that you *cannot* pass any arbitrary Python object to a kernel because Python objects can be highly dynamic and may hold data that Taichi's compiler cannot recognize. Here are some common arguements that allow you to easily pass data from the Python scope to the Taichi scope.
+A kernel can take multiple arguments. Note that you *cannot* pass any arbitrary Python object to a kernel because Python objects can be highly dynamic and may hold data that Taichi's compiler cannot recognize. Here are some common arguments that allow you to easily pass data from the Python scope to the Taichi scope.
 
 
 :::note IMPORTANT

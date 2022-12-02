@@ -650,3 +650,18 @@ def test_module_arch_fallback():
             r'AOT compilation to a different arch than the current one is not yet supported, switching'
     ):
         m = ti.aot.Module(ti.cpu)
+
+
+@test_utils.test(arch=[ti.vulkan])
+def test_save_kernel_with_rwtexture():
+    @ti.kernel
+    def write(tex: ti.types.rw_texture(num_dimensions=2,
+                                       fmt=ti.Format.r32f,
+                                       lod=0)):
+        for i, j in tex:
+            tex.store(ti.Vector([i, j]), ti.Vector([1.0, 0.0, 0.0, 0.0]))
+
+    m = ti.aot.Module()
+    m.add_kernel(write)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        m.save(tmpdir)

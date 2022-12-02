@@ -89,7 +89,11 @@ def produce_injected_args(kernel, symbolic_args=None):
                                   shape=(2, ) * ndim))
             else:
                 raise RuntimeError('')
-        elif isinstance(anno, (TextureType, RWTextureType)):
+        elif isinstance(anno, RWTextureType):
+            texture_shape = (2, ) * anno.num_dimensions
+            fmt = anno.fmt
+            injected_args.append(Texture(fmt, texture_shape))
+        elif isinstance(anno, TextureType):
             if symbolic_args is None:
                 raise RuntimeError(
                     'Texture type annotation doesn\'t have enough information for aot. Please either specify the channel_format, shape and num_channels in the graph arg declaration.'

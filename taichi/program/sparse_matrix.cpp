@@ -156,7 +156,8 @@ std::unique_ptr<SparseMatrix> SparseMatrixBuilder::build_cuda() {
   built_ = true;
   auto sm = make_cu_sparse_matrix(rows_, cols_, dtype_);
 #ifdef TI_WITH_CUDA
-  num_triplets_ = ndarray_data_base_ptr_->read_int(std::vector<int>{0});
+  CUDADriver::get_instance().memcpy_device_to_host(
+      &num_triplets_, (void *)get_ndarray_data_ptr(), sizeof(int));
   auto len = 3 * num_triplets_ + 1;
   std::vector<float32> trips(len);
   CUDADriver::get_instance().memcpy_device_to_host(

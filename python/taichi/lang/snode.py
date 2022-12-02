@@ -395,8 +395,9 @@ def rescale_index(a, b, I):
         n = len(I)
     else:
         assert isinstance(
-            I, (list, expr.Expr, matrix.Matrix)
+            I, (expr.Expr, matrix.Matrix)
         ), "The third argument must be an index (list, ti.Vector, or Expr with TensorType)"
+        n = I.n
 
     from taichi.lang.kernel_impl import pyfunc  # pylint: disable=C0415
 

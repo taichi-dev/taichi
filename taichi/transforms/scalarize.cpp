@@ -9,23 +9,6 @@
 
 namespace taichi::lang {
 
-template <typename T>
-static std::vector<Stmt *> get_scalarized_indices(T *stmt) {
-  auto indices = stmt->indices;
-  std::vector<Stmt *> flattened_indices;
-  for (auto &index : indices) {
-    if (index->template is<MatrixInitStmt>()) {
-      auto matrix_init_stmt = index->template cast<MatrixInitStmt>();
-      flattened_indices.insert(flattened_indices.end(),
-                               matrix_init_stmt->values.begin(),
-                               matrix_init_stmt->values.end());
-    } else {
-      flattened_indices.push_back(index);
-    }
-  }
-  return flattened_indices;
-}
-
 static bool is_alloca_scalarizable(AllocaStmt *stmt) {
   /* Do not scalarize AllocaStmt allocated for CUDA SharedArray */
   auto alloca = stmt->as<AllocaStmt>();

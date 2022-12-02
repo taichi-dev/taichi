@@ -42,6 +42,7 @@ class Struct(TaichiOperations):
         dict_items([('v', [0. 0. 0.]), ('t', 1.0), ('A', {'v': [[0.], [0.], [0.]], 't': 1.0})])
     """
     _is_taichi_class = True
+    _instance_count = 0
 
     def __init__(self, *args, **kwargs):
         # converts lists to matrices and dicts to structs
@@ -96,12 +97,12 @@ class Struct(TaichiOperations):
         return self.entries.items()
 
     def _register_members(self):
-        for k in self.keys:
-            setattr(self, k,
-                    property(
-                        Struct._make_getter(k),
-                        Struct._make_setter(k),
-                    ))
+        # https://stackoverflow.com/questions/48448074/adding-a-property-to-an-existing-object-instance
+        cls = self.__class__
+        new_cls_name = cls.__name__ + str(cls._instance_count)
+        cls._instance_count += 1
+        properties = {k: property(cls._make_getter(k), cls._make_setter(k)) for k in self.keys}
+        self.__class__ = type(new_cls_name, (cls, ), properties)
 
     def _register_methods(self):
         for name, method in self.methods.items():

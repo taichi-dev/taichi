@@ -417,6 +417,7 @@ class ASTTransformer(Builder):
             id(min): ti_ops.min,
             id(max): ti_ops.max,
             id(int): impl.ti_int,
+            id(bool): impl.ti_bool,
             id(float): impl.ti_float,
             id(any): matrix_ops.any,
             id(all): matrix_ops.all,

@@ -2,8 +2,7 @@
 
 #include "taichi/ir/expression.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 class TypeSystemError {
  public:
@@ -138,7 +137,7 @@ class DynamicTrait : public Trait {
 
 class TraitMismatch : public TypeSystemError {
   const DataType dt_;
-  Trait const *trait_;
+  Trait *const trait_;
 
  public:
   explicit TraitMismatch(DataType dt, Trait *trait) : dt_(dt), trait_(trait) {
@@ -158,7 +157,7 @@ class ArgLengthMismatch : public TypeSystemError {
 class Constraint {
  public:
   const std::shared_ptr<TyVar> tyvar;
-  Trait *trait;
+  Trait *const trait;
   explicit Constraint(std::shared_ptr<TyVar> tyvar, Trait *trait)
       : tyvar(tyvar), trait(trait) {
   }
@@ -232,5 +231,4 @@ class Operations {
   static void init_internals();
 };
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

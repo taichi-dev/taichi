@@ -2,8 +2,7 @@
 #include "taichi/ir/statements.h"
 #include "taichi/ir/frontend_ir.h"
 
-namespace taichi {
-namespace lang {
+namespace taichi::lang {
 
 void TyVar::unify(int pos,
                   DataType dt,
@@ -77,8 +76,8 @@ std::string TyMono::to_string() const {
 }
 
 std::string TyVarMismatch::to_string() const {
-  return "expected " + original_.to_string() + " for type variable " +
-         var_.name() + ", but got " + conflicting_.to_string();
+  return "expected " + original_.to_string() + ", but got " +
+         conflicting_.to_string();
 }
 
 std::string TypeMismatch::to_string() const {
@@ -375,5 +374,4 @@ void Operations::init_internals() {
 #undef PLAIN_OP
 }
 
-}  // namespace lang
-}  // namespace taichi
+}  // namespace taichi::lang

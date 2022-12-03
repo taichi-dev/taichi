@@ -295,11 +295,11 @@ def grad_replaced(func):
         >>>     for I in ti.grouped(x):
         >>>         x.grad[I] = y.grad[I] / a
         >>>
-        >>> @ti.grad_replaced
+        >>> @ti.ad.grad_replaced
         >>> def foo(a):
         >>>     multiply(a)
         >>>
-        >>> @ti.grad_for(foo)
+        >>> @ti.ad.grad_for(foo)
         >>> def foo_grad(a):
         >>>     multiply_grad(a)"""
     def decorated(*args, **kwargs):

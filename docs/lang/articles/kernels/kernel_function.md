@@ -115,6 +115,65 @@ A kernel can take multiple arguments. Note that you *cannot* pass any arbitrary 
 
 :::
 
+#### Primative Types
+Primative Types are predefined by the python language. This includes types such as Integers, Floats, and Booleans.
+
+In the following example, the arguments `x` and `y` are passed to `myKernel()` *by value*:
+
+```python {1}
+@ti.kernel
+def myKernel(x: int, y: float):
+    print(x + y)
+
+myKernel(1, 1.0)  # Prints 2.0
+```
+
+#### Vectors/Matrices
+In addition to primative types, we can also define predefined arrays and pass them into the kernel function. Vectors are represented as arrays and Matrices are represented as a group of arrays.
+
+In the following example, we pass a 2x3 matrix `arr` into `myKernel()` *by reference*:
+```python {13,17}
+import taichi as ti
+ti.init()
+
+
+@ti.kernel
+def myKernel(arr: array):
+    #get the number at position arr[1][1]
+    for i in range(len(arr)):
+        for j in range(len(arr[i])):
+            if i == 1 and j == 1:
+                return arr[i][j]
+
+arr = [
+      [2,4,6],
+      [8,10,12]
+      ]
+print(myKernel(arr)) #will return 
+
+```
+#### Struct/Dataclass Types
+We can take advantage of Taichi's type system and create our own dataclass to pass into the kernel function.
+
+In the following example, we created a Rectangle class `Rectangle` and passed an instance of the class `a` into the kernel function to calculate its area.
+
+```python
+import taichi as ti
+
+@ti.kernel
+def myKernel(a:Rectangle):
+    return a.length * a.height
+
+@ti.dataclass
+class Rectangle:
+    length: float
+    width: float
+
+rectangle = Rectangle(2,2)
+print(myKernel(rectangle)) #will print 4
+
+```
+
 #### Matrix Fields
 We can use the ti.Matrix() function to declare our own [Matrix Field](https://docs.taichi-lang.org/docs/master/field#matrix-fields) and pass it into the kernel. This also works for [Vector Fields](https://docs.taichi-lang.org/docs/master/field#vector-fields)
 
@@ -126,7 +185,7 @@ ti.init()
 
 
 @ti.kernel
-def myKernel(a):
+def myKernel(a:ti.Matrix.field):
     for i in ti.grouped(a):
         a[i] = [[1,1,1], [1,1,1]]
 
@@ -137,20 +196,6 @@ print(a[0][0,0])#prints 1
 
 ```
 
-
-#### Scalar Fields
-
-Scalar Fields are fields that only store constants. Click [here](https://docs.taichi-lang.org/docs/master/field#scalar-fields) for more information on Scalar Fields.
-
-In the following example, the arguments `x` and `y` are passed to `myKernel()` *by value*:
-
-```python {1}
-@ti.kernel
-def myKernel(x: int, y: float):
-    print(x + y)
-
-myKernel(1, 1.0)  # Prints 2.0
-```
 
 
 #### ti.types.ndarray()

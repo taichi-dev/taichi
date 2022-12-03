@@ -149,7 +149,7 @@ arr = [
       [2,4,6],
       [8,10,12]
       ]
-print(myKernel(arr)) #will return 
+print(myKernel(arr)) #will return
 
 ```
 #### Struct/Dataclass Types

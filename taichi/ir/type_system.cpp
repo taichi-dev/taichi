@@ -222,8 +222,7 @@ std::vector<Stmt *> get_all_rvalues(const std::vector<Expr> &args,
                                     Expression::FlattenContext *ctx) {
   std::vector<Stmt *> stmts;
   for (auto arg : args) {
-    flatten_rvalue(arg, ctx);
-    stmts.push_back(arg->stmt);
+    stmts.push_back(flatten_rvalue(arg, ctx));
   }
   return stmts;
 }

@@ -89,13 +89,13 @@ bool VulkanLoader::check_vulkan_device() {
 
 bool VulkanLoader::init(PFN_vkGetInstanceProcAddr get_proc_addr) {
   std::call_once(init_flag_, [&]() {
-    if (initialized) {
+    if (initialized_) {
       return;
     }
     // (penguinliong) So that MoltenVK instances can be imported.
     if (get_proc_addr != nullptr) {
       volkInitializeCustom(get_proc_addr);
-      initialized = true;
+      initialized_ = true;
       return;
     }
 #if defined(__APPLE__)
@@ -106,18 +106,18 @@ bool VulkanLoader::init(PFN_vkGetInstanceProcAddr get_proc_addr) {
             "vkGetInstanceProcAddr");
 
     volkInitializeCustom(get_proc_addr);
-    initialized = true;
+    initialized_ = true;
 #else
     VkResult result = volkInitialize();
-    initialized = result == VK_SUCCESS;
+    initialized_ = result == VK_SUCCESS;
 #endif
-    initialized = initialized && check_vulkan_device();
+    initialized_ = initialized_ && check_vulkan_device();
     const char *id = std::getenv("TI_VISIBLE_DEVICE");
     if (id) {
       set_vulkan_visible_device(id);
     }
   });
-  return initialized;
+  return initialized_;
 }
 
 void VulkanLoader::load_instance(VkInstance instance) {

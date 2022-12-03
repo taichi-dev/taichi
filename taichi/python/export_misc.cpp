@@ -19,7 +19,6 @@
 #include "taichi/system/dynamic_loader.h"
 #include "taichi/system/hacked_signal_handler.h"
 #include "taichi/system/profiler.h"
-#include "taichi/util/statistics.h"
 #if defined(TI_WITH_CUDA)
 #include "taichi/rhi/cuda/cuda_driver.h"
 #endif
@@ -70,7 +69,7 @@ void print_all_units() {
 }
 
 void export_misc(py::module &m) {
-  py::class_<Config>(m, "Config");
+  py::class_<Config>(m, "Config");  // NOLINT(bugprone-unused-raii)
   py::register_exception_translator([](std::exception_ptr p) {
     try {
       if (p)
@@ -153,7 +152,7 @@ void export_misc(py::module &m) {
   m.def("with_opengl", taichi::lang::opengl::is_opengl_api_available,
         py::arg("use_gles") = false);
 #else
-  m.def("with_opengl", []() { return false; });
+  m.def("with_opengl", [](bool use_gles) { return false; });
 #endif
 #ifdef TI_WITH_VULKAN
   m.def("with_vulkan", taichi::lang::vulkan::is_vulkan_api_available);
@@ -178,14 +177,6 @@ void export_misc(py::module &m) {
 #else
   m.def("with_cc", []() { return false; });
 #endif
-
-  py::class_<Statistics>(m, "Statistics")
-      .def(py::init<>())
-      .def("clear", &Statistics::clear)
-      .def("get_counters", &Statistics::get_counters);
-  m.def(
-      "get_kernel_stats", []() -> Statistics & { return stat; },
-      py::return_value_policy::reference);
 
   py::class_<HackedSignalRegister>(m, "HackedSignalRegister").def(py::init<>());
 }

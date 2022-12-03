@@ -25,16 +25,17 @@ def print_module_doc(module: Module):
             "",
             "```c",
             f"// {x}",
-            get_declr(declr),
+            get_declr(module, declr),
             "```",
         ]
 
-        if x in module.doc.api_refs:
-            for line in module.doc.api_refs[x]:
+        if x in module.doc.api_full_refs:
+            for line in module.doc.api_full_refs[x]:
                 out += [resolve_inline_symbols_to_names(module, line)]
         else:
             print(f"WARNING: `{x}` is not documented")
-        out += [""]
+            out += [""]
+    out += [""]
 
     return '\n'.join(out)
 
@@ -81,6 +82,7 @@ if __name__ == "__main__":
         BuiltInType("PFN_vkGetInstanceProcAddr", "PFN_vkGetInstanceProcAddr"),
         BuiltInType("char", "char"),
         BuiltInType("GLuint", "GLuint"),
+        BuiltInType("VkDeviceMemory", "VkDeviceMemory"),
     }
 
     for module in Module.load_all(builtin_tys):

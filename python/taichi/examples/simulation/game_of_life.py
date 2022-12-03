@@ -15,10 +15,16 @@ count = ti.field(int, shape=(n, n))  # count of neighbours
 
 
 @ti.func
+def get_alive(i, j):
+    return alive[i, j] if 0 <= i < n and 0 <= j < n else 0
+
+
+@ti.func
 def get_count(i, j):
-    return (alive[i - 1, j] + alive[i + 1, j] + alive[i, j - 1] +
-            alive[i, j + 1] + alive[i - 1, j - 1] + alive[i + 1, j - 1] +
-            alive[i - 1, j + 1] + alive[i + 1, j + 1])
+    return (get_alive(i - 1, j) + get_alive(i + 1, j) + get_alive(i, j - 1) +
+            get_alive(i, j + 1) + get_alive(i - 1, j - 1) +
+            get_alive(i + 1, j - 1) + get_alive(i - 1, j + 1) +
+            get_alive(i + 1, j + 1))
 
 
 # See https://www.conwaylife.com/wiki/Cellular_automaton#Rules for more rules

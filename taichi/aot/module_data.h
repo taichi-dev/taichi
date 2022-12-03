@@ -120,7 +120,7 @@ struct ModuleData {
   std::unordered_map<std::string, CompiledTaichiKernel> kernels;
   std::unordered_map<std::string, CompiledTaichiKernel> kernel_tmpls;
   std::vector<aot::CompiledFieldData> fields;
-  std::map<DeviceCapability, uint32_t> required_caps;
+  std::map<std::string, uint32_t> required_caps;
 
   size_t root_buffer_size;
 

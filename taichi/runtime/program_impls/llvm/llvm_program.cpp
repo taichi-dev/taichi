@@ -87,7 +87,8 @@ void LlvmProgramImpl::materialize_snode_tree(SNodeTree *tree,
                                  result_buffer);
 }
 
-std::unique_ptr<AotModuleBuilder> LlvmProgramImpl::make_aot_module_builder() {
+std::unique_ptr<AotModuleBuilder> LlvmProgramImpl::make_aot_module_builder(
+    const DeviceCapabilityConfig &caps) {
   if (config->arch == Arch::x64 || config->arch == Arch::arm64) {
     return std::make_unique<cpu::AotModuleBuilderImpl>(this);
   }
@@ -106,20 +107,6 @@ std::unique_ptr<AotModuleBuilder> LlvmProgramImpl::make_aot_module_builder() {
 
   TI_NOT_IMPLEMENTED;
   return nullptr;
-}
-
-std::unique_ptr<aot::Kernel> LlvmProgramImpl::make_aot_kernel(Kernel &kernel) {
-  auto compiled_fn =
-      this->compile(&kernel, nullptr);  // Offloaded used in async mode only
-
-  const std::string &kernel_key = kernel.get_cached_kernel_key();
-  TI_ASSERT(cache_data_->kernels.count(kernel_key));
-  const LlvmOfflineCache::KernelCacheData &kernel_data =
-      cache_data_->kernels[kernel_key];
-  LlvmOfflineCache::KernelCacheData compiled_kernel = kernel_data.clone();
-  compiled_kernel.kernel_key = kernel.get_name();
-  return std::make_unique<llvm_aot::KernelImpl>(compiled_fn,
-                                                std::move(compiled_kernel));
 }
 
 void LlvmProgramImpl::cache_kernel(const std::string &kernel_key,

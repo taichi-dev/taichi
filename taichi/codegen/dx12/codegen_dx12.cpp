@@ -10,7 +10,6 @@
 #include "taichi/program/program.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"
-#include "taichi/util/statistics.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/analysis/offline_cache_util.h"
@@ -92,11 +91,7 @@ class TaskCodeGenLLVMDX12 : public TaskCodeGenLLVM {
         builder->SetInsertPoint(loop_test_bb);
         auto cond = builder->CreateICmp(
             llvm::CmpInst::Predicate::ICMP_SLT,
-            builder->CreateLoad(
-#ifdef TI_LLVM_15
-                i32_ty,
-#endif
-                loop_index),
+            builder->CreateLoad(i32_ty, loop_index),
             llvm_val[stmt->owned_num_local.find(stmt->major_from_type)
                          ->second]);
         builder->CreateCondBr(cond, loop_body_bb, func_exit);
@@ -109,13 +104,10 @@ class TaskCodeGenLLVMDX12 : public TaskCodeGenLLVM {
           auto &s = stmt->body->statements[i];
           s->accept(this);
         }
-        builder->CreateStore(builder->CreateAdd(builder->CreateLoad(
-#ifdef TI_LLVM_15
-                                                    i32_ty,
-#endif
-                                                    loop_index),
-                                                block_dim),
-                             loop_index);
+        builder->CreateStore(
+            builder->CreateAdd(builder->CreateLoad(i32_ty, loop_index),
+                               block_dim),
+            loop_index);
         builder->CreateBr(loop_test_bb);
         builder->SetInsertPoint(func_exit);
       }
@@ -151,7 +143,6 @@ class TaskCodeGenLLVMDX12 : public TaskCodeGenLLVM {
   }
 
   void visit(OffloadedStmt *stmt) override {
-    stat.add("codegen_offloaded_tasks");
     TI_ASSERT(current_offload == nullptr);
     current_offload = stmt;
     if (stmt->bls_size > 0)
@@ -232,8 +223,6 @@ static std::vector<uint8_t> generate_dxil_from_llvm(
 
 KernelCodeGenDX12::CompileResult KernelCodeGenDX12::compile() {
   TI_AUTO_PROF;
-  auto *llvm_prog = get_llvm_program(prog);
-  auto *tlctx = llvm_prog->get_llvm_context(kernel->arch);
   auto &config = prog->this_thread_config();
   std::string kernel_key = get_hashed_offline_cache_key(&config, kernel);
   kernel->set_kernel_key_for_cache(kernel_key);

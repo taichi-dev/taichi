@@ -54,7 +54,7 @@ class FrontendExprStmt : public Stmt {
  public:
   Expr val;
 
-  FrontendExprStmt(const Expr &val) : val(val) {
+  explicit FrontendExprStmt(const Expr &val) : val(val) {
   }
 
   TI_DEFINE_ACCEPT
@@ -133,7 +133,7 @@ class FrontendIfStmt : public Stmt {
   Expr condition;
   std::unique_ptr<Block> true_statements, false_statements;
 
-  FrontendIfStmt(const Expr &condition) : condition(condition) {
+  explicit FrontendIfStmt(const Expr &condition) : condition(condition) {
   }
 
   bool is_container_statement() const override {
@@ -148,7 +148,7 @@ class FrontendPrintStmt : public Stmt {
   using EntryType = std::variant<Expr, std::string>;
   std::vector<EntryType> contents;
 
-  FrontendPrintStmt(const std::vector<EntryType> &contents_) {
+  explicit FrontendPrintStmt(const std::vector<EntryType> &contents_) {
     for (const auto &c : contents_) {
       if (std::holds_alternative<Expr>(c))
         contents.push_back(std::get<Expr>(c));
@@ -216,7 +216,7 @@ class FrontendFuncDefStmt : public Stmt {
   std::string funcid;
   std::unique_ptr<Block> body;
 
-  FrontendFuncDefStmt(const std::string &funcid) : funcid(funcid) {
+  explicit FrontendFuncDefStmt(const std::string &funcid) : funcid(funcid) {
   }
 
   bool is_container_statement() const override {
@@ -254,7 +254,7 @@ class FrontendWhileStmt : public Stmt {
   Expr cond;
   std::unique_ptr<Block> body;
 
-  FrontendWhileStmt(const Expr &cond) : cond(cond) {
+  explicit FrontendWhileStmt(const Expr &cond) : cond(cond) {
   }
 
   bool is_container_statement() const override {
@@ -268,7 +268,7 @@ class FrontendReturnStmt : public Stmt {
  public:
   ExprGroup values;
 
-  FrontendReturnStmt(const ExprGroup &group) : values(group) {
+  explicit FrontendReturnStmt(const ExprGroup &group) : values(group) {
   }
 
   bool is_container_statement() const override {
@@ -314,7 +314,7 @@ class TexturePtrExpression : public Expression {
   DataType channel_format{PrimitiveType::f32};
   int lod{0};
 
-  TexturePtrExpression(int arg_id, int num_dims = 2)
+  explicit TexturePtrExpression(int arg_id, int num_dims)
       : arg_id(arg_id), num_dims(num_dims) {
   }
 
@@ -342,7 +342,7 @@ class RandExpression : public Expression {
  public:
   DataType dt;
 
-  RandExpression(DataType dt) : dt(dt) {
+  explicit RandExpression(DataType dt) : dt(dt) {
   }
 
   void type_check(CompileConfig *config) override;
@@ -574,12 +574,24 @@ class IndexExpression : public Expression {
   // `var` is one of FieldExpression, MatrixFieldExpression,
   // ExternalTensorExpression, IdExpression
   Expr var;
-  ExprGroup indices;
+  // In the cases of matrix slice and vector swizzle, there can be multiple
+  // indices, and the corresponding ret_shape should also be recorded. In normal
+  // index expressions ret_shape will be left empty.
+  std::vector<ExprGroup> indices_group;
+  std::vector<int> ret_shape;
 
   IndexExpression(const Expr &var,
                   const ExprGroup &indices,
                   std::string tb = "")
-      : var(var), indices(indices) {
+      : var(var), indices_group({indices}) {
+    this->tb = tb;
+  }
+
+  IndexExpression(const Expr &var,
+                  const std::vector<ExprGroup> &indices_group,
+                  const std::vector<int> &ret_shape,
+                  std::string tb = "")
+      : var(var), indices_group(indices_group), ret_shape(ret_shape) {
     this->tb = tb;
   }
 
@@ -672,7 +684,7 @@ class IdExpression : public Expression {
  public:
   Identifier id;
 
-  IdExpression(const Identifier &id) : id(id) {
+  explicit IdExpression(const Identifier &id) : id(id) {
   }
 
   void type_check(CompileConfig *config) override {
@@ -713,7 +725,7 @@ class SNodeOpExpression : public Expression {
   SNode *snode;
   SNodeOpType op_type;
   ExprGroup indices;
-  Expr value;
+  std::vector<Expr> values;  // Only for op_type==append
 
   SNodeOpExpression(SNode *snode, SNodeOpType op_type, const ExprGroup &indices)
       : snode(snode), op_type(op_type), indices(indices) {
@@ -722,8 +734,8 @@ class SNodeOpExpression : public Expression {
   SNodeOpExpression(SNode *snode,
                     SNodeOpType op_type,
                     const ExprGroup &indices,
-                    const Expr &value)
-      : snode(snode), op_type(op_type), indices(indices), value(value) {
+                    const std::vector<Expr> &values)
+      : snode(snode), op_type(op_type), indices(indices), values(values) {
   }
 
   void type_check(CompileConfig *config) override;
@@ -757,7 +769,7 @@ class ConstExpression : public Expression {
   TypedConstant val;
 
   template <typename T>
-  ConstExpression(const T &x) : val(x) {
+  explicit ConstExpression(const T &x) : val(x) {
     ret_type = val.dt;
   }
   template <typename T>
@@ -797,6 +809,21 @@ class FuncCallExpression : public Expression {
 
   FuncCallExpression(Function *func, const ExprGroup &args)
       : func(func), args(args) {
+  }
+
+  void flatten(FlattenContext *ctx) override;
+
+  TI_DEFINE_ACCEPT_FOR_EXPRESSION
+};
+
+class GetElementExpression : public Expression {
+ public:
+  Expr src;
+  int index;
+
+  void type_check(CompileConfig *config) override;
+
+  GetElementExpression(const Expr &src, int index) : src(src), index(index) {
   }
 
   void flatten(FlattenContext *ctx) override;
@@ -874,7 +901,7 @@ class ReferenceExpression : public Expression {
   Expr var;
   void type_check(CompileConfig *config) override;
 
-  ReferenceExpression(const Expr &expr) : var(expr) {
+  explicit ReferenceExpression(const Expr &expr) : var(expr) {
   }
 
   void flatten(FlattenContext *ctx) override;
@@ -976,6 +1003,8 @@ class ASTBuilder {
   void insert_snode_activate(SNode *snode, const ExprGroup &expr_group);
   void insert_snode_deactivate(SNode *snode, const ExprGroup &expr_group);
 
+  std::vector<Expr> expand_expr(const std::vector<Expr> &exprs);
+
   void create_scope(std::unique_ptr<Block> &list, LoopType tp = NotLoop);
   void pop_scope();
 
@@ -1019,7 +1048,7 @@ class FrontendContext {
   std::unique_ptr<Block> root_node_;
 
  public:
-  FrontendContext(Arch arch) {
+  explicit FrontendContext(Arch arch) {
     root_node_ = std::make_unique<Block>();
     current_builder_ = std::make_unique<ASTBuilder>(root_node_.get(), arch);
   }
@@ -1033,8 +1062,8 @@ class FrontendContext {
   }
 };
 
-void flatten_lvalue(Expr expr, Expression::FlattenContext *ctx);
+Stmt *flatten_lvalue(Expr expr, Expression::FlattenContext *ctx);
 
-void flatten_rvalue(Expr expr, Expression::FlattenContext *ctx);
+Stmt *flatten_rvalue(Expr expr, Expression::FlattenContext *ctx);
 
 }  // namespace taichi::lang

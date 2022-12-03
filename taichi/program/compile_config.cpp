@@ -9,12 +9,11 @@ CompileConfig::CompileConfig() {
   simd_width = default_simd_width(arch);
   opt_level = 1;
   external_optimization_level = 3;
-  packed = false;
+  packed = true;
   print_ir = false;
   print_preprocessed_ir = false;
   print_accessor_ir = false;
   print_evaluator_ir = false;
-  print_benchmark_stat = false;
   use_llvm = true;
   demote_dense_struct_fors = true;
   advanced_optimization = true;
@@ -23,7 +22,6 @@ CompileConfig::CompileConfig() {
   debug = false;
   cfg_optimization = true;
   check_out_of_bound = false;
-  validate_autodiff = false;
   lazy_compilation = true;
   serial_schedule = false;
   simplify_before_lower_access = true;

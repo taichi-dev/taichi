@@ -18,6 +18,9 @@ endif()
 
 if (TI_WITH_VULKAN)
   list(APPEND C_API_SOURCE "c_api/src/taichi_vulkan_impl.cpp")
+  if (APPLE)
+    install(FILES ${MoltenVK_LIBRARY} DESTINATION c_api/lib)
+  endif()
 endif()
 
 if(TI_BUILD_TESTS)
@@ -31,6 +34,15 @@ target_link_libraries(${TAICHI_C_API_NAME} PRIVATE taichi_core)
 if(TI_WITH_GGUI)
 target_link_libraries(${TAICHI_C_API_NAME} PRIVATE taichi_ui_vulkan)
 target_link_libraries(${TAICHI_C_API_NAME} PRIVATE taichi_ui)
+endif()
+
+# Avoid exporting third party symbols from libtaichi_c_api.so
+# Note that on Windows, external symbols will be excluded from .dll automatically, by default.
+if(LINUX)
+    target_link_options(${TAICHI_C_API_NAME} PRIVATE -Wl,--version-script,${CMAKE_CURRENT_SOURCE_DIR}/c_api/version_scripts/export_symbols_linux.lds)
+elseif(APPLE)
+    # Unfortunately, ld on MacOS does not support --exclude-libs and we have to manually specify the exported symbols
+    target_link_options(${TAICHI_C_API_NAME} PRIVATE -Wl,-exported_symbols_list,${CMAKE_CURRENT_SOURCE_DIR}/c_api/version_scripts/export_symbols_mac.lds)
 endif()
 
 set(C_API_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")

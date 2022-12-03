@@ -45,7 +45,7 @@ class CompiledTaichiKernel {
     DeviceAllocation *listgen_buffer{nullptr};
   };
 
-  CompiledTaichiKernel(const Params &ti_params);
+  explicit CompiledTaichiKernel(const Params &ti_params);
 
   const TaichiKernelAttributes &ti_kernel_attribs() const;
 
@@ -159,7 +159,8 @@ class TI_DLL_EXPORT GfxRuntime {
 
 GfxRuntime::RegisterParams run_codegen(
     Kernel *kernel,
-    Device *device,
+    Arch arch,
+    const DeviceCapabilityConfig &caps,
     const std::vector<CompiledSNodeStructs> &compiled_structs);
 
 }  // namespace gfx

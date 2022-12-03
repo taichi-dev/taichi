@@ -6,10 +6,6 @@
 //
 #pragma once
 
-#ifndef TI_WITH_VULKAN
-#define TI_WITH_VULKAN 1
-#endif  // TI_WITH_VULKAN
-
 #include <taichi/taichi.h>
 
 #ifdef __cplusplus
@@ -60,6 +56,11 @@ typedef struct TiVulkanMemoryInteropInfo {
   // Vulkan buffer usage. In most of the cases, Taichi requires the
   // `VK_BUFFER_USAGE_STORAGE_BUFFER_BIT`.
   VkBufferUsageFlags usage;
+  // Device memory binded to the Vulkan buffer.
+  VkDeviceMemory memory;
+  // Offset in `VkDeviceMemory` object to the beginning of this allocation, in
+  // bytes.
+  uint64_t offset;
 } TiVulkanMemoryInteropInfo;
 
 // Structure `TiVulkanImageInteropInfo`

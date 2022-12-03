@@ -36,7 +36,7 @@ TEST_F(CapiTest, AotTestCpuBufferInterop) {
 }
 
 TEST_F(CapiTest, AotTestCudaBufferInterop) {
-  if (capi::utils::is_cuda_available()) {
+  if (ti::is_arch_available(TI_ARCH_CUDA)) {
     TiArch arch = TiArch::TI_ARCH_CUDA;
     ti::Runtime runtime(arch);
     uint32_t size0 = 4;
@@ -80,7 +80,7 @@ static void texture_interop_test(TiArch arch) {
 }
 
 TEST_F(CapiTest, AotTestVulkanTextureInterop) {
-  if (capi::utils::is_vulkan_available()) {
+  if (ti::is_arch_available(TI_ARCH_VULKAN)) {
     TiArch arch = TiArch::TI_ARCH_VULKAN;
     texture_interop_test(arch);
   }

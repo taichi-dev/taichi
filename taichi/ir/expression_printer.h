@@ -10,7 +10,7 @@ namespace taichi::lang {
 
 class ExpressionPrinter : public ExpressionVisitor {
  public:
-  ExpressionPrinter(std::ostream *os = nullptr) : os_(os) {
+  explicit ExpressionPrinter(std::ostream *os = nullptr) : os_(os) {
   }
 
   void set_ostream(std::ostream *os) {
@@ -127,7 +127,18 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
   void visit(IndexExpression *expr) override {
     expr->var->accept(this);
     emit('[');
-    emit_vector(expr->indices.exprs);
+    if (expr->ret_shape.empty()) {
+      emit_vector(expr->indices_group[0].exprs);
+    } else {
+      for (auto &indices : expr->indices_group) {
+        emit('(');
+        emit_vector(indices.exprs);
+        emit("), ");
+      }
+      emit("shape=(");
+      emit_vector(expr->ret_shape);
+      emit(')');
+    }
     emit(']');
   }
 
@@ -188,9 +199,9 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
     emit('(', expr->snode->get_node_type_name_hinted(), ", [");
     emit_vector(expr->indices.exprs);
     emit("]");
-    if (expr->value.expr) {
+    if (!expr->values.empty()) {
       emit(' ');
-      expr->value->accept(this);
+      emit_vector(expr->values);
     }
     emit(')');
   }

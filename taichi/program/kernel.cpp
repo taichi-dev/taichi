@@ -9,7 +9,6 @@
 #include "taichi/program/extension.h"
 #include "taichi/program/program.h"
 #include "taichi/util/action_recorder.h"
-#include "taichi/util/statistics.h"
 
 #ifdef TI_WITH_LLVM
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
@@ -30,7 +29,9 @@ Kernel::Kernel(Program &program,
                const std::function<void(Kernel *)> &func,
                const std::string &primal_name,
                AutodiffMode autodiff_mode) {
-  this->init(program, std::bind(func, this), primal_name, autodiff_mode);
+  // due to #6362, we cannot write [func, this] { return func(this); }
+  this->init(
+      program, [&] { return func(this); }, primal_name, autodiff_mode);
 }
 
 Kernel::Kernel(Program &program,
@@ -63,10 +64,6 @@ Kernel::Kernel(Program &program,
 void Kernel::compile() {
   CurrentCallableGuard _(program, this);
   compiled_ = program->compile(*this);
-}
-
-void Kernel::compile_to_aot_kernel() {
-  compiled_aot_kernel_ = program->make_aot_kernel(*this);
 }
 
 void Kernel::lower(bool to_executable) {
@@ -112,12 +109,6 @@ void Kernel::lower(bool to_executable) {
 void Kernel::operator()(LaunchContextBuilder &ctx_builder) {
   if (!compiled_) {
     compile();
-  }
-
-  if (!from_cache_) {
-    for (auto &offloaded : ir->as<Block>()->statements) {
-      account_for_offloaded(offloaded->as<OffloadedStmt>());
-    }
   }
 
   compiled_(ctx_builder.get_context());
@@ -257,17 +248,13 @@ void Kernel::LaunchContextBuilder::set_arg_ndarray(int arg_id,
 void Kernel::LaunchContextBuilder::set_arg_texture(int arg_id,
                                                    const Texture &tex) {
   intptr_t ptr = tex.get_device_allocation_ptr_as_int();
-  ctx_->set_arg(arg_id, ptr);
-  ctx_->set_array_device_allocation_type(
-      arg_id, RuntimeContext::DevAllocType::kTexture);
+  ctx_->set_arg_texture(arg_id, ptr);
 }
 
 void Kernel::LaunchContextBuilder::set_arg_rw_texture(int arg_id,
                                                       const Texture &tex) {
   intptr_t ptr = tex.get_device_allocation_ptr_as_int();
-  ctx_->set_arg(arg_id, ptr);
-  ctx_->set_array_device_allocation_type(
-      arg_id, RuntimeContext::DevAllocType::kRWTexture);
+  ctx_->set_arg_rw_texture(arg_id, ptr, tex.get_size());
 }
 
 void Kernel::LaunchContextBuilder::set_arg_raw(int arg_id, uint64 d) {
@@ -329,12 +316,27 @@ int64 Kernel::get_ret_int(int i) {
   return fetch_ret<int64>(dt, i);
 }
 
+uint64 Kernel::get_ret_uint(int i) {
+  auto dt = rets[i].dt->get_compute_type();
+  return fetch_ret<uint64>(dt, i);
+}
+
 std::vector<int64> Kernel::get_ret_int_tensor(int i) {
   DataType dt = rets[i].dt->as<TensorType>()->get_element_type();
   int size = rets[i].dt->as<TensorType>()->get_num_elements();
   std::vector<int64> res;
   for (int j = 0; j < size; j++) {
     res.emplace_back(fetch_ret<int64>(dt, j));
+  }
+  return res;
+}
+
+std::vector<uint64> Kernel::get_ret_uint_tensor(int i) {
+  DataType dt = rets[i].dt->as<TensorType>()->get_element_type();
+  int size = rets[i].dt->as<TensorType>()->get_num_elements();
+  std::vector<uint64> res;
+  for (int j = 0; j < size; j++) {
+    res.emplace_back(fetch_ret<uint64>(dt, j));
   }
   return res;
 }
@@ -352,33 +354,6 @@ std::vector<float64> Kernel::get_ret_float_tensor(int i) {
 void Kernel::set_arch(Arch arch) {
   TI_ASSERT(!compiled_);
   this->arch = arch;
-}
-
-void Kernel::account_for_offloaded(OffloadedStmt *stmt) {
-  if (is_evaluator || is_accessor)
-    return;
-  auto task_type = stmt->task_type;
-  stat.add("launched_tasks", 1.0);
-  if (task_type == OffloadedStmt::TaskType::listgen) {
-    stat.add("launched_tasks_list_op", 1.0);
-    stat.add("launched_tasks_list_gen", 1.0);
-  } else if (task_type == OffloadedStmt::TaskType::serial) {
-    // TODO: Do we need to distinguish serial tasks that contain clear lists vs
-    // those who don't?
-    stat.add("launched_tasks_compute", 1.0);
-    stat.add("launched_tasks_serial", 1.0);
-  } else if (task_type == OffloadedStmt::TaskType::range_for) {
-    stat.add("launched_tasks_compute", 1.0);
-    stat.add("launched_tasks_range_for", 1.0);
-  } else if (task_type == OffloadedStmt::TaskType::struct_for) {
-    stat.add("launched_tasks_compute", 1.0);
-    stat.add("launched_tasks_struct_for", 1.0);
-  } else if (task_type == OffloadedStmt::TaskType::mesh_for) {
-    stat.add("launched_tasks_compute", 1.0);
-    stat.add("launched_tasks_mesh_for", 1.0);
-  } else if (task_type == OffloadedStmt::TaskType::gc) {
-    stat.add("launched_tasks_garbage_collect", 1.0);
-  }
 }
 
 std::string Kernel::get_name() const {
@@ -403,9 +378,10 @@ void Kernel::init(Program &program,
 
   this->arch = program.this_thread_config().arch;
 
-  if (autodiff_mode == AutodiffMode::kNone ||
-      autodiff_mode == AutodiffMode::kCheckAutodiffValid) {
+  if (autodiff_mode == AutodiffMode::kNone) {
     name = primal_name;
+  } else if (autodiff_mode == AutodiffMode::kCheckAutodiffValid) {
+    name = primal_name + "_validate_grad";
   } else if (autodiff_mode == AutodiffMode::kForward) {
     name = primal_name + "_forward_grad";
   } else if (autodiff_mode == AutodiffMode::kReverse) {
@@ -441,7 +417,7 @@ void Kernel::offload_to_executable(IRNode *stmt) {
       stmt, config, this, verbose,
       /*determine_ad_stack_size=*/autodiff_mode == AutodiffMode::kReverse,
       /*lower_global_access=*/true,
-      /*make_block_local=*/config.make_thread_local,
+      /*make_thread_local=*/config.make_thread_local,
       /*make_block_local=*/
       is_extension_supported(config.arch, Extension::bls) &&
           config.make_block_local);

@@ -93,6 +93,7 @@ TEST_P(LlvmOfflineCacheTest, ReadWrite) {
   {
     auto llvm_ctx = std::make_unique<llvm::LLVMContext>();
 
+    llvm_ctx->setOpaquePointers(false);
     LlvmOfflineCache::KernelCacheData kcache;
     kcache.created_at = 1;
     kcache.last_used_at = 1;

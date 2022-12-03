@@ -1,8 +1,8 @@
-from typing import Iterable
-
+from taichi._funcs import field_fill_taichi_scope
 from taichi._lib.utils import get_os_name
 from taichi.lang import ops
 from taichi.lang._ndrange import ndrange
+from taichi.lang.enums import Format
 from taichi.lang.expr import Expr
 from taichi.lang.field import ScalarField
 from taichi.lang.impl import grouped, static, static_assert
@@ -13,6 +13,8 @@ from taichi.lang.snode import deactivate
 from taichi.types import ndarray_type, texture_type, vector
 from taichi.types.annotations import template
 from taichi.types.primitive_types import f16, f32, f64, i32, u8
+
+from taichi.math import vec3
 
 
 # A set of helper (meta)functions
@@ -54,13 +56,13 @@ def ndarray_matrix_to_ext_arr(ndarray: ndarray_type.ndarray(),
                               as_vector: template()):
     for I in grouped(ndarray):
         for p in static(range(ndarray[I].n)):
-            for q in static(range(ndarray[I].m)):
-                if static(as_vector):
-                    if static(layout_is_aos):
-                        arr[I, p] = ndarray[I][p]
-                    else:
-                        arr[p, I] = ndarray[I][p]
+            if static(as_vector):
+                if static(layout_is_aos):
+                    arr[I, p] = ndarray[I][p]
                 else:
+                    arr[p, I] = ndarray[I][p]
+            else:
+                for q in static(range(ndarray[I].m)):
                     if static(layout_is_aos):
                         arr[I, p, q] = ndarray[I][p, q]
                     else:
@@ -74,7 +76,7 @@ def vector_to_fast_image(img: template(), out: ndarray_type.ndarray()):
         r, g, b = 0, 0, 0
         color = img[i, img.shape[1] - 1 - j]
         if static(img.dtype in [f16, f32, f64]):
-            r, g, b = min(255, max(0, int(color * 255)))[:3]
+            r, g, b = ops.min(255, ops.max(0, int(color * 255)))[:3]
         else:
             static_assert(img.dtype == u8)
             r, g, b = color[:3]
@@ -145,13 +147,13 @@ def ext_arr_to_ndarray_matrix(arr: ndarray_type.ndarray(),
                               as_vector: template()):
     for I in grouped(ndarray):
         for p in static(range(ndarray[I].n)):
-            for q in static(range(ndarray[I].m)):
-                if static(as_vector):
-                    if static(layout_is_aos):
-                        ndarray[I][p] = arr[I, p]
-                    else:
-                        ndarray[I][p] = arr[p, I]
+            if static(as_vector):
+                if static(layout_is_aos):
+                    ndarray[I][p] = arr[I, p]
                 else:
+                    ndarray[I][p] = arr[p, I]
+            else:
+                for q in static(range(ndarray[I].m)):
                     if static(layout_is_aos):
                         ndarray[I][p, q] = arr[I, p, q]
                     else:
@@ -237,20 +239,8 @@ def clear_loss(l: template()):
 
 
 @kernel
-def fill_matrix(mat: template(), vals: template()):
-    for I in grouped(mat):
-        for p in static(range(mat.n)):
-            for q in static(range(mat.m)):
-                if static(mat[I].ndim == 2):
-                    if static(isinstance(vals[p], Iterable)):
-                        mat[I][p, q] = vals[p][q]
-                    else:
-                        mat[I][p, q] = vals[p]
-                else:
-                    if static(isinstance(vals[p], Iterable)):
-                        mat[I][p] = vals[p][q]
-                    else:
-                        mat[I][p] = vals[p]
+def field_fill_python_scope(F: template(), val: template()):
+    field_fill_taichi_scope(F, val)
 
 
 @kernel
@@ -267,11 +257,9 @@ def snode_deactivate_dynamic(b: template()):
 
 @kernel
 def load_texture_from_numpy(tex: texture_type.rw_texture(num_dimensions=2,
-                                                         num_channels=4,
-                                                         channel_format=u8,
+                                                         fmt=Format.rgba8u,
                                                          lod=0),
-                            img: ndarray_type.ndarray(field_dim=2,
-                                                      element_shape=(3, ))):
+                            img: ndarray_type.ndarray(dtype=vec3, ndim=2)):
     for i, j in img:
         tex.store(
             vector(2, i32)([i, j]),
@@ -281,11 +269,9 @@ def load_texture_from_numpy(tex: texture_type.rw_texture(num_dimensions=2,
 
 @kernel
 def save_texture_to_numpy(tex: texture_type.rw_texture(num_dimensions=2,
-                                                       num_channels=4,
-                                                       channel_format=u8,
+                                                       fmt=Format.rgba8u,
                                                        lod=0),
-                          img: ndarray_type.ndarray(field_dim=2,
-                                                    element_shape=(3, ))):
+                          img: ndarray_type.ndarray(dtype=vec3, ndim=2)):
     for i, j in img:
         img[i, j] = ops.round(tex.load(vector(2, i32)([i, j])).rgb * 255)
 

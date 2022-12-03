@@ -4,14 +4,79 @@
 
 #include <unordered_map>
 
-#define MAKE_SOLVER(dt, type, order)                                           \
-  {                                                                            \
-    {#dt, #type, #order}, []() -> std::unique_ptr<SparseSolver> {              \
-      using T = Eigen::Simplicial##type<Eigen::SparseMatrix<dt>, Eigen::Lower, \
-                                        Eigen::order##Ordering<int>>;          \
-      return std::make_unique<                                                 \
-          EigenSparseSolver<T, Eigen::SparseMatrix<dt>>>();                    \
-    }                                                                          \
+namespace taichi::lang {
+#define EIGEN_LLT_SOLVER_INSTANTIATION(dt, type, order)              \
+  template class EigenSparseSolver<                                  \
+      Eigen::Simplicial##type<Eigen::SparseMatrix<dt>, Eigen::Lower, \
+                              Eigen::order##Ordering<int>>,          \
+      Eigen::SparseMatrix<dt>>;
+#define EIGEN_LU_SOLVER_INSTANTIATION(dt, type, order)  \
+  template class EigenSparseSolver<                     \
+      Eigen::Sparse##type<Eigen::SparseMatrix<dt>,      \
+                          Eigen::order##Ordering<int>>, \
+      Eigen::SparseMatrix<dt>>;
+// Explicit instantiation of EigenSparseSolver
+EIGEN_LLT_SOLVER_INSTANTIATION(float32, LLT, AMD);
+EIGEN_LLT_SOLVER_INSTANTIATION(float32, LLT, COLAMD);
+EIGEN_LLT_SOLVER_INSTANTIATION(float32, LDLT, AMD);
+EIGEN_LLT_SOLVER_INSTANTIATION(float32, LDLT, COLAMD);
+EIGEN_LU_SOLVER_INSTANTIATION(float32, LU, AMD);
+EIGEN_LU_SOLVER_INSTANTIATION(float32, LU, COLAMD);
+EIGEN_LLT_SOLVER_INSTANTIATION(float64, LLT, AMD);
+EIGEN_LLT_SOLVER_INSTANTIATION(float64, LLT, COLAMD);
+EIGEN_LLT_SOLVER_INSTANTIATION(float64, LDLT, AMD);
+EIGEN_LLT_SOLVER_INSTANTIATION(float64, LDLT, COLAMD);
+EIGEN_LU_SOLVER_INSTANTIATION(float64, LU, AMD);
+EIGEN_LU_SOLVER_INSTANTIATION(float64, LU, COLAMD);
+}  // namespace taichi::lang
+
+// Explicit instantiation of the template class EigenSparseSolver::solve
+#define EIGEN_LLT_SOLVE_INSTANTIATION(dt, type, order, df)               \
+  using T##dt = Eigen::VectorX##df;                                      \
+  using S##dt##type##order =                                             \
+      Eigen::Simplicial##type<Eigen::SparseMatrix<dt>, Eigen::Lower,     \
+                              Eigen::order##Ordering<int>>;              \
+  template T##dt                                                         \
+  EigenSparseSolver<S##dt##type##order, Eigen::SparseMatrix<dt>>::solve( \
+      const T##dt &b);
+#define EIGEN_LU_SOLVE_INSTANTIATION(dt, type, order, df)                  \
+  using LUT##dt = Eigen::VectorX##df;                                      \
+  using LUS##dt##type##order =                                             \
+      Eigen::Sparse##type<Eigen::SparseMatrix<dt>,                         \
+                          Eigen::order##Ordering<int>>;                    \
+  template LUT##dt                                                         \
+  EigenSparseSolver<LUS##dt##type##order, Eigen::SparseMatrix<dt>>::solve( \
+      const LUT##dt &b);
+
+// Explicit instantiation of the template class EigenSparseSolver::solve_rf
+#define INSTANTIATE_LLT_SOLVE_RF(dt, type, order, df)                     \
+  using llt##dt##type##order =                                            \
+      Eigen::Simplicial##type<Eigen::SparseMatrix<dt>, Eigen::Lower,      \
+                              Eigen::order##Ordering<int>>;               \
+  template void EigenSparseSolver<llt##dt##type##order,                   \
+                                  Eigen::SparseMatrix<dt>>::solve_rf<df,  \
+                                                                     dt>( \
+      Program * prog, const SparseMatrix &sm, const Ndarray &b,           \
+      const Ndarray &x);
+
+#define INSTANTIATE_LU_SOLVE_RF(dt, type, order, df)                      \
+  using lu##dt##type##order =                                             \
+      Eigen::Sparse##type<Eigen::SparseMatrix<dt>,                        \
+                          Eigen::order##Ordering<int>>;                   \
+  template void EigenSparseSolver<lu##dt##type##order,                    \
+                                  Eigen::SparseMatrix<dt>>::solve_rf<df,  \
+                                                                     dt>( \
+      Program * prog, const SparseMatrix &sm, const Ndarray &b,           \
+      const Ndarray &x);
+
+#define MAKE_EIGEN_SOLVER(dt, type, order) \
+  std::make_unique<EigenSparseSolver##dt##type##order>()
+
+#define MAKE_SOLVER(dt, type, order)                              \
+  {                                                               \
+    {#dt, #type, #order}, []() -> std::unique_ptr<SparseSolver> { \
+      return MAKE_EIGEN_SOLVER(dt, type, order);                  \
+    }                                                             \
   }
 
 using Triplets = std::tuple<std::string, std::string, std::string>;
@@ -34,6 +99,9 @@ namespace taichi::lang {
 template <class EigenSolver, class EigenMatrix>
 bool EigenSparseSolver<EigenSolver, EigenMatrix>::compute(
     const SparseMatrix &sm) {
+  if (!is_initialized_) {
+    SparseSolver::init_solver(sm.num_rows(), sm.num_cols(), sm.get_data_type());
+  }
   GET_EM(sm);
   solver_.compute(*mat);
   if (solver_.info() != Eigen::Success) {
@@ -44,6 +112,9 @@ bool EigenSparseSolver<EigenSolver, EigenMatrix>::compute(
 template <class EigenSolver, class EigenMatrix>
 void EigenSparseSolver<EigenSolver, EigenMatrix>::analyze_pattern(
     const SparseMatrix &sm) {
+  if (!is_initialized_) {
+    SparseSolver::init_solver(sm.num_rows(), sm.num_cols(), sm.get_data_type());
+  }
   GET_EM(sm);
   solver_.analyzePattern(*mat);
 }
@@ -56,15 +127,53 @@ void EigenSparseSolver<EigenSolver, EigenMatrix>::factorize(
 }
 
 template <class EigenSolver, class EigenMatrix>
-Eigen::VectorXf EigenSparseSolver<EigenSolver, EigenMatrix>::solve(
-    const Eigen::Ref<const Eigen::VectorXf> &b) {
+template <typename T>
+T EigenSparseSolver<EigenSolver, EigenMatrix>::solve(const T &b) {
   return solver_.solve(b);
 }
+
+EIGEN_LLT_SOLVE_INSTANTIATION(float32, LLT, AMD, f);
+EIGEN_LLT_SOLVE_INSTANTIATION(float32, LLT, COLAMD, f);
+EIGEN_LLT_SOLVE_INSTANTIATION(float32, LDLT, AMD, f);
+EIGEN_LLT_SOLVE_INSTANTIATION(float32, LDLT, COLAMD, f);
+EIGEN_LU_SOLVE_INSTANTIATION(float32, LU, AMD, f);
+EIGEN_LU_SOLVE_INSTANTIATION(float32, LU, COLAMD, f);
+EIGEN_LLT_SOLVE_INSTANTIATION(float64, LLT, AMD, d);
+EIGEN_LLT_SOLVE_INSTANTIATION(float64, LLT, COLAMD, d);
+EIGEN_LLT_SOLVE_INSTANTIATION(float64, LDLT, AMD, d);
+EIGEN_LLT_SOLVE_INSTANTIATION(float64, LDLT, COLAMD, d);
+EIGEN_LU_SOLVE_INSTANTIATION(float64, LU, AMD, d);
+EIGEN_LU_SOLVE_INSTANTIATION(float64, LU, COLAMD, d);
 
 template <class EigenSolver, class EigenMatrix>
 bool EigenSparseSolver<EigenSolver, EigenMatrix>::info() {
   return solver_.info() == Eigen::Success;
 }
+
+template <class EigenSolver, class EigenMatrix>
+template <typename T, typename V>
+void EigenSparseSolver<EigenSolver, EigenMatrix>::solve_rf(
+    Program *prog,
+    const SparseMatrix &sm,
+    const Ndarray &b,
+    const Ndarray &x) {
+  size_t db = prog->get_ndarray_data_ptr_as_int(&b);
+  size_t dX = prog->get_ndarray_data_ptr_as_int(&x);
+  Eigen::Map<T>((V *)dX, rows_) = solver_.solve(Eigen::Map<T>((V *)db, cols_));
+}
+
+INSTANTIATE_LLT_SOLVE_RF(float32, LLT, COLAMD, Eigen::VectorXf)
+INSTANTIATE_LLT_SOLVE_RF(float32, LDLT, COLAMD, Eigen::VectorXf)
+INSTANTIATE_LLT_SOLVE_RF(float32, LLT, AMD, Eigen::VectorXf)
+INSTANTIATE_LLT_SOLVE_RF(float32, LDLT, AMD, Eigen::VectorXf)
+INSTANTIATE_LU_SOLVE_RF(float32, LU, AMD, Eigen::VectorXf)
+INSTANTIATE_LU_SOLVE_RF(float32, LU, COLAMD, Eigen::VectorXf)
+INSTANTIATE_LLT_SOLVE_RF(float64, LLT, COLAMD, Eigen::VectorXd)
+INSTANTIATE_LLT_SOLVE_RF(float64, LDLT, COLAMD, Eigen::VectorXd)
+INSTANTIATE_LLT_SOLVE_RF(float64, LLT, AMD, Eigen::VectorXd)
+INSTANTIATE_LLT_SOLVE_RF(float64, LDLT, AMD, Eigen::VectorXd)
+INSTANTIATE_LU_SOLVE_RF(float64, LU, AMD, Eigen::VectorXd)
+INSTANTIATE_LU_SOLVE_RF(float64, LU, COLAMD, Eigen::VectorXd)
 
 CuSparseSolver::CuSparseSolver() {
 #if defined(TI_WITH_CUDA)
@@ -93,7 +202,6 @@ void CuSparseSolver::analyze_pattern(const SparseMatrix &sm) {
   size_t nnzA = A->get_nnz();
   void *d_csrRowPtrA = A->get_row_ptr();
   void *d_csrColIndA = A->get_col_ind();
-
   CUSOLVERDriver::get_instance().csSpCreate(&cusolver_handle_);
   CUSPARSEDriver::get_instance().cpCreate(&cusparse_handel_);
   CUSPARSEDriver::get_instance().cpCreateMatDescr(&descr_);
@@ -108,7 +216,7 @@ void CuSparseSolver::analyze_pattern(const SparseMatrix &sm) {
   // step 2: analyze chol(A) to know structure of L
   CUSOLVERDriver::get_instance().csSpXcsrcholAnalysis(
       cusolver_handle_, rowsA, nnzA, descr_, d_csrRowPtrA, d_csrColIndA, info_);
-
+  is_analyzed_ = true;
 #else
   TI_NOT_IMPLEMENTED
 #endif
@@ -145,6 +253,7 @@ void CuSparseSolver::factorize(const SparseMatrix &sm) {
   CUSOLVERDriver::get_instance().csSpScsrcholZeroPivot(cusolver_handle_, info_,
                                                        tol, &singularity);
   TI_ASSERT(singularity == -1);
+  is_factorized_ = true;
 #else
   TI_NOT_IMPLEMENTED
 #endif
@@ -153,11 +262,11 @@ void CuSparseSolver::factorize(const SparseMatrix &sm) {
 void CuSparseSolver::solve_cu(Program *prog,
                               const SparseMatrix &sm,
                               const Ndarray &b,
-                              Ndarray &x) {
+                              const Ndarray &x) {
 #ifdef TI_WITH_CUDA
-  cusparseHandle_t cusparseHandle = NULL;
+  cusparseHandle_t cusparseHandle = nullptr;
   CUSPARSEDriver::get_instance().cpCreate(&cusparseHandle);
-  cusolverSpHandle_t handle = NULL;
+  cusolverSpHandle_t handle = nullptr;
   CUSOLVERDriver::get_instance().csSpCreate(&handle);
 
   int major_version, minor_version, patch_level;
@@ -191,21 +300,21 @@ void CuSparseSolver::solve_cu(Program *prog,
   float *h_val_B = (float *)malloc(sizeof(float) * nnz);
   int *h_mapBfromA = (int *)malloc(sizeof(int) * nnz);
 
-  assert(NULL != h_z);
-  assert(NULL != h_x);
-  assert(NULL != h_b);
-  assert(NULL != h_Qb);
-  assert(NULL != h_Q);
-  assert(NULL != hrow_offsets_B);
-  assert(NULL != hcol_indices_B);
-  assert(NULL != h_val_B);
-  assert(NULL != h_mapBfromA);
+  assert(nullptr != h_z);
+  assert(nullptr != h_x);
+  assert(nullptr != h_b);
+  assert(nullptr != h_Qb);
+  assert(nullptr != h_Q);
+  assert(nullptr != hrow_offsets_B);
+  assert(nullptr != hcol_indices_B);
+  assert(nullptr != h_val_B);
+  assert(nullptr != h_mapBfromA);
 
-  int *hrow_offsets = NULL, *hcol_indices = NULL;
+  int *hrow_offsets = nullptr, *hcol_indices = nullptr;
   hrow_offsets = (int *)malloc(sizeof(int) * (nrows + 1));
   hcol_indices = (int *)malloc(sizeof(int) * nnz);
-  assert(NULL != hrow_offsets);
-  assert(NULL != hcol_indices);
+  assert(nullptr != hrow_offsets);
+  assert(nullptr != hcol_indices);
   // Attention: drow_offsets is not freed at other palces
   CUDADriver::get_instance().memcpy_device_to_host(
       (void *)hrow_offsets, drow_offsets, sizeof(int) * (nrows + 1));
@@ -213,7 +322,7 @@ void CuSparseSolver::solve_cu(Program *prog,
       (void *)hcol_indices, dcol_indices, sizeof(int) * nnz);
 
   /* configure matrix descriptor*/
-  cusparseMatDescr_t descrA = NULL;
+  cusparseMatDescr_t descrA = nullptr;
   CUSPARSEDriver::get_instance().cpCreateMatDescr(&descrA);
   CUSPARSEDriver::get_instance().cpSetMatType(descrA,
                                               CUSPARSE_MATRIX_TYPE_GENERAL);
@@ -286,31 +395,31 @@ void CuSparseSolver::solve_cu(Program *prog,
   CUSOLVERDriver::get_instance().csSpDestory(handle);
   CUSPARSEDriver::get_instance().cpDestroy(cusparseHandle);
 
-  if (hrow_offsets != NULL)
+  if (hrow_offsets != nullptr)
     free(hrow_offsets);
-  if (hcol_indices != NULL)
+  if (hcol_indices != nullptr)
     free(hcol_indices);
-  if (hrow_offsets_B != NULL)
+  if (hrow_offsets_B != nullptr)
     free(hrow_offsets_B);
-  if (hcol_indices_B != NULL)
+  if (hcol_indices_B != nullptr)
     free(hcol_indices_B);
-  if (h_Q != NULL)
+  if (h_Q != nullptr)
     free(h_Q);
-  if (h_mapBfromA != NULL)
+  if (h_mapBfromA != nullptr)
     free(h_mapBfromA);
-  if (h_z != NULL)
+  if (h_z != nullptr)
     free(h_z);
-  if (h_b != NULL)
+  if (h_b != nullptr)
     free(h_b);
-  if (h_Qb != NULL)
+  if (h_Qb != nullptr)
     free(h_Qb);
-  if (h_x != NULL)
+  if (h_x != nullptr)
     free(h_x);
-  if (buffer_cpu != NULL)
+  if (buffer_cpu != nullptr)
     free(buffer_cpu);
-  if (h_val_A != NULL)
+  if (h_val_A != nullptr)
     free(h_val_A);
-  if (h_val_B != NULL)
+  if (h_val_B != nullptr)
     free(h_val_B);
 #endif
 }
@@ -318,8 +427,14 @@ void CuSparseSolver::solve_cu(Program *prog,
 void CuSparseSolver::solve_rf(Program *prog,
                               const SparseMatrix &sm,
                               const Ndarray &b,
-                              Ndarray &x) {
+                              const Ndarray &x) {
 #if defined(TI_WITH_CUDA)
+  if (is_analyzed_ == false) {
+    analyze_pattern(sm);
+  }
+  if (is_factorized_ == false) {
+    factorize(sm);
+  }
   // Retrive the info of the sparse matrix
   SparseMatrix *sm_no_cv = const_cast<SparseMatrix *>(&sm);
   CuSparseMatrix *A = dynamic_cast<CuSparseMatrix *>(sm_no_cv);
@@ -346,8 +461,10 @@ std::unique_ptr<SparseSolver> make_sparse_solver(DataType dt,
   using func_type = std::unique_ptr<SparseSolver> (*)();
   static const std::unordered_map<key_type, func_type, key_hash>
       solver_factory = {
-          MAKE_SOLVER(float32, LLT, AMD), MAKE_SOLVER(float32, LLT, COLAMD),
-          MAKE_SOLVER(float32, LDLT, AMD), MAKE_SOLVER(float32, LDLT, COLAMD)};
+          MAKE_SOLVER(float32, LLT, AMD),  MAKE_SOLVER(float32, LLT, COLAMD),
+          MAKE_SOLVER(float32, LDLT, AMD), MAKE_SOLVER(float32, LDLT, COLAMD),
+          MAKE_SOLVER(float64, LLT, AMD),  MAKE_SOLVER(float64, LLT, COLAMD),
+          MAKE_SOLVER(float64, LDLT, AMD), MAKE_SOLVER(float64, LDLT, COLAMD)};
   static const std::unordered_map<std::string, std::string> dt_map = {
       {"f32", "float32"}, {"f64", "float64"}};
   auto it = dt_map.find(taichi::lang::data_type_name(dt));
@@ -360,9 +477,17 @@ std::unique_ptr<SparseSolver> make_sparse_solver(DataType dt,
     auto solver_func = solver_factory.at(solver_key);
     return solver_func();
   } else if (solver_type == "LU") {
-    using EigenMatrix = Eigen::SparseMatrix<float32>;
-    using LU = Eigen::SparseLU<EigenMatrix>;
-    return std::make_unique<EigenSparseSolver<LU, EigenMatrix>>();
+    if (it->first == "f32") {
+      using EigenMatrix = Eigen::SparseMatrix<float32>;
+      using LU = Eigen::SparseLU<EigenMatrix>;
+      return std::make_unique<EigenSparseSolver<LU, EigenMatrix>>();
+    } else if (it->first == "f64") {
+      using EigenMatrix = Eigen::SparseMatrix<float64>;
+      using LU = Eigen::SparseLU<EigenMatrix>;
+      return std::make_unique<EigenSparseSolver<LU, EigenMatrix>>();
+    } else {
+      TI_ERROR("Not supported sparse solver data type: {}", it->second);
+    }
   } else
     TI_ERROR("Not supported sparse solver type: {}", solver_type);
 }

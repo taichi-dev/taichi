@@ -80,27 +80,27 @@ TEST_F(CapiTest, GraphTestCpuGraph) {
 }
 
 TEST_F(CapiTest, GraphTestCudaGraph) {
-  if (capi::utils::is_cuda_available()) {
+  if (ti::is_arch_available(TI_ARCH_CUDA)) {
     TiArch arch = TiArch::TI_ARCH_CUDA;
     graph_aot_test(arch);
   }
 }
 
 TEST_F(CapiTest, GraphTestVulkanGraph) {
-  if (capi::utils::is_vulkan_available()) {
+  if (ti::is_arch_available(TI_ARCH_VULKAN)) {
     TiArch arch = TiArch::TI_ARCH_VULKAN;
     graph_aot_test(arch);
   }
 }
 TEST_F(CapiTest, GraphTestVulkanTextureGraph) {
-  if (capi::utils::is_vulkan_available()) {
+  if (ti::is_arch_available(TI_ARCH_VULKAN)) {
     TiArch arch = TiArch::TI_ARCH_VULKAN;
     texture_aot_test(arch);
   }
 }
 
 TEST_F(CapiTest, GraphTestOpenglGraph) {
-  if (capi::utils::is_opengl_available()) {
+  if (ti::is_arch_available(TI_ARCH_OPENGL)) {
     TiArch arch = TiArch::TI_ARCH_OPENGL;
     graph_aot_test(arch);
   }

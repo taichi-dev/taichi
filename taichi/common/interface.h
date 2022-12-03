@@ -117,7 +117,7 @@ class InterfaceHolder {
   class TI_IMPLEMENTATION_HOLDER_NAME(T) final                                \
       : public ImplementationHolderBase {                                     \
    public:                                                                    \
-    TI_IMPLEMENTATION_HOLDER_NAME(T)(const std::string &name) {               \
+    explicit TI_IMPLEMENTATION_HOLDER_NAME(T)(const std::string &name) {      \
       this->name = name;                                                      \
     }                                                                         \
     using FactoryMethod = std::function<std::shared_ptr<T>()>;                \

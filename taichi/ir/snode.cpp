@@ -37,7 +37,8 @@ SNode &SNode::insert_children(SNodeType t) {
 SNode &SNode::create_node(std::vector<Axis> axes,
                           std::vector<int> sizes,
                           SNodeType type,
-                          bool packed) {
+                          bool packed,
+                          const std::string &tb) {
   TI_ASSERT(axes.size() == sizes.size() || sizes.size() == 1);
   if (sizes.size() == 1) {
     sizes = std::vector<int>(axes.size(), sizes[0]);
@@ -54,30 +55,26 @@ SNode &SNode::create_node(std::vector<Axis> axes,
       throw TaichiRuntimeError(
           "Every dimension of a Taichi field should be positive");
     }
-    auto &ind = axes[i];
-    new_node.extractors[ind.value].activate(
+    int ind = axes[i].value;
+    auto end = new_node.physical_index_position + new_node.num_active_indices;
+    bool is_first_division =
+        std::find(new_node.physical_index_position, end, ind) == end;
+    if (is_first_division) {
+      new_node.physical_index_position[new_node.num_active_indices++] = ind;
+    } else {
+      TI_WARN_IF(
+          packed && !bit::is_power_of_two(sizes[i]),
+          "Shape {} is detected on non-first division of axis {}:\n{} For "
+          "best performance, we recommend that you set it to a power of two.",
+          sizes[i], char('i' + ind), tb);
+    }
+    new_node.extractors[ind].activate(
         bit::log2int(bit::least_pot_bound(sizes[i])));
-    new_node.extractors[ind.value].num_elements_from_root *= sizes[i];
+    new_node.extractors[ind].num_elements_from_root *= sizes[i];
     if (packed) {
-      new_node.extractors[ind.value].shape = sizes[i];
+      new_node.extractors[ind].shape = sizes[i];
     } else {  // if not in packed mode, pad shape to POT
-      new_node.extractors[ind.value].shape =
-          1 << new_node.extractors[ind.value].num_bits;
-    }
-  }
-  // infer mappings
-  for (int i = 0; i < taichi_max_num_indices; i++) {
-    bool found = false;
-    for (int k = 0; k < taichi_max_num_indices; k++) {
-      if (new_node.physical_index_position[k] == i) {
-        found = true;
-        break;
-      }
-    }
-    if (found)
-      continue;
-    if (new_node.extractors[i].active) {
-      new_node.physical_index_position[new_node.num_active_indices++] = i;
+      new_node.extractors[ind].shape = 1 << new_node.extractors[ind].num_bits;
     }
   }
   std::sort(new_node.physical_index_position,
@@ -91,8 +88,8 @@ SNode &SNode::create_node(std::vector<Axis> axes,
   }
   if (acc_shape > std::numeric_limits<int>::max()) {
     TI_WARN(
-        "Snode index might be out of int32 boundary but int64 indexing is not "
-        "supported yet.");
+        "SNode index might be out of int32 boundary but int64 indexing is not "
+        "supported yet. Struct fors might not work either.");
   }
   new_node.num_cells_per_container = acc_shape;
   // infer extractors (only for POT)
@@ -130,14 +127,20 @@ SNode &SNode::create_node(std::vector<Axis> axes,
   return new_node;
 }
 
-SNode &SNode::dynamic(const Axis &expr, int n, int chunk_size, bool packed) {
-  auto &snode = create_node({expr}, {n}, SNodeType::dynamic, packed);
+SNode &SNode::dynamic(const Axis &expr,
+                      int n,
+                      int chunk_size,
+                      bool packed,
+                      const std::string &tb) {
+  auto &snode = create_node({expr}, {n}, SNodeType::dynamic, packed, tb);
   snode.chunk_size = chunk_size;
   return snode;
 }
 
-SNode &SNode::bit_struct(BitStructType *bit_struct_type, bool packed) {
-  auto &snode = create_node({}, {}, SNodeType::bit_struct, packed);
+SNode &SNode::bit_struct(BitStructType *bit_struct_type,
+                         bool packed,
+                         const std::string &tb) {
+  auto &snode = create_node({}, {}, SNodeType::bit_struct, packed, tb);
   snode.dt = bit_struct_type;
   snode.physical_type = bit_struct_type->get_physical_type();
   return snode;
@@ -146,8 +149,9 @@ SNode &SNode::bit_struct(BitStructType *bit_struct_type, bool packed) {
 SNode &SNode::quant_array(const std::vector<Axis> &axes,
                           const std::vector<int> &sizes,
                           int bits,
-                          bool packed) {
-  auto &snode = create_node(axes, sizes, SNodeType::quant_array, packed);
+                          bool packed,
+                          const std::string &tb) {
+  auto &snode = create_node(axes, sizes, SNodeType::quant_array, packed, tb);
   snode.physical_type =
       TypeFactory::get_instance().get_primitive_int_type(bits, false);
   return snode;

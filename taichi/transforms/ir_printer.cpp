@@ -44,8 +44,8 @@ class IRPrinter : public IRVisitor {
   std::string *output{nullptr};
   std::stringstream ss;
 
-  IRPrinter(ExpressionPrinter *expr_printer = nullptr,
-            std::string *output = nullptr)
+  explicit IRPrinter(ExpressionPrinter *expr_printer = nullptr,
+                     std::string *output = nullptr)
       : expr_printer_(expr_printer), output(output) {
   }
 
@@ -426,6 +426,19 @@ class IRPrinter : public IRVisitor {
     print_raw(s);
   }
 
+  void visit(MatrixOfMatrixPtrStmt *stmt) override {
+    std::string s = fmt::format("{}{} = matrix of matrix ptr [",
+                                stmt->type_hint(), stmt->name());
+    for (int i = 0; i < (int)stmt->stmts.size(); i++) {
+      s += fmt::format("{}", stmt->stmts[i]->name());
+      if (i + 1 < (int)stmt->stmts.size()) {
+        s += ", ";
+      }
+    }
+    s += "]";
+    print_raw(s);
+  }
+
   void visit(MatrixPtrStmt *stmt) override {
     std::string s =
         fmt::format("{}{} = shift ptr [{} + {}]", stmt->type_hint(),
@@ -617,6 +630,8 @@ class IRPrinter : public IRVisitor {
     } else if (stmt->task_type == OffloadedTaskType::gc) {
       print("{} = offloaded garbage collect {}", stmt->name(),
             stmt->snode->get_node_type_name_hinted());
+    } else if (stmt->task_type == OffloadedTaskType::gc_rc) {
+      print("{} = offloaded garbage collect runtime context", stmt->name());
     } else {
       print("{} = offloaded {} ", stmt->name(), details);
       if (stmt->tls_prologue) {

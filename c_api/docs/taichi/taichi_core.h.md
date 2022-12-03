@@ -244,9 +244,8 @@ A collection of Taichi kernels (a compute graph) to launch on the offload target
 
 `enumeration.error`
 
-Errors reported by the Taichi C-API. Enumerants greater than or equal to zero are success states.
+Errors reported by the Taichi C-API.
 
-- `enumeration.error.incomplete`: The output data is truncated because the user-provided buffer is too small.
 - `enumeration.error.success`: The Taichi C-API invocation finished gracefully.
 - `enumeration.error.not_supported`: The invoked API, or the combination of parameters is not supported by the Taichi C-API.
 - `enumeration.error.corrupted_data`: Provided data is corrupted.
@@ -257,6 +256,7 @@ Errors reported by the Taichi C-API. Enumerants greater than or equal to zero ar
 - `enumeration.error.argument_not_found`: One or more kernel arguments are missing.
 - `enumeration.error.invalid_interop`: The intended interoperation is not possible on the current arch. For example, attempts to export a Vulkan object from a CUDA runtime are not allowed.
 - `enumeration.error.invalid_state`: The Taichi C-API enters an unrecoverable invalid state. Related Taichi objects are potentially corrupted. The users *should* release the contaminated resources for stability. Please feel free to file an issue if you encountered this error in a normal routine.
+- `enumeration.error.incompatible_module`: The AOT module is not compatible with the current runtime.
 
 `enumeration.arch`
 
@@ -440,16 +440,25 @@ A named argument value to feed compute graphs.
 - `structure.named_argument.name`: Name of the argument.
 - `structure.named_argument.argument`: Argument body.
 
+`function.get_available_archs`
+
+Gets a list of available archs on the current platform. An arch is only available if:
+
+1. The Runtime library is compiled with its support;
+2. The current platform is installed with a capable hardware or an emulation software.
+
+An available arch has at least one device available, i.e., device index 0 is always available. If an arch is not available on the current platform, a call to `function.create_runtime` with that arch is guaranteed failing.
+
 `function.get_last_error`
 
-Get the last error raised by Taichi C-API invocations. Returns the semantical error code.
+Gets the last error raised by Taichi C-API invocations. Returns the semantical error code.
 
 - `function.get_last_error.message_size`: Size of textual error message in `function.get_last_error.message`
 - `function.get_last_error.message`: Text buffer for the textual error message. Ignored when `message_size` is 0.
 
 `function.set_last_error`
 
-Set the provided error as the last error raised by Taichi C-API invocations. It can be useful in extended validation procedures in Taichi C-API wrappers and helper libraries.
+Sets the provided error as the last error raised by Taichi C-API invocations. It can be useful in extended validation procedures in Taichi C-API wrappers and helper libraries.
 
 - `function.set_last_error.error`: Semantical error code.
 - `function.set_last_error.message`: A null-terminated string of the textual error message or `nullptr` for empty error message.

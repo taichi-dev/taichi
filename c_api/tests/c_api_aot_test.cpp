@@ -21,9 +21,13 @@ static void kernel_aot_test(TiArch arch) {
 
   std::vector<int> arg2_v = {1, 2, 3};
 
-  k_run[0] = arg0_val;
-  k_run[1] = arg1_array;
-  k_run.set(2, arg2_v);
+  // This is just to make sure clear_args() does its work.
+  k_run.push_arg(arg0_val);
+  k_run.clear_args();
+
+  k_run.push_arg(arg0_val);
+  k_run.push_arg(arg1_array);
+  k_run.push_arg(arg2_v);
   k_run.launch();
   runtime.wait();
 
@@ -81,7 +85,7 @@ TEST_F(CapiTest, AotTestCpuField) {
 }
 
 TEST_F(CapiTest, AotTestCudaField) {
-  if (capi::utils::is_cuda_available()) {
+  if (ti::is_arch_available(TI_ARCH_CUDA)) {
     TiArch arch = TiArch::TI_ARCH_CUDA;
     field_aot_test(arch);
   }
@@ -93,21 +97,21 @@ TEST_F(CapiTest, AotTestCpuKernel) {
 }
 
 TEST_F(CapiTest, AotTestCudaKernel) {
-  if (capi::utils::is_cuda_available()) {
+  if (ti::is_arch_available(TI_ARCH_CUDA)) {
     TiArch arch = TiArch::TI_ARCH_CUDA;
     kernel_aot_test(arch);
   }
 }
 
 TEST_F(CapiTest, AotTestVulkanKernel) {
-  if (capi::utils::is_vulkan_available()) {
+  if (ti::is_arch_available(TI_ARCH_VULKAN)) {
     TiArch arch = TiArch::TI_ARCH_VULKAN;
     kernel_aot_test(arch);
   }
 }
 
 TEST_F(CapiTest, AotTestOpenglKernel) {
-  if (capi::utils::is_opengl_available()) {
+  if (ti::is_arch_available(TI_ARCH_OPENGL)) {
     TiArch arch = TiArch::TI_ARCH_OPENGL;
     kernel_aot_test(arch);
   }

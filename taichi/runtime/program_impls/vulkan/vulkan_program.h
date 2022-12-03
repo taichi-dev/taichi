@@ -30,7 +30,7 @@ class VulkanDeviceCreator;
 
 class VulkanProgramImpl : public ProgramImpl {
  public:
-  VulkanProgramImpl(CompileConfig &config);
+  explicit VulkanProgramImpl(CompileConfig &config);
   FunctionType compile(Kernel *kernel, OffloadedStmt *offloaded) override;
 
   std::size_t get_snode_num_dynamically_allocated(
@@ -57,7 +57,8 @@ class VulkanProgramImpl : public ProgramImpl {
     return vulkan_runtime_->flush();
   }
 
-  std::unique_ptr<AotModuleBuilder> make_aot_module_builder() override;
+  std::unique_ptr<AotModuleBuilder> make_aot_module_builder(
+      const DeviceCapabilityConfig &caps) override;
 
   void destroy_snode_tree(SNodeTree *snode_tree) override {
     TI_ASSERT(snode_tree_mgr_ != nullptr);
@@ -90,8 +91,6 @@ class VulkanProgramImpl : public ProgramImpl {
     return snode_tree_mgr_->get_snode_tree_device_ptr(tree_id);
   }
 
-  std::unique_ptr<aot::Kernel> make_aot_kernel(Kernel &kernel) override;
-
   void enqueue_compute_op_lambda(
       std::function<void(Device *device, CommandList *cmdlist)> op,
       const std::vector<ComputeOpImageRef> &image_refs) override;
@@ -100,7 +99,7 @@ class VulkanProgramImpl : public ProgramImpl {
 
   const std::unique_ptr<gfx::CacheManager> &get_cache_manager();
 
-  ~VulkanProgramImpl();
+  ~VulkanProgramImpl() override;
 
  private:
   std::unique_ptr<vulkan::VulkanDeviceCreator> embedded_device_{nullptr};

@@ -60,13 +60,14 @@ void OpenglProgramImpl::materialize_snode_tree(SNodeTree *tree,
   snode_tree_mgr_->materialize_snode_tree(tree);
 }
 
-std::unique_ptr<AotModuleBuilder> OpenglProgramImpl::make_aot_module_builder() {
+std::unique_ptr<AotModuleBuilder> OpenglProgramImpl::make_aot_module_builder(
+    const DeviceCapabilityConfig &caps) {
   if (runtime_) {
     return std::make_unique<gfx::AotModuleBuilderImpl>(
-        snode_tree_mgr_->get_compiled_structs(), Arch::opengl);
+        snode_tree_mgr_->get_compiled_structs(), Arch::opengl, caps);
   } else {
     return std::make_unique<gfx::AotModuleBuilderImpl>(
-        aot_compiled_snode_structs_, Arch::opengl);
+        aot_compiled_snode_structs_, Arch::opengl, caps);
   }
 }
 
@@ -82,12 +83,6 @@ DeviceAllocation OpenglProgramImpl::allocate_texture(
   return runtime_->create_image(params);
 }
 
-std::unique_ptr<aot::Kernel> OpenglProgramImpl::make_aot_kernel(
-    Kernel &kernel) {
-  auto params = get_cache_manager()->load_or_compile(config, &kernel);
-  return std::make_unique<gfx::KernelImpl>(runtime_.get(), std::move(params));
-}
-
 void OpenglProgramImpl::dump_cache_data_to_disk() {
   const auto &mgr = get_cache_manager();
   mgr->clean_offline_cache(offline_cache::string_to_clean_cache_policy(
@@ -101,15 +96,13 @@ const std::unique_ptr<gfx::CacheManager>
     &OpenglProgramImpl::get_cache_manager() {
   if (!cache_manager_) {
     TI_ASSERT(runtime_ && snode_tree_mgr_ && device_);
-    auto target_device = std::make_unique<aot::TargetDevice>(config->arch);
-    device_->clone_caps(*target_device);
     using Mgr = gfx::CacheManager;
     Mgr::Params params;
     params.arch = config->arch;
     params.mode = config->offline_cache ? Mgr::MemAndDiskCache : Mgr::MemCache;
     params.cache_path = config->offline_cache_file_path;
     params.runtime = runtime_.get();
-    params.target_device = std::move(target_device);
+    params.caps = device_->get_current_caps();
     params.compiled_structs = &snode_tree_mgr_->get_compiled_structs();
     cache_manager_ = std::make_unique<gfx::CacheManager>(std::move(params));
   }

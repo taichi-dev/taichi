@@ -12,8 +12,7 @@ def compile_graph_aot(arch):
 
     @ti.kernel
     def run0(rw_tex: ti.types.rw_texture(num_dimensions=2,
-                                         num_channels=1,
-                                         channel_format=ti.f32,
+                                         fmt=ti.Format.r32f,
                                          lod=0)):
         for i, j in ti.ndrange(128, 128):
             value = ti.cast((j * 129 + i) % 2, ti.f32)
@@ -22,8 +21,7 @@ def compile_graph_aot(arch):
     @ti.kernel
     def run1(tex: ti.types.texture(num_dimensions=2),
              rw_tex: ti.types.rw_texture(num_dimensions=2,
-                                         num_channels=1,
-                                         channel_format=ti.f32,
+                                         fmt=ti.Format.r32f,
                                          lod=0)):
         for i, j in ti.ndrange(128, 128):
             value = tex.fetch(ti.Vector([i, j]), 0).x
@@ -74,7 +72,7 @@ def compile_graph_aot(arch):
     assert "TAICHI_AOT_FOLDER_PATH" in os.environ.keys()
     tmpdir = str(os.environ["TAICHI_AOT_FOLDER_PATH"])
 
-    mod = ti.aot.Module(arch)
+    mod = ti.aot.Module()
     mod.add_graph('run_graph', run_graph)
     mod.save(tmpdir, '')
 

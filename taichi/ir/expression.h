@@ -11,8 +11,10 @@ class ExpressionVisitor;
 
 // always a tree - used as rvalues
 class Expression {
- public:
+ protected:
   Stmt *stmt;
+
+ public:
   std::string tb;
   std::map<std::string, std::string> attributes;
   DataType ret_type;
@@ -53,6 +55,10 @@ class Expression {
 
   virtual ~Expression() {
   }
+
+  Stmt *get_flattened_stmt() const {
+    return stmt;
+  }
 };
 
 class ExprGroup {
@@ -62,7 +68,7 @@ class ExprGroup {
   ExprGroup() {
   }
 
-  ExprGroup(const Expr &a) {
+  explicit ExprGroup(const Expr &a) {
     exprs.emplace_back(a);
   }
 
@@ -119,8 +125,8 @@ inline ExprGroup operator,(const ExprGroup &a, const Expr &b) {
 
 class ExpressionVisitor {
  public:
-  ExpressionVisitor(bool allow_undefined_visitor = false,
-                    bool invoke_default_visitor = false)
+  explicit ExpressionVisitor(bool allow_undefined_visitor = false,
+                             bool invoke_default_visitor = false)
       : allow_undefined_visitor_(allow_undefined_visitor),
         invoke_default_visitor_(invoke_default_visitor) {
   }

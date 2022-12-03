@@ -6,7 +6,6 @@
 
 #include "taichi/common/core.h"
 #include "taichi/util/io.h"
-#include "taichi/util/statistics.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"
 #include "taichi/program/program.h"
@@ -18,6 +17,7 @@
 #include "taichi/analysis/offline_cache_util.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/transforms.h"
+#include "taichi/codegen/codegen_utils.h"
 
 namespace taichi::lang {
 
@@ -30,7 +30,7 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
  public:
   using IRVisitor::visit;
 
-  TaskCodeGenCUDA(Kernel *kernel, IRNode *ir = nullptr)
+  explicit TaskCodeGenCUDA(Kernel *kernel, IRNode *ir = nullptr)
       : TaskCodeGenLLVM(kernel, ir) {
   }
 
@@ -53,10 +53,7 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
     auto value_arr = builder->CreateAlloca(stype);
     for (int i = 0; i < values.size(); i++) {
       auto value_ptr = builder->CreateGEP(
-#ifdef TI_LLVM_15
-          stype,
-#endif
-          value_arr, {tlctx->get_constant(0), tlctx->get_constant(i)});
+          stype, value_arr, {tlctx->get_constant(0), tlctx->get_constant(i)});
       builder->CreateStore(values[i], value_ptr);
     }
     return LLVMModuleBuilder::call(
@@ -102,12 +99,20 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
         formats += data_type_format(arg_stmt->ret_type);
 
         auto value = llvm_val[arg_stmt];
+        auto value_type = value->getType();
         if (arg_stmt->ret_type->is<TensorType>()) {
           auto dtype = arg_stmt->ret_type->cast<TensorType>();
           num_contents += dtype->get_num_elements();
           auto elem_type = dtype->get_element_type();
           for (int i = 0; i < dtype->get_num_elements(); ++i) {
-            auto elem_value = builder->CreateExtractElement(value, i);
+            llvm::Value *elem_value;
+            if (codegen_vector_type(&prog->this_thread_config())) {
+              TI_ASSERT(llvm::dyn_cast<llvm::VectorType>(value_type));
+              elem_value = builder->CreateExtractElement(value, i);
+            } else {
+              TI_ASSERT(llvm::dyn_cast<llvm::ArrayType>(value_type));
+              elem_value = builder->CreateExtractValue(value, i);
+            }
             auto [casted_value, elem_value_type] =
                 create_value_and_type(elem_value, elem_type);
             types.push_back(elem_value_type);
@@ -251,156 +256,6 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
                 llvm_val[stmt->val]);
   }
 
-  // LLVM15 already support f16 atomic in
-  // https://github.com/llvm/llvm-project/commit/0cb08e448af7167ada767e0526aa44980e72ad08
-  // the review is at https://reviews.llvm.org/D52416
-  // Limit the f16 hack to LLVM10 build.
-#ifndef TI_LLVM_15
-  // A huge hack for supporting f16 atomic add/max/min! Borrowed from
-  // https://github.com/tensorflow/tensorflow/blob/470d58a83470f8ede3beaa584e6992bc71b7baa6/tensorflow/compiler/xla/service/gpu/ir_emitter.cc#L378-L490
-  // The reason is that LLVM10 does not support generating atomicCAS for f16 on
-  // NVPTX backend.
-  //
-  // Implements atomic binary operations using atomic compare-and-swap
-  // (atomicCAS) as follows:
-  //   1. Reads the value from the memory pointed to by output_address and
-  //     records it as old_output.
-  //   2. Uses old_output as one of the source operand to perform the binary
-  //     operation and stores the result in new_output.
-  //   3. Calls atomicCAS which implements compare-and-swap as an atomic
-  //     operation. In particular, atomicCAS reads the value from the memory
-  //     pointed to by output_address, and compares the value with old_output.
-  //     If the two values equal, new_output is written to the same memory
-  //     location and true is returned to indicate that the atomic operation
-  //     succeeds. Otherwise, the new value read from the memory is returned. In
-  //     this case, the new value is copied to old_output, and steps 2. and 3.
-  //     are repeated until atomicCAS succeeds.
-  //
-  // int32 is used for the atomicCAS operation. So atomicCAS reads and writes 32
-  // bit values from the memory, which is larger than the memory size required
-  // by the original atomic binary operation. We mask off the last two bits of
-  // the output_address and use the result as an address to read the 32 bit
-  // values from the memory.
-  //
-  // This can avoid out of bound memory accesses, based on the assumption:
-  // All buffers are 4 byte aligned and have a size of 4N.
-  //
-  // The pseudo code is shown below.
-  //
-  //   cas_new_output_address = alloca(32);
-  //   cas_old_output_address = alloca(32);
-  //   atomic_address = output_address & ((int64)(-4));
-  //   new_output_address = cas_new_output_address + (output_address & 3);
-  //
-  //   *cas_old_output_address = *atomic_address;
-  //   do {
-  //     *cas_new_output_address = *cas_old_output_address;
-  //     *new_output_address = operation(*new_output_address, *source_address);
-  //     (*cas_old_output_address, success) =
-  //       atomicCAS(atomic_address, *cas_old_output_address,
-  //       *cas_new_output_address);
-  //   } while (!success);
-  //
-
-  llvm::Value *atomic_op_using_cas(
-      llvm::Value *output_address,
-      llvm::Value *val,
-      std::function<llvm::Value *(llvm::Value *, llvm::Value *)> op) override {
-    llvm::PointerType *output_address_type =
-        llvm::dyn_cast<llvm::PointerType>(output_address->getType());
-    TI_ASSERT(output_address_type != nullptr);
-
-    // element_type is the data type for the binary operation.
-    llvm::Type *element_type = output_address_type->getPointerElementType();
-    llvm::Type *element_address_type = element_type->getPointerTo();
-
-    int atomic_size = 32;
-    llvm::Type *atomic_type = builder->getIntNTy(atomic_size);
-    llvm::Type *atomic_address_type = atomic_type->getPointerTo(
-        output_address_type->getPointerAddressSpace());
-
-    // cas_old_output_address and cas_new_output_address point to the scratch
-    // memory where we store the old and new values for the repeated atomicCAS
-    // operations.
-    llvm::Value *cas_old_output_address =
-        builder->CreateAlloca(atomic_type, nullptr);
-    llvm::Value *cas_new_output_address =
-        builder->CreateAlloca(atomic_type, nullptr);
-
-    llvm::Value *atomic_memory_address;
-    // binop_output_address points to the scratch memory that stores the
-    // result of the binary operation.
-    llvm::Value *binop_output_address;
-
-    // Calculate bin_output_address output_address
-    llvm::Type *address_int_type =
-        module->getDataLayout().getIntPtrType(output_address_type);
-    atomic_memory_address =
-        builder->CreatePtrToInt(output_address, address_int_type);
-    llvm::Value *mask = llvm::ConstantInt::get(address_int_type, 3);
-    llvm::Value *offset = builder->CreateAnd(atomic_memory_address, mask);
-    mask = llvm::ConstantInt::get(address_int_type, -4);
-    atomic_memory_address = builder->CreateAnd(atomic_memory_address, mask);
-    atomic_memory_address =
-        builder->CreateIntToPtr(atomic_memory_address, atomic_address_type);
-    binop_output_address = builder->CreateAdd(
-        builder->CreatePtrToInt(cas_new_output_address, address_int_type),
-        offset);
-    binop_output_address =
-        builder->CreateIntToPtr(binop_output_address, element_address_type);
-
-    // Use the value from the memory that atomicCAS operates on to initialize
-    // cas_old_output.
-    llvm::Value *cas_old_output =
-        builder->CreateLoad(atomic_memory_address, "cas_old_output");
-    builder->CreateStore(cas_old_output, cas_old_output_address);
-
-    llvm::BasicBlock *loop_body_bb =
-        BasicBlock::Create(*llvm_context, "atomic_op_loop_body", func);
-    llvm::BasicBlock *loop_exit_bb =
-        BasicBlock::Create(*llvm_context, "loop_exit_bb", func);
-    builder->CreateBr(loop_body_bb);
-    builder->SetInsertPoint(loop_body_bb);
-
-    // loop body for one atomicCAS
-    {
-      // Use cas_old_output to initialize cas_new_output.
-      cas_old_output =
-          builder->CreateLoad(cas_old_output_address, "cas_old_output");
-      builder->CreateStore(cas_old_output, cas_new_output_address);
-
-      auto binop_output = op(builder->CreateLoad(binop_output_address), val);
-      builder->CreateStore(binop_output, binop_output_address);
-
-      llvm::Value *cas_new_output =
-          builder->CreateLoad(cas_new_output_address, "cas_new_output");
-
-      // Emit code to perform the atomicCAS operation
-      // (cas_old_output, success) = atomicCAS(memory_address, cas_old_output,
-      //                                       cas_new_output);
-      llvm::Value *ret_value = builder->CreateAtomicCmpXchg(
-          atomic_memory_address, cas_old_output, cas_new_output,
-          llvm::AtomicOrdering::SequentiallyConsistent,
-          llvm::AtomicOrdering::SequentiallyConsistent);
-
-      // Extract the memory value returned from atomicCAS and store it as
-      // cas_old_output.
-      builder->CreateStore(
-          builder->CreateExtractValue(ret_value, 0, "cas_old_output"),
-          cas_old_output_address);
-      // Extract the success bit returned from atomicCAS and generate a
-      // conditional branch on the success bit.
-      builder->CreateCondBr(
-          builder->CreateExtractValue(ret_value, 1, "success"), loop_exit_bb,
-          loop_body_bb);
-    }
-
-    builder->SetInsertPoint(loop_exit_bb);
-
-    return output_address;
-  }
-#endif
-
   void visit(RangeForStmt *for_stmt) override {
     create_naive_range_for(for_stmt);
   }
@@ -467,11 +322,7 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
         builder->SetInsertPoint(loop_test_bb);
         auto cond = builder->CreateICmp(
             llvm::CmpInst::Predicate::ICMP_SLT,
-            builder->CreateLoad(
-#ifdef TI_LLVM_15
-                i32_ty,
-#endif
-                loop_index),
+            builder->CreateLoad(i32_ty, loop_index),
             llvm_val[stmt->owned_num_local.find(stmt->major_from_type)
                          ->second]);
         builder->CreateCondBr(cond, loop_body_bb, func_exit);
@@ -484,13 +335,10 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
           auto &s = stmt->body->statements[i];
           s->accept(this);
         }
-        builder->CreateStore(builder->CreateAdd(builder->CreateLoad(
-#ifdef TI_LLVM_15
-                                                    i32_ty,
-#endif
-                                                    loop_index),
-                                                block_dim),
-                             loop_index);
+        builder->CreateStore(
+            builder->CreateAdd(builder->CreateLoad(i32_ty, loop_index),
+                               block_dim),
+            loop_index);
         builder->CreateBr(loop_test_bb);
         builder->SetInsertPoint(func_exit);
       }
@@ -541,6 +389,36 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
     }
   }
 
+  void emit_cuda_gc_rc(OffloadedStmt *stmt) {
+    {
+      init_offloaded_task_function(stmt, "gather_list");
+      call("gc_rc_parallel_0", get_context());
+      finalize_offloaded_task_function();
+      current_task->grid_dim = prog->this_thread_config().saturating_grid_dim;
+      current_task->block_dim = 64;
+      offloaded_tasks.push_back(*current_task);
+      current_task = nullptr;
+    }
+    {
+      init_offloaded_task_function(stmt, "reinit_lists");
+      call("gc_rc_parallel_1", get_context());
+      finalize_offloaded_task_function();
+      current_task->grid_dim = 1;
+      current_task->block_dim = 1;
+      offloaded_tasks.push_back(*current_task);
+      current_task = nullptr;
+    }
+    {
+      init_offloaded_task_function(stmt, "zero_fill");
+      call("gc_rc_parallel_2", get_context());
+      finalize_offloaded_task_function();
+      current_task->grid_dim = prog->this_thread_config().saturating_grid_dim;
+      current_task->block_dim = 64;
+      offloaded_tasks.push_back(*current_task);
+      current_task = nullptr;
+    }
+  }
+
   bool kernel_argument_by_val() const override {
     return true;  // on CUDA, pass the argument by value
   }
@@ -576,7 +454,6 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
   }
 
   void visit(OffloadedStmt *stmt) override {
-    stat.add("codegen_offloaded_tasks");
     if (stmt->bls_size > 0)
       create_bls_buffer(stmt);
 #if defined(TI_WITH_CUDA)
@@ -586,6 +463,8 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
     if (stmt->task_type == Type::gc) {
       // gc has 3 kernels, so we treat it specially
       emit_cuda_gc(stmt);
+    } else if (stmt->task_type == Type::gc_rc) {
+      emit_cuda_gc_rc(stmt);
     } else {
       init_offloaded_task_function(stmt);
       if (stmt->task_type == Type::serial) {
@@ -739,12 +618,6 @@ FunctionType CUDAModuleToFunctionConverter::convert(
   auto &mod = data.module;
   auto &tasks = data.tasks;
 #ifdef TI_WITH_CUDA
-  for (const auto &task : tasks) {
-    llvm::Function *func = mod->getFunction(task.name);
-    TI_ASSERT(func);
-    tlctx_->mark_function_as_cuda_kernel(func, task.block_dim);
-  }
-
   auto jit = tlctx_->jit.get();
   auto cuda_module =
       jit->add_module(std::move(mod), executor_->get_config()->gpu_max_reg);
@@ -812,6 +685,8 @@ FunctionType CUDAModuleToFunctionConverter::convert(
     if (transferred) {
       CUDADriver::get_instance().stream_synchronize(nullptr);
     }
+    CUDADriver::get_instance().context_set_limit(
+        CU_LIMIT_STACK_SIZE, executor->get_config()->cuda_stack_limit);
 
     for (auto task : offloaded_tasks) {
       TI_TRACE("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,

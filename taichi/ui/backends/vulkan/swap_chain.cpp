@@ -91,9 +91,9 @@ bool SwapChain::copy_depth_buffer_to_ndarray(
     arr_dev_ptr.device->unmap(field_buffer);
   } else {
     TI_NOT_IMPLEMENTED;
-    return 0;
+    return false;
   }
-  return 1;
+  return true;
 }
 
 void SwapChain::cleanup() {

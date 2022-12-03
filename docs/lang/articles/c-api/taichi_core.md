@@ -325,7 +325,6 @@ A collection of Taichi kernels (a compute graph) to launch on the offload target
 ```c
 // enumeration.error
 typedef enum TiError {
-  TI_ERROR_INCOMPLETE = 1,
   TI_ERROR_SUCCESS = 0,
   TI_ERROR_NOT_SUPPORTED = -1,
   TI_ERROR_CORRUPTED_DATA = -2,
@@ -336,13 +335,13 @@ typedef enum TiError {
   TI_ERROR_ARGUMENT_NOT_FOUND = -7,
   TI_ERROR_INVALID_INTEROP = -8,
   TI_ERROR_INVALID_STATE = -9,
+  TI_ERROR_INCOMPATIBLE_MODULE = -10,
   TI_ERROR_MAX_ENUM = 0xffffffff,
 } TiError;
 ```
 
-Errors reported by the Taichi C-API. Enumerants greater than or equal to zero are success states.
+Errors reported by the Taichi C-API.
 
-- `TI_ERROR_INCOMPLETE`: The output data is truncated because the user-provided buffer is too small.
 - `TI_ERROR_SUCCESS`: The Taichi C-API invocation finished gracefully.
 - `TI_ERROR_NOT_SUPPORTED`: The invoked API, or the combination of parameters is not supported by the Taichi C-API.
 - `TI_ERROR_CORRUPTED_DATA`: Provided data is corrupted.
@@ -353,6 +352,7 @@ Errors reported by the Taichi C-API. Enumerants greater than or equal to zero ar
 - `TI_ERROR_ARGUMENT_NOT_FOUND`: One or more kernel arguments are missing.
 - `TI_ERROR_INVALID_INTEROP`: The intended interoperation is not possible on the current arch. For example, attempts to export a Vulkan object from a CUDA runtime are not allowed.
 - `TI_ERROR_INVALID_STATE`: The Taichi C-API enters an unrecoverable invalid state. Related Taichi objects are potentially corrupted. The users *should* release the contaminated resources for stability. Please feel free to file an issue if you encountered this error in a normal routine.
+- `TI_ERROR_INCOMPATIBLE_MODULE`: The AOT module is not compatible with the current runtime.
 
 ---
 ### Enumeration `TiArch`
@@ -384,6 +384,52 @@ Types of backend archs.
 - `TI_ARCH_CUDA`: NVIDIA CUDA GPU backend.
 - `TI_ARCH_VULKAN`: Vulkan GPU backend.
 - `TI_ARCH_OPENGL`: OpenGL GPU backend.
+
+---
+### Enumeration `TiCapability`
+
+```c
+// enumeration.capability
+typedef enum TiCapability {
+  TI_CAPABILITY_RESERVED = 0,
+  TI_CAPABILITY_SPIRV_VERSION = 1,
+  TI_CAPABILITY_SPIRV_HAS_INT8 = 2,
+  TI_CAPABILITY_SPIRV_HAS_INT16 = 3,
+  TI_CAPABILITY_SPIRV_HAS_INT64 = 4,
+  TI_CAPABILITY_SPIRV_HAS_FLOAT16 = 5,
+  TI_CAPABILITY_SPIRV_HAS_FLOAT64 = 6,
+  TI_CAPABILITY_SPIRV_HAS_ATOMIC_I64 = 7,
+  TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT16 = 8,
+  TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT16_ADD = 9,
+  TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT16_MINMAX = 10,
+  TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT = 11,
+  TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT_ADD = 12,
+  TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT_MINMAX = 13,
+  TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT64 = 14,
+  TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT64_ADD = 15,
+  TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT64_MINMAX = 16,
+  TI_CAPABILITY_SPIRV_HAS_VARIABLE_PTR = 17,
+  TI_CAPABILITY_SPIRV_HAS_PHYSICAL_STORAGE_BUFFER = 18,
+  TI_CAPABILITY_SPIRV_HAS_SUBGROUP_BASIC = 19,
+  TI_CAPABILITY_SPIRV_HAS_SUBGROUP_VOTE = 20,
+  TI_CAPABILITY_SPIRV_HAS_SUBGROUP_ARITHMETIC = 21,
+  TI_CAPABILITY_SPIRV_HAS_SUBGROUP_BALLOT = 22,
+  TI_CAPABILITY_SPIRV_HAS_NON_SEMANTIC_INFO = 23,
+  TI_CAPABILITY_SPIRV_HAS_NO_INTEGER_WRAP_DECORATION = 24,
+  TI_CAPABILITY_MAX_ENUM = 0xffffffff,
+} TiCapability;
+```
+
+---
+### Structure `TiCapabilityLevelInfo`
+
+```c
+// structure.capability_level_info
+typedef struct TiCapabilityLevelInfo {
+  TiCapability capability;
+  uint32_t level;
+} TiCapabilityLevelInfo;
+```
 
 ---
 ### Enumeration `TiDataType`
@@ -869,6 +915,24 @@ A named argument value to feed compute graphs.
 - `argument`: Argument body.
 
 ---
+### Function `ti_get_available_archs`
+
+```c
+// function.get_available_archs
+TI_DLL_EXPORT void TI_API_CALL ti_get_available_archs(
+  uint32_t* arch_count,
+  TiArch* archs
+);
+```
+
+Gets a list of available archs on the current platform. An arch is only available if:
+
+1. The Runtime library is compiled with its support;
+2. The current platform is installed with a capable hardware or an emulation software.
+
+An available arch has at least one device available, i.e., device index 0 is always available. If an arch is not available on the current platform, a call to [`ti_create_runtime`](#function-ti_create_runtime) with that arch is guaranteed failing.
+
+---
 ### Function `ti_get_last_error`
 
 ```c
@@ -879,7 +943,7 @@ TI_DLL_EXPORT TiError TI_API_CALL ti_get_last_error(
 );
 ```
 
-Get the last error raised by Taichi C-API invocations. Returns the semantical error code.
+Gets the last error raised by Taichi C-API invocations. Returns the semantical error code.
 
 - `message_size`: Size of textual error message in `message`
 - `message`: Text buffer for the textual error message. Ignored when `message_size` is 0.
@@ -895,7 +959,7 @@ TI_DLL_EXPORT void TI_API_CALL ti_set_last_error(
 );
 ```
 
-Set the provided error as the last error raised by Taichi C-API invocations. It can be useful in extended validation procedures in Taichi C-API wrappers and helper libraries.
+Sets the provided error as the last error raised by Taichi C-API invocations. It can be useful in extended validation procedures in Taichi C-API wrappers and helper libraries.
 
 - `error`: Semantical error code.
 - `message`: A null-terminated string of the textual error message or `nullptr` for empty error message.
@@ -923,6 +987,18 @@ TI_DLL_EXPORT void TI_API_CALL ti_destroy_runtime(
 ```
 
 Destroys a Taichi Runtime.
+
+---
+### Function `ti_get_runtime_capabilities`
+
+```c
+// function.get_runtime_capabilities
+TI_DLL_EXPORT void TI_API_CALL ti_get_runtime_capabilities(
+  TiRuntime runtime,
+  uint32_t* capability_count,
+  TiCapabilityLevelInfo* capabilities
+);
+```
 
 ---
 ### Function `ti_allocate_memory`
@@ -1210,6 +1286,18 @@ TI_DLL_EXPORT TiAotModule TI_API_CALL ti_load_aot_module(
 
 Loads a pre-compiled AOT module from the file system.
 Returns [`TI_NULL_HANDLE`](#definition-ti_null_handle) if the runtime fails to load the AOT module from the specified path.
+
+---
+### Function `ti_create_aot_module`
+
+```c
+// function.create_aot_module
+TI_DLL_EXPORT TiAotModule TI_API_CALL ti_create_aot_module(
+  TiRuntime runtime,
+  const void* tcm,
+  uint64_t size
+);
+```
 
 ---
 ### Function `ti_destroy_aot_module`

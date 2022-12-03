@@ -48,5 +48,6 @@
   "simt"            : "SIMT programming",
   "release"         : "Release",
   "build"           : "Build system",
-  "rfc"             : "RFC"
+  "rfc"             : "RFC",
+  "amdgpu"          : "AMDGPU backend"
 }

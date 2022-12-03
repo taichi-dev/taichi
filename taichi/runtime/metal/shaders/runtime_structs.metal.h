@@ -114,13 +114,13 @@ STR(
 
     struct SNodeExtractors {
       struct Extractor {
-        int32_t start = 0;
         int32_t num_bits = 0;
         int32_t acc_offset = 0;
-        int32_t num_elements_from_root = 0;
+        int32_t shape = 0;
+        int32_t acc_shape = 0;
       };
-
       Extractor extractors[kTaichiMaxNumIndices];
+      bool packed;
     };
 
     struct ElementCoords { int32_t at[kTaichiMaxNumIndices]; };

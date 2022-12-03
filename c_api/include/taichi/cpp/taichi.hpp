@@ -1,13 +1,32 @@
 // C++ wrapper of Taichi C-API
 #pragma once
+#include <cstddef>
 #include <cstring>
 #include <list>
 #include <vector>
+#include <map>
 #include <string>
 #include <utility>
 #include "taichi/taichi.h"
 
 namespace ti {
+
+inline std::vector<TiArch> get_available_archs() {
+  uint32_t narch = 0;
+  ti_get_available_archs(&narch, nullptr);
+  std::vector<TiArch> archs(narch);
+  ti_get_available_archs(&narch, archs.data());
+  return archs;
+}
+inline bool is_arch_available(TiArch arch) {
+  std::vector<TiArch> archs = get_available_archs();
+  for (size_t i = 0; i < archs.size(); ++i) {
+    if (archs.at(i) == arch) {
+      return true;
+    }
+  }
+  return false;
+}
 
 // Token type for half-precision floats.
 struct half {
@@ -149,6 +168,8 @@ template <typename T>
 class NdArray {
   Memory memory_{};
   TiNdArray ndarray_{};
+  size_t elem_count_{};
+  size_t scalar_count_{};
 
  public:
   constexpr bool is_valid() const {
@@ -158,16 +179,29 @@ class NdArray {
     memory_.destroy();
   }
 
-  NdArray() {
+  NdArray() : elem_count_(1), scalar_count_(1) {
   }
   NdArray(const NdArray<T> &) = delete;
   NdArray(NdArray<T> &&b)
-      : memory_(std::move(b.memory_)), ndarray_(std::exchange(b.ndarray_, {})) {
+      : memory_(std::move(b.memory_)),
+        ndarray_(std::exchange(b.ndarray_, {})),
+        elem_count_(std::exchange(b.elem_count_, 1)),
+        scalar_count_(std::exchange(b.scalar_count_, 1)) {
   }
   NdArray(Memory &&memory, const TiNdArray &ndarray)
-      : memory_(std::move(memory)), ndarray_(ndarray) {
+      : memory_(std::move(memory)),
+        ndarray_(ndarray),
+        elem_count_(1),
+        scalar_count_(1) {
     if (ndarray.memory != memory_) {
       ti_set_last_error(TI_ERROR_INVALID_ARGUMENT, "ndarray.memory != memory");
+    }
+    for (uint32_t i = 0; i < ndarray_.shape.dim_count; ++i) {
+      elem_count_ *= ndarray_.shape.dims[i];
+    }
+    scalar_count_ *= elem_count_;
+    for (uint32_t i = 0; i < ndarray_.elem_shape.dim_count; ++i) {
+      scalar_count_ *= ndarray_.elem_shape.dims[i];
     }
   }
   ~NdArray() {
@@ -179,6 +213,8 @@ class NdArray {
     destroy();
     memory_ = std::move(b.memory_);
     ndarray_ = std::exchange(b.ndarray_, {});
+    elem_count_ = std::exchange(b.elem_count_, 1);
+    scalar_count_ = std::exchange(b.scalar_count_, 1);
     return *this;
   }
 
@@ -189,29 +225,50 @@ class NdArray {
     return memory_.unmap();
   }
 
-  inline void read(T *dst, size_t size) const {
-    memory_.read(dst, size);
+  inline size_t scalar_count() const {
+    return scalar_count_;
+  }
+  inline size_t elem_count() const {
+    return elem_count_;
+  }
+
+  inline void read(T *dst, size_t count) const {
+    if (count > scalar_count_) {
+      ti_set_last_error(
+          TI_ERROR_ARGUMENT_OUT_OF_RANGE,
+          "ndarray read ouf of range; please ensure you specified the correct "
+          "number of elements (rather than size-in-bytes) to be read");
+      return;
+    }
+    memory_.read(dst, count * sizeof(T));
   }
   inline void read(std::vector<T> &dst) const {
-    read(dst.data(), dst.size() * sizeof(T));
+    read(dst.data(), dst.size());
   }
   template <typename U>
   inline void read(std::vector<U> &dst) const {
     static_assert(sizeof(U) % sizeof(T) == 0,
                   "sizeof(U) must be a multiple of sizeof(T)");
-    read((T *)dst.data(), dst.size() * sizeof(U));
+    read((T *)dst.data(), dst.size() * (sizeof(U) / sizeof(T)));
   }
-  inline void write(const T *src, size_t size) const {
-    memory_.write(src, size);
+  inline void write(const T *src, size_t count) const {
+    if (count > scalar_count_) {
+      ti_set_last_error(
+          TI_ERROR_ARGUMENT_OUT_OF_RANGE,
+          "ndarray write ouf of range; please ensure you specified the correct "
+          "number of elements (rather than size-in-bytes) to be written");
+      return;
+    }
+    memory_.write(src, count * sizeof(T));
   }
   inline void write(const std::vector<T> &src) const {
-    write(src.data(), src.size() * sizeof(T));
+    write(src.data(), src.size());
   }
   template <typename U>
   inline void write(const std::vector<U> &src) const {
     static_assert(sizeof(U) % sizeof(T) == 0,
                   "sizeof(U) must be a multiple of sizeof(T)");
-    write((const T *)src.data(), src.size() * sizeof(U));
+    write((const T *)src.data(), src.size() * (sizeof(U) / sizeof(T)));
   }
 
   constexpr TiDataType elem_type() const {
@@ -507,15 +564,25 @@ class Kernel {
     return at(i);
   }
 
-  // Temporary workaround for setting vec/matrix arguments in a flattened way.
   template <typename T>
-  void set(uint32_t i, const std::vector<T> &v) {
-    if (i + v.size() >= args_.size()) {
-      args_.resize(i + v.size());
-    }
+  void push_arg(const std::vector<T> &v) {
+    int idx = args_.size();
+    // Temporary workaround for setting vec/matrix arguments in a flattened way.
+    args_.resize(args_.size() + v.size());
     for (int j = 0; j < v.size(); ++j) {
-      at(i + j) = v[j];
+      at(idx + j) = v[j];
     }
+  }
+
+  template <typename T>
+  void push_arg(const T &arg) {
+    int idx = args_.size();
+    args_.resize(idx + 1);
+    at(idx) = arg;
+  }
+
+  void clear_args() {
+    args_.clear();
   }
 
   void launch(uint32_t argument_count, const TiArgument *arguments) {
@@ -687,9 +754,23 @@ class Runtime {
 
   Runtime &operator=(const Runtime &) = delete;
   Runtime &operator=(Runtime &&b) {
+    arch_ = std::exchange(b.arch_, TI_ARCH_MAX_ENUM);
     runtime_ = detail::move_handle(b.runtime_);
     should_destroy_ = std::exchange(b.should_destroy_, false);
     return *this;
+  }
+
+  std::map<TiCapability, uint32_t> get_capabilities() const {
+    uint32_t n = 0;
+    ti_get_runtime_capabilities(runtime_, &n, nullptr);
+    std::vector<TiCapabilityLevelInfo> devcaps(n);
+    ti_get_runtime_capabilities(runtime_, &n, devcaps.data());
+
+    std::map<TiCapability, uint32_t> out{};
+    for (auto devcap : devcaps) {
+      out[devcap.capability] = devcap.level;
+    }
+    return out;
   }
 
   Memory allocate_memory(const TiMemoryAllocateInfo &allocate_info) {
@@ -770,6 +851,14 @@ class Runtime {
   }
   AotModule load_aot_module(const std::string &path) {
     return load_aot_module(path.c_str());
+  }
+
+  AotModule create_aot_module(const void *tcm, size_t size) {
+    TiAotModule aot_module = ti_create_aot_module(runtime_, tcm, size);
+    return AotModule(runtime_, aot_module, true);
+  }
+  AotModule create_aot_module(const std::vector<uint8_t> &tcm) {
+    return create_aot_module(tcm.data(), tcm.size());
   }
 
   void copy_memory_device_to_device(const TiMemorySlice &dst_memory,

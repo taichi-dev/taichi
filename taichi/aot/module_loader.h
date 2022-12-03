@@ -94,6 +94,11 @@ class TI_DLL_EXPORT Module {
     TI_NOT_IMPLEMENTED;
   }
 
+  virtual const DeviceCapabilityConfig &get_required_caps() const {
+    static DeviceCapabilityConfig default_cfg;
+    return default_cfg;
+  }
+
   inline bool is_corrupted() const {
     return is_corrupted_;
   }
@@ -114,54 +119,6 @@ class TI_DLL_EXPORT Module {
   std::unordered_map<std::string, std::unique_ptr<KernelTemplate>>
       loaded_kernel_templates_;
   std::unordered_map<std::string, std::unique_ptr<Field>> loaded_fields_;
-};
-
-// Only responsible for reporting device capabilities
-class TargetDevice : public Device {
- public:
-  TargetDevice(Arch arch) {
-    // TODO: make this configurable
-    set_default_caps(arch);
-  }
-
-  void set_default_caps(Arch arch) {
-    if (arch == Arch::vulkan || arch == Arch::opengl) {
-      set_cap(DeviceCapability::spirv_version, 0x10300);
-    }
-  }
-
-  DeviceAllocation allocate_memory(const AllocParams &params) override {
-    TI_NOT_IMPLEMENTED;
-  }
-  void dealloc_memory(DeviceAllocation handle) override {
-    TI_NOT_IMPLEMENTED;
-  }
-  std::unique_ptr<Pipeline> create_pipeline(
-      const PipelineSourceDesc &src,
-      std::string name = "Pipeline") override {
-    TI_NOT_IMPLEMENTED;
-  }
-  void *map_range(DevicePtr ptr, uint64_t size) override {
-    TI_NOT_IMPLEMENTED;
-  }
-  void *map(DeviceAllocation alloc) override {
-    TI_NOT_IMPLEMENTED;
-  }
-  void unmap(DevicePtr ptr) override {
-    TI_NOT_IMPLEMENTED;
-  }
-  void unmap(DeviceAllocation alloc) override {
-    TI_NOT_IMPLEMENTED;
-  }
-  void memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) override {
-    TI_NOT_IMPLEMENTED;
-  }
-  Stream *get_compute_stream() override {
-    TI_NOT_IMPLEMENTED;
-  }
-  void wait_idle() override {
-    TI_NOT_IMPLEMENTED;
-  }
 };
 
 }  // namespace aot

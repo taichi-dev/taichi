@@ -93,9 +93,8 @@ def test_vector_types_f64():
     test()
 
 
-@test_utils.test()
 @ti.kernel
-def test_translate():
+def _test_translate():
     error = 0
     translate_vec = ti.math.vec3(1., 2., 3.)
     translate_mat = ti.math.translate(translate_vec[0], translate_vec[1],
@@ -106,9 +105,18 @@ def test_translate():
     assert error == 0
 
 
-@test_utils.test()
+@test_utils.test(debug=True)
+def test_translate():
+    _test_translate()
+
+
+@test_utils.test(debug=True, real_matrix=True, real_matrix_scalarize=True)
+def test_translate_real_matrix_scalarize():
+    _test_translate()
+
+
 @ti.kernel
-def test_scale():
+def _test_scale():
     error = 0
     scale_vec = ti.math.vec3(1., 2., 3.)
     scale_mat = ti.math.scale(scale_vec[0], scale_vec[1], scale_vec[2])
@@ -118,9 +126,18 @@ def test_scale():
     assert error == 0
 
 
-@test_utils.test()
+@test_utils.test(debug=True)
+def test_scale():
+    _test_scale()
+
+
+@test_utils.test(debug=True, real_matrix=True, real_matrix_scalarize=True)
+def test_scale_real_matrix_scalarize():
+    _test_scale()
+
+
 @ti.kernel
-def test_rotation2d():
+def _test_rotation2d():
     error = 0
     rotationTest = ti.math.rotation2d(ti.math.radians(30))
     rotationRef = ti.math.mat2([[0.866025, -0.500000], [0.500000, 0.866025]])
@@ -128,9 +145,18 @@ def test_rotation2d():
     assert error == 0
 
 
-@test_utils.test()
+@test_utils.test(debug=True)
+def test_rotation2d():
+    _test_rotation2d()
+
+
+@test_utils.test(debug=True, real_matrix=True, real_matrix_scalarize=True)
+def test_rotation2d_real_matrix_scalarize():
+    _test_rotation2d()
+
+
 @ti.kernel
-def test_rotation3d():
+def _test_rotation3d():
     error = 0
 
     first = 1.046
@@ -166,3 +192,13 @@ def test_rotation3d():
     error += check_epsilon_equal(rotationEuler, rotationTest, 0.00001)
 
     assert error == 0
+
+
+@test_utils.test(debug=True)
+def test_rotation3d():
+    _test_rotation3d()
+
+
+@test_utils.test(debug=True, real_matrix=True, real_matrix_scalarize=True)
+def test_rotation3d_real_matrix_scalarize():
+    _test_rotation3d()

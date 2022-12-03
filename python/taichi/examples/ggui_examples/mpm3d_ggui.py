@@ -77,8 +77,8 @@ def substep(g_x: float, g_y: float, g_z: float):
         for d in ti.static(range(3)):
             new_sig = sig[d, d]
             if F_materials[p] == SNOW:  # Snow
-                new_sig = min(max(sig[d, d], 1 - 2.5e-2),
-                              1 + 4.5e-3)  # Plasticity
+                new_sig = ti.min(ti.max(sig[d, d], 1 - 2.5e-2),
+                                 1 + 4.5e-3)  # Plasticity
             F_Jp[p] *= sig[d, d] / new_sig
             sig[d, d] = new_sig
             J *= new_sig
@@ -109,7 +109,7 @@ def substep(g_x: float, g_y: float, g_z: float):
         F_grid_v[I] += dt * ti.Vector([g_x, g_y, g_z])
         cond = (I < bound) & (F_grid_v[I] < 0) | \
                (I > n_grid - bound) & (F_grid_v[I] > 0)
-        F_grid_v[I] = 0 if cond else F_grid_v[I]
+        F_grid_v[I] = ti.select(cond, 0, F_grid_v[I])
     ti.loop_config(block_dim=n_grid)
     for p in F_x:
         if F_used[p] == 0:

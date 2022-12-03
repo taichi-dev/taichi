@@ -11,7 +11,7 @@ namespace taichi {
                                                                               \
   class InterfaceInjector_##class_name {                                      \
    public:                                                                    \
-    InterfaceInjector_##class_name(const std::string &name) {                 \
+    explicit InterfaceInjector_##class_name(const std::string &name) {        \
       InterfaceHolder::get_instance()->register_registration_method(          \
           base_alias, [&](void *m) {                                          \
             ((pybind11::module *)m)                                           \

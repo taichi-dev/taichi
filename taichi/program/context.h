@@ -82,9 +82,15 @@ struct RuntimeContext {
     set_array_device_allocation_type(arg_id, DevAllocType::kTexture);
   }
 
-  void set_arg_rw_texture(int arg_id, intptr_t alloc_ptr) {
+  void set_arg_rw_texture(int arg_id,
+                          intptr_t alloc_ptr,
+                          const std::array<int, 3> &shape) {
     args[arg_id] = taichi_union_cast_with_different_sizes<uint64>(alloc_ptr);
     set_array_device_allocation_type(arg_id, DevAllocType::kRWTexture);
+    TI_ASSERT(shape.size() <= taichi_max_num_indices);
+    for (int i = 0; i < shape.size(); i++) {
+      extra_args[arg_id][i] = shape[i];
+    }
   }
 
   void set_arg_external_array(int arg_id,

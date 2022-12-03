@@ -25,7 +25,7 @@ v = ti.Vector.field(dim, dtype=float, shape=n_particles)
 C = ti.Matrix.field(dim, dim, dtype=float, shape=n_particles)
 grid_v = ti.Vector.field(dim, dtype=float, shape=(n_grid, n_grid))
 grid_m = ti.field(dtype=float, shape=(n_grid, n_grid))
-restT = ti.Matrix.field(dim, dim, dtype=float, shape=n_particles)
+restT = ti.Matrix.field(dim, dim, dtype=float, shape=n_elements)
 total_energy = ti.field(dtype=float, shape=(), needs_grad=True)
 vertices = ti.field(dtype=ti.i32, shape=(n_elements, 3))
 
@@ -116,7 +116,7 @@ def grid_op():
             dist = ti.Vector([i * dx - 0.5, j * dx - 0.5])
             if dist.norm_sqr() < 0.005:
                 dist = dist.normalized()
-                grid_v[i, j] -= dist * min(0, grid_v[i, j].dot(dist))
+                grid_v[i, j] -= dist * ti.min(0, grid_v[i, j].dot(dist))
 
             # box
             if i < bound and grid_v[i, j].x < 0:

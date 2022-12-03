@@ -2,6 +2,7 @@ import warnings
 
 from taichi.lang import ops
 from taichi.lang.util import in_python_scope
+from taichi.types import primitive_types
 
 
 class TaichiOperations:
@@ -297,6 +298,10 @@ class TaichiOperations:
 
     def __ti_int__(self):
         return ops.cast(self, int)
+
+    def __ti_bool__(self):
+        return ops.cast(
+            self, primitive_types.i32)  # TODO[Xiaoyan]: Use i1 in the future
 
     def __ti_float__(self):
         return ops.cast(self, float)

@@ -17,7 +17,7 @@ class Function;
  */
 class AllocaStmt : public Stmt {
  public:
-  AllocaStmt(DataType type) : is_shared(false) {
+  explicit AllocaStmt(DataType type) : is_shared(false) {
     ret_type = type;
     TI_STMT_REG_FIELDS;
   }
@@ -206,7 +206,7 @@ class ArgLoadStmt : public Stmt {
  */
 class RandStmt : public Stmt {
  public:
-  RandStmt(const DataType &dt) {
+  explicit RandStmt(const DataType &dt) {
     ret_type = dt;
     TI_STMT_REG_FIELDS;
   }
@@ -407,6 +407,24 @@ class MatrixOfGlobalPtrStmt : public Stmt {
 };
 
 /**
+ * A matrix of MatrixPtrStmts. The purpose of this stmt is to handle matrix
+ * slice and vector swizzle. This stmt will be eliminated after the
+ * lower_matrix_ptr pass.
+ *
+ * TODO(yi/zhanlue): Keep scalarization pass alive for MatrixOfMatrixPtrStmt
+ * operations even with real_matrix_scalarize=False
+ */
+class MatrixOfMatrixPtrStmt : public Stmt {
+ public:
+  std::vector<Stmt *> stmts;
+
+  MatrixOfMatrixPtrStmt(const std::vector<Stmt *> &stmts, DataType dt);
+
+  TI_STMT_DEF_FIELDS(ret_type, stmts);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
+/**
  * A pointer to an element of a matrix.
  */
 class MatrixPtrStmt : public Stmt {
@@ -414,7 +432,7 @@ class MatrixPtrStmt : public Stmt {
   Stmt *origin{nullptr};
   Stmt *offset{nullptr};
 
-  MatrixPtrStmt(Stmt *, Stmt *);
+  MatrixPtrStmt(Stmt *, Stmt *, const std::string & = "");
 
   /* TODO(zhanlue/yi): Unify semantics of offset in MatrixPtrStmt
 
@@ -474,6 +492,8 @@ class SNodeOpStmt : public Stmt {
 };
 
 // TODO: remove this
+// (penguinliong) This Stmt is used for both ND-arrays and textures. This is
+// subject to change in the future.
 class ExternalTensorShapeAlongAxisStmt : public Stmt {
  public:
   int axis;
@@ -683,9 +703,8 @@ class LocalStoreStmt : public Stmt {
   Stmt *val;
 
   LocalStoreStmt(Stmt *dest, Stmt *val) : dest(dest), val(val) {
-    TI_ASSERT(dest->is<AllocaStmt>() ||
-              (dest->is<MatrixPtrStmt>() &&
-               dest->cast<MatrixPtrStmt>()->offset_used_as_index()));
+    TI_ASSERT(dest->is<AllocaStmt>() || dest->is<MatrixPtrStmt>() ||
+              dest->is<MatrixOfMatrixPtrStmt>());
     TI_STMT_REG_FIELDS;
   }
 
@@ -740,18 +759,19 @@ class PrintStmt : public Stmt {
   using EntryType = std::variant<Stmt *, std::string>;
   std::vector<EntryType> contents;
 
-  PrintStmt(const std::vector<EntryType> &contents_) : contents(contents_) {
+  explicit PrintStmt(const std::vector<EntryType> &contents_)
+      : contents(contents_) {
     TI_STMT_REG_FIELDS;
   }
 
   template <typename... Args>
-  PrintStmt(Stmt *t, Args &&...args)
+  explicit PrintStmt(Stmt *t, Args &&...args)
       : contents(make_entries(t, std::forward<Args>(args)...)) {
     TI_STMT_REG_FIELDS;
   }
 
   template <typename... Args>
-  PrintStmt(const std::string &str, Args &&...args)
+  explicit PrintStmt(const std::string &str, Args &&...args)
       : contents(make_entries(str, std::forward<Args>(args)...)) {
     TI_STMT_REG_FIELDS;
   }
@@ -950,7 +970,7 @@ class ReferenceStmt : public Stmt {
   Stmt *var;
   bool global_side_effect{false};
 
-  ReferenceStmt(Stmt *var) : var(var) {
+  explicit ReferenceStmt(Stmt *var) : var(var) {
     TI_STMT_REG_FIELDS;
   }
 
@@ -959,6 +979,21 @@ class ReferenceStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(ret_type, var);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
+/**
+ * Gets an element from a struct
+ */
+class GetElementStmt : public Stmt {
+ public:
+  Stmt *src;
+  int index;
+  GetElementStmt(Stmt *src, int index) : src(src), index(index) {
+    TI_STMT_REG_FIELDS;
+  }
+
+  TI_STMT_DEF_FIELDS(ret_type, src, index);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
@@ -1089,7 +1124,7 @@ class BitExtractStmt : public Stmt {
  */
 class GetRootStmt : public Stmt {
  public:
-  GetRootStmt(SNode *root = nullptr) : root_(root) {
+  explicit GetRootStmt(SNode *root = nullptr) : root_(root) {
     if (this->root_ != nullptr) {
       while (this->root_->parent) {
         this->root_ = this->root_->parent;
@@ -1161,6 +1196,10 @@ class GetChStmt : public Stmt {
   bool is_bit_vectorized;
 
   GetChStmt(Stmt *input_ptr, int chid, bool is_bit_vectorized = false);
+  GetChStmt(Stmt *input_ptr,
+            SNode *snode,
+            int chid,
+            bool is_bit_vectorized = false);
 
   bool has_global_side_effect() const override {
     return false;
@@ -1232,7 +1271,8 @@ class OffloadedStmt : public Stmt {
   static std::string task_type_name(TaskType tt);
 
   bool has_body() const {
-    return task_type != TaskType::listgen && task_type != TaskType::gc;
+    return task_type != TaskType::listgen && task_type != TaskType::gc &&
+           task_type != TaskType::gc_rc;
   }
 
   bool is_container_statement() const override {
@@ -1831,7 +1871,7 @@ class MatrixInitStmt : public Stmt {
  public:
   std::vector<Stmt *> values;
 
-  MatrixInitStmt(const std::vector<Stmt *> &values) : values(values) {
+  explicit MatrixInitStmt(const std::vector<Stmt *> &values) : values(values) {
     TI_STMT_REG_FIELDS;
   }
 

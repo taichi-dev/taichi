@@ -16,17 +16,16 @@ void convert_to_range_for(OffloadedStmt *offloaded, bool packed) {
   std::vector<SNode *> snodes;
   auto *snode = offloaded->snode;
   int total_bits = 0;
-  int start_bits_root[taichi_max_num_indices] = {0};
+  int start_bits[taichi_max_num_indices] = {0};
   while (snode->type != SNodeType::root) {
     snodes.push_back(snode);
     for (int j = 0; j < taichi_max_num_indices; j++) {
-      start_bits_root[j] += snode->extractors[j].num_bits;
+      start_bits[j] += snode->extractors[j].num_bits;
     }
     total_bits += snode->total_num_bits;
     snode = snode->parent;
   }
   std::reverse(snodes.begin(), snodes.end());
-  TI_ASSERT(total_bits <= 30);
 
   // general shape calculation - no dependence on POT
   int64 total_n = 1;
@@ -38,6 +37,7 @@ void convert_to_range_for(OffloadedStmt *offloaded, bool packed) {
     }
     total_n *= s->num_cells_per_container;
   }
+  TI_ASSERT(total_n <= std::numeric_limits<int>::max());
 
   offloaded->const_begin = true;
   offloaded->const_end = true;
@@ -68,15 +68,25 @@ void convert_to_range_for(OffloadedStmt *offloaded, bool packed) {
   if (packed) {  // no dependence on POT
     for (int i = 0; i < (int)snodes.size(); i++) {
       auto snode = snodes[i];
-      auto extracted =
-          generate_mod_x_div_y(&body_header, main_loop_var, total_n,
-                               total_n / snode->num_cells_per_container);
+      Stmt *extracted = main_loop_var;
+      if (i != 0) {  // first extraction doesn't need a mod
+        extracted = generate_mod(&body_header, extracted, total_n);
+      }
       total_n /= snode->num_cells_per_container;
+      extracted = generate_div(&body_header, extracted, total_n);
+      bool is_first_extraction = true;
       for (int j = 0; j < (int)physical_indices.size(); j++) {
         auto p = physical_indices[j];
         auto ext = snode->extractors[p];
-        auto index = generate_mod_x_div_y(
-            &body_header, extracted, ext.acc_shape * ext.shape, ext.acc_shape);
+        if (!ext.active)
+          continue;
+        Stmt *index = extracted;
+        if (is_first_extraction) {  // first extraction doesn't need a mod
+          is_first_extraction = false;
+        } else {
+          index = generate_mod(&body_header, index, ext.acc_shape * ext.shape);
+        }
+        index = generate_div(&body_header, index, ext.acc_shape);
         total_shape[p] /= ext.shape;
         auto multiplier =
             body_header.push_back<ConstStmt>(TypedConstant(total_shape[p]));
@@ -88,9 +98,6 @@ void convert_to_range_for(OffloadedStmt *offloaded, bool packed) {
     }
   } else {
     int offset = total_bits;
-    int start_bits[taichi_max_num_indices] = {0};
-    std::copy(std::begin(start_bits_root), std::end(start_bits_root),
-              std::begin(start_bits));
     for (int i = 0; i < (int)snodes.size(); i++) {
       auto snode = snodes[i];
       offset -= snode->total_num_bits;
@@ -110,15 +117,11 @@ void convert_to_range_for(OffloadedStmt *offloaded, bool packed) {
       }
     }
 
-    std::copy(std::begin(start_bits_root), std::end(start_bits_root),
-              std::begin(start_bits));
-    for (int i = 0; i < (int)snodes.size(); i++) {
-      auto snode = snodes[i];
+    if (!snodes.empty()) {
+      auto snode = snodes.back();
       for (int j = 0; j < (int)physical_indices.size(); j++) {
         auto p = physical_indices[j];
-        start_bits[p] -= snode->extractors[p].num_bits;
-        auto num_elements = snode->extractors[p].num_elements_from_root
-                            << start_bits[p];
+        auto num_elements = snode->extractors[p].num_elements_from_root;
         if (!bit::is_power_of_two(num_elements)) {
           has_test = true;
           auto bound =

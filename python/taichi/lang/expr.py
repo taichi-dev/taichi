@@ -3,6 +3,7 @@ from taichi._lib import core as _ti_core
 from taichi.lang import impl
 from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.exception import TaichiCompilationError, TaichiTypeError
+from taichi.lang.matrix import make_matrix
 from taichi.lang.util import is_taichi_class, to_numpy_type
 from taichi.types import primitive_types
 from taichi.types.primitive_types import integer_types, real_types
@@ -23,6 +24,9 @@ class Expr(TaichiOperations):
                 raise TaichiTypeError(
                     'Cannot initialize scalar expression from '
                     f'taichi class: {type(args[0])}')
+            elif isinstance(args[0], (list, tuple)):
+                assert impl.current_cfg().real_matrix
+                self.ptr = make_matrix(args[0]).ptr
             else:
                 # assume to be constant
                 arg = args[0]
@@ -42,11 +46,30 @@ class Expr(TaichiOperations):
     def is_tensor(self):
         return self.ptr.is_tensor()
 
+    def element_type(self):
+        return self.ptr.get_ret_type().element_type()
+
     def get_shape(self):
         if not self.is_tensor():
             raise TaichiCompilationError(
                 f"Getting shape of non-tensor type: {self.ptr.get_ret_type()}")
-        return self.ptr.get_shape()
+        return tuple(self.ptr.get_shape())
+
+    @property
+    def n(self):
+        shape = self.get_shape()
+        if len(shape) < 1:
+            raise TaichiCompilationError(
+                f"Getting n of tensor type < 1D: {self.ptr.get_ret_type()}")
+        return shape[0]
+
+    @property
+    def m(self):
+        shape = self.get_shape()
+        if len(shape) < 2:
+            raise TaichiCompilationError(
+                f"Getting m of tensor type < 2D: {self.ptr.get_ret_type()}")
+        return shape[1]
 
     def __hash__(self):
         return self.ptr.get_raw_address()
@@ -121,7 +144,7 @@ def make_var_list(size, ast_builder=None):
     return exprs
 
 
-def make_expr_group(*exprs):
+def make_expr_group(*exprs, real_func_arg=False):
     from taichi.lang.matrix import Matrix  # pylint: disable=C0415
     if len(exprs) == 1:
         if isinstance(exprs[0], (list, tuple)):
@@ -133,11 +156,28 @@ def make_expr_group(*exprs):
     expr_group = _ti_core.ExprGroup()
     for i in exprs:
         if isinstance(i, Matrix):
-            assert i.local_tensor_proxy is not None
-            expr_group.push_back(i.local_tensor_proxy)
+            if real_func_arg:
+                for item in i.entries:
+                    expr_group.push_back(Expr(item).ptr)
+            else:
+                assert i.local_tensor_proxy is not None
+                expr_group.push_back(i.local_tensor_proxy)
         else:
             expr_group.push_back(Expr(i).ptr)
     return expr_group
+
+
+def _get_flattened_ptrs(val):
+    if is_taichi_class(val):
+        ptrs = []
+        for item in val._members:
+            ptrs.extend(_get_flattened_ptrs(item))
+        return ptrs
+    if impl.current_cfg().real_matrix and isinstance(
+            val, Expr) and val.ptr.is_tensor():
+        return impl.get_runtime().prog.current_ast_builder().expand_expr(
+            [val.ptr])
+    return [Expr(val).ptr]
 
 
 __all__ = []

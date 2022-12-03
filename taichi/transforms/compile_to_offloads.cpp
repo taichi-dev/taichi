@@ -53,7 +53,7 @@ void compile_to_offloads(IRNode *ir,
   }
 
   if (config.real_matrix && config.real_matrix_scalarize) {
-    irpass::scalarize(ir);
+    irpass::scalarize(ir, config);
 
     // Remove redundant MatrixInitStmt inserted during scalarization
     irpass::die(ir);
@@ -109,7 +109,8 @@ void compile_to_offloads(IRNode *ir,
     irpass::analysis::verify(ir);
   }
 
-  if (autodiff_mode != AutodiffMode::kNone) {
+  if (autodiff_mode == AutodiffMode::kReverse ||
+      autodiff_mode == AutodiffMode::kForward) {
     // Remove local atomics here so that we don't have to handle their gradients
     irpass::demote_atomics(ir, config);
 
@@ -335,6 +336,14 @@ void compile_function(IRNode *ir,
     irpass::frontend_type_check(ir);
     irpass::lower_ast(ir);
     print("Lowered");
+  }
+
+  if (config.real_matrix && config.real_matrix_scalarize) {
+    irpass::scalarize(ir, config);
+
+    // Remove redundant MatrixInitStmt inserted during scalarization
+    irpass::die(ir);
+    print("Scalarized");
   }
 
   irpass::lower_access(ir, config, {{}, true});

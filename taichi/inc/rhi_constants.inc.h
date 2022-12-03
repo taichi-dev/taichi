@@ -1,11 +1,13 @@
+// (penguinliong) Device capability is a shared intelligence between the runtime
+// environment and the code generator. It's only about the program executed
+// on-device rather than any platform specific capability provided by some
+// graphics APIs like Vulkan or CUDA. For example, DirectX shader model, CUDA
+// compute capability and Vulkan physical device features can be listed here as
+// device capabilities, yet things like Vulkan API version and GLFW version
+// should not.
 #ifdef PER_DEVICE_CAPABILITY
-// Vulkan Caps
-PER_DEVICE_CAPABILITY(vk_api_version)
-PER_DEVICE_CAPABILITY(vk_has_physical_features2)
-PER_DEVICE_CAPABILITY(vk_has_external_memory)
-PER_DEVICE_CAPABILITY(vk_has_surface)
-PER_DEVICE_CAPABILITY(vk_has_presentation)
 // SPIR-V Caps
+PER_DEVICE_CAPABILITY(reserved)
 PER_DEVICE_CAPABILITY(spirv_version)
 PER_DEVICE_CAPABILITY(spirv_has_int8)
 PER_DEVICE_CAPABILITY(spirv_has_int16)
@@ -29,8 +31,7 @@ PER_DEVICE_CAPABILITY(spirv_has_subgroup_vote)
 PER_DEVICE_CAPABILITY(spirv_has_subgroup_arithmetic)
 PER_DEVICE_CAPABILITY(spirv_has_subgroup_ballot)
 PER_DEVICE_CAPABILITY(spirv_has_non_semantic_info)
-// Graphics Caps
-PER_DEVICE_CAPABILITY(wide_lines)
+PER_DEVICE_CAPABILITY(spirv_has_no_integer_wrap_decoration)
 #endif
 
 #ifdef PER_BUFFER_FORMAT

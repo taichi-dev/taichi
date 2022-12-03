@@ -119,8 +119,8 @@ class Ndarray:
             raise ValueError(
                 f"Mismatch shape: {tuple(self.arr.shape)} expected, but {tuple(arr.shape)} provided"
             )
-        if hasattr(arr, 'contiguous'):
-            arr = arr.contiguous()
+        if not arr.flags.c_contiguous:
+            arr = np.ascontiguousarray(arr)
 
         from taichi._kernels import ext_arr_to_ndarray  # pylint: disable=C0415
         ext_arr_to_ndarray(arr, self)
@@ -139,8 +139,8 @@ class Ndarray:
             raise ValueError(
                 f"Mismatch shape: {tuple(self.arr.shape)} expected, but {tuple(arr.shape)} provided"
             )
-        if hasattr(arr, 'contiguous'):
-            arr = arr.contiguous()
+        if not arr.flags.c_contiguous:
+            arr = np.ascontiguousarray(arr)
 
         from taichi._kernels import \
             ext_arr_to_ndarray_matrix  # pylint: disable=C0415

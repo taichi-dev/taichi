@@ -21,7 +21,6 @@ struct CompileConfig {
   bool print_ir;
   bool print_accessor_ir;
   bool print_evaluator_ir;
-  bool print_benchmark_stat;
   bool serial_schedule;
   bool simplify_before_lower_access;
   bool lower_access;
@@ -106,6 +105,8 @@ struct CompileConfig {
 
   int num_compile_threads{4};
   std::string vk_api_version;
+
+  size_t cuda_stack_limit{8192};
 
   CompileConfig();
 };

@@ -15,6 +15,9 @@ There are two ways to import a NumPy array `arr` to the Taichi scope:
 
 - Pass `arr` as an argument to a kernel or a Taichi function using `ti.types.ndarray()` as type hint. The argument is passed by reference without creating a copy of `arr`. Thus, any modification to this argument from inside a kernel or Taichi function also changes the original array `arr`. This approach is preferred when the kernel or Taichi function that takes in the argument needs to process the original array (for storage or filtering, for example).
 
+:::note
+`from_numpy() / from_torch()` can take in any numpy array or torch Tensor, no matter it's contiguous or not. Taichi will manage its own copy of data. However, when passing an argument to a Taichi kernel, only contiguous numpy arrays or torch Tensors are supported.
+:::
 
 ## Data transfer between NumPy arrays and Taichi fields
 
@@ -53,7 +56,6 @@ print(tensor.device) # device(type='cuda', index=0)
 ```
 
 For Paddle, you need to specify the device by calling `paddle.CPUPlace()` or `paddle.CUDAPlace(n)`, where `n` is an optional ID set to 0 by default.
-
 
 ## External array shapes
 
@@ -224,4 +226,31 @@ def copy_scalar(x: ti.template(), y: ti.types.ndarray()):
 copy(x, y) # error!
 copy(x, y.clone()) # correct
 copy(x, y.contiguous()) # correct
+```
+
+## FAQ
+
+### Can I use `@ti.kernel` to accelerate a NumPy function?
+
+Unlike other Python acceleration frameworks, such as Numba, Taichi does not compile NumPy functions. Calling NumPy functions inside the Taichi scope is not supported, as the following example shows:
+
+```python
+import numpy as np
+
+@ti.kernel
+def invalid_sum(arr: ti.types.ndarray()):
+    total = np.sum(arr)  # Not supported!
+    ...
+```
+
+
+If you want to use a NumPy function, which lacks a counterpart in Taichi, you can call the function in the Python scope as usual and pass the processed array to Taichi kernels via `ti.types.ndarray()`. For example:
+
+```python
+indices = np.argsort(arr)  # arr is a Numpy.ndarray
+
+@ti.kernel
+def valid_example(arr: ti.types.ndarray(), indices: ti.types.ndarray()):
+    min_element = arr[indices[0]]
+    ...
 ```

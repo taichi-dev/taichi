@@ -59,7 +59,7 @@ def compile_dynamic_aot(arch):
         assert x[2, 0] == 9
         assert x[3, 0] == 12
 
-    m = ti.aot.Module(arch)
+    m = ti.aot.Module()
 
     m.add_kernel(activate, template_args={})
     m.add_kernel(check_value_0, template_args={})

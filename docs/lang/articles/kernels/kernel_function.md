@@ -145,11 +145,8 @@ def myKernel(arr: array):
             if i == 1 and j == 1:
                 return arr[i][j]
 
-arr = [
-      [2,4,6],
-      [8,10,12]
-      ]
-print(myKernel(arr)) #will return
+arr = [[2,4,6], [8,10,12]]
+print(myKernel(arr))  #will return 10
 
 ```
 #### Struct/Dataclass Types
@@ -159,9 +156,8 @@ In the following example, we created a Rectangle class `Rectangle` and passed an
 
 ```python
 import taichi as ti
-
 @ti.kernel
-def myKernel(a:Rectangle):
+def myKernel(a: Rectangle):
     return a.length * a.height
 
 @ti.dataclass
@@ -170,7 +166,7 @@ class Rectangle:
     width: float
 
 rectangle = Rectangle(2,2)
-print(myKernel(rectangle)) #will print 4
+print(myKernel(rectangle))  #will print 4
 
 ```
 
@@ -185,14 +181,13 @@ ti.init()
 
 
 @ti.kernel
-def myKernel(a:ti.Matrix.field):
+def myKernel(a: ti.Matrix.field):
     for i in ti.grouped(a):
         a[i] = [[1,1,1], [1,1,1]]
 
-# Declares a 2x2 matrix field, with each of its elements being a 3x2 matrix
-a = ti.Matrix.field(n=2, m=3, dtype=ti.f32, shape=(2, 2))
+a = ti.Matrix.field(n=2, m=3, dtype=ti.f32, shape=(2, 2))  #Declares a 2x2 matrix field, with each of its elements being a 3x2 matrix
 myKernel(a)
-print(a[0][0,0])#prints 1
+print(a[0][0,0])  #prints 1
 
 ```
 

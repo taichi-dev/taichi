@@ -27,7 +27,6 @@ if [[ $OSTYPE == "linux-"* ]]; then
     export LLVM_DIR="$HOME/taichi-llvm-15"
   fi
 
-    
 elif [ "$(uname -s):$(uname -m)" == "Darwin:arm64" ]; then
   # The following commands are done manually to save time.
   if [ ! -d ~/taichi-llvm-15-m1 ]; then

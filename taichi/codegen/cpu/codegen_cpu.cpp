@@ -256,7 +256,7 @@ FunctionType CPUModuleToFunctionConverter::convert(
         context.set_array_device_allocation_type(
             i, RuntimeContext::DevAllocType::kNone);
 
-        if (context.has_grad) {
+        if (context.has_grad[i]) {
           DeviceAllocation *ptr_grad =
               static_cast<DeviceAllocation *>(context.get_grad_arg<void *>(i));
           uint64 host_ptr_grad =

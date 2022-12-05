@@ -113,7 +113,6 @@ class VecStatement {
   stmt_vector stmts;
 
   VecStatement() {
-    stmts.reserve(8);
   }
 
   // NOLINTNEXTLINE(google-explicit-constructor)

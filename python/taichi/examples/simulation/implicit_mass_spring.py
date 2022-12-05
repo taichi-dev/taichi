@@ -33,7 +33,6 @@ class Cloth:
         self.kd = 0.5  # damping constant
         self.kf = 1.0e5  # fix point stiffness
 
-        self.gravity = ti.Vector([0.0, -2.0])
         self.init_pos()
         self.init_edges()
         self.MassBuilder = ti.linalg.SparseMatrixBuilder(
@@ -102,8 +101,9 @@ class Cloth:
     @ti.kernel
     def compute_force(self):
         self.clear_force()
+        gravity = ti.Vector([0.0, -2.0])
         for i in self.force:
-            self.force[i] += self.gravity * self.mass[i]
+            self.force[i] += gravity * self.mass[i]
 
         for i in self.spring:
             idx1, idx2 = self.spring[i][0], self.spring[i][1]

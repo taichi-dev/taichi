@@ -299,6 +299,7 @@ class Module:
         self.declr_reg = DeclarationRegistry(builtin_tys)
         self.required_modules = []
         self.default_definitions = []
+        self.guarded_by = None
         self.doc = None
 
         DeclarationRegistry.set_current(self.declr_reg)
@@ -308,6 +309,9 @@ class Module:
                 name = jj["name"]
                 value = jj["value"] if "value" in jj else str(version)
                 self.default_definitions += [(name, value)]
+
+        if "guarded_by" in j:
+            self.guarded_by = j["guarded_by"]
 
         if "doc" in j:
             self.doc = Documentation(j["doc"])

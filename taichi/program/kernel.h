@@ -46,11 +46,13 @@ class LaunchContextBuilder {
   // This ignores the underlying kernel's |arg_id|-th arg type.
   void set_arg_raw(int arg_id, uint64 d);
 
+  uint64 get_ret_raw(Device *device, unsigned retNo) const;
+
   template <typename T>
   T get_ret(Device *device, unsigned retNo) const;
 
   float64 get_ret_float(Device *device, unsigned retNo) const;
-  int64 get_ret_int(Device *device, unsigned retNo);
+  int64 get_ret_int(Device *device, unsigned retNo) const;
   uint64 get_ret_uint(Device *device, unsigned retNo) const;
   std::vector<int64> get_ret_int_tensor(Device *device, unsigned retNo) const;
   std::vector<uint64> get_ret_uint_tensor(Device *device, unsigned retNo) const;

@@ -208,7 +208,12 @@ float64 LaunchContextBuilder::get_ret_float(Device *device,
   return fetch_ret<float64>(dt, retNo, device, ctx_);
 }
 
-int64 LaunchContextBuilder::get_ret_int(Device *device, unsigned retNo) {
+uint64 LaunchContextBuilder::get_ret_raw(Device *device,
+                                           unsigned retNo) const {
+  return device->fetch_result_uint64(retNo, ctx_->result_buffer);
+}
+
+int64 LaunchContextBuilder::get_ret_int(Device *device, unsigned retNo) const {
   auto *dt = kernel_->rets[retNo].dt->get_compute_type();
   auto p = fetch_ret<int64>(dt, retNo, device, ctx_);
   return p;

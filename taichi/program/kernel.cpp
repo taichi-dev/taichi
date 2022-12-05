@@ -56,21 +56,21 @@ Kernel::Kernel(Program &program,
   }
 }
 
-LaunchContextBuilder Kernel::make_launch_context() {
-  return LaunchContextBuilder(this);
+KernelLaunchContext Kernel::make_launch_context() {
+  return KernelLaunchContext(this);
 }
 
-LaunchContextBuilder::LaunchContextBuilder(Kernel *kernel, RuntimeContext *ctx)
+KernelLaunchContext::KernelLaunchContext(Kernel *kernel, RuntimeContext *ctx)
     : kernel_(kernel), owned_ctx_(nullptr), ctx_(ctx) {
 }
 
-LaunchContextBuilder::LaunchContextBuilder(Kernel *kernel)
+KernelLaunchContext::KernelLaunchContext(Kernel *kernel)
     : kernel_(kernel),
       owned_ctx_(std::make_unique<RuntimeContext>()),
       ctx_(owned_ctx_.get()) {
 }
 
-void LaunchContextBuilder::set_arg_float(int arg_id, float64 d) {
+void KernelLaunchContext::set_arg_float(int arg_id, float64 d) {
   TI_ASSERT_INFO(!kernel_->parameter_list[arg_id].is_array,
                  "Assigning scalar value to external (numpy) array argument is "
                  "not allowed.");
@@ -109,7 +109,7 @@ void LaunchContextBuilder::set_arg_float(int arg_id, float64 d) {
   }
 }
 
-void LaunchContextBuilder::set_arg_int(int arg_id, int64 d) {
+void KernelLaunchContext::set_arg_int(int arg_id, int64 d) {
   TI_ASSERT_INFO(!kernel_->parameter_list[arg_id].is_array,
                  "Assigning scalar value to external (numpy) array argument is "
                  "not allowed.");
@@ -142,15 +142,15 @@ void LaunchContextBuilder::set_arg_int(int arg_id, int64 d) {
   }
 }
 
-void LaunchContextBuilder::set_arg_uint(int arg_id, uint64 d) {
+void KernelLaunchContext::set_arg_uint(int arg_id, uint64 d) {
   set_arg_int(arg_id, d);
 }
 
-void LaunchContextBuilder::set_extra_arg_int(int i, int j, int32 d) {
+void KernelLaunchContext::set_extra_arg_int(int i, int j, int32 d) {
   ctx_->extra_args[i][j] = d;
 }
 
-void LaunchContextBuilder::set_arg_external_array_with_shape(
+void KernelLaunchContext::set_arg_external_array_with_shape(
     int arg_id,
     uintptr_t ptr,
     uint64 size,
@@ -170,24 +170,24 @@ void LaunchContextBuilder::set_arg_external_array_with_shape(
   ctx_->set_arg_external_array(arg_id, ptr, size, shape);
 }
 
-void LaunchContextBuilder::set_arg_ndarray(int arg_id, const Ndarray &arr) {
+void KernelLaunchContext::set_arg_ndarray(int arg_id, const Ndarray &arr) {
   intptr_t ptr = arr.get_device_allocation_ptr_as_int();
   TI_ASSERT_INFO(arr.shape.size() <= taichi_max_num_indices,
                  "External array cannot have > {max_num_indices} indices");
   ctx_->set_arg_ndarray(arg_id, ptr, arr.shape);
 }
 
-void LaunchContextBuilder::set_arg_texture(int arg_id, const Texture &tex) {
+void KernelLaunchContext::set_arg_texture(int arg_id, const Texture &tex) {
   intptr_t ptr = tex.get_device_allocation_ptr_as_int();
   ctx_->set_arg_texture(arg_id, ptr);
 }
 
-void LaunchContextBuilder::set_arg_rw_texture(int arg_id, const Texture &tex) {
+void KernelLaunchContext::set_arg_rw_texture(int arg_id, const Texture &tex) {
   intptr_t ptr = tex.get_device_allocation_ptr_as_int();
   ctx_->set_arg_rw_texture(arg_id, ptr, tex.get_size());
 }
 
-void LaunchContextBuilder::set_arg_raw(int arg_id, uint64 d) {
+void KernelLaunchContext::set_arg_raw(int arg_id, uint64 d) {
   TI_ASSERT_INFO(!kernel_->parameter_list[arg_id].is_array,
                  "Assigning scalar value to external (numpy) array argument is "
                  "not allowed.");
@@ -202,30 +202,30 @@ void LaunchContextBuilder::set_arg_raw(int arg_id, uint64 d) {
 }
 
 // Refactor2023:FIXME: Bad smell. Use template function.
-float64 LaunchContextBuilder::get_ret_float(Device *device,
+float64 KernelLaunchContext::get_ret_float(Device *device,
                                             unsigned retNo) const {
   auto *dt = kernel_->rets[retNo].dt->get_compute_type();
   return fetch_ret<float64>(dt, retNo, device, ctx_);
 }
 
-uint64 LaunchContextBuilder::get_ret_raw(Device *device,
+uint64 KernelLaunchContext::get_ret_raw(Device *device,
                                            unsigned retNo) const {
   return device->fetch_result_uint64(retNo, ctx_->result_buffer);
 }
 
-int64 LaunchContextBuilder::get_ret_int(Device *device, unsigned retNo) const {
+int64 KernelLaunchContext::get_ret_int(Device *device, unsigned retNo) const {
   auto *dt = kernel_->rets[retNo].dt->get_compute_type();
   auto p = fetch_ret<int64>(dt, retNo, device, ctx_);
   return p;
 }
 
-uint64 LaunchContextBuilder::get_ret_uint(Device *device,
+uint64 KernelLaunchContext::get_ret_uint(Device *device,
                                           unsigned retNo) const {
   auto *dt = kernel_->rets[retNo].dt->get_compute_type();
   return fetch_ret<uint64>(dt, retNo, device, ctx_);
 }
 
-std::vector<int64> LaunchContextBuilder::get_ret_int_tensor(
+std::vector<int64> KernelLaunchContext::get_ret_int_tensor(
     Device *device,
     unsigned retNo) const {
   auto *tensor_dt = kernel_->rets[retNo].dt->as<TensorType>();
@@ -240,7 +240,7 @@ std::vector<int64> LaunchContextBuilder::get_ret_int_tensor(
   return res;
 }
 
-std::vector<uint64> LaunchContextBuilder::get_ret_uint_tensor(
+std::vector<uint64> KernelLaunchContext::get_ret_uint_tensor(
     Device *device,
     unsigned retNo) const {
   auto *tensor_dt = kernel_->rets[retNo].dt->as<TensorType>();
@@ -255,7 +255,7 @@ std::vector<uint64> LaunchContextBuilder::get_ret_uint_tensor(
   return res;
 }
 
-std::vector<float64> LaunchContextBuilder::get_ret_float_tensor(
+std::vector<float64> KernelLaunchContext::get_ret_float_tensor(
     Device *device,
     unsigned retNo) const {
   auto *tensor_dt = kernel_->rets[retNo].dt->as<TensorType>();
@@ -270,14 +270,14 @@ std::vector<float64> LaunchContextBuilder::get_ret_float_tensor(
   return res;
 }
 
-RuntimeContext &LaunchContextBuilder::get_context() {
+RuntimeContext &KernelLaunchContext::get_context() {
   // Refactor2023:FIXME: Move to KernelLauncher
   kernel_->program->prepare_runtime_context(ctx_);
   return *ctx_;
 }
 
 template <typename T>
-T LaunchContextBuilder::fetch_ret(DataType dt,
+T KernelLaunchContext::fetch_ret(DataType dt,
                                   unsigned retNo,
                                   Device *device,
                                   RuntimeContext *rt_ctx) {

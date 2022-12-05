@@ -7,7 +7,7 @@ namespace taichi::lang {
 namespace {
 void set_kernel_args(const std::vector<int> &I,
                      int num_active_indices,
-                     LaunchContextBuilder *launch_ctx) {
+                     KernelLaunchContext *launch_ctx) {
   for (int i = 0; i < num_active_indices; i++) {
     launch_ctx->set_arg_int(i, I[i]);
   }

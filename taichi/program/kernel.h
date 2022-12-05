@@ -14,15 +14,15 @@ namespace taichi::lang {
 class Program;
 
 // Refactor2023:FIXME: Move to KernelLauncher
-class LaunchContextBuilder {
+class KernelLaunchContext {
  public:
-  LaunchContextBuilder(Kernel *kernel, RuntimeContext *ctx);
-  explicit LaunchContextBuilder(Kernel *kernel);
+  KernelLaunchContext(Kernel *kernel, RuntimeContext *ctx);
+  explicit KernelLaunchContext(Kernel *kernel);
 
-  LaunchContextBuilder(LaunchContextBuilder &&) = default;
-  LaunchContextBuilder &operator=(LaunchContextBuilder &&) = default;
-  LaunchContextBuilder(const LaunchContextBuilder &) = delete;
-  LaunchContextBuilder &operator=(const LaunchContextBuilder &) = delete;
+  KernelLaunchContext(KernelLaunchContext &&) = default;
+  KernelLaunchContext &operator=(KernelLaunchContext &&) = default;
+  KernelLaunchContext(const KernelLaunchContext &) = delete;
+  KernelLaunchContext &operator=(const KernelLaunchContext &) = delete;
 
   void set_arg_float(int arg_id, float64 d);
 
@@ -114,7 +114,7 @@ class TI_DLL_EXPORT Kernel : public Callable {
   }
 
   // Refactor2023:FIXME: Move to KernelLauncher
-  LaunchContextBuilder make_launch_context();
+  KernelLaunchContext make_launch_context();
 
   // Refactor2023:FIXME: Pre-refactor & Remove
   uint64 get_next_task_id() {
@@ -179,7 +179,7 @@ class TI_DLL_EXPORT Kernel : public Callable {
 void launch_kernel(Program *prog, Kernel &kernel, RuntimeContext &ctx);
 
 template <typename T>
-T LaunchContextBuilder::get_ret(Device *device, unsigned retNo) const {
+T KernelLaunchContext::get_ret(Device *device, unsigned retNo) const {
   auto *dt = kernel_->rets[retNo].dt->get_compute_type();
   return fetch_ret<float64>(dt, retNo, device, ctx_);
 }

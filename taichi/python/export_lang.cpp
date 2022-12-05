@@ -687,27 +687,27 @@ void export_lang(py::module &m) {
             return &self->context->builder();
           },
           py::return_value_policy::reference)
-      .def("__call__", [](Kernel *kernel, LaunchContextBuilder &launch_ctx) {
+      .def("__call__", [](Kernel *kernel, KernelLaunchContext &launch_ctx) {
         py::gil_scoped_release release;
         launch_kernel(kernel->program, *kernel, launch_ctx.get_context());
       });
 
-  py::class_<LaunchContextBuilder>(m, "KernelLaunchContext")
-      .def("set_arg_int", &LaunchContextBuilder::set_arg_int)
-      .def("set_arg_uint", &LaunchContextBuilder::set_arg_uint)
-      .def("set_arg_float", &LaunchContextBuilder::set_arg_float)
+  py::class_<KernelLaunchContext>(m, "KernelLaunchContext")
+      .def("set_arg_int", &KernelLaunchContext::set_arg_int)
+      .def("set_arg_uint", &KernelLaunchContext::set_arg_uint)
+      .def("set_arg_float", &KernelLaunchContext::set_arg_float)
       .def("set_arg_external_array_with_shape",
-           &LaunchContextBuilder::set_arg_external_array_with_shape)
-      .def("set_arg_ndarray", &LaunchContextBuilder::set_arg_ndarray)
-      .def("set_arg_texture", &LaunchContextBuilder::set_arg_texture)
-      .def("set_arg_rw_texture", &LaunchContextBuilder::set_arg_rw_texture)
-      .def("set_extra_arg_int", &LaunchContextBuilder::set_extra_arg_int)
-      .def("get_ret_int", &LaunchContextBuilder::get_ret_int)
-      .def("get_ret_uint", &LaunchContextBuilder::get_ret_uint)
-      .def("get_ret_float", &LaunchContextBuilder::get_ret_float)
-      .def("get_ret_int_tensor", &LaunchContextBuilder::get_ret_int_tensor)
-      .def("get_ret_uint_tensor", &LaunchContextBuilder::get_ret_uint_tensor)
-      .def("get_ret_float_tensor", &LaunchContextBuilder::get_ret_float_tensor);
+           &KernelLaunchContext::set_arg_external_array_with_shape)
+      .def("set_arg_ndarray", &KernelLaunchContext::set_arg_ndarray)
+      .def("set_arg_texture", &KernelLaunchContext::set_arg_texture)
+      .def("set_arg_rw_texture", &KernelLaunchContext::set_arg_rw_texture)
+      .def("set_extra_arg_int", &KernelLaunchContext::set_extra_arg_int)
+      .def("get_ret_int", &KernelLaunchContext::get_ret_int)
+      .def("get_ret_uint", &KernelLaunchContext::get_ret_uint)
+      .def("get_ret_float", &KernelLaunchContext::get_ret_float)
+      .def("get_ret_int_tensor", &KernelLaunchContext::get_ret_int_tensor)
+      .def("get_ret_uint_tensor", &KernelLaunchContext::get_ret_uint_tensor)
+      .def("get_ret_float_tensor", &KernelLaunchContext::get_ret_float_tensor);
 
   py::class_<Function>(m, "Function")
       .def("add_scalar_param", &Function::add_scalar_param)

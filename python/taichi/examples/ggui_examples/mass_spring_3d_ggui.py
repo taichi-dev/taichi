@@ -70,13 +70,13 @@ def initialize_spring_offsets():
         for i in range(-1, 2):
             for j in range(-1, 2):
                 if (i, j) != (0, 0):
-                    spring_offsets.append(ti.Vector([i, j]))
+                    spring_offsets.append([i, j])
 
     else:
         for i in range(-2, 3):
             for j in range(-2, 3):
                 if (i, j) != (0, 0) and abs(i) + abs(j) <= 2:
-                    spring_offsets.append(ti.Vector([i, j]))
+                    spring_offsets.append([i, j])
 
 
 initialize_spring_offsets()
@@ -90,7 +90,8 @@ def substep():
     for i in ti.grouped(x):
         force = ti.Vector([0.0, 0.0, 0.0])
         for spring_offset in ti.static(spring_offsets):
-            j = i + spring_offset
+            vec = ti.Vector(spring_offset, dt=ti.i32)
+            j = i + vec
             if 0 <= j[0] < n and 0 <= j[1] < n:
                 x_ij = x[i] - x[j]
                 v_ij = v[i] - v[j]

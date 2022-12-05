@@ -141,6 +141,7 @@ def test_field_init_eye():
                 A[i, j] = 1
 
     init()
+    print('Ailing', (A.to_numpy() - np.eye(n, dtype=np.float32)).sum())
     assert np.allclose(A.to_numpy(), np.eye(n, dtype=np.float32))
 
 

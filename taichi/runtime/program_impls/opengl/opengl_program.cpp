@@ -91,7 +91,16 @@ void OpenglProgramImpl::dump_cache_data_to_disk() {
                            config->offline_cache_cleaning_factor);
   mgr->dump_with_merging();
 }
+void OpenglProgramImpl::finalize() {
+  runtime_.reset();
+  device_.reset();
+  opengl::initialize_opengl(/*use_gles=*/false, /*error_tolerance=*/false,
+                            /*reset=*/true);
+}
 
+OpenglProgramImpl::~OpenglProgramImpl() {
+  finalize();
+}
 const std::unique_ptr<gfx::CacheManager>
     &OpenglProgramImpl::get_cache_manager() {
   if (!cache_manager_) {

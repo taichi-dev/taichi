@@ -210,7 +210,6 @@ void export_lang(py::module &m) {
                      &CompileConfig::quant_opt_atomic_demotion)
       .def_readwrite("allow_nv_shader_extension",
                      &CompileConfig::allow_nv_shader_extension)
-      .def_readwrite("use_gles", &CompileConfig::use_gles)
       .def_readwrite("make_mesh_block_local",
                      &CompileConfig::make_mesh_block_local)
       .def_readwrite("mesh_localize_to_end_mapping",
@@ -327,8 +326,7 @@ void export_lang(py::module &m) {
 
   py::class_<Program>(m, "Program")
       .def(py::init<>())
-      .def("config", &Program::this_thread_config,
-           py::return_value_policy::reference)
+      .def("config", &Program::config)
       .def("sync_kernel_profiler",
            [](Program *program) { program->profiler->sync(); })
       .def("update_kernel_profiler",

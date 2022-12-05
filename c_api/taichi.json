@@ -954,7 +954,6 @@
             "required_modules": [
                 "taichi/taichi_core.h"
             ],
-            "guarded_by": "TI_WITH_CPU",
             "declarations": [
                 {
                     "name": "cpu_memory_interop_info",
@@ -994,7 +993,6 @@
             "required_modules": [
                 "taichi/taichi_core.h"
             ],
-            "guarded_by": "TI_WITH_CUDA",
             "declarations": [
                 {
                     "name": "cuda_memory_interop_info",
@@ -1035,7 +1033,6 @@
             "required_modules": [
                 "taichi/taichi_core.h"
             ],
-            "guarded_by": "TI_WITH_VULKAN",
             "declarations": [
                 {
                     "name": "vulkan_runtime_interop_info",
@@ -1337,7 +1334,6 @@
             "required_modules": [
                 "taichi/taichi_core.h"
             ],
-            "guarded_by": "TI_WITH_OPENGL",
             "declarations": [
                 {
                     "name": "opengl_memory_interop_info",
@@ -1394,7 +1390,6 @@
             "required_modules": [
                 "taichi/taichi_core.h"
             ],
-            "guarded_by": "TI_WITH_UNITY",
             "declarations": [
                 {
                     "name": "native_buffer",

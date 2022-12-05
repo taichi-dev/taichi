@@ -32,7 +32,7 @@ class ConstantFold : public BasicStmtVisitor {
       return it->second.get();
 
     auto kernel_name = fmt::format("jit_evaluator_{}", cache.size());
-    auto func = [&id, this](Kernel *kernel) {
+    auto func = [&id](Kernel *kernel) {
       auto lhstmt =
           Stmt::make<ArgLoadStmt>(/*arg_id=*/0, id.lhs, /*is_ptr=*/false);
       auto rhstmt =

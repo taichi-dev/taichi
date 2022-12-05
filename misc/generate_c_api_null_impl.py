@@ -1,8 +1,7 @@
 from os import system
 
-from taichi_json import (Alias, BitField, BuiltInType, EntryBase,
-                         Enumeration, Field, Function, Handle, Module,
-                         Structure, Union)
+from taichi_json import (Alias, BitField, BuiltInType, EntryBase, Enumeration,
+                         Field, Function, Handle, Module, Structure, Union)
 
 
 def get_type_name(x: EntryBase):

@@ -197,6 +197,7 @@ if (TI_EXPORT_CORE)
 endif()
 
 option(TI_WITH_C_API "build taichi runtime c-api library" OFF)
+option(TI_WITH_C_API_NULL_IMPL "build taichi runtime c-api linking library" OFF)
 
 if (TI_WITH_C_API)
   include(cmake/TaichiCAPI.cmake)

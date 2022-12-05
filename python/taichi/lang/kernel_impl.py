@@ -813,11 +813,8 @@ class Kernel:
             if has_ret:
                 if id(ret_dt) in primitive_types.integer_type_ids:
                     if is_signed(cook_dtype(ret_dt)):
-                        print("$$$$$$--1")
                         launch_ctx.get_ret_int(impl.get_runtime().prog.get_compute_device(), 0)
-                        print("$$$$$$--2")
                         ret = launch_ctx.get_ret_int(impl.get_runtime().prog.get_compute_device(), 0)
-                        print("$$$$$$--3")
                     else:
                         ret = launch_ctx.get_ret_uint(impl.get_runtime().prog.get_compute_device(), 0)
                 elif id(ret_dt) in primitive_types.real_type_ids:

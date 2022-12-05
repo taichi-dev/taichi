@@ -209,11 +209,8 @@ float64 LaunchContextBuilder::get_ret_float(Device *device,
 }
 
 int64 LaunchContextBuilder::get_ret_int(Device *device, unsigned retNo) {
-  fmt::print(stderr, "{}:{} {}\n", __FILE__, __LINE__, __func__);
   auto *dt = kernel_->rets[retNo].dt->get_compute_type();
-  fmt::print(stderr, "{}:{} {}\n", __FILE__, __LINE__, __func__);
   auto p = fetch_ret<int64>(dt, retNo, device, ctx_);
-  fmt::print(stderr, "{}:{} {}\n", __FILE__, __LINE__, __func__);
   return p;
 }
 
@@ -274,48 +271,23 @@ RuntimeContext &LaunchContextBuilder::get_context() {
   return *ctx_;
 }
 
-template <typename T, typename G>
-T ___taichi_union_cast_with_different_sizes(G g) {
-  fmt::print(stderr, "{}:{} {} 1\n", __FILE__, __LINE__, __func__);
-  union {
-    T t;
-    G g;
-  } u;
-  fmt::print(stderr, "{}:{} {} 1\n", __FILE__, __LINE__, __func__);
-  u.g = g;
-  fmt::print(stderr, "{}:{} {} 1\n", __FILE__, __LINE__, __func__);
-
-  auto t = u.t;
-  fmt::print(stderr, "{}:{} {} 1\n", __FILE__, __LINE__, __func__);
-
-  return t;
-}
-
 template <typename T>
 T LaunchContextBuilder::fetch_ret(DataType dt,
                                   unsigned retNo,
                                   Device *device,
                                   RuntimeContext *rt_ctx) {
   TI_ASSERT(device);
-  fmt::print(stderr, "{}:{} {}\n", __FILE__, __LINE__, __func__);
 
   auto *primative_dt = dt->cast<PrimitiveType>();
   if (!primative_dt) {
     TI_NOT_IMPLEMENTED;
-    fmt::print(stderr, "{}:{} {}\n", __FILE__, __LINE__, __func__);
   }
-  fmt::print(stderr, "{}:{} {}\n", __FILE__, __LINE__, __func__);
 
 #define FETCH_AND_CAST(dt_enum, dt_type)                                \
   case dt_enum: {                                                       \
-    fmt::print(stderr, "{}:{} {} 1\n", __FILE__, __LINE__, __func__);   \
     auto i = device->fetch_result_uint64(retNo, rt_ctx->result_buffer); \
-    fmt::print(stderr, "{}:{} {} 2\n", __FILE__, __LINE__, __func__);   \
-    return (T)___taichi_union_cast_with_different_sizes<dt_type>(i);       \
+    return (T)taichi_union_cast_with_different_sizes<dt_type>(i);       \
   }
-  TI_ASSERT(device);
-  TI_ASSERT(rt_ctx->result_buffer);
-  fmt::print(stderr, "{}:{} {}\n", __FILE__, __LINE__, __func__);
 
   switch (primative_dt->type) {
     FETCH_AND_CAST(PrimitiveTypeID::f32, float32);
@@ -332,7 +304,6 @@ T LaunchContextBuilder::fetch_ret(DataType dt,
     default:
       TI_NOT_IMPLEMENTED;
   }
-  fmt::print(stderr, "{}:{} {}\n", __FILE__, __LINE__, __func__);
 #undef FETCH_AND_CAST
 }
 

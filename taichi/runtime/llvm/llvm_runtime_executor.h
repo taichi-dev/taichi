@@ -77,7 +77,7 @@ class LlvmRuntimeExecutor {
   template <typename T>
   T fetch_result(int i, uint64 *result_buffer) {
     return taichi_union_cast_with_different_sizes<T>(
-        fetch_result_uint64(i, result_buffer));
+        device_->fetch_result_uint64(i, result_buffer));
   }
 
   DevicePtr get_snode_tree_device_ptr(int tree_id);
@@ -110,7 +110,7 @@ class LlvmRuntimeExecutor {
     auto runtime = tlctx->runtime_jit_module;
     runtime->call<void *>("runtime_" + key, llvm_runtime_,
                           std::forward<Args>(args)...);
-    return taichi_union_cast_with_different_sizes<T>(fetch_result_uint64(
+    return taichi_union_cast_with_different_sizes<T>(device_->fetch_result_uint64(
         taichi_result_buffer_runtime_query_id, result_buffer));
   }
 
@@ -131,7 +131,6 @@ class LlvmRuntimeExecutor {
 
   void finalize();
 
-  uint64 fetch_result_uint64(int i, uint64 *result_buffer);
   void destroy_snode_tree(SNodeTree *snode_tree);
   std::size_t get_snode_num_dynamically_allocated(SNode *snode,
                                                   uint64 *result_buffer);

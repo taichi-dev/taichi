@@ -325,6 +325,8 @@ void export_lang(py::module &m) {
       .def("insert_snode_access_flag", &ASTBuilder::insert_snode_access_flag)
       .def("reset_snode_access_flag", &ASTBuilder::reset_snode_access_flag);
 
+  py::class_<Device>(m, "Device");  // NOLINT(bugprone-unused-raii)
+
   py::class_<Program>(m, "Program")
       .def(py::init<>())
       .def("config", &Program::this_thread_config,
@@ -352,6 +354,8 @@ void export_lang(py::module &m) {
                  ->get_compute_stream()
                  ->device_time_elapsed_us();
            })
+      // Refactor2023:FIXME: Remove (Tmp)
+      .def("get_compute_device", &Program::get_compute_device)
       .def("reinit_kernel_profiler_with_metrics",
            [](Program *program, const std::vector<std::string> metrics) {
              return program->profiler->reinit_with_metrics(metrics);
@@ -675,12 +679,6 @@ void export_lang(py::module &m) {
       .def("add_arr_param", &Kernel::add_arr_param)
       .def("add_texture_param", &Kernel::add_texture_param)
       .def("add_ret", &Kernel::add_ret)
-      .def("get_ret_int", &Kernel::get_ret_int)
-      .def("get_ret_uint", &Kernel::get_ret_uint)
-      .def("get_ret_float", &Kernel::get_ret_float)
-      .def("get_ret_int_tensor", &Kernel::get_ret_int_tensor)
-      .def("get_ret_uint_tensor", &Kernel::get_ret_uint_tensor)
-      .def("get_ret_float_tensor", &Kernel::get_ret_float_tensor)
       .def("make_launch_context", &Kernel::make_launch_context)
       .def(
           "ast_builder",
@@ -702,7 +700,21 @@ void export_lang(py::module &m) {
       .def("set_arg_ndarray", &LaunchContextBuilder::set_arg_ndarray)
       .def("set_arg_texture", &LaunchContextBuilder::set_arg_texture)
       .def("set_arg_rw_texture", &LaunchContextBuilder::set_arg_rw_texture)
-      .def("set_extra_arg_int", &LaunchContextBuilder::set_extra_arg_int);
+      .def("set_extra_arg_int", &LaunchContextBuilder::set_extra_arg_int)
+      .def(
+          "get_ret_int",
+          [&](LaunchContextBuilder *c, Device *d, unsigned i) {
+            std::cerr << __FILE__ << ":" << __LINE__ << " " << __func__ << "\n";
+            auto ret = c->get_ret_int(d, i);
+            std::cerr << ret << '\n';
+            std::cerr << __FILE__ << ":" << __LINE__ << " " << __func__ << "\n";
+            return ret;
+          })
+      .def("get_ret_uint", &LaunchContextBuilder::get_ret_uint)
+      .def("get_ret_float", &LaunchContextBuilder::get_ret_float)
+      .def("get_ret_int_tensor", &LaunchContextBuilder::get_ret_int_tensor)
+      .def("get_ret_uint_tensor", &LaunchContextBuilder::get_ret_uint_tensor)
+      .def("get_ret_float_tensor", &LaunchContextBuilder::get_ret_float_tensor);
 
   py::class_<Function>(m, "Function")
       .def("add_scalar_param", &Function::add_scalar_param)

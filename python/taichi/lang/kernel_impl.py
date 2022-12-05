@@ -813,21 +813,25 @@ class Kernel:
             if has_ret:
                 if id(ret_dt) in primitive_types.integer_type_ids:
                     if is_signed(cook_dtype(ret_dt)):
-                        ret = t_kernel.get_ret_int(0)
+                        print("$$$$$$--1")
+                        launch_ctx.get_ret_int(impl.get_runtime().prog.get_compute_device(), 0)
+                        print("$$$$$$--2")
+                        ret = launch_ctx.get_ret_int(impl.get_runtime().prog.get_compute_device(), 0)
+                        print("$$$$$$--3")
                     else:
-                        ret = t_kernel.get_ret_uint(0)
+                        ret = launch_ctx.get_ret_uint(impl.get_runtime().prog.get_compute_device(), 0)
                 elif id(ret_dt) in primitive_types.real_type_ids:
-                    ret = t_kernel.get_ret_float(0)
+                    ret = launch_ctx.get_ret_float(impl.get_runtime().prog.get_compute_device(), 0)
                 elif id(ret_dt.dtype) in primitive_types.integer_type_ids:
                     if is_signed(cook_dtype(ret_dt.dtype)):
-                        it = iter(t_kernel.get_ret_int_tensor(0))
+                        it = iter(launch_ctx.get_ret_int_tensor(impl.get_runtime().prog.get_compute_device(), 0))
                     else:
-                        it = iter(t_kernel.get_ret_uint_tensor(0))
+                        it = iter(launch_ctx.get_ret_uint_tensor(impl.get_runtime().prog.get_compute_device(), 0))
                     ret = Matrix([[next(it) for _ in range(ret_dt.m)]
                                   for _ in range(ret_dt.n)],
                                  ndim=getattr(ret_dt, 'ndim', 2))
                 else:
-                    it = iter(t_kernel.get_ret_float_tensor(0))
+                    it = iter(launch_ctx.get_ret_float_tensor(impl.get_runtime().prog.get_compute_device(), 0))
                     ret = Matrix([[next(it) for _ in range(ret_dt.m)]
                                   for _ in range(ret_dt.n)],
                                  ndim=getattr(ret_dt, 'ndim', 2))

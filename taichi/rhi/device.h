@@ -428,7 +428,7 @@ class Device {
   }
 
   virtual uint64 fetch_result_uint64(int i, uint64 *result_buffer) {
-    TI_NOT_IMPLEMENTED
+    return result_buffer[i];
   }
 
   // Each thraed will acquire its own stream

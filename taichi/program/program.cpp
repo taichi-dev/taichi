@@ -398,10 +398,6 @@ Kernel &Program::get_snode_writer(SNode *snode) {
   return ker;
 }
 
-uint64 Program::fetch_result_uint64(int i) {
-  return program_impl_->fetch_result_uint64(i, result_buffer);
-}
-
 void Program::finalize() {
   if (finalized_) {
     return;

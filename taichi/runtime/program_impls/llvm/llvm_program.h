@@ -157,10 +157,6 @@ class LlvmProgramImpl : public ProgramImpl {
     runtime_exec_->maybe_initialize_cuda_llvm_context();
   }
 
-  uint64 fetch_result_uint64(int i, uint64 *result_buffer) override {
-    return runtime_exec_->fetch_result_uint64(i, result_buffer);
-  }
-
   template <typename T, typename... Args>
   T runtime_query(const std::string &key,
                   uint64 *result_buffer,

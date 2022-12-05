@@ -201,84 +201,139 @@ void LaunchContextBuilder::set_arg_raw(int arg_id, uint64 d) {
   ctx_->set_arg<uint64>(arg_id, d);
 }
 
+// Refactor2023:FIXME: Bad smell. Use template function.
+float64 LaunchContextBuilder::get_ret_float(Device *device,
+                                            unsigned retNo) const {
+  auto *dt = kernel_->rets[retNo].dt->get_compute_type();
+  return fetch_ret<float64>(dt, retNo, device, ctx_);
+}
+
+int64 LaunchContextBuilder::get_ret_int(Device *device, unsigned retNo) {
+  fmt::print(stderr, "{}:{} {}\n", __FILE__, __LINE__, __func__);
+  auto *dt = kernel_->rets[retNo].dt->get_compute_type();
+  fmt::print(stderr, "{}:{} {}\n", __FILE__, __LINE__, __func__);
+  auto p = fetch_ret<int64>(dt, retNo, device, ctx_);
+  fmt::print(stderr, "{}:{} {}\n", __FILE__, __LINE__, __func__);
+  return p;
+}
+
+uint64 LaunchContextBuilder::get_ret_uint(Device *device,
+                                          unsigned retNo) const {
+  auto *dt = kernel_->rets[retNo].dt->get_compute_type();
+  return fetch_ret<uint64>(dt, retNo, device, ctx_);
+}
+
+std::vector<int64> LaunchContextBuilder::get_ret_int_tensor(
+    Device *device,
+    unsigned retNo) const {
+  auto *tensor_dt = kernel_->rets[retNo].dt->as<TensorType>();
+  TI_ASSERT(tensor_dt != nullptr);
+  DataType element_dt = tensor_dt->get_element_type();
+  int element_count = tensor_dt->get_num_elements();
+  TI_ASSERT(element_count >= 0);
+  std::vector<int64> res;
+  for (unsigned j = 0; j < (unsigned)element_count; ++j) {
+    res.push_back(fetch_ret<int64>(element_dt, j, device, ctx_));
+  }
+  return res;
+}
+
+std::vector<uint64> LaunchContextBuilder::get_ret_uint_tensor(
+    Device *device,
+    unsigned retNo) const {
+  auto *tensor_dt = kernel_->rets[retNo].dt->as<TensorType>();
+  TI_ASSERT(tensor_dt != nullptr);
+  DataType element_dt = tensor_dt->get_element_type();
+  int element_count = tensor_dt->get_num_elements();
+  TI_ASSERT(element_count >= 0);
+  std::vector<uint64> res;
+  for (unsigned j = 0; j < (unsigned)element_count; ++j) {
+    res.push_back(fetch_ret<uint64>(element_dt, j, device, ctx_));
+  }
+  return res;
+}
+
+std::vector<float64> LaunchContextBuilder::get_ret_float_tensor(
+    Device *device,
+    unsigned retNo) const {
+  auto *tensor_dt = kernel_->rets[retNo].dt->as<TensorType>();
+  TI_ASSERT(tensor_dt != nullptr);
+  DataType element_dt = tensor_dt->get_element_type();
+  int element_count = tensor_dt->get_num_elements();
+  TI_ASSERT(element_count >= 0);
+  std::vector<float64> res;
+  for (unsigned j = 0; j < (unsigned)element_count; ++j) {
+    res.push_back(fetch_ret<float64>(element_dt, j, device, ctx_));
+  }
+  return res;
+}
+
 RuntimeContext &LaunchContextBuilder::get_context() {
+  // Refactor2023:FIXME: Move to KernelLauncher
   kernel_->program->prepare_runtime_context(ctx_);
   return *ctx_;
 }
 
+template <typename T, typename G>
+T ___taichi_union_cast_with_different_sizes(G g) {
+  fmt::print(stderr, "{}:{} {} 1\n", __FILE__, __LINE__, __func__);
+  union {
+    T t;
+    G g;
+  } u;
+  fmt::print(stderr, "{}:{} {} 1\n", __FILE__, __LINE__, __func__);
+  u.g = g;
+  fmt::print(stderr, "{}:{} {} 1\n", __FILE__, __LINE__, __func__);
+
+  auto t = u.t;
+  fmt::print(stderr, "{}:{} {} 1\n", __FILE__, __LINE__, __func__);
+
+  return t;
+}
+
 template <typename T>
-T Kernel::fetch_ret(DataType dt, int i) {
-  if (dt->is_primitive(PrimitiveTypeID::f32)) {
-    return (T)program->fetch_result<float32>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
-    return (T)program->fetch_result<float64>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::i32)) {
-    return (T)program->fetch_result<int32>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
-    return (T)program->fetch_result<int64>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::i8)) {
-    return (T)program->fetch_result<int8>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
-    return (T)program->fetch_result<int16>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
-    return (T)program->fetch_result<uint8>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
-    return (T)program->fetch_result<uint16>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
-    return (T)program->fetch_result<uint32>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
-    return (T)program->fetch_result<uint64>(i);
-  } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
-    // use f32 to interact with python
-    return (T)program->fetch_result<float32>(i);
-  } else {
-    TI_NOT_IMPLEMENTED
+T LaunchContextBuilder::fetch_ret(DataType dt,
+                                  unsigned retNo,
+                                  Device *device,
+                                  RuntimeContext *rt_ctx) {
+  TI_ASSERT(device);
+  fmt::print(stderr, "{}:{} {}\n", __FILE__, __LINE__, __func__);
+
+  auto *primative_dt = dt->cast<PrimitiveType>();
+  if (!primative_dt) {
+    TI_NOT_IMPLEMENTED;
+    fmt::print(stderr, "{}:{} {}\n", __FILE__, __LINE__, __func__);
   }
-}
+  fmt::print(stderr, "{}:{} {}\n", __FILE__, __LINE__, __func__);
 
-float64 Kernel::get_ret_float(int i) {
-  auto dt = rets[i].dt->get_compute_type();
-  return fetch_ret<float64>(dt, i);
-}
-
-int64 Kernel::get_ret_int(int i) {
-  auto dt = rets[i].dt->get_compute_type();
-  return fetch_ret<int64>(dt, i);
-}
-
-uint64 Kernel::get_ret_uint(int i) {
-  auto dt = rets[i].dt->get_compute_type();
-  return fetch_ret<uint64>(dt, i);
-}
-
-std::vector<int64> Kernel::get_ret_int_tensor(int i) {
-  DataType dt = rets[i].dt->as<TensorType>()->get_element_type();
-  int size = rets[i].dt->as<TensorType>()->get_num_elements();
-  std::vector<int64> res;
-  for (int j = 0; j < size; j++) {
-    res.emplace_back(fetch_ret<int64>(dt, j));
+#define FETCH_AND_CAST(dt_enum, dt_type)                                \
+  case dt_enum: {                                                       \
+    fmt::print(stderr, "{}:{} {} 1\n", __FILE__, __LINE__, __func__);   \
+    auto i = device->fetch_result_uint64(retNo, rt_ctx->result_buffer); \
+    fmt::print(stderr, "{}:{} {} 2\n", __FILE__, __LINE__, __func__);   \
+    return (T)___taichi_union_cast_with_different_sizes<dt_type>(i);       \
   }
-  return res;
-}
+  TI_ASSERT(device);
+  TI_ASSERT(rt_ctx->result_buffer);
+  fmt::print(stderr, "{}:{} {}\n", __FILE__, __LINE__, __func__);
 
-std::vector<uint64> Kernel::get_ret_uint_tensor(int i) {
-  DataType dt = rets[i].dt->as<TensorType>()->get_element_type();
-  int size = rets[i].dt->as<TensorType>()->get_num_elements();
-  std::vector<uint64> res;
-  for (int j = 0; j < size; j++) {
-    res.emplace_back(fetch_ret<uint64>(dt, j));
+  switch (primative_dt->type) {
+    FETCH_AND_CAST(PrimitiveTypeID::f32, float32);
+    FETCH_AND_CAST(PrimitiveTypeID::f64, float64);
+    FETCH_AND_CAST(PrimitiveTypeID::i32, int32);
+    FETCH_AND_CAST(PrimitiveTypeID::i64, int64);
+    FETCH_AND_CAST(PrimitiveTypeID::i8, int8);
+    FETCH_AND_CAST(PrimitiveTypeID::i16, int16);
+    FETCH_AND_CAST(PrimitiveTypeID::u8, uint8);
+    FETCH_AND_CAST(PrimitiveTypeID::u16, uint16);
+    FETCH_AND_CAST(PrimitiveTypeID::u32, uint32);
+    FETCH_AND_CAST(PrimitiveTypeID::u64, uint64);
+    FETCH_AND_CAST(PrimitiveTypeID::f16, float32);  // use f32
+    default:
+      TI_NOT_IMPLEMENTED;
   }
-  return res;
-}
-
-std::vector<float64> Kernel::get_ret_float_tensor(int i) {
-  DataType dt = rets[i].dt->as<TensorType>()->get_element_type();
-  int size = rets[i].dt->as<TensorType>()->get_num_elements();
-  std::vector<float64> res;
-  for (int j = 0; j < size; j++) {
-    res.emplace_back(fetch_ret<float64>(dt, j));
-  }
-  return res;
+  fmt::print(stderr, "{}:{} {}\n", __FILE__, __LINE__, __func__);
+#undef FETCH_AND_CAST
 }
 
 std::string Kernel::get_name() const {

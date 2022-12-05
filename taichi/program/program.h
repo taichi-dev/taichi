@@ -203,13 +203,6 @@ class TI_DLL_EXPORT Program {
 
   Kernel &get_snode_writer(SNode *snode);
 
-  uint64 fetch_result_uint64(int i);
-
-  template <typename T>
-  T fetch_result(int i) {
-    return taichi_union_cast_with_different_sizes<T>(fetch_result_uint64(i));
-  }
-
   Arch get_host_arch() {
     return host_arch();
   }

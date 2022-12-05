@@ -134,7 +134,9 @@ void run_snode() {
 
   launch_kernel(&program, *kernel_init, ctx_init.get_context());
   launch_kernel(&program, *kernel_ret, ctx_ret.get_context());
-  std::cout << program.fetch_result<int>(0) << std::endl;
+  std::cout << ctx_ret.get_ret<int>(program.get_compute_device(), 0)
+            << std::endl;
+
   launch_kernel(&program, *kernel_ext, ctx_ext.get_context());
   for (int i = 0; i < n; i++)
     std::cout << ext_arr[i] << " ";

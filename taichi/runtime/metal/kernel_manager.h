@@ -38,6 +38,8 @@ class KernelManager {
   // To make Pimpl + std::unique_ptr work
   ~KernelManager();
 
+  Device *get_device();
+
   void add_compiled_snode_tree(const CompiledStructs &snode_tree);
 
   // Register a Taichi kernel to the Metal runtime.

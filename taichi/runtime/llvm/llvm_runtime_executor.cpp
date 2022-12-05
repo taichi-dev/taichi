@@ -183,24 +183,6 @@ void LlvmRuntimeExecutor::synchronize() {
   fflush(stdout);
 }
 
-uint64 LlvmRuntimeExecutor::fetch_result_uint64(int i, uint64 *result_buffer) {
-  // TODO: We are likely doing more synchronization than necessary. Simplify the
-  // sync logic when we fetch the result.
-  synchronize();
-  uint64 ret;
-  if (config_->arch == Arch::cuda) {
-#if defined(TI_WITH_CUDA)
-    CUDADriver::get_instance().memcpy_device_to_host(&ret, result_buffer + i,
-                                                     sizeof(uint64));
-#else
-    TI_NOT_IMPLEMENTED;
-#endif
-  } else {
-    ret = result_buffer[i];
-  }
-  return ret;
-}
-
 std::size_t LlvmRuntimeExecutor::get_snode_num_dynamically_allocated(
     SNode *snode,
     uint64 *result_buffer) {

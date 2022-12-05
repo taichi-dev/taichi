@@ -700,6 +700,10 @@ class KernelManager::Impl {
     rhi_device_->dealloc_memory(print_assert_idevalloc_.handle);
   }
 
+  Device *get_device() {
+    return rhi_device_.get();
+  }
+
   void add_compiled_snode_tree(const CompiledStructs &compiled_tree) {
     SNodesRootBuffer rtbuf{};
     rtbuf.desc = BufferDescriptor::root(compiled_tree.root_id);
@@ -1285,6 +1289,10 @@ class KernelManager::Impl {
     TI_ERROR("Metal not supported on the current OS");
   }
 
+  Device *get_device() {
+    TI_ERROR("Metal not supported on the current OS");
+  }
+
   void add_compiled_snode_tree(const CompiledStructs &) {
     TI_ERROR("Metal not supported on the current OS");
   }
@@ -1329,6 +1337,10 @@ KernelManager::KernelManager(Params params)
 }
 
 KernelManager::~KernelManager() {
+}
+
+Device *KernelManager::get_device() {
+  return impl_->get_device();
 }
 
 void KernelManager::add_compiled_snode_tree(const CompiledStructs &snode_tree) {

@@ -46,9 +46,26 @@ class LaunchContextBuilder {
   // This ignores the underlying kernel's |arg_id|-th arg type.
   void set_arg_raw(int arg_id, uint64 d);
 
+  template <typename T>
+  T get_ret(Device *device, unsigned retNo) const;
+
+  float64 get_ret_float(Device *device, unsigned retNo) const;
+  int64 get_ret_int(Device *device, unsigned retNo);
+  uint64 get_ret_uint(Device *device, unsigned retNo) const;
+  std::vector<int64> get_ret_int_tensor(Device *device, unsigned retNo) const;
+  std::vector<uint64> get_ret_uint_tensor(Device *device, unsigned retNo) const;
+  std::vector<float64> get_ret_float_tensor(Device *device,
+                                            unsigned retNo) const;
+
   RuntimeContext &get_context();
 
  private:
+  template <typename T>
+  static T fetch_ret(DataType dt,
+                     unsigned retNo,
+                     Device *device,
+                     RuntimeContext *rt_ctx);
+
   Kernel *kernel_;
   std::unique_ptr<RuntimeContext> owned_ctx_;
   // |ctx_| *almost* always points to |owned_ctx_|. However, it is possible
@@ -94,27 +111,8 @@ class TI_DLL_EXPORT Kernel : public Callable {
     lowered_ = lowered;
   }
 
-  // Refactor2023:FIXME: Move
+  // Refactor2023:FIXME: Move to KernelLauncher
   LaunchContextBuilder make_launch_context();
-
-  // Refactor2023:FIXME: Move
-  template <typename T>
-  T fetch_ret(DataType dt, int i);
-
-  // Refactor2023:FIXME: Move
-  float64 get_ret_float(int i);
-
-  // Refactor2023:FIXME: Move
-  int64 get_ret_int(int i);
-  // Refactor2023:FIXME: Move
-  uint64 get_ret_uint(int i);
-
-  // Refactor2023:FIXME: Move
-  std::vector<int64> get_ret_int_tensor(int i);
-  // Refactor2023:FIXME: Move
-  std::vector<uint64> get_ret_uint_tensor(int i);
-  // Refactor2023:FIXME: Move
-  std::vector<float64> get_ret_float_tensor(int i);
 
   // Refactor2023:FIXME: Pre-refactor & Remove
   uint64 get_next_task_id() {
@@ -177,5 +175,11 @@ class TI_DLL_EXPORT Kernel : public Callable {
 
 // Refactor2023:FIXME: Remove
 void launch_kernel(Program *prog, Kernel &kernel, RuntimeContext &ctx);
+
+template <typename T>
+T LaunchContextBuilder::get_ret(Device *device, unsigned retNo) const {
+  auto *dt = kernel_->rets[retNo].dt->get_compute_type();
+  return fetch_ret<float64>(dt, retNo, device, ctx_);
+}
 
 }  // namespace taichi::lang

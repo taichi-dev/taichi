@@ -48,6 +48,10 @@ class MetalProgramImpl : public ProgramImpl {
   DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
                                            uint64 *result_buffer) override;
 
+  Device *get_compute_device() override {
+    return metal_kernel_mgr_->get_device();
+  }
+
   void dump_cache_data_to_disk() override;
 
   const std::unique_ptr<metal::CacheManager> &get_cache_manager();

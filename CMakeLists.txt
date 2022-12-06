@@ -59,8 +59,12 @@ endif()
 # library into a shared lib.
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
+# Work around a cmake issue with multi-thread compilation: https://github.com/alicevision/geogram/issues/2
 set(CMAKE_THREAD_LIBS_INIT "-lpthread")
 set(CMAKE_HAVE_THREADS_LIBRARY 1)
+if(WIN32)
+    set(CMAKE_USE_WIN32_THREADS_INIT 0)
+endif()
 set(CMAKE_USE_PTHREADS_INIT 1)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 

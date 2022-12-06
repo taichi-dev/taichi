@@ -104,8 +104,10 @@ class Identifier {
 
 #ifdef TI_WITH_LLVM
 using stmt_vector = llvm::SmallVector<pStmt, 8>;
+using stmt_ref_vector = llvm::SmallVector<Stmt *, 2>;
 #else
 using stmt_vector = std::vector<pStmt>;
+using stmt_ref_vector = std::vector<Stmt *>;
 #endif
 
 class VecStatement {
@@ -192,6 +194,34 @@ class IRVisitor {
 
 struct CompileConfig;
 class Kernel;
+
+using stmt_refs = one_or_more<Stmt *>;
+
+namespace IRTraits {
+
+// FIXME: Use C++ 20 concepts to replace `dynamic_cast<T>() != nullptr`
+
+class Store {
+ public:
+  virtual ~Store() = default;
+
+  // Get the list of sinks/destinations of the store operation
+  virtual stmt_refs get_store_destination() const = 0;
+
+  // If store_stmt provides one data source, return the data.
+  virtual Stmt *get_store_data() const = 0;
+};
+
+class Load {
+ public:
+  virtual ~Load() = default;
+
+  // If load_stmt loads some variables or a stack, return the pointers of them.
+  virtual stmt_refs get_load_pointers() const = 0;
+};
+
+
+}  // namespace IRTraits
 
 class IRNode {
  public:

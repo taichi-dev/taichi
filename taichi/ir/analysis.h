@@ -106,10 +106,10 @@ std::pair<std::unordered_map<const SNode *, GlobalPtrStmt *>,
 gather_uniquely_accessed_pointers(IRNode *root);
 std::unique_ptr<std::unordered_set<AtomicOpStmt *>> gather_used_atomics(
     IRNode *root);
-std::vector<Stmt *> get_load_pointers(Stmt *load_stmt);
+stmt_refs get_load_pointers(Stmt *load_stmt);
 
-Stmt *get_store_data(Stmt *store_stmt);
-std::vector<Stmt *> get_store_destination(Stmt *store_stmt);
+Stmt *get_store_data(Stmt *store_stmt) noexcept;
+stmt_refs get_store_destination(Stmt *store_stmt) noexcept;
 bool has_store_or_atomic(IRNode *root, const std::vector<Stmt *> &vars);
 std::pair<bool, Stmt *> last_store_or_atomic(IRNode *root, Stmt *var);
 

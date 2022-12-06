@@ -8,6 +8,8 @@
 #include <cstring>
 #include <string>
 #include <map>
+#include <vector>
+#include <variant>
 #include <functional>
 #include <memory>
 #include <iostream>
@@ -82,6 +84,57 @@ struct is_specialization : std::false_type {};
 
 template <template <class...> class Template, class... Args>
 struct is_specialization<Template<Args...>, Template> : std::true_type {};
+
+template <typename T>
+struct one_or_more : public std::variant<T, std::vector<T>> {
+  using std::variant<T, std::vector<T>>::variant;
+  using value_type = T;
+
+  value_type *begin() {
+    if (value_type *s = std::get_if<value_type>(this)) {
+      return s;
+    } else {
+      return (std::get_if<std::vector<value_type>>(this))->data();
+    }
+  }
+
+  value_type *end() {
+    if (value_type *s = std::get_if<value_type>(this)) {
+      if (*s) {
+        return s + 1;
+      } else {
+        return s;
+      }
+    } else {
+      auto *vec = std::get_if<std::vector<value_type>>(this);
+      return vec->data() + vec->size();
+    }
+  }
+
+  size_t size() const {
+    if (const value_type *s = std::get_if<value_type>(this)) {
+      if (*s) {
+        return 1;
+      } else {
+        return 0;
+      }
+    } else {
+      return std::get_if<std::vector<value_type>>(this)->size();
+    }
+  }
+
+  bool empty() const {
+    if (const value_type *s = std::get_if<value_type>(this)) {
+      if (*s) {
+        return false;
+      } else {
+        return true;
+      }
+    } else {
+      return std::get_if<std::vector<value_type>>(this)->empty();
+    }
+  }
+};
 
 TI_STATIC_ASSERT((std::is_same<const volatile int, volatile const int>::value));
 TI_STATIC_ASSERT(

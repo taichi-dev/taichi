@@ -6,7 +6,13 @@ namespace taichi::lang {
 
 namespace irpass::analysis {
 
-std::vector<Stmt *> get_load_pointers(Stmt *load_stmt) {
+stmt_refs get_load_pointers(Stmt *load_stmt) {
+  if (auto load_trait = load_stmt->cast<IRTraits::Load>()) {
+    // The statement has the "Load" IR Trait
+    return load_trait->get_load_pointers();
+  }
+  return nullptr;
+  /*
   // If load_stmt loads some variables or a stack, return the pointers of them.
   if (auto local_load = load_stmt->cast<LocalLoadStmt>()) {
     return std::vector<Stmt *>(1, local_load->src);
@@ -35,9 +41,17 @@ std::vector<Stmt *> get_load_pointers(Stmt *load_stmt) {
   } else {
     return std::vector<Stmt *>();
   }
+  */
 }
 
-Stmt *get_store_data(Stmt *store_stmt) {
+Stmt *get_store_data(Stmt *store_stmt) noexcept {
+  if (auto store_trait = store_stmt->cast<IRTraits::Store>()) {
+    // The statement has the "Store" IR Trait
+    return store_trait->get_store_data();
+  }
+  return nullptr;
+
+  /*
   // If store_stmt provides one data source, return the data.
   if (store_stmt->is<AllocaStmt>() && !store_stmt->ret_type->is<TensorType>()) {
     // For convenience, return store_stmt instead of the const [0] it actually
@@ -50,9 +64,19 @@ Stmt *get_store_data(Stmt *store_stmt) {
   } else {
     return nullptr;
   }
+  */
 }
 
-std::vector<Stmt *> get_store_destination(Stmt *store_stmt) {
+stmt_refs get_store_destination(Stmt *store_stmt) noexcept {
+  // If store_stmt provides some data sources, return the pointers of the data.
+  if (auto store_trait = store_stmt->cast<IRTraits::Store>()) {
+    // The statement has the "Store" IR Trait
+    return store_trait->get_store_destination();
+  } else {
+    return nullptr;
+  }
+
+  /*
   // If store_stmt provides some data sources, return the pointers of the data.
   if (store_stmt->is<AllocaStmt>() && !store_stmt->ret_type->is<TensorType>()) {
     // The statement itself provides a data source (const [0]).
@@ -79,6 +103,7 @@ std::vector<Stmt *> get_store_destination(Stmt *store_stmt) {
   } else {
     return std::vector<Stmt *>();
   }
+  */
 }
 
 }  // namespace irpass::analysis

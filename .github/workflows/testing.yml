@@ -272,10 +272,9 @@ jobs:
     name: Build and Test (AMDGPU)
     needs: check_files
     timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 120 }}
-    strategy:
-      matrix:
-        tags:
-          - [self-hosted, amdgpu]
+
+    runs-on: [self-hosted, amdgpu]
+
 
     steps:
       - uses: actions/checkout@v3

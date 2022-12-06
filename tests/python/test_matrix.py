@@ -1203,6 +1203,9 @@ def test_vector_transpose():
         y = ti.Vector([3, 4])
         z = x @ y.transpose()
 
-    with pytest.raises(TaichiCompilationError,
-                       match=r"`transpose\(\)` cannot apply to a vector. If you want something like `a @ b.transpose\(\)`, write `a.outer_product\(b\)` instead."):
+    with pytest.raises(
+            TaichiCompilationError,
+            match=
+            r"`transpose\(\)` cannot apply to a vector. If you want something like `a @ b.transpose\(\)`, write `a.outer_product\(b\)` instead."
+    ):
         foo()

@@ -220,7 +220,6 @@ class Load {
   virtual stmt_refs get_load_pointers() const = 0;
 };
 
-
 }  // namespace IRTraits
 
 class IRNode {

@@ -48,7 +48,7 @@ class AllocaStmt : public Stmt, public IRTraits::Store {
     // For convenience, return store_stmt instead of the const [0] it actually
     // stores.
     return ret_type->is<TensorType>() ? nullptr : (Stmt *)this;
-  }  
+  }
 
   bool is_shared;
   TI_STMT_DEF_FIELDS(ret_type, is_shared);
@@ -293,7 +293,9 @@ class TernaryOpStmt : public Stmt {
 /**
  * An atomic operation.
  */
-class AtomicOpStmt : public Stmt, public IRTraits::Store, public IRTraits::Load {
+class AtomicOpStmt : public Stmt,
+                     public IRTraits::Store,
+                     public IRTraits::Load {
  public:
   AtomicOpType op_type;
   Stmt *dest, *val;
@@ -574,7 +576,9 @@ class AssertStmt : public Stmt {
 /**
  * Call an external (C++) function.
  */
-class ExternalFuncCallStmt : public Stmt, public IRTraits::Store, public IRTraits::Load {
+class ExternalFuncCallStmt : public Stmt,
+                             public IRTraits::Store,
+                             public IRTraits::Load {
  public:
   enum Type { SHARED_OBJECT = 0, ASSEMBLY = 1, BITCODE = 2 };
 

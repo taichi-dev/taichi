@@ -60,13 +60,12 @@ endif()
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # Work around a cmake issue with multi-thread compilation: https://github.com/alicevision/geogram/issues/2
-set(CMAKE_THREAD_LIBS_INIT "-lpthread")
-set(CMAKE_HAVE_THREADS_LIBRARY 1)
-if(WIN32)
-    set(CMAKE_USE_WIN32_THREADS_INIT 0)
+if(LINUX)
+    set(CMAKE_THREAD_LIBS_INIT "-lpthread")
+    set(CMAKE_HAVE_THREADS_LIBRARY 1)
+    set(CMAKE_USE_PTHREADS_INIT 1)
+    set(THREADS_PREFER_PTHREAD_FLAG ON)
 endif()
-set(CMAKE_USE_PTHREADS_INIT 1)
-set(THREADS_PREFER_PTHREAD_FLAG ON)
 
 option(USE_MOLD "Use mold (A Modern Linker)" OFF)
 option(TI_WITH_BACKTRACE "Use backward-cpp to print out C++ stack trace upon failure" OFF)

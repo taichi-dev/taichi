@@ -48,6 +48,9 @@ if(TI_WITH_DX12)
 endif()
 
 add_executable(${TESTS_NAME} ${TAICHI_TESTS_SOURCE})
+if(NOT USE_MOLD)
+    target_link_options(${TESTS_NAME} PRIVATE -Wl,-fuse-ld=lld)
+endif()
 if (WIN32)
     # Output the executable to build/ instead of build/Debug/...
     set(TESTS_OUTPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/build")

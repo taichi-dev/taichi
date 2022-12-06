@@ -485,3 +485,7 @@ if (NOT APPLE)
     install(FILES ${CMAKE_SOURCE_DIR}/external/cuda_libdevice/slim_libdevice.10.bc
             DESTINATION ${INSTALL_LIB_DIR}/runtime)
 endif()
+
+if(NOT USE_MOLD)
+    target_link_options(${CORE_WITH_PYBIND_LIBRARY_NAME} PRIVATE -Wl,-fuse-ld=lld)
+endif()

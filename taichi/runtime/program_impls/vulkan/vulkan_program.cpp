@@ -78,8 +78,7 @@ VulkanProgramImpl::VulkanProgramImpl(CompileConfig &config)
     : ProgramImpl(config) {
 }
 
-FunctionType VulkanProgramImpl::compile(Kernel *kernel,
-                                        OffloadedStmt *offloaded) {
+FunctionType VulkanProgramImpl::compile(Kernel *kernel) {
   return register_params_to_executable(
       get_cache_manager()->load_or_compile(config, kernel),
       vulkan_runtime_.get());

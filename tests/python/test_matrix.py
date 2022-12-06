@@ -4,7 +4,7 @@ import operator
 import numpy as np
 import pytest
 from taichi.lang import impl
-from taichi.lang.exception import TaichiCompilationError
+from taichi.lang.exception import TaichiCompilationError, TaichiTypeError
 from taichi.lang.misc import get_host_arch_list
 
 import taichi as ti
@@ -1193,3 +1193,20 @@ def test_atomic_op_scalarize():
     field = ti.Vector.field(n=3, dtype=ti.f32, shape=10)
     ndarray = ti.Vector.ndarray(n=3, dtype=ti.f32, shape=(10))
     _test_field_and_ndarray(field, ndarray, func, verify)
+
+
+@test_utils.test(arch=[ti.cuda, ti.cpu],
+                 real_matrix=True,
+                 real_matrix_scalarize=True,
+                 debug=True)
+def test_unsupported_logical_operations():
+    @ti.kernel
+    def test():
+        x = ti.Vector([1, 0])
+        y = ti.Vector([1, 1])
+
+        z = x and y
+
+    with pytest.raises(TaichiTypeError,
+                       match=r"unsupported operand type\(s\) for "):
+        test()

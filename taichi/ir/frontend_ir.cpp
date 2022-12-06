@@ -289,11 +289,8 @@ void BinaryOpExpression::type_check(CompileConfig *config) {
                                   !is_integral(rhs_type.get_element_type())))
     error();
   if (binary_is_logical(type) &&
-      (lhs_type != PrimitiveType::i32 || rhs_type != PrimitiveType::i32) &&
-      (!is_tensor_op || (lhs_type->cast<TensorType>()->get_element_type() !=
-                             PrimitiveType::i32 ||
-                         rhs_type->cast<TensorType>()->get_element_type() !=
-                             PrimitiveType::i32)))
+      (is_tensor_op || lhs_type != PrimitiveType::i32 ||
+       rhs_type != PrimitiveType::i32))
     error();
   if (is_comparison(type) || binary_is_logical(type)) {
     ret_type = make_dt(PrimitiveType::i32);

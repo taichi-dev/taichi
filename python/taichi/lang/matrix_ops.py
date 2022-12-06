@@ -147,8 +147,6 @@ def inverse(mat):
 @pyfunc
 def transpose(mat):
     shape = static(mat.get_shape())
-    if static(len(shape) == 1):
-        return Vector([mat[i] for i in static(range(shape[0]))])
     return Matrix([[mat[i, j] for i in static(range(shape[0]))]
                    for j in static(range(shape[1]))])
 

@@ -33,6 +33,7 @@ class FunctionCreationGuard {
 
 class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
  public:
+  const CompileConfig *compile_config{nullptr};
   Kernel *kernel;
   IRNode *ir;
   Program *prog;
@@ -69,12 +70,13 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   using IRVisitor::visit;
   using LLVMModuleBuilder::call;
 
-  explicit TaskCodeGenLLVM(Kernel *kernel,
+  explicit TaskCodeGenLLVM(const CompileConfig *config,
+                           Kernel *kernel,
                            IRNode *ir = nullptr,
                            std::unique_ptr<llvm::Module> &&module = nullptr);
 
   Arch current_arch() {
-    return prog->this_thread_config().arch;
+    return compile_config->arch;
   }
 
   void initialize_context();

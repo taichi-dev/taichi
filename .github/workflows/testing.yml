@@ -240,17 +240,17 @@ jobs:
           TI_DEVICE_MEMORY_GB: '1'
           TI_RUN_RELEASE_TESTS: '1'
 
-      - name: Build & Run C-API Headless Demos (Desktop)
-        run: |
-          [[ ${{needs.check_files.outputs.run_job}} == false ]] && exit 0
-          . .github/workflows/scripts/common-utils.sh
-          chown -R 1000:1000 .
-          ci-docker-run-gpu --name taichi-test-capi-headless-demo-desktop \
-            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
-            /home/dev/taichi/.github/workflows/scripts/aot-demo.sh build-and-test-headless-demo-desktop
-        env:
-          PY: py38
-          TI_DEVICE_MEMORY_GB: '1'
+      # - name: Build & Run C-API Headless Demos (Desktop)
+      #   run: |
+      #     [[ ${{needs.check_files.outputs.run_job}} == false ]] && exit 0
+      #     . .github/workflows/scripts/common-utils.sh
+      #     chown -R 1000:1000 .
+      #     ci-docker-run-gpu --name taichi-test-capi-headless-demo-desktop \
+      #       registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
+      #       /home/dev/taichi/.github/workflows/scripts/aot-demo.sh build-and-test-headless-demo-desktop
+      #   env:
+      #     PY: py38
+      #     TI_DEVICE_MEMORY_GB: '1'
 
       - name: Save wheel if test failed
         if: failure() && steps.test.conclusion == 'failure'

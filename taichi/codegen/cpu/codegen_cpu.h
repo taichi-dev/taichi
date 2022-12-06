@@ -11,7 +11,8 @@ namespace taichi::lang {
 
 class KernelCodeGenCPU : public KernelCodeGen {
  public:
-  explicit KernelCodeGenCPU(Kernel *kernel) : KernelCodeGen(kernel) {
+  explicit KernelCodeGenCPU(const CompileConfig *compile_config, Kernel *kernel)
+      : KernelCodeGen(compile_config, kernel) {
   }
 
   // TODO: Stop defining this macro guards in the headers

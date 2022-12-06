@@ -4,7 +4,8 @@ from taichi.lang.kernel_impl import func, pyfunc
 from taichi.lang.matrix import Matrix, Vector
 from taichi.lang.matrix_ops_utils import (arg_at, arg_foreach_check,
                                           assert_list, assert_tensor,
-                                          assert_vector, check_matmul, dim_lt,
+                                          assert_vector, check_matmul,
+                                          check_transpose, dim_lt,
                                           is_int_const, preconditions,
                                           same_shapes, square_matrix)
 from taichi.types.annotations import template
@@ -142,7 +143,7 @@ def inverse(mat):
     return None
 
 
-@preconditions(assert_tensor)
+@preconditions(check_transpose)
 @pyfunc
 def transpose(mat):
     shape = static(mat.get_shape())

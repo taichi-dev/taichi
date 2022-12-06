@@ -1193,3 +1193,16 @@ def test_atomic_op_scalarize():
     field = ti.Vector.field(n=3, dtype=ti.f32, shape=10)
     ndarray = ti.Vector.ndarray(n=3, dtype=ti.f32, shape=(10))
     _test_field_and_ndarray(field, ndarray, func, verify)
+
+
+@test_utils.test()
+def test_vector_transpose():
+    @ti.kernel
+    def foo():
+        x = ti.Vector([1, 2])
+        y = ti.Vector([3, 4])
+        z = x @ y.transpose()
+
+    with pytest.raises(TaichiCompilationError,
+                       match=r"`transpose\(\)` cannot apply to a vector. If you want something like `a @ b.transpose\(\)`, write `a.outer_product\(b\)` instead."):
+        foo()

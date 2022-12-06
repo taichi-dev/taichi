@@ -1,6 +1,7 @@
 #!/bin/bash
 set -ex
 
+
 export TI_SKIP_VERSION_CHECK=ON
 export TI_CI=1
 

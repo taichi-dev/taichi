@@ -112,7 +112,7 @@ function build-and-test-headless-demo {
     git clone --recursive https://github.com/jim19930609/taichi-aot-demo.git
 
     cd taichi-aot-demo
-    git checkout fix_build_system
+    git checkout fix_sph
 
     . $(pwd)/ci/test_utils.sh
 
@@ -162,7 +162,7 @@ function build-and-test-headless-demo-desktop {
     git clone --recursive https://github.com/jim19930609/taichi-aot-demo.git
 
     cd taichi-aot-demo
-    git checkout fix_build_system
+    git checkout fix_sph
 
     TAICHI_C_API_INSTALL_DIR=$(find $TAICHI_REPO_DIR -name cmake-install -type d | head -n 1)/c_api
     python3 -m pip install -r ci/requirements.txt

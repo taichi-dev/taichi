@@ -71,14 +71,14 @@ CacheManager::CompiledKernelData CacheManager::load_or_compile(
     const CompileConfig *compile_config,
     Kernel *kernel) {
   if (kernel->is_evaluator || config_.mode == NotCache) {
-    return compile_kernel(kernel);
+    return compile_kernel(compile_config, kernel);
   }
   TI_ASSERT(config_.mode > NotCache);
   const auto kernel_key = make_kernel_key(compile_config, kernel);
   if (auto opt = try_load_cached_kernel(kernel, kernel_key)) {
     return *opt;
   }
-  return compile_and_cache_kernel(kernel_key, kernel);
+  return compile_and_cache_kernel(kernel_key, compile_config, kernel);
 }
 
 void CacheManager::dump_with_merging() const {
@@ -141,8 +141,10 @@ void CacheManager::clean_offline_cache(offline_cache::CleanCachePolicy policy,
   }
 }
 
-CompiledKernelData CacheManager::compile_kernel(Kernel *kernel) const {
-  irpass::ast_to_ir(kernel->program->this_thread_config(), *kernel);
+CompiledKernelData CacheManager::compile_kernel(
+    const CompileConfig *compile_config,
+    Kernel *kernel) const {
+  irpass::ast_to_ir(*compile_config, *kernel);
   return run_codegen(config_.compiled_runtime_module_,
                      *config_.compiled_snode_trees_, kernel, nullptr);
 }
@@ -196,13 +198,14 @@ std::optional<CompiledKernelData> CacheManager::try_load_cached_kernel(
 
 CompiledKernelData CacheManager::compile_and_cache_kernel(
     const std::string &key,
+    const CompileConfig *compile_config,
     Kernel *kernel) {
   TI_DEBUG_IF(config_.mode == MemAndDiskCache, "Cache kernel '{}' (key='{}')",
               kernel->get_name(), key);
   OfflineCacheKernelMetadata k;
   k.kernel_key = key;
   k.created_at = k.last_used_at = std::time(nullptr);
-  k.compiled_kernel_data = compile_kernel(kernel);
+  k.compiled_kernel_data = compile_kernel(compile_config, kernel);
   k.size = k.compiled_kernel_data.source_code.size();
   const auto &kernel_data = (caching_kernels_[key] = std::move(k));
   return kernel_data.compiled_kernel_data;

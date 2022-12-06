@@ -55,14 +55,17 @@ class CacheManager {
                            double cleaning_factor) const;
 
  private:
-  CompiledKernelData compile_kernel(Kernel *kernel) const;
+  CompiledKernelData compile_kernel(const CompileConfig *compile_config,
+                                    Kernel *kernel) const;
   std::string make_kernel_key(const CompileConfig *compile_config,
                               Kernel *kernel) const;
   std::optional<CompiledKernelData> try_load_cached_kernel(
       Kernel *kernel,
       const std::string &key);
-  CompiledKernelData compile_and_cache_kernel(const std::string &key,
-                                              Kernel *kernel);
+  CompiledKernelData compile_and_cache_kernel(
+      const std::string &key,
+      const CompileConfig *compile_config,
+      Kernel *kernel);
   bool load_kernel_source_code(OfflineCacheKernelMetadata &kernel_data);
 
   Params config_;

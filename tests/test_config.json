@@ -194,6 +194,14 @@
     "CapiTest.DryRunOpenglAotModule": [
         ["cpp", "aot", "python_scripts", "kernel_aot_test1.py"],
         "--arch=opengl"
+    ],
+    "CapiTest.TestLoadTcmAotModule": [
+        ["cpp", "aot", "python_scripts", "tcm_test.py"],
+        "--arch=vulkan"
+    ],
+    "CapiTest.TestCreateTcmAotModule": [
+        ["cpp", "aot", "python_scripts", "tcm_test.py"],
+        "--arch=vulkan"
     ]
 }
 }

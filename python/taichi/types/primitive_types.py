@@ -154,7 +154,7 @@ def ref(tp):
 real_types = [f16, f32, f64, float]
 real_type_ids = [id(t) for t in real_types]
 
-integer_types = [i8, i16, i32, i64, u8, u16, u32, u64, int]
+integer_types = [i8, i16, i32, i64, u8, u16, u32, u64, int, bool]
 integer_type_ids = [id(t) for t in integer_types]
 
 all_types = real_types + integer_types

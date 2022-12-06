@@ -269,6 +269,8 @@ def cook_dtype(dtype):
         return impl.get_runtime().default_fp
     if dtype is int:
         return impl.get_runtime().default_ip
+    if dtype is bool:
+        return i32  # TODO[Xiaoyan]: Use i1 in the future
     raise ValueError(f'Invalid data type {dtype}')
 
 

@@ -136,8 +136,6 @@ void LlvmRuntime::wait() {
 
 }  // namespace capi
 
-#endif  // TI_WITH_LLVM
-
 // function.export_cpu_runtime
 void ti_export_cpu_memory(TiRuntime runtime,
                           TiMemory memory,
@@ -197,3 +195,5 @@ void ti_export_cuda_memory(TiRuntime runtime,
   TI_NOT_IMPLEMENTED;
 #endif
 }
+
+#endif  // TI_WITH_LLVM

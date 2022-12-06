@@ -43,7 +43,7 @@ function prepare-unity-build-env {
     cd taichi
 
     # Dependencies
-    git clone --reference-if-able /var/lib/git-cache -b upgrade-modules2 https://github.com/taichi-dev/Taichi-UnityExample
+    git clone --reference-if-able /var/lib/git-cache https://github.com/taichi-dev/Taichi-UnityExample
 
     python misc/generate_unity_language_binding.py
     cp c_api/unity/*.cs Taichi-UnityExample/Assets/Taichi/Generated
@@ -167,6 +167,28 @@ function build-and-test-headless-demo-desktop {
     TAICHI_C_API_INSTALL_DIR=$(find $TAICHI_REPO_DIR -name cmake-install -type d | head -n 1)/c_api
     python3 -m pip install -r ci/requirements.txt
     python3 ci/run_tests.py -l $TAICHI_C_API_INSTALL_DIR
+}
+
+function check-c-api-export-symbols {
+    cd taichi
+    TAICHI_REPO_DIR=$(pwd)
+    TAICHI_C_API_DIR=$(find $TAICHI_REPO_DIR -name libtaichi_c_api.* | head -n 1)
+
+    # T: global functions
+    # B: global variables (uninitialized)
+    # D: global variables (initialized)
+    EXPORT_SYM=" T \| B \| D "
+
+    # Note: this has to be consistent with the version scripts (export_symbol_linux.ld, export_symbol_mac.ld)
+    CAPI_SYM=" _\?ti_"
+    CAPI_UTILS_SYM=" capi::utils::"
+
+    NUM_LEAK_SYM=$(nm -C --extern-only ${TAICHI_C_API_DIR} | grep "${EXPORT_SYM}" | grep -v "${CAPI_SYM}" | grep -v "${CAPI_UTILS_SYM}" | wc -l)
+    if [ ${NUM_LEAK_SYM} -gt 0 ]; then
+        echo "Following symbols leaked from libtaichi_c_api: "
+        nm -C --extern-only ${TAICHI_C_API_DIR} | grep "${EXPORT_SYM}" | grep -v "${CAPI_SYM}" | grep -v "${CAPI_UTILS_SYM}"
+        exit 1
+    fi
 }
 
 $1

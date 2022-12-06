@@ -39,7 +39,7 @@ def bls_test_template(dim,
         create_block().dense(index, bs).place(y)
         create_block().dense(index, bs).place(y2)
 
-    ndrange = ((bs[i], N - bs[i]) for i in range(dim))
+    ndrange = ((bs[i] * 2, N - bs[i] * 2) for i in range(dim))
 
     if block_dim is None:
         block_dim = 1

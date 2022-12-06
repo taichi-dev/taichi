@@ -38,7 +38,7 @@ static void taichi_sparse_test(TiArch arch) {
 }
 
 TEST_F(CapiTest, TaichiSparseTestCuda) {
-  if (capi::utils::is_cuda_available()) {
+  if (ti::is_arch_available(TI_ARCH_CUDA)) {
     TiArch arch = TiArch::TI_ARCH_CUDA;
     taichi_sparse_test(arch);
   }

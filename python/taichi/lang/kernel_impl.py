@@ -16,11 +16,12 @@ from taichi.lang.ast.ast_transformer_utils import ReturnStatus
 from taichi.lang.enums import AutodiffMode, Layout
 from taichi.lang.exception import (TaichiCompilationError, TaichiRuntimeError,
                                    TaichiRuntimeTypeError, TaichiSyntaxError,
-                                   handle_exception_from_cpp)
+                                   TaichiTypeError, handle_exception_from_cpp)
 from taichi.lang.expr import Expr
 from taichi.lang.kernel_arguments import KernelArgument
 from taichi.lang.matrix import Matrix, MatrixType
 from taichi.lang.shell import _shell_pop_print, oinspect
+from taichi.lang.struct import StructType
 from taichi.lang.util import (cook_dtype, has_paddle, has_pytorch,
                               to_taichi_type)
 from taichi.types import (ndarray_type, primitive_types, sparse_matrix_builder,
@@ -121,7 +122,6 @@ def _get_tree_and_ctx(self,
     func_body.decorator_list = []
 
     global_vars = _get_global_vars(self.func)
-
     for i, arg in enumerate(func_body.args.args):
         anno = arg.annotation
         if isinstance(anno, ast.Name):
@@ -265,9 +265,18 @@ class Func:
                     non_template_args.append(args[i])
         non_template_args = impl.make_expr_group(non_template_args,
                                                  real_func_arg=True)
-        return Expr(
+        func_call = Expr(
             _ti_core.make_func_call_expr(
                 self.taichi_functions[key.instance_id], non_template_args))
+        impl.get_runtime().prog.current_ast_builder().insert_expr_stmt(
+            func_call.ptr)
+        if self.return_type is None:
+            return None
+        if id(self.return_type) in primitive_types.type_ids:
+            return Expr(_ti_core.make_get_element_expr(func_call.ptr, 0))
+        if isinstance(self.return_type, StructType):
+            return self.return_type.from_real_func_ret(func_call)[0]
+        raise TaichiTypeError(f"Unsupported return type: {self.return_type}")
 
     def do_compile(self, key, args):
         tree, ctx = _get_tree_and_ctx(self,
@@ -376,7 +385,7 @@ class TaichiCallableTemplateMapper:
             # [Primitive arguments] Return the value
             return arg
         if isinstance(anno, texture_type.TextureType):
-            return arg.num_dims,
+            return arg.num_dims, arg.dtype
         if isinstance(anno, texture_type.RWTextureType):
             # (penguinliong) '0' is the assumed LOD level. We currently don't
             # support mip-mapping.
@@ -393,17 +402,18 @@ class TaichiCallableTemplateMapper:
                 return arg.dtype, len(arg.shape) + 2, (arg.n,
                                                        arg.m), Layout.AOS
             # external arrays
-            element_dim = 0 if anno.element_dim is None else anno.element_dim
             shape = getattr(arg, 'shape', None)
             if shape is None:
                 raise TaichiRuntimeTypeError(
                     f"Invalid argument into ti.types.ndarray(), got {arg}")
             shape = tuple(shape)
-            if len(shape) < element_dim:
-                raise ValueError(
-                    f"Invalid argument into ti.types.ndarray() - required element_dim={element_dim}, "
-                    f"but the argument has only {len(shape)} dimensions")
-            element_shape = () if element_dim == 0 else shape[-element_dim:]
+            element_shape = ()
+            if isinstance(anno.dtype, MatrixType):
+                if len(shape) < anno.dtype.ndim:
+                    raise ValueError(
+                        f"Invalid argument into ti.types.ndarray() - required element_dim={anno.dtype.ndim}, "
+                        f"but the argument has only {len(shape)} dimensions")
+                element_shape = shape[-anno.dtype.ndim:]
             return to_taichi_type(
                 arg.dtype), len(shape), element_shape, Layout.AOS
         if isinstance(anno, sparse_matrix_builder):
@@ -643,8 +653,11 @@ class Kernel:
                     # so that it only holds "real" array shapes.
                     is_soa = needed.layout == Layout.SOA
                     array_shape = v.shape
-                    element_dim = needed.element_dim
-                    if element_dim:
+                    if needed.dtype is None or id(
+                            needed.dtype) in primitive_types.type_ids:
+                        element_dim = 0
+                    else:
+                        element_dim = needed.dtype.ndim
                         array_shape = v.shape[
                             element_dim:] if is_soa else v.shape[:-element_dim]
                     if isinstance(v, np.ndarray):

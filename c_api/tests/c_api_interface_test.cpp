@@ -3,6 +3,10 @@
 #include "taichi/cpp/taichi.hpp"
 #include "c_api/tests/gtest_fixture.h"
 
+TEST_F(CapiTest, DryRunAvailableArchs) {
+  std::vector<TiArch> archs = ti::get_available_archs();
+}
+
 TEST_F(CapiTest, DryRunRuntime) {
   {
     // CPU Runtime
@@ -10,26 +14,26 @@ TEST_F(CapiTest, DryRunRuntime) {
     ti::Runtime runtime(arch);
   }
 
-  if (capi::utils::is_vulkan_available()) {
+  if (ti::is_arch_available(TI_ARCH_VULKAN)) {
     // Vulkan Runtime
     TiArch arch = TiArch::TI_ARCH_VULKAN;
     ti::Runtime runtime(arch);
   }
 
-  if (capi::utils::is_cuda_available()) {
+  if (ti::is_arch_available(TI_ARCH_CUDA)) {
     // Vulkan Runtime
     TiArch arch = TiArch::TI_ARCH_CUDA;
     ti::Runtime runtime(arch);
   }
 
-  if (capi::utils::is_opengl_available()) {
+  if (ti::is_arch_available(TI_ARCH_OPENGL)) {
     TiArch arch = TiArch::TI_ARCH_OPENGL;
     ti::Runtime runtime(arch);
   }
 }
 
 TEST_F(CapiTest, DryRunCapabilities) {
-  if (capi::utils::is_vulkan_available()) {
+  if (ti::is_arch_available(TI_ARCH_VULKAN)) {
     // Vulkan Runtime
     {
       ti::Runtime runtime(TI_ARCH_VULKAN);
@@ -50,7 +54,7 @@ TEST_F(CapiTest, DryRunMemoryAllocation) {
     ti::NdArray<uint8_t> ndarray = runtime.allocate_ndarray<uint8_t>({100}, {});
   }
 
-  if (capi::utils::is_vulkan_available()) {
+  if (ti::is_arch_available(TI_ARCH_VULKAN)) {
     // Vulkan Runtime
     TiArch arch = TiArch::TI_ARCH_VULKAN;
     ti::Runtime runtime(arch);
@@ -58,7 +62,7 @@ TEST_F(CapiTest, DryRunMemoryAllocation) {
     ti::NdArray<uint8_t> ndarray = runtime.allocate_ndarray<uint8_t>({100}, {});
   }
 
-  if (capi::utils::is_opengl_available()) {
+  if (ti::is_arch_available(TI_ARCH_OPENGL)) {
     // Opengl Runtime
     TiArch arch = TiArch::TI_ARCH_OPENGL;
     ti::Runtime runtime(arch);
@@ -66,7 +70,7 @@ TEST_F(CapiTest, DryRunMemoryAllocation) {
     ti::NdArray<uint8_t> ndarray = runtime.allocate_ndarray<uint8_t>({100}, {});
   }
 
-  if (capi::utils::is_cuda_available()) {
+  if (ti::is_arch_available(TI_ARCH_CUDA)) {
     // Cuda Runtime
     TiArch arch = TiArch::TI_ARCH_CUDA;
     ti::Runtime runtime(arch);
@@ -76,7 +80,7 @@ TEST_F(CapiTest, DryRunMemoryAllocation) {
 }
 
 TEST_F(CapiTest, FailMapDeviceOnlyMemory) {
-  if (capi::utils::is_vulkan_available()) {
+  if (ti::is_arch_available(TI_ARCH_VULKAN)) {
     ti::Runtime runtime(TI_ARCH_VULKAN);
 
     ti::Memory mem = runtime.allocate_memory(100);
@@ -94,8 +98,29 @@ TEST_F(CapiTest, FailMapDeviceOnlyMemory) {
   }
 }
 
+TEST_F(CapiTest, FailOutOfRangeReadWrite) {
+  if (ti::is_arch_available(TI_ARCH_VULKAN)) {
+    ti::Runtime runtime(TI_ARCH_VULKAN);
+
+    std::vector<float> data(101);
+    ti::NdArray<float> arr = runtime.allocate_ndarray<float>({50}, {2});
+
+    TI_ASSERT(arr.elem_count() == 50);
+    TI_ASSERT(arr.scalar_count() == 100);
+
+    arr.write(data);
+
+    char err_msg[1024]{0};
+    TiError err = ti_get_last_error(sizeof(err_msg), err_msg);
+
+    TI_ASSERT(err == TI_ERROR_ARGUMENT_OUT_OF_RANGE);
+
+    ti_set_last_error(TI_ERROR_SUCCESS, nullptr);
+  }
+}
+
 TEST_F(CapiTest, DryRunImageAllocation) {
-  if (capi::utils::is_vulkan_available()) {
+  if (ti::is_arch_available(TI_ARCH_VULKAN)) {
     {
       // Vulkan Runtime
       TiArch arch = TiArch::TI_ARCH_VULKAN;
@@ -107,7 +132,7 @@ TEST_F(CapiTest, DryRunImageAllocation) {
 }
 
 TEST_F(CapiTest, DryRunVulkanAotModule) {
-  if (capi::utils::is_vulkan_available()) {
+  if (ti::is_arch_available(TI_ARCH_VULKAN)) {
     const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
 
     std::stringstream aot_mod_ss;
@@ -123,7 +148,7 @@ TEST_F(CapiTest, DryRunVulkanAotModule) {
 }
 
 TEST_F(CapiTest, DryRunOpenglAotModule) {
-  if (capi::utils::is_opengl_available()) {
+  if (ti::is_arch_available(TI_ARCH_OPENGL)) {
     const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
 
     std::stringstream aot_mod_ss;
@@ -135,6 +160,70 @@ TEST_F(CapiTest, DryRunOpenglAotModule) {
       ti::Runtime runtime(arch);
 
       ti::AotModule aot_mod = runtime.load_aot_module(aot_mod_ss.str());
+    }
+  }
+}
+
+TEST_F(CapiTest, TestLoadTcmAotModule) {
+  if (ti::is_arch_available(TI_ARCH_VULKAN)) {
+    const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
+
+    std::stringstream aot_mod_ss;
+    aot_mod_ss << folder_dir << "/module.tcm";
+
+    {
+      // Vulkan Runtime
+      TiArch arch = TiArch::TI_ARCH_VULKAN;
+      ti::Runtime runtime(arch);
+      ti::AotModule aot_mod = runtime.load_aot_module(aot_mod_ss.str());
+      ti::Kernel run = aot_mod.get_kernel("run");
+      ti::NdArray<int32_t> arr =
+          runtime.allocate_ndarray<int32_t>({16}, {}, true);
+      run[0] = arr;
+      run.launch();
+      runtime.wait();
+      std::vector<int32_t> data(16);
+      arr.read(data);
+      for (int32_t i = 0; i < 16; ++i) {
+        TI_ASSERT(data.at(i) == i);
+      }
+    }
+  }
+}
+
+TEST_F(CapiTest, TestCreateTcmAotModule) {
+  if (ti::is_arch_available(TI_ARCH_VULKAN)) {
+    const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
+
+    std::stringstream aot_mod_ss;
+    aot_mod_ss << folder_dir << "/module.tcm";
+
+    std::vector<uint8_t> tcm;
+    {
+      std::fstream f(aot_mod_ss.str(),
+                     std::ios::in | std::ios::binary | std::ios::ate);
+      TI_ASSERT(f.is_open());
+      tcm.resize(f.tellg());
+      f.seekg(std::ios::beg);
+      f.read((char *)tcm.data(), tcm.size());
+    }
+
+    {
+      // Vulkan Runtime
+      TiArch arch = TiArch::TI_ARCH_VULKAN;
+      ti::Runtime runtime(arch);
+      ti::AotModule aot_mod = runtime.create_aot_module(tcm);
+      ti::Kernel run = aot_mod.get_kernel("run");
+      ti::NdArray<int32_t> arr =
+          runtime.allocate_ndarray<int32_t>({16}, {}, true);
+      run[0] = arr;
+      run.launch();
+      runtime.wait();
+      std::vector<int32_t> data(16);
+      arr.read(data);
+      for (int32_t i = 0; i < 16; ++i) {
+        TI_ASSERT(data.at(i) == i);
+      }
     }
   }
 }

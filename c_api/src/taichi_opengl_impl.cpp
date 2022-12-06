@@ -1,5 +1,5 @@
-#include "taichi_opengl_impl.h"
 #ifdef TI_WITH_OPENGL
+#include "taichi_opengl_impl.h"
 
 OpenglRuntime::OpenglRuntime()
     : GfxRuntime(taichi::Arch::opengl),

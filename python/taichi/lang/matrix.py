@@ -26,6 +26,7 @@ def _gen_swizzles(cls):
     # https://www.khronos.org/opengl/wiki/Data_Type_(GLSL)#Swizzling
     KEYGROUP_SET = ['xyzw', 'rgba', 'stpq']
     cls._swizzle_to_keygroup = {}
+    cls._keygroup_to_checker = {}
 
     def make_valid_attribs_checker(key_group):
         def check(instance, pattern):
@@ -42,10 +43,12 @@ def _gen_swizzles(cls):
         return check
 
     for key_group in KEYGROUP_SET:
+        cls._keygroup_to_checker[key_group] = make_valid_attribs_checker(
+            key_group)
         for index, attr in enumerate(key_group):
 
             def gen_property(attr, attr_idx, key_group):
-                checker = make_valid_attribs_checker(key_group)
+                checker = cls._keygroup_to_checker[key_group]
 
                 def prop_getter(instance):
                     checker(instance, attr)
@@ -69,7 +72,7 @@ def _gen_swizzles(cls):
         for pat in sw_patterns:
             # Create a function for value capturing
             def gen_property(pattern, key_group):
-                checker = make_valid_attribs_checker(key_group)
+                checker = cls._keygroup_to_checker[key_group]
                 prop_key = ''.join(pattern)
 
                 def prop_getter(instance):
@@ -495,7 +498,9 @@ class Matrix(TaichiOperations):
     def get_shape(self):
         if self.ndim == 1:
             return (self.n, )
-        return (self.n, self.m)
+        if self.ndim == 2:
+            return (self.n, self.m)
+        return None
 
     def element_type(self):
         if self._impl.entries:
@@ -1537,7 +1542,12 @@ class MatrixField(Field):
         """
         if isinstance(val, numbers.Number) or (isinstance(val, expr.Expr)
                                                and not val.is_tensor()):
-            val = list(list(val for _ in range(self.m)) for _ in range(self.n))
+            if self.ndim == 2:
+                val = list(
+                    list(val for _ in range(self.m)) for _ in range(self.n))
+            else:
+                assert self.ndim == 1
+                val = list(val for _ in range(self.n))
         elif isinstance(val, Matrix):
             val = val.to_list()
         else:
@@ -1681,7 +1691,12 @@ class MatrixType(CompoundType):
         self.n = n
         self.m = m
         self.ndim = ndim
-        self.dtype = cook_dtype(dtype)
+        # FIXME(haidong): dtypes should not be left empty for ndarray.
+        #                 Remove the None dtype when we are ready to break legacy code.
+        if dtype is not None:
+            self.dtype = cook_dtype(dtype)
+        else:
+            self.dtype = None
 
     def __call__(self, *args):
         """Return a matrix matching the shape and dtype.
@@ -1761,6 +1776,12 @@ class MatrixType(CompoundType):
         #  type cast
         return self.cast(Matrix(entries, dt=self.dtype, ndim=self.ndim))
 
+    def from_real_func_ret(self, func_ret, ret_index=0):
+        return self([
+            expr.Expr(ti_python_core.make_get_element_expr(func_ret.ptr, i))
+            for i in range(ret_index, ret_index + self.m * self.n)
+        ]), ret_index + self.m * self.n
+
     def cast(self, mat):
         if in_python_scope():
             return Matrix([[
@@ -1787,6 +1808,11 @@ class MatrixType(CompoundType):
         assert kwargs.get("ndim", self.ndim) == self.ndim
         kwargs.update({"ndim": self.ndim})
         return Matrix.field(self.n, self.m, dtype=self.dtype, **kwargs)
+
+    def get_shape(self):
+        if self.ndim == 1:
+            return (self.n, )
+        return (self.n, self.m)
 
 
 class VectorType(MatrixType):

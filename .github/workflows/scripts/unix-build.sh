@@ -6,24 +6,40 @@ set -ex
 
 [[ "$IN_DOCKER" == "true" ]] && cd taichi
 
-# TODO: Move llvm installation from container image to here
-if [[ "$LLVM_VERSION" == "15" ]]; then
-  if [[ $OSTYPE == "linux-"* ]]; then
-    wget https://github.com/ailzhang/torchhub_example/releases/download/0.2/taichi-llvm-15-linux.zip
+if [[ $OSTYPE == "linux-"* ]]; then
+  if [ ! -d ~/taichi-llvm-15 ]; then
+    pushd ~
+    if [ -f /etc/centos-release ] ; then
+      # FIXIME: prebuilt llvm15 on ubuntu didn't work on manylinux image of centos. Once that's fixed, remove this hack.
+      wget https://github.com/ailzhang/torchhub_example/releases/download/0.3/taichi-llvm-15-linux.zip
+    else
+      wget https://github.com/taichi-dev/taichi_assets/releases/download/llvm15/taichi-llvm-15-linux.zip
+    fi
     unzip taichi-llvm-15-linux.zip && rm taichi-llvm-15-linux.zip
-    export PATH="$PWD/taichi-llvm-15/bin:$PATH"
-  elif [ "$(uname -s):$(uname -m)" == "Darwin:arm64" ]; then
-    # The following commands are done manually to save time.
-    #wget https://github.com/ailzhang/torchhub_example/releases/download/0.2/taichi-llvm-15-m1.zip
-    #unzip taichi-llvm-15-m1.zip && rm taichi-llvm-15-m1.zip
-    export PATH="/Users/github/taichi-llvm-15-m1/bin:$PATH"
-  elif [ "$(uname -s):$(uname -m)" == "Darwin:x86_64" ]; then
-    # The following commands are done manually to save time.
-    #wget https://github.com/ailzhang/torchhub_example/releases/download/0.2/llvm-15-macos10.15.zip
-    #unzip llvm-15-macos10.15.zip && rm llvm-15-macos10.15.zip
-    export LLVM_DIR="~/llvm-15-mac10.15/"
+    popd
   fi
-  export TAICHI_CMAKE_ARGS="$TAICHI_CMAKE_ARGS -DTI_LLVM_15:BOOL=ON"
+
+  export LLVM_DIR="$HOME/taichi-llvm-15"
+elif [ "$(uname -s):$(uname -m)" == "Darwin:arm64" ]; then
+  # The following commands are done manually to save time.
+  if [ ! -d ~/taichi-llvm-15-m1 ]; then
+    pushd ~
+    wget https://github.com/taichi-dev/taichi_assets/releases/download/llvm15/taichi-llvm-15-m1.zip
+    unzip taichi-llvm-15-m1.zip && rm taichi-llvm-15-m1.zip
+    popd
+  fi
+
+  export LLVM_DIR="$HOME/taichi-llvm-15-m1"
+elif [ "$(uname -s):$(uname -m)" == "Darwin:x86_64" ]; then
+  # The following commands are done manually to save time.
+  if [ ! -d ~/llvm-15-mac10.15 ]; then
+    pushd ~
+    wget https://github.com/taichi-dev/taichi_assets/releases/download/llvm15/llvm-15-mac10.15.zip
+    unzip llvm-15-mac10.15.zip && rm llvm-15-mac10.15.zip
+    popd
+  fi
+
+  export LLVM_DIR="$HOME/llvm-15-mac10.15/"
 fi
 
 build_taichi_wheel() {

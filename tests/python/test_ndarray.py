@@ -515,7 +515,7 @@ def test_vector_ndarray_taichi_scope_real_matrix():
 # number of compiled functions
 def _test_compiled_functions():
     @ti.kernel
-    def func(a: ti.types.ndarray(element_dim=1)):
+    def func(a: ti.types.ndarray(ti.types.vector(n=10, dtype=ti.i32))):
         for i in range(5):
             for j in range(4):
                 a[i][j * j] = j * j
@@ -541,7 +541,7 @@ def test_compiled_functions():
 
 def _test_arg_not_match():
     @ti.kernel
-    def func1(a: ti.types.ndarray(element_dim=1)):
+    def func1(a: ti.types.ndarray(dtype=ti.types.vector(2, ti.i32))):
         pass
 
     x = ti.Matrix.ndarray(2, 3, ti.i32, shape=(4, 7))
@@ -553,7 +553,7 @@ def _test_arg_not_match():
         func1(x)
 
     @ti.kernel
-    def func2(a: ti.types.ndarray(element_dim=2)):
+    def func2(a: ti.types.ndarray(dtype=ti.types.matrix(2, 2, ti.i32))):
         pass
 
     x = ti.Vector.ndarray(2, ti.i32, shape=(4, 7))
@@ -565,7 +565,7 @@ def _test_arg_not_match():
         func2(x)
 
     @ti.kernel
-    def func5(a: ti.types.ndarray(element_shape=(2, 3))):
+    def func5(a: ti.types.ndarray(dtype=ti.types.matrix(2, 3, dtype=ti.i32))):
         pass
 
     x = ti.Vector.ndarray(2, ti.i32, shape=(4, 7))
@@ -576,25 +576,26 @@ def _test_arg_not_match():
     ):
         func5(x)
 
-    with pytest.raises(
-            ValueError,
-            match=r'Both element_shape and element_dim are specified'):
-
-        @ti.kernel
-        def func6(a: ti.types.ndarray(element_dim=1, element_shape=(2, 3))):
-            pass
-
     @ti.kernel
-    def func7(a: ti.types.ndarray(field_dim=2)):
+    def func7(a: ti.types.ndarray(ndim=2)):
         pass
 
     x = ti.ndarray(ti.i32, shape=(3, ))
     with pytest.raises(
             ValueError,
             match=
-            r'Invalid argument into ti\.types\.ndarray\(\) - required field_dim'
-    ):
+            r'Invalid argument into ti\.types\.ndarray\(\) - required ndim'):
         func7(x)
+
+    @ti.kernel
+    def func8(x: ti.types.ndarray(dtype=ti.f32)):
+        pass
+
+    x = ti.ndarray(dtype=ti.i32, shape=(16, 16))
+    with pytest.raises(
+            TypeError,
+            match=r'Expect element type .* for Ndarray, but get .*'):
+        func8(x)
 
 
 @test_utils.test(arch=get_host_arch_list())
@@ -699,8 +700,7 @@ def test_gaussian_kernel():
             -0.5 * ti.pow(x / sigma, 2)) / (sigma * ti.sqrt(2.0 * M_PI))
 
     @ti.kernel
-    def fill_gaussian_kernel(
-            ker: ti.types.ndarray(ti.f32, field_dim=1), N: ti.i32):
+    def fill_gaussian_kernel(ker: ti.types.ndarray(ti.f32, ndim=1), N: ti.i32):
         sum = 0.0
         for i in range(2 * N + 1):
             ker[i] = gaussian(i - N, ti.sqrt(N))
@@ -717,3 +717,15 @@ def test_gaussian_kernel():
     fill_gaussian_kernel(np_arr, N)
 
     assert test_utils.allclose(res, np_arr)
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray,
+                 real_matrix=True,
+                 real_matrix_scalarize=True)
+def test_ndarray_numpy_matrix_scalarize():
+    boundary_box_np = np.array([[0, 0, 0], [1, 1, 1]], dtype=np.float32)
+    boundary_box = ti.Vector.ndarray(3, ti.f32, shape=2)
+    boundary_box.from_numpy(boundary_box_np)
+    ref_numpy = boundary_box.to_numpy()
+
+    assert (boundary_box_np == ref_numpy).all()

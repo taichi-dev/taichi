@@ -1,11 +1,19 @@
 import numpy as np
 from taichi._lib import core as _ti_core
 from taichi.lang import impl
-from taichi.lang.enums import Format
-from taichi.lang.expr import Expr
+from taichi.lang.expr import Expr, make_expr_group
+from taichi.lang.matrix import Matrix
 from taichi.lang.util import taichi_scope
 from taichi.types import vector
-from taichi.types.primitive_types import f16, f32, i8, i16, i32, u8, u16, u32
+from taichi.types.primitive_types import f32, u8
+from taichi.types.texture_type import FORMAT2TY_CH
+
+
+def _get_entries(mat):
+    if isinstance(mat, Matrix):
+        return mat.entries
+    assert isinstance(mat, Expr) and mat.is_tensor()
+    return impl.get_runtime().prog.current_ast_builder().expand_expr([mat.ptr])
 
 
 class TextureSampler:
@@ -15,13 +23,7 @@ class TextureSampler:
 
     @taichi_scope
     def sample_lod(self, uv, lod):
-        args_group = ()
-        if self.num_dims == 1:
-            args_group = (uv.x, lod)
-        elif self.num_dims == 2:
-            args_group = impl.make_expr_group(uv.x, uv.y, lod)
-        elif self.num_dims == 3:
-            args_group = impl.make_expr_group(uv.x, uv.y, uv.z, lod)
+        args_group = make_expr_group(*_get_entries(uv), lod)
         v = _ti_core.make_texture_op_expr(_ti_core.TextureOpType.kSampleLod,
                                           self.ptr_expr, args_group)
         r = impl.call_internal("composite_extract_0",
@@ -40,13 +42,7 @@ class TextureSampler:
 
     @taichi_scope
     def fetch(self, index, lod):
-        args_group = ()
-        if self.num_dims == 1:
-            args_group = impl.make_expr_group(index.x, lod)
-        elif self.num_dims == 2:
-            args_group = impl.make_expr_group(index.x, index.y, lod)
-        elif self.num_dims == 3:
-            args_group = impl.make_expr_group(index.x, index.y, index.z, lod)
+        args_group = make_expr_group(*_get_entries(index), lod)
         v = _ti_core.make_texture_op_expr(_ti_core.TextureOpType.kFetchTexel,
                                           self.ptr_expr, args_group)
         r = impl.call_internal("composite_extract_0",
@@ -72,13 +68,7 @@ class RWTextureAccessor:
 
     @taichi_scope
     def load(self, index):
-        args_group = ()
-        if self.num_dims == 1:
-            args_group = impl.make_expr_group(index.x)
-        elif self.num_dims == 2:
-            args_group = impl.make_expr_group(index.x, index.y)
-        elif self.num_dims == 3:
-            args_group = impl.make_expr_group(index.x, index.y, index.z)
+        args_group = make_expr_group(*_get_entries(index))
         v = _ti_core.make_texture_op_expr(_ti_core.TextureOpType.kLoad,
                                           self.ptr_expr, args_group)
         r = impl.call_internal("composite_extract_0",
@@ -97,17 +87,8 @@ class RWTextureAccessor:
 
     @taichi_scope
     def store(self, index, value):
-        args_group = ()
-        if self.num_dims == 1:
-            args_group = impl.make_expr_group(index.x, value.r, value.g,
-                                              value.b, value.a)
-        elif self.num_dims == 2:
-            args_group = impl.make_expr_group(index.x, index.y, value.r,
-                                              value.g, value.b, value.a)
-        elif self.num_dims == 3:
-            args_group = impl.make_expr_group(index.x, index.y, index.z,
-                                              value.r, value.g, value.b,
-                                              value.a)
+        args_group = make_expr_group(*_get_entries(index),
+                                     *_get_entries(value))
         impl.expr_init(
             _ti_core.make_texture_op_expr(_ti_core.TextureOpType.kStore,
                                           self.ptr_expr, args_group))
@@ -138,53 +119,11 @@ class RWTextureAccessor:
         return self.ptr_expr
 
 
-FORMAT2TY_CH = {
-    Format.r8: (u8, 1),
-    Format.r8u: (u8, 1),
-    Format.r8i: (i8, 1),
-    Format.rg8: (u8, 2),
-    Format.rg8u: (u8, 2),
-    Format.rg8i: (i8, 2),
-    Format.rgba8: (u8, 4),
-    Format.rgba8u: (u8, 4),
-    Format.rgba8i: (i8, 4),
-    Format.r16: (u16, 1),
-    Format.r16u: (u16, 1),
-    Format.r16i: (i16, 1),
-    Format.r16f: (f16, 1),
-    Format.rg16: (u16, 2),
-    Format.rg16u: (u16, 2),
-    Format.rg16i: (i16, 2),
-    Format.rg16f: (f16, 2),
-    Format.rgb16: (u16, 3),
-    Format.rgb16u: (u16, 3),
-    Format.rgb16i: (i16, 3),
-    Format.rgb16f: (f16, 3),
-    Format.rgba16: (u16, 4),
-    Format.rgba16u: (u16, 4),
-    Format.rgba16i: (i16, 4),
-    Format.rgba16f: (f16, 4),
-    Format.r32u: (u32, 1),
-    Format.r32i: (i32, 1),
-    Format.r32f: (f32, 1),
-    Format.rg32u: (u32, 2),
-    Format.rg32i: (i32, 2),
-    Format.rg32f: (f32, 2),
-    Format.rgb32u: (u32, 3),
-    Format.rgb32i: (i32, 3),
-    Format.rgb32f: (f32, 3),
-    Format.rgba32u: (u32, 4),
-    Format.rgba32i: (i32, 4),
-    Format.rgba32f: (f32, 4),
-}
-
-
 class Texture:
     """Taichi Texture class.
 
     Args:
-        dtype (DataType): Data type of each value.
-        num_channels (int): Number of channels in texture
+        fmt (ti.Format): Color format of the texture.
         shape (Tuple[int]): Shape of the Texture.
     """
     def __init__(self, fmt, arr_shape):

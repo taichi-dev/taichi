@@ -44,7 +44,7 @@ ti diagnose
 ti changelog
 echo "wanted archs: $TI_WANTED_ARCHS"
 
-if [ "$TI_RUN_RELEASE_TESTS" == "1" -a -z "$TI_LITE_TEST" ]; then
+if [ "$TI_RUN_RELEASE_TESTS" == "1" ]; then
     python3 -m pip install PyYAML
     git clone https://github.com/taichi-dev/taichi-release-tests
     pushd taichi-release-tests
@@ -104,7 +104,7 @@ if [ -z "$GPU_TEST" ]; then
         python3 tests/run_tests.py -vr2 -t4 -k "not paddle" -a "$TI_WANTED_ARCHS"
     fi
 else
-    run-it cuda   6
+    run-it cuda   8
     run-it cpu    $(nproc)
     run-it vulkan 8
     run-it opengl 4

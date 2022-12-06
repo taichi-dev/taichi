@@ -1211,7 +1211,9 @@ def test_vector_transpose():
         foo()
 
 
-@test_utils.test(require=ti.extension.dynamic_index, dynamic_index=True, debug=True)
+@test_utils.test(require=ti.extension.dynamic_index,
+                 dynamic_index=True,
+                 debug=True)
 def test_global_tmp_overwrite():
     # https://github.com/taichi-dev/taichi/issues/6663
     @ti.kernel

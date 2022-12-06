@@ -18,10 +18,10 @@ int Callable::add_ret(const DataType &dt) {
 }
 
 int Callable::add_arr_param(const DataType &dt,
-                             int total_dim,
-                             std::vector<int> element_shape) {
-  parameter_list.emplace_back(dt->get_compute_type(), /*is_array=*/true, /*size=*/0,
-                    total_dim, element_shape);
+                            int total_dim,
+                            std::vector<int> element_shape) {
+  parameter_list.emplace_back(dt->get_compute_type(), /*is_array=*/true,
+                              /*size=*/0, total_dim, element_shape);
   return (int)parameter_list.size() - 1;
 }
 

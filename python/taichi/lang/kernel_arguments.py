@@ -79,7 +79,8 @@ def decl_sparse_matrix(dtype):
 def decl_ndarray_arg(dtype, dim, element_shape, layout):
     dtype = cook_dtype(dtype)
     element_dim = len(element_shape)
-    arg_id = impl.get_runtime().compiling_callable.add_arr_param(dtype, dim, element_shape)
+    arg_id = impl.get_runtime().compiling_callable.add_arr_param(
+        dtype, dim, element_shape)
     if layout == Layout.AOS:
         element_dim = -element_dim
     return AnyArray(

@@ -163,7 +163,8 @@ def _svd3d(A, dt, iters=None):
     """
     assert A.n == 3 and A.m == 3
     if impl.current_cfg().real_matrix:
-        inputs = get_runtime().compiling_callable.ast_builder().expand_expr([A.ptr])
+        inputs = get_runtime().compiling_callable.ast_builder().expand_expr(
+            [A.ptr])
     else:
         inputs = tuple([e.ptr for e in A.entries])
     assert dt in [f32, f64]

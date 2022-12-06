@@ -34,9 +34,9 @@ from taichi.types.primitive_types import (all_types, f16, f32, f64, i32, i64,
 
 @taichi_scope
 def expr_init_local_tensor(shape, element_type, elements):
-    return get_runtime().compiling_callable.ast_builder().expr_alloca_local_tensor(
-        shape, element_type, elements,
-        get_runtime().get_current_src_info())
+    return get_runtime().compiling_callable.ast_builder(
+    ).expr_alloca_local_tensor(shape, element_type, elements,
+                               get_runtime().get_current_src_info())
 
 
 @taichi_scope
@@ -47,14 +47,15 @@ def make_matrix_expr(shape, element_type, elements):
 
 @taichi_scope
 def expr_init_shared_array(shape, element_type):
-    return get_runtime().compiling_callable.ast_builder().expr_alloca_shared_array(
-        shape, element_type)
+    return get_runtime().compiling_callable.ast_builder(
+    ).expr_alloca_shared_array(shape, element_type)
 
 
 @taichi_scope
 def expr_init(rhs):
     if rhs is None:
-        return Expr(get_runtime().compiling_callable.ast_builder().expr_alloca())
+        return Expr(
+            get_runtime().compiling_callable.ast_builder().expr_alloca())
     if isinstance(rhs, Matrix) and (hasattr(rhs, "_DIM")):
         return Matrix(*rhs.to_list(), ndim=rhs.ndim)
     if isinstance(rhs, Matrix):
@@ -337,7 +338,7 @@ class PyTaichi:
         self.compiled_functions = {}
         self.src_info_stack = []
         self.inside_kernel = False
-        self.compiling_callable = None # pointer to instance of lang::Kernel/Function
+        self.compiling_callable = None  # pointer to instance of lang::Kernel/Function
         self.current_kernel = None
         self.global_vars = []
         self.grad_vars = []

@@ -491,8 +491,9 @@ def block_local(*args):
         impl.current_cfg().opt_level = 1
     for a in args:
         for v in a._get_field_members():
-            get_runtime().compiling_callable.ast_builder().insert_snode_access_flag(
-                _ti_core.SNodeAccessFlag.block_local, v.ptr)
+            get_runtime().compiling_callable.ast_builder(
+            ).insert_snode_access_flag(_ti_core.SNodeAccessFlag.block_local,
+                                       v.ptr)
 
 
 def mesh_local(*args):
@@ -525,15 +526,17 @@ def mesh_local(*args):
     """
     for a in args:
         for v in a._get_field_members():
-            get_runtime().compiling_callable.ast_builder().insert_snode_access_flag(
-                _ti_core.SNodeAccessFlag.mesh_local, v.ptr)
+            get_runtime().compiling_callable.ast_builder(
+            ).insert_snode_access_flag(_ti_core.SNodeAccessFlag.mesh_local,
+                                       v.ptr)
 
 
 def cache_read_only(*args):
     for a in args:
         for v in a._get_field_members():
-            get_runtime().compiling_callable.ast_builder().insert_snode_access_flag(
-                _ti_core.SNodeAccessFlag.read_only, v.ptr)
+            get_runtime().compiling_callable.ast_builder(
+            ).insert_snode_access_flag(_ti_core.SNodeAccessFlag.read_only,
+                                       v.ptr)
 
 
 def assume_in_range(val, base, low, high):
@@ -703,8 +706,8 @@ def mesh_patch_idx():
 
     Related to https://github.com/taichi-dev/taichi/issues/3608
     """
-    return impl.get_runtime().compiling_callable.ast_builder().insert_patch_idx_expr(
-    )
+    return impl.get_runtime().compiling_callable.ast_builder(
+    ).insert_patch_idx_expr()
 
 
 def is_arch_supported(arch, use_gles=False):

@@ -203,13 +203,12 @@ void KernelLaunchContext::set_arg_raw(int arg_id, uint64 d) {
 
 // Refactor2023:FIXME: Bad smell. Use template function.
 float64 KernelLaunchContext::get_ret_float(Device *device,
-                                            unsigned retNo) const {
+                                           unsigned retNo) const {
   auto *dt = kernel_->rets[retNo].dt->get_compute_type();
   return fetch_ret<float64>(dt, retNo, device, ctx_);
 }
 
-uint64 KernelLaunchContext::get_ret_raw(Device *device,
-                                           unsigned retNo) const {
+uint64 KernelLaunchContext::get_ret_raw(Device *device, unsigned retNo) const {
   return device->fetch_result_uint64(retNo, ctx_->result_buffer);
 }
 
@@ -219,8 +218,7 @@ int64 KernelLaunchContext::get_ret_int(Device *device, unsigned retNo) const {
   return p;
 }
 
-uint64 KernelLaunchContext::get_ret_uint(Device *device,
-                                          unsigned retNo) const {
+uint64 KernelLaunchContext::get_ret_uint(Device *device, unsigned retNo) const {
   auto *dt = kernel_->rets[retNo].dt->get_compute_type();
   return fetch_ret<uint64>(dt, retNo, device, ctx_);
 }
@@ -278,9 +276,9 @@ RuntimeContext &KernelLaunchContext::get_context() {
 
 template <typename T>
 T KernelLaunchContext::fetch_ret(DataType dt,
-                                  unsigned retNo,
-                                  Device *device,
-                                  RuntimeContext *rt_ctx) {
+                                 unsigned retNo,
+                                 Device *device,
+                                 RuntimeContext *rt_ctx) {
   TI_ASSERT(device);
 
   auto *primative_dt = dt->cast<PrimitiveType>();

@@ -258,7 +258,8 @@ class Func:
                 elif impl.current_cfg().real_matrix and isinstance(
                         args[i], impl.Expr) and args[i].ptr.is_tensor():
                     non_template_args.extend([
-                        Expr(x) for x in impl.get_runtime().compiling_callable.ast_builder().expand_expr([args[i].ptr])
+                        Expr(x) for x in impl.get_runtime().compiling_callable.
+                        ast_builder().expand_expr([args[i].ptr])
                     ])
                 else:
                     non_template_args.append(args[i])
@@ -813,22 +814,34 @@ class Kernel:
             if has_ret:
                 if id(ret_dt) in primitive_types.integer_type_ids:
                     if is_signed(cook_dtype(ret_dt)):
-                        launch_ctx.get_ret_int(impl.get_runtime().prog.get_compute_device(), 0)
-                        ret = launch_ctx.get_ret_int(impl.get_runtime().prog.get_compute_device(), 0)
+                        launch_ctx.get_ret_int(
+                            impl.get_runtime().prog.get_compute_device(), 0)
+                        ret = launch_ctx.get_ret_int(
+                            impl.get_runtime().prog.get_compute_device(), 0)
                     else:
-                        ret = launch_ctx.get_ret_uint(impl.get_runtime().prog.get_compute_device(), 0)
+                        ret = launch_ctx.get_ret_uint(
+                            impl.get_runtime().prog.get_compute_device(), 0)
                 elif id(ret_dt) in primitive_types.real_type_ids:
-                    ret = launch_ctx.get_ret_float(impl.get_runtime().prog.get_compute_device(), 0)
+                    ret = launch_ctx.get_ret_float(
+                        impl.get_runtime().prog.get_compute_device(), 0)
                 elif id(ret_dt.dtype) in primitive_types.integer_type_ids:
                     if is_signed(cook_dtype(ret_dt.dtype)):
-                        it = iter(launch_ctx.get_ret_int_tensor(impl.get_runtime().prog.get_compute_device(), 0))
+                        it = iter(
+                            launch_ctx.get_ret_int_tensor(
+                                impl.get_runtime().prog.get_compute_device(),
+                                0))
                     else:
-                        it = iter(launch_ctx.get_ret_uint_tensor(impl.get_runtime().prog.get_compute_device(), 0))
+                        it = iter(
+                            launch_ctx.get_ret_uint_tensor(
+                                impl.get_runtime().prog.get_compute_device(),
+                                0))
                     ret = Matrix([[next(it) for _ in range(ret_dt.m)]
                                   for _ in range(ret_dt.n)],
                                  ndim=getattr(ret_dt, 'ndim', 2))
                 else:
-                    it = iter(launch_ctx.get_ret_float_tensor(impl.get_runtime().prog.get_compute_device(), 0))
+                    it = iter(
+                        launch_ctx.get_ret_float_tensor(
+                            impl.get_runtime().prog.get_compute_device(), 0))
                     ret = Matrix([[next(it) for _ in range(ret_dt.m)]
                                   for _ in range(ret_dt.n)],
                                  ndim=getattr(ret_dt, 'ndim', 2))

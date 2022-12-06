@@ -110,8 +110,9 @@ class LlvmRuntimeExecutor {
     auto runtime = tlctx->runtime_jit_module;
     runtime->call<void *>("runtime_" + key, llvm_runtime_,
                           std::forward<Args>(args)...);
-    return taichi_union_cast_with_different_sizes<T>(device_->fetch_result_uint64(
-        taichi_result_buffer_runtime_query_id, result_buffer));
+    return taichi_union_cast_with_different_sizes<T>(
+        device_->fetch_result_uint64(taichi_result_buffer_runtime_query_id,
+                                     result_buffer));
   }
 
   /* -------------------------- */

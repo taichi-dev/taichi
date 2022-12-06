@@ -7,7 +7,7 @@ set -ex
 [[ "$IN_DOCKER" == "true" ]] && cd taichi
 
 if [[ $OSTYPE == "linux-"* ]]; then
-  if ["$AMDGPU_TEST"]; then
+  if [ ! -z "$AMDGPU_TEST" ]; then
     sudo ln -s /usr/bin/clang++-10 /usr/bin/clang++
     sudo ln -s /usr/bin/clang-10 /usr/bin/clang
     sudo ln -s /usr/bin/ld.lld-10 /usr/bin/ld.lld

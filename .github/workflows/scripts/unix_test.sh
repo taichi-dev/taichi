@@ -14,7 +14,7 @@ setup_python
 
 [[ "$IN_DOCKER" == "true" ]] && cd taichi
 
-if ["$AMDGPU_TEST"]; then
+if [ ! -z "$AMDGPU_TEST" ]; then
     sudo chmod 666 /dev/kfd
     sudo chmod 666 /dev/dri/*
 fi
@@ -108,7 +108,7 @@ if [ -z "$GPU_TEST" ]; then
         fi
         python3 tests/run_tests.py -vr2 -t4 -k "not paddle" -a "$TI_WANTED_ARCHS"
     fi
-elif ["$AMDGPU_TEST"]; then
+elif [ ! -z "$AMDGPU_TEST" ]; then
     run-it cpu    $(nproc)
     # run-it amdgpu 4
 else

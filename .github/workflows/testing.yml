@@ -277,7 +277,6 @@ jobs:
         tags:
           - [self-hosted, amdgpu]
 
-    runs-on: ${{ matrix.tags }}
     steps:
       - uses: actions/checkout@v3
         with:
@@ -318,7 +317,7 @@ jobs:
              /home/dev/taichi/.github/workflows/scripts/unix_test.sh
         env:
           PY: py38
-          TI_WANTED_ARCHS: 'cc,cpu,amdgpu'
+          TI_WANTED_ARCHS: 'cpu,amdgpu'
           TI_DEVICE_MEMORY_GB: '1'
           TI_RUN_RELEASE_TESTS: '0'
 

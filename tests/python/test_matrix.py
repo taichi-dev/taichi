@@ -1210,3 +1210,19 @@ def test_unsupported_logical_operations():
     with pytest.raises(TaichiTypeError,
                        match=r"unsupported operand type\(s\) for "):
         test()
+
+
+@test_utils.test()
+def test_vector_transpose():
+    @ti.kernel
+    def foo():
+        x = ti.Vector([1, 2])
+        y = ti.Vector([3, 4])
+        z = x @ y.transpose()
+
+    with pytest.raises(
+            TaichiCompilationError,
+            match=
+            r"`transpose\(\)` cannot apply to a vector. If you want something like `a @ b.transpose\(\)`, write `a.outer_product\(b\)` instead."
+    ):
+        foo()

@@ -47,7 +47,7 @@ RUN apt-get update && \
 # Install LLVM 15
 WORKDIR /
 # Make sure this URL gets updated each time there is a new prebuilt bin release
-RUN wget https://github.com/GaleSeLee/assets/releases/download/v0.0.1/taichi-llvm-15.0.0-linux.zip
+RUN wget https://github.com/GaleSeLee/assets/releases/download/v0.0.2/taichi-llvm-15.0.0-linux.zip
 RUN unzip taichi-llvm-15.0.0-linux.zip && \
     rm taichi-llvm-15.0.0-linux.zip
 ENV PATH="/taichi-llvm-15.0.0-linux/bin:$PATH"
@@ -57,9 +57,7 @@ ENV CXX="clang++-10"
 
 # Create non-root user for running the container
 RUN useradd -m -s /bin/bash dev && \
-    usermod -a -G video dev && \
-    chmod 666 /dev/kfd && \
-    chmod 666 /dev/dri/*
+    usermod -a -G video dev
 WORKDIR /home/dev
 USER dev
 

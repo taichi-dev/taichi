@@ -243,17 +243,17 @@ def compute_A(A: ti.types.sparse_matrix_builder()):
 
 
 @ti.kernel
-def flatten(fb: ti.types.ndarray(), F_b: ti.template()):
+def flatten(dest: ti.types.ndarray(), src: ti.template()):
     for i in range(n_verts):
         for j in range(3):
-            fb[3 * i + j] = F_b[i][j]
+            dest[3 * i + j] = src[i][j]
 
 
 @ti.kernel
-def aggragate(F_v: ti.template(), fv: ti.types.ndarray()):
+def aggragate(dest: ti.template(), src: ti.types.ndarray()):
     for i in range(n_verts):
         for j in range(3):
-            F_v[i][j] = fv[3 * i + j]
+            dest[i][j] = src[3 * i + j]
 
 
 def direct():

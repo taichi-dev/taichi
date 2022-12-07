@@ -115,7 +115,7 @@ struct one_or_more {
   one_or_more(one_or_more &&value) : var(std::move(value.var)) {
   }
 
-  one_or_more &one_or_more::operator=(one_or_more &&) = default;
+  one_or_more &operator=(one_or_more &&) = default;
 
   value_type *begin() {
     if (value_type *s = std::get_if<value_type>(&var)) {

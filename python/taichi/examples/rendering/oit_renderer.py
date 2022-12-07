@@ -2,7 +2,7 @@ import taichi as ti
 
 from taichi.math import vec3, vec4, mix, clamp
 
-ti.init(arch=ti.gpu)
+ti.init(arch=ti.cuda)
 res = (1000, 1000)
 color_buffer = ti.Vector.field(3, dtype=ti.f32, shape=res)
 

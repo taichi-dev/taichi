@@ -1217,7 +1217,7 @@ def test_vector_transpose():
 def test_global_tmp_overwrite():
     # https://github.com/taichi-dev/taichi/issues/6663
     @ti.kernel
-    def foo():
+    def foo() -> ti.i32:
         p = ti.Matrix([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
         loop = 1
         sig = ti.Vector([0, 0, 0, 0])
@@ -1228,6 +1228,6 @@ def test_global_tmp_overwrite():
             p[0, 0] = -1
         for i in range(1):
             sig[i] = 2
-        print(sig, p)
+        return sig.sum() + p.sum()
 
-    foo()
+    assert foo() == 4

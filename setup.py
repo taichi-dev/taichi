@@ -128,7 +128,7 @@ def get_cmake_args():
         if use_msbuild:
             build_options.extend(['-G', 'Visual Studio 17 2022'])
         else:
-            build_options.extend(['-G', 'Ninja', '--skip-generator-test'])
+            build_options.extend(['-G', 'Ninja'])
     sys.argv[2:2] = build_options
 
     cmake_args += [

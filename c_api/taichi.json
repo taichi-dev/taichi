@@ -96,7 +96,8 @@
                         "argument_not_found": -7,
                         "invalid_interop": -8,
                         "invalid_state": -9,
-                        "incompatible_module": -10
+                        "incompatible_module": -10,
+                        "out_of_memory": -11
                     }
                 },
                 {

@@ -684,13 +684,6 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
       VulkanResourceBinder::Set &set);
   vkapi::IVkDescriptorSet alloc_desc_set(vkapi::IVkDescriptorSetLayout layout);
 
-  inline void set_current_caps(DeviceCapabilityConfig &&caps) {
-    caps_ = std::move(caps);
-  }
-  const DeviceCapabilityConfig &get_current_caps() const override {
-    return caps_;
-  }
-
   constexpr VulkanCapabilities &vk_caps() {
     return vk_caps_;
   }
@@ -704,7 +697,6 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
   void create_vma_allocator();
   void new_descriptor_pool();
 
-  DeviceCapabilityConfig caps_;
   VulkanCapabilities vk_caps_;
 
   VkInstance instance_;

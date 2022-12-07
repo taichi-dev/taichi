@@ -21,29 +21,13 @@ struct DeviceCapabilityConfig {
  public:
   std::map<DeviceCapability, uint32_t> devcaps;
 
-  inline uint32_t contains(DeviceCapability cap) const {
-    auto it = devcaps.find(cap);
-    return it != devcaps.end();
-  }
-  inline uint32_t get(DeviceCapability cap) const {
-    auto it = devcaps.find(cap);
-    if (it != devcaps.end()) {
-      return it->second;
-    }
-    return 0;
-  }
-  inline void set(DeviceCapability cap, uint32_t level) {
-    devcaps[cap] = level;
-  }
-  inline void dbg_print_all() const {
-    for (auto &pair : devcaps) {
-      TI_TRACE("DeviceCapability::{} ({}) = {}", to_string(pair.first),
-               int(pair.first), pair.second);
-    }
-  }
-  inline const std::map<DeviceCapability, uint32_t> &to_inner() const {
-    return devcaps;
-  }
+  uint32_t contains(DeviceCapability cap) const;
+  uint32_t get(DeviceCapability cap) const;
+  void set(DeviceCapability cap, uint32_t level);
+
+  void dbg_print_all() const;
+
+  const std::map<DeviceCapability, uint32_t> &to_inner() const;
 
   TI_IO_DEF(devcaps);
 };

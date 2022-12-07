@@ -31,7 +31,7 @@ ti.root.dense(ti.ij, res).dynamic(ti.k, 2048,
 @ti.func
 def gooch_lighting(normal: ti.template()):
     light = normalize(vec3(-1, 2, 1))
-    warmth = normalize(normal) * light * 0.5 + 0.5
+    warmth = normal * light * 0.5 + 0.5
     return mix(vec3(0, 0.25, 0.75), vec3(1, 1, 1), warmth)
 
 
@@ -70,7 +70,7 @@ def intersect_sphere(light: ti.template(), sphere: ti.template()):
             if t1 > 0:
                 hit_pos1 = light.pos + light.dir * t1
                 dist1 = t1
-                normal1 = normalize((hit_pos1 - sphere.center)
+                normal1 = normalize(hit_pos1 - sphere.center)
             t2 = tp + tt
             if t2 > 0:
                 hit_pos2 = light.pos + light.dir * t2

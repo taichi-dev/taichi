@@ -29,7 +29,7 @@ namespace irpass {
 
 void re_id(IRNode *root);
 void flag_access(IRNode *root);
-void scalarize(IRNode *root);
+void scalarize(IRNode *root, bool dynamic_index);
 void lower_matrix_ptr(IRNode *root);
 bool die(IRNode *root);
 bool simplify(IRNode *root, const CompileConfig &config);

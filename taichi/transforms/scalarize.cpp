@@ -612,11 +612,10 @@ class ScalarizePointers : public BasicStmtVisitor {
 };
 
 namespace irpass {
-
-void scalarize(IRNode *root) {
+void scalarize(IRNode *root, bool dynamic_index) {
   TI_AUTO_PROF;
   Scalarize scalarize_pass(root);
-  if (!root->get_kernel()->program->this_thread_config().dynamic_index) {
+  if (!dynamic_index) {
     ScalarizePointers scalarize_pointers_pass(root);
   }
 }

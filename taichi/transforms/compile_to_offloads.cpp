@@ -61,7 +61,7 @@ void compile_to_offloads(IRNode *ir,
   }
 
   if (config.real_matrix && config.real_matrix_scalarize) {
-    irpass::scalarize(ir);
+    irpass::scalarize(ir, config.dynamic_index);
 
     // Remove redundant MatrixInitStmt inserted during scalarization
     irpass::die(ir);

@@ -556,6 +556,13 @@ DeviceAllocation GLDevice::allocate_memory(const AllocParams &params) {
   }
   check_opengl_error("glBufferData");
 
+  if(alloc_res==GL_OUT_OF_MEMORY)
+  {
+    throw std::bad_alloc();
+  }
+  check_opengl_error("glBufferData");
+  
+  
   DeviceAllocation alloc;
   alloc.device = this;
   alloc.alloc_id = buffer;

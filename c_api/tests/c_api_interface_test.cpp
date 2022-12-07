@@ -7,8 +7,7 @@ TEST_F(CapiTest, DryRunAvailableArchs) {
   std::vector<TiArch> archs = ti::get_available_archs();
 }
 
-TEST_F(CapiTest, DryRunRuntime) {
-  {
+TEST_F(CapiTest, DryRunRuntime) {{         
     // CPU Runtime
     TiArch arch = TiArch::TI_ARCH_X64;
     ti::Runtime runtime(arch);
@@ -38,7 +37,7 @@ TEST_F(CapiTest, DryRunRuntime) {
 }
 
 TEST_F(CapiTest, DryRunCapabilities) {
-  if (ti::is_arch_available(TI_ARCH_VULKAN)) {
+  if (ti::is_arch_available(TI_ARCH_VULKAN)) {     
     // Vulkan Runtime
     {
       ti::Runtime runtime(TI_ARCH_VULKAN);
@@ -95,7 +94,7 @@ TEST_F(CapiTest, SetCapabilities) {
   }
 }
 
-TEST_F(CapiTest, DryRunMemoryAllocation) {
+TEST_F(CapiTest, DryRunMemoryAllocation) {            
   {
     // CPU Runtime
     TiArch arch = TiArch::TI_ARCH_X64;
@@ -106,7 +105,7 @@ TEST_F(CapiTest, DryRunMemoryAllocation) {
 
   if (ti::is_arch_available(TI_ARCH_VULKAN)) {
     // Vulkan Runtime
-    TiArch arch = TiArch::TI_ARCH_VULKAN;
+    TiArch arch = TiArch::TI_ARCH_VULKAN;             
     ti::Runtime runtime(arch);
     ti::Memory memory = runtime.allocate_memory(100);
     ti::NdArray<uint8_t> ndarray = runtime.allocate_ndarray<uint8_t>({100}, {});
@@ -114,7 +113,7 @@ TEST_F(CapiTest, DryRunMemoryAllocation) {
 
   if (ti::is_arch_available(TI_ARCH_OPENGL)) {
     // Opengl Runtime
-    TiArch arch = TiArch::TI_ARCH_OPENGL;
+    TiArch arch = TiArch::TI_ARCH_OPENGL;              
     ti::Runtime runtime(arch);
     ti::Memory memory = runtime.allocate_memory(100);
     ti::NdArray<uint8_t> ndarray = runtime.allocate_ndarray<uint8_t>({100}, {});

@@ -38,6 +38,7 @@
 
 #endif
 
+#include "taichi/jit/jit_module.h"
 #include "taichi/util/lang_util.h"
 #include "taichi/program/program.h"
 #include "taichi/jit/jit_session.h"

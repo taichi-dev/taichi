@@ -1,11 +1,14 @@
 #pragma once
+
 #include <string>
 #include <vector>
-#include "taichi/util/lang_util.h"
 
-#include "taichi/jit/jit_module.h"
-#include "taichi/program/compile_config.h"
+#include "taichi/common/core.h"
+#include "taichi/common/logging.h"
+#include "taichi/common/serialization.h"
+
 #include "taichi/rhi/device_capability.h"
+#include "taichi/rhi/arch.h"
 
 namespace taichi::lang {
 
@@ -179,10 +182,6 @@ enum class BufferFormat : uint32_t {
 #include "taichi/inc/rhi_constants.inc.h"
 #undef PER_BUFFER_FORMAT
 };
-
-std::pair<DataType, uint32_t> buffer_format2type_channels(BufferFormat format);
-BufferFormat type_channels2buffer_format(const DataType &type,
-                                         uint32_t num_channels);
 
 class Pipeline {
  public:

@@ -7,7 +7,8 @@ color_buffer = ti.Vector.field(3, dtype=ti.f32, shape=res)
 
 eps = 1e-4
 inf = 1e10
-fov = 0.6
+fov = 0.5
+aspect_ratio = res[0] / res[1]
 
 alpha_min = 0.2
 alpha_width = 0.5
@@ -125,16 +126,14 @@ def render():
     for i in range(256):
         spheres.append(
             Sphere(
-                vec3(ti.random() * 4 - 2,
-                     ti.random() * 4 - 2,
+                vec3(ti.random() * 3 - 1.5,
+                     ti.random() * 3 - 1.5,
                      ti.random() * 3 - 1.5),
-                ti.random() * 0.3 + 0.1,
+                ti.random() * 0.2 + 0.1,
                 (ti.random(), ti.random(), ti.random(),
                  ti.random() * 0.3 + 0.2)))
 
     for u, v in color_buffer:
-        aspect_ratio = res[0] / res[1]
-        pos = camera_pos
         ray_dir = ti.Vector([
             (2 * fov * u / res[1] - fov * aspect_ratio - 1e-5),
             (2 * fov * v / res[1] - fov - 1e-5),

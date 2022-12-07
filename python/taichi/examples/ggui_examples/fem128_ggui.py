@@ -1,7 +1,7 @@
 import taichi as ti
 
 arch = ti.vulkan if ti._lib.core.with_vulkan() else ti.cuda
-ti.init(arch=arch)
+ti.init(arch=arch, real_matrix=True, real_matrix_scalarize=True)
 
 N = 12
 dt = 5e-5

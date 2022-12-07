@@ -23,7 +23,6 @@
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/program/snode_rw_accessors_bank.h"
 #include "taichi/program/context.h"
-#include "taichi/runtime/runtime.h"
 #include "taichi/struct/snode_tree.h"
 #include "taichi/system/memory_pool.h"
 #include "taichi/system/threading.h"

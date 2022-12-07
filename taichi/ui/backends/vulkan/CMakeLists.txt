@@ -1,26 +1,26 @@
 # ./taichi/ui/backends/vulkan/CMakeLists.txt
 
-add_library(taichi_ui_vulkan OBJECT)
+add_library(taichi_ui_vulkan)
 target_sources(taichi_ui_vulkan
   PRIVATE
-    app_context.cpp
-    canvas.cpp
-    gui.cpp
-    renderable.cpp
-    renderer.cpp
-    swap_chain.cpp
-    vertex.cpp
-    renderables/circles.cpp
-    renderables/lines.cpp
-    renderables/mesh.cpp
-    renderables/particles.cpp
-    renderables/scene_lines.cpp
-    renderables/set_image.cpp
-    renderables/triangles.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/app_context.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/canvas.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderable.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/swap_chain.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/vertex.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderables/circles.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderables/lines.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderables/mesh.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderables/particles.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderables/scene_lines.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderables/set_image.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderables/triangles.cpp
   )
 
 if(NOT ANDROID)
-  target_sources(taichi_ui_vulkan PRIVATE window.cpp)
+  target_sources(taichi_ui_vulkan PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/window.cpp)
 endif()
 
 target_include_directories(taichi_ui_vulkan

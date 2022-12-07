@@ -4,16 +4,54 @@ set(TAICHI_EXPORT_CORE_NAME taichi_export_core)
 
 message(WARNING "You are trying to build the taichi_export_core target, support for this target will be deprecated in the future, please considering using the taichi_c_api target.")
 
+get_target_property(TAICHI_CORE_SOURCES taichi_core SOURCES)
+get_target_property(TAICHI_CORE_LINK_LIBRARIES taichi_core LINK_LIBRARIES)
+get_target_property(TAICHI_CORE_INCLUDE_DIRECTORIES taichi_core INCLUDE_DIRECTORIES)
+get_target_property(TAICHI_CORE_LINK_OPTIONS taichi_core LINK_OPTIONS)
+
+add_library(taichi_core_object OBJECT "${TAICHI_CORE_SOURCES}")
+
+set_target_properties(taichi_core_object PROPERTIES
+                      LINK_LIBRARIES "${TAICHI_CORE_LINK_LIBRARIES}"
+                      LINK_OPTIONS "${TAICHI_CORE_LINK_OPTIONS}"
+                      INCLUDE_DIRECTORIES "${TAICHI_CORE_INCLUDE_DIRECTORIES}")
+
+
 add_library(${TAICHI_EXPORT_CORE_NAME} SHARED)
-target_link_libraries(${TAICHI_EXPORT_CORE_NAME} PRIVATE taichi_core)
 set_target_properties(${TAICHI_EXPORT_CORE_NAME} PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build"
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")
 
+target_link_libraries(${TAICHI_EXPORT_CORE_NAME} PRIVATE taichi_core_object)
+
 # [TODO] Remove the following two linkages after rewriting AOT Demos with Device APIS
 if(TI_WITH_GGUI)
-    target_link_libraries(${TAICHI_EXPORT_CORE_NAME} PRIVATE taichi_ui_vulkan)
-    target_link_libraries(${TAICHI_EXPORT_CORE_NAME} PRIVATE taichi_ui)
+    get_target_property(TAICHI_UI_VULKAN_SOURCES taichi_ui_vulkan SOURCES)
+    get_target_property(TAICHI_UI_VULKAN_LINK_LIBRARIES taichi_ui_vulkan LINK_LIBRARIES)
+    get_target_property(TAICHI_UI_VULKAN_INCLUDE_DIRECTORIES taichi_ui_vulkan INCLUDE_DIRECTORIES)
+    get_target_property(TAICHI_UI_VULKAN_LINK_OPTIONS taichi_ui_vulkan LINK_OPTIONS)
+
+    add_library(taichi_ui_vulkan_object OBJECT "${TAICHI_UI_VULKAN_SOURCES}")
+    set_target_properties(taichi_ui_vulkan_object PROPERTIES
+                          LINK_LIBRARIES "${TAICHI_UI_VULKAN_LINK_LIBRARIES}"
+                          LINK_OPTIONS "${TAICHI_UI_VULKAN_LINK_OPTIONS}"
+                          INCLUDE_DIRECTORIES "${TAICHI_UI_VULKAN_INCLUDE_DIRECTORIES}")
+
+    # --------------------------------------------------------
+
+    get_target_property(TAICHI_UI_SOURCES taichi_ui SOURCES)
+    get_target_property(TAICHI_UI_LINK_LIBRARIES taichi_ui LINK_LIBRARIES)
+    get_target_property(TAICHI_UI_INCLUDE_DIRECTORIES taichi_ui INCLUDE_DIRECTORIES)
+    get_target_property(TAICHI_UI_LINK_OPTIONS taichi_ui LINK_OPTIONS)
+
+    add_library(taichi_ui_object OBJECT "${TAICHI_UI_SOURCES}")
+    set_target_properties(taichi_ui_object PROPERTIES
+                          LINK_LIBRARIES "${TAICHI_UI_LINK_LIBRARIES}"
+                          LINK_OPTIONS "${TAICHI_UI_LINK_OPTIONS}"
+                          INCLUDE_DIRECTORIES "${TAICHI_UI_INCLUDE_DIRECTORIES}")
+
+    target_link_libraries(${TAICHI_EXPORT_CORE_NAME} PRIVATE taichi_ui_vulkan_object)
+    target_link_libraries(${TAICHI_EXPORT_CORE_NAME} PRIVATE taichi_ui_object)
 endif()
 
 target_include_directories(${TAICHI_EXPORT_CORE_NAME}

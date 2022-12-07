@@ -1,15 +1,15 @@
 # ./taichi/ui/CMakeLists.txt
 
-add_library(taichi_ui OBJECT
-    gui/gui.cpp
-    gui/android.cpp
-    gui/cocoa.cpp
-    gui/win32.cpp
-    gui/x11.cpp
+add_library(taichi_ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/gui.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/android.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/cocoa.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/win32.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gui/x11.cpp
   )
 
 if(TI_WITH_GGUI AND NOT ANDROID)
-  target_sources(taichi_ui PRIVATE common/window_base.cpp)
+  target_sources(taichi_ui PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/common/window_base.cpp)
 endif()
 
 target_include_directories(taichi_ui

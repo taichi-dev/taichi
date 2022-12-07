@@ -1,5 +1,5 @@
 import taichi as ti
-from taichi.math import clamp, mix, vec3, vec4, normalize
+from taichi.math import clamp, mix, normalize, vec3, vec4
 
 ti.init(arch=ti.cuda)
 res = (1000, 1000)
@@ -138,10 +138,8 @@ def render():
                  ti.random() * 0.3 + 0.2)))
 
     for u, v in color_buffer:
-        ray_dir = vec3(
-            (2 * (u + 0.5) / res[0] - 1) * aspect_ratio,
-            (2 * (v + 0.5) / res[1] - 1),
-            -1.0 / fov)
+        ray_dir = vec3((2 * (u + 0.5) / res[0] - 1) * aspect_ratio,
+                       (2 * (v + 0.5) / res[1] - 1), -1.0 / fov)
         ray_dir = normalize(ray_dir)
         get_intersections(u, v, Light(pos=camera_pos, dir=ray_dir))
         color = get_color(u, v)

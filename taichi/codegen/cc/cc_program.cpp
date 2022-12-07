@@ -16,7 +16,7 @@ CCProgramImpl::CCProgramImpl(CompileConfig &config) : ProgramImpl(config) {
 }
 
 FunctionType CCProgramImpl::compile(Kernel *kernel) {
-  CCKernelGen codegen(kernel, this);
+  CCKernelGen codegen(*config, kernel, this);
   auto ker = codegen.compile();
   auto ker_ptr = ker.get();
   this->add_kernel(std::move(ker));

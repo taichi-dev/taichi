@@ -18,6 +18,15 @@ namespace {
 std::string get_node_ptr_name(SNode *snode) {
   return fmt::format("struct Ti_{} *", snode->get_node_type_name_hinted());
 }
+
+static void lower_ast(const CompileConfig &config, Kernel *kernel) {
+  auto ir = kernel->ir.get();
+  irpass::compile_to_executable(ir, config, kernel,
+                                /*autodiff_mode=*/kernel->autodiff_mode,
+                                /*ad_use_stack=*/true, config.print_ir,
+                                /*lower_global_access*/ true);
+}
+
 }  // namespace
 
 class CCTransformer : public IRVisitor {
@@ -38,20 +47,9 @@ class CCTransformer : public IRVisitor {
   }
 
   void run() {
-    this->lower_ast();
     emit_header("void Tk_{}(struct Ti_Context *ti_ctx) {{", kernel_->name);
     kernel_->ir->accept(this);
     emit("}}");
-  }
-
-  void lower_ast() {
-    auto ir = kernel_->ir.get();
-    auto config = kernel_->program->this_thread_config();
-    config.demote_dense_struct_fors = true;
-    irpass::compile_to_executable(ir, config, kernel_,
-                                  /*autodiff_mode=*/kernel_->autodiff_mode,
-                                  /*ad_use_stack=*/true, config.print_ir,
-                                  /*lower_global_access*/ true);
   }
 
   std::string get_source() {
@@ -593,6 +591,7 @@ class CCTransformer : public IRVisitor {
 };  // namespace cccp
 
 std::unique_ptr<CCKernel> CCKernelGen::compile() {
+  lower_ast(compile_config_, kernel_);
   auto layout = cc_program_impl_->get_layout();
   CCTransformer tran(kernel_, layout);
 

@@ -133,7 +133,7 @@ struct one_or_more {
         return s;
       }
     } else {
-      auto *vec = std::get_if<std::vector<value_type>>(&var);
+      auto *vec = std::get_if<Container>(&var);
       return vec->data() + vec->size();
     }
   }
@@ -146,7 +146,7 @@ struct one_or_more {
         return 0;
       }
     } else {
-      return std::get_if<std::vector<value_type>>(&var)->size();
+      return std::get_if<Container>(&var)->size();
     }
   }
 
@@ -158,7 +158,7 @@ struct one_or_more {
         return true;
       }
     } else {
-      return std::get_if<std::vector<value_type>>(&var)->empty();
+      return std::get_if<Container>(&var)->empty();
     }
   }
 };

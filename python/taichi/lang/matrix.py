@@ -496,9 +496,6 @@ class Matrix(TaichiOperations):
             self._impl = _TiScopeMatrixImpl(m, n, entries, local_tensor_proxy,
                                             None)
 
-    def make_matrix(self):
-        return make_matrix(self._impl.entries)
-
     def get_shape(self):
         if self.ndim == 1:
             return (self.n, )
@@ -668,6 +665,9 @@ class Matrix(TaichiOperations):
             return self._impl.subscript_scope_ignored(indices)
         is_global_mat = isinstance(self, _MatrixFieldElement)
         return self._impl._subscript(is_global_mat, *indices)
+
+    def _make_matrix(self):
+        return make_matrix(self._impl.entries)
 
     def to_list(self):
         """Return this matrix as a 1D `list`.

@@ -174,7 +174,7 @@ void ti_get_available_archs(uint32_t *arch_count, TiArch *archs) {
   }
 
   size_t n = std::min((size_t)*arch_count, AVAILABLE_ARCHS.size());
-  *arch_count = (uint32_t)n;
+  *arch_count = (uint32_t)AVAILABLE_ARCHS.size();
   if (archs != nullptr) {
     for (size_t i = 0; i < n; ++i) {
       archs[i] = AVAILABLE_ARCHS.at(i);

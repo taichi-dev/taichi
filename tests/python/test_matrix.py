@@ -1209,3 +1209,25 @@ def test_vector_transpose():
             r"`transpose\(\)` cannot apply to a vector. If you want something like `a @ b.transpose\(\)`, write `a.outer_product\(b\)` instead."
     ):
         foo()
+
+
+@test_utils.test(require=ti.extension.dynamic_index,
+                 dynamic_index=True,
+                 debug=True)
+def test_global_tmp_overwrite():
+    # https://github.com/taichi-dev/taichi/issues/6663
+    @ti.kernel
+    def foo() -> ti.i32:
+        p = ti.Matrix([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
+        loop = 1
+        sig = ti.Vector([0, 0, 0, 0])
+        assert p[0, 0] == 1
+        while loop == 1:
+            assert p[0, 0] == 1
+            loop = 0
+            p[0, 0] = -1
+        for i in range(1):
+            sig[i] = 2
+        return sig.sum() + p.sum()
+
+    assert foo() == 4

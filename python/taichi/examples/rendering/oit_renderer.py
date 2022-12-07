@@ -1,6 +1,5 @@
 import taichi as ti
-
-from taichi.math import vec3, vec4, mix, clamp
+from taichi.math import clamp, mix, vec3, vec4
 
 ti.init(arch=ti.gpu)
 res = (1000, 1000)
@@ -24,7 +23,8 @@ background_color = vec4(0.2, 0.2, 0.2, 1)
 spheres = Sphere.field()
 ti.root.dynamic(ti.j, 1024, chunk_size=64).place(spheres)
 colors_in_pixel = ColorWithDepth.field()
-ti.root.dense(ti.ij, res).dynamic(ti.k, 2048, chunk_size=64).place(colors_in_pixel)
+ti.root.dense(ti.ij, res).dynamic(ti.k, 2048,
+                                  chunk_size=64).place(colors_in_pixel)
 
 
 @ti.func
@@ -85,9 +85,11 @@ def get_intersections(u, v, light: ti.template()):
     for i in range(spheres.length()):
         hit1, hit2 = intersect_sphere(light, spheres[i])
         if hit1.depth < inf:
-            colors_in_pixel[u, v].append(ColorWithDepth(color=shading(hit1), depth=hit1.depth))
+            colors_in_pixel[u, v].append(
+                ColorWithDepth(color=shading(hit1), depth=hit1.depth))
         if hit2.depth < inf:
-            colors_in_pixel[u, v].append(ColorWithDepth(color=shading(hit2), depth=hit2.depth))
+            colors_in_pixel[u, v].append(
+                ColorWithDepth(color=shading(hit2), depth=hit2.depth))
 
 
 @ti.func
@@ -95,7 +97,8 @@ def bubble_sort(u, v):
     l = colors_in_pixel[u, v].length()
     for i in range(l - 1):
         for j in range(l - 1 - i):
-            if colors_in_pixel[u, v, j].depth > colors_in_pixel[u, v, j + 1].depth:
+            if colors_in_pixel[u, v, j].depth > colors_in_pixel[u, v,
+                                                                j + 1].depth:
                 tmp = colors_in_pixel[u, v, j]
                 colors_in_pixel[u, v, j] = colors_in_pixel[u, v, j + 1]
                 colors_in_pixel[u, v, j + 1] = tmp
@@ -121,8 +124,13 @@ def get_color(u, v):
 def render():
     for i in range(256):
         spheres.append(
-            Sphere(vec3(ti.random() * 4 - 2, ti.random() * 4 - 2, ti.random() * 3 - 1.5), ti.random() * 0.3 + 0.1,
-                   (ti.random(), ti.random(), ti.random(), ti.random() * 0.3 + 0.2)))
+            Sphere(
+                vec3(ti.random() * 4 - 2,
+                     ti.random() * 4 - 2,
+                     ti.random() * 3 - 1.5),
+                ti.random() * 0.3 + 0.1,
+                (ti.random(), ti.random(), ti.random(),
+                 ti.random() * 0.3 + 0.2)))
 
     for u, v in color_buffer:
         aspect_ratio = res[0] / res[1]

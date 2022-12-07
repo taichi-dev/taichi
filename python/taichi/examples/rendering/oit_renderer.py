@@ -135,7 +135,7 @@ def render():
                      ti.random() * 3 - 1.5),
                 ti.random() * 0.2 + 0.1,
                 (ti.random(), ti.random(), ti.random(),
-                 ti.random() * 0.3 + 0.2)))
+                 ti.random())))
 
     for u, v in color_buffer:
         ray_dir = vec3(

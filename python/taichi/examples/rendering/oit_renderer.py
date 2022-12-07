@@ -134,8 +134,7 @@ def render():
                      ti.random() * 3 - 1.5,
                      ti.random() * 3 - 1.5),
                 ti.random() * 0.2 + 0.1,
-                (ti.random(), ti.random(), ti.random(),
-                 ti.random())))
+                (ti.random(), ti.random(), ti.random(), ti.random())))
 
     for u, v in color_buffer:
         ray_dir = vec3((2 * (u + 0.5) / res[0] - 1) * aspect_ratio,

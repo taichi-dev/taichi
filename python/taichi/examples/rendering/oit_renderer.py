@@ -11,7 +11,7 @@ fov = 0.5
 aspect_ratio = res[0] / res[1]
 
 alpha_min = 0.2
-alpha_width = 0.5
+alpha_width = 0.3
 camera_pos = vec3(0, 0, 5)
 
 Hit = ti.types.struct(pos=vec3, normal=vec3, color=vec4, depth=float)

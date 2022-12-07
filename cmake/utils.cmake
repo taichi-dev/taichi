@@ -1,10 +1,5 @@
 function(configure_target_linker TARGET_NAME USE_MOLD)
 
-message("!!!!!!!!!")
-message("${USE_MOLD}")
-message("${TARGET_NAME}")
-message("!!!!!!!!!")
-
 if (${USE_MOLD})
     target_link_options(${TARGET_NAME} PRIVATE -Wl,-fuse-ld=mold)
 elseif(WIN32 OR LINUX)

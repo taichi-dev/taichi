@@ -52,7 +52,6 @@ std::unique_ptr<IRNode> IRNode::clone() {
   else {
     TI_NOT_IMPLEMENTED
   }
-  new_irnode->kernel = kernel;
   return new_irnode;
 }
 

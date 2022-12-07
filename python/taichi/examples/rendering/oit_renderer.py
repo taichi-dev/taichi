@@ -120,6 +120,8 @@ def get_color(u, v):
     blend(color, background_color)
     return color
 
+stratify_res = 5
+inv_stratify = 1.0 / stratify_res
 
 @ti.kernel
 def render():
@@ -135,9 +137,9 @@ def render():
 
     for u, v in color_buffer:
         ray_dir = ti.Vector([
-            (2 * fov * u / res[1] - fov * aspect_ratio - 1e-5),
-            (2 * fov * v / res[1] - fov - 1e-5),
-            -1.0,
+            (2 * (u + 0.5) / res[0] - 1) * aspect_ratio,
+            (2 * (v + 0.5) / res[1] - 1),
+            -1.0 / fov,
         ])
         ray_dir = ray_dir.normalized()
         get_intersections(u, v, Light(pos=camera_pos, dir=ray_dir))

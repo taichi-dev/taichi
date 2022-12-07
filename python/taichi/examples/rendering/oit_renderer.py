@@ -1,5 +1,5 @@
 import taichi as ti
-from taichi.math import clamp, mix, vec3, vec4
+from taichi.math import clamp, mix, vec3, vec4, normalize
 
 ti.init(arch=ti.cuda)
 res = (1000, 1000)
@@ -30,8 +30,8 @@ ti.root.dense(ti.ij, res).dynamic(ti.k, 2048,
 
 @ti.func
 def gooch_lighting(normal: ti.template()):
-    light = vec3(-1, 2, 1).normalized()
-    warmth = normal.normalized() * light * 0.5 + 0.5
+    light = normalize(vec3(-1, 2, 1))
+    warmth = normalize(normal) * light * 0.5 + 0.5
     return mix(vec3(0, 0.25, 0.75), vec3(1, 1, 1), warmth)
 
 
@@ -70,12 +70,12 @@ def intersect_sphere(light: ti.template(), sphere: ti.template()):
             if t1 > 0:
                 hit_pos1 = light.pos + light.dir * t1
                 dist1 = t1
-                normal1 = (hit_pos1 - sphere.center).normalized()
+                normal1 = normalize((hit_pos1 - sphere.center)
             t2 = tp + tt
             if t2 > 0:
                 hit_pos2 = light.pos + light.dir * t2
                 dist2 = t2
-                normal2 = (hit_pos2 - sphere.center).normalized()
+                normal2 = normalize(hit_pos2 - sphere.center)
     return Hit(pos=hit_pos1, normal=normal1, color=sphere.color, depth=dist1), \
            Hit(pos=hit_pos2, normal=normal2, color=sphere.color, depth=dist2)
 
@@ -143,7 +143,7 @@ def render():
             (2 * (v + 0.5) / res[1] - 1),
             -1.0 / fov,
         ])
-        ray_dir = ray_dir.normalized()
+        ray_dir = normalize(ray_dir)
         get_intersections(u, v, Light(pos=camera_pos, dir=ray_dir))
         color = get_color(u, v)
         color_buffer[u, v] = ti.pow(color.rgb * color.a, 1 / 2.2)

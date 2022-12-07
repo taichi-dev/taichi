@@ -251,7 +251,7 @@ void offload_to_executable(IRNode *ir,
   irpass::analysis::verify(ir);
 
   if (is_extension_supported(config.arch, Extension::quant) &&
-      ir->get_config().quant_opt_atomic_demotion) {
+      config.quant_opt_atomic_demotion) {
     irpass::analysis::gather_uniquely_accessed_bit_structs(ir, amgr.get());
   }
 

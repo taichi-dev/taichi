@@ -113,10 +113,9 @@ LLVMCompiledKernel KernelCodeGen::compile_kernel_to_module() {
   using TaskFunc = int32 (*)(void *);
   std::vector<TaskFunc> task_funcs(offloads.size());
   for (int i = 0; i < offloads.size(); i++) {
-    auto compile_func = [&, i] {
+    auto compile_func = [&, kernel = this->kernel, i] {
       tlctx->fetch_this_thread_struct_module();
-      auto offload =
-          irpass::analysis::clone(offloads[i].get(), offloads[i]->get_kernel());
+      auto offload = irpass::analysis::clone(offloads[i].get(), kernel);
       irpass::re_id(offload.get());
       auto new_data =
           this->compile_task(&config, nullptr, offload->as<OffloadedStmt>());

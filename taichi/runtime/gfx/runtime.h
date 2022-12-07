@@ -161,7 +161,8 @@ GfxRuntime::RegisterParams run_codegen(
     Kernel *kernel,
     Arch arch,
     const DeviceCapabilityConfig &caps,
-    const std::vector<CompiledSNodeStructs> &compiled_structs);
+    const std::vector<CompiledSNodeStructs> &compiled_structs,
+    bool enable_spv_opt);
 
 }  // namespace gfx
 }  // namespace taichi::lang

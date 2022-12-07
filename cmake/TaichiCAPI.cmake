@@ -28,12 +28,21 @@ if(TI_BUILD_TESTS)
 endif()
 
 add_library(${TAICHI_C_API_NAME} SHARED ${C_API_SOURCE})
-target_link_libraries(${TAICHI_C_API_NAME} PRIVATE taichi_core)
+
+add_library(taichi_core_static)
+target_link_libraries(taichi_core_static PUBLIC taichi_core)
+target_link_libraries(${TAICHI_C_API_NAME} PRIVATE taichi_core_static)
 
 # [TODO] Remove the following two linkages after rewriting AOT Demos with Device APIS
 if(TI_WITH_GGUI)
-target_link_libraries(${TAICHI_C_API_NAME} PRIVATE taichi_ui_vulkan)
-target_link_libraries(${TAICHI_C_API_NAME} PRIVATE taichi_ui)
+add_library(taichi_ui_vulkan_static)
+target_link_libraries(taichi_ui_vulkan_static PUBLIC taichi_ui_vulkan)
+
+add_library(taichi_ui_static)
+target_link_libraries(taichi_ui_static PUBLIC taichi_ui)
+
+target_link_libraries(${TAICHI_C_API_NAME} PRIVATE taichi_ui_vulkan_static)
+target_link_libraries(${TAICHI_C_API_NAME} PRIVATE taichi_ui_static)
 endif()
 
 # Avoid exporting third party symbols from libtaichi_c_api.so

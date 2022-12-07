@@ -7,7 +7,26 @@ from taichi._lib import core as _ti_core
 from taichi.lang import expr, impl
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.field import Field
-from taichi.lang.util import cook_dtype, is_taichi_class, taichi_scope
+from taichi.lang.util import (cook_dtype, is_matrix_class, is_taichi_class,
+                              taichi_scope)
+
+
+def uniform_matrix_inputs(*args):
+    has_real_matrix = False
+    for arg in args:
+        if is_taichi_expr(arg) and arg.ptr.is_tensor():
+            has_real_matrix = True
+            break
+
+    results = []
+    for arg in args:
+        if has_real_matrix and is_matrix_class(arg):
+            results.append(arg.make_matrix())
+        else:
+            results.append(arg)
+
+    return results
+
 
 unary_ops = []
 
@@ -52,6 +71,8 @@ def binary(foo):
 
     @functools.wraps(foo)
     def wrapped(a, b):
+        a, b = uniform_matrix_inputs(a, b)
+
         if isinstance(a, Field) or isinstance(b, Field):
             return NotImplemented
         if is_taichi_class(a):
@@ -82,6 +103,8 @@ def ternary(foo):
 
     @functools.wraps(foo)
     def wrapped(a, b, c):
+        a, b, c = uniform_matrix_inputs(a, b, c)
+
         if isinstance(a, Field) or isinstance(b, Field) or isinstance(
                 c, Field):
             return NotImplemented
@@ -107,6 +130,8 @@ def writeback_binary(foo):
 
     @functools.wraps(foo)
     def wrapped(a, b):
+        a, b = uniform_matrix_inputs(a, b)
+
         if isinstance(a, Field) or isinstance(b, Field):
             return NotImplemented
         if is_taichi_class(a):

@@ -197,7 +197,7 @@ class Kernel;
 
 using stmt_refs = one_or_more<Stmt *>;
 
-namespace IRTraits {
+namespace ir_traits {
 
 // FIXME: Use C++ 20 concepts to replace `dynamic_cast<T>() != nullptr`
 

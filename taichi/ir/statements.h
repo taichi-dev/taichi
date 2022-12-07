@@ -15,7 +15,7 @@ class Function;
 /**
  * Allocate a local variable with initial value 0.
  */
-class AllocaStmt : public Stmt, public IRTraits::Store {
+class AllocaStmt : public Stmt, public ir_traits::Store {
  public:
   explicit AllocaStmt(DataType type) : is_shared(false) {
     ret_type = type;
@@ -294,8 +294,8 @@ class TernaryOpStmt : public Stmt {
  * An atomic operation.
  */
 class AtomicOpStmt : public Stmt,
-                     public IRTraits::Store,
-                     public IRTraits::Load {
+                     public ir_traits::Store,
+                     public ir_traits::Load {
  public:
   AtomicOpType op_type;
   Stmt *dest, *val;
@@ -499,7 +499,7 @@ class MatrixPtrStmt : public Stmt {
 /**
  * An operation to a SNode (not necessarily a leaf SNode).
  */
-class SNodeOpStmt : public Stmt, public IRTraits::Store {
+class SNodeOpStmt : public Stmt, public ir_traits::Store {
  public:
   SNodeOpType op_type;
   SNode *snode;
@@ -577,8 +577,8 @@ class AssertStmt : public Stmt {
  * Call an external (C++) function.
  */
 class ExternalFuncCallStmt : public Stmt,
-                             public IRTraits::Store,
-                             public IRTraits::Load {
+                             public ir_traits::Store,
+                             public ir_traits::Load {
  public:
   enum Type { SHARED_OBJECT = 0, ASSEMBLY = 1, BITCODE = 2 };
 
@@ -691,7 +691,7 @@ class LoopUniqueStmt : public Stmt {
  * A load from a global address, including SNodes, external arrays, TLS, BLS,
  * and global temporary variables.
  */
-class GlobalLoadStmt : public Stmt, public IRTraits::Load {
+class GlobalLoadStmt : public Stmt, public ir_traits::Load {
  public:
   Stmt *src;
 
@@ -720,7 +720,7 @@ class GlobalLoadStmt : public Stmt, public IRTraits::Load {
  * A store to a global address, including SNodes, external arrays, TLS, BLS,
  * and global temporary variables.
  */
-class GlobalStoreStmt : public Stmt, public IRTraits::Store {
+class GlobalStoreStmt : public Stmt, public ir_traits::Store {
  public:
   Stmt *dest;
   Stmt *val;
@@ -749,7 +749,7 @@ class GlobalStoreStmt : public Stmt, public IRTraits::Store {
 /**
  * A load from a local variable, i.e., an "alloca".
  */
-class LocalLoadStmt : public Stmt, public IRTraits::Load {
+class LocalLoadStmt : public Stmt, public ir_traits::Load {
  public:
   Stmt *src;
 
@@ -777,7 +777,7 @@ class LocalLoadStmt : public Stmt, public IRTraits::Load {
 /**
  * A store to a local variable, i.e., an "alloca".
  */
-class LocalStoreStmt : public Stmt, public IRTraits::Store {
+class LocalStoreStmt : public Stmt, public ir_traits::Store {
  public:
   Stmt *dest;
   Stmt *val;
@@ -1054,7 +1054,7 @@ class FuncCallStmt : public Stmt {
 /**
  * A reference to a variable.
  */
-class ReferenceStmt : public Stmt, public IRTraits::Load {
+class ReferenceStmt : public Stmt, public ir_traits::Load {
  public:
   Stmt *var;
   bool global_side_effect{false};
@@ -1711,7 +1711,7 @@ class AdStackAllocaStmt : public Stmt {
 /**
  * Load the top primal value of an AD-stack.
  */
-class AdStackLoadTopStmt : public Stmt, public IRTraits::Load {
+class AdStackLoadTopStmt : public Stmt, public ir_traits::Load {
  public:
   Stmt *stack;
 
@@ -1741,7 +1741,7 @@ class AdStackLoadTopStmt : public Stmt, public IRTraits::Load {
 /**
  * Load the top adjoint value of an AD-stack.
  */
-class AdStackLoadTopAdjStmt : public Stmt, public IRTraits::Load {
+class AdStackLoadTopAdjStmt : public Stmt, public ir_traits::Load {
  public:
   Stmt *stack;
 
@@ -1771,7 +1771,7 @@ class AdStackLoadTopAdjStmt : public Stmt, public IRTraits::Load {
 /**
  * Pop the top primal and adjoint values in the AD-stack.
  */
-class AdStackPopStmt : public Stmt, public IRTraits::Load {
+class AdStackPopStmt : public Stmt, public ir_traits::Load {
  public:
   Stmt *stack;
 
@@ -1798,7 +1798,7 @@ class AdStackPopStmt : public Stmt, public IRTraits::Load {
  * Push a primal value to the AD-stack, and set the corresponding adjoint
  * value to 0.
  */
-class AdStackPushStmt : public Stmt, public IRTraits::Load {
+class AdStackPushStmt : public Stmt, public ir_traits::Load {
  public:
   Stmt *stack;
   Stmt *v;
@@ -1827,7 +1827,7 @@ class AdStackPushStmt : public Stmt, public IRTraits::Load {
  * Accumulate |v| to the top adjoint value of the AD-stack.
  * This statement loads and stores the adjoint data.
  */
-class AdStackAccAdjointStmt : public Stmt, public IRTraits::Load {
+class AdStackAccAdjointStmt : public Stmt, public ir_traits::Load {
  public:
   Stmt *stack;
   Stmt *v;

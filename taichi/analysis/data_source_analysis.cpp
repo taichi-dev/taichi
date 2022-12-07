@@ -7,7 +7,7 @@ namespace taichi::lang {
 namespace irpass::analysis {
 
 stmt_refs get_load_pointers(Stmt *load_stmt) {
-  if (auto load_trait = load_stmt->cast<IRTraits::Load>()) {
+  if (auto load_trait = load_stmt->cast<ir_traits::Load>()) {
     // The statement has the "Load" IR Trait
     return load_trait->get_load_pointers();
   }
@@ -15,7 +15,7 @@ stmt_refs get_load_pointers(Stmt *load_stmt) {
 }
 
 Stmt *get_store_data(Stmt *store_stmt) noexcept {
-  if (auto store_trait = store_stmt->cast<IRTraits::Store>()) {
+  if (auto store_trait = store_stmt->cast<ir_traits::Store>()) {
     // The statement has the "Store" IR Trait
     return store_trait->get_store_data();
   }
@@ -24,7 +24,7 @@ Stmt *get_store_data(Stmt *store_stmt) noexcept {
 
 stmt_refs get_store_destination(Stmt *store_stmt) noexcept {
   // If store_stmt provides some data sources, return the pointers of the data.
-  if (auto store_trait = store_stmt->cast<IRTraits::Store>()) {
+  if (auto store_trait = store_stmt->cast<ir_traits::Store>()) {
     // The statement has the "Store" IR Trait
     return store_trait->get_store_destination();
   } else {

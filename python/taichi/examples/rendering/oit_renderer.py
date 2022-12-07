@@ -120,8 +120,10 @@ def get_color(u, v):
     blend(color, background_color)
     return color
 
+
 stratify_res = 5
 inv_stratify = 1.0 / stratify_res
+
 
 @ti.kernel
 def render():

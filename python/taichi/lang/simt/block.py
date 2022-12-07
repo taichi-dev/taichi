@@ -34,7 +34,7 @@ def thread_idx():
 def global_thread_idx():
     arch = impl.get_runtime().prog.config().arch
     if arch == _ti_core.cuda:
-        return impl.get_runtime().prog.current_ast_builder(
+        return impl.get_runtime().compiling_callable.ast_builder(
         ).insert_thread_idx_expr()
     if impl.get_runtime().prog.config().arch == _ti_core.vulkan:
         return impl.call_internal("vkGlobalThreadIdx",

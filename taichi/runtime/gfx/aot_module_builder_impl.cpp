@@ -201,8 +201,8 @@ AotModuleBuilderImpl::try_get_kernel_register_params(
 
 void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
                                            Kernel *kernel) {
-  spirv::lower(kernel);
-  auto compiled = run_codegen(kernel, this->device_api_backend_, caps_,
+  spirv::lower(config_, kernel);
+  auto compiled = run_codegen(kernel, device_api_backend_, caps_,
                               compiled_structs_, config_);
   compiled.kernel_attribs.name = identifier;
   ti_aot_data_.kernels.push_back(compiled.kernel_attribs);
@@ -243,10 +243,9 @@ void AotModuleBuilderImpl::add_field_per_backend(const std::string &identifier,
 void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier,
                                                 const std::string &key,
                                                 Kernel *kernel) {
-  spirv::lower(kernel);
+  spirv::lower(config_, kernel);
   auto compiled = run_codegen(kernel, device_api_backend_, caps_,
                               compiled_structs_, config_);
-
   compiled.kernel_attribs.name = identifier + "|" + key;
   ti_aot_data_.kernels.push_back(compiled.kernel_attribs);
   ti_aot_data_.spirv_codes.push_back(compiled.task_spirv_source_codes);

@@ -236,11 +236,8 @@ class IRNode {
   virtual IRNode *get_parent() const = 0;
 
   IRNode *get_ir_root();
-  Kernel *get_kernel() const;
 
   virtual ~IRNode() = default;
-
-  CompileConfig &get_config() const;
 
   template <typename T>
   bool is() const {

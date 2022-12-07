@@ -93,7 +93,7 @@ struct one_or_more {
 
   one_or_more(value_type const &value) : var(value) {
   }
-  
+
   one_or_more(value_type &value) : var(value) {
   }
 

@@ -11,6 +11,10 @@ parser.add_argument('--exp',
                     default='implicit')
 parser.add_argument('--dim', type=int, default=3)
 parser.add_argument('--gui', choices=['auto', 'ggui', 'cpu'], default='auto')
+parser.add_argument('-s',
+                        '--use_sparse',
+                        action='store_true',
+                        help='Use sparse matrix and sparse solver')
 parser.add_argument('place_holder', nargs='*')
 args = parser.parse_args()
 
@@ -29,6 +33,8 @@ dt = 2e-4
 
 if args.exp == 'implicit':
     dt = 1e-2
+
+use_sparse = args.use_sparse
 
 n_cube = np.array([5] * 3)
 n_verts = np.product(n_cube)
@@ -159,6 +165,13 @@ F_b = ti.Vector.field(3, dtype=ti.f32, shape=n_verts)
 F_r0 = ti.Vector.field(3, dtype=ti.f32, shape=n_verts)
 F_p0 = ti.Vector.field(3, dtype=ti.f32, shape=n_verts)
 
+# ndarray version of F_b
+F_b_ndarr = ti.ndarray(dtype=ti.f32, shape= 3 * n_verts)
+# stiffness matrix
+A_builder = ti.linalg.SparseMatrixBuilder(3 * n_verts,
+                                  3 * n_verts,
+                                  max_num_triplets=50000)
+solver = ti.linalg.SparseSolver(ti.f32, "LLT")
 
 @ti.kernel
 def get_b():
@@ -198,6 +211,55 @@ def cg():
     add(F_x, F_x, dt, F_v)
 
 
+
+@ti.kernel
+def compute_A(A: ti.types.sparse_matrix_builder()):
+    # A = M - dt * dt * K
+    for i in range(n_verts):
+        for j in range(3):
+            A[3 * i + j, 3 * i + j] += F_m[i]
+    for c in F_vertices:
+        verts = F_vertices[c]
+        W_c = F_W[c]
+        B_c = F_B[c]
+        for u in range(4):
+            for d in range(3):
+                dD = ti.Matrix.zero(ti.f32, 3, 3)
+                if u == 3:
+                    for j in range(3):
+                        dD[d, j] = -1
+                else:
+                    dD[d, u] = 1
+                dF = dD @ B_c
+                dP = 2.0 * mu * dF
+                dH = -W_c * dP @ B_c.transpose()
+                for i in range(3):
+                    for j in range(3):
+                        A[3 * verts[u] + d, 3 * verts[i] + j] += -dt**2 * dH[j, i]
+                for i in range(3):
+                    A[3 * verts[u] + d, 3 * verts[3] + i] += -dt**2 *(-dH[i, 0] - dH[i,1] - dH[i,2])
+
+@ti.kernel 
+def flatten(fb:ti.types.ndarray(), F_b: ti.template()):
+    for i in range(n_verts):
+        for j in range(3):
+            fb[3 * i + j] = F_b[i][j]
+@ti.kernel 
+def aggragate(F_v: ti.template(), fv:ti.types.ndarray()):
+    for i in range(n_verts):
+        for j in range(3):
+            F_v[i][j] = fv[3 * i + j]
+
+def direct():
+    get_force()
+    get_b()
+    flatten(F_b_ndarr, F_b)
+    v = solver.solve(F_b_ndarr)
+    aggragate(F_v, v)
+    F_f.fill(0)
+    add(F_x, F_x, dt, F_v)
+    
+
 @ti.kernel
 def advect():
     for p in F_x:
@@ -222,7 +284,12 @@ def init():
     for u in F_x:
         F_x[u].y += 1.0
 
-
+def init_A():
+    compute_A(A_builder)
+    A = A_builder.build()
+    solver.analyze_pattern(A)
+    solver.factorize(A)
+    
 @ti.kernel
 def floor_bound():
     for u in F_x:
@@ -285,7 +352,9 @@ def substep():
             get_force()
             advect()
     else:
-        for i in range(1):
+        if use_sparse:
+            direct()
+        else:
             cg()
     floor_bound()
 
@@ -294,6 +363,9 @@ def main():
     get_vertices()
     init()
     get_indices()
+
+    if use_sparse:
+        init_A()
 
     if args.gui == 'ggui':
         res = (800, 600)
@@ -360,6 +432,30 @@ def main():
             gui.clear(0x000000)
             gui.circles(T(F_x.to_numpy() / 3), radius=1.5, color=0xba543a)
             gui.show()
+
+
+def test():
+    get_vertices()
+    init()
+    get_indices()
+    
+    def mul(x):
+        matmul_cell(F_mul_ans, x)
+        return F_mul_ans
+    v_rand = np.random.rand(n_verts, 3).astype(np.float32)
+    F_v.from_numpy(v_rand)
+    mul(F_v)
+    Av_cg = F_mul_ans.to_numpy().reshape(3 * n_verts)
+    
+    compute_A(A_builder)
+    A = A_builder.build()
+    F_v_ndarr = ti.ndarray(dtype=ti.f32, shape= 3 * n_verts)
+    F_v_ndarr.from_numpy(v_rand.reshape(3*n_verts))
+    Av = A @ F_v_ndarr
+    Av_dir = Av.to_numpy()
+
+    print(np.linalg.norm( np.asarray(Av_cg) - np.asarray(Av_dir)) )
+    assert np.linalg.norm( np.asarray(Av_cg) - np.asarray(Av_dir)) < 6.0e-5
 
 
 if __name__ == '__main__':

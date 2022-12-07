@@ -200,7 +200,7 @@ AotModuleBuilderImpl::try_get_kernel_register_params(
 
 void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
                                            Kernel *kernel) {
-  spirv::lower(kernel);
+  spirv::lower(config_, kernel);
   auto compiled =
       run_codegen(kernel, this->device_api_backend_, caps_, compiled_structs_,
                   config_.external_optimization_level > 0);
@@ -243,7 +243,7 @@ void AotModuleBuilderImpl::add_field_per_backend(const std::string &identifier,
 void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier,
                                                 const std::string &key,
                                                 Kernel *kernel) {
-  spirv::lower(kernel);
+  spirv::lower(config_, kernel);
   auto compiled =
       run_codegen(kernel, device_api_backend_, caps_, compiled_structs_,
                   config_.external_optimization_level > 0);

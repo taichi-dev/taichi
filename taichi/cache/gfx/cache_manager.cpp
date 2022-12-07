@@ -151,7 +151,7 @@ CacheManager::CacheManager(Params &&init_params)
 CompiledKernelData CacheManager::load_or_compile(CompileConfig *config,
                                                  Kernel *kernel) {
   if (kernel->is_evaluator) {
-    spirv::lower(kernel);
+    spirv::lower(*config, kernel);
     return gfx::run_codegen(kernel, runtime_->get_ti_device()->arch(),
                             runtime_->get_ti_device()->get_current_caps(),
                             compiled_structs_,

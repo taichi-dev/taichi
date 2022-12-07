@@ -2565,10 +2565,8 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
   kernel_attribs.is_jit_evaluator = params_.kernel->is_evaluator;
 }
 
-void lower(Kernel *kernel) {
+void lower(const CompileConfig &config, Kernel *kernel) {
   if (!kernel->lowered()) {
-    auto &config = kernel->program->this_thread_config();
-    config.demote_dense_struct_fors = true;
     irpass::compile_to_executable(kernel->ir.get(), config, kernel,
                                   kernel->autodiff_mode,
                                   /*ad_use_stack=*/false, config.print_ir,

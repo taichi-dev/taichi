@@ -225,8 +225,6 @@ class Load {
 
 class IRNode {
  public:
-  Kernel *kernel;
-
   virtual void accept(IRVisitor *visitor) {
     TI_NOT_IMPLEMENTED
   }
@@ -514,7 +512,6 @@ class Block : public IRNode {
 
   Block() {
     parent_stmt = nullptr;
-    kernel = nullptr;
   }
 
   Block *parent_block() const;

@@ -486,6 +486,4 @@ if (NOT APPLE)
             DESTINATION ${INSTALL_LIB_DIR}/runtime)
 endif()
 
-if(NOT USE_MOLD)
-    target_link_options(${CORE_WITH_PYBIND_LIBRARY_NAME} PRIVATE -Wl,-fuse-ld=lld)
-endif()
+configure_target_linker(${CORE_WITH_PYBIND_LIBRARY_NAME} ${USE_MOLD})

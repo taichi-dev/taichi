@@ -15,6 +15,8 @@ endif()
 
 set(CMAKE_CXX_STANDARD 17)
 
+include("cmake/utils.cmake")
+
 execute_process(
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
   COMMAND git rev-parse --short HEAD
@@ -61,21 +63,6 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 option(USE_MOLD "Use mold (A Modern Linker)" OFF)
 option(TI_WITH_BACKTRACE "Use backward-cpp to print out C++ stack trace upon failure" OFF)
-
-if (USE_MOLD)
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=mold")
-    set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -fuse-ld=mold")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=mold")
-endif()
-
-if (WIN32)
-    if (CMAKE_BUILD_TYPE EQUAL "RelWithDebInfo")
-        # -debug for LLD generates PDB files
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-debug")
-        set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -Wl,-debug")
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-debug")
-    endif()
-endif()
 
 if (WIN32)
   # For `Debug` configs MSVC links to a debuggable runtime by default which has

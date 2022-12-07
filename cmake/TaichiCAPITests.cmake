@@ -43,6 +43,4 @@ target_include_directories(${C_API_TESTS_NAME}
 
 add_test(NAME ${C_API_TESTS_NAME} COMMAND ${C_API_TESTS_NAME})
 
-if(NOT USE_MOLD)
-    target_link_options(${C_API_TESTS_NAME} PRIVATE -Wl,-fuse-ld=lld)
-endif()
+configure_target_linker(${C_API_TESTS_NAME} ${USE_MOLD})

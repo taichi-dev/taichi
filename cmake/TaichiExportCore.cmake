@@ -99,3 +99,5 @@ install(FILES
       ${TAICHI_PUBLIC_HEADERS_TEMP}
     DESTINATION include
     )
+
+configure_target_linker(${TAICHI_EXPORT_CORE_NAME} ${USE_MOLD})

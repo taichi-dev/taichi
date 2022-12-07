@@ -36,10 +36,6 @@ target_link_libraries(${TAICHI_C_API_NAME} PRIVATE taichi_ui_vulkan)
 target_link_libraries(${TAICHI_C_API_NAME} PRIVATE taichi_ui)
 endif()
 
-if(NOT USE_MOLD)
-    target_link_options(${TAICHI_C_API_NAME} PRIVATE -Wl,-fuse-ld=lld)
-endif()
-
 # Avoid exporting third party symbols from libtaichi_c_api.so
 # Note that on Windows, external symbols will be excluded from .dll automatically, by default.
 if(LINUX)
@@ -133,3 +129,5 @@ install(DIRECTORY
       ${INSTALL_LIB_DIR}/runtime
       DESTINATION c_api)
 endif()
+
+configure_target_linker(${TAICHI_C_API_NAME} ${USE_MOLD})

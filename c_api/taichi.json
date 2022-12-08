@@ -533,6 +533,25 @@
                     ]
                 },
                 {
+                    "name": "set_runtime_capabilities",
+                    "type": "function",
+                    "is_extension": true,
+                    "parameters": [
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "name": "capability_count",
+                            "type": "uint32_t"
+                        },
+                        {
+                            "name": "capabilities",
+                            "type": "structure.capability_level_info",
+                            "count": "capability_count"
+                        }
+                    ]
+                },
+                {
                     "name": "get_runtime_capabilities",
                     "type": "function",
                     "parameters": [

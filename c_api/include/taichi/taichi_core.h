@@ -755,6 +755,12 @@ TI_DLL_EXPORT void TI_API_CALL ti_destroy_runtime(
   TiRuntime runtime
 );
 
+// Function `ti_set_runtime_capabilities_ext`
+TI_DLL_EXPORT void TI_API_CALL
+ti_set_runtime_capabilities_ext(TiRuntime runtime,
+                                uint32_t capability_count,
+                                const TiCapabilityLevelInfo *capabilities);
+
 // Function `ti_get_runtime_capabilities`
 TI_DLL_EXPORT void TI_API_CALL ti_get_runtime_capabilities(
   TiRuntime runtime,

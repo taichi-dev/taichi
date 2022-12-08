@@ -1,3 +1,6 @@
+// clang++-10 -> clang++ etc
+// assets llvm v0.0.1 -> v0.0.2
+// apt install lld-10
 # Taichi Dockerfile for development
 FROM rocm/dev-ubuntu-20.04:5.2
 
@@ -38,7 +41,7 @@ RUN apt-get update && \
 # Install LLVM 15
 WORKDIR /
 # Make sure this URL gets updated each time there is a new prebuilt bin release
-RUN wget https://github.com/GaleSeLee/assets/releases/download/v0.0.1/taichi-llvm-15.0.0-linux.zip
+RUN wget https://github.com/GaleSeLee/assets/releases/download/v0.0.2/taichi-llvm-15.0.0-linux.zip
 RUN unzip taichi-llvm-15.0.0-linux.zip && \
     rm taichi-llvm-15.0.0-linux.zip
 ENV PATH="/taichi-llvm-15.0.0-linux/bin:$PATH"

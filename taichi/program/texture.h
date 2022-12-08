@@ -13,6 +13,10 @@ class Program;
 class Ndarray;
 class SNode;
 
+std::pair<DataType, uint32_t> buffer_format2type_channels(BufferFormat format);
+BufferFormat type_channels2buffer_format(const DataType &type,
+                                         uint32_t num_channels);
+
 class TI_DLL_EXPORT Texture {
  public:
   /* Constructs a Texture managed by Program.

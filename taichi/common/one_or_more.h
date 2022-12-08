@@ -1,7 +1,6 @@
 #pragma once
 
 namespace taichi {
-  
 
 template <typename T, class Container = std::vector<T>>
 struct one_or_more {
@@ -80,5 +79,5 @@ struct one_or_more {
     }
   }
 };
-  
-}
+
+}  // namespace taichi

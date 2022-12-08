@@ -13,6 +13,7 @@ T taichi_union_cast_with_different_sizes(G g);
 
 namespace taichi::lang {
 class AotModuleBuilder;
+class Program;
 class Ndarray;
 class Texture;
 class Kernel;
@@ -161,8 +162,17 @@ struct TI_DLL_EXPORT CompiledGraph {
   RuntimeContext ctx_;
 
   void run(const std::unordered_map<std::string, IValue> &args) const;
+  void jit_run(Program *prog,
+               const CompileConfig &compile_config,
+               const std::unordered_map<std::string, IValue> &args) const;
 
   TI_IO_DEF(dispatches);
+
+ private:
+  static void init_runtime_context(
+      const std::vector<Arg> &paramter_list,
+      const std::unordered_map<std::string, IValue> &args,
+      RuntimeContext &ctx);
 };
 
 }  // namespace aot

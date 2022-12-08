@@ -365,21 +365,21 @@ void Kernel::offload_to_executable(IRNode *stmt) {
 }
 
 // Refactor2023:FIXME: Remove (:Temp)
-void launch_kernel(Program *prog, Kernel &kernel, RuntimeContext &ctx) {
+void launch_kernel(Program *prog,
+                   const CompileConfig &compile_config,
+                   Kernel &kernel,
+                   RuntimeContext &ctx) {
   auto fn = kernel.get_compiled_func();
   if (!fn) {
     kernel.set_compiled_func(fn = prog->compile(kernel));
   }
-  TI_ASSERT(!!fn);
 
+  TI_ASSERT(!!fn);
   fn(ctx);
 
-  const auto config = prog->this_thread_config();
-  const auto arch = config.arch;
-
+  const auto arch = compile_config.arch;
   prog->sync = (prog->sync && arch_is_cpu(arch));
-  // Note that Kernel::arch may be different from program.config.arch
-  if (config.debug && (arch_is_cpu(arch) || arch == Arch::cuda)) {
+  if (compile_config.debug && (arch_is_cpu(arch) || arch == Arch::cuda)) {
     prog->check_runtime_error();
   }
 }

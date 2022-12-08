@@ -799,7 +799,7 @@ class Kernel:
                 )
 
             try:
-                t_kernel(launch_ctx)
+                _ti_core.launch_kernel(impl.get_runtime().prog, t_kernel, launch_ctx)
             except Exception as e:
                 e = handle_exception_from_cpp(e)
                 raise e from None

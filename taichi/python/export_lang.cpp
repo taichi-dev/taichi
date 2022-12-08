@@ -611,7 +611,8 @@ void export_lang(py::module &m) {
       .def("seq", &GraphBuilder::seq, py::return_value_policy::reference);
 
   py::class_<aot::CompiledGraph>(m, "CompiledGraph")
-      .def("run", [](aot::CompiledGraph *self, const py::dict &pyargs) {
+      .def("jit_run", [](aot::CompiledGraph *self, Program *prog,
+                         const py::dict &pyargs) {
         std::unordered_map<std::string, aot::IValue> args;
         for (auto it : pyargs) {
           std::string arg_name = py::cast<std::string>(it.first);
@@ -667,7 +668,7 @@ void export_lang(py::module &m) {
             TI_NOT_IMPLEMENTED;
           }
         }
-        self->run(args);
+        self->jit_run(prog, prog->this_thread_config(), args);
       });
 
   py::class_<Kernel>(m, "Kernel")
@@ -686,11 +687,14 @@ void export_lang(py::module &m) {
           [](Kernel *self) -> ASTBuilder * {
             return &self->context->builder();
           },
-          py::return_value_policy::reference)
-      .def("__call__", [](Kernel *kernel, KernelLaunchContext &launch_ctx) {
-        py::gil_scoped_release release;
-        launch_kernel(kernel->program, *kernel, launch_ctx.get_context());
-      });
+          py::return_value_policy::reference);
+
+  m.def("launch_kernel",
+        [](Program *prog, Kernel *kernel, KernelLaunchContext &launch_ctx) {
+          py::gil_scoped_release release;
+          launch_kernel(prog, prog->this_thread_config(), *kernel,
+                        launch_ctx.get_context());
+        });
 
   py::class_<KernelLaunchContext>(m, "KernelLaunchContext")
       .def("set_arg_int", &KernelLaunchContext::set_arg_int)

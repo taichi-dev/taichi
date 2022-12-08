@@ -176,7 +176,10 @@ class TI_DLL_EXPORT Kernel : public Callable {
 };
 
 // Refactor2023:FIXME: Remove
-void launch_kernel(Program *prog, Kernel &kernel, RuntimeContext &ctx);
+void launch_kernel(Program *prog,
+                   const CompileConfig &compiple_config,
+                   Kernel &kernel,
+                   RuntimeContext &ctx);
 
 template <typename T>
 T KernelLaunchContext::get_ret(Device *device, unsigned retNo) const {

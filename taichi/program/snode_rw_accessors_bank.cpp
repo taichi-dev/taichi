@@ -41,14 +41,16 @@ void SNodeRwAccessorsBank::Accessors::write_float(const std::vector<int> &I,
   set_kernel_args(I, snode_->num_active_indices, &launch_ctx);
   launch_ctx.set_arg_float(snode_->num_active_indices, val);
   prog_->synchronize();
-  lang::launch_kernel(writer_->program, *writer_, launch_ctx.get_context());
+  lang::launch_kernel(prog_, prog_->this_thread_config(), *writer_,
+                      launch_ctx.get_context());
 }
 
 float64 SNodeRwAccessorsBank::Accessors::read_float(const std::vector<int> &I) {
   prog_->synchronize();
   auto launch_ctx = reader_->make_launch_context();
   set_kernel_args(I, snode_->num_active_indices, &launch_ctx);
-  lang::launch_kernel(reader_->program, *reader_, launch_ctx.get_context());
+  lang::launch_kernel(prog_, prog_->this_thread_config(), *reader_,
+                      launch_ctx.get_context());
   prog_->synchronize();
   auto ret = launch_ctx.get_ret_float(prog_->get_compute_device(), 0);
   return ret;
@@ -61,14 +63,16 @@ void SNodeRwAccessorsBank::Accessors::write_int(const std::vector<int> &I,
   set_kernel_args(I, snode_->num_active_indices, &launch_ctx);
   launch_ctx.set_arg_int(snode_->num_active_indices, val);
   prog_->synchronize();
-  lang::launch_kernel(writer_->program, *writer_, launch_ctx.get_context());
+  lang::launch_kernel(prog_, prog_->this_thread_config(), *writer_,
+                      launch_ctx.get_context());
 }
 
 int64 SNodeRwAccessorsBank::Accessors::read_int(const std::vector<int> &I) {
   prog_->synchronize();
   auto launch_ctx = reader_->make_launch_context();
   set_kernel_args(I, snode_->num_active_indices, &launch_ctx);
-  lang::launch_kernel(reader_->program, *reader_, launch_ctx.get_context());
+  lang::launch_kernel(prog_, prog_->this_thread_config(), *reader_,
+                      launch_ctx.get_context());
   prog_->synchronize();
   auto ret = launch_ctx.get_ret_int(prog_->get_compute_device(), 0);
   return ret;

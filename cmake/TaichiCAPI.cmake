@@ -1,5 +1,19 @@
 cmake_minimum_required(VERSION 3.0)
 
+# This function creates a static target from OBJECT_TARGET, then link TARGET with the static target
+#
+# For now, we have to keep this hack because:
+# 1. Existence of circular dependencies in Taichi repo (https://github.com/taichi-dev/taichi/issues/6838)
+# 2. Link order restriction from `ld` linker on Linux (https://stackoverflow.com/questions/45135/why-does-the-order-in-which-libraries-are-linked-sometimes-cause-errors-in-gcc), which has zero-tolerance w.r.t circular dependencies.
+function(target_link_static_library TARGET OBJECT_TARGET)
+    set(STATIC_TARGET "${OBJECT_TARGET}_static")
+    add_library(${STATIC_TARGET})
+    target_link_libraries(${STATIC_TARGET} PUBLIC ${OBJECT_TARGET})
+    get_target_property(LINK_LIBS ${OBJECT_TARGET} LINK_LIBRARIES)
+    target_link_libraries(${TARGET} PRIVATE "-Wl,--start-group" "${STATIC_TARGET}" "${LINK_LIBS}" "-Wl,--end-group")
+endfunction()
+
+
 set(TAICHI_C_API_NAME taichi_c_api)
 
 file(GLOB_RECURSE C_API_SOURCE "c_api/src/taichi_core_impl.cpp")
@@ -28,21 +42,12 @@ if(TI_BUILD_TESTS)
 endif()
 
 add_library(${TAICHI_C_API_NAME} SHARED ${C_API_SOURCE})
-
-add_library(taichi_core_static)
-target_link_libraries(taichi_core_static PUBLIC taichi_core)
-target_link_libraries(${TAICHI_C_API_NAME} PRIVATE taichi_core_static)
+target_link_static_library(${TAICHI_C_API_NAME} taichi_core)
 
 # [TODO] Remove the following two linkages after rewriting AOT Demos with Device APIS
 if(TI_WITH_GGUI)
-add_library(taichi_ui_vulkan_static)
-target_link_libraries(taichi_ui_vulkan_static PUBLIC taichi_ui_vulkan)
-
-add_library(taichi_ui_static)
-target_link_libraries(taichi_ui_static PUBLIC taichi_ui)
-
-target_link_libraries(${TAICHI_C_API_NAME} PRIVATE taichi_ui_vulkan_static)
-target_link_libraries(${TAICHI_C_API_NAME} PRIVATE taichi_ui_static)
+    target_link_static_library(${TAICHI_C_API_NAME} taichi_ui_vulkan)
+    target_link_static_library(${TAICHI_C_API_NAME} taichi_ui)
 endif()
 
 # Avoid exporting third party symbols from libtaichi_c_api.so

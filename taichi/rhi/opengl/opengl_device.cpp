@@ -532,7 +532,6 @@ GLDevice::~GLDevice() {
 
 DeviceAllocation GLDevice::allocate_memory(const AllocParams &params) {
   GLenum target_hint = GL_SHADER_STORAGE_BUFFER;
-
   if (params.usage && AllocUsage::Storage) {
     target_hint = GL_SHADER_STORAGE_BUFFER;
   } else if (params.usage && AllocUsage::Uniform) {
@@ -542,14 +541,19 @@ DeviceAllocation GLDevice::allocate_memory(const AllocParams &params) {
   } else if (params.host_read && params.host_write) {
     target_hint = GL_COPY_READ_BUFFER;
   }
-
   GLuint buffer;
   glGenBuffers(1, &buffer);
   check_opengl_error("glGenBuffers");
   glBindBuffer(target_hint, buffer);
   check_opengl_error("glBindBuffer");
+
   glBufferData(target_hint, params.size, nullptr,
                params.host_read ? GL_STATIC_COPY : GL_DYNAMIC_READ);
+  GLuint alloc_res = glGetError();
+
+  if (alloc_res == GL_OUT_OF_MEMORY) {
+    throw std::bad_alloc();
+  }
   check_opengl_error("glBufferData");
 
   DeviceAllocation alloc;

@@ -12,23 +12,28 @@ TEST_F(CapiTest, DryRunRuntime) {
     // CPU Runtime
     TiArch arch = TiArch::TI_ARCH_X64;
     ti::Runtime runtime(arch);
+    runtime.destroy();
   }
 
   if (ti::is_arch_available(TI_ARCH_VULKAN)) {
     // Vulkan Runtime
     TiArch arch = TiArch::TI_ARCH_VULKAN;
     ti::Runtime runtime(arch);
+    runtime.destroy();
   }
 
   if (ti::is_arch_available(TI_ARCH_CUDA)) {
-    // Vulkan Runtime
+    // CUDA Runtime
     TiArch arch = TiArch::TI_ARCH_CUDA;
     ti::Runtime runtime(arch);
+    runtime.destroy();
   }
 
   if (ti::is_arch_available(TI_ARCH_OPENGL)) {
+    // openGL Runtime
     TiArch arch = TiArch::TI_ARCH_OPENGL;
     ti::Runtime runtime(arch);
+    runtime.destroy();
   }
 }
 

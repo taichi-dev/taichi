@@ -336,6 +336,7 @@ typedef enum TiError {
   TI_ERROR_INVALID_INTEROP = -8,
   TI_ERROR_INVALID_STATE = -9,
   TI_ERROR_INCOMPATIBLE_MODULE = -10,
+  TI_ERROR_OUT_OF_MEMORY = -11,
   TI_ERROR_MAX_ENUM = 0xffffffff,
 } TiError;
 ```
@@ -989,6 +990,18 @@ TI_DLL_EXPORT void TI_API_CALL ti_destroy_runtime(
 Destroys a Taichi Runtime.
 
 ---
+### Function `ti_set_runtime_capabilities_ext`
+
+```c
+// function.set_runtime_capabilities
+TI_DLL_EXPORT void TI_API_CALL ti_set_runtime_capabilities_ext(
+  TiRuntime runtime,
+  uint32_t capability_count,
+  const TiCapabilityLevelInfo* capabilities
+);
+```
+
+---
 ### Function `ti_get_runtime_capabilities`
 
 ```c
@@ -999,6 +1012,11 @@ TI_DLL_EXPORT void TI_API_CALL ti_get_runtime_capabilities(
   TiCapabilityLevelInfo* capabilities
 );
 ```
+
+Gets all capabilities available on the runtime instance.
+
+- `capability_count`: The total number of capabilities available.
+- `capabilities`: Returned capabilities.
 
 ---
 ### Function `ti_allocate_memory`

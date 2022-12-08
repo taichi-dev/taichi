@@ -18,6 +18,7 @@
 #include <type_traits>
 #include <unordered_map>
 #include <vector>
+#include "taichi/common/core.h"
 #include "taichi/common/json.h"
 #include "taichi/common/json_serde.h"
 

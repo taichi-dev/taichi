@@ -476,6 +476,8 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
   {
     char msg_buf[256];
     RHI_DEBUG_SNPRINTF(
+        msg_buf,
+        sizeof(msg_buf),
         "Vulkan Device \"%s\" supports Vulkan %d version %d.%d.%d",
         physical_device_properties.deviceName,
         VK_API_VERSION_VARIANT(physical_device_properties.apiVersion),
@@ -517,7 +519,8 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
 
   for (auto &ext : extension_properties) {
     char msg_buf[256];
-    RHI_DEBUG_SNPRINTF("Vulkan device extension {%s} (%x)", ext.extensionName,
+    RHI_DEBUG_SNPRINTF(msg_buf, sizeof(msg_buf),
+                       "Vulkan device extension {%s} (%x)", ext.extensionName,
                        ext.specVersion);
     RHI_LOG_DEBUG(msg_buf);
 

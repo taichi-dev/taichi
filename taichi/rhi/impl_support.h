@@ -1,8 +1,8 @@
 #pragma once
 
-#include "device.h"
+#include "taichi/rhi/device.h"
 
-namespace taichi {
+namespace taichi::lang {
 
 // Constructs within `rhi_impl` is for implementing RHI
 // No public-facing API should use anything within `rhi_impl` namespace
@@ -28,7 +28,7 @@ void disabled_function([[maybe_unused]] Ts... C) {
 #endif
 #define RHI_DEBUG_SNPRINTF std::snprintf
 #else
-#define RHI_DEBUG_SNPRINTF taichi::rhi_impl::disabled_function
+#define RHI_DEBUG_SNPRINTF taichi::lang::rhi_impl::disabled_function
 #define RHI_LOG_DEBUG(msg)
 #endif
 
@@ -42,10 +42,14 @@ struct RhiReturn {
   [[nodiscard]] TiRhiResults result;
   [[nodiscard]] T object;
 
-  RhiReturn(TiRhiResults result, T object) : result(result), object(object) {
+  RhiReturn(TiRhiResults &result, T &object) : result(result), object(object) {
   }
 
-  RhiReturn(TiRhiResults result, T &&object) : result(result), object(std::move(object)) {
+  RhiReturn(const TiRhiResults &result, const T &object)
+      : result(result), object(object) {
+  }
+
+  RhiReturn(TiRhiResults &&result, T &&object) : result(result), object(std::move(object)) {
   }
 
   RhiReturn &operator=(const RhiReturn &other) = default;
@@ -54,13 +58,13 @@ struct RhiReturn {
 // Bi-directional map, useful for mapping between RHI enums and backend enums
 template <typename RhiType, typename BackendType>
 struct BidirMap {
-  const std::unordered_map<RhiType, BackendType> rhi2backend;
-  const std::unordered_map<BackendType, RhiType> backend2rhi;
+  std::unordered_map<RhiType, BackendType> rhi2backend;
+  std::unordered_map<BackendType, RhiType> backend2rhi;
 
   BidirMap(std::initializer_list<std::pair<RhiType, BackendType>> init_list) {
     for (auto &pair : init_list) {
-      rhi2backend[pair.first] = pair.second;
-      backend2rhi[pair.second] = pair.first;
+      rhi2backend.insert(pair);
+      backend2rhi.insert(std::make_pair(pair.second, pair.first));
     }
   }
 

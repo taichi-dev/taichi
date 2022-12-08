@@ -62,13 +62,7 @@ def advance():
             NoV = vel[i].dot(disp)
             if NoV < 0:
                 vel[i] -= NoV * disp / disp2
-
-        cond0 = pos[i][0] < 0 and vel[i][0] < 0 or pos[i][0] > 1 and vel[i][
-            0] > 0
-        cond1 = pos[i][1] < 0 and vel[i][1] < 0 or pos[i][1] > 1 and vel[i][
-            1] > 0
-        cond = ti.Vector([cond0, cond1])
-
+        cond = (pos[i] < 0) & (vel[i] < 0) | (pos[i] > 1) & (vel[i] > 0)
         # rect boundary condition:
         for j in ti.static(range(pos.n)):
             if cond[j]:

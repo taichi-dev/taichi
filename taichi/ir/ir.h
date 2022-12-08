@@ -10,6 +10,7 @@
 
 #include "taichi/common/core.h"
 #include "taichi/common/exceptions.h"
+#include "taichi/common/one_or_more.h"
 #include "taichi/ir/snode.h"
 #include "taichi/ir/mesh.h"
 #include "taichi/ir/type_factory.h"

@@ -3,8 +3,6 @@
 #include <map>
 #include <cstdint>
 
-#include "taichi/common/serialization.h"
-
 namespace taichi::lang {
 
 // For backend dependent code (e.g. codegen)
@@ -31,7 +29,7 @@ struct DeviceCapabilityConfig {
 
   const std::map<DeviceCapability, uint32_t> &to_inner() const;
 
-  TI_IO_DEF(devcaps);
+  // TI_IO_DEF(devcaps);
 };
 
 }  // namespace taichi::lang

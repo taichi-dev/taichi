@@ -1,6 +1,7 @@
 #pragma once
 
 #include "taichi/rhi/device.h"
+#include <assert.h>
 
 namespace taichi::lang {
 
@@ -19,14 +20,16 @@ void disabled_function([[maybe_unused]] Ts... C) {
 #endif
 
 #define RHI_DEBUG
+#define RHI_USE_TI_LOGGING
 
 #ifdef RHI_DEBUG
-#if defined(SPDLOG_H) && defined(TI_WARN)
+#define RHI_DEBUG_SNPRINTF std::snprintf
+#ifdef RHI_USE_TI_LOGGING
+#include "taichi/common/logging.h"
 #define RHI_LOG_DEBUG(msg) TI_TRACE("RHI Debug : {}", msg)
 #else
-#define RHI_LOG_DEBUG(msg) std::cerr << "RHI Debug: " << msg << std::endl;
+#define RHI_LOG_DEBUG(msg) std::cout << "RHI Debug: " << msg << std::endl;
 #endif
-#define RHI_DEBUG_SNPRINTF std::snprintf
 #else
 #define RHI_DEBUG_SNPRINTF taichi::lang::rhi_impl::disabled_function
 #define RHI_LOG_DEBUG(msg)

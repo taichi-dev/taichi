@@ -1414,7 +1414,7 @@ std::unique_ptr<Pipeline> VulkanDevice::create_pipeline(
     std::string name) {
   RHI_ASSERT(src.type == PipelineSourceType::spirv_binary &&
              src.stage == PipelineStageType::compute);
-  RHI_ASSERT(src.data != nullptr && src.size == 0 &&
+  RHI_ASSERT(src.data != nullptr && src.size != 0 &&
              "pipeline source cannot be empty");
 
   SpirvCodeView code;
@@ -1599,8 +1599,8 @@ void *VulkanDevice::map(DeviceAllocation alloc) {
         "wrapper)");
     RHI_ASSERT(false);
   } else if (res != VK_SUCCESS) {
-    RHI_LOG_ERROR(res, "failed to map memory for unknown reasons");
-    RHI_ASSERT(false);
+    BAIL_ON_VK_BAD_RESULT_NO_RETURN(res,
+                                    "failed to map memory for unknown reasons");
   }
 
   return alloc_int.mapped;

@@ -17,7 +17,7 @@ function build-and-smoke-test-android-aot-demo {
 
     rm -rf taichi-aot-demo
     # IF YOU PIN THIS TO A COMMIT/BRANCH, YOU'RE RESPONSIBLE TO REVERT IT BACK TO MASTER ONCE MERGED.
-    git clone https://github.com/taichi-dev/taichi-aot-demo
+    git clone https://github.com/PENGUINLIONG/taichi-aot-demo -b anroid-build
 
     APP_ROOT=taichi-aot-demo/implicit_fem
     ANDROID_APP_ROOT=$APP_ROOT/android
@@ -109,7 +109,7 @@ function build-and-test-headless-demo {
     popd
 
     rm -rf taichi-aot-demo
-    git clone --recursive --depth=1 https://github.com/taichi-dev/taichi-aot-demo
+    git clone --recursive --depth=1 https://github.com/PENGUINLIONG/taichi-aot-demo -b anroid-build
     cd taichi-aot-demo
 
     . $(pwd)/ci/test_utils.sh
@@ -157,7 +157,7 @@ function build-and-test-headless-demo-desktop {
     popd
 
     rm -rf taichi-aot-demo
-    git clone --recursive --depth=1 https://github.com/taichi-dev/taichi-aot-demo
+    git clone --recursive --depth=1 https://github.com/PENGUINLIONG/taichi-aot-demo -b anroid-build
     cd taichi-aot-demo
 
     TAICHI_C_API_INSTALL_DIR=$(find $TAICHI_REPO_DIR -name cmake-install -type d | head -n 1)/c_api

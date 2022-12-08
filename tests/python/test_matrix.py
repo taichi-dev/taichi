@@ -1274,6 +1274,7 @@ def test_cross_scope_matrix_atomic_ops():
 
     assert (x[1, 3] == [100, 10, 1]).all()
 
+
 @test_utils.test(require=ti.extension.dynamic_index,
                  dynamic_index=True,
                  debug=True)

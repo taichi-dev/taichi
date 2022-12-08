@@ -481,6 +481,8 @@ if(TI_WITH_PYTHON)
             LIBRARY DESTINATION ${INSTALL_LIB_DIR}/core)
 endif()
 
+target_link_options(${CORE_WITH_PYBIND_LIBRARY_NAME} PRIVATE -Wl,--gc-sections)
+
 if (NOT APPLE)
     install(FILES ${CMAKE_SOURCE_DIR}/external/cuda_libdevice/slim_libdevice.10.bc
             DESTINATION ${INSTALL_LIB_DIR}/runtime)

@@ -49,6 +49,7 @@ endif()
 
 add_library(${TAICHI_C_API_NAME} SHARED ${C_API_SOURCE})
 target_link_static_library(${TAICHI_C_API_NAME} taichi_core)
+target_link_options(${TAICHI_C_API_NAME} PRIVATE -Wl,--gc-sections)
 
 # Avoid exporting third party symbols from libtaichi_c_api.so
 # Note that on Windows, external symbols will be excluded from .dll automatically, by default.

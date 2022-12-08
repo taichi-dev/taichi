@@ -7,7 +7,8 @@ TEST_F(CapiTest, DryRunAvailableArchs) {
   std::vector<TiArch> archs = ti::get_available_archs();
 }
 
-TEST_F(CapiTest, DryRunRuntime) {{         
+TEST_F(CapiTest, DryRunRuntime) {
+  {
     // CPU Runtime
     TiArch arch = TiArch::TI_ARCH_X64;
     ti::Runtime runtime(arch);

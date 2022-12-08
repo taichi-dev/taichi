@@ -13,10 +13,10 @@
 namespace taichi::lang {
 
 enum TiRhiResults {
-    ti_rhi_success = 0,
-    ti_rhi_error = -1,
-    ti_rhi_invalid_usage = -2,
-    ti_rhi_not_supported = -3,
+  ti_rhi_success = 0,
+  ti_rhi_error = -1,
+  ti_rhi_invalid_usage = -2,
+  ti_rhi_not_supported = -3,
 };
 
 constexpr size_t kBufferSizeEntireSize = size_t(-1);

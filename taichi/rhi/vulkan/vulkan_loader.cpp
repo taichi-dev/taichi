@@ -133,7 +133,8 @@ PFN_vkVoidFunction VulkanLoader::load_function(const char *name) {
       vkGetInstanceProcAddr(VulkanLoader::instance().vulkan_instance_, name);
   if (result == nullptr) {
     char msg_buf[256];
-    snprintf(msg_buf, sizeof(msg_buf), "Failed to load vulkan function %s", name);
+    snprintf(msg_buf, sizeof(msg_buf), "Failed to load vulkan function %s",
+             name);
     RHI_LOG_ERROR(msg_buf);
   }
   return result;

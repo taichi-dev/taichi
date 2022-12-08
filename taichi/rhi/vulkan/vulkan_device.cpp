@@ -131,8 +131,7 @@ const BidirMap<BlendFactor, VkBlendFactor> blend_factor_map = {
     {BlendFactor::one_minus_dst_alpha, VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA},
 };
 
-RhiReturn<VkBlendFactor> blend_factor_ti_to_vk(
-    BlendFactor factor) {
+RhiReturn<VkBlendFactor> blend_factor_ti_to_vk(BlendFactor factor) {
   if (!blend_factor_map.exists(factor)) {
     RHI_LOG_ERROR("BlendFactor cannot be mapped to vk");
     return {ti_rhi_not_supported, VK_BLEND_FACTOR_ONE};
@@ -338,9 +337,9 @@ void VulkanPipeline::create_pipeline_layout() {
 }
 
 void VulkanPipeline::create_compute_pipeline(const Params &params) {
-  char msg_buf[512]; 
-  RHI_DEBUG_SNPRINTF(msg_buf, sizeof(msg_buf),
-                     "Compiling Vulkan pipeline %s", params.name.data());
+  char msg_buf[512];
+  RHI_DEBUG_SNPRINTF(msg_buf, sizeof(msg_buf), "Compiling Vulkan pipeline %s",
+                     params.name.data());
   RHI_LOG_DEBUG(msg_buf);
   pipeline_ = vkapi::create_compute_pipeline(device_, 0, shader_stages_[0],
                                              pipeline_layout_);
@@ -501,12 +500,12 @@ void VulkanPipeline::create_graphics_pipeline(
           auto &[res, factor] =
               blend_factor_ti_to_vk(ti_param.color.dst_factor);
           RHI_ASSERT(res == ti_rhi_success);
-          state.dstColorBlendFactor = factor;          
+          state.dstColorBlendFactor = factor;
         }
         {
           auto &[res, op] = blend_op_ti_to_vk(ti_param.alpha.op);
           RHI_ASSERT(res == ti_rhi_success);
-          state.alphaBlendOp = op;  
+          state.alphaBlendOp = op;
         }
         {
           auto &[res, factor] =
@@ -669,7 +668,7 @@ void VulkanResourceBinder::image(uint32_t set,
   CHECK_SET_BINDINGS
   if (layout_locked_) {
     RHI_ASSERT(bindings.at(binding).type ==
-              VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+               VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
   } else {
     if (bindings.find(binding) != bindings.end()) {
       RHI_LOG_ERROR("Overriding last binding");
@@ -1414,7 +1413,7 @@ std::unique_ptr<Pipeline> VulkanDevice::create_pipeline(
     const PipelineSourceDesc &src,
     std::string name) {
   RHI_ASSERT(src.type == PipelineSourceType::spirv_binary &&
-            src.stage == PipelineStageType::compute);
+             src.stage == PipelineStageType::compute);
   RHI_ASSERT(src.data != nullptr && src.size == 0 &&
              "pipeline source cannot be empty");
 

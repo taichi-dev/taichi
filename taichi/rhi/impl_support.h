@@ -49,7 +49,8 @@ struct RhiReturn {
       : result(result), object(object) {
   }
 
-  RhiReturn(TiRhiResults &&result, T &&object) : result(result), object(std::move(object)) {
+  RhiReturn(TiRhiResults &&result, T &&object)
+      : result(result), object(std::move(object)) {
   }
 
   RhiReturn &operator=(const RhiReturn &other) = default;
@@ -86,4 +87,4 @@ struct BidirMap {
 };
 
 }  // namespace rhi_impl
-}  // namespace taichi
+}  // namespace taichi::lang

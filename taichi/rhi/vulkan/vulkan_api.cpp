@@ -156,7 +156,8 @@ IVkDescriptorSetLayout create_descriptor_set_layout(
   obj->device = device;
   VkResult res =
       vkCreateDescriptorSetLayout(device, create_info, nullptr, &obj->layout);
-  BAIL_ON_VK_BAD_RESULT_NO_RETURN(res, "failed to create descriptor set layout");
+  BAIL_ON_VK_BAD_RESULT_NO_RETURN(res,
+                                  "failed to create descriptor set layout");
   return obj;
 }
 
@@ -593,7 +594,8 @@ IVkAccelerationStructureKHR create_acceleration_structure(
 
   VkResult res = create_acceleration_structure_khr(buffer->device, &info,
                                                    nullptr, &obj->accel);
-  BAIL_ON_VK_BAD_RESULT_NO_RETURN(res, "failed to create acceleration structure");
+  BAIL_ON_VK_BAD_RESULT_NO_RETURN(res,
+                                  "failed to create acceleration structure");
 
   return obj;
 }

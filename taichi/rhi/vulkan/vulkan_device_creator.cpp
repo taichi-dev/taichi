@@ -472,12 +472,11 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
   // Get device properties
   VkPhysicalDeviceProperties physical_device_properties{};
   vkGetPhysicalDeviceProperties(physical_device_, &physical_device_properties);
-  
+
   {
     char msg_buf[256];
     RHI_DEBUG_SNPRINTF(
-        msg_buf,
-        sizeof(msg_buf),
+        msg_buf, sizeof(msg_buf),
         "Vulkan Device \"%s\" supports Vulkan %d version %d.%d.%d",
         physical_device_properties.deviceName,
         VK_API_VERSION_VARIANT(physical_device_properties.apiVersion),
@@ -783,8 +782,8 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
     create_info.enabledLayerCount = 0;
   }
   BAIL_ON_VK_BAD_RESULT_NO_RETURN(vkCreateDevice(physical_device_, &create_info,
-                                       kNoVkAllocCallbacks, &device_),
-                        "failed to create logical device");
+                                                 kNoVkAllocCallbacks, &device_),
+                                  "failed to create logical device");
   VulkanLoader::instance().load_device(device_);
 
   if (queue_family_indices_.compute_family.has_value()) {

@@ -1195,7 +1195,7 @@ def test_atomic_op_scalarize():
     _test_field_and_ndarray(field, ndarray, func, verify)
 
 
-@test_utils.test()
+@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
 def test_unsupported_logical_operations():
     @ti.kernel
     def test():

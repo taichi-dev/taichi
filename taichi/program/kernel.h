@@ -144,7 +144,7 @@ class TI_DLL_EXPORT Kernel : public Callable {
   }
 
   // Refactor2023:FIXME: Remove
-  void offload_to_executable(IRNode *stmt);
+  void offload_to_executable(const CompileConfig &config, IRNode *stmt);
 
   // Refactor2023:FIXME: Remove
   FunctionType get_compiled_func() {

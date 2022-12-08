@@ -348,8 +348,7 @@ bool Kernel::supports_lowering(Arch arch) {
          (arch == Arch::metal);
 }
 
-void Kernel::offload_to_executable(IRNode *stmt) {
-  auto config = program->this_thread_config();
+void Kernel::offload_to_executable(const CompileConfig &config, IRNode *stmt) {
   bool verbose = config.print_ir;
   if ((is_accessor && !config.print_accessor_ir) ||
       (is_evaluator && !config.print_evaluator_ir))

@@ -732,7 +732,8 @@ def test_ndarray_numpy_matrix_scalarize():
 
 
 @pytest.mark.parametrize('dtype', [ti.i64, ti.u64, ti.f64])
-@test_utils.test(arch=supported_archs_taichi_ndarray, require=ti.extension.data64)
+@test_utils.test(arch=supported_archs_taichi_ndarray,
+                 require=ti.extension.data64)
 def test_ndarray_python_scope_read_64bit(dtype):
     @ti.kernel
     def run(x: ti.types.ndarray()):

@@ -386,7 +386,70 @@ TEST_F(CapiTest,TestBehaviorDestroyEvent)
 }
 
 
+// TEST_F(CapiTest,TestBehaviorCopyImageDTD)
+// {
+//   TiError error = TI_ERROR_SUCCESS;
+//   TiImageExtent extent;
+//   extent.height = 512;
+//   extent.width = 512;
+//   extent.depth = 1;
+//   extent.array_layer_count = 1;
+//   TiImageAllocateInfo imageAllocateInfo;
+//   imageAllocateInfo.dimension = TI_IMAGE_DIMENSION_2D;
+//   imageAllocateInfo.format = TI_FORMAT_RGBA8;
+//   imageAllocateInfo.extent = extent;
+//   imageAllocateInfo.usage = TI_IMAGE_USAGE_STORAGE_BIT;
+//   imageAllocateInfo.mip_level_count = 1;
+//   TiImageOffset offset;
+//   offset.array_layer_offset = 0;
+//   offset.x = 0;
+//   offset.y = 0;
+//   offset.z = 0;
+//   if(ti::is_arch_available(TI_ARCH_VULKAN))
+//   {
+//     TiRuntime runtime = ti_create_runtime(TI_ARCH_VULKAN);
+//     TiImage image = ti_allocate_image(runtime, &imageAllocateInfo);
+//     TiImageSlice src_image;
+//     src_image.image = image;
+//     src_image.extent = extent;
+//     src_image.mip_level = 0;
+//     src_image.offset = offset;
+//     TiImageSlice dst_image;
+//     ti_copy_image_device_to_device(runtime,&dst_image,&src_image);                                //这个函数用了就编译不过了。
+//     error = ti_get_last_error(0,nullptr);
+//     TI_ASSERT(error == TI_ERROR_SUCCESS);
+//   }
+// }
 
+TEST_F(CapiTest,TestBehaviorCopyImageDTD)
+{
+  TiError error = TI_ERROR_SUCCESS;
+  TiMemoryAllocateInfo MemInfo;
+  MemInfo.usage = TI_MEMORY_USAGE_STORAGE_BIT;
+  MemInfo.size = 1024;
+  MemInfo.host_write = TI_TRUE;
+  MemInfo.export_sharing = TI_TRUE;
+  
+  if(ti::is_arch_available(TI_ARCH_VULKAN))
+  {
+    TiRuntime runtime = ti_create_runtime(TI_ARCH_VULKAN);
+    TiMemory memory = ti_allocate_memory(runtime,&MemInfo);
+    TiMemorySlice dst_memory;
+    dst_memory.memory = memory;
+    dst_memory.size = 64;
+    dst_memory.offset = 128;
+    TiMemorySlice src_memory;
+    src_memory.memory = memory;
+    dst_memory.size = 64;
+    dst_memory.offset = 256;
+
+    ti_copy_memory_device_to_device(runtime,&dst_memory,&src_memory);
+    error = ti_get_last_error(0,nullptr);
+
+
+
+  }
+}
 
 
 

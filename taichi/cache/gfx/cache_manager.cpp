@@ -148,7 +148,7 @@ CacheManager::CacheManager(Params &&init_params)
   offline_cache_metadata_.version[2] = TI_VERSION_PATCH;
 }
 
-CompiledKernelData CacheManager::load_or_compile(CompileConfig *config,
+CompiledKernelData CacheManager::load_or_compile(const CompileConfig *config,
                                                  Kernel *kernel) {
   if (kernel->is_evaluator) {
     spirv::lower(*config, kernel);
@@ -282,7 +282,7 @@ CompiledKernelData CacheManager::compile_and_cache_kernel(
   return *params_opt;
 }
 
-std::string CacheManager::make_kernel_key(CompileConfig *config,
+std::string CacheManager::make_kernel_key(const CompileConfig *config,
                                           Kernel *kernel) const {
   if (mode_ < MemAndDiskCache) {
     return kernel->get_name();

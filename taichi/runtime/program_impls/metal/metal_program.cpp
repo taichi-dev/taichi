@@ -45,9 +45,10 @@ MetalProgramImpl::MetalProgramImpl(CompileConfig &config_)
     : ProgramImpl(config_) {
 }
 
-FunctionType MetalProgramImpl::compile(Kernel *kernel) {
+FunctionType MetalProgramImpl::compile(const CompileConfig &compile_config,
+                                       Kernel *kernel) {
   return metal::compiled_kernel_to_metal_executable(
-      get_cache_manager()->load_or_compile(config, kernel),
+      get_cache_manager()->load_or_compile(&compile_config, kernel),
       metal_kernel_mgr_.get());
 }
 

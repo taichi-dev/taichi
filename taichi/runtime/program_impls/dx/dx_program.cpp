@@ -26,10 +26,11 @@ FunctionType compile_to_executable(Kernel *kernel,
 Dx11ProgramImpl::Dx11ProgramImpl(CompileConfig &config) : ProgramImpl(config) {
 }
 
-FunctionType Dx11ProgramImpl::compile(Kernel *kernel) {
-  spirv::lower(*config, kernel);
+FunctionType Dx11ProgramImpl::compile(const CompileConfig &compile_config,
+                                      Kernel *kernel) {
+  spirv::lower(compile_config, kernel);
   return directx11::compile_to_executable(
-      kernel, runtime_.get(), config->external_optimization_level > 0,
+      kernel, runtime_.get(), compile_config.external_optimization_level > 0,
       snode_tree_mgr_.get());
 }
 

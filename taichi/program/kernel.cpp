@@ -371,7 +371,7 @@ void launch_kernel(Program *prog,
                    RuntimeContext &ctx) {
   auto fn = kernel.get_compiled_func();
   if (!fn) {
-    kernel.set_compiled_func(fn = prog->compile(kernel));
+    kernel.set_compiled_func(fn = prog->compile(compile_config, kernel));
   }
 
   TI_ASSERT(!!fn);

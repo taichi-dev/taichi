@@ -310,8 +310,9 @@ class VulkanPipeline : public Pipeline {
       const std::vector<VertexInputBinding> &vertex_inputs,
       const std::vector<VertexInputAttribute> &vertex_attrs);
 
-  static VkShaderModule create_shader_module(VkDevice device,
-                                             const SpirvCodeView &code);
+  static rhi_impl::RhiReturn<VkShaderModule> create_shader_module(
+      VkDevice device,
+      const SpirvCodeView &code);
 
   struct GraphicsPipelineTemplate {
     VkPipelineViewportStateCreateInfo viewport_state{};
@@ -756,10 +757,6 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
       desc_set_layouts_;
   vkapi::IVkDescriptorPool desc_pool_{nullptr};
 };
-
-VkFormat buffer_format_ti_to_vk(BufferFormat f);
-
-BufferFormat buffer_format_vk_to_ti(VkFormat f);
 
 }  // namespace vulkan
 }  // namespace taichi::lang

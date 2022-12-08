@@ -2,15 +2,24 @@
 
 #include <string>
 #include <vector>
+#include <assert.h>
+#include <initializer_list>
 
-#include "taichi/common/core.h"
-#include "taichi/common/logging.h"
+#include "taichi/common/platform_macros.h"
 #include "taichi/common/serialization.h"
+#include "taichi/common/core.h"
 
 #include "taichi/rhi/device_capability.h"
 #include "taichi/rhi/arch.h"
 
 namespace taichi::lang {
+
+enum TiRhiResults {
+    ti_rhi_success = 0,
+    ti_rhi_error = -1,
+    ti_rhi_invalid_usage = -2,
+    ti_rhi_not_supported = -3,
+};
 
 constexpr size_t kBufferSizeEntireSize = size_t(-1);
 
@@ -123,26 +132,26 @@ class ResourceBinder {
                      uint32_t binding,
                      DeviceAllocation alloc,
                      ImageSamplerConfig sampler_config) {
-    TI_NOT_IMPLEMENTED
+    RHI_NOT_IMPLEMENTED;
   }
 
   virtual void rw_image(uint32_t set,
                         uint32_t binding,
                         DeviceAllocation alloc,
                         int lod) {
-    TI_NOT_IMPLEMENTED
+    RHI_NOT_IMPLEMENTED;
   }
 
   // Set vertex buffer (not implemented in compute only device)
   virtual void vertex_buffer(DevicePtr ptr, uint32_t binding = 0) {
-    TI_NOT_IMPLEMENTED
+    RHI_NOT_IMPLEMENTED;
   }
 
   // Set index buffer (not implemented in compute only device)
   // index_width = 4 -> uint32 index
   // index_width = 2 -> uint16 index
   virtual void index_buffer(DevicePtr ptr, size_t index_width) {
-    TI_NOT_IMPLEMENTED
+    RHI_NOT_IMPLEMENTED;
   }
 };
 
@@ -272,74 +281,74 @@ class CommandList {
                                 std::vector<float> *clear_colors,
                                 DeviceAllocation *depth_attachment,
                                 bool depth_clear) {
-    TI_NOT_IMPLEMENTED
+    RHI_NOT_IMPLEMENTED;
   }
   virtual void end_renderpass() {
-    TI_NOT_IMPLEMENTED
+    RHI_NOT_IMPLEMENTED;
   }
   virtual void draw(uint32_t num_verticies, uint32_t start_vertex = 0) {
-    TI_NOT_IMPLEMENTED
+    RHI_NOT_IMPLEMENTED;
   }
   virtual void draw_instance(uint32_t num_verticies,
                              uint32_t num_instances,
                              uint32_t start_vertex = 0,
                              uint32_t start_instance = 0) {
-    TI_NOT_IMPLEMENTED
+    RHI_NOT_IMPLEMENTED;
   }
   virtual void set_line_width(float width) {
-    TI_NOT_IMPLEMENTED
+    RHI_NOT_IMPLEMENTED;
   }
   virtual void draw_indexed(uint32_t num_indicies,
                             uint32_t start_vertex = 0,
                             uint32_t start_index = 0) {
-    TI_NOT_IMPLEMENTED
+    RHI_NOT_IMPLEMENTED;
   }
   virtual void draw_indexed_instance(uint32_t num_indicies,
                                      uint32_t num_instances,
                                      uint32_t start_vertex = 0,
                                      uint32_t start_index = 0,
                                      uint32_t start_instance = 0) {
-    TI_NOT_IMPLEMENTED
+    RHI_NOT_IMPLEMENTED;
   }
   virtual void image_transition(DeviceAllocation img,
                                 ImageLayout old_layout,
                                 ImageLayout new_layout) {
-    TI_NOT_IMPLEMENTED
+    RHI_NOT_IMPLEMENTED;
   }
   virtual void buffer_to_image(DeviceAllocation dst_img,
                                DevicePtr src_buf,
                                ImageLayout img_layout,
                                const BufferImageCopyParams &params) {
-    TI_NOT_IMPLEMENTED
+    RHI_NOT_IMPLEMENTED;
   }
   virtual void image_to_buffer(DevicePtr dst_buf,
                                DeviceAllocation src_img,
                                ImageLayout img_layout,
                                const BufferImageCopyParams &params) {
-    TI_NOT_IMPLEMENTED
+    RHI_NOT_IMPLEMENTED;
   }
   virtual void copy_image(DeviceAllocation dst_img,
                           DeviceAllocation src_img,
                           ImageLayout dst_img_layout,
                           ImageLayout src_img_layout,
                           const ImageCopyParams &params) {
-    TI_NOT_IMPLEMENTED
+    RHI_NOT_IMPLEMENTED;
   }
   virtual void blit_image(DeviceAllocation dst_img,
                           DeviceAllocation src_img,
                           ImageLayout dst_img_layout,
                           ImageLayout src_img_layout,
                           const ImageCopyParams &params) {
-    TI_NOT_IMPLEMENTED
+    RHI_NOT_IMPLEMENTED;
   }
   virtual void signal_event(DeviceEvent *event) {
-    TI_NOT_IMPLEMENTED
+    RHI_NOT_IMPLEMENTED;
   }
   virtual void reset_event(DeviceEvent *event) {
-    TI_NOT_IMPLEMENTED
+    RHI_NOT_IMPLEMENTED;
   }
   virtual void wait_event(DeviceEvent *event) {
-    TI_NOT_IMPLEMENTED
+    RHI_NOT_IMPLEMENTED;
   }
 };
 
@@ -385,7 +394,7 @@ class Stream {
   virtual void command_sync() = 0;
 
   virtual double device_time_elapsed_us() const {
-    TI_NOT_IMPLEMENTED
+    RHI_NOT_IMPLEMENTED;
   }
 };
 
@@ -420,7 +429,7 @@ class Device {
       const PipelineSourceDesc &src,
       std::string name = "Pipeline") = 0;
 
-  virtual std::unique_ptr<DeviceEvent> create_event(){TI_NOT_IMPLEMENTED}
+  virtual std::unique_ptr<DeviceEvent> create_event(){RHI_NOT_IMPLEMENTED;}
 
   std::unique_ptr<DeviceAllocationGuard> allocate_memory_unique(
       const AllocParams &params) {
@@ -428,8 +437,8 @@ class Device {
         this->allocate_memory(params));
   }
 
-  virtual uint64 fetch_result_uint64(int i, uint64 *result_buffer) {
-    TI_NOT_IMPLEMENTED
+  virtual uint64_t fetch_result_uint64(int i, uint64_t *result_buffer) {
+    RHI_NOT_IMPLEMENTED;
   }
 
   // Each thraed will acquire its own stream
@@ -495,7 +504,7 @@ class Surface {
   virtual void resize(uint32_t width, uint32_t height) = 0;
   virtual DeviceAllocation get_depth_data(DeviceAllocation &depth_alloc) = 0;
   virtual DeviceAllocation get_image_data() {
-    TI_NOT_IMPLEMENTED
+    RHI_NOT_IMPLEMENTED;
   }
 };
 

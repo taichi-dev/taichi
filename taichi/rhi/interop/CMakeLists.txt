@@ -19,7 +19,6 @@ endif()
 target_include_directories(${INTEROP_RHI}
   PRIVATE
     ${PROJECT_SOURCE_DIR}
-    ${PROJECT_SOURCE_DIR}/external/eigen
     ${PROJECT_SOURCE_DIR}/external/volk
     ${PROJECT_SOURCE_DIR}/external/spdlog/include
     ${PROJECT_SOURCE_DIR}/external/SPIRV-Tools/include

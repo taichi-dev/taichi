@@ -202,11 +202,17 @@ void UnaryOpExpression::flatten(FlattenContext *ctx) {
 }
 
 Expr to_broadcast_tensor(const Expr &elt, const DataType &dt) {
-  TI_ASSERT(dt->is<TensorType>());
-  if (elt->ret_type == dt) {
+  if (!elt->ret_type->is<TensorType>() && !dt->is<TensorType>())
     return elt;
-  } else if (elt->ret_type->is<TensorType>()) {
-    TI_ERROR("Cannot broadcast tensor to tensor");
+
+  if (elt->ret_type->is<TensorType>() && dt->is<TensorType>()) {
+    // Only tensor shape will be checked here, since the dtype will
+    // be promoted later at irpass::type_check()
+    if (elt->ret_type.get_shape() != dt.get_shape()) {
+      TI_ERROR("Cannot broadcast tensor to tensor");
+    } else {
+      return elt;
+    }
   }
 
   auto tensor_type = dt->as<TensorType>();

@@ -19,12 +19,10 @@ target_include_directories(${VULKAN_RHI}
   PRIVATE
     ${PROJECT_SOURCE_DIR}
     ${PROJECT_SOURCE_DIR}/external/SPIRV-Tools/include
-    ${PROJECT_SOURCE_DIR}/external/eigen
     ${PROJECT_SOURCE_DIR}/external/FP16/include
     ${PROJECT_SOURCE_DIR}/external/SPIRV-Reflect
   PRIVATE
     ${PROJECT_SOURCE_DIR}/external/spdlog/include
-    ${LLVM_INCLUDE_DIRS}
   PUBLIC
     ${PROJECT_SOURCE_DIR}/external/volk
     ${PROJECT_SOURCE_DIR}/external/Vulkan-Headers/include

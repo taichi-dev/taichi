@@ -230,7 +230,7 @@ const std::unique_ptr<gfx::CacheManager>
     params.mode = config->offline_cache ? Mgr::MemAndDiskCache : Mgr::MemCache;
     params.cache_path = config->offline_cache_file_path;
     params.runtime = vulkan_runtime_.get();
-    params.caps = embedded_device_->device()->get_current_caps();
+    params.caps = embedded_device_->device()->get_caps();
     params.compiled_structs = &snode_tree_mgr_->get_compiled_structs();
     cache_manager_ = std::make_unique<gfx::CacheManager>(std::move(params));
   }

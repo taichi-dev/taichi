@@ -68,6 +68,16 @@ def get_clangpp():
     return _clangpp_presence
 
 
+def is_matrix_class(rhs):
+    matrix_class = False
+    try:
+        if rhs._is_matrix_class:
+            matrix_class = True
+    except:
+        pass
+    return matrix_class
+
+
 def is_taichi_class(rhs):
     taichi_class = False
     try:

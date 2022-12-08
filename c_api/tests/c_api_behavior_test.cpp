@@ -198,3 +198,116 @@ TEST_F (CapiTest, TestBehaviorMapMemory)
   TI_ASSERT(error,TI_ERROR_ARGUMENT_NULL);
   ti_set_last_error(TI_ERROR_SUCCESS,nullptr);
 }
+
+TEST_F (CapiTest, TestBehaviorUnmapMemory)
+{
+  TiMemoryAllocateInfo* allocate_info = new TiMemoryAllocateInfo;
+  allocate_info->size = 1024;
+  allocate_info->usage = TI_MEMORY_USAGE_STORAGE_BIT;
+  if(ti::is_arch_available(TI_ARCH_VULKAN))
+  {
+    TiRuntime runtime = ti_create_runtime(TI_ARCH_VULKAN);
+    TiMemory memory = ti_allocate_memory(runtime,allocate_info);
+    ti_map_memory(runtime,memory);
+    ti_unmap_memory(runtime,memory);
+    TiError error = ti_get_last_error(0,nullptr);
+    TI_ASSERT(error == TI_ERROR_SUCCESS);
+    ti_set_last_error(TI_ERROR_SUCCESS,nullptr);
+  }
+}
+
+TEST_F (CapiTest,TestBehaviorAllocateImage)
+{
+  TiError error = TI_ERROR_SUCCESS;
+  TiImageExtent extent;
+  extent.height=512;
+  extent.width = 512;
+  extent.depth = 1;
+  extent.array_layer_count = 1;
+  TiImageAllocateInfo imageAllocateInfo;
+  imageAllocateInfo.dimension=TI_IMAGE_DIMENSION_2D;
+  imageAllocateInfo.format = TI_FORMAT_RGBA8;
+  imageAllocateInfo.extent = extent;
+  imageAllocateInfo.usage = TI_IMAGE_USAGE_STORAGE_BIT;
+  imageAllocateInfo.mip_level_count =1;
+
+  if(ti::is_arch_available(TI_ARCH_VULKAN))
+  {
+    std::cout<<"000"<<std::endl;
+    TiRuntime runtime = ti_create_runtime(TI_ARCH_VULKAN);
+    TiImage image = ti_allocate_image(runtime,&imageAllocateInfo);
+    error = ti_get_last_error(0,nullptr);
+    TI_ASSERT(error==TI_ERROR_SUCCESS);
+    TI_ASSERT(image!=TI_NULL_HANDLE);
+    ti_set_last_error(TI_ERROR_SUCCESS,nullptr);
+
+    imageAllocateInfo.dimension = TI_IMAGE_DIMENSION_MAX_ENUM;
+    image = ti_allocate_image(runtime,&imageAllocateInfo);
+    error = ti_get_last_error(0,nullptr);
+    TI_ASSERT(error == TI_ERROR_ARGUMENT_OUT_OF_RANGE);
+    TI_ASSERT(image == TI_NULL_HANDLE);
+    ti_set_last_error(TI_ERROR_SUCCESS,nullptr);
+
+    imageAllocateInfo.dimension = TI_IMAGE_DIMENSION_2D;
+    imageAllocateInfo.format = TI_FORMAT_MAX_ENUM;
+    image = ti_allocate_image(runtime,&imageAllocateInfo);
+    error = ti_get_last_error(0,nullptr);
+    TI_ASSERT(error == TI_ERROR_ARGUMENT_OUT_OF_RANGE);
+    TI_ASSERT(image == TI_NULL_HANDLE);
+    imageAllocateInfo.format = TI_FORMAT_RGB16F;
+  }
+
+  TiImage image = ti_allocate_image(TI_NULL_HANDLE,nullptr);
+  TI_ASSERT(image==TI_NULL_HANDLE);
+  error = ti_get_last_error(0,nullptr);
+  TI_ASSERT(error==TI_ERROR_ARGUMENT_NULL);
+
+  if(ti::is_arch_available(TI_ARCH_OPENGL))
+  {
+    std::cout<<"openGL"<<std::endl;
+    TiRuntime runtime = ti_create_runtime(TI_ARCH_OPENGL);
+    TiImage image = ti_allocate_image(runtime, &imageAllocateInfo);          //why not support
+    error = ti_get_last_error(0,nullptr);
+    TI_ASSERT(error == TI_ERROR_SUCCESS);
+    TI_ASSERT(image != TI_NULL_HANDLE);
+    ti_set_last_error(TI_ERROR_SUCCESS, nullptr);
+  }
+}
+
+TEST_F(CapiTest,TestBehaviorFreeImage)
+{
+   TiError error = TI_ERROR_SUCCESS;
+  TiImageExtent extent;
+  extent.height=512;
+  extent.width = 512;
+  extent.depth = 1;
+  extent.array_layer_count = 1;
+  TiImageAllocateInfo imageAllocateInfo;
+  imageAllocateInfo.dimension=TI_IMAGE_DIMENSION_2D;
+  imageAllocateInfo.format = TI_FORMAT_RGBA8;
+  imageAllocateInfo.extent = extent;
+  imageAllocateInfo.usage = TI_IMAGE_USAGE_STORAGE_BIT;
+  imageAllocateInfo.mip_level_count =1;
+
+  if(ti::is_arch_available(TI_ARCH_VULKAN))
+  {
+    std::cout<<"vulkan"<<std::endl;
+    TiRuntime runtime = ti_create_runtime(TI_ARCH_VULKAN);
+    TiImage image = ti_allocate_image(runtime,&imageAllocateInfo);
+    ti_free_image(runtime,image);
+    error = ti_get_last_error(0,nullptr);
+    TI_ASSERT(error == TI_ERROR_SUCCESS);
+    ti_free_image(TI_NULL_HANDLE,nullptr);
+    error = ti_get_last_error(0,nullptr);
+    TI_ASSERT(error == TI_ERROR_ARGUMENT_NULL);
+    ti_set_last_error(TI_ERROR_SUCCESS,nullptr);
+  }
+}
+
+
+
+
+
+
+
+

@@ -1,7 +1,7 @@
 import taichi as ti
 
 arch = ti.vulkan if ti._lib.core.with_vulkan() else ti.cuda
-ti.init(arch=arch, real_matrix=True, real_matrix_scalarize=True)
+ti.init(arch=arch)
 
 n = 128
 quad_size = 1.0 / n

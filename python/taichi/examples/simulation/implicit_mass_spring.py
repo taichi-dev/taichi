@@ -252,9 +252,9 @@ def main():
     args, unknowns = parser.parse_known_args()
     arch = args.arch
     if arch in ["x64", "cpu", "arm64"]:
-        ti.init(arch=ti.cpu, real_matrix=True, real_matrix_scalarize=True)
+        ti.init(arch=ti.cpu)
     elif arch in ["cuda", "gpu"]:
-        ti.init(arch=ti.cuda, real_matrix=True, real_matrix_scalarize=True)
+        ti.init(arch=ti.cuda)
     else:
         raise ValueError('Only CPU and CUDA backends are supported for now.')
 

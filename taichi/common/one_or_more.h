@@ -1,5 +1,8 @@
 #pragma once
 
+#include <vector>
+#include <variant>
+
 namespace taichi {
 
 template <typename T, class Container = std::vector<T>>

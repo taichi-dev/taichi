@@ -12,7 +12,6 @@
 #include "taichi/struct/snode_tree.h"
 #include "taichi/program/compile_config.h"
 
-#include "taichi/runtime/runtime.h"
 #include "taichi/system/threading.h"
 #include "taichi/system/memory_pool.h"
 
@@ -138,7 +137,6 @@ class LlvmRuntimeExecutor {
 
  private:
   CompileConfig *config_;
-  std::unique_ptr<Runtime> runtime_mem_info_{nullptr};
 
   // TODO(zhanlue): compile - runtime split for TaichiLLVMContext
   //
@@ -159,6 +157,8 @@ class LlvmRuntimeExecutor {
   // good buddy
   friend LlvmProgramImpl;
   friend SNodeTreeBufferManager;
+
+  KernelProfilerBase *profiler_ = nullptr;
 };
 
 }  // namespace taichi::lang

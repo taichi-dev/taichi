@@ -20,14 +20,11 @@ inline std::vector<TiArch> get_available_archs() {
 }
 inline bool is_arch_available(TiArch arch) {
   std::vector<TiArch> archs = get_available_archs();
-  std::cout << "available archs: ";
   for (size_t i = 0; i < archs.size(); ++i) {
-    std::cout << archs[i] << " ";
     if (archs.at(i) == arch) {
       return true;
     }
   }
-  std::cout << std::endl;
   return false;
 }
 

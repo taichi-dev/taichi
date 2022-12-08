@@ -202,6 +202,18 @@
     "CapiTest.TestCreateTcmAotModule": [
         ["cpp", "aot", "python_scripts", "tcm_test.py"],
         "--arch=vulkan"
+    ],
+    "CapiTest.TestBehaviorLoadAOTModuleVulkan": [
+        ["cpp", "aot", "python_scripts", "aot_module_test.py"],
+        "--arch=vulkan"
+    ],
+    "CapiTest.TestBehaviorDestroyAotModuleVulkan": [
+        ["cpp", "aot", "python_scripts", "aot_module_test.py"],
+        "--arch=vulkan"
+    ],
+    "CapiTest.TestBehaviorGetCgraphVulkan": [
+        ["cpp", "aot", "python_scripts", "graph_aot_test_vulkan.py"],
+        "--arch=vulkan"
     ]
 }
 }

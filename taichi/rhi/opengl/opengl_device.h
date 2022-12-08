@@ -16,14 +16,12 @@ class GLResourceBinder : public ResourceBinder {
  public:
   ~GLResourceBinder() override;
 
-  struct Bindings : public ResourceBinder::Bindings {
+  struct Bindings {
     // OpenGL has no sets, default set = 0
     uint32_t binding{0};
     GLuint buffer{0};
     GLuint image{0};
   };
-
-  std::unique_ptr<ResourceBinder::Bindings> materialize() override;
 
   void rw_buffer(uint32_t set,
                  uint32_t binding,
@@ -98,8 +96,6 @@ class GLCommandList : public CommandList {
 
   void bind_pipeline(Pipeline *p) override;
   void bind_resources(ResourceBinder *binder) override;
-  void bind_resources(ResourceBinder *binder,
-                      ResourceBinder::Bindings *bindings) override;
   void buffer_barrier(DevicePtr ptr, size_t size) override;
   void buffer_barrier(DeviceAllocation alloc) override;
   void memory_barrier() override;

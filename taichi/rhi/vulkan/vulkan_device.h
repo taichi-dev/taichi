@@ -195,17 +195,9 @@ class VulkanResourceBinder : public ResourceBinder {
     }
   };
 
-  struct VulkanBindings : public Bindings {
-    std::vector<
-        std::pair<vkapi::IVkDescriptorSetLayout, vkapi::IVkDescriptorSet>>
-        sets;
-  };
-
   explicit VulkanResourceBinder(
       VkPipelineBindPoint bind_point = VK_PIPELINE_BIND_POINT_COMPUTE);
   ~VulkanResourceBinder() override;
-
-  std::unique_ptr<Bindings> materialize() override;
 
   void rw_buffer(uint32_t set,
                  uint32_t binding,
@@ -368,8 +360,6 @@ class VulkanCommandList : public CommandList {
 
   void bind_pipeline(Pipeline *p) override;
   void bind_resources(ResourceBinder *binder) override;
-  void bind_resources(ResourceBinder *binder,
-                      ResourceBinder::Bindings *bindings) override;
   void buffer_barrier(DevicePtr ptr, size_t size) override;
   void buffer_barrier(DeviceAllocation alloc) override;
   void memory_barrier() override;

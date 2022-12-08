@@ -25,10 +25,6 @@ class ResourceBinderImpl : public ResourceBinder {
   explicit ResourceBinderImpl(const Device *dev) : dev_(dev) {
   }
 
-  std::unique_ptr<Bindings> materialize() override {
-    TI_NOT_IMPLEMENTED;
-    return nullptr;
-  }
   // RW buffers
   void rw_buffer(uint32_t set,
                  uint32_t binding,
@@ -122,10 +118,6 @@ class CommandListImpl : public CommandList {
         static_cast<ResourceBinderImpl *>(binder)->binding_map();
   }
 
-  void bind_resources(ResourceBinder *binder,
-                      ResourceBinder::Bindings *bindings) override {
-    TI_NOT_IMPLEMENTED;
-  }
   void buffer_barrier(DevicePtr ptr, size_t size) override {
     TI_NOT_IMPLEMENTED;
   }

@@ -571,10 +571,6 @@ VulkanResourceBinder::~VulkanResourceBinder() {
   }
 }
 
-std::unique_ptr<ResourceBinder::Bindings> VulkanResourceBinder::materialize() {
-  return std::unique_ptr<Bindings>();
-}
-
 VkSampler create_sampler(ImageSamplerConfig config, VkDevice device) {
   VkSampler sampler = VK_NULL_HANDLE;
 
@@ -919,10 +915,6 @@ void VulkanCommandList::bind_resources(ResourceBinder *ti_binder) {
       buffer_->refs.push_back(buffer);
     }
   }
-}
-
-void VulkanCommandList::bind_resources(ResourceBinder *binder,
-                                       ResourceBinder::Bindings *bindings) {
 }
 
 void VulkanCommandList::buffer_barrier(DevicePtr ptr, size_t size) {

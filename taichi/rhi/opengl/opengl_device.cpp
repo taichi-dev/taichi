@@ -241,11 +241,6 @@ void GLResourceBinder::index_buffer(DevicePtr ptr, size_t index_width) {
   TI_NOT_IMPLEMENTED;
 }
 
-std::unique_ptr<ResourceBinder::Bindings> GLResourceBinder::materialize() {
-  TI_NOT_IMPLEMENTED;
-  return nullptr;
-}
-
 GLPipeline::GLPipeline(const PipelineSourceDesc &desc,
                        const std::string &name) {
   GLuint shader_id;
@@ -363,11 +358,6 @@ void GLCommandList::bind_resources(ResourceBinder *_binder) {
     cmd->target = device_->get_image_gl_dims(texture);
     recorded_commands_.push_back(std::move(cmd));
   }
-}
-
-void GLCommandList::bind_resources(ResourceBinder *binder,
-                                   ResourceBinder::Bindings *bindings) {
-  TI_NOT_IMPLEMENTED;
 }
 
 template <typename T>

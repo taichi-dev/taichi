@@ -25,10 +25,6 @@ void check_dx_error(HRESULT hr, const char *msg) {
   }
 }
 
-std::unique_ptr<ResourceBinder::Bindings> Dx11ResourceBinder::materialize() {
-  TI_NOT_IMPLEMENTED;
-}
-
 void Dx11ResourceBinder::rw_buffer(uint32_t set,
                                    uint32_t binding,
                                    DevicePtr ptr,
@@ -126,11 +122,6 @@ void Dx11CommandList::bind_resources(ResourceBinder *binder_) {
 
     cb_slot_watermark_ = std::max(cb_slot_watermark_, int(binding));
   }
-}
-
-void Dx11CommandList::bind_resources(ResourceBinder *binder,
-                                     ResourceBinder::Bindings *bindings) {
-  TI_NOT_IMPLEMENTED;
 }
 
 void Dx11CommandList::buffer_barrier(DevicePtr ptr, size_t size) {

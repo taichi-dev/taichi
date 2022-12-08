@@ -3,6 +3,8 @@
 #include <map>
 #include <cstdint>
 
+#include "taichi/common/serialization.h"
+
 namespace taichi::lang {
 
 // For backend dependent code (e.g. codegen)

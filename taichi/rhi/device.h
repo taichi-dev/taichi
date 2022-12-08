@@ -5,9 +5,7 @@
 #include <assert.h>
 #include <initializer_list>
 
-#include "taichi/common/platform_macros.h"
-#include "taichi/common/serialization.h"
-#include "taichi/common/core.h"
+#include "taichi/common/logging.h"
 
 #include "taichi/rhi/device_capability.h"
 #include "taichi/rhi/arch.h"

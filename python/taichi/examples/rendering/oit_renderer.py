@@ -1,3 +1,5 @@
+# A demo of order-independent transparency using Taichi
+# Reference: https://github.com/nvpro-samples/vk_order_independent_transparency
 import taichi as ti
 from taichi.math import clamp, mix, normalize, vec3, vec4
 

@@ -6,11 +6,17 @@ cmake_minimum_required(VERSION 3.0)
 # 1. Existence of circular dependencies in Taichi repo (https://github.com/taichi-dev/taichi/issues/6838)
 # 2. Link order restriction from `ld` linker on Linux (https://stackoverflow.com/questions/45135/why-does-the-order-in-which-libraries-are-linked-sometimes-cause-errors-in-gcc), which has zero-tolerance w.r.t circular dependencies.
 function(target_link_static_library TARGET OBJECT_TARGET)
+
     set(STATIC_TARGET "${OBJECT_TARGET}_static")
     add_library(${STATIC_TARGET})
     target_link_libraries(${STATIC_TARGET} PUBLIC ${OBJECT_TARGET})
+if(LINUX)
     get_target_property(LINK_LIBS ${OBJECT_TARGET} LINK_LIBRARIES)
     target_link_libraries(${TARGET} PRIVATE "-Wl,--start-group" "${STATIC_TARGET}" "${LINK_LIBS}" "-Wl,--end-group")
+else()
+    target_link_libraries(${TARGET} PRIVATE "${STATIC_TARGET}")
+endif()
+
 endfunction()
 
 

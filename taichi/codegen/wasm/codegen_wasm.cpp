@@ -254,7 +254,7 @@ LLVMCompiledTask KernelCodeGenWASM::compile_task(
     const CompileConfig *config,
     std::unique_ptr<llvm::Module> &&module,
     OffloadedStmt *stmt) {
-  kernel->offload_to_executable(ir);
+  kernel->offload_to_executable(*config, ir);
   bool init_flag = module == nullptr;
   std::vector<OffloadedTask> name_list;
   auto gen =

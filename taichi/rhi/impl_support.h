@@ -76,7 +76,7 @@ struct BidirMap {
     return rhi2backend.find(v) != rhi2backend.cend();
   }
 
-  const BackendType &at(RhiType &v) const {
+  BackendType at(RhiType &v) const {
     return rhi2backend.at(v);
   }
 
@@ -84,7 +84,7 @@ struct BidirMap {
     return backend2rhi.find(v) != backend2rhi.cend();
   }
 
-  const RhiType &at(BackendType &v) const {
+  RhiType at(BackendType &v) const {
     return backend2rhi.at(v);
   }
 };

@@ -346,7 +346,7 @@ TiMemory ti_allocate_memory(TiRuntime runtime,
 
   try {
     out = ((Runtime *)runtime)->allocate_memory(params);
-  } catch (const std::bad_alloc& e) {
+  } catch (const std::bad_alloc &e) {
     ti_set_last_error(TI_ERROR_OUT_OF_MEMORY, "allocate_memory");
     return TI_NULL_HANDLE;
   }

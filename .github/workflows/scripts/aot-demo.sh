@@ -52,7 +52,7 @@ function prepare-unity-build-env {
     export TAICHI_REPO_DIR=$(pwd)
 
     setup-android-ndk-env
-    git clone --reference-if-able /var/lib/git-cache https://github.com/damnkk/JYF_taichi-unity2 JYF_taichi-unity2 -b debug_unity
+    git clone --reference-if-able /var/lib/git-cache -b debug_unity https://github.com/damnkk/JYF_taichi-unity2 JYF_taichi-unity2
     mkdir tu2-build
     pushd tu2-build
     cmake ../taichi-unity2 -DTAICHI_C_API_INSTALL_DIR=$TAICHI_REPO_DIR/_skbuild/linux-x86_64-3.9/cmake-install/c_api $ANDROID_CMAKE_ARGS

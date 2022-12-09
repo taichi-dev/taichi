@@ -40,7 +40,7 @@ using host_vsnprintf_type = int (*)(char *,
                                     const char *,
                                     std::va_list);
 using vm_allocator_type = void *(*)(void *, std::size_t, std::size_t);
-using RangeForTaskFunc = void(RuntimeContext *, const char *tls, int i);
+using RangeForTaskFunc = void(RuntimeContext *, const char *tls, int block_begin, int block_end);
 using MeshForTaskFunc = void(RuntimeContext *, const char *tls, uint32_t i);
 using parallel_for_type = void (*)(void *thread_pool,
                                    int splits,
@@ -1466,14 +1466,16 @@ void cpu_parallel_range_for_task(void *range_context,
   if (ctx.step == 1) {
     int block_start = ctx.begin + task_id * ctx.block_size;
     int block_end = std::min(block_start + ctx.block_size, ctx.end);
-    for (int i = block_start; i < block_end; i++) {
-      ctx.body(&this_thread_context, tls_ptr, i);
-    }
+    // for (int i = block_start; i < block_end; i++) {
+    //   ctx.body(&this_thread_context, tls_ptr, i);
+    // }
+    printf("@@@@@ block_start %d, block_end %d\n", block_start, block_end);
+    ctx.body(&this_thread_context, tls_ptr, block_start, block_end);
   } else if (ctx.step == -1) {
     int block_start = ctx.end - task_id * ctx.block_size;
     int block_end = std::max(ctx.begin, block_start * ctx.block_size);
     for (int i = block_start - 1; i >= block_end; i--) {
-      ctx.body(&this_thread_context, tls_ptr, i);
+      // ctx.body(&this_thread_context, tls_ptr, i);
     }
   }
   if (ctx.epilogue)
@@ -1517,17 +1519,17 @@ void gpu_parallel_range_for(RuntimeContext *context,
                             RangeForTaskFunc *func,
                             range_for_xlogue epilogue,
                             const std::size_t tls_size) {
-  int idx = thread_idx() + block_dim() * block_idx() + begin;
-  alignas(8) char tls_buffer[tls_size];
-  auto tls_ptr = &tls_buffer[0];
-  if (prologue)
-    prologue(context, tls_ptr);
-  while (idx < end) {
-    func(context, tls_ptr, idx);
-    idx += block_dim() * grid_dim();
-  }
-  if (epilogue)
-    epilogue(context, tls_ptr);
+  // int idx = thread_idx() + block_dim() * block_idx() + begin;
+  // alignas(8) char tls_buffer[tls_size];
+  // auto tls_ptr = &tls_buffer[0];
+  // if (prologue)
+  //   prologue(context, tls_ptr);
+  // while (idx < end) {
+  //   func(context, tls_ptr, idx);
+  //   idx += block_dim() * grid_dim();
+  // }
+  // if (epilogue)
+  //   epilogue(context, tls_ptr);
 }
 
 struct mesh_task_helper_context {
@@ -1556,7 +1558,7 @@ void cpu_parallel_mesh_for_task(void *range_context,
   for (int idx = block_start; idx < block_end; idx++) {
     if (ctx.prologue)
       ctx.prologue(ctx.context, tls_ptr, idx);
-    ctx.body(&this_thread_context, tls_ptr, idx);
+    // ctx.body(&this_thread_context, tls_ptr, idx);
     if (ctx.epilogue)
       ctx.epilogue(ctx.context, tls_ptr, idx);
   }

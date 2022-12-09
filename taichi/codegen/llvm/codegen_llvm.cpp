@@ -1128,6 +1128,54 @@ void TaskCodeGenLLVM::create_increment(llvm::Value *ptr, llvm::Value *value) {
   builder->CreateStore(builder->CreateAdd(original_value, value), ptr);
 }
 
+void TaskCodeGenLLVM::create_cpu_block_range_for(OffloadedStmt* stmt, llvm::Value *begin_var, llvm::Value *end_var) {
+  using namespace llvm;
+  BasicBlock *body = BasicBlock::Create(*llvm_context, "for_loop_body", func);
+  BasicBlock *loop_inc =
+      BasicBlock::Create(*llvm_context, "for_loop_inc", func);
+  BasicBlock *after_loop = BasicBlock::Create(*llvm_context, "after_for", func);
+  BasicBlock *loop_test =
+      BasicBlock::Create(*llvm_context, "for_loop_test", func);
+
+  auto loop_var_ty = tlctx->get_data_type(PrimitiveType::i32);
+  auto loop_var = create_entry_block_alloca(PrimitiveType::i32);
+  loop_vars_llvm[stmt].push_back(loop_var);
+  builder->CreateStore(builder->CreateLoad(loop_var_ty, begin_var), loop_var);
+  
+  builder->CreateBr(loop_test);
+  {
+    // test block
+    builder->SetInsertPoint(loop_test);
+    llvm::Value *cond;
+    cond = builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SLT,
+                               builder->CreateLoad(loop_var_ty, loop_var),
+                               builder->CreateLoad(loop_var_ty, end_var));
+                              // loop_var, end_var);
+    builder->CreateCondBr(cond, body, after_loop);
+  }
+  {
+    {
+      auto lrg = make_loop_reentry_guard(this);
+      // The continue stmt should jump to the loop-increment block!
+      current_loop_reentry = loop_inc;
+      // body cfg
+      builder->SetInsertPoint(body);
+      stmt->body->accept(this);
+    }
+    if (!returned) {
+      builder->CreateBr(loop_inc);
+    } else {
+      returned = false;
+    }
+    builder->SetInsertPoint(loop_inc);
+
+    create_increment(loop_var, tlctx->get_constant(1));
+    builder->CreateBr(loop_test);
+  }
+  // next cfg
+  builder->SetInsertPoint(after_loop);
+}
+
 void TaskCodeGenLLVM::create_naive_range_for(RangeForStmt *for_stmt) {
   using namespace llvm;
   BasicBlock *body = BasicBlock::Create(*llvm_context, "for_loop_body", func);

@@ -164,6 +164,8 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   // Direct translation
   void create_naive_range_for(RangeForStmt *for_stmt);
 
+  void create_cpu_block_range_for(OffloadedStmt* stmt, llvm::Value *begin_var, llvm::Value *end_var);
+
   static std::string get_runtime_snode_name(SNode *snode);
 
   void visit(Block *stmt_list) override;

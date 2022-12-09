@@ -38,15 +38,25 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
     // The loop body
     llvm::Function *body;
     {
+      // auto guard = get_function_creation_guard(
+      //     {llvm::PointerType::get(get_runtime_type("RuntimeContext"), 0),
+      //      llvm::Type::getInt8PtrTy(*llvm_context),
+      //      tlctx->get_data_type<int>()});
+
+      // auto loop_var = create_entry_block_alloca(PrimitiveType::i32);
+      // loop_vars_llvm[stmt].push_back(loop_var);
+      // builder->CreateStore(get_arg(2), loop_var);
+      // stmt->body->accept(this);
       auto guard = get_function_creation_guard(
           {llvm::PointerType::get(get_runtime_type("RuntimeContext"), 0),
            llvm::Type::getInt8PtrTy(*llvm_context),
-           tlctx->get_data_type<int>()});
+           tlctx->get_data_type<int>(), tlctx->get_data_type<int>()});
 
-      auto loop_var = create_entry_block_alloca(PrimitiveType::i32);
-      loop_vars_llvm[stmt].push_back(loop_var);
-      builder->CreateStore(get_arg(2), loop_var);
-      stmt->body->accept(this);
+      auto begin_var = builder->CreateAlloca(tlctx->get_data_type(PrimitiveType::i32), (unsigned)0, nullptr);
+      auto end_var = builder->CreateAlloca(tlctx->get_data_type(PrimitiveType::i32), (unsigned)0, nullptr);
+      builder->CreateStore(get_arg(2), begin_var);
+      builder->CreateStore(get_arg(3), end_var);
+      create_cpu_block_range_for(stmt, begin_var, end_var);
 
       body = guard.body;
     }
@@ -55,15 +65,15 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
 
     auto [begin, end] = get_range_for_bounds(stmt);
 
-    // adaptive block_dim
-    if (prog->this_thread_config().cpu_block_dim_adaptive) {
-      int num_items = (stmt->end_value - stmt->begin_value) / std::abs(step);
-      int num_threads = stmt->num_cpu_threads;
-      int items_per_thread = std::max(1, num_items / (num_threads * 32));
-      // keep each task has at least 512 items to amortize scheduler overhead
-      // also saturate the value to 1024 for better load balancing
-      stmt->block_dim = std::min(1024, std::max(512, items_per_thread));
-    }
+    // // adaptive block_dim
+    // if (prog->this_thread_config().cpu_block_dim_adaptive) {
+    //   int num_items = (stmt->end_value - stmt->begin_value) / std::abs(step);
+    //   int num_threads = stmt->num_cpu_threads;
+    //   int items_per_thread = std::max(1, num_items / (num_threads * 32));
+    //   // keep each task has at least 512 items to amortize scheduler overhead
+    //   // also saturate the value to 1024 for better load balancing
+    //   stmt->block_dim = std::min(1024, std::max(512, items_per_thread));
+    // }
 
     call("cpu_parallel_range_for", get_arg(0),
          tlctx->get_constant(stmt->num_cpu_threads), begin, end,

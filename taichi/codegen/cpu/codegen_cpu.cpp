@@ -49,11 +49,13 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
       // stmt->body->accept(this);
       auto guard = get_function_creation_guard(
           {llvm::PointerType::get(get_runtime_type("RuntimeContext"), 0),
-           llvm::Type::getInt8PtrTy(*llvm_context),
-           tlctx->get_data_type<int>(), tlctx->get_data_type<int>()});
+           llvm::Type::getInt8PtrTy(*llvm_context), tlctx->get_data_type<int>(),
+           tlctx->get_data_type<int>()});
 
-      auto begin_var = builder->CreateAlloca(tlctx->get_data_type(PrimitiveType::i32), (unsigned)0, nullptr);
-      auto end_var = builder->CreateAlloca(tlctx->get_data_type(PrimitiveType::i32), (unsigned)0, nullptr);
+      auto begin_var = builder->CreateAlloca(
+          tlctx->get_data_type(PrimitiveType::i32), (unsigned)0, nullptr);
+      auto end_var = builder->CreateAlloca(
+          tlctx->get_data_type(PrimitiveType::i32), (unsigned)0, nullptr);
       builder->CreateStore(get_arg(2), begin_var);
       builder->CreateStore(get_arg(3), end_var);
       create_cpu_block_range_for(stmt, begin_var, end_var);

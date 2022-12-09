@@ -40,7 +40,10 @@ using host_vsnprintf_type = int (*)(char *,
                                     const char *,
                                     std::va_list);
 using vm_allocator_type = void *(*)(void *, std::size_t, std::size_t);
-using RangeForTaskFunc = void(RuntimeContext *, const char *tls, int block_begin, int block_end);
+using RangeForTaskFunc = void(RuntimeContext *,
+                              const char *tls,
+                              int block_begin,
+                              int block_end);
 using MeshForTaskFunc = void(RuntimeContext *, const char *tls, uint32_t i);
 using parallel_for_type = void (*)(void *thread_pool,
                                    int splits,

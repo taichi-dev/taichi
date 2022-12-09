@@ -1128,7 +1128,9 @@ void TaskCodeGenLLVM::create_increment(llvm::Value *ptr, llvm::Value *value) {
   builder->CreateStore(builder->CreateAdd(original_value, value), ptr);
 }
 
-void TaskCodeGenLLVM::create_cpu_block_range_for(OffloadedStmt* stmt, llvm::Value *begin_var, llvm::Value *end_var) {
+void TaskCodeGenLLVM::create_cpu_block_range_for(OffloadedStmt *stmt,
+                                                 llvm::Value *begin_var,
+                                                 llvm::Value *end_var) {
   using namespace llvm;
   BasicBlock *body = BasicBlock::Create(*llvm_context, "for_loop_body", func);
   BasicBlock *loop_inc =
@@ -1141,7 +1143,7 @@ void TaskCodeGenLLVM::create_cpu_block_range_for(OffloadedStmt* stmt, llvm::Valu
   auto loop_var = create_entry_block_alloca(PrimitiveType::i32);
   loop_vars_llvm[stmt].push_back(loop_var);
   builder->CreateStore(builder->CreateLoad(loop_var_ty, begin_var), loop_var);
-  
+
   builder->CreateBr(loop_test);
   {
     // test block
@@ -1150,7 +1152,7 @@ void TaskCodeGenLLVM::create_cpu_block_range_for(OffloadedStmt* stmt, llvm::Valu
     cond = builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SLT,
                                builder->CreateLoad(loop_var_ty, loop_var),
                                builder->CreateLoad(loop_var_ty, end_var));
-                              // loop_var, end_var);
+    // loop_var, end_var);
     builder->CreateCondBr(cond, body, after_loop);
   }
   {

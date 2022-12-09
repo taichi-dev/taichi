@@ -583,7 +583,7 @@ std::unique_ptr<Pipeline> GLDevice::create_pipeline(
   return std::make_unique<GLPipeline>(src, name);
 }
 
-RhiResults GLDevice::map_range(DevicePtr ptr,
+RhiResult GLDevice::map_range(DevicePtr ptr,
                                uint64_t size,
                                void *&mapped_ptr) {
   TI_ASSERT_INFO(
@@ -594,10 +594,10 @@ RhiResults GLDevice::map_range(DevicePtr ptr,
   mapped_ptr = glMapBufferRange(GL_SHADER_STORAGE_BUFFER, ptr.offset, size,
                                 buffer_to_access_.at(ptr.alloc_id));
   check_opengl_error("glMapBufferRange");
-  return RhiResults::success;
+  return RhiResult::success;
 }
 
-RhiResults GLDevice::map(DeviceAllocation alloc, void *&mapped_ptr) {
+RhiResult GLDevice::map(DeviceAllocation alloc, void *&mapped_ptr) {
   TI_ASSERT_INFO(
       buffer_to_access_.find(alloc.alloc_id) != buffer_to_access_.end(),
       "Buffer not created with host_read or write");
@@ -617,7 +617,7 @@ RhiResults GLDevice::map(DeviceAllocation alloc, void *&mapped_ptr) {
   }
   mapped_ptr = glMapBuffer(GL_SHADER_STORAGE_BUFFER, access_oldapi);
   check_opengl_error("glMapBuffer");
-  return RhiResults::success;
+  return RhiResult::success;
 }
 
 void GLDevice::unmap(DevicePtr ptr) {

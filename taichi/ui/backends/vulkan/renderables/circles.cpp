@@ -52,9 +52,9 @@ void Circles::update_ubo(glm::vec3 color,
   UniformBufferObject ubo{color, (int)use_per_vertex_color,
                           radius * app_context_->config.height};
 
-  void *mapped;
+  void *mapped{nullptr};
   TI_ASSERT(app_context_->device().map(uniform_buffer_, mapped) ==
-            RhiResults::success);
+            RhiResult::success);
   memcpy(mapped, &ubo, sizeof(ubo));
   app_context_->device().unmap(uniform_buffer_);
 }

@@ -67,17 +67,17 @@ const BidirMap<BufferFormat, VkFormat> buffer_format_map = {
 RhiReturn<VkFormat> buffer_format_ti_to_vk(BufferFormat f) {
   if (!buffer_format_map.exists(f)) {
     RHI_LOG_ERROR("BufferFormat cannot be mapped to vk");
-    return {RhiResults::not_supported, VK_FORMAT_UNDEFINED};
+    return {RhiResult::not_supported, VK_FORMAT_UNDEFINED};
   }
-  return {RhiResults::success, buffer_format_map.at(f)};
+  return {RhiResult::success, buffer_format_map.at(f)};
 }
 
 RhiReturn<BufferFormat> buffer_format_vk_to_ti(VkFormat f) {
   if (!buffer_format_map.exists(f)) {
     RHI_LOG_ERROR("VkFormat cannot be mapped to ti");
-    return {RhiResults::not_supported, BufferFormat::unknown};
+    return {RhiResult::not_supported, BufferFormat::unknown};
   }
-  return {RhiResults::success, buffer_format_map.backend2rhi.at(f)};
+  return {RhiResult::success, buffer_format_map.backend2rhi.at(f)};
 }
 
 const BidirMap<ImageLayout, VkImageLayout> image_layout_map = {
@@ -113,9 +113,9 @@ const BidirMap<BlendOp, VkBlendOp> blend_op_map = {
 RhiReturn<VkBlendOp> blend_op_ti_to_vk(BlendOp op) {
   if (!blend_op_map.exists(op)) {
     RHI_LOG_ERROR("BlendOp cannot be mapped to vk");
-    return {RhiResults::not_supported, VK_BLEND_OP_ADD};
+    return {RhiResult::not_supported, VK_BLEND_OP_ADD};
   }
-  return {RhiResults::success, blend_op_map.at(op)};
+  return {RhiResult::success, blend_op_map.at(op)};
 }
 
 const BidirMap<BlendFactor, VkBlendFactor> blend_factor_map = {
@@ -134,9 +134,9 @@ const BidirMap<BlendFactor, VkBlendFactor> blend_factor_map = {
 RhiReturn<VkBlendFactor> blend_factor_ti_to_vk(BlendFactor factor) {
   if (!blend_factor_map.exists(factor)) {
     RHI_LOG_ERROR("BlendFactor cannot be mapped to vk");
-    return {RhiResults::not_supported, VK_BLEND_FACTOR_ONE};
+    return {RhiResult::not_supported, VK_BLEND_FACTOR_ONE};
   }
-  return {RhiResults::success, blend_factor_map.at(factor)};
+  return {RhiResult::success, blend_factor_map.at(factor)};
 }
 
 VulkanPipeline::VulkanPipeline(const Params &params)
@@ -186,8 +186,8 @@ RhiReturn<VkShaderModule> VulkanPipeline::create_shader_module(
   BAIL_ON_VK_BAD_RESULT(
       vkCreateShaderModule(device, &create_info, kNoVkAllocCallbacks,
                            &shader_module),
-      "failed to create shader module", RhiResults::error, VK_NULL_HANDLE);
-  return {RhiResults::success, shader_module};
+      "failed to create shader module", RhiResult::error, VK_NULL_HANDLE);
+  return {RhiResult::success, shader_module};
 }
 
 vkapi::IVkPipeline VulkanPipeline::graphics_pipeline(
@@ -320,7 +320,7 @@ void VulkanPipeline::create_shader_stages(const Params &params) {
         shader_stages_.emplace_back();
 
     auto [result, shader_module] = create_shader_module(device_, code_view);
-    RHI_ASSERT(result == RhiResults::success);
+    RHI_ASSERT(result == RhiResult::success);
 
     shader_stage_info.sType =
         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -385,7 +385,7 @@ void VulkanPipeline::create_graphics_pipeline(
     desc.binding = attr.binding;
     desc.location = attr.location;
     auto [result, vk_format] = buffer_format_ti_to_vk(attr.format);
-    RHI_ASSERT(result == RhiResults::success);
+    RHI_ASSERT(result == RhiResult::success);
     desc.format = vk_format;
     assert(desc.format != VK_FORMAT_UNDEFINED);
     desc.offset = attr.offset;
@@ -487,32 +487,32 @@ void VulkanPipeline::create_graphics_pipeline(
       if (ti_param.enable) {
         {
           auto [res, op] = blend_op_ti_to_vk(ti_param.color.op);
-          RHI_ASSERT(res == RhiResults::success);
+          RHI_ASSERT(res == RhiResult::success);
           state.colorBlendOp = op;
         }
         {
           auto [res, factor] = blend_factor_ti_to_vk(ti_param.color.src_factor);
-          RHI_ASSERT(res == RhiResults::success);
+          RHI_ASSERT(res == RhiResult::success);
           state.srcColorBlendFactor = factor;
         }
         {
           auto [res, factor] = blend_factor_ti_to_vk(ti_param.color.dst_factor);
-          RHI_ASSERT(res == RhiResults::success);
+          RHI_ASSERT(res == RhiResult::success);
           state.dstColorBlendFactor = factor;
         }
         {
           auto [res, op] = blend_op_ti_to_vk(ti_param.alpha.op);
-          RHI_ASSERT(res == RhiResults::success);
+          RHI_ASSERT(res == RhiResult::success);
           state.alphaBlendOp = op;
         }
         {
           auto [res, factor] = blend_factor_ti_to_vk(ti_param.alpha.src_factor);
-          RHI_ASSERT(res == RhiResults::success);
+          RHI_ASSERT(res == RhiResult::success);
           state.srcAlphaBlendFactor = factor;
         }
         {
           auto [res, factor] = blend_factor_ti_to_vk(ti_param.alpha.dst_factor);
-          RHI_ASSERT(res == RhiResults::success);
+          RHI_ASSERT(res == RhiResult::success);
           state.dstAlphaBlendFactor = factor;
         }
         state.colorWriteMask =
@@ -1543,7 +1543,7 @@ const VulkanDevice::AllocationInternal &VulkanDevice::get_alloc_internal(
   return map_pair->second;
 }
 
-RhiResults VulkanDevice::map_internal(AllocationInternal &alloc_int,
+RhiResult VulkanDevice::map_internal(AllocationInternal &alloc_int,
                                       size_t offset,
                                       size_t size,
                                       void *&mapped_ptr) {
@@ -1551,7 +1551,7 @@ RhiResults VulkanDevice::map_internal(AllocationInternal &alloc_int,
 
   if (alloc_int.mapped != nullptr) {
     RHI_LOG_ERROR("Memory can not be mapped multiple times");
-    return RhiResults::invalid_usage;
+    return RhiResult::invalid_usage;
   }
 
   VkResult res;
@@ -1573,16 +1573,16 @@ RhiResults VulkanDevice::map_internal(AllocationInternal &alloc_int,
         "accessible from the host: ensure your memory is allocated with "
         "`host_read=true` or `host_write=true` (or `host_access=true` in C++ "
         "wrapper)");
-    return RhiResults::invalid_usage;
+    return RhiResult::invalid_usage;
   } else if (res != VK_SUCCESS) {
     char msg_buf[256];
     snprintf(msg_buf, sizeof(msg_buf),
              "failed to map memory for unknown reasons. VkResult = %d", res);
     RHI_LOG_ERROR(msg_buf);
-    return RhiResults::error;
+    return RhiResult::error;
   }
 
-  return RhiResults::success;
+  return RhiResult::success;
 }
 
 void VulkanDevice::dealloc_memory(DeviceAllocation handle) {
@@ -1596,7 +1596,7 @@ uint64_t VulkanDevice::get_memory_physical_pointer(DeviceAllocation handle) {
   return uint64_t(alloc_int.addr);
 }
 
-RhiResults VulkanDevice::map_range(DevicePtr ptr,
+RhiResult VulkanDevice::map_range(DevicePtr ptr,
                                    uint64_t size,
                                    void *&mapped_ptr) {
   AllocationInternal &alloc_int = get_alloc_internal(ptr);
@@ -1604,7 +1604,7 @@ RhiResults VulkanDevice::map_range(DevicePtr ptr,
   return map_internal(alloc_int, ptr.offset, size, mapped_ptr);
 }
 
-RhiResults VulkanDevice::map(DeviceAllocation alloc, void *&mapped_ptr) {
+RhiResult VulkanDevice::map(DeviceAllocation alloc, void *&mapped_ptr) {
   AllocationInternal &alloc_int = get_alloc_internal(alloc);
 
   return map_internal(alloc_int, 0, alloc_int.alloc_info.size, mapped_ptr);
@@ -1948,7 +1948,7 @@ DeviceAllocation VulkanDevice::create_image(const ImageParams &params) {
   image_info.mipLevels = num_mip_levels;
   image_info.arrayLayers = 1;
   auto [result, vk_format] = buffer_format_ti_to_vk(params.format);
-  assert(result == RhiResults::success);
+  assert(result == RhiResult::success);
   image_info.format = vk_format;
   image_info.tiling = VK_IMAGE_TILING_OPTIMAL;
   image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -2494,7 +2494,7 @@ void VulkanSurface::create_swap_chain() {
                           swapchain_images.data());
 
   auto [result, image_format] = buffer_format_vk_to_ti(surface_format.format);
-  RHI_ASSERT(result == RhiResults::success);
+  RHI_ASSERT(result == RhiResult::success);
   image_format_ = image_format;
 
   for (VkImage img : swapchain_images) {

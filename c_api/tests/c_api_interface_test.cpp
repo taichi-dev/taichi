@@ -142,8 +142,7 @@ TEST_F(CapiTest, FailMapDeviceOnlyMemory) {
     TI_ASSERT(err == TI_ERROR_INVALID_STATE);
     TI_ASSERT(std::string(err_msg).find("Assertion failure") !=
               std::string::npos);
-    TI_ASSERT(std::string(err_msg).find("map") != std::string::npos);
-    TI_ASSERT(std::string(err_msg).find("RhiResults::success") !=
+    TI_ASSERT(std::string(err_msg).find("RHI map memory failed") !=
               std::string::npos);
 
     ti_set_last_error(TI_ERROR_SUCCESS, nullptr);

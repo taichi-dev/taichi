@@ -372,7 +372,8 @@ void *ti_map_memory(TiRuntime runtime, TiMemory devmem) {
 
   Runtime *runtime2 = (Runtime *)runtime;
   TI_ASSERT(runtime2->get().map(devmem2devalloc(*runtime2, devmem), out) ==
-            taichi::lang::RhiResults::success);
+                taichi::lang::RhiResult::success &&
+            "RHI map memory failed");
   TI_CAPI_TRY_CATCH_END();
   return out;
 }

@@ -44,9 +44,9 @@ class HostDeviceContextBlitter {
       return;
     }
 
-    char *device_base;
+    char *device_base{nullptr};
     TI_ASSERT(device_->map(*device_args_buffer_, (void *&)device_base) ==
-              RhiResults::success);
+              RhiResult::success);
 
 #define TO_DEVICE(short_type, type)               \
   if (arg.dtype == PrimitiveTypeID::short_type) { \
@@ -67,9 +67,9 @@ class HostDeviceContextBlitter {
             uint32_t access = uint32_t(ctx_attribs_->arr_access.at(i));
             if (access & uint32_t(irpass::ExternalPtrAccess::READ)) {
               DeviceAllocation buffer = ext_arrays.at(i);
-              char *device_arr_ptr;
+              char *device_arr_ptr{nullptr};
               TI_ASSERT(device_->map(buffer, (void *&)device_arr_ptr) ==
-                        RhiResults::success);
+                        RhiResult::success);
               const void *host_ptr = host_ctx_->get_arg<void *>(i);
               std::memcpy(device_arr_ptr, host_ptr, ext_arr_size.at(i));
               device_->unmap(buffer);
@@ -160,9 +160,9 @@ class HostDeviceContextBlitter {
           uint32_t access = uint32_t(ctx_attribs_->arr_access.at(i));
           if (access & uint32_t(irpass::ExternalPtrAccess::WRITE)) {
             DeviceAllocation buffer = ext_array_shadows.at(i);
-            char *device_arr_ptr;
+            char *device_arr_ptr{nullptr};
             TI_ASSERT(device_->map(buffer, (void *&)device_arr_ptr) ==
-                      RhiResults::success);
+                      RhiResult::success);
             void *host_ptr = host_ctx_->get_arg<void *>(i);
             std::memcpy(host_ptr, device_arr_ptr, ext_arr_size.at(i));
             device_->unmap(buffer);
@@ -174,9 +174,9 @@ class HostDeviceContextBlitter {
     if (!ctx_attribs_->has_rets())
       return require_sync;
 
-    char *device_base;
+    char *device_base{nullptr};
     TI_ASSERT(device_->map(*device_ret_buffer_, (void *&)device_base) ==
-              RhiResults::success);
+              RhiResult::success);
 
 #define TO_HOST(short_type, type, offset)                            \
   if (dt->is_primitive(PrimitiveTypeID::short_type)) {               \

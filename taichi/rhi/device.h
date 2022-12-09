@@ -12,7 +12,7 @@
 
 namespace taichi::lang {
 
-enum class RhiResults {
+enum class RhiResult {
   success = 0,
   error = -1,
   invalid_usage = -2,
@@ -439,10 +439,10 @@ class Device {
   // Wait for all tasks to complete (task from all streams)
   virtual void wait_idle() = 0;
 
-  virtual RhiResults map_range(DevicePtr ptr,
+  virtual RhiResult map_range(DevicePtr ptr,
                                uint64_t size,
                                void *&mapped_ptr) = 0;
-  virtual RhiResults map(DeviceAllocation alloc, void *&mapped_ptr) = 0;
+  virtual RhiResult map(DeviceAllocation alloc, void *&mapped_ptr) = 0;
 
   virtual void unmap(DevicePtr ptr) = 0;
   virtual void unmap(DeviceAllocation alloc) = 0;

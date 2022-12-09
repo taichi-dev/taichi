@@ -169,7 +169,7 @@ def render():
 
 
 t0 = time.perf_counter()
-window = ti.ui.Window('Marching squares', res=resolution)
+window = ti.ui.Window('2D Marching Squares', res=resolution)
 canvas = window.get_canvas()
 while window.running:
     iTime[None] = time.perf_counter() - t0

@@ -4,6 +4,9 @@
 #include "taichi/rhi/vulkan/vulkan_loader.h"
 
 #ifdef __APPLE__
+// For `runtime_lib_dir()`
+#include "taichi/util/lang_util.h"
+// For `glfwInitVulkanLoader`
 #include "GLFW/glfw3.h"
 #endif
 

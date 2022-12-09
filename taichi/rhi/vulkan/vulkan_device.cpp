@@ -491,14 +491,12 @@ void VulkanPipeline::create_graphics_pipeline(
           state.colorBlendOp = op;
         }
         {
-          auto [res, factor] =
-              blend_factor_ti_to_vk(ti_param.color.src_factor);
+          auto [res, factor] = blend_factor_ti_to_vk(ti_param.color.src_factor);
           RHI_ASSERT(res == RhiResults::success);
           state.srcColorBlendFactor = factor;
         }
         {
-          auto [res, factor] =
-              blend_factor_ti_to_vk(ti_param.color.dst_factor);
+          auto [res, factor] = blend_factor_ti_to_vk(ti_param.color.dst_factor);
           RHI_ASSERT(res == RhiResults::success);
           state.dstColorBlendFactor = factor;
         }
@@ -508,14 +506,12 @@ void VulkanPipeline::create_graphics_pipeline(
           state.alphaBlendOp = op;
         }
         {
-          auto [res, factor] =
-              blend_factor_ti_to_vk(ti_param.alpha.src_factor);
+          auto [res, factor] = blend_factor_ti_to_vk(ti_param.alpha.src_factor);
           RHI_ASSERT(res == RhiResults::success);
           state.srcAlphaBlendFactor = factor;
         }
         {
-          auto [res, factor] =
-              blend_factor_ti_to_vk(ti_param.alpha.dst_factor);
+          auto [res, factor] = blend_factor_ti_to_vk(ti_param.alpha.dst_factor);
           RHI_ASSERT(res == RhiResults::success);
           state.dstAlphaBlendFactor = factor;
         }

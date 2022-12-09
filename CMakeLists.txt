@@ -6,6 +6,8 @@ cmake_minimum_required(VERSION 3.17)
 
 project(taichi)
 
+include("cmake/utils.cmake")
+
 if (NOT DEFINED TI_VERSION_MAJOR)
     message(WARNING "It seems that you are running cmake manually, which may cause issues. Please use setup.py to build taichi from source, see https://docs.taichi-lang.org/docs/dev_install for more details.")
     set(TI_VERSION_MAJOR 0)

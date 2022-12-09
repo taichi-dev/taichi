@@ -165,11 +165,10 @@ def render():
 
 
 t0 = time.perf_counter()
-window = ti.ui.Window('2D Marching Squares', res=resolution)
-canvas = window.get_canvas()
-while window.running:
+gui = ti.GUI('2D Marching Squares', res=resolution, fast_gui=True)
+while gui.running and not gui.get_event(gui.ESCAPE):
     iTime[None] = time.perf_counter() - t0
     march_squares()
     render()
-    canvas.set_image(pixels)
-    window.show()
+    gui.set_image(pixels)
+    gui.show()

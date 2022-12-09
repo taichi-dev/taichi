@@ -319,7 +319,7 @@ void VulkanPipeline::create_shader_stages(const Params &params) {
     VkPipelineShaderStageCreateInfo &shader_stage_info =
         shader_stages_.emplace_back();
 
-    auto &[result, shader_module] = create_shader_module(device_, code_view);
+    auto [result, shader_module] = create_shader_module(device_, code_view);
     RHI_ASSERT(result == ti_rhi_success);
 
     shader_stage_info.sType =
@@ -384,7 +384,7 @@ void VulkanPipeline::create_graphics_pipeline(
         graphics_pipeline_template_->input_attrs.emplace_back();
     desc.binding = attr.binding;
     desc.location = attr.location;
-    auto &[result, vk_format] = buffer_format_ti_to_vk(attr.format);
+    auto [result, vk_format] = buffer_format_ti_to_vk(attr.format);
     RHI_ASSERT(result == ti_rhi_success);
     desc.format = vk_format;
     assert(desc.format != VK_FORMAT_UNDEFINED);
@@ -486,35 +486,35 @@ void VulkanPipeline::create_graphics_pipeline(
       state.blendEnable = ti_param.enable;
       if (ti_param.enable) {
         {
-          auto &[res, op] = blend_op_ti_to_vk(ti_param.color.op);
+          auto [res, op] = blend_op_ti_to_vk(ti_param.color.op);
           RHI_ASSERT(res == ti_rhi_success);
           state.colorBlendOp = op;
         }
         {
-          auto &[res, factor] =
+          auto [res, factor] =
               blend_factor_ti_to_vk(ti_param.color.src_factor);
           RHI_ASSERT(res == ti_rhi_success);
           state.srcColorBlendFactor = factor;
         }
         {
-          auto &[res, factor] =
+          auto [res, factor] =
               blend_factor_ti_to_vk(ti_param.color.dst_factor);
           RHI_ASSERT(res == ti_rhi_success);
           state.dstColorBlendFactor = factor;
         }
         {
-          auto &[res, op] = blend_op_ti_to_vk(ti_param.alpha.op);
+          auto [res, op] = blend_op_ti_to_vk(ti_param.alpha.op);
           RHI_ASSERT(res == ti_rhi_success);
           state.alphaBlendOp = op;
         }
         {
-          auto &[res, factor] =
+          auto [res, factor] =
               blend_factor_ti_to_vk(ti_param.alpha.src_factor);
           RHI_ASSERT(res == ti_rhi_success);
           state.srcAlphaBlendFactor = factor;
         }
         {
-          auto &[res, factor] =
+          auto [res, factor] =
               blend_factor_ti_to_vk(ti_param.alpha.dst_factor);
           RHI_ASSERT(res == ti_rhi_success);
           state.dstAlphaBlendFactor = factor;
@@ -1934,7 +1934,7 @@ DeviceAllocation VulkanDevice::create_image(const ImageParams &params) {
   image_info.extent.depth = params.z;
   image_info.mipLevels = num_mip_levels;
   image_info.arrayLayers = 1;
-  auto &[result, vk_format] = buffer_format_ti_to_vk(params.format);
+  auto [result, vk_format] = buffer_format_ti_to_vk(params.format);
   assert(result == ti_rhi_success);
   image_info.format = vk_format;
   image_info.tiling = VK_IMAGE_TILING_OPTIMAL;
@@ -2480,7 +2480,7 @@ void VulkanSurface::create_swap_chain() {
   vkGetSwapchainImagesKHR(device_->vk_device(), swapchain_, &num_images,
                           swapchain_images.data());
 
-  auto &[result, image_format] = buffer_format_vk_to_ti(surface_format.format);
+  auto [result, image_format] = buffer_format_vk_to_ti(surface_format.format);
   RHI_ASSERT(result == ti_rhi_success);
   image_format_ = image_format;
 

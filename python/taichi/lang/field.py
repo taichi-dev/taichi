@@ -291,7 +291,9 @@ class ScalarField(Field):
         """Converts this field to a `numpy.ndarray`.
         """
         if self.parent()._snode.ptr.type == _ti_core.SNodeType.dynamic:
-            warn("You are trying to convert a dynamic snode to a numpy array, be aware that inactive items in the snode will be converted to zeros in the resulting array.")
+            warn(
+                "You are trying to convert a dynamic snode to a numpy array, be aware that inactive items in the snode will be converted to zeros in the resulting array."
+            )
         if dtype is None:
             dtype = to_numpy_type(self.dtype)
         import numpy as np  # pylint: disable=C0415

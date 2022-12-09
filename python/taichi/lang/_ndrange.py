@@ -1,11 +1,10 @@
 import collections.abc
 
 import numpy as np
-from taichi.lang import impl, ops
+from taichi.lang import ops
 from taichi.lang.exception import TaichiSyntaxError, TaichiTypeError
 from taichi.lang.expr import Expr
-from taichi.lang.matrix import _IntermediateMatrix, make_matrix
-from taichi.types import primitive_types
+from taichi.lang.matrix import _IntermediateMatrix
 from taichi.types.utils import is_integral
 
 
@@ -139,21 +138,10 @@ def ndrange(*args):
     return _Ndrange(*args)
 
 
-class GroupedNDRangeBase:
+class GroupedNDRange:
     def __init__(self, r):
         self.r = r
 
-
-class GroupedNDRange(GroupedNDRangeBase):
-    def __iter__(self):
-        for ind in self.r:
-            if impl.current_cfg().real_matrix:
-                yield make_matrix(list(ind), dt=primitive_types.i32)
-            else:
-                yield _IntermediateMatrix(len(ind), 1, list(ind), ndim=1)
-
-
-class StaticGroupedNDRange(GroupedNDRangeBase):
     def __iter__(self):
         for ind in self.r:
             yield _IntermediateMatrix(len(ind), 1, list(ind), ndim=1)

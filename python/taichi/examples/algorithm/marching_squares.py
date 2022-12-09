@@ -3,8 +3,10 @@ Marching squares algorithm in Taichi.
 See "https://en.wikipedia.org/wiki/Marching_squares"
 """
 import time
+
 import taichi as ti
 import taichi.math as tm
+
 ti.init(arch=ti.cpu)
 
 W, H = 800, 600
@@ -53,12 +55,10 @@ def hash22(p):
 def noise(p):
     ip = tm.floor(p)
     p -= ip
-    v = tm.vec4(
-        tm.dot(hash22(ip), p),
-        tm.dot(hash22(ip + tm.vec2(1, 0)), p - tm.vec2(1, 0)),
-        tm.dot(hash22(ip + tm.vec2(0, 1)), p - tm.vec2(0, 1)),
-        tm.dot(hash22(ip + tm.vec2(1, 1)), p - tm.vec2(1, 1))
-    )
+    v = tm.vec4(tm.dot(hash22(ip), p),
+                tm.dot(hash22(ip + tm.vec2(1, 0)), p - tm.vec2(1, 0)),
+                tm.dot(hash22(ip + tm.vec2(0, 1)), p - tm.vec2(0, 1)),
+                tm.dot(hash22(ip + tm.vec2(1, 1)), p - tm.vec2(1, 1)))
     p = p * p * p * (p * (p * 6 - 15) + 10)
     return tm.mix(tm.mix(v.x, v.y, p.x), tm.mix(v.z, v.w, p.x), p.y)
 
@@ -69,8 +69,7 @@ def isofunc(p):
 
 
 @ti.func
-def interp(p1: tm.vec2, p2: tm.vec2,
-           v1: float, v2: float,
+def interp(p1: tm.vec2, p2: tm.vec2, v1: float, v2: float,
            isovalue: float) -> tm.vec2:
     return tm.mix(p1, p2, (isovalue - v1) / (v2 - v1))
 
@@ -97,12 +96,9 @@ def march_squares() -> int:
     y_range = grid_size
     for i, j in ti.ndrange((-x_range, x_range + 1), (-y_range, y_range + 1)):
         case_id = 0
-        values = tm.vec4(
-            isofunc(tm.vec2(i, j)),
-            isofunc(tm.vec2(i + 1, j)),
-            isofunc(tm.vec2(i + 1, j + 1)),
-            isofunc(tm.vec2(i, j + 1))
-        )
+        values = tm.vec4(isofunc(tm.vec2(i, j)), isofunc(tm.vec2(i + 1, j)),
+                         isofunc(tm.vec2(i + 1, j + 1)),
+                         isofunc(tm.vec2(i, j + 1)))
         if values.x > level:
             case_id |= 1
         if values.y > level:
@@ -161,7 +157,8 @@ def render():
         # Draw background grid
         col = tm.mix(col, tm.vec3(0), 1 - tm.smoothstep(0, 0.04, dgrid - 0.02))
         # Draw edges
-        col = tm.mix(col, tm.vec3(1, 0, 0), 1 - tm.smoothstep(0, 0.05, dedge - 0.02))
+        col = tm.mix(col, tm.vec3(1, 0, 0),
+                     1 - tm.smoothstep(0, 0.05, dedge - 0.02))
         # Draw small circles at the vertices
         col = tm.mix(col, tm.vec3(0), 1 - tm.smoothstep(0, 0.05, dv - 0.1))
         col = tm.mix(col, tm.vec3(1), 1 - tm.smoothstep(0, 0.05, dv - 0.08))

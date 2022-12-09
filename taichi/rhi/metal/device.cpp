@@ -322,24 +322,30 @@ class DeviceImpl : public Device, public AllocToMTLBufferMapper {
     return std::make_unique<PipelineImpl>(std::move(pipeline));
   }
 
-  void *map_range(DevicePtr ptr, uint64_t size) override {
+  RhiResults map_range(DevicePtr ptr,
+                         uint64_t size,
+                         void *&mapped_ptr) override {
     auto *mem = find(ptr).mem;
     if (!mem) {
-      return nullptr;
+      mapped_ptr = nullptr;
+      return RhiResults::error;
     }
     if ((ptr.offset + size) > mem->size()) {
-      TI_ERROR("Range exceeded");
-      return nullptr;
+      mapped_ptr = nullptr;
+      return RhiResults::error;
     }
-    return (mem->ptr() + ptr.offset);
+    mapped_ptr = (mem->ptr() + ptr.offset);
+    return RhiResults::success;
   }
 
-  void *map(DeviceAllocation alloc) override {
+  RhiResults map(DeviceAllocation alloc, void *&mapped_ptr) override {
     auto *mem = find(alloc).mem;
     if (!mem) {
-      return nullptr;
+      mapped_ptr = nullptr;
+      return RhiResults::error;
     }
-    return mem->ptr();
+    mapped_ptr = mem->ptr();
+    return RhiResults::success;
   }
 
   void unmap(DevicePtr ptr) override {

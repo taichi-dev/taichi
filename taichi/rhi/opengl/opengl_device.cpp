@@ -583,27 +583,30 @@ std::unique_ptr<Pipeline> GLDevice::create_pipeline(
   return std::make_unique<GLPipeline>(src, name);
 }
 
-void *GLDevice::map_range(DevicePtr ptr, uint64_t size) {
+RhiResults GLDevice::map_range(DevicePtr ptr,
+                                 uint64_t size,
+                                 void *&mapped_ptr) {
   TI_ASSERT_INFO(
       buffer_to_access_.find(ptr.alloc_id) != buffer_to_access_.end(),
       "Buffer not created with host_read or write");
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, ptr.alloc_id);
   check_opengl_error("glBindBuffer");
-  void *mapped = glMapBufferRange(GL_SHADER_STORAGE_BUFFER, ptr.offset, size,
+  mapped_ptr = glMapBufferRange(GL_SHADER_STORAGE_BUFFER, ptr.offset, size,
                                   buffer_to_access_.at(ptr.alloc_id));
   check_opengl_error("glMapBufferRange");
-  return mapped;
+  return RhiResults::success;
 }
 
-void *GLDevice::map(DeviceAllocation alloc) {
-  int size = 0;
+RhiResults GLDevice::map(DeviceAllocation alloc, void *&mapped_ptr) {
+  TI_ASSERT_INFO(
+      buffer_to_access_.find(alloc.alloc_id) != buffer_to_access_.end(),
+      "Buffer not created with host_read or write");
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, alloc.alloc_id);
   check_opengl_error("glBindBuffer");
-
-  glGetBufferParameteriv(GL_SHADER_STORAGE_BUFFER, GL_BUFFER_SIZE, &size);
-  check_opengl_error("glGetBufferParameteriv");
-
-  return map_range(alloc.get_ptr(0), size);
+  mapped_ptr = glMapBuffer(GL_SHADER_STORAGE_BUFFER,
+                           buffer_to_access_.at(alloc.alloc_id));
+  check_opengl_error("glMapBufferRange");
+  return RhiResults::success;
 }
 
 void GLDevice::unmap(DevicePtr ptr) {

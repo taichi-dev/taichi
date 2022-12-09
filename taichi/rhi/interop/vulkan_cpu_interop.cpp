@@ -24,8 +24,9 @@ void memcpy_cpu_to_vulkan(DevicePtr dst, DevicePtr src, uint64_t size) {
 
   CpuDevice::AllocInfo src_alloc_info = cpu_dev->get_alloc_info(src_alloc);
 
-  unsigned char *dst_ptr = (unsigned char *)(vk_dev->map_range(dst, size));
-  unsigned char *src_ptr = (unsigned char *)src_alloc_info.ptr + src.offset;
+  void *dst_ptr;
+  TI_ASSERT(vk_dev->map_range(dst, size, dst_ptr) == RhiResults::success);
+  void *src_ptr = (uint8_t *)src_alloc_info.ptr + src.offset;
 
   memcpy(dst_ptr, src_ptr, size);
   vk_dev->unmap(dst);
@@ -42,8 +43,9 @@ void memcpy_cpu_to_vulkan_via_staging(DevicePtr dst,
 
   CpuDevice::AllocInfo src_alloc_info = cpu_dev->get_alloc_info(src_alloc);
 
-  unsigned char *dst_ptr = (unsigned char *)(vk_dev->map_range(staging, size));
-  unsigned char *src_ptr = (unsigned char *)src_alloc_info.ptr + src.offset;
+  void *dst_ptr;
+  TI_ASSERT(vk_dev->map_range(dst, size, dst_ptr) == RhiResults::success);
+  void *src_ptr = (uint8_t *)src_alloc_info.ptr + src.offset;
 
   memcpy(dst_ptr, src_ptr, size);
   vk_dev->unmap(staging);

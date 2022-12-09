@@ -61,7 +61,8 @@ class SampleApp : public App {
           /* host_write = */ true,
           /* host_read = */ false, /* export_sharing = */ false,
           /* usage = */ AllocUsage::Vertex});
-      Vertex *mapped = (Vertex *)device->map(*vertex_buffer);
+      Vertex *mapped;
+      TI_ASSERT(device->map(*vertex_buffer, (void *&)mapped) == RhiResults::success);
       mapped[0] = {{0.0, 0.5}, {1.0, 0.0, 0.0}};
       mapped[1] = {{0.5, -0.5}, {0.0, 1.0, 0.0}};
       mapped[2] = {{-0.5, -0.5}, {0.0, 0.0, 1.0}};

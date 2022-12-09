@@ -251,8 +251,10 @@ class GLDevice : public GraphicsDevice {
       std::string name = "Pipeline") override;
 
   // Mapping can fail and will return nullptr
-  void *map_range(DevicePtr ptr, uint64_t size) override;
-  void *map(DeviceAllocation alloc) override;
+  RhiResults map_range(DevicePtr ptr,
+                         uint64_t size,
+                         void *&mapped_ptr) override;
+  RhiResults map(DeviceAllocation alloc, void *&mapped_ptr) override;
 
   void unmap(DevicePtr ptr) override;
   void unmap(DeviceAllocation alloc) override;

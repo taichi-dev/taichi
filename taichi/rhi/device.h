@@ -12,11 +12,11 @@
 
 namespace taichi::lang {
 
-enum TiRhiResults {
-  ti_rhi_success = 0,
-  ti_rhi_error = -1,
-  ti_rhi_invalid_usage = -2,
-  ti_rhi_not_supported = -3,
+enum class RhiResults {
+  success = 0,
+  error = -1,
+  invalid_usage = -2,
+  not_supported = -3,
 };
 
 constexpr size_t kBufferSizeEntireSize = size_t(-1);
@@ -439,9 +439,10 @@ class Device {
   // Wait for all tasks to complete (task from all streams)
   virtual void wait_idle() = 0;
 
-  // Mapping can fail and will return nullptr
-  virtual void *map_range(DevicePtr ptr, uint64_t size) = 0;
-  virtual void *map(DeviceAllocation alloc) = 0;
+  virtual RhiResults map_range(DevicePtr ptr,
+                               uint64_t size,
+                               void *&mapped_ptr) = 0;
+  virtual RhiResults map(DeviceAllocation alloc, void *&mapped_ptr) = 0;
 
   virtual void unmap(DevicePtr ptr) = 0;
   virtual void unmap(DeviceAllocation alloc) = 0;

@@ -23,7 +23,8 @@ int SetImage::get_correct_dimension(int dimension) {
 
 void SetImage::update_ubo(float x_factor, float y_factor, bool transpose) {
   UniformBufferObject ubo = {x_factor, y_factor, int(transpose)};
-  void *mapped = app_context_->device().map(uniform_buffer_);
+  void *mapped;
+  TI_ASSERT(app_context_->device().map(uniform_buffer_, mapped) == RhiResults::success);
   memcpy(mapped, &ubo, sizeof(ubo));
   app_context_->device().unmap(uniform_buffer_);
 }
@@ -273,8 +274,8 @@ void SetImage::update_vertex_buffer() {
   // Our actual VBO might only use the first several attributes in `Vertex`,
   // therefore this slicing & copying for each Vertex.
   {
-    char *mapped_vbo =
-        static_cast<char *>(app_context_->device().map(staging_vertex_buffer_));
+    char *mapped_vbo;
+    TI_ASSERT(app_context_->device().map(staging_vertex_buffer_, (void *&)mapped_vbo) == RhiResults::success);
     for (int i = 0; i < vertices.size(); ++i) {
       const char *src = reinterpret_cast<const char *>(&vertices[i]);
       for (auto a : VboHelpers::kOrderedAttrs) {
@@ -301,7 +302,8 @@ void SetImage::update_index_buffer() {
       0, 1, 2, 3, 4, 5,
   };
   {
-    int *mapped_ibo = (int *)app_context_->device().map(staging_index_buffer_);
+    int *mapped_ibo;
+    TI_ASSERT(app_context_->device().map(staging_index_buffer_, (void *&)mapped_ibo) == RhiResults::success);
     memcpy(mapped_ibo, indices.data(),
            (size_t)config_.indices_count * sizeof(int));
     app_context_->device().unmap(staging_index_buffer_);

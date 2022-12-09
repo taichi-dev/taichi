@@ -42,17 +42,17 @@ void disabled_function([[maybe_unused]] Ts... C) {
 // NOTE: If an internal function can fail, wrap return object with this!
 template <typename T>
 struct RhiReturn {
-  [[nodiscard]] TiRhiResults result;
+  [[nodiscard]] RhiResults result;
   [[nodiscard]] T object;
 
-  RhiReturn(TiRhiResults &result, T &object) : result(result), object(object) {
+  RhiReturn(RhiResults &result, T &object) : result(result), object(object) {
   }
 
-  RhiReturn(const TiRhiResults &result, const T &object)
+  RhiReturn(const RhiResults &result, const T &object)
       : result(result), object(object) {
   }
 
-  RhiReturn(TiRhiResults &&result, T &&object)
+  RhiReturn(RhiResults &&result, T &&object)
       : result(result), object(std::move(object)) {
   }
 

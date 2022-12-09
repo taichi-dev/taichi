@@ -3,7 +3,7 @@ Marching squares algorithm in Taichi.
 See "https://en.wikipedia.org/wiki/Marching_squares"
 """
 import time
-
+import numpy as np
 import taichi as ti
 import taichi.math as tm
 
@@ -16,7 +16,7 @@ level = 0.15  # Draw contour of isofunc=level
 pixels = ti.Vector.field(3, float, shape=resolution)
 
 # Cases 0-15 in the wikipedia page
-_edges = [
+_edges_np = np.array([
     [[-1, -1], [-1, -1]],
     [[3, 0], [-1, -1]],
     [[0, 1], [-1, -1]],
@@ -33,10 +33,9 @@ _edges = [
     [[0, 1], [-1, -1]],
     [[3, 0], [-1, -1]],
     [[-1, -1], [-1, -1]],
-]
+], dtype=np.int32)
 edge_table = ti.Matrix.field(2, 2, int, 16)
-for i in range(16):
-    edge_table[i] = _edges[i]
+edge_table.from_numpy(_edges_np)
 
 Edge = ti.types.struct(p0=tm.vec2, p1=tm.vec2)
 edges = Edge.field()

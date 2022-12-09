@@ -440,8 +440,8 @@ class Device {
   virtual void wait_idle() = 0;
 
   virtual RhiResult map_range(DevicePtr ptr,
-                               uint64_t size,
-                               void *&mapped_ptr) = 0;
+                              uint64_t size,
+                              void *&mapped_ptr) = 0;
   virtual RhiResult map(DeviceAllocation alloc, void *&mapped_ptr) = 0;
 
   virtual void unmap(DevicePtr ptr) = 0;

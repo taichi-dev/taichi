@@ -1,3 +1,4 @@
+pip
 tqdm
 requests
 mslex

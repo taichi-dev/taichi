@@ -655,7 +655,7 @@ class Kernel:
                     # so that it only holds "real" array shapes.
                     is_soa = needed.layout == Layout.SOA
                     array_shape = v.shape
-                    if functools.reduce(operator.mul, array_shape) > np.iinfo(
+                    if functools.reduce(operator.mul, array_shape, 1) > np.iinfo(
                             np.int32).max:
                         warnings.warn(
                             "Ndarray index might be out of int32 boundary but int64 indexing is not supported yet."

@@ -8,6 +8,7 @@ import platform
 
 # -- third party --
 # -- own --
+from .escapes import escape_codes
 
 # -- code --
 def is_manylinux2014():
@@ -25,15 +26,18 @@ def get_cache_home():
 def banner(msg):
     def decorate(f):
         sig = inspect.signature(f)
+        C = escape_codes['bold_cyan']
+        R = escape_codes['bold_red']
+        N = escape_codes['reset']
         def wrapper(*args, **kwargs):
             _args = sig.bind(*args, **kwargs)
-            print(f':: -----BEGIN {msg}-----'.format(**_args.arguments))
+            print(f'{C}:: -----BEGIN {msg}-----{N}'.format(**_args.arguments))
             try:
                 ret = f(*args, **kwargs)
-                print(f':: -----END {msg}-----'.format(**_args.arguments))
+                print(f'{C}:: -----END {msg}-----{N}'.format(**_args.arguments))
                 return ret
             except BaseException as e:
-                print(f'!! -----EXCEPTION {msg}-----'.format(**_args.arguments))
+                print(f'{R}!! -----EXCEPTION {msg}-----{N}'.format(**_args.arguments))
                 raise
 
         return wrapper

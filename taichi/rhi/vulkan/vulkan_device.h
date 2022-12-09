@@ -593,8 +593,8 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
   uint64_t get_memory_physical_pointer(DeviceAllocation handle) override;
 
   RhiResults map_range(DevicePtr ptr,
-                         uint64_t size,
-                         void *&mapped_ptr) override;
+                       uint64_t size,
+                       void *&mapped_ptr) override;
   RhiResults map(DeviceAllocation alloc, void *&mapped_ptr) override;
 
   void unmap(DevicePtr ptr) override;
@@ -750,12 +750,13 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
 
   // Internal implementaion functions
   AllocationInternal &get_alloc_internal(const DeviceAllocation &alloc);
-  const AllocationInternal &get_alloc_internal(const DeviceAllocation &alloc) const;
-  
+  const AllocationInternal &get_alloc_internal(
+      const DeviceAllocation &alloc) const;
+
   RhiResults map_internal(AllocationInternal &alloc_int,
-                            size_t offset,
-                            size_t size,
-                            void *&mapped_ptr);
+                          size_t offset,
+                          size_t size,
+                          void *&mapped_ptr);
 };
 
 }  // namespace vulkan

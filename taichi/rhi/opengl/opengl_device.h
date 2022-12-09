@@ -252,8 +252,8 @@ class GLDevice : public GraphicsDevice {
 
   // Mapping can fail and will return nullptr
   RhiResults map_range(DevicePtr ptr,
-                         uint64_t size,
-                         void *&mapped_ptr) override;
+                       uint64_t size,
+                       void *&mapped_ptr) override;
   RhiResults map(DeviceAllocation alloc, void *&mapped_ptr) override;
 
   void unmap(DevicePtr ptr) override;

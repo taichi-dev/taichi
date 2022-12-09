@@ -584,15 +584,15 @@ std::unique_ptr<Pipeline> GLDevice::create_pipeline(
 }
 
 RhiResults GLDevice::map_range(DevicePtr ptr,
-                                 uint64_t size,
-                                 void *&mapped_ptr) {
+                               uint64_t size,
+                               void *&mapped_ptr) {
   TI_ASSERT_INFO(
       buffer_to_access_.find(ptr.alloc_id) != buffer_to_access_.end(),
       "Buffer not created with host_read or write");
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, ptr.alloc_id);
   check_opengl_error("glBindBuffer");
   mapped_ptr = glMapBufferRange(GL_SHADER_STORAGE_BUFFER, ptr.offset, size,
-                                  buffer_to_access_.at(ptr.alloc_id));
+                                buffer_to_access_.at(ptr.alloc_id));
   check_opengl_error("glMapBufferRange");
   return RhiResults::success;
 }

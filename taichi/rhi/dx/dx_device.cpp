@@ -704,8 +704,8 @@ std::unique_ptr<Pipeline> Dx11Device::create_pipeline(
 }
 
 RhiResults Dx11Device::map_range(DevicePtr ptr,
-                                   uint64_t size,
-                                   void *&mapped_ptr) {
+                                 uint64_t size,
+                                 void *&mapped_ptr) {
   RhiResults res = Dx11Device::map(DeviceAllocation(ptr), mapped_ptr);
   mapped_ptr = static_cast<uint8_t *>(mapped_ptr) + ptr.offset;
   return res;

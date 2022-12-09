@@ -69,7 +69,7 @@ class HostDeviceContextBlitter {
               DeviceAllocation buffer = ext_arrays.at(i);
               char *device_arr_ptr;
               TI_ASSERT(device_->map(buffer, (void *&)device_arr_ptr) ==
-                  RhiResults::success);
+                        RhiResults::success);
               const void *host_ptr = host_ctx_->get_arg<void *>(i);
               std::memcpy(device_arr_ptr, host_ptr, ext_arr_size.at(i));
               device_->unmap(buffer);
@@ -161,7 +161,8 @@ class HostDeviceContextBlitter {
           if (access & uint32_t(irpass::ExternalPtrAccess::WRITE)) {
             DeviceAllocation buffer = ext_array_shadows.at(i);
             char *device_arr_ptr;
-            TI_ASSERT(device_->map(buffer, (void *&)device_arr_ptr) == RhiResults::success);
+            TI_ASSERT(device_->map(buffer, (void *&)device_arr_ptr) ==
+                      RhiResults::success);
             void *host_ptr = host_ctx_->get_arg<void *>(i);
             std::memcpy(host_ptr, device_arr_ptr, ext_arr_size.at(i));
             device_->unmap(buffer);

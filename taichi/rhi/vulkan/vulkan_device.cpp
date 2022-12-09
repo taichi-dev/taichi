@@ -1544,9 +1544,9 @@ const VulkanDevice::AllocationInternal &VulkanDevice::get_alloc_internal(
 }
 
 RhiResults VulkanDevice::map_internal(AllocationInternal &alloc_int,
-                                        size_t offset,
-                                        size_t size,
-                                        void *&mapped_ptr) {
+                                      size_t offset,
+                                      size_t size,
+                                      void *&mapped_ptr) {
   mapped_ptr = nullptr;
 
   if (alloc_int.mapped != nullptr) {
@@ -1592,11 +1592,13 @@ void VulkanDevice::dealloc_memory(DeviceAllocation handle) {
 }
 
 uint64_t VulkanDevice::get_memory_physical_pointer(DeviceAllocation handle) {
-  const AllocationInternal& alloc_int = get_alloc_internal(handle);
+  const AllocationInternal &alloc_int = get_alloc_internal(handle);
   return uint64_t(alloc_int.addr);
 }
 
-RhiResults VulkanDevice::map_range(DevicePtr ptr, size_t size, void *&mapped_ptr) {
+RhiResults VulkanDevice::map_range(DevicePtr ptr,
+                                   size_t size,
+                                   void *&mapped_ptr) {
   AllocationInternal &alloc_int = get_alloc_internal(ptr);
 
   return map_internal(alloc_int, ptr.offset, size, mapped_ptr);

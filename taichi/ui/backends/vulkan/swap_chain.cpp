@@ -85,8 +85,10 @@ bool SwapChain::copy_depth_buffer_to_ndarray(
     DeviceAllocation depth_buffer = surface_->get_depth_data(depth_allocation_);
     DeviceAllocation field_buffer(arr_dev_ptr);
     void *src_ptr, *dst_ptr;
-    TI_ASSERT(app_context_->device().map(depth_buffer, src_ptr) == RhiResults::success);
-    TI_ASSERT(arr_dev_ptr.device->map(field_buffer, dst_ptr) == RhiResults::success);
+    TI_ASSERT(app_context_->device().map(depth_buffer, src_ptr) ==
+              RhiResults::success);
+    TI_ASSERT(arr_dev_ptr.device->map(field_buffer, dst_ptr) ==
+              RhiResults::success);
     memcpy(dst_ptr, src_ptr, copy_size);
     app_context_->device().unmap(depth_buffer);
     arr_dev_ptr.device->unmap(field_buffer);

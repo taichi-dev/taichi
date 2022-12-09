@@ -54,7 +54,9 @@ void CpuDevice::dealloc_memory(DeviceAllocation handle) {
   }
 }
 
-RhiResults CpuDevice::map_range(DevicePtr ptr, uint64_t size, void *&mapped_ptr) {
+RhiResults CpuDevice::map_range(DevicePtr ptr,
+                                uint64_t size,
+                                void *&mapped_ptr) {
   AllocInfo &info = allocations_[ptr.alloc_id];
   if (info.ptr == nullptr) {
     return RhiResults::error;

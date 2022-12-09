@@ -471,6 +471,13 @@ Creates a Taichi Runtime with the specified `enumeration.arch`.
 
 Destroys a Taichi Runtime.
 
+`function.get_runtime_capabilities`
+
+Gets all capabilities available on the runtime instance.
+
+- `function.get_runtime_capabilities.capability_count`: The total number of capabilities available.
+- `function.get_runtime_capabilities.capabilities`: Returned capabilities.
+
 `function.allocate_memory`
 
 Allocates a contiguous device memory with provided parameters.

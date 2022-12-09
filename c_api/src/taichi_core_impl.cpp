@@ -174,7 +174,7 @@ void ti_get_available_archs(uint32_t *arch_count, TiArch *archs) {
   }
 
   size_t n = std::min((size_t)*arch_count, AVAILABLE_ARCHS.size());
-  *arch_count = (uint32_t)n;
+  *arch_count = (uint32_t)AVAILABLE_ARCHS.size();
   if (archs != nullptr) {
     for (size_t i = 0; i < n; ++i) {
       archs[i] = AVAILABLE_ARCHS.at(i);
@@ -344,7 +344,12 @@ TiMemory ti_allocate_memory(TiRuntime runtime,
   params.export_sharing = create_info->export_sharing;
   params.usage = usage;
 
-  out = ((Runtime *)runtime)->allocate_memory(params);
+  try {
+    out = ((Runtime *)runtime)->allocate_memory(params);
+  } catch (const std::bad_alloc &e) {
+    ti_set_last_error(TI_ERROR_OUT_OF_MEMORY, "allocate_memory");
+    return TI_NULL_HANDLE;
+  }
   TI_CAPI_TRY_CATCH_END();
   return out;
 }

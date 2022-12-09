@@ -1534,7 +1534,7 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
 }
 
 void VulkanDevice::dealloc_memory(DeviceAllocation handle) {
-  auto &map_pair = allocations_.find(handle.alloc_id);
+  auto map_pair = allocations_.find(handle.alloc_id);
   RHI_ASSERT(map_pair != allocations_.end() && "Invalid handle (double free?)");
 
   allocations_.erase(handle.alloc_id);
@@ -1546,7 +1546,7 @@ uint64_t VulkanDevice::get_memory_physical_pointer(DeviceAllocation handle) {
 }
 
 void *VulkanDevice::map_range(DevicePtr ptr, uint64_t size) {
-  auto &map_pair = allocations_.find(ptr.alloc_id);
+  auto map_pair = allocations_.find(ptr.alloc_id);
   RHI_ASSERT(map_pair != allocations_.end() && "Invalid handle");
   AllocationInternal &alloc_int = map_pair->second;
 
@@ -1567,7 +1567,7 @@ void *VulkanDevice::map_range(DevicePtr ptr, uint64_t size) {
 }
 
 void *VulkanDevice::map(DeviceAllocation alloc) {
-  auto &map_pair = allocations_.find(alloc.alloc_id);
+  auto map_pair = allocations_.find(alloc.alloc_id);
   RHI_ASSERT(map_pair != allocations_.end() && "Invalid handle");
   AllocationInternal &alloc_int = map_pair->second;
 
@@ -1603,7 +1603,7 @@ void VulkanDevice::unmap(DevicePtr ptr) {
 }
 
 void VulkanDevice::unmap(DeviceAllocation alloc) {
-  auto &map_pair = allocations_.find(alloc.alloc_id);
+  auto map_pair = allocations_.find(alloc.alloc_id);
   RHI_ASSERT(map_pair != allocations_.end() && "Invalid handle");
   AllocationInternal &alloc_int = map_pair->second;
 

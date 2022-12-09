@@ -16,14 +16,16 @@ from .misc import banner
 def setup_python(version=None):
     assert version
 
-    home = Path.home()
+    home = Path.home().resolve()
 
     for d in ['miniconda', 'miniconda3', 'miniforge3']:
-        p = home / d / 'envs' / version / 'bin' / 'python'
-        if not p.exists():
+        env = home / d / 'envs' / version
+        exe = env / 'bin' / 'python'
+        if not exe.exists():
             continue
 
-        python = sh.bake(str(p))
+        os.environ['PATH'] = f'{env / "bin"}:{os.environ["PATH"]}'
+        python = sh.bake(str(exe))
         pip = python.bake('-m', 'pip')
         break
     else:

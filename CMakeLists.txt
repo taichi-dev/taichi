@@ -15,8 +15,6 @@ endif()
 
 set(CMAKE_CXX_STANDARD 17)
 
-include("cmake/utils.cmake")
-
 execute_process(
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
   COMMAND git rev-parse --short HEAD

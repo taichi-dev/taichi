@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.0)
 
+include("cmake/utils.cmake")
+
 # This function creates a static target from OBJECT_TARGET, then link TARGET with the static target
 #
 # For now, we have to keep this hack because:

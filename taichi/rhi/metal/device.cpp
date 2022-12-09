@@ -323,8 +323,8 @@ class DeviceImpl : public Device, public AllocToMTLBufferMapper {
   }
 
   RhiResult map_range(DevicePtr ptr,
-                       uint64_t size,
-                       void *&mapped_ptr) override {
+                      uint64_t size,
+                      void *&mapped_ptr) override {
     auto *mem = find(ptr).mem;
     if (!mem) {
       mapped_ptr = nullptr;

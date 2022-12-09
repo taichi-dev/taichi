@@ -1597,7 +1597,7 @@ uint64_t VulkanDevice::get_memory_physical_pointer(DeviceAllocation handle) {
 }
 
 RhiResults VulkanDevice::map_range(DevicePtr ptr,
-                                   size_t size,
+                                   uint64_t size,
                                    void *&mapped_ptr) {
   AllocationInternal &alloc_int = get_alloc_internal(ptr);
 

@@ -1,9 +1,11 @@
 import ast
 import functools
 import inspect
+import operator
 import re
 import sys
 import textwrap
+import warnings
 import weakref
 
 import numpy as np
@@ -653,6 +655,8 @@ class Kernel:
                     # so that it only holds "real" array shapes.
                     is_soa = needed.layout == Layout.SOA
                     array_shape = v.shape
+                    if functools.reduce(operator.mul, array_shape) > np.iinfo(np.int32).max:
+                        warnings.warn("Ndarray index might be out of int32 boundary but int64 indexing is not supported yet.")
                     if needed.dtype is None or id(
                             needed.dtype) in primitive_types.type_ids:
                         element_dim = 0

@@ -2,9 +2,7 @@
 
 # -- stdlib --
 import os
-import shlex
 import platform
-import sys
 
 # -- third party --
 # -- own --
@@ -15,6 +13,13 @@ import sys
 # NOT written as a general purpose library, wild assumptions are made.
 
 IS_WINDOWS = platform.system() == 'Windows'
+
+if IS_WINDOWS:
+    import mslex
+    quote = mslex.quote
+else:
+    import shlex
+    quote = shlex.quote
 
 
 class CommandFailed(Exception):
@@ -44,7 +49,7 @@ class Command:
     def __call__(self, *moreargs, ):
         args = object.__getattribute__(self, 'args')
         args = args + list(map(str, moreargs))
-        cmd = shlex.join(args)
+        cmd = ' '.join(map(quote, args))
         code = os.system(cmd)
         if code:
             raise CommandFailed(cmd, code)

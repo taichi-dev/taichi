@@ -3,7 +3,9 @@ Marching squares algorithm in Taichi.
 See "https://en.wikipedia.org/wiki/Marching_squares"
 """
 import time
+
 import numpy as np
+
 import taichi as ti
 import taichi.math as tm
 
@@ -33,7 +35,8 @@ _edges_np = np.array([
     [[0, 1], [-1, -1]],
     [[3, 0], [-1, -1]],
     [[-1, -1], [-1, -1]],
-], dtype=np.int32)
+],
+                     dtype=np.int32)
 edge_table = ti.Matrix.field(2, 2, int, 16)
 edge_table.from_numpy(_edges_np)
 

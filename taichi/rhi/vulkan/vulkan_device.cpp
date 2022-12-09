@@ -1531,7 +1531,7 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
 
 VulkanDevice::AllocationInternal &VulkanDevice::get_alloc_internal(
     const DeviceAllocation &alloc) {
-  auto &map_pair = allocations_.find(alloc.alloc_id);
+  auto map_pair = allocations_.find(alloc.alloc_id);
   assert(map_pair != allocations_.end() && "Invalid memory handle");
   return map_pair->second;
 }
@@ -1617,7 +1617,7 @@ void VulkanDevice::unmap(DevicePtr ptr) {
 void VulkanDevice::unmap(DeviceAllocation alloc) {
   AllocationInternal &alloc_int = get_alloc_internal(alloc);
 
-  if (alloc_int.mapped = nullptr) {
+  if (alloc_int.mapped == nullptr) {
     RHI_LOG_ERROR("Unmapping memory that is not mapped");
     return;
   }

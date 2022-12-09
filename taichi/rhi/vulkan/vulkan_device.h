@@ -562,12 +562,12 @@ class VulkanStream : public Stream {
 };
 
 struct VulkanCapabilities {
-  uint32_t vk_api_version {0};
-  bool physical_device_features2 {false};
-  bool external_memory {false};
-  bool wide_line {false};
-  bool surface {false};
-  bool present {false};
+  uint32_t vk_api_version{0};
+  bool physical_device_features2{false};
+  bool external_memory{false};
+  bool wide_line{false};
+  bool surface{false};
+  bool present{false};
 };
 
 class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {

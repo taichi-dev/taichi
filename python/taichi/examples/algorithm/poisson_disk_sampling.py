@@ -65,13 +65,15 @@ def find_nearest_point(p):
 
 @ti.kernel
 def poisson_disk_sample(num_samples: int) -> int:
-    while head[None] < tail[None] and head[None] < ti.min(num_samples, desired_samples):
+    while head[None] < tail[None] and head[None] < ti.min(
+            num_samples, desired_samples):
         source_x = samples[head[None]]
         head[None] += 1
 
         for _ in range(100):
             theta = ti.random() * 2 * tm.pi
-            offset = tm.vec2(tm.cos(theta), tm.sin(theta)) * (1 + ti.random()) * radius
+            offset = tm.vec2(tm.cos(theta),
+                             tm.sin(theta)) * (1 + ti.random()) * radius
             new_x = source_x + offset
             new_index = coord_to_index(new_x)
 
@@ -117,16 +119,21 @@ def render():
         sf = 2 / iResolution.y
         buf = sample_dist(uv)
         bufSh = sample_dist(uv + tm.vec2(0.005, 0.015))
-        cCol = tm.vec3(hash21(buf.yz + 0.3),  hash21(buf.yz), hash21(buf.yz + 0.09))
+        cCol = tm.vec3(hash21(buf.yz + 0.3), hash21(buf.yz),
+                       hash21(buf.yz + 0.09))
         pat = (abs(tm.fract(-buf.x * 150) - 0.5) * 2) / 300
-        col = tm.mix(col, tm.vec3(0), (1 - tm.smoothstep(0, 3 * sf, pat)) * 0.25)
+        col = tm.mix(col, tm.vec3(0),
+                     (1 - tm.smoothstep(0, 3 * sf, pat)) * 0.25)
         ew, ew2 = 0.005, 0.008
         cCol2 = tm.mix(cCol, tm.vec3(1), 0.9)
-        col = tm.mix(col, tm.vec3(0),  (1 - tm.smoothstep(0, sf * 2, bufSh.x)) * 0.4)
-        col = tm.mix(col, tm.vec3(0),  1 - tm.smoothstep(sf, 0, -buf.x))
-        col = tm.mix(col, cCol2,  1 - tm.smoothstep(sf, 0, -buf.x - ew))
-        col = tm.mix(col, tm.vec3(0),  1 - tm.smoothstep(sf, 0, -buf.x - ew2 - ew))
-        col = tm.mix(col, cCol,  1 - tm.smoothstep(sf, 0., -buf.x - ew2 - ew * 2))
+        col = tm.mix(col, tm.vec3(0),
+                     (1 - tm.smoothstep(0, sf * 2, bufSh.x)) * 0.4)
+        col = tm.mix(col, tm.vec3(0), 1 - tm.smoothstep(sf, 0, -buf.x))
+        col = tm.mix(col, cCol2, 1 - tm.smoothstep(sf, 0, -buf.x - ew))
+        col = tm.mix(col, tm.vec3(0),
+                     1 - tm.smoothstep(sf, 0, -buf.x - ew2 - ew))
+        col = tm.mix(col, cCol,
+                     1 - tm.smoothstep(sf, 0., -buf.x - ew2 - ew * 2))
         col = tm.sqrt(ti.max(col, 0))
         img[i, j] = col
 

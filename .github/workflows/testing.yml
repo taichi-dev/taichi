@@ -140,7 +140,7 @@ jobs:
         run: |
           # Use the molten-vk v1.1.10 downloaded from taichi assets
           brew uninstall molten-vk -f
-          .github/workflows/scripts/unix-build.sh
+          .github/workflows/scripts/build.py
         env:
           CXX: clang++
           TAICHI_CMAKE_ARGS: >-
@@ -203,7 +203,7 @@ jobs:
 
           ci-docker-run-gpu --name taichi-build \
             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
-            /home/dev/taichi/.github/workflows/scripts/unix-build.sh
+            /home/dev/taichi/.github/workflows/scripts/build.py
 
         env:
           PY: py38
@@ -295,7 +295,7 @@ jobs:
 
           ci-docker-run-amdgpu --name taichi-build \
             registry.taichigraphics.com/taichidev-ubuntu18.04.amdgpu:v0.0.3 \
-            /home/dev/taichi/.github/workflows/scripts/unix-build.sh
+            /home/dev/taichi/.github/workflows/scripts/build.py
 
         env:
           PY: py38
@@ -423,7 +423,7 @@ jobs:
           prepare-build-cache
           brew install molten-vk
           brew install llvm@15
-          .github/workflows/scripts/unix-build.sh
+          .github/workflows/scripts/build.py
         env:
           PY: ${{ matrix.python }}
           CXX: clang++
@@ -513,7 +513,7 @@ jobs:
           ci-docker-run --name taichi-build-host \
             -v $TAICHI_WHEEL_DIR:/home/dev/taichi/dist \
             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
-            /home/dev/taichi/.github/workflows/scripts/unix-build.sh
+            /home/dev/taichi/.github/workflows/scripts/build.py
         env:
           TAICHI_CMAKE_ARGS: >-
             -DTI_WITH_OPENGL:BOOL=ON

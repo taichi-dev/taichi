@@ -227,7 +227,7 @@ jobs:
              /home/dev/taichi/.github/workflows/scripts/unix_test.sh
         env:
           PY: py38
-          TI_WANTED_ARCHS: 'cc,cpu,cuda,vulkan,opengl'
+          TI_WANTED_ARCHS: 'cpu,cuda,vulkan,opengl'
           TI_DEVICE_MEMORY_GB: '1'
           TI_RUN_RELEASE_TESTS: '1'
 

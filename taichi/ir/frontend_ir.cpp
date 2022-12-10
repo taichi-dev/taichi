@@ -202,11 +202,17 @@ void UnaryOpExpression::flatten(FlattenContext *ctx) {
 }
 
 Expr to_broadcast_tensor(const Expr &elt, const DataType &dt) {
-  TI_ASSERT(dt->is<TensorType>());
-  if (elt->ret_type == dt) {
+  if (!elt->ret_type->is<TensorType>() && !dt->is<TensorType>())
     return elt;
-  } else if (elt->ret_type->is<TensorType>()) {
-    TI_ERROR("Cannot broadcast tensor to tensor");
+
+  if (elt->ret_type->is<TensorType>() && dt->is<TensorType>()) {
+    // Only tensor shape will be checked here, since the dtype will
+    // be promoted later at irpass::type_check()
+    if (elt->ret_type.get_shape() != dt.get_shape()) {
+      TI_ERROR("Cannot broadcast tensor to tensor");
+    } else {
+      return elt;
+    }
   }
 
   auto tensor_type = dt->as<TensorType>();
@@ -289,11 +295,8 @@ void BinaryOpExpression::type_check(CompileConfig *config) {
                                   !is_integral(rhs_type.get_element_type())))
     error();
   if (binary_is_logical(type) &&
-      (lhs_type != PrimitiveType::i32 || rhs_type != PrimitiveType::i32) &&
-      (!is_tensor_op || (lhs_type->cast<TensorType>()->get_element_type() !=
-                             PrimitiveType::i32 ||
-                         rhs_type->cast<TensorType>()->get_element_type() !=
-                             PrimitiveType::i32)))
+      (is_tensor_op || lhs_type != PrimitiveType::i32 ||
+       rhs_type != PrimitiveType::i32))
     error();
   if (is_comparison(type) || binary_is_logical(type)) {
     ret_type = make_dt(PrimitiveType::i32);

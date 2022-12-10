@@ -1,13 +1,13 @@
 from taichi.lang._ndarray import ScalarNdarray
-from taichi.lang._texture import FORMAT2TY_CH, Texture
+from taichi.lang._texture import Texture
 from taichi.lang.exception import TaichiCompilationError
 from taichi.lang.matrix import Matrix, MatrixNdarray, MatrixType, VectorNdarray
 from taichi.lang.util import cook_dtype
 from taichi.types.annotations import template
 from taichi.types.ndarray_type import NdarrayType
-from taichi.types.texture_type import RWTextureType, TextureType
+from taichi.types.texture_type import TY_CH2FORMAT, RWTextureType, TextureType
 
-template_types = (NdarrayType, template)
+template_types = (NdarrayType, TextureType, template)
 
 
 def check_type_match(lhs, rhs):
@@ -38,11 +38,7 @@ def produce_injected_args(kernel, symbolic_args=None):
     injected_args = []
     for i, arg in enumerate(kernel.arguments):
         anno = arg.annotation
-        if isinstance(anno, template_types):
-            if not isinstance(anno, NdarrayType):
-                raise TaichiCompilationError(
-                    f'Expected Ndaray type, got {anno}')
-
+        if isinstance(anno, NdarrayType):
             # TODO(Haidong) we should always use MatrixType and get rid of the element shapes
             if symbolic_args is not None:
                 element_shape = tuple(symbolic_args[i].element_shape)
@@ -99,14 +95,8 @@ def produce_injected_args(kernel, symbolic_args=None):
                     'Texture type annotation doesn\'t have enough information for aot. Please either specify the channel_format, shape and num_channels in the graph arg declaration.'
                 )
             texture_shape = tuple(symbolic_args[i].texture_shape)
-            # FIXME: (penguinliong) dtype + num_channels -> texel format.
-            fmt = None
-            for (fmt2, (channel_format2,
-                        num_channels2)) in FORMAT2TY_CH.items():
-                if channel_format2 == symbolic_args[i].channel_format(
-                ) and num_channels2 == symbolic_args[i].num_channels:
-                    fmt = fmt2
-                    break
+            fmt = TY_CH2FORMAT[(symbolic_args[i].channel_format(),
+                                symbolic_args[i].num_channels)]
             injected_args.append(Texture(fmt, texture_shape))
         elif isinstance(anno, MatrixType):
             if not isinstance(symbolic_args[i], list):

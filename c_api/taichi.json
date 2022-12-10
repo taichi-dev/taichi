@@ -96,7 +96,8 @@
                         "argument_not_found": -7,
                         "invalid_interop": -8,
                         "invalid_state": -9,
-                        "incompatible_module": -10
+                        "incompatible_module": -10,
+                        "out_of_memory": -11
                     }
                 },
                 {
@@ -528,6 +529,25 @@
                     "parameters": [
                         {
                             "type": "handle.runtime"
+                        }
+                    ]
+                },
+                {
+                    "name": "set_runtime_capabilities",
+                    "type": "function",
+                    "is_extension": true,
+                    "parameters": [
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "name": "capability_count",
+                            "type": "uint32_t"
+                        },
+                        {
+                            "name": "capabilities",
+                            "type": "structure.capability_level_info",
+                            "count": "capability_count"
                         }
                     ]
                 },

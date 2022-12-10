@@ -421,6 +421,7 @@ class Matrix(TaichiOperations):
         0
     """
     _is_taichi_class = True
+    _is_matrix_class = True
     __array_priority__ = 1000
 
     def __init__(self, arr, dt=None, is_ref=False, ndim=None):
@@ -664,6 +665,9 @@ class Matrix(TaichiOperations):
             return self._impl.subscript_scope_ignored(indices)
         is_global_mat = isinstance(self, _MatrixFieldElement)
         return self._impl._subscript(is_global_mat, *indices)
+
+    def _make_matrix(self):
+        return make_matrix(self._impl.entries)
 
     def to_list(self):
         """Return this matrix as a 1D `list`.

@@ -4,7 +4,7 @@ import operator
 import numpy as np
 import pytest
 from taichi.lang import impl
-from taichi.lang.exception import TaichiCompilationError
+from taichi.lang.exception import TaichiCompilationError, TaichiTypeError
 from taichi.lang.misc import get_host_arch_list
 
 import taichi as ti
@@ -1193,3 +1193,119 @@ def test_atomic_op_scalarize():
     field = ti.Vector.field(n=3, dtype=ti.f32, shape=10)
     ndarray = ti.Vector.ndarray(n=3, dtype=ti.f32, shape=(10))
     _test_field_and_ndarray(field, ndarray, func, verify)
+
+
+@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
+def test_unsupported_logical_operations():
+    @ti.kernel
+    def test():
+        x = ti.Vector([1, 0])
+        y = ti.Vector([1, 1])
+
+        z = x and y
+
+    with pytest.raises(TaichiTypeError,
+                       match=r"unsupported operand type\(s\) for "):
+        test()
+
+
+@test_utils.test()
+def test_vector_transpose():
+    @ti.kernel
+    def foo():
+        x = ti.Vector([1, 2])
+        y = ti.Vector([3, 4])
+        z = x @ y.transpose()
+
+    with pytest.raises(
+            TaichiCompilationError,
+            match=
+            r"`transpose\(\)` cannot apply to a vector. If you want something like `a @ b.transpose\(\)`, write `a.outer_product\(b\)` instead."
+    ):
+        foo()
+
+
+@test_utils.test(arch=[ti.cuda, ti.cpu],
+                 real_matrix=True,
+                 real_matrix_scalarize=True,
+                 debug=True)
+def test_cross_scope_matrix_binary_ops():
+    n = 128
+    x = ti.Vector.field(3, dtype=int, shape=(n, n))
+    spring_offsets = [ti.Vector([1, 2]), ti.Vector([2, 3])]
+
+    @ti.kernel
+    def test():
+        vec = ti.Vector([4, 5])
+        ind0 = vec + ti.static(spring_offsets)[0]
+        ind1 = ti.lang.ops.add(vec, ti.static(spring_offsets)[1])
+
+        x[ind0] = [100, 10, 1]
+        x[ind1] = [1, 10, 100]
+
+    test()
+
+    assert (x[5, 7] == [100, 10, 1]).all()
+    assert (x[6, 8] == [1, 10, 100]).all()
+
+
+@test_utils.test(arch=[ti.cuda, ti.cpu],
+                 real_matrix=True,
+                 real_matrix_scalarize=True,
+                 debug=True)
+def test_cross_scope_matrix_ternary_ops():
+    n = 128
+    x = ti.Vector.field(3, dtype=int, shape=(n, n))
+    spring_offsets = [ti.Vector([1, 2]), ti.Vector([2, 3])]
+
+    @ti.kernel
+    def test():
+        vec = ti.Vector([0, 1])
+        ind0 = ti.select(vec, vec, ti.static(spring_offsets)[0])
+        x[ind0] = [100, 10, 1]
+
+    test()
+
+    assert (x[1, 1] == [100, 10, 1]).all()
+
+
+@test_utils.test(arch=[ti.cuda, ti.cpu],
+                 real_matrix=True,
+                 real_matrix_scalarize=True,
+                 debug=True)
+def test_cross_scope_matrix_atomic_ops():
+    n = 128
+    x = ti.Vector.field(3, dtype=int, shape=(n, n))
+    spring_offsets = [ti.Vector([1, 2]), ti.Vector([2, 3])]
+
+    @ti.kernel
+    def test():
+        vec = ti.Vector([0, 1])
+        vec += ti.static(spring_offsets)[0]
+        x[vec] = [100, 10, 1]
+
+    test()
+
+    assert (x[1, 3] == [100, 10, 1]).all()
+
+
+@test_utils.test(require=ti.extension.dynamic_index,
+                 dynamic_index=True,
+                 debug=True)
+def test_global_tmp_overwrite():
+    # https://github.com/taichi-dev/taichi/issues/6663
+    @ti.kernel
+    def foo() -> ti.i32:
+        p = ti.Matrix([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
+        loop = 1
+        sig = ti.Vector([0, 0, 0, 0])
+        assert p[0, 0] == 1
+        while loop == 1:
+            assert p[0, 0] == 1
+            loop = 0
+            p[0, 0] = -1
+        for i in range(1):
+            sig[i] = 2
+        return sig.sum() + p.sum()
+
+    assert foo() == 4

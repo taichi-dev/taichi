@@ -562,12 +562,12 @@ class VulkanStream : public Stream {
 };
 
 struct VulkanCapabilities {
-  uint32_t vk_api_version;
-  bool physical_device_features2;
-  bool external_memory;
-  bool wide_line;
-  bool surface;
-  bool present;
+  uint32_t vk_api_version{0};
+  bool physical_device_features2{false};
+  bool external_memory{false};
+  bool wide_line{false};
+  bool surface{false};
+  bool present{false};
 };
 
 class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
@@ -684,13 +684,6 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
       VulkanResourceBinder::Set &set);
   vkapi::IVkDescriptorSet alloc_desc_set(vkapi::IVkDescriptorSetLayout layout);
 
-  inline void set_current_caps(DeviceCapabilityConfig &&caps) {
-    caps_ = std::move(caps);
-  }
-  const DeviceCapabilityConfig &get_current_caps() const override {
-    return caps_;
-  }
-
   constexpr VulkanCapabilities &vk_caps() {
     return vk_caps_;
   }
@@ -704,7 +697,6 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
   void create_vma_allocator();
   void new_descriptor_pool();
 
-  DeviceCapabilityConfig caps_;
   VulkanCapabilities vk_caps_;
 
   VkInstance instance_;

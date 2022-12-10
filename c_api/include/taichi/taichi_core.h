@@ -350,6 +350,7 @@ typedef enum TiError {
   TI_ERROR_INVALID_STATE = -9,
   // The AOT module is not compatible with the current runtime.
   TI_ERROR_INCOMPATIBLE_MODULE = -10,
+  TI_ERROR_OUT_OF_MEMORY = -11,
   TI_ERROR_MAX_ENUM = 0xffffffff,
 } TiError;
 
@@ -851,10 +852,20 @@ TI_DLL_EXPORT TiRuntime TI_API_CALL ti_create_runtime(TiArch arch);
 // Destroys a Taichi Runtime.
 TI_DLL_EXPORT void TI_API_CALL ti_destroy_runtime(TiRuntime runtime);
 
+// Function `ti_set_runtime_capabilities_ext`
+TI_DLL_EXPORT void TI_API_CALL
+ti_set_runtime_capabilities_ext(TiRuntime runtime,
+                                uint32_t capability_count,
+                                const TiCapabilityLevelInfo *capabilities);
+
 // Function `ti_get_runtime_capabilities`
+//
+// Gets all capabilities available on the runtime instance.
 TI_DLL_EXPORT void TI_API_CALL
 ti_get_runtime_capabilities(TiRuntime runtime,
+                            // The total number of capabilities available.
                             uint32_t *capability_count,
+                            // Returned capabilities.
                             TiCapabilityLevelInfo *capabilities);
 
 // Function `ti_allocate_memory`

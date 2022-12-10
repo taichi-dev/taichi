@@ -237,14 +237,7 @@ void Program::check_runtime_error() {
 }
 
 void Program::synchronize() {
-  // Normal mode shouldn't be affected by `sync` flag.
-  if (arch_uses_llvm(this_thread_config().arch) ||
-      this_thread_config().arch == Arch::metal ||
-      this_thread_config().arch == Arch::vulkan ||
-      this_thread_config().arch == Arch::opengl ||
-      this_thread_config().arch == Arch::dx12) {
-    program_impl_->synchronize();
-  }
+  program_impl_->synchronize();
 }
 
 StreamSemaphore Program::flush() {
@@ -411,9 +404,7 @@ void Program::finalize() {
 
   synchronize();
   memory_pool_->terminate();
-  if (arch_uses_llvm(this_thread_config().arch)) {
-    program_impl_->finalize();
-  }
+  program_impl_->finalize();
 
   Stmt::reset_counter();
 
@@ -436,11 +427,6 @@ void Program::print_memory_profiler_info() {
 }
 
 std::size_t Program::get_snode_num_dynamically_allocated(SNode *snode) {
-  TI_ASSERT(arch_uses_llvm(this_thread_config().arch) ||
-            this_thread_config().arch == Arch::metal ||
-            this_thread_config().arch == Arch::vulkan ||
-            this_thread_config().arch == Arch::opengl ||
-            this_thread_config().arch == Arch::dx12);
   return program_impl_->get_snode_num_dynamically_allocated(snode,
                                                             result_buffer);
 }

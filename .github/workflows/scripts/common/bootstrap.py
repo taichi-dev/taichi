@@ -23,7 +23,7 @@ def ensure_dependencies():
             importlib.import_module(dep)
     except ModuleNotFoundError:
         print('Installing dependencies...')
-        if os.system(f'{sys.executable} -m pip install -U -r {p}'):
+        if os.system(f'{sys.executable} -m pip install --user -U -r {p}'):
             raise Exception('Unable to install dependencies!')
         os.execl(sys.executable, sys.executable, *sys.argv)
 

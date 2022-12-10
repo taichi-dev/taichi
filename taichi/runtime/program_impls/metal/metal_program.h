@@ -50,7 +50,7 @@ class MetalProgramImpl : public ProgramImpl {
                                            uint64 *result_buffer) override;
 
   Device *get_compute_device() override {
-    return metal_kernel_mgr_->get_device();
+    return metal_kernel_mgr_ ? metal_kernel_mgr_->get_device() : nullptr;
   }
 
   void dump_cache_data_to_disk() override;

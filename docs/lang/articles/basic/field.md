@@ -13,7 +13,7 @@ Fields in Taichi are the _global_ data containers, which can be accessed from bo
 
 Scalar fields refer to the fields that store scalars and are the most basic fields.
 
-- A 0D scalar field is a single scalar. 
+- A 0D scalar field is a single scalar.
 - A 1D scalar field is a 1D array of scalars.
 - A 2D scalar field is a 2D array of scalars, and so on.
 

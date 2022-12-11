@@ -439,12 +439,47 @@ class Device {
   // Wait for all tasks to complete (task from all streams)
   virtual void wait_idle() = 0;
 
+  /**
+   * Map a range within a DeviceAllocation memory into host address space.
+   * 
+   * @param[in] ptr The Device Pointer to map.
+   * @param[in] size The size of the mapped region.
+   * @param[out] mapped_ptr Outputs the pointer to the mapped region.
+   * @return The result status.
+   *         `success` when the mapping is successful.
+   *         `invalid_usage` when the memory is not host visible.
+   *         `invalid_usage` when trying to map the memory multiple times.
+   *         `invalid_usage` when `ptr.offset + size` is out-of-bounds.
+   *         `error` when the mapping failed for other reasons.
+   */
   virtual RhiResult map_range(DevicePtr ptr,
                               uint64_t size,
-                              void *&mapped_ptr) = 0;
-  virtual RhiResult map(DeviceAllocation alloc, void *&mapped_ptr) = 0;
+                              void **mapped_ptr) = 0;
 
+  /**
+   * Map an entire DeviceAllocation into host address space.
+   * @param[in] ptr The Device Pointer to map.
+   * @param[in] size The size of the mapped region.
+   * @param[out] mapped_ptr Outputs the pointer to the mapped region.
+   * @return The result status.
+   *         `success` when the mapping is successful.
+   *         `invalid_usage` when the memory is not host visible.
+   *         `invalid_usage` when trying to map the memory multiple times.
+   *         `invalid_usage` when `ptr.offset + size` is out-of-bounds.
+   *         `error` when the mapping failed for other reasons.
+   */
+  virtual RhiResult map(DeviceAllocation alloc, void **mapped_ptr) = 0;
+
+  /**
+   * Unmap a previously mapped DevicePtr or DeviceAllocation.
+   * @param[in] ptr The DevicePtr to unmap.
+   */
   virtual void unmap(DevicePtr ptr) = 0;
+
+  /**
+   * Unmap a previously mapped DevicePtr or DeviceAllocation.
+   * @param[in] alloc The DeviceAllocation to unmap
+   */
   virtual void unmap(DeviceAllocation alloc) = 0;
 
   // Directly share memory in the form of alias

@@ -251,11 +251,11 @@ class GLDevice : public GraphicsDevice {
       std::string name = "Pipeline") override;
 
   // Mapping can fail and will return nullptr
-  RhiResult map_range(DevicePtr ptr, uint64_t size, void *&mapped_ptr) override;
-  RhiResult map(DeviceAllocation alloc, void *&mapped_ptr) override;
+  RhiResult map_range(DevicePtr ptr, uint64_t size, void **mapped_ptr) final;
+  RhiResult map(DeviceAllocation alloc, void **mapped_ptr) final;
 
-  void unmap(DevicePtr ptr) override;
-  void unmap(DeviceAllocation alloc) override;
+  void unmap(DevicePtr ptr) final;
+  void unmap(DeviceAllocation alloc) final;
 
   // Strictly intra device copy (synced)
   void memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) override;

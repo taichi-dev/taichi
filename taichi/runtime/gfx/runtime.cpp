@@ -44,8 +44,8 @@ class HostDeviceContextBlitter {
       return;
     }
 
-    char *device_base{nullptr};
-    TI_ASSERT(device_->map(*device_args_buffer_, (void *&)device_base) ==
+    void *device_base{nullptr};
+    TI_ASSERT(device_->map(*device_args_buffer_, &device_base) ==
               RhiResult::success);
 
 #define TO_DEVICE(short_type, type)               \
@@ -57,7 +57,7 @@ class HostDeviceContextBlitter {
 
     for (int i = 0; i < ctx_attribs_->args().size(); ++i) {
       const auto &arg = ctx_attribs_->args()[i];
-      char *device_ptr = device_base + arg.offset_in_mem;
+      void *device_ptr = (uint8_t *)device_base + arg.offset_in_mem;
       do {
         if (arg.is_array) {
           if (host_ctx_->device_allocation_type[i] ==
@@ -67,8 +67,8 @@ class HostDeviceContextBlitter {
             uint32_t access = uint32_t(ctx_attribs_->arr_access.at(i));
             if (access & uint32_t(irpass::ExternalPtrAccess::READ)) {
               DeviceAllocation buffer = ext_arrays.at(i);
-              char *device_arr_ptr{nullptr};
-              TI_ASSERT(device_->map(buffer, (void *&)device_arr_ptr) ==
+              void *device_arr_ptr{nullptr};
+              TI_ASSERT(device_->map(buffer, &device_arr_ptr) ==
                         RhiResult::success);
               const void *host_ptr = host_ctx_->get_arg<void *>(i);
               std::memcpy(device_arr_ptr, host_ptr, ext_arr_size.at(i));
@@ -113,7 +113,8 @@ class HostDeviceContextBlitter {
       } while (false);
     }
 
-    char *device_ptr = device_base + ctx_attribs_->extra_args_mem_offset();
+    void *device_ptr =
+        (uint8_t *)device_base + ctx_attribs_->extra_args_mem_offset();
     std::memcpy(device_ptr, host_ctx_->extra_args,
                 ctx_attribs_->extra_args_bytes());
 
@@ -160,8 +161,8 @@ class HostDeviceContextBlitter {
           uint32_t access = uint32_t(ctx_attribs_->arr_access.at(i));
           if (access & uint32_t(irpass::ExternalPtrAccess::WRITE)) {
             DeviceAllocation buffer = ext_array_shadows.at(i);
-            char *device_arr_ptr{nullptr};
-            TI_ASSERT(device_->map(buffer, (void *&)device_arr_ptr) ==
+            void *device_arr_ptr{nullptr};
+            TI_ASSERT(device_->map(buffer, &device_arr_ptr) ==
                       RhiResult::success);
             void *host_ptr = host_ctx_->get_arg<void *>(i);
             std::memcpy(host_ptr, device_arr_ptr, ext_arr_size.at(i));
@@ -174,8 +175,8 @@ class HostDeviceContextBlitter {
     if (!ctx_attribs_->has_rets())
       return require_sync;
 
-    char *device_base{nullptr};
-    TI_ASSERT(device_->map(*device_ret_buffer_, (void *&)device_base) ==
+    void *device_base{nullptr};
+    TI_ASSERT(device_->map(*device_ret_buffer_, &device_base) ==
               RhiResult::success);
 
 #define TO_HOST(short_type, type, offset)                            \
@@ -190,7 +191,7 @@ class HostDeviceContextBlitter {
       // Note that we are copying the i-th return value on Metal to the i-th
       // *arg* on the host context.
       const auto &ret = ctx_attribs_->rets()[i];
-      char *device_ptr = device_base + ret.offset_in_mem;
+      void *device_ptr = (uint8_t *)device_base + ret.offset_in_mem;
       const auto dt = PrimitiveType::get(ret.dtype);
       const auto num = ret.stride / data_type_size(dt);
       for (int j = 0; j < num; ++j) {

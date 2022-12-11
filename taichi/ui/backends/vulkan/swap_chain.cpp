@@ -85,9 +85,9 @@ bool SwapChain::copy_depth_buffer_to_ndarray(
     DeviceAllocation depth_buffer = surface_->get_depth_data(depth_allocation_);
     DeviceAllocation field_buffer(arr_dev_ptr);
     void *src_ptr{nullptr}, *dst_ptr{nullptr};
-    TI_ASSERT(app_context_->device().map(depth_buffer, src_ptr) ==
+    TI_ASSERT(app_context_->device().map(depth_buffer, &src_ptr) ==
               RhiResult::success);
-    TI_ASSERT(arr_dev_ptr.device->map(field_buffer, dst_ptr) ==
+    TI_ASSERT(arr_dev_ptr.device->map(field_buffer, &dst_ptr) ==
               RhiResult::success);
     memcpy(dst_ptr, src_ptr, copy_size);
     app_context_->device().unmap(depth_buffer);
@@ -126,7 +126,7 @@ std::vector<uint32_t> &SwapChain::dump_image_buffer() {
   image_buffer_data_.resize(w * h);
   DeviceAllocation img_buffer = surface_->get_image_data();
   void *ptr{nullptr};
-  TI_ASSERT(app_context_->device().map(img_buffer, ptr) == RhiResult::success);
+  TI_ASSERT(app_context_->device().map(img_buffer, &ptr) == RhiResult::success);
   auto format = surface_->image_format();
   uint32_t *u32ptr = (uint32_t *)ptr;
   if (format == BufferFormat::bgra8 || format == BufferFormat::bgra8srgb) {

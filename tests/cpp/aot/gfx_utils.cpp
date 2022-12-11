@@ -8,7 +8,7 @@ static void write_devalloc(taichi::lang::DeviceAllocation &alloc,
                            const void *data,
                            size_t size) {
   void *device_arr_ptr{nullptr};
-  TI_ASSERT(alloc.device->map(alloc, device_arr_ptr) ==
+  TI_ASSERT(alloc.device->map(alloc, &device_arr_ptr) ==
             taichi::lang::RhiResult::success);
   std::memcpy(device_arr_ptr, data, size);
   alloc.device->unmap(alloc);
@@ -18,7 +18,7 @@ static void load_devalloc(taichi::lang::DeviceAllocation &alloc,
                           void *data,
                           size_t size) {
   void *device_arr_ptr{nullptr};
-  TI_ASSERT(alloc.device->map(alloc, device_arr_ptr) ==
+  TI_ASSERT(alloc.device->map(alloc, &device_arr_ptr) ==
             taichi::lang::RhiResult::success);
   std::memcpy(data, device_arr_ptr, size);
   alloc.device->unmap(alloc);

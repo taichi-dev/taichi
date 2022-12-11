@@ -705,13 +705,13 @@ std::unique_ptr<Pipeline> Dx11Device::create_pipeline(
 
 RhiResult Dx11Device::map_range(DevicePtr ptr,
                                 uint64_t size,
-                                void *&mapped_ptr) {
+                                void **mapped_ptr) {
   RhiResult res = Dx11Device::map(DeviceAllocation(ptr), mapped_ptr);
-  mapped_ptr = static_cast<uint8_t *>(mapped_ptr) + ptr.offset;
+  *mapped_ptr = static_cast<uint8_t *>(*mapped_ptr) + ptr.offset;
   return res;
 }
 
-RhiResult Dx11Device::map(DeviceAllocation alloc, void *&mapped_ptr) {
+RhiResult Dx11Device::map(DeviceAllocation alloc, void **mapped_ptr) {
   uint32_t alloc_id = alloc.alloc_id;
   BufferTuple &buf_tuple = alloc_id_to_buffer_[alloc_id];
   ID3D11Buffer *buf = nullptr;
@@ -738,7 +738,7 @@ RhiResult Dx11Device::map(DeviceAllocation alloc, void *&mapped_ptr) {
 
   buf_tuple.mapped = buf;
 
-  mapped_ptr = mapped.pData;
+  *mapped_ptr = mapped.pData;
 
   return RhiResult::success;
 }

@@ -592,11 +592,11 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
 
   uint64_t get_memory_physical_pointer(DeviceAllocation handle) override;
 
-  RhiResult map_range(DevicePtr ptr, uint64_t size, void *&mapped_ptr) override;
-  RhiResult map(DeviceAllocation alloc, void *&mapped_ptr) override;
+  RhiResult map_range(DevicePtr ptr, uint64_t size, void **mapped_ptr) final;
+  RhiResult map(DeviceAllocation alloc, void **mapped_ptr) final;
 
-  void unmap(DevicePtr ptr) override;
-  void unmap(DeviceAllocation alloc) override;
+  void unmap(DevicePtr ptr) final;
+  void unmap(DeviceAllocation alloc) final;
 
   // Strictly intra device copy
   void memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) override;
@@ -655,7 +655,10 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
   std::tuple<vkapi::IVkImage, vkapi::IVkImageView, VkFormat> get_vk_image(
       const DeviceAllocation &alloc) const;
 
-  DeviceAllocation import_vkbuffer(vkapi::IVkBuffer buffer);
+  DeviceAllocation import_vkbuffer(vkapi::IVkBuffer buffer,
+                                   size_t size,
+                                   VkDeviceMemory memory,
+                                   VkDeviceSize offset);
 
   DeviceAllocation import_vk_image(vkapi::IVkImage image,
                                    vkapi::IVkImageView view,
@@ -754,7 +757,7 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
   RhiResult map_internal(AllocationInternal &alloc_int,
                          size_t offset,
                          size_t size,
-                         void *&mapped_ptr);
+                         void **mapped_ptr);
 };
 
 }  // namespace vulkan

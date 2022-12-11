@@ -323,28 +323,24 @@ class DeviceImpl : public Device, public AllocToMTLBufferMapper {
   }
 
   RhiResult map_range(DevicePtr ptr,
-                      uint64_t size,
-                      void *&mapped_ptr) override {
+                      uint64_t size, void **mapped_ptr) final {
     auto *mem = find(ptr).mem;
     if (!mem) {
-      mapped_ptr = nullptr;
       return RhiResult::error;
     }
     if ((ptr.offset + size) > mem->size()) {
-      mapped_ptr = nullptr;
       return RhiResult::error;
     }
-    mapped_ptr = (mem->ptr() + ptr.offset);
+    *mapped_ptr = (mem->ptr() + ptr.offset);
     return RhiResult::success;
   }
 
-  RhiResult map(DeviceAllocation alloc, void *&mapped_ptr) override {
+  RhiResult map(DeviceAllocation alloc, void **mapped_ptr) final {
     auto *mem = find(alloc).mem;
     if (!mem) {
-      mapped_ptr = nullptr;
       return RhiResult::error;
     }
-    mapped_ptr = mem->ptr();
+    *mapped_ptr = mem->ptr();
     return RhiResult::success;
   }
 

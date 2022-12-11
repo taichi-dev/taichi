@@ -1546,11 +1546,14 @@ const VulkanDevice::AllocationInternal &VulkanDevice::get_alloc_internal(
 RhiResult VulkanDevice::map_internal(AllocationInternal &alloc_int,
                                      size_t offset,
                                      size_t size,
-                                     void *&mapped_ptr) {
-  mapped_ptr = nullptr;
-
+                                     void **mapped_ptr) {
   if (alloc_int.mapped != nullptr) {
     RHI_LOG_ERROR("Memory can not be mapped multiple times");
+    return RhiResult::invalid_usage;
+  }
+
+  if (alloc_int.alloc_info.size < offset + size) {
+    RHI_LOG_ERROR("Mapping out of range");
     return RhiResult::invalid_usage;
   }
 
@@ -1564,8 +1567,6 @@ RhiResult VulkanDevice::map_internal(AllocationInternal &alloc_int,
                       alloc_int.alloc_info.offset + offset, size, 0,
                       &alloc_int.mapped);
   }
-
-  mapped_ptr = alloc_int.mapped;
 
   if (alloc_int.mapped == nullptr || res == VK_ERROR_MEMORY_MAP_FAILED) {
     RHI_LOG_ERROR(
@@ -1581,6 +1582,8 @@ RhiResult VulkanDevice::map_internal(AllocationInternal &alloc_int,
     RHI_LOG_ERROR(msg_buf);
     return RhiResult::error;
   }
+
+  *mapped_ptr = alloc_int.mapped;
 
   return RhiResult::success;
 }
@@ -1598,13 +1601,13 @@ uint64_t VulkanDevice::get_memory_physical_pointer(DeviceAllocation handle) {
 
 RhiResult VulkanDevice::map_range(DevicePtr ptr,
                                   uint64_t size,
-                                  void *&mapped_ptr) {
+                                  void **mapped_ptr) {
   AllocationInternal &alloc_int = get_alloc_internal(ptr);
 
   return map_internal(alloc_int, ptr.offset, size, mapped_ptr);
 }
 
-RhiResult VulkanDevice::map(DeviceAllocation alloc, void *&mapped_ptr) {
+RhiResult VulkanDevice::map(DeviceAllocation alloc, void **mapped_ptr) {
   AllocationInternal &alloc_int = get_alloc_internal(alloc);
 
   return map_internal(alloc_int, 0, alloc_int.alloc_info.size, mapped_ptr);
@@ -1867,7 +1870,10 @@ vkapi::IVkFramebuffer VulkanDevice::get_framebuffer(
   return framebuffer;
 }
 
-DeviceAllocation VulkanDevice::import_vkbuffer(vkapi::IVkBuffer buffer) {
+DeviceAllocation VulkanDevice::import_vkbuffer(vkapi::IVkBuffer buffer,
+                                               size_t size,
+                                               VkDeviceMemory memory,
+                                               VkDeviceSize offset) {
   AllocationInternal alloc_int{};
   alloc_int.external = true;
   alloc_int.buffer = buffer;
@@ -1879,6 +1885,10 @@ DeviceAllocation VulkanDevice::import_vkbuffer(vkapi::IVkBuffer buffer) {
     info.pNext = nullptr;
     alloc_int.addr = vkGetBufferDeviceAddress(device_, &info);
   }
+  
+  alloc_int.alloc_info.size = size;
+  alloc_int.alloc_info.deviceMemory = memory;
+  alloc_int.alloc_info.offset = offset;
 
   DeviceAllocation alloc;
   alloc.device = this;

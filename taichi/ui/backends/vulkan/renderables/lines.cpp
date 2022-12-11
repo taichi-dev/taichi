@@ -51,7 +51,7 @@ void Lines::update_ubo(glm::vec3 color, bool use_per_vertex_color) {
   UniformBufferObject ubo{color, (int)use_per_vertex_color};
 
   void *mapped{nullptr};
-  TI_ASSERT(app_context_->device().map(uniform_buffer_, mapped) ==
+  TI_ASSERT(app_context_->device().map(uniform_buffer_, &mapped) ==
             RhiResult::success);
   memcpy(mapped, &ubo, sizeof(ubo));
   app_context_->device().unmap(uniform_buffer_);

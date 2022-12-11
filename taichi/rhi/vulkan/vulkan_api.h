@@ -243,7 +243,6 @@ IVkFramebuffer create_framebuffer(VkFramebufferCreateFlags flags,
 // VkBuffer
 struct DeviceObjVkBuffer : public DeviceObj {
   VkBuffer buffer{VK_NULL_HANDLE};
-  size_t size{0};
   VkBufferUsageFlags usage{0};
   VmaAllocator allocator{nullptr};
   VmaAllocation allocation{nullptr};
@@ -258,7 +257,6 @@ IVkBuffer create_buffer(VkDevice device,
 // Importing external buffer
 IVkBuffer create_buffer(VkDevice device,
                         VkBuffer buffer,
-                        size_t size,
                         VkBufferUsageFlags usage);
 
 // VkBufferView

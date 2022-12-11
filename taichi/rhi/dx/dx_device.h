@@ -177,10 +177,10 @@ class Dx11Device : public GraphicsDevice {
   std::unique_ptr<Pipeline> create_pipeline(
       const PipelineSourceDesc &src,
       std::string name = "Pipeline") override;
-  RhiResult map_range(DevicePtr ptr, uint64_t size, void *&mapped_ptr) override;
-  RhiResult map(DeviceAllocation alloc, void *&mapped_ptr) override;
-  void unmap(DevicePtr ptr) override;
-  void unmap(DeviceAllocation alloc) override;
+  RhiResult map_range(DevicePtr ptr, uint64_t size, void **mapped_ptr) final;
+  RhiResult map(DeviceAllocation alloc, void **mapped_ptr) final;
+  void unmap(DevicePtr ptr) final;
+  void unmap(DeviceAllocation alloc) final;
   void memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) override;
   Stream *get_compute_stream() override;
   std::unique_ptr<Pipeline> create_raster_pipeline(

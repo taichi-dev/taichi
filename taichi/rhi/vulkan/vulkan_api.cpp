@@ -511,7 +511,6 @@ IVkBuffer create_buffer(VkDevice device,
   IVkBuffer buffer = std::make_shared<DeviceObjVkBuffer>();
   buffer->device = device;
   buffer->allocator = allocator;
-  buffer->size = buffer_info->size;
   buffer->usage = buffer_info->usage;
 
   VkResult res = vmaCreateBuffer(allocator, buffer_info, alloc_info,
@@ -524,12 +523,10 @@ IVkBuffer create_buffer(VkDevice device,
 
 IVkBuffer create_buffer(VkDevice device,
                         VkBuffer buffer,
-                        size_t size,
                         VkBufferUsageFlags usage) {
   IVkBuffer obj = std::make_shared<DeviceObjVkBuffer>();
   obj->device = device;
   obj->buffer = buffer;
-  obj->size = size;
   obj->usage = usage;
 
   return obj;

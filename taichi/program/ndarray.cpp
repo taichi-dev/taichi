@@ -148,8 +148,8 @@ T Ndarray::read(const std::vector<int> &I) const {
       this->ndarray_alloc_.get_ptr(/*offset=*/index * sizeof(T)), size_);
 
   char *device_arr_ptr{nullptr};
-  TI_ASSERT(staging_buf_->device->map(*staging_buf_, (void *&)device_arr_ptr) ==
-            RhiResult::success);
+  TI_ASSERT(staging_buf_->device->map(*staging_buf_,
+            (void **) &device_arr_ptr) == RhiResult::success);
 
   T data;
   std::memcpy(&data, device_arr_ptr, size_);
@@ -170,8 +170,8 @@ void Ndarray::write(const std::vector<int> &I, T val) const {
       this->ndarray_alloc_.device->allocate_memory_unique(alloc_params);
 
   T *device_arr_ptr{nullptr};
-  TI_ASSERT(staging_buf_->device->map(*staging_buf_, (void *&)device_arr_ptr) ==
-            RhiResult::success);
+  TI_ASSERT(staging_buf_->device->map(
+                *staging_buf_, (void **)&device_arr_ptr) == RhiResult::success);
 
   TI_ASSERT(device_arr_ptr);
   device_arr_ptr[0] = val;

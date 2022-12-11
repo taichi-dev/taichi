@@ -9,15 +9,11 @@ The term _field_ is borrowed from mathematics and physics. If you already know [
 
 Fields in Taichi are the _global_ data containers, which can be accessed from both the Python scope and the Taichi scope. Just like an ndarray in NumPy or a tensor in PyTorch, a field in Taichi is defined as a multi-dimensional array of elements, and elements in a field can be a scalar, a vector, a matrix, or a struct.
 
-:::note
-A 0D (zero-dimensional) field contains *only one* element.
-:::
-
 ## Scalar fields
 
 Scalar fields refer to the fields that store scalars and are the most basic fields.
 
-- A 0D scalar field is a single scalar.
+- A 0D scalar field is a single scalar. 
 - A 1D scalar field is a 1D array of scalars.
 - A 2D scalar field is a 2D array of scalars, and so on.
 

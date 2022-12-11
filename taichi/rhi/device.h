@@ -441,7 +441,7 @@ class Device {
 
   /**
    * Map a range within a DeviceAllocation memory into host address space.
-   * 
+   *
    * @param[in] ptr The Device Pointer to map.
    * @param[in] size The size of the mapped region.
    * @param[out] mapped_ptr Outputs the pointer to the mapped region.

@@ -1885,7 +1885,7 @@ DeviceAllocation VulkanDevice::import_vkbuffer(vkapi::IVkBuffer buffer,
     info.pNext = nullptr;
     alloc_int.addr = vkGetBufferDeviceAddress(device_, &info);
   }
-  
+
   alloc_int.alloc_info.size = size;
   alloc_int.alloc_info.deviceMemory = memory;
   alloc_int.alloc_info.offset = offset;

@@ -322,8 +322,7 @@ class DeviceImpl : public Device, public AllocToMTLBufferMapper {
     return std::make_unique<PipelineImpl>(std::move(pipeline));
   }
 
-  RhiResult map_range(DevicePtr ptr,
-                      uint64_t size, void **mapped_ptr) final {
+  RhiResult map_range(DevicePtr ptr, uint64_t size, void **mapped_ptr) final {
     auto *mem = find(ptr).mem;
     if (!mem) {
       return RhiResult::error;

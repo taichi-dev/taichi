@@ -1071,9 +1071,10 @@ def static(x, *xs):
         return [static(x)] + [static(x) for x in xs]
 
     if isinstance(x,
-                  (bool, int, float, range, list, tuple, enumerate, _Ndrange,
-                   GroupedNDRange, zip, filter, map)) or x is None:
+                  (bool, int, float, range, list, tuple, enumerate,
+                   GroupedNDRange, _Ndrange, zip, filter, map)) or x is None:
         return x
+
     if isinstance(x, AnyArray):
         return x
     if isinstance(x, Field):

@@ -185,8 +185,7 @@ def test_static_grouped_ndrange_0d():
     assert val[None] == 42
 
 
-@test_utils.test()
-def test_static_grouped_func():
+def _test_static_grouped_func():
 
     K = 3
     dim = 2
@@ -207,3 +206,13 @@ def test_static_grouped_func():
         for j in range(K):
             for k in range(K):
                 assert v[i, j][k] == i + j * 3 + k * 10
+
+
+@test_utils.test()
+def test_static_grouped_func():
+    _test_static_grouped_func()
+
+
+@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
+def test_static_grouped_func_matrix_scalarize():
+    _test_static_grouped_func()

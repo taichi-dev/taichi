@@ -60,6 +60,8 @@ void compile_to_offloads(IRNode *ir,
     print("Lowered");
   }
 
+  irpass::lower_called_functions(config, ir);
+
   irpass::eliminate_immutable_local_vars(ir);
   print("Immutable local vars eliminated");
 

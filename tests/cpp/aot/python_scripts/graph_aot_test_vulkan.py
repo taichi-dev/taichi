@@ -24,7 +24,6 @@ def compile_graph_aot(arch):
 
     g_builder = ti.graph.GraphBuilder()
 
-
     run_graph = g_builder.compile()
 
     assert "TAICHI_AOT_FOLDER_PATH" in os.environ.keys()
@@ -33,7 +32,7 @@ def compile_graph_aot(arch):
     mod = ti.aot.Module()
     mod.add_graph('run_graph', run_graph)
     mod.save(tmpdir)
-    mod.archive(tmpdir+'/module.tcm')
+    mod.archive(tmpdir + '/module.tcm')
 
 
 if __name__ == "__main__":

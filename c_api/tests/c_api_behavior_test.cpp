@@ -118,24 +118,22 @@ TEST_F(CapiTest, TestBehaviorAllocateMemory) {
   TiError error = TI_ERROR_SUCCESS;
   TiMemoryAllocateInfo allocate_info;
   allocate_info.size = 1024;
-   auto inner = [&](TiArch arch){
-    if(ti::is_arch_available(arch))
-    {
+  auto inner = [&](TiArch arch) {
+    if (ti::is_arch_available(arch)) {
       // Attempt to allocate memory with size of 1024
       TiRuntime runtime = ti_create_runtime(arch);
-      for(int i = 0;i<4;++i)
-      {
-        allocate_info.usage = TI_MEMORY_USAGE_STORAGE_BIT<<i;
-        TiMemory memory = ti_allocate_memory(runtime,&allocate_info);
-        TI_ASSERT(memory!=TI_NULL_HANDLE);
+      for (int i = 0; i < 4; ++i) {
+        allocate_info.usage = TI_MEMORY_USAGE_STORAGE_BIT << i;
+        TiMemory memory = ti_allocate_memory(runtime, &allocate_info);
+        TI_ASSERT(memory != TI_NULL_HANDLE);
       }
 
       // Attempt to run out of the memory
       {
         allocate_info.size = 1000000000000000000;
-        ti_allocate_memory(runtime,&allocate_info);
-        error = ti_get_last_error(0,nullptr);
-        TI_ASSERT(error==TI_ERROR_OUT_OF_MEMORY);
+        ti_allocate_memory(runtime, &allocate_info);
+        error = ti_get_last_error(0, nullptr);
+        TI_ASSERT(error == TI_ERROR_OUT_OF_MEMORY);
         allocate_info.size = 1024;
       }
 
@@ -147,13 +145,13 @@ TEST_F(CapiTest, TestBehaviorAllocateMemory) {
 
       // runtime is not null, allocate_info is null
       {
-        ti_allocate_memory(runtime,nullptr);
+        ti_allocate_memory(runtime, nullptr);
         CHECK_TAICHI_ERROR_IS(TI_ERROR_ARGUMENT_NULL);
       }
 
       // runtime is null, allocate is not null;
       {
-        ti_allocate_memory(TI_NULL_HANDLE,&allocate_info);
+        ti_allocate_memory(TI_NULL_HANDLE, &allocate_info);
         CHECK_TAICHI_ERROR_IS(TI_ERROR_ARGUMENT_NULL);
       }
     }
@@ -163,9 +161,8 @@ TEST_F(CapiTest, TestBehaviorAllocateMemory) {
 }
 
 TEST_F(CapiTest, TestBehaviorFreeMemory) {
-
-  auto inner = [](TiArch arch){
-    if(ti::is_arch_available(arch)) {
+  auto inner = [](TiArch arch) {
+    if (ti::is_arch_available(arch)) {
       TiRuntime runtime = ti_create_runtime(arch);
       TiMemoryAllocateInfo *allocate_info = new TiMemoryAllocateInfo;
       allocate_info->size = 1024;
@@ -174,26 +171,26 @@ TEST_F(CapiTest, TestBehaviorFreeMemory) {
       ti_free_memory(runtime, memory);
       CHECK_TAICHI_SUCCESS();
 
-      //runtime & allocate_info are both null
+      // runtime & allocate_info are both null
       {
-        ti_free_memory(TI_NULL_HANDLE,nullptr);
+        ti_free_memory(TI_NULL_HANDLE, nullptr);
         CHECK_TAICHI_ERROR_IS(TI_ERROR_ARGUMENT_NULL);
       }
 
-      //runtime is null and allocate_info is valid
+      // runtime is null and allocate_info is valid
       {
         TiMemoryAllocateInfo *allocate_info = new TiMemoryAllocateInfo;
         allocate_info->size = 1024;
         allocate_info->usage = TI_MEMORY_USAGE_STORAGE_BIT;
         TiMemory memory = ti_allocate_memory(runtime, allocate_info);
-        ti_free_memory(TI_NULL_HANDLE,memory);
+        ti_free_memory(TI_NULL_HANDLE, memory);
         CHECK_TAICHI_ERROR_IS(TI_ERROR_ARGUMENT_NULL);
       }
 
-      //runtime is not null and allocate_info is null
+      // runtime is not null and allocate_info is null
       {
         TiRuntime runtime = ti_create_runtime(arch);
-        ti_free_memory(runtime,nullptr);
+        ti_free_memory(runtime, nullptr);
         CHECK_TAICHI_ERROR_IS(TI_ERROR_ARGUMENT_NULL);
       }
     }
@@ -206,31 +203,31 @@ TEST_F(CapiTest, TestBehaviorMapMemory) {
   allocate_info.size = 1024;
   allocate_info.usage = TI_MEMORY_USAGE_STORAGE_BIT;
 
-  auto inner = [&](TiArch arch){
-    if(ti::is_arch_available(arch)) {
+  auto inner = [&](TiArch arch) {
+    if (ti::is_arch_available(arch)) {
       TiRuntime runtime = ti_create_runtime(arch);
-      TiMemory memory = ti_allocate_memory(runtime,&allocate_info);
-      ti_map_memory(runtime,memory);
+      TiMemory memory = ti_allocate_memory(runtime, &allocate_info);
+      ti_map_memory(runtime, memory);
       CHECK_TAICHI_SUCCESS();
 
       // runtime & memory are both null
       {
-        ti_map_memory(TI_NULL_HANDLE,TI_NULL_HANDLE);
+        ti_map_memory(TI_NULL_HANDLE, TI_NULL_HANDLE);
         CHECK_TAICHI_ERROR_IS(TI_ERROR_ARGUMENT_NULL);
       }
 
       // runtime is null, memory is valid
       {
         TiRuntime runtime = ti_create_runtime(arch);
-        TiMemory memory = ti_allocate_memory(runtime,&allocate_info);
-        ti_map_memory(TI_NULL_HANDLE,memory);
+        TiMemory memory = ti_allocate_memory(runtime, &allocate_info);
+        ti_map_memory(TI_NULL_HANDLE, memory);
         CHECK_TAICHI_ERROR_IS(TI_ERROR_ARGUMENT_NULL);
       }
 
       // runtime is valid, memory is null
       {
         TiRuntime runtime = ti_create_runtime(arch);
-        ti_map_memory(runtime,TI_NULL_HANDLE);
+        ti_map_memory(runtime, TI_NULL_HANDLE);
         CHECK_TAICHI_ERROR_IS(TI_ERROR_ARGUMENT_NULL);
       }
     }
@@ -242,35 +239,34 @@ TEST_F(CapiTest, TestBehaviorUnmapMemory) {
   TiMemoryAllocateInfo allocate_info;
   allocate_info.size = 1024;
   auto inner = [&](TiArch arch) {
-    if(ti::is_arch_available(arch)) {
+    if (ti::is_arch_available(arch)) {
       TiRuntime runtime = ti_create_runtime(arch);
-      for(int i = 0;i<4;++i)
-      {
-        allocate_info.usage = TI_MEMORY_USAGE_STORAGE_BIT<<i;
-        TiMemory memory = ti_allocate_memory(runtime,&allocate_info);
+      for (int i = 0; i < 4; ++i) {
+        allocate_info.usage = TI_MEMORY_USAGE_STORAGE_BIT << i;
+        TiMemory memory = ti_allocate_memory(runtime, &allocate_info);
         ti_map_memory(runtime, memory);
         ti_unmap_memory(runtime, memory);
         CHECK_TAICHI_SUCCESS();
       }
 
-      //runtime & memory are both null
+      // runtime & memory are both null
       {
-        ti_unmap_memory(TI_NULL_HANDLE,TI_NULL_HANDLE);
-        CHECK_TAICHI_ERROR_IS(TI_ERROR_ARGUMENT_NULL);        
-      }
-
-      //runtime is null, memory is valid 
-      {
-        TiRuntime runtime = ti_create_runtime(TI_ARCH_VULKAN);
-        TiMemory memory = ti_allocate_memory(runtime, &allocate_info);
-        ti_unmap_memory(TI_NULL_HANDLE,memory);
+        ti_unmap_memory(TI_NULL_HANDLE, TI_NULL_HANDLE);
         CHECK_TAICHI_ERROR_IS(TI_ERROR_ARGUMENT_NULL);
       }
 
-      //runtime is valid, memory is valid
+      // runtime is null, memory is valid
       {
         TiRuntime runtime = ti_create_runtime(TI_ARCH_VULKAN);
-        ti_unmap_memory(runtime,TI_NULL_HANDLE);
+        TiMemory memory = ti_allocate_memory(runtime, &allocate_info);
+        ti_unmap_memory(TI_NULL_HANDLE, memory);
+        CHECK_TAICHI_ERROR_IS(TI_ERROR_ARGUMENT_NULL);
+      }
+
+      // runtime is valid, memory is valid
+      {
+        TiRuntime runtime = ti_create_runtime(TI_ARCH_VULKAN);
+        ti_unmap_memory(runtime, TI_NULL_HANDLE);
         CHECK_TAICHI_ERROR_IS(TI_ERROR_ARGUMENT_NULL);
       }
     }
@@ -292,19 +288,18 @@ TEST_F(CapiTest, TestBehaviorAllocateImage) {
   imageAllocateInfo.usage = TI_IMAGE_USAGE_STORAGE_BIT;
   imageAllocateInfo.mip_level_count = 1;
 
-  auto inner = [&](TiArch arch){
-    if(ti::is_arch_available(arch))
-    {
+  auto inner = [&](TiArch arch) {
+    if (ti::is_arch_available(arch)) {
       // Attemp to allocate a normal 2D image
       TiRuntime runtime = ti_create_runtime(arch);
-      TiImage image = ti_allocate_image(runtime,&imageAllocateInfo);
+      TiImage image = ti_allocate_image(runtime, &imageAllocateInfo);
       CHECK_TAICHI_SUCCESS();
-      TI_ASSERT(image!=TI_NULL_HANDLE);
+      TI_ASSERT(image != TI_NULL_HANDLE);
 
       // Attemp to allocate a 2D image with invalid demension
       {
         imageAllocateInfo.dimension = TI_IMAGE_DIMENSION_MAX_ENUM;
-        image = ti_allocate_image(runtime,&imageAllocateInfo);
+        image = ti_allocate_image(runtime, &imageAllocateInfo);
         CHECK_TAICHI_ERROR_IS(TI_ERROR_ARGUMENT_OUT_OF_RANGE);
         imageAllocateInfo.dimension = TI_IMAGE_DIMENSION_2D;
       }
@@ -319,19 +314,19 @@ TEST_F(CapiTest, TestBehaviorAllocateImage) {
 
       // runtime & imageAllocateInfo are both null
       {
-        image = ti_allocate_image(TI_NULL_HANDLE,TI_NULL_HANDLE);
+        image = ti_allocate_image(TI_NULL_HANDLE, TI_NULL_HANDLE);
         CHECK_TAICHI_ERROR_IS(TI_ERROR_ARGUMENT_NULL);
       }
 
-      //runtime is null, imageAllocateInfo is valid
+      // runtime is null, imageAllocateInfo is valid
       {
         image = ti_allocate_image(TI_NULL_HANDLE, &imageAllocateInfo);
         CHECK_TAICHI_ERROR_IS(TI_ERROR_ARGUMENT_NULL);
       }
 
-      //runtime is valid, imageAllocateInfo is null;
+      // runtime is valid, imageAllocateInfo is null;
       {
-        image = ti_allocate_image(runtime,TI_NULL_HANDLE);
+        image = ti_allocate_image(runtime, TI_NULL_HANDLE);
         CHECK_TAICHI_ERROR_IS(TI_ERROR_ARGUMENT_NULL);
       }
     }
@@ -353,28 +348,27 @@ TEST_F(CapiTest, TestBehaviorFreeImage) {
   imageAllocateInfo.usage = TI_IMAGE_USAGE_STORAGE_BIT;
   imageAllocateInfo.mip_level_count = 1;
 
-  auto inner = [&](TiArch arch){
+  auto inner = [&](TiArch arch) {
     // Attemp to free a normal 2D image
-    if(ti::is_arch_available(arch))
-    {
+    if (ti::is_arch_available(arch)) {
       TiRuntime runtime = ti_create_runtime(arch);
-      TiImage image = ti_allocate_image(runtime,&imageAllocateInfo);
+      TiImage image = ti_allocate_image(runtime, &imageAllocateInfo);
       ti_free_image(runtime, image);
       CHECK_TAICHI_SUCCESS();
 
-      // Runtime & image are both invalid 
+      // Runtime & image are both invalid
       {
-        ti_free_image(TI_NULL_HANDLE,TI_NULL_HANDLE);
+        ti_free_image(TI_NULL_HANDLE, TI_NULL_HANDLE);
         CHECK_TAICHI_ERROR_IS(TI_ERROR_ARGUMENT_NULL);
       }
 
       // Runtime is null, Image is valid
       {
-        ti_free_image(TI_NULL_HANDLE,image);
+        ti_free_image(TI_NULL_HANDLE, image);
         CHECK_TAICHI_ERROR_IS(TI_ERROR_ARGUMENT_NULL);
       }
 
-      //Runtime is valid, image is null
+      // Runtime is valid, image is null
       {
         ti_free_image(runtime, TI_NULL_HANDLE);
         CHECK_TAICHI_ERROR_IS(TI_ERROR_ARGUMENT_NULL);
@@ -385,10 +379,8 @@ TEST_F(CapiTest, TestBehaviorFreeImage) {
 }
 
 TEST_F(CapiTest, TestBehaviorCreateEvent) {
-
   auto inner = [&](TiArch arch) {
-    if(ti::is_arch_available(arch))
-    {
+    if (ti::is_arch_available(arch)) {
       TiRuntime runtime = ti_create_runtime(arch);
       TiEvent event = ti_create_event(runtime);
       CHECK_TAICHI_SUCCESS();
@@ -404,11 +396,10 @@ TEST_F(CapiTest, TestBehaviorCreateEvent) {
 }
 
 TEST_F(CapiTest, TestBehaviorDestroyEvent) {
-
   auto inner = [&](TiArch arch) {
-    if(ti::is_arch_available(arch)) {
+    if (ti::is_arch_available(arch)) {
       TiRuntime runtime = ti_create_runtime(arch);
-      TiEvent event = ti_create_event(runtime);    
+      TiEvent event = ti_create_event(runtime);
       ti_destroy_event(event);
       CHECK_TAICHI_SUCCESS();
 
@@ -422,15 +413,13 @@ TEST_F(CapiTest, TestBehaviorDestroyEvent) {
   inner(TI_ARCH_VULKAN);
 }
 
-
-TEST_F(CapiTest, TestBehaviorCopyMemoryDTD)
-{
+TEST_F(CapiTest, TestBehaviorCopyMemoryDTD) {
   TiMemoryAllocateInfo MallocateInfo;
   MallocateInfo.size = 2048;
   MallocateInfo.usage = TI_MEMORY_USAGE_STORAGE_BIT;
   MallocateInfo.export_sharing = TI_TRUE;
   auto inner = [&](TiArch arch) {
-    if(ti::is_arch_available(arch)){
+    if (ti::is_arch_available(arch)) {
       TiRuntime runtime = ti_create_runtime(arch);
       TiMemory memory = ti_allocate_memory(runtime, &MallocateInfo);
       TiMemorySlice src_memory;
@@ -480,25 +469,22 @@ void test_behavior_load_aot_module_impl(TiArch arch) {
 
     // AOT module from tcm file, normal usage.
     {
-      TiAotModule module = ti_load_aot_module(
-          runtime,
-          module_path.c_str());
+      TiAotModule module = ti_load_aot_module(runtime, module_path.c_str());
       CHECK_TAICHI_SUCCESS();
       TI_ASSERT(module != TI_NULL_HANDLE);
     }
 
     // AOT module from filesystem directory, normal usage.
     {
-      TiAotModule module = ti_load_aot_module(
-          runtime,
-          folder_dir);
+      TiAotModule module = ti_load_aot_module(runtime, folder_dir);
       CHECK_TAICHI_SUCCESS();
       TI_ASSERT(module != TI_NULL_HANDLE);
     }
 
     // Attempt to load aot module from tcm file, while runtime is null.
     {
-      TiAotModule module = ti_load_aot_module(TI_NULL_HANDLE, module_path.c_str());
+      TiAotModule module =
+          ti_load_aot_module(TI_NULL_HANDLE, module_path.c_str());
       CHECK_TAICHI_ERROR_IS(TI_ERROR_ARGUMENT_NULL);
       TI_ASSERT(module == TI_NULL_HANDLE);
     }
@@ -510,13 +496,13 @@ void test_behavior_load_aot_module_impl(TiArch arch) {
       TI_ASSERT(module == TI_NULL_HANDLE);
     }
 
-    //Attempt to load aot module without path.
+    // Attempt to load aot module without path.
     {
       TiAotModule module = ti_load_aot_module(runtime, nullptr);
       CHECK_TAICHI_ERROR_IS(TI_ERROR_ARGUMENT_NULL);
       TI_ASSERT(module == TI_NULL_HANDLE);
     }
-    //Attempt to load aot module with a invalid path.
+    // Attempt to load aot module with a invalid path.
     {
       TiAotModule module = ti_load_aot_module(runtime, "ssssss/????//");
       CHECK_TAICHI_ERROR_IS(TI_ERROR_CORRUPTED_DATA);
@@ -525,16 +511,14 @@ void test_behavior_load_aot_module_impl(TiArch arch) {
   }
 }
 
-TEST_F(CapiTest,TestBehaviorLoadAOTModuleVulkan)
-{
+TEST_F(CapiTest, TestBehaviorLoadAOTModuleVulkan) {
   test_behavior_load_aot_module_impl(TI_ARCH_VULKAN);
 }
 
-void test_behavior_destroy_aot_module_impl(TiArch arch){
+void test_behavior_destroy_aot_module_impl(TiArch arch) {
   const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
   const std::string module_path = folder_dir + std::string("/module.tcm");
-  if(ti::is_arch_available(arch))
-  {
+  if (ti::is_arch_available(arch)) {
     TiRuntime runtime = ti_create_runtime(arch);
     TiAotModule module = ti_load_aot_module(runtime, module_path.c_str());
     TI_ASSERT(module != TI_NULL_HANDLE);
@@ -545,22 +529,19 @@ void test_behavior_destroy_aot_module_impl(TiArch arch){
     ti_destroy_aot_module(TI_NULL_HANDLE);
     CHECK_TAICHI_ERROR_IS(TI_ERROR_ARGUMENT_NULL);
   }
-
 }
-TEST_F(CapiTest, TestBehaviorDestroyAotModuleVulkan)
-{
+TEST_F(CapiTest, TestBehaviorDestroyAotModuleVulkan) {
   test_behavior_destroy_aot_module_impl(TI_ARCH_VULKAN);
 }
 
-void test_behavir_get_cgraph_impl(TiArch arch)
-{
+void test_behavir_get_cgraph_impl(TiArch arch) {
   const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
   const std::string module_path = folder_dir + std::string("/module.tcm");
-  if(ti::is_arch_available(arch))
-  {
+  if (ti::is_arch_available(arch)) {
     TiRuntime runtime = ti_create_runtime(arch);
     TiAotModule module = ti_load_aot_module(runtime, module_path.c_str());
-    TiComputeGraph Cgraph = ti_get_aot_module_compute_graph(module, "run_graph");
+    TiComputeGraph Cgraph =
+        ti_get_aot_module_compute_graph(module, "run_graph");
     CHECK_TAICHI_SUCCESS();
     TI_ASSERT(Cgraph != TI_NULL_HANDLE);
 
@@ -579,11 +560,8 @@ void test_behavir_get_cgraph_impl(TiArch arch)
     CHECK_TAICHI_ERROR_IS(TI_ERROR_NAME_NOT_FOUND);
     TI_ASSERT(Cgraph == TI_NULL_HANDLE);
   }
-
 }
 
-TEST_F(CapiTest, TestBehaviorGetCgraphVulkan)
-{
+TEST_F(CapiTest, TestBehaviorGetCgraphVulkan) {
   test_behavir_get_cgraph_impl(TI_ARCH_VULKAN);
 }
-

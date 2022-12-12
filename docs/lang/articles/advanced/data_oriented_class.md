@@ -51,7 +51,7 @@ class MyClass:
         self.temp = ti.field(dtype = ti.i32, shape=n)
 
 
-a = MyClass() # creating an instance of Data-Oriented Class 
+a = MyClass() # creating an instance of Data-Oriented Class
 # a.call_inc() cannot be called, because a.temp has not been allocated at this point
 a.allocate_temp(4) #c
 a.call_inc()

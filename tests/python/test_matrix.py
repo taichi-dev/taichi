@@ -713,8 +713,7 @@ def test_matrix_vector_multiplication():
     foo()
 
 
-@test_utils.test(arch=[ti.cuda, ti.cpu],
-                 real_matrix_scalarize=False)
+@test_utils.test(arch=[ti.cuda, ti.cpu], real_matrix_scalarize=False)
 def test_local_matrix_read():
 
     s = ti.field(ti.i32, shape=())
@@ -730,8 +729,7 @@ def test_local_matrix_read():
             assert s[None] == i * 3 + j
 
 
-@test_utils.test(arch=[ti.cuda, ti.cpu],
-                 real_matrix_scalarize=False)
+@test_utils.test(arch=[ti.cuda, ti.cpu], real_matrix_scalarize=False)
 def test_local_matrix_read_without_assign():
     @ti.kernel
     def local_vector_read(i: ti.i32) -> ti.i32:
@@ -741,8 +739,7 @@ def test_local_matrix_read_without_assign():
         assert local_vector_read(i) == i
 
 
-@test_utils.test(arch=[ti.cuda, ti.cpu],
-                 real_matrix_scalarize=False)
+@test_utils.test(arch=[ti.cuda, ti.cpu], real_matrix_scalarize=False)
 def test_local_matrix_indexing_in_loop():
     s = ti.field(ti.i32, shape=(3, 3))
 
@@ -759,8 +756,7 @@ def test_local_matrix_indexing_in_loop():
             assert s[i, j] == i * 3 + j + 1
 
 
-@test_utils.test(arch=[ti.cuda, ti.cpu],
-                 real_matrix_scalarize=False)
+@test_utils.test(arch=[ti.cuda, ti.cpu], real_matrix_scalarize=False)
 def test_local_matrix_indexing_ops():
     @ti.kernel
     def element_write() -> ti.i32:

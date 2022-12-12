@@ -111,6 +111,8 @@ def process(imgfile, scale):
     w = int(W / _internal_scale * scale)
     h = int(H / _internal_scale * scale)
     result = cv2.resize(result, (w, h), interpolation=cv2.INTER_CUBIC)
+    plt.tight_layout()
+    plt.axis('off')
     plt.imshow(result)
     plt.show()
 

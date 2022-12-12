@@ -504,7 +504,7 @@ void test_behavior_load_aot_module_impl(TiArch arch) {
     }
     // Attempt to load aot module with a invalid path.
     {
-      TiAotModule module = ti_load_aot_module(runtime, "ssssss/????//");
+      TiAotModule module = ti_load_aot_module(runtime, "ssssss///");
       CHECK_TAICHI_ERROR_IS(TI_ERROR_CORRUPTED_DATA);
       TI_ASSERT(module == TI_NULL_HANDLE);
     }

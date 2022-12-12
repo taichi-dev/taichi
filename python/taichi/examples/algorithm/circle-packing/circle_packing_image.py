@@ -2,24 +2,31 @@
 Given an input image, redraw it with circle packings.
 """
 try:
-    import cv2
     import cairocffi as cairo
+    import cv2
 except:
-    raise ImportError("This example depends on opencv and cairocffi, please run 'pip install opencv-python cairocffi' to install.")
+    raise ImportError(
+        "This example depends on opencv and cairocffi, please run 'pip install opencv-python cairocffi' to install."
+    )
 
 import os
-import numpy as np
+
 import matplotlib.pyplot as plt
+import numpy as np
+
 import taichi as ti
+
 ti.init(arch=ti.cpu)
 
 _internal_scale = 5  # internally we need a large image to paint
 
+
 @ti.dataclass
 class Circle:
-    x : int
-    y : int
-    r : int
+    x: int
+    y: int
+    r: int
+
 
 circles = Circle.field()
 ti.root.dynamic(ti.i, 100000, chunk_size=64).place(circles)
@@ -28,10 +35,9 @@ ti.root.dynamic(ti.i, 100000, chunk_size=64).place(circles)
 def load_image(imgfile):
     image = cv2.imread(imgfile)
     h, w = image.shape[:2]
-    image = cv2.resize(
-        image, (int(_internal_scale * w), int(_internal_scale * h)),
-        interpolation=cv2.INTER_AREA
-    )
+    image = cv2.resize(image,
+                       (int(_internal_scale * w), int(_internal_scale * h)),
+                       interpolation=cv2.INTER_AREA)
     return cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
 
@@ -43,8 +49,7 @@ def get_dist_transform_image(image):
 
 
 @ti.kernel
-def add_new_circles(filled: ti.types.ndarray(),
-                    dist_image: ti.types.ndarray(),
+def add_new_circles(filled: ti.types.ndarray(), dist_image: ti.types.ndarray(),
                     min_radius: int, max_radius: int) -> int:
     H, W = dist_image.shape[0], dist_image.shape[1]
     ti.loop_config(serialize=True)
@@ -57,7 +62,7 @@ def add_new_circles(filled: ti.types.ndarray(),
                 if not filled[y, x] and r <= x < W - r and r <= y < H - r:
                     for ii in range(x - r, x + r + 1):
                         for jj in range(y - r, y + r + 1):
-                            if (ii - x) ** 2 + (jj - y)**2 < (r + 1) ** 2:
+                            if (ii - x)**2 + (jj - y)**2 < (r + 1)**2:
                                 if filled[jj, ii]:
                                     valid = False
                                     break
@@ -82,7 +87,7 @@ def plot_cirlces(image, ctx, n):
             ec = (0.5, 0.5, 0.5)
         else:
             ec = (0, 0, 0)
-        ctx.arc(c.x, c.y, c.r, 0, 2*np.pi)
+        ctx.arc(c.x, c.y, c.r, 0, 2 * np.pi)
         ctx.set_source_rgb(*fc)
         ctx.fill_preserve()
         ctx.set_source_rgba(*ec)
@@ -119,7 +124,8 @@ def process(imgfile, scale):
 
 def main(imgfile=None, scale=2):
     if imgfile is None:
-        imgfile = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'taichi_logo.png')
+        imgfile = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                               'taichi_logo.png')
     process(imgfile, scale)
 
 

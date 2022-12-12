@@ -7,15 +7,15 @@ sidebar_position: 3
 To define a Taichi kernel as a Python class member function:
 
 1. Decorate the class with a `@ti.data_oriented` decorator.
-2. Define `ti.kernel`s and `ti.func`s in your data-oriented Python class.
+2. Define `ti.kernel`s and `ti.func`s in your Data-Oriented Python class.
 
 :::note
 The first argument of the function should be the class instance ("`self`"), unless you are defining a `@staticmethod`.
 :::
 
-A brief example:
+A brief example. Notice the use of `@ti.data_oriented` and `@ti.kernel` in lines 1 and 6, respectively:
 
-```python {1}
+```python {1,6}
 @ti.data_oriented
 class TiArray:
     def __init__(self, n):
@@ -30,7 +30,7 @@ a = TiArray(32)
 a.inc()
 ```
 
-Definitions of Taichi fields can be made not only in _init_ functions, but also at any place of a Python-scope function in a data-oriented class. For example,
+Definitions of Taichi fields can be made not only in _init_ functions, but also at any place of a Python-scope function in a Data-Oriented class.
 
 ```python {21,25}
 import taichi as ti
@@ -51,9 +51,9 @@ class MyClass:
         self.temp = ti.field(dtype = ti.i32, shape=n)
 
 
-a = MyClass()
+a = MyClass() # creating an instance of Data-Oriented Class 
 # a.call_inc() cannot be called, because a.temp has not been allocated at this point
-a.allocate_temp(4)
+a.allocate_temp(4) #c
 a.call_inc()
 a.call_inc()
 print(a.temp)  # [2 2 2 2]
@@ -95,9 +95,9 @@ print(a.y)  # [ 5. 13. 21. 29.]
 ```
 
 
-## Inheritance of data-oriented classes
+## Inheritance of Data-Oriented Classes
 
-The data-oriented property is automatically carried along with the Python class inheriting. This means that you can call a Taichi Kernel if any of its ancestor classes is decorated with `@ti.data_oriented`.
+The Data-Oriented property is automatically carried along with the Python class inheritence. This implies that you can call a Taichi Kernel if any of its ancestor classes is decorated with `@ti.data_oriented`, which is shown in the example below:
 
 An example:
 ```python
@@ -152,7 +152,7 @@ c = BaseClass()
 
 ## Python built-in decorators
 
-Common decorators that are pre-built in Python, `@staticmethod`[^1] and `@classmethod`[^2], can decorate a Taichi kernel in data-oriented classes.
+Common decorators that are pre-built in Python, `@staticmethod`[^1] and `@classmethod`[^2], can decorate a Taichi kernel in Data-Oriented classes.
 
 [^1]: [Python built-in functions - staticmethod](https://docs.python.org/3/library/functions.html#staticmethod)
 [^2]: [Python built-in functions - classmethod](https://docs.python.org/3/library/functions.html#classmethod)

@@ -104,7 +104,8 @@ def test_print_multiple_threads():
     ti.sync()
 
 
-def _test_print_list():
+@test_utils.test(exclude=[ti.cc, ti.dx11, vk_on_mac], debug=True)
+def test_print_list():
     x = ti.Matrix.field(2, 3, dtype=ti.f32, shape=(2, 3))
     y = ti.Vector.field(3, dtype=ti.f32, shape=())
 
@@ -122,19 +123,6 @@ def _test_print_list():
 
     func(233.3)
     ti.sync()
-
-
-@test_utils.test(exclude=[ti.cc, ti.dx11, vk_on_mac], debug=True)
-def test_print_list():
-    _test_print_list()
-
-
-@test_utils.test(exclude=[ti.cc, ti.dx11, vk_on_mac],
-                 debug=True,
-                 real_matrix=True,
-                 real_matrix_scalarize=True)
-def test_print_list_matrix_scalarize():
-    _test_print_list()
 
 
 @test_utils.test(arch=[ti.cpu, ti.vulkan], exclude=[vk_on_mac], debug=True)

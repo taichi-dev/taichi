@@ -55,12 +55,12 @@ def test_add_overflow(capfd, ty, num):
     capfd.readouterr()
 
     @ti.kernel
-    def foo() -> ty:
-        a = ty(num)
+    def foo(x: ty) -> ty:
+        a = ty(x)
         b = ty(num)
         return a + b
 
-    foo()
+    foo(num)
     ti.sync()
     captured = capfd.readouterr().out
     assert "Addition overflow detected" in captured
@@ -103,12 +103,12 @@ def test_sub_overflow_i(capfd, ty, num):
     capfd.readouterr()
 
     @ti.kernel
-    def foo() -> ty:
+    def foo(num: ty) -> ty:
         a = ty(num)
         b = ty(-num)
         return a - b
 
-    foo()
+    foo(num)
     ti.sync()
     captured = capfd.readouterr().out
     assert "Subtraction overflow detected" in captured
@@ -123,12 +123,12 @@ def test_sub_no_overflow_i(capfd, ty, num):
     capfd.readouterr()
 
     @ti.kernel
-    def foo() -> ty:
+    def foo(num: ty) -> ty:
         a = ty(num)
         b = ty(-num + 1)
         return a - b
 
-    foo()
+    foo(num)
     ti.sync()
     captured = capfd.readouterr().out
     assert "Subtraction overflow detected" not in captured
@@ -143,12 +143,12 @@ def test_sub_overflow_u(capfd, ty):
     capfd.readouterr()
 
     @ti.kernel
-    def foo() -> ty:
-        a = ty(1)
-        b = ty(2)
+    def foo(x: ty, y: ty) -> ty:
+        a = ty(x)
+        b = ty(y)
         return a - b
 
-    foo()
+    foo(1, 2)
     ti.sync()
     captured = capfd.readouterr().out
     assert "Subtraction overflow detected" in captured
@@ -163,12 +163,12 @@ def test_sub_no_overflow_u(capfd, ty):
     capfd.readouterr()
 
     @ti.kernel
-    def foo() -> ty:
-        a = ty(1)
-        b = ty(1)
+    def foo(x: ty) -> ty:
+        a = ty(x)
+        b = ty(x)
         return a - b
 
-    foo()
+    foo(1)
     ti.sync()
     captured = capfd.readouterr().out
     assert "Subtraction overflow detected" not in captured
@@ -201,12 +201,12 @@ def test_mul_overflow(capfd, ty, num1, num2):
     capfd.readouterr()
 
     @ti.kernel
-    def foo() -> ty:
+    def foo(num1: ty, num2: ty) -> ty:
         a = ty(num1 + 1)
         b = ty(num2 + 1)
         return a * b
 
-    foo()
+    foo(num1, num2)
     ti.sync()
     captured = capfd.readouterr().out
     assert "Multiplication overflow detected" in captured
@@ -221,12 +221,12 @@ def test_mul_no_overflow(capfd, ty, num1, num2):
     capfd.readouterr()
 
     @ti.kernel
-    def foo() -> ty:
+    def foo(num1: ty, num2: ty) -> ty:
         a = ty(num1 + 1)
         b = ty(num2 - 1)
         return a * b
 
-    foo()
+    foo(num1, num2)
     ti.sync()
     captured = capfd.readouterr().out
     assert "Multiplication overflow detected" not in captured
@@ -253,12 +253,12 @@ def test_shl_overflow(capfd, ty, num):
     capfd.readouterr()
 
     @ti.kernel
-    def foo() -> ty:
+    def foo(num: ty) -> ty:
         a = ty(2)
         b = num
         return a << b
 
-    foo()
+    foo(num)
     ti.sync()
     captured = capfd.readouterr().out
     assert "Shift left overflow detected" in captured
@@ -273,12 +273,12 @@ def test_shl_no_overflow(capfd, ty, num):
     capfd.readouterr()
 
     @ti.kernel
-    def foo() -> ty:
+    def foo(num: ty) -> ty:
         a = ty(2)
         b = num - 1
         return a << b
 
-    foo()
+    foo(num)
     ti.sync()
     captured = capfd.readouterr().out
     assert "Shift left overflow detected" not in captured

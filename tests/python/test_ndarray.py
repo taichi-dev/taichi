@@ -729,3 +729,19 @@ def test_ndarray_numpy_matrix_scalarize():
     ref_numpy = boundary_box.to_numpy()
 
     assert (boundary_box_np == ref_numpy).all()
+
+
+@pytest.mark.parametrize('dtype', [ti.i64, ti.u64, ti.f64])
+@test_utils.test(arch=supported_archs_taichi_ndarray,
+                 require=ti.extension.data64)
+def test_ndarray_python_scope_read_64bit(dtype):
+    @ti.kernel
+    def run(x: ti.types.ndarray()):
+        for i in x:
+            x[i] = i + ti.i64(2**40)
+
+    n = 4
+    a = ti.ndarray(dtype, shape=(n, ))
+    run(a)
+    for i in range(n):
+        assert a[i] == i + 2**40

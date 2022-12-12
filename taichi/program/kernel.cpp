@@ -324,8 +324,7 @@ void Kernel::init(Program &program,
   is_accessor = false;
   is_evaluator = false;
   compiled_ = nullptr;
-  context =
-      std::make_unique<FrontendContext>(program.global_compile_config().arch);
+  context = std::make_unique<FrontendContext>();
   ir = context->get_root();
   ir_is_ast_ = true;
 

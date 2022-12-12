@@ -12,7 +12,7 @@ Function::Function(Program *program, const FunctionKey &func_key)
 
 void Function::set_function_body(const std::function<void()> &func) {
   context =
-      std::make_unique<FrontendContext>(program->global_compile_config().arch);
+      std::make_unique<FrontendContext>();
   ir = context->get_root();
 
   func();

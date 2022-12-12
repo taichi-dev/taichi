@@ -40,57 +40,44 @@ FrontendAssignStmt::FrontendAssignStmt(const Expr &lhs, const Expr &rhs)
 
 FrontendForStmt::FrontendForStmt(const ExprGroup &loop_vars,
                                  SNode *snode,
-                                 Arch arch,
                                  const ForLoopConfig &config)
     : snode(snode) {
-  init_config(arch, config);
+  init_config(config);
   init_loop_vars(loop_vars);
 }
 
 FrontendForStmt::FrontendForStmt(const ExprGroup &loop_vars,
                                  const Expr &external_tensor,
-                                 Arch arch,
                                  const ForLoopConfig &config)
     : external_tensor(external_tensor) {
-  init_config(arch, config);
+  init_config(config);
   init_loop_vars(loop_vars);
 }
 
 FrontendForStmt::FrontendForStmt(const ExprGroup &loop_vars,
                                  const mesh::MeshPtr &mesh,
                                  const mesh::MeshElementType &element_type,
-                                 Arch arch,
                                  const ForLoopConfig &config)
     : mesh(mesh.ptr.get()), element_type(element_type) {
-  init_config(arch, config);
+  init_config(config);
   init_loop_vars(loop_vars);
 }
 
 FrontendForStmt::FrontendForStmt(const Expr &loop_var,
                                  const Expr &begin,
                                  const Expr &end,
-                                 Arch arch,
                                  const ForLoopConfig &config)
     : begin(begin), end(end) {
-  init_config(arch, config);
+  init_config(config);
   add_loop_var(loop_var);
 }
 
-void FrontendForStmt::init_config(Arch arch, const ForLoopConfig &config) {
+void FrontendForStmt::init_config(const ForLoopConfig &config) {
   is_bit_vectorized = config.is_bit_vectorized;
   strictly_serialized = config.strictly_serialized;
   mem_access_opt = config.mem_access_opt;
   block_dim = config.block_dim;
-  if (arch == Arch::cuda) {
-    num_cpu_threads = 1;
-    TI_ASSERT(block_dim <= taichi_max_gpu_block_dim);
-  } else {  // cpu
-    if (config.num_cpu_threads == 0) {
-      num_cpu_threads = std::thread::hardware_concurrency();
-    } else {
-      num_cpu_threads = config.num_cpu_threads;
-    }
-  }
+  num_cpu_threads = config.num_cpu_threads;
 }
 
 void FrontendForStmt::init_loop_vars(const ExprGroup &loop_vars) {
@@ -1242,8 +1229,8 @@ void ASTBuilder::insert_for(const Expr &s,
                             const Expr &e,
                             const std::function<void(Expr)> &func) {
   auto i = Expr(std::make_shared<IdExpression>(get_next_id()));
-  auto stmt_unique = std::make_unique<FrontendForStmt>(i, s, e, this->arch_,
-                                                       for_loop_dec_.config);
+  auto stmt_unique =
+      std::make_unique<FrontendForStmt>(i, s, e, for_loop_dec_.config);
   for_loop_dec_.reset();
   auto stmt = stmt_unique.get();
   this->insert(std::move(stmt_unique));
@@ -1254,8 +1241,9 @@ void ASTBuilder::insert_for(const Expr &s,
 
 Expr ASTBuilder::insert_thread_idx_expr() {
   auto loop = stack_.size() ? stack_.back()->parent_stmt : nullptr;
-  TI_ERROR_IF(arch_ != Arch::cuda && !arch_is_cpu(arch_),
-              "ti.thread_idx() is only available in cuda or cpu context.");
+  // Refactor2023:FIXME: move the assertion
+  // TI_ERROR_IF(arch_ != Arch::cuda && !arch_is_cpu(arch_),
+  //             "ti.thread_idx() is only available in cuda or cpu context.");
   if (loop != nullptr) {
     auto i = stack_.size() - 1;
     while (!(loop->is<FrontendForStmt>())) {
@@ -1401,7 +1389,7 @@ void ASTBuilder::begin_frontend_range_for(const Expr &i,
                                           const Expr &s,
                                           const Expr &e) {
   auto stmt_unique =
-      std::make_unique<FrontendForStmt>(i, s, e, arch_, for_loop_dec_.config);
+      std::make_unique<FrontendForStmt>(i, s, e, for_loop_dec_.config);
   auto stmt = stmt_unique.get();
   this->insert(std::move(stmt_unique));
   this->create_scope(stmt->body,
@@ -1415,8 +1403,8 @@ void ASTBuilder::begin_frontend_struct_for_on_snode(const ExprGroup &loop_vars,
       for_loop_dec_.config.strictly_serialized,
       "ti.loop_config(serialize=True) does not have effect on the struct for. "
       "The execution order is not guaranteed.");
-  auto stmt_unique = std::make_unique<FrontendForStmt>(loop_vars, snode, arch_,
-                                                       for_loop_dec_.config);
+  auto stmt_unique =
+      std::make_unique<FrontendForStmt>(loop_vars, snode, for_loop_dec_.config);
   for_loop_dec_.reset();
   auto stmt = stmt_unique.get();
   this->insert(std::move(stmt_unique));
@@ -1431,7 +1419,7 @@ void ASTBuilder::begin_frontend_struct_for_on_external_tensor(
       "ti.loop_config(serialize=True) does not have effect on the struct for. "
       "The execution order is not guaranteed.");
   auto stmt_unique = std::make_unique<FrontendForStmt>(
-      loop_vars, external_tensor, arch_, for_loop_dec_.config);
+      loop_vars, external_tensor, for_loop_dec_.config);
   for_loop_dec_.reset();
   auto stmt = stmt_unique.get();
   this->insert(std::move(stmt_unique));
@@ -1447,7 +1435,7 @@ void ASTBuilder::begin_frontend_mesh_for(
       "ti.loop_config(serialize=True) does not have effect on the mesh for. "
       "The execution order is not guaranteed.");
   auto stmt_unique = std::make_unique<FrontendForStmt>(
-      ExprGroup(i), mesh_ptr, element_type, arch_, for_loop_dec_.config);
+      ExprGroup(i), mesh_ptr, element_type, for_loop_dec_.config);
   for_loop_dec_.reset();
   auto stmt = stmt_unique.get();
   this->insert(std::move(stmt_unique));

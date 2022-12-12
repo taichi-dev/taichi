@@ -176,24 +176,20 @@ class FrontendForStmt : public Stmt {
 
   FrontendForStmt(const ExprGroup &loop_vars,
                   SNode *snode,
-                  Arch arch,
                   const ForLoopConfig &config);
 
   FrontendForStmt(const ExprGroup &loop_vars,
                   const Expr &external_tensor,
-                  Arch arch,
                   const ForLoopConfig &config);
 
   FrontendForStmt(const ExprGroup &loop_vars,
                   const mesh::MeshPtr &mesh,
                   const mesh::MeshElementType &element_type,
-                  Arch arch,
                   const ForLoopConfig &config);
 
   FrontendForStmt(const Expr &loop_var,
                   const Expr &begin,
                   const Expr &end,
-                  Arch arch,
                   const ForLoopConfig &config);
 
   bool is_container_statement() const override {
@@ -203,7 +199,7 @@ class FrontendForStmt : public Stmt {
   TI_DEFINE_ACCEPT
 
  private:
-  void init_config(Arch arch, const ForLoopConfig &config);
+  void init_config(const ForLoopConfig &config);
 
   void init_loop_vars(const ExprGroup &loop_vars);
 
@@ -939,12 +935,11 @@ class ASTBuilder {
 
   std::vector<Block *> stack_;
   std::vector<LoopState> loop_state_stack_;
-  Arch arch_;
   ForLoopDecoratorRecorder for_loop_dec_;
   int id_counter_{0};
 
  public:
-  ASTBuilder(Block *initial, Arch arch) : arch_(arch) {
+  explicit ASTBuilder(Block *initial) {
     stack_.push_back(initial);
     loop_state_stack_.push_back(None);
   }
@@ -1026,11 +1021,6 @@ class ASTBuilder {
   }
 
   void block_dim(int v) {
-    if (arch_ == Arch::cuda || arch_ == Arch::vulkan) {
-      TI_ASSERT((v % 32 == 0) || bit::is_power_of_two(v));
-    } else {
-      TI_ASSERT(bit::is_power_of_two(v));
-    }
     for_loop_dec_.config.block_dim = v;
   }
 
@@ -1053,9 +1043,9 @@ class FrontendContext {
   std::unique_ptr<Block> root_node_;
 
  public:
-  explicit FrontendContext(Arch arch) {
+  FrontendContext() {
     root_node_ = std::make_unique<Block>();
-    current_builder_ = std::make_unique<ASTBuilder>(root_node_.get(), arch);
+    current_builder_ = std::make_unique<ASTBuilder>(root_node_.get());
   }
 
   ASTBuilder &builder() {

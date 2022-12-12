@@ -5,6 +5,8 @@
 namespace taichi::lang {
 
 class FrontendTypeCheck : public IRVisitor {
+  const CompileConfig &compile_config_;
+
   void check_cond_type(const Expr &cond, std::string stmt_name) {
     if (!cond->ret_type->is<PrimitiveType>() || !is_integral(cond->ret_type))
       throw TaichiTypeError(fmt::format(
@@ -14,7 +16,8 @@ class FrontendTypeCheck : public IRVisitor {
   }
 
  public:
-  explicit FrontendTypeCheck() {
+  explicit FrontendTypeCheck(const CompileConfig &compile_config)
+      : compile_config_(compile_config) {
     allow_undefined_visitor = true;
   }
 
@@ -65,6 +68,22 @@ class FrontendTypeCheck : public IRVisitor {
   }
 
   void visit(FrontendForStmt *stmt) override {
+    // FIXME: Maybe move outside
+    const auto arch = compile_config_.arch;
+    if (arch == Arch::cuda) {
+      stmt->num_cpu_threads = 1;
+      TI_ASSERT(stmt->block_dim <= taichi_max_gpu_block_dim);
+    } else {  // cpu
+      if (stmt->num_cpu_threads == 0) {
+        stmt->num_cpu_threads = std::thread::hardware_concurrency();
+      }
+    }
+    if (arch == Arch::cuda || arch == Arch::vulkan) {
+      TI_ASSERT(stmt->block_dim == 0 || (stmt->block_dim % 32 == 0) ||
+                bit::is_power_of_two(stmt->block_dim));
+    } else {
+      TI_ASSERT(stmt->block_dim == 0 || bit::is_power_of_two(stmt->block_dim));
+    }
     stmt->body->accept(this);
   }
 
@@ -93,9 +112,9 @@ class FrontendTypeCheck : public IRVisitor {
 
 namespace irpass {
 
-void frontend_type_check(IRNode *root) {
+void frontend_type_check(const CompileConfig &compile_config, IRNode *root) {
   TI_AUTO_PROF;
-  FrontendTypeCheck checker;
+  FrontendTypeCheck checker(compile_config);
   root->accept(&checker);
 }
 

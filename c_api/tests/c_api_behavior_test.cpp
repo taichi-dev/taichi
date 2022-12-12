@@ -549,11 +549,10 @@ void test_behavior_destroy_aot_module_impl(TiArch arch){
 }
 TEST_F(CapiTest, TestBehaviorDestroyAotModuleVulkan)
 {
-  std::cout << 11111111111111 << std::endl;
   test_behavior_destroy_aot_module_impl(TI_ARCH_VULKAN);
 }
 
-void test_behavir_get_Cgraph_impl(TiArch arch)
+void test_behavir_get_cgraph_impl(TiArch arch)
 {
   const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
   const std::string module_path = folder_dir + std::string("/module.tcm");
@@ -585,6 +584,6 @@ void test_behavir_get_Cgraph_impl(TiArch arch)
 
 TEST_F(CapiTest, TestBehaviorGetCgraphVulkan)
 {
-  test_behavir_get_Cgraph_impl(TI_ARCH_VULKAN);
+  test_behavir_get_cgraph_impl(TI_ARCH_VULKAN);
 }
 

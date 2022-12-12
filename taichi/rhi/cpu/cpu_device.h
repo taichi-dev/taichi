@@ -97,13 +97,11 @@ class CpuDevice : public LlvmDevice {
 
   uint64 fetch_result_uint64(int i, uint64 *result_buffer) override;
 
-  RhiResults map_range(DevicePtr ptr,
-                       uint64_t size,
-                       void *&mapped_ptr) override;
-  RhiResults map(DeviceAllocation alloc, void *&mapped_ptr) override;
+  RhiResult map_range(DevicePtr ptr, uint64_t size, void **mapped_ptr) final;
+  RhiResult map(DeviceAllocation alloc, void **mapped_ptr) final;
 
-  void unmap(DevicePtr ptr) override{TI_NOT_IMPLEMENTED};
-  void unmap(DeviceAllocation alloc) override;
+  void unmap(DevicePtr ptr) final{TI_NOT_IMPLEMENTED};
+  void unmap(DeviceAllocation alloc) final;
 
   DeviceAllocation import_memory(void *ptr, size_t size);
 

@@ -23,9 +23,9 @@ int SetImage::get_correct_dimension(int dimension) {
 
 void SetImage::update_ubo(float x_factor, float y_factor, bool transpose) {
   UniformBufferObject ubo = {x_factor, y_factor, int(transpose)};
-  void *mapped;
-  TI_ASSERT(app_context_->device().map(uniform_buffer_, mapped) ==
-            RhiResults::success);
+  void *mapped{nullptr};
+  TI_ASSERT(app_context_->device().map(uniform_buffer_, &mapped) ==
+            RhiResult::success);
   memcpy(mapped, &ubo, sizeof(ubo));
   app_context_->device().unmap(uniform_buffer_);
 }
@@ -275,17 +275,16 @@ void SetImage::update_vertex_buffer() {
   // Our actual VBO might only use the first several attributes in `Vertex`,
   // therefore this slicing & copying for each Vertex.
   {
-    char *mapped_vbo;
-    TI_ASSERT(app_context_->device().map(staging_vertex_buffer_,
-                                         (void *&)mapped_vbo) ==
-              RhiResults::success);
+    void *mapped_vbo{nullptr};
+    TI_ASSERT(app_context_->device().map(staging_vertex_buffer_, &mapped_vbo) ==
+              RhiResult::success);
     for (int i = 0; i < vertices.size(); ++i) {
       const char *src = reinterpret_cast<const char *>(&vertices[i]);
       for (auto a : VboHelpers::kOrderedAttrs) {
         const auto a_sz = VboHelpers::size(a);
         if (VboHelpers::has_attr(config_.vbo_attrs, a)) {
           memcpy(mapped_vbo, src, a_sz);
-          mapped_vbo += a_sz;
+          mapped_vbo = (uint8_t *)mapped_vbo + a_sz;
         }
         // Pointer to the full Vertex attributes needs to be advanced
         // unconditionally.
@@ -305,10 +304,9 @@ void SetImage::update_index_buffer() {
       0, 1, 2, 3, 4, 5,
   };
   {
-    int *mapped_ibo;
-    TI_ASSERT(app_context_->device().map(staging_index_buffer_,
-                                         (void *&)mapped_ibo) ==
-              RhiResults::success);
+    void *mapped_ibo{nullptr};
+    TI_ASSERT(app_context_->device().map(staging_index_buffer_, &mapped_ibo) ==
+              RhiResult::success);
     memcpy(mapped_ibo, indices.data(),
            (size_t)config_.indices_count * sizeof(int));
     app_context_->device().unmap(staging_index_buffer_);

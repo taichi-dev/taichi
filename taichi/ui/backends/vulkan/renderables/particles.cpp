@@ -26,9 +26,9 @@ void Particles::update_ubo(glm::vec3 color,
   ubo.tan_half_fov = tanf(glm::radians(scene.camera_.fov) / 2);
   ubo.use_per_vertex_color = use_per_vertex_color;
 
-  void *mapped;
-  TI_ASSERT(app_context_->device().map(uniform_buffer_, mapped) ==
-            RhiResults::success);
+  void *mapped{nullptr};
+  TI_ASSERT(app_context_->device().map(uniform_buffer_, &mapped) ==
+            RhiResult::success);
   memcpy(mapped, &ubo, sizeof(ubo));
   app_context_->device().unmap(uniform_buffer_);
 }
@@ -41,9 +41,9 @@ void Particles::update_data(const ParticlesInfo &info, const Scene &scene) {
     create_bindings();
   }
   {
-    void *mapped;
-    TI_ASSERT(app_context_->device().map(storage_buffer_, mapped) ==
-              RhiResults::success);
+    void *mapped{nullptr};
+    TI_ASSERT(app_context_->device().map(storage_buffer_, &mapped) ==
+              RhiResult::success);
     memcpy(mapped, scene.point_lights_.data(), correct_ssbo_size);
     app_context_->device().unmap(storage_buffer_);
   }

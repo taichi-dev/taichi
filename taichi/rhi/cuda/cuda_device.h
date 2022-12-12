@@ -110,15 +110,13 @@ class CudaDevice : public LlvmDevice {
 
   uint64 fetch_result_uint64(int i, uint64 *result_buffer) override;
 
-  RhiResults map_range(DevicePtr ptr,
-                       uint64_t size,
-                       void *&mapped_ptr) override {
+  RhiResult map_range(DevicePtr ptr, uint64_t size, void **mapped_ptr) final {
     TI_NOT_IMPLEMENTED;
   }
-  RhiResults map(DeviceAllocation alloc, void *&mapped_ptr) override;
+  RhiResult map(DeviceAllocation alloc, void **mapped_ptr) final;
 
-  void unmap(DevicePtr ptr) override{TI_NOT_IMPLEMENTED};
-  void unmap(DeviceAllocation alloc) override;
+  void unmap(DevicePtr ptr) final{TI_NOT_IMPLEMENTED};
+  void unmap(DeviceAllocation alloc) final;
 
   void memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) override;
 

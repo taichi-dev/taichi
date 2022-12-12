@@ -51,16 +51,16 @@ TEST(Dx11DeviceCreationTest, CreateDeviceAndAllocateMemory) {
 
   // Map to CPU, write some values, then check those values
   void *mapped;
-  EXPECT_TRUE(device->map(device_alloc, mapped) ==
-              taichi::lang::RhiResults::success);
+  EXPECT_TRUE(device->map(device_alloc, &mapped) ==
+              taichi::lang::RhiResult::success);
   int *mapped_int = reinterpret_cast<int *>(mapped);
   for (int i = 0; i < 100; i++) {
     mapped_int[i] = i;
   }
   device->unmap(device_alloc);
 
-  EXPECT_TRUE(device->map(device_alloc, mapped) ==
-              taichi::lang::RhiResults::success);
+  EXPECT_TRUE(device->map(device_alloc, &mapped) ==
+              taichi::lang::RhiResult::success);
   mapped_int = reinterpret_cast<int *>(mapped);
   for (int i = 0; i < 100; i++) {
     EXPECT_EQ(mapped_int[i], i);

@@ -97,7 +97,7 @@ TEST_F(AlgebraicSimplicationTest, SimplifyMultiplyZeroFastMath) {
 
   CompileConfig config_without_fast_math;
   config_without_fast_math.fast_math = false;
-  kernel->program->this_thread_config() = config_without_fast_math;
+  kernel->program->global_compile_config() = config_without_fast_math;
 
   irpass::type_check(block.get(), config_without_fast_math);
   EXPECT_EQ(block->size(), 8);
@@ -133,7 +133,7 @@ TEST_F(AlgebraicSimplicationTest, SimplifyMultiplyZeroFastMath) {
 
   CompileConfig config_with_fast_math;
   config_with_fast_math.fast_math = true;
-  kernel->program->this_thread_config() = config_with_fast_math;
+  kernel->program->global_compile_config() = config_with_fast_math;
 
   irpass::alg_simp(block.get(),
                    config_with_fast_math);  // should eliminate mul, add

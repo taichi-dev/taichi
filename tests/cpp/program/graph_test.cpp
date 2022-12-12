@@ -47,7 +47,7 @@ TEST(GraphTest, SimpleGraphRun) {
   args.insert({"arr", aot::IValue::create(array)});
   args.insert({"x", aot::IValue::create<int>(2)});
 
-  g->jit_run(test_prog.prog(), test_prog.prog()->this_thread_config(), args);
+  g->jit_run(test_prog.prog(), test_prog.prog()->global_compile_config(), args);
   test_prog.prog()->synchronize();
   EXPECT_EQ(array.read_int({0}), 2);
   EXPECT_EQ(array.read_int({1}), 2);

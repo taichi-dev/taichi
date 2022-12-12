@@ -329,7 +329,7 @@ void export_lang(py::module &m) {
 
   py::class_<Program>(m, "Program")
       .def(py::init<>())
-      .def("config", &Program::this_thread_config,
+      .def("config", &Program::global_compile_config,
            py::return_value_policy::reference)
       .def("sync_kernel_profiler",
            [](Program *program) { program->profiler->sync(); })
@@ -398,28 +398,31 @@ void export_lang(py::module &m) {
       .def("create_sparse_matrix_builder",
            [](Program *program, int n, int m, uint64 max_num_entries,
               DataType dtype, const std::string &storage_format) {
-             TI_ERROR_IF(!arch_is_cpu(program->this_thread_config().arch) &&
-                             !arch_is_cuda(program->this_thread_config().arch),
-                         "SparseMatrix only supports CPU and CUDA for now.");
+             TI_ERROR_IF(
+                 !arch_is_cpu(program->global_compile_config().arch) &&
+                     !arch_is_cuda(program->global_compile_config().arch),
+                 "SparseMatrix only supports CPU and CUDA for now.");
              return SparseMatrixBuilder(n, m, max_num_entries, dtype,
                                         storage_format, program);
            })
       .def("create_sparse_matrix",
            [](Program *program, int n, int m, DataType dtype,
               std::string storage_format) {
-             TI_ERROR_IF(!arch_is_cpu(program->this_thread_config().arch) &&
-                             !arch_is_cuda(program->this_thread_config().arch),
-                         "SparseMatrix only supports CPU and CUDA for now.");
-             if (arch_is_cpu(program->this_thread_config().arch))
+             TI_ERROR_IF(
+                 !arch_is_cpu(program->global_compile_config().arch) &&
+                     !arch_is_cuda(program->global_compile_config().arch),
+                 "SparseMatrix only supports CPU and CUDA for now.");
+             if (arch_is_cpu(program->global_compile_config().arch))
                return make_sparse_matrix(n, m, dtype, storage_format);
              else
                return make_cu_sparse_matrix(n, m, dtype);
            })
       .def("make_sparse_matrix_from_ndarray",
            [](Program *program, SparseMatrix &sm, const Ndarray &ndarray) {
-             TI_ERROR_IF(!arch_is_cpu(program->this_thread_config().arch) &&
-                             !arch_is_cuda(program->this_thread_config().arch),
-                         "SparseMatrix only supports CPU and CUDA for now.");
+             TI_ERROR_IF(
+                 !arch_is_cpu(program->global_compile_config().arch) &&
+                     !arch_is_cuda(program->global_compile_config().arch),
+                 "SparseMatrix only supports CPU and CUDA for now.");
              return make_sparse_matrix_from_ndarray(program, sm, ndarray);
            })
       .def("make_id_expr",
@@ -668,7 +671,7 @@ void export_lang(py::module &m) {
             TI_NOT_IMPLEMENTED;
           }
         }
-        self->jit_run(prog, prog->this_thread_config(), args);
+        self->jit_run(prog, prog->global_compile_config(), args);
       });
 
   py::class_<Kernel>(m, "Kernel")
@@ -692,7 +695,7 @@ void export_lang(py::module &m) {
   m.def("launch_kernel",
         [](Program *prog, Kernel *kernel, KernelLaunchContext &launch_ctx) {
           py::gil_scoped_release release;
-          launch_kernel(prog, prog->this_thread_config(), *kernel,
+          launch_kernel(prog, prog->global_compile_config(), *kernel,
                         launch_ctx.get_context());
         });
 

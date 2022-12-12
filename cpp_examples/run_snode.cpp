@@ -132,14 +132,14 @@ void run_snode() {
   ctx_ext.set_arg_external_array_with_shape(0, taichi::uint64(ext_arr.data()),
                                             n, {n});
 
-  launch_kernel(&program, program.this_thread_config(), *kernel_init,
+  launch_kernel(&program, program.global_compile_config(), *kernel_init,
                 ctx_init.get_context());
-  launch_kernel(&program, program.this_thread_config(), *kernel_ret,
+  launch_kernel(&program, program.global_compile_config(), *kernel_ret,
                 ctx_ret.get_context());
   std::cout << ctx_ret.get_ret<int>(program.get_compute_device(), 0)
             << std::endl;
 
-  launch_kernel(&program, program.this_thread_config(), *kernel_ext,
+  launch_kernel(&program, program.global_compile_config(), *kernel_ext,
                 ctx_ext.get_context());
   for (int i = 0; i < n; i++)
     std::cout << ext_arr[i] << " ";

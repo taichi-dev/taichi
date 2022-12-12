@@ -93,12 +93,6 @@ class StructCompiler;
 class TI_DLL_EXPORT Program {
  public:
   using Kernel = taichi::lang::Kernel;
-  // We let every thread has its own config because the constant folding pass
-  // wants to change the CompileConfig so that it can compile the evaluator,
-  // but we don't want it to change the global config. We will refactor it
-  // later when we make Taichi thread-safe.
-  std::unordered_map<std::thread::id, CompileConfig> configs;
-  std::thread::id main_thread_id_;
   bool sync{false};  // device/host synchronized?
 
   uint64 *result_buffer{nullptr};  // Note result_buffer is used by all backends
@@ -123,18 +117,9 @@ class TI_DLL_EXPORT Program {
 
   ~Program();
 
-  CompileConfig &this_thread_config() {
-    // std::unordered_map is not thread safe even if we do the rehash in
-    // advance, so we need to add a lock to protect it.
-    std::shared_lock<std::shared_mutex> read_lock(config_map_mut);
-    auto thread_id = std::this_thread::get_id();
-    if (!configs.count(thread_id)) {
-      read_lock.unlock();
-      std::unique_lock<std::shared_mutex> write_lock(config_map_mut);
-      configs[thread_id] = configs[main_thread_id_];
-      return configs[thread_id];
-    }
-    return configs[thread_id];
+  // FIXME: Returning const ref is better, which is blocked by some tests.
+  CompileConfig &global_compile_config() {
+    return global_compile_config_;
   }
 
   struct KernelProfilerQueryResult {
@@ -345,7 +330,7 @@ class TI_DLL_EXPORT Program {
    * Please limit its use to LLVM backend only
    */
   ProgramImpl *get_program_impl() {
-    TI_ASSERT(arch_uses_llvm(this_thread_config().arch));
+    TI_ASSERT(arch_uses_llvm(global_compile_config().arch));
     return program_impl_.get();
   }
 
@@ -379,7 +364,7 @@ class TI_DLL_EXPORT Program {
   std::unique_ptr<MemoryPool> memory_pool_{nullptr};
   std::vector<std::unique_ptr<Ndarray>> ndarrays_;
   std::vector<std::unique_ptr<Texture>> textures_;
-  std::shared_mutex config_map_mut;
+  CompileConfig global_compile_config_;
 };
 
 }  // namespace taichi::lang

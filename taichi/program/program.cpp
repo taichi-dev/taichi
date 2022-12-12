@@ -72,12 +72,9 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
                        : "ri"(fpcr | (1 << 24)));  // Bit 24 is FZ
   __asm__ __volatile__("");
 #endif  // defined(__arm64__) || defined(__aarch64__)
-  main_thread_id_ = std::this_thread::get_id();
-  // Rehash in advance to avoid rehashing during compilation
-  configs.rehash(default_compile_config.num_compile_threads + 1);
-  configs[main_thread_id_] = default_compile_config;
-  configs[main_thread_id_].arch = desired_arch;
-  auto &config = this_thread_config();
+  auto &config = global_compile_config_;
+  config = default_compile_config;
+  config.arch = desired_arch;
   // TODO: allow users to run in debug mode without out-of-bound checks
   if (config.debug)
     config.check_out_of_bound = true;
@@ -201,10 +198,10 @@ void Program::materialize_runtime() {
 }
 
 void Program::destroy_snode_tree(SNodeTree *snode_tree) {
-  TI_ASSERT(arch_uses_llvm(this_thread_config().arch) ||
-            this_thread_config().arch == Arch::vulkan ||
-            this_thread_config().arch == Arch::dx11 ||
-            this_thread_config().arch == Arch::dx12);
+  TI_ASSERT(arch_uses_llvm(global_compile_config().arch) ||
+            global_compile_config().arch == Arch::vulkan ||
+            global_compile_config().arch == Arch::dx11 ||
+            global_compile_config().arch == Arch::dx12);
   program_impl_->destroy_snode_tree(snode_tree);
   free_snode_tree_ids_.push(snode_tree->id());
 }
@@ -332,19 +329,19 @@ void Program::visualize_layout(const std::string &fn) {
 }
 
 Arch Program::get_accessor_arch() {
-  if (this_thread_config().arch == Arch::opengl) {
+  if (global_compile_config().arch == Arch::opengl) {
     return Arch::opengl;
-  } else if (this_thread_config().arch == Arch::vulkan) {
+  } else if (global_compile_config().arch == Arch::vulkan) {
     return Arch::vulkan;
-  } else if (this_thread_config().arch == Arch::cuda) {
+  } else if (global_compile_config().arch == Arch::cuda) {
     return Arch::cuda;
-  } else if (this_thread_config().arch == Arch::metal) {
+  } else if (global_compile_config().arch == Arch::metal) {
     return Arch::metal;
-  } else if (this_thread_config().arch == Arch::cc) {
+  } else if (global_compile_config().arch == Arch::cc) {
     return Arch::cc;
-  } else if (this_thread_config().arch == Arch::dx11) {
+  } else if (global_compile_config().arch == Arch::dx11) {
     return Arch::dx11;
-  } else if (this_thread_config().arch == Arch::dx12) {
+  } else if (global_compile_config().arch == Arch::dx12) {
     return Arch::dx12;
   } else {
     return get_host_arch();
@@ -399,7 +396,6 @@ void Program::finalize() {
     return;
   }
   synchronize();
-  TI_ASSERT(std::this_thread::get_id() == main_thread_id_);
   TI_TRACE("Program finalizing...");
 
   synchronize();
@@ -459,8 +455,8 @@ Texture *Program::create_texture(const DataType type,
 
 intptr_t Program::get_ndarray_data_ptr_as_int(const Ndarray *ndarray) {
   uint64_t *data_ptr{nullptr};
-  if (arch_is_cpu(this_thread_config().arch) ||
-      this_thread_config().arch == Arch::cuda) {
+  if (arch_is_cpu(global_compile_config().arch) ||
+      global_compile_config().arch == Arch::cuda) {
     // For the LLVM backends, device allocation is a physical pointer.
     data_ptr =
         program_impl_->get_ndarray_alloc_info_ptr(ndarray->ndarray_alloc_);
@@ -535,16 +531,16 @@ std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(
   if (arch == Arch::wasm) {
     // Have to check WASM first, or it dispatches to the LlvmProgramImpl.
 #ifdef TI_WITH_LLVM
-    return std::make_unique<wasm::AotModuleBuilderImpl>(&this_thread_config());
+    return std::make_unique<wasm::AotModuleBuilderImpl>(&global_compile_config());
 #else
     TI_NOT_IMPLEMENTED
 #endif
   }
-  if (arch_uses_llvm(this_thread_config().arch) ||
-      this_thread_config().arch == Arch::metal ||
-      this_thread_config().arch == Arch::vulkan ||
-      this_thread_config().arch == Arch::opengl ||
-      this_thread_config().arch == Arch::dx12) {
+  if (arch_uses_llvm(global_compile_config().arch) ||
+      global_compile_config().arch == Arch::metal ||
+      global_compile_config().arch == Arch::vulkan ||
+      global_compile_config().arch == Arch::opengl ||
+      global_compile_config().arch == Arch::dx12) {
     return program_impl_->make_aot_module_builder(cfg);
   }
   return nullptr;

@@ -45,7 +45,7 @@ TEST(Scalarize, ScalarizeGlobalStore) {
   block->push_back<GlobalStoreStmt>(dest_stmt, matrix_init_stmt);
 
   irpass::scalarize(block.get(),
-                    test_prog.prog()->this_thread_config().dynamic_index);
+                    test_prog.prog()->global_compile_config().dynamic_index);
   irpass::lower_matrix_ptr(block.get());
   irpass::die(block.get());
 
@@ -102,7 +102,7 @@ TEST(Scalarize, ScalarizeGlobalLoad) {
   block->push_back<GlobalStoreStmt>(src_stmt, load_stmt);
 
   irpass::scalarize(block.get(),
-                    test_prog.prog()->this_thread_config().dynamic_index);
+                    test_prog.prog()->global_compile_config().dynamic_index);
   irpass::lower_matrix_ptr(block.get());
   irpass::die(block.get());
 
@@ -163,7 +163,7 @@ TEST(Scalarize, ScalarizeLocalStore) {
   block->push_back<LocalStoreStmt>(dest_stmt, matrix_init_stmt);
 
   irpass::scalarize(block.get(),
-                    test_prog.prog()->this_thread_config().dynamic_index);
+                    test_prog.prog()->global_compile_config().dynamic_index);
   irpass::die(block.get());
 
   EXPECT_EQ(block->size(), 2 /*const*/ + 4 /*alloca*/ + 4 /*store*/);
@@ -211,7 +211,7 @@ TEST(Scalarize, ScalarizeLocalLoad) {
   block->push_back<GlobalStoreStmt>(src_stmt, load_stmt);
 
   irpass::scalarize(block.get(),
-                    test_prog.prog()->this_thread_config().dynamic_index);
+                    test_prog.prog()->global_compile_config().dynamic_index);
   irpass::die(block.get());
 
   EXPECT_EQ(block->size(), 4 /*alloca*/ + 4 /*load*/ + 4 /*store*/);

@@ -28,7 +28,7 @@ class Circle:
     r: int
 
 
-circles = Circle.field()
+circles = Circle.field()  # pylint: disable=no-member
 ti.root.dynamic(ti.i, 100000, chunk_size=64).place(circles)
 
 

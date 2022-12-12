@@ -116,7 +116,7 @@ TEST_F(CapiTest, TestBehaviorGetRuntimeCapabilities) {
 
 TEST_F(CapiTest, TestBehaviorAllocateMemory) {
   TiError error = TI_ERROR_SUCCESS;
-
+  
   auto inner = [&](TiArch arch) {
     if (ti::is_arch_available(arch)) {
       // Attempt to allocate memory with size of 1024
@@ -287,7 +287,8 @@ TEST_F(CapiTest, TestBehaviorUnmapMemory) {
   inner(TI_ARCH_VULKAN);
 }
 
-TiImageAllocateInfo getImageAllocateInfo() {
+TiImageAllocateInfo getImageAllocateInfo()
+{
   TiImageExtent extent;
   extent.height = 512;
   extent.width = 512;
@@ -303,6 +304,7 @@ TiImageAllocateInfo getImageAllocateInfo() {
 }
 
 TEST_F(CapiTest, TestBehaviorAllocateImage) {
+
   auto inner = [&](TiArch arch) {
     if (ti::is_arch_available(arch)) {
       // Attemp to allocate a normal 2D image
@@ -341,14 +343,20 @@ TEST_F(CapiTest, TestBehaviorAllocateImage) {
 
       // runtime & imageAllocateInfo are both null
       {
+        TiRuntime runtime = ti_create_runtime(arch);
         auto image = ti_allocate_image(TI_NULL_HANDLE, TI_NULL_HANDLE);
         CHECK_TAICHI_ERROR_IS(TI_ERROR_ARGUMENT_NULL);
+        ti_free_image(runtime, image);
+        ti_destroy_runtime(runtime);
       }
       // runtime is null, imageAllocateInfo is valid
       {
+        TiRuntime runtime = ti_create_runtime(arch);
         TiImageAllocateInfo imageAllocateInfo = getImageAllocateInfo();
         TiImage image = ti_allocate_image(TI_NULL_HANDLE, &imageAllocateInfo);
         CHECK_TAICHI_ERROR_IS(TI_ERROR_ARGUMENT_NULL);
+        ti_free_image(runtime, image);
+        ti_destroy_runtime(runtime);
       }
 
       // runtime is valid, imageAllocateInfo is null;
@@ -356,6 +364,8 @@ TEST_F(CapiTest, TestBehaviorAllocateImage) {
         TiRuntime runtime = ti_create_runtime(arch);
         TiImage image = ti_allocate_image(runtime, TI_NULL_HANDLE);
         CHECK_TAICHI_ERROR_IS(TI_ERROR_ARGUMENT_NULL);
+        ti_free_image(runtime, image);
+        ti_destroy_runtime(runtime);
       }
     }
   };
@@ -484,6 +494,7 @@ TEST_F(CapiTest, TestBehaviorCopyMemoryDTD) {
 
       ti_free_memory(runtime, memory);
       ti_destroy_runtime(runtime);
+      
     }
   };
   inner(TI_ARCH_VULKAN);

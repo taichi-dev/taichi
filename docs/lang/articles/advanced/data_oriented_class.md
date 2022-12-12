@@ -2,7 +2,7 @@
 sidebar_position: 3
 ---
 
-# Data-oriented Class
+# Data-Oriented Class
 
 To define a Taichi kernel as a Python class member function:
 

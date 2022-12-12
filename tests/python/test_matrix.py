@@ -875,7 +875,7 @@ def test_elementwise_ops():
     test()
 
 
-@test_utils.test()
+@test_utils.test(debug=True)
 def test_local_matrix_scalarize():
     @ti.kernel
     def func():
@@ -893,10 +893,8 @@ def test_local_matrix_scalarize():
         # Unary
         x[1, 1] = ti.sqrt(x[1, 0])
 
-        # TODO: test for dynamic indexing
-
         assert (x[0, 0] == 100.)
-        assert (x[0, 1] == 200.)
+        assert (x[0, 1] == 100.)
         assert (x[1, 0] == 200.)
         assert (x[1, 1] < 14.14214)
         assert (x[1, 1] > 14.14213)

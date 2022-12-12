@@ -407,7 +407,7 @@ TEST_F(CapiTest, TestBehaviorFreeImage) {
         ti_free_image(TI_NULL_HANDLE, TI_NULL_HANDLE);
         CHECK_TAICHI_ERROR_IS(TI_ERROR_ARGUMENT_NULL);
       }
-
+      
       // Runtime is null, Image is valid
       {
         ti_free_image(TI_NULL_HANDLE, image);

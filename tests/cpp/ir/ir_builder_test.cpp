@@ -115,8 +115,9 @@ TEST(IRBuilder, ExternalPtr) {
   auto launch_ctx = ker->make_launch_context();
   launch_ctx.set_arg_external_array_with_shape(
       /*arg_id=*/0, (uint64)array.get(), size, {size});
-  lang::launch_kernel(test_prog.prog(), test_prog.prog()->global_compile_config(),
-                      *ker, launch_ctx.get_context());
+  lang::launch_kernel(test_prog.prog(),
+                      test_prog.prog()->global_compile_config(), *ker,
+                      launch_ctx.get_context());
   EXPECT_EQ(array[0], 2);
   EXPECT_EQ(array[1], 1);
   EXPECT_EQ(array[2], 42);
@@ -140,8 +141,9 @@ TEST(IRBuilder, Ndarray) {
   auto ker1 = setup_kernel1(test_prog.prog());
   auto launch_ctx1 = ker1->make_launch_context();
   launch_ctx1.set_arg_ndarray(/*arg_id=*/0, array);
-  lang::launch_kernel(test_prog.prog(), test_prog.prog()->global_compile_config(),
-                      *ker1, launch_ctx1.get_context());
+  lang::launch_kernel(test_prog.prog(),
+                      test_prog.prog()->global_compile_config(), *ker1,
+                      launch_ctx1.get_context());
   EXPECT_EQ(array.read_int({0}), 2);
   EXPECT_EQ(array.read_int({1}), 1);
   EXPECT_EQ(array.read_int({2}), 42);
@@ -150,8 +152,9 @@ TEST(IRBuilder, Ndarray) {
   auto launch_ctx2 = ker2->make_launch_context();
   launch_ctx2.set_arg_ndarray(/*arg_id=*/0, array);
   launch_ctx2.set_arg_int(/*arg_id=*/1, 3);
-  lang::launch_kernel(test_prog.prog(), test_prog.prog()->global_compile_config(),
-                      *ker2, launch_ctx2.get_context());
+  lang::launch_kernel(test_prog.prog(),
+                      test_prog.prog()->global_compile_config(), *ker2,
+                      launch_ctx2.get_context());
   EXPECT_EQ(array.read_int({0}), 2);
   EXPECT_EQ(array.read_int({1}), 3);
   EXPECT_EQ(array.read_int({2}), 42);
@@ -178,8 +181,9 @@ TEST(IRBuilder, AtomicOp) {
   auto launch_ctx = ker->make_launch_context();
   launch_ctx.set_arg_external_array_with_shape(
       /*arg_id=*/0, (uint64)array.get(), size, {size});
-  lang::launch_kernel(test_prog.prog(), test_prog.prog()->global_compile_config(),
-                      *ker, launch_ctx.get_context());
+  lang::launch_kernel(test_prog.prog(),
+                      test_prog.prog()->global_compile_config(), *ker,
+                      launch_ctx.get_context());
 
   EXPECT_EQ(array[0], 3);
 }

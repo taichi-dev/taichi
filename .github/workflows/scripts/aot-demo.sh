@@ -17,7 +17,7 @@ function build-and-smoke-test-android-aot-demo {
 
     rm -rf taichi-aot-demo
     # IF YOU PIN THIS TO A COMMIT/BRANCH, YOU'RE RESPONSIBLE TO REVERT IT BACK TO MASTER ONCE MERGED.
-    git clone https://github.com/bobcao3/taichi-aot-demo
+    git clone https://github.com/taichi-dev/taichi-aot-demo
 
     APP_ROOT=taichi-aot-demo/implicit_fem
     ANDROID_APP_ROOT=$APP_ROOT/android

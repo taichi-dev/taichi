@@ -2,15 +2,22 @@
 
 #include <string>
 #include <vector>
+#include <assert.h>
+#include <initializer_list>
 
-#include "taichi/common/core.h"
 #include "taichi/common/logging.h"
-#include "taichi/common/serialization.h"
 
 #include "taichi/rhi/device_capability.h"
 #include "taichi/rhi/arch.h"
 
 namespace taichi::lang {
+
+enum class RhiResult {
+  success = 0,
+  error = -1,
+  invalid_usage = -2,
+  not_supported = -3,
+};
 
 constexpr size_t kBufferSizeEntireSize = size_t(-1);
 
@@ -96,10 +103,6 @@ class ResourceBinder {
  public:
   virtual ~ResourceBinder() {
   }
-
-  struct Bindings {};
-
-  virtual std::unique_ptr<Bindings> materialize() = 0;
 
   // In Vulkan this is called Storage Buffer (shader can store)
   virtual void rw_buffer(uint32_t set,
@@ -241,8 +244,6 @@ class CommandList {
 
   virtual void bind_pipeline(Pipeline *p) = 0;
   virtual void bind_resources(ResourceBinder *binder) = 0;
-  virtual void bind_resources(ResourceBinder *binder,
-                              ResourceBinder::Bindings *bindings) = 0;
   virtual void buffer_barrier(DevicePtr ptr, size_t size) = 0;
   virtual void buffer_barrier(DeviceAllocation alloc) = 0;
   virtual void memory_barrier() = 0;
@@ -428,7 +429,7 @@ class Device {
         this->allocate_memory(params));
   }
 
-  virtual uint64 fetch_result_uint64(int i, uint64 *result_buffer) {
+  virtual uint64_t fetch_result_uint64(int i, uint64_t *result_buffer) {
     TI_NOT_IMPLEMENTED
   }
 
@@ -438,11 +439,47 @@ class Device {
   // Wait for all tasks to complete (task from all streams)
   virtual void wait_idle() = 0;
 
-  // Mapping can fail and will return nullptr
-  virtual void *map_range(DevicePtr ptr, uint64_t size) = 0;
-  virtual void *map(DeviceAllocation alloc) = 0;
+  /**
+   * Map a range within a DeviceAllocation memory into host address space.
+   *
+   * @param[in] ptr The Device Pointer to map.
+   * @param[in] size The size of the mapped region.
+   * @param[out] mapped_ptr Outputs the pointer to the mapped region.
+   * @return The result status.
+   *         `success` when the mapping is successful.
+   *         `invalid_usage` when the memory is not host visible.
+   *         `invalid_usage` when trying to map the memory multiple times.
+   *         `invalid_usage` when `ptr.offset + size` is out-of-bounds.
+   *         `error` when the mapping failed for other reasons.
+   */
+  virtual RhiResult map_range(DevicePtr ptr,
+                              uint64_t size,
+                              void **mapped_ptr) = 0;
 
+  /**
+   * Map an entire DeviceAllocation into host address space.
+   * @param[in] ptr The Device Pointer to map.
+   * @param[in] size The size of the mapped region.
+   * @param[out] mapped_ptr Outputs the pointer to the mapped region.
+   * @return The result status.
+   *         `success` when the mapping is successful.
+   *         `invalid_usage` when the memory is not host visible.
+   *         `invalid_usage` when trying to map the memory multiple times.
+   *         `invalid_usage` when `ptr.offset + size` is out-of-bounds.
+   *         `error` when the mapping failed for other reasons.
+   */
+  virtual RhiResult map(DeviceAllocation alloc, void **mapped_ptr) = 0;
+
+  /**
+   * Unmap a previously mapped DevicePtr or DeviceAllocation.
+   * @param[in] ptr The DevicePtr to unmap.
+   */
   virtual void unmap(DevicePtr ptr) = 0;
+
+  /**
+   * Unmap a previously mapped DevicePtr or DeviceAllocation.
+   * @param[in] alloc The DeviceAllocation to unmap
+   */
   virtual void unmap(DeviceAllocation alloc) = 0;
 
   // Directly share memory in the form of alias

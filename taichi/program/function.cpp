@@ -11,8 +11,7 @@ Function::Function(Program *program, const FunctionKey &func_key)
 }
 
 void Function::set_function_body(const std::function<void()> &func) {
-  context =
-      std::make_unique<FrontendContext>();
+  context = std::make_unique<FrontendContext>();
   ir = context->get_root();
 
   func();

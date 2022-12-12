@@ -275,7 +275,6 @@ TEST_F(CapiTest, TestBehaviorUnmapMemory) {
 }
 
 TEST_F(CapiTest, TestBehaviorAllocateImage) {
-  TiError error = TI_ERROR_SUCCESS;
   TiImageExtent extent;
   extent.height = 512;
   extent.width = 512;
@@ -335,7 +334,6 @@ TEST_F(CapiTest, TestBehaviorAllocateImage) {
 }
 
 TEST_F(CapiTest, TestBehaviorFreeImage) {
-  TiError error = TI_ERROR_SUCCESS;
   TiImageExtent extent;
   extent.height = 512;
   extent.width = 512;

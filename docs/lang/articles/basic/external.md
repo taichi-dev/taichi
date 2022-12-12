@@ -54,8 +54,11 @@ Data transfer between a PyTorch tensor and a Taichi field is similar to the NumP
 tensor = x.to_torch(device="cuda:0")
 print(tensor.device) # device(type='cuda', index=0)
 ```
-<!-- Please give a coding example of Paddle -->
 For Paddle, you need to specify the device by calling `paddle.CPUPlace()` or `paddle.CUDAPlace(n)`, where `n` is an optional ID set to 0 by default.
+
+```python
+device = paddle.CPUPlace()
+tensor = x.to_paddle(device=device)
 
 ## External array shapes
 

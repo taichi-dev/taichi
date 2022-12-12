@@ -307,7 +307,17 @@ TEST_F(CapiTest, TestBehaviorAllocateImage) {
     if (ti::is_arch_available(arch)) {
       // Attemp to allocate a normal 2D image
       {
-        auto imageAllocateInfo = getImageAllocateInfo();
+        TiImageExtent extent;
+        extent.height = 512;
+        extent.width = 512;
+        extent.depth = 1;
+        extent.array_layer_count = 1;
+        TiImageAllocateInfo imageAllocateInfo;
+        imageAllocateInfo.dimension = TI_IMAGE_DIMENSION_2D;
+        imageAllocateInfo.format = TI_FORMAT_RGBA8;
+        imageAllocateInfo.extent = extent;
+        imageAllocateInfo.usage = TI_IMAGE_USAGE_STORAGE_BIT;
+        imageAllocateInfo.mip_level_count = 1;
         TiRuntime runtime = ti_create_runtime(arch);
         TiImage image = ti_allocate_image(runtime, &imageAllocateInfo);
         CHECK_TAICHI_SUCCESS();
@@ -363,6 +373,7 @@ TEST_F(CapiTest, TestBehaviorAllocateImage) {
         TiImage image = ti_allocate_image(runtime, TI_NULL_HANDLE);
         CHECK_TAICHI_ERROR_IS(TI_ERROR_ARGUMENT_NULL);
         ti_free_image(runtime, image);
+        CHECK_TAICHI_ERROR_IS(TI_ERROR_ARGUMENT_NULL);
         ti_destroy_runtime(runtime);
       }
     }

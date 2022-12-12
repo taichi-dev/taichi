@@ -198,6 +198,8 @@ void compile_function(IRNode *ir,
 void ast_to_ir(const CompileConfig &config,
                /*FIXME:Fix to const */ Kernel &kernel,
                bool to_executable = true);
+
+void lower_called_functions(const CompileConfig &compile_config, IRNode *ir);
 }  // namespace irpass
 
 }  // namespace taichi::lang

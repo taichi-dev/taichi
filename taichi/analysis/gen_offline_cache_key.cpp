@@ -425,10 +425,16 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     // Serialize dependent real-functions
     emit(real_funcs_.size());
     for (auto &[func, id] : real_funcs_) {
-      if (auto &ast_str = func->try_get_ast_serialization_data();
-          ast_str.has_value()) {
-        emit_bytes(ast_str->c_str(), ast_str->size());
+      if (const auto &ast_str = func->try_get_ast_serialization_data();
+          !ast_str.has_value()) {
+        func->set_ast_serialization_data("\xff");
+        std::ostringstream oss;
+        gen_offline_cache_key(prog_, func->ir.get(), &oss);
+        func->set_ast_serialization_data(oss.str());
       }
+      const auto &ast_str = func->try_get_ast_serialization_data();
+      TI_ASSERT(ast_str.has_value() && !ast_str->empty());
+      emit_bytes(ast_str->c_str(), ast_str->size());
     }
 
     // Serialize snode_trees(Temporary: using offline-cache-key of SNode)

@@ -61,6 +61,9 @@ void compile_to_offloads(IRNode *ir,
     print("Lowered");
   }
 
+
+  irpass::lower_called_functions(config, ir);
+
   if (config.real_matrix && config.real_matrix_scalarize) {
     irpass::scalarize(ir, config.dynamic_index);
 

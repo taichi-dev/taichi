@@ -7,7 +7,7 @@ from taichi.lang._texture import RWTextureAccessor, TextureSampler
 from taichi.lang.any_array import AnyArray
 from taichi.lang.enums import Layout
 from taichi.lang.expr import Expr
-from taichi.lang.matrix import Matrix, MatrixType, Vector, VectorType
+from taichi.lang.matrix import Matrix, MatrixType, Vector, VectorType, make_matrix
 from taichi.lang.struct import StructType
 from taichi.lang.util import cook_dtype
 from taichi.types.primitive_types import RefType, f32, u64
@@ -60,12 +60,11 @@ def decl_scalar_arg(dtype):
 
 def decl_matrix_arg(matrixtype):
     if isinstance(matrixtype, VectorType):
-        return Vector(
+        return make_matrix(
             [decl_scalar_arg(matrixtype.dtype) for _ in range(matrixtype.n)])
-    return Matrix(
+    return make_matrix(
         [[decl_scalar_arg(matrixtype.dtype) for _ in range(matrixtype.m)]
-         for _ in range(matrixtype.n)],
-        ndim=matrixtype.ndim)
+         for _ in range(matrixtype.n)])
 
 
 def decl_sparse_matrix(dtype):

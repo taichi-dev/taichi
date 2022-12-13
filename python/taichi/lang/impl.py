@@ -182,7 +182,7 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
         indices_expr_group = make_expr_group(*indices)
         index_dim = indices_expr_group.size()
 
-    if is_taichi_class(value):
+    if isinstance(value, Struct):
         return value._subscript(*indices)
     if isinstance(value, MeshElementFieldProxy):
         return value.subscript(*indices)

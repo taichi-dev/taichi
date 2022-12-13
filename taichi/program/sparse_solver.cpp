@@ -498,36 +498,42 @@ void CuSparseSolver::solve_rf(Program *prog,
   size_t d_b = prog->get_ndarray_data_ptr_as_int(&b);
   size_t d_x = prog->get_ndarray_data_ptr_as_int(&x);
 
-  float *h_b = (float *)malloc(sizeof(float) * rowsA);
-  float *h_Qb = (float *)malloc(sizeof(float) * rowsA);
-  assert(h_b != nullptr);
-  assert(h_Qb != nullptr);
-  CUDADriver::get_instance().memcpy_device_to_host((void *)h_b, (void *)d_b,
-                                                   sizeof(float) * rowsA);
-  // TODO: replace with cuSparseGather
-  for (int row = 0; row < rowsA; row++) {
-    h_Qb[row] = h_b[h_Q[row]];
-  }
+  // step 1: d_Qb = Q * b
   void *d_Qb = NULL;
   CUDADriver::get_instance().malloc(&d_Qb, sizeof(float) * rowsA);
+  cusparseDnVecDescr_t vec_b;
+  cusparseSpVecDescr_t vec_Qb;
+  CUSPARSEDriver::get_instance().cpCreateDnVec(&vec_b, (int)rowsA, (void *)d_b,
+                                               CUDA_R_32F);
+  CUSPARSEDriver::get_instance().cpCreateSpVec(
+      &vec_Qb, (int)rowsA, (int)rowsA, d_Q, d_Qb, CUSPARSE_INDEX_32I,
+      CUSPARSE_INDEX_BASE_ZERO, CUDA_R_32F);
+  CUSPARSEDriver::get_instance().cpGather(cusparse_handel_, vec_b, vec_Qb);
 
-  CUDADriver::get_instance().memcpy_host_to_device((void *)d_Qb, (void *)h_Qb,
-                                                   sizeof(float) * rowsA);
-  // solve B*z = Q*b
+  // step 2: solve B*z = Q*b using cholesky solver
   void *d_z = NULL;
   CUDADriver::get_instance().malloc(&d_z, sizeof(float) * colsA);
   CUSOLVERDriver::get_instance().csSpScsrcholSolve(
       cusolver_handle_, rowsA, (void *)d_Qb, (void *)d_z, info_, gpu_buffer_);
 
-  // Q*x = z
-  // TODO: Replace cuSparseSsctr with cuSparseScatter
-  CUSPARSEDriver::get_instance().cpSsctr(cusparse_handel_, (int)rowsA,
-                                         (void *)d_z, (void *)d_Q, (void *)d_x,
-                                         CUSPARSE_INDEX_BASE_ZERO);
-  free(h_b);
-  free(h_Qb);
-  CUDADriver::get_instance().mem_free(d_Qb);
-  CUDADriver::get_instance().mem_free(d_z);
+  // step 3: Q*x = z
+  cusparseSpVecDescr_t vecX;
+  cusparseDnVecDescr_t vecY;
+  CUSPARSEDriver::get_instance().cpCreateSpVec(
+      &vecX, (int)colsA, (int)colsA, d_Q, d_z, CUSPARSE_INDEX_32I,
+      CUSPARSE_INDEX_BASE_ZERO, CUDA_R_32F);
+  CUSPARSEDriver::get_instance().cpCreateDnVec(&vecY, (int)colsA, (void *)d_x,
+                                               CUDA_R_32F);
+  CUSPARSEDriver::get_instance().cpScatter(cusparse_handel_, vecX, vecY);
+
+  if (d_Qb != NULL)
+    CUDADriver::get_instance().mem_free(d_Qb);
+  if (d_z != NULL)
+    CUDADriver::get_instance().mem_free(d_z);
+  CUSPARSEDriver::get_instance().cpDestroySpVec(vec_Qb);
+  CUSPARSEDriver::get_instance().cpDestroyDnVec(vec_b);
+  CUSPARSEDriver::get_instance().cpDestroySpVec(vecX);
+  CUSPARSEDriver::get_instance().cpDestroyDnVec(vecY);
 #else
   TI_NOT_IMPLEMENTED
 #endif

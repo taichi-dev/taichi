@@ -3,26 +3,11 @@
 #include "taichi/cpp/taichi.hpp"
 #include "c_api/tests/gtest_fixture.h"
 
-#define CHECK_TAICHI_SUCCESS()                      \
-  {                                                 \
-    TiError actual = ti_get_last_error(0, nullptr); \
-    EXPECT_EQ(actual, TI_ERROR_SUCCESS);            \
-  }
-
-#define CHECK_TAICHI_ERROR_IS(expected)             \
-  {                                                 \
-    TiError actual = ti_get_last_error(0, nullptr); \
-    EXPECT_EQ(actual, expected);                    \
-    ti_set_last_error(TI_ERROR_SUCCESS, nullptr);   \
-  }
-
-// -----------------------------------------------------------------------------
-
 TEST_F(CapiTest, TestBehaviorCreateRuntime) {
-  auto inner = [](TiArch arch) {
+  auto inner = [this](TiArch arch) {
     TiRuntime runtime = ti_create_runtime(arch);
     TI_ASSERT(runtime == TI_NULL_HANDLE);
-    CHECK_TAICHI_ERROR_IS(TI_ERROR_NOT_SUPPORTED);
+    CHECK_TAICHI_ERROR(TI_ERROR_NOT_SUPPORTED);
   };
 
   // Attempt to create runtime for unknown arch.
@@ -42,11 +27,11 @@ TEST_F(CapiTest, TestBehaviorCreateRuntime) {
 TEST_F(CapiTest, TestBehaviorDestroyRuntime) {
   // Attempt to destroy null handles.
   ti_destroy_runtime(TI_NULL_HANDLE);
-  CHECK_TAICHI_ERROR_IS(TI_ERROR_ARGUMENT_NULL);
+  CHECK_TAICHI_ERROR(TI_ERROR_ARGUMENT_NULL);
 }
 
 TEST_F(CapiTest, TestBehaviorGetRuntimeCapabilities) {
-  auto inner = [](TiArch arch) {
+  auto inner = [this](TiArch arch) {
     if (!ti::is_arch_available(arch)) {
       TI_WARN("arch {} is not supported so the test is skipped", arch);
       return;

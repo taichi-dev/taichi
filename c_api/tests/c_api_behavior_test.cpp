@@ -652,7 +652,7 @@ void test_behavir_get_cgraph_impl(TiArch arch) {
   const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
   const std::string module_path = folder_dir + std::string("/module.tcm");
   if (!ti::is_arch_available(arch)) {
-    TI_ASSERT("arch {} is not supported, so the test is skipped", arch);
+    TI_WARN("arch {} is not supported, so the test is skipped", arch);
     return;
   }
 

@@ -21,7 +21,6 @@ endfunction()
 
 set(TAICHI_C_API_NAME taichi_c_api)
 
-set(TAICHI_C_API_NAME taichi_c_api)
 file(GLOB_RECURSE C_API_SOURCE "c_api/src/taichi_core_impl.cpp")
 
 if (TI_WITH_LLVM)

@@ -44,7 +44,6 @@ The simplest way to declare a scalar field is to call `ti.field(dtype, shape)`, 
   ```python
   f_1d = ti.field(ti.i32, shape=9)  # A 1D field of length 9
   ```
-  Over here we are defining a 
   An illustration of `f_1d`:
 
   ```
@@ -344,7 +343,7 @@ To access the 0D matrix field `x = ti.Matrix.field(n=3, m=4, dtype=ti.f32, shape
 `x[None][p, q]` (0 &le; p < n, 0 &le; q < m)
 :::
 
-### Considerations: Matrix size
+### Considerations: Matrix Size
 
 Matrix operations are unrolled at compile time. Take a look at the following example:
 

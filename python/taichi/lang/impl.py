@@ -61,8 +61,7 @@ def expr_init(rhs):
         if rhs.ndim == 1:
             entries = [rhs(i) for i in range(rhs.n)]
         else:
-            entries = [[rhs(i, j) for j in range(rhs.m)]
-                       for i in range(rhs.n)]
+            entries = [[rhs(i, j) for j in range(rhs.m)] for i in range(rhs.n)]
         return make_matrix(entries)
     if isinstance(rhs, SharedArray):
         return rhs

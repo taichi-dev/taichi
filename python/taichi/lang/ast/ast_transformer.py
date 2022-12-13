@@ -659,8 +659,7 @@ class ASTTransformer(Builder):
                         #
                         # We created local variable "t" - a copy of the passed-in argument "data"
                         if not isinstance(
-                                data,
-                                expr.Expr) or not data.ptr.is_tensor():
+                                data, expr.Expr) or not data.ptr.is_tensor():
                             raise TaichiSyntaxError(
                                 f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix, but got {type(data)}."
                             )
@@ -681,8 +680,7 @@ class ASTTransformer(Builder):
 
                         if ctx.func.arguments[
                                 i].annotation.ndim == 2 and element_shape[
-                                    1] != ctx.func.arguments[
-                                        i].annotation.m:
+                                    1] != ctx.func.arguments[i].annotation.m:
                             raise TaichiSyntaxError(
                                 f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix with m {ctx.func.arguments[i].annotation.m}, but got {element_shape[0]}."
                             )
@@ -1216,8 +1214,7 @@ class ASTTransformer(Builder):
                                                loop_var)
                 ctx.create_variable(
                     target,
-                    matrix.make_matrix(loop_indices,
-                                       dt=primitive_types.i32))
+                    matrix.make_matrix(loop_indices, dt=primitive_types.i32))
                 build_stmts(ctx, node.body)
                 ctx.ast_builder.end_frontend_struct_for()
             else:

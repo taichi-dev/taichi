@@ -93,6 +93,10 @@ file(GLOB TAICHI_CORE_SOURCE
     "taichi/rhi/*.h" "taichi/rhi/*.cpp"
 )
 
+if(TI_BUILD_TESTS)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_BUILD_TESTS")
+endif()
+
 if(TI_WITH_LLVM)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_LLVM")
 endif()

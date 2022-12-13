@@ -140,9 +140,10 @@ TEST_F(CapiTest, FailMapDeviceOnlyMemory) {
     TiError err = ti_get_last_error(sizeof(err_msg), err_msg);
 
     TI_ASSERT(err == TI_ERROR_INVALID_STATE);
-    TI_ASSERT(std::string(err_msg).find("host_read") != std::string::npos);
-    TI_ASSERT(std::string(err_msg).find("host_write") != std::string::npos);
-    TI_ASSERT(std::string(err_msg).find("host_access") != std::string::npos);
+    TI_ASSERT(
+        std::string(err_msg).find(
+            "Mapping Memory without VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT set") !=
+        std::string::npos);
 
     ti_set_last_error(TI_ERROR_SUCCESS, nullptr);
   }

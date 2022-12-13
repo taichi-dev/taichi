@@ -41,8 +41,10 @@ ti.init()
 class MyClass:
     @ti.kernel
     def inc(self, temp: ti.template()):
+
+        #increment all elements in array by 1
         for I in ti.grouped(temp):
-            temp[I] += 1
+            temp[I] += 1 
 
     def call_inc(self):
         self.inc(self.temp)
@@ -52,14 +54,16 @@ class MyClass:
 
 
 a = MyClass() # creating an instance of Data-Oriented Class 
+
 # a.call_inc() cannot be called, because a.temp has not been allocated at this point
-a.allocate_temp(4) #c
-a.call_inc()
-a.call_inc()
-print(a.temp)  # [2 2 2 2]
-a.allocate_temp(8)
-a.call_inc()
-print(a.temp)  # [1 1 1 1 1 1 1 1]
+a.allocate_temp(4) # [0 0 0 0]
+a.call_inc() # [1 1 1 1]
+a.call_inc() # [2 2 2 2]
+print(a.temp)  # will print [2 2 2 2]
+
+a.allocate_temp(8) # [0 0 0 0 0 0 0 0 0]
+a.call_inc() # [1 1 1 1 1 1 1 1]
+print(a.temp)  # will print [1 1 1 1 1 1 1 1]
 ```
 
 Another memory recycling example:

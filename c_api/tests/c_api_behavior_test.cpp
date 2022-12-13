@@ -155,7 +155,7 @@ TEST_F(CapiTest, TestBehaviorAllocateMemory) {
       ti_allocate_memory(runtime, nullptr);
       CHECK_TAICHI_ERROR_IS(TI_ERROR_ARGUMENT_NULL);
     }
-    
+
     // runtime is null, allocate is not null;
     {
       TiMemoryAllocateInfo allocate_info;

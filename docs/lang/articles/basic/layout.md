@@ -160,7 +160,7 @@ The accessors of `x` and `y` are in reverse order between row-major arrays and c
 
 ### AoS versus SoA
 
-AoS means _array of structures_ and SoA means _structure of arrays_. Consider an RGB image with 4 pixels and 3 color channels, an AoS layout stores `RGBRGBRGBRGB` while an SoA layout stores `RRRRGGGGBBBB`. The selection of AoS or SoA layout largely depends on the access pattern to the field. Let's discuss a scenario to process large RGB images. The two layouts have the following arrangements in memory:
+AoS means _array of structures_ and SoA means _structure of arrays_. Consider an RGB image with four pixels and three color channels: an AoS layout stores `RGBRGBRGBRGB` while an SoA layout stores `RRRRGGGGBBBB`. The selection of an AoS or SoA layout largely depends on the access pattern to the field. Let's discuss a scenario to process large RGB images. The two layouts have the following arrangements in memory:
 
 ```
 # address: low ...................... high

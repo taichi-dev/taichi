@@ -18,7 +18,6 @@ from taichi.lang.exception import (TaichiIndexError, TaichiSyntaxError,
                                    TaichiTypeError)
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field
-from taichi.lang.impl import current_cfg
 from taichi.lang.matrix import Matrix, MatrixType, Vector, is_vector
 from taichi.lang.snode import append, deactivate, length
 from taichi.lang.struct import Struct, StructType

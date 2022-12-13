@@ -10,7 +10,6 @@ from taichi.lang import impl
 from taichi.lang.exception import (TaichiCompilationError, TaichiNameError,
                                    TaichiSyntaxError,
                                    handle_exception_from_cpp)
-from taichi.lang.matrix import Matrix
 
 
 class Builder:

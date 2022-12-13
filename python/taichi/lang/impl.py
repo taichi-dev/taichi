@@ -8,7 +8,7 @@ from taichi._snode.fields_builder import FieldsBuilder
 from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang._ndrange import GroupedNDRange, _Ndrange
 from taichi.lang._texture import RWTextureAccessor
-from taichi.lang.any_array import AnyArray, AnyArrayAccess
+from taichi.lang.any_array import AnyArray
 from taichi.lang.enums import SNodeGradType
 from taichi.lang.exception import (TaichiCompilationError, TaichiIndexError,
                                    TaichiRuntimeError, TaichiSyntaxError,
@@ -17,8 +17,7 @@ from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.kernel_arguments import SparseMatrixProxy
 from taichi.lang.matrix import (Matrix, MatrixField, MatrixNdarray, MatrixType,
-                                Vector, VectorNdarray, _IntermediateMatrix,
-                                _MatrixFieldElement, make_matrix)
+                                VectorNdarray, make_matrix)
 from taichi.lang.mesh import (ConvType, MeshElementFieldProxy, MeshInstance,
                               MeshRelationAccessProxy,
                               MeshReorderedMatrixFieldProxy,

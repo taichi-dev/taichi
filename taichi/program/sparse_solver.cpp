@@ -578,6 +578,7 @@ std::unique_ptr<SparseSolver> make_sparse_solver(DataType dt,
 }
 
 CuSparseSolver::~CuSparseSolver() {
+#if defined(TI_WITH_CUDA)
   if (h_Q != nullptr)
     free(h_Q);
   if (h_csrRowPtrB != nullptr)
@@ -606,6 +607,7 @@ CuSparseSolver::~CuSparseSolver() {
     CUDADriver::get_instance().mem_free(d_csrColIndB);
   if (d_csrValB != nullptr)
     CUDADriver::get_instance().mem_free(d_csrValB);
+#endif
 }
 std::unique_ptr<SparseSolver> make_cusparse_solver(
     DataType dt,

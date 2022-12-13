@@ -46,7 +46,7 @@ The simplest way to declare a scalar field is to call `ti.field(dtype, shape)`, 
   ```
 <<<<<<< HEAD
 =======
-  Over here we are defining a
+
 >>>>>>> da7bac2b5be484ec2648fe058e191497f5803384
   An illustration of `f_1d`:
 

@@ -5,6 +5,13 @@ import pytest
 import taichi as ti
 
 
+# rerunfailures use xdist version number to determine if it is compatible
+# but we are using a forked version of xdist(with git hash as it's version),
+# so we need to override it
+import pytest_rerunfailures
+pytest_rerunfailures.works_with_current_xdist = lambda: True
+
+
 @pytest.fixture(autouse=True)
 def wanted_arch(request, req_arch, req_options):
     if req_arch is not None:

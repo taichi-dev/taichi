@@ -6,7 +6,10 @@ import taichi as ti
 from tests import test_utils
 
 
-def run_mpm88_test():
+@pytest.mark.skipif(os.environ.get('TI_LITE_TEST') or '0', reason='Lite test')
+@pytest.mark.run_in_serial
+@test_utils.test()
+def test_mpm88():
     dim = 2
     N = 64
     n_particles = N * N
@@ -100,20 +103,6 @@ def run_mpm88_test():
     for i in range(4):
         assert (pos**(i + 1)).mean() == test_utils.approx(regression[i],
                                                           rel=1e-2)
-
-
-@pytest.mark.skipif(os.environ.get('TI_LITE_TEST') or '0', reason='Lite test')
-@pytest.mark.run_in_serial
-@test_utils.test()
-def test_mpm88():
-    run_mpm88_test()
-
-
-@pytest.mark.skipif(os.environ.get('TI_LITE_TEST') or '0', reason='Lite test')
-@pytest.mark.run_in_serial
-@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
-def test_mpm88_real_matrix_scalarize():
-    run_mpm88_test()
 
 
 def _is_appveyor():

@@ -108,7 +108,8 @@ def test_static_grouped():
                     assert x[i, j, k] == 0
 
 
-def _test_static_grouped_static():
+@test_utils.test()
+def test_static_grouped_static():
     x = ti.Matrix.field(2, 3, dtype=ti.f32, shape=(16, 4))
 
     @ti.kernel
@@ -123,16 +124,6 @@ def _test_static_grouped_static():
             for k in range(2):
                 for l in range(3):
                     assert x[i, j][k, l] == k + l * 10 + i + j * 4
-
-
-@test_utils.test()
-def test_static_grouped_static():
-    _test_static_grouped_static()
-
-
-@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
-def test_static_grouped_static_matrix_scalarize():
-    _test_static_grouped_static()
 
 
 @test_utils.test()
@@ -230,7 +221,8 @@ def test_ndrange_ast_transform():
             assert A[i, j] == r
 
 
-def _test_grouped_ndrange_star():
+@test_utils.test()
+def test_grouped_ndrange_star():
     @ti.kernel
     def foo() -> ti.i32:
         ret = 0
@@ -239,16 +231,6 @@ def _test_grouped_ndrange_star():
         return ret
 
     assert foo() == 36
-
-
-@test_utils.test()
-def test_grouped_ndrange_star():
-    _test_grouped_ndrange_star()
-
-
-@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
-def test_grouped_ndrange_star_matrix_scalarize():
-    _test_grouped_ndrange_star()
 
 
 @test_utils.test()

@@ -361,7 +361,8 @@ def test_ref_atomic():
     bar()
 
 
-def _test_func_ndarray_arg():
+@test_utils.test(arch=[ti.cpu, ti.cuda], debug=True)
+def test_func_ndarray_arg():
     vec3 = ti.types.vector(3, ti.f32)
 
     @ti.func
@@ -392,20 +393,8 @@ def _test_func_ndarray_arg():
         test_error(arr)
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda], debug=True)
-def test_func_ndarray_arg():
-    _test_func_ndarray_arg()
-
-
-@test_utils.test(arch=[ti.cpu, ti.cuda],
-                 debug=True,
-                 real_matrix=True,
-                 real_matrix_scalarize=True)
-def test_func_ndarray_arg_matrix_scalarize():
-    _test_func_ndarray_arg()
-
-
-def _test_func_matrix_arg():
+@test_utils.test(debug=True)
+def test_func_matrix_arg():
     vec3 = ti.types.vector(3, ti.f32)
 
     @ti.func
@@ -423,7 +412,8 @@ def _test_func_matrix_arg():
     test_k()
 
 
-def _test_func_matrix_arg_with_error():
+@test_utils.test()
+def test_func_matrix_arg_with_error():
     vec3 = ti.types.vector(3, ti.f32)
 
     @ti.func
@@ -441,21 +431,8 @@ def _test_func_matrix_arg_with_error():
         test_error()
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda], debug=True)
-def test_func_matrix_arg():
-    _test_func_matrix_arg()
-    _test_func_matrix_arg_with_error()
-
-
-@test_utils.test(arch=[ti.cpu, ti.cuda],
-                 debug=True,
-                 real_matrix=True,
-                 real_matrix_scalarize=True)
-def test_func_matrix_arg_real_matrix():
-    _test_func_matrix_arg()
-
-
-def _test_real_func_matrix_arg():
+@test_utils.test(arch=[ti.cpu, ti.cuda])
+def test_real_func_matrix_arg():
     @ti.experimental.real_func
     def mat_arg(a: ti.math.mat2, b: ti.math.vec2) -> float:
         return a[0, 0] + a[0, 1] + a[1, 0] + a[1, 1] + b[0] + b[1]
@@ -470,18 +447,6 @@ def _test_real_func_matrix_arg():
         return mat_arg(a, b[()])
 
     assert foo() == pytest.approx(21)
-
-
-@test_utils.test(arch=[ti.cpu, ti.cuda])
-def test_real_func_matrix_arg():
-    _test_real_func_matrix_arg()
-
-
-@test_utils.test(arch=[ti.cpu, ti.cuda],
-                 real_matrix=True,
-                 real_matrix_scalarize=True)
-def test_real_func_matrix_arg_real_matrix():
-    _test_real_func_matrix_arg()
 
 
 @test_utils.test(arch=[ti.cpu, ti.cuda])
@@ -500,7 +465,8 @@ def test_real_func_struct_ret():
     assert foo() == pytest.approx(123 * 1.2345e300)
 
 
-def _test_real_func_struct_ret_with_matrix():
+@test_utils.test(arch=[ti.cpu, ti.cuda])
+def test_real_func_struct_ret_with_matrix():
     s0 = ti.types.struct(a=ti.math.vec3, b=ti.i16)
     s1 = ti.types.struct(a=ti.f32, b=s0)
 
@@ -514,15 +480,3 @@ def _test_real_func_struct_ret_with_matrix():
         return s.a + s.b.a[0] + s.b.a[1] + s.b.a[2] + s.b.b
 
     assert foo() == pytest.approx(105.2)
-
-
-@test_utils.test(arch=[ti.cpu, ti.cuda])
-def test_real_func_struct_ret_with_matrix():
-    _test_real_func_struct_ret_with_matrix()
-
-
-@test_utils.test(arch=[ti.cpu, ti.cuda],
-                 real_matrix=True,
-                 real_matrix_scalarize=True)
-def test_real_func_struct_ret_with_matrix_real_matrix():
-    _test_real_func_struct_ret_with_matrix()

@@ -553,7 +553,7 @@ class MatrixFieldExpression : public Expression {
 
 /**
  * Creating a local matrix;
- * lowered from ti.Matrix with real_matrix=True
+ * lowered from ti.Matrix
  */
 class MatrixExpression : public Expression {
  public:

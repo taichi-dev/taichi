@@ -666,9 +666,6 @@ class Matrix(TaichiOperations):
         is_global_mat = isinstance(self, _MatrixFieldElement)
         return self._impl._subscript(is_global_mat, *indices)
 
-    def _make_matrix(self):
-        return make_matrix(self._impl.entries)
-
     def to_list(self):
         """Return this matrix as a 1D `list`.
 
@@ -1797,7 +1794,7 @@ class MatrixType(CompoundType):
         if isinstance(mat, impl.Expr) and mat.ptr.is_tensor():
             return ops_mod.cast(mat, self.dtype)
 
-        if isinstance(mat, Matrix) and impl.current_cfg().real_matrix:
+        if isinstance(mat, Matrix):
             arr = [[mat(i, j) for j in range(self.m)] for i in range(self.n)]
             return ops_mod.cast(make_matrix(arr), self.dtype)
 
@@ -1898,7 +1895,7 @@ class VectorType(MatrixType):
         if isinstance(vec, impl.Expr) and vec.ptr.is_tensor():
             return ops_mod.cast(vec, self.dtype)
 
-        if isinstance(vec, Matrix) and impl.current_cfg().real_matrix:
+        if isinstance(vec, Matrix):
             arr = vec.entries
             return ops_mod.cast(make_matrix(arr), self.dtype)
 

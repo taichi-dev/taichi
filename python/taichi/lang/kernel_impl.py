@@ -255,8 +255,7 @@ class Func:
                 elif isinstance(anno, primitive_types.RefType):
                     non_template_args.append(
                         _ti_core.make_reference(args[i].ptr))
-                elif impl.current_cfg().real_matrix and isinstance(
-                        args[i], impl.Expr) and args[i].ptr.is_tensor():
+                elif isinstance(args[i], impl.Expr) and args[i].ptr.is_tensor():
                     non_template_args.extend([
                         Expr(x) for x in impl.get_runtime().prog.
                         current_ast_builder().expand_expr([args[i].ptr])

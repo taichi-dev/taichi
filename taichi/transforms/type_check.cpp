@@ -555,13 +555,7 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(GlobalTemporaryStmt *stmt) override {
-    /**
-     * We need to convert TensorType to pointer when
-     * real_matrix is enabled because one can store value
-     * in a loop to a tensor defined outside the loop
-     */
-    if (!stmt->ret_type->is<TensorType>() || config_.real_matrix)
-      stmt->ret_type.set_is_pointer(true);
+    stmt->ret_type.set_is_pointer(true);
   }
 
   void visit(InternalFuncStmt *stmt) override {

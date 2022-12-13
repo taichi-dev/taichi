@@ -300,7 +300,11 @@ def test_unary():
     assert test_utils.allclose(xf[14], np.round(yf), rel=1e-5)
 
 
-def _test_ternary_i(is_mat):
+@pytest.mark.parametrize('is_mat', [(True, True, True), (True, False, False),
+                                    (False, True, False), (False, False, True),
+                                    (False, True, True)])
+@test_utils.test()
+def test_ternary_i(is_mat):
     cond_is_mat, lhs_is_mat, rhs_is_mat = is_mat
     x = ti.Matrix.field(3, 2, ti.i32, 1)
     if cond_is_mat:
@@ -341,19 +345,3 @@ def _test_ternary_i(is_mat):
     assert test_utils.allclose(
         x[0],
         np.int32(np.bool_(y)) * z + np.int32(1 - np.bool_(y)) * w)
-
-
-@pytest.mark.parametrize('is_mat', [(True, True, True), (True, False, False),
-                                    (False, True, False), (False, False, True),
-                                    (False, True, True)])
-@test_utils.test()
-def test_ternary_i(is_mat):
-    _test_ternary_i(is_mat)
-
-
-@pytest.mark.parametrize('is_mat', [(True, True, True), (True, False, False),
-                                    (False, True, False), (False, False, True),
-                                    (False, True, True)])
-@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
-def test_ternary_i_matrix_scalarize(is_mat):
-    _test_ternary_i(is_mat)

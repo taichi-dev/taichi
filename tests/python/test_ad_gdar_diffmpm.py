@@ -4,7 +4,8 @@ import taichi as ti
 from tests import test_utils
 
 
-def _test_gdar_mpm():
+@test_utils.test(require=ti.extension.assertion, debug=True, exclude=[ti.cc])
+def test_gdar_mpm():
     real = ti.f32
 
     dim = 2
@@ -182,17 +183,3 @@ def _test_gdar_mpm():
         learning_rate = 10
         init_v[None][0] -= learning_rate * grad[0]
         init_v[None][1] -= learning_rate * grad[1]
-
-
-@test_utils.test(require=ti.extension.assertion, debug=True, exclude=[ti.cc])
-def test_gdar_mpm():
-    _test_gdar_mpm()
-
-
-@test_utils.test(require=ti.extension.assertion,
-                 debug=True,
-                 exclude=[ti.cc],
-                 real_matrix=True,
-                 real_matrix_scalarize=True)
-def test_gdar_mpm_real_matrix_scalarize():
-    _test_gdar_mpm()

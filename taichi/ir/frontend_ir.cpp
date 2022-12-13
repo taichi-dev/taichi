@@ -152,10 +152,7 @@ void UnaryOpExpression::type_check(CompileConfig *config) {
   auto operand_primitive_type = operand->ret_type.get_element_type();
   auto ret_primitive_type = ret_type;
 
-  if (config->real_matrix) {
-    TI_ASSERT(operand_primitive_type->is<PrimitiveType>());
-
-  } else if (!operand->ret_type->is<PrimitiveType>()) {
+  if (!operand_primitive_type->is<PrimitiveType>()) {
     throw TaichiTypeError(fmt::format(
         "unsupported operand type(s) for '{}': '{}'", unary_op_type_name(type),
         operand_primitive_type->to_string()));
@@ -539,9 +536,6 @@ void ExternalTensorExpression::flatten(FlattenContext *ctx) {
   //                 The scalarization should happen after
   //                 irpass::lower_access()
   auto prim_dt = dt;
-  if (!get_compile_config()->real_matrix) {
-    prim_dt = dt.get_element_type();
-  }
   auto ptr = Stmt::make<ArgLoadStmt>(arg_id, prim_dt, /*is_ptr=*/true);
 
   int external_dims = dim - std::abs(element_dim);

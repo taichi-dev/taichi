@@ -220,10 +220,10 @@ TiMemory ti_import_vulkan_memory(
   taichi::lang::vulkan::VulkanDevice &vk_runtime =
       static_cast<VulkanRuntime *>(runtime2)->get_vk();
 
-  vkapi::IVkBuffer buffer =
-      vkapi::create_buffer(vk_runtime.vk_device(), interop_info->buffer,
-                           interop_info->size, interop_info->usage);
-  taichi::lang::DeviceAllocation devalloc = vk_runtime.import_vkbuffer(buffer);
+  vkapi::IVkBuffer buffer = vkapi::create_buffer(
+      vk_runtime.vk_device(), interop_info->buffer, interop_info->usage);
+  taichi::lang::DeviceAllocation devalloc = vk_runtime.import_vkbuffer(
+      buffer, interop_info->size, interop_info->memory, interop_info->offset);
   out = devalloc2devmem(*runtime2, devalloc);
   TI_CAPI_TRY_CATCH_END();
   return out;
@@ -240,11 +240,11 @@ void ti_export_vulkan_memory(TiRuntime runtime,
   taichi::lang::DeviceAllocation devalloc = devmem2devalloc(*runtime2, memory);
   vkapi::IVkBuffer buffer = runtime2->get_vk().get_vkbuffer(devalloc);
 
-  auto [vk_mem, offset, __] =
+  auto [vk_mem, offset, size] =
       runtime2->get_vk().get_vkmemory_offset_size(devalloc);
 
   interop_info->buffer = buffer.get()->buffer;
-  interop_info->size = buffer.get()->size;
+  interop_info->size = size;
   interop_info->usage = buffer.get()->usage;
   interop_info->memory = vk_mem;
   interop_info->offset = (uint64_t)offset;

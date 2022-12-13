@@ -122,7 +122,8 @@ def test_constant_matrices():
     func(5)
 
 
-def _test_taichi_scope_vector_operations_with_global_vectors():
+@test_utils.test(arch=get_host_arch_list())
+def test_taichi_scope_vector_operations_with_global_vectors():
     for ops in vector_operation_types:
         a, b, c = test_vector_arrays[:3]
         m1, m2 = ti.Vector(a), ti.Vector(b)
@@ -143,18 +144,7 @@ def _test_taichi_scope_vector_operations_with_global_vectors():
 
 
 @test_utils.test(arch=get_host_arch_list())
-def test_taichi_scope_vector_operations_with_global_vectors():
-    _test_taichi_scope_vector_operations_with_global_vectors()
-
-
-@test_utils.test(arch=get_host_arch_list(),
-                 real_matrix=True,
-                 real_matrix_scalarize=True)
-def test_taichi_scope_vector_operations_with_global_vectors_matrix_scalarize():
-    _test_taichi_scope_vector_operations_with_global_vectors()
-
-
-def _test_taichi_scope_matrix_operations_with_global_matrices():
+def test_taichi_scope_matrix_operations_with_global_matrices():
     for ops in matrix_operation_types:
         a, b, c = test_matrix_arrays[:3]
         m1, m2 = ti.Matrix(a), ti.Matrix(b)
@@ -172,19 +162,6 @@ def _test_taichi_scope_matrix_operations_with_global_matrices():
 
         assert np.allclose(r1[None].to_numpy(), ops(a, b))
         assert np.allclose(r2[None].to_numpy(), ops(a, c))
-
-
-@test_utils.test(arch=get_host_arch_list())
-def test_taichi_scope_matrix_operations_with_global_matrices():
-    _test_taichi_scope_matrix_operations_with_global_matrices()
-
-
-@test_utils.test(arch=get_host_arch_list(),
-                 real_matrix=True,
-                 real_matrix_scalarize=True)
-def test_taichi_scope_matrix_operations_with_global_matrices_matrix_scalarize(
-):
-    _test_taichi_scope_matrix_operations_with_global_matrices()
 
 
 def _test_local_matrix_non_constant_index():
@@ -219,20 +196,10 @@ def test_local_matrix_non_constant_index():
     _test_local_matrix_non_constant_index()
 
 
-@test_utils.test(require=ti.extension.dynamic_index,
-                 real_matrix=True,
+@test_utils.test(arch=[ti.cuda, ti.cpu],
                  real_matrix_scalarize=False,
                  debug=True)
 def test_local_matrix_non_constant_index_real_matrix():
-    _test_local_matrix_non_constant_index()
-
-
-@test_utils.test(require=ti.extension.dynamic_index,
-                 dynamic_index=True,
-                 real_matrix=True,
-                 real_matrix_scalarize=True,
-                 debug=True)
-def test_local_matrix_non_constant_index_real_matrix_scalarize():
     _test_local_matrix_non_constant_index()
 
 
@@ -265,7 +232,8 @@ def test_matrix_ndarray_non_constant_index():
     assert v[3][9] == 9
 
 
-def _test_matrix_field_non_constant_index():
+@test_utils.test(require=ti.extension.dynamic_index)
+def test_matrix_field_non_constant_index():
     m = ti.Matrix.field(2, 2, ti.i32, 5)
     v = ti.Vector.field(10, ti.i32, 5)
 
@@ -294,17 +262,8 @@ def _test_matrix_field_non_constant_index():
     assert v[1][9] == 9
 
 
-@test_utils.test(require=ti.extension.dynamic_index, dynamic_index=True)
-def test_matrix_field_non_constant_index():
-    _test_matrix_field_non_constant_index()
-
-
-@test_utils.test(require=ti.extension.dynamic_index, real_matrix=True)
-def test_matrix_field_non_constant_index_real_matrix():
-    _test_matrix_field_non_constant_index()
-
-
-def _test_matrix_field_constant_index():
+@test_utils.test()
+def test_matrix_field_constant_index():
     m = ti.Matrix.field(2, 2, ti.i32, 5)
 
     @ti.kernel
@@ -316,16 +275,6 @@ def _test_matrix_field_constant_index():
     func()
 
     assert np.allclose(m.to_numpy(), np.ones((5, 2, 2), np.int32) * 12)
-
-
-@test_utils.test()
-def test_matrix_field_constant_index():
-    _test_matrix_field_constant_index()
-
-
-@test_utils.test(arch=[ti.cuda, ti.cpu], real_matrix=True)
-def test_matrix_field_constant_index_real_matrix():
-    _test_matrix_field_constant_index()
 
 
 @test_utils.test(arch=ti.cpu)
@@ -634,7 +583,8 @@ def test_python_scope_inplace_operator():
         assert np.allclose(m1.to_numpy(), ops(a, b))
 
 
-def _test_indexing():
+@test_utils.test()
+def test_indexing():
     @ti.kernel
     def foo():
         m = ti.Matrix([[0., 0., 0., 0.] for _ in range(4)])
@@ -654,7 +604,8 @@ def _test_indexing():
         bar()
 
 
-def _test_indexing_in_fields():
+@test_utils.test()
+def test_indexing_in_fields():
     f = ti.Matrix.field(3, 3, ti.f32, shape=())
 
     @ti.kernel
@@ -678,7 +629,8 @@ def _test_indexing_in_fields():
         bar()
 
 
-def _test_indexing_in_struct():
+@test_utils.test()
+def test_indexing_in_struct():
     @ti.kernel
     def foo():
         s = ti.Struct(a=ti.Vector([0, 0, 0]), b=2)
@@ -698,7 +650,8 @@ def _test_indexing_in_struct():
         bar()
 
 
-def _test_indexing_in_struct_field():
+@test_utils.test()
+def test_indexing_in_struct_field():
 
     s = ti.Struct.field(
         {
@@ -724,46 +677,6 @@ def _test_indexing_in_struct_field():
         bar()
 
 
-@test_utils.test()
-def test_indexing_in_struct_field():
-    _test_indexing_in_struct_field()
-
-
-@test_utils.test()
-def test_indexing_in_struct():
-    _test_indexing_in_struct()
-
-
-@test_utils.test()
-def test_indexing_in_fields():
-    _test_indexing_in_fields()
-
-
-@test_utils.test()
-def test_indexing():
-    _test_indexing()
-
-
-@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
-def test_indexing_in_struct_field_matrix_scalarize():
-    _test_indexing_in_struct_field()
-
-
-@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
-def test_indexing_in_struct_matrix_scalarize():
-    _test_indexing_in_struct()
-
-
-@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
-def test_indexing_in_fields_matrix_scalarize():
-    _test_indexing_in_fields()
-
-
-@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
-def test_indexing_matrix_scalarize():
-    _test_indexing()
-
-
 @test_utils.test(arch=get_host_arch_list(), debug=True)
 def test_matrix_vector_multiplication():
     mat = ti.math.mat3(1)
@@ -782,9 +695,7 @@ def test_matrix_vector_multiplication():
     foo()
 
 
-@test_utils.test(arch=[ti.cuda, ti.cpu],
-                 real_matrix=True,
-                 real_matrix_scalarize=False)
+@test_utils.test(arch=[ti.cuda, ti.cpu], real_matrix_scalarize=False)
 def test_local_matrix_read():
 
     s = ti.field(ti.i32, shape=())
@@ -800,9 +711,7 @@ def test_local_matrix_read():
             assert s[None] == i * 3 + j
 
 
-@test_utils.test(arch=[ti.cuda, ti.cpu],
-                 real_matrix=True,
-                 real_matrix_scalarize=False)
+@test_utils.test(arch=[ti.cuda, ti.cpu], real_matrix_scalarize=False)
 def test_local_matrix_read_without_assign():
     @ti.kernel
     def local_vector_read(i: ti.i32) -> ti.i32:
@@ -812,9 +721,7 @@ def test_local_matrix_read_without_assign():
         assert local_vector_read(i) == i
 
 
-@test_utils.test(arch=[ti.cuda, ti.cpu],
-                 real_matrix=True,
-                 real_matrix_scalarize=False)
+@test_utils.test(arch=[ti.cuda, ti.cpu], real_matrix_scalarize=False)
 def test_local_matrix_indexing_in_loop():
     s = ti.field(ti.i32, shape=(3, 3))
 
@@ -831,9 +738,7 @@ def test_local_matrix_indexing_in_loop():
             assert s[i, j] == i * 3 + j + 1
 
 
-@test_utils.test(arch=[ti.cuda, ti.cpu],
-                 real_matrix=True,
-                 real_matrix_scalarize=False)
+@test_utils.test(arch=[ti.cuda, ti.cpu], real_matrix_scalarize=False)
 def test_local_matrix_indexing_ops():
     @ti.kernel
     def element_write() -> ti.i32:
@@ -868,7 +773,7 @@ def test_local_matrix_indexing_ops():
             assert f[i, j] == xs[j][i]
 
 
-@test_utils.test(arch=[ti.cuda, ti.cpu], real_matrix=True)
+@test_utils.test()
 def test_local_matrix_index_check():
     @ti.kernel
     def foo():
@@ -890,7 +795,6 @@ def test_local_matrix_index_check():
 
 
 @test_utils.test(arch=[ti.cuda, ti.cpu],
-                 real_matrix=True,
                  real_matrix_scalarize=False,
                  debug=True)
 def test_elementwise_ops():
@@ -953,9 +857,7 @@ def test_elementwise_ops():
     test()
 
 
-@test_utils.test(arch=[ti.cuda, ti.cpu],
-                 real_matrix=True,
-                 real_matrix_scalarize=True)
+@test_utils.test(debug=True)
 def test_local_matrix_scalarize():
     @ti.kernel
     def func():
@@ -973,10 +875,8 @@ def test_local_matrix_scalarize():
         # Unary
         x[1, 1] = ti.sqrt(x[1, 0])
 
-        # TODO: test for dynamic indexing
-
         assert (x[0, 0] == 100.)
-        assert (x[0, 1] == 200.)
+        assert (x[0, 1] == 100.)
         assert (x[1, 0] == 200.)
         assert (x[1, 1] < 14.14214)
         assert (x[1, 1] > 14.14213)
@@ -1010,9 +910,7 @@ def _test_field_and_ndarray(field, ndarray, func, verify):
     verify(ndarray)
 
 
-@test_utils.test(arch=[ti.cuda, ti.cpu],
-                 real_matrix=True,
-                 real_matrix_scalarize=True)
+@test_utils.test()
 def test_store_scalarize():
     @ti.func
     def func(a: ti.template()):
@@ -1031,9 +929,7 @@ def test_store_scalarize():
     _test_field_and_ndarray(field, ndarray, func, verify)
 
 
-@test_utils.test(arch=[ti.cuda, ti.cpu],
-                 real_matrix=True,
-                 real_matrix_scalarize=True)
+@test_utils.test()
 def test_load_store_scalarize():
     @ti.func
     def func(a: ti.template()):
@@ -1052,9 +948,7 @@ def test_load_store_scalarize():
     _test_field_and_ndarray(field, ndarray, func, verify)
 
 
-@test_utils.test(arch=[ti.cuda, ti.cpu],
-                 real_matrix=True,
-                 real_matrix_scalarize=True)
+@test_utils.test()
 def test_unary_op_scalarize():
     @ti.func
     def func(a: ti.template()):
@@ -1078,9 +972,7 @@ def test_unary_op_scalarize():
     _test_field_and_ndarray(field, ndarray, func, verify)
 
 
-@test_utils.test(arch=[ti.cuda, ti.cpu],
-                 real_matrix=True,
-                 real_matrix_scalarize=True)
+@test_utils.test()
 def test_binary_op_scalarize():
     @ti.func
     def func(a: ti.template()):
@@ -1100,9 +992,7 @@ def test_binary_op_scalarize():
     _test_field_and_ndarray(field, ndarray, func, verify)
 
 
-@test_utils.test(arch=[ti.cuda, ti.cpu],
-                 real_matrix=True,
-                 real_matrix_scalarize=True)
+@test_utils.test()
 def test_trace_op():
     @ti.kernel
     def test_fun() -> ti.f32:
@@ -1129,10 +1019,7 @@ def test_trace_op():
         failed_func()
 
 
-@test_utils.test(arch=[ti.cuda, ti.cpu],
-                 real_matrix=True,
-                 real_matrix_scalarize=True,
-                 debug=True)
+@test_utils.test(debug=True)
 def test_ternary_op_scalarize():
     @ti.kernel
     def test():
@@ -1149,10 +1036,7 @@ def test_ternary_op_scalarize():
     test()
 
 
-@test_utils.test(arch=[ti.cuda, ti.cpu],
-                 real_matrix=True,
-                 real_matrix_scalarize=True,
-                 debug=True)
+@test_utils.test(debug=True)
 def test_fill_op():
     @ti.kernel
     def test_fun():
@@ -1165,10 +1049,7 @@ def test_fill_op():
     test_fun()
 
 
-@test_utils.test(arch=[ti.cuda, ti.cpu],
-                 real_matrix=True,
-                 real_matrix_scalarize=True,
-                 debug=True)
+@test_utils.test(debug=True)
 def test_atomic_op_scalarize():
     @ti.func
     def func(x: ti.template()):
@@ -1195,7 +1076,7 @@ def test_atomic_op_scalarize():
     _test_field_and_ndarray(field, ndarray, func, verify)
 
 
-@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
+@test_utils.test()
 def test_unsupported_logical_operations():
     @ti.kernel
     def test():
@@ -1225,10 +1106,7 @@ def test_vector_transpose():
         foo()
 
 
-@test_utils.test(arch=[ti.cuda, ti.cpu],
-                 real_matrix=True,
-                 real_matrix_scalarize=True,
-                 debug=True)
+@test_utils.test(debug=True)
 def test_cross_scope_matrix_binary_ops():
     n = 128
     x = ti.Vector.field(3, dtype=int, shape=(n, n))
@@ -1249,10 +1127,7 @@ def test_cross_scope_matrix_binary_ops():
     assert (x[6, 8] == [1, 10, 100]).all()
 
 
-@test_utils.test(arch=[ti.cuda, ti.cpu],
-                 real_matrix=True,
-                 real_matrix_scalarize=True,
-                 debug=True)
+@test_utils.test(debug=True)
 def test_cross_scope_matrix_ternary_ops():
     n = 128
     x = ti.Vector.field(3, dtype=int, shape=(n, n))
@@ -1269,10 +1144,7 @@ def test_cross_scope_matrix_ternary_ops():
     assert (x[1, 1] == [100, 10, 1]).all()
 
 
-@test_utils.test(arch=[ti.cuda, ti.cpu],
-                 real_matrix=True,
-                 real_matrix_scalarize=True,
-                 debug=True)
+@test_utils.test(debug=True)
 def test_cross_scope_matrix_atomic_ops():
     n = 128
     x = ti.Vector.field(3, dtype=int, shape=(n, n))

@@ -195,17 +195,9 @@ class VulkanResourceBinder : public ResourceBinder {
     }
   };
 
-  struct VulkanBindings : public Bindings {
-    std::vector<
-        std::pair<vkapi::IVkDescriptorSetLayout, vkapi::IVkDescriptorSet>>
-        sets;
-  };
-
   explicit VulkanResourceBinder(
       VkPipelineBindPoint bind_point = VK_PIPELINE_BIND_POINT_COMPUTE);
   ~VulkanResourceBinder() override;
-
-  std::unique_ptr<Bindings> materialize() override;
 
   void rw_buffer(uint32_t set,
                  uint32_t binding,
@@ -310,8 +302,9 @@ class VulkanPipeline : public Pipeline {
       const std::vector<VertexInputBinding> &vertex_inputs,
       const std::vector<VertexInputAttribute> &vertex_attrs);
 
-  static VkShaderModule create_shader_module(VkDevice device,
-                                             const SpirvCodeView &code);
+  static rhi_impl::RhiReturn<VkShaderModule> create_shader_module(
+      VkDevice device,
+      const SpirvCodeView &code);
 
   struct GraphicsPipelineTemplate {
     VkPipelineViewportStateCreateInfo viewport_state{};
@@ -367,8 +360,6 @@ class VulkanCommandList : public CommandList {
 
   void bind_pipeline(Pipeline *p) override;
   void bind_resources(ResourceBinder *binder) override;
-  void bind_resources(ResourceBinder *binder,
-                      ResourceBinder::Bindings *bindings) override;
   void buffer_barrier(DevicePtr ptr, size_t size) override;
   void buffer_barrier(DeviceAllocation alloc) override;
   void memory_barrier() override;
@@ -562,12 +553,12 @@ class VulkanStream : public Stream {
 };
 
 struct VulkanCapabilities {
-  uint32_t vk_api_version;
-  bool physical_device_features2;
-  bool external_memory;
-  bool wide_line;
-  bool surface;
-  bool present;
+  uint32_t vk_api_version{0};
+  bool physical_device_features2{false};
+  bool external_memory{false};
+  bool wide_line{false};
+  bool surface{false};
+  bool present{false};
 };
 
 class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
@@ -601,12 +592,11 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
 
   uint64_t get_memory_physical_pointer(DeviceAllocation handle) override;
 
-  // Mapping can fail and will return nullptr
-  void *map_range(DevicePtr ptr, uint64_t size) override;
-  void *map(DeviceAllocation alloc) override;
+  RhiResult map_range(DevicePtr ptr, uint64_t size, void **mapped_ptr) final;
+  RhiResult map(DeviceAllocation alloc, void **mapped_ptr) final;
 
-  void unmap(DevicePtr ptr) override;
-  void unmap(DeviceAllocation alloc) override;
+  void unmap(DevicePtr ptr) final;
+  void unmap(DeviceAllocation alloc) final;
 
   // Strictly intra device copy
   void memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) override;
@@ -665,7 +655,10 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
   std::tuple<vkapi::IVkImage, vkapi::IVkImageView, VkFormat> get_vk_image(
       const DeviceAllocation &alloc) const;
 
-  DeviceAllocation import_vkbuffer(vkapi::IVkBuffer buffer);
+  DeviceAllocation import_vkbuffer(vkapi::IVkBuffer buffer,
+                                   size_t size,
+                                   VkDeviceMemory memory,
+                                   VkDeviceSize offset);
 
   DeviceAllocation import_vk_image(vkapi::IVkImage image,
                                    vkapi::IVkImageView view,
@@ -755,11 +748,17 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
                 VulkanResourceBinder::SetLayoutHasher>
       desc_set_layouts_;
   vkapi::IVkDescriptorPool desc_pool_{nullptr};
+
+  // Internal implementaion functions
+  AllocationInternal &get_alloc_internal(const DeviceAllocation &alloc);
+  const AllocationInternal &get_alloc_internal(
+      const DeviceAllocation &alloc) const;
+
+  RhiResult map_internal(AllocationInternal &alloc_int,
+                         size_t offset,
+                         size_t size,
+                         void **mapped_ptr);
 };
-
-VkFormat buffer_format_ti_to_vk(BufferFormat f);
-
-BufferFormat buffer_format_vk_to_ti(VkFormat f);
 
 }  // namespace vulkan
 }  // namespace taichi::lang

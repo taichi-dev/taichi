@@ -31,6 +31,7 @@ The `@ti.dataclass` decorator converts the annotated members in the `Python clas
 
 
 ## Associate Functions with the Struct Type
+
 Both Python classes and Taichi struct types can have functions attached to them. Building from the above example, one can embed functions in the struct as follows:
 
 ```python

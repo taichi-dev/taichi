@@ -126,23 +126,27 @@ TEST_F(CapiTest, TestBehaviorAllocateMemory) {
     }
 
     // Attempt to allocate memory with size of 1024
-    TiRuntime runtime = ti_create_runtime(arch);
-    for (int i = 0; i < 4; ++i) {
+    {
+      TiRuntime runtime = ti_create_runtime(arch);
       TiMemoryAllocateInfo allocate_info;
       allocate_info.size = 1024;
-      allocate_info.usage = TI_MEMORY_USAGE_STORAGE_BIT << i;
+      allocate_info.usage = TI_MEMORY_USAGE_STORAGE_BIT;
       TiMemory memory = ti_allocate_memory(runtime, &allocate_info);
       TI_ASSERT(memory != TI_NULL_HANDLE);
       ti_free_memory(runtime, memory);
+      ti_destroy_runtime(runtime);
     }
 
     // Attempt to run out of the memory
     {
+      TiRuntime runtime = ti_create_runtime(arch);
       TiMemoryAllocateInfo allocate_info;
       allocate_info.size = 1000000000000000000;
-      ti_allocate_memory(runtime, &allocate_info);
+      TiMemory memory = ti_allocate_memory(runtime, &allocate_info);
       error = ti_get_last_error(0, nullptr);
       CHECK_TAICHI_ERROR_IS(TI_ERROR_OUT_OF_MEMORY);
+      ti_free_memory(runtime, memory);
+      ti_destroy_runtime(runtime);
     }
 
     // runtime and allocate_info are both null
@@ -153,19 +157,20 @@ TEST_F(CapiTest, TestBehaviorAllocateMemory) {
 
     // runtime is not null, allocate_info is null
     {
+      TiRuntime runtime = ti_create_runtime(arch);
       ti_allocate_memory(runtime, nullptr);
       CHECK_TAICHI_ERROR_IS(TI_ERROR_ARGUMENT_NULL);
+      ti_destroy_runtime(runtime);
     }
 
     // runtime is null, allocate is not null;
     {
       TiMemoryAllocateInfo allocate_info;
       allocate_info.size = 1024;
-      ti_allocate_memory(TI_NULL_HANDLE, &allocate_info);
+      TiMemory memory = ti_allocate_memory(TI_NULL_HANDLE, &allocate_info);
       CHECK_TAICHI_ERROR_IS(TI_ERROR_ARGUMENT_NULL);
+      TI_ASSERT(memory == TI_NULL_HANDLE);
     }
-
-    ti_destroy_runtime(runtime);
   };
 
   inner(TI_ARCH_VULKAN);
@@ -277,15 +282,15 @@ TEST_F(CapiTest, TestBehaviorUnmapMemory) {
       return;
     }
 
-    TiRuntime runtime = ti_create_runtime(arch);
-    for (int i = 0; i < 4; ++i) {
-      allocate_info.usage = TI_MEMORY_USAGE_STORAGE_BIT << i;
+    {
+      TiRuntime runtime = ti_create_runtime(arch);
+      allocate_info.usage = TI_MEMORY_USAGE_STORAGE_BIT;
       TiMemory memory = ti_allocate_memory(runtime, &allocate_info);
       ti_map_memory(runtime, memory);
       ti_unmap_memory(runtime, memory);
       CHECK_TAICHI_SUCCESS();
+      ti_destroy_runtime(runtime);
     }
-    ti_destroy_runtime(runtime);
 
     // runtime & memory are both null
     {
@@ -353,6 +358,13 @@ TEST_F(CapiTest, TestBehaviorAllocateImage) {
       TiImage image = ti_allocate_image(runtime, &imageAllocateInfo);
       CHECK_TAICHI_SUCCESS();
       TI_ASSERT(image != TI_NULL_HANDLE);
+
+      imageAllocateInfo.usage = TI_IMAGE_USAGE_SAMPLED_BIT;
+      image = ti_allocate_image(runtime, &imageAllocateInfo);
+      CHECK_TAICHI_SUCCESS();
+      TI_ASSERT(image != TI_NULL_HANDLE);
+      imageAllocateInfo.usage = TI_IMAGE_USAGE_STORAGE_BIT;
+
       ti_free_image(runtime, image);
       ti_destroy_runtime(runtime);
     }

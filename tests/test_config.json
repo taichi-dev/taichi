@@ -212,7 +212,7 @@
         "--arch=vulkan"
     ],
     "CapiTest.TestBehaviorGetCgraphVulkan": [
-        ["cpp", "aot", "python_scripts", "graph_aot_test_vulkan.py"],
+        ["cpp", "aot", "python_scripts", "graph_aot_test.py"],
         "--arch=vulkan"
     ]
 }

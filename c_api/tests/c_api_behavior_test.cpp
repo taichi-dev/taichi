@@ -116,7 +116,6 @@ TEST_F(CapiTest, TestBehaviorGetRuntimeCapabilities) {
 }
 
 TEST_F(CapiTest, TestBehaviorAllocateMemory) {
-  TiError error = TI_ERROR_SUCCESS;
   auto inner = [&](TiArch arch) {
     if (ti::is_arch_available(arch)) {
       // Attempt to allocate memory with size of 1024

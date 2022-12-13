@@ -112,7 +112,6 @@ TEST_F(CapiTest, TestBehaviorGetRuntimeCapabilities) {
     }
     ti_destroy_runtime(runtime);
   };
-
   inner(TI_ARCH_VULKAN);
 }
 
@@ -129,15 +128,6 @@ TEST_F(CapiTest, TestBehaviorAllocateMemory) {
         TiMemory memory = ti_allocate_memory(runtime, &allocate_info);
         TI_ASSERT(memory != TI_NULL_HANDLE);
         ti_free_memory(runtime, memory);
-      }
-
-      // Attempt to run out of the memory
-      {
-        TiMemoryAllocateInfo allocate_info;
-        allocate_info.size = 1000000000000000000;
-        ti_allocate_memory(runtime, &allocate_info);
-        error = ti_get_last_error(0, nullptr);
-        CHECK_TAICHI_ERROR_IS(TI_ERROR_OUT_OF_MEMORY);
       }
 
       // runtime and allocate_info are both null

@@ -227,7 +227,7 @@ TEST_F(CapiTest, TestBehaviorMapMemory) {
       TI_WARN("arch {} is not supported, so the test is skipped", arch);
       return;
     }
-    
+
     {
       TiRuntime runtime = ti_create_runtime(arch);
       TiMemory memory = ti_allocate_memory(runtime, &allocate_info);
@@ -334,7 +334,7 @@ TEST_F(CapiTest, TestBehaviorAllocateImage) {
     if (!ti::is_arch_available(arch)) {
       TI_WARN("arch {} is not supported, so the test is skipped", arch);
       return;
-    } 
+    }
 
     // Attemp to allocate a normal 2D image
     {
@@ -643,11 +643,10 @@ void test_behavir_get_cgraph_impl(TiArch arch) {
     TI_ASSERT("arch {} is not supported, so the test is skipped", arch);
     return;
   }
-  
+
   TiRuntime runtime = ti_create_runtime(arch);
   TiAotModule module = ti_load_aot_module(runtime, module_path.c_str());
-  TiComputeGraph Cgraph =
-      ti_get_aot_module_compute_graph(module, "run_graph");
+  TiComputeGraph Cgraph = ti_get_aot_module_compute_graph(module, "run_graph");
   CHECK_TAICHI_SUCCESS();
   TI_ASSERT(Cgraph != TI_NULL_HANDLE);
 

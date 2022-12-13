@@ -44,7 +44,7 @@ class MyClass:
 
         #increment all elements in array by 1
         for I in ti.grouped(temp):
-            temp[I] += 1 
+            temp[I] += 1
 
     def call_inc(self):
         self.inc(self.temp)
@@ -54,7 +54,7 @@ class MyClass:
 
 
 <<<<<<< HEAD
-a = MyClass() # creating an instance of Data-Oriented Class 
+a = MyClass() # creating an instance of Data-Oriented Class
 
 =======
 a = MyClass() # creating an instance of Data-Oriented Class

@@ -89,11 +89,11 @@ class CuSparseSolver : public SparseSolver {
   int *d_Q {nullptr}; 
   int *h_csrRowPtrB {nullptr}; /* <int> n+1 */
   int *h_csrColIndB {nullptr}; /* <int> nnzA */
-  float *h_csrValB {nullptr}; /* <double> nnzA */
+  float *h_csrValB {nullptr}; /* <float> nnzA */
   int *h_mapBfromA {nullptr};  /* <int> nnzA */
   int *d_csrRowPtrB {nullptr}; /* <int> n+1 */
   int *d_csrColIndB {nullptr}; /* <int> nnzA */
-  float *d_csrValB {nullptr}; /* <double> nnzA */
+  float *d_csrValB {nullptr}; /* <float> nnzA */
  public:
   CuSparseSolver();
   ~CuSparseSolver() override;

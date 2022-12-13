@@ -212,7 +212,7 @@ void CuSparseSolver::analyze_pattern(const SparseMatrix &sm) {
   CUSPARSEDriver::get_instance().cpSetMatIndexBase(descr_,
                                                    CUSPARSE_INDEX_BASE_ZERO);
 
-  // Reorder
+  // step 1: reorder the sparse matrix
   float *h_csrValA = NULL; 
   h_Q = (int *)malloc(sizeof(int) * colsA);
   h_csrRowPtrB = (int *)malloc(sizeof(int) * (rowsA + 1));
@@ -230,7 +230,7 @@ void CuSparseSolver::analyze_pattern(const SparseMatrix &sm) {
   CUDADriver::get_instance().memcpy_device_to_host(h_csrColIndB, d_csrColIndA, sizeof(int) * nnzA);
   CUDADriver::get_instance().memcpy_device_to_host(h_csrValA, d_csrValA, sizeof(float) * nnzA);
 
-  // Compoute h_Q
+  // compoute h_Q
   CUSOLVERDriver::get_instance().csSpXcsrsymamdHost(
           cusolver_handle_, rowsA, nnzA, descr_, h_csrRowPtrB, h_csrColIndB, h_Q);  
   CUDADriver::get_instance().malloc((void **)&d_Q, sizeof(int)*colsA);         
@@ -248,7 +248,7 @@ void CuSparseSolver::analyze_pattern(const SparseMatrix &sm) {
   CUSOLVERDriver::get_instance().csSpXcsrpermHost(cusolver_handle_, rowsA, colsA, nnzA, descr_,
                                          h_csrRowPtrB, h_csrColIndB, h_Q, h_Q,
                                          h_mapBfromA, buffer_cpu);
-  /* B = A( mapBfromA ) */
+  // B = A( mapBfromA )
   for (int j = 0; j < nnzA; j++) {
     h_csrValB[j] = h_csrValA[h_mapBfromA[j]];
   }
@@ -261,10 +261,10 @@ void CuSparseSolver::analyze_pattern(const SparseMatrix &sm) {
   free(h_csrValA);
   free(buffer_cpu);
 
-  // step 1: create opaque info structure
+  // step 2: create opaque info structure
   CUSOLVERDriver::get_instance().csSpCreateCsrcholInfo(&info_);
 
-  // step 2: analyze chol(A) to know structure of L
+  // step 3: analyze chol(A) to know structure of L
   CUSOLVERDriver::get_instance().csSpXcsrcholAnalysis(
       cusolver_handle_, rowsA, nnzA, descr_, d_csrRowPtrB, d_csrColIndB, info_);
   is_analyzed_ = true;
@@ -497,41 +497,28 @@ void CuSparseSolver::solve_rf(Program *prog,
   assert(h_Qb != nullptr);
   CUDADriver::get_instance().memcpy_device_to_host((void*)h_b, (void *)d_b,
                                                    sizeof(float) * rowsA);
-  // replace with cuSparseGather                                     
+  // TODO: replace with cuSparseGather                                     
   for (int row = 0; row < rowsA; row++) {
     h_Qb[row] = h_b[h_Q[row]];
   }
   void *d_Qb = NULL;
   CUDADriver::get_instance().malloc(&d_Qb, sizeof(float) * rowsA);
   CUDADriver::get_instance().memcpy_host_to_device((void *)d_Qb, (void *)h_Qb,sizeof(float) * rowsA);
-  /* solve B*z = Q*b */
+  // solve B*z = Q*b 
   void *d_z = NULL;
   CUDADriver::get_instance().malloc(&d_z, sizeof(float) * colsA);
   CUSOLVERDriver::get_instance().csSpScsrcholSolve(
       cusolver_handle_, rowsA, (void *)d_Qb, (void *)d_z, info_, gpu_buffer_);
 
   // Q*x = z
+  // TODO: Replace cuSparseSsctr with cuSparseScatter                                  
   CUSPARSEDriver::get_instance().cpSsctr(cusparse_handel_, (int)rowsA, (void*)d_z, 
                                     (void*)d_Q, (void*)d_x,CUSPARSE_INDEX_BASE_ZERO);
-  // Replace cuSparseSsctr with cuSparseScatter                                  
-  // cusparseSpVecDescr_t vecX;
-  // cusparseDnVecDescr_t vecY;
-  // CUSPARSEDriver::get_instance().cpCreateSpVec(&vecX, rowsA, nnz, d_Q, d_z,CUSPARSE_INDEX_32I,
-  //                                       CUSPARSE_INDEX_BASE_ZERO, CUDA_R_32F);
-  // CUSPARSEDriver::get_instance().cpCreateDnVec(&vecY, rowsA, d_x, CUDA_R_32F);
-  // CUSPARSEDriver::get_instance().cpScatter(cusolver_handle_, vecX, vecY);
 
   free(h_b);
   free(h_Qb);
   CUDADriver::get_instance().mem_free(d_Qb);
   CUDADriver::get_instance().mem_free(d_z);
-
-
-  // TODO: free allocated memory and handles
-  // CUDADriver::get_instance().mem_free(gpu_buffer_);
-  // CUSOLVERDriver::get_instance().csSpDestory(cusolver_handle_);
-  // CUSPARSEDriver::get_instance().cpDestroy(cusparse_handel_);
-  // CUSPARSEDriver::get_instance().cpDestroyMatDescr(descrA);
 #else
   TI_NOT_IMPLEMENTED
 #endif

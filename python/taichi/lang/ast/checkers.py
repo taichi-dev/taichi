@@ -1,7 +1,7 @@
 import ast
 
-from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang._wrap_inspect import getsourcefile, getsourcelines
+from taichi.lang.exception import TaichiSyntaxError
 
 
 class KernelSimplicityASTChecker(ast.NodeVisitor):

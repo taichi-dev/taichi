@@ -9,6 +9,7 @@ import sourceinspect
 _builtin_getfile = inspect.getfile
 _builtin_findsource = inspect.findsource
 
+
 def check_use_sourceinspect():
     return int(os.getenv('USE_SOURCEINSPECT', 0)) == 1
 
@@ -130,7 +131,8 @@ class _InspectContextManager:
 
 def getsourcelines(obj):
     if check_use_sourceinspect():
-        warnings.warn('Sourceinspect is deprecated since v1.4.0', DeprecationWarning)
+        warnings.warn('Sourceinspect is deprecated since v1.4.0',
+                      DeprecationWarning)
         return sourceinspect.getsourcelines(obj)
 
     try:
@@ -147,7 +149,8 @@ def getsourcelines(obj):
 
 def getsourcefile(obj):
     if check_use_sourceinspect():
-        warnings.warn('Sourceinspect is deprecated since v1.4.0', DeprecationWarning)
+        warnings.warn('Sourceinspect is deprecated since v1.4.0',
+                      DeprecationWarning)
         return sourceinspect.getsourcefile(obj)
 
     try:

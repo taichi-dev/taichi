@@ -175,11 +175,8 @@ def test_incomplete_info_rwtexture():
 
 
 def test_deprecated_source_inspect():
-    with pytest.warns(
-            DeprecationWarning,
-            match=
-            "Sourceinspect is deprecated since v1.4.0"
-    ):
+    with pytest.warns(DeprecationWarning,
+                      match="Sourceinspect is deprecated since v1.4.0"):
         import os
         os.environ['USE_SOURCEINSPECT'] = '1'
         from taichi.lang._wrap_inspect import getsourcelines

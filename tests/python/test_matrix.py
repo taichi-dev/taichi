@@ -196,7 +196,7 @@ def test_local_matrix_non_constant_index():
     _test_local_matrix_non_constant_index()
 
 
-@test_utils.test(require=ti.extension.dynamic_index,
+@test_utils.test(arch=[ti.cuda, ti.cpu],
                  real_matrix_scalarize=False,
                  debug=True)
 def test_local_matrix_non_constant_index_real_matrix():
@@ -232,7 +232,8 @@ def test_matrix_ndarray_non_constant_index():
     assert v[3][9] == 9
 
 
-def _test_matrix_field_non_constant_index():
+@test_utils.test(require=ti.extension.dynamic_index)
+def test_matrix_field_non_constant_index():
     m = ti.Matrix.field(2, 2, ti.i32, 5)
     v = ti.Vector.field(10, ti.i32, 5)
 
@@ -261,17 +262,8 @@ def _test_matrix_field_non_constant_index():
     assert v[1][9] == 9
 
 
-@test_utils.test(require=ti.extension.dynamic_index, dynamic_index=True)
-def test_matrix_field_non_constant_index():
-    _test_matrix_field_non_constant_index()
-
-
-@test_utils.test(require=ti.extension.dynamic_index, real_matrix=True)
-def test_matrix_field_non_constant_index_real_matrix():
-    _test_matrix_field_non_constant_index()
-
-
-def _test_matrix_field_constant_index():
+@test_utils.test()
+def test_matrix_field_constant_index():
     m = ti.Matrix.field(2, 2, ti.i32, 5)
 
     @ti.kernel
@@ -283,16 +275,6 @@ def _test_matrix_field_constant_index():
     func()
 
     assert np.allclose(m.to_numpy(), np.ones((5, 2, 2), np.int32) * 12)
-
-
-@test_utils.test()
-def test_matrix_field_constant_index():
-    _test_matrix_field_constant_index()
-
-
-@test_utils.test(arch=[ti.cuda, ti.cpu], real_matrix=True)
-def test_matrix_field_constant_index_real_matrix():
-    _test_matrix_field_constant_index()
 
 
 @test_utils.test(arch=ti.cpu)

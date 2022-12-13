@@ -21,7 +21,7 @@ def uniform_matrix_inputs(*args):
     results = []
     for arg in args:
         if has_real_matrix and is_matrix_class(arg):
-            results.append(arg._make_matrix())
+            results.append(impl.expr_init(arg))
         else:
             results.append(arg)
 

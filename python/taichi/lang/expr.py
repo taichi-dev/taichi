@@ -25,7 +25,6 @@ class Expr(TaichiOperations):
                     'Cannot initialize scalar expression from '
                     f'taichi class: {type(args[0])}')
             elif isinstance(args[0], (list, tuple)):
-                assert impl.current_cfg().real_matrix
                 self.ptr = make_matrix(args[0]).ptr
             else:
                 # assume to be constant
@@ -173,8 +172,7 @@ def _get_flattened_ptrs(val):
         for item in val._members:
             ptrs.extend(_get_flattened_ptrs(item))
         return ptrs
-    if impl.current_cfg().real_matrix and isinstance(
-            val, Expr) and val.ptr.is_tensor():
+    if isinstance(val, Expr) and val.ptr.is_tensor():
         return impl.get_runtime().prog.current_ast_builder().expand_expr(
             [val.ptr])
     return [Expr(val).ptr]

@@ -12,6 +12,7 @@ import numpy as np
 import taichi.lang
 from taichi._lib import core as _ti_core
 from taichi.lang import impl, ops, runtime_ops
+from taichi.lang._wrap_inspect import getsourcefile, getsourcelines
 from taichi.lang.ast import (ASTTransformerContext, KernelSimplicityASTChecker,
                              transform_tree)
 from taichi.lang.ast.ast_transformer_utils import ReturnStatus
@@ -22,7 +23,7 @@ from taichi.lang.exception import (TaichiCompilationError, TaichiRuntimeError,
 from taichi.lang.expr import Expr
 from taichi.lang.kernel_arguments import KernelArgument
 from taichi.lang.matrix import Matrix, MatrixType
-from taichi.lang.shell import _shell_pop_print, oinspect
+from taichi.lang.shell import _shell_pop_print
 from taichi.lang.struct import StructType
 from taichi.lang.util import (cook_dtype, has_paddle, has_pytorch,
                               to_taichi_type)
@@ -115,8 +116,8 @@ def _get_tree_and_ctx(self,
                       args=None,
                       ast_builder=None,
                       is_real_function=False):
-    file = oinspect.getsourcefile(self.func)
-    src, start_lineno = oinspect.getsourcelines(self.func)
+    file = getsourcefile(self.func)
+    src, start_lineno = getsourcelines(self.func)
     src = [textwrap.fill(line, tabsize=4, width=9999) for line in src]
     tree = ast.parse(textwrap.dedent("\n".join(src)))
 

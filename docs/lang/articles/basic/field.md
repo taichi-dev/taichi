@@ -62,7 +62,7 @@ The simplest way to declare a scalar field is to call `ti.field(dtype, shape)`, 
 
     ```python
 <<<<<<< HEAD
-    
+
 =======
 
 >>>>>>> da7bac2b5be484ec2648fe058e191497f5803384

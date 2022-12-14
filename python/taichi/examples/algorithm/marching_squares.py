@@ -82,11 +82,11 @@ def get_vertex(vertex_id, values, isovalue):
     square = [tm.vec2(0), tm.vec2(1, 0), tm.vec2(1, 1), tm.vec2(0, 1)]
     if vertex_id == 0:
         v = interp(square[0], square[1], values.x, values.y, isovalue)
-    if vertex_id == 1:
+    elif vertex_id == 1:
         v = interp(square[1], square[2], values.y, values.z, isovalue)
-    if vertex_id == 2:
+    elif vertex_id == 2:
         v = interp(square[2], square[3], values.z, values.w, isovalue)
-    if vertex_id == 3:
+    else:
         v = interp(square[3], square[0], values.w, values.x, isovalue)
     return v
 

@@ -60,8 +60,9 @@ class LoopInvariantDetector : public BasicStmtVisitor {
 
   bool is_loop_invariant(Stmt *stmt, Block *current_scope) {
     int loop_invariant_nesting_level = (arch_is_cpu(config.arch)) ? 0 : 1;
-    if (loop_blocks.size() <= loop_invariant_nesting_level || (!config.move_loop_invariant_outside_if &&
-                                    current_scope != loop_blocks.top()))
+    if (loop_blocks.size() <= loop_invariant_nesting_level ||
+        (!config.move_loop_invariant_outside_if &&
+         current_scope != loop_blocks.top()))
       return false;
 
     bool is_invariant = true;

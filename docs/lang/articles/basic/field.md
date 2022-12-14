@@ -9,7 +9,7 @@ The term _field_ is borrowed from mathematics and physics. If you already know [
 
 Fields in Taichi are the _global_ data containers, which can be accessed from both the Python scope and the Taichi scope. Just like an ndarray in NumPy or a tensor in PyTorch, a field in Taichi is defined as a multi-dimensional array of elements, and elements in a field can be a Scalar, a Vector, a Matrix, or a Struct.
 
-## Scalar Fields
+## Scalar fields
 
 Scalar fields refer to the fields that store scalars and are the most basic fields.
 
@@ -95,7 +95,7 @@ The simplest way to declare a scalar field is to call `ti.field(dtype, shape)`, 
                 └  └───┴───┴───┴───┴───┴───┘  ┘
   ```
 
-Scalar Fields of higher dimensions can be similarily defined.
+Scalar fields of higher dimensions can be similarly defined.
 
 :::caution WARNING
 
@@ -104,7 +104,7 @@ Taichi only supports fields of dimensions &le; 8.
 :::
 
 
-### Accessing Elements in a Scalar Field
+### Accessing elements in a scalar field
 
 Once a field is declared, Taichi automatically initializes its elements to zero.
 
@@ -130,7 +130,7 @@ When accessing a 0D field `x`, use `x[None] = 0`, *not* `x = 0`.
     f_0d.shape=()
   ```
 
-- To access an element in a 1D field, use index `i` to get the ith element of our defined field.
+- To access an element in a 1D field, use index `i` to get the `i`-th element of our defined field.
 
   ```python
   for i in range(9):
@@ -145,7 +145,7 @@ When accessing a 0D field `x`, use `x[None] = 0`, *not* `x = 0`.
   └───┴───┴───┴───┴───┴───┴───┴───┴───┘
   ```
 
-- To access an element in a 2D field, use index `(i, j)`, which is an integer pair to get the ith jth element of our defined field.
+- To access an element in a 2D field, use index `(i, j)`, which is an integer pair to get the `i-th, j-th` element of our defined field.
 
   ```python
   for i, j in f_2d:
@@ -206,7 +206,7 @@ f_2d[0][3:] = [4, 5, 6]  # Error! You tried to access a slice of the first row, 
 :::
 
 
-### Fill a Scalar Field with a Given Value
+### Fill a scalar field with a given value
 
 To set all elements in a scalar field to a given value, call `field.fill()`:
 
@@ -228,7 +228,7 @@ f_1d.shape  # (9,)
 f_3d.dtype  # f32
 ```
 
-## Vector Fields
+## Vector fields
 
 As the name suggests, vector fields are the fields whose elements are vectors. What a vector represents depends on the scenario of your program. For example, a vector may stand for the (R, G, B) triple of a pixel, the position of a particle, or the gravitational field in space.
 
@@ -268,7 +268,7 @@ box_size = (300, 300, 300)  # A 300x300x300 grid in a 3D space
 volumetric_field = ti.Vector.field(n=3, dtype=ti.f32, shape=box_size)
 ```
 
-### Accessing Elements in a Vector Field
+### Accessing elements in a vector field
 
 Accessing a vector field is similar to accessing a multi-dimensional array: You use an index operator `[]` to access an element in the field. The only difference is that, to access a specific component of an element (vector in this case), you need an *extra* index operator `[]`:
 
@@ -320,9 +320,9 @@ To access the `p`-th component of the 0D vector field `x = ti.Vector.field(n=3, 
 `x[None][p]` (0 &le; p < n).
 :::
 
-## Matrix Fields
+## Matrix fields
 
-As the name suggests, matrix fields are the fields whose elements are matrices. In continuum mechanics, at each infinitesimal point in a 3D material exists a `strain` and `stress` tensor. The strain and stress tensor is a 3 x 2 matrix. We can use a Matrix Field to represent this tensor.
+As the name suggests, matrix fields are the fields whose elements are matrices. In continuum mechanics, at each infinitesimal point in a 3D material exists a strain and stress tensor, which is a 3 x 2 matrix. We can use a matrix field to represent this tensor.
 
 ### Declaration
 
@@ -333,11 +333,11 @@ The following code snippet declares a tensor field:
 tensor_field = ti.Matrix.field(n=3, m=2, dtype=ti.f32, shape=(300, 400, 500))
 ```
 
-### Accessing Elements in a Matrix Field
+### Accessing elements in a matrix field
 
 Accessing a matrix field is similar to accessing a vector field: You use an index operator `[]` for field indexing and a second index operator `[]` for matrix indexing.
 
-- To access the `ith, jth` element of the matrix field `tensor_field`:
+- To access the `i-th, j-th` element of the matrix field `tensor_field`:
 
   `mat = tensor_field[i, j]`
 
@@ -351,7 +351,7 @@ To access the 0D matrix field `x = ti.Matrix.field(n=3, m=4, dtype=ti.f32, shape
 `x[None][p, q]` (0 &le; p < n, 0 &le; q < m)
 :::
 
-### Considerations: Matrix Size
+### Considerations: Matrix size
 
 Matrix operations are unrolled at compile time. Take a look at the following example:
 
@@ -381,14 +381,14 @@ Operating on larger matrices (for example `32x128`) can lead to longer compilati
 
 **Workaround:**
 
-When declaring a matrix field, leave large dimensions to the Fields, rather than to the matrices. If you have a `3x2` field of `64x32` matrices:
+When declaring a matrix field, leave large dimensions to the *fields*, rather than to the matrices. If you have a `3x2` field of `64x32` matrices:
 
 - Not recommended:
   `ti.Matrix.field(64, 32, dtype=ti.f32, shape=(3, 2))`
 - Recommended:
   `ti.Matrix.field(3, 2, dtype=ti.f32, shape=(64, 32))`
 
-## Struct Fields
+## Struct fields
 
 Struct fields are fields that store user-defined structs. Members of a struct element can be:
 
@@ -427,7 +427,7 @@ particle = ti.types.struct(
 particle_field = particle.field(shape=(n,))
 ```
 
-### Access Elements in a Struct Field
+### Accessing elements in a struct field
 
 You can access a member of an element in a struct field in either of the following ways: index-first or name-first.
 

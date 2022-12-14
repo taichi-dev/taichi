@@ -89,7 +89,7 @@ class Offloader {
     for (int i = 0; i < (int)root_statements.size(); i++) {
       auto &stmt = root_statements[i];
       // Note that stmt->parent is root_block, which doesn't contain stmt now.
-      if (auto s = stmt->cast<RangeForStmt>(); s && !s->strictly_serialized) {
+      if (auto s = stmt->cast<RangeForStmt>(); s && !s->strictly_serialized && !arch_is_cpu(arch)) {
         assemble_serial_statements();
         auto offloaded = Stmt::make_typed<OffloadedStmt>(
             OffloadedStmt::TaskType::range_for, arch);

@@ -107,6 +107,7 @@ struct CompileConfig {
 
   size_t cuda_stack_limit{8192};
 
+
   CompileConfig();
 };
 

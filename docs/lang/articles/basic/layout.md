@@ -8,7 +8,7 @@ Modern processor cores compute orders of magnitude faster than their equipped me
 
 After familiarizing yourself with the basics of Taichi [Fields](./field.md), this article helps you one step further by explaining the underlying memory layout that is essential to write high-performance Taichi programs. In particular, we present how to organize an efficient data layout and how to manage memory occupancy.
 
-## Organizing an Efficient Data Layout
+## Organizing an efficient data layout
 
 In this section, we introduce how to organize data layouts in Taichi fields. The central principle of efficient data layout is _locality_. Generally speaking, a program with desirable locality has at least one of the following features:
 
@@ -89,7 +89,7 @@ ti.root.dense(ti.ij, (3, 4)).place(x)
 # or equivalently
 x = ti.field(ti.f32, shape=(3,4))
 ```
-See the sketch below to see a visualization that illustrates the difference between these layers:
+See the sketch below for a visualization that illustrates the difference between these layers:
 
 ![2D data-layout sketch](https://user-images.githubusercontent.com/2747993/190545525-305563dc-d09e-4af2-b99b-166d5c4398d0.png)
 
@@ -111,9 +111,9 @@ for i, j in A:
 
 The Taichi compiler is capable of automatically deducing the underlying data layout and applying a proper data access order. This is an advantage over most general-purpose programming languages where the access order has to be optimized manually.
 
-### Row-Major versus Column-Major
+### Row-major versus column-major
 
-One important thing to note about memory addresses is that its space is linear. Without loss of generality, we omit the differences in data types and assume each data element has size 1. Moreover, we denote the starting memory address of a field as `base`, and the indexing formula for 1D Taichi fields is `base + i` for the `i-th` element.
+One important thing to note about memory addresses is that their space is linear. Without loss of generality, we omit the differences in data types and assume each data element has size 1. Moreover, we denote the starting memory address of a field as `base`, and the indexing formula for 1D Taichi fields is `base + i` for the `i-th` element.
 
 For multi-dimensional fields, we can flatten the high-dimension index into the linear memory address space in two ways: Taking a 2D field of shape `(M, N)` as an instance, we can either store `M` rows with `N`-length 1D buffers, say the _row-major_ way, or store `N` columns, say the _column-major_ way. The index flatten formula for the `(i, j)`-th element is `base + i * N + j` for row-major and `base + j * M + i` for column-major, respectively.
 

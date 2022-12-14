@@ -162,10 +162,7 @@ def _svd3d(A, dt, iters=None):
         Decomposed 3x3 matrices `U`, 'S' and `V`.
     """
     assert A.n == 3 and A.m == 3
-    if impl.current_cfg().real_matrix:
-        inputs = get_runtime().prog.current_ast_builder().expand_expr([A.ptr])
-    else:
-        inputs = tuple([e.ptr for e in A.entries])
+    inputs = get_runtime().prog.current_ast_builder().expand_expr([A.ptr])
     assert dt in [f32, f64]
     if iters is None:
         if dt == f32:

@@ -137,7 +137,8 @@ def test_texture_from_ndarray():
     tex.from_ndarray(f)
 
 
-def _test_texture_3d():
+@test_utils.test(arch=supported_archs_texture)
+def test_texture_3d():
     res = (32, 32, 32)
     tex = ti.Texture(ti.Format.r32f, res)
 
@@ -145,18 +146,7 @@ def _test_texture_3d():
 
 
 @test_utils.test(arch=supported_archs_texture)
-def test_texture_3d():
-    _test_texture_3d()
-
-
-@test_utils.test(arch=supported_archs_texture,
-                 real_matrix=True,
-                 real_matrix_scalarize=True)
-def test_texture_3d_real_matrix_scalarize():
-    _test_texture_3d()
-
-
-def _test_from_to_image():
+def test_from_to_image():
     url = 'https://github.com/taichi-dev/taichi/blob/master/misc/logo.png?raw=true'
     response = requests.get(url)
     img = Image.open(BytesIO(response.content))
@@ -169,18 +159,7 @@ def _test_from_to_image():
 
 
 @test_utils.test(arch=supported_archs_texture)
-def test_from_to_image():
-    _test_from_to_image()
-
-
-@test_utils.test(arch=supported_archs_texture,
-                 real_matrix=True,
-                 real_matrix_scalarize=True)
-def test_from_to_image_real_matrix_scalarize():
-    _test_from_to_image()
-
-
-def _test_rw_texture_2d_struct_for():
+def test_rw_texture_2d_struct_for():
     res = (128, 128)
     tex = ti.Texture(ti.Format.r32f, res)
     arr = ti.ndarray(ti.f32, res)
@@ -200,18 +179,6 @@ def _test_rw_texture_2d_struct_for():
     write(tex)
     read(tex, arr)
     assert arr.to_numpy().sum() == 128 * 128
-
-
-@test_utils.test(arch=supported_archs_texture)
-def test_rw_texture_2d_struct_for():
-    _test_rw_texture_2d_struct_for()
-
-
-@test_utils.test(arch=supported_archs_texture,
-                 real_matrix=True,
-                 real_matrix_scalarize=True)
-def test_rw_texture_2d_struct_for_real_matrix_scalarize():
-    _test_rw_texture_2d_struct_for()
 
 
 @test_utils.test(arch=supported_archs_texture)

@@ -26,7 +26,8 @@ def test_vector_swizzle_python():
     assert all(z == w.xxxx)
 
 
-def _test_vector_swizzle_taichi():
+@test_utils.test(debug=True)
+def test_vector_swizzle_taichi():
     @ti.kernel
     def foo():
         v = ti.math.vec3(0)
@@ -47,16 +48,6 @@ def _test_vector_swizzle_taichi():
         assert all(z == w.xxxx)
 
     foo()
-
-
-@test_utils.test(debug=True)
-def test_vector_swizzle_taichi():
-    _test_vector_swizzle_taichi()
-
-
-@test_utils.test(real_matrix=True, real_matrix_scalarize=True, debug=True)
-def test_vector_swizzle_taichi_matrix_scalarize():
-    _test_vector_swizzle_taichi()
 
 
 @test_utils.test(debug=True)
@@ -104,7 +95,8 @@ def test_vector_dtype():
     foo()
 
 
-def _test_vector_invalid_swizzle_patterns():
+@test_utils.test()
+def test_vector_invalid_swizzle_patterns():
     a = ti.math.vec2(1, 2)
 
     with pytest.raises(ti.TaichiSyntaxError,
@@ -146,17 +138,7 @@ def _test_vector_invalid_swizzle_patterns():
 
 
 @test_utils.test()
-def test_vector_invalid_swizzle_patterns():
-    _test_vector_invalid_swizzle_patterns()
-
-
-@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
-def test_vector_invalid_swizzle_patterns_real_matrix_scalarize():
-    _test_vector_invalid_swizzle_patterns()
-
-
-@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
-def test_vector_swizzle_real_matrix_scalarize():
+def test_vector_swizzle3_taichi():
     @ti.kernel
     def foo() -> ti.types.vector(3, ti.i32):
         v = ti.Vector([1, 2, 3])

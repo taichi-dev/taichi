@@ -62,142 +62,54 @@ def _test_bls_stencil(*args, **kwargs):
     bls_test_template(*args, **kwargs)
 
 
-def _test_gather_1d_trivial():
+@test_utils.test(require=ti.extension.bls)
+def test_gather_1d_trivial():
     # y[i] = x[i]
     _test_bls_stencil(1, 128, bs=32, stencil=((0, ), ))
 
 
-def _test_gather_1d():
+@test_utils.test(require=ti.extension.bls)
+def test_gather_1d():
     # y[i] = x[i - 1] + x[i]
     _test_bls_stencil(1, 128, bs=32, stencil=((-1, ), (0, )))
 
 
-def _test_gather_2d():
+@test_utils.test(require=ti.extension.bls)
+def test_gather_2d():
     stencil = [(0, 0), (0, -1), (0, 1), (1, 0)]
     _test_bls_stencil(2, 128, bs=16, stencil=stencil)
 
 
-def _test_gather_2d_nonsquare():
+@test_utils.test(require=ti.extension.bls)
+def test_gather_2d_nonsquare():
     stencil = [(0, 0), (0, -1), (0, 1), (1, 0)]
     _test_bls_stencil(2, 128, bs=(4, 16), stencil=stencil)
 
 
-def _test_gather_3d():
+@test_utils.test(require=ti.extension.bls)
+def test_gather_3d():
     stencil = [(-1, -1, -1), (2, 0, 1)]
     _test_bls_stencil(3, 64, bs=(4, 8, 16), stencil=stencil)
 
 
-def _test_scatter_1d_trivial():
+@test_utils.test(require=ti.extension.bls)
+def test_scatter_1d_trivial():
     # y[i] = x[i]
     _test_bls_stencil(1, 128, bs=32, stencil=((0, ), ), scatter=True)
 
 
-def _test_scatter_1d():
+@test_utils.test(require=ti.extension.bls)
+def test_scatter_1d():
     _test_bls_stencil(1, 128, bs=32, stencil=(
         (1, ),
         (0, ),
     ), scatter=True)
 
 
-def _test_scatter_2d():
-    stencil = [(0, 0), (0, -1), (0, 1), (1, 0)]
-    _test_bls_stencil(2, 128, bs=16, stencil=stencil, scatter=True)
-
-
-@test_utils.test(require=ti.extension.bls)
-def test_gather_1d_trivial():
-    _test_gather_1d_trivial()
-
-
-@test_utils.test(require=ti.extension.bls)
-def test_gather_1d():
-    _test_gather_1d()
-
-
-@test_utils.test(require=ti.extension.bls)
-def test_gather_2d():
-    _test_gather_2d()
-
-
-@test_utils.test(require=ti.extension.bls)
-def test_gather_2d_nonsquare():
-    _test_gather_2d_nonsquare()
-
-
-@test_utils.test(require=ti.extension.bls)
-def test_gather_3d():
-    _test_gather_3d()
-
-
-@test_utils.test(require=ti.extension.bls)
-def test_scatter_1d_trivial():
-    _test_scatter_1d_trivial()
-
-
-@test_utils.test(require=ti.extension.bls)
-def test_scatter_1d():
-    _test_scatter_1d()
-
-
 @test_utils.test(require=ti.extension.bls)
 def test_scatter_2d():
-    _test_scatter_2d()
-
-
-@test_utils.test(require=ti.extension.bls,
-                 real_matrix=True,
-                 real_matrix_scalarize=True)
-def test_gather_1d_trivial_matrix_scalarize():
-    _test_gather_1d_trivial()
-
-
-@test_utils.test(require=ti.extension.bls,
-                 real_matrix=True,
-                 real_matrix_scalarize=True)
-def test_gather_1d_matrix_scalarize():
-    _test_gather_1d()
-
-
-@test_utils.test(require=ti.extension.bls,
-                 real_matrix=True,
-                 real_matrix_scalarize=True)
-def test_gather_2d_matrix_scalarize():
-    _test_gather_2d()
-
-
-@test_utils.test(require=ti.extension.bls,
-                 real_matrix=True,
-                 real_matrix_scalarize=True)
-def test_gather_2d_nonsquare_matrix_scalarize():
-    _test_gather_2d_nonsquare()
-
-
-@test_utils.test(require=ti.extension.bls,
-                 real_matrix=True,
-                 real_matrix_scalarize=True)
-def test_gather_3d_matrix_scalarize():
-    _test_gather_3d()
-
-
-@test_utils.test(require=ti.extension.bls,
-                 real_matrix=True,
-                 real_matrix_scalarize=True)
-def test_scatter_1d_trivial_matrix_scalarize():
-    _test_scatter_1d_trivial()
-
-
-@test_utils.test(require=ti.extension.bls,
-                 real_matrix=True,
-                 real_matrix_scalarize=True)
-def test_scatter_1d_matrix_scalarize():
-    _test_scatter_1d()
-
-
-@test_utils.test(require=ti.extension.bls,
-                 real_matrix=True,
-                 real_matrix_scalarize=True)
-def test_scatter_2d_matrix_scalarize():
-    _test_scatter_2d()
+    stencil = [(0, 0), (0, -1), (0, 1), (1, 0)]
+    _test_bls_stencil(2, 128, bs=16, stencil=stencil, scatter=True)
 
 
 @test_utils.test(require=ti.extension.bls)

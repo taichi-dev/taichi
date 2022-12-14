@@ -266,7 +266,8 @@ def test_append_struct():
             assert x[i, j].d == i * j * 10000000000
 
 
-def _test_append_matrix():
+@test_utils.test(require=ti.extension.sparse, exclude=[ti.metal])
+def test_append_matrix():
     mat = ti.types.matrix(n=2, m=2, dtype=ti.u8)
     f = mat.field()
     pixel = ti.root.dense(ti.i, 10).dynamic(ti.j, 20, 4)
@@ -289,19 +290,7 @@ def _test_append_matrix():
 
 
 @test_utils.test(require=ti.extension.sparse, exclude=[ti.metal])
-def test_append_matrix():
-    _test_append_matrix()
-
-
-@test_utils.test(require=ti.extension.sparse,
-                 exclude=[ti.metal],
-                 real_matrix=True,
-                 real_matrix_scalarize=True)
-def test_append_matrix_real_matrix():
-    _test_append_matrix()
-
-
-def _test_append_matrix_in_struct():
+def test_append_matrix_in_struct():
     mat = ti.types.matrix(n=2, m=2, dtype=ti.u8)
     struct = ti.types.struct(a=ti.u64, b=mat, c=ti.u16)
     f = struct.field()
@@ -326,16 +315,3 @@ def _test_append_matrix_in_struct():
             for k in range(4):
                 assert f[i, j].b[k // 2, k % 2] == i * j * (k + 1) % 256
             assert f[i, j].c == i * j * 5000 % 65536
-
-
-@test_utils.test(require=ti.extension.sparse, exclude=[ti.metal])
-def test_append_matrix_in_struct():
-    _test_append_matrix_in_struct()
-
-
-@test_utils.test(require=ti.extension.sparse,
-                 exclude=[ti.metal],
-                 real_matrix=True,
-                 real_matrix_scalarize=True)
-def test_append_matrix_in_struct_matrix_scalarize():
-    _test_append_matrix_in_struct()

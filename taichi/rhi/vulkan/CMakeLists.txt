@@ -18,8 +18,6 @@ target_sources(${VULKAN_RHI}
 target_include_directories(${VULKAN_RHI}
   PRIVATE
     ${PROJECT_SOURCE_DIR}
-    ${PROJECT_SOURCE_DIR}/external/SPIRV-Tools/include
-    ${PROJECT_SOURCE_DIR}/external/FP16/include
     ${PROJECT_SOURCE_DIR}/external/SPIRV-Reflect
   PRIVATE
     ${PROJECT_SOURCE_DIR}/external/spdlog/include

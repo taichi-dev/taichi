@@ -1,9 +1,11 @@
 import ast
 import functools
 import inspect
+import operator
 import re
 import sys
 import textwrap
+import warnings
 import weakref
 
 import numpy as np
@@ -255,8 +257,8 @@ class Func:
                 elif isinstance(anno, primitive_types.RefType):
                     non_template_args.append(
                         _ti_core.make_reference(args[i].ptr))
-                elif impl.current_cfg().real_matrix and isinstance(
-                        args[i], impl.Expr) and args[i].ptr.is_tensor():
+                elif isinstance(args[i],
+                                impl.Expr) and args[i].ptr.is_tensor():
                     non_template_args.extend([
                         Expr(x) for x in impl.get_runtime().prog.
                         current_ast_builder().expand_expr([args[i].ptr])
@@ -653,6 +655,11 @@ class Kernel:
                     # so that it only holds "real" array shapes.
                     is_soa = needed.layout == Layout.SOA
                     array_shape = v.shape
+                    if functools.reduce(operator.mul, array_shape,
+                                        1) > np.iinfo(np.int32).max:
+                        warnings.warn(
+                            "Ndarray index might be out of int32 boundary but int64 indexing is not supported yet."
+                        )
                     if needed.dtype is None or id(
                             needed.dtype) in primitive_types.type_ids:
                         element_dim = 0

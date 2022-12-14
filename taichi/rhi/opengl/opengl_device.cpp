@@ -241,11 +241,6 @@ void GLResourceBinder::index_buffer(DevicePtr ptr, size_t index_width) {
   TI_NOT_IMPLEMENTED;
 }
 
-std::unique_ptr<ResourceBinder::Bindings> GLResourceBinder::materialize() {
-  TI_NOT_IMPLEMENTED;
-  return nullptr;
-}
-
 GLPipeline::GLPipeline(const PipelineSourceDesc &desc,
                        const std::string &name) {
   GLuint shader_id;
@@ -363,11 +358,6 @@ void GLCommandList::bind_resources(ResourceBinder *_binder) {
     cmd->target = device_->get_image_gl_dims(texture);
     recorded_commands_.push_back(std::move(cmd));
   }
-}
-
-void GLCommandList::bind_resources(ResourceBinder *binder,
-                                   ResourceBinder::Bindings *bindings) {
-  TI_NOT_IMPLEMENTED;
 }
 
 template <typename T>
@@ -592,27 +582,39 @@ std::unique_ptr<Pipeline> GLDevice::create_pipeline(
   return std::make_unique<GLPipeline>(src, name);
 }
 
-void *GLDevice::map_range(DevicePtr ptr, uint64_t size) {
+RhiResult GLDevice::map_range(DevicePtr ptr, uint64_t size, void **mapped_ptr) {
   TI_ASSERT_INFO(
       buffer_to_access_.find(ptr.alloc_id) != buffer_to_access_.end(),
       "Buffer not created with host_read or write");
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, ptr.alloc_id);
   check_opengl_error("glBindBuffer");
-  void *mapped = glMapBufferRange(GL_SHADER_STORAGE_BUFFER, ptr.offset, size,
-                                  buffer_to_access_.at(ptr.alloc_id));
+  *mapped_ptr = glMapBufferRange(GL_SHADER_STORAGE_BUFFER, ptr.offset, size,
+                                 buffer_to_access_.at(ptr.alloc_id));
   check_opengl_error("glMapBufferRange");
-  return mapped;
+  return RhiResult::success;
 }
 
-void *GLDevice::map(DeviceAllocation alloc) {
-  int size = 0;
+RhiResult GLDevice::map(DeviceAllocation alloc, void **mapped_ptr) {
+  TI_ASSERT_INFO(
+      buffer_to_access_.find(alloc.alloc_id) != buffer_to_access_.end(),
+      "Buffer not created with host_read or write");
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, alloc.alloc_id);
   check_opengl_error("glBindBuffer");
-
-  glGetBufferParameteriv(GL_SHADER_STORAGE_BUFFER, GL_BUFFER_SIZE, &size);
-  check_opengl_error("glGetBufferParameteriv");
-
-  return map_range(alloc.get_ptr(0), size);
+  // This is pure stupidity.
+  // Why does `glMapBuffer` and `glMapBufferRange` uses two TOTALLY different
+  // enums? Whoever came up with the API is DRUNK!
+  GLbitfield access = buffer_to_access_.at(alloc.alloc_id);
+  GLenum access_oldapi;
+  if (bool(access & GL_MAP_READ_BIT) && bool(access & GL_MAP_WRITE_BIT)) {
+    access_oldapi = GL_READ_WRITE;
+  } else if (access & GL_MAP_WRITE_BIT) {
+    access_oldapi = GL_WRITE_ONLY;
+  } else {
+    access_oldapi = GL_READ_ONLY;
+  }
+  *mapped_ptr = glMapBuffer(GL_SHADER_STORAGE_BUFFER, access_oldapi);
+  check_opengl_error("glMapBuffer");
+  return RhiResult::success;
 }
 
 void GLDevice::unmap(DevicePtr ptr) {

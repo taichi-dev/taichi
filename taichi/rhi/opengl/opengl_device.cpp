@@ -536,7 +536,7 @@ DeviceAllocation GLDevice::allocate_memory(const AllocParams &params) {
   check_opengl_error("glGenBuffers");
   glBindBuffer(target_hint, buffer);
   check_opengl_error("glBindBuffer");
-  
+
   glBufferData(target_hint, params.size, nullptr,
                params.host_read ? GL_STATIC_COPY : GL_DYNAMIC_READ);
   GLuint alloc_res = glGetError();

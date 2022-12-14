@@ -30,7 +30,7 @@ Sphere = ti.types.struct(center=vec3, radius=ti.f32)
 The `@ti.dataclass` decorator converts the annotated members in the `Python class` to members in the resulting `Struct Type`. In both of the above examples, you end up with the same struct field.
 
 
-## Associate Functions with the Struct Type
+## Associate Functions with the struct type
 
 Both Python classes and Taichi struct types can have functions attached to them. Building from the above example, one can embed functions in the struct as follows:
 

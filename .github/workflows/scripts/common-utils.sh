@@ -168,6 +168,7 @@ function ci-docker-run-amdgpu {
     fi
 
     ci-docker-run \
+        --priviledged \
         --device=/dev/kfd \
         --device=/dev/dri \
         --group-add=video \

@@ -11,15 +11,15 @@ We use NumPy arrays as an example to illustrate the data transfer process becaus
 
 There are two ways to import a NumPy array `arr` to the Taichi scope:
 
-1. Create a Taichi field `f`, whose shape and dtype match the shape and dtype of `arr`, and call `f.from_numpy(arr)` to copy the data in `arr` into `f`. This approach is preferred when the original array is visited frequently from elsewhere in the Taichi scope (for example, in texture sampling).
+- Create a Taichi field `f`, whose shape and dtype match the shape and dtype of `arr`, and call `f.from_numpy(arr)` to copy the data in `arr` into `f`. This approach is preferred when the original array is visited frequently from elsewhere in the Taichi scope (for example, in texture sampling).
 
-2. Pass `arr` as an argument to a kernel or a Taichi function using `ti.types.ndarray()` as type hint. The argument is passed by reference without creating a copy of `arr`. Thus, any modification to this argument from inside a kernel or Taichi function also changes the original array `arr`. This approach is preferred when the kernel or Taichi function that takes in the argument needs to process the original array (for storage or filtering, for example).
+- Pass `arr` as an argument to a kernel or a Taichi function using `ti.types.ndarray()` as type hint. The argument is passed by reference without creating a copy of `arr`. Thus, any modification to this argument from inside a kernel or Taichi function also changes the original array `arr`. This approach is preferred when the kernel or Taichi function that takes in the argument needs to process the original array (for storage or filtering, for example).
 
 :::note
 `from_numpy() / from_torch()` can take in any numpy array or torch Tensor, no matter it's contiguous or not. Taichi will manage its own copy of data. However, when passing an argument to a Taichi kernel, only contiguous numpy arrays or torch Tensors are supported.
 :::
 
-## Data Transfer between NumPy arrays and Taichi Fields
+## Data transfer between NumPy arrays and Taichi fields
 
 To import data from a NumPy array to a Taichi field, first make sure that the field and the array have the same shape:
 
@@ -46,7 +46,7 @@ arr = x.to_numpy()
 #       [6, 7, 8]], dtype=int32)
 ```
 
-## Data Transfer between PyTorch/Paddle Tensors and Taichi Fields
+## Data transfer between PyTorch/Paddle tensors and Taichi fields
 
 Data transfer between a PyTorch tensor and a Taichi field is similar to the NumPy case above: Call `from_torch()` for data import and `to_torch()` for data export. But note that `to_torch()` requires one more argument `device`, which specifies the PyTorch device:
 
@@ -149,9 +149,13 @@ When transferring data between a `ti.field/ti.Vector.field/ti.Matrix.field` and 
     field.from_numpy(array_dict) # the input array must have the same keys as the field
     ```
 
-## Using External Arrays as Taichi Kernel Arguments
+## Using external arrays as Taichi kernel arguments
 
-Use type hint `ti.types.ndarray()` to pass external arrays as kernel arguments. For example:
+Use type hint `ti.types.ndarray()` to pass external arrays as kernel arguments.
+
+### An entry-level example
+
+The following example shows the most basic way to call `ti.types.ndarray()`:
 
 ```python {10}
 import taichi as ti
@@ -170,9 +174,8 @@ test()
 print(a)
 ```
 
-This is an entry-level example to show you how to call `ti.types.ndarray()`. We now illustrate a more advanced usage of this method.
+### Advanced usage
 
-### Advanced
 
 Assume that `a` and `b` are both 2D arrays of the same shape and dtype. For each cell `(i, j)` in `a`, we want to calculate the difference between its value and the average of its four neighboring cells while storing the result in the corresponding cell in `b`. In this case, cells on the boundary, which are cells with fewer than four neighbors, are ruled out for simplicity. This operation is usually denoted as the *Discrete Laplace Operator*:
 
@@ -199,7 +202,7 @@ def test(a: ti.types.ndarray(), b: ti.types.ndarray()):  # assume a, b have the 
             b[i, j] = a[i, j] - (a[i-1, j] + a[i, j-1] + a[i+1, j] + a[i, j+1]) / 4
 ```
 
-Not only is this code snippet is more readable than the NumPy version above, but it also runs way faster even on the CPU backend.
+Not only is this code snippet more readable than the NumPy version above, but it also runs way faster even on the CPU backend.
 
 :::note
 The elements in an external array must be indexed using a single square bracket. This contrasts with a Taichi vector field or matrix field where field members and elements are indexed separately:

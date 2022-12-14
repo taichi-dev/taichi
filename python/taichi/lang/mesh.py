@@ -83,7 +83,7 @@ class MeshReorderedMatrixFieldProxy(MatrixField):
         self._initialize_host_accessors()
         key = self.g2r_field[key]
         key = self._pad_key(key)
-        return Matrix(self._host_access(key), is_ref=True)
+        return Matrix(self._host_access(key))
 
 
 class MeshElementField:

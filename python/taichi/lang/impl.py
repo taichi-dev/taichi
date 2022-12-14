@@ -25,8 +25,9 @@ from taichi.lang.mesh import (ConvType, MeshElementFieldProxy, MeshInstance,
 from taichi.lang.simt.block import SharedArray
 from taichi.lang.snode import SNode
 from taichi.lang.struct import Struct, StructField, _IntermediateStruct
-from taichi.lang.util import (cook_dtype, get_traceback, is_taichi_class,
-                              python_scope, taichi_scope, warning)
+from taichi.lang.util import (cook_dtype, get_traceback, is_matrix_class,
+                              is_taichi_class, python_scope, taichi_scope,
+                              warning)
 from taichi.types.primitive_types import (all_types, f16, f32, f64, i32, i64,
                                           u8, u32, u64)
 
@@ -182,7 +183,7 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
         indices_expr_group = make_expr_group(*indices)
         index_dim = indices_expr_group.size()
 
-    if is_taichi_class(value):
+    if is_taichi_class(value) and not is_matrix_class(value):
         return value._subscript(*indices)
     if isinstance(value, MeshElementFieldProxy):
         return value.subscript(*indices)

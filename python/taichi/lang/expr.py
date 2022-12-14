@@ -155,12 +155,9 @@ def make_expr_group(*exprs, real_func_arg=False):
     expr_group = _ti_core.ExprGroup()
     for i in exprs:
         if isinstance(i, Matrix):
-            if real_func_arg:
-                for item in i.entries:
-                    expr_group.push_back(Expr(item).ptr)
-            else:
-                assert i.local_tensor_proxy is not None
-                expr_group.push_back(i.local_tensor_proxy)
+            assert real_func_arg
+            for item in i.entries:
+                expr_group.push_back(Expr(item).ptr)
         else:
             expr_group.push_back(Expr(i).ptr)
     return expr_group

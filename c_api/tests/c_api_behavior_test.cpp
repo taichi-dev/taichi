@@ -297,7 +297,7 @@ TEST_F(CapiTest, TestBehaviorUnmapMemory) {
   inner(TI_ARCH_VULKAN);
 }
 
-TiImageAllocateInfo getImageAllocateInfo() {
+TiImageAllocateInfo get_image_allocate_info() {
   TiImageExtent extent;
   extent.height = 512;
   extent.width = 512;
@@ -350,7 +350,7 @@ TEST_F(CapiTest, TestBehaviorAllocateImage) {
     // Attemp to allocate a 2D image with invalid demension
     {
       TiRuntime runtime = ti_create_runtime(arch);
-      auto imageAllocateInfo = getImageAllocateInfo();
+      auto imageAllocateInfo = get_image_allocate_info();
       imageAllocateInfo.dimension = TI_IMAGE_DIMENSION_MAX_ENUM;
       TiImage image = ti_allocate_image(runtime, &imageAllocateInfo);
       CHECK_TAICHI_ERROR_IS(TI_ERROR_ARGUMENT_OUT_OF_RANGE);
@@ -362,7 +362,7 @@ TEST_F(CapiTest, TestBehaviorAllocateImage) {
     // Attemp to allocate a 2D image with a invalid format
     {
       TiRuntime runtime = ti_create_runtime(arch);
-      auto imageAllocateInfo = getImageAllocateInfo();
+      auto imageAllocateInfo = get_image_allocate_info();
       imageAllocateInfo.format = TI_FORMAT_MAX_ENUM;
       TiImage image = ti_allocate_image(runtime, &imageAllocateInfo);
       CHECK_TAICHI_ERROR_IS(TI_ERROR_ARGUMENT_OUT_OF_RANGE);
@@ -383,7 +383,7 @@ TEST_F(CapiTest, TestBehaviorAllocateImage) {
     // runtime is null, imageAllocateInfo is valid
     {
       TiRuntime runtime = ti_create_runtime(arch);
-      TiImageAllocateInfo imageAllocateInfo = getImageAllocateInfo();
+      TiImageAllocateInfo imageAllocateInfo = get_image_allocate_info();
       TiImage image = ti_allocate_image(TI_NULL_HANDLE, &imageAllocateInfo);
       CHECK_TAICHI_ERROR_IS(TI_ERROR_ARGUMENT_NULL);
       ti_free_image(runtime, image);
@@ -626,7 +626,7 @@ TEST_F(CapiTest, TestBehaviorDestroyAotModuleVulkan) {
   test_behavior_destroy_aot_module_impl(TI_ARCH_VULKAN);
 }
 
-void test_behavir_get_cgraph_impl(TiArch arch) {
+void test_behavior_get_cgraph_impl(TiArch arch) {
   const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
   const std::string module_path = folder_dir + std::string("/module.tcm");
   if (!ti::is_arch_available(arch)) {
@@ -636,28 +636,28 @@ void test_behavir_get_cgraph_impl(TiArch arch) {
 
   TiRuntime runtime = ti_create_runtime(arch);
   TiAotModule module = ti_load_aot_module(runtime, module_path.c_str());
-  TiComputeGraph Cgraph = ti_get_aot_module_compute_graph(module, "run_graph");
+  TiComputeGraph cgraph = ti_get_aot_module_compute_graph(module, "run_graph");
   CHECK_TAICHI_SUCCESS();
-  TI_ASSERT(Cgraph != TI_NULL_HANDLE);
+  TI_ASSERT(cgraph != TI_NULL_HANDLE);
 
   // Attemp to get compute graph with null module.
-  Cgraph = ti_get_aot_module_compute_graph(TI_NULL_HANDLE, "run_graph");
+  cgraph = ti_get_aot_module_compute_graph(TI_NULL_HANDLE, "run_graph");
   CHECK_TAICHI_ERROR_IS(TI_ERROR_ARGUMENT_NULL);
-  TI_ASSERT(Cgraph == TI_NULL_HANDLE);
+  TI_ASSERT(cgraph == TI_NULL_HANDLE);
 
   // Attemp to get compute graph without graph name.
-  Cgraph = ti_get_aot_module_compute_graph(module, nullptr);
+  cgraph = ti_get_aot_module_compute_graph(module, nullptr);
   CHECK_TAICHI_ERROR_IS(TI_ERROR_ARGUMENT_NULL);
-  TI_ASSERT(Cgraph == TI_NULL_HANDLE);
+  TI_ASSERT(cgraph == TI_NULL_HANDLE);
 
   // Attemp to get compute graph with invalid name.
-  Cgraph = ti_get_aot_module_compute_graph(module, "#$#%*(");
+  cgraph = ti_get_aot_module_compute_graph(module, "#$#%*(");
   CHECK_TAICHI_ERROR_IS(TI_ERROR_NAME_NOT_FOUND);
-  TI_ASSERT(Cgraph == TI_NULL_HANDLE);
+  TI_ASSERT(cgraph == TI_NULL_HANDLE);
 
   ti_destroy_runtime(runtime);
 }
 
 TEST_F(CapiTest, TestBehaviorGetCgraphVulkan) {
-  test_behavir_get_cgraph_impl(TI_ARCH_VULKAN);
+  test_behavior_get_cgraph_impl(TI_ARCH_VULKAN);
 }

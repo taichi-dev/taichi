@@ -498,6 +498,11 @@ void ti_copy_memory_device_to_device(TiRuntime runtime,
   TI_CAPI_ARGUMENT_NULL(dst_memory->memory);
   TI_CAPI_ARGUMENT_NULL(src_memory);
   TI_CAPI_ARGUMENT_NULL(src_memory->memory);
+  if (dst_memory->size != src_memory->size) {
+    ti_set_last_error(TI_ERROR_INVALID_ARGUMENT,
+                      "The size of memory slices are not match");
+    return;
+  }
 
   Runtime *runtime2 = (Runtime *)runtime;
   auto dst = devmem2devalloc(*runtime2, dst_memory->memory)

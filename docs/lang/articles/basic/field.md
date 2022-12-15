@@ -44,10 +44,7 @@ The simplest way to declare a scalar field is to call `ti.field(dtype, shape)`, 
   ```python
   f_1d = ti.field(ti.i32, shape=9)  # A 1D field of length 9
   ```
-<<<<<<< HEAD
-=======
 
->>>>>>> da7bac2b5be484ec2648fe058e191497f5803384
   An illustration of `f_1d`:
 
   ```
@@ -61,11 +58,6 @@ The simplest way to declare a scalar field is to call `ti.field(dtype, shape)`, 
   There is little difference between a 0D field and a 1D field of length 1 except for their indexing rules. You *must* use `None` as the index to access a 0D field and `0` as the index to access a 1D field of length 1:
 
     ```python
-<<<<<<< HEAD
-
-=======
-
->>>>>>> da7bac2b5be484ec2648fe058e191497f5803384
     f1 = ti.field(int, shape=())
     f2 = ti.field(int, shape=1)
 

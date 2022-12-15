@@ -92,7 +92,7 @@ See the [Math Module](../math/math_module.md) for more information.
 ### Initialize Taichi
 
 :::note
-`ti.init(x:Optional)`- Initializes Taichi environment and allows you to customize your Taichi runtime depending on the `x` number of arguements passed into it.
+`ti.init(**kwargs)`- Initializes Taichi environment and allows you to customize your Taichi runtime depending on the optional arguments passed into it.
 :::
 
 For now, we only introduce the most important argument, namely, `arch`.

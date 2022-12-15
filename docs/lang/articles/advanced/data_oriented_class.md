@@ -44,7 +44,7 @@ class MyClass:
 
         #increment all elements in array by 1
         for I in ti.grouped(temp):
-            temp[I] += 1 
+            temp[I] += 1
 
     def call_inc(self):
         self.inc(self.temp)
@@ -53,6 +53,15 @@ class MyClass:
         self.temp = ti.field(dtype = ti.i32, shape=n)
 
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+a = MyClass() # creating an instance of Data-Oriented Class
+
+=======
+a = MyClass() # creating an instance of Data-Oriented Class
+>>>>>>> b62e12c10a27a2dd924c4e909976cdfe98a109ce
+>>>>>>> f34c256ef7603137916bfd0e61eb454811a068bd
 # a.call_inc() cannot be called, because a.temp has not been allocated at this point
 a.allocate_temp(4) # [0 0 0 0]
 a.call_inc() # [1 1 1 1]
@@ -97,7 +106,7 @@ print(a.y)  # [ 5. 13. 21. 29.]
 ```
 
 
-## Inheritance of Data-Oriented Classes
+## Inheritance of Data-Oriented classes
 
 The Data-Oriented property is automatically carried along with the Python class inheritence. This implies that you can call a Taichi Kernel if any of its ancestor classes is decorated with `@ti.data_oriented`, which is shown in the example below:
 

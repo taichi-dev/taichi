@@ -115,7 +115,7 @@ ti.init(arch=ti.gpu)
 
 `ti.field` is the most important and frequently used data structure in Taichi. You can compare it to NumPy's `ndarray` or PyTorch's `tensor`. But Taichi's field is more flexible. For example, a Taichi field can be [spatially sparse](../basic/sparse.md) and easily [switched between different data layouts](../basic/layout.md).
 
-We will introduce more advanced features of field in other scenario-based tutorials. For now, it suffices to know that the Field `pixels` is a dense 2D array.
+We will introduce more advanced features of fields in other scenario-based tutorials. For now, it suffices to know that the field `pixels` is a dense 2D array.
 
 ```python
 n = 320

@@ -120,7 +120,7 @@ TEST_F(CapiTest, TestBehaviorAllocateMemory) {
     if (!ti::is_arch_available(arch)) {
       TI_WARN("arch {} is not supported, so this test is skipped", arch);
     }
-    
+
     // Attempt to allocate memory with size of 1024
     TiRuntime runtime = ti_create_runtime(arch);
     {

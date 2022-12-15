@@ -85,6 +85,7 @@ SIMPLEX.from_numpy(simplex_np)
 
 @ti.func
 def noise4d(x, y, z, w):
+    """4D simplex noise."""
     s = (x + y + z + w) * F4
     ijkl = tm.floor(tm.vec4(x, y, z, w) + s)
     t = (ijkl.x + ijkl.y + ijkl.z + ijkl.w) * G4

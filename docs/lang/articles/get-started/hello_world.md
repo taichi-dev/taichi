@@ -108,7 +108,7 @@ import taichi.math as tm
 ti.init(arch=ti.gpu)
 ```
 
-### Define a Field
+### Define a Taichi field
 
 :::note
 `ti.field(x,y)` - Defines a Field whose shape is of `y` and whose elements are of type `x`.

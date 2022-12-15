@@ -516,7 +516,7 @@ IVkBuffer create_buffer(VkDevice device,
   VkResult res = vmaCreateBuffer(allocator, buffer_info, alloc_info,
                                  &buffer->buffer, &buffer->allocation, nullptr);
   if (res == VK_ERROR_OUT_OF_DEVICE_MEMORY) {
-    throw std::bad_alloc();                                     //FIXME
+    throw std::bad_alloc();  // FIXME
   }
   BAIL_ON_VK_BAD_RESULT_NO_RETURN(res, "failed to create buffer");
 

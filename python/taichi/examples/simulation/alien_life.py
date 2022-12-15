@@ -142,7 +142,7 @@ length = 0.65  # control amplitude of point wiggles
 
 @ti.kernel
 def update(
-    time: float,
+    time: float,  # pylint: disable=redefined-outer-name
     intensity: ti.types.ndarray(),  # pylint: disable=redefined-outer-name
     points: ti.types.ndarray(dtype=tm.vec2, ndim=1)):
     pos.fill(0)

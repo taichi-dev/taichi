@@ -2,6 +2,7 @@
 Use 4D simplex noise to reproduce a generative artwork by https://bleuje.com/
 """
 import numpy as np
+
 import taichi as ti
 import taichi.math as tm
 
@@ -140,7 +141,8 @@ length = 0.65  # control amplitude of point wiggles
 
 
 @ti.kernel
-def update(time: float, intensity: ti.types.ndarray(), points: ti.types.ndarray(dtype=tm.vec2, ndim=1)):
+def update(time: float, intensity: ti.types.ndarray(),
+           points: ti.types.ndarray(dtype=tm.vec2, ndim=1)):
     pos.fill(0)
     ct = 1.5 * ti.cos(2 * np.pi * time)
     st = 1.5 * ti.sin(2 * np.pi * time)

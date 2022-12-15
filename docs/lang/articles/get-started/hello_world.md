@@ -146,7 +146,7 @@ For those who come from the world of OpenGL, `ti.func` corresponds to the usual 
 
 The key to high performance lies in how you iterate in Taichi. In particular, we can use parallelized looping to parse through our data more efficiently.
 
-The following code snippet introduces a `for` loop at the outermost scope in a Taichi kernel and thus is *automatically parallelized*. Also notice that the loop is also calling both `i` and `j` in the same loop, and the program will run these iterations concurrently.
+The following code snippet introduces a `for` loop at the outermost scope in a Taichi kernel and thus is *automatically parallelized*. Notice that the loop is also calling both `i` and `j` at the same time, and the program will run these iterations concurrently.
 
 Taichi offers a handy syntax sugar: It parallelizes any `for` loop at the outermost scope in a kernel. This means that you can parallelize your tasks using one plain loop, without the need to know thread allocation/recycling or memory management.
 

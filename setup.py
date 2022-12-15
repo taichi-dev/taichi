@@ -127,7 +127,7 @@ def get_cmake_args():
         if (os.getenv('TAICHI_USE_MSBUILD', '0') in ('1', 'ON')):
             use_msbuild = True
         if use_msbuild:
-            build_options.extend(['-G', 'Visual Studio 17 2022'])
+            build_options.extend(['-G', 'Visual Studio 16 2019'])
         else:
             build_options.extend(['-G', 'Ninja', '--skip-generator-test'])
     if sys.platform == "darwin":

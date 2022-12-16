@@ -99,7 +99,7 @@ struct SyncedPtrStableObjectList {
   std::mutex lock;
   std::forward_list<T> objects;
   std::vector<T *> free_nodes;
-  
+
   T &acquire() {
     std::lock_guard<std::mutex> _(lock);
     if (free_nodes.empty()) {

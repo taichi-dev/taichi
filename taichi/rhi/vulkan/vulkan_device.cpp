@@ -1126,7 +1126,7 @@ void VulkanCommandList::begin_renderpass(int x0,
       depth_attachment_info.clearValue.depthStencil = {0.0, 0};
 
       render_info.pDepthAttachment = &depth_attachment_info;
-    
+
       current_dynamic_targets_.push_back(image);
     } else {
       rp_desc.depth_attachment = VK_FORMAT_UNDEFINED;
@@ -1234,7 +1234,7 @@ void VulkanCommandList::end_renderpass() {
 
     return;
   }
-  
+
   vkCmdEndRenderPass(buffer_->buffer);
 
   current_renderpass_ = VK_NULL_HANDLE;
@@ -1682,7 +1682,7 @@ RhiResult VulkanDevice::map_internal(AllocationInternal &alloc_int,
     RHI_LOG_ERROR("Memory can not be mapped multiple times");
     return RhiResult::invalid_usage;
   }
-  
+
   if (size != VK_WHOLE_SIZE && alloc_int.alloc_info.size < offset + size) {
     RHI_LOG_ERROR("Mapping out of range");
     return RhiResult::invalid_usage;
@@ -1959,8 +1959,8 @@ std::tuple<VkDeviceMemory, size_t, size_t>
 VulkanDevice::get_vkmemory_offset_size(const DeviceAllocation &alloc) const {
   auto &buffer_alloc = get_alloc_internal(alloc);
   return std::make_tuple(buffer_alloc.alloc_info.deviceMemory,
-                          buffer_alloc.alloc_info.offset,
-                          buffer_alloc.alloc_info.size);
+                         buffer_alloc.alloc_info.offset,
+                         buffer_alloc.alloc_info.size);
 }
 
 vkapi::IVkBuffer VulkanDevice::get_vkbuffer(
@@ -1997,7 +1997,7 @@ DeviceAllocation VulkanDevice::import_vkbuffer(vkapi::IVkBuffer buffer,
                                                VkDeviceMemory memory,
                                                VkDeviceSize offset) {
   AllocationInternal &alloc_int = allocations_.acquire();
-  
+
   alloc_int.external = true;
   alloc_int.buffer = buffer;
   alloc_int.mapped = nullptr;
@@ -2020,7 +2020,7 @@ DeviceAllocation VulkanDevice::import_vk_image(vkapi::IVkImage image,
                                                vkapi::IVkImageView view,
                                                VkImageLayout layout) {
   ImageAllocInternal &alloc_int = image_allocations_.acquire();
-  
+
   alloc_int.external = true;
   alloc_int.image = image;
   alloc_int.view = view;

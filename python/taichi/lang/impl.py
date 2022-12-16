@@ -279,7 +279,7 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
                                get_runtime().get_current_src_info()))
 
     # Directly evaluate in Python for non-Taichi types
-    return value.__getitem__(*indices)
+    return value.__getitem__(indices)
 
 
 @taichi_scope

@@ -429,26 +429,21 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
               ti_kernel->ti_kernel_attribs().ctx_attribs.arr_access.at(i));
 
           // Alloc ext arr
-          if (ext_array_size[i]) {
-            bool host_write =
-                access & uint32_t(irpass::ExternalPtrAccess::READ);
-            auto allocated = device_->allocate_memory_unique(
-                {ext_array_size[i], host_write, false,
-                 /*export_sharing=*/false, AllocUsage::Storage});
-            any_arrays[i] = *allocated.get();
-            allocated_buffers.push_back(std::move(allocated));
+          size_t alloc_size = std::max(32ull, ext_array_size[i]);
+          bool host_write = access & uint32_t(irpass::ExternalPtrAccess::READ);
+          auto allocated = device_->allocate_memory_unique(
+              {alloc_size, host_write, false, /*export_sharing=*/false,
+               AllocUsage::Storage});
+          any_arrays[i] = *allocated.get();
+          allocated_buffers.push_back(std::move(allocated));
 
-            bool host_read =
-                access & uint32_t(irpass::ExternalPtrAccess::WRITE);
-            if (host_read) {
-              auto allocated = device_->allocate_memory_unique(
-                  {ext_array_size[i], false, true,
-                   /*export_sharing=*/false, AllocUsage::None});
-              any_array_shadows[i] = *allocated.get();
-              allocated_buffers.push_back(std::move(allocated));
-            }
-          } else {
-            any_arrays[i] = kDeviceNullAllocation;
+          bool host_read = access & uint32_t(irpass::ExternalPtrAccess::WRITE);
+          if (host_read) {
+            auto allocated = device_->allocate_memory_unique(
+                {alloc_size, false, true, /*export_sharing=*/false,
+                 AllocUsage::None});
+            any_array_shadows[i] = *allocated.get();
+            allocated_buffers.push_back(std::move(allocated));
           }
         }
       }

@@ -337,7 +337,7 @@ class VulkanPipeline : public Pipeline {
   std::unique_ptr<GraphicsPipelineTemplate> graphics_pipeline_template_;
   std::unordered_map<vkapi::IVkRenderPass, vkapi::IVkPipeline>
       graphics_pipeline_;
-  
+
   // For KHR_dynamic_rendering
   std::unordered_map<VulkanRenderPassDesc,
                      vkapi::IVkPipeline,

@@ -788,7 +788,7 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
       if (dynamic_rendering_feature.dynamicRendering) {
         ti_device_->vk_caps().dynamic_rendering = true;
       }
-      
+
       *pNextEnd = &dynamic_rendering_feature;
       pNextEnd = &dynamic_rendering_feature.pNext;
     }

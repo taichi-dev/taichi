@@ -95,16 +95,16 @@ def determinant(mat):
     if static(shape[0] == 4):
         det = mat[0, 0] * 0  # keep type
         for i in static(range(4)):
-            det = det + (-1)**i * (mat[i, 0] *
-                              (E(mat, i + 1, 1, 4) *
-                               (E(mat, i + 2, 2, 4) * E(mat, i + 3, 3, 4) -
-                                E(mat, i + 3, 2, 4) * E(mat, i + 2, 3, 4)) -
-                               E(mat, i + 2, 1, 4) *
-                               (E(mat, i + 1, 2, 4) * E(mat, i + 3, 3, 4) -
-                                E(mat, i + 3, 2, 4) * E(mat, i + 1, 3, 4)) +
-                               E(mat, i + 3, 1, 4) *
-                               (E(mat, i + 1, 2, 4) * E(mat, i + 2, 3, 4) -
-                                E(mat, i + 2, 2, 4) * E(mat, i + 1, 3, 4))))
+            det = det + (-1)**i * (
+                mat[i, 0] * (E(mat, i + 1, 1, 4) *
+                             (E(mat, i + 2, 2, 4) * E(mat, i + 3, 3, 4) -
+                              E(mat, i + 3, 2, 4) * E(mat, i + 2, 3, 4)) -
+                             E(mat, i + 2, 1, 4) *
+                             (E(mat, i + 1, 2, 4) * E(mat, i + 3, 3, 4) -
+                              E(mat, i + 3, 2, 4) * E(mat, i + 1, 3, 4)) +
+                             E(mat, i + 3, 1, 4) *
+                             (E(mat, i + 1, 2, 4) * E(mat, i + 2, 3, 4) -
+                              E(mat, i + 2, 2, 4) * E(mat, i + 1, 3, 4))))
         return det
     # unreachable
     return None

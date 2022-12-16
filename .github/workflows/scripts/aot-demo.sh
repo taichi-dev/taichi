@@ -10,8 +10,8 @@ export TAICHI_AOT_DEMO_BRANCH=master
 export TAICHI_UNITY2_URL=https://github.com/taichi-dev/taichi-unity2
 export TAICHI_UNITY2_BRANCH=main
 
-export TAICHI_UNITY_EXAMPLE_URL=https://github.com/taichi-dev/Taichi-UnityExample
-export TAICHI_UNITY_EXAMPLE_BRANCH=main
+export TAICHI_UNITY_EXAMPLE_URL=https://github.com/damnkk/Taichi-UnityExample.git
+export TAICHI_UNITY_EXAMPLE_BRANCH=mpm88_fix1
 
 . $(dirname $0)/common-utils.sh
 

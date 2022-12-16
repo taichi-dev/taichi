@@ -121,10 +121,6 @@ class TI_DLL_EXPORT Kernel : public Callable {
     return task_counter_++;
   }
 
-  void mark_as_from_cache() {
-    from_cache_ = true;
-  }
-
   [[nodiscard]] std::string get_name() const override;
   /**
    * Whether the given |arch| is supported in the lower() method.
@@ -135,11 +131,11 @@ class TI_DLL_EXPORT Kernel : public Callable {
   // Refactor2023:FIXME: Remove
   static bool supports_lowering(Arch arch);
 
-  void set_kernel_key_for_cache(const std::string &kernel_key) {
+  void set_kernel_key_for_cache(const std::string &kernel_key) const {
     kernel_key_ = kernel_key;
   }
 
-  const std::string &get_cached_kernel_key() {
+  const std::string &get_cached_kernel_key() const {
     return kernel_key_;
   }
 
@@ -161,18 +157,11 @@ class TI_DLL_EXPORT Kernel : public Callable {
             const std::string &name = "",
             AutodiffMode autodiff_mode = AutodiffMode::kNone);
 
-  // True if |ir| is a frontend AST. False if it's already offloaded to CHI IR.
   bool ir_is_ast_{false};
-  // The closure that, if invoked, launches the backend kernel (shader)
-  // Refactor2023:FIXME: Remove
   FunctionType compiled_{nullptr};
-  // A flag to record whether |ir| has been fully lowered.
-  // lower initial AST all the way down to a bunch of
-  // OffloadedStmt for async execution TODO(Lin): Check this comment
-  mutable bool lowered_{false};
   std::atomic<uint64> task_counter_{0};
-  std::string kernel_key_;
-  bool from_cache_{false};
+  mutable bool lowered_{false};
+  mutable std::string kernel_key_;
 };
 
 // Refactor2023:FIXME: Remove

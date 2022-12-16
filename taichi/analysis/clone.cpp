@@ -58,7 +58,7 @@ class IRCloner : public IRVisitor {
     if (stmt->true_statements) {
       other_node = other->true_statements.get();
       stmt->true_statements->accept(this);
-      other_node = other;
+      other_node = other; 
     }
     if (stmt->false_statements) {
       other_node = other->false_statements.get();

@@ -723,7 +723,8 @@ GfxRuntime::RegisterParams run_codegen(
   TI_TRACE("VK codegen for Taichi kernel={}", taichi_kernel_name);
   spirv::KernelCodegen::Params params;
   params.ti_kernel_name = taichi_kernel_name;
-  params.kernel = kernel;
+  params.kernel_def = kernel;
+  params.ir_root = kernel->ir.get();
   params.compiled_structs = compiled_structs;
   params.arch = arch;
   params.caps = caps;

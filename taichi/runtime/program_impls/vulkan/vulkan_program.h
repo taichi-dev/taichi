@@ -10,6 +10,7 @@
 #include "taichi/runtime/gfx/runtime.h"
 #include "taichi/runtime/gfx/snode_tree_manager.h"
 #include "taichi/cache/gfx/cache_manager.h"
+#include "taichi/cache/kernel_compilation_manager.h"
 #include "taichi/rhi/vulkan/vulkan_device.h"
 #include "vk_mem_alloc.h"
 
@@ -98,7 +99,8 @@ class VulkanProgramImpl : public ProgramImpl {
 
   void dump_cache_data_to_disk() override;
 
-  const std::unique_ptr<gfx::CacheManager> &get_cache_manager();
+  const std::unique_ptr<KernelCompilationManager>
+      &get_kernel_compilation_maanger();
 
   ~VulkanProgramImpl() override;
 
@@ -107,6 +109,6 @@ class VulkanProgramImpl : public ProgramImpl {
   std::unique_ptr<gfx::GfxRuntime> vulkan_runtime_{nullptr};
   std::unique_ptr<gfx::SNodeTreeManager> snode_tree_mgr_{nullptr};
   std::vector<spirv::CompiledSNodeStructs> aot_compiled_snode_structs_;
-  std::unique_ptr<gfx::CacheManager> cache_manager_{nullptr};
+  std::unique_ptr<KernelCompilationManager> kernel_compilation_mgr_{nullptr};
 };
 }  // namespace taichi::lang

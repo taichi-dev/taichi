@@ -1,11 +1,15 @@
 #include "taichi/runtime/program_impls/vulkan/vulkan_program.h"
 
-#include "taichi/analysis/offline_cache_util.h"
 #include "taichi/aot/graph_data.h"
-#include "taichi/runtime/gfx/aot_module_builder_impl.h"
-#include "taichi/runtime/gfx/snode_tree_manager.h"
-#include "taichi/runtime/gfx/aot_module_loader_impl.h"
+#include "taichi/codegen/spirv/cxompiled_kernel_data.h"
+#include "taichi/codegen/spirv/kernel_compiler.h"
+#include "taichi/runtime/gfx/runtime.h"
 #include "taichi/util/offline_cache.h"
+#include "taichi/analysis/offline_cache_util.h"
+#include "taichi/cache/kernel_compilation_manager.h"
+#include "taichi/runtime/gfx/snode_tree_manager.h"
+#include "taichi/runtime/gfx/aot_module_builder_impl.h"
+#include "taichi/runtime/gfx/aot_module_loader_impl.h"
 
 #if !defined(ANDROID)
 #include "GLFW/glfw3.h"
@@ -80,9 +84,19 @@ VulkanProgramImpl::VulkanProgramImpl(CompileConfig &config)
 
 FunctionType VulkanProgramImpl::compile(const CompileConfig &compile_config,
                                         Kernel *kernel) {
-  return register_params_to_executable(
-      get_cache_manager()->load_or_compile(&compile_config, kernel),
-      vulkan_runtime_.get());
+  auto &mgr = get_kernel_compilation_maanger();
+  const auto &compiled = mgr->load_or_compile(
+      compile_config, vulkan_runtime_->get_ti_device()->get_current_caps(),
+      *kernel);
+  const auto *spirv_compiled =
+      dynamic_cast<const spirv::CompiledKernelData *>(&compiled);
+  const auto &spirv_data = spirv_compiled->get_internal_data();
+  gfx::GfxRuntime::RegisterParams params;
+  params.kernel_attribs = spirv_data.kernel_attribs;
+  params.task_spirv_source_codes = spirv_data.spirv_src;
+  params.num_snode_trees = spirv_data.num_snode_trees;
+  return register_params_to_executable(std::move(params),
+                                       vulkan_runtime_.get());
 }
 
 static void glfw_error_callback(int code, const char *description) {
@@ -212,7 +226,7 @@ void VulkanProgramImpl::enqueue_compute_op_lambda(
 }
 
 void VulkanProgramImpl::dump_cache_data_to_disk() {
-  const auto &mgr = get_cache_manager();
+  const auto &mgr = get_kernel_compilation_maanger();
   mgr->clean_offline_cache(offline_cache::string_to_clean_cache_policy(
                                config->offline_cache_cleaning_policy),
                            config->offline_cache_max_size_of_files,
@@ -220,26 +234,24 @@ void VulkanProgramImpl::dump_cache_data_to_disk() {
   mgr->dump_with_merging();
 }
 
-const std::unique_ptr<gfx::CacheManager>
-    &VulkanProgramImpl::get_cache_manager() {
-  if (!cache_manager_) {
-    TI_ASSERT(vulkan_runtime_ && snode_tree_mgr_ && embedded_device_);
-    using Mgr = gfx::CacheManager;
-    Mgr::Params params;
-    params.arch = config->arch;
-    params.mode = config->offline_cache ? Mgr::MemAndDiskCache : Mgr::MemCache;
-    params.cache_path = config->offline_cache_file_path;
-    params.runtime = vulkan_runtime_.get();
-    params.compile_config = config;
-    params.caps = embedded_device_->device()->get_current_caps();
-    params.compiled_structs = &snode_tree_mgr_->get_compiled_structs();
-    cache_manager_ = std::make_unique<gfx::CacheManager>(std::move(params));
+const std::unique_ptr<KernelCompilationManager>
+    &VulkanProgramImpl::get_kernel_compilation_maanger() {
+  if (!kernel_compilation_mgr_) {
+    KernelCompilationManager::Config init_config;
+    // FIXME: Rm CompileConfig::offline_cache_file_path &
+    //     Mv it to TaichiConfig
+    init_config.offline_cache_path = config->offline_cache_file_path;
+    init_config.kernel_compiler =
+        std::make_unique<spirv::KernelCompiler>(spirv::KernelCompiler::Config{
+            &snode_tree_mgr_->get_compiled_structs()});
+    kernel_compilation_mgr_ =
+        std::make_unique<KernelCompilationManager>(std::move(init_config));
   }
-  return cache_manager_;
+  return kernel_compilation_mgr_;
 }
 
 VulkanProgramImpl::~VulkanProgramImpl() {
-  cache_manager_.reset();
+  kernel_compilation_mgr_.reset();
   vulkan_runtime_.reset();
   embedded_device_.reset();
 }

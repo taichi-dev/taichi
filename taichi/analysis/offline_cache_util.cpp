@@ -150,7 +150,7 @@ std::string get_hashed_offline_cache_key_of_snode(SNode *snode) {
 }
 
 std::string get_hashed_offline_cache_key(const CompileConfig *config,
-                                         Kernel *kernel) {
+                                         const Kernel *kernel) {
   std::string kernel_ast_string;
   if (kernel) {
     std::ostringstream oss;

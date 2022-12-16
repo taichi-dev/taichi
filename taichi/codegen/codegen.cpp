@@ -75,7 +75,6 @@ KernelCodeGen::maybe_read_compilation_from_cache(
   if (!reader->get_kernel_cache(cache_data, kernel_key, llvm_ctx)) {
     return std::nullopt;
   }
-  kernel->mark_as_from_cache();
   return {std::move(cache_data.compiled_data)};
 }
 

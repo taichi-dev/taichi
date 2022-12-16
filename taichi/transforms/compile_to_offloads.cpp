@@ -31,7 +31,7 @@ make_pass_printer(bool verbose, const std::string &kernel_name, IRNode *ir) {
 
 void compile_to_offloads(IRNode *ir,
                          const CompileConfig &config,
-                         Kernel *kernel,
+                         const Kernel *kernel,
                          bool verbose,
                          AutodiffMode autodiff_mode,
                          bool ad_use_stack,
@@ -60,7 +60,6 @@ void compile_to_offloads(IRNode *ir,
     irpass::lower_ast(ir);
     print("Lowered");
   }
-
 
   irpass::lower_called_functions(config, ir);
 
@@ -175,7 +174,7 @@ void compile_to_offloads(IRNode *ir,
 
 void offload_to_executable(IRNode *ir,
                            const CompileConfig &config,
-                           Kernel *kernel,
+                           const Kernel *kernel,
                            bool verbose,
                            bool determine_ad_stack_size,
                            bool lower_global_access,
@@ -308,7 +307,7 @@ void offload_to_executable(IRNode *ir,
 
 void compile_to_executable(IRNode *ir,
                            const CompileConfig &config,
-                           Kernel *kernel,
+                           const Kernel *kernel,
                            AutodiffMode autodiff_mode,
                            bool ad_use_stack,
                            bool verbose,

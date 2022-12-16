@@ -254,6 +254,7 @@ endif()
 
 add_subdirectory(taichi/util)
 add_subdirectory(taichi/common)
+add_subdirectory(taichi/cache)
 add_subdirectory(taichi/rhi/interop)
 
 target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE taichi_util)

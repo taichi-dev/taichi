@@ -54,8 +54,8 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
 
  public:
   ASTSerializer(Program *prog, std::ostream *os)
-      : ExpressionVisitor(true), prog_(prog), os_(os) {
-    this->allow_undefined_visitor = true;
+      : ExpressionVisitor(false), prog_(prog), os_(os) {
+    this->allow_undefined_visitor = false;
   }
 
   void set_ostream(std::ostream *os) {

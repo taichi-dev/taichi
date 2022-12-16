@@ -148,8 +148,9 @@ CacheManager::CacheManager(Params &&init_params)
   offline_cache_metadata_.version[2] = TI_VERSION_PATCH;
 }
 
-CompiledKernelData CacheManager::load_or_compile(const CompileConfig *config,
-                                                 Kernel *kernel) {
+CacheManager::CompiledKernelData CacheManager::load_or_compile(
+    const CompileConfig *config,
+    Kernel *kernel) {
   if (kernel->is_evaluator) {
     spirv::lower(*config, kernel);
     return gfx::run_codegen(kernel, runtime_->get_ti_device()->arch(),
@@ -226,9 +227,8 @@ void CacheManager::clean_offline_cache(offline_cache::CleanCachePolicy policy,
   }
 }
 
-std::optional<CompiledKernelData> CacheManager::try_load_cached_kernel(
-    Kernel *kernel,
-    const std::string &key) {
+std::optional<CacheManager::CompiledKernelData>
+CacheManager::try_load_cached_kernel(Kernel *kernel, const std::string &key) {
   if (mode_ == NotCache) {
     return std::nullopt;
   }
@@ -239,7 +239,6 @@ std::optional<CompiledKernelData> CacheManager::try_load_cached_kernel(
   if (params_opt.has_value()) {
     TI_DEBUG("Create kernel '{}' from in-memory cache (key='{}')",
              kernel->get_name(), key);
-    kernel->mark_as_from_cache();
     // TODO: Support multiple SNodeTrees in AOT.
     params_opt->num_snode_trees = compiled_structs_.size();
     return params_opt;
@@ -249,7 +248,6 @@ std::optional<CompiledKernelData> CacheManager::try_load_cached_kernel(
     if (auto *aot_kernel = cached_module_->get_kernel(key)) {
       TI_DEBUG("Create kernel '{}' from cache (key='{}')", kernel->get_name(),
                key);
-      kernel->mark_as_from_cache();
       auto *aot_kernel_impl = static_cast<gfx::KernelImpl *>(aot_kernel);
       auto compiled = aot_kernel_impl->params();
       // TODO: Support multiple SNodeTrees in AOT.
@@ -263,7 +261,7 @@ std::optional<CompiledKernelData> CacheManager::try_load_cached_kernel(
   return std::nullopt;
 }
 
-CompiledKernelData CacheManager::compile_and_cache_kernel(
+CacheManager::CompiledKernelData CacheManager::compile_and_cache_kernel(
     const std::string &key,
     Kernel *kernel) {
   TI_DEBUG_IF(mode_ == MemAndDiskCache, "Cache kernel '{}' (key='{}')",

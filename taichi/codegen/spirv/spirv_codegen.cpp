@@ -2449,8 +2449,10 @@ static void spriv_message_consumer(spv_message_level_t level,
 }
 
 KernelCodegen::KernelCodegen(const Params &params)
-    : params_(params), ctx_attribs_(*params.kernel, &params.caps) {
+    : params_(params), ctx_attribs_(*params.kernel_def, &params.caps) {
   uint32_t spirv_version = params.caps.get(DeviceCapability::spirv_version);
+  TI_ASSERT(params.kernel_def);
+  TI_ASSERT(params.ir_root);
 
   spv_target_env target_env;
   if (spirv_version >= 0x10600) {
@@ -2501,7 +2503,7 @@ KernelCodegen::KernelCodegen(const Params &params)
 
 void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
                         std::vector<std::vector<uint32_t>> &generated_spirv) {
-  auto *root = params_.kernel->ir->as<Block>();
+  auto *root = params_.ir_root->as<Block>();
   auto &tasks = root->statements;
   for (int i = 0; i < tasks.size(); ++i) {
     TaskCodegen::Params tp;
@@ -2562,7 +2564,7 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
   }
   kernel_attribs.ctx_attribs = std::move(ctx_attribs_);
   kernel_attribs.name = params_.ti_kernel_name;
-  kernel_attribs.is_jit_evaluator = params_.kernel->is_evaluator;
+  kernel_attribs.is_jit_evaluator = params_.kernel_def->is_evaluator;
 }
 
 void lower(const CompileConfig &config, Kernel *kernel) {

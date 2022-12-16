@@ -172,7 +172,6 @@ std::optional<CompiledKernelData> CacheManager::try_load_cached_kernel(
     if (iter != kernels.end()) {
       TI_DEBUG("Create kernel '{}' from in-memory cache (key='{}')",
                kernel->get_name(), key);
-      kernel->mark_as_from_cache();
       return iter->second.compiled_kernel_data;
     }
   }
@@ -188,7 +187,6 @@ std::optional<CompiledKernelData> CacheManager::try_load_cached_kernel(
                  key);
         k.last_used_at = std::time(nullptr);
         updated_data_.push_back(&k);
-        kernel->mark_as_from_cache();
         return k.compiled_kernel_data;
       }
     }

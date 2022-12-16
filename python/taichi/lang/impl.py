@@ -147,13 +147,6 @@ def _calc_slice(index, default_stop):
 
 @taichi_scope
 def subscript(ast_builder, value, *_indices, skip_reordered=False):
-    if isinstance(value, np.ndarray):
-        return value.__getitem__(_indices)
-
-    if isinstance(value, (tuple, list, dict)):
-        assert len(_indices) == 1
-        return value[_indices[0]]
-
     has_slice = False
 
     flattened_indices = []
@@ -279,6 +272,8 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
                                get_runtime().get_current_src_info()))
 
     # Directly evaluate in Python for non-Taichi types
+    if len(indices) == 1:
+        indices = indices[0]
     return value.__getitem__(indices)
 
 

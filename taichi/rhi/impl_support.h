@@ -95,9 +95,8 @@ struct BidirMap {
 // It does not mark objects as used, and it does not free objects (destructor is
 // not called)
 template <class T>
-class SyncedPtrStableObjectList {\
+class SyncedPtrStableObjectList {
  public:
-
   T &acquire() {
     std::lock_guard<std::mutex> _(lock_);
     if (free_nodes_.empty()) {

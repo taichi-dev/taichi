@@ -95,32 +95,35 @@ struct BidirMap {
 // It does not mark objects as used, and it does not free objects (destructor is
 // not called)
 template <class T>
-struct SyncedPtrStableObjectList {
-  std::mutex lock;
-  std::forward_list<T> objects;
-  std::vector<T *> free_nodes;
+class SyncedPtrStableObjectList {\
+ public:
 
   T &acquire() {
-    std::lock_guard<std::mutex> _(lock);
-    if (free_nodes.empty()) {
-      return objects.emplace_front();
+    std::lock_guard<std::mutex> _(lock_);
+    if (free_nodes_.empty()) {
+      return objects_.emplace_front();
     } else {
-      T *obj = free_nodes.back();
-      free_nodes.pop_back();
+      T *obj = free_nodes_.back();
+      free_nodes_.pop_back();
       return *obj;
     }
   }
 
   void release(T *ptr) {
-    std::lock_guard<std::mutex> _(lock);
-    free_nodes.push_back(ptr);
+    std::lock_guard<std::mutex> _(lock_);
+    free_nodes_.push_back(ptr);
   }
 
   void clear() {
-    std::lock_guard<std::mutex> _(lock);
-    objects.clear();
-    free_nodes.clear();
+    std::lock_guard<std::mutex> _(lock_);
+    objects_.clear();
+    free_nodes_.clear();
   }
+
+ private:
+  std::mutex lock_;
+  std::forward_list<T> objects_;
+  std::vector<T *> free_nodes_;
 };
 
 }  // namespace rhi_impl

@@ -563,6 +563,8 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
       enabled_extensions.push_back(ext.extensionName);
     } else if (name == VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME) {
       enabled_extensions.push_back(ext.extensionName);
+    } else if (name == VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME) {
+      enabled_extensions.push_back(ext.extensionName);
     } else if (name == VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME &&
                params_.enable_validation_layer) {
       // VK_KHR_shader_non_semantic_info isn't supported on molten-vk.
@@ -664,6 +666,9 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
       buffer_device_address_feature{};
   buffer_device_address_feature.sType =
       VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES_KHR;
+  VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamic_rendering_feature{};
+  dynamic_rendering_feature.sType =
+      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR;
 
   if (ti_device_->vk_caps().physical_device_features2) {
     VkPhysicalDeviceFeatures2KHR features2{};
@@ -771,6 +776,23 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
       *pNextEnd = &buffer_device_address_feature;
       pNextEnd = &buffer_device_address_feature.pNext;
     }
+
+    // Dynamic rendering
+    // TODO: Figure out how to integrate this correctly with ImGui,
+    //       and then figure out the layout & barrier stuff
+    /*
+    if (CHECK_EXTENSION(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME)) {
+      features2.pNext = &dynamic_rendering_feature;
+      vkGetPhysicalDeviceFeatures2KHR(physical_device_, &features2);
+
+      if (dynamic_rendering_feature.dynamicRendering) {
+        ti_device_->vk_caps().dynamic_rendering = true;
+      }
+      
+      *pNextEnd = &dynamic_rendering_feature;
+      pNextEnd = &dynamic_rendering_feature.pNext;
+    }
+    */
 
     // TODO: add atomic min/max feature
   }

@@ -2,6 +2,8 @@
 
 #include "taichi/rhi/device.h"
 #include <assert.h>
+#include <forward_list>
+#include <mutex>
 
 namespace taichi::lang {
 
@@ -86,6 +88,38 @@ struct BidirMap {
 
   RhiType at(BackendType &v) const {
     return backend2rhi.at(v);
+  }
+};
+
+// A synchronized list of objects that is pointer stable & reuse objects
+// It does not mark objects as used, and it does not free objects (destructor is
+// not called)
+template <class T>
+struct SyncedPtrStableObjectList {
+  std::mutex lock;
+  std::forward_list<T> objects;
+  std::vector<T *> free_nodes;
+  
+  T &acquire() {
+    std::lock_guard<std::mutex> _(lock);
+    if (free_nodes.empty()) {
+      return objects.emplace_front();
+    } else {
+      T *obj = free_nodes.back();
+      free_nodes.pop_back();
+      return *obj;
+    }
+  }
+
+  void release(T *ptr) {
+    std::lock_guard<std::mutex> _(lock);
+    free_nodes.push_back(ptr);
+  }
+
+  void clear() {
+    std::lock_guard<std::mutex> _(lock);
+    objects.clear();
+    free_nodes.clear();
   }
 };
 

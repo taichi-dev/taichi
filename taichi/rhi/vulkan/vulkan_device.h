@@ -12,6 +12,7 @@
 
 #include <memory>
 #include <optional>
+#include <list>
 
 #include <taichi/rhi/device.h>
 #include <taichi/rhi/vulkan/vulkan_utils.h>
@@ -284,6 +285,9 @@ class VulkanPipeline : public Pipeline {
       const VulkanRenderPassDesc &renderpass_desc,
       vkapi::IVkRenderPass renderpass);
 
+  vkapi::IVkPipeline graphics_pipeline_dynamic(
+      const VulkanRenderPassDesc &renderpass_desc);
+
   const std::string &name() const {
     return name_;
   }
@@ -333,6 +337,12 @@ class VulkanPipeline : public Pipeline {
   std::unique_ptr<GraphicsPipelineTemplate> graphics_pipeline_template_;
   std::unordered_map<vkapi::IVkRenderPass, vkapi::IVkPipeline>
       graphics_pipeline_;
+  
+  // For KHR_dynamic_rendering
+  std::unordered_map<VulkanRenderPassDesc,
+                     vkapi::IVkPipeline,
+                     RenderPassDescHasher>
+      graphics_pipeline_dynamic_;
 
   VulkanResourceBinder resource_binder_;
   std::vector<vkapi::IVkDescriptorSetLayout> set_layouts_;
@@ -443,6 +453,7 @@ class VulkanCommandList : public CommandList {
       currently_used_sets_;
 
   // Renderpass & raster pipeline
+  std::vector<vkapi::IVkImage> current_dynamic_targets_;
   VulkanRenderPassDesc current_renderpass_desc_;
   vkapi::IVkRenderPass current_renderpass_{VK_NULL_HANDLE};
   vkapi::IVkFramebuffer current_framebuffer_{VK_NULL_HANDLE};
@@ -559,6 +570,7 @@ struct VulkanCapabilities {
   bool wide_line{false};
   bool surface{false};
   bool present{false};
+  bool dynamic_rendering{false};
 };
 
 class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
@@ -710,27 +722,31 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
 
   // Memory allocation
   struct AllocationInternal {
-    bool external{false};
+    // Allocation info from VMA or set by `import_vkbuffer`
     VmaAllocationInfo alloc_info;
-    vkapi::IVkBuffer buffer;
-    void *mapped{nullptr};
+    // VkBuffer handle (reference counted)
+    vkapi::IVkBuffer buffer{nullptr};
+    // Buffer Device Address
     VkDeviceAddress addr{0};
+    // If mapped, the currently mapped address
+    void *mapped{nullptr};
+    // Is the allocation external (imported) or not (VMA)
+    bool external{false};
   };
-
-  unordered_map<uint32_t, AllocationInternal> allocations_;
-
-  uint32_t alloc_cnt_ = 0;
 
   // Images / Image views
   struct ImageAllocInternal {
     bool external{false};
     VmaAllocationInfo alloc_info;
-    vkapi::IVkImage image;
-    vkapi::IVkImageView view;
+    vkapi::IVkImage image{nullptr};
+    vkapi::IVkImageView view{nullptr};
     std::vector<vkapi::IVkImageView> view_lods;
   };
 
-  unordered_map<uint32_t, ImageAllocInternal> image_allocations_;
+  // Since we use the pointer to AllocationInternal as the `alloc_id`,
+  // **pointer stability** is important.
+  rhi_impl::SyncedPtrStableObjectList<AllocationInternal> allocations_;
+  rhi_impl::SyncedPtrStableObjectList<ImageAllocInternal> image_allocations_;
 
   // Renderpass
   unordered_map<VulkanRenderPassDesc,
@@ -750,9 +766,15 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
   vkapi::IVkDescriptorPool desc_pool_{nullptr};
 
   // Internal implementaion functions
-  AllocationInternal &get_alloc_internal(const DeviceAllocation &alloc);
-  const AllocationInternal &get_alloc_internal(
-      const DeviceAllocation &alloc) const;
+  inline static AllocationInternal &get_alloc_internal(
+      const DeviceAllocation &alloc) {
+    return *reinterpret_cast<AllocationInternal *>(alloc.alloc_id);
+  }
+
+  inline static ImageAllocInternal &get_image_alloc_internal(
+      const DeviceAllocation &alloc) {
+    return *reinterpret_cast<ImageAllocInternal *>(alloc.alloc_id);
+  }
 
   RhiResult map_internal(AllocationInternal &alloc_int,
                          size_t offset,

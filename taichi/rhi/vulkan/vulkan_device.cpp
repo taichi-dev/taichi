@@ -1580,7 +1580,7 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
   VkBufferCreateInfo buffer_info{};
   buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
   buffer_info.pNext = nullptr;
-  buffer_info.size = params.size;
+  buffer_info.size = std::max(params.size, 32ull);
   // FIXME: How to express this in a backend-neutral way?
   buffer_info.usage =
       VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT;

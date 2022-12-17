@@ -1720,13 +1720,7 @@ RhiResult VulkanDevice::map_internal(AllocationInternal &alloc_int,
 }
 
 void VulkanDevice::dealloc_memory(DeviceAllocation handle) {
-  AllocationInternal &alloc = get_alloc_internal(handle);
-  alloc.alloc_info = {};
-  alloc.addr = 0;
-  alloc.buffer.reset();
-  alloc.external = false;
-  alloc.mapped = nullptr;
-  allocations_.release(&alloc);
+  allocations_.release(&get_alloc_internal(handle));
 }
 
 uint64_t VulkanDevice::get_memory_physical_pointer(DeviceAllocation handle) {
@@ -2173,13 +2167,7 @@ DeviceAllocation VulkanDevice::create_image(const ImageParams &params) {
 }
 
 void VulkanDevice::destroy_image(DeviceAllocation handle) {
-  ImageAllocInternal &alloc = get_image_alloc_internal(handle);
-  alloc.alloc_info = {};
-  alloc.external = false;
-  alloc.image.reset();
-  alloc.view.reset();
-  alloc.view_lods.clear();
-  image_allocations_.release(&alloc);
+  image_allocations_.release(&get_image_alloc_internal(handle));
 }
 
 vkapi::IVkRenderPass VulkanDevice::get_renderpass(

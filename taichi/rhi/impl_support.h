@@ -95,12 +95,12 @@ struct BidirMap {
 template <class T>
 class SyncedPtrStableObjectList {
   using storage_block = std::array<uint8_t, sizeof(T)>;
-  
+
  public:
   template <typename... Params>
   T &acquire(Params &&...args) {
     std::lock_guard<std::mutex> _(lock_);
-    
+
     void *storage = nullptr;
     if (free_nodes_.empty()) {
       storage = objects_.emplace_front().data();
@@ -113,14 +113,14 @@ class SyncedPtrStableObjectList {
 
   void release(T *ptr) {
     std::lock_guard<std::mutex> _(lock_);
-    
+
     ptr->~T();
     free_nodes_.push_back(ptr);
   }
 
   void clear() {
     std::lock_guard<std::mutex> _(lock_);
-    
+
     // Transfer to quick look-up
     std::unordered_set<void *> free_nodes_set(free_nodes_.begin(),
                                               free_nodes_.end());

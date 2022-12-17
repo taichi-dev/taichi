@@ -513,7 +513,7 @@ class Scalarize : public BasicStmtVisitor {
   void visit(ArgLoadStmt *stmt) override {
     auto ret_type = stmt->ret_type.ptr_removed().get_element_type();
     auto arg_load =
-        std::make_unique<ArgLoadStmt>(stmt->arg_id, ret_type, stmt->is_ptr);
+        std::make_unique<ArgLoadStmt>(stmt->arg_id, ret_type, stmt->is_ptr, stmt->is_grad);
 
     immediate_modifier_.replace_usages_with(stmt, arg_load.get());
 

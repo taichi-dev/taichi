@@ -1,9 +1,10 @@
 import argparse
 import os
-import pytest
-import taichi as ti
-
 from importlib import reload
+
+import pytest
+
+import taichi as ti
 
 FRAMES = 200
 

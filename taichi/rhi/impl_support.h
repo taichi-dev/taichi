@@ -3,6 +3,7 @@
 #include "taichi/rhi/device.h"
 #include <assert.h>
 #include <forward_list>
+#include <unordered_set>
 #include <mutex>
 
 namespace taichi::lang {

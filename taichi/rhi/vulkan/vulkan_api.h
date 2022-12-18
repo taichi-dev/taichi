@@ -167,6 +167,13 @@ IVkPipeline create_graphics_pipeline(VkDevice device,
                                      IVkPipelineLayout layout,
                                      IVkPipelineCache cache = nullptr,
                                      IVkPipeline base_pipeline = nullptr);
+IVkPipeline create_graphics_pipeline_dynamic(
+    VkDevice device,
+    VkGraphicsPipelineCreateInfo *create_info,
+    VkPipelineRenderingCreateInfoKHR *rendering_info,
+    IVkPipelineLayout layout,
+    IVkPipelineCache cache = nullptr,
+    IVkPipeline base_pipeline = nullptr);
 IVkPipeline create_raytracing_pipeline(
     VkDevice device,
     VkRayTracingPipelineCreateInfoKHR *create_info,

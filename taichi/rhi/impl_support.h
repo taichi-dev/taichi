@@ -2,6 +2,9 @@
 
 #include "taichi/rhi/device.h"
 #include <assert.h>
+#include <forward_list>
+#include <unordered_set>
+#include <mutex>
 
 namespace taichi::lang {
 
@@ -87,6 +90,62 @@ struct BidirMap {
   RhiType at(BackendType &v) const {
     return backend2rhi.at(v);
   }
+};
+
+// A synchronized list of objects that is pointer stable & reuse objects
+template <class T>
+class SyncedPtrStableObjectList {
+  using storage_block = std::array<uint8_t, sizeof(T)>;
+
+ public:
+  template <typename... Params>
+  T &acquire(Params &&...args) {
+    std::lock_guard<std::mutex> _(lock_);
+
+    void *storage = nullptr;
+    if (free_nodes_.empty()) {
+      storage = objects_.emplace_front().data();
+    } else {
+      storage = free_nodes_.back();
+      free_nodes_.pop_back();
+    }
+    return *new (storage) T(std::forward<Params>(args)...);
+  }
+
+  void release(T *ptr) {
+    std::lock_guard<std::mutex> _(lock_);
+
+    ptr->~T();
+    free_nodes_.push_back(ptr);
+  }
+
+  void clear() {
+    std::lock_guard<std::mutex> _(lock_);
+
+    // Transfer to quick look-up
+    std::unordered_set<void *> free_nodes_set(free_nodes_.begin(),
+                                              free_nodes_.end());
+    free_nodes_.clear();
+    // Destroy live objects
+    for (auto &storage : objects_) {
+      T *obj = reinterpret_cast<T *>(storage.data());
+      // Call destructor if object is not in the free list (thus live)
+      if (free_nodes_set.find(obj) == free_nodes_set.end()) {
+        obj->~T();
+      }
+    }
+    // Clear the storage
+    objects_.clear();
+  }
+
+  ~SyncedPtrStableObjectList() {
+    clear();
+  }
+
+ private:
+  std::mutex lock_;
+  std::forward_list<storage_block> objects_;
+  std::vector<void *> free_nodes_;
 };
 
 }  // namespace rhi_impl

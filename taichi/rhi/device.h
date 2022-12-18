@@ -17,6 +17,7 @@ enum class RhiResult {
   error = -1,
   invalid_usage = -2,
   not_supported = -3,
+  out_of_memory = -4,
 };
 
 constexpr size_t kBufferSizeEntireSize = size_t(-1);
@@ -54,7 +55,7 @@ struct LLVMRuntime;
 
 // TODO: Figure out how to support images. Temporary solutions is to have all
 // opque types such as images work as an allocation
-using DeviceAllocationId = uint32_t;
+using DeviceAllocationId = uint64_t;
 
 struct TI_DLL_EXPORT DeviceAllocation {
   Device *device{nullptr};

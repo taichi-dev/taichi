@@ -32,6 +32,7 @@ void SwapChain::create_depth_resources() {
   params.x = curr_width_;
   params.y = curr_height_;
   params.export_sharing = false;
+  params.usage = ImageAllocUsage::Attachment | ImageAllocUsage::Sampled;
 
   depth_allocation_ = app_context_->device().create_image(params);
 }

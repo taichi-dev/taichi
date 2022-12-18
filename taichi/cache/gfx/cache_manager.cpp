@@ -124,10 +124,7 @@ CacheManager::CacheManager(Params &&init_params)
       if (exists && lock_with_file(lock_path)) {
         auto _ = make_cleanup([&lock_path]() {
           if (!unlock_with_file(lock_path)) {
-            TI_WARN(
-                "Unlock {} failed. You can remove this .lock file manually and "
-                "try again.",
-                lock_path);
+            TI_WARN("Unlock {} failed", lock_path);
           }
         });
         gfx::AotModuleParams params;
@@ -175,10 +172,7 @@ void CacheManager::dump_with_merging() const {
     if (lock_with_file(lock_path)) {
       auto _ = make_cleanup([&lock_path]() {
         if (!unlock_with_file(lock_path)) {
-          TI_WARN(
-              "Unlock {} failed. You can remove this .lock file manually and "
-              "try again.",
-              lock_path);
+          TI_WARN("Unlock {} failed", lock_path);
         }
       });
 

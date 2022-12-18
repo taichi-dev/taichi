@@ -58,10 +58,7 @@ inline bool lock_with_file(const std::string &path,
 inline RaiiCleanup make_unlocker(const std::string &path) {
   return make_cleanup([&path]() {
     if (!unlock_with_file(path)) {
-      TI_WARN(
-          "Unlock {} failed. You can remove this .lock file manually and try "
-          "again.",
-          path);
+      TI_WARN("Unlock {} failed", path);
     }
   });
 }

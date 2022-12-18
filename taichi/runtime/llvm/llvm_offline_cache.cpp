@@ -130,17 +130,12 @@ bool LlvmOfflineCacheFileReader::load_meta_data(
   if (lock_with_file(lock_path)) {
     auto _ = make_cleanup([&lock_path]() {
       if (!unlock_with_file(lock_path)) {
-        TI_WARN(
-            "Unlock {} failed. You can remove this .lock file manually and try "
-            "again.",
-            lock_path);
+        TI_WARN("Unlock {} failed", lock_path);
       }
     });
     return Error::kNoError == load_metadata_with_checking(data, tcb_path);
   }
-  TI_WARN(
-      "Lock {} failed. You can remove this .lock file manually and try again.",
-      lock_path);
+  TI_WARN("Lock {} failed", lock_path);
   return false;
 }
 
@@ -318,18 +313,12 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
     // metadata file format to reduce overhead.
     std::string lock_path = taichi::join_path(path, kMetadataFileLockName);
     if (!lock_with_file(lock_path)) {
-      TI_WARN(
-          "Lock {} failed. You can remove this .lock file manually and try "
-          "again.",
-          lock_path);
+      TI_WARN("Lock {} failed", lock_path);
       return;
     }
     auto _ = make_cleanup([&lock_path]() {
       if (!unlock_with_file(lock_path)) {
-        TI_WARN(
-            "Unlock {} failed. You can remove this .lock file manually and try "
-            "again.",
-            lock_path);
+        TI_WARN("Unlock {} failed", lock_path);
       }
     });
 

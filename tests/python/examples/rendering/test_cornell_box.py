@@ -1,9 +1,9 @@
 import argparse
 import os
-
 import pytest
-
 import taichi as ti
+
+from importlib import reload
 
 FRAMES = 200
 
@@ -11,19 +11,22 @@ FRAMES = 200
 @pytest.mark.run_in_serial
 @pytest.mark.skipif(os.environ.get('TI_LITE_TEST') or '0', reason='Lite test')
 def test_cornell_box():
-    from taichi.examples.rendering.cornell_box import render, tonemap
+    import taichi.examples.rendering.cornell_box as cornell_box
+    reload(cornell_box)
+
     for i in range(FRAMES):
-        render()
+        cornell_box.render()
         interval = 10
         if i % interval == 0:
-            tonemap(i)
+            cornell_box.tonemap(i)
 
 
 @pytest.mark.run_in_serial
 @pytest.mark.skipif(os.environ.get('TI_LITE_TEST') or '0', reason='Lite test')
 def video_cornell_box(result_dir):
-    from taichi.examples.rendering.cornell_box import (render, tonemap,
-                                                       tonemapped_buffer)
+    import taichi.examples.rendering.cornell_box as cornell_box
+    reload(cornell_box)
+
     video_manager = ti.tools.VideoManager(output_dir=result_dir,
                                           framerate=24,
                                           automatic_build=False)
@@ -32,12 +35,12 @@ def video_cornell_box(result_dir):
                  background_color=0x112F41,
                  show_gui=False)
     for i in range(FRAMES):
-        render()
+        cornell_box.render()
         interval = 10
         if i % interval == 0:
-            tonemap(i)
+            cornell_box.tonemap(i)
 
-        gui.set_image(tonemapped_buffer)
+        gui.set_image(cornell_box.tonemapped_buffer)
         video_manager.write_frame(gui.get_image())
         gui.clear()
     video_manager.make_video(mp4=True, gif=False)

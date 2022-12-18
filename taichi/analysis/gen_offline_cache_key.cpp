@@ -55,6 +55,7 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
  public:
   ASTSerializer(Program *prog, std::ostream *os)
       : ExpressionVisitor(true), prog_(prog), os_(os) {
+    // TODO(PGZXB): Set allow_undefined_visitor as false. (blocked by constant-folding) 
     this->allow_undefined_visitor = true;
   }
 
@@ -270,6 +271,12 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
   void visit(ReferenceExpression *expr) override {
     emit(ExprOpCode::ReferenceExpression);
     emit(expr->var);
+  }
+
+  void visit(GetElementExpression *expr) override {
+    emit(ExprOpCode::GetElementExpression);
+    emit(expr->src);
+    emit(expr->index);
   }
 
   void visit(Block *block) override {

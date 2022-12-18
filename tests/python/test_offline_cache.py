@@ -1,5 +1,6 @@
 import atexit
 import functools
+import glob
 import math
 import os
 import shutil
@@ -19,10 +20,11 @@ OFFLINE_CACHE_TEMP_DIR = mkdtemp()
 atexit.register(lambda: rmdir(OFFLINE_CACHE_TEMP_DIR))
 
 supported_llvm_archs = {ti.cpu, ti.cuda}
-# supported_gfx_archs = {ti.opengl, ti.vulkan}
+# The archs using CompiledKernelData + KernelCompiler + KernelCompilationManager (ckk)
+supported_ckk_archs = {ti.vulkan}
 supported_gfx_archs = {ti.opengl}
 supported_metal_arch = {ti.metal}
-supported_archs_offline_cache = supported_llvm_archs | supported_gfx_archs | supported_metal_arch
+supported_archs_offline_cache = supported_llvm_archs | supported_gfx_archs | supported_metal_arch | supported_ckk_archs
 supported_archs_offline_cache = {
     v
     for v in supported_archs_offline_cache if v in test_utils.expected_archs()
@@ -55,6 +57,8 @@ def expected_num_cache_files(arch, num_offloads: List[int] = None) -> int:
         result += sum(num_offloads)
     elif arch in supported_metal_arch:
         result += len(num_offloads)
+    elif arch in supported_ckk_archs:
+        result += len(num_offloads)
     # metadata files
     if arch in supported_llvm_archs:
         result += 2  # metadata.{json, tcb}
@@ -63,6 +67,8 @@ def expected_num_cache_files(arch, num_offloads: List[int] = None) -> int:
         result += 4
     elif arch in supported_metal_arch:
         result += 1  # metadata.tcb
+    elif arch in supported_ckk_archs:
+        result += 1  # ticache.tcb
     return result
 
 
@@ -77,6 +83,8 @@ def backend_specified_cache_path(arch):
         return join(tmp_offline_cache_file_path(), 'gfx')
     elif arch in supported_metal_arch:
         return join(tmp_offline_cache_file_path(), 'metal')
+    elif arch in supported_ckk_archs:
+        return tmp_offline_cache_file_path()
     assert False
 
 
@@ -91,6 +99,10 @@ def current_thread_ext_options():
 
 def cache_files_cnt(arch):
     try:
+        if arch in supported_ckk_archs:
+            cache_path = backend_specified_cache_path(arch)
+            cnt = lambda n: len(glob.glob(os.path.join(cache_path, n)))
+            return cnt('*.tic') + cnt('ticache.tcb')
         return len(listdir(backend_specified_cache_path(arch)))
     except FileNotFoundError:
         return 0
@@ -464,10 +476,8 @@ def test_offline_cache_with_changing_compile_config(curr_arch):
 
     @ti.kernel
     def helper():
-        a = 100
-        b = 200
-        c = a / b
-        for i in range(b):
+        c = 0
+        for i in range(100):
             c += i
 
     assert added_files(curr_arch) == expected_num_cache_files(curr_arch)
@@ -499,7 +509,8 @@ def test_offline_cache_with_changing_compile_config(curr_arch):
         curr_arch, [2, 2])
 
 
-@pytest.mark.parametrize('curr_arch', supported_archs_offline_cache)
+@pytest.mark.parametrize('curr_arch',
+                         supported_archs_offline_cache - supported_ckk_archs)
 @pytest.mark.parametrize('factor', [0.0, 0.25, 0.85, 1.0])
 @pytest.mark.parametrize('policy', ['never', 'version', 'lru', 'fifo'])
 @_test_offline_cache_dec

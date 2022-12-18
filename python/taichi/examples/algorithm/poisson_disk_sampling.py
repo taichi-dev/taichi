@@ -1,11 +1,16 @@
 """
 Poisson disk sampling in Taichi, a fancy version.
 Based on Yuanming Hu's code: https://github.com/taichi-dev/poisson_disk_sampling
+
+User interface:
+
+1. Click on the window to restart the animation.
+2. Press `p` to save screenshot.
 """
 import taichi as ti
 import taichi.math as tm
 
-ti.init(arch=ti.cpu)
+ti.init(arch=ti.gpu)
 
 grid_n = 20
 dx = 1 / grid_n
@@ -138,26 +143,31 @@ def render():
         img[i, j] = col
 
 
-refresh_scene()
-gui = ti.ui.Window("Poisson Disk Sampling", res=(window_size, window_size))
-canvas = gui.get_canvas()
-gui.fps_limit = 10
-while gui.running:
-    gui.get_event(ti.ui.PRESS)
-    if gui.is_pressed(ti.ui.ESCAPE):
-        gui.running = False
+def main():
+    refresh_scene()
+    gui = ti.ui.Window("Poisson Disk Sampling", res=(window_size, window_size))
+    canvas = gui.get_canvas()
+    gui.fps_limit = 10
+    while gui.running:
+        gui.get_event(ti.ui.PRESS)
+        if gui.is_pressed(ti.ui.ESCAPE):
+            gui.running = False
 
-    if gui.is_pressed(ti.ui.LMB):
-        iMouse[None] = gui.get_cursor_pos()
-        refresh_scene()
+        if gui.is_pressed(ti.ui.LMB):
+            iMouse[None] = gui.get_cursor_pos()
+            refresh_scene()
 
-    if gui.is_pressed("p"):
+        if gui.is_pressed("p"):
+            canvas.set_image(img)
+            gui.save_image("screenshot.png")
+
+        poisson_disk_sample(sample_count[None])
+        sample_count[None] += 1
+        compute_distance_field()
+        render()
         canvas.set_image(img)
-        gui.write_image("screenshot.png")
+        gui.show()
 
-    poisson_disk_sample(sample_count[None])
-    sample_count[None] += 1
-    compute_distance_field()
-    render()
-    canvas.set_image(img)
-    gui.show()
+
+if __name__ == "__main__":
+    main()

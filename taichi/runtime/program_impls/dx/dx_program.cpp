@@ -68,10 +68,11 @@ std::unique_ptr<AotModuleBuilder> Dx11ProgramImpl::make_aot_module_builder(
     const DeviceCapabilityConfig &caps) {
   if (runtime_) {
     return std::make_unique<gfx::AotModuleBuilderImpl>(
-        snode_tree_mgr_->get_compiled_structs(), Arch::dx11, *config, caps);
+        snode_tree_mgr_->get_compiled_structs(), nullptr, Arch::dx11, *config,
+        caps);
   } else {
     return std::make_unique<gfx::AotModuleBuilderImpl>(
-        aot_compiled_snode_structs_, Arch::dx11, *config, caps);
+        aot_compiled_snode_structs_, nullptr, Arch::dx11, *config, caps);
   }
 }
 

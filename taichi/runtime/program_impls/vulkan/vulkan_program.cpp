@@ -199,10 +199,12 @@ std::unique_ptr<AotModuleBuilder> VulkanProgramImpl::make_aot_module_builder(
     const DeviceCapabilityConfig &caps) {
   if (vulkan_runtime_) {
     return std::make_unique<gfx::AotModuleBuilderImpl>(
-        snode_tree_mgr_->get_compiled_structs(), Arch::vulkan, *config, caps);
+        snode_tree_mgr_->get_compiled_structs(),
+        get_kernel_compilation_maanger().get(), Arch::vulkan, *config, caps);
   } else {
     return std::make_unique<gfx::AotModuleBuilderImpl>(
-        aot_compiled_snode_structs_, Arch::vulkan, *config, caps);
+        aot_compiled_snode_structs_, get_kernel_compilation_maanger().get(),
+        Arch::vulkan, *config, caps);
   }
 }
 
@@ -240,10 +242,12 @@ const std::unique_ptr<KernelCompilationManager>
     KernelCompilationManager::Config init_config;
     // FIXME: Rm CompileConfig::offline_cache_file_path &
     //     Mv it to TaichiConfig
+    const auto *structs = vulkan_runtime_
+                              ? &snode_tree_mgr_->get_compiled_structs()
+                              : &aot_compiled_snode_structs_;
     init_config.offline_cache_path = config->offline_cache_file_path;
-    init_config.kernel_compiler =
-        std::make_unique<spirv::KernelCompiler>(spirv::KernelCompiler::Config{
-            &snode_tree_mgr_->get_compiled_structs()});
+    init_config.kernel_compiler = std::make_unique<spirv::KernelCompiler>(
+        spirv::KernelCompiler::Config{structs});
     kernel_compilation_mgr_ =
         std::make_unique<KernelCompilationManager>(std::move(init_config));
   }

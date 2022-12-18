@@ -6,6 +6,7 @@
 #include "taichi/program/kernel.h"
 #include "taichi/aot/module_data.h"
 #include "taichi/codegen/spirv/spirv_codegen.h"
+#include "taichi/codegen/spirv/cxompiled_kernel_data.h"
 #include "taichi/runtime/gfx/aot_graph_data.h"
 
 namespace taichi::lang {
@@ -104,10 +105,12 @@ class AotDataConverter {
 }  // namespace
 AotModuleBuilderImpl::AotModuleBuilderImpl(
     const std::vector<CompiledSNodeStructs> &compiled_structs,
+    KernelCompilationManager *kernel_compilation_manager,
     Arch device_api_backend,
     const CompileConfig &compile_config,
     const DeviceCapabilityConfig &caps)
     : compiled_structs_(compiled_structs),
+      kernel_compilation_manager_(kernel_compilation_manager),
       device_api_backend_(device_api_backend),
       config_(compile_config),
       caps_(caps) {
@@ -200,10 +203,7 @@ AotModuleBuilderImpl::try_get_kernel_register_params(
 
 void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
                                            Kernel *kernel) {
-  spirv::lower(config_, kernel);
-  auto compiled =
-      run_codegen(kernel, this->device_api_backend_, caps_, compiled_structs_,
-                  config_.external_optimization_level > 0);
+  auto compiled = compile_kernel(*kernel);
   compiled.kernel_attribs.name = identifier;
   ti_aot_data_.kernels.push_back(compiled.kernel_attribs);
   ti_aot_data_.spirv_codes.push_back(compiled.task_spirv_source_codes);
@@ -243,14 +243,31 @@ void AotModuleBuilderImpl::add_field_per_backend(const std::string &identifier,
 void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier,
                                                 const std::string &key,
                                                 Kernel *kernel) {
-  spirv::lower(config_, kernel);
-  auto compiled =
-      run_codegen(kernel, device_api_backend_, caps_, compiled_structs_,
-                  config_.external_optimization_level > 0);
-
+  auto compiled = compile_kernel(*kernel);
   compiled.kernel_attribs.name = identifier + "|" + key;
   ti_aot_data_.kernels.push_back(compiled.kernel_attribs);
   ti_aot_data_.spirv_codes.push_back(compiled.task_spirv_source_codes);
+}
+
+GfxRuntime::RegisterParams AotModuleBuilderImpl::compile_kernel(
+    const Kernel &kernel_def) {
+  if (kernel_compilation_manager_) {
+    const auto &compiled = kernel_compilation_manager_->load_or_compile(
+        config_, caps_, kernel_def);
+    const auto &spirv_compiled =
+        dynamic_cast<const spirv::CompiledKernelData &>(compiled);
+    const auto &spirv_data = spirv_compiled.get_internal_data();
+    gfx::GfxRuntime::RegisterParams params;
+    params.kernel_attribs = spirv_data.kernel_attribs;
+    params.task_spirv_source_codes = spirv_data.spirv_src;
+    params.num_snode_trees = spirv_data.num_snode_trees;
+    return params;
+  } else {  // Refactor2023:FIXME: Remove the branch
+    auto *kernel = const_cast<Kernel *>(&kernel_def);
+    spirv::lower(config_, kernel);
+    return run_codegen(kernel, device_api_backend_, caps_, compiled_structs_,
+                       config_.external_optimization_level > 0);
+  }
 }
 
 }  // namespace gfx

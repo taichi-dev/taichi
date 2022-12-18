@@ -6,6 +6,7 @@
 #include "taichi/aot/module_builder.h"
 #include "taichi/runtime/gfx/aot_utils.h"
 #include "taichi/runtime/gfx/runtime.h"
+#include "taichi/cache/kernel_compilation_manager.h"
 #include "taichi/codegen/spirv/snode_struct_compiler.h"
 #include "taichi/codegen/spirv/kernel_utils.h"
 
@@ -16,6 +17,7 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
  public:
   explicit AotModuleBuilderImpl(
       const std::vector<CompiledSNodeStructs> &compiled_structs,
+      KernelCompilationManager *kernel_compilation_manager,
       Arch device_api_backend,
       const CompileConfig &compile_config,
       const DeviceCapabilityConfig &caps);
@@ -47,7 +49,10 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
                              const TaskAttributes &k,
                              const std::vector<uint32_t> &source_code) const;
 
+  GfxRuntime::RegisterParams compile_kernel(const Kernel &kernel_def);
+
   const std::vector<CompiledSNodeStructs> &compiled_structs_;
+  KernelCompilationManager *kernel_compilation_manager_{nullptr};
   TaichiAotData ti_aot_data_;
 
   Arch device_api_backend_;

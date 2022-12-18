@@ -140,7 +140,7 @@ CacheManager::CacheManager(Params &&init_params)
   }
 
   caching_module_builder_ = std::make_unique<gfx::AotModuleBuilderImpl>(
-      compiled_structs_, init_params.arch, compile_config_,
+      compiled_structs_, nullptr, init_params.arch, compile_config_,
       std::move(init_params.caps));
 
   offline_cache_metadata_.version[0] = TI_VERSION_MAJOR;

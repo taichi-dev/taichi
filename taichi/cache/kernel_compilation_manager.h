@@ -12,7 +12,10 @@
 
 namespace taichi::lang {
 
-struct OfflineCacheData {
+struct CacheData {
+  enum CacheMode { MemCache, MemAndDiskCache };
+  using Version = std::uint16_t[3];
+
   struct KernelData {
     Arch arch;
     std::string kernel_key;
@@ -22,10 +25,13 @@ struct OfflineCacheData {
 
     std::unique_ptr<lang::CompiledKernelData> compiled_kernel_data;
 
-    TI_IO_DEF(kernel_key, size, created_at, last_used_at);
+    // Dump the kernel to disk if `cache_mode` == `MemAndDiskCache`
+    CacheMode cache_mode{MemCache};
+
+    TI_IO_DEF(arch, kernel_key, size, created_at, last_used_at);
   };
 
-  offline_cache::Version version{};
+  Version version{};
   std::size_t size{0};
   std::unordered_map<std::string, KernelData> kernels;
 
@@ -38,12 +44,8 @@ class KernelCompilationManager final {
   static constexpr char kCacheFilenameFormat[] = "{}-{}.tic";
   static constexpr char kMetadataLockName[] = "ticache.lock";
 
-  using OfflineCacheData = OfflineCacheData;
-  using OfflineCacheKernelData = OfflineCacheData::KernelData;
-  using CachingKernels =
-      std::unordered_map<std::string, OfflineCacheKernelData>;
-
-  enum CacheMode { MemCache, MemAndDiskCache };
+  using KernelCacheData = CacheData::KernelData;
+  using CachingKernels = std::unordered_map<std::string, KernelCacheData>;
 
  public:
   struct Config {
@@ -76,10 +78,11 @@ class KernelCompilationManager final {
   std::string make_gukk(const CompileConfig &compile_config,
                         const Kernel &kernel_def) const;
 
-  const CompiledKernelData *try_load_cached_kernel(const Kernel &kernel_def,
-                                                   const std::string &gukk,
-                                                   Arch arch,
-                                                   CacheMode cache_mode);
+  const CompiledKernelData *try_load_cached_kernel(
+      const Kernel &kernel_def,
+      const std::string &gukk,
+      Arch arch,
+      CacheData::CacheMode cache_mode);
 
   const CompiledKernelData &compile_and_cache_kernel(
       const std::string &gukk,
@@ -92,8 +95,8 @@ class KernelCompilationManager final {
 
   Config config_;
   CachingKernels caching_kernels_;
-  OfflineCacheData cached_data_;
-  std::vector<OfflineCacheKernelData *> updated_data_;
+  CacheData cached_data_;
+  std::vector<KernelCacheData *> updated_data_;
 };
 
 }  // namespace taichi::lang

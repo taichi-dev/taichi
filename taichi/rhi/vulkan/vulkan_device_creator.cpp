@@ -54,14 +54,14 @@ vk_debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
   }
 
   if (message_severity > VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT) {
-    //#ifdef TI_BUILD_TESTS
-    //    TI_ERROR("validation layer: {}, {}", message_type,
-    //            p_callback_data->pMessage);
-    //#else
+#ifdef TI_BUILD_TESTS
+    TI_ERROR("validation layer: {}, {}", message_type,
+             p_callback_data->pMessage);
+#else
 
     TI_WARN("validation layer: {}, {}", message_type,
             p_callback_data->pMessage);
-    //#endif
+#endif
   }
 
   return VK_FALSE;

@@ -1138,6 +1138,8 @@ void export_lang(py::module &m) {
 
   py::class_<Type>(m, "Type").def("to_string", &Type::to_string);
 
+  m.def("promoted_type", promoted_type);
+
   // Note that it is important to specify py::return_value_policy::reference for
   // the factory methods, otherwise pybind11 will delete the Types owned by
   // TypeFactory on Python-scope pointer destruction.

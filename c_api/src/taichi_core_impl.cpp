@@ -5,7 +5,6 @@
 #include "taichi/program/ndarray.h"
 #include "taichi/program/texture.h"
 #include "taichi/common/virtual_dir.h"
-#include <iostream>
 
 bool is_vulkan_available() {
 #ifdef TI_WITH_VULKAN

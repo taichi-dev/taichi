@@ -9,14 +9,14 @@ inline bool is_error_ignorable(TiError error) {
 
 class CapiTest : public ::testing::Test {
  public:
-  void CHECK_TAICHI_SUCCESS() {
+  void ASSERT_TAICHI_SUCCESS() {
     TiError actual = ti_get_last_error(0, nullptr);
     EXPECT_EQ(actual, TI_ERROR_SUCCESS);
   }
 
-  void CHECK_TAICHI_ERROR(TiError expected,
-                          const std::string &match = "",
-                          bool reset_error = true) {
+  void EXPECT_TAICHI_ERROR(TiError expected,
+                           const std::string &match = "",
+                           bool reset_error = true) {
     char err_msg[4096]{0};
     TiError err = ti_get_last_error(sizeof(err_msg), err_msg);
 

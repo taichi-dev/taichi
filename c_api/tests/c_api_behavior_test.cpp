@@ -7,7 +7,7 @@ TEST_F(CapiTest, TestBehaviorCreateRuntime) {
   auto inner = [this](TiArch arch) {
     TiRuntime runtime = ti_create_runtime(arch);
     TI_ASSERT(runtime == TI_NULL_HANDLE);
-    CHECK_TAICHI_ERROR(TI_ERROR_NOT_SUPPORTED);
+    EXPECT_TAICHI_ERROR(TI_ERROR_NOT_SUPPORTED);
   };
 
   // Attempt to create runtime for unknown arch.
@@ -27,7 +27,7 @@ TEST_F(CapiTest, TestBehaviorCreateRuntime) {
 TEST_F(CapiTest, TestBehaviorDestroyRuntime) {
   // Attempt to destroy null handles.
   ti_destroy_runtime(TI_NULL_HANDLE);
-  CHECK_TAICHI_ERROR(TI_ERROR_ARGUMENT_NULL);
+  EXPECT_TAICHI_ERROR(TI_ERROR_ARGUMENT_NULL);
 }
 
 TEST_F(CapiTest, TestBehaviorGetRuntimeCapabilities) {
@@ -42,7 +42,7 @@ TEST_F(CapiTest, TestBehaviorGetRuntimeCapabilities) {
     {
       // Two nulls, considerred nop.
       ti_get_runtime_capabilities(runtime, nullptr, nullptr);
-      CHECK_TAICHI_SUCCESS();
+      ASSERT_TAICHI_SUCCESS();
     }
 
     {
@@ -51,7 +51,7 @@ TEST_F(CapiTest, TestBehaviorGetRuntimeCapabilities) {
       // returned.
       uint32_t capability_count = 0;
       ti_get_runtime_capabilities(runtime, &capability_count, nullptr);
-      CHECK_TAICHI_SUCCESS();
+      ASSERT_TAICHI_SUCCESS();
       switch (arch) {
         case TI_ARCH_VULKAN:
         case TI_ARCH_OPENGL:
@@ -73,7 +73,7 @@ TEST_F(CapiTest, TestBehaviorGetRuntimeCapabilities) {
           },
       };
       ti_get_runtime_capabilities(runtime, nullptr, capabilities.data());
-      CHECK_TAICHI_SUCCESS();
+      ASSERT_TAICHI_SUCCESS();
       EXPECT_EQ(capabilities.at(0).capability, (TiCapability)0xcbcbcbcb);
       EXPECT_EQ(capabilities.at(0).level, 0xcbcbcbcb);
     }
@@ -83,11 +83,11 @@ TEST_F(CapiTest, TestBehaviorGetRuntimeCapabilities) {
       // Normal usage.
       uint32_t capability_count = 0;
       ti_get_runtime_capabilities(runtime, &capability_count, nullptr);
-      CHECK_TAICHI_SUCCESS();
+      ASSERT_TAICHI_SUCCESS();
       std::vector<TiCapabilityLevelInfo> capabilities(capability_count);
       ti_get_runtime_capabilities(runtime, &capability_count,
                                   capabilities.data());
-      CHECK_TAICHI_SUCCESS();
+      ASSERT_TAICHI_SUCCESS();
       for (size_t i = 0; i < capability_count; ++i) {
         TI_ASSERT(capabilities.at(i).capability !=
                   (TiCapability)TI_CAPABILITY_RESERVED);

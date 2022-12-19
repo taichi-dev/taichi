@@ -136,10 +136,10 @@ TEST_F(CapiTest, FailMapDeviceOnlyMemory) {
     ti::Memory mem = runtime.allocate_memory(100);
     mem.map();
 
-    CHECK_TAICHI_ERROR(TI_ERROR_INVALID_STATE, "Assertion failure",
-                       false /* reset_error */);
-    CHECK_TAICHI_ERROR(TI_ERROR_INVALID_STATE, "RHI map memory failed",
-                       true /* reset_error */);
+    EXPECT_TAICHI_ERROR(TI_ERROR_INVALID_STATE, "Assertion failure",
+                        /*reset_error=*/false);
+    EXPECT_TAICHI_ERROR(TI_ERROR_INVALID_STATE, "RHI map memory failed",
+                        /*reset_error=*/true);
   }
 }
 
@@ -155,7 +155,7 @@ TEST_F(CapiTest, FailOutOfRangeReadWrite) {
 
     arr.write(data);
 
-    CHECK_TAICHI_ERROR(TI_ERROR_ARGUMENT_OUT_OF_RANGE);
+    EXPECT_TAICHI_ERROR(TI_ERROR_ARGUMENT_OUT_OF_RANGE);
   }
 }
 
